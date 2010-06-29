@@ -2441,6 +2441,7 @@ CharDriverState *qemu_chr_open_opts(QemuOpts *opts,
                                     void (*init)(struct CharDriverState *s))
 {
     CharDriverState *chr;
+    const char *backend;
     int i;
 
     if (qemu_opts_id(opts) == NULL) {
@@ -2448,8 +2449,14 @@ CharDriverState *qemu_chr_open_opts(QemuOpts *opts,
         return NULL;
     }
 
+    backend = qemu_opt_get(opts, "backend");
+    if (!backend) {
+        fprintf(stderr, "chardev: backend option not specified\n");
+        return NULL;
+    }
+
     for (i = 0; i < ARRAY_SIZE(backend_table); i++) {
-        if (strcmp(backend_table[i].name, qemu_opt_get(opts, "backend")) == 0)
+        if (strcmp(backend_table[i].name, backend) == 0)
             break;
     }
     if (i == ARRAY_SIZE(backend_table)) {
