@@ -214,13 +214,17 @@ static int vnc_server_info_put(QDict *qdict)
 
 static void vnc_client_cache_auth(VncState *client)
 {
+#if defined(CONFIG_VNC_TLS) || defined(CONFIG_VNC_SASL)
     QDict *qdict;
+#endif
 
     if (!client->info) {
         return;
     }
 
+#if defined(CONFIG_VNC_TLS) || defined(CONFIG_VNC_SASL)
     qdict = qobject_to_qdict(client->info);
+#endif
 
 #ifdef CONFIG_VNC_TLS
     if (client->tls.session &&
@@ -1184,7 +1188,7 @@ void vnc_client_write(void *opaque)
     vnc_lock_output(vs);
     if (vs->output.offset) {
         vnc_client_write_locked(opaque);
-    } else {
+    } else if (vs->csock != -1) {
         qemu_set_fd_handler2(vs->csock, NULL, vnc_client_read, NULL, vs);
     }
     vnc_unlock_output(vs);
@@ -2523,7 +2527,9 @@ int vnc_display_open(DisplayState *ds, const char *display)
     int sasl = 0;
     int saslErr;
 #endif
+#if defined(CONFIG_VNC_TLS) || defined(CONFIG_VNC_SASL)
     int acl = 0;
+#endif
     int lock_key_sync = 1;
 
     if (!vnc_display)
@@ -2581,8 +2587,10 @@ int vnc_display_open(DisplayState *ds, const char *display)
                 return -1;
             }
 #endif
+#if defined(CONFIG_VNC_TLS) || defined(CONFIG_VNC_SASL)
         } else if (strncmp(options, "acl", 3) == 0) {
             acl = 1;
+#endif
         } else if (strncmp(options, "lossy", 5) == 0) {
             vs->lossy = true;
         }

@@ -281,27 +281,62 @@ NICState *qemu_new_nic(NetClientInfo *info,
     return nic;
 }
 
-void qemu_del_vlan_client(VLANClientState *vc)
+static void qemu_cleanup_vlan_client(VLANClientState *vc)
 {
     if (vc->vlan) {
         QTAILQ_REMOVE(&vc->vlan->clients, vc, next);
     } else {
-        if (vc->send_queue) {
-            qemu_del_net_queue(vc->send_queue);
-        }
         QTAILQ_REMOVE(&non_vlan_clients, vc, next);
-        if (vc->peer) {
-            vc->peer->peer = NULL;
-        }
     }
 
     if (vc->info->cleanup) {
         vc->info->cleanup(vc);
     }
+}
 
+static void qemu_free_vlan_client(VLANClientState *vc)
+{
+    if (!vc->vlan) {
+        if (vc->send_queue) {
+            qemu_del_net_queue(vc->send_queue);
+        }
+        if (vc->peer) {
+            vc->peer->peer = NULL;
+        }
+    }
     qemu_free(vc->name);
     qemu_free(vc->model);
     qemu_free(vc);
+}
+
+void qemu_del_vlan_client(VLANClientState *vc)
+{
+    /* If there is a peer NIC, delete and cleanup client, but do not free. */
+    if (!vc->vlan && vc->peer && vc->peer->info->type == NET_CLIENT_TYPE_NIC) {
+        NICState *nic = DO_UPCAST(NICState, nc, vc->peer);
+        if (nic->peer_deleted) {
+            return;
+        }
+        nic->peer_deleted = true;
+        /* Let NIC know peer is gone. */
+        vc->peer->link_down = true;
+        if (vc->peer->info->link_status_changed) {
+            vc->peer->info->link_status_changed(vc->peer);
+        }
+        qemu_cleanup_vlan_client(vc);
+        return;
+    }
+
+    /* If this is a peer NIC and peer has already been deleted, free it now. */
+    if (!vc->vlan && vc->peer && vc->info->type == NET_CLIENT_TYPE_NIC) {
+        NICState *nic = DO_UPCAST(NICState, nc, vc);
+        if (nic->peer_deleted) {
+            qemu_free_vlan_client(vc->peer);
+        }
+    }
+
+    qemu_cleanup_vlan_client(vc);
+    qemu_free_vlan_client(vc);
 }
 
 VLANClientState *
@@ -739,19 +774,25 @@ int qemu_find_nic_model(NICInfo *nd, const char * const *models,
 
 int net_handle_fd_param(Monitor *mon, const char *param)
 {
-    if (!qemu_isdigit(param[0])) {
-        int fd;
+    int fd;
+
+    if (!qemu_isdigit(param[0]) && mon) {
 
         fd = monitor_get_fd(mon, param);
         if (fd == -1) {
             error_report("No file descriptor named %s found", param);
             return -1;
         }
-
-        return fd;
     } else {
-        return strtol(param, NULL, 0);
+        char *endptr = NULL;
+
+        fd = strtol(param, &endptr, 10);
+        if (*endptr || (fd == 0 && param == endptr)) {
+            return -1;
+        }
     }
+
+    return fd;
 }
 
 static int net_init_nic(QemuOpts *opts,
@@ -1168,7 +1209,7 @@ void net_host_device_add(Monitor *mon, const QDict *qdict)
         return;
     }
 
-    opts = qemu_opts_parse(&qemu_net_opts, opts_str ? opts_str : "", 0);
+    opts = qemu_opts_parse(qemu_find_opts("net"), opts_str ? opts_str : "", 0);
     if (!opts) {
         return;
     }
@@ -1202,7 +1243,7 @@ int do_netdev_add(Monitor *mon, const QDict *qdict, QObject **ret_data)
     QemuOpts *opts;
     int res;
 
-    opts = qemu_opts_from_qdict(&qemu_netdev_opts, qdict);
+    opts = qemu_opts_from_qdict(qemu_find_opts("netdev"), qdict);
     if (!opts) {
         return -1;
     }
@@ -1226,7 +1267,7 @@ int do_netdev_del(Monitor *mon, const QDict *qdict, QObject **ret_data)
         return -1;
     }
     qemu_del_vlan_client(vc);
-    qemu_opts_del(qemu_opts_find(&qemu_netdev_opts, id));
+    qemu_opts_del(qemu_opts_find(qemu_find_opts("netdev"), id));
     return 0;
 }
 
@@ -1349,21 +1390,23 @@ static int net_init_netdev(QemuOpts *opts, void *dummy)
 
 int net_init_clients(void)
 {
+    QemuOptsList *net = qemu_find_opts("net");
+
     if (default_net) {
         /* if no clients, we use a default config */
-        qemu_opts_set(&qemu_net_opts, NULL, "type", "nic");
+        qemu_opts_set(net, NULL, "type", "nic");
 #ifdef CONFIG_SLIRP
-        qemu_opts_set(&qemu_net_opts, NULL, "type", "user");
+        qemu_opts_set(net, NULL, "type", "user");
 #endif
     }
 
     QTAILQ_INIT(&vlans);
     QTAILQ_INIT(&non_vlan_clients);
 
-    if (qemu_opts_foreach(&qemu_netdev_opts, net_init_netdev, NULL, 1) == -1)
+    if (qemu_opts_foreach(qemu_find_opts("netdev"), net_init_netdev, NULL, 1) == -1)
         return -1;
 
-    if (qemu_opts_foreach(&qemu_net_opts, net_init_client, NULL, 1) == -1) {
+    if (qemu_opts_foreach(net, net_init_client, NULL, 1) == -1) {
         return -1;
     }
 

@@ -393,6 +393,7 @@ available sound hardware.
 qemu -soundhw sb16,adlib disk.img
 qemu -soundhw es1370 disk.img
 qemu -soundhw ac97 disk.img
+qemu -soundhw hda disk.img
 qemu -soundhw all disk.img
 qemu -soundhw ?
 @end example
@@ -482,11 +483,10 @@ possible drivers and properties, use @code{-device ?} and
 @code{-device @var{driver},?}.
 ETEXI
 
-#ifdef CONFIG_LINUX
 DEFHEADING(File system options:)
 
 DEF("fsdev", HAS_ARG, QEMU_OPTION_fsdev,
-    "-fsdev local,id=id,path=path,security_model=[mapped|passthrough]\n",
+    "-fsdev local,id=id,path=path,security_model=[mapped|passthrough|none]\n",
     QEMU_ARCH_ALL)
 
 STEXI
@@ -515,13 +515,11 @@ Create a file-system-"device" for local-filesystem.
 
 @end table
 ETEXI
-#endif
 
-#ifdef CONFIG_LINUX
 DEFHEADING(Virtual File system pass-through options:)
 
 DEF("virtfs", HAS_ARG, QEMU_OPTION_virtfs,
-    "-virtfs local,path=path,mount_tag=tag,security_model=[mapped|passthrough]\n",
+    "-virtfs local,path=path,mount_tag=tag,security_model=[mapped|passthrough|none]\n",
     QEMU_ARCH_ALL)
 
 STEXI
@@ -554,7 +552,6 @@ Create a Virtual file-system-pass through for local-filesystem.
 
 @end table
 ETEXI
-#endif
 
 DEFHEADING()
 
@@ -672,6 +669,76 @@ STEXI
 @item -sdl
 @findex -sdl
 Enable SDL.
+ETEXI
+
+DEF("spice", HAS_ARG, QEMU_OPTION_spice,
+    "-spice <args>   enable spice\n", QEMU_ARCH_ALL)
+STEXI
+@item -spice @var{option}[,@var{option}[,...]]
+@findex -spice
+Enable the spice remote desktop protocol. Valid options are
+
+@table @option
+
+@item port=<nr>
+Set the TCP port spice is listening on for plaintext channels.
+
+@item addr=<addr>
+Set the IP address spice is listening on.  Default is any address.
+
+@item ipv4
+@item ipv6
+Force using the specified IP version.
+
+@item password=<secret>
+Set the password you need to authenticate.
+
+@item disable-ticketing
+Allow client connects without authentication.
+
+@item tls-port=<nr>
+Set the TCP port spice is listening on for encrypted channels.
+
+@item x509-dir=<dir>
+Set the x509 file directory. Expects same filenames as -vnc $display,x509=$dir
+
+@item x509-key-file=<file>
+@item x509-key-password=<file>
+@item x509-cert-file=<file>
+@item x509-cacert-file=<file>
+@item x509-dh-key-file=<file>
+The x509 file names can also be configured individually.
+
+@item tls-ciphers=<list>
+Specify which ciphers to use.
+
+@item tls-channel=[main|display|inputs|record|playback|tunnel]
+@item plaintext-channel=[main|display|inputs|record|playback|tunnel]
+Force specific channel to be used with or without TLS encryption.  The
+options can be specified multiple times to configure multiple
+channels.  The special name "default" can be used to set the default
+mode.  For channels which are not explicitly forced into one mode the
+spice client is allowed to pick tls/plaintext as he pleases.
+
+@item image-compression=[auto_glz|auto_lz|quic|glz|lz|off]
+Configure image compression (lossless).
+Default is auto_glz.
+
+@item jpeg-wan-compression=[auto|never|always]
+@item zlib-glz-wan-compression=[auto|never|always]
+Configure wan image compression (lossy for slow links).
+Default is auto.
+
+@item streaming-video=[off|all|filter]
+Configure video stream detection.  Default is filter.
+
+@item agent-mouse=[on|off]
+Enable/disable passing mouse events via vdagent.  Default is on.
+
+@item playback-compression=[on|off]
+Enable/disable audio stream compression (using celt 0.5.1).  Default is on.
+
+@end table
 ETEXI
 
 DEF("portrait", 0, QEMU_OPTION_portrait,
@@ -2234,6 +2301,17 @@ Normally QEMU loads a configuration file from @var{sysconfdir}/qemu.conf and
 @var{sysconfdir}/target-@var{ARCH}.conf on startup.  The @code{-nodefconfig}
 option will prevent QEMU from loading these configuration files at startup.
 ETEXI
+#ifdef CONFIG_SIMPLE_TRACE
+DEF("trace", HAS_ARG, QEMU_OPTION_trace,
+    "-trace\n"
+    "                Specify a trace file to log traces to\n",
+    QEMU_ARCH_ALL)
+STEXI
+@item -trace
+@findex -trace
+Specify a trace file to log output traces to.
+ETEXI
+#endif
 
 HXCOMM This is the last statement. Insert new options before this line!
 STEXI

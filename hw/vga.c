@@ -1934,8 +1934,6 @@ void vga_common_reset(VGACommonState *s)
     s->map_addr = 0;
     s->map_end = 0;
     s->lfb_vram_mapped = 0;
-    s->bios_offset = 0;
-    s->bios_size = 0;
     s->sr_index = 0;
     memset(s->sr, '\0', sizeof(s->sr));
     s->gr_index = 0;
@@ -2313,13 +2311,6 @@ void vga_init(VGACommonState *s)
 
     register_ioport_write(0x1ce, 1, 2, vbe_ioport_write_index, s);
     register_ioport_write(0x1cf, 1, 2, vbe_ioport_write_data, s);
-
-    /* old Bochs IO ports */
-    register_ioport_read(0xff80, 1, 2, vbe_ioport_read_index, s);
-    register_ioport_read(0xff81, 1, 2, vbe_ioport_read_data, s);
-
-    register_ioport_write(0xff80, 1, 2, vbe_ioport_write_index, s);
-    register_ioport_write(0xff81, 1, 2, vbe_ioport_write_data, s);
 #else
     register_ioport_read(0x1ce, 1, 2, vbe_ioport_read_index, s);
     register_ioport_read(0x1d0, 1, 2, vbe_ioport_read_data, s);

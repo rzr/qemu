@@ -13,6 +13,8 @@
 
 #include <qemu-common.h>
 #include "qemu-error.h"
+#include "trace.h"
+#include "blockdev.h"
 #include "virtio-blk.h"
 #ifdef __linux__
 # include <scsi/sg.h>
@@ -51,6 +53,8 @@ static void virtio_blk_req_complete(VirtIOBlockReq *req, int status)
 {
     VirtIOBlock *s = req->dev;
 
+    trace_virtio_blk_req_complete(req, status);
+
     req->in->status = status;
     virtqueue_push(s->vq, &req->elem, req->qiov.size + sizeof(*req->in));
     virtio_notify(&s->vdev, s->vq);
@@ -87,6 +91,8 @@ static void virtio_blk_rw_complete(void *opaque, int ret)
 {
     VirtIOBlockReq *req = opaque;
 
+    trace_virtio_blk_rw_complete(req, ret);
+
     if (ret) {
         int is_read = !(req->out->type & VIRTIO_BLK_T_OUT);
         if (virtio_blk_handle_rw_error(req, -ret, is_read))
@@ -100,7 +106,13 @@ static void virtio_blk_flush_complete(void *opaque, int ret)
 {
     VirtIOBlockReq *req = opaque;
 
-    virtio_blk_req_complete(req, ret ? VIRTIO_BLK_S_IOERR : VIRTIO_BLK_S_OK);
+    if (ret) {
+        if (virtio_blk_handle_rw_error(req, -ret, 0)) {
+            return;
+        }
+    }
+
+    virtio_blk_req_complete(req, VIRTIO_BLK_S_OK);
 }
 
 static VirtIOBlockReq *virtio_blk_alloc_request(VirtIOBlock *s)
@@ -261,13 +273,15 @@ static void virtio_blk_handle_flush(VirtIOBlockReq *req, MultiReqBuffer *mrb)
 
     acb = bdrv_aio_flush(req->dev->bs, virtio_blk_flush_complete, req);
     if (!acb) {
-        virtio_blk_req_complete(req, VIRTIO_BLK_S_IOERR);
+        virtio_blk_flush_complete(req, -EIO);
     }
 }
 
 static void virtio_blk_handle_write(VirtIOBlockReq *req, MultiReqBuffer *mrb)
 {
     BlockRequest *blkreq;
+
+    trace_virtio_blk_handle_write(req, req->out->sector, req->qiov.size / 512);
 
     if (req->out->sector & req->dev->sector_mask) {
         virtio_blk_rw_complete(req, -EIO);
@@ -310,13 +324,13 @@ static void virtio_blk_handle_request(VirtIOBlockReq *req,
     MultiReqBuffer *mrb)
 {
     if (req->elem.out_num < 1 || req->elem.in_num < 1) {
-        fprintf(stderr, "virtio-blk missing headers\n");
+        error_report("virtio-blk missing headers");
         exit(1);
     }
 
     if (req->elem.out_sg[0].iov_len < sizeof(*req->out) ||
         req->elem.in_sg[req->elem.in_num - 1].iov_len < sizeof(*req->in)) {
-        fprintf(stderr, "virtio-blk header not in correct element\n");
+        error_report("virtio-blk header not in correct element");
         exit(1);
     }
 
@@ -480,6 +494,11 @@ static int virtio_blk_load(QEMUFile *f, void *opaque, int version_id)
         qemu_get_buffer(f, (unsigned char*)&req->elem, sizeof(req->elem));
         req->next = s->rq;
         s->rq = req;
+
+        virtqueue_map_sg(req->elem.in_sg, req->elem.in_addr,
+            req->elem.in_num, 1);
+        virtqueue_map_sg(req->elem.out_sg, req->elem.out_addr,
+            req->elem.out_num, 0);
     }
 
     return 0;
@@ -527,6 +546,7 @@ VirtIODevice *virtio_blk_init(DeviceState *dev, BlockConf *conf)
     register_savevm(dev, "virtio-blk", virtio_blk_id++, 2,
                     virtio_blk_save, virtio_blk_load, s);
     bdrv_set_removable(s->bs, 0);
+    s->bs->buffer_alignment = conf->logical_block_size;
 
     return &s->vdev;
 }

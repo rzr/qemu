@@ -24,6 +24,7 @@
 #include "qemu-common.h"
 #include "qemu-option.h"
 #include "osdep.h"
+#include "sysemu.h"
 #include "block_int.h"
 #include <stdio.h>
 
@@ -39,7 +40,7 @@ typedef struct img_cmd_t {
 /* Default to cache=writeback as data integrity is not important for qemu-tcg. */
 #define BDRV_O_FLAGS BDRV_O_CACHE_WB
 
-static void error(const char *fmt, ...)
+static void GCC_FMT_ATTR(1, 2) error(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -645,14 +646,16 @@ static int img_convert(int argc, char **argv)
     const uint8_t *buf1;
     BlockDriverInfo bdi;
     QEMUOptionParameter *param = NULL, *create_options = NULL;
+    QEMUOptionParameter *out_baseimg_param;
     char *options = NULL;
+    const char *snapshot_name = NULL;
 
     fmt = NULL;
     out_fmt = "raw";
     out_baseimg = NULL;
     flags = 0;
     for(;;) {
-        c = getopt(argc, argv, "f:O:B:hce6o:");
+        c = getopt(argc, argv, "f:O:B:s:hce6o:");
         if (c == -1)
             break;
         switch(c) {
@@ -679,6 +682,9 @@ static int img_convert(int argc, char **argv)
             break;
         case 'o':
             options = optarg;
+            break;
+        case 's':
+            snapshot_name = optarg;
             break;
         }
     }
@@ -709,6 +715,19 @@ static int img_convert(int argc, char **argv)
         }
         bdrv_get_geometry(bs[bs_i], &bs_sectors);
         total_sectors += bs_sectors;
+    }
+
+    if (snapshot_name != NULL) {
+        if (bs_n > 1) {
+            error("No support for concatenating multiple snapshot\n");
+            ret = -1;
+            goto out;
+        }
+        if (bdrv_snapshot_load_tmp(bs[0], snapshot_name) < 0) {
+            error("Failed to load snapshot\n");
+            ret = -1;
+            goto out;
+        }
     }
 
     /* Find driver and parse its options */
@@ -752,6 +771,12 @@ static int img_convert(int argc, char **argv)
         goto out;
     }
 
+    /* Get backing file name if -o backing_file was used */
+    out_baseimg_param = get_option_parameter(param, BLOCK_OPT_BACKING_FILE);
+    if (out_baseimg_param) {
+        out_baseimg = out_baseimg_param->value.s;
+    }
+
     /* Check if compression is supported */
     if (flags & BLOCK_FLAG_COMPRESS) {
         QEMUOptionParameter *encryption =
@@ -783,7 +808,8 @@ static int img_convert(int argc, char **argv)
         goto out;
     }
 
-    out_bs = bdrv_new_open(out_filename, out_fmt, BDRV_O_FLAGS | BDRV_O_RDWR);
+    out_bs = bdrv_new_open(out_filename, out_fmt,
+        BDRV_O_FLAGS | BDRV_O_RDWR | BDRV_O_NO_FLUSH);
     if (!out_bs) {
         ret = -1;
         goto out;
@@ -1286,7 +1312,7 @@ static int img_rebase(int argc, char **argv)
         }
 
         bs_new_backing = bdrv_new("new_backing");
-        ret = bdrv_open(bs_new_backing, out_baseimg, BDRV_O_FLAGS | BDRV_O_RDWR,
+        ret = bdrv_open(bs_new_backing, out_baseimg, BDRV_O_FLAGS,
                         new_backing_drv);
         if (ret) {
             error("Could not open new backing file '%s'", out_baseimg);

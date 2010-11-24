@@ -132,10 +132,10 @@ int do_migrate_cancel(Monitor *mon, const QDict *qdict, QObject **ret_data)
 
 int do_migrate_set_speed(Monitor *mon, const QDict *qdict, QObject **ret_data)
 {
-    double d;
+    int64_t d;
     FdMigrationState *s;
 
-    d = qdict_get_double(qdict, "value");
+    d = qdict_get_int(qdict, "value");
     d = MAX(0, MIN(UINT32_MAX, d));
     max_throttle = d;
 
@@ -316,8 +316,14 @@ ssize_t migrate_fd_put_buffer(void *opaque, const void *data, size_t size)
     if (ret == -1)
         ret = -(s->get_error(s));
 
-    if (ret == -EAGAIN)
+    if (ret == -EAGAIN) {
         qemu_set_fd_handler2(s->fd, NULL, NULL, migrate_fd_put_notify, s);
+    } else if (ret < 0) {
+        if (s->mon) {
+            monitor_resume(s->mon);
+        }
+        s->state = MIG_STATE_ERROR;
+    }
 
     return ret;
 }

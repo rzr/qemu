@@ -50,7 +50,7 @@ QemuOpts *drive_add(const char *file, const char *fmt, ...)
     vsnprintf(optstr, sizeof(optstr), fmt, ap);
     va_end(ap);
 
-    opts = qemu_opts_parse(&qemu_drive_opts, optstr, 0);
+    opts = qemu_opts_parse(qemu_find_opts("drive"), optstr, 0);
     if (!opts) {
         return NULL;
     }
@@ -314,7 +314,7 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi, int *fatal_error)
     on_write_error = BLOCK_ERR_STOP_ENOSPC;
     if ((buf = qemu_opt_get(opts, "werror")) != NULL) {
         if (type != IF_IDE && type != IF_SCSI && type != IF_VIRTIO && type != IF_NONE) {
-            fprintf(stderr, "werror is no supported by this format\n");
+            fprintf(stderr, "werror is not supported by this format\n");
             return NULL;
         }
 
@@ -326,8 +326,8 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi, int *fatal_error)
 
     on_read_error = BLOCK_ERR_REPORT;
     if ((buf = qemu_opt_get(opts, "rerror")) != NULL) {
-        if (type != IF_IDE && type != IF_VIRTIO && type != IF_NONE) {
-            fprintf(stderr, "rerror is no supported by this format\n");
+        if (type != IF_IDE && type != IF_VIRTIO && type != IF_SCSI && type != IF_NONE) {
+            fprintf(stderr, "rerror is not supported by this format\n");
             return NULL;
         }
 
@@ -451,7 +451,7 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi, int *fatal_error)
         break;
     case IF_VIRTIO:
         /* add virtio block device */
-        opts = qemu_opts_create(&qemu_device_opts, NULL, 0);
+        opts = qemu_opts_create(qemu_find_opts("device"), NULL, 0);
         qemu_opt_set(opts, "driver", "virtio-blk-pci");
         qemu_opt_set(opts, "drive", dinfo->id);
         if (devaddr)

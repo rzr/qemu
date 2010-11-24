@@ -22,6 +22,7 @@
 #include "loader.h"
 #include "elf.h"
 #include "mc146818rtc.h"
+#include "blockdev.h"
 
 #define MAX_IDE_BUS 2
 
@@ -166,7 +167,6 @@ void mips_r4k_init (ram_addr_t ram_size,
     int bios_size;
     CPUState *env;
     ResetData *reset_info;
-    ISADevice *rtc_state;
     int i;
     qemu_irq *i8259;
     DriveInfo *hd[MAX_IDE_BUS * MAX_IDE_DEVS];
@@ -267,7 +267,7 @@ void mips_r4k_init (ram_addr_t ram_size,
     isa_bus_new(NULL);
     isa_bus_irqs(i8259);
 
-    rtc_state = rtc_init(2000, NULL);
+    rtc_init(2000, NULL);
 
     /* Register 64 KB of ISA IO space at 0x14000000 */
 #ifdef TARGET_WORDS_BIGENDIAN

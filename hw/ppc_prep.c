@@ -37,6 +37,7 @@
 #include "ide.h"
 #include "loader.h"
 #include "mc146818rtc.h"
+#include "blockdev.h"
 
 //#define HARD_DEBUG_PPC_IO
 //#define DEBUG_PPC_IO
@@ -564,14 +565,15 @@ static void ppc_prep_init (ram_addr_t ram_size,
                            const char *initrd_filename,
                            const char *cpu_model)
 {
-    CPUState *env = NULL, *envs[MAX_CPUS];
+    CPUState *env = NULL;
     char *filename;
     nvram_t nvram;
     M48t59State *m48t59;
     int PPC_io_memory;
     int linux_boot, i, nb_nics1, bios_size;
     ram_addr_t ram_offset, bios_offset;
-    uint32_t kernel_base, kernel_size, initrd_base, initrd_size;
+    uint32_t kernel_base, initrd_base;
+    long kernel_size, initrd_size;
     PCIBus *pci_bus;
     qemu_irq *i8259;
     qemu_irq *cpu_exit_irq;
@@ -600,7 +602,6 @@ static void ppc_prep_init (ram_addr_t ram_size,
             cpu_ppc_tb_init(env, 100UL * 1000UL * 1000UL);
         }
         qemu_register_reset((QEMUResetHandler*)&cpu_reset, env);
-        envs[i] = env;
     }
 
     /* allocate RAM */
@@ -693,7 +694,7 @@ static void ppc_prep_init (ram_addr_t ram_size,
     cpu_register_physical_memory(0x80000000, 0x00800000, PPC_io_memory);
 
     /* init basic PC hardware */
-    pci_vga_init(pci_bus, 0, 0);
+    pci_vga_init(pci_bus);
     //    openpic = openpic_init(0x00000000, 0xF0000000, 1);
     //    pit = pit_init(0x40, i8259[0]);
     rtc_init(2000, NULL);

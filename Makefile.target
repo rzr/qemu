@@ -30,15 +30,38 @@ endif
 endif
 
 PROGS=$(QEMU_PROG)
+STPFILES=
 
+ifndef CONFIG_HAIKU
 LIBS+=-lm
+endif
 
 kvm.o kvm-all.o vhost.o vhost_net.o: QEMU_CFLAGS+=$(KVM_CFLAGS)
 
 config-target.h: config-target.h-timestamp
 config-target.h-timestamp: config-target.mak
 
-all: $(PROGS)
+ifdef CONFIG_SYSTEMTAP_TRACE
+stap: $(QEMU_PROG).stp
+
+ifdef CONFIG_USER_ONLY
+TARGET_TYPE=user
+else
+TARGET_TYPE=system
+endif
+
+$(QEMU_PROG).stp:
+	$(call quiet-command,sh $(SRC_PATH)/tracetool \
+		--$(TRACE_BACKEND) \
+		--binary $(bindir)/$(QEMU_PROG) \
+		--target-arch $(TARGET_ARCH) \
+		--target-type $(TARGET_TYPE) \
+		--stap < $(SRC_PATH)/trace-events > $(QEMU_PROG).stp,"  GEN   $(QEMU_PROG).stp")
+else
+stap:
+endif
+
+all: $(PROGS) stap
 
 # Dummy command so that make thinks it has done something
 	@true
@@ -86,7 +109,7 @@ $(call set-vpath, $(SRC_PATH)/linux-user:$(SRC_PATH)/linux-user/$(TARGET_ABI_DIR
 QEMU_CFLAGS+=-I$(SRC_PATH)/linux-user -I$(SRC_PATH)/linux-user/$(TARGET_ABI_DIR)
 obj-y = main.o syscall.o strace.o mmap.o signal.o thunk.o \
       elfload.o linuxload.o uaccess.o gdbstub.o cpu-uname.o \
-      qemu-malloc.o
+      qemu-malloc.o $(oslib-obj-y)
 
 obj-$(TARGET_HAS_BFLT) += flatload.o
 
@@ -217,8 +240,16 @@ obj-ppc-y += ppc4xx_devs.o ppc4xx_pci.o ppc405_uc.o ppc405_boards.o
 obj-ppc-y += ppc440.o ppc440_bamboo.o
 # PowerPC E500 boards
 obj-ppc-y += ppce500_mpc8544ds.o
+# PowerPC 440 Xilinx ML507 reference board.
+obj-ppc-y += virtex_ml507.o
 obj-ppc-$(CONFIG_KVM) += kvm_ppc.o
 obj-ppc-$(CONFIG_FDT) += device_tree.o
+
+# Xilinx PPC peripherals
+obj-ppc-y += xilinx_intc.o
+obj-ppc-y += xilinx_timer.o
+obj-ppc-y += xilinx_uartlite.o
+obj-ppc-y += xilinx_ethlite.o
 
 obj-mips-y = mips_r4k.o mips_jazz.o mips_malta.o mips_mipssim.o
 obj-mips-y += mips_addr.o mips_timer.o mips_int.o
@@ -299,7 +330,7 @@ obj-alpha-y = alpha_palcode.o
 
 main.o: QEMU_CFLAGS+=$(GPROF_CFLAGS)
 
-monitor.o: qemu-monitor.h
+monitor.o: hmp-commands.h qmp-commands.h
 
 $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y): $(GENERATED_HEADERS)
 
@@ -310,6 +341,7 @@ obj-y += $(addprefix $(HWDIR)/, $(hw-obj-y))
 
 endif # CONFIG_SOFTMMU
 
+obj-y += $(addprefix ../, $(trace-obj-y))
 obj-$(CONFIG_GDBSTUB_XML) += gdbstub-xml.o
 
 $(QEMU_PROG): $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y)
@@ -319,17 +351,30 @@ $(QEMU_PROG): $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y)
 gdbstub-xml.c: $(TARGET_XML_FILES) $(SRC_PATH)/feature_to_c.sh
 	$(call quiet-command,rm -f $@ && $(SHELL) $(SRC_PATH)/feature_to_c.sh $@ $(TARGET_XML_FILES),"  GEN   $(TARGET_DIR)$@")
 
-qemu-monitor.h: $(SRC_PATH)/qemu-monitor.hx
+hmp-commands.h: $(SRC_PATH)/hmp-commands.hx
+	$(call quiet-command,sh $(SRC_PATH)/hxtool -h < $< > $@,"  GEN   $(TARGET_DIR)$@")
+
+qmp-commands.h: $(SRC_PATH)/qmp-commands.hx
 	$(call quiet-command,sh $(SRC_PATH)/hxtool -h < $< > $@,"  GEN   $(TARGET_DIR)$@")
 
 clean:
 	rm -f *.o *.a *~ $(PROGS) nwfpe/*.o fpu/*.o
 	rm -f *.d */*.d tcg/*.o ide/*.o
-	rm -f qemu-monitor.h gdbstub-xml.c
+	rm -f hmp-commands.h qmp-commands.h gdbstub-xml.c
+ifdef CONFIG_SYSTEMTAP_TRACE
+	rm -f *.stp
+endif
 
 install: all
 ifneq ($(PROGS),)
-	$(INSTALL) -m 755 $(STRIP_OPT) $(PROGS) "$(DESTDIR)$(bindir)"
+	$(INSTALL) -m 755 $(PROGS) "$(DESTDIR)$(bindir)"
+ifneq ($(STRIP),)
+	$(STRIP) $(patsubst %,"$(DESTDIR)$(bindir)/%",$(PROGS))
+endif
+endif
+ifdef CONFIG_SYSTEMTAP_TRACE
+	$(INSTALL_DIR) "$(DESTDIR)$(datadir)/../systemtap/tapset"
+	$(INSTALL_DATA) $(QEMU_PROG).stp "$(DESTDIR)$(datadir)/../systemtap/tapset"
 endif
 
 # Include automatically generated dependency files

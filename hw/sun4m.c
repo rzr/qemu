@@ -40,8 +40,8 @@
 #include "qdev-addr.h"
 #include "loader.h"
 #include "elf.h"
-
-//#define DEBUG_IRQ
+#include "blockdev.h"
+#include "trace.h"
 
 /*
  * Sun4m architecture was used in the following machines:
@@ -70,13 +70,6 @@
  *
  * See for example: http://www.sunhelp.org/faq/sunref1.html
  */
-
-#ifdef DEBUG_IRQ
-#define DPRINTF(fmt, ...)                                       \
-    do { printf("CPUIRQ: " fmt , ## __VA_ARGS__); } while (0)
-#else
-#define DPRINTF(fmt, ...)
-#endif
 
 #define KERNEL_LOAD_ADDR     0x00004000
 #define CMDLINE_ADDR         0x007ff000
@@ -247,14 +240,14 @@ void cpu_check_irqs(CPUState *env)
 
                 env->interrupt_index = TT_EXTINT | i;
                 if (old_interrupt != env->interrupt_index) {
-                    DPRINTF("Set CPU IRQ %d\n", i);
+                    trace_sun4m_cpu_interrupt(i);
                     cpu_interrupt(env, CPU_INTERRUPT_HARD);
                 }
                 break;
             }
         }
     } else if (!env->pil_in && (env->interrupt_index & ~15) == TT_EXTINT) {
-        DPRINTF("Reset CPU IRQ %d\n", env->interrupt_index & 15);
+        trace_sun4m_cpu_reset_interrupt(env->interrupt_index & 15);
         env->interrupt_index = 0;
         cpu_reset_interrupt(env, CPU_INTERRUPT_HARD);
     }
@@ -265,12 +258,12 @@ static void cpu_set_irq(void *opaque, int irq, int level)
     CPUState *env = opaque;
 
     if (level) {
-        DPRINTF("Raise CPU IRQ %d\n", irq);
+        trace_sun4m_cpu_set_irq_raise(irq);
         env->halted = 0;
         env->pil_in |= 1 << irq;
         cpu_check_irqs(env);
     } else {
-        DPRINTF("Lower CPU IRQ %d\n", irq);
+        trace_sun4m_cpu_set_irq_lower(irq);
         env->pil_in &= ~(1 << irq);
         cpu_check_irqs(env);
     }
@@ -809,7 +802,7 @@ static void sun4m_hw_init(const struct sun4m_hwdef *hwdef, ram_addr_t RAM_size,
     void *iommu, *espdma, *ledma, *nvram;
     qemu_irq *cpu_irqs[MAX_CPUS], slavio_irq[32], slavio_cpu_irq[MAX_CPUS],
         espdma_irq, ledma_irq;
-    qemu_irq esp_reset;
+    qemu_irq esp_reset, dma_enable;
     qemu_irq fdc_tc;
     qemu_irq *cpu_halt;
     unsigned long kernel_size;
@@ -929,11 +922,12 @@ static void sun4m_hw_init(const struct sun4m_hwdef *hwdef, ram_addr_t RAM_size,
         exit(1);
     }
 
-    esp_reset = qdev_get_gpio_in(espdma, 0);
     esp_init(hwdef->esp_base, 2,
              espdma_memory_read, espdma_memory_write,
-             espdma, espdma_irq, &esp_reset);
+             espdma, espdma_irq, &esp_reset, &dma_enable);
 
+    qdev_connect_gpio_out(espdma, 0, esp_reset);
+    qdev_connect_gpio_out(espdma, 1, dma_enable);
 
     if (hwdef->cs_base) {
         sysbus_create_simple("SUNW,CS4231", hwdef->cs_base,
@@ -1493,7 +1487,7 @@ static void sun4d_hw_init(const struct sun4d_hwdef *hwdef, ram_addr_t RAM_size,
     void *iounits[MAX_IOUNITS], *espdma, *ledma, *nvram;
     qemu_irq *cpu_irqs[MAX_CPUS], sbi_irq[32], sbi_cpu_irq[MAX_CPUS],
         espdma_irq, ledma_irq;
-    qemu_irq esp_reset;
+    qemu_irq esp_reset, dma_enable;
     unsigned long kernel_size;
     void *fw_cfg;
     DeviceState *dev;
@@ -1560,10 +1554,12 @@ static void sun4d_hw_init(const struct sun4d_hwdef *hwdef, ram_addr_t RAM_size,
         exit(1);
     }
 
-    esp_reset = qdev_get_gpio_in(espdma, 0);
     esp_init(hwdef->esp_base, 2,
              espdma_memory_read, espdma_memory_write,
-             espdma, espdma_irq, &esp_reset);
+             espdma, espdma_irq, &esp_reset, &dma_enable);
+
+    qdev_connect_gpio_out(espdma, 0, esp_reset);
+    qdev_connect_gpio_out(espdma, 1, dma_enable);
 
     kernel_size = sun4m_load_kernel(kernel_filename, initrd_filename,
                                     RAM_size);
@@ -1682,7 +1678,7 @@ static void sun4c_hw_init(const struct sun4c_hwdef *hwdef, ram_addr_t RAM_size,
 {
     void *iommu, *espdma, *ledma, *nvram;
     qemu_irq *cpu_irqs, slavio_irq[8], espdma_irq, ledma_irq;
-    qemu_irq esp_reset;
+    qemu_irq esp_reset, dma_enable;
     qemu_irq fdc_tc;
     unsigned long kernel_size;
     DriveInfo *fd[MAX_FD];
@@ -1750,10 +1746,12 @@ static void sun4c_hw_init(const struct sun4c_hwdef *hwdef, ram_addr_t RAM_size,
         exit(1);
     }
 
-    esp_reset = qdev_get_gpio_in(espdma, 0);
     esp_init(hwdef->esp_base, 2,
              espdma_memory_read, espdma_memory_write,
-             espdma, espdma_irq, &esp_reset);
+             espdma, espdma_irq, &esp_reset, &dma_enable);
+
+    qdev_connect_gpio_out(espdma, 0, esp_reset);
+    qdev_connect_gpio_out(espdma, 1, dma_enable);
 
     kernel_size = sun4m_load_kernel(kernel_filename, initrd_filename,
                                     RAM_size);

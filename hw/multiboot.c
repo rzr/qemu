@@ -171,6 +171,12 @@ int load_multiboot(void *fw_cfg,
         uint64_t elf_low, elf_high;
         int kernel_size;
         fclose(f);
+
+        if (((struct elf64_hdr*)header)->e_machine == EM_X86_64) {
+            fprintf(stderr, "Cannot load x86-64 image, give a 32bit one.\n");
+            exit(1);
+        }
+
         kernel_size = load_elf(kernel_filename, NULL, NULL, &elf_entry,
                                &elf_low, &elf_high, 0, ELF_MACHINE, 0);
         if (kernel_size < 0) {
@@ -252,7 +258,7 @@ int load_multiboot(void *fw_cfg,
 
         do {
             char *next_space;
-            uint32_t mb_mod_length;
+            int mb_mod_length;
             uint32_t offs = mbs.mb_buf_size;
 
             next_initrd = strchr(initrd_filename, ',');

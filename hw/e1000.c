@@ -55,6 +55,7 @@ static int debugflags = DBGBIT(TXERR) | DBGBIT(GENERAL);
 
 #define IOPORT_SIZE       0x40
 #define PNPMMIO_SIZE      0x20000
+#define MIN_BUF_SIZE      60 /* Min. octets in an ethernet frame sans FCS */
 
 /*
  * HW models:
@@ -345,7 +346,7 @@ is_vlan_txd(uint32_t txd_lower)
 
 /* FCS aka Ethernet CRC-32. We don't get it from backends and can't
  * fill it in, just pad descriptor length by 4 bytes unless guest
- * told us to trip it off the packet. */
+ * told us to strip it off the packet. */
 static inline int
 fcs_len(E1000State *s)
 {
@@ -383,9 +384,12 @@ xmit_seg(E1000State *s)
         } else	// UDP
             cpu_to_be16wu((uint16_t *)(tp->data+css+4), len);
         if (tp->sum_needed & E1000_TXD_POPTS_TXSM) {
+            unsigned int phsum;
             // add pseudo-header length before checksum calculation
             sp = (uint16_t *)(tp->data + tp->tucso);
-            cpu_to_be16wu(sp, be16_to_cpup(sp) + len);
+            phsum = be16_to_cpup(sp) + len;
+            phsum = (phsum >> 16) + (phsum & 0xffff);
+            cpu_to_be16wu(sp, phsum);
         }
         tp->tso_frames++;
     }
@@ -443,9 +447,10 @@ process_tx_desc(E1000State *s, struct e1000_tx_desc *dp)
         // data descriptor
         tp->sum_needed = le32_to_cpu(dp->upper.data) >> 8;
         tp->cptse = ( txd_lower & E1000_TXD_CMD_TSE ) ? 1 : 0;
-    } else
+    } else {
         // legacy descriptor
         tp->cptse = 0;
+    }
 
     if (vlan_enabled(s) && is_vlan_txd(txd_lower) &&
         (tp->cptse || txd_lower & E1000_TXD_CMD_EOP)) {
@@ -635,9 +640,18 @@ e1000_receive(VLANClientState *nc, const uint8_t *buf, size_t size)
     uint32_t rdh_start;
     uint16_t vlan_special = 0;
     uint8_t vlan_status = 0, vlan_offset = 0;
+    uint8_t min_buf[MIN_BUF_SIZE];
 
     if (!(s->mac_reg[RCTL] & E1000_RCTL_EN))
         return -1;
+
+    /* Pad to minimum Ethernet frame length */
+    if (size < sizeof(min_buf)) {
+        memcpy(min_buf, buf, size);
+        memset(&min_buf[size], 0, sizeof(min_buf) - size);
+        buf = min_buf;
+        size = sizeof(min_buf);
+    }
 
     if (size > s->rxbuf_size) {
         DBGOUT(RX, "packet too large for buffers (%lu > %d)\n",
@@ -672,8 +686,9 @@ e1000_receive(VLANClientState *nc, const uint8_t *buf, size_t size)
                                       (void *)(buf + vlan_offset), size);
             desc.length = cpu_to_le16(size + fcs_len(s));
             desc.status |= E1000_RXD_STAT_EOP|E1000_RXD_STAT_IXSM;
-        } else // as per intel docs; skip descriptors with null buf addr
+        } else { // as per intel docs; skip descriptors with null buf addr
             DBGOUT(RX, "Null RX descriptor!!\n");
+        }
         cpu_physical_memory_write(base, (void *)&desc, sizeof(desc));
 
         if (++s->mac_reg[RDH] * sizeof(desc) >= s->mac_reg[RDLEN])
@@ -690,9 +705,14 @@ e1000_receive(VLANClientState *nc, const uint8_t *buf, size_t size)
 
     s->mac_reg[GPRC]++;
     s->mac_reg[TPR]++;
-    n = s->mac_reg[TORL];
-    if ((s->mac_reg[TORL] += size) < n)
+    /* TOR - Total Octets Received:
+     * This register includes bytes received in a packet from the <Destination
+     * Address> field through the <CRC> field, inclusively.
+     */
+    n = s->mac_reg[TORL] + size + /* Always include FCS length. */ 4;
+    if (n < s->mac_reg[TORL])
         s->mac_reg[TORH]++;
+    s->mac_reg[TORL] = n;
 
     n = E1000_ICS_RXT0;
     if ((rdt = s->mac_reg[RDT]) < s->mac_reg[RDH])
@@ -840,13 +860,14 @@ e1000_mmio_writel(void *opaque, target_phys_addr_t addr, uint32_t val)
 #ifdef TARGET_WORDS_BIGENDIAN
     val = bswap32(val);
 #endif
-    if (index < NWRITEOPS && macreg_writeops[index])
+    if (index < NWRITEOPS && macreg_writeops[index]) {
         macreg_writeops[index](s, index, val);
-    else if (index < NREADOPS && macreg_readops[index])
+    } else if (index < NREADOPS && macreg_readops[index]) {
         DBGOUT(MMIO, "e1000_mmio_writel RO %x: 0x%04x\n", index<<2, val);
-    else
+    } else {
         DBGOUT(UNKNOWN, "MMIO unknown write addr=0x%08x,val=0x%08x\n",
                index<<2, val);
+    }
 }
 
 static void

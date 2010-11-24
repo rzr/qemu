@@ -61,7 +61,7 @@ static void *qemu_io_alloc(size_t len, int pattern)
 
 	if (misalign)
 		len += MISALIGN_OFFSET;
-	buf = qemu_memalign(512, len);
+	buf = qemu_blockalign(bs, len);
 	memset(buf, pattern, len);
 	if (misalign)
 		buf += MISALIGN_OFFSET;
@@ -1427,11 +1427,8 @@ alloc_f(int argc, char **argv)
 
 	cvtstr(offset, s1, sizeof(s1));
 
-	if (nb_sectors == 1)
-		printf("sector allocated at offset %s\n", s1);
-	else
-		printf("%d/%d sectors allocated at offset %s\n",
-			sum_alloc, nb_sectors, s1);
+	printf("%d/%d sectors allocated at offset %s\n",
+	       sum_alloc, nb_sectors, s1);
 	return 0;
 }
 
@@ -1444,6 +1441,44 @@ static const cmdinfo_t alloc_cmd = {
 	.args		= "off [sectors]",
 	.oneline	= "checks if a sector is present in the file",
 };
+
+static int
+map_f(int argc, char **argv)
+{
+	int64_t offset;
+	int64_t nb_sectors;
+	char s1[64];
+	int num, num_checked;
+	int ret;
+	const char *retstr;
+
+	offset = 0;
+	nb_sectors = bs->total_sectors;
+
+	do {
+		num_checked = MIN(nb_sectors, INT_MAX);
+		ret = bdrv_is_allocated(bs, offset, num_checked, &num);
+		retstr = ret ? "    allocated" : "not allocated";
+		cvtstr(offset << 9ULL, s1, sizeof(s1));
+		printf("[% 24" PRId64 "] % 8d/% 8d sectors %s at offset %s (%d)\n",
+				offset << 9ULL, num, num_checked, retstr, s1, ret);
+
+		offset += num;
+		nb_sectors -= num;
+	} while(offset < bs->total_sectors);
+
+	return 0;
+}
+
+static const cmdinfo_t map_cmd = {
+       .name           = "map",
+       .argmin         = 0,
+       .argmax         = 0,
+       .cfunc          = map_f,
+       .args           = "",
+       .oneline        = "prints the allocated areas of a file",
+};
+
 
 static int
 close_f(int argc, char **argv)
@@ -1683,6 +1718,7 @@ int main(int argc, char **argv)
 	add_command(&length_cmd);
 	add_command(&info_cmd);
 	add_command(&alloc_cmd);
+	add_command(&map_cmd);
 
 	add_args_command(init_args_command);
 	add_check_command(init_check_command);

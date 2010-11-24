@@ -37,6 +37,7 @@
 #include "elf.h"
 #include "vt82c686.h"
 #include "mc146818rtc.h"
+#include "blockdev.h"
 
 #define DEBUG_FULONG2E_INIT
 
@@ -75,7 +76,8 @@ static struct _loaderparams {
     const char *initrd_filename;
 } loaderparams;
 
-static void prom_set(uint32_t* prom_buf, int index, const char *string, ...)
+static void GCC_FMT_ATTR(3, 4) prom_set(uint32_t* prom_buf, int index,
+                                        const char *string, ...)
 {
     va_list ap;
     int32_t table_addr;
@@ -140,13 +142,13 @@ static int64_t load_kernel (CPUState *env)
     prom_size = ENVP_NB_ENTRIES * (sizeof(int32_t) + ENVP_ENTRY_SIZE);
     prom_buf = qemu_malloc(prom_size);
 
-    prom_set(prom_buf, index++, loaderparams.kernel_filename);
+    prom_set(prom_buf, index++, "%s", loaderparams.kernel_filename);
     if (initrd_size > 0) {
-        prom_set(prom_buf, index++, "rd_start=0x" PRIx64 " rd_size=%li %s",
+        prom_set(prom_buf, index++, "rd_start=0x%" PRIx64 " rd_size=%li %s",
                  cpu_mips_phys_to_kseg0(NULL, initrd_offset), initrd_size,
                  loaderparams.kernel_cmdline);
     } else {
-        prom_set(prom_buf, index++, loaderparams.kernel_cmdline);
+        prom_set(prom_buf, index++, "%s", loaderparams.kernel_cmdline);
     }
 
     /* Setup minimum environment variables */
@@ -257,19 +259,17 @@ static void mips_fulong2e_init(ram_addr_t ram_size, const char *boot_device,
 {
     char *filename;
     unsigned long ram_offset, bios_offset;
-    unsigned long bios_size;
+    long bios_size;
     int64_t kernel_entry;
     qemu_irq *i8259;
     qemu_irq *cpu_exit_irq;
     int via_devfn;
     PCIBus *pci_bus;
-    ISADevice *isa_dev;
     uint8_t *eeprom_buf;
     i2c_bus *smbus;
     int i;
     DriveInfo *hd[MAX_IDE_BUS * MAX_IDE_DEVS];
     DeviceState *eeprom;
-    ISADevice *rtc_state;
     CPUState *env;
 
     /* init CPUs */
@@ -295,7 +295,7 @@ static void mips_fulong2e_init(ram_addr_t ram_size, const char *boot_device,
     ram_offset = qemu_ram_alloc(NULL, "fulong2e.ram", ram_size);
     bios_offset = qemu_ram_alloc(NULL, "fulong2e.bios", bios_size);
 
-    cpu_register_physical_memory(0, ram_size, IO_MEM_RAM);
+    cpu_register_physical_memory(0, ram_size, ram_offset);
     cpu_register_physical_memory(0x1fc00000LL,
 					   bios_size, bios_offset | IO_MEM_ROM);
 
@@ -376,9 +376,9 @@ static void mips_fulong2e_init(ram_addr_t ram_size, const char *boot_device,
     DMA_init(0, cpu_exit_irq);
 
     /* Super I/O */
-    isa_dev = isa_create_simple("i8042");
+    isa_create_simple("i8042");
 
-    rtc_state = rtc_init(2000, NULL);
+    rtc_init(2000, NULL);
 
     for(i = 0; i < MAX_SERIAL_PORTS; i++) {
         if (serial_hds[i]) {

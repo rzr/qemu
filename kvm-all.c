@@ -137,6 +137,24 @@ static KVMSlot *kvm_lookup_overlapping_slot(KVMState *s,
     return found;
 }
 
+int kvm_physical_memory_addr_from_ram(KVMState *s, ram_addr_t ram_addr,
+                                      target_phys_addr_t *phys_addr)
+{
+    int i;
+
+    for (i = 0; i < ARRAY_SIZE(s->slots); i++) {
+        KVMSlot *mem = &s->slots[i];
+
+        if (ram_addr >= mem->phys_offset &&
+            ram_addr < mem->phys_offset + mem->memory_size) {
+            *phys_addr = mem->start_addr + (ram_addr - mem->phys_offset);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 static int kvm_set_user_memory_region(KVMState *s, KVMSlot *slot)
 {
     struct kvm_userspace_memory_region mem;
@@ -274,6 +292,9 @@ static int kvm_set_migration_log(int enable)
     for (i = 0; i < ARRAY_SIZE(s->slots); i++) {
         mem = &s->slots[i];
 
+        if (!mem->memory_size) {
+            continue;
+        }
         if (!!(mem->flags & KVM_MEM_LOG_DIRTY_PAGES) == enable) {
             continue;
         }
@@ -429,18 +450,10 @@ static void kvm_set_phys_mem(target_phys_addr_t start_addr,
     KVMSlot *mem, old;
     int err;
 
-    if (start_addr & ~TARGET_PAGE_MASK) {
-        if (flags >= IO_MEM_UNASSIGNED) {
-            if (!kvm_lookup_overlapping_slot(s, start_addr,
-                                             start_addr + size)) {
-                return;
-            }
-            fprintf(stderr, "Unaligned split of a KVM memory slot\n");
-        } else {
-            fprintf(stderr, "Only page-aligned memory slots supported\n");
-        }
-        abort();
-    }
+    /* kvm works in page size chunks, but the function may be called
+       with sub-page size and unaligned start address. */
+    size = TARGET_PAGE_ALIGN(size);
+    start_addr = TARGET_PAGE_ALIGN(start_addr);
 
     /* KVM does not support read-only slots */
     phys_offset &= ~IO_MEM_ROM;
@@ -1036,18 +1049,14 @@ int kvm_has_xcrs(void)
 void kvm_setup_guest_memory(void *start, size_t size)
 {
     if (!kvm_has_sync_mmu()) {
-#ifdef MADV_DONTFORK
-        int ret = madvise(start, size, MADV_DONTFORK);
+        int ret = qemu_madvise(start, size, QEMU_MADV_DONTFORK);
 
         if (ret) {
-            perror("madvice");
+            perror("qemu_madvise");
+            fprintf(stderr,
+                    "Need MADV_DONTFORK in absence of synchronous KVM MMU\n");
             exit(1);
         }
-#else
-        fprintf(stderr,
-                "Need MADV_DONTFORK in absence of synchronous KVM MMU\n");
-        exit(1);
-#endif
     }
 }
 

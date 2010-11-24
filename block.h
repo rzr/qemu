@@ -35,7 +35,7 @@ typedef struct QEMUSnapshotInfo {
 #define BDRV_O_NO_BACKING  0x0100 /* don't open the backing file */
 #define BDRV_O_NO_FLUSH    0x0200 /* disable flushing on this disk */
 
-#define BDRV_O_CACHE_MASK  (BDRV_O_NOCACHE | BDRV_O_CACHE_WB)
+#define BDRV_O_CACHE_MASK  (BDRV_O_NOCACHE | BDRV_O_CACHE_WB | BDRV_O_NO_FLUSH)
 
 #define BDRV_SECTOR_BITS   9
 #define BDRV_SECTOR_SIZE   (1ULL << BDRV_SECTOR_BITS)
@@ -142,7 +142,7 @@ BlockDriverAIOCB *bdrv_aio_ioctl(BlockDriverState *bs,
         BlockDriverCompletionFunc *cb, void *opaque);
 
 /* Ensure contents are flushed to disk.  */
-void bdrv_flush(BlockDriverState *bs);
+int bdrv_flush(BlockDriverState *bs);
 void bdrv_flush_all(void);
 void bdrv_close_all(void);
 
@@ -211,6 +211,8 @@ int bdrv_snapshot_goto(BlockDriverState *bs,
 int bdrv_snapshot_delete(BlockDriverState *bs, const char *snapshot_id);
 int bdrv_snapshot_list(BlockDriverState *bs,
                        QEMUSnapshotInfo **psn_info);
+int bdrv_snapshot_load_tmp(BlockDriverState *bs,
+                           const char *snapshot_name);
 char *bdrv_snapshot_dump(char *buf, int buf_size, QEMUSnapshotInfo *sn);
 
 char *get_human_readable_size(char *buf, int buf_size, int64_t size);

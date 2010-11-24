@@ -508,9 +508,10 @@ int send_all(int fd, const void *buf, int len1)
 
 #else
 
-static int unix_write(int fd, const uint8_t *buf, int len1)
+int send_all(int fd, const void *_buf, int len1)
 {
     int ret, len;
+    const uint8_t *buf = _buf;
 
     len = len1;
     while (len > 0) {
@@ -526,11 +527,6 @@ static int unix_write(int fd, const uint8_t *buf, int len1)
         }
     }
     return len1 - len;
-}
-
-int send_all(int fd, const void *buf, int len1)
-{
-    return unix_write(fd, buf, len1);
 }
 #endif /* !_WIN32 */
 
@@ -2286,7 +2282,7 @@ QemuOpts *qemu_chr_parse_compat(const char *label, const char *filename)
     const char *p;
     QemuOpts *opts;
 
-    opts = qemu_opts_create(&qemu_chardev_opts, label, 1);
+    opts = qemu_opts_create(qemu_find_opts("chardev"), label, 1);
     if (NULL == opts)
         return NULL;
 

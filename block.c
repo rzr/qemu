@@ -23,6 +23,7 @@
  */
 #include "config-host.h"
 #include "qemu-common.h"
+#include "trace.h"
 #include "monitor.h"
 #include "block_int.h"
 #include "module.h"
@@ -523,7 +524,6 @@ int bdrv_open(BlockDriverState *bs, const char *filename, int flags,
               BlockDriver *drv)
 {
     int ret;
-    int probed = 0;
 
     if (flags & BDRV_O_SNAPSHOT) {
         BlockDriverState *bs1;
@@ -584,7 +584,6 @@ int bdrv_open(BlockDriverState *bs, const char *filename, int flags,
     /* Find the right image format driver */
     if (!drv) {
         ret = find_image_format(filename, &drv);
-        probed = 1;
     }
 
     if (!drv) {
@@ -596,8 +595,6 @@ int bdrv_open(BlockDriverState *bs, const char *filename, int flags,
     if (ret < 0) {
         goto unlink_and_fail;
     }
-
-    bs->probed = probed;
 
     /* If there is a backing file, use it */
     if ((flags & BDRV_O_NO_BACKING) == 0 && bs->backing_file[0] != '\0') {
@@ -745,6 +742,7 @@ int bdrv_check(BlockDriverState *bs, BdrvCheckResult *res)
 int bdrv_commit(BlockDriverState *bs)
 {
     BlockDriver *drv = bs->drv;
+    BlockDriver *backing_drv;
     int64_t sector, total_sectors;
     int n, ro, open_flags;
     int ret = 0, rw_ret = 0;
@@ -762,7 +760,8 @@ int bdrv_commit(BlockDriverState *bs)
     if (bs->backing_hd->keep_read_only) {
         return -EACCES;
     }
-    
+
+    backing_drv = bs->backing_hd->drv;
     ro = bs->backing_hd->read_only;
     strncpy(filename, bs->backing_hd->filename, sizeof(filename));
     open_flags =  bs->backing_hd->open_flags;
@@ -772,12 +771,14 @@ int bdrv_commit(BlockDriverState *bs)
         bdrv_delete(bs->backing_hd);
         bs->backing_hd = NULL;
         bs_rw = bdrv_new("");
-        rw_ret = bdrv_open(bs_rw, filename, open_flags | BDRV_O_RDWR, drv);
+        rw_ret = bdrv_open(bs_rw, filename, open_flags | BDRV_O_RDWR,
+            backing_drv);
         if (rw_ret < 0) {
             bdrv_delete(bs_rw);
             /* try to re-open read-only */
             bs_ro = bdrv_new("");
-            ret = bdrv_open(bs_ro, filename, open_flags & ~BDRV_O_RDWR, drv);
+            ret = bdrv_open(bs_ro, filename, open_flags & ~BDRV_O_RDWR,
+                backing_drv);
             if (ret < 0) {
                 bdrv_delete(bs_ro);
                 /* drive not functional anymore */
@@ -828,7 +829,8 @@ ro_cleanup:
         bdrv_delete(bs->backing_hd);
         bs->backing_hd = NULL;
         bs_ro = bdrv_new("");
-        ret = bdrv_open(bs_ro, filename, open_flags & ~BDRV_O_RDWR, drv);
+        ret = bdrv_open(bs_ro, filename, open_flags & ~BDRV_O_RDWR,
+            backing_drv);
         if (ret < 0) {
             bdrv_delete(bs_ro);
             /* drive not functional anymore */
@@ -928,14 +930,14 @@ static void set_dirty_bitmap(BlockDriverState *bs, int64_t sector_num,
         bit = start % (sizeof(unsigned long) * 8);
         val = bs->dirty_bitmap[idx];
         if (dirty) {
-            if (!(val & (1 << bit))) {
+            if (!(val & (1UL << bit))) {
                 bs->dirty_count++;
-                val |= 1 << bit;
+                val |= 1UL << bit;
             }
         } else {
-            if (val & (1 << bit)) {
+            if (val & (1UL << bit)) {
                 bs->dirty_count--;
-                val &= ~(1 << bit);
+                val &= ~(1UL << bit);
             }
         }
         bs->dirty_bitmap[idx] = val;
@@ -1451,14 +1453,27 @@ const char *bdrv_get_device_name(BlockDriverState *bs)
     return bs->device_name;
 }
 
-void bdrv_flush(BlockDriverState *bs)
+int bdrv_flush(BlockDriverState *bs)
 {
     if (bs->open_flags & BDRV_O_NO_FLUSH) {
-        return;
+        return 0;
     }
 
-    if (bs->drv && bs->drv->bdrv_flush)
-        bs->drv->bdrv_flush(bs);
+    if (bs->drv && bs->drv->bdrv_flush) {
+        return bs->drv->bdrv_flush(bs);
+    }
+
+    /*
+     * Some block drivers always operate in either writethrough or unsafe mode
+     * and don't support bdrv_flush therefore. Usually qemu doesn't know how
+     * the server works (because the behaviour is hardcoded or depends on
+     * server-side configuration), so we can't ensure that everything is safe
+     * on disk. Returning an error doesn't work because that would break guests
+     * even if the server operates in writethrough mode.
+     *
+     * Let's hope the user knows what he's doing.
+     */
+    return 0;
 }
 
 void bdrv_flush_all(void)
@@ -1897,6 +1912,22 @@ int bdrv_snapshot_list(BlockDriverState *bs,
     return -ENOTSUP;
 }
 
+int bdrv_snapshot_load_tmp(BlockDriverState *bs,
+        const char *snapshot_name)
+{
+    BlockDriver *drv = bs->drv;
+    if (!drv) {
+        return -ENOMEDIUM;
+    }
+    if (!bs->read_only) {
+        return -EINVAL;
+    }
+    if (drv->bdrv_snapshot_load_tmp) {
+        return drv->bdrv_snapshot_load_tmp(bs, snapshot_name);
+    }
+    return -ENOTSUP;
+}
+
 #define NB_SUFFIXES 4
 
 char *get_human_readable_size(char *buf, int buf_size, int64_t size)
@@ -1981,6 +2012,8 @@ BlockDriverAIOCB *bdrv_aio_readv(BlockDriverState *bs, int64_t sector_num,
     BlockDriver *drv = bs->drv;
     BlockDriverAIOCB *ret;
 
+    trace_bdrv_aio_readv(bs, sector_num, nb_sectors, opaque);
+
     if (!drv)
         return NULL;
     if (bdrv_check_request(bs, sector_num, nb_sectors))
@@ -1998,12 +2031,51 @@ BlockDriverAIOCB *bdrv_aio_readv(BlockDriverState *bs, int64_t sector_num,
     return ret;
 }
 
+typedef struct BlockCompleteData {
+    BlockDriverCompletionFunc *cb;
+    void *opaque;
+    BlockDriverState *bs;
+    int64_t sector_num;
+    int nb_sectors;
+} BlockCompleteData;
+
+static void block_complete_cb(void *opaque, int ret)
+{
+    BlockCompleteData *b = opaque;
+
+    if (b->bs->dirty_bitmap) {
+        set_dirty_bitmap(b->bs, b->sector_num, b->nb_sectors, 1);
+    }
+    b->cb(b->opaque, ret);
+    qemu_free(b);
+}
+
+static BlockCompleteData *blk_dirty_cb_alloc(BlockDriverState *bs,
+                                             int64_t sector_num,
+                                             int nb_sectors,
+                                             BlockDriverCompletionFunc *cb,
+                                             void *opaque)
+{
+    BlockCompleteData *blkdata = qemu_mallocz(sizeof(BlockCompleteData));
+
+    blkdata->bs = bs;
+    blkdata->cb = cb;
+    blkdata->opaque = opaque;
+    blkdata->sector_num = sector_num;
+    blkdata->nb_sectors = nb_sectors;
+
+    return blkdata;
+}
+
 BlockDriverAIOCB *bdrv_aio_writev(BlockDriverState *bs, int64_t sector_num,
                                   QEMUIOVector *qiov, int nb_sectors,
                                   BlockDriverCompletionFunc *cb, void *opaque)
 {
     BlockDriver *drv = bs->drv;
     BlockDriverAIOCB *ret;
+    BlockCompleteData *blk_cb_data;
+
+    trace_bdrv_aio_writev(bs, sector_num, nb_sectors, opaque);
 
     if (!drv)
         return NULL;
@@ -2013,7 +2085,10 @@ BlockDriverAIOCB *bdrv_aio_writev(BlockDriverState *bs, int64_t sector_num,
         return NULL;
 
     if (bs->dirty_bitmap) {
-        set_dirty_bitmap(bs, sector_num, nb_sectors, 1);
+        blk_cb_data = blk_dirty_cb_alloc(bs, sector_num, nb_sectors, cb,
+                                         opaque);
+        cb = &block_complete_cb;
+        opaque = blk_cb_data;
     }
 
     ret = drv->bdrv_aio_writev(bs, sector_num, qiov, nb_sectors,
@@ -2061,6 +2136,8 @@ static void multiwrite_user_cb(MultiwriteCB *mcb)
 static void multiwrite_cb(void *opaque, int ret)
 {
     MultiwriteCB *mcb = opaque;
+
+    trace_multiwrite_cb(mcb, ret);
 
     if (ret < 0 && !mcb->error) {
         mcb->error = ret;
@@ -2202,6 +2279,8 @@ int bdrv_aio_multiwrite(BlockDriverState *bs, BlockRequest *reqs, int num_reqs)
     // Check for mergable requests
     num_reqs = multiwrite_merge(bs, reqs, num_reqs, mcb);
 
+    trace_bdrv_aio_multiwrite(mcb, mcb->num_callbacks, num_reqs);
+
     /*
      * Run the aio requests. As soon as one request can't be submitted
      * successfully, fail all requests that are not yet submitted (we must
@@ -2223,6 +2302,7 @@ int bdrv_aio_multiwrite(BlockDriverState *bs, BlockRequest *reqs, int num_reqs)
      */
     mcb->num_requests = 1;
 
+    // Run the aio requests
     for (i = 0; i < num_reqs; i++) {
         mcb->num_requests++;
         acb = bdrv_aio_writev(bs, reqs[i].sector, reqs[i].qiov,
@@ -2233,8 +2313,10 @@ int bdrv_aio_multiwrite(BlockDriverState *bs, BlockRequest *reqs, int num_reqs)
             // submitted yet. Otherwise we'll wait for the submitted AIOs to
             // complete and report the error in the callback.
             if (i == 0) {
+                trace_bdrv_aio_multiwrite_earlyfail(mcb);
                 goto fail;
             } else {
+                trace_bdrv_aio_multiwrite_latefail(mcb, i);
                 multiwrite_cb(mcb, -EIO);
                 break;
             }
@@ -2643,8 +2725,8 @@ int bdrv_get_dirty(BlockDriverState *bs, int64_t sector)
 
     if (bs->dirty_bitmap &&
         (sector << BDRV_SECTOR_BITS) < bdrv_getlength(bs)) {
-        return bs->dirty_bitmap[chunk / (sizeof(unsigned long) * 8)] &
-            (1 << (chunk % (sizeof(unsigned long) * 8)));
+        return !!(bs->dirty_bitmap[chunk / (sizeof(unsigned long) * 8)] &
+            (1UL << (chunk % (sizeof(unsigned long) * 8))));
     } else {
         return 0;
     }

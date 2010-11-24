@@ -2233,6 +2233,37 @@ void cpu_loop (CPUState *env)
             env->regs[3] = ret;
             env->sregs[SR_PC] = env->regs[14];
             break;
+        case EXCP_HW_EXCP:
+            env->regs[17] = env->sregs[SR_PC] + 4;
+            if (env->iflags & D_FLAG) {
+                env->sregs[SR_ESR] |= 1 << 12;
+                env->sregs[SR_PC] -= 4;
+                /* FIXME: if branch was immed, replay the imm aswell.  */
+            }
+
+            env->iflags &= ~(IMM_FLAG | D_FLAG);
+
+            switch (env->sregs[SR_ESR] & 31) {
+                case ESR_EC_FPU:
+                    info.si_signo = SIGFPE;
+                    info.si_errno = 0;
+                    if (env->sregs[SR_FSR] & FSR_IO) {
+                        info.si_code = TARGET_FPE_FLTINV;
+                    }
+                    if (env->sregs[SR_FSR] & FSR_DZ) {
+                        info.si_code = TARGET_FPE_FLTDIV;
+                    }
+                    info._sifields._sigfault._addr = 0;
+                    queue_signal(env, info.si_signo, &info);
+                    break;
+                default:
+                    printf ("Unhandled hw-exception: 0x%x\n",
+                            env->sregs[SR_ESR] & 5);
+                    cpu_dump_state(env, stderr, fprintf, 0);
+                    exit (1);
+                    break;
+            }
+            break;
         case EXCP_DEBUG:
             {
                 int sig;
@@ -2759,6 +2790,12 @@ int main(int argc, char **argv, char **envp)
             r = argv[optind++];
             if (envlist_setenv(envlist, r) != 0)
                 usage();
+        } else if (!strcmp(r, "ignore-environment")) {
+            envlist_free(envlist);
+            if ((envlist = envlist_create()) == NULL) {
+                (void) fprintf(stderr, "Unable to allocate envlist\n");
+                exit(1);
+            }
         } else if (!strcmp(r, "U")) {
             r = argv[optind++];
             if (envlist_unsetenv(envlist, r) != 0)
