@@ -124,7 +124,7 @@ audio-obj-y += wavcapture.o
 common-obj-y += $(addprefix audio/, $(audio-obj-y))
 
 ui-obj-y += keymaps.o
-ui-obj-$(CONFIG_SDL) += sdl.o sdl_zoom.o x_keymap.o
+ui-obj-$(CONFIG_SDL) += sdl.o sdl_zoom.o sdl_rotate.o x_keymap.o
 ui-obj-$(CONFIG_CURSES) += curses.o
 ui-obj-y += vnc.o d3des.o
 ui-obj-y += vnc-enc-zlib.o vnc-enc-hextile.o
@@ -273,6 +273,10 @@ sound-obj-$(CONFIG_ADLIB) += fmopl.o adlib.o
 sound-obj-$(CONFIG_GUS) += gus.o gusemu_hal.o gusemu_mixer.o
 sound-obj-$(CONFIG_CS4231A) += cs4231a.o
 sound-obj-$(CONFIG_HDA) += intel-hda.o hda-audio.o
+# Haptic
+hw-obj-$(CONFIG_SVIBE) += svibe.o
+
+
 
 adlib.o fmopl.o: QEMU_CFLAGS += -DBUILD_Y8950=0
 hw-obj-$(CONFIG_SOUND) += $(sound-obj-y)
