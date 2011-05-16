@@ -37,6 +37,8 @@
 #include "sysemu.h"
 #include "x_keymap.h"
 #include "sdl_zoom.h"
+#include "sdl_rotate.h"
+#include "sdl_keysym.h"
 
 static DisplayChangeListener *dcl;
 static SDL_Surface *real_screen;
@@ -62,6 +64,7 @@ static uint8_t allocator;
 static SDL_PixelFormat host_format;
 static int scaling_active = 0;
 static Notifier mouse_mode_notifier;
+static int rotation = 0;
 
 static void sdl_update(DisplayState *ds, int x, int y, int w, int h)
 {
@@ -73,13 +76,31 @@ static void sdl_update(DisplayState *ds, int x, int y, int w, int h)
     rec.h = h;
 
     if (guest_screen) {
-        if (!scaling_active) {
+        if (!scaling_active && !rotation) {
             SDL_BlitSurface(guest_screen, &rec, real_screen, &rec);
         } else {
-            if (sdl_zoom_blit(guest_screen, real_screen, SMOOTHING_ON, &rec) < 0) {
-                fprintf(stderr, "Zoom blit failed\n");
-                exit(1);
-            }
+            SDL_Surface* rotated;
+
+            if (!rotation)
+                rotated = guest_screen;
+            else
+                rotated = rotateSurface90Degrees(guest_screen, rotation);
+
+            /* blit the whole lot */
+            rec.x = 0;
+            rec.y = 0;
+            rec.w = rotated->w;
+            rec.h = rotated->h;
+
+            sdl_zoom_blit(rotated, real_screen, SMOOTHING_ON, &rec);
+            if (rotated != guest_screen)
+                SDL_FreeSurface(rotated);
+
+            /* blit the whole lot */
+            rec.x = 0;
+            rec.y = 0;
+            rec.w = real_screen->w;
+            rec.h = real_screen->h;
         }
     } 
     SDL_UpdateRect(real_screen, rec.x, rec.y, rec.w, rec.h);
@@ -87,6 +108,12 @@ static void sdl_update(DisplayState *ds, int x, int y, int w, int h)
 
 static void sdl_setdata(DisplayState *ds)
 {
+    SDL_Rect rec;
+    rec.x = 0;
+    rec.y = 0;
+    rec.w = real_screen->w;
+    rec.h = real_screen->h;
+
     if (guest_screen != NULL) SDL_FreeSurface(guest_screen);
 
     guest_screen = SDL_CreateRGBSurfaceFrom(ds_get_data(ds), ds_get_width(ds), ds_get_height(ds),
@@ -107,8 +134,13 @@ static void do_sdl_resize(int new_width, int new_height, int bpp)
     if (gui_noframe)
         flags |= SDL_NOFRAME;
 
-    width = new_width;
-    height = new_height;
+    if (rotation&1) {
+        width = new_height;
+        height = new_width;
+    } else {
+        width = new_width;
+        height = new_height;
+    }
     real_screen = SDL_SetVideoMode(width, height, bpp, flags);
     if (!real_screen) {
 	fprintf(stderr, "Could not open SDL display (%dx%dx%d): %s\n", width, 
@@ -122,6 +154,8 @@ static void sdl_resize(DisplayState *ds)
     if  (!allocator) {
         if (!scaling_active)
             do_sdl_resize(ds_get_width(ds), ds_get_height(ds), 0);
+        else if (!real_screen)
+            do_sdl_resize(width, height, ds_get_bits_per_pixel(ds));
         else if (real_screen->format->BitsPerPixel != ds_get_bits_per_pixel(ds))
             do_sdl_resize(real_screen->w, real_screen->h, ds_get_bits_per_pixel(ds));
         sdl_setdata(ds);
@@ -564,7 +598,8 @@ static void sdl_refresh(DisplayState *ds)
     while (SDL_PollEvent(ev)) {
         switch (ev->type) {
         case SDL_VIDEOEXPOSE:
-            sdl_update(ds, 0, 0, real_screen->w, real_screen->h);
+            if (guest_screen)
+                sdl_update(ds, 0, 0, guest_screen->w, guest_screen->h);
             break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
@@ -831,9 +866,11 @@ void sdl_display_init(DisplayState *ds, int full_screen, int no_frame)
     if (no_frame)
         gui_noframe = 1;
 
+#ifndef WIN32
     if (!full_screen) {
         setenv("SDL_VIDEO_ALLOW_SCREENSAVER", "1", 0);
     }
+#endif
 
     /* Enable normal up/down events for Caps-Lock and Num-Lock keys.
      * This requires SDL >= 1.2.14. */
@@ -882,4 +919,33 @@ void sdl_display_init(DisplayState *ds, int full_screen, int no_frame)
         gui_fullscreen_initial_grab = 1;
         sdl_grab_start();
     }
+}
+
+void sdl_display_set_rotation(int rot)
+{
+    rotation = rot;
+}
+
+void sdl_display_set_window_size(int w, int h)
+{
+    SDL_Event ev;
+
+    scaling_active = 1;
+    width = w;
+    height = h;
+
+    /* this fails if SDL is not initialized */
+    memset(&ev, 0, sizeof ev);
+    ev.resize.type = SDL_VIDEORESIZE;
+    ev.resize.w = w;
+    ev.resize.h = h;
+    SDL_PushEvent(&ev);
+}
+
+void sdl_display_force_refresh(void)
+{
+    SDL_Event ev;
+    memset(&ev, 0, sizeof ev);
+    ev.expose.type = SDL_VIDEOEXPOSE;
+    SDL_PushEvent(&ev);
 }

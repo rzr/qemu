@@ -360,6 +360,9 @@ void qemu_console_copy(DisplayState *ds, int src_x, int src_y,
 
 /* sdl.c */
 void sdl_display_init(DisplayState *ds, int full_screen, int no_frame);
+void sdl_display_set_rotation(int rot);
+void sdl_display_set_window_size(int w, int h);
+void sdl_display_force_refresh(void);
 
 /* cocoa.m */
 void cocoa_display_init(DisplayState *ds, int full_screen);

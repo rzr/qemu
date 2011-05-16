@@ -1,6 +1,9 @@
 
 #include "keymaps.h"
 
+#ifndef __KEYSYM__
+#define __KEYSYM__
+
 static const name2keysym_t name2keysym[]={
 /* ascii */
     { "space",                0x020},
@@ -275,3 +278,4 @@ static const name2keysym_t name2keysym[]={
 
 {NULL, 0},
 };
+#endif

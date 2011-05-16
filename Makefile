@@ -106,7 +106,7 @@ QEMU_CFLAGS+=$(CURL_CFLAGS)
 
 ui/cocoa.o: ui/cocoa.m
 
-ui/sdl.o audio/sdlaudio.o ui/sdl_zoom.o baum.o: QEMU_CFLAGS += $(SDL_CFLAGS)
+ui/sdl.o audio/sdlaudio.o ui/sdl_zoom.o ui/sdl_rotate.o baum.o: QEMU_CFLAGS += $(SDL_CFLAGS)
 
 ui/vnc.o: QEMU_CFLAGS += $(VNC_TLS_CFLAGS)
 
