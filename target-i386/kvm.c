@@ -47,6 +47,10 @@
 
 #ifdef KVM_CAP_EXT_CPUID
 
+const KVMCapabilityInfo kvm_arch_required_capabilities[] = {
+	KVM_CAP_LAST_INFO
+};
+
 static struct kvm_cpuid2 *try_get_cpuid(KVMState *s, int max)
 {
     struct kvm_cpuid2 *cpuid;

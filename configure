@@ -2630,6 +2630,8 @@ if [ "$docs" = "yes" ] ; then
 fi
 if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=y" >> $config_host_mak
+  echo "SDL_LIBS=$sdl_libs -lSDL_image -lSDL_gfx" >> $config_host_mak
+
   echo "SDL_CFLAGS=$sdl_cflags" >> $config_host_mak
 fi
 if test "$cocoa" = "yes" ; then
