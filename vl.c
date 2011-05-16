@@ -100,10 +100,12 @@
 #if defined(__APPLE__) || defined(main)
 #include <SDL.h>
 int qemu_main(int argc, char **argv, char **envp);
+/*
 int main(int argc, char **argv)
 {
     return qemu_main(argc, argv, NULL);
 }
+*/
 #undef main
 #define main qemu_main
 #endif
@@ -162,7 +164,7 @@ int main(int argc, char **argv)
 #include "qemu-queue.h"
 #include "cpus.h"
 #include "arch_init.h"
-
+#include "vl.h"
 #include "ui/qemu-spice.h"
 
 //#define DEBUG_NET
@@ -248,6 +250,13 @@ static QEMUTimer *nographic_timer;
 
 uint8_t qemu_uuid[16];
 
+int enable_gl = 1;
+
+extern void qemu_display_init(DisplayState *ds);
+extern void simulator_mutex_lock(void);
+extern void simulator_mutex_unlock(void);
+extern void sim_kill_all_process(void);
+
 static QEMUBootSetHandler *boot_set_handler;
 static void *boot_set_opaque;
 
@@ -303,7 +312,6 @@ static int default_driver_check(QemuOpts *opts, void *opaque)
 
 /***********************************************************/
 /* real time host monotonic timer */
-
 /***********************************************************/
 /* host time/date access */
 void qemu_get_timedate(struct tm *tm, int offset)
@@ -891,7 +899,9 @@ static void smp_parse(const char *optarg)
             threads = threads > 0 ? threads : 1;
             cores = smp / (sockets * threads);
         } else {
-            threads = smp / (cores * sockets);
+          if (sockets) {
+			threads = smp / (cores * sockets);
+		  }
         }
     }
     smp_cpus = smp;
@@ -1905,7 +1915,7 @@ static const QEMUOption *lookup_opt(int argc, char **argv,
     return popt;
 }
 
-int main(int argc, char **argv, char **envp)
+int qemu_main(int argc, char **argv, char **envp)
 {
     const char *gdbstub_dev = NULL;
     int i;
