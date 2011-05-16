@@ -27,7 +27,6 @@
 #include "exec-all.h"
 #include "qemu-common.h"
 #include "kvm.h"
-#include "kvm_x86.h"
 
 //#define DEBUG_MMU
 
@@ -110,32 +109,6 @@ void cpu_x86_close(CPUX86State *env)
     qemu_free(env);
 }
 
-static void cpu_x86_version(CPUState *env, int *family, int *model)
-{
-    int cpuver = env->cpuid_version;
-
-    if (family == NULL || model == NULL) {
-        return;
-    }
-
-    *family = (cpuver >> 8) & 0x0f;
-    *model = ((cpuver >> 12) & 0xf0) + ((cpuver >> 4) & 0x0f);
-}
-
-/* Broadcast MCA signal for processor version 06H_EH and above */
-int cpu_x86_support_mca_broadcast(CPUState *env)
-{
-    int family = 0;
-    int model = 0;
-
-    cpu_x86_version(env, &family, &model);
-    if ((family == 6 && model >= 14) || family > 6) {
-        return 1;
-    }
-
-    return 0;
-}
-
 /***********************************************************/
 /* x86 debug */
 
@@ -195,18 +168,19 @@ static const char *cc_op_str[] = {
 };
 
 static void
-cpu_x86_dump_seg_cache(CPUState *env, FILE *f, fprintf_function cpu_fprintf,
+cpu_x86_dump_seg_cache(CPUState *env, FILE *f,
+                       int (*cpu_fprintf)(FILE *f, const char *fmt, ...),
                        const char *name, struct SegmentCache *sc)
 {
 #ifdef TARGET_X86_64
     if (env->hflags & HF_CS64_MASK) {
         cpu_fprintf(f, "%-3s=%04x %016" PRIx64 " %08x %08x", name,
-                    sc->selector, sc->base, sc->limit, sc->flags & 0x00ffff00);
+                    sc->selector, sc->base, sc->limit, sc->flags);
     } else
 #endif
     {
         cpu_fprintf(f, "%-3s=%04x %08x %08x %08x", name, sc->selector,
-                    (uint32_t)sc->base, sc->limit, sc->flags & 0x00ffff00);
+                    (uint32_t)sc->base, sc->limit, sc->flags);
     }
 
     if (!(env->hflags & HF_PE_MASK) || !(sc->flags & DESC_P_MASK))
@@ -249,10 +223,8 @@ done:
     cpu_fprintf(f, "\n");
 }
 
-#define DUMP_CODE_BYTES_TOTAL    50
-#define DUMP_CODE_BYTES_BACKWARD 20
-
-void cpu_dump_state(CPUState *env, FILE *f, fprintf_function cpu_fprintf,
+void cpu_dump_state(CPUState *env, FILE *f,
+                    int (*cpu_fprintf)(FILE *f, const char *fmt, ...),
                     int flags)
 {
     int eflags, i, nb;
@@ -362,11 +334,9 @@ void cpu_dump_state(CPUState *env, FILE *f, fprintf_function cpu_fprintf,
                     (uint32_t)env->cr[2],
                     (uint32_t)env->cr[3],
                     (uint32_t)env->cr[4]);
-        for(i = 0; i < 4; i++) {
-            cpu_fprintf(f, "DR%d=" TARGET_FMT_lx " ", i, env->dr[i]);
-        }
-        cpu_fprintf(f, "\nDR6=" TARGET_FMT_lx " DR7=" TARGET_FMT_lx "\n",
-                    env->dr[6], env->dr[7]);
+        for(i = 0; i < 4; i++)
+            cpu_fprintf(f, "DR%d=%08x ", i, env->dr[i]);
+        cpu_fprintf(f, "\nDR6=%08x DR7=%08x\n", env->dr[6], env->dr[7]);
     }
     if (flags & X86_DUMP_CCOP) {
         if ((unsigned)env->cc_op < CC_OP_NB)
@@ -436,24 +406,6 @@ void cpu_dump_state(CPUState *env, FILE *f, fprintf_function cpu_fprintf,
             else
                 cpu_fprintf(f, " ");
         }
-    }
-    if (flags & CPU_DUMP_CODE) {
-        target_ulong base = env->segs[R_CS].base + env->eip;
-        target_ulong offs = MIN(env->eip, DUMP_CODE_BYTES_BACKWARD);
-        uint8_t code;
-        char codestr[3];
-
-        cpu_fprintf(f, "Code=");
-        for (i = 0; i < DUMP_CODE_BYTES_TOTAL; i++) {
-            if (cpu_memory_rw_debug(env, base - offs + i, &code, 1, 0) == 0) {
-                snprintf(codestr, sizeof(codestr), "%02x", code);
-            } else {
-                snprintf(codestr, sizeof(codestr), "??");
-            }
-            cpu_fprintf(f, "%s%s%s%s", i > 0 ? " " : "",
-                        i == offs ? "<" : "", codestr, i == offs ? ">" : "");
-        }
-        cpu_fprintf(f, "\n");
     }
 }
 
@@ -1068,11 +1020,15 @@ static void breakpoint_handler(CPUState *env)
 /* This should come from sysemu.h - if we could include it here... */
 void qemu_system_reset_request(void);
 
-static void qemu_inject_x86_mce(CPUState *cenv, int bank, uint64_t status,
-                        uint64_t mcg_status, uint64_t addr, uint64_t misc)
+void cpu_inject_x86_mce(CPUState *cenv, int bank, uint64_t status,
+                        uint64_t mcg_status, uint64_t addr, uint64_t misc, int broadcast)
 {
     uint64_t mcg_cap = cenv->mcg_cap;
+    unsigned bank_num = mcg_cap & 0xff;
     uint64_t *banks = cenv->mce_banks;
+
+    if (bank >= bank_num || !(status & MCI_STATUS_VAL))
+        return;
 
     /*
      * if MSR_MCG_CTL is not all 1s, the uncorrected error
@@ -1113,45 +1069,6 @@ static void qemu_inject_x86_mce(CPUState *cenv, int bank, uint64_t status,
         banks[1] = status;
     } else
         banks[1] |= MCI_STATUS_OVER;
-}
-
-void cpu_inject_x86_mce(CPUState *cenv, int bank, uint64_t status,
-                        uint64_t mcg_status, uint64_t addr, uint64_t misc,
-                        int broadcast)
-{
-    unsigned bank_num = cenv->mcg_cap & 0xff;
-    CPUState *env;
-    int flag = 0;
-
-    if (bank >= bank_num || !(status & MCI_STATUS_VAL)) {
-        return;
-    }
-
-    if (broadcast) {
-        if (!cpu_x86_support_mca_broadcast(cenv)) {
-            fprintf(stderr, "Current CPU does not support broadcast\n");
-            return;
-        }
-    }
-
-    if (kvm_enabled()) {
-        if (broadcast) {
-            flag |= MCE_BROADCAST;
-        }
-
-        kvm_inject_x86_mce(cenv, bank, status, mcg_status, addr, misc, flag);
-    } else {
-        qemu_inject_x86_mce(cenv, bank, status, mcg_status, addr, misc);
-        if (broadcast) {
-            for (env = first_cpu; env != NULL; env = env->next_cpu) {
-                if (cenv == env) {
-                    continue;
-                }
-                qemu_inject_x86_mce(env, 1, MCI_STATUS_VAL | MCI_STATUS_UC,
-                                    MCG_STATUS_MCIP | MCG_STATUS_RIPV, 0, 0);
-            }
-        }
-    }
 }
 #endif /* !CONFIG_USER_ONLY */
 

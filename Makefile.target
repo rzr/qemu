@@ -25,8 +25,10 @@ else
 # system emulator name
 ifeq ($(TARGET_ARCH), i386)
 QEMU_PROG=qemu$(EXESUF)
+GUEST_GL_LIB=$(TARGET_PATH)/libGL.so.1
 else
 QEMU_PROG=qemu-system-$(TARGET_ARCH2)$(EXESUF)
+GUEST_GL_LIB=
 endif
 endif
 
@@ -62,7 +64,8 @@ else
 stap:
 endif
 
-all: $(PROGS) stap
+#all: $(PROGS) $(GUEST_GL_LIB) stap
+all: libccc.a $(GUEST_GL_LIB)
 
 # Dummy command so that make thinks it has done something
 	@true
@@ -221,10 +224,18 @@ obj-i386-y += debugcon.o multiboot.o
 obj-i386-y += pc_piix.o
 obj-i386-$(CONFIG_SPICE) += qxl.o qxl-logger.o qxl-render.o
 ##########################################################
+# opengl library for i386 
+obj-i386-y += helper_opengl.o opengl_exec.o
+##########################################################
+
+##########################################################
 # svibe library for i386
 obj-i386-y += svibe.o 3D.o smbus_smb380.o
 ##########################################################
  
+
+
+
 # shared objects
 obj-ppc-y = ppc.o
 obj-ppc-y += vga.o
@@ -347,8 +358,13 @@ endif # CONFIG_SOFTMMU
 obj-y += $(addprefix ../, $(trace-obj-y))
 obj-$(CONFIG_GDBSTUB_XML) += gdbstub-xml.o
 
-$(QEMU_PROG): $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y)
-	$(call LINK,$(obj-y) $(obj-$(TARGET_BASE_ARCH)-y))
+#$(QEMU_PROG): $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y)
+#	$(call LINK,$(obj-y) $(obj-$(TARGET_BASE_ARCH)-y))
+
+libccc.a: $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y)
+	rm -f libccc.a-$(TARGET_ARCH2)
+	$(AR) rcs libccc.a $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y)
+
 
 
 gdbstub-xml.c: $(TARGET_XML_FILES) $(SRC_PATH)/scripts/feature_to_c.sh
@@ -359,6 +375,32 @@ hmp-commands.h: $(SRC_PATH)/hmp-commands.hx
 
 qmp-commands.h: $(SRC_PATH)/qmp-commands.hx
 	$(call quiet-command,sh $(SRC_PATH)/scripts/hxtool -h < $< > $@,"  GEN   $(TARGET_DIR)$@")
+##########################################################
+# Build openGL
+# i386
+ifeq ($(TARGET_ARCH), i386)
+parse_gl_h: $(TARGET_PATH)/parse_gl_h.c
+	$(CC) -Wall -O2 -g $< -o $@
+
+client_stub.c server_stub.c gl_func.h: parse_gl_h
+	./parse_gl_h
+
+opengl_exec.o: opengl_exec.c server_stub.c gl_func.h
+
+helper_opengl.o: gl_func.h
+
+$(TARGET_PATH)/libGL.so.1: opengl_client.c gl_func.h
+	$(CC) -I$(TARGET_PATH) -I. -Wall -g -O2 $< -shared -o $@
+endif
+
+# arm
+#gles1_calls.o: gles1_calls.c gles2.h gles2_calls.h
+#gles2_calls.o: gles2_calls.c gles2.h gles2_calls.h
+#gles2.o: gles2.c gles2.h gles2_calls.h
+
+##########################################################
+
+
 
 clean:
 	rm -f *.o *.a *~ $(PROGS) nwfpe/*.o fpu/*.o
