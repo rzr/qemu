@@ -24,6 +24,8 @@
 
 /* define it to use liveness analysis (better code) */
 #define USE_LIVENESS_ANALYSIS
+#define USE_TCG_OPTIMIZATIONS 
+
 
 #include "config.h"
 
@@ -1985,6 +1987,40 @@ static inline int tcg_gen_code_common(TCGContext *s, uint8_t *gen_code_buf,
         qemu_log("\n");
     }
 #endif
+
+#ifdef USE_TCG_OPTIMIZATIONS
+#ifdef HARDCORE_DEBUG
+    if (gen_opc_buf[0] != INDEX_op_debug_insn_start) {
+        fprintf(stderr, "FUUUUUUUUUUUUUUUUUUUUU!!!!!!!!!!!!!!!!\n");
+        exit(1);
+    }
+#define OPT_START_ADDR 0x40a5cf1c
+#define OPT_END_ADDR   0x40a5cf1f
+    if (gen_opparam_buf[0] >= OPT_START_ADDR && gen_opparam_buf[0] <= OPT_END_ADDR) {
+#endif
+#ifdef CONFIG_PROFILER
+        s->la_time -= profile_getclock();
+#endif
+        gen_opparam_ptr = tcg_optimize(s, gen_opc_ptr, gen_opparam_buf, tcg_op_defs);
+#ifdef CONFIG_PROFILER
+        s->la_time += profile_getclock();
+#endif
+#ifdef HARDCORE_DEBUG
+    }
+#undef OPT_START_ADDR
+#undef OPT_END_ADDR
+#endif /* HARDCORE DEBUG */
+#endif /* USE_TCG_OPTIMIZATIONS */
+
+#ifdef DEBUG_DISAS
+    if (unlikely(qemu_loglevel_mask(CPU_LOG_TB_OP_OPT))) {
+        qemu_log("OP after optimizations:\n");
+        tcg_dump_ops(s, logfile);
+        qemu_log("\n");
+    }
+#endif
+
+
 
 #ifdef CONFIG_PROFILER
     s->la_time -= profile_getclock();
