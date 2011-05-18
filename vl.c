@@ -1311,6 +1311,9 @@ void qemu_system_reset_request(void)
 
 void qemu_system_shutdown_request(void)
 {
+#ifndef _SDK_SIMULATOR
+	sim_kill_all_process();
+#endif
     shutdown_requested = 1;
     qemu_notify_event();
 }
@@ -1390,7 +1393,15 @@ void main_loop_wait(int nonblocking)
 
     slirp_select_poll(&rfds, &wfds, &xfds, (ret < 0));
 
-    qemu_run_all_timers();
+#ifndef _SDK_SIMULATOR  
+	simulator_mutex_lock();
+#endif
+
+	qemu_run_all_timers();
+
+#ifndef _SDK_SIMULATOR  
+	simulator_mutex_unlock();
+#endif
 
     /* Check bottom-halves last in case any of the earlier events triggered
        them.  */
@@ -3062,8 +3073,17 @@ int qemu_main(int argc, char **argv, char **envp)
         break;
 #endif
 #if defined(CONFIG_SDL)
-    case DT_SDL:
-        sdl_display_init(ds, full_screen, no_frame);
+    case DT_SDL:{
+			extern int use_qemu_display;
+			if (use_qemu_display) {
+				/* use qemu SDL */
+				sdl_display_init(ds, full_screen, no_frame);
+			}
+			else {
+				/* use qemu_gtk_widget */
+				qemu_display_init(ds);
+			}
+		}
         break;
 #elif defined(CONFIG_COCOA)
     case DT_SDL:

@@ -775,9 +775,17 @@ static void sdl_refresh(DisplayState *ds)
         {
 	    SDL_ResizeEvent *rev = &ev->resize;
             int bpp = real_screen->format->BitsPerPixel;
+			int w, h;
             if (bpp != 16 && bpp != 32)
                 bpp = 32;
-            do_sdl_resize(rev->w, rev->h, bpp);
+			if (rotation & 1) {
+				w = rev->h;
+				h = rev->w;
+			} else {
+				w = rev->w;
+				h = rev->h;
+			}
+            do_sdl_resize(w, h, bpp);
             scaling_active = 1;
             if (!is_buffer_shared(ds->surface)) {
                 ds->surface = qemu_resize_displaysurface(ds, ds_get_width(ds), ds_get_height(ds));
