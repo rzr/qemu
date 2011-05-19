@@ -1400,13 +1400,15 @@ static int vmstate_load(QEMUFile *f, SaveStateEntry *se, int version_id)
     return vmstate_load_state(f, se->vmsd, se->opaque, version_id);
 }
 
-static void vmstate_save(QEMUFile *f, SaveStateEntry *se)
+static int vmstate_save(QEMUFile *f, SaveStateEntry *se)
 {
     if (!se->vmsd) {         /* Old style */
         se->save_state(f, se->opaque);
-        return;
+        return 0;
     }
     vmstate_save_state(f,se->vmsd, se->opaque);
+
+	return 0;
 }
 
 #define QEMU_VM_FILE_MAGIC           0x5145564d
@@ -1438,6 +1440,13 @@ int qemu_savevm_state_begin(Monitor *mon, QEMUFile *f, int blk_enable,
                             int shared)
 {
     SaveStateEntry *se;
+    int dev = 0;
+	QTAILQ_FOREACH(se, &savevm_handlers, entry) {
+		if (se->save_live_state || se->vmsd) {
+			dev++;
+		}
+	}
+	monitor_printf(mon, "Device_Count=%d\n", dev);
 
     QTAILQ_FOREACH(se, &savevm_handlers, entry) {
         if(se->set_params == NULL) {
@@ -1449,6 +1458,7 @@ int qemu_savevm_state_begin(Monitor *mon, QEMUFile *f, int blk_enable,
     qemu_put_be32(f, QEMU_VM_FILE_MAGIC);
     qemu_put_be32(f, QEMU_VM_FILE_VERSION);
 
+	dev = 0;
     QTAILQ_FOREACH(se, &savevm_handlers, entry) {
         int len;
 
@@ -1466,7 +1476,8 @@ int qemu_savevm_state_begin(Monitor *mon, QEMUFile *f, int blk_enable,
 
         qemu_put_be32(f, se->instance_id);
         qemu_put_be32(f, se->version_id);
-
+		
+		dev++;
         se->save_live_state(mon, f, QEMU_VM_SECTION_START, se->opaque);
     }
 
@@ -1481,7 +1492,7 @@ int qemu_savevm_state_begin(Monitor *mon, QEMUFile *f, int blk_enable,
 int qemu_savevm_state_iterate(Monitor *mon, QEMUFile *f)
 {
     SaveStateEntry *se;
-    int ret = 1;
+    int ret = 1, dev = 0;
 
     QTAILQ_FOREACH(se, &savevm_handlers, entry) {
         if (se->save_live_state == NULL)
@@ -1490,7 +1501,8 @@ int qemu_savevm_state_iterate(Monitor *mon, QEMUFile *f)
         /* Section type */
         qemu_put_byte(f, QEMU_VM_SECTION_PART);
         qemu_put_be32(f, se->section_id);
-
+		
+		dev++;
         ret = se->save_live_state(mon, f, QEMU_VM_SECTION_PART, se->opaque);
         if (!ret) {
             /* Do not proceed to the next vmstate before this one reported
@@ -1515,7 +1527,8 @@ int qemu_savevm_state_iterate(Monitor *mon, QEMUFile *f)
 int qemu_savevm_state_complete(Monitor *mon, QEMUFile *f)
 {
     SaveStateEntry *se;
-
+	int r;
+	int dev = 0;
     cpu_synchronize_all_states();
 
     QTAILQ_FOREACH(se, &savevm_handlers, entry) {
@@ -1525,10 +1538,12 @@ int qemu_savevm_state_complete(Monitor *mon, QEMUFile *f)
         /* Section type */
         qemu_put_byte(f, QEMU_VM_SECTION_END);
         qemu_put_be32(f, se->section_id);
-
+		
+		dev++;
         se->save_live_state(mon, f, QEMU_VM_SECTION_END, se->opaque);
     }
 
+	dev = 0;
     QTAILQ_FOREACH(se, &savevm_handlers, entry) {
         int len;
 
@@ -1546,11 +1561,19 @@ int qemu_savevm_state_complete(Monitor *mon, QEMUFile *f)
 
         qemu_put_be32(f, se->instance_id);
         qemu_put_be32(f, se->version_id);
-
-        vmstate_save(f, se);
-    }
-
-    qemu_put_byte(f, QEMU_VM_EOF);
+		
+		dev++;
+	    r = vmstate_save(f, se);
+		if (r < 0) {
+			monitor_printf(mon, "cannot migrate with device '%s'\n", se->idstr);
+			return r;
+		}
+		monitor_printf(mon, "Device_Completed:%d:name:%s\n", dev, se->idstr);
+	}
+	
+	monitor_printf(mon, "SaveVM Complete\n");
+    
+	qemu_put_byte(f, QEMU_VM_EOF);
 
     if (qemu_file_has_error(f))
         return -EIO;

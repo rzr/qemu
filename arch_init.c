@@ -301,6 +301,7 @@ int ram_save_live(Monitor *mon, QEMUFile *f, int stage, void *opaque)
 
         bytes_sent = ram_save_block(f);
         bytes_transferred += bytes_sent;
+		monitor_printf(mon, "Completed=%f\n",(float)bytes_transferred/(float)ram_bytes_total());
         if (bytes_sent == 0) { /* no more blocks */
             break;
         }
