@@ -572,6 +572,11 @@ for opt do
   ;;
   --disable-strip) strip_opt="no"
   ;;
+  --disable-jpeg) jpeg="no"
+  ;;
+  --enable-jpeg) jpeg="yes"
+  ;;
+
   --disable-vnc-tls) vnc_tls="no"
   ;;
   --enable-vnc-tls) vnc_tls="yes"
