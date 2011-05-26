@@ -25,10 +25,10 @@ else
 # system emulator name
 ifeq ($(TARGET_ARCH), i386)
 QEMU_PROG=qemu$(EXESUF)
-GUEST_GL_LIB=$(TARGET_PATH)/libGL.so.1
+#GUEST_GL_LIB=$(TARGET_PATH)/libGL.so.1
 else
 QEMU_PROG=qemu-system-$(TARGET_ARCH2)$(EXESUF)
-GUEST_GL_LIB=
+#GUEST_GL_LIB=
 endif
 endif
 
@@ -65,7 +65,8 @@ stap:
 endif
 
 #all: $(PROGS) $(GUEST_GL_LIB) stap
-all: libccc.a $(GUEST_GL_LIB)
+all: libccc.a 
+# $(GUEST_GL_LIB)
 
 # Dummy command so that make thinks it has done something
 	@true
@@ -225,12 +226,13 @@ obj-i386-y += pc_piix.o
 obj-i386-$(CONFIG_SPICE) += qxl.o qxl-logger.o qxl-render.o
 ##########################################################
 # opengl library for i386 
-obj-i386-y += helper_opengl.o opengl_exec.o
+#obj-i386-y += helper_opengl.o opengl_exec.o
 ##########################################################
 
 ##########################################################
 # svibe library for i386
-obj-i386-y += svibe.o 3D.o smbus_smb380.o
+#obj-i386-y += svibe.o 3D.o smbus_smb380.o
+obj-i386-y += svibe.o smbus_smb380.o
 ##########################################################
  
 
@@ -378,20 +380,20 @@ qmp-commands.h: $(SRC_PATH)/qmp-commands.hx
 ##########################################################
 # Build openGL
 # i386
-ifeq ($(TARGET_ARCH), i386)
-parse_gl_h: $(TARGET_PATH)/parse_gl_h.c
-	$(CC) -Wall -O2 -g $< -o $@
-
-client_stub.c server_stub.c gl_func.h: parse_gl_h
-	./parse_gl_h
-
-opengl_exec.o: opengl_exec.c server_stub.c gl_func.h
-
-helper_opengl.o: gl_func.h
-
-$(TARGET_PATH)/libGL.so.1: opengl_client.c gl_func.h
-	$(CC) -I$(TARGET_PATH) -I. -Wall -g -O2 $< -shared -o $@
-endif
+#ifeq ($(TARGET_ARCH), i386)
+#parse_gl_h: $(TARGET_PATH)/parse_gl_h.c
+#	$(CC) -Wall -O2 -g $< -o $@
+#
+#client_stub.c server_stub.c gl_func.h: parse_gl_h
+#	./parse_gl_h
+#
+#opengl_exec.o: opengl_exec.c server_stub.c gl_func.h
+#
+#helper_opengl.o: gl_func.h
+#
+#$(TARGET_PATH)/libGL.so.1: opengl_client.c gl_func.h
+#	$(CC) -I$(TARGET_PATH) -I. -Wall -g -O2 $< -shared -o $@
+#endif
 
 # arm
 #gles1_calls.o: gles1_calls.c gles2.h gles2_calls.h

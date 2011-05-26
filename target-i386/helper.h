@@ -85,9 +85,6 @@ DEF_HELPER_0(rdpmc, void)
 DEF_HELPER_0(rdmsr, void)
 DEF_HELPER_0(wrmsr, void)
 
-/* opengl support by okdear */
-DEF_HELPER_0(opengl99, void)
-
 DEF_HELPER_1(check_iob, void, i32)
 DEF_HELPER_1(check_iow, void, i32)
 DEF_HELPER_1(check_iol, void, i32)
