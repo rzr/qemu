@@ -939,7 +939,10 @@ fi
 gcc_flags="-Wold-style-declaration -Wold-style-definition -Wtype-limits"
 gcc_flags="-Wformat-security -Wformat-y2k -Winit-self -Wignored-qualifiers $gcc_flags"
 gcc_flags="-Wmissing-include-dirs -Wempty-body -Wnested-externs $gcc_flags"
-gcc_flags="-fstack-protector-all $gcc_flags"
+
+# TODO: build on i386 fails to use -fstack-protector-all option.
+gcc_flags="-fnostack-protector-all $gcc_flags"
+
 cat > $TMPC << EOF
 int main(void) { return 0; }
 EOF
