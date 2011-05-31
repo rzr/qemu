@@ -232,7 +232,7 @@ obj-i386-$(CONFIG_SPICE) += qxl.o qxl-logger.o qxl-render.o
 ##########################################################
 # svibe library for i386
 #obj-i386-y += svibe.o 3D.o smbus_smb380.o
-obj-i386-y += svibe.o smbus_smb380.o
+obj-i386-y += svibe.o
 ##########################################################
  
 
