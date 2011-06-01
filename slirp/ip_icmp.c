@@ -60,6 +60,60 @@ static const int icmp_flush[19] = {
 /* ADDR MASK REPLY (18) */ 0
 };
 
+int icmp_attach(struct socket *so);
+void icmp_detach(struct socket *so);
+int icmp_cksum(u_short *p, int n);
+
+int
+icmp_attach(struct socket *so)
+{
+  /* same as udp_attach except socket creation */
+  if((so->s = qemu_socket(AF_INET,SOCK_RAW,IPPROTO_ICMP)) != -1) {
+    so->so_expire = curtime + SO_EXPIRE;
+    insque(so, &so->slirp->udb);
+  }
+  return(so->s);
+}
+
+void
+icmp_detach(struct socket *so)
+{
+  /* same as udp_detach */
+  closesocket(so->s);
+  sofree(so);
+}
+
+int
+icmp_cksum(u_short *p, int n)
+{
+    register u_short answer;
+    register long sum = 0;
+    u_short odd_byte = 0;
+
+    while( n > 1 )
+    {
+        sum += *p++;
+        n -= 2;
+   
+    }/* WHILE */
+
+
+    /* mop up an odd byte, if necessary */
+    if( n == 1 )
+    {
+        *( u_char* )( &odd_byte ) = *( u_char* )p;
+        sum += odd_byte;
+   
+    }/* IF */
+
+    sum = ( sum >> 16 ) + ( sum & 0xffff );    /* add hi 16 to low 16 */
+    sum += ( sum >> 16 );                    /* add carry */
+    answer = ~sum;                            /* ones-complement, truncate*/
+   
+    return ( answer );
+
+} /* in_cksum() */
+
 /*
  * Process a received ICMP message.
  */
@@ -101,11 +155,26 @@ icmp_input(struct mbuf *m, int hlen)
     ip->ip_len += hlen;	             /* since ip_input subtracts this */
     if (ip->ip_dst.s_addr == slirp->vhost_addr.s_addr) {
       icmp_reflect(m);
+#ifndef _WIN32
+    } else if( getuid() != 0 ) {
+      char commands[64];
+      int code;
+
+      sprintf( commands, "ping -c 1 %s", inet_ntoa(ip->ip_dst) );
+      code = system( commands ); 
+
+      if( WIFEXITED(code) && WEXITSTATUS(code) == 0 )
+        icmp_reflect(m);
+      else
+        icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_NET, 0, "ping failed");
+#endif
     } else {
+      char icmp_buf[128] ;
+      struct icmp *picmp = (struct icmp *)icmp_buf; 
       struct socket *so;
       struct sockaddr_in addr;
       if ((so = socreate(slirp)) == NULL) goto freeit;
-      if(udp_attach(so) == -1) {
+      if(icmp_attach(so) == -1) {
 	DEBUG_MISC((dfd,"icmp_input udp_attach errno = %d-%s\n",
 		    errno,strerror(errno)));
 	sofree(so);
@@ -136,12 +205,21 @@ icmp_input(struct mbuf *m, int hlen)
 	addr.sin_addr = so->so_faddr;
       }
       addr.sin_port = so->so_fport;
-      if(sendto(so->s, icmp_ping_msg, strlen(icmp_ping_msg), 0,
+
+      picmp->icmp_type = ICMP_ECHO;
+      picmp->icmp_code = 0;
+      picmp->icmp_cksum = 0;
+      picmp->icmp_id = icp->icmp_id;
+      picmp->icmp_seq = icp->icmp_seq;
+      strcpy(icmp_buf+8, icmp_ping_msg);
+      picmp->icmp_cksum = icmp_cksum((u_short *)picmp, sizeof(icmp_ping_msg)+8);
+
+      if(sendto(so->s, picmp, sizeof(icmp_ping_msg)+8, 0,
 		(struct sockaddr *)&addr, sizeof(addr)) == -1) {
 	DEBUG_MISC((dfd,"icmp_input udp sendto tx errno = %d-%s\n",
 		    errno,strerror(errno)));
 	icmp_error(m, ICMP_UNREACH,ICMP_UNREACH_NET, 0,strerror(errno));
-	udp_detach(so);
+	icmp_detach(so);
       }
     } /* if ip->ip_dst.s_addr == alias_addr.s_addr */
     break;
