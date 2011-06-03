@@ -192,8 +192,7 @@ static struct timeval last_read_time, current_read_time;
 
 int has_x_error = 0;
 
-	int
-read_from_client (int sock)
+int read_from_client (int sock)
 {
 	long args[50];
 	int args_size[50];
@@ -611,8 +610,7 @@ CASE_OUT_POINTERS:
 	return 0;
 }
 
-	int
-make_socket (uint16_t port)
+int make_socket (uint16_t port)
 {
 	int sock;
 	struct sockaddr_in name;
@@ -623,6 +621,16 @@ make_socket (uint16_t port)
 	{
 		perror ("socket");
 		exit (EXIT_FAILURE);
+	}
+
+	int flag = 1;
+	if (setsockopt(sock, IPPROTO_IP, SO_REUSEADDR,(char *)&flag, sizeof(int)) != 0)
+	{
+		perror("setsockopt SO_REUSEADDR");
+	}
+	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,(char *)&flag, sizeof(int)) != 0)
+	{
+		perror("setsockopt TCP_NODELAY");
 	}
 
 	/* Give the socket a name. */
@@ -671,8 +679,7 @@ void usage()
 	printf("--h or --help       : display this help\n");
 }
 
-	int
-main (int argc, char* argv[])
+int main (int argc, char* argv[])
 {
 	int sock;
 	fd_set active_fd_set, read_fd_set;
@@ -728,16 +735,6 @@ main (int argc, char* argv[])
 
 	/* Create the socket and set it up to accept connections. */
 	sock = make_socket (port);
-
-	int flag = 1;
-	if (setsockopt(sock, IPPROTO_IP, SO_REUSEADDR,(char *)&flag, sizeof(int)) != 0)
-	{
-		perror("setsockopt SO_REUSEADDR");
-	}
-	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,(char *)&flag, sizeof(int)) != 0)
-	{
-		perror("setsockopt TCP_NODELAY");
-	}
 
 	if (listen (sock, 1) < 0)
 	{
