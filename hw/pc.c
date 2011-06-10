@@ -1067,6 +1067,7 @@ void pc_vga_init(PCIBus *pci_bus)
     } else if (std_vga_enabled) {
         if (pci_bus) {
             pci_vga_init(pci_bus);
+            pci_overlay_init(pci_bus);
         } else {
             isa_vga_init();
         }
