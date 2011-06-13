@@ -25,6 +25,18 @@
 #define OVERLAY_MEM_SIZE (2048 * 1024)	// 2MB
 #define OVERLAY_REG_SIZE 1024		// 1KB
 
+enum {
+    OVERLAY_POWER    = 0x00,
+    OVERLAY_FORMAT   = 0x04,
+    OVERLAY_SIZE     = 0x08,
+    OVERLAY_POSITION = 0x0C,
+};
+
+uint32_t overlay_power;
+uint32_t overlay_format;
+uint32_t overlay_size;
+uint32_t overlay_position;
+
 typedef struct OverlayState {
     PCIDevice dev;
     
@@ -41,21 +53,46 @@ typedef struct OverlayState {
 static uint32_t overlay_reg_read(void *opaque, target_phys_addr_t addr)
 {
     return 0;
+//    OverlayState *s = opaque;
+//    return s->reg[addr/4];
 }
 
-static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t mem_value)
+static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t val)
 {
-    return;
+    switch (addr) {
+    case OVERLAY_POWER:
+        overlay_power = val;
+        break;
+    case OVERLAY_FORMAT:
+        overlay_format = val;
+        break;
+    case OVERLAY_SIZE:
+        overlay_size = val;
+        break;
+    case OVERLAY_POSITION:
+        overlay_position = val;
+        break;
+    default:
+        fprintf(stderr, "wring overlay register access - addr : %x08x\n", addr);
+    }
 }
 
 static uint32_t overlay_mem_read(void *opaque, target_phys_addr_t addr)
 {
-    return 0;
+    OverlayState *s = opaque;
+    uint32_t *temp;
+
+    temp = (uint32_t*)(s->vram_ptr + addr);
+    return *temp;
 }
 
-static void overlay_mem_write(void *opaque, target_phys_addr_t addr, uint32_t mem_value)
+static void overlay_mem_write(void *opaque, target_phys_addr_t addr, uint32_t val)
 {
-    return;
+    OverlayState *s = opaque;
+    uint32_t *temp;
+
+    temp = (uint32_t*)(s->vram_ptr + addr);
+    *temp = val;
 }
 
 static CPUReadMemoryFunc * const overlay_reg_readfn[3] = {
@@ -148,10 +185,8 @@ int pci_overlay_init(PCIBus *bus)
 static PCIDeviceInfo overlay_info = {
     .qdev.name    = "overlay",
     .qdev.size    = sizeof(OverlayState),
-//    .qdev.vmsd    = &vmstate_vga_pci,
     .no_hotplug   = 1,
     .init         = overlay_initfn,
-//    .config_write = pci_vga_write_config,
 };
 
 static void overlay_register(void)
