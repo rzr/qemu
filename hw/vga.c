@@ -1612,8 +1612,14 @@ void vga_dirty_log_restart(VGACommonState *s)
 }
 
 /*
- * graphic modes
- */
+* graphic modes
+*/
+extern uint32_t overlay_power;
+extern uint32_t overlay_format;
+extern uint32_t overlay_size;
+extern uint32_t overlay_position;
+extern uint8_t* overlay_ptr;	// pointer in qemu space
+
 static void vga_draw_graphic(VGACommonState *s, int full_update)
 {
     int y1, y, update, linesize, y_start, double_scan, mask, depth;
@@ -1784,6 +1790,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         }
         /* explicit invalidation for the hardware cursor */
         update |= (s->invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1;
+        update |= overlay_power;
         if (update) {
             if (y_start < 0)
                 y_start = y;
@@ -1795,6 +1802,29 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 vga_draw_line(s, d, s->vram_ptr + addr, width);
                 if (s->cursor_draw_line)
                     s->cursor_draw_line(s, d, y);
+            }
+            if (overlay_power) {
+                int i;
+		uint8_t *fb_sub;
+		uint8_t *over_sub;
+		uint8_t alpha, c_alpha;
+		uint32_t temp;
+		uint32_t *dst;
+
+                for (i = 0; i < width; i++) {
+                    fb_sub = s->vram_ptr + addr + i * 4;
+                    over_sub = overlay_ptr + addr + i * 4;
+                    alpha = fb_sub[3];
+                    c_alpha = 0xff - alpha;
+                    dst = (uint32_t*)fb_sub;
+                    //fprintf(stderr, "alpha = %d\n", alpha);
+                    
+                    temp = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                           ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
+                           ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
+ 
+                    *dst = temp;
+                }
             }
         } else {
             if (y_start >= 0) {

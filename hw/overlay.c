@@ -36,7 +36,7 @@ uint32_t overlay_power;
 uint32_t overlay_format;
 uint32_t overlay_size;
 uint32_t overlay_position;
-uint8_t* vram_ptr;	// pointer in qemu space
+uint8_t* overlay_ptr;	// pointer in qemu space
 
 typedef struct OverlayState {
     PCIDevice dev;
@@ -137,7 +137,7 @@ static int overlay_initfn(PCIDevice *dev)
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
     s->vram_offset = qemu_ram_alloc(NULL, "overlay.vram", OVERLAY_MEM_SIZE);
-    vram_ptr = qemu_get_ram_ptr(s->vram_offset);
+    overlay_ptr = qemu_get_ram_ptr(s->vram_offset);
 
     s->overlay_mmio = cpu_register_io_memory(overlay_reg_readfn,
                                              overlay_reg_writefn, s,
