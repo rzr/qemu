@@ -1676,9 +1676,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         if (depth == 32) {
 #endif
             qemu_free_displaysurface(s->ds);
-            s->ds->surface = qemu_create_displaysurface_from(disp_width, height, depth,
-                    s->line_offset,
-                    s->vram_ptr + (s->start_addr * 4));
+            s->ds->surface = qemu_create_displaysurface(s->ds, disp_width, height);
 #if defined(HOST_WORDS_BIGENDIAN) != defined(TARGET_WORDS_BIGENDIAN)
             s->ds->surface->pf = qemu_different_endianness_pixelformat(depth);
 #endif
@@ -1790,7 +1788,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         }
         /* explicit invalidation for the hardware cursor */
         update |= (s->invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1;
-        update |= overlay_power;
+        update |= 1;	// sucking architecture causes low performance. sorry.
         if (update) {
             if (y_start < 0)
                 y_start = y;
@@ -1798,22 +1796,16 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 page_min = page0;
             if (page1 > page_max)
                 page_max = page1;
-            if (!(is_buffer_shared(s->ds->surface))) {
-                vga_draw_line(s, d, s->vram_ptr + addr, width);
-                if (s->cursor_draw_line)
-                    s->cursor_draw_line(s, d, y);
-            }
             if (overlay_power) {
                 int i;
 		uint8_t *fb_sub= s->vram_ptr + addr;
 		uint8_t *over_sub = overlay_ptr + addr;
 		uint8_t alpha, c_alpha;
-		uint32_t *dst = (uint32_t*)s->ds->surface->data;
+		uint32_t *dst = (uint32_t*)(s->ds->surface->data + addr);
 
                 for (i = 0; i < width; i++, fb_sub += 4, over_sub += 4, dst++) {
                     alpha = fb_sub[3];
                     c_alpha = 0xff - alpha;
-                    dst = (uint32_t*)fb_sub;
                     //fprintf(stderr, "alpha = %d\n", alpha);
                     
                     *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
@@ -1821,6 +1813,11 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                            ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
                 }
             }
+            else  if (!(is_buffer_shared(s->ds->surface))) {
+                vga_draw_line(s, d, s->vram_ptr + addr, width);
+                if (s->cursor_draw_line)
+                    s->cursor_draw_line(s, d, y);
+	    }
         } else {
             if (y_start >= 0) {
                 /* flush to display */
