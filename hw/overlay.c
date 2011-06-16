@@ -73,8 +73,6 @@ static uint32_t overlay_reg_read(void *opaque, target_phys_addr_t addr)
 
 static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t val)
 {
-    fprintf(stderr, "overlay register read - addr : %d, val : 0x%08x\n", addr, val);
-
     switch (addr) {
     case OVERLAY_POWER:
         overlay_power = val;
