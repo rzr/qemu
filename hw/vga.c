@@ -1805,25 +1805,20 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             }
             if (overlay_power) {
                 int i;
-		uint8_t *fb_sub;
-		uint8_t *over_sub;
+		uint8_t *fb_sub= s->vram_ptr + addr;
+		uint8_t *over_sub = overlay_ptr + addr;
 		uint8_t alpha, c_alpha;
-		uint32_t temp;
-		uint32_t *dst;
+		uint32_t *dst = (uint32_t*)s->ds->surface->data;
 
-                for (i = 0; i < width; i++) {
-                    fb_sub = s->vram_ptr + addr + i * 4;
-                    over_sub = overlay_ptr + addr + i * 4;
+                for (i = 0; i < width; i++, fb_sub += 4, over_sub += 4, dst++) {
                     alpha = fb_sub[3];
                     c_alpha = 0xff - alpha;
                     dst = (uint32_t*)fb_sub;
                     //fprintf(stderr, "alpha = %d\n", alpha);
                     
-                    temp = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                    *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
                            ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
                            ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
- 
-                    *dst = temp;
                 }
             }
         } else {
