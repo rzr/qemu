@@ -1614,10 +1614,13 @@ void vga_dirty_log_restart(VGACommonState *s)
 /*
 * graphic modes
 */
-extern uint32_t overlay_power;
-extern uint32_t overlay_format;
-extern uint32_t overlay_size;
-extern uint32_t overlay_position;
+extern uint32_t overlay0_power;
+extern uint32_t overlay0_size;
+extern uint32_t overlay0_position;
+extern uint32_t overlay1_power;
+extern uint32_t overlay1_size;
+extern uint32_t overlay1_position;
+
 extern uint8_t* overlay_ptr;	// pointer in qemu space
 
 static void vga_draw_graphic(VGACommonState *s, int full_update)
@@ -1796,7 +1799,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 page_min = page0;
             if (page1 > page_max)
                 page_max = page1;
-            if (overlay_power) {
+            if (overlay0_power) {
                 int i;
 		uint8_t *fb_sub= s->vram_ptr + addr;
 		uint8_t *over_sub = overlay_ptr + addr;
