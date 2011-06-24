@@ -93,22 +93,22 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t va
     case OVERLAY_POWER:
         overlay0_power = val;
         break;
-    case OVERLAY_SIZE:
+    case OVERLAY_POSITION:
         overlay0_left = val & 0xFFFF;
         overlay0_top = val >> 16;
         break;
-    case OVERLAY_POSITION:
+    case OVERLAY_SIZE:
         overlay0_width = val & 0xFFFF;
         overlay0_height = val >> 16;
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
         overlay1_power = val;
         break;
-    case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
+    case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
         overlay1_left = val & 0xFFFF;
         overlay1_top = val >> 16;
         break;
-    case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
+    case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
         overlay1_width = val & 0xFFFF;
         overlay1_height = val >> 16;
         break;
