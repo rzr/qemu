@@ -88,7 +88,11 @@ int fd; /* file description */
 #define CHECK_ARGS(x, y) (1 / ((sizeof(x)/sizeof(x[0])) == (sizeof(y)/sizeof(y[0])) ? 1 : 0)) ? x : x, y
 
 #ifndef _WIN32
+
 #define TCP_COMMUNICATION_SUPPORT
+#define USE_TCP_METHOD
+//#define USE_DEVICE_METHOD
+//#define USE_SWI_METHOD
 #endif
 //#define PROVIDE_STUB_IMPLEMENTATION
 
@@ -757,7 +761,7 @@ static int nbFBConfigs = 0;
 #define __CLIENT_WINDOW__
 
 #ifdef __CLIENT_WINDOW__
-/* Window Image¸¦ ÀÌ¿ëÇÑ  Guest Window Draw */
+/* Window Imageï¿½ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½  Guest Window Draw */
 #include <X11/extensions/XShm.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -1366,7 +1370,25 @@ static void do_init()
     int port = PORT;
     if (getenv("GL_SERVER_PORT"))
       port = atoi(getenv("GL_SERVER_PORT"));
+
+/* Get host IP address from file system and connect to server */
+#ifdef USE_TCP_METHOD
+    FILE *fAddr;
+    char buffer[32];
+
+    fAddr = fopen("/opt/home/opengl_ip.txt", "rt");
+    if (fAddr == NULL) {
+	fprintf(stderr, "opengl_ip.txt file open error.\n");
+    	exit (EXIT_FAILURE);
+    }
+
+    fgets(buffer, 32, fAddr);
+    //fprintf(stderr, "buffer is %s\n", buffer);
+    init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : buffer, port);
+    fclose(fAddr);
+#else
     init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : "localhost", port);
+#endif
     
     int flag = 1;
     if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,(char *)&flag, sizeof(int)) != 0)
@@ -1606,7 +1628,11 @@ static void do_opengl_call_no_lock(int func_number, void* ret_ptr, long* args, i
     last_current_thread = current_thread;
 
 #ifdef TCP_COMMUNICATION_SUPPORT
+#ifdef USE_TCP_METHOD
+    use_tcp_communication = getenv("USE_TCP_COMMUNICATION") ? getenv("USE_TCP_COMMUNICATION") : 1;
+#else
     use_tcp_communication = getenv("USE_TCP_COMMUNICATION") != NULL;
+#endif
 #endif
     do_init();
     
@@ -2088,7 +2114,7 @@ GLAPI void APIENTRY glPopAttrib()
   do_opengl_call(glPopAttrib_func, NULL, NULL, NULL);
 }
 
-/* 'glIsEnabled'¿¡ ´ëÇÑ static function »ý¼º */
+/* 'glIsEnabled'ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ static function ï¿½ï¿½ */
 static GLboolean APIENTRY _glIsEnabled( GLenum cap )
 {
   GLboolean ret = 0;
@@ -4159,7 +4185,7 @@ static void _move_win_if_necessary(Display *dpy, Window win)
   _get_window_pos(dpy, win, &pos);
   if (memcmp(&pos, &state->oldPos, sizeof(state->oldPos)) != 0)
   {
-    /* Host Window¸¦ ³ªÅ¸³»Áö ¾Ê´Â´Ù. if (pos.map_state != state->oldPos.map_state)
+    /* Host Windowï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´Â´ï¿½. if (pos.map_state != state->oldPos.map_state)
     {
       long args[] = { INT_TO_ARG(win), INT_TO_ARG(pos.map_state) };
       do_opengl_call_no_lock(_changeWindowState_func, NULL, args, NULL);
@@ -4502,7 +4528,7 @@ static void glXSwapBuffers_no_lock( Display *dpy, GLXDrawable drawable )
   GET_CURRENT_STATE();
 #endif
 
-#ifndef __CLIENT_WINDOW__ /*Host window¿¡ drawÇÏÁö ¾Ê´Â´Ù.*/
+#ifndef __CLIENT_WINDOW__ /*Host windowï¿½ï¿½ drawï¿½ï¿½ï¿½ï¿½ ï¿½Ê´Â´ï¿½.*/
   do_opengl_call_no_lock(glXSwapBuffers_func, NULL, args, NULL);
 #endif
 
@@ -4914,7 +4940,7 @@ static XVisualInfo* glXGetVisualFromFBConfig_no_lock( Display *dpy, GLXFBConfig 
   int visualid;
   do_opengl_call_no_lock(glXGetVisualFromFBConfig_func, &visualid, args, NULL);
 
-  /*host vid¸¦ tabAssocVisualInfoVisualId[]¿¡ ÀúÀåÇÏ¿© »ç¿ëÇÔÀ¸·Î guest vi¿¡ µî·ÏÇÒ ÇÊ¿ä ¾øÀ½*/ 
+  /*host vidï¿½ï¿½ tabAssocVisualInfoVisualId[]ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ guest viï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ ï¿½ï¿½ï¿½ï¿½*/ 
   /*vis->visualid = visualid;*/
 
   assert (nEltTabAssocVisualInfoVisualId < MAX_SIZE_TAB_ASSOC_VISUALINFO_VISUALID);
