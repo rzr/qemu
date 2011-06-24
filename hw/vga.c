@@ -1843,7 +1843,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                     over_sub = overlay_ptr + 0x400000 + y * overlay1_width;		// 4MB apart
                     dst = (uint32_t*)(s->ds->surface->data + addr + overlay1_left);
     
-                    for (i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++) {
+                    for (i = 0; i < overlay1_width; i++, fb_sub += 4, over_sub += 4, dst++) {
                         alpha = fb_sub[3];
                         c_alpha = 0xff - alpha;
                         //fprintf(stderr, "alpha = %d\n", alpha);
