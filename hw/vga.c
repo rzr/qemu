@@ -1614,13 +1614,18 @@ void vga_dirty_log_restart(VGACommonState *s)
 /*
 * graphic modes
 */
-extern uint32_t overlay0_power;
-extern uint32_t overlay0_size;
-extern uint32_t overlay0_position;
-extern uint32_t overlay1_power;
-extern uint32_t overlay1_size;
-extern uint32_t overlay1_position;
-
+extern uint8_t overlay0_power;
+extern uint16_t overlay0_left;
+extern uint16_t overlay0_top;
+extern uint16_t overlay0_width;
+extern uint16_t overlay0_height;
+	
+extern uint8_t overlay1_power;
+extern uint16_t overlay1_left;
+extern uint16_t overlay1_top;
+extern uint16_t overlay1_width;
+extern uint16_t overlay1_height;
+	
 extern uint8_t* overlay_ptr;	// pointer in qemu space
 
 static void vga_draw_graphic(VGACommonState *s, int full_update)
@@ -1799,28 +1804,56 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 page_min = page0;
             if (page1 > page_max)
                 page_max = page1;
-            if (overlay0_power) {
-                int i;
-		uint8_t *fb_sub= s->vram_ptr + addr;
-		uint8_t *over_sub = overlay_ptr + addr;
-		uint8_t alpha, c_alpha;
-		uint32_t *dst = (uint32_t*)(s->ds->surface->data + addr);
+            if (!(is_buffer_shared(s->ds->surface))) {
+                vga_draw_line(s, d, s->vram_ptr + addr, width);
+	    }
+	    
+	    int i;
+	    uint8_t *fb_sub;
+	    uint8_t *over_sub;
+	    uint8_t alpha, c_alpha;
+	    uint32_t *dst;
+	    uint16_t overlay_bottom;
 
-                for (i = 0; i < width; i++, fb_sub += 4, over_sub += 4, dst++) {
-                    alpha = fb_sub[3];
-                    c_alpha = 0xff - alpha;
-                    //fprintf(stderr, "alpha = %d\n", alpha);
-                    
-                    *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
-                           ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
-                           ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
+            if (overlay0_power) {
+                overlay_bottom = overlay0_top + overlay0_height;
+
+                if (overlay0_top <= y && y < overlay_bottom) {
+                    fb_sub= s->vram_ptr + addr + overlay0_left;
+                    over_sub = overlay_ptr + y * overlay0_width;
+                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay0_left);
+    
+                    for (i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++) {
+                        alpha = fb_sub[3];
+                        c_alpha = 0xff - alpha;
+                        //fprintf(stderr, "alpha = %d\n", alpha);
+                        
+                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
+                               ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
+                    }
                 }
             }
-            else  if (!(is_buffer_shared(s->ds->surface))) {
-                vga_draw_line(s, d, s->vram_ptr + addr, width);
-                if (s->cursor_draw_line)
-                    s->cursor_draw_line(s, d, y);
-	    }
+
+            if (overlay1_power) {
+                overlay_bottom = overlay1_top + overlay1_height;
+
+                if (overlay1_top <= y && y < overlay_bottom) {
+                    fb_sub= s->vram_ptr + addr + overlay1_left;
+                    over_sub = overlay_ptr + 0x400000 + y * overlay1_width;		// 4MB apart
+                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay1_left);
+    
+                    for (i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++) {
+                        alpha = fb_sub[3];
+                        c_alpha = 0xff - alpha;
+                        //fprintf(stderr, "alpha = %d\n", alpha);
+                        
+                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
+                               ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
+                    }
+                }
+            }
         } else {
             if (y_start >= 0) {
                 /* flush to display */
