@@ -1819,11 +1819,12 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 overlay_bottom = overlay0_top + overlay0_height;
 
                 if (overlay0_top <= y && y < overlay_bottom) {
-                    fb_sub= s->vram_ptr + addr + overlay0_left;
-                    over_sub = overlay_ptr + y * overlay0_width;
-                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay0_left);
+                    fb_sub = s->vram_ptr + addr + overlay0_left * 4;
+                    over_sub = overlay_ptr + y * overlay0_width * 4;
+                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay0_left * 4);
     
                     for (i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++) {
+                        //alpha = 0x80;
                         alpha = fb_sub[3];
                         c_alpha = 0xff - alpha;
                         //fprintf(stderr, "alpha = %d\n", alpha);
@@ -1839,11 +1840,12 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 overlay_bottom = overlay1_top + overlay1_height;
 
                 if (overlay1_top <= y && y < overlay_bottom) {
-                    fb_sub= s->vram_ptr + addr + overlay1_left;
-                    over_sub = overlay_ptr + 0x400000 + y * overlay1_width;		// 4MB apart
-                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay1_left);
+                    fb_sub = s->vram_ptr + addr + overlay1_left * 4;
+                    over_sub = overlay_ptr + y * overlay1_width * 4;
+                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay1_left * 4);
     
                     for (i = 0; i < overlay1_width; i++, fb_sub += 4, over_sub += 4, dst++) {
+                        //alpha = 0x80;
                         alpha = fb_sub[3];
                         c_alpha = 0xff - alpha;
                         //fprintf(stderr, "alpha = %d\n", alpha);
