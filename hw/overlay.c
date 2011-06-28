@@ -22,24 +22,28 @@
 #define PCI_VENDOR_ID_SAMSUNG		0x144d
 #define PCI_DEVICE_ID_VIRTUAL_OVERLAY   0x1010
 
-#define OVERLAY_MEM_SIZE (8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
-#define OVERLAY_REG_SIZE 256
+#define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
+#define OVERLAY_REG_SIZE	256
+#define OVERLAY1_REG_OFFSET	(OVERLAY_REG_SIZE / 2)
+
 
 enum {
-    OVERLAY0_POWER    = 0x00,
-    OVERLAY0_SIZE     = 0x04,	// width and height
-    OVERLAY0_POSITION = 0x08,	// left top position
-    OVERLAY1_POWER    = 0x0C,
-    OVERLAY1_SIZE     = 0x10,	// width and height
-    OVERLAY1_POSITION = 0x14,	// left top position
+	OVERLAY_POWER    = 0x00,
+	OVERLAY_POSITION = 0x04,	// left top position
+	OVERLAY_SIZE     = 0x08,	// width and height
 };
 
-uint32_t overlay0_power;
-uint32_t overlay0_size;
-uint32_t overlay0_position;
-uint32_t overlay1_power;
-uint32_t overlay1_size;
-uint32_t overlay1_position;
+uint8_t overlay0_power;
+uint16_t overlay0_left;
+uint16_t overlay0_top;
+uint16_t overlay0_width;
+uint16_t overlay0_height;
+
+uint8_t overlay1_power;
+uint16_t overlay1_left;
+uint16_t overlay1_top;
+uint16_t overlay1_width;
+uint16_t overlay1_height;
 
 uint8_t* overlay_ptr;	// pointer in qemu space
 
@@ -57,27 +61,28 @@ typedef struct OverlayState {
 static uint32_t overlay_reg_read(void *opaque, target_phys_addr_t addr)
 {
     switch (addr) {
-    case OVERLAY0_POWER:
+    case OVERLAY_POWER:
         return overlay0_power;
         break;
-    case OVERLAY0_SIZE:
-        return overlay0_size;
+    case OVERLAY_SIZE:
+        return overlay0_left | overlay0_top << 16;
         break;
-    case OVERLAY0_POSITION:
-        return overlay0_position;
+    case OVERLAY_POSITION:
+        return overlay0_width | overlay0_height << 16;
         break;
-    case OVERLAY1_POWER:
+    case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
         return overlay1_power;
         break;
-    case OVERLAY1_SIZE:
-        return overlay1_size;
+    case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
+        return overlay1_left | overlay1_top << 16;
         break;
-    case OVERLAY1_POSITION:
-        return overlay1_position;
+    case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
+        return overlay1_width | overlay1_height << 16;
         break;
     default:
         fprintf(stderr, "wrong overlay register read - addr : %d\n", addr);
     }
+
 
     return 0;
 }
@@ -85,23 +90,27 @@ static uint32_t overlay_reg_read(void *opaque, target_phys_addr_t addr)
 static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t val)
 {
     switch (addr) {
-    case OVERLAY0_POWER:
+    case OVERLAY_POWER:
         overlay0_power = val;
         break;
-    case OVERLAY0_SIZE:
-        overlay0_size = val;
+    case OVERLAY_POSITION:
+        overlay0_left = val & 0xFFFF;
+        overlay0_top = val >> 16;
         break;
-    case OVERLAY0_POSITION:
-        overlay0_position = val;
+    case OVERLAY_SIZE:
+        overlay0_width = val & 0xFFFF;
+        overlay0_height = val >> 16;
         break;
-    case OVERLAY1_POWER:
+    case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
         overlay1_power = val;
         break;
-    case OVERLAY1_SIZE:
-        overlay1_size = val;
+    case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
+        overlay1_left = val & 0xFFFF;
+        overlay1_top = val >> 16;
         break;
-    case OVERLAY1_POSITION:
-        overlay1_position = val;
+    case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
+        overlay1_width = val & 0xFFFF;
+        overlay1_height = val >> 16;
         break;
     default:
         fprintf(stderr, "wrong overlay register write - addr : %d\n", addr);
