@@ -1371,21 +1371,11 @@ static void do_init()
     if (getenv("GL_SERVER_PORT"))
       port = atoi(getenv("GL_SERVER_PORT"));
 
-/* Get host IP address from file system and connect to server */
+/* Get fixed host IP address and connect to server */
 #ifdef USE_TCP_METHOD
-    FILE *fAddr;
-    char buffer[32];
+    char fixed_host_ip[] = "10.0.2.2";  /* HOST_QEMU_ADDRESS */
 
-    fAddr = fopen("/opt/home/opengl_ip.txt", "rt");
-    if (fAddr == NULL) {
-	fprintf(stderr, "opengl_ip.txt file open error.\n");
-    	exit (EXIT_FAILURE);
-    }
-
-    fgets(buffer, 32, fAddr);
-    //fprintf(stderr, "buffer is %s\n", buffer);
-    init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : buffer, port);
-    fclose(fAddr);
+    init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : &fixed_host_ip[0], port);
 #else
     init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : "localhost", port);
 #endif
