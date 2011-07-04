@@ -9,7 +9,7 @@ exec ./configure \
  --target-list=i386-softmmu \
  --enable-profiler \
  --disable-werror \
- --audio-drv-list=alsa \
+ --audio-drv-list=pa \
  --audio-card-list=es1370 \
  --enable-mixemu \
  --disable-vnc-tls \
