@@ -1545,6 +1545,8 @@ static void select_vgahw (const char *p)
         vga_interface_type = VGA_XENFB;
     } else if (strstart(p, "qxl", &opts)) {
         vga_interface_type = VGA_QXL;
+    } else if (strstart(p, "slp", &opts)) { // by caramis...
+        vga_interface_type = VGA_SLP;
     } else if (!strstart(p, "none", &opts)) {
     invalid_vga:
         fprintf(stderr, "Unknown vga type: %s\n", p);

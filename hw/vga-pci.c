@@ -116,8 +116,26 @@ static PCIDeviceInfo vga_info = {
     .romfile      = "vgabios-stdvga.bin",
 };
 
+int pci_slp_vga_init(PCIBus *bus)
+{
+    pci_create_simple(bus, -1, "SLP_VGA");
+    return 0;
+}
+
+static PCIDeviceInfo slp_vga_info = {
+    .qdev.name    = "SLP_VGA",
+    .qdev.size    = sizeof(PCIVGAState),
+    .qdev.vmsd    = &vmstate_vga_pci,
+    .no_hotplug   = 1,
+    .init         = pci_vga_initfn,
+    .config_write = pci_vga_write_config,
+    .romfile      = "vgabios-slpvga.bin",
+};
+
 static void vga_register(void)
 {
     pci_qdev_register(&vga_info);
+// by caramis...
+    pci_qdev_register(&slp_vga_info);
 }
 device_init(vga_register);
