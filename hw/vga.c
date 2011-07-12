@@ -1614,6 +1614,7 @@ void vga_dirty_log_restart(VGACommonState *s)
 /*
 * graphic modes
 */
+#if defined (TARGET_I386)
 extern uint8_t overlay0_power;
 extern uint16_t overlay0_left;
 extern uint16_t overlay0_top;
@@ -1627,6 +1628,7 @@ extern uint16_t overlay1_width;
 extern uint16_t overlay1_height;
 	
 extern uint8_t* overlay_ptr;	// pointer in qemu space
+#endif
 
 static void vga_draw_graphic(VGACommonState *s, int full_update)
 {
@@ -1796,7 +1798,9 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         }
         /* explicit invalidation for the hardware cursor */
         update |= (s->invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1;
+#if defined (TARGET_I386)
         update |= 1;	// sucking architecture causes low performance. sorry.
+#endif
         if (update) {
             if (y_start < 0)
                 y_start = y;
@@ -1807,7 +1811,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             if (!(is_buffer_shared(s->ds->surface))) {
                 vga_draw_line(s, d, s->vram_ptr + addr, width);
 	    }
-	    
+#if defined (TARGET_I386)
 	    int i;
 	    uint8_t *fb_sub;
 	    uint8_t *over_sub;
@@ -1856,6 +1860,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                     }
                 }
             }
+#endif
         } else {
             if (y_start >= 0) {
                 /* flush to display */
