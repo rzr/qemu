@@ -275,6 +275,8 @@ static int usb_wacom_handle_control(USBDevice *dev, int request, int value,
         if (s->mouse_grabbed) {
             qemu_remove_mouse_event_handler(s->eh_entry);
             s->mouse_grabbed = 0;
+            s->changed = 1;
+            dev->setup_index=0;
         }
         s->mode = data[0];
         ret = 0;
