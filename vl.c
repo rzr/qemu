@@ -253,9 +253,9 @@ uint8_t qemu_uuid[16];
 int enable_gl = 1;
 
 extern void qemu_display_init(DisplayState *ds);
-extern void simulator_mutex_lock(void);
-extern void simulator_mutex_unlock(void);
-extern void sim_kill_all_process(void);
+extern void emulator_mutex_lock(void);
+extern void emulator_mutex_unlock(void);
+extern void emul_kill_all_process(void);
 
 static QEMUBootSetHandler *boot_set_handler;
 static void *boot_set_opaque;
@@ -1312,7 +1312,7 @@ void qemu_system_reset_request(void)
 void qemu_system_shutdown_request(void)
 {
 #ifndef _SDK_SIMULATOR
-	sim_kill_all_process();
+	emul_kill_all_process();
 #endif
     shutdown_requested = 1;
     qemu_notify_event();
@@ -1394,13 +1394,13 @@ void main_loop_wait(int nonblocking)
     slirp_select_poll(&rfds, &wfds, &xfds, (ret < 0));
 
 #ifndef _SDK_SIMULATOR  
-	simulator_mutex_lock();
+	emulator_mutex_lock();
 #endif
 
 	qemu_run_all_timers();
 
 #ifndef _SDK_SIMULATOR  
-	simulator_mutex_unlock();
+	emulator_mutex_unlock();
 #endif
 
     /* Check bottom-halves last in case any of the earlier events triggered
@@ -1545,6 +1545,8 @@ static void select_vgahw (const char *p)
         vga_interface_type = VGA_XENFB;
     } else if (strstart(p, "qxl", &opts)) {
         vga_interface_type = VGA_QXL;
+    } else if (strstart(p, "slp", &opts)) { // by caramis...
+        vga_interface_type = VGA_SLP;
     } else if (!strstart(p, "none", &opts)) {
     invalid_vga:
         fprintf(stderr, "Unknown vga type: %s\n", p);
