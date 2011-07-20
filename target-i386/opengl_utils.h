@@ -334,7 +334,7 @@ static inline void display_gl_call(FILE* f, int func_number, long* args, int* ar
 	int nb_args = signature->nb_args;
 	int* args_type = signature->args_type;
 
-	fprintf(f, "%s(", tab_opengl_calls_name[func_number]);
+	//fprintf(f, "%s(", tab_opengl_calls_name[func_number]);
 
 	for(i=0;i<nb_args;i++)
 	{

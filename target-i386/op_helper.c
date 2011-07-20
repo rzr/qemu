@@ -4811,7 +4811,7 @@ void helper_int99(void)
 {
   regs_to_env();
 #ifndef _WIN32
-  helper_opengl(env);
+  //helper_opengl(env);
 #endif
   env_to_regs();
 }
