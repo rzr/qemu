@@ -23,74 +23,112 @@
  */
 
 /* gcc -Wall -O2 -g opengl_server.c opengl_exec.c -o opengl_server -I../i386-softmmu -I. -I.. -lGL */
+/* gcc -g -o opengl_server opengl_server.c opengl_exec.c -I../i386-softmmu -I. -I.. -I/c/mingw/include -lopengl32 -lws2_32 -lgdi32 -lpthread */
 
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
-#include <signal.h>
+#include <pthread.h>
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#ifdef _WIN32 // or __MINGW32__
+ #include <windows.h>
+// #include <winsock2.h>
+#else // _WIN32
+#include <sys/types.h>
+#include <sys/time.h>
+
+ #include <unistd.h>
+ #include <arpa/inet.h>
+ #include <errno.h>
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+ #include <netinet/tcp.h>
+ #include <netdb.h>
+ #include <signal.h>
+
+ #include <X11/Xlib.h>
+ #include <X11/Xutil.h>
+
+#endif // _WIN32
 
 #define PORT    5555
-
 #define ENABLE_GL_LOG
 
 #include "opengl_func.h"
 #include "opengl_utils.h"
-
-static int refresh_rate = 1000;
-static int must_save = 0;
-static int timestamp = 1; /* only valid if must_save == 1. include timestamps in the save file to enable real-time playback */
+#include "opengl_server.h"
 
 extern int display_function_call;
-extern void init_process_tab(void);
-extern int do_function_call(Display*, int, int, long*, char*);
-extern void opengl_exec_set_local_connection(void);
-extern void opengl_exec_set_parent_window(Display* _dpy, Window _parent_window);
+
+#ifdef _WIN32
+HWND		displayHWND;
+static Display CreateDisplay(void)
+ {
+   HWND        hWnd;
+   WNDCLASS    wc;
+   LPSTR       ClassName ="DISPLAY";
+   HINSTANCE hInstance = 0;
+
+   /* only register the window class once - use hInstance as a flag. */
+   hInstance = GetModuleHandle(NULL);
+   wc.style         = CS_OWNDC;
+   wc.lpfnWndProc   = (WNDPROC)DefWindowProc;
+   wc.cbClsExtra    = 0;
+   wc.cbWndExtra    = 0;
+   wc.hInstance     = hInstance;
+   wc.hIcon         = LoadIcon(NULL, IDI_WINLOGO);
+   wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+   wc.hbrBackground = NULL;
+   wc.lpszMenuName  = NULL;
+   wc.lpszClassName = ClassName;
+
+   RegisterClass(&wc);
+
+   displayHWND = CreateWindow(ClassName, ClassName, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU ),
+   0, 0, 10, 10, NULL, (HMENU)NULL, hInstance, NULL);
+
+
+   ShowWindow(hWnd, SW_HIDE);
+
+   return GetDC(displayHWND);
+}
+#else
+extern void opengl_exec_set_parent_window(OGLS_Conn *pConn, Window _parent_window);
+#endif // _WIN32
 
 #ifdef ENABLE_GL_LOG
 static FILE* f = NULL;
 
-static char* filename = "/tmp/debug_gl.bin";
+static const char* filename = "/tmp/debug_gl.bin";
 
 #define write_gl_debug_init() do { if (f == NULL) f = fopen(filename, "wb"); } while(0)
 
-static void inline  write_gl_debug_cmd_char(char my_int)
+inline static void  write_gl_debug_cmd_char(char my_int)
 {
 	write_gl_debug_init();
 	fwrite(&my_int, sizeof(my_int), 1, f);
 }
 
-static void inline  write_gl_debug_cmd_short(short my_int)
+inline static void  write_gl_debug_cmd_short(short my_int)
 {
 	write_gl_debug_init();
 	fwrite(&my_int, sizeof(my_int), 1, f);
 }
 
-static void inline write_gl_debug_cmd_int(int my_int)
+inline static void write_gl_debug_cmd_int(int my_int)
 {
 	write_gl_debug_init();
 	fwrite(&my_int, sizeof(my_int), 1, f);
 }
 
-static void inline  write_gl_debug_cmd_longlong(long long my_longlong)
+inline static void  write_gl_debug_cmd_longlong(long long my_longlong)
 {
 	write_gl_debug_init();
 	fwrite(&my_longlong, sizeof(my_longlong), 1, f);
 }
 
-static void inline  write_gl_debug_cmd_buffer_with_size(int size, void* buffer)
+inline static void  write_gl_debug_cmd_buffer_with_size(int size, void* buffer)
 {
 	write_gl_debug_init();
 	fwrite(&size, sizeof(int), 1, f);
@@ -98,14 +136,14 @@ static void inline  write_gl_debug_cmd_buffer_with_size(int size, void* buffer)
 		fwrite(buffer, size, 1, f);
 }
 
-static void inline  write_gl_debug_cmd_buffer_without_size(int size, void* buffer)
+inline static void  write_gl_debug_cmd_buffer_without_size(int size, void* buffer)
 {
 	write_gl_debug_init();
 	if (size)
 		fwrite(buffer, size, 1, f);
 }
 
-static void inline  write_gl_debug_end()
+inline static void  write_gl_debug_end(void)
 {
 	write_gl_debug_init();
 	fclose(f);
@@ -114,29 +152,35 @@ static void inline  write_gl_debug_end()
 
 #endif
 
-static void write_sock_data(int sock, void* data, int len)
+static int write_sock_data(int sock, void* data, int len)
 {
+	int offset = 0;
+
 	if (len && data)
 	{
-		int offset = 0;
 		while(offset < len)
 		{
 			int nwritten = write(sock, data + offset, len - offset);
 			if (nwritten == -1)
 			{
+#ifndef _WIN32
 				if (errno == EINTR)
 					continue;
+#endif
 				perror("write");
-				assert(nwritten != -1);
+				//assert(nwritten != -1);
+                return -1;
 			}
 			offset += nwritten;
 		}
 	}
+
+	return offset;
 }
 
-static void inline write_sock_int(int sock, int my_int)
+inline static int write_sock_int(int sock, int my_int)
 {
-	write_sock_data(sock, &my_int, sizeof(int));
+	return write_sock_data(sock, &my_int, sizeof(int));
 }
 
 static int total_read = 0;
@@ -150,63 +194,61 @@ static void read_sock_data(int sock, void* data, int len)
 			int nread = read(sock, data + offset, len - offset);
 			if (nread == -1)
 			{
+#ifndef _WIN32
 				if (errno == EINTR)
 					continue;
+#endif
 				perror("read");
-				assert(nread != -1);
+				//assert(nread != -1);
 			}
 			if (nread == 0)
 			{
-				fprintf(stderr, "nread = 0\n");
+				//fprintf(stderr, "nread = 0\n");
 			}
-			assert(nread > 0);
-			offset += nread;
-			total_read += nread;
+			//assert(nread > 0);
+			if (nread > 0)
+			{
+				offset += nread;
+				total_read += nread;
+			}
 		}
 	}
 }
 
-static int inline read_sock_int(int sock)
+inline static int read_sock_int(int sock)
 {
 	int ret;
 	read_sock_data(sock, &ret, sizeof(int));
 	return ret;
 }
 
-static short inline read_sock_short(int sock)
+inline static short read_sock_short(int sock)
 {
 	short ret;
 	read_sock_data(sock, &ret, sizeof(short));
 	return ret;
 }
 
-
-static Display* dpy = NULL;
-static int parent_xid = -1;
-
-
-static struct timeval last_time, current_time, time_stamp_start;
-static int count_last_time = 0, count_current = 0;
-
-static struct timeval last_read_time, current_read_time;
-
-int has_x_error = 0;
-
-int read_from_client (int sock)
+static int OGLS_readConn( OGLS_Conn *pConn )
 {
+	int sock = pConn->sock;
 	long args[50];
 	int args_size[50];
 	char ret_string[32768];
 	char command_buffer[65536*16];
 
-	if (dpy == NULL)
+	if( pConn->Display == NULL )
 	{
-		init_process_tab();
-		dpy = XOpenDisplay(NULL);
-		if (parent_xid != -1)
+		create_process_tab(pConn);
+#ifdef _WIN32
+		pConn->Display = CreateDisplay();
+#else
+		pConn->Display = XOpenDisplay(NULL);
+		if (pConn->pOption->parent_xid != -1)
 		{
-			opengl_exec_set_parent_window(dpy, parent_xid);
+			opengl_exec_set_parent_window(pConn, pConn->pOption->parent_xid);
 		}
+#endif // _WIN32
 	}
 
 	int i;
@@ -225,7 +267,7 @@ int read_from_client (int sock)
 		read_sock_data(sock, command_buffer, command_buffer_size);
 
 #ifdef ENABLE_GL_LOG
-		if (must_save) write_gl_debug_cmd_short(_serialized_calls_func);
+		if (pConn->pOption->must_save) write_gl_debug_cmd_short(_serialized_calls_func);
 #endif
 
 		while(commmand_buffer_offset < command_buffer_size)
@@ -236,11 +278,12 @@ int read_from_client (int sock)
 				fprintf(stderr, "func_number >= 0 && func_number < GL_N_CALLS failed at "
 						"commmand_buffer_offset=%d (command_buffer_size=%d)\n",
 						commmand_buffer_offset, command_buffer_size);
-				exit(-1);
+				//exit(-1);
+				return -1;
 			}
 
 #ifdef ENABLE_GL_LOG
-			if (must_save) write_gl_debug_cmd_short(func_number);
+			if (pConn->pOption->must_save) write_gl_debug_cmd_short(func_number);
 #endif
 			commmand_buffer_offset += sizeof(short);
 
@@ -260,7 +303,7 @@ int read_from_client (int sock)
 						{
 							args[i] = *(int*)(command_buffer + commmand_buffer_offset);
 #ifdef ENABLE_GL_LOG
-							if (must_save) write_gl_debug_cmd_char(args[i]);
+							if (pConn->pOption->must_save) write_gl_debug_cmd_char(args[i]);
 #endif
 							commmand_buffer_offset += sizeof(int);
 							break;
@@ -271,7 +314,7 @@ int read_from_client (int sock)
 						{
 							args[i] = *(int*)(command_buffer + commmand_buffer_offset);
 #ifdef ENABLE_GL_LOG
-							if (must_save) write_gl_debug_cmd_short(args[i]);
+							if (pConn->pOption->must_save) write_gl_debug_cmd_short(args[i]);
 #endif
 							commmand_buffer_offset += sizeof(int);
 							break;
@@ -283,7 +326,7 @@ int read_from_client (int sock)
 						{
 							args[i] = *(int*)(command_buffer + commmand_buffer_offset);
 #ifdef ENABLE_GL_LOG
-							if (must_save) write_gl_debug_cmd_int(args[i]);
+							if (pConn->pOption->must_save) write_gl_debug_cmd_int(args[i]);
 #endif
 							commmand_buffer_offset += sizeof(int);
 							break;
@@ -313,7 +356,7 @@ CASE_IN_UNKNOWN_SIZE_POINTERS:
 								}
 							}
 #ifdef ENABLE_GL_LOG
-							if (must_save) write_gl_debug_cmd_buffer_with_size(args_size[i], (void*)args[i]);
+							if (pConn->pOption->must_save) write_gl_debug_cmd_buffer_with_size(args_size[i], (void*)args[i]);
 #endif
 							commmand_buffer_offset += args_size[i];
 
@@ -325,7 +368,7 @@ CASE_IN_LENGTH_DEPENDING_ON_PREVIOUS_ARGS:
 							args_size[i] = compute_arg_length(stderr, func_number, i, args);
 							args[i] = (args_size[i]) ? (long)(command_buffer + commmand_buffer_offset) : 0;
 #ifdef ENABLE_GL_LOG
-							if (must_save) write_gl_debug_cmd_buffer_without_size(args_size[i], (void*)args[i]);
+							if (pConn->pOption->must_save) write_gl_debug_cmd_buffer_without_size(args_size[i], (void*)args[i]);
 #endif
 							commmand_buffer_offset += args_size[i];
 							break;
@@ -343,7 +386,7 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 						args[i] = (long)(command_buffer + commmand_buffer_offset);
 						args_size[i] = tab_args_type_length[args_type[i]];
 #ifdef ENABLE_GL_LOG
-						if (must_save) write_gl_debug_cmd_buffer_without_size(tab_args_type_length[args_type[i]], (void*)args[i]);
+						if (pConn->pOption->must_save) write_gl_debug_cmd_buffer_without_size(tab_args_type_length[args_type[i]], (void*)args[i]);
 #endif
 						commmand_buffer_offset += tab_args_type_length[args_type[i]];
 						break;
@@ -360,14 +403,13 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 			}
 
 			if (display_function_call) display_gl_call(stderr, func_number, args, args_size);
-
-			do_function_call(dpy, func_number, 1, args, ret_string);
+			do_function_call(pConn, func_number, 1, args, ret_string);
 		}
 	}
 	else
 	{
 #ifdef ENABLE_GL_LOG
-		if (must_save && func_number != _synchronize_func) write_gl_debug_cmd_short(func_number);
+		if (pConn->pOption->must_save && func_number != _synchronize_func) write_gl_debug_cmd_short(func_number);
 #endif
 
 		for(i=0;i<nb_args;i++)
@@ -378,7 +420,7 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 				case TYPE_CHAR:
 					args[i] = read_sock_int(sock);
 #ifdef ENABLE_GL_LOG
-					if (must_save) write_gl_debug_cmd_char(args[i]);
+					if (pConn->pOption->must_save) write_gl_debug_cmd_char(args[i]);
 #endif
 					break;
 
@@ -386,7 +428,7 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 				case TYPE_SHORT:
 					args[i] = read_sock_int(sock);
 #ifdef ENABLE_GL_LOG
-					if (must_save) write_gl_debug_cmd_short(args[i]);
+					if (pConn->pOption->must_save) write_gl_debug_cmd_short(args[i]);
 #endif
 					break;
 
@@ -395,7 +437,7 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 				case TYPE_FLOAT:
 					args[i] = read_sock_int(sock);
 #ifdef ENABLE_GL_LOG
-					if (must_save) write_gl_debug_cmd_int(args[i]);
+					if (pConn->pOption->must_save) write_gl_debug_cmd_int(args[i]);
 #endif
 					break;
 
@@ -418,7 +460,7 @@ CASE_IN_UNKNOWN_SIZE_POINTERS:
 							}
 						}
 #ifdef ENABLE_GL_LOG
-						if (must_save) write_gl_debug_cmd_buffer_with_size(args_size[i], (void*)args[i]);
+						if (pConn->pOption->must_save) write_gl_debug_cmd_buffer_with_size(args_size[i], (void*)args[i]);
 #endif
 						break;
 					}
@@ -429,7 +471,7 @@ CASE_IN_LENGTH_DEPENDING_ON_PREVIOUS_ARGS:
 						args[i] = (args_size[i]) ? (long)malloc(args_size[i]) : 0;
 						read_sock_data(sock, (void*)args[i], args_size[i]);
 #ifdef ENABLE_GL_LOG
-						if (must_save) write_gl_debug_cmd_buffer_without_size(args_size[i], (void*)args[i]);
+						if (pConn->pOption->must_save) write_gl_debug_cmd_buffer_without_size(args_size[i], (void*)args[i]);
 #endif
 						break;
 					}
@@ -463,7 +505,7 @@ CASE_OUT_UNKNOWN_SIZE_POINTERS:
 						}
 						//fprintf(stderr, "%p %d\n", (void*)args[i], args_size[i]);
 #ifdef ENABLE_GL_LOG
-						if (must_save) write_gl_debug_cmd_int(args_size[i]);
+						if (pConn->pOption->must_save) write_gl_debug_cmd_int(args_size[i]);
 #endif
 						break;
 					}
@@ -483,7 +525,7 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 					args[i] = (long)malloc(args_size[i]);
 					read_sock_data(sock, (void*)args[i], args_size[i]);
 #ifdef ENABLE_GL_LOG
-					if (must_save) write_gl_debug_cmd_buffer_without_size(tab_args_type_length[args_type[i]], (void*)args[i]);
+					if (pConn->pOption->must_save) write_gl_debug_cmd_buffer_without_size(tab_args_type_length[args_type[i]], (void*)args[i]);
 #endif
 					break;
 
@@ -502,9 +544,9 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 
 		if (getenv("ALWAYS_FLUSH")) fflush(f);
 
-		int ret = do_function_call(dpy, func_number, 1, args, ret_string);
+		int ret = do_function_call(pConn, func_number, 1, args, ret_string);
 #ifdef ENABLE_GL_LOG
-		if (must_save && func_number == glXGetVisualFromFBConfig_func)
+		if (pConn->pOption->must_save && func_number == glXGetVisualFromFBConfig_func)
 		{
 			write_gl_debug_cmd_int(ret);
 		}
@@ -531,7 +573,12 @@ CASE_IN_POINTERS:
 
 CASE_OUT_POINTERS:
 					//fprintf(stderr, "%p %d\n", (void*)args[i], args_size[i]);
-					write_sock_data(sock, (void*)args[i], args_size[i]);
+					if( 0> write_sock_data(sock, (void*)args[i], args_size[i]) )
+					{
+						perror( "write_sock_data" ) ;
+						return -1 ;
+					}
+
 					if (display_function_call)
 					{
 						if (args_type[i] == TYPE_OUT_1INT)
@@ -559,16 +606,28 @@ CASE_OUT_POINTERS:
 
 		if (signature->ret_type == TYPE_CONST_CHAR)
 		{
-			write_sock_int(sock, strlen(ret_string) + 1);
-			write_sock_data(sock, ret_string, strlen(ret_string) + 1);
+			if( 0 > write_sock_int(sock, strlen(ret_string) + 1) )
+			{
+				perror( "write_sock_int" ) ;
+				return -1 ;
+			}
+			if( 0 > write_sock_data(sock, ret_string, strlen(ret_string) + 1) )
+			{
+				perror( "write_sock_data" ) ;
+				return -1 ;
+			}
 		}
 		else if (signature->ret_type != TYPE_NONE)
 		{
-			write_sock_int(sock, ret);
+			if( 0 > write_sock_int(sock, ret) )
+			{
+				perror( "write_sock_int" ) ;
+				return -1 ;
+			}
 		}
 
 #ifdef ENABLE_GL_LOG
-		if (must_save && func_number == _exit_process_func)
+		if (pConn->pOption->must_save && func_number == _exit_process_func)
 		{
 			write_gl_debug_end();
 		}
@@ -580,37 +639,37 @@ CASE_OUT_POINTERS:
 		else if (func_number == glXSwapBuffers_func)
 		{
 			int diff_time;
-			count_current++;
-			gettimeofday(&current_time, NULL);
+			pConn->count_current++;
+			gettimeofday(&pConn->current_time, NULL);
 #ifdef ENABLE_GL_LOG
-			if (must_save && timestamp)
+			if (pConn->pOption->must_save && pConn->pOption->timestamp)
 			{
-				long long ts = (current_time.tv_sec - time_stamp_start.tv_sec) * (long long)1000000 + current_time.tv_usec - time_stamp_start.tv_usec;
+				long long ts = (pConn->current_time.tv_sec - pConn->time_stamp_start.tv_sec) * (long long)1000000 + pConn->current_time.tv_usec - pConn->time_stamp_start.tv_usec;
 				/* -1 is special code that indicates time synchro */
 				write_gl_debug_cmd_short(timesynchro_func);
 				write_gl_debug_cmd_longlong(ts);
 			}
 #endif
-			diff_time = (current_time.tv_sec - last_time.tv_sec) * 1000 + (current_time.tv_usec - last_time.tv_usec) / 1000;
-			if (diff_time > refresh_rate)
+			diff_time = (pConn->current_time.tv_sec - pConn->last_time.tv_sec) * 1000 + (pConn->current_time.tv_usec - pConn->last_time.tv_usec) / 1000;
+			if (diff_time > pConn->pOption->refresh_rate)
 			{
 #ifdef ENABLE_GL_LOG
 				fflush(f);
 #endif
 				printf("%d frames in %.1f seconds = %.3f FPS\n",
-						count_current - count_last_time,
+						pConn->count_current - pConn->count_last_time,
 						diff_time / 1000.,
-						(count_current - count_last_time) * 1000. / diff_time);
-				last_time.tv_sec = current_time.tv_sec;
-				last_time.tv_usec = current_time.tv_usec;
-				count_last_time = count_current;
+						(pConn->count_current - pConn->count_last_time) * 1000. / diff_time);
+				pConn->last_time.tv_sec = pConn->current_time.tv_sec;
+				pConn->last_time.tv_usec = pConn->current_time.tv_usec;
+				pConn->count_last_time = pConn->count_current;
 			}
 		}
 	}
 	return 0;
 }
 
-int make_socket (uint16_t port)
+static int OGLS_createListenSocket (uint16_t port)
 {
 	int sock;
 	struct sockaddr_in name;
@@ -620,7 +679,8 @@ int make_socket (uint16_t port)
 	if (sock < 0)
 	{
 		perror ("socket");
-		exit (EXIT_FAILURE);
+		//exit (EXIT_FAILURE);
+		return -1;
 	}
 
 	int flag = 1;
@@ -639,15 +699,89 @@ int make_socket (uint16_t port)
 	name.sin_addr.s_addr = htonl (INADDR_ANY);
 	if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
 	{
+		fprintf(stderr, "bind: errorno = %d\n", errno);
 		perror ("bind");
-		exit (EXIT_FAILURE);
+		//exit (EXIT_FAILURE);
+		return -1;
 	}
 
 	return sock;
 }
 
-static int x_error_handler(Display     *display,
-		XErrorEvent *error)
+static OGLS_Conn * OGLS_createConn( OGLS_Opts *pOption )
+{
+	OGLS_Conn *pConn = malloc(sizeof(OGLS_Conn));
+	if( !pConn )
+	{
+		return NULL ;
+	}
+
+	memset( pConn, 0, sizeof(*pConn) );
+	pConn->pOption = pOption;
+	return pConn;
+}
+
+static void OGLS_removeConn( OGLS_Conn *pConn )
+{
+	if( !pConn ) return ;
+
+	if( pConn->sock > 0 )
+	{
+		closesocket(pConn->sock);
+		pConn->sock = 0 ;
+	}
+
+	if( pConn->Display )
+	{
+#ifdef _WIN32
+//		ReleaseDC(pConn->Display);
+#else
+		XCloseDisplay( pConn->Display );
+		pConn->Display = NULL;
+#endif // _WIN32
+	}
+
+	remove_process_tab(pConn);
+
+	free( pConn );
+}
+
+static void OGLS_loop( OGLS_Conn *pConn )
+{
+	//fprintf (stderr, "Server: connect from host %s, port %hd.\n",
+	//		inet_ntoa (pConn->clientname.sin_addr),
+	//		ntohs (pConn->clientname.sin_port));
+
+	gettimeofday(&pConn->last_time, NULL);
+	gettimeofday(&pConn->last_read_time, NULL);
+
+#ifndef _WIN32
+	if (strcmp(inet_ntoa(pConn->clientname.sin_addr), "127.0.0.1") == 0 &&
+			pConn->pOption->different_windows == 0)
+	{
+		pConn->local_connection = 1;
+	}
+#endif // _WIN32
+
+	if( pConn->pOption->timestamp )
+	{
+		gettimeofday(&pConn->time_stamp_start, NULL);
+	}
+
+	while( OGLS_readConn(pConn) >= 0 );
+
+	do_function_call(pConn, _exit_process_func, 1, NULL, NULL);
+
+	//fprintf (stderr, "Server: disconnect from host %s, port %hd.\n",
+	//		inet_ntoa (pConn->clientname.sin_addr),
+	//		ntohs (pConn->clientname.sin_port));
+
+	OGLS_removeConn( pConn );
+}
+
+#ifndef _WIN32
+int has_x_error = 0;
+static int OGLS_x_error_handler(Display *display, XErrorEvent *error)
 {
 	char buf[64];
 	XGetErrorText(display, error->error_code, buf, 63);
@@ -663,8 +797,80 @@ static int x_error_handler(Display     *display,
 	has_x_error = 1;
 	return 0;
 }
+#endif // _WIN32
 
-void usage()
+static void OGLS_main( OGLS_Opts *pOption )
+{
+	int sock;
+	fd_set active_fd_set, read_fd_set;
+
+	socklen_t size;
+
+#ifndef _WIN32
+	XSetErrorHandler(OGLS_x_error_handler);
+#endif // _WIN32
+
+	/* Create the socket and set it up to accept connections. */
+	sock = OGLS_createListenSocket( pOption->port );
+	if (sock < 0)
+		return;
+
+	if (listen (sock, 1) < 0)
+	{
+		perror ("listen");
+		//exit (EXIT_FAILURE);
+		return;
+	}
+
+	FD_ZERO (&active_fd_set);
+	FD_SET (sock, &active_fd_set);
+
+	while(1)
+	{
+		OGLS_Conn *pConn = NULL;
+		pthread_t taskid;
+
+		read_fd_set = active_fd_set;
+		if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
+		{
+#ifndef _WIN32
+			if (errno == EINTR) {
+				continue;
+			}
+#endif
+			perror ("select");
+			//exit (EXIT_FAILURE);
+			break;
+		}
+
+		pConn = OGLS_createConn( pOption );
+		if( !pConn )
+		{
+			perror( "OGLS_createConn" );
+			continue;
+		}
+
+		size = sizeof(pConn->clientname);
+		pConn->sock = accept (sock, (struct sockaddr *) &pConn->clientname, &size);
+		if (pConn->sock < 0)
+		{
+			perror ("accept");
+			OGLS_removeConn( pConn );
+			continue;
+		}
+
+		if( pthread_create( (pthread_t *)&taskid, NULL, (void *(*)(void *))OGLS_loop, (void *)pConn ) )
+		{
+			perror( "pthread_create" );
+			OGLS_removeConn( pConn );
+			continue;
+		}
+	}
+
+	closesocket( sock );
+}
+
+static void usage(void)
 {
 	printf("Usage : opengl_server [OPTION]\n\n");
 	printf("The following options are available :\n");
@@ -679,16 +885,21 @@ void usage()
 	printf("--h or --help       : display this help\n");
 }
 
-int main (int argc, char* argv[])
+//int main (int argc, char* argv[])
+void *init_opengl_server(void *arg)
 {
-	int sock;
-	fd_set active_fd_set, read_fd_set;
-	int i;
-	struct sockaddr_in clientname;
-	socklen_t size;
-	int port = PORT;
-	int different_windows = 0;
+	//int i;
+	OGLS_Opts option;
 
+	memset( &option, 0, sizeof(option) );
+
+	// set default values
+	option.port = PORT;
+	option.parent_xid = -1;
+	option.refresh_rate = 1000;
+	option.timestamp = 1; /* only valid if must_save == 1. include timestamps in the save file to enable real-time playback */
+
+#if 0
 	for(i=1;i<argc;i++)
 	{
 		if (argv[i][0] == '-' && argv[i][1] == '-')
@@ -696,15 +907,15 @@ int main (int argc, char* argv[])
 
 		if (strcmp(argv[i], "-debug") == 0)
 		{
-			display_function_call = 1;
+			option.display_function_call = 1;
 		}
 		else if (strcmp(argv[i], "-save") == 0)
 		{
-			must_save = 1;
+			option.must_save = 1;
 		}
 		else if (strncmp(argv[i], "-port=",6) == 0)
 		{
-			port = atoi(argv[i] + 6);
+			option.port = atoi(argv[i] + 6);
 		}
 		else if (strncmp(argv[i], "-filename=",strlen("-filename=")) == 0)
 		{
@@ -713,12 +924,12 @@ int main (int argc, char* argv[])
 		else if (strncmp(argv[i], "-parent-xid=",strlen("-parent-xid=")) == 0)
 		{
 			char* c = argv[i] + strlen("-parent-xid=");
-			parent_xid = strtol(c, NULL, 0);
-			different_windows = 1;
+			option.parent_xid = strtol(c, NULL, 0);
+			option.different_windows = 1;
 		}
 		else if (strcmp(argv[i], "-different-windows") == 0)
 		{
-			different_windows = 1;
+			option.different_windows = 1;
 		}
 		else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0)
 		{
@@ -732,91 +943,8 @@ int main (int argc, char* argv[])
 			return -1;
 		}
 	}
+#endif	/* 0 */
 
-	/* Create the socket and set it up to accept connections. */
-	sock = make_socket (port);
-
-	if (listen (sock, 1) < 0)
-	{
-		perror ("listen");
-		exit (EXIT_FAILURE);
-	}
-
-	struct sigaction action;
-	action.sa_handler = SIG_IGN;
-	action.sa_flags = SA_NOCLDWAIT;
-	sigaction(SIGCHLD,&action,NULL);
-
-	FD_ZERO (&active_fd_set);
-	FD_SET (sock, &active_fd_set);
-
-	while(1)
-	{
-		int new, pid;
-
-		read_fd_set = active_fd_set;
-		if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
-		{
-			perror ("select");
-			exit (EXIT_FAILURE);
-		}
-
-		size = sizeof (clientname);
-		new = accept (sock, (struct sockaddr *) &clientname, &size);
-		if (new < 0)
-		{
-			perror ("accept");
-			exit (EXIT_FAILURE);
-		}
-		pid = fork();
-		if (pid == -1)
-		{
-			perror ("fork");
-			exit(EXIT_FAILURE);
-		}
-		if (pid == 0)
-		{
-			close(sock);
-
-			fprintf (stderr, "Server: connect from host %s, port %hd.\n",
-					inet_ntoa (clientname.sin_addr),
-					ntohs (clientname.sin_port));
-
-			gettimeofday(&last_time, NULL);
-			gettimeofday(&last_read_time, NULL);
-
-			if (strcmp(inet_ntoa(clientname.sin_addr), "127.0.0.1") == 0 &&
-					different_windows == 0)
-			{
-				opengl_exec_set_local_connection();
-			}
-
-			if (timestamp)
-			{
-				gettimeofday(&time_stamp_start, NULL);
-			}
-
-			XSetErrorHandler(x_error_handler);
-
-			while(1)
-			{
-				if (read_from_client (new) < 0)
-				{
-					do_function_call(dpy, _exit_process_func, 1, NULL, NULL);
-
-					fprintf (stderr, "Server: disconnect from host %s, port %hd.\n",
-							inet_ntoa (clientname.sin_addr),
-							ntohs (clientname.sin_port));
-
-					return 0;
-				}
-			}
-		}
-		else
-		{
-			close(new);
-		}
-	}
-
+	OGLS_main(&option);
 	return 0;
 }

@@ -1373,9 +1373,21 @@ static void do_init()
 
 /* Get fixed host IP address and connect to server */
 #ifdef USE_TCP_METHOD
-    char fixed_host_ip[] = "10.0.2.2";  /* HOST_QEMU_ADDRESS */
+    //char fixed_host_ip[] = "10.0.2.2";  /* HOST_QEMU_ADDRESS */
+    //init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : &fixed_host_ip[0], port);
 
-    init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : &fixed_host_ip[0], port);
+    FILE *fAddr;
+    char buffer[32];
+
+    fAddr = fopen("/opt/home/opengl_ip.txt", "rt");
+    if (fAddr == NULL) {
+    	fprintf(stderr, "opengl_ip.txt file open error\n");
+    	exit(EXIT_FAILURE);
+    }
+
+    fgets(buffer, 32, fAddr);
+    init_sockaddr(&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : buffer, port);
+    fclose(fAddr);
 #else
     init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : "localhost", port);
 #endif
@@ -1928,8 +1940,9 @@ static void do_opengl_call_no_lock(int func_number, void* ret_ptr, long* args, i
       last_command_buffer_size = -1;
     }
 
-    if (!(func_number == glXSwapBuffers_func || func_number == glFlush_func  || func_number == glFinish_func || (func_number == glReadPixels_func && disable_warning_for_gl_read_pixels)) && enable_gl_buffering)
-      log_gl("synchronous opengl call : %s.\n", tab_opengl_calls_name[func_number]);
+    //if (!(func_number == glXSwapBuffers_func || func_number == glFlush_func  || func_number == glFinish_func || (func_number == glReadPixels_func && disable_warning_for_gl_read_pixels)) && enable_gl_buffering)
+    //  log_gl("synchronous opengl call : %s.\n", tab_opengl_calls_name[func_number]);
+
     if (signature->ret_type == TYPE_CONST_CHAR)
     {
       try_to_put_into_phys_memory(ret_string, RET_STRING_SIZE);

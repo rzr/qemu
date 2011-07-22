@@ -49,18 +49,18 @@ typedef HDC Display;
 HWND		displayHWND;
 #endif
 
-#include "qemu-common.h"
-
-#include "opengl_func.h"
+//## remove GCC warning
+//#include "qemu-common.h"
+//#include "opengl_func.h"
+#include "helper_opengl.h"
 
 #define ENABLE_GL_LOG
 
-extern void init_process_tab(void);
-#ifdef _WIN32
-extern int do_function_call(Display dpy, int func_number, int pid, int* args, char* ret_string);
-#else
-extern int do_function_call(Display* dpy, int func_number, int pid, int* args, char* ret_string);
-#endif
+//#ifdef _WIN32
+//extern int do_function_call(Display dpy, int func_number, int pid, int* args, char* ret_string);
+//#else
+//extern int do_function_call(Display* dpy, int func_number, int pid, int* args, char* ret_string);
+//#endif
 extern int last_process_id;
 
 #ifndef _WIN32
@@ -68,7 +68,7 @@ extern void sdl_set_opengl_window(int x, int y, int width, int height);
 #endif
 
 #ifdef _WIN32
-Display CreateDisplay(void)
+static Display CreateDisplay(void)
 {
   HWND        hWnd;
   WNDCLASS    wc;
@@ -367,7 +367,7 @@ static int write_gl_debug_cmd_short(int my_int)
   return r;
 }
 
-static int inline  write_gl_debug_cmd_buffer_with_size(int size, void* buffer)
+inline static int write_gl_debug_cmd_buffer_with_size(int size, void* buffer)
 {
   int r;
   write_gl_debug_init();
@@ -377,7 +377,7 @@ static int inline  write_gl_debug_cmd_buffer_with_size(int size, void* buffer)
   return r;
 }
 
-static int inline  write_gl_debug_cmd_buffer_without_size(int size, void* buffer)
+inline static int write_gl_debug_cmd_buffer_without_size(int size, void* buffer)
 {
   int r = 0;
   write_gl_debug_init();
@@ -462,7 +462,9 @@ static int decode_call_int(CPUState *env, int func_number, int pid, target_ulong
   if (dpy == NULL)
   {
     dpy = CreateDisplay();
-    init_process_tab();
+    //init_process_tab();
+    create_process_tab(NULL);
+
     ret_string = malloc(32768);
     my_strlen = strlen;
   }
@@ -961,7 +963,9 @@ static int decode_call_int(CPUState *env, int func_number, int pid, target_ulong
     }
     
     dpy = XOpenDisplay(NULL);
-    init_process_tab();
+    /*init_process_tab();*/
+    create_process_tab(NULL);
+
     ret_string = malloc(32768);
     my_strlen = strlen;
   }

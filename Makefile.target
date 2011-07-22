@@ -225,7 +225,7 @@ obj-i386-y += pc_piix.o
 obj-i386-$(CONFIG_SPICE) += qxl.o qxl-logger.o qxl-render.o
 ##########################################################
 # opengl library for i386 
-obj-i386-y += helper_opengl.o opengl_exec.o
+obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
 ##########################################################
 
 ##########################################################
@@ -387,6 +387,8 @@ client_stub.c server_stub.c gl_func.h: parse_gl_h
 	./parse_gl_h
 
 opengl_exec.o: opengl_exec.c server_stub.c gl_func.h
+
+opengl_server.o: opengl_server.c opengl_exec.c
 
 helper_opengl.o: gl_func.h
 

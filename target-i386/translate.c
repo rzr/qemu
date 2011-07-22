@@ -791,6 +791,7 @@ static inline void gen_update_cc_op(DisasContext *s)
     }
 }
 
+extern void helper_int99(void);
 void  helper_opengl99(void)
 {
 	helper_int99();

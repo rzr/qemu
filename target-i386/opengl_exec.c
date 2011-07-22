@@ -36,8 +36,6 @@ void init_process_tab(void);
 
 //#define _MK_DBG_
 
-typedef HDC Display;
-
 #define IsViewable         2
 #define False 0
 #define True 1
@@ -50,11 +48,6 @@ typedef HDC Display;
 
 #include "mesa_glu.h"
 #include "mesa_mipmap.c"
-
-
-static HDC active_win = 0; /* FIXME */
-static int active_win_x = 0;
-static int active_win_y = 0;
 
 typedef struct
 {
@@ -70,8 +63,8 @@ typedef struct
 {
 	void* key;
 	void* value;
-	void* hWnd; /* Surface?? ��?? Window Handle*/
-	void* cDC; /*Context?? ��?? Dummy Window Handle*/
+	void* hWnd; /* Surface?? À§?? Window Handle*/
+	void* cDC; /*Context?? À§?? Dummy Window Handle*/
 } Assoc;
 
 
@@ -81,6 +74,7 @@ typedef struct
 #define MAX_FBCONFIG 10
 
 #include "opengl_utils.h"
+#include "opengl_server.h"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -210,13 +204,6 @@ typedef struct
 	Assoc association_fakecontext_visual[MAX_ASSOC_SIZE];
 } ProcessStruct;
 
-static ProcessStruct processTab[MAX_HANDLED_PROCESS];
-
-void init_process_tab(void)
-{
-	memset(processTab, 0, sizeof(processTab));
-}
-
 int last_process_id = 0;
 
 
@@ -227,12 +214,6 @@ typedef struct
 	unsigned int visualID;
 	/*PIXELFORMATDESCRIPTOR* visInfo;*/
 } AssocAttribListVisual;
-
-static int nTabAssocAttribListVisual = 0;
-static AssocAttribListVisual* tabAssocAttribListVisual = NULL;
-
-
-
 
 #define ARG_TO_CHAR(x)                (char)(x)
 #define ARG_TO_UNSIGNED_CHAR(x)       (unsigned char)(x)
@@ -323,10 +304,6 @@ static void _get_window_pos(HWND hWnd, WindowPosStruct* pos)
 
 int display_function_call = 0;
 
-
-static int last_assigned_internal_num = 0;
-static int last_active_internal_num = 0;
-
 static void init_gl_state(GLState* state)
 {
 	state->textureAllocator = &state->ownTextureAllocator;
@@ -368,7 +345,6 @@ static void destroy_gl_state(GLState* state)
 	if (state->interleavedArrays) free(state->interleavedArrays);
 	if (state->elementPointerATI) free(state->elementPointerATI);
 }
-
 
 static void _create_context(ProcessStruct* process, HGLRC ctxt, int fake_ctxt, HGLRC shareList, int fake_shareList)
 {
@@ -922,16 +898,17 @@ void unset_association_fakepbuffer_pbuffer(ProcessStruct* process, void* fakepbu
 	}
 }
 
-static int get_visual_info_from_visual_id(Display dpy, int visualid, PIXELFORMATDESCRIPTOR* rpfd)
+static int get_visual_info_from_visual_id( OGLS_Conn *pConn, int visualid, PIXELFORMATDESCRIPTOR* rpfd)
 {
 	int i;
 	if( 0 < visualid )
 	{
-		for(i=0;i<nTabAssocAttribListVisual;i++)
+		AssocAttribListVisual *tabAssocAttribListVisual = (AssocAttribListVisual *)pConn->tabAssocAttribListVisual ;
+		for(i=0;i<pConn->nTabAssocAttribListVisual;i++)
 		{
 			if ( tabAssocAttribListVisual[i].visualID == visualid)
 			{
-				DescribePixelFormat((HDC)dpy, (visualid -1), sizeof( PIXELFORMATDESCRIPTOR), rpfd);
+				DescribePixelFormat((HDC)pConn->Display, (visualid -1), sizeof( PIXELFORMATDESCRIPTOR), rpfd);
 				return 1;
 			}
 		}
@@ -945,8 +922,6 @@ static int get_default_visual(Display dpy, PIXELFORMATDESCRIPTOR* rpfd)
 	HDC         hdc;
 	hdc = (HDC) dpy;
 	int n;
-
-	fprintf(stderr, "get_default_visual\n");
 
 	if ((n = DescribePixelFormat(hdc, 0, 0, NULL)) > 0)
 	{
@@ -971,12 +946,11 @@ static int get_default_visual(Display dpy, PIXELFORMATDESCRIPTOR* rpfd)
 		if( i < n ) return i + 1;
 	}
 
-	fprintf(stderr, "get_default_visual() - Error \n");
 	return 0;
 }
 
-/* Surface?? ��?? Window ????*/
-static HDC create_swindow(HDC clientdrawable, ProcessStruct* process, int x, int y, int width, int height)
+/* Surface?? 위?? Window ????*/
+static HDC create_swindow(OGLS_Conn *pConn, HDC clientdrawable, ProcessStruct* process, int x, int y, int width, int height)
 {
 	RECT rect;
 	HWND hWnd;
@@ -1010,7 +984,7 @@ static HDC create_swindow(HDC clientdrawable, ProcessStruct* process, int x, int
 	hDC = GetDC(hWnd);
 	if(hDC)
 	{
-		active_win = hDC;
+		pConn->active_win = hDC;
 		ShowWindow(hWnd,SW_HIDE);
 		set_association_clientdrawable_serverwnd(process, (void *) clientdrawable, (void *) hWnd);
 	}
@@ -1018,7 +992,7 @@ static HDC create_swindow(HDC clientdrawable, ProcessStruct* process, int x, int
 	return hDC;
 }
 
-/* pbuffer?? ��?? Window ????*/
+/* pbuffer?? 위?? Window ????*/
 static HDC create_pbwindow(void *fakepbuffer, ProcessStruct* process, int x, int y, int width, int height)
 {
 	RECT rect;
@@ -1060,7 +1034,7 @@ static HDC create_pbwindow(void *fakepbuffer, ProcessStruct* process, int x, int
 	return hDC;
 }
 
-/* context?? ��?? Dummy Window ????*/
+/* context?? À§?? Dummy Window ????*/
 static HDC create_cwindow(int fake_ctx, ProcessStruct* process, int x, int y, int width, int height)
 {
 	RECT rect;
@@ -1102,15 +1076,15 @@ static HDC create_cwindow(int fake_ctx, ProcessStruct* process, int x, int y, in
 	return hDC;
 }
 
-static void destroy_glwindow(HWND hWnd, HDC hDC )
+static void destroy_glwindow(OGLS_Conn *pConn, HWND hWnd, HDC hDC )
 {
 	ReleaseDC( hWnd, hDC );
 	DestroyWindow(hWnd);
 
 	/*PostQuitMessage(0);*/
 
-	if( active_win == hDC)
-		active_win = 0;
+	if( pConn->active_win == hDC)
+		pConn->active_win = 0;
 }
 
 static int get_server_texture(ProcessStruct* process, unsigned int client_texture)
@@ -1220,16 +1194,18 @@ translate_id(GLsizei n, GLenum type, const GLvoid * list)
 }
 
 
-int do_function_call(Display dpy, int func_number, int pid, long* args, char* ret_string)
+int do_function_call(OGLS_Conn *pConn, int func_number, int pid, long* args, char* ret_string)
 {
 	char ret_char = 0;
 	int ret_int = 0;
 	const char* ret_str = NULL;
 	int iProcess;
 	ProcessStruct* process = NULL;
+	ProcessStruct *processTab = (ProcessStruct *) pConn->processTab;
 
 	for(iProcess=0;iProcess<MAX_HANDLED_PROCESS;iProcess++)
 	{
+		ProcessStruct *processTab = (ProcessStruct *) pConn->processTab;
 		if (processTab[iProcess].process_id == pid)
 		{
 			process = &processTab[iProcess];
@@ -1240,7 +1216,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 			process = &processTab[iProcess];
 			memset(process, 0, sizeof(ProcessStruct));
 			process->process_id = pid;
-			process->internal_num = last_assigned_internal_num++;
+			process->internal_num = pConn->last_assigned_internal_num++;
 			init_gl_state(&process->default_state);
 			process->current_state = &process->default_state;
 			break;
@@ -1252,10 +1228,10 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 		return 0;
 	}
 
-	if (process->internal_num != last_active_internal_num)
+	if (process->internal_num != pConn->last_active_internal_num)
 	{
 		wglMakeCurrent(process->current_state->drawable, process->current_state->context);
-		last_active_internal_num = process->internal_num;
+		pConn->last_active_internal_num = process->internal_num;
 	}
 
 	process->instr_counter++;
@@ -1343,7 +1319,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 				destroy_gl_state(&process->default_state);
 				free(process->glstates);
 
-				active_win = 0;
+				pConn->active_win = 0;
 
 				memmove(&processTab[iProcess], &processTab[iProcess+1], (MAX_HANDLED_PROCESS - 1 - iProcess) * sizeof(ProcessStruct));
 
@@ -1380,11 +1356,11 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 					if (!(params[0] == pos.x && params[1] == pos.y && params[2] == pos.width && params[3] == pos.height))
 					{
 						int redim = !(params[2] == pos.width && params[3] == pos.height);
-						active_win_x = params[0];
-						active_win_y = params[1];
+						pConn->active_win_x = params[0];
+						pConn->active_win_y = params[1];
 
-						fprintf(stderr, "old x=%d y=%d width=%d height=%d\n", pos.x, pos.y, pos.width, pos.height);
-						fprintf(stderr, "new x=%d y=%d width=%d height=%d\n", params[0], params[1], params[2], params[3]);
+						//fprintf(stderr, "old x=%d y=%d width=%d height=%d\n", pos.x, pos.y, pos.width, pos.height);
+						//fprintf(stderr, "new x=%d y=%d width=%d height=%d\n", params[0], params[1], params[2], params[3]);
 
 						if (redim)
 						{
@@ -1443,7 +1419,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 				}
 				else
 				{
-					hdc = (HDC) dpy;
+					hdc = (HDC) pConn->Display;
 
 					if ((n = DescribePixelFormat(hdc, 0, 0, NULL)) > 0)
 					{
@@ -1560,17 +1536,18 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 					visualid = fbConfig->visualID;
 					ret_int = visualid;
 
-					for( i = 0; i < nTabAssocAttribListVisual && (tabAssocAttribListVisual[i].visualID != visualid); i++ );
+					AssocAttribListVisual *tabAssocAttribListVisual = (AssocAttribListVisual *)pConn->tabAssocAttribListVisual ;
+					for( i = 0; i < pConn->nTabAssocAttribListVisual && (tabAssocAttribListVisual[i].visualID != visualid); i++ );
 
-					if( i >= nTabAssocAttribListVisual )
+					if( i >= pConn->nTabAssocAttribListVisual )
 					{
-						tabAssocAttribListVisual =
-							realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (nTabAssocAttribListVisual+1));
+						pConn->tabAssocAttribListVisual = tabAssocAttribListVisual =
+							realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (pConn->nTabAssocAttribListVisual+1));
 
-						tabAssocAttribListVisual[nTabAssocAttribListVisual].attribListLength = 0;
-						tabAssocAttribListVisual[nTabAssocAttribListVisual].attribList = NULL;
-						tabAssocAttribListVisual[nTabAssocAttribListVisual].visualID = visualid;
-						nTabAssocAttribListVisual++;
+						tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribListLength = 0;
+						tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribList = NULL;
+						tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].visualID = visualid;
+						pConn->nTabAssocAttribListVisual++;
 					}
 
 					if (display_function_call) fprintf(stderr, "visualid = %d\n", ret_int);
@@ -1650,14 +1627,14 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 
 				if (1 || display_function_call) fprintf(stderr, "visualid=%d, fake_shareList=%d\n", visualid, fake_shareList);
 
-				if(get_visual_info_from_visual_id(dpy, visualid, &pfd))
+				if(get_visual_info_from_visual_id(pConn, visualid, &pfd))
 				{
 					SetPixelFormat(hdc, visualid - 1, &pfd);
 					ctxt = wglCreateContext (hdc);
 				}
 				else
 				{
-					if((visualid = get_default_visual(dpy, &pfd)))
+					if((visualid = get_default_visual(pConn->Display, &pfd)))
 					{
 						SetPixelFormat(hdc, visualid - 1, &pfd);
 						ctxt = wglCreateContext (hdc);
@@ -1769,14 +1746,14 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 
 						if( visualid == 0 )
 						{
-							visualid = get_default_visual(dpy, &pfd);
+							visualid = get_default_visual(pConn->Display, &pfd);
 						}
 
 						drawable = get_association_clientdrawable_serverdrawable(process, client_drawable);
 						if (drawable == 0)
 						{
 
-							drawable = create_swindow(client_drawable, process, 0, 0, 480, 800);
+							drawable = create_swindow(pConn, client_drawable, process, 0, 0, 480, 800);
 							set_association_clientdrawable_serverdrawable(process, (void*)client_drawable, (void*)drawable);
 						}
 
@@ -1818,13 +1795,13 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 
 				if (visualid)
 				{
-					if( get_visual_info_from_visual_id(dpy, visualid, &pfd))
+					if( get_visual_info_from_visual_id(pConn, visualid, &pfd))
 					{
 						ret_int = get_pfdAttrib(&pfd, args[2], (int*)args[3]);
 					}
 					else
 					{
-						if( get_default_visual(dpy, &pfd))
+						if( get_default_visual(pConn->Display, &pfd))
 							ret_int = get_pfdAttrib(&pfd, args[2], (int*)args[3]);
 						else
 							ret_int = GLX_BAD_VISUAL;
@@ -1832,7 +1809,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 				}
 				else
 				{
-					if( get_default_visual(dpy, &pfd))
+					if( get_default_visual(pConn->Display, &pfd))
 						ret_int = get_pfdAttrib(&pfd, args[2], (int*)args[3]);
 					else
 						ret_int = GLX_BAD_VISUAL;
@@ -1845,24 +1822,25 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 			{
 				PIXELFORMATDESCRIPTOR pfd;
 				unsigned int visualid = 0;
+				AssocAttribListVisual *tabAssocAttribListVisual = (AssocAttribListVisual *)pConn->tabAssocAttribListVisual ;
 
 				int i;
 
 				if ((int*)args[2] == NULL)
 					ret_int = 0;
 
-				visualid = get_default_visual(dpy, &pfd);
+				visualid = get_default_visual(pConn->Display, &pfd);
 
-				for( i = 0; i < nTabAssocAttribListVisual && (tabAssocAttribListVisual[i].visualID != visualid); i++ );
+				for( i = 0; i < pConn->nTabAssocAttribListVisual && (tabAssocAttribListVisual[i].visualID != visualid); i++ );
 
-				if( i >= nTabAssocAttribListVisual ) {
-					tabAssocAttribListVisual =
-						realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (nTabAssocAttribListVisual+1));
+				if( i >= pConn->nTabAssocAttribListVisual ) {
+					pConn->tabAssocAttribListVisual = tabAssocAttribListVisual =
+						realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (pConn->nTabAssocAttribListVisual+1));
 
-					tabAssocAttribListVisual[nTabAssocAttribListVisual].attribListLength = 0;
-					tabAssocAttribListVisual[nTabAssocAttribListVisual].attribList = NULL;
-					tabAssocAttribListVisual[nTabAssocAttribListVisual].visualID = i;
-					nTabAssocAttribListVisual++;
+					tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribListLength = 0;
+					tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribList = NULL;
+					tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].visualID = i;
+					pConn->nTabAssocAttribListVisual++;
 				}
 
 				ret_int = visualid;
@@ -1880,7 +1858,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 
 				if( drawable && hWnd )
 				{
-					destroy_glwindow(hWnd, drawable);
+					destroy_glwindow(pConn, hWnd, drawable);
 
 #if defined( _MK_DBG_ )
 					printf("DestoryWindw( HWND 0x%p, HDC 0x%p) Client Drawable 0x%p\n", hWnd, drawable, client_drawable);
@@ -1961,7 +1939,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 							wglDeleteContext(ctxt);
 
 							get_association_fakecontext_glxwnd(process, (void*)(long)fake_ctxt, hWnd, hdc);
-							destroy_glwindow(hWnd, hdc);
+							destroy_glwindow(pConn, hWnd, hdc);
 
 							unset_association_fakecontext_glxcontext(process, (void*)(long)fake_ctxt);
 							unset_association_fakecontext_visualid(process, (void*)(long)fake_ctxt);
@@ -2189,7 +2167,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 						free(pb_info);
 					}
 
-					destroy_glwindow(hWnd, pbuffer);
+					destroy_glwindow(pConn, hWnd, pbuffer);
 
 #if defined( _MK_DBG_ )
 					printf("DestoryPbuffer( HWND 0x%p, HDC 0x%p) fake pbuffer 0x%p\n", hWnd, pbuffer, fakepbuffer);
@@ -3540,6 +3518,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 
 #else
 
+#include <arpa/inet.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -3550,6 +3529,7 @@ int do_function_call(Display dpy, int func_number, int pid, long* args, char* re
 #include <mesa_glx.h>
 
 #include "opengl_func.h"
+#include "opengl_server.h"
 
 #include "mesa_glu.h"
 #include "mesa_mipmap.c"
@@ -3641,31 +3621,17 @@ static XVisualInfo* get_default_visual(Display* dpy)
 	return vis;
 }
 
-
-static Display* parent_dpy = NULL;
-static Window qemu_parent_window = 0;
-
-static Window active_win = 0; /* FIXME */
-static int active_win_x = 0;
-static int active_win_y = 0;
-
-void opengl_exec_set_parent_window(Display* _dpy, Window _parent_window)
+void opengl_exec_set_parent_window(OGLS_Conn *pConn, Window _parent_window)
 {
-	parent_dpy = _dpy;
-	qemu_parent_window = _parent_window;
-	if (active_win)
+	pConn->parent_dpy = pConn->Display;
+	pConn->qemu_parent_window = _parent_window;
+	if (pConn->active_win)
 	{
-		XReparentWindow(_dpy, active_win, _parent_window, active_win_x, active_win_y);
+		XReparentWindow(pConn->Display, pConn->active_win, _parent_window, pConn->active_win_x, pConn->active_win_y);
 	}
 }
 
-static int local_connection = 0;
-void opengl_exec_set_local_connection(void)
-{
-	local_connection = 1;
-}
-
-static Window create_window(Display* dpy, Window local_parent_window, XVisualInfo* vis, const char *name,
+static Window create_window(OGLS_Conn *pConn, Window local_parent_window, XVisualInfo* vis, const char *name,
 		int x, int y, int width, int height)
 {
 	int scrnum;
@@ -3674,13 +3640,13 @@ static Window create_window(Display* dpy, Window local_parent_window, XVisualInf
 	Window root;
 	Window win;
 
-	scrnum = DefaultScreen( dpy );
-	root = RootWindow( dpy, scrnum );
+	scrnum = DefaultScreen( pConn->Display );
+	root = RootWindow( pConn->Display, scrnum );
 
 	/* window attributes */
 	attr.background_pixel = 0;
 	attr.border_pixel = 0;
-	attr.colormap = XCreateColormap( dpy, root, vis->visual, AllocNone);
+	attr.colormap = XCreateColormap( pConn->Display, root, vis->visual, AllocNone);
 	attr.event_mask = StructureNotifyMask | ExposureMask /*| KeyPressMask*/;
 	attr.save_under = True;
 	//if (local_parent_window == NULL && qemu_parent_window == NULL)
@@ -3692,19 +3658,19 @@ static Window create_window(Display* dpy, Window local_parent_window, XVisualInf
 
 	if (local_parent_window)
 	{
-		win = XCreateWindow( dpy, local_parent_window, 0, 0, width, height,
+		win = XCreateWindow( pConn->Display, local_parent_window, 0, 0, width, height,
 				0, vis->depth, InputOutput,
 				vis->visual, mask, &attr );
 	}
-	else if (qemu_parent_window)
+	else if (pConn->qemu_parent_window)
 	{
-		win = XCreateWindow( dpy, qemu_parent_window, 0, 0, width, height,
+		win = XCreateWindow( pConn->Display, pConn->qemu_parent_window, 0, 0, width, height,
 				0, vis->depth, InputOutput,
 				vis->visual, mask, &attr );
 	}
 	else
 	{
-		win = XCreateWindow( dpy, root, 0, 0, width, height,
+		win = XCreateWindow( pConn->Display, root, 0, 0, width, height,
 				0, vis->depth, InputOutput,
 				vis->visual, mask, &attr );
 	}
@@ -3717,22 +3683,22 @@ static Window create_window(Display* dpy, Window local_parent_window, XVisualInf
 		sizehints.width  = width;
 		sizehints.height = height;
 		sizehints.flags = USSize | USPosition;
-		XSetWMNormalHints(dpy, win, &sizehints);
-		XSetStandardProperties(dpy, win, name, name,
+		XSetWMNormalHints(pConn->Display, win, &sizehints);
+		XSetStandardProperties(pConn->Display, win, name, name,
 				None, (char **)NULL, 0, &sizehints);
 	}
 
-	/* Host Window?? ?׸??? ?ʴ´?. if( win )
-	   XMapWindow(dpy, win);*/
+	/* Host Window?? ?琉??? ?苛쨈?. if( win )
+	   XMapWindow(pConn->Display, win);*/
 
-	XSync(dpy, 0);
+	XSync(pConn->Display, 0);
 
 	/*
 	   int loop = 1;
 	   while (loop) {
-	   while (XPending(dpy) > 0) {
+	   while (XPending(pConn->Display) > 0) {
 	   XEvent event;
-	   XNextEvent(dpy, &event);
+	   XNextEvent(pConn->Display, &event);
 	   switch (event.type) {
 	   case CreateNotify:
 	   {
@@ -3746,23 +3712,23 @@ static Window create_window(Display* dpy, Window local_parent_window, XVisualInf
 	   }
 	   }*/
 
-	active_win = win;
+	pConn->active_win = win;
 
 	return win;
 }
 
-static void destroy_window(Display* dpy, Window win )
+static void destroy_window(OGLS_Conn *pConn, Window win )
 {
 	/*int i;*/
 
-	XDestroyWindow(dpy, win);
+	XDestroyWindow(pConn->Display, win);
 
-	XSync(dpy, 0);
+	XSync(pConn->Display, 0);
 	/*int loop = 1;
 	  while (loop) {
-	  while (XPending(dpy) > 0) {
+	  while (XPending(pConn->Display) > 0) {
 	  XEvent event;
-	  XNextEvent(dpy, &event);
+	  XNextEvent(pConn->Display, &event);
 	  switch (event.type) {
 	  case DestroyNotify:
 	  {
@@ -3776,8 +3742,8 @@ static void destroy_window(Display* dpy, Window win )
 	  }
 	  }*/
 
-	if( active_win == win)
-		active_win = 0;
+	if( pConn->active_win == win)
+		pConn->active_win = 0;
 
 }
 
@@ -3912,13 +3878,6 @@ typedef struct
 	Assoc association_clientdrawable_serverdrawable[MAX_ASSOC_SIZE];
 	Assoc association_fakecontext_visual[MAX_ASSOC_SIZE];
 } ProcessStruct;
-
-static ProcessStruct processTab[MAX_HANDLED_PROCESS];
-
-void init_process_tab(void)
-{
-	memset(processTab, 0, sizeof(processTab));
-}
 
 int last_process_id = 0;
 
@@ -4203,9 +4162,6 @@ typedef struct
 	XVisualInfo* visInfo;
 } AssocAttribListVisual;
 
-static int nTabAssocAttribListVisual = 0;
-static AssocAttribListVisual* tabAssocAttribListVisual = NULL;
-
 static int _compute_length_of_attrib_list_including_zero(const int* attribList, int booleanMustHaveValue)
 {
 	int i = 0;
@@ -4227,8 +4183,10 @@ static int _compute_length_of_attrib_list_including_zero(const int* attribList, 
 	return i + 1;
 }
 
-static int glXChooseVisualFunc(Display* dpy, const int* _attribList)
+static int glXChooseVisualFunc( OGLS_Conn *pConn, const int* _attribList)
 {
+	AssocAttribListVisual *tabAssocAttribListVisual = (AssocAttribListVisual *)pConn->tabAssocAttribListVisual ;
+
 	if (_attribList == NULL)
 		return 0;
 	int attribListLength = _compute_length_of_attrib_list_including_zero(_attribList, 0);
@@ -4258,7 +4216,7 @@ static int glXChooseVisualFunc(Display* dpy, const int* _attribList)
 		}
 	}
 
-	for(i=0;i<nTabAssocAttribListVisual;i++)
+	for(i=0;i<pConn->nTabAssocAttribListVisual;i++)
 	{
 		if (tabAssocAttribListVisual[i].attribListLength == attribListLength &&
 				memcmp(tabAssocAttribListVisual[i].attribList, attribList, attribListLength * sizeof(int)) == 0)
@@ -4267,24 +4225,27 @@ static int glXChooseVisualFunc(Display* dpy, const int* _attribList)
 			return (tabAssocAttribListVisual[i].visInfo) ? tabAssocAttribListVisual[i].visInfo->visualid : 0;
 		}
 	}
-	XVisualInfo* visInfo = glXChooseVisual(dpy, 0, attribList);
-	tabAssocAttribListVisual =
-		realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (nTabAssocAttribListVisual+1));
-	tabAssocAttribListVisual[nTabAssocAttribListVisual].attribListLength = attribListLength;
-	tabAssocAttribListVisual[nTabAssocAttribListVisual].attribList = (int*)malloc(sizeof(int) * attribListLength);
-	memcpy(tabAssocAttribListVisual[nTabAssocAttribListVisual].attribList, attribList, sizeof(int) * attribListLength);
-	tabAssocAttribListVisual[nTabAssocAttribListVisual].visInfo = visInfo;
-	nTabAssocAttribListVisual++;
+	XVisualInfo* visInfo = glXChooseVisual(pConn->Display, 0, attribList);
+	pConn->tabAssocAttribListVisual = tabAssocAttribListVisual =
+		realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (pConn->nTabAssocAttribListVisual+1));
+	tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribListLength = attribListLength;
+	tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribList = (int*)malloc(sizeof(int) * attribListLength);
+	memcpy(tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribList, attribList, sizeof(int) * attribListLength);
+	tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].visInfo = visInfo;
+	pConn->nTabAssocAttribListVisual++;
 	free(attribList);
 	return (visInfo) ? visInfo->visualid : 0;
 }
 
-static XVisualInfo* get_visual_info_from_visual_id(Display* dpy, int visualid)
+static XVisualInfo* get_visual_info_from_visual_id( OGLS_Conn *pConn, int visualid)
 {
 	int i, n;
 	XVisualInfo template;
 	XVisualInfo* visInfo;
-	for(i=0;i<nTabAssocAttribListVisual;i++)
+
+	AssocAttribListVisual *tabAssocAttribListVisual = (AssocAttribListVisual *)pConn->tabAssocAttribListVisual ;
+
+	for(i=0;i<pConn->nTabAssocAttribListVisual;i++)
 	{
 		if (tabAssocAttribListVisual[i].visInfo &&
 				tabAssocAttribListVisual[i].visInfo->visualid == visualid)
@@ -4293,13 +4254,13 @@ static XVisualInfo* get_visual_info_from_visual_id(Display* dpy, int visualid)
 		}
 	}
 	template.visualid = visualid;
-	visInfo = XGetVisualInfo(dpy, VisualIDMask, &template, &n);
-	tabAssocAttribListVisual =
-		realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (nTabAssocAttribListVisual+1));
-	tabAssocAttribListVisual[nTabAssocAttribListVisual].attribListLength = 0;
-	tabAssocAttribListVisual[nTabAssocAttribListVisual].attribList = NULL;
-	tabAssocAttribListVisual[nTabAssocAttribListVisual].visInfo = visInfo;
-	nTabAssocAttribListVisual++;
+	visInfo = XGetVisualInfo(pConn->Display, VisualIDMask, &template, &n);
+	pConn->tabAssocAttribListVisual = tabAssocAttribListVisual =
+		realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (pConn->nTabAssocAttribListVisual+1));
+	tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribListLength = 0;
+	tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribList = NULL;
+	tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].visInfo = visInfo;
+	pConn->nTabAssocAttribListVisual++;
 	return visInfo;
 }
 
@@ -4374,9 +4335,6 @@ static void destroy_gl_state(GLState* state)
 	if (state->elementPointerATI) free(state->elementPointerATI);
 }
 
-static int last_assigned_internal_num = 0;
-static int last_active_internal_num = 0;
-
 static void init_gl_state(GLState* state)
 {
 	state->textureAllocator = &state->ownTextureAllocator;
@@ -4440,7 +4398,7 @@ translate_id(GLsizei n, GLenum type, const GLvoid * list)
 	}
 }
 
-void _create_context(ProcessStruct* process, GLXContext ctxt, int fake_ctxt, GLXContext shareList, int fake_shareList)
+static void _create_context(ProcessStruct* process, GLXContext ctxt, int fake_ctxt, GLXContext shareList, int fake_shareList)
 {
 	process->glstates = realloc(process->glstates, (process->nbGLStates+1)*sizeof(GLState*));
 	process->glstates[process->nbGLStates] = malloc(sizeof(GLState));
@@ -4477,21 +4435,23 @@ void _create_context(ProcessStruct* process, GLXContext ctxt, int fake_ctxt, GLX
 	process->nbGLStates++;
 }
 
-int do_function_call(Display* dpy, int func_number, int pid, long* args, char* ret_string)
+int do_function_call(OGLS_Conn *pConn, int func_number, int pid, long* args, char* ret_string)
 {
 	char ret_char = 0;
 	int ret_int = 0;
 	const char* ret_str = NULL;
 	int iProcess;
 	ProcessStruct* process = NULL;
+	ProcessStruct *processTab = (ProcessStruct *) pConn->processTab;
 
-	if (parent_dpy)
+	if (pConn->parent_dpy)
 	{
-		dpy = parent_dpy;
+		pConn->Display = pConn->parent_dpy;
 	}
 
 	for(iProcess=0;iProcess<MAX_HANDLED_PROCESS;iProcess++)
 	{
+		ProcessStruct *processTab = (ProcessStruct *) pConn->processTab;
 		if (processTab[iProcess].process_id == pid)
 		{
 			process = &processTab[iProcess];
@@ -4502,7 +4462,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 			process = &processTab[iProcess];
 			memset(process, 0, sizeof(ProcessStruct));
 			process->process_id = pid;
-			process->internal_num = last_assigned_internal_num++;
+			process->internal_num = pConn->last_assigned_internal_num++;
 			init_gl_state(&process->default_state);
 			process->current_state = &process->default_state;
 			break;
@@ -4513,14 +4473,16 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 		fprintf(stderr, "Too many processes !\n");
 		return 0;
 	}
-	if (process->internal_num != last_active_internal_num)
+	if (process->internal_num != pConn->last_active_internal_num)
 	{
-		glXMakeCurrent(dpy, process->current_state->drawable, process->current_state->context);
-		last_active_internal_num = process->internal_num;
+		glXMakeCurrent(pConn->Display, process->current_state->drawable, process->current_state->context);
+		pConn->last_active_internal_num = process->internal_num;
 	}
 
 	process->instr_counter++;
+
 	if (display_function_call) fprintf(stderr, "[%d]> %s\n", process->instr_counter, tab_opengl_calls_name[func_number]);
+	//fprintf(stderr, "[%d]> %s\n", process->instr_counter, tab_opengl_calls_name[func_number]);
 
 	switch (func_number)
 	{
@@ -4543,9 +4505,9 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				for(i=0;i < MAX_ASSOC_SIZE && process->association_fakecontext_glxcontext[i].key != NULL;i++)
 				{
 					GLXContext ctxt = process->association_fakecontext_glxcontext[i].value;
-					fprintf(stderr, "Destroy context corresponding to fake_context = %ld\n",
-							(long)process->association_fakecontext_glxcontext[i].key);
-					glXDestroyContext(dpy, ctxt);
+					//fprintf(stderr, "Destroy context corresponding to fake_context = %ld\n",
+					//		(long)process->association_fakecontext_glxcontext[i].key);
+					glXDestroyContext(pConn->Display, ctxt);
 				}
 
 				GET_EXT_PTR(void, glXDestroyPbuffer, (Display*, GLXPbuffer));
@@ -4554,23 +4516,23 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 					GLXPbuffer pbuffer = (GLXPbuffer)process->association_fakepbuffer_pbuffer[i].value;
 					fprintf(stderr, "Destroy pbuffer corresponding to fake_pbuffer = %ld\n",
 							(long)process->association_fakepbuffer_pbuffer[i].key);
-					if (!is_gl_vendor_ati(dpy))
-						ptr_func_glXDestroyPbuffer(dpy, pbuffer);
+					if (!is_gl_vendor_ati(pConn->Display))
+						ptr_func_glXDestroyPbuffer(pConn->Display, pbuffer);
 				}
 
 				for(i=0;i < MAX_ASSOC_SIZE && process->association_clientdrawable_serverdrawable[i].key != NULL;i++)
 				{
-					fprintf(stderr, "Destroy window corresponding to client_drawable = %p\n",
-							process->association_clientdrawable_serverdrawable[i].key);
+					//fprintf(stderr, "Destroy window corresponding to client_drawable = %p\n",
+					//		process->association_clientdrawable_serverdrawable[i].key);
 
 					Window win = (Window)process->association_clientdrawable_serverdrawable[i].value;
-					XDestroyWindow(dpy, win);
+					XDestroyWindow(pConn->Display, win);
 
 					int loop = 1;
 					while (loop) {
-						while (XPending(dpy) > 0) {
+						while (XPending(pConn->Display) > 0) {
 							XEvent event;
-							XNextEvent(dpy, &event);
+							XNextEvent(pConn->Display, &event);
 							switch (event.type) {
 								case DestroyNotify:
 									{
@@ -4593,7 +4555,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				destroy_gl_state(&process->default_state);
 				free(process->glstates);
 
-				active_win = 0;
+				pConn->active_win = 0;
 
 				memmove(&processTab[iProcess], &processTab[iProcess+1], (MAX_HANDLED_PROCESS - 1 - iProcess) * sizeof(ProcessStruct));
 
@@ -4613,16 +4575,16 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 					if (args[1] == IsViewable)
 					{
 						WindowPosStruct pos;
-						_get_window_pos(dpy, drawable, &pos);
+						_get_window_pos(pConn->Display, drawable, &pos);
 						if (pos.map_state != args[1])
 						{
-							XMapWindow(dpy, drawable);
+							XMapWindow(pConn->Display, drawable);
 
 							int loop = 0; //1;
 							while (loop) {
-								while (XPending(dpy) > 0) {
+								while (XPending(pConn->Display) > 0) {
 									XEvent event;
-									XNextEvent(dpy, &event);
+									XNextEvent(pConn->Display, &event);
 									switch (event.type) {
 										case ConfigureNotify:
 											{
@@ -4652,29 +4614,29 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				if (drawable)
 				{
 					WindowPosStruct pos;
-					_get_window_pos(dpy, drawable, &pos);
+					_get_window_pos(pConn->Display, drawable, &pos);
 					if (!(params[0] == pos.x && params[1] == pos.y && params[2] == pos.width && params[3] == pos.height))
 					{
 						int redim = !(params[2] == pos.width && params[3] == pos.height);
-						active_win_x = params[0];
-						active_win_y = params[1];
+						pConn->active_win_x = params[0];
+						pConn->active_win_y = params[1];
 
 						/*
 						   fprintf(stderr, "old x=%d y=%d width=%d height=%d\n", pos.x, pos.y, pos.width, pos.height);
 						   fprintf(stderr, "new x=%d y=%d width=%d height=%d\n", params[0], params[1], params[2], params[3]);
 						 */
 
-						XMoveResizeWindow(dpy, drawable, params[0], params[1], params[2], params[3]);
-						_get_window_pos(dpy, drawable, &pos);
+						XMoveResizeWindow(pConn->Display, drawable, params[0], params[1], params[2], params[3]);
+						_get_window_pos(pConn->Display, drawable, &pos);
 						process->currentDrawablePos = pos;
 						//if (getenv("FORCE_GL_VIEWPORT"))
 						if (redim)
 							glViewport(0, 0, params[2], params[3]);
 						int loop = 0; //1;
 						while (loop) {
-							while (XPending(dpy) > 0) {
+							while (XPending(pConn->Display) > 0) {
 								XEvent event;
-								XNextEvent(dpy, &event);
+								XNextEvent(pConn->Display, &event);
 								switch (event.type) {
 									case ConfigureNotify:
 										{
@@ -4735,32 +4697,32 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 
 		case glXChooseVisual_func:
 			{
-				ret_int = glXChooseVisualFunc(dpy, (int*)args[2]);
+				ret_int = glXChooseVisualFunc(pConn, (int*)args[2]);
 				break;
 			}
 
 		case glXQueryExtensionsString_func:
 			{
-				ret_str = glXQueryExtensionsString(dpy, 0);
+				ret_str = glXQueryExtensionsString(pConn->Display, 0);
 				break;
 			}
 
 		case glXQueryServerString_func:
 			{
-				ret_str = glXQueryServerString(dpy, 0, args[2]);
+				ret_str = glXQueryServerString(pConn->Display, 0, args[2]);
 				break;
 			}
 
 		case glXGetClientString_func:
 			{
-				ret_str = glXGetClientString(dpy, args[1]);
+				ret_str = glXGetClientString(pConn->Display, args[1]);
 				break;
 			}
 
 		case glXGetScreenDriver_func:
 			{
 				GET_EXT_PTR(const char*, glXGetScreenDriver, (Display* , int ));
-				ret_str = ptr_func_glXGetScreenDriver(dpy, 0);
+				ret_str = ptr_func_glXGetScreenDriver(pConn->Display, 0);
 				break;
 			}
 
@@ -4778,18 +4740,18 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				if (1 || display_function_call) fprintf(stderr, "visualid=%d, fake_shareList=%d\n", visualid, fake_shareList);
 
 				GLXContext shareList = get_association_fakecontext_glxcontext(process, (void*)(long)fake_shareList);
-				XVisualInfo* vis = get_visual_info_from_visual_id(dpy, visualid);
+				XVisualInfo* vis = get_visual_info_from_visual_id(pConn, visualid);
 				GLXContext ctxt;
 				if (vis)
 				{
-					ctxt = glXCreateContext(dpy, vis, shareList, args[3]);
+					ctxt = glXCreateContext(pConn->Display, vis, shareList, args[3]);
 				}
 				else
 				{
-					vis = get_default_visual(dpy);
+					vis = get_default_visual(pConn->Display);
 					int saved_visualid = vis->visualid;
 					vis->visualid = (visualid) ? visualid : saved_visualid;
-					ctxt = glXCreateContext(dpy, vis, shareList, args[3]);
+					ctxt = glXCreateContext(pConn->Display, vis, shareList, args[3]);
 					vis->visualid = saved_visualid;
 				}
 
@@ -4827,10 +4789,10 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 					GLXContext shareList = get_association_fakecontext_glxcontext(process, (void*)(long)fake_shareList);
 					process->next_available_context_number ++;
 					int fake_ctxt = process->next_available_context_number;
-					GLXContext ctxt = ptr_func_glXCreateNewContext(dpy, fbconfig, args[2], shareList, args[4]);
+					GLXContext ctxt = ptr_func_glXCreateNewContext(pConn->Display, fbconfig, args[2], shareList, args[4]);
 					set_association_fakecontext_glxcontext(process, (void*)(long)fake_ctxt, ctxt);
 
-					vis = ptr_func_glXGetVisualFromFBConfig(dpy, fbconfig); /* visual info ????*/
+					vis = ptr_func_glXGetVisualFromFBConfig(pConn->Display, fbconfig); /* visual info ????*/
 					set_association_fakecontext_visual(process, (void *)(long)fake_ctxt, vis);
 
 					ret_int = fake_ctxt;
@@ -4858,7 +4820,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					glXCopyContext(dpy, src_ctxt, dst_ctxt, args[3]);
+					glXCopyContext(pConn->Display, src_ctxt, dst_ctxt, args[3]);
 				}
 				break;
 			}
@@ -4914,7 +4876,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 								}
 							}
 
-							glXDestroyContext(dpy, ctxt);
+							glXDestroyContext(pConn->Display, ctxt);
 							unset_association_fakecontext_glxcontext(process, (void*)(long)fake_ctxt);
 
 							break;
@@ -4926,7 +4888,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 
 		case glXQueryVersion_func:
 			{
-				ret_int = glXQueryVersion(dpy, (int*)args[1], (int*)args[2]);
+				ret_int = glXQueryVersion(pConn->Display, (int*)args[1], (int*)args[2]);
 				break;
 			}
 
@@ -4946,7 +4908,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 
 				if (client_drawable == 0 && fake_ctxt == 0)
 				{
-					ret_int = glXMakeCurrent(dpy, 0, NULL);
+					ret_int = glXMakeCurrent(pConn->Display, 0, NULL);
 					process->current_state = &process->default_state;
 				}
 				else if ((drawable = (GLXDrawable)get_association_fakepbuffer_pbuffer(process, (void*)client_drawable)))
@@ -4959,7 +4921,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 					}
 					else
 					{
-						ret_int = glXMakeCurrent(dpy, drawable, ctxt);
+						ret_int = glXMakeCurrent(pConn->Display, drawable, ctxt);
 					}
 				}
 				else
@@ -4977,25 +4939,25 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 						{
 							XVisualInfo* vis = (XVisualInfo*)get_association_fakecontext_visual(process, (void*)(long)fake_ctxt);
 							if (vis == NULL)
-								vis = get_default_visual(dpy);
-							/*if (local_connection)
+								vis = get_default_visual(pConn->Display);
+							/*if (pConn->local_connection)
 							  drawable = client_drawable;
 							  else*/
 							{
-								if (/*local_connection &&*/ client_drawable == RootWindow(dpy, 0))
+								if (/*pConn->local_connection &&*/ client_drawable == RootWindow(pConn->Display, 0))
 								{
 									drawable = client_drawable;
 								}
 								else
 								{
-									drawable = create_window(dpy, (local_connection) ? (Window)client_drawable : 0, vis, "", 0, 0, 480, 800);/* Default Window ũ?⸦ Simulator ũ???? ?????Ѵ?.*/
+									drawable = create_window(pConn, (pConn->local_connection) ? (Window)client_drawable : 0, vis, "", 0, 0, 480, 800);/* Default Window 크?綬�Simulator 크???? ?????磯?.*/
 								}
 								//fprintf(stderr, "creating window\n");
 							}
 							set_association_clientdrawable_serverdrawable(process, (void*)client_drawable, (void*)drawable);
 						}
 
-						ret_int = glXMakeCurrent(dpy, drawable, ctxt);
+						ret_int = glXMakeCurrent(pConn->Display, drawable, ctxt);
 					}
 				}
 
@@ -5026,7 +4988,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					if (client_cursor.pixels && local_connection == 0)
+					if (client_cursor.pixels && pConn->local_connection == 0)
 					{
 						glPushAttrib(GL_ALL_ATTRIB_BITS);
 						glPushClientAttrib(GL_ALL_ATTRIB_BITS);
@@ -5086,7 +5048,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 						glPopAttrib();
 					}
 
-					glXSwapBuffers(dpy, drawable);
+					glXSwapBuffers(pConn->Display, drawable);
 				}
 				break;
 			}
@@ -5103,7 +5065,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					ret_char = glXIsDirect(dpy, ctxt);
+					ret_char = glXIsDirect(pConn->Display, ctxt);
 				}
 				break;
 			}
@@ -5113,10 +5075,10 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				int visualid = args[1];
 				XVisualInfo* vis = NULL;
 				if (visualid)
-					vis = get_visual_info_from_visual_id(dpy, visualid);
+					vis = get_visual_info_from_visual_id(pConn, visualid);
 				if (vis == NULL)
-					vis = get_default_visual(dpy);
-				ret_int = glXGetConfig(dpy, vis, args[2], (int*)args[3]);
+					vis = get_default_visual(pConn->Display);
+				ret_int = glXGetConfig(pConn->Display, vis, args[2], (int*)args[3]);
 				break;
 			}
 
@@ -5131,13 +5093,13 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				int* res = (int*)args[5];
 
 				if (visualid)
-					vis = get_visual_info_from_visual_id(dpy, visualid);
+					vis = get_visual_info_from_visual_id(pConn, visualid);
 				if (vis == NULL)
-					vis = get_default_visual(dpy);
+					vis = get_default_visual(pConn->Display);
 
 				for(i=0;i<n;i++)
 				{
-					res[i] = glXGetConfig(dpy, vis, attribs[i], &values[i]);
+					res[i] = glXGetConfig(pConn->Display, vis, attribs[i], &values[i]);
 				}
 				break;
 			}
@@ -5151,7 +5113,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 
 		case glXQueryExtension_func:
 			{
-				ret_int = glXQueryExtension(dpy, (int*)args[1], (int*)args[2]);
+				ret_int = glXQueryExtension(pConn->Display, (int*)args[1], (int*)args[2]);
 				break;
 			}
 
@@ -5165,7 +5127,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					GLXFBConfig* fbconfigs = ptr_func_glXChooseFBConfig(dpy, args[1], (int*)args[2], (int*)args[3]);
+					GLXFBConfig* fbconfigs = ptr_func_glXChooseFBConfig(pConn->Display, args[1], (int*)args[2], (int*)args[3]);
 					if (fbconfigs)
 					{
 						process->fbconfigs[process->nfbconfig] = fbconfigs;
@@ -5192,7 +5154,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					GLXFBConfigSGIX* fbconfigs = ptr_func_glXChooseFBConfigSGIX(dpy, args[1], (int*)args[2], (int*)args[3]);
+					GLXFBConfigSGIX* fbconfigs = ptr_func_glXChooseFBConfigSGIX(pConn->Display, args[1], (int*)args[2], (int*)args[3]);
 					if (fbconfigs)
 					{
 						process->fbconfigs[process->nfbconfig] = fbconfigs;
@@ -5219,7 +5181,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					GLXFBConfig* fbconfigs = ptr_func_glXGetFBConfigs(dpy, args[1], (int*)args[2]);
+					GLXFBConfig* fbconfigs = ptr_func_glXGetFBConfigs(pConn->Display, args[1], (int*)args[2]);
 					if (fbconfigs)
 					{
 						process->fbconfigs[process->nfbconfig] = fbconfigs;
@@ -5243,7 +5205,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 
 				GLXDrawable drawable = get_association_clientdrawable_serverdrawable(process, client_drawable);
 
-				destroy_window(dpy, (Window)drawable);
+				destroy_window(pConn, (Window)drawable);
 
 				int i;
 				for(i=0;process->association_clientdrawable_serverdrawable[i].key != NULL;i++)
@@ -5278,7 +5240,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				GLXFBConfig fbconfig = get_fbconfig(process, client_fbconfig);
 				if (fbconfig)
 				{
-					GLXPbuffer pbuffer = ptr_func_glXCreatePbuffer(dpy, fbconfig, (int*)args[2]);
+					GLXPbuffer pbuffer = ptr_func_glXCreatePbuffer(pConn->Display, fbconfig, (int*)args[2]);
 					fprintf(stderr, "glXCreatePbuffer --> %X\n", (int)pbuffer);
 					if (pbuffer)
 					{
@@ -5300,7 +5262,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				GLXFBConfig fbconfig = get_fbconfig(process, client_fbconfig);
 				if (fbconfig)
 				{
-					GLXPbufferSGIX pbuffer = ptr_func_glXCreateGLXPbufferSGIX(dpy, fbconfig, args[2], args[3], (int*)args[4]);
+					GLXPbufferSGIX pbuffer = ptr_func_glXCreateGLXPbufferSGIX(pConn->Display, fbconfig, args[2], args[3], (int*)args[4]);
 					if (pbuffer)
 					{
 						process->next_available_pbuffer_number ++;
@@ -5325,8 +5287,8 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					if (!is_gl_vendor_ati(dpy))
-						ptr_func_glXDestroyPbuffer(dpy, pbuffer);
+					if (!is_gl_vendor_ati(pConn->Display))
+						ptr_func_glXDestroyPbuffer(pConn->Display, pbuffer);
 					unset_association_fakepbuffer_pbuffer(process, (void*)fake_pbuffer);
 				}
 				break;
@@ -5345,8 +5307,8 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					if (!is_gl_vendor_ati(dpy))
-						ptr_func_glXDestroyGLXPbufferSGIX(dpy, pbuffer);
+					if (!is_gl_vendor_ati(pConn->Display))
+						ptr_func_glXDestroyGLXPbufferSGIX(pConn->Display, pbuffer);
 					unset_association_fakepbuffer_pbuffer(process, (void*)fake_pbuffer);
 				}
 				break;
@@ -5365,7 +5327,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					ptr_func_glXBindTexImageATI(dpy, pbuffer, args[2]);
+					ptr_func_glXBindTexImageATI(pConn->Display, pbuffer, args[2]);
 				}
 				break;
 			}
@@ -5383,7 +5345,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					ptr_func_glXReleaseTexImageATI(dpy, pbuffer, args[2]);
+					ptr_func_glXReleaseTexImageATI(pConn->Display, pbuffer, args[2]);
 				}
 				break;
 			}
@@ -5402,7 +5364,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					ret_int = ptr_func_glXBindTexImageARB(dpy, pbuffer, args[2]);
+					ret_int = ptr_func_glXBindTexImageARB(pConn->Display, pbuffer, args[2]);
 				}
 				break;
 			}
@@ -5421,7 +5383,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					ret_int = ptr_func_glXReleaseTexImageARB(dpy, pbuffer, args[2]);
+					ret_int = ptr_func_glXReleaseTexImageARB(pConn->Display, pbuffer, args[2]);
 				}
 				break;
 			}
@@ -5433,7 +5395,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				ret_int = 0;
 				GLXFBConfig fbconfig = get_fbconfig(process, client_fbconfig);
 				if (fbconfig)
-					ret_int = ptr_func_glXGetFBConfigAttrib(dpy, fbconfig, args[2], (int*)args[3]);
+					ret_int = ptr_func_glXGetFBConfigAttrib(pConn->Display, fbconfig, args[2], (int*)args[3]);
 				break;
 			}
 
@@ -5452,7 +5414,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				{
 					if (fbconfig)
 					{
-						res[i] = ptr_func_glXGetFBConfigAttrib(dpy, fbconfig, attribs[i], &values[i]);
+						res[i] = ptr_func_glXGetFBConfigAttrib(pConn->Display, fbconfig, attribs[i], &values[i]);
 					}
 					else
 					{
@@ -5469,7 +5431,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				ret_int = 0;
 				GLXFBConfig fbconfig = get_fbconfig(process, client_fbconfig);
 				if (fbconfig)
-					ret_int = ptr_func_glXGetFBConfigAttribSGIX(dpy, (GLXFBConfigSGIX)fbconfig, args[2], (int*)args[3]);
+					ret_int = ptr_func_glXGetFBConfigAttribSGIX(pConn->Display, (GLXFBConfigSGIX)fbconfig, args[2], (int*)args[3]);
 				break;
 			}
 
@@ -5486,7 +5448,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					ret_int = ptr_func_glXQueryContext(dpy, ctxt, args[2], (int*)args[3]);
+					ret_int = ptr_func_glXQueryContext(pConn->Display, ctxt, args[2], (int*)args[3]);
 				}
 				break;
 			}
@@ -5503,7 +5465,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				}
 				else
 				{
-					ptr_func_glXQueryDrawable(dpy, drawable, args[2], (int*)args[3]);
+					ptr_func_glXQueryDrawable(pConn->Display, drawable, args[2], (int*)args[3]);
 				}
 				break;
 			}
@@ -5515,7 +5477,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				ret_int = 0;
 				GLXFBConfig fbconfig = get_fbconfig(process, client_fbconfig);
 				if (fbconfig)
-					ret_int = ptr_func_glXQueryGLXPbufferSGIX(dpy, (GLXFBConfigSGIX)fbconfig, args[2], (int*)args[3]);
+					ret_int = ptr_func_glXQueryGLXPbufferSGIX(pConn->Display, (GLXFBConfigSGIX)fbconfig, args[2], (int*)args[3]);
 				break;
 			}
 
@@ -5530,7 +5492,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 					GLXContext shareList = get_association_fakecontext_glxcontext(process, (void*)args[3]);
 					process->next_available_context_number ++;
 					int fake_ctxt = process->next_available_context_number;
-					GLXContext ctxt = ptr_func_glXCreateContextWithConfigSGIX(dpy, (GLXFBConfigSGIX)fbconfig, args[2], shareList, args[4]);
+					GLXContext ctxt = ptr_func_glXCreateContextWithConfigSGIX(pConn->Display, (GLXFBConfigSGIX)fbconfig, args[2], shareList, args[4]);
 					set_association_fakecontext_glxcontext(process, (void*)(long)fake_ctxt, ctxt);
 					ret_int = fake_ctxt;
 				}
@@ -5545,16 +5507,18 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 				GLXFBConfig fbconfig = get_fbconfig(process, client_fbconfig);
 				if (fbconfig)
 				{
-					XVisualInfo* vis = ptr_func_glXGetVisualFromFBConfig(dpy, fbconfig);
+					AssocAttribListVisual *tabAssocAttribListVisual = (AssocAttribListVisual *)pConn->tabAssocAttribListVisual ;
+					XVisualInfo* vis = ptr_func_glXGetVisualFromFBConfig(pConn->Display, fbconfig);
 					ret_int = (vis) ? vis->visualid : 0;
 					if (vis)
 					{
-						tabAssocAttribListVisual =
-							realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (nTabAssocAttribListVisual+1));
-						tabAssocAttribListVisual[nTabAssocAttribListVisual].attribListLength = 0;
-						tabAssocAttribListVisual[nTabAssocAttribListVisual].attribList = NULL;
-						tabAssocAttribListVisual[nTabAssocAttribListVisual].visInfo = vis;
-						nTabAssocAttribListVisual++;
+						pConn->tabAssocAttribListVisual = tabAssocAttribListVisual =
+							realloc(tabAssocAttribListVisual, sizeof(AssocAttribListVisual) * (pConn->nTabAssocAttribListVisual+1));
+						tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribListLength = 0;
+						tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].attribList = NULL;
+						tabAssocAttribListVisual[pConn->nTabAssocAttribListVisual].visInfo = vis;
+						pConn->nTabAssocAttribListVisual++;
+						pConn->tabAssocAttribListVisual = tabAssocAttribListVisual;
 					}
 					if (display_function_call) fprintf(stderr, "visualid = %d\n", ret_int);
 				}
@@ -6670,7 +6634,7 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 		case glGetIntegerv_func:
 			{
 				glGetIntegerv(args[0], (int*)args[1]);
-				fprintf(stderr,"glGetIntegerv(%X)=%d\n", (int)args[0], *(int*)args[1]);
+				//fprintf(stderr,"glGetIntegerv(%X)=%d\n", (int)args[0], *(int*)args[1]);
 				break;
 			}
 
@@ -6876,6 +6840,27 @@ int do_function_call(Display* dpy, int func_number, int pid, long* args, char* r
 
 	return ret_int;
 }
-
 #endif
 
+void create_process_tab( OGLS_Conn *pConn )
+{
+	if (pConn == NULL) {
+		fprintf(stderr, "create_process_tab: pConn is NULL.\n");
+		return;
+	}
+	pConn->processTab = malloc( sizeof(ProcessStruct)*MAX_HANDLED_PROCESS );
+	if( !pConn->processTab )
+	{
+		perror( "init_process_tab" );
+		return ;
+	}
+
+	memset(pConn->processTab, 0, sizeof(ProcessStruct)*MAX_HANDLED_PROCESS );
+}
+
+void remove_process_tab( OGLS_Conn *pConn )
+{
+	if( !pConn->processTab ) return ;
+	free( pConn->processTab );
+	pConn->processTab = NULL;
+}
