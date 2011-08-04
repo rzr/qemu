@@ -1068,6 +1068,7 @@ void pc_vga_init(PCIBus *pci_bus)
         if (pci_bus) {
             pci_vga_init(pci_bus);
             pci_overlay_init(pci_bus);
+            pci_brightness_init(pci_bus);
         } else {
             isa_vga_init();
         }
@@ -1075,6 +1076,7 @@ void pc_vga_init(PCIBus *pci_bus)
         if (pci_bus) {
             pci_slp_vga_init(pci_bus);
             pci_overlay_init(pci_bus);
+            pci_brightness_init(pci_bus);
         } else {
             isa_vga_init();
         }

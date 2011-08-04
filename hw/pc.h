@@ -153,6 +153,9 @@ extern enum vga_retrace_method vga_retrace_method;
 int isa_vga_init(void);
 int pci_vga_init(PCIBus *bus);
 int pci_overlay_init(PCIBus *bus);
+int pci_brightness_init(PCIBus *bus);
+int pci_get_brightness(void);
+
 int isa_vga_mm_init(target_phys_addr_t vram_base,
                     target_phys_addr_t ctrl_base, int it_shift);
 
