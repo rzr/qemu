@@ -1817,7 +1817,8 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
 	    int i;
 	    uint8_t *fb_sub;
 	    uint8_t *over_sub;
-	    uint8_t alpha, c_alpha, delta;
+	    uint8_t *dst_sub;
+	    uint8_t alpha, c_alpha;
 	    uint32_t *dst;
 	    uint16_t overlay_bottom;
 
@@ -1833,16 +1834,15 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                         //alpha = 0x80;
                         alpha = fb_sub[3];
                         c_alpha = 0xff - alpha;
-                        delta = (brightness_level + 1) * 9;
                         //fprintf(stderr, "alpha = %d\n", alpha);
                         
                         //*dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
                         //       ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
                         //       ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
 
-                        *dst = (((c_alpha * over_sub[0] + alpha * fb_sub[0]) * delta / 99) >> 8)  |
-                               (((c_alpha * over_sub[1] + alpha * fb_sub[1]) * delta / 99) & 0xFF00)  |
-                               ((((c_alpha * over_sub[2] + alpha * fb_sub[2]) * delta / 99) & 0xFF00) << 8);
+                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
+                               (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
                     }
                 }
             }
@@ -1859,39 +1859,30 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                         //alpha = 0x80;
                         alpha = fb_sub[3];
                         c_alpha = 0xff - alpha;
-                        delta = (brightness_level+1) * 9;
                         //fprintf(stderr, "alpha = %d\n", alpha);
                         
                         //*dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
                         //       ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
                         //       ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
 
-                        *dst = (((c_alpha * over_sub[0] + alpha * fb_sub[0]) * delta / 99) >> 8)  |
-                               (((c_alpha * over_sub[1] + alpha * fb_sub[1]) * delta / 99) & 0xFF00)  |
-                               ((((c_alpha * over_sub[2] + alpha * fb_sub[2]) * delta / 99) & 0xFF00) << 8);
+                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
+                               (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
                     }
                 }
             }
-#endif
-#if defined (TARGET_I386)
-    	    uint8_t *framebuffer;
-    	    uint32_t *dest;
-
-    	    if (!overlay0_power && !overlay1_power) {
-
- 				if (brightness_level >= 0 && brightness_level <= 10) {
-					framebuffer = s->vram_ptr + addr;
-					dest = (uint32_t*)(s->ds->surface->data + addr);
-					alpha = (brightness_level + 1) * 9;
-
-					//printf("addr = alpha = %d, disp_width = %d\n", alpha, disp_width);
-					for (i=0; i < disp_width; i++, framebuffer += 4, dest++) {
-						*dest = ((alpha * framebuffer[0] / 99) & 0xFF) |
-								((alpha * framebuffer[1] / 99) & 0xFF) << 8 |
-								((alpha * framebuffer[2] / 99) & 0xFF) << 16;
-					}
-				}
-    	    }
+            
+            if (brightness_level < 10) {
+                dst_sub = s->ds->surface->data + addr;
+                alpha = (brightness_level + 1) * 9;
+        
+                //printf("addr = alpha = %d, disp_width = %d\n", alpha, disp_width);
+                for (i=0; i < disp_width; i++, dst_sub += 4) {
+                    dst_sub[0] = alpha * dst_sub[0] / 99;
+                    dst_sub[1] = alpha * dst_sub[1] / 99;
+                    dst_sub[2] = alpha * dst_sub[2] / 99;
+                }
+            }
 #endif	/* TARGET_I386 */
 
         } else {
