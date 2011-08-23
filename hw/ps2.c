@@ -596,7 +596,7 @@ void *ps2_kbd_init(void (*update_irq)(void *, int), void *update_arg)
     s->common.update_arg = update_arg;
     s->scancode_set = 2;
     vmstate_register(NULL, 0, &vmstate_ps2_keyboard, s);
-    qemu_add_kbd_event_handler(ps2_put_keycode, s);
+    qemu_add_ps2kbd_event_handler(ps2_put_keycode, s);
     qemu_register_reset(ps2_kbd_reset, s);
     return s;
 }

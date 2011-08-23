@@ -30,6 +30,8 @@
 
 static QEMUPutKBDEvent *qemu_put_kbd_event;
 static void *qemu_put_kbd_event_opaque;
+static QEMUPutKBDEvent *qemu_put_ps2kbd_event;
+static void *qemu_put_ps2kbd_event_opaque;
 static QTAILQ_HEAD(, QEMUPutLEDEntry) led_handlers = QTAILQ_HEAD_INITIALIZER(led_handlers);
 static QTAILQ_HEAD(, QEMUPutMouseEntry) mouse_handlers =
     QTAILQ_HEAD_INITIALIZER(mouse_handlers);
@@ -46,6 +48,19 @@ void qemu_remove_kbd_event_handler(void)
 {
     qemu_put_kbd_event_opaque = NULL;
     qemu_put_kbd_event = NULL;
+}
+
+void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
+{
+    qemu_add_kbd_event_handler(func,opaque); // temporary code for compatibility with Xserver
+    qemu_put_ps2kbd_event_opaque = opaque;
+    qemu_put_ps2kbd_event = func;
+}
+
+void qemu_remove_ps2kbd_event_handler(void)
+{
+    qemu_put_ps2kbd_event_opaque = NULL;
+    qemu_put_ps2kbd_event = NULL;
 }
 
 static void check_mode_change(void)
@@ -131,6 +146,13 @@ void kbd_put_keycode(int keycode)
 {
     if (qemu_put_kbd_event) {
         qemu_put_kbd_event(qemu_put_kbd_event_opaque, keycode);
+    }
+}
+
+void ps2kbd_put_keycode(int keycode)
+{
+    if (qemu_put_ps2kbd_event) {
+        qemu_put_ps2kbd_event(qemu_put_ps2kbd_event_opaque, keycode);
     }
 }
 
