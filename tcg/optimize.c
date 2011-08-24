@@ -469,6 +469,12 @@ static TCGArg *tcg_constant_folding(TCGContext *s, uint16_t *tcg_opc_ptr,
                 break;
         }
     }
+
+	if (vals)
+		free(vals);
+	if (state)
+		free(state);
+
     return gen_args;
 }
 
