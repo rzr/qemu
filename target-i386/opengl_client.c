@@ -38,7 +38,9 @@
 
 /*  HACK_XGL=true USE_TCP_COMMUNICATION=1 LD_LIBRARY_PATH=/home/even/qemu/cvs280207/qemu/i386-softmmu:/home/even/cairo/glitz-0.5.6/src/glx/.libs/:/home/even/cairo/glitz-0.5.6/src/.libsvalgrind Xgl -screen 800x600 :10 -ac */
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+#endif
 #define _XOPEN_SOURCE 600
 #include <stdlib.h>
 #include <stdio.h>

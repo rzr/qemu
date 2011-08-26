@@ -23,8 +23,8 @@
  */
 
 #ifdef _WIN32
-#ifndef GNU_SOURCE
-  #define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
 #endif
 #endif
 
@@ -35,18 +35,16 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include "exec.h"
 
-
-
-//#include "exec.h"
 #ifndef _WIN32
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #else
 #include <windows.h>
 
-typedef HDC Display;
-HWND		displayHWND;
+typedef HDC GLDisplay;
+HWND displayHWND;
 #endif
 
 //## remove GCC warning
@@ -68,11 +66,11 @@ extern void sdl_set_opengl_window(int x, int y, int width, int height);
 #endif
 
 #ifdef _WIN32
-static Display CreateDisplay(void)
+static GLDisplay CreateDisplay(void)
 {
   HWND        hWnd;
   WNDCLASS    wc;
-  LPSTR       ClassName ="DISPLAY";
+  LPCSTR       ClassName ="DISPLAY";
   HINSTANCE hInstance = 0;
 
   /* only register the window class once - use hInstance as a flag. */
@@ -437,7 +435,7 @@ static int decode_call_int(CPUState *env, int func_number, int pid, target_ulong
   target_ulong saved_out_ptr[50];
   static char* ret_string = NULL;
   static target_ulong args[50];
-  static Display dpy = 0;
+  static GLDisplay dpy = 0;
 
   if (last_func_number == _exit_process_func && func_number == _exit_process_func)
   {

@@ -36,16 +36,16 @@ void init_process_tab(void);
 
 //#define _MK_DBG_
 
-#define IsViewable         2
+#define IsViewable 2
 #define False 0
 #define True 1
 
 
 #define GL_GLEXT_PROTOTYPES
 #include "opengl_func.h"
-#include <mesa_glx.h>
-#include <mesa_glxext.h>
-
+#include "opengl_utils.h"
+#include "mesa_glx.h"
+#include "mesa_glxext.h"
 #include "mesa_glu.h"
 #include "mesa_mipmap.c"
 
@@ -57,7 +57,7 @@ typedef struct
 	int height;
 	int colorFormat;
 	unsigned int colorBits;
-}PbufferInfo;
+} PbufferInfo;
 
 typedef struct
 {
@@ -67,17 +67,10 @@ typedef struct
 	void* cDC; /*Context?? À§?? Dummy Window Handle*/
 } Assoc;
 
-
 #define MAX_HANDLED_PROCESS 100
 #define MAX_ASSOC_SIZE 100
-
 #define MAX_FBCONFIG 10
-
-#include "opengl_utils.h"
-#include "opengl_server.h"
-
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-
 
 typedef struct
 {
@@ -95,7 +88,6 @@ typedef struct
 } ClientState;
 
 #define MAX_CLIENT_STATE_STACK_SIZE 16
-
 #define NB_MAX_TEXTURES 16
 #define MY_GL_MAX_VERTEX_ATTRIBS_ARB 16
 #define MY_GL_MAX_VERTEX_ATTRIBS_NV 16
@@ -174,7 +166,7 @@ typedef struct
 {
 	PIXELFORMATDESCRIPTOR pfd;
 	unsigned int visualID;
-}WGLFBConfig;
+} WGLFBConfig;
 
 typedef struct
 {
@@ -919,8 +911,8 @@ static int get_visual_info_from_visual_id( OGLS_Conn *pConn, int visualid, PIXEL
 
 static int get_default_visual(Display dpy, PIXELFORMATDESCRIPTOR* rpfd)
 {
-	HDC         hdc;
-	hdc = (HDC) dpy;
+	HDC hdc;
+	hdc = (HDC)dpy;
 	int n;
 
 	if ((n = DescribePixelFormat(hdc, 0, 0, NULL)) > 0)
@@ -3525,12 +3517,10 @@ int do_function_call(OGLS_Conn *pConn, int func_number, int pid, long* args, cha
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
 
-#include <mesa_gl.h>
-#include <mesa_glx.h>
-
 #include "opengl_func.h"
-#include "opengl_server.h"
-
+#include "opengl_utils.h"
+#include "mesa_gl.h"
+#include "mesa_glx.h"
 #include "mesa_glu.h"
 #include "mesa_mipmap.c"
 
@@ -3760,7 +3750,6 @@ typedef struct
 
 #define MAX_FBCONFIG 10
 
-#include "opengl_utils.h"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
