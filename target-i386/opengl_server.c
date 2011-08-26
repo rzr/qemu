@@ -31,26 +31,23 @@
 #include <assert.h>
 #include <pthread.h>
 
-#ifdef _WIN32 // or __MINGW32__
- #include <windows.h>
+//#ifdef _WIN32 // or __MINGW32__
+// #include <windows.h>
 // #include <winsock2.h>
-#else // _WIN32
-#include <sys/types.h>
-#include <sys/time.h>
-
- #include <unistd.h>
- #include <arpa/inet.h>
- #include <errno.h>
- #include <sys/socket.h>
- #include <netinet/in.h>
- #include <netinet/tcp.h>
- #include <netdb.h>
- #include <signal.h>
-
- #include <X11/Xlib.h>
- #include <X11/Xutil.h>
-
-#endif // _WIN32
+//#else // _WIN32
+// #include <sys/types.h>
+// #include <sys/time.h> 
+// #include <unistd.h>
+// #include <arpa/inet.h>
+// #include <errno.h>
+// #include <sys/socket.h>
+// #include <netinet/in.h>
+// #include <netinet/tcp.h>
+// #include <netdb.h> 
+// #include <signal.h> 
+// #include <X11/Xlib.h>
+// #include <X11/Xutil.h>
+//#endif // _WIN32
 
 #define PORT    5555
 #define ENABLE_GL_LOG
