@@ -46,8 +46,8 @@
 
 /* To work around optimizer bug in MSVC4.1 */
 #if defined(__WIN32__) && !defined(OPENSTEP)
-void
-dummy(GLuint j, GLuint k)
+void dummy(GLuint j, GLuint k);
+void dummy(GLuint j, GLuint k)
 {
 }
 #else

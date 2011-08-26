@@ -8,16 +8,33 @@
 #ifndef OPENGL_SERVER_H_
 #define OPENGL_SERVER_H_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <pthread.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+
 #ifndef _WIN32
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
+ #include <arpa/inet.h>
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+ #include <netinet/tcp.h>
+ #include <netdb.h>
+ #include <X11/Xlib.h>
+ #include <X11/Xutil.h>
+#else
+ #include <windows.h>
 #endif	/* _WIN32 */
 
 #ifdef _WIN32
 #define socklen_t	int
 typedef HDC Display;
+typedef unsigned long Window;
 #else
 #define closesocket close
 #endif
