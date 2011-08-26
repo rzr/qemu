@@ -24,13 +24,11 @@
 
 #include "mesa_gl.h"
 #include "mesa_glext.h"
-
 #include "opengl_server.h"
 
 /* To remove GCC warnings */
 //extern void opengl_exec_set_parent_window(Display* _dpy, Window _parent_window);
 extern void opengl_exec_set_parent_window(OGLS_Conn *pConn, Window _parent_window);
-
 extern void opengl_exec_set_local_connection(void);
 
 //#ifdef _WIN32
@@ -40,9 +38,7 @@ extern void opengl_exec_set_local_connection(void);
 //#endif
 
 extern int do_function_call(OGLS_Conn *, int, int, long*, char*);
-
 extern void execute_func(int func_number, long* args, int* pret_int, char* pret_char);
-
 extern void create_process_tab( OGLS_Conn *pConn );
 extern void remove_process_tab( OGLS_Conn *pConn );
 
