@@ -1,0 +1,14 @@
+Source: samsung-sdk-simulator
+Section: devel
+Priority: extra
+Maintainer: DongKyun Yun <dk77.yun@samsung.com>
+Build-Depends: bison, flex, autoconf, gcc, libglu1-mesa-dev, libsdl1.2-dev, libgtk2.0-dev, libsdl-image1.2-dev, libsdl-gfx1.2-dev, debhelper, libxml2-dev, libasound2-dev, uuid-dev, libdgles2-dev
+Vcs-Git: ssh://id@165.213.180.234:/git/xo-sdk/native-sdk
+XBSC-Slp-Category: SDK/Simulator
+
+Package: samsung-sdk-simulator
+Architecture: i386
+Depends: libglu1-mesa, libsdl1.2debian-alsa, libsdl-gfx1.2-4, libsdl-image1.2, libgtk2.0-0, samsung-sdk-simulator-kernel(>=1.0-14), simulator-image-x86(>=0.0.9)
+Recommends: kqemu-common, samsung-sdk-telephony-emulator,  scratchbox-aquila-device-rootstrap | scratchbox-aquila-simulator-rootstrap
+Description: Samsung SDK Simulator
+ QEMU based simulator for Samsung LiMo based devices
