@@ -1,0 +1,27 @@
+
+Samsung Platform emulator
+=========================
+
+A mobile phone emulator for S5PC110 based handsets, based on QEMU 0.10.5
+The emulator includes both an x86 and ARM version, and an inbuilt NFS server for hosting NFS root.
+
+
+Building
+========
+
+Install Ubuntu packages as follows:
+
+aptitude install bison flex autoconf gcc libglu1-mesa-dev libsdl1.2-dev libgtk2.0-dev libsdl-image1.2-dev libsdl-gfx1.2-dev debhelper libxml2-dev libasound2-dev libx11-dev zlib1g-dev
+
+then:
+
+./build.sh
+
+
+Running
+=======
+
+The code has some dependencies on Scratchbox 1.0, which need cleaning up...
+Currently, it expects a /scratchbox directory, with an x86 or ARM target configured, and a Linux kernel + initrd.
+Alternately, you can boot an image.  See the configuration dialog when first starting up.
+
