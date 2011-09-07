@@ -221,10 +221,10 @@ install: $(TARGET)
 	#mkdir -p $(PHONE_DIR)
 	install emulator-x86 $(PHONE_DIR)/emulator-x86
 	#install emulator-arm $(PHONE_DIR)/emulator-arm
-ifneq ($(CONFIG_WIN32),y)
-	install emulator.sh	$(PHONE_DIR)/emulator
-else
+ifeq ($(CONFIG_WIN32),y)
 	install emulator.bat $(PHONE_DIR)
+else ifeq ($(CONFIG_LINUX),y)
+	install emulator.sh $(PHONE_DIR)/emulator
 endif
 	install vtm $(PHONE_DIR)/vtm
 	install emulator.png $(PHONE_DIR)
