@@ -1,0 +1,5 @@
+simulator-arm
+simulator-x86
+about_version.c
+.*.d
+*~
