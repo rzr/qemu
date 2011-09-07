@@ -11,7 +11,6 @@ set_emulator_var () {
 
 	INHOUSE_IMG="inhouse"
 	PKG_BRANCH="release"
-	EMUL_BRANCH="release"
 
 	if test -e $PACKAGE_DIR
 	then
@@ -30,33 +29,25 @@ set_emulator_var () {
 
 build_emulator_pkg () { 
 	echo ==== git clone ====
-	git clone slp-git:slp/sdk/emulator/emulator
+	git clone slp-git:slp/sdk/emulator/qemu
 	git clone slp-git:slp/sdk/emulator/emulator-kernel
 	
-	if test -d emulator
+	if test -d qemu 
 	then
 		if test -d emulator-kernel
 		then
-			echo ==== Get emulator and emualtor-kernel git successfully!! ====
+			echo ==== Get qemu and emualtor-kernel git successfully!! ====
 		else
 			echo ==== Failed to get emulator-kernel git ===
 			exit 1
 		fi
 	else
-		echo ==== Emulator and emulator-kernel do not exist ====
+		echo ==== Qemu directory does not exist!! ====
 		exit 1
 	fi
 	
 	echo ==== Start building emulator ====
-	cd $PACKAGE_SRC_DIR/emulator
-	echo $EMUL_BRANCH
-	git checkout $EMUL_BRANCH
-	git submodule init
-	sed -i s/slp-git-server/slp-git/g .git/config
-	git submodule update
-	cd ../
-	git checkout $PKG_BRANCH
-	cd SLP/
+	cd $PACKAGE_SRC_DIR/qemu/SLP
 	./build.sh
 	make install
 	mkdir -p binary/data/kernel-img
@@ -124,7 +115,6 @@ case $1 in
 	standalone)
 	echo ==== Start Standalone Build ====
 	set_emulator_var
-	EMUL_BRANCH="new_master"
 	PKG_BRANCH="master"
 	build_emulator_pkg
 	package_emulator_for_standalone
