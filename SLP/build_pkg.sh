@@ -29,8 +29,8 @@ set_emulator_var () {
 
 build_emulator_pkg () { 
 	echo ==== git clone ====
-	git clone slp-git:slp/sdk/emulator/qemu
-	git clone slp-git:slp/sdk/emulator/emulator-kernel
+	git clone slp-git:slp/sdk/public/common/emulator/open-source/qemu
+	git clone slp-git:slp/sdk/public/common/emulator/open-source/emulator-kernel
 	
 	if test -d qemu 
 	then
