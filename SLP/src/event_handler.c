@@ -221,8 +221,8 @@ static const uint8_t evdev_keycode_to_pc_keycode[61] = {
     0,         /* 127 EVDEV - PAUS */
     0,         /* 128 EVDEV - ???? */
     0,         /* 129 EVDEV - I129 ("Internet" Keyboards) */
-    0xf1,      /* 130 EVDEV - HNGL (Korean Hangul Latin toggle) */
-    0xf2,      /* 131 EVDEV - HJCV (Korean Hangul Hanja toggle) */
+    0xf2,      /* 130 EVDEV - HJCV (Korean Hangul Hanja toggle) */
+    0xf1,      /* 131 EVDEV - HNGL (Korean Hangul Latin toggle) */
     0x7d,      /* 132 AE13 (Yen)*/
     0xdb,      /* 133 EVDEV - LWIN */
     0xdc,      /* 134 EVDEV - RWIN */
