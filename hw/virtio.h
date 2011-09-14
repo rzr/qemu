@@ -201,6 +201,7 @@ VirtIODevice *virtio_balloon_init(DeviceState *dev);
 #ifdef CONFIG_LINUX
 VirtIODevice *virtio_9p_init(DeviceState *dev, V9fsConf *conf);
 #endif
+VirtIODevice *virtio_ex_init(DeviceState *dev);
 
 
 void virtio_net_exit(VirtIODevice *vdev);
