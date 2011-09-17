@@ -22,6 +22,7 @@
 			</lcd_list>
 			<key_map_list>
 
+<!--			
 				<key_map>
 					<region left="71" top="552" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -41,6 +42,7 @@
             <keyboard>GDK_Send</keyboard>
           </event_info>
 				</key_map>
+-->
 
 				<key_map>
 					<region left="159" top="552" width="54" height="54"></region>
@@ -62,6 +64,7 @@
           </event_info>
 				</key_map>
 
+<!--			
 				<key_map>
 					<region left="247" top="552" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -81,6 +84,7 @@
             <keyboard>GDK_End</keyboard>
           </event_info>
 				</key_map>
+-->
 
 				<key_map>
 					<region left="362" top="463" width="14" height="46"></region>
@@ -159,6 +163,7 @@
 			</lcd_list>
 			<key_map_list>
 
+<!--			
 				<key_map>
 					<region left="552" top="251" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -178,6 +183,7 @@
             <keyboard>GDK_Send</keyboard>
           </event_info>
         </key_map>
+-->
 
 				<key_map>
 					<region left="552" top="163" width="54" height="54"></region>
@@ -199,6 +205,7 @@
           </event_info>
         </key_map>
 
+<!--			
 				<key_map>
 					<region left="552" top="75" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -218,6 +225,7 @@
             <keyboard>GDK_End</keyboard>
           </event_info>
         </key_map>
+-->
 
 				<key_map>
 					<region left="463" top="0" width="46" height="14"></region>
@@ -296,6 +304,7 @@
 			</lcd_list>
 			<key_map_list>
 			
+<!--			
 				<key_map>
 					<region left="251" top="14" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -315,6 +324,7 @@
             <keyboard>GDK_Send</keyboard>
           </event_info>
         </key_map>
+-->
 
 				<key_map>
 					<region left="163" top="14" width="54" height="54"></region>
@@ -336,6 +346,7 @@
           </event_info>
         </key_map>
 
+<!--			
         <key_map>
 					<region left="75" top="14" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -355,6 +366,7 @@
             <keyboard>GDK_End</keyboard>
           </event_info>
         </key_map>
+-->
 
         <key_map>
 					<region left="0" top="111" width="14" height="46"></region>
@@ -432,6 +444,7 @@
 			</lcd_list>
 			<key_map_list>
 
+<!--			
 				<key_map>
 					<region left="14" top="71" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -451,6 +464,7 @@
             <keyboard>GDK_Send</keyboard>
           </event_info>
         </key_map>
+-->
 
 				<key_map>
 					<region left="14" top="159" width="54" height="54"></region>
@@ -472,6 +486,7 @@
           </event_info>
         </key_map>
 
+<!--			
 				<key_map>
 					<region left="14" top="247" width="54" height="54"></region>
           <event_info status="VKS_KEY_PRESSED">
@@ -491,6 +506,7 @@
             <keyboard>GDK_End</keyboard>
           </event_info>
         </key_map>
+-->
 
 				<key_map>
 					<region left="111" top="362" width="46" height="14"></region>
