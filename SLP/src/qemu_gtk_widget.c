@@ -56,20 +56,48 @@ qemu_state_t *qemu_state;
 static int widget_exposed;
 static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+//#define SDL_THREAD
+
+#ifdef SDL_THREAD
+static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
+static pthread_t thread_id = 0;
+#endif
+
 int use_qemu_display = 0;
+
+#ifdef SDL_THREAD
+static void* run_qemu_update(void* arg)
+{
+	for(;;) { 
+		pthread_mutex_lock(&sdl_mutex);     
+
+		pthread_cond_wait(&sdl_cond, &sdl_mutex); 
+
+		qemu_update(qemu_state);
+
+		pthread_mutex_unlock(&sdl_mutex);    
+	} 
+
+	return NULL;
+}
+#endif
 
 static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
 {
 	//log_msg(MSGL_DBG2, "qemu_ds_update\n");
 	/* call sdl update */
+#ifdef SDL_THREAD
+	pthread_cond_signal(&sdl_cond); 
+#else
 	qemu_update(qemu_state);
+#endif
 }
 
 static void qemu_ds_resize(DisplayState *ds)
 {
 	log_msg(MSGL_DEBUG, "%d, %d\n",
-		ds_get_width(qemu_state->ds),
-		ds_get_height(qemu_state->ds));
+			ds_get_width(qemu_state->ds),
+			ds_get_height(qemu_state->ds));
 
 	if (ds_get_width(qemu_state->ds) == 720 && ds_get_height(qemu_state->ds) == 400) {
 		log_msg(MSGL_DEBUG, "blanking BIOS\n");
@@ -81,14 +109,14 @@ static void qemu_ds_resize(DisplayState *ds)
 
 	/* create surface_qemu */
 	qemu_state->surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(qemu_state->ds),
-					ds_get_width(qemu_state->ds),
-					ds_get_height(qemu_state->ds),
-					ds_get_bits_per_pixel(qemu_state->ds),
-					ds_get_linesize(qemu_state->ds),
-					qemu_state->ds->surface->pf.rmask,
-					qemu_state->ds->surface->pf.gmask,
-					qemu_state->ds->surface->pf.bmask,
-					qemu_state->ds->surface->pf.amask);
+			ds_get_width(qemu_state->ds),
+			ds_get_height(qemu_state->ds),
+			ds_get_bits_per_pixel(qemu_state->ds),
+			ds_get_linesize(qemu_state->ds),
+			qemu_state->ds->surface->pf.rmask,
+			qemu_state->ds->surface->pf.gmask,
+			qemu_state->ds->surface->pf.bmask,
+			qemu_state->ds->surface->pf.amask);
 
 	pthread_mutex_unlock(&sdl_mutex);
 
@@ -105,7 +133,11 @@ static void qemu_ds_refresh(DisplayState *ds)
 	vga_hw_update();
 
 	if (widget_exposed) {
+#ifdef SDL_THREAD
+		pthread_cond_signal(&sdl_cond); 
+#else
 		qemu_update(qemu_state);
+#endif
 		widget_exposed--;
 	}
 }
@@ -167,6 +199,16 @@ void qemu_display_init (DisplayState *ds)
 	dcl->dpy_refresh = qemu_ds_refresh;
 
 	register_displaychangelistener(qemu_state->ds, dcl);
+
+#ifdef SDL_THREAD
+	if(thread_id == 0 ){
+		log_msg(MSGL_DEBUG, "sdl update thread create \n");
+		if (pthread_create(&thread_id, NULL, run_qemu_update, NULL) != 0) {
+			log_msg(MSGL_ERROR, "pthread_create fail \n");
+			return;
+		}
+	}
+#endif
 }
 
 
@@ -203,7 +245,7 @@ gint qemu_widget_new (GtkWidget **widget)
 		qemu_widget_size (qemu_state, qemu_state->width, qemu_state->height);
 
 	log_msg(MSGL_DEBUG, "qemu widget size is width = %d, height = %d\n",
-		qemu_state->width, qemu_state->height);
+			qemu_state->width, qemu_state->height);
 
 	*widget = GTK_WIDGET (qemu_state);
 
@@ -230,13 +272,13 @@ void qemu_widget_size (qemu_state_t *qemu_state, gint width, gint height)
 #ifdef GTK_WIDGET_REALIZED
 	if (GTK_WIDGET_REALIZED (widget))
 #else
-	if (gtk_widget_get_realized(widget))
+		if (gtk_widget_get_realized(widget))
 #endif
-	{
-		pthread_mutex_lock(&sdl_mutex);
-		qemu_sdl_init(GTK_QEMU(widget));
-		pthread_mutex_unlock(&sdl_mutex);
-	}
+		{
+			pthread_mutex_lock(&sdl_mutex);
+			qemu_sdl_init(GTK_QEMU(widget));
+			pthread_mutex_unlock(&sdl_mutex);
+		}
 }
 
 
@@ -294,13 +336,13 @@ static void qemu_widget_size_allocate (GtkWidget *widget, GtkAllocation *allocat
 #ifdef GTK_WIDGET_REALIZED
 	if (GTK_WIDGET_REALIZED (widget))
 #else
-	if (gtk_widget_get_realized(widget))
+		if (gtk_widget_get_realized(widget))
 #endif
-	{
-		gdk_window_move_resize (widget->window,
-				allocation->x, allocation->y,
-				allocation->width, allocation->height);
-	}
+		{
+			gdk_window_move_resize (widget->window,
+					allocation->x, allocation->y,
+					allocation->width, allocation->height);
+		}
 
 	log_msg(MSGL_DEBUG, "qemu_state size allocated\n");
 }
@@ -333,12 +375,12 @@ static void qemu_sdl_init(qemu_state_t *qemu_state)
 	}
 
 	qemu_state->surface_screen = SDL_SetVideoMode(qemu_state->width,
-					qemu_state->height, 0, qemu_state->flags);
+			qemu_state->height, 0, qemu_state->flags);
 
 #ifndef _WIN32
 	SDL_VERSION(&info.version);
 	SDL_GetWMInfo(&info);
-//	opengl_exec_set_parent_window(info.info.x11.display, info.info.x11.window);
+	//	opengl_exec_set_parent_window(info.info.x11.display, info.info.x11.window);
 #endif
 }
 
@@ -369,7 +411,9 @@ static void qemu_update (qemu_state_t *qemu_state)
 	g_return_if_fail (qemu_state != NULL);
 	g_return_if_fail (GTK_IS_QEMU (qemu_state));
 
+#ifndef SDL_THREAD
 	pthread_mutex_lock(&sdl_mutex);
+#endif
 
 	surface = SDL_GetVideoSurface ();
 
@@ -388,7 +432,7 @@ static void qemu_update (qemu_state_t *qemu_state)
 		SDL_Surface *bar  = NULL;
 
 		down_screen = rotozoomSurface(qemu_state->surface_qemu, UISTATE.current_mode * 90,
-				 1 / qemu_state->scale, SMOOTHING_ON);
+				1 / qemu_state->scale, SMOOTHING_ON);
 
 		if(UISTATE.current_mode==0 ||  UISTATE.current_mode==2) /* 0 and 180 degree rotation*/
 		{
@@ -428,14 +472,14 @@ static void qemu_update (qemu_state_t *qemu_state)
 			if ((qemu_state->scale == 1) && (UISTATE.current_mode == 0))
 			{
 				SDL_BlitSurface(qemu_state->surface_qemu, NULL,
-					 qemu_state->surface_screen, NULL);
+						qemu_state->surface_screen, NULL);
 			}
 			else
 			{
 				SDL_BlitSurface(down_screen, ptr_fb_first_half,
-					qemu_state->surface_screen, ptr_on_screen_first_half);
+						qemu_state->surface_screen, ptr_on_screen_first_half);
 				SDL_BlitSurface(down_screen, ptr_fb_second_half,
-					qemu_state->surface_screen, ptr_on_screen_second_half);
+						qemu_state->surface_screen, ptr_on_screen_second_half);
 				SDL_BlitSurface(bar,NULL, qemu_state->surface_screen, ptr_fb_second_half);
 			}
 		}
@@ -477,16 +521,16 @@ static void qemu_update (qemu_state_t *qemu_state)
 			if ((qemu_state->scale == 1) && (UISTATE.current_mode == 0))
 			{
 				SDL_BlitSurface(qemu_state->surface_qemu, NULL,
-					qemu_state->surface_screen, NULL);
+						qemu_state->surface_screen, NULL);
 			}
 			else
 			{
 				SDL_BlitSurface(down_screen, ptr_fb_first_half,
-					qemu_state->surface_screen, ptr_on_screen_first_half);
+						qemu_state->surface_screen, ptr_on_screen_first_half);
 				SDL_BlitSurface(down_screen, ptr_fb_second_half,
-					qemu_state->surface_screen, ptr_on_screen_second_half);
+						qemu_state->surface_screen, ptr_on_screen_second_half);
 				SDL_BlitSurface(bar, NULL,
-					qemu_state->surface_screen, ptr_fb_second_half);
+						qemu_state->surface_screen, ptr_fb_second_half);
 			}
 		}
 	}
@@ -498,7 +542,7 @@ static void qemu_update (qemu_state_t *qemu_state)
 		{
 			SDL_Surface *down_screen;
 			down_screen = rotozoomSurface(qemu_state->surface_qemu,
-				 UISTATE.current_mode * 90, 1 / qemu_state->scale, SMOOTHING_ON);
+					UISTATE.current_mode * 90, 1 / qemu_state->scale, SMOOTHING_ON);
 			SDL_BlitSurface(down_screen, NULL, qemu_state->surface_screen, NULL);
 			SDL_FreeSurface(down_screen);
 		}
@@ -508,5 +552,7 @@ static void qemu_update (qemu_state_t *qemu_state)
 
 	SDL_UpdateRect(qemu_state->surface_screen, 0, 0, 0, 0);
 
+#ifndef SDL_THREAD
 	pthread_mutex_unlock(&sdl_mutex);
+#endif
 }
