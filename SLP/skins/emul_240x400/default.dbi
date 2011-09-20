@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <device_info>
   <key_mode>
-    <key name="Rotate_Normal" code="0"></key>
-    <key name="Rotate_90" code="1"></key>
-    <key name="Rotate_180" code="2"></key>
-    <key name="Rotate_270" code="3"></key>
+    <key name="Portrait" code="0"></key>
+    <key name="Landscape" code="1"></key>
+    <key name="Reverse Portrait" code="2"></key>
+    <key name="Reverse Landscape" code="3"></key>
   </key_mode>
   
   <mode_section>
-		<mode id="1" name="Rotate_Normal">
+		<mode id="1" name="Portrait">
 			<image_list>
 				<main_image>default.png</main_image>
 				<keypressed_image>default_p.png</keypressed_image>
@@ -149,7 +149,7 @@
 			</key_map_list>
 		</mode>
 
-		<mode id="2" name="Rotate_90">
+		<mode id="2" name="Landscape">
 			<image_list>
 				<main_image>default_w90.png</main_image>
 				<keypressed_image>default_w90_p.png</keypressed_image>
@@ -290,7 +290,7 @@
 			</key_map_list>
 		</mode>
 
-		<mode id="3" name="Rotate_180">
+		<mode id="3" name="Reverse Portrait">
 			<image_list>
 				<main_image>default_180.png</main_image>
 				<keypressed_image>default_180_p.png</keypressed_image>
@@ -430,7 +430,7 @@
 
 			</key_map_list>
 		</mode>
-		<mode id="4" name="Rotate_270">
+		<mode id="4" name="Reverse Landscape">
 			<image_list>
 				<main_image>default_w.png</main_image>
 				<keypressed_image>default_w_p.png</keypressed_image>
@@ -575,10 +575,10 @@
 	<event_menu>
 	
 		<menu name="Rotate">
-			<event id="Rotate_Normal" value="Rotate_Normal"></event>
-			<event id="Rotate_90" value="Rotate_90"></event>
-			<event id="Rotate_180" value="Rotate_180"></event>
-			<event id="Rotate_270" value="Rotate_270"></event>
+			<event id="Portrait" value="Portrait"></event>
+			<event id="Landscape" value="Landscape"></event>
+			<event id="Reverse Portrait" value="Reverse Portrait"></event>
+			<event id="Reverse Landscape" value="Reverse Landscape"></event>
 		</menu>
 		
 		<menu name="USB Keyboard">
