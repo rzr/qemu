@@ -653,16 +653,16 @@ static void touch_shoot_for_type(int x, int y, int lcd_status, int touch_type)
 			PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y);
 #endif /* DEBUG_TOUCH_EVENT */
 
-	/* when rotate 0 (normal) */
-	pWidget = g_object_get_data((GObject *) popup_menu, ROTATE_NORMAL);
+	/* when portrait */
+	pWidget = g_object_get_data((GObject *) popup_menu, PORTRAIT);
 	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE)  /* touch drag process */
 			kbd_mouse_event(dx, dy, dz, touch_type);
 	}
 	else
 		kbd_mouse_event(dx, dy, dz, touch_type);
-	/* when rotate 90 */
-	pWidget = g_object_get_data((GObject *) popup_menu, ROTATE_90);
+	/* when landscape */
+	pWidget = g_object_get_data((GObject *) popup_menu, LANDSCAPE);
 	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
 			if (qemu_arch_is_arm()){
@@ -679,8 +679,8 @@ static void touch_shoot_for_type(int x, int y, int lcd_status, int touch_type)
 		}
 	}
 
-	/* when rotate 180 */
-	pWidget = g_object_get_data((GObject *) popup_menu, ROTATE_180);
+	/* when reverse portrait */
+	pWidget = g_object_get_data((GObject *) popup_menu, REVERSE_PORTRAIT);
 	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
 				if (qemu_arch_is_arm())
@@ -690,8 +690,8 @@ static void touch_shoot_for_type(int x, int y, int lcd_status, int touch_type)
 		}
 	}
 
-	/* when rotate 270 */
-	pWidget = g_object_get_data((GObject *) popup_menu, ROTATE_270);
+	/* when reverse landscape */
+	pWidget = g_object_get_data((GObject *) popup_menu, REVERSE_LANDSCAPE);
 	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
 				if (qemu_arch_is_arm())

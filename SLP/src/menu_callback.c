@@ -350,14 +350,14 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 		}
 	}
 
-	/* 4.1 Rotate Normal menu */
+	/* 4.1 Portrait menu */
 
-	if (g_strcmp0(buf, ROTATE_NORMAL) == 0) {
+	if (g_strcmp0(buf, PORTRAIT) == 0) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
 
 			int i = 0;
 			for (i = 0; i < PHONE.mode_cnt; i++) {
-				if (g_strcmp0(PHONE.mode[i].name, ROTATE_NORMAL) == 0) {
+				if (g_strcmp0(PHONE.mode[i].name, PORTRAIT) == 0) {
 					menu_rotate_callback(&PHONE, i);
 					break;
 				}
@@ -367,14 +367,14 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 		}
 	}
 
-	/* 4.2 Rotate 90 menu */
+	/* 4.2 Landscape menu */
 
-	else if (g_strcmp0(buf, ROTATE_90) == 0) {
+	else if (g_strcmp0(buf, LANDSCAPE) == 0) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
 
 			int i = 0;
 			for (i = 0; i < PHONE.mode_cnt; i++) {
-				if (g_strcmp0(PHONE.mode[i].name, ROTATE_90) == 0) {
+				if (g_strcmp0(PHONE.mode[i].name, LANDSCAPE) == 0) {
 					menu_rotate_callback(&PHONE, i);
 					break;
 				}
@@ -384,14 +384,14 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 		}
 	}
 
-	/* 4.3 Rotate 180 menu */
+	/* 4.3 Reverse Portrait menu */
 
-	else if (g_strcmp0(buf, ROTATE_180) == 0) {
+	else if (g_strcmp0(buf, REVERSE_PORTRAIT) == 0) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
 
 			int i = 0;
 			for (i = 0; i < PHONE.mode_cnt; i++) {
-				if (g_strcmp0(PHONE.mode[i].name, ROTATE_180) == 0) {
+				if (g_strcmp0(PHONE.mode[i].name, REVERSE_PORTRAIT) == 0) {
 					menu_rotate_callback(&PHONE, i);
 					break;
 				}
@@ -401,14 +401,14 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 		}
 	}
 
-	/* 4.4 Rotate 270 menu */
+	/* 4.4 Reverse Landscape menu */
 
-	else if (g_strcmp0(buf, ROTATE_270) == 0) {
+	else if (g_strcmp0(buf, REVERSE_LANDSCAPE) == 0) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
 
 			int i = 0;
 			for (i = 0; i < PHONE.mode_cnt; i++) {
-				if (g_strcmp0(PHONE.mode[i].name, ROTATE_270) == 0) {
+				if (g_strcmp0(PHONE.mode[i].name, REVERSE_LANDSCAPE) == 0) {
 					menu_rotate_callback(&PHONE, i);
 					break;
 				}
@@ -419,8 +419,8 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 	}
 
 	else {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE)
-			show_message(buf, buf);
+//		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE)
+//			show_message(buf, buf);
 	}
 
 	log_msg(MSGL_INFO, "menu_event_callback called\n");
