@@ -261,9 +261,9 @@ set_devel_env () {
 			;;
 		*86)	
 			# find the target path
-			test "$BOOT_OPTION" = "--disk" && TARGET_PATH="$EMULATOR_BIN_PATH/../../emulator-image/$TARGET_NAME"
+			test "$BOOT_OPTION" = "--disk" && TARGET_PATH="$EMULATOR_BIN_PATH/../../../../emulator-image/$TARGET_NAME"
 			# fine the kernel image
-			EMULATOR_KERNEL_LINK="$EMULATOR_BIN_PATH/../../linux-current"
+			EMULATOR_KERNEL_LINK="$EMULATOR_BIN_PATH/../../../emulator-kernel"
 			if test -h "$EMULATOR_KERNEL_LINK" -a -d "$EMULATOR_KERNEL_LINK/arch/x86/boot"
 			then
 				EMULATOR_KERNEL_PATH="$EMULATOR_KERNEL_LINK/arch/x86/boot"
@@ -271,9 +271,9 @@ set_devel_env () {
 				then
 					DDD="$DDD $EMULATOR_KERNEL_PATH/../../../vmlinux"
 				fi
-			elif test -d "$EMULATOR_BIN_PATH/../../emulator-kernel/arch/x86/boot"
+			elif test -d "$EMULATOR_BIN_PATH/../../../emulator-kernel/arch/x86/boot"
 			then
-				EMULATOR_KERNEL_PATH="$EMULATOR_BIN_PATH/../../emulator-kernel/arch/x86/boot"
+				EMULATOR_KERNEL_PATH="$EMULATOR_BIN_PATH/../../../emulator-kernel/arch/x86/boot"
 				if test "$DDD" != "" 
 				then
 					DDD="$DDD $EMULATOR_KERNEL_PATH/../../../vmlinux"
