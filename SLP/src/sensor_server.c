@@ -85,8 +85,8 @@ void *init_sensor_server(void *arg)
 	int sensord_len = (int)sizeof(struct sockaddr_in);
 #endif
 	int port_n, port = *((int *)arg);	 		/* sensor port number */
-	char recv_buf[255];
-	char send_buf[255];
+	char recv_buf[32];
+	char send_buf[32];
 	struct sockaddr_in servaddr;
 	struct sockaddr_in clientaddr;
 	struct sockaddr_in sensordaddr;
@@ -147,7 +147,7 @@ void *init_sensor_server(void *arg)
 	{
 #ifdef TCP
 		client_s = accept(listen_s, (struct sockaddr *)&clientaddr, &client_len);
-		if(read(client_s, recv_buf, 255) <= 0)
+		if(read(client_s, recv_buf, 32) <= 0)
 		{
 			perror("Read error: ");
 #ifndef __MINGW32__
@@ -158,7 +158,7 @@ void *init_sensor_server(void *arg)
             goto clean_up;
 		}
 #else
-		if(recvfrom(listen_s, recv_buf, 255, 0, (struct sockaddr *)&clientaddr, &client_len) <= 0)
+		if(recvfrom(listen_s, recv_buf, 32, 0, (struct sockaddr *)&clientaddr, &client_len) <= 0)
             continue;
 #endif
 	    parse_result = sensor_parser(recv_buf);
@@ -169,7 +169,7 @@ void *init_sensor_server(void *arg)
 			{
 				sent_init_value = 1;
 				sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
-				if(sendto(sensord_s, send_buf, 255, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
+				if(sendto(sensord_s, send_buf, 32, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
 				{
 					perror("Send error: "); 
 					goto clean_up;
@@ -197,7 +197,7 @@ void *init_sensor_server(void *arg)
 
 			if(parse_result != 1 && parse_result != -1)
 			{
-				if(sendto(sensord_s, send_buf, 255, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
+				if(sendto(sensord_s, send_buf, 32, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
 				{
 					perror("Send error: "); 
 					goto clean_up;
@@ -226,7 +226,7 @@ clean_up:
 int sensor_parser(char *buffer)
 {
 	int len = 0;
-	char tmpbuf[255];
+	char tmpbuf[32];
 	int rotation;
 	int from_skin;
 
@@ -312,7 +312,7 @@ int parse_val(char *buff, unsigned char data, char *parsbuf)
 	int count = 0;
 	while(1)
 	{
-		if(count > 40)
+		if(count > 12)
 			return -1;
 		if(buff[count] == data)
 		{
