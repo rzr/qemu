@@ -35,3 +35,4 @@
  */
 
 void *init_sensor_server(void *arg);
+gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer data);

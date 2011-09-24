@@ -446,8 +446,76 @@ static void* run_gtk_main(void* arg)
 {
 	/* 11. gtk main start */
 #ifndef _THREAD
+
+	int listen_s;
+	struct sockaddr_in servaddr;
+	GIOChannel *channel = NULL;
+	GError *error;
+	GIOStatus status;
+
+#ifdef __MINGW32__	
+	WSADATA wsadata;
+	if(WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+		printf("Error creating socket.\n");
+		return NULL;
+	}
+#endif
+
+	if((listen_s = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+	{
+		perror("Create listen socket error: ");
+		goto cleanup;
+	}
+
+	memset(&servaddr, '\0', sizeof(servaddr));
+
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	servaddr.sin_port = htons(SENSOR_PORT);
+
+	if(bind(listen_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
+	{
+		perror("bind error: ");
+		goto cleanup;
+	}
+
+	channel = g_io_channel_unix_new(listen_s);
+	if(channel == NULL)
+	{
+		printf("gnet_udp_socket_get_io_channel failed\n");
+		goto cleanup;
+	}
+	
+//	status = g_io_channel_set_encoding(channel, NULL, NULL);
+//	if(status != G_IO_STATUS_NORMAL)
+//	{
+//		printf("encoding error %d %s\n", status, error->message);
+//		goto cleanup;
+//	}
+	g_io_channel_set_flags(channel, G_IO_FLAG_NONBLOCK, NULL);
+
+	guint sourceid = g_io_add_watch(channel, G_IO_IN|G_IO_ERR|G_IO_HUP, sensor_server, NULL);
+
+	if(sourceid <= 0)
+	{
+		printf("g_io_add_watch() failed\n");
+		g_io_channel_unref(channel);
+		goto cleanup;
+	}
+
 	gtk_main();
 #endif
+
+cleanup:
+#ifdef __MINGW32__
+	if(listen_s)
+		closesocket(listen_s);
+	WSACleanup();
+#else
+	if(listen_s)
+		close(listen_s);
+#endif
+
 	return NULL;
 }
 
@@ -766,7 +834,7 @@ int main (int argc, char** argv)
         run_gtk_main(NULL);
 #endif
 
-#if 1
+#if 0
 	if(pthread_create(&thread_sensor_id, NULL, init_sensor_server, (void *)&sensor_port) != 0) {
 		log_msg(MSGL_ERROR, "error creating sensor server thread!!\n");
 		return -1;
