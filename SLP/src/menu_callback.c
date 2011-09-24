@@ -198,7 +198,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 	switch(nMode)
 	{
 	case 0:
-		sprintf(buf, "1\n0\nn");
+		sprintf(buf, "1\n0\n");
 		break;
 	case 1:
 		sprintf(buf, "1\n90\n");

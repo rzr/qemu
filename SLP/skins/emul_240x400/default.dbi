@@ -582,8 +582,8 @@
 		</menu>
 		
 		<menu name="USB Keyboard">
-			<event id="keyboard_on" value="keyboard_on"></event>
-			<event id="keyboard_off" value="keyboard_off"></event>
+			<event id="keyboard_on" value="On"></event>
+			<event id="keyboard_off" value="Off"></event>
 		</menu>
 
 </event_menu></device_info>

@@ -202,13 +202,13 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 				gtk_container_add(GTK_CONTAINER(SubMenuItem1), menu_item);
 
-				g_signal_connect(menu_item, "activate", G_CALLBACK(menu_event_callback), device->event_menu[i].event_list[j].event_evalue);
+				g_signal_connect(menu_item, "activate", G_CALLBACK(menu_event_callback), device->event_menu[i].event_list[j].event_eid);
 				gtk_widget_show(menu_item);
 
 				/* 3.7.3 object name set */
 
-				g_object_set_data((GObject *) * pMenu, device->event_menu[i].event_list[j].event_evalue, (GObject *) menu_item);
-				g_object_set(menu_item, "name", device->event_menu[i].event_list[j].event_evalue, NULL);
+				g_object_set_data((GObject *) * pMenu, device->event_menu[i].event_list[j].event_eid, (GObject *) menu_item);
+				g_object_set(menu_item, "name", device->event_menu[i].event_list[j].event_eid, NULL);
 
 			}
 		}
