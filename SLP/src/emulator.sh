@@ -403,7 +403,8 @@ set_qemu_options () {
 	fi
 
 	#qemu_time_setting
-	qemu_common_opts="$qemu_common_opts -localtime"
+	#qemu_common_opts="$qemu_common_opts -localtime"
+	qemu_common_opts="$qemu_common_opts -rtc base=utc"
 
 	#qemu_network mode
 	qemu_common_opts="$qemu_common_opts -net user"
