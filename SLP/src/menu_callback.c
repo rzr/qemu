@@ -476,9 +476,10 @@ void show_about_window(GtkWidget *parent)
 	const gchar *website = "http://innovator.samsungmobile.com";
 
 	sprintf(comments, "SLP Emulator.\n"
+		"Version: %s\n"
 //		"Based upon QEMU 0.10.5 (http://qemu.org)\n"
 		"Build date: %s\nGit version: %s\n",
-		build_date, build_git);
+		build_version, build_date, build_git);
 
 	GtkWidget* about_dialog = gtk_about_dialog_new();
 
