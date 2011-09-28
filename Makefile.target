@@ -199,6 +199,7 @@ obj-y += vhost_net.o
 obj-$(CONFIG_VHOST_NET) += vhost.o
 obj-$(CONFIG_REALLY_VIRTFS) += virtio-9p.o
 obj-y += rwhandler.o
+obj-y += sdb.o
 obj-$(CONFIG_KVM) += kvm.o kvm-all.o
 obj-$(CONFIG_NO_KVM) += kvm-stub.o
 LIBS+=-lz
