@@ -219,7 +219,7 @@ void sdb_setup(void)
 		if(net_slirp_redir((char*)buf) < 0)
 			continue;
 
-		fprintf(stdout,"SDBD established on port %d\n", port+1);
+//		fprintf(stdout,"SDBD established on port %d\n", port+1);
 		success = 1;
 		break;
 	}
