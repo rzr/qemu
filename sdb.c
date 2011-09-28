@@ -219,7 +219,7 @@ void sdb_setup(void)
 		if(net_slirp_redir((char*)buf) < 0)
 			continue;
 
-		printf("SDB listening on port from %d to %d\n", port, port+9);
+		fprintf(stdout,"SDBD established on port %d\n", port+1);
 		success = 1;
 		break;
 	}
@@ -227,8 +227,6 @@ void sdb_setup(void)
 		fprintf(stderr, "it seems too many emulator instances are running on this machine. Aborting\n" );
 		exit(1);
     }
-	setenv( "SDB_PORT", (char*)buf, 1);
-	fflush(stdout);
 
     /* Save base port. */
     SLP_base_port = port;
@@ -248,8 +246,8 @@ void sdb_setup(void)
 		
         sprintf(tmp,"0013host:emulator:%d",port+1);
         socket_send(s, tmp, 30);
-		printf("sent '%s' to SDB server\n", tmp);
-		fflush(stdout);
+//		printf("sent '%s' to SDB server\n", tmp);
+//		fflush(stdout);
 
     }
     while (0);
