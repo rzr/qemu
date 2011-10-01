@@ -57,6 +57,9 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 {
 	GtkWidget *filew = NULL;
 	char *filename = NULL;
+	time_t rawtime;
+	struct tm *timeinfo;
+	char save_file_name[64];
 
 	if (str_title == NULL) 
 		return NULL;
@@ -82,9 +85,17 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 
 	sprintf(icon_image, "%s/icons/07_EXECUTE_APP.png", skin);	
 
-	gtk_window_set_default_icon_from_file (icon_image, NULL);
+	gtk_window_set_icon_from_file (GTK_WINDOW(filew), icon_image, NULL);
 #endif
 
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(filew), TRUE);
+
+	rawtime = time(NULL);
+	timeinfo = localtime(&rawtime);
+	strftime(save_file_name, 64, "emulator-%Y-%m-%d-%H-%M-%S.png", timeinfo);
+
+	gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(filew), save_file_name);
+	
 	if (str_folder == NULL || strlen(str_folder) == 0) 
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filew), configuration.target_path);	
 	else 

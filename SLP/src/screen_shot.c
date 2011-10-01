@@ -143,15 +143,6 @@ void frame_buffer_handler(GtkWidget *widget, gpointer data)
 
 	frame_buffer_window = create_frame_buffer_window(&g_fbinfo[0]);
 
-	gchar icon_image[128] = {0, };
-	const gchar *skin = get_skin_path();
-	if (skin == NULL)
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
-
-	sprintf(icon_image, "%s/icons/06_SCREEN-SHOT.png", skin);
-
-	gtk_window_set_default_icon_from_file (icon_image, NULL);
-
 	add_window(frame_buffer_window, SCREEN_SHOT_ID);
 
 	UISTATE.is_screenshot_run = TRUE;
@@ -488,6 +479,15 @@ static GtkWidget *create_frame_buffer(BUF_WIDGET * pWidget)
 	gtk_window_set_title(GTK_WINDOW(window1), ("Screen Shot"));
 	gtk_window_set_resizable(GTK_WINDOW(window1), FALSE);
 	pWidget->pWindow = window1;
+
+	gchar icon_image[128] = {0, };
+	const gchar *skin = get_skin_path();
+	if (skin == NULL)
+		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+
+	sprintf(icon_image, "%s/icons/06_SCREEN-SHOT.png", skin);
+
+	gtk_window_set_icon_from_file (GTK_WINDOW(window1), icon_image, NULL);
 
 	vBox = gtk_vbox_new(FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(window1), vBox);
