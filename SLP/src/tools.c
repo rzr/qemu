@@ -82,7 +82,7 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 
 	sprintf(icon_image, "%s/icons/07_EXECUTE_APP.png", skin);	
 
-	gtk_window_set_default_icon_from_file (icon_image, NULL);
+	gtk_window_set_icon_from_file (GTK_WINDOW(filew), icon_image, NULL);
 #endif
 
 	if (str_folder == NULL || strlen(str_folder) == 0) 
