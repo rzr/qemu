@@ -355,12 +355,16 @@ static GtkWidget *make_scale_frame(const gchar *frame_name)
 	add_widget(OPTION_ID, OPTION_SCALE_HALF_BUTTON, scale_half_button);
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(scale_half_button));
 	gtk_box_pack_start (GTK_BOX (hbox), scale_half_button, TRUE, TRUE, 1);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(scale_half_button), TRUE);
 
 	GtkWidget *scale_one_button = gtk_radio_button_new_with_label(group, "1x");
 	add_widget(OPTION_ID, OPTION_SCALE_ONE_BUTTON, scale_one_button);
 	gtk_box_pack_start (GTK_BOX (hbox), scale_one_button, TRUE, TRUE, 1);	
 
+	if(preference_entrys.scale == 2)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(scale_half_button), TRUE);
+	else
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(scale_one_button), TRUE);
+	
 	if(startup_option_config_done == 1)
 	{
 		gtk_widget_set_sensitive(scale_half_button, FALSE);
