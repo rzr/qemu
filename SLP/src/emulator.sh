@@ -28,7 +28,7 @@ else
     if test -e ~/.slpsdk
     then
         slppath=`grep SLP_SDK_INSTALL_PATH ~/.slpsdk`
-        SDK_PATH=`echo $slppath | cut -f2 -d"="`
+        SDK_PATH=`echo $slppath | cut -f2- -d"="`
         EMULATOR_BIN_PATH="$SDK_PATH/Emulator"
     fi  
 fi
@@ -347,6 +347,7 @@ set_emulator_options () {
 		EMUL_LOGFILE=""
 		EMUL_VERBOSE=0
 		ulimit -c 0
+		rm emulator.klog
 		emul_opts="--no-dump $emul_opts"
 	fi
 }
