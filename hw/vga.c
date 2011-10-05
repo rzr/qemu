@@ -1629,6 +1629,8 @@ extern uint16_t overlay1_height;
 	
 extern uint8_t* overlay_ptr;	// pointer in qemu space
 
+/* brightness level :              0,   1,   2,   3,   4,   5,   6,   7,   8,   9 */
+static const uint8_t brightness_tbl[] = {20, 100, 120, 140, 160, 180, 200, 220, 230, 240};
 extern uint32_t brightness_level;
 #endif
 
@@ -1836,10 +1838,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                         c_alpha = 0xff - alpha;
                         //fprintf(stderr, "alpha = %d\n", alpha);
                         
-                        //*dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
-                        //       ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
-                        //       ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
-
                         *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
                                ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
                                (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
@@ -1861,10 +1859,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                         c_alpha = 0xff - alpha;
                         //fprintf(stderr, "alpha = %d\n", alpha);
                         
-                        //*dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
-                        //       ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
-                        //       ((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8;
-
                         *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
                                ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
                                (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
@@ -1874,13 +1868,14 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             
             if (brightness_level < 10) {
                 dst_sub = s->ds->surface->data + addr;
-                alpha = (brightness_level + 1) * 9;
-        
-                //printf("addr = alpha = %d, disp_width = %d\n", alpha, disp_width);
-                for (i=0; i < disp_width; i++, dst_sub += 4) {
-                    dst_sub[0] = alpha * dst_sub[0] / 99;
-                    dst_sub[1] = alpha * dst_sub[1] / 99;
-                    dst_sub[2] = alpha * dst_sub[2] / 99;
+                dst = (uint32_t*)(s->ds->surface->data + addr);
+
+                alpha = brightness_tbl[brightness_level];
+
+                for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
+                	*dst = ((alpha * dst_sub[0]) >> 8) |
+                			((alpha * dst_sub[1]) & 0xFF00) |
+                			(((alpha * dst_sub[2]) & 0xFF00) << 8);
                 }
             }
 #endif	/* TARGET_I386 */
