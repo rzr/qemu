@@ -16,6 +16,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+SDL_GFX=`dpkg -l | grep libsdl-gfx`
+if test "$SDL_GFX" = ""
+then
+	echo "There is no libSDL_gfx library to run this emulator.\nPlease install libsdl-gfx package."
+	exit 1
+fi
+
 CURDIR=`pwd`
 if test -e "emulator-x86"
 then
@@ -40,7 +47,7 @@ EMULATOR_KERNEL_NAME_ARM="zImage_arm"
 EMULATOR_KERNEL_NAME_X86="bzImage"
 QEMU_BIOS_PATH="${EMULATOR_DATA_PATH}/pc-bios"
 
-export LD_LIBRARY_PATH=$EMULATOR_BIN_PATH
+#export LD_LIBRARY_PATH=$EMULATOR_BIN_PATH
 
 ## enable emulator dump & logging
 export EMUL_VERBOSE=9
