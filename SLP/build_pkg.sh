@@ -76,11 +76,8 @@ downloading_emulator_img () {
 	chmod 644 pkginfo.manifest
 
 	cd $PACKAGE_EMUL_DIR/Emulator
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/libSDL_gfx.so.13
 	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/$INHOUSE_IMG/emulimg-default.x86
 	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/$INHOUSE_IMG/emulimg.x86
-
-	chmod 644 emulimg.x86 emulimg-default.x86 libSDL_gfx.so.13
 
 	cd $PACKAGE_BIN_DIR
 	echo `pwd`
@@ -88,10 +85,6 @@ downloading_emulator_img () {
 }
 
 package_emulator_for_standalone () {
-	cd $PACAKGE_EMUL_DIR/Emulator
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/libSDL_gfx.so.13
-    chmod 644 libSDL_gfx.so.13
-
 	cd $PACKAGE_EMUL_DIR
 	mv Emulator/ $BUILD_DIR
 }
