@@ -34,5 +34,12 @@
  *
  */
 
-void *init_sensor_server(void *arg);
+#ifndef __SENSOR_SERVER_H__
+#define __SENSOR_SERVER_H__
+
+#include <glib.h>
+
+void *init_sensor_server(void);
 gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer data);
+
+#endif
