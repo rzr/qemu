@@ -100,6 +100,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 	/* SaveVM Menu */
 
+#if 0
 	GtkWidget *savevm_menu_item = gtk_image_menu_item_new_with_label(_("Save Emulator State"));
 	sprintf(icon_image, "%s/icons/05_GPS.png", skin_path);
 	image_widget = gtk_image_new_from_file (icon_image);
@@ -117,6 +118,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	gtk_container_add(GTK_CONTAINER(SubMenuItem), savevm_menu_item);
 	add_widget(EMULATOR_ID, MENU_GPS, savevm_menu_item);
 	gtk_widget_show(savevm_menu_item);
+#endif
 
     /* GPS Menu */
         if(configuration.enable_gpsd){
