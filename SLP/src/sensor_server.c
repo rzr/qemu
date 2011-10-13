@@ -54,6 +54,7 @@
 #include <pthread.h>
 #include <math.h>
 
+#include "sensor_server.h"
 #include "emulator.h"
 #define UDP
 
@@ -65,162 +66,80 @@ extern int sensor_update(uint16_t x, uint16_t y, uint16_t z);
 int sensord_initialized = 0;
 int sent_init_value = 0;
 
-void *init_sensor_server(void *arg);
 int sensor_parser(char *buffer);
 int parse_val(char *buff, unsigned char data, char *parsbuf);
 
-void *init_sensor_server(void *arg)
+void *init_sensor_server(void)
 {
-	int parse_result;
-	int listen_s;			/* listening socket */
-#ifdef TCP
-    int client_s;			/* Client socket  */
-#endif
-	int sensord_s;
-#ifndef _WIN32
-	socklen_t client_len = (socklen_t)sizeof(struct sockaddr_in);
-	socklen_t sensord_len = (socklen_t)sizeof(struct sockaddr_in);
-#else
-	int client_len = (int)sizeof(struct sockaddr_in);
-	int sensord_len = (int)sizeof(struct sockaddr_in);
-#endif
-	int port_n, port = *((int *)arg);	 		/* sensor port number */
-	char recv_buf[32];
-	char send_buf[32];
+	int listen_s;
 	struct sockaddr_in servaddr;
-	struct sockaddr_in clientaddr;
-	struct sockaddr_in sensordaddr;
+	GIOChannel *channel = NULL;
+	GError *error;
+	GIOStatus status;
 
-#ifdef __MINGW32__
-    WSADATA wsadata;
-    if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
-        printf("Error creating socket.\n");
-        return NULL;
-    }
+#ifdef __MINGW32__	
+	WSADATA wsadata;
+	if(WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+		printf("Error creating socket.\n");
+		return NULL;
+	}
 #endif
 
-	if(port !=0 )
-		port_n = port;
-	else
-		port_n = DEFAULT_SENSOR_PORT;
-#ifdef TCP
-	if((listen_s = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-#else
 	if((listen_s = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-#endif
 	{
 		perror("Create listen socket error: ");
-        goto clean_up;
+		goto cleanup;
 	}
 
-	if((sensord_s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-	{
-		perror("Create send socket error: ");
-		goto clean_up;
-	}
-	
 	memset(&servaddr, '\0', sizeof(servaddr));
-	memset(&clientaddr,'\0', sizeof(clientaddr));
-	memset(&sensordaddr,'\0', sizeof(sensordaddr));
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	servaddr.sin_port = htons(port_n);
+	servaddr.sin_port = htons(SENSOR_PORT);
 
-	sensordaddr.sin_family = AF_INET;
-	sensordaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	sensordaddr.sin_port = htons(SENSORD_PORT);
-	
 	if(bind(listen_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
 	{
 		perror("bind error: ");
-        goto clean_up;
+		goto cleanup;
 	}
-#ifdef TCP	
-	if(listen(listen_s, 3) == -1)
+
+	channel = g_io_channel_unix_new(listen_s);
+	if(channel == NULL)
 	{
-		perror("Listen error: ");
-        goto clean_up;
+		printf("gnet_udp_socket_get_io_channel failed\n");
+		goto cleanup;
 	}
-#endif
-	while(1)
+	
+//	status = g_io_channel_set_encoding(channel, NULL, NULL);
+//	if(status != G_IO_STATUS_NORMAL)
+//	{
+//		printf("encoding error %d %s\n", status, error->message);
+//		goto cleanup;
+//	}
+	g_io_channel_set_flags(channel, G_IO_FLAG_NONBLOCK, NULL);
+
+	guint sourceid = g_io_add_watch(channel, G_IO_IN|G_IO_ERR|G_IO_HUP, sensor_server, NULL);
+
+	if(sourceid <= 0)
 	{
-#ifdef TCP
-		client_s = accept(listen_s, (struct sockaddr *)&clientaddr, &client_len);
-		if(read(client_s, recv_buf, 32) <= 0)
-		{
-			perror("Read error: ");
-#ifndef __MINGW32__
-			closesocket(client_s);
-#else
-			close(client_s);
-#endif
-            goto clean_up;
-		}
-#else
-		if(recvfrom(listen_s, recv_buf, 32, 0, (struct sockaddr *)&clientaddr, &client_len) <= 0)
-            continue;
-#endif
-	    parse_result = sensor_parser(recv_buf);
-
-		if(sensord_initialized)
-		{
-			if(sent_init_value == 0)
-			{
-				sent_init_value = 1;
-				sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
-				if(sendto(sensord_s, send_buf, 32, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
-				{
-					perror("Send error: "); 
-					goto clean_up;
-				}
-			}
-
-			switch(parse_result)
-			{
-			case 0:
-				sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
-				break;
-			case 90:
-				sprintf(send_buf, "1\n3\n-9.80665\n0\n0\n");
-				break;
-			case 180:
-				sprintf(send_buf, "1\n3\n0\n9.80665\n0\n");
-				break;
-			case 270:
-				sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
-				break;
-			case 7:
-				sprintf(send_buf, "%s", recv_buf); 
-				break;
-			}
-
-			if(parse_result != 1 && parse_result != -1)
-			{
-				if(sendto(sensord_s, send_buf, 32, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
-				{
-					perror("Send error: "); 
-					goto clean_up;
-				}
-			}
-		}
+		printf("g_io_add_watch() failed\n");
+		g_io_channel_unref(channel);
+		goto cleanup;
 	}
 
-clean_up:
+	return NULL;
+
+cleanup:
 #ifdef __MINGW32__
-    if( listen_s )
-        closesocket(listen_s);
-	if( sensord_s )
-		closesocket(sensord_s);
-    WSACleanup();
+	if(listen_s)
+		closesocket(listen_s);
+	WSACleanup();
 #else
-    if( listen_s )
-        close(listen_s);
-	if( sensord_s )
-		close(sensord_s);
+	if(listen_s)
+		close(listen_s);
 #endif
 
-    return NULL;
+	return NULL;
 }
 
 gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer data)
@@ -267,8 +186,6 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 	if((condition == G_IO_IN))
 	{
-//		gchar *encoding = g_io_channel_get_encoding(channel);
-//		printf("encoding : %s\n", encoding);
 //		status = g_io_channel_read_chars(channel, recv_buf, 32, &len, &error);
 		ioerror = g_io_channel_read(channel, recv_buf, 32, &len);
 //		if(status != G_IO_STATUS_NORMAL)
