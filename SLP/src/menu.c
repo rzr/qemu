@@ -107,7 +107,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(savevm_menu_item), image_widget);
 	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(savevm_menu_item),TRUE);
 
 	if (UISTATE.is_gps_run == FALSE)
 		g_object_set(savevm_menu_item, "sensitive", TRUE, NULL);
@@ -149,7 +149,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(compass_menu_item), image_widget);
 		if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-			gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+			gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(compass_menu_item),TRUE);
 		if (UISTATE.is_compass_run == FALSE)
 			g_object_set(compass_menu_item, "sensitive", TRUE, NULL);
 
@@ -168,7 +168,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
 	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
 	gtk_widget_set_tooltip_text(menu_item,
 		"Capture and Save the present Screen Shot ");
 	g_signal_connect(menu_item, "activate", G_CALLBACK(frame_buffer_handler), NULL);
@@ -189,7 +189,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 			gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
 			if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-				gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+				gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
 			gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
 			gtk_widget_show(menu_item);
 
@@ -263,7 +263,7 @@ static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconf
 
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
 	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
 	gtk_widget_set_tooltip_text(menu_item, _("Set the present Emulator's Configuration(position, terminal type, fps, path)"));
 
 	g_signal_connect(menu_item, "activate", G_CALLBACK(menu_option_callback), NULL);
@@ -278,7 +278,7 @@ static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconf
 
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
 	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
 	gtk_widget_set_tooltip_text(menu_item, _("Show Target information like LCD Size"));
 
 	g_signal_connect(menu_item, "activate", G_CALLBACK(menu_device_info_callback), NULL);
