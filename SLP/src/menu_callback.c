@@ -172,7 +172,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 #else
 	int send_len = (int)sizeof(struct sockaddr_in);
 #endif
-	char buf[255];
+	char buf[32];
 	struct sockaddr_in servaddr;
 
 #ifdef __MINGW32__
@@ -217,7 +217,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 		break;
 	}
 
-	if(sendto(send_s, buf, 255, 0, (struct sockaddr *)&servaddr, send_len) <= 0)
+	if(sendto(send_s, buf, 32, 0, (struct sockaddr *)&servaddr, send_len) <= 0)
 	{
 		perror("sendto error: ");
 	}

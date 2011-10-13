@@ -103,8 +103,11 @@ int fill_configuration(int status)
 
 		configuration.always_on_top = 0;
 		/* 2.1 emulator config initial */
-
+#ifndef _WIN32
 		configuration.enable_shell = 1;
+#else
+		configuration.enable_shell = 0;
+#endif
 		configuration.enable_telephony_emulator = 0;
 		configuration.enable_gpsd = 0;
 		configuration.enable_compass = 0;
