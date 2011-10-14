@@ -149,6 +149,10 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
   */
 void rotate_event_callback(PHONEMODELINFO *device, int nMode)
 {
+	char *rotate[4] = {PORTRAIT, LANDSCAPE, REVERSE_PORTRAIT, REVERSE_LANDSCAPE};
+	GtkWidget *pwidget = NULL;
+	GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
+
 	/* 1. error checking */
 
 	if (device == NULL || nMode < 0)
@@ -159,6 +163,9 @@ void rotate_event_callback(PHONEMODELINFO *device, int nMode)
 	UISTATE.current_mode = nMode;
 
 	mask_main_lcd(g_main_window, &PHONE, &configuration, nMode);
+
+	pwidget = g_object_get_data((GObject *) popup_menu, rotate[nMode]);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pwidget), TRUE);
 
 	log_msg(MSGL_INFO, "rotate called\n");
 }
