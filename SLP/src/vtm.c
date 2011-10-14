@@ -502,6 +502,9 @@ void setup_ram_frame(void)
 
 void show_create_window(void)
 {
+	gchar icon_image[128] = {0, };
+	const gchar *skin = NULL;
+
 	GtkWidget *win = (GtkWidget *)gtk_builder_get_object(g_builder, "window2");
 	add_window(win, VTM_CREATE_ID);
 
@@ -509,6 +512,12 @@ void show_create_window(void)
 
 	setup_create_frame();
 	setup_create_button();
+
+	skin = get_skin_path();
+	if(skin == NULL)
+		log_msg(MSGL_WARN, "getting icon image path is failed!!\n");
+	sprintf(icon_image, "%s/icons/vtm.png", skin);
+	gtk_window_set_icon_from_file(GTK_WINDOW(win), icon_image, NULL);
 
 	gtk_widget_show_all(win);
 	g_signal_connect(GTK_OBJECT(win), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
