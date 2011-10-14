@@ -707,8 +707,8 @@ void create_config_frame(GtkWidget * vbox)
 	
 	/* 6. boot frame create */
 
-	GtkWidget *boot_frame = make_boot_frame(_("Boot"));
-	gtk_box_pack_start(GTK_BOX(temp_vbox), boot_frame, TRUE, TRUE, 0);
+//	GtkWidget *boot_frame = make_boot_frame(_("Boot"));
+//	gtk_box_pack_start(GTK_BOX(temp_vbox), boot_frame, TRUE, TRUE, 0);
 
 }
 
@@ -777,6 +777,9 @@ void create_config_page(GtkWidget *parent)
 //int show_config_window ()
 int show_config_window (GtkWidget *parent)
 {
+	gchar icon_image[128] = {0, };
+	const gchar *skin = NULL;
+
 	/* 1. set initial preference entrys */
 
 	set_initial_preference_entrys();
@@ -787,6 +790,14 @@ int show_config_window (GtkWidget *parent)
 	add_window (win, OPTION_ID);
 
 	gtk_window_set_title (GTK_WINDOW (win), _("Emulator Options"));
+
+	skin = get_skin_path();
+	if(skin == NULL)
+		log_msg(MSGL_WARN, "getting icon image path is failed!!\n");
+	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
+	gtk_window_set_icon_from_file(GTK_WINDOW (win), icon_image, NULL);
+
+	gtk_window_set_default_size(GTK_WINDOW (win), 360, 220);
 	gtk_window_set_modal (GTK_WINDOW (win), TRUE);
 	gtk_window_set_position (GTK_WINDOW (win), GTK_WIN_POS_CENTER);
 
