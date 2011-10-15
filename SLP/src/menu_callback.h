@@ -62,6 +62,7 @@ int menu_frame_rate_callback(void);
 int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfiguration, int nMode);
 void rotate_event_callback(PHONEMODELINFO *device, int nMode);
 void menu_rotate_callback(PHONEMODELINFO *device, int nMode);
+void menu_keyboard_callback(GtkWidget *widget, gpointer data);
 void menu_event_callback(GtkWidget *widget, gpointer data);
 void menu_device_info_callback(GtkWidget *widget, gpointer data);
 void show_about_window(GtkWidget *parent);

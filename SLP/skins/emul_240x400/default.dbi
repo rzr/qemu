@@ -581,9 +581,5 @@
 			<event id="Reverse Landscape" value="Reverse Landscape"></event>
 		</menu>
 		
-		<menu name="USB Keyboard">
-			<event id="keyboard_on" value="On"></event>
-			<event id="keyboard_off" value="Off"></event>
-		</menu>
 
 </event_menu></device_info>

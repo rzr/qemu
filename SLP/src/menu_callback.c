@@ -242,6 +242,25 @@ cleanup:
 }
 
 
+void menu_keyboard_callback(GtkWidget *widget, gpointer data)
+{
+	GtkWidget *pWidget = NULL;
+	char *buf = NULL;
+	buf = data;
+
+	pWidget = widget;
+
+	if (g_strcmp0(buf, "On") == 0) {
+		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			menu_rotate_callback(&PHONE, 7);
+		}
+	}
+	else if (g_strcmp0(buf, "Off") == 0) {
+		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			menu_rotate_callback(&PHONE, 8);
+		}
+	}
+}
 /**
  * @brief	pop-up menu callback for event menu
  * @param 	widget: event generation widget
@@ -345,17 +364,6 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 		}
 	}
 
-	else if (g_strcmp0(buf, KEYBOARD_ON) == 0) {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-			menu_rotate_callback(&PHONE, 7);
-		}
-	}
-
-	else if (g_strcmp0(buf, KEYBOARD_OFF) == 0) {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-			menu_rotate_callback(&PHONE, 8);
-		}
-	}
 
 	/* 4.1 Portrait menu */
 
