@@ -270,6 +270,7 @@ int sensor_parser(char *buffer)
 	char tmpbuf[32];
 	int rotation;
 	int from_skin;
+	int base_mode = 0;
 
 #ifdef SENSOR_DEBUG
 	printf("read data: %s\n", buffer);
@@ -311,23 +312,26 @@ int sensor_parser(char *buffer)
 	{
 		if(from_skin == 0)
 		{
+			if(UISTATE.current_mode > 3)
+				base_mode = 4;
+
 			switch(rotation)
 			{
 			case 0:
-				if(UISTATE.current_mode != 0)
-					rotate_event_callback(&PHONE, 0);
+				if(UISTATE.current_mode %4 != 0)
+					rotate_event_callback(&PHONE, base_mode + 0);
 				break;
 			case 90:
-				if(UISTATE.current_mode != 1)
-					rotate_event_callback(&PHONE, 1);
+				if(UISTATE.current_mode %4 != 1)
+					rotate_event_callback(&PHONE, base_mode + 1);
 				break;
 			case 180:
-				if(UISTATE.current_mode != 2)
-					rotate_event_callback(&PHONE, 2);
+				if(UISTATE.current_mode %4 != 2)
+					rotate_event_callback(&PHONE, base_mode + 2);
 				break;
 			case 270:
-				if(UISTATE.current_mode != 3)
-					rotate_event_callback(&PHONE, 3);
+				if(UISTATE.current_mode %4 != 3)
+					rotate_event_callback(&PHONE, base_mode + 3);
 				break;
 			default:
 				assert(0);

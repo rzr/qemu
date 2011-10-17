@@ -266,7 +266,7 @@ void qemu_widget_size (qemu_state_t *qemu_state, gint width, gint height)
 
 	log_msg(MSGL_INFO, "qemu_qemu_state size if width = %d, height = %d\n", width, height);
 
-	sdl_display_set_rotation((4 - UISTATE.current_mode)%4);
+	sdl_display_set_rotation((8 - UISTATE.current_mode)%4);
 	sdl_display_set_window_size(width, height);
 
 #ifdef GTK_WIDGET_REALIZED
@@ -536,13 +536,13 @@ static void qemu_update (qemu_state_t *qemu_state)
 	}
 	else
 	{
-		if ((qemu_state->scale == 1) && (UISTATE.current_mode == 0))
+		if ((qemu_state->scale == 1) && (UISTATE.current_mode %4 == 0))
 			SDL_BlitSurface(qemu_state->surface_qemu, NULL, qemu_state->surface_screen, NULL);
 		else
 		{
 			SDL_Surface *down_screen;
 			down_screen = rotozoomSurface(qemu_state->surface_qemu,
-					UISTATE.current_mode * 90, 1 / qemu_state->scale, SMOOTHING_ON);
+					(UISTATE.current_mode %4) * 90, 1 / qemu_state->scale, SMOOTHING_ON);
 			SDL_BlitSurface(down_screen, NULL, qemu_state->surface_screen, NULL);
 			SDL_FreeSurface(down_screen);
 		}

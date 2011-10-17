@@ -193,7 +193,7 @@ void virtual_target_select_cb(GtkComboBox *virtual_target_combobox, gpointer dat
 	g_free(path);
 	g_free(info_file);
 }
-
+/*
 void scale_select_cb(GtkWidget *widget, gpointer data)
 {
 	GtkToggleButton *toggled_button = GTK_TOGGLE_BUTTON(data);
@@ -206,7 +206,7 @@ void scale_select_cb(GtkWidget *widget, gpointer data)
 			preference_entrys.scale = 1;
 	}
 }
-
+*/
 
 /**
 	@brief	set telnet status active by telnet_port
@@ -357,8 +357,6 @@ int ok_clicked_cb(GtkWidget *widget, gpointer entry)
 	}
 
 	
-	configuration.scale = preference_entrys.scale;
-
 	/* 3. SD Card Set */
 
 //	configuration.qemu_configuration.sdcard_type = preference_entrys.qemu_configuration.sdcard_type;

@@ -335,7 +335,7 @@ static GtkWidget *make_virtual_target_frame(const gchar *frame_name)
 	return frame;
 }
 
-
+/*
 static GtkWidget *make_scale_frame(const gchar *frame_name)
 {
 	GSList *group;
@@ -376,7 +376,7 @@ static GtkWidget *make_scale_frame(const gchar *frame_name)
 
 	return frame;
 }
-
+*/
 
 /**
   @brief	make a frame for always on frame buffer
@@ -642,8 +642,6 @@ static GtkWidget *make_boot_frame(const gchar *frame_name)
 
 static void set_initial_preference_entrys(void)
 {
-	preference_entrys.scale = configuration.scale;
-
 	preference_entrys.qemu_configuration.use_host_http_proxy = configuration.qemu_configuration.use_host_http_proxy;
 	preference_entrys.qemu_configuration.use_host_dns_server = configuration.qemu_configuration.use_host_dns_server;
 
@@ -688,8 +686,8 @@ void create_config_frame(GtkWidget * vbox)
 	GtkWidget *virtual_target_frame = make_virtual_target_frame(_("Virtual Target"));
 	gtk_box_pack_start(GTK_BOX(temp_vbox), virtual_target_frame, TRUE, TRUE, 0);
 
-	GtkWidget *scale_frame = make_scale_frame(_("Scale"));
-	gtk_box_pack_start(GTK_BOX(temp_vbox), scale_frame, TRUE, TRUE, 0);
+//	GtkWidget *scale_frame = make_scale_frame(_("Scale"));
+//	gtk_box_pack_start(GTK_BOX(temp_vbox), scale_frame, TRUE, TRUE, 0);
 
 
 	/* 4. network internet setting frame create */
@@ -797,7 +795,7 @@ int show_config_window (GtkWidget *parent)
 	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 	gtk_window_set_icon_from_file(GTK_WINDOW (win), icon_image, NULL);
 
-	gtk_window_set_default_size(GTK_WINDOW (win), 360, 220);
+	gtk_window_set_default_size(GTK_WINDOW (win), 360, -1);
 	gtk_window_set_modal (GTK_WINDOW (win), TRUE);
 	gtk_window_set_position (GTK_WINDOW (win), GTK_WIN_POS_CENTER);
 
