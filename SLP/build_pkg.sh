@@ -1,8 +1,6 @@
 #!/bin/sh
 # Emulator Release Package
 
-echo $2
-
 set_emulator_var () {
 	echo ==== Init ====
 	BUILD_DIR=`pwd`
@@ -11,7 +9,6 @@ set_emulator_var () {
 	PACKAGE_BIN_DIR=$PACKAGE_DIR/EMUL_BIN
 	PACKAGE_EMUL_DIR=$PACKAGE_BIN_DIR/data
 
-	INHOUSE_IMG="inhouse"
 	PKG_BRANCH="release"
 
 	if test -e $PACKAGE_DIR
@@ -26,7 +23,6 @@ set_emulator_var () {
 	mkdir -p EMUL_BIN/data
 
 	cd $PACKAGE_SRC_DIR
-
 }
 
 build_emulator_pkg () { 
@@ -50,6 +46,7 @@ build_emulator_pkg () {
 	
 	echo ==== Start building emulator ====
 	cd $PACKAGE_SRC_DIR/qemu/SLP
+	git checkout $PKG_BRANCH
 	./build.sh
 	make install
 	mkdir -p binary/data/kernel-img
@@ -65,14 +62,14 @@ build_emulator_pkg () {
 	echo ==== Finish building emulator-Kernel ====
 }
 
-downloading_emulator_img () {
+downloading_emulator_script () {
 	echo ==== Begin Emulator Packaging ====
 	cd $BUILD_DIR
 	cd $PACKAGE_BIN_DIR
 	cp $PACKAGE_EMUL_DIR/Emulator/emulator.png ./
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/install
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/pkginfo.manifest
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/remove
+	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/qemu/install
+	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/qemu/pkginfo.manifest
+	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/qemu/remove
 
 	chmod 755 install remove
 	chmod 644 pkginfo.manifest
@@ -80,12 +77,6 @@ downloading_emulator_img () {
 	PKG_VERSION=`grep 'Version' pkginfo.manifest | cut -f3- -d"."`
 	sed -i s/$PKG_VERSION/$1/g pkginfo.manifest
 
-	cd $PACKAGE_EMUL_DIR/Emulator
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/$INHOUSE_IMG/emulimg-default.x86
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/$INHOUSE_IMG/emulimg.x86
-
-	cd $PACKAGE_BIN_DIR
-	echo `pwd`
 	echo ==== End Emualtor Packaging ====
 }
 
@@ -95,20 +86,12 @@ package_emulator_for_standalone () {
 }
 
 case $1 in
-	public)
-	echo ==== Start Public Build ====
-	set_emulator_var
-	INHOUSE_IMG=""
-	build_emulator_pkg
-	downloading_emulator_img $2
-	echo ==== Finish Public Build ====
-	;;
-	inhouse)
-	echo ==== Start Inhouse Build ====
+	release)
+	echo ==== Start Release Build ====
 	set_emulator_var
 	build_emulator_pkg
-	downloading_emulator_img $2
-	echo ==== Start Inhouse Build ====
+	downloading_emulator_script $2
+	echo ==== Finish Release Build ====
 	;;
 	standalone)
 	echo ==== Start Standalone Build ====
@@ -120,5 +103,5 @@ case $1 in
 	;;
 	*)
 	echo "usage : `basename $0` <package>"
-	echo " <package> : public/inhouse/standalone"
+	echo " <package> : release/standalone"
 esac
