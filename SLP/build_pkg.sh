@@ -1,6 +1,8 @@
 #!/bin/sh
 # Emulator Release Package
 
+echo $2
+
 set_emulator_var () {
 	echo ==== Init ====
 	BUILD_DIR=`pwd`
@@ -75,6 +77,9 @@ downloading_emulator_img () {
 	chmod 755 install remove
 	chmod 644 pkginfo.manifest
 
+	PKG_VERSION=`grep 'Version' pkginfo.manifest | cut -f3- -d"."`
+	sed -i s/$PKG_VERSION/$1/g pkginfo.manifest
+
 	cd $PACKAGE_EMUL_DIR/Emulator
 	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/$INHOUSE_IMG/emulimg-default.x86
 	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/$INHOUSE_IMG/emulimg.x86
@@ -95,14 +100,14 @@ case $1 in
 	set_emulator_var
 	INHOUSE_IMG=""
 	build_emulator_pkg
-	downloading_emulator_img
+	downloading_emulator_img $2
 	echo ==== Finish Public Build ====
 	;;
 	inhouse)
 	echo ==== Start Inhouse Build ====
 	set_emulator_var
 	build_emulator_pkg
-	downloading_emulator_img
+	downloading_emulator_img $2
 	echo ==== Start Inhouse Build ====
 	;;
 	standalone)
