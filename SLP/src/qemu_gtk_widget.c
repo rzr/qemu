@@ -54,6 +54,7 @@ static void qemu_sdl_init(qemu_state_t *qemu_state);
 
 qemu_state_t *qemu_state;
 static int widget_exposed;
+int qemu_state_initialized = 0;
 static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 //#define SDL_THREAD
@@ -191,6 +192,14 @@ void qemu_display_init (DisplayState *ds)
 	/*  graphics context information */
 	DisplayChangeListener *dcl;
 
+	while(1)
+	{
+		if(qemu_state_initialized == 1)
+			break;
+		else
+			usleep(100000);
+	}
+
 	qemu_state->ds = ds;
 
 	dcl = qemu_mallocz(sizeof(DisplayChangeListener));
@@ -249,6 +258,7 @@ gint qemu_widget_new (GtkWidget **widget)
 
 	*widget = GTK_WIDGET (qemu_state);
 
+	qemu_state_initialized = 1;
 	return TRUE;
 }
 
