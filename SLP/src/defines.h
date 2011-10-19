@@ -143,6 +143,8 @@ extern "C" {
 #define REVERSE_LANDSCAPE			"Reverse Landscape"
 #define KEYBOARD_ON					"keyboard_on"
 #define KEYBOARD_OFF				"keyboard_off"
+#define	HALF_SIZE					"1/2x"
+#define ACTUAL_SIZE					"1x"
 
 #define PLATFORM_TYPE_KEY			"RELEASE"
 #define DEFAULT_TARGET_KEY			"DEFAULT_TARGET"
@@ -163,7 +165,7 @@ extern "C" {
 
 /* Tag for getting GTK OBJECT POINTER */
 #define MAX_PROGRAM					5						/* program count of latest list */
-#define MODE_MAX					4						/* maximum MODE count */
+#define MODE_MAX					8						/* maximum MODE count */
 #define EVENT_INFO_MAX				2						/* maximum EVENT count */
 #define KEY_MAX_COUNT				256						/* maximum KEY count */
 #define LED_MAX_COUNT				4						/* maximum LED count */
@@ -586,7 +588,6 @@ typedef struct _CONFIGUATION
 	int main_x;
 	int main_y;
 	int mount_port;
-	int scale;
 
 	gchar target_path[MAXBUF];
 	gchar skin_path[MAXBUF];

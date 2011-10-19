@@ -52,6 +52,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	GSList *pGroup = NULL;
 	gchar icon_image[128] = {0, };
 	const gchar *skin_path;
+	gchar *keyboard_menu[2] = {"On", "Off"};
 	int i, j = 0;
 
 	skin_path = get_skin_path();
@@ -175,6 +176,32 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
 	gtk_widget_show(menu_item);
 
+	/* 3.6 USB keyboard menu */
+	
+	menu_item = gtk_image_menu_item_new_with_label(_("USB Keyboard"));
+	sprintf(icon_image, "%s/icons/04_KEYPAD.png", skin_path);
+	image_widget = gtk_image_new_from_file (icon_image);
+
+	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
+	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item), TRUE);
+	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
+	gtk_widget_show(menu_item);
+
+	SubMenuItem1 = gtk_menu_new();
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(menu_item), SubMenuItem1);
+
+	for(i = 0; i < 2; i++)
+	{
+		menu_item = gtk_radio_menu_item_new_with_label(pGroup, keyboard_menu[i]);
+		pGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(menu_item));
+
+		gtk_container_add(GTK_CONTAINER(SubMenuItem1), menu_item);
+
+		g_signal_connect(menu_item, "activate", G_CALLBACK(menu_keyboard_callback), keyboard_menu[i]);
+		gtk_widget_show(menu_item);
+	}
+	
 	/* 3.7 event for dbi file */
 
 	if (device->event_menu_cnt > 0) {
@@ -204,13 +231,13 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 				gtk_container_add(GTK_CONTAINER(SubMenuItem1), menu_item);
 
-				g_signal_connect(menu_item, "activate", G_CALLBACK(menu_event_callback), device->event_menu[i].event_list[j].event_eid);
+				g_signal_connect(menu_item, "activate", G_CALLBACK(menu_event_callback), device->event_menu[i].event_list[j].event_evalue);
 				gtk_widget_show(menu_item);
 
 				/* 3.7.3 object name set */
 
-				g_object_set_data((GObject *) * pMenu, device->event_menu[i].event_list[j].event_eid, (GObject *) menu_item);
-				g_object_set(menu_item, "name", device->event_menu[i].event_list[j].event_eid, NULL);
+				g_object_set_data((GObject *) * pMenu, device->event_menu[i].event_list[j].event_evalue, (GObject *) menu_item);
+				g_object_set(menu_item, "name", device->event_menu[i].event_list[j].event_evalue, NULL);
 
 			}
 		}

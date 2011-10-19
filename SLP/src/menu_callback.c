@@ -164,10 +164,23 @@ void rotate_event_callback(PHONEMODELINFO *device, int nMode)
 
 	mask_main_lcd(g_main_window, &PHONE, &configuration, nMode);
 
-	pwidget = g_object_get_data((GObject *) popup_menu, rotate[nMode]);
+	pwidget = g_object_get_data((GObject *) popup_menu, rotate[nMode%4]);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pwidget), TRUE);
 
 	log_msg(MSGL_INFO, "rotate called\n");
+}
+
+
+void scale_event_callback(PHONEMODELINFO *device, int nMode)
+{
+	if (device == NULL || nMode < 0)
+		return;
+
+	UISTATE.current_mode = nMode;
+
+	mask_main_lcd(g_main_window, &PHONE, &configuration, nMode);
+
+	log_msg(MSGL_INFO, "scale called\n");
 }
 
 
@@ -242,6 +255,25 @@ cleanup:
 }
 
 
+void menu_keyboard_callback(GtkWidget *widget, gpointer data)
+{
+	GtkWidget *pWidget = NULL;
+	char *buf = NULL;
+	buf = data;
+
+	pWidget = widget;
+
+	if (g_strcmp0(buf, "On") == 0) {
+		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			menu_rotate_callback(&PHONE, 7);
+		}
+	}
+	else if (g_strcmp0(buf, "Off") == 0) {
+		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			menu_rotate_callback(&PHONE, 8);
+		}
+	}
+}
 /**
  * @brief	pop-up menu callback for event menu
  * @param 	widget: event generation widget
@@ -345,17 +377,6 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 		}
 	}
 
-	else if (g_strcmp0(buf, KEYBOARD_ON) == 0) {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-			menu_rotate_callback(&PHONE, 7);
-		}
-	}
-
-	else if (g_strcmp0(buf, KEYBOARD_OFF) == 0) {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-			menu_rotate_callback(&PHONE, 8);
-		}
-	}
 
 	/* 4.1 Portrait menu */
 
@@ -422,6 +443,26 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 			}
 
 			device_set_rotation(270);
+		}
+	}
+
+	/* 5. Scale menu */
+
+	else if (g_strcmp0(buf, HALF_SIZE) == 0) {
+		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			if(UISTATE.current_mode > 3) {
+				UISTATE.scale = 2.0;
+				scale_event_callback(&PHONE, UISTATE.current_mode - 4);			
+			}
+		}
+	}
+
+	else if (g_strcmp0(buf, ACTUAL_SIZE) == 0) {
+		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			if(UISTATE.current_mode <= 3) {
+				UISTATE.scale = 1.0;
+				scale_event_callback(&PHONE, UISTATE.current_mode + 4);			
+			}	
 		}
 	}
 

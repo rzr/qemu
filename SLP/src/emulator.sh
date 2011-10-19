@@ -332,7 +332,7 @@ set_emulator_options () {
 	# no skin, search for one
 	if test "$skin" = ""
 	then
-		skin="$EMULATOR_SKIN_PATH/emul_240x400/default.dbi"
+		skin="$EMULATOR_SKIN_PATH/emul_480x800/default.dbi"
 	fi
 	if test \! -f "$skin"
 	then
