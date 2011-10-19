@@ -622,23 +622,23 @@ static void touch_shoot_for_type(int x, int y, int lcd_status, int touch_type)
    		dy = y * 0x7FFF / (lcd_height - 1);
 	}
 	else {
-		if(UISTATE.current_mode == 0){
+		if(UISTATE.current_mode %4 == 0){
 			dx = (x * 0x7FFF) / 5040;
 			dy = (y * 0x7FFF) / 3780;
 		}
-		else if(UISTATE.current_mode == 1){
+		else if(UISTATE.current_mode %4 == 1){
 			/* In this mode x becomes y and y -(lcd_height + lcd_region.y) becomes  x, the idea is to
 			     convert all rotation events(90,180,270) to normal rotation event(0)
 			  */
 			dx = ((lcd_height - y) * 0x7FFF) / 5040;
 			dy = (x * 0x7FFF) / 3780;
 		}
-		else if(UISTATE.current_mode == 2){
+		else if(UISTATE.current_mode %4 == 2){
 			/*Similar to above comment*/
 			dx = ((lcd_width - x ) * 0x7FFF) / 5040;
 			dy = ((lcd_height - y) * 0x7FFF) / 3780;
 		}
-		else if(UISTATE.current_mode == 3){
+		else if(UISTATE.current_mode %4 == 3){
 			/*Similar to above comment*/
 			dx = (y * 0x7FFF) / 5040;
 			dy = ((lcd_width - x) * 0x7FFF) / 3780;

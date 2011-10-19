@@ -86,8 +86,6 @@ int fill_configuration(int status)
 #endif
 	}
 
-	configuration.scale = 2;
-
 	/* 1.4 skin setting */
 
 	if (startup_option.skin) {
@@ -591,12 +589,11 @@ int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconf
 	int i;
 	int resolution_found = 0;
 	char *skin = NULL;
-	char *resolution_one[RESOLUTION_COUNT] = {"320x480", "480x800", "600x1024", "720x1280"};
-	char *resolution_half[RESOLUTION_COUNT] = {"160x240", "240x400", "300x512", "360x640"};
+	char *resolution[RESOLUTION_COUNT] = {"320x480", "480x800", "600x1024", "720x1280"};
 
 	for(i = 0; i < RESOLUTION_COUNT; i++)
 	{
-		if(strcmp(pvirtual_target_info->resolution, resolution_one[i]) == 0)
+		if(strcmp(pvirtual_target_info->resolution, resolution[i]) == 0)
 		{
 			resolution_found = 1;
 			break;
@@ -609,20 +606,14 @@ int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconf
 		return -1;
 	}
 
-	if(pconfiguration->scale == 2)
-	{
-		skin = g_strdup(resolution_half[i]);
-	}
-	else
-	{
-		skin = g_strdup(resolution_one[i]);
-	}
+	skin = g_strdup(resolution[i]);
 
 	snprintf(pconfiguration->skin_path, MAXBUF, "%s/emul_%s/default.dbi", get_skin_path(), skin);
 
 	if(is_valid_skin(pconfiguration->skin_path) == 0)
 	{
 		log_msg(MSGL_ERROR, "skin file is invalid\n");
+		g_free(skin);
 		return -1;
 	}
 	
