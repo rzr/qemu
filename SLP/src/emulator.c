@@ -373,7 +373,7 @@ static void construct_main_window(void)
 		exit(EXIT_FAILURE);
 	}
 
-	if(gtk_window_set_icon_from_file(GTK_WINDOW (g_main_window), emul_img_dir, NULL) == FALSE) {
+	if(gtk_window_set_default_icon_from_file(emul_img_dir, NULL) == FALSE) {
 		log_msg(MSGL_ERROR, "emulator icon from file doesn't set!! %s\n", emul_img_dir);
 		exit(EXIT_FAILURE);
 	}
