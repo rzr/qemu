@@ -11,7 +11,7 @@ exec ./configure \
  --audio-drv-list=pa \
  --audio-card-list=es1370 \
  --enable-mixemu \
- --disable-vnc-tls \
+ --disable-vnc-tls
 #--enable-profiler \
 # --enable-gles2 --gles2dir=/usr
 ;;
@@ -31,7 +31,7 @@ exec ./configure \
  --audio-drv-list=winwave \
  --audio-card-list=es1370 \
  --enable-mixemu \
- --disable-vnc-tls \
+ --disable-vnc-tls
 # --disable-vnc-jpeg \
 # --disable-jpeg
 ;;

@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+## Register .desktop file
+xdg-desktop-menu uninstall samsung-sdk_menu.directory samsung-sdk-emulator.desktop
+xdg-desktop-menu uninstall samsung-sdk_menu.directory samsung-sdk-vtm.desktop
+### END Register Menu ###
+
+## Remove icon file ##
+rm -f ~/.local/share/icons/emulator.png
+rm -f ~/.local/share/icons/vtm.png
+## End remove icon file ##
