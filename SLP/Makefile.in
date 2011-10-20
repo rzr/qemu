@@ -1,6 +1,6 @@
 prefix = @prefix@
 
-PHONE_DIR = binary 
+PHONE_DIR=Emulator 
 
 all:
 	cd src && $(MAKE)

@@ -61,7 +61,7 @@ ifeq ($(CONFIG_DSOUND),y)
 endif
 
 prefix = @prefix@
-PHONE_DIR = ../binary
+PHONE_DIR=../Emulator
 
 DEBUG = y
 STRIP = strip
@@ -218,20 +218,19 @@ $(VTM) : $(OBJS_VTM)
 	$(Q)$(CC) -Wl,--rpath,$$ORIGIN/lib $(OBJS_VTM) $(LDFLAGS) $(LIBS_COMMON) -o $@
 
 install: $(TARGET)
-	#mkdir -p $(PHONE_DIR)
-	install emulator-x86 $(PHONE_DIR)/emulator-x86
-	#install emulator-arm $(PHONE_DIR)/emulator-arm
 ifeq ($(CONFIG_WIN32),y)
 	install emulator.bat $(PHONE_DIR)
 	install emulator.vbs $(PHONE_DIR)
 	install vtm.bat $(PHONE_DIR)
 	install vtm.vbs $(PHONE_DIR)
+	install ../../qemu-img $(PHONE_DIR)
 else ifeq ($(CONFIG_LINUX),y)
 	install emulator.sh $(PHONE_DIR)/emulator
 endif
-	install vtm $(PHONE_DIR)/vtm
-	install emulator.png $(PHONE_DIR)
+	install emulator-x86 $(PHONE_DIR)/emulator-x86
+	#install emulator-arm $(PHONE_DIR)/emulator-arm
 	install savevm.glade $(PHONE_DIR)
+	install vtm $(PHONE_DIR)/vtm
 	install vtm.glade $(PHONE_DIR)
 #	install gps.glade $(PHONE_DIR)
 
