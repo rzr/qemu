@@ -87,10 +87,17 @@ void real_log_msg(int level, const char *file, unsigned int line, const char *fu
 		fprintf(stdout, "%s / %s", msglevel[level], tmp);
 
 	if ((msg_level == MSGL_ALL) || (msg_level == MSGL_FILE)) {
+#ifdef _WIN32
+		SYSTEMTIME currentTime;
+		GetLocalTime(&currentTime);
+		sprintf(timeinfo, "%4ld/%02ld/%02ld %02ld:%02ld:%02ld",
+				currentTime.wYear, currentTime.wMonth, currentTime.wDay,
+				currentTime.wHour, currentTime.wMinute, currentTime.wSecond);
+#else
 		gettimeofday(&tval, NULL);
-		tm_time = gmtime(&(tval.tv_sec));
+		tm_time = localtime(&tval.tv_sec);
 		strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
-
+#endif
 		sprintf(txt, "%s %s / %s", timeinfo, msglevel[level], tmp);
 		if ((fp = fopen(logfile, "a+")) == NULL) {
 			fprintf(stdout, "log file can't open. (%s)\n", logfile);
