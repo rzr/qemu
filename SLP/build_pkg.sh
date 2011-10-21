@@ -115,7 +115,7 @@ emulator_linux ()
 			build_emulator_kernel
 			create_emulator_metascript $3
 			make_emulator_release_pkg
-			#upload_release_pkg
+			upload_release_pkg
 			echo ==== Finish Release Build ====
 			;;
 		standalone)
@@ -125,7 +125,7 @@ emulator_linux ()
 			build_emulator
 			build_emulator_kernel
 			make_emulator_standalone_pkg
-			#upload_standalone_pkg
+			upload_standalone_pkg
 			echo ==== Start Standalone Build ====
 			;;
 		*)
