@@ -46,6 +46,8 @@
     do { } while (0)
 #endif
 
+extern void show_message(const char *szTitle, const char *szMessage);
+
 typedef struct KVMSlot
 {
     target_phys_addr_t start_addr;
@@ -670,24 +672,32 @@ int kvm_init(void)
     }
     s->vmfd = -1;
     s->fd = qemu_open("/dev/kvm", O_RDWR);
-    if (s->fd == -1) {
-        fprintf(stderr, "Could not access KVM kernel module: %m\n");
-        ret = -errno;
-        goto err;
-    }
+	if (s->fd == -1) {
+		fprintf(stderr, "Could not access KVM kernel module: %m\n");
 
-    ret = kvm_ioctl(s, KVM_GET_API_VERSION, 0);
+		show_message("Error", "Could not access KVM kernel module: Permission denied\n"
+				"You can add the login user to the KVM group by following command \n"
+				" - $sudo addgroup `whoami` kvm");
+		exit(0);
+
+		ret = -errno;
+		goto err;
+	}
+
+	ret = kvm_ioctl(s, KVM_GET_API_VERSION, 0);
     if (ret < KVM_API_VERSION) {
         if (ret > 0) {
             ret = -EINVAL;
         }
         fprintf(stderr, "kvm version too old\n");
+		show_message("Error", "KVM version too old \n");
         goto err;
     }
 
     if (ret > KVM_API_VERSION) {
         ret = -EINVAL;
         fprintf(stderr, "kvm version not supported\n");
+		show_message("Error", "KVM version not supported \n");
         goto err;
     }
 
