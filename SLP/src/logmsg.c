@@ -140,7 +140,7 @@ void log_msg_init(int level)
 			fprintf(stdout, "\n>>> debug_level must be 0,1,2,3,4,9 <otherwise: MSGL_INFO<3>\n");
 			msg_level = MSGL_DEFAULT;
 		}
-		fprintf(stderr, "msglevel = %d\n", msg_level);
+		fprintf(stdout, "msglevel = %d\n", msg_level);
 	}
 
 	if (level) {

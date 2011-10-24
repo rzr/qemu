@@ -19,7 +19,7 @@
 SDL_GFX=`dpkg -l | grep libsdl-gfx`
 if test "$SDL_GFX" = ""
 then
-	echo "There is no libSDL_gfx library to run this emulator.\nPlease install libsdl-gfx package."
+	echo "There is no libSDL_gfx library to run this emulator.\nPlease install libsdl-gfx package." >> $STDERR_LOGFILE
 	exit 1
 fi
 
@@ -56,6 +56,12 @@ if test -e $EMUL_LOGFILE
 then
 	rm $EMUL_LOGFILE
 fi
+STDERR_LOGFILE="$EMULATOR_BIN_PATH/stderr.txt"
+if test -e $STDERR_LOGFILE
+then
+	rm $STDERR_LOGFILE
+fi
+
 EMUL_DUMP=1
 ulimit -c unlimited
 
@@ -309,7 +315,7 @@ set_devel_env () {
 set_emulator_options () {
 	if test \! -d "$EMULATOR_SKIN_PATH"
 	then
-		echo "No emulator skins found..."
+		echo "No emulator skins found..." >> $STDERR_LOGFILE
 		exit 1
 	fi
 
@@ -336,7 +342,7 @@ set_emulator_options () {
 	fi
 	if test \! -f "$skin"
 	then
-		echo "No skin file found"
+		echo "No skin file found" >> $STDERR_LOGFILE
 		exit 1
 	fi
 
@@ -406,7 +412,7 @@ set_qemu_options () {
 		qemu_arm_opts="$qemu_arm_opts -kernel $EMULATOR_KERNEL_PATH/$EMULATOR_KERNEL_NAME_ARM"
 		qemu_x86_opts="$qemu_x86_opts -kernel $EMULATOR_KERNEL_PATH/$EMULATOR_KERNEL_NAME_X86"
 	else
-		echo "Cannot find kernel image !!!!"
+		echo "Cannot find kernel image !!!!" >> $STDERR_LOGFILE
 		exit 1
 	fi
 
@@ -465,7 +471,7 @@ case ${TARGET_ARCH} in
 		then
 		exec $GDB "${EMULATOR_BIN_PATH}/emulator-x86" \
 			$BOOT_OPTION "$TARGET_PATH" \
-			$emul_opts -- $qemu_x86_opts $qemu_common_opts $debug_ports $kvm_opt 2>> $EMUL_LOGFILE
+			$emul_opts -- $qemu_x86_opts $qemu_common_opts $debug_ports $kvm_opt 1>> $EMUL_LOGFILE 2> stderr.log
 		else
 		exec $GDB "${EMULATOR_BIN_PATH}/emulator-x86" \
 			$BOOT_OPTION "$TARGET_PATH" \
@@ -473,7 +479,7 @@ case ${TARGET_ARCH} in
 		fi
 		;;
 	*)
-		echo "Unknown target architecture: ${TARGET_ARCH}"
+		echo "Unknown target architecture: ${TARGET_ARCH}" >> $STDERR_LOGFILE
 		;;
 esac
 
