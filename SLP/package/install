@@ -37,8 +37,24 @@ categoryfile=~/.local/share/desktop-directories/samsung-sdk_menu.directory
 
 mkdir -p $iconpath
 
-cp -f $SLP_SDK_INSTALL_PATH/temp/$emul_iconfile $iconpath/$emul_iconfile
-cp -f $SLP_SDK_INSTALL_PATH/temp/$vtm_iconfile $iconpath/$vtm_iconfile
+if test -e $SLP_SDK_INSTALL_PATH/temp/$emul_iconfile
+then
+	cp -f $SLP_SDK_INSTALL_PATH/temp/$emul_iconfile $iconpath/$emul_iconfile
+else
+	echo "$emul_iconfile does not exist!!"
+	exit 1
+fi
+
+if test -e $SLP_SDK_INSTALL_PATH/temp/$vtm_iconfile 
+then 
+	cp -f $SLP_SDK_INSTALL_PATH/temp/$vtm_iconfile $iconpath/$vtm_iconfile
+else
+	echo "$vtm_iconfile does not exist!!"
+	exit 1
+fi
+
+#cp -f $SLP_SDK_INSTALL_PATH/temp/$emul_iconfile $iconpath/$emul_iconfile
+#cp -f $SLP_SDK_INSTALL_PATH/temp/$vtm_iconfile $iconpath/$vtm_iconfile
 
 mkdir -p $desktoppath
 

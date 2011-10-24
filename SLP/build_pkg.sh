@@ -71,6 +71,7 @@ create_emulator_metascript () {
 make_emulator_release_pkg () {
 	echo ==== Start compressing emulator Packaging ====
 	cp $BUILD_DIR/skins/icons/emulator.png $PKG_BIN_DIR/
+	cp $BUILD_DIR/skins/icons/vtm.png $PKG_BIN_DIR/
 	cd $PKG_BIN_DIR
 	zip -r $PKG_OUTPUT *
 	echo ==== Finish compressing emulator Packaging ====
