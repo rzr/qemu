@@ -175,5 +175,5 @@ void isa_ne2000_init(int base, int irq, NICInfo *nd);
 #define E820_UNUSABLE   5
 
 int e820_add_entry(uint64_t, uint64_t, uint32_t);
-
+int svcamera_pci_init(PCIBus *bus);
 #endif

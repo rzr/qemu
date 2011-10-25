@@ -11,7 +11,8 @@ exec ./configure \
  --audio-drv-list=pa \
  --audio-card-list=es1370 \
  --enable-mixemu \
- --disable-vnc-tls
+ --disable-vnc-tls \
+ --extra-ldflags="-lv4l2 -lv4lconvert"
 #--enable-profiler \
 # --enable-gles2 --gles2dir=/usr
 ;;
