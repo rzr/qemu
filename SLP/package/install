@@ -15,6 +15,7 @@ case ${UBUNTU_VER} in
 	*)
 		categories="Samsung Linux Platform"
 		;;
+esac
 	
 ## emulator shortcut 
 emul_desktopfile=$desktoppath/samsung-sdk-emulator.desktop
