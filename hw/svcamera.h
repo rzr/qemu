@@ -125,8 +125,6 @@ void svcam_fake_g_ctrl(SVCamState *state, SVCamParam *param);
 void svcam_fake_enum_fsizes(SVCamState *state, SVCamParam *param);
 void svcam_fake_enum_fintv(SVCamState *state, SVCamParam *param);
 
-void *svcam_worker_thread(void *thread_param);
-
 void svcam_device_init(SVCamState *state, SVCamParam *param);
 void svcam_device_open(SVCamState *state, SVCamParam *param);
 void svcam_device_start_preview(SVCamState *state, SVCamParam *param);
