@@ -38,18 +38,23 @@
 #define SVCAM_MEM_SIZE		(4 * 1024 * 1024)	// 4MB
 #define SVCAM_REG_SIZE		(256)				// 64 * 4
 
-/* ===================================================================================
- 	 I/O
-==================================================================================== */
-
-static SVCamParam g_param;
+/*
+ *  I/O functions
+ */
 static inline uint32_t svcam_reg_read(void *opaque, target_phys_addr_t offset)
 {
-	uint32_t ret;
+	uint32_t ret = 0;
+	SVCamState *state = (SVCamState*)opaque;
 
 	switch (offset & 0xFF) {
+	case SVCAM_CMD_ISSTREAM:
+		pthread_mutex_lock(&state->thread->mutex_lock);
+		ret = state->streamon;
+		pthread_mutex_unlock(&state->thread->mutex_lock);
+		break;
 	case SVCAM_CMD_G_DATA:
-		return g_param.stack[g_param.top++];
+		ret = state->thread->param->stack[state->thread->param->top++];
+		break;
 	case SVCAM_CMD_OPEN:
 	case SVCAM_CMD_CLOSE:
 	case SVCAM_CMD_START_PREVIEW:
@@ -65,74 +70,74 @@ static inline uint32_t svcam_reg_read(void *opaque, target_phys_addr_t offset)
 	case SVCAM_CMD_G_CTRL:
 	case SVCAM_CMD_ENUM_FSIZES:
 	case SVCAM_CMD_ENUM_FINTV:
-		ret = g_param.errCode;
-		g_param.errCode = 0;
-		return ret;
+		ret = state->thread->param->errCode;
+		state->thread->param->errCode = 0;
+		break;
 	default:
 		DEBUG_PRINT("Not supported command!!");
 		break;
 	}
-    return 0;
+	return ret;
 }
 
 static inline void svcam_reg_write(void *opaque, target_phys_addr_t offset, uint32_t value)
 {
 	SVCamState *state = (SVCamState*)opaque;
-	uint32_t cmd = offset/sizeof(uint32_t);
-
-	g_param.devCmd = cmd;
 	
-	switch(offset & 0xFF) {	
+	switch(offset & 0xFF) {
 	case SVCAM_CMD_OPEN:
-		svcam_device_open(state, &g_param);
+		svcam_device_open(state);
 		break;
 	case SVCAM_CMD_CLOSE:
-		svcam_device_close(state, &g_param);
+		svcam_device_close(state);
 		break;
 	case SVCAM_CMD_START_PREVIEW:
-		svcam_device_start_preview(state, &g_param);
+		svcam_device_start_preview(state);
 		break;
 	case SVCAM_CMD_STOP_PREVIEW:
-		svcam_device_stop_preview(state, &g_param);
+		svcam_device_stop_preview(state);
 		break;
 	case SVCAM_CMD_S_PARAM:
-		svcam_device_s_param(state, &g_param);
+		svcam_device_s_param(state);
 		break;
 	case SVCAM_CMD_G_PARAM:
-		svcam_device_g_param(state, &g_param);
+		svcam_device_g_param(state);
 		break;
 	case SVCAM_CMD_ENUM_FMT:
-		svcam_device_enum_fmt(state, &g_param);
+		svcam_device_enum_fmt(state);
 		break;
 	case SVCAM_CMD_TRY_FMT:
-		svcam_device_try_fmt(state, &g_param);
+		svcam_device_try_fmt(state);
 		break;
 	case SVCAM_CMD_S_FMT:
-		svcam_device_s_fmt(state, &g_param);
+		svcam_device_s_fmt(state);
 		break;
 	case SVCAM_CMD_G_FMT:
-		svcam_device_g_fmt(state, &g_param);
+		svcam_device_g_fmt(state);
 		break;
 	case SVCAM_CMD_QCTRL:
-		svcam_device_qctrl(state, &g_param);
+		svcam_device_qctrl(state);
 		break;
 	case SVCAM_CMD_S_CTRL:
-		svcam_device_s_ctrl(state, &g_param);
+		svcam_device_s_ctrl(state);
 		break;
 	case SVCAM_CMD_G_CTRL:
-		svcam_device_g_ctrl(state, &g_param);
+		svcam_device_g_ctrl(state);
 		break;
 	case SVCAM_CMD_ENUM_FSIZES:
-		svcam_device_enum_fsizes(state, &g_param);
+		svcam_device_enum_fsizes(state);
 		break;
 	case SVCAM_CMD_ENUM_FINTV:
-		svcam_device_enum_fintv(state, &g_param);
+		svcam_device_enum_fintv(state);
 		break;
 	case SVCAM_CMD_S_DATA:
-		g_param.stack[g_param.top++] = value;
+		state->thread->param->stack[state->thread->param->top++] = value;
 		break;
-	case SVCAM_CMD_DTC:
-		memset(&g_param, 0, sizeof(g_param));
+	case SVCAM_CMD_DATACLR:
+		memset(state->thread->param, 0, sizeof(SVCamParam));
+		break;
+	case SVCAM_CMD_CLRIRQ:
+		qemu_irq_lower(state->dev.irq[0]);
 		break;
 	default:
 		DEBUG_PRINT("Not supported command!!");
@@ -152,9 +157,9 @@ static CPUWriteMemoryFunc * const svcam_reg_writefn[3] = {
 	svcam_reg_write,
 };
 
-/* ===================================================================================
- 	 memory allocation
-==================================================================================== */
+/*
+ *  memory allocation
+ */
 static void svcam_memory_map(PCIDevice *dev, int region_num,
 			       pcibus_t addr, pcibus_t size, int type)
 {
@@ -173,16 +178,20 @@ static void svcam_mmio_map(PCIDevice *dev, int region_num,
 	s->mmio_addr = addr;
 }
 
-// ==========================================================================================
+/*
+ *  Initialize function
+ */
 static int svcam_initfn(PCIDevice *dev)
 {
 	SVCamState *s = DO_UPCAST(SVCamState, dev, dev);
 	uint8_t *pci_conf = s->dev.config;
+	SVCamThreadInfo *thread;
+	SVCamParam *param;
 
 	pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_SAMSUNG);
 	pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_CAMERA);
 	pci_config_set_class(pci_conf, PCI_CLASS_OTHERS);
-	pci_config_set_interrupt_pin(pci_conf, 2);
+	pci_config_set_interrupt_pin(pci_conf, 0x02);
 
 	s->mem_offset = qemu_ram_alloc(NULL, "svcamera.ram", SVCAM_MEM_SIZE);
 	/* return a host pointer */
@@ -201,14 +210,14 @@ static int svcam_initfn(PCIDevice *dev)
 						PCI_BASE_ADDRESS_SPACE_MEMORY, svcam_mmio_map);
 
 	/* for worker thread */
-	SVCamThreadInfo *thread = qemu_malloc(sizeof(SVCamThreadInfo));
+	thread = qemu_mallocz(sizeof(SVCamThreadInfo));
+	param = qemu_mallocz(sizeof(SVCamParam));
 
 	thread->state = s;
+	thread->param = param;
 	s->thread = thread;
 
-	svcam_device_init(thread->state, NULL);
-
-	memset(&g_param, 0, sizeof(g_param));
+	svcam_device_init(s);
 
 	return 0;
 }

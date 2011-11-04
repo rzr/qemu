@@ -16,14 +16,6 @@
 #include <libv4l2.h>
 #include <libv4lconvert.h>
 
-#if defined (DEBUG_SVCAM)
-#define PIX_TO_FOURCC(pix) \
-	((char) ((pix) & 0xff)), \
-	((char) (((pix) >> 8) & 0xff)), \
-	((char) (((pix) >> 16) & 0xff)), \
-	((char) (((pix) >> 24) & 0xff))
-#endif
-
 static int v4l2_fd;
 static int convert_trial;
 
@@ -68,10 +60,16 @@ static int __v4l_convert(SVCamState *state, void *src_ptr, uint32_t src_size)
 			return 0;
 		}
 	}
+	pthread_mutex_lock(&state->thread->mutex_lock);
+	if (!state->streamon) {
+		pthread_mutex_unlock(&state->thread->mutex_lock);
+		return 0;
+	}
+	pthread_mutex_unlock(&state->thread->mutex_lock);
 
 	memcpy(src_ptr, dst_buf, dst_fmt.fmt.pix.sizeimage);
 
-	qemu_irq_raise(state->dev.irq[1]);
+	qemu_irq_raise(state->dev.irq[0]);
 
 	return 1;
 }
@@ -87,10 +85,7 @@ static int __v4l2_get_frame(SVCamState *state){
 		return -1;
 	}
 
-	if (v4lcvtdata) {
-		return __v4l_convert(state, state->vaddr, (uint32_t)r);
-	}
-	return -1;
+	return __v4l_convert(state, state->vaddr, (uint32_t)r);
 }
 
 static int __v4l2_grab(SVCamState *state)
@@ -117,13 +112,13 @@ static int __v4l2_grab(SVCamState *state)
 		DEBUG_PRINT("Timed out");
 		return -1;
 	}
+	pthread_mutex_lock(&state->thread->mutex_lock);
+	r = state->streamon;
+	pthread_mutex_unlock(&state->thread->mutex_lock);
+	if (!r)
+		return 0;
 
 	return __v4l2_get_frame(state);
-}
-
-int svcam_fake_grab(SVCamState *state)
-{
-	return 0;
 }
 
 // Worker thread
@@ -155,7 +150,7 @@ wait_worker_thread:
 	pthread_exit(NULL);
 }
 
-void svcam_device_init(SVCamState* state, SVCamParam* param)
+void svcam_device_init(SVCamState* state)
 {
 	int err = 0;
 	SVCamThreadInfo *thread = state->thread;
@@ -165,41 +160,41 @@ void svcam_device_init(SVCamState* state, SVCamParam* param)
 
 	err = pthread_create(&thread->thread_id, NULL, svcam_worker_thread, (void*)thread);
 	if (err != 0) {
-		DEBUG_PRINT("pthread_create() is failed");
 		perror("svcamera pthread_create fail");
 		exit(0);
 	}
 }
 
 // SVCAM_CMD_OPEN
-void svcam_device_open(SVCamState* state, SVCamParam* param)
+void svcam_device_open(SVCamState* state)
 {
 	int fd;
 	struct v4l2_capability cap;
+	SVCamParam *param = state->thread->param;
 
 	DEBUG_PRINT("");
 
 	param->top = 0;
 	v4l2_fd = v4l2_open("/dev/video0", O_RDWR | O_NONBLOCK);
 	if (v4l2_fd < 0) {
-		DEBUG_PRINT("v4l2 device open failed. fake webcam mode ON.");
+		DEBUG_PRINT("v4l2 device open failed.");
+		param->errCode = EINVAL;
 		return;
 	}
 	if (xioctl(v4l2_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-			DEBUG_PRINT("VIDIOC_QUERYCAP failed. fake webcam mode ON.");
-			v4l2_close(v4l2_fd);
-			return;
-	}
-
-	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
-					!(cap.capabilities & V4L2_CAP_STREAMING)) {
-		DEBUG_PRINT("Not supported video driver. fake webcam mode ON.");
+		DEBUG_PRINT("VIDIOC_QUERYCAP failed");
 		v4l2_close(v4l2_fd);
+		param->errCode = EINVAL;
+		return;
+	}
+	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
+			!(cap.capabilities & V4L2_CAP_STREAMING)) {
+		DEBUG_PRINT("Not supported video driver.");
+		v4l2_close(v4l2_fd);
+		param->errCode = EINVAL;
 		return;
 	}
 
-	/* we will use host webcam */
-	state->is_webcam = 1;
 	fd = v4l2_fd_open(v4l2_fd, V4L2_ENABLE_ENUM_FMT_EMULATION);
 	if (fd != -1) {
 		v4l2_fd = fd;
@@ -207,6 +202,7 @@ void svcam_device_open(SVCamState* state, SVCamParam* param)
 	v4lcvtdata = v4lconvert_create(v4l2_fd);
 	if (!v4lcvtdata) {
 		DEBUG_PRINT("v4lconvert_create failed!!");
+		v4l2_close(v4l2_fd);
 		perror("v4lconvert_create fail");
 		exit(0);
 	}
@@ -217,7 +213,7 @@ void svcam_device_open(SVCamState* state, SVCamParam* param)
 }
 
 // SVCAM_CMD_START_PREVIEW
-void svcam_device_start_preview(SVCamState* state, SVCamParam* param)
+void svcam_device_start_preview(SVCamState* state)
 {
 	DEBUG_PRINT("");
 	pthread_mutex_lock(&state->thread->mutex_lock);
@@ -227,20 +223,21 @@ void svcam_device_start_preview(SVCamState* state, SVCamParam* param)
 }
 
 // SVCAM_CMD_STOP_PREVIEW
-void svcam_device_stop_preview(SVCamState* state, SVCamParam* param)
+void svcam_device_stop_preview(SVCamState* state)
 {
 	DEBUG_PRINT("");
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 0;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
 	sleep(0);
+	qemu_irq_lower(state->dev.irq[0]);
 }
 
-void svcam_device_s_param(SVCamState* state, SVCamParam* param)
+void svcam_device_s_param(SVCamState* state)
 {
 	struct v4l2_streamparm sp;
+	SVCamParam *param = state->thread->param;
 
-	DEBUG_PRINT("");
 	param->top = 0;
 	memset(&sp, 0, sizeof(struct v4l2_streamparm));
 	sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -252,11 +249,11 @@ void svcam_device_s_param(SVCamState* state, SVCamParam* param)
 	}
 }
 
-void svcam_device_g_param(SVCamState* state, SVCamParam* param)
+void svcam_device_g_param(SVCamState* state)
 {
 	struct v4l2_streamparm sp;
+	SVCamParam *param = state->thread->param;
 	
-	DEBUG_PRINT("");
 	param->top = 0;
 	memset(&sp, 0, sizeof(struct v4l2_streamparm));
 	sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -269,9 +266,10 @@ void svcam_device_g_param(SVCamState* state, SVCamParam* param)
 	param->stack[1] = sp.parm.capture.timeperframe.denominator;
 }
 
-void svcam_device_s_fmt(SVCamState* state, SVCamParam* param)
+void svcam_device_s_fmt(SVCamState* state)
 {
-	DEBUG_PRINT("");
+	SVCamParam *param = state->thread->param;
+
 	param->top = 0;
 	memset(&dst_fmt, 0, sizeof(struct v4l2_format));
 	dst_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -280,33 +278,38 @@ void svcam_device_s_fmt(SVCamState* state, SVCamParam* param)
 	dst_fmt.fmt.pix.pixelformat = param->stack[2];
 	dst_fmt.fmt.pix.field = param->stack[3];
 
-	if (v4lcvtdata) {
-		if (v4lconvert_try_format(v4lcvtdata, &dst_fmt, &src_fmt) != 0)
-			DEBUG_PRINT("v4lconvert_try_format failed!!");
-		if (xioctl(v4l2_fd, VIDIOC_S_FMT, &src_fmt) < 0) {
-			DEBUG_PRINT("VIDIOC_S_FMT failed!!");
-			param->errCode = errno;
-			return;
-		}
-		if (dst_buf) {
-			qemu_free(dst_buf);
-			dst_buf = NULL;
-		}
-		dst_buf = qemu_malloc(dst_fmt.fmt.pix.sizeimage);
-	} else {
-		if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
-			DEBUG_PRINT("VIDIOC_S_FMT failed!!");
-			param->errCode = errno;
-			return;
-		}
+	if (v4lconvert_try_format(v4lcvtdata, &dst_fmt, &src_fmt) != 0) {
+		DEBUG_PRINT("v4lconvert_try_format failed!!");
+		param->errCode = EINVAL;
+		return;
 	}
+	if (xioctl(v4l2_fd, VIDIOC_S_FMT, &src_fmt) < 0) {
+		DEBUG_PRINT("VIDIOC_S_FMT failed!!");
+		param->errCode = errno;
+		return;
+	}
+
+	if (dst_buf) {
+		qemu_free(dst_buf);
+		dst_buf = NULL;
+	}
+	dst_buf = qemu_malloc(dst_fmt.fmt.pix.sizeimage);
+
+	param->stack[0] = dst_fmt.fmt.pix.width;
+	param->stack[1] = dst_fmt.fmt.pix.height;
+	param->stack[2] = dst_fmt.fmt.pix.field;
+	param->stack[3] = dst_fmt.fmt.pix.pixelformat;
+	param->stack[4] = dst_fmt.fmt.pix.bytesperline;
+	param->stack[5] = dst_fmt.fmt.pix.sizeimage;
+	param->stack[6] = dst_fmt.fmt.pix.colorspace;
+	param->stack[7] = dst_fmt.fmt.pix.priv;
 }
 
-void svcam_device_g_fmt(SVCamState* state, SVCamParam* param)
+void svcam_device_g_fmt(SVCamState* state)
 {
 	struct v4l2_format format;
+	SVCamParam *param = state->thread->param;
 
-	DEBUG_PRINT("");
 	param->top = 0;
 	memset(&format, 0, sizeof(struct v4l2_format));
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -316,26 +319,31 @@ void svcam_device_g_fmt(SVCamState* state, SVCamParam* param)
 	} else {
 		param->stack[0] = format.fmt.pix.width;
 		param->stack[1] = format.fmt.pix.height;
-		param->stack[2] = format.fmt.pix.pixelformat;
-		param->stack[3] = format.fmt.pix.field;
+		param->stack[2] = format.fmt.pix.field;
+		param->stack[3] = format.fmt.pix.pixelformat;
 		param->stack[4] = format.fmt.pix.bytesperline;
 		param->stack[5] = format.fmt.pix.sizeimage;
+		param->stack[6] = format.fmt.pix.colorspace;
+		param->stack[7] = format.fmt.pix.priv;
 		memcpy(&dst_fmt, &format, sizeof(format));
-		if (v4lcvtdata) {
-				if (v4lconvert_try_format(v4lcvtdata, &dst_fmt, &src_fmt) != 0)
-					DEBUG_PRINT("v4lconvert_try_format failed!!");
-				if (dst_buf) {
-					qemu_free(dst_buf);
-					dst_buf = NULL;
-				}
-				dst_buf = qemu_malloc(dst_fmt.fmt.pix.sizeimage);
+
+		if (v4lconvert_try_format(v4lcvtdata, &dst_fmt, &src_fmt) != 0) {
+			DEBUG_PRINT("v4lconvert_try_format failed!!");
+			param->errCode = EINVAL;
+			return;
 		}
+		if (dst_buf) {
+			qemu_free(dst_buf);
+			dst_buf = NULL;
+		}
+		dst_buf = qemu_malloc(dst_fmt.fmt.pix.sizeimage);
 	}
 }
 
-void svcam_device_try_fmt(SVCamState* state, SVCamParam* param)
+void svcam_device_try_fmt(SVCamState* state)
 {
 	struct v4l2_format format;
+	SVCamParam *param = state->thread->param;
 
 	param->top = 0;
 	memset(&format, 0, sizeof(struct v4l2_format));
@@ -349,11 +357,20 @@ void svcam_device_try_fmt(SVCamState* state, SVCamParam* param)
 		param->errCode = errno;
 		return;
 	}
+	param->stack[0] = format.fmt.pix.width;
+	param->stack[1] = format.fmt.pix.height;
+	param->stack[2] = format.fmt.pix.field;
+	param->stack[3] = format.fmt.pix.pixelformat;
+	param->stack[4] = format.fmt.pix.bytesperline;
+	param->stack[5] = format.fmt.pix.sizeimage;
+	param->stack[6] = format.fmt.pix.colorspace;
+	param->stack[7] = format.fmt.pix.priv;
 }
 
-void svcam_device_enum_fmt(SVCamState* state, SVCamParam* param)
+void svcam_device_enum_fmt(SVCamState* state)
 {
 	struct v4l2_fmtdesc format;
+	SVCamParam *param = state->thread->param;
 
 	param->top = 0;
 	memset(&format, 0, sizeof(struct v4l2_fmtdesc));
@@ -371,11 +388,13 @@ void svcam_device_enum_fmt(SVCamState* state, SVCamParam* param)
 	memcpy(&param->stack[3], format.description, sizeof(format.description));
 }
 
-void svcam_device_qctrl(SVCamState* state, SVCamParam* param)
+void svcam_device_qctrl(SVCamState* state)
 {
-	struct v4l2_queryctrl ctrl = {0, };
+	struct v4l2_queryctrl ctrl;
+	SVCamParam *param = state->thread->param;
 
 	param->top = 0;
+	memset(&ctrl, 0, sizeof(struct v4l2_queryctrl));
 	ctrl.id = param->stack[0];
 
 	if (xioctl(v4l2_fd, VIDIOC_QUERYCTRL, &ctrl) < 0) {
@@ -392,12 +411,13 @@ void svcam_device_qctrl(SVCamState* state, SVCamParam* param)
 	memcpy(&param->stack[6], ctrl.name, sizeof(ctrl.name));
 }
 
-void svcam_device_s_ctrl(SVCamState* state, SVCamParam* param)
+void svcam_device_s_ctrl(SVCamState* state)
 {
-	struct v4l2_control ctrl = {0, };
+	struct v4l2_control ctrl;
+	SVCamParam *param = state->thread->param;
 
-	DEBUG_PRINT("");
 	param->top = 0;
+	memset(&ctrl, 0, sizeof(struct v4l2_control));
 	ctrl.id = param->stack[0];
 	ctrl.value = param->stack[1];
 
@@ -407,12 +427,13 @@ void svcam_device_s_ctrl(SVCamState* state, SVCamParam* param)
 	}
 }
 
-void svcam_device_g_ctrl(SVCamState* state, SVCamParam* param)
+void svcam_device_g_ctrl(SVCamState* state)
 {
-	struct v4l2_control ctrl = {0, };
+	struct v4l2_control ctrl;
+	SVCamParam *param = state->thread->param;
 
-	DEBUG_PRINT("");
 	param->top = 0;
+	memset(&ctrl, 0, sizeof(struct v4l2_control));
 	ctrl.id = param->stack[0];
 
 	if (xioctl(v4l2_fd, VIDIOC_G_CTRL, &ctrl) < 0) {
@@ -423,9 +444,10 @@ void svcam_device_g_ctrl(SVCamState* state, SVCamParam* param)
 	param->stack[0] = ctrl.value;
 }
 
-void svcam_device_enum_fsizes(SVCamState* state, SVCamParam* param)
+void svcam_device_enum_fsizes(SVCamState* state)
 {
 	struct v4l2_frmsizeenum fsize;
+	SVCamParam *param = state->thread->param;
 
 	param->top = 0;
 	memset(&fsize, 0, sizeof(struct v4l2_frmsizeenum));
@@ -446,9 +468,10 @@ void svcam_device_enum_fsizes(SVCamState* state, SVCamParam* param)
 	}
 }
 
-void svcam_device_enum_fintv(SVCamState* state, SVCamParam* param)
+void svcam_device_enum_fintv(SVCamState* state)
 {
 	struct v4l2_frmivalenum ival;
+	SVCamParam *param = state->thread->param;
 
 	param->top = 0;
 	memset(&ival, 0, sizeof(struct v4l2_frmivalenum));
@@ -472,11 +495,9 @@ void svcam_device_enum_fintv(SVCamState* state, SVCamParam* param)
 }
 
 // SVCAM_CMD_CLOSE
-void svcam_device_close(SVCamState* state, SVCamParam* param)
+void svcam_device_close(SVCamState* state)
 {
 	DEBUG_PRINT(" ");
-
-	state->is_webcam = 0;
 	if (v4lcvtdata) {
 		v4lconvert_destroy(v4lcvtdata);
 		v4lcvtdata = NULL;
