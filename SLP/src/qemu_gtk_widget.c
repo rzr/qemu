@@ -57,11 +57,11 @@ static int widget_exposed;
 int qemu_state_initialized = 0;
 static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-//#define SDL_THREAD
+#define SDL_THREAD
 
 #ifdef SDL_THREAD
 static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
-static pthread_t thread_id = 0;
+static int sdl_thread_initialized = 0;
 #endif
 
 int use_qemu_display = 0;
@@ -88,7 +88,13 @@ static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
 	//log_msg(MSGL_DBG2, "qemu_ds_update\n");
 	/* call sdl update */
 #ifdef SDL_THREAD
-	pthread_cond_signal(&sdl_cond); 
+
+	pthread_mutex_lock(&sdl_mutex);
+
+	pthread_cond_signal(&sdl_cond);
+
+	pthread_mutex_unlock(&sdl_mutex);
+
 #else
 	qemu_update(qemu_state);
 #endif
@@ -210,7 +216,9 @@ void qemu_display_init (DisplayState *ds)
 	register_displaychangelistener(qemu_state->ds, dcl);
 
 #ifdef SDL_THREAD
-	if(thread_id == 0 ){
+	if(sdl_thread_initialized == 0 ){
+		sdl_thread_initialized = 1;
+		pthread_t thread_id;
 		log_msg(MSGL_DEBUG, "sdl update thread create \n");
 		if (pthread_create(&thread_id, NULL, run_qemu_update, NULL) != 0) {
 			log_msg(MSGL_ERROR, "pthread_create fail \n");
@@ -427,135 +435,15 @@ static void qemu_update (qemu_state_t *qemu_state)
 
 	surface = SDL_GetVideoSurface ();
 
-	/* if dbi_file have scale option, we use zoomdown function.*/
-	if (PHONE.dual_display == 1) {
-		SDL_Surface *down_screen = NULL;
-		SDL_Rect fb_first_half;
-		SDL_Rect fb_second_half;
-		SDL_Rect on_screen_first_half;
-		SDL_Rect on_screen_second_half;
-
-		SDL_Rect *ptr_fb_first_half;
-		SDL_Rect *ptr_fb_second_half;
-		SDL_Rect *ptr_on_screen_first_half;
-		SDL_Rect *ptr_on_screen_second_half;
-		SDL_Surface *bar  = NULL;
-
-		down_screen = rotozoomSurface(qemu_state->surface_qemu, UISTATE.current_mode * 90,
-				1 / qemu_state->scale, SMOOTHING_ON);
-
-		if(UISTATE.current_mode==0 ||  UISTATE.current_mode==2) /* 0 and 180 degree rotation*/
-		{
-			if (down_screen && qemu_state->scale ==2)
-			{
-				/*load the splitted area with image*/
-				bar=SDL_LoadBMP(PHONE.mode[ UISTATE.current_mode].image_list.splitted_area_image);
-				/*firt half of the framebuffer data (SDLSurface1)*/
-				fb_first_half.x=0;
-				fb_first_half.y=0;
-				fb_first_half.w= down_screen->w/2;
-				fb_first_half.h= down_screen->h;
-
-				/*second half of the framebuffer data(SDL_Surface2)*/
-				fb_second_half.x=down_screen->w/2;
-				fb_second_half.y=0;
-				fb_second_half.w= down_screen->w/2;
-				fb_second_half.h= down_screen->h;
-
-				/*on screen position for SDLSurface1*/
-				on_screen_first_half.x=0;
-				on_screen_first_half.y=0;
-				on_screen_first_half.w=down_screen->w/2;
-				on_screen_first_half.h= down_screen->h;
-
-				/*on screen position for SDLSurface2*/
-				on_screen_second_half.x=down_screen->w/2+intermediate_section;
-				on_screen_second_half.y=0;
-				on_screen_second_half.w= down_screen->w/2;
-				on_screen_second_half.h=down_screen->h;
-
-				ptr_fb_first_half=&fb_first_half;
-				ptr_fb_second_half=&fb_second_half;
-				ptr_on_screen_first_half=&on_screen_first_half;
-				ptr_on_screen_second_half=&on_screen_second_half;
-			}
-			if ((qemu_state->scale == 1) && (UISTATE.current_mode == 0))
-			{
-				SDL_BlitSurface(qemu_state->surface_qemu, NULL,
-						qemu_state->surface_screen, NULL);
-			}
-			else
-			{
-				SDL_BlitSurface(down_screen, ptr_fb_first_half,
-						qemu_state->surface_screen, ptr_on_screen_first_half);
-				SDL_BlitSurface(down_screen, ptr_fb_second_half,
-						qemu_state->surface_screen, ptr_on_screen_second_half);
-				SDL_BlitSurface(bar,NULL, qemu_state->surface_screen, ptr_fb_second_half);
-			}
-		}
-		if(UISTATE.current_mode==1 || UISTATE.current_mode==3)/*90 and 270 degree Rotation */
-		{
-			if (down_screen && qemu_state->scale ==2)
-			{
-				/*load the splitted area with image*/
-				bar=SDL_LoadBMP(PHONE.mode[ UISTATE.current_mode].image_list.splitted_area_image);
-
-				/*firt half of the framebuffer data (SDLSurface1)*/
-				fb_first_half.x=0;
-				fb_first_half.y=0;
-				fb_first_half.w= down_screen->w;
-				fb_first_half.h= down_screen->h/2;
-				/*second half of the framebuffer data(SDL_Surface2)*/
-				fb_second_half.x=0;
-				fb_second_half.y=down_screen->h/2;
-				fb_second_half.w= down_screen->w;
-				fb_second_half.h= down_screen->h/2;
-
-				/*on screen position for SDLSurface1*/
-				on_screen_first_half.x=0;
-				on_screen_first_half.y=0;
-				on_screen_first_half.w= down_screen->w;
-				on_screen_first_half.h= down_screen->h/2;
-
-				/*on screen position for SDLSurface2*/
-				on_screen_second_half.x=0;
-				on_screen_second_half.y= (down_screen->h/2)+intermediate_section;
-				on_screen_second_half.w= down_screen->w;
-				on_screen_second_half.h= down_screen->h/2;
-
-				ptr_fb_first_half=&fb_first_half;
-				ptr_fb_second_half=&fb_second_half;
-				ptr_on_screen_first_half=&on_screen_first_half;
-				ptr_on_screen_second_half=&on_screen_second_half;
-			}
-			if ((qemu_state->scale == 1) && (UISTATE.current_mode == 0))
-			{
-				SDL_BlitSurface(qemu_state->surface_qemu, NULL,
-						qemu_state->surface_screen, NULL);
-			}
-			else
-			{
-				SDL_BlitSurface(down_screen, ptr_fb_first_half,
-						qemu_state->surface_screen, ptr_on_screen_first_half);
-				SDL_BlitSurface(down_screen, ptr_fb_second_half,
-						qemu_state->surface_screen, ptr_on_screen_second_half);
-				SDL_BlitSurface(bar, NULL,
-						qemu_state->surface_screen, ptr_fb_second_half);
-			}
-		}
-	}
+	if ((qemu_state->scale == 1) && (UISTATE.current_mode %4 == 0))
+		SDL_BlitSurface(qemu_state->surface_qemu, NULL, qemu_state->surface_screen, NULL);
 	else
 	{
-		if ((qemu_state->scale == 1) && (UISTATE.current_mode %4 == 0))
-			SDL_BlitSurface(qemu_state->surface_qemu, NULL, qemu_state->surface_screen, NULL);
-		else
-		{
-			SDL_Surface *down_screen;
-			down_screen = rotozoomSurface(qemu_state->surface_qemu,
-					(UISTATE.current_mode %4) * 90, 1 / qemu_state->scale, SMOOTHING_ON);
-			SDL_BlitSurface(down_screen, NULL, qemu_state->surface_screen, NULL);
-			SDL_FreeSurface(down_screen);
-		}
+		SDL_Surface *down_screen;
+		down_screen = rotozoomSurface(qemu_state->surface_qemu,
+				(UISTATE.current_mode %4) * 90, 1 / qemu_state->scale, SMOOTHING_ON);
+		SDL_BlitSurface(down_screen, NULL, qemu_state->surface_screen, NULL);
+		SDL_FreeSurface(down_screen);
 	}
 
 	/* If 'x', 'y', 'w' and 'h' are all 0, SDL_UpdateRect will update the entire screen.*/
