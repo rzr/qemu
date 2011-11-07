@@ -97,7 +97,7 @@ static int __v4l2_grab(SVCamState *state)
 	FD_ZERO(&fds);
 	FD_SET(v4l2_fd, &fds);
 
-	tv.tv_sec = 1;
+	tv.tv_sec = 2;
 	tv.tv_usec = 0;
 
 	r = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
