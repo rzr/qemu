@@ -10,6 +10,7 @@
 #include "qemu-common.h"
 #include "svcamera.h"
 #include "pci.h"
+#include "kvm.h"
 
 #include <linux/videodev2.h>
 
@@ -18,6 +19,7 @@
 
 static int v4l2_fd;
 static int convert_trial;
+static int skip_flag = 0;
 
 static struct v4lconvert_data *v4lcvtdata;
 static struct v4l2_format src_fmt;
@@ -38,6 +40,13 @@ static int xioctl(int fd, int req, void *arg)
 static int __v4l_convert(SVCamState *state, void *src_ptr, uint32_t src_size)
 {
 	int ret;
+
+	pthread_mutex_lock(&state->thread->mutex_lock);
+	if (!state->streamon) {
+		pthread_mutex_unlock(&state->thread->mutex_lock);
+		return 0;
+	}
+	pthread_mutex_unlock(&state->thread->mutex_lock);
 
 	ret = v4lconvert_convert(v4lcvtdata,
 							&src_fmt, &dst_fmt,
@@ -60,32 +69,11 @@ static int __v4l_convert(SVCamState *state, void *src_ptr, uint32_t src_size)
 			return 0;
 		}
 	}
-	pthread_mutex_lock(&state->thread->mutex_lock);
-	if (!state->streamon) {
-		pthread_mutex_unlock(&state->thread->mutex_lock);
-		return 0;
-	}
-	pthread_mutex_unlock(&state->thread->mutex_lock);
-
 	memcpy(src_ptr, dst_buf, dst_fmt.fmt.pix.sizeimage);
 
 	qemu_irq_raise(state->dev.irq[0]);
 
 	return 1;
-}
-
-static int __v4l2_get_frame(SVCamState *state){
-	int r;
-
-	r = v4l2_read(v4l2_fd, state->vaddr, dst_fmt.fmt.pix.sizeimage);
-	if ( r < 0) {
-		if (errno == EAGAIN)
-			return 0;
-		DEBUG_PRINT("READ : %s, %d", strerror(errno), errno);
-		return -1;
-	}
-
-	return __v4l_convert(state, state->vaddr, (uint32_t)r);
 }
 
 static int __v4l2_grab(SVCamState *state)
@@ -101,7 +89,6 @@ static int __v4l2_grab(SVCamState *state)
 	tv.tv_usec = 0;
 
 	r = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
-
 	if ( r < 0) {
 		if (errno == EINTR)
 			return 0;
@@ -112,13 +99,22 @@ static int __v4l2_grab(SVCamState *state)
 		DEBUG_PRINT("Timed out");
 		return -1;
 	}
-	pthread_mutex_lock(&state->thread->mutex_lock);
-	r = state->streamon;
-	pthread_mutex_unlock(&state->thread->mutex_lock);
-	if (!r)
-		return 0;
 
-	return __v4l2_get_frame(state);
+	r = v4l2_read(v4l2_fd, state->vaddr, dst_fmt.fmt.pix.sizeimage);
+	if ( r < 0) {
+		if (errno == EAGAIN)
+			return 0;
+		DEBUG_PRINT("READ : %s, %d", strerror(errno), errno);
+		return -1;
+	}
+
+	if (!kvm_enabled()) {
+		skip_flag = !skip_flag;
+		if (skip_flag)
+			return 0;
+	}
+
+	return __v4l_convert(state, state->vaddr, (uint32_t)r);
 }
 
 // Worker thread
@@ -130,6 +126,7 @@ wait_worker_thread:
 	pthread_mutex_lock(&thread->mutex_lock);
 	thread->state->streamon = 0;
 	convert_trial = 10;
+	skip_flag = 1;
 	pthread_cond_wait(&thread->thread_cond, &thread->mutex_lock);
 	pthread_mutex_unlock(&thread->mutex_lock);
 
@@ -262,8 +259,9 @@ void svcam_device_g_param(SVCamState* state)
 		param->errCode = errno;
 		return;
 	}
-	param->stack[0] = sp.parm.capture.timeperframe.numerator;
-	param->stack[1] = sp.parm.capture.timeperframe.denominator;
+	param->stack[0] = sp.parm.capture.capability;
+	param->stack[1] = sp.parm.capture.timeperframe.numerator;
+	param->stack[2] = sp.parm.capture.timeperframe.denominator;
 }
 
 void svcam_device_s_fmt(SVCamState* state)
@@ -497,7 +495,17 @@ void svcam_device_enum_fintv(SVCamState* state)
 // SVCAM_CMD_CLOSE
 void svcam_device_close(SVCamState* state)
 {
+	uint32_t chk;
+
 	DEBUG_PRINT(" ");
+
+	pthread_mutex_lock(&state->thread->mutex_lock);
+	chk = state->streamon;
+	pthread_mutex_unlock(&state->thread->mutex_lock);
+
+	if (chk)
+		svcam_device_stop_preview(state);
+
 	if (v4lcvtdata) {
 		v4lconvert_destroy(v4lcvtdata);
 		v4lcvtdata = NULL;
