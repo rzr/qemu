@@ -16,6 +16,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+# If nvidia graphic driver problem is produced, library path should be changed to mesa library.
+# To solve this problem, LD_LIBRARY_PATH is set like below
+#export LD_LIBRARY_PATH=/usr/lib/mesa
+
 SDL_GFX=`dpkg -l | grep libsdl-gfx`
 if test "$SDL_GFX" = ""
 then
