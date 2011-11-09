@@ -264,6 +264,10 @@ hw-obj-$(CONFIG_DP8393X) += dp8393x.o
 hw-obj-$(CONFIG_DS1225Y) += ds1225y.o
 hw-obj-$(CONFIG_MIPSNET) += mipsnet.o
 
+hw-obj-$(CONFIG_PCI) += svcamera_pci.o
+hw-obj-$(CONFIG_LINUX) += svcamera_linux.o
+hw-obj-$(CONFIG_WIN32) += svcamera_win32.o
+
 # Sound
 sound-obj-y =
 sound-obj-$(CONFIG_SB16) += sb16.o

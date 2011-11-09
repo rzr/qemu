@@ -234,7 +234,6 @@ obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
 #obj-i386-y += svibe.o 3D.o smbus_smb380.o
 obj-i386-y += svibe.o
 ##########################################################
-obj-i386-y += svcamera_pci.o svcamera_linux.o 
 
 
 
