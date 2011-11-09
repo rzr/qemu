@@ -184,6 +184,10 @@ static void pc_init1(ram_addr_t ram_size,
     if (pci_enabled) {
         pc_pci_device_init(pci_bus);
     }
+
+    if (pci_enabled) {
+        svcamera_pci_init(pci_bus);
+    }
 }
 
 static void pc_init_pci(ram_addr_t ram_size,
