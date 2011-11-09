@@ -83,7 +83,6 @@ struct SVCamThreadInfo {
 	pthread_t		thread_id;
 	pthread_cond_t	thread_cond;
 	pthread_mutex_t	mutex_lock;
-#endif
 };
 
 struct SVCamState {
