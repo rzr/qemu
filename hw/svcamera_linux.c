@@ -25,7 +25,7 @@
  *
  */
 
-
+#include "qemu-common.h"
 #include "qemu-common.h"
 #include "svcamera.h"
 #include "pci.h"
@@ -100,6 +100,7 @@ static int __v4l2_grab(SVCamState *state)
 	fd_set fds;
 	struct timeval tv;
 	int r;
+	uint32_t sizeimage;
 	
 	FD_ZERO(&fds);
 	FD_SET(v4l2_fd, &fds);
@@ -116,10 +117,12 @@ static int __v4l2_grab(SVCamState *state)
 	}
 	if (!r) {
 		DEBUG_PRINT("Timed out");
-		return -1;
+		return 0;
 	}
 
-	r = v4l2_read(v4l2_fd, state->vaddr, dst_fmt.fmt.pix.sizeimage);
+	sizeimage = src_fmt.fmt.pix.sizeimage > dst_fmt.fmt.pix.sizeimage ?
+			src_fmt.fmt.pix.sizeimage : dst_fmt.fmt.pix.sizeimage;
+	r = v4l2_read(v4l2_fd, state->vaddr, sizeimage);
 	if ( r < 0) {
 		if (errno == EAGAIN)
 			return 0;
