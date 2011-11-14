@@ -132,6 +132,13 @@ static void qemu_ds_resize(DisplayState *ds)
 		return;
 	}
 
+	// work-around to remove afterimage on black color
+	if ( qemu_state->surface_qemu->format ) {
+		// set color key 'magenta'
+		SDL_SetColorKey( qemu_state->surface_qemu, SDL_SRCCOLORKEY,
+				SDL_MapRGB( qemu_state->surface_qemu->format, 0xFF, 0x00, 0xFF ) );
+	}
+
 }
 
 
