@@ -132,13 +132,6 @@ static void qemu_ds_resize(DisplayState *ds)
 		return;
 	}
 
-	// work-around to remove afterimage on black color
-	if ( qemu_state->surface_qemu->format ) {
-		// set color key 'magenta'
-		SDL_SetColorKey( qemu_state->surface_qemu, SDL_SRCCOLORKEY,
-				SDL_MapRGB( qemu_state->surface_qemu->format, 0xFF, 0x00, 0xFF ) );
-	}
-
 }
 
 
@@ -446,6 +439,12 @@ static void qemu_update (qemu_state_t *qemu_state)
 		SDL_BlitSurface(qemu_state->surface_qemu, NULL, qemu_state->surface_screen, NULL);
 	else
 	{
+		// work-around to remove afterimage on black color in Window and Ubuntu 11.10
+		if( qemu_state->surface_qemu ) {
+			// set color key 'magenta'
+			qemu_state->surface_qemu->format->colorkey = 0xFF00FF;
+		}
+
 		SDL_Surface *down_screen;
 		down_screen = rotozoomSurface(qemu_state->surface_qemu,
 				(UISTATE.current_mode %4) * 90, 1 / qemu_state->scale, SMOOTHING_ON);
