@@ -387,10 +387,10 @@ set_qemu_hw_options () {
 
 	#emulator_gps
 	#qemu_common_opts="$qemu_common_opts -serial pipe:/tmp/gpsdevice"
-	qemu_common_opts="$qemu_common_opts -redir udp:$gps_port:${GUEST_IP_ADDRESS}:$gps_port"
+#	qemu_common_opts="$qemu_common_opts -redir udp:$gps_port:${GUEST_IP_ADDRESS}:$gps_port"
 	
 	#emulator_sensor
-	qemu_common_opts="$qemu_common_opts -redir udp:$sensor_port:${GUEST_IP_ADDRESS}:$sensor_port"
+#	qemu_common_opts="$qemu_common_opts -redir udp:$sensor_port:${GUEST_IP_ADDRESS}:$sensor_port"
 
 	#acclerator : for opengl module (not necessary now)
 #	qemu_x86_opts="$qemu_x86_opts -device Accelerator"
@@ -437,7 +437,7 @@ set_qemu_options () {
 	#emul_opts="$emul_opts  --ssh-port $ssh_port"
 
 	#emulator_ide_port
-	qemu_common_opts="$qemu_common_opts -redir tcp:$ide_port:${GUEST_IP_ADDRESS}:$ide_port"
+#	qemu_common_opts="$qemu_common_opts -redir tcp:$ide_port:${GUEST_IP_ADDRESS}:$ide_port"
 
 	#qemu monitor
 	qemu_common_opts="$qemu_common_opts -monitor tcp:127.0.0.1:9000,server,nowait"
@@ -456,7 +456,7 @@ test "`basename $0`" = "emulator.sh" && set_devel_env || DDD=""
 set_emulator_options
 set_qemu_hw_options
 set_qemu_options
-set_qemu_debug_options
+#set_qemu_debug_options
 
 if test "$DDD" != "" 
 then
