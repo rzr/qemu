@@ -382,7 +382,8 @@ set_qemu_hw_options () {
 
 	#qemu network hw selection
 	qemu_arm_opts="$qemu_arm_opts -net nic,model=s5pc1xx-usb-otg"
-	qemu_x86_opts="$qemu_x86_opts -net nic,model=rtl8139"
+	#qemu_x86_opts="$qemu_x86_opts -net nic,model=rtl8139"
+	qemu_x86_opts="$qemu_x86_opts -net nic,model=virtio"
 
 	#emulator_gps
 	#qemu_common_opts="$qemu_common_opts -serial pipe:/tmp/gpsdevice"
