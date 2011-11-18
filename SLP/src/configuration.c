@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include "configuration.h"
+#include "sdb.h"
 
 #define EMUL_PIXELFORMAT_YUV422P           1
 #define EMUL_PIXELFORMAT_YUV420P           2
@@ -641,6 +642,7 @@ int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconf
  * */
 void qemu_option_set_to_config(arglist *al)
 {
+	int i;
 	gboolean userdata_exist = FALSE;
 
 	const gchar *emulator_path = get_emulator_path();
@@ -702,6 +704,14 @@ void qemu_option_set_to_config(arglist *al)
 	gethostIP(hostip);
 	if (strlen(hostip))
 		sprintf(&kernel_kappend[strlen(kernel_kappend)], "openglip=%s ", hostip);
+
+	// handover SDB port to kernel side
+	for(i=0; i<10; i++){
+		if(get_sdb_base_port() != 0)
+			break;
+		sleep(1);
+	}
+	sprintf(&kernel_kappend[strlen(kernel_kappend)], "sdb_port=%d ", get_sdb_base_port());
 
 	// get DPI value
 	if (strlen(virtual_target_info.dpi))
