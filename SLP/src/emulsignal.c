@@ -104,8 +104,6 @@ void destroy_emulator(void)
 	remove_pidfile("emulator");
 
 	log_msg(MSGL_INFO, "Emulator Stop: remove pid file\n");
-		
-	return 0;
 }
 
 

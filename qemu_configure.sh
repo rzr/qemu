@@ -12,9 +12,10 @@ exec ./configure \
  --audio-card-list=es1370 \
  --enable-mixemu \
  --disable-vnc-tls \
+ --enable-ffmpeg \
  --extra-ldflags="-lv4l2 -lv4lconvert"
-#--enable-profiler \
-# --enable-gles2 --gles2dir=/usr
+# --enable-gles2 --gles2dir=/usr \
+# --enable-profiler \
 ;;
 CYGWIN*)
 echo "checking for os... targetos $targetos"
@@ -33,6 +34,7 @@ exec ./configure \
  --audio-card-list=es1370 \
  --enable-mixemu \
  --disable-vnc-tls
+# --enable-ffmpeg
 # --disable-vnc-jpeg \
 # --disable-jpeg
 ;;

@@ -68,7 +68,7 @@ typedef struct VncRectEntry VncRectEntry;
 
 typedef int VncReadEvent(VncState *vs, uint8_t *data, size_t len);
 
-typedef void VncWritePixels(VncState *vs, struct PixelFormat *pf, void *data, int size);
+typedef void VncWritePixels(VncState *vs, struct QEMU_PixelFormat *pf, void *data, int size);
 
 typedef void VncSendHextileTile(VncState *vs,
                                 int x, int y, int w, int h,

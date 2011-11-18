@@ -19,8 +19,6 @@
 #include "pci.h"
 #include "pci_ids.h"
 
-#define PCI_VENDOR_ID_SAMSUNG				0x144d
-#define PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS    0x1014
 #define QEMU_DEV_NAME						"brightness"
 
 #define BRIGHTNESS_MEM_SIZE			(4 * 1024)		/* 4KB */

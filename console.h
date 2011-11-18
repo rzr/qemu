@@ -107,7 +107,7 @@ void kbd_put_keysym(int keysym);
 #define QEMU_ALLOCATED_FLAG     0x02
 #define QEMU_REALPIXELS_FLAG    0x04
 
-struct PixelFormat {
+struct QEMU_PixelFormat {
     uint8_t bits_per_pixel;
     uint8_t bytes_per_pixel;
     uint8_t depth; /* color depth in bits */
@@ -124,7 +124,7 @@ struct DisplaySurface {
     int linesize;        /* bytes per line */
     uint8_t *data;
 
-    struct PixelFormat pf;
+    struct QEMU_PixelFormat pf;
 };
 
 /* cursor data format is 32bit RGBA */

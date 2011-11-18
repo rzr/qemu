@@ -130,7 +130,8 @@ linux_aio=""
 attr=""
 vhost_net=""
 xfs=""
-
+ffmpeg="no"
+ffmpeg_inc="distrib/ffmpeg"
 gprof="no"
 debug_tcg="no"
 debug_mon="no"
@@ -543,6 +544,8 @@ for opt do
   ;;
   --fmod-inc=*) fmod_inc="$optarg"
   ;;
+  --ffmpeg-inc=*) ffmpeg_inc="$optarg"
+  ;;
   --oss-lib=*) oss_lib="$optarg"
   ;;
   --audio-card-list=*) audio_card_list=`echo "$optarg" | sed -e 's/,/ /g'`
@@ -596,6 +599,10 @@ for opt do
   --disable-vnc-thread) vnc_thread="no"
   ;;
   --enable-vnc-thread) vnc_thread="yes"
+  ;;
+  --disable-ffmpeg) ffmpeg="no"
+  ;;
+  --enable-ffmpeg) ffmpeg="yes"
   ;;
   --disable-slirp) slirp="no"
   ;;
@@ -863,6 +870,8 @@ echo "  --disable-vnc-png        disable PNG compression for VNC server (default
 echo "  --enable-vnc-png         enable PNG compression for VNC server"
 echo "  --disable-vnc-thread     disable threaded VNC server"
 echo "  --enable-vnc-thread      enable threaded VNC server"
+echo "  --disable-ffmpeg         disable FFMPEG lossy compression"
+echo "  --enable-ffmpeg          enable FFMPEG lossy compression"
 echo "  --disable-curses         disable curses output"
 echo "  --enable-curses          enable curses output"
 echo "  --disable-curl           disable curl connectivity"
@@ -894,6 +903,7 @@ echo "  --enable-user-pie        build usermode emulation targets as PIE"
 echo "  --disable-user-pie       do not build usermode emulation targets as PIE"
 echo "  --fmod-lib               path to FMOD library"
 echo "  --fmod-inc               path to FMOD includes"
+echo "  --ffmpeg-inc             path to FFMPEG includes"
 echo "  --oss-lib                path to OSS library"
 echo "  --enable-uname-release=R Return R for uname -r in usermode emulation"
 echo "  --sparc_cpu=V            Build qemu for Sparc architecture v7, v8, v8plus, v8plusa, v9"
@@ -1362,6 +1372,40 @@ EOF
       feature_not_found "vnc-png"
     fi
     vnc_png=no
+  fi
+fi
+
+##########################################
+# FFMPEG detection
+if test "$ffmpeg" = "yes" ; then 
+cat > $TMPC <<EOF
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+
+int main(void) { AVFormatContext *pFormatCtx = NULL; av_find_stream_info(pFormatCtx); return 0; }
+EOF
+  ffmpeg_cflags="-I$source_path/SLP/$ffmpeg_inc"
+  if test "$linux" = "yes" ; then
+  	ffmpeg_libs="-lavformat -lavcodec -lavutil -lswscale"
+  elif test "$mingw32" = "yes" ; then
+ 	ffmpeg_libpath="-L$source_path/SLP/$ffmpeg_inc/libs"
+   	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll"
+  fi
+  ffmpeg_libs="$ffmpeg_libpath $ffmpeg_libs"
+  if compile_prog "$ffmpeg_cflags" "$ffmpeg_libs" ; then
+    ffmpeg=yes
+    libs_softmmu="$ffmpeg_libs $libs_softmmu"
+  else
+    if test "$ffmpeg" = "yes" ; then
+      feature_not_found "ffmpeg"
+    fi
+    ffmpeg=no
   fi
 fi
 
@@ -2450,6 +2494,7 @@ echo "VNC SASL support  $vnc_sasl"
 echo "VNC JPEG support  $vnc_jpeg"
 echo "VNC PNG support   $vnc_png"
 echo "VNC thread        $vnc_thread"
+echo "FFMPEG support    $ffmpeg"
 if test -n "$sparc_cpu"; then
     echo "Target Sparc Arch $sparc_cpu"
 fi
@@ -2618,6 +2663,10 @@ fi
 if test "$vnc_thread" != "no" ; then
   echo "CONFIG_VNC_THREAD=y" >> $config_host_mak
   echo "CONFIG_THREAD=y" >> $config_host_mak
+fi
+if test "$ffmpeg" = "yes" ; then
+  echo "CONFIG_FFMPEG=y" >> $config_host_mak
+  echo "FFMPEG_CFLAGS=$ffmpeg_cflags" >> $config_host_mak
 fi
 if test "$fnmatch" = "yes" ; then
   echo "CONFIG_FNMATCH=y" >> $config_host_mak
