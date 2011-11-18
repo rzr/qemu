@@ -440,7 +440,7 @@ set_qemu_options () {
 #	qemu_common_opts="$qemu_common_opts -redir tcp:$ide_port:${GUEST_IP_ADDRESS}:$ide_port"
 
 	#qemu monitor
-	qemu_common_opts="$qemu_common_opts -monitor tcp:127.0.0.1:9000,server,nowait"
+#	qemu_common_opts="$qemu_common_opts -monitor tcp:127.0.0.1:9000,server,nowait"
 }
 
 set_qemu_debug_options () {
