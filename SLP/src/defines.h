@@ -130,6 +130,7 @@ extern "C" {
 
 #define HARDWARE_GROUP				"HARDWARE"
 #define RESOLUTION_KEY				"RESOLUTION"
+#define BUTTON_TYPE_KEY                         "BUTTON_TYPE"
 #define RAM_SIZE_KEY				"RAM_SIZE"
 #define DPI_KEY                     "DPI"
 
@@ -619,6 +620,7 @@ typedef struct _PLATINFO {
 typedef struct _VIRTUALTARGETINFO {
 	char virtual_target_name[MAXBUF];
 	char resolution[MAXBUF];
+	int button_type;
 	int sdcard_type;
 	char sdcard_path[MAXBUF];
 	int ram_size;

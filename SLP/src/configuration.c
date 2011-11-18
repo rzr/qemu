@@ -23,7 +23,7 @@
 #define EMUL_PIXELFORMAT_YUV420P           2
 
 #define RESOLUTION_COUNT				   4
-
+#define BUTTON_TYPE_COUNT               4	
 /*
  *
  * *** config *** (target_path)
@@ -376,6 +376,8 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 	snprintf(pvirtual_target_info->resolution, MAXBUF, "%s", buf);
 	g_free(buf);
 
+	pvirtual_target_info->button_type = get_config_type(info_file, HARDWARE_GROUP, BUTTON_TYPE_KEY);
+
 	pvirtual_target_info->sdcard_type = get_config_type(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
 	if(pvirtual_target_info->sdcard_type == 0)
 	{
@@ -588,9 +590,11 @@ int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconf
 {
 	int i;
 	int resolution_found = 0;
+	int button_type         = 0;
 	char *skin = NULL;
 	char *resolution[RESOLUTION_COUNT] = {"320x480", "480x800", "600x1024", "720x1280"};
-
+	char *button_types[BUTTON_TYPE_COUNT]   = {"","","not_use_","3keys_"};
+	
 	for(i = 0; i < RESOLUTION_COUNT; i++)
 	{
 		if(strcmp(pvirtual_target_info->resolution, resolution[i]) == 0)
@@ -602,17 +606,24 @@ int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconf
 
 	if(resolution_found == 0)
 	{
-		log_msg(MSGL_ERROR, "unknown resolution\n");
+		log_msg(MSGL_ERROR, "unknown resolution : %s\n", pvirtual_target_info->resolution);
 		return -1;
 	}
 
+	button_type = pvirtual_target_info->button_type;
+        if (button_type !=0 &&  button_type != 1 &&  button_type != 3)
+        {
+                log_msg(MSGL_ERROR, "unknown button type : %d\n", button_type);
+                return -1;
+        }
+
 	skin = g_strdup(resolution[i]);
 
-	snprintf(pconfiguration->skin_path, MAXBUF, "%s/emul_%s/default.dbi", get_skin_path(), skin);
+	snprintf(pconfiguration->skin_path, MAXBUF, "%s/emul_%s%s/default.dbi", get_skin_path(), button_types[button_type], skin);
 
 	if(is_valid_skin(pconfiguration->skin_path) == 0)
 	{
-		log_msg(MSGL_ERROR, "skin file is invalid\n");
+		log_msg(MSGL_ERROR, "skin file is invalid : %s\n", pconfiguration->skin_path);
 		g_free(skin);
 		return -1;
 	}

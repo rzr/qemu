@@ -22,88 +22,44 @@
 			</lcd_list>
 			<key_map_list>
 
-<!--			
-				<key_map>
-					<region left="61" top="584" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-				</key_map>
--->
-
 				<key_map>
 					<region left="149" top="584" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
 				</key_map>
-
-<!--			
-				<key_map>
-					<region left="237" top="584" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-				</key_map>
--->
 
 				<key_map>
 					<region left="342" top="486" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
 				</key_map>
 
 				<key_map>
@@ -128,22 +84,22 @@
 
 				<key_map>
 					<region left="342" top="110" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
 				</key_map>
 
 			</key_map_list>
@@ -163,129 +119,85 @@
 			</lcd_list>
 			<key_map_list>
 
-<!--			
-				<key_map>
-					<region left="584" top="241" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-        </key_map>
--->
-
 				<key_map>
 					<region left="584" top="153" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-        </key_map>
-
-<!--			
-				<key_map>
-					<region left="584" top="65" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-        </key_map>
--->
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="486" top="0" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+				</key_map>
 
-        <key_map>
+				<key_map>
 					<region left="56" top="0" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="110" top="0" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+				</key_map>
 
 			</key_map_list>
 		</mode>
@@ -304,129 +216,84 @@
 			</lcd_list>
 			<key_map_list>
 
-<!--			
-				<key_map>
-					<region left="241" top="14" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-        </key_map>
--->
-
 				<key_map>
 					<region left="153" top="14" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+				</key_map>
 
-<!--			
-        <key_map>
-					<region left="65" top="14" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-        </key_map>
--->
-
-        <key_map>
+				<key_map>
 					<region left="0" top="120" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="0" top="550" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-        </key_map>
-
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+				</key_map>
 				<key_map>
 					<region left="0" top="496" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+				</key_map>
 
 			</key_map_list>
 		</mode>
@@ -444,130 +311,86 @@
 				</lcd>
 			</lcd_list>
 			<key_map_list>
-		
-<!--			
-				<key_map>
-					<region left="14" top="61" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-        </key_map>
--->
-
+			
 				<key_map>
 					<region left="14" top="149" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-        </key_map>
-
-<!--			
-				<key_map>
-					<region left="14" top="237" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-        </key_map>
--->
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="120" top="342" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="550" top="342" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="496" top="342" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+				</key_map>
 
 			</key_map_list>
 		</mode>
@@ -586,88 +409,44 @@
 			</lcd_list>
 			<key_map_list>
 
-<!--			
-				<key_map>
-					<region left="158" top="1096" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-				</key_map>
--->
-
 				<key_map>
 					<region left="299" top="1096" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
 				</key_map>
-
-<!--			
-				<key_map>
-					<region left="440" top="1096" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-				</key_map>
--->
 
 				<key_map>
 					<region left="642" top="1007" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
 				</key_map>
 
 				<key_map>
@@ -692,22 +471,22 @@
 
 				<key_map>
 					<region left="642" top="121" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
 				</key_map>
 
 			</key_map_list>
@@ -727,129 +506,85 @@
 			</lcd_list>
 			<key_map_list>
 
-<!--			
-				<key_map>
-					<region left="1096" top="444" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-        </key_map>
--->
-
 				<key_map>
 					<region left="1096" top="303" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-        </key_map>
-
-<!--			
-				<key_map>
-					<region left="1096" top="162" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-        </key_map>
--->
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="1007" top="0" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+				</key_map>
 
-        <key_map>
+				<key_map>
 					<region left="67" top="0" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="121" top="0" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+				</key_map>
 
 			</key_map_list>
 		</mode>
@@ -868,129 +603,85 @@
 			</lcd_list>
 			<key_map_list>
 
-<!--			
-				<key_map>
-					<region left="444" top="14" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-        </key_map>
--->
-
 				<key_map>
 					<region left="303" top="14" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+				</key_map>
 
-<!--			
-        <key_map>
-					<region left="162" top="14" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-        </key_map>
--->
-
-        <key_map>
+				<key_map>
 					<region left="0" top="111" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="0" top="1051" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="0" top="997" width="14" height="46"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+				</key_map>
 
 			</key_map_list>
 		</mode>
@@ -1008,130 +699,86 @@
 				</lcd>
 			</lcd_list>
 			<key_map_list>
-		
-<!--			
-				<key_map>
-					<region left="14" top="158" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CALL</event_id>
-            <event_value>
-              <key_code>100</key_code>
-              <key_name>KEY_SEND</key_name>
-            </event_value>
-            <keyboard>GDK_Send</keyboard>
-          </event_info>
-        </key_map>
--->
 
 				<key_map>
 					<region left="14" top="299" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_HOME</event_id>
-            <event_value>
-              <key_code>101</key_code>
-              <key_name>KEY_MENU</key_name>
-            </event_value>
-            <keyboard>GDK_Home</keyboard>
-          </event_info>
-        </key_map>
-
-<!--			
-				<key_map>
-					<region left="14" top="440" width="54" height="54"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_END</event_id>
-            <event_value>
-              <key_code>102</key_code>
-              <key_name>KEY_END</key_name>
-            </event_value>
-            <keyboard>GDK_End</keyboard>
-          </event_info>
-        </key_map>
--->
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_HOME</event_id>
+						<event_value>
+							<key_code>101</key_code>
+							<key_name>KEY_MENU</key_name>
+						</event_value>
+						<keyboard>GDK_Home</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="111" top="642" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_EXT_CAMERA</event_id>
-            <event_value>
-              <key_code>212</key_code>
-              <key_name>KEY_CAMERA</key_name>
-            </event_value>
-            <keyboard>GDK_Camera</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_EXT_CAMERA</event_id>
+						<event_value>
+							<key_code>212</key_code>
+							<key_name>KEY_CAMERA</key_name>
+						</event_value>
+						<keyboard>GDK_Camera</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="1051" top="642" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_UP</event_id>
-            <event_value>
-              <key_code>115</key_code>
-              <key_name>KEY_SCROLLUP</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Up</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_UP</event_id>
+						<event_value>
+							<key_code>115</key_code>
+							<key_name>KEY_SCROLLUP</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Up</keyboard>
+					</event_info>
+				</key_map>
 
 				<key_map>
 					<region left="997" top="642" width="46" height="14"></region>
-          <event_info status="VKS_KEY_PRESSED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-          <event_info status="VKS_KEY_RELEASED">
-            <event_id>DIKS_PAGE_DOWN</event_id>
-            <event_value>
-              <key_code>114</key_code>
-              <key_name>KEY_SCROLLDOWN</key_name>
-            </event_value>
-            <keyboard>GDK_KP_Page_Down</keyboard>
-          </event_info>
-        </key_map>
+					<event_info status="VKS_KEY_PRESSED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+					<event_info status="VKS_KEY_RELEASED">
+						<event_id>DIKS_PAGE_DOWN</event_id>
+						<event_value>
+							<key_code>114</key_code>
+							<key_name>KEY_SCROLLDOWN</key_name>
+						</event_value>
+						<keyboard>GDK_KP_Page_Down</keyboard>
+					</event_info>
+				</key_map>
 
 			</key_map_list>
 		</mode>
