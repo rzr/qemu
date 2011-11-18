@@ -42,7 +42,7 @@
  * @section  INTRO
  *   program module name: ISE emulator
  *   emulator program can run both standalone and with ISE
- */
+*/
 
 #include "emulator.h"
 #include "about_version.h"
@@ -64,7 +64,6 @@
 #include <pthread.h>
 
 #include "opengl_server.h"
-#include "sdb.h"
 
 #define RCVBUFSIZE 40
 #define MAX_COMMANDS 5
@@ -206,10 +205,10 @@ static void emul_process_close_handle (GPid pid, gint status, gpointer data)
 }
 
 /**
-  @brief  send SIGTERM to process
-  @param	data: pid of terminal
-  @user_data: dummy
- */
+	@brief  send SIGTERM to process
+	@param	data: pid of terminal
+	@user_data: dummy
+*/
 static void emul_kill_process(gpointer data, gpointer user_data)
 {
 	log_msg(MSGL_WARN, "kill terminal pid=%d\n", (int)data);
@@ -217,18 +216,18 @@ static void emul_kill_process(gpointer data, gpointer user_data)
 }
 
 /**
-  @brief	call emul_kill_process for all the node in emul_process_list
- */
+	@brief	call emul_kill_process for all the node in emul_process_list
+*/
 void emul_kill_all_process(void)
 {
 	g_slist_foreach(emul_process_list, emul_kill_process, NULL);
 }
 
 /**
-  @brief  create a process
-  @param	data: command of starting process
-  @return success: TRUE
- */
+	@brief  create a process
+	@param	data: command of starting process
+	@return success: TRUE
+*/
 int emul_create_process(const gchar cmd[])
 {
 	GPid pid = 0;
@@ -248,7 +247,7 @@ int emul_create_process(const gchar cmd[])
 	}
 
 	else {
-		//	log_msg(MSGL_ERROR, "Error in g_spawn_async\n");
+	//	log_msg(MSGL_ERROR, "Error in g_spawn_async\n");
 		ret = FALSE;
 	}
 
@@ -299,11 +298,11 @@ void exit_emulator(void)
 
 	/* 3. quit SDL */
 
-	//	SDL_Quit();
+//	SDL_Quit();
 
 	/* 4. shutdown qemu system */
 
-	//	qemu_system_shutdown_request();
+//	qemu_system_shutdown_request();
 
 	/* 5. quit main */
 
@@ -408,7 +407,7 @@ static void construct_main_window(void)
 
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
 	gtk_fixed_put (GTK_FIXED (fixed), sdl_widget, PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x,
-			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
+		PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
 	gtk_container_add (GTK_CONTAINER (g_main_window), fixed);
 
 	/* 6. create popup menu */
@@ -434,7 +433,7 @@ static void construct_main_window(void)
 	g_signal_connect (G_OBJECT(g_main_window), "configure_event", G_CALLBACK(configure_event), NULL);
 
 	gtk_widget_set_events (g_main_window, GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK |
-			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);// | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
+			   GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);// | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 
 	/* 10. widget show all */
 
@@ -456,10 +455,10 @@ static void* run_gtk_main(void* arg)
 #ifdef _WIN32
 static void* construct_main_window_and_run_gtk_main(void* arg)
 {
-	construct_main_window();
-	init_sensor_server();
-	gtk_main();
-	return NULL;
+     construct_main_window();
+	 init_sensor_server();
+     gtk_main();
+     return NULL;
 }
 #endif
 
@@ -530,7 +529,7 @@ static int startup_option_parser(int *argc, char ***argv)
 		fprintf(stderr, "%s: option parsing failed\n", (*argv)[0]);
 		exit (1);
 	}
-
+	
 	if (startup_option.no_dump) {
 		startup_option.log_level = 0;
 	}
@@ -696,10 +695,10 @@ static void emul_prepare_process(void)
 	if(qemu_arch_is_arm()) {
 		const char* target_path = get_target_path();
 
-		if(configuration.qemu_configuration.diskimg_type) 
-			sprintf (cmd, "/opt/samsung_sdk/simulator/vmodem_arm");
-		else 
-			sprintf (cmd, "%s/usr/bin/vmodem_arm", target_path);
+                if(configuration.qemu_configuration.diskimg_type) 
+                        sprintf (cmd, "/opt/samsung_sdk/simulator/vmodem_arm");
+                else 
+                        sprintf (cmd, "%s/usr/bin/vmodem_arm", target_path);
 
 		if(emul_create_process(cmd) == FALSE)
 			fprintf(stderr, "create vmodem failed\n");
@@ -728,11 +727,9 @@ static void emul_prepare_process(void)
 int main (int argc, char** argv)
 {
 	int r;
+	int sensor_port = SENSOR_PORT;
 
 	pthread_t thread_gtk_id, thread_sensor_id;
-
-	/* call sdb setup function */
-	sdb_setup();
 
 	init_emulator(&argc, &argv);
 	startup_option_parser(&argc, &argv);
@@ -752,23 +749,23 @@ int main (int argc, char** argv)
 
 #ifndef _THREAD
 #ifndef _WIN32
-	construct_main_window();
+        construct_main_window();
 
-	/* 5.3 create gtk thread  */
-	if (pthread_create(&thread_gtk_id, NULL, run_gtk_main, NULL) != 0) {
-		log_msg (MSGL_ERROR, "error creating gtk_id thread!!\n");
-		return -1;
-	}
+        /* 5.3 create gtk thread  */
+        if (pthread_create(&thread_gtk_id, NULL, run_gtk_main, NULL) != 0) {
+                log_msg (MSGL_ERROR, "error creating gtk_id thread!!\n");
+                return -1;
+        }
 #else /* _WIN32 */
-	/* if _WIN32, window creation and gtk main must be run in a thread */
-	if (pthread_create(&thread_gtk_id, NULL, construct_main_window_and_run_gtk_main, NULL) != 0) {
-		log_msg (MSGL_ERROR, "error creating gtk_id thread!!\n");
-		return -1;
-	}
+        /* if _WIN32, window creation and gtk main must be run in a thread */
+        if (pthread_create(&thread_gtk_id, NULL, construct_main_window_and_run_gtk_main, NULL) != 0) {
+                log_msg (MSGL_ERROR, "error creating gtk_id thread!!\n");
+                return -1;
+        }
 #endif
 #else /* NON-THREAD */
-	construct_main_window();
-	run_gtk_main(NULL);
+        construct_main_window();
+        run_gtk_main(NULL);
 #endif
 
 #ifdef ENABLE_OPENGL_SERVER
@@ -790,20 +787,20 @@ int main (int argc, char** argv)
 
 gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpointer data)
 {
-	unsigned int len = 0;
+    unsigned int len = 0;
 	GIOError error;
 	GIOStatus status;
 	gchar *recvbuffer;
 	time_t rawtime;
 	struct tm *timeinfo;
 	char time_str[MAX_TIME_STR];
-	char telnet_commands[MAX_COMMANDS][MAX_LENGTH] = {
-		"read", //dummy command for local use
-		"delvm snapshot\r",
-		"read", //dummy command for local use
-		"savevm snapshot\r",
-		"read", //dummy command for local use
-	};
+    char telnet_commands[MAX_COMMANDS][MAX_LENGTH] = {
+							"read", //dummy command for local use
+							"delvm snapshot\r",
+							"read", //dummy command for local use
+							"savevm snapshot\r",
+							"read", //dummy command for local use
+							};
 
 	if((condition==G_IO_IN) && !(vmstate%2))
 	{
@@ -838,7 +835,7 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 				timeinfo = localtime(&rawtime);
 				strftime(time_str, MAX_TIME_STR, "%Y-%m-%d %H:%M:%S", timeinfo);
 				printf("%s\n", time_str);
-
+				
 				virtual_target_info.snapshot_saved = 1;
 				snprintf(virtual_target_info.snapshot_saved_date, MAXBUF, "%s", time_str);
 				set_config_type(SYSTEMINFO.virtual_target_info_file, ETC_GROUP, SNAPSHOT_SAVED_KEY, virtual_target_info.snapshot_saved);
@@ -848,7 +845,7 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 			}
 
 			g_free(recvbuffer);
-
+			
 			if(vmstate<(MAX_COMMANDS-1))
 				vmstate++;
 
@@ -859,8 +856,8 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 	if(vmstate%2)
 	{
 		error = g_io_channel_write(channel,telnet_commands[vmstate],\
-				strlen(telnet_commands[vmstate]), \
-				&len);
+											strlen(telnet_commands[vmstate]), \
+											&len);
 		if(error!=G_IO_ERROR_NONE)
 		{
 			g_io_channel_unref (channel);
@@ -890,30 +887,30 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 
 void save_emulator_state(void)
 {
-	/* Connect to the monitor console */
-	struct sockaddr_in server;
-	unsigned short server_port = 9000;
-	char *server_ip = "127.0.0.1";
+    /* Connect to the monitor console */
+    struct sockaddr_in server;
+    unsigned short server_port = 9000;
+    char *server_ip = "127.0.0.1";
 
 
 	/* build the UI */
-	GtkBuilder *builder = gtk_builder_new();
+    GtkBuilder *builder = gtk_builder_new();
 	char full_glade_path[MAX_LEN];
-	sprintf(full_glade_path, "%s/savevm.glade", get_bin_path());
-	gtk_builder_add_from_file(builder, full_glade_path, NULL);
+    sprintf(full_glade_path, "%s/savevm.glade", get_bin_path());
+    gtk_builder_add_from_file(builder, full_glade_path, NULL);
 
-	//get objects from the UI
-	savevm_window = (GtkWidget *)gtk_builder_get_object(builder, "savevm_window");
-	savevm_progress = (GtkProgressBar *)gtk_builder_get_object(builder, "savevm_progress");
-	savevm_label = (GtkWidget *)gtk_builder_get_object(builder, "savevm_label");
+    //get objects from the UI
+    savevm_window = (GtkWidget *)gtk_builder_get_object(builder, "savevm_window");
+    savevm_progress = (GtkProgressBar *)gtk_builder_get_object(builder, "savevm_progress");
+    savevm_label = (GtkWidget *)gtk_builder_get_object(builder, "savevm_label");
 	gtk_progress_bar_set_text(savevm_progress,"Saving State in progress...");
-	//gtk_builder_connect_signals(builder, NULL);
-	gtk_widget_show(savevm_window);
+    //gtk_builder_connect_signals(builder, NULL);
+    gtk_widget_show(savevm_window);
 
 	if ((vmsock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 	{
-		printf("socket() failed\n");
-		return ;
+    	printf("socket() failed\n");
+    	return ;
 	}
 	memset(&server, 0, sizeof(server));
 	server.sin_family      = AF_INET;
@@ -921,29 +918,29 @@ void save_emulator_state(void)
 	server.sin_port        = htons(server_port);
 	if (connect(vmsock, (struct sockaddr *) &server, sizeof(server)) < 0)
 	{
-		printf("connect() failed\n");
-		close(vmsock);
-		return ;
+    	printf("connect() failed\n");
+    	close(vmsock);
+    	return ;
 	}
 
 	channel=g_io_channel_unix_new(vmsock);
 	if(channel==NULL)
 	{
-		printf("gnet_tcp_socket_get_io_channel() failed\n");
-		close(vmsock);
-		return ;
-	}
+       	printf("gnet_tcp_socket_get_io_channel() failed\n");
+    	close(vmsock);
+       	return ;
+   	}
 	//g_io_channel_set_flags (channel, G_IO_FLAG_NONBLOCK, NULL);
-
+	
 	guint sourceid = g_io_add_watch(channel, G_IO_IN|G_IO_ERR|G_IO_HUP, \
-			update_progress_bar, NULL);
+													update_progress_bar, NULL);
 
 	if(sourceid<=0)
 	{
-		printf("g_io_add_watch() failed\n");
+       	printf("g_io_add_watch() failed\n");
 		g_io_channel_unref(channel);
-		close(vmsock);
-		return ;
-	}
+    	close(vmsock);
+       	return ;
+   	}
 	printf("Added to gmain loop = %d\n", sourceid);
 }

@@ -3149,7 +3149,7 @@ int qemu_main(int argc, char **argv, char **envp)
     qemu_run_machine_init_done_notifiers();
 	
 	/* call sdb setup function */
-	//sdb_setup(); // called in main
+	sdb_setup();
 
     qemu_system_reset();
     if (loadvm) {
