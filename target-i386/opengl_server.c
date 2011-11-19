@@ -900,7 +900,7 @@ void *init_opengl_server(void *arg)
 		sleep(1);
 #else
 		/* microsecond */
-		_usleep(1000000);
+		usleep(1000000);
 #endif
 	}
 
