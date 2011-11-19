@@ -896,7 +896,12 @@ void *init_opengl_server(void *arg)
 	for(i=1;i<10;i++){
 		if( SLP_base_port != 0 )
 			break;
+#ifndef _WIN32
 		sleep(1);
+#else
+		/* microsecond */
+		_usleep(1000000);
+#endif
 	}
 
 	// set default values
