@@ -37,15 +37,15 @@
 #ifndef __SENSOR_H_
 #define __SENSOR_H_
 #ifdef __MINGW32__
- #include <winsock2.h>
+#include <winsock2.h>
 #else
- #include <arpa/inet.h>
- #include <errno.h>
- #include <fcntl.h>
- #include <netinet/in.h>
- #include <signal.h>
- #include <sys/socket.h>
- #include <unistd.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 #include <sys/types.h>
@@ -56,11 +56,11 @@
 
 #include "sensor_server.h"
 #include "emulator.h"
+#include "sdb.h"
 #define UDP
 
 extern int sensor_update(uint16_t x, uint16_t y, uint16_t z);
 
-#define DEFAULT_SENSOR_PORT 3581
 #define SENSORD_PORT		3580
 
 int sensord_initialized = 0;
@@ -72,7 +72,9 @@ int parse_val(char *buff, unsigned char data, char *parsbuf);
 void *init_sensor_server(void)
 {
 	int listen_s;
+	uint16_t port;
 	struct sockaddr_in servaddr;
+	char buf[32] = {0};
 	GIOChannel *channel = NULL;
 	GError *error;
 	GIOStatus status;
@@ -85,6 +87,9 @@ void *init_sensor_server(void)
 	}
 #endif
 
+	/* ex: 26100 + 3/udp */
+	port = get_sdb_base_port() + 3;
+
 	if((listen_s = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 	{
 		perror("Create listen socket error: ");
@@ -95,10 +100,12 @@ void *init_sensor_server(void)
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	servaddr.sin_port = htons(SENSOR_PORT);
+	servaddr.sin_port = htons(port);
 
+	fprintf(stderr, "bind port[127.0.0.1:%d/udp] for sensor server in host \n", port);
 	if(bind(listen_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
 	{
+		fprintf(stderr, "bind fail [%d:%s] \n", errno, strerror(errno));
 		perror("bind error: ");
 		goto cleanup;
 	}
@@ -106,23 +113,23 @@ void *init_sensor_server(void)
 	channel = g_io_channel_unix_new(listen_s);
 	if(channel == NULL)
 	{
-		printf("gnet_udp_socket_get_io_channel failed\n");
+		fprintf(stderr, "gnet_udp_socket_get_io_channel failed\n");
 		goto cleanup;
 	}
-	
-//	status = g_io_channel_set_encoding(channel, NULL, NULL);
-//	if(status != G_IO_STATUS_NORMAL)
-//	{
-//		printf("encoding error %d %s\n", status, error->message);
-//		goto cleanup;
-//	}
+
+	//	status = g_io_channel_set_encoding(channel, NULL, NULL);
+	//	if(status != G_IO_STATUS_NORMAL)
+	//	{
+	//		printf("encoding error %d %s\n", status, error->message);
+	//		goto cleanup;
+	//	}
 	g_io_channel_set_flags(channel, G_IO_FLAG_NONBLOCK, NULL);
 
 	guint sourceid = g_io_add_watch(channel, G_IO_IN|G_IO_ERR|G_IO_HUP, sensor_server, NULL);
 
 	if(sourceid <= 0)
 	{
-		printf("g_io_add_watch() failed\n");
+		fprintf(stderr, "g_io_add_watch() failed\n");
 		g_io_channel_unref(channel);
 		goto cleanup;
 	}
@@ -177,7 +184,7 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 		perror("Create send socket error: ");
 		goto clean_up;
 	}
-	
+
 	memset(&sensordaddr,'\0', sizeof(sensordaddr));
 
 	sensordaddr.sin_family = AF_INET;
@@ -186,12 +193,12 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 	if((condition == G_IO_IN))
 	{
-//		status = g_io_channel_read_chars(channel, recv_buf, 32, &len, &error);
+		//		status = g_io_channel_read_chars(channel, recv_buf, 32, &len, &error);
 		ioerror = g_io_channel_read(channel, recv_buf, 32, &len);
-//		if(status != G_IO_STATUS_NORMAL)
+		//		if(status != G_IO_STATUS_NORMAL)
 		if(ioerror != G_IO_ERROR_NONE)
 		{
-//			printf("recv() failed %d %s\n", status, error->message);
+			//			printf("recv() failed %d %s\n", status, error->message);
 			printf("recv() failed %d \n", ioerror);
 			goto clean_up;
 		}
@@ -214,21 +221,21 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 				switch(parse_result)
 				{
-				case 0:
-					sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
-					break;
-				case 90:
-					sprintf(send_buf, "1\n3\n-9.80665\n0\n0\n");
-					break;
-				case 180:
-					sprintf(send_buf, "1\n3\n0\n9.80665\n0\n");
-					break;
-				case 270:
-					sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
-					break;
-				case 7:
-					sprintf(send_buf, "%s", recv_buf); 
-					break;
+					case 0:
+						sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
+						break;
+					case 90:
+						sprintf(send_buf, "1\n3\n-9.80665\n0\n0\n");
+						break;
+					case 180:
+						sprintf(send_buf, "1\n3\n0\n9.80665\n0\n");
+						break;
+					case 270:
+						sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
+						break;
+					case 7:
+						sprintf(send_buf, "%s", recv_buf); 
+						break;
 				}
 
 				if(parse_result != 1 && parse_result != -1)
@@ -276,8 +283,8 @@ int sensor_parser(char *buffer)
 	printf("read data: %s\n", buffer);
 #endif
 	/* start */
-    memset(tmpbuf, '\0', sizeof(tmpbuf));
-    len = parse_val(buffer, 0x0a, tmpbuf);
+	memset(tmpbuf, '\0', sizeof(tmpbuf));
+	len = parse_val(buffer, 0x0a, tmpbuf);
 
 	// packet from skin 
 	if(strcmp(tmpbuf, "1\n") == 0)
@@ -317,24 +324,24 @@ int sensor_parser(char *buffer)
 
 			switch(rotation)
 			{
-			case 0:
-				if(UISTATE.current_mode %4 != 0)
-					rotate_event_callback(&PHONE, base_mode + 0);
-				break;
-			case 90:
-				if(UISTATE.current_mode %4 != 1)
-					rotate_event_callback(&PHONE, base_mode + 1);
-				break;
-			case 180:
-				if(UISTATE.current_mode %4 != 2)
-					rotate_event_callback(&PHONE, base_mode + 2);
-				break;
-			case 270:
-				if(UISTATE.current_mode %4 != 3)
-					rotate_event_callback(&PHONE, base_mode + 3);
-				break;
-			default:
-				assert(0);
+				case 0:
+					if(UISTATE.current_mode %4 != 0)
+						rotate_event_callback(&PHONE, base_mode + 0);
+					break;
+				case 90:
+					if(UISTATE.current_mode %4 != 1)
+						rotate_event_callback(&PHONE, base_mode + 1);
+					break;
+				case 180:
+					if(UISTATE.current_mode %4 != 2)
+						rotate_event_callback(&PHONE, base_mode + 2);
+					break;
+				case 270:
+					if(UISTATE.current_mode %4 != 3)
+						rotate_event_callback(&PHONE, base_mode + 3);
+					break;
+				default:
+					assert(0);
 			}
 		}
 	}
@@ -366,7 +373,7 @@ int parse_val(char *buff, unsigned char data, char *parsbuf)
 		}
 		count++;
 	}
-	
+
 	return 0;
 }
 #if 0
