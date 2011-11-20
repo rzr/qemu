@@ -376,6 +376,10 @@ int sensor_parser(char *buffer)
 	}
 	else if(strcmp(tmpbuf, "7\n") == 0) // keyboard on/off
 	{
+		if(sensord_initialized == 0){
+			/* can't send info to guest */
+			show_message("Warning", "Not ready!\nYou cannot turn on/off the USB Keyboard.");
+		}
 		return 7;
 	}
 	else
