@@ -54,6 +54,7 @@
 #include "opengl_func.h"
 #include "opengl_utils.h"
 #include "opengl_server.h"
+#include "sdb.h"
 
 extern int display_function_call;
 
@@ -891,7 +892,7 @@ void *init_opengl_server(void *arg)
 	memset( &option, 0, sizeof(option) );
 
 	// set default values
-	option.port = get_sdb_base_port() + 4;
+	option.port = get_sdb_base_port() + SDB_TCP_OPENGL_INDEX;
 	option.parent_xid = -1;
 	option.refresh_rate = 1000;
 	option.timestamp = 1; /* only valid if must_save == 1. include timestamps in the save file to enable real-time playback */

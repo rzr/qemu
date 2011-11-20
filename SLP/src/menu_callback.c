@@ -213,7 +213,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 	}
 
 	memset(&servaddr, '\0', sizeof(servaddr));
-	port = get_sdb_base_port() + 3;
+	port = get_sdb_base_port() + SDB_UDP_SENSOR_INDEX;
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
