@@ -64,7 +64,7 @@ extern int sensor_update(uint16_t x, uint16_t y, uint16_t z);
 #define SENSORD_PORT		3580
 
 int sensord_initialized = 0;
-int sent_init_value = 0;
+int sent_start_value = 0;
 
 int sensor_parser(char *buffer);
 int parse_val(char *buff, unsigned char data, char *parsbuf);
@@ -149,7 +149,6 @@ cleanup:
 	return NULL;
 }
 
-
 int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 {
 	int   s;  
@@ -167,12 +166,9 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	}   
 
 	socket_send(s, "sensor\n\n\n\n", 10);
-	fprintf(stderr, "[%s][%d] 10 byte sedn \n", __FUNCTION__, __LINE__);
-
 	socket_send(s, &buf_size, 4); 
-	fprintf(stderr, "[%s][%d] 4 byte sedn \n", __FUNCTION__, __LINE__);
-
 	socket_send(s, send_buf, buf_size);
+
 	fprintf(stderr, "send(size: %d) te 127.0.0.1:%d/tcp \n"
 			, buf_size, get_sdb_base_port() + 3);
 
@@ -187,6 +183,65 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	return 1;
 }
 
+static void create_fw_rota_init()
+{
+	int s;
+	char fw_buf[64] = {0};
+	char recv_buf[8] = {0};
+	char send_buf[32] = {0};
+
+	while(1)
+	{
+		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
+		if (s < 0) {
+			fprintf(stderr, "can't create socket to talk to the SDB server \n");
+			continue;
+		}
+
+		memset(fw_buf, 0, sizeof(fw_buf));
+
+		/* length is hex: 0x35 = 53 */
+		sprintf(fw_buf,"0035host-serial:emulator-%d:forward:tcp:%d;tcp:3577"
+				,get_sdb_base_port(),  get_sdb_base_port() + SDB_TCP_SENSOR_INDEX );
+
+		/* Over 53+4 */
+		socket_send(s, fw_buf, 60);
+
+		memset(recv_buf, 0, sizeof(recv_buf));
+		recv( s, recv_buf, 4, 0 );
+
+		/* check OKAY */
+		if(!memcmp(recv_buf, "OKAY", 4)) {
+			fprintf(stderr, "create forward [%s] success : [%s] \n", fw_buf, recv_buf);
+
+			/* send init ratation info */
+			sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
+
+			if( send_info_to_sensor_daemon(send_buf, 32) <= 0 ) {   
+				fprintf(stderr, "[%s][%d] send init rotaion info: error \n", __FUNCTION__, __LINE__);
+			}else{
+				fprintf(stderr, "[%s][%d] send init rotation info: sucess \n", __FUNCTION__, __LINE__);
+				/* all initialized */
+				sensord_initialized = 1;
+			}
+
+			break;
+		}else{
+			/* not ready */
+			//fprintf(stderr, "create forward [%s] fail : [%s] \n", fw_buf, recv_buf);
+			usleep(1000000);
+		}
+
+#ifdef __WIN32
+		closesocket(s);
+#else
+		close(s);
+#endif
+
+	}
+
+	return NULL;
+}
 
 gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer data)
 {
@@ -199,8 +254,6 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 	gsize len;
 	char recv_buf[32] = {0};
 	char send_buf[32] = {0};
-
-	fprintf(stderr, "[%s][%d] callback start \n", __FUNCTION__, __LINE__);
 
 #ifdef __MINGW32__
 	WSADATA wsadata;
@@ -226,32 +279,21 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 		{
 			parse_result = sensor_parser(recv_buf);
 
+			if(sent_start_value == 0) {
+				/* new way with sdb */
+				pthread_t taskid;
+
+				fprintf(stderr, "pthread_create for create_forward : \n");
+				if( pthread_create( (pthread_t *)&taskid, NULL, (void *(*)(void *))create_fw_rota_init, NULL ) ){
+					perror( "pthread_create" );
+					fprintf(stderr, "pthread_create for create_forward fail: \n");
+				}   
+
+				sent_start_value = 1;
+			}
+
 			if(sensord_initialized)
 			{
-				if(sent_init_value == 0)
-				{
-					sent_init_value = 1;
-
-					sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
-
-#if 1
-					/* new way with sdb */
-					if( send_info_to_sensor_daemon(send_buf, 32) <= 0 )
-					{
-						fprintf(stderr, "[%s][%d] send error \n", __FUNCTION__, __LINE__);
-						fprintf(stderr, "[%s][%d] not clean_up \n", __FUNCTION__, __LINE__);
-						//goto clean_up;
-					}
-#else
-					/* old way */
-					if(sendto(sensord_s, send_buf, 32, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
-					{
-						perror("Send error: "); 
-						goto clean_up;
-					}
-#endif
-				}
-
 				switch(parse_result)
 				{
 					case 0:
@@ -273,22 +315,14 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 				if(parse_result != 1 && parse_result != -1)
 				{
-#if 1
 					/* new way with sdb */
 					if( send_info_to_sensor_daemon(send_buf, 32) <= 0 )
 					{
-						perror("Send error: ");
-						goto clean_up;
+						fprintf(stderr, "[%s][%d] send error \n", __FUNCTION__, __LINE__);
+						fprintf(stderr, "[%s][%d] not clean_up \n", __FUNCTION__, __LINE__);
+						//goto clean_up;
 					}
 
-#else
-					/* old way */
-					if(sendto(sensord_s, send_buf, 32, 0, (struct sockaddr *)&sensordaddr, sensord_len) <= 0)
-					{
-						perror("Send error: "); 
-						goto clean_up;
-					}
-#endif
 				}
 			}
 			return TRUE;
@@ -336,7 +370,8 @@ int sensor_parser(char *buffer)
 	}
 	else if(strcmp(tmpbuf, "3\n") == 0) // packet from sensord
 	{
-		sensord_initialized = 1;
+		/* sensord_initialized will be initialized in create_fw_rota_init */
+		/* sensord_initialized = 1; */
 		return 1;
 	}
 	else if(strcmp(tmpbuf, "7\n") == 0) // keyboard on/off

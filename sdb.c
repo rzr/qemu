@@ -302,7 +302,7 @@ void sdb_setup(void)
 	 */
 	do
 	{
-		char tmp[32];
+		char tmp[32] = {0};
 
 		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
 		if (s < 0) {
@@ -310,10 +310,9 @@ void sdb_setup(void)
 			break;
 		}
 
+		/* length is hex: 0x13 = 19 */
 		sprintf(tmp,"0013host:emulator:%d",port+1);
 		socket_send(s, tmp, 30);
-		//		printf("sent '%s' to SDB server\n", tmp);
-		//		fflush(stdout);
 
 	}
 	while (0);
