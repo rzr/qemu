@@ -55,8 +55,6 @@
 #include "opengl_utils.h"
 #include "opengl_server.h"
 
-extern int SLP_base_port;
-
 extern int display_function_call;
 
 #ifdef _WIN32
@@ -888,24 +886,12 @@ static void usage(void)
 //int main (int argc, char* argv[])
 void *init_opengl_server(void *arg)
 {
-	int i;
 	OGLS_Opts option;
 
 	memset( &option, 0, sizeof(option) );
 
-	for(i=1;i<10;i++){
-		if( SLP_base_port != 0 )
-			break;
-#ifndef _WIN32
-		sleep(1);
-#else
-		/* microsecond */
-		usleep(1000000);
-#endif
-	}
-
 	// set default values
-	option.port = SLP_base_port + 4;
+	option.port = get_sdb_base_port() + 4;
 	option.parent_xid = -1;
 	option.refresh_rate = 1000;
 	option.timestamp = 1; /* only valid if must_save == 1. include timestamps in the save file to enable real-time playback */

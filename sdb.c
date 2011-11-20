@@ -11,10 +11,11 @@
 #endif /* !_WIN32 */
 
 #include "net/slirp.h"
+#include "qemu_socket.h"
 #include "sdb.h"
 #include "nbd.h"
 
-int SLP_base_port = 0;
+static int SLP_base_port = 0;
 
 /* QSOCKET_CALL is used to deal with the fact that EINTR happens pretty
  * easily in QEMU since we use SIGALRM to implement periodic timers
@@ -197,8 +198,62 @@ int inet_strtoip(const char*  str, uint32_t  *ip)
 	return 0;
 }
 
+static int check_port_bind_listen(u_int port)
+{
+	struct sockaddr_in addr;
+	int s, opt = 1;
+	int ret = -1;
+	socklen_t addrlen = sizeof(addr);
+	memset(&addr, 0, addrlen);
+
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_port = htons(port);
+
+	if (((s = qemu_socket(AF_INET,SOCK_STREAM,0)) < 0) ||
+			(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
+			(bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
+			(listen(s,1) < 0)) {
+
+		/* fail */
+		ret = -1;
+		fprintf(stderr, "port(%d) listen  fail \n", port);
+	}else{
+		/*fsucess*/
+		ret = 1;
+		fprintf(stderr, "port(%d) listen  ok \n", port);
+	}
+
+	close(s);
+
+	return ret;
+}
+
 int get_sdb_base_port(void)
 {
+	int   tries     = 10;
+	int   success   = 0;
+	u_int port = 26100;
+
+	if(SLP_base_port == 0){
+
+		for ( ; tries > 0; tries--, port += 10 ) {
+			if(check_port_bind_listen(port+1) < 0 )
+				continue;
+
+			success = 1;
+			break;
+		}
+
+		if (!success) {
+			fprintf(stderr, "it seems too many emulator instances are running on this machine. Aborting\n" );
+			exit(1);
+		}
+
+		SLP_base_port = port;
+		fprintf(stderr, "sdb port is %d \n", SLP_base_port);
+	}
+
 	return SLP_base_port;
 }
 
@@ -230,6 +285,11 @@ void sdb_setup(void)
 	fprintf(stderr, "redirect %s \n", buf);
 	if (!success) {
 		fprintf(stderr, "it seems too many emulator instances are running on this machine. Aborting\n" );
+		exit(1);
+	}
+
+	if( SLP_base_port != port ){
+		fprintf(stderr, "sdb port is miss match. Aborting\n" );
 		exit(1);
 	}
 

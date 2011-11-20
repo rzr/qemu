@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include "configuration.h"
+#include "sdb.h"
 
 #define EMUL_PIXELFORMAT_YUV422P           1
 #define EMUL_PIXELFORMAT_YUV420P           2
@@ -702,6 +703,9 @@ void qemu_option_set_to_config(arglist *al)
 	gethostIP(hostip);
 	if (strlen(hostip))
 		sprintf(&kernel_kappend[strlen(kernel_kappend)], "openglip=%s ", hostip);
+
+	// sdb port
+	sprintf(&kernel_kappend[strlen(kernel_kappend)], "sdb_port=%d ", get_sdb_base_port());
 
 	// get DPI value
 	if (strlen(virtual_target_info.dpi))
