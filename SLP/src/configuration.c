@@ -18,7 +18,11 @@
 
 #include <assert.h>
 #include "configuration.h"
+#include "debug_ch.h"
 #include "sdb.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, configuration);
 
 #define EMUL_PIXELFORMAT_YUV422P           1
 #define EMUL_PIXELFORMAT_YUV420P           2
@@ -70,7 +74,7 @@ int fill_configuration(int status)
 		configuration.qemu_configuration.diskimg_type = 0;
 		strcpy(configuration.target_path, startup_option.target);
 
-		log_msg(MSGL_INFO, "target path is %s\n", configuration.target_path);
+		INFO( "target path is %s\n", configuration.target_path);
 	}
 
 	else if (strlen(startup_option.disk) > 0) {
@@ -85,15 +89,6 @@ int fill_configuration(int status)
 #else // inhouse
 		snprintf(configuration.qemu_configuration.diskimg_path, MAXBUF, "%s/protector-simulator.img",data_path);
 #endif
-	}
-
-	/* 1.4 skin setting */
-
-	if (startup_option.skin) {
-		log_msg(MSGL_INFO, "skin path is %s\n", startup_option.skin);
-	}
-	else {
-		fprintf(stderr, "skin path is missing\n");
 	}
 
 	/* 2. CONF_INIT_MODE / CONF_EXIST_STARTUP_MODE*/
@@ -143,7 +138,7 @@ int fill_configuration(int status)
 		return 0;
 	}
 	else
-		log_msg(MSGL_INFO, "Configuration Structure fill error !\n");
+		INFO( "Configuration Structure fill error !\n");
 
 	return 0;
 }
@@ -168,7 +163,7 @@ PROGRAMNAME *get_config_value_list(gchar *filepath, const gchar *group, const gc
 	keyfile = g_key_file_new();
 
 	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		log_msg( MSGL_INFO, "loading key file form %s is failed\n", filepath );
+		INFO("loading key file form %s is failed\n", filepath );
 		g_error("%s", error->message);
 		return NULL;
 	}
@@ -231,7 +226,7 @@ int create_config_file(gchar* filepath)
 		fclose(fp);
 	}
 	else {
-		log_msg(MSGL_ERROR, "Can't open file path. (%s)\n", filepath);
+		ERR( "Can't open file path. (%s)\n", filepath);
 		return -1;
 	}
 
@@ -367,7 +362,7 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
-		log_msg(MSGL_ERROR, "target info file not exists : %s\n", virtual_target_name);
+		ERR( "target info file not exists : %s\n", virtual_target_name);
 		return -1;
 	}
 
@@ -393,16 +388,10 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 	
 	pvirtual_target_info->ram_size = get_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 
-	if(strcmp(virtual_target_name, "default") == 0)
-	{
-		snprintf(pvirtual_target_info->diskimg_path, MAXBUF, "%s/emulimg-default.x86", get_path());
-	}
-	else
-	{
-		buf = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
-		snprintf(pvirtual_target_info->diskimg_path, MAXBUF, "%s", buf);
-		g_free(buf);
-	}
+	buf = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+//	buf = get_virtual_target_path(virtual_target_name);
+	snprintf(pvirtual_target_info->diskimg_path, MAXBUF, "%s", buf);
+	g_free(buf);
 
 	pvirtual_target_info->snapshot_saved = get_config_type(info_file, ETC_GROUP, SNAPSHOT_SAVED_KEY);
 	if(pvirtual_target_info->snapshot_saved == 0)
@@ -432,7 +421,7 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 int is_valid_target(const gchar *path)
 {
 	if (g_file_test(path, G_FILE_TEST_IS_DIR | G_FILE_TEST_EXISTS) == FALSE) {
-		log_msg(MSGL_ERROR, "target file: %s is not exist.\n", path);
+		ERR( "target file: %s is not exist.\n", path);
 		return -1;
 	}
 
@@ -503,20 +492,21 @@ int load_emulator_config_file(SYSINFO *pSYSTEMINFO)
 	int target_list_status = is_valid_target_list_file(pSYSTEMINFO);
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
-		log_msg(MSGL_ERROR, "load target list file error\n");
+		ERR( "load target list file error\n");
 		return -1;
 	}
 
-	int virtual_target_info_status = read_virtual_target_info_file("default", &virtual_target_info);
+	int virtual_target_info_status = read_virtual_target_info_file(startup_option.vtm, &virtual_target_info);
 	if(virtual_target_info_status == -1)
 	{
-		log_msg(MSGL_ERROR, "load target info file error\n");
+		ERR( "load target info file error\n");
 		return -1;
 	}
 	else
 	{
-		snprintf(pSYSTEMINFO->virtual_target_name, MAXBUF, "%s", "default");
-		virtual_target_path = get_virtual_target_path("default");
+		snprintf(pSYSTEMINFO->virtual_target_name, MAXBUF, "%s", startup_option.vtm);
+//		virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
+		virtual_target_path = get_virtual_target_path(startup_option.vtm);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		snprintf(pSYSTEMINFO->virtual_target_info_file, MAXPATH, "%s", info_file);
 	}
@@ -531,35 +521,28 @@ int load_emulator_config_file(SYSINFO *pSYSTEMINFO)
 
 		fill_configuration(CONF_EXIST_STARTUP_MODE);
 
-		result = read_config_file(SYSTEMINFO.conf_file, &configuration);
+		result = read_config_file(SYSTEMINFO.virtual_target_info_file, &configuration);
 
 //		if (result == -1) {
 //			fill_configuration(CONF_INIT_MODE);
-		if(startup_option.quick_start == 0)
-			show_config_window(NULL);
-//		}
 
 		break;
 
 	case FILE_NOT_EXISTS :
-
-		fill_configuration(CONF_INIT_MODE);
-
+//		fill_configuration(CONF_INIT_MODE);
 //		if ((strlen(configuration.target_path) < 2))
-		if(startup_option.quick_start == 0)
-			show_config_window(NULL);
-
-		create_config_file(SYSTEMINFO.conf_file);
+//		create_config_file(SYSTEMINFO.virtual_target_info_file);
+		ERR( "load emulator config file \n");
 
 		break;
 
 	default:
-		log_msg(MSGL_ERROR, "load emulator config file error\n");
+		ERR( "Emulator config file not exists!\n");
 
 		return -1;
 	}
 
-	write_config_file(SYSTEMINFO.conf_file, &configuration);
+//	write_config_file(SYSTEMINFO.virtual_target_info_file, &configuration);
 	startup_option_config_done = 1;
 
 	return 0;
@@ -574,12 +557,12 @@ int load_emulator_config_file(SYSINFO *pSYSTEMINFO)
  * */
 int load_config_file(SYSINFO *pSYSTEMINFO)
 {
-//	log_msg(MSGL_INFO, "default_target = %s \n", configuration.target_path);
+//	INFO( "default_target = %s \n", configuration.target_path);
 
 	/* 2. emulator config file load (emulator.conf) */
 
 	if (load_emulator_config_file(pSYSTEMINFO) == -1) {
-		log_msg (MSGL_ERROR, "load emulator.conf file error!!\n");
+		ERR( "load emulator.conf file error!!\n");
 		return -1;
 	}
 
@@ -607,14 +590,14 @@ int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconf
 
 	if(resolution_found == 0)
 	{
-		log_msg(MSGL_ERROR, "unknown resolution : %s\n", pvirtual_target_info->resolution);
+		ERR( "unknown resolution\n");
 		return -1;
 	}
 
 	button_type = pvirtual_target_info->button_type;
         if (button_type !=0 &&  button_type != 1 &&  button_type != 3)
         {
-                log_msg(MSGL_ERROR, "unknown button type : %d\n", button_type);
+                ERR( "unknown button type : %d\n", button_type);
                 return -1;
         }
 
@@ -624,7 +607,7 @@ int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconf
 
 	if(is_valid_skin(pconfiguration->skin_path) == 0)
 	{
-		log_msg(MSGL_ERROR, "skin file is invalid : %s\n", pconfiguration->skin_path);
+		ERR( "skin file is invalid\n");
 		g_free(skin);
 		return -1;
 	}
@@ -644,7 +627,7 @@ void qemu_option_set_to_config(arglist *al)
 {
 	gboolean userdata_exist = FALSE;
 
-	const gchar *emulator_path = get_emulator_path();
+	const gchar *vtm_path = get_vtm_path();
 
 	int width = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.w);
 	int height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.h);
@@ -725,7 +708,7 @@ void qemu_option_set_to_config(arglist *al)
 #define GUEST_IP_ADDRESS "10.0.2.16"
 #define HOST_QEMU_ADDRESS "10.0.2.2"
 #define BOOT_DRIVE "c"
-#define KERNEL_LOGFILE_NAME "/emulator.klog"
+#define KERNEL_LOGFILE_NAME "logs/emulator.klog"
 
 #define VIRTIO_DISK
 	if(!configuration.qemu_configuration.diskimg_type) {
@@ -754,14 +737,11 @@ void qemu_option_set_to_config(arglist *al)
 
 	sprintf(&kernel_kappend[strlen(kernel_kappend)], "%d", startup_option.run_level);
 
-	append_argvlist(al, "%s", emulator_path);
+	append_argvlist(al, "%s", vtm_path);
 	if (qemu_arch_is_arm()) {
 		if(configuration.qemu_configuration.diskimg_type) {
 			append_argvlist(al, "-hda");
-			if(strcmp(SYSTEMINFO.virtual_target_name, "default") == 0)
-				append_argvlist(al, "%s", configuration.qemu_configuration.diskimg_path);
-			else
-				append_argvlist(al, "%s", virtual_target_info.diskimg_path);
+			append_argvlist(al, "%s", virtual_target_info.diskimg_path);
 		}
 	}
 	/*this is for i386*/
@@ -770,15 +750,9 @@ void qemu_option_set_to_config(arglist *al)
 		if(configuration.qemu_configuration.diskimg_type) {
 			append_argvlist(al, "-drive");
 #ifdef VIRTIO_DISK
-			if(strcmp(SYSTEMINFO.virtual_target_name, "default") == 0)
-				append_argvlist(al, "file=%s,if=virtio", configuration.qemu_configuration.diskimg_path);
-			else
-				append_argvlist(al, "file=%s,if=virtio", virtual_target_info.diskimg_path);
+			append_argvlist(al, "file=%s,if=virtio", virtual_target_info.diskimg_path);
 #else
-			if(strcmp(virtual_target_info.virtual_target_name, "default") == 0)
-				append_argvlist(al, "file=%s", configuration.qemu_configuration.diskimg_path);
-			else
-				append_argvlist(al, "file=%s", virtual_target_info.diskimg_path);
+			append_argvlist(al, "file=%s", virtual_target_info.diskimg_path);
 #endif
 			gchar userdata_buf[MAXBUF] = {0, };
 			char *target_name = basename(configuration.target_path);
@@ -805,7 +779,7 @@ void qemu_option_set_to_config(arglist *al)
 
 	if (!startup_option.no_dump) {
 		gchar kernel_log_path[MAXBUF] = {0, };
-		strcpy(kernel_log_path, get_path());
+		strcpy(kernel_log_path, get_virtual_target_path(startup_option.vtm));
 		strcat(kernel_log_path, KERNEL_LOGFILE_NAME);
 		append_argvlist(al, "-serial");
 		append_argvlist(al, "file:%s", kernel_log_path); 

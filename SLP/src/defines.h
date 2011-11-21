@@ -119,14 +119,22 @@ extern "C" {
 #define SDCARD_TYPE_KEY				"SDCARD_TYPE"
 #define SDCARD_PATH_KEY				"SDCARD_PATH"
 /* for saving emulator state */
-#define SAVEVM_KEY				"SAVEVM"
-#define SNAPSHOT_SAVED_KEY		"SNAPSHOT_SAVED"
+#define SAVEVM_KEY					"SAVEVM"
+#define KVM_KEY						"KVM"
+#define BINARY_KEY					"BINARY"
+#define LOG_LEVEL_KEY				"LOG_LEVEL"
+#define DEBUG_QEMU_KEY				"DEBUG_QEMU"
+#define SNAPSHOT_SAVED_KEY			"SNAPSHOT_SAVED"
 #define SNAPSHOT_SAVED_DATE_KEY		"SNAPSHOT_DATE"
 #define DISK_TYPE_KEY				"DISK_TYPE"
 #define DISK_PATH_KEY				"DISK_PATH"
+#define EMULATOR_OPTION_KEY			"EMULATOR_OPTION"
+#define QEMU_OPTION_KEY				"QEMU_OPTION"
+
 
 #define TARGET_LIST_GROUP			"TARGET_LIST"
 #define ETC_GROUP					"ETC"
+#define ADDITIONAL_OPTION_GROUP		"ADDITIONAL_OPTION"
 
 #define HARDWARE_GROUP				"HARDWARE"
 #define RESOLUTION_KEY				"RESOLUTION"
@@ -302,15 +310,13 @@ enum {
 typedef struct _STARTUP_OPTION
 {
 	gchar		*target;				/**<Target name> */
-	gchar		*disk;				/**<Target name> */
-	gchar		*skin;				/**<Skin path> */
-	gint		log_level;					/**<log level> */	
-	gint		run_level;					/**<run level> */
-	gboolean	target_log;					/**<If ture, the target log of emulator is printed */
+	gchar		*disk;					/**<Target name> */
+	gchar		*vtm;					/**<VTM name>**/
+	int			run_level;				/**<run level> */
+	gboolean	target_log;				/**<If ture, the target log of emulator is printed */
 	gint		mountPort;
 	gint		ssh_port;
 	gint		telnet_port;
-	gint		quick_start;
 	gboolean	no_dump;
 } STARTUP_OPTION;
 

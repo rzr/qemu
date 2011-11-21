@@ -62,8 +62,12 @@
 #include "extern.h"
 #ifndef _WIN32
 #include "defines.h"
-#include "logmsg.h"
 #endif
+
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, vinit_process);
 
 #define MAX_COMMAND 256
 
@@ -88,7 +92,7 @@ int load_ssh(char *command, char *args)
 	
 
 	if ((pid = vfork()) < 0) {
-		log_msg(MSGL_WARN, "fork error\n");
+		WARN( "fork error\n");
 		return -1;
 	}
 
@@ -100,7 +104,7 @@ int load_ssh(char *command, char *args)
 	
 	else if (pid > 0) { /* parent */
 //		int status = 0;
-		log_msg(MSGL_DEBUG, "ssh pid = %d\n", pid);
+		TRACE( "ssh pid = %d\n", pid);
 //		sleep(4);
 //		kill(pid, SIGTERM);
 //		wait4(pid, &status, 0, NULL);
@@ -145,7 +149,7 @@ int file_transfer_scp( char* src, char* dest )
 	pid_t pid;
 
 	if( (pid = vfork()) < 0 ) {
-		log_msg(MSGL_WARN, "fork error\n");
+		WARN( "fork error\n");
 		return -1;
 	}
 
@@ -153,7 +157,7 @@ int file_transfer_scp( char* src, char* dest )
 		execlp("scp", "scp", "-o StrictHostKeyChecking=no", src, dest, (char *)0);
 		exit(0);
 	}else if (pid > 0) { /* parent */
-		log_msg(MSGL_DEBUG, "ssh pid = %d\n", pid);
+		TRACE( "ssh pid = %d\n", pid);
 		sleep(1);
 		kill(pid, SIGTERM);
 	}

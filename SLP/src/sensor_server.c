@@ -56,8 +56,13 @@
 
 #include "sensor_server.h"
 #include "emulator.h"
-#include "sdb.h"
 #define UDP
+
+#include "debug_ch.h"
+#include "sdb.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, sensor_server);
 
 extern int sensor_update(uint16_t x, uint16_t y, uint16_t z);
 
@@ -82,7 +87,7 @@ void *init_sensor_server(void)
 #ifdef __MINGW32__	
 	WSADATA wsadata;
 	if(WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
-		fprintf(stderr, "Error creating socket.\n");
+		ERR("Error creating socket.\n");
 		return NULL;
 	}
 #endif
@@ -92,7 +97,7 @@ void *init_sensor_server(void)
 
 	if((listen_s = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 	{
-		perror("Create listen socket error: ");
+		ERR("Create listen socket error: ");
 		goto cleanup;
 	}
 
@@ -102,25 +107,25 @@ void *init_sensor_server(void)
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	servaddr.sin_port = htons(port);
 
-	fprintf(stderr, "bind port[127.0.0.1:%d/udp] for sensor server in host \n", port);
+	ERR( "bind port[127.0.0.1:%d/udp] for sensor server in host \n", port);
 	if(bind(listen_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
 	{
-		fprintf(stderr, "bind fail [%d:%s] \n", errno, strerror(errno));
-		perror("bind error: ");
+		ERR( "bind fail [%d:%s] \n", errno, strerror(errno));
+		ERR("bind error: ");
 		goto cleanup;
 	}
 
 	channel = g_io_channel_unix_new(listen_s);
 	if(channel == NULL)
 	{
-		fprintf(stderr, "gnet_udp_socket_get_io_channel failed\n");
+		ERR("gnet_udp_socket_get_io_channel failed\n");
 		goto cleanup;
 	}
 
 	//	status = g_io_channel_set_encoding(channel, NULL, NULL);
 	//	if(status != G_IO_STATUS_NORMAL)
 	//	{
-	//		fprintf(stderr, "encoding error %d %s\n", status, error->message);
+	//		ERR("encoding error %d %s\n", status, error->message);
 	//		goto cleanup;
 	//	}
 	g_io_channel_set_flags(channel, G_IO_FLAG_NONBLOCK, NULL);
@@ -129,7 +134,7 @@ void *init_sensor_server(void)
 
 	if(sourceid <= 0)
 	{
-		fprintf(stderr, "g_io_add_watch() failed\n");
+		ERR("g_io_add_watch() failed\n");
 		g_io_channel_unref(channel);
 		goto cleanup;
 	}
@@ -157,8 +162,8 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 
 	s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_SENSOR_INDEX)); 
 	if (s < 0) {
-		fprintf(stderr, "can't create socket to talk to the sdb forwarding session \n");
-		fprintf(stderr, "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
+		ERR( "can't create socket to talk to the sdb forwarding session \n");
+		ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
 				, get_sdb_base_port() + SDB_TCP_SENSOR_INDEX
 				, errno, strerror(errno)
 			   );
@@ -169,7 +174,7 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	socket_send(s, &buf_size, 4); 
 	socket_send(s, send_buf, buf_size);
 
-	fprintf(stderr, "send(size: %d) te 127.0.0.1:%d/tcp \n"
+	ERR( "send(size: %d) te 127.0.0.1:%d/tcp \n"
 			, buf_size, get_sdb_base_port() + 3);
 
 #ifdef _WIN32
@@ -178,7 +183,7 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	close(s);
 #endif
 
-	fprintf(stderr, "[%s][%d] end \n", __FUNCTION__, __LINE__);
+	ERR( "[%s][%d] end \n", __FUNCTION__, __LINE__);
 
 	return 1;
 }
@@ -194,7 +199,7 @@ static void create_fw_rota_init()
 	{
 		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
 		if (s < 0) {
-			fprintf(stderr, "can't create socket to talk to the SDB server \n");
+			ERR( "can't create socket to talk to the SDB server \n");
 			continue;
 		}
 
@@ -212,15 +217,15 @@ static void create_fw_rota_init()
 
 		/* check OKAY */
 		if(!memcmp(recv_buf, "OKAY", 4)) {
-			fprintf(stderr, "create forward [%s] success : [%s] \n", fw_buf, recv_buf);
+			INFO( "create forward [%s] success : [%s] \n", fw_buf, recv_buf);
 
 			/* send init ratation info */
 			sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
 
 			if( send_info_to_sensor_daemon(send_buf, 32) <= 0 ) {   
-				fprintf(stderr, "[%s][%d] send init rotaion info: error \n", __FUNCTION__, __LINE__);
+				ERR( "[%s][%d] send init rotaion info: error \n", __FUNCTION__, __LINE__);
 			}else{
-				fprintf(stderr, "[%s][%d] send init rotation info: sucess \n", __FUNCTION__, __LINE__);
+				INFO( "[%s][%d] send init rotation info: sucess \n", __FUNCTION__, __LINE__);
 				/* all initialized */
 				sensord_initialized = 1;
 			}
@@ -258,7 +263,7 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 #ifdef __MINGW32__
 	WSADATA wsadata;
 	if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
-		fprintf(stderr, "[%s][%d] Error creating socket  \n", __FUNCTION__, __LINE__);
+		ERR( "[%s][%d] Error creating socket  \n", __FUNCTION__, __LINE__);
 		g_io_channel_unref(channel);
 		g_io_channel_shutdown(channel, TRUE, NULL);
 		return FALSE;
@@ -267,12 +272,12 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 	if((condition == G_IO_IN))
 	{
-		//status = g_io_channel_read_chars(channel, recv_buf, 32, &len, &error);
+		//		status = g_io_channel_read_chars(channel, recv_buf, 32, &len, &error);
 		ioerror = g_io_channel_read(channel, recv_buf, 32, &len);
-		//if(status != G_IO_STATUS_NORMAL)
+		//		if(status != G_IO_STATUS_NORMAL)
 		if(ioerror != G_IO_ERROR_NONE)
 		{
-			fprintf(stderr, "[%s][%d] recv() failed %d \n", __FUNCTION__, __LINE__, ioerror);
+			ERR( "[%s][%d] recv() failed %d \n", __FUNCTION__, __LINE__, ioerror);
 			goto clean_up;
 		}
 		else
@@ -283,10 +288,10 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 				/* new way with sdb */
 				pthread_t taskid;
 
-				fprintf(stderr, "pthread_create for create_forward : \n");
+				INFO( "pthread_create for create_forward : \n");
 				if( pthread_create( (pthread_t *)&taskid, NULL, (void *(*)(void *))create_fw_rota_init, NULL ) ){
-					perror( "pthread_create" );
-					fprintf(stderr, "pthread_create for create_forward fail: \n");
+					ERR( "pthread_create" );
+					ERR( "pthread_create for create_forward fail: \n");
 				}   
 
 				sent_start_value = 1;
@@ -318,11 +323,10 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 					/* new way with sdb */
 					if( send_info_to_sensor_daemon(send_buf, 32) <= 0 )
 					{
-						fprintf(stderr, "[%s][%d] send error \n", __FUNCTION__, __LINE__);
-						fprintf(stderr, "[%s][%d] not clean_up \n", __FUNCTION__, __LINE__);
+						ERR( "[%s][%d] send error \n", __FUNCTION__, __LINE__);
+						ERR( "[%s][%d] not clean_up \n", __FUNCTION__, __LINE__);
 						//goto clean_up;
 					}
-
 				}
 			}
 			return TRUE;
@@ -330,7 +334,7 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 	}
 	else if((condition == G_IO_ERR) || (condition == G_IO_HUP))
 	{
-		fprintf(stderr, "[%s][%d] G_IO_ERR | G_IO_HUP received  \n", __FUNCTION__, __LINE__);
+		ERR("G_IO_ERR | G_IO_HUP received \n");
 	}
 
 clean_up:
@@ -353,7 +357,7 @@ int sensor_parser(char *buffer)
 	int base_mode = 0;
 
 #ifdef SENSOR_DEBUG
-	fprintf(stderr, "read data: %s\n", buffer);
+	TRACE("read data: %s\n", buffer);
 #endif
 	/* start */
 	memset(tmpbuf, '\0', sizeof(tmpbuf));
@@ -384,7 +388,7 @@ int sensor_parser(char *buffer)
 	}
 	else
 	{
-		perror("bad data");
+		ERR("bad data");
 		return -1;
 	}
 

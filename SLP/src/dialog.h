@@ -42,11 +42,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <gdk/gdkkeysyms.h>
-
+#include <glib.h>
 #include "ui_imageid.h"
 #include "utils.h"
 
 void show_message(const char *szTitle, const char *szMessage);
+gboolean show_ok_cancel_message(const char *szTitle, const char *szMessage);
 
 #define _(String)			String
 

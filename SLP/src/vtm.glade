@@ -3,267 +3,207 @@
   <!-- interface-requires gtk+ 2.10 -->
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="window1">
-    <property name="width_request">600</property>
-    <property name="height_request">480</property>
+    <property name="width_request">410</property>
+    <property name="height_request">280</property>
+    <property name="border_width">6</property>
     <property name="title" translatable="yes">Virtual Target Manager</property>
     <property name="resizable">False</property>
     <property name="window_position">center</property>
+    <signal name="destroy" handler="gtk_main_quit"/>
     <child>
       <object class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
         <child>
-          <object class="GtkLabel" id="label1">
+          <object class="GtkFrame" id="frame4">
             <property name="visible">True</property>
-            <property name="xalign">0.05000000074505806</property>
+            <property name="label_xalign">0</property>
+            <property name="label_yalign">0.49000000953674316</property>
+            <child>
+              <object class="GtkAlignment" id="alignment5">
+                <property name="visible">True</property>
+                <property name="left_padding">12</property>
+                <child>
+                  <object class="GtkHBox" id="hbox8">
+                    <property name="height_request">0</property>
+                    <property name="visible">True</property>
+                    <child>
+                      <object class="GtkRadioButton" id="radiobutton8">
+                        <property name="label" translatable="yes">x86</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="active">True</property>
+                        <property name="draw_indicator">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkRadioButton" id="radiobutton9">
+                        <property name="label" translatable="yes">arm</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="active">True</property>
+                        <property name="draw_indicator">True</property>
+                        <property name="group">radiobutton8</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">22</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child type="label">
+              <object class="GtkLabel" id="label1">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">&lt;b&gt;Architecture&lt;/b&gt;</property>
+                <property name="use_markup">True</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="Target lists">
+            <property name="height_request">20</property>
+            <property name="visible">True</property>
+            <property name="xalign">0.039999999105930328</property>
+            <property name="yalign">1</property>
             <property name="label" translatable="yes">Lists of currently available targets.</property>
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="padding">5</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkHSeparator" id="hseparator1">
-            <property name="visible">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="position">1</property>
+            <property name="fill">False</property>
+            <property name="position">-1</property>
           </packing>
         </child>
         <child>
           <object class="GtkHBox" id="hbox1">
             <property name="visible">True</property>
             <child>
-              <object class="GtkTable" id="table1">
-                <property name="width_request">480</property>
+              <object class="GtkVBox" id="vbox3">
+                <property name="width_request">323</property>
                 <property name="visible">True</property>
-                <property name="n_rows">22</property>
-                <property name="n_columns">2</property>
-                <property name="column_spacing">1</property>
-                <property name="row_spacing">1</property>
-                <child>
-                  <object class="GtkHSeparator" id="hseparator2">
-                    <property name="visible">True</property>
-                  </object>
-                  <packing>
-                    <property name="right_attach">2</property>
-                    <property name="top_attach">1</property>
-                    <property name="bottom_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label2">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Name &lt;/b&gt;</property>
-                    <property name="use_markup">True</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label3">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">&lt;b&gt; Resolution &lt;/b&gt;</property>
-                    <property name="use_markup">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="right_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label4">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">default</property>
-                  </object>
-                  <packing>
-                    <property name="top_attach">2</property>
-                    <property name="bottom_attach">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label5">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">480 * 800</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="right_attach">2</property>
-                    <property name="top_attach">2</property>
-                    <property name="bottom_attach">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
+                <property name="border_width">3</property>
                 <child>
                   <placeholder/>
                 </child>
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="padding">1</property>
                 <property name="position">0</property>
               </packing>
             </child>
             <child>
               <object class="GtkVBox" id="vbox2">
                 <property name="visible">True</property>
-                <property name="spacing">5</property>
                 <child>
-                  <object class="GtkButton" id="button1">
-                    <property name="label" translatable="yes">Create</property>
+                  <object class="GtkHBox" id="hbox9">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
+                    <child>
+                      <object class="GtkFrame" id="frame5">
+                        <property name="visible">True</property>
+                        <property name="label_xalign">0</property>
+                        <property name="shadow_type">none</property>
+                        <child>
+                          <object class="GtkAlignment" id="alignment4">
+                            <property name="visible">True</property>
+                            <property name="left_padding">12</property>
+                            <child>
+                              <placeholder/>
+                            </child>
+                          </object>
+                        </child>
+                        <child type="label">
+                          <object class="GtkLabel" id="label2">
+                            <property name="visible">True</property>
+                            <property name="use_markup">True</property>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
-                    <property name="padding">1</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="button2">
-                    <property name="label" translatable="yes">View</property>
+                  <object class="GtkButton" id="button1">
+                    <property name="label" translatable="yes">Create</property>
+                    <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                   </object>
                   <packing>
-                    <property name="padding">1</property>
+                    <property name="padding">5</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="button3">
-                    <property name="label" translatable="yes">Delete</property>
+                    <property name="label" translatable="yes">Modify</property>
+                    <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                   </object>
                   <packing>
-                    <property name="padding">1</property>
+                    <property name="padding">4</property>
                     <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="button2">
+                    <property name="label" translatable="yes">Delete</property>
+                    <property name="height_request">28</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                  </object>
+                  <packing>
+                    <property name="padding">5</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="button4">
+                    <property name="label" translatable="yes">Activate</property>
+                    <property name="height_request">28</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="activate_clicked_cb"/>
+                  </object>
+                  <packing>
+                    <property name="padding">5</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
               </object>
               <packing>
-                <property name="padding">1</property>
-                <property name="position">1</property>
+                <property name="padding">4</property>
+                <property name="position">-1</property>
               </packing>
             </child>
           </object>
           <packing>
-            <property name="expand">False</property>
-            <property name="padding">1</property>
             <property name="position">2</property>
           </packing>
         </child>
@@ -271,13 +211,13 @@
     </child>
   </object>
   <object class="GtkWindow" id="window2">
-    <property name="width_request">450</property>
+    <property name="width_request">410</property>
     <property name="title" translatable="yes">Create new Virtual Target</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="window_position">center</property>
     <child>
-      <object class="GtkVBox" id="vbox3">
+      <object class="GtkVBox" id="vbox4">
         <property name="visible">True</property>
         <property name="spacing">5</property>
         <child>
@@ -298,6 +238,7 @@
               <object class="GtkEntry" id="entry1">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="max_length">20</property>
                 <property name="invisible_char">&#x25CF;</property>
               </object>
               <packing>
@@ -310,6 +251,32 @@
             <property name="expand">False</property>
             <property name="padding">5</property>
             <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkHBox" id="hbox10">
+            <property name="visible">True</property>
+            <child>
+              <object class="GtkLabel" id="label3">
+                <property name="width_request">24</property>
+                <property name="visible">True</property>
+              </object>
+              <packing>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label4">
+                <property name="visible">True</property>
+                <property name="wrap">True</property>
+              </object>
+              <packing>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="position">1</property>
           </packing>
         </child>
         <child>
@@ -333,6 +300,8 @@
                         <property name="draw_indicator">True</property>
                       </object>
                       <packing>
+                        <property name="expand">False</property>
+                        <property name="padding">3</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
@@ -347,6 +316,8 @@
                         <property name="group">radiobutton1</property>
                       </object>
                       <packing>
+                        <property name="expand">False</property>
+                        <property name="padding">3</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
@@ -360,6 +331,8 @@
                         <property name="group">radiobutton1</property>
                       </object>
                       <packing>
+                        <property name="expand">False</property>
+                        <property name="padding">3</property>
                         <property name="position">2</property>
                       </packing>
                     </child>
@@ -373,6 +346,8 @@
                         <property name="group">radiobutton1</property>
                       </object>
                       <packing>
+                        <property name="expand">False</property>
+                        <property name="padding">3</property>
                         <property name="position">3</property>
                       </packing>
                     </child>
@@ -390,8 +365,8 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="padding">5</property>
-            <property name="position">1</property>
+            <property name="padding">2</property>
+            <property name="position">2</property>
           </packing>
         </child>
         <child>
@@ -403,7 +378,7 @@
                 <property name="visible">True</property>
                 <property name="left_padding">12</property>
                 <child>
-                  <object class="GtkVBox" id="vbox4">
+                  <object class="GtkVBox" id="vbox5">
                     <property name="visible">True</property>
                     <property name="homogeneous">True</property>
                     <child>
@@ -463,6 +438,7 @@
                           <object class="GtkFileChooserButton" id="filechooserbutton1">
                             <property name="width_request">150</property>
                             <property name="visible">True</property>
+                            <property name="title" translatable="yes">Select an existing SD card img file(*.img)</property>
                           </object>
                           <packing>
                             <property name="padding">5</property>
@@ -510,8 +486,8 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="padding">5</property>
-            <property name="position">2</property>
+            <property name="padding">2</property>
+            <property name="position">3</property>
           </packing>
         </child>
         <child>
@@ -565,8 +541,8 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="padding">5</property>
-            <property name="position">3</property>
+            <property name="padding">2</property>
+            <property name="position">4</property>
           </packing>
         </child>
         <child>
@@ -575,14 +551,14 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="position">4</property>
+            <property name="position">5</property>
           </packing>
         </child>
         <child>
           <object class="GtkHButtonBox" id="hbuttonbox1">
             <property name="visible">True</property>
             <child>
-              <object class="GtkButton" id="button5">
+              <object class="GtkButton" id="button6">
                 <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -597,7 +573,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button4">
+              <object class="GtkButton" id="button7">
                 <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -613,10 +589,13 @@
             </child>
           </object>
           <packing>
-            <property name="position">5</property>
+            <property name="padding">4</property>
+            <property name="position">6</property>
           </packing>
         </child>
       </object>
     </child>
   </object>
+  <object class="GtkFileFilter" id="filefilter1"/>
+  <object class="GtkFileFilter" id="filefilter2"/>
 </interface>

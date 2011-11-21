@@ -14,8 +14,11 @@
 #include "qemu_socket.h"
 #include "sdb.h"
 #include "nbd.h"
+#include "debug_ch.h"
 
 static int SLP_base_port = 0;
+//DEFAULT_DEBUG_CHANNEL(qemu);
+MULTI_DEBUG_CHANNEL(qemu, sdb);
 
 /* QSOCKET_CALL is used to deal with the fact that EINTR happens pretty
  * easily in QEMU since we use SIGALRM to implement periodic timers
@@ -217,11 +220,11 @@ static int check_port_bind_listen(u_int port)
 
 		/* fail */
 		ret = -1;
-		fprintf(stderr, "port(%d) listen  fail \n", port);
+		ERR( "port(%d) listen  fail \n", port);
 	}else{
 		/*fsucess*/
 		ret = 1;
-		fprintf(stderr, "port(%d) listen  ok \n", port);
+		INFO( "port(%d) listen  ok \n", port);
 	}
 
 	close(s);
@@ -246,12 +249,12 @@ int get_sdb_base_port(void)
 		}
 
 		if (!success) {
-			fprintf(stderr, "it seems too many emulator instances are running on this machine. Aborting\n" );
+			ERR( "it seems too many emulator instances are running on this machine. Aborting\n" );
 			exit(1);
 		}
 
 		SLP_base_port = port;
-		fprintf(stderr, "sdb port is %d \n", SLP_base_port);
+		INFO( "sdb port is %d \n", SLP_base_port);
 	}
 
 	return SLP_base_port;
@@ -282,20 +285,20 @@ void sdb_setup(void)
 		success = 1;
 		break;
 	}
-	fprintf(stderr, "redirect %s \n", buf);
+	 INFO("redirect %s \n", buf);
 	if (!success) {
-		fprintf(stderr, "it seems too many emulator instances are running on this machine. Aborting\n" );
+		ERR( "it seems too many emulator instances are running on this machine. Aborting\n" );
 		exit(1);
 	}
 
 	if( SLP_base_port != port ){
-		fprintf(stderr, "sdb port is miss match. Aborting\n" );
+		ERR( "sdb port is miss match. Aborting\n" );
 		exit(1);
 	}
 
 	/* Save base port. */
 	SLP_base_port = port;
-	fprintf(stderr, "Port(%d/tcp) listen for SDB \n", SLP_base_port + 1);
+	INFO( "Port(%d/tcp) listen for SDB \n", SLP_base_port + 1);
 
 	/* send a simple message to the SDB host server to tell it we just started.
 	 * it should be listening on port 26099. if we can't reach it, don't bother
@@ -306,7 +309,7 @@ void sdb_setup(void)
 
 		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
 		if (s < 0) {
-			fprintf(stderr, "can't create socket to talk to the SDB server \n");
+			ERR( "can't create socket to talk to the SDB server \n");
 			break;
 		}
 

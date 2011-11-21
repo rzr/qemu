@@ -40,7 +40,6 @@
 #include <gtk/gtk.h>
 
 #include "fileio.h"
-#include "logmsg.h"
 
 GHashTable *window_hash_init (void);
 void add_window (GtkWidget * win, gint id);
@@ -52,6 +51,7 @@ void add_widget (gint window_id, gchar * widget_name, GtkWidget * widget);
 GtkWidget *get_widget (gint window_id, gchar * widget_name);
 
 int set_config_type(gchar *filepath, const gchar *group, const gchar *field, const int type);
+int del_config_key(gchar *filepath, const gchar *group, const gchar *field);
 int set_config_value(gchar *filepath, const gchar *group, const gchar *field, const gchar *value);
 int get_config_type(gchar *filepath, const gchar *group, const gchar *field);
 char *get_config_value(gchar *filepath, const gchar *group, const gchar *field);

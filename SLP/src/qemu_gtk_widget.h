@@ -65,7 +65,6 @@
 
 #include "extern.h"
 #include "ui_imageid.h"
-#include "logmsg.h"
 
 #define GTK_TYPE_QEMU (qemu_get_type ())
 #define GTK_QEMU(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_QEMU, qemu_state_t))

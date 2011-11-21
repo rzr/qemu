@@ -65,6 +65,10 @@
 #include "event_handler.h"
 #include "utils.h"
 #include "tools.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, event_handler);
 
 typedef enum
 {
@@ -875,7 +879,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 				else if (keycode == 356) keycode = 105;
 
 				if (kbd_mouse_is_absolute()) {
-					log_msg(MSGL_DEBUG, "press parsing keycode = %d, result = %d\n", keycode, keycode & 0x7f);
+					TRACE( "press parsing keycode = %d, result = %d\n", keycode, keycode & 0x7f);
 					ps2kbd_put_keycode(keycode & 0x7f);				
 				}
 			}
@@ -917,7 +921,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 				else if (keycode == 356) keycode = 105;
 
 				if (kbd_mouse_is_absolute()) {
-					log_msg(MSGL_DEBUG, "release parsing keycode = %d, result = %d\n", keycode, keycode| 0x80);
+					TRACE( "release parsing keycode = %d, result = %d\n", keycode, keycode| 0x80);
 					ps2kbd_put_keycode(keycode | 0x80);	
 				}
 			}

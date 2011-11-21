@@ -16,10 +16,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-# If nvidia graphic driver problem is produced, library path should be changed to mesa library.
-# To solve this problem, LD_LIBRARY_PATH is set like below
-#export LD_LIBRARY_PATH=/usr/lib/mesa
-
 SDL_GFX=`dpkg -l | grep libsdl-gfx`
 if test "$SDL_GFX" = ""
 then
@@ -387,10 +383,10 @@ set_qemu_hw_options () {
 
 	#emulator_gps
 	#qemu_common_opts="$qemu_common_opts -serial pipe:/tmp/gpsdevice"
-#	qemu_common_opts="$qemu_common_opts -redir udp:$gps_port:${GUEST_IP_ADDRESS}:$gps_port"
+	qemu_common_opts="$qemu_common_opts -redir udp:$gps_port:${GUEST_IP_ADDRESS}:$gps_port"
 	
 	#emulator_sensor
-#	qemu_common_opts="$qemu_common_opts -redir udp:$sensor_port:${GUEST_IP_ADDRESS}:$sensor_port"
+	qemu_common_opts="$qemu_common_opts -redir udp:$sensor_port:${GUEST_IP_ADDRESS}:$sensor_port"
 
 	#acclerator : for opengl module (not necessary now)
 #	qemu_x86_opts="$qemu_x86_opts -device Accelerator"
@@ -437,10 +433,10 @@ set_qemu_options () {
 	#emul_opts="$emul_opts  --ssh-port $ssh_port"
 
 	#emulator_ide_port
-#	qemu_common_opts="$qemu_common_opts -redir tcp:$ide_port:${GUEST_IP_ADDRESS}:$ide_port"
+	qemu_common_opts="$qemu_common_opts -redir tcp:$ide_port:${GUEST_IP_ADDRESS}:$ide_port"
 
 	#qemu monitor
-#	qemu_common_opts="$qemu_common_opts -monitor tcp:127.0.0.1:9000,server,nowait"
+	qemu_common_opts="$qemu_common_opts -monitor tcp:127.0.0.1:9000,server,nowait"
 }
 
 set_qemu_debug_options () {
@@ -456,7 +452,7 @@ test "`basename $0`" = "emulator.sh" && set_devel_env || DDD=""
 set_emulator_options
 set_qemu_hw_options
 set_qemu_options
-#set_qemu_debug_options
+set_qemu_debug_options
 
 if test "$DDD" != "" 
 then

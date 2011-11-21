@@ -75,7 +75,6 @@
 
 typedef struct _arglist arglist;
 
-#include "logmsg.h"
 #include "utils.h"
 #include "configuration.h"
 #include "emulsignal.h"

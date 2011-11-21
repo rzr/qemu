@@ -48,13 +48,11 @@
 
 #include "defines.h"
 #include "ui_imageid.h"
-#include "logmsg.h"
 #include "fileio.h"
 #include "vt_utils.h"
 #include "utils.h"
 #include "dialog.h"
 #include "process.h"
-
 #define MAX_LEN 256
 
 gchar *remove_space(const gchar *str);
@@ -82,8 +80,25 @@ void setup_resolution_frame(void);
 void setup_sdcard_frame(void);
 void setup_ram_frame(void);
 
-void show_create_window(void);
-void construct_main_window(void);
+void setup_modify_frame(char *target_name);
+void setup_modify_button(char *target_name);
+void setup_modify_resolution_frame(char *target_name);
+void setup_modify_sdcard_frame(char *target_name);
+void setup_modify_ram_frame(char *target_name);
+void modify_ok_clicked_cb(GtkWidget *widget, gpointer selection);
 
+void show_create_window(void);
+void show_modify_window(char* target_name);
+void construct_main_window(void);
+GtkWidget *setup_list(void);
+void delete_clicked_cb(GtkWidget *widget, gpointer selection);
+void modify_clicked_cb(GtkWidget *widget, gpointer selection);
+void activate_clicked_cb(GtkWidget *widget, gpointer selection);
+void refresh_clicked_cb(char *arch);
+void activate_target(char *target_name);
+void arch_select_cb(GtkWidget *widget, gpointer data);
+void init_setenv(void);
+void entry_changed(GtkEditable *entry, gpointer data);
+void make_default_image(void);
 
 #endif 

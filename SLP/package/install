@@ -17,13 +17,6 @@ case ${UBUNTU_VER} in
 		;;
 esac
 	
-## emulator shortcut 
-emul_desktopfile=$desktoppath/samsung-sdk-emulator.desktop
-emul_iconfile=emulator.png
-emul_exefile=Emulator/emulator
-emul_comment="Emulator running software on a Samsung Phone"
-emul_name="SLP Emulator"
-
 ## vtm shortcut
 vtm_desktopfile=$desktoppath/samsung-sdk-vtm.desktop
 vtm_iconfile=vtm.png
@@ -42,20 +35,11 @@ fi
 
 iconpath=~/.local/share/icons
 
-emul_exepath=$SLP_SDK_INSTALL_PATH/$emul_exefile
 vtm_exepath=$SLP_SDK_INSTALL_PATH/$vtm_exefile
 
 categoryfile=~/.local/share/desktop-directories/samsung-sdk_menu.directory
 
 mkdir -p $iconpath
-
-if test -e $SLP_SDK_INSTALL_PATH/temp/$emul_iconfile
-then
-	cp -f $SLP_SDK_INSTALL_PATH/temp/$emul_iconfile $iconpath/$emul_iconfile
-else
-	echo "$emul_iconfile does not exist!!"
-	exit 1
-fi
 
 if test -e $SLP_SDK_INSTALL_PATH/temp/$vtm_iconfile 
 then 
@@ -65,29 +49,9 @@ else
 	exit 1
 fi
 
-#cp -f $SLP_SDK_INSTALL_PATH/temp/$emul_iconfile $iconpath/$emul_iconfile
 #cp -f $SLP_SDK_INSTALL_PATH/temp/$vtm_iconfile $iconpath/$vtm_iconfile
 
 mkdir -p $desktoppath
-
-## Create emulator .desktop file 
-cat > $emul_desktopfile << END
-[Desktop Entry]
-Encoding=UTF-8
-Value=1.0
-Type=Application
-Terminal=false
-Comment=$emul_comment
-Name=$emul_name
-Categories=$categories
-StartupNotify=true
-NoDisplay=false
-END
-
-cat >> $emul_desktopfile << END
-Icon=$iconpath/$emul_iconfile
-Exec=$emul_exepath
-END
 
 ## Create vtm .desktop file 
 cat > $vtm_desktopfile << END
@@ -109,6 +73,5 @@ Exec=$vtm_exepath
 END
 
 ## Register .desktop file
-xdg-desktop-menu install $categoryfile $emul_desktopfile
 xdg-desktop-menu install $categoryfile $vtm_desktopfile
 ### END Register Menu ###

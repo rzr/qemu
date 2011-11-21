@@ -39,7 +39,6 @@
 //#include "hw/smb380.h"
 #include "qemu_gtk_widget.h"
 #include "about_version.h"
-#include "sdb.h"
 
 #ifdef __MINGW32__
 #include <winsock2.h>
@@ -48,6 +47,12 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #endif
+
+#include "debug_ch.h"
+#include "sdb.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, menu_callback);
 
 extern GtkWidget *pixmap_widget;
 extern GtkWidget *fixed;
@@ -72,9 +77,9 @@ void menu_create_eiwidget_callback(GtkWidget *widget, GtkWidget *menu)
 	sprintf(telemul_path, "%s/../bin/%s", path, telemul_name);
 
 	if(emul_create_process(telemul_path) == TRUE)
-		log_msg(MSGL_INFO, "start telephony emulator\n");
+		INFO( "start telephony emulator\n");
 	else
-		log_msg(MSGL_ERROR, "falied to start telephony emulator\n");
+		ERR( "falied to start telephony emulator\n");
 
 	free(telemul_path);
 #endif
@@ -168,7 +173,7 @@ void rotate_event_callback(PHONEMODELINFO *device, int nMode)
 	pwidget = g_object_get_data((GObject *) popup_menu, rotate[nMode%4]);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pwidget), TRUE);
 
-	log_msg(MSGL_INFO, "rotate called\n");
+	INFO( "rotate called\n");
 }
 
 
@@ -181,7 +186,7 @@ void scale_event_callback(PHONEMODELINFO *device, int nMode)
 
 	mask_main_lcd(g_main_window, &PHONE, &configuration, nMode);
 
-	log_msg(MSGL_INFO, "scale called\n");
+	INFO( "scale called\n");
 }
 
 
@@ -219,7 +224,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	servaddr.sin_port = htons(port);
 
-	fprintf(stderr, "sendto data for rotation [127.0.0.1:%d/udp] \n", port);
+	ERR( "sendto data for rotation [127.0.0.1:%d/udp] \n", port);
 
 	switch(nMode)
 	{
@@ -477,7 +482,7 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 		//			show_message(buf, buf);
 	}
 
-	log_msg(MSGL_INFO, "menu_event_callback called\n");
+	INFO( "menu_event_callback called\n");
 }
 
 
@@ -507,27 +512,30 @@ void menu_device_info_callback(GtkWidget * widget, gpointer data)
  */
 void show_about_window(GtkWidget *parent)
 {
-	const gchar *version = build_version;
+	//const gchar *version = build_version;
 	const gchar *copyright =
 		"Copyright (C) 2011 Samsung Electronics Co., LTD. All Rights Reserved.\n";
 	gchar comments[512] = {0,};
-	const gchar *authors[] = {	/* from qemu/MAINTAINERS, alphabetically */
-		"Fabrice Bellard",
-		"Paul Brook",
-		"Magnus Damm",
-		"Edgar E. Iglesias",
-		"Aurelien Jarno",
-		"Vassili Karpov (malc)",
-		"Jan Kiszka",
-		"Armin Kuster",
-		"Hervé Poussineau",
-		"Thiemo Seufer",
-		"Blue Swirl",
-		"Andrzej Zaborowski",
-		"Thorsten Zitterell",
-		" and many more",
-		NULL};
-	const gchar *website = "http://innovator.samsungmobile.com";
+	/* from qemu/MAINTAINERS, alphabetically */
+	/*
+	   const gchar *authors[] = {	
+	   "Fabrice Bellard",
+	   "Paul Brook",
+	   "Magnus Damm",
+	   "Edgar E. Iglesias",
+	   "Aurelien Jarno",
+	   "Vassili Karpov (malc)",
+	   "Jan Kiszka",
+	   "Armin Kuster",
+	   "Hervé Poussineau",
+	   "Thiemo Seufer",
+	   "Blue Swirl",
+	   "Andrzej Zaborowski",
+	   "Thorsten Zitterell",
+	   " and many more",
+	   NULL};
+	 */
+	//const gchar *website = "http://innovator.samsungmobile.com";
 
 	sprintf(comments, "SLP Emulator.\n"
 			"Version: %s\n"

@@ -44,6 +44,11 @@
 #include "tools.h"
 #include <glib.h>
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, tools);
+
 /** 
   * @brief 	get the filename from filebrowser
   * @param 	str_title: titlebar name of filebrowser
@@ -80,8 +85,9 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 	gchar icon_image[128] = {0, };
 
 	const gchar *skin = get_skin_path();
-	if (skin == NULL) 
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+	if (skin == NULL){
+		WARN("getting icon image path is failed!!\n");
+	}
 
 	sprintf(icon_image, "%s/icons/07_EXECUTE_APP.png", skin);	
 
@@ -278,15 +284,15 @@ int load_skin_image(PHONEMODELINFO * device)
 	GError *g_err = NULL;
 	int i = 0;
 
-	log_msg(MSGL_DEBUG, "skin image call\n");
+	TRACE( "skin image call\n");
 
 	/*normal mode*/
 	for (i = 0; i < device->mode_cnt; i++) {
 
 		device->mode_SkinImg[i].pPixImg = gdk_pixbuf_new_from_file(device->mode[i].image_list.main_image, &g_err);
-		log_msg(MSGL_DEBUG, "image = %s\n", device->mode[i].image_list.main_image);
+		TRACE( "image = %s\n", device->mode[i].image_list.main_image);
 		if (!device->mode_SkinImg[i].pPixImg) {
-			log_msg(MSGL_WARN, "Image Generation failed!!=%s\n", device->mode[i].image_list.main_image);
+			WARN( "Image Generation failed!!=%s\n", device->mode[i].image_list.main_image);
 			return -1;
 		}
 
@@ -295,30 +301,30 @@ int load_skin_image(PHONEMODELINFO * device)
 		device->mode_SkinImg[i].pPixImg_P = gdk_pixbuf_new_from_file(device->mode[i].image_list.keypressed_image, &g_err);
 		if (!device->mode_SkinImg[i].pPixImg_P) {
 			g_object_unref(device->mode_SkinImg[i].pPixImg);
-			log_msg(MSGL_WARN, "Image Generation failed!!\n");
+			WARN( "Image Generation failed!!\n");
 			return -1;
 		}
 		/*LED*/
 		if (device->mode[i].image_list.led_main_image != NULL && strlen(device->mode[i].image_list.led_main_image) != 0) {
-			log_msg(MSGL_DEBUG, "led_main_image   Image Generation  %s \n", device->mode[i].image_list.led_main_image );
+			TRACE( "led_main_image   Image Generation  %s \n", device->mode[i].image_list.led_main_image );
 			device->mode_SkinImg[i].pPixImgLed = gdk_pixbuf_new_from_file(device->mode[i].image_list.led_main_image, &g_err);
 
 			if (!device->mode_SkinImg[i].pPixImgLed) {
 				g_object_unref(device->mode_SkinImg[i].pPixImg);
 				g_object_unref(device->mode_SkinImg[i].pPixImg_P);
-				log_msg(MSGL_WARN, "Image Generation failed!!\n");
+				WARN( "Image Generation failed!!\n");
 				return -1;
 			}
 		}
 
 		if (device->mode[i].image_list.led_keypressed_image != NULL && strlen(device->mode[i].image_list.led_keypressed_image) != 0) {
-			log_msg(MSGL_DEBUG, "led_keypressed_image Image Generation  %s \n", device->mode[i].image_list.led_keypressed_image);
+			TRACE( "led_keypressed_image Image Generation  %s \n", device->mode[i].image_list.led_keypressed_image);
 			device->mode_SkinImg[i].pPixImgLed_P = gdk_pixbuf_new_from_file(device->mode[i].image_list.led_keypressed_image, &g_err);
 			if (!device->mode_SkinImg[i].pPixImgLed_P) {
 				g_object_unref(device->mode_SkinImg[i].pPixImg);
 				g_object_unref(device->mode_SkinImg[i].pPixImg_P);
 				g_object_unref(device->mode_SkinImg[i].pPixImgLed);
-				log_msg(MSGL_WARN, "Image Generation failed!!\n");
+				WARN( "Image Generation failed!!\n");
 				return -1;
 			}
 		}
@@ -328,7 +334,7 @@ int load_skin_image(PHONEMODELINFO * device)
 	if (device->cover_mode_cnt == 1) {
 		device->cover_mode_SkinImg.pPixImg = gdk_pixbuf_new_from_file(device->cover_mode.image_list.main_image, &g_err);
 		if (!device->cover_mode_SkinImg.pPixImg) {
-			log_msg(MSGL_WARN, "Image Generation failed!!\n");
+			WARN( "Image Generation failed!!\n");
 			return -1;
 		}
 
@@ -338,7 +344,7 @@ int load_skin_image(PHONEMODELINFO * device)
 		device->cover_mode_SkinImg.pPixImg_P = gdk_pixbuf_new_from_file(device->cover_mode.image_list.keypressed_image, &g_err);
 		if (!device->cover_mode_SkinImg.pPixImg_P) {
 			g_object_unref(device->cover_mode_SkinImg.pPixImg);
-			log_msg(MSGL_WARN, "Image Generation failed!!\n");
+			WARN( "Image Generation failed!!\n");
 			return -1;
 		}
 		/*LED*/
@@ -348,7 +354,7 @@ int load_skin_image(PHONEMODELINFO * device)
 			if (!device->cover_mode_SkinImg.pPixImgLed) {
 				g_object_unref(device->cover_mode_SkinImg.pPixImg);
 				g_object_unref(device->cover_mode_SkinImg.pPixImg_P);
-				log_msg(MSGL_WARN, "Image Generation failed!!\n");
+				WARN( "Image Generation failed!!\n");
 				return -1;
 			}
 		}
@@ -361,7 +367,7 @@ int load_skin_image(PHONEMODELINFO * device)
 				g_object_unref(device->cover_mode_SkinImg.pPixImg);
 				g_object_unref(device->cover_mode_SkinImg.pPixImg_P);
 				g_object_unref(device->cover_mode_SkinImg.pPixImgLed);
-				log_msg(MSGL_WARN, "Image Generation failed!!\n");
+				WARN( "Image Generation failed!!\n");
 				return -1;
 			}
 		}
