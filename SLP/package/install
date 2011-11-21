@@ -26,7 +26,7 @@ vtm_name="Virtual Target Manager"
 
 ## Do not modify the followings (Make desktop menu)
 slppath=`grep SLP_SDK_INSTALL_PATH ~/.slpsdk`
-SLP_SDK_INSTALL_PATH=`echo $slppath | cut -f2- -d"="`
+SLP_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`
 if [ -z $SLP_SDK_INSTALL_PATH ]
 then
 #   echo "There is no SLP_SDK_PATH ENV" >> /tmp/emulator.log
