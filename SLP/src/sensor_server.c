@@ -60,6 +60,7 @@
 
 #include "debug_ch.h"
 #include "sdb.h"
+#include "nbd.h"
 
 //DEFAULT_DEBUG_CHANNEL(slp);
 MULTI_DEBUG_CHANNEL(slp, sensor_server);
@@ -79,10 +80,9 @@ void *init_sensor_server(void)
 	int listen_s;
 	uint16_t port;
 	struct sockaddr_in servaddr;
-	char buf[32] = {0};
 	GIOChannel *channel = NULL;
-	GError *error;
-	GIOStatus status;
+	//GError *error;
+	//GIOStatus status;
 
 #ifdef __MINGW32__	
 	WSADATA wsadata;
@@ -154,7 +154,7 @@ cleanup:
 	return NULL;
 }
 
-int send_info_to_sensor_daemon(char *send_buf, int buf_size)
+static int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 {
 	int   s;  
 
@@ -184,7 +184,7 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	return 1;
 }
 
-static void create_fw_rota_init()
+static void *create_fw_rota_init(void *arg)
 {
 	int s;
 	char fw_buf[64] = {0};
@@ -248,8 +248,8 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 {
 	int parse_result;
 
-	GError *error;
-	GIOStatus status;
+	//GError *error;
+	//GIOStatus status;
 	GIOError ioerror;
 
 	gsize len;
