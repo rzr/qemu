@@ -657,8 +657,8 @@ int create_config_file(gchar* filepath)
 
 		g_fprintf (fp, "\n[%s]\n", QEMU_GROUP);
 		g_fprintf (fp, "%s=\n", BINARY_KEY);
-		g_fprintf (fp, "%s=0\n", HTTP_PROXY_KEY);
-		g_fprintf (fp, "%s=0\n", DNS_SERVER_KEY);
+		g_fprintf (fp, "%s=1\n", HTTP_PROXY_KEY);
+		g_fprintf (fp, "%s=1\n", DNS_SERVER_KEY);
 		g_fprintf (fp, "%s=1200\n", TELNET_PORT_KEY);
 //		g_fprintf (fp, "%s=\n", DISK_TYPE_KEY);
 //		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_KEY);
