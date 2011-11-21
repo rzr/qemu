@@ -670,7 +670,7 @@ void qemu_option_set_to_config(arglist *al)
 					"video=uvesafb:ywrap,%dx%d-%d@60 ", width, height, bpp);
 	}
 
-	char proxy[MIDBUF], hostip[MIDBUF], dns1[MIDBUF], dns2[MIDBUF] = {0, };
+	char proxy[MIDBUF] ={0}, hostip[MIDBUF] = {0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
 
 	gethostproxy(proxy);
 	if (configuration.qemu_configuration.use_host_http_proxy == 1)
