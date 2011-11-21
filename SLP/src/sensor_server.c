@@ -107,7 +107,7 @@ void *init_sensor_server(void)
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	servaddr.sin_port = htons(port);
 
-	ERR( "bind port[127.0.0.1:%d/udp] for sensor server in host \n", port);
+	INFO( "bind port[127.0.0.1:%d/udp] for sensor server in host \n", port);
 	if(bind(listen_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
 	{
 		ERR( "bind fail [%d:%s] \n", errno, strerror(errno));
@@ -158,12 +158,10 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 {
 	int   s;  
 
-	fprintf(stderr, "[%s][%d] start \n", __FUNCTION__, __LINE__);
-
 	s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_SENSOR_INDEX)); 
 	if (s < 0) {
-		ERR( "can't create socket to talk to the sdb forwarding session \n");
-		ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
+		TRACE( "can't create socket to talk to the sdb forwarding session \n");
+		TRACE( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
 				, get_sdb_base_port() + SDB_TCP_SENSOR_INDEX
 				, errno, strerror(errno)
 			   );
@@ -174,7 +172,7 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	socket_send(s, &buf_size, 4); 
 	socket_send(s, send_buf, buf_size);
 
-	ERR( "send(size: %d) te 127.0.0.1:%d/tcp \n"
+	INFO( "send(size: %d) te 127.0.0.1:%d/tcp \n"
 			, buf_size, get_sdb_base_port() + 3);
 
 #ifdef _WIN32
@@ -182,8 +180,6 @@ int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 #else
 	close(s);
 #endif
-
-	ERR( "[%s][%d] end \n", __FUNCTION__, __LINE__);
 
 	return 1;
 }
@@ -290,7 +286,6 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 				INFO( "pthread_create for create_forward : \n");
 				if( pthread_create( (pthread_t *)&taskid, NULL, (void *(*)(void *))create_fw_rota_init, NULL ) ){
-					ERR( "pthread_create" );
 					ERR( "pthread_create for create_forward fail: \n");
 				}   
 

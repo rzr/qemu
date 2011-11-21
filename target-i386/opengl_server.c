@@ -702,7 +702,7 @@ static int OGLS_createListenSocket (uint16_t port)
 		return -1;
 	}
 
-	fprintf(stderr, "Port(%d/tcp) listen for opengl \n", port);
+	//fprintf(stderr, "Port(%d/tcp) listen for opengl \n", port);
 
 	return sock;
 }
