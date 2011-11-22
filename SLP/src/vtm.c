@@ -161,7 +161,7 @@ void entry_changed(GtkEditable *entry, gpointer data)
 	if(strcmp(name, dst) != 0)
 	{
 		WARN( "Virtual target name is invalid! Valid characters are 0-9 a-z A-Z -_\n");
-		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name is invalid! \n Valid characters are 0-9 a-z A-Z -_");
+		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name is invalid! \nValid characters are 0-9 a-z A-Z -_");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		free(dst);
 		return;
