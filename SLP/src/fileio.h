@@ -64,7 +64,7 @@ const gchar *get_conf_path(void);
 const gchar *get_vms_path(void);
 const gchar *get_vms_abs_path(void);
 const gchar *get_conf_abs_path(void);
-gchar *get_emulator_conf_filepath(void);
+gchar *get_targetlist_filepath(void);
 gchar *get_virtual_target_path(gchar *virtual_target_name);
 gchar *get_virtual_target_abs_path(gchar *virtual_target_name);
 gchar *get_virtual_target_log_path(gchar *virtual_target_name);

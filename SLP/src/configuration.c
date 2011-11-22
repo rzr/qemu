@@ -453,24 +453,24 @@ int is_valid_skin (gchar *file)
  * @date    Apr 19. 2009
  * */
 
-int is_valid_emulator_conf_file()
+int is_valid_targetlist_file()
 {
 	int status = 0;
-	gchar *emulator_conf_filepath = NULL;
+	gchar *targetlist_filepath = NULL;
 
 	/* 1. getting emulator conf path : /opt/samsing_sdk/simulator/conf/emulator.conf */
 
-	emulator_conf_filepath = get_emulator_conf_filepath();
+	targetlist_filepath = get_targetlist_filepath();
 
  	/* 2. check if exist emulator.conf */
 
-	status = is_exist_file(emulator_conf_filepath);
+	status = is_exist_file(targetlist_filepath);
 
 	if (status != -1) {
-		sprintf(SYSTEMINFO.conf_file, "%s", emulator_conf_filepath);
+		sprintf(SYSTEMINFO.conf_file, "%s", targetlist_filepath);
 	}
 
-	g_free(emulator_conf_filepath);
+	g_free(targetlist_filepath);
 
 	return status;
 }
@@ -482,7 +482,7 @@ int is_valid_emulator_conf_file()
  * @return	fail(-1), success(0)
  * @date    Apr 19. 2009
  * */
-int load_emulator_config_file(SYSINFO *pSYSTEMINFO)
+int load_targetlistig_file(SYSINFO *pSYSTEMINFO)
 {
 	int status = 0;
 	int result = 0;
@@ -514,7 +514,7 @@ int load_emulator_config_file(SYSINFO *pSYSTEMINFO)
 	g_free(virtual_target_path);
 	g_free(info_file);
 
-	status = is_valid_emulator_conf_file();
+	status = is_valid_targetlist_file();
 
 	switch ( status ) {
 	case FILE_EXISTS:
@@ -561,7 +561,7 @@ int load_config_file(SYSINFO *pSYSTEMINFO)
 
 	/* 2. emulator config file load (emulator.conf) */
 
-	if (load_emulator_config_file(pSYSTEMINFO) == -1) {
+	if (load_targetlistig_file(pSYSTEMINFO) == -1) {
 		ERR( "load emulator.conf file error!!\n");
 		return -1;
 	}

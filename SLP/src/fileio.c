@@ -97,7 +97,7 @@ int is_exist_file(gchar *filepath)
 }
 
 
-/* vtm_path = "/opt/samsung_sdk/Emulator/vtm/vtm" : get_my_exec_path() */
+/* vtm_path = "/opt/samsung_sdk/Emulator/vtm" : get_my_exec_path() */
 const gchar *get_vtm_path(void)
 {
 	static gchar *vtm_path = NULL;
@@ -142,11 +142,7 @@ const gchar *get_vtm_path(void)
 	return vtm_path;
 }
 
-
-/* get_bin_path = "/opt/samsung_sdk/Emulator/"
- * get emulator root directory
- */
-
+/* get_bin_path = "~/samsung_sdk/Emulator/" */
 const gchar *get_bin_path(void)
 {
 	static gchar *bin_path;
@@ -310,7 +306,7 @@ const gchar *get_conf_path(void)
 	return conf_path;
 }
 
-/* get_conf_path = "/opt/samsung_sdk/Emulator/VMs" */
+/* get_conf_path = "x86/VMs" */
 const gchar *get_vms_path(void)
 {
 	static gchar *vms_path;
@@ -326,8 +322,7 @@ const gchar *get_vms_path(void)
 	return vms_path;
 }
 
-/* get_conf_path = "/opt/samsung_sdk/Emulator/conf" */
-/* get_conf_path = "C:\Documents and Settings\Administrator\Application Data\samsung_sdk\Emulator\1" */
+/* get_conf_abs_path = "~/samsung_sdk/Emulator/conf" */
 const gchar *get_conf_abs_path(void)
 {
 	static gchar *conf_path;
@@ -343,6 +338,7 @@ const gchar *get_conf_abs_path(void)
 	return conf_path;
 }
 
+/* get_vms_abs_path = "~/samsung_sdk/Emulator/x86/VMs" */
 const gchar *get_vms_abs_path(void)
 {
 	static gchar *vms_path;
@@ -358,25 +354,22 @@ const gchar *get_vms_abs_path(void)
 	return vms_path;
 }
 
-/**
- * @brief 	get_emulator conf file path
- * @return	"/opt/samsung_sdk/Emulator/conf/targetlist.ini"
- * @date    July 9. 2009
- * */
-gchar *get_emulator_conf_filepath(void)
+/* get_targetlist_filepath	"x86/conf/targetlist.ini" */
+gchar *get_targetlist_filepath(void)
 {
-	gchar *emulator_conf_filepath = NULL;
-	emulator_conf_filepath = calloc(1, 512);
-	if(NULL == emulator_conf_filepath) {
+	gchar *targetlist_filepath = NULL;
+	targetlist_filepath = calloc(1, 512);
+	if(NULL == targetlist_filepath) {
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 	
 	const gchar *conf_path = get_conf_path();
-	sprintf(emulator_conf_filepath, "%s/targetlist.ini", conf_path);
+	sprintf(targetlist_filepath, "%s/targetlist.ini", conf_path);
 
-	return emulator_conf_filepath;
+	return targetlist_filepath;
 }
 
+/* get_virtual_target_path	"x86/VMs/virtual_target_name/" */
 gchar *get_virtual_target_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_path = NULL;
@@ -392,6 +385,7 @@ gchar *get_virtual_target_path(gchar *virtual_target_name)
 	return virtual_target_path;
 }
 
+/* get_virtual_target_abs_path	"~/samsung-sdk/Emulator/x86/VMs/virtual_target_name/" */
 gchar *get_virtual_target_abs_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_path = NULL;

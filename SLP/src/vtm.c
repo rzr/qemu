@@ -271,7 +271,7 @@ void show_modify_window(char *target_name)
 	}
 
 
-	target_list_filepath = get_emulator_conf_filepath();
+	target_list_filepath = get_targetlist_filepath();
 	target_list_status = is_exist_file(target_list_filepath);
 
 	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
@@ -309,7 +309,7 @@ void init_setenv()
 
 	g_setenv("EMULATOR_ARCH",arch,1);
 	INFO( "architecture : %s\n", arch);
-	target_list_filepath = get_emulator_conf_filepath();
+	target_list_filepath = get_targetlist_filepath();
 	target_list_status = is_exist_file(target_list_filepath);
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
@@ -471,7 +471,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 #endif
-		target_list_filepath = get_emulator_conf_filepath();
+		target_list_filepath = get_targetlist_filepath();
 		target_list_status = is_exist_file(target_list_filepath);
 
 		del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
@@ -505,7 +505,7 @@ void refresh_clicked_cb(char *arch)
 	gchar *local_target_list_filepath;
 
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
-	local_target_list_filepath = get_emulator_conf_filepath();
+	local_target_list_filepath = get_targetlist_filepath();
 	target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
 
 	gtk_list_store_clear(store);
@@ -1034,7 +1034,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			"%s/%s/emulimg-%s.x86", get_vms_path(), name, name);
 	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
 	//delete original target name
-	target_list_filepath = get_emulator_conf_filepath();
+	target_list_filepath = get_targetlist_filepath();
 	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
 	g_free(target_name);
 	
