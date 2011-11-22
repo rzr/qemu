@@ -270,7 +270,7 @@ static void debug_init(void)
 	strcpy(logfile, get_virtual_target_path(startup_option.vtm));
 	strcat(logfile, "logs/emulator.log");
 
-	if(access(logfile, F_OK | R_OK) == TRUE)
+	if(access(logfile, F_OK | R_OK) == 0)
 	{
 		if(remove(logfile) == 0)
 			fprintf(stdout, "origianl (%s) is removed\n", logfile);
