@@ -667,7 +667,7 @@ int create_config_file(gchar* filepath)
 		
 		g_fprintf (fp, "\n[%s]\n", ADDITIONAL_OPTION_GROUP);
 		g_fprintf (fp, "%s=\n", EMULATOR_OPTION_KEY);
-		g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-usb -usbdevice wacom-tablet -usbdevice keyboard -net nic,model=virtio -soundhw all -rtc base=utc -net user -redir tcp:1202:10.0.2.16:22");
+		g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-usb -usbdevice wacom-tablet -usbdevice keyboard -net nic,model=virtio -soundhw all -rtc base=utc -net user");
 		g_fprintf (fp, "[%s]\n", HARDWARE_GROUP);
 		g_fprintf (fp, "%s=\n", RESOLUTION_KEY);
 		g_fprintf (fp, "%s=1\n", BUTTON_TYPE_KEY);
