@@ -71,6 +71,7 @@ GtkWidget *list;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar *g_arch;
+gchar icon_image[128] = {0, };
 
 void activate_target(char *target_name)
 {
@@ -213,8 +214,6 @@ void entry_changed(GtkEditable *entry, gpointer data)
 
 void show_modify_window(char *target_name)
 {
-	gchar icon_image[128] = {0, };
-	const gchar *skin = NULL;
 	GtkWidget *sub_window;
 	char *virtual_target_path;
 	int info_file_status;
@@ -250,40 +249,9 @@ void show_modify_window(char *target_name)
 	gtk_label_set_text(GTK_LABEL(label4),"Please input specify name of the virtual target");
 	g_signal_connect(G_OBJECT (name_entry), "changed",	G_CALLBACK (entry_changed),	(gpointer*)target_name);
 
-
 	setup_modify_frame(target_name);
-
-	
-#if 0	
-	
-#ifdef _WIN32
-	cmd = g_strdup_printf("mv %s", virtual_target_path);
-#else
-	cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
-#endif		
-	if(!run_cmd(cmd))
-	{
-		g_free(cmd);
-		g_free(virtual_target_path);
-		TRACE( "Failed to delete target name: %s", target_name);
-		show_message("Failed to delete target name: %s", target_name);
-		return;
-	}
-
-
-	target_list_filepath = get_targetlist_filepath();
-	target_list_status = is_exist_file(target_list_filepath);
-
-	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
-
-#endif
-
 	setup_modify_button(target_name);
 
-	skin = get_skin_path();
-	if(skin == NULL)
-		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/vtm.png", skin);
 	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), icon_image, NULL);
 
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
@@ -291,15 +259,12 @@ void show_modify_window(char *target_name)
 	gtk_widget_show_all(sub_window);
 	
 	gtk_main();
-
 }
 
 
 void init_setenv()
 {
 	char* arch;
-	const gchar *skin;
-	gchar emul_img_dir[512] = {0,};
 	int target_list_status;
 	
 	if(!g_getenv("EMULATOR_ARCH"))
@@ -316,22 +281,7 @@ void init_setenv()
 		ERR( "load target list file error\n");
 //		exit(1);
 	}
-	skin = get_skin_path();
-	if (skin == NULL) {
-		ERR( "getting skin path is failed!!\n");
-		exit (1);
-	}
-	sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
-
-	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
-		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
-		exit(1);
-	}
-
-	if(gtk_window_set_default_icon_from_file(emul_img_dir, NULL) == FALSE) {
-		ERR( "emulator icon from file doesn't set!! %s\n", emul_img_dir);
-		exit(1);
-	}
+	
 	refresh_clicked_cb(arch);
 	make_default_image();
 }
@@ -1475,7 +1425,6 @@ void setup_ram_frame(void)
 
 void show_create_window(void)
 {
-	gchar icon_image[128] = {0, };
 	const gchar *skin = NULL;
 	GtkWidget *sub_window;
 
@@ -1522,6 +1471,7 @@ void construct_main_window(void)
 	GtkWidget *modify_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button3");
 	GtkWidget *activate_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
 	g_main_window = (GtkWidget *)gtk_builder_get_object(g_builder, "window1");
+	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), icon_image, NULL);
 	GtkWidget *x86_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton8");
 	GtkWidget *arm_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton9");
 
@@ -1554,6 +1504,8 @@ int main(int argc, char** argv)
 	char* working_dir;
 	char *buf = argv[0];
 	int status;
+	char *skin = NULL;
+	char full_glade_path[MAX_LEN];
 	working_dir = g_path_get_dirname(buf);
 	status = g_chdir(working_dir);
 	if(status == -1)
@@ -1566,7 +1518,10 @@ int main(int argc, char** argv)
 	INFO( "virtual target manager start \n");
 
 	g_builder = gtk_builder_new();
-	char full_glade_path[MAX_LEN];
+	skin = (char*)get_skin_path();
+	if(skin == NULL)
+		WARN( "getting icon image path is failed!!\n");
+	sprintf(icon_image, "%s/icons/vtm.png", skin);
 
 	sprintf(full_glade_path, "%s/vtm_conf/vtm.glade", get_bin_path());
 
