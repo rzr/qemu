@@ -169,12 +169,12 @@ int gethostproxy(char *proxy)
 		pclose(output);
 
 	}else if (strcmp(buf, "auto") == 0){
-		fprintf(stderr, "Emulator can't support automatic proxy currently. starts up with normal proxy.\n ");
+		ERR( "Emulator can't support automatic proxy currently. starts up with normal proxy.\n ");
 		//can't support proxy auto setting
-		output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
-		fscanf(output , "%s", buf);
-		sprintf(proxy, "%s", buf);
-		pclose(output);
+//		output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
+//		fscanf(output , "%s", buf);
+//		sprintf(proxy, "%s", buf);
+//		pclose(output);
 	}
 
 	emulator_mutex_unlock();
