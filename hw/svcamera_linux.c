@@ -40,10 +40,7 @@ static int v4l2_fd;
 static int convert_trial;
 static int skip_flag = 0;
 
-static struct v4lconvert_data *v4lcvtdata;
-static struct v4l2_format src_fmt;
 static struct v4l2_format dst_fmt;
-static void *dst_buf;
 
 static int xioctl(int fd, int req, void *arg)
 {
@@ -56,51 +53,11 @@ static int xioctl(int fd, int req, void *arg)
 	return r;
 }
 
-static int __v4l_convert(SVCamState *state, void *src_ptr, uint32_t src_size)
-{
-	int ret;
-
-	pthread_mutex_lock(&state->thread->mutex_lock);
-	if (!state->streamon) {
-		pthread_mutex_unlock(&state->thread->mutex_lock);
-		return 0;
-	}
-	pthread_mutex_unlock(&state->thread->mutex_lock);
-
-	ret = v4lconvert_convert(v4lcvtdata,
-							&src_fmt, &dst_fmt,
-							(unsigned char *)src_ptr, src_size, (unsigned char *)dst_buf,
-							dst_fmt.fmt.pix.sizeimage);
-	if (ret < 0) {
-		switch (errno) {
-		case EINVAL:
-		case ENOMEM:
-			DEBUG_PRINT("fail!");
-			return -1;
-		case EAGAIN:
-		case EIO:
-		case EINTR:
-		default:
-			DEBUG_PRINT("try again: %d", convert_trial);
-			if (convert_trial-- == -1) {
-				return -1;
-			}
-			return 0;
-		}
-	}
-	memcpy(src_ptr, dst_buf, dst_fmt.fmt.pix.sizeimage);
-
-	qemu_irq_raise(state->dev.irq[0]);
-
-	return 1;
-}
-
 static int __v4l2_grab(SVCamState *state)
 {
 	fd_set fds;
 	struct timeval tv;
 	int r;
-	uint32_t sizeimage;
 	
 	FD_ZERO(&fds);
 	FD_SET(v4l2_fd, &fds);
@@ -120,14 +77,21 @@ static int __v4l2_grab(SVCamState *state)
 		return 0;
 	}
 
-	sizeimage = src_fmt.fmt.pix.sizeimage > dst_fmt.fmt.pix.sizeimage ?
-			src_fmt.fmt.pix.sizeimage : dst_fmt.fmt.pix.sizeimage;
-	r = v4l2_read(v4l2_fd, state->vaddr, sizeimage);
+	r = v4l2_read(v4l2_fd, state->vaddr, dst_fmt.fmt.pix.sizeimage);
 	if ( r < 0) {
-		if (errno == EAGAIN)
+		switch (errno) {
+		case EINVAL:
+		case ENOMEM:
+			return -1;
+		case EAGAIN:
+		case EIO:
+		case EINTR:
+		default:
+			if (convert_trial-- == -1) {
+				return -1;
+			}
 			return 0;
-		DEBUG_PRINT("READ : %s, %d", strerror(errno), errno);
-		return -1;
+		}
 	}
 
 	if (!kvm_enabled()) {
@@ -136,7 +100,8 @@ static int __v4l2_grab(SVCamState *state)
 			return 0;
 	}
 
-	return __v4l_convert(state, state->vaddr, (uint32_t)r);
+	qemu_irq_raise(state->dev.irq[0]);
+	return 1;
 }
 
 // Worker thread
@@ -187,11 +152,8 @@ void svcam_device_init(SVCamState* state)
 // SVCAM_CMD_OPEN
 void svcam_device_open(SVCamState* state)
 {
-	int fd;
 	struct v4l2_capability cap;
 	SVCamParam *param = state->thread->param;
-
-	DEBUG_PRINT("");
 
 	param->top = 0;
 	v4l2_fd = v4l2_open("/dev/video0", O_RDWR | O_NONBLOCK);
@@ -214,27 +176,12 @@ void svcam_device_open(SVCamState* state)
 		return;
 	}
 
-	fd = v4l2_fd_open(v4l2_fd, V4L2_ENABLE_ENUM_FMT_EMULATION);
-	if (fd != -1) {
-		v4l2_fd = fd;
-	}
-	v4lcvtdata = v4lconvert_create(v4l2_fd);
-	if (!v4lcvtdata) {
-		DEBUG_PRINT("v4lconvert_create failed!!");
-		v4l2_close(v4l2_fd);
-		perror("v4lconvert_create fail");
-		exit(0);
-	}
-
-	/* this is necessary? */
-	memset(&src_fmt, 0, sizeof(src_fmt));
 	memset(&dst_fmt, 0, sizeof(dst_fmt));
 }
 
 // SVCAM_CMD_START_PREVIEW
 void svcam_device_start_preview(SVCamState* state)
 {
-	DEBUG_PRINT("");
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 1;
 	pthread_cond_signal(&state->thread->thread_cond);
@@ -244,7 +191,6 @@ void svcam_device_start_preview(SVCamState* state)
 // SVCAM_CMD_STOP_PREVIEW
 void svcam_device_stop_preview(SVCamState* state)
 {
-	DEBUG_PRINT("");
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 0;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
@@ -298,22 +244,11 @@ void svcam_device_s_fmt(SVCamState* state)
 	dst_fmt.fmt.pix.pixelformat = param->stack[2];
 	dst_fmt.fmt.pix.field = param->stack[3];
 
-	if (v4lconvert_try_format(v4lcvtdata, &dst_fmt, &src_fmt) != 0) {
-		DEBUG_PRINT("v4lconvert_try_format failed!!");
-		param->errCode = EINVAL;
-		return;
-	}
-	if (xioctl(v4l2_fd, VIDIOC_S_FMT, &src_fmt) < 0) {
+	if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
 		DEBUG_PRINT("VIDIOC_S_FMT failed!!");
 		param->errCode = errno;
 		return;
 	}
-
-	if (dst_buf) {
-		qemu_free(dst_buf);
-		dst_buf = NULL;
-	}
-	dst_buf = qemu_malloc(dst_fmt.fmt.pix.sizeimage);
 
 	param->stack[0] = dst_fmt.fmt.pix.width;
 	param->stack[1] = dst_fmt.fmt.pix.height;
@@ -346,17 +281,6 @@ void svcam_device_g_fmt(SVCamState* state)
 		param->stack[6] = format.fmt.pix.colorspace;
 		param->stack[7] = format.fmt.pix.priv;
 		memcpy(&dst_fmt, &format, sizeof(format));
-
-		if (v4lconvert_try_format(v4lcvtdata, &dst_fmt, &src_fmt) != 0) {
-			DEBUG_PRINT("v4lconvert_try_format failed!!");
-			param->errCode = EINVAL;
-			return;
-		}
-		if (dst_buf) {
-			qemu_free(dst_buf);
-			dst_buf = NULL;
-		}
-		dst_buf = qemu_malloc(dst_fmt.fmt.pix.sizeimage);
 	}
 }
 
@@ -518,9 +442,6 @@ void svcam_device_enum_fintv(SVCamState* state)
 void svcam_device_close(SVCamState* state)
 {
 	uint32_t chk;
-
-	DEBUG_PRINT(" ");
-
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	chk = state->streamon;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
@@ -528,15 +449,5 @@ void svcam_device_close(SVCamState* state)
 	if (chk)
 		svcam_device_stop_preview(state);
 
-	if (v4lcvtdata) {
-		v4lconvert_destroy(v4lcvtdata);
-		v4lcvtdata = NULL;
-	}
-
 	v4l2_close(v4l2_fd);
-
-	if (dst_buf) {
-		qemu_free(dst_buf);
-		dst_buf = NULL;
-	}
 }
