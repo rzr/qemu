@@ -91,13 +91,13 @@ void activate_target(char *target_name)
 	virtual_target_path = get_virtual_target_path(target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(info_file);
-	
 	//if targetlist exist but config file not exists
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
 		ERR( "target info file not exists : %s\n", target_name);
 		return ;
 	}
+
 #ifndef _WIN32
 	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS))
 	{
@@ -109,6 +109,7 @@ void activate_target(char *target_name)
 #else /* _WIN32 */
 		enable_kvm = g_strdup_printf(" ");
 #endif
+
 	binary = get_config_value(info_file, QEMU_GROUP, BINARY_KEY);
 	emul_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, EMULATOR_OPTION_KEY);
 	qemu_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, QEMU_OPTION_KEY);
@@ -971,8 +972,11 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	name = gtk_entry_get_text(GTK_ENTRY(name_entry));
+	char *virtual_target_path = get_virtual_target_path((gchar*)name);
+	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	
 	ram_select_cb();
+    set_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
 	
 //	name character validation check
 	dst =  malloc(VT_NAME_MAXBUF);
@@ -998,6 +1002,9 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		snprintf(virtual_target_info.virtual_target_name, MAXBUF, "%s", name);
 	}
 	
+	dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
+	INFO( "virtual_target_path: %s\n", dest_path);
+	
 	// if try to change the target name
 	if(strcmp(name, target_name) != 0)
 	{
@@ -1013,9 +1020,6 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 				vms_path, target_name, vms_path, name);
 		cmd2 = g_strdup_printf("mv %s/%s/emulimg-%s.x86 %s/%s/emulimg-%s.x86", 
 				vms_path, name, target_name, vms_path, name, name);
-		
-		dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
-		INFO( "virtual_target_path: %s\n", dest_path);
 		
 		if(!run_cmd(cmd))
 		{
@@ -1263,7 +1267,6 @@ void ok_clicked_cb(void)
 			}
 	}
 	
-
 // create emulator image
 #ifdef _WIN32
 	cmd = g_strdup_printf("%s/bin/qemu-img create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_bin_path(), get_abs_path(),
