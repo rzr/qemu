@@ -97,7 +97,7 @@ int is_exist_file(gchar *filepath)
 }
 
 
-/* vtm_path = "/opt/samsung_sdk/Emulator/vtm" : get_my_exec_path() */
+/* vtm_path = "~/samsung_sdk/Emulator/vtm" : get_my_exec_path() */
 const gchar *get_vtm_path(void)
 {
 	static gchar *vtm_path = NULL;
