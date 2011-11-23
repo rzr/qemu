@@ -376,6 +376,19 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *virtual_target_path;
 	char *info_file;
 	int info_file_status;
+	char *resolution = NULL;
+	char *sdcard_type = NULL;
+	char *sdcard_path = NULL;
+	char *ram_size = NULL;
+	char *dpi = NULL;
+	char *disk_path = NULL;
+	char *arch = NULL;
+	char *sdcard_detail = NULL;
+	char *sdcard_detail_path = NULL;
+	char *ram_size_detail = NULL;
+	char *disk_path_detail = NULL;
+	char *sdcard_path_detail = NULL;
+	char *details = NULL;
 
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
@@ -399,19 +412,14 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 		//get info from config.ini
-		char *resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-		char *sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
-		char *sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
-		char *ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
-		char *dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
-		char *disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+		resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
+		sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
+		sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
+		ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
+		dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
+		disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
 
-		char *arch = (char*)g_getenv("EMULATOR_ARCH");
-		char *sdcard_detail = NULL;
-		char *sdcard_detail_path = NULL;
-		char *ram_size_detail = NULL;
-		char *disk_path_detail = NULL;
-		char *sdcard_path_detail = NULL;
+		arch = getenv("EMULATOR_ARCH");
 		if(strcmp(sdcard_type, "0") == 0)
 		{
 			sdcard_detail = g_strdup_printf("Not supported");
@@ -425,11 +433,18 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
 		disk_path_detail = g_strdup_printf("%s%s", get_bin_path(), disk_path);
-		
-		char *details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+#ifndef _WIN32		
+		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
 		show_message("Virtual Target details", details);
-
+#else /* _WIN32 */
+		gchar *details_win = NULL;
+		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+		details_win = change_path_from_slash(details);
+		show_message("Virtual Target details", details_win);
+		free(details_win);
+#endif
 		g_free(resolution);
 		g_free(sdcard_type);
 		g_free(sdcard_path);
