@@ -367,6 +367,88 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 	}
 }
 
+void details_clicked_cb(GtkWidget *widget, gpointer selection)
+{
+	GtkListStore *store;
+	GtkTreeModel *model;
+	GtkTreeIter  iter;
+	char *target_name;
+	char *virtual_target_path;
+	char *info_file;
+	int info_file_status;
+
+	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+
+	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
+		return;
+	
+	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
+		&model, &iter)) {
+		//get target name
+		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
+			
+		virtual_target_path = get_virtual_target_path(target_name);
+		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+		info_file_status = is_exist_file(info_file);
+
+   		//if targetlist exist but config file not exists
+		if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "target info file not exists : %s\n", target_name);
+			return;
+		}
+		//get info from config.ini
+		char *resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
+		char *sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
+		char *sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
+		char *ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
+		char *dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
+		char *disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+
+		char *arch = (char*)g_getenv("EMULATOR_ARCH");
+		char *sdcard_detail = NULL;
+		char *sdcard_detail_path = NULL;
+		char *ram_size_detail = NULL;
+		char *disk_path_detail = NULL;
+		char *sdcard_path_detail = NULL;
+		if(strcmp(sdcard_type, "0") == 0)
+		{
+			sdcard_detail = g_strdup_printf("Not supported");
+			sdcard_detail_path = g_strdup_printf(" ");
+		}
+		else
+		{
+			sdcard_detail = g_strdup_printf("Supported");
+			sdcard_path_detail = g_strdup_printf("%s%s", get_bin_path(), sdcard_path); 
+		}
+
+		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
+		disk_path_detail = g_strdup_printf("%s%s", get_bin_path(), disk_path);
+		
+		char *details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+		show_message("Virtual Target details", details);
+
+		g_free(resolution);
+		g_free(sdcard_type);
+		g_free(sdcard_path);
+		g_free(ram_size);
+		g_free(dpi);
+		g_free(disk_path);
+		g_free(sdcard_detail);
+		g_free(sdcard_detail_path);
+		g_free(ram_size_detail);
+		g_free(disk_path_detail);
+		g_free(sdcard_path_detail);
+		g_free(details);
+		return;
+	}
+
+	show_message("Warning", "Target is not selected. Firstly select a target and press the button.");
+}
+
+
 void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 {
 	GtkListStore *store;
@@ -699,7 +781,6 @@ int name_collision_check(void)
 void exit_vtm(void)
 {
 	INFO( "virtual target manager exit \n");
-	
 	window_hash_destroy();
 	gtk_main_quit();
 }
@@ -726,7 +807,7 @@ GtkWidget *setup_list(void)
 #else
 	gtk_tree_view_column_set_alignment(column,0.0);
 #endif
-	gtk_tree_view_column_set_min_width(column,100);
+	gtk_tree_view_column_set_min_width(column,130);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Ram size", cell, "text", RAM_SIZE, NULL);
@@ -735,7 +816,7 @@ GtkWidget *setup_list(void)
 #else
 	gtk_tree_view_column_set_alignment(column,0.0);
 #endif
-	gtk_tree_view_column_set_min_width(column,100);
+	gtk_tree_view_column_set_min_width(column,50);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Resolution", cell, "text", RESOLUTION, NULL);
@@ -744,7 +825,7 @@ GtkWidget *setup_list(void)
 #else
 	gtk_tree_view_column_set_alignment(column,0.0);
 #endif
-	gtk_tree_view_column_set_min_width(column,100);
+	gtk_tree_view_column_set_min_width(column,70);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sc_win), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_container_add(GTK_CONTAINER(sc_win), list);
@@ -1470,6 +1551,7 @@ void construct_main_window(void)
 	GtkWidget *delete_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button2");
 	GtkWidget *modify_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button3");
 	GtkWidget *activate_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
+	GtkWidget *details_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button5");
 	g_main_window = (GtkWidget *)gtk_builder_get_object(g_builder, "window1");
 	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), icon_image, NULL);
 	GtkWidget *x86_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton8");
@@ -1487,6 +1569,7 @@ void construct_main_window(void)
 	selection  = gtk_tree_view_get_selection(GTK_TREE_VIEW(list));
 	g_signal_connect(create_button, "clicked", G_CALLBACK(show_create_window), NULL); 
 	g_signal_connect(delete_button, "clicked", G_CALLBACK(delete_clicked_cb), selection);
+	g_signal_connect(details_button, "clicked", G_CALLBACK(details_clicked_cb), selection);
 	g_signal_connect(modify_button, "clicked", G_CALLBACK(modify_clicked_cb), selection);
 	g_signal_connect(activate_button, "clicked", G_CALLBACK(activate_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 

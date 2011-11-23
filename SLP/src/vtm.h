@@ -92,6 +92,7 @@ void show_modify_window(char* target_name);
 void construct_main_window(void);
 GtkWidget *setup_list(void);
 void delete_clicked_cb(GtkWidget *widget, gpointer selection);
+void details_clicked_cb(GtkWidget *widget, gpointer selection);
 void modify_clicked_cb(GtkWidget *widget, gpointer selection);
 void activate_clicked_cb(GtkWidget *widget, gpointer selection);
 void refresh_clicked_cb(char *arch);
