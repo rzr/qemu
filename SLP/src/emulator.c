@@ -281,6 +281,29 @@ int emul_create_process(const gchar cmd[])
 }
 #endif
 
+#ifdef _WIN32
+void socket_cleanup(void)
+{
+    WSACleanup();
+}
+#endif
+
+int socket_init(void)
+{
+#ifdef _WIN32
+    WSADATA Data;
+    int ret, err;
+
+    ret = WSAStartup(MAKEWORD(2,2), &Data);
+    if (ret != 0) {
+        err = WSAGetLastError();
+        fprintf(stderr, "WSAStartup: %d\n", err);
+        return -1;
+    }
+    atexit(socket_cleanup);
+#endif
+    return 0;
+}
 
 /**
  * @brief	 destroy emulator
@@ -731,6 +754,7 @@ int main (int argc, char** argv)
 
 	init_emulator(&argc, &argv);
 	startup_option_parser(&argc, &argv);
+	socket_init();
 
 	/* option parsed and pass to qemu option */
 
