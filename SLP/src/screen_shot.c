@@ -528,6 +528,8 @@ static GtkWidget *create_frame_buffer(BUF_WIDGET * pWidget)
 	gtk_container_add(GTK_CONTAINER(window1), vBox);
 	gtk_widget_show(vBox);
 
+	gtk_window_add_accel_group(GTK_WINDOW(window1), accel_group);
+
 	/* 2. toolbar create */
 	
 	toolbar1 = gtk_toolbar_new();
