@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <pthread.h>
+#include <sys/types.h>
 #include "hw.h"
 #include "pci.h"
 #include "pci_ids.h"
-#include <pthread.h>
-#include <sys/types.h>
+#include "debug_ch.h"
+
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 

@@ -17,20 +17,20 @@
 
 #include "codec_accel.h"
 
-#define DEBUG_SLPCODEC
+/* #define DEBUG_SLPCODEC
 
 #ifdef DEBUG_SLPCODEC
 #define DEBUG_PRINT(fmt, ...) \
 	fprintf (stdout, "[qemu][%s][%d]" fmt, __func__, __LINE__, ##__VA_ARGS__);
 #else
 #define DEBUG_PRINT(fmt, ...) ((void)0);
-#endif
-
-// #define PCI_VENDOR_ID_SAMSUNG			0x144d
-// #define PCI_DEVICE_ID_VIRTUAL_CODEC		0x1018
+#endif */
 
 #define QEMU_DEV_NAME		"codec"
 #define CODEC_REG_SIZE		512
+
+/* define debug channel */
+MULTI_DEBUG_CHANNEL(slp, codec);
 
 enum {
 	FUNC_NUM = 0,
@@ -77,8 +77,6 @@ struct SlpCodecInfo {
 
 AVCodecContext *gAVCtx;
 AVFrame *gFrame;
-static int cnt = 0;
-static int iCnt = 0;
 
 /* void av_register_all() */
 void qemu_av_register_all (void)
@@ -90,13 +88,11 @@ int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture)
 {
 	int ret;
 
-	DEBUG_PRINT("Enter\n")
-
 	picture->reordered_opaque = context->reordered_opaque;
 	picture->opaque = NULL;
 
 	ret = avcodec_default_get_buffer(context, picture);
-	DEBUG_PRINT("Leave\n")
+	TRACE("after avcodec_default_get_buffer, return value:%d\n", ret);
 
 	return ret;
 }
@@ -201,21 +197,22 @@ void qemu_avcodec_alloc_frame (void)
 /* void av_free (void *ptr) */
 void qemu_av_free (void)
 {
-	int ret;
+	int value;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
-	cpu_memory_rw_debug(cpu_single_env, target_param->ret_args, &ret, sizeof(int), 0);
-	printf("%s : %d\n", __func__, ret);
-	if (ret == 1) {
+	cpu_memory_rw_debug(cpu_single_env, target_param->ret_args, &value, sizeof(int), 0);
+	TRACE("free num :%d\n", value);
+
+	if (value == 1) {
         if (gAVCtx)
             av_free(gAVCtx);
         gAVCtx = NULL;
-    } else if (ret == 2) {
+    } else if (value == 2) {
         if (gFrame)
             av_free(gFrame);
         gFrame = NULL;
-    } else if (ret == 3) {
+    } else if (value == 3) {
         if (gAVCtx->palctrl)
             av_free(gAVCtx->palctrl);
         gAVCtx->palctrl = NULL;
@@ -225,7 +222,7 @@ void qemu_av_free (void)
         gAVCtx->extradata = NULL;
     }
 
-	DEBUG_PRINT("Leave\n")
+	TRACE("Leave\n");
 }
 
 /* void avcodec_get_context_defaults (AVCodecContext *ctx) */
@@ -233,14 +230,14 @@ void qemu_avcodec_get_context_defaults (void)
 {
 	AVCodecContext *avctx;
 
-	DEBUG_PRINT("\n")
+	TRACE("Enter\n");
 	avctx = gAVCtx;
 	if (avctx) {
 		avcodec_get_context_defaults(avctx);
 	} else {
-		DEBUG_PRINT("AVCodecContext is NULL\n")
+		ERR("AVCodecContext is NULL\n");
 	}
-
+	TRACE("Leave\n");
 }
 
 /* void avcodec_flush_buffers (AVCodecContext *avctx) */
@@ -248,13 +245,15 @@ void qemu_avcodec_flush_buffers (void)
 {
 	AVCodecContext *avctx;
 
-	DEBUG_PRINT("\n")
+	TRACE("Enter\n");
+
 	avctx = gAVCtx;
 	if (avctx) {
 		avcodec_flush_buffers(avctx);
 	} else {
-		DEBUG_PRINT("AVCodecContext is NULL\n")
+		ERR("AVCodecContext is NULL\n");
 	}
+	TRACE("Leave\n");
 }
 
 /* int avcodec_default_get_buffer (AVCodecContext *s, AVFrame *pic) */
@@ -264,15 +263,18 @@ int qemu_avcodec_default_get_buffer (void)
 	AVFrame *pic;
 	int ret;
 
-	DEBUG_PRINT("\n")
+	TRACE("Enter\n");
+
 	avctx = gAVCtx;
 	pic = gFrame;
 	if (avctx == NULL | pic == NULL) {
-		printf("AVCodecContext or AVFrame is NULL!!\n");
+		ERR("AVCodecContext or AVFrame is NULL!!\n");
 		return -1;
 	} else {
 		ret = avcodec_default_get_buffer(avctx, pic);
 	}
+
+	TRACE("Leave, return value:%d\n", ret);
 
 	return ret;
 }
@@ -283,14 +285,17 @@ void qemu_avcodec_default_release_buffer (void)
 	AVCodecContext *ctx;
 	AVFrame *frame;
 
-	DEBUG_PRINT("\n")
+	TRACE("Enter\n");
+
 	ctx = gAVCtx;
 	frame = gFrame;
 	if (ctx == NULL | frame == NULL) {
-		printf("AVCodecContext or AVFrame is NULL!!\n");
+		ERR("AVCodecContext or AVFrame is NULL!!\n");
 	} else {
 		avcodec_default_release_buffer(ctx, frame);
 	}
+
+	TRACE("Leave\n");
 }
 
 /* int avcodec_decode_video (AVCodecContext *avctx, AVFrame *picture,
@@ -309,7 +314,7 @@ int qemu_avcodec_decode_video (void)
 	avctx = gAVCtx;
 	picture = gFrame;
 	if (avctx == NULL | picture == NULL) {
-		printf("AVCodecContext or AVFrame is NULL!! avctx:0x%x, picture:0x%x\n", avctx, picture);
+		ERR("AVCodecContext or AVFrame is NULL!! avctx:0x%x, picture:0x%x\n", avctx, picture);
 		return -1;
 	}
 
@@ -327,6 +332,7 @@ int qemu_avcodec_decode_video (void)
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[9], &avctx->reordered_opaque, sizeof(int), 0);
 
 	ret = avcodec_decode_video(avctx, picture, &got_picture_ptr, buf, buf_size);
+	TRACE("after decode video, ret:%d\n", ret);
 
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[1], picture, sizeof(AVFrame), 1);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[2], &got_picture_ptr, sizeof(int), 1);
@@ -352,7 +358,7 @@ int qemu_avcodec_encode_video (void)
 	AVFrame *pict;
 	AVFrame tempFrame;
 	int numBytes;
-	int ret, temp, i;
+	int ret, i;
 
 	if (gAVCtx) {
 		avctx = gAVCtx;
@@ -365,8 +371,7 @@ int qemu_avcodec_encode_video (void)
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[3], pict, sizeof(AVFrame), 0);
     numBytes = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     buffer = (uint8_t*)av_malloc(numBytes * sizeof(uint8_t));
-	temp = cpu_memory_rw_debug(cpu_single_env, target_param->in_args[4], buffer, numBytes, 0);
-	printf("A: %d\n", temp);
+	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[4], buffer, numBytes, 0);
 	
     avpicture_fill(pict, buffer, avctx->pix_fmt, avctx->width, avctx->height);
 	if (buf_size > 0) {
@@ -376,11 +381,14 @@ int qemu_avcodec_encode_video (void)
 	ret = avcodec_encode_video (avctx, buf, buf_size, pict);
 	if (ret > 0) {
 		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[5], avctx->coded_frame, sizeof(AVFrame), 1);
-		temp = cpu_memory_rw_debug(cpu_single_env, target_param->in_args[6], buf, buf_size, 1);
-		printf("B: %d\n", temp);
+		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[6], buf, buf_size, 1);
 	}
+
+	TRACE("after encode video, ret:%d\n", ret);
+
 	av_free(buffer);
 //	av_free(buf);
+
 	return ret;
 }
 
@@ -418,9 +426,8 @@ void qemu_av_picture_copy (void)
 	av_picture_copy(&dst, src, avctx->pix_fmt, avctx->width, avctx->height);
 
 	ret = cpu_memory_rw_debug(cpu_single_env, target_param->in_args[5], dst.data[0], numBytes, 1);
-	if (ret < 0) {
-		printf("data ret:%d\n", ret);
-	}
+	TRACE("After copy image buffer from host to guest, ret:%d\n", ret);
+	
 /*	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[5], dst.data[1], (width * height)/4, 1);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[6], dst.data[2], (width * height)/4, 1); */
 
@@ -466,17 +473,9 @@ int qemu_av_parser_parse (void)
 void qemu_av_parser_close (void)
 {
 	AVCodecParserContext *s;
-
 	av_parser_close(s);
 }
 
-
-void qemu_av_codec_next (void)
-{
-	AVCodec *c;
-	
-	c = av_codec_next(NULL);
-}
 
 #if 0
 
@@ -501,11 +500,12 @@ int qemu_th_decode_ctl (void)
 	size_t buf_size;
 	int ret;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
+
 	if (_gDec) {
 		dec = _gDec;
 	} else {
-		DEBUG_PRINT("Failed to get th_dec_ctx pointer\n");
+		ERR("Failed to get th_dec_ctx pointer\n");
 	}
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[1], &req, sizeof(int), 0);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[3], &buf_size, sizeof(size_t), 0);
@@ -519,7 +519,7 @@ int qemu_th_decode_ctl (void)
 
 	_gDec = dec;
 
-	DEBUG_PRINT("Leave : ret(%d)\n", ret)
+	TRACE("Leave : ret(%d)\n", ret);
 	return ret;
 }
 
@@ -532,7 +532,7 @@ th_dec_ctx* qemu_th_decode_alloc (void)
 	th_setup_info* setup;
 	th_dec_ctx *ctx;
 	
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
 	if (_gSetup) {
 		setup = _gSetup;
@@ -544,10 +544,11 @@ th_dec_ctx* qemu_th_decode_alloc (void)
 	if (ctx) {
 		_gDec = ctx;
 	} else {
-		DEBUG_PRINT("Failed to alloc theora decoder\n")
+		ERR("Failed to alloc theora decoder\n");
 	}
 
-	DEBUG_PRINT("Leave\n")
+	TRACE("Leave\n");
+
 	return ctx;
 }
 
@@ -564,7 +565,7 @@ int qemu_th_decode_headerin (void)
 	char *packet;
 	int ret;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
 //	setup = _gSetup;
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0], &info, sizeof(th_info), 0);
@@ -585,7 +586,7 @@ int qemu_th_decode_headerin (void)
 
 	free(packet);
 
-	DEBUG_PRINT("Leave : ret(%d)\n", ret)
+	TRACE("Leave : ret(%d)\n", ret);
 	return ret;
 }
 
@@ -602,7 +603,8 @@ int qemu_th_decode_packetin (void)
 	long bytes;
 	int ret;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
+
 	if (_gDec) {
 		dec = _gDec;
 	}
@@ -617,7 +619,7 @@ int qemu_th_decode_packetin (void)
 
 	ret = th_decode_packetin(dec, &op, &granpos);
 
-	DEBUG_PRINT("Leave : ret(%d)\n", ret)
+	TRACE("Leave : ret(%d)\n", ret);
 	return ret;
 }
 
@@ -630,7 +632,7 @@ int qemu_th_decode_ycbcr_out (void)
 	th_ycbcr_buffer ycbcr;
 	int ret, size;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
 	if (_gDec) {
 		dec = _gDec;
@@ -638,7 +640,7 @@ int qemu_th_decode_ycbcr_out (void)
 	size = sizeof(th_dec_ctx);
 	ret = th_decode_ycbcr_out(dec, ycbcr);
 	
-	DEBUG_PRINT("Leave : ret(%d)\n", ret)
+	TRACE("Leave : ret(%d)\n", ret);
 	return ret;
 }
 
@@ -647,11 +649,11 @@ void qemu_th_info_clear (void)
 {
 	th_info* info;
 	
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
 	th_info_clear(info);
 
-	DEBUG_PRINT("Leave\n")
+	TRACE("Leave\n");
 }
 
 /* void th_comment_clear (th_comment* _tc) */
@@ -659,11 +661,11 @@ void qemu_th_comment_clear (void)
 {
 	th_comment* tc;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
 	th_comment_clear(tc);
 
-	DEBUG_PRINT("Leave\n")
+	TRACE("Leave\n");
 }
 
 /* void th_setup_free (th_setup_info* _setup) */
@@ -671,11 +673,11 @@ void qemu_th_setup_free (void)
 {
 	th_setup_info* setup;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
 	th_setup_free(setup);
 
-	DEBUG_PRINT("Leave\n")
+	TRACE("Leave\n");
 }
 
 /* void th_decode_free (th_dec_ctx* _dec) */
@@ -683,11 +685,11 @@ void qemu_th_decode_free (void)
 {
 	th_dec_ctx* dec;
 
-	DEBUG_PRINT("Enter\n")
+	TRACE("Enter\n");
 
 	th_decode_free(dec);
 
-	DEBUG_PRINT("Leave\n")
+	TRACE("Leave\n");
 }
 #endif
 
@@ -750,9 +752,6 @@ static int codec_operate (uint32_t apiIndex)
 			break;
 		case 32:
 			qemu_av_parser_close();
-			break;
-		case 33:
-			qemu_av_codec_next();
 			break;
 		/* THEORA API */
 /*		case 40:
@@ -827,7 +826,7 @@ static void thread_job (void)
  */
 static uint32_t codec_read (void *opaque, target_phys_addr_t addr)
 {
-	DEBUG_PRINT("[QEMU]codec_read\n");
+	TRACE("empty function\n");
 	return 0;
 }
 
@@ -837,7 +836,7 @@ static void codec_write (void *opaque, target_phys_addr_t addr, uint32_t value)
 	uint32_t offset;
 	int ret = -1;
 
-	offset = addr - 512;
+	offset = addr;
 	switch (offset) {
 		case FUNC_NUM:
 			ret = codec_operate(value);
