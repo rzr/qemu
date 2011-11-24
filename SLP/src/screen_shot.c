@@ -122,6 +122,41 @@ GtkWidget *create_frame_buffer_window(FBINFO *pBufInfo)
 	pWidget->nOrgHeight = qemu_state->surface_qemu->h / qemu_state->scale;
 	pWidget->nCurDisplay = 1;
 
+
+	/* rotate */
+	int nMode = UISTATE.current_mode % 4;
+	if (nMode  == 1) /*90*/
+	{
+		int temp;
+		pImg = gdk_pixbuf_rotate_simple(pImg, GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE);
+		pWidget->pPixBuf = pImg;
+		temp = pWidget->width;
+		pWidget->width = pWidget->height;
+		pWidget->height = temp;
+
+		temp = pWidget->nOrgWidth;
+		pWidget->nOrgWidth = pWidget->nOrgHeight;
+		pWidget->nOrgHeight = temp;
+	}
+	if (nMode == 2) /*180*/
+	{
+		pImg = gdk_pixbuf_rotate_simple(pImg, GDK_PIXBUF_ROTATE_UPSIDEDOWN);
+		pWidget->pPixBuf = pImg;
+	}
+	if (nMode == 3) /*280*/
+	{
+		int temp;
+		pImg = gdk_pixbuf_rotate_simple(pImg, GDK_PIXBUF_ROTATE_CLOCKWISE);
+		pWidget->pPixBuf = pImg;
+		temp = pWidget->width;
+		pWidget->width = pWidget->height;
+		pWidget->height = temp;
+
+		temp = pWidget->nOrgWidth;
+		pWidget->nOrgWidth = pWidget->nOrgHeight;
+		pWidget->nOrgHeight = temp;
+	}
+
 	/* after getting the information, it is to generate the frame buffer window */
 	
 	widget = create_frame_buffer(pWidget);
