@@ -44,6 +44,11 @@
 #include "dialog.h"
 #include "configuration.h"
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, command);
+
 #ifdef _WIN32
 void* system_telnet(void)
 {
@@ -71,14 +76,15 @@ void create_cmdwindow(void)
 	/* gnome-terminal */
 
 	if (!terminal)
-		terminal = "/usr/bin/xterm -l -e";
+		terminal = "/usr/bin/gnome-terminal --disable-factory -x";
+//		terminal = "/usr/bin/xterm -l -e";
 
 	sprintf(cmd, "%s ssh -o StrictHostKeyChecking=no root@localhost -p %d", terminal, startup_option.ssh_port);
 
 	if(emul_create_process(cmd) == TRUE)
-		log_msg(MSGL_INFO, "start command window\n");
+		INFO( "start command window\n");
 	else
-		log_msg(MSGL_ERROR, "falied to start command window\n");
+		ERR( "falied to start command window\n");
 
 #endif
 }

@@ -60,6 +60,11 @@
 #endif
 #endif
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, option);
+
 CONFIGURATION preference_entrys;
 int startup_option_config_done = 0;
 
@@ -78,7 +83,7 @@ int gethostDNS(char *dns1, char *dns2)
 
 	resolv = fopen("/etc/resolv.conf", "r");
 	if (resolv <= 0) {
-		log_msg(MSGL_ERROR, "Cann't open \"/etc/resolv.conf.\"\n");
+		ERR( "Cann't open \"/etc/resolv.conf.\"\n");
 		return 1;
 	}
 
@@ -164,12 +169,12 @@ int gethostproxy(char *proxy)
 		pclose(output);
 
 	}else if (strcmp(buf, "auto") == 0){
-		fprintf(stderr, "Emulator can't support automatic proxy currently. starts up with normal proxy.\n ");
+		ERR( "Emulator can't support automatic proxy currently. starts up with normal proxy.\n ");
 		//can't support proxy auto setting
-		//output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
-		//fscanf(output , "%s", buf);
-		//sprintf(proxy, "%s", buf);
-		//pclose(output);
+//		output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
+//		fscanf(output , "%s", buf);
+//		sprintf(proxy, "%s", buf);
+//		pclose(output);
 	}
 
 	emulator_mutex_unlock();
@@ -180,17 +185,17 @@ int gethostproxy(char *proxy)
 	BYTE *proxyenable, *proxyserver;
 	DWORD dwLength = 0;
 	nRet = RegOpenKeyEx(HKEY_CURRENT_USER,
-		"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
-	       	0, KEY_QUERY_VALUE, &hKey);
+			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
+			0, KEY_QUERY_VALUE, &hKey);
 	if (nRet != ERROR_SUCCESS) {
 		fprintf(stderr, "Failed to open registry from %s\n",
-			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+				"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
 		return 0;
 	}
-        lRet = RegQueryValueEx(hKey, "ProxyEnable", 0, NULL, NULL, &dwLength);
+	lRet = RegQueryValueEx(hKey, "ProxyEnable", 0, NULL, NULL, &dwLength);
 	if (lRet != ERROR_SUCCESS && dwLength == 0) {
 		fprintf(stderr, "Failed to query value from from %s\n",
-			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+				"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
 		RegCloseKey(hKey);
 		return 0;
 	}
@@ -205,7 +210,7 @@ int gethostproxy(char *proxy)
 	if (lRet != ERROR_SUCCESS) {
 		free(proxyenable);
 		fprintf(stderr, "Failed to query value from from %s\n",
-			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+				"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
 		RegCloseKey(hKey);
 		return 0;
 	}
@@ -214,12 +219,12 @@ int gethostproxy(char *proxy)
 		RegCloseKey(hKey);		
 		return 0;
 	}
-	
+
 	dwLength = 0;
 	lRet = RegQueryValueEx(hKey, "ProxyServer", 0, NULL, NULL, &dwLength);
 	if (lRet != ERROR_SUCCESS && dwLength == 0) {
 		fprintf(stderr, "Failed to query value from from %s\n",
-			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+				"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
 		RegCloseKey(hKey);		
 		return 0;
 	}
@@ -236,7 +241,7 @@ int gethostproxy(char *proxy)
 	if (lRet != ERROR_SUCCESS) {
 		free(proxyserver);
 		fprintf(stderr, "Failed to query value from from %s\n",
-			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+				"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
 		RegCloseKey(hKey);
 		return 0;
 	}
@@ -269,9 +274,9 @@ int gethostIP(char *host_ip)
 
 				if (ioctl(fd, SIOCGIFADDR, &req) < 0)
 				{
-					log_msg(MSGL_ERROR, "ioctl fail: %s \n", strerror(errno));
+					ERR( "ioctl fail: %s \n", strerror(errno));
 				}else{
-					log_msg(MSGL_DEBUG, "%s: [%s]\n"
+					TRACE( "%s: [%s]\n"
 							, curif->if_name
 							, inet_ntoa(((struct sockaddr_in*) &req.ifr_addr)->sin_addr));
 
@@ -287,11 +292,11 @@ int gethostIP(char *host_ip)
 			close(fd);
 
 		} else {
-			log_msg(MSGL_ERROR, "if_nameindex fail: %s \n", strerror(errno));
+			ERR( "if_nameindex fail: %s \n", strerror(errno));
 		}
 
 	} else {
-		log_msg(MSGL_ERROR, "socket fail: %s \n", strerror(errno));
+		ERR( "socket fail: %s \n", strerror(errno));
 	}
 
 #endif
@@ -319,7 +324,7 @@ static GtkWidget *make_virtual_target_frame(const gchar *frame_name)
 	gtk_misc_set_alignment(GTK_MISC (label), 0, 0.5);
 	gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 1);
 
-	GtkWidget *virtual_target_combobox = gtk_combo_box_new_text();
+	GtkWidget *virtual_target_combobox = (GtkWidget *)gtk_combo_box_new_text();
 	add_widget(OPTION_ID, OPTION_VIRTUAL_TARGET_COMBOBOX, virtual_target_combobox);
 	gtk_box_pack_start (GTK_BOX (hbox), virtual_target_combobox, TRUE, TRUE, 1);	
 
@@ -343,53 +348,54 @@ static GtkWidget *make_virtual_target_frame(const gchar *frame_name)
 }
 
 /*
-static GtkWidget *make_scale_frame(const gchar *frame_name)
-{
-	GSList *group;
+   static GtkWidget *make_scale_frame(const gchar *frame_name)
+   {
+   GSList *group;
 
-	GtkWidget *frame;
-	frame = gtk_frame_new(frame_name);
+   GtkWidget *frame;
+   frame = gtk_frame_new(frame_name);
 
-	GtkWidget *vbox;
-	vbox = gtk_vbox_new (FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
+   GtkWidget *vbox;
+   vbox = gtk_vbox_new (FALSE, 0);
+   gtk_container_add(GTK_CONTAINER(frame), vbox);
 
-	GtkWidget *hbox;
-	hbox = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
+   GtkWidget *hbox;
+   hbox = gtk_hbox_new (FALSE, 0);
+   gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
 
-	GtkWidget *scale_half_button = gtk_radio_button_new_with_label(NULL, "1/2x");
-	add_widget(OPTION_ID, OPTION_SCALE_HALF_BUTTON, scale_half_button);
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(scale_half_button));
-	gtk_box_pack_start (GTK_BOX (hbox), scale_half_button, TRUE, TRUE, 1);
+   GtkWidget *scale_half_button = gtk_radio_button_new_with_label(NULL, "1/2x");
+   add_widget(OPTION_ID, OPTION_SCALE_HALF_BUTTON, scale_half_button);
+   group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(scale_half_button));
+   gtk_box_pack_start (GTK_BOX (hbox), scale_half_button, TRUE, TRUE, 1);
 
-	GtkWidget *scale_one_button = gtk_radio_button_new_with_label(group, "1x");
-	add_widget(OPTION_ID, OPTION_SCALE_ONE_BUTTON, scale_one_button);
-	gtk_box_pack_start (GTK_BOX (hbox), scale_one_button, TRUE, TRUE, 1);	
+   GtkWidget *scale_one_button = gtk_radio_button_new_with_label(group, "1x");
+   add_widget(OPTION_ID, OPTION_SCALE_ONE_BUTTON, scale_one_button);
+   gtk_box_pack_start (GTK_BOX (hbox), scale_one_button, TRUE, TRUE, 1);	
 
-	if(preference_entrys.scale == 2)
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(scale_half_button), TRUE);
-	else
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(scale_one_button), TRUE);
-	
-	if(startup_option_config_done == 1)
-	{
-		gtk_widget_set_sensitive(scale_half_button, FALSE);
-		gtk_widget_set_sensitive(scale_one_button, FALSE);
-	}
+   if(preference_entrys.scale == 2)
+   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(scale_half_button), TRUE);
+   else
+   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(scale_one_button), TRUE);
 
-	g_signal_connect(G_OBJECT(scale_half_button), "toggled", G_CALLBACK(scale_select_cb), scale_half_button);
-	g_signal_connect(G_OBJECT(scale_one_button), "toggled", G_CALLBACK(scale_select_cb), scale_one_button);
+   if(startup_option_config_done == 1)
+   {
+   gtk_widget_set_sensitive(scale_half_button, FALSE);
+   gtk_widget_set_sensitive(scale_one_button, FALSE);
+   }
 
-	return frame;
-}
-*/
+   g_signal_connect(G_OBJECT(scale_half_button), "toggled", G_CALLBACK(scale_select_cb), scale_half_button);
+   g_signal_connect(G_OBJECT(scale_one_button), "toggled", G_CALLBACK(scale_select_cb), scale_one_button);
+
+   return frame;
+   }
+ */
 
 /**
   @brief	make a frame for always on frame buffer
   @param	frame_name: frame name
   @return newly created frame
  */
+#if 0
 static GtkWidget *make_serial_frame(const gchar *frame_name)
 {
 	/* 1. set box */
@@ -459,6 +465,7 @@ static GtkWidget *make_serial_frame(const gchar *frame_name)
 	g_signal_connect(G_OBJECT(serial_console_button), "toggled", G_CALLBACK(serial_console_command_cb), NULL);
 	return(frame);
 }
+#endif
 
 /**
   @brief	make a frame for always on frame buffer
@@ -508,6 +515,7 @@ static GtkWidget *make_internet_frame(const gchar *frame_name)
  * @brief	make a frame for sdcard
  * @return	newly created frame
  */
+#if 0
 static GtkWidget *make_sdcard_frame(const gchar *frame_name)
 {
 	/* 1. set box */
@@ -560,6 +568,7 @@ static GtkWidget *make_sdcard_frame(const gchar *frame_name)
 
 	return frame;
 }
+#endif
 
 
 static GtkWidget *make_always_on_top_frame(const gchar *frame_name)
@@ -579,7 +588,7 @@ static GtkWidget *make_always_on_top_frame(const gchar *frame_name)
 	add_widget(OPTION_ID, OPTION_ALWAYS_ON_TOP_BUTTON, always_on_top);
 	gtk_box_pack_start(GTK_BOX (hbox), always_on_top, TRUE, TRUE, 1);
 	gtk_toggle_button_set_active((GtkToggleButton *)always_on_top, preference_entrys.always_on_top);
-	
+
 	g_signal_connect(G_OBJECT(always_on_top), "toggled", G_CALLBACK(always_on_top_cb), NULL);
 
 	return frame;
@@ -591,6 +600,7 @@ static GtkWidget *make_always_on_top_frame(const gchar *frame_name)
   @param	frame_name: frame name
   @return newly created frame
  */
+#if 0
 static GtkWidget *make_boot_frame(const gchar *frame_name)
 {
 	char snapshot_date_str[MAXBUF];
@@ -641,6 +651,7 @@ static GtkWidget *make_boot_frame(const gchar *frame_name)
 
 	return frame;
 }
+#endif
 
 /**
   @brief	set initial preference entry
@@ -653,7 +664,7 @@ static void set_initial_preference_entrys(void)
 	preference_entrys.qemu_configuration.use_host_dns_server = configuration.qemu_configuration.use_host_dns_server;
 
 	preference_entrys.always_on_top = configuration.always_on_top;
-	
+
 	preference_entrys.qemu_configuration.save_emulator_state = configuration.qemu_configuration.save_emulator_state;
 	preference_entrys.qemu_configuration.snapshot_saved = virtual_target_info.snapshot_saved;
 	snprintf(preference_entrys.qemu_configuration.snapshot_saved_date, MAXBUF, "%s", virtual_target_info.snapshot_saved_date);
@@ -693,8 +704,8 @@ void create_config_frame(GtkWidget * vbox)
 	GtkWidget *virtual_target_frame = make_virtual_target_frame(_("Virtual Target"));
 	gtk_box_pack_start(GTK_BOX(temp_vbox), virtual_target_frame, TRUE, TRUE, 0);
 
-//	GtkWidget *scale_frame = make_scale_frame(_("Scale"));
-//	gtk_box_pack_start(GTK_BOX(temp_vbox), scale_frame, TRUE, TRUE, 0);
+	//	GtkWidget *scale_frame = make_scale_frame(_("Scale"));
+	//	gtk_box_pack_start(GTK_BOX(temp_vbox), scale_frame, TRUE, TRUE, 0);
 
 
 	/* 4. network internet setting frame create */
@@ -709,11 +720,11 @@ void create_config_frame(GtkWidget * vbox)
 
 	GtkWidget *always_on_top_frame = make_always_on_top_frame(_("Always On Top"));
 	gtk_box_pack_start(GTK_BOX(temp_vbox), always_on_top_frame, TRUE, TRUE, 0);
-	
+
 	/* 6. boot frame create */
 
-//	GtkWidget *boot_frame = make_boot_frame(_("Boot"));
-//	gtk_box_pack_start(GTK_BOX(temp_vbox), boot_frame, TRUE, TRUE, 0);
+	//	GtkWidget *boot_frame = make_boot_frame(_("Boot"));
+	//	gtk_box_pack_start(GTK_BOX(temp_vbox), boot_frame, TRUE, TRUE, 0);
 
 }
 
@@ -798,7 +809,7 @@ int show_config_window (GtkWidget *parent)
 
 	skin = get_skin_path();
 	if(skin == NULL)
-		log_msg(MSGL_WARN, "getting icon image path is failed!!\n");
+		WARN( "getting icon image path is failed!!\n");
 	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 	gtk_window_set_icon_from_file(GTK_WINDOW (win), icon_image, NULL);
 

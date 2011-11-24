@@ -36,6 +36,10 @@
 
 
 #include "vt_utils.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, vt_utils);
 
 gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num)
 {
@@ -47,15 +51,14 @@ gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num)
 	keyfile = g_key_file_new();
 
 	if(!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		log_msg( MSGL_ERROR, "loading key file from %s is failed\n", filepath);
-		g_error("%s", error->message);
+		ERR("loading key file from %s is failed\n", filepath);
 		return NULL;
 	}
 
 	target_list = g_key_file_get_keys(keyfile, group, &length, &error);
 
 	if(target_list == NULL || length == 0) {
-		log_msg( MSGL_ERROR, "no targets under group %s\n", group);
+		ERR("no targets under group %s\n", group);
 		return NULL;
 	}
 
@@ -71,7 +74,7 @@ int is_valid_target_list_file(SYSINFO *pSYSTEMINFO)
 	int status = 0;
 	gchar *target_list_filepath = NULL;
 
-	target_list_filepath = get_target_list_filepath();
+	target_list_filepath = get_targetlist_filepath();
 
 	status = is_exist_file(target_list_filepath);
 
@@ -84,4 +87,19 @@ int is_valid_target_list_file(SYSINFO *pSYSTEMINFO)
 	return status;
 }
 
-
+void escapeStr(const char* str, char* dst)
+{
+	int i = 0;
+	char ch;
+	while(*str)
+	{
+		ch = *str++;
+		
+		if((ch >= 'a' && ch <= 'z') || 
+				(ch >= 'A' && ch <= 'Z') || 
+				(ch >='0' && ch <= '9') || 
+				(ch == '-') || (ch == '_'))
+			dst[i++] = ch;
+	}
+	dst[i] = '\0';
+}

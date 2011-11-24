@@ -37,6 +37,11 @@
 #include "screen_shot.h"
 #include "tools.h"
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, screen_shot);
+
 static FBINFO g_fbinfo[MAX_EMULFB]={
 	{ DRAWWIDTH, DRAWHEIGHT, BPP, 0, FB_SIZE, 0, 0, 0, -1, NULL, 0, NULL },
 	{ DRAWWIDTH, DRAWHEIGHT, BPP, 0, FB_SIZE, 0, 0, 0, -1, NULL, 0, NULL },
@@ -482,8 +487,9 @@ static GtkWidget *create_frame_buffer(BUF_WIDGET * pWidget)
 
 	gchar icon_image[128] = {0, };
 	const gchar *skin = get_skin_path();
-	if (skin == NULL)
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+	if (skin == NULL){
+		WARN("getting icon image path is failed!!\n");
+	}
 
 	sprintf(icon_image, "%s/icons/06_SCREEN-SHOT.png", skin);
 

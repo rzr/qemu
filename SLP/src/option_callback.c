@@ -38,6 +38,11 @@
 #include "option.h" //-> included #include "option_callback.h"
 #include "process.h"
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, option_callback);
+
 
 /**
 	@brief	previewin option dialog
@@ -90,7 +95,7 @@ gchar* get_png_from_dbi(gchar* filename)
 	xmlDocPtr	doc;
 	doc = xmlParseFile(filename);
 	if (doc == NULL) {
-		log_msg(MSGL_ERROR, "Can't parse XML : %s \n", filename);
+		ERR( "Can't parse XML : %s \n", filename);
 		return NULL;
 	}
 
@@ -155,19 +160,19 @@ void virtual_target_select_cb(GtkComboBox *virtual_target_combobox, gpointer dat
 
 //	GtkWidget *virtual_target_combobox = get_widget(OPTION_ID, OPTION_VIRTUAL_TARGET_COMBOBOX);
 
-	name = gtk_combo_box_get_active_text(GTK_COMBO_BOX(virtual_target_combobox));
+	name = (char *)gtk_combo_box_get_active_text(GTK_COMBO_BOX(virtual_target_combobox));
 
 	status = read_virtual_target_info_file(name, &virtual_target_info);
 	if(status == -1)
 	{
-		log_msg(MSGL_ERROR, "load target info file error\n");
+		ERR( "load target info file error\n");
 		show_message("Error", "Target info file is missing!\n");
 		return;
 	}
 	else
 	{
 		snprintf(SYSTEMINFO.virtual_target_name, MAXBUF, "%s", name);
-		path = get_virtual_target_path(name);
+		path = get_virtual_target_abs_path(name);
 		info_file = g_strdup_printf("%sconfig.ini", path);
 		snprintf(SYSTEMINFO.virtual_target_info_file, MAXPATH, "%s", info_file);
 	}

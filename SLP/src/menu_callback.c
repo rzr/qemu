@@ -41,12 +41,18 @@
 #include "about_version.h"
 
 #ifdef __MINGW32__
- #include <winsock2.h>
+#include <winsock2.h>
 #else
- #include <sys/socket.h>
- #include <arpa/inet.h>
- #include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #endif
+
+#include "debug_ch.h"
+#include "sdb.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, menu_callback);
 
 extern GtkWidget *pixmap_widget;
 extern GtkWidget *fixed;
@@ -57,10 +63,10 @@ extern int emul_create_process(const gchar cmd[]);
 static const char telemul_name[] = "telephony_emulator";
 
 /**
-  * @brief  Event Injector call
-  * @param 	wrapper function for creating event injector
-  * @return void
-  */
+ * @brief  Event Injector call
+ * @param 	wrapper function for creating event injector
+ * @return void
+ */
 void menu_create_eiwidget_callback(GtkWidget *widget, GtkWidget *menu)
 {
 #ifndef _WIN32
@@ -71,9 +77,9 @@ void menu_create_eiwidget_callback(GtkWidget *widget, GtkWidget *menu)
 	sprintf(telemul_path, "%s/../bin/%s", path, telemul_name);
 
 	if(emul_create_process(telemul_path) == TRUE)
-		log_msg(MSGL_INFO, "start telephony emulator\n");
+		INFO( "start telephony emulator\n");
 	else
-		log_msg(MSGL_ERROR, "falied to start telephony emulator\n");
+		ERR( "falied to start telephony emulator\n");
 
 	free(telemul_path);
 #endif
@@ -81,28 +87,28 @@ void menu_create_eiwidget_callback(GtkWidget *widget, GtkWidget *menu)
 
 
 /**
-  * @brief	show preference window
-  * @param 	widget: event generation widget
-  * @param 	data: user event pointer
-  * @return success: 0
-  */
+ * @brief	show preference window
+ * @param 	widget: event generation widget
+ * @param 	data: user event pointer
+ * @return success: 0
+ */
 int menu_option_callback(GtkWidget *widget, gpointer data)
 {
 	show_config_window(g_main_window);
-//	write_config_file(SYSTEMINFO.conf_file, &configuration);
+	//	write_config_file(SYSTEMINFO.conf_file, &configuration);
 
 	return 0;
 }
 
 
 /**
-  * @brief 	ajust skin image
-  * @param 	widget: callback generation widget
-  * @param 	pDev: pointer to structure containg phone model info
-  * @param 	pref: pointer to structure containg user preference
-  * @param 	nMode: mode
-  * @return successs : 0
-  */
+ * @brief 	ajust skin image
+ * @param 	widget: callback generation widget
+ * @param 	pDev: pointer to structure containg phone model info
+ * @param 	pref: pointer to structure containg user preference
+ * @param 	nMode: mode
+ * @return successs : 0
+ */
 int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfiguration, int nMode)
 {
 	GdkBitmap *SkinMask = NULL;
@@ -125,8 +131,8 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
 	qemu_widget_new(&sdl_widget);
 	gtk_fixed_move (GTK_FIXED (fixed), sdl_widget,
-		PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x,
-		PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
+			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x,
+			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
 
 	if (SkinPixmap != NULL)
 		g_object_unref(SkinPixmap);
@@ -143,10 +149,10 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 
 
 /**
-  * @brief 	handler to rotate
-  * @param 	device: pointe to structure containg device info
-  * @param 	nMode: convert Mode
-  */
+ * @brief 	handler to rotate
+ * @param 	device: pointe to structure containg device info
+ * @param 	nMode: convert Mode
+ */
 void rotate_event_callback(PHONEMODELINFO *device, int nMode)
 {
 	char *rotate[4] = {PORTRAIT, LANDSCAPE, REVERSE_PORTRAIT, REVERSE_LANDSCAPE};
@@ -167,7 +173,7 @@ void rotate_event_callback(PHONEMODELINFO *device, int nMode)
 	pwidget = g_object_get_data((GObject *) popup_menu, rotate[nMode%4]);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pwidget), TRUE);
 
-	log_msg(MSGL_INFO, "rotate called\n");
+	INFO( "rotate called\n");
 }
 
 
@@ -180,13 +186,15 @@ void scale_event_callback(PHONEMODELINFO *device, int nMode)
 
 	mask_main_lcd(g_main_window, &PHONE, &configuration, nMode);
 
-	log_msg(MSGL_INFO, "scale called\n");
+	INFO( "scale called\n");
 }
 
 
 void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 {
 	int send_s;
+	uint16_t port;
+
 #ifndef _WIN32
 	socklen_t send_len = (socklen_t)sizeof(struct sockaddr_in);
 #else
@@ -210,31 +218,34 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 	}
 
 	memset(&servaddr, '\0', sizeof(servaddr));
+	port = get_sdb_base_port() + SDB_UDP_SENSOR_INDEX;
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	servaddr.sin_port = htons(SENSOR_PORT);
+	servaddr.sin_port = htons(port);
+
+	ERR( "sendto data for rotation [127.0.0.1:%d/udp] \n", port);
 
 	switch(nMode)
 	{
-	case 0:
-		sprintf(buf, "1\n0\n");
-		break;
-	case 1:
-		sprintf(buf, "1\n90\n");
-		break;
-	case 2:
-		sprintf(buf, "1\n180\n");
-		break;
-	case 3:
-		sprintf(buf, "1\n270\n");
-		break;
-	case 7:
-		sprintf(buf, "7\n1\n");
-		break;
-	case 8:
-		sprintf(buf, "7\n0\n");
-		break;
+		case 0:
+			sprintf(buf, "1\n0\n");
+			break;
+		case 1:
+			sprintf(buf, "1\n90\n");
+			break;
+		case 2:
+			sprintf(buf, "1\n180\n");
+			break;
+		case 3:
+			sprintf(buf, "1\n270\n");
+			break;
+		case 7:
+			sprintf(buf, "7\n1\n");
+			break;
+		case 8:
+			sprintf(buf, "7\n0\n");
+			break;
 	}
 
 	if(sendto(send_s, buf, 32, 0, (struct sockaddr *)&servaddr, send_len) <= 0)
@@ -467,93 +478,96 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 	}
 
 	else {
-//		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE)
-//			show_message(buf, buf);
+		//		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE)
+		//			show_message(buf, buf);
 	}
 
-	log_msg(MSGL_INFO, "menu_event_callback called\n");
+	INFO( "menu_event_callback called\n");
 }
 
 
 /**
-  * @brief 	pop-up menu callback for showing gerneal emulation info
-  * @param 	widget: event generation widget
-  * @param 	data: user defined data
-  * @return	void
-  */
+ * @brief 	pop-up menu callback for showing gerneal emulation info
+ * @param 	widget: event generation widget
+ * @param 	data: user defined data
+ * @return	void
+ */
 void menu_device_info_callback(GtkWidget * widget, gpointer data)
 {
 	char buf[MAXBUF];
 	memset(buf, 0x00, sizeof(buf));
 
 	snprintf(buf, sizeof(buf), "LCD SIZE    : %d x %d\nColor Depth : %d(bits per pixel)\nKey Count   : %d", PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.w,
-			 PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.h, PHONE.mode[UISTATE.current_mode].lcd_list[0].bitsperpixel,
-			 PHONE.mode[UISTATE.current_mode].key_map_list_cnt);
+			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.h, PHONE.mode[UISTATE.current_mode].lcd_list[0].bitsperpixel,
+			PHONE.mode[UISTATE.current_mode].key_map_list_cnt);
 
 	show_message("Device Information", buf);
 }
 
 
 /**
-	@brief 	called when cliced about popup menu, it opens a about_dialog
-	@param	widget: emulator_id
-	@see	show_about_dialog
-*/
+  @brief 	called when cliced about popup menu, it opens a about_dialog
+  @param	widget: emulator_id
+  @see	show_about_dialog
+ */
 void show_about_window(GtkWidget *parent)
 {
-	const gchar *version = build_version;
+	//const gchar *version = build_version;
 	const gchar *copyright =
 		"Copyright (C) 2011 Samsung Electronics Co., LTD. All Rights Reserved.\n";
 	gchar comments[512] = {0,};
-	const gchar *authors[] = {	/* from qemu/MAINTAINERS, alphabetically */
-		"Fabrice Bellard",
-		"Paul Brook",
-		"Magnus Damm",
-		"Edgar E. Iglesias",
-		"Aurelien Jarno",
-		"Vassili Karpov (malc)",
-		"Jan Kiszka",
-		"Armin Kuster",
-		"Hervé Poussineau",
-		"Thiemo Seufer",
-		"Blue Swirl",
-		"Andrzej Zaborowski",
-		"Thorsten Zitterell",
-		" and many more",
-		 NULL};
-	const gchar *website = "http://innovator.samsungmobile.com";
+	/* from qemu/MAINTAINERS, alphabetically */
+	/*
+	   const gchar *authors[] = {	
+	   "Fabrice Bellard",
+	   "Paul Brook",
+	   "Magnus Damm",
+	   "Edgar E. Iglesias",
+	   "Aurelien Jarno",
+	   "Vassili Karpov (malc)",
+	   "Jan Kiszka",
+	   "Armin Kuster",
+	   "Hervé Poussineau",
+	   "Thiemo Seufer",
+	   "Blue Swirl",
+	   "Andrzej Zaborowski",
+	   "Thorsten Zitterell",
+	   " and many more",
+	   NULL};
+	 */
+	//const gchar *website = "http://innovator.samsungmobile.com";
 
 	sprintf(comments, "SLP Emulator.\n"
-		"Version: %s\n"
-//		"Based upon QEMU 0.10.5 (http://qemu.org)\n"
-		"Build date: %s\nGit version: %s\n",
-		build_version, build_date, build_git);
+			"Version: %s\n"
+			//		"Based upon QEMU 0.10.5 (http://qemu.org)\n"
+			"Build date: %s\nGit version: %s\n",
+			build_version, build_date, build_git);
 
 	GtkWidget* about_dialog = gtk_about_dialog_new();
 
-//	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(about_dialog), version);
+	//	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(about_dialog), version);
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(about_dialog), comments);
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(about_dialog), copyright);
-//	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(about_dialog), website);
+	//	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(about_dialog), website);
 	gtk_show_about_dialog(GTK_WINDOW(parent),
-							"program-name", "SLP Emulator",
-//							"version", version,
-							"comments", comments,
-							"copyright", copyright,
-//							"website", website,
-//							"authors", authors,
-							"license", license_text,
-							NULL);
+			"program-name", "SLP Emulator",
+			//							"version", version,
+			"comments", comments,
+			"copyright", copyright,
+			//							"website", website,
+			//							"authors", authors,
+			"license", license_text,
+			NULL);
 
 }
 
 
 /**
-  * @brief	show emulator about info
-  * @param 	widget: event generation widget
-  * @param 	data: user defined data
-  * @return	void
-  */
+ * @brief	show emulator about info
+ * @param 	widget: event generation widget
+ * @param 	data: user defined data
+ * @return	void
+ */
 void menu_about_callback(GtkWidget *widget, gpointer data)
 {
 	GtkWidget *win = get_window(EMULATOR_ID);

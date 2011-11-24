@@ -35,6 +35,10 @@
  */
 
 #include "emulsignal.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, emulsignal);
 
 static sigset_t cur_sigset, old_sigset;
 
@@ -54,7 +58,7 @@ static int destroy_window(void)
 	if (UISTATE.is_ei_run == TRUE) {		
 		win = get_window(EVENT_INJECTOR_ID);
 		gtk_widget_destroy(win);
-		log_msg(MSGL_DEBUG, "event injector destroy\n");
+		TRACE( "event injector destroy\n");
 	}
 
 	/* 2. check event manager */
@@ -62,7 +66,7 @@ static int destroy_window(void)
 	if (UISTATE.is_em_run == TRUE) {
 		win = get_window(EVENT_MANAGER_ID);
 		gtk_widget_destroy(win);
-		log_msg(MSGL_DEBUG, "event manager destroy\n");	
+		TRACE( "event manager destroy\n");	
 	}
 
 	/* 4. check screen shot */
@@ -70,7 +74,7 @@ static int destroy_window(void)
 	if(UISTATE.is_screenshot_run == TRUE) {
 		win = get_window(SCREEN_SHOT_ID);
 		gtk_widget_destroy(win);
-		log_msg(MSGL_DEBUG, "screen shot destroy\n");
+		TRACE( "screen shot destroy\n");
 	}
 
 	return 0;
@@ -93,17 +97,19 @@ void destroy_emulator(void)
 	
 	/* 4. save configuration conf, main_x, main_y */
 
-	set_config_type(SYSTEMINFO.conf_file, EMULATOR_GROUP, MAIN_X_KEY, configuration.main_x);
-	set_config_type(SYSTEMINFO.conf_file, EMULATOR_GROUP, MAIN_Y_KEY, configuration.main_y);
+	set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, MAIN_X_KEY, configuration.main_x);
+	set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, MAIN_Y_KEY, configuration.main_y);
 
-	log_msg(MSGL_INFO, "Emulator Stop: set config type\n");
+	INFO( "Emulator Stop: set config type\n");
 
 
 	/* 5. remove pid file */
 
 	remove_pidfile("emulator");
 
-	log_msg(MSGL_INFO, "Emulator Stop: remove pid file\n");
+	INFO( "Emulator Stop: remove pid file\n");
+		
+	return;
 }
 
 
@@ -121,20 +127,20 @@ void sig_handler (int signo)
 	//int status;
 	//pid_t pid;
 	
-	log_msg (MSGL_DEBUG, "signo %d happens\n", signo);
+	TRACE("signo %d happens\n", signo);
 	switch (signo) {		
 	case SIGCHLD:
 #if 0				
 
 		if ((pid = waitpid(-1, &status, 0)) > 0) { 
-			log_msg(MSGL_INFO, "child %d stop with signal %d\n", pid, signo);
+			INFO( "child %d stop with signal %d\n", pid, signo);
 		} 
 
 		else if ((pid == -1) && (errno == EINTR)) {
-			log_msg(MSGL_INFO, "pid == -1 or errno EINTR \n");
+			INFO( "pid == -1 or errno EINTR \n");
 			//continue;
 		} else {
-			log_msg(MSGL_INFO, "pid = %d errono = %d\n",pid, errno );
+			INFO( "pid = %d errono = %d\n",pid, errno );
 			break;
 		}
 
@@ -146,27 +152,27 @@ void sig_handler (int signo)
 	sigfillset (&sigset);
 	if (sigprocmask (SIG_BLOCK, &sigset, &oldset) < 0) 
 	
-		log_msg (MSGL_DEBUG, "sigprocmask %d error \n", signo);
+		TRACE("sigprocmask %d error \n", signo);
 
 		/* wait for any child process to change state */
 		
 		while (1) {
 
 			if ((pid = waitpid(-1, &status, WNOHANG)) > 0) { 
-				log_msg(MSGL_INFO, "child %d stop with signal %d\n", pid, signo);
+				INFO( "child %d stop with signal %d\n", pid, signo);
 			} else if ((pid == -1) && (errno == EINTR)) {
-				log_msg(MSGL_INFO, "pid == -1 or errno EINTR \n");
+				INFO( "pid == -1 or errno EINTR \n");
 				continue;
 			} else {
-				log_msg(MSGL_INFO, "pid = %d errono = %d\n",pid, errno );
+				INFO( "pid = %d errono = %d\n",pid, errno );
 				break;
 			}
 		}
 
 		if (sigprocmask (SIG_SETMASK, &oldset, NULL) < 0) 
-			log_msg(MSGL_DEBUG, "sigprocmask error \n");
+			TRACE( "sigprocmask error \n");
 
-		log_msg(MSGL_INFO, "child(%d) die %d\n", pid, signo);
+		INFO( "child(%d) die %d\n", pid, signo);
 
 		return;
 #endif
@@ -178,12 +184,12 @@ void sig_handler (int signo)
 	sigfillset (&sigset);
 
 	if (sigprocmask (SIG_BLOCK, &sigset, &oldset) < 0) {
-		log_msg(MSGL_ERROR, "sigprocmask %d error \n", signo);
+		ERR( "sigprocmask %d error \n", signo);
 		exit_emulator();
 	}
 
 	if (sigprocmask (SIG_SETMASK, &oldset, NULL) < 0) {
-		log_msg(MSGL_ERROR, "sigprocmask error \n");
+		ERR( "sigprocmask error \n");
 	}
 
 	exit_emulator();
@@ -209,7 +215,7 @@ int sig_block()
 	sigfillset (&cur_sigset);
 
 	if (sigprocmask (SIG_BLOCK, &cur_sigset, &old_sigset) < 0) {
-		log_msg(MSGL_ERROR, "sigprocmask error \n");
+		ERR( "sigprocmask error \n");
 	}
 #endif
 	return 0;
@@ -229,7 +235,7 @@ int sig_unblock()
 	sigfillset (&cur_sigset);
 
 	if (sigprocmask (SIG_SETMASK, &old_sigset, NULL) < 0) {
-		log_msg(MSGL_ERROR, "sigprocmask error \n");
+		ERR( "sigprocmask error \n");
 	}
 #endif
 	return 0;
@@ -251,7 +257,7 @@ int register_sig_handler()
 	signal (SIGINT, sig_handler);
 	signal (SIGCHLD, sig_handler);
 #endif
-	log_msg(MSGL_INFO, "resist sig handler\n");
+	TRACE( "resist sig handler\n");
 
 	return 0;
 }

@@ -35,6 +35,10 @@
  */
 
 #include "gps.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, gps);
 
 static gchar *g_gps_full_path;
 static gchar *g_gps_basename;
@@ -47,7 +51,7 @@ static int safe_system(const char *command, const char *args1, const char *args2
 #ifndef _WIN32
 	pid_t pid;
 	if ((pid = vfork()) < 0) {
-		log_msg(MSGL_WARN, "fork error\n");
+		WARN( "fork error\n");
 		return -1;
 	}
 
@@ -60,7 +64,7 @@ static int safe_system(const char *command, const char *args1, const char *args2
 	else if (pid > 0) { /* parent */
 		int status = 0;
 		wait4(pid, &status, 0, NULL);
-		log_msg(MSGL_DEBUG, "ssh pid = %d\n", pid);
+		TRACE( "ssh pid = %d\n", pid);
 	}
 #else
 	STARTUPINFO si;
@@ -123,7 +127,7 @@ static void menu_gps_file_search(GtkWidget* widget, gpointer user_data)
 	const gchar *data_path = get_data_path();
 
 	if (data_path == NULL) {
-		log_msg(MSGL_ERROR, "Fail to get data path\n");
+		ERR( "Fail to get data path\n");
 	}
 
 	sprintf(gps_path, "%s/gps.log", data_path);
@@ -425,8 +429,9 @@ void menu_create_gps(GtkWidget* parent)
 
 	gchar icon_image[128] = {0, };
 	const gchar *skin = get_skin_path();	
-	if (skin == NULL) 
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+	if (skin == NULL){
+		WARN("getting icon image path is failed!!\n");
+	}
 
 	sprintf(icon_image, "%s/icons/05_GPS.png", skin);	
 	

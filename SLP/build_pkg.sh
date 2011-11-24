@@ -32,7 +32,7 @@ build_emulator () {
 	git checkout $PKG_BRANCH
 	./build.sh
 	make install
-	mkdir -p Emulator/data/kernel-img
+	mkdir -p Emulator/x86/data/kernel-img
 	mv Emulator $PKG_EMUL_DIR/
 	echo ==== Finish building emulator ====
 }
@@ -54,7 +54,7 @@ build_emulator_kernel () {
 	cd $PKG_DIR/emulator-kernel
 	git checkout $PKG_BRANCH 
 	./build.sh
-	cp arch/x86/boot/bzImage $PKG_EMUL_DIR/Emulator/data/kernel-img/
+	cp arch/x86/boot/bzImage $PKG_EMUL_DIR/Emulator/x86/data/kernel-img/
 	echo ==== Finish building emulator-Kernel ====
 }
 
@@ -70,7 +70,6 @@ create_emulator_metascript () {
 
 make_emulator_release_pkg () {
 	echo ==== Start compressing emulator Packaging ====
-	cp $BUILD_DIR/skins/icons/emulator.png $PKG_BIN_DIR/
 	cp $BUILD_DIR/skins/icons/vtm.png $PKG_BIN_DIR/
 	cd $PKG_BIN_DIR
 	zip -r $PKG_OUTPUT *
@@ -149,21 +148,23 @@ emulator_windows()
 	autoconf
 	./configure
 	make && make install
-	mkdir -p $WIN_QEMU_DIR/Emulator/data/kernel-img
+	mkdir -p $WIN_QEMU_DIR/Emulator/x86/data/kernel-img
 	echo ==== End Emulator Build ====
 
 	echo ==== Get the lastest kernel image ===
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/windows/bzImage -P $WIN_QEMU_DIR/Emulator/data/kernel-img
-	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/windows/emulator_dll.zip -P $WIN_QEMU_DIR/
+	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/windows/bzImage -P $WIN_QEMU_DIR/Emulator/x86/data/kernel-img
+	wget http://172.21.111.180/slpsdk-binary/SLP2.0_SDK/Emulator/windows/emulator_dll.zip -P $WIN_QEMU_DIR
 	
 	echo ==== Make windows package directory ===
 	cd $WIN_QEMU_DIR
 	mkdir -p EMUL_PKG/data
-	mv $WIN_QEMU_DIR/Emulator $WIN_PKG_DIR/data/
+	mv $WIN_QEMU_DIR/Emulator $WIN_PKG_DIR/data
+	editbin.exe /subsystem:windows $WIN_PKG_DIR/data/Emulator/vtm.exe
+	editbin.exe /subsystem:windows $WIN_PKG_DIR/data/Emulator/emulator-x86.exe
 
 	if test -e emulator_dll.zip
 	then
-		unzip emulator_dll.zip -d $WIN_PKG_DIR/data/Emulator
+		unzip emulator_dll.zip -d $WIN_PKG_DIR/data/Emulator/bin
 	fi
 
 	echo ==== Copy mate files into windows package ===

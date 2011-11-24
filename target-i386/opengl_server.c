@@ -49,46 +49,46 @@
 // #include <X11/Xutil.h>
 //#endif // _WIN32
 
-#define PORT    5555
 #define ENABLE_GL_LOG
 
 #include "opengl_func.h"
 #include "opengl_utils.h"
 #include "opengl_server.h"
+#include "sdb.h"
 
 extern int display_function_call;
 
 #ifdef _WIN32
 HWND		displayHWND;
 static Display CreateDisplay(void)
- {
-   HWND        hWnd;
-   WNDCLASS    wc;
-   LPSTR       ClassName ="DISPLAY";
-   HINSTANCE hInstance = 0;
+{
+	HWND        hWnd;
+	WNDCLASS    wc;
+	LPSTR       ClassName ="DISPLAY";
+	HINSTANCE hInstance = 0;
 
-   /* only register the window class once - use hInstance as a flag. */
-   hInstance = GetModuleHandle(NULL);
-   wc.style         = CS_OWNDC;
-   wc.lpfnWndProc   = (WNDPROC)DefWindowProc;
-   wc.cbClsExtra    = 0;
-   wc.cbWndExtra    = 0;
-   wc.hInstance     = hInstance;
-   wc.hIcon         = LoadIcon(NULL, IDI_WINLOGO);
-   wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-   wc.hbrBackground = NULL;
-   wc.lpszMenuName  = NULL;
-   wc.lpszClassName = ClassName;
+	/* only register the window class once - use hInstance as a flag. */
+	hInstance = GetModuleHandle(NULL);
+	wc.style         = CS_OWNDC;
+	wc.lpfnWndProc   = (WNDPROC)DefWindowProc;
+	wc.cbClsExtra    = 0;
+	wc.cbWndExtra    = 0;
+	wc.hInstance     = hInstance;
+	wc.hIcon         = LoadIcon(NULL, IDI_WINLOGO);
+	wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = NULL;
+	wc.lpszMenuName  = NULL;
+	wc.lpszClassName = ClassName;
 
-   RegisterClass(&wc);
+	RegisterClass(&wc);
 
-   displayHWND = CreateWindow(ClassName, ClassName, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU ),
-   0, 0, 10, 10, NULL, (HMENU)NULL, hInstance, NULL);
+	displayHWND = CreateWindow(ClassName, ClassName, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU ),
+			0, 0, 10, 10, NULL, (HMENU)NULL, hInstance, NULL);
 
 
-   ShowWindow(hWnd, SW_HIDE);
+	ShowWindow(hWnd, SW_HIDE);
 
-   return GetDC(displayHWND);
+	return GetDC(displayHWND);
 }
 #else
 extern void opengl_exec_set_parent_window(OGLS_Conn *pConn, Window _parent_window);
@@ -166,7 +166,7 @@ static int write_sock_data(int sock, void* data, int len)
 #endif
 				perror("write");
 				//assert(nwritten != -1);
-                return -1;
+				return -1;
 			}
 			offset += nwritten;
 		}
@@ -696,11 +696,13 @@ static int OGLS_createListenSocket (uint16_t port)
 	name.sin_addr.s_addr = htonl (INADDR_ANY);
 	if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
 	{
-		fprintf(stderr, "bind: errorno = %d\n", errno);
+		fprintf(stderr, "bind(%s:%d): errorno = %d(%s)\n", INADDR_ANY, port, errno, strerror(errno));
 		perror ("bind");
 		//exit (EXIT_FAILURE);
 		return -1;
 	}
+
+	//fprintf(stderr, "Port(%d/tcp) listen for opengl \n", port);
 
 	return sock;
 }
@@ -731,7 +733,7 @@ static void OGLS_removeConn( OGLS_Conn *pConn )
 	if( pConn->Display )
 	{
 #ifdef _WIN32
-//		ReleaseDC(pConn->Display);
+		//		ReleaseDC(pConn->Display);
 #else
 		XCloseDisplay( pConn->Display );
 		pConn->Display = NULL;
@@ -871,7 +873,7 @@ static void usage(void)
 {
 	printf("Usage : opengl_server [OPTION]\n\n");
 	printf("The following options are available :\n");
-	printf("--port=XXXX         : set XXX as the port number for the TCP/IP server (default : 5555)\n");
+	printf("--port=XXXX         : set XXX as the port number for the TCP/IP server \n");
 	printf("--debug             : output debugging trace on stderr\n");
 	printf("--save              : dump the serialialized OpenGL flow in a file (default : /tmp/debug_gl.bin)\n");
 	printf("--filename=X        : the file where to write the serailized OpenGL flow\n");
@@ -885,13 +887,12 @@ static void usage(void)
 //int main (int argc, char* argv[])
 void *init_opengl_server(void *arg)
 {
-	//int i;
 	OGLS_Opts option;
 
 	memset( &option, 0, sizeof(option) );
 
 	// set default values
-	option.port = PORT;
+	option.port = get_sdb_base_port() + SDB_TCP_OPENGL_INDEX;
 	option.parent_xid = -1;
 	option.refresh_rate = 1000;
 	option.timestamp = 1; /* only valid if must_save == 1. include timestamps in the save file to enable real-time playback */

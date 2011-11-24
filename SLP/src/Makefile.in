@@ -63,6 +63,7 @@ endif
 prefix = @prefix@
 PHONE_DIR=../Emulator
 
+
 DEBUG = y
 STRIP = strip
 TARGET_X86 = emulator-x86
@@ -96,7 +97,6 @@ OBJS_COMMON = \
 	event_handler.o \
 	fileio.o \
 	gpsnew.o \
-	logmsg.o \
 	menu.o \
 	menu_callback.o \
 	option.o \
@@ -110,6 +110,7 @@ OBJS_COMMON = \
 	tools.o \
 	utils.o \
 	vt_utils.o \
+	debug_ch.o \
 	vinit_process.o
 
 OBJS_X86 += $(OBJS_COMMON) arch_x86.o
@@ -118,11 +119,11 @@ OBJS_ARM += $(OBJS_COMMON) arch_arm.o
 
 OBJS_VTM = \
 	fileio.o \
-	logmsg.o \
 	vt_utils.o \
 	utils.o \
 	dialog.o \
 	process.o \
+	debug_ch_vtm.o \
 	vtm.o
 
 SRCS_X86 = $(OBJS_X86:%.o=%.c)
@@ -153,9 +154,9 @@ X86_QEMU_LIBFLAGS = \
  -Wl,-whole-archive ../../i386-softmmu/libccc.a -Wl,-no-whole-archive -luuid
 
 ifeq ($(CONFIG_WIN32),y)
-    X86_QEMU_LIBFLAGS += -lopengl32 -lws2_32 -lgdi32 -lpthread
+    X86_QEMU_LIBFLAGS += -lopengl32 -lws2_32 -lgdi32 -lpthread -L./bin
 else ifeq ($(CONFIG_LINUX),y)
-    X86_QEMU_LIBFLAGS += -lGL
+    X86_QEMU_LIBFLAGS += -lGL # -L/usr/lib/mesa
 endif
 
 ARM_QEMU_LIBFLAGS = \
@@ -219,19 +220,30 @@ $(VTM) : $(OBJS_VTM)
 
 install: $(TARGET)
 ifeq ($(CONFIG_WIN32),y)
-	install emulator.bat $(PHONE_DIR)
-	install emulator.vbs $(PHONE_DIR)
-	install vtm.bat $(PHONE_DIR)
-	install vtm.vbs $(PHONE_DIR)
-	install ../../qemu-img $(PHONE_DIR)
+	mkdir $(PHONE_DIR)/bin
+#	install emulator.bat $(PHONE_DIR)
+#	install emulator.vbs $(PHONE_DIR)
+#	install vtm.bat $(PHONE_DIR)
+#	install vtm.vbs $(PHONE_DIR)
+	install ../../qemu-img $(PHONE_DIR)/bin
 else ifeq ($(CONFIG_LINUX),y)
-	install emulator.sh $(PHONE_DIR)/emulator
+#	install emulator.sh $(PHONE_DIR)/emulator
 endif
+	mkdir $(PHONE_DIR)/arm
+	mkdir $(PHONE_DIR)/x86
+	mkdir $(PHONE_DIR)/vtm_conf
+	mkdir $(PHONE_DIR)/x86/VMs
+	mkdir $(PHONE_DIR)/x86/data
+	mkdir $(PHONE_DIR)/x86/data/kernel-img
+	mkdir $(PHONE_DIR)/x86/VMs/default
+	mkdir $(PHONE_DIR)/x86/VMs/default/logs
 	install emulator-x86 $(PHONE_DIR)/emulator-x86
-	#install emulator-arm $(PHONE_DIR)/emulator-arm
-	install savevm.glade $(PHONE_DIR)
-	install vtm $(PHONE_DIR)/vtm
-	install vtm.glade $(PHONE_DIR)
+#	install emulator-arm $(PHONE_DIR)/emulator-arm
+#	install savevm.glade $(PHONE_DIR)
+	install vtm $(PHONE_DIR)
+	install vtm.glade $(PHONE_DIR)/vtm_conf
+	install config.ini $(PHONE_DIR)/x86/VMs/default
+	install DEBUGCH $(PHONE_DIR)
 #	install gps.glade $(PHONE_DIR)
 
 %/__dir_clean__: dummy

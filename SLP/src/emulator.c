@@ -65,6 +65,11 @@
 
 #include "opengl_server.h"
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, main);
+
 #define RCVBUFSIZE 40
 #define MAX_COMMANDS 5
 #define MAX_LENGTH 24
@@ -198,10 +203,10 @@ static void emulator_mutex_init(void)
  */
 static void emul_process_close_handle (GPid pid, gint status, gpointer data)
 {
-	log_msg(MSGL_DEBUG, "remove pid=%d\n", pid);
+	TRACE( "remove pid=%d\n", pid);
 	g_spawn_close_pid (pid);
 	emul_process_list = g_slist_remove(emul_process_list, (gpointer) pid);
-	log_msg(MSGL_DEBUG, "remove complete pid=%d\n", pid);
+	TRACE( "remove complete pid=%d\n", pid);
 }
 
 /**
@@ -211,7 +216,7 @@ static void emul_process_close_handle (GPid pid, gint status, gpointer data)
 */
 static void emul_kill_process(gpointer data, gpointer user_data)
 {
-	log_msg(MSGL_WARN, "kill terminal pid=%d\n", (int)data);
+	WARN( "kill terminal pid=%d\n", (int)data);
 	kill( (pid_t)(gpointer)data, SIGTERM);
 }
 
@@ -247,7 +252,7 @@ int emul_create_process(const gchar cmd[])
 	}
 
 	else {
-	//	log_msg(MSGL_ERROR, "Error in g_spawn_async\n");
+	//	ERR( "Error in g_spawn_async\n");
 		ret = FALSE;
 	}
 
@@ -258,7 +263,7 @@ int emul_create_process(const gchar cmd[])
 		ret = FALSE;
 	}
 
-	log_msg(MSGL_DEBUG,"create PID = %d\n", pid);
+	TRACE("create PID = %d\n", pid);
 
 	emulator_mutex_unlock();
 
@@ -290,7 +295,7 @@ void exit_emulator(void)
 
 	destroy_emulator();
 
-	log_msg(MSGL_INFO, "Emulator Stop: destroy emulator \n");
+	INFO( "Emulator Stop: destroy emulator \n");
 
 	/* 2. destroy hash */
 
@@ -307,11 +312,11 @@ void exit_emulator(void)
 	/* 5. quit main */
 
 	gtk_main_quit();
-	log_msg(MSGL_INFO, "Emulator Stop: shutdown qemu system, gtk_main quit complete \n");
+	INFO( "Emulator Stop: shutdown qemu system, gtk_main quit complete \n");
 
 #ifdef ENABLE_OPENGL_SERVER
 	pthread_cancel(thread_opengl_id);
-	log_msg(MSGL_INFO, "opengl_server thread is quited.\n");
+	INFO( "opengl_server thread is quited.\n");
 #endif	/* ENABLE_OPENGL_SERVER */
 
 	exit(0);
@@ -363,25 +368,25 @@ static void construct_main_window(void)
 
 	skin = get_skin_path();
 	if (skin == NULL) {
-		log_msg (MSGL_ERROR, "getting skin path is failed!!\n");
+		ERR( "getting skin path is failed!!\n");
 		exit (1);
 	}
 	sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
 
 	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
-		log_msg (MSGL_ERROR, "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
+		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
 		exit(EXIT_FAILURE);
 	}
 
 	if(gtk_window_set_default_icon_from_file(emul_img_dir, NULL) == FALSE) {
-		log_msg(MSGL_ERROR, "emulator icon from file doesn't set!! %s\n", emul_img_dir);
+		ERR( "emulator icon from file doesn't set!! %s\n", emul_img_dir);
 		exit(EXIT_FAILURE);
 	}
 
 	/* 3. skin load */
 
 	if (load_skin_image(&PHONE) < 0) {
-		log_msg (MSGL_ERROR, "emulator skin image is not loaded.\n");
+		ERR( "emulator skin image is not loaded.\n");
 		exit(1);
 	}
 
@@ -401,7 +406,7 @@ static void construct_main_window(void)
 
 	fixed = gtk_fixed_new ();
 	if (!qemu_widget_new(&sdl_widget)) {
-		log_msg (MSGL_ERROR, "sdl_widget is failed!!\n");
+		ERR( "sdl_widget is failed!!\n");
 		exit(1);
 	}
 
@@ -419,7 +424,7 @@ static void construct_main_window(void)
 
 	gtk_window_move (GTK_WINDOW (g_main_window), configuration.main_x, configuration.main_y);
 	UISTATE.scale = PHONE.mode[0].lcd_list[0].lcd_region.s;
-	log_msg(MSGL_INFO, "scale = %f\n", UISTATE.scale);
+	TRACE("scale = %f\n", UISTATE.scale);
 
 	/* 9. Signal connect */
 
@@ -474,7 +479,6 @@ static void init_startup_option(void)
 {
 	memset(&(startup_option), 0x00, sizeof(startup_option));
 	startup_option.run_level = 5;
-	startup_option.log_level = 9;
 	startup_option.mountPort = 1301;
 	startup_option.telnet_port = 1201;
 	startup_option.ssh_port = 1202;
@@ -483,7 +487,7 @@ static void init_startup_option(void)
 		while(check_port(LOCALHOST, startup_option.mountPort) == 0)
 			startup_option.mountPort++;
 	}
-	startup_option.quick_start = 0;
+	
 	startup_option.no_dump = FALSE;
 }
 
@@ -503,18 +507,19 @@ static int startup_option_parser(int *argc, char ***argv)
 	gboolean version = FALSE;
 	GOptionContext *context = NULL;
 	GError *error = NULL;
+	//int status = 0;
+	//char *name, *path;
+	char *info_file;
 
 	GOptionEntry options[] = {
-		{"skin", 0, 0, G_OPTION_ARG_STRING, &startup_option.skin, "Skin File", "\"*.dbi\""},
 		{"target", 0, 0, G_OPTION_ARG_STRING, &startup_option.target, "Virtual root path", "\"target path\""},
 		{"disk", 0, 0, G_OPTION_ARG_STRING, &startup_option.disk, "Disk image path", "\"disk path\""},
-		{"version", 0, 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
-		{"log", 0, 0, G_OPTION_ARG_INT, &startup_option.log_level, "Log level", "\"log_level(0:system,1:error,2:warn,3:info,4:debug,9:save)\"" },
+		{"vtm", 0, 0, G_OPTION_ARG_STRING, &startup_option.vtm, "Virtual target image file", "\"*.x86 or *.arm\""},
 		{"run-level", 0, 0, G_OPTION_ARG_INT, &startup_option.run_level, "Run level", "5"},
+		{"version", 0, 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
 		{"Port", 0, 0, G_OPTION_ARG_INT, &startup_option.mountPort, "Port for NFS mounting", "\"default is 1301\""},
 		{"ssh-port", 0, 0, G_OPTION_ARG_INT, &startup_option.ssh_port, "Port for ssh to guest", NULL},
 		{"telnet-port", 0, 0, G_OPTION_ARG_INT, &startup_option.telnet_port, "Port for telnet to guest", NULL},
-		{"quick-start", 0, 0, G_OPTION_ARG_INT, &startup_option.quick_start, "Quick start of emulator without showing option window", NULL},
 		{"no-dump", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &startup_option.no_dump, "Disable dump feature", NULL},
 		{NULL}
 	};
@@ -530,9 +535,10 @@ static int startup_option_parser(int *argc, char ***argv)
 		exit (1);
 	}
 	
-	if (startup_option.no_dump) {
-		startup_option.log_level = 0;
-	}
+	char *virtual_target_path = get_virtual_target_path(startup_option.vtm);
+	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+	free(virtual_target_path);
+	free(info_file);
 
 	/* 3. when parsed version option */
 
@@ -540,8 +546,6 @@ static int startup_option_parser(int *argc, char ***argv)
 		printf("\n\nVersion : %s (%s)  Build date: %s\n", build_version, build_git, build_date);
 		exit(0);
 	}
-
-	/* 4. when parsed skin option */
 
 	if (startup_option.target && !startup_option.disk) {
 		/* parse target option */
@@ -556,23 +560,15 @@ static int startup_option_parser(int *argc, char ***argv)
 			fprintf(stderr, "disk image path (%s)  is invalid. retry disk startup option\n", startup_option.disk);
 			exit(1);
 		}
-		if (!startup_option.skin) {
-			fprintf(stderr, "need to provide a skin path with --disk\n");
-			exit(1);
-		}
 	}
 	else {
 		fprintf(stderr, "Need exactly one of --target or --disk\n");
 		exit(1);
 	}
 
-	if (startup_option.skin) {
-		if(is_valid_skin (startup_option.skin) == 0) {
-			printf("skin file is invalid. retry skin startup option\n");
-			exit(1);
-		}
+	if (!startup_option.vtm) {
+		fprintf(stderr, "vtm image is not selected\n");
 	}
-
 	return 0;
 }
 
@@ -645,25 +641,27 @@ static int load_config_passed_to_qemu (arglist* al, int argc, char **argv)
 	/* 1. load configuration and show option window */
 
 	if (load_config_file(&SYSTEMINFO) < 0) {
-		log_msg (MSGL_ERROR, "load configuration file error!!\n");
+		ERR( "load configuration file error!!\n");
 		return -1;
 	}
 
-	log_msg(MSGL_INFO, "load config file complete\n");
+	TRACE( "load config file complete\n");
+
+	
 
 	if (determine_skin(&virtual_target_info, &configuration) < 0) {
-		log_msg (MSGL_ERROR, "invalid skin file\n");
+		ERR( "invalid skin file\n");
 		return -1;
 	}
 
 	/* 2. skin parse dbi file and fill the structure */
 
 	if (skin_parser(configuration.skin_path, &PHONE) < 0) {
-		log_msg (MSGL_ERROR, "skin parse error\n");
+		ERR( "skin parse error\n");
 		return -1;
 	}
 
-	log_msg(MSGL_INFO, "skin parse complete\n");
+	TRACE( "skin parse complete\n");
 
 	/* 3. parsed to qemu startup option when ok clicked */
 
@@ -727,19 +725,18 @@ static void emul_prepare_process(void)
 int main (int argc, char** argv)
 {
 	int r;
-	int sensor_port = SENSOR_PORT;
+	//int sensor_port = SENSOR_PORT;
 
-	pthread_t thread_gtk_id, thread_sensor_id;
+	pthread_t thread_gtk_id;
 
 	init_emulator(&argc, &argv);
 	startup_option_parser(&argc, &argv);
-	log_msg_init(startup_option.log_level);
 
 	/* option parsed and pass to qemu option */
 
 	r = load_config_passed_to_qemu(&g_qemu_arglist, argc, argv);
 	if (r < 0) {
-		log_msg (MSGL_ERROR, "option parsed and pass to qemu option error!!\n");
+		ERR( "option parsed and pass to qemu option error!!\n");
 		return -1;
 	}
 
@@ -753,13 +750,13 @@ int main (int argc, char** argv)
 
         /* 5.3 create gtk thread  */
         if (pthread_create(&thread_gtk_id, NULL, run_gtk_main, NULL) != 0) {
-                log_msg (MSGL_ERROR, "error creating gtk_id thread!!\n");
+                ERR( "error creating gtk_id thread!!\n");
                 return -1;
         }
 #else /* _WIN32 */
         /* if _WIN32, window creation and gtk main must be run in a thread */
         if (pthread_create(&thread_gtk_id, NULL, construct_main_window_and_run_gtk_main, NULL) != 0) {
-                log_msg (MSGL_ERROR, "error creating gtk_id thread!!\n");
+                ERR( "error creating gtk_id thread!!\n");
                 return -1;
         }
 #endif
@@ -771,7 +768,7 @@ int main (int argc, char** argv)
 #ifdef ENABLE_OPENGL_SERVER
 	/* create OPENGL server thread */
 	if (pthread_create(&thread_opengl_id, NULL, init_opengl_server, NULL) != 0) {
-		log_msg(MSGL_ERROR, "error creating opengl_id thread!!");
+		ERR( "error creating opengl_id thread!!");
 		return -1;
 	}
 #endif	/* ENABLE_OPENGL_SERVER */

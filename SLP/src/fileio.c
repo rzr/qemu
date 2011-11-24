@@ -37,6 +37,12 @@
 #include <assert.h>
 #include "fileio.h"
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, fileio);
+
+extern STARTUP_OPTION startup_option;
 #ifdef _WIN32
 static void dos_path_to_unix_path(char *path)
 {
@@ -67,106 +73,139 @@ static void unix_path_to_dos_path(char *path)
 int is_exist_file(gchar *filepath)
 {
 	if ((filepath == NULL) || (strlen(filepath) <= 0))	{
-		log_msg(MSGL_ERROR, "filepath is incorrect.\n");
+		ERR( "filepath is incorrect.\n");
 		return -1;
 	}
 
 	if (strlen(filepath) >= MAXBUF) {
-		log_msg(MSGL_ERROR, "file path is too long. (%s)\n", filepath);
+		ERR( "file path is too long. (%s)\n", filepath);
 		return -1;
 	}
 
 	if (g_file_test(filepath, G_FILE_TEST_IS_DIR) == TRUE) {
-		log_msg(MSGL_INFO, "%s: is not a file, is a directory!!\n", filepath);
+		INFO( "%s: is not a file, is a directory!!\n", filepath);
 		return -1;
 	}
 
 	if (g_file_test(filepath, G_FILE_TEST_EXISTS) == TRUE) {
-		log_msg(MSGL_INFO, "%s: exists normally!!\n", filepath);
+		TRACE( "%s: exists normally!!\n", filepath);
 		return FILE_EXISTS;
 	}
 
-	log_msg(MSGL_INFO, "%s: not exists!!\n", filepath);
+	INFO( "%s: not exists!!\n", filepath);
 	return FILE_NOT_EXISTS;
 }
 
 
-/* emulator_path = "/opt/samsung_sdk/simulator/bin/simulator" : get_my_exec_path() */
-const gchar *get_emulator_path(void)
+/* vtm_path = "~/samsung_sdk/Emulator/vtm" : get_my_exec_path() */
+const gchar *get_vtm_path(void)
 {
-	static gchar *emulator_path = NULL;
+	static gchar *vtm_path = NULL;
 	int len = 10;
 	int r;
 
 	/* allocate just once */
-	if (emulator_path)
-		return emulator_path;
+	if (vtm_path)
+		return vtm_path;
 
 	const char *env_path = getenv("EMULATOR_PATH");
 	if (env_path) {
-		emulator_path = strdup(env_path);
-		return emulator_path;
+		vtm_path = strdup(env_path);
+		return vtm_path;
 	}
 
 	while (1)
 	{
-		emulator_path = malloc(len);
-		if (!emulator_path) {
+		vtm_path = malloc(len);
+		if (!vtm_path) {
 			fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 		}
 
 #ifndef _WIN32
-		r = readlink("/proc/self/exe", emulator_path, len);
+		r = readlink("/proc/self/exe", vtm_path, len);
 		if (r < len) {
-			emulator_path[r] = 0;
+			vtm_path[r] = 0;
 			break;
 		}
 #else
-		r = GetModuleFileName(NULL, emulator_path, len);
+		r = GetModuleFileName(NULL, vtm_path, len);
 		if (r < len) {
-			emulator_path[r] = 0;
-			dos_path_to_unix_path(emulator_path);
+			vtm_path[r] = 0;
+			dos_path_to_unix_path(vtm_path);
 			break;
 		}
 #endif
-		free(emulator_path);
+		free(vtm_path);
 		len *= 2;
 	}
 
-	return emulator_path;
+	return vtm_path;
 }
 
-
-/* get_bin_path = "/opt/samsung_sdk/simulator/bin/" */
-
+/* get_bin_path = "~/samsung_sdk/Emulator/" */
 const gchar *get_bin_path(void)
 {
 	static gchar *bin_path;
 
 	if (!bin_path)
 	{
-		const gchar *emulator_path = get_emulator_path();
-		bin_path = g_path_get_dirname(emulator_path);
+		const gchar *vtm_path = get_vtm_path();
+		bin_path = g_path_get_dirname(vtm_path);
 	}
 
 	return bin_path;
 }
 
 
-/* get_path = "/opt/samsung_sdk/simulator/" */
+/* get_path = "/opt/samsung_sdk/Emulator/x86" 
+* get_path = "/opt/samsung_sdk/Emulator/arm" */
 const gchar *get_path(void)
 {
-	static gchar *path = NULL;
+	static gchar *path_buf;
+	static gchar *path;
+	char *arch = (char *)g_getenv("EMULATOR_ARCH");
 
-	if (!path)
+	/* vtm_path = /opt/samsung_sdk/Emulator/vtm/vtm */
+	const gchar *vtm_path = get_vtm_path();
+	path_buf = g_path_get_dirname(vtm_path);
+	if(!arch) /* for stand alone */
 	{
-		const gchar *emulator_path = get_emulator_path();
-		path = g_path_get_dirname(emulator_path);
+		if(strcmp(g_path_get_basename(vtm_path), "emulator-x86") == 0)
+			arch = g_strdup_printf("x86");
+		else
+			arch = g_strdup_printf("arm");
 	}
+	path = malloc(3);
+	strcpy(path, arch);
 
 	return path;
 }
 
+/* get_path = "/opt/samsung_sdk/Emulator/x86" 
+* get_path = "/opt/samsung_sdk/Emulator/arm" */
+const gchar *get_abs_path(void)
+{
+	static gchar *path_buf = NULL;
+	static gchar *path;
+	char *arch = (char *)g_getenv("EMULATOR_ARCH");
+
+	const gchar *vtm_path = get_vtm_path();
+	path_buf = g_path_get_dirname(vtm_path);
+	path = malloc(strlen(path_buf) + 4);
+	if(!arch) /* for stand alone */
+	{
+		if(strcmp(g_path_get_basename(vtm_path), "emulator-x86") == 0)
+			arch = g_strdup_printf("x86");
+		else
+			arch = g_strdup_printf("arm");
+	}
+	strcpy(path, path_buf);
+	strcat(path, "/");	
+	strcat(path, arch);
+	g_free(path_buf);
+
+	return path;
+}
 
 /* get_skin_path = "/opt/samsung_sdk/simulator/skins" */
 const gchar *get_skin_path(void)
@@ -183,7 +222,7 @@ const gchar *get_skin_path(void)
 	skin_path_env = getenv("EMULATOR_SKIN_PATH");
 	if (!skin_path_env)
 	{
-		path = get_path();
+		path = get_bin_path();
 		skin_path = malloc(strlen(path) + sizeof skinsubdir);
 		if (!skin_path) {
 			fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__);
@@ -256,55 +295,81 @@ const gchar *get_conf_path(void)
 {
 	static gchar *conf_path;
 
-	if (!conf_path)
-	{
-		static const char suffix[] = "/conf";
+	static const char suffix[] = "/conf";
 
-		const gchar *path = get_path();
-		conf_path = malloc(strlen(path) + sizeof suffix);
-		assert(conf_path != NULL);
-		strcpy(conf_path, path);
-		strcat(conf_path, suffix);
-	}
+	const gchar *path = get_path();
+	conf_path = malloc(strlen(path) + sizeof suffix);
+	assert(conf_path != NULL);
+	strcpy(conf_path, path);
+	strcat(conf_path, suffix);
 
 	return conf_path;
 }
 
-/**
- * @brief 	get_emulator conf file path
- * @return	"/opt/samsung_sdk/simulator/conf/emulator.conf"
- *			=> "/root/.samsung_sdk/simulator/1/emulator.conf"
- *			=> "/home/users/.samsung_sdk/simulator/1/emulator.conf"
- * @date    July 9. 2009
- * */
-gchar *get_emulator_conf_filepath(void)
+/* get_conf_path = "x86/VMs" */
+const gchar *get_vms_path(void)
 {
-	gchar *emulator_conf_filepath = NULL;
-	emulator_conf_filepath = calloc(1, 512);
-	if(NULL == emulator_conf_filepath) {
+	static gchar *vms_path;
+
+	static const char suffix[] = "/VMs";
+
+	const gchar *path = get_path();
+	vms_path = malloc(strlen(path) + sizeof suffix);
+	assert(vms_path != NULL);
+	strcpy(vms_path, path);
+	strcat(vms_path, suffix);
+
+	return vms_path;
+}
+
+/* get_conf_abs_path = "~/samsung_sdk/Emulator/conf" */
+const gchar *get_conf_abs_path(void)
+{
+	static gchar *conf_path;
+
+	static const char suffix[] = "/conf";
+
+	const gchar *path = get_abs_path();
+	conf_path = malloc(strlen(path) + sizeof suffix);
+	assert(conf_path != NULL);
+	strcpy(conf_path, path);
+	strcat(conf_path, suffix);
+
+	return conf_path;
+}
+
+/* get_vms_abs_path = "~/samsung_sdk/Emulator/x86/VMs" */
+const gchar *get_vms_abs_path(void)
+{
+	static gchar *vms_path;
+
+	static const char suffix[] = "/VMs";
+
+	const gchar *path = get_abs_path();
+	vms_path = malloc(strlen(path) + sizeof suffix);
+	assert(vms_path != NULL);
+	strcpy(vms_path, path);
+	strcat(vms_path, suffix);
+
+	return vms_path;
+}
+
+/* get_targetlist_filepath	"x86/conf/targetlist.ini" */
+gchar *get_targetlist_filepath(void)
+{
+	gchar *targetlist_filepath = NULL;
+	targetlist_filepath = calloc(1, 512);
+	if(NULL == targetlist_filepath) {
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 	
 	const gchar *conf_path = get_conf_path();
-	sprintf(emulator_conf_filepath, "%s/emulator.conf", conf_path);
+	sprintf(targetlist_filepath, "%s/targetlist.ini", conf_path);
 
-	return emulator_conf_filepath;
+	return targetlist_filepath;
 }
 
-gchar *get_target_list_filepath(void)
-{
-	gchar *target_list_filepath = NULL;
-	target_list_filepath = calloc(1,512);
-	if(NULL == target_list_filepath) {
-		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
-	}
-
-	const gchar *conf_path = get_conf_path();
-	sprintf(target_list_filepath, "%s/targetlist.ini", conf_path);
-
-	return target_list_filepath;
-}
-
+/* get_virtual_target_path	"x86/VMs/virtual_target_name/" */
 gchar *get_virtual_target_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_path = NULL;
@@ -314,12 +379,43 @@ gchar *get_virtual_target_path(gchar *virtual_target_name)
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 
-	const gchar *conf_path = get_conf_path();
+	const gchar *conf_path = get_vms_path();
 	sprintf(virtual_target_path, "%s/%s/", conf_path, virtual_target_name);
 
 	return virtual_target_path;
 }
 
+/* get_virtual_target_abs_path	"~/samsung-sdk/Emulator/x86/VMs/virtual_target_name/" */
+gchar *get_virtual_target_abs_path(gchar *virtual_target_name)
+{
+	gchar *virtual_target_path = NULL;
+	virtual_target_path = calloc(1,512);
+
+	if(NULL == virtual_target_path) {
+		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
+	}
+
+	const gchar *conf_path = get_vms_abs_path();
+	sprintf(virtual_target_path, "%s/%s/", conf_path, virtual_target_name);
+
+	return virtual_target_path;
+}
+
+gchar *get_virtual_target_log_path(gchar *virtual_target_name)
+{
+	gchar *virtual_target_log_path = NULL;
+	virtual_target_log_path = calloc(1,512);
+
+	if(NULL == virtual_target_log_path) {
+		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
+	}
+
+	const gchar *vms_path = get_vms_abs_path();
+	sprintf(virtual_target_log_path, "%s/%s/logs", vms_path, virtual_target_name);
+
+	return virtual_target_log_path;
+
+}
 int check_port(const char *ip_address, int port)
 {
 	struct sockaddr_in address;

@@ -35,6 +35,10 @@
  */
 
 #include "gpsnew.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, gpsnew);
 
 GtkWidget *scroll_window;
 GtkTextBuffer *text_buffer;

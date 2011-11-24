@@ -37,6 +37,11 @@
 #include "compass.h"
 //#define DEBUG
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, compass);
+
 int compass_update(uint8_t x, uint8_t y, uint8_t z, uint8_t temp);
 
 static void menu_compass_apply(GtkWidget* widget, gpointer user_data)
@@ -145,8 +150,9 @@ void menu_create_compass(GtkWidget* parent)
 
 	gchar icon_image[128] = {0, };
 	const gchar *skin = get_skin_path();	
-	if (skin == NULL) 
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+	if (skin == NULL){
+		WARN("getting icon image path is failed!!\n");
+	}
 
 	sprintf(icon_image, "%s/icons/15_COMPASS.png", skin);	
 	

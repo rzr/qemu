@@ -1,6 +1,6 @@
 prefix = @prefix@
 
-PHONE_DIR=Emulator 
+PHONE_DIR=Emulator
 
 all:
 	cd src && $(MAKE)
@@ -12,8 +12,8 @@ install:
 	mkdir -p $(PHONE_DIR)
 	cd src && $(MAKE) install
 	cp -dpr ./skins $(PHONE_DIR)
-	cp -dpr ./data $(PHONE_DIR)
-	cp -dpr ./conf $(PHONE_DIR)
+	cp -dpr ./data $(PHONE_DIR)/x86
+	cp -dpr ./conf $(PHONE_DIR)/x86
 
 distclean: clean
 	cd ../ && $(MAKE) distclean

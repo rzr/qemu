@@ -44,7 +44,11 @@
 #include <unistd.h>
 #include <assert.h>
 #include "dbi_parser.h"
-#include "logmsg.h"
+
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, dbi_parser);
 
 
 static int  rotate_keycode[4];
@@ -57,17 +61,17 @@ static int  rotate_keycode[4];
 static void print_parse_info(void)
 {
 	int i,j;
-	log_msg(MSGL_DEBUG," PHONE.mode_cnt =%d \n",PHONE.mode_cnt );
+	TRACE(" PHONE.mode_cnt =%d \n",PHONE.mode_cnt );
 
 	for( i=0;i< PHONE.mode_cnt ; i ++) {
 		for(j=0;j < PHONE.mode[i].lcd_list_cnt ; j ++ ) {
-			log_msg(MSGL_DEBUG," PHONE.mode[%d].lcd_list[%d].id =%d \n",i,j,PHONE.mode[i].lcd_list[j].id);
-			log_msg(MSGL_DEBUG," PHONE.mode[%d].lcd_list[%d].bitsperpixel =%d \n",i,j,PHONE.mode[i].lcd_list[j].bitsperpixel);
-			log_msg(MSGL_DEBUG," PHONE.mode[%d].lcd_list[%d].nonstd =%d \n",i,j,PHONE.mode[i].lcd_list[j].nonstd);
-			log_msg(MSGL_DEBUG," PHONE.mode[%d].lcd_list[%d].lcd_region.x =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.x);
-			log_msg(MSGL_DEBUG," PHONE.mode[%d].lcd_list[%d].lcd_region.y =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.y);
-			log_msg(MSGL_DEBUG," PHONE.mode[%d].lcd_list[%d].lcd_region.w =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.w);
-			log_msg(MSGL_DEBUG," PHONE.mode[%d].lcd_list[%d].lcd_region.h =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.h);
+			TRACE(" PHONE.mode[%d].lcd_list[%d].id =%d \n",i,j,PHONE.mode[i].lcd_list[j].id);
+			TRACE(" PHONE.mode[%d].lcd_list[%d].bitsperpixel =%d \n",i,j,PHONE.mode[i].lcd_list[j].bitsperpixel);
+			TRACE(" PHONE.mode[%d].lcd_list[%d].nonstd =%d \n",i,j,PHONE.mode[i].lcd_list[j].nonstd);
+			TRACE(" PHONE.mode[%d].lcd_list[%d].lcd_region.x =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.x);
+			TRACE(" PHONE.mode[%d].lcd_list[%d].lcd_region.y =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.y);
+			TRACE(" PHONE.mode[%d].lcd_list[%d].lcd_region.w =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.w);
+			TRACE(" PHONE.mode[%d].lcd_list[%d].lcd_region.h =%d \n",i,j,PHONE.mode[i].lcd_list[j].lcd_region.h);
 		}
 	}
 
@@ -120,7 +124,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 					pSrc_Buf = (char *) xmlNodeGetContent(image_node);
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
-					log_msg(MSGL_DEBUG," main_image = %s \n", pDes_Buf);
+					TRACE(" main_image = %s \n", pDes_Buf);
 
 					ml->image_list.main_image = pDes_Buf;
 				}
@@ -129,7 +133,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 					pSrc_Buf = (char *) xmlNodeGetContent(image_node);
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
-					log_msg(MSGL_DEBUG, " keypressed_image = %s \n", pDes_Buf);
+					TRACE( " keypressed_image = %s \n", pDes_Buf);
 					ml->image_list.keypressed_image = pDes_Buf;
 				}
 
@@ -137,7 +141,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 					pSrc_Buf = (char *) xmlNodeGetContent(image_node);
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
-					log_msg(MSGL_DEBUG, " led_main_image = %s \n", pDes_Buf);
+					TRACE( " led_main_image = %s \n", pDes_Buf);
 					ml->image_list.led_main_image = pDes_Buf;
 				}
 
@@ -145,7 +149,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 					pSrc_Buf = (char *) xmlNodeGetContent(image_node);
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
-					log_msg(MSGL_DEBUG, " led_keypressed_image = %s \n", pDes_Buf);
+					TRACE( " led_keypressed_image = %s \n", pDes_Buf);
 					ml->image_list.led_keypressed_image = pDes_Buf;
 				}
 				/* To identify dual display split area image(middle bar) */
@@ -154,7 +158,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 					pSrc_Buf = (char *) xmlNodeGetContent(image_node);
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
-					log_msg(MSGL_DEBUG, " ^^^^^^^^^^^^^^^^^^^^^^^^ = %s \n", pDes_Buf);
+					TRACE( " ^^^^^^^^^^^^^^^^^^^^^^^^ = %s \n", pDes_Buf);
 					ml->image_list.splitted_area_image = pDes_Buf;
 				}
 			}
@@ -354,7 +358,7 @@ int parse_dbi_file(const gchar * filename, PHONEMODELINFO * pDeviceData)
 	char *pSrc_Buf;
 
 	if (filename == NULL || strlen(filename) == 0 || pDeviceData == NULL) {
-		log_msg(MSGL_WARN, "Please input skin path (%s)\n", filename);
+		WARN( "Please input skin path (%s)\n", filename);
 		return -1;
 	}
 
@@ -367,11 +371,11 @@ int parse_dbi_file(const gchar * filename, PHONEMODELINFO * pDeviceData)
 	doc = xmlParseFile(filename);
 
 	if (doc == NULL) {
-		log_msg(MSGL_WARN, "can't parse file %s\n", filename);
+		WARN( "can't parse file %s\n", filename);
 		return -1;
 	}
 	// XML root
-	log_msg(MSGL_WARN, "start to parse file %s\n", filename);
+	WARN( "start to parse file %s\n", filename);
 
 	xmlNode *root = NULL;
 	root = xmlDocGetRootElement(doc);

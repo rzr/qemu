@@ -38,6 +38,11 @@
 #include "utils.h"
 #include <pthread.h>
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, qemu_gtk_widget);
+
 #ifndef _WIN32
 //extern void opengl_exec_set_parent_window(Display* _dpy, Window _parent_window);
 #endif
@@ -85,7 +90,7 @@ static void* run_qemu_update(void* arg)
 
 static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
 {
-	//log_msg(MSGL_DBG2, "qemu_ds_update\n");
+	//TRACE("qemu_ds_update\n");
 	/* call sdl update */
 #ifdef SDL_THREAD
 
@@ -102,12 +107,12 @@ static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
 
 static void qemu_ds_resize(DisplayState *ds)
 {
-	log_msg(MSGL_DEBUG, "%d, %d\n",
+	TRACE( "%d, %d\n",
 			ds_get_width(qemu_state->ds),
 			ds_get_height(qemu_state->ds));
 
 	if (ds_get_width(qemu_state->ds) == 720 && ds_get_height(qemu_state->ds) == 400) {
-		log_msg(MSGL_DEBUG, "blanking BIOS\n");
+		TRACE( "blanking BIOS\n");
 		qemu_state->surface_qemu = NULL;
 		return;
 	}
@@ -128,7 +133,7 @@ static void qemu_ds_resize(DisplayState *ds)
 	pthread_mutex_unlock(&sdl_mutex);
 
 	if (!qemu_state->surface_qemu) {
-		log_msg(MSGL_ERROR, "Unable to set the RGBSurface: %s", SDL_GetError() );
+		ERR( "Unable to set the RGBSurface: %s", SDL_GetError() );
 		return;
 	}
 
@@ -182,19 +187,19 @@ static void qemu_widget_class_init(gpointer g_class, gpointer class_data)
 	widget_class->size_allocate = qemu_widget_size_allocate;
 	widget_class->expose_event = qemu_widget_expose;
 
-	log_msg(MSGL_DEBUG, "qemu class init\n");
+	TRACE( "qemu class init\n");
 }
 
 
 static void qemu_widget_init(GTypeInstance *instance, gpointer g_class)
 {
-	log_msg(MSGL_DEBUG, "qemu initialize\n");
+	TRACE( "qemu initialize\n");
 }
 
 
 void qemu_display_init (DisplayState *ds)
 {
-	log_msg(MSGL_WARN, "qemu_display_init\n");
+	WARN( "qemu_display_init\n");
 	/*  graphics context information */
 	DisplayChangeListener *dcl;
 
@@ -219,9 +224,9 @@ void qemu_display_init (DisplayState *ds)
 	if(sdl_thread_initialized == 0 ){
 		sdl_thread_initialized = 1;
 		pthread_t thread_id;
-		log_msg(MSGL_DEBUG, "sdl update thread create \n");
+		TRACE( "sdl update thread create \n");
 		if (pthread_create(&thread_id, NULL, run_qemu_update, NULL) != 0) {
-			log_msg(MSGL_ERROR, "pthread_create fail \n");
+			ERR( "pthread_create fail \n");
 			return;
 		}
 	}
@@ -261,7 +266,7 @@ gint qemu_widget_new (GtkWidget **widget)
 	else
 		qemu_widget_size (qemu_state, qemu_state->width, qemu_state->height);
 
-	log_msg(MSGL_DEBUG, "qemu widget size is width = %d, height = %d\n",
+	TRACE( "qemu widget size is width = %d, height = %d\n",
 			qemu_state->width, qemu_state->height);
 
 	*widget = GTK_WIDGET (qemu_state);
@@ -282,7 +287,7 @@ void qemu_widget_size (qemu_state_t *qemu_state, gint width, gint height)
 
 	gtk_widget_queue_resize (GTK_WIDGET (qemu_state));
 
-	log_msg(MSGL_INFO, "qemu_qemu_state size if width = %d, height = %d\n", width, height);
+	TRACE("qemu_qemu_state size if width = %d, height = %d\n", width, height);
 
 	sdl_display_set_rotation((8 - UISTATE.current_mode)%4);
 	sdl_display_set_window_size(width, height);
@@ -336,7 +341,7 @@ static void qemu_widget_realize (GtkWidget *widget)
 	qemu_sdl_init(GTK_QEMU(widget));
 	pthread_mutex_unlock(&sdl_mutex);
 
-	log_msg(MSGL_DEBUG, "qemu realize success\n");
+	TRACE( "qemu realize success\n");
 }
 
 
@@ -362,7 +367,7 @@ static void qemu_widget_size_allocate (GtkWidget *widget, GtkAllocation *allocat
 					allocation->width, allocation->height);
 		}
 
-	log_msg(MSGL_DEBUG, "qemu_state size allocated\n");
+	TRACE( "qemu_state size allocated\n");
 }
 
 
@@ -388,7 +393,7 @@ static void qemu_sdl_init(qemu_state_t *qemu_state)
 	g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
 
 	if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0 ) {
-		log_msg(MSGL_ERROR, "unable to init SDL: %s", SDL_GetError() );
+		ERR( "unable to init SDL: %s", SDL_GetError() );
 		exit(1);
 	}
 
@@ -413,7 +418,7 @@ gint qemu_widget_expose (GtkWidget *widget, GdkEventExpose *event)
 	g_return_val_if_fail (GTK_IS_QEMU (widget), FALSE);
 	g_return_val_if_fail (event != NULL, FALSE);
 
-	log_msg(MSGL_DBG2, "qemu_expose\n");
+	TRACE("qemu_expose\n");
 	widget_exposed++;
 
 	return FALSE;
@@ -439,6 +444,12 @@ static void qemu_update (qemu_state_t *qemu_state)
 		SDL_BlitSurface(qemu_state->surface_qemu, NULL, qemu_state->surface_screen, NULL);
 	else
 	{
+		// work-around to remove afterimage on black color in Window and Ubuntu 11.10
+		if( qemu_state->surface_qemu ) {
+			// set color key 'magenta'
+			qemu_state->surface_qemu->format->colorkey = 0xFF00FF;
+		}
+
 		SDL_Surface *down_screen;
 		down_screen = rotozoomSurface(qemu_state->surface_qemu,
 				(UISTATE.current_mode %4) * 90, 1 / qemu_state->scale, SMOOTHING_ON);

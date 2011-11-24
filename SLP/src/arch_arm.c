@@ -35,13 +35,17 @@
  */
 
 #include "emulator.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, arch_arm);
 
 extern int sensor_update(uint16_t x, uint16_t y, uint16_t z);
 
 // fake sensor_update
 int sensor_update(uint16_t x, uint16_t y, uint16_t z)
 {
-	log_msg(MSGL_DEBUG, "x(%d), y(%d), z(%d) \n", x, y, z);
+	TRACE( "x(%d), y(%d), z(%d) \n", x, y, z);
 	return 0;
 }
 

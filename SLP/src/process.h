@@ -50,7 +50,6 @@ extern "C" {
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
-#include "logmsg.h"
 
 int write_pidfile(const char *filename);
 int remove_pidfile(const char *filename);

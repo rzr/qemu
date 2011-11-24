@@ -36,6 +36,10 @@
 
 
 #include "menu.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, menu);
 
 /**
   * @brief  create popup advanced menu
@@ -56,8 +60,9 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	int i, j = 0;
 
 	skin_path = get_skin_path();
-	if (skin_path == NULL)
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+	if (skin_path == NULL){
+		WARN("getting icon image path is failed!!\n");
+	}
 
 	/* 3. advanced */
 
@@ -264,8 +269,9 @@ static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconf
 	const gchar *skin_path;
 
 	skin_path = get_skin_path();
-	if (skin_path == NULL)
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+	if (skin_path == NULL){
+		WARN("getting icon image path is failed!!\n");
+	}
 
 
 	Item = gtk_image_menu_item_new_with_label(_("Properties"));
@@ -332,8 +338,9 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 	*pMenu = gtk_menu_new();
 
 	skin_path = get_skin_path();
-	if (skin_path == NULL)
-		log_msg (MSGL_WARN, "getting icon image path is failed!!\n");
+	if (skin_path == NULL){
+		WARN("getting icon image path is failed!!\n");
+	}
 
 	/* 2. shell menu */
         if(configuration.enable_shell){

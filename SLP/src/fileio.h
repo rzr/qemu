@@ -54,15 +54,20 @@
 #include "defines.h"
 
 int is_exist_file(gchar *filepath);
-const gchar *get_emulator_path(void);
+const gchar *get_vtm_path(void);
 const gchar *get_bin_path(void);
 const gchar *get_path(void);
+const gchar *get_abs_path(void);
 const gchar *get_skin_path(void);
 const gchar *get_data_path(void);
 const gchar *get_conf_path(void);
-gchar *get_emulator_conf_filepath(void);
-gchar *get_target_list_filepath(void);
+const gchar *get_vms_path(void);
+const gchar *get_vms_abs_path(void);
+const gchar *get_conf_abs_path(void);
+gchar *get_targetlist_filepath(void);
 gchar *get_virtual_target_path(gchar *virtual_target_name);
+gchar *get_virtual_target_abs_path(gchar *virtual_target_name);
+gchar *get_virtual_target_log_path(gchar *virtual_target_name);
 #ifdef _WIN32	
 gchar *change_path_to_slash(gchar *org_path);
 gchar *change_path_from_slash(gchar *org_path);

@@ -60,7 +60,6 @@
 #include <errno.h>
 #include <utils.h>
 
-#include "logmsg.h"
 //#include "ui_imageid.h"
 #include "extern.h"
 

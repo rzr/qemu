@@ -51,6 +51,11 @@
 
 #include "utils.h"
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, utils);
+
 static GHashTable *windows_hash = NULL; /* hash table to get widow and widget of Emulator */
 
 
@@ -102,13 +107,13 @@ void window_hash_destroy (void)
 void add_widget (gint window_id, gchar * widget_name, GtkWidget * widget)
 {
     if (!windows_hash) {
-		log_msg(MSGL_WARN,"Parent window not exist!\n");
+		WARN("Parent window not exist!\n");
 		return;
     }
 	
     GtkWidget *parent = get_window (window_id);
     if (!parent) {
-		log_msg(MSGL_WARN,"Parent window not exist!\n");
+		WARN("Parent window not exist!\n");
 		return;
     }
 	
@@ -128,13 +133,13 @@ GtkWidget *get_widget (gint window_id, gchar *widget_name)
 	
     parent = get_window (window_id);
     if (!parent) {
-		log_msg(MSGL_WARN, "Parent window not exist!\n");
+		WARN( "Parent window not exist!\n");
 		return NULL;
     }
 
     GtkWidget *w = (GtkWidget *) g_object_get_data (G_OBJECT (parent), widget_name);
     if (!w) {
-		log_msg(MSGL_INFO, "Widget(%s) not found!\n", widget_name);
+		INFO( "Widget(%s) not found!\n", widget_name);
 		return NULL;
     }
 	
@@ -156,7 +161,7 @@ int set_config_type(gchar *filepath, const gchar *group, const gchar *field, con
 
 	keyfile = g_key_file_new();
 	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		log_msg(MSGL_INFO, "loading key file form %s is failed.\n", filepath);
+		INFO( "loading key file form %s is failed.\n", filepath);
 		return -1;
 	}
 
@@ -191,6 +196,52 @@ int set_config_type(gchar *filepath, const gchar *group, const gchar *field, con
 
 }
 
+int del_config_key(gchar *filepath, const gchar *group, const gchar *field)
+{
+	GKeyFile *keyfile;
+	GError *error = NULL;
+	gsize length;
+
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
+		INFO( "loading key file form %s is failed.\n", filepath);
+		return -1;
+	}
+
+	if(!g_key_file_remove_key(keyfile, group, field, &error)){
+			ERR( "fail to remove remove this key");
+			return -1;
+	}
+	
+	gchar *data = g_key_file_to_data(keyfile, &length, &error);
+	if (error != NULL) {
+		g_print("in set_config_type\n");
+		g_print("%s", error->message);
+		g_clear_error(&error);
+	}
+
+	g_strstrip(data);
+	length = strlen(data);
+	g_file_set_contents(filepath, data, length, &error);
+	if (error != NULL) {
+		g_print("in set_config_value after g_file_set_contents\n");
+		g_print("%s", error->message);
+		g_clear_error(&error);
+	}
+
+#ifndef _WIN32
+	chmod(filepath, S_IRWXU | S_IRWXG | S_IRWXO);
+#else
+	chmod(filepath, S_IRWXU);
+#endif
+
+	g_free(data);
+	g_key_file_free(keyfile);
+
+	return 0;
+
+}
+
 
 /**
  * @brief 	set config value in emulator.conf file
@@ -206,7 +257,7 @@ int set_config_value(gchar *filepath, const gchar *group, const gchar *field, co
 
 	keyfile = g_key_file_new();
 	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		log_msg(MSGL_WARN, "loading key file form %s is failed.\n", filepath);
+		WARN( "loading key file form %s is failed.\n", filepath);
 		return -1;
 	}
 
@@ -256,7 +307,7 @@ int get_config_type(gchar *filepath, const gchar *group, const gchar *field)
 	keyfile = g_key_file_new();
 
 	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		log_msg( MSGL_ERROR, "loading key file from %s is failed\n", filepath );
+		ERR("loading key file from %s is failed\n", filepath );
 		return -1;
 	}
 
@@ -282,7 +333,7 @@ char *get_config_value(gchar *filepath, const gchar *group, const gchar *field)
 	keyfile = g_key_file_new();
 
 	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		log_msg( MSGL_ERROR, "loading key file form %s is failed\n", filepath );
+		ERR("loading key file form %s is failed\n", filepath );
 		return NULL;
 	}
 

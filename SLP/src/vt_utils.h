@@ -46,8 +46,7 @@
 #include "fileio.h"
 
 gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num);
-
 int is_valid_target_list_file(SYSINFO *pSYSTEMINFO);
-
+void escapeStr(const char* str, char* dst);
 
 #endif

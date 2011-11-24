@@ -42,6 +42,12 @@
 #endif
 #include <assert.h>
 
+#include "fileio.h"
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(slp);
+MULTI_DEBUG_CHANNEL(slp, process);
+
 #define	SHELL	"/bin/sh"
 
 struct pid_list {
@@ -210,7 +216,7 @@ int write_pidfile(const char *filename)
 	}
 
 	if ((fd = open(pidfname, O_RDWR | O_CREAT, 0666)) < 0) {
-		log_msg(MSGL_ERROR, "%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
+		ERR( "%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
 		return -1;
 	}
 
@@ -253,7 +259,7 @@ int remove_pidfile(const char *filename)
 	}
 
 	if (remove (pidfname) < 0) {
-		log_msg(MSGL_ERROR, "Can't remove pid file. (%s)\n", pidfname);
+		ERR( "Can't remove pid file. (%s)\n", pidfname);
 	}
 
 	return 0;

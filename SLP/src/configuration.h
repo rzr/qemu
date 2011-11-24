@@ -87,9 +87,9 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 
 int is_valid_target(const gchar *path);
 int is_valid_skin(gchar *file);
-int is_valid_emulator_conf_file(void);
+int is_valid_targetlist_file(void);
 
-int load_emulator_config_file(SYSINFO *pSYSTEMINFO);
+int load_targetlistig_file(SYSINFO *pSYSTEMINFO);
 int load_config_file(SYSINFO *pSYSTEMINFO);
 int determine_skin(VIRTUALTARGETINFO *pvirtual_target_info, CONFIGURATION *pconfiguration);
 

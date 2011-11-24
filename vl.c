@@ -168,6 +168,11 @@ int main(int argc, char **argv)
 #include "ui/qemu-spice.h"
 #include "sdb.h"
 
+#include "debug_ch.h"
+
+//DEFAULT_DEBUG_CHANNEL(qemu);
+MULTI_DEBUG_CHANNEL(qemu, main);
+
 //#define DEBUG_NET
 //#define DEBUG_SLIRP
 
