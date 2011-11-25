@@ -187,6 +187,7 @@ static int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 static void *create_fw_rota_init(void *arg)
 {
 	int s;
+	int tries = 0;
 	char fw_buf[64] = {0};
 	char recv_buf[8] = {0};
 	char send_buf[32] = {0};
@@ -195,8 +196,14 @@ static void *create_fw_rota_init(void *arg)
 	{
 		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
 		if (s < 0) {
-			ERR( "can't create socket to talk to the SDB server \n");
-			continue;
+
+			ERR("[%d] can't create socket to talk to the SDB server \n", ++tries);
+			usleep(1000000);
+
+			if(tries > 9)
+				break;
+			else
+				continue;
 		}
 
 		memset(fw_buf, 0, sizeof(fw_buf));
