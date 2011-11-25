@@ -834,12 +834,12 @@ static int virtio_balloon_init_pci(PCIDevice *pci_dev)
 	return 0;
 }
 
-static int virtio_ex_init_pci(PCIDevice *pci_dev)
+static int virtio_gpi_init_pci(PCIDevice *pci_dev)
 {
 	VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
 	VirtIODevice *vdev;
 
-	vdev = virtio_ex_init(&pci_dev->qdev);
+	vdev = virtio_gpi_init(&pci_dev->qdev);
 	virtio_init_pci(proxy, vdev,
 			PCI_VENDOR_ID_REDHAT_QUMRANET,
 			PCI_DEVICE_ID_VIRTIO_EXAMPLE,
@@ -931,10 +931,10 @@ static PCIDeviceInfo virtio_info[] = {
 			},
 			.qdev.reset = virtio_pci_reset,
 	},{
-		.qdev.name = "virtio-ex-pci",
-			.qdev.alias = "virtio-example",
+		.qdev.name = "virtio-gpi-pci",
+			.qdev.alias = "virtio-gpi",
 			.qdev.size = sizeof(VirtIOPCIProxy),
-			.init      = virtio_ex_init_pci,
+			.init      = virtio_gpi_init_pci,
 			.exit      = virtio_exit_pci,
 			.qdev.props = (Property[]) {
 				DEFINE_VIRTIO_COMMON_FEATURES(VirtIOPCIProxy, host_features),

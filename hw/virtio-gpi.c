@@ -1,5 +1,5 @@
 /* 
- * Qemu virtio example 
+ * Qemu virtio general purpose 
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved 
  *
@@ -20,31 +20,32 @@
 #include "qemu-log.h"
 #include <sys/time.h>
 
-/* fixme: move to virtio-ex.h */
-#define VIRTIO_ID_EX 10
+/* fixme: move to virtio-gpi.h */
+#define VIRTIO_ID_GPI 20
 
 /* Enable debug messages. */
-#define VIRTIO_EX_DEBUG
+#define VIRTIO_GPI_DEBUG
 
-#if defined(VIRTIO_EX_DEBUG)
+#if defined(VIRTIO_GPI_DEBUG)
 #define logout(fmt, ...) \
-	fprintf(stdout, "[virtio][%s][%d]" fmt, __func__, __LINE__, ##__VA_ARGS__)
+	fprintf(stderr, "[virt_gpi][%s][%d]" fmt, __func__, __LINE__, ##__VA_ARGS__)
 #else
 #define logout(fmt, ...) ((void)0)
 #endif
 
 
-typedef struct VirtIOEX
+typedef struct VirtIOGPI
 {
 	VirtIODevice vdev;
 	VirtQueue *vq;
-} VirtIOEX;
+} VirtIOGPI;
 
 #define SIZE_OUT_HEADER (4*3)
 #define SIZE_IN_HEADER 4
 
 static int log_dump(char *buffer, int size)
 {
+#if defined(VIRTIO_GPI_DEBUG)
 	int i;
 	unsigned char *ptr = (unsigned char*)buffer;
 
@@ -62,11 +63,13 @@ static int log_dump(char *buffer, int size)
 			break;
 		}
 	}
+
 	logout("DATA END  -------------- \n");
+#endif
 	return 0;
 }
 
-static void virtio_ex_handle(VirtIODevice *vdev, VirtQueue *vq)
+static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
 	VirtQueueElement elem;
 
@@ -99,24 +102,24 @@ static void virtio_ex_handle(VirtIODevice *vdev, VirtQueue *vq)
 	}
 }
 
-static uint32_t virtio_ex_get_features(VirtIODevice *vdev, uint32_t f)
+static uint32_t virtio_gpi_get_features(VirtIODevice *vdev, uint32_t f)
 {
 	logout("\n");
 	return 0;
 }
 
-static void virtio_ex_save(QEMUFile *f, void *opaque)
+static void virtio_gpi_save(QEMUFile *f, void *opaque)
 {
-	VirtIOEX *s = opaque;
+	VirtIOGPI *s = opaque;
 
 	logout("\n");
 
 	virtio_save(&s->vdev, f);
 }
 
-static int virtio_ex_load(QEMUFile *f, void *opaque, int version_id)
+static int virtio_gpi_load(QEMUFile *f, void *opaque, int version_id)
 {
-	VirtIOEX *s = opaque;
+	VirtIOGPI *s = opaque;
 	logout("\n");
 
 	if (version_id != 1)
@@ -126,23 +129,23 @@ static int virtio_ex_load(QEMUFile *f, void *opaque, int version_id)
 	return 0;
 }
 
-VirtIODevice *virtio_ex_init(DeviceState *dev)
+VirtIODevice *virtio_gpi_init(DeviceState *dev)
 {
-	VirtIOEX *s = NULL;
+	VirtIOGPI *s = NULL;
 
 	logout("\n");
 
-	s = (VirtIOEX *)virtio_common_init("virtio-ex",
-			VIRTIO_ID_EX,
-			0, sizeof(VirtIOEX));
+	s = (VirtIOGPI *)virtio_common_init("virtio-gpi",
+			VIRTIO_ID_GPI,
+			0, sizeof(VirtIOGPI));
 	if (!s)
 		return NULL;
 
-	s->vdev.get_features = virtio_ex_get_features;
+	s->vdev.get_features = virtio_gpi_get_features;
 
-	s->vq = virtio_add_queue(&s->vdev, 128, virtio_ex_handle);
+	s->vq = virtio_add_queue(&s->vdev, 128, virtio_gpi_handle);
 
-	register_savevm(dev, "virtio-ex", -1, 1, virtio_ex_save, virtio_ex_load, s);
+	register_savevm(dev, "virtio-gpi", -1, 1, virtio_gpi_save, virtio_gpi_load, s);
 
 	return &s->vdev;
 }
