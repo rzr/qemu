@@ -54,12 +54,12 @@ static int log_dump(char *buffer, int size)
 
 	for(i=0; i < size; i++)
 	{
-		fprintf(stdout, " %02x ", ptr[i]);
+		fprintf(stderr, " %02x ", ptr[i]);
 		if(i!=0 && (i+1)%64 == 0) {
-			fprintf(stdout, "\n");
+			fprintf(stderr, "\n");
 		}
 		if(ptr[i] == 0x00){
-			fprintf(stdout, "\n");
+			fprintf(stderr, "\n");
 			break;
 		}
 	}
@@ -82,7 +82,7 @@ static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 		logout("elem.out_sg[0].iov_len(%d) elem.in_sg[0].iov_len(%d) \n"
 				, elem.out_sg[0].iov_len, elem.in_sg[0].iov_len);
 
-		buffer = malloc(elem.out_sg[0].iov_len);
+		buffer = qemu_mallocz(elem.out_sg[0].iov_len);
 		ptr = buffer;
 		memcpy(ptr, (char *)elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
 
@@ -95,7 +95,7 @@ static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 
 		ret = elem.in_sg[0].iov_len;
 
-		free(buffer);
+		qemu_free(buffer);
 
 		virtqueue_push(vq, &elem, ret);
 		virtio_notify(vdev, vq);
