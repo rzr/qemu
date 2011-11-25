@@ -1,6 +1,6 @@
 PKG_NAME=emulator
 PKG_VERSION=$1
-PKG_DESC="Samsung Linux Platform Emulator"
+PKG_DESC="Tizen Emulator"
 PKG_INSTALL=install
 PKG_REMOVE=remove
 PKG_OS=`uname`
