@@ -530,6 +530,11 @@ static int startup_option_parser(int *argc, char ***argv)
 	gboolean version = FALSE;
 	GOptionContext *context = NULL;
 	GError *error = NULL;
+    char timeinfo[256] = { 0, };
+    struct tm *tm_time;
+    struct timeval tval;
+	char string[MAXBUF];
+	FILE *fp = NULL;
 	//int status = 0;
 	//char *name, *path;
 	char *info_file;
@@ -557,18 +562,31 @@ static int startup_option_parser(int *argc, char ***argv)
 		fprintf(stderr, "%s: option parsing failed\n", (*argv)[0]);
 		exit (1);
 	}
-	
+
+	/* 3. starting info */
+	gettimeofday(&tval, NULL);
+	tm_time = localtime(&(tval.tv_sec));
+	strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
+	INFO("=========INFO START========\n");
+	INFO("Date: %s\n", timeinfo);
+	INFO("Version : %s(%s)  Build date: %s\n", build_version, build_git, build_date);
+
 	char *virtual_target_path = get_virtual_target_path(startup_option.vtm);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+	if( (fp = fopen(info_file, "r")) == NULL )
+	{
+		ERR("can't open %s", info_file);
+		exit(1);
+	}
+
+	while(fgets(string, MAXBUF, fp)!=NULL)
+		INFO("%s", string);
+	dbg_printf("\n");
+	INFO("=========INFO END========\n");
+
+	fclose(fp);	
 	free(virtual_target_path);
 	free(info_file);
-
-	/* 3. when parsed version option */
-
-	if (version) {
-		printf("\n\nVersion : %s (%s)  Build date: %s\n", build_version, build_git, build_date);
-		exit(0);
-	}
 
 	if (startup_option.target && !startup_option.disk) {
 		/* parse target option */
@@ -745,10 +763,11 @@ static void emul_prepare_process(void)
  * @date     Apr 22. 2009
  * */
 
-int main (int argc, char** argv)
+int main(int argc, char** argv)
 {
-	int r;
 	//int sensor_port = SENSOR_PORT;
+    int i, r;
+
 
 	pthread_t thread_gtk_id;
 
@@ -763,7 +782,12 @@ int main (int argc, char** argv)
 		ERR( "option parsed and pass to qemu option error!!\n");
 		return -1;
 	}
-
+	INFO("Arguments : ");
+	for(i=0; i<g_qemu_arglist.argc; i++){
+		dbg_printf_nonewline("%s ", g_qemu_arglist.argv[i]);
+	}
+	dbg_printf("\n");
+	
 	/* 4. signal handler */
 
 	register_sig_handler();
@@ -801,6 +825,7 @@ int main (int argc, char** argv)
 #ifndef	_WIN32
 	emul_prepare_process();
 #endif
+	
 	qemu_main(g_qemu_arglist.argc, g_qemu_arglist.argv, NULL);
 
 	return 0;
