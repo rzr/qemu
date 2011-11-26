@@ -116,26 +116,26 @@ static PCIDeviceInfo vga_info = {
     .romfile      = "vgabios-stdvga.bin",
 };
 
-int pci_slp_vga_init(PCIBus *bus)
+int pci_tizen_vga_init(PCIBus *bus)
 {
-    pci_create_simple(bus, -1, "SLP_VGA");
+    pci_create_simple(bus, -1, "TIZEN_VGA");
     return 0;
 }
 
-static PCIDeviceInfo slp_vga_info = {
-    .qdev.name    = "SLP_VGA",
+static PCIDeviceInfo tizen_vga_info = {
+    .qdev.name    = "TIZEN_VGA",
     .qdev.size    = sizeof(PCIVGAState),
     .qdev.vmsd    = &vmstate_vga_pci,
     .no_hotplug   = 1,
     .init         = pci_vga_initfn,
     .config_write = pci_vga_write_config,
-    .romfile      = "vgabios-slpvga.bin",
+    .romfile      = "vgabios-tizenvga.bin",
 };
 
 static void vga_register(void)
 {
     pci_qdev_register(&vga_info);
 // by caramis...
-    pci_qdev_register(&slp_vga_info);
+    pci_qdev_register(&tizen_vga_info);
 }
 device_init(vga_register);

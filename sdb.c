@@ -16,7 +16,7 @@
 #include "nbd.h"
 #include "debug_ch.h"
 
-static int SLP_base_port = 0;
+static int tizen_base_port = 0;
 //DEFAULT_DEBUG_CHANNEL(qemu);
 MULTI_DEBUG_CHANNEL(qemu, sdb);
 
@@ -238,7 +238,7 @@ int get_sdb_base_port(void)
 	int   success   = 0;
 	u_int port = 26100;
 
-	if(SLP_base_port == 0){
+	if(tizen_base_port == 0){
 
 		for ( ; tries > 0; tries--, port += 10 ) {
 			if(check_port_bind_listen(port+1) < 0 )
@@ -253,11 +253,11 @@ int get_sdb_base_port(void)
 			exit(1);
 		}
 
-		SLP_base_port = port;
-		INFO( "sdb port is %d \n", SLP_base_port);
+		tizen_base_port = port;
+		INFO( "sdb port is %d \n", tizen_base_port);
 	}
 
-	return SLP_base_port;
+	return tizen_base_port;
 }
 
 void sdb_setup(void)
@@ -291,14 +291,14 @@ void sdb_setup(void)
 		exit(1);
 	}
 
-	if( SLP_base_port != port ){
+	if( tizen_base_port != port ){
 		ERR( "sdb port is miss match. Aborting\n" );
 		exit(1);
 	}
 
 	/* Save base port. */
-	SLP_base_port = port;
-	INFO( "Port(%d/tcp) listen for SDB \n", SLP_base_port + 1);
+	tizen_base_port = port;
+	INFO( "Port(%d/tcp) listen for SDB \n", tizen_base_port + 1);
 
 	/* send a simple message to the SDB host server to tell it we just started.
 	 * it should be listening on port 26099. if we can't reach it, don't bother

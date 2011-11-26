@@ -1,7 +1,0 @@
-Package: emulator
-Version: 1.1.104
-Maintainer: Yeong-Kyoon, Lee <yeongkyoon.lee@samsung.com> Dong-Kyun, Yun <dk77.yun@samsung.com>
-Description: Tizen Emulator
-Install-script: install
-Remove-script: remove
-Category: SDK/Emulator

@@ -1072,9 +1072,9 @@ void pc_vga_init(PCIBus *pci_bus)
         } else {
             isa_vga_init();
         }
-    } else if (slp_vga_enabled) { // by caramis...
+    } else if (tizen_vga_enabled) { // by caramis...
         if (pci_bus) {
-            pci_slp_vga_init(pci_bus);
+            pci_tizen_vga_init(pci_bus);
             pci_overlay_init(pci_bus);
             pci_brightness_init(pci_bus);
         } else {
