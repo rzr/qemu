@@ -1630,7 +1630,9 @@ extern uint16_t overlay1_height;
 extern uint8_t* overlay_ptr;	// pointer in qemu space
 
 /* brightness level :              0,   1,   2,   3,   4,   5,   6,   7,   8,   9 */
-static const uint8_t brightness_tbl[] = {20, 100, 120, 140, 160, 180, 200, 220, 230, 240};
+//static const uint8_t brightness_tbl[] = {20, 100, 120, 140, 160, 180, 200, 220, 230, 240};
+static const uint8_t brightness_tbl[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
+										130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240};
 extern uint32_t brightness_level;
 #endif
 
@@ -1866,7 +1868,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 }
             }
             
-            if (brightness_level < 10) {
+            if (brightness_level < 24) {
                 dst_sub = s->ds->surface->data + addr;
                 dst = (uint32_t*)(s->ds->surface->data + addr);
 
