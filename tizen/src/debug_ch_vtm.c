@@ -270,10 +270,7 @@ static void debug_init(void)
 	strcat(logfile, "/vtm.log");
 
 	if(access(logfile, F_OK | R_OK) == 0)
-	{
-		if(remove(logfile) == 0)
-			fprintf(stdout, "origianl (%s) is removed\n", logfile);
-	}
+		remove(logfile) == 0
 }
 
 /* allocate some tmp string space */
