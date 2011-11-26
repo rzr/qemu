@@ -27,7 +27,7 @@
 #define BRIGHTNESS_REG_SIZE			256
 
 #define BRIGHTNESS_MIN				(0)
-#define BRIGHTNESS_MAX				(10)
+#define BRIGHTNESS_MAX				(24)
 
 typedef struct BrightnessState {
     PCIDevice dev;
@@ -44,7 +44,7 @@ enum {
 };
 
 //uint8_t* brightness_ptr;	// pointer in qemu space
-uint32_t brightness_level = 10;
+uint32_t brightness_level = 24;
 
 //#define DEBUG_BRIGHTNESS
 
