@@ -46,10 +46,13 @@ typedef struct VirtIOGPI
 static int log_dump(char *buffer, int size)
 {
 #if defined(VIRTIO_GPI_DEBUG)
+
+	logout("buffer[%p] size[%d] \n", buffer, size);
+
+#if 0
 	int i;
 	unsigned char *ptr = (unsigned char*)buffer;
 
-	logout("buffer[%p] size[%d] \n", buffer, size);
 	logout("DATA BEGIN -------------- \n");
 
 	for(i=0; i < size; i++)
@@ -66,6 +69,8 @@ static int log_dump(char *buffer, int size)
 
 	logout("DATA END  -------------- \n");
 #endif
+
+#endif
 	return 0;
 }
 
@@ -78,6 +83,8 @@ static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 	while(virtqueue_pop(vq, &elem)) {
 		int ret = 0;
 		char *buffer, *ptr;
+
+		logout("FIXME: Need to iterate elem.out_sg[i] & elem.in_sg[i]\n");
 
 		logout("elem.out_sg[0].iov_len(%d) elem.in_sg[0].iov_len(%d) \n"
 				, elem.out_sg[0].iov_len, elem.in_sg[0].iov_len);
@@ -133,7 +140,7 @@ VirtIODevice *virtio_gpi_init(DeviceState *dev)
 {
 	VirtIOGPI *s = NULL;
 
-	logout("\n");
+	logout("initialize \n");
 
 	s = (VirtIOGPI *)virtio_common_init("virtio-gpi",
 			VIRTIO_ID_GPI,
