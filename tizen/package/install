@@ -72,5 +72,5 @@ Exec=$vtm_exepath
 END
 
 ## Register .desktop file
-xdg-desktop-menu install $MENU_DIRECTORY $vtm_desktopfile
+xdg-desktop-menu install $MENU_DIRECTORY_PATH $vtm_desktopfile
 ### END Register Menu ###
