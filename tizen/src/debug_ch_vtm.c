@@ -270,7 +270,7 @@ static void debug_init(void)
 	strcat(logfile, "/vtm.log");
 
 	if(access(logfile, F_OK | R_OK) == 0)
-		remove(logfile) == 0
+		remove(logfile);
 }
 
 /* allocate some tmp string space */
