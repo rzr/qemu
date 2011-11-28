@@ -22,7 +22,7 @@
 
 void qemu_av_register_all (void);
 
-int qemu_avcodec_open (void);
+int qemu_avcodec_open (void *opaque);
 
 int qemu_avcodec_close (void);
 
@@ -30,7 +30,7 @@ void qemu_avcodec_alloc_context (void);
 
 void qemu_avcodec_alloc_frame (void);
 
-void qemu_av_free (void);
+void qemu_av_free (void* opaque);
 
 void qemu_avcodec_get_context_defaults (void);
 
@@ -40,15 +40,15 @@ int qemu_avcodec_default_get_buffer (void);
 
 void qemu_avcodec_default_release_buffer (void);
 
-int qemu_avcodec_decode_video (void);
+int qemu_avcodec_decode_video (void *opaque);
 
 // int qemu_avcodec_decode_audio (void);
 
-int qemu_avcodec_encode_video (void);
+int qemu_avcodec_encode_video (void *opaque);
 
 // int qemu_avcodec_encode_audio (void);
 
-void qemu_av_picture_copy (void);
+void qemu_av_picture_copy (void *opaque);
 
 void qemu_av_parser_init (void);
 
