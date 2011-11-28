@@ -1338,6 +1338,7 @@ void setup_create_frame(void)
 
 void setup_modify_frame(char *target_name)
 {
+	setup_modify_buttontype_frame(target_name);
 	setup_modify_resolution_frame(target_name);
 	setup_modify_sdcard_frame(target_name);
 	setup_modify_ram_frame(target_name);
@@ -1478,6 +1479,28 @@ void setup_buttontype_frame(void)
 	g_signal_connect(GTK_RADIO_BUTTON(radiobutton10), "toggled", G_CALLBACK(buttontype_select_cb), NULL);
 	g_signal_connect(GTK_RADIO_BUTTON(radiobutton11), "toggled", G_CALLBACK(buttontype_select_cb), NULL);
 
+}
+
+void setup_modify_buttontype_frame(char *target_name)
+{
+	int button_type;
+	GtkWidget *radiobutton10 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton10");
+	GtkWidget *radiobutton11 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton11");
+
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton10), TRUE);
+
+	g_signal_connect(GTK_RADIO_BUTTON(radiobutton10), "toggled", G_CALLBACK(buttontype_select_cb), NULL);
+	g_signal_connect(GTK_RADIO_BUTTON(radiobutton11), "toggled", G_CALLBACK(buttontype_select_cb), NULL);
+
+	button_type = get_config_type(g_info_file, HARDWARE_GROUP, BUTTON_TYPE_KEY);
+
+	if(button_type == 1)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton10), TRUE);
+	else
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton11), TRUE);
+
+	virtual_target_info.button_type = button_type;
+	INFO( "button_type : %d\n", button_type);
 }
 
 void setup_resolution_frame(void)

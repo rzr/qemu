@@ -87,6 +87,7 @@ void setup_modify_button(char *target_name);
 void setup_modify_resolution_frame(char *target_name);
 void setup_modify_sdcard_frame(char *target_name);
 void setup_modify_ram_frame(char *target_name);
+void setup_modify_buttontype_frame(char *target_name);
 void modify_ok_clicked_cb(GtkWidget *widget, gpointer selection);
 
 void show_create_window(void);
