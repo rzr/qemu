@@ -1,5 +1,7 @@
-simulator-arm
-simulator-x86
+emulator-arm
+emulator-x86
+vtm
 about_version.c
+Emulator/
 .*.d
 *~

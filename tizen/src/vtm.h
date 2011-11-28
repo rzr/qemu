@@ -66,6 +66,7 @@ void exit_vtm(void);
 void create_window_deleted_cb(void);
 
 void resolution_select_cb(GtkWidget *widget, gpointer data);
+void buttontype_select_cb(void);
 void sdcard_size_select_cb(void);
 void set_sdcard_create_active_cb(void);
 void set_sdcard_select_active_cb(void);
@@ -77,6 +78,7 @@ void ok_clicked_cb(void);
 void setup_create_frame(void);
 void setup_create_button(void);
 void setup_resolution_frame(void);
+void setup_buttontype_frame(void);
 void setup_sdcard_frame(void);
 void setup_ram_frame(void);
 
