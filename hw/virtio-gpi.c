@@ -27,26 +27,12 @@
 #define VIRTIO_GPI_DEBUG
 
 #if defined(VIRTIO_GPI_DEBUG)
+
 #define logout(fmt, ...) \
 	fprintf(stderr, "[virt_gpi][%s][%d]" fmt, __func__, __LINE__, ##__VA_ARGS__)
-#else
-#define logout(fmt, ...) ((void)0)
-#endif
-
-
-typedef struct VirtIOGPI
-{
-	VirtIODevice vdev;
-	VirtQueue *vq;
-} VirtIOGPI;
-
-#define SIZE_OUT_HEADER (4*3)
-#define SIZE_IN_HEADER 4
 
 static int log_dump(char *buffer, int size)
 {
-#if defined(VIRTIO_GPI_DEBUG)
-
 	logout("buffer[%p] size[%d] \n", buffer, size);
 
 #if 0
@@ -61,57 +47,115 @@ static int log_dump(char *buffer, int size)
 		if(i!=0 && (i+1)%64 == 0) {
 			fprintf(stderr, "\n");
 		}
-		if(ptr[i] == 0x00){
-			fprintf(stderr, "\n");
-			break;
-		}
 	}
 
+	fprintf(stderr, "\n");
 	logout("DATA END  -------------- \n");
-#endif
-
 #endif
 	return 0;
 }
 
+#else
+#define logout(fmt, ...) ((void)0)
+#define log_dump(fmt, ...) ((void)0)
+#endif
+
+#define SIZE_OUT_HEADER (4*3)
+#define SIZE_IN_HEADER 4
+
+typedef struct VirtIOGPI
+{
+	VirtIODevice vdev;
+	VirtQueue *vq;
+} VirtIOGPI;
+
 static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
+	int i, ret = 0;
+	int pid, length, r_length;
+	char *buffer = NULL;
+	char *r_buffer = NULL;
+	char *ptr = NULL;
+	int  *i_buffer = NULL;
+
 	VirtQueueElement elem;
 
-	logout("\n");
+	while(virtqueue_pop(vq, &elem)) 
+	{
+		pid =  ((int*)elem.out_sg[0].iov_base)[0];
+		length = ((int*)elem.out_sg[0].iov_base)[1];
+		r_length = ((int*)elem.out_sg[0].iov_base)[2];
 
-	while(virtqueue_pop(vq, &elem)) {
-		int ret = 0;
-		char *buffer, *ptr;
+		logout("pid(%d) length(%d) r_length(%d) \n", pid, length, r_length);
 
-		logout("FIXME: Need to iterate elem.out_sg[i] & elem.in_sg[i]\n");
+		if(length < SIZE_OUT_HEADER || r_length < SIZE_IN_HEADER)
+			goto done;
 
-		logout("elem.out_sg[0].iov_len(%d) elem.in_sg[0].iov_len(%d) \n"
-				, elem.out_sg[0].iov_len, elem.in_sg[0].iov_len);
+		/* alloc */
+		buffer = qemu_mallocz(length);
+		r_buffer = qemu_mallocz(r_length);
 
-		buffer = qemu_mallocz(elem.out_sg[0].iov_len);
+		i_buffer = (int*)buffer;
+
+		/* get whole data */
+		i = 0;
 		ptr = buffer;
-		memcpy(ptr, (char *)elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
+		while(length){
+			int next = length;
+			if(next > elem.out_sg[i].iov_len)
+				next = elem.out_sg[i].iov_len;
+			memcpy(ptr, (char *)elem.out_sg[i].iov_base, next);
+			ptr += next;
+			ret += next;
+			i++;
+			length -= next;
+		}
+		log_dump(buffer, ((int*)elem.out_sg[0].iov_base)[1]);
 
-		log_dump(buffer, elem.out_sg[0].iov_len);
 		/* procedure */
+#if 0
+		*(int*)r_buffer = decode_call_int(i_buffer[0], /* pid */
+				buffer + SIZE_OUT_HEADER, /* command_buffer */
+				i_buffer[1] - SIZE_OUT_HEADER, /* cmd buffer length */
+				r_buffer + SIZE_IN_HEADER);    /* return buffer */
+#else
+		/* test: ping-pong */
+		memcpy(r_buffer, buffer, r_length);
+#endif
 
-		/* ping pong */
-		ptr = buffer;
-		memcpy((char *)elem.in_sg[0].iov_base, ptr, elem.in_sg[0].iov_len);
+		log_dump(r_buffer, r_length);
 
-		ret = elem.in_sg[0].iov_len;
+		if(r_length)
+			ret = r_length;
 
+		/* put whole data */
+		i = 0;
+		ptr = r_buffer;
+		while(r_length) {
+			int next = r_length;
+			if(next > elem.in_sg[i].iov_len)
+				next = elem.in_sg[i].iov_len;
+			memcpy(elem.in_sg[i].iov_base, ptr, next);
+			ptr += next;
+			r_length -= next;
+			i++;
+		}
+
+		/* free */
 		qemu_free(buffer);
+		qemu_free(r_buffer);
 
+done:
 		virtqueue_push(vq, &elem, ret);
 		virtio_notify(vdev, vq);
 	}
+
+	return;
 }
 
 static uint32_t virtio_gpi_get_features(VirtIODevice *vdev, uint32_t f)
 {
-	logout("\n");
+	logout("%x \n", f);
 	return 0;
 }
 
