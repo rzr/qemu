@@ -235,6 +235,11 @@ obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
 obj-i386-y += svibe.o
 ##########################################################
 
+##########################################################
+# general purpose interface for i386 
+obj-i386-y += helper_gpi.o
+##########################################################
+
 
 
 # shared objects

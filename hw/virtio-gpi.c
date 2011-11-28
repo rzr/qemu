@@ -20,48 +20,42 @@
 #include "qemu-log.h"
 #include <sys/time.h>
 
+#include "debug_ch.h"
+MULTI_DEBUG_CHANNEL(qemu, gpi);
+
 /* fixme: move to virtio-gpi.h */
 #define VIRTIO_ID_GPI 20
 
 /* Enable debug messages. */
-#define VIRTIO_GPI_DEBUG
+//#define VIRTIO_GPI_DEBUG
 
 #if defined(VIRTIO_GPI_DEBUG)
 
-#define logout(fmt, ...) \
-	fprintf(stderr, "[virt_gpi][%s][%d]" fmt, __func__, __LINE__, ##__VA_ARGS__)
-
 static int log_dump(char *buffer, int size)
 {
-	logout("buffer[%p] size[%d] \n", buffer, size);
+	TRACE("buffer[%p] size[%d] \n", buffer, size);
 
-#if 0
 	int i;
 	unsigned char *ptr = (unsigned char*)buffer;
 
-	logout("DATA BEGIN -------------- \n");
+	TRACE("DATA BEGIN -------------- \n");
 
 	for(i=0; i < size; i++)
 	{
-		fprintf(stderr, " %02x ", ptr[i]);
-		if(i!=0 && (i+1)%64 == 0) {
-			fprintf(stderr, "\n");
-		}
+		TRACE("[%d] %02x(%c) ",i,  ptr[i], ptr[i]);
 	}
 
-	fprintf(stderr, "\n");
-	logout("DATA END  -------------- \n");
-#endif
+	TRACE("DATA END  -------------- \n");
 	return 0;
 }
 
 #else
-#define logout(fmt, ...) ((void)0)
 #define log_dump(fmt, ...) ((void)0)
 #endif
 
-#define SIZE_OUT_HEADER (4*3)
-#define SIZE_IN_HEADER 4
+int call_gpi(int pid, int call_num, char *in_args, int args_len, char *r_buffer, int r_length);
+
+#define SIZE_GPI_HEADER (4*4)
 
 typedef struct VirtIOGPI
 {
@@ -72,7 +66,7 @@ typedef struct VirtIOGPI
 static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
 	int i, ret = 0;
-	int pid, length, r_length;
+	int pid, length, r_length, ftn_num;
 	char *buffer = NULL;
 	char *r_buffer = NULL;
 	char *ptr = NULL;
@@ -82,14 +76,18 @@ static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 
 	while(virtqueue_pop(vq, &elem)) 
 	{
-		pid =  ((int*)elem.out_sg[0].iov_base)[0];
-		length = ((int*)elem.out_sg[0].iov_base)[1];
-		r_length = ((int*)elem.out_sg[0].iov_base)[2];
+		pid			= ((int*)elem.out_sg[0].iov_base)[0];
+		length		= ((int*)elem.out_sg[0].iov_base)[1];
+		r_length	= ((int*)elem.out_sg[0].iov_base)[2];
+		ftn_num		= ((int*)elem.out_sg[0].iov_base)[3];
 
-		logout("pid(%d) length(%d) r_length(%d) \n", pid, length, r_length);
+		TRACE("pid(%d) length(%d) r_length(%d) ftn num(%d) \n"
+				, pid, length, r_length, ftn_num);
 
-		if(length < SIZE_OUT_HEADER || r_length < SIZE_IN_HEADER)
+		if(length < SIZE_GPI_HEADER){
+			ERR("wrong protocal \n");
 			goto done;
+		}
 
 		/* alloc */
 		buffer = qemu_mallocz(length);
@@ -113,15 +111,12 @@ static void virtio_gpi_handle(VirtIODevice *vdev, VirtQueue *vq)
 		log_dump(buffer, ((int*)elem.out_sg[0].iov_base)[1]);
 
 		/* procedure */
-#if 0
-		*(int*)r_buffer = decode_call_int(i_buffer[0], /* pid */
-				buffer + SIZE_OUT_HEADER, /* command_buffer */
-				i_buffer[1] - SIZE_OUT_HEADER, /* cmd buffer length */
-				r_buffer + SIZE_IN_HEADER);    /* return buffer */
-#else
-		/* test: ping-pong */
-		memcpy(r_buffer, buffer, r_length);
-#endif
+		call_gpi(i_buffer[0],					/* pid */
+				ftn_num,						/* call function number */
+				buffer + SIZE_GPI_HEADER,		/* command_buffer */
+				i_buffer[1] - SIZE_GPI_HEADER,	/* cmd buffer length */
+				r_buffer, 						/* return buffer length */
+				r_length);						/* return buffer */
 
 		log_dump(r_buffer, r_length);
 
@@ -155,7 +150,7 @@ done:
 
 static uint32_t virtio_gpi_get_features(VirtIODevice *vdev, uint32_t f)
 {
-	logout("%x \n", f);
+	TRACE("virtio gpi get features: %x \n", f);
 	return 0;
 }
 
@@ -163,7 +158,7 @@ static void virtio_gpi_save(QEMUFile *f, void *opaque)
 {
 	VirtIOGPI *s = opaque;
 
-	logout("\n");
+	TRACE("virtio gpi save \n");
 
 	virtio_save(&s->vdev, f);
 }
@@ -171,7 +166,7 @@ static void virtio_gpi_save(QEMUFile *f, void *opaque)
 static int virtio_gpi_load(QEMUFile *f, void *opaque, int version_id)
 {
 	VirtIOGPI *s = opaque;
-	logout("\n");
+	TRACE("virtio gpi load \n");
 
 	if (version_id != 1)
 		return -EINVAL;
@@ -184,7 +179,7 @@ VirtIODevice *virtio_gpi_init(DeviceState *dev)
 {
 	VirtIOGPI *s = NULL;
 
-	logout("initialize \n");
+	TRACE("initialize \n");
 
 	s = (VirtIOGPI *)virtio_common_init("virtio-gpi",
 			VIRTIO_ID_GPI,
