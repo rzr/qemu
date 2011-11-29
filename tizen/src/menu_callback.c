@@ -206,14 +206,14 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 #ifdef __MINGW32__
 	WSADATA wsadata;
 	if(WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
-		printf("Error creating socket.");
+		ERR("Error creating socket.");
 		return;
 	}
 #endif
 
 	if((send_s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
-		perror("Create the socket error: ");
+		ERR("Create the socket error: ");
 		goto cleanup;
 	}
 
@@ -224,7 +224,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	servaddr.sin_port = htons(port);
 
-	ERR( "sendto data for rotation [127.0.0.1:%d/udp] \n", port);
+	INFO("sendto data for rotation [127.0.0.1:%d/udp] \n", port);
 
 	switch(nMode)
 	{
@@ -250,7 +250,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 
 	if(sendto(send_s, buf, 32, 0, (struct sockaddr *)&servaddr, send_len) <= 0)
 	{
-		perror("sendto error: ");
+		ERR("sendto data for rotation [127.0.0.1:%d/udp] fail \n", port);
 	}
 
 cleanup:
