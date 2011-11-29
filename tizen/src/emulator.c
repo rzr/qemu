@@ -330,7 +330,7 @@ void exit_emulator(void)
 
 	/* 4. shutdown qemu system */
 
-//	qemu_system_shutdown_request();
+	qemu_system_shutdown_request();
 
 	/* 5. quit main */
 
@@ -473,10 +473,9 @@ static void construct_main_window(void)
 static void* run_gtk_main(void* arg)
 {
 	/* 11. gtk main start */
-#ifndef _THREAD
 	init_sensor_server();
 	gtk_main();
-#endif
+
 	return NULL;
 }
 
@@ -646,9 +645,7 @@ static void init_emulator(int *argc, char ***argv)
 	emulator_mutex_init();
 #ifndef _WIN32
 	g_thread_init(NULL);
-#ifndef _THREAD
 	XInitThreads();
-#endif
 #endif
 
 	/* 3. gtk_init */
@@ -792,7 +789,6 @@ int main(int argc, char** argv)
 
 	register_sig_handler();
 
-#ifndef _THREAD
 #ifndef _WIN32
         construct_main_window();
 
@@ -807,10 +803,6 @@ int main(int argc, char** argv)
                 ERR( "error creating gtk_id thread!!\n");
                 return -1;
         }
-#endif
-#else /* NON-THREAD */
-        construct_main_window();
-        run_gtk_main(NULL);
 #endif
 
 #ifdef ENABLE_OPENGL_SERVER
