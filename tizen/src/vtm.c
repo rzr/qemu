@@ -47,7 +47,7 @@ MULTI_DEBUG_CHANNEL(tizen, vtm);
 #define SDCARD_SIZE_1024	"1024"
 #define SDCARD_SIZE_1536	"1536"
 #define SDCARD_DEFAULT_SIZE		1
-# define VT_NAME_MAXBUF		20
+# define VT_NAME_MAXBUF		21
 #define RAM_SIZE_512	"512"
 #define RAM_SIZE_768	"768"
 #define RAM_SIZE_1024	"1024"
@@ -147,15 +147,15 @@ void entry_changed(GtkEditable *entry, gpointer data)
 	const gchar *name = gtk_entry_get_text (GTK_ENTRY (entry));
 	char* target_name = (char*)data;
 	GtkWidget *label4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "label4");
-	gtk_label_set_text(GTK_LABEL(label4),"Please input specify name of the virtual target");
+	gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
 
 	GtkWidget *ok_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button7");
 	char* dst =  malloc(VT_NAME_MAXBUF);
 	
 	if(strlen(name) == VT_NAME_MAXBUF)
 	{
-		WARN( "Virtual target name length can not be longer than 20 characters\n");
-		gtk_label_set_text(GTK_LABEL(label4),"virtual target name length can not be longer than 20 characters");
+		WARN( "Virtual target name length can not be longer than 20 characters.\n");
+		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name length can not be longer\nthan 20 characters.");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		return ;
 	}
@@ -163,7 +163,7 @@ void entry_changed(GtkEditable *entry, gpointer data)
 	if(strcmp(name, dst) != 0)
 	{
 		WARN( "Virtual target name is invalid! Valid characters are 0-9 a-z A-Z -_\n");
-		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name is invalid! \nValid characters are 0-9 a-z A-Z -_");
+		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name is invalid!           \nValid characters are 0-9 a-z A-Z -_");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		free(dst);
 		return;
@@ -171,8 +171,8 @@ void entry_changed(GtkEditable *entry, gpointer data)
 
 	if(strcmp(name, "") == 0)
 	{
-		WARN( "Please input specify name of the virtual target\n");
-		gtk_label_set_text(GTK_LABEL(label4),"Please input specify name of the virtual target");
+		WARN( "Input specify name of the virtual target.\n");
+		gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		return;
 	}
@@ -183,8 +183,8 @@ void entry_changed(GtkEditable *entry, gpointer data)
 	{
 		if(name_collision_check() == 1)
 		{
-			WARN( "Virtual target with the same name exists! \n Please choose another name.\n");
-			gtk_label_set_text(GTK_LABEL(label4),"Virtual target with the same name exists! \nPlease choose another name.");
+			WARN( "Virtual target with the same name exists! \n Choose another name.\n");
+			gtk_label_set_text(GTK_LABEL(label4),"Virtual target with the same name exists!\nChoose another name.");
 			gtk_widget_set_sensitive(ok_button, FALSE);
 			return;
 		}
@@ -200,8 +200,8 @@ void entry_changed(GtkEditable *entry, gpointer data)
 		{
 			if(name_collision_check() == 1)
 			{
-				WARN( "Virtual target with the same name exists! \nPlease choose another name.\n");
-				gtk_label_set_text(GTK_LABEL(label4),"Virtual target with the same name exists! \nPlease choose another name.");
+				WARN( "Virtual target with the same name exists! \nChoose another name.\n");
+				gtk_label_set_text(GTK_LABEL(label4),"Virtual target with the same name exists!\nChoose another name.");
 				gtk_widget_set_sensitive(ok_button, FALSE);
 				return;
 			}
@@ -245,9 +245,10 @@ void show_modify_window(char *target_name)
 	/* setup and fill name */
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	gtk_entry_set_text(GTK_ENTRY(name_entry), target_name);
+	gtk_entry_set_max_length(GTK_ENTRY(name_entry), VT_NAME_MAXBUF); 
 
 	GtkWidget *label4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "label4");
-	gtk_label_set_text(GTK_LABEL(label4),"Please input specify name of the virtual target");
+	gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
 	g_signal_connect(G_OBJECT (name_entry), "changed",	G_CALLBACK (entry_changed),	(gpointer*)target_name);
 
 	setup_modify_frame(target_name);
@@ -1010,8 +1011,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 // no name validation check
 	if(strcmp(name, "") == 0)
 	{
-		WARN( "Please specify name of the virtual target!");
-		show_message("Warning", "Please specify name of the virtual target!");
+		WARN( "Specify name of the virtual target!");
+		show_message("Warning", "Specify name of the virtual target!");
 		return;
 	}
 	else
@@ -1028,8 +1029,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		char *vms_path = (char*)get_vms_path();
 		if(name_collision_check() == 1)
 		{
-			WARN( "Virtual target with the same name exists! Please choose another name.");
-			show_message("Warning", "Virtual target with the same name exists! Please choose another name.");
+			WARN( "Virtual target with the same name exists! Choose another name.");
+			show_message("Warning", "Virtual target with the same name exists! Choose another name.");
 			return;
 		}	
 #ifndef _WIN32
@@ -1592,8 +1593,10 @@ void show_create_window(void)
 	fill_virtual_target_info();
 
 	GtkWidget *label4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "label4");
-	gtk_label_set_text(GTK_LABEL(label4),"Please input specify name of the virtual target");
+	gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
+	gtk_entry_set_max_length(GTK_ENTRY(name_entry), VT_NAME_MAXBUF); 
+
 	g_signal_connect(G_OBJECT (name_entry), "changed",	G_CALLBACK (entry_changed),	NULL);
 
 	setup_create_frame();
