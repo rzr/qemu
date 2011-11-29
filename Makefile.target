@@ -398,7 +398,7 @@ opengl_server.o: opengl_server.c opengl_exec.c
 helper_opengl.o: gl_func.h
 
 $(TARGET_PATH)/libGL.so.1: opengl_client.c gl_func.h
-	$(CC) -I$(TARGET_PATH) -I. -Wall -g -O2 $< -shared -o $@
+	$(CC) -I$(TARGET_PATH) -I. -ldl -lpthread -Wall -g -O2 $< -shared -o $@
 endif
 
 # arm
