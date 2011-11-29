@@ -70,7 +70,7 @@ extern int sensor_update(uint16_t x, uint16_t y, uint16_t z);
 #define SENSORD_PORT		3580
 
 int sensord_initialized = 0;
-int sent_start_value = 0;
+//int sent_start_value = 0;
 
 int sensor_parser(char *buffer);
 int parse_val(char *buff, unsigned char data, char *parsbuf);
@@ -164,7 +164,7 @@ static int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 		TRACE( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
 				, get_sdb_base_port() + SDB_TCP_SENSOR_INDEX
 				, errno, strerror(errno)
-			   );
+			 );
 		return -1;
 	}   
 
@@ -184,6 +184,8 @@ static int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	return 1;
 }
 
+#if 0
+/* Not using sdb port forwarding => Using redir in sdb setup */
 static void *create_fw_rota_init(void *arg)
 {
 	int s;
@@ -250,6 +252,7 @@ static void *create_fw_rota_init(void *arg)
 
 	return NULL;
 }
+#endif
 
 gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer data)
 {
@@ -287,7 +290,10 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 		{
 			parse_result = sensor_parser(recv_buf);
 
+#if 0
+			/* Not using sdb forwarding => Using redir in sdb setup */
 			if(sent_start_value == 0) {
+
 				/* new way with sdb */
 				pthread_t taskid;
 
@@ -298,6 +304,7 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 				sent_start_value = 1;
 			}
+#endif
 
 			if(sensord_initialized)
 			{
@@ -377,7 +384,7 @@ int sensor_parser(char *buffer)
 	else if(strcmp(tmpbuf, "3\n") == 0) // packet from sensord
 	{
 		/* sensord_initialized will be initialized in create_fw_rota_init */
-		/* sensord_initialized = 1; */
+		sensord_initialized = 1;
 		return 1;
 	}
 	else if(strcmp(tmpbuf, "7\n") == 0) // keyboard on/off

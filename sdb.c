@@ -269,7 +269,7 @@ void sdb_setup(void)
 	int   port;
 	uint32_t  guest_ip;
 	const char *p;
-	char buf[30] = {0,};
+	char buf[64] = {0,};
 
 	inet_strtoip("10.0.2.16", &guest_ip);
 
@@ -285,7 +285,8 @@ void sdb_setup(void)
 		success = 1;
 		break;
 	}
-	 INFO("redirect %s \n", buf);
+
+	INFO("redirect [%s] success\n", buf);
 	if (!success) {
 		ERR( "it seems too many emulator instances are running on this machine. Aborting\n" );
 		exit(1);
@@ -300,6 +301,14 @@ void sdb_setup(void)
 	tizen_base_port = port;
 	INFO( "Port(%d/tcp) listen for SDB \n", tizen_base_port + 1);
 
+	/* for sensort */
+	sprintf(buf, "tcp:%d:10.0.2.16:3577", get_sdb_base_port() + SDB_TCP_SENSOR_INDEX );
+	if(net_slirp_redir((char*)buf) < 0){
+		ERR( "redirect [%s] fail \n", buf);
+	}else{
+		INFO("redirect [%s] success\n", buf);
+	}
+
 	/* send a simple message to the SDB host server to tell it we just started.
 	 * it should be listening on port 26099. if we can't reach it, don't bother
 	 */
@@ -309,7 +318,8 @@ void sdb_setup(void)
 
 		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
 		if (s < 0) {
-			ERR( "can't create socket to talk to the SDB server \n");
+			INFO("can't create socket to talk to the SDB server \n");
+			INFO("This emulator will be scaned by the SDB server \n");
 			break;
 		}
 
