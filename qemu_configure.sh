@@ -12,7 +12,9 @@ exec ./configure \
  --audio-card-list=es1370 \
  --enable-mixemu \
  --disable-vnc-tls \
+ --enable-tcg-x86-opt \
  --extra-ldflags="-lv4l2 -lv4lconvert"
+#    --enable-debug \
 #--enable-profiler \
 # --enable-gles2 --gles2dir=/usr
 ;;
