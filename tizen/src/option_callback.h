@@ -88,7 +88,7 @@ void no_wait_connection_cb(void);
 void serial_console_command_cb(void);
 void use_host_proxy_cb(void);
 void use_host_DNS_cb(void);
-void always_on_top_cb(void);
+void always_on_top_cb(GtkWidget *widget, gpointer data);
 void snapshot_boot_cb(void);
 void default_clicked_cb(GtkWidget *widget, gpointer entry);
 

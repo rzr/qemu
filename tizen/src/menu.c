@@ -45,7 +45,6 @@ MULTI_DEBUG_CHANNEL(tizen, menu);
   * @brief  create popup advanced menu
   * @return void
   */
-
 static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION *pconfiguration)
 {
 	GtkWidget *Item = NULL;
@@ -79,6 +78,18 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
 	SubMenuItem = gtk_menu_new();
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(Item), SubMenuItem);
+
+	menu_item = gtk_check_menu_item_new_with_label(_("Always On Top"));
+	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
+	g_signal_connect(menu_item, "toggled", G_CALLBACK(always_on_top_cb), menu_item);
+
+	int always_on_top = get_config_type(SYSTEMINFO.virtual_target_info_file, COMMON_GROUP, ALWAYS_ON_TOP_KEY);
+	if(always_on_top == 1)
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_item), TRUE);
+	else
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_item), FALSE);
+
+	gtk_widget_show(menu_item);
 
 	/* 3.2 event injector menu of advanced */
         if(configuration.enable_telephony_emulator){
@@ -206,7 +217,34 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 		g_signal_connect(menu_item, "activate", G_CALLBACK(menu_keyboard_callback), keyboard_menu[i]);
 		gtk_widget_show(menu_item);
 	}
-	
+	/* 3.6 USB keyboard menu */
+
+
+	/*	
+	menu_item = gtk_image_menu_item_new_with_label(_("Always On Top"));
+	sprintf(icon_image, "%s/icons/04_KEYPAD.png", skin_path);
+	image_widget = gtk_image_new_from_file (icon_image);
+
+	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
+	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item), TRUE);
+	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
+	gtk_widget_show(menu_item);
+
+	SubMenuItem1 = gtk_menu_new();
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(menu_item), SubMenuItem1);
+
+	for(i = 0; i < 2; i++)
+	{
+		menu_item = gtk_radio_menu_item_new_with_label(pGroup, keyboard_menu[i]);
+		pGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(menu_item));
+
+		gtk_container_add(GTK_CONTAINER(SubMenuItem1), menu_item);
+
+		g_signal_connect(menu_item, "activate", G_CALLBACK(always_on_top_cb), keyboard_menu[i]);
+		gtk_widget_show(menu_item);
+	}
+	*/
 	/* 3.7 event for dbi file */
 
 	if (device->event_menu_cnt > 0) {
@@ -257,7 +295,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
   * @brief  create popup properties menu
   * @return void
   */
-
+#if 0
 static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconfiguration)
 {
 
@@ -272,7 +310,6 @@ static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconf
 	if (skin_path == NULL){
 		WARN("getting icon image path is failed!!\n");
 	}
-
 
 	Item = gtk_image_menu_item_new_with_label(_("Properties"));
 	sprintf(icon_image, "%s/icons/10_PROPERTIES.png", skin_path);
@@ -303,6 +340,7 @@ static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconf
 	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
 	gtk_widget_show(menu_item);
 
+
 	/* 4.4 device info menu of properties */
 
 	menu_item = gtk_image_menu_item_new_with_label(_("Device Info"));
@@ -320,7 +358,7 @@ static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconf
 
 	gtk_widget_show(Item);
 }
-
+#endif
 
 /**
   * @brief  create popup menu
@@ -369,8 +407,21 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 	MENU_ADD_SEPARTOR(*pMenu);
 
 	/* 4. properties menu */
+	
+	Item = gtk_image_menu_item_new_with_label(_("Device Info"));
+	sprintf(icon_image, "%s/icons/12_DEVICE-INFO.png", skin_path);
+	image_widget = gtk_image_new_from_file (icon_image);
 
-	create_popup_properties_menu(pMenu, pconfiguration);
+	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
+	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+	gtk_widget_set_tooltip_text(Item, _("Show Target information like LCD Size"));
+
+	g_signal_connect(Item, "activate", G_CALLBACK(menu_device_info_callback), NULL);
+	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
+	gtk_widget_show(Item);
+
+//	create_popup_properties_menu(pMenu, pconfiguration);
 
 	/* 5. about menu */
 
