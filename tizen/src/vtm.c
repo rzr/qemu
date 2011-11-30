@@ -163,7 +163,7 @@ void entry_changed(GtkEditable *entry, gpointer data)
 	if(strcmp(name, dst) != 0)
 	{
 		WARN( "Virtual target name is invalid! Valid characters are 0-9 a-z A-Z -_\n");
-		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name is invalid!           \nValid characters are 0-9 a-z A-Z -_");
+		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name is invalid!\nValid characters are 0-9 a-z A-Z -_");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		free(dst);
 		return;
@@ -756,9 +756,14 @@ int write_config_file(gchar *filepath)
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(strcmp(arch, "x86") == 0)
 		set_config_value(filepath, QEMU_GROUP, BINARY_KEY, "emulator-x86");
-	else
+	else if(strcmp(arch, "arm") == 0)
 		set_config_value(filepath, QEMU_GROUP, BINARY_KEY, "emulator-arm");
-
+	else
+	{
+		show_message("Error", "architecture setting error\n");
+		ERR( "architecture setting error");
+		return -1;
+	}
 //	set_config_type(filepath, QEMU_GROUP, TELNET_CONSOLE_COMMAND_TYPE_KEY, 0);
 //	set_config_value(filepath, QEMU_GROUP, TELNET_CONSOLE_COMMAND_KEY, "/usr/bin/putty -telnet -P 1200 localhost");
 //	set_config_type(filepath, QEMU_GROUP, KVM_KEY, 1);
@@ -1194,7 +1199,11 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 //	create_config_file(conf_file);
 	snprintf(virtual_target_info.dpi, MAXBUF, "2070");
-	write_config_file(conf_file);
+	if(write_config_file(conf_file) == -1)
+	{
+		show_message("Error", "Virtual target modification failed!");
+		return ;
+	}
 
 	show_message("INFO", "Virtual target modification success!");
 
@@ -1314,8 +1323,11 @@ void ok_clicked_cb(void)
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
 	snprintf(virtual_target_info.dpi, MAXBUF, "2070");
-	write_config_file(conf_file);
-
+	if(write_config_file(conf_file) == -1)
+	{
+		show_message("Error", "Virtual target creation failed!");
+		return ;
+	}
 	show_message("INFO", "Virtual target creation success!");
 
 	g_free(conf_file);
