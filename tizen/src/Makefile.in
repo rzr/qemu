@@ -229,14 +229,14 @@ ifeq ($(CONFIG_WIN32),y)
 else ifeq ($(CONFIG_LINUX),y)
 #	install emulator.sh $(PHONE_DIR)/emulator
 endif
-	mkdir $(PHONE_DIR)/arm
-	mkdir $(PHONE_DIR)/x86
-	mkdir $(PHONE_DIR)/vtm_conf
-	mkdir $(PHONE_DIR)/x86/VMs
-	mkdir $(PHONE_DIR)/x86/data
-	mkdir $(PHONE_DIR)/x86/data/kernel-img
-	mkdir $(PHONE_DIR)/x86/VMs/default
-	mkdir $(PHONE_DIR)/x86/VMs/default/logs
+	mkdir -p $(PHONE_DIR)/arm
+	mkdir -p $(PHONE_DIR)/x86
+	mkdir -p $(PHONE_DIR)/vtm_conf
+	mkdir -p $(PHONE_DIR)/x86/VMs
+	mkdir -p $(PHONE_DIR)/x86/data
+	mkdir -p $(PHONE_DIR)/x86/data/kernel-img
+	mkdir -p $(PHONE_DIR)/x86/VMs/default
+	mkdir -p $(PHONE_DIR)/x86/VMs/default/logs
 	install emulator-x86 $(PHONE_DIR)/emulator-x86
 #	install emulator-arm $(PHONE_DIR)/emulator-arm
 #	install savevm.glade $(PHONE_DIR)

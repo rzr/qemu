@@ -170,10 +170,17 @@ const gchar *get_path(void)
 	path_buf = g_path_get_dirname(vtm_path);
 	if(!arch) /* for stand alone */
 	{
-		if(strcmp(g_path_get_basename(vtm_path), "emulator-x86") == 0)
+		char *binary = g_path_get_basename(vtm_path);
+		if(strcmp(binary, "emulator-x86") == 0)
 			arch = g_strdup_printf("x86");
-		else
+		else if(strcmp(binary, "emulator-arm") == 0)
 			arch = g_strdup_printf("arm");
+		else 
+		{
+			ERR( "binary setting failed\n");
+			exit(1);
+		}
+		free(binary);
 	}
 	path = malloc(3);
 	strcpy(path, arch);
@@ -194,10 +201,17 @@ const gchar *get_abs_path(void)
 	path = malloc(strlen(path_buf) + 5);
 	if(!arch) /* for stand alone */
 	{
-		if(strcmp(g_path_get_basename(vtm_path), "emulator-x86") == 0)
+		char *binary = g_path_get_basename(vtm_path);
+		if(strcmp(binary, "emulator-x86") == 0)
 			arch = g_strdup_printf("x86");
-		else
+		else if(strcmp(binary, "emulator-arm") == 0)
 			arch = g_strdup_printf("arm");
+		else 
+		{
+			ERR( "binary setting failed\n");
+			exit(1);
+		}
+		free(binary);
 	}
 	strcpy(path, path_buf);
 	strcat(path, "/");	
