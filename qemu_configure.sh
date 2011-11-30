@@ -13,6 +13,8 @@ exec ./configure \
  --enable-mixemu \
  --disable-vnc-tls \
  --extra-ldflags="-lv4l2 -lv4lconvert"
+# --enable-tcg-x86-opt \
+#    --enable-debug \
 #--enable-profiler \
 # --enable-gles2 --gles2dir=/usr
 ;;

@@ -307,4 +307,8 @@ DEF(qemu_st64, 0, 2, 1, TCG_OPF_CALL_CLOBBER | TCG_OPF_SIDE_EFFECTS)
 
 #endif /* TCG_TARGET_REG_BITS != 32 */
 
+#ifdef CONFIG_EXEC_PROFILE
+DEF(prof_tbexec, 0, 1, 0, 0)
+#endif  /* CONFIG_EXEC_PROFILE */
+
 #undef DEF

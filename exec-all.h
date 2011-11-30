@@ -88,7 +88,7 @@ int cpu_restore_state(struct TranslationBlock *tb,
                       void *puc);
 void cpu_resume_from_signal(CPUState *env1, void *puc);
 void cpu_io_recompile(CPUState *env, void *retaddr);
-TranslationBlock *tb_gen_code(CPUState *env, 
+TranslationBlock *tb_gen_code(CPUState *env,
                               target_ulong pc, target_ulong cs_base, int flags,
                               int cflags);
 void cpu_exec_init(CPUState *env);
@@ -158,6 +158,9 @@ struct TranslationBlock {
     struct TranslationBlock *jmp_next[2];
     struct TranslationBlock *jmp_first;
     uint32_t icount;
+#ifdef CONFIG_EXEC_PROFILE
+    uint32_t tbexec_count[2];
+#endif
 };
 
 static inline unsigned int tb_jmp_cache_hash_page(target_ulong pc)
@@ -334,6 +337,18 @@ static inline tb_page_addr_t get_page_addr_code(CPUState *env1, target_ulong add
         + env1->tlb_table[mmu_idx][page_index].addend;
     return qemu_ram_addr_from_host_nofail(p);
 }
+
+#if defined(CONFIG_TCG_TARGET_X86_OPT)
+/* extended versions of MMU helpers for x86 TCG target optimization */
+uint8_t REGPARM __ldextb_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextb_mmu(target_ulong addr, uint8_t val, int mmu_idx, void *ra);
+uint16_t REGPARM __ldextw_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextw_mmu(target_ulong addr, uint16_t val, int mmu_idx, void *ra);
+uint32_t REGPARM __ldextl_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextl_mmu(target_ulong addr, uint32_t val, int mmu_idx, void *ra);
+uint64_t REGPARM __ldextq_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextq_mmu(target_ulong addr, uint64_t val, int mmu_idx, void *ra);
+#endif  /* CONFIG_TCG_TARGET_X86_OPT */
 #endif
 
 typedef void (CPUDebugExcpHandler)(CPUState *env);

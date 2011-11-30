@@ -629,6 +629,8 @@ for opt do
   ;;
   --enable-profiler) profiler="yes"
   ;;
+  --enable-tcg-x86-opt) tcg_x86_opt="yes"
+  ;;
   --enable-cocoa)
       cocoa="yes" ;
       sdl="no" ;
@@ -2431,6 +2433,7 @@ echo "gprof enabled     $gprof"
 echo "sparse enabled    $sparse"
 echo "strip binaries    $strip_opt"
 echo "profiler          $profiler"
+echo "TCG optimization  $tcg_x86_opt"
 echo "static build      $static"
 echo "-Werror enabled   $werror"
 if test "$darwin" = "yes" ; then
@@ -2569,6 +2572,9 @@ if test "$static" = "yes" ; then
 fi
 if test $profiler = "yes" ; then
   echo "CONFIG_PROFILER=y" >> $config_host_mak
+fi
+if test $tcg_x86_opt = "yes" ; then
+  echo "CONFIG_TCG_TARGET_X86_OPT=y" >> $config_host_mak
 fi
 if test "$slirp" = "yes" ; then
   echo "CONFIG_SLIRP=y" >> $config_host_mak
