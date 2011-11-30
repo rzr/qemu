@@ -304,6 +304,8 @@ void use_host_DNS_cb(void)
 void always_on_top_cb(void)
 {
 	preference_entrys.always_on_top = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(get_widget(OPTION_ID, OPTION_ALWAYS_ON_TOP_BUTTON)));
+	set_config_type(SYSTEMINFO.virtual_target_info_file, COMMON_GROUP, ALWAYS_ON_TOP_KEY, preference_entrys.always_on_top);
+
 }
 
 
