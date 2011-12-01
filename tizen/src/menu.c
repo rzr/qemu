@@ -37,6 +37,7 @@
 
 #include "menu.h"
 #include "debug_ch.h"
+#include "sdb.h"
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, menu);
@@ -254,7 +255,11 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 		for (i = 0; i < device->event_menu_cnt; i++) {
 
 			menu_item = gtk_image_menu_item_new_with_label(device->event_menu[i].name);
-			sprintf(icon_image, "%s/icons/09_ROTATE.png", skin_path);
+			if(i == 0)
+				sprintf(icon_image, "%s/icons/09_ROTATE.png", skin_path);
+			else if (i == 1)
+				sprintf(icon_image, "%s/icons/10_PROPERTIES.png", skin_path);
+
 			image_widget = gtk_image_new_from_file (icon_image);
 
 			gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
@@ -372,13 +377,21 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 	GtkWidget *image_widget = NULL;
 	gchar icon_image[128] = {0, };
 	const gchar *skin_path;
-
+	char *emul_name = NULL;
 	*pMenu = gtk_menu_new();
 
 	skin_path = get_skin_path();
 	if (skin_path == NULL){
 		WARN("getting icon image path is failed!!\n");
 	}
+
+	emul_name = g_strdup_printf("emulator:%d", get_sdb_base_port()); 
+    Item = gtk_menu_item_new_with_label(emul_name);
+	gtk_widget_set_sensitive(Item, FALSE);
+   	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
+    gtk_widget_show(Item);
+	free(emul_name);
+	MENU_ADD_SEPARTOR(*pMenu);
 
 	/* 2. shell menu */
         if(configuration.enable_shell){
@@ -403,8 +416,6 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 	/* 3. advanced menu */
 
 	create_popup_advanced_menu(pMenu, device, pconfiguration);
-
-	MENU_ADD_SEPARTOR(*pMenu);
 
 	/* 4. properties menu */
 	
@@ -442,6 +453,9 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 	Item = gtk_image_menu_item_new_with_label(_("Close"));
 	sprintf(icon_image, "%s/icons/14_CLOSE.png", skin_path);
 	image_widget = gtk_image_new_from_file (icon_image);
+
+//	gtk_widget_add_accelerator (Item, "activate", group, GDK_C,
+//			GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
 	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
