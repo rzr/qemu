@@ -589,7 +589,6 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *disk_path = NULL;
 	char *arch = NULL;
 	char *sdcard_detail = NULL;
-	char *sdcard_detail_path = NULL;
 	char *ram_size_detail = NULL;
 	char *disk_path_detail = NULL;
 	char *sdcard_path_detail = NULL;
@@ -633,7 +632,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	if(strcmp(sdcard_type, "0") == 0)
 	{
 		sdcard_detail = g_strdup_printf("Not supported");
-		sdcard_detail_path = g_strdup_printf(" ");
+		sdcard_path_detail = g_strdup_printf(" ");
 	}
 	else
 	{
@@ -642,7 +641,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	}
 
 	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-	disk_path_detail = g_strdup_printf("%s%s", get_bin_path(), disk_path);
+	disk_path_detail = g_strdup_printf("%s/%s", get_bin_path(), disk_path);
 #ifndef _WIN32		
 	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 			target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
@@ -662,7 +661,6 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	g_free(dpi);
 	g_free(disk_path);
 	g_free(sdcard_detail);
-	g_free(sdcard_detail_path);
 	g_free(ram_size_detail);
 	g_free(disk_path_detail);
 	g_free(sdcard_path_detail);
