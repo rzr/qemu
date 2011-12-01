@@ -574,3 +574,101 @@ void menu_about_callback(GtkWidget *widget, gpointer data)
 	show_about_window(win);
 }
 
+void show_info_window(GtkWidget *widget, gpointer data)
+{
+	char *target_name;
+	char *virtual_target_path;
+	char *info_file;
+	int info_file_status;
+	int button_type;
+	char *resolution = NULL;
+	char *sdcard_type = NULL;
+	char *sdcard_path = NULL;
+	char *ram_size = NULL;
+	char *dpi = NULL;
+	char *disk_path = NULL;
+	char *arch = NULL;
+	char *sdcard_detail = NULL;
+	char *sdcard_detail_path = NULL;
+	char *ram_size_detail = NULL;
+	char *disk_path_detail = NULL;
+	char *sdcard_path_detail = NULL;
+	char *details = NULL;
+	
+	GtkWidget *win = get_window(EMULATOR_ID);
+	target_name = (char*)data;
+	virtual_target_path = get_virtual_target_path(target_name);
+	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+	//if targetlist exist but config file not exists
+	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+	{
+		ERR( "target info file not exists : %s\n", target_name);
+		return;
+	}
+	button_type= get_config_type(info_file, HARDWARE_GROUP, BUTTON_TYPE_KEY);
+	resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
+	sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
+	sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
+	ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
+	dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
+	disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+
+	arch = getenv("EMULATOR_ARCH");
+	if(!arch) /* for stand alone */
+	{
+		const gchar *vtm_path = get_vtm_path();
+		char *binary = g_path_get_basename(vtm_path);
+		if(strcmp(binary, "emulator-x86") == 0)
+			arch = g_strdup_printf("x86");
+		else if(strcmp(binary, "emulator-arm") == 0)
+			arch = g_strdup_printf("arm");
+		else 
+		{
+			ERR( "binary setting failed\n");
+			exit(1);
+		}
+		free(binary);
+	}
+
+	if(strcmp(sdcard_type, "0") == 0)
+	{
+		sdcard_detail = g_strdup_printf("Not supported");
+		sdcard_detail_path = g_strdup_printf(" ");
+	}
+	else
+	{
+		sdcard_detail = g_strdup_printf("Supported");
+		sdcard_path_detail = g_strdup_printf("%s%s", get_bin_path(), sdcard_path); 
+	}
+
+	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
+	disk_path_detail = g_strdup_printf("%s%s", get_bin_path(), disk_path);
+#ifndef _WIN32		
+	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+			target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+	show_message("Emulator details", details);
+#else /* _WIN32 */
+	gchar *details_win = NULL;
+	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+			target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+	details_win = change_path_from_slash(details);
+	show_message("Emulator details", details_win);
+	free(details_win);
+#endif
+	g_free(resolution);
+	g_free(sdcard_type);
+	g_free(sdcard_path);
+	g_free(ram_size);
+	g_free(dpi);
+	g_free(disk_path);
+	g_free(sdcard_detail);
+	g_free(sdcard_detail_path);
+	g_free(ram_size_detail);
+	g_free(disk_path_detail);
+	g_free(sdcard_path_detail);
+	g_free(details);
+	return;
+//	show_about_window(win);
+}
+
+

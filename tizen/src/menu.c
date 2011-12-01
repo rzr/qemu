@@ -38,7 +38,6 @@
 #include "menu.h"
 #include "debug_ch.h"
 #include "sdb.h"
-
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, menu);
 
@@ -385,12 +384,22 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 		WARN("getting icon image path is failed!!\n");
 	}
 
+	/* 1. emulator info menu */
 	emul_name = g_strdup_printf("emulator:%d", get_sdb_base_port()); 
-    Item = gtk_menu_item_new_with_label(emul_name);
-	gtk_widget_set_sensitive(Item, FALSE);
+    Item = gtk_image_menu_item_new_with_label(_(emul_name));
+	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin_path);
+    image_widget = gtk_image_new_from_file (icon_image);
+   	
+	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
+	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
+		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+   	gtk_widget_set_tooltip_text(Item, _("Show Emulator infomation"));
+    g_signal_connect(Item, "activate", G_CALLBACK(show_info_window), (gpointer*)startup_option.vtm);
+	
    	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
-    gtk_widget_show(Item);
+	gtk_widget_show(Item);
 	free(emul_name);
+	
 	MENU_ADD_SEPARTOR(*pMenu);
 
 	/* 2. shell menu */
