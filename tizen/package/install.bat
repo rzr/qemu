@@ -13,5 +13,5 @@ set desktop_menu_icon_path=%INSTALLED_PATH%\%icon_path%
 echo Program path : %program_path%
 echo Desktop menu icon path : %desktop_menu_icon_path%
 echo Setting shortcut...
-wscript.exe %MAKESHORTCUT_PATH% /shortcut:"%start_menu_programs_path%\Samsung Linux Platform\%vtm_shortcut_name%" /target:"%program_path%\%vtm_execute_file%" /icon:"%desktop_menu_icon_path%\%vtm_icon_file%"
+wscript.exe %MAKESHORTCUT_PATH% /shortcut:"%start_menu_programs_path%\Tizen SDK\%vtm_shortcut_name%" /target:"%program_path%\%vtm_execute_file%" /icon:"%desktop_menu_icon_path%\%vtm_icon_file%"
 echo COMPLETE
