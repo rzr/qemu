@@ -385,7 +385,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 	}
 
 	/* 1. emulator info menu */
-	emul_name = g_strdup_printf("emulator:%d", get_sdb_base_port()); 
+	emul_name = g_strdup_printf("emulator-%d", get_sdb_base_port()); 
     Item = gtk_image_menu_item_new_with_label(_(emul_name));
 	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin_path);
     image_widget = gtk_image_new_from_file (icon_image);
