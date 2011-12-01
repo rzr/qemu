@@ -7,9 +7,9 @@ desktoppath=~/.local/share/applications
 ## vtm shortcut
 vtm_desktopfile=$desktoppath/tizen-sdk-vtm.desktop
 vtm_iconfile=vtm.ico
-vtm_exefile=Emulator/vtm
-vtm_comment="Virtual target manager is a tool which can make a cloned emulator image"
-vtm_name="Virtual Target Manager"
+vtm_exefile=Emulator/emulator-manager
+vtm_comment="Emulator manager is a tool which can make a cloned emulator image"
+vtm_name="Emulator Manager"
 
 ## Do not modify the followings (Make desktop menu)
 TIZEN_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`

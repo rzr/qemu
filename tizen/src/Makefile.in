@@ -68,7 +68,7 @@ DEBUG = y
 STRIP = strip
 TARGET_X86 = emulator-x86
 TARGET_ARM = emulator-arm
-VTM = vtm
+VTM = emulator-manager
 EMUL_LIB = libemulator.a
 
 DEF += @DEF@
@@ -240,7 +240,7 @@ endif
 	install emulator-x86 $(PHONE_DIR)/emulator-x86
 #	install emulator-arm $(PHONE_DIR)/emulator-arm
 #	install savevm.glade $(PHONE_DIR)
-	install vtm $(PHONE_DIR)
+	install $(VTM) $(PHONE_DIR)
 	install vtm.glade $(PHONE_DIR)/vtm_conf
 	install config.ini $(PHONE_DIR)/x86/VMs/default
 	install DEBUGCH $(PHONE_DIR)

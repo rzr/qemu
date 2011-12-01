@@ -267,7 +267,7 @@ static void debug_init(void)
 	}
 
 	strcpy(logfile, get_bin_path());
-	strcat(logfile, "/vtm.log");
+	strcat(logfile, "/emulator-manager.log");
 
 	if(access(logfile, F_OK | R_OK) == 0)
 		remove(logfile);
