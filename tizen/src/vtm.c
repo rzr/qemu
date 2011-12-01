@@ -1650,6 +1650,8 @@ void construct_main_window(void)
 
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(x86_radiobutton), TRUE);
 
+	gtk_widget_set_sensitive(arm_radiobutton, FALSE);
+
 	g_signal_connect(GTK_RADIO_BUTTON(x86_radiobutton), "toggled", G_CALLBACK(arch_select_cb), x86_radiobutton);
 	g_signal_connect(GTK_RADIO_BUTTON(arm_radiobutton), "toggled", G_CALLBACK(arch_select_cb), arm_radiobutton);
 	gtk_box_pack_start(GTK_BOX(vbox), list_view, TRUE, TRUE, 0);
