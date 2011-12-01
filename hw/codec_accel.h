@@ -24,7 +24,7 @@ void qemu_av_register_all (void);
 
 int qemu_avcodec_open (void *opaque);
 
-int qemu_avcodec_close (void);
+int qemu_avcodec_close (void *opaque);
 
 void qemu_avcodec_alloc_context (void);
 
