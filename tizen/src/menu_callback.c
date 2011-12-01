@@ -594,11 +594,11 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *disk_path_detail = NULL;
 	char *sdcard_path_detail = NULL;
 	char *details = NULL;
-	
-	GtkWidget *win = get_window(EMULATOR_ID);
+
 	target_name = (char*)data;
 	virtual_target_path = get_virtual_target_path(target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+	info_file_status = is_exist_file(info_file);
 	//if targetlist exist but config file not exists
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
