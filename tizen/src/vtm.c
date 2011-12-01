@@ -779,7 +779,7 @@ int write_config_file(gchar *filepath)
 	set_config_value(filepath, HARDWARE_GROUP, SDCARD_PATH_KEY, virtual_target_info.sdcard_path);
     set_config_type(filepath, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
     set_config_value(filepath, HARDWARE_GROUP, DPI_KEY, virtual_target_info.dpi);
-    set_config_type(filepath, HARDWARE_GROUP, BUTTON_TYPE_KEY, virtual_target_info.button_type);
+//  set_config_type(filepath, HARDWARE_GROUP, BUTTON_TYPE_KEY, virtual_target_info.button_type);
 	set_config_value(filepath, HARDWARE_GROUP, DISK_PATH_KEY, virtual_target_info.diskimg_path);
 
 	return 0;
