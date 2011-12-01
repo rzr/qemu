@@ -439,13 +439,13 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 #ifndef _WIN32		
 		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 				target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
-		show_message("Virtual Target details", details);
+		show_message("Virtual Target Details", details);
 #else /* _WIN32 */
 		gchar *details_win = NULL;
 		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 				target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
 		details_win = change_path_from_slash(details);
-		show_message("Virtual Target details", details_win);
+		show_message("Virtual Target Details", details_win);
 		free(details_win);
 #endif
 		g_free(resolution);
@@ -744,11 +744,7 @@ int create_config_file(gchar* filepath)
 
 int write_config_file(gchar *filepath)
 {
-#ifndef _WIN32
-    set_config_type(filepath, EMULATOR_GROUP, ENABLE_SHELL_KEY, 1);
-#else
     set_config_type(filepath, EMULATOR_GROUP, ENABLE_SHELL_KEY, 0);
-#endif	
 	/*  QEMU option (09.05.26)*/
 
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
