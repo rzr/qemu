@@ -59,7 +59,6 @@ void show_message(const char *szTitle, const char *szMessage)
 	GtkWidget *label;
 	GtkWidget *button;
 	GtkWidget *dialog_window;
-	PangoFontDescription *pPangoFont = NULL;
 
 	/* create Dialog */
 	
@@ -92,11 +91,6 @@ void show_message(const char *szTitle, const char *szMessage)
 	
 	label = gtk_label_new(szMessage);
 
-	/* set Mono Space Font */
-	
-	pPangoFont = pango_font_description_from_string("Monospace 11");
-	gtk_widget_modify_font(label, pPangoFont);
-
 	/* set Padding arround Label */ 
 	
 	gtk_misc_set_padding(GTK_MISC(label), 10, 10);
@@ -118,7 +112,6 @@ gboolean show_ok_cancel_message(const char *szTitle, const char *szMessage)
 	GtkWidget *button_ok;
 	GtkWidget *button_cancel;
 	GtkWidget *dialog_window;
-	PangoFontDescription *pPangoFont = NULL;
 
 	/* create Dialog */
 	
@@ -151,11 +144,6 @@ gboolean show_ok_cancel_message(const char *szTitle, const char *szMessage)
 	/* create Label */
 	
 	label = gtk_label_new(szMessage);
-
-	/* set Mono Space Font */
-	
-	pPangoFont = pango_font_description_from_string("Monospace 11");
-	gtk_widget_modify_font(label, pPangoFont);
 
 	/* set Padding arround Label */ 
 	
