@@ -645,13 +645,13 @@ void show_info_window(GtkWidget *widget, gpointer data)
 #ifndef _WIN32		
 	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 			target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
-	show_message("Emulator details", details);
+	show_message("Emulator Details", details);
 #else /* _WIN32 */
 	gchar *details_win = NULL;
 	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 			target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
 	details_win = change_path_from_slash(details);
-	show_message("Emulator details", details_win);
+	show_message("Emulator Details", details_win);
 	free(details_win);
 #endif
 	g_free(resolution);
