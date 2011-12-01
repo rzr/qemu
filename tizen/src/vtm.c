@@ -1471,6 +1471,7 @@ void setup_create_button(void)
 	GtkWidget *ok_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button7");
 	GtkWidget *cancel_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button6");
 	
+	gtk_widget_set_sensitive(ok_button, FALSE);
 	g_signal_connect(ok_button, "clicked", G_CALLBACK(ok_clicked_cb), NULL);
 	g_signal_connect(cancel_button, "clicked", G_CALLBACK(create_window_deleted_cb), NULL);
 }
