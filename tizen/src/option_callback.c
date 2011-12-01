@@ -301,11 +301,16 @@ void use_host_DNS_cb(void)
 }
 
 
-void always_on_top_cb(void)
+void always_on_top_cb(GtkWidget *widget, gpointer data)
 {
-	preference_entrys.always_on_top = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(get_widget(OPTION_ID, OPTION_ALWAYS_ON_TOP_BUTTON)));
+	preference_entrys.always_on_top = 
+		gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(data));
 	set_config_type(SYSTEMINFO.virtual_target_info_file, COMMON_GROUP, ALWAYS_ON_TOP_KEY, preference_entrys.always_on_top);
 
+	configuration.always_on_top = preference_entrys.always_on_top;
+	GtkWidget *win = get_window(EMULATOR_ID);
+	if(win != NULL)
+		gtk_window_set_keep_above(GTK_WINDOW (win), configuration.always_on_top);
 }
 
 
