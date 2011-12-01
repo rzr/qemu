@@ -71,6 +71,7 @@ void menu_about_callback(GtkWidget *widget, gpointer data);
 
 int sort_recent_app_list(CONFIGURATION *pconfiguration);
 void do_shutdown(void);
+void show_info_window(GtkWidget *widget, gpointer data);
 
 #ifdef __cplusplus
 }
