@@ -4,21 +4,6 @@
 currentPath=`pwd`
 desktoppath=~/.local/share/applications
 
-UBUNTU_VER=`awk 'BEGIN {FS="="}; /DISTRIB_RELEASE.*/ {print $2}' /etc/lsb-release`
-case ${UBUNTU_VER} in
-	11.04)
-		categories="Tizen SDK;Development"
-		;;
-	11.10)
-		categories="Tizen SDK;Development"
-		;;
-	*)
-		categories="Tizen SDK"
-		;;
-esac
-
-
-
 ## vtm shortcut
 vtm_desktopfile=$desktoppath/tizen-sdk-vtm.desktop
 vtm_iconfile=vtm.ico
@@ -61,7 +46,7 @@ Type=Application
 Terminal=false
 Comment=$vtm_comment
 Name=$vtm_name
-Categories=$categories
+Categories=$CATEGORY
 StartupNotify=true
 NoDisplay=false
 END
