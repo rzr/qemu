@@ -1,5 +1,5 @@
 @ECHO OFF
-set vtm_shortcut_name=Virtual Target Manager
+set vtm_shortcut_name=Emulator Manager
 set execute_path=Emulator
 set vtm_execute_file=vtm.exe
 set icon_path=Emulator\skins\icons

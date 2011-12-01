@@ -40,7 +40,7 @@
 #include "debug_ch.h"
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
-MULTI_DEBUG_CHANNEL(tizen, vtm);
+MULTI_DEBUG_CHANNEL(tizen, emulmgr);
 
 #define SDCARD_SIZE_256		"256"
 #define SDCARD_SIZE_512		"512"
