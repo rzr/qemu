@@ -164,7 +164,7 @@ emulator_windows()
 
 	if test -e emulator_dll.zip
 	then
-		unzip emulator_dll.zip -d $WIN_PKG_DIR/data/Emulator/bin
+		unzip emulator_dll.zip -d $WIN_PKG_DIR/data/Emulator/
 	fi
 
 	echo ==== Copy mate files into windows package ===

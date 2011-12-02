@@ -154,7 +154,7 @@ X86_QEMU_LIBFLAGS = \
  -Wl,-whole-archive ../../i386-softmmu/libccc.a -Wl,-no-whole-archive -luuid
 
 ifeq ($(CONFIG_WIN32),y)
-    X86_QEMU_LIBFLAGS += -lopengl32 -lws2_32 -lgdi32 -lpthread -L./bin
+    X86_QEMU_LIBFLAGS += -lopengl32 -lws2_32 -lgdi32 -lpthread
 else ifeq ($(CONFIG_LINUX),y)
     X86_QEMU_LIBFLAGS += -lGL # -L/usr/lib/mesa
 endif
@@ -220,12 +220,8 @@ $(VTM) : $(OBJS_VTM)
 
 install: $(TARGET)
 ifeq ($(CONFIG_WIN32),y)
-	mkdir $(PHONE_DIR)/bin
-#	install emulator.bat $(PHONE_DIR)
-#	install emulator.vbs $(PHONE_DIR)
-#	install vtm.bat $(PHONE_DIR)
-#	install vtm.vbs $(PHONE_DIR)
-	install ../../qemu-img $(PHONE_DIR)/bin
+	mkdir $(PHONE_DIR)
+	install ../../qemu-img $(PHONE_DIR)
 else ifeq ($(CONFIG_LINUX),y)
 #	install emulator.sh $(PHONE_DIR)/emulator
 endif
