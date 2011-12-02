@@ -1634,6 +1634,7 @@ void construct_main_window(void)
 	GtkWidget *modify_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button3");
 	GtkWidget *activate_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
 	GtkWidget *details_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button5");
+	GtkWidget *refresh_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button8");
 	g_main_window = (GtkWidget *)gtk_builder_get_object(g_builder, "window1");
 	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), icon_image, NULL);
 	GtkWidget *x86_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton8");
@@ -1656,6 +1657,7 @@ void construct_main_window(void)
 	g_signal_connect(details_button, "clicked", G_CALLBACK(details_clicked_cb), selection);
 	g_signal_connect(modify_button, "clicked", G_CALLBACK(modify_clicked_cb), selection);
 	g_signal_connect(activate_button, "clicked", G_CALLBACK(activate_clicked_cb), selection);
+	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
 	
 	g_object_unref(G_OBJECT(g_builder));
