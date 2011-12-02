@@ -1,7 +1,7 @@
 @ECHO OFF
 set vtm_shortcut_name=Emulator Manager
 set execute_path=Emulator
-set vtm_execute_file=vtm.exe
+set vtm_execute_file=emulator-manager.exe
 set icon_path=Emulator\skins\icons
 set vtm_icon_file=vtm.ico
 FOR /F "tokens=2* delims=	 " %%A IN ('reg query "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v Programs') DO SET start_menu_programs_path=%%B
