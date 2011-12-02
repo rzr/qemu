@@ -446,6 +446,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		show_message("Virtual Target Details", details_win);
 		free(details_win);
 #endif
+	
 		g_free(resolution);
 		g_free(sdcard_type);
 		g_free(sdcard_path);
@@ -550,6 +551,7 @@ void refresh_clicked_cb(char *arch)
 	gchar *ram_size = NULL;
 	int info_file_status;
 	gchar *local_target_list_filepath;
+	GtkTreePath *first_col_path = NULL;
 
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 	local_target_list_filepath = get_targetlist_filepath();
@@ -583,8 +585,11 @@ void refresh_clicked_cb(char *arch)
 		g_free(virtual_target_path);
 		g_free(info_file);
 	}
+	first_col_path = gtk_tree_path_new_from_indices(0, -1);
+	gtk_tree_view_set_cursor(GTK_TREE_VIEW(list), first_col_path, NULL, 0);
+	
 	g_free(local_target_list_filepath);
-	g_strfreev(target_list);	
+	g_strfreev(target_list);
 
 }
 
@@ -831,7 +836,6 @@ GtkWidget *setup_list(void)
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sc_win), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_container_add(GTK_CONTAINER(sc_win), list);
-
 	g_object_unref( G_OBJECT(store));
 
 	return sc_win;
@@ -1642,7 +1646,7 @@ void construct_main_window(void)
 	g_signal_connect(activate_button, "clicked", G_CALLBACK(activate_clicked_cb), selection);
 	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
-	
+
 	g_object_unref(G_OBJECT(g_builder));
 	
 	/* setup emulator architecture and path */
