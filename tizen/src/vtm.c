@@ -378,7 +378,6 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *virtual_target_path;
 	char *info_file;
 	int info_file_status;
-	int button_type;
 	char *resolution = NULL;
 	char *sdcard_type = NULL;
 	char *sdcard_path = NULL;
@@ -414,7 +413,6 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 		//get info from config.ini
-		button_type= get_config_type(info_file, HARDWARE_GROUP, BUTTON_TYPE_KEY);
 		resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
 		sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
 		sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
@@ -437,13 +435,13 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
 		disk_path_detail = g_strdup_printf("%s/%s", get_bin_path(), disk_path);
 #ifndef _WIN32		
-		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-				target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
 		show_message("Virtual Target Details", details);
 #else /* _WIN32 */
 		gchar *details_win = NULL;
-		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-				target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
 		details_win = change_path_from_slash(details);
 		show_message("Virtual Target Details", details_win);
 		free(details_win);
@@ -817,34 +815,19 @@ GtkWidget *setup_list(void)
 	cell = gtk_cell_renderer_text_new();
 	
 	//set text alignment 
-#if GTK_CHECK_VERSION(2,20,0)
-	gtk_cell_renderer_set_alignment(cell,0.5,0.5);
-#endif
 	column = gtk_tree_view_column_new_with_attributes("Target name", cell, "text", TARGET_NAME, NULL);
-#if GTK_CHECK_VERSION(2,20,0)
-	gtk_tree_view_column_set_alignment(column,0.5);
-#else
 	gtk_tree_view_column_set_alignment(column,0.0);
-#endif
 	gtk_tree_view_column_set_min_width(column,130);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Ram size", cell, "text", RAM_SIZE, NULL);
-#if GTK_CHECK_VERSION(2,20,0)
-	gtk_tree_view_column_set_alignment(column,0.5);
-#else
 	gtk_tree_view_column_set_alignment(column,0.0);
-#endif
-	gtk_tree_view_column_set_min_width(column,50);
+	gtk_tree_view_column_set_min_width(column,100);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Resolution", cell, "text", RESOLUTION, NULL);
-#if GTK_CHECK_VERSION(2,20,0)
-	gtk_tree_view_column_set_alignment(column,0.5);
-#else
 	gtk_tree_view_column_set_alignment(column,0.0);
-#endif
-	gtk_tree_view_column_set_min_width(column,70);
+	gtk_tree_view_column_set_max_width(column,60);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sc_win), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_container_add(GTK_CONTAINER(sc_win), list);

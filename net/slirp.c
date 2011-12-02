@@ -413,8 +413,9 @@ static int slirp_hostfwd(SlirpState *s, const char *redir_str,
 
     if (slirp_add_hostfwd(s->slirp, is_udp, host_addr, host_port, guest_addr,
                           guest_port) < 0) {
-        error_report("could not set up host forwarding rule '%s'",
-                     redir_str);
+		// normal case with sdb & multi emulator => comment-out
+        // error_report("could not set up host forwarding rule '%s'",
+        //             redir_str);
         return -1;
     }
     return 0;
