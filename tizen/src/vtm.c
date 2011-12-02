@@ -1630,7 +1630,7 @@ void construct_main_window(void)
 	vbox = GTK_WIDGET( gtk_builder_get_object( g_builder, "vbox3" ) );
 
 	list_view = setup_list();
-
+	gtk_widget_grab_focus(activate_button);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(x86_radiobutton), TRUE);
 
 	gtk_widget_set_sensitive(arm_radiobutton, FALSE);
