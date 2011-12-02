@@ -580,7 +580,6 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *virtual_target_path;
 	char *info_file;
 	int info_file_status;
-	int button_type;
 	char *resolution = NULL;
 	char *sdcard_type = NULL;
 	char *sdcard_path = NULL;
@@ -604,7 +603,6 @@ void show_info_window(GtkWidget *widget, gpointer data)
 		ERR( "target info file not exists : %s\n", target_name);
 		return;
 	}
-	button_type= get_config_type(info_file, HARDWARE_GROUP, BUTTON_TYPE_KEY);
 	resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
 	sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
 	sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
@@ -643,13 +641,13 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
 	disk_path_detail = g_strdup_printf("%s/%s", get_bin_path(), disk_path);
 #ifndef _WIN32		
-	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-			target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
 	show_message("Emulator Details", details);
 #else /* _WIN32 */
 	gchar *details_win = NULL;
-	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nButton type: %d button(s)\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-			target_name, arch, resolution, button_type, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
+			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
 	details_win = change_path_from_slash(details);
 	show_message("Emulator Details", details_win);
 	free(details_win);
