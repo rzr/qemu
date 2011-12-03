@@ -220,7 +220,7 @@ $(VTM) : $(OBJS_VTM)
 
 install: $(TARGET)
 ifeq ($(CONFIG_WIN32),y)
-	mkdir $(PHONE_DIR)
+#	mkdir $(PHONE_DIR)
 	install ../../qemu-img $(PHONE_DIR)
 else ifeq ($(CONFIG_LINUX),y)
 #	install emulator.sh $(PHONE_DIR)/emulator
