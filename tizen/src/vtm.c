@@ -635,7 +635,7 @@ void make_default_image(void)
 		INFO( "emulimg-default.x86 not exists. is making now.\n");
 	// create emulator image
 #ifdef _WIN32
-		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 x86/VMs/default/emulimg-default.x86", get_abs_path());
+		cmd = g_strdup_printf("qemu-img.exe create -b %s/emulimg.x86 -f qcow2 x86/VMs/default/emulimg-default.x86", get_abs_path());
 #else
 		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 x86/VMs/default/emulimg-default.x86", get_abs_path());
 #endif
@@ -1278,7 +1278,7 @@ void ok_clicked_cb(void)
 	
 // create emulator image
 #ifdef _WIN32
-	cmd = g_strdup_printf("%s/bin/qemu-img create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_bin_path(), get_abs_path(),
+	cmd = g_strdup_printf("qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_abs_path(),
 			dest_path, virtual_target_info.virtual_target_name);
 #else
 	cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_abs_path(),
