@@ -223,7 +223,7 @@ gboolean handle_connection(int mode)
 			{
 #ifdef __MINGW32__
                 WSADATA wsadata;
-                if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+                if (WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
                     printf("Error creating socket.");
                     return -1;
                 }
@@ -281,7 +281,7 @@ gboolean handle_connection(int mode)
 		{
 #ifdef __MINGW32__
             WSADATA wsadata;
-            if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+            if (WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
                 printf("Error creating socket.");
                 return -1;
             }

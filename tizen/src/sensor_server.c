@@ -86,7 +86,7 @@ void *init_sensor_server(void)
 
 #ifdef __MINGW32__	
 	WSADATA wsadata;
-	if(WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+	if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
 		ERR("Error creating socket.\n");
 		return NULL;
 	}
@@ -268,7 +268,7 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 
 #ifdef __MINGW32__
 	WSADATA wsadata;
-	if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+	if (WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
 		ERR( "[%s][%d] Error creating socket  \n", __FUNCTION__, __LINE__);
 		g_io_channel_unref(channel);
 		g_io_channel_shutdown(channel, TRUE, NULL);
