@@ -227,7 +227,11 @@ static int check_port_bind_listen(u_int port)
 		INFO( "port(%d) listen  ok \n", port);
 	}
 
+#ifdef _WIN32
+	closesocket(s);
+#else
 	close(s);
+#endif
 
 	return ret;
 }
