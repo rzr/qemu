@@ -257,7 +257,6 @@ cleanup:
 #ifdef __MINGW32__
 	if(send_s)
 		closesocket(send_s);
-	WSACleanup();
 #else
 	if(send_s)
 		close(send_s);

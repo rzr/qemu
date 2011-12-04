@@ -108,7 +108,6 @@ void exit_function()
 #ifdef __MINGW32__
             if ( netport == UDP || netport == TCP ) {
                 closesocket(output);
-                WSACleanup();
             } else {
                 close(output);
             }
@@ -364,7 +363,6 @@ gboolean handle_connection(int mode)
             {
 #ifdef __MINGW32__
 			    closesocket(client_socket);
-                WSACleanup();
 #else
 			    close(client_socket);
 #endif
@@ -375,7 +373,6 @@ gboolean handle_connection(int mode)
             {
 #ifdef __MINGW32__
 			closesocket(output);
-            WSACleanup();
 #else
 			close(output);
 #endif
@@ -387,7 +384,6 @@ gboolean handle_connection(int mode)
             {
 #ifdef __MINGW32__
 			closesocket(output);
-            WSACleanup();
 #else
 			close(output);
 #endif

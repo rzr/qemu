@@ -145,7 +145,6 @@ cleanup:
 #ifdef __MINGW32__
 	if(listen_s)
 		closesocket(listen_s);
-	WSACleanup();
 #else
 	if(listen_s)
 		close(listen_s);
@@ -347,9 +346,7 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 	}
 
 clean_up:
-#ifdef __MINGW32__
-	WSACleanup();
-#endif
+
 	g_io_channel_unref(channel);
 	g_io_channel_shutdown(channel, TRUE, NULL);
 
