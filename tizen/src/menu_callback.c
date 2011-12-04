@@ -205,7 +205,7 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
 
 #ifdef __MINGW32__
 	WSADATA wsadata;
-	if(WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+	if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
 		ERR("Error creating socket.");
 		return;
 	}
