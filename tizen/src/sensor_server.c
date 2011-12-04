@@ -98,6 +98,7 @@ void *init_sensor_server(void)
 	if((listen_s = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 	{
 		ERR("Create listen socket error: ");
+        perror("socket");
 		goto cleanup;
 	}
 
@@ -110,8 +111,8 @@ void *init_sensor_server(void)
 	INFO( "bind port[127.0.0.1:%d/udp] for sensor server in host \n", port);
 	if(bind(listen_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
 	{
-		ERR( "bind fail [%d:%s] \n", errno, strerror(errno));
 		ERR("bind error: ");
+        perror("bind");
 		goto cleanup;
 	}
 
