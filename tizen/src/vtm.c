@@ -429,7 +429,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		else
 		{
 			sdcard_detail = g_strdup_printf("Supported");
-			sdcard_path_detail = g_strdup_printf("%s%s", get_bin_path(), sdcard_path); 
+			sdcard_path_detail = g_strdup_printf("%s/%s", get_bin_path(), sdcard_path); 
 		}
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
@@ -446,7 +446,6 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		show_message("Virtual Target Details", details_win);
 		free(details_win);
 #endif
-	
 		g_free(resolution);
 		g_free(sdcard_type);
 		g_free(sdcard_path);
