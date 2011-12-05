@@ -635,7 +635,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	else
 	{
 		sdcard_detail = g_strdup_printf("Supported");
-		sdcard_path_detail = g_strdup_printf("%s%s", get_bin_path(), sdcard_path); 
+		sdcard_path_detail = g_strdup_printf("%s/%s", get_bin_path(), sdcard_path); 
 	}
 
 	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
