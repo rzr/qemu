@@ -394,7 +394,7 @@ static void construct_main_window(void)
 		ERR( "getting skin path is failed!!\n");
 		exit (1);
 	}
-	sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
+	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
 
 	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
 		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
