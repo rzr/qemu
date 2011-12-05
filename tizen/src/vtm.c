@@ -147,7 +147,7 @@ void entry_changed(GtkEditable *entry, gpointer data)
 	const gchar *name = gtk_entry_get_text (GTK_ENTRY (entry));
 	char* target_name = (char*)data;
 	GtkWidget *label4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "label4");
-	gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
+	gtk_label_set_text(GTK_LABEL(label4),"Input name of the virtual target.");
 
 	GtkWidget *ok_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button7");
 	char* dst =  malloc(VT_NAME_MAXBUF);
@@ -171,8 +171,8 @@ void entry_changed(GtkEditable *entry, gpointer data)
 
 	if(strcmp(name, "") == 0)
 	{
-		WARN( "Input specify name of the virtual target.\n");
-		gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
+		WARN( "Input name of the virtual target.\n");
+		gtk_label_set_text(GTK_LABEL(label4),"Input name of the virtual target.");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		return;
 	}
@@ -248,7 +248,7 @@ void show_modify_window(char *target_name)
 	gtk_entry_set_max_length(GTK_ENTRY(name_entry), VT_NAME_MAXBUF); 
 
 	GtkWidget *label4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "label4");
-	gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
+	gtk_label_set_text(GTK_LABEL(label4),"Input name of the virtual target.");
 	g_signal_connect(G_OBJECT (name_entry), "changed",	G_CALLBACK (entry_changed),	(gpointer*)target_name);
 
 	setup_modify_frame(target_name);
@@ -1587,7 +1587,7 @@ void show_create_window(void)
 	fill_virtual_target_info();
 
 	GtkWidget *label4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "label4");
-	gtk_label_set_text(GTK_LABEL(label4),"Input specify name of the virtual target.");
+	gtk_label_set_text(GTK_LABEL(label4),"Input name of the virtual target.");
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	gtk_entry_set_max_length(GTK_ENTRY(name_entry), VT_NAME_MAXBUF); 
 

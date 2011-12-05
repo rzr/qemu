@@ -413,7 +413,7 @@
             <property name="visible">True</property>
             <child>
               <object class="GtkLabel" id="label3">
-                <property name="width_request">153</property>
+                <property name="width_request">144</property>
                 <property name="visible">True</property>
               </object>
               <packing>
@@ -424,10 +424,10 @@
             <child>
               <object class="GtkLabel" id="label4">
                 <property name="visible">True</property>
-                <property name="wrap">True</property>
-                <property name="wrap_mode">word-char</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
+                <property name="padding">4</property>
                 <property name="position">1</property>
               </packing>
             </child>
