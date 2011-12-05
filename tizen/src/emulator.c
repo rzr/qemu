@@ -370,21 +370,9 @@ static void construct_main_window(void)
 #endif
 	gtk_window_set_decorated (GTK_WINDOW (g_main_window), FALSE);
 
-	/* 2.1 emulator tastbar(ex: mirage-i686) */
+	/* 2.1 emulator taskbar name */
 
-	if(configuration.target_path != NULL && strlen(configuration.target_path) != 0)
-		name = basename(configuration.target_path);
-	else
-	{
-		if(strcmp(SYSTEMINFO.virtual_target_name, "default") == 0)
-			name = basename(configuration.qemu_configuration.diskimg_path);
-		else
-			name = basename(virtual_target_info.diskimg_path);
-	}
-
-	if (!name)
-		name = "Emulator";
-
+	name = g_strdup_printf("emulator-%d", get_sdb_base_port()); 
 	gtk_window_set_title (GTK_WINDOW (g_main_window), name);
 
 	/* 2.2 emulator taskbar icon image */
