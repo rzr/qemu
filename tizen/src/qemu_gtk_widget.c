@@ -39,6 +39,7 @@
 #include <pthread.h>
 
 #include "debug_ch.h"
+#include "../ui/sdl_rotate.h"
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, qemu_gtk_widget);

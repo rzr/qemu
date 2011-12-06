@@ -1,10 +1,10 @@
 /*
-
-SDL_rotozoom.c - rotozoomer, zoomer and shrinker for 32bit or 8bit surfaces
-
-LGPL (c) A. Schiffler
-
-*/
+ * Derived from: SDL_rotozoom,  LGPL (c) A. Schiffler from the SDL_gfx library.
+ * Modifications by S-Core Co., Ltd
+ *
+ * This work is licensed under the terms of the GNU GPL version 2.
+ * See the COPYING file in the top-level directory.
+ */
 
 #ifdef WIN32
 #include <windows.h>
@@ -15,8 +15,7 @@ LGPL (c) A. Schiffler
 
 #include "sdl_rotate.h"
 
-#if 0
-#include "SDL_rotozoom.h"
+#if 1
 
 /* ---- Internally used structures */
 
@@ -894,7 +893,7 @@ SDL_Surface* rotateSurface90Degrees(SDL_Surface* src, int numClockwiseTurns)
 }
 
 
-#if 0
+#if 1
 /*!
 \brief Internal target surface sizing function for rotozooms with trig result return.
 
