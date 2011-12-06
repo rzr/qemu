@@ -67,8 +67,6 @@ MULTI_DEBUG_CHANNEL(tizen, sensor_server);
 
 extern int sensor_update(uint16_t x, uint16_t y, uint16_t z);
 
-#define SENSORD_PORT		3580
-
 int sensord_initialized = 0;
 //int sent_start_value = 0;
 
@@ -158,11 +156,11 @@ static int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 {
 	int   s;  
 
-	s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_SENSOR_INDEX)); 
+	s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_EMULD_INDEX)); 
 	if (s < 0) {
 		TRACE( "can't create socket to talk to the sdb forwarding session \n");
 		TRACE( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
-				, get_sdb_base_port() + SDB_TCP_SENSOR_INDEX
+				, get_sdb_base_port() + SDB_TCP_EMULD_INDEX
 				, errno, strerror(errno)
 			 );
 		return -1;

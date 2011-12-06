@@ -306,7 +306,7 @@ void sdb_setup(void)
 	INFO( "Port(%d/tcp) listen for SDB \n", tizen_base_port + 1);
 
 	/* for sensort */
-	sprintf(buf, "tcp:%d:10.0.2.16:3577", get_sdb_base_port() + SDB_TCP_SENSOR_INDEX );
+	sprintf(buf, "tcp:%d:10.0.2.16:3577", get_sdb_base_port() + SDB_TCP_EMULD_INDEX );
 	if(net_slirp_redir((char*)buf) < 0){
 		ERR( "redirect [%s] fail \n", buf);
 	}else{

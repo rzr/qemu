@@ -64,6 +64,7 @@
 #include <pthread.h>
 
 #include "opengl_server.h"
+#include "sdb.h"
 
 #include "debug_ch.h"
 
