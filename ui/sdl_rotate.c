@@ -58,6 +58,17 @@ to a situation where the program can segfault.
 */
 #define VALUE_LIMIT	0.001
 
+Uint32 _colorkey(SDL_Surface *src);
+int _shrinkSurfaceRGBA(SDL_Surface * src, SDL_Surface * dst, int factorx, int factory);
+int _shrinkSurfaceY(SDL_Surface * src, SDL_Surface * dst, int factorx, int factory);
+int _zoomSurfaceRGBA(SDL_Surface * src, SDL_Surface * dst, int flipx, int flipy, int smooth);
+int _zoomSurfaceY(SDL_Surface * src, SDL_Surface * dst, int flipx, int flipy);
+void _transformSurfaceRGBA(SDL_Surface * src, SDL_Surface * dst, int cx, int cy, int isin, int icos, int flipx, int flipy, int smooth);
+void transformSurfaceY(SDL_Surface * src, SDL_Surface * dst, int cx, int cy, int isin, int icos, int flipx, int flipy);
+void _rotozoomSurfaceSizeTrig(int width, int height, double angle, double zoomx, double zoomy,
+							  int *dstwidth, int *dstheight,
+							  double *canglezoom, double *sanglezoom);
+
 /*!
 \brief Returns colorkey info for a surface
 */

@@ -88,7 +88,7 @@
 #  endif
 #endif /* _WIN32 */
 
-#define SDB_TCP_SENSOR_INDEX  3   /* sensor daemon port */
+#define SDB_TCP_EMULD_INDEX  3    /* emulator daemon port */
 #define SDB_TCP_OPENGL_INDEX  4   /* opengl server port */
 
 #define SDB_UDP_SENSOR_INDEX  3   /* sensor server port */

@@ -90,8 +90,6 @@ static Display CreateDisplay(void)
 
 	return GetDC(displayHWND);
 }
-#else
-extern void opengl_exec_set_parent_window(OGLS_Conn *pConn, Window _parent_window);
 #endif // _WIN32
 
 #ifdef ENABLE_GL_LOG
@@ -696,7 +694,7 @@ static int OGLS_createListenSocket (uint16_t port)
 	name.sin_addr.s_addr = htonl (INADDR_ANY);
 	if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
 	{
-		fprintf(stderr, "bind(%s:%d): errorno = %d(%s)\n", INADDR_ANY, port, errno, strerror(errno));
+		fprintf(stderr, "bind(INADDR_ANY:%d): errorno = %d(%s)\n", port, errno, strerror(errno));
 		perror ("bind");
 		//exit (EXIT_FAILURE);
 		return -1;
@@ -869,6 +867,7 @@ static void OGLS_main( OGLS_Opts *pOption )
 	closesocket( sock );
 }
 
+#if 0
 static void usage(void)
 {
 	printf("Usage : opengl_server [OPTION]\n\n");
@@ -883,6 +882,7 @@ static void usage(void)
 	printf("                     or from another emulator, through TCP/IP\n");
 	printf("--h or --help       : display this help\n");
 }
+#endif
 
 //int main (int argc, char* argv[])
 void *init_opengl_server(void *arg)
