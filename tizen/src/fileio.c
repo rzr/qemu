@@ -171,9 +171,9 @@ const gchar *get_path(void)
 	if(!arch) /* for stand alone */
 	{
 		char *binary = g_path_get_basename(vtm_path);
-		if(strcmp(binary, "emulator-x86") == 0)
+		if(strstr(binary, "emulator-x86"))
 			arch = g_strdup_printf("x86");
-		else if(strcmp(binary, "emulator-arm") == 0)
+		else if(strstr(binary, "emulator-arm"))
 			arch = g_strdup_printf("arm");
 		else 
 		{
@@ -202,9 +202,9 @@ const gchar *get_abs_path(void)
 	if(!arch) /* for stand alone */
 	{
 		char *binary = g_path_get_basename(vtm_path);
-		if(strcmp(binary, "emulator-x86") == 0)
+		if(strstr(binary, "emulator-x86"))
 			arch = g_strdup_printf("x86");
-		else if(strcmp(binary, "emulator-arm") == 0)
+		else if(strstr(binary, "emulator-arm"))
 			arch = g_strdup_printf("arm");
 		else 
 		{

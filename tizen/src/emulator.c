@@ -537,6 +537,7 @@ static void init_startup_option(void)
 	}
 	
 	startup_option.no_dump = FALSE;
+	startup_option.vtm = "default";
 }
 
 
