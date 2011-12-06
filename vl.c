@@ -1942,6 +1942,9 @@ static const QEMUOption *lookup_opt(int argc, char **argv,
     return popt;
 }
 
+#if defined(CONFIG_SDL)
+extern int use_qemu_display;
+#endif
 int qemu_main(int argc, char **argv, char **envp)
 {
     const char *gdbstub_dev = NULL;
@@ -3088,7 +3091,6 @@ int qemu_main(int argc, char **argv, char **envp)
 #endif
 #if defined(CONFIG_SDL)
     case DT_SDL:{
-			extern int use_qemu_display;
 			if (use_qemu_display) {
 				/* use qemu SDL */
 				sdl_display_init(ds, full_screen, no_frame);

@@ -4807,6 +4807,7 @@ static float approx_rcp(float a)
 
 #endif
 
+void helper_int99(void);
 void helper_int99(void)
 {
   regs_to_env();
