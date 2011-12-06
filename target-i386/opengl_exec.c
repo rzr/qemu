@@ -4025,6 +4025,8 @@ static GLXDrawable get_association_clientdrawable_serverdrawable(ProcessStruct* 
 	}
 	return (GLXDrawable)0;
 }
+
+#if 0
 static void* get_association_serverdrawable_clientdrawable(ProcessStruct* process, GLXDrawable serverdrawable)
 {
 	int i;
@@ -4035,6 +4037,8 @@ static void* get_association_serverdrawable_clientdrawable(ProcessStruct* proces
 	}
 	return NULL;
 }
+#endif
+
 static void set_association_clientdrawable_serverdrawable(ProcessStruct* process, void* clientdrawable, void* serverdrawable)
 {
 	int i;

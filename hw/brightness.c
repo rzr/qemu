@@ -72,7 +72,11 @@ static void brightness_reg_write(void *opaque, target_phys_addr_t addr, uint32_t
 {
 	DEBUG_PRINT(("brightness_reg_write: addr = %d, val = %d\n", addr, val));
 
+#if BRIGHTNESS_MIN > 0
 	if (val < BRIGHTNESS_MIN || val > BRIGHTNESS_MAX) {
+#else
+	if (val > BRIGHTNESS_MAX) {
+#endif
 		fprintf(stderr, "brightness_reg_write: Invalide brightness level.\n");
 	}
 
@@ -97,6 +101,7 @@ static CPUWriteMemoryFunc * const brightness_reg_writefn[3] = {
 	brightness_reg_write,
 };
 
+#if 0
 static void brightness_ioport_map(PCIDevice *dev, int region_num,
 			       pcibus_t addr, pcibus_t size, int type)
 {
@@ -107,6 +112,7 @@ static void brightness_ioport_map(PCIDevice *dev, int region_num,
 
     //s->ioport_addr = addr;
 }
+#endif
 
 static void brightness_mmio_map(PCIDevice *dev, int region_num,
 			       pcibus_t addr, pcibus_t size, int type)

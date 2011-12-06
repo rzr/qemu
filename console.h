@@ -43,6 +43,8 @@ typedef struct QEMUPutLEDEntry {
 
 void qemu_add_kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
 void qemu_remove_kbd_event_handler(void);
+void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
+void qemu_remove_ps2kbd_event_handler(void);
 QEMUPutMouseEntry *qemu_add_mouse_event_handler(QEMUPutMouseEvent *func,
                                                 void *opaque, int absolute,
                                                 const char *name);
@@ -53,6 +55,7 @@ QEMUPutLEDEntry *qemu_add_led_event_handler(QEMUPutLEDEvent *func, void *opaque)
 void qemu_remove_led_event_handler(QEMUPutLEDEntry *entry);
 
 void kbd_put_keycode(int keycode);
+void ps2kbd_put_keycode(int keycode);
 void kbd_put_ledstate(int ledstate);
 void kbd_mouse_event(int dx, int dy, int dz, int buttons_state);
 
