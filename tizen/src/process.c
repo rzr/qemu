@@ -216,11 +216,10 @@ int write_pidfile(const char *filename)
 	}
 
 	if ((fd = open(pidfname, O_RDWR | O_CREAT, 0666)) < 0) {
-		ERR( "%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
-		return -1;
+		ERR("Failed to create emulator.pid file\n");
+		ERR("%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
+		exit(1);
 	}
-
-	/* 기존 내용 삭제 */
 	
 	ftruncate(fd, 0);
 	memset(buf, 0, sizeof(buf));

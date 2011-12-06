@@ -316,7 +316,10 @@ static int dbg_vprintf( const char *format, va_list args )
 
 	// unlock
 	if ((fp = fopen(logfile, "a+")) == NULL) {
-		fprintf(stdout, "log file can't open.(%s)\n", logfile);
+		fprintf(stdout, "Emulator can't open (%s).\n"
+				"Please check whether or not "
+				"this emulator is running on the installation path.\n", logfile);
+		exit(1);
 	}
 
 	fputs(txt, fp);
