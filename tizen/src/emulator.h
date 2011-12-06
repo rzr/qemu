@@ -109,5 +109,6 @@ void emul_kill_all_process(void);
 extern int qemu_arch_is_arm(void); /* hack */
 int device_set_rotation(int rotation);
 int socket_init(void);
+void exit_emulator_post_process( void );
 
 #endif

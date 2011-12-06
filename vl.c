@@ -262,6 +262,7 @@ extern void qemu_display_init(DisplayState *ds);
 extern void emulator_mutex_lock(void);
 extern void emulator_mutex_unlock(void);
 extern void emul_kill_all_process(void);
+void exit_emulator_post_process( void );
 
 static QEMUBootSetHandler *boot_set_handler;
 static void *boot_set_opaque;
@@ -1317,11 +1318,18 @@ void qemu_system_reset_request(void)
 
 void qemu_system_shutdown_request(void)
 {
+
+#if 1 /* graceful shutdown */
+    /* graceful shutdown starts with 'qemu_system_shutdown_request'. */
+	exit_emulator_post_process();
+#endif
+
 #ifndef _SDK_SIMULATOR
 	emul_kill_all_process();
 #endif
     shutdown_requested = 1;
     qemu_notify_event();
+
 }
 
 void qemu_system_powerdown_request(void)

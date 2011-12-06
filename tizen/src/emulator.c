@@ -305,6 +305,29 @@ int socket_init(void)
     return 0;
 }
 
+void exit_emulator_post_process( void ) {
+
+	/* 1. emulator and driver destroy */
+	destroy_emulator();
+	INFO( "Emulator Stop: destroy emulator \n");
+
+	/* 2. destroy hash */
+	window_hash_destroy();
+
+	/* 3. quit SDL */
+//	SDL_Quit();
+
+	/* 4. quit main */
+	gtk_main_quit();
+	INFO( "Emulator Stop: shutdown qemu system, gtk_main quit complete \n");
+
+#ifdef ENABLE_OPENGL_SERVER
+	pthread_cancel(thread_opengl_id);
+	INFO( "opengl_server thread is quited.\n");
+#endif	/* ENABLE_OPENGL_SERVER */
+
+}
+
 /**
  * @brief	 destroy emulator
  * @param	 widget
@@ -313,6 +336,18 @@ int socket_init(void)
  */
 void exit_emulator(void)
 {
+
+#if 1 /* graceful shutdown */
+
+	// long press : power key
+	ps2kbd_put_keycode( 103 & 0x7f );
+	usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
+	ps2kbd_put_keycode( 103 | 0x80 );
+
+	// If user selects 'Yes' in Power off poup, 'qemu_system_shutdown_request' in vl.c is supposed to be called.
+
+#else
+
 
 	/* 1. emulator and driver destroy */
 
@@ -343,6 +378,9 @@ void exit_emulator(void)
 #endif	/* ENABLE_OPENGL_SERVER */
 
 	exit(0);
+
+#endif /* graceful shutdown */
+
 }
 
 
