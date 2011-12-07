@@ -2634,6 +2634,10 @@ fi
 if test "$xfs" = "yes" ; then
   echo "CONFIG_XFS=y" >> $config_host_mak
 fi
+
+# for qemu_thread_create call in tizen
+echo "CONFIG_THREAD=y" >> $config_host_mak
+
 qemu_version=`head $source_path/VERSION`
 echo "VERSION=$qemu_version" >>$config_host_mak
 echo "PKGVERSION=$pkgversion" >>$config_host_mak
