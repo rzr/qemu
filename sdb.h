@@ -92,7 +92,7 @@
 #define SDB_TCP_OPENGL_INDEX  4   /* opengl server port */
 
 #define SDB_UDP_SENSOR_INDEX  3   /* sensor server port */
-
+extern int tizen_base_port;
 void sdb_setup(void);
 int get_sdb_base_port(void);
 int inet_strtoip(const char*  str, uint32_t  *ip);

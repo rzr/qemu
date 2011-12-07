@@ -36,8 +36,23 @@
 
 
 #include "vtm.h"
-
 #include "debug_ch.h"
+#ifndef _WIN32
+#include <sys/ipc.h>  
+#include <sys/shm.h> 
+#endif
+#ifdef _WIN32
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else /* !_WIN32 */
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#endif /* !_WIN32 */
+
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, emulmgr);
@@ -54,6 +69,9 @@ MULTI_DEBUG_CHANNEL(tizen, emulmgr);
 #define RAM_DEFAULT_SIZE	0
 #define RAM_768_SIZE	1
 #define RAM_1024_SIZE	2
+#define CREATE_MODE	1
+#define DELETE_MODE	2
+#define MODIFY_MODE 3
 
 GtkBuilder *g_builder;
 GtkBuilder *g_create_builder;
@@ -73,6 +91,67 @@ GtkWidget *f_entry;
 gchar *g_arch;
 gchar icon_image[128] = {0, };
 
+#ifdef _WIN32
+void socket_cleanup(void)
+{
+    WSACleanup();
+}
+#endif
+
+int socket_init(void)
+{
+#ifdef _WIN32
+    WSADATA Data;
+    int ret, err;
+
+    ret = WSAStartup(MAKEWORD(2,0), &Data);
+    if (ret != 0) {
+        err = WSAGetLastError();
+        fprintf(stderr, "WSAStartup: %d\n", err);
+        return -1;
+    }
+    atexit(socket_cleanup);
+#endif
+    return 0;
+}
+
+
+static int check_port_bind_listen(u_int port)
+{
+	struct sockaddr_in addr;
+	int s, opt = 1;
+	int ret = -1;
+	socklen_t addrlen = sizeof(addr);
+	memset(&addr, 0, addrlen);
+
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_port = htons(port);
+
+	if (((s = socket(AF_INET,SOCK_STREAM,0)) < 0) ||
+			(bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
+			(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
+			(listen(s,1) < 0)) {
+
+		/* fail */
+		ret = -1;
+		ERR( "port(%d) listen  fail \n", port);
+	}else{
+		/*fsucess*/
+		ret = 1;
+		INFO( "port(%d) listen  ok \n", port);
+	}
+
+#ifdef _WIN32
+	closesocket(s);
+#else
+	close(s);
+#endif
+
+	return ret;
+}
+
+
 void activate_target(char *target_name)
 {
 	char *cmd = NULL;
@@ -86,7 +165,10 @@ void activate_target(char *target_name)
 	char *emul_add_opt = NULL;
 	char *qemu_add_opt = NULL;
 	int info_file_status;	
-	
+
+	if(check_shdmem(target_name, CREATE_MODE) == -1)
+		return ;
+
 	path = (char*)get_path();
 	virtual_target_path = get_virtual_target_path(target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
@@ -99,12 +181,12 @@ void activate_target(char *target_name)
 	}
 
 #ifndef _WIN32
-	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS))
+	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
+	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && strcmp(kvm,"1") == 0)
 	{
 		enable_kvm = g_strdup_printf("-enable-kvm");
 	}
-	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
-	if( (kvm == 0) || (strcmp(kvm,"0") == 0) )
+	else
 		enable_kvm = g_strdup_printf(" ");
 #else /* _WIN32 */
 		enable_kvm = g_strdup_printf(" ");
@@ -140,7 +222,57 @@ void activate_target(char *target_name)
 	return;
 }
 
+int check_shdmem(char *target_name, int type)
+{
+#ifndef _WIN32
+	int shm_id;
+	void *shm_addr;
+	u_int port;
+	int val;
+	struct shmid_ds shm_info;
+	
+	for(port=26100;port < 26200; port += 10)
+	{
+		if ( -1 != ( shm_id = shmget( (key_t)port, 0, 0)))
+		{
+			if((void *)-1 == (shm_addr = shmat(shm_id, (void *)0, 0)))
+			{
+				ERR( "%s\n", strerror(errno));
+				break;
+			}
 
+			val = shmctl(shm_id, IPC_STAT, &shm_info);
+			if(val != -1)
+			{
+				INFO( "count of process that use shared memory : %d\n", shm_info.shm_nattch);
+				if(shm_info.shm_nattch > 0 && strcmp(target_name, (char*)shm_addr) == 0)
+				{
+					if(check_port_bind_listen(port+1) > 0){
+						shmdt(shm_addr);
+						continue;
+					}
+					if(type == CREATE_MODE)
+						show_message("Warning", "Can not activate this target!\nVirtual target with the same name is running now!");
+					else if(type == DELETE_MODE)
+						show_message("Warning", "Can not delete this target!\nVirtual target with the same name is running now!");
+					else if(type == MODIFY_MODE)
+						show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
+					else
+						ERR("wrong type passed\n");
+					
+					shmdt(shm_addr);
+					return -1;
+				}
+				else
+					shmdt(shm_addr);
+			}
+		}
+	}
+
+#endif
+	return 0;
+
+}
 
 void entry_changed(GtkEditable *entry, gpointer data)
 {
@@ -327,6 +459,10 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Warning","You can not modify default target");
 			return;
 		}
+
+		if(check_shdmem(target_name, MODIFY_MODE)== -1)
+			return;
+		
 		virtual_target_path = get_virtual_target_path(target_name);
 		show_modify_window(target_name);	
 		g_free(virtual_target_path);
@@ -489,6 +625,9 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Warning","You can not delete default target");
 			return;
 		}
+		
+		if(check_shdmem(target_name, DELETE_MODE)== -1)
+			return;
 
 		gboolean bResult = show_ok_cancel_message("Warning", "Are you sure you delete this target?");
 		if(bResult == FALSE)
@@ -1599,7 +1738,7 @@ void show_create_window(void)
 	skin = get_skin_path();
 	if(skin == NULL)
 		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/vtm.png", skin);
+	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), icon_image, NULL);
 
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
@@ -1671,11 +1810,13 @@ int main(int argc, char** argv)
 	gtk_init(&argc, &argv);
 	INFO( "virtual target manager start \n");
 
+	socket_init();
+	
 	g_builder = gtk_builder_new();
 	skin = (char*)get_skin_path();
 	if(skin == NULL)
 		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/vtm.png", skin);
+	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 
 	sprintf(full_glade_path, "%s/vtm_conf/vtm.glade", get_bin_path());
 

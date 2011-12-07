@@ -62,10 +62,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#ifndef _WIN32
+#include <sys/ipc.h>  
+#include <sys/shm.h> 
+#endif
 
 #include "opengl_server.h"
 #include "sdb.h"
-
+#include "nbd.h"
 #include "debug_ch.h"
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
@@ -130,7 +134,7 @@ struct _arglist {
 };
 
 static arglist g_qemu_arglist = {{0,}, 0};
-
+int tizen_base_port = 0;
 void append_argvlist(arglist* al, const char *fmt, ...)
 {
 	char buf[MAXBUF];
@@ -465,7 +469,15 @@ static void construct_main_window(void)
 		ERR( "getting skin path is failed!!\n");
 		exit (1);
 	}
+#ifdef _WIN32	
+#if (_WIN32_WINNT >= 0x0601)
 	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+#else 
+	sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
+#endif
+#else /* _WIN32 */
+	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+#endif/* _WIN32 */
 
 	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
 		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
@@ -823,6 +835,35 @@ static void emul_prepare_process(void)
 }
 #endif
 
+int init_shdmem()
+{
+#ifndef _WIN32
+    int shmid; 
+    char *shared_memory;
+  
+	tizen_base_port = get_sdb_base_port();
+	shmid = shmget((key_t)tizen_base_port, 64, 0666|IPC_CREAT); 
+    if (shmid == -1) 
+    { 
+        ERR("shmget failed"); 
+        return -1; 
+    } 
+    shared_memory = shmat(shmid, (char*)0x00, 0); 
+    if (shared_memory == (void *)-1) 
+    { 
+        ERR("shmat failed"); 
+        return -1; 
+    } 
+	sprintf(shared_memory, "%s", startup_option.vtm);
+	//memcpy( shared_memory, startup_option.vtm, strlen(startup_option.vtm));
+	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
+	
+//	shmctl(shmid, IPC_RMID, 0);
+//	shmdt(shared_memory);
+#endif
+	return 0;
+}
+
 /**
  * @brief    function to create emulator
  * @param argc        number of argument
@@ -844,6 +885,7 @@ int main(int argc, char** argv)
 	startup_option_parser(&argc, &argv);
 	socket_init();
 
+	init_shdmem();
 	/* option parsed and pass to qemu option */
 
 	r = load_config_passed_to_qemu(&g_qemu_arglist, argc, argv);
