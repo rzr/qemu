@@ -54,7 +54,6 @@
 #include <pthread.h>
 #include <math.h>
 
-#include "qemu-thread.h"
 #include "sensor_server.h"
 #include "emulator.h"
 #define UDP
@@ -183,6 +182,76 @@ static int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	return 1;
 }
 
+#if 0
+/* Not using sdb port forwarding => Using redir in sdb setup */
+static void *create_fw_rota_init(void *arg)
+{
+	int s;
+	int tries = 0;
+	char fw_buf[64] = {0};
+	char recv_buf[8] = {0};
+	char send_buf[32] = {0};
+
+	while(1)
+	{
+		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
+		if (s < 0) {
+
+			ERR("[%d] can't create socket to talk to the SDB server \n", ++tries);
+			usleep(1000000);
+
+			if(tries > 9)
+				break;
+			else
+				continue;
+		}
+
+		memset(fw_buf, 0, sizeof(fw_buf));
+
+		/* length is hex: 0x35 = 53 */
+		sprintf(fw_buf,"0035host-serial:emulator-%d:forward:tcp:%d;tcp:3577"
+				,get_sdb_base_port(),  get_sdb_base_port() + SDB_TCP_SENSOR_INDEX );
+
+		/* Over 53+4 */
+		socket_send(s, fw_buf, 60);
+
+		memset(recv_buf, 0, sizeof(recv_buf));
+		recv( s, recv_buf, 4, 0 );
+
+		/* check OKAY */
+		if(!memcmp(recv_buf, "OKAY", 4)) {
+			INFO( "create forward [%s] success : [%s] \n", fw_buf, recv_buf);
+
+			/* send init ratation info */
+			sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
+
+			if( send_info_to_sensor_daemon(send_buf, 32) <= 0 ) {   
+				ERR( "[%s][%d] send init rotaion info: error \n", __FUNCTION__, __LINE__);
+			}else{
+				INFO( "[%s][%d] send init rotation info: sucess \n", __FUNCTION__, __LINE__);
+				/* all initialized */
+				sensord_initialized = 1;
+			}
+
+			break;
+		}else{
+			/* not ready */
+			//fprintf(stderr, "create forward [%s] fail : [%s] \n", fw_buf, recv_buf);
+			usleep(1000000);
+		}
+
+#ifdef __WIN32
+		closesocket(s);
+#else
+		close(s);
+#endif
+
+	}
+
+	return NULL;
+}
+#endif
+
 gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer data)
 {
 	int parse_result;
@@ -218,6 +287,22 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 		else
 		{
 			parse_result = sensor_parser(recv_buf);
+
+#if 0
+			/* Not using sdb forwarding => Using redir in sdb setup */
+			if(sent_start_value == 0) {
+
+				/* new way with sdb */
+				pthread_t taskid;
+
+				INFO( "pthread_create for create_forward : \n");
+				if( pthread_create( (pthread_t *)&taskid, NULL, (void *(*)(void *))create_fw_rota_init, NULL ) ){
+					ERR( "pthread_create for create_forward fail: \n");
+				}   
+
+				sent_start_value = 1;
+			}
+#endif
 
 			if(sensord_initialized)
 			{

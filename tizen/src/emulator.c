@@ -67,7 +67,6 @@
 #include <sys/shm.h> 
 #endif
 
-#include "qemu-thread.h"
 #include "opengl_server.h"
 #include "sdb.h"
 #include "nbd.h"
@@ -156,7 +155,7 @@ DWORD unfsd_thread;
 #endif
 
 #ifdef ENABLE_OPENGL_SERVER
-QemuThread thread_opengl_id;
+pthread_t thread_opengl_id;
 #endif	/* ENABLE_OPENGL_SERVER */
 
 #ifndef _WIN32
@@ -328,7 +327,7 @@ void exit_emulator_post_process( void ) {
 	INFO( "Emulator Stop: shutdown qemu system, gtk_main quit complete \n");
 
 #ifdef ENABLE_OPENGL_SERVER
-	pthread_cancel(thread_opengl_id.thread);
+	pthread_cancel(thread_opengl_id);
 	INFO( "opengl_server thread is quited.\n");
 #endif	/* ENABLE_OPENGL_SERVER */
 
@@ -401,9 +400,11 @@ void exit_emulator(void)
 	// If user selects 'Yes' in Power off poup, 'qemu_system_shutdown_request' in vl.c is supposed to be called.
 
 	/* 2nd way : send command shutdown to emuld in guest image */
-	QemuThread thread;	
-
-	qemu_thread_create(&thread, graceful_shutdown_ftn, NULL);
+	pthread_t thread_id;
+	if (pthread_create(&thread_id, NULL, graceful_shutdown_ftn, NULL) != 0) { 
+		ERR("pthread_create fail \n");
+		qemu_system_shutdown_request();
+	} 
 
 #else
 
@@ -432,7 +433,7 @@ void exit_emulator(void)
 	INFO( "Emulator Stop: shutdown qemu system, gtk_main quit complete \n");
 
 #ifdef ENABLE_OPENGL_SERVER
-	pthread_cancel(thread_opengl_id.thread);
+	pthread_cancel(thread_opengl_id);
 	INFO( "opengl_server thread is quited.\n");
 #endif	/* ENABLE_OPENGL_SERVER */
 
@@ -889,7 +890,7 @@ int main(int argc, char** argv)
 	int i, r;
 
 
-	QemuThread thread;
+	pthread_t thread_gtk_id;
 
 	init_emulator(&argc, &argv);
 	startup_option_parser(&argc, &argv);
@@ -914,24 +915,27 @@ int main(int argc, char** argv)
 	register_sig_handler();
 
 #ifndef _WIN32
-
 	construct_main_window();
 
 	/* 5.3 create gtk thread  */
-	qemu_thread_create(&thread, run_gtk_main, NULL);
-
+	if (pthread_create(&thread_gtk_id, NULL, run_gtk_main, NULL) != 0) {
+		ERR( "error creating gtk_id thread!!\n");
+		return -1;
+	}
 #else /* _WIN32 */
-
 	/* if _WIN32, window creation and gtk main must be run in a thread */
-	qemu_thread_create(&thread, construct_main_window_and_run_gtk_main, NULL);
-
+	if (pthread_create(&thread_gtk_id, NULL, construct_main_window_and_run_gtk_main, NULL) != 0) {
+		ERR( "error creating gtk_id thread!!\n");
+		return -1;
+	}
 #endif
 
 #ifdef ENABLE_OPENGL_SERVER
-
 	/* create OPENGL server thread */
-	qemu_thread_create(&thread_opengl_id, init_opengl_server, NULL);
-
+	if (pthread_create(&thread_opengl_id, NULL, init_opengl_server, NULL) != 0) {
+		ERR( "error creating opengl_id thread!!");
+		return -1;
+	}
 #endif	/* ENABLE_OPENGL_SERVER */
 
 	/* 6. create serial console and vmodem, and other processes */
