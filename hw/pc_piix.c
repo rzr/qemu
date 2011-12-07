@@ -189,11 +189,11 @@ static void pc_init1(ram_addr_t ram_size,
         svcamera_pci_init(pci_bus);
     }
 
-	/* init virtual codec device */
+#ifdef CONFIG_FFMPEG
 	if (pci_enabled) {
 		pci_codec_init(pci_bus);	
 	}
-
+#endif
 }
 
 static void pc_init_pci(ram_addr_t ram_size,

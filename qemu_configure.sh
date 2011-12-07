@@ -12,8 +12,8 @@ exec ./configure \
  --audio-card-list=es1370 \
  --enable-mixemu \
  --disable-vnc-tls \
- --enable-ffmpeg \
- --extra-ldflags="-lv4l2 -lv4lconvert"
+ --extra-ldflags="-lv4l2 -lv4lconvert -Xlinker -rpath -Xlinker ./lib"
+# --enable-ffmpeg \
 # --enable-gles2 --gles2dir=/usr \
 # --enable-profiler \
 ;;

@@ -1390,13 +1390,13 @@ cat > $TMPC <<EOF
 
 int main(void) { AVFormatContext *pFormatCtx = NULL; av_find_stream_info(pFormatCtx); return 0; }
 EOF
-  ffmpeg_cflags="-I$source_path/SLP/$ffmpeg_inc"
+  ffmpeg_cflags="-I$source_path/SLP/$ffmpeg_inc/include"
   if test "$linux" = "yes" ; then
   	ffmpeg_libs="-lavformat -lavcodec -lavutil -lswscale"
   elif test "$mingw32" = "yes" ; then
- 	ffmpeg_libpath="-L$source_path/SLP/$ffmpeg_inc/libs"
    	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll"
   fi
+  ffmpeg_libpath="-L$source_path/SLP/$ffmpeg_inc/lib"
   ffmpeg_libs="$ffmpeg_libpath $ffmpeg_libs"
   if compile_prog "$ffmpeg_cflags" "$ffmpeg_libs" ; then
     ffmpeg=yes
