@@ -38,6 +38,7 @@
 #include "utils.h"
 #include <pthread.h>
 
+#include "qemu-thread.h"
 #include "debug_ch.h"
 #include "../ui/sdl_rotate.h"
 
@@ -224,12 +225,9 @@ void qemu_display_init (DisplayState *ds)
 #ifdef SDL_THREAD
 	if(sdl_thread_initialized == 0 ){
 		sdl_thread_initialized = 1;
-		pthread_t thread_id;
+		QemuThread thread_id;
 		TRACE( "sdl update thread create \n");
-		if (pthread_create(&thread_id, NULL, run_qemu_update, NULL) != 0) {
-			ERR( "pthread_create fail \n");
-			return;
-		}
+		qemu_thread_create(&thread_id, run_qemu_update, NULL);
 	}
 #endif
 }

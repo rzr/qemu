@@ -800,7 +800,7 @@ static void OGLS_main( OGLS_Opts *pOption )
 {
 	int sock;
 	fd_set active_fd_set, read_fd_set;
-
+	sigset_t set, oldset;
 	socklen_t size;
 
 #ifndef _WIN32
@@ -856,12 +856,18 @@ static void OGLS_main( OGLS_Opts *pOption )
 			continue;
 		}
 
+
+		/* Leave signal handling to the iothread.  */
+		sigfillset(&set);
+		pthread_sigmask(SIG_SETMASK, &set, &oldset);
 		if( pthread_create( (pthread_t *)&taskid, NULL, (void *(*)(void *))OGLS_loop, (void *)pConn ) )
 		{
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			perror( "pthread_create" );
 			OGLS_removeConn( pConn );
 			continue;
 		}
+		pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 	}
 
 	closesocket( sock );
