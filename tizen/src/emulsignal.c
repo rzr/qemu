@@ -36,7 +36,11 @@
 
 #include "emulsignal.h"
 #include "debug_ch.h"
-
+#include "sdb.h"
+#ifndef _WIN32
+#include <sys/ipc.h>  
+#include <sys/shm.h> 
+#endif
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, emulsignal);
 
@@ -87,28 +91,36 @@ static int destroy_window(void)
  */
 void destroy_emulator(void)
 {
-	/* 2. terminal closed */
+	/* 1. terminal closed */
 
 	emul_kill_all_process();
 
-	/* 3. window destroy */
+	/* 2. window destroy */
 
 	destroy_window();
 	
-	/* 4. save configuration conf, main_x, main_y */
+	/* 3. save configuration conf, main_x, main_y */
 
 	set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, MAIN_X_KEY, configuration.main_x);
 	set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, MAIN_Y_KEY, configuration.main_y);
 
 	INFO( "Emulator Stop: set config type\n");
 
-
-	/* 5. remove pid file */
+	/* 4. remove pid file */
 
 	remove_pidfile("emulator");
 
 	INFO( "Emulator Stop: remove pid file\n");
-		
+	
+	/* 5. remove shared memory */
+
+#ifndef _WIN32
+	int shmid = shmget((key_t)tizen_base_port, 64, 0); 
+	if(shmctl(shmid, IPC_RMID, 0) == -1)
+		ERR( "fail to remove shared memory\n");
+	else
+		INFO( "succedd to remove shared memory\n");
+#endif
 	return;
 }
 

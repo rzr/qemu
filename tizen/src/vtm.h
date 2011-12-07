@@ -104,5 +104,7 @@ void arch_select_cb(GtkWidget *widget, gpointer data);
 void init_setenv(void);
 void entry_changed(GtkEditable *entry, gpointer data);
 void make_default_image(void);
+int check_shdmem(char *target_name, int type);
+int socket_init(void);
 
 #endif 

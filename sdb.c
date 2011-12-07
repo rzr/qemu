@@ -16,7 +16,6 @@
 #include "nbd.h"
 #include "debug_ch.h"
 
-static int tizen_base_port = 0;
 //DEFAULT_DEBUG_CHANNEL(qemu);
 MULTI_DEBUG_CHANNEL(qemu, sdb);
 
