@@ -474,7 +474,7 @@ void on_browser_clicked(void)
 				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
 				      NULL);
 	char full_gps_data_path[MAX_LEN];
-	sprintf(full_gps_data_path, "%s/data", get_bin_path());
+	sprintf(full_gps_data_path, "%s/data", get_root_path());
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), full_gps_data_path);
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
@@ -575,7 +575,7 @@ void menu_create_gps(GtkWidget* parent)
     {
 	GtkBuilder *builder = gtk_builder_new();
 	char full_glade_path[MAX_LEN];
-	sprintf(full_glade_path, "%s/gps.glade", get_bin_path());
+	sprintf(full_glade_path, "%s/gps.glade", get_root_path());
 
 	gtk_builder_add_from_file(builder, full_glade_path, NULL);
 

@@ -665,7 +665,7 @@ static int startup_option_parser(int *argc, char ***argv)
 	INFO("Date: %s\n", timeinfo);
 	INFO("Version : %s(%s)  Build date: %s\n", build_version, build_git, build_date);
 
-	char *virtual_target_path = get_virtual_target_path(startup_option.vtm);
+	char *virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	if( (fp = fopen(info_file, "r")) == NULL )
 	{
@@ -1059,7 +1059,7 @@ void save_emulator_state(void)
 	/* build the UI */
 	GtkBuilder *builder = gtk_builder_new();
 	char full_glade_path[MAX_LEN];
-	sprintf(full_glade_path, "%s/savevm.glade", get_bin_path());
+	sprintf(full_glade_path, "%s/savevm.glade", get_root_path());
 	gtk_builder_add_from_file(builder, full_glade_path, NULL);
 
 	//get objects from the UI
