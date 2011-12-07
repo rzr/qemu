@@ -64,7 +64,7 @@ MULTI_DEBUG_CHANNEL(tizen, configuration);
 int fill_configuration(int status)
 {
 	int default_telnet_port = 1200;
-	const gchar *data_path = get_data_path();
+	const gchar *data_path = get_data_abs_path();
 
 	/* 1. startup option parsing */
 
@@ -356,7 +356,7 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 	char *info_file;
 	char *buf = NULL;
 
-	virtual_target_path = get_virtual_target_path(virtual_target_name);
+	virtual_target_path = get_virtual_target_abs_path(virtual_target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(info_file);
 
@@ -389,7 +389,7 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 	pvirtual_target_info->ram_size = get_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 
 	buf = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
-//	buf = get_virtual_target_path(virtual_target_name);
+//	buf = get_virtual_target_abs_path(virtual_target_name);
 	snprintf(pvirtual_target_info->diskimg_path, MAXBUF, "%s", buf);
 	g_free(buf);
 
@@ -460,7 +460,7 @@ int is_valid_targetlist_file()
 
 	/* 1. getting emulator conf path : /opt/samsing_sdk/simulator/conf/emulator.conf */
 
-	targetlist_filepath = get_targetlist_filepath();
+	targetlist_filepath = get_targetlist_abs_filepath();
 
  	/* 2. check if exist emulator.conf */
 
@@ -506,7 +506,7 @@ int load_targetlistig_file(SYSINFO *pSYSTEMINFO)
 	{
 		snprintf(pSYSTEMINFO->virtual_target_name, MAXBUF, "%s", startup_option.vtm);
 //		virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
-		virtual_target_path = get_virtual_target_path(startup_option.vtm);
+		virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		snprintf(pSYSTEMINFO->virtual_target_info_file, MAXPATH, "%s", info_file);
 	}
@@ -627,7 +627,7 @@ void qemu_option_set_to_config(arglist *al)
 {
 	gboolean userdata_exist = FALSE;
 
-	const gchar *vtm_path = get_vtm_path();
+	const gchar *exec_path = get_exec_path();
 
 	int width = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.w);
 	int height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.h);
@@ -737,7 +737,7 @@ void qemu_option_set_to_config(arglist *al)
 
 	sprintf(&kernel_kappend[strlen(kernel_kappend)], "%d", startup_option.run_level);
 
-	append_argvlist(al, "%s", vtm_path);
+	append_argvlist(al, "%s", exec_path);
 	if (qemu_arch_is_arm()) {
 		if(configuration.qemu_configuration.diskimg_type) {
 			append_argvlist(al, "-hda");
@@ -779,7 +779,7 @@ void qemu_option_set_to_config(arglist *al)
 
 	if (!startup_option.no_dump) {
 		gchar kernel_log_path[MAXBUF] = {0, };
-		strcpy(kernel_log_path, get_virtual_target_path(startup_option.vtm));
+		strcpy(kernel_log_path, get_virtual_target_abs_path(startup_option.vtm));
 		strcat(kernel_log_path, KERNEL_LOGFILE_NAME);
 		append_argvlist(al, "-serial");
 		append_argvlist(al, "file:%s", kernel_log_path); 

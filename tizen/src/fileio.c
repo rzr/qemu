@@ -39,8 +39,8 @@
 
 #include "debug_ch.h"
 
-//DEFAULT_DEBUG_CHANNEL(tizen);
-MULTI_DEBUG_CHANNEL(tizen, fileio);
+//DEFAULT_DEBUG_CHANNEL(tizen_sdk);
+MULTI_DEBUG_CHANNEL(tizen_sdk, fileio);
 
 extern STARTUP_OPTION startup_option;
 #ifdef _WIN32
@@ -65,7 +65,7 @@ static void unix_path_to_dos_path(char *path)
 
 /**
  * @brief 	check about file
- * @param	filename : file path (ex: /home/$(USER_ID)/.samsung_sdk/simulator/1/emulator.conf)
+ * @param	filename : file path (ex: /home/$(USER_ID)/.tizen_sdk/simulator/1/emulator.conf)
  * @return	exist normal(1), not exist(0), error case(-1))
  * @date    Oct. 22. 2009
  * */
@@ -97,80 +97,96 @@ int is_exist_file(gchar *filepath)
 }
 
 
-/* vtm_path = "~/samsung_sdk/Emulator/vtm" : get_my_exec_path() */
-const gchar *get_vtm_path(void)
+/* exec_path = "~/tizen_sdk/Emulator/bin/emulator-manager" */
+/* 			 = "~/tizen_sdk/Emulator/bin/emulator-x86" */
+const gchar *get_exec_path(void)
 {
-	static gchar *vtm_path = NULL;
+	static gchar *exec_path = NULL;
 	int len = 10;
 	int r;
 
 	/* allocate just once */
-	if (vtm_path)
-		return vtm_path;
+	if (exec_path)
+		return exec_path;
 
 	const char *env_path = getenv("EMULATOR_PATH");
 	if (env_path) {
-		vtm_path = strdup(env_path);
-		return vtm_path;
+		exec_path = strdup(env_path);
+		return exec_path;
 	}
 
 	while (1)
 	{
-		vtm_path = malloc(len);
-		if (!vtm_path) {
+		exec_path = malloc(len);
+		if (!exec_path) {
 			fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 		}
 
 #ifndef _WIN32
-		r = readlink("/proc/self/exe", vtm_path, len);
+		r = readlink("/proc/self/exe", exec_path, len);
 		if (r < len) {
-			vtm_path[r] = 0;
+			exec_path[r] = 0;
 			break;
 		}
 #else
-		r = GetModuleFileName(NULL, vtm_path, len);
+		r = GetModuleFileName(NULL, exec_path, len);
 		if (r < len) {
-			vtm_path[r] = 0;
-			dos_path_to_unix_path(vtm_path);
+			exec_path[r] = 0;
+			dos_path_to_unix_path(exec_path);
 			break;
 		}
 #endif
-		free(vtm_path);
+		free(exec_path);
 		len *= 2;
 	}
 
-	return vtm_path;
+	return exec_path;
 }
 
-/* get_bin_path = "~/samsung_sdk/Emulator/" */
+/* get_root_path = "~/tizen_sdk/Emulator" */
+const gchar *get_root_path(void)
+{
+	static gchar *root_path; 
+	static gchar *root_path_buf;
+
+	if (!root_path)
+	{
+		const gchar *exec_path = get_exec_path();
+		root_path_buf = g_path_get_dirname(exec_path);
+		root_path = g_path_get_dirname(root_path_buf);
+		g_free(root_path_buf);
+	}
+
+	return root_path;
+}
+
+/* get_bin_path = "~/tizen_sdk/Emulator/bin" */
 const gchar *get_bin_path(void)
 {
-	static gchar *bin_path;
+	static gchar *bin_path; 
 
 	if (!bin_path)
 	{
-		const gchar *vtm_path = get_vtm_path();
-		bin_path = g_path_get_dirname(vtm_path);
+		const gchar *exec_path = get_exec_path();
+		bin_path = g_path_get_dirname(exec_path);
 	}
 
 	return bin_path;
 }
 
-
-/* get_path = "/opt/samsung_sdk/Emulator/x86" 
-* get_path = "/opt/samsung_sdk/Emulator/arm" */
-const gchar *get_path(void)
+/* get_arch_path = "x86" 
+* 	             = "arm" */
+const gchar *get_arch_path(void)
 {
 	static gchar *path_buf;
 	static gchar *path;
 	char *arch = (char *)g_getenv("EMULATOR_ARCH");
 
-	/* vtm_path = /opt/samsung_sdk/Emulator/vtm/vtm */
-	const gchar *vtm_path = get_vtm_path();
-	path_buf = g_path_get_dirname(vtm_path);
+	const gchar *exec_path = get_exec_path();
+	path_buf = g_path_get_dirname(exec_path);
 	if(!arch) /* for stand alone */
 	{
-		char *binary = g_path_get_basename(vtm_path);
+		char *binary = g_path_get_basename(exec_path);
 		if(strstr(binary, "emulator-x86"))
 			arch = g_strdup_printf("x86");
 		else if(strstr(binary, "emulator-arm"))
@@ -188,20 +204,23 @@ const gchar *get_path(void)
 	return path;
 }
 
-/* get_path = "/opt/samsung_sdk/Emulator/x86" 
-* get_path = "/opt/samsung_sdk/Emulator/arm" */
-const gchar *get_abs_path(void)
+/* get_arch_abs_path = "~/tizen_sdk/Emulator/x86" 
+* 				= "~/tizen_sdk/Emulator/arm" */
+const gchar *get_arch_abs_path(void)
 {
 	static gchar *path_buf = NULL;
+	static gchar *path_buf2 = NULL;
 	static gchar *path;
 	char *arch = (char *)g_getenv("EMULATOR_ARCH");
 
-	const gchar *vtm_path = get_vtm_path();
-	path_buf = g_path_get_dirname(vtm_path);
+	const gchar *exec_path = get_exec_path();
+	path_buf2 = g_path_get_dirname(exec_path);
+	path_buf = g_path_get_dirname(path_buf2);
+	g_free(path_buf2);
 	path = malloc(strlen(path_buf) + 5);
 	if(!arch) /* for stand alone */
 	{
-		char *binary = g_path_get_basename(vtm_path);
+		char *binary = g_path_get_basename(exec_path);
 		if(strstr(binary, "emulator-x86"))
 			arch = g_strdup_printf("x86");
 		else if(strstr(binary, "emulator-arm"))
@@ -221,7 +240,7 @@ const gchar *get_abs_path(void)
 	return path;
 }
 
-/* get_skin_path = "/opt/samsung_sdk/simulator/skins" */
+/* get_skin_path = "~/tizen_sdk/simulator/skins" */
 const gchar *get_skin_path(void)
 {
 	const char *skin_path_env;
@@ -236,7 +255,7 @@ const gchar *get_skin_path(void)
 	skin_path_env = getenv("EMULATOR_SKIN_PATH");
 	if (!skin_path_env)
 	{
-		path = get_bin_path();
+		path = get_root_path();
 		skin_path = malloc(strlen(path) + sizeof skinsubdir);
 		if (!skin_path) {
 			fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__);
@@ -257,7 +276,7 @@ const gchar *get_skin_path(void)
 }
 
 
-/* get_data_path = "/opt/samsung_sdk/simulator/data" */
+/* get_data_path = "~/tizen_sdk/Emulator/data" */
 const gchar *get_data_path(void)
 {
 	static const char suffix[] = "/data";
@@ -265,7 +284,26 @@ const gchar *get_data_path(void)
 
 	if (!data_path)
 	{
-		const gchar *path = get_path();
+		const gchar *path = get_arch_path();
+
+		data_path = malloc(strlen(path) + sizeof suffix);
+		assert(data_path != NULL);
+		strcpy(data_path, path);
+		strcat(data_path, suffix);
+	}
+
+	return data_path;
+}
+
+/* get_data_path = "~/tizen_sdk/Emulator/data" */
+const gchar *get_data_abs_path(void)
+{
+	static const char suffix[] = "/data";
+	static gchar *data_path;
+
+	if (!data_path)
+	{
+		const gchar *path = get_arch_abs_path();
 
 		data_path = malloc(strlen(path) + sizeof suffix);
 		assert(data_path != NULL);
@@ -303,15 +341,16 @@ gchar *change_path_from_slash(gchar *org_path)
 #endif
 
 
-/* get_conf_path = "/opt/samsung_sdk/simulator/conf" */
-/* get_conf_path = "C:\Documents and Settings\Administrator\Application Data\samsung_sdk\simulator\1" */
+/* get_conf_path = "~/tizen_sdk/Emulator/x86/conf" */
+/*				 = "~/tizen_sdk/Emulator/arm/conf" */
+
 const gchar *get_conf_path(void)
 {
 	static gchar *conf_path;
 
 	static const char suffix[] = "/conf";
 
-	const gchar *path = get_path();
+	const gchar *path = get_arch_path();
 	conf_path = malloc(strlen(path) + sizeof suffix);
 	assert(conf_path != NULL);
 	strcpy(conf_path, path);
@@ -327,7 +366,7 @@ const gchar *get_vms_path(void)
 
 	static const char suffix[] = "/VMs";
 
-	const gchar *path = get_path();
+	const gchar *path = get_arch_path();
 	vms_path = malloc(strlen(path) + sizeof suffix);
 	assert(vms_path != NULL);
 	strcpy(vms_path, path);
@@ -336,14 +375,15 @@ const gchar *get_vms_path(void)
 	return vms_path;
 }
 
-/* get_conf_abs_path = "~/samsung_sdk/Emulator/conf" */
+/* get_conf_abs_path = "~/tizen_sdk/Emulator/x86/conf" */
+/* 					 = "~/tizen_sdk/Emulator/arm/conf" */
 const gchar *get_conf_abs_path(void)
 {
 	static gchar *conf_path;
 
 	static const char suffix[] = "/conf";
 
-	const gchar *path = get_abs_path();
+	const gchar *path = get_arch_abs_path();
 	conf_path = malloc(strlen(path) + sizeof suffix);
 	assert(conf_path != NULL);
 	strcpy(conf_path, path);
@@ -352,14 +392,15 @@ const gchar *get_conf_abs_path(void)
 	return conf_path;
 }
 
-/* get_vms_abs_path = "~/samsung_sdk/Emulator/x86/VMs" */
+/* get_vms_abs_path = "~/tizen_sdk/Emulator/x86/VMs" */
+/* 				    = "~/tizen_sdk/Emulator/arm/VMs" */
 const gchar *get_vms_abs_path(void)
 {
 	static gchar *vms_path;
 
 	static const char suffix[] = "/VMs";
 
-	const gchar *path = get_abs_path();
+	const gchar *path = get_arch_abs_path();
 	vms_path = malloc(strlen(path) + sizeof suffix);
 	assert(vms_path != NULL);
 	strcpy(vms_path, path);
@@ -368,8 +409,9 @@ const gchar *get_vms_abs_path(void)
 	return vms_path;
 }
 
-/* get_targetlist_filepath	"x86/conf/targetlist.ini" */
-gchar *get_targetlist_filepath(void)
+/*  get_targetlist_abs_filepath  = " ~/tizen_sdk/Emulator/x86/conf/targetlist.ini" */
+/*  						     = " ~/tizen_sdk/Emulator/arm/conf/targetlist.ini" */
+gchar *get_targetlist_abs_filepath(void)
 {
 	gchar *targetlist_filepath = NULL;
 	targetlist_filepath = calloc(1, 512);
@@ -377,13 +419,15 @@ gchar *get_targetlist_filepath(void)
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 	
-	const gchar *conf_path = get_conf_path();
+	const gchar *conf_path = get_conf_abs_path();
 	sprintf(targetlist_filepath, "%s/targetlist.ini", conf_path);
 
 	return targetlist_filepath;
 }
 
-/* get_virtual_target_path	"x86/VMs/virtual_target_name/" */
+
+/* get_virtual_target_path = "x86/VMs/virtual_target_name/" */
+/* 						   = "arm/VMs/virtual_target_name/" */
 gchar *get_virtual_target_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_path = NULL;
@@ -399,7 +443,8 @@ gchar *get_virtual_target_path(gchar *virtual_target_name)
 	return virtual_target_path;
 }
 
-/* get_virtual_target_abs_path	"~/samsung-sdk/Emulator/x86/VMs/virtual_target_name/" */
+/* get_virtual_target_abs_path	"~/tizen_sdk/Emulator/x86/VMs/virtual_target_name/" */
+/* 								"~/tizen_sdk/Emulator/arm/VMs/virtual_target_name/" */
 gchar *get_virtual_target_abs_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_path = NULL;
@@ -415,6 +460,8 @@ gchar *get_virtual_target_abs_path(gchar *virtual_target_name)
 	return virtual_target_path;
 }
 
+/* get_virtual_target_log_path	"~/tizen_sdk/Emulator/x86/VMs/virtual_target_name/logs" */
+/* 								"~/tizen_sdk/Emulator/arm/VMs/virtual_target_name/logs" */
 gchar *get_virtual_target_log_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_log_path = NULL;
@@ -430,6 +477,7 @@ gchar *get_virtual_target_log_path(gchar *virtual_target_name)
 	return virtual_target_log_path;
 
 }
+
 int check_port(const char *ip_address, int port)
 {
 	struct sockaddr_in address;

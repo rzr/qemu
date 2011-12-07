@@ -93,11 +93,11 @@ int secure_copy(const char *file1, const char * file2)
 	gchar *bin_path = NULL;
 	
 	//parameter = (char *)malloc(512);
-	bin_path = get_path();
+	bin_path = get_arch_path();
 	memset(parameter, 0 , sizeof(1024));
 	
 	//sprintf(skin_path, "%s%s", path,"\\_skins");
-	//sprintf(parameter, "%s%s %s root@192.168.128.3:%s", get_path(), "\\scp.exe", file1, file2);
+	//sprintf(parameter, "%s%s %s root@192.168.128.3:%s", get_arch_path(), "\\scp.exe", file1, file2);
 	sprintf(parameter, "%s%s %s root@192.168.128.3:%s", bin_path, "\\scp.exe", file1+2, file2);
 	//printf("pram=%s\N", parameter);
 		
@@ -108,7 +108,7 @@ int secure_copy(const char *file1, const char * file2)
 		g_free(bin_path);
 	/*
 	char asdf[512] = "";
-	sprintf(asdf, "%s\\scp.exe", get_path());
+	sprintf(asdf, "%s\\scp.exe", get_arch_path());
 	GetStartupInfo(&si);
 
 	//CreateProcess("scp", parameter, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);

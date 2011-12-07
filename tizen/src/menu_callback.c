@@ -71,7 +71,7 @@ void menu_create_eiwidget_callback(GtkWidget *widget, GtkWidget *menu)
 {
 #ifndef _WIN32
 	char* telemul_path;
-	const char *path = get_bin_path();
+	const char *path = get_root_path();
 
 	telemul_path = malloc(strlen(path) + 8 + strlen(telemul_name) + 1);
 	sprintf(telemul_path, "%s/../bin/%s", path, telemul_name);
@@ -593,7 +593,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *details = NULL;
 
 	target_name = (char*)data;
-	virtual_target_path = get_virtual_target_path(target_name);
+	virtual_target_path = get_virtual_target_abs_path(target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(info_file);
 	//if targetlist exist but config file not exists
@@ -612,8 +612,8 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	arch = getenv("EMULATOR_ARCH");
 	if(!arch) /* for stand alone */
 	{
-		const gchar *vtm_path = get_vtm_path();
-		char *binary = g_path_get_basename(vtm_path);
+		const gchar *exec_path = get_exec_path();
+		char *binary = g_path_get_basename(exec_path);
 		if(strcmp(binary, "emulator-x86") == 0)
 			arch = g_strdup_printf("x86");
 		else if(strcmp(binary, "emulator-arm") == 0)
@@ -634,11 +634,11 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	else
 	{
 		sdcard_detail = g_strdup_printf("Supported");
-		sdcard_path_detail = g_strdup_printf("%s/%s", get_bin_path(), sdcard_path); 
+		sdcard_path_detail = g_strdup_printf("%s", sdcard_path); 
 	}
 
 	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-	disk_path_detail = g_strdup_printf("%s/%s", get_bin_path(), disk_path);
+	disk_path_detail = g_strdup_printf("%s", disk_path);
 #ifndef _WIN32		
 	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);

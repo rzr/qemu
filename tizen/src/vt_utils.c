@@ -74,7 +74,7 @@ int is_valid_target_list_file(SYSINFO *pSYSTEMINFO)
 	int status = 0;
 	gchar *target_list_filepath = NULL;
 
-	target_list_filepath = get_targetlist_filepath();
+	target_list_filepath = get_targetlist_abs_filepath();
 
 	status = is_exist_file(target_list_filepath);
 

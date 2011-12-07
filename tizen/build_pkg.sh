@@ -159,12 +159,12 @@ emulator_windows()
 	cd $WIN_QEMU_DIR
 	mkdir -p EMUL_PKG/data
 	mv $WIN_QEMU_DIR/Emulator $WIN_PKG_DIR/data
-	editbin.exe /subsystem:windows $WIN_PKG_DIR/data/Emulator/emulator-manager.exe
-	editbin.exe /subsystem:windows $WIN_PKG_DIR/data/Emulator/emulator-x86.exe
+	editbin.exe /subsystem:windows $WIN_PKG_DIR/data/Emulator/bin/emulator-manager.exe
+	editbin.exe /subsystem:windows $WIN_PKG_DIR/data/Emulator/bin/emulator-x86.exe
 
 	if test -e emulator_dll.zip
 	then
-		unzip emulator_dll.zip -d $WIN_PKG_DIR/data/Emulator/
+		unzip emulator_dll.zip -d $WIN_PKG_DIR/data/Emulator/bin/
 	fi
 
 	echo ==== Copy mate files into windows package ===

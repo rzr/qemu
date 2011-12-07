@@ -169,8 +169,8 @@ void activate_target(char *target_name)
 	if(check_shdmem(target_name, CREATE_MODE) == -1)
 		return ;
 
-	path = (char*)get_path();
-	virtual_target_path = get_virtual_target_path(target_name);
+	path = (char*)get_arch_abs_path();
+	virtual_target_path = get_virtual_target_abs_path(target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(info_file);
 	//if targetlist exist but config file not exists
@@ -200,13 +200,13 @@ void activate_target(char *target_name)
 	if(qemu_add_opt == 0)
 		qemu_add_opt = g_strdup_printf(" ");
 #ifndef _WIN32	
-	cmd = g_strdup_printf("./%s --vtm %s --disk x86/VMs/default/emulimg-default.x86 %s \
+	cmd = g_strdup_printf("./%s --vtm %s --disk %semulimg-%s.x86 %s \
 			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+			binary, target_name, get_virtual_target_abs_path(target_name), target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 #else /*_WIN32 */
-	cmd = g_strdup_printf("%s --vtm %s --disk x86/VMs/default/emulimg-default.x86 %s\
+	cmd = g_strdup_printf("%s --vtm %s --disk %semulimg-%s.x86 %s\
 			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+			binary, target_name, get_virtual_target_abs_path(target_name), target_name , emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 #endif
 
 	if(!g_spawn_command_line_async(cmd, &error))
@@ -353,7 +353,7 @@ void show_modify_window(char *target_name)
 	char full_glade_path[MAX_LEN];
 
 	g_create_builder = gtk_builder_new();
-	sprintf(full_glade_path, "%s/vtm_conf/vtm.glade", get_bin_path());
+	sprintf(full_glade_path, "%s/etc/vtm.glade", get_root_path());
 
 	gtk_builder_add_from_file(g_create_builder, full_glade_path, NULL);
 
@@ -363,7 +363,7 @@ void show_modify_window(char *target_name)
 	
 	gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target");
 
-	virtual_target_path = get_virtual_target_path(target_name);
+	virtual_target_path = get_virtual_target_abs_path(target_name);
 	g_info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(g_info_file);
    	//if targetlist exist but config file not exists
@@ -408,7 +408,7 @@ void init_setenv()
 
 	g_setenv("EMULATOR_ARCH",arch,1);
 	INFO( "architecture : %s\n", arch);
-	target_list_filepath = get_targetlist_filepath();
+	target_list_filepath = get_targetlist_abs_filepath();
 	target_list_status = is_exist_file(target_list_filepath);
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
@@ -463,7 +463,7 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 		if(check_shdmem(target_name, MODIFY_MODE)== -1)
 			return;
 		
-		virtual_target_path = get_virtual_target_path(target_name);
+		virtual_target_path = get_virtual_target_abs_path(target_name);
 		show_modify_window(target_name);	
 		g_free(virtual_target_path);
 	}
@@ -493,7 +493,7 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 		&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-		virtual_target_path = get_virtual_target_path(target_name);
+		virtual_target_path = get_virtual_target_abs_path(target_name);
 		activate_target(target_name);	
 		g_free(virtual_target_path);
 		g_free(target_name);
@@ -538,7 +538,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 			
-		virtual_target_path = get_virtual_target_path(target_name);
+		virtual_target_path = get_virtual_target_abs_path(target_name);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		info_file_status = is_exist_file(info_file);
 
@@ -565,11 +565,11 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		else
 		{
 			sdcard_detail = g_strdup_printf("Supported");
-			sdcard_path_detail = g_strdup_printf("%s/%s", get_bin_path(), sdcard_path); 
+			sdcard_path_detail = g_strdup_printf("%s", sdcard_path); 
 		}
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-		disk_path_detail = g_strdup_printf("%s/%s", get_bin_path(), disk_path);
+		disk_path_detail = g_strdup_printf("%s", disk_path);
 #ifndef _WIN32		
 		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
 				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
@@ -633,7 +633,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		if(bResult == FALSE)
 			return;
 		
-		virtual_target_path = get_virtual_target_path(target_name);
+		virtual_target_path = get_virtual_target_abs_path(target_name);
 
 #ifdef _WIN32
 		char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
@@ -657,7 +657,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 #endif
-		target_list_filepath = get_targetlist_filepath();
+		target_list_filepath = get_targetlist_abs_filepath();
 		target_list_status = is_exist_file(target_list_filepath);
 
 		del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
@@ -692,7 +692,7 @@ void refresh_clicked_cb(char *arch)
 	GtkTreePath *first_col_path = NULL;
 
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
-	local_target_list_filepath = get_targetlist_filepath();
+	local_target_list_filepath = get_targetlist_abs_filepath();
 	target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
 
 	gtk_list_store_clear(store);
@@ -701,7 +701,7 @@ void refresh_clicked_cb(char *arch)
 	{
 		gtk_list_store_append(store, &iter);
 				
-		virtual_target_path = get_virtual_target_path(target_list[i]);
+		virtual_target_path = get_virtual_target_abs_path(target_list[i]);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		info_file_status = is_exist_file(info_file);
 
@@ -765,17 +765,20 @@ void make_default_image(void)
 {
 	char *cmd = NULL;
 	int info_file_status;
-	char *virtual_target_path = get_virtual_target_path("default");
-	char* default_img = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
+	char *virtual_target_path = get_virtual_target_abs_path("default");
+	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+	char *default_img = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
 	info_file_status = is_exist_file(default_img);
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
 		INFO( "emulimg-default.x86 not exists. is making now.\n");
 	// create emulator image
 #ifdef _WIN32
-		cmd = g_strdup_printf("qemu-img.exe create -b %s/emulimg.x86 -f qcow2 x86/VMs/default/emulimg-default.x86", get_abs_path());
+		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %s",
+				get_bin_path(), get_arch_abs_path(), default_img);
 #else
-		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 x86/VMs/default/emulimg-default.x86", get_abs_path());
+		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %s",
+				get_arch_abs_path(), default_img);
 #endif
 		if(!run_cmd(cmd))
 		{
@@ -786,7 +789,10 @@ void make_default_image(void)
 
 		INFO( "emulimg-default.x86 creation succeeded!\n");
 		g_free(cmd);
+
+		set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
 	}
+	free(default_img);
 }	
 
 gboolean run_cmd(char *cmd)
@@ -1114,7 +1120,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	name = gtk_entry_get_text(GTK_ENTRY(name_entry));
-	char *virtual_target_path = get_virtual_target_path((gchar*)name);
+	char *virtual_target_path = get_virtual_target_abs_path((gchar*)name);
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	
 	ram_select_cb();
@@ -1145,13 +1151,13 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		snprintf(virtual_target_info.virtual_target_name, MAXBUF, "%s", name);
 	}
 	
-	dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
+	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
 	INFO( "virtual_target_path: %s\n", dest_path);
 	
 	// if try to change the target name
 	if(strcmp(name, target_name) != 0)
 	{
-		char *vms_path = (char*)get_vms_path();
+		char *vms_path = (char*)get_vms_abs_path();
 		if(name_collision_check() == 1)
 		{
 			WARN( "Virtual target with the same name exists! Choose another name.");
@@ -1224,15 +1230,12 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
 
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
-			"%s/%s/emulimg-%s.x86", get_vms_path(), name, name);
+			"%s/%s/emulimg-%s.x86", get_vms_abs_path(), name, name);
 	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
-	//delete original target name
-	target_list_filepath = get_targetlist_filepath();
-	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
-	g_free(target_name);
-	
 	if(virtual_target_info.sdcard_type == 2){
-		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
+		GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
+		char *sdcard_uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(sdcard_filechooser));
+		if(sdcard_uri == NULL){
 			show_message("Error", "You didn't select an existing sdcard image");
 			return;
 		}
@@ -1244,12 +1247,17 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	else
 	{
 	// target_name not changed
-	dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
+	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.x86", dest_path, 
 			virtual_target_info.virtual_target_name);
 	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
 	}
 
+	//delete original target name
+	target_list_filepath = get_targetlist_abs_filepath();
+	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
+	g_free(target_name);
+	
 	if(access(dest_path, R_OK) != 0)
 #ifndef _WIN32
 		mkdir(dest_path, S_IRWXU | S_IRWXG);
@@ -1268,7 +1276,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		// sdcard create
 		sdcard_size_select_cb();
 #ifndef _WIN32
-		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_path(), sdcard_create_size, dest_path);
+		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
 		
 		if(!run_cmd(cmd))
 		{
@@ -1279,7 +1287,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		}
 		g_free(cmd);
 #else
-		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_path(), sdcard_create_size);
+		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_abs_path(), sdcard_create_size);
 		char *dst_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", dest_path, sdcard_create_size);
 
 		gchar *src_dos_path = change_path_from_slash(src_sdcard_path);
@@ -1347,7 +1355,7 @@ void ok_clicked_cb(void)
 	char *conf_file = NULL;
 	GtkWidget *win = get_window(VTM_CREATE_ID);
 	
-	dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
+	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
 	if(access(dest_path, R_OK) != 0)
 #ifndef _WIN32
 		mkdir(dest_path, S_IRWXU | S_IRWXG);
@@ -1372,7 +1380,7 @@ void ok_clicked_cb(void)
 	{
 		// sdcard create
 #ifndef _WIN32
-		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_path(), sdcard_create_size, dest_path);
+		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
 		
 		if(!run_cmd(cmd))
 		{
@@ -1383,7 +1391,7 @@ void ok_clicked_cb(void)
 		}
 		g_free(cmd);
 #else
-		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_path(), sdcard_create_size);
+		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_abs_path(), sdcard_create_size);
 		char *dst_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", dest_path, sdcard_create_size);
 
 		gchar *src_dos_path = change_path_from_slash(src_sdcard_path);
@@ -1416,10 +1424,10 @@ void ok_clicked_cb(void)
 	
 // create emulator image
 #ifdef _WIN32
-	cmd = g_strdup_printf("qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_abs_path(),
+	cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_root_path(), get_arch_abs_path(),
 			dest_path, virtual_target_info.virtual_target_name);
 #else
-	cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_abs_path(),
+	cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_arch_abs_path(),
 			dest_path, virtual_target_info.virtual_target_name);
 #endif
 	if(!run_cmd(cmd))
@@ -1534,6 +1542,10 @@ void setup_modify_sdcard_frame(char *target_name)
 
 // file chooser setup
 	GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
+	GtkFileFilter *filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "SD Card Image Files");
+	gtk_file_filter_add_pattern(filter, "*.img");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser), filter);
 
 	sdcard_type= get_config_value(g_info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
 	if(strcmp(sdcard_type, "0") == 0)
@@ -1715,7 +1727,7 @@ void show_create_window(void)
 
 	g_create_builder = gtk_builder_new();
 	char full_glade_path[MAX_LEN];
-	sprintf(full_glade_path, "%s/vtm_conf/vtm.glade", get_bin_path());
+	sprintf(full_glade_path, "%s/etc/vtm.glade", get_root_path());
 
 	gtk_builder_add_from_file(g_create_builder, full_glade_path, NULL);
 
@@ -1818,7 +1830,7 @@ int main(int argc, char** argv)
 		WARN( "getting icon image path is failed!!\n");
 	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 
-	sprintf(full_glade_path, "%s/vtm_conf/vtm.glade", get_bin_path());
+	sprintf(full_glade_path, "%s/etc/vtm.glade", get_root_path());
 
 	gtk_builder_add_from_file(g_builder, full_glade_path, NULL);
 
