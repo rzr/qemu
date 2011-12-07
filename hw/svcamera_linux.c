@@ -30,11 +30,14 @@
 #include "svcamera.h"
 #include "pci.h"
 #include "kvm.h"
+#include "debug_ch.h"
 
 #include <linux/videodev2.h>
 
 #include <libv4l2.h>
 #include <libv4lconvert.h>
+
+MULTI_DEBUG_CHANNEL(tizen, svcam_linux);
 
 static int v4l2_fd;
 static int convert_trial;
@@ -69,11 +72,11 @@ static int __v4l2_grab(SVCamState *state)
 	if ( r < 0) {
 		if (errno == EINTR)
 			return 0;
-		DEBUG_PRINT("select : %s", strerror(errno));
+		ERR("select : %s\n", strerror(errno));
 		return -1;
 	}
 	if (!r) {
-		DEBUG_PRINT("Timed out");
+		ERR("Timed out\n");
 		return 0;
 	}
 
@@ -88,6 +91,7 @@ static int __v4l2_grab(SVCamState *state)
 		case EINTR:
 		default:
 			if (convert_trial-- == -1) {
+				ERR("Try count is exceeded\n");
 				return -1;
 			}
 			return 0;
@@ -99,7 +103,7 @@ static int __v4l2_grab(SVCamState *state)
 		if (skip_flag)
 			return 0;
 	}
-
+	
 	qemu_irq_raise(state->dev.irq[0]);
 	return 1;
 }
@@ -122,7 +126,7 @@ wait_worker_thread:
 	{
 		pthread_mutex_unlock(&thread->mutex_lock);
 		if (__v4l2_grab(thread->state) < 0) {
-			DEBUG_PRINT("__v4l2_grab() error!");
+			WARN("__v4l2_grab failed!\n");
 			goto wait_worker_thread;
 		}
 		pthread_mutex_lock(&thread->mutex_lock);
@@ -144,7 +148,7 @@ void svcam_device_init(SVCamState* state)
 
 	err = pthread_create(&thread->thread_id, NULL, svcam_worker_thread, (void*)thread);
 	if (err != 0) {
-		perror("svcamera pthread_create fail");
+		perror("svcamera pthread_create fail\n");
 		exit(0);
 	}
 }
@@ -158,19 +162,19 @@ void svcam_device_open(SVCamState* state)
 	param->top = 0;
 	v4l2_fd = v4l2_open("/dev/video0", O_RDWR | O_NONBLOCK);
 	if (v4l2_fd < 0) {
-		DEBUG_PRINT("v4l2 device open failed.");
+		ERR("v4l2 device open failed.\n");
 		param->errCode = EINVAL;
 		return;
 	}
 	if (xioctl(v4l2_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-		DEBUG_PRINT("VIDIOC_QUERYCAP failed");
+		ERR("VIDIOC_QUERYCAP failed\n");
 		v4l2_close(v4l2_fd);
 		param->errCode = EINVAL;
 		return;
 	}
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
 			!(cap.capabilities & V4L2_CAP_STREAMING)) {
-		DEBUG_PRINT("Not supported video driver.");
+		ERR("Not supported video driver.\n");
 		v4l2_close(v4l2_fd);
 		param->errCode = EINVAL;
 		return;
@@ -210,6 +214,7 @@ void svcam_device_s_param(SVCamState* state)
 	sp.parm.capture.timeperframe.denominator = param->stack[1];
 
 	if (xioctl(v4l2_fd, VIDIOC_S_PARM, &sp) < 0) {
+		ERR("VIDIOC_S_PARM failed: %d\n", errno);
 		param->errCode = errno;
 	}
 }
@@ -224,6 +229,7 @@ void svcam_device_g_param(SVCamState* state)
 	sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (xioctl(v4l2_fd, VIDIOC_G_PARM, &sp) < 0) {
+		ERR("VIDIOC_G_PARM failed: %d\n", errno);
 		param->errCode = errno;
 		return;
 	}
@@ -245,7 +251,7 @@ void svcam_device_s_fmt(SVCamState* state)
 	dst_fmt.fmt.pix.field = param->stack[3];
 
 	if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
-		DEBUG_PRINT("VIDIOC_S_FMT failed!!");
+		ERR("VIDIOC_S_FMT failed : %d\n", errno);
 		param->errCode = errno;
 		return;
 	}
@@ -270,6 +276,7 @@ void svcam_device_g_fmt(SVCamState* state)
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (xioctl(v4l2_fd, VIDIOC_G_FMT, &format) < 0) {
+		ERR("VIDIOC_G_FMT failed : %d\n", errno);
 		param->errCode = errno;		
 	} else {
 		param->stack[0] = format.fmt.pix.width;
@@ -298,6 +305,7 @@ void svcam_device_try_fmt(SVCamState* state)
 	format.fmt.pix.field = param->stack[3];
 
 	if (xioctl(v4l2_fd, VIDIOC_TRY_FMT, &format) < 0) {
+		ERR("VIDIOC_TRY_FMT failed : %d\n", errno);
 		param->errCode = errno;
 		return;
 	}
@@ -408,7 +416,7 @@ void svcam_device_enum_fsizes(SVCamState* state)
 		param->stack[1] = fsize.discrete.height;
 	} else {
 		param->errCode = EINVAL;
-		DEBUG_PRINT("Not Supported mode, we only support DISCRETE");
+		ERR("Not Supported mode, we only support DISCRETE\n");
 	}
 }
 
@@ -434,7 +442,7 @@ void svcam_device_enum_fintv(SVCamState* state)
 		param->stack[1] = ival.discrete.denominator;
 	} else {
 		param->errCode = EINVAL;
-		DEBUG_PRINT("Not Supported mode, we only support DISCRETE");
+		ERR("Not Supported mode, we only support DISCRETE\n");
 	}
 }
 

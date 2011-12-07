@@ -32,14 +32,6 @@
 #include "pci.h"
 #include <pthread.h>
 
-#define DEBUG_SVCAM
-
-#if defined (DEBUG_SVCAM)
-#  define DEBUG_PRINT(x, arg...) do { printf("[%s] " x "\n", __func__,  ##arg); } while (0)
-#else
-#  define DEBUG_PRINT(x)
-#endif
-
 #define SVCAM_MAX_PARAM	 20
 
 /* must sync with GUEST camera_driver */
