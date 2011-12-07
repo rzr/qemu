@@ -469,7 +469,15 @@ static void construct_main_window(void)
 		ERR( "getting skin path is failed!!\n");
 		exit (1);
 	}
+#ifdef _WIN32	
+#if (_WIN32_WINNT >= 0x0601)
 	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+#else 
+	sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
+#endif
+#else /* _WIN32 */
+	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+#endif/* _WIN32 */
 
 	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
 		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);

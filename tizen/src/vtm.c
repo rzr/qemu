@@ -1738,7 +1738,7 @@ void show_create_window(void)
 	skin = get_skin_path();
 	if(skin == NULL)
 		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/vtm.png", skin);
+	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), icon_image, NULL);
 
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
@@ -1816,7 +1816,7 @@ int main(int argc, char** argv)
 	skin = (char*)get_skin_path();
 	if(skin == NULL)
 		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/vtm.png", skin);
+	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 
 	sprintf(full_glade_path, "%s/vtm_conf/vtm.glade", get_bin_path());
 
