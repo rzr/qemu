@@ -171,7 +171,7 @@ static int send_info_to_sensor_daemon(char *send_buf, int buf_size)
 	socket_send(s, send_buf, buf_size);
 
 	INFO( "send(size: %d) te 127.0.0.1:%d/tcp \n"
-			, buf_size, get_sdb_base_port() + 3);
+			, buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX);
 
 #ifdef _WIN32
 	closesocket(s);
