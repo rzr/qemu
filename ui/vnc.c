@@ -577,7 +577,7 @@ static void vnc_dpy_resize(DisplayState *ds)
 }
 
 /* fastest code */
-static void vnc_write_pixels_copy(VncState *vs, struct PixelFormat *pf,
+static void vnc_write_pixels_copy(VncState *vs, struct QEMU_PixelFormat *pf,
                                   void *pixels, int size)
 {
     vnc_write(vs, pixels, size);
@@ -628,7 +628,7 @@ void vnc_convert_pixel(VncState *vs, uint8_t *buf, uint32_t v)
     }
 }
 
-static void vnc_write_pixels_generic(VncState *vs, struct PixelFormat *pf,
+static void vnc_write_pixels_generic(VncState *vs, struct QEMU_PixelFormat *pf,
                                      void *pixels1, int size)
 {
     uint8_t buf[4];

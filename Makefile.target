@@ -224,6 +224,7 @@ obj-i386-y += device-hotplug.o pci-hotplug.o smbios.o wdt_ib700.o
 obj-i386-y += debugcon.o multiboot.o
 obj-i386-y += pc_piix.o
 obj-i386-$(CONFIG_SPICE) += qxl.o qxl-logger.o qxl-render.o
+
 ##########################################################
 # opengl library for i386 
 obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
@@ -240,7 +241,12 @@ obj-i386-y += svibe.o
 obj-i386-y += helper_gpi.o
 ##########################################################
 
-
+ifdef CONFIG_FFMPEG
+# codec acceleration
+obj-i386-y += codec_accel.o
+LIBS+=-lavformat -lavcodec -lavutil -lswscale -lbz2
+CFLAGS+=$(FFMPEG_CFLAGS)
+endif
 
 # shared objects
 obj-ppc-y = ppc.o

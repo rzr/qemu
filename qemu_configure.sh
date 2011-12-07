@@ -12,9 +12,10 @@ exec ./configure \
  --enable-mixemu \
  --disable-vnc-tls \
  --enable-tcg-x86-opt \
- --extra-ldflags="-lv4l2 -lv4lconvert"
-#    --enable-debug \
-#--enable-profiler \
+ --extra-ldflags="-lv4l2 -lv4lconvert -Xlinker -rpath -Xlinker ./lib"
+# --enable-ffmpeg \
+# --enable-debug \
+# --enable-profiler \
 # --enable-gles2 --gles2dir=/usr
 ;;
 CYGWIN*)
@@ -34,6 +35,7 @@ exec ./configure \
  --audio-card-list=es1370 \
  --enable-mixemu \
  --disable-vnc-tls
+# --enable-ffmpeg
 # --disable-vnc-jpeg \
 # --disable-jpeg
 ;;
