@@ -41,6 +41,9 @@
 #include "pci_ids.h"
 
 #include "svcamera.h"
+#include "debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(tizen, svcam_pci);
 
 #define PCI_CAMERA_DEVICE_NAME		"svcamera_pci"
 
@@ -86,7 +89,7 @@ static inline uint32_t svcam_reg_read(void *opaque, target_phys_addr_t offset)
 		state->thread->param->errCode = 0;
 		break;
 	default:
-		DEBUG_PRINT("Not supported command!!");
+		WARN("Not supported command!!\n");
 		break;
 	}
 	return ret;
@@ -152,7 +155,7 @@ static inline void svcam_reg_write(void *opaque, target_phys_addr_t offset, uint
 		qemu_irq_lower(state->dev.irq[0]);
 		break;
 	default:
-		DEBUG_PRINT("Not supported command!!");
+		WARN("Not supported command!!\n");
 		break;
 	}
 }
