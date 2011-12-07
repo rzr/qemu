@@ -329,6 +329,36 @@ void exit_emulator_post_process( void ) {
 
 }
 
+static int send_info_to_emuld(char *send_buf, int buf_size)
+{
+    int   s;  
+
+    s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_EMULD_INDEX)); 
+    if (s < 0) {
+        TRACE( "can't create socket to talk to the sdb forwarding session \n");
+        TRACE( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
+                , get_sdb_base_port() + SDB_TCP_EMULD_INDEX
+                , errno, strerror(errno)
+             );  
+        return -1; 
+    }   
+
+    socket_send(s, "system\n\n\n\n", 10);
+    socket_send(s, &buf_size, 4); 
+    socket_send(s, send_buf, buf_size);
+
+    INFO( "send(size: %d) te 127.0.0.1:%d/tcp \n"
+            , buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX); 
+
+#ifdef _WIN32
+    closesocket(s);
+#else
+    close(s);
+#endif
+
+    return 1;
+}
+
 /**
  * @brief	 destroy emulator
  * @param	 widget
@@ -340,19 +370,33 @@ void exit_emulator(void)
 
 #if 1 /* graceful shutdown */
 
-	// long press : power key
-	ps2kbd_put_keycode( 103 & 0x7f );
-	usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
-	ps2kbd_put_keycode( 103 | 0x80 );
-
+	/* 1st way : long press => power key */
+	//ps2kbd_put_keycode( 103 & 0x7f );
+	//usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
+	//ps2kbd_put_keycode( 103 | 0x80 );
 	// If user selects 'Yes' in Power off poup, 'qemu_system_shutdown_request' in vl.c is supposed to be called.
+
+	/* 2nd way : send command shutdown to emuld in guest image */
+	int i;
+
+    INFO("send command shutdown to emuld \n");
+	send_info_to_emuld("shutdown", 8);
+
+	/* wait 7 seconds */
+    INFO("wait 7 seconds \n");
+	for(i=0; i<7; i++){
+		usleep(1000000);
+	}
+
+    INFO("qemu_system_shutdown_request call \n");
+	qemu_system_shutdown_request();
 
 #else
 
 
-	/* 1. emulator and driver destroy */
+		/* 1. emulator and driver destroy */
 
-	destroy_emulator();
+		destroy_emulator();
 
 	INFO( "Emulator Stop: destroy emulator \n");
 
@@ -362,7 +406,7 @@ void exit_emulator(void)
 
 	/* 3. quit SDL */
 
-//	SDL_Quit();
+	//	SDL_Quit();
 
 	/* 4. shutdown qemu system */
 
