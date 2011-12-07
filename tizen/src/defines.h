@@ -128,6 +128,7 @@ extern "C" {
 #define SNAPSHOT_SAVED_DATE_KEY		"SNAPSHOT_DATE"
 #define DISK_TYPE_KEY				"DISK_TYPE"
 #define DISK_PATH_KEY				"DISK_PATH"
+#define BASEDISK_PATH_KEY			"BASEDISK_PATH"
 #define EMULATOR_OPTION_KEY			"EMULATOR_OPTION"
 #define QEMU_OPTION_KEY				"QEMU_OPTION"
 
@@ -628,6 +629,8 @@ typedef struct _VIRTUALTARGETINFO {
 	char resolution[MAXBUF];
 	int button_type;
 	int sdcard_type;
+	int disk_type;
+	char basedisk_path[MAXBUF];
 	char sdcard_path[MAXBUF];
 	int ram_size;
 	char dpi[MAXBUF];
