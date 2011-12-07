@@ -9,7 +9,6 @@ exec ./configure \
  --target-list=i386-softmmu \
  --disable-werror \
  --audio-drv-list=pa \
- --audio-card-list=es1370 \
  --enable-mixemu \
  --disable-vnc-tls \
  --enable-tcg-x86-opt \

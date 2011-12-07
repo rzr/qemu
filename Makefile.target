@@ -13,8 +13,8 @@ include $(HWDIR)/config.mak
 endif
 
 TARGET_PATH=$(SRC_PATH)/target-$(TARGET_BASE_ARCH)
-$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw)
-QEMU_CFLAGS+= -I.. -I$(TARGET_PATH) -DNEED_CPU_H
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/hw)
+QEMU_CFLAGS+= -I.. -I$(TARGET_PATH) -I$(SRC_PATH)/hw -DNEED_CPU_H
 
 include $(SRC_PATH)/Makefile.objs
 
@@ -348,6 +348,18 @@ obj-s390x-y = s390-virtio-bus.o s390-virtio.o
 
 obj-alpha-y = alpha_palcode.o
 
+#
+# TIZEN hw
+#
+
+# x86
+obj-i386-y += tizen-board.o
+obj-i386-y += tizen-ac97.o
+# arm
+# common
+
+
+
 main.o: QEMU_CFLAGS+=$(GPROF_CFLAGS)
 
 monitor.o: hmp-commands.h qmp-commands.h
@@ -407,8 +419,6 @@ endif
 #gles2.o: gles2.c gles2.h gles2_calls.h
 
 ##########################################################
-
-
 
 clean:
 	rm -f *.o *.a *~ $(PROGS) nwfpe/*.o fpu/*.o
