@@ -60,7 +60,7 @@ static int __v4l2_grab(SVCamState *state)
 {
 	fd_set fds;
 	struct timeval tv;
-	int r;
+	int ret;
 	
 	FD_ZERO(&fds);
 	FD_SET(v4l2_fd, &fds);
@@ -68,20 +68,25 @@ static int __v4l2_grab(SVCamState *state)
 	tv.tv_sec = 2;
 	tv.tv_usec = 0;
 
-	r = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
-	if ( r < 0) {
+	ret = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
+	if ( ret < 0) {
 		if (errno == EINTR)
 			return 0;
 		ERR("select : %s\n", strerror(errno));
 		return -1;
 	}
-	if (!r) {
-		ERR("Timed out\n");
+	if (!ret) {
+		WARN("Timed out\n");
 		return 0;
 	}
 
-	r = v4l2_read(v4l2_fd, state->vaddr, dst_fmt.fmt.pix.sizeimage);
-	if ( r < 0) {
+	if (!v4l2_fd) {
+		WARN("file descriptor is closed or not opened \n");
+		return -1;
+	}
+
+	ret = v4l2_read(v4l2_fd, state->vaddr, dst_fmt.fmt.pix.sizeimage);
+	if ( ret < 0) {
 		switch (errno) {
 		case EINVAL:
 		case ENOMEM:
@@ -103,9 +108,16 @@ static int __v4l2_grab(SVCamState *state)
 		if (skip_flag)
 			return 0;
 	}
-	
-	qemu_irq_raise(state->dev.irq[0]);
-	return 1;
+
+	ret = -1;
+	pthread_mutex_lock(&state->thread->mutex_lock);
+	if (state->streamon) {
+		qemu_irq_raise(state->dev.irq[0]);
+		ret = 1;
+	}
+	pthread_mutex_unlock(&state->thread->mutex_lock);
+
+	return ret;
 }
 
 // Worker thread
@@ -121,18 +133,20 @@ wait_worker_thread:
 	pthread_cond_wait(&thread->thread_cond, &thread->mutex_lock);
 	pthread_mutex_unlock(&thread->mutex_lock);
 
-	pthread_mutex_lock(&thread->mutex_lock);
-	while(thread->state->streamon)
+	while (1)
 	{
-		pthread_mutex_unlock(&thread->mutex_lock);
-		if (__v4l2_grab(thread->state) < 0) {
-			WARN("__v4l2_grab failed!\n");
+		pthread_mutex_lock(&thread->mutex_lock);
+		if (thread->state->streamon) {
+			pthread_mutex_unlock(&thread->mutex_lock);
+			if (__v4l2_grab(thread->state) < 0) {
+				WARN("__v4l2_grab failed!\n");
+				goto wait_worker_thread;
+			}
+		} else {
+			pthread_mutex_unlock(&thread->mutex_lock);
 			goto wait_worker_thread;
 		}
-		pthread_mutex_lock(&thread->mutex_lock);
 	}
-	pthread_mutex_unlock(&thread->mutex_lock);
-	goto wait_worker_thread;
 
 	qemu_free(thread_param);
 	pthread_exit(NULL);
@@ -140,14 +154,12 @@ wait_worker_thread:
 
 void svcam_device_init(SVCamState* state)
 {
-	int err = 0;
 	SVCamThreadInfo *thread = state->thread;
 
 	pthread_cond_init(&thread->thread_cond, NULL);
 	pthread_mutex_init(&thread->mutex_lock, NULL);
 
-	err = pthread_create(&thread->thread_id, NULL, svcam_worker_thread, (void*)thread);
-	if (err != 0) {
+	if (pthread_create(&thread->thread_id, NULL, svcam_worker_thread, (void*)thread) != 0) {
 		perror("svcamera pthread_create fail\n");
 		exit(0);
 	}
@@ -199,7 +211,6 @@ void svcam_device_stop_preview(SVCamState* state)
 	state->streamon = 0;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
 	sleep(0);
-	qemu_irq_lower(state->dev.irq[0]);
 }
 
 void svcam_device_s_param(SVCamState* state)
@@ -449,13 +460,10 @@ void svcam_device_enum_fintv(SVCamState* state)
 // SVCAM_CMD_CLOSE
 void svcam_device_close(SVCamState* state)
 {
-	uint32_t chk;
 	pthread_mutex_lock(&state->thread->mutex_lock);
-	chk = state->streamon;
+	state->streamon = 0;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
 
-	if (chk)
-		svcam_device_stop_preview(state);
-
 	v4l2_close(v4l2_fd);
+	v4l2_fd = 0;
 }
