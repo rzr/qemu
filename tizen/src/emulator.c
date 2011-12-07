@@ -42,7 +42,7 @@
  * @section  INTRO
  *   program module name: ISE emulator
  *   emulator program can run both standalone and with ISE
-*/
+ */
 
 #include "emulator.h"
 #include "about_version.h"
@@ -215,10 +215,10 @@ static void emul_process_close_handle (GPid pid, gint status, gpointer data)
 }
 
 /**
-	@brief  send SIGTERM to process
-	@param	data: pid of terminal
-	@user_data: dummy
-*/
+  @brief  send SIGTERM to process
+  @param	data: pid of terminal
+  @user_data: dummy
+ */
 static void emul_kill_process(gpointer data, gpointer user_data)
 {
 	WARN( "kill terminal pid=%d\n", (int)data);
@@ -226,18 +226,18 @@ static void emul_kill_process(gpointer data, gpointer user_data)
 }
 
 /**
-	@brief	call emul_kill_process for all the node in emul_process_list
-*/
+  @brief	call emul_kill_process for all the node in emul_process_list
+ */
 void emul_kill_all_process(void)
 {
 	g_slist_foreach(emul_process_list, emul_kill_process, NULL);
 }
 
 /**
-	@brief  create a process
-	@param	data: command of starting process
-	@return success: TRUE
-*/
+  @brief  create a process
+  @param	data: command of starting process
+  @return success: TRUE
+ */
 int emul_create_process(const gchar cmd[])
 {
 	GPid pid = 0;
@@ -257,7 +257,7 @@ int emul_create_process(const gchar cmd[])
 	}
 
 	else {
-	//	ERR( "Error in g_spawn_async\n");
+		//	ERR( "Error in g_spawn_async\n");
 		ret = FALSE;
 	}
 
@@ -289,25 +289,25 @@ int emul_create_process(const gchar cmd[])
 #ifdef _WIN32
 void socket_cleanup(void)
 {
-    WSACleanup();
+	WSACleanup();
 }
 #endif
 
 int socket_init(void)
 {
 #ifdef _WIN32
-    WSADATA Data;
-    int ret, err;
+	WSADATA Data;
+	int ret, err;
 
-    ret = WSAStartup(MAKEWORD(2,0), &Data);
-    if (ret != 0) {
-        err = WSAGetLastError();
-        fprintf(stderr, "WSAStartup: %d\n", err);
-        return -1;
-    }
-    atexit(socket_cleanup);
+	ret = WSAStartup(MAKEWORD(2,0), &Data);
+	if (ret != 0) {
+		err = WSAGetLastError();
+		fprintf(stderr, "WSAStartup: %d\n", err);
+		return -1;
+	}
+	atexit(socket_cleanup);
 #endif
-    return 0;
+	return 0;
 }
 
 void exit_emulator_post_process( void ) {
@@ -320,7 +320,7 @@ void exit_emulator_post_process( void ) {
 	window_hash_destroy();
 
 	/* 3. quit SDL */
-//	SDL_Quit();
+	//	SDL_Quit();
 
 	/* 4. quit main */
 	gtk_main_quit();
@@ -335,32 +335,51 @@ void exit_emulator_post_process( void ) {
 
 static int send_info_to_emuld(char *send_buf, int buf_size)
 {
-    int   s;  
+	int   s;  
 
-    s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_EMULD_INDEX)); 
-    if (s < 0) {
-        TRACE( "can't create socket to talk to the sdb forwarding session \n");
-        TRACE( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
-                , get_sdb_base_port() + SDB_TCP_EMULD_INDEX
-                , errno, strerror(errno)
-             );  
-        return -1; 
-    }   
+	s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_EMULD_INDEX)); 
+	if (s < 0) {
+		TRACE( "can't create socket to talk to the sdb forwarding session \n");
+		TRACE( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
+				, get_sdb_base_port() + SDB_TCP_EMULD_INDEX
+				, errno, strerror(errno)
+			 );  
+		return -1; 
+	}   
 
-    socket_send(s, "system\n\n\n\n", 10);
-    socket_send(s, &buf_size, 4); 
-    socket_send(s, send_buf, buf_size);
+	socket_send(s, "system\n\n\n\n", 10);
+	socket_send(s, &buf_size, 4); 
+	socket_send(s, send_buf, buf_size);
 
-    INFO( "send(size: %d) te 127.0.0.1:%d/tcp \n"
-            , buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX); 
+	INFO( "send(size: %d) te 127.0.0.1:%d/tcp \n"
+			, buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX); 
 
 #ifdef _WIN32
-    closesocket(s);
+	closesocket(s);
 #else
-    close(s);
+	close(s);
 #endif
 
-    return 1;
+	return 1;
+}
+
+static void *graceful_shutdown_ftn(void* arg)
+{
+	int i;
+
+	INFO("send command shutdown to emuld \n");
+	send_info_to_emuld("shutdown", 8);
+
+	/* wait 7 seconds */
+	INFO("wait 7 seconds \n");
+	for(i=0; i<7; i++){
+		usleep(1000000);
+	}
+
+	INFO("qemu_system_shutdown_request call \n");
+	qemu_system_shutdown_request();
+
+	return 0;
 }
 
 /**
@@ -381,26 +400,18 @@ void exit_emulator(void)
 	// If user selects 'Yes' in Power off poup, 'qemu_system_shutdown_request' in vl.c is supposed to be called.
 
 	/* 2nd way : send command shutdown to emuld in guest image */
-	int i;
-
-    INFO("send command shutdown to emuld \n");
-	send_info_to_emuld("shutdown", 8);
-
-	/* wait 7 seconds */
-    INFO("wait 7 seconds \n");
-	for(i=0; i<7; i++){
-		usleep(1000000);
-	}
-
-    INFO("qemu_system_shutdown_request call \n");
-	qemu_system_shutdown_request();
+	pthread_t thread_id;
+	if (pthread_create(&thread_id, NULL, graceful_shutdown_ftn, NULL) != 0) { 
+		ERR("pthread_create fail \n");
+		qemu_system_shutdown_request();
+	} 
 
 #else
 
 
-		/* 1. emulator and driver destroy */
+	/* 1. emulator and driver destroy */
 
-		destroy_emulator();
+	destroy_emulator();
 
 	INFO( "Emulator Stop: destroy emulator \n");
 
@@ -518,7 +529,7 @@ static void construct_main_window(void)
 
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
 	gtk_fixed_put (GTK_FIXED (fixed), sdl_widget, PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x,
-		PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
+			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
 	gtk_container_add (GTK_CONTAINER (g_main_window), fixed);
 
 	/* 6. create popup menu */
@@ -544,7 +555,7 @@ static void construct_main_window(void)
 	g_signal_connect (G_OBJECT(g_main_window), "configure_event", G_CALLBACK(configure_event), NULL);
 
 	gtk_widget_set_events (g_main_window, GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK |
-			   GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);// | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
+			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);// | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 
 	/* 10. widget show all */
 
@@ -565,10 +576,10 @@ static void* run_gtk_main(void* arg)
 #ifdef _WIN32
 static void* construct_main_window_and_run_gtk_main(void* arg)
 {
-     construct_main_window();
-	 init_sensor_server();
-     gtk_main();
-     return NULL;
+	construct_main_window();
+	init_sensor_server();
+	gtk_main();
+	return NULL;
 }
 #endif
 
@@ -592,7 +603,7 @@ static void init_startup_option(void)
 		while(check_port(LOCALHOST, startup_option.mountPort) == 0)
 			startup_option.mountPort++;
 	}
-	
+
 	startup_option.no_dump = FALSE;
 	startup_option.vtm = "default";
 }
@@ -613,9 +624,9 @@ static int startup_option_parser(int *argc, char ***argv)
 	gboolean version = FALSE;
 	GOptionContext *context = NULL;
 	GError *error = NULL;
-    char timeinfo[256] = { 0, };
-    struct tm *tm_time;
-    struct timeval tval;
+	char timeinfo[256] = { 0, };
+	struct tm *tm_time;
+	struct timeval tval;
 	char string[MAXBUF];
 	FILE *fp = NULL;
 	//int status = 0;
@@ -769,7 +780,7 @@ static int load_config_passed_to_qemu (arglist* al, int argc, char **argv)
 
 	TRACE( "load config file complete\n");
 
-	
+
 
 	if (determine_skin(&virtual_target_info, &configuration) < 0) {
 		ERR( "invalid skin file\n");
@@ -815,10 +826,10 @@ static void emul_prepare_process(void)
 	if(qemu_arch_is_arm()) {
 		const char* target_path = get_target_path();
 
-                if(configuration.qemu_configuration.diskimg_type) 
-                        sprintf (cmd, "/opt/samsung_sdk/simulator/vmodem_arm");
-                else 
-                        sprintf (cmd, "%s/usr/bin/vmodem_arm", target_path);
+		if(configuration.qemu_configuration.diskimg_type) 
+			sprintf (cmd, "/opt/samsung_sdk/simulator/vmodem_arm");
+		else 
+			sprintf (cmd, "%s/usr/bin/vmodem_arm", target_path);
 
 		if(emul_create_process(cmd) == FALSE)
 			fprintf(stderr, "create vmodem failed\n");
@@ -838,28 +849,28 @@ static void emul_prepare_process(void)
 int init_shdmem()
 {
 #ifndef _WIN32
-    int shmid; 
-    char *shared_memory;
-  
+	int shmid; 
+	char *shared_memory;
+
 	tizen_base_port = get_sdb_base_port();
 	shmid = shmget((key_t)tizen_base_port, 64, 0666|IPC_CREAT); 
-    if (shmid == -1) 
-    { 
-        ERR("shmget failed"); 
-        return -1; 
-    } 
-    shared_memory = shmat(shmid, (char*)0x00, 0); 
-    if (shared_memory == (void *)-1) 
-    { 
-        ERR("shmat failed"); 
-        return -1; 
-    } 
+	if (shmid == -1) 
+	{ 
+		ERR("shmget failed"); 
+		return -1; 
+	} 
+	shared_memory = shmat(shmid, (char*)0x00, 0); 
+	if (shared_memory == (void *)-1) 
+	{ 
+		ERR("shmat failed"); 
+		return -1; 
+	} 
 	sprintf(shared_memory, "%s", startup_option.vtm);
 	//memcpy( shared_memory, startup_option.vtm, strlen(startup_option.vtm));
 	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
-	
-//	shmctl(shmid, IPC_RMID, 0);
-//	shmdt(shared_memory);
+
+	//	shmctl(shmid, IPC_RMID, 0);
+	//	shmdt(shared_memory);
 #endif
 	return 0;
 }
@@ -876,7 +887,7 @@ int init_shdmem()
 int main(int argc, char** argv)
 {
 	//int sensor_port = SENSOR_PORT;
-    int i, r;
+	int i, r;
 
 
 	pthread_t thread_gtk_id;
@@ -898,25 +909,25 @@ int main(int argc, char** argv)
 		dbg_printf_nonewline("%s ", g_qemu_arglist.argv[i]);
 	}
 	dbg_printf("\n");
-	
+
 	/* 4. signal handler */
 
 	register_sig_handler();
 
 #ifndef _WIN32
-        construct_main_window();
+	construct_main_window();
 
-        /* 5.3 create gtk thread  */
-        if (pthread_create(&thread_gtk_id, NULL, run_gtk_main, NULL) != 0) {
-                ERR( "error creating gtk_id thread!!\n");
-                return -1;
-        }
+	/* 5.3 create gtk thread  */
+	if (pthread_create(&thread_gtk_id, NULL, run_gtk_main, NULL) != 0) {
+		ERR( "error creating gtk_id thread!!\n");
+		return -1;
+	}
 #else /* _WIN32 */
-        /* if _WIN32, window creation and gtk main must be run in a thread */
-        if (pthread_create(&thread_gtk_id, NULL, construct_main_window_and_run_gtk_main, NULL) != 0) {
-                ERR( "error creating gtk_id thread!!\n");
-                return -1;
-        }
+	/* if _WIN32, window creation and gtk main must be run in a thread */
+	if (pthread_create(&thread_gtk_id, NULL, construct_main_window_and_run_gtk_main, NULL) != 0) {
+		ERR( "error creating gtk_id thread!!\n");
+		return -1;
+	}
 #endif
 
 #ifdef ENABLE_OPENGL_SERVER
@@ -931,7 +942,7 @@ int main(int argc, char** argv)
 #ifndef	_WIN32
 	emul_prepare_process();
 #endif
-	
+
 	qemu_main(g_qemu_arglist.argc, g_qemu_arglist.argv, NULL);
 
 	return 0;
@@ -939,20 +950,20 @@ int main(int argc, char** argv)
 
 gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpointer data)
 {
-    unsigned int len = 0;
+	unsigned int len = 0;
 	GIOError error;
 	GIOStatus status;
 	gchar *recvbuffer;
 	time_t rawtime;
 	struct tm *timeinfo;
 	char time_str[MAX_TIME_STR];
-    char telnet_commands[MAX_COMMANDS][MAX_LENGTH] = {
-							"read", //dummy command for local use
-							"delvm snapshot\r",
-							"read", //dummy command for local use
-							"savevm snapshot\r",
-							"read", //dummy command for local use
-							};
+	char telnet_commands[MAX_COMMANDS][MAX_LENGTH] = {
+		"read", //dummy command for local use
+		"delvm snapshot\r",
+		"read", //dummy command for local use
+		"savevm snapshot\r",
+		"read", //dummy command for local use
+	};
 
 	if((condition==G_IO_IN) && !(vmstate%2))
 	{
@@ -987,7 +998,7 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 				timeinfo = localtime(&rawtime);
 				strftime(time_str, MAX_TIME_STR, "%Y-%m-%d %H:%M:%S", timeinfo);
 				printf("%s\n", time_str);
-				
+
 				virtual_target_info.snapshot_saved = 1;
 				snprintf(virtual_target_info.snapshot_saved_date, MAXBUF, "%s", time_str);
 				set_config_type(SYSTEMINFO.virtual_target_info_file, ETC_GROUP, SNAPSHOT_SAVED_KEY, virtual_target_info.snapshot_saved);
@@ -997,7 +1008,7 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 			}
 
 			g_free(recvbuffer);
-			
+
 			if(vmstate<(MAX_COMMANDS-1))
 				vmstate++;
 
@@ -1008,8 +1019,8 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 	if(vmstate%2)
 	{
 		error = g_io_channel_write(channel,telnet_commands[vmstate],\
-											strlen(telnet_commands[vmstate]), \
-											&len);
+				strlen(telnet_commands[vmstate]), \
+				&len);
 		if(error!=G_IO_ERROR_NONE)
 		{
 			g_io_channel_unref (channel);
@@ -1039,30 +1050,30 @@ gboolean  update_progress_bar(GIOChannel *channel, GIOCondition condition, gpoin
 
 void save_emulator_state(void)
 {
-    /* Connect to the monitor console */
-    struct sockaddr_in server;
-    unsigned short server_port = 9000;
-    char *server_ip = "127.0.0.1";
+	/* Connect to the monitor console */
+	struct sockaddr_in server;
+	unsigned short server_port = 9000;
+	char *server_ip = "127.0.0.1";
 
 
 	/* build the UI */
-    GtkBuilder *builder = gtk_builder_new();
+	GtkBuilder *builder = gtk_builder_new();
 	char full_glade_path[MAX_LEN];
-    sprintf(full_glade_path, "%s/savevm.glade", get_bin_path());
-    gtk_builder_add_from_file(builder, full_glade_path, NULL);
+	sprintf(full_glade_path, "%s/savevm.glade", get_bin_path());
+	gtk_builder_add_from_file(builder, full_glade_path, NULL);
 
-    //get objects from the UI
-    savevm_window = (GtkWidget *)gtk_builder_get_object(builder, "savevm_window");
-    savevm_progress = (GtkProgressBar *)gtk_builder_get_object(builder, "savevm_progress");
-    savevm_label = (GtkWidget *)gtk_builder_get_object(builder, "savevm_label");
+	//get objects from the UI
+	savevm_window = (GtkWidget *)gtk_builder_get_object(builder, "savevm_window");
+	savevm_progress = (GtkProgressBar *)gtk_builder_get_object(builder, "savevm_progress");
+	savevm_label = (GtkWidget *)gtk_builder_get_object(builder, "savevm_label");
 	gtk_progress_bar_set_text(savevm_progress,"Saving State in progress...");
-    //gtk_builder_connect_signals(builder, NULL);
-    gtk_widget_show(savevm_window);
+	//gtk_builder_connect_signals(builder, NULL);
+	gtk_widget_show(savevm_window);
 
 	if ((vmsock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 	{
-    	printf("socket() failed\n");
-    	return ;
+		printf("socket() failed\n");
+		return ;
 	}
 	memset(&server, 0, sizeof(server));
 	server.sin_family      = AF_INET;
@@ -1070,29 +1081,29 @@ void save_emulator_state(void)
 	server.sin_port        = htons(server_port);
 	if (connect(vmsock, (struct sockaddr *) &server, sizeof(server)) < 0)
 	{
-    	printf("connect() failed\n");
-    	close(vmsock);
-    	return ;
+		printf("connect() failed\n");
+		close(vmsock);
+		return ;
 	}
 
 	channel=g_io_channel_unix_new(vmsock);
 	if(channel==NULL)
 	{
-       	printf("gnet_tcp_socket_get_io_channel() failed\n");
-    	close(vmsock);
-       	return ;
-   	}
+		printf("gnet_tcp_socket_get_io_channel() failed\n");
+		close(vmsock);
+		return ;
+	}
 	//g_io_channel_set_flags (channel, G_IO_FLAG_NONBLOCK, NULL);
-	
+
 	guint sourceid = g_io_add_watch(channel, G_IO_IN|G_IO_ERR|G_IO_HUP, \
-													update_progress_bar, NULL);
+			update_progress_bar, NULL);
 
 	if(sourceid<=0)
 	{
-       	printf("g_io_add_watch() failed\n");
+		printf("g_io_add_watch() failed\n");
 		g_io_channel_unref(channel);
-    	close(vmsock);
-       	return ;
-   	}
+		close(vmsock);
+		return ;
+	}
 	printf("Added to gmain loop = %d\n", sourceid);
 }
