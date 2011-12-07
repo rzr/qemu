@@ -79,18 +79,6 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	SubMenuItem = gtk_menu_new();
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(Item), SubMenuItem);
 
-	menu_item = gtk_check_menu_item_new_with_label(_("Always On Top"));
-	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
-	g_signal_connect(menu_item, "toggled", G_CALLBACK(always_on_top_cb), menu_item);
-
-	int always_on_top = get_config_type(SYSTEMINFO.virtual_target_info_file, COMMON_GROUP, ALWAYS_ON_TOP_KEY);
-	if(always_on_top == 1)
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_item), TRUE);
-	else
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_item), FALSE);
-
-	gtk_widget_show(menu_item);
-
 	/* 3.2 event injector menu of advanced */
         if(configuration.enable_telephony_emulator){
         	menu_item = gtk_image_menu_item_new_with_label(_("Telephony Emulator"));
@@ -422,28 +410,29 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
         	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
 	        gtk_widget_show(Item);
         }
-	/* 3. advanced menu */
-
-	create_popup_advanced_menu(pMenu, device, pconfiguration);
-
-	/* 4. properties menu */
 	
-	Item = gtk_image_menu_item_new_with_label(_("Device Info"));
-	sprintf(icon_image, "%s/icons/12_DEVICE-INFO.png", skin_path);
-	image_widget = gtk_image_new_from_file (icon_image);
+	/* 2. always on top  menu */
+	Item = gtk_check_menu_item_new_with_label(_("Always On Top"));
+	g_signal_connect(Item, "toggled", G_CALLBACK(always_on_top_cb), Item);
+	int always_on_top = get_config_type(SYSTEMINFO.virtual_target_info_file, COMMON_GROUP, ALWAYS_ON_TOP_KEY);
+	if(always_on_top == 1)
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(Item), TRUE);
+	else
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(Item), FALSE);
 
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
-	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
-	gtk_widget_set_tooltip_text(Item, _("Show Target information like LCD Size"));
-
-	g_signal_connect(Item, "activate", G_CALLBACK(menu_device_info_callback), NULL);
+	gtk_widget_set_tooltip_text(Item,"Set keep above this window or not");
 	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
 	gtk_widget_show(Item);
 
+
+		
+		/* 3. advanced menu */
+
+	create_popup_advanced_menu(pMenu, device, pconfiguration);
+
 //	create_popup_properties_menu(pMenu, pconfiguration);
 
-	/* 5. about menu */
+	/* 4. about menu */
 
 	Item = gtk_image_menu_item_new_with_label(_("About"));
 	sprintf(icon_image, "%s/icons/13_ABOUT.png", skin_path);
@@ -454,10 +443,11 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
 
 	g_signal_connect(Item, "activate", G_CALLBACK(menu_about_callback), NULL);
+   	gtk_widget_set_tooltip_text(Item,"Show license and version information");
 	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
 	gtk_widget_show(Item);
 
-	/* 6. exit menu */
+	/* 5. exit menu */
 
 	Item = gtk_image_menu_item_new_with_label(_("Close"));
 	sprintf(icon_image, "%s/icons/14_CLOSE.png", skin_path);
@@ -471,6 +461,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
 
 	g_signal_connect(Item, "activate", G_CALLBACK(exit_emulator), NULL);
+   	gtk_widget_set_tooltip_text(Item,"Exit Emulator");
 	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
 	gtk_widget_show(Item);
 }
