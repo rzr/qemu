@@ -646,22 +646,22 @@ static void nam_writew (void *opaque, uint32_t addr, uint32_t val)
         break;
 #ifdef USE_MIXER
     case AC97_Master_Volume_Mute:
-        dolog2 ("caramis1 %#x\n", val);
+//        dolog2 ("caramis1 %#x\n", val);
 //        set_volume (s, index, AUD_MIXER_VOLUME, val);
         set_volume (s, index, 0, val);
         break;
     case AC97_PCM_Out_Volume_Mute:
-        dolog2 ("caramis2 %#x\n", val);
+//        dolog2 ("caramis2 %#x\n", val);
 //        set_volume (s, index, AUD_MIXER_PCM, val);
         set_volume (s, index, 0, val);
         break;
     case AC97_Line_In_Volume_Mute:
-        dolog2 ("caramis3 %#x\n", val);
+//        dolog2 ("caramis3 %#x\n", val);
 //        set_volume (s, index, AUD_MIXER_LINE_IN, val);
         set_volume (s, index, 1, val);
         break;
     case AC97_Record_Select:
-        dolog2 ("caramis4 %#x\n", val);
+//        dolog2 ("caramis4 %#x\n", val);
 //        record_select (s, val);
         break;
 #endif
