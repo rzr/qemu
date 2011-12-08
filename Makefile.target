@@ -241,13 +241,6 @@ obj-i386-y += svibe.o
 obj-i386-y += helper_gpi.o
 ##########################################################
 
-# codec acceleration
-ifdef CONFIG_FFMPEG
-obj-i386-y += codec_accel.o
-LIBS+=-lavformat -lavcodec -lavutil -lswscale -lbz2
-CFLAGS+=$(FFMPEG_CFLAGS)
-endif
-
 # shared objects
 obj-ppc-y = ppc.o
 obj-ppc-y += vga.o
@@ -361,6 +354,13 @@ obj-alpha-y = alpha_palcode.o
 # x86
 obj-i386-y += tizen-board.o
 obj-i386-y += tizen-ac97.o
+
+ifdef CONFIG_FFMPEG
+obj-i386-y += tizen-codec.o
+LIBS+=-lavformat -lavcodec -lavutil -lswscale -lbz2
+CFLAGS+=$(FFMPEG_CFLAGS)
+endif
+
 # arm
 # common
 
