@@ -132,6 +132,8 @@ vhost_net=""
 xfs=""
 ffmpeg="no"
 ffmpeg_inc="distrib/ffmpeg"
+v4l2="no"
+v4l2_inc=""
 gprof="no"
 debug_tcg="no"
 debug_mon="no"
@@ -546,6 +548,8 @@ for opt do
   ;;
   --ffmpeg-inc=*) ffmpeg_inc="$optarg"
   ;;
+  --v4l2-inc=*) v4l2_inc="$optarg"
+  ;;
   --oss-lib=*) oss_lib="$optarg"
   ;;
   --audio-card-list=*) audio_card_list=`echo "$optarg" | sed -e 's/,/ /g'`
@@ -603,6 +607,10 @@ for opt do
   --disable-ffmpeg) ffmpeg="no"
   ;;
   --enable-ffmpeg) ffmpeg="yes"
+  ;;
+  --disable-v4l2) v4l2="no"
+  ;;
+  --enable-v4l2) v4l2="yes"
   ;;
   --disable-slirp) slirp="no"
   ;;
@@ -874,6 +882,8 @@ echo "  --disable-vnc-thread     disable threaded VNC server"
 echo "  --enable-vnc-thread      enable threaded VNC server"
 echo "  --disable-ffmpeg         disable FFMPEG lossy compression"
 echo "  --enable-ffmpeg          enable FFMPEG lossy compression"
+echo "  --disable-v4l2           disable camera using v4l2"
+echo "  --enable-v4l2            enable camera using v4l2"
 echo "  --disable-curses         disable curses output"
 echo "  --enable-curses          enable curses output"
 echo "  --disable-curl           disable curl connectivity"
@@ -906,6 +916,7 @@ echo "  --disable-user-pie       do not build usermode emulation targets as PIE"
 echo "  --fmod-lib               path to FMOD library"
 echo "  --fmod-inc               path to FMOD includes"
 echo "  --ffmpeg-inc             path to FFMPEG includes"
+echo "  --v4l2-inc               path to V4L2 includes"
 echo "  --oss-lib                path to OSS library"
 echo "  --enable-uname-release=R Return R for uname -r in usermode emulation"
 echo "  --sparc_cpu=V            Build qemu for Sparc architecture v7, v8, v8plus, v8plusa, v9"
@@ -1388,15 +1399,14 @@ cat > $TMPC <<EOF
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
 
 int main(void) { AVFormatContext *pFormatCtx = NULL; av_find_stream_info(pFormatCtx); return 0; }
 EOF
   ffmpeg_cflags="-I$source_path/tizen/$ffmpeg_inc/include"
   if test "$linux" = "yes" ; then
-  	ffmpeg_libs="-lavformat -lavcodec -lavutil -lswscale"
+  	ffmpeg_libs="-lavformat -lavcodec -lavutil" 
   elif test "$mingw32" = "yes" ; then
-   	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll"
+   	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll"
   fi
   ffmpeg_libpath="-L$source_path/tizen/$ffmpeg_inc/lib"
   ffmpeg_libs="$ffmpeg_libpath $ffmpeg_libs"
@@ -1408,6 +1418,36 @@ EOF
       feature_not_found "ffmpeg"
     fi
     ffmpeg=no
+  fi
+fi
+
+##########################################
+# V4L2 detection
+if test "$v4l2" = "yes" ; then 
+cat > $TMPC <<EOF
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+
+#include <libv4l2.h>
+#include <libv4lconvert.h>
+
+int main(void) {v4l2_open("/dev/video0", O_RDWR); return 0; }
+EOF
+
+#  v4l2_cflags="-I$v4l2_inc"
+  if test "$linux" = "yes" ; then
+  	v4l2_libs="-lv4l2 -lv4lconvert"
+  fi
+  if compile_prog "$v4l2_cflags" "$v4l2_libs" ; then
+    v4l2=yes
+    libs_softmmu="$v4l2_libs $libs_softmmu"
+  else
+    if test "$v4l2" = "yes" ; then
+      feature_not_found "v4l2"
+    fi
+    v4l2=no
   fi
 fi
 
@@ -2498,6 +2538,7 @@ echo "VNC JPEG support  $vnc_jpeg"
 echo "VNC PNG support   $vnc_png"
 echo "VNC thread        $vnc_thread"
 echo "FFMPEG support    $ffmpeg"
+echo "V4L2 support      $v4l2"  
 if test -n "$sparc_cpu"; then
     echo "Target Sparc Arch $sparc_cpu"
 fi
@@ -2674,6 +2715,11 @@ if test "$ffmpeg" = "yes" ; then
   echo "CONFIG_FFMPEG=y" >> $config_host_mak
   echo "FFMPEG_CFLAGS=$ffmpeg_cflags" >> $config_host_mak
 fi
+if test "$v4l2" = "yes" ; then
+  echo "CONFIG_V4L2=y" >> $config_host_mak
+  echo "V4L2_CFLAGS=$v4l2_cflags" >> $config_host_mak
+fi
+
 if test "$fnmatch" = "yes" ; then
   echo "CONFIG_FNMATCH=y" >> $config_host_mak
 fi
