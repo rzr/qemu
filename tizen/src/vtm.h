@@ -55,7 +55,7 @@
 #include "process.h"
 #define MAX_LEN 256
 
-gchar *remove_space(const gchar *str);
+gchar *remove_chars(const gchar *str);
 gboolean run_cmd(char *cmd);
 void fill_virtual_target_info(void);
 int create_config_file(gchar *filepath);
@@ -65,7 +65,7 @@ int name_collision_check(void);
 void exit_vtm(void);
 void create_window_deleted_cb(void);
 
-void resolution_select_cb(GtkWidget *widget, gpointer data);
+void resolution_select_cb(void);
 void buttontype_select_cb(void);
 void sdcard_size_select_cb(void);
 void set_sdcard_create_active_cb(void);
