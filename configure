@@ -1404,7 +1404,7 @@ int main(void) { AVFormatContext *pFormatCtx = NULL; av_find_stream_info(pFormat
 EOF
   ffmpeg_cflags="-I$source_path/tizen/$ffmpeg_inc/include"
   if test "$linux" = "yes" ; then
-  	ffmpeg_libs="-lavformat -lavcodec -lavutil" 
+  	ffmpeg_libs="-lavformat -lavcodec -lavutil -lm -lpthread -lz" 
   elif test "$mingw32" = "yes" ; then
    	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll"
   fi
@@ -1416,6 +1416,7 @@ EOF
   else
     if test "$ffmpeg" = "yes" ; then
       feature_not_found "ffmpeg"
+	  exit 1;
     fi
     ffmpeg=no
   fi

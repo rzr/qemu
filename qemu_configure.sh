@@ -12,9 +12,8 @@ exec ./configure \
  --enable-mixemu \
  --disable-vnc-tls \
  --enable-tcg-x86-opt \
- --enable-v4l2
-# --extra-ldflags="-Xlinker -rpath -Xlinker ./lib"
-# --enable-ffmpeg
+ --enable-v4l2 \
+ --enable-ffmpeg
 # --enable-debug \
 # --enable-profiler \
 # --enable-gles2 --gles2dir=/usr
