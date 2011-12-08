@@ -640,15 +640,42 @@ void show_info_window(GtkWidget *widget, gpointer data)
 
 	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
 #ifndef _WIN32		
-	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
-			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+
+	details = g_strdup_printf(""
+			" - Name: %s\n"
+			" - CPU: %s\n"
+			" - Resolution: %s\n"
+			" - Ram Size: %s\n"
+			" - DPI: %s\n"
+			" - SD Card: %s\n"
+			" - SD Path: %s\n"
+			" - Image Path: %s\n"
+			" - Base Image Path: %s \n"
+			, target_name, arch, resolution, ram_size_detail
+			, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+
 	show_message("Virtual Target Details", details);
+
 #else /* _WIN32 */
 	gchar *details_win = NULL;
-	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
-			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+
+	details = g_strdup_printf(""
+			" - Name: %s\n"
+			" - CPU: %s\n"
+			" - Resolution: %s\n"
+			" - Ram Size: %s\n"
+			" - DPI: %s\n"
+			" - SD Card: %s\n"
+			" - SD Path: %s\n"
+			" - Image Path: %s\n"
+			" - Base Image Path: %s \n"
+			, target_name, arch, resolution, ram_size_detail
+			, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+
 	details_win = change_path_from_slash(details);
+
 	show_message("Virtual Target Details", details_win);
+
 	free(details_win);
 #endif
 	g_free(resolution);
@@ -662,7 +689,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	g_free(ram_size_detail);
 	g_free(details);
 	return;
-//	show_about_window(win);
+	//	show_about_window(win);
 }
 
 

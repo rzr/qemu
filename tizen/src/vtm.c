@@ -94,25 +94,25 @@ gchar icon_image[128] = {0, };
 #ifdef _WIN32
 void socket_cleanup(void)
 {
-    WSACleanup();
+	WSACleanup();
 }
 #endif
 
 int socket_init(void)
 {
 #ifdef _WIN32
-    WSADATA Data;
-    int ret, err;
+	WSADATA Data;
+	int ret, err;
 
-    ret = WSAStartup(MAKEWORD(2,0), &Data);
-    if (ret != 0) {
-        err = WSAGetLastError();
-        fprintf(stderr, "WSAStartup: %d\n", err);
-        return -1;
-    }
-    atexit(socket_cleanup);
+	ret = WSAStartup(MAKEWORD(2,0), &Data);
+	if (ret != 0) {
+		err = WSAGetLastError();
+		fprintf(stderr, "WSAStartup: %d\n", err);
+		return -1;
+	}
+	atexit(socket_cleanup);
 #endif
-    return 0;
+	return 0;
 }
 
 
@@ -189,7 +189,7 @@ void activate_target(char *target_name)
 	else
 		enable_kvm = g_strdup_printf(" ");
 #else /* _WIN32 */
-		enable_kvm = g_strdup_printf(" ");
+	enable_kvm = g_strdup_printf(" ");
 #endif
 
 	binary = get_config_value(info_file, QEMU_GROUP, BINARY_KEY);
@@ -218,7 +218,7 @@ void activate_target(char *target_name)
 		exit(1);
 	}
 	g_free(cmd);
-	
+
 	return;
 }
 
@@ -230,7 +230,7 @@ int check_shdmem(char *target_name, int type)
 	u_int port;
 	int val;
 	struct shmid_ds shm_info;
-	
+
 	for(port=26100;port < 26200; port += 10)
 	{
 		if ( -1 != ( shm_id = shmget( (key_t)port, 0, 0)))
@@ -259,7 +259,7 @@ int check_shdmem(char *target_name, int type)
 						show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
 					else
 						ERR("wrong type passed\n");
-					
+
 					shmdt(shm_addr);
 					return -1;
 				}
@@ -283,7 +283,7 @@ void entry_changed(GtkEditable *entry, gpointer data)
 
 	GtkWidget *ok_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button7");
 	char* dst =  malloc(VT_NAME_MAXBUF);
-	
+
 	if(strlen(name) == VT_NAME_MAXBUF)
 	{
 		WARN( "Virtual target name length can not be longer than 20 characters.\n");
@@ -341,7 +341,7 @@ void entry_changed(GtkEditable *entry, gpointer data)
 				snprintf(virtual_target_info.virtual_target_name, MAXBUF, "%s", name);
 		}
 	}
-	
+
 	gtk_widget_set_sensitive(ok_button, TRUE);
 }
 
@@ -360,20 +360,20 @@ void show_modify_window(char *target_name)
 	sub_window = (GtkWidget *)gtk_builder_get_object(g_create_builder, "window2");
 
 	add_window(sub_window, VTM_CREATE_ID);
-	
+
 	gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target");
 
 	virtual_target_path = get_virtual_target_abs_path(target_name);
 	g_info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(g_info_file);
-   	//if targetlist exist but config file not exists
+	//if targetlist exist but config file not exists
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
 		ERR( "target info file not exists : %s\n", target_name);
 		return;
 	}
 
-//	fill_modify_target_info();
+	//	fill_modify_target_info();
 	/* setup and fill name */
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	gtk_entry_set_text(GTK_ENTRY(name_entry), target_name);
@@ -391,7 +391,7 @@ void show_modify_window(char *target_name)
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
 
 	gtk_widget_show_all(sub_window);
-	
+
 	gtk_main();
 }
 
@@ -400,7 +400,7 @@ void init_setenv()
 {
 	char* arch;
 	int target_list_status;
-	
+
 	if(!g_getenv("EMULATOR_ARCH"))
 		arch = g_strdup_printf("x86");
 	else
@@ -413,9 +413,9 @@ void init_setenv()
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
 		ERR( "load target list file error\n");
-//		exit(1);
+		//		exit(1);
 	}
-	
+
 	refresh_clicked_cb(arch);
 	make_default_image();
 }
@@ -432,7 +432,7 @@ void arch_select_cb(GtkWidget *widget, gpointer data)
 		g_setenv("EMULATOR_ARCH",arch,1);
 		INFO( "architecture : %s\n", arch);
 		refresh_clicked_cb(arch);
-//		g_free(arch);
+		//		g_free(arch);
 	}
 
 }
@@ -450,9 +450,9 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
-	
+
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
-		&model, &iter)) {
+				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 		if(strcmp(target_name, "default") == 0){
@@ -462,7 +462,7 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 
 		if(check_shdmem(target_name, MODIFY_MODE)== -1)
 			return;
-		
+
 		virtual_target_path = get_virtual_target_abs_path(target_name);
 		show_modify_window(target_name);	
 		g_free(virtual_target_path);
@@ -488,9 +488,9 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
-	
+
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
-		&model, &iter)) {
+				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 		virtual_target_path = get_virtual_target_abs_path(target_name);
@@ -532,17 +532,17 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
-	
+
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
-		&model, &iter)) {
+				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-			
+
 		virtual_target_path = get_virtual_target_abs_path(target_name);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		info_file_status = is_exist_file(info_file);
 
-   		//if targetlist exist but config file not exists
+		//if targetlist exist but config file not exists
 		if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "target info file not exists : %s\n", target_name);
@@ -570,16 +570,55 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		}
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
+
 #ifndef _WIN32		
-		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
-				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+		/* check image & base image */
+		if(access(disk_path, R_OK) != 0){
+			details = g_strdup_printf("The image does not exist \n\n"
+					"    - [%s]", disk_path);
+			show_message("Error", details);
+		}
+		if(access(basedisk_path, R_OK) != 0){
+			details = g_strdup_printf("The base image does not exist \n\n"
+					"    - [%s]", basedisk_path);
+			show_message("Error", details);
+		}
+
+		details = g_strdup_printf(""
+				" - Name: %s\n"
+				" - CPU: %s\n"
+				" - Resolution: %s\n"
+				" - Ram Size: %s\n"
+				" - DPI: %s\n"
+				" - SD Card: %s\n"
+				" - SD Path: %s\n"
+				" - Image Path: %s\n"
+				" - Base Image Path: %s \n"
+				, target_name, arch, resolution, ram_size_detail
+				, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+
 		show_message("Virtual Target Details", details);
+
 #else /* _WIN32 */
 		gchar *details_win = NULL;
-		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
-				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+
+		details = g_strdup_printf(""
+				" - Name: %s\n"
+				" - CPU: %s\n"
+				" - Resolution: %s\n"
+				" - Ram Size: %s\n"
+				" - DPI: %s\n"
+				" - SD Card: %s\n"
+				" - SD Path: %s\n"
+				" - Image Path: %s\n"
+				" - Base Image Path: %s \n"
+				, target_name, arch, resolution, ram_size_detail
+				, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+
 		details_win = change_path_from_slash(details);
+
 		show_message("Virtual Target Details", details_win);
+
 		free(details_win);
 #endif
 		g_free(resolution);
@@ -614,9 +653,9 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
-	
+
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
-		&model, &iter)) {
+				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 		if(strcmp(target_name,"default") == 0)
@@ -624,14 +663,14 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Warning","You can not delete default target");
 			return;
 		}
-		
+
 		if(check_shdmem(target_name, DELETE_MODE)== -1)
 			return;
 
 		gboolean bResult = show_ok_cancel_message("Warning", "Are you sure you delete this target?");
 		if(bResult == FALSE)
 			return;
-		
+
 		virtual_target_path = get_virtual_target_abs_path(target_name);
 
 #ifdef _WIN32
@@ -670,7 +709,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		show_message("INFO","Virtual target deletion success!");
 		return;
 	}
-	
+
 	show_message("Warning", "Target is not selected. Firstly select a target and delete.");
 }
 
@@ -699,12 +738,12 @@ void refresh_clicked_cb(char *arch)
 	for(i = 0; i < num; i++)
 	{
 		gtk_list_store_append(store, &iter);
-				
+
 		virtual_target_path = get_virtual_target_abs_path(target_list[i]);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		info_file_status = is_exist_file(info_file);
 
-   		//if targetlist exist but config file not exists
+		//if targetlist exist but config file not exists
 		if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "target info file not exists : %s\n", target_list[i]);
@@ -724,7 +763,7 @@ void refresh_clicked_cb(char *arch)
 	}
 	first_col_path = gtk_tree_path_new_from_indices(0, -1);
 	gtk_tree_view_set_cursor(GTK_TREE_VIEW(list), first_col_path, NULL, 0);
-	
+
 	g_free(local_target_list_filepath);
 	g_strfreev(target_list);
 
@@ -771,7 +810,7 @@ void make_default_image(void)
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
 		INFO( "emulimg-default.x86 not exists. is making now.\n");
-	// create emulator image
+		// create emulator image
 #ifdef _WIN32
 		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %s",
 				get_bin_path(), get_arch_abs_path(), default_img);
@@ -816,14 +855,14 @@ gboolean run_cmd(char *cmd)
 	}
 	if (exit_status != 0) {
 		TRACE( "Command returns error: %s\n", s_out);
-//		show_message("Command returns error", s_out);
+		//		show_message("Command returns error", s_out);
 		g_free(s_out);
 		g_free(s_err);
 		return FALSE;
 	}
 
 	TRACE( "Command success: %s\n", cmd);
-//	show_message("Command success!", s_out);
+	//	show_message("Command success!", s_out);
 	g_free(s_out);
 	g_free(s_err);
 	return TRUE;
@@ -856,13 +895,13 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "%s=1\n", HTTP_PROXY_KEY);
 		g_fprintf (fp, "%s=1\n", DNS_SERVER_KEY);
 		g_fprintf (fp, "%s=1200\n", TELNET_PORT_KEY);
-//		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_KEY);
-//		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_DATE_KEY);
+		//		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_KEY);
+		//		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_DATE_KEY);
 		g_fprintf (fp, "%s=1\n", KVM_KEY);
-		
+
 		g_fprintf (fp, "\n[%s]\n", ADDITIONAL_OPTION_GROUP);
 		g_fprintf (fp, "%s=\n", EMULATOR_OPTION_KEY);
-		g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-usb -usbdevice wacom-tablet -usbdevice keyboard -net nic,model=virtio -soundhw all -rtc base=utc -net user");
+		g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice wacom-tablet -usbdevice keyboard -net nic,model=virtio -rtc base=utc -net user");
 		g_fprintf (fp, "[%s]\n", HARDWARE_GROUP);
 		g_fprintf (fp, "%s=\n", RESOLUTION_KEY);
 		g_fprintf (fp, "%s=1\n", BUTTON_TYPE_KEY);
@@ -892,7 +931,7 @@ int create_config_file(gchar* filepath)
 
 int write_config_file(gchar *filepath)
 {
-    set_config_type(filepath, EMULATOR_GROUP, ENABLE_SHELL_KEY, 0);
+	set_config_type(filepath, EMULATOR_GROUP, ENABLE_SHELL_KEY, 0);
 	/*  QEMU option (09.05.26)*/
 
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
@@ -906,23 +945,23 @@ int write_config_file(gchar *filepath)
 		ERR( "architecture setting error");
 		return -1;
 	}
-//	set_config_type(filepath, QEMU_GROUP, TELNET_CONSOLE_COMMAND_TYPE_KEY, 0);
-//	set_config_value(filepath, QEMU_GROUP, TELNET_CONSOLE_COMMAND_KEY, "/usr/bin/putty -telnet -P 1200 localhost");
-//	set_config_type(filepath, QEMU_GROUP, KVM_KEY, 1);
-//	set_config_type(filepath, QEMU_GROUP, SDCARD_TYPE_KEY, pconfiguration->qemu_configuration.sdcard_type);
-//	set_config_value(filepath, QEMU_GROUP, SDCARD_PATH_KEY, pconfiguration->qemu_configuration.sdcard_path);
-//	set_config_type(filepath, QEMU_GROUP, SAVEVM_KEY, pconfiguration->qemu_configuration.save_emulator_state);
-//	set_config_type(filepath, QEMU_GROUP, SNAPSHOT_SAVED_KEY, pconfiguration->qemu_configuration.snapshot_saved);
-//	set_config_value(filepath, QEMU_GROUP, SNAPSHOT_SAVED_DATE_KEY, pconfiguration->qemu_configuration.snapshot_saved_date);
+	//	set_config_type(filepath, QEMU_GROUP, TELNET_CONSOLE_COMMAND_TYPE_KEY, 0);
+	//	set_config_value(filepath, QEMU_GROUP, TELNET_CONSOLE_COMMAND_KEY, "/usr/bin/putty -telnet -P 1200 localhost");
+	//	set_config_type(filepath, QEMU_GROUP, KVM_KEY, 1);
+	//	set_config_type(filepath, QEMU_GROUP, SDCARD_TYPE_KEY, pconfiguration->qemu_configuration.sdcard_type);
+	//	set_config_value(filepath, QEMU_GROUP, SDCARD_PATH_KEY, pconfiguration->qemu_configuration.sdcard_path);
+	//	set_config_type(filepath, QEMU_GROUP, SAVEVM_KEY, pconfiguration->qemu_configuration.save_emulator_state);
+	//	set_config_type(filepath, QEMU_GROUP, SNAPSHOT_SAVED_KEY, pconfiguration->qemu_configuration.snapshot_saved);
+	//	set_config_value(filepath, QEMU_GROUP, SNAPSHOT_SAVED_DATE_KEY, pconfiguration->qemu_configuration.snapshot_saved_date);
 
 
-    set_config_value(filepath, HARDWARE_GROUP, RESOLUTION_KEY, virtual_target_info.resolution);
+	set_config_value(filepath, HARDWARE_GROUP, RESOLUTION_KEY, virtual_target_info.resolution);
 	set_config_type(filepath, HARDWARE_GROUP, SDCARD_TYPE_KEY, virtual_target_info.sdcard_type);
 	set_config_value(filepath, HARDWARE_GROUP, SDCARD_PATH_KEY, virtual_target_info.sdcard_path);
-    set_config_type(filepath, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
-  	set_config_type(filepath, HARDWARE_GROUP, DISK_TYPE_KEY, virtual_target_info.disk_type);
-    set_config_value(filepath, HARDWARE_GROUP, DPI_KEY, virtual_target_info.dpi);
-//  set_config_type(filepath, HARDWARE_GROUP, BUTTON_TYPE_KEY, virtual_target_info.button_type);
+	set_config_type(filepath, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
+	set_config_type(filepath, HARDWARE_GROUP, DISK_TYPE_KEY, virtual_target_info.disk_type);
+	set_config_value(filepath, HARDWARE_GROUP, DPI_KEY, virtual_target_info.dpi);
+	//  set_config_type(filepath, HARDWARE_GROUP, BUTTON_TYPE_KEY, virtual_target_info.button_type);
 	set_config_value(filepath, HARDWARE_GROUP, DISK_PATH_KEY, virtual_target_info.diskimg_path);
 	set_config_value(filepath, HARDWARE_GROUP, BASEDISK_PATH_KEY, virtual_target_info.basedisk_path);
 
@@ -965,7 +1004,7 @@ GtkWidget *setup_list(void)
 	store = gtk_list_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 	list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 	cell = gtk_cell_renderer_text_new();
-	
+
 	//set text alignment 
 	column = gtk_tree_view_column_new_with_attributes("Target name", cell, "text", TARGET_NAME, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
@@ -1018,7 +1057,7 @@ void resolution_select_cb(GtkWidget *widget, gpointer data)
 void buttontype_select_cb(void)
 {
 	gboolean active = FALSE;
-	
+
 	GtkWidget *create_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton10");
 	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(create_radiobutton));
 	if(active == TRUE)
@@ -1046,7 +1085,7 @@ void sdcard_size_select_cb(void)
 void set_sdcard_create_active_cb(void)
 {
 	gboolean active = FALSE;
-	
+
 	GtkWidget *create_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton4");
 	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(create_radiobutton));
 
@@ -1061,13 +1100,13 @@ void set_sdcard_create_active_cb(void)
 void set_disk_select_active_cb(void)
 {
 	gboolean active = FALSE;
-	
+
 	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton13");
 	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(select_radiobutton));
-	
+
 	if(active == TRUE)
 		virtual_target_info.disk_type = 1;
-	
+
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 
 	gtk_widget_set_sensitive(sdcard_filechooser2, active);
@@ -1077,13 +1116,13 @@ void set_disk_select_active_cb(void)
 void set_sdcard_select_active_cb(void)
 {
 	gboolean active = FALSE;
-	
+
 	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton5");
 	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(select_radiobutton));
-	
+
 	if(active == TRUE)
 		virtual_target_info.sdcard_type = 2;
-	
+
 	GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 
 	gtk_widget_set_sensitive(sdcard_filechooser, active);
@@ -1092,10 +1131,10 @@ void set_sdcard_select_active_cb(void)
 void set_disk_default_active_cb(void)
 {
 	gboolean active = FALSE;
-	
+
 	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
 	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(default_radiobutton));
-	
+
 	if(active == TRUE)
 	{
 		virtual_target_info.disk_type = 0;
@@ -1107,10 +1146,10 @@ void set_disk_default_active_cb(void)
 void set_sdcard_none_active_cb(void)
 {
 	gboolean active = FALSE;
-	
+
 	GtkWidget *none_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton6");
 	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(none_radiobutton));
-	
+
 	if(active == TRUE)
 		virtual_target_info.sdcard_type = 0;
 }
@@ -1120,7 +1159,7 @@ void disk_file_select_cb(void)
 	gchar *path = NULL;
 
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
-	
+
 	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser2));
 	snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", path);
 	INFO( "disk path : %s\n", path);
@@ -1134,7 +1173,7 @@ void sdcard_file_select_cb(void)
 	gchar *path = NULL;
 
 	GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
-	
+
 	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser));
 	snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s", path);
 	INFO( "sdcard path : %s\n", path);
@@ -1166,17 +1205,17 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	const gchar *name = NULL;
 	char *sdcard_name = NULL;
 	char *dst;
-	
+
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	name = gtk_entry_get_text(GTK_ENTRY(name_entry));
 	char *virtual_target_path = get_virtual_target_abs_path((gchar*)name);
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-	
+
 	ram_select_cb();
 	buttontype_select_cb();
-    set_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
-	
-//	name character validation check
+	set_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
+
+	//	name character validation check
 	dst =  malloc(VT_NAME_MAXBUF);
 	escapeStr(name, dst);
 	if(strcmp(name, dst) != 0)
@@ -1188,7 +1227,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 	free(dst);
 
-// no name validation check
+	// no name validation check
 	if(strcmp(name, "") == 0)
 	{
 		WARN( "Specify name of the virtual target!");
@@ -1199,10 +1238,10 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	{
 		snprintf(virtual_target_info.virtual_target_name, MAXBUF, "%s", name);
 	}
-	
+
 	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
 	INFO( "virtual_target_path: %s\n", dest_path);
-	
+
 	// if try to change the target name
 	if(strcmp(name, target_name) != 0)
 	{
@@ -1218,7 +1257,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 				vms_path, target_name, vms_path, name);
 		cmd2 = g_strdup_printf("mv %s/%s/emulimg-%s.x86 %s/%s/emulimg-%s.x86", 
 				vms_path, name, target_name, vms_path, name, name);
-		
+
 		if(!run_cmd(cmd))
 		{
 			g_free(cmd);
@@ -1243,7 +1282,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		char *dst_path = g_strdup_printf("%s/%s", vms_path, name);
 		char *src_img_path = g_strdup_printf("%s/%s/emulimg-%s.x86", vms_path, name, target_name);
 		char *dst_img_path = g_strdup_printf("%s/%s/emulimg-%s.x86", vms_path, name, name);
- 
+
 		gchar *src_path_for_win = change_path_from_slash(src_path);
 		gchar *dst_path_for_win = change_path_from_slash(dst_path);
 		gchar *src_img_path_for_win = change_path_from_slash(src_img_path);
@@ -1263,7 +1302,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		}
 		g_free(src_path_for_win);
 		g_free(dst_path_for_win);
-		
+
 		if (g_rename(src_img_path_for_win, dst_img_path_for_win) != 0)
 		{
 			g_free(src_img_path_for_win);
@@ -1307,12 +1346,12 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	target_list_filepath = get_targetlist_abs_filepath();
 	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
 	g_free(target_name);
-	
+
 	if(access(dest_path, R_OK) != 0)
 #ifndef _WIN32
 		mkdir(dest_path, S_IRWXU | S_IRWXG);
 #else
-		mkdir(dest_path);
+	mkdir(dest_path);
 #endif
 
 	// sdcard
@@ -1327,7 +1366,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		sdcard_size_select_cb();
 #ifndef _WIN32
 		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
-		
+
 		if(!run_cmd(cmd))
 		{
 			g_free(cmd);
@@ -1362,18 +1401,18 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		TRACE( "[sdcard_type:1]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
 	else if(virtual_target_info.sdcard_type == 2){
-			if(strcmp(virtual_target_info.sdcard_path, "") == 0){
+		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
 			show_message("Error", "You didn't select an existing sdcard image");
 			return;
-			}
+		}
 		TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
-	
-// add virtual target name to targetlist.ini
+
+	// add virtual target name to targetlist.ini
 	set_config_value(target_list_filepath, TARGET_LIST_GROUP, virtual_target_info.virtual_target_name, "");
-// write config.ini
+	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
-//	create_config_file(conf_file);
+	//	create_config_file(conf_file);
 	snprintf(virtual_target_info.dpi, MAXBUF, "2070");
 	if(write_config_file(conf_file) == -1)
 	{
@@ -1391,7 +1430,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	refresh_clicked_cb(arch);
 
 	g_object_unref(G_OBJECT(g_create_builder));
-	
+
 	gtk_main_quit();
 	return;
 
@@ -1404,31 +1443,31 @@ void ok_clicked_cb(void)
 	char *log_path = NULL;
 	char *conf_file = NULL;
 	GtkWidget *win = get_window(VTM_CREATE_ID);
-	
+
 	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
 	if(access(dest_path, R_OK) != 0)
 #ifndef _WIN32
 		mkdir(dest_path, S_IRWXU | S_IRWXG);
 #else
-		mkdir(dest_path);
+	mkdir(dest_path);
 #endif
 	log_path = get_virtual_target_log_path(virtual_target_info.virtual_target_name);
 	if(access(log_path, R_OK) != 0)
 #ifndef _WIN32
 		mkdir(log_path, S_IRWXU | S_IRWXG);
 #else
-		mkdir(log_path);
+	mkdir(log_path);
 #endif
-//disk type
+	//disk type
 	if(virtual_target_info.disk_type == 0)
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
 	else if(virtual_target_info.disk_type == 1){
-			if(strcmp(virtual_target_info.basedisk_path, "") == 0){
+		if(strcmp(virtual_target_info.basedisk_path, "") == 0){
 			show_message("Error", "You didn't select an existing sdcard image");
 			return;
-			}
+		}
 	}
-// sdcard
+	// sdcard
 	if(virtual_target_info.sdcard_type == 0)
 	{
 		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
@@ -1438,7 +1477,7 @@ void ok_clicked_cb(void)
 		// sdcard create
 #ifndef _WIN32
 		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
-		
+
 		if(!run_cmd(cmd))
 		{
 			g_free(cmd);
@@ -1473,13 +1512,13 @@ void ok_clicked_cb(void)
 		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%ssdcard_%d.img", dest_path, sdcard_create_size);
 	}
 	else if(virtual_target_info.sdcard_type == 2){
-			if(strcmp(virtual_target_info.sdcard_path, "") == 0){
+		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
 			show_message("Error", "You didn't select an existing sdcard image");
 			return;
-			}
+		}
 	}
-	
-// create emulator image
+
+	// create emulator image
 #ifdef _WIN32
 	if(virtual_target_info.disk_type == 1){
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.x86", get_root_path(), virtual_target_info.basedisk_path,
@@ -1493,7 +1532,7 @@ void ok_clicked_cb(void)
 #else
 	if(virtual_target_info.disk_type == 1){
 		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.x86", virtual_target_info.basedisk_path,
-			dest_path, virtual_target_info.virtual_target_name);
+				dest_path, virtual_target_info.virtual_target_name);
 	}
 	else
 	{
@@ -1510,13 +1549,13 @@ void ok_clicked_cb(void)
 	}
 	g_free(cmd);
 
-// diskimg_path
+	// diskimg_path
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.x86", dest_path, 
 			virtual_target_info.virtual_target_name);
 
-// add virtual target name to targetlist.ini
+	// add virtual target name to targetlist.ini
 	set_config_value(target_list_filepath, TARGET_LIST_GROUP, virtual_target_info.virtual_target_name, "");
-// write config.ini
+	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
 	snprintf(virtual_target_info.dpi, MAXBUF, "2070");
@@ -1535,7 +1574,7 @@ void ok_clicked_cb(void)
 	refresh_clicked_cb(arch);
 
 	g_object_unref(G_OBJECT(g_create_builder));
-	
+
 	gtk_main_quit();
 	return;
 }
@@ -1614,10 +1653,10 @@ void setup_modify_disk_frame(char *target_name)
 	gtk_widget_set_sensitive(default_radiobutton, FALSE);
 	gtk_widget_set_sensitive(select_radiobutton, FALSE);
 	gtk_widget_set_sensitive(sdcard_filechooser2, FALSE);
-	
-//	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
-//	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
-//	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
+
+	//	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
+	//	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
+	//	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
 
 
 }
@@ -1628,25 +1667,25 @@ void setup_modify_sdcard_frame(char *target_name)
 	char* sdcard_path;
 
 	GtkWidget *hbox4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "hbox4");
-	
+
 	GtkComboBox *sdcard_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
 	gtk_box_pack_start(GTK_BOX(hbox4), GTK_WIDGET(sdcard_combo_box), FALSE, FALSE, 1);
 	add_widget(VTM_CREATE_ID, VTM_CREATE_SDCARD_COMBOBOX, GTK_WIDGET(sdcard_combo_box));
-	
+
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_256); 
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_512); 
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_1024); 
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_1536); 
-	
+
 	gtk_combo_box_set_active(sdcard_combo_box, SDCARD_DEFAULT_SIZE);
 
-// radio button setup
+	// radio button setup
 	GtkWidget *create_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton4");
 	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton5");
 	GtkWidget *none_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton6");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(none_radiobutton), TRUE);
 
-// file chooser setup
+	// file chooser setup
 	GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 	GtkFileFilter *filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, "SD Card Image Files");
@@ -1685,7 +1724,7 @@ void setup_modify_ram_frame(char *target_name)
 	GtkComboBox *ram_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
 	gtk_box_pack_start(GTK_BOX(hbox6), GTK_WIDGET(ram_combo_box), FALSE, FALSE, 1);
 	add_widget(VTM_CREATE_ID, VTM_CREATE_RAM_COMBOBOX, GTK_WIDGET(ram_combo_box));
-	
+
 	gtk_combo_box_append_text(ram_combo_box, RAM_SIZE_512); 
 	gtk_combo_box_append_text(ram_combo_box, RAM_SIZE_768); 
 	gtk_combo_box_append_text(ram_combo_box, RAM_SIZE_1024); 
@@ -1706,7 +1745,7 @@ void setup_create_button(void)
 {
 	GtkWidget *ok_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button7");
 	GtkWidget *cancel_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button6");
-	
+
 	gtk_widget_set_sensitive(ok_button, FALSE);
 	g_signal_connect(ok_button, "clicked", G_CALLBACK(ok_clicked_cb), NULL);
 	g_signal_connect(cancel_button, "clicked", G_CALLBACK(create_window_deleted_cb), NULL);
@@ -1716,7 +1755,7 @@ void setup_modify_button(char* target_name)
 {
 	GtkWidget *ok_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button7");
 	GtkWidget *cancel_button = (GtkWidget *)gtk_builder_get_object(g_create_builder, "button6");
-	
+
 	g_signal_connect(ok_button, "clicked", G_CALLBACK(modify_ok_clicked_cb), (gpointer*)target_name);
 	g_signal_connect(cancel_button, "clicked", G_CALLBACK(create_window_deleted_cb), NULL);
 }
@@ -1784,7 +1823,7 @@ void setup_disk_frame(void)
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser2), filter);
 	set_disk_select_active_cb();	
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
-	
+
 	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
 	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
 	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
@@ -1793,27 +1832,27 @@ void setup_disk_frame(void)
 
 void setup_sdcard_frame(void)
 {
-// sdcard size combo box setup
+	// sdcard size combo box setup
 	GtkWidget *hbox = (GtkWidget *)gtk_builder_get_object(g_create_builder, "hbox4");
-	
+
 	GtkComboBox *sdcard_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(sdcard_combo_box), FALSE, FALSE, 1);
 	add_widget(VTM_CREATE_ID, VTM_CREATE_SDCARD_COMBOBOX, GTK_WIDGET(sdcard_combo_box));
-	
+
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_256); 
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_512); 
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_1024); 
 	gtk_combo_box_append_text(sdcard_combo_box, SDCARD_SIZE_1536); 
-	
+
 	gtk_combo_box_set_active(sdcard_combo_box, SDCARD_DEFAULT_SIZE);
 
-// radio button setup
+	// radio button setup
 	GtkWidget *create_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton4");
 	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton5");
 	GtkWidget *none_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton6");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(none_radiobutton), TRUE);
 
-// file chooser setup
+	// file chooser setup
 	GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 	GtkFileFilter *filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, "SD Card Image Files");
@@ -1833,15 +1872,15 @@ void setup_sdcard_frame(void)
 void setup_ram_frame(void)
 {
 	GtkWidget *hbox = (GtkWidget *)gtk_builder_get_object(g_create_builder, "hbox6");
-	
+
 	GtkComboBox *ram_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ram_combo_box), FALSE, FALSE, 1);
 	add_widget(VTM_CREATE_ID, VTM_CREATE_RAM_COMBOBOX, GTK_WIDGET(ram_combo_box));
-	
+
 	gtk_combo_box_append_text(ram_combo_box, RAM_SIZE_512); 
 	gtk_combo_box_append_text(ram_combo_box, RAM_SIZE_768); 
 	gtk_combo_box_append_text(ram_combo_box, RAM_SIZE_1024); 
-	
+
 	gtk_combo_box_set_active(ram_combo_box, RAM_DEFAULT_SIZE);
 
 	g_signal_connect(G_OBJECT(ram_combo_box), "changed", G_CALLBACK(ram_select_cb), NULL);
@@ -1883,7 +1922,7 @@ void show_create_window(void)
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
 
 	gtk_widget_show_all(sub_window);
-	
+
 	gtk_main();
 }
 
@@ -1924,10 +1963,10 @@ void construct_main_window(void)
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
 
 	g_object_unref(G_OBJECT(g_builder));
-	
+
 	/* setup emulator architecture and path */
 	gtk_widget_show_all(g_main_window);
-	
+
 
 }
 
@@ -1945,12 +1984,12 @@ int main(int argc, char** argv)
 		ERR( "fail to change working directory\n");
 		exit(1);
 	}
-	
+
 	gtk_init(&argc, &argv);
 	INFO( "virtual target manager start \n");
 
 	socket_init();
-	
+
 	g_builder = gtk_builder_new();
 	skin = (char*)get_skin_path();
 	if(skin == NULL)
@@ -1968,7 +2007,7 @@ int main(int argc, char** argv)
 	init_setenv();
 
 	gtk_main();
-	
+
 	free(target_list_filepath);
 	return 0;
 }
