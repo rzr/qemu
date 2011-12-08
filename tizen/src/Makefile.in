@@ -239,9 +239,6 @@ endif
 	cp -a  config.ini $(PHONE_DIR)/x86/VMs/default
 	cp -a DEBUGCH $(PHONE_DIR)/etc
 #	install gps.glade $(PHONE_DIR)
-ifeq ($(CONFIG_FFMPEG),y)
-	cp ../distrib/ffmpeg/lib/* $(PHONE_DIR)/bin
-endif
 
 %/__dir_clean__: dummy
 	cd `dirname $@` && $(MAKE) clean
