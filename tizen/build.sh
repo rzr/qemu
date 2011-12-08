@@ -4,4 +4,4 @@
 
 autoconf
 ./configure
-make -j8
+make
