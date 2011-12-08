@@ -19,9 +19,6 @@
 #include "pci.h"
 #include "pci_ids.h"
 
-#define PCI_VENDOR_ID_SAMSUNG		0x144d
-#define PCI_DEVICE_ID_VIRTUAL_OVERLAY   0x1010
-
 #define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
 #define OVERLAY_REG_SIZE	256
 #define OVERLAY1_REG_OFFSET	(OVERLAY_REG_SIZE / 2)

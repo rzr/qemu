@@ -171,6 +171,12 @@ static void tizen_x86_machine_init(ram_addr_t ram_size,
 //        svcamera_pci_init(pci_bus);
 		tizen_ac97_init(pci_bus);
     }
+
+#ifdef CONFIG_FFMPEG
+    if (pci_enabled) {
+        pci_codec_init(pci_bus);        
+    }   
+#endif
 }
 
 static void tizen_arm_machine_init(ram_addr_t ram_size,

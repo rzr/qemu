@@ -241,7 +241,7 @@ typedef struct DisplayState DisplayState;
 typedef struct DisplayChangeListener DisplayChangeListener;
 typedef struct DisplaySurface DisplaySurface;
 typedef struct DisplayAllocator DisplayAllocator;
-typedef struct PixelFormat PixelFormat;
+typedef struct QEMU_PixelFormat PixelFormat;
 typedef struct TextConsole TextConsole;
 typedef TextConsole QEMUConsole;
 typedef struct CharDriverState CharDriverState;

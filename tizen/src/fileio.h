@@ -67,6 +67,7 @@ const gchar *get_vms_path(void);
 const gchar *get_vms_abs_path(void);
 const gchar *get_conf_abs_path(void);
 const gchar *get_baseimg_abs_path(void);
+const gchar *get_etc_path(void);
 gchar *get_targetlist_abs_filepath(void);
 gchar *get_virtual_target_path(gchar *virtual_target_name);
 gchar *get_virtual_target_abs_path(gchar *virtual_target_name);

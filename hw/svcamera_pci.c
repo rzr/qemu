@@ -47,9 +47,6 @@ MULTI_DEBUG_CHANNEL(tizen, svcam_pci);
 
 #define PCI_CAMERA_DEVICE_NAME		"svcamera_pci"
 
-#define PCI_VENDOR_ID_SAMSUNG			0x144d
-#define PCI_DEVICE_ID_VIRTUAL_CAMERA    0x1018
-
 #define SVCAM_MEM_SIZE		(4 * 1024 * 1024)	// 4MB
 #define SVCAM_REG_SIZE		(256)				// 64 * 4
 
