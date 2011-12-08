@@ -241,8 +241,8 @@ obj-i386-y += svibe.o
 obj-i386-y += helper_gpi.o
 ##########################################################
 
-ifdef CONFIG_FFMPEG
 # codec acceleration
+ifdef CONFIG_FFMPEG
 obj-i386-y += codec_accel.o
 LIBS+=-lavformat -lavcodec -lavutil -lswscale -lbz2
 CFLAGS+=$(FFMPEG_CFLAGS)
