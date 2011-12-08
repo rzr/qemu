@@ -272,24 +272,24 @@ int check_shdmem(char *target_name, int type)
 						shmdt(shm_addr);
 						continue;
 					}
-					if(type == CREATE_MODE)
+					if(type == CREATE_MODE){
 						show_message("Warning", "Can not activate this target!\nVirtual target with the same name is running now!");
-					else if(type == DELETE_MODE)
+					}else if(type == DELETE_MODE){
 						show_message("Warning", "Can not delete this target!\nVirtual target with the same name is running now!");
-					else if(type == MODIFY_MODE)
+					}else if(type == MODIFY_MODE){
 						show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
-					else if(type == RESET_MODE)
+					}else if(type == RESET_MODE){
 						show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
-					else
-						show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
-					else
+					}else{
 						ERR("wrong type passed\n");
+					}
 
 					shmdt(shm_addr);
 					return -1;
 				}
-				else
+				else{
 					shmdt(shm_addr);
+				}
 			}
 		}
 	}
@@ -547,12 +547,12 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
-	
+
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
-		&model, &iter)) {
+				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-		
+
 		if(check_shdmem(target_name, RESET_MODE)== -1)
 			return;
 
@@ -576,8 +576,8 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 		disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
-		
-	// reset emulator image
+
+		// reset emulator image
 #ifdef _WIN32
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %s", 
 				get_root_path(), basedisk_path, disk_path);
@@ -600,7 +600,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 		show_message("INFO","Virtual target reset success!");
 		return;
 	}
-	
+
 	show_message("Warning", "Target is not selected. Firstly select a target and reset.");
 }
 
@@ -669,7 +669,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		}
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-	
+
 		if(access(disk_path, R_OK) != 0){
 			details = g_strdup_printf("The image does not exist \n\n"
 					"    - [%s]", disk_path);
