@@ -15,7 +15,7 @@
  * a result of using, modifying or distributing this software or its derivatives.
  */
 
-#include "codec_accel.h"
+#include "tizen-codec.h"
 
 #define QEMU_DEV_NAME			"codec"
 #define SVCODEC_MEM_SIZE		(4 * 1024 * 1024)
