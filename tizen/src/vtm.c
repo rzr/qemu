@@ -164,6 +164,9 @@ void activate_target(char *target_name)
 	char *binary = NULL;
 	char *emul_add_opt = NULL;
 	char *qemu_add_opt = NULL;
+	char *disk_path = NULL;
+	char *basedisk_path = NULL;
+	char *error_log = NULL;
 	int info_file_status;	
 
 	if(check_shdmem(target_name, CREATE_MODE) == -1)
@@ -180,7 +183,26 @@ void activate_target(char *target_name)
 		return ;
 	}
 
+	disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+	basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
+
 #ifndef _WIN32
+	/* check image & base image */
+	if(access(disk_path, R_OK) != 0){
+		error_log = g_strdup_printf("The image does not exist \n\n"
+				"    - [%s]", disk_path);
+		show_message("Error", error_log);
+		g_free(error_log);
+		return;
+	}    
+	if(access(basedisk_path, R_OK) != 0){
+		error_log = g_strdup_printf("The base image does not exist \n\n"
+				"    - [%s]", basedisk_path);
+		show_message("Error", error_log);
+		g_free(error_log);
+		return;
+	}  
+
 	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
 	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && strcmp(kvm,"1") == 0)
 	{
@@ -189,6 +211,7 @@ void activate_target(char *target_name)
 	else
 		enable_kvm = g_strdup_printf(" ");
 #else /* _WIN32 */
+	/* todo: check image & base image */
 	enable_kvm = g_strdup_printf(" ");
 #endif
 
@@ -577,11 +600,13 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 			details = g_strdup_printf("The image does not exist \n\n"
 					"    - [%s]", disk_path);
 			show_message("Error", details);
+			g_free(details);
 		}
 		if(access(basedisk_path, R_OK) != 0){
 			details = g_strdup_printf("The base image does not exist \n\n"
 					"    - [%s]", basedisk_path);
 			show_message("Error", details);
+			g_free(details);
 		}
 
 		details = g_strdup_printf(""
@@ -600,6 +625,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		show_message("Virtual Target Details", details);
 
 #else /* _WIN32 */
+		/* todo: check image & base image */
 		gchar *details_win = NULL;
 
 		details = g_strdup_printf(""
@@ -1347,12 +1373,13 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
 	g_free(target_name);
 
-	if(access(dest_path, R_OK) != 0)
+	if(access(dest_path, R_OK) != 0){
 #ifndef _WIN32
 		mkdir(dest_path, S_IRWXU | S_IRWXG);
 #else
-	mkdir(dest_path);
+		mkdir(dest_path);
 #endif
+	}
 
 	// sdcard
 	if(virtual_target_info.sdcard_type == 0)
@@ -1445,19 +1472,21 @@ void ok_clicked_cb(void)
 	GtkWidget *win = get_window(VTM_CREATE_ID);
 
 	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-	if(access(dest_path, R_OK) != 0)
+	if(access(dest_path, R_OK) != 0){
 #ifndef _WIN32
 		mkdir(dest_path, S_IRWXU | S_IRWXG);
 #else
-	mkdir(dest_path);
+		mkdir(dest_path);
 #endif
+	}
 	log_path = get_virtual_target_log_path(virtual_target_info.virtual_target_name);
-	if(access(log_path, R_OK) != 0)
+	if(access(log_path, R_OK) != 0){
 #ifndef _WIN32
 		mkdir(log_path, S_IRWXU | S_IRWXG);
 #else
-	mkdir(log_path);
+		mkdir(log_path);
 #endif
+	}
 	//disk type
 	if(virtual_target_info.disk_type == 0)
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
