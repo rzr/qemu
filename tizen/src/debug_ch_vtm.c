@@ -318,7 +318,10 @@ static int dbg_vprintf( const char *format, va_list args )
 
 	// unlock
 	if ((fp = fopen(logfile, "a+")) == NULL) {
-		fprintf(stdout, "log file can't open.(%s)\n", logfile);
+		fprintf(stdout, "Emulator manager can't open.\n"
+				"Please check if "
+				"this binary file is running on the right path.\n");
+		exit(1);
 	}
 
 	fputs(txt, fp);
