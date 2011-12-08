@@ -18,6 +18,7 @@
 
 extern STARTUP_OPTION startup_option;
 static char logfile[256] = { 0, };
+static char debugchfile[256] = {0, };
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
 	int ret;
@@ -236,8 +237,10 @@ static void debug_init(void)
 		return;  /* already initialized */
 
 	nb_debug_options = 0;
+	strcpy(debugchfile, get_etc_path());
+	strcat(debugchfile, "/DEBUGCH");
 
-	fp= fopen("./DEBUGCH", "r");
+	fp= fopen(debugchfile, "r");
 	if( fp == NULL){
 		debug = getenv("DEBUGCH");
 	}else{

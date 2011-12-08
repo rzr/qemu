@@ -271,6 +271,35 @@ const gchar *get_arch_abs_path(void)
 	return path;
 }
 
+/* get_etc_path = "~/tizen_sdk/simulator/etc" */
+const gchar *get_etc_path(void)
+{
+	const char etcsubdir[] = "/etc";
+	const char *path;
+	static char *etc_path;
+
+	if (etc_path)
+		return etc_path;
+
+	path = get_root_path();
+	etc_path = malloc(strlen(path) + sizeof etcsubdir);
+	if (!etc_path) {
+		ERR( "%s - %d: memory allocation failed!\n", __FILE__, __LINE__);
+		exit(1);
+	}
+
+	strcpy(etc_path, path);
+	strcat(etc_path, etcsubdir);
+
+	if (g_file_test(etc_path, G_FILE_TEST_IS_DIR) == FALSE) {
+		ERR( "no etc directory at %s\n", etc_path);
+	}
+
+	return etc_path;
+}
+
+
+
 /* get_skin_path = "~/tizen_sdk/simulator/skins" */
 const gchar *get_skin_path(void)
 {
@@ -307,7 +336,8 @@ const gchar *get_skin_path(void)
 }
 
 
-/* get_data_path = "~/tizen_sdk/Emulator/data" */
+/* get_data_path = "x86/data" 
+*				 = "arm/data" */
 const gchar *get_data_path(void)
 {
 	static const char suffix[] = "/data";
@@ -326,7 +356,8 @@ const gchar *get_data_path(void)
 	return data_path;
 }
 
-/* get_data_path = "~/tizen_sdk/Emulator/data" */
+/* get_data_path = "~/tizen_sdk/Emulator/x86/data" 
+ *				 = "~/tizen_sdk/Emulator/x86/data" */
 const gchar *get_data_abs_path(void)
 {
 	static const char suffix[] = "/data";
