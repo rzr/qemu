@@ -168,7 +168,7 @@ static void tizen_x86_machine_init(ram_addr_t ram_size,
 
 // TIZEN-specialized device init...
     if (pci_enabled) {
-//        svcamera_pci_init(pci_bus);
+		svcamera_pci_init(pci_bus);
 		tizen_ac97_init(pci_bus);
     }
 
