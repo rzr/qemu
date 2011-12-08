@@ -88,6 +88,7 @@ static int gui_grab_code = gtk_alt_left | gtk_control_left;
 static int gui_key_modifier_pressed;
 static int gui_keysym;
 static kbd_layout_t *kbd_layout = NULL;
+extern multi_touch_state qemu_mts;
 
 
 static uint8_t gtk_keyevent_to_keycode_generic(const GdkEventKey *event)
@@ -344,6 +345,7 @@ static void reset_keys(void)
 static void gtk_process_key(GdkEventKey *event)
 {
 	int keycode, v;
+	int i;
 
 	if (event->keyval == GDK_Pause) {
 		/* specific case */
@@ -371,6 +373,19 @@ static void gtk_process_key(GdkEventKey *event)
 	case 0x2a:                          /* Left Shift */
 	case 0x36:                          /* Right Shift */
 	case 0x1d:                          /* Left CTRL */
+		if (event->type == GDK_KEY_RELEASE) {
+			qemu_mts.multitouch_enable = 0;
+
+			if (qemu_mts.finger_cnt > 0) {
+				for (i = 0; i < qemu_mts.finger_cnt; i++) {
+					kbd_mouse_event(qemu_mts.finger_slot[i].dx, qemu_mts.finger_slot[i].dy, i, 0);
+				}
+				qemu_mts.finger_cnt = 0;
+			}
+		} else {
+			qemu_mts.multitouch_enable = 1;
+		}
+
 	case 0x9d:                          /* Right CTRL */
 	case 0x38:                          /* Left ALT */
 	case 0xb8:                         /* Right ALT */
@@ -581,10 +596,36 @@ gboolean key_event_handler (GtkWidget *wid, GdkEventKey *event)
 	return TRUE;
 }
 
+static void do_multitouch_prossesing(int x, int y, int dx, int dy, int dz, int touch_type)
+{
+	if (touch_type == 1 && qemu_mts.finger_cnt < MAX_MULTI_TOUCH_CNT) {
+		qemu_mts.finger_slot[qemu_mts.finger_cnt].x = x; //skin position
+		qemu_mts.finger_slot[qemu_mts.finger_cnt].y = y;
+		qemu_mts.finger_slot[qemu_mts.finger_cnt].dx = dx; //lcd position
+		qemu_mts.finger_slot[qemu_mts.finger_cnt].dy = dy;
+
+		dz = qemu_mts.finger_cnt;
+		//fprintf(stderr, "!!!!! dx=%d, dy=%d, dz=%d, touch_type=%d\n", dx, dy, dz, touch_type);
+		kbd_mouse_event(dx, dy, dz, 1);
+
+		qemu_mts.finger_cnt++;
+	} else if (touch_type == 1 && qemu_mts.finger_cnt == MAX_MULTI_TOUCH_CNT) {
+		//move last touch point
+		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].x = x;
+		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].y = y;
+		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].dx = dx;
+		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].dy = dy;
+		dz = qemu_mts.finger_cnt - 1;
+		//fprintf(stderr, "!!!!! dx=%d, dy=%d, dz=%d, touch_type=%d\n", dx, dy, dz, touch_type);
+		kbd_mouse_event(dx, dy, dz, 1);
+	}
+}
+
 static int button_status = -1;
-static void touch_shoot_for_type(int x, int y, int lcd_status, int touch_type)
+static void touch_shoot_for_type(GtkWidget *widget, int x, int y, int lcd_status, int touch_type)
 {
 	int dx, dy, dz = 0, lcd_height, lcd_width;
+	int i;
 	GtkWidget *pWidget = NULL;
 	GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
 	lcd_height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h);
@@ -659,26 +700,35 @@ static void touch_shoot_for_type(int x, int y, int lcd_status, int touch_type)
 
 	/* when portrait */
 	pWidget = g_object_get_data((GObject *) popup_menu, PORTRAIT);
-	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE)  /* touch drag process */
-			kbd_mouse_event(dx, dy, dz, touch_type);
+	if (pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
+		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) { /* touch drag process */
+			if (qemu_mts.multitouch_enable == 1) {
+				/* ctrl key pressed */
+				do_multitouch_prossesing(x, y, dx, dy, dz, touch_type);
+			} else {
+				kbd_mouse_event(dx, dy, dz, touch_type);
+			}
+		}
 	}
-	else
-		kbd_mouse_event(dx, dy, dz, touch_type);
+
 	/* when landscape */
 	pWidget = g_object_get_data((GObject *) popup_menu, LANDSCAPE);
-	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
+	if (pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-			if (qemu_arch_is_arm()){
+			if (qemu_arch_is_arm()) {
 				/* here dx comes dy and since it is (dy - 0x7FFF - lcd_height - 1) * -1) becomes dx
 				   am subtracting 0x7fff because it was multiplied earlier, No idea why 0x7fff is used
 				   Similar comments for other rotations
 				*/
+				//todo : multitouch
 				kbd_mouse_event(((dy - 0x7FFF - lcd_height - 1) * -1) , dx, dz, touch_type);
-			}
-			else
-			{
-				kbd_mouse_event(dx, dy, dz, touch_type);
+			} else {
+				if (qemu_mts.multitouch_enable == 1) {
+					/* ctrl key pressed */
+					do_multitouch_prossesing(x, y, dx, dy, dz, touch_type);
+				} else {
+					kbd_mouse_event(dx, dy, dz, touch_type);
+				}
 			}
 		}
 	}
@@ -687,21 +737,35 @@ static void touch_shoot_for_type(int x, int y, int lcd_status, int touch_type)
 	pWidget = g_object_get_data((GObject *) popup_menu, REVERSE_PORTRAIT);
 	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-				if (qemu_arch_is_arm())
-					kbd_mouse_event((dx - 0x7FFF - lcd_width - 1)*-1, (dy -0x7FFF) * -1, dz, touch_type);
-				else
+			if (qemu_arch_is_arm()) {
+				//todo : multitouch
+				kbd_mouse_event((dx - 0x7FFF - lcd_width - 1)*-1, (dy -0x7FFF) * -1, dz, touch_type);
+			} else {
+				if (qemu_mts.multitouch_enable == 1) {
+					/* ctrl key pressed */
+					do_multitouch_prossesing(x, y, dx, dy, dz, touch_type);
+				} else {
 					kbd_mouse_event(dx, dy, dz, touch_type);
+				}
+			}
 		}
 	}
 
 	/* when reverse landscape */
 	pWidget = g_object_get_data((GObject *) popup_menu, REVERSE_LANDSCAPE);
-	if(pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
+	if (pWidget && GTK_IS_CHECK_MENU_ITEM(pWidget)) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-				if (qemu_arch_is_arm())
-					kbd_mouse_event(dy, (dx - 0x7FFF)*-1, dz, touch_type);
-				else
+			if (qemu_arch_is_arm()) {
+				//todo : multitouch
+				kbd_mouse_event(dy, (dx - 0x7FFF)*-1, dz, touch_type);
+			} else {
+				if (qemu_mts.multitouch_enable == 1) {
+					/* ctrl key pressed */
+					do_multitouch_prossesing(x, y, dx, dy, dz, touch_type);
+				} else {
 					kbd_mouse_event(dx, dy, dz, touch_type);
+				}
+			}
 		}
 	}
 }
@@ -845,7 +909,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 
 		if (event->type == GDK_MOTION_NOTIFY) 
 			if (lcd_status == LCD_REGION || lcd_status == DUAL_LCD_REGION) 	
-				touch_shoot_for_type(dx, dy, lcd_status, TOUCH_DRAG);
+				touch_shoot_for_type(widget, dx, dy, lcd_status, TOUCH_DRAG);
 	}
 	
 	/* 4. when event press */
@@ -857,7 +921,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 		if (lcd_status == LCD_REGION || lcd_status == DUAL_LCD_REGION) {	
 
 			lcd_press_flag = TRUE;			
-			touch_shoot_for_type(dx, dy, lcd_status, TOUCH_PRESS);
+			touch_shoot_for_type(widget, dx, dy, lcd_status, TOUCH_PRESS);
 		}
 
 		/* 5.2  when event is not in lcd region (keycode region) */
@@ -900,7 +964,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 		/* 5.1  when event is in lcd region (touch region) */		
 
 		if (lcd_status == LCD_REGION || lcd_status == DUAL_LCD_REGION) 	
-			touch_shoot_for_type(dx, dy, lcd_status, TOUCH_RELEASE);
+			touch_shoot_for_type(widget, dx, dy, lcd_status, TOUCH_RELEASE);
 
 		/* 5.2  when event is not in lcd region (keycode region) */
 

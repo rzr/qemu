@@ -148,7 +148,8 @@ static void usb_wacom_event(void *opaque,
     /* scale to Penpartner resolution */
     s->x = (x * 5040 / 0x7FFF);
     s->y = (y * 3780 / 0x7FFF);
-    s->dz += dz;
+    //s->dz += dz;
+    s->dz = dz;
     s->buttons_state = buttons_state;
     s->changed = 1;
 }
@@ -224,7 +225,7 @@ static int usb_wacom_poll(USBWacomState *s, uint8_t *buf, int len)
         return 0;
 
     buf[0] = s->mode;
-    buf[5] = 0x00 | (b & 0xf0);
+    buf[5] = s->dz; //00 | (b & 0xf0);
     buf[1] = s->x & 0xff;
     buf[2] = s->x >> 8;
     buf[3] = s->y & 0xff;

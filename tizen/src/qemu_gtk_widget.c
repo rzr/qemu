@@ -37,6 +37,7 @@
 #include "qemu_gtk_widget.h"
 #include "utils.h"
 #include <pthread.h>
+#include "cursor_left_ptr.xpm"
 
 #include "debug_ch.h"
 #include "../ui/sdl_rotate.h"
@@ -62,6 +63,8 @@ qemu_state_t *qemu_state;
 static int widget_exposed;
 int qemu_state_initialized = 0;
 static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
+static SDL_Cursor* sdl_cursor_normal;
+multi_touch_state qemu_mts;
 
 #define SDL_THREAD
 
@@ -372,12 +375,175 @@ static void qemu_widget_size_allocate (GtkWidget *widget, GtkAllocation *allocat
 }
 
 
+static SDL_Cursor *sdl_cursor_init(const char *image[])
+{
+	int i, row, col;
+	    Uint8 data[4*32];
+	    Uint8 mask[4*32];
+	    int w, h;
+
+	    sscanf(image[0], "%d %d", &w, &h);
+
+	    i = -1;
+	    for ( row=0; row<32; ++row ) {
+	        for ( col=0; col<32; ++col ) {
+	            if ( col % 8 ) {
+	                data[i] <<= 1;
+	                mask[i] <<= 1;
+	            } else {
+	                ++i;
+	                data[i] = mask[i] = 0;
+	            }
+	            switch (image[4+row][col]) {
+	                case 'X':
+	                    data[i] |= 0x01;
+	                    mask[i] |= 0x01;
+	                    break;
+	                case '.':
+	                    mask[i] |= 0x01;
+	                    break;
+	                case ' ':
+	                    break;
+	            }
+	        }
+	    }
+	    return SDL_CreateCursor(data, mask, 32, 32, 0, 0);
+}
+
+/*
+ * This is a 32-bit pixel function created with help from this
+* website: http://www.libsdl.org/intro.en/usingvideo.html
+*
+* You will need to make changes if you want it to work with
+* 8-, 16- or 24-bit surfaces.  Consult the above website for
+* more information.
+*/
+void sdl_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel) {
+   Uint8 *target_pixel = (Uint8 *)surface->pixels + y * surface->pitch + x * 4;
+   *(Uint32 *)target_pixel = pixel;
+}
+
+/*
+* This is an implementation of the Midpoint Circle Algorithm 
+* found on Wikipedia at the following link:
+*
+*   http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
+*
+* The algorithm elegantly draws a circle quickly, using a
+* set_pixel function for clarity.
+*/
+void sdl_draw_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel) {
+   int error = -radius;
+   int x = radius;
+   int y = 0;
+
+   while (x >= y)
+   {
+       sdl_set_pixel(surface, cx + x, cy + y, pixel);
+       sdl_set_pixel(surface, cx + y, cy + x, pixel);
+           
+       if (x != 0)
+       {
+           sdl_set_pixel(surface, cx - x, cy + y, pixel);
+           sdl_set_pixel(surface, cx + y, cy - x, pixel);
+       }
+       
+       if (y != 0)
+       {
+           sdl_set_pixel(surface, cx + x, cy - y, pixel);
+           sdl_set_pixel(surface, cx - y, cy + x, pixel);
+       }
+       
+       if (x != 0 && y != 0)
+       {
+           sdl_set_pixel(surface, cx - x, cy - y, pixel);
+           sdl_set_pixel(surface, cx - y, cy - x, pixel);
+       }
+           
+       error += y;
+       ++y;
+       error += y;
+
+       if (error >= 0)
+       {
+           --x;
+           error -= x;
+           error -= x;
+       }
+   }
+}
+
+/*
+ * SDL_Surface 32-bit circle-fill algorithm without using trig
+*
+* While I humbly call this "Celdecea's Method", odds are that the
+* procedure has already been documented somewhere long ago.  All of
+* the circle-fill examples I came across utilized trig functions or
+* scanning neighbor pixels.  This algorithm identifies the width of
+* a semi-circle at each pixel height and draws a scan-line covering
+* that width.
+*
+* The code is not optimized but very fast, owing to the fact that it
+* alters pixels in the provided surface directly rather than through
+* function calls.
+*
+* WARNING:  This function does not lock surfaces before altering, so
+* use SDL_LockSurface in any release situation.
+*/
+static void sdl_fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel)
+{
+   // Note that there is more to altering the bitrate of this
+   // method than just changing this value.  See how pixels are
+   // altered at the following web page for tips:
+   //   http://www.libsdl.org/intro.en/usingvideo.html
+   const int bpp = 4;
+   double dy;
+
+   double r = (double)radius;
+
+   for (dy = 1; dy <= r; dy += 1.0)
+   {
+       // This loop is unrolled a bit, only iterating through half of the
+       // height of the circle.  The result is used to draw a scan line and
+       // its mirror image below it.
+       // The following formula has been simplified from our original.  We
+       // are using half of the width of the circle because we are provided
+       // with a center and we need left/right coordinates.
+       double dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
+       int x = cx - dx;
+       // Grab a pointer to the left-most pixel for each half of the circle
+       Uint8 *target_pixel_a = (Uint8 *)surface->pixels + ((int)(cy + r - dy)) * surface->pitch + x * bpp;
+       Uint8 *target_pixel_b = (Uint8 *)surface->pixels + ((int)(cy - r + dy)) * surface->pitch + x * bpp;
+
+
+
+       for (; x <= cx + dx; x++)
+       {
+           *(Uint32 *)target_pixel_a = pixel;
+           *(Uint32 *)target_pixel_b = pixel;
+           target_pixel_a += bpp;
+           target_pixel_b += bpp;
+       }
+   }
+}
+
+static void qemu_sdl_cleanup(void)
+{
+    if (sdl_cursor_normal)
+        SDL_FreeCursor(sdl_cursor_normal);
+
+    SDL_FreeSurface(qemu_mts.finger_point);
+
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+
 static void qemu_sdl_init(qemu_state_t *qemu_state)
 {
 	GtkWidget *qw = GTK_WIDGET(qemu_state);
 	gchar SDL_windowhack[32];
 	SDL_SysWMinfo info;
 	long window;
+	int temp;
 
 	if (use_qemu_display)
 		return;
@@ -397,6 +563,21 @@ static void qemu_sdl_init(qemu_state_t *qemu_state)
 		ERR( "unable to init SDL: %s", SDL_GetError() );
 		exit(1);
 	}
+
+	/* cursor init */
+	sdl_cursor_normal = sdl_cursor_init(cursor_left_ptr_xpm);
+	SDL_SetCursor(sdl_cursor_normal);
+
+	/* finger point surface init */
+	qemu_mts.finger_point_size = DEFAULT_FINGER_POINT_SIZE;
+	temp = qemu_mts.finger_point_size / 2;
+	qemu_mts.finger_point = SDL_CreateRGBSurface(SDL_SRCALPHA | SDL_HWSURFACE,
+		qemu_mts.finger_point_size + 2, qemu_mts.finger_point_size + 2, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+	
+	sdl_fill_circle(qemu_mts.finger_point, temp, temp, temp, DEFAULT_FINGER_POINT_COLOR); //finger point
+	sdl_draw_circle(qemu_mts.finger_point, temp, temp, temp, 0xFF000000); // finger point outline
+
+	//atexit(qemu_sdl_cleanup); TODO:
 
 	qemu_state->surface_screen = SDL_SetVideoMode(qemu_state->width,
 			qemu_state->height, 0, qemu_state->flags);
@@ -427,6 +608,8 @@ gint qemu_widget_expose (GtkWidget *widget, GdkEventExpose *event)
 
 static void qemu_update (qemu_state_t *qemu_state)
 {
+	int i = 0;
+	SDL_Rect r;
 	SDL_Surface *surface  = NULL;
 
 	if (!qemu_state->ds)
@@ -441,10 +624,33 @@ static void qemu_update (qemu_state_t *qemu_state)
 
 	surface = SDL_GetVideoSurface ();
 
-	if ((qemu_state->scale == 1) && (UISTATE.current_mode %4 == 0))
-		SDL_BlitSurface(qemu_state->surface_qemu, NULL, qemu_state->surface_screen, NULL);
-	else
-	{
+	if (qemu_state->scale == 1) {
+		if (UISTATE.current_mode %4 != 0) { //rotation
+			// work-around to remove afterimage on black color in Window and Ubuntu 11.10
+			if( qemu_state->surface_qemu ) {
+				// set color key 'magenta'
+				qemu_state->surface_qemu->format->colorkey = 0xFF00FF;
+			}
+
+			SDL_Surface *rot_screen;
+			rot_screen = rotozoomSurface(qemu_state->surface_qemu,
+					(UISTATE.current_mode %4) * 90, 1, SMOOTHING_ON);
+			SDL_BlitSurface(rot_screen, NULL, qemu_state->surface_screen, NULL);
+			
+			SDL_FreeSurface(rot_screen);
+		} else {
+			SDL_BlitSurface(qemu_state->surface_qemu, NULL, qemu_state->surface_screen, NULL);
+		}
+
+		/* draw finger points (multi-touch) */
+		for (i = 0; i < qemu_mts.finger_cnt; i++) {
+			r.x = qemu_mts.finger_slot[i].x - (qemu_mts.finger_point_size / 2);
+			r.y = qemu_mts.finger_slot[i].y - (qemu_mts.finger_point_size / 2);
+			r.w = r.h = qemu_mts.finger_point_size;
+			
+			SDL_BlitSurface(qemu_mts.finger_point, NULL, qemu_state->surface_screen, &r);
+		}
+	} else { //resize
 		// work-around to remove afterimage on black color in Window and Ubuntu 11.10
 		if( qemu_state->surface_qemu ) {
 			// set color key 'magenta'
@@ -455,6 +661,16 @@ static void qemu_update (qemu_state_t *qemu_state)
 		down_screen = rotozoomSurface(qemu_state->surface_qemu,
 				(UISTATE.current_mode %4) * 90, 1 / qemu_state->scale, SMOOTHING_ON);
 		SDL_BlitSurface(down_screen, NULL, qemu_state->surface_screen, NULL);
+
+		/* draw finger points (multi-touch) */
+		for (i = 0; i < qemu_mts.finger_cnt; i++) {
+			r.x = (qemu_mts.finger_slot[i].x - qemu_mts.finger_point_size) / qemu_state->scale;
+			r.y = (qemu_mts.finger_slot[i].y - qemu_mts.finger_point_size) / qemu_state->scale;
+			r.w = r.h = qemu_mts.finger_point_size;
+			
+			SDL_BlitSurface(qemu_mts.finger_point, NULL, qemu_state->surface_screen, &r);
+		}
+
 		SDL_FreeSurface(down_screen);
 	}
 

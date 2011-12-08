@@ -94,4 +94,22 @@ void qemu_display_init (DisplayState *ds);
 gint qemu_widget_new (GtkWidget **widget);
 gint qemu_widget_expose (GtkWidget *widget, GdkEventExpose *event);
 
+
+#define MAX_MULTI_TOUCH_CNT 2
+#define DEFAULT_FINGER_POINT_SIZE 32
+#define DEFAULT_FINGER_POINT_COLOR 0x7E0f0f0f
+
+typedef struct _finger_point {
+	int x; int y;
+	int dx; int dy;
+} finger_point;
+
+typedef struct _multi_touch_state {
+	int multitouch_enable;
+	int finger_cnt;
+	finger_point finger_slot[MAX_MULTI_TOUCH_CNT];
+	int finger_point_size;
+	SDL_Surface* finger_point;
+} multi_touch_state;
+
 #endif
