@@ -556,7 +556,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 		if(check_shdmem(target_name, RESET_MODE)== -1)
 			return;
 
-		gboolean bResult = show_ok_cancel_message("Warning", "Are you sure you reset this target?");
+		gboolean bResult = show_ok_cancel_message("Warning", "This target will be reset, Are you sure to continue?");
 		if(bResult == FALSE)
 			return;
 		virtual_target_path = get_virtual_target_abs_path(target_name);
@@ -770,7 +770,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		if(check_shdmem(target_name, DELETE_MODE)== -1)
 			return;
 
-		gboolean bResult = show_ok_cancel_message("Warning", "Are you sure you delete this target?");
+		gboolean bResult = show_ok_cancel_message("Warning", "This target will be removed, Are you sure to continue?");
 		if(bResult == FALSE)
 			return;
 
@@ -2043,6 +2043,7 @@ void construct_main_window(void)
 	GtkWidget *activate_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
 	GtkWidget *details_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button5");
 	GtkWidget *refresh_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button8");
+	GtkWidget *reset_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button9");
 	g_main_window = (GtkWidget *)gtk_builder_get_object(g_builder, "window1");
 	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), icon_image, NULL);
 	GtkWidget *x86_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton8");
@@ -2066,6 +2067,7 @@ void construct_main_window(void)
 	g_signal_connect(modify_button, "clicked", G_CALLBACK(modify_clicked_cb), selection);
 	g_signal_connect(activate_button, "clicked", G_CALLBACK(activate_clicked_cb), selection);
 	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), selection);
+	g_signal_connect(reset_button, "clicked", G_CALLBACK(reset_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
 
 	g_object_unref(G_OBJECT(g_builder));
