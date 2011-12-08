@@ -585,10 +585,10 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *ram_size = NULL;
 	char *dpi = NULL;
 	char *disk_path = NULL;
+	char *basedisk_path = NULL;
 	char *arch = NULL;
 	char *sdcard_detail = NULL;
 	char *ram_size_detail = NULL;
-	char *disk_path_detail = NULL;
 	char *sdcard_path_detail = NULL;
 	char *details = NULL;
 
@@ -608,6 +608,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 	dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
 	disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+	basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
 
 	arch = getenv("EMULATOR_ARCH");
 	if(!arch) /* for stand alone */
@@ -638,15 +639,14 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	}
 
 	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-	disk_path_detail = g_strdup_printf("%s", disk_path);
 #ifndef _WIN32		
-	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
+			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 	show_message("Virtual Target Details", details);
 #else /* _WIN32 */
 	gchar *details_win = NULL;
-	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+	details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
+			target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 	details_win = change_path_from_slash(details);
 	show_message("Virtual Target Details", details_win);
 	free(details_win);
@@ -657,10 +657,9 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	g_free(ram_size);
 	g_free(dpi);
 	g_free(disk_path);
+	g_free(basedisk_path);
 	g_free(sdcard_detail);
 	g_free(ram_size_detail);
-	g_free(disk_path_detail);
-	g_free(sdcard_path_detail);
 	g_free(details);
 	return;
 //	show_about_window(win);

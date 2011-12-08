@@ -203,6 +203,37 @@ const gchar *get_arch_path(void)
 
 	return path;
 }
+/* get_baseimg_abs_path = "~/tizen_sdk/Emulator/x86/emulimg.x86"
+*						= "~/tizen_sdk/Emulator/arm/emulimg.arm"	*/
+const gchar *get_baseimg_abs_path(void)
+{
+	const gchar *arch_path;
+	static gchar *path;
+	char *arch = (char *)g_getenv("EMULATOR_ARCH");
+	const gchar *exec_path = get_exec_path();
+	if(!arch) /* for stand alone */
+	{
+		char *binary = g_path_get_basename(exec_path);
+		if(strstr(binary, "emulator-x86"))
+			arch = g_strdup_printf("x86");
+		else if(strstr(binary, "emulator-arm"))
+			arch = g_strdup_printf("arm");
+		else 
+		{
+			ERR( "binary setting failed\n");
+			exit(1);
+		}
+		free(binary);
+	}
+	arch_path = get_arch_abs_path();
+	path = malloc(strlen(arch_path) + 13);
+	strcpy(path, arch_path);
+	strcat(path, "/");	
+	strcat(path, "emulimg.");
+	strcat(path, arch);
+
+	return path;
+}
 
 /* get_arch_abs_path = "~/tizen_sdk/Emulator/x86" 
 * 				= "~/tizen_sdk/Emulator/arm" */

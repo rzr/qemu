@@ -520,10 +520,10 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *ram_size = NULL;
 	char *dpi = NULL;
 	char *disk_path = NULL;
+	char *basedisk_path = NULL;
 	char *arch = NULL;
 	char *sdcard_detail = NULL;
 	char *ram_size_detail = NULL;
-	char *disk_path_detail = NULL;
 	char *sdcard_path_detail = NULL;
 	char *details = NULL;
 
@@ -555,6 +555,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 		dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
 		disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+		basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
 
 		arch = getenv("EMULATOR_ARCH");
 		if(strcmp(sdcard_type, "0") == 0)
@@ -569,15 +570,14 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		}
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-		disk_path_detail = g_strdup_printf("%s", disk_path);
 #ifndef _WIN32		
-		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
+				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 		show_message("Virtual Target Details", details);
 #else /* _WIN32 */
 		gchar *details_win = NULL;
-		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s",
-				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path_detail);
+		details = g_strdup_printf("Name: %s\nCPU: %s\nResolution: %s\nRam size: %s\nDPI: %s\nSD card: %s\nSD path: %s\nDisk path: %s\nBasedisk path: %s",
+				target_name, arch, resolution, ram_size_detail, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 		details_win = change_path_from_slash(details);
 		show_message("Virtual Target Details", details_win);
 		free(details_win);
@@ -590,7 +590,6 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		g_free(disk_path);
 		g_free(sdcard_detail);
 		g_free(ram_size_detail);
-		g_free(disk_path_detail);
 		g_free(sdcard_path_detail);
 		g_free(details);
 		return;
@@ -790,8 +789,10 @@ void make_default_image(void)
 		INFO( "emulimg-default.x86 creation succeeded!\n");
 		g_free(cmd);
 
-		set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
 	}
+	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
+	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+
 	free(default_img);
 }	
 
@@ -855,7 +856,6 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "%s=1\n", HTTP_PROXY_KEY);
 		g_fprintf (fp, "%s=1\n", DNS_SERVER_KEY);
 		g_fprintf (fp, "%s=1200\n", TELNET_PORT_KEY);
-//		g_fprintf (fp, "%s=\n", DISK_TYPE_KEY);
 //		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_KEY);
 //		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_DATE_KEY);
 		g_fprintf (fp, "%s=1\n", KVM_KEY);
@@ -870,6 +870,8 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "%s=\n", SDCARD_PATH_KEY);
 		g_fprintf (fp, "%s=\n", RAM_SIZE_KEY);
 		g_fprintf (fp, "%s=\n", DPI_KEY);
+		g_fprintf (fp, "%s=0\n", DISK_TYPE_KEY);
+		g_fprintf (fp, "%s=\n", BASEDISK_PATH_KEY);
 		g_fprintf (fp, "%s=\n", DISK_PATH_KEY);
 
 		fclose(fp);
@@ -918,9 +920,11 @@ int write_config_file(gchar *filepath)
 	set_config_type(filepath, HARDWARE_GROUP, SDCARD_TYPE_KEY, virtual_target_info.sdcard_type);
 	set_config_value(filepath, HARDWARE_GROUP, SDCARD_PATH_KEY, virtual_target_info.sdcard_path);
     set_config_type(filepath, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
+  	set_config_type(filepath, HARDWARE_GROUP, DISK_TYPE_KEY, virtual_target_info.disk_type);
     set_config_value(filepath, HARDWARE_GROUP, DPI_KEY, virtual_target_info.dpi);
 //  set_config_type(filepath, HARDWARE_GROUP, BUTTON_TYPE_KEY, virtual_target_info.button_type);
 	set_config_value(filepath, HARDWARE_GROUP, DISK_PATH_KEY, virtual_target_info.diskimg_path);
+	set_config_value(filepath, HARDWARE_GROUP, BASEDISK_PATH_KEY, virtual_target_info.basedisk_path);
 
 	return 0;
 }
@@ -1054,6 +1058,22 @@ void set_sdcard_create_active_cb(void)
 	gtk_widget_set_sensitive(sdcard_combo_box, active);
 }
 
+void set_disk_select_active_cb(void)
+{
+	gboolean active = FALSE;
+	
+	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton13");
+	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(select_radiobutton));
+	
+	if(active == TRUE)
+		virtual_target_info.disk_type = 1;
+	
+	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
+
+	gtk_widget_set_sensitive(sdcard_filechooser2, active);
+
+}
+
 void set_sdcard_select_active_cb(void)
 {
 	gboolean active = FALSE;
@@ -1069,6 +1089,21 @@ void set_sdcard_select_active_cb(void)
 	gtk_widget_set_sensitive(sdcard_filechooser, active);
 }
 
+void set_disk_default_active_cb(void)
+{
+	gboolean active = FALSE;
+	
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
+	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(default_radiobutton));
+	
+	if(active == TRUE)
+	{
+		virtual_target_info.disk_type = 0;
+		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
+		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
+	}
+}
+
 void set_sdcard_none_active_cb(void)
 {
 	gboolean active = FALSE;
@@ -1078,6 +1113,20 @@ void set_sdcard_none_active_cb(void)
 	
 	if(active == TRUE)
 		virtual_target_info.sdcard_type = 0;
+}
+
+void disk_file_select_cb(void)
+{
+	gchar *path = NULL;
+
+	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
+	
+	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser2));
+	snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", path);
+	INFO( "disk path : %s\n", path);
+
+	g_free(path);
+
 }
 
 void sdcard_file_select_cb(void)
@@ -1232,6 +1281,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
 			"%s/%s/emulimg-%s.x86", get_vms_abs_path(), name, name);
 	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
+
 	if(virtual_target_info.sdcard_type == 2){
 		GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 		char *sdcard_uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(sdcard_filechooser));
@@ -1246,11 +1296,11 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 	else
 	{
-	// target_name not changed
-	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.x86", dest_path, 
-			virtual_target_info.virtual_target_name);
-	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
+		// target_name not changed
+		dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
+		snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.x86", dest_path, 
+				virtual_target_info.virtual_target_name);
+		TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
 	}
 
 	//delete original target name
@@ -1369,8 +1419,15 @@ void ok_clicked_cb(void)
 #else
 		mkdir(log_path);
 #endif
-
-
+//disk type
+	if(virtual_target_info.disk_type == 0)
+		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
+	else if(virtual_target_info.disk_type == 1){
+			if(strcmp(virtual_target_info.basedisk_path, "") == 0){
+			show_message("Error", "You didn't select an existing sdcard image");
+			return;
+			}
+	}
 // sdcard
 	if(virtual_target_info.sdcard_type == 0)
 	{
@@ -1424,11 +1481,25 @@ void ok_clicked_cb(void)
 	
 // create emulator image
 #ifdef _WIN32
-	cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_root_path(), get_arch_abs_path(),
-			dest_path, virtual_target_info.virtual_target_name);
+	if(virtual_target_info.disk_type == 1){
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.x86", get_root_path(), virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name);
+	}
+	else
+	{
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_root_path(), get_arch_abs_path(),
+				dest_path, virtual_target_info.virtual_target_name);
+	}
 #else
-	cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_arch_abs_path(),
+	if(virtual_target_info.disk_type == 1){
+		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.x86", virtual_target_info.basedisk_path,
 			dest_path, virtual_target_info.virtual_target_name);
+	}
+	else
+	{
+		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.x86", virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name);
+	}
 #endif
 	if(!run_cmd(cmd))
 	{
@@ -1474,6 +1545,7 @@ void setup_create_frame(void)
 	setup_buttontype_frame();
 	setup_resolution_frame();
 	setup_sdcard_frame();
+	setup_disk_frame();
 	setup_ram_frame();
 }
 
@@ -1482,6 +1554,7 @@ void setup_modify_frame(char *target_name)
 	setup_modify_buttontype_frame(target_name);
 	setup_modify_resolution_frame(target_name);
 	setup_modify_sdcard_frame(target_name);
+	setup_modify_disk_frame(target_name);
 	setup_modify_ram_frame(target_name);
 }
 
@@ -1514,6 +1587,39 @@ void setup_modify_resolution_frame(char *target_name)
 	snprintf(virtual_target_info.resolution, MAXBUF, "%s", resolution);
 	INFO( "resolution : %s\n", resolution);
 	g_free(resolution);
+}
+
+void setup_modify_disk_frame(char *target_name)
+{
+	char *disk_path;
+	// radio button setup
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
+	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton13");
+	// file chooser setup
+	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
+	GtkFileFilter *filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "Disk Files");
+	gtk_file_filter_add_pattern(filter, "*.x86");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser2), filter);
+	int disk_type= get_config_type(g_info_file, HARDWARE_GROUP, DISK_TYPE_KEY);
+	if(disk_type == 1)
+	{
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(select_radiobutton), TRUE);
+		disk_path= get_config_value(g_info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(sdcard_filechooser2), disk_path);
+	}
+	else if(disk_type == 0)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
+	//can not modify baseimg. only can create.	
+	gtk_widget_set_sensitive(default_radiobutton, FALSE);
+	gtk_widget_set_sensitive(select_radiobutton, FALSE);
+	gtk_widget_set_sensitive(sdcard_filechooser2, FALSE);
+	
+//	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
+//	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
+//	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
+
+
 }
 
 void setup_modify_sdcard_frame(char *target_name)
@@ -1662,6 +1768,27 @@ void setup_resolution_frame(void)
 	g_signal_connect(GTK_RADIO_BUTTON(radiobutton2), "toggled", G_CALLBACK(resolution_select_cb), radiobutton2);
 	g_signal_connect(GTK_RADIO_BUTTON(radiobutton3), "toggled", G_CALLBACK(resolution_select_cb), radiobutton3);
 	g_signal_connect(GTK_RADIO_BUTTON(radiobutton4), "toggled", G_CALLBACK(resolution_select_cb), radiobutton4);
+}
+
+
+void setup_disk_frame(void)
+{
+	// radio button setup
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
+	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton13");
+	// file chooser setup
+	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
+	GtkFileFilter *filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "Disk Files");
+	gtk_file_filter_add_pattern(filter, "*.x86");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser2), filter);
+	set_disk_select_active_cb();	
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
+	
+	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
+	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
+	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
+
 }
 
 void setup_sdcard_frame(void)
