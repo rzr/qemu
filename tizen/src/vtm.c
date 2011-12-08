@@ -72,6 +72,7 @@ MULTI_DEBUG_CHANNEL(tizen, emulmgr);
 #define CREATE_MODE	1
 #define DELETE_MODE	2
 #define MODIFY_MODE 3
+#define RESET_MODE 4
 
 GtkBuilder *g_builder;
 GtkBuilder *g_create_builder;
@@ -185,8 +186,6 @@ void activate_target(char *target_name)
 
 	disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
 	basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
-
-#ifndef _WIN32
 	/* check image & base image */
 	if(access(disk_path, R_OK) != 0){
 		error_log = g_strdup_printf("The image does not exist \n\n"
@@ -201,8 +200,8 @@ void activate_target(char *target_name)
 		show_message("Error", error_log);
 		g_free(error_log);
 		return;
-	}  
-
+	} 
+#ifndef _WIN32
 	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
 	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && strcmp(kvm,"1") == 0)
 	{
@@ -211,7 +210,6 @@ void activate_target(char *target_name)
 	else
 		enable_kvm = g_strdup_printf(" ");
 #else /* _WIN32 */
-	/* todo: check image & base image */
 	enable_kvm = g_strdup_printf(" ");
 #endif
 
@@ -280,6 +278,10 @@ int check_shdmem(char *target_name, int type)
 						show_message("Warning", "Can not delete this target!\nVirtual target with the same name is running now!");
 					else if(type == MODIFY_MODE)
 						show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
+					else if(type == RESET_MODE)
+						show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
+					else
+						show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
 					else
 						ERR("wrong type passed\n");
 
@@ -528,6 +530,80 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 	}
 }
 
+void reset_clicked_cb(GtkWidget *widget, gpointer selection)
+{
+	GtkListStore *store;
+	GtkTreeModel *model;
+	GtkTreeIter  iter;
+	char *target_name;
+	char *cmd = NULL;
+	char *virtual_target_path;
+	char *info_file;
+	char *disk_path;
+	int file_status;
+	char* basedisk_path = NULL;
+	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+
+	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
+		return;
+	
+	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
+		&model, &iter)) {
+		//get target name
+		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
+		
+		if(check_shdmem(target_name, RESET_MODE)== -1)
+			return;
+
+		gboolean bResult = show_ok_cancel_message("Warning", "Are you sure you reset this target?");
+		if(bResult == FALSE)
+			return;
+		virtual_target_path = get_virtual_target_abs_path(target_name);
+		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+		file_status = is_exist_file(info_file);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "target info file not exists : %s\n", target_name);
+			return;
+		}
+
+		basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
+		file_status = is_exist_file(basedisk_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "Base image file not exists : %s\n", basedisk_path);
+			return;
+		}
+		disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
+		
+	// reset emulator image
+#ifdef _WIN32
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %s", 
+				get_root_path(), basedisk_path, disk_path);
+#else
+		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %s", 
+				basedisk_path, disk_path);
+#endif
+		if(!run_cmd(cmd))
+		{
+			g_free(cmd);
+			free(basedisk_path);
+			free(disk_path);
+			show_message("Error", "emulator image reset failed!");
+			return;
+		}
+		g_free(cmd);
+		g_free(target_name);
+		free(basedisk_path);
+		free(disk_path);
+		show_message("INFO","Virtual target reset success!");
+		return;
+	}
+	
+	show_message("Warning", "Target is not selected. Firstly select a target and reset.");
+}
+
 void details_clicked_cb(GtkWidget *widget, gpointer selection)
 {
 	GtkListStore *store;
@@ -593,9 +669,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		}
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-
-#ifndef _WIN32		
-		/* check image & base image */
+	
 		if(access(disk_path, R_OK) != 0){
 			details = g_strdup_printf("The image does not exist \n\n"
 					"    - [%s]", disk_path);
@@ -608,6 +682,9 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Error", details);
 			g_free(details);
 		}
+
+#ifndef _WIN32		
+		/* check image & base image */
 
 		details = g_strdup_printf(""
 				" - Name: %s\n"
