@@ -9,13 +9,7 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 
-#if 0
-#include <theora/codec.h>
-#include <theora/theora.h>
-#include <theora/theoradec.h>
-#include "decint.h"
-#endif
-
+#define CODEC_THREAD
 /*
  *  Codec Device Structures
  */
@@ -57,12 +51,27 @@ typedef struct _SVCodecState {
 } SVCodecState;
 
 /*
- *  Codec Helper APIs
+ *  Codec Device APIs
  */
 
+int pci_codec_init (PCIBus *bus);
+static int codec_operate(uint32_t value, SVCodecState *opaque);
+
+
+/*
+ *  Codec Helper APIs
+ */
+void codec_set_context (AVCodecContext *dstctx,
+                        AVCodecContext *srcctx);
+
+#ifndef CODEC_THREAD
+static int codec_copy_info (SVCodecState *s);
 static int codec_thread_init (void *opaque);
 static void* codec_worker_thread (void *opaque);
-
+static void wake_codec_wrkthread(SVCodecState *s);
+static void sleep_codec_wrkthread(SVCodecState *s);
+static void codec_thread_destroy(void *opaque);
+#endif
 
 /*
  *  FFMPEG APIs
@@ -105,27 +114,6 @@ int qemu_av_parser_parse (void);
 void qemu_av_parser_close (void);
 
 int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture);
-#if 0
-/*
- * THEORA APIs
- */
 
-int qemu_th_decode_ctl (void);
+void qemu_avcodec_release_buffer (AVCodecContext *context, AVFrame *picture);
 
-th_dec_ctx* qemu_th_decode_alloc (void);
-
-int qemu_th_decode_headerin (void);
-
-int qemu_th_decode_packetin (void);
-
-int qemu_th_decode_ycbcr_out (void);
-
-void qemu_th_info_clear (void);
-
-void qemu_th_comment_clear (void);
-
-void qemu_th_setup_free (void);
-
-void qemu_th_decode_free (void);
-
-#endif
