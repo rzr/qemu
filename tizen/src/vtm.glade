@@ -1,10 +1,10 @@
-
+<?xml version="1.0"?>
 <interface>
   <!-- interface-requires gtk+ 2.10 -->
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="window1">
-    <property name="width_request">430</property>
-    <property name="height_request">280</property>
+    <property name="width_request">451</property>
+    <property name="height_request">345</property>
     <property name="border_width">6</property>
     <property name="title" translatable="yes">Emulator Manager</property>
     <property name="window_position">center</property>
@@ -31,6 +31,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
+                        <property name="tooltip_text" translatable="yes">Select x86 architecture.</property>
                         <property name="active">True</property>
                         <property name="draw_indicator">True</property>
                       </object>
@@ -46,6 +47,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
+                        <property name="tooltip_text" translatable="yes">Selecting arm architecture is not supported currently.</property>
                         <property name="active">True</property>
                         <property name="draw_indicator">True</property>
                         <property name="group">radiobutton8</property>
@@ -109,16 +111,17 @@
             </child>
             <child>
               <object class="GtkVBox" id="vbox2">
-                <property name="width_request">89</property>
-                <property name="height_request">73</property>
                 <property name="visible">True</property>
                 <property name="spacing">3</property>
                 <child>
                   <object class="GtkButton" id="button1">
+                    <property name="width_request">95</property>
                     <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Create new virtual target.</property>
+                    <property name="xalign">0</property>
                     <property name="image_position">bottom</property>
                     <child>
                       <object class="GtkHBox" id="hbox13">
@@ -135,7 +138,9 @@
                         <child>
                           <object class="GtkLabel" id="label14">
                             <property name="visible">True</property>
+                            <property name="xalign">0</property>
                             <property name="label" translatable="yes">Create</property>
+                            <property name="ellipsize">end</property>
                           </object>
                           <packing>
                             <property name="position">1</property>
@@ -153,10 +158,12 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="button3">
+                    <property name="width_request">95</property>
                     <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Modify selected virtual target.</property>
                     <child>
                       <object class="GtkHBox" id="hbox12">
                         <property name="visible">True</property>
@@ -173,7 +180,9 @@
                         <child>
                           <object class="GtkLabel" id="label13">
                             <property name="visible">True</property>
+                            <property name="xalign">0</property>
                             <property name="label" translatable="yes">Modify</property>
+                            <property name="ellipsize">end</property>
                           </object>
                           <packing>
                             <property name="position">1</property>
@@ -191,10 +200,12 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="button2">
+                    <property name="width_request">95</property>
                     <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Delete selected virtual target.</property>
                     <child>
                       <object class="GtkHBox" id="hbox11">
                         <property name="visible">True</property>
@@ -213,6 +224,7 @@
                             <property name="visible">True</property>
                             <property name="xalign">0</property>
                             <property name="label" translatable="yes">Delete</property>
+                            <property name="ellipsize">end</property>
                           </object>
                           <packing>
                             <property name="position">1</property>
@@ -229,38 +241,31 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkHSeparator" id="hseparator1">
-                    <property name="visible">True</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="padding">5</property>
-                    <property name="position">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkButton" id="button5">
+                  <object class="GtkButton" id="button9">
+                    <property name="width_request">95</property>
                     <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Reset selected virtual target.</property>
                     <child>
-                      <object class="GtkHBox" id="hbox14">
+                      <object class="GtkHBox" id="hbox18">
                         <property name="visible">True</property>
                         <child>
-                          <object class="GtkImage" id="image6">
+                          <object class="GtkImage" id="image9">
                             <property name="visible">True</property>
-                            <property name="stock">gtk-info</property>
-                            <property name="icon-size">1</property>
+                            <property name="stock">gtk-undo</property>
                           </object>
                           <packing>
                             <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="label15">
+                          <object class="GtkLabel" id="label19">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">Details</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes">Reset</property>
+                            <property name="ellipsize">end</property>
                           </object>
                           <packing>
                             <property name="position">1</property>
@@ -272,16 +277,27 @@
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">False</property>
-                    <property name="padding">1</property>
-                    <property name="position">5</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkHSeparator" id="hseparator1">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">7</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="button8">
+                    <property name="width_request">95</property>
                     <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Refresh target list.</property>
                     <child>
                       <object class="GtkHBox" id="hbox15">
                         <property name="visible">True</property>
@@ -298,7 +314,9 @@
                         <child>
                           <object class="GtkLabel" id="label16">
                             <property name="visible">True</property>
+                            <property name="xalign">0</property>
                             <property name="label" translatable="yes">Refresh</property>
+                            <property name="ellipsize">end</property>
                           </object>
                           <packing>
                             <property name="position">1</property>
@@ -314,11 +332,65 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="button4">
+                  <object class="GtkButton" id="button5">
+                    <property name="width_request">95</property>
                     <property name="height_request">28</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Show virtual target information.</property>
+                    <child>
+                      <object class="GtkHBox" id="hbox14">
+                        <property name="visible">True</property>
+                        <child>
+                          <object class="GtkImage" id="image6">
+                            <property name="visible">True</property>
+                            <property name="stock">gtk-info</property>
+                            <property name="icon-size">1</property>
+                          </object>
+                          <packing>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label15">
+                            <property name="visible">True</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes">Details</property>
+                            <property name="ellipsize">end</property>
+                          </object>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="padding">1</property>
+                    <property name="position">6</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkHSeparator" id="hseparator2">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="padding">7</property>
+                    <property name="position">7</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="button4">
+                    <property name="width_request">95</property>
+                    <property name="height_request">28</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Start selected virtual target.</property>
                     <signal name="clicked" handler="activate_clicked_cb"/>
                     <child>
                       <object class="GtkHBox" id="hbox16">
@@ -336,7 +408,9 @@
                         <child>
                           <object class="GtkLabel" id="label17">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">Activate</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes">Start</property>
+                            <property name="ellipsize">end</property>
                           </object>
                           <packing>
                             <property name="position">1</property>
@@ -348,7 +422,7 @@
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">False</property>
-                    <property name="position">6</property>
+                    <property name="position">8</property>
                   </packing>
                 </child>
               </object>
@@ -746,7 +820,7 @@
                           <object class="GtkFileChooserButton" id="filechooserbutton2">
                             <property name="width_request">150</property>
                             <property name="visible">True</property>
-                            <property name="title" translatable="yes">Change Base Image</property>
+                            <property name="title" translatable="yes">Select an existing Disk</property>
                           </object>
                           <packing>
                             <property name="padding">5</property>
@@ -760,7 +834,7 @@
                     </child>
                     <child>
                       <object class="GtkRadioButton" id="radiobutton12">
-                        <property name="label" translatable="yes">Use Default Base Image</property>
+                        <property name="label" translatable="yes">Use default Base Image</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
