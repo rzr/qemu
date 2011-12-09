@@ -208,15 +208,15 @@ $(OBJ): qemu/config-host.h
 # rpath is the search path for .so libraries (similar to LD_LIBRARY_PATH)
 $(TARGET_X86): $(DIRS:%=%/__dir__) $(OBJS_X86)
 	@echo "  LINK $@"
-	$(Q)$(CC) -Wl,--rpath,$$ORIGIN/lib $(OBJS_X86) $(LDFLAGS) $(X86_QEMU_LIBFLAGS) $(LIBS_COMMON) -o $@
+	$(Q)$(CC) $(OBJS_X86) $(LDFLAGS) $(X86_QEMU_LIBFLAGS) $(LIBS_COMMON) -o $@
 
 $(TARGET_ARM): $(DIRS:%=%/__dir__) $(OBJS_ARM)
 	@echo "  LINK $@"
-	$(Q)$(CC) -Wl,--rpath,$$ORIGIN/lib $(OBJS_ARM) $(LDFLAGS) $(ARM_QEMU_LIBFLAGS) $(LIBS_COMMON) -o $@
+	$(Q)$(CC) $(OBJS_ARM) $(LDFLAGS) $(ARM_QEMU_LIBFLAGS) $(LIBS_COMMON) -o $@
 
 $(VTM) : $(OBJS_VTM)
 	@echo "  LINK $@"
-	$(Q)$(CC) -Wl,--rpath,$$ORIGIN/lib $(OBJS_VTM) $(LDFLAGS) $(LIBS_COMMON) -o $@
+	$(Q)$(CC) $(OBJS_VTM) $(LDFLAGS) $(LIBS_COMMON) -o $@
 
 install: $(TARGET)
 	mkdir -p $(PHONE_DIR)/bin
