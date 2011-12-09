@@ -22,8 +22,8 @@
 #define PCI_VENDOR_ID_SAMSUNG		0x144d
 #define PCI_DEVICE_ID_VIRTUAL_OVERLAY   0x1010
 
-#define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
-#define OVERLAY_REG_SIZE	256
+#define OVERLAY_MEM_SIZE		(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
+#define OVERLAY_REG_SIZE		256
 #define OVERLAY1_REG_OFFSET	(OVERLAY_REG_SIZE / 2)
 
 
@@ -81,8 +81,8 @@ static uint32_t overlay_reg_read(void *opaque, target_phys_addr_t addr)
         break;
     default:
         fprintf(stderr, "wrong overlay register read - addr : %d\n", addr);
+        break;
     }
-
 
     return 0;
 }
@@ -91,7 +91,12 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t va
 {
     switch (addr) {
     case OVERLAY_POWER:
+    	printf( "overlay_reg_write power:%d\n", val );
         overlay0_power = val;
+        if( !overlay0_power ) {
+        	// clear the last overlay area.
+        	memset( overlay_ptr, 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        }
         break;
     case OVERLAY_POSITION:
         overlay0_left = val & 0xFFFF;
@@ -103,6 +108,10 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t va
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
         overlay1_power = val;
+        if( !overlay1_power ) {
+        	// clear the last overlay area.
+        	memset( overlay_ptr + OVERLAY1_REG_OFFSET , 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        }
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
         overlay1_left = val & 0xFFFF;
@@ -114,6 +123,7 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t va
         break;
     default:
         fprintf(stderr, "wrong overlay register write - addr : %d\n", addr);
+        break;
     }
 }
 
