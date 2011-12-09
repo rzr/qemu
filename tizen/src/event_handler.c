@@ -596,28 +596,75 @@ gboolean key_event_handler (GtkWidget *wid, GdkEventKey *event)
 	return TRUE;
 }
 
+static int bSearchFinger = 1;
+static int select_finger_point = -1;
 static void do_multitouch_prossesing(int x, int y, int dx, int dy, int dz, int touch_type)
 {
-	if (touch_type == 1 && qemu_mts.finger_cnt < MAX_MULTI_TOUCH_CNT) {
-		qemu_mts.finger_slot[qemu_mts.finger_cnt].x = x; //skin position
-		qemu_mts.finger_slot[qemu_mts.finger_cnt].y = y;
-		qemu_mts.finger_slot[qemu_mts.finger_cnt].dx = dx; //lcd position
-		qemu_mts.finger_slot[qemu_mts.finger_cnt].dy = dy;
+	int i;
 
-		dz = qemu_mts.finger_cnt;
-		//fprintf(stderr, "!!!!! dx=%d, dy=%d, dz=%d, touch_type=%d\n", dx, dy, dz, touch_type);
-		kbd_mouse_event(dx, dy, dz, 1);
+	if (touch_type == 1) { //pressed
+		if (qemu_mts.finger_cnt > 0)
+		{
+			if (bSearchFinger == 1) {
+				//search previous finger point
+				for (i = 0; i < qemu_mts.finger_cnt; i++) {
+					if ((qemu_mts.finger_slot[i].x - qemu_mts.finger_point_size) < x &&
+						(qemu_mts.finger_slot[i].x + qemu_mts.finger_point_size) > x &&
+						(qemu_mts.finger_slot[i].y - qemu_mts.finger_point_size) < y &&
+						(qemu_mts.finger_slot[i].y + qemu_mts.finger_point_size) > y) {
+						select_finger_point = i;
+						bSearchFinger = 0;
+						break;
+					}
+				}
+			}
 
-		qemu_mts.finger_cnt++;
-	} else if (touch_type == 1 && qemu_mts.finger_cnt == MAX_MULTI_TOUCH_CNT) {
-		//move last touch point
-		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].x = x;
-		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].y = y;
-		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].dx = dx;
-		qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].dy = dy;
-		dz = qemu_mts.finger_cnt - 1;
-		//fprintf(stderr, "!!!!! dx=%d, dy=%d, dz=%d, touch_type=%d\n", dx, dy, dz, touch_type);
-		kbd_mouse_event(dx, dy, dz, 1);
+			if (select_finger_point != -1) { //found
+				qemu_mts.finger_slot[select_finger_point].x = x;
+				qemu_mts.finger_slot[select_finger_point].y = y;
+				qemu_mts.finger_slot[select_finger_point].dx = dx;
+				qemu_mts.finger_slot[select_finger_point].dy = dy;
+
+				kbd_mouse_event(dx, dy, select_finger_point, 1);
+			} else {
+				if (qemu_mts.finger_cnt != MAX_MULTI_TOUCH_CNT) {
+					//add new finger point
+					qemu_mts.finger_slot[qemu_mts.finger_cnt].x = x;
+					qemu_mts.finger_slot[qemu_mts.finger_cnt].y = y;
+					qemu_mts.finger_slot[qemu_mts.finger_cnt].dx = dx;
+					qemu_mts.finger_slot[qemu_mts.finger_cnt].dy = dy;
+
+					kbd_mouse_event(dx, dy, qemu_mts.finger_cnt, 1);
+
+					qemu_mts.finger_cnt++;
+					bSearchFinger = 0;
+				} else {
+					//move last finger point
+					qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].x = x;
+					qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].y = y;
+					qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].dx = dx;
+					qemu_mts.finger_slot[MAX_MULTI_TOUCH_CNT - 1].dy = dy;
+
+					kbd_mouse_event(dx, dy, MAX_MULTI_TOUCH_CNT - 1, 1);
+				}
+			}
+
+		}
+		else if (qemu_mts.finger_cnt == 0) //first touch
+		{
+			qemu_mts.finger_slot[0].x = x; //skin position
+			qemu_mts.finger_slot[0].y = y;
+			qemu_mts.finger_slot[0].dx = dx; //lcd position
+			qemu_mts.finger_slot[0].dy = dy;
+
+			kbd_mouse_event(dx, dy, 0, 1);
+
+			qemu_mts.finger_cnt++;
+			bSearchFinger = 0;
+		}
+	} else { //release
+		bSearchFinger = 1;
+		select_finger_point = -1; //clear
 	}
 }
 
