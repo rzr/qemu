@@ -592,7 +592,7 @@
                       <object class="GtkLabel" id="label20">
                         <property name="visible">True</property>
                         <property name="xalign">0.10000000149011612</property>
-                        <property name="label" translatable="yes">Size : </property>
+                        <property name="label" translatable="yes">Resolution :</property>
                       </object>
                       <packing>
                         <property name="padding">5</property>
@@ -609,7 +609,7 @@
             <child type="label">
               <object class="GtkLabel" id="label7">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">&lt;b&gt;Resolution&lt;/b&gt;</property>
+                <property name="label" translatable="yes">&lt;b&gt;Display&lt;/b&gt;</property>
                 <property name="use_markup">True</property>
               </object>
             </child>
