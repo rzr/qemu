@@ -118,6 +118,7 @@
 
 #define VTM_CREATE_SDCARD_COMBOBOX		"VTM_CREATE_SDCARD_COMBOBOX"
 #define VTM_CREATE_RAM_COMBOBOX			"VTM_CREATE_RAM_COMBOBOX"
+#define VTM_CREATE_RESOLUTION_COMBOBOX			"VTM_CREATE_RESOLUTION_COMBOBOX"
 
 //============================== ISE Window Menu IDs =============================
 #define ID_MENU_FILE_OPEN           	0x0001

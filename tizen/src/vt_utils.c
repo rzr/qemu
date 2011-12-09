@@ -86,7 +86,8 @@ int is_valid_target_list_file(SYSINFO *pSYSTEMINFO)
 
 	return status;
 }
-
+/* used for target name check on create and modify window
+ 	valid target name includes numbers, alphabet, -, _	*/
 void escapeStr(const char* str, char* dst)
 {
 	int i = 0;
@@ -102,4 +103,23 @@ void escapeStr(const char* str, char* dst)
 			dst[i++] = ch;
 	}
 	dst[i] = '\0';
+}
+
+/* used for resolution setting
+*   change like "HVGA(320x480)" -> "320x480" */
+char* escape_resolution_str(const char* str)
+{
+	int i = 0;
+	char ch;
+	char *dst = malloc(20);
+	while(*str)
+	{
+		ch = *str++;
+		
+		if((ch >='0' && ch <= '9') || (ch == 'x'))
+			dst[i++] = ch;
+	}
+	dst[i] = '\0';		
+
+	return dst;
 }
