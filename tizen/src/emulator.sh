@@ -153,6 +153,11 @@ parse_input_params () {
 			shift ;;
 		--debug-qemu)
 			GDB="gdb --args"
+			EMUL_DUMP=0
+			EMUL_LOGFILE=""
+			EMUL_VERBOSE=0
+			ulimit -c 0
+			emul_opts="--no-dump $emul_opts"
 			shift ;;
 		--q|--quick-start)
 			quick_start=1
@@ -242,9 +247,7 @@ set_devel_env () {
 	echo "Running from build directory"
 	EMULATOR_BIN_PATH="$build_dir"
 
-        test -h "$build_dir/conf" || ln -s "$build_dir/../conf" "$build_dir/conf"
-        test -h "$build_dir/data" || ln -s "$build_dir/../data" "$build_dir/data"
-        test -h "$build_dir/skins" || ln -s "$build_dir/../skins" "$build_dir/skins"
+#        test -h "$build_dir/skins" || ln -s "$build_dir/../skins" "$build_dir/skins"
 
 	case ${TARGET_ARCH} in
 		*arm)
@@ -273,8 +276,18 @@ set_devel_env () {
 			fi
 			;;
 		*86)	
+		        test -d "$build_dir/../etc" || mkdir "$build_dir/../etc"
+		        test -d "$build_dir/../x86" || mkdir "$build_dir/../x86"
+		        test -h "$build_dir/../x86/conf" || ln -s "$build_dir/../conf" "$build_dir/../x86/conf"
+		        test -h "$build_dir/../x86/data" || ln -s "$build_dir/../data" "$build_dir/../x86/data"
+		        test -d "$build_dir/../x86/VMs" || mkdir "$build_dir/../x86/VMs" 
+		        test -d "$build_dir/../x86/VMs/default" || mkdir "$build_dir/../x86/VMs/default" 
+		        test -d "$build_dir/../x86/VMs/default/logs" || mkdir "$build_dir/../x86/VMs/default/logs" 
+		        test -f "$build_dir/../x86/VMs/default/config.ini" || cp "$build_dir/config_dbg.ini" "$build_dir/../x86/VMs/default/config.ini" 
+
 			# find the target path
 			test "$BOOT_OPTION" = "--disk" && TARGET_PATH="$EMULATOR_BIN_PATH/../../../../emulator-image/$TARGET_NAME"
+
 			# fine the kernel image
 			EMULATOR_KERNEL_LINK="$EMULATOR_BIN_PATH/../../../emulator-kernel"
 			if test -h "$EMULATOR_KERNEL_LINK" -a -d "$EMULATOR_KERNEL_LINK/arch/x86/boot"
@@ -348,11 +361,15 @@ set_emulator_options () {
 
 	export EMULATOR_SKIN_PATH
 
-	#qemu_skin
-	emul_opts="$emul_opts --skin $skin"
+	case ${TARGET_ARCH} in
+		*arm)
+			#qemu_skin
+			emul_opts="$emul_opts --skin $skin"
 
-	#quick_start
-	emul_opts="$emul_opts --quick-start $quick_start"
+			#quick_start
+			emul_opts="$emul_opts --quick-start $quick_start"
+			;;
+	esac
 	
 	#disable dump
 	if test EMUL_DUMP = 0
@@ -368,10 +385,7 @@ set_emulator_options () {
 set_qemu_hw_options () {
 	#qemu cpu selection
 	qemu_arm_opts="$qemu_arm_opts -M s5pc110"
-
-	#for qemu 0.14.1
-#	commented out by caramis...
-#	qemu_x86_opts="$qemu_x86_opts -M pc-0.13"
+	qemu_x86_opts="$qemu_x86_opts -M tizen-x86-machine"
 
 	#qemu memory size
 #	qemu_common_opts="$qemu_common_opts -m 256"
@@ -386,7 +400,7 @@ set_qemu_hw_options () {
 	qemu_common_opts="$qemu_common_opts -redir udp:$gps_port:${GUEST_IP_ADDRESS}:$gps_port"
 	
 	#emulator_sensor
-	qemu_common_opts="$qemu_common_opts -redir udp:$sensor_port:${GUEST_IP_ADDRESS}:$sensor_port"
+#	qemu_common_opts="$qemu_common_opts -redir udp:$sensor_port:${GUEST_IP_ADDRESS}:$sensor_port"
 
 	#acclerator : for opengl module (not necessary now)
 #	qemu_x86_opts="$qemu_x86_opts -device Accelerator"
@@ -452,7 +466,7 @@ test "`basename $0`" = "emulator.sh" && set_devel_env || DDD=""
 set_emulator_options
 set_qemu_hw_options
 set_qemu_options
-set_qemu_debug_options
+#set_qemu_debug_options
 
 if test "$DDD" != "" 
 then
@@ -474,7 +488,7 @@ case ${TARGET_ARCH} in
 			$BOOT_OPTION "$TARGET_PATH" \
 			$emul_opts -- $qemu_x86_opts $qemu_common_opts $debug_ports $kvm_opt 1>> $EMUL_LOGFILE 2> stderr.log
 		else
-		exec $GDB "${EMULATOR_BIN_PATH}/emulator-x86" \
+		exec $GDB "${EMULATOR_BIN_PATH}/emulator-x86" --vtm default \
 			$BOOT_OPTION "$TARGET_PATH" \
 			$emul_opts -- $qemu_x86_opts $qemu_common_opts $debug_ports $kvm_opt
 		fi
