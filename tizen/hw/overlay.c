@@ -22,8 +22,8 @@
 #define PCI_VENDOR_ID_SAMSUNG		0x144d
 #define PCI_DEVICE_ID_VIRTUAL_OVERLAY   0x1010
 
-#define OVERLAY_MEM_SIZE		(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
-#define OVERLAY_REG_SIZE		256
+#define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
+#define OVERLAY_REG_SIZE	256
 #define OVERLAY1_REG_OFFSET	(OVERLAY_REG_SIZE / 2)
 
 
@@ -91,7 +91,6 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t va
 {
     switch (addr) {
     case OVERLAY_POWER:
-    	printf( "overlay_reg_write power:%d\n", val );
         overlay0_power = val;
         if( !overlay0_power ) {
         	// clear the last overlay area.
