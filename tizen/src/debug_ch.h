@@ -58,10 +58,20 @@ struct _debug_channel
 	 (_dbg_get_channel_flags(dbch) & (1 << __DBCL##dbcl)))
 
 #define __DPRINTF(dbcl,dbch) \
+	do{ if(__GET_DEBUGGING(dbcl,(dbch))){ \
+		struct _debug_channel * const __dbch =(struct _debug_channel *)(dbch); \
+		const enum _debug_class __dbcl = __DBCL##dbcl; \
+		_DBG_LOG
+
+#define _DBG_LOG(args...) \
+		dbg_log(__dbcl, (struct _debug_channel *)(__dbch), args); } }while(0)
+/*
+
+#define __DPRINTF(dbcl,dbch) \
 	(!__GET_DEBUGGING(dbcl,(dbch)) || \
 	 (dbg_log(__DBCL##dbcl,(dbch), "") == -1)) ? \
 (void)0 : (void)dbg_printf
-
+*/
 extern unsigned char _dbg_get_channel_flags( struct _debug_channel *channel );
 extern int _dbg_set_channel_flags( struct _debug_channel *channel,
 		unsigned char set, unsigned char clear );

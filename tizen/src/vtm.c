@@ -1288,7 +1288,6 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	char *dest_path = NULL;
 	char *conf_file = NULL;
 	const gchar *name = NULL;
-	char *sdcard_name = NULL;
 	char *dst;
 
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
@@ -1414,10 +1413,11 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			show_message("Error", "You didn't select an existing sdcard image");
 			return;
 		}
-		sdcard_name = g_path_get_basename(virtual_target_info.sdcard_path);
-		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
-		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s%s", dest_path, sdcard_name);
-		TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+		sdcard_file_select_cb();
+//		sdcard_name = g_path_get_basename(virtual_target_info.sdcard_path);
+//		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
+//		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s%s", dest_path, sdcard_name);
+//		TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
 	else
 	{
@@ -1951,9 +1951,6 @@ void setup_sdcard_frame(void)
 	gtk_file_filter_set_name(filter, "SD Card Image Files");
 	gtk_file_filter_add_pattern(filter, "*.img");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser), filter);
-
-	set_sdcard_create_active_cb();	
-	set_sdcard_select_active_cb();	
 
 	g_signal_connect(G_OBJECT(sdcard_combo_box), "changed", G_CALLBACK(sdcard_size_select_cb), NULL);
 	g_signal_connect(G_OBJECT(create_radiobutton), "toggled", G_CALLBACK(set_sdcard_create_active_cb), NULL);

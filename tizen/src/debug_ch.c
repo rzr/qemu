@@ -373,43 +373,39 @@ const char *dbg_sprintf( const char *format, ... )
 	return ret;
 }
 
-/* default implementation of dbg_vlog */
-static int dbg_vlog( enum _debug_class cls, struct _debug_channel *channel,
-		const char *format, va_list args )
-{
-	int ret = 0;
-
-	if (cls < sizeof(debug_classes)/sizeof(debug_classes[0])) {
-		(void)(channel);
-		/* to print debug class, channel */
-		ret += dbg_printf_nonewline("[%s:%s"
-				, debug_classes[cls] , channel->name);
-
-		if (*channel->multiname)
-			ret += dbg_printf_nonewline(":%s] ", channel->multiname);
-		else
-			ret += dbg_printf_nonewline("] ");
-	}
-	if (format) {
-		ret += dbg_vprintf( format, args );
-	}
-	return ret;
-}
-
 int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 		const char *format, ... )
 {
-	int ret;
+	int ret = 0;
+	char buf[2048];
 	va_list valist;
-
+	FILE *fp;
+	
 	if (!(_dbg_get_channel_flags( channel ) & (1 << cls)))
 		return -1;
 
-	va_start(valist, format);
-	ret = dbg_vlog( cls, channel, format, valist );
+	ret += snprintf(buf, sizeof(buf),"[%s:%s", debug_classes[cls], channel->name);
+
+	if (*channel->multiname)
+		ret += snprintf(buf + ret, sizeof(buf) - ret, ":%s]", channel->multiname);
+	else
+		ret += snprintf(buf + ret, sizeof(buf) - ret, "]");
+
+ 	va_start(valist, format);
+	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
 
-	fflush(stderr);
+	if ((fp = fopen(logfile, "a+")) == NULL) {
+		fprintf(stdout, "Emulator can't open.\n"
+				"Please check if "
+				"this binary file is running on the right path.\n");
+		exit(1);
+	}
+	fprintf(fp,"%s", buf);
+//	fputs(buf, fp);
+	fclose(fp);
+//	ret = fprintf(logfile, "%s\n", buf);
+//	fflush(stderr);
 
 	return ret;
 }

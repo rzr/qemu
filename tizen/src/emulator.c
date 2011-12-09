@@ -118,6 +118,7 @@ GtkWidget *g_main_window;
 
 GtkWidget *pixmap_widget;
 GtkWidget *fixed;
+static char logfile[256] = { 0, };
 
 /* Widgets for savevm */
 GtkWidget *savevm_window;
@@ -325,6 +326,10 @@ void exit_emulator_post_process( void ) {
 	/* 4. quit main */
 	gtk_main_quit();
 	INFO( "Emulator Stop: shutdown qemu system, gtk_main quit complete \n");
+
+	/* 5. Flush output */
+	fclose(stdout);
+	fclose(stderr);
 
 #ifdef ENABLE_OPENGL_SERVER
 	pthread_cancel(thread_opengl_id);
@@ -875,6 +880,25 @@ int init_shdmem()
 	return 0;
 }
 
+
+static void redirect_log(void)
+{
+	FILE *fp;
+	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
+	strcat(logfile, "/emulator.log");
+
+	fp = freopen(logfile, "a+", stdout);
+	if(fp ==NULL)
+		fprintf(stderr, "log file open error\n");
+	fp = freopen(logfile, "a+", stderr);
+	if(fp ==NULL)
+		fprintf(stderr, "log file open error\n");
+
+	setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+	setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+
+}
+
 /**
  * @brief    function to create emulator
  * @param argc        number of argument
@@ -891,9 +915,9 @@ int main(int argc, char** argv)
 
 
 	pthread_t thread_gtk_id;
-
 	init_emulator(&argc, &argv);
 	startup_option_parser(&argc, &argv);
+	redirect_log();
 	socket_init();
 
 	init_shdmem();
