@@ -43,7 +43,7 @@
 #include "svcamera.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, svcam_pci);
+MULTI_DEBUG_CHANNEL(tizen, camera_pci);
 
 #define PCI_CAMERA_DEVICE_NAME		"svcamera_pci"
 

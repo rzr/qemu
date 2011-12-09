@@ -37,7 +37,7 @@
 #include <libv4l2.h>
 #include <libv4lconvert.h>
 
-MULTI_DEBUG_CHANNEL(tizen, svcam_linux);
+MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 
 static int v4l2_fd;
 static int convert_trial;
@@ -90,13 +90,14 @@ static int __v4l2_grab(SVCamState *state)
 		switch (errno) {
 		case EINVAL:
 		case ENOMEM:
+			ERR("v4l2_read failed : %s\n", strerror(errno));
 			return -1;
 		case EAGAIN:
 		case EIO:
 		case EINTR:
 		default:
 			if (convert_trial-- == -1) {
-				ERR("Try count is exceeded\n");
+				ERR("Try count for v4l2_read is exceeded\n");
 				return -1;
 			}
 			return 0;
@@ -132,6 +133,7 @@ wait_worker_thread:
 	skip_flag = 1;
 	pthread_cond_wait(&thread->thread_cond, &thread->mutex_lock);
 	pthread_mutex_unlock(&thread->mutex_lock);
+	INFO("Streaming on ......\n");
 
 	while (1)
 	{
@@ -139,7 +141,7 @@ wait_worker_thread:
 		if (thread->state->streamon) {
 			pthread_mutex_unlock(&thread->mutex_lock);
 			if (__v4l2_grab(thread->state) < 0) {
-				WARN("__v4l2_grab failed!\n");
+				INFO("...... Streaming off\n");
 				goto wait_worker_thread;
 			}
 		} else {
@@ -147,21 +149,24 @@ wait_worker_thread:
 			goto wait_worker_thread;
 		}
 	}
-
-	qemu_free(thread_param);
-	pthread_exit(NULL);
 }
 
 void svcam_device_init(SVCamState* state)
 {
 	SVCamThreadInfo *thread = state->thread;
 
-	pthread_cond_init(&thread->thread_cond, NULL);
-	pthread_mutex_init(&thread->mutex_lock, NULL);
+	if (pthread_cond_init(&thread->thread_cond, NULL)) {
+		ERR("failed to initialize thread condition\n");
+		exit(61);
+	}
+	if (pthread_mutex_init(&thread->mutex_lock, NULL)) {
+		ERR("failed to initialize mutex\n");
+		exit(62);
+	}
 
 	if (pthread_create(&thread->thread_id, NULL, svcam_worker_thread, (void*)thread) != 0) {
-		perror("svcamera pthread_create fail\n");
-		exit(0);
+		perror("failed to create a worker thread for webcam connection\n");
+		exit(63);
 	}
 }
 
@@ -174,12 +179,12 @@ void svcam_device_open(SVCamState* state)
 	param->top = 0;
 	v4l2_fd = v4l2_open("/dev/video0", O_RDWR | O_NONBLOCK);
 	if (v4l2_fd < 0) {
-		ERR("v4l2 device open failed.\n");
+		ERR("v4l2 device open failed.(/dev/video0)\n");
 		param->errCode = EINVAL;
 		return;
 	}
 	if (xioctl(v4l2_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-		ERR("VIDIOC_QUERYCAP failed\n");
+		ERR("Could not qeury video capabilities\n");
 		v4l2_close(v4l2_fd);
 		param->errCode = EINVAL;
 		return;
@@ -193,6 +198,7 @@ void svcam_device_open(SVCamState* state)
 	}
 
 	memset(&dst_fmt, 0, sizeof(dst_fmt));
+	INFO("Opened\n");
 }
 
 // SVCAM_CMD_START_PREVIEW
@@ -200,7 +206,8 @@ void svcam_device_start_preview(SVCamState* state)
 {
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 1;
-	pthread_cond_signal(&state->thread->thread_cond);
+	if (pthread_cond_signal(&state->thread->thread_cond))
+		ERR("failed to send a signal to the worker thread\n");
 	pthread_mutex_unlock(&state->thread->mutex_lock);
 }
 
@@ -225,7 +232,7 @@ void svcam_device_s_param(SVCamState* state)
 	sp.parm.capture.timeperframe.denominator = param->stack[1];
 
 	if (xioctl(v4l2_fd, VIDIOC_S_PARM, &sp) < 0) {
-		ERR("VIDIOC_S_PARM failed: %d\n", errno);
+		ERR("failed to set FPS: %s\n", strerror(errno));
 		param->errCode = errno;
 	}
 }
@@ -240,7 +247,7 @@ void svcam_device_g_param(SVCamState* state)
 	sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (xioctl(v4l2_fd, VIDIOC_G_PARM, &sp) < 0) {
-		ERR("VIDIOC_G_PARM failed: %d\n", errno);
+		ERR("failed to get FPS: %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -262,7 +269,7 @@ void svcam_device_s_fmt(SVCamState* state)
 	dst_fmt.fmt.pix.field = param->stack[3];
 
 	if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
-		ERR("VIDIOC_S_FMT failed : %d\n", errno);
+		ERR("failed to set video format: %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -287,7 +294,7 @@ void svcam_device_g_fmt(SVCamState* state)
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (xioctl(v4l2_fd, VIDIOC_G_FMT, &format) < 0) {
-		ERR("VIDIOC_G_FMT failed : %d\n", errno);
+		ERR("failed to get video format: %s\n", strerror(errno));
 		param->errCode = errno;		
 	} else {
 		param->stack[0] = format.fmt.pix.width;
@@ -316,7 +323,7 @@ void svcam_device_try_fmt(SVCamState* state)
 	format.fmt.pix.field = param->stack[3];
 
 	if (xioctl(v4l2_fd, VIDIOC_TRY_FMT, &format) < 0) {
-		ERR("VIDIOC_TRY_FMT failed : %d\n", errno);
+		ERR("failed to check video format: %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -341,6 +348,8 @@ void svcam_device_enum_fmt(SVCamState* state)
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (xioctl(v4l2_fd, VIDIOC_ENUM_FMT, &format) < 0) {
+		if (errno != EINVAL)
+			ERR("failed to enumerate video formats%s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -361,6 +370,8 @@ void svcam_device_qctrl(SVCamState* state)
 	ctrl.id = param->stack[0];
 
 	if (xioctl(v4l2_fd, VIDIOC_QUERYCTRL, &ctrl) < 0) {
+		if (errno != EINVAL)
+			ERR("failed to query video controls%s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -385,6 +396,7 @@ void svcam_device_s_ctrl(SVCamState* state)
 	ctrl.value = param->stack[1];
 
 	if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
+		ERR("failed to set video control value", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -400,6 +412,7 @@ void svcam_device_g_ctrl(SVCamState* state)
 	ctrl.id = param->stack[0];
 
 	if (xioctl(v4l2_fd, VIDIOC_G_CTRL, &ctrl) < 0) {
+		ERR("failed to get video control value", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -418,6 +431,8 @@ void svcam_device_enum_fsizes(SVCamState* state)
 	fsize.pixel_format = param->stack[1];
 
 	if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMESIZES, &fsize) < 0) {
+		if (errno != EINVAL)
+			ERR("failed to get frame sizes", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -444,6 +459,8 @@ void svcam_device_enum_fintv(SVCamState* state)
 	ival.height = param->stack[3];
 
 	if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &ival) < 0) {
+		if (errno != EINVAL)
+			ERR("failed to get frame intervals", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -466,4 +483,5 @@ void svcam_device_close(SVCamState* state)
 
 	v4l2_close(v4l2_fd);
 	v4l2_fd = 0;
+	INFO("Closed\n");
 }
