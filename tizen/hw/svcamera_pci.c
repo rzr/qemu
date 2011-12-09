@@ -149,7 +149,7 @@ static inline void svcam_reg_write(void *opaque, target_phys_addr_t offset, uint
 		memset(state->thread->param, 0, sizeof(SVCamParam));
 		break;
 	case SVCAM_CMD_CLRIRQ:
-		qemu_irq_lower(state->dev.irq[0]);
+		qemu_irq_lower(state->dev.irq[2]);
 		break;
 	default:
 		WARN("Not supported command!!\n");
@@ -202,8 +202,8 @@ static int svcam_initfn(PCIDevice *dev)
 
 	pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_SAMSUNG);
 	pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_CAMERA);
-	pci_config_set_class(pci_conf, PCI_CLASS_OTHERS);
-	pci_config_set_interrupt_pin(pci_conf, 0x02);
+	pci_config_set_class(pci_conf, PCI_CLASS_MULTIMEDIA_OTHER);
+	pci_config_set_interrupt_pin(pci_conf, 0x03);
 
 	s->mem_offset = qemu_ram_alloc(NULL, "svcamera.ram", SVCAM_MEM_SIZE);
 	/* return a host pointer */

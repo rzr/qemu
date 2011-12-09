@@ -112,7 +112,7 @@ static int __v4l2_grab(SVCamState *state)
 	ret = -1;
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	if (state->streamon) {
-		qemu_irq_raise(state->dev.irq[0]);
+		qemu_irq_raise(state->dev.irq[2]);
 		ret = 1;
 	}
 	pthread_mutex_unlock(&state->thread->mutex_lock);
