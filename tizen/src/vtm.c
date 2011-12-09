@@ -62,13 +62,26 @@ MULTI_DEBUG_CHANNEL(tizen, emulmgr);
 #define SDCARD_SIZE_1024	"1024"
 #define SDCARD_SIZE_1536	"1536"
 #define SDCARD_DEFAULT_SIZE		1
-# define VT_NAME_MAXBUF		21
+# define VT_NAME_MAXBUF			21
 #define RAM_SIZE_512	"512"
 #define RAM_SIZE_768	"768"
 #define RAM_SIZE_1024	"1024"
+#define HVGA	"HVGA(320x480)"
+#define WVGA	"WVGA(480x800)"
+#define WSVGA	"WSVGA(600x1024)"
+#define HD		"HD(720x1280)"
+#define HVGA_VALUE	"320x480"
+#define WVGA_VALUE	"480x800"
+#define WSVGA_VALUE	"600x1024"
+#define HD_VALUE	"720x1280"
 #define RAM_DEFAULT_SIZE	0
 #define RAM_768_SIZE	1
 #define RAM_1024_SIZE	2
+#define RESOLUTION_DEFAULT_SIZE	1
+#define RESOLUTION_HVGA	0
+#define RESOLUTION_WVGA	1
+#define RESOLUTION_WSVGA	2
+#define RESOLUTION_HD	3
 #define CREATE_MODE	1
 #define DELETE_MODE	2
 #define MODIFY_MODE 3
@@ -872,36 +885,6 @@ void refresh_clicked_cb(char *arch)
 
 }
 
-gchar *remove_space(const gchar *str)
-{
-	int i = 0;
-	const char *in_str;
-	char out_str[MAXBUF];
-
-	in_str = str;
-
-	while(1)
-	{
-		if(*in_str == '\0')
-		{
-			out_str[i] = 0;
-			break;
-		}
-		else if(*in_str == ' ')
-		{
-			in_str++;
-			continue;
-		}
-		else
-		{
-			out_str[i] = *in_str;
-		}
-		in_str++;
-		i++;
-	}
-	return g_strdup(out_str);
-}
-
 void make_default_image(void)
 {
 	char *cmd = NULL;
@@ -1142,19 +1125,18 @@ void create_window_deleted_cb(void)
 	gtk_main_quit();
 }
 
-void resolution_select_cb(GtkWidget *widget, gpointer data)
+void resolution_select_cb(void)
 {
 	char *resolution;
+	
+	GtkComboBox *resolution_combobox = 
+		(GtkComboBox *)get_widget(VTM_CREATE_ID, VTM_CREATE_RESOLUTION_COMBOBOX);
 
-	GtkToggleButton *toggled_button = GTK_TOGGLE_BUTTON(data);
+	resolution = escape_resolution_str(gtk_combo_box_get_active_text(resolution_combobox));
+	snprintf(virtual_target_info.resolution, MAXBUF, "%s", resolution);
+	INFO( "resolution size : %s\n", resolution);
+	g_free(resolution);
 
-	if(gtk_toggle_button_get_active(toggled_button) == TRUE)
-	{
-		resolution = remove_space(gtk_button_get_label(GTK_BUTTON(toggled_button)));
-		snprintf(virtual_target_info.resolution, MAXBUF, "%s", resolution);
-		INFO( "resolution : %s\n", gtk_button_get_label(GTK_BUTTON(toggled_button)));
-		g_free(resolution);
-	}
 }
 
 void buttontype_select_cb(void)
@@ -1315,6 +1297,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 
 	ram_select_cb();
+	resolution_select_cb();
 	buttontype_select_cb();
 	set_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
 
@@ -1706,30 +1689,30 @@ void setup_modify_frame(char *target_name)
 void setup_modify_resolution_frame(char *target_name)
 {
 	char *resolution;
-	GtkWidget *radiobutton1 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton1");
-	GtkWidget *radiobutton2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton2");
-	GtkWidget *radiobutton3 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton3");
-	GtkWidget *radiobutton4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton7");
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton1), "toggled", G_CALLBACK(resolution_select_cb), radiobutton1);
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton2), "toggled", G_CALLBACK(resolution_select_cb), radiobutton2);
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton3), "toggled", G_CALLBACK(resolution_select_cb), radiobutton3);
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton4), "toggled", G_CALLBACK(resolution_select_cb), radiobutton4);
+	
+	resolution = get_config_value(g_info_file, HARDWARE_GROUP, RESOLUTION_KEY);
 
-	resolution= get_config_value(g_info_file, HARDWARE_GROUP, RESOLUTION_KEY);
+	GtkWidget *hbox3 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "hbox3");
+	GtkComboBox *resolution_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
+	gtk_box_pack_start(GTK_BOX(hbox3), GTK_WIDGET(resolution_combo_box), FALSE, FALSE, 1);
+	add_widget(VTM_CREATE_ID, VTM_CREATE_RESOLUTION_COMBOBOX, GTK_WIDGET(resolution_combo_box));
 
-	if(strcmp(resolution, 
-				remove_space(gtk_button_get_label(GTK_BUTTON(radiobutton1)))) == 0)
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton1), TRUE);
-	else if(strcmp(resolution, 
-				remove_space(gtk_button_get_label(GTK_BUTTON(radiobutton2)))) == 0)
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton2), TRUE);
-	else if(strcmp(resolution, 
-				remove_space(gtk_button_get_label(GTK_BUTTON(radiobutton3)))) == 0)
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton3), TRUE);
+	gtk_combo_box_append_text(resolution_combo_box, HVGA); 
+	gtk_combo_box_append_text(resolution_combo_box, WVGA); 
+	gtk_combo_box_append_text(resolution_combo_box, WSVGA); 
+	gtk_combo_box_append_text(resolution_combo_box, HD); 
+
+	if(strcmp(resolution, HVGA_VALUE) == 0)
+		gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_HVGA);
+	else if(strcmp(resolution, WVGA_VALUE) == 0)
+		gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_WVGA);
+	else if(strcmp(resolution, WSVGA_VALUE) == 0)
+		gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_WSVGA);
 	else
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton4), TRUE);
+		gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_HD);
 
-	snprintf(virtual_target_info.resolution, MAXBUF, "%s", resolution);
+	g_signal_connect(G_OBJECT(resolution_combo_box), "changed", G_CALLBACK(resolution_select_cb), NULL);
+
 	INFO( "resolution : %s\n", resolution);
 	g_free(resolution);
 }
@@ -1902,17 +1885,21 @@ void setup_modify_buttontype_frame(char *target_name)
 
 void setup_resolution_frame(void)
 {
-	GtkWidget *radiobutton1 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton1");
-	GtkWidget *radiobutton2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton2");
-	GtkWidget *radiobutton3 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton3");
-	GtkWidget *radiobutton4 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton7");
+	GtkWidget *hbox = (GtkWidget *)gtk_builder_get_object(g_create_builder, "hbox3");
 
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radiobutton2), TRUE);
+	GtkComboBox *resolution_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(resolution_combo_box), FALSE, FALSE, 1);
+	add_widget(VTM_CREATE_ID, VTM_CREATE_RESOLUTION_COMBOBOX, GTK_WIDGET(resolution_combo_box));
 
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton1), "toggled", G_CALLBACK(resolution_select_cb), radiobutton1);
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton2), "toggled", G_CALLBACK(resolution_select_cb), radiobutton2);
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton3), "toggled", G_CALLBACK(resolution_select_cb), radiobutton3);
-	g_signal_connect(GTK_RADIO_BUTTON(radiobutton4), "toggled", G_CALLBACK(resolution_select_cb), radiobutton4);
+	gtk_combo_box_append_text(resolution_combo_box, HVGA); 
+	gtk_combo_box_append_text(resolution_combo_box, WVGA); 
+	gtk_combo_box_append_text(resolution_combo_box, WSVGA); 
+	gtk_combo_box_append_text(resolution_combo_box, HD); 
+
+	gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_DEFAULT_SIZE);
+
+	g_signal_connect(G_OBJECT(resolution_combo_box), "changed", G_CALLBACK(resolution_select_cb), NULL);
+
 }
 
 
