@@ -75,6 +75,10 @@ void show_message(const char *szTitle, const char *szMessage)
 	gtk_window_set_title(GTK_WINDOW(dialog_window), szTitle);
 	gtk_container_set_border_width(GTK_CONTAINER(dialog_window), 0);
 
+	/* set dialog not resizble */
+
+	gtk_window_set_resizable(GTK_WINDOW(dialog_window), FALSE);
+
 	/* create OK Button and Set Reponse */
 	
 	button = gtk_dialog_add_button(GTK_DIALOG(dialog_window), GTK_STOCK_OK, GTK_RESPONSE_OK);
@@ -127,6 +131,10 @@ gboolean show_ok_cancel_message(const char *szTitle, const char *szMessage)
 	
 	gtk_window_set_title(GTK_WINDOW(dialog_window), szTitle);
 	gtk_container_set_border_width(GTK_CONTAINER(dialog_window), 0);
+
+	/* set dialog not resizble */
+
+	gtk_window_set_resizable(GTK_WINDOW(dialog_window), FALSE);
 
 	/* create OK Button and Set Reponse */
 	

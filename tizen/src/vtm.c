@@ -285,15 +285,21 @@ int check_shdmem(char *target_name, int type)
 						shmdt(shm_addr);
 						continue;
 					}
-					if(type == CREATE_MODE){
+					switch(type)
+					{
+					case CREATE_MODE:
 						show_message("Warning", "Can not activate this target!\nVirtual target with the same name is running now!");
-					}else if(type == DELETE_MODE){
+						break;
+					case DELETE_MODE:
 						show_message("Warning", "Can not delete this target!\nVirtual target with the same name is running now!");
-					}else if(type == MODIFY_MODE){
+						break;
+					case MODIFY_MODE:
 						show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
-					}else if(type == RESET_MODE){
+						break;
+					case RESET_MODE:
 						show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
-					}else{
+						break;
+					default:
 						ERR("wrong type passed\n");
 					}
 
@@ -972,7 +978,6 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "%s=0\n",ALWAYS_ON_TOP_KEY);
 
 		g_fprintf (fp, "\n[%s]\n", EMULATOR_GROUP);
-		g_fprintf (fp, "%s=\n", ENABLE_SHELL_KEY);
 		g_fprintf (fp, "%s=100\n", MAIN_X_KEY);
 		g_fprintf (fp, "%s=100\n", MAIN_Y_KEY);
 
@@ -1017,7 +1022,6 @@ int create_config_file(gchar* filepath)
 
 int write_config_file(gchar *filepath)
 {
-	set_config_type(filepath, EMULATOR_GROUP, ENABLE_SHELL_KEY, 0);
 	/*  QEMU option (09.05.26)*/
 
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
