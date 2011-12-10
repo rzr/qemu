@@ -1956,6 +1956,9 @@ void setup_sdcard_frame(void)
 	gtk_file_filter_add_pattern(filter, "*.img");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser), filter);
 
+	set_sdcard_create_active_cb();	
+	set_sdcard_select_active_cb();
+
 	g_signal_connect(G_OBJECT(sdcard_combo_box), "changed", G_CALLBACK(sdcard_size_select_cb), NULL);
 	g_signal_connect(G_OBJECT(create_radiobutton), "toggled", G_CALLBACK(set_sdcard_create_active_cb), NULL);
 	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_sdcard_select_active_cb), NULL);
