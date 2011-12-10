@@ -654,7 +654,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			, target_name, arch, resolution, ram_size_detail
 			, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
-	show_message("Virtual Target Details", details);
+	show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
 
 #else /* _WIN32 */
 	gchar *details_win = NULL;
@@ -674,7 +674,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 
 	details_win = change_path_from_slash(details);
 
-	show_message("Virtual Target Details", details_win);
+	show_sized_message("Virtual Target Details", details_win, DIALOG_MAX_WIDTH);
 
 	free(details_win);
 #endif

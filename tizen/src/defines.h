@@ -170,7 +170,7 @@ extern "C" {
 
 #define MIDBUF						128
 #define QEMUARGC					70
-
+#define DIALOG_MAX_WIDTH			70
 #define NON_BUTTON_REGION			-1
 
 /* Tag for getting GTK OBJECT POINTER */

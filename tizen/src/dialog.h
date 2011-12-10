@@ -47,6 +47,7 @@
 #include "utils.h"
 
 void show_message(const char *szTitle, const char *szMessage);
+void show_sized_message(const char *szTitle, const char *szMessage, const int maxlength);
 gboolean show_ok_cancel_message(const char *szTitle, const char *szMessage);
 
 #define _(String)			String

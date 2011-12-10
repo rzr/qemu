@@ -718,7 +718,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 				, target_name, arch, resolution, ram_size_detail
 				, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
-		show_message("Virtual Target Details", details);
+		show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
 
 #else /* _WIN32 */
 		/* todo: check image & base image */
@@ -739,7 +739,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 
 		details_win = change_path_from_slash(details);
 
-		show_message("Virtual Target Details", details_win);
+		show_sized_message("Virtual Target Details", details_win, DIALOG_MAX_WIDTH);
 
 		free(details_win);
 #endif
