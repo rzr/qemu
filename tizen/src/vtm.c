@@ -709,7 +709,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 				" - Name: %s\n"
 				" - CPU: %s\n"
 				" - Resolution: %s\n"
-				" - Ram Size: %s\n"
+				" - RAM Size: %s\n"
 				" - DPI: %s\n"
 				" - SD Card: %s\n"
 				" - SD Path: %s\n"
@@ -728,7 +728,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 				" - Name: %s\n"
 				" - CPU: %s\n"
 				" - Resolution: %s\n"
-				" - Ram Size: %s\n"
+				" - RAM Size: %s\n"
 				" - DPI: %s\n"
 				" - SD Card: %s\n"
 				" - SD Path: %s\n"
@@ -1096,12 +1096,12 @@ GtkWidget *setup_list(void)
 	cell = gtk_cell_renderer_text_new();
 
 	//set text alignment 
-	column = gtk_tree_view_column_new_with_attributes("Target name", cell, "text", TARGET_NAME, NULL);
+	column = gtk_tree_view_column_new_with_attributes("Target Name", cell, "text", TARGET_NAME, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_min_width(column,130);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 
-	column = gtk_tree_view_column_new_with_attributes("Ram size", cell, "text", RAM_SIZE, NULL);
+	column = gtk_tree_view_column_new_with_attributes("RAM Size", cell, "text", RAM_SIZE, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_min_width(column,100);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
