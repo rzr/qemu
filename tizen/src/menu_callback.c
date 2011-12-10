@@ -512,8 +512,6 @@ void menu_device_info_callback(GtkWidget * widget, gpointer data)
 void show_about_window(GtkWidget *parent)
 {
 	//const gchar *version = build_version;
-	const gchar *copyright =
-		"Copyright (C) 2011 Samsung Electronics Co., LTD. All Rights Reserved.\n";
 	gchar comments[512] = {0,};
 	/* from qemu/MAINTAINERS, alphabetically */
 	/*
@@ -546,13 +544,11 @@ void show_about_window(GtkWidget *parent)
 
 	//	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(about_dialog), version);
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(about_dialog), comments);
-	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(about_dialog), copyright);
 	//	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(about_dialog), website);
 	gtk_show_about_dialog(GTK_WINDOW(parent),
 			"program-name", "Tizen Emulator",
 			//							"version", version,
 			"comments", comments,
-			"copyright", copyright,
 			//							"website", website,
 			//							"authors", authors,
 			"license", license_text,
