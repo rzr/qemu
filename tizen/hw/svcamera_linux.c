@@ -56,6 +56,77 @@ static int xioctl(int fd, int req, void *arg)
 	return r;
 }
 
+#define SVCAM_CTRL_VALUE_MAX		20
+#define SVCAM_CTRL_VALUE_MIN		1
+#define SVCAM_CTRL_VALUE_MID		10
+#define SVCAM_CTRL_VALUE_STEP		1
+
+struct svcam_qctrl {
+	uint32_t id;
+	uint32_t hit;
+	int32_t min;
+	int32_t max;
+	int32_t step;
+	int32_t init_val;
+};
+
+static struct svcam_qctrl qctrl_tbl[] = {
+	{ V4L2_CID_BRIGHTNESS, 0, },
+	{ V4L2_CID_CONTRAST, 0,	},
+	{ V4L2_CID_SATURATION,0, },
+	{ V4L2_CID_SHARPNESS, 0, },
+};
+
+static void svcam_reset_controls(void)
+{
+	uint32_t i;
+	for (i = 0; i < ARRAY_SIZE(qctrl_tbl); i++) {
+		if (qctrl_tbl[i].hit) {
+			struct v4l2_control ctrl = {0,};
+			ctrl.id = qctrl_tbl[i].id;
+			ctrl.value = qctrl_tbl[i].init_val;
+			if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
+				ERR("failed to set video control value while reset values\n", strerror(errno));
+			}
+		}
+	}
+}
+
+static int32_t value_convert_from_guest(int32_t min, int32_t max, int32_t value)
+{
+	double rate = 0.0;
+	int32_t dist = 0, ret = 0;
+
+	dist = max - min;
+
+	if (dist < SVCAM_CTRL_VALUE_MAX) {
+		rate = (double)SVCAM_CTRL_VALUE_MAX / (double)dist;
+		ret = min + (int32_t)(value / rate);
+	} else {
+		rate = (double)dist / (double)SVCAM_CTRL_VALUE_MAX;
+		ret = min + (int32_t)(rate * value);
+	}
+	return ret;
+}
+
+static int32_t value_convert_to_guest(int32_t min, int32_t max, int32_t value)
+{
+	double rate  = 0.0;
+	int32_t dist = 0, ret = 0;
+
+	dist = max - min;
+
+	if (dist < SVCAM_CTRL_VALUE_MAX) {
+		rate = (double)SVCAM_CTRL_VALUE_MAX / (double)dist;
+		ret = (int32_t)((double)(value - min) * rate);
+	} else {
+		rate = (double)dist / (double)SVCAM_CTRL_VALUE_MAX;
+		ret = (int32_t)((double)(value - min) / rate);
+	}
+
+	return ret;
+}
+
 static int __v4l2_grab(SVCamState *state)
 {
 	fd_set fds;
@@ -149,6 +220,7 @@ wait_worker_thread:
 			goto wait_worker_thread;
 		}
 	}
+	pthread_exit(0);
 }
 
 void svcam_device_init(SVCamState* state)
@@ -362,6 +434,7 @@ void svcam_device_enum_fmt(SVCamState* state)
 
 void svcam_device_qctrl(SVCamState* state)
 {
+	uint32_t i;
 	struct v4l2_queryctrl ctrl;
 	SVCamParam *param = state->thread->param;
 
@@ -369,17 +442,56 @@ void svcam_device_qctrl(SVCamState* state)
 	memset(&ctrl, 0, sizeof(struct v4l2_queryctrl));
 	ctrl.id = param->stack[0];
 
+	switch (ctrl.id) {
+	case V4L2_CID_BRIGHTNESS:
+		i = 0;
+		break;
+	case V4L2_CID_CONTRAST:
+		i = 1;
+		break;
+	case V4L2_CID_SATURATION:
+		i = 2;
+		break;
+	case V4L2_CID_SHARPNESS:
+		i = 3;
+		break;
+	default:
+		param->errCode = EINVAL;
+		return;
+	}
+
 	if (xioctl(v4l2_fd, VIDIOC_QUERYCTRL, &ctrl) < 0) {
 		if (errno != EINVAL)
 			ERR("failed to query video controls%s\n", strerror(errno));
 		param->errCode = errno;
 		return;
+	} else {
+		struct v4l2_control sctrl;
+		memset(&sctrl, 0, sizeof(struct v4l2_control));
+		sctrl.id = ctrl.id;
+		if ((ctrl.maximum + ctrl.minimum) == 0) {
+			sctrl.value = 0;
+		} else {
+			sctrl.value = (ctrl.maximum + ctrl.minimum) / 2;
+		}
+		if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &sctrl) < 0) {
+			ERR("failed to set video control value\n", strerror(errno));
+			param->errCode = errno;
+			return;
+		}
+		qctrl_tbl[i].hit = 1;
+		qctrl_tbl[i].min = ctrl.minimum;
+		qctrl_tbl[i].max = ctrl.maximum;
+		qctrl_tbl[i].step = ctrl.step;
+		qctrl_tbl[i].init_val = ctrl.default_value;
 	}
+
+	// set fixed values by FW configuration file
 	param->stack[0] = ctrl.id;
-	param->stack[1] = ctrl.minimum;
-	param->stack[2] = ctrl.maximum;
-	param->stack[3] = ctrl.step;
-	param->stack[4] = ctrl.default_value;
+	param->stack[1] = SVCAM_CTRL_VALUE_MIN;	// minimum
+	param->stack[2] = SVCAM_CTRL_VALUE_MAX;	// maximum
+	param->stack[3] = SVCAM_CTRL_VALUE_STEP;// step
+	param->stack[4] = SVCAM_CTRL_VALUE_MID;	// default_value
 	param->stack[5] = ctrl.flags;
 	/* name field setting */
 	memcpy(&param->stack[6], ctrl.name, sizeof(ctrl.name));
@@ -387,16 +499,37 @@ void svcam_device_qctrl(SVCamState* state)
 
 void svcam_device_s_ctrl(SVCamState* state)
 {
+	uint32_t i;
 	struct v4l2_control ctrl;
 	SVCamParam *param = state->thread->param;
 
 	param->top = 0;
 	memset(&ctrl, 0, sizeof(struct v4l2_control));
 	ctrl.id = param->stack[0];
-	ctrl.value = param->stack[1];
 
+	switch (ctrl.id) {
+	case V4L2_CID_BRIGHTNESS:
+		i = 0;
+		break;
+	case V4L2_CID_CONTRAST:
+		i = 1;
+		break;
+	case V4L2_CID_SATURATION:
+		i = 2;
+		break;
+	case V4L2_CID_SHARPNESS:
+		i = 3;
+		break;
+	default:
+		ERR("our emulator does not support this control : 0x%x\n", ctrl.id);
+		param->errCode = EINVAL;
+		return;
+	}
+
+	ctrl.value = value_convert_from_guest(qctrl_tbl[i].min,
+			qctrl_tbl[i].max, param->stack[1]);
 	if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-		ERR("failed to set video control value", strerror(errno));
+		ERR("failed to set video control value\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -404,6 +537,7 @@ void svcam_device_s_ctrl(SVCamState* state)
 
 void svcam_device_g_ctrl(SVCamState* state)
 {
+	uint32_t i;
 	struct v4l2_control ctrl;
 	SVCamParam *param = state->thread->param;
 
@@ -411,13 +545,32 @@ void svcam_device_g_ctrl(SVCamState* state)
 	memset(&ctrl, 0, sizeof(struct v4l2_control));
 	ctrl.id = param->stack[0];
 
+	switch (ctrl.id) {
+	case V4L2_CID_BRIGHTNESS:
+		i = 0;
+		break;
+	case V4L2_CID_CONTRAST:
+		i = 1;
+		break;
+	case V4L2_CID_SATURATION:
+		i = 2;
+		break;
+	case V4L2_CID_SHARPNESS:
+		i = 3;
+		break;
+	default:
+		ERR("our emulator does not support this control : 0x%x\n", ctrl.id);
+		param->errCode = EINVAL;
+		return;
+	}
+
 	if (xioctl(v4l2_fd, VIDIOC_G_CTRL, &ctrl) < 0) {
 		ERR("failed to get video control value", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
-
-	param->stack[0] = ctrl.value;
+	param->stack[0] = value_convert_to_guest(qctrl_tbl[i].min,
+			qctrl_tbl[i].max, ctrl.value);
 }
 
 void svcam_device_enum_fsizes(SVCamState* state)
@@ -480,6 +633,8 @@ void svcam_device_close(SVCamState* state)
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 0;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
+
+	svcam_reset_controls();
 
 	v4l2_close(v4l2_fd);
 	v4l2_fd = 0;
