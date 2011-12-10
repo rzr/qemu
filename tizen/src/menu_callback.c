@@ -625,7 +625,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 
 	if(strcmp(sdcard_type, "0") == 0)
 	{
-		sdcard_detail = g_strdup_printf("Not supported");
+		sdcard_detail = g_strdup_printf("Not Supported");
 		sdcard_path_detail = g_strdup_printf(" ");
 	}
 	else
@@ -641,7 +641,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			" - Name: %s\n"
 			" - CPU: %s\n"
 			" - Resolution: %s\n"
-			" - Ram Size: %s\n"
+			" - RAM Size: %s\n"
 			" - DPI: %s\n"
 			" - SD Card: %s\n"
 			" - SD Path: %s\n"
@@ -659,7 +659,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			" - Name: %s\n"
 			" - CPU: %s\n"
 			" - Resolution: %s\n"
-			" - Ram Size: %s\n"
+			" - RAM Size: %s\n"
 			" - DPI: %s\n"
 			" - SD Card: %s\n"
 			" - SD Path: %s\n"
