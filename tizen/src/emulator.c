@@ -853,11 +853,12 @@ static void emul_prepare_process(void)
 
 int init_shdmem()
 {
+
+	tizen_base_port = get_sdb_base_port();
 #ifndef _WIN32
 	int shmid; 
 	char *shared_memory;
 
-	tizen_base_port = get_sdb_base_port();
 	shmid = shmget((key_t)tizen_base_port, 64, 0666|IPC_CREAT); 
 	if (shmid == -1) 
 	{ 
