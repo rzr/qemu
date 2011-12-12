@@ -418,7 +418,7 @@ static SDL_Cursor *sdl_cursor_init(const char *image[])
 * 8-, 16- or 24-bit surfaces.  Consult the above website for
 * more information.
 */
-void sdl_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel) {
+static void sdl_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel) {
    Uint8 *target_pixel = (Uint8 *)surface->pixels + y * surface->pitch + x * 4;
    *(Uint32 *)target_pixel = pixel;
 }
@@ -432,7 +432,7 @@ void sdl_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel) {
 * The algorithm elegantly draws a circle quickly, using a
 * set_pixel function for clarity.
 */
-void sdl_draw_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel) {
+static void sdl_draw_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel) {
    int error = -radius;
    int x = radius;
    int y = 0;
