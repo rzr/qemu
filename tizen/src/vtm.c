@@ -102,7 +102,6 @@ gchar *g_info_file;
 GtkWidget *list;
 int sdcard_create_size;
 GtkWidget *f_entry;
-gchar *g_arch;
 gchar icon_image[128] = {0, };
 
 #ifdef _WIN32
@@ -181,10 +180,19 @@ void activate_target(char *target_name)
 	char *disk_path = NULL;
 	char *basedisk_path = NULL;
 	char *error_log = NULL;
+	char *arch= NULL;
 	int info_file_status;	
 
 	if(check_shdmem(target_name, CREATE_MODE) == -1)
 		return ;
+
+	arch = getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
 
 	path = (char*)get_arch_abs_path();
 	virtual_target_path = get_virtual_target_abs_path(target_name);
@@ -229,18 +237,19 @@ void activate_target(char *target_name)
 	binary = get_config_value(info_file, QEMU_GROUP, BINARY_KEY);
 	emul_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, EMULATOR_OPTION_KEY);
 	qemu_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, QEMU_OPTION_KEY);
+
 	if(emul_add_opt == 0)
 		emul_add_opt = g_strdup_printf(" ");
 	if(qemu_add_opt == 0)
 		qemu_add_opt = g_strdup_printf(" ");
 #ifndef _WIN32	
-	cmd = g_strdup_printf("./%s --vtm %s --disk %semulimg-%s.x86 %s \
+	cmd = g_strdup_printf("./%s --vtm %s --disk %semulimg-%s.%s %s \
 			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, get_virtual_target_abs_path(target_name), target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+			binary, target_name, get_virtual_target_abs_path(target_name), target_name, arch, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 #else /*_WIN32 */
-	cmd = g_strdup_printf("%s --vtm %s --disk %semulimg-%s.x86 %s\
+	cmd = g_strdup_printf("%s --vtm %s --disk %semulimg-%s.%s %s\
 			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, get_virtual_target_abs_path(target_name), target_name , emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+			binary, target_name, get_virtual_target_abs_path(target_name), target_name , arch, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 #endif
 
 	if(!g_spawn_command_line_async(cmd, &error))
@@ -645,6 +654,14 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *sdcard_path_detail = NULL;
 	char *details = NULL;
 
+	arch = getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
+
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
 
@@ -675,7 +692,6 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
 		basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
 
-		arch = getenv("EMULATOR_ARCH");
 		if(strcmp(sdcard_type, "0") == 0)
 		{
 			sdcard_detail = g_strdup_printf("Not supported");
@@ -897,18 +913,19 @@ void make_default_image(void)
 	int info_file_status;
 	char *virtual_target_path = get_virtual_target_abs_path("default");
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-	char *default_img = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
-	info_file_status = is_exist_file(default_img);
+	char *default_img_x86 = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
+	char *default_img_arm = g_strdup_printf("%semulimg-default.arm", virtual_target_path);
+	info_file_status = is_exist_file(default_img_x86);
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
 		INFO( "emulimg-default.x86 not exists. is making now.\n");
 		// create emulator image
 #ifdef _WIN32
 		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %s",
-				get_bin_path(), get_arch_abs_path(), default_img);
+				get_bin_path(), get_arch_abs_path(), default_img_x86);
 #else
 		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %s",
-				get_arch_abs_path(), default_img);
+				get_arch_abs_path(), default_img_x86);
 #endif
 		if(!run_cmd(cmd))
 		{
@@ -921,10 +938,37 @@ void make_default_image(void)
 		g_free(cmd);
 
 	}
-	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
+	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_x86);
 	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
 
-	free(default_img);
+	info_file_status = is_exist_file(default_img_arm);
+	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+	{
+		INFO( "emulimg-default.arm not exists. is making now.\n");
+		// create emulator image
+#ifdef _WIN32
+		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.arm -f qcow2 %s",
+				get_bin_path(), get_arch_abs_path(), default_img_arm);
+#else
+		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.arm -f qcow2 %s",
+				get_arch_abs_path(), default_img_arm);
+#endif
+		if(!run_cmd(cmd))
+		{
+			g_free(cmd);
+			ERR("Error", "emulator image creation failed!");
+			return;
+		}
+
+		INFO( "emulimg-default.arm creation succeeded!\n");
+		g_free(cmd);
+
+	}
+	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_arm);
+	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+
+	free(default_img_x86);
+	free(default_img_arm);
 }	
 
 gboolean run_cmd(char *cmd)
@@ -1293,11 +1337,19 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	char *conf_file = NULL;
 	const gchar *name = NULL;
 	char *dst;
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
 
 	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	name = gtk_entry_get_text(GTK_ENTRY(name_entry));
 	char *virtual_target_path = get_virtual_target_abs_path((gchar*)name);
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+
 
 	ram_select_cb();
 	resolution_select_cb();
@@ -1344,8 +1396,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 #ifndef _WIN32
 		cmd = g_strdup_printf("mv %s/%s %s/%s", 
 				vms_path, target_name, vms_path, name);
-		cmd2 = g_strdup_printf("mv %s/%s/emulimg-%s.x86 %s/%s/emulimg-%s.x86", 
-				vms_path, name, target_name, vms_path, name, name);
+		cmd2 = g_strdup_printf("mv %s/%s/emulimg-%s.%s %s/%s/emulimg-%s.%s", 
+				vms_path, name, target_name, arch, vms_path, name, name, arch);
 
 		if(!run_cmd(cmd))
 		{
@@ -1369,8 +1421,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 #else /* WIN32 */
 		char *src_path = g_strdup_printf("%s/%s", vms_path, target_name);
 		char *dst_path = g_strdup_printf("%s/%s", vms_path, name);
-		char *src_img_path = g_strdup_printf("%s/%s/emulimg-%s.x86", vms_path, name, target_name);
-		char *dst_img_path = g_strdup_printf("%s/%s/emulimg-%s.x86", vms_path, name, name);
+		char *src_img_path = g_strdup_printf("%s/%s/emulimg-%s.%s", vms_path, name, target_name, arch);
+		char *dst_img_path = g_strdup_printf("%s/%s/emulimg-%s.%s", vms_path, name, name, arch);
 
 		gchar *src_path_for_win = change_path_from_slash(src_path);
 		gchar *dst_path_for_win = change_path_from_slash(dst_path);
@@ -1407,7 +1459,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
 
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
-			"%s/%s/emulimg-%s.x86", get_vms_abs_path(), name, name);
+			"%s/%s/emulimg-%s.%s", get_vms_abs_path(), name, name, arch);
 	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
 
 	if(virtual_target_info.sdcard_type == 2){
@@ -1427,8 +1479,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	{
 		// target_name not changed
 		dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-		snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.x86", dest_path, 
-				virtual_target_info.virtual_target_name);
+		snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
+				virtual_target_info.virtual_target_name, arch);
 		TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
 	}
 
@@ -1517,7 +1569,6 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	g_free(conf_file);
 
 	gtk_widget_destroy(win);
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	refresh_clicked_cb(arch);
 
 	g_object_unref(G_OBJECT(g_create_builder));
@@ -1534,6 +1585,13 @@ void ok_clicked_cb(void)
 	char *log_path = NULL;
 	char *conf_file = NULL;
 	GtkWidget *win = get_window(VTM_CREATE_ID);
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
 
 	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
 	if(access(dest_path, R_OK) != 0){
@@ -1614,23 +1672,23 @@ void ok_clicked_cb(void)
 	// create emulator image
 #ifdef _WIN32
 	if(virtual_target_info.disk_type == 1){
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.x86", get_root_path(), virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name);
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
 	}
 	else
 	{
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %semulimg-%s.x86", get_root_path(), get_arch_abs_path(),
-				dest_path, virtual_target_info.virtual_target_name);
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.%s -f qcow2 %semulimg-%s.%s", get_root_path(), get_arch_abs_path(), arch,
+				dest_path, virtual_target_info.virtual_target_name, arch);
 	}
 #else
 	if(virtual_target_info.disk_type == 1){
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.x86", virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name);
+		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
 	}
 	else
 	{
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.x86", virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name);
+		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
 	}
 #endif
 	if(!run_cmd(cmd))
@@ -1643,8 +1701,8 @@ void ok_clicked_cb(void)
 	g_free(cmd);
 
 	// diskimg_path
-	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.x86", dest_path, 
-			virtual_target_info.virtual_target_name);
+	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
+			virtual_target_info.virtual_target_name, arch);
 
 	// add virtual target name to targetlist.ini
 	set_config_value(target_list_filepath, TARGET_LIST_GROUP, virtual_target_info.virtual_target_name, "");
@@ -1663,7 +1721,6 @@ void ok_clicked_cb(void)
 	g_free(dest_path);
 
 	gtk_widget_destroy(win);
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	refresh_clicked_cb(arch);
 
 	g_object_unref(G_OBJECT(g_create_builder));
@@ -1731,7 +1788,17 @@ void setup_modify_disk_frame(char *target_name)
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 	GtkFileFilter *filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, "Disk Files");
-	gtk_file_filter_add_pattern(filter, "*.x86");
+	
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
+
+	char *filter_pattern = g_strdup_printf("*.%s",arch);
+	gtk_file_filter_add_pattern(filter, filter_pattern);
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser2), filter);
 	int disk_type= get_config_type(g_info_file, HARDWARE_GROUP, DISK_TYPE_KEY);
 	if(disk_type == 1)
@@ -1916,7 +1983,18 @@ void setup_disk_frame(void)
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 	GtkFileFilter *filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, "Disk Files");
-	gtk_file_filter_add_pattern(filter, "*.x86");
+
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
+
+	char *filter_pattern = g_strdup_printf("*.%s",arch);
+	gtk_file_filter_add_pattern(filter, filter_pattern);
+
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser2), filter);
 	set_disk_select_active_cb();	
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
