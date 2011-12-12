@@ -230,8 +230,8 @@ endif
 	mkdir -p $(PHONE_DIR)/x86/data/kernel-img
 	mkdir -p $(PHONE_DIR)/x86/VMs/default
 	mkdir -p $(PHONE_DIR)/x86/VMs/default/logs
-	install emulator-x86 $(PHONE_DIR)/emulator-x86
-	install emulator-arm $(PHONE_DIR)/emulator-arm
+	install emulator-x86 $(PHONE_DIR)/bin/emulator-x86
+	install emulator-arm $(PHONE_DIR)/bin/emulator-arm
 #	install savevm.glade $(PHONE_DIR)
 	cp -a $(VTM) $(PHONE_DIR)/bin
 	cp -a vtm.glade $(PHONE_DIR)/etc
