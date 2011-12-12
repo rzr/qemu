@@ -66,6 +66,8 @@ typedef struct USBKeyboardState {
     uint8_t leds;
     uint8_t key[16];
     int32_t keys;
+    int keyboard_grabbed;
+    QEMUPutKbdEntry *eh_entry;
 } USBKeyboardState;
 
 typedef struct USBHIDState {
@@ -491,7 +493,7 @@ static void usb_pointer_event(void *opaque,
     usb_hid_changed(hs);
 }
 
-static void usb_keyboard_event(void *opaque, int keycode)
+static int usb_keyboard_event(void *opaque, int keycode)
 {
     USBHIDState *hs = opaque;
     USBKeyboardState *s = &hs->kbd;
@@ -499,21 +501,22 @@ static void usb_keyboard_event(void *opaque, int keycode)
 
     if (hs->n == QUEUE_LENGTH) {
         fprintf(stderr, "usb-kbd: warning: key event queue full\n");
-        return;
+        return 0;
     }
     slot = (hs->head + hs->n) & QUEUE_MASK; hs->n++;
     s->keycodes[slot] = keycode;
     usb_hid_changed(hs);
+	return 0;
 }
 
-static void usb_keyboard_process_keycode(USBHIDState *hs)
+static int usb_keyboard_process_keycode(USBHIDState *hs)
 {
     USBKeyboardState *s = &hs->kbd;
     uint8_t hid_code, key;
     int i, keycode, slot;
 
     if (hs->n == 0) {
-        return;
+        return 0;
     }
     slot = hs->head & QUEUE_MASK; QUEUE_INCR(hs->head); hs->n--;
     keycode = s->keycodes[slot];
@@ -524,24 +527,24 @@ static void usb_keyboard_process_keycode(USBHIDState *hs)
 
     switch (hid_code) {
     case 0x00:
-        return;
+        return 0;
 
     case 0xe0:
         if (s->modifiers & (1 << 9)) {
             s->modifiers ^= 3 << 8;
             usb_hid_changed(hs);
-            return;
+            return 0;
         }
     case 0xe1 ... 0xe7:
         if (keycode & (1 << 7)) {
             s->modifiers &= ~(1 << (hid_code & 0x0f));
             usb_hid_changed(hs);
-            return;
+            return 0;
         }
     case 0xe8 ... 0xef:
         s->modifiers |= 1 << (hid_code & 0x0f);
         usb_hid_changed(hs);
-        return;
+        return 0;
     }
 
     if (keycode & (1 << 7)) {
@@ -552,7 +555,7 @@ static void usb_keyboard_process_keycode(USBHIDState *hs)
                 break;
             }
         if (i < 0)
-            return;
+            return 0;
     } else {
         for (i = s->keys - 1; i >= 0; i --)
             if (s->key[i] == hid_code)
@@ -561,8 +564,11 @@ static void usb_keyboard_process_keycode(USBHIDState *hs)
             if (s->keys < sizeof(s->key))
                 s->key[s->keys ++] = hid_code;
         } else
-            return;
+            return 0;
     }
+
+    usb_hid_changed(hs);
+    return 0;
 }
 
 static inline int int_clamp(int val, int vmin, int vmax)
@@ -664,6 +670,10 @@ static int usb_keyboard_poll(USBHIDState *hs, uint8_t *buf, int len)
         return 0;
 
     usb_keyboard_process_keycode(hs);
+//    if (!s->keyboard_grabbed) {
+//        qemu_activate_keyboard_event_handler(s->eh_entry);
+//        s->keyboard_grabbed = 1;
+//    }
 
     buf[0] = s->modifiers & 0xff;
     buf[1] = 0;
@@ -710,7 +720,7 @@ static void usb_keyboard_handle_reset(USBDevice *dev)
 {
     USBHIDState *s = (USBHIDState *)dev;
 
-    qemu_add_kbd_event_handler(usb_keyboard_event, s);
+    qemu_add_kbd_event_handler(usb_keyboard_event, s, "USB Keyboard");
     memset(s->kbd.keycodes, 0, sizeof (s->kbd.keycodes));
     s->head = 0;
     s->n = 0;
@@ -845,7 +855,7 @@ static void usb_hid_handle_destroy(USBDevice *dev)
 
     switch(s->kind) {
     case USB_KEYBOARD:
-        qemu_remove_kbd_event_handler();
+        qemu_remove_kbd_event_handler(s->kbd.eh_entry);
         break;
     default:
         qemu_remove_mouse_event_handler(s->ptr.eh_entry);

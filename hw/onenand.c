@@ -24,12 +24,6 @@
 #include "irq.h"
 #include "blockdev.h"
 
-/* 11 for 2kB-page OneNAND ("2nd generation") and 10 for 1kB-page chips */
-#define PAGE_SHIFT	11
-
-/* Fixed */
-#define BLOCK_SHIFT	(PAGE_SHIFT + 6)
-
 typedef struct {
     uint32_t id;
     int shift;
@@ -65,6 +59,12 @@ typedef struct {
     int secs_cur;
     int blocks;
     uint8_t *blockwp;
+
+    int page_shift;
+    int block_shift;
+    int dbuf_num;
+
+    int superload;
 } OneNANDState;
 
 enum {
@@ -99,20 +99,33 @@ enum {
 void onenand_base_update(void *opaque, target_phys_addr_t new)
 {
     OneNANDState *s = (OneNANDState *) opaque;
+    int buf_data_size = (0x7e50 << s->shift);
+    int buf_boot_size = (0x0200 << s->shift);
+    int slow_buf_size = buf_data_size % TARGET_PAGE_SIZE ?
+                           buf_data_size % TARGET_PAGE_SIZE :
+                           TARGET_PAGE_SIZE;
+    int fast_buf_size = buf_data_size - slow_buf_size;
 
     s->base = new;
 
     /* XXX: We should use IO_MEM_ROMD but we broke it earlier...
      * Both 0x0000 ... 0x01ff and 0x8000 ... 0x800f can be used to
      * write boot commands.  Also take note of the BWPS bit.  */
-    cpu_register_physical_memory(s->base + (0x0000 << s->shift),
-                    0x0200 << s->shift, s->iomemtype);
-    cpu_register_physical_memory(s->base + (0x0200 << s->shift),
-                    0xbe00 << s->shift,
-                    (s->ram +(0x0200 << s->shift)) | IO_MEM_RAM);
-    if (s->iomemtype)
+    cpu_register_physical_memory(s->base, buf_boot_size, s->iomemtype);
+
+    cpu_register_physical_memory(s->base + buf_boot_size,
+                    fast_buf_size,
+                    (s->ram + buf_boot_size) | IO_MEM_RAM);
+
+    cpu_register_physical_memory_offset(s->base + buf_boot_size + fast_buf_size,
+                                        slow_buf_size, s->iomemtype,
+                                        buf_boot_size + fast_buf_size);
+
+    if (s->iomemtype) {
         cpu_register_physical_memory_offset(s->base + (0xc000 << s->shift),
-                    0x4000 << s->shift, s->iomemtype, (0xc000 << s->shift));
+                                            0x4000 << s->shift, s->iomemtype,
+                                            (0xc000 << s->shift));
+    }
 }
 
 void onenand_base_unmap(void *opaque)
@@ -135,7 +148,7 @@ static void onenand_reset(OneNANDState *s, int cold)
     s->command = 0;
     s->count = 1;
     s->bufaddr = 0;
-    s->config[0] = 0x40c0;
+    s->config[0] = 0xc0c0;
     s->config[1] = 0x0000;
     onenand_intr_update(s);
     qemu_irq_raise(s->rdy);
@@ -149,6 +162,7 @@ static void onenand_reset(OneNANDState *s, int cold)
     s->bdrv_cur = s->bdrv;
     s->current = s->image;
     s->secs_cur = s->secs;
+    s->superload = 0;
 
     if (cold) {
         /* Lock the whole flash */
@@ -194,11 +208,12 @@ static inline int onenand_load_spare(OneNANDState *s, int sec, int secn,
         if (bdrv_read(s->bdrv_cur, s->secs_cur + (sec >> 5), buf, 1) < 0)
             return 1;
         memcpy(dest, buf + ((sec & 31) << 4), secn << 4);
-    } else if (sec + secn > s->secs_cur)
+    } else if (sec + secn > s->secs_cur) {
         return 1;
-    else
+    } else {
         memcpy(dest, s->current + (s->secs_cur << 9) + (sec << 4), secn << 4);
- 
+    }
+
     return 0;
 }
 
@@ -212,11 +227,12 @@ static inline int onenand_prog_spare(OneNANDState *s, int sec, int secn,
             return 1;
         memcpy(buf + ((sec & 31) << 4), src, secn << 4);
         return bdrv_write(s->bdrv_cur, s->secs_cur + (sec >> 5), buf, 1) < 0;
-    } else if (sec + secn > s->secs_cur)
+    } else if (sec + secn > s->secs_cur) {
         return 1;
+    }
 
     memcpy(s->current + (s->secs_cur << 9) + (sec << 4), src, secn << 4);
- 
+
     return 0;
 }
 
@@ -226,7 +242,7 @@ static inline int onenand_erase(OneNANDState *s, int sec, int num)
     uint8_t buf[512];
 
     memset(buf, 0xff, sizeof(buf));
-    for (; num > 0; num --, sec ++) {
+    for (; num > 0; num--, sec++) {
         if (onenand_prog_main(s, sec, 1, buf))
             return 1;
         if (onenand_prog_spare(s, sec, 1, buf))
@@ -246,7 +262,7 @@ static void onenand_command(OneNANDState *s, int cmd)
             ((((s->addr[page] >> 2) & 0x3f) +	\
               (((s->addr[block] & 0xfff) |	\
                 (s->addr[block] >> 15 ?		\
-                 s->density_mask : 0)) << 6)) << (PAGE_SHIFT - 9));
+                 s->density_mask : 0)) << 6)) << (s->page_shift - 9));
 #define SETBUF_M()				\
     buf = (s->bufaddr & 8) ?			\
             s->data[(s->bufaddr >> 2) & 1][0] : s->boot[0];	\
@@ -255,6 +271,7 @@ static void onenand_command(OneNANDState *s, int cmd)
     buf = (s->bufaddr & 8) ?			\
             s->data[(s->bufaddr >> 2) & 1][1] : s->boot[1];	\
     buf += (s->bufaddr & 3) << 4;
+#define IS_SAMSUNG_ONENAND() (((s->id >> 16) & 0xff) == 0xEC)
 
     switch (cmd) {
     case 0x00:	/* Load single/multiple sector data unit into buffer */
@@ -264,17 +281,20 @@ static void onenand_command(OneNANDState *s, int cmd)
         if (onenand_load_main(s, sec, s->count, buf))
             s->status |= ONEN_ERR_CMD | ONEN_ERR_LOAD;
 
-#if 0
-        SETBUF_S()
-        if (onenand_load_spare(s, sec, s->count, buf))
-            s->status |= ONEN_ERR_CMD | ONEN_ERR_LOAD;
-#endif
+        if (IS_SAMSUNG_ONENAND()) {
+            SETBUF_S()
+            if (onenand_load_spare(s, sec, s->count, buf))
+                s->status |= ONEN_ERR_CMD | ONEN_ERR_LOAD;
+        }
 
         /* TODO: if (s->bufaddr & 3) + s->count was > 4 (2k-pages)
          * or    if (s->bufaddr & 1) + s->count was > 2 (1k-pages)
          * then we need two split the read/write into two chunks.
          */
         s->intstatus |= ONEN_INT | ONEN_INT_LOAD;
+        break;
+    case 0x03:  /* Superload */
+        s->superload = 1;
         break;
     case 0x13:	/* Load single/multiple spare sector into buffer */
         SETADDR(ONEN_BUF_BLOCK, ONEN_BUF_PAGE)
@@ -296,11 +316,11 @@ static void onenand_command(OneNANDState *s, int cmd)
         if (onenand_prog_main(s, sec, s->count, buf))
             s->status |= ONEN_ERR_CMD | ONEN_ERR_PROG;
 
-#if 0
-        SETBUF_S()
-        if (onenand_prog_spare(s, sec, s->count, buf))
-            s->status |= ONEN_ERR_CMD | ONEN_ERR_PROG;
-#endif
+        if (IS_SAMSUNG_ONENAND()) {
+            SETBUF_S()
+            if (onenand_prog_spare(s, sec, s->count, buf))
+                s->status |= ONEN_ERR_CMD | ONEN_ERR_PROG;
+        }
 
         /* TODO: if (s->bufaddr & 3) + s->count was > 4 (2k-pages)
          * or    if (s->bufaddr & 1) + s->count was > 2 (1k-pages)
@@ -405,8 +425,8 @@ static void onenand_command(OneNANDState *s, int cmd)
     case 0x94:	/* Block erase */
         sec = ((s->addr[ONEN_BUF_BLOCK] & 0xfff) |
                         (s->addr[ONEN_BUF_BLOCK] >> 15 ? s->density_mask : 0))
-                << (BLOCK_SHIFT - 9);
-        if (onenand_erase(s, sec, 1 << (BLOCK_SHIFT - 9)))
+                << (s->block_shift - 9);
+        if (onenand_erase(s, sec, 1 << (s->block_shift - 9)))
             s->status |= ONEN_ERR_CMD | ONEN_ERR_ERASE;
 
         s->intstatus |= ONEN_INT | ONEN_INT_ERASE;
@@ -428,7 +448,7 @@ static void onenand_command(OneNANDState *s, int cmd)
         s->intstatus |= ONEN_INT;
         s->bdrv_cur = NULL;
         s->current = s->otp;
-        s->secs_cur = 1 << (BLOCK_SHIFT - 9);
+        s->secs_cur = 1 << (s->block_shift - 9);
         s->addr[ONEN_BUF_BLOCK] = 0;
         s->otpmode = 1;
         break;
@@ -447,11 +467,18 @@ static uint32_t onenand_read(void *opaque, target_phys_addr_t addr)
 {
     OneNANDState *s = (OneNANDState *) opaque;
     int offset = addr >> s->shift;
+    int res = 0;
 
     switch (offset) {
-    case 0x0000 ... 0xc000:
+    case 0x0000 ... 0x804e:
         return lduw_le_p(s->boot[0] + addr);
-
+    case 0x804f:
+        res = lduw_le_p(s->boot[0] + addr);
+        if (s->superload) {
+            onenand_command(s, 0x00); /* Read */
+        }
+        s->superload = 0;
+        return res;
     case 0xf000:	/* Manufacturer ID */
         return (s->id >> 16) & 0xff;
     case 0xf001:	/* Device ID */
@@ -460,11 +487,12 @@ static uint32_t onenand_read(void *opaque, target_phys_addr_t addr)
     case 0xf002:	/* Version ID */
         return (s->id >>  0) & 0xff;
     case 0xf003:	/* Data Buffer size */
-        return 1 << PAGE_SHIFT;
+        /* Number of buffers each of one page size measured in words */
+        return s->dbuf_num << (s->page_shift - 1);
     case 0xf004:	/* Boot Buffer size */
         return 0x200;
     case 0xf005:	/* Amount of buffers */
-        return 1 | (2 << 8);
+        return 1 | (s->dbuf_num << 8);
     case 0xf006:	/* Technology */
         return 0;
 
@@ -472,7 +500,8 @@ static uint32_t onenand_read(void *opaque, target_phys_addr_t addr)
         return s->addr[offset - 0xf100];
 
     case 0xf200:	/* Start buffer */
-        return (s->bufaddr << 8) | ((s->count - 1) & (1 << (PAGE_SHIFT - 10)));
+        return (s->bufaddr << 8) |
+               (s->count & (1 << (s->page_shift - 9)) ? 0 : s->count);
 
     case 0xf220:	/* Command */
         return s->command;
@@ -498,7 +527,9 @@ static uint32_t onenand_read(void *opaque, target_phys_addr_t addr)
     case 0xff02:	/* ECC Result of spare area data */
     case 0xff03:	/* ECC Result of main area data */
     case 0xff04:	/* ECC Result of spare area data */
-        hw_error("%s: imeplement ECC\n", __FUNCTION__);
+        /* Why we do ever need to care about ECC?  There can't be any errors.
+         * So return zero as a success status.  */
+        /* hw_error("%s: implement ECC\n", __FUNCTION__); */
         return 0x0000;
     }
 
@@ -507,8 +538,14 @@ static uint32_t onenand_read(void *opaque, target_phys_addr_t addr)
     return 0;
 }
 
-static void onenand_write(void *opaque, target_phys_addr_t addr,
-                uint32_t value)
+static uint32_t onenand_read_32(void *opaque, target_phys_addr_t addr)
+{
+    uint32_t res = onenand_read(opaque, addr) |
+                   (onenand_read(opaque, addr + 2) << 16);
+    return res;
+}
+
+static void onenand_write(void *opaque, target_phys_addr_t addr, uint32_t value)
 {
     OneNANDState *s = (OneNANDState *) opaque;
     int offset = addr >> s->shift;
@@ -523,7 +560,7 @@ static void onenand_write(void *opaque, target_phys_addr_t addr,
             if (value == 0x0000) {
                 SETADDR(ONEN_BUF_BLOCK, ONEN_BUF_PAGE)
                 onenand_load_main(s, sec,
-                                1 << (PAGE_SHIFT - 9), s->data[0][0]);
+                                1 << (s->page_shift - 9), s->data[0][0]);
                 s->addr[ONEN_BUF_PAGE] += 4;
                 s->addr[ONEN_BUF_PAGE] &= 0xff;
             }
@@ -552,15 +589,22 @@ static void onenand_write(void *opaque, target_phys_addr_t addr,
         }
         break;
 
+    case 0x0200 ... 0x7fff:
+    case 0x8010 ... 0x804f:
+        stw_le_p(s->boot[0] + addr, (uint16_t)value);
+        break;
+
     case 0xf100 ... 0xf107:	/* Start addresses */
         s->addr[offset - 0xf100] = value;
         break;
 
     case 0xf200:	/* Start buffer */
         s->bufaddr = (value >> 8) & 0xf;
-        if (PAGE_SHIFT == 11)
+        if (s->page_shift == 12)
+            s->count = (value & 7) ?: 8;
+        else if (s->page_shift == 11)
             s->count = (value & 3) ?: 4;
-        else if (PAGE_SHIFT == 10)
+        else if (s->page_shift == 10)
             s->count = (value & 1) ?: 2;
         break;
 
@@ -603,30 +647,45 @@ static void onenand_write(void *opaque, target_phys_addr_t addr,
     }
 }
 
+static void onenand_write_32(void *opaque, target_phys_addr_t addr,
+                             uint32_t value)
+{
+    onenand_write(opaque, addr, value & 0xffff);
+    onenand_write(opaque, addr + 2, value >> 16);
+}
+
 static CPUReadMemoryFunc * const onenand_readfn[] = {
     onenand_read,	/* TODO */
     onenand_read,
-    onenand_read,
+    onenand_read_32,
 };
 
 static CPUWriteMemoryFunc * const onenand_writefn[] = {
     onenand_write,	/* TODO */
     onenand_write,
-    onenand_write,
+    onenand_write_32,
 };
 
-void *onenand_init(uint32_t id, int regshift, qemu_irq irq)
+void *onenand_init(uint32_t id, int regshift, qemu_irq irq,
+                   int page_size, int data_buf)
 {
     OneNANDState *s = (OneNANDState *) qemu_mallocz(sizeof(*s));
     DriveInfo *dinfo = drive_get(IF_MTD, 0, 0);
     uint32_t size = 1 << (24 + ((id >> 12) & 7));
     void *ram;
 
+    /* 12 for 4kB-page OneNAND, 11 for 2kB-page OneNAND ("2nd generation") and
+       10 for 1kB-page chips */
+    s->page_shift = page_size;
+    s->dbuf_num = data_buf;
+
+    /* Fixed */
+    s->block_shift = s->page_shift + 6;
     s->shift = regshift;
     s->intr = irq;
     s->rdy = NULL;
     s->id = id;
-    s->blocks = size >> BLOCK_SHIFT;
+    s->blocks = size >> s->block_shift;
     s->secs = size >> 9;
     s->blockwp = qemu_malloc(s->blocks);
     s->density_mask = (id & (1 << 11)) ? (1 << (6 + ((id >> 12) & 7))) : 0;
@@ -637,16 +696,21 @@ void *onenand_init(uint32_t id, int regshift, qemu_irq irq)
                         0xff, size + (size >> 5));
     else
         s->bdrv = dinfo->bdrv;
-    s->otp = memset(qemu_malloc((64 + 2) << PAGE_SHIFT),
-                    0xff, (64 + 2) << PAGE_SHIFT);
+    s->otp = memset(qemu_malloc((64 + 2) << s->page_shift),
+                    0xff, (64 + 2) << s->page_shift);
     s->ram = qemu_ram_alloc(NULL, "onenand.ram", 0xc000 << s->shift);
     ram = qemu_get_ram_ptr(s->ram);
     s->boot[0] = ram + (0x0000 << s->shift);
     s->boot[1] = ram + (0x8000 << s->shift);
-    s->data[0][0] = ram + ((0x0200 + (0 << (PAGE_SHIFT - 1))) << s->shift);
-    s->data[0][1] = ram + ((0x8010 + (0 << (PAGE_SHIFT - 6))) << s->shift);
-    s->data[1][0] = ram + ((0x0200 + (1 << (PAGE_SHIFT - 1))) << s->shift);
-    s->data[1][1] = ram + ((0x8010 + (1 << (PAGE_SHIFT - 6))) << s->shift);
+    s->data[0][0] = ram + ((0x0200 + (0 << (s->page_shift - 1))) << s->shift);
+    s->data[0][1] = ram + ((0x8010 + (0 << (s->page_shift - 6))) << s->shift);
+    if (s->page_shift < 12) {
+        /* FIXME: what is here when page_shift IS 12? */
+        s->data[1][0] =
+            ram + ((0x0200 + (1 << (s->page_shift - 1))) << s->shift);
+        s->data[1][1] =
+            ram + ((0x8010 + (1 << (s->page_shift - 6))) << s->shift);
+    }
 
     onenand_reset(s, 1);
 

@@ -22,7 +22,7 @@ typedef struct {
     int extension;
 } gamepad_state;
 
-static void stellaris_gamepad_put_key(void * opaque, int keycode)
+static int stellaris_gamepad_put_key(void * opaque, int keycode)
 {
     gamepad_state *s = (gamepad_state *)opaque;
     int i;
@@ -30,7 +30,7 @@ static void stellaris_gamepad_put_key(void * opaque, int keycode)
 
     if (keycode == 0xe0 && !s->extension) {
         s->extension = 0x80;
-        return;
+        return 0;
     }
 
     down = (keycode & 0x80) == 0;
@@ -45,6 +45,7 @@ static void stellaris_gamepad_put_key(void * opaque, int keycode)
     }
 
     s->extension = 0;
+    return 0;
 }
 
 static void stellaris_gamepad_save(QEMUFile *f, void *opaque)
@@ -85,7 +86,7 @@ void stellaris_gamepad_init(int n, qemu_irq *irq, const int *keycode)
         s->buttons[i].keycode = keycode[i];
     }
     s->num_buttons = n;
-    qemu_add_kbd_event_handler(stellaris_gamepad_put_key, s);
+    qemu_add_kbd_event_handler(stellaris_gamepad_put_key, s, "Stellaris Gamepad");
     register_savevm(NULL, "stellaris_gamepad", -1, 1,
                     stellaris_gamepad_save, stellaris_gamepad_load, s);
 }

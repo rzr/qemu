@@ -43,6 +43,7 @@
 #define EXCP_EXCEPTION_EXIT  8   /* Return from v7M exception.  */
 #define EXCP_KERNEL_TRAP     9   /* Jumped to kernel code page.  */
 #define EXCP_STREX          10
+#define EXCP_SMC            11   /* secure monitor call */
 
 #define ARMV7M_EXCP_RESET   1
 #define ARMV7M_EXCP_NMI     2
@@ -82,9 +83,9 @@ typedef struct CPUARMState {
     uint32_t spsr;
 
     /* Banked registers.  */
-    uint32_t banked_spsr[6];
-    uint32_t banked_r13[6];
-    uint32_t banked_r14[6];
+    uint32_t banked_spsr[7];
+    uint32_t banked_r13[7];
+    uint32_t banked_r14[7];
 
     /* These hold r8-r12.  */
     uint32_t usr_regs[5];
@@ -99,6 +100,9 @@ typedef struct CPUARMState {
     uint32_t GE; /* cpsr[19:16] */
     uint32_t thumb; /* cpsr[5]. 0 = arm mode, 1 = thumb mode. */
     uint32_t condexec_bits; /* IT bits.  cpsr[15:10,26:25].  */
+    uint32_t actual_condexec_bits; /* Real IT bits updated as execution goes.  */
+    uint32_t saved_condexec_bits; /* Saved IT bits to be restored after interrupt.  */
+    uint32_t saved_condexec_tb; /* Address of a new TB after interrupt inside of IT block.  */
 
     /* System control coprocessor (cp15) */
     struct {
@@ -112,6 +116,9 @@ typedef struct CPUARMState {
         uint32_t c1_sys; /* System control register.  */
         uint32_t c1_coproc; /* Coprocessor access register.  */
         uint32_t c1_xscaleauxcr; /* XScale auxiliary control register.  */
+        uint32_t c1_secfg; /* Secure configuration register. */
+        uint32_t c1_sedbg; /* Secure debug enable register. */
+        uint32_t c1_nseac; /* Non-secure access control register. */
         uint32_t c2_base0; /* MMU translation table base 0.  */
         uint32_t c2_base1; /* MMU translation table base 1.  */
         uint32_t c2_control; /* MMU translation table base control.  */
@@ -128,6 +135,8 @@ typedef struct CPUARMState {
         uint32_t c6_data;
         uint32_t c9_insn; /* Cache lockdown registers.  */
         uint32_t c9_data;
+        uint32_t c12_vbar; /* secure/nonsecure vector base address register. */
+        uint32_t c12_mvbar; /* monitor vector base address register. */
         uint32_t c13_fcse; /* FCSE PID.  */
         uint32_t c13_context; /* Context ID.  */
         uint32_t c13_tls1; /* User RW Thread register.  */
@@ -303,10 +312,12 @@ static inline void xpsr_write(CPUARMState *env, uint32_t val, uint32_t mask)
     if (mask & CPSR_IT_0_1) {
         env->condexec_bits &= ~3;
         env->condexec_bits |= (val >> 25) & 3;
+        env->actual_condexec_bits = env->condexec_bits;
     }
     if (mask & CPSR_IT_2_7) {
         env->condexec_bits &= 3;
         env->condexec_bits |= (val >> 8) & 0xfc;
+        env->actual_condexec_bits = env->condexec_bits;
     }
     if (mask & 0x1ff) {
         env->v7m.exception = val & 0x1ff;
@@ -322,6 +333,7 @@ enum arm_cpu_mode {
   ARM_CPU_MODE_FIQ = 0x11,
   ARM_CPU_MODE_IRQ = 0x12,
   ARM_CPU_MODE_SVC = 0x13,
+  ARM_CPU_MODE_SMC = 0x16,
   ARM_CPU_MODE_ABT = 0x17,
   ARM_CPU_MODE_UND = 0x1b,
   ARM_CPU_MODE_SYS = 0x1f
@@ -362,7 +374,8 @@ enum arm_features {
     ARM_FEATURE_DIV,
     ARM_FEATURE_M, /* Microcontroller profile.  */
     ARM_FEATURE_OMAPCP, /* OMAP specific CP15 ops handling.  */
-    ARM_FEATURE_THUMB2EE
+    ARM_FEATURE_THUMB2EE,
+    ARM_FEATURE_TRUSTZONE /* TrustZone Security Extensions. */
 };
 
 static inline int arm_feature(CPUARMState *env, int feature)
@@ -409,6 +422,7 @@ void cpu_arm_set_cp_io(CPUARMState *env, int cpnum,
 #define ARM_CPUID_ARM1136_R2  0x4107b362
 #define ARM_CPUID_ARM11MPCORE 0x410fb022
 #define ARM_CPUID_CORTEXA8    0x410fc080
+#define ARM_CPUID_CORTEXA8_R2 0x412fc083
 #define ARM_CPUID_CORTEXA9    0x410fc090
 #define ARM_CPUID_CORTEXM3    0x410fc231
 #define ARM_CPUID_ANY         0xffffffff
