@@ -435,7 +435,11 @@ static void frame_buffer_save_image(GtkToolButton *toolbutton, gpointer user_dat
 	char *file_name = NULL;
 	char *str = NULL;
 	GError *g_err = NULL;
+	GdkPixbuf *pOriImg = NULL;
 	BUF_WIDGET *buf_widget = (BUF_WIDGET *) user_data;
+		
+	pOriImg = gdk_pixbuf_scale_simple(buf_widget->pPixBuf, buf_widget->nOrgWidth, buf_widget->nOrgHeight, GDK_INTERP_NEAREST);
+	buf_widget->pPixBuf = pOriImg;
 
 	file_name = get_file_name("Save Image...", NULL, GTK_FILE_CHOOSER_ACTION_SAVE, NULL, IMAGE_FILE_SAVE);
 
@@ -481,8 +485,13 @@ static void frame_buffer_save_image(GtkToolButton *toolbutton, gpointer user_dat
 static void copy_clip_board(GtkToolButton * toolbutton, gpointer user_data)
 {
 	GtkClipboard *clipboard = NULL;
+	GdkPixbuf *pOriImg = NULL;
 	BUF_WIDGET *buf_widget = (BUF_WIDGET *) user_data;
 	clipboard = gtk_clipboard_get_for_display(gdk_display_get_default(), GDK_SELECTION_CLIPBOARD);
+
+	pOriImg = gdk_pixbuf_scale_simple(buf_widget->pPixBuf, buf_widget->nOrgWidth, buf_widget->nOrgHeight, GDK_INTERP_NEAREST);
+	buf_widget->pPixBuf = pOriImg;
+	
 	gtk_clipboard_set_image(clipboard, buf_widget->pPixBuf);
 }
 
