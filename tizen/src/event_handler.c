@@ -672,7 +672,6 @@ static int button_status = -1;
 static void touch_shoot_for_type(GtkWidget *widget, int x, int y, int lcd_status, int touch_type)
 {
 	int dx, dy, dz = 0, lcd_height, lcd_width;
-	int i;
 	GtkWidget *pWidget = NULL;
 	GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
 	lcd_height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h);

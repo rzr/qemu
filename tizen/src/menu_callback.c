@@ -116,7 +116,8 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	GtkWidget *sdl_widget = NULL;
 
 	gtk_widget_hide_all(widget);
-	gtk_window_resize(GTK_WINDOW(widget), pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
+	gtk_decorated_window_move_resize_window (GTK_WINDOW(widget), pconfiguration->main_x, pconfiguration->main_y,
+		pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
 
 	/*
 	 * to generate the configure, expose_event, when the large image goes
@@ -124,10 +125,13 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	 * that image, so expose event handler have to support it
 	 */
 
+	gtk_widget_destroy (pixmap_widget);
 	pixmap_widget = gtk_image_new_from_pixbuf (pDev->mode_SkinImg[nMode].pPixImg);
+
 	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, &SkinPixmap, &SkinMask, 1);
 	gdk_pixbuf_get_has_alpha (pDev->mode_SkinImg[nMode].pPixImg);
 	gtk_widget_shape_combine_mask (GTK_WIDGET(widget), SkinMask, 0, 0);
+
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
 	qemu_widget_new(&sdl_widget);
 	gtk_fixed_move (GTK_FIXED (fixed), sdl_widget,
