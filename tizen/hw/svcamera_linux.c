@@ -86,7 +86,7 @@ static void svcam_reset_controls(void)
 			ctrl.id = qctrl_tbl[i].id;
 			ctrl.value = qctrl_tbl[i].init_val;
 			if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-				ERR("failed to set video control value while reset values\n", strerror(errno));
+				ERR("failed to set video control value while reset values : %s\n", strerror(errno));
 			}
 		}
 	}
@@ -435,6 +435,7 @@ void svcam_device_enum_fmt(SVCamState* state)
 void svcam_device_qctrl(SVCamState* state)
 {
 	uint32_t i;
+	char name[32] = {0,};
 	struct v4l2_queryctrl ctrl;
 	SVCamParam *param = state->thread->param;
 
@@ -444,15 +445,23 @@ void svcam_device_qctrl(SVCamState* state)
 
 	switch (ctrl.id) {
 	case V4L2_CID_BRIGHTNESS:
+		TRACE("Query : BRIGHTNESS\n");
+		memcpy((void*)name, (void*)"brightness", 32);
 		i = 0;
 		break;
 	case V4L2_CID_CONTRAST:
+		TRACE("Query : CONTRAST\n");
+		memcpy((void*)name, (void*)"contrast", 32);
 		i = 1;
 		break;
 	case V4L2_CID_SATURATION:
+		TRACE("Query : SATURATION\n");
+		memcpy((void*)name, (void*)"saturation", 32);
 		i = 2;
 		break;
 	case V4L2_CID_SHARPNESS:
+		TRACE("Query : SHARPNESS\n");
+		memcpy((void*)name, (void*)"sharpness", 32);
 		i = 3;
 		break;
 	default:
@@ -494,7 +503,7 @@ void svcam_device_qctrl(SVCamState* state)
 	param->stack[4] = SVCAM_CTRL_VALUE_MID;	// default_value
 	param->stack[5] = ctrl.flags;
 	/* name field setting */
-	memcpy(&param->stack[6], ctrl.name, sizeof(ctrl.name));
+	memcpy(&param->stack[6], (void*)name, sizeof(ctrl.name));
 }
 
 void svcam_device_s_ctrl(SVCamState* state)
@@ -510,15 +519,19 @@ void svcam_device_s_ctrl(SVCamState* state)
 	switch (ctrl.id) {
 	case V4L2_CID_BRIGHTNESS:
 		i = 0;
+		TRACE("%d is set to the value of the BRIGHTNESS\n", param->stack[1]);
 		break;
 	case V4L2_CID_CONTRAST:
 		i = 1;
+		TRACE("%d is set to the value of the CONTRAST\n", param->stack[1]);
 		break;
 	case V4L2_CID_SATURATION:
 		i = 2;
+		TRACE("%d is set to the value of the SATURATION\n", param->stack[1]);
 		break;
 	case V4L2_CID_SHARPNESS:
 		i = 3;
+		TRACE("%d is set to the value of the SHARPNESS\n", param->stack[1]);
 		break;
 	default:
 		ERR("our emulator does not support this control : 0x%x\n", ctrl.id);
@@ -529,7 +542,7 @@ void svcam_device_s_ctrl(SVCamState* state)
 	ctrl.value = value_convert_from_guest(qctrl_tbl[i].min,
 			qctrl_tbl[i].max, param->stack[1]);
 	if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-		ERR("failed to set video control value\n", strerror(errno));
+		ERR("failed to set video control value : value(%d), %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -547,15 +560,19 @@ void svcam_device_g_ctrl(SVCamState* state)
 
 	switch (ctrl.id) {
 	case V4L2_CID_BRIGHTNESS:
+		TRACE("Gets the value of the BRIGHTNESS\n");
 		i = 0;
 		break;
 	case V4L2_CID_CONTRAST:
+		TRACE("Gets the value of the CONTRAST\n");
 		i = 1;
 		break;
 	case V4L2_CID_SATURATION:
+		TRACE("Gets the value of the SATURATION\n");
 		i = 2;
 		break;
 	case V4L2_CID_SHARPNESS:
+		TRACE("Gets the value of the SHARPNESS\n");
 		i = 3;
 		break;
 	default:
@@ -565,12 +582,13 @@ void svcam_device_g_ctrl(SVCamState* state)
 	}
 
 	if (xioctl(v4l2_fd, VIDIOC_G_CTRL, &ctrl) < 0) {
-		ERR("failed to get video control value", strerror(errno));
+		ERR("failed to get video control value : %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
 	param->stack[0] = value_convert_to_guest(qctrl_tbl[i].min,
 			qctrl_tbl[i].max, ctrl.value);
+	TRACE("Value : %d\n", param->stack[0]);
 }
 
 void svcam_device_enum_fsizes(SVCamState* state)
@@ -585,7 +603,7 @@ void svcam_device_enum_fsizes(SVCamState* state)
 
 	if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMESIZES, &fsize) < 0) {
 		if (errno != EINVAL)
-			ERR("failed to get frame sizes", strerror(errno));
+			ERR("failed to get frame sizes : %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -613,7 +631,7 @@ void svcam_device_enum_fintv(SVCamState* state)
 
 	if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &ival) < 0) {
 		if (errno != EINVAL)
-			ERR("failed to get frame intervals", strerror(errno));
+			ERR("failed to get frame intervals : %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
