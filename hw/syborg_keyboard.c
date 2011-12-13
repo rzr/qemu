@@ -133,7 +133,7 @@ static CPUWriteMemoryFunc * const syborg_keyboard_writefn[] = {
      syborg_keyboard_write
 };
 
-static int syborg_keyboard_event(void *opaque, int keycode)
+static void syborg_keyboard_event(void *opaque, int keycode)
 {
     SyborgKeyboardState *s = (SyborgKeyboardState *)opaque;
     int slot;
@@ -143,7 +143,7 @@ static int syborg_keyboard_event(void *opaque, int keycode)
     if (keycode == 0xe0 && !s->extension_bit) {
         DPRINTF("Extension bit\n");
         s->extension_bit = 0x80;
-        return 0;
+        return;
     }
     val = (keycode & 0x7f) | s->extension_bit;
     if (keycode & 0x80)
@@ -163,7 +163,6 @@ static int syborg_keyboard_event(void *opaque, int keycode)
     }
 
     syborg_keyboard_update(s);
-    return 0;
 }
 
 static void syborg_keyboard_save(QEMUFile *f, void *opaque)
@@ -220,7 +219,7 @@ static int syborg_keyboard_init(SysBusDevice *dev)
     }
     s->key_fifo = qemu_mallocz(s->fifo_size * sizeof(s->key_fifo[0]));
 
-    qemu_add_kbd_event_handler(syborg_keyboard_event, s, "Syborg Keyboard");
+    qemu_add_kbd_event_handler(syborg_keyboard_event, s);
 
     register_savevm(&dev->qdev, "syborg_keyboard", -1, 1,
                     syborg_keyboard_save, syborg_keyboard_load, s);

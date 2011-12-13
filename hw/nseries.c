@@ -169,8 +169,7 @@ static void n8x0_nand_setup(struct n800_s *s)
                     onenand_base_unmap,
                     (s->nand = onenand_init(0xec4800, 1,
                                             omap2_gpio_in_get(s->cpu->gpif,
-                                                    N8X0_ONENAND_GPIO)[0],
-                                            ONENAND_2KB_PAGE, 2)));
+                                                    N8X0_ONENAND_GPIO)[0])));
     otp_region = onenand_raw_otp(s->nand);
 
     memcpy(otp_region + 0x000, n8x0_cal_wlan_mac, sizeof(n8x0_cal_wlan_mac));
@@ -210,7 +209,7 @@ static MouseTransformInfo n810_pointercal = {
 
 #define RETU_KEYCODE	61	/* F3 */
 
-static int n800_key_event(void *opaque, int keycode)
+static void n800_key_event(void *opaque, int keycode)
 {
     struct n800_s *s = (struct n800_s *) opaque;
     int code = s->keymap[keycode & 0x7f];
@@ -218,11 +217,10 @@ static int n800_key_event(void *opaque, int keycode)
     if (code == -1) {
         if ((keycode & 0x7f) == RETU_KEYCODE)
             retu_key_event(s->retu, !(keycode & 0x80));
-        return 0;
+        return;
     }
 
     tsc210x_key_event(s->ts.chip, code, !(keycode & 0x80));
-    return 0;
 }
 
 static const int n800_keys[16] = {
@@ -264,7 +262,7 @@ static void n800_tsc_kbd_setup(struct n800_s *s)
         if (n800_keys[i] >= 0)
             s->keymap[n800_keys[i]] = i;
 
-    qemu_add_kbd_event_handler(n800_key_event, s, "Nokia n800");
+    qemu_add_kbd_event_handler(n800_key_event, s);
 
     tsc210x_set_transform(s->ts.chip, &n800_pointercal);
 }
@@ -280,7 +278,7 @@ static void n810_tsc_setup(struct n800_s *s)
 }
 
 /* N810 Keyboard controller */
-static int n810_key_event(void *opaque, int keycode)
+static void n810_key_event(void *opaque, int keycode)
 {
     struct n800_s *s = (struct n800_s *) opaque;
     int code = s->keymap[keycode & 0x7f];
@@ -288,11 +286,10 @@ static int n810_key_event(void *opaque, int keycode)
     if (code == -1) {
         if ((keycode & 0x7f) == RETU_KEYCODE)
             retu_key_event(s->retu, !(keycode & 0x80));
-        return 0;
+        return;
     }
 
     lm832x_key_event(s->kbd, code, !(keycode & 0x80));
-    return 0;
 }
 
 #define M	0
@@ -374,7 +371,7 @@ static void n810_kbd_setup(struct n800_s *s)
         if (n810_keys[i] > 0)
             s->keymap[n810_keys[i]] = i;
 
-    qemu_add_kbd_event_handler(n810_key_event, s, "Nokia n810");
+    qemu_add_kbd_event_handler(n810_key_event, s);
 
     /* Attach the LM8322 keyboard to the I2C bus,
      * should happen in n8x0_i2c_setup and s->kbd be initialised here.  */

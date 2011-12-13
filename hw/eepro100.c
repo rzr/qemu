@@ -1656,12 +1656,6 @@ static ssize_t nic_receive(VLANClientState *nc, const uint8_t * buf, size_t size
     static const uint8_t broadcast_macaddr[6] =
         { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-    /* TODO: check multiple IA bit. */
-    if (s->configuration[20] & BIT(6)) {
-        missing("Multiple IA bit");
-        return -1;
-    }
-
     if (s->configuration[8] & 0x80) {
         /* CSMA is disabled. */
         logout("%p received while CSMA is disabled\n", s);

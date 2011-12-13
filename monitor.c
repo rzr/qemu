@@ -25,7 +25,6 @@
 #include "hw/hw.h"
 #include "hw/qdev.h"
 #include "hw/usb.h"
-#include "hw/usb-ehci.h"
 #include "hw/pcmcia.h"
 #include "hw/pc.h"
 #include "hw/pci.h"
@@ -3002,14 +3001,6 @@ static const mon_cmd_t info_cmds[] = {
         .help       = "show which guest mouse is receiving events",
         .user_print = do_info_mice_print,
         .mhandler.info_new = do_info_mice,
-    },
-    {
-        .name       = "keyboard",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show which guest keyboard is receiving events",
-        .user_print = do_info_keyboard_print,
-        .mhandler.info_new = do_info_keyboard,
     },
     {
         .name       = "vnc",

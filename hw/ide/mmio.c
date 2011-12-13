@@ -39,7 +39,6 @@
 typedef struct {
     IDEBus bus;
     int shift;
-    int offset;
 } MMIOState;
 
 static void mmio_ide_reset(void *opaque)
@@ -52,7 +51,7 @@ static void mmio_ide_reset(void *opaque)
 static uint32_t mmio_ide_read (void *opaque, target_phys_addr_t addr)
 {
     MMIOState *s = opaque;
-    addr = (addr - s->offset) >> s->shift;
+    addr >>= s->shift;
     if (addr & 7)
         return ide_ioport_read(&s->bus, addr);
     else
@@ -63,7 +62,7 @@ static void mmio_ide_write (void *opaque, target_phys_addr_t addr,
 	uint32_t val)
 {
     MMIOState *s = opaque;
-    addr = (addr - s->offset) >> s->shift;
+    addr >>= s->shift;
     if (addr & 7)
         ide_ioport_write(&s->bus, addr, val);
     else
@@ -129,7 +128,6 @@ void mmio_ide_init (target_phys_addr_t membase, target_phys_addr_t membase2,
     ide_init2_with_non_qdev_drives(&s->bus, hd0, hd1, irq);
 
     s->shift = shift;
-    s->offset = membase & ~TARGET_PAGE_MASK;
 
     mem1 = cpu_register_io_memory(mmio_ide_reads, mmio_ide_writes, s,
                                   DEVICE_NATIVE_ENDIAN);

@@ -95,12 +95,12 @@ struct PXA2xxKeyPadState {
     uint32_t    kpkdi;
 };
 
-static int pxa27x_keyboard_event (PXA2xxKeyPadState *kp, int keycode)
+static void pxa27x_keyboard_event (PXA2xxKeyPadState *kp, int keycode)
 {
     int row, col,rel;
 
     if(!(kp->kpc & KPC_ME)) /* skip if not enabled */
-        return 0;
+        return;
 
     if(kp->kpc & KPC_AS || kp->kpc & KPC_ASACT) {
         if(kp->kpc & KPC_AS)
@@ -111,7 +111,7 @@ static int pxa27x_keyboard_event (PXA2xxKeyPadState *kp, int keycode)
         row = kp->map[keycode].row;
         col = kp->map[keycode].column;
         if(row == -1 || col == -1)
-            return 0;
+            return;
         switch (col) {
         case 0:
         case 1:
@@ -144,14 +144,14 @@ static int pxa27x_keyboard_event (PXA2xxKeyPadState *kp, int keycode)
         } /* switch */
         goto out;
     }
-    return 0;
+    return;
 
 out:
     if(kp->kpc & KPC_MIE) {
         kp->kpc |= KPC_MI;
         qemu_irq_raise(kp->irq);
     }
-    return 0;
+    return;
 }
 
 static uint32_t pxa2xx_keypad_read(void *opaque, target_phys_addr_t offset)
@@ -332,6 +332,5 @@ void pxa27x_register_keypad(PXA2xxKeyPadState *kp, struct keymap *map,
     }
 
     kp->map = map;
-    qemu_add_kbd_event_handler((QEMUPutKBDEvent *) pxa27x_keyboard_event, kp,
-            "PXA keypad");
+    qemu_add_kbd_event_handler((QEMUPutKBDEvent *) pxa27x_keyboard_event, kp);
 }

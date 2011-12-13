@@ -39,18 +39,8 @@ uint8_t nand_getio(NANDFlashState *s);
 /* onenand.c */
 void onenand_base_update(void *opaque, target_phys_addr_t new);
 void onenand_base_unmap(void *opaque);
-/* id = XXYYZZ (XX - Manufacturer, YY - device properties, ZZ - version)
-   regshift = 1 in most cases
-   page_size = 10 (for 1kB-page chips), 11 (for 2kB-page chips),
-   12 (for 4kB-page chips)
-   data_buf = 2 in most cases */
-void *onenand_init(uint32_t id, int regshift, qemu_irq irq,
-                   int page_size, int data_buf);
+void *onenand_init(uint32_t id, int regshift, qemu_irq irq);
 void *onenand_raw_otp(void *opaque);
-
-#define ONENAND_1KB_PAGE 10
-#define ONENAND_2KB_PAGE 11
-#define ONENAND_4KB_PAGE 12
 
 /* ecc.c */
 typedef struct {
