@@ -79,4 +79,11 @@ void tmp105_set(i2c_slave *i2c, int temp);
 /* lm832x.c */
 void lm832x_key_event(i2c_slave *i2c, int key, int state);
 
+/* wm8994.c */
+void wm8994_data_req_set(DeviceState *dev, void (*data_req)(void *, int),
+                         void *opaque);
+void *wm8994_dac_buffer(DeviceState *dev, int samples);
+void wm8994_dac_dat(DeviceState *dev, uint32_t sample);
+void wm8994_dac_commit(DeviceState *dev);
+
 #endif

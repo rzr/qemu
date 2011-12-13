@@ -1366,7 +1366,7 @@ typedef struct musicpal_key_state {
     qemu_irq out[8];
 } musicpal_key_state;
 
-static void musicpal_key_event(void *opaque, int keycode)
+static int musicpal_key_event(void *opaque, int keycode)
 {
     musicpal_key_state *s = opaque;
     uint32_t event = 0;
@@ -1374,7 +1374,7 @@ static void musicpal_key_event(void *opaque, int keycode)
 
     if (keycode == KEYCODE_EXTENDED) {
         s->kbd_extended = 1;
-        return;
+        return 0;
     }
 
     if (s->kbd_extended) {
@@ -1441,6 +1441,7 @@ static void musicpal_key_event(void *opaque, int keycode)
     }
 
     s->kbd_extended = 0;
+    return 0;
 }
 
 static int musicpal_key_init(SysBusDevice *dev)
@@ -1454,7 +1455,7 @@ static int musicpal_key_init(SysBusDevice *dev)
 
     qdev_init_gpio_out(&dev->qdev, s->out, ARRAY_SIZE(s->out));
 
-    qemu_add_kbd_event_handler(musicpal_key_event, s);
+    qemu_add_kbd_event_handler(musicpal_key_event, s, "Musicpal");
 
     return 0;
 }

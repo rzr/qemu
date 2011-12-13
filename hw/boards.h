@@ -31,6 +31,7 @@ typedef struct QEMUMachine {
     struct QEMUMachine *next;
 } QEMUMachine;
 
+int qemu_arch_is_arm(void);
 int qemu_register_machine(QEMUMachine *m);
 
 extern QEMUMachine *current_machine;

@@ -187,6 +187,8 @@ typedef struct AsyncURB
 
     USBPacket     *packet;
     USBHostDevice *hdev;
+
+    int more;     /* packet required multiple URBs */
 } AsyncURB;
 
 static AsyncURB *async_alloc(void)
@@ -252,7 +254,7 @@ static void async_complete(void *opaque)
         if (p) {
             switch (aurb->urb.status) {
             case 0:
-                p->len = aurb->urb.actual_length;
+                p->len += aurb->urb.actual_length;
                 if (aurb->urb.type == USBDEVFS_URB_TYPE_CONTROL) {
                     async_complete_ctrl(s, p);
                 }
@@ -268,7 +270,10 @@ static void async_complete(void *opaque)
                 break;
             }
 
-            usb_packet_complete(p);
+            if (!aurb->more) {
+                DPRINTF("invoking packet_complete. plen = %d\n", p->len);
+                usb_packet_complete(p);
+            }
         }
 
         async_free(aurb);
@@ -294,7 +299,7 @@ static void async_cancel(USBPacket *unused, void *opaque)
 static int usb_host_claim_interfaces(USBHostDevice *dev, int configuration)
 {
     int dev_descr_len, config_descr_len;
-    int interface, nb_interfaces;
+    int interface, nb_interfaces, nb_configurations;
     int ret, i;
 
     if (configuration == 0) /* address state - ignore */
@@ -307,12 +312,12 @@ static int usb_host_claim_interfaces(USBHostDevice *dev, int configuration)
     if (dev_descr_len > dev->descr_len) {
         goto fail;
     }
+    nb_configurations = dev->descr[17];
 
     i += dev_descr_len;
     while (i < dev->descr_len) {
         DPRINTF("husb: i is %d, descr_len is %d, dl %d, dt %d\n",
-                i, dev->descr_len,
-               dev->descr[i], dev->descr[i+1]);
+                i, dev->descr_len, dev->descr[i], dev->descr[i+1]);
 
         if (dev->descr[i+1] != USB_DT_CONFIG) {
             i += dev->descr[i];
@@ -414,69 +419,89 @@ static void usb_host_handle_destroy(USBDevice *dev)
 
 static int usb_linux_update_endp_table(USBHostDevice *s);
 
+/* devio.c limits single requests to 16k */
+#define MAX_USBFS_BUFFER_SIZE 16384
+
 static int usb_host_handle_data(USBHostDevice *s, USBPacket *p)
 {
     struct usbdevfs_urb *urb;
     AsyncURB *aurb;
-    int ret;
+    int ret, len;
+    int rem = p->len;
+    uint8_t *pbuf = p->data;
 
-    aurb = async_alloc();
-    aurb->hdev   = s;
-    aurb->packet = p;
+    p->len = 0;
+    while (rem) {
+        aurb = async_alloc();
+        aurb->hdev   = s;
+        aurb->packet = p;
 
-    urb = &aurb->urb;
+        urb = &aurb->urb;
 
-    if (p->pid == USB_TOKEN_IN) {
-        urb->endpoint = p->devep | 0x80;
-    } else {
-        urb->endpoint = p->devep;
-    }
+        if (p->pid == USB_TOKEN_IN) {
+            urb->endpoint = p->devep | 0x80;
+        } else {
+            urb->endpoint = p->devep;
+        }
 
-    if (is_halted(s, p->devep)) {
-        ret = ioctl(s->fd, USBDEVFS_CLEAR_HALT, &urb->endpoint);
+        if (is_halted(s, p->devep)) {
+            ret = ioctl(s->fd, USBDEVFS_CLEAR_HALT, &urb->endpoint);
+            if (ret < 0) {
+                DPRINTF("husb: failed to clear halt. ep 0x%x errno %d\n",
+                        urb->endpoint, errno);
+                return USB_RET_NAK;
+            }
+            clear_halt(s, p->devep);
+        }
+
+        if (is_isoc(s, p->devep)) {
+            /* Setup ISOC transfer */
+            urb->type     = USBDEVFS_URB_TYPE_ISO;
+            urb->flags    = USBDEVFS_URB_ISO_ASAP;
+            urb->number_of_packets = 1;
+            urb->iso_frame_desc[0].length = p->len;
+        } else {
+            /* Setup bulk transfer */
+            urb->type     = USBDEVFS_URB_TYPE_BULK;
+        }
+
+        urb->usercontext = s;
+
+        /* USBFS limits max request size to 16k */
+        if (rem > MAX_USBFS_BUFFER_SIZE) {
+            len = MAX_USBFS_BUFFER_SIZE;
+            aurb->more = 1;
+        } else {
+            len = rem;
+            aurb->more = 0;
+        }
+        urb->buffer_length = len;
+        urb->buffer = pbuf;
+
+        ret = ioctl(s->fd, USBDEVFS_SUBMITURB, urb);
+
+        DPRINTF("husb: data submit. ep 0x%x len %u aurb %p\n",
+                urb->endpoint, len, aurb);
+
         if (ret < 0) {
-            DPRINTF("husb: failed to clear halt. ep 0x%x errno %d\n",
-                   urb->endpoint, errno);
-            return USB_RET_NAK;
+            DPRINTF("husb: submit failed. errno %d\n", errno);
+                async_free(aurb);
+
+            switch(errno) {
+            case ETIMEDOUT:
+                return USB_RET_NAK;
+            case EPIPE:
+            default:
+                return USB_RET_STALL;
+            }
         }
-        clear_halt(s, p->devep);
+
+        usb_defer_packet(p, async_cancel, aurb);
+
+        pbuf += len;
+        rem -= len;
     }
 
-    urb->buffer        = p->data;
-    urb->buffer_length = p->len;
-
-    if (is_isoc(s, p->devep)) {
-        /* Setup ISOC transfer */
-        urb->type     = USBDEVFS_URB_TYPE_ISO;
-        urb->flags    = USBDEVFS_URB_ISO_ASAP;
-        urb->number_of_packets = 1;
-        urb->iso_frame_desc[0].length = p->len;
-    } else {
-        /* Setup bulk transfer */
-        urb->type     = USBDEVFS_URB_TYPE_BULK;
-    }
-
-    urb->usercontext = s;
-
-    ret = ioctl(s->fd, USBDEVFS_SUBMITURB, urb);
-
-    DPRINTF("husb: data submit. ep 0x%x len %u aurb %p\n",
-            urb->endpoint, p->len, aurb);
-
-    if (ret < 0) {
-        DPRINTF("husb: submit failed. errno %d\n", errno);
-        async_free(aurb);
-
-        switch(errno) {
-        case ETIMEDOUT:
-            return USB_RET_NAK;
-        case EPIPE:
-        default:
-            return USB_RET_STALL;
-        }
-    }
-
-    usb_defer_packet(p, async_cancel, aurb);
     return USB_RET_ASYNC;
 }
 

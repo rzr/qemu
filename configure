@@ -122,6 +122,7 @@ uuid=""
 vde=""
 vnc_tls=""
 vnc_sasl=""
+jpeg="yes"
 vnc_jpeg=""
 vnc_png=""
 vnc_thread="no"
@@ -172,6 +173,8 @@ blobs="yes"
 pkgversion=""
 check_utests="no"
 user_pie="no"
+gles2="no"
+gles2_static="no"
 zero_malloc=""
 trace_backend="nop"
 trace_file="trace"
@@ -583,7 +586,6 @@ for opt do
   ;;
   --enable-jpeg) jpeg="yes"
   ;;
-
   --disable-vnc-tls) vnc_tls="no"
   ;;
   --enable-vnc-tls) vnc_tls="yes"
@@ -731,6 +733,16 @@ for opt do
   ;;
   --enable-docs) docs="yes"
   ;;
+  --enable-gles2) gles2="yes"; gles2dir="/usr";
+  ;;
+  --disable-gles2) gles2="no";
+  ;;
+  --enable-gles2-static) gles2="yes"; gles2_static="yes" gles2dir="/usr";
+  ;;
+  --disable-gles2-static) gles2_static="no";
+  ;;
+  --gles2dir=*) gles2dir="$optarg"
+  ;;
   --disable-vhost-net) vhost_net="no"
   ;;
   --enable-vhost-net) vhost_net="yes"
@@ -859,6 +871,8 @@ echo "  --disable-werror         disable compilation abort on warning"
 echo "  --disable-sdl            disable SDL"
 echo "  --enable-sdl             enable SDL"
 echo "  --enable-cocoa           enable COCOA (Mac OS X only)"
+echo "  --disable-jpeg           disable JPEG support"
+echo "  --enable-jpeg            enable JPEG support"
 echo "  --audio-drv-list=LIST    set audio drivers list:"
 echo "                           Available drivers: $audio_possible_drivers"
 echo "  --audio-card-list=LIST   set list of emulated audio cards [$audio_card_list]"
@@ -933,6 +947,9 @@ echo "  --disable-blobs          disable installing provided firmware blobs"
 echo "  --kerneldir=PATH         look for kernel includes in PATH"
 echo "  --enable-docs            enable documentation build"
 echo "  --disable-docs           disable documentation build"
+echo "  --enable-gles2           ARM target: Enable OpenGL ES 2.0 hardware accelerator"
+echo "  --enable-gles2-static    ARM target: Link OpenGL ES 2.0 hardware accelerator statically"
+echo "  --gles2dir=PATH          prefix where dgles2 is installed"
 echo "  --disable-vhost-net      disable vhost-net acceleration support"
 echo "  --enable-vhost-net       enable vhost-net acceleration support"
 echo "  --enable-trace-backend=B Set trace backend"
@@ -1342,24 +1359,34 @@ EOF
 fi
 
 ##########################################
-# VNC JPEG detection
-if test "$vnc_jpeg" != "no" ; then
+# JPEG detection
+if test "$jpeg" != "no"; then
 cat > $TMPC <<EOF
 #include <stdio.h>
 #include <jpeglib.h>
 int main(void) { struct jpeg_compress_struct s; jpeg_create_compress(&s); return 0; }
 EOF
-    vnc_jpeg_cflags=""
-    vnc_jpeg_libs="-ljpeg"
-  if compile_prog "$vnc_jpeg_cflags" "$vnc_jpeg_libs" ; then
-    vnc_jpeg=yes
-    libs_softmmu="$vnc_jpeg_libs $libs_softmmu"
-  else
-    if test "$vnc_jpeg" = "yes" ; then
-      feature_not_found "vnc-jpeg"
+    jpeg_cflags=""
+    jpeg_libs="-ljpeg"
+  if compile_prog "$jpeg_cflags" "$jpeg_libs" ; then
+    jpeg=yes
+    if test "$vnc_jpeg" != "no"; then
+      vnc_jpeg=yes
     fi
+    libs_softmmu="$jpeg_libs $libs_softmmu"
+  else
+    if test "$jpeg" = "yes" ; then
+      feature_not_found "jpeg"
+    fi
+    jpeg=no
     vnc_jpeg=no
   fi
+elif test "$vnc_jpeg" != "no"; then
+    echo
+    echo "Error: VNC JPEG was requested but JPEG was disabled"
+    echo "Please either enable JPEG with '--enable-jpeg' or disable VNC JPEG with '--disable-vnc-jpeg'."
+    echo
+    exit 1
 fi
 
 ##########################################
@@ -2525,6 +2552,7 @@ if test "$darwin" = "yes" ; then
     echo "Cocoa support     $cocoa"
 fi
 echo "SDL support       $sdl"
+echo "JPEG support      $jpeg"
 echo "curses support    $curses"
 echo "curl support      $curl"
 echo "check support     $check_utests"
@@ -2560,6 +2588,9 @@ echo "Install blobs     $blobs"
 echo "KVM support       $kvm"
 echo "fdt support       $fdt"
 echo "preadv support    $preadv"
+echo "gles2 support     $gles2"
+echo "gles2 static      $gles2_static"
+echo "dgles2 prefix     $gles2dir"
 echo "fdatasync         $fdatasync"
 echo "madvise           $madvise"
 echo "posix_madvise     $posix_madvise"
@@ -2691,6 +2722,10 @@ fi
 echo "CONFIG_BDRV_WHITELIST=$block_drv_whitelist" >> $config_host_mak
 if test "$mixemu" = "yes" ; then
   echo "CONFIG_MIXEMU=y" >> $config_host_mak
+fi
+if test "$jpeg" = "yes" ; then
+  echo "CONFIG_JPEG=y" >> $config_host_mak
+  echo "JPEG_CFLAGS=$jpeg_cflags" >> $config_host_mak
 fi
 if test "$vnc_tls" = "yes" ; then
   echo "CONFIG_VNC_TLS=y" >> $config_host_mak
@@ -2851,9 +2886,15 @@ fi
 if test "$posix_madvise" = "yes" ; then
   echo "CONFIG_POSIX_MADVISE=y" >> $config_host_mak
 fi
-
 if test "$spice" = "yes" ; then
   echo "CONFIG_SPICE=y" >> $config_host_mak
+fi
+if test "$gles2" = "yes" ; then
+  echo "CONFIG_GLES2=y" >> $config_host_mak
+if test "$gles2_static" = "yes" ; then
+  echo "CONFIG_GLES2_STATIC=y" >> $config_host_mak
+fi
+  echo "DGLES2=$gles2dir" >> $config_host_mak
 fi
 
 # XXX: suppress that

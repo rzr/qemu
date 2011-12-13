@@ -634,12 +634,25 @@ static int startup_option_parser(int *argc, char ***argv)
 	struct timeval tval;
 	char string[MAXBUF];
 	FILE *fp = NULL;
-	//int status = 0;
-	//char *name, *path;
 	char *info_file;
+	char *arch = getenv("EMULATOR_ARCH");
+	const gchar *exec_path = get_exec_path();
+	if(!arch) /* for stand alone */
+	{
+		char *binary = g_path_get_basename(exec_path);
+		if(strstr(binary, "emulator-x86"))
+			arch = g_strdup_printf("x86");
+		else if(strstr(binary, "emulator-arm"))
+			arch = g_strdup_printf("arm");
+		else 
+		{
+			ERR( "binary setting failed\n");
+			exit(1);
+		}
+		free(binary);
+	}
 
 	GOptionEntry options[] = {
-		{"target", 0, 0, G_OPTION_ARG_STRING, &startup_option.target, "Virtual root path", "\"target path\""},
 		{"disk", 0, 0, G_OPTION_ARG_STRING, &startup_option.disk, "Disk image path", "\"disk path\""},
 		{"vtm", 0, 0, G_OPTION_ARG_STRING, &startup_option.vtm, "Virtual target image file", "\"*.x86 or *.arm\""},
 		{"run-level", 0, 0, G_OPTION_ARG_INT, &startup_option.run_level, "Run level", "5"},
@@ -678,6 +691,11 @@ static int startup_option_parser(int *argc, char ***argv)
 		exit(1);
 	}
 
+	if (!startup_option.vtm) 
+		startup_option.vtm = g_strdup_printf("default");
+	startup_option.disk = g_strdup_printf("%semulimg-%s.%s",virtual_target_path, startup_option.vtm, arch);	
+	INFO("target name :%s, disk path: %s", startup_option.vtm, startup_option.disk);
+
 	while(fgets(string, MAXBUF, fp)!=NULL)
 		INFO("%s", string);
 	dbg_printf("\n");
@@ -687,28 +705,6 @@ static int startup_option_parser(int *argc, char ***argv)
 	free(virtual_target_path);
 	free(info_file);
 
-	if (startup_option.target && !startup_option.disk) {
-		/* parse target option */
-		if (is_valid_target(startup_option.target) == -1) {
-			fprintf(stderr, "target path (%s)  is invalid. retry target startup option\n", startup_option.target);
-			exit(1);
-		}
-	}
-	else if (startup_option.disk && !startup_option.target) {
-		/* parse disk option */
-		if (is_exist_file(startup_option.disk) != 1) {
-			fprintf(stderr, "disk image path (%s)  is invalid. retry disk startup option\n", startup_option.disk);
-			exit(1);
-		}
-	}
-	else {
-		fprintf(stderr, "Need exactly one of --target or --disk\n");
-		exit(1);
-	}
-
-	if (!startup_option.vtm) {
-		fprintf(stderr, "vtm image is not selected\n");
-	}
 	return 0;
 }
 
