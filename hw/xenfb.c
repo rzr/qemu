@@ -67,7 +67,6 @@ struct XenInput {
     int button_state;       /* Last seen pointer button state */
     int extended;
     QEMUPutMouseEntry *qmouse;
-    QEMUPutKbdEntry *qkbd;
 };
 
 #define UP_QUEUE 8
@@ -298,7 +297,7 @@ static void xenfb_key_event(void *opaque, int scancode)
 
     if (scancode == 0xe0) {
 	xenfb->extended = 1;
-	return 0;
+	return;
     } else if (scancode & 0x80) {
 	scancode &= 0x7f;
 	down = 0;
@@ -308,7 +307,6 @@ static void xenfb_key_event(void *opaque, int scancode)
 	xenfb->extended = 0;
     }
     xenfb_send_key(xenfb, down, scancode2linux[scancode]);
-    return 0;
 }
 
 /*
@@ -374,7 +372,7 @@ static int input_connect(struct XenDevice *xendev)
     if (rc != 0)
 	return rc;
 
-    in->qkbd = qemu_add_kbd_event_handler(xenfb_key_event, in, "Xen Keyboard");
+    qemu_add_kbd_event_handler(xenfb_key_event, in);
     in->qmouse = qemu_add_mouse_event_handler(xenfb_mouse_event, in,
 					      in->abs_pointer_wanted,
 					      "Xen PVFB Mouse");
@@ -389,7 +387,7 @@ static void input_disconnect(struct XenDevice *xendev)
 	qemu_remove_mouse_event_handler(in->qmouse);
 	in->qmouse = NULL;
     }
-    qemu_remove_kbd_event_handler(in->qkbd);
+    qemu_add_kbd_event_handler(NULL, NULL);
     common_unbind(&in->c);
 }
 

@@ -152,12 +152,11 @@ int bitbang_i2c_set(bitbang_i2c_interface *i2c, int line, int level)
         return bitbang_i2c_ret(i2c, data);
 
     case SENDING_ACK:
+        i2c->state = RECEIVING_BIT7;
         if (data != 0) {
             DPRINTF("NACKED\n");
-            i2c->state = STOPPED;
             i2c_nack(i2c->bus);
         } else {
-            i2c->state = RECEIVING_BIT7;
             DPRINTF("ACKED\n");
         }
         return bitbang_i2c_ret(i2c, 1);

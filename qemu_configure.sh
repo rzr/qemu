@@ -6,7 +6,7 @@ case $targetos in
 Linux*)
 echo "checking for os... targetos $targetos"
 exec ./configure \
- --target-list=i386-softmmu,arm-softmmu \
+ --target-list=i386-softmmu \
  --disable-werror \
  --audio-drv-list=pa \
  --enable-mixemu \

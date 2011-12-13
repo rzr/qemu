@@ -153,7 +153,7 @@ static const uint8_t pc_to_adb_keycode[256] = {
   0,  0,  0,  0,  0, 95,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 };
 
-static int adb_kbd_put_keycode(void *opaque, int keycode)
+static void adb_kbd_put_keycode(void *opaque, int keycode)
 {
     ADBDevice *d = opaque;
     KBDState *s = d->opaque;
@@ -164,7 +164,6 @@ static int adb_kbd_put_keycode(void *opaque, int keycode)
             s->wptr = 0;
         s->count++;
     }
-    return 0;
 }
 
 static int adb_kbd_poll(ADBDevice *d, uint8_t *obuf)
@@ -305,7 +304,7 @@ void adb_kbd_init(ADBBusState *bus)
     s = qemu_mallocz(sizeof(KBDState));
     d = adb_register_device(bus, ADB_KEYBOARD, adb_kbd_request,
                             adb_kbd_reset, s);
-    qemu_add_kbd_event_handler(adb_kbd_put_keycode, d, "adb");
+    qemu_add_kbd_event_handler(adb_kbd_put_keycode, d);
     register_savevm(NULL, "adb_kbd", -1, 1, adb_kbd_save,
                     adb_kbd_load, s);
 }

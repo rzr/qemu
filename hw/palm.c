@@ -120,7 +120,7 @@ static struct {
     [0x39] = { 4, 1 },	/* Spc	-> Centre */
 };
 
-static int palmte_button_event(void *opaque, int keycode)
+static void palmte_button_event(void *opaque, int keycode)
 {
     struct omap_mpu_state_s *cpu = (struct omap_mpu_state_s *) opaque;
 
@@ -129,7 +129,6 @@ static int palmte_button_event(void *opaque, int keycode)
                         palmte_keymap[keycode & 0x7f].row,
                         palmte_keymap[keycode & 0x7f].column,
                         !(keycode & 0x80));
-    return 0;
 }
 
 static void palmte_onoff_gpios(void *opaque, int line, int level)
@@ -233,7 +232,7 @@ static void palmte_init(ram_addr_t ram_size,
 
     palmte_microwire_setup(cpu);
 
-    qemu_add_kbd_event_handler(palmte_button_event, cpu, "Palm Keyboard");
+    qemu_add_kbd_event_handler(palmte_button_event, cpu);
 
     palmte_gpio_setup(cpu);
 

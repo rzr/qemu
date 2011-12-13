@@ -158,9 +158,4 @@ void icmp_error(struct mbuf *msrc, u_char type, u_char code, int minsize,
                 const char *message);
 void icmp_reflect(struct mbuf *);
 
-#ifndef _WIN32
-#include <sys/wait.h>
-#endif
-#include <unistd.h>
-
 #endif

@@ -380,7 +380,6 @@ static void spitz_keyboard_handler(void *opaque, int keycode)
     }
 
     QUEUE_KEY((code & 0x7f) | (keycode & 0x80));
-    return 0;
 }
 
 static void spitz_keyboard_tick(void *opaque)
@@ -506,8 +505,6 @@ static int spitz_keyboard_init(SysBusDevice *dev)
                 s->keymap[spitz_keymap[i][j]] = (i << 4) | j;
 
     spitz_keyboard_pre_map(s);
-    qemu_add_kbd_event_handler((QEMUPutKBDEvent *) spitz_keyboard_handler, s,
-            "Spitz keyboard");
 
     s->kbdtimer = qemu_new_timer(vm_clock, spitz_keyboard_tick, s);
     qdev_init_gpio_in(&dev->qdev, spitz_keyboard_strobe, SPITZ_KEY_STROBE_NUM);

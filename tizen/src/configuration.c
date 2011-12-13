@@ -70,7 +70,14 @@ int fill_configuration(int status)
 
 	/* 1.3 target setting */
 
-	if (strlen(startup_option.disk) > 0) {
+	if (startup_option.target != NULL) {
+		configuration.qemu_configuration.diskimg_type = 0;
+		strcpy(configuration.target_path, startup_option.target);
+
+		INFO( "target path is %s\n", configuration.target_path);
+	}
+
+	else if (strlen(startup_option.disk) > 0) {
 		configuration.qemu_configuration.diskimg_type = 1;
 		if(strcmp(SYSTEMINFO.virtual_target_name, "default") == 0)
 			strcpy(configuration.qemu_configuration.diskimg_path, startup_option.disk);

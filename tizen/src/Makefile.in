@@ -1,6 +1,6 @@
 include ./../../config-host.mak
 include ./../../i386-softmmu/config-target.mak
-include ./../../arm-softmmu/config-target.mak
+#include ./../../arm-softmmu/config-target.mak
 
 # Trick for invalid QEMU Makefile targets coming from the first include file
 subdir-libhw32: all
@@ -174,7 +174,8 @@ endif
 	@echo "  CC    $@"
 	$(Q)$(CC) $(CFLAGS) -o $@ -c $<
 
-all: $(TARGET_X86) $(TARGET_ARM) $(VTM)
+#all: $(TARGET_X86) $(TARGET_ARM)
+all: $(TARGET_X86) $(VTM)
 
 -include $(DEPFILES)
 
@@ -231,7 +232,7 @@ endif
 	mkdir -p $(PHONE_DIR)/x86/VMs/default
 	mkdir -p $(PHONE_DIR)/x86/VMs/default/logs
 	install emulator-x86 $(PHONE_DIR)/bin/emulator-x86
-	install emulator-arm $(PHONE_DIR)/bin/emulator-arm
+#	install emulator-arm $(PHONE_DIR)/bin/emulator-arm
 #	install savevm.glade $(PHONE_DIR)
 	cp -a $(VTM) $(PHONE_DIR)/bin
 	cp -a vtm.glade $(PHONE_DIR)/etc
