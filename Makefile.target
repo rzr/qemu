@@ -322,7 +322,7 @@ obj-arm-y += arm-semi.o
 obj-arm-y += pxa2xx.o pxa2xx_pic.o pxa2xx_gpio.o pxa2xx_timer.o pxa2xx_dma.o
 obj-arm-y += pxa2xx_lcd.o pxa2xx_mmci.o pxa2xx_pcmcia.o pxa2xx_keypad.o
 obj-arm-y += gumstix.o
-obj-arm-y += zaurus.o ide/microdrive.o spitz.o tosa.o tc6393xb.o
+obj-arm-y += zaurus.o ide/microdrive.o tosa.o tc6393xb.o
 obj-arm-y += omap1.o omap_lcdc.o omap_dma.o omap_clk.o omap_mmc.o omap_i2c.o \
 		omap_gpio.o omap_intc.o omap_uart.o
 obj-arm-y += omap2.o omap_dss.o soc_dma.o omap_gptimer.o omap_synctimer.o \
@@ -335,6 +335,59 @@ obj-arm-y += framebuffer.o
 obj-arm-y += syborg.o syborg_fb.o syborg_interrupt.o syborg_keyboard.o
 obj-arm-y += syborg_serial.o syborg_timer.o syborg_pointer.o syborg_rtc.o
 obj-arm-y += syborg_virtio.o
+
+#########################################################
+# Samsung additional hardware
+obj-arm-y += pl192.o pl330.o
+obj-arm-y += s5pc1xx.o s5pc1xx_pmu.o s5pc1xx_onedram.o s5pc1xx_usb_otg.o
+obj-arm-y += s5pc1xx_i2c.o s5pc1xx_gpio.o s5pc1xx_i2c_gpio.o s5pc1xx_spi.o
+obj-arm-y += s5pc1xx_clk.o s5pc1xx_rtc.o s5pc1xx_pwm.o s5pc1xx_wdt.o s5pc1xx_st.o
+obj-arm-y += s5pc1xx_nand.o s5pc1xx_onenand.o s5pc1xx_srom.o s5pc1xx_mmc.o
+obj-arm-y += s5pc1xx_uart.o s5pc1xx_tsadc.o s5pc1xx_keyif.o s5pc1xx_lcd.o
+obj-arm-y += s5pc1xx_ac97.o s5pc1xx_pcm.o s5pc1xx_spdif.o s5pc1xx_i2s.o
+obj-arm-y += s5pc1xx_jpeg.o
+obj-arm-y += qt602240_ts.o mcs5000_tk.o wm8994.o ak8973.o
+obj-arm-y += smb380.o
+obj-arm-y += ide/mmio.o
+
+# USB layer
+obj-arm-$(CONFIG_USB_OHCI) += usb-ohci.o
+
+#ifeq ($(HOST_USB), libusb)
+#LIBS += $(LIBUSB_LIBS)
+#endif
+
+##########################################################
+# virtio, opengl for arm(dummy) 
+obj-arm-y += helper_gpi_dummy.o opengl_dummy.o
+##########################################################
+
+ifeq ($(TARGET_BASE_ARCH), arm)
+ifdef CONFIG_JPEG
+LIBS+=-lm -ljpeg
+CFLAGS+= $(VNC_JPEG_CFLAGS)
+endif
+ifdef CONFIG_FFMPEG
+LIBS+=-lavformat -lavcodec -lavutil -lswscale -lbz2
+CFLAGS+= $(FFMPEG_CFLAGS)
+endif
+
+ifdef CONFIG_GLES2
+CFLAGS+=-I$(DGLES2)/include
+LIBS+=-L$(DGLES2)/lib
+ifdef CONFIG_GLES2_STATIC
+LIBS+=-Wl,-Bstatic -lEGL -lGLESv2 -lOSMesa -Wl,-Bdynamic
+else
+LIBS+=-lEGL -lGLESv2
+endif
+ifndef CONFIG_WIN32
+LIBS+=-LX11 -ldl
+endif
+obj-arm-y += gles2.o gles2_calls.o gles1_calls.o
+endif # CONFIG_GLES2
+endif # TARGET_BASE_ARCH==arm
+
+#############################################################
 
 obj-sh4-y = shix.o r2d.o sh7750.o sh7750_regnames.o tc58128.o
 obj-sh4-y += sh_timer.o sh_serial.o sh_intc.o sh_pci.o sm501.o
@@ -375,16 +428,17 @@ main.o: QEMU_CFLAGS+=$(GPROF_CFLAGS)
 
 monitor.o: hmp-commands.h qmp-commands.h
 
+
 $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y): $(GENERATED_HEADERS)
 
 obj-y += $(addprefix ../, $(common-obj-y))
 obj-y += $(addprefix ../libdis/, $(libdis-y))
 obj-y += $(libobj-y)
 obj-y += $(addprefix $(HWDIR)/, $(hw-obj-y))
+obj-y += $(addprefix ../, $(trace-obj-y))
 
 endif # CONFIG_SOFTMMU
 
-obj-y += $(addprefix ../, $(trace-obj-y))
 obj-$(CONFIG_GDBSTUB_XML) += gdbstub-xml.o
 
 #$(QEMU_PROG): $(obj-y) $(obj-$(TARGET_BASE_ARCH)-y)
@@ -425,9 +479,9 @@ $(TARGET_PATH)/libGL.so.1: opengl_client.c gl_func.h
 endif
 
 # arm
-#gles1_calls.o: gles1_calls.c gles2.h gles2_calls.h
-#gles2_calls.o: gles2_calls.c gles2.h gles2_calls.h
-#gles2.o: gles2.c gles2.h gles2_calls.h
+gles1_calls.o: gles1_calls.c gles2.h gles2_calls.h
+gles2_calls.o: gles2_calls.c gles2.h gles2_calls.h
+gles2.o: gles2.c gles2.h gles2_calls.h
 
 ##########################################################
 

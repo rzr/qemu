@@ -97,6 +97,12 @@ static void set_kernel_args(struct arm_boot_info *info,
         cpu_physical_memory_write(p, atag_board_buf, atag_board_len);
         p += atag_board_len;
     }
+    if (info->revision) {
+        /* ATAG_REVISION */
+        WRITE_WORD(p, 3);
+        WRITE_WORD(p, 0x54410007);
+        WRITE_WORD(p, info->revision);
+    }
     /* ATAG_END */
     WRITE_WORD(p, 0);
     WRITE_WORD(p, 0);

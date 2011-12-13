@@ -19,7 +19,8 @@
 /* in ms */
 #define GUI_REFRESH_INTERVAL 30
 
-typedef void QEMUPutKBDEvent(void *opaque, int keycode);
+/* Keyboard events handlers should return zero if they handled the event */
+typedef int  QEMUPutKBDEvent(void *opaque, int keycode);
 typedef void QEMUPutLEDEvent(void *opaque, int ledstate);
 typedef void QEMUPutMouseEvent(void *opaque, int dx, int dy, int dz, int buttons_state);
 
@@ -41,10 +42,20 @@ typedef struct QEMUPutLEDEntry {
     QTAILQ_ENTRY(QEMUPutLEDEntry) next;
 } QEMUPutLEDEntry;
 
-void qemu_add_kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
-void qemu_remove_kbd_event_handler(void);
-void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
-void qemu_remove_ps2kbd_event_handler(void);
+typedef struct QEMUPutKbdEntry {
+    char *qemu_put_kbd_name;
+    QEMUPutKBDEvent *qemu_put_kbd_event;
+    void *qemu_put_kbd_event_opaque;
+    int index;
+
+    QTAILQ_ENTRY(QEMUPutKbdEntry) node;
+} QEMUPutKbdEntry;
+
+QEMUPutKbdEntry *qemu_add_kbd_event_handler(QEMUPutKBDEvent *func,
+                                            void *opaque,
+                                            const char *name);
+void qemu_remove_kbd_event_handler(QEMUPutKbdEntry *entry);
+void qemu_activate_keyboard_event_handler(QEMUPutKbdEntry *entry);
 QEMUPutMouseEntry *qemu_add_mouse_event_handler(QEMUPutMouseEvent *func,
                                                 void *opaque, int absolute,
                                                 const char *name);
@@ -78,6 +89,10 @@ struct MouseTransformInfo {
 void do_info_mice_print(Monitor *mon, const QObject *data);
 void do_info_mice(Monitor *mon, QObject **ret_data);
 void do_mouse_set(Monitor *mon, const QDict *qdict);
+
+void do_info_keyboard_print(Monitor *mon, const QObject *data);
+void do_info_keyboard(Monitor *mon, QObject **ret_data);
+int do_keyboard_set(Monitor *mon, const QDict *qdict, QObject **ret_data);
 
 /* keysym is a unicode code except for special keys (see QEMU_KEY_xxx
    constants) */

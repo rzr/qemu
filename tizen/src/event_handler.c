@@ -990,7 +990,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 
 				if (kbd_mouse_is_absolute()) {
 					TRACE( "press parsing keycode = %d, result = %d\n", keycode, keycode & 0x7f);
-					ps2kbd_put_keycode(keycode & 0x7f);				
+					//ps2kbd_put_keycode(keycode & 0x7f);				
 				}
 			}
 			else {
@@ -1032,7 +1032,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 
 				if (kbd_mouse_is_absolute()) {
 					TRACE( "release parsing keycode = %d, result = %d\n", keycode, keycode| 0x80);
-					ps2kbd_put_keycode(keycode | 0x80);	
+					//ps2kbd_put_keycode(keycode | 0x80);	
 				}
 			}
 		}
