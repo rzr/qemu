@@ -243,13 +243,13 @@ void activate_target(char *target_name)
 	if(qemu_add_opt == 0)
 		qemu_add_opt = g_strdup_printf(" ");
 #ifndef _WIN32	
-	cmd = g_strdup_printf("./%s --vtm %s --disk %semulimg-%s.%s %s \
+	cmd = g_strdup_printf("./%s --vtm %s %s \
 			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, get_virtual_target_abs_path(target_name), target_name, arch, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+			binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 #else /*_WIN32 */
-	cmd = g_strdup_printf("%s --vtm %s --disk %semulimg-%s.%s %s\
+	cmd = g_strdup_printf("%s --vtm %s %s\
 			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, get_virtual_target_abs_path(target_name), target_name , arch, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+			binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 #endif
 
 	if(!g_spawn_command_line_async(cmd, &error))
