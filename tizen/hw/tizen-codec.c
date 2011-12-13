@@ -118,7 +118,7 @@ int qemu_avcodec_open (SVCodecState *s)
 	}
 	avctx = gAVCtx;
 	size = sizeof(AVCodecContext);
-	TRACE("[%s][%d] AVCodecContext Size:%d\n", sizeof(AVCodecContext)); 
+	TRACE("[%s][%d] AVCodecContext Size:%d\n", __func__, __LINE__, sizeof(AVCodecContext)); 
 	memcpy(&tempCtx, avctx, size);
 	memcpy(avctx, s->vaddr, size);
 	memcpy(&tempCodec, (uint8_t*)s->vaddr + size, sizeof(AVCodec));
