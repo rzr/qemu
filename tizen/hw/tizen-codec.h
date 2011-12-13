@@ -9,7 +9,7 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 
-#define CODEC_THREAD
+// #define CODEC_THREAD
 /*
  *  Codec Device Structures
  */
@@ -64,7 +64,7 @@ static int codec_operate(uint32_t value, SVCodecState *opaque);
 void codec_set_context (AVCodecContext *dstctx,
                         AVCodecContext *srcctx);
 
-#ifndef CODEC_THREAD
+#ifdef CODEC_THREAD
 static int codec_copy_info (SVCodecState *s);
 static int codec_thread_init (void *opaque);
 static void* codec_worker_thread (void *opaque);

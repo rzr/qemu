@@ -44,14 +44,12 @@ enum {
 
 SVCodecParam *target_param;
 
-static int thread_cnt = 0;
 AVCodecContext *gAVCtx = NULL;
 AVFrame *gFrame = NULL;
 
 /* void av_register_all() */
 void qemu_av_register_all (void)
 {
-	TRACE("%s cnt:%d\n", __func__, ++thread_cnt);
 	av_register_all();
 }
 
@@ -110,18 +108,17 @@ int qemu_avcodec_open (SVCodecState *s)
 	AVCodec *codec;
 	AVCodec tempCodec;
 	enum CodecID codec_id;
-//	bool bEncode;
 	int ret;
 	int size;
 
-	TRACE("%s cnt:%d\n", __func__, ++thread_cnt);
 	/* guest to host */
 	if (!gAVCtx) {
 		ERR("AVCodecContext is NULL!!\n");
 		return -1;
 	}
 	avctx = gAVCtx;
-	size = sizeof(AVCodecContext); 
+	size = sizeof(AVCodecContext);
+	TRACE("[%s][%d] AVCodecContext Size:%d\n", __func__, __LINE__, sizeof(AVCodecContext)); 
 	memcpy(&tempCtx, avctx, size);
 	memcpy(avctx, s->vaddr, size);
 	memcpy(&tempCodec, (uint8_t*)s->vaddr + size, sizeof(AVCodec));
@@ -166,7 +163,6 @@ int qemu_avcodec_close (SVCodecState* s)
 	AVCodecContext *avctx;
 	int ret = -1;
 	
-	TRACE("%s cnt:%d\n", __func__, ++thread_cnt);
 	avctx = gAVCtx;
 	if (!avctx) {
 		ERR("[%s][%d] AVCodecContext is NULL\n", __func__, __LINE__);
@@ -185,14 +181,12 @@ int qemu_avcodec_close (SVCodecState* s)
 /* AVCodecContext* avcodec_alloc_context (void) */
 void qemu_avcodec_alloc_context (void)
 {
-	TRACE("%s cnt:%d\n", __func__, ++thread_cnt);
 	gAVCtx = avcodec_alloc_context();
 }
 
 /* AVFrame *avcodec_alloc_frame (void) */
 void qemu_avcodec_alloc_frame (void)
 {
-	TRACE("%s cnt:%d\n", __func__, ++thread_cnt);
 	gFrame = avcodec_alloc_frame();
 }
 
@@ -327,8 +321,8 @@ int qemu_avcodec_decode_video (SVCodecState *s)
 	size = sizeof(AVCodecContext);
 
 	memcpy(&tempCtx, avctx, size);
-	memcpy(avctx, s->vaddr, size);
-	codec_set_context(avctx, &tempCtx);
+//	memcpy(avctx, s->vaddr, size);
+//	codec_set_context(avctx, &tempCtx);
 
 	memcpy(&buf_size, (uint8_t*)s->vaddr + size, sizeof(int));
 	size += sizeof(int);
@@ -349,7 +343,7 @@ int qemu_avcodec_decode_video (SVCodecState *s)
 		TRACE("There is no frame\n");
 	}
 
-#ifdef CODEC_THREAD
+#ifndef CODEC_THREAD
 	if (buf_size > 0 && buf) {
 		size = sizeof(AVCodecContext);
 		memcpy(s->vaddr, avctx, size);
@@ -548,12 +542,9 @@ void qemu_av_parser_close (void)
 //	av_parser_close(s);
 }
 
-static int abcd = 0;
-
 static int codec_operate (uint32_t apiIndex, SVCodecState *state)
 {
 	int ret = -1;
-	TRACE("%s : count :%d\n", __func__, ++abcd);
 	switch (apiIndex) {
 		/* FFMPEG API */
 		case 1:
@@ -586,7 +577,7 @@ static int codec_operate (uint32_t apiIndex, SVCodecState *state)
 		case 13:
 			qemu_avcodec_default_release_buffer();
 			break;
-#ifdef CODEC_THREAD
+#ifndef CODEC_THREAD
 		case 20:
 			ret = qemu_avcodec_decode_video(state);
 			break;
@@ -599,7 +590,6 @@ static int codec_operate (uint32_t apiIndex, SVCodecState *state)
 			/* wake codec worker thread */
 			wake_codec_wrkthread(state);
 			TRACE("[%d]After wake_codec_wrkthread\n", __LINE__);
-//			sleep_codec_wrkthread(state);
 			break;
 #endif
 		case 24:
@@ -667,8 +657,7 @@ static uint32_t codec_read (void *opaque, target_phys_addr_t addr)
 	return ret;
 }
 
-static int count = 0;
-static int testcount = 0;
+// static int count = 0;
 static void codec_write (void *opaque, target_phys_addr_t addr, uint32_t value)
 {
 	uint32_t offset;
@@ -678,18 +667,17 @@ static void codec_write (void *opaque, target_phys_addr_t addr, uint32_t value)
 	offset = addr;
 	switch (offset) {
 		case FUNC_NUM:
-			TRACE("TEST COUNT:%d\n", ++testcount);
 			target_param->func_num = value;
 			ret = codec_operate(value, state);
-			count = 0;
+//			count = 0;
 			break;
 		case IN_ARGS:
-			target_param->in_args[count++] = value;
+//			target_param->in_args[count++] = value;
 			break;
 		case RET_STR:
 			target_param->ret_args = value;
 		case COPY_RESULT_DATA:
-#ifndef CODEC_THREAD
+#ifdef CODEC_THREAD
 			codec_copy_info(state);
 			sleep_codec_wrkthread(state);
 			qemu_irq_lower(state->dev.irq[1]);
@@ -726,7 +714,7 @@ static void codec_mmio_map (PCIDevice *dev, int region_num,
 	s->mmio_addr = addr;
 }
 
-#ifndef CODEC_THREAD
+#ifdef CODEC_THREAD
 static int codec_copy_info (SVCodecState *s)
 {
 	int i = 0;
@@ -751,7 +739,6 @@ static int codec_copy_info (SVCodecState *s)
 	return 0;
 }
 
-
 static void wake_codec_wrkthread(SVCodecState *s)
 {
 	pthread_mutex_lock(&s->thInfo.lock);
@@ -770,7 +757,6 @@ static void sleep_codec_wrkthread(SVCodecState *s)
 	s->bstart = false;
 	pthread_mutex_unlock(&s->thInfo.lock);
 }
-
 
 static int codec_thread_init(void *opaque)
 {
@@ -806,8 +792,6 @@ static void codec_thread_destroy(void *opaque)
 //	pthread_exit(NULL);
 }
 
-static int abc = 0;
-
 static void* codec_worker_thread(void *opaque)
 {
 	SVCodecState *s = (SVCodecState*)opaque;
@@ -815,8 +799,6 @@ static void* codec_worker_thread(void *opaque)
 	pthread_mutex_lock(&s->thInfo.lock);
 	while (1) {
 		pthread_cond_wait(&s->thInfo.cond, &s->thInfo.lock);
-
-		TRACE("wake_up worker thread :%d\n", abc++);
 		if (s->index == 20) {
 			qemu_avcodec_decode_video(s);
 		} else if (s->index == 22) {
@@ -853,7 +835,7 @@ static int codec_initfn (PCIDevice *dev)
 					PCI_BASE_ADDRESS_MEM_PREFETCH, codec_mem_map);
 	pci_register_bar(&s->dev, 1, SVCODEC_REG_SIZE,
 					PCI_BASE_ADDRESS_SPACE_MEMORY, codec_mmio_map);
-#ifndef CODEC_THREAD 
+#ifdef CODEC_THREAD 
 	codec_thread_init(s);
 #endif
 
