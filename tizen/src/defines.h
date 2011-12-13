@@ -310,6 +310,7 @@ enum {
  */
 typedef struct _STARTUP_OPTION
 {
+	gchar		*target;				/**<Target name> */
 	gchar		*disk;					/**<Target name> */
 	gchar		*vtm;					/**<VTM name>**/
 	int			run_level;				/**<run level> */

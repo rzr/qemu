@@ -442,6 +442,7 @@
   </object>
   <object class="GtkWindow" id="window2">
     <property name="width_request">420</property>
+    <property name="title" translatable="yes">Create new Virtual Target</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="window_position">center</property>
@@ -688,7 +689,7 @@
                           <object class="GtkFileChooserButton" id="filechooserbutton1">
                             <property name="width_request">150</property>
                             <property name="visible">True</property>
-                            <property name="title" translatable="yes">Select an existing SD card</property>
+                            <property name="title" translatable="yes">Select an existing SD card img file(*.img)</property>
                           </object>
                           <packing>
                             <property name="padding">5</property>
@@ -772,6 +773,7 @@
                           <object class="GtkFileChooserButton" id="filechooserbutton2">
                             <property name="width_request">150</property>
                             <property name="visible">True</property>
+                            <property name="title" translatable="yes">Select an existing Disk</property>
                           </object>
                           <packing>
                             <property name="padding">5</property>
