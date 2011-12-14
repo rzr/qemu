@@ -667,6 +667,7 @@ static int startup_option_parser(int *argc, char ***argv)
 	/* 2. Goption parsing */
 
 	context = g_option_context_new ("- Samsung SDK Emulator");
+	g_option_context_set_help_enabled(context, FALSE);
 	g_option_context_add_main_entries (context, options, NULL);
 	g_option_context_add_group (context, gtk_get_option_group (TRUE));
 
