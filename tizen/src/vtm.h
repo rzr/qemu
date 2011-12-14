@@ -53,7 +53,7 @@
 #include "utils.h"
 #include "dialog.h"
 #include "process.h"
-#define MAX_LEN 256
+#define MAX_LEN 1024
 
 gchar *remove_chars(const gchar *str);
 gboolean run_cmd(char *cmd);
