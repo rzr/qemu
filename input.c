@@ -28,13 +28,40 @@
 #include "console.h"
 #include "qjson.h"
 
-static QTAILQ_HEAD(, QEMUPutKbdEntry) kbd_handlers =
-    QTAILQ_HEAD_INITIALIZER(kbd_handlers);
+static QEMUPutKBDEvent *qemu_put_kbd_event;
+static void *qemu_put_kbd_event_opaque;
+static QEMUPutKBDEvent *qemu_put_ps2kbd_event;
+static void *qemu_put_ps2kbd_event_opaque;
 static QTAILQ_HEAD(, QEMUPutLEDEntry) led_handlers = QTAILQ_HEAD_INITIALIZER(led_handlers);
 static QTAILQ_HEAD(, QEMUPutMouseEntry) mouse_handlers =
     QTAILQ_HEAD_INITIALIZER(mouse_handlers);
 static NotifierList mouse_mode_notifiers = 
     NOTIFIER_LIST_INITIALIZER(mouse_mode_notifiers);
+
+void qemu_add_kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
+{
+    qemu_put_kbd_event_opaque = opaque;
+    qemu_put_kbd_event = func;
+}
+
+void qemu_remove_kbd_event_handler(void)
+{
+    qemu_put_kbd_event_opaque = NULL;
+    qemu_put_kbd_event = NULL;
+}
+
+void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
+{
+    qemu_add_kbd_event_handler(func,opaque); // temporary code for compatibility with Xserver
+    qemu_put_ps2kbd_event_opaque = opaque;
+    qemu_put_ps2kbd_event = func;
+}
+
+void qemu_remove_ps2kbd_event_handler(void)
+{
+    qemu_put_ps2kbd_event_opaque = NULL;
+    qemu_put_ps2kbd_event = NULL;
+}
 
 static void check_mode_change(void)
 {
@@ -52,38 +79,6 @@ static void check_mode_change(void)
 
     current_is_absolute = is_absolute;
     current_has_absolute = has_absolute;
-}
-
-QEMUPutKbdEntry *qemu_add_kbd_event_handler(QEMUPutKBDEvent *func,
-                                            void *opaque,
-                                            const char *name)
-{
-    static int index = 0;
-    QEMUPutKbdEntry *s, *cursor;
-
-    QTAILQ_FOREACH(cursor, &kbd_handlers, node) {
-        if (cursor->qemu_put_kbd_event == func &&
-            cursor->qemu_put_kbd_event_opaque == opaque) {
-            return cursor;
-        }
-    }
-
-    s = qemu_mallocz(sizeof(QEMUPutKbdEntry));
-
-    s->qemu_put_kbd_event_opaque = opaque;
-    s->qemu_put_kbd_event = func;
-    s->qemu_put_kbd_name = qemu_strdup(name);
-    s->index = index++;
-
-    QTAILQ_INSERT_TAIL(&kbd_handlers, s, node);
-
-    return s;
-}
-
-void qemu_remove_kbd_event_handler(QEMUPutKbdEntry *entry)
-{
-    QTAILQ_REMOVE(&kbd_handlers, entry, node);
-    qemu_free(entry);
 }
 
 QEMUPutMouseEntry *qemu_add_mouse_event_handler(QEMUPutMouseEvent *func,
@@ -149,12 +144,15 @@ void qemu_remove_led_event_handler(QEMUPutLEDEntry *entry)
 
 void kbd_put_keycode(int keycode)
 {
-    QEMUPutKbdEntry *entry;
-    QTAILQ_FOREACH(entry, &kbd_handlers, node) {
-        if (!entry->qemu_put_kbd_event(entry->qemu_put_kbd_event_opaque,
-                                       keycode)) {
-            break;
-        }
+    if (qemu_put_kbd_event) {
+        qemu_put_kbd_event(qemu_put_kbd_event_opaque, keycode);
+    }
+}
+
+void ps2kbd_put_keycode(int keycode)
+{
+    if (qemu_put_ps2kbd_event) {
+        qemu_put_ps2kbd_event(qemu_put_ps2kbd_event_opaque, keycode);
     }
 }
 
@@ -309,115 +307,4 @@ void qemu_add_mouse_mode_change_notifier(Notifier *notify)
 void qemu_remove_mouse_mode_change_notifier(Notifier *notify)
 {
     notifier_list_remove(&mouse_mode_notifiers, notify);
-}
-
-static void info_keyboard_iter(QObject *data, void *opaque)
-{
-    QDict *kbd;
-    Monitor *mon = opaque;
-
-    kbd = qobject_to_qdict(data);
-    monitor_printf(mon, "%c Keyboard #%" PRId64 ": %s\n",
-                  (qdict_get_bool(kbd, "current") ? '*' : ' '),
-                  qdict_get_int(kbd, "index"), qdict_get_str(kbd, "name"));
-}
-
-void do_info_keyboard_print(Monitor *mon, const QObject *data)
-{
-    QList *kbd_list;
-
-    kbd_list = qobject_to_qlist(data);
-    if (qlist_empty(kbd_list)) {
-        monitor_printf(mon, "No keyboard devices connected\n");
-        return;
-    }
-
-    qlist_iter(kbd_list, info_keyboard_iter, mon);
-}
-
-void qemu_activate_keyboard_event_handler(QEMUPutKbdEntry *entry)
-{
-    QTAILQ_REMOVE(&kbd_handlers, entry, node);
-    QTAILQ_INSERT_HEAD(&kbd_handlers, entry, node);
-}
-
-/*
- * do_info_keyboard(): Show VM keyboard information
- *
- * Each keyboard is represented by a QDict, the returned QObject is
- * a QList of all keyboards.
- *
- * The keyboard QDict contains the following:
- *
- * - "name": keyboard's name
- * - "index": keyboard's index
- * - "current": true if this keyboard is receiving events, false otherwise
- *
- * Example:
- *
- * [ { "name": "QEMU USB Keyboard", "index": 0, "current": false },
- *   { "name": "QEMU PS/2 Keyboard", "index": 1, "current": true } ]
- */
-void do_info_keyboard(Monitor *mon, QObject **ret_data)
-{
-    QEMUPutKbdEntry *cursor;
-    QList *kbd_list;
-    int current;
-
-    kbd_list = qlist_new();
-
-    if (QTAILQ_EMPTY(&kbd_handlers)) {
-        goto out;
-    }
-
-    current = QTAILQ_FIRST(&kbd_handlers)->index;
-    QTAILQ_FOREACH(cursor, &kbd_handlers, node) {
-        QObject *obj;
-        obj = qobject_from_jsonf("{ 'name': %s,"
-                                 "  'index': %d,"
-                                 "  'current': %i }",
-                                 cursor->qemu_put_kbd_name,
-                                 cursor->index,
-                                 current == cursor->index);
-        qlist_append_obj(kbd_list, obj);
-    }
-out:
-    *ret_data = QOBJECT(kbd_list);
-}
-
-/*
- * do_keyboard_set(): Set active keyboard
- *
- * Argument qdict contains
- * - "index": the keyboard index to set
- *
- * Example:
- *
- * { "index": "0" }
- */
-int do_keyboard_set(Monitor *mon, const QDict *qdict, QObject **ret_data)
-{
-    QEMUPutKbdEntry *cursor;
-    int index = qdict_get_int(qdict, "index");
-    int found = 0;
-
-    if (QTAILQ_EMPTY(&kbd_handlers)) {
-        qerror_report(QERR_DEVICE_NOT_FOUND, "keyboard");
-        return -1;
-    }
-
-    QTAILQ_FOREACH(cursor, &kbd_handlers, node) {
-        if (cursor->index == index) {
-            qemu_activate_keyboard_event_handler(cursor);
-            found = 1;
-            break;
-        }
-    }
-
-    if (!found) {
-        qerror_report(QERR_INVALID_PARAMETER, "index");
-        return -1;
-    }
-
-    return 0;
 }

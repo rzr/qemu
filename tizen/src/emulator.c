@@ -694,7 +694,7 @@ static int startup_option_parser(int *argc, char ***argv)
 	if (!startup_option.vtm) 
 		startup_option.vtm = g_strdup_printf("default");
 	startup_option.disk = g_strdup_printf("%semulimg-%s.%s",virtual_target_path, startup_option.vtm, arch);	
-	INFO("target name :%s, disk path: %s", startup_option.vtm, startup_option.disk);
+	INFO("target name :%s, disk path: %s\n", startup_option.vtm, startup_option.disk);
 
 	while(fgets(string, MAXBUF, fp)!=NULL)
 		INFO("%s", string);

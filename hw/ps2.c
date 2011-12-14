@@ -139,7 +139,7 @@ void ps2_queue(void *opaque, int b)
    bit 7    - 0 key pressed, 1 = key released
    bits 6-0 - translated scancode set 2
  */
-static int ps2_put_keycode(void *opaque, int keycode)
+static void ps2_put_keycode(void *opaque, int keycode)
 {
     PS2KbdState *s = opaque;
 
@@ -151,7 +151,6 @@ static int ps2_put_keycode(void *opaque, int keycode)
         keycode = ps2_raw_keycode[keycode & 0x7f];
       }
     ps2_queue(&s->common, keycode);
-    return 0;
 }
 
 uint32_t ps2_read_data(void *opaque)
@@ -597,7 +596,7 @@ void *ps2_kbd_init(void (*update_irq)(void *, int), void *update_arg)
     s->common.update_arg = update_arg;
     s->scancode_set = 2;
     vmstate_register(NULL, 0, &vmstate_ps2_keyboard, s);
-    qemu_add_kbd_event_handler(ps2_put_keycode, s, "QEMU PS/2 Keyboard");
+    qemu_add_ps2kbd_event_handler(ps2_put_keycode, s);
     qemu_register_reset(ps2_kbd_reset, s);
     return s;
 }

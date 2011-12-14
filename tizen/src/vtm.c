@@ -34,7 +34,6 @@
  *
  */
 
-
 #include "vtm.h"
 #include "debug_ch.h"
 #ifndef _WIN32
@@ -52,7 +51,6 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #endif /* !_WIN32 */
-
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, emulmgr);
@@ -242,14 +240,36 @@ void activate_target(char *target_name)
 		emul_add_opt = g_strdup_printf(" ");
 	if(qemu_add_opt == 0)
 		qemu_add_opt = g_strdup_printf(" ");
-#ifndef _WIN32	
-	cmd = g_strdup_printf("./%s --vtm %s %s \
-			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+#ifndef _WIN32
+	if(strcmp(arch, "x86") == 0)
+	{
+		cmd = g_strdup_printf("./%s --vtm %s %s \
+				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
+				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt);
+	}
+	else if(strcmp(arch,"arm")== 0)
+	{
+		cmd = g_strdup_printf("./%s --vtm %s %s \
+			--  -kernel %s/data/kernel-img/zImage %s",
+			binary, target_name, emul_add_opt, path, qemu_add_opt);
+	}
+	else
+	{
+		show_message("Error", "Architecture setting failed");
+		return ;
+	}
 #else /*_WIN32 */
-	cmd = g_strdup_printf("%s --vtm %s %s\
-			-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-			binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+	if(strcmp(arch, "x86") == 0)
+	{
+		cmd = g_strdup_printf("%s --vtm %s %s\
+				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
+				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+	}else if(strcmp(arch, "arm") == 0)
+	{
+			cmd = g_strdup_printf("%s --vtm %s %s \
+			--  -kernel %s/data/kernel-img/zImage %s",
+			binary, target_name, emul_add_opt, path, qemu_add_opt);
+	}
 #endif
 
 	if(!g_spawn_command_line_async(cmd, &error))
@@ -404,6 +424,13 @@ void show_modify_window(char *target_name)
 	char *virtual_target_path;
 	int info_file_status;
 	char full_glade_path[MAX_LEN];
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
 
 	g_create_builder = gtk_builder_new();
 	sprintf(full_glade_path, "%s/etc/vtm.glade", get_root_path());
@@ -414,7 +441,10 @@ void show_modify_window(char *target_name)
 
 	add_window(sub_window, VTM_CREATE_ID);
 
-	gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target");
+	if(strcmp(arch, "x86") == 0)
+		gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target(x86)");
+	else if(strcmp(arch, "arm") == 0)
+		gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target(arm)");	
 
 	virtual_target_path = get_virtual_target_abs_path(target_name);
 	g_info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
@@ -484,6 +514,7 @@ void arch_select_cb(GtkWidget *widget, gpointer data)
 		g_unsetenv("EMULATOR_ARCH");
 		g_setenv("EMULATOR_ARCH",arch,1);
 		INFO( "architecture : %s\n", arch);
+		target_list_filepath = get_targetlist_abs_filepath();
 		refresh_clicked_cb(arch);
 		//		g_free(arch);
 	}
@@ -914,7 +945,7 @@ void make_default_image(void)
 	char *virtual_target_path = get_virtual_target_abs_path("default");
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	char *default_img_x86 = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
-	char *default_img_arm = g_strdup_printf("%semulimg-default.arm", virtual_target_path);
+	//make x86 default image if it's not existed.
 	info_file_status = is_exist_file(default_img_x86);
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
@@ -940,6 +971,13 @@ void make_default_image(void)
 	}
 	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_x86);
 	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+	
+	
+	//make arm default image if it's not existed.
+	g_setenv("EMULATOR_ARCH","arm",1);
+	virtual_target_path = get_virtual_target_abs_path("default");
+	char *default_img_arm = g_strdup_printf("%semulimg-default.arm", virtual_target_path);
+	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 
 	info_file_status = is_exist_file(default_img_arm);
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
@@ -966,6 +1004,7 @@ void make_default_image(void)
 	}
 	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_arm);
 	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+	g_setenv("EMULATOR_ARCH","x86",1);
 
 	free(default_img_x86);
 	free(default_img_arm);
@@ -1015,6 +1054,13 @@ void fill_virtual_target_info(void)
 
 int create_config_file(gchar* filepath)
 {
+	char *arch = getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return -1;
+	}
 	FILE *fp = g_fopen(filepath, "w+");
 
 	if (fp != NULL) {
@@ -1036,7 +1082,10 @@ int create_config_file(gchar* filepath)
 
 		g_fprintf (fp, "\n[%s]\n", ADDITIONAL_OPTION_GROUP);
 		g_fprintf (fp, "%s=\n", EMULATOR_OPTION_KEY);
-		g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice wacom-tablet -usbdevice keyboard -net nic,model=virtio -rtc base=utc -net user");
+		if(strcmp(arch, "x86") == 0)
+			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice wacom-tablet -usbdevice keyboard -net nic,model=virtio -rtc base=utc -net user");
+		else if(strcmp(arch, "arm") == 0)
+			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY," -M s5pc110 -net nic,model=s5pc1xx-usb-otg -usbdevice keyboard -rtc base=utc -net user -redir tcp:1202:10.0.2.16:22");
 		g_fprintf (fp, "[%s]\n", HARDWARE_GROUP);
 		g_fprintf (fp, "%s=\n", RESOLUTION_KEY);
 		g_fprintf (fp, "%s=1\n", BUTTON_TYPE_KEY);
@@ -1787,7 +1836,7 @@ void setup_modify_disk_frame(char *target_name)
 	// file chooser setup
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 	GtkFileFilter *filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "Disk Files");
+	gtk_file_filter_set_name(filter, "Disk Image Files");
 	
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
@@ -1848,7 +1897,7 @@ void setup_modify_sdcard_frame(char *target_name)
 	// file chooser setup
 	GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 	GtkFileFilter *filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "SD Card Image Files");
+	gtk_file_filter_set_name(filter, "SD Card Image Files(*.img)");
 	gtk_file_filter_add_pattern(filter, "*.img");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser), filter);
 
@@ -1976,14 +2025,6 @@ void setup_resolution_frame(void)
 
 void setup_disk_frame(void)
 {
-	// radio button setup
-	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
-	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton13");
-	// file chooser setup
-	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
-	GtkFileFilter *filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "Disk Files");
-
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
 	{
@@ -1991,17 +2032,33 @@ void setup_disk_frame(void)
 		show_message("Error", "architecture setting failed");
 		return ;
 	}
-
+	// radio button setup
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
+	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton13");
+	// file chooser setup
+	GtkWidget *disk_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
+	GtkFileFilter *filter = gtk_file_filter_new();
+	if(strcmp(arch, "x86") == 0)
+	{
+		gtk_file_chooser_button_set_title((GtkFileChooserButton *)disk_filechooser2,"Select existing Base Image(x86)");
+		gtk_file_filter_set_name(filter, "Disk Image Files(*.x86)");
+	}
+	else if(strcmp(arch, "arm") == 0)
+	{
+		gtk_file_chooser_button_set_title((GtkFileChooserButton *)disk_filechooser2,"Select existing Base Image(arm)");
+		gtk_file_filter_set_name(filter, "Disk Image Files(*.arm)");
+	}
+	
 	char *filter_pattern = g_strdup_printf("*.%s",arch);
 	gtk_file_filter_add_pattern(filter, filter_pattern);
 
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser2), filter);
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(disk_filechooser2), filter);
 	set_disk_select_active_cb();	
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
 
 	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
 	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
-	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
+	g_signal_connect(G_OBJECT(disk_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
 
 }
 
@@ -2030,7 +2087,7 @@ void setup_sdcard_frame(void)
 	// file chooser setup
 	GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 	GtkFileFilter *filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "SD Card Image Files");
+	gtk_file_filter_set_name(filter, "SD Card Image Files(*.img)");
 	gtk_file_filter_add_pattern(filter, "*.img");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(sdcard_filechooser), filter);
 
@@ -2065,6 +2122,13 @@ void show_create_window(void)
 {
 	const gchar *skin = NULL;
 	GtkWidget *sub_window;
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed");
+		return ;
+	}
 
 	g_create_builder = gtk_builder_new();
 	char full_glade_path[MAX_LEN];
@@ -2075,6 +2139,11 @@ void show_create_window(void)
 	sub_window = (GtkWidget *)gtk_builder_get_object(g_create_builder, "window2");
 
 	add_window(sub_window, VTM_CREATE_ID);
+
+	if(strcmp(arch, "x86") == 0)
+		gtk_window_set_title(GTK_WINDOW(sub_window), "Create new Virtual Target(x86)");
+	else if(strcmp(arch, "arm") == 0)
+		gtk_window_set_title(GTK_WINDOW(sub_window), "Create new Virtual Target(arm)");	
 
 	fill_virtual_target_info();
 
@@ -2154,6 +2223,7 @@ int main(int argc, char** argv)
 	int status;
 	char *skin = NULL;
 	char full_glade_path[MAX_LEN];
+	
 	working_dir = g_path_get_dirname(buf);
 	status = g_chdir(working_dir);
 	if(status == -1)

@@ -344,9 +344,10 @@ static void escc_reset(DeviceState *d)
 static inline void set_rxint(ChannelState *s)
 {
     s->rxint = 1;
-    if (!s->txint_under_svc) {
-        s->rxint_under_svc = 1;
-        if (s->chn == chn_a) {
+    /* XXX: missing daisy chainnig: chn_b rx should have a lower priority
+       than chn_a rx/tx/special_condition service*/
+    s->rxint_under_svc = 1;
+    if (s->chn == chn_a) {
         s->rregs[R_INTR] |= INTR_RXINTA;
         if (s->wregs[W_MINTR] & MINTR_STATUSHI)
             s->otherchn->rregs[R_IVEC] = IVEC_HIRXINTA;
@@ -359,11 +360,6 @@ static inline void set_rxint(ChannelState *s)
         else
             s->rregs[R_IVEC] = IVEC_LORXINTB;
     }
-    }
-    if (s->chn == chn_a)
-        s->rregs[R_INTR] |= INTR_RXINTA;
-    else
-        s->otherchn->rregs[R_INTR] |= INTR_RXINTB;
     escc_update_irq(s);
 }
 
@@ -766,7 +762,7 @@ static const uint8_t e0_keycodes[128] = {
     1, 3, 25, 26, 49, 52, 72, 73, 97, 99, 111, 118, 120, 122, 67, 0,
 };
 
-static int sunkbd_event(void *opaque, int ch)
+static void sunkbd_event(void *opaque, int ch)
 {
     ChannelState *s = opaque;
     int release = ch & 0x80;
@@ -777,26 +773,26 @@ static int sunkbd_event(void *opaque, int ch)
     case 58: // Caps lock press
         s->caps_lock_mode ^= 1;
         if (s->caps_lock_mode == 2)
-            return 0; // Drop second press
+            return; // Drop second press
         break;
     case 69: // Num lock press
         s->num_lock_mode ^= 1;
         if (s->num_lock_mode == 2)
-            return 0; // Drop second press
+            return; // Drop second press
         break;
     case 186: // Caps lock release
         s->caps_lock_mode ^= 2;
         if (s->caps_lock_mode == 3)
-            return 0; // Drop first release
+            return; // Drop first release
         break;
     case 197: // Num lock release
         s->num_lock_mode ^= 2;
         if (s->num_lock_mode == 3)
-            return 0; // Drop first release
+            return; // Drop first release
         break;
     case 0xe0:
         s->e0_mode = 1;
-        return 0;
+        return;
     default:
         break;
     }
@@ -808,7 +804,6 @@ static int sunkbd_event(void *opaque, int ch)
     }
     KBD_DPRINTF("Translated keycode %2.2x\n", ch);
     put_queue(s, ch | release);
-    return 0;
 }
 
 static void handle_kbd_command(ChannelState *s, int val)
@@ -933,8 +928,7 @@ static int escc_init1(SysBusDevice *dev)
                                      "QEMU Sun Mouse");
     }
     if (s->chn[1].type == kbd) {
-        qemu_add_kbd_event_handler(sunkbd_event, &s->chn[1],
-                "QEMU Sun Keyboard");
+        qemu_add_kbd_event_handler(sunkbd_event, &s->chn[1]);
     }
 
     return 0;

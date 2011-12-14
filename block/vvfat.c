@@ -817,13 +817,7 @@ static int read_directory(BDRVVVFATState* s, int mapping_index)
 
 static inline uint32_t sector2cluster(BDRVVVFATState* s,off_t sector_num)
 {
-    uint32_t ret;
-
-    if (sector_num < s->faked_sectors)
-        ret = 0;
-    else
-        ret = (sector_num-s->faked_sectors)/s->sectors_per_cluster;
-    return ret;
+    return (sector_num-s->faked_sectors)/s->sectors_per_cluster;
 }
 
 static inline off_t cluster2sector(BDRVVVFATState* s, uint32_t cluster_num)

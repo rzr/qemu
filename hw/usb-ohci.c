@@ -618,7 +618,7 @@ static int ohci_service_iso_td(OHCIState *ohci, struct ohci_ed *ed,
 
     starting_frame = OHCI_BM(iso_td.flags, TD_SF);
     frame_count = OHCI_BM(iso_td.flags, TD_FC);
-    relative_frame_number = USUB(ohci->frame_number, starting_frame);
+    relative_frame_number = USUB(ohci->frame_number, starting_frame); 
 
 #ifdef DEBUG_ISOCH
     printf("--- ISO_TD ED head 0x%.8x tailp 0x%.8x\n"
@@ -632,8 +632,8 @@ static int ohci_service_iso_td(OHCIState *ohci, struct ohci_ed *ed,
            iso_td.flags, iso_td.bp, iso_td.next, iso_td.be,
            iso_td.offset[0], iso_td.offset[1], iso_td.offset[2], iso_td.offset[3],
            iso_td.offset[4], iso_td.offset[5], iso_td.offset[6], iso_td.offset[7],
-           ohci->frame_number, starting_frame,
-           frame_count, relative_frame_number,
+           ohci->frame_number, starting_frame, 
+           frame_count, relative_frame_number,         
            OHCI_BM(iso_td.flags, TD_DI), OHCI_BM(iso_td.flags, TD_CC));
 #endif
 
@@ -643,7 +643,7 @@ static int ohci_service_iso_td(OHCIState *ohci, struct ohci_ed *ed,
     } else if (relative_frame_number > frame_count) {
         /* ISO TD expired - retire the TD to the Done Queue and continue with
            the next ISO TD of the same ED */
-        DPRINTF("usb-ohci: ISO_TD R=%d > FC=%d\n", relative_frame_number,
+        DPRINTF("usb-ohci: ISO_TD R=%d > FC=%d\n", relative_frame_number, 
                frame_count);
         OHCI_SET_BM(iso_td.flags, TD_CC, OHCI_CC_DATAOVERRUN);
         ed->head &= ~OHCI_DPTR_MASK;
@@ -690,8 +690,8 @@ static int ohci_service_iso_td(OHCIState *ohci, struct ohci_ed *ed,
     start_offset = iso_td.offset[relative_frame_number];
     next_offset = iso_td.offset[relative_frame_number + 1];
 
-    if (!(OHCI_BM(start_offset, TD_PSW_CC) & 0xe) ||
-        ((relative_frame_number < frame_count) &&
+    if (!(OHCI_BM(start_offset, TD_PSW_CC) & 0xe) || 
+        ((relative_frame_number < frame_count) && 
          !(OHCI_BM(next_offset, TD_PSW_CC) & 0xe))) {
         printf("usb-ohci: ISO_TD cc != not accessed 0x%.8x 0x%.8x\n",
                start_offset, next_offset);
@@ -756,7 +756,7 @@ static int ohci_service_iso_td(OHCIState *ohci, struct ohci_ed *ed,
             if (ret != USB_RET_NODEV)
                 break;
         }
-
+    
         if (ret == USB_RET_ASYNC) {
             return 1;
         }
@@ -1668,30 +1668,6 @@ static USBPortOps ohci_port_ops = {
     .attach = ohci_attach,
     .detach = ohci_detach,
 };
-static void usb_ohci_save(QEMUFile *f, void *opaque)
-{
-    USBPort  *portl = (USBPort *)opaque;
-    OHCIState *port_info;
-    uint32_t  port_state;
-    int i;
-
-    for (i = 0; i < OHCI_MAX_PORTS; i++) {
-        port_info  = portl[i].opaque;
-        port_state = port_info->rhport[portl[i].index].ctrl;
-        if (port_state & OHCI_PORT_CCS) {
-            hw_error("usb-ohci: some device is attached to usb-port. "
-                     "SaveVM is not possible\n");
-        }
-    }
-}
-
-static int usb_ohci_load(QEMUFile *f, void *opaque, int version_id)
-{
-    if (version_id != 1)
-        return -EINVAL;
-
-    return 0;
-}
 
 static void usb_ohci_init(OHCIState *ohci, DeviceState *dev,
                           int num_ports, uint32_t localmem_base)
@@ -1730,9 +1706,6 @@ static void usb_ohci_init(OHCIState *ohci, DeviceState *dev,
 
     ohci->async_td = 0;
     qemu_register_reset(ohci_reset, ohci);
-
-    register_savevm(dev, "usb-ohci", -1, 1,
-                    usb_ohci_save, usb_ohci_load, ohci->rhport);
 }
 
 typedef struct {
