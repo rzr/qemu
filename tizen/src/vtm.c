@@ -1021,7 +1021,7 @@ void make_default_image(void)
 	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_x86);
 	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
 	
-	
+#ifdef _ARM	
 	//make arm default image if it's not existed.
 	g_setenv("EMULATOR_ARCH","arm",1);
 	virtual_target_path = get_virtual_target_abs_path("default");
@@ -1055,8 +1055,9 @@ void make_default_image(void)
 	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
 	g_setenv("EMULATOR_ARCH","x86",1);
 
-	free(default_img_x86);
 	free(default_img_arm);
+#endif
+	free(default_img_x86);
 }	
 
 gboolean run_cmd(char *cmd)
