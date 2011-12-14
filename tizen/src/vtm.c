@@ -168,7 +168,6 @@ void activate_target(char *target_name)
 	char *cmd = NULL;
 	GError *error = NULL;
 	char *enable_kvm = NULL;
-	char *kvm = NULL;
 	gchar *path;
 	char *info_file;
 	char *virtual_target_path;
@@ -180,6 +179,7 @@ void activate_target(char *target_name)
 	char *error_log = NULL;
 	char *arch= NULL;
 	int info_file_status;	
+	int status;
 
 	if(check_shdmem(target_name, CREATE_MODE) == -1)
 		return ;
@@ -220,17 +220,13 @@ void activate_target(char *target_name)
 		g_free(error_log);
 		return;
 	} 
-#ifndef _WIN32
-	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
-	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && strcmp(kvm,"1") == 0)
+
+	enable_kvm = check_kvm(info_file, &status);
+	if(status < 0)
 	{
-		enable_kvm = g_strdup_printf("-enable-kvm");
+		show_message("Error", "Fail to set kvm.");
+		return;
 	}
-	else
-		enable_kvm = g_strdup_printf(" ");
-#else /* _WIN32 */
-	enable_kvm = g_strdup_printf(" ");
-#endif
 
 	binary = get_config_value(info_file, QEMU_GROUP, BINARY_KEY);
 	emul_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, EMULATOR_OPTION_KEY);
@@ -283,6 +279,59 @@ void activate_target(char *target_name)
 	g_free(cmd);
 
 	return;
+}
+
+char *check_kvm(char *info_file, int *status)
+{
+	char *kvm = NULL;
+	char *s_out = NULL;
+	char *s_err = NULL;
+	int exit_status;
+	GError *err = NULL;
+	char *s_out2 = NULL;
+	char *s_err2 = NULL;
+	char *enable_kvm = NULL;
+#ifndef _WIN32
+	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
+	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && (strcmp(kvm,"1") == 0))
+	{
+	
+		if (!g_spawn_command_line_sync("grep kvm /etc/group", &s_out, &s_err, &exit_status, &err)) {
+			TRACE( "Failed to invoke command: %s\n", err->message);
+			g_error_free(err);
+			g_free(s_out);
+			g_free(s_err);
+			*status = -1;
+		}
+		if (!g_spawn_command_line_sync("whoami", &s_out2, &s_err2, &exit_status, &err)) {
+			TRACE( "Failed to invoke command: %s\n", err->message);
+			g_error_free(err);
+			g_free(s_out2);
+			g_free(s_err2);
+			*status = -1;
+		}
+		if(strstr(s_out,s_out2) != NULL)
+			enable_kvm = g_strdup_printf("-enable-kvm");
+		else
+		{
+			INFO("check if you've done [sudo addgroup `whoami` kvm]\n");
+			enable_kvm = g_strdup_printf(" ");
+		}
+	
+		g_free(s_out);
+		g_free(s_err);
+		g_free(s_out2);
+		g_free(s_err2);
+
+	}
+	else
+		enable_kvm = g_strdup_printf(" ");
+#else /* _WIN32 */
+	enable_kvm = g_strdup_printf(" ");
+#endif
+	*status = 1;
+	return enable_kvm;
+
 }
 
 int check_shdmem(char *target_name, int type)
