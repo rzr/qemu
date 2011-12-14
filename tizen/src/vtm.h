@@ -112,5 +112,5 @@ void entry_changed(GtkEditable *entry, gpointer data);
 void make_default_image(void);
 int check_shdmem(char *target_name, int type);
 int socket_init(void);
-
+char* check_kvm(char *info_file, int *status);
 #endif 
