@@ -382,7 +382,9 @@ int read_virtual_target_info_file(gchar *virtual_target_name, VIRTUALTARGETINFO 
 	pvirtual_target_info->ram_size = get_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 
 	buf = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
-//	buf = get_virtual_target_abs_path(virtual_target_name);
+	//	buf = get_virtual_target_abs_path(virtual_target_name);
+	if(!buf && strlen(startup_option.disk) > 0)
+		buf = startup_option.disk;
 	snprintf(pvirtual_target_info->diskimg_path, MAXBUF, "%s", buf);
 	g_free(buf);
 
