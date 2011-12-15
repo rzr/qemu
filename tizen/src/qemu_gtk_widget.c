@@ -569,6 +569,7 @@ static void qemu_sdl_init(qemu_state_t *qemu_state)
 	SDL_SetCursor(sdl_cursor_normal);
 
 	/* finger point surface init */
+	qemu_mts.multitouch_enable = 0;
 	qemu_mts.finger_point_size = DEFAULT_FINGER_POINT_SIZE;
 	temp = qemu_mts.finger_point_size / 2;
 	qemu_mts.finger_point = SDL_CreateRGBSurface(SDL_SRCALPHA | SDL_HWSURFACE,
