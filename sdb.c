@@ -14,7 +14,7 @@
 #include "qemu_socket.h"
 #include "sdb.h"
 #include "nbd.h"
-#include "debug_ch.h"
+#include "tizen/src/debug_ch.h"
 
 //DEFAULT_DEBUG_CHANNEL(qemu);
 MULTI_DEBUG_CHANNEL(qemu, sdb);

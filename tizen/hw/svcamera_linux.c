@@ -30,7 +30,7 @@
 #include "svcamera.h"
 #include "pci.h"
 #include "kvm.h"
-#include "debug_ch.h"
+#include "tizen/src/debug_ch.h"
 
 #include <linux/videodev2.h>
 

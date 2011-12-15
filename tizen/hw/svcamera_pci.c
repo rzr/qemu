@@ -41,7 +41,7 @@
 #include "pci_ids.h"
 
 #include "svcamera.h"
-#include "debug_ch.h"
+#include "tizen/src/debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, camera_pci);
 
