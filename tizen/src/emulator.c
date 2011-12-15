@@ -50,6 +50,7 @@
 #include "sensor_server.h"
 #include <assert.h>
 #include <linux/version.h>
+#include <sys/utsname.h> 
 
 /* changes for saving emulator state */
 #ifdef __MINGW32__
@@ -622,7 +623,8 @@ static void init_startup_option(void)
  * @return   success  0,  fail    -1
  * @date     May 18. 2009
  * */
-
+ 
+struct utsname host_uname_buf;
 static int startup_option_parser(int *argc, char ***argv)
 {
 	/* 1. Goption handling */
@@ -684,9 +686,16 @@ static int startup_option_parser(int *argc, char ***argv)
 	INFO("=========INFO START========\n");
 	INFO("Current time: %s\n", timeinfo);
 	INFO("SDK version : %s(%s)  Build date: %s\n", build_version, build_git, build_date);
-	INFO("Host kernel version : (%d, %d, %d)\n", LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff , LINUX_VERSION_CODE & 0xff);
+	INFO("Qemu build machine linux kernel version : (%d, %d, %d)\n",
+		LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff , LINUX_VERSION_CODE & 0xff);
+
+    	if (uname(&host_uname_buf) == 0) {
+		INFO("Host uname : %s %s %s %s %s\n", host_uname_buf.sysname, host_uname_buf.nodename,
+			host_uname_buf.release, host_uname_buf.version, host_uname_buf.machine);
+    	}
+	
 	INFO("Host gtk version : (%d, %d, %d)\n", GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION);
-	INFO("Host sdl version : (%d, %d, %d)\n", SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);	
+	INFO("Host sdl version : (%d, %d, %d)\n", SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
 
 	char *virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
