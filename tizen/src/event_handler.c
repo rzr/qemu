@@ -6,13 +6,15 @@
  * Contact: 
  * DoHyung Hong <don.hong@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * JinKyu Kim <fredrick.kim@samsung.com>
+ * Hyunjun Son <hj79.son@samsung.com>
+ * SangJin Kim <sangjin3.kim@samsung.com>
+ * MunKyu Im <munkyu.im@samsung.com>
  * KiTae Kim <kt920.kim@samsung.com>
  * JinHyung Jo <jinhyung.jo@samsung.com>
- * YuYeon Oh <yuyeon.oh@samsung.com>
- * WooJin Jung <woojin2.jung@samsung.com>
  * SungMin Ha <sungmin82.ha@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
+ * JiHye Kim <jihye1128.kim@samsung.com>
+ * GiWoong Kim <giwoong.kim@samsung.com>
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * DongKyun Yun <dk77.yun@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -34,6 +36,7 @@
  *
  */
 
+/* This is a modified and simplified version of original sdl.c in qemu */
 /* This is a modified and simplified version of original sdl.c in qemu */
 /*
  * QEMU System Emulator
@@ -66,7 +69,6 @@
 #include "utils.h"
 #include "tools.h"
 #include "debug_ch.h"
-#include <sys/utsname.h>
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, event_handler);
@@ -90,7 +92,7 @@ static int gui_key_modifier_pressed;
 static int gui_keysym;
 static kbd_layout_t *kbd_layout = NULL;
 extern multi_touch_state qemu_mts;
-extern struct utsname host_uname_buf;
+
 
 static uint8_t gtk_keyevent_to_keycode_generic(const GdkEventKey *event)
 {
@@ -345,20 +347,19 @@ static void reset_keys(void)
 
 static void gtk_process_key(GdkEventKey *event)
 {
-	int keycode, v;
-	int i;
+	static guint ev_state = 0;
+	static GdkEventKey prev_event ;
+	int keycode;
 
 	if (event->keyval == GDK_Pause) {
 		/* specific case */
-		v = 0;
-
-		if (event->type == GDK_KEY_RELEASE)
-		v |= 0x80;
+		int v = (event->type == GDK_KEY_RELEASE) ? 0x80 : 0;
 
 		kbd_put_keycode(0xe1);
 		kbd_put_keycode(0x1d | v);
 		kbd_put_keycode(0x45 | v);
-		return;
+
+		prev_event = *event; return;
 	}
 
 	if (kbd_layout)
@@ -370,12 +371,15 @@ static void gtk_process_key(GdkEventKey *event)
 	case 0x00:
 		/* sent when leaving window: reset the modifiers state */
 		reset_keys();
-		return;
+		prev_event = *event; return;
+	case 0x2a:                          /* Left Shift */
+	case 0x36:                          /* Right Shift */
 	case 0x1d:                          /* Left CTRL */
 		if (event->type == GDK_KEY_RELEASE) {
 			qemu_mts.multitouch_enable = 0;
 
 			if (qemu_mts.finger_cnt > 0) {
+				int i;
 				for (i = 0; i < qemu_mts.finger_cnt; i++) {
 					kbd_mouse_event(qemu_mts.finger_slot[i].dx, qemu_mts.finger_slot[i].dy, i, 0);
 				}
@@ -384,9 +388,8 @@ static void gtk_process_key(GdkEventKey *event)
 		} else {
 			qemu_mts.multitouch_enable = 1;
 		}
+
 	case 0x9d:                          /* Right CTRL */
-	case 0x2a:                          /* Left Shift */
-	case 0x36:                          /* Right Shift */
 	case 0x38:                          /* Left ALT */
 	case 0xb8:                         /* Right ALT */
 		if (event->type == GDK_KEY_RELEASE)
@@ -394,28 +397,50 @@ static void gtk_process_key(GdkEventKey *event)
 		else
 			modifiers_state[keycode] = 1;
 		break;
-	case 0x45: /* num lock */
-	case 0x3a: /* caps lock */
-		/* GTK does send the key up event, so we dont generate it */
-		/*kbd_put_keycode(keycode);
-		kbd_put_keycode(keycode | 0x80);
-		return;*/
+	case 0x45:	/* Num Lock */
+		if (event->type == GDK_KEY_RELEASE)
+			ev_state ^= GDK_MOD2_MASK;
+		break;
+	case 0x3a: 	/* Caps Lock */
+		if (event->type == GDK_KEY_RELEASE)
+			ev_state ^= GDK_LOCK_MASK;
 		break;
 	}
 
+//	fprintf(stderr, "input key = %02x %s\n", keycode, (event->type == GDK_KEY_PRESS)? "press":"release");
+
+	if (event->type == GDK_KEY_PRESS) {
+		/* Put release keycode of previous pressed key becuase GTK doesn't generate release event of long-pushed key */
+		if (prev_event.type == GDK_KEY_PRESS &&
+			prev_event.state == event->state &&
+			prev_event.hardware_keycode == event->hardware_keycode) {
+			if (keycode & 0x80)
+				kbd_put_keycode(0xe0);
+			kbd_put_keycode(keycode | 0x80);
+		}
+		else {
+			/* synchronize state of Num Lock to host's event->state */
+			if ((event->state ^ ev_state) & GDK_MOD2_MASK) {
+				ev_state ^= GDK_MOD2_MASK;
+				kbd_put_keycode(0x45 & 0x7f);
+				kbd_put_keycode(0x45 | 0x80);
+			}
+
+			/* synchronize state of Caps Lock to host's event->state */
+			if ((event->state ^ ev_state) & GDK_LOCK_MASK) {
+				ev_state ^= GDK_LOCK_MASK;
+				kbd_put_keycode(0x3a & 0x7f);
+				kbd_put_keycode(0x3a | 0x80);
+			}
+		}
+	}
+
 	/* now send the key code */
-
-	if (keycode & 0x80) {
+	if (keycode & 0x80)
 		kbd_put_keycode(0xe0);
-	}
+	kbd_put_keycode((event->type == GDK_KEY_RELEASE) ? (keycode | 0x80) : (keycode & 0x7f));
 
-	if (event->type == GDK_KEY_RELEASE) {
-		kbd_put_keycode(keycode | 0x80);
-	}
-
-	else {
-		kbd_put_keycode(keycode & 0x7f);
-	}
+	prev_event = *event; return;
 }
 
 
@@ -1056,15 +1081,10 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
   */
 gboolean configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
 {
-	// Ubuntu 11.10 configure_event bug work-around
-	if (strcmp(host_uname_buf.release, "3.0.0-12-generic") == 0 && event->x == 0 && event->y == 0) {
-		return TRUE;
-	}
-
 	/* just save new values in configuration structure */
+
 	configuration.main_x = event->x;
 	configuration.main_y = event->y;
-	INFO("configure_event x=%d, y=%d", event->x, event->y);
 
 	return TRUE;
 }

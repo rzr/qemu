@@ -20,7 +20,7 @@
 #include "qemu-log.h"
 #include <sys/time.h>
 
-#include "debug_ch.h"
+#include "tizen/src/debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, gpi);
 
 /* fixme: move to virtio-gpi.h */

@@ -1,10 +1,13 @@
 /*
- * Samsung Virtual Codec device(PCI) for Linux host.
+ * Virtual Codec device
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Authors:
+ * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
+ *  SeokYeon Hwang <syeon.hwang@samsung.com>
+ *  DongKyun Yun <dk77.yun@samsung.com>
+ *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -123,7 +126,7 @@ int qemu_avcodec_open (SVCodecState *s)
 	memcpy(avctx, s->vaddr, size);
 	memcpy(&tempCodec, (uint8_t*)s->vaddr + size, sizeof(AVCodec));
 
-	// restore AVCodecContext's pointer variables
+	/* restore AVCodecContext's pointer variables */
 	codec_set_context(avctx, &tempCtx);
 
 	codec_id = tempCodec.id;
@@ -502,14 +505,6 @@ void qemu_av_picture_copy (SVCodecState *s)
 /* AVCodecParserContext *av_parser_init (int codec_id) */
 void qemu_av_parser_init (void)
 {
-/*	AVCodecParserContext *s;
-	int codec_id;
-
-	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0], &codec_id, sizeof(int), 0);
-
-	s = av_parser_init(codec_id);
-
-	cpu_memory_rw_debug(cpu_single_env, target_param->ret_args, s, sizeof(AVCodecParserContext), 1); */
 }
 
 /* int av_parser_parse(AVCodecParserContext *s, AVCodecContext *avctx,
@@ -519,27 +514,12 @@ void qemu_av_parser_init (void)
  */
 int qemu_av_parser_parse (void)
 {
-/*	AVCodecParserContext *s;
-	AVCodecContext *avctx;
-	uint8_t *poutbuf;
-	int poutbuf_size;
-	const uint8_t *buf;
-	int buf_size;
-	int64_t pts;
-	int64_t pos;
-	int ret;
-
-	ret = av_parser_parse(s, avctx, &poutbuf, &poutbuf_size, buf, buf_size, pts, pos);
-
-	return ret; */
 	return 0;
 }
 
 /* void av_parser_close (AVCodecParserContext *s) */
 void qemu_av_parser_close (void)
 {
-//	AVCodecParserContext *s;
-//	av_parser_close(s);
 }
 
 static int codec_operate (uint32_t apiIndex, SVCodecState *state)
@@ -604,34 +584,6 @@ static int codec_operate (uint32_t apiIndex, SVCodecState *state)
 		case 32:
 			qemu_av_parser_close();
 			break;
-		/* THEORA API */
-/*		case 40:
-			ret = qemu_th_decode_ctl();
-			break;
-		case 41:
-			ret = qemu_th_decode_alloc();
-			break;
-		case 42:
-			ret = qemu_th_decode_headerin();
-			break;
-		case 43:
-			ret = qemu_th_decode_packetin();
-			break;
-		case 44:
-			ret = qemu_th_decode_ycbcr_out();
-			break;
-		case 45:
-			qemu_th_info_clear();
-			break;
-		case 46:
-			qemu_th_comment_clear();
-			break;
-		case 47:
-			qemu_th_setup_free();
-			break;
-		case 48:
-			qemu_th_decode_free();
-			break; */
 		default:
 			WARN("The api index does not exsit!. api index:%d\n", apiIndex);
 	}
@@ -657,7 +609,6 @@ static uint32_t codec_read (void *opaque, target_phys_addr_t addr)
 	return ret;
 }
 
-// static int count = 0;
 static void codec_write (void *opaque, target_phys_addr_t addr, uint32_t value)
 {
 	uint32_t offset;
@@ -667,7 +618,7 @@ static void codec_write (void *opaque, target_phys_addr_t addr, uint32_t value)
 	offset = addr;
 	switch (offset) {
 		case FUNC_NUM:
-			target_param->func_num = value;
+//			target_param->func_num = value;
 			ret = codec_operate(value, state);
 //			count = 0;
 			break;
