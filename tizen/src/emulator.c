@@ -66,7 +66,9 @@
 #include <pthread.h>
 #ifndef _WIN32
 #include <sys/ipc.h>  
-#include <sys/shm.h> 
+#include <sys/shm.h>
+#else
+#include <windows.h>
 #endif
 
 #include "opengl_server.h"
@@ -888,6 +890,42 @@ int init_shdmem()
 
 	//	shmctl(shmid, IPC_RMID, 0);
 	//	shmdt(shared_memory);
+#else
+	tizen_base_port = get_sdb_base_port();
+	HANDLE hMapFile;
+	char* pBuf;
+	char* port_in_use;
+	char *shared_memory;
+	shared_memory = g_strdup_printf("%s", startup_option.vtm);
+	port_in_use =  g_strdup_printf("%d", tizen_base_port);
+    hMapFile = CreateFileMapping(
+                 INVALID_HANDLE_VALUE,    // use paging file
+                 NULL,                    // default security
+                 PAGE_READWRITE,          // read/write access
+                 0,                       // maximum object size (high-order DWORD)
+                 50,                // maximum object size (low-order DWORD)
+                 port_in_use);                 // name of mapping object
+    if (hMapFile == NULL)
+    {
+		ERR("Could not create file mapping object (%d).\n", GetLastError());
+		return -1;
+    }
+    pBuf = MapViewOfFile(hMapFile,   // handle to map object
+                        FILE_MAP_ALL_ACCESS, // read/write permission
+                        0,
+                        0,
+                        50);
+
+    if (pBuf == NULL)
+    {
+		ERR("Could not map view of file (%d).\n", GetLastError());
+		CloseHandle(hMapFile);
+		return -1;
+    }
+	
+	CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
+	free(port_in_use);
+	free(shared_memory);
 #endif
 	return 0;
 }

@@ -120,6 +120,12 @@ void destroy_emulator(void)
 		ERR( "fail to remove shared memory\n");
 	else
 		INFO( "succedd to remove shared memory\n");
+#else
+	char *port_in_use;
+	port_in_use = g_strdup_printf("%d", tizen_base_port);
+	HANDLE hMapFile = OpenFileMapping(FILE_MAP_READ, TRUE, port_in_use);
+	if(hMapFile)
+		CloseHandle(hMapFile);
 #endif
 	return;
 }
