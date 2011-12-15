@@ -123,7 +123,7 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 
 	gtk_widget_hide_all(widget);
 
-	if (strcmp(host_uname_buf.release, "2.6.35-22-generic") == 0) { // Ubuntu 10.10 resize window bug work-around
+	if (strcmp(host_uname_buf.release, "2.6.35-22-generic") == 0) { // for ubuntu 10.10 resize window bug
 		gtk_decorated_window_move_resize_window (GTK_WINDOW(widget),
 			pconfiguration->main_x, pconfiguration->main_y,
 			pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
