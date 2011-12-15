@@ -41,7 +41,6 @@ else
 fi
 
 EMULATOR_DATA_PATH="$EMULATOR_BIN_PATH/data"
-EMULATOR_SKIN_PATH="$EMULATOR_BIN_PATH/skins"
 EMULATOR_KERNEL_PATH="${EMULATOR_DATA_PATH}/kernel-img"
 EMULATOR_KERNEL_NAME_ARM="zImage_arm"
 EMULATOR_KERNEL_NAME_X86="bzImage"
@@ -92,8 +91,6 @@ display_help_mesgs () {
 	echo "\t\t Run emulator with gdb"
 	echo "\t --ddd-kernel"
 	echo "\t\t Run emulator with DDD(Data Display Debugger)"
-	echo "\t --q | --quick-start"
-	echo "\t\t quick start of emulator without showing option window"
 	echo "\t --t [new image] | --target [new image]"
 	echo "\t\t Run emulator with new image"
 	echo "\t --h | --help"
@@ -109,9 +106,6 @@ parse_input_params () {
 	while [ "$1" != "" ]
 	do
 		case $1 in
-		disk*)
-			BOOT_OPTION="--disk"
-			shift ;;
 		nfs*)
 			BOOT_OPTION="--target"
 			shift ;;
@@ -159,9 +153,6 @@ parse_input_params () {
 			ulimit -c 0
 			emul_opts="--no-dump $emul_opts"
 			shift ;;
-		--q|--quick-start)
-			quick_start=1
-			shift;;
 		--t|--target)
 			while echo "$2" | grep "^[^-]"
 			do
@@ -206,7 +197,6 @@ set_terminal_type () {
 
 set_user_env () {
 	test -e "/dev/kvm" && kvm_opt="-enable-kvm"
-	quick_start=0
 
 	set_terminal_type
 	parse_input_params $@
@@ -247,23 +237,23 @@ set_devel_env () {
 	echo "Running from build directory"
 	EMULATOR_BIN_PATH="$build_dir"
 
-#        test -h "$build_dir/skins" || ln -s "$build_dir/../skins" "$build_dir/skins"
-
 	case ${TARGET_ARCH} in
 		*arm)
+		        test -d "$build_dir/../etc" || mkdir "$build_dir/../etc"
+		        test -f "$build_dir/../etc/DEBUGCH" || cp "$build_dir/DEBUGCH" "$build_dir/../etc/" 
+		        test -d "$build_dir/../arm" || mkdir "$build_dir/../arm"
+		        test -h "$build_dir/../arm/conf" || ln -s "$build_dir/../conf" "$build_dir/../arm/conf"
+		        test -h "$build_dir/../arm/data" || ln -s "$build_dir/../data" "$build_dir/../arm/data"
+		        test -d "$build_dir/../arm/VMs" || mkdir "$build_dir/../arm/VMs" 
+		        test -d "$build_dir/../arm/VMs/default" || mkdir "$build_dir/../arm/VMs/default" 
+		        test -d "$build_dir/../arm/VMs/default/logs" || mkdir "$build_dir/../arm/VMs/default/logs" 
+		        test -f "$build_dir/../arm/VMs/default/config.ini" || cp "$build_dir/config_dbg_arm.ini" "$build_dir/../arm/VMs/default/config.ini" 
+
 			# find the target path
 			test "$BOOT_OPTION" = "--disk" && TARGET_PATH="$EMULATOR_BIN_PATH/../../emulator-image/$TARGET_NAME"
+
 			# fine the kernel image
-			EMULATOR_KERNEL_LINK="$EMULATOR_BIN_PATH/../../../kernel/linux-current"
-			if test -h "$EMULATOR_KERNEL_LINK" -a -d "$EMULATOR_KERNEL_LINK/arch/arm/boot"
-			then
-				EMULATOR_KERNEL_PATH="$EMULATOR_KERNEL_LINK/arch/arm/boot"
-				EMULATOR_KERNEL_NAME_ARM="zImage"
-				if test "$DDD" != "" 
-				then
-					DDD="$DDD --debugger /usr/bin/arm-linux/bin/arm-linux-gdb $EMULATOR_KERNEL_PATH/../../../vmlinux"
-				fi
-			elif test -d "$EMULATOR_BIN_PATH/../../../kernel/linux-2.6.32/arch/arm/boot"
+			if test -d "$EMULATOR_BIN_PATH/../../../kernel/linux-2.6.32/arch/arm/boot"
 			then
 				EMULATOR_KERNEL_PATH="$EMULATOR_BIN_PATH/../../../kernel/linux-2.6.32/arch/arm/boot"
 				EMULATOR_KERNEL_NAME_ARM="zImage"
@@ -277,27 +267,20 @@ set_devel_env () {
 			;;
 		*86)	
 		        test -d "$build_dir/../etc" || mkdir "$build_dir/../etc"
+		        test -f "$build_dir/../etc/DEBUGCH" || cp "$build_dir/DEBUGCH" "$build_dir/../etc/" 
 		        test -d "$build_dir/../x86" || mkdir "$build_dir/../x86"
 		        test -h "$build_dir/../x86/conf" || ln -s "$build_dir/../conf" "$build_dir/../x86/conf"
 		        test -h "$build_dir/../x86/data" || ln -s "$build_dir/../data" "$build_dir/../x86/data"
 		        test -d "$build_dir/../x86/VMs" || mkdir "$build_dir/../x86/VMs" 
 		        test -d "$build_dir/../x86/VMs/default" || mkdir "$build_dir/../x86/VMs/default" 
 		        test -d "$build_dir/../x86/VMs/default/logs" || mkdir "$build_dir/../x86/VMs/default/logs" 
-		        test -f "$build_dir/../x86/VMs/default/config.ini" || cp "$build_dir/config_dbg.ini" "$build_dir/../x86/VMs/default/config.ini" 
+		        test -f "$build_dir/../x86/VMs/default/config.ini" || cp "$build_dir/config_dbg_x86.ini" "$build_dir/../x86/VMs/default/config.ini" 
 
 			# find the target path
 			test "$BOOT_OPTION" = "--disk" && TARGET_PATH="$EMULATOR_BIN_PATH/../../../../emulator-image/$TARGET_NAME"
 
 			# fine the kernel image
-			EMULATOR_KERNEL_LINK="$EMULATOR_BIN_PATH/../../../emulator-kernel"
-			if test -h "$EMULATOR_KERNEL_LINK" -a -d "$EMULATOR_KERNEL_LINK/arch/x86/boot"
-			then
-				EMULATOR_KERNEL_PATH="$EMULATOR_KERNEL_LINK/arch/x86/boot"
-				if test "$DDD" != "" 
-				then
-					DDD="$DDD $EMULATOR_KERNEL_PATH/../../../vmlinux"
-				fi
-			elif test -d "$EMULATOR_BIN_PATH/../../../emulator-kernel/arch/x86/boot"
+			if test -d "$EMULATOR_BIN_PATH/../../../emulator-kernel/arch/x86/boot"
 			then
 				EMULATOR_KERNEL_PATH="$EMULATOR_BIN_PATH/../../../emulator-kernel/arch/x86/boot"
 				if test "$DDD" != "" 
@@ -310,13 +293,6 @@ set_devel_env () {
 			;;
 	esac
 
-	# find the skins
-	if test -d "$EMULATOR_BIN_PATH/../skins"
-	then
-		EMULATOR_SKIN_PATH="$EMULATOR_BIN_PATH/../skins"
-		echo "Found skins in $EMULATOR_SKIN_PATH"
-	fi
-
 	# find the bios path
 	if test -d "$EMULATOR_BIN_PATH/../data/pc-bios"
 	then
@@ -326,51 +302,6 @@ set_devel_env () {
 }
 
 set_emulator_options () {
-	if test \! -d "$EMULATOR_SKIN_PATH"
-	then
-		echo "No emulator skins found..." >> $STDERR_LOGFILE
-		exit 1
-	fi
-
-	target_conf="$TARGET_PATH/TargetInfo.conf"
-	if test -f "$target_conf"
-	then
-		skin=`grep "^EmulatorSkinPath=" "$target_conf" | cut -f2 -d=`
-		case "$skin" in
-		/*)
-			;;
-		skin*)
-			skin="$EMULATOR_SKIN_PATH/../$skin"
-			;;
-		*)
-			skin="$EMULATOR_SKIN_PATH/$skin"
-			;;
-		esac
-	fi
-
-	# no skin, search for one
-	if test "$skin" = ""
-	then
-		skin="$EMULATOR_SKIN_PATH/emul_480x800/default.dbi"
-	fi
-	if test \! -f "$skin"
-	then
-		echo "No skin file found" >> $STDERR_LOGFILE
-		exit 1
-	fi
-
-	export EMULATOR_SKIN_PATH
-
-	case ${TARGET_ARCH} in
-		*arm)
-			#qemu_skin
-			emul_opts="$emul_opts --skin $skin"
-
-			#quick_start
-			emul_opts="$emul_opts --quick-start $quick_start"
-			;;
-	esac
-	
 	#disable dump
 	if test EMUL_DUMP = 0
 	then
@@ -478,7 +409,6 @@ case ${TARGET_ARCH} in
 		DGLES2_BACKEND='env DGLES2_BACKEND=osmesa'
 		# export DGLES2_BACKEND="osmesa"
 		exec $GDB $DGLES2_BACKEND "${EMULATOR_BIN_PATH}/emulator-arm" \
-			$BOOT_OPTION "$TARGET_PATH" \
 			$emul_opts -- $qemu_arm_opts $qemu_common_opts $debug_ports
 		;;
 	*86)
@@ -488,8 +418,7 @@ case ${TARGET_ARCH} in
 			$BOOT_OPTION "$TARGET_PATH" \
 			$emul_opts -- $qemu_x86_opts $qemu_common_opts $debug_ports $kvm_opt 1>> $EMUL_LOGFILE 2> stderr.log
 		else
-		exec $GDB "${EMULATOR_BIN_PATH}/emulator-x86" --vtm default \
-			$BOOT_OPTION "$TARGET_PATH" \
+		exec $GDB "${EMULATOR_BIN_PATH}/emulator-x86" \
 			$emul_opts -- $qemu_x86_opts $qemu_common_opts $debug_ports $kvm_opt
 		fi
 		;;
