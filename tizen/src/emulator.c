@@ -49,6 +49,7 @@
 #include "vl.h"
 #include "sensor_server.h"
 #include <assert.h>
+#include <linux/version.h>
 
 /* changes for saving emulator state */
 #ifdef __MINGW32__
@@ -683,8 +684,9 @@ static int startup_option_parser(int *argc, char ***argv)
 	INFO("=========INFO START========\n");
 	INFO("Current time: %s\n", timeinfo);
 	INFO("SDK version : %s(%s)  Build date: %s\n", build_version, build_git, build_date);
-	INFO("gtk version : (%d, %d, %d)\n", GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION);
-	INFO("sdl version : (%d, %d, %d)\n", SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);	
+	INFO("Host kernel version : (%d, %d, %d)\n", LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff , LINUX_VERSION_CODE & 0xff);
+	INFO("Host gtk version : (%d, %d, %d)\n", GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION);
+	INFO("Host sdl version : (%d, %d, %d)\n", SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);	
 
 	char *virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
