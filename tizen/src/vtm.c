@@ -284,45 +284,25 @@ void activate_target(char *target_name)
 char *check_kvm(char *info_file, int *status)
 {
 	char *kvm = NULL;
-	char *s_out = NULL;
-	char *s_err = NULL;
-	int exit_status;
-	GError *err = NULL;
-	char *s_out2 = NULL;
-	char *s_err2 = NULL;
 	char *enable_kvm = NULL;
+	int fd;
 #ifndef _WIN32
 	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
-	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && (strcmp(kvm,"1") == 0))
+	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && strcmp(kvm,"1") == 0)
 	{
-	
-		if (!g_spawn_command_line_sync("grep kvm /etc/group", &s_out, &s_err, &exit_status, &err)) {
-			TRACE( "Failed to invoke command: %s\n", err->message);
-			g_error_free(err);
-			g_free(s_out);
-			g_free(s_err);
-			*status = -1;
-		}
-		if (!g_spawn_command_line_sync("whoami", &s_out2, &s_err2, &exit_status, &err)) {
-			TRACE( "Failed to invoke command: %s\n", err->message);
-			g_error_free(err);
-			g_free(s_out2);
-			g_free(s_err2);
-			*status = -1;
-		}
-		if(strstr(s_out,s_out2) != NULL)
-			enable_kvm = g_strdup_printf("-enable-kvm");
-		else
+		fd = open("/dev/kvm", O_RDWR);
+		if (fd == -1)
 		{
-			INFO("check if you've done [sudo addgroup `whoami` kvm]\n");
-			enable_kvm = g_strdup_printf(" ");
-		}
-	
-		g_free(s_out);
-		g_free(s_err);
-		g_free(s_out2);
-		g_free(s_err2);
-
+			ERR( "Could not access KVM kernel module: %m\n");
+			show_message("Error", "Could not access KVM kernel module: Permission denied\n"
+                "You can add the login user to the KVM group by following command \n"
+                 " - $sudo addgroup `whoami` kvm");
+			*status = fd;
+	    }
+		else
+			enable_kvm = g_strdup_printf("-enable-kvm");
+		 
+		close(fd);
 	}
 	else
 		enable_kvm = g_strdup_printf(" ");

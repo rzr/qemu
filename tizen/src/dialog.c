@@ -155,7 +155,7 @@ void show_sized_message(const char *szTitle, const char *szMessage, const int ma
 	gtk_label_set_line_wrap(GTK_LABEL(label),TRUE);
 	gtk_label_set_line_wrap_mode(GTK_LABEL(label), PANGO_WRAP_CHAR);
 	gtk_label_set_ellipsize(GTK_LABEL(label),PANGO_ELLIPSIZE_MIDDLE);
-	gtk_widget_set_tooltip_text(GTK_LABEL(label),szMessage);
+	gtk_widget_set_tooltip_text(GTK_WIDGET(label),szMessage);
 	/* set Padding arround Label */ 
 	
 	gtk_misc_set_padding(GTK_MISC(label), 10, 10);
