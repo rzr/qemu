@@ -3,8 +3,10 @@
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Authors:
- * 	JinHyung Jo <jinhyung.jo@samsung.com>
+ * Contact:
+ * JinHyung Jo <jinhyung.jo@samsung.com>
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * DongKyun Yun <dk77.yun@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
