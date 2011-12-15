@@ -1,9 +1,9 @@
 /*
- * Virtual Codec device(PCI)
+ * Virtual Codec device
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Authors:
+ * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
  *  SeokYeon Hwang <syeon.hwang@samsung.com>
  *  DongKyun Yun <dk77.yun@samsung.com>
