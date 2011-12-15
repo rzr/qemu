@@ -39,6 +39,7 @@
 //#include "hw/smb380.h"
 #include "qemu_gtk_widget.h"
 #include "about_version.h"
+#include <sys/utsname.h>
 
 #ifdef __MINGW32__
 #include <winsock2.h>
@@ -56,6 +57,7 @@ MULTI_DEBUG_CHANNEL(tizen, menu_callback);
 
 extern GtkWidget *pixmap_widget;
 extern GtkWidget *fixed;
+extern struct utsname host_uname_buf;
 
 extern int emul_create_process(const gchar cmd[]);
 
@@ -114,10 +116,23 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	GdkBitmap *SkinMask = NULL;
 	GdkPixmap *SkinPixmap = NULL;
 	GtkWidget *sdl_widget = NULL;
+	GdkGeometry hints;
 
 	gtk_widget_hide_all(widget);
-	gtk_decorated_window_move_resize_window (GTK_WINDOW(widget), pconfiguration->main_x, pconfiguration->main_y,
-		pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
+
+	if (strcmp(host_uname_buf.release, "2.6.35-22-generic") == 0) { // Ubuntu 10.10 resize window bug work-around
+		gtk_decorated_window_move_resize_window (GTK_WINDOW(widget),
+			pconfiguration->main_x, pconfiguration->main_y,
+			pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
+	} else {
+		hints.width_inc = hints.min_width = hints.base_width = pDev->mode_SkinImg[nMode].nImgWidth;
+		hints.height_inc = hints.min_height = hints.base_height = pDev->mode_SkinImg[nMode].nImgHeight;
+		gtk_window_set_geometry_hints (GTK_WINDOW (widget), NULL, &hints,
+			GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+
+		gtk_window_resize (GTK_WINDOW(widget),
+			pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
+	}
 
 	/*
 	 * to generate the configure, expose_event, when the large image goes
@@ -147,6 +162,7 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	gtk_window_move(GTK_WINDOW(widget), pconfiguration->main_x, pconfiguration->main_y);
 	gtk_window_set_keep_above(GTK_WINDOW (widget), pconfiguration->always_on_top);
 	gtk_widget_show_all(widget);
+	gtk_widget_queue_resize (widget);
 
 	return 0;
 }
