@@ -50,7 +50,7 @@
 #include "sensor_server.h"
 #include <assert.h>
 #include <linux/version.h>
-#include <sys/utsname.h> 
+#include <sys/utsname.h>
 
 /* changes for saving emulator state */
 #ifdef __MINGW32__
@@ -625,7 +625,7 @@ static void init_startup_option(void)
  * @return   success  0,  fail    -1
  * @date     May 18. 2009
  * */
- 
+
 struct utsname host_uname_buf;
 static int startup_option_parser(int *argc, char ***argv)
 {
@@ -686,8 +686,8 @@ static int startup_option_parser(int *argc, char ***argv)
 	tm_time = localtime(&(tval.tv_sec));
 	strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
 	INFO("=========INFO START========\n");
-	INFO("Current time: %s\n", timeinfo);
-	INFO("SDK version : %s(%s)  Build date: %s\n", build_version, build_git, build_date);
+	INFO("Current time : %s\n", timeinfo);
+	INFO("SDK version : %s(%s), Build date : %s\n", build_version, build_git, build_date);
 	INFO("Qemu build machine linux kernel version : (%d, %d, %d)\n",
 		LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff , LINUX_VERSION_CODE & 0xff);
 
@@ -695,8 +695,7 @@ static int startup_option_parser(int *argc, char ***argv)
 		INFO("Host uname : %s %s %s %s %s\n", host_uname_buf.sysname, host_uname_buf.nodename,
 			host_uname_buf.release, host_uname_buf.version, host_uname_buf.machine);
     	}
-	
-	INFO("Host gtk version : (%d, %d, %d)\n", GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION);
+
 	INFO("Host sdl version : (%d, %d, %d)\n", SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
 
 	char *virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
@@ -710,7 +709,7 @@ static int startup_option_parser(int *argc, char ***argv)
 	if (!startup_option.vtm) 
 		startup_option.vtm = g_strdup_printf("default");
 	startup_option.disk = g_strdup_printf("%semulimg-%s.%s",virtual_target_path, startup_option.vtm, arch);	
-	INFO("target name :%s, disk path: %s\n", startup_option.vtm, startup_option.disk);
+	INFO("target name : %s, disk path : %s\n", startup_option.vtm, startup_option.disk);
 
 	INFO("\n");
 	while(fgets(string, MAXBUF, fp)!=NULL)

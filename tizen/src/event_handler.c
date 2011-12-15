@@ -66,6 +66,7 @@
 #include "utils.h"
 #include "tools.h"
 #include "debug_ch.h"
+#include <sys/utsname.h>
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, event_handler);
@@ -89,7 +90,7 @@ static int gui_key_modifier_pressed;
 static int gui_keysym;
 static kbd_layout_t *kbd_layout = NULL;
 extern multi_touch_state qemu_mts;
-
+extern struct utsname host_uname_buf;
 
 static uint8_t gtk_keyevent_to_keycode_generic(const GdkEventKey *event)
 {
@@ -370,8 +371,6 @@ static void gtk_process_key(GdkEventKey *event)
 		/* sent when leaving window: reset the modifiers state */
 		reset_keys();
 		return;
-	case 0x2a:                          /* Left Shift */
-	case 0x36:                          /* Right Shift */
 	case 0x1d:                          /* Left CTRL */
 		if (event->type == GDK_KEY_RELEASE) {
 			qemu_mts.multitouch_enable = 0;
@@ -385,8 +384,9 @@ static void gtk_process_key(GdkEventKey *event)
 		} else {
 			qemu_mts.multitouch_enable = 1;
 		}
-
 	case 0x9d:                          /* Right CTRL */
+	case 0x2a:                          /* Left Shift */
+	case 0x36:                          /* Right Shift */
 	case 0x38:                          /* Left ALT */
 	case 0xb8:                         /* Right ALT */
 		if (event->type == GDK_KEY_RELEASE)
@@ -1056,10 +1056,15 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
   */
 gboolean configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
 {
-	/* just save new values in configuration structure */
+	// Ubuntu 11.10 configure_event bug work-around
+	if (strcmp(host_uname_buf.release, "3.0.0-12-generic") == 0 && event->x == 0 && event->y == 0) {
+		return TRUE;
+	}
 
+	/* just save new values in configuration structure */
 	configuration.main_x = event->x;
 	configuration.main_y = event->y;
+	INFO("configure_event x=%d, y=%d", event->x, event->y);
 
 	return TRUE;
 }
