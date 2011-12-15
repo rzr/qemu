@@ -1,19 +1,41 @@
 /* 
  * Qemu brightness emulator
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved 
+ * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Authors:
- *  Yuyeon Oh  yuyeon.oh@samsung.com
+ * Contact: 
+ * DoHyung Hong <don.hong@samsung.com>
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
+ * Hyunjun Son <hj79.son@samsung.com>
+ * SangJin Kim <sangjin3.kim@samsung.com>
+ * MunKyu Im <munkyu.im@samsung.com>
+ * KiTae Kim <kt920.kim@samsung.com>
+ * JinHyung Jo <jinhyung.jo@samsung.com>
+ * SungMin Ha <sungmin82.ha@samsung.com>
+ * JiHye Kim <jihye1128.kim@samsung.com>
+ * GiWoong Kim <giwoong.kim@samsung.com>
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * DongKyun Yun <dk77.yun@samsung.com>
  *
- * PROPRIETARY/CONFIDENTIAL
- * This software is the confidential and proprietary information of SAMSUNG ELECTRONICS ("Confidential Information").  
- * You shall not disclose such Confidential Information and shall use it only in accordance with the terms of the license agreement 
- * you entered into with SAMSUNG ELECTRONICS.  SAMSUNG make no representations or warranties about the suitability 
- * of the software, either express or implied, including but not limited to the implied warranties of merchantability, fitness for 
- * a particular purpose, or non-infringement. SAMSUNG shall not be liable for any damages suffered by licensee as 
- * a result of using, modifying or distributing this software or its derivatives.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
+ *
  */
+
 
 #include "pc.h"
 #include "pci.h"
