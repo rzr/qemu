@@ -371,6 +371,76 @@ int check_shdmem(char *target_name, int type)
 		}
 	}
 
+#else /* _WIN32*/
+	u_int port;
+	char* base_port = NULL;
+	char* pBuf;
+	HANDLE hMapFile;
+	for(port=26100;port < 26200; port += 10)
+	{
+		base_port = g_strdup_printf("%d", port);
+		hMapFile = OpenFileMapping(
+                 FILE_MAP_READ,
+				 TRUE,
+                 base_port);          
+		if(hMapFile == NULL)
+		{
+			INFO("port %s is not used.\n", base_port);
+			continue;
+		}
+		else
+		{
+			 pBuf = (char*)MapViewOfFile(hMapFile,
+                        FILE_MAP_READ,
+                        0,
+                        0,
+                        50);
+			if (pBuf == NULL)
+			{
+				ERR("Could not map view of file (%d).\n", GetLastError());
+				CloseHandle(hMapFile);
+				return -1;
+			}
+
+			if(strcmp(pBuf, target_name) == 0)
+			{
+				if(check_port_bind_listen(port+1) > 0)
+				{
+					UnmapViewOfFile(pBuf);
+					CloseHandle(hMapFile);
+					continue;
+				}
+				
+				switch(type)
+				{
+				case CREATE_MODE:
+					show_message("Warning", "Can not activate this target!\nVirtual target with the same name is running now!");
+					break;
+				case DELETE_MODE:
+					show_message("Warning", "Can not delete this target!\nVirtual target with the same name is running now!");
+					break;
+				case MODIFY_MODE:
+					show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
+					break;
+				case RESET_MODE:
+					show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
+					break;
+				default:
+					ERR("wrong type passed\n");
+				}
+				
+				UnmapViewOfFile(pBuf);
+				CloseHandle(hMapFile);
+				free(base_port);
+				return -1;
+			}
+			else
+				UnmapViewOfFile(pBuf);
+		}
+
+		CloseHandle(hMapFile);
+		free(base_port);
+	}
 #endif
 	return 0;
 
