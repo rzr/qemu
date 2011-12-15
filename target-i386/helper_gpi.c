@@ -27,7 +27,7 @@
 #include "helper_gpi.h"
 
 #include "sdb.h"
-#include "debug_ch.h"
+#include "tizen/src/debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, gpi);
 
 /**

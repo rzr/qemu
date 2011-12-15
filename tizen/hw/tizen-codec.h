@@ -34,7 +34,7 @@
 #include "hw.h"
 #include "pci.h"
 #include "pci_ids.h"
-#include "debug_ch.h"
+#include "tizen/src/debug_ch.h"
 
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>

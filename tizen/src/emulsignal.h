@@ -6,13 +6,15 @@
  * Contact: 
  * DoHyung Hong <don.hong@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * JinKyu Kim <fredrick.kim@samsung.com>
+ * Hyunjun Son <hj79.son@samsung.com>
+ * SangJin Kim <sangjin3.kim@samsung.com>
+ * MunKyu Im <munkyu.im@samsung.com>
  * KiTae Kim <kt920.kim@samsung.com>
  * JinHyung Jo <jinhyung.jo@samsung.com>
- * YuYeon Oh <yuyeon.oh@samsung.com>
- * WooJin Jung <woojin2.jung@samsung.com>
  * SungMin Ha <sungmin82.ha@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
+ * JiHye Kim <jihye1128.kim@samsung.com>
+ * GiWoong Kim <giwoong.kim@samsung.com>
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * DongKyun Yun <dk77.yun@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -33,6 +35,7 @@
  * - S-Core Co., Ltd
  *
  */
+
 
 #ifndef __SIGNAL_H__
 #define __SIGNAL_H__
