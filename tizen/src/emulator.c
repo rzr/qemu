@@ -51,7 +51,6 @@
 #include "vl.h"
 #include "sensor_server.h"
 #include <assert.h>
-#include <linux/version.h>
 
 /* changes for saving emulator state */
 #ifdef __MINGW32__
@@ -70,6 +69,7 @@
 #include <sys/ipc.h>  
 #include <sys/shm.h>
 #include <sys/utsname.h>
+#include <linux/version.h>
 #elif _WIN32
 #include <windows.h>
 #endif
