@@ -795,7 +795,7 @@ void create_config_page(GtkWidget *parent)
 //int show_config_window ()
 int show_config_window (GtkWidget *parent)
 {
-	gchar icon_image[128] = {0, };
+	gchar icon_image[MAXPATH] = {0, };
 	const gchar *skin = NULL;
 
 	/* 1. set initial preference entrys */

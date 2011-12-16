@@ -532,7 +532,7 @@ static GtkWidget *create_frame_buffer(BUF_WIDGET * pWidget)
 	gtk_window_set_resizable(GTK_WINDOW(window1), FALSE);
 	pWidget->pWindow = window1;
 
-	gchar icon_image[128] = {0, };
+	gchar icon_image[MAXPATH] = {0, };
 	const gchar *skin = get_skin_path();
 	if (skin == NULL){
 		WARN("getting icon image path is failed!!\n");

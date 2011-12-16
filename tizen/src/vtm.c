@@ -102,7 +102,7 @@ gchar *g_info_file;
 GtkWidget *list;
 int sdcard_create_size;
 GtkWidget *f_entry;
-gchar icon_image[1024] = {0, };
+gchar icon_image[MAXPATH] = {0, };
 
 #ifdef _WIN32
 void socket_cleanup(void)
