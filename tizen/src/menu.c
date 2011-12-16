@@ -127,47 +127,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	gtk_widget_show(savevm_menu_item);
 #endif
 
-    /* GPS Menu */
-        if(configuration.enable_gpsd){
-	        GtkWidget *gps_menu_item = gtk_image_menu_item_new_with_label(_("GPS emulator"));
-        	sprintf(icon_image, "%s/icons/05_GPS.png", skin_path);
-        	image_widget = gtk_image_new_from_file (icon_image);
-        
-        	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(gps_menu_item), image_widget);
-		if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-        		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(gps_menu_item),TRUE);
-
-        	if (UISTATE.is_gps_run == FALSE)
-        		g_object_set(gps_menu_item, "sensitive", TRUE, NULL);
-        
-        	g_signal_connect(gps_menu_item, "activate", G_CALLBACK(menu_create_gps), NULL);
-        
-        	gtk_container_add(GTK_CONTAINER(SubMenuItem), gps_menu_item);
-        	add_widget(EMULATOR_ID, MENU_GPS, gps_menu_item);
-        	gtk_widget_show(gps_menu_item);
-        }
-
-	/* Compass Emulator */
-
-	if(qemu_arch_is_arm() && configuration.enable_compass) {
-		GtkWidget *compass_menu_item = gtk_image_menu_item_new_with_label(_("Compass"));
-		sprintf(icon_image, "%s/icons/15_COMPASS.png", skin_path);
-		image_widget = gtk_image_new_from_file (icon_image);
-
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(compass_menu_item), image_widget);
-		if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-			gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(compass_menu_item),TRUE);
-		if (UISTATE.is_compass_run == FALSE)
-			g_object_set(compass_menu_item, "sensitive", TRUE, NULL);
-
-		g_signal_connect(compass_menu_item, "activate", G_CALLBACK(menu_create_compass), NULL);
-
-		gtk_container_add(GTK_CONTAINER(SubMenuItem), compass_menu_item);
-		add_widget(EMULATOR_ID, MENU_COMPASS, compass_menu_item);
-		gtk_widget_show(compass_menu_item);
-	}
-
-	/* 3.5 screen shot menu of advanced */
+	/* 3.3 screen shot menu of advanced */
 
 	menu_item = gtk_image_menu_item_new_with_label(_("Screen Shot"));
 	sprintf(icon_image, "%s/icons/06_SCREEN-SHOT.png", skin_path);
@@ -182,7 +142,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
 	gtk_widget_show(menu_item);
 
-	/* 3.6 USB keyboard menu */
+	/* 3.4 USB keyboard menu */
 	
 	menu_item = gtk_image_menu_item_new_with_label(_("USB Keyboard"));
 	sprintf(icon_image, "%s/icons/04_KEYPAD.png", skin_path);
@@ -207,39 +167,12 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 		g_signal_connect(menu_item, "activate", G_CALLBACK(menu_keyboard_callback), keyboard_menu[i]);
 		gtk_widget_show(menu_item);
 	}
-	/* 3.6 USB keyboard menu */
 
-
-	/*	
-	menu_item = gtk_image_menu_item_new_with_label(_("Always On Top"));
-	sprintf(icon_image, "%s/icons/04_KEYPAD.png", skin_path);
-	image_widget = gtk_image_new_from_file (icon_image);
-
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
-	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item), TRUE);
-	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
-	gtk_widget_show(menu_item);
-
-	SubMenuItem1 = gtk_menu_new();
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(menu_item), SubMenuItem1);
-
-	for(i = 0; i < 2; i++)
-	{
-		menu_item = gtk_radio_menu_item_new_with_label(pGroup, keyboard_menu[i]);
-		pGroup = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(menu_item));
-
-		gtk_container_add(GTK_CONTAINER(SubMenuItem1), menu_item);
-
-		g_signal_connect(menu_item, "activate", G_CALLBACK(always_on_top_cb), keyboard_menu[i]);
-		gtk_widget_show(menu_item);
-	}
-	*/
-	/* 3.7 event for dbi file */
+	/* 3.6 event for dbi file */
 
 	if (device->event_menu_cnt > 0) {
 
-		/* 3.7.1 sub menu */
+		/* 3.6.1 sub menu */
 
 		for (i = 0; i < device->event_menu_cnt; i++) {
 
@@ -271,8 +204,6 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 				g_signal_connect(menu_item, "activate", G_CALLBACK(menu_event_callback), device->event_menu[i].event_list[j].event_evalue);
 				gtk_widget_show(menu_item);
 
-				/* 3.7.3 object name set */
-
 				g_object_set_data((GObject *) * pMenu, device->event_menu[i].event_list[j].event_evalue, (GObject *) menu_item);
 				g_object_set(menu_item, "name", device->event_menu[i].event_list[j].event_evalue, NULL);
 
@@ -284,75 +215,6 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	gtk_widget_show(Item);
 }
 
-
-/**
-  * @brief  create popup properties menu
-  * @return void
-  */
-#if 0
-static void create_popup_properties_menu(GtkWidget **pMenu, CONFIGURATION *pconfiguration)
-{
-
-	GtkWidget *Item = NULL;
-	GtkWidget *SubMenuItem = NULL;
-	GtkWidget *menu_item = NULL;
-	GtkWidget *image_widget = NULL;
-	gchar icon_image[128] = {0, };
-	const gchar *skin_path;
-
-	skin_path = get_skin_path();
-	if (skin_path == NULL){
-		WARN("getting icon image path is failed!!\n");
-	}
-
-	Item = gtk_image_menu_item_new_with_label(_("Properties"));
-	sprintf(icon_image, "%s/icons/10_PROPERTIES.png", skin_path);
-	image_widget = gtk_image_new_from_file (icon_image);
-
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
-	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
-	gtk_container_add(GTK_CONTAINER(*pMenu), Item);
-
-	/* 4.1 sub_menu of properties */
-
-	SubMenuItem = gtk_menu_new();
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(Item), SubMenuItem);
-
-	/* 4.2 option menu of properties */
-
-	menu_item = gtk_image_menu_item_new_with_label(_("Options"));
-	sprintf(icon_image, "%s/icons/11_OPTION.png", skin_path);
-	image_widget = gtk_image_new_from_file (icon_image);
-
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
-	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
-	gtk_widget_set_tooltip_text(menu_item, _("Set the present Emulator's Configuration(position, terminal type, fps, path)"));
-
-	g_signal_connect(menu_item, "activate", G_CALLBACK(menu_option_callback), NULL);
-	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
-	gtk_widget_show(menu_item);
-
-
-	/* 4.4 device info menu of properties */
-
-	menu_item = gtk_image_menu_item_new_with_label(_("Device Info"));
-	sprintf(icon_image, "%s/icons/12_DEVICE-INFO.png", skin_path);
-	image_widget = gtk_image_new_from_file (icon_image);
-
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
-	if(GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16)
-		gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
-	gtk_widget_set_tooltip_text(menu_item, _("Show Target information like LCD Size"));
-
-	g_signal_connect(menu_item, "activate", G_CALLBACK(menu_device_info_callback), NULL);
-	gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
-	gtk_widget_show(menu_item);
-
-	gtk_widget_show(Item);
-}
-#endif
 
 /**
   * @brief  create popup menu

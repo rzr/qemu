@@ -91,12 +91,10 @@ OBJS_COMMON = \
 	about_version.o \
 	configuration.o \
 	command.o \
-	compass.o \
 	dbi_parser.o \
 	dialog.o \
 	event_handler.o \
 	fileio.o \
-	gpsnew.o \
 	menu.o \
 	menu_callback.o \
 	option.o \
