@@ -1133,7 +1133,7 @@ void save_emulator_state(void)
 
 	/* build the UI */
 	GtkBuilder *builder = gtk_builder_new();
-	char full_glade_path[MAX_LEN];
+	char full_glade_path[256];
 	sprintf(full_glade_path, "%s/savevm.glade", get_root_path());
 	gtk_builder_add_from_file(builder, full_glade_path, NULL);
 
