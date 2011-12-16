@@ -1930,6 +1930,11 @@ CASE_IN_KNOWN_SIZE_POINTERS:
 						}
 				}
 			}
+
+			try_to_put_into_phys_memory(command_buffer, command_buffer_size);
+			call_opengl(_serialized_calls_func, getpid(), NULL, &command_buffer, &command_buffer_size);
+			command_buffer_size = 0;
+			last_command_buffer_size = -1;
 		}
 		else
 		{
