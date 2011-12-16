@@ -126,6 +126,9 @@ GtkWidget *g_main_window;
 GtkWidget *pixmap_widget;
 GtkWidget *fixed;
 static char logfile[256] = { 0, };
+#ifdef __linux__
+struct utsname host_uname_buf;
+#endif
 
 /* Widgets for savevm */
 GtkWidget *savevm_window;
@@ -544,6 +547,13 @@ static void construct_main_window(void)
 			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
 	gtk_container_add (GTK_CONTAINER (g_main_window), fixed);
 
+#ifdef __linux__
+	if (strcmp(host_uname_buf.release, "2.6.35-22-generic") == 0) { // for ubuntu 10.10 resize window bug
+		gtk_window_resize (GTK_WINDOW(g_main_window),
+			PHONE.mode_SkinImg[0].nImgHeight, PHONE.mode_SkinImg[0].nImgHeight);
+	}
+#endif
+
 	/* 6. create popup menu */
 
 	create_popup_menu (&popup_menu, &PHONE, &configuration);
@@ -628,9 +638,7 @@ static void init_startup_option(void)
  * @return   success  0,  fail    -1
  * @date     May 18. 2009
  * */
-#ifdef __linux__
-struct utsname host_uname_buf;
-#endif
+
 static int startup_option_parser(int *argc, char ***argv)
 {
 	/* 1. Goption handling */
