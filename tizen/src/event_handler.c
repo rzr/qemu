@@ -37,7 +37,7 @@
  */
 
 /* This is a modified and simplified version of original sdl.c in qemu */
-/* This is a modified and simplified version of original sdl.c in qemu */
+
 /*
  * QEMU System Emulator
  *
