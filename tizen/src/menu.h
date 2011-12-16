@@ -51,8 +51,6 @@ extern "C" {
 #include "emulator.h"
 #include "menu_callback.h"
 #include "screen_shot.h"
-#include "gpsnew.h"
-#include "compass.h"
 #include "command.h"
 
 void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION *pconfiguration);
