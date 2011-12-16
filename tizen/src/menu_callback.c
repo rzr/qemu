@@ -42,7 +42,6 @@
 //#include "hw/smb380.h"
 #include "qemu_gtk_widget.h"
 #include "about_version.h"
-#include <sys/utsname.h>
 
 #ifdef __MINGW32__
 #include <winsock2.h>
@@ -50,6 +49,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#endif
+
+#ifdef __linux__
+#include <sys/utsname.h>
 #endif
 
 #include "debug_ch.h"
@@ -60,7 +63,9 @@ MULTI_DEBUG_CHANNEL(tizen, menu_callback);
 
 extern GtkWidget *pixmap_widget;
 extern GtkWidget *fixed;
+#ifdef __linux__
 extern struct utsname host_uname_buf;
+#endif
 
 extern int emul_create_process(const gchar cmd[]);
 
@@ -123,11 +128,14 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 
 	gtk_widget_hide_all(widget);
 
+#ifdef __linux__
 	if (strcmp(host_uname_buf.release, "2.6.35-22-generic") == 0) { // for ubuntu 10.10 resize window bug
 		gtk_decorated_window_move_resize_window (GTK_WINDOW(widget),
 			pconfiguration->main_x, pconfiguration->main_y,
 			pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
-	} else {
+	} else
+#endif
+	{
 		hints.width_inc = hints.min_width = hints.base_width = pDev->mode_SkinImg[nMode].nImgWidth;
 		hints.height_inc = hints.min_height = hints.base_height = pDev->mode_SkinImg[nMode].nImgHeight;
 		gtk_window_set_geometry_hints (GTK_WINDOW (widget), NULL, &hints,
