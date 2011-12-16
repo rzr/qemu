@@ -81,7 +81,7 @@ extern "C" {
 
 #define MAX_PID						256						/* maximum count of working processes */
 #define MAX_ARGS					10						/* maxium argument count in executing process */
-#define MAXPATH						1024					/* maximum path length */
+#define MAXPATH						512					/* maximum path length */
 
 #define APPLICATION_DIALOG_OPEN		2
 #define IMAGE_FILE_SAVE				3

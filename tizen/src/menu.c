@@ -55,7 +55,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 	GtkWidget *SubMenuItem1 = NULL;
 	GtkWidget *menu_item = NULL;
 	GSList *pGroup = NULL;
-	gchar icon_image[128] = {0, };
+	gchar icon_image[MAXPATH] = {0, };
 	const gchar *skin_path;
 	gchar *keyboard_menu[2] = {"On", "Off"};
 	int i, j = 0;
@@ -226,7 +226,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 	GtkWidget *Item = NULL;
 	GtkWidget *menu_item = NULL;
 	GtkWidget *image_widget = NULL;
-	gchar icon_image[128] = {0, };
+	gchar icon_image[MAXPATH] = {0, };
 	const gchar *skin_path;
 	char *emul_name = NULL;
 	*pMenu = gtk_menu_new();

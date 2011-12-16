@@ -85,7 +85,7 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 	tmppixbuf=gtk_widget_render_icon((GtkWidget *) (filew), GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU, NULL);
 	gtk_window_set_icon(GTK_WINDOW (filew), tmppixbuf);
 #else
-	gchar icon_image[128] = {0, };
+	gchar icon_image[MAXPATH] = {0, };
 
 	const gchar *skin = get_skin_path();
 	if (skin == NULL){
