@@ -69,7 +69,9 @@
 #include "utils.h"
 #include "tools.h"
 #include "debug_ch.h"
+#ifdef __linux__
 #include <sys/utsname.h>
+#endif
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, event_handler);
@@ -93,7 +95,9 @@ static int gui_key_modifier_pressed;
 static int gui_keysym;
 static kbd_layout_t *kbd_layout = NULL;
 extern multi_touch_state qemu_mts;
+#ifdef __linux__
 extern struct utsname host_uname_buf;
+#endif
 
 
 static uint8_t gtk_keyevent_to_keycode_generic(const GdkEventKey *event)
@@ -1084,10 +1088,12 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
   */
 gboolean configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
 {
+#ifdef __linux__
 	// for ubuntu 11.10 configure_event bug
 	if (strcmp(host_uname_buf.release, "3.0.0-12-generic") == 0 && event->x == 0 && event->y == 0) {
 		return TRUE;
 	}
+#endif
 
 	/* just save new values in configuration structure */
 	configuration.main_x = event->x;

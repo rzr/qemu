@@ -413,6 +413,7 @@ static SDL_Cursor *sdl_cursor_init(const char *image[])
 	    return SDL_CreateCursor(data, mask, 32, 32, 0, 0);
 }
 
+/* ===== Reference : http://content.gpwiki.org/index.php/SDL:Tutorials:Drawing_and_Filling_Circles ===== */
 /*
  * This is a 32-bit pixel function created with help from this
 * website: http://www.libsdl.org/intro.en/usingvideo.html
@@ -529,6 +530,7 @@ static void sdl_fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Ui
        }
    }
 }
+/* ========================================================= */
 
 static void qemu_sdl_cleanup(void)
 {
