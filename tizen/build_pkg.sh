@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -xe
 # Emulator Release Package
 
 set_emulator_var () {
