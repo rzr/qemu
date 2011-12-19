@@ -799,7 +799,9 @@ void qemu_option_set_to_config(arglist *al)
 		append_argvlist(al, "-serial");
 		append_argvlist(al, "file:%s", kernel_log_path); 
 	}
-	else if (configuration.qemu_configuration.telnet_type == 1) {
+	else
+	{
+//	else if (configuration.qemu_configuration.telnet_type == 1) {
 		append_argvlist(al, "-serial");
 		append_argvlist(al, "telnet:localhost:%s,server,nowait,ipv4",
 						configuration.qemu_configuration.telnet_port);
