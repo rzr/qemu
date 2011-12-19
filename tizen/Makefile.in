@@ -14,6 +14,7 @@ install:
 	cp -dpr ./skins $(PHONE_DIR)
 	cp -dpr ./data $(PHONE_DIR)/x86
 	cp -dpr ./conf $(PHONE_DIR)/x86
+	cp -dpr ./license $(PHONE_DIR)
 
 distclean: clean
 	cd ../ && $(MAKE) distclean
