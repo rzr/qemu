@@ -1,4 +1,4 @@
-/*
+/* 
  * Emulator
  *
  * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
@@ -483,24 +483,24 @@ static void construct_main_window(void)
 #endif
 	gtk_window_set_decorated (GTK_WINDOW (g_main_window), FALSE);
 
-	/* 2.1 emulator taskbar name */
-
-	name = g_strdup_printf("emulator-%d", get_sdb_base_port()); 
-	gtk_window_set_title (GTK_WINDOW (g_main_window), name);
-
-	/* 2.2 emulator taskbar icon image */
+	/* 2.1 emulator taskbar icon image */
 
 	skin = get_skin_path();
 	if (skin == NULL) {
 		ERR( "getting skin path is failed!!\n");
 		exit (1);
 	}
-#ifdef _WIN32	
-#if (_WIN32_WINNT >= 0x0601)
-	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
-#else 
-	sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
-#endif
+#ifdef _WIN32
+	OSVERSIONINFO osvi;
+	ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    GetVersionEx(&osvi);
+
+    if((osvi.dwMajorVersion >= 6) && (osvi.dwMinorVersion >= 1))
+        sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+    else 
+		sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
+		
 #else /* _WIN32 */
 	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
 #endif/* _WIN32 */
@@ -509,11 +509,14 @@ static void construct_main_window(void)
 		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
 		exit(EXIT_FAILURE);
 	}
+	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), emul_img_dir, NULL);
+	
+	
+	/* 2.2 emulator taskbar name */
 
-	if(gtk_window_set_default_icon_from_file(emul_img_dir, NULL) == FALSE) {
-		ERR( "emulator icon from file doesn't set!! %s\n", emul_img_dir);
-		exit(EXIT_FAILURE);
-	}
+	name = g_strdup_printf("emulator-%d", get_sdb_base_port()); 
+	gtk_window_set_title (GTK_WINDOW (g_main_window), name);
+
 
 	/* 3. skin load */
 
