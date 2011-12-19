@@ -285,10 +285,10 @@ void activate_target(char *target_name)
 
 char *check_kvm(char *info_file, int *status)
 {
-	char *kvm = NULL;
 	char *enable_kvm = NULL;
-	int fd;
 #ifndef _WIN32
+	char *kvm = NULL;
+	int fd;
 	kvm = get_config_value(info_file, QEMU_GROUP, KVM_KEY);
 	if(g_file_test("/dev/kvm", G_FILE_TEST_EXISTS) && strcmp(kvm,"1") == 0)
 	{
@@ -1482,11 +1482,11 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 {
 	GtkWidget *win = get_window(VTM_CREATE_ID);
 	char *target_name = (char*)data;
-	char *cmd = NULL;
-	char *cmd2 = NULL;
 	char *dest_path = NULL;
 	char *conf_file = NULL;
 	const gchar *name = NULL;
+	char *cmd = NULL;
+	char *cmd2 = NULL;
 	char *dst;
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
@@ -2222,7 +2222,6 @@ void setup_ram_frame(void)
 
 void show_create_window(void)
 {
-	const gchar *skin = NULL;
 	GtkWidget *sub_window;
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
@@ -2259,10 +2258,6 @@ void show_create_window(void)
 	setup_create_frame();
 	setup_create_button();
 
-	skin = get_skin_path();
-	if(skin == NULL)
-		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
 	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), icon_image, NULL);
 
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
@@ -2343,7 +2338,7 @@ int main(int argc, char** argv)
 	skin = (char*)get_skin_path();
 	if(skin == NULL)
 		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/Emulator_20x20.png", skin);
+	sprintf(icon_image, "%s/icons/vtm.ico", skin);
 
 	sprintf(full_glade_path, "%s/etc/vtm.glade", get_root_path());
 

@@ -565,8 +565,7 @@ void show_about_window(GtkWidget *parent)
 	 */
 	//const gchar *website = "http://innovator.samsungmobile.com";
 
-	sprintf(comments, "Tizen Emulator.\n"
-			"Version: %s\n"
+	sprintf(comments, "\nVersion: %s\n"
 			//		"Based upon QEMU 0.10.5 (http://qemu.org)\n"
 			"Build date: %s\nGit version: %s\n",
 			build_version, build_date, build_git);
