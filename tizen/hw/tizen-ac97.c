@@ -1,10 +1,11 @@
-/* 
- * Qemu ac97
+/*
+ * TIZEN ac97 audio device
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
+ * KiTae Kim <kt920.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * DongKyun Yun <dk77.yun@samsung.com>
  *
@@ -25,10 +26,10 @@
  * Contributors:
  * - S-Core Co., Ltd
  *
+ * This source is based of ac97.c...
+ * Support mixer controls...
+ *
  */
-
-// by caramis...
-// Support mixer controls...
 
 #include "hw.h"
 #include "audiodev.h"

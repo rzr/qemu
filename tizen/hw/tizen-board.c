@@ -1,21 +1,21 @@
-/* 
- * Qemu board
+/*
+ * TIZEN base board
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Contact: 
+ * Contact:
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * DongKyun Yun <dk77.yun@samsung.com>
  * DoHyung Hong <don.hong@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * Hyunjun Son <hj79.son@samsung.com>
  * SangJin Kim <sangjin3.kim@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
  * KiTae Kim <kt920.kim@samsung.com>
  * JinHyung Jo <jinhyung.jo@samsung.com>
  * SungMin Ha <sungmin82.ha@samsung.com>
+ * MunKyu Im <munkyu.im@samsung.com>
  * JiHye Kim <jihye1128.kim@samsung.com>
- * GiWoong Kim <giwoong.kim@samsung.com>
- * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
- * DongKyun Yun <dk77.yun@samsung.com>
+ * GiWoong Kim <giwoong.kim@samsung.com> 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,12 +34,10 @@
  * Contributors:
  * - S-Core Co., Ltd
  *
+ * x86 board from pc_piix.c...
+ * add some TIZEN-speciaized device...
  */
 
-// by caramis
-
-// x86 machine from pc_piix.c...
-// add some tizen-specialized device...
 
 #include "hw.h"
 #include "pc.h"
