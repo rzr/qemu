@@ -423,7 +423,7 @@ void svcam_device_enum_fmt(SVCamState* state)
 
 	if (xioctl(v4l2_fd, VIDIOC_ENUM_FMT, &format) < 0) {
 		if (errno != EINVAL)
-			ERR("failed to enumerate video formats%s\n", strerror(errno));
+			ERR("failed to enumerate video formats: %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	}
@@ -473,7 +473,7 @@ void svcam_device_qctrl(SVCamState* state)
 
 	if (xioctl(v4l2_fd, VIDIOC_QUERYCTRL, &ctrl) < 0) {
 		if (errno != EINVAL)
-			ERR("failed to query video controls%s\n", strerror(errno));
+			ERR("failed to query video controls : %s\n", strerror(errno));
 		param->errCode = errno;
 		return;
 	} else {
@@ -486,7 +486,7 @@ void svcam_device_qctrl(SVCamState* state)
 			sctrl.value = (ctrl.maximum + ctrl.minimum) / 2;
 		}
 		if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &sctrl) < 0) {
-			ERR("failed to set video control value\n", strerror(errno));
+			ERR("failed to set video control value : %s\n", strerror(errno));
 			param->errCode = errno;
 			return;
 		}
@@ -544,7 +544,7 @@ void svcam_device_s_ctrl(SVCamState* state)
 	ctrl.value = value_convert_from_guest(qctrl_tbl[i].min,
 			qctrl_tbl[i].max, param->stack[1]);
 	if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-		ERR("failed to set video control value : value(%d), %s\n", strerror(errno));
+		ERR("failed to set video control value : value(%d), %s\n", param->stack[1], strerror(errno));
 		param->errCode = errno;
 		return;
 	}
