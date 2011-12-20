@@ -1425,6 +1425,8 @@ void set_disk_default_active_cb(void)
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
 		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
 	}
+	else
+		virtual_target_info.disk_type = 1;
 }
 
 void set_sdcard_none_active_cb(void)
@@ -1488,6 +1490,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	char *cmd = NULL;
 	char *cmd2 = NULL;
 	char *dst;
+	char *vms_path = NULL;
+	//find arch name
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
 	{
@@ -1505,6 +1509,18 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	ram_select_cb();
 	resolution_select_cb();
 	buttontype_select_cb();
+
+	if(virtual_target_info.disk_type == 0)
+		set_disk_default_active_cb();
+	else if(virtual_target_info.disk_type == 1)
+		disk_file_select_cb();
+	else
+	{
+		WARN( "disk type is wrong");
+		show_message("Warning", "disk type is wrong");
+		return;
+	}
+
 	set_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
 
 	//	name character validation check
@@ -1537,13 +1553,14 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	// if try to change the target name
 	if(strcmp(name, target_name) != 0)
 	{
-		char *vms_path = (char*)get_vms_abs_path();
+		vms_path = (char*)get_vms_abs_path();
 		if(name_collision_check() == 1)
 		{
 			WARN( "Virtual target with the same name exists! Choose another name.");
 			show_message("Warning", "Virtual target with the same name exists! Choose another name.");
 			return;
-		}	
+		}
+		//start name changing procesure
 #ifndef _WIN32
 		cmd = g_strdup_printf("mv %s/%s %s/%s", 
 				vms_path, target_name, vms_path, name);
@@ -1604,9 +1621,10 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		}
 		g_free(src_img_path_for_win);
 		g_free(dst_img_path_for_win);
-		g_free(vms_path);
 #endif
-	}
+		g_free(vms_path);
+	} // end chage name precedure
+
 	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
 
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
@@ -1960,14 +1978,16 @@ void setup_modify_disk_frame(char *target_name)
 	}
 	else if(disk_type == 0)
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
-	//can not modify baseimg. only can create.	
+	//can not modify baseimg. only can create.
+
 	gtk_widget_set_sensitive(default_radiobutton, FALSE);
 	gtk_widget_set_sensitive(select_radiobutton, FALSE);
 	gtk_widget_set_sensitive(sdcard_filechooser2, FALSE);
-
-	//	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
-	//	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
-	//	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
+	
+	// because of false value of sensitivity, callback is useless
+//	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
+//	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
+//	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
 
 
 }
