@@ -13,7 +13,7 @@ include $(HWDIR)/config.mak
 endif
 
 TARGET_PATH=$(SRC_PATH)/target-$(TARGET_BASE_ARCH)
-$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/hw)
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src/hw)
 QEMU_CFLAGS+= -I.. -I$(TARGET_PATH) -I$(SRC_PATH)/hw -DNEED_CPU_H
 
 include $(SRC_PATH)/Makefile.objs
