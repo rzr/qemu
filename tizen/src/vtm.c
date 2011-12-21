@@ -2333,6 +2333,65 @@ void construct_main_window(void)
 
 }
 
+void set_mesa_lib(void)
+{
+	char *s_out = NULL;
+	char *s_err = NULL;
+	char *s_out2 = NULL;
+	char *s_err2 = NULL;
+
+	int exit_status;
+	GError *err = NULL;
+
+	if (!g_spawn_command_line_sync("cat /etc/issue", &s_out, &s_err, &exit_status, &err)) {
+		TRACE( "Failed to invoke command: %s\n", err->message);
+		show_message("Failed to invoke command", err->message);
+		g_error_free(err);
+		g_free(s_out);
+		g_free(s_err);
+		return ;
+	}
+	if (exit_status != 0) {
+		TRACE( "Command returns error: %s\n", s_out);
+		g_free(s_out);
+		g_free(s_err);
+		return;
+	}
+	
+	if (!g_spawn_command_line_sync("lspci", &s_out2, &s_err2, &exit_status, &err)) {
+		TRACE( "Failed to invoke command: %s\n", err->message);
+		show_message("Failed to invoke command", err->message);
+		g_error_free(err);
+		g_free(s_out);
+		g_free(s_err);
+		g_free(s_out2);
+		g_free(s_err2);
+		return ;
+	}
+	if (exit_status != 0) {
+		TRACE( "Command returns error: %s\n", s_out);
+		g_free(s_out);
+		g_free(s_err);
+		g_free(s_out2);
+		g_free(s_err2);
+		return;
+	}
+
+	if(strstr(s_out, "10.10") && strstr(s_out2, "nVidia"))
+	{
+		INFO( "linux version :%s  Set to use mesa lib\n", s_out);
+		g_setenv("LD_LIBRARY_PATH","/usr/lib/mesa:$LD_LIBRARY_PATH",1);
+	}
+
+	g_free(s_out);
+	g_free(s_err);
+	g_free(s_out2);
+	g_free(s_err2);
+	return ;
+
+}
+
+
 int main(int argc, char** argv)
 {
 	char* working_dir;
@@ -2353,6 +2412,10 @@ int main(int argc, char** argv)
 	INFO( "virtual target manager start \n");
 
 	socket_init();
+	//if ubuntu 10.10 use mesa lib for opengl
+#ifdef	__linux__
+	set_mesa_lib();
+#endif
 
 	g_builder = gtk_builder_new();
 	skin = (char*)get_skin_path();
