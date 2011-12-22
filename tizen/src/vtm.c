@@ -1016,7 +1016,11 @@ void refresh_clicked_cb(char *arch)
 		//if targetlist exist but config file not exists
 		if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 		{
-			ERR( "target info file not exists : %s\n", target_list[i]);
+			INFO( "target info file not exists : %s\n", target_list[i]);
+			del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_list[i]);
+			target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
+			gtk_list_store_remove(store, &iter);
+			i -= 1;
 			continue;
 		}
 
