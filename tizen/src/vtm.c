@@ -1121,9 +1121,9 @@ gboolean run_cmd(char *cmd)
 
 	g_return_val_if_fail(cmd != NULL, FALSE);
 
-	TRACE( "Command: %s\n", cmd);
+	INFO( "Command: %s\n", cmd);
 	if (!g_spawn_command_line_sync(cmd, &s_out, &s_err, &exit_status, &err)) {
-		TRACE( "Failed to invoke command: %s\n", err->message);
+		ERR( "Failed to invoke command: %s\n", err->message);
 		show_message("Failed to invoke command", err->message);
 		g_error_free(err);
 		g_free(s_out);
@@ -1131,14 +1131,14 @@ gboolean run_cmd(char *cmd)
 		return FALSE;
 	}
 	if (exit_status != 0) {
-		TRACE( "Command returns error: %s\n", s_out);
+		ERR( "Command returns error: %s\n", s_out);
 		//		show_message("Command returns error", s_out);
 		g_free(s_out);
 		g_free(s_err);
 		return FALSE;
 	}
 
-	TRACE( "Command success: %s\n", cmd);
+	INFO( "Command success: %s\n", cmd);
 	//	show_message("Command success!", s_out);
 	g_free(s_out);
 	g_free(s_err);
@@ -1569,6 +1569,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 		if(!run_cmd(cmd))
 		{
+			ERR( "Fail to run %s\n", cmd);
 			g_free(cmd);
 			g_free(dest_path);
 			show_message("Error", "Fail to change the target name!");
@@ -1578,6 +1579,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 		if(!run_cmd(cmd2))
 		{
+			ERR( "Fail to run %s\n", cmd2);
 			g_free(cmd);
 			g_free(cmd2);
 			g_free(dest_path);
