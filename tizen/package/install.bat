@@ -14,4 +14,6 @@ echo Program path : %program_path%
 echo Desktop menu icon path : %desktop_menu_icon_path%
 echo Setting shortcut...
 wscript.exe %MAKESHORTCUT_PATH% /shortcut:"%start_menu_programs_path%\%CATEGORY%\%vtm_shortcut_name%" /target:"%program_path%\%vtm_execute_file%" /icon:"%desktop_menu_icon_path%\%vtm_icon_file%"
+echo Setting registry
+reg add "hklm\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"  /f /v %program_path%\%vtm_execute_file% /t REG_SZ /d RUNASADMIN
 echo COMPLETE
