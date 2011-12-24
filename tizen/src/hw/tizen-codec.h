@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include "hw.h"
+#include "kvm.h"
 #include "pci.h"
 #include "pci_ids.h"
 #include "tizen/src/debug_ch.h"
@@ -40,6 +41,7 @@
 #include <libswscale/swscale.h>
 
 // #define CODEC_THREAD
+// #define CODEC_KVM
 
 /*
  *  Codec Device Structures
@@ -108,6 +110,10 @@ static void codec_thread_destroy(void *opaque);
  *  FFMPEG APIs
  */
 
+void qemu_parser_init (void);
+
+void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src);
+
 void qemu_av_register_all (void);
 
 int qemu_avcodec_open (SVCodecState *s);
@@ -138,9 +144,9 @@ int qemu_avcodec_encode_video (SVCodecState *s);
 
 void qemu_av_picture_copy (SVCodecState *s);
 
-void qemu_av_parser_init (void);
+void qemu_av_parser_init (SVCodecState *s);
 
-int qemu_av_parser_parse (void);
+int qemu_av_parser_parse (SVCodecState *s);
 
 void qemu_av_parser_close (void);
 
