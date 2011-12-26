@@ -2181,6 +2181,7 @@ void setup_disk_frame(void)
 	gtk_file_filter_add_pattern(filter, filter_pattern);
 
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(disk_filechooser2), filter);
+	set_disk_default_active_cb();
 	set_disk_select_active_cb();	
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
 
