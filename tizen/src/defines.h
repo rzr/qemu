@@ -446,6 +446,7 @@ typedef struct _event_info {
 typedef struct _key_map {
 	region key_map_region;
 	event_info_data event_info[EVENT_INFO_MAX];
+	char *tooltip;
 	int event_info_cnt;
 } key_map_list_data;
 

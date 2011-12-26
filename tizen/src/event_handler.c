@@ -1102,3 +1102,30 @@ gboolean configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer d
 	return TRUE;
 }
 
+gboolean query_tooltip_event(GtkWidget *widget, gint x, gint y, gboolean keyboard_tip, GtkTooltip *tooltip, gpointer data)
+{
+	int index;
+	int left, right, top, bottom;
+
+	for(index = 0; index < PHONE.mode[UISTATE.current_mode].key_map_list_cnt; index++) {
+		left = PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.x;
+		right = left + PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.w;
+		top = PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.y;
+		bottom = top + PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.h;
+
+		if (x >= left && x <= right && y >= top && y <= bottom) {
+			break;
+		}
+	}
+
+	if (index == PHONE.mode[UISTATE.current_mode].key_map_list_cnt) {
+		gtk_tooltip_set_text(tooltip, NULL);
+		return FALSE;
+	} else {
+		char* text = PHONE.mode[UISTATE.current_mode].key_map_list[index].tooltip;
+		gtk_tooltip_set_text(tooltip, text);
+	}
+
+	return TRUE;
+}
+

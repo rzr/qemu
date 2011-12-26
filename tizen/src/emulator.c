@@ -419,8 +419,9 @@ void exit_emulator(void)
 	if (pthread_create(&thread_id, NULL, graceful_shutdown_ftn, NULL) != 0) { 
 		ERR("pthread_create fail \n");
 		qemu_system_shutdown_request();
-	} 
+	}
 
+	free_dbi_file(&PHONE);
 #else
 
 
@@ -576,8 +577,11 @@ static void construct_main_window(void)
 	g_signal_connect (G_OBJECT(g_main_window), "key_press_event", G_CALLBACK(key_event_handler), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "key_release_event", G_CALLBACK(key_event_handler), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_emulator), NULL);
-
 	g_signal_connect (G_OBJECT(g_main_window), "configure_event", G_CALLBACK(configure_event), NULL);
+
+	//g_object_set (g_main_window, "has-tooltip", TRUE, NULL);
+	gtk_widget_set_has_tooltip(g_main_window, TRUE);
+	g_signal_connect (G_OBJECT(g_main_window), "query-tooltip", G_CALLBACK(query_tooltip_event), NULL);
 
 	gtk_widget_set_events (g_main_window, GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK |
 			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);// | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);

@@ -68,6 +68,7 @@ extern GtkWidget *xo_popup_menu;
 gboolean key_event_handler(GtkWidget *wid, GdkEventKey *event);
 gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpointer data);
 gboolean configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data);
+gboolean query_tooltip_event(GtkWidget *widget, gint x, gint y, gboolean keyboard_tip, GtkTooltip *tooltip, gpointer data);
 
 /* vl.c */
 void kbd_put_keycode(int keycode);

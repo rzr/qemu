@@ -110,6 +110,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 	ml->id = dbi_atoi(child_node, "id");
 	pSrc_Buf = (char *)xmlGetProp(child_node, (const xmlChar *)"name");
 	ml->name = strdup(pSrc_Buf);
+	xmlFree(pSrc_Buf);
 
 	// mode children : image_list, region, lcd_list,
 	// led_list, key_map_list
@@ -127,7 +128,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
 					TRACE(" main_image = %s \n", pDes_Buf);
-
+					xmlFree(pSrc_Buf);
 					ml->image_list.main_image = pDes_Buf;
 				}
 
@@ -136,6 +137,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
 					TRACE( " keypressed_image = %s \n", pDes_Buf);
+					xmlFree(pSrc_Buf);
 					ml->image_list.keypressed_image = pDes_Buf;
 				}
 
@@ -144,6 +146,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
 					TRACE( " led_main_image = %s \n", pDes_Buf);
+					xmlFree(pSrc_Buf);
 					ml->image_list.led_main_image = pDes_Buf;
 				}
 
@@ -152,6 +155,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
 					TRACE( " led_keypressed_image = %s \n", pDes_Buf);
+					xmlFree(pSrc_Buf);
 					ml->image_list.led_keypressed_image = pDes_Buf;
 				}
 				/* To identify dual display split area image(middle bar) */
@@ -161,6 +165,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 
 					pDes_Buf = g_strdup_printf("%s/%s", dbi_path, pSrc_Buf);
 					TRACE( " ^^^^^^^^^^^^^^^^^^^^^^^^ = %s \n", pDes_Buf);
+					xmlFree(pSrc_Buf);
 					ml->image_list.splitted_area_image = pDes_Buf;
 				}
 			}
@@ -225,10 +230,13 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 																					  "led_color")) {
 							pSrc_Buf = (char *) xmlGetProp(region_child_node, (const xmlChar *)"id");
 							ml->led_list[led_chk_cnt].id = strdup(pSrc_Buf);
+							xmlFree(pSrc_Buf);
 							pSrc_Buf = (char *) xmlGetProp(region_child_node, (const xmlChar *)"name");
 							ml->led_list[led_chk_cnt].name = strdup(pSrc_Buf);
+							xmlFree(pSrc_Buf);
 							pSrc_Buf = (char *) xmlGetProp(region_child_node, (const xmlChar *) "imagepath");
 							ml->led_list[led_chk_cnt].imagepath = strdup(pSrc_Buf);
+							xmlFree(pSrc_Buf);
 						}
 					}
 					led_chk_cnt++;	// led list count
@@ -275,6 +283,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 								if (!xmlStrcmp(event_node->name, (const xmlChar *) "event_id")) {
 									pSrc_Buf = (char *) xmlNodeGetContent(event_node);
 									ei->event_id = strdup(pSrc_Buf);
+									xmlFree(pSrc_Buf);
 								}
 								// event_value
 								else if (!xmlStrcmp(event_node->name, (const xmlChar *) "event_value")) {
@@ -290,6 +299,7 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 										else if (!xmlStrcmp(event_value->name, (const xmlChar *) "key_name")) {
 											pSrc_Buf = (char *) xmlNodeGetContent(event_value);
 											ev->key_name = strdup(pSrc_Buf);
+											xmlFree(pSrc_Buf);
 											event_value_chk_cnt++;
 											ei->event_value_cnt = event_value_chk_cnt;
 										}
@@ -299,12 +309,20 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 								else if (!xmlStrcmp(event_node->name, (const xmlChar *) "keyboard")) {
 									pSrc_Buf = (char *) xmlNodeGetContent(event_node);
 									ei->keyboard = strdup(pSrc_Buf);
+									xmlFree(pSrc_Buf);
 								}
 							}
 							event_value_chk_cnt = 0;
 							event_info_chk_cnt++;
 							ml->key_map_list[key_map_chk_cnt].event_info_cnt = event_info_chk_cnt;
 						}
+
+						else if (!xmlStrcmp(region_child_node->name, (const xmlChar *) "tooltip")) {
+							pSrc_Buf = (char *) xmlNodeGetContent(region_child_node->children);
+							ml->key_map_list[key_map_chk_cnt].tooltip = strdup(pSrc_Buf);
+							xmlFree(pSrc_Buf);
+						}
+
 					}
 					key_map_chk_cnt++;	// key_map list
 					// count
@@ -447,15 +465,19 @@ int parse_dbi_file(const gchar * filename, PHONEMODELINFO * pDeviceData)
 					event_menu_list *em = &pDeviceData->event_menu[event_menu_cnt];
 					pSrc_Buf = (char *)xmlGetProp(child_node, (const xmlChar *)"name");
 					g_strlcpy(em->name, pSrc_Buf, sizeof em->name);
+					xmlFree(pSrc_Buf);
+
 					// event id
 					for (region_node = child_node->children; region_node != NULL; region_node = region_node->next) {
 						if (region_node->type == XML_ELEMENT_NODE && !xmlStrcmp(region_node->name, (const xmlChar *)"event")) {
 							event_prop *ep = &em->event_list[event_list_cnt];
 							pSrc_Buf = (char *)xmlGetProp(region_node, (const xmlChar *) "id");
 							g_strlcpy(ep->event_eid, pSrc_Buf, sizeof ep->event_eid);
+							xmlFree(pSrc_Buf);
 
 							pSrc_Buf = (char *)xmlGetProp(region_node, (const xmlChar *) "value");
 							g_strlcpy(ep->event_evalue, pSrc_Buf, sizeof ep->event_evalue);
+							xmlFree(pSrc_Buf);
 
 							event_list_cnt++;
 							em->event_list_cnt = event_list_cnt;
@@ -484,20 +506,40 @@ static void free_modelist(mode_list *ml)
 {
 	int i;
 
-	free(ml->name);
-	free(ml->image_list.main_image);
-	free(ml->image_list.keypressed_image);
-	free(ml->image_list.led_main_image);
-	free(ml->image_list.led_keypressed_image);
-	free(ml->image_list.splitted_area_image);
-
-	for (i=0; i<ml->led_list_cnt; i++) {
-		free(ml->led_list[i].name);
-		free(ml->led_list[i].imagepath);
+	if (ml->name) {
+		free(ml->name);
+	}
+	if (ml->image_list.main_image) {
+		free(ml->image_list.main_image);
+	}
+	if (ml->image_list.keypressed_image) {
+		free(ml->image_list.keypressed_image);
+	}
+	if (ml->image_list.led_main_image) {
+		free(ml->image_list.led_main_image);
+	}
+	if (ml->image_list.led_keypressed_image) {
+		free(ml->image_list.led_keypressed_image);
+	}
+	if (ml->image_list.splitted_area_image) {
+		free(ml->image_list.splitted_area_image);
 	}
 
-	//for (i=0; i<ml->key_map_list_cnt; i++)
-		//free_keymaplist(free(ml->key_map_list[i]);
+	for (i=0; i<ml->led_list_cnt; i++) {
+		if (ml->led_list[i].name) {
+			free(ml->led_list[i].name);
+		}
+		if (ml->led_list[i].imagepath) {
+			free(ml->led_list[i].imagepath);
+		}
+	}
+
+	for (i=0; i<ml->key_map_list_cnt; i++) {
+		if (ml->key_map_list[i].tooltip) {
+			free(ml->key_map_list[i].tooltip);
+		}
+		//todo:
+	}
 }
 
 int free_dbi_file(PHONEMODELINFO *pDeviceData)
