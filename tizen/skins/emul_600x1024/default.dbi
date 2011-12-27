@@ -40,6 +40,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -60,6 +61,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -80,6 +82,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -100,6 +103,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
@@ -137,6 +141,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -157,6 +162,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -177,6 +183,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -197,6 +204,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
@@ -234,6 +242,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -254,6 +263,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -274,6 +284,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 				<key_map>
 					<region left="0" top="496" width="14" height="46"></region>
@@ -293,6 +304,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
@@ -330,6 +342,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -350,6 +363,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -370,6 +384,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -390,6 +405,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
@@ -427,6 +443,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -447,6 +464,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -467,6 +485,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -487,6 +506,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
@@ -524,6 +544,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -544,6 +565,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -564,6 +586,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -584,6 +607,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
@@ -621,6 +645,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -641,6 +666,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -661,6 +687,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -681,6 +708,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
@@ -718,6 +746,7 @@
 						</event_value>
 						<keyboard>GDK_Home</keyboard>
 					</event_info>
+					<tooltip>Home button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -738,6 +767,7 @@
 						</event_value>
 						<keyboard>GDK_Camera</keyboard>
 					</event_info>
+					<tooltip>Power button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -758,6 +788,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Up</keyboard>
 					</event_info>
+					<tooltip>Volume-up button</tooltip>
 				</key_map>
 
 				<key_map>
@@ -778,6 +809,7 @@
 						</event_value>
 						<keyboard>GDK_KP_Page_Down</keyboard>
 					</event_info>
+					<tooltip>Volume-down button</tooltip>
 				</key_map>
 
 			</key_map_list>
