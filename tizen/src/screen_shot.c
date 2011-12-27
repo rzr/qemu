@@ -561,14 +561,14 @@ static GtkWidget *create_frame_buffer(BUF_WIDGET * pWidget)
 	tmp_toolbar_icon_size = gtk_toolbar_get_icon_size(GTK_TOOLBAR(toolbar1));
 
 	toolbutton1 = (GtkWidget *) gtk_tool_button_new_from_stock("gtk-justify-center");
-	gtk_widget_set_tooltip_text(toolbutton1, "Copy into ClipBoard");
+	gtk_widget_set_tooltip_text(toolbutton1, "Copy into ClipBoard (Ctrl+c)");
 	gtk_widget_show(toolbutton1);
 	gtk_container_add(GTK_CONTAINER(toolbar1), toolbutton1);
 	g_signal_connect(toolbutton1, "clicked", G_CALLBACK(copy_clip_board), pWidget);
 	gtk_widget_add_accelerator(toolbutton1, "clicked", accel_group, GDK_c, (GdkModifierType) GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
 	toolbutton2 = (GtkWidget *) gtk_tool_button_new_from_stock("gtk-save-as");
-	gtk_widget_set_tooltip_text(toolbutton2, "Save as(CTRL+S)");
+	gtk_widget_set_tooltip_text(toolbutton2, "Save as (Ctrl+s)");
 	gtk_widget_show(toolbutton2);
 	gtk_container_add(GTK_CONTAINER(toolbar1), toolbutton2);
 	g_signal_connect(toolbutton2, "clicked", G_CALLBACK(frame_buffer_save_image), pWidget);
