@@ -407,12 +407,12 @@ int sensor_parser(char *buffer)
 
 	if(sensord_initialized == 1)
 	{
-		if(from_skin == 0)
+		if(from_skin == 1) //skin-packet only
 		{
 			if(UISTATE.current_mode > 3)
 				base_mode = 4;
 
-			switch(rotation)
+			switch(rotation) //rotate emulator window
 			{
 				case 0:
 					if(UISTATE.current_mode %4 != 0)
