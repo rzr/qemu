@@ -2310,7 +2310,7 @@ void construct_main_window(void)
 	GtkWidget *create_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button1");
 	GtkWidget *delete_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button2");
 	GtkWidget *modify_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button3");
-	GtkWidget *activate_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
+	GtkWidget *start_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
 	GtkWidget *details_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button5");
 	GtkWidget *refresh_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button8");
 	GtkWidget *reset_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button9");
@@ -2322,7 +2322,7 @@ void construct_main_window(void)
 	vbox = GTK_WIDGET( gtk_builder_get_object( g_builder, "vbox3" ) );
 
 	list_view = setup_list();
-	gtk_widget_grab_focus(activate_button);
+	gtk_widget_grab_focus(start_button);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(x86_radiobutton), TRUE);
 
 	gtk_widget_set_sensitive(arm_radiobutton, FALSE);
@@ -2331,11 +2331,25 @@ void construct_main_window(void)
 	g_signal_connect(GTK_RADIO_BUTTON(arm_radiobutton), "toggled", G_CALLBACK(arch_select_cb), arm_radiobutton);
 	gtk_box_pack_start(GTK_BOX(vbox), list_view, TRUE, TRUE, 0);
 	selection  = gtk_tree_view_get_selection(GTK_TREE_VIEW(list));
+	// add shortcut to buttons
+	GtkAccelGroup *group;
+	group = gtk_accel_group_new();
+	gtk_window_add_accel_group (GTK_WINDOW (g_main_window), group);
+
+	gtk_widget_add_accelerator (create_button, "clicked", group, GDK_Insert, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator (delete_button, "clicked", group, GDK_Delete, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator (modify_button, "clicked", group, GDK_M, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator (reset_button, "clicked", group, GDK_R, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator (refresh_button, "clicked", group, GDK_F5, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator (details_button, "clicked", group, GDK_D, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator (start_button, "clicked", group, GDK_S, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator (start_button, "clicked", group, GDK_Return, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
 	g_signal_connect(create_button, "clicked", G_CALLBACK(show_create_window), NULL); 
 	g_signal_connect(delete_button, "clicked", G_CALLBACK(delete_clicked_cb), selection);
 	g_signal_connect(details_button, "clicked", G_CALLBACK(details_clicked_cb), selection);
 	g_signal_connect(modify_button, "clicked", G_CALLBACK(modify_clicked_cb), selection);
-	g_signal_connect(activate_button, "clicked", G_CALLBACK(activate_clicked_cb), selection);
+	g_signal_connect(start_button, "clicked", G_CALLBACK(activate_clicked_cb), selection);
 	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), selection);
 	g_signal_connect(reset_button, "clicked", G_CALLBACK(reset_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
