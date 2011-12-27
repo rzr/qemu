@@ -970,7 +970,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 	/* 2. if clicked right mouse button, create popup_menu */
 	
 	GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
-	if (event->button == 3) {
+	if (event->button == 3 && get_emulator_condition() != EMUL_SHUTTING_DOWN) {
 		color.pixel = gdk_rgb_xpixel_from_rgb(0x3f3f3f); /* gray:0f */
 		gdk_gc_set_foreground(widget->style->fg_gc[GTK_STATE_NORMAL], &color);
 		gtk_menu_popup (GTK_MENU (popup_menu), NULL, NULL, NULL, NULL, event->button, event->time);

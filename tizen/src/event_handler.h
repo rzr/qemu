@@ -45,6 +45,7 @@
 #include "qemu_gtk_widget.h"
 #include "ui_imageid.h"
 #include "defines.h"
+#include "emulator.h"
 
 /* generic keyboard conversion */
 #include "../../ui/sdl_keysym.h"

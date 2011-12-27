@@ -93,6 +93,12 @@ typedef struct _arglist arglist;
 
 void append_argvlist(arglist* al, const char *fmt, ...) __attribute((__format__(__printf__,2,3)));
 
+enum {
+	EMUL_BOOTING = 0, //not used yet
+	EMUL_NORMAL, //not used yet
+	EMUL_SHUTTING_DOWN,
+};
+
 extern void save_emulator_state(void);
 extern void exit_emulator(void);
 extern gboolean  update_progress_bar(GIOChannel *, GIOCondition , gpointer);
@@ -105,6 +111,8 @@ extern PHONEMODELINFO *phone_info;
 extern GtkWidget *EventItem1;
 extern GtkWidget *EventItem2;
 
+int get_emulator_condition(void);
+void set_emulator_condition(int state);
 int emul_create_process(const gchar cmd[]);
 void emul_kill_all_process(void);
 extern int qemu_arch_is_arm(void); /* hack */

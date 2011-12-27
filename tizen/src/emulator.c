@@ -120,6 +120,7 @@ UIFLAG UISTATE = {
 	.network_read_flag = FALSE,
 };
 
+int _emulator_condition = 0;
 PHONEMODELINFO PHONE;
 GtkWidget *g_main_window;
 
@@ -138,6 +139,16 @@ int        vmstate=0;
 int 	   vmsock=-1;
 int		   device_count = 0;
 GIOChannel *channel=NULL;
+
+int get_emulator_condition(void)
+{
+	return _emulator_condition;
+}
+
+void set_emulator_condition(int state)
+{
+	_emulator_condition = state;
+}
 
 struct _arglist {
 	char *argv[QEMUARGC];
@@ -405,6 +416,7 @@ static void *graceful_shutdown_ftn(void* arg)
  */
 void exit_emulator(void)
 {
+	set_emulator_condition(EMUL_SHUTTING_DOWN);
 
 #if 1 /* graceful shutdown */
 
@@ -576,7 +588,7 @@ static void construct_main_window(void)
 	g_signal_connect (G_OBJECT(g_main_window), "button_release_event", G_CALLBACK(motion_notify_event_handler), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "key_press_event", G_CALLBACK(key_event_handler), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "key_release_event", G_CALLBACK(key_event_handler), NULL);
-	g_signal_connect (G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_emulator), NULL);
+	//g_signal_connect (G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_emulator), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "configure_event", G_CALLBACK(configure_event), NULL);
 
 	//g_object_set (g_main_window, "has-tooltip", TRUE, NULL);
