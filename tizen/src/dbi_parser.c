@@ -510,19 +510,19 @@ static void free_modelist(mode_list *ml)
 		free(ml->name);
 	}
 	if (ml->image_list.main_image) {
-		free(ml->image_list.main_image);
+		g_free(ml->image_list.main_image);
 	}
 	if (ml->image_list.keypressed_image) {
-		free(ml->image_list.keypressed_image);
+		g_free(ml->image_list.keypressed_image);
 	}
 	if (ml->image_list.led_main_image) {
-		free(ml->image_list.led_main_image);
+		g_free(ml->image_list.led_main_image);
 	}
 	if (ml->image_list.led_keypressed_image) {
-		free(ml->image_list.led_keypressed_image);
+		g_free(ml->image_list.led_keypressed_image);
 	}
 	if (ml->image_list.splitted_area_image) {
-		free(ml->image_list.splitted_area_image);
+		g_free(ml->image_list.splitted_area_image);
 	}
 
 	for (i=0; i<ml->led_list_cnt; i++) {
