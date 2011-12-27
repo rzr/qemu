@@ -1495,6 +1495,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	char *cmd2 = NULL;
 	char *dst;
 	char *vms_path = NULL;
+	char *sdcard_name = NULL;
+	int file_status;	
 	//find arch name
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
@@ -1636,7 +1638,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
 			"%s/%s/emulimg-%s.%s", get_vms_abs_path(), name, name, arch);
 	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
-
+	// 2 : select from existing image
 	if(virtual_target_info.sdcard_type == 2){
 		GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 		char *sdcard_uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(sdcard_filechooser));
@@ -1645,10 +1647,16 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			return;
 		}
 		sdcard_file_select_cb();
-//		sdcard_name = g_path_get_basename(virtual_target_info.sdcard_path);
-//		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
-//		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s%s", dest_path, sdcard_name);
-//		TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+		file_status = is_exist_file(virtual_target_info.sdcard_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			// apply sdcard path that is changed by modifying target name
+			sdcard_name = g_path_get_basename(virtual_target_info.sdcard_path);
+			memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
+			snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s%s", dest_path, sdcard_name);
+			TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+			free(sdcard_name);
+		}
 	}
 	else
 	{
