@@ -588,7 +588,7 @@ static void construct_main_window(void)
 	g_signal_connect (G_OBJECT(g_main_window), "button_release_event", G_CALLBACK(motion_notify_event_handler), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "key_press_event", G_CALLBACK(key_event_handler), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "key_release_event", G_CALLBACK(key_event_handler), NULL);
-	//g_signal_connect (G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_emulator), NULL);
+	g_signal_connect (G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_emulator), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "configure_event", G_CALLBACK(configure_event), NULL);
 
 	//g_object_set (g_main_window, "has-tooltip", TRUE, NULL);
