@@ -68,6 +68,9 @@ static void frame_buffer_magnify3x_callback(GtkAction *action, gpointer data);
 static void frame_buffer_magnify4x_callback(GtkAction *action, gpointer data);
 static void frame_buffer_magnify5x_callback(GtkAction *action, gpointer data);
 
+#define MAX_ZOOM_IN_FACTOR 5
+#define MAX_ZOOM_OUT_FACTOR 1
+
 /** 
   * @brief 	create frame buffer window
   * @param 	pBufInfo: pointer to structure describing frame buffer information
@@ -314,7 +317,7 @@ static void frame_buffer_magnify_zoomin_callback(GtkAction *action, gpointer dat
 	BUF_WIDGET *buf_widget = (BUF_WIDGET *) data;	
 	GtkWidget *widget = NULL;
 
-	if (buf_widget->nCurDisplay < 5) {
+	if (buf_widget->nCurDisplay < MAX_ZOOM_IN_FACTOR) {
 		buf_widget->nCurDisplay++;
 		widget = frame_buffer_scale_window(data, buf_widget->nCurDisplay);
 		gtk_widget_show_all(widget);
@@ -333,7 +336,7 @@ static void frame_buffer_magnify_zoomout_callback(GtkAction *action, gpointer da
 	BUF_WIDGET *buf_widget = (BUF_WIDGET *) data;	
 	GtkWidget *widget = NULL;
 
-	if (buf_widget->nCurDisplay > 1) {
+	if (buf_widget->nCurDisplay > MAX_ZOOM_OUT_FACTOR) {
 		buf_widget->nCurDisplay--;
 		widget = frame_buffer_scale_window(data, buf_widget->nCurDisplay);
 		gtk_widget_show_all(widget);
@@ -575,13 +578,19 @@ static GtkWidget *create_frame_buffer(BUF_WIDGET * pWidget)
 	gtk_widget_add_accelerator(toolbutton2, "clicked", accel_group, GDK_s, (GdkModifierType) GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	
 	menutoolbutton1 = (GtkWidget *)gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_IN);
-	gtk_widget_set_tooltip_text(menutoolbutton1, "Zoom in");
+	gtk_widget_set_tooltip_text(menutoolbutton1, "Zoom in (Mouse wheel up)");
+	if (pWidget->nCurDisplay == MAX_ZOOM_IN_FACTOR) {
+		gtk_widget_set_sensitive(menutoolbutton1, FALSE);
+	}
 	gtk_widget_show(menutoolbutton1);
 	gtk_container_add(GTK_CONTAINER(toolbar1), menutoolbutton1);
 	g_signal_connect(menutoolbutton1, "clicked", G_CALLBACK(frame_buffer_magnify_zoomin_callback), pWidget);
 	
 	menutoolbutton2 = (GtkWidget *)gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_OUT);
-	gtk_widget_set_tooltip_text(menutoolbutton2, "Zoom out");
+	gtk_widget_set_tooltip_text(menutoolbutton2, "Zoom out (Mouse wheel down)");
+	if (pWidget->nCurDisplay == MAX_ZOOM_OUT_FACTOR) {
+		gtk_widget_set_sensitive(menutoolbutton2, FALSE);
+	}
 	gtk_widget_show(menutoolbutton2);
 	gtk_container_add(GTK_CONTAINER(toolbar1), menutoolbutton2);
 	g_signal_connect(menutoolbutton2, "clicked", G_CALLBACK(frame_buffer_magnify_zoomout_callback), pWidget);
