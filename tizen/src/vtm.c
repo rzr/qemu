@@ -318,6 +318,8 @@ char *check_kvm(char *info_file, int *status)
 
 int check_shdmem(char *target_name, int type)
 {
+	char *virtual_target_path = NULL;
+	virtual_target_path = get_virtual_target_abs_path(target_name);
 #ifndef _WIN32
 	int shm_id;
 	void *shm_addr;
@@ -339,7 +341,7 @@ int check_shdmem(char *target_name, int type)
 			if(val != -1)
 			{
 				INFO( "count of process that use shared memory : %d\n", shm_info.shm_nattch);
-				if(shm_info.shm_nattch > 0 && strcmp(target_name, (char*)shm_addr) == 0)
+				if(shm_info.shm_nattch > 0 && strcmp(virtual_target_path, (char*)shm_addr) == 0)
 				{
 					if(check_port_bind_listen(port+1) > 0){
 						shmdt(shm_addr);
@@ -404,7 +406,7 @@ int check_shdmem(char *target_name, int type)
 				return -1;
 			}
 
-			if(strcmp(pBuf, target_name) == 0)
+			if(strcmp(pBuf, virtual_target_path) == 0)
 			{
 				if(check_port_bind_listen(port+1) > 0)
 				{
@@ -444,6 +446,7 @@ int check_shdmem(char *target_name, int type)
 		free(base_port);
 	}
 #endif
+	free(virtual_target_path);
 	return 0;
 
 }
@@ -1005,9 +1008,9 @@ void refresh_clicked_cb(char *arch)
 	
 	//check VMs path
 	vms_path = (char*)get_vms_abs_path();
-	info_file_status = is_exist_file(vms_path);
-	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
-	{
+//	if(access(vms_path, R_OK) == -1){
+//		if(errno == ENOTDIR)
+	if (g_file_test(vms_path, G_FILE_TEST_EXISTS) == FALSE) {
 		show_message("Error","VMs directory is not existed, Check if EMULATOR_IMAGE installed.");
 		free(vms_path);
 		exit(0);
