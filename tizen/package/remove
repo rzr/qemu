@@ -1,11 +1,11 @@
-#!/bin/sh -e
+#!/bin/sh
 
-ETC_PATH= $INSTALLED_PATH/Emulator/etc
+ETC_PATH=$INSTALLED_PATH/Emulator/etc
 echo $ETC_PATH
 ## Remove etc path
 if test -e $ETC_PATH
 then
-	rm -f $ETC_PATH
+	rm -rf $ETC_PATH
 fi
 ## Register .desktop file
 xdg-desktop-menu uninstall $MENU_DIRECTORY_NAME  tizen-sdk-vtm.desktop

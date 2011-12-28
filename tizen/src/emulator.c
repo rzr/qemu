@@ -899,12 +899,13 @@ static void emul_prepare_process(void)
 int init_shdmem()
 {
 
+	char *virtual_target_path = NULL;
+	virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
 	tizen_base_port = get_sdb_base_port();
 #ifndef _WIN32
 	int shmid; 
 	char *shared_memory;
-
-	shmid = shmget((key_t)tizen_base_port, 64, 0666|IPC_CREAT); 
+	shmid = shmget((key_t)tizen_base_port, MAXPATH, 0666|IPC_CREAT); 
 	if (shmid == -1) 
 	{ 
 		ERR("shmget failed"); 
@@ -916,7 +917,7 @@ int init_shdmem()
 		ERR("shmat failed"); 
 		return -1; 
 	} 
-	sprintf(shared_memory, "%s", startup_option.vtm);
+	sprintf(shared_memory, "%s", virtual_target_path);
 	//memcpy( shared_memory, startup_option.vtm, strlen(startup_option.vtm));
 	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
 
@@ -928,7 +929,7 @@ int init_shdmem()
 	char* pBuf;
 	char* port_in_use;
 	char *shared_memory;
-	shared_memory = g_strdup_printf("%s", startup_option.vtm);
+	shared_memory = g_strdup_printf("%s", virtual_target_path);
 	port_in_use =  g_strdup_printf("%d", tizen_base_port);
     hMapFile = CreateFileMapping(
                  INVALID_HANDLE_VALUE,    // use paging file
@@ -959,6 +960,7 @@ int init_shdmem()
 	free(port_in_use);
 	free(shared_memory);
 #endif
+	free(virtual_target_path);
 	return 0;
 }
 
