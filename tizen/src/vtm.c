@@ -907,7 +907,6 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	show_message("Warning", "Target is not selected. Firstly select a target and press the button.");
 }
 
-
 void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 {
 	GtkListStore *store;
@@ -994,6 +993,7 @@ void refresh_clicked_cb(char *arch)
 	char *info_file;
 	char *resolution = NULL;
 	char *buf;
+	char *vms_path = NULL;
 	gchar *ram_size = NULL;
 	int info_file_status;
 	gchar *local_target_list_filepath;
@@ -1002,13 +1002,25 @@ void refresh_clicked_cb(char *arch)
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 	local_target_list_filepath = get_targetlist_abs_filepath();
 	target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
+	
+	//check VMs path
+	vms_path = (char*)get_vms_abs_path();
+	info_file_status = is_exist_file(vms_path);
+	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+	{
+		show_message("Error","VMs directory is not existed, Check if EMULATOR_IMAGE installed.");
+		free(vms_path);
+		exit(0);
+	}
+	else
+		free(vms_path);
 
 	gtk_list_store_clear(store);
 
 	for(i = 0; i < num; i++)
 	{
 		gtk_list_store_append(store, &iter);
-
+		
 		virtual_target_path = get_virtual_target_abs_path(target_list[i]);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		info_file_status = is_exist_file(info_file);
