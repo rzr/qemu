@@ -186,10 +186,23 @@ GtkWidget *create_frame_buffer_window(FBINFO *pBufInfo)
 void frame_buffer_handler(GtkWidget *widget, gpointer data)
 {
 	GtkWidget *frame_buffer_window = NULL;
+	int x, y;
+	gint frame_buffer_window_w;
+	gint frame_buffer_window_h;
 
 	frame_buffer_window = create_frame_buffer_window(&g_fbinfo[0]);
 
 	add_window(frame_buffer_window, SCREEN_SHOT_ID);
+
+	/* positioning */
+	gtk_window_get_size(GTK_WINDOW(frame_buffer_window), &frame_buffer_window_w, &frame_buffer_window_h);
+
+	x = configuration.main_x + PHONE.mode_SkinImg[UISTATE.current_mode].nImgWidth + frame_buffer_window_w;
+	if (x < gdk_screen_width()) { //right of emulator window
+		gtk_window_move(GTK_WINDOW(frame_buffer_window), x - frame_buffer_window_w, configuration.main_y);
+	} else { //left of emulator window
+		gtk_window_move(GTK_WINDOW(frame_buffer_window), configuration.main_x -frame_buffer_window_w, configuration.main_y);
+	}
 
 	UISTATE.is_screenshot_run = TRUE;
 		
