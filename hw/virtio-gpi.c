@@ -1,18 +1,29 @@
-/* 
- * Qemu virtio general purpose 
+/*
+ * Samsung Virtual Camera device(PCI) for Linux host.
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved 
+ * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Authors:
- *  Dongkyun Yun  dk77.yun@samsung.com
+ * Contact:
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * DongKyun Yun <dk77.yun@samsung.com>
  *
- * PROPRIETARY/CONFIDENTIAL
- * This software is the confidential and proprietary information of SAMSUNG ELECTRONICS ("Confidential Information").      
- * You shall not disclose such Confidential Information and shall use it only in accordance with the terms of the lice    nse agreement 
- * you entered into with SAMSUNG ELECTRONICS.  SAMSUNG make no representations or warranties about the suitability 
- * of the software, either express or implied, including but not limited to the implied warranties of merchantability,     fitness for 
- * a particular purpose, or non-infringement. SAMSUNG shall not be liable for any damages suffered by licensee as 
- * a result of using, modifying or distributing this software or its derivatives.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
+ *
  */
 
 #include "hw.h"
