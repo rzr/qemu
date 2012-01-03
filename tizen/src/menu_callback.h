@@ -75,6 +75,7 @@ int sort_recent_app_list(CONFIGURATION *pconfiguration);
 void do_shutdown(void);
 void show_info_window(GtkWidget *widget, gpointer data);
 
+extern int keyboard_state;
 #ifdef __cplusplus
 }
 #endif
