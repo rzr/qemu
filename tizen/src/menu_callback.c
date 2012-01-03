@@ -37,7 +37,6 @@
  */
 
 #include "menu_callback.h"
-#include "menu_callback.h"
 #include "hw/smbus.h"
 //#include "hw/smb380.h"
 #include "qemu_gtk_widget.h"
@@ -295,7 +294,7 @@ cleanup:
 	return;
 }
 
-
+int keyboard_state = 1;
 void menu_keyboard_callback(GtkWidget *widget, gpointer data)
 {
 	GtkWidget *pWidget = NULL;
@@ -306,11 +305,13 @@ void menu_keyboard_callback(GtkWidget *widget, gpointer data)
 
 	if (g_strcmp0(buf, "On") == 0) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			keyboard_state = 1;
 			menu_rotate_callback(&PHONE, 7);
 		}
 	}
 	else if (g_strcmp0(buf, "Off") == 0) {
 		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+			keyboard_state = 0;
 			menu_rotate_callback(&PHONE, 8);
 		}
 	}

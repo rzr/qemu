@@ -59,6 +59,7 @@
 
 #include "sensor_server.h"
 #include "emulator.h"
+#include "menu_callback.h"
 #define UDP
 
 #include "debug_ch.h"
@@ -326,6 +327,12 @@ gboolean sensor_server(GIOChannel *channel, GIOCondition condition, gpointer dat
 					case 7:
 						sprintf(send_buf, "%s", recv_buf); 
 						break;
+					case 2: //reboot guest
+                                        {
+						// menu_callback.h
+                                                sprintf(send_buf, "7\n%1d\n", keyboard_state);
+                                                break;
+                                        }
 				}
 
 				if(parse_result != 1 && parse_result != -1)
@@ -382,6 +389,9 @@ int sensor_parser(char *buffer)
 	}
 	else if(strcmp(tmpbuf, "3\n") == 0) // packet from sensord
 	{
+		if (sensord_initialized == 1) // reboot guest
+                        return 2;
+
 		/* sensord_initialized will be initialized in create_fw_rota_init */
 		sensord_initialized = 1;
 		return 1;
