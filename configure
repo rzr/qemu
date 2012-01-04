@@ -1404,7 +1404,7 @@ int main(void) { AVFormatContext *pFormatCtx = NULL; av_find_stream_info(pFormat
 EOF
   ffmpeg_cflags="-I$source_path/tizen/$ffmpeg_inc/include"
   if test "$linux" = "yes" ; then
-  	ffmpeg_libs="-lavformat -lavcodec -lavutil -lm -lpthread -lz" 
+  	ffmpeg_libs="-lavformat -lavcodec -lavutil -lm" 
   elif test "$mingw32" = "yes" ; then
    	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll"
   fi
