@@ -4,13 +4,6 @@
 currentPath=`pwd`
 desktoppath=~/.local/share/applications
 
-## vtm shortcut
-vtm_desktopfile=$desktoppath/tizen-sdk-vtm.desktop
-vtm_iconfile=vtm.ico
-vtm_exefile=Emulator/bin/emulator-manager
-vtm_comment="Emulator manager is a tool which can make a cloned emulator image"
-vtm_name="Emulator Manager"
-
 ## Do not modify the followings (Make desktop menu)
 TIZEN_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`
 if [ -z $TIZEN_SDK_INSTALL_PATH ]
@@ -21,7 +14,19 @@ fi
 
 iconpath=~/.local/share/icons
 
+## vtm shortcut
+vtm_desktopfile=$desktoppath/tizen-sdk-vtm.desktop
+vtm_iconfile=vtm.ico
+vtm_exefile=Emulator/bin/emulator-manager
 vtm_exepath=$TIZEN_SDK_INSTALL_PATH/$vtm_exefile
+vtm_comment="Emulator manager is a tool which can make a cloned emulator image"
+vtm_name="Emulator Manager"
+${MAKESHORTCUT_PATH} \
+		-f $vtm_desktopfile \
+		-e $vtm_exepath \
+		-i "$iconpath/$vtm_iconfile" \
+		-n $vtm_name \
+		-c $vtm_comment
 
 mkdir -p $iconpath
 

@@ -8,7 +8,7 @@ then
 	rm -rf $ETC_PATH
 fi
 ## Register .desktop file
-xdg-desktop-menu uninstall $MENU_DIRECTORY_NAME  tizen-sdk-vtm.desktop
+${REMOVE_SHORTCUT}  tizen-sdk-vtm.desktop
 ### END Register Menu ###
 
 ## Remove icon file ##
