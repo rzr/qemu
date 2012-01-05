@@ -22,11 +22,11 @@ vtm_exepath=$TIZEN_SDK_INSTALL_PATH/$vtm_exefile
 vtm_comment="Emulator manager is a tool which can make a cloned emulator image"
 vtm_name="Emulator Manager"
 ${MAKESHORTCUT_PATH} \
-		-f $vtm_desktopfile \
-		-e $vtm_exepath \
+		-f "$vtm_desktopfile" \
+		-e "$vtm_exepath" \
 		-i "$iconpath/$vtm_iconfile" \
-		-n $vtm_name \
-		-c $vtm_comment
+		-n "$vtm_name" \
+		-c "$vtm_comment"
 
 mkdir -p $iconpath
 
