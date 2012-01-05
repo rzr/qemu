@@ -201,7 +201,7 @@ void activate_target(char *target_name)
 	//if targetlist exist but config file not exists
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
-		ERR( "target info file not exists : %s\n", target_name);
+		ERR( "target info file does not exist : %s\n", target_name);
 		return ;
 	}
 
@@ -556,7 +556,7 @@ void show_modify_window(char *target_name)
 	//if targetlist exist but config file not exists
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
-		ERR( "target info file not exists : %s\n", target_name);
+		ERR( "target info file does not exist : %s\n", target_name);
 		return;
 	}
 
@@ -682,7 +682,14 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 		virtual_target_path = get_virtual_target_abs_path(target_name);
-		activate_target(target_name);	
+		activate_target(target_name);
+		//change name if it's running
+//		static const char suffix[] = "(running)";
+//		char *new_name = malloc(strlen(target_name) + sizeof suffix);
+//		strcpy(new_name, target_name);
+//		strcat(new_name, suffix);
+//		gtk_list_store_set(store, &iter, TARGET_NAME, new_name, -1);
+//		free(new_name);
 		g_free(virtual_target_path);
 		g_free(target_name);
 	}
@@ -1004,24 +1011,33 @@ void refresh_clicked_cb(char *arch)
 
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 	local_target_list_filepath = get_targetlist_abs_filepath();
-	target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
-	
+
 	//check VMs path
 	vms_path = (char*)get_vms_abs_path();
-//	if(access(vms_path, R_OK) == -1){
-//		if(errno == ENOTDIR)
 	if (g_file_test(vms_path, G_FILE_TEST_EXISTS) == FALSE) {
-		show_message("Error","VMs directory is not existed, Check if EMULATOR_IMAGE installed.");
+		show_message("Error","VMs directory does not exist, Check if EMULATOR_IMAGE installed.");
 		free(vms_path);
 		exit(0);
 	}
 	else
 		free(vms_path);
+	
+	target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
+	if(!target_list)
+	{
+		show_message("Warning","There is no available target.");
+		return ; 
+	}
 
 	gtk_list_store_clear(store);
 
 	for(i = 0; i < num; i++)
 	{
+		if(!target_list)
+		{
+			show_message("Warning","There is no available target.");
+			return ; 
+		}
 		gtk_list_store_append(store, &iter);
 		
 		virtual_target_path = get_virtual_target_abs_path(target_list[i]);
@@ -1065,7 +1081,7 @@ void make_default_image(void)
 	char *virtual_target_path = get_virtual_target_abs_path("default");
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	char *default_img_x86 = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
-	//make x86 default image if it's not existed.
+	//make x86 default image if it does not exist.
 	info_file_status = is_exist_file(default_img_x86);
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
@@ -1093,7 +1109,7 @@ void make_default_image(void)
 	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
 	
 #ifdef _ARM	
-	//make arm default image if it's not existed.
+	//make arm default image if it does not exist.
 	g_setenv("EMULATOR_ARCH","arm",1);
 	virtual_target_path = get_virtual_target_abs_path("default");
 	char *default_img_arm = g_strdup_printf("%semulimg-default.arm", virtual_target_path);
@@ -1782,6 +1798,7 @@ void ok_clicked_cb(void)
 	char *dest_path = NULL;
 	char *log_path = NULL;
 	char *conf_file = NULL;
+	int file_status;
 	GtkWidget *win = get_window(VTM_CREATE_ID);
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
@@ -1808,11 +1825,12 @@ void ok_clicked_cb(void)
 #endif
 	}
 	//disk type
+	memset(virtual_target_info.basedisk_path, 0x00, MAXBUF);
 	if(virtual_target_info.disk_type == 0)
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
 	else if(virtual_target_info.disk_type == 1){
 		if(strcmp(virtual_target_info.basedisk_path, "") == 0){
-			show_message("Error", "You didn't select an existing sdcard image");
+			show_message("Error", "You didn't select an existing base image");
 			return;
 		}
 	}
@@ -1866,10 +1884,17 @@ void ok_clicked_cb(void)
 			return;
 		}
 	}
-
+	
 	// create emulator image
 #ifdef _WIN32
 	if(virtual_target_info.disk_type == 1){
+		is_exist_file(virtual_target_info.basedisk_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
+			show_message("Error", "Base image does not exist");
+			return ;
+		}
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 	}
@@ -1880,6 +1905,13 @@ void ok_clicked_cb(void)
 	}
 #else
 	if(virtual_target_info.disk_type == 1){
+		file_status = is_exist_file(virtual_target_info.basedisk_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
+			show_message("Error", "Base image does not exist");
+			return ;
+		}
 		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 	}
