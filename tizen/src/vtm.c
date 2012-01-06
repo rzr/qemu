@@ -1825,11 +1825,11 @@ void ok_clicked_cb(void)
 #endif
 	}
 	//disk type
-	memset(virtual_target_info.basedisk_path, 0x00, MAXBUF);
 	if(virtual_target_info.disk_type == 0)
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
 	else if(virtual_target_info.disk_type == 1){
-		if(strcmp(virtual_target_info.basedisk_path, "") == 0){
+		disk_file_select_cb();
+		if(strlen((char*)virtual_target_info.basedisk_path) == 0){
 			show_message("Error", "You didn't select an existing base image");
 			return;
 		}
