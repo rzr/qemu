@@ -21,7 +21,6 @@ vtm_exefile=Emulator/bin/emulator-manager
 vtm_exepath=$TIZEN_SDK_INSTALL_PATH/$vtm_exefile
 vtm_comment="Emulator manager is a tool which can make a cloned emulator image"
 vtm_name="Emulator Manager"
-
 mkdir -p $iconpath
 
 if test -e $TIZEN_SDK_INSTALL_PATH/temp/$vtm_iconfile 
@@ -31,27 +30,6 @@ else
 	echo "$vtm_iconfile does not exist!!"
 	exit 1
 fi
-
-mkdir -p $desktoppath
-
-## Create vtm .desktop file 
-cat > $vtm_desktopfile << END
-[Desktop Entry]
-Encoding=UTF-8
-Value=1.0
-Type=Application
-Terminal=false
-Comment=$vtm_comment
-Name=$vtm_name
-Categories=$CATEGORY
-StartupNotify=true
-NoDisplay=false
-END
-
-cat >> $vtm_desktopfile << END
-Icon=$iconpath/$vtm_iconfile
-Exec=$vtm_exepath
-END
 
 ${MAKESHORTCUT_PATH} \
 		-f "$vtm_desktopfile" \
