@@ -120,7 +120,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Create new virtual target.</property>
+                    <property name="tooltip_text" translatable="yes">Create new virtual target.(Ctrl+Insert)</property>
                     <property name="xalign">0</property>
                     <property name="image_position">bottom</property>
                     <child>
@@ -163,7 +163,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Modify selected virtual target.</property>
+                    <property name="tooltip_text" translatable="yes">Modify selected virtual target.(Ctrl+M)</property>
                     <child>
                       <object class="GtkHBox" id="hbox12">
                         <property name="visible">True</property>
@@ -205,7 +205,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Delete selected virtual target.</property>
+                    <property name="tooltip_text" translatable="yes">Delete selected virtual target.(Ctrl+Delete)</property>
                     <child>
                       <object class="GtkHBox" id="hbox11">
                         <property name="visible">True</property>
@@ -247,7 +247,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Reset selected virtual target.</property>
+                    <property name="tooltip_text" translatable="yes">Reset selected virtual target.(Ctrl+R)</property>
                     <child>
                       <object class="GtkHBox" id="hbox18">
                         <property name="visible">True</property>
@@ -297,7 +297,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Refresh target list.</property>
+                    <property name="tooltip_text" translatable="yes">Refresh target list.(Ctrl+F5)</property>
                     <child>
                       <object class="GtkHBox" id="hbox15">
                         <property name="visible">True</property>
@@ -338,7 +338,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Show virtual target information.</property>
+                    <property name="tooltip_text" translatable="yes">Show virtual target information.(Ctrl+D)</property>
                     <child>
                       <object class="GtkHBox" id="hbox14">
                         <property name="visible">True</property>
@@ -390,7 +390,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Start selected virtual target.</property>
+                    <property name="tooltip_text" translatable="yes">Start selected virtual target.(Ctrl+Enter)</property>
                     <signal name="clicked" handler="activate_clicked_cb"/>
                     <child>
                       <object class="GtkHBox" id="hbox16">
