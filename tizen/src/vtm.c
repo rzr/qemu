@@ -190,7 +190,7 @@ void activate_target(char *target_name)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 
@@ -209,14 +209,14 @@ void activate_target(char *target_name)
 	basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
 	/* check image & base image */
 	if(access(disk_path, R_OK) != 0){
-		error_log = g_strdup_printf("The image does not exist \n\n"
+		error_log = g_strdup_printf("The image does not exist. \n\n"
 				"    - [%s]", disk_path);
 		show_message("Error", error_log);
 		g_free(error_log);
 		return;
 	}    
 	if(access(basedisk_path, R_OK) != 0){
-		error_log = g_strdup_printf("The base image does not exist \n\n"
+		error_log = g_strdup_printf("The base image does not exist. \n\n"
 				"    - [%s]", basedisk_path);
 		show_message("Error", error_log);
 		g_free(error_log);
@@ -253,7 +253,7 @@ void activate_target(char *target_name)
 	}
 	else
 	{
-		show_message("Error", "Architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 #else /*_WIN32 */
@@ -350,16 +350,16 @@ int check_shdmem(char *target_name, int type)
 					switch(type)
 					{
 					case CREATE_MODE:
-						show_message("Warning", "Can not activate this target!\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not activate this target.\nVirtual target with the same name is running now!");
 						break;
 					case DELETE_MODE:
-						show_message("Warning", "Can not delete this target!\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not delete this target.\nVirtual target with the same name is running now!");
 						break;
 					case MODIFY_MODE:
-						show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not modify this target.\nVirtual target with the same name is running now!");
 						break;
 					case RESET_MODE:
-						show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not reset this target.\nVirtual target with the same name is running now!");
 						break;
 					default:
 						ERR("wrong type passed\n");
@@ -418,16 +418,16 @@ int check_shdmem(char *target_name, int type)
 				switch(type)
 				{
 				case CREATE_MODE:
-					show_message("Warning", "Can not activate this target!\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not activate this target.\nVirtual target with the same name is running now!");
 					break;
 				case DELETE_MODE:
-					show_message("Warning", "Can not delete this target!\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not delete this target.\nVirtual target with the same name is running now!");
 					break;
 				case MODIFY_MODE:
-					show_message("Warning", "Can not modify this target!\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not modify this target.\nVirtual target with the same name is running now!");
 					break;
 				case RESET_MODE:
-					show_message("Warning", "Can not reset this target!\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not reset this target.\nVirtual target with the same name is running now!");
 					break;
 				default:
 					ERR("wrong type passed\n");
@@ -532,7 +532,7 @@ void show_modify_window(char *target_name)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 
@@ -644,7 +644,7 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 		if(strcmp(target_name, "default") == 0){
-			show_message("Warning","You can not modify default target");
+			show_message("Warning","You can not modify default target.");
 			return;
 		}
 
@@ -800,7 +800,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 
@@ -848,13 +848,13 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
 
 		if(access(disk_path, R_OK) != 0){
-			details = g_strdup_printf("The image does not exist \n\n"
+			details = g_strdup_printf("The image does not exist. \n\n"
 					"    - [%s]", disk_path);
 			show_message("Error", details);
 			g_free(details);
 		}
 		if(access(basedisk_path, R_OK) != 0){
-			details = g_strdup_printf("The base image does not exist \n\n"
+			details = g_strdup_printf("The base image does not exist. \n\n"
 					"    - [%s]", basedisk_path);
 			show_message("Error", details);
 			g_free(details);
@@ -939,7 +939,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 		if(strcmp(target_name,"default") == 0)
 		{
-			show_message("Warning","You can not delete default target");
+			show_message("Warning","You can not delete default target.");
 			return;
 		}
 
@@ -1195,7 +1195,7 @@ int create_config_file(gchar* filepath)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return -1;
 	}
 	FILE *fp = g_fopen(filepath, "w+");
@@ -1261,7 +1261,7 @@ int write_config_file(gchar *filepath)
 		set_config_value(filepath, QEMU_GROUP, BINARY_KEY, "emulator-arm");
 	else
 	{
-		show_message("Error", "architecture setting error\n");
+		show_message("Error", "Architecture setting failed.\n");
 		ERR( "architecture setting error");
 		return -1;
 	}
@@ -1533,7 +1533,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "architecture setting failed.");
 		return ;
 	}
 
@@ -1554,7 +1554,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	else
 	{
 		WARN( "disk type is wrong");
-		show_message("Warning", "disk type is wrong");
+		show_message("Warning", "Disk type is wrong.");
 		return;
 	}
 
@@ -1674,7 +1674,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 		char *sdcard_uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(sdcard_filechooser));
 		if(sdcard_uri == NULL){
-			show_message("Error", "You didn't select an existing sdcard image");
+			show_message("Warning", "You didn't select an existing sdcard image!");
 			return;
 		}
 		sdcard_file_select_cb();
@@ -1759,7 +1759,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 	else if(virtual_target_info.sdcard_type == 2){
 		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
-			show_message("Error", "You didn't select an existing sdcard image");
+			show_message("Warning", "You didn't select an existing sdcard image!");
 			return;
 		}
 		TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
@@ -1804,7 +1804,7 @@ void ok_clicked_cb(void)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 
@@ -1830,7 +1830,7 @@ void ok_clicked_cb(void)
 	else if(virtual_target_info.disk_type == 1){
 		disk_file_select_cb();
 		if(strlen((char*)virtual_target_info.basedisk_path) == 0){
-			show_message("Error", "You didn't select an existing base image");
+			show_message("Warning", "You didn't select an existing base image.");
 			return;
 		}
 	}
@@ -1880,7 +1880,7 @@ void ok_clicked_cb(void)
 	}
 	else if(virtual_target_info.sdcard_type == 2){
 		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
-			show_message("Error", "You didn't select an existing sdcard image");
+			show_message("Warning", "You didn't select an existing sdcard image!");
 			return;
 		}
 	}
@@ -1892,7 +1892,7 @@ void ok_clicked_cb(void)
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Error", "Base image does not exist");
+			show_message("Error", "Base image does not exist!");
 			return ;
 		}
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
@@ -1909,7 +1909,7 @@ void ok_clicked_cb(void)
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Error", "Base image does not exist");
+			show_message("Error", "Base image does not exist!");
 			return ;
 		}
 		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -1925,7 +1925,7 @@ void ok_clicked_cb(void)
 	{
 		g_free(cmd);
 		g_free(dest_path);
-		show_message("Error", "emulator image create failed!");
+		show_message("Error", "Emulator image create failed!");
 		return;
 	}
 	g_free(cmd);
@@ -2023,7 +2023,7 @@ void setup_modify_disk_frame(char *target_name)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 
@@ -2212,7 +2212,7 @@ void setup_disk_frame(void)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 	// radio button setup
@@ -2309,7 +2309,7 @@ void show_create_window(void)
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed");
+		show_message("Error", "Architecture setting failed.");
 		return ;
 	}
 
