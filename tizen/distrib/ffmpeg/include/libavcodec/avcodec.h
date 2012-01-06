@@ -1173,7 +1173,7 @@ typedef struct AVCodecContext {
     int frame_size;
     int frame_number;   ///< audio or video frame number
 
-    /* add i_frame_number and stts_count because gstreamer plugin has been updated */
+    /* add i_frame_number and stts_count because of tizen emulator */
     int i_frame_number;
     int stts_count;
 
