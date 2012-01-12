@@ -243,11 +243,7 @@ int create_config_file(gchar* filepath)
 		return -1;
 	}
 
-#ifndef _WIN32
-	chmod(filepath, S_IRWXU | S_IRWXG | S_IRWXO);
-#else
-	chmod(filepath, S_IRWXU);
-#endif
+	g_chmod(filepath, 0666);
 
 	return 0;
 }

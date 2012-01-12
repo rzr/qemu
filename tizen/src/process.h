@@ -52,6 +52,8 @@ extern "C" {
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 
 int write_pidfile(const char *filename);
 int remove_pidfile(const char *filename);
