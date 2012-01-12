@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gtk/gtk.h>
 #include <time.h>
 #include <ctype.h>
@@ -186,11 +187,7 @@ int set_config_type(gchar *filepath, const gchar *group, const gchar *field, con
 		g_clear_error(&error);
 	}
 
-#ifndef _WIN32
-	chmod(filepath, S_IRWXU | S_IRWXG | S_IRWXO);
-#else
-	chmod(filepath, S_IRWXU);
-#endif
+	g_chmod(filepath, 0666);
 
 	g_free(data);
 	g_key_file_free(keyfile);
@@ -231,12 +228,6 @@ int del_config_key(gchar *filepath, const gchar *group, const gchar *field)
 		g_print("%s", error->message);
 		g_clear_error(&error);
 	}
-
-#ifndef _WIN32
-	chmod(filepath, S_IRWXU | S_IRWXG | S_IRWXO);
-#else
-	chmod(filepath, S_IRWXU);
-#endif
 
 	g_free(data);
 	g_key_file_free(keyfile);
@@ -281,12 +272,6 @@ int set_config_value(gchar *filepath, const gchar *group, const gchar *field, co
 		g_print("%s", error->message);
 		g_clear_error(&error);
 	}
-
-#ifndef _WIN32
-	chmod(filepath, S_IRWXU | S_IRWXG | S_IRWXO);
-#else
-	chmod(filepath, S_IRWXU);
-#endif
 
 	g_free(data);
 	g_key_file_free(keyfile);

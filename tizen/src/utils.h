@@ -40,8 +40,6 @@
 
 #ifndef __UTILS_H__
 #define __UTILS_H__
-#include <gtk/gtk.h>
-
 #include "fileio.h"
 
 GHashTable *window_hash_init (void);

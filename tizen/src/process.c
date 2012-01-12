@@ -228,11 +228,8 @@ int write_pidfile(const char *filename)
 	sprintf(buf, "%d", (int)getpid());
 	write(fd, buf, strlen(buf));
 
-#ifndef _WIN32
-	chmod(pidfname, S_IRWXU | S_IRWXG | S_IRWXO);
-#else
-	chmod(pidfname, S_IRWXU);
-#endif
+	g_chmod(pidfname, 0666);
+
 	close(fd);
 
 	return 0;

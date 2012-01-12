@@ -1241,11 +1241,7 @@ int create_config_file(gchar* filepath)
 		return -1;
 	}
 
-#ifndef _WIN32
-	chmod(filepath, S_IRWXU | S_IRWXG | S_IRWXO);
-#else
-	chmod(filepath, S_IRWXU);
-#endif
+	g_chmod(filepath, 0666);
 
 	return 0;
 }
@@ -1703,13 +1699,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
 	g_free(target_name);
 
-	if(access(dest_path, R_OK) != 0){
-#ifndef _WIN32
-		mkdir(dest_path, S_IRWXU | S_IRWXG);
-#else
-		mkdir(dest_path);
-#endif
-	}
+	if(access(dest_path, R_OK) != 0)
+		g_mkdir(dest_path, 0755);
 
 	// sdcard
 	if(virtual_target_info.sdcard_type == 0)
@@ -1809,21 +1800,13 @@ void ok_clicked_cb(void)
 	}
 
 	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-	if(access(dest_path, R_OK) != 0){
-#ifndef _WIN32
-		mkdir(dest_path, S_IRWXU | S_IRWXG);
-#else
-		mkdir(dest_path);
-#endif
-	}
+	if(access(dest_path, R_OK) != 0)
+		g_mkdir(dest_path, 0755);
+	
 	log_path = get_virtual_target_log_path(virtual_target_info.virtual_target_name);
-	if(access(log_path, R_OK) != 0){
-#ifndef _WIN32
-		mkdir(log_path, S_IRWXU | S_IRWXG);
-#else
-		mkdir(log_path);
-#endif
-	}
+	if(access(log_path, R_OK) != 0)
+		mkdir(log_path, 0755);
+	
 	//disk type
 	if(virtual_target_info.disk_type == 0)
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
