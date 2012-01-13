@@ -34,8 +34,8 @@ exec ./configure \
  --audio-drv-list=winwave \
  --audio-card-list=es1370 \
  --enable-mixemu \
- --disable-vnc-tls
-# --enable-ffmpeg
+ --disable-vnc-tls \
+ --enable-ffmpeg
 # --disable-vnc-jpeg \
 # --disable-jpeg
 ;;
