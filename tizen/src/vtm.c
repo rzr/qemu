@@ -1220,9 +1220,9 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "\n[%s]\n", ADDITIONAL_OPTION_GROUP);
 		g_fprintf (fp, "%s=\n", EMULATOR_OPTION_KEY);
 		if(strcmp(arch, "x86") == 0)
-			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice wacom-tablet -usbdevice keyboard -net nic,model=virtio -rtc base=utc -net user");
+			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice wacom-tablet -usbdevice keyboard -net user -net nic,model=virtio -rtc base=utc");
 		else if(strcmp(arch, "arm") == 0)
-			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY," -M s5pc110 -net nic,model=s5pc1xx-usb-otg -usbdevice keyboard -rtc base=utc -net user -redir tcp:1202:10.0.2.16:22");
+			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY," -M s5pc110 -net user -net nic,model=s5pc1xx-usb-otg -usbdevice keyboard -rtc base=utc -redir tcp:1202:10.0.2.16:22");
 		g_fprintf (fp, "[%s]\n", HARDWARE_GROUP);
 		g_fprintf (fp, "%s=\n", RESOLUTION_KEY);
 		g_fprintf (fp, "%s=1\n", BUTTON_TYPE_KEY);
@@ -1871,7 +1871,7 @@ void ok_clicked_cb(void)
 	// create emulator image
 #ifdef _WIN32
 	if(virtual_target_info.disk_type == 1){
-		is_exist_file(virtual_target_info.basedisk_path);
+		file_status = is_exist_file(virtual_target_info.basedisk_path);
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);

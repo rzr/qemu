@@ -152,8 +152,7 @@ GtkWidget *get_widget (gint window_id, gchar *widget_name)
 
 
 /**
- * @brief 	set config type in emulator.conf file
- * @param	filename: configuration file path, group: EMULATOR_GROUP, field: CONF_USE_KEY, type: setting type
+ * @brief 	set config integer value in config.ini file
  * @return	fail(-1), success(0)
  * @date    Nov 18. 2008
  * */
@@ -196,6 +195,11 @@ int set_config_type(gchar *filepath, const gchar *group, const gchar *field, con
 
 }
 
+/**
+ * @brief 	delete target name key in targetlist.ini file
+ * @return	fail(-1), success(0)
+ * @date    Nov 18. 2008
+ * */
 int del_config_key(gchar *filepath, const gchar *group, const gchar *field)
 {
 	GKeyFile *keyfile;
@@ -238,8 +242,7 @@ int del_config_key(gchar *filepath, const gchar *group, const gchar *field)
 
 
 /**
- * @brief 	set config value in emulator.conf file
- * @param	filename: configuration file path, group: EMULATOR_GROUP, field: TARGET_PATH_KEY, value: setting value
+ * @brief 	set config characters value in config.ini file
  * @return	fail(-1), success(0)
  * @date    Nov 18. 2008
  * */
@@ -281,8 +284,7 @@ int set_config_value(gchar *filepath, const gchar *group, const gchar *field, co
 
 
 /**
- * @brief 	get config type	from emulator.conf file
- * @param	filename: configuration file path, group: EMULATOR_GROUP, field: CONF_USE_KEY, CONFIGURATION
+ * @brief 	get config integer type	from config.ini file
  * @return	fail(0), success(type)
  * @date    Nov 18. 2008
  * */
@@ -307,8 +309,7 @@ int get_config_type(gchar *filepath, const gchar *group, const gchar *field)
 
 
 /**
- * @brief 	get config value from emulator.conf file
- * @param	filename: configuration file path, group: EMULATOR_GROUP, field: TARGET_PATH_KEY, CONFIGURATION
+ * @brief 	get config characters value from config.ini file
  * @return	fail(0), success(value)
  * @date    Nov 18. 2008
  * */
