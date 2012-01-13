@@ -1805,7 +1805,7 @@ void ok_clicked_cb(void)
 	
 	log_path = get_virtual_target_log_path(virtual_target_info.virtual_target_name);
 	if(access(log_path, R_OK) != 0)
-		mkdir(log_path, 0755);
+		g_mkdir(log_path, 0755);
 	
 	//disk type
 	if(virtual_target_info.disk_type == 0)
@@ -2349,7 +2349,7 @@ void construct_main_window(void)
 	GtkWidget *x86_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton8");
 	GtkWidget *arm_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton9");
 
-	vbox = GTK_WIDGET( gtk_builder_get_object( g_builder, "vbox3" ) );
+	vbox = GTK_WIDGET(gtk_builder_get_object(g_builder, "vbox3"));
 
 	list_view = setup_list();
 	gtk_widget_grab_focus(start_button);

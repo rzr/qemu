@@ -207,11 +207,11 @@ gboolean show_ok_cancel_message(const char *szTitle, const char *szMessage)
 
 	/* set OK Button to Default Button */
 #if GTK_CHECK_VERSION(2,20,0)	
-	gtk_widget_set_can_default(button_ok, TRUE);
+	gtk_widget_set_can_default(button_cancel, TRUE);
 #else
-	GTK_WIDGET_SET_FLAGS(button_ok, GTK_CAN_DEFAULT);
+	GTK_WIDGET_SET_FLAGS(button_cancel, GTK_CAN_DEFAULT);
 #endif
-	gtk_widget_grab_default(button_ok);
+	gtk_widget_grab_default(button_cancel);
 
 	/* create Label */
 	
