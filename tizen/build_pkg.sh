@@ -51,10 +51,19 @@ build_emulator_kernel () {
 	fi
 
 	echo ==== Start building emulator-Kernel ====
+	KERNEL_OUTPUT="arch/x86/boot/bzImage"
+	KERNEL_DIR="/SLP2.0_SDK/Emulator/windows"
 	cd $PKG_DIR/emulator-kernel
 	git checkout $PKG_BRANCH 
 	./build.sh
-	cp arch/x86/boot/bzImage $PKG_EMUL_DIR/Emulator/x86/data/kernel-img/
+	cp $KERNEL_OUTPUT $PKG_EMUL_DIR/Emulator/x86/data/kernel-img/
+	echo ==== Upload kernel image for Windows ====
+	ncftpput -u sdk -p binary 172.21.111.180 $KERNEL_OUTPUT $KERNEL_DIR
+	if [ $? != 0 ] ; then
+		echo "Failed to upload the file."
+	    exit 1
+	fi
+	echo "Succeeded to upload the file"
 	echo ==== Finish building emulator-Kernel ====
 }
 
