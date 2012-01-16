@@ -334,6 +334,10 @@ int socket_init(void)
 
 void exit_emulator_post_process( void ) {
 
+	set_emulator_condition(EMUL_SHUTTING_DOWN);
+
+	free_dbi_file(&PHONE);
+
 	/* 1. emulator and driver destroy */
 	destroy_emulator();
 	INFO( "Emulator Stop: destroy emulator \n");
@@ -389,6 +393,7 @@ static int send_info_to_emuld(char *send_buf, int buf_size)
 	return 1;
 }
 
+#if 0
 static void *graceful_shutdown_ftn(void* arg)
 {
 	int i;
@@ -399,7 +404,11 @@ static void *graceful_shutdown_ftn(void* arg)
 	/* wait 7 seconds */
 	INFO("wait 7 seconds \n");
 	for(i=0; i<7; i++){
+#ifdef _WIN32
+		Sleep(1000);
+#else
 		usleep(1000000);
+#endif
 	}
 
 	INFO("qemu_system_shutdown_request call \n");
@@ -407,6 +416,7 @@ static void *graceful_shutdown_ftn(void* arg)
 
 	return 0;
 }
+#endif // #if 0
 
 /**
  * @brief	 destroy emulator
@@ -416,24 +426,28 @@ static void *graceful_shutdown_ftn(void* arg)
  */
 void exit_emulator(void)
 {
-	set_emulator_condition(EMUL_SHUTTING_DOWN);
 
 #if 1 /* graceful shutdown */
 
 	/* 1st way : long press => power key */
-	//ps2kbd_put_keycode( 103 & 0x7f );
-	//usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
-	//ps2kbd_put_keycode( 103 | 0x80 );
+	ps2kbd_put_keycode( 103 & 0x7f );
+#ifdef _WIN32
+	Sleep( 1.6 * 1000 ); // 1.6 seconds
+#else
+	usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
+#endif
+	ps2kbd_put_keycode( 103 | 0x80 );
 	// If user selects 'Yes' in Power off poup, 'qemu_system_shutdown_request' in vl.c is supposed to be called.
 
+#if 0
 	/* 2nd way : send command shutdown to emuld in guest image */
 	pthread_t thread_id;
-	if (pthread_create(&thread_id, NULL, graceful_shutdown_ftn, NULL) != 0) { 
+	if (pthread_create(&thread_id, NULL, graceful_shutdown_ftn, NULL) != 0) {
 		ERR("pthread_create fail \n");
 		qemu_system_shutdown_request();
 	}
+#endif
 
-	free_dbi_file(&PHONE);
 #else
 
 
