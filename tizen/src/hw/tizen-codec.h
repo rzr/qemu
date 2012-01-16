@@ -41,7 +41,7 @@
 #include <libswscale/swscale.h>
 
 // #define CODEC_THREAD
-// #define CODEC_KVM
+#define CODEC_KVM
 
 /*
  *  Codec Device Structures

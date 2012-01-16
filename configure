@@ -1406,7 +1406,7 @@ EOF
   if test "$linux" = "yes" ; then
   	ffmpeg_libs="-lavformat -lavcodec -lavutil -lm" 
   elif test "$mingw32" = "yes" ; then
-   	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll"
+   	ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll -lm"
   fi
   ffmpeg_libpath="-L$source_path/tizen/$ffmpeg_inc/lib"
   ffmpeg_libs="$ffmpeg_libpath $ffmpeg_libs"
