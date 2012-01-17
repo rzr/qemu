@@ -58,7 +58,7 @@ build_emulator_kernel () {
 	./build.sh
 	cp $KERNEL_OUTPUT $PKG_EMUL_DIR/Emulator/x86/data/kernel-img/
 	echo ==== Upload kernel image for Windows ====
-	ncftpput -u sdk -p binary 172.21.111.180 $KERNEL_OUTPUT $KERNEL_DIR
+	ncftpput -u sdk -p binary 172.21.111.180 $KERNEL_DIR $KERNEL_OUTPUT
 	if [ $? != 0 ] ; then
 		echo "Failed to upload the file."
 	    exit 1
