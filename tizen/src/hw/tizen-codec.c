@@ -128,9 +128,9 @@ int qemu_avcodec_open (SVCodecState *s)
 	cpu_synchronize_state(cpu_single_env);
 
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0],
-						avctx, sizeof(AVCodecContext), 0);
+						(uint8_t*)avctx, sizeof(AVCodecContext), 0);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[1],
-						&tmpCodec, sizeof(AVCodec), 0);
+						(uint8_t*)&tmpCodec, sizeof(AVCodec), 0);
 
 	/* restore AVCodecContext's pointer variables */
 	qemu_restore_context(avctx, &tmpCtx);
@@ -139,7 +139,7 @@ int qemu_avcodec_open (SVCodecState *s)
 	if (avctx->extradata_size > 0) {
 		avctx->extradata = (uint8_t*)av_malloc(avctx->extradata_size);
 		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[2],
-							avctx->extradata, avctx->extradata_size, 0);
+							(uint8_t*)avctx->extradata, avctx->extradata_size, 0);
 	} else {
 		avctx->extradata = NULL;
 	}
@@ -160,7 +160,8 @@ int qemu_avcodec_open (SVCodecState *s)
 		return ret;
 	}
 
-	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0], avctx, sizeof(AVCodecContext), 1);
+	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0],
+						(uint8_t*)avctx, sizeof(AVCodecContext), 1);
 
 	return ret;
 }
@@ -264,7 +265,8 @@ void qemu_av_free (SVCodecState* s)
 	int value;
 
 #ifdef CODEC_KVM
-	cpu_memory_rw_debug(cpu_single_env, target_param->ret_args, &value, sizeof(int), 0);
+	cpu_memory_rw_debug(cpu_single_env, target_param->ret_args,
+						(uint8_t*)&value, sizeof(int), 0);
 #else
 	memcpy(&value, s->vaddr, sizeof(int));
 #endif
@@ -385,19 +387,21 @@ int qemu_avcodec_decode_video (SVCodecState* s)
 	avctx = gAVCtx;
 	picture = gFrame;
 	if (avctx == NULL || picture == NULL) {
-		printf("AVCodecContext or AVFrame is NULL!! avctx:0x%x, picture:0x%x\n", avctx, picture);
+		printf("AVCodecContext or AVFrame is NULL");
 		return -1;
 	}
 	
 	cpu_synchronize_state(cpu_single_env);
-	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[4], &buf_size, sizeof(int), 0);
+	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[4],
+						(uint8_t*)&buf_size, sizeof(int), 0);
 
 	TRACE("Paser Buffer : 0x%x, Parser:%d\n", gParserOutBuf, bParser); 
 	if (gParserOutBuf && bParser) {
 		buf = gParserOutBuf;
 	} else if (buf_size > 0) {
 		buf = (uint8_t*)av_malloc(buf_size * sizeof(uint8_t));
-		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[3], buf, buf_size, 0);
+		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[3],
+							(uint8_t*)buf, buf_size, 0);
 	} else {
 		TRACE("There is no input buffer\n");
 	}
@@ -426,11 +430,11 @@ int qemu_avcodec_decode_video (SVCodecState* s)
 	}
 
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0],
-						avctx, sizeof(AVCodecContext), 1);
+						(uint8_t*)avctx, sizeof(AVCodecContext), 1);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[1],
-						picture, sizeof(AVFrame), 1);
+						(uint8_t*)picture, sizeof(AVFrame), 1);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[2],
-						&got_picture_ptr, sizeof(int), 1);
+						(uint8_t*)&got_picture_ptr, sizeof(int), 1);
 //	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[6],
 //						&avctx->pix_fmt, sizeof(enum PixelFormat), 1);
 
@@ -551,23 +555,23 @@ int qemu_avcodec_encode_video (SVCodecState *s)
 	cpu_synchronize_state(cpu_single_env);
 
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[2],
-						&outBufSize, sizeof(int), 0);
+						(uint8_t*)&outBufSize, sizeof(int), 0);
 
 	if (outBufSize > 0) {
 		outBuf = (uint8_t*)av_malloc(outBufSize * sizeof(uint8_t));
 		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[1],
-							outBuf, outBufSize, 0);
+							(uint8_t*)outBuf, outBufSize, 0);
 	} else {
 		ERR("input buffer size is 0\n");
 		return -1;
 	}
 
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[3],
-						pict, sizeof(AVFrame), 0);
+						(uint8_t*)pict, sizeof(AVFrame), 0);
     inBufSize = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     inBuf = (uint8_t*)av_malloc(inBufSize * sizeof(uint8_t));
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[4],
-						inBuf, inBufSize, 0);
+						(uint8_t*)inBuf, inBufSize, 0);
 	
     ret = avpicture_fill((AVPicture*)pict, inBuf, avctx->pix_fmt,
 						avctx->width, avctx->height);
@@ -580,9 +584,9 @@ int qemu_avcodec_encode_video (SVCodecState *s)
 
 	if (ret > 0) {
 		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[5],
-							avctx->coded_frame, sizeof(AVFrame), 1);
+							(uint8_t*)avctx->coded_frame, sizeof(AVFrame), 1);
 		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[6],
-							outBuf, outBufSize, 1);
+							(uint8_t*)outBuf, outBufSize, 1);
 	}
 	av_free(inBuf);
 	return ret;
@@ -680,9 +684,6 @@ void qemu_av_picture_copy (SVCodecState *s)
 	AVCodecContext* avctx;
 	AVPicture dst;
 	AVPicture *src;
-	enum PixelFormat pix_fmt;
-	int width;
-	int height;
 	int numBytes;
 	uint8_t *buffer = NULL;
 	int ret;
@@ -703,7 +704,7 @@ void qemu_av_picture_copy (SVCodecState *s)
 
 	cpu_synchronize_state(cpu_single_env);
 	ret = cpu_memory_rw_debug(cpu_single_env, target_param->in_args[5],
-							dst.data[0], numBytes, 1);
+							  (uint8_t*)dst.data[0], numBytes, 1);
 	if (ret < 0) {
 		TRACE("failed to copy decoded frame into guest!! ret:%d\n", ret);
 	}
@@ -754,7 +755,7 @@ void qemu_av_parser_init (SVCodecState *s)
 
 	cpu_synchronize_state(cpu_single_env);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0],
-						&codec_id, sizeof(int), 0);
+						(uint8_t*)&codec_id, sizeof(int), 0);
 
 	parserctx = av_parser_init(codec_id);
 	if (!parserctx) {
@@ -799,7 +800,7 @@ int qemu_av_parser_parse (SVCodecState *s)
 	int inbuf_size;
 	int64_t pts;
 	int64_t dts;
-	int size, ret;
+	int ret;
 
 	if (gAVParserCtx && gAVCtx) {
 		parserctx = gAVParserCtx;
@@ -815,20 +816,20 @@ int qemu_av_parser_parse (SVCodecState *s)
 
 	cpu_synchronize_state(cpu_single_env);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[1],
-						avctx, sizeof(AVCodecContext), 0);
+						(uint8_t*)avctx, sizeof(AVCodecContext), 0);
 	qemu_restore_context(avctx, &tmp_ctx);	
 
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[5],
-						&inbuf_size, sizeof(int), 0);
+						(uint8_t*)&inbuf_size, sizeof(int), 0);
 	if (inbuf_size > 0) {
 		inbuf = av_malloc(sizeof(uint8_t) * inbuf_size);
 		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[4],
-							inbuf, inbuf_size, 0);
+							(uint8_t*)inbuf, inbuf_size, 0);
 	}
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[6],
-						&pts, sizeof(int64_t), 0);
+						(uint8_t*)&pts, sizeof(int64_t), 0);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[7],
-						&dts, sizeof(int64_t), 0);
+						(uint8_t*)&dts, sizeof(int64_t), 0);
 	
 	ret = av_parser_parse(parserctx, avctx, &poutbuf, &poutbuf_size,
 						  inbuf, inbuf_size, pts, dts);
@@ -839,16 +840,14 @@ int qemu_av_parser_parse (SVCodecState *s)
 	}
 
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[0],
-						parserctx, sizeof(AVCodecParserContext), 1);
+						(uint8_t*)parserctx, sizeof(AVCodecParserContext), 1);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[1],
-						avctx, sizeof(AVCodecContext), 1);
+						(uint8_t*)avctx, sizeof(AVCodecContext), 1);
 	cpu_memory_rw_debug(cpu_single_env, target_param->in_args[3],
-						&poutbuf_size, sizeof(int), 1);
-//	memcpy(s->vaddr, &poutbuf_size, sizeof(int));
+						(uint8_t*)&poutbuf_size, sizeof(int), 1);
 	if (poutbuf_size != 0) {
 		cpu_memory_rw_debug(cpu_single_env, target_param->in_args[2],
-						poutbuf, poutbuf_size, 1);
-//		memcpy((uint8_t*)s->vaddr + 4, poutbuf, poutbuf_size);
+							(uint8_t*)poutbuf, poutbuf_size, 1);
 	}
 
 	TRACE("Leave %s\n", __func__);
@@ -1044,7 +1043,8 @@ static void codec_write (void *opaque, target_phys_addr_t addr, uint32_t value)
 #ifdef CODEC_KVM
 			if (ret >= 0) {
 				cpu_synchronize_state(cpu_single_env);
-				cpu_memory_rw_debug(cpu_single_env, target_param->ret_args, &ret, sizeof(int), 1);
+				cpu_memory_rw_debug(cpu_single_env, target_param->ret_args,
+									(uint8_t*)&ret, sizeof(int), 1);
 			}
 #endif
 			paramCount = 0;
