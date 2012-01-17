@@ -706,8 +706,8 @@ static void touch_shoot_for_type(GtkWidget *widget, int x, int y, int lcd_status
 	int dx, dy, dz = 0, lcd_height, lcd_width;
 	GtkWidget *pWidget = NULL;
 	GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
-	lcd_height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h);
-	lcd_width = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.w);
+	lcd_height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h * UISTATE.scale);
+	lcd_width = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.w * UISTATE.scale);
 
 #if 0
 	if (qemu_arch_is_arm()) {
@@ -772,8 +772,8 @@ static void touch_shoot_for_type(GtkWidget *widget, int x, int y, int lcd_status
 #ifdef DEBUG_TOUCH_EVENT 
 	printf("dx %d dy %d x %d y %d lcd_width %d lcd_height %d\n",dx,dy,x,y,lcd_width,lcd_height);
 	printf("lcd_region.x = %d, lcd_region.y = %d\n",
-			PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.x,
-			PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y);
+			PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.x * UISTATE.scale,
+			PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y * UISTATE.scale);
 #endif /* DEBUG_TOUCH_EVENT */
 
 	/* when portrait */
@@ -862,10 +862,10 @@ static void draw_mapping(GtkWidget * widget, GdkEventButton * event, int nPressK
 
 	if (nPressKey >= 0 && nPressKey < MAX_KEY_NUM) {
 
-		x = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.x;
-		y = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.y;
-		nW = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.w;
-		nH = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.h;
+		x = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.x * UISTATE.scale;
+		y = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.y * UISTATE.scale;
+		nW = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.w * UISTATE.scale;
+		nH = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.h * UISTATE.scale;
 		gdk_draw_pixbuf(widget->window, widget->style->fg_gc[GTK_STATE_NORMAL], PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg_P, x, y, x, y, nW, nH, GDK_RGB_DITHER_MAX, 0, 0);
 		gdk_flush();
 	}
@@ -891,6 +891,8 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 	old_button_status = button_status;	
 	button_status = check_region_button(x, y, &PHONE);
 	lcd_status = check_region_lcd(x, y, &PHONE);
+
+#if 0
 	if(PHONE.dual_display == 1){
 		int curr_rotation = UISTATE.current_mode;
 		extern int intermediate_section;
@@ -927,8 +929,9 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 				y = y - intermediate_section;
 		}
 	}
-	dx = (x - (PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.x)) * PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.s;
-	dy = (y - (PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y)) * PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.s;	
+#endif
+	dx = (x - (PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.x * UISTATE.scale)) / UISTATE.scale;
+	dy = (y - (PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y * UISTATE.scale)) / UISTATE.scale;
 
 	/* 1. button animation */
 	
@@ -939,19 +942,19 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 		if (button_status != old_button_status) {
 			for(j = 0; j < PHONE.mode[UISTATE.current_mode].key_map_list_cnt; j++) {
 
-				gtk_widget_queue_draw_area(widget, PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.x,	
-								   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.y,
-								   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.w,
-								   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.h);			
+				gtk_widget_queue_draw_area(widget, PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.x * UISTATE.scale,
+								   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.y * UISTATE.scale,
+								   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.w * UISTATE.scale,
+								   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.h * UISTATE.scale);
 			}
 
 		}
 		
-		gdk_draw_rectangle(widget->window, widget->style->fg_gc[GTK_STATE_NORMAL], FALSE, 
-						PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.x, 
-						PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.y, 
-						PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.w-1,
-						PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.h-1);
+		gdk_draw_rectangle(widget->window, widget->style->fg_gc[GTK_STATE_NORMAL], FALSE,
+						PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.x * UISTATE.scale,
+						PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.y * UISTATE.scale,
+						(PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.w - 1) * UISTATE.scale,
+						(PHONE.mode[UISTATE.current_mode].key_map_list[button_status].key_map_region.h - 1) * UISTATE.scale);
 		
 	}
 
@@ -960,10 +963,10 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 		gdk_gc_set_foreground(widget->style->fg_gc[GTK_STATE_NORMAL], &color);
 
 		for(j = 0; j < PHONE.mode[UISTATE.current_mode].key_map_list_cnt; j++) {
-			gtk_widget_queue_draw_area(widget, PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.x,	
-											   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.y,
-											   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.w,
-											   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.h);
+			gtk_widget_queue_draw_area(widget, PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.x * UISTATE.scale,
+							   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.y * UISTATE.scale,
+							   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.w * UISTATE.scale,
+							   PHONE.mode[UISTATE.current_mode].key_map_list[j].key_map_region.h * UISTATE.scale);
 		}
 	}
 
@@ -1041,16 +1044,16 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 
 		/* 5.1  when event is in lcd region (touch region) */		
 
-		if (lcd_status == LCD_REGION || lcd_status == DUAL_LCD_REGION) 	
+		if (lcd_status == LCD_REGION || lcd_status == DUAL_LCD_REGION) {
 			touch_shoot_for_type(widget, dx, dy, lcd_status, TOUCH_RELEASE);
-
+		}
 		/* 5.2  when event is not in lcd region (keycode region) */
 
 		else {
-			gtk_widget_queue_draw_area(widget, PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.x,
-										   PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.y,
-										   PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.w,
-										   PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.h);
+			gtk_widget_queue_draw_area(widget, PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.x * UISTATE.scale,
+							   PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.y * UISTATE.scale,
+							   PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.w * UISTATE.scale,
+							   PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.button_press_flag].key_map_region.h * UISTATE.scale);
 
 			if (button_status != NON_BUTTON_REGION) {
 				keycode = PHONE.mode[UISTATE.current_mode].key_map_list[button_status].event_info[0].event_value[0].key_code;
@@ -1108,10 +1111,10 @@ gboolean query_tooltip_event(GtkWidget *widget, gint x, gint y, gboolean keyboar
 	int left, right, top, bottom;
 
 	for(index = 0; index < PHONE.mode[UISTATE.current_mode].key_map_list_cnt; index++) {
-		left = PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.x;
-		right = left + PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.w;
-		top = PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.y;
-		bottom = top + PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.h;
+		left = PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.x * UISTATE.scale;
+		right = left + PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.w * UISTATE.scale;
+		top = PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.y * UISTATE.scale;
+		bottom = top + PHONE.mode[UISTATE.current_mode].key_map_list[index].key_map_region.h * UISTATE.scale;
 
 		if (x >= left && x <= right && y >= top && y <= bottom) {
 			break;

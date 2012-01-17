@@ -169,13 +169,13 @@ int check_region_button(int x, int y, PHONEMODELINFO *device)
 {
 	int i = 0;
 	if (UISTATE.last_index != -1) {
-		if (INSIDE(x, y, PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.last_index].key_map_region) == TRUE) {
+		if (INSIDE(x, y, PHONE.mode[UISTATE.current_mode].key_map_list[UISTATE.last_index].key_map_region, UISTATE.scale) == TRUE) {
 			return UISTATE.last_index;
 		}
 	}
 
 	for (i = 0; i < PHONE.mode[UISTATE.current_mode].key_map_list_cnt; i++) {
-		if (INSIDE(x, y, PHONE.mode[UISTATE.current_mode].key_map_list[i].key_map_region) == TRUE) {
+		if (INSIDE(x, y, PHONE.mode[UISTATE.current_mode].key_map_list[i].key_map_region, UISTATE.scale) == TRUE) {
 			UISTATE.last_index = i;
 			return UISTATE.last_index;
 		}
@@ -195,14 +195,15 @@ int check_region_lcd(int x, int y, PHONEMODELINFO * device)
 {
 	int i = 0;
 	for (i = 0; i < device->mode[UISTATE.current_mode].lcd_list_cnt; i++) {
+#if 0
 		if(device->dual_display == 1){
 			extern int intermediate_section;
 			int curr_rotation = UISTATE.current_mode;
 
 			/* 0 */
 			if(curr_rotation == 0){
-				int value = device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.x +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.w/device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.s)/2);
+				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.x * UISTATE.scale) +
+					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.w * UISTATE.scale)/2);
 				/* If its within the middle bar then its not a LCD region */
 				if(x >= value && x < (value + intermediate_section)){
 					return NON_LCD_REGION;
@@ -216,8 +217,8 @@ int check_region_lcd(int x, int y, PHONEMODELINFO * device)
 			}
 			/* 180 */
 			else if(curr_rotation == 2){
-				int value = device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.x +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.w/device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.s)/2);
+				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.x * UISTATE.scale) +
+					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.w * UISTATE.scale)/2);
 
 				/* If its within the middle bar then its not a LCD region */
 				if(x > value && x <= (value + intermediate_section)){
@@ -232,8 +233,8 @@ int check_region_lcd(int x, int y, PHONEMODELINFO * device)
 			}
 			/* 90 */
 			else if(curr_rotation == 1){
-				int value = device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.y +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.h/device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.s)/2);
+				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.y * UISTATE.scale) +
+					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.h * UISTATE.scale)/2);
 
 				/* If its within the middle bar then its not a LCD region */
 				if(y > value && y <= (value + intermediate_section)){
@@ -248,8 +249,8 @@ int check_region_lcd(int x, int y, PHONEMODELINFO * device)
 			}
 			/* 270 */
 			else {
-				int value = device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.y +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.h/device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.s)/2);
+				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.y * UISTATE.scale) +
+					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.h * UISTATE.scale)/2);
 
 				/* If its within the middle bar then its not a LCD region */
 				if(y > value && y <= (value + intermediate_section)){
@@ -265,12 +266,13 @@ int check_region_lcd(int x, int y, PHONEMODELINFO * device)
 		}
 		else
 		{
-			if (INSIDE_LCD(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region) == TRUE) {
+#endif
+			if (INSIDE_LCD(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region, UISTATE.scale) == TRUE) {
 				UISTATE.last_index = i;
 				if (i > 0)		return DUAL_LCD_REGION;
 				else 			return LCD_REGION;
 			}
-		}
+
 	}
 
 	return NON_LCD_REGION;
@@ -375,7 +377,18 @@ int load_skin_image(PHONEMODELINFO * device)
 			}
 		}
 	}
-	return 0;
+
+        /* remember the skin image when 1.0 scale */
+        for (i = 0; i < MODE_MAX; i++) {
+            device->default_SkinImg[i].pPixImg = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImg);
+            device->default_SkinImg[i].pPixImg_P = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImg_P);
+            device->default_SkinImg[i].pPixImgLed = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImgLed);
+            device->default_SkinImg[i].pPixImgLed_P = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImgLed_P);
+	    device->default_SkinImg[i].nImgWidth = device->mode_SkinImg[i].nImgWidth;
+            device->default_SkinImg[i].nImgHeight = device->mode_SkinImg[i].nImgHeight;
+        }
+
+        return 0;
 }
 
 

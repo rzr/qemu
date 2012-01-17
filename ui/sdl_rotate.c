@@ -52,7 +52,7 @@ This catches any potential overflows which seem to happen with
 just the right src image dimensions and scale/rotation and can lead
 to a situation where the program can segfault.
 */
-#define GUARD_ROWS (2)
+#define GUARD_ROWS (0)
 
 /*!
 \brief Lower limit of absolute zoom factor or rotation degrees.
