@@ -131,17 +131,16 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	if (strcmp(host_uname_buf.release, "2.6.35-22-generic") == 0) { // for ubuntu 10.10 resize window bug
 		gtk_decorated_window_move_resize_window (GTK_WINDOW(widget),
 			pconfiguration->main_x, pconfiguration->main_y,
-			pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
+			pDev->mode_SkinImg[nMode].nImgWidth * UISTATE.scale, pDev->mode_SkinImg[nMode].nImgHeight * UISTATE.scale);
 	} else
 #endif
 	{
-		hints.width_inc = hints.min_width = hints.base_width = pDev->mode_SkinImg[nMode].nImgWidth;
-		hints.height_inc = hints.min_height = hints.base_height = pDev->mode_SkinImg[nMode].nImgHeight;
+		hints.width_inc = hints.min_width = hints.base_width = pDev->mode_SkinImg[nMode].nImgWidth * UISTATE.scale;
+		hints.height_inc = hints.min_height = hints.base_height = pDev->mode_SkinImg[nMode].nImgHeight * UISTATE.scale;
 		gtk_window_set_geometry_hints (GTK_WINDOW (widget), NULL, &hints,
 			GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 
-		gtk_window_resize (GTK_WINDOW(widget),
-			pDev->mode_SkinImg[nMode].nImgWidth, pDev->mode_SkinImg[nMode].nImgHeight);
+		gtk_window_resize (GTK_WINDOW(widget),hints.base_width, hints.base_height);
 	}
 
 	/*
@@ -151,6 +150,28 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	 */
 
 	gtk_widget_destroy (pixmap_widget);
+	g_object_unref (pixmap_widget);
+
+	/* change current skin image */
+	if (UISTATE.scale == 1.0) {
+		gdk_pixbuf_unref (pDev->mode_SkinImg[nMode].pPixImg);
+		gdk_pixbuf_unref (pDev->mode_SkinImg[nMode].pPixImg_P);
+		pDev->mode_SkinImg[nMode].pPixImg = gdk_pixbuf_copy(pDev->default_SkinImg[nMode].pPixImg);
+		pDev->mode_SkinImg[nMode].pPixImg_P = gdk_pixbuf_copy(pDev->default_SkinImg[nMode].pPixImg_P);
+	} else {
+		gdk_pixbuf_unref (pDev->mode_SkinImg[nMode].pPixImg);
+		gdk_pixbuf_unref (pDev->mode_SkinImg[nMode].pPixImg_P);
+
+		pDev->mode_SkinImg[nMode].pPixImg = gdk_pixbuf_scale_simple (pDev->default_SkinImg[nMode].pPixImg,
+                                                         pDev->default_SkinImg[nMode].nImgWidth * UISTATE.scale,
+                                                         pDev->default_SkinImg[nMode].nImgHeight * UISTATE.scale,
+                                                         GDK_INTERP_HYPER);
+		pDev->mode_SkinImg[nMode].pPixImg_P = gdk_pixbuf_scale_simple (pDev->default_SkinImg[nMode].pPixImg_P,
+                                                         pDev->default_SkinImg[nMode].nImgWidth * UISTATE.scale,
+                                                         pDev->default_SkinImg[nMode].nImgHeight * UISTATE.scale,
+                                                         GDK_INTERP_HYPER);
+	}
+
 	pixmap_widget = gtk_image_new_from_pixbuf (pDev->mode_SkinImg[nMode].pPixImg);
 
 	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, &SkinPixmap, &SkinMask, 1);
@@ -160,8 +181,8 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
 	qemu_widget_new(&sdl_widget);
 	gtk_fixed_move (GTK_FIXED (fixed), sdl_widget,
-			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x,
-			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y);
+			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x * UISTATE.scale,
+			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y * UISTATE.scale);
 
 	if (SkinPixmap != NULL)
 		g_object_unref(SkinPixmap);
@@ -489,24 +510,37 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
 	}
 
 	/* 5. Scale menu */
+        else if (g_strcmp0(buf, ACTUAL_SIZE) == 0) {
+                if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+                        UISTATE.scale = 1.0;
+                        set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, SCALE_KEY, UISTATE.scale * 100);
+                        scale_event_callback(&PHONE, UISTATE.current_mode);
+                }
+        }
 
-	else if (g_strcmp0(buf, HALF_SIZE) == 0) {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-			if(UISTATE.current_mode > 3) {
-				UISTATE.scale = 2.0;
-				scale_event_callback(&PHONE, UISTATE.current_mode - 4);			
-			}
-		}
-	}
+        else if (g_strcmp0(buf, HALF_SIZE) == 0) {
+                if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+                        UISTATE.scale = 0.5;
+                        set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, SCALE_KEY, UISTATE.scale * 100);
+                        scale_event_callback(&PHONE, UISTATE.current_mode);
+                }
+        }
 
-	else if (g_strcmp0(buf, ACTUAL_SIZE) == 0) {
-		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-			if(UISTATE.current_mode <= 3) {
-				UISTATE.scale = 1.0;
-				scale_event_callback(&PHONE, UISTATE.current_mode + 4);			
-			}	
-		}
-	}
+        else if (g_strcmp0(buf, THREE_QUATERS_SIZE) == 0) {
+                if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+                        UISTATE.scale = 0.75;
+                        set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, SCALE_KEY, UISTATE.scale * 100);
+                        scale_event_callback(&PHONE, UISTATE.current_mode);
+                 }
+         }
+
+        else if (g_strcmp0(buf, QUATER_SIZE) == 0) {
+               if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
+                       UISTATE.scale = 0.25;
+                       set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, SCALE_KEY, UISTATE.scale * 100);
+                       scale_event_callback(&PHONE, UISTATE.current_mode);
+                }
+        }
 
 	else {
 		//		if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE)

@@ -220,6 +220,7 @@ int create_config_file(gchar* filepath)
 
 		g_fprintf (fp, "%s=\n", MAIN_X_KEY);
 		g_fprintf (fp, "%s=\n", MAIN_Y_KEY);
+		g_fprintf (fp, "%s=\n", SCALE_KEY);
 
 		g_fprintf (fp, "\n[%s]\n", QEMU_GROUP);
 		g_fprintf (fp, "%s=\n", HTTP_PROXY_KEY);
@@ -265,6 +266,7 @@ int write_config_file(gchar *filepath, CONFIGURATION *pconfiguration)
 	set_config_type(filepath, EMULATOR_GROUP, CMD_TYPE_KEY, pconfiguration->cmd_type);
 	set_config_type(filepath, EMULATOR_GROUP, MAIN_X_KEY, pconfiguration->main_x);
 	set_config_type(filepath, EMULATOR_GROUP, MAIN_Y_KEY, pconfiguration->main_y);
+	set_config_type(filepath, EMULATOR_GROUP, SCALE_KEY, pconfiguration->scale);
 
 	/*  QEMU option (09.05.26)*/
 
@@ -312,7 +314,7 @@ int read_config_file(gchar *filepath, CONFIGURATION *pconfiguration)
 
 	pconfiguration->main_x = get_config_type(filepath, EMULATOR_GROUP, MAIN_X_KEY);
 	pconfiguration->main_y = get_config_type(filepath, EMULATOR_GROUP, MAIN_Y_KEY);
-
+	pconfiguration->scale = get_config_type(filepath, EMULATOR_GROUP, SCALE_KEY);
 
 	int telnet_port;
 	buf = get_config_value(filepath, QEMU_GROUP, TELNET_PORT_KEY);

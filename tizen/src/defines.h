@@ -110,6 +110,7 @@ extern "C" {
 #define CMD_TYPE_KEY				"COMMAND_TYPE"
 #define MAIN_X_KEY					"MAIN_X"
 #define MAIN_Y_KEY					"MAIN_Y"
+#define SCALE_KEY					"SCALE"
 #define TERMINAL_TYPE_KEY			"TERMINAL_TYPE"
 
 #define HTTP_PROXY_KEY				"HTTP_PROXY"
@@ -155,8 +156,10 @@ extern "C" {
 #define REVERSE_LANDSCAPE			"Reverse Landscape"
 #define KEYBOARD_ON					"keyboard_on"
 #define KEYBOARD_OFF				"keyboard_off"
-#define	HALF_SIZE					"1/2x"
-#define ACTUAL_SIZE					"1x"
+#define QUATER_SIZE					"0.25"
+#define HALF_SIZE					"0.5"
+#define THREE_QUATERS_SIZE				"0.75"
+#define ACTUAL_SIZE					"1.0"
 
 #define PLATFORM_TYPE_KEY			"RELEASE"
 #define DEFAULT_TARGET_KEY			"DEFAULT_TARGET"
@@ -177,7 +180,7 @@ extern "C" {
 
 /* Tag for getting GTK OBJECT POINTER */
 #define MAX_PROGRAM					5						/* program count of latest list */
-#define MODE_MAX					8						/* maximum MODE count */
+#define MODE_MAX					4						/* maximum MODE count */
 #define EVENT_INFO_MAX				2						/* maximum EVENT count */
 #define KEY_MAX_COUNT				256						/* maximum KEY count */
 #define LED_MAX_COUNT				4						/* maximum LED count */
@@ -209,9 +212,13 @@ extern "C" {
 
 #define MAX_EMULFB 3
 /* macro to find the position of skin */
-#define INSIDE(_x, _y, _r)									\
+/*#define INSIDE(_x, _y, _r)									\
 		((_x >= (_r).x) && (_x < ((_r).x + (_r).w)) &&	\
-		(_y >= (_r).y) && (_y < ((_r).y + (_r).h)))
+		(_y >= (_r).y) && (_y < ((_r).y + (_r).h)))*/
+#define INSIDE(_x, _y, _r, _s)                                                                 \
+               ((_x >= (_r).x * _s) && (_x < ((_r).x + (_r).w) * _s) &&        \
+               (_y >= (_r).y * _s) && (_y < ((_r).y + (_r).h) * _s))
+
 
 /*The below macros are for dual display */
 extern int intermediate_section;
@@ -226,9 +233,13 @@ extern int intermediate_section;
 		(_y >= (_r).y) && (_y < ((_r).y +  intermediate_section + (_r).h/(_r).s)))
 
 /*The below macro is for single display */
-#define INSIDE_LCD(_x, _y, _r)									\
+/*#define INSIDE_LCD(_x, _y, _r)									\
 		((_x >= (_r).x) && (_x < ((_r).x  + (_r).w/(_r).s)) &&	\
-		(_y >= (_r).y) && (_y < ((_r).y + (_r).h/(_r).s)))
+		(_y >= (_r).y) && (_y < ((_r).y + (_r).h/(_r).s)))*/
+#define INSIDE_LCD(_x, _y, _r, _s)                                                                     \
+               ((_x >= (_r).x * _s) && (_x < (((_r).x + (_r).w) * _s)) &&      \
+               (_y >= (_r).y * _s) && (_y < (((_r).y + (_r).h) * _s)))
+
 
 /* macro to insert the delimiter into menu */
 #define MENU_ADD_SEPARTOR(K) {\
@@ -494,6 +505,7 @@ typedef struct _PHONEMODELINFO{
 	int mode_cnt;
 	mode_list mode[MODE_MAX];
 	SkinImgInfo mode_SkinImg[MODE_MAX];
+	SkinImgInfo default_SkinImg[MODE_MAX];
 	int cover_mode_cnt;
 	mode_list cover_mode;
 	SkinImgInfo cover_mode_SkinImg;
@@ -597,6 +609,7 @@ typedef struct _CONFIGUATION
 	int cmd_type;
 	int main_x;
 	int main_y;
+	int scale;
 	int mount_port;
 
 	gchar target_path[MAXBUF];

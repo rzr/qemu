@@ -481,13 +481,13 @@ int parse_dbi_file(const gchar * filename, PHONEMODELINFO * pDeviceData)
 
 							event_list_cnt++;
 							em->event_list_cnt = event_list_cnt;
-						}		// endif
-					}			// end for
+						}// endif
+					}// end for
 					event_menu_cnt++;
 					pDeviceData->event_menu_cnt = event_menu_cnt;
 					event_list_cnt = 0;
 				}
-			}					// end for
+			}// end for
 		}
 	}
 
@@ -509,23 +509,14 @@ static void free_modelist(mode_list *ml)
 	if (ml->name) {
 		free(ml->name);
 	}
-	if (ml->image_list.main_image) {
-		g_free(ml->image_list.main_image);
-	}
-	if (ml->image_list.keypressed_image) {
-		g_free(ml->image_list.keypressed_image);
-	}
-	if (ml->image_list.led_main_image) {
-		g_free(ml->image_list.led_main_image);
-	}
-	if (ml->image_list.led_keypressed_image) {
-		g_free(ml->image_list.led_keypressed_image);
-	}
-	if (ml->image_list.splitted_area_image) {
-		g_free(ml->image_list.splitted_area_image);
-	}
 
-	for (i=0; i<ml->led_list_cnt; i++) {
+	g_free(ml->image_list.main_image);
+	g_free(ml->image_list.keypressed_image);
+	g_free(ml->image_list.led_main_image);
+	g_free(ml->image_list.led_keypressed_image);
+	g_free(ml->image_list.splitted_area_image);
+
+	for (i = 0; i < ml->led_list_cnt; i++) {
 		if (ml->led_list[i].name) {
 			free(ml->led_list[i].name);
 		}
@@ -534,7 +525,7 @@ static void free_modelist(mode_list *ml)
 		}
 	}
 
-	for (i=0; i<ml->key_map_list_cnt; i++) {
+	for (i = 0; i < ml->key_map_list_cnt; i++) {
 		if (ml->key_map_list[i].tooltip) {
 			free(ml->key_map_list[i].tooltip);
 		}
@@ -546,7 +537,7 @@ int free_dbi_file(PHONEMODELINFO *pDeviceData)
 {
 	int i;
 
-	for (i=0; i<pDeviceData->mode_cnt; i++) {
+	for (i = 0; i < pDeviceData->mode_cnt; i++) {
 		mode_list *ml = &pDeviceData->mode[i];
 		free_modelist(ml);
 	}

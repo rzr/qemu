@@ -251,9 +251,9 @@ gint qemu_widget_new (GtkWidget **widget)
 	if (!qemu_state)
 		qemu_state = g_object_new(qemu_get_type(), NULL);
 
-	qemu_state->scale = lcd->lcd_region.s;
-	qemu_state->width = lcd->lcd_region.w / qemu_state->scale;
-	qemu_state->height = lcd->lcd_region.h / qemu_state->scale;
+	qemu_state->scale = UISTATE.scale;
+	qemu_state->width = lcd->lcd_region.w * qemu_state->scale;
+	qemu_state->height = lcd->lcd_region.h * qemu_state->scale;
 	qemu_state->bpp = lcd->bitsperpixel;
 	qemu_state->flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL|SDL_NOFRAME;
 	if(PHONE.dual_display == 1){
@@ -631,7 +631,7 @@ static void qemu_update (qemu_state_t *qemu_state)
 	surface = SDL_GetVideoSurface ();
 
 	if (qemu_state->scale == 1) {
-		if (UISTATE.current_mode %4 != 0) { //rotation
+		if (UISTATE.current_mode % 4 != 0) { //rotation
 			// work-around to remove afterimage on black color in Window and Ubuntu 11.10
 			if( qemu_state->surface_qemu ) {
 				// set color key 'magenta'
@@ -640,7 +640,7 @@ static void qemu_update (qemu_state_t *qemu_state)
 
 			SDL_Surface *rot_screen;
 			rot_screen = rotozoomSurface(qemu_state->surface_qemu,
-					(UISTATE.current_mode %4) * 90, 1, SMOOTHING_ON);
+					(UISTATE.current_mode % 4) * 90, 1, SMOOTHING_ON);
 			SDL_BlitSurface(rot_screen, NULL, qemu_state->surface_screen, NULL);
 			
 			SDL_FreeSurface(rot_screen);
@@ -665,13 +665,13 @@ static void qemu_update (qemu_state_t *qemu_state)
 
 		SDL_Surface *down_screen;
 		down_screen = rotozoomSurface(qemu_state->surface_qemu,
-				(UISTATE.current_mode %4) * 90, 1 / qemu_state->scale, SMOOTHING_ON);
+				(UISTATE.current_mode % 4) * 90, qemu_state->scale, SMOOTHING_ON);
 		SDL_BlitSurface(down_screen, NULL, qemu_state->surface_screen, NULL);
 
 		/* draw finger points (multi-touch) */
 		for (i = 0; i < qemu_mts.finger_cnt; i++) {
-			r.x = (qemu_mts.finger_slot[i].x - qemu_mts.finger_point_size) / qemu_state->scale;
-			r.y = (qemu_mts.finger_slot[i].y - qemu_mts.finger_point_size) / qemu_state->scale;
+			r.x = (qemu_mts.finger_slot[i].x * qemu_state->scale) - (qemu_mts.finger_point_size / 2);
+			r.y = (qemu_mts.finger_slot[i].y * qemu_state->scale) - (qemu_mts.finger_point_size / 2);
 			r.w = r.h = qemu_mts.finger_point_size;
 			
 			SDL_BlitSurface(qemu_mts.finger_point, NULL, qemu_state->surface_screen, &r);

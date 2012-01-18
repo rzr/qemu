@@ -120,19 +120,12 @@ GtkWidget *create_frame_buffer_window(FBINFO *pBufInfo)
 								);     
 
 	/* scale size */
-
-	pImg = gdk_pixbuf_scale_simple(pImg, 
-							qemu_state->surface_qemu->w / qemu_state->scale, 
-							qemu_state->surface_qemu->h / qemu_state->scale, 
-							GDK_INTERP_NEAREST);
+        pWidget->nOrgWidth = pWidget->width = qemu_state->surface_qemu->w * qemu_state->scale;
+        pWidget->nOrgHeight = pWidget->height = qemu_state->surface_qemu->h * qemu_state->scale;
+        pImg = gdk_pixbuf_scale_simple(pImg, pWidget->width, pWidget->height, GDK_INTERP_HYPER);
 
 	pWidget->pPixBuf = pImg;
-	pWidget->width = qemu_state->surface_qemu->w / qemu_state->scale;
-	pWidget->height = qemu_state->surface_qemu->h / qemu_state->scale;
-	pWidget->nOrgWidth = qemu_state->surface_qemu->w / qemu_state->scale;
-	pWidget->nOrgHeight = qemu_state->surface_qemu->h / qemu_state->scale;
 	pWidget->nCurDisplay = 1;
-
 
 	/* rotate */
 	int nMode = UISTATE.current_mode % 4;
@@ -186,7 +179,7 @@ GtkWidget *create_frame_buffer_window(FBINFO *pBufInfo)
 void frame_buffer_handler(GtkWidget *widget, gpointer data)
 {
 	GtkWidget *frame_buffer_window = NULL;
-	int x, y;
+	int x;
 	gint frame_buffer_window_w;
 	gint frame_buffer_window_h;
 
@@ -197,7 +190,7 @@ void frame_buffer_handler(GtkWidget *widget, gpointer data)
 	/* positioning */
 	gtk_window_get_size(GTK_WINDOW(frame_buffer_window), &frame_buffer_window_w, &frame_buffer_window_h);
 
-	x = configuration.main_x + PHONE.mode_SkinImg[UISTATE.current_mode].nImgWidth + frame_buffer_window_w;
+	x = configuration.main_x + (PHONE.mode_SkinImg[UISTATE.current_mode].nImgWidth * UISTATE.scale) + frame_buffer_window_w;
 	if (x < gdk_screen_width()) { //right of emulator window
 		gtk_window_move(GTK_WINDOW(frame_buffer_window), x - frame_buffer_window_w, configuration.main_y);
 	} else { //left of emulator window

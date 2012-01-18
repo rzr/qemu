@@ -107,7 +107,7 @@ UIFLAG UISTATE = {
 	.button_press_flag = -1,
 	.key_button_press_flag = 0,
 	.frame_buffer_ctrl = 0,
-	.scale = 2.0,
+	.scale = 1.0,
 	.current_mode = 0,
 	.config_flag = 0,
 	.PID_flag = 0,
@@ -584,18 +584,20 @@ static void construct_main_window(void)
 	}
 #endif
 
-	/* 6. create popup menu */
+	/* 6. emulator start position */
+	gtk_window_move (GTK_WINDOW (g_main_window), configuration.main_x, configuration.main_y);
+	//UISTATE.scale = PHONE.mode[0].lcd_list[0].lcd_region.s;
+	UISTATE.scale = ((float)get_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, SCALE_KEY)) / 100;
+        if (UISTATE.scale <= 0 || UISTATE.scale > 1.0) {
+		UISTATE.scale = 1.0;
+	}
+	TRACE("scale = %f\n", UISTATE.scale);
 
+	/* 7. create popup menu */
 	create_popup_menu (&popup_menu, &PHONE, &configuration);
 	add_widget(EMULATOR_ID, POPUP_MENU, popup_menu);
 
-	/* 8. emulator start position */
-
-	gtk_window_move (GTK_WINDOW (g_main_window), configuration.main_x, configuration.main_y);
-	UISTATE.scale = PHONE.mode[0].lcd_list[0].lcd_region.s;
-	TRACE("scale = %f\n", UISTATE.scale);
-
-	/* 9. Signal connect */
+	/* 8. Signal connect */
 
 	g_signal_connect (G_OBJECT(g_main_window), "motion_notify_event", G_CALLBACK(motion_notify_event_handler), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "button_press_event", G_CALLBACK(motion_notify_event_handler), NULL);
@@ -612,16 +614,20 @@ static void construct_main_window(void)
 	gtk_widget_set_events (g_main_window, GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK |
 			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);// | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 
-	/* 10. widget show all */
+	/* 9. widget show all */
 
 	gtk_window_set_keep_above(GTK_WINDOW (g_main_window), configuration.always_on_top);
 	gtk_widget_show_all (g_main_window);
 	gtk_widget_queue_resize (g_main_window);
+
+	if (UISTATE.scale != 1.0) {
+		scale_event_callback(&PHONE, UISTATE.current_mode);
+	}
 }
 
 static void* run_gtk_main(void* arg)
 {
-	/* 11. gtk main start */
+	/* 10. gtk main start */
 	init_sensor_server();
 	gtk_main();
 

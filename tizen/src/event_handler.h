@@ -64,7 +64,7 @@ extern GtkWidget *xo_popup_menu;
 	
 #define KEYCODE		PHONE.mode[0].key_map_list[i].event_info[j].event_value[j].key_code
 
-#define skin_scale 	PHONE.mode[0].lcd_list[0].lcd_region.s
+//#define skin_scale 	PHONE.mode[0].lcd_list[0].lcd_region.s
 
 gboolean key_event_handler(GtkWidget *wid, GdkEventKey *event);
 gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpointer data);
