@@ -122,7 +122,7 @@ GtkWidget *create_frame_buffer_window(FBINFO *pBufInfo)
 	/* scale size */
         pWidget->nOrgWidth = pWidget->width = qemu_state->surface_qemu->w * qemu_state->scale;
         pWidget->nOrgHeight = pWidget->height = qemu_state->surface_qemu->h * qemu_state->scale;
-        pImg = gdk_pixbuf_scale_simple(pImg, pWidget->width, pWidget->height, GDK_INTERP_HYPER);
+        pImg = gdk_pixbuf_scale_simple(pImg, pWidget->width, pWidget->height, GDK_INTERP_NEAREST);
 
 	pWidget->pPixBuf = pImg;
 	pWidget->nCurDisplay = 1;

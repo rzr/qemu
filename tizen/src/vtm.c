@@ -1207,7 +1207,7 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "\n[%s]\n", EMULATOR_GROUP);
 		g_fprintf (fp, "%s=100\n", MAIN_X_KEY);
 		g_fprintf (fp, "%s=100\n", MAIN_Y_KEY);
-                g_fprintf (fp, "%s=100\n", SCALE_KEY);
+                g_fprintf (fp, "%s=50\n", SCALE_KEY);
 
 		g_fprintf (fp, "\n[%s]\n", QEMU_GROUP);
 		g_fprintf (fp, "%s=\n", BINARY_KEY);
