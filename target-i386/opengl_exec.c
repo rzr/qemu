@@ -1186,6 +1186,169 @@ translate_id(GLsizei n, GLenum type, const GLvoid * list)
 }
 
 
+static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *prevbuf)
+{
+	char *start;
+	char *ret;
+	char *p;
+	int retlen;
+    static const char *delim = " \t\n\r/";
+
+	if (prevbuf)
+		free(prevbuf);
+
+    if (s) {
+        *saveptr = s;
+    } else {
+        if (!(*saveptr) || !(*n))
+            return NULL;
+        s = *saveptr;
+    }
+
+    for (; *n && strchr(delim, *s); s++, (*n)--) {
+        if (*s == '/' && *n > 1) {
+            if (s[1] == '/') {
+                do {
+                    s++, (*n)--;
+                } while (*n > 1 && s[1] != '\n' && s[1] != '\r');
+            } else if (s[1] == '*') {
+                do {
+                    s++, (*n)--;
+                } while (*n > 2 && (s[1] != '*' || s[2] != '/'));
+                s++, (*n)--;
+            }
+        }
+    }
+
+   	start = s;
+    for (; *n && *s && !strchr(delim, *s); s++, (*n)--);
+	if (*n > 0) 
+		s++, (*n)--;
+
+	*saveptr = s;
+
+	retlen = s - start;
+	ret = malloc(retlen + 1);
+	p = ret;
+
+	while (retlen > 0) {
+        if (*start == '/' && retlen > 1) {
+            if (start[1] == '/') {
+                do {
+                    start++, retlen--;
+                } while (retlen > 1 && start[1] != '\n' && start[1] != '\r');
+				start++, retlen--;
+				continue;
+            } else if (start[1] == '*') {
+                do {
+                    start++, retlen--;
+                } while (retlen > 2 && (start[1] != '*' || start[2] != '/'));
+                start += 3, retlen -= 3;
+				continue;
+            }
+        }
+		*(p++) = *(start++), retlen--;
+	}
+	
+	*p = 0;
+	return ret;
+}
+
+static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
+{
+	char *saveptr = NULL;
+	char *sp;
+	char *p = NULL;
+
+    if (!length) 
+        length = strlen(source);
+    
+    *patched_len = 0;
+    int patched_size = length;
+    char *patched = malloc(patched_size + 1);
+
+    if (!patched) 
+        return NULL;
+
+    p = opengl_strtok(source, &length, &saveptr, NULL);
+    for (; p; p = opengl_strtok(0, &length, &saveptr, p)) {
+        if (!strncmp(p, "lowp", 4) || !strncmp(p, "mediump", 7) || !strncmp(p, "highp", 5)) {
+            continue;
+        } else if (!strncmp(p, "precision", 9)) {
+            while ((p = opengl_strtok(0, &length, &saveptr, p)) && !strchr(p, ';'));
+        } else {
+            if (!strncmp(p, "gl_MaxVertexUniformVectors", 26)) {
+                p = "(gl_MaxVertexUniformComponents / 4)";
+            } else if (!strncmp(p, "gl_MaxFragmentUniformVectors", 28)) {
+                p = "(gl_MaxFragmentUniformComponents / 4)";
+            } else if (!strncmp(p, "gl_MaxVaryingVectors", 20)) {
+                p = "(gl_MaxVaryingFloats / 4)";
+            }
+
+            int new_len = strlen(p);
+            if (*patched_len + new_len > patched_size) {
+                patched_size *= 2;
+                patched = realloc(patched, patched_size + 1);
+
+                if (!patched) 
+                    return NULL;
+            }
+
+            memcpy(patched + *patched_len, p, new_len);
+            *patched_len += new_len;
+        }     
+    }
+
+    patched[*patched_len] = 0;
+    /* check that we don't leave dummy preprocessor lines */
+    for (sp = patched; *sp;) {
+        for (; *sp == ' ' || *sp == '\t'; sp++);
+        if (!strncmp(sp, "#define", 7)) {
+            for (p = sp + 7; *p == ' ' || *p == '\t'; p++);
+            if (*p == '\n' || *p == '\r' || *p == '/') {
+                memset(sp, 0x20, 7);
+            }
+        }
+        for (; *sp && *sp != '\n' && *sp != '\r'; sp++);
+        for (; *sp == '\n' || *sp == '\r'; sp++);
+    }
+    return patched;
+}
+
+static int 
+shadersrc_gles_to_gl(GLsizei count, const char** string, char **s, const GLint* length, GLint *l)
+{
+	int i;
+
+	for(i = 0; i < count; ++i) {
+		GLint len;
+		if(length) {
+			len = length[i];
+			if (len < 0) 
+				len = string[i] ? strlen(string[i]) : 0;
+		} else
+			len = string[i] ? strlen(string[i]) : 0;
+
+		if(string[i]) {
+			s[i] = do_eglShaderPatch(string[i], len, &l[i]);
+			if(!s[i]) {
+				while(i)
+					free(s[--i]);
+
+				free(l);
+				free(s);
+				return -1;
+			}
+		} else {
+			s[i] = NULL;
+			l[i] = 0;
+		}
+	}
+	
+	return 0;
+}
+
+
 int do_function_call(OGLS_Conn *pConn, int func_number, int pid, long* args, char* ret_string)
 {
 	char ret_char = 0;
@@ -2657,12 +2820,35 @@ int do_function_call(OGLS_Conn *pConn, int func_number, int pid, long* args, cha
 				int acc_length = 0;
 				GLcharARB** tab_prog = malloc(size * sizeof(GLcharARB*));
 				int* tab_length = (int*)args[3];
+
+				char **tab_prog_new;
+				GLint *tab_length_new;
+
+			   tab_prog_new = malloc(args[1]* sizeof(char*));
+			   tab_length_new = malloc(args[1]* sizeof(GLint));
+
+			   memset(tab_prog_new, 0, args[1] * sizeof(char*));
+			   memset(tab_length_new, 0, args[1] * sizeof(GLint));
+
+
 				for(i=0;i<size;i++)
 				{
 					tab_prog[i] = ((GLcharARB*)args[2]) + acc_length;
 					acc_length += tab_length[i];
 				}
-				ptr_func_glShaderSource(args[0], args[1], tab_prog, tab_length);
+				
+				shadersrc_gles_to_gl(args[1], tab_prog, tab_prog_new, tab_length, tab_length_new);
+				
+				if (!tab_prog_new || !tab_length_new)
+					break;
+
+				ptr_func_glShaderSource(args[0], args[1], tab_prog_new, tab_length_new);
+
+				for (i = 0; i < args[1]; i++)
+					free(tab_prog_new[i]);
+				free(tab_prog_new);
+				free(tab_length_new);
+
 				free(tab_prog);
 				break;
 			}

@@ -696,9 +696,11 @@ void qemu_option_set_to_config(arglist *al)
 	}
 	
 	// handover Host IP address to kernel side
+	/*
 	gethostIP(hostip);
 	if (strlen(hostip))
 		sprintf(&kernel_kappend[strlen(kernel_kappend)], "openglip=%s ", hostip);
+	*/
 
 	// sdb port
 	sprintf(&kernel_kappend[strlen(kernel_kappend)], "sdb_port=%d ", get_sdb_base_port());

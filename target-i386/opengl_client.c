@@ -1376,16 +1376,18 @@ static void do_init()
 		//init_sockaddr (&servername, getenv("GL_SERVER") ? getenv("GL_SERVER") : &fixed_host_ip[0], port);
 
 		FILE *fp;
-		char ip_buffer[32] = {0};
 		char port_buffer[32] = {0};
+		char ip_buffer[32] = "10.0.2.2";
 
-		fp = fopen("/opt/home/opengl_ip.txt", "rt");
-		if( fp== NULL ) {
-			fprintf(stderr, "/opt/home/opengl_ip.txt file open error\n");
-			exit(EXIT_FAILURE);
-		}
-		fgets(ip_buffer, 32, fp);
-		fclose(fp);
+		/*
+		   fp = fopen("/opt/home/opengl_ip.txt", "rt");
+		   if( fp== NULL ) {
+		   fprintf(stderr, "/opt/home/opengl_ip.txt file open error\n");
+		   exit(EXIT_FAILURE);
+		   }
+		   fgets(ip_buffer, 32, fp);
+		   fclose(fp);
+		 */
 
 		fp = fopen("/opt/home/sdb_port.txt", "rt");
 		if( fp== NULL ) {
@@ -1481,15 +1483,17 @@ static void do_init()
 		}
 #endif
 	}
+	/*
 #ifndef _WIN32
 	if((fd = open(DEV_NAME, O_RDWR|O_NDELAY)) < 0)
 #else
-		if((fd = open(DEV_NAME, O_RDWR)) < 0 )
+	if((fd = open(DEV_NAME, O_RDWR)) < 0 )
 #endif
-		{
-			fprintf(stderr, "Device Open Error\n");
-			return -1;
-		}
+	{
+		fprintf(stderr, "Device Open Error\n");
+		return -1;
+	}
+	*/
 }
 
 static int try_to_put_into_phys_memory(void* addr, int len)

@@ -31,10 +31,10 @@
 #include <assert.h>
 #include <pthread.h>
 
-//#ifdef _WIN32 // or __MINGW32__
-// #include <windows.h>
-// #include <winsock2.h>
-//#else // _WIN32
+#ifdef _WIN32 // or __MINGW32__
+	#include <windows.h>
+	#include <winsock2.h>
+#else // _WIN32
 // #include <sys/types.h>
 // #include <sys/time.h> 
 // #include <unistd.h>
@@ -47,7 +47,7 @@
 // #include <signal.h> 
 // #include <X11/Xlib.h>
 // #include <X11/Xutil.h>
-//#endif // _WIN32
+#endif // _WIN32
 
 #define ENABLE_GL_LOG
 
@@ -55,6 +55,11 @@
 #include "opengl_utils.h"
 #include "opengl_server.h"
 #include "sdb.h"
+
+#include "../tizen/src/debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(qemu,opengl_server);
+
 
 extern int display_function_call;
 
@@ -155,14 +160,14 @@ static int write_sock_data(int sock, void* data, int len)
 	{
 		while(offset < len)
 		{
-			int nwritten = write(sock, data + offset, len - offset);
+			int nwritten = send(sock, data + offset, len - offset, 0);
 			if (nwritten == -1)
 			{
 #ifndef _WIN32
 				if (errno == EINTR)
 					continue;
 #endif
-				perror("write");
+				ERR("write error : %s(%d)\n", strerror(errno), errno);
 				//assert(nwritten != -1);
 				return -1;
 			}
@@ -186,14 +191,14 @@ static void read_sock_data(int sock, void* data, int len)
 		int offset = 0;
 		while(offset < len)
 		{
-			int nread = read(sock, data + offset, len - offset);
+			int nread = recv(sock, data + offset, len - offset, 0);
 			if (nread == -1)
 			{
 #ifndef _WIN32
 				if (errno == EINTR)
 					continue;
 #endif
-				perror("read");
+				ERR("read(%d) error : %s(%d)\n", sock, strerror(errno), errno);
 				//assert(nread != -1);
 			}
 			if (nread == 0)
@@ -249,6 +254,8 @@ static int OGLS_readConn( OGLS_Conn *pConn )
 	int i;
 	int func_number = read_sock_short(sock);
 
+	TRACE("OGLS_readConn (%s)\n", tab_opengl_calls_name[func_number]);
+
 	Signature* signature = (Signature*)tab_opengl_calls[func_number];
 	int ret_type = signature->ret_type;
 	int nb_args = signature->nb_args;
@@ -280,6 +287,8 @@ static int OGLS_readConn( OGLS_Conn *pConn )
 #ifdef ENABLE_GL_LOG
 			if (pConn->pOption->must_save) write_gl_debug_cmd_short(func_number);
 #endif
+			TRACE("serialized call is %s\n", tab_opengl_calls_name[func_number]);
+
 			commmand_buffer_offset += sizeof(short);
 
 
@@ -673,7 +682,7 @@ static int OGLS_createListenSocket (uint16_t port)
 	sock = socket (PF_INET, SOCK_STREAM, 0);
 	if (sock < 0)
 	{
-		perror ("socket");
+		ERR("socket error : %s(%d)\n", strerror(errno), errno);
 		//exit (EXIT_FAILURE);
 		return -1;
 	}
@@ -681,11 +690,11 @@ static int OGLS_createListenSocket (uint16_t port)
 	int flag = 1;
 	if (setsockopt(sock, IPPROTO_IP, SO_REUSEADDR,(char *)&flag, sizeof(int)) != 0)
 	{
-		perror("setsockopt SO_REUSEADDR");
+		ERR("setsockopt error(SO_REUSEADDR) : %s(%d)\n", strerror(errno), errno);
 	}
 	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY,(char *)&flag, sizeof(int)) != 0)
 	{
-		perror("setsockopt TCP_NODELAY");
+		ERR("setsockopt error(TCP_NODELAY) : %s(%d)\n", strerror(errno), errno);
 	}
 
 	/* Give the socket a name. */
@@ -695,7 +704,8 @@ static int OGLS_createListenSocket (uint16_t port)
 	if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0)
 	{
 		fprintf(stderr, "bind(INADDR_ANY:%d): errorno = %d(%s)\n", port, errno, strerror(errno));
-		perror ("bind");
+		ERR("bind error : %s(%d)\n", strerror(errno), errno);
+		//exit (EXIT_FAILURE);
 		//exit (EXIT_FAILURE);
 		return -1;
 	}
@@ -814,7 +824,7 @@ static void OGLS_main( OGLS_Opts *pOption )
 
 	if (listen (sock, 1) < 0)
 	{
-		perror ("listen");
+		ERR("listen error : %s(%d)\n", strerror(errno), errno);
 		//exit (EXIT_FAILURE);
 		return;
 	}
@@ -835,7 +845,7 @@ static void OGLS_main( OGLS_Opts *pOption )
 				continue;
 			}
 #endif
-			perror ("select");
+			ERR("select error : %s(%d)\n", strerror(errno), errno);
 			//exit (EXIT_FAILURE);
 			break;
 		}
@@ -851,14 +861,14 @@ static void OGLS_main( OGLS_Opts *pOption )
 		pConn->sock = accept (sock, (struct sockaddr *) &pConn->clientname, &size);
 		if (pConn->sock < 0)
 		{
-			perror ("accept");
+			ERR("accept error : %s(%d)\n", strerror(errno), errno);
 			OGLS_removeConn( pConn );
 			continue;
 		}
 
 		if( pthread_create( (pthread_t *)&taskid, NULL, (void *(*)(void *))OGLS_loop, (void *)pConn ) )
 		{
-			perror( "pthread_create" );
+			ERR("pthread_create error : %s(%d)\n", strerror(errno), errno);
 			OGLS_removeConn( pConn );
 			continue;
 		}
