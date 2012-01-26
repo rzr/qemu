@@ -627,13 +627,13 @@ void arch_select_cb(GtkWidget *widget, gpointer data)
 
 void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
 	char *virtual_target_path;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
@@ -665,13 +665,13 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 
 void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
 	char *virtual_target_path;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
@@ -702,7 +702,7 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 
 void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
@@ -712,7 +712,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *disk_path;
 	int file_status;
 	char* basedisk_path = NULL;
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
@@ -776,7 +776,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 
 void details_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
@@ -804,7 +804,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		return ;
 	}
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
@@ -919,7 +919,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 
 void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
@@ -927,7 +927,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *virtual_target_path;
 	int target_list_status;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
@@ -983,7 +983,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 #ifdef _WIN32
 		g_free(virtual_target_win_path);
 #endif
-		gtk_list_store_remove(store, &iter);
+		gtk_tree_store_remove(store, &iter);
 		g_free(target_name);
 		show_message("INFO","Virtual target deletion success!");
 		return;
@@ -994,8 +994,8 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 
 void refresh_clicked_cb(char *arch)
 {
-	GtkListStore *store;
-	GtkTreeIter iter;
+	GtkTreeStore *store;
+	GtkTreeIter iter, child;
 	int i;
 	int num = 0;
 	gchar **target_list = NULL;
@@ -1009,7 +1009,7 @@ void refresh_clicked_cb(char *arch)
 	gchar *local_target_list_filepath;
 	GtkTreePath *first_col_path = NULL;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 	local_target_list_filepath = get_targetlist_abs_filepath();
 
 	//check VMs path
@@ -1029,8 +1029,9 @@ void refresh_clicked_cb(char *arch)
 		return ; 
 	}
 
-	gtk_list_store_clear(store);
-
+	gtk_tree_store_clear(store);
+	gtk_tree_store_append(store, &iter, NULL);
+	gtk_tree_store_set(store, &iter, TARGET_NAME, "[BETA]", RESOLUTION, "", RAM_SIZE, "", -1);
 	for(i = 0; i < num; i++)
 	{
 		if(!target_list)
@@ -1038,7 +1039,7 @@ void refresh_clicked_cb(char *arch)
 			show_message("Warning","There is no available target.");
 			return ; 
 		}
-		gtk_list_store_append(store, &iter);
+		gtk_tree_store_append(store, &child, &iter);
 		
 		virtual_target_path = get_virtual_target_abs_path(target_list[i]);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
@@ -1050,7 +1051,7 @@ void refresh_clicked_cb(char *arch)
 			INFO( "target info file not exists : %s\n", target_list[i]);
 			del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_list[i]);
 			target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
-			gtk_list_store_remove(store, &iter);
+			gtk_tree_store_remove(store, &iter);
 			i -= 1;
 			continue;
 		}
@@ -1058,7 +1059,7 @@ void refresh_clicked_cb(char *arch)
 		buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 		ram_size = g_strdup_printf("%sMB", buf); 
 		resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-		gtk_list_store_set(store, &iter, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
+		gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
 
 		g_free(buf);
 		g_free(ram_size);
@@ -1068,6 +1069,7 @@ void refresh_clicked_cb(char *arch)
 	}
 	first_col_path = gtk_tree_path_new_from_indices(0, -1);
 	gtk_tree_view_set_cursor(GTK_TREE_VIEW(list), first_col_path, NULL, 0);
+  	gtk_tree_view_expand_all (GTK_TREE_VIEW (list));
 
 	g_free(local_target_list_filepath);
 	g_strfreev(target_list);
@@ -1310,15 +1312,15 @@ void exit_vtm(void)
 	gtk_main_quit();
 }
 
-GtkWidget *setup_list(void)
+GtkWidget *setup_tree_view(void)
 {
 	GtkWidget *sc_win;
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 
 	sc_win = gtk_scrolled_window_new(NULL, NULL);
-	store = gtk_list_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+	store = gtk_tree_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 	list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 	cell = gtk_cell_renderer_text_new();
 
@@ -2340,7 +2342,7 @@ void show_create_window(void)
 void construct_main_window(void)
 {
 	GtkWidget *vbox;
-	GtkWidget *list_view;
+	GtkWidget *tree_view;
 	GtkTreeSelection *selection;
 	GtkWidget *create_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button1");
 	GtkWidget *delete_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button2");
@@ -2356,7 +2358,7 @@ void construct_main_window(void)
 
 	vbox = GTK_WIDGET(gtk_builder_get_object(g_builder, "vbox3"));
 
-	list_view = setup_list();
+	tree_view = setup_tree_view();
 	gtk_widget_grab_focus(start_button);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(x86_radiobutton), TRUE);
 
@@ -2364,8 +2366,9 @@ void construct_main_window(void)
 
 	g_signal_connect(GTK_RADIO_BUTTON(x86_radiobutton), "toggled", G_CALLBACK(arch_select_cb), x86_radiobutton);
 	g_signal_connect(GTK_RADIO_BUTTON(arm_radiobutton), "toggled", G_CALLBACK(arch_select_cb), arm_radiobutton);
-	gtk_box_pack_start(GTK_BOX(vbox), list_view, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), tree_view, TRUE, TRUE, 0);
 	selection  = gtk_tree_view_get_selection(GTK_TREE_VIEW(list));
+//  gtk_tree_selection_set_mode (selection, GTK_SELECTION_MULTIPLE);
 	// add shortcut to buttons
 	GtkAccelGroup *group;
 	group = gtk_accel_group_new();

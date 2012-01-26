@@ -100,7 +100,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer selection);
 void show_create_window(void);
 void show_modify_window(char* target_name);
 void construct_main_window(void);
-GtkWidget *setup_list(void);
+GtkWidget *setup_tree_view(void);
 void delete_clicked_cb(GtkWidget *widget, gpointer selection);
 void reset_clicked_cb(GtkWidget *widget, gpointer selection);
 void details_clicked_cb(GtkWidget *widget, gpointer selection);
