@@ -1479,7 +1479,11 @@ void disk_file_select_cb(void)
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 
 	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser2));
+#ifdef _WIN32
+	snprintf(virtual_target_info.basedisk_path, MAXBUF, change_path_to_slash(path));
+#else
 	snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", path);
+#endif
 	INFO( "disk path : %s\n", path);
 
 	g_free(path);
