@@ -195,6 +195,10 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	gtk_widget_show_all(widget);
 	gtk_widget_queue_resize (widget);
 
+	/* do this when emulator-window does not resize upon scale factor change */
+	gtk_widget_hide_all(widget);
+	gtk_widget_show_all(widget);
+
 	return 0;
 }
 
