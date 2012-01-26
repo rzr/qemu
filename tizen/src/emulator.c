@@ -556,7 +556,7 @@ static void construct_main_window(void)
 
 	pixmap_widget = gtk_image_new_from_pixbuf (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
 	gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, &SkinPixmap, &SkinMask, 1);
-	gdk_pixbuf_get_has_alpha (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
+	//gdk_pixbuf_get_has_alpha (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
 	gtk_widget_shape_combine_mask (g_main_window, SkinMask, 0, 0);
 
 	if (SkinPixmap != NULL)

@@ -175,7 +175,7 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	pixmap_widget = gtk_image_new_from_pixbuf (pDev->mode_SkinImg[nMode].pPixImg);
 
 	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, &SkinPixmap, &SkinMask, 1);
-	gdk_pixbuf_get_has_alpha (pDev->mode_SkinImg[nMode].pPixImg);
+	//gdk_pixbuf_get_has_alpha (pDev->mode_SkinImg[nMode].pPixImg);
 	gtk_widget_shape_combine_mask (GTK_WIDGET(widget), SkinMask, 0, 0);
 
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
@@ -607,6 +607,16 @@ void show_about_window(GtkWidget *parent)
 
 	GtkWidget* about_dialog = gtk_about_dialog_new();
 
+#ifdef _WIN32
+    // about_dialog should be topmost
+    BOOL bTopMost = FALSE;
+    GtkWidget* menu_item = (GtkWidget*)g_object_get_data((GObject *) get_widget(EMULATOR_ID, POPUP_MENU), "always_on_top");
+    if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menu_item)) == TRUE) {
+        bTopMost = TRUE;
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_item), FALSE);
+    }
+#endif
+
 	//	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(about_dialog), version);
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(about_dialog), comments);
 	//	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(about_dialog), website);
@@ -619,6 +629,11 @@ void show_about_window(GtkWidget *parent)
 			"license", license_text,
 			NULL);
 
+#ifdef _WIN32
+    if (bTopMost) {
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_item), TRUE);
+    }
+#endif
 }
 
 

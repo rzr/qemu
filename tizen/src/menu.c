@@ -262,6 +262,10 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(Item), FALSE);
     }
 
+#ifdef _WIN32
+    g_object_set_data((GObject *) *pMenu, "always_on_top", (GObject *) Item);
+#endif
+
     gtk_widget_set_tooltip_text(Item, "Set keep above this window or not");
     gtk_container_add(GTK_CONTAINER(*pMenu), Item);
     gtk_widget_show(Item);
