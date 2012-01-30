@@ -196,6 +196,51 @@ int set_config_type(gchar *filepath, const gchar *group, const gchar *field, con
 }
 
 /**
+ * @brief 	delete group in targetlist.ini file
+ * @return	fail(-1), success(0)
+ * @date    Nov 18. 2008
+ * */
+int del_config_group(gchar *filepath, const gchar *group)
+{
+	GKeyFile *keyfile;
+	GError *error = NULL;
+	gsize length;
+
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
+		INFO( "loading key file form %s is failed.\n", filepath);
+		return -1;
+	}
+
+	if(!g_key_file_remove_group(keyfile, group, &error)){
+			ERR( "fail to remove remove this key");
+			return -1;
+	}
+	
+	gchar *data = g_key_file_to_data(keyfile, &length, &error);
+	if (error != NULL) {
+		g_print("in set_config_type\n");
+		g_print("%s", error->message);
+		g_clear_error(&error);
+	}
+
+	g_strstrip(data);
+	length = strlen(data);
+	g_file_set_contents(filepath, data, length, &error);
+	if (error != NULL) {
+		g_print("in set_config_value after g_file_set_contents\n");
+		g_print("%s", error->message);
+		g_clear_error(&error);
+	}
+
+	g_free(data);
+	g_key_file_free(keyfile);
+
+	return 0;
+
+}
+
+/**
  * @brief 	delete target name key in targetlist.ini file
  * @return	fail(-1), success(0)
  * @date    Nov 18. 2008

@@ -103,7 +103,7 @@ GtkWidget *list;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
-
+char* LASTEST_VERSION_GROUP;
 #ifdef _WIN32
 void socket_cleanup(void)
 {
@@ -977,7 +977,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		target_list_filepath = get_targetlist_abs_filepath();
 		target_list_status = is_exist_file(target_list_filepath);
 
-		del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
+		del_config_key(target_list_filepath, LASTEST_VERSION_GROUP, target_name);
 		g_free(cmd);
 		g_free(virtual_target_path);
 #ifdef _WIN32
@@ -997,7 +997,9 @@ void refresh_clicked_cb(char *arch)
 	GtkTreeStore *store;
 	GtkTreeIter iter, child;
 	int i;
-	int num = 0;
+	int list_num = 0;
+	int group_num = 0;
+	gchar **target_groups = NULL;
 	gchar **target_list = NULL;
 	char *virtual_target_path;
 	char *info_file;
@@ -1022,50 +1024,52 @@ void refresh_clicked_cb(char *arch)
 	else
 		free(vms_path);
 	
-	target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
-	if(!target_list)
-	{
-		show_message("Warning","There is no available target.");
-		return ; 
-	}
-
+	target_groups = get_virtual_target_groups(local_target_list_filepath, &group_num);
 	gtk_tree_store_clear(store);
-	gtk_tree_store_append(store, &iter, NULL);
-	gtk_tree_store_set(store, &iter, TARGET_NAME, "[BETA]", RESOLUTION, "", RAM_SIZE, "", -1);
-	for(i = 0; i < num; i++)
+	group_num -= 1;
+	//search group name order in reverse.
+	for( ; group_num >= 0; group_num--)
 	{
+		target_list = get_virtual_target_list(local_target_list_filepath, target_groups[group_num], &list_num);
 		if(!target_list)
 		{
-			show_message("Warning","There is no available target.");
-			return ; 
+			INFO( "delete group name : %s\n", target_groups[group_num]);
+			del_config_group(local_target_list_filepath, target_groups[group_num]);	
+			continue ; 
 		}
-		gtk_tree_store_append(store, &child, &iter);
-		
-		virtual_target_path = get_virtual_target_abs_path(target_list[i]);
-		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-		info_file_status = is_exist_file(info_file);
+		gtk_tree_store_append(store, &iter, NULL);
+		gtk_tree_store_set(store, &iter, TARGET_NAME, target_groups[group_num], RESOLUTION, "", RAM_SIZE, "", -1);
 
-		//if targetlist exist but config file not exists
-		if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+		for(i = 0; i < list_num; i++)
 		{
-			INFO( "target info file not exists : %s\n", target_list[i]);
-			del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_list[i]);
-			target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
-			gtk_tree_store_remove(store, &iter);
-			i -= 1;
-			continue;
+			gtk_tree_store_append(store, &child, &iter);
+		
+			virtual_target_path = get_virtual_target_abs_path(target_list[i]);
+			info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+			info_file_status = is_exist_file(info_file);
+
+			//if targetlist exist but config file not exists
+			if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+			{
+				INFO( "target info file not exists : %s\n", target_list[i]);
+				del_config_key(target_list_filepath, target_groups[group_num], target_list[i]);
+				target_list = get_virtual_target_list(local_target_list_filepath, target_groups[group_num], &list_num);
+				gtk_tree_store_remove(store, &child);
+				i -= 1;
+				continue;
+			}
+
+			buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
+			ram_size = g_strdup_printf("%sMB", buf); 
+			resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
+			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
+
+			g_free(buf);
+			g_free(ram_size);
+			g_free(resolution);
+			g_free(virtual_target_path);
+			g_free(info_file);
 		}
-
-		buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
-		ram_size = g_strdup_printf("%sMB", buf); 
-		resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-		gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
-
-		g_free(buf);
-		g_free(ram_size);
-		g_free(resolution);
-		g_free(virtual_target_path);
-		g_free(info_file);
 	}
 	first_col_path = gtk_tree_path_new_from_indices(0, -1);
 	gtk_tree_view_set_cursor(GTK_TREE_VIEW(list), first_col_path, NULL, 0);
@@ -1073,6 +1077,7 @@ void refresh_clicked_cb(char *arch)
 
 	g_free(local_target_list_filepath);
 	g_strfreev(target_list);
+	g_strfreev(target_groups);
 
 }
 
@@ -1289,19 +1294,24 @@ int write_config_file(gchar *filepath)
 
 int name_collision_check(void)
 {
-	int i;
-	int num = 0;
+	int i,j;
+	int list_num = 0;
+	int group_num = 0;
 	gchar **target_list = NULL;
+	gchar **target_groups = NULL;
 
-	target_list = get_virtual_target_list(target_list_filepath, TARGET_LIST_GROUP, &num);
-
-	for(i = 0; i < num; i++)
+	target_groups = get_virtual_target_groups(target_list_filepath, &group_num);
+	for(i = 0; i < group_num; i++)
 	{
-		if(strcmp(target_list[i], virtual_target_info.virtual_target_name) == 0)
+		target_list = get_virtual_target_list(target_list_filepath, target_groups[i], &list_num);
+		for(j = 0; j < list_num; j++)
+		{
+			if(strcmp(target_list[j], virtual_target_info.virtual_target_name) == 0)
 			return 1;
+		}
 	}
-
 	g_strfreev(target_list);	
+	g_strfreev(target_groups);	
 	return 0;
 }
 
@@ -1703,7 +1713,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 	//delete original target name
 	target_list_filepath = get_targetlist_abs_filepath();
-	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
+	del_config_key(target_list_filepath, LASTEST_VERSION_GROUP, target_name);
 	g_free(target_name);
 
 	if(access(dest_path, R_OK) != 0)
@@ -1764,7 +1774,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, TARGET_LIST_GROUP, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, LASTEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	//	create_config_file(conf_file);
@@ -1925,7 +1935,7 @@ void ok_clicked_cb(void)
 			virtual_target_info.virtual_target_name, arch);
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, TARGET_LIST_GROUP, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, LASTEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
@@ -2458,6 +2468,62 @@ void set_mesa_lib(void)
 
 }
 
+void version_init(void)
+{
+	FILE *fp = NULL;
+	char *tmp = NULL;
+	GKeyFile *keyfile;
+	GError *error = NULL;
+	gsize length;
+	char version_path[MAX_LEN];
+	gchar *target_list_filepath;
+
+	target_list_filepath = get_targetlist_abs_filepath();
+	sprintf(version_path, "%s/VERSION",get_etc_path());
+	fp= fopen(version_path, "r");
+	if ((tmp= (char *)malloc(MAX_LEN + 1)) == NULL){
+		fclose(fp);
+		return;
+	}
+	
+	fseek(fp, 0, SEEK_SET);
+	fgets(tmp, 1024, fp);
+	if(tmp){
+		tmp[strlen(tmp)-1] = 0;
+		LASTEST_VERSION_GROUP = tmp;
+	}
+	fclose(fp);
+	
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
+		ERR( "loading key file form %s is failed.\n", target_list_filepath);
+		return;
+	}
+
+	if(g_key_file_has_group(keyfile, LASTEST_VERSION_GROUP) == FALSE)
+	{
+		g_key_file_set_value(keyfile, LASTEST_VERSION_GROUP, "default", "");
+		gchar *data = g_key_file_to_data(keyfile, &length, &error);
+		if (error != NULL) {
+			g_print("in set_config_type\n");
+			g_print("%s", error->message);
+			g_clear_error(&error);
+		}
+		g_strstrip(data);
+		length = strlen(data);
+		g_file_set_contents(target_list_filepath, data, length, &error);
+		if (error != NULL) {
+			g_print("in set_config_value after g_file_set_contents\n");
+			g_print("%s", error->message);
+			g_clear_error(&error);
+		}
+
+		g_free(data);
+		g_key_file_free(keyfile);
+		return;
+	}
+	return;
+}
 
 int main(int argc, char** argv)
 {
@@ -2499,6 +2565,7 @@ int main(int argc, char** argv)
 	construct_main_window();
 
 	init_setenv();
+	version_init();
 
 	gtk_main();
 

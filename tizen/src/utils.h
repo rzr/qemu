@@ -53,6 +53,7 @@ GtkWidget *get_widget (gint window_id, gchar * widget_name);
 
 int set_config_type(gchar *filepath, const gchar *group, const gchar *field, const int type);
 int del_config_key(gchar *filepath, const gchar *group, const gchar *field);
+int del_config_group(gchar *filepath, const gchar *group);
 int set_config_value(gchar *filepath, const gchar *group, const gchar *field, const gchar *value);
 int get_config_type(gchar *filepath, const gchar *group, const gchar *field);
 char *get_config_value(gchar *filepath, const gchar *group, const gchar *field);

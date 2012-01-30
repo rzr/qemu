@@ -43,6 +43,33 @@
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, vt_utils);
 
+gchar **get_virtual_target_groups(gchar *filepath, int *num)
+{
+	GKeyFile *keyfile;
+	GError *error = NULL;
+	gchar **group_list = NULL;
+	gsize length;
+
+	keyfile = g_key_file_new();
+
+	if(!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
+		ERR("loading key file from %s is failed\n", filepath);
+		return NULL;
+	}
+
+	group_list = g_key_file_get_groups(keyfile, &length);
+
+	if(group_list == NULL || length == 0) {
+		ERR("no group under %s\n", filepath);
+		return NULL;
+	}
+
+	*num = length;
+
+	g_key_file_free(keyfile);
+	return group_list;
+}
+
 gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num)
 {
 	GKeyFile *keyfile;
