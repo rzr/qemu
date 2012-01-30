@@ -219,7 +219,7 @@ $(VTM) : $(OBJS_VTM)
 install: $(TARGET)
 	mkdir -p $(PHONE_DIR)/bin
 ifeq ($(CONFIG_WIN32),y)
-	install ../../qemu-img $(PHONE_DIR)/bin
+	install ../../qemu-img.exe $(PHONE_DIR)/bin
 endif
 	mkdir -p $(PHONE_DIR)/arm
 	mkdir -p $(PHONE_DIR)/x86
