@@ -103,7 +103,7 @@ GtkWidget *list;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
-char* LASTEST_VERSION_GROUP;
+char* LATEST_VERSION_GROUP;
 #ifdef _WIN32
 void socket_cleanup(void)
 {
@@ -583,7 +583,7 @@ void show_modify_window(char *target_name)
 }
 
 
-void init_setenv()
+void env_init()
 {
 	char* arch;
 	int target_list_status;
@@ -598,13 +598,16 @@ void init_setenv()
 	target_list_filepath = get_targetlist_abs_filepath();
 	target_list_status = is_exist_file(target_list_filepath);
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
-	{
 		ERR( "load target list file error\n");
-		//		exit(1);
-	}
+
+	// check latest version
+	version_init();
+
+	//make default target of the latest version
+	make_default_image();
 
 	refresh_clicked_cb(arch);
-	make_default_image();
+
 }
 void arch_select_cb(GtkWidget *widget, gpointer data)
 {
@@ -977,7 +980,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		target_list_filepath = get_targetlist_abs_filepath();
 		target_list_status = is_exist_file(target_list_filepath);
 
-		del_config_key(target_list_filepath, LASTEST_VERSION_GROUP, target_name);
+		del_config_key(target_list_filepath, LATEST_VERSION_GROUP, target_name);
 		g_free(cmd);
 		g_free(virtual_target_path);
 #ifdef _WIN32
@@ -1713,7 +1716,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 	//delete original target name
 	target_list_filepath = get_targetlist_abs_filepath();
-	del_config_key(target_list_filepath, LASTEST_VERSION_GROUP, target_name);
+	del_config_key(target_list_filepath, LATEST_VERSION_GROUP, target_name);
 	g_free(target_name);
 
 	if(access(dest_path, R_OK) != 0)
@@ -1774,7 +1777,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, LASTEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, LATEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	//	create_config_file(conf_file);
@@ -1935,7 +1938,7 @@ void ok_clicked_cb(void)
 			virtual_target_info.virtual_target_name, arch);
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, LASTEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, LATEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
@@ -2204,7 +2207,6 @@ void setup_resolution_frame(void)
 	g_signal_connect(G_OBJECT(resolution_combo_box), "changed", G_CALLBACK(resolution_select_cb), NULL);
 
 }
-
 
 void setup_disk_frame(void)
 {
@@ -2490,7 +2492,7 @@ void version_init(void)
 	fgets(tmp, 1024, fp);
 	if(tmp){
 		tmp[strlen(tmp)-1] = 0;
-		LASTEST_VERSION_GROUP = tmp;
+		LATEST_VERSION_GROUP = tmp;
 	}
 	fclose(fp);
 	
@@ -2499,16 +2501,17 @@ void version_init(void)
 		ERR( "loading key file form %s is failed.\n", target_list_filepath);
 		return;
 	}
-
-	if(g_key_file_has_group(keyfile, LASTEST_VERSION_GROUP) == FALSE)
+	
+	if(g_key_file_has_group(keyfile, LATEST_VERSION_GROUP) == FALSE)
 	{
-		g_key_file_set_value(keyfile, LASTEST_VERSION_GROUP, "default", "");
+		g_key_file_set_value(keyfile, LATEST_VERSION_GROUP, "default", "");
 		gchar *data = g_key_file_to_data(keyfile, &length, &error);
 		if (error != NULL) {
 			g_print("in set_config_type\n");
 			g_print("%s", error->message);
 			g_clear_error(&error);
 		}
+
 		g_strstrip(data);
 		length = strlen(data);
 		g_file_set_contents(target_list_filepath, data, length, &error);
@@ -2564,9 +2567,8 @@ int main(int argc, char** argv)
 
 	construct_main_window();
 
-	init_setenv();
-	version_init();
-
+	env_init();
+	
 	gtk_main();
 
 	free(target_list_filepath);

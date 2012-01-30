@@ -109,7 +109,7 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection);
 void refresh_clicked_cb(char *arch);
 void activate_target(char *target_name);
 void arch_select_cb(GtkWidget *widget, gpointer data);
-void init_setenv(void);
+void env_init(void);
 void entry_changed(GtkEditable *entry, gpointer data);
 void make_default_image(void);
 int check_shdmem(char *target_name, int type);
