@@ -1777,7 +1777,7 @@ static CharDriverState *qemu_chr_open_win_file_out(QemuOpts *opts)
     HANDLE fd_out;
 
     fd_out = CreateFile(file_out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-                        OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (fd_out == INVALID_HANDLE_VALUE)
         return NULL;
 
