@@ -121,13 +121,87 @@ static uint8_t gtk_keyevent_to_keycode_generic(const GdkEventKey *event)
 
 static UINT vk2scan(UINT vk)
 {
+	/* commnetby don.hong
+	 * MapVirtualKey doesn't support extended scan code.
+	 * MapVirtualKeyEx(,MAPVK_VK_TO_VSC_EX,) doesn't work with mingw.
+	 * So we cannot covernt virtual keycode to extended scan code.
+	 * For example, 'HOME' is converted as 'KP HOME'.
+	 * But, it's not so critical.
+	 */
 	return MapVirtualKey(vk,0);
+//	return MapVirtualKeyEx(vk,4,GetKeyboardLayout(0));
 }
 
-
-static uint8_t gtk_keyevent_to_keycode(const GdkEventKey *event)
+static uint8_t gtk_keyevent_to_keycode(GdkEventKey *event)
 {
-	return (uint8_t)vk2scan((UINT)(event->hardware_keycode));
+	/*
+	 * GdkEventKey's behavior is different between linux and Windows.
+	 * GdkEventKey doesn't contain Numlock state in Windows.
+	 * It is important when we reconcile NumLock states between host and guest.
+	 * So, we parse key code to add NumLock state to GdkEventKey in Windows.
+	 *
+	 * VK_PRIOR		0x21		PAGE UP key
+	 * VK_NEXT		0x22		PAGE DOWN key
+	 * VK_END		0x23		END key
+	 * VK_HOME		0x24		HOME key
+	 * VK_LEFT		0x25		LEFT ARROW key
+	 * VK_UP		0x26		UP ARROW key
+	 * VK_RIGHT		0x27		RIGHT ARROW key
+	 * VK_DOWN		0x28		DOWN ARROW key
+	 *
+	 * VK_INSERT	0x2D		INS key
+	 * VK_DELETE	0x2E		DEL key
+	 *
+	 * VK_NUMPAD0	0x60		Numeric keypad 0 key
+	 * VK_NUMPAD1	0x61		Numeric keypad 1 key
+	 * VK_NUMPAD2	0x62		Numeric keypad 2 key
+	 * VK_NUMPAD3	0x63		Numeric keypad 3 key
+	 * VK_NUMPAD4	0x64		Numeric keypad 4 key
+	 * VK_NUMPAD5	0x65		Numeric keypad 5 key
+	 * VK_NUMPAD6	0x66		Numeric keypad 6 key
+	 * VK_NUMPAD7	0x67		Numeric keypad 7 key
+	 * VK_NUMPAD8	0x68		Numeric keypad 8 key
+	 * VK_NUMPAD9	0x69		Numeric keypad 9 key
+	 *
+	 * VK_DECIMAL	0x6E		Decimal key
+	 */
+
+	static bool numlock = false;
+	UINT vkey = (UINT)(event->hardware_keycode);
+	uint8_t scancode;
+
+	if( numlock )
+	{
+		event->state |= GDK_MOD2_MASK;
+		if( vkey == VK_NUMLOCK && event->type == GDK_KEY_RELEASE )
+			numlock = false;
+	}
+	else if( event->type == GDK_KEY_RELEASE )
+	{
+		if( vkey == VK_NUMLOCK )
+		{
+			event->state |= GDK_MOD2_MASK;
+			numlock = true;
+		}
+	}
+	else if( (vkey >= VK_NUMPAD0 && vkey <= VK_NUMPAD9) || vkey == VK_DECIMAL )
+	{
+		event->state |= GDK_MOD2_MASK;
+		numlock = true;
+	}
+
+	scancode = (uint8_t)vk2scan((UINT)(event->hardware_keycode));
+
+	/*
+	 * GdkEventKey treats HOME as the same with KPAD_HOME, and MapVirtualKey returns the scan code of 'KPAD 7 HOME'.
+	 * So, we convert HOME and KPAD_HOME to the scan code of 'HOME'
+	 */
+
+	if( (vkey >= VK_PRIOR && vkey <= VK_DOWN) || vkey == VK_INSERT || vkey == VK_DELETE )
+		scancode |= 0x80;
+
+//	fprintf(stderr, "input key = %02x, scancode=%02x, state=%08x %s\n", vkey, scancode, event->state, (event->type == GDK_KEY_PRESS)? "press":"release");
+	return scancode;
 }
 
 #else
@@ -156,7 +230,7 @@ static const uint8_t x_keycode_to_pc_keycode[61] = {
    0x0,         /* 117 */
    0x0,         /* 118 */
    0x0,         /* 119 */
-   0x70,         /* 120 Hiragana_Katakana */
+   0x70,         /* 120 Hiragana_Ka	takana */
    0x0,         /* 121 */
    0x0,         /* 122 */
    0x73,         /* 123 backslash */
@@ -328,6 +402,7 @@ static uint8_t gtk_keyevent_to_keycode(const GdkEventKey *event)
 		keycode = 0;
 	}
 
+//	fprintf(stderr, "input key = %02x, scancode=%02x, state=%08x %s\n", event->hardware_keycode, keycode, event->state, (event->type == GDK_KEY_PRESS)? "press":"release");
 	return keycode;
 }
 #endif
@@ -349,7 +424,6 @@ static void reset_keys(void)
 		}
 	}
 }
-
 
 static void gtk_process_key(GdkEventKey *event)
 {
@@ -414,8 +488,6 @@ static void gtk_process_key(GdkEventKey *event)
 		break;
 	}
 
-//	fprintf(stderr, "input key = %02x %s\n", keycode, (event->type == GDK_KEY_PRESS)? "press":"release");
-
 	if (event->type == GDK_KEY_PRESS) {
 		/* Put release keycode of previous pressed key becuase GTK doesn't generate release event of long-pushed key */
 		if (prev_event.type == GDK_KEY_PRESS &&
@@ -447,7 +519,8 @@ static void gtk_process_key(GdkEventKey *event)
 		kbd_put_keycode(0xe0);
 	kbd_put_keycode((event->type == GDK_KEY_RELEASE) ? (keycode | 0x80) : (keycode & 0x7f));
 
-	prev_event = *event; return;
+	prev_event = *event;
+	return;
 }
 
 
