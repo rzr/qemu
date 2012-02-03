@@ -213,8 +213,8 @@ int del_config_group(gchar *filepath, const gchar *group)
 	}
 
 	if(!g_key_file_remove_group(keyfile, group, &error)){
-			ERR( "fail to remove remove this key");
-			return -1;
+		ERR( "fail to remove this key. group name : %s\n", group);
+		return -1;
 	}
 	
 	gchar *data = g_key_file_to_data(keyfile, &length, &error);
@@ -258,7 +258,7 @@ int del_config_key(gchar *filepath, const gchar *group, const gchar *field)
 	}
 
 	if(!g_key_file_remove_key(keyfile, group, field, &error)){
-			ERR( "fail to remove remove this key");
+			ERR( "fail to remove this key. [group: %s , key: %s]\n", group, field);
 			return -1;
 	}
 	

@@ -86,6 +86,7 @@ MULTI_DEBUG_CHANNEL(tizen, emulmgr);
 #define DELETE_MODE	2
 #define MODIFY_MODE 3
 #define RESET_MODE 4
+#define DELETE_GROUP_MODE 5
 
 GtkBuilder *g_builder;
 GtkBuilder *g_create_builder;
@@ -361,6 +362,10 @@ int check_shdmem(char *target_name, int type)
 					case RESET_MODE:
 						show_message("Warning", "Can not reset this target.\nVirtual target with the same name is running now!");
 						break;
+					case DELETE_GROUP_MODE:
+						show_message("Warning", "Can not delete this group.\nSome virtual target in this group is running now!");
+						break;
+
 					default:
 						ERR("wrong type passed\n");
 					}
@@ -583,32 +588,64 @@ void show_modify_window(char *target_name)
 }
 
 
-void env_init()
+void env_init(void)
 {
 	char* arch;
 	int target_list_status;
-
+	char *default_targetname;
+	FILE *fp = NULL;
+	char *tmp = NULL;
+	char version_path[MAX_LEN];
+	gchar *target_list_filepath;
+	
+	//architecture setting
 	if(!g_getenv("EMULATOR_ARCH"))
 		arch = g_strdup_printf("x86");
 	else
-		return ;
+		return;
 
 	g_setenv("EMULATOR_ARCH",arch,1);
 	INFO( "architecture : %s\n", arch);
+	
+	//get targetlist.ini file	
 	target_list_filepath = get_targetlist_abs_filepath();
 	target_list_status = is_exist_file(target_list_filepath);
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
+	{
 		ERR( "load target list file error\n");
+		show_message("Err", "load target list file error!");
+		return;
+	}
+	
+	//latest version setting
+	sprintf(version_path, "%s/VERSION",get_etc_path());
+	
+	fp= fopen(version_path, "r");
+	if ((tmp= (char *)malloc(MAX_LEN + 1)) == NULL){
+		fclose(fp);
+		return;
+	}
+	
+	fseek(fp, 0, SEEK_SET);
+	fgets(tmp, 1024, fp);
+	if(tmp){
+		tmp[strlen(tmp)-1] = 0;
+		LATEST_VERSION_GROUP = tmp;
+	}
+	fclose(fp);
+
+	default_targetname = g_strdup_printf("default%s",LATEST_VERSION_GROUP);
 
 	// check latest version
-	version_init();
+	version_init(default_targetname, target_list_filepath);
 
 	//make default target of the latest version
-	make_default_image();
+	make_default_image(default_targetname);
 
 	refresh_clicked_cb(arch);
 
 }
+
 void arch_select_cb(GtkWidget *widget, gpointer data)
 {
 	gchar *arch;
@@ -646,10 +683,6 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-		if(strcmp(target_name, "default") == 0){
-			show_message("Warning","You can not modify default target.");
-			return;
-		}
 
 		if(check_shdmem(target_name, MODIFY_MODE)== -1)
 			return;
@@ -770,7 +803,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 		g_free(target_name);
 		free(basedisk_path);
 		free(disk_path);
-		show_message("INFO","Virtual target reset success!");
+		show_message("INFO","Success reset virtual target!");
 		return;
 	}
 
@@ -920,6 +953,99 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	show_message("Warning", "Target is not selected. Firstly select a target and press the button.");
 }
 
+int check_if_group(char* target_list_filepath, char* target_name, int type)
+{
+	GKeyFile *keyfile;
+	GError *error = NULL;
+	gchar **target_list = NULL;
+	int list_num;
+	int i;
+	char *cmd = NULL;
+	char *virtual_target_path = NULL;
+	char *group_baseimage_path = NULL;
+	char *arch = getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "Architecture setting failed.");
+		return -1;
+	}
+
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
+		ERR( "loading key file form %s is failed.\n", target_list_filepath);
+		return -1;
+	}
+
+	if(g_key_file_has_group(keyfile, target_name) == FALSE)
+		return 1;
+	else // target_name is a group name
+	{
+		target_list = get_virtual_target_list(target_list_filepath, target_name, &list_num);
+
+		for(i = 0; i < list_num; i++)
+		{
+			if(check_shdmem(target_list[i], DELETE_MODE) == -1)
+				return -1;
+		}
+		gboolean bResult = show_ok_cancel_message("Warning", "All targets under this group will be removed, Are you sure to continue?");
+		if(bResult == FALSE)
+			return -1;
+
+		for(i = 0; i < list_num; i++)
+		{
+			virtual_target_path = get_virtual_target_abs_path(target_list[i]);
+
+#ifdef _WIN32
+			char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
+			cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
+			if (system(cmd)	== -1)
+			{
+				g_free(cmd);
+				g_free(virtual_target_path);
+				TRACE( "Failed to delete target name: %s", target_list[i]);
+				show_message("Failed to delete target name: %s", target_list[i]);
+				return -1;
+			}
+#else
+			cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
+			if(!run_cmd(cmd))
+			{
+				g_free(cmd);
+				g_free(virtual_target_path);
+				TRACE( "Failed to delete target name: %s", target_list[i]);
+				show_message("Failed to delete target name: %s", target_list[i]);
+				return -1;
+			}
+#endif
+		del_config_key(target_list_filepath, target_name, target_list[i]);
+		g_free(cmd);
+		g_free(virtual_target_path);
+#ifdef _WIN32
+		g_free(virtual_target_win_path);
+#endif
+		}	
+		
+		INFO( "delete group name : %s\n", target_name);
+		del_config_group(target_list_filepath, target_name);
+
+		INFO( "delete group base image : %s\n", target_name);
+		group_baseimage_path = g_strdup_printf("%s/emulimg%s.%s", get_arch_abs_path(), target_name, arch);
+		if(g_remove(group_baseimage_path) == -1)
+			INFO( "fail deleting %s\n", group_baseimage_path);
+		else
+			INFO( "success deleting %s\n", group_baseimage_path);
+
+		refresh_clicked_cb(arch);
+		free(group_baseimage_path);
+		g_strfreev(target_list);
+		g_key_file_free(keyfile);
+	}
+
+	show_message("INFO","Success deleting group!");
+	return 0;
+}
+
 void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 {
 	GtkTreeStore *store;
@@ -930,8 +1056,16 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *virtual_target_path;
 	int target_list_status;
 
+	target_list_filepath = get_targetlist_abs_filepath();
+	target_list_status = is_exist_file(target_list_filepath);
+	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
+	{
+		INFO( "target info file not exists : %s\n", target_list_filepath);
+		return;
+	}
+	
 	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	model = gtk_tree_view_get_model(GTK_TREE_VIEW (list));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -940,13 +1074,12 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-		if(strcmp(target_name,"default") == 0)
-		{
-			show_message("Warning","You can not delete default target.");
-			return;
-		}
 
-		if(check_shdmem(target_name, DELETE_MODE)== -1)
+		//check if selection is group name or target name	
+		if(check_if_group(target_list_filepath, target_name, DELETE_GROUP_MODE) <= 0)
+			return;
+
+		if(check_shdmem(target_name, DELETE_MODE) == -1)
 			return;
 
 		gboolean bResult = show_ok_cancel_message("Warning", "This target will be removed, Are you sure to continue?");
@@ -977,9 +1110,6 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 #endif
-		target_list_filepath = get_targetlist_abs_filepath();
-		target_list_status = is_exist_file(target_list_filepath);
-
 		del_config_key(target_list_filepath, LATEST_VERSION_GROUP, target_name);
 		g_free(cmd);
 		g_free(virtual_target_path);
@@ -988,10 +1118,9 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 #endif
 		gtk_tree_store_remove(store, &iter);
 		g_free(target_name);
-		show_message("INFO","Virtual target deletion success!");
+		show_message("INFO","Success deleting virtual target!");
 		return;
 	}
-
 	show_message("Warning", "Target is not selected. Firstly select a target and delete.");
 }
 
@@ -1050,7 +1179,6 @@ void refresh_clicked_cb(char *arch)
 			virtual_target_path = get_virtual_target_abs_path(target_list[i]);
 			info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 			info_file_status = is_exist_file(info_file);
-
 			//if targetlist exist but config file not exists
 			if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 			{
@@ -1068,6 +1196,7 @@ void refresh_clicked_cb(char *arch)
 			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
 
 			g_free(buf);
+
 			g_free(ram_size);
 			g_free(resolution);
 			g_free(virtual_target_path);
@@ -1084,25 +1213,45 @@ void refresh_clicked_cb(char *arch)
 
 }
 
-void make_default_image(void)
+void make_default_image(char *default_targetname)
 {
 	char *cmd = NULL;
 	int info_file_status;
-	char *virtual_target_path = get_virtual_target_abs_path("default");
+	char *virtual_target_path = get_virtual_target_abs_path(default_targetname);
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-	char *default_img_x86 = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
+	char *default_img_x86 = g_strdup_printf("%semulimg-default%s.x86", virtual_target_path, LATEST_VERSION_GROUP);
+	char *default_dir_x86 = g_strdup_printf("%s/%s", get_vms_abs_path(), default_targetname);
+	char *default_path_x86 = g_strdup_printf("%s/config.ini", default_dir_x86);
+	char *log_dir_x86 = get_virtual_target_log_path(default_targetname);
+	char *conf_path_x86 = g_strdup_printf("%s/config.ini", get_conf_abs_path());
+	GError *err = NULL;
+	GFile *file_conf_path_x86 = g_file_new_for_path(conf_path_x86);
+	GFile *file_default_path_x86 = g_file_new_for_path(default_path_x86);
+	
 	//make x86 default image if it does not exist.
 	info_file_status = is_exist_file(default_img_x86);
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
-		INFO( "emulimg-default.x86 not exists. is making now.\n");
+		INFO( "x86 default image not exists. is making now.\n");
+		if(access(default_dir_x86, R_OK) != 0)
+			g_mkdir(default_dir_x86, 0755);
+		if(access(log_dir_x86, R_OK) != 0)
+			g_mkdir(log_dir_x86, 0755);
+		//copy config.ini
+		if(!g_file_copy(file_conf_path_x86, file_default_path_x86, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)){
+			ERR("fail to copy config.ini: %s\n", err->message);
+			g_error_free(err);
+			g_free(conf_path_x86);
+			return;
+		}
+
 		// create emulator image
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %s",
-				get_bin_path(), get_arch_abs_path(), default_img_x86);
+		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg%s.x86 -f qcow2 %s",
+				get_bin_path(), get_arch_abs_path(), LATEST_VERSION_GROUP, default_img_x86);
 #else
-		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %s",
-				get_arch_abs_path(), default_img_x86);
+		cmd = g_strdup_printf("qemu-img create -b %s/emulimg%s.x86 -f qcow2 %s",
+				get_arch_abs_path(), LATEST_VERSION_GROUP, default_img_x86);
 #endif
 		if(!run_cmd(cmd))
 		{
@@ -1113,6 +1262,10 @@ void make_default_image(void)
 
 		INFO( "emulimg-default.x86 creation succeeded!\n");
 		g_free(cmd);
+		g_free(default_dir_x86);
+		g_free(default_path_x86);
+		g_free(log_dir_x86);
+		g_free(conf_path_x86);
 
 	}
 	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_x86);
@@ -1121,14 +1274,32 @@ void make_default_image(void)
 #ifdef _ARM	
 	//make arm default image if it does not exist.
 	g_setenv("EMULATOR_ARCH","arm",1);
-	virtual_target_path = get_virtual_target_abs_path("default");
-	char *default_img_arm = g_strdup_printf("%semulimg-default.arm", virtual_target_path);
+	virtual_target_path = get_virtual_target_abs_path(default_targetname);
+	char *default_img_arm = g_strdup_printf("%semulimg-default%s.arm", virtual_target_path, LATEST_VERSION_GROUP);
+	char *default_dir_arm = g_strdup_printf("%s/%s", get_vms_abs_path(), default_targetname);
+	char *default_path_arm = g_strdup_printf("%s/config.ini", default_dir_arm);
+	char *log_dir_arm = get_virtual_target_log_path(default_targetname);
+	char *conf_path_arm = g_strdup_printf("%s/config.ini", get_conf_abs_path());
+	GFile *file_conf_path_arm =  g_file_new_for_path(conf_path_arm);
+	GFile *file_default_path_arm =  g_file_new_for_path(default_path_arm);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 
 	info_file_status = is_exist_file(default_img_arm);
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
-		INFO( "emulimg-default.arm not exists. is making now.\n");
+		INFO( "arm default image not exists. is making now.\n");
+		if(access(default_dir_arm, R_OK) != 0)
+			g_mkdir(default_dir_arm, 0755);
+		if(access(log_dir_arm, R_OK) != 0)
+			g_mkdir(log_dir_arm, 0755);
+
+		//copy config.ini
+		if(!g_file_copy(file_conf_path_arm, file_default_path_arm, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)){
+			Err("fail to copy config.ini: %s", err->message);
+			g_error_free(err);
+			g_free(conf_path_arm);
+			return;
+		}
 		// create emulator image
 #ifdef _WIN32
 		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.arm -f qcow2 %s",
@@ -1146,6 +1317,10 @@ void make_default_image(void)
 
 		INFO( "emulimg-default.arm creation succeeded!\n");
 		g_free(cmd);
+		g_free(default_dir_arm);
+		g_free(default_path_arm);
+		g_free(log_dir_arm);
+		g_free(conf_path_arm);
 
 	}
 	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_arm);
@@ -1302,7 +1477,8 @@ int name_collision_check(void)
 	int group_num = 0;
 	gchar **target_list = NULL;
 	gchar **target_groups = NULL;
-
+	target_list_filepath = get_targetlist_abs_filepath();
+	
 	target_groups = get_virtual_target_groups(target_list_filepath, &group_num);
 	for(i = 0; i < group_num; i++)
 	{
@@ -1788,7 +1964,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		return ;
 	}
 
-	show_message("INFO", "Virtual target modification success!");
+	show_message("INFO", "Success modifying virtual target!");
 
 	g_free(dest_path);
 	g_free(conf_file);
@@ -1948,7 +2124,7 @@ void ok_clicked_cb(void)
 		show_message("Error", "Virtual target creation failed!");
 		return ;
 	}
-	show_message("INFO", "Virtual target creation success!");
+	show_message("INFO", "Success creating virtual target!");
 
 	g_free(conf_file);
 	g_free(dest_path);
@@ -2470,41 +2646,21 @@ void set_mesa_lib(void)
 
 }
 
-void version_init(void)
+void version_init(char *default_targetname, char* target_list_filepath)
 {
-	FILE *fp = NULL;
-	char *tmp = NULL;
 	GKeyFile *keyfile;
 	GError *error = NULL;
 	gsize length;
-	char version_path[MAX_LEN];
-	gchar *target_list_filepath;
-
-	target_list_filepath = get_targetlist_abs_filepath();
-	sprintf(version_path, "%s/VERSION",get_etc_path());
-	fp= fopen(version_path, "r");
-	if ((tmp= (char *)malloc(MAX_LEN + 1)) == NULL){
-		fclose(fp);
-		return;
-	}
-	
-	fseek(fp, 0, SEEK_SET);
-	fgets(tmp, 1024, fp);
-	if(tmp){
-		tmp[strlen(tmp)-1] = 0;
-		LATEST_VERSION_GROUP = tmp;
-	}
-	fclose(fp);
 	
 	keyfile = g_key_file_new();
 	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
 		ERR( "loading key file form %s is failed.\n", target_list_filepath);
 		return;
 	}
-	
+
 	if(g_key_file_has_group(keyfile, LATEST_VERSION_GROUP) == FALSE)
 	{
-		g_key_file_set_value(keyfile, LATEST_VERSION_GROUP, "default", "");
+		g_key_file_set_value(keyfile, LATEST_VERSION_GROUP, default_targetname, "");
 		gchar *data = g_key_file_to_data(keyfile, &length, &error);
 		if (error != NULL) {
 			g_print("in set_config_type\n");

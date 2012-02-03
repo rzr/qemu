@@ -44,7 +44,7 @@
 
 #include <glib.h>
 #include <glib/gstdio.h>
-
+#include <gio/gio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -111,11 +111,12 @@ void activate_target(char *target_name);
 void arch_select_cb(GtkWidget *widget, gpointer data);
 void env_init(void);
 void entry_changed(GtkEditable *entry, gpointer data);
-void make_default_image(void);
+void make_default_image(char *default_targetname);
 int check_shdmem(char *target_name, int type);
 int socket_init(void);
 char *check_kvm(char *info_file, int *status);
-void version_init(void);
+void version_init(char *default_targetname, char* target_list_filepath);
+int check_if_group(char* target_list_filepath, char* target_name, int type);
 #ifdef __linux__
 void set_mesa_lib(void);
 #endif
