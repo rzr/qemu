@@ -72,7 +72,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
     image_widget = gtk_image_new_from_file (icon_image);
     gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
     if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item), TRUE);
     }
     gtk_container_add(GTK_CONTAINER(*pMenu), Item);
 
@@ -87,7 +87,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
         image_widget = gtk_image_new_from_file (icon_image);
         gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
         if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-            gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
+            gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item), TRUE);
         }
 
         gtk_widget_set_tooltip_text(menu_item, "Emulate receiving and sending calls, SMSs, etc");
@@ -113,7 +113,7 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
 
     gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(savevm_menu_item), image_widget);
     if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(savevm_menu_item),TRUE);
+        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(savevm_menu_item), TRUE);
     }
 
     if (UISTATE.is_gps_run == FALSE) {
@@ -128,21 +128,37 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
     gtk_widget_show(savevm_menu_item);
 #endif
 
-    /* 5.2 screen shot menu of advanced */
+    /* 5.2 shell menu */
+    if (configuration.enable_shell) {
+        menu_item = gtk_image_menu_item_new_with_label(_("Shell"));
+        sprintf(icon_image, "%s/icons/01_SHELL.png", skin_path);
+        image_widget = gtk_image_new_from_file (icon_image);
+
+        gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
+        if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
+            gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item), TRUE);
+        }
+        gtk_widget_set_tooltip_text(menu_item, _("Run sdb shell"));
+        g_signal_connect(menu_item, "activate", G_CALLBACK(create_cmdwindow), NULL);
+        gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
+        gtk_widget_show(menu_item);
+    }
+
+    /* 5.3 screen shot menu of advanced */
     menu_item = gtk_image_menu_item_new_with_label(_("Screen Shot"));
     sprintf(icon_image, "%s/icons/06_SCREEN-SHOT.png", skin_path);
     image_widget = gtk_image_new_from_file (icon_image);
 
     gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
     if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
+        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item), TRUE);
     }
     gtk_widget_set_tooltip_text(menu_item, "Capture and Save the present Screen Shot ");
     g_signal_connect(menu_item, "activate", G_CALLBACK(frame_buffer_handler), NULL);
     gtk_container_add(GTK_CONTAINER(SubMenuItem), menu_item);
     gtk_widget_show(menu_item);
 
-    /* 5.3 USB keyboard menu */
+    /* 5.4 USB keyboard menu */
     menu_item = gtk_image_menu_item_new_with_label(_("USB Keyboard"));
     sprintf(icon_image, "%s/icons/04_KEYPAD.png", skin_path);
     image_widget = gtk_image_new_from_file (icon_image);
@@ -168,14 +184,14 @@ static void create_popup_advanced_menu(GtkWidget **pMenu, PHONEMODELINFO *device
         gtk_widget_show(menu_item);
     }
 
-    /* 5.4 about menu */
+    /* 5.5 about menu */
     menu_item = gtk_image_menu_item_new_with_label(_("About"));
     sprintf(icon_image, "%s/icons/13_ABOUT.png", skin_path);
     image_widget = gtk_image_new_from_file (icon_image);
 
     gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image_widget);
     if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item),TRUE);
+        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(menu_item), TRUE);
     }
 
     g_signal_connect(menu_item, "activate", G_CALLBACK(menu_about_callback), NULL);
@@ -218,7 +234,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 
     gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
     if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item), TRUE);
     }
     gtk_widget_set_tooltip_text(Item, _("Show Emulator infomation"));
     g_signal_connect(Item, "activate", G_CALLBACK(show_info_window), (gpointer*)startup_option.vtm);
@@ -228,29 +244,6 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
     free(emul_name);
 
     MENU_ADD_SEPARTOR(*pMenu);
-
-    /* 2. shell menu */
-    if (configuration.enable_shell) {
-        Item = gtk_image_menu_item_new_with_label(_("Shell"));
-        sprintf(icon_image, "%s/icons/01_SHELL.png", skin_path);
-        image_widget = gtk_image_new_from_file (icon_image);
-
-        gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
-        if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-            gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
-        }
-        gtk_widget_set_tooltip_text(Item, _("Run Command Window (ssh)"));
-
-        gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
-        if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-            gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
-        }
-        gtk_widget_set_tooltip_text(Item, _("Run Command Window (ssh)"));
-
-        g_signal_connect(Item, "activate", G_CALLBACK(create_cmdwindow), NULL);
-        gtk_container_add(GTK_CONTAINER(*pMenu), Item);
-        gtk_widget_show(Item);
-    }
 
     /* 3. always on top  menu */
     Item = gtk_check_menu_item_new_with_label(_("Always On Top"));
@@ -287,7 +280,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 
             gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
             if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-                gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+                gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item), TRUE);
             }
             gtk_container_add(GTK_CONTAINER(*pMenu), Item);
             gtk_widget_show(Item);
@@ -333,7 +326,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 
     gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(Item), image_widget);
     if (GTK_MAJOR_VERSION >=2 && GTK_MINOR_VERSION >= 16) {
-        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item),TRUE);
+        gtk_image_menu_item_set_always_show_image (GTK_IMAGE_MENU_ITEM(Item), TRUE);
     }
 
     g_signal_connect(Item, "activate", G_CALLBACK(exit_emulator), NULL);

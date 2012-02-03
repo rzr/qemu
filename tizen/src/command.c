@@ -38,8 +38,8 @@
 
 
 /**
-	@file 	command.c
-	@brief	functions to manage terminal window
+    @file     command.c
+    @brief    functions to manage terminal window
 */
 
 #include "command.h"
@@ -54,40 +54,37 @@ MULTI_DEBUG_CHANNEL(tizen, command);
 #ifdef _WIN32
 void* system_telnet(void)
 {
-	gchar cmd[256] = "";
-	//sprintf (cmd, "start cmd /C telnet %s",configuration.qemu_configuration.root_file_system_ip); 
-	//sprintf (cmd, "start cmd /C ssh root@%s",configuration.qemu_configuration.root_file_system_ip); 
-	system(cmd);
+    gchar cmd[256] = "";
+    //sprintf (cmd, "start cmd /C telnet %s",configuration.qemu_configuration.root_file_system_ip); 
+    //sprintf (cmd, "start cmd /C ssh root@%s",configuration.qemu_configuration.root_file_system_ip); 
+    system(cmd);
 }
 #endif
-
 
 /* execute a terminal connected to the target */
 void create_cmdwindow(void)
 {
-
-	gchar cmd[256];
-	const char *terminal = getenv("EMULATOR_TERMINAL");
+    gchar cmd[256];
+    const char *terminal = getenv("EMULATOR_TERMINAL");
 
 #ifdef _WIN32
-	sprintf (cmd, "start cmd /C telnet localhost %d", startup_option.telnet_port);
-	system(cmd);
-	fflush(stdout);
-#else
+    sprintf (cmd, "start cmd /C telnet localhost %d", startup_option.telnet_port);
+    system(cmd);
+    fflush(stdout);
+#elif __linux__
+    /* gnome-terminal */
+    if (!terminal) {
+        terminal = "/usr/bin/gnome-terminal --disable-factory -x";
+        //terminal = "/usr/bin/xterm -l -e";
+    }
+    //TODO: sdb path
+    sprintf(cmd, "%s sdb -s emulator-%d shell", terminal, get_sdb_base_port());
 
-	/* gnome-terminal */
-
-	if (!terminal)
-		terminal = "/usr/bin/gnome-terminal --disable-factory -x";
-//		terminal = "/usr/bin/xterm -l -e";
-
-	sprintf(cmd, "%s ssh -o StrictHostKeyChecking=no root@localhost -p %d", terminal, startup_option.ssh_port);
-
-	if(emul_create_process(cmd) == TRUE)
-		INFO( "start command window\n");
-	else
-		ERR( "falied to start command window\n");
-
+    if (emul_create_process(cmd) == TRUE) {
+        INFO( "start command window\n");
+    } else {
+        ERR( "falied to start command window\n");
+    }
 #endif
 }
 
