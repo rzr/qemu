@@ -1183,7 +1183,7 @@ void refresh_clicked_cb(char *arch)
 			if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 			{
 				INFO( "target info file not exists : %s\n", target_list[i]);
-				del_config_key(target_list_filepath, target_groups[group_num], target_list[i]);
+				del_config_key(local_target_list_filepath, target_groups[group_num], target_list[i]);
 				target_list = get_virtual_target_list(local_target_list_filepath, target_groups[group_num], &list_num);
 				gtk_tree_store_remove(store, &child);
 				i -= 1;
