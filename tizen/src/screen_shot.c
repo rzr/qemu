@@ -419,7 +419,7 @@ static void frame_buffer_magnify5x_callback(GtkAction *action, gpointer data)
 	gtk_widget_show_all(widget);
 }
 
-#ifdef _WIN32
+#if 0
 char * find_index(char *file_name, char search)
 {
 	int len = 0;
@@ -427,7 +427,7 @@ char * find_index(char *file_name, char search)
 	len = strlen(file_name);
 
 	while (len-- > 0) {
-		if (*file_name == search) {
+		if (*file_name == search) { //file_name + len
 			return file_name;
 		}
 		file_name++;
@@ -458,12 +458,10 @@ static void frame_buffer_save_image(GtkToolButton *toolbutton, gpointer user_dat
 	if (file_name == NULL || strlen(file_name) == 0) 
 		return;
 
-#ifndef _WIN32
-	str = rindex(file_name, '.');
-#else
-	str = find_index(file_name, '.');
 
-#endif
+	str = strrchr(file_name, '.');
+	//str = find_index(file_name, '.');
+
 	if (str == NULL) {
 		show_message("Warning", "You must Add the Extension of File.(PNG/JPG/BMP)");
 		return;
