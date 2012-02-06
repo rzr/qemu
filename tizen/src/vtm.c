@@ -1277,6 +1277,8 @@ void make_default_image(char *default_targetname)
 	char *default_path_x86 = g_strdup_printf("%s/config.ini", default_dir_x86);
 	char *log_dir_x86 = get_virtual_target_log_path(default_targetname);
 	char *conf_path_x86 = g_strdup_printf("%s/config.ini", get_conf_abs_path());
+	char *targetlist_x86 = get_targetlist_abs_filepath();
+ 
 	GError *err = NULL;
 	GFile *file_conf_path_x86 = g_file_new_for_path(conf_path_x86);
 	GFile *file_default_path_x86 = g_file_new_for_path(default_path_x86);
@@ -1309,7 +1311,15 @@ void make_default_image(char *default_targetname)
 		if(!run_cmd(cmd))
 		{
 			g_free(cmd);
-			ERR("Error", "emulator image creation failed!");
+			ERR("default x86 image creation failed!\n");
+			del_config_key(targetlist_x86, LATEST_VERSION_GROUP, default_targetname);
+			del_config_group(targetlist_x86, LATEST_VERSION_GROUP);
+			show_message("Error", "default x86 image creation failed!");
+			g_free(default_dir_x86);
+			g_free(default_path_x86);
+			g_free(log_dir_x86);
+			g_free(conf_path_x86);
+			g_free(targetlist_x86);
 			return;
 		}
 
@@ -1319,6 +1329,7 @@ void make_default_image(char *default_targetname)
 		g_free(default_path_x86);
 		g_free(log_dir_x86);
 		g_free(conf_path_x86);
+		g_free(targetlist_x86);
 
 	}
 	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_x86);
@@ -1333,6 +1344,7 @@ void make_default_image(char *default_targetname)
 	char *default_path_arm = g_strdup_printf("%s/config.ini", default_dir_arm);
 	char *log_dir_arm = get_virtual_target_log_path(default_targetname);
 	char *conf_path_arm = g_strdup_printf("%s/config.ini", get_conf_abs_path());
+	char *targetlist_arm = get_targetlist_abs_filepath();
 	GFile *file_conf_path_arm =  g_file_new_for_path(conf_path_arm);
 	GFile *file_default_path_arm =  g_file_new_for_path(default_path_arm);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
@@ -1363,8 +1375,16 @@ void make_default_image(char *default_targetname)
 #endif
 		if(!run_cmd(cmd))
 		{
+			ERR("default arm image creation failed!");
+			del_config_key(targetlist_arm, LATEST_VERSION_GROUP, default_targetname);
+			del_config_group(targetlist_arm, LATEST_VERSION_GROUP);
+			show_message("Error", "default arm image creation failed!");
 			g_free(cmd);
-			ERR("Error", "emulator image creation failed!");
+			g_free(default_dir_arm);
+			g_free(default_path_arm);
+			g_free(log_dir_arm);
+			g_free(conf_path_arm);
+			g_free(targetlist_arm);
 			return;
 		}
 
@@ -1374,7 +1394,7 @@ void make_default_image(char *default_targetname)
 		g_free(default_path_arm);
 		g_free(log_dir_arm);
 		g_free(conf_path_arm);
-
+		g_free(targetlist_arm);
 	}
 	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_arm);
 	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
