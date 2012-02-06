@@ -241,6 +241,46 @@ int del_config_group(gchar *filepath, const gchar *group)
 }
 
 /**
+ * @brief 	get group name of specific target name
+ * @return	group name
+ * @date    Nov 18. 2008
+ * */
+char *get_group_name(gchar *filepath, const gchar *field)
+{
+	GKeyFile *keyfile;
+	GError *err = NULL;
+	char **target_groups = NULL;
+	int i;
+	int group_num;
+
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &err)) {
+		INFO( "loading key file form %s is failed.\n", filepath);
+		return NULL;
+	}
+	
+	target_groups = get_virtual_target_groups(filepath, &group_num);
+
+	for(i = 0; i < group_num; i++)
+	{
+		if(!g_key_file_has_key(keyfile, target_groups[i], field, &err))
+			INFO("%s is not in %s\n", target_groups[i], field);
+		else
+		{
+			g_key_file_free(keyfile);
+			return target_groups[i];
+		}
+	}
+
+	INFO("there is no group include %s\n", field);
+	g_key_file_free(keyfile);
+	return NULL;
+
+}
+
+
+
+/**
  * @brief 	delete target name key in targetlist.ini file
  * @return	fail(-1), success(0)
  * @date    Nov 18. 2008

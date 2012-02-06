@@ -982,15 +982,19 @@ int check_if_group(char* target_list_filepath, char* target_name, int type)
 	else // target_name is a group name
 	{
 		target_list = get_virtual_target_list(target_list_filepath, target_name, &list_num);
+	
+		gboolean bResult = show_ok_cancel_message("Warning", "All targets under this group will be removed, Are you sure to continue?");
+		if(bResult == FALSE)
+			return -1;
+		
+		if(!target_list)
+			goto DEL_GROUP;
 
 		for(i = 0; i < list_num; i++)
 		{
 			if(check_shdmem(target_list[i], DELETE_MODE) == -1)
 				return -1;
 		}
-		gboolean bResult = show_ok_cancel_message("Warning", "All targets under this group will be removed, Are you sure to continue?");
-		if(bResult == FALSE)
-			return -1;
 
 		for(i = 0; i < list_num; i++)
 		{
@@ -1024,8 +1028,9 @@ int check_if_group(char* target_list_filepath, char* target_name, int type)
 #ifdef _WIN32
 		g_free(virtual_target_win_path);
 #endif
-		}	
-		
+		}
+		g_strfreev(target_list);
+DEL_GROUP:		
 		INFO( "delete group name : %s\n", target_name);
 		del_config_group(target_list_filepath, target_name);
 
@@ -1038,7 +1043,6 @@ int check_if_group(char* target_list_filepath, char* target_name, int type)
 
 		refresh_clicked_cb(arch);
 		free(group_baseimage_path);
-		g_strfreev(target_list);
 		g_key_file_free(keyfile);
 	}
 
@@ -1052,6 +1056,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
+	char *group_name;
 	char *cmd = NULL;
 	char *virtual_target_path;
 	int target_list_status;
@@ -1110,7 +1115,17 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 #endif
-		del_config_key(target_list_filepath, LATEST_VERSION_GROUP, target_name);
+		//find group of target_name and delete the target_name
+		group_name = get_group_name(target_list_filepath, target_name);
+		if(!group_name)
+		{
+			ERR( "%s is not under any group in targetlist.ini\n", target_name);
+			return;
+		}
+		
+		del_config_key(target_list_filepath, group_name, target_name);
+
+		g_free(group_name);
 		g_free(cmd);
 		g_free(virtual_target_path);
 #ifdef _WIN32

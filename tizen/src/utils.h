@@ -41,7 +41,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 #include "fileio.h"
-
+#include "vt_utils.h"
 GHashTable *window_hash_init (void);
 void add_window (GtkWidget * win, gint id);
 void raise_window (GtkWidget * win);
@@ -57,6 +57,7 @@ int del_config_group(gchar *filepath, const gchar *group);
 int set_config_value(gchar *filepath, const gchar *group, const gchar *field, const gchar *value);
 int get_config_type(gchar *filepath, const gchar *group, const gchar *field);
 char *get_config_value(gchar *filepath, const gchar *group, const gchar *field);
+char *get_group_name(gchar *filepath, const gchar *field);
 
 #ifndef _WIN32
 void strlwr (char *string);
