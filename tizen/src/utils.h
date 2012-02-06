@@ -58,6 +58,7 @@ int set_config_value(gchar *filepath, const gchar *group, const gchar *field, co
 int get_config_type(gchar *filepath, const gchar *group, const gchar *field);
 char *get_config_value(gchar *filepath, const gchar *group, const gchar *field);
 char *get_group_name(gchar *filepath, const gchar *field);
+gboolean is_group(const gchar *target_name);
 
 #ifndef _WIN32
 void strlwr (char *string);

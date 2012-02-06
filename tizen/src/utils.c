@@ -241,6 +241,30 @@ int del_config_group(gchar *filepath, const gchar *group)
 }
 
 /**
+ * @brief 	see if target_name is group
+ * @return	true / false
+ * @date    Nov 18. 2008
+ * */
+gboolean is_group(const gchar *target_name)
+{
+	char **target_groups = NULL;
+	int i;
+	int group_num;
+	char *filepath = get_targetlist_abs_filepath();
+	
+	target_groups = get_virtual_target_groups(filepath, &group_num);
+
+	for(i = 0; i < group_num; i++)
+	{
+		if(strcmp(target_groups[i], target_name) == 0)
+			return TRUE;
+	}
+	
+	return FALSE;
+}
+
+
+/**
  * @brief 	get group name of specific target name
  * @return	group name
  * @date    Nov 18. 2008

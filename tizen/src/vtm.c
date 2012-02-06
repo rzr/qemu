@@ -100,7 +100,7 @@ GtkWidget *g_main_window;
 VIRTUALTARGETINFO virtual_target_info;
 gchar *target_list_filepath;
 gchar *g_info_file;
-GtkWidget *list;
+GtkWidget *treeview;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
@@ -673,8 +673,8 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *target_name;
 	char *virtual_target_path;
 
-	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -707,8 +707,8 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *target_name;
 	char *virtual_target_path;
 
-	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -736,6 +736,44 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 	}
 }
 
+void cursor_changed_cb(GtkWidget *widget, gpointer selection)
+{
+	GtkTreeStore *store;
+	GtkTreeModel *model;
+	GtkTreeIter  iter;
+	char *target_name;
+	GtkWidget *modify_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button3");
+	GtkWidget *reset_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button9");
+	GtkWidget *start_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
+	GtkWidget *details_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button5");
+
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
+
+	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
+				&model, &iter)) {
+		
+		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
+
+		if(is_group(target_name) == TRUE){
+			gtk_widget_set_sensitive(modify_button, FALSE);
+			gtk_widget_set_sensitive(reset_button, FALSE);
+			gtk_widget_set_sensitive(start_button, FALSE);
+			gtk_widget_set_sensitive(details_button, FALSE);
+		}
+		else
+		{
+			gtk_widget_set_sensitive(modify_button, TRUE);
+			gtk_widget_set_sensitive(reset_button, TRUE);
+			gtk_widget_set_sensitive(start_button, TRUE);
+			gtk_widget_set_sensitive(details_button, TRUE);
+
+		}
+
+	}
+}
+
+
 void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 {
 	GtkTreeStore *store;
@@ -748,8 +786,8 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *disk_path;
 	int file_status;
 	char* basedisk_path = NULL;
-	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -840,8 +878,8 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		return ;
 	}
 
-	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -953,7 +991,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	show_message("Warning", "Target is not selected. Firstly select a target and press the button.");
 }
 
-int check_if_group(char* target_list_filepath, char* target_name, int type)
+int delete_group(char* target_list_filepath, char* target_name, int type)
 {
 	GKeyFile *keyfile;
 	GError *error = NULL;
@@ -1069,8 +1107,8 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		return;
 	}
 	
-	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model(GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -1081,7 +1119,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 
 		//check if selection is group name or target name	
-		if(check_if_group(target_list_filepath, target_name, DELETE_GROUP_MODE) <= 0)
+		if(delete_group(target_list_filepath, target_name, DELETE_GROUP_MODE) <= 0)
 			return;
 
 		if(check_shdmem(target_name, DELETE_MODE) == -1)
@@ -1158,7 +1196,7 @@ void refresh_clicked_cb(char *arch)
 	gchar *local_target_list_filepath;
 	GtkTreePath *first_col_path = NULL;
 
-	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
 	local_target_list_filepath = get_targetlist_abs_filepath();
 
 	//check VMs path
@@ -1219,8 +1257,8 @@ void refresh_clicked_cb(char *arch)
 		}
 	}
 	first_col_path = gtk_tree_path_new_from_indices(0, -1);
-	gtk_tree_view_set_cursor(GTK_TREE_VIEW(list), first_col_path, NULL, 0);
-  	gtk_tree_view_expand_all (GTK_TREE_VIEW (list));
+	gtk_tree_view_set_cursor(GTK_TREE_VIEW(treeview), first_col_path, NULL, 0);
+  	gtk_tree_view_expand_all(GTK_TREE_VIEW(treeview));
 
 	g_free(local_target_list_filepath);
 	g_strfreev(target_list);
@@ -1513,6 +1551,7 @@ void exit_vtm(void)
 {
 	INFO( "virtual target manager exit \n");
 	window_hash_destroy();
+	g_object_unref(G_OBJECT(g_builder));
 	gtk_main_quit();
 }
 
@@ -1525,26 +1564,26 @@ GtkWidget *setup_tree_view(void)
 
 	sc_win = gtk_scrolled_window_new(NULL, NULL);
 	store = gtk_tree_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-	list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 	cell = gtk_cell_renderer_text_new();
 
 	//set text alignment 
 	column = gtk_tree_view_column_new_with_attributes("Target Name", cell, "text", TARGET_NAME, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_min_width(column,130);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("RAM Size", cell, "text", RAM_SIZE, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_min_width(column,100);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Resolution", cell, "text", RESOLUTION, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_max_width(column,60);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sc_win), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_container_add(GTK_CONTAINER(sc_win), list);
+	gtk_container_add(GTK_CONTAINER(sc_win), treeview);
 	g_object_unref( G_OBJECT(store));
 
 	return sc_win;
@@ -2570,7 +2609,7 @@ void construct_main_window(void)
 	g_signal_connect(GTK_RADIO_BUTTON(x86_radiobutton), "toggled", G_CALLBACK(arch_select_cb), x86_radiobutton);
 	g_signal_connect(GTK_RADIO_BUTTON(arm_radiobutton), "toggled", G_CALLBACK(arch_select_cb), arm_radiobutton);
 	gtk_box_pack_start(GTK_BOX(vbox), tree_view, TRUE, TRUE, 0);
-	selection  = gtk_tree_view_get_selection(GTK_TREE_VIEW(list));
+	selection  = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
 //  gtk_tree_selection_set_mode (selection, GTK_SELECTION_MULTIPLE);
 	// add shortcut to buttons
 	GtkAccelGroup *group;
@@ -2594,8 +2633,7 @@ void construct_main_window(void)
 	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), selection);
 	g_signal_connect(reset_button, "clicked", G_CALLBACK(reset_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
-
-	g_object_unref(G_OBJECT(g_builder));
+	g_signal_connect(treeview, "cursor-changed", G_CALLBACK(cursor_changed_cb), selection);
 
 	/* setup emulator architecture and path */
 	gtk_widget_show_all(g_main_window);

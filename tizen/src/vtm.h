@@ -103,6 +103,7 @@ void construct_main_window(void);
 GtkWidget *setup_tree_view(void);
 void delete_clicked_cb(GtkWidget *widget, gpointer selection);
 void reset_clicked_cb(GtkWidget *widget, gpointer selection);
+void cursor_changed_cb(GtkWidget *widget, gpointer selection);
 void details_clicked_cb(GtkWidget *widget, gpointer selection);
 void modify_clicked_cb(GtkWidget *widget, gpointer selection);
 void activate_clicked_cb(GtkWidget *widget, gpointer selection);
@@ -116,7 +117,7 @@ int check_shdmem(char *target_name, int type);
 int socket_init(void);
 char *check_kvm(char *info_file, int *status);
 void version_init(char *default_targetname, char* target_list_filepath);
-int check_if_group(char* target_list_filepath, char* target_name, int type);
+int delete_group(char* target_list_filepath, char* target_name, int type);
 #ifdef __linux__
 void set_mesa_lib(void);
 #endif
