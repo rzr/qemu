@@ -779,8 +779,8 @@ static void touch_shoot_for_type(GtkWidget *widget, int x, int y, int lcd_status
 	int dx, dy, dz = 0, lcd_height, lcd_width;
 	GtkWidget *pWidget = NULL;
 	GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
-	lcd_height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h * UISTATE.scale);
-	lcd_width = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.w * UISTATE.scale);
+	lcd_height = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h);
+	lcd_width = (int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.w);
 
 #if 0
 	if (qemu_arch_is_arm()) {
