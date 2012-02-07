@@ -449,38 +449,54 @@ static void frame_buffer_save_image(GtkToolButton *toolbutton, gpointer user_dat
 	GError *g_err = NULL;
 	GdkPixbuf *pOriImg = NULL;
 	BUF_WIDGET *buf_widget = (BUF_WIDGET *) user_data;
-		
+	GtkFileFilter *image_file_filter = NULL;
+
 	pOriImg = gdk_pixbuf_scale_simple(buf_widget->pPixBuf, buf_widget->nOrgWidth, buf_widget->nOrgHeight, GDK_INTERP_NEAREST);
 	buf_widget->pPixBuf = pOriImg;
 
-	file_name = get_file_name("Save Image...", NULL, GTK_FILE_CHOOSER_ACTION_SAVE, NULL, IMAGE_FILE_SAVE);
+	do {
+		image_file_filter = gtk_file_filter_new();
+		gtk_file_filter_set_name(image_file_filter, "Image Files");
+		gtk_file_filter_add_pattern(image_file_filter, "*.[pP][nN][gG]");
+		gtk_file_filter_add_pattern(image_file_filter, "*.[jJ][pP][gG]");
+		gtk_file_filter_add_pattern(image_file_filter, "*.[jJ][pP][eE][gG]");
+		gtk_file_filter_add_pattern(image_file_filter, "*.[bB][mM][pP]");
 
-	if (file_name == NULL || strlen(file_name) == 0) 
-		return;
+		file_name = get_file_name("Save Image...", NULL, GTK_FILE_CHOOSER_ACTION_SAVE, image_file_filter, IMAGE_FILE_SAVE);
+		if (file_name == NULL) {
+			break; //cancle
+		} else if (strlen(file_name) == 0) {
+			g_free(file_name);
+			continue;
+		}
 
+		str = strrchr(file_name, '.');
+		if (str == NULL) {
+			int len = strlen(file_name) + 5;
+			char *png_file_name = qemu_mallocz(len);
+			snprintf(png_file_name, len, "%s.png", file_name); //default format
 
-	str = strrchr(file_name, '.');
-	//str = find_index(file_name, '.');
+			gdk_pixbuf_save(buf_widget->pPixBuf, png_file_name, "png", &g_err, "compression", "9", NULL);
+			qemu_free(png_file_name);
+			break;
+		}
 
-	if (str == NULL) {
-		show_message("Warning", "You must Add the Extension of File.(PNG/JPG/BMP)");
-		return;
-	}
-
-	if (strncmp(str + 1, "jpg", strlen("jpg")) == 0 || strncmp(str + 1, "JPG", strlen("JPG")) == 0 || strncmp(str + 1, "jpeg", strlen("jpeg")) == 0 || strncmp(str + 1, "JPEG", strlen("JPEG")) == 0) 
-		gdk_pixbuf_save(buf_widget->pPixBuf, file_name, "jpeg", &g_err, "quality", "100", NULL);
-
-	else if (strncmp(str + 1, "png", strlen("png")) == 0 || strncmp(str + 1, "PNG", strlen("PNG")) == 0) 
-		gdk_pixbuf_save(buf_widget->pPixBuf, file_name, "png", &g_err, "compression", "9", NULL);
-
-	else if (strncmp(str + 1, "bmp", strlen("bmp")) == 0 || strncmp(str + 1, "BMP", strlen("bmp")) == 0) 
-		gdk_pixbuf_save(buf_widget->pPixBuf, file_name, "bmp", &g_err, NULL);
-	
-
-	else {
-		show_message("Warning", "You must Add the Extension of File.(PNG/JPG/BMP)");
-		return;
-	}
+		if (strncmp(str + 1, "jpg", strlen("jpg") + 1) == 0 || strncmp(str + 1, "JPG", strlen("JPG") + 1) == 0 ||
+			strncmp(str + 1, "jpeg", strlen("jpeg") + 1) == 0 || strncmp(str + 1, "JPEG", strlen("JPEG") + 1) == 0)
+		{
+			gdk_pixbuf_save(buf_widget->pPixBuf, file_name, "jpeg", &g_err, "quality", "100", NULL);
+			break;
+		} else if (strncmp(str + 1, "png", strlen("png") + 1) == 0 || strncmp(str + 1, "PNG", strlen("PNG") + 1) == 0) {
+			gdk_pixbuf_save(buf_widget->pPixBuf, file_name, "png", &g_err, "compression", "9", NULL);
+			break;
+		} else if (strncmp(str + 1, "bmp", strlen("bmp") + 1) == 0 || strncmp(str + 1, "BMP", strlen("bmp") + 1) == 0) {
+			gdk_pixbuf_save(buf_widget->pPixBuf, file_name, "bmp", &g_err, NULL);
+			break;
+		} else {
+			show_message("Warning", "You must Add the Extension of File. (PNG/JPG/BMP)");
+			g_free(file_name);
+		}
+	}while(1);
 
 	g_free(file_name);
 }

@@ -92,8 +92,7 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 		WARN("getting icon image path is failed!!\n");
 	}
 
-	sprintf(icon_image, "%s/icons/07_EXECUTE_APP.png", skin);	
-
+	sprintf(icon_image, "%s/icons/07_EXECUTE_APP.png", skin);
 	gtk_window_set_icon_from_file (GTK_WINDOW(filew), icon_image, NULL);
 #endif
 
@@ -101,7 +100,7 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 
 	rawtime = time(NULL);
 	timeinfo = localtime(&rawtime);
-	strftime(save_file_name, 64, "emulator-%Y-%m-%d-%H-%M-%S.png", timeinfo);
+	strftime(save_file_name, 64, "emulator-%Y-%m-%d-%H%M%S.png", timeinfo);
 
 	gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(filew), save_file_name);
 	
@@ -117,7 +116,7 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 		{
 			GtkFileFilter *file_filter = NULL;
 			file_filter = gtk_file_filter_new();
-			gtk_file_filter_set_name(file_filter, "ALL(*)");
+			gtk_file_filter_set_name(file_filter, "All Files");
 			gtk_file_filter_add_pattern(file_filter, "*");
 			gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filew), file_filter);
 		}
