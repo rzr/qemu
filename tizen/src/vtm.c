@@ -104,7 +104,8 @@ GtkWidget *treeview;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
-char* LATEST_VERSION_GROUP;
+char* MAIN_VERSION;
+char* SUB_VERSION;
 #ifdef _WIN32
 void socket_cleanup(void)
 {
@@ -593,8 +594,6 @@ void env_init(void)
 	char* arch;
 	int target_list_status;
 	char *default_targetname;
-	FILE *fp = NULL;
-	char *tmp = NULL;
 	char version_path[MAX_LEN];
 	gchar *target_list_filepath;
 	
@@ -618,26 +617,11 @@ void env_init(void)
 	}
 	
 	//latest version setting
-	sprintf(version_path, "%s/VERSION",get_etc_path());
+	sprintf(version_path, "%s/version.ini",get_etc_path());
+	MAIN_VERSION = get_config_value(version_path, VERSION_GROUP, MAIN_VERSION_KEY);
+	SUB_VERSION = get_config_value(version_path, VERSION_GROUP, SUB_VERSION_KEY);
 	
-	fp= fopen(version_path, "r");
-	if ((tmp= (char *)malloc(MAX_LEN + 1)) == NULL){
-		fclose(fp);
-		return;
-	}
-	
-	fseek(fp, 0, SEEK_SET);
-	fgets(tmp, 1024, fp);
-	if(tmp){
-		tmp[strlen(tmp)-1] = 0;
-		LATEST_VERSION_GROUP = tmp;
-	}
-	fclose(fp);
-
-	default_targetname = g_strdup_printf("default%s",LATEST_VERSION_GROUP);
-
-	// check latest version
-	version_init(default_targetname, target_list_filepath);
+	default_targetname = g_strdup_printf("default%s", SUB_VERSION);
 
 	//make default target of the latest version
 	make_default_image(default_targetname);
@@ -1008,6 +992,7 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		show_message("Error", "Architecture setting failed.");
 		return -1;
 	}
+	char *default_sub_version = g_strdup_printf("default%s",SUB_VERSION);
 
 	keyfile = g_key_file_new();
 	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
@@ -1037,47 +1022,69 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		for(i = 0; i < list_num; i++)
 		{
 			virtual_target_path = get_virtual_target_abs_path(target_list[i]);
-
-#ifdef _WIN32
-			char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
-			cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
-			if (system(cmd)	== -1)
+			if( (strcmp(target_name, MAIN_VERSION) != 0) &&
+					(strcmp(target_list[i], default_sub_version) != 0) )
 			{
-				g_free(cmd);
-				g_free(virtual_target_path);
-				TRACE( "Failed to delete target name: %s", target_list[i]);
-				show_message("Failed to delete target name: %s", target_list[i]);
-				return -1;
-			}
+#ifdef _WIN32
+				char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
+				cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
+				if (system(cmd)	== -1)
+				{
+					g_free(cmd);
+					g_free(virtual_target_path);
+					free(default_sub_version);
+					TRACE( "Failed to delete target name: %s", target_list[i]);
+					show_message("Failed to delete target name: %s", target_list[i]);
+					return -1;
+				}
 #else
-			cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
-			if(!run_cmd(cmd))
-			{
+				cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
+				if(!run_cmd(cmd))
+				{
+					g_free(cmd);
+					g_free(virtual_target_path);
+					free(default_sub_version);
+					TRACE( "Failed to delete target name: %s", target_list[i]);
+					show_message("Failed to delete target name: %s", target_list[i]);
+					return -1;
+				}
+#endif
+				del_config_key(target_list_filepath, target_name, target_list[i]);
 				g_free(cmd);
 				g_free(virtual_target_path);
-				TRACE( "Failed to delete target name: %s", target_list[i]);
-				show_message("Failed to delete target name: %s", target_list[i]);
-				return -1;
-			}
-#endif
-		del_config_key(target_list_filepath, target_name, target_list[i]);
-		g_free(cmd);
-		g_free(virtual_target_path);
 #ifdef _WIN32
-		g_free(virtual_target_win_path);
+				g_free(virtual_target_win_path);
 #endif
+			}
+			show_message("INFO", "Can not delete the latest default target of the latest group.\n"
+					"The others are deleting");
+			free(default_sub_version);
+			g_strfreev(target_list);
 		}
-		g_strfreev(target_list);
-DEL_GROUP:		
-		INFO( "delete group name : %s\n", target_name);
-		del_config_group(target_list_filepath, target_name);
 
-		INFO( "delete group base image : %s\n", target_name);
-		group_baseimage_path = g_strdup_printf("%s/emulimg%s.%s", get_arch_abs_path(), target_name, arch);
-		if(g_remove(group_baseimage_path) == -1)
-			INFO( "fail deleting %s\n", group_baseimage_path);
+DEL_GROUP:		
+		//do not delete base image of MAIN_VERSION
+		if(strcmp(target_name, MAIN_VERSION) != 0)
+		{
+			INFO( "delete group name : %s\n", target_name);
+			del_config_group(target_list_filepath, target_name);
+
+			INFO( "delete group base image : %s\n", target_name);
+			group_baseimage_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_abs_path(), target_name, arch);
+
+			if(g_remove(group_baseimage_path) == -1)
+				INFO( "fail deleting %s\n", group_baseimage_path);
+			else
+				INFO( "success deleting %s\n", group_baseimage_path);
+		}
 		else
-			INFO( "success deleting %s\n", group_baseimage_path);
+		{
+			show_message("INFO", "Can not delete the latest version.");
+			refresh_clicked_cb(arch);
+			free(group_baseimage_path);
+			g_key_file_free(keyfile);
+			return 0;
+		}
 
 		refresh_clicked_cb(arch);
 		free(group_baseimage_path);
@@ -1269,141 +1276,122 @@ void refresh_clicked_cb(char *arch)
 void make_default_image(char *default_targetname)
 {
 	char *cmd = NULL;
-	int info_file_status;
+	int file_status;
 	char *virtual_target_path = get_virtual_target_abs_path(default_targetname);
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-	char *default_img_x86 = g_strdup_printf("%semulimg-default%s.x86", virtual_target_path, LATEST_VERSION_GROUP);
-	char *default_dir_x86 = g_strdup_printf("%s/%s", get_vms_abs_path(), default_targetname);
-	char *default_path_x86 = g_strdup_printf("%s/config.ini", default_dir_x86);
-	char *log_dir_x86 = get_virtual_target_log_path(default_targetname);
-	char *conf_path_x86 = g_strdup_printf("%s/config.ini", get_conf_abs_path());
-	char *targetlist_x86 = get_targetlist_abs_filepath();
- 
-	GError *err = NULL;
-	GFile *file_conf_path_x86 = g_file_new_for_path(conf_path_x86);
-	GFile *file_default_path_x86 = g_file_new_for_path(default_path_x86);
-	
-	//make x86 default image if it does not exist.
-	info_file_status = is_exist_file(default_img_x86);
-	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+	char *default_img;
+	char *arch;
+	char *default_dir;
+	char *default_path; 
+	char *log_dir;
+	char *conf_path;
+	char *targetlist;
+	char *base_img_path;
+	char *target_list_filepath;
+	GError *err;
+	GFile *file_conf_path;
+	GFile *file_default_path;
+	int i,j;
+#ifdef __arm__
+	j = 2;
+#else
+	j = 1;
+#endif
+
+	for(i=0; i < j; i++)
 	{
-		INFO( "x86 default image not exists. is making now.\n");
-		if(access(default_dir_x86, R_OK) != 0)
-			g_mkdir(default_dir_x86, 0755);
-		if(access(log_dir_x86, R_OK) != 0)
-			g_mkdir(log_dir_x86, 0755);
-		//copy config.ini
-		if(!g_file_copy(file_conf_path_x86, file_default_path_x86, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)){
-			ERR("fail to copy config.ini: %s\n", err->message);
-			g_error_free(err);
-			g_free(conf_path_x86);
+		if(i == 0)
+			setenv("EMULATOR_ARCH", "x86", 1);
+		else
+			setenv("EMULATOR_ARCH", "arm", 1);
+			
+		arch = getenv("EMULATOR_ARCH");
+		target_list_filepath = get_targetlist_abs_filepath();
+		file_status = is_exist_file(target_list_filepath);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "load target list file error\n");
+			show_message("Err", "load target list file error!");
 			return;
 		}
-
+		default_img = g_strdup_printf("%semulimg-default%s.%s", virtual_target_path, SUB_VERSION, arch);
+		default_dir = g_strdup_printf("%s/%s", get_vms_abs_path(), default_targetname);
+		default_path = g_strdup_printf("%s/config.ini", default_dir);
+		log_dir = get_virtual_target_log_path(default_targetname);
+		conf_path = g_strdup_printf("%s/config.ini", get_conf_abs_path());
+		targetlist = get_targetlist_abs_filepath();
+		file_conf_path = g_file_new_for_path(conf_path);
+		file_default_path = g_file_new_for_path(default_path);
+		//make default image if it does not exist.
+		file_status = is_exist_file(default_img);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			file_status = 0;
+			INFO( "%s default image not exists. is making now.\n", arch);
+			if(access(default_dir, R_OK) != 0)
+				g_mkdir(default_dir, 0755);
+			if(access(log_dir, R_OK) != 0)
+				g_mkdir(log_dir, 0755);
+			//copy config.ini
+			if(!g_file_copy(file_conf_path, file_default_path, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)){
+				ERR("fail to copy config.ini: %s\n", err->message);
+				g_error_free(err);
+				g_free(conf_path);
+				break;
+			}
+			//find base image	
+			base_img_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_abs_path(), MAIN_VERSION, arch);
+			file_status = is_exist_file(base_img_path);
+			if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+			{
+				ERR( "file not exist: %s", base_img_path);
+				show_message("File not exist", base_img_path);
+				free(base_img_path);
+				break;
+			}
 		// create emulator image
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg%s.x86 -f qcow2 %s",
-				get_bin_path(), get_arch_abs_path(), LATEST_VERSION_GROUP, default_img_x86);
+			cmd = g_strdup_printf("%s/qemu-img.exe create -b %s -f qcow2 %s",
+					get_bin_path(), base_img_path, default_img);
 #else
-		cmd = g_strdup_printf("qemu-img create -b %s/emulimg%s.x86 -f qcow2 %s",
-				get_arch_abs_path(), LATEST_VERSION_GROUP, default_img_x86);
+			cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %s",
+					base_img_path, default_img);
 #endif
-		if(!run_cmd(cmd))
-		{
-			g_free(cmd);
-			ERR("default x86 image creation failed!\n");
-			del_config_key(targetlist_x86, LATEST_VERSION_GROUP, default_targetname);
-			del_config_group(targetlist_x86, LATEST_VERSION_GROUP);
-			show_message("Error", "default x86 image creation failed!");
-			g_free(default_dir_x86);
-			g_free(default_path_x86);
-			g_free(log_dir_x86);
-			g_free(conf_path_x86);
-			g_free(targetlist_x86);
-			return;
-		}
+			if(!run_cmd(cmd))
+			{
+				free(cmd);
+				ERR("default %s image creation failed!\n", arch);
+				show_message("Error", "default image creation failed!");
+				free(default_dir);
+				free(default_path);
+				free(log_dir);
+				free(conf_path);
+				free(targetlist);
+				free(base_img_path);
+				break;
+			}
 
-		INFO( "emulimg-default.x86 creation succeeded!\n");
-		g_free(cmd);
-		g_free(default_dir_x86);
-		g_free(default_path_x86);
-		g_free(log_dir_x86);
-		g_free(conf_path_x86);
-		g_free(targetlist_x86);
-
-	}
-	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_x86);
-	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+			INFO( "%s default image creation succeeded!\n", arch);
+			// check main(latest) version
+			version_init(default_targetname, target_list_filepath);
 	
-#ifdef _ARM	
-	//make arm default image if it does not exist.
-	g_setenv("EMULATOR_ARCH","arm",1);
-	virtual_target_path = get_virtual_target_abs_path(default_targetname);
-	char *default_img_arm = g_strdup_printf("%semulimg-default%s.arm", virtual_target_path, LATEST_VERSION_GROUP);
-	char *default_dir_arm = g_strdup_printf("%s/%s", get_vms_abs_path(), default_targetname);
-	char *default_path_arm = g_strdup_printf("%s/config.ini", default_dir_arm);
-	char *log_dir_arm = get_virtual_target_log_path(default_targetname);
-	char *conf_path_arm = g_strdup_printf("%s/config.ini", get_conf_abs_path());
-	char *targetlist_arm = get_targetlist_abs_filepath();
-	GFile *file_conf_path_arm =  g_file_new_for_path(conf_path_arm);
-	GFile *file_default_path_arm =  g_file_new_for_path(default_path_arm);
-	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+			free(cmd);
+			free(default_dir);
+			free(default_path);
+			free(log_dir);
+			free(conf_path);
+			free(targetlist);
+			free(base_img_path);
 
-	info_file_status = is_exist_file(default_img_arm);
-	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
-	{
-		INFO( "arm default image not exists. is making now.\n");
-		if(access(default_dir_arm, R_OK) != 0)
-			g_mkdir(default_dir_arm, 0755);
-		if(access(log_dir_arm, R_OK) != 0)
-			g_mkdir(log_dir_arm, 0755);
-
-		//copy config.ini
-		if(!g_file_copy(file_conf_path_arm, file_default_path_arm, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)){
-			Err("fail to copy config.ini: %s", err->message);
-			g_error_free(err);
-			g_free(conf_path_arm);
-			return;
 		}
-		// create emulator image
-#ifdef _WIN32
-		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.arm -f qcow2 %s",
-				get_bin_path(), get_arch_abs_path(), default_img_arm);
-#else
-		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.arm -f qcow2 %s",
-				get_arch_abs_path(), default_img_arm);
-#endif
-		if(!run_cmd(cmd))
-		{
-			ERR("default arm image creation failed!");
-			del_config_key(targetlist_arm, LATEST_VERSION_GROUP, default_targetname);
-			del_config_group(targetlist_arm, LATEST_VERSION_GROUP);
-			show_message("Error", "default arm image creation failed!");
-			g_free(cmd);
-			g_free(default_dir_arm);
-			g_free(default_path_arm);
-			g_free(log_dir_arm);
-			g_free(conf_path_arm);
-			g_free(targetlist_arm);
-			return;
-		}
+		set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+		set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
 
-		INFO( "emulimg-default.arm creation succeeded!\n");
-		g_free(cmd);
-		g_free(default_dir_arm);
-		g_free(default_path_arm);
-		g_free(log_dir_arm);
-		g_free(conf_path_arm);
-		g_free(targetlist_arm);
+		free(default_img);
 	}
-	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_arm);
-	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
-	g_setenv("EMULATOR_ARCH","x86",1);
 
-	free(default_img_arm);
-#endif
-	free(default_img_x86);
-}	
+	setenv("EMULATOR_ARCH", "x86", 1);
+}
 
 gboolean run_cmd(char *cmd)
 {
@@ -1966,7 +1954,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 	//delete original target name
 	target_list_filepath = get_targetlist_abs_filepath();
-	del_config_key(target_list_filepath, LATEST_VERSION_GROUP, target_name);
+	del_config_key(target_list_filepath, SUB_VERSION, target_name);
 	g_free(target_name);
 
 	if(access(dest_path, R_OK) != 0)
@@ -2027,7 +2015,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, LATEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, MAIN_VERSION, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	//	create_config_file(conf_file);
@@ -2188,7 +2176,7 @@ void ok_clicked_cb(void)
 			virtual_target_info.virtual_target_name, arch);
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, LATEST_VERSION_GROUP, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, MAIN_VERSION, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
@@ -2731,9 +2719,9 @@ void version_init(char *default_targetname, char* target_list_filepath)
 		return;
 	}
 
-	if(g_key_file_has_group(keyfile, LATEST_VERSION_GROUP) == FALSE)
+	if(g_key_file_has_group(keyfile, MAIN_VERSION) == FALSE)
 	{
-		g_key_file_set_value(keyfile, LATEST_VERSION_GROUP, default_targetname, "");
+		g_key_file_set_value(keyfile, MAIN_VERSION, default_targetname, "");
 		gchar *data = g_key_file_to_data(keyfile, &length, &error);
 		if (error != NULL) {
 			g_print("in set_config_type\n");

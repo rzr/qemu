@@ -212,26 +212,15 @@ const gchar *get_baseimg_abs_path(void)
 {
 	const gchar *arch_path;
 	static gchar *path;
-	char* latest_version = NULL;
+	char* MAIN_VERSION = NULL;
 	char *tmp = NULL;
 	char version_path[MAXPATH];
 	gchar *target_list_filepath;
 	char *arch = (char *)g_getenv("EMULATOR_ARCH");
 	const gchar *exec_path = get_exec_path();
 	target_list_filepath = get_targetlist_abs_filepath();
-	sprintf(version_path, "%s/VERSION",get_etc_path());
-	FILE *fp= fopen(version_path, "r");
-	if ((tmp= (char *)malloc(MAXPATH + 1)) == NULL){
-		fclose(fp);
-		return;
-	}
-	fseek(fp, 0, SEEK_SET);
-	fgets(tmp, 1024, fp);
-	if(tmp){
-		tmp[strlen(tmp)-1] = 0;
-		latest_version = tmp;
-	}
-	fclose(fp);
+	sprintf(version_path, "%s/version.ini",get_etc_path());
+	MAIN_VERSION = get_config_value(version_path, VERSION_GROUP, MAIN_VERSION_KEY);
 
 	if(!arch) /* for stand alone */
 	{
@@ -249,15 +238,15 @@ const gchar *get_baseimg_abs_path(void)
 	}
 
 	arch_path = get_arch_abs_path();
-	path = malloc(strlen(arch_path) + 13 + strlen(latest_version));
+	path = malloc(strlen(arch_path) + 14 + strlen(MAIN_VERSION));
 	strcpy(path, arch_path);
 	strcat(path, "/");	
-	strcat(path, "emulimg");
-	strcat(path, latest_version);
+	strcat(path, "emulimg-");
+	strcat(path, MAIN_VERSION);
 	strcat(path, ".");
 	strcat(path, arch);
 	
-	free(latest_version);
+	free(MAIN_VERSION);
 	return path;
 }
 

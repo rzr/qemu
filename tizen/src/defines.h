@@ -134,7 +134,8 @@ extern "C" {
 #define BASEDISK_PATH_KEY			"BASEDISK_PATH"
 #define EMULATOR_OPTION_KEY			"EMULATOR_OPTION"
 #define QEMU_OPTION_KEY				"QEMU_OPTION"
-
+#define MAIN_VERSION_KEY			"MAIN_VERSION"
+#define SUB_VERSION_KEY				"SUB_VERSION"
 
 #define TARGET_LIST_GROUP			"TARGET_LIST"
 #define ETC_GROUP					"ETC"
@@ -145,7 +146,7 @@ extern "C" {
 #define BUTTON_TYPE_KEY                         "BUTTON_TYPE"
 #define RAM_SIZE_KEY				"RAM_SIZE"
 #define DPI_KEY                     "DPI"
-
+#define VERSION_GROUP				"VERSION"
 #define FOLDER_CLOSE				"folder_close"
 #define FOLDER_OPEN					"folder_open"
 #define LED_ON						"led_on"
