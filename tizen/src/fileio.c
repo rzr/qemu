@@ -99,6 +99,42 @@ int is_exist_file(gchar *filepath)
 	return FILE_NOT_EXISTS;
 }
 
+/* get_sdk_root = "~/tizen_sdk/" */
+const gchar *get_sdk_root(void)
+{
+    static gchar *sdk_path = NULL;
+    gchar *home_path = NULL;
+    gchar *info_file_subpath = NULL;
+    gchar *info_file_fullpath = NULL;
+    gchar *file_buf = NULL;
+
+    if (!sdk_path)
+    {
+#ifdef __linux__
+        home_path = g_get_home_dir();
+        info_file_subpath = "/.TizenSDK/tizensdkpath";
+
+        int len = strlen(home_path) + strlen(info_file_subpath) + 1;
+        info_file_fullpath = g_malloc0(len);
+        snprintf(info_file_fullpath, len, "%s%s", home_path, info_file_subpath);
+#elif _WIN32
+        //TODO:
+#endif
+
+        if (!g_file_get_contents(info_file_fullpath, &file_buf, NULL, NULL)) {
+            g_free(home_path);
+            g_free(info_file_fullpath);
+            return NULL;
+        }
+
+        sdk_path = strchr(file_buf, '=') + 1;
+
+        g_free(home_path);
+        g_free(info_file_fullpath);
+    }
+
+    return sdk_path;
+}
 
 /* exec_path = "~/tizen_sdk/Emulator/bin/emulator-manager" */
 /* 			 = "~/tizen_sdk/Emulator/bin/emulator-x86" */

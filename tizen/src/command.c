@@ -77,8 +77,7 @@ void create_cmdwindow(void)
         terminal = "/usr/bin/gnome-terminal --disable-factory -x";
         //terminal = "/usr/bin/xterm -l -e";
     }
-    //TODO: sdb path
-    sprintf(cmd, "%s sdb -s emulator-%d shell", terminal, get_sdb_base_port());
+    sprintf(cmd, "%s %s/SDK/sdb/sdb -s emulator-%d shell", terminal, get_sdk_root(), get_sdb_base_port());
 
     if (emul_create_process(cmd) == TRUE) {
         INFO( "start command window\n");
