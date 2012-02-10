@@ -213,14 +213,13 @@ const gchar *get_baseimg_abs_path(void)
 	const gchar *arch_path;
 	static gchar *path;
 	char* MAJOR_VERSION = NULL;
-	char *tmp = NULL;
 	char version_path[MAXPATH];
 	gchar *target_list_filepath;
 	char *arch = (char *)g_getenv("EMULATOR_ARCH");
 	const gchar *exec_path = get_exec_path();
 	target_list_filepath = get_targetlist_abs_filepath();
 	sprintf(version_path, "%s/version.ini",get_etc_path());
-	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
+	MAJOR_VERSION = (char*)get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
 
 	if(!arch) /* for stand alone */
 	{

@@ -74,6 +74,7 @@ void set_sdcard_create_active_cb(void);
 void set_sdcard_select_active_cb(void);
 void set_disk_select_active_cb(void);
 void set_sdcard_none_active_cb(void);
+void set_default_image(char *target_name);
 void set_disk_default_active_cb(void);
 void sdcard_file_select_cb(void);
 void disk_file_select_cb(void);

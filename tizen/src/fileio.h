@@ -55,6 +55,7 @@
 #endif
 #include "process.h"
 #include "defines.h"
+#include "utils.h"
 
 int is_exist_file(gchar *filepath);
 const gchar *get_exec_path(void);

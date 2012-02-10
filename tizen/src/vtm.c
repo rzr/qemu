@@ -1355,7 +1355,7 @@ void make_default_image(char *default_targetname)
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			file_status = 0;
-			INFO( "%s default image not exists. is making now.\n", arch);
+			INFO( "%s default image does not exists. is making now.\n", arch);
 			if(access(default_dir, R_OK) != 0)
 				g_mkdir(default_dir, 0755);
 			if(access(log_dir, R_OK) != 0)
@@ -1373,7 +1373,7 @@ void make_default_image(char *default_targetname)
 			if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 			{
 				ERR( "file not exist: %s", base_img_path);
-				show_message("File not exist", base_img_path);
+				show_message("File does not exist", base_img_path);
 				free(base_img_path);
 				break;
 			}
@@ -1625,7 +1625,7 @@ GtkWidget *setup_tree_view(void)
 	gtk_tree_view_column_set_max_width(column,80);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 	
-	column = gtk_tree_view_column_new_with_attributes("Minor ver.", cell, "text", MINOR, NULL);
+	column = gtk_tree_view_column_new_with_attributes("Minor Version", cell, "text", MINOR, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_max_width(column,60);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
@@ -1756,6 +1756,35 @@ void set_disk_default_active_cb(void)
 		virtual_target_info.disk_type = 1;
 }
 
+void set_default_image(char *target_name)
+{
+	gboolean active = FALSE;
+	char *virtual_target_path;
+	char *conf_path;
+
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
+	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(default_radiobutton));
+
+	if(active == TRUE)
+	{
+		virtual_target_info.disk_type = 0;
+		virtual_target_path = get_virtual_target_abs_path(target_name);
+		conf_path = g_strdup_printf("%sconfig.ini", virtual_target_path);
+		snprintf(virtual_target_info.major_version, MAXBUF, "%s", get_config_value(conf_path, COMMON_GROUP, MAJOR_VERSION_KEY));
+		snprintf(virtual_target_info.minor_version, MAXBUF, "%s", get_config_value(conf_path, COMMON_GROUP, MINOR_VERSION_KEY));
+		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
+		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
+		INFO( "major version : %s\n", virtual_target_info.major_version);
+		INFO( "minor version : %s\n", virtual_target_info.minor_version);
+
+		free(virtual_target_path);
+		free(conf_path);
+	}
+	else
+		virtual_target_info.disk_type = 1;
+}
+
+
 void set_sdcard_none_active_cb(void)
 {
 	gboolean active = FALSE;
@@ -1827,6 +1856,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	char *dst;
 	char *vms_path = NULL;
 	char *sdcard_name = NULL;
+	GtkWidget *name_entry;
 	int file_status;	
 	//find arch name
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
@@ -1837,18 +1867,15 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		return ;
 	}
 
-	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
+	name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
 	name = gtk_entry_get_text(GTK_ENTRY(name_entry));
-	char *virtual_target_path = get_virtual_target_abs_path((gchar*)name);
-	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-
-
+	
 	ram_select_cb();
 	resolution_select_cb();
 	buttontype_select_cb();
 
 	if(virtual_target_info.disk_type == 0)
-		set_disk_default_active_cb();
+		set_default_image(target_name);
 	else if(virtual_target_info.disk_type == 1)
 		disk_file_select_cb();
 	else
@@ -1857,8 +1884,6 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		show_message("Warning", "Disk type is wrong.");
 		return;
 	}
-
-	set_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
 
 	//	name character validation check
 	dst =  malloc(VT_NAME_MAXBUF);
@@ -2000,7 +2025,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 	//delete original target name
 	target_list_filepath = get_targetlist_abs_filepath();
-	del_config_key(target_list_filepath, MINOR_VERSION, target_name);
+	del_config_key(target_list_filepath, virtual_target_info.major_version, target_name);
 	g_free(target_name);
 
 	if(access(dest_path, R_OK) != 0)
@@ -2061,7 +2086,8 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, MAJOR_VERSION, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, virtual_target_info.major_version, 
+			virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	//	create_config_file(conf_file);
@@ -2179,7 +2205,7 @@ void ok_clicked_cb(void)
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Error", "Base image does not exist!");
+			show_message("Base image does not exist", virtual_target_info.basedisk_path);
 			return ;
 		}
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
@@ -2196,7 +2222,7 @@ void ok_clicked_cb(void)
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Base image not exist", virtual_target_info.basedisk_path);
+			show_message("Base image does not exist", virtual_target_info.basedisk_path);
 			return ;
 		}
 		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2756,8 +2782,6 @@ void set_mesa_lib(void)
 void version_init(char *default_targetname, char* target_list_filepath)
 {
 	GKeyFile *keyfile;
-	GError *error = NULL;
-	gsize length;
 	int file_status;
 
 	keyfile = g_key_file_new();
@@ -2765,33 +2789,15 @@ void version_init(char *default_targetname, char* target_list_filepath)
 	file_status = is_exist_file(target_list_filepath);
 	if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 	{
-		show_message("File not exist", target_list_filepath);
+		show_message("File dose not exist", target_list_filepath);
 		return;
 	}
 
 	if(g_key_file_has_group(keyfile, MAJOR_VERSION) == FALSE)
-	{
-		g_key_file_set_value(keyfile, MAJOR_VERSION, default_targetname, "");
-		gchar *data = g_key_file_to_data(keyfile, &length, &error);
-		if (error != NULL) {
-			g_print("in set_config_type\n");
-			g_print("%s", error->message);
-			g_clear_error(&error);
-		}
-
-		g_strstrip(data);
-		length = strlen(data);
-		g_file_set_contents(target_list_filepath, data, length, &error);
-		if (error != NULL) {
-			g_print("in set_config_value after g_file_set_contents\n");
-			g_print("%s", error->message);
-			g_clear_error(&error);
-		}
-
-		g_free(data);
-		g_key_file_free(keyfile);
-		return;
-	}
+		set_config_value(target_list_filepath, MAJOR_VERSION, default_targetname, "");
+	
+	g_key_file_free(keyfile);
+	
 	return;
 }
 
