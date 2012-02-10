@@ -53,7 +53,8 @@ gchar **get_virtual_target_groups(gchar *filepath, int *num)
 	keyfile = g_key_file_new();
 
 	if(!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		ERR("loading key file from %s is failed\n", filepath);
+		ERR("Loading file is failed : %s\n", filepath);
+		show_message("Lodaing file failed", filepath);
 		return NULL;
 	}
 
@@ -80,7 +81,8 @@ gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num)
 	keyfile = g_key_file_new();
 
 	if(!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		ERR("loading key file from %s is failed\n", filepath);
+		ERR("Loading file is failed : %s\n", filepath);
+		show_message("Lodaing file failed", filepath);
 		return NULL;
 	}
 
@@ -88,7 +90,6 @@ gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num)
 
 	if(target_list == NULL || length == 0) {
 		ERR("no targets under group %s\n", group);
-		return NULL;
 	}
 
 	*num = length;

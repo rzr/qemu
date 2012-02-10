@@ -47,6 +47,7 @@
 #include <glib/gstdio.h>
 
 #include "fileio.h"
+#include "dialog.h"
 
 gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num);
 gchar **get_virtual_target_groups(gchar *filepath, int *num);

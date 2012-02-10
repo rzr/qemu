@@ -212,7 +212,7 @@ const gchar *get_baseimg_abs_path(void)
 {
 	const gchar *arch_path;
 	static gchar *path;
-	char* MAIN_VERSION = NULL;
+	char* MAJOR_VERSION = NULL;
 	char *tmp = NULL;
 	char version_path[MAXPATH];
 	gchar *target_list_filepath;
@@ -220,7 +220,7 @@ const gchar *get_baseimg_abs_path(void)
 	const gchar *exec_path = get_exec_path();
 	target_list_filepath = get_targetlist_abs_filepath();
 	sprintf(version_path, "%s/version.ini",get_etc_path());
-	MAIN_VERSION = get_config_value(version_path, VERSION_GROUP, MAIN_VERSION_KEY);
+	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
 
 	if(!arch) /* for stand alone */
 	{
@@ -238,15 +238,15 @@ const gchar *get_baseimg_abs_path(void)
 	}
 
 	arch_path = get_arch_abs_path();
-	path = malloc(strlen(arch_path) + 14 + strlen(MAIN_VERSION));
+	path = malloc(strlen(arch_path) + 14 + strlen(MAJOR_VERSION));
 	strcpy(path, arch_path);
 	strcat(path, "/");	
 	strcat(path, "emulimg-");
-	strcat(path, MAIN_VERSION);
+	strcat(path, MAJOR_VERSION);
 	strcat(path, ".");
 	strcat(path, arch);
 	
-	free(MAIN_VERSION);
+	free(MAJOR_VERSION);
 	return path;
 }
 

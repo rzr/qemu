@@ -94,6 +94,7 @@ enum {
 	TARGET_NAME,
 	RAM_SIZE,
 	RESOLUTION,
+	MINOR,
 	N_COL
 };
 GtkWidget *g_main_window;
@@ -104,8 +105,9 @@ GtkWidget *treeview;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
-char* MAIN_VERSION;
-char* SUB_VERSION;
+char *MAJOR_VERSION;
+char *MINOR_VERSION;
+char *DEFAULT_TARGET;
 #ifdef _WIN32
 void socket_cleanup(void)
 {
@@ -593,7 +595,6 @@ void env_init(void)
 {
 	char* arch;
 	int target_list_status;
-	char *default_targetname;
 	char version_path[MAX_LEN];
 	gchar *target_list_filepath;
 	
@@ -618,13 +619,13 @@ void env_init(void)
 	
 	//latest version setting
 	sprintf(version_path, "%s/version.ini",get_etc_path());
-	MAIN_VERSION = get_config_value(version_path, VERSION_GROUP, MAIN_VERSION_KEY);
-	SUB_VERSION = get_config_value(version_path, VERSION_GROUP, SUB_VERSION_KEY);
+	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
+	MINOR_VERSION = get_config_value(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
 	
-	default_targetname = g_strdup_printf("default%s", SUB_VERSION);
+	DEFAULT_TARGET = g_strdup_printf("default%s", MINOR_VERSION);
 
 	//make default target of the latest version
-	make_default_image(default_targetname);
+	make_default_image(DEFAULT_TARGET);
 
 	refresh_clicked_cb(arch);
 
@@ -730,6 +731,7 @@ void cursor_changed_cb(GtkWidget *widget, gpointer selection)
 	GtkWidget *reset_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button9");
 	GtkWidget *start_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
 	GtkWidget *details_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button5");
+	GtkWidget *delete_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button2");
 
 	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
 	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
@@ -740,20 +742,37 @@ void cursor_changed_cb(GtkWidget *widget, gpointer selection)
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 
 		if(is_group(target_name) == TRUE){
+			if(strcmp(target_name, MAJOR_VERSION) == 0 || 
+					strcmp(target_name, "Custom") == 0)
+				gtk_widget_set_sensitive(delete_button, FALSE);
+			else
+				gtk_widget_set_sensitive(delete_button, TRUE);
+			
+			gtk_widget_set_sensitive(details_button, FALSE);
 			gtk_widget_set_sensitive(modify_button, FALSE);
 			gtk_widget_set_sensitive(reset_button, FALSE);
 			gtk_widget_set_sensitive(start_button, FALSE);
-			gtk_widget_set_sensitive(details_button, FALSE);
 		}
 		else
 		{
-			gtk_widget_set_sensitive(modify_button, TRUE);
-			gtk_widget_set_sensitive(reset_button, TRUE);
-			gtk_widget_set_sensitive(start_button, TRUE);
-			gtk_widget_set_sensitive(details_button, TRUE);
+			if(strcmp(target_name, DEFAULT_TARGET) == 0)
+			{
+				gtk_widget_set_sensitive(delete_button, FALSE);
+				gtk_widget_set_sensitive(modify_button, FALSE);
+				gtk_widget_set_sensitive(reset_button, TRUE);
+				gtk_widget_set_sensitive(start_button, TRUE);
+				gtk_widget_set_sensitive(details_button, TRUE);
+			}
+			else
+			{
+				gtk_widget_set_sensitive(delete_button, TRUE);
+				gtk_widget_set_sensitive(modify_button, TRUE);
+				gtk_widget_set_sensitive(reset_button, TRUE);
+				gtk_widget_set_sensitive(start_button, TRUE);
+				gtk_widget_set_sensitive(details_button, TRUE);
 
+			}
 		}
-
 	}
 }
 
@@ -992,7 +1011,7 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		show_message("Error", "Architecture setting failed.");
 		return -1;
 	}
-	char *default_sub_version = g_strdup_printf("default%s",SUB_VERSION);
+	char *default_sub_version = g_strdup_printf("default%s",MINOR_VERSION);
 
 	keyfile = g_key_file_new();
 	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
@@ -1022,8 +1041,8 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		for(i = 0; i < list_num; i++)
 		{
 			virtual_target_path = get_virtual_target_abs_path(target_list[i]);
-			if( (strcmp(target_name, MAIN_VERSION) != 0) &&
-					(strcmp(target_list[i], default_sub_version) != 0) )
+			if((strcmp(target_name, MAJOR_VERSION) != 0) && 
+					strcmp(target_list[i], default_sub_version) != 0)
 			{
 #ifdef _WIN32
 				char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
@@ -1056,22 +1075,24 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 				g_free(virtual_target_win_path);
 #endif
 			}
-			show_message("INFO", "Can not delete the latest default target of the latest group.\n"
-					"The others are deleting");
+			else
+				show_message("INFO", "Can not delete the latest default target of the latest group.\n"
+						"The others are deleting");
+
 			free(default_sub_version);
 			g_strfreev(target_list);
 		}
 
-DEL_GROUP:		
-		//do not delete base image of MAIN_VERSION
-		if(strcmp(target_name, MAIN_VERSION) != 0)
+DEL_GROUP:	
+		//do not delete base image of MAJOR_VERSION
+		if(strcmp(target_name, MAJOR_VERSION) != 0)
 		{
 			INFO( "delete group name : %s\n", target_name);
 			del_config_group(target_list_filepath, target_name);
-
+		
 			INFO( "delete group base image : %s\n", target_name);
 			group_baseimage_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_abs_path(), target_name, arch);
-
+			
 			if(g_remove(group_baseimage_path) == -1)
 				INFO( "fail deleting %s\n", group_baseimage_path);
 			else
@@ -1085,7 +1106,7 @@ DEL_GROUP:
 			g_key_file_free(keyfile);
 			return 0;
 		}
-
+		
 		refresh_clicked_cb(arch);
 		free(group_baseimage_path);
 		g_key_file_free(keyfile);
@@ -1196,6 +1217,7 @@ void refresh_clicked_cb(char *arch)
 	char *virtual_target_path;
 	char *info_file;
 	char *resolution = NULL;
+	char *minor_version = NULL;
 	char *buf;
 	char *vms_path = NULL;
 	gchar *ram_size = NULL;
@@ -1225,12 +1247,16 @@ void refresh_clicked_cb(char *arch)
 		target_list = get_virtual_target_list(local_target_list_filepath, target_groups[group_num], &list_num);
 		if(!target_list)
 		{
-			INFO( "delete group name : %s\n", target_groups[group_num]);
-			del_config_group(local_target_list_filepath, target_groups[group_num]);	
+			if(strcmp(target_groups[group_num], "Custom") != 0)
+			{
+				INFO( "delete group name : %s\n", target_groups[group_num]);
+				del_config_group(local_target_list_filepath, target_groups[group_num]);	
+			}
 			continue ; 
 		}
 		gtk_tree_store_append(store, &iter, NULL);
-		gtk_tree_store_set(store, &iter, TARGET_NAME, target_groups[group_num], RESOLUTION, "", RAM_SIZE, "", -1);
+		gtk_tree_store_set(store, &iter, 
+				TARGET_NAME, target_groups[group_num], RESOLUTION, "", RAM_SIZE, "", MINOR, "", -1);
 
 		for(i = 0; i < list_num; i++)
 		{
@@ -1253,12 +1279,14 @@ void refresh_clicked_cb(char *arch)
 			buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 			ram_size = g_strdup_printf("%sMB", buf); 
 			resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
+			minor_version = get_config_value(info_file, COMMON_GROUP, MINOR_VERSION_KEY);
+			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, MINOR, minor_version, -1);
 
 			g_free(buf);
 
 			g_free(ram_size);
 			g_free(resolution);
+			g_free(minor_version);
 			g_free(virtual_target_path);
 			g_free(info_file);
 		}
@@ -1314,7 +1342,7 @@ void make_default_image(char *default_targetname)
 			show_message("Err", "load target list file error!");
 			return;
 		}
-		default_img = g_strdup_printf("%semulimg-default%s.%s", virtual_target_path, SUB_VERSION, arch);
+		default_img = g_strdup_printf("%semulimg-default%s.%s", virtual_target_path, MINOR_VERSION, arch);
 		default_dir = g_strdup_printf("%s/%s", get_vms_abs_path(), default_targetname);
 		default_path = g_strdup_printf("%s/config.ini", default_dir);
 		log_dir = get_virtual_target_log_path(default_targetname);
@@ -1340,7 +1368,7 @@ void make_default_image(char *default_targetname)
 				break;
 			}
 			//find base image	
-			base_img_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_abs_path(), MAIN_VERSION, arch);
+			base_img_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_abs_path(), MAJOR_VERSION, arch);
 			file_status = is_exist_file(base_img_path);
 			if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 			{
@@ -1382,11 +1410,13 @@ void make_default_image(char *default_targetname)
 			free(conf_path);
 			free(targetlist);
 			free(base_img_path);
+	
+			set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+			set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
+			set_config_value(info_file, COMMON_GROUP, MAJOR_VERSION_KEY, MAJOR_VERSION);
+			set_config_value(info_file, COMMON_GROUP, MINOR_VERSION_KEY, MINOR_VERSION);
 
 		}
-		set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
-		set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
-
 		free(default_img);
 	}
 
@@ -1448,8 +1478,10 @@ int create_config_file(gchar* filepath)
 
 	if (fp != NULL) {
 		g_fprintf (fp, "[%s]\n", COMMON_GROUP);
-		g_fprintf (fp, "%s=0\n",ALWAYS_ON_TOP_KEY);
-
+		g_fprintf (fp, "%s=0\n", ALWAYS_ON_TOP_KEY);
+		g_fprintf (fp, "%s=\n", MAJOR_VERSION_KEY);
+		g_fprintf (fp, "%s=\n", MINOR_VERSION_KEY);
+		
 		g_fprintf (fp, "\n[%s]\n", EMULATOR_GROUP);
 		g_fprintf (fp, "%s=100\n", MAIN_X_KEY);
 		g_fprintf (fp, "%s=100\n", MAIN_Y_KEY);
@@ -1518,6 +1550,8 @@ int write_config_file(gchar *filepath)
 	//	set_config_value(filepath, QEMU_GROUP, SNAPSHOT_SAVED_DATE_KEY, pconfiguration->qemu_configuration.snapshot_saved_date);
 
 
+	set_config_value(filepath, COMMON_GROUP, MAJOR_VERSION_KEY, virtual_target_info.major_version);
+	set_config_value(filepath, COMMON_GROUP, MINOR_VERSION_KEY, virtual_target_info.minor_version);
 	set_config_value(filepath, HARDWARE_GROUP, RESOLUTION_KEY, virtual_target_info.resolution);
 	set_config_type(filepath, HARDWARE_GROUP, SDCARD_TYPE_KEY, virtual_target_info.sdcard_type);
 	set_config_value(filepath, HARDWARE_GROUP, SDCARD_PATH_KEY, virtual_target_info.sdcard_path);
@@ -1571,25 +1605,31 @@ GtkWidget *setup_tree_view(void)
 	GtkTreeViewColumn *column;
 
 	sc_win = gtk_scrolled_window_new(NULL, NULL);
-	store = gtk_tree_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+	store = gtk_tree_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 	cell = gtk_cell_renderer_text_new();
 
 	//set text alignment 
 	column = gtk_tree_view_column_new_with_attributes("Target Name", cell, "text", TARGET_NAME, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
-	gtk_tree_view_column_set_min_width(column,130);
+	gtk_tree_view_column_set_min_width(column,170);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("RAM Size", cell, "text", RAM_SIZE, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
-	gtk_tree_view_column_set_min_width(column,100);
+	gtk_tree_view_column_set_min_width(column,60);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Resolution", cell, "text", RESOLUTION, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
+	gtk_tree_view_column_set_max_width(column,80);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+	
+	column = gtk_tree_view_column_new_with_attributes("Minor ver.", cell, "text", MINOR, NULL);
+	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_max_width(column,60);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sc_win), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_container_add(GTK_CONTAINER(sc_win), treeview);
 	g_object_unref( G_OBJECT(store));
@@ -1707,6 +1747,8 @@ void set_disk_default_active_cb(void)
 	if(active == TRUE)
 	{
 		virtual_target_info.disk_type = 0;
+		snprintf(virtual_target_info.major_version, MAXBUF, "%s", MAJOR_VERSION);
+		snprintf(virtual_target_info.minor_version, MAXBUF, "%s", MINOR_VERSION);
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
 		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
 	}
@@ -1732,6 +1774,10 @@ void disk_file_select_cb(void)
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 
 	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser2));
+	
+	snprintf(virtual_target_info.major_version, MAXBUF, "Custom");
+	snprintf(virtual_target_info.minor_version, MAXBUF, "None");
+	INFO( "major version : %s, minor version: %s\n", virtual_target_info.major_version, virtual_target_info.minor_version);
 #ifdef _WIN32
 	snprintf(virtual_target_info.basedisk_path, MAXBUF, change_path_to_slash(path));
 #else
@@ -1954,7 +2000,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 	//delete original target name
 	target_list_filepath = get_targetlist_abs_filepath();
-	del_config_key(target_list_filepath, SUB_VERSION, target_name);
+	del_config_key(target_list_filepath, MINOR_VERSION, target_name);
 	g_free(target_name);
 
 	if(access(dest_path, R_OK) != 0)
@@ -2015,7 +2061,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	}
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, MAIN_VERSION, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, MAJOR_VERSION, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	//	create_config_file(conf_file);
@@ -2150,7 +2196,7 @@ void ok_clicked_cb(void)
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Error", "Base image does not exist!");
+			show_message("Base image not exist", virtual_target_info.basedisk_path);
 			return ;
 		}
 		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2176,7 +2222,7 @@ void ok_clicked_cb(void)
 			virtual_target_info.virtual_target_name, arch);
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, MAIN_VERSION, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, virtual_target_info.major_version, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
@@ -2712,16 +2758,20 @@ void version_init(char *default_targetname, char* target_list_filepath)
 	GKeyFile *keyfile;
 	GError *error = NULL;
 	gsize length;
-	
+	int file_status;
+
 	keyfile = g_key_file_new();
-	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
-		ERR( "loading key file form %s is failed.\n", target_list_filepath);
+
+	file_status = is_exist_file(target_list_filepath);
+	if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+	{
+		show_message("File not exist", target_list_filepath);
 		return;
 	}
 
-	if(g_key_file_has_group(keyfile, MAIN_VERSION) == FALSE)
+	if(g_key_file_has_group(keyfile, MAJOR_VERSION) == FALSE)
 	{
-		g_key_file_set_value(keyfile, MAIN_VERSION, default_targetname, "");
+		g_key_file_set_value(keyfile, MAJOR_VERSION, default_targetname, "");
 		gchar *data = g_key_file_to_data(keyfile, &length, &error);
 		if (error != NULL) {
 			g_print("in set_config_type\n");

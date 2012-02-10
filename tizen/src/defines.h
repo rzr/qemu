@@ -134,8 +134,8 @@ extern "C" {
 #define BASEDISK_PATH_KEY			"BASEDISK_PATH"
 #define EMULATOR_OPTION_KEY			"EMULATOR_OPTION"
 #define QEMU_OPTION_KEY				"QEMU_OPTION"
-#define MAIN_VERSION_KEY			"MAIN_VERSION"
-#define SUB_VERSION_KEY				"SUB_VERSION"
+#define MAJOR_VERSION_KEY			"MAJOR_VERSION"
+#define MINOR_VERSION_KEY			"MINOR_VERSION"
 
 #define TARGET_LIST_GROUP			"TARGET_LIST"
 #define ETC_GROUP					"ETC"
@@ -642,6 +642,8 @@ typedef struct _PLATINFO {
 
 typedef struct _VIRTUALTARGETINFO {
 	char virtual_target_name[MAXBUF];
+	char major_version[MAXBUF];
+	char minor_version[MAXBUF];
 	char resolution[MAXBUF];
 	int button_type;
 	int sdcard_type;
