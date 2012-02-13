@@ -68,7 +68,7 @@ void create_cmdwindow(void)
     const char *terminal = getenv("EMULATOR_TERMINAL");
 
 #ifdef _WIN32
-    sprintf (cmd, "start cmd /C telnet localhost %d", startup_option.telnet_port);
+    sprintf (cmd, "start cmd /C %s\\SDK\\sdb\\sdb -s emulator-%d shell", get_sdk_root(), get_sdb_base_port());
     system(cmd);
     fflush(stdout);
 #elif __linux__

@@ -103,7 +103,6 @@ int is_exist_file(gchar *filepath)
 const gchar *get_sdk_root(void)
 {
     static gchar *sdk_path = NULL;
-    gchar *home_path = NULL;
     gchar *info_file_subpath = NULL;
     gchar *info_file_fullpath = NULL;
     gchar *file_buf = NULL;
@@ -111,25 +110,39 @@ const gchar *get_sdk_root(void)
     if (!sdk_path)
     {
 #ifdef __linux__
-        home_path = g_get_home_dir();
+        gchar *home_path = g_get_home_dir();
         info_file_subpath = "/.TizenSDK/tizensdkpath";
 
         int len = strlen(home_path) + strlen(info_file_subpath) + 1;
         info_file_fullpath = g_malloc0(len);
         snprintf(info_file_fullpath, len, "%s%s", home_path, info_file_subpath);
+
+        g_free(home_path);
 #elif _WIN32
-        //TODO:
+        HKEY hKey;
+        TCHAR szDefaultPath[_MAX_PATH] = {0};
+        DWORD dwBufLen = MAX_PATH;
+
+        RegOpenKeyEx(HKEY_CURRENT_USER,
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+            0, KEY_QUERY_VALUE, &hKey);
+        RegQueryValueEx(hKey, "Local AppData", NULL, NULL, (LPBYTE)szDefaultPath, &dwBufLen);
+        RegCloseKey(hKey);
+
+        info_file_subpath = "\\.TizenSDK\\tizensdkpath";
+
+        int len = strlen(szDefaultPath) + strlen(info_file_subpath) + 1;
+        info_file_fullpath = g_malloc0(len);
+        snprintf(info_file_fullpath, len, "%s%s", szDefaultPath, info_file_subpath);
 #endif
 
         if (!g_file_get_contents(info_file_fullpath, &file_buf, NULL, NULL)) {
-            g_free(home_path);
             g_free(info_file_fullpath);
             return NULL;
         }
 
         sdk_path = strchr(file_buf, '=') + 1;
 
-        g_free(home_path);
         g_free(info_file_fullpath);
     }
 
