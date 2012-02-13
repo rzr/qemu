@@ -119,6 +119,13 @@ int socket_init(void);
 char *check_kvm(char *info_file, int *status);
 void version_init(char *default_targetname, char* target_list_filepath);
 int delete_group(char* target_list_filepath, char* target_name, int type);
+
+int create_diskimg(char *arch, char *dest_path);
+int create_sdcard(char *dest_path);
+int modify_sdcard(char *arch, char *dest_path);
+int change_modify_target_name(char *arch, char *dest_path, char *name, char* target_name);
+int check_modify_target_name(char *name);
+int set_modify_variable(char *target_name);
 #ifdef __linux__
 void set_mesa_lib(void);
 #endif

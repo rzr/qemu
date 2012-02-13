@@ -69,6 +69,7 @@ const gchar *get_data_abs_path(void);
 const gchar *get_conf_path(void);
 const gchar *get_vms_path(void);
 const gchar *get_vms_abs_path(void);
+const gchar *get_tizen_vms_path(void);
 const gchar *get_conf_abs_path(void);
 const gchar *get_baseimg_abs_path(void);
 const gchar *get_etc_path(void);

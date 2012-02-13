@@ -105,9 +105,10 @@ GtkWidget *treeview;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
-char *MAJOR_VERSION;
-char *MINOR_VERSION;
+const char *MAJOR_VERSION;
+const char *MINOR_VERSION;
 char *DEFAULT_TARGET;
+const char *HOMEDIR;
 #ifdef _WIN32
 void socket_cleanup(void)
 {
@@ -613,7 +614,7 @@ void env_init(void)
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
 		ERR( "load target list file error\n");
-		show_message("Err", "load target list file error!");
+		show_message("Error", "load target list file error!");
 		return;
 	}
 	
@@ -829,7 +830,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %s", 
 				get_root_path(), basedisk_path, disk_path);
 #else
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %s", 
+		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s", 
 				basedisk_path, disk_path);
 #endif
 		if(!run_cmd(cmd))
@@ -1231,7 +1232,11 @@ void refresh_clicked_cb(char *arch)
 	//check VMs path
 	vms_path = (char*)get_vms_abs_path();
 	if (g_file_test(vms_path, G_FILE_TEST_EXISTS) == FALSE) {
-		show_message("Error","VMs directory does not exist, Check if EMULATOR_IMAGE installed.");
+		char *message = g_strdup_printf("VMs directory does not exist."
+				" Check if EMULATOR_IMAGE installed.\n\n"
+				"   - [%s]", vms_path);
+		show_message("Error", message);
+		free(message);
 		free(vms_path);
 		exit(0);
 	}
@@ -1373,7 +1378,10 @@ void make_default_image(char *default_targetname)
 			if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 			{
 				ERR( "file not exist: %s", base_img_path);
-				show_message("File does not exist", base_img_path);
+				char *message = g_strdup_printf("File does not exist.\n\n"
+						"   -[%s]", base_img_path);
+				show_message("Error", message);
+				free(message);
 				free(base_img_path);
 				break;
 			}
@@ -1382,7 +1390,7 @@ void make_default_image(char *default_targetname)
 			cmd = g_strdup_printf("%s/qemu-img.exe create -b %s -f qcow2 %s",
 					get_bin_path(), base_img_path, default_img);
 #else
-			cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %s",
+			cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s",
 					base_img_path, default_img);
 #endif
 			if(!run_cmd(cmd))
@@ -1844,32 +1852,8 @@ void ram_select_cb(void)
 	g_free(size);
 }
 
-void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
+int set_modify_variable(char *target_name)
 {
-	GtkWidget *win = get_window(VTM_CREATE_ID);
-	char *target_name = (char*)data;
-	char *dest_path = NULL;
-	char *conf_file = NULL;
-	const gchar *name = NULL;
-	char *cmd = NULL;
-	char *cmd2 = NULL;
-	char *dst;
-	char *vms_path = NULL;
-	char *sdcard_name = NULL;
-	GtkWidget *name_entry;
-	int file_status;	
-	//find arch name
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
-	if(arch == NULL)
-	{
-		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed.");
-		return ;
-	}
-
-	name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
-	name = gtk_entry_get_text(GTK_ENTRY(name_entry));
-	
 	ram_select_cb();
 	resolution_select_cb();
 	buttontype_select_cb();
@@ -1882,9 +1866,15 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	{
 		WARN( "disk type is wrong");
 		show_message("Warning", "Disk type is wrong.");
-		return;
+		return -1;
 	}
+	return 0;
+}
 
+int check_modify_target_name(char *name)
+{
+	char *dst;
+		
 	//	name character validation check
 	dst =  malloc(VT_NAME_MAXBUF);
 	escapeStr(name, dst);
@@ -1893,7 +1883,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		WARN( "virtual target name only allowed numbers, a-z, A-Z, -_");
 		show_message("Warning", "Virtual target name is not correct! \n (only allowed numbers, a-z, A-Z, -_)");
 		free(dst);
-		return;
+		return -1;
 	}
 	free(dst);
 
@@ -1902,15 +1892,21 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	{
 		WARN( "Specify name of the virtual target!");
 		show_message("Warning", "Specify name of the virtual target!");
-		return;
+		return -1;
 	}
 	else
 	{
 		snprintf(virtual_target_info.virtual_target_name, MAXBUF, "%s", name);
 	}
+	return 0;
 
-	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-	INFO( "virtual_target_path: %s\n", dest_path);
+}
+
+int change_modify_target_name(char *arch, char *dest_path, char *name, char* target_name)
+{
+	char *cmd = NULL;
+	char *cmd2 = NULL;
+	char *vms_path = NULL;
 
 	// if try to change the target name
 	if(strcmp(name, target_name) != 0)
@@ -1920,7 +1916,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		{
 			WARN( "Virtual target with the same name exists! Choose another name.");
 			show_message("Warning", "Virtual target with the same name exists! Choose another name.");
-			return;
+			return -1;
 		}
 		//start name changing procesure
 #ifndef _WIN32
@@ -1935,7 +1931,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(cmd);
 			g_free(dest_path);
 			show_message("Error", "Fail to change the target name!");
-			return;
+			return -1;
 		}
 		g_free(cmd);
 
@@ -1946,7 +1942,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(cmd2);
 			g_free(dest_path);
 			show_message("Error", "Fail to change the target name!");
-			return;
+			return -1;
 		}
 		g_free(cmd2);
 
@@ -1971,7 +1967,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(src_path_for_win);
 			g_free(dst_path_for_win);
 			show_message("Error", "Fail to change the target name!");
-			return ;
+			return -1;
 		}
 		g_free(src_path_for_win);
 		g_free(dst_path_for_win);
@@ -1981,62 +1977,29 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(src_img_path_for_win);
 			g_free(dst_img_path_for_win);
 			show_message("Error", "Fail to change the target name!");
-			return ;
+			return -1;
 		}
 		g_free(src_img_path_for_win);
 		g_free(dst_img_path_for_win);
 #endif
 		g_free(vms_path);
 	} // end chage name precedure
+	
+	return 0;
+}
 
-	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
-
-	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
-			"%s/%s/emulimg-%s.%s", get_vms_abs_path(), name, name, arch);
-	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
-	// 2 : select from existing image
-	if(virtual_target_info.sdcard_type == 2){
-		GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
-		char *sdcard_uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(sdcard_filechooser));
-		if(sdcard_uri == NULL){
-			show_message("Warning", "You didn't select an existing sdcard image!");
-			return;
-		}
-		sdcard_file_select_cb();
-		file_status = is_exist_file(virtual_target_info.sdcard_path);
-		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
-		{
-			// apply sdcard path that is changed by modifying target name
-			sdcard_name = g_path_get_basename(virtual_target_info.sdcard_path);
-			memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
-			snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s%s", dest_path, sdcard_name);
-			TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
-			free(sdcard_name);
-		}
-	}
-	else
-	{
-		// target_name not changed
-		dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-		snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
-				virtual_target_info.virtual_target_name, arch);
-		TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
-	}
-
-	//delete original target name
-	target_list_filepath = get_targetlist_abs_filepath();
-	del_config_key(target_list_filepath, virtual_target_info.major_version, target_name);
-	g_free(target_name);
-
-	if(access(dest_path, R_OK) != 0)
-		g_mkdir(dest_path, 0755);
-
-	// sdcard
+int modify_sdcard(char *arch, char *dest_path)
+{
+	char *sdcard_name = NULL;
+	int file_status;
+	char *cmd;
+	// 0 : None
 	if(virtual_target_info.sdcard_type == 0)
 	{
 		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
-		TRACE( "[sdcard_type:0]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+		INFO( "[sdcard_type:0]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
+	// 1 : Create New Image
 	else if(virtual_target_info.sdcard_type == 1)
 	{
 		// sdcard create
@@ -2049,7 +2012,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(cmd);
 			g_free(dest_path);
 			show_message("Error", "SD Card img create failed!");
-			return;
+			return -1;
 		}
 		g_free(cmd);
 #else
@@ -2068,58 +2031,247 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(src_dos_path);
 			g_free(dst_dos_path);
 			show_message("Error", "SD Card img create failed!");
-			return;
+			return -1;
 		}
 		g_free(src_dos_path);
 		g_free(dst_dos_path);
 
 #endif
 		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%ssdcard_%d.img", dest_path, sdcard_create_size);
-		TRACE( "[sdcard_type:1]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+		INFO( "[sdcard_type:1]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
+	// 2 : Select From Existing Image
 	else if(virtual_target_info.sdcard_type == 2){
-		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
+		GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
+		char *sdcard_uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(sdcard_filechooser));
+		if(sdcard_uri == NULL || strcmp(virtual_target_info.sdcard_path, "") == 0){
 			show_message("Warning", "You didn't select an existing sdcard image!");
-			return;
+			return -1;
 		}
-		TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+		sdcard_file_select_cb();
+		file_status = is_exist_file(virtual_target_info.sdcard_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			// apply sdcard path that is changed by modifying target name
+			sdcard_name = g_path_get_basename(virtual_target_info.sdcard_path);
+			memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
+			snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s%s", dest_path, sdcard_name);
+			INFO( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+			free(sdcard_name);
+		}
 	}
+	else
+	{
+		INFO( "virtual_target_info.sdcard_type: %d\n", virtual_target_info.sdcard_type);
+		show_message("Warning", "SD card type is wrong!");
+		return -1;
+	}
+
+	return 0;
+}
+
+void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
+{
+	GtkWidget *win = get_window(VTM_CREATE_ID);
+	GtkWidget *name_entry;
+	char *target_name = (char*)data;
+	char *dest_path = NULL;
+	char *conf_file = NULL;
+	char *name = NULL;
+	//find arch name
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed.");
+		return;
+	}
+	
+	if(set_modify_variable(target_name) == -1)
+		return;
+	
+	name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
+	name = (char*)gtk_entry_get_text(GTK_ENTRY(name_entry));
+
+	if(check_modify_target_name(name) == -1)
+		return;
+	
+	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
+	INFO( "virtual_target_path: %s\n", dest_path);
+
+	//work when try to change target name
+	if(change_modify_target_name(arch, dest_path, name, target_name) == -1)
+		return;
+
+	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
+
+	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
+			"%s/%s/emulimg-%s.%s", get_vms_abs_path(), name, name, arch);
+	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
+	
+	if(modify_sdcard(arch, dest_path) == -1)
+		return;
+	
+	//delete original target name
+	target_list_filepath = get_targetlist_abs_filepath();
+	del_config_key(target_list_filepath, virtual_target_info.major_version, target_name);
+	g_free(target_name);
+
+	if(access(dest_path, R_OK) != 0)
+		g_mkdir(dest_path, 0755);
 
 	// add virtual target name to targetlist.ini
 	set_config_value(target_list_filepath, virtual_target_info.major_version, 
 			virtual_target_info.virtual_target_name, "");
+	
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
+	
 	//	create_config_file(conf_file);
 	snprintf(virtual_target_info.dpi, MAXBUF, "2070");
 	if(write_config_file(conf_file) == -1)
 	{
 		show_message("Error", "Virtual target modification failed!");
-		return ;
+		return;
 	}
 
 	show_message("INFO", "Success modifying virtual target!");
 
-	g_free(dest_path);
-	g_free(conf_file);
-
 	gtk_widget_destroy(win);
+
 	refresh_clicked_cb(arch);
 
 	g_object_unref(G_OBJECT(g_create_builder));
 
 	gtk_main_quit();
+
+	g_free(dest_path);
+	g_free(conf_file);
+
 	return;
 
 }
+int create_diskimg(char *arch, char *dest_path)
+{
+	int file_status;
+	char *cmd = NULL;
+
+	if(virtual_target_info.disk_type == 1){
+		disk_file_select_cb();
+		
+		file_status = is_exist_file(virtual_target_info.basedisk_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
+			char *message = g_strdup_printf("Base image does not exist.\n\n"
+					"   -[%s]", virtual_target_info.basedisk_path);
+			show_message("Error", message);
+			free(message);
+			return -1;
+		}
+#ifdef _WIN32
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#else
+		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#endif
+	}
+	else if(virtual_target_info.disk_type == 0)
+	{
+		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
+#ifdef _WIN32
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.%s -f qcow2 %semulimg-%s.%s", get_root_path(), get_arch_abs_path(), arch,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#else
+		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#endif
+	}
+	else
+	{
+		INFO("disk type : %d\n", virtual_target_info.disk_type);
+		show_message("Error","disk type is wrong");
+		return -1;
+	}
+	
+	if(!run_cmd(cmd))
+	{
+		g_free(cmd);
+		g_free(dest_path);
+		show_message("Error", "Emulator image create failed!");
+		return -1;
+	}
+	g_free(cmd);
+
+	// set diskimg_path
+	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
+			virtual_target_info.virtual_target_name, arch);
+	return 0;
+}
+
+
+int create_sdcard(char *dest_path)
+{
+	char *cmd = NULL;
+
+	// sdcard
+	if(virtual_target_info.sdcard_type == 0)
+	{
+		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
+	}
+	else if(virtual_target_info.sdcard_type == 1)
+	{
+		// sdcard create
+#ifndef _WIN32
+		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
+
+		if(!run_cmd(cmd))
+		{
+			g_free(cmd);
+			g_free(dest_path);
+			show_message("Error", "SD Card img create failed!");
+			return -1;
+		}
+		g_free(cmd);
+#else
+		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_abs_path(), sdcard_create_size);
+		char *dst_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", dest_path, sdcard_create_size);
+
+		gchar *src_dos_path = change_path_from_slash(src_sdcard_path);
+		gchar *dst_dos_path = change_path_from_slash(dst_sdcard_path);
+
+		g_free(src_sdcard_path);
+		g_free(dst_sdcard_path);
+
+		if(!CopyFileA(src_dos_path, dst_dos_path, FALSE))
+		{
+			g_free(dest_path);
+			g_free(src_dos_path);
+			g_free(dst_dos_path);
+			show_message("Error", "SD Card img create failed!");
+			return -1;
+		}
+		g_free(src_dos_path);
+		g_free(dst_dos_path);
+
+#endif
+		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%ssdcard_%d.img", dest_path, sdcard_create_size);
+	}
+	else if(virtual_target_info.sdcard_type == 2){
+		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
+			show_message("Warning", "You didn't select an existing sdcard image!");
+			return -1;
+		}
+	}
+	return 0;
+}	
 
 void ok_clicked_cb(void)
 {
-	char *cmd = NULL;
 	char *dest_path = NULL;
 	char *log_path = NULL;
 	char *conf_file = NULL;
-	int file_status;
 	GtkWidget *win = get_window(VTM_CREATE_ID);
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
@@ -2137,115 +2289,11 @@ void ok_clicked_cb(void)
 	if(access(log_path, R_OK) != 0)
 		g_mkdir(log_path, 0755);
 	
-	//disk type
-	if(virtual_target_info.disk_type == 0)
-		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
-	else if(virtual_target_info.disk_type == 1){
-		disk_file_select_cb();
-		if(strlen((char*)virtual_target_info.basedisk_path) == 0){
-			show_message("Warning", "You didn't select an existing base image.");
-			return;
-		}
-	}
-	// sdcard
-	if(virtual_target_info.sdcard_type == 0)
-	{
-		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
-	}
-	else if(virtual_target_info.sdcard_type == 1)
-	{
-		// sdcard create
-#ifndef _WIN32
-		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
-
-		if(!run_cmd(cmd))
-		{
-			g_free(cmd);
-			g_free(dest_path);
-			show_message("Error", "SD Card img create failed!");
-			return;
-		}
-		g_free(cmd);
-#else
-		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_abs_path(), sdcard_create_size);
-		char *dst_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", dest_path, sdcard_create_size);
-
-		gchar *src_dos_path = change_path_from_slash(src_sdcard_path);
-		gchar *dst_dos_path = change_path_from_slash(dst_sdcard_path);
-
-		g_free(src_sdcard_path);
-		g_free(dst_sdcard_path);
-
-		if(!CopyFileA(src_dos_path, dst_dos_path, FALSE))
-		{
-			g_free(dest_path);
-			g_free(src_dos_path);
-			g_free(dst_dos_path);
-			show_message("Error", "SD Card img create failed!");
-			return;
-		}
-		g_free(src_dos_path);
-		g_free(dst_dos_path);
-
-#endif
-
-		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%ssdcard_%d.img", dest_path, sdcard_create_size);
-	}
-	else if(virtual_target_info.sdcard_type == 2){
-		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
-			show_message("Warning", "You didn't select an existing sdcard image!");
-			return;
-		}
-	}
-	
-	// create emulator image
-#ifdef _WIN32
-	if(virtual_target_info.disk_type == 1){
-		file_status = is_exist_file(virtual_target_info.basedisk_path);
-		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
-		{
-			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Base image does not exist", virtual_target_info.basedisk_path);
-			return ;
-		}
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-	else
-	{
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.%s -f qcow2 %semulimg-%s.%s", get_root_path(), get_arch_abs_path(), arch,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-#else
-	if(virtual_target_info.disk_type == 1){
-		file_status = is_exist_file(virtual_target_info.basedisk_path);
-		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
-		{
-			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Base image does not exist", virtual_target_info.basedisk_path);
-			return ;
-		}
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-	else
-	{
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-#endif
-	if(!run_cmd(cmd))
-	{
-		g_free(cmd);
-		g_free(dest_path);
-		show_message("Error", "Emulator image create failed!");
+	if(create_sdcard(dest_path) == -1)
 		return;
-	}
-	g_free(cmd);
 
-	// diskimg_path
-	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
-			virtual_target_info.virtual_target_name, arch);
+	if(create_diskimg(arch, dest_path) == -1)
+		return;
 
 	// add virtual target name to targetlist.ini
 	set_config_value(target_list_filepath, virtual_target_info.major_version, virtual_target_info.virtual_target_name, "");

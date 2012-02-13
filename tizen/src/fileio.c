@@ -435,6 +435,24 @@ const gchar *get_conf_path(void)
 	return conf_path;
 }
 
+
+/* get_tizen_vms_path = "~/home/{USERNAME}/tizen_VMs" */
+const gchar *get_tizen_vms_path(void)
+{
+	static const char suffix[] = "/tizen_VMs";
+	char *homedir = g_getenv("HOME");
+	static gchar *tizen_vms_path;
+	
+	if(!homedir)
+		homedir = g_get_home_dir();
+	tizen_vms_path = malloc(strlen(homedir) + sizeof suffix);
+	assert(tizen_vms_path != NULL);
+	strcpy(tizen_vms_path, homedir);
+	strcat(tizen_vms_path, suffix);
+
+	return tizen_vms_path;
+}
+
 /* get_conf_path = "x86/VMs" */
 const gchar *get_vms_path(void)
 {
