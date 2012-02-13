@@ -51,7 +51,7 @@
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, command);
 
-#ifdef _WIN32
+#if 0
 void* system_telnet(void)
 {
     gchar cmd[256] = "";
@@ -66,18 +66,21 @@ void create_cmdwindow(void)
 {
     gchar cmd[256];
     const char *terminal = getenv("EMULATOR_TERMINAL");
+    int sdb_port = get_sdb_base_port();
 
 #ifdef _WIN32
-    sprintf (cmd, "start cmd /C %s\\SDK\\sdb\\sdb -s emulator-%d shell", get_sdk_root(), get_sdb_base_port());
+    sprintf (cmd, "start \"emulator-%d\" cmd /C %s\\SDK\\sdb\\sdb -s emulator-%d shell",
+        sdb_port, get_sdk_root(), sdb_port);
     system(cmd);
     fflush(stdout);
 #elif __linux__
     /* gnome-terminal */
     if (!terminal) {
-        terminal = "/usr/bin/gnome-terminal --disable-factory -x";
+        terminal = "/usr/bin/gnome-terminal --disable-factory";
         //terminal = "/usr/bin/xterm -l -e";
     }
-    sprintf(cmd, "%s %s/SDK/sdb/sdb -s emulator-%d shell", terminal, get_sdk_root(), get_sdb_base_port());
+    sprintf(cmd, "%s --title=emulator-%d -x %s/SDK/sdb/sdb -s emulator-%d shell",
+        terminal, sdb_port, get_sdk_root(), sdb_port);
 
     if (emul_create_process(cmd) == TRUE) {
         INFO( "start command window\n");
