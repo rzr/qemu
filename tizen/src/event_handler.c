@@ -1199,7 +1199,11 @@ gboolean query_tooltip_event(GtkWidget *widget, gint x, gint y, gboolean keyboar
 		return FALSE;
 	} else {
 		char* text = PHONE.mode[UISTATE.current_mode].key_map_list[index].tooltip;
-		gtk_tooltip_set_text(tooltip, text);
+		if (text != NULL) {
+			gtk_tooltip_set_text(tooltip, text);
+		} else {
+			return FALSE;
+		}
 	}
 
 	return TRUE;

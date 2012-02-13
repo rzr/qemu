@@ -319,8 +319,12 @@ static int dbi_load_mode_list(xmlNode *child_node, mode_list *ml, const gchar *d
 
 						else if (!xmlStrcmp(region_child_node->name, (const xmlChar *) "tooltip")) {
 							pSrc_Buf = (char *) xmlNodeGetContent(region_child_node->children);
-							ml->key_map_list[key_map_chk_cnt].tooltip = strdup(pSrc_Buf);
-							xmlFree(pSrc_Buf);
+							if (pSrc_Buf == NULL) {
+								ml->key_map_list[key_map_chk_cnt].tooltip = NULL;
+							} else {
+								ml->key_map_list[key_map_chk_cnt].tooltip = strdup(pSrc_Buf);
+								xmlFree(pSrc_Buf);
+							}
 						}
 
 					}
