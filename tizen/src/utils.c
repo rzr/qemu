@@ -250,7 +250,7 @@ gboolean is_group(const gchar *target_name)
 	char **target_groups = NULL;
 	int i;
 	int group_num;
-	char *filepath = get_targetlist_abs_filepath();
+	char *filepath = get_targetlist_filepath();
 	
 	target_groups = get_virtual_target_groups(filepath, &group_num);
 

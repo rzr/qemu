@@ -174,7 +174,7 @@ void virtual_target_select_cb(GtkComboBox *virtual_target_combobox, gpointer dat
 	else
 	{
 		snprintf(SYSTEMINFO.virtual_target_name, MAXBUF, "%s", name);
-		path = get_virtual_target_abs_path(name);
+		path = get_virtual_target_path(name);
 		info_file = g_strdup_printf("%sconfig.ini", path);
 		snprintf(SYSTEMINFO.virtual_target_info_file, MAXPATH, "%s", info_file);
 	}
