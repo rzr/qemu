@@ -379,10 +379,10 @@ const gchar *get_conf_path(void)
 }
 
 
-/* get_tizen_vms_path = "/home/{USER}/tizen_VMs/{ARCH}" */
+/* get_tizen_vms_path = "/home/{USER}/tizen_vms/{ARCH}" */
 const gchar *get_tizen_vms_path(void)
 {
-	static const char tizen_vms[] = "/tizen_VMs/";
+	static const char tizen_vms[] = "/tizen_vms/";
 	char *homedir = (char*)g_getenv("HOME");
 	static gchar *tizen_vms_path;
 	char *arch = (char *)g_getenv("EMULATOR_ARCH");

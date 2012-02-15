@@ -46,6 +46,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else /* !_WIN32 */
+#include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -109,10 +110,13 @@ const char *MINOR_VERSION;
 char *DEFAULT_TARGET;
 const char *HOMEDIR;
 #ifdef _WIN32
+HANDLE g_hFile;
 void socket_cleanup(void)
 {
 	WSACleanup();
 }
+#else
+int g_fd;
 #endif
 
 int socket_init(void)
@@ -617,8 +621,13 @@ void env_init(void)
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
 		ERR( "load target list file error\n");
+#ifdef _WIN32
+		char *message = g_strdup_printf("Target list file does not exist.\n\n"
+				"   - [%s]", change_path_from_slash(target_list_filepath));
+#else
 		char *message = g_strdup_printf("Target list file does not exist.\n\n"
 				"   - [%s]", target_list_filepath);
+#endif
 		show_message("Error", message);
 		free(message);
 		return;
@@ -1340,11 +1349,11 @@ void make_default_image(char *default_targetname)
 	for(i=0; i < j; i++)
 	{
 		if(i == 0)
-			setenv("EMULATOR_ARCH", "x86", 1);
+			g_setenv("EMULATOR_ARCH", "x86", 1);
 		else
-			setenv("EMULATOR_ARCH", "arm", 1);
+			g_setenv("EMULATOR_ARCH", "arm", 1);
 			
-		arch = getenv("EMULATOR_ARCH");
+		arch = (char*)g_getenv("EMULATOR_ARCH");
 		target_list_filepath = get_targetlist_filepath();
 		file_status = is_exist_file(target_list_filepath);
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
@@ -1434,7 +1443,7 @@ void make_default_image(char *default_targetname)
 		free(default_img);
 	}
 
-	setenv("EMULATOR_ARCH", "x86", 1);
+	g_setenv("EMULATOR_ARCH", "x86", 1);
 }
 
 gboolean run_cmd(char *cmd)
@@ -1608,7 +1617,14 @@ void exit_vtm(void)
 	INFO( "virtual target manager exit \n");
 	window_hash_destroy();
 	g_object_unref(G_OBJECT(g_builder));
+#ifndef _WIN32
+	flock(g_fd, LOCK_UN);
+	close(g_fd);
+#else
+	CloseHandle(g_hFile);
+#endif
 	gtk_main_quit();
+
 }
 
 GtkWidget *setup_tree_view(void)
@@ -1910,8 +1926,6 @@ int check_modify_target_name(char *name)
 
 int change_modify_target_name(char *arch, char *dest_path, char *name, char* target_name)
 {
-	char *cmd = NULL;
-	char *cmd2 = NULL;
 	char *vms_path = NULL;
 
 	// if try to change the target name
@@ -1926,6 +1940,8 @@ int change_modify_target_name(char *arch, char *dest_path, char *name, char* tar
 		}
 		//start name changing procesure
 #ifndef _WIN32
+		char *cmd = NULL;
+		char *cmd2 = NULL;
 		cmd = g_strdup_printf("mv %s/%s %s/%s", 
 				vms_path, target_name, vms_path, name);
 		cmd2 = g_strdup_printf("mv %s/%s/emulimg-%s.%s %s/%s/emulimg-%s.%s", 
@@ -1998,7 +2014,6 @@ int modify_sdcard(char *arch, char *dest_path)
 {
 	char *sdcard_name = NULL;
 	int file_status;
-	char *cmd;
 	// 0 : None
 	if(virtual_target_info.sdcard_type == 0)
 	{
@@ -2011,6 +2026,7 @@ int modify_sdcard(char *arch, char *dest_path)
 		// sdcard create
 		sdcard_size_select_cb();
 #ifndef _WIN32
+		char *cmd = NULL;
 		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_path(), sdcard_create_size, dest_path);
 
 		if(!run_cmd(cmd))
@@ -2219,8 +2235,6 @@ int create_diskimg(char *arch, char *dest_path)
 
 int create_sdcard(char *dest_path)
 {
-	char *cmd = NULL;
-
 	// sdcard
 	if(virtual_target_info.sdcard_type == 0)
 	{
@@ -2230,6 +2244,7 @@ int create_sdcard(char *dest_path)
 	{
 		// sdcard create
 #ifndef _WIN32
+		char *cmd = NULL;
 		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_path(), sdcard_create_size, dest_path);
 
 		if(!run_cmd(cmd))
@@ -2774,7 +2789,7 @@ void construct_main_window(void)
 
 
 }
-
+#ifdef	__linux__
 void set_mesa_lib(void)
 {
 	char *s_out = NULL;
@@ -2832,6 +2847,7 @@ void set_mesa_lib(void)
 	return ;
 
 }
+#endif
 
 void version_init(char *default_targetname, char* target_list_filepath)
 {
@@ -2853,6 +2869,37 @@ void version_init(char *default_targetname, char* target_list_filepath)
 	g_key_file_free(keyfile);
 	
 	return;
+}
+
+void lock_file(char *path)
+{
+#ifdef _WIN32
+	char *path_win = change_path_from_slash(path);
+	g_hFile = CreateFile(path_win, // open path
+				GENERIC_READ,             // open for reading
+				0,                        // do not share
+				NULL,                     // no security
+				OPEN_EXISTING,            // existing file only
+				FILE_ATTRIBUTE_NORMAL,    // normal file
+				NULL);
+	if(g_hFile == INVALID_HANDLE_VALUE)
+	{
+		show_message("Error", "Can not execute the emulator manager!\n"
+				"Another instance is already running.");
+		free(path_win);
+		exit(0);
+	}
+
+#else
+	g_fd = open(path, O_RDWR);
+	if(flock(g_fd, LOCK_EX|LOCK_NB) == -1)
+	{
+		show_message("Error", "Can not execute the emulator manager!\n"
+				"Another instance is already running.");
+		exit(0);
+	}
+#endif
+
 }
 
 int main(int argc, char** argv)
@@ -2890,6 +2937,8 @@ int main(int argc, char** argv)
 
 	gtk_builder_add_from_file(g_builder, full_glade_path, NULL);
 
+	lock_file(full_glade_path);
+	
 	window_hash_init();
 
 	construct_main_window();

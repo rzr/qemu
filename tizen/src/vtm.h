@@ -120,6 +120,7 @@ char *check_kvm(char *info_file, int *status);
 void version_init(char *default_targetname, char* target_list_filepath);
 int delete_group(char* target_list_filepath, char* target_name, int type);
 
+void lock_file(char *path);
 int create_diskimg(char *arch, char *dest_path);
 int create_sdcard(char *dest_path);
 int modify_sdcard(char *arch, char *dest_path);
@@ -128,5 +129,8 @@ int check_modify_target_name(char *name);
 int set_modify_variable(char *target_name);
 #ifdef __linux__
 void set_mesa_lib(void);
+#endif
+#ifdef _WIN32
+void socket_cleanup(void);
 #endif
 #endif 

@@ -360,13 +360,23 @@ int set_config_value(gchar *filepath, const gchar *group, const gchar *field, co
 	GKeyFile *keyfile;
 	GError *error = NULL;
 	gsize length;
+	int file_status;
 
 	keyfile = g_key_file_new();
+
 	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
 		WARN( "loading key file form %s is failed.\n", filepath);
-		return -1;
+		file_status = is_exist_file(filepath);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			char *message = g_strdup_printf("File does not exist\n\n"
+								"   - [%s]", filepath);
+			show_message("Error", message);
+			free(message);
+			return -1;
+		}
 	}
-
+	
 	g_key_file_set_value(keyfile, group, field, value);
 
 	gchar *data = g_key_file_to_data(keyfile, &length, &error);
