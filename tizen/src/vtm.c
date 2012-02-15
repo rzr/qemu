@@ -1642,23 +1642,23 @@ GtkWidget *setup_tree_view(void)
 	//set text alignment 
 	column = gtk_tree_view_column_new_with_attributes("Target Name", cell, "text", TARGET_NAME, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
-	gtk_tree_view_column_set_min_width(column,170);
+	gtk_tree_view_column_set_min_width(column,130);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("RAM Size", cell, "text", RAM_SIZE, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
-	gtk_tree_view_column_set_min_width(column,60);
+	gtk_tree_view_column_set_min_width(column,100);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Resolution", cell, "text", RESOLUTION, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
-	gtk_tree_view_column_set_max_width(column,80);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-	
-	column = gtk_tree_view_column_new_with_attributes("Minor Version", cell, "text", MINOR, NULL);
-	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_max_width(column,60);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+	
+//	column = gtk_tree_view_column_new_with_attributes("Minor Version", cell, "text", MINOR, NULL);
+//	gtk_tree_view_column_set_alignment(column,0.0);
+//	gtk_tree_view_column_set_max_width(column,60);
+//	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sc_win), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_container_add(GTK_CONTAINER(sc_win), treeview);
