@@ -100,7 +100,7 @@ int is_exist_file(gchar *filepath)
 }
 
 /* get_sdk_root = "~/tizen_sdk/" */
-const gchar *get_sdk_root(void)
+gchar *get_sdk_root(void)
 {
     static gchar *sdk_path = NULL;
     gchar *info_file_subpath = NULL;
@@ -110,14 +110,12 @@ const gchar *get_sdk_root(void)
     if (!sdk_path)
     {
 #ifdef __linux__
-        gchar *home_path = g_get_home_dir();
+        const gchar *home_path = g_get_home_dir();
         info_file_subpath = "/.TizenSDK/tizensdkpath";
 
         int len = strlen(home_path) + strlen(info_file_subpath) + 1;
         info_file_fullpath = g_malloc0(len);
         snprintf(info_file_fullpath, len, "%s%s", home_path, info_file_subpath);
-
-        g_free(home_path);
 #elif _WIN32
         HKEY hKey;
         TCHAR szDefaultPath[_MAX_PATH] = {0};
@@ -147,6 +145,33 @@ const gchar *get_sdk_root(void)
     }
 
     return sdk_path;
+}
+
+/* get_sdb_path = "~/tizen_sdk/SDK/sdb/sdb" */
+// After using this function, please call g_free().
+gchar *get_sdb_path(void)
+{
+    gchar *sdb_fullpath = NULL;
+    gchar *sdb_subpath = "/SDK/sdb/sdb";
+    gchar *sdk_path = NULL;
+
+    sdk_path = get_sdk_root();
+    if (!sdk_path) {
+        return NULL;
+    }
+
+#ifdef __linux__
+    int len = strlen(sdk_path) + strlen(sdb_subpath) + 1;
+    sdb_fullpath = g_malloc0(len);
+    snprintf(sdb_fullpath, len, "%s%s", sdk_path, sdb_subpath);
+#elif _WIN32
+    int len = strlen(sdk_path) + strlen(sdb_subpath) + 5;
+    sdb_fullpath = g_malloc0(len);
+    snprintf(sdb_fullpath, len, "%s%s.exe", sdk_path, sdb_subpath);
+    dos_path_to_unix_path(sdk_path);
+#endif
+
+    return sdb_fullpath;
 }
 
 /* exec_path = "~/tizen_sdk/Emulator/bin/emulator-manager" */

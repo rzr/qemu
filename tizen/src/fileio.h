@@ -57,6 +57,8 @@
 #include "defines.h"
 
 int is_exist_file(gchar *filepath);
+gchar *get_sdk_root(void);
+gchar *get_sdb_path(void);
 const gchar *get_exec_path(void);
 const gchar *get_root_path(void);
 const gchar *get_bin_path(void);

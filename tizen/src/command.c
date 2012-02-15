@@ -45,6 +45,8 @@
 #include "command.h"
 #include "dialog.h"
 #include "configuration.h"
+#include "fileio.h"
+#include "sdb.h"
 
 #include "debug_ch.h"
 
@@ -65,12 +67,19 @@ void* system_telnet(void)
 void create_cmdwindow(void)
 {
     gchar cmd[256];
+
+    gchar* sdb_path = get_sdb_path();
+    if (access(sdb_path, 0) != 0) {
+        show_message("Sdb file is not exist.", sdb_path);
+        g_free(sdb_path);
+        return;
+    }
+
     const char *terminal = getenv("EMULATOR_TERMINAL");
     int sdb_port = get_sdb_base_port();
 
 #ifdef _WIN32
-    sprintf (cmd, "start \"emulator-%d\" cmd /C %s\\SDK\\sdb\\sdb -s emulator-%d shell",
-        sdb_port, get_sdk_root(), sdb_port);
+    sprintf (cmd, "start \"emulator-%d\" cmd /C %s -s emulator-%d shell", sdb_port, sdb_path, sdb_port);
     system(cmd);
     fflush(stdout);
 #elif __linux__
@@ -79,8 +88,7 @@ void create_cmdwindow(void)
         terminal = "/usr/bin/gnome-terminal --disable-factory";
         //terminal = "/usr/bin/xterm -l -e";
     }
-    sprintf(cmd, "%s --title=emulator-%d -x %s/SDK/sdb/sdb -s emulator-%d shell",
-        terminal, sdb_port, get_sdk_root(), sdb_port);
+    sprintf(cmd, "%s --title=emulator-%d -x %s -s emulator-%d shell", terminal, sdb_port, sdb_path, sdb_port);
 
     if (emul_create_process(cmd) == TRUE) {
         INFO( "start command window\n");

@@ -305,8 +305,12 @@ int read_config_file(gchar *filepath, CONFIGURATION *pconfiguration)
 	pconfiguration->qemu_configuration.use_host_dns_server = get_config_type(filepath, QEMU_GROUP, DNS_SERVER_KEY);
 
 	/* option menu config parsed */
+	gchar *sdb_path = get_sdb_path();
+	if (access(sdb_path, 0) == 0) {
+		pconfiguration->enable_shell = get_config_type(filepath, EMULATOR_GROUP, ENABLE_SHELL_KEY);
+	}
+	g_free(sdb_path);
 
-	pconfiguration->enable_shell = get_config_type(filepath, EMULATOR_GROUP, ENABLE_SHELL_KEY);
 	pconfiguration->enable_telephony_emulator = get_config_type(filepath, EMULATOR_GROUP, ENABLE_TELEPHONY_EMULATOR_KEY);
 	pconfiguration->enable_gpsd = get_config_type(filepath, EMULATOR_GROUP, ENABLE_GPSD_KEY);
 	pconfiguration->enable_compass = get_config_type(filepath, EMULATOR_GROUP, ENABLE_COMPASS_KEY);
