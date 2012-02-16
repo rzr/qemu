@@ -289,7 +289,7 @@ static void debug_init(void)
 		free(tmp);
 	}
 
-	strcpy(logfile, get_virtual_target_abs_path(startup_option.vtm));
+	strcpy(logfile, get_virtual_target_path(startup_option.vtm));
 	strcat(logfile, "logs/emulator.log");
 
 	if(access(logfile, F_OK | R_OK) == 0)

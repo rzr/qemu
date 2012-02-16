@@ -210,7 +210,7 @@ int write_pidfile(const char *filename)
 	char	buf[128] = "";
 	char	pidfname[512] = ""; 
 
-	const gchar *conf_path = get_conf_abs_path();
+	const gchar *conf_path = get_conf_path();
 	sprintf(pidfname, "%s/emulator.pid", conf_path);
 
 	if (access(conf_path, R_OK) != 0) {
@@ -249,7 +249,7 @@ int remove_pidfile(const char *filename)
 		return -1;
 	}
 
-	const gchar *conf_path = get_conf_abs_path();
+	const gchar *conf_path = get_conf_path();
 	sprintf(pidfname, "%s/emulator.pid", conf_path);
 
 	if (strlen(pidfname) <= 0) {

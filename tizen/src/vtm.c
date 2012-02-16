@@ -35,7 +35,6 @@
  * - S-Core Co., Ltd
  *
  */
-
 #include "vtm.h"
 #include "debug_ch.h"
 #ifndef _WIN32
@@ -47,6 +46,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else /* !_WIN32 */
+#include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -86,6 +86,7 @@ MULTI_DEBUG_CHANNEL(tizen, emulmgr);
 #define DELETE_MODE	2
 #define MODIFY_MODE 3
 #define RESET_MODE 4
+#define DELETE_GROUP_MODE 5
 
 GtkBuilder *g_builder;
 GtkBuilder *g_create_builder;
@@ -93,22 +94,29 @@ enum {
 	TARGET_NAME,
 	RAM_SIZE,
 	RESOLUTION,
+	MINOR,
 	N_COL
 };
 GtkWidget *g_main_window;
 VIRTUALTARGETINFO virtual_target_info;
 gchar *target_list_filepath;
 gchar *g_info_file;
-GtkWidget *list;
+GtkWidget *treeview;
 int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
-
+const char *MAJOR_VERSION;
+const char *MINOR_VERSION;
+char *DEFAULT_TARGET;
+const char *HOMEDIR;
 #ifdef _WIN32
+HANDLE g_hFile;
 void socket_cleanup(void)
 {
 	WSACleanup();
 }
+#else
+int g_fd;
 #endif
 
 int socket_init(void)
@@ -194,14 +202,18 @@ void activate_target(char *target_name)
 		return ;
 	}
 
-	path = (char*)get_arch_abs_path();
-	virtual_target_path = get_virtual_target_abs_path(target_name);
+	path = (char*)get_arch_path();
+	virtual_target_path = get_virtual_target_path(target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(info_file);
 	//if targetlist exist but config file not exists
 	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
 	{
 		ERR( "target info file does not exist : %s\n", target_name);
+		char *message = g_strdup_printf("config.ini file does not exist\n\n"
+								"   - [%s]", info_file);
+		show_message("Error", message);
+		free(message);
 		return ;
 	}
 
@@ -319,7 +331,7 @@ char *check_kvm(char *info_file, int *status)
 int check_shdmem(char *target_name, int type)
 {
 	char *virtual_target_path = NULL;
-	virtual_target_path = get_virtual_target_abs_path(target_name);
+	virtual_target_path = get_virtual_target_path(target_name);
 #ifndef _WIN32
 	int shm_id;
 	void *shm_addr;
@@ -361,6 +373,10 @@ int check_shdmem(char *target_name, int type)
 					case RESET_MODE:
 						show_message("Warning", "Can not reset this target.\nVirtual target with the same name is running now!");
 						break;
+					case DELETE_GROUP_MODE:
+						show_message("Warning", "Can not delete this group.\nSome virtual target in this group is running now!");
+						break;
+
 					default:
 						ERR("wrong type passed\n");
 					}
@@ -550,7 +566,7 @@ void show_modify_window(char *target_name)
 	else if(strcmp(arch, "arm") == 0)
 		gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target(arm)");	
 
-	virtual_target_path = get_virtual_target_abs_path(target_name);
+	virtual_target_path = get_virtual_target_path(target_name);
 	g_info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(g_info_file);
 	//if targetlist exist but config file not exists
@@ -583,29 +599,54 @@ void show_modify_window(char *target_name)
 }
 
 
-void init_setenv()
+void env_init(void)
 {
 	char* arch;
 	int target_list_status;
-
+	char version_path[MAX_LEN];
+	gchar *target_list_filepath;
+	
+	//architecture setting
 	if(!g_getenv("EMULATOR_ARCH"))
 		arch = g_strdup_printf("x86");
 	else
-		return ;
+		return;
 
 	g_setenv("EMULATOR_ARCH",arch,1);
 	INFO( "architecture : %s\n", arch);
-	target_list_filepath = get_targetlist_abs_filepath();
+	
+	//get targetlist.ini file	
+	target_list_filepath = get_targetlist_filepath();
 	target_list_status = is_exist_file(target_list_filepath);
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
 		ERR( "load target list file error\n");
-		//		exit(1);
+#ifdef _WIN32
+		char *message = g_strdup_printf("Target list file does not exist.\n\n"
+				"   - [%s]", change_path_from_slash(target_list_filepath));
+#else
+		char *message = g_strdup_printf("Target list file does not exist.\n\n"
+				"   - [%s]", target_list_filepath);
+#endif
+		show_message("Error", message);
+		free(message);
+		return;
 	}
+	
+	//latest version setting
+	sprintf(version_path, "%s/version.ini",get_etc_path());
+	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
+	MINOR_VERSION = get_config_value(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
+	
+	DEFAULT_TARGET = g_strdup_printf("default%s", MINOR_VERSION);
+
+	//make default target of the latest version
+	make_default_image(DEFAULT_TARGET);
 
 	refresh_clicked_cb(arch);
-	make_default_image();
+
 }
+
 void arch_select_cb(GtkWidget *widget, gpointer data)
 {
 	gchar *arch;
@@ -618,7 +659,7 @@ void arch_select_cb(GtkWidget *widget, gpointer data)
 		g_unsetenv("EMULATOR_ARCH");
 		g_setenv("EMULATOR_ARCH",arch,1);
 		INFO( "architecture : %s\n", arch);
-		target_list_filepath = get_targetlist_abs_filepath();
+		target_list_filepath = get_targetlist_filepath();
 		refresh_clicked_cb(arch);
 		//		g_free(arch);
 	}
@@ -627,14 +668,14 @@ void arch_select_cb(GtkWidget *widget, gpointer data)
 
 void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
 	char *virtual_target_path;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -643,15 +684,11 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-		if(strcmp(target_name, "default") == 0){
-			show_message("Warning","You can not modify default target.");
-			return;
-		}
 
 		if(check_shdmem(target_name, MODIFY_MODE)== -1)
 			return;
 
-		virtual_target_path = get_virtual_target_abs_path(target_name);
+		virtual_target_path = get_virtual_target_path(target_name);
 		show_modify_window(target_name);	
 		g_free(virtual_target_path);
 	}
@@ -665,14 +702,14 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 
 void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
 	char *virtual_target_path;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -681,7 +718,7 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-		virtual_target_path = get_virtual_target_abs_path(target_name);
+		virtual_target_path = get_virtual_target_path(target_name);
 		activate_target(target_name);
 		//change name if it's running
 //		static const char suffix[] = "(running)";
@@ -700,9 +737,65 @@ void activate_clicked_cb(GtkWidget *widget, gpointer selection)
 	}
 }
 
+void cursor_changed_cb(GtkWidget *widget, gpointer selection)
+{
+	GtkTreeStore *store;
+	GtkTreeModel *model;
+	GtkTreeIter  iter;
+	char *target_name;
+	GtkWidget *modify_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button3");
+	GtkWidget *reset_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button9");
+	GtkWidget *start_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button4");
+	GtkWidget *details_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button5");
+	GtkWidget *delete_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button2");
+
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
+
+	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
+				&model, &iter)) {
+		
+		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
+
+		if(is_group(target_name) == TRUE){
+			if(strcmp(target_name, MAJOR_VERSION) == 0 || 
+					strcmp(target_name, "Custom") == 0)
+				gtk_widget_set_sensitive(delete_button, FALSE);
+			else
+				gtk_widget_set_sensitive(delete_button, TRUE);
+			
+			gtk_widget_set_sensitive(details_button, FALSE);
+			gtk_widget_set_sensitive(modify_button, FALSE);
+			gtk_widget_set_sensitive(reset_button, FALSE);
+			gtk_widget_set_sensitive(start_button, FALSE);
+		}
+		else
+		{
+			if(strcmp(target_name, DEFAULT_TARGET) == 0)
+			{
+				gtk_widget_set_sensitive(delete_button, FALSE);
+				gtk_widget_set_sensitive(modify_button, FALSE);
+				gtk_widget_set_sensitive(reset_button, TRUE);
+				gtk_widget_set_sensitive(start_button, TRUE);
+				gtk_widget_set_sensitive(details_button, TRUE);
+			}
+			else
+			{
+				gtk_widget_set_sensitive(delete_button, TRUE);
+				gtk_widget_set_sensitive(modify_button, TRUE);
+				gtk_widget_set_sensitive(reset_button, TRUE);
+				gtk_widget_set_sensitive(start_button, TRUE);
+				gtk_widget_set_sensitive(details_button, TRUE);
+
+			}
+		}
+	}
+}
+
+
 void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
@@ -712,8 +805,8 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *disk_path;
 	int file_status;
 	char* basedisk_path = NULL;
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model (GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -729,7 +822,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 		gboolean bResult = show_ok_cancel_message("Warning", "This target will be reset, Are you sure to continue?");
 		if(bResult == FALSE)
 			return;
-		virtual_target_path = get_virtual_target_abs_path(target_name);
+		virtual_target_path = get_virtual_target_path(target_name);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		file_status = is_exist_file(info_file);
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
@@ -752,7 +845,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %s", 
 				get_root_path(), basedisk_path, disk_path);
 #else
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %s", 
+		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s", 
 				basedisk_path, disk_path);
 #endif
 		if(!run_cmd(cmd))
@@ -767,7 +860,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 		g_free(target_name);
 		free(basedisk_path);
 		free(disk_path);
-		show_message("INFO","Virtual target reset success!");
+		show_message("INFO","Success reset virtual target!");
 		return;
 	}
 
@@ -776,7 +869,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 
 void details_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
@@ -804,8 +897,8 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		return ;
 	}
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -815,7 +908,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 
-		virtual_target_path = get_virtual_target_abs_path(target_name);
+		virtual_target_path = get_virtual_target_path(target_name);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		info_file_status = is_exist_file(info_file);
 
@@ -917,18 +1010,149 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	show_message("Warning", "Target is not selected. Firstly select a target and press the button.");
 }
 
+int delete_group(char* target_list_filepath, char* target_name, int type)
+{
+	GKeyFile *keyfile;
+	GError *error = NULL;
+	gchar **target_list = NULL;
+	int list_num;
+	int i;
+	char *cmd = NULL;
+	char *virtual_target_path = NULL;
+	char *group_baseimage_path = NULL;
+	char *arch = getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "Architecture setting failed.");
+		return -1;
+	}
+	char *default_sub_version = g_strdup_printf("default%s",MINOR_VERSION);
+
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
+		ERR( "loading key file form %s is failed.\n", target_list_filepath);
+		return -1;
+	}
+
+	if(g_key_file_has_group(keyfile, target_name) == FALSE)
+		return 1;
+	else // target_name is a group name
+	{
+		target_list = get_virtual_target_list(target_list_filepath, target_name, &list_num);
+	
+		gboolean bResult = show_ok_cancel_message("Warning", "All targets under this group will be removed, Are you sure to continue?");
+		if(bResult == FALSE)
+			return -1;
+		
+		if(!target_list)
+			goto DEL_GROUP;
+
+		for(i = 0; i < list_num; i++)
+		{
+			if(check_shdmem(target_list[i], DELETE_MODE) == -1)
+				return -1;
+		}
+
+		for(i = 0; i < list_num; i++)
+		{
+			virtual_target_path = get_virtual_target_path(target_list[i]);
+			if((strcmp(target_name, MAJOR_VERSION) != 0) && 
+					strcmp(target_list[i], default_sub_version) != 0)
+			{
+#ifdef _WIN32
+				char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
+				cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
+				if (system(cmd)	== -1)
+				{
+					g_free(cmd);
+					g_free(virtual_target_path);
+					free(default_sub_version);
+					TRACE( "Failed to delete target name: %s", target_list[i]);
+					show_message("Failed to delete target name: %s", target_list[i]);
+					return -1;
+				}
+#else
+				cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
+				if(!run_cmd(cmd))
+				{
+					g_free(cmd);
+					g_free(virtual_target_path);
+					free(default_sub_version);
+					TRACE( "Failed to delete target name: %s", target_list[i]);
+					show_message("Failed to delete target name: %s", target_list[i]);
+					return -1;
+				}
+#endif
+				del_config_key(target_list_filepath, target_name, target_list[i]);
+				g_free(cmd);
+				g_free(virtual_target_path);
+#ifdef _WIN32
+				g_free(virtual_target_win_path);
+#endif
+			}
+			else
+				show_message("INFO", "Can not delete the latest default target of the latest group.\n"
+						"The others are deleting");
+
+			free(default_sub_version);
+			g_strfreev(target_list);
+		}
+
+DEL_GROUP:	
+		//do not delete base image of MAJOR_VERSION
+		if(strcmp(target_name, MAJOR_VERSION) != 0)
+		{
+			INFO( "delete group name : %s\n", target_name);
+			del_config_group(target_list_filepath, target_name);
+		
+			INFO( "delete group base image : %s\n", target_name);
+			group_baseimage_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_path(), target_name, arch);
+			
+			if(g_remove(group_baseimage_path) == -1)
+				INFO( "fail deleting %s\n", group_baseimage_path);
+			else
+				INFO( "success deleting %s\n", group_baseimage_path);
+		}
+		else
+		{
+			show_message("INFO", "Can not delete the latest version.");
+			refresh_clicked_cb(arch);
+			free(group_baseimage_path);
+			g_key_file_free(keyfile);
+			return 0;
+		}
+		
+		refresh_clicked_cb(arch);
+		free(group_baseimage_path);
+		g_key_file_free(keyfile);
+	}
+
+	show_message("INFO","Success deleting group!");
+	return 0;
+}
+
 void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 {
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkTreeModel *model;
 	GtkTreeIter  iter;
 	char *target_name;
+	char *group_name;
 	char *cmd = NULL;
 	char *virtual_target_path;
 	int target_list_status;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW (list)));
-	model = gtk_tree_view_get_model (GTK_TREE_VIEW (list));
+	target_list_filepath = get_targetlist_filepath();
+	target_list_status = is_exist_file(target_list_filepath);
+	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
+	{
+		INFO( "target info file not exists : %s\n", target_list_filepath);
+		return;
+	}
+	
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	model = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
@@ -937,20 +1161,19 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-		if(strcmp(target_name,"default") == 0)
-		{
-			show_message("Warning","You can not delete default target.");
-			return;
-		}
 
-		if(check_shdmem(target_name, DELETE_MODE)== -1)
+		//check if selection is group name or target name	
+		if(delete_group(target_list_filepath, target_name, DELETE_GROUP_MODE) <= 0)
+			return;
+
+		if(check_shdmem(target_name, DELETE_MODE) == -1)
 			return;
 
 		gboolean bResult = show_ok_cancel_message("Warning", "This target will be removed, Are you sure to continue?");
 		if(bResult == FALSE)
 			return;
 
-		virtual_target_path = get_virtual_target_abs_path(target_name);
+		virtual_target_path = get_virtual_target_path(target_name);
 
 #ifdef _WIN32
 		char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
@@ -974,34 +1197,43 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			return;
 		}
 #endif
-		target_list_filepath = get_targetlist_abs_filepath();
-		target_list_status = is_exist_file(target_list_filepath);
+		//find group of target_name and delete the target_name
+		group_name = get_group_name(target_list_filepath, target_name);
+		if(!group_name)
+		{
+			ERR( "%s is not under any group in targetlist.ini\n", target_name);
+			return;
+		}
+		
+		del_config_key(target_list_filepath, group_name, target_name);
 
-		del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
+		g_free(group_name);
 		g_free(cmd);
 		g_free(virtual_target_path);
 #ifdef _WIN32
 		g_free(virtual_target_win_path);
 #endif
-		gtk_list_store_remove(store, &iter);
+		gtk_tree_store_remove(store, &iter);
 		g_free(target_name);
-		show_message("INFO","Virtual target deletion success!");
+		show_message("INFO","Success deleting virtual target!");
 		return;
 	}
-
 	show_message("Warning", "Target is not selected. Firstly select a target and delete.");
 }
 
 void refresh_clicked_cb(char *arch)
 {
-	GtkListStore *store;
-	GtkTreeIter iter;
+	GtkTreeStore *store;
+	GtkTreeIter iter, child;
 	int i;
-	int num = 0;
+	int list_num = 0;
+	int group_num = 0;
+	gchar **target_groups = NULL;
 	gchar **target_list = NULL;
 	char *virtual_target_path;
 	char *info_file;
 	char *resolution = NULL;
+	char *minor_version = NULL;
 	char *buf;
 	char *vms_path = NULL;
 	gchar *ram_size = NULL;
@@ -1009,143 +1241,210 @@ void refresh_clicked_cb(char *arch)
 	gchar *local_target_list_filepath;
 	GtkTreePath *first_col_path = NULL;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
-	local_target_list_filepath = get_targetlist_abs_filepath();
+	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
+	local_target_list_filepath = get_targetlist_filepath();
 
 	//check VMs path
-	vms_path = (char*)get_vms_abs_path();
+	vms_path = (char*)get_tizen_vms_path();
 	if (g_file_test(vms_path, G_FILE_TEST_EXISTS) == FALSE) {
-		show_message("Error","VMs directory does not exist, Check if EMULATOR_IMAGE installed.");
+		char *message = g_strdup_printf("VMs directory does not exist."
+				" Check if EMULATOR_IMAGE installed.\n\n"
+				"   - [%s]", vms_path);
+		show_message("Error", message);
+		free(message);
 		free(vms_path);
 		exit(0);
 	}
 	else
 		free(vms_path);
 	
-	target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
-	if(!target_list)
+	target_groups = get_virtual_target_groups(local_target_list_filepath, &group_num);
+	gtk_tree_store_clear(store);
+	group_num -= 1;
+	//search group name order in reverse.
+	for( ; group_num >= 0; group_num--)
 	{
-		show_message("Warning","There is no available target.");
-		return ; 
-	}
-
-	gtk_list_store_clear(store);
-
-	for(i = 0; i < num; i++)
-	{
+		target_list = get_virtual_target_list(local_target_list_filepath, target_groups[group_num], &list_num);
 		if(!target_list)
 		{
-			show_message("Warning","There is no available target.");
-			return ; 
+			if(strcmp(target_groups[group_num], "Custom") != 0)
+			{
+				INFO( "delete group name : %s\n", target_groups[group_num]);
+				del_config_group(local_target_list_filepath, target_groups[group_num]);	
+			}
+			continue ; 
 		}
-		gtk_list_store_append(store, &iter);
-		
-		virtual_target_path = get_virtual_target_abs_path(target_list[i]);
-		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-		info_file_status = is_exist_file(info_file);
+		gtk_tree_store_append(store, &iter, NULL);
+		gtk_tree_store_set(store, &iter, 
+				TARGET_NAME, target_groups[group_num], RESOLUTION, "", RAM_SIZE, "", MINOR, "", -1);
 
-		//if targetlist exist but config file not exists
-		if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+		for(i = 0; i < list_num; i++)
 		{
-			INFO( "target info file not exists : %s\n", target_list[i]);
-			del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_list[i]);
-			target_list = get_virtual_target_list(local_target_list_filepath, TARGET_LIST_GROUP, &num);
-			gtk_list_store_remove(store, &iter);
-			i -= 1;
-			continue;
+			gtk_tree_store_append(store, &child, &iter);
+		
+			virtual_target_path = get_virtual_target_path(target_list[i]);
+			info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+			info_file_status = is_exist_file(info_file);
+			//if targetlist exist but config file not exists
+			if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
+			{
+				INFO( "target info file not exists : %s\n", target_list[i]);
+				del_config_key(local_target_list_filepath, target_groups[group_num], target_list[i]);
+				target_list = get_virtual_target_list(local_target_list_filepath, target_groups[group_num], &list_num);
+				gtk_tree_store_remove(store, &child);
+				i -= 1;
+				continue;
+			}
+
+			buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
+			ram_size = g_strdup_printf("%sMB", buf); 
+			resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
+			minor_version = get_config_value(info_file, COMMON_GROUP, MINOR_VERSION_KEY);
+			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, MINOR, minor_version, -1);
+
+			g_free(buf);
+
+			g_free(ram_size);
+			g_free(resolution);
+			g_free(minor_version);
+			g_free(virtual_target_path);
+			g_free(info_file);
 		}
-
-		buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
-		ram_size = g_strdup_printf("%sMB", buf); 
-		resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-		gtk_list_store_set(store, &iter, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
-
-		g_free(buf);
-		g_free(ram_size);
-		g_free(resolution);
-		g_free(virtual_target_path);
-		g_free(info_file);
 	}
 	first_col_path = gtk_tree_path_new_from_indices(0, -1);
-	gtk_tree_view_set_cursor(GTK_TREE_VIEW(list), first_col_path, NULL, 0);
+	gtk_tree_view_set_cursor(GTK_TREE_VIEW(treeview), first_col_path, NULL, 0);
+  	gtk_tree_view_expand_all(GTK_TREE_VIEW(treeview));
 
 	g_free(local_target_list_filepath);
 	g_strfreev(target_list);
+	g_strfreev(target_groups);
 
 }
 
-void make_default_image(void)
+void make_default_image(char *default_targetname)
 {
 	char *cmd = NULL;
-	int info_file_status;
-	char *virtual_target_path = get_virtual_target_abs_path("default");
+	int file_status;
+	char *virtual_target_path = get_virtual_target_path(default_targetname);
 	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-	char *default_img_x86 = g_strdup_printf("%semulimg-default.x86", virtual_target_path);
-	//make x86 default image if it does not exist.
-	info_file_status = is_exist_file(default_img_x86);
-	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
-	{
-		INFO( "emulimg-default.x86 not exists. is making now.\n");
-		// create emulator image
-#ifdef _WIN32
-		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.x86 -f qcow2 %s",
-				get_bin_path(), get_arch_abs_path(), default_img_x86);
+	char *default_img;
+	char *arch;
+	char *default_dir;
+	char *default_path; 
+	char *log_dir;
+	char *conf_path;
+	char *targetlist;
+	char *base_img_path;
+	char *target_list_filepath;
+	GError *err;
+	GFile *file_conf_path;
+	GFile *file_default_path;
+	int i,j;
+#ifdef __arm__
+	j = 2;
 #else
-		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.x86 -f qcow2 %s",
-				get_arch_abs_path(), default_img_x86);
+	j = 1;
 #endif
-		if(!run_cmd(cmd))
+
+	for(i=0; i < j; i++)
+	{
+		if(i == 0)
+			g_setenv("EMULATOR_ARCH", "x86", 1);
+		else
+			g_setenv("EMULATOR_ARCH", "arm", 1);
+			
+		arch = (char*)g_getenv("EMULATOR_ARCH");
+		target_list_filepath = get_targetlist_filepath();
+		file_status = is_exist_file(target_list_filepath);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
-			g_free(cmd);
-			ERR("Error", "emulator image creation failed!");
+			ERR( "load target list file error\n");
+			show_message("Err", "load target list file error!");
 			return;
 		}
+		default_img = g_strdup_printf("%semulimg-default%s.%s", virtual_target_path, MINOR_VERSION, arch);
+		default_dir = g_strdup_printf("%s/%s", get_tizen_vms_path(), default_targetname);
+		default_path = g_strdup_printf("%s/config.ini", default_dir);
+		log_dir = get_virtual_target_log_path(default_targetname);
+		conf_path = g_strdup_printf("%s/config.ini", get_conf_path());
+		targetlist = get_targetlist_filepath();
+		file_conf_path = g_file_new_for_path(conf_path);
+		file_default_path = g_file_new_for_path(default_path);
+		//make default image if it does not exist.
+		file_status = is_exist_file(default_img);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			file_status = 0;
+			INFO( "%s default image does not exists. is making now.\n", arch);
+			if(access(default_dir, R_OK) != 0)
+				g_mkdir(default_dir, 0755);
+			if(access(log_dir, R_OK) != 0)
+				g_mkdir(log_dir, 0755);
+			//copy config.ini
+			if(!g_file_copy(file_conf_path, file_default_path, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)){
+				ERR("fail to copy config.ini: %s\n", err->message);
+				g_error_free(err);
+				g_free(conf_path);
+				break;
+			}
+			//find base image	
+			base_img_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_path(), MAJOR_VERSION, arch);
+			file_status = is_exist_file(base_img_path);
+			if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+			{
+				ERR( "file not exist: %s", base_img_path);
+				char *message = g_strdup_printf("File does not exist.\n\n"
+						"   -[%s]", base_img_path);
+				show_message("Error", message);
+				free(message);
+				free(base_img_path);
+				break;
+			}
+		// create emulator image
+#ifdef _WIN32
+			cmd = g_strdup_printf("%s/qemu-img.exe create -b %s -f qcow2 %s",
+					get_bin_path(), base_img_path, default_img);
+#else
+			cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s",
+					base_img_path, default_img);
+#endif
+			if(!run_cmd(cmd))
+			{
+				free(cmd);
+				ERR("default %s image creation failed!\n", arch);
+				show_message("Error", "default image creation failed!");
+				free(default_dir);
+				free(default_path);
+				free(log_dir);
+				free(conf_path);
+				free(targetlist);
+				free(base_img_path);
+				break;
+			}
 
-		INFO( "emulimg-default.x86 creation succeeded!\n");
-		g_free(cmd);
-
-	}
-	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_x86);
-	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
+			INFO( "%s default image creation succeeded!\n", arch);
+			// check main(latest) version
+			version_init(default_targetname, target_list_filepath);
 	
-#ifdef _ARM	
-	//make arm default image if it does not exist.
-	g_setenv("EMULATOR_ARCH","arm",1);
-	virtual_target_path = get_virtual_target_abs_path("default");
-	char *default_img_arm = g_strdup_printf("%semulimg-default.arm", virtual_target_path);
-	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+			free(cmd);
+			free(default_dir);
+			free(default_path);
+			free(log_dir);
+			free(conf_path);
+			free(targetlist);
+			free(base_img_path);
+	
+			set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_path());
+			set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
+			set_config_value(info_file, COMMON_GROUP, MAJOR_VERSION_KEY, MAJOR_VERSION);
+			set_config_value(info_file, COMMON_GROUP, MINOR_VERSION_KEY, MINOR_VERSION);
 
-	info_file_status = is_exist_file(default_img_arm);
-	if(info_file_status == -1 || info_file_status == FILE_NOT_EXISTS)
-	{
-		INFO( "emulimg-default.arm not exists. is making now.\n");
-		// create emulator image
-#ifdef _WIN32
-		cmd = g_strdup_printf("%s/qemu-img.exe create -b %s/emulimg.arm -f qcow2 %s",
-				get_bin_path(), get_arch_abs_path(), default_img_arm);
-#else
-		cmd = g_strdup_printf("qemu-img create -b %s/emulimg.arm -f qcow2 %s",
-				get_arch_abs_path(), default_img_arm);
-#endif
-		if(!run_cmd(cmd))
-		{
-			g_free(cmd);
-			ERR("Error", "emulator image creation failed!");
-			return;
 		}
-
-		INFO( "emulimg-default.arm creation succeeded!\n");
-		g_free(cmd);
-
+		free(default_img);
 	}
-	set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img_arm);
-	set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_abs_path());
-	g_setenv("EMULATOR_ARCH","x86",1);
 
-	free(default_img_arm);
-#endif
-	free(default_img_x86);
-}	
+	g_setenv("EMULATOR_ARCH", "x86", 1);
+}
 
 gboolean run_cmd(char *cmd)
 {
@@ -1202,8 +1501,10 @@ int create_config_file(gchar* filepath)
 
 	if (fp != NULL) {
 		g_fprintf (fp, "[%s]\n", COMMON_GROUP);
-		g_fprintf (fp, "%s=0\n",ALWAYS_ON_TOP_KEY);
-
+		g_fprintf (fp, "%s=0\n", ALWAYS_ON_TOP_KEY);
+		g_fprintf (fp, "%s=\n", MAJOR_VERSION_KEY);
+		g_fprintf (fp, "%s=\n", MINOR_VERSION_KEY);
+		
 		g_fprintf (fp, "\n[%s]\n", EMULATOR_GROUP);
 		g_fprintf (fp, "%s=100\n", MAIN_X_KEY);
 		g_fprintf (fp, "%s=100\n", MAIN_Y_KEY);
@@ -1272,6 +1573,8 @@ int write_config_file(gchar *filepath)
 	//	set_config_value(filepath, QEMU_GROUP, SNAPSHOT_SAVED_DATE_KEY, pconfiguration->qemu_configuration.snapshot_saved_date);
 
 
+	set_config_value(filepath, COMMON_GROUP, MAJOR_VERSION_KEY, virtual_target_info.major_version);
+	set_config_value(filepath, COMMON_GROUP, MINOR_VERSION_KEY, virtual_target_info.minor_version);
 	set_config_value(filepath, HARDWARE_GROUP, RESOLUTION_KEY, virtual_target_info.resolution);
 	set_config_type(filepath, HARDWARE_GROUP, SDCARD_TYPE_KEY, virtual_target_info.sdcard_type);
 	set_config_value(filepath, HARDWARE_GROUP, SDCARD_PATH_KEY, virtual_target_info.sdcard_path);
@@ -1287,19 +1590,25 @@ int write_config_file(gchar *filepath)
 
 int name_collision_check(void)
 {
-	int i;
-	int num = 0;
+	int i,j;
+	int list_num = 0;
+	int group_num = 0;
 	gchar **target_list = NULL;
-
-	target_list = get_virtual_target_list(target_list_filepath, TARGET_LIST_GROUP, &num);
-
-	for(i = 0; i < num; i++)
+	gchar **target_groups = NULL;
+	target_list_filepath = get_targetlist_filepath();
+	
+	target_groups = get_virtual_target_groups(target_list_filepath, &group_num);
+	for(i = 0; i < group_num; i++)
 	{
-		if(strcmp(target_list[i], virtual_target_info.virtual_target_name) == 0)
+		target_list = get_virtual_target_list(target_list_filepath, target_groups[i], &list_num);
+		for(j = 0; j < list_num; j++)
+		{
+			if(strcmp(target_list[j], virtual_target_info.virtual_target_name) == 0)
 			return 1;
+		}
 	}
-
 	g_strfreev(target_list);	
+	g_strfreev(target_groups);	
 	return 0;
 }
 
@@ -1307,38 +1616,52 @@ void exit_vtm(void)
 {
 	INFO( "virtual target manager exit \n");
 	window_hash_destroy();
+	g_object_unref(G_OBJECT(g_builder));
+#ifndef _WIN32
+	flock(g_fd, LOCK_UN);
+	close(g_fd);
+#else
+	CloseHandle(g_hFile);
+#endif
 	gtk_main_quit();
+
 }
 
-GtkWidget *setup_list(void)
+GtkWidget *setup_tree_view(void)
 {
 	GtkWidget *sc_win;
-	GtkListStore *store;
+	GtkTreeStore *store;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 
 	sc_win = gtk_scrolled_window_new(NULL, NULL);
-	store = gtk_list_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-	list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	store = gtk_tree_store_new(N_COL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 	cell = gtk_cell_renderer_text_new();
 
 	//set text alignment 
 	column = gtk_tree_view_column_new_with_attributes("Target Name", cell, "text", TARGET_NAME, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_min_width(column,130);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("RAM Size", cell, "text", RAM_SIZE, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_min_width(column,100);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
 	column = gtk_tree_view_column_new_with_attributes("Resolution", cell, "text", RESOLUTION, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_max_width(column,60);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+	
+//	column = gtk_tree_view_column_new_with_attributes("Minor Version", cell, "text", MINOR, NULL);
+//	gtk_tree_view_column_set_alignment(column,0.0);
+//	gtk_tree_view_column_set_max_width(column,60);
+//	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sc_win), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_container_add(GTK_CONTAINER(sc_win), list);
+	gtk_container_add(GTK_CONTAINER(sc_win), treeview);
 	g_object_unref( G_OBJECT(store));
 
 	return sc_win;
@@ -1454,12 +1777,43 @@ void set_disk_default_active_cb(void)
 	if(active == TRUE)
 	{
 		virtual_target_info.disk_type = 0;
-		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
+		snprintf(virtual_target_info.major_version, MAXBUF, "%s", MAJOR_VERSION);
+		snprintf(virtual_target_info.minor_version, MAXBUF, "%s", MINOR_VERSION);
+		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
 	}
 	else
 		virtual_target_info.disk_type = 1;
 }
+
+void set_default_image(char *target_name)
+{
+	gboolean active = FALSE;
+	char *virtual_target_path;
+	char *conf_path;
+
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton12");
+	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(default_radiobutton));
+
+	if(active == TRUE)
+	{
+		virtual_target_info.disk_type = 0;
+		virtual_target_path = get_virtual_target_path(target_name);
+		conf_path = g_strdup_printf("%sconfig.ini", virtual_target_path);
+		snprintf(virtual_target_info.major_version, MAXBUF, "%s", get_config_value(conf_path, COMMON_GROUP, MAJOR_VERSION_KEY));
+		snprintf(virtual_target_info.minor_version, MAXBUF, "%s", get_config_value(conf_path, COMMON_GROUP, MINOR_VERSION_KEY));
+		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
+		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
+		INFO( "major version : %s\n", virtual_target_info.major_version);
+		INFO( "minor version : %s\n", virtual_target_info.minor_version);
+
+		free(virtual_target_path);
+		free(conf_path);
+	}
+	else
+		virtual_target_info.disk_type = 1;
+}
+
 
 void set_sdcard_none_active_cb(void)
 {
@@ -1479,6 +1833,10 @@ void disk_file_select_cb(void)
 	GtkWidget *sdcard_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 
 	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser2));
+	
+	snprintf(virtual_target_info.major_version, MAXBUF, "Custom");
+	snprintf(virtual_target_info.minor_version, MAXBUF, "None");
+	INFO( "major version : %s, minor version: %s\n", virtual_target_info.major_version, virtual_target_info.minor_version);
 #ifdef _WIN32
 	snprintf(virtual_target_info.basedisk_path, MAXBUF, change_path_to_slash(path));
 #else
@@ -1516,51 +1874,29 @@ void ram_select_cb(void)
 	g_free(size);
 }
 
-void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
+int set_modify_variable(char *target_name)
 {
-	GtkWidget *win = get_window(VTM_CREATE_ID);
-	char *target_name = (char*)data;
-	char *dest_path = NULL;
-	char *conf_file = NULL;
-	const gchar *name = NULL;
-	char *cmd = NULL;
-	char *cmd2 = NULL;
-	char *dst;
-	char *vms_path = NULL;
-	char *sdcard_name = NULL;
-	int file_status;	
-	//find arch name
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
-	if(arch == NULL)
-	{
-		ERR( "architecture setting failed\n");
-		show_message("Error", "architecture setting failed.");
-		return ;
-	}
-
-	GtkWidget *name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
-	name = gtk_entry_get_text(GTK_ENTRY(name_entry));
-	char *virtual_target_path = get_virtual_target_abs_path((gchar*)name);
-	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
-
-
 	ram_select_cb();
 	resolution_select_cb();
 	buttontype_select_cb();
 
 	if(virtual_target_info.disk_type == 0)
-		set_disk_default_active_cb();
+		set_default_image(target_name);
 	else if(virtual_target_info.disk_type == 1)
 		disk_file_select_cb();
 	else
 	{
 		WARN( "disk type is wrong");
 		show_message("Warning", "Disk type is wrong.");
-		return;
+		return -1;
 	}
+	return 0;
+}
 
-	set_config_type(info_file, HARDWARE_GROUP, RAM_SIZE_KEY, virtual_target_info.ram_size);
-
+int check_modify_target_name(char *name)
+{
+	char *dst;
+		
 	//	name character validation check
 	dst =  malloc(VT_NAME_MAXBUF);
 	escapeStr(name, dst);
@@ -1569,7 +1905,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 		WARN( "virtual target name only allowed numbers, a-z, A-Z, -_");
 		show_message("Warning", "Virtual target name is not correct! \n (only allowed numbers, a-z, A-Z, -_)");
 		free(dst);
-		return;
+		return -1;
 	}
 	free(dst);
 
@@ -1578,28 +1914,34 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	{
 		WARN( "Specify name of the virtual target!");
 		show_message("Warning", "Specify name of the virtual target!");
-		return;
+		return -1;
 	}
 	else
 	{
 		snprintf(virtual_target_info.virtual_target_name, MAXBUF, "%s", name);
 	}
+	return 0;
 
-	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-	INFO( "virtual_target_path: %s\n", dest_path);
+}
+
+int change_modify_target_name(char *arch, char *dest_path, char *name, char* target_name)
+{
+	char *vms_path = NULL;
 
 	// if try to change the target name
 	if(strcmp(name, target_name) != 0)
 	{
-		vms_path = (char*)get_vms_abs_path();
+		vms_path = (char*)get_tizen_vms_path();
 		if(name_collision_check() == 1)
 		{
 			WARN( "Virtual target with the same name exists! Choose another name.");
 			show_message("Warning", "Virtual target with the same name exists! Choose another name.");
-			return;
+			return -1;
 		}
 		//start name changing procesure
 #ifndef _WIN32
+		char *cmd = NULL;
+		char *cmd2 = NULL;
 		cmd = g_strdup_printf("mv %s/%s %s/%s", 
 				vms_path, target_name, vms_path, name);
 		cmd2 = g_strdup_printf("mv %s/%s/emulimg-%s.%s %s/%s/emulimg-%s.%s", 
@@ -1611,7 +1953,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(cmd);
 			g_free(dest_path);
 			show_message("Error", "Fail to change the target name!");
-			return;
+			return -1;
 		}
 		g_free(cmd);
 
@@ -1622,7 +1964,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(cmd2);
 			g_free(dest_path);
 			show_message("Error", "Fail to change the target name!");
-			return;
+			return -1;
 		}
 		g_free(cmd2);
 
@@ -1647,7 +1989,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(src_path_for_win);
 			g_free(dst_path_for_win);
 			show_message("Error", "Fail to change the target name!");
-			return ;
+			return -1;
 		}
 		g_free(src_path_for_win);
 		g_free(dst_path_for_win);
@@ -1657,26 +1999,76 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(src_img_path_for_win);
 			g_free(dst_img_path_for_win);
 			show_message("Error", "Fail to change the target name!");
-			return ;
+			return -1;
 		}
 		g_free(src_img_path_for_win);
 		g_free(dst_img_path_for_win);
 #endif
 		g_free(vms_path);
 	} // end chage name precedure
+	
+	return 0;
+}
 
-	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
+int modify_sdcard(char *arch, char *dest_path)
+{
+	char *sdcard_name = NULL;
+	int file_status;
+	// 0 : None
+	if(virtual_target_info.sdcard_type == 0)
+	{
+		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
+		INFO( "[sdcard_type:0]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+	}
+	// 1 : Create New Image
+	else if(virtual_target_info.sdcard_type == 1)
+	{
+		// sdcard create
+		sdcard_size_select_cb();
+#ifndef _WIN32
+		char *cmd = NULL;
+		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_path(), sdcard_create_size, dest_path);
 
-	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
-			"%s/%s/emulimg-%s.%s", get_vms_abs_path(), name, name, arch);
-	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
-	// 2 : select from existing image
-	if(virtual_target_info.sdcard_type == 2){
+		if(!run_cmd(cmd))
+		{
+			g_free(cmd);
+			g_free(dest_path);
+			show_message("Error", "SD Card img create failed!");
+			return -1;
+		}
+		g_free(cmd);
+#else
+		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_path(), sdcard_create_size);
+		char *dst_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", dest_path, sdcard_create_size);
+
+		gchar *src_dos_path = change_path_from_slash(src_sdcard_path);
+		gchar *dst_dos_path = change_path_from_slash(dst_sdcard_path);
+
+		g_free(src_sdcard_path);
+		g_free(dst_sdcard_path);
+
+		if(!CopyFileA(src_dos_path, dst_dos_path, FALSE))
+		{
+			g_free(dest_path);
+			g_free(src_dos_path);
+			g_free(dst_dos_path);
+			show_message("Error", "SD Card img create failed!");
+			return -1;
+		}
+		g_free(src_dos_path);
+		g_free(dst_dos_path);
+
+#endif
+		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%ssdcard_%d.img", dest_path, sdcard_create_size);
+		INFO( "[sdcard_type:1]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+	}
+	// 2 : Select From Existing Image
+	else if(virtual_target_info.sdcard_type == 2){
 		GtkWidget *sdcard_filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton1");
 		char *sdcard_uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(sdcard_filechooser));
-		if(sdcard_uri == NULL){
+		if(sdcard_uri == NULL || strcmp(virtual_target_info.sdcard_path, "") == 0){
 			show_message("Warning", "You didn't select an existing sdcard image!");
-			return;
+			return -1;
 		}
 		sdcard_file_select_cb();
 		file_status = is_exist_file(virtual_target_info.sdcard_path);
@@ -1686,50 +2078,185 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			sdcard_name = g_path_get_basename(virtual_target_info.sdcard_path);
 			memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
 			snprintf(virtual_target_info.sdcard_path, MAXBUF, "%s%s", dest_path, sdcard_name);
-			TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
+			INFO( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 			free(sdcard_name);
 		}
 	}
 	else
 	{
-		// target_name not changed
-		dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
-		snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
-				virtual_target_info.virtual_target_name, arch);
-		TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
+		INFO( "virtual_target_info.sdcard_type: %d\n", virtual_target_info.sdcard_type);
+		show_message("Warning", "SD card type is wrong!");
+		return -1;
 	}
 
+	return 0;
+}
+
+void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
+{
+	GtkWidget *win = get_window(VTM_CREATE_ID);
+	GtkWidget *name_entry;
+	char *target_name = (char*)data;
+	char *dest_path = NULL;
+	char *conf_file = NULL;
+	char *name = NULL;
+	//find arch name
+	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	if(arch == NULL)
+	{
+		ERR( "architecture setting failed\n");
+		show_message("Error", "architecture setting failed.");
+		return;
+	}
+	
+	if(set_modify_variable(target_name) == -1)
+		return;
+	
+	name_entry = (GtkWidget *)gtk_builder_get_object(g_create_builder, "entry1");
+	name = (char*)gtk_entry_get_text(GTK_ENTRY(name_entry));
+
+	if(check_modify_target_name(name) == -1)
+		return;
+	
+	dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
+	INFO( "virtual_target_path: %s\n", dest_path);
+
+	//work when try to change target name
+	if(change_modify_target_name(arch, dest_path, name, target_name) == -1)
+		return;
+
+	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
+
+	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
+			"%s/%s/emulimg-%s.%s", get_tizen_vms_path(), name, name, arch);
+	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
+	
+	if(modify_sdcard(arch, dest_path) == -1)
+		return;
+	
 	//delete original target name
-	target_list_filepath = get_targetlist_abs_filepath();
-	del_config_key(target_list_filepath, TARGET_LIST_GROUP, target_name);
+	target_list_filepath = get_targetlist_filepath();
+	del_config_key(target_list_filepath, virtual_target_info.major_version, target_name);
 	g_free(target_name);
 
 	if(access(dest_path, R_OK) != 0)
 		g_mkdir(dest_path, 0755);
 
+	// add virtual target name to targetlist.ini
+	set_config_value(target_list_filepath, virtual_target_info.major_version, 
+			virtual_target_info.virtual_target_name, "");
+	
+	// write config.ini
+	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
+	
+	//	create_config_file(conf_file);
+	snprintf(virtual_target_info.dpi, MAXBUF, "2070");
+	if(write_config_file(conf_file) == -1)
+	{
+		show_message("Error", "Virtual target modification failed!");
+		return;
+	}
+
+	show_message("INFO", "Success modifying virtual target!");
+
+	gtk_widget_destroy(win);
+
+	refresh_clicked_cb(arch);
+
+	g_object_unref(G_OBJECT(g_create_builder));
+
+	gtk_main_quit();
+
+	g_free(dest_path);
+	g_free(conf_file);
+
+	return;
+
+}
+int create_diskimg(char *arch, char *dest_path)
+{
+	int file_status;
+	char *cmd = NULL;
+
+	if(virtual_target_info.disk_type == 1){
+		disk_file_select_cb();
+		
+		file_status = is_exist_file(virtual_target_info.basedisk_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
+			char *message = g_strdup_printf("Base image does not exist.\n\n"
+					"   -[%s]", virtual_target_info.basedisk_path);
+			show_message("Error", message);
+			free(message);
+			return -1;
+		}
+#ifdef _WIN32
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#else
+		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#endif
+	}
+	else if(virtual_target_info.disk_type == 0)
+	{
+		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
+#ifdef _WIN32
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.%s -f qcow2 %semulimg-%s.%s", get_root_path(), get_arch_path(), arch,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#else
+		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
+				dest_path, virtual_target_info.virtual_target_name, arch);
+#endif
+	}
+	else
+	{
+		INFO("disk type : %d\n", virtual_target_info.disk_type);
+		show_message("Error","disk type is wrong");
+		return -1;
+	}
+	
+	if(!run_cmd(cmd))
+	{
+		g_free(cmd);
+		g_free(dest_path);
+		show_message("Error", "Emulator image create failed!");
+		return -1;
+	}
+	g_free(cmd);
+
+	// set diskimg_path
+	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
+			virtual_target_info.virtual_target_name, arch);
+	return 0;
+}
+
+
+int create_sdcard(char *dest_path)
+{
 	// sdcard
 	if(virtual_target_info.sdcard_type == 0)
 	{
 		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
-		TRACE( "[sdcard_type:0]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
 	else if(virtual_target_info.sdcard_type == 1)
 	{
 		// sdcard create
-		sdcard_size_select_cb();
 #ifndef _WIN32
-		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
+		char *cmd = NULL;
+		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_path(), sdcard_create_size, dest_path);
 
 		if(!run_cmd(cmd))
 		{
 			g_free(cmd);
 			g_free(dest_path);
 			show_message("Error", "SD Card img create failed!");
-			return;
+			return -1;
 		}
 		g_free(cmd);
 #else
-		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_abs_path(), sdcard_create_size);
+		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_path(), sdcard_create_size);
 		char *dst_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", dest_path, sdcard_create_size);
 
 		gchar *src_dos_path = change_path_from_slash(src_sdcard_path);
@@ -1744,57 +2271,28 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 			g_free(src_dos_path);
 			g_free(dst_dos_path);
 			show_message("Error", "SD Card img create failed!");
-			return;
+			return -1;
 		}
 		g_free(src_dos_path);
 		g_free(dst_dos_path);
 
 #endif
 		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%ssdcard_%d.img", dest_path, sdcard_create_size);
-		TRACE( "[sdcard_type:1]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
 	else if(virtual_target_info.sdcard_type == 2){
 		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
 			show_message("Warning", "You didn't select an existing sdcard image!");
-			return;
+			return -1;
 		}
-		TRACE( "[sdcard_type:2]virtual_target_info.sdcard_path: %s\n", virtual_target_info.sdcard_path);
 	}
-
-	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, TARGET_LIST_GROUP, virtual_target_info.virtual_target_name, "");
-	// write config.ini
-	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
-	//	create_config_file(conf_file);
-	snprintf(virtual_target_info.dpi, MAXBUF, "2070");
-	if(write_config_file(conf_file) == -1)
-	{
-		show_message("Error", "Virtual target modification failed!");
-		return ;
-	}
-
-	show_message("INFO", "Virtual target modification success!");
-
-	g_free(dest_path);
-	g_free(conf_file);
-
-	gtk_widget_destroy(win);
-	refresh_clicked_cb(arch);
-
-	g_object_unref(G_OBJECT(g_create_builder));
-
-	gtk_main_quit();
-	return;
-
-}
+	return 0;
+}	
 
 void ok_clicked_cb(void)
 {
-	char *cmd = NULL;
 	char *dest_path = NULL;
 	char *log_path = NULL;
 	char *conf_file = NULL;
-	int file_status;
 	GtkWidget *win = get_window(VTM_CREATE_ID);
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
 	if(arch == NULL)
@@ -1804,7 +2302,7 @@ void ok_clicked_cb(void)
 		return ;
 	}
 
-	dest_path = get_virtual_target_abs_path(virtual_target_info.virtual_target_name);
+	dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
 	if(access(dest_path, R_OK) != 0)
 		g_mkdir(dest_path, 0755);
 	
@@ -1812,118 +2310,14 @@ void ok_clicked_cb(void)
 	if(access(log_path, R_OK) != 0)
 		g_mkdir(log_path, 0755);
 	
-	//disk type
-	if(virtual_target_info.disk_type == 0)
-		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_abs_path());
-	else if(virtual_target_info.disk_type == 1){
-		disk_file_select_cb();
-		if(strlen((char*)virtual_target_info.basedisk_path) == 0){
-			show_message("Warning", "You didn't select an existing base image.");
-			return;
-		}
-	}
-	// sdcard
-	if(virtual_target_info.sdcard_type == 0)
-	{
-		memset(virtual_target_info.sdcard_path, 0x00, MAXBUF);
-	}
-	else if(virtual_target_info.sdcard_type == 1)
-	{
-		// sdcard create
-#ifndef _WIN32
-		cmd = g_strdup_printf("cp %s/sdcard_%d.img %s", get_data_abs_path(), sdcard_create_size, dest_path);
-
-		if(!run_cmd(cmd))
-		{
-			g_free(cmd);
-			g_free(dest_path);
-			show_message("Error", "SD Card img create failed!");
-			return;
-		}
-		g_free(cmd);
-#else
-		char *src_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", get_data_abs_path(), sdcard_create_size);
-		char *dst_sdcard_path = g_strdup_printf("%s/sdcard_%d.img", dest_path, sdcard_create_size);
-
-		gchar *src_dos_path = change_path_from_slash(src_sdcard_path);
-		gchar *dst_dos_path = change_path_from_slash(dst_sdcard_path);
-
-		g_free(src_sdcard_path);
-		g_free(dst_sdcard_path);
-
-		if(!CopyFileA(src_dos_path, dst_dos_path, FALSE))
-		{
-			g_free(dest_path);
-			g_free(src_dos_path);
-			g_free(dst_dos_path);
-			show_message("Error", "SD Card img create failed!");
-			return;
-		}
-		g_free(src_dos_path);
-		g_free(dst_dos_path);
-
-#endif
-
-		snprintf(virtual_target_info.sdcard_path, MAXBUF, "%ssdcard_%d.img", dest_path, sdcard_create_size);
-	}
-	else if(virtual_target_info.sdcard_type == 2){
-		if(strcmp(virtual_target_info.sdcard_path, "") == 0){
-			show_message("Warning", "You didn't select an existing sdcard image!");
-			return;
-		}
-	}
-	
-	// create emulator image
-#ifdef _WIN32
-	if(virtual_target_info.disk_type == 1){
-		file_status = is_exist_file(virtual_target_info.basedisk_path);
-		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
-		{
-			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Error", "Base image does not exist!");
-			return ;
-		}
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-	else
-	{
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.%s -f qcow2 %semulimg-%s.%s", get_root_path(), get_arch_abs_path(), arch,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-#else
-	if(virtual_target_info.disk_type == 1){
-		file_status = is_exist_file(virtual_target_info.basedisk_path);
-		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
-		{
-			ERR( "Base image does not exist : %s\n", virtual_target_info.basedisk_path);
-			show_message("Error", "Base image does not exist!");
-			return ;
-		}
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-	else
-	{
-		cmd = g_strdup_printf("qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
-				dest_path, virtual_target_info.virtual_target_name, arch);
-	}
-#endif
-	if(!run_cmd(cmd))
-	{
-		g_free(cmd);
-		g_free(dest_path);
-		show_message("Error", "Emulator image create failed!");
+	if(create_sdcard(dest_path) == -1)
 		return;
-	}
-	g_free(cmd);
 
-	// diskimg_path
-	snprintf(virtual_target_info.diskimg_path, MAXBUF, "%semulimg-%s.%s", dest_path, 
-			virtual_target_info.virtual_target_name, arch);
+	if(create_diskimg(arch, dest_path) == -1)
+		return;
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, TARGET_LIST_GROUP, virtual_target_info.virtual_target_name, "");
+	set_config_value(target_list_filepath, virtual_target_info.major_version, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
@@ -1933,7 +2327,7 @@ void ok_clicked_cb(void)
 		show_message("Error", "Virtual target creation failed!");
 		return ;
 	}
-	show_message("INFO", "Virtual target creation success!");
+	show_message("INFO", "Success creating virtual target!");
 
 	g_free(conf_file);
 	g_free(dest_path);
@@ -2193,7 +2587,6 @@ void setup_resolution_frame(void)
 
 }
 
-
 void setup_disk_frame(void)
 {
 	char *arch = (char*)g_getenv("EMULATOR_ARCH");
@@ -2340,7 +2733,7 @@ void show_create_window(void)
 void construct_main_window(void)
 {
 	GtkWidget *vbox;
-	GtkWidget *list_view;
+	GtkWidget *tree_view;
 	GtkTreeSelection *selection;
 	GtkWidget *create_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button1");
 	GtkWidget *delete_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button2");
@@ -2356,7 +2749,7 @@ void construct_main_window(void)
 
 	vbox = GTK_WIDGET(gtk_builder_get_object(g_builder, "vbox3"));
 
-	list_view = setup_list();
+	tree_view = setup_tree_view();
 	gtk_widget_grab_focus(start_button);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(x86_radiobutton), TRUE);
 
@@ -2364,8 +2757,9 @@ void construct_main_window(void)
 
 	g_signal_connect(GTK_RADIO_BUTTON(x86_radiobutton), "toggled", G_CALLBACK(arch_select_cb), x86_radiobutton);
 	g_signal_connect(GTK_RADIO_BUTTON(arm_radiobutton), "toggled", G_CALLBACK(arch_select_cb), arm_radiobutton);
-	gtk_box_pack_start(GTK_BOX(vbox), list_view, TRUE, TRUE, 0);
-	selection  = gtk_tree_view_get_selection(GTK_TREE_VIEW(list));
+	gtk_box_pack_start(GTK_BOX(vbox), tree_view, TRUE, TRUE, 0);
+	selection  = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+//  gtk_tree_selection_set_mode (selection, GTK_SELECTION_MULTIPLE);
 	// add shortcut to buttons
 	GtkAccelGroup *group;
 	group = gtk_accel_group_new();
@@ -2388,15 +2782,14 @@ void construct_main_window(void)
 	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), selection);
 	g_signal_connect(reset_button, "clicked", G_CALLBACK(reset_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
-
-	g_object_unref(G_OBJECT(g_builder));
+	g_signal_connect(treeview, "cursor-changed", G_CALLBACK(cursor_changed_cb), selection);
 
 	/* setup emulator architecture and path */
 	gtk_widget_show_all(g_main_window);
 
 
 }
-
+#ifdef	__linux__
 void set_mesa_lib(void)
 {
 	char *s_out = NULL;
@@ -2454,7 +2847,60 @@ void set_mesa_lib(void)
 	return ;
 
 }
+#endif
 
+void version_init(char *default_targetname, char* target_list_filepath)
+{
+	GKeyFile *keyfile;
+	int file_status;
+
+	keyfile = g_key_file_new();
+
+	file_status = is_exist_file(target_list_filepath);
+	if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+	{
+		show_message("File dose not exist", target_list_filepath);
+		return;
+	}
+
+	if(g_key_file_has_group(keyfile, MAJOR_VERSION) == FALSE)
+		set_config_value(target_list_filepath, MAJOR_VERSION, default_targetname, "");
+	
+	g_key_file_free(keyfile);
+	
+	return;
+}
+
+void lock_file(char *path)
+{
+#ifdef _WIN32
+	char *path_win = change_path_from_slash(path);
+	g_hFile = CreateFile(path_win, // open path
+				GENERIC_READ,             // open for reading
+				0,                        // do not share
+				NULL,                     // no security
+				OPEN_EXISTING,            // existing file only
+				FILE_ATTRIBUTE_NORMAL,    // normal file
+				NULL);
+	if(g_hFile == INVALID_HANDLE_VALUE)
+	{
+		show_message("Error", "Can not execute the emulator manager!\n"
+				"Another instance is already running.");
+		free(path_win);
+		exit(0);
+	}
+
+#else
+	g_fd = open(path, O_RDWR);
+	if(flock(g_fd, LOCK_EX|LOCK_NB) == -1)
+	{
+		show_message("Error", "Can not execute the emulator manager!\n"
+				"Another instance is already running.");
+		exit(0);
+	}
+#endif
+
+}
 
 int main(int argc, char** argv)
 {
@@ -2491,12 +2937,14 @@ int main(int argc, char** argv)
 
 	gtk_builder_add_from_file(g_builder, full_glade_path, NULL);
 
+	lock_file(full_glade_path);
+	
 	window_hash_init();
 
 	construct_main_window();
 
-	init_setenv();
-
+	env_init();
+	
 	gtk_main();
 
 	free(target_list_filepath);

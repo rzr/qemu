@@ -673,7 +673,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *details = NULL;
 
 	target_name = (char*)data;
-	virtual_target_path = get_virtual_target_abs_path(target_name);
+	virtual_target_path = get_virtual_target_path(target_name);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	info_file_status = is_exist_file(info_file);
 	//if targetlist exist but config file not exists
