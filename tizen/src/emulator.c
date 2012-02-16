@@ -485,6 +485,23 @@ void exit_emulator(void)
 
 }
 
+#ifdef _WIN32
+static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+    RECT *pHostScreen;
+    MONITORINFO mi;
+    mi.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfo(hMonitor, &mi);
+
+    pHostScreen = (RECT *)dwData;
+    pHostScreen->left = MIN(lprcMonitor->left, pHostScreen->left);
+    pHostScreen->top = MIN(lprcMonitor->top, pHostScreen->top);
+    pHostScreen->right = MAX(lprcMonitor->right, pHostScreen->right);
+    pHostScreen->bottom = MAX(lprcMonitor->bottom,pHostScreen->bottom);
+
+    return TRUE;
+}
+#endif
 
 static void construct_main_window(void)
 {
@@ -521,11 +538,11 @@ static void construct_main_window(void)
 	OSVERSIONINFO osvi;
 	ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
 	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    GetVersionEx(&osvi);
+	GetVersionEx(&osvi);
 
-    if((osvi.dwMajorVersion >= 6) && (osvi.dwMinorVersion >= 1))
-        sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
-    else 
+	if ((osvi.dwMajorVersion >= 6) && (osvi.dwMinorVersion >= 1))
+		sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+	else
 		sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
 		
 #else /* _WIN32 */
@@ -585,13 +602,67 @@ static void construct_main_window(void)
 #endif
 
 	/* 6. emulator start position */
-	gtk_window_move (GTK_WINDOW (g_main_window), configuration.main_x, configuration.main_y);
-	//UISTATE.scale = PHONE.mode[0].lcd_list[0].lcd_region.s;
 	UISTATE.scale = ((float)get_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, SCALE_KEY)) / 100;
-        if (UISTATE.scale <= 0 || UISTATE.scale > 1.0) {
+	if (UISTATE.scale <= 0 || UISTATE.scale > 1.0) {
 		UISTATE.scale = 1.0;
 	}
 	TRACE("scale = %f\n", UISTATE.scale);
+
+#ifdef _WIN32
+    RECT host_screen;
+    int emulator_w, emulator_h;
+    int range;
+
+    emulator_w = emulator_h = 0;
+    ZeroMemory(&host_screen, sizeof(RECT));
+    EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&host_screen);
+
+    if (host_screen.left < 0) {
+        int shift = host_screen.left * -1;
+        host_screen.left += shift;
+        host_screen.right += shift;
+    }
+    if (host_screen.top < 0) {
+        int shift = host_screen.top * -1;
+        host_screen.top += shift;
+        host_screen.bottom += shift;
+    }
+
+    emulator_w = PHONE.mode_SkinImg[UISTATE.current_mode].nImgWidth * UISTATE.scale;
+    emulator_h = PHONE.mode_SkinImg[UISTATE.current_mode].nImgHeight * UISTATE.scale;
+
+    // position correction of x
+    range = host_screen.left - emulator_w;
+    if (configuration.main_x <= range)
+    {
+        INFO("configuration.main_x=%d is out of monitor range. (%d ~ %d)\n",
+                configuration.main_x, range, host_screen.right);
+        configuration.main_x = host_screen.left;
+    }
+    else if (configuration.main_x >= host_screen.right)
+    {
+        INFO("configuration.main_x=%d is out of monitor range. (%d ~ %d)\n",
+                configuration.main_x, range, host_screen.right);
+        configuration.main_x = host_screen.right - emulator_w;
+    }
+
+    // position correction of y
+    range = host_screen.top - emulator_h;
+    if (configuration.main_y <= range)
+    {
+        INFO("configuration.main_y=%d is out of monitor range. (%d ~ %d)\n",
+                configuration.main_x, range, host_screen.bottom);
+        configuration.main_y = host_screen.top;
+    }
+    else if (configuration.main_y >= host_screen.bottom)
+    {
+        INFO("configuration.main_y=%d is out of monitor range. (%d ~ %d)\n",
+                configuration.main_x, range, host_screen.bottom);
+        configuration.main_y = host_screen.bottom - emulator_h;
+    }
+#endif
+
+	gtk_window_move (GTK_WINDOW (g_main_window), configuration.main_x, configuration.main_y);
 
 	/* 7. create popup menu */
 	create_popup_menu (&popup_menu, &PHONE, &configuration);
@@ -607,7 +678,6 @@ static void construct_main_window(void)
 	g_signal_connect (G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_emulator), NULL);
 	g_signal_connect (G_OBJECT(g_main_window), "configure_event", G_CALLBACK(configure_event), NULL);
 
-	//g_object_set (g_main_window, "has-tooltip", TRUE, NULL);
 	gtk_widget_set_has_tooltip(g_main_window, TRUE);
 	g_signal_connect (G_OBJECT(g_main_window), "query-tooltip", G_CALLBACK(query_tooltip_event), NULL);
 

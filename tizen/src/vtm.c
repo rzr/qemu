@@ -1201,13 +1201,18 @@ int create_config_file(gchar* filepath)
 	FILE *fp = g_fopen(filepath, "w+");
 
 	if (fp != NULL) {
+		gint x, y;
+		GtkWidget *win = get_window(VTM_CREATE_ID);
+		gtk_window_get_position(GTK_WINDOW(win), &x, &y);
+
 		g_fprintf (fp, "[%s]\n", COMMON_GROUP);
 		g_fprintf (fp, "%s=0\n",ALWAYS_ON_TOP_KEY);
 
 		g_fprintf (fp, "\n[%s]\n", EMULATOR_GROUP);
-		g_fprintf (fp, "%s=100\n", MAIN_X_KEY);
-		g_fprintf (fp, "%s=100\n", MAIN_Y_KEY);
-                g_fprintf (fp, "%s=50\n", SCALE_KEY);
+		g_fprintf (fp, "%s=%d\n", MAIN_X_KEY, x);
+		g_fprintf (fp, "%s=%d\n", MAIN_Y_KEY, y);
+		g_fprintf (fp, "%s=50\n", SCALE_KEY);
+		g_fprintf (fp, "%s=1\n", ENABLE_SHELL_KEY);
 
 		g_fprintf (fp, "\n[%s]\n", QEMU_GROUP);
 		g_fprintf (fp, "%s=\n", BINARY_KEY);
