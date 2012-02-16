@@ -101,6 +101,7 @@ gint qemu_widget_expose (GtkWidget *widget, GdkEventExpose *event);
 #define MAX_MULTI_TOUCH_CNT 2
 #define DEFAULT_FINGER_POINT_SIZE 32
 #define DEFAULT_FINGER_POINT_COLOR 0x7E0f0f0f
+#define DEFAULT_FINGER_POINT_COLOR_OUTLINE 0xDDDDDDDD
 
 typedef struct _finger_point {
 	int x; int y;
