@@ -525,6 +525,9 @@ static void construct_main_window(void)
 #else
 	GTK_WIDGET_SET_FLAGS(g_main_window, GTK_CAN_FOCUS);
 #endif
+	GdkColor color;
+	color.red = color.green = color.blue = 0x8888;
+	gtk_widget_modify_bg(GTK_WINDOW (g_main_window), GTK_STATE_NORMAL, &color);
 	gtk_window_set_decorated (GTK_WINDOW (g_main_window), FALSE);
 
 	/* 2.1 emulator taskbar icon image */
