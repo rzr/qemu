@@ -350,6 +350,7 @@ obj-i386-y += tizen-board.o
 obj-i386-y += tizen-ac97.o
 obj-i386-y += overlay.o
 obj-i386-y += brightness.o
+obj-i386-y += maru_touchscreen.o
 obj-i386-$(CONFIG_PCI) += svcamera_pci.o
 obj-i386-$(CONFIG_LINUX) += svcamera_linux.o
 obj-i386-$(CONFIG_WIN32) += svcamera_win32.o
