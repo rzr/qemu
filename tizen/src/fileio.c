@@ -251,43 +251,20 @@ const gchar *get_bin_path(void)
 	return bin_path;
 }
 
-/* get_arch_path = "x86" 
-* 	             = "arm" */
-const gchar *get_arch_path(void)
-{
-	static gchar *path_buf;
-	static gchar *path;
-	char *arch = (char *)g_getenv("EMULATOR_ARCH");
-
-	const gchar *exec_path = get_exec_path();
-	path_buf = g_path_get_dirname(exec_path);
-	if(!arch) /* for stand alone */
-	{
-		char *binary = g_path_get_basename(exec_path);
-		if(strstr(binary, "emulator-x86"))
-			arch = g_strdup_printf("x86");
-		else if(strstr(binary, "emulator-arm"))
-			arch = g_strdup_printf("arm");
-		else 
-		{
-			ERR( "binary setting failed\n");
-			exit(1);
-		}
-		free(binary);
-	}
-	path = malloc(3);
-	strcpy(path, arch);
-
-	return path;
-}
-/* get_baseimg_abs_path = "~/tizen_sdk/Emulator/x86/emulimg.x86"
-*						= "~/tizen_sdk/Emulator/arm/emulimg.arm"	*/
-const gchar *get_baseimg_abs_path(void)
+/* get_baseimg_path = "~/tizen_sdk/Emulator/{ARCH}/emulimg{VERSION}.{ARCH}" */
+const gchar *get_baseimg_path(void)
 {
 	const gchar *arch_path;
 	static gchar *path;
+	char* MAJOR_VERSION = NULL;
+	char version_path[MAXPATH];
+	gchar *target_list_filepath;
 	char *arch = (char *)g_getenv("EMULATOR_ARCH");
 	const gchar *exec_path = get_exec_path();
+	target_list_filepath = get_targetlist_filepath();
+	sprintf(version_path, "%s/version.ini",get_etc_path());
+	MAJOR_VERSION = (char*)get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
+
 	if(!arch) /* for stand alone */
 	{
 		char *binary = g_path_get_basename(exec_path);
@@ -302,19 +279,22 @@ const gchar *get_baseimg_abs_path(void)
 		}
 		free(binary);
 	}
-	arch_path = get_arch_abs_path();
-	path = malloc(strlen(arch_path) + 13);
+
+	arch_path = get_arch_path();
+	path = malloc(strlen(arch_path) + 14 + strlen(MAJOR_VERSION));
 	strcpy(path, arch_path);
 	strcat(path, "/");	
-	strcat(path, "emulimg.");
+	strcat(path, "emulimg-");
+	strcat(path, MAJOR_VERSION);
+	strcat(path, ".");
 	strcat(path, arch);
-
+	
+	free(MAJOR_VERSION);
 	return path;
 }
 
-/* get_arch_abs_path = "~/tizen_sdk/Emulator/x86" 
-* 				= "~/tizen_sdk/Emulator/arm" */
-const gchar *get_arch_abs_path(void)
+/* get_arch_path = "~/tizen_sdk/Emulator/{ARCH}" */
+const gchar *get_arch_path(void)
 {
 	static gchar *path_buf = NULL;
 	static gchar *path_buf2 = NULL;
@@ -375,8 +355,6 @@ const gchar *get_etc_path(void)
 	return etc_path;
 }
 
-
-
 /* get_skin_path = "~/tizen_sdk/simulator/skins" */
 const gchar *get_skin_path(void)
 {
@@ -412,9 +390,7 @@ const gchar *get_skin_path(void)
 	return skin_path;
 }
 
-
-/* get_data_path = "x86/data" 
-*				 = "arm/data" */
+/* get_data_path = "~/tizen_sdk/Emulator/{ARCH}/data" */ 
 const gchar *get_data_path(void)
 {
 	static const char suffix[] = "/data";
@@ -423,26 +399,6 @@ const gchar *get_data_path(void)
 	if (!data_path)
 	{
 		const gchar *path = get_arch_path();
-
-		data_path = malloc(strlen(path) + sizeof suffix);
-		assert(data_path != NULL);
-		strcpy(data_path, path);
-		strcat(data_path, suffix);
-	}
-
-	return data_path;
-}
-
-/* get_data_path = "~/tizen_sdk/Emulator/x86/data" 
- *				 = "~/tizen_sdk/Emulator/x86/data" */
-const gchar *get_data_abs_path(void)
-{
-	static const char suffix[] = "/data";
-	static gchar *data_path;
-
-	if (!data_path)
-	{
-		const gchar *path = get_arch_abs_path();
 
 		data_path = malloc(strlen(path) + sizeof suffix);
 		assert(data_path != NULL);
@@ -480,9 +436,7 @@ gchar *change_path_from_slash(gchar *org_path)
 #endif
 
 
-/* get_conf_path = "~/tizen_sdk/Emulator/x86/conf" */
-/*				 = "~/tizen_sdk/Emulator/arm/conf" */
-
+/* get_conf_path = "~/tizen_sdk/Emulator/{ARCH}/conf" */
 const gchar *get_conf_path(void)
 {
 	static gchar *conf_path;
@@ -498,59 +452,45 @@ const gchar *get_conf_path(void)
 	return conf_path;
 }
 
-/* get_conf_path = "x86/VMs" */
-const gchar *get_vms_path(void)
+
+/* get_tizen_vms_path = "/home/{USER}/tizen_vms/{ARCH}" */
+const gchar *get_tizen_vms_path(void)
 {
-	static gchar *vms_path;
+	static const char tizen_vms[] = "/tizen_vms/";
+	char *homedir = (char*)g_getenv("HOME");
+	static gchar *tizen_vms_path;
+	char *arch = (char *)g_getenv("EMULATOR_ARCH");
+	const gchar *exec_path = get_exec_path();
+	
+	if(!arch) /* for stand alone */
+	{
+		char *binary = g_path_get_basename(exec_path);
+		if(strstr(binary, "emulator-x86"))
+			arch = g_strdup_printf("x86");
+		else if(strstr(binary, "emulator-arm"))
+			arch = g_strdup_printf("arm");
+		else 
+		{
+			ERR( "binary setting failed\n");
+			exit(1);
+		}
+		free(binary);
+	}
+	
+	if(!homedir)
+		homedir = (char*)g_get_home_dir();
 
-	static const char suffix[] = "/VMs";
+	tizen_vms_path = malloc(strlen(homedir) + sizeof tizen_vms + strlen(arch));
+	assert(tizen_vms_path != NULL);
+	strcpy(tizen_vms_path, homedir);
+	strcat(tizen_vms_path, tizen_vms);
+	strcat(tizen_vms_path, arch);
 
-	const gchar *path = get_arch_path();
-	vms_path = malloc(strlen(path) + sizeof suffix);
-	assert(vms_path != NULL);
-	strcpy(vms_path, path);
-	strcat(vms_path, suffix);
-
-	return vms_path;
+	return tizen_vms_path;
 }
 
-/* get_conf_abs_path = "~/tizen_sdk/Emulator/x86/conf" */
-/* 					 = "~/tizen_sdk/Emulator/arm/conf" */
-const gchar *get_conf_abs_path(void)
-{
-	static gchar *conf_path;
-
-	static const char suffix[] = "/conf";
-
-	const gchar *path = get_arch_abs_path();
-	conf_path = malloc(strlen(path) + sizeof suffix);
-	assert(conf_path != NULL);
-	strcpy(conf_path, path);
-	strcat(conf_path, suffix);
-
-	return conf_path;
-}
-
-/* get_vms_abs_path = "~/tizen_sdk/Emulator/x86/VMs" */
-/* 				    = "~/tizen_sdk/Emulator/arm/VMs" */
-const gchar *get_vms_abs_path(void)
-{
-	static gchar *vms_path;
-
-	static const char suffix[] = "/VMs";
-
-	const gchar *path = get_arch_abs_path();
-	vms_path = malloc(strlen(path) + sizeof suffix);
-	assert(vms_path != NULL);
-	strcpy(vms_path, path);
-	strcat(vms_path, suffix);
-
-	return vms_path;
-}
-
-/*  get_targetlist_abs_filepath  = " ~/tizen_sdk/Emulator/x86/conf/targetlist.ini" */
-/*  						     = " ~/tizen_sdk/Emulator/arm/conf/targetlist.ini" */
-gchar *get_targetlist_abs_filepath(void)
+/*  get_targetlist_filepath  = " ~/tizen_VMs/{ARCH}/targetlist.ini" */
+gchar *get_targetlist_filepath(void)
 {
 	gchar *targetlist_filepath = NULL;
 	targetlist_filepath = calloc(1, 512);
@@ -558,15 +498,14 @@ gchar *get_targetlist_abs_filepath(void)
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 	
-	const gchar *conf_path = get_conf_abs_path();
-	sprintf(targetlist_filepath, "%s/targetlist.ini", conf_path);
-
+	const gchar *vms_path = get_tizen_vms_path();
+	sprintf(targetlist_filepath, "%s/targetlist.ini", vms_path);
+	free(vms_path);	
+	
 	return targetlist_filepath;
 }
 
-
-/* get_virtual_target_path = "x86/VMs/virtual_target_name/" */
-/* 						   = "arm/VMs/virtual_target_name/" */
+/* get_virtual_target_path	"~/tizen_VMs/{ARCH}/virtual_target_name/" */
 gchar *get_virtual_target_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_path = NULL;
@@ -576,31 +515,13 @@ gchar *get_virtual_target_path(gchar *virtual_target_name)
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 
-	const gchar *conf_path = get_vms_path();
+	const gchar *conf_path = get_tizen_vms_path();
 	sprintf(virtual_target_path, "%s/%s/", conf_path, virtual_target_name);
 
 	return virtual_target_path;
 }
 
-/* get_virtual_target_abs_path	"~/tizen_sdk/Emulator/x86/VMs/virtual_target_name/" */
-/* 								"~/tizen_sdk/Emulator/arm/VMs/virtual_target_name/" */
-gchar *get_virtual_target_abs_path(gchar *virtual_target_name)
-{
-	gchar *virtual_target_path = NULL;
-	virtual_target_path = calloc(1,512);
-
-	if(NULL == virtual_target_path) {
-		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
-	}
-
-	const gchar *conf_path = get_vms_abs_path();
-	sprintf(virtual_target_path, "%s/%s/", conf_path, virtual_target_name);
-
-	return virtual_target_path;
-}
-
-/* get_virtual_target_log_path	"~/tizen_sdk/Emulator/x86/VMs/virtual_target_name/logs" */
-/* 								"~/tizen_sdk/Emulator/arm/VMs/virtual_target_name/logs" */
+/* get_virtual_target_log_path	"~/tizen_VMs/{ARCH}/virtual_target_name/logs" */
 gchar *get_virtual_target_log_path(gchar *virtual_target_name)
 {
 	gchar *virtual_target_log_path = NULL;
@@ -610,7 +531,7 @@ gchar *get_virtual_target_log_path(gchar *virtual_target_name)
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 
-	const gchar *vms_path = get_vms_abs_path();
+	const gchar *vms_path = get_tizen_vms_path();
 	sprintf(virtual_target_log_path, "%s/%s/logs", vms_path, virtual_target_name);
 
 	return virtual_target_log_path;

@@ -233,6 +233,7 @@ endif
 #	install emulator-arm $(PHONE_DIR)/bin/emulator-arm
 #	install savevm.glade $(PHONE_DIR)
 	cp -a $(VTM) $(PHONE_DIR)/bin
+	cp -a ../../qemu-img $(PHONE_DIR)/bin
 	cp -a vtm.glade $(PHONE_DIR)/etc
 #	cp -a  config_x86.ini $(PHONE_DIR)/x86/VMs/default/config.ini
 #	cp -a DEBUGCH $(PHONE_DIR)/etc

@@ -44,7 +44,7 @@
 
 #include <glib.h>
 #include <glib/gstdio.h>
-
+#include <gio/gio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -74,6 +74,7 @@ void set_sdcard_create_active_cb(void);
 void set_sdcard_select_active_cb(void);
 void set_disk_select_active_cb(void);
 void set_sdcard_none_active_cb(void);
+void set_default_image(char *target_name);
 void set_disk_default_active_cb(void);
 void sdcard_file_select_cb(void);
 void disk_file_select_cb(void);
@@ -100,22 +101,36 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer selection);
 void show_create_window(void);
 void show_modify_window(char* target_name);
 void construct_main_window(void);
-GtkWidget *setup_list(void);
+GtkWidget *setup_tree_view(void);
 void delete_clicked_cb(GtkWidget *widget, gpointer selection);
 void reset_clicked_cb(GtkWidget *widget, gpointer selection);
+void cursor_changed_cb(GtkWidget *widget, gpointer selection);
 void details_clicked_cb(GtkWidget *widget, gpointer selection);
 void modify_clicked_cb(GtkWidget *widget, gpointer selection);
 void activate_clicked_cb(GtkWidget *widget, gpointer selection);
 void refresh_clicked_cb(char *arch);
 void activate_target(char *target_name);
 void arch_select_cb(GtkWidget *widget, gpointer data);
-void init_setenv(void);
+void env_init(void);
 void entry_changed(GtkEditable *entry, gpointer data);
-void make_default_image(void);
+void make_default_image(char *default_targetname);
 int check_shdmem(char *target_name, int type);
 int socket_init(void);
 char *check_kvm(char *info_file, int *status);
+void version_init(char *default_targetname, char* target_list_filepath);
+int delete_group(char* target_list_filepath, char* target_name, int type);
+
+void lock_file(char *path);
+int create_diskimg(char *arch, char *dest_path);
+int create_sdcard(char *dest_path);
+int modify_sdcard(char *arch, char *dest_path);
+int change_modify_target_name(char *arch, char *dest_path, char *name, char* target_name);
+int check_modify_target_name(char *name);
+int set_modify_variable(char *target_name);
 #ifdef __linux__
 void set_mesa_lib(void);
+#endif
+#ifdef _WIN32
+void socket_cleanup(void);
 #endif
 #endif 

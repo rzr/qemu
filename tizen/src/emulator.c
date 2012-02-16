@@ -821,7 +821,7 @@ static int startup_option_parser(int *argc, char ***argv)
 
 	INFO("Host sdl version : (%d, %d, %d)\n", SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
 
-	char *virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
+	char *virtual_target_path = get_virtual_target_path(startup_option.vtm);
 	info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	if( (fp = fopen(info_file, "r")) == NULL )
 	{
@@ -990,7 +990,7 @@ int init_shdmem()
 {
 
 	char *virtual_target_path = NULL;
-	virtual_target_path = get_virtual_target_abs_path(startup_option.vtm);
+	virtual_target_path = get_virtual_target_path(startup_option.vtm);
 	tizen_base_port = get_sdb_base_port();
 #ifndef _WIN32
 	int shmid; 

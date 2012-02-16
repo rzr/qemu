@@ -196,6 +196,115 @@ int set_config_type(gchar *filepath, const gchar *group, const gchar *field, con
 }
 
 /**
+ * @brief 	delete group in targetlist.ini file
+ * @return	fail(-1), success(0)
+ * @date    Nov 18. 2008
+ * */
+int del_config_group(gchar *filepath, const gchar *group)
+{
+	GKeyFile *keyfile;
+	GError *error = NULL;
+	gsize length;
+
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
+		INFO( "loading key file form %s is failed.\n", filepath);
+		return -1;
+	}
+
+	if(!g_key_file_remove_group(keyfile, group, &error)){
+		ERR( "fail to remove this key. group name : %s\n", group);
+		return -1;
+	}
+	
+	gchar *data = g_key_file_to_data(keyfile, &length, &error);
+	if (error != NULL) {
+		g_print("in set_config_type\n");
+		g_print("%s", error->message);
+		g_clear_error(&error);
+	}
+
+	g_strstrip(data);
+	length = strlen(data);
+	g_file_set_contents(filepath, data, length, &error);
+	if (error != NULL) {
+		g_print("in set_config_value after g_file_set_contents\n");
+		g_print("%s", error->message);
+		g_clear_error(&error);
+	}
+
+	g_free(data);
+	g_key_file_free(keyfile);
+
+	return 0;
+
+}
+
+/**
+ * @brief 	see if target_name is group
+ * @return	true / false
+ * @date    Nov 18. 2008
+ * */
+gboolean is_group(const gchar *target_name)
+{
+	char **target_groups = NULL;
+	int i;
+	int group_num;
+	char *filepath = get_targetlist_filepath();
+	
+	target_groups = get_virtual_target_groups(filepath, &group_num);
+
+	for(i = 0; i < group_num; i++)
+	{
+		if(strcmp(target_groups[i], target_name) == 0)
+			return TRUE;
+	}
+	
+	return FALSE;
+}
+
+
+/**
+ * @brief 	get group name of specific target name
+ * @return	group name
+ * @date    Nov 18. 2008
+ * */
+char *get_group_name(gchar *filepath, const gchar *field)
+{
+	GKeyFile *keyfile;
+	GError *err = NULL;
+	char **target_groups = NULL;
+	int i;
+	int group_num;
+
+	keyfile = g_key_file_new();
+	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &err)) {
+		INFO( "loading key file form %s is failed.\n", filepath);
+		return NULL;
+	}
+	
+	target_groups = get_virtual_target_groups(filepath, &group_num);
+
+	for(i = 0; i < group_num; i++)
+	{
+		if(!g_key_file_has_key(keyfile, target_groups[i], field, &err))
+			INFO("%s is not in %s\n", target_groups[i], field);
+		else
+		{
+			g_key_file_free(keyfile);
+			return target_groups[i];
+		}
+	}
+
+	INFO("there is no group include %s\n", field);
+	g_key_file_free(keyfile);
+	return NULL;
+
+}
+
+
+
+/**
  * @brief 	delete target name key in targetlist.ini file
  * @return	fail(-1), success(0)
  * @date    Nov 18. 2008
@@ -213,7 +322,7 @@ int del_config_key(gchar *filepath, const gchar *group, const gchar *field)
 	}
 
 	if(!g_key_file_remove_key(keyfile, group, field, &error)){
-			ERR( "fail to remove remove this key");
+			ERR( "fail to remove this key. [group: %s , key: %s]\n", group, field);
 			return -1;
 	}
 	
@@ -251,13 +360,23 @@ int set_config_value(gchar *filepath, const gchar *group, const gchar *field, co
 	GKeyFile *keyfile;
 	GError *error = NULL;
 	gsize length;
+	int file_status;
 
 	keyfile = g_key_file_new();
+
 	if (!g_key_file_load_from_file(keyfile, filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
 		WARN( "loading key file form %s is failed.\n", filepath);
-		return -1;
+		file_status = is_exist_file(filepath);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			char *message = g_strdup_printf("File does not exist\n\n"
+								"   - [%s]", filepath);
+			show_message("Error", message);
+			free(message);
+			return -1;
+		}
 	}
-
+	
 	g_key_file_set_value(keyfile, group, field, value);
 
 	gchar *data = g_key_file_to_data(keyfile, &length, &error);

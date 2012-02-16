@@ -47,8 +47,10 @@
 #include <glib/gstdio.h>
 
 #include "fileio.h"
+#include "dialog.h"
 
 gchar **get_virtual_target_list(gchar *filepath, const gchar *group, int *num);
+gchar **get_virtual_target_groups(gchar *filepath, int *num);
 int is_valid_target_list_file(SYSINFO *pSYSTEMINFO);
 void escapeStr(const char* str, char* dst);
 char *escape_resolution_str(const char* str);
