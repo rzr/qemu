@@ -581,7 +581,7 @@ static void qemu_sdl_init(qemu_state_t *qemu_state)
 		qemu_mts.finger_point_size + 2, qemu_mts.finger_point_size + 2, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 	
 	sdl_fill_circle(qemu_mts.finger_point, temp, temp, temp, DEFAULT_FINGER_POINT_COLOR); //finger point
-	sdl_draw_circle(qemu_mts.finger_point, temp, temp, temp, 0xFF000000); // finger point outline
+	sdl_draw_circle(qemu_mts.finger_point, temp, temp, temp, DEFAULT_FINGER_POINT_COLOR_OUTLINE); // finger point outline
 
 	//atexit(qemu_sdl_cleanup); TODO:
 
