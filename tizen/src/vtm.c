@@ -636,9 +636,9 @@ void env_init(void)
 	//latest version setting
 	sprintf(version_path, "%s/version.ini",get_etc_path());
 	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
-	MINOR_VERSION = get_config_value(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
+//	MINOR_VERSION = get_config_value(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
 	
-	DEFAULT_TARGET = g_strdup_printf("default%s", MINOR_VERSION);
+	DEFAULT_TARGET = g_strdup_printf("default");
 
 	//make default target of the latest version
 	make_default_image(DEFAULT_TARGET);
