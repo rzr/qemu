@@ -636,7 +636,7 @@ void env_init(void)
 	//latest version setting
 	sprintf(version_path, "%s/version.ini",get_etc_path());
 	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
-//	MINOR_VERSION = get_config_value(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
+	MINOR_VERSION = get_config_value(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
 	
 	DEFAULT_TARGET = g_strdup_printf("default");
 
@@ -1027,7 +1027,6 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		show_message("Error", "Architecture setting failed.");
 		return -1;
 	}
-	char *default_sub_version = g_strdup_printf("default%s",MINOR_VERSION);
 
 	keyfile = g_key_file_new();
 	if (!g_key_file_load_from_file(keyfile, target_list_filepath, G_KEY_FILE_KEEP_COMMENTS, &error)) {
@@ -1058,7 +1057,7 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		{
 			virtual_target_path = get_virtual_target_path(target_list[i]);
 			if((strcmp(target_name, MAJOR_VERSION) != 0) && 
-					strcmp(target_list[i], default_sub_version) != 0)
+					strcmp(target_list[i], "default") != 0)
 			{
 #ifdef _WIN32
 				char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
@@ -1067,7 +1066,6 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 				{
 					g_free(cmd);
 					g_free(virtual_target_path);
-					free(default_sub_version);
 					TRACE( "Failed to delete target name: %s", target_list[i]);
 					show_message("Failed to delete target name: %s", target_list[i]);
 					return -1;
@@ -1078,7 +1076,6 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 				{
 					g_free(cmd);
 					g_free(virtual_target_path);
-					free(default_sub_version);
 					TRACE( "Failed to delete target name: %s", target_list[i]);
 					show_message("Failed to delete target name: %s", target_list[i]);
 					return -1;
@@ -1095,7 +1092,6 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 				show_message("INFO", "Can not delete the latest default target of the latest group.\n"
 						"The others are deleting");
 
-			free(default_sub_version);
 			g_strfreev(target_list);
 		}
 
@@ -1362,7 +1358,7 @@ void make_default_image(char *default_targetname)
 			show_message("Err", "load target list file error!");
 			return;
 		}
-		default_img = g_strdup_printf("%semulimg-default%s.%s", virtual_target_path, MINOR_VERSION, arch);
+		default_img = g_strdup_printf("%semulimg-default.%s", virtual_target_path, arch);
 		default_dir = g_strdup_printf("%s/%s", get_tizen_vms_path(), default_targetname);
 		default_path = g_strdup_printf("%s/config.ini", default_dir);
 		log_dir = get_virtual_target_log_path(default_targetname);
