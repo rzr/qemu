@@ -68,6 +68,7 @@
 #include "event_handler.h"
 #include "utils.h"
 #include "tools.h"
+#include "hw/tizen_acpi_piix4.h"
 #include "debug_ch.h"
 #ifdef __linux__
 #include <sys/utsname.h>
@@ -1098,7 +1099,17 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 
 				if (kbd_mouse_is_absolute()) {
 					TRACE( "press parsing keycode = %d, result = %d\n", keycode, keycode & 0x7f);
-					ps2kbd_put_keycode(keycode & 0x7f);				
+
+					// home key or power key is used for resume.
+					if( ( 101 == keycode ) || ( 103 == keycode ) ) {
+						if( is_suspended_state() ) {
+							INFO( "user requests system resume.\n" );
+							resume();
+							usleep( 500 * 1000 );
+						}
+					}
+
+					ps2kbd_put_keycode(keycode & 0x7f);
 				}
 			}
 			else {

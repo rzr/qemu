@@ -53,6 +53,7 @@
 #include "sysbus.h"
 #include "arch_init.h"
 #include "blockdev.h"
+#include "tizen_acpi_piix4.h"
 
 #define MAX_IDE_BUS 2
 
@@ -182,7 +183,12 @@ static void tizen_x86_machine_init(ram_addr_t ram_size,
         cmos_s3 = qemu_allocate_irqs(pc_cmos_set_s3_resume, rtc_state, 1);
         smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt, first_cpu, 1);
         /* TODO: Populate SPD eeprom data.  */
-        smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
+
+        // commented out for tizen acpi
+//        smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
+//                              isa_get_irq(9), *cmos_s3, *smi_irq,
+//                              kvm_enabled());
+        smbus = tizen_piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
                               isa_get_irq(9), *cmos_s3, *smi_irq,
                               kvm_enabled());
         for (i = 0; i < 8; i++) {
