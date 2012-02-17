@@ -254,7 +254,7 @@ const gchar *get_bin_path(void)
 /* get_baseimg_path = "~/tizen_sdk/Emulator/{ARCH}/emulimg{VERSION}.{ARCH}" */
 const gchar *get_baseimg_path(void)
 {
-	gchar *arch_path;
+	const gchar *arch_path;
 	static gchar *path;
 	char* MAJOR_VERSION = NULL;
 	char version_path[MAXPATH];
@@ -333,7 +333,7 @@ const gchar *get_etc_path(void)
 {
 	const char etcsubdir[] = "/etc";
 	const char *path;
-	const char *etc_path;
+	static char *etc_path;
 
 	if (etc_path)
 		return etc_path;
@@ -498,7 +498,7 @@ gchar *get_targetlist_filepath(void)
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 	
-	const gchar *vms_path = get_tizen_vms_path();
+	gchar *vms_path = get_tizen_vms_path();
 	sprintf(targetlist_filepath, "%s/targetlist.ini", vms_path);
 	free(vms_path);	
 	

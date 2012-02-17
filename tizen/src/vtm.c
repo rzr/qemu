@@ -310,7 +310,7 @@ int check_shdmem(char *target_name, int type)
 		{
 			if((void *)-1 == (shm_addr = shmat(shm_id, (void *)0, 0)))
 			{
-				ERR( "%s\n", strerror(errno));
+				ERR( "error occured at shmat()");
 				break;
 			}
 

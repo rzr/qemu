@@ -99,7 +99,6 @@ OBJS_COMMON = \
 	menu_callback.o \
 	option.o \
 	option_callback.o \
-	process.o \
 	qemu_gtk_widget.o \
 	screen_shot.o \
 	sensor_server.o \
@@ -120,7 +119,6 @@ OBJS_VTM = \
 	vt_utils.o \
 	utils.o \
 	dialog.o \
-	process.o \
 	debug_ch_vtm.o \
 	vtm.o
 

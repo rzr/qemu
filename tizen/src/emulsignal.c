@@ -107,14 +107,8 @@ void destroy_emulator(void)
 	set_config_type(SYSTEMINFO.virtual_target_info_file, EMULATOR_GROUP, MAIN_Y_KEY, configuration.main_y);
 
 	INFO( "Emulator Stop: set config type\n");
-
-	/* 4. remove pid file */
-
-	remove_pidfile("emulator");
-
-	INFO( "Emulator Stop: remove pid file\n");
 	
-	/* 5. remove shared memory */
+	/* 4. remove shared memory */
 
 #ifndef _WIN32
 	int shmid = shmget((key_t)tizen_base_port, 64, 0); 

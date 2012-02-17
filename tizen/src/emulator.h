@@ -82,14 +82,11 @@ typedef struct _arglist arglist;
 #include "emulsignal.h"
 #include "tools.h"
 #include "fileio.h"
-#include "process.h"
 #include "extern.h"	
 #include "menu.h"
 #include "vinit_process.h"
-#include "process.h"
 #include "qemu_gtk_widget.h"
 #include "event_handler.h" 
-#include "vinit_process.h"
 
 void append_argvlist(arglist* al, const char *fmt, ...) __attribute((__format__(__printf__,2,3)));
 

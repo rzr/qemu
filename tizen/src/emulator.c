@@ -894,11 +894,7 @@ static void init_emulator(int *argc, char ***argv)
 
 	init_structure();
 
-	/* 5. pid write */
-
-	write_pidfile("emulator");
-
-	/* 6. make hash init */
+	/* 5. make hash init */
 
 	window_hash_init ();
 }

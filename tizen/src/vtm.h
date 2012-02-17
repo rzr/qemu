@@ -54,7 +54,6 @@
 #include "vt_utils.h"
 #include "utils.h"
 #include "dialog.h"
-#include "process.h"
 #define MAX_LEN 1024
 
 gchar *remove_chars(const gchar *str);
