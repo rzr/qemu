@@ -57,37 +57,6 @@
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, emulmgr);
 
-#define SDCARD_SIZE_256		"256"
-#define SDCARD_SIZE_512		"512"
-#define SDCARD_SIZE_1024	"1024"
-#define SDCARD_SIZE_1536	"1536"
-#define SDCARD_DEFAULT_SIZE		1
-# define VT_NAME_MAXBUF			21
-#define RAM_SIZE_512	"512"
-#define RAM_SIZE_768	"768"
-#define RAM_SIZE_1024	"1024"
-#define HVGA	"HVGA(320x480)"
-#define WVGA	"WVGA(480x800)"
-#define WSVGA	"WSVGA(600x1024)"
-#define HD		"HD(720x1280)"
-#define HVGA_VALUE	"320x480"
-#define WVGA_VALUE	"480x800"
-#define WSVGA_VALUE	"600x1024"
-#define HD_VALUE	"720x1280"
-#define RAM_DEFAULT_SIZE	0
-#define RAM_768_SIZE	1
-#define RAM_1024_SIZE	2
-#define RESOLUTION_DEFAULT_SIZE	1
-#define RESOLUTION_HVGA	0
-#define RESOLUTION_WVGA	1
-#define RESOLUTION_WSVGA	2
-#define RESOLUTION_HD	3
-#define CREATE_MODE	1
-#define DELETE_MODE	2
-#define MODIFY_MODE 3
-#define RESET_MODE 4
-#define DELETE_GROUP_MODE 5
-
 GtkBuilder *g_builder;
 GtkBuilder *g_create_builder;
 enum {
@@ -136,7 +105,6 @@ int socket_init(void)
 	return 0;
 }
 
-
 static int check_port_bind_listen(u_int port)
 {
 	struct sockaddr_in addr;
@@ -171,7 +139,6 @@ static int check_port_bind_listen(u_int port)
 
 	return ret;
 }
-
 
 void activate_target(char *target_name)
 {
@@ -281,7 +248,6 @@ void activate_target(char *target_name)
 			binary, target_name, emul_add_opt, path, qemu_add_opt);
 	}
 #endif
-
 	if(!g_spawn_command_line_async(cmd, &error))
 	{
 		TRACE( "Failed to invoke command: %s\n", error->message);
@@ -325,7 +291,6 @@ char *check_kvm(char *info_file, int *status)
 #endif
 	*status = 1;
 	return enable_kvm;
-
 }
 
 int check_shdmem(char *target_name, int type)
@@ -362,19 +327,24 @@ int check_shdmem(char *target_name, int type)
 					switch(type)
 					{
 					case CREATE_MODE:
-						show_message("Warning", "Can not activate this target.\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not activate this target.\n"
+								"Virtual target with the same name is running now!");
 						break;
 					case DELETE_MODE:
-						show_message("Warning", "Can not delete this target.\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not delete this target.\n"
+								"Virtual target with the same name is running now!");
 						break;
 					case MODIFY_MODE:
-						show_message("Warning", "Can not modify this target.\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not modify this target.\n"
+								"Virtual target with the same name is running now!");
 						break;
 					case RESET_MODE:
-						show_message("Warning", "Can not reset this target.\nVirtual target with the same name is running now!");
+						show_message("Warning", "Can not reset this target.\n"
+								"Virtual target with the same name is running now!");
 						break;
 					case DELETE_GROUP_MODE:
-						show_message("Warning", "Can not delete this group.\nSome virtual target in this group is running now!");
+						show_message("Warning", "Can not delete this group.\n"
+								"Some virtual target in this group is running now!");
 						break;
 
 					default:
@@ -434,16 +404,20 @@ int check_shdmem(char *target_name, int type)
 				switch(type)
 				{
 				case CREATE_MODE:
-					show_message("Warning", "Can not activate this target.\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not activate this target.\n"
+							"Virtual target with the same name is running now!");
 					break;
 				case DELETE_MODE:
-					show_message("Warning", "Can not delete this target.\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not delete this target.\n"
+							"Virtual target with the same name is running now!");
 					break;
 				case MODIFY_MODE:
-					show_message("Warning", "Can not modify this target.\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not modify this target.\n"
+							"Virtual target with the same name is running now!");
 					break;
 				case RESET_MODE:
-					show_message("Warning", "Can not reset this target.\nVirtual target with the same name is running now!");
+					show_message("Warning", "Can not reset this target.\n"
+							"Virtual target with the same name is running now!");
 					break;
 				default:
 					ERR("wrong type passed\n");
@@ -479,8 +453,8 @@ void entry_changed(GtkEditable *entry, gpointer data)
 
 	if(strlen(name) == VT_NAME_MAXBUF)
 	{
-		WARN( "Virtual target name length can not be longer than 20 characters.\n");
-		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name length can not be longer\nthan 20 characters.");
+		WARN( "The length of name can not be greater than 20 letters.\n");
+		gtk_label_set_text(GTK_LABEL(label4),"The length of name can not be greater\nthan 20 letters.");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		return ;
 	}
@@ -488,7 +462,7 @@ void entry_changed(GtkEditable *entry, gpointer data)
 	if(strcmp(name, dst) != 0)
 	{
 		WARN( "Virtual target name is invalid! Valid characters are 0-9 a-z A-Z -_\n");
-		gtk_label_set_text(GTK_LABEL(label4),"Virtual target name is invalid!\nValid characters are 0-9 a-z A-Z -_");
+		gtk_label_set_text(GTK_LABEL(label4),"Name is invalid!\nValid characters are 0-9 a-z A-Z -_");
 		gtk_widget_set_sensitive(ok_button, FALSE);
 		free(dst);
 		return;
@@ -598,7 +572,6 @@ void show_modify_window(char *target_name)
 	gtk_main();
 }
 
-
 void env_init(void)
 {
 	char* arch;
@@ -643,7 +616,7 @@ void env_init(void)
 	//make default target of the latest version
 	make_default_image(DEFAULT_TARGET);
 
-	refresh_clicked_cb(arch);
+	refresh_clicked_cb();
 
 }
 
@@ -660,7 +633,7 @@ void arch_select_cb(GtkWidget *widget, gpointer data)
 		g_setenv("EMULATOR_ARCH",arch,1);
 		INFO( "architecture : %s\n", arch);
 		target_list_filepath = get_targetlist_filepath();
-		refresh_clicked_cb(arch);
+		refresh_clicked_cb();
 		//		g_free(arch);
 	}
 
@@ -697,7 +670,6 @@ void modify_clicked_cb(GtkWidget *widget, gpointer selection)
 		show_message("Warning", "Target is not selected. Firstly select a target and modify.");
 		return;
 	}
-
 }
 
 void activate_clicked_cb(GtkWidget *widget, gpointer selection)
@@ -791,7 +763,6 @@ void cursor_changed_cb(GtkWidget *widget, gpointer selection)
 		}
 	}
 }
-
 
 void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 {
@@ -1113,13 +1084,13 @@ DEL_GROUP:
 		else
 		{
 			show_message("INFO", "Can not delete the latest version.");
-			refresh_clicked_cb(arch);
+			refresh_clicked_cb();
 			free(group_baseimage_path);
 			g_key_file_free(keyfile);
 			return 0;
 		}
 		
-		refresh_clicked_cb(arch);
+		refresh_clicked_cb();
 		free(group_baseimage_path);
 		g_key_file_free(keyfile);
 	}
@@ -1217,7 +1188,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 	show_message("Warning", "Target is not selected. Firstly select a target and delete.");
 }
 
-void refresh_clicked_cb(char *arch)
+void refresh_clicked_cb(void)
 {
 	GtkTreeStore *store;
 	GtkTreeIter iter, child;
@@ -1240,10 +1211,10 @@ void refresh_clicked_cb(char *arch)
 	store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));
 	local_target_list_filepath = get_targetlist_filepath();
 
-	//check VMs path
+	//check tizen_vms path
 	vms_path = (char*)get_tizen_vms_path();
 	if (g_file_test(vms_path, G_FILE_TEST_EXISTS) == FALSE) {
-		char *message = g_strdup_printf("VMs directory does not exist."
+		char *message = g_strdup_printf("tizen_vms directory does not exist."
 				" Check if EMULATOR_IMAGE installed.\n\n"
 				"   - [%s]", vms_path);
 		show_message("Error", message);
@@ -1655,7 +1626,7 @@ GtkWidget *setup_tree_view(void)
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_max_width(column,60);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-	
+	//annotate for future use	
 //	column = gtk_tree_view_column_new_with_attributes("Minor Version", cell, "text", MINOR, NULL);
 //	gtk_tree_view_column_set_alignment(column,0.0);
 //	gtk_tree_view_column_set_max_width(column,60);
@@ -1707,7 +1678,6 @@ void buttontype_select_cb(void)
 
 	INFO( "button_type : %d\n", virtual_target_info.button_type);
 }
-
 
 void sdcard_size_select_cb(void)
 {
@@ -1814,7 +1784,6 @@ void set_default_image(char *target_name)
 	else
 		virtual_target_info.disk_type = 1;
 }
-
 
 void set_sdcard_none_active_cb(void)
 {
@@ -2162,7 +2131,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 
 	gtk_widget_destroy(win);
 
-	refresh_clicked_cb(arch);
+	refresh_clicked_cb();
 
 	g_object_unref(G_OBJECT(g_create_builder));
 
@@ -2174,6 +2143,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	return;
 
 }
+
 int create_diskimg(char *arch, char *dest_path)
 {
 	int file_status;
@@ -2232,7 +2202,6 @@ int create_diskimg(char *arch, char *dest_path)
 			virtual_target_info.virtual_target_name, arch);
 	return 0;
 }
-
 
 int create_sdcard(char *dest_path)
 {
@@ -2334,7 +2303,7 @@ void ok_clicked_cb(void)
 	g_free(dest_path);
 
 	gtk_widget_destroy(win);
-	refresh_clicked_cb(arch);
+	refresh_clicked_cb();
 
 	g_object_unref(G_OBJECT(g_create_builder));
 
@@ -2427,13 +2396,6 @@ void setup_modify_disk_frame(char *target_name)
 	gtk_widget_set_sensitive(default_radiobutton, FALSE);
 	gtk_widget_set_sensitive(select_radiobutton, FALSE);
 	gtk_widget_set_sensitive(sdcard_filechooser2, FALSE);
-	
-	// because of false value of sensitivity, callback is useless
-//	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_disk_select_active_cb), NULL);
-//	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
-//	g_signal_connect(G_OBJECT(sdcard_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
-
-
 }
 
 void setup_modify_sdcard_frame(char *target_name)
@@ -2486,7 +2448,6 @@ void setup_modify_sdcard_frame(char *target_name)
 	g_signal_connect(G_OBJECT(none_radiobutton), "toggled", G_CALLBACK(set_sdcard_none_active_cb), NULL);
 	g_signal_connect(G_OBJECT(sdcard_filechooser), "selection-changed", G_CALLBACK(sdcard_file_select_cb), NULL);
 
-
 }
 
 void setup_modify_ram_frame(char *target_name)
@@ -2512,7 +2473,6 @@ void setup_modify_ram_frame(char *target_name)
 		gtk_combo_box_set_active(ram_combo_box, RAM_1024_SIZE);
 
 	g_signal_connect(G_OBJECT(ram_combo_box), "changed", G_CALLBACK(ram_select_cb), NULL);
-
 }
 
 
@@ -2544,7 +2504,6 @@ void setup_buttontype_frame(void)
 
 	g_signal_connect(GTK_RADIO_BUTTON(radiobutton10), "toggled", G_CALLBACK(buttontype_select_cb), NULL);
 	g_signal_connect(GTK_RADIO_BUTTON(radiobutton11), "toggled", G_CALLBACK(buttontype_select_cb), NULL);
-
 }
 
 void setup_modify_buttontype_frame(char *target_name)
@@ -2585,7 +2544,6 @@ void setup_resolution_frame(void)
 	gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_DEFAULT_SIZE);
 
 	g_signal_connect(G_OBJECT(resolution_combo_box), "changed", G_CALLBACK(resolution_select_cb), NULL);
-
 }
 
 void setup_disk_frame(void)
@@ -2780,16 +2738,15 @@ void construct_main_window(void)
 	g_signal_connect(details_button, "clicked", G_CALLBACK(details_clicked_cb), selection);
 	g_signal_connect(modify_button, "clicked", G_CALLBACK(modify_clicked_cb), selection);
 	g_signal_connect(start_button, "clicked", G_CALLBACK(activate_clicked_cb), selection);
-	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), selection);
+	g_signal_connect(refresh_button, "clicked", G_CALLBACK(refresh_clicked_cb), NULL);
 	g_signal_connect(reset_button, "clicked", G_CALLBACK(reset_clicked_cb), selection);
 	g_signal_connect(G_OBJECT(g_main_window), "delete-event", G_CALLBACK(exit_vtm), NULL); 
 	g_signal_connect(treeview, "cursor-changed", G_CALLBACK(cursor_changed_cb), selection);
 
 	/* setup emulator architecture and path */
 	gtk_widget_show_all(g_main_window);
-
-
 }
+
 #ifdef	__linux__
 void set_mesa_lib(void)
 {
@@ -2885,7 +2842,7 @@ void lock_file(char *path)
 				NULL);
 	if(g_hFile == INVALID_HANDLE_VALUE)
 	{
-		show_message("Error", "Can not execute the emulator manager!\n"
+		show_message("Error", "Can not execute Emulator Manager!\n"
 				"Another instance is already running.");
 		free(path_win);
 		exit(0);
@@ -2895,7 +2852,7 @@ void lock_file(char *path)
 	g_fd = open(path, O_RDWR);
 	if(flock(g_fd, LOCK_EX|LOCK_NB) == -1)
 	{
-		show_message("Error", "Can not execute the emulator manager!\n"
+		show_message("Error", "Can not execute Emulator Manager!\n"
 				"Another instance is already running.");
 		exit(0);
 	}

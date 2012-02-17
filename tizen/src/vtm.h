@@ -108,7 +108,7 @@ void cursor_changed_cb(GtkWidget *widget, gpointer selection);
 void details_clicked_cb(GtkWidget *widget, gpointer selection);
 void modify_clicked_cb(GtkWidget *widget, gpointer selection);
 void activate_clicked_cb(GtkWidget *widget, gpointer selection);
-void refresh_clicked_cb(char *arch);
+void refresh_clicked_cb(void);
 void activate_target(char *target_name);
 void arch_select_cb(GtkWidget *widget, gpointer data);
 void env_init(void);
