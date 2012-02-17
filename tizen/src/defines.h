@@ -248,7 +248,37 @@ extern int intermediate_section;
 	        gtk_container_add (GTK_CONTAINER (K), menu_item);\
 	        gtk_widget_show (menu_item);\
 	        }
-
+/* macro for Emulator Manager */
+#define SDCARD_SIZE_256		"256"
+#define SDCARD_SIZE_512		"512"
+#define SDCARD_SIZE_1024	"1024"
+#define SDCARD_SIZE_1536	"1536"
+#define SDCARD_DEFAULT_SIZE		1
+# define VT_NAME_MAXBUF			21
+#define RAM_SIZE_512	"512"
+#define RAM_SIZE_768	"768"
+#define RAM_SIZE_1024	"1024"
+#define HVGA	"HVGA(320x480)"
+#define WVGA	"WVGA(480x800)"
+#define WSVGA	"WSVGA(600x1024)"
+#define HD		"HD(720x1280)"
+#define HVGA_VALUE	"320x480"
+#define WVGA_VALUE	"480x800"
+#define WSVGA_VALUE	"600x1024"
+#define HD_VALUE	"720x1280"
+#define RAM_DEFAULT_SIZE	0
+#define RAM_768_SIZE	1
+#define RAM_1024_SIZE	2
+#define RESOLUTION_DEFAULT_SIZE	1
+#define RESOLUTION_HVGA	0
+#define RESOLUTION_WVGA	1
+#define RESOLUTION_WSVGA	2
+#define RESOLUTION_HD	3
+#define CREATE_MODE	1
+#define DELETE_MODE	2
+#define MODIFY_MODE 3
+#define RESET_MODE 4
+#define DELETE_GROUP_MODE 5
 
 
 /* Front UI TYPE Enum */

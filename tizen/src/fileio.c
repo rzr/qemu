@@ -254,7 +254,7 @@ const gchar *get_bin_path(void)
 /* get_baseimg_path = "~/tizen_sdk/Emulator/{ARCH}/emulimg{VERSION}.{ARCH}" */
 const gchar *get_baseimg_path(void)
 {
-	const gchar *arch_path;
+	gchar *arch_path;
 	static gchar *path;
 	char* MAJOR_VERSION = NULL;
 	char version_path[MAXPATH];
@@ -296,8 +296,8 @@ const gchar *get_baseimg_path(void)
 /* get_arch_path = "~/tizen_sdk/Emulator/{ARCH}" */
 const gchar *get_arch_path(void)
 {
-	static gchar *path_buf = NULL;
-	static gchar *path_buf2 = NULL;
+	gchar *path_buf;
+	gchar *path_buf2;
 	static gchar *path;
 	char *arch = (char *)g_getenv("EMULATOR_ARCH");
 
@@ -333,7 +333,7 @@ const gchar *get_etc_path(void)
 {
 	const char etcsubdir[] = "/etc";
 	const char *path;
-	static char *etc_path;
+	const char *etc_path;
 
 	if (etc_path)
 		return etc_path;
