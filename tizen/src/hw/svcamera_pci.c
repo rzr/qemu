@@ -207,7 +207,7 @@ static int svcam_initfn(PCIDevice *dev)
 	SVCamThreadInfo *thread;
 	SVCamParam *param;
 
-	pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_SAMSUNG);
+	pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_TIZEN);
 	pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_CAMERA);
 	pci_config_set_class(pci_conf, PCI_CLASS_MULTIMEDIA_OTHER);
 	pci_config_set_interrupt_pin(pci_conf, 0x03);

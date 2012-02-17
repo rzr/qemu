@@ -9,6 +9,6 @@ Version: 52.2.0
 Requires: libavformat = 52.64.2
 Requires.private: 
 Conflicts:
-Libs: -L${libdir} -lavdevice -lz -lm
+Libs: -L${libdir} -lavdevice -lz -lbz2 -lm
 Libs.private: 
 Cflags: -I${includedir}

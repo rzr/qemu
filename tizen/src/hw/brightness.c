@@ -41,8 +41,6 @@
 #include "pci.h"
 #include "pci_ids.h"
 
-#define PCI_VENDOR_ID_SAMSUNG				0x144d
-#define PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS    0x1014
 #define QEMU_DEV_NAME						"brightness"
 
 #define BRIGHTNESS_MEM_SIZE			(4 * 1024)		/* 4KB */
@@ -152,7 +150,7 @@ static int brightness_initfn(PCIDevice *dev)
 	BrightnessState *s = DO_UPCAST(BrightnessState, dev, dev);
     uint8_t *pci_conf = s->dev.config;
 
-    pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_SAMSUNG);
+    pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_TIZEN);
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 

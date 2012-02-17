@@ -39,9 +39,6 @@
 #include "pci.h"
 #include "pci_ids.h"
 
-#define PCI_VENDOR_ID_SAMSUNG		0x144d
-#define PCI_DEVICE_ID_VIRTUAL_OVERLAY   0x1010
-
 #define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
 #define OVERLAY_REG_SIZE	256
 #define OVERLAY1_REG_OFFSET	(OVERLAY_REG_SIZE / 2)
@@ -185,7 +182,7 @@ static int overlay_initfn(PCIDevice *dev)
     OverlayState *s = DO_UPCAST(OverlayState, dev, dev);
     uint8_t *pci_conf = s->dev.config;
 
-    pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_SAMSUNG);
+    pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_TIZEN);
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_OVERLAY);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 

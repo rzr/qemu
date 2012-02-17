@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT(simulator, 1.0)
+AC_INIT(emulator, 1.0)
 
 AC_PROG_CC
 AC_PROG_MAKE_SET
@@ -7,7 +7,7 @@ AC_PROG_CXX
 
 AC_CHECK_PROGS(PKG_CONFIG, pkg-config, false)
 AC_CHECK_PROGS(AR, ar, false)
-AC_PREFIX_DEFAULT(/opt/samsung_sdk)
+AC_PREFIX_DEFAULT(`pwd`)
 
 if test "$PKG_CONFIG" = "false"
 then
