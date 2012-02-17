@@ -153,6 +153,11 @@ static inline void svcam_reg_write(void *opaque, target_phys_addr_t offset, uint
 	case SVCAM_CMD_CLRIRQ:
 		qemu_irq_lower(state->dev.irq[2]);
 		break;
+	case SVCAM_CMD_REQFRAME:
+		pthread_mutex_lock(&state->thread->mutex_lock);
+		state->req_frame = value + 1;
+		pthread_mutex_unlock(&state->thread->mutex_lock);
+		break;
 	default:
 		WARN("Not supported command!!\n");
 		break;

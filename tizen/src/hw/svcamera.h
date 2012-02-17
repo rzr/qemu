@@ -58,6 +58,7 @@
 #define SVCAM_CMD_G_DATA         0x48
 #define SVCAM_CMD_CLRIRQ         0x4C
 #define SVCAM_CMD_DATACLR        0x50
+#define SVCAM_CMD_REQFRAME       0x54
 
 typedef struct SVCamState SVCamState;
 typedef struct SVCamThreadInfo SVCamThreadInfo;
@@ -82,15 +83,16 @@ struct SVCamThreadInfo {
 struct SVCamState {
 	PCIDevice				dev;
 
-	int								streamon;
-
 	ram_addr_t				mem_offset;
-	void								*vaddr;
+	void					*vaddr;
+	uint32_t				streamon;
+	uint32_t				buf_size;
+	uint32_t				req_frame;
 
-	int								cam_mmio;
+	int						cam_mmio;
 
-	uint32_t					mem_addr;
-	uint32_t					mmio_addr;
+	uint32_t				mem_addr;
+	uint32_t				mmio_addr;
 
 	SVCamThreadInfo	*thread;
 };

@@ -43,7 +43,6 @@ MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 
 static int v4l2_fd;
 static int convert_trial;
-static int skip_flag = 0;
 
 static struct v4l2_format dst_fmt;
 
@@ -132,7 +131,9 @@ static int32_t value_convert_to_guest(int32_t min, int32_t max, int32_t value)
 static int __v4l2_grab(SVCamState *state)
 {
 	fd_set fds;
+	static uint32_t index = 0;
 	struct timeval tv;
+	void *buf;
 	int ret;
 	
 	FD_ZERO(&fds);
@@ -158,7 +159,8 @@ static int __v4l2_grab(SVCamState *state)
 		return -1;
 	}
 
-	ret = v4l2_read(v4l2_fd, state->vaddr, dst_fmt.fmt.pix.sizeimage);
+	buf = state->vaddr + (state->buf_size * index);
+	ret = v4l2_read(v4l2_fd, buf, state->buf_size);
 	if ( ret < 0) {
 		switch (errno) {
 		case EINVAL:
@@ -177,17 +179,17 @@ static int __v4l2_grab(SVCamState *state)
 		}
 	}
 
-	if (!kvm_enabled()) {
-		skip_flag = !skip_flag;
-		if (skip_flag)
-			return 0;
-	}
+	index = !index;
 
-	ret = -1;
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	if (state->streamon) {
-		qemu_irq_raise(state->dev.irq[2]);
+		if (state->req_frame) {
+			qemu_irq_raise(state->dev.irq[2]);
+			state->req_frame = 0;
+		}
 		ret = 1;
+	} else {
+		ret = -1;
 	}
 	pthread_mutex_unlock(&state->thread->mutex_lock);
 
@@ -203,7 +205,6 @@ wait_worker_thread:
 	pthread_mutex_lock(&thread->mutex_lock);
 	thread->state->streamon = 0;
 	convert_trial = 10;
-	skip_flag = 1;
 	pthread_cond_wait(&thread->thread_cond, &thread->mutex_lock);
 	pthread_mutex_unlock(&thread->mutex_lock);
 	INFO("Streaming on ......\n");
@@ -280,6 +281,7 @@ void svcam_device_start_preview(SVCamState* state)
 {
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 1;
+	state->buf_size = dst_fmt.fmt.pix.sizeimage;
 	if (pthread_cond_signal(&state->thread->thread_cond))
 		ERR("failed to send a signal to the worker thread\n");
 	pthread_mutex_unlock(&state->thread->mutex_lock);
@@ -290,6 +292,7 @@ void svcam_device_stop_preview(SVCamState* state)
 {
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 0;
+	state->buf_size = 0;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
 	sleep(0);
 }
