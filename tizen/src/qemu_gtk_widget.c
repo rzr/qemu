@@ -532,6 +532,8 @@ static void sdl_fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Ui
 }
 /* ========================================================= */
 
+#if 0
+//TODO : call
 static void qemu_sdl_cleanup(void)
 {
     if (sdl_cursor_normal)
@@ -541,6 +543,7 @@ static void qemu_sdl_cleanup(void)
 
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
+#endif
 
 static void qemu_sdl_init(qemu_state_t *qemu_state)
 {

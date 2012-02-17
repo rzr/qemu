@@ -44,7 +44,7 @@ typedef struct USBTouchscreenState {
     int8_t changed;
 } USBTouchscreenState;
 
-/* These structure must match the kernel definitions */
+/* This structure must match the kernel definitions */
 typedef struct USBEmulTouchscreenPacket {
     uint16_t x, y, z;
     uint8_t state;
