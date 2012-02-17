@@ -340,7 +340,7 @@ set_qemu_hw_options () {
 	qemu_x86_opts="$qemu_x86_opts -soundhw all"
 
 	#touchpad
-	qemu_x86_opts="$qemu_x86_opts -usb -usbdevice wacom-tablet"
+	qemu_x86_opts="$qemu_x86_opts -usb -usbdevice maru-touchscreen"
 
 	#graphic
 #	modified by caramis...

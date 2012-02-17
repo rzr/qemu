@@ -1523,7 +1523,7 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "\n[%s]\n", ADDITIONAL_OPTION_GROUP);
 		g_fprintf (fp, "%s=\n", EMULATOR_OPTION_KEY);
 		if(strcmp(arch, "x86") == 0)
-			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice wacom-tablet -usbdevice keyboard -net user -net nic,model=virtio -rtc base=utc");
+			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice maru-touchscreen -usbdevice keyboard -net user -net nic,model=virtio -rtc base=utc");
 		else if(strcmp(arch, "arm") == 0)
 			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY," -M s5pc110 -net user -net nic,model=s5pc1xx-usb-otg -usbdevice keyboard -rtc base=utc -redir tcp:1202:10.0.2.16:22");
 		g_fprintf (fp, "[%s]\n", HARDWARE_GROUP);
