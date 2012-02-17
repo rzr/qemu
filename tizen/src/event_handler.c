@@ -68,7 +68,7 @@
 #include "event_handler.h"
 #include "utils.h"
 #include "tools.h"
-#include "hw/tizen_acpi_piix4.h"
+#include "hw/maru_pm.h"
 #include "debug_ch.h"
 #ifdef __linux__
 #include <sys/utsname.h>

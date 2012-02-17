@@ -53,7 +53,7 @@
 #include "sysbus.h"
 #include "arch_init.h"
 #include "blockdev.h"
-#include "tizen_acpi_piix4.h"
+#include "maru_pm.h"
 
 #define MAX_IDE_BUS 2
 
@@ -188,7 +188,7 @@ static void tizen_x86_machine_init(ram_addr_t ram_size,
 //        smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
 //                              isa_get_irq(9), *cmos_s3, *smi_irq,
 //                              kvm_enabled());
-        smbus = tizen_piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
+        smbus = maru_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
                               isa_get_irq(9), *cmos_s3, *smi_irq,
                               kvm_enabled());
         for (i = 0; i < 8; i++) {
