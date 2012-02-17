@@ -1147,7 +1147,7 @@ int pci_codec_init (PCIBus *bus)
 
 static PCIDeviceInfo codec_info = {
 	.qdev.name 		= QEMU_DEV_NAME,
-	.qdev.desc 		= "Virtual codec device for emulator",
+	.qdev.desc 		= "Virtual codec device for Tizen emulator",
 	.qdev.size 		= sizeof (SVCodecState),	
 	.init			= codec_initfn,
 };
