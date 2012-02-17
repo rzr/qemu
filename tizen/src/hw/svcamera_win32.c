@@ -145,16 +145,13 @@ typedef HRESULT (STDAPICALLTYPE *SETCALLBACKFN)(CallbackFn);
 
 
 static HINSTANCE g_hInst = NULL;
+static SVCamState *g_state = NULL;
 
 static CTRLFN SVCamCtrl;
 static SETCALLBACKFN SVCamSetCallbackFn;
 
 static uint32_t cur_fmt_idx = 0;
 static uint32_t cur_frame_idx = 0;
-
-
-static void *g_vaddr = NULL;
-static qemu_irq *g_irq = NULL;
 
 void v4lconvert_yuyv_to_yuv420(const unsigned char *src, unsigned char *dest,
 		uint32_t width, uint32_t height, uint32_t yvu);
@@ -197,22 +194,29 @@ static long value_convert_to_guest(long min, long max, long value)
 
 static int STDAPICALLTYPE svcam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 {
+	static uint32_t index = 0;
 	uint32_t width, height;
 	width = supported_dst_frames[cur_frame_idx].width;
 	height = supported_dst_frames[cur_frame_idx].height;
+	void *buf = g_state->vaddr + (g_state->buf_size * index);
 
 	switch (supported_dst_pixfmts[cur_fmt_idx].fmt) {
 	case V4L2_PIX_FMT_YUV420:
-		v4lconvert_yuyv_to_yuv420(pBuffer, g_vaddr, width, height, 0);
+		v4lconvert_yuyv_to_yuv420(pBuffer, buf, width, height, 0);
 		break;
 	case V4L2_PIX_FMT_YVU420:
-		v4lconvert_yuyv_to_yuv420(pBuffer, g_vaddr, width, height, 1);
+		v4lconvert_yuyv_to_yuv420(pBuffer, buf, width, height, 1);
 		break;
 	case V4L2_PIX_FMT_YUYV:
-		memcpy(g_vaddr, (void*)pBuffer, dwSize);
+		memcpy(buf, (void*)pBuffer, dwSize);
 		break;
 	}
-	qemu_irq_raise(g_irq[2]);
+	index = !index;
+
+	if (g_state->req_frame) {
+		qemu_irq_raise(g_state->dev.irq[2]);
+		g_state->req_frame = 0;
+	}
 	return 1;
 }
 
@@ -224,8 +228,7 @@ void svcam_device_init(SVCamState* state)
 	pthread_cond_init(&thread->thread_cond, NULL);
 	pthread_mutex_init(&thread->mutex_lock, NULL);
 
-	g_vaddr = state->vaddr;
-	g_irq = state->dev.irq;
+	g_state = state;
 }
 
 // SVCAM_CMD_OPEN
@@ -299,6 +302,7 @@ void svcam_device_close(SVCamState* state)
 void svcam_device_start_preview(SVCamState* state)
 {
 	HRESULT hr;
+	uint32_t width, height;
 	SVCamParam *param = state->thread->param;
 	TRACE("svcam_device_start_preview\n");
 	param->top = 0;
@@ -306,10 +310,15 @@ void svcam_device_start_preview(SVCamState* state)
 	if (FAILED(hr)) {
 		param->errCode = EINVAL;
 		ERR("start preview failed!!!, [HRESULT : 0x%x]\n", hr);
+		return;
 	}
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 1;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
+
+	width = supported_dst_frames[cur_frame_idx].width;
+	height = supported_dst_frames[cur_frame_idx].height;
+	state->buf_size = height * ((width * supported_dst_pixfmts[cur_fmt_idx].bpp) >> 3);
 }
 
 // SVCAM_CMD_STOP_PREVIEW
@@ -327,6 +336,7 @@ void svcam_device_stop_preview(SVCamState* state)
 	pthread_mutex_lock(&state->thread->mutex_lock);
 	state->streamon = 0;
 	pthread_mutex_unlock(&state->thread->mutex_lock);
+	state->buf_size = 0;
 }
 
 // SVCAM_CMD_S_PARAM
