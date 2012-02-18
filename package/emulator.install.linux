@@ -17,15 +17,16 @@ iconpath=~/.local/share/icons
 ## vtm shortcut
 vtm_desktopfile=$desktoppath/tizen-sdk-vtm.desktop
 vtm_iconfile=vtm.ico
+vtm_iconpath=Emulator/skins/icons
 vtm_exefile=Emulator/bin/emulator-manager
 vtm_exepath=$TIZEN_SDK_INSTALL_PATH/$vtm_exefile
 vtm_comment="Emulator manager is a tool which can make a cloned emulator image"
 vtm_name="Emulator Manager"
 mkdir -p $iconpath
 
-if test -e $TIZEN_SDK_INSTALL_PATH/temp/$vtm_iconfile 
+if test -e $TIZEN_SDK_INSTALL_PATH/$vtm_iconpath/$vtm_iconfile 
 then 
-	cp -f $TIZEN_SDK_INSTALL_PATH/temp/$vtm_iconfile $iconpath/$vtm_iconfile
+	cp -f $TIZEN_SDK_INSTALL_PATH/$vtm_iconpath/$vtm_iconfile $iconpath/$vtm_iconfile
 else
 	echo "$vtm_iconfile does not exist!!"
 	exit 1
