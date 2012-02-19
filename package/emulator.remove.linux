@@ -1,13 +1,6 @@
 #!/bin/sh
 
-ETC_PATH=$INSTALLED_PATH/Emulator/etc
 desktoppath=~/.local/share/applications
-echo $ETC_PATH
-## Remove etc path
-if test -e $ETC_PATH
-then
-	rm -rf $ETC_PATH
-fi
 ## Register .desktop file
 ${REMOVE_SHORTCUT}  $desktoppath/tizen-sdk-vtm.desktop
 ### END Register Menu ###
