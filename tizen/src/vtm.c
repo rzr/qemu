@@ -75,7 +75,7 @@ int sdcard_create_size;
 GtkWidget *f_entry;
 gchar icon_image[MAXPATH] = {0, };
 const char *MAJOR_VERSION;
-const char *MINOR_VERSION;
+int MINOR_VERSION;
 char *DEFAULT_TARGET;
 const char *HOMEDIR;
 #ifdef _WIN32
@@ -609,9 +609,10 @@ void env_init(void)
 	//latest version setting
 	sprintf(version_path, "%s/version.ini",get_etc_path());
 	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
-	MINOR_VERSION = get_config_value(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
+	MINOR_VERSION = get_config_type(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
 	
-	DEFAULT_TARGET = g_strdup_printf("default");
+	DEFAULT_TARGET = "default";
+	//check minor version of default image if it exists.
 
 	//make default target of the latest version
 	make_default_image(DEFAULT_TARGET);
@@ -1030,28 +1031,14 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 			if((strcmp(target_name, MAJOR_VERSION) != 0) && 
 					strcmp(target_list[i], "default") != 0)
 			{
-#ifdef _WIN32
-				char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
-				cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
-				if (system(cmd)	== -1)
+				if(remove_dir(virtual_target_path) == -1)
 				{
-					g_free(cmd);
-					g_free(virtual_target_path);
-					TRACE( "Failed to delete target name: %s", target_list[i]);
-					show_message("Failed to delete target name: %s", target_list[i]);
+					char *message = g_strdup_printf("Failed to delete target name: %s", target_list[i]); 
+					show_message("Error", message);
+					free(message);
 					return -1;
 				}
-#else
-				cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
-				if(!run_cmd(cmd))
-				{
-					g_free(cmd);
-					g_free(virtual_target_path);
-					TRACE( "Failed to delete target name: %s", target_list[i]);
-					show_message("Failed to delete target name: %s", target_list[i]);
-					return -1;
-				}
-#endif
+				
 				del_config_key(target_list_filepath, target_name, target_list[i]);
 				g_free(cmd);
 				g_free(virtual_target_path);
@@ -1200,7 +1187,7 @@ void refresh_clicked_cb(void)
 	char *virtual_target_path;
 	char *info_file;
 	char *resolution = NULL;
-	char *minor_version = NULL;
+	int minor_version = 0;
 	char *buf;
 	char *vms_path = NULL;
 	gchar *ram_size = NULL;
@@ -1243,7 +1230,7 @@ void refresh_clicked_cb(void)
 		}
 		gtk_tree_store_append(store, &iter, NULL);
 		gtk_tree_store_set(store, &iter, 
-				TARGET_NAME, target_groups[group_num], RESOLUTION, "", RAM_SIZE, "", MINOR, "", -1);
+				TARGET_NAME, target_groups[group_num], RESOLUTION, "", -1);
 
 		for(i = 0; i < list_num; i++)
 		{
@@ -1266,14 +1253,13 @@ void refresh_clicked_cb(void)
 			buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 			ram_size = g_strdup_printf("%sMB", buf); 
 			resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-			minor_version = get_config_value(info_file, COMMON_GROUP, MINOR_VERSION_KEY);
-			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, MINOR, minor_version, -1);
+			minor_version = get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY);
+			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
 
 			g_free(buf);
 
 			g_free(ram_size);
 			g_free(resolution);
-			g_free(minor_version);
 			g_free(virtual_target_path);
 			g_free(info_file);
 		}
@@ -1288,12 +1274,38 @@ void refresh_clicked_cb(void)
 
 }
 
+int remove_dir(char *path)
+{	
+	char *cmd = NULL;
+#ifdef _WIN32
+	char *win_path = change_path_from_slash(path);
+	cmd = g_strdup_printf("rmdir /Q /S %s", win_path);	
+	if (system(cmd)	== -1)
+	{
+		free(cmd);
+		free(path);
+		TRACE( "Failed to delete directory: %s", win_path);
+		free(win_path);
+		return -1;
+	}
+#else
+	cmd = g_strdup_printf("rm -rf %s", path);
+	if(!run_cmd(cmd))
+	{
+		free(cmd);
+		free(path);
+		TRACE( "Failed to delete directory: %s", path);
+		return -1;
+	}
+#endif
+	return 0;
+}
+
+
 void make_default_image(char *default_targetname)
 {
 	char *cmd = NULL;
 	int file_status;
-	char *virtual_target_path = get_virtual_target_path(default_targetname);
-	char *info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 	char *default_img;
 	char *arch;
 	char *default_dir;
@@ -1303,6 +1315,8 @@ void make_default_image(char *default_targetname)
 	char *targetlist;
 	char *base_img_path;
 	char *target_list_filepath;
+	char *info_file;
+	char *virtual_target_path;
 	GError *err;
 	GFile *file_conf_path;
 	GFile *file_default_path;
@@ -1319,7 +1333,24 @@ void make_default_image(char *default_targetname)
 			g_setenv("EMULATOR_ARCH", "x86", 1);
 		else
 			g_setenv("EMULATOR_ARCH", "arm", 1);
-			
+	
+		virtual_target_path = get_virtual_target_path(default_targetname);
+		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
+		file_status = is_exist_file(info_file);
+		if(file_status == FILE_EXISTS)
+		{
+			if(get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY) < MINOR_VERSION)
+			{
+				if(remove_dir(virtual_target_path) == -1)
+				{
+					show_message("Error", "Failed to delete default target!");
+					free(info_file);
+					free(virtual_target_path);
+					return ;
+				}
+			}
+				
+		}
 		arch = (char*)g_getenv("EMULATOR_ARCH");
 		target_list_filepath = get_targetlist_filepath();
 		file_status = is_exist_file(target_list_filepath);
@@ -1327,6 +1358,8 @@ void make_default_image(char *default_targetname)
 		{
 			ERR( "load target list file error\n");
 			show_message("Err", "load target list file error!");
+			free(virtual_target_path);
+			free(info_file);
 			return;
 		}
 		default_img = g_strdup_printf("%semulimg-default.%s", virtual_target_path, arch);
@@ -1404,8 +1437,10 @@ void make_default_image(char *default_targetname)
 			set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_path());
 			set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
 			set_config_value(info_file, COMMON_GROUP, MAJOR_VERSION_KEY, MAJOR_VERSION);
-			set_config_value(info_file, COMMON_GROUP, MINOR_VERSION_KEY, MINOR_VERSION);
-
+			set_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY, MINOR_VERSION);
+			
+			free(virtual_target_path);
+			free(info_file);
 		}
 		free(default_img);
 	}
@@ -1546,7 +1581,7 @@ int write_config_file(gchar *filepath)
 
 
 	set_config_value(filepath, COMMON_GROUP, MAJOR_VERSION_KEY, virtual_target_info.major_version);
-	set_config_value(filepath, COMMON_GROUP, MINOR_VERSION_KEY, virtual_target_info.minor_version);
+	set_config_type(filepath, COMMON_GROUP, MINOR_VERSION_KEY, virtual_target_info.minor_version);
 	set_config_value(filepath, HARDWARE_GROUP, RESOLUTION_KEY, virtual_target_info.resolution);
 	set_config_type(filepath, HARDWARE_GROUP, SDCARD_TYPE_KEY, virtual_target_info.sdcard_type);
 	set_config_value(filepath, HARDWARE_GROUP, SDCARD_PATH_KEY, virtual_target_info.sdcard_path);
@@ -1749,7 +1784,7 @@ void set_disk_default_active_cb(void)
 	{
 		virtual_target_info.disk_type = 0;
 		snprintf(virtual_target_info.major_version, MAXBUF, "%s", MAJOR_VERSION);
-		snprintf(virtual_target_info.minor_version, MAXBUF, "%s", MINOR_VERSION);
+		virtual_target_info.minor_version = MINOR_VERSION;
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
 	}
@@ -1772,11 +1807,11 @@ void set_default_image(char *target_name)
 		virtual_target_path = get_virtual_target_path(target_name);
 		conf_path = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		snprintf(virtual_target_info.major_version, MAXBUF, "%s", get_config_value(conf_path, COMMON_GROUP, MAJOR_VERSION_KEY));
-		snprintf(virtual_target_info.minor_version, MAXBUF, "%s", get_config_value(conf_path, COMMON_GROUP, MINOR_VERSION_KEY));
+		virtual_target_info.minor_version = get_config_type(conf_path, COMMON_GROUP, MINOR_VERSION_KEY);
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
 		INFO( "major version : %s\n", virtual_target_info.major_version);
-		INFO( "minor version : %s\n", virtual_target_info.minor_version);
+		INFO( "minor version : %d\n", virtual_target_info.minor_version);
 
 		free(virtual_target_path);
 		free(conf_path);
@@ -1805,8 +1840,8 @@ void disk_file_select_cb(void)
 	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser2));
 	
 	snprintf(virtual_target_info.major_version, MAXBUF, "Custom");
-	snprintf(virtual_target_info.minor_version, MAXBUF, "None");
-	INFO( "major version : %s, minor version: %s\n", virtual_target_info.major_version, virtual_target_info.minor_version);
+	virtual_target_info.minor_version = 0;
+	INFO( "major version : %s, minor version: %d\n", virtual_target_info.major_version, virtual_target_info.minor_version);
 #ifdef _WIN32
 	snprintf(virtual_target_info.basedisk_path, MAXBUF, change_path_to_slash(path));
 #else
