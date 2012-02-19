@@ -673,7 +673,7 @@ typedef struct _PLATINFO {
 typedef struct _VIRTUALTARGETINFO {
 	char virtual_target_name[MAXBUF];
 	char major_version[MAXBUF];
-	char minor_version[MAXBUF];
+	int minor_version;
 	char resolution[MAXBUF];
 	int button_type;
 	int sdcard_type;
