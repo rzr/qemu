@@ -989,7 +989,6 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 	gchar **target_list = NULL;
 	int list_num;
 	int i;
-	char *cmd = NULL;
 	char *virtual_target_path = NULL;
 	char *group_baseimage_path = NULL;
 	char *arch = getenv("EMULATOR_ARCH");
@@ -1040,16 +1039,12 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 				}
 				
 				del_config_key(target_list_filepath, target_name, target_list[i]);
-				g_free(cmd);
-				g_free(virtual_target_path);
-#ifdef _WIN32
-				g_free(virtual_target_win_path);
-#endif
 			}
 			else
 				show_message("INFO", "Can not delete the latest default target of the latest group.\n"
 						"The others are deleting");
 
+			free(virtual_target_path);
 			g_strfreev(target_list);
 		}
 
@@ -1283,7 +1278,6 @@ int remove_dir(char *path)
 	if (system(cmd)	== -1)
 	{
 		free(cmd);
-		free(path);
 		TRACE( "Failed to delete directory: %s", win_path);
 		free(win_path);
 		return -1;
@@ -1293,7 +1287,6 @@ int remove_dir(char *path)
 	if(!run_cmd(cmd))
 	{
 		free(cmd);
-		free(path);
 		TRACE( "Failed to delete directory: %s", path);
 		return -1;
 	}
@@ -1344,13 +1337,14 @@ void make_default_image(char *default_targetname)
 				if(remove_dir(virtual_target_path) == -1)
 				{
 					show_message("Error", "Failed to delete default target!");
-					free(info_file);
 					free(virtual_target_path);
+					free(info_file);
 					return ;
 				}
 			}
 				
 		}
+		
 		arch = (char*)g_getenv("EMULATOR_ARCH");
 		target_list_filepath = get_targetlist_filepath();
 		file_status = is_exist_file(target_list_filepath);
@@ -1362,6 +1356,7 @@ void make_default_image(char *default_targetname)
 			free(info_file);
 			return;
 		}
+		
 		default_img = g_strdup_printf("%semulimg-default.%s", virtual_target_path, arch);
 		default_dir = g_strdup_printf("%s/%s", get_tizen_vms_path(), default_targetname);
 		default_path = g_strdup_printf("%s/config.ini", default_dir);
