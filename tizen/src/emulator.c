@@ -544,12 +544,12 @@ static void construct_main_window(void)
 	GetVersionEx(&osvi);
 
 	if ((osvi.dwMajorVersion >= 6) && (osvi.dwMinorVersion >= 1))
-		sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+		sprintf(emul_img_dir, "%s/icons/Emulator.ico", skin);
 	else
 		sprintf(emul_img_dir, "%s/icons/Emulator_20x20.png", skin);
 		
 #else /* _WIN32 */
-	sprintf(emul_img_dir, "%s/icons/vtm.ico", skin);
+	sprintf(emul_img_dir, "%s/icons/Emulator.ico", skin);
 #endif/* _WIN32 */
 
 	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
