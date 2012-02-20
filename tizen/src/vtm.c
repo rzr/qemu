@@ -68,16 +68,14 @@ enum {
 };
 GtkWidget *g_main_window;
 VIRTUALTARGETINFO virtual_target_info;
-gchar *target_list_filepath;
+gchar *g_target_list_filepath;
 gchar *g_info_file;
 GtkWidget *treeview;
 int sdcard_create_size;
 GtkWidget *f_entry;
-gchar icon_image[MAXPATH] = {0, };
-const char *MAJOR_VERSION;
-int MINOR_VERSION;
-char *DEFAULT_TARGET;
-const char *HOMEDIR;
+gchar g_icon_image[MAXPATH] = {0, };
+const char *g_major_version;
+int g_minor_version;
 #ifdef _WIN32
 HANDLE g_hFile;
 void socket_cleanup(void)
@@ -218,13 +216,13 @@ void activate_target(char *target_name)
 	if(qemu_add_opt == 0)
 		qemu_add_opt = g_strdup_printf(" ");
 #ifndef _WIN32
-	if(strcmp(arch, "x86") == 0)
+	if(strcmp(arch, X86) == 0)
 	{
 		cmd = g_strdup_printf("./%s --vtm %s %s \
 				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
 				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt);
 	}
-	else if(strcmp(arch,"arm")== 0)
+	else if(strcmp(arch, ARM)== 0)
 	{
 		cmd = g_strdup_printf("./%s --vtm %s %s \
 			--  -kernel %s/data/kernel-img/zImage %s",
@@ -236,12 +234,12 @@ void activate_target(char *target_name)
 		return ;
 	}
 #else /*_WIN32 */
-	if(strcmp(arch, "x86") == 0)
+	if(strcmp(arch, X86) == 0)
 	{
 		cmd = g_strdup_printf("%s --vtm %s %s\
 				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
 				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
-	}else if(strcmp(arch, "arm") == 0)
+	}else if(strcmp(arch, ARM) == 0)
 	{
 			cmd = g_strdup_printf("%s --vtm %s %s \
 			--  -kernel %s/data/kernel-img/zImage %s",
@@ -518,7 +516,7 @@ void show_modify_window(char *target_name)
 	char *virtual_target_path;
 	int info_file_status;
 	char full_glade_path[MAX_LEN];
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	char *arch = (char*)g_getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -535,9 +533,9 @@ void show_modify_window(char *target_name)
 
 	add_window(sub_window, VTM_CREATE_ID);
 
-	if(strcmp(arch, "x86") == 0)
+	if(strcmp(arch, X86) == 0)
 		gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target(x86)");
-	else if(strcmp(arch, "arm") == 0)
+	else if(strcmp(arch, ARM) == 0)
 		gtk_window_set_title(GTK_WINDOW(sub_window), "Modify existing Virtual Target(arm)");	
 
 	virtual_target_path = get_virtual_target_path(target_name);
@@ -563,7 +561,7 @@ void show_modify_window(char *target_name)
 	setup_modify_frame(target_name);
 	setup_modify_button(target_name);
 
-	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), icon_image, NULL);
+	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), g_icon_image, NULL);
 
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
 
@@ -575,44 +573,23 @@ void show_modify_window(char *target_name)
 void env_init(void)
 {
 	char* arch;
-	int target_list_status;
 	char version_path[MAX_LEN];
-	gchar *target_list_filepath;
-	
 	//architecture setting
 	if(!g_getenv("EMULATOR_ARCH"))
-		arch = g_strdup_printf("x86");
+		arch = g_strdup_printf(X86);
 	else
 		return;
 
-	g_setenv("EMULATOR_ARCH",arch,1);
+	g_setenv(EMULATOR_ARCH, arch, 1);
 	INFO( "architecture : %s\n", arch);
-	
-	//get targetlist.ini file	
-	target_list_filepath = get_targetlist_filepath();
-	target_list_status = is_exist_file(target_list_filepath);
-	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
-	{
-		ERR( "load target list file error\n");
-#ifdef _WIN32
-		char *message = g_strdup_printf("Target list file does not exist.\n\n"
-				"   - [%s]", change_path_from_slash(target_list_filepath));
-#else
-		char *message = g_strdup_printf("Target list file does not exist.\n\n"
-				"   - [%s]", target_list_filepath);
-#endif
-		show_message("Error", message);
-		free(message);
-		return;
-	}
-	
+
 	//latest version setting
 	sprintf(version_path, "%s/version.ini",get_etc_path());
-	MAJOR_VERSION = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
-	MINOR_VERSION = get_config_type(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
+	g_major_version = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
+	g_minor_version = get_config_type(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
 	
-	DEFAULT_TARGET = "default";
-	//check minor version of default image if it exists.
+	//make user directories or targetlist.ini if they don't exist.
+	make_tizen_vms();
 
 	//make default target of the latest version
 	make_default_image(DEFAULT_TARGET);
@@ -630,10 +607,10 @@ void arch_select_cb(GtkWidget *widget, gpointer data)
 	if(gtk_toggle_button_get_active(toggled_button) == TRUE)
 	{
 		arch = (char*)gtk_button_get_label(GTK_BUTTON(toggled_button));
-		g_unsetenv("EMULATOR_ARCH");
-		g_setenv("EMULATOR_ARCH",arch,1);
+		g_unsetenv(EMULATOR_ARCH);
+		g_setenv(EMULATOR_ARCH, arch, 1);
 		INFO( "architecture : %s\n", arch);
-		target_list_filepath = get_targetlist_filepath();
+		g_target_list_filepath = get_targetlist_filepath();
 		refresh_clicked_cb();
 		//		g_free(arch);
 	}
@@ -731,8 +708,8 @@ void cursor_changed_cb(GtkWidget *widget, gpointer selection)
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 
 		if(is_group(target_name) == TRUE){
-			if(strcmp(target_name, MAJOR_VERSION) == 0 || 
-					strcmp(target_name, "Custom") == 0)
+			if(strcmp(target_name, g_major_version) == 0 || 
+					strcmp(target_name, CUSTOM_GROUP) == 0)
 				gtk_widget_set_sensitive(delete_button, FALSE);
 			else
 				gtk_widget_set_sensitive(delete_button, TRUE);
@@ -861,7 +838,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *sdcard_path_detail = NULL;
 	char *details = NULL;
 
-	arch = getenv("EMULATOR_ARCH");
+	arch = getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -991,7 +968,7 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 	int i;
 	char *virtual_target_path = NULL;
 	char *group_baseimage_path = NULL;
-	char *arch = getenv("EMULATOR_ARCH");
+	char *arch = getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -1027,8 +1004,8 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		for(i = 0; i < list_num; i++)
 		{
 			virtual_target_path = get_virtual_target_path(target_list[i]);
-			if((strcmp(target_name, MAJOR_VERSION) != 0) && 
-					strcmp(target_list[i], "default") != 0)
+			if((strcmp(target_name, g_major_version) != 0) && 
+					strcmp(target_list[i], DEFAULT) != 0)
 			{
 				if(remove_dir(virtual_target_path) == -1)
 				{
@@ -1049,8 +1026,8 @@ int delete_group(char* target_list_filepath, char* target_name, int type)
 		}
 
 DEL_GROUP:	
-		//do not delete base image of MAJOR_VERSION
-		if(strcmp(target_name, MAJOR_VERSION) != 0)
+		//do not delete base image of g_major_version
+		if(strcmp(target_name, g_major_version) != 0)
 		{
 			INFO( "delete group name : %s\n", target_name);
 			del_config_group(target_list_filepath, target_name);
@@ -1092,11 +1069,11 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *virtual_target_path;
 	int target_list_status;
 
-	target_list_filepath = get_targetlist_filepath();
-	target_list_status = is_exist_file(target_list_filepath);
+	g_target_list_filepath = get_targetlist_filepath();
+	target_list_status = is_exist_file(g_target_list_filepath);
 	if(target_list_status == -1 || target_list_status == FILE_NOT_EXISTS)
 	{
-		INFO( "target info file not exists : %s\n", target_list_filepath);
+		INFO( "target info file not exists : %s\n", g_target_list_filepath);
 		return;
 	}
 	
@@ -1112,7 +1089,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
 
 		//check if selection is group name or target name	
-		if(delete_group(target_list_filepath, target_name, DELETE_GROUP_MODE) <= 0)
+		if(delete_group(g_target_list_filepath, target_name, DELETE_GROUP_MODE) <= 0)
 			return;
 
 		if(check_shdmem(target_name, DELETE_MODE) == -1)
@@ -1147,14 +1124,14 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 		}
 #endif
 		//find group of target_name and delete the target_name
-		group_name = get_group_name(target_list_filepath, target_name);
+		group_name = get_group_name(g_target_list_filepath, target_name);
 		if(!group_name)
 		{
 			ERR( "%s is not under any group in targetlist.ini\n", target_name);
 			return;
 		}
 		
-		del_config_key(target_list_filepath, group_name, target_name);
+		del_config_key(g_target_list_filepath, group_name, target_name);
 
 		g_free(group_name);
 		g_free(cmd);
@@ -1194,7 +1171,7 @@ void refresh_clicked_cb(void)
 	local_target_list_filepath = get_targetlist_filepath();
 
 	//check tizen_vms path
-	vms_path = (char*)get_tizen_vms_path();
+	vms_path = (char*)get_tizen_vms_arch_path();
 	if (g_file_test(vms_path, G_FILE_TEST_EXISTS) == FALSE) {
 		char *message = g_strdup_printf("tizen_vms directory does not exist."
 				" Check if EMULATOR_IMAGE installed.\n\n"
@@ -1216,7 +1193,7 @@ void refresh_clicked_cb(void)
 		target_list = get_virtual_target_list(local_target_list_filepath, target_groups[group_num], &list_num);
 		if(!target_list)
 		{
-			if(strcmp(target_groups[group_num], "Custom") != 0)
+			if(strcmp(target_groups[group_num], CUSTOM_GROUP) != 0)
 			{
 				INFO( "delete group name : %s\n", target_groups[group_num]);
 				del_config_group(local_target_list_filepath, target_groups[group_num]);	
@@ -1294,6 +1271,40 @@ int remove_dir(char *path)
 	return 0;
 }
 
+void make_tizen_vms(void)
+{
+	FILE *fp;
+	int file_status;
+	char *target_list_filepath;
+	char *tizen_vms_path = (char*)get_tizen_vms_arch_path();
+	char *screenshots_path = (char*)get_screenshots_path();
+
+	if(access(tizen_vms_path, R_OK) != 0){
+		INFO("tizen_vms dir not exist. is making now : %s\n", tizen_vms_path);
+		g_mkdir_with_parents(tizen_vms_path, 0755);
+	}
+	
+	if(access(screenshots_path, R_OK) != 0){
+		INFO("screenshots dir not exist. is making now : %s\n", screenshots_path);
+		g_mkdir(screenshots_path, 0755);
+	}
+
+	target_list_filepath = get_targetlist_filepath();
+	file_status = is_exist_file(target_list_filepath);
+	if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+	{
+		INFO("target info file not exists. is makeing now : %s\n", target_list_filepath);
+		fp = g_fopen(target_list_filepath, "w+");
+		if(fp != NULL) {
+			g_fprintf(fp, "[%s]", CUSTOM_GROUP);
+			fclose(fp);	
+		}	
+	}
+
+	free(tizen_vms_path);
+	free(screenshots_path);
+	free(target_list_filepath);
+}
 
 void make_default_image(char *default_targetname)
 {
@@ -1314,6 +1325,7 @@ void make_default_image(char *default_targetname)
 	GFile *file_conf_path;
 	GFile *file_default_path;
 	int i,j;
+
 #ifdef __arm__
 	j = 2;
 #else
@@ -1323,16 +1335,16 @@ void make_default_image(char *default_targetname)
 	for(i=0; i < j; i++)
 	{
 		if(i == 0)
-			g_setenv("EMULATOR_ARCH", "x86", 1);
+			g_setenv(EMULATOR_ARCH, X86, 1);
 		else
-			g_setenv("EMULATOR_ARCH", "arm", 1);
+			g_setenv(EMULATOR_ARCH, ARM, 1);
 	
 		virtual_target_path = get_virtual_target_path(default_targetname);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		file_status = is_exist_file(info_file);
 		if(file_status == FILE_EXISTS)
 		{
-			if(get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY) < MINOR_VERSION)
+			if(get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY) < g_minor_version)
 			{
 				if(remove_dir(virtual_target_path) == -1)
 				{
@@ -1345,7 +1357,7 @@ void make_default_image(char *default_targetname)
 				
 		}
 		
-		arch = (char*)g_getenv("EMULATOR_ARCH");
+		arch = (char*)g_getenv(EMULATOR_ARCH);
 		target_list_filepath = get_targetlist_filepath();
 		file_status = is_exist_file(target_list_filepath);
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
@@ -1358,7 +1370,7 @@ void make_default_image(char *default_targetname)
 		}
 		
 		default_img = g_strdup_printf("%semulimg-default.%s", virtual_target_path, arch);
-		default_dir = g_strdup_printf("%s/%s", get_tizen_vms_path(), default_targetname);
+		default_dir = g_strdup_printf("%s/%s", get_tizen_vms_arch_path(), default_targetname);
 		default_path = g_strdup_printf("%s/config.ini", default_dir);
 		log_dir = get_virtual_target_log_path(default_targetname);
 		conf_path = g_strdup_printf("%s/config.ini", get_conf_path());
@@ -1383,7 +1395,7 @@ void make_default_image(char *default_targetname)
 				break;
 			}
 			//find base image	
-			base_img_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_path(), MAJOR_VERSION, arch);
+			base_img_path = g_strdup_printf("%s/emulimg-%s.%s", get_arch_path(), g_major_version, arch);
 			file_status = is_exist_file(base_img_path);
 			if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 			{
@@ -1431,8 +1443,8 @@ void make_default_image(char *default_targetname)
 	
 			set_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY, get_baseimg_path());
 			set_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY, default_img);
-			set_config_value(info_file, COMMON_GROUP, MAJOR_VERSION_KEY, MAJOR_VERSION);
-			set_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY, MINOR_VERSION);
+			set_config_value(info_file, COMMON_GROUP, MAJOR_VERSION_KEY, g_major_version);
+			set_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY, g_minor_version);
 			
 			free(virtual_target_path);
 			free(info_file);
@@ -1440,7 +1452,7 @@ void make_default_image(char *default_targetname)
 		free(default_img);
 	}
 
-	g_setenv("EMULATOR_ARCH", "x86", 1);
+	g_setenv(EMULATOR_ARCH, X86, 1);
 }
 
 gboolean run_cmd(char *cmd)
@@ -1487,7 +1499,7 @@ void fill_virtual_target_info(void)
 
 int create_config_file(gchar* filepath)
 {
-	char *arch = getenv("EMULATOR_ARCH");
+	char *arch = getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -1523,9 +1535,9 @@ int create_config_file(gchar* filepath)
 
 		g_fprintf (fp, "\n[%s]\n", ADDITIONAL_OPTION_GROUP);
 		g_fprintf (fp, "%s=\n", EMULATOR_OPTION_KEY);
-		if(strcmp(arch, "x86") == 0)
+		if(strcmp(arch, X86) == 0)
 			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY,"-M tizen-x86-machine -usb -usbdevice maru-touchscreen -usbdevice keyboard -net user -net nic,model=virtio -rtc base=utc");
-		else if(strcmp(arch, "arm") == 0)
+		else if(strcmp(arch, ARM) == 0)
 			g_fprintf (fp, "%s=%s\n", QEMU_OPTION_KEY," -M s5pc110 -net user -net nic,model=s5pc1xx-usb-otg -usbdevice keyboard -rtc base=utc -redir tcp:1202:10.0.2.16:22");
 		g_fprintf (fp, "[%s]\n", HARDWARE_GROUP);
 		g_fprintf (fp, "%s=\n", RESOLUTION_KEY);
@@ -1554,11 +1566,11 @@ int write_config_file(gchar *filepath)
 {
 	/*  QEMU option (09.05.26)*/
 
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
-	if(strcmp(arch, "x86") == 0)
-		set_config_value(filepath, QEMU_GROUP, BINARY_KEY, "emulator-x86");
-	else if(strcmp(arch, "arm") == 0)
-		set_config_value(filepath, QEMU_GROUP, BINARY_KEY, "emulator-arm");
+	char *arch = (char*)g_getenv(EMULATOR_ARCH);
+	if(strcmp(arch, X86) == 0)
+		set_config_value(filepath, QEMU_GROUP, BINARY_KEY, EMULATOR_X86);
+	else if(strcmp(arch, ARM) == 0)
+		set_config_value(filepath, QEMU_GROUP, BINARY_KEY, EMULATOR_ARM);
 	else
 	{
 		show_message("Error", "Architecture setting failed.\n");
@@ -1597,12 +1609,12 @@ int name_collision_check(void)
 	int group_num = 0;
 	gchar **target_list = NULL;
 	gchar **target_groups = NULL;
-	target_list_filepath = get_targetlist_filepath();
+	g_target_list_filepath = get_targetlist_filepath();
 	
-	target_groups = get_virtual_target_groups(target_list_filepath, &group_num);
+	target_groups = get_virtual_target_groups(g_target_list_filepath, &group_num);
 	for(i = 0; i < group_num; i++)
 	{
-		target_list = get_virtual_target_list(target_list_filepath, target_groups[i], &list_num);
+		target_list = get_virtual_target_list(g_target_list_filepath, target_groups[i], &list_num);
 		for(j = 0; j < list_num; j++)
 		{
 			if(strcmp(target_list[j], virtual_target_info.virtual_target_name) == 0)
@@ -1778,8 +1790,8 @@ void set_disk_default_active_cb(void)
 	if(active == TRUE)
 	{
 		virtual_target_info.disk_type = 0;
-		snprintf(virtual_target_info.major_version, MAXBUF, "%s", MAJOR_VERSION);
-		virtual_target_info.minor_version = MINOR_VERSION;
+		snprintf(virtual_target_info.major_version, MAXBUF, "%s", g_major_version);
+		virtual_target_info.minor_version = g_minor_version;
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 		INFO( "default disk path : %s\n", virtual_target_info.basedisk_path);
 	}
@@ -1834,7 +1846,7 @@ void disk_file_select_cb(void)
 
 	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sdcard_filechooser2));
 	
-	snprintf(virtual_target_info.major_version, MAXBUF, "Custom");
+	snprintf(virtual_target_info.major_version, MAXBUF, CUSTOM_GROUP);
 	virtual_target_info.minor_version = 0;
 	INFO( "major version : %s, minor version: %d\n", virtual_target_info.major_version, virtual_target_info.minor_version);
 #ifdef _WIN32
@@ -1931,7 +1943,7 @@ int change_modify_target_name(char *arch, char *dest_path, char *name, char* tar
 	// if try to change the target name
 	if(strcmp(name, target_name) != 0)
 	{
-		vms_path = (char*)get_tizen_vms_path();
+		vms_path = (char*)get_tizen_vms_arch_path();
 		if(name_collision_check() == 1)
 		{
 			WARN( "Virtual target with the same name exists! Choose another name.");
@@ -2101,7 +2113,7 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	char *conf_file = NULL;
 	char *name = NULL;
 	//find arch name
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	char *arch = (char*)g_getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -2128,22 +2140,22 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	memset(virtual_target_info.diskimg_path, 0x00, MAXBUF);
 
 	snprintf(virtual_target_info.diskimg_path, MAXBUF, 
-			"%s/%s/emulimg-%s.%s", get_tizen_vms_path(), name, name, arch);
+			"%s/%s/emulimg-%s.%s", get_tizen_vms_arch_path(), name, name, arch);
 	TRACE( "virtual_target_info.diskimg_path: %s\n",virtual_target_info.diskimg_path);
 	
 	if(modify_sdcard(arch, dest_path) == -1)
 		return;
 	
 	//delete original target name
-	target_list_filepath = get_targetlist_filepath();
-	del_config_key(target_list_filepath, virtual_target_info.major_version, target_name);
+	g_target_list_filepath = get_targetlist_filepath();
+	del_config_key(g_target_list_filepath, virtual_target_info.major_version, target_name);
 	g_free(target_name);
 
 	if(access(dest_path, R_OK) != 0)
 		g_mkdir(dest_path, 0755);
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, virtual_target_info.major_version, 
+	set_config_value(g_target_list_filepath, virtual_target_info.major_version, 
 			virtual_target_info.virtual_target_name, "");
 	
 	// write config.ini
@@ -2171,7 +2183,6 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
 	g_free(conf_file);
 
 	return;
-
 }
 
 int create_diskimg(char *arch, char *dest_path)
@@ -2294,7 +2305,7 @@ void ok_clicked_cb(void)
 	char *log_path = NULL;
 	char *conf_file = NULL;
 	GtkWidget *win = get_window(VTM_CREATE_ID);
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	char *arch = (char*)g_getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -2317,7 +2328,7 @@ void ok_clicked_cb(void)
 		return;
 
 	// add virtual target name to targetlist.ini
-	set_config_value(target_list_filepath, virtual_target_info.major_version, virtual_target_info.virtual_target_name, "");
+	set_config_value(g_target_list_filepath, virtual_target_info.major_version, virtual_target_info.virtual_target_name, "");
 	// write config.ini
 	conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 	create_config_file(conf_file);
@@ -2401,7 +2412,7 @@ void setup_modify_disk_frame(char *target_name)
 	GtkFileFilter *filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, "Disk Image Files");
 	
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	char *arch = (char*)g_getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -2578,7 +2589,7 @@ void setup_resolution_frame(void)
 
 void setup_disk_frame(void)
 {
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	char *arch = (char*)g_getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -2591,12 +2602,12 @@ void setup_disk_frame(void)
 	// file chooser setup
 	GtkWidget *disk_filechooser2 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton2");
 	GtkFileFilter *filter = gtk_file_filter_new();
-	if(strcmp(arch, "x86") == 0)
+	if(strcmp(arch, X86) == 0)
 	{
 		gtk_file_chooser_button_set_title((GtkFileChooserButton *)disk_filechooser2,"Select existing Base Image(x86)");
 		gtk_file_filter_set_name(filter, "Disk Image Files(*.x86)");
 	}
-	else if(strcmp(arch, "arm") == 0)
+	else if(strcmp(arch, ARM) == 0)
 	{
 		gtk_file_chooser_button_set_title((GtkFileChooserButton *)disk_filechooser2,"Select existing Base Image(arm)");
 		gtk_file_filter_set_name(filter, "Disk Image Files(*.arm)");
@@ -2675,7 +2686,7 @@ void setup_ram_frame(void)
 void show_create_window(void)
 {
 	GtkWidget *sub_window;
-	char *arch = (char*)g_getenv("EMULATOR_ARCH");
+	char *arch = (char*)g_getenv(EMULATOR_ARCH);
 	if(arch == NULL)
 	{
 		ERR( "architecture setting failed\n");
@@ -2693,9 +2704,9 @@ void show_create_window(void)
 
 	add_window(sub_window, VTM_CREATE_ID);
 
-	if(strcmp(arch, "x86") == 0)
+	if(strcmp(arch, X86) == 0)
 		gtk_window_set_title(GTK_WINDOW(sub_window), "Create new Virtual Target(x86)");
-	else if(strcmp(arch, "arm") == 0)
+	else if(strcmp(arch, ARM) == 0)
 		gtk_window_set_title(GTK_WINDOW(sub_window), "Create new Virtual Target(arm)");	
 
 	fill_virtual_target_info();
@@ -2710,7 +2721,7 @@ void show_create_window(void)
 	setup_create_frame();
 	setup_create_button();
 
-	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), icon_image, NULL);
+	gtk_window_set_icon_from_file(GTK_WINDOW(sub_window), g_icon_image, NULL);
 
 	g_signal_connect(GTK_OBJECT(sub_window), "delete_event", G_CALLBACK(create_window_deleted_cb), NULL);
 
@@ -2732,7 +2743,7 @@ void construct_main_window(void)
 	GtkWidget *refresh_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button8");
 	GtkWidget *reset_button = (GtkWidget *)gtk_builder_get_object(g_builder, "button9");
 	g_main_window = (GtkWidget *)gtk_builder_get_object(g_builder, "window1");
-	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), icon_image, NULL);
+	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), g_icon_image, NULL);
 	GtkWidget *x86_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton8");
 	GtkWidget *arm_radiobutton = (GtkWidget *)gtk_builder_get_object(g_builder, "radiobutton9");
 
@@ -2851,8 +2862,8 @@ void version_init(char *default_targetname, char* target_list_filepath)
 		return;
 	}
 
-	if(g_key_file_has_group(keyfile, MAJOR_VERSION) == FALSE)
-		set_config_value(target_list_filepath, MAJOR_VERSION, default_targetname, "");
+	if(g_key_file_has_group(keyfile, g_major_version) == FALSE)
+		set_config_value(target_list_filepath, g_major_version, default_targetname, "");
 	
 	g_key_file_free(keyfile);
 	
@@ -2861,9 +2872,26 @@ void version_init(char *default_targetname, char* target_list_filepath)
 
 void lock_file(char *path)
 {
+	const gchar *username;
+	const gchar *tizen_tmp_path;
+	gchar *userfile = NULL;
+	int file_status;
+	username = g_get_user_name();
+	tizen_tmp_path = get_tizen_tmp_path();
+	userfile = g_strdup_printf("%s/%s", tizen_tmp_path, username);	
+	if(access(tizen_tmp_path, R_OK) != 0) 
+		g_mkdir(tizen_tmp_path, 0755);
+	
+	file_status = is_exist_file(userfile);
+	if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+	{
+		 FILE *fp = fopen(userfile, "w+");
+		 fclose(fp);
+	}	
+	
 #ifdef _WIN32
-	char *path_win = change_path_from_slash(path);
-	g_hFile = CreateFile(path_win, // open path
+	char *userfile_win = change_path_from_slash(userfile);
+	g_hFile = CreateFile(userfile_win, // open path
 				GENERIC_READ,             // open for reading
 				0,                        // do not share
 				NULL,                     // no security
@@ -2874,12 +2902,12 @@ void lock_file(char *path)
 	{
 		show_message("Error", "Can not execute Emulator Manager!\n"
 				"Another instance is already running.");
-		free(path_win);
+		free(userfile_win);
 		exit(0);
 	}
 
 #else
-	g_fd = open(path, O_RDWR);
+	g_fd = open(userfile, O_RDWR);
 	if(flock(g_fd, LOCK_EX|LOCK_NB) == -1)
 	{
 		show_message("Error", "Can not execute Emulator Manager!\n"
@@ -2887,7 +2915,6 @@ void lock_file(char *path)
 		exit(0);
 	}
 #endif
-
 }
 
 int main(int argc, char** argv)
@@ -2919,7 +2946,7 @@ int main(int argc, char** argv)
 	skin = (char*)get_skin_path();
 	if(skin == NULL)
 		WARN( "getting icon image path is failed!!\n");
-	sprintf(icon_image, "%s/icons/vtm.ico", skin);
+	sprintf(g_icon_image, "%s/icons/vtm.ico", skin);
 
 	sprintf(full_glade_path, "%s/etc/vtm.glade", get_root_path());
 
@@ -2935,6 +2962,6 @@ int main(int argc, char** argv)
 	
 	gtk_main();
 
-	free(target_list_filepath);
+	free(g_target_list_filepath);
 	return 0;
 }

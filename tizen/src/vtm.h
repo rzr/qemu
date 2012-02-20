@@ -118,6 +118,7 @@ int socket_init(void);
 char *check_kvm(char *info_file, int *status);
 void version_init(char *default_targetname, char* target_list_filepath);
 int delete_group(char* target_list_filepath, char* target_name, int type);
+void make_tizen_vms(void);
 
 int remove_dir(char *path);
 void lock_file(char *path);

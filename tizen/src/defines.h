@@ -97,7 +97,11 @@ extern "C" {
 #define LCD_TAG						"LCD"
 #define LCDSUB_TAG					"SUBLCD"
 #define KEY_TAG						"KEY"
-
+#define X86							"x86"
+#define ARM							"arm"
+#define DEFAULT_TARGET				"default"
+#define EMULATOR_X86				"emulator-x86"
+#define EMULATOR_ARM				"emulator-arm"
 #define COMMON_GROUP				"COMMON"
 #define EMULATOR_GROUP				"EMULATOR"
 #define QEMU_GROUP					"QEMU"
@@ -112,7 +116,7 @@ extern "C" {
 #define MAIN_Y_KEY					"MAIN_Y"
 #define SCALE_KEY					"SCALE"
 #define TERMINAL_TYPE_KEY			"TERMINAL_TYPE"
-
+#define EMULATOR_ARCH				"EMULATOR_ARCH"
 #define HTTP_PROXY_KEY				"HTTP_PROXY"
 #define DNS_SERVER_KEY				"DNS_SERVER"
 #define TELNET_TYPE_KEY				"TELNET_TYPE"
@@ -141,6 +145,7 @@ extern "C" {
 #define ETC_GROUP					"ETC"
 #define ADDITIONAL_OPTION_GROUP		"ADDITIONAL_OPTION"
 
+#define CUSTOM_GROUP				"Custom"
 #define HARDWARE_GROUP				"HARDWARE"
 #define RESOLUTION_KEY				"RESOLUTION"
 #define BUTTON_TYPE_KEY                         "BUTTON_TYPE"
@@ -166,7 +171,7 @@ extern "C" {
 #define DEFAULT_TARGET_KEY			"DEFAULT_TARGET"
 #define SBOX_SKIN_KEY				"EmulatorSkinPath"
 #define SBOX_EXEC_KEY				"PackagePath"
-
+#define DEFAULT						"default"
 #define TARGET_WIN_PATH "/samsung_sdk/target/"
 
 /* buffer generation */

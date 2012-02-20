@@ -764,15 +764,15 @@ static int startup_option_parser(int *argc, char ***argv)
 	char string[MAXBUF];
 	FILE *fp = NULL;
 	char *info_file;
-	char *arch = getenv("EMULATOR_ARCH");
+	char *arch = getenv(EMULATOR_ARCH);
 	const gchar *exec_path = get_exec_path();
 	if(!arch) /* for stand alone */
 	{
 		char *binary = g_path_get_basename(exec_path);
-		if(strstr(binary, "emulator-x86"))
-			arch = g_strdup_printf("x86");
-		else if(strstr(binary, "emulator-arm"))
-			arch = g_strdup_printf("arm");
+		if(strstr(binary, EMULATOR_X86))
+			arch = g_strdup_printf(X86);
+		else if(strstr(binary, EMULATOR_ARM))
+			arch = g_strdup_printf(ARM);
 		else 
 		{
 			ERR( "binary setting failed\n");
