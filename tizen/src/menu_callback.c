@@ -695,10 +695,10 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	{
 		const gchar *exec_path = get_exec_path();
 		char *binary = g_path_get_basename(exec_path);
-		if(strcmp(binary, "emulator-x86") == 0)
-			arch = g_strdup_printf("x86");
-		else if(strcmp(binary, "emulator-arm") == 0)
-			arch = g_strdup_printf("arm");
+		if(strcmp(binary, EMULATOR_X86) == 0)
+			arch = g_strdup_printf(X86);
+		else if(strcmp(binary, EMULATOR_ARM) == 0)
+			arch = g_strdup_printf(ARM);
 		else 
 		{
 			ERR( "binary setting failed\n");
