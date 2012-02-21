@@ -583,7 +583,7 @@ gchar *get_virtual_target_log_path(gchar *virtual_target_name)
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__); exit(1);
 	}
 
-	const gchar *vms_path = get_tizen_vms_path();
+	const gchar *vms_path = get_tizen_vms_arch_path();
 	sprintf(virtual_target_log_path, "%s/%s/logs", vms_path, virtual_target_name);
 
 	return virtual_target_log_path;
