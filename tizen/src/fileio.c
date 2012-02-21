@@ -480,7 +480,6 @@ const gchar *get_tizen_vms_arch_path(void)
 	char *tizen_vms = (char*)get_tizen_vms_path();
 	char *arch = (char *)g_getenv(EMULATOR_ARCH);
 	const gchar *exec_path = get_exec_path();
-	
 	if(!arch) /* for stand alone */
 	{
 		char *binary = g_path_get_basename(exec_path);
@@ -495,8 +494,8 @@ const gchar *get_tizen_vms_arch_path(void)
 		}
 		free(binary);
 	}
-
-	tizen_vms_arch_path = malloc(strlen(tizen_vms) + 1 + strlen(arch));
+	
+	tizen_vms_arch_path = malloc(strlen(tizen_vms) + 1 + strlen(arch) + 1);
 	assert(tizen_vms_arch_path != NULL);
 	strcpy(tizen_vms_arch_path, tizen_vms);
 	strcat(tizen_vms_arch_path, "/");
