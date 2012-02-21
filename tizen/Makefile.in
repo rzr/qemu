@@ -13,7 +13,6 @@ install:
 	cd src && $(MAKE) install
 	cp -dpr ./skins $(PHONE_DIR)
 	cp -dpr ./data $(PHONE_DIR)/x86
-	cp -dpr ./conf $(PHONE_DIR)/x86
 	cp -dpr ./license $(PHONE_DIR)
 	cp -a ./src/config_x86.ini $(PHONE_DIR)/x86/conf/config.ini
 

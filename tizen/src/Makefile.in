@@ -222,14 +222,12 @@ endif
 	mkdir -p $(PHONE_DIR)/arm
 	mkdir -p $(PHONE_DIR)/x86
 	mkdir -p $(PHONE_DIR)/etc
-#	mkdir -p $(PHONE_DIR)/x86/data
-#	mkdir -p $(PHONE_DIR)/x86/data/kernel-img
+	mkdir -p $(PHONE_DIR)/x86/conf
 	install emulator-x86 $(PHONE_DIR)/bin/emulator-x86
 #	install emulator-arm $(PHONE_DIR)/bin/emulator-arm
 	cp -a $(VTM) $(PHONE_DIR)/bin
 	cp -a ../../qemu-img $(PHONE_DIR)/bin
 	cp -a vtm.glade $(PHONE_DIR)/etc
-#	cp -a config_x86.ini $(PHONE_DIR)/x86/conf/config.ini
 
 %/__dir_clean__: dummy
 	cd `dirname $@` && $(MAKE) clean
