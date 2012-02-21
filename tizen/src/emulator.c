@@ -85,7 +85,6 @@ MULTI_DEBUG_CHANNEL(tizen, main);
 #define RCVBUFSIZE 40
 #define MAX_COMMANDS 5
 #define MAX_LENGTH 24
-//#define SIMULATOR_DISK_FILE  "/opt/samsung_sdk/simulator/emulimg.x86"
 #define MAX_TIME_STR 100
 
 /* enable opengl_server thread */
@@ -795,7 +794,7 @@ static int startup_option_parser(int *argc, char ***argv)
 
 	/* 2. Goption parsing */
 
-	context = g_option_context_new ("- Samsung SDK Emulator");
+	context = g_option_context_new ("- Tizen SDK Emulator");
 	g_option_context_set_help_enabled(context, FALSE);
 	g_option_context_add_main_entries (context, options, NULL);
 	g_option_context_add_group (context, gtk_get_option_group (TRUE));
@@ -966,7 +965,7 @@ static void emul_prepare_process(void)
 		const char* target_path = get_target_path();
 
 		if(configuration.qemu_configuration.diskimg_type) 
-			sprintf (cmd, "/opt/samsung_sdk/simulator/vmodem_arm");
+			sprintf (cmd, "/opt/tizen_sdk/simulator/vmodem_arm");
 		else 
 			sprintf (cmd, "%s/usr/bin/vmodem_arm", target_path);
 

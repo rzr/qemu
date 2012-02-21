@@ -290,7 +290,7 @@ int write_config_file(gchar *filepath, CONFIGURATION *pconfiguration)
 
 /**
  * @brief 	read conf value and save in configuration structure from config file (emulator.conf)
- * @param	filename : configuration file path (ex: ~/.samsung_sdk/simulator/1/emulator.conf), CONFIGURATION
+ * @param	filename : configuration file path, CONFIGURATION
  * @return	fail(-1), success(0)
  * @date    Nov 17. 2008
  * */

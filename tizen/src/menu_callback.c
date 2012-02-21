@@ -602,7 +602,6 @@ void show_about_window(GtkWidget *parent)
 	   " and many more",
 	   NULL};
 	 */
-	//const gchar *website = "http://innovator.samsungmobile.com";
 
 	sprintf(comments, "\nVersion: %s\n"
 			//		"Based upon QEMU 0.10.5 (http://qemu.org)\n"
