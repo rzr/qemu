@@ -357,7 +357,7 @@ obj-i386-$(CONFIG_LINUX) += svcamera_linux.o
 obj-i386-$(CONFIG_WIN32) += svcamera_win32.o
 
 ifdef CONFIG_FFMPEG
-obj-i386-y += tizen-codec.o
+obj-i386-y += maru_codec.o
 LIBS+=-lavformat -lavcodec -lavutil -lswscale -lbz2
 CFLAGS+=$(FFMPEG_CFLAGS)
 endif
