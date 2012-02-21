@@ -264,7 +264,7 @@ const gchar *get_baseimg_path(void)
 	target_list_filepath = get_targetlist_filepath();
 	sprintf(version_path, "%s/version.ini",get_etc_path());
 	MAJOR_VERSION = (char*)get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
-
+	char* subdir = NULL;	
 	if(!arch) /* for stand alone */
 	{
 		char *binary = g_path_get_basename(exec_path);
@@ -280,16 +280,15 @@ const gchar *get_baseimg_path(void)
 		free(binary);
 	}
 
+	subdir = g_strdup_printf("/emulimg-%s.%s", MAJOR_VERSION, arch);
+
 	arch_path = get_arch_path();
-	path = malloc(strlen(arch_path) + 14 + strlen(MAJOR_VERSION));
+	path = malloc(strlen(arch_path) + strlen(subdir) + 2);
 	strcpy(path, arch_path);
-	strcat(path, "/");	
-	strcat(path, "emulimg-");
-	strcat(path, MAJOR_VERSION);
-	strcat(path, ".");
-	strcat(path, arch);
+	strcat(path, subdir);
 	
 	free(MAJOR_VERSION);
+	free(subdir);
 	return path;
 }
 
@@ -297,15 +296,11 @@ const gchar *get_baseimg_path(void)
 const gchar *get_arch_path(void)
 {
 	gchar *path_buf;
-	gchar *path_buf2;
 	static gchar *path;
 	char *arch = (char *)g_getenv(EMULATOR_ARCH);
 
 	const gchar *exec_path = get_exec_path();
-	path_buf2 = g_path_get_dirname(exec_path);
-	path_buf = g_path_get_dirname(path_buf2);
-	g_free(path_buf2);
-	path = malloc(strlen(path_buf) + 5);
+	path_buf = g_path_get_dirname(g_path_get_dirname(exec_path));
 	if(!arch) /* for stand alone */
 	{
 		char *binary = g_path_get_basename(exec_path);
@@ -320,6 +315,9 @@ const gchar *get_arch_path(void)
 		}
 		free(binary);
 	}
+
+	path = malloc(strlen(path_buf) + strlen(arch) + 2);
+
 	strcpy(path, path_buf);
 	strcat(path, "/");	
 	strcat(path, arch);
@@ -339,7 +337,7 @@ const gchar *get_etc_path(void)
 		return etc_path;
 
 	path = get_root_path();
-	etc_path = malloc(strlen(path) + sizeof etcsubdir);
+	etc_path = malloc(strlen(path) + sizeof etcsubdir + 1);
 	if (!etc_path) {
 		ERR( "%s - %d: memory allocation failed!\n", __FILE__, __LINE__);
 		exit(1);
@@ -371,7 +369,7 @@ const gchar *get_skin_path(void)
 	if (!skin_path_env)
 	{
 		path = get_root_path();
-		skin_path = malloc(strlen(path) + sizeof skinsubdir);
+		skin_path = malloc(strlen(path) + sizeof skinsubdir + 1);
 		if (!skin_path) {
 			fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__);
 			exit(1);
@@ -399,7 +397,7 @@ const gchar *get_tizen_tmp_path(void)
 	static gchar *path;
 
 	tmp_path = g_get_tmp_dir();
-	path = malloc(strlen(tmp_path) + sizeof subdir);
+	path = malloc(strlen(tmp_path) + sizeof subdir + 1);
 	if (!path) {
 		fprintf(stderr, "%s - %d: memory allocation failed!\n", __FILE__, __LINE__);
 		exit(1);
@@ -422,7 +420,7 @@ const gchar *get_data_path(void)
 	{
 		const gchar *path = get_arch_path();
 
-		data_path = malloc(strlen(path) + sizeof suffix);
+		data_path = malloc(strlen(path) + sizeof suffix + 1);
 		assert(data_path != NULL);
 		strcpy(data_path, path);
 		strcat(data_path, suffix);
@@ -466,7 +464,7 @@ const gchar *get_conf_path(void)
 	static const char suffix[] = "/conf";
 
 	const gchar *path = get_arch_path();
-	conf_path = malloc(strlen(path) + sizeof suffix);
+	conf_path = malloc(strlen(path) + sizeof suffix + 1);
 	assert(conf_path != NULL);
 	strcpy(conf_path, path);
 	strcat(conf_path, suffix);
@@ -518,7 +516,7 @@ const gchar *get_tizen_vms_path(void)
 	if(!homedir)
 		homedir = (char*)g_get_home_dir();
 
-	tizen_vms_path = malloc(strlen(homedir) + sizeof tizen_vms);
+	tizen_vms_path = malloc(strlen(homedir) + sizeof tizen_vms + 1);
 	assert(tizen_vms_path != NULL);
 	strcpy(tizen_vms_path, homedir);
 	strcat(tizen_vms_path, tizen_vms);
@@ -533,7 +531,7 @@ const gchar *get_screenshots_path(void)
 	char *tizen_vms_path = (char*)get_tizen_vms_path();
 	char *screenshots_path;	
 	
-	screenshots_path = malloc(strlen(tizen_vms_path) + sizeof subdir);
+	screenshots_path = malloc(strlen(tizen_vms_path) + sizeof subdir + 1);
 	assert(screenshots_path != NULL);
 	strcpy(screenshots_path, tizen_vms_path);
 	strcat(screenshots_path, subdir);
