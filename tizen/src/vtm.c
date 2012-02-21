@@ -1278,6 +1278,7 @@ void make_tizen_vms(void)
 	char *target_list_filepath;
 	char *tizen_vms_path = (char*)get_tizen_vms_arch_path();
 	char *screenshots_path = (char*)get_screenshots_path();
+	char *log_path = (char*)get_virtual_target_log_path(DEFAULT);
 
 	if(access(tizen_vms_path, R_OK) != 0){
 		INFO("tizen_vms dir not exist. is making now : %s\n", tizen_vms_path);
@@ -1287,6 +1288,11 @@ void make_tizen_vms(void)
 	if(access(screenshots_path, R_OK) != 0){
 		INFO("screenshots dir not exist. is making now : %s\n", screenshots_path);
 		g_mkdir(screenshots_path, 0755);
+	}
+
+	if(access(log_path, R_OK) != 0){
+		INFO("screenshots dir not exist. is making now : %s\n", log_path);
+		g_mkdir(log_path, 0755);
 	}
 
 	target_list_filepath = get_targetlist_filepath();
@@ -1303,6 +1309,7 @@ void make_tizen_vms(void)
 
 	free(tizen_vms_path);
 	free(screenshots_path);
+	free(log_path);
 	free(target_list_filepath);
 }
 

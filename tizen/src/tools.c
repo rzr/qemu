@@ -52,6 +52,8 @@
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, tools);
 
+#define MAX_FILENAME_LENGTH 64
+
 /** 
   * @brief 	get the filename from filebrowser
   * @param 	str_title: titlebar name of filebrowser
@@ -67,7 +69,8 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 	char *filename = NULL;
 	time_t rawtime;
 	struct tm *timeinfo;
-	char save_file_name[64];
+	char save_file_subname[MAX_FILENAME_LENGTH];
+	char save_file_fullname[MAX_FILENAME_LENGTH];
 
 	if (str_title == NULL) 
 		return NULL;
@@ -100,14 +103,21 @@ char *get_file_name(char *str_title, char *str_folder, GtkFileChooserAction choo
 
 	rawtime = time(NULL);
 	timeinfo = localtime(&rawtime);
-	strftime(save_file_name, 64, "emulator-%Y-%m-%d-%H%M%S.png", timeinfo);
+	strftime(save_file_subname, MAX_FILENAME_LENGTH, "-%Y-%m-%d-%H%M%S.png", timeinfo);
 
-	gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(filew), save_file_name);
+	if (strlen(startup_option.vtm) == 0 || MAX_FILENAME_LENGTH - (strlen(save_file_subname) + 1) < strlen(startup_option.vtm)) {
+		snprintf(save_file_fullname, MAX_FILENAME_LENGTH - 1, "emulator%s", save_file_subname);
+	} else {
+		snprintf(save_file_fullname, MAX_FILENAME_LENGTH - 1, "%s%s", startup_option.vtm, save_file_subname);
+	}
+
+	gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(filew), save_file_fullname);
 	
-	if (str_folder == NULL || strlen(str_folder) == 0) 
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filew), configuration.target_path);	
-	else 
+	if (str_folder == NULL || strlen(str_folder) == 0) {
+		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filew), configuration.target_path);
+	} else {
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filew), str_folder);
+	}
 
 	// FileFilter
 	if (file_filter != NULL) {

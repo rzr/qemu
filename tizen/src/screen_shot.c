@@ -462,7 +462,12 @@ static void frame_buffer_save_image(GtkToolButton *toolbutton, gpointer user_dat
 		gtk_file_filter_add_pattern(image_file_filter, "*.[jJ][pP][eE][gG]");
 		gtk_file_filter_add_pattern(image_file_filter, "*.[bB][mM][pP]");
 
-		file_name = get_file_name("Save Image...", NULL, GTK_FILE_CHOOSER_ACTION_SAVE, image_file_filter, IMAGE_FILE_SAVE);
+		gchar *screenshot_path =  get_screenshots_path();
+		if (access(screenshot_path, 0) != 0) {
+			screenshot_path = NULL;
+		}
+
+		file_name = get_file_name("Save Image...", screenshot_path, GTK_FILE_CHOOSER_ACTION_SAVE, image_file_filter, IMAGE_FILE_SAVE);
 		if (file_name == NULL) {
 			break; //cancle
 		} else if (strlen(file_name) == 0) {
