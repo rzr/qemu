@@ -41,7 +41,7 @@
 #include <libswscale/swscale.h>
 
 // #define CODEC_THREAD
-#define CODEC_HOST
+// #define CODEC_HOST
 
 /*
  *  Codec Device Structures
@@ -70,6 +70,7 @@ typedef struct _SVCodecState {
     PCIDevice       	dev;
     SVCodecThreadInfo	thInfo;
 	SVCodecInfo			codecInfo;
+	SVCodecParam		codecParam;
 
     int             	mmioIndex;
 
@@ -90,6 +91,26 @@ enum {
     READY_TO_GET_DATA   = 0x0C,
     COPY_RESULT_DATA    = 0x10,
 };
+
+enum {
+    EMUL_AV_REGISTER_ALL = 1,
+    EMUL_AVCODEC_OPEN,
+    EMUL_AVCODEC_CLOSE,
+    EMUL_AVCODEC_ALLOC_CONTEXT,
+    EMUL_AVCODEC_ALLOC_FRAME,
+    EMUL_AV_FREE_CONTEXT,
+    EMUL_AV_FREE_FRAME,
+    EMUL_AV_FREE_PALCTRL,
+    EMUL_AV_FREE_EXTRADATA,
+    EMUL_AVCODEC_FLUSH_BUFFERS,
+    EMUL_AVCODEC_DECODE_VIDEO,
+    EMUL_AVCODEC_ENCODE_VIDEO,
+    EMUL_AV_PICTURE_COPY,
+    EMUL_AV_PARSER_INIT,
+    EMUL_AV_PARSER_PARSE,
+    EMUL_AV_PARSER_CLOSE,
+};
+
 
 /*
  *  Codec Device APIs
@@ -131,16 +152,21 @@ void qemu_avcodec_alloc_context (void);
 
 void qemu_avcodec_alloc_frame (void);
 
-void qemu_av_free (SVCodecState* s);
+void qemu_av_free_context (void);
+
+void qemu_av_free_picture (void);
+
+void qemu_av_free_palctrl (void);
+
+void qemu_av_free_extradata (void);
 
 void qemu_avcodec_flush_buffers (void);
 
 int qemu_avcodec_decode_video (SVCodecState *s);
 
-int qemu_avcodec_decode_audio (void);
-
 int qemu_avcodec_encode_video (SVCodecState *s);
 
+// int qemu_avcodec_decode_audio (void);
 // int qemu_avcodec_encode_audio (void);
 
 void qemu_av_picture_copy (SVCodecState *s);
