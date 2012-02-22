@@ -1,5 +1,5 @@
 /*
- * Samsung Virtual Camera device(PCI) for Windows host.
+ * Virtual Camera device(PCI) for Windows host.
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
