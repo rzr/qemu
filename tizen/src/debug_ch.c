@@ -289,8 +289,8 @@ static void debug_init(void)
 		free(tmp);
 	}
 
-	strcpy(logfile, get_virtual_target_path(startup_option.vtm));
-	strcat(logfile, "logs/emulator.log");
+	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
+	strcat(logfile, EMUL_LOGFILE);
 
 	if(access(logfile, F_OK | R_OK) == 0)
 		remove(logfile);

@@ -475,11 +475,7 @@ int is_valid_targetlist_file()
 	int status = 0;
 	gchar *targetlist_filepath = NULL;
 
-	/* 1. getting emulator conf path : /opt/samsing_sdk/simulator/conf/emulator.conf */
-
 	targetlist_filepath = get_targetlist_filepath();
-
- 	/* 2. check if exist emulator.conf */
 
 	status = is_exist_file(targetlist_filepath);
 
@@ -669,9 +665,9 @@ void qemu_option_set_to_config(arglist *al)
 	if (qemu_arch_is_arm()){
 		/* duallcd command line is used in hw/s5pc1xx.c to change the board revision */
 		if(PHONE.dual_display == 1)
-			strcpy(kernel_kappend, "console=ttySAC2,115200n8 duallcd mem=80M mem=256M@0x40000000 mem=128@0x50000000 mtdparts=samsung-onenand:1m(bootloader),256k(params),2816k(config),8m(csa),7m(kernel),1m(log),12m(modem),60m(qboot),-(UBI) ");
+			strcpy(kernel_kappend, "console=ttySAC2,115200n8 duallcd mem=80M mem=256M@0x40000000 mem=128@0x50000000 mtdparts=tizen-onenand:1m(bootloader),256k(params),2816k(config),8m(csa),7m(kernel),1m(log),12m(modem),60m(qboot),-(UBI) ");
 		else
-			strcpy(kernel_kappend, "console=ttySAC2,115200n8 mem=80M mem=256M@0x40000000 mem=128@0x50000000 mtdparts=samsung-onenand:1m(bootloader),256k(params),2816k(config),8m(csa),7m(kernel),1m(log),12m(modem),60m(qboot),-(UBI) ");
+			strcpy(kernel_kappend, "console=ttySAC2,115200n8 mem=80M mem=256M@0x40000000 mem=128@0x50000000 mtdparts=tizen-onenand:1m(bootloader),256k(params),2816k(config),8m(csa),7m(kernel),1m(log),12m(modem),60m(qboot),-(UBI) ");
 	}
 	else
 		strcpy(kernel_kappend, "console=ttyS0 ");

@@ -76,6 +76,7 @@ GtkWidget *f_entry;
 gchar g_icon_image[MAXPATH] = {0, };
 const char *g_major_version;
 int g_minor_version;
+gchar *g_userfile;
 #ifdef _WIN32
 HANDLE g_hFile;
 void socket_cleanup(void)
@@ -1358,7 +1359,7 @@ void make_default_image(char *default_targetname)
 					show_message("Error", "Failed to delete default target!");
 					free(virtual_target_path);
 					free(info_file);
-					return ;
+					break ;
 				}
 			}
 				
@@ -1370,10 +1371,10 @@ void make_default_image(char *default_targetname)
 		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 		{
 			ERR( "load target list file error\n");
-			show_message("Err", "load target list file error!");
+			show_message("Error", "load target list file error!");
 			free(virtual_target_path);
 			free(info_file);
-			return;
+			break;
 		}
 		
 		default_img = g_strdup_printf("%semulimg-default.%s", virtual_target_path, arch);
@@ -1381,6 +1382,15 @@ void make_default_image(char *default_targetname)
 		default_path = g_strdup_printf("%s/config.ini", default_dir);
 		log_dir = get_virtual_target_log_path(default_targetname);
 		conf_path = g_strdup_printf("%s/config.ini", get_conf_path());
+		file_status = is_exist_file(conf_path);
+		if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+		{
+			char *message = g_strdup_printf("File does not exist.\n\n"
+					"   -[%s]", conf_path);
+			show_message("Error", message);
+			free(message);
+			break;
+		}
 		targetlist = get_targetlist_filepath();
 		file_conf_path = g_file_new_for_path(conf_path);
 		file_default_path = g_file_new_for_path(default_path);
@@ -1644,6 +1654,7 @@ void exit_vtm(void)
 #else
 	CloseHandle(g_hFile);
 #endif
+	g_remove(g_userfile);
 	gtk_main_quit();
 
 }
@@ -2880,25 +2891,33 @@ void version_init(char *default_targetname, char* target_list_filepath)
 void lock_file(char *path)
 {
 	const gchar *username;
-	const gchar *tizen_tmp_path;
-	gchar *userfile = NULL;
 	int file_status;
-	username = g_get_user_name();
-	tizen_tmp_path = get_tizen_tmp_path();
-	userfile = g_strdup_printf("%s/%s", tizen_tmp_path, username);	
-	if(access(tizen_tmp_path, R_OK) != 0) 
-		g_mkdir(tizen_tmp_path, 0755);
 	
-	file_status = is_exist_file(userfile);
+	username = g_get_user_name();
+	g_userfile = g_strdup_printf(".%s", username);
+
+	file_status = is_exist_file(g_userfile);
 	if(file_status == -1 || file_status == FILE_NOT_EXISTS)
 	{
-		 FILE *fp = fopen(userfile, "w+");
-		 fclose(fp);
+#ifdef _WIN32
+	HANDLE hFile = NULL;
+	hFile = CreateFile(change_path_from_slash(g_userfile),
+				GENERIC_READ,
+				0,
+				NULL,
+				CREATE_NEW,
+				FILE_ATTRIBUTE_HIDDEN,
+				NULL);
+
+	CloseHandle(hFile);
+#else
+	FILE *fp = fopen(g_userfile, "w+");
+	fclose(fp);
+#endif
 	}	
 	
 #ifdef _WIN32
-	char *userfile_win = change_path_from_slash(userfile);
-	g_hFile = CreateFile(userfile_win, // open path
+	g_hFile = CreateFile(change_path_from_slash(g_userfile), // open path
 				GENERIC_READ,             // open for reading
 				0,                        // do not share
 				NULL,                     // no security
@@ -2909,16 +2928,18 @@ void lock_file(char *path)
 	{
 		show_message("Error", "Can not execute Emulator Manager!\n"
 				"Another instance is already running.");
-		free(userfile_win);
+		free(g_userfile);
 		exit(0);
 	}
 
 #else
-	g_fd = open(userfile, O_RDWR);
+	g_fd = open(g_userfile, O_RDWR);
 	if(flock(g_fd, LOCK_EX|LOCK_NB) == -1)
 	{
 		show_message("Error", "Can not execute Emulator Manager!\n"
 				"Another instance is already running.");
+		close(g_fd);
+		free(g_userfile);
 		exit(0);
 	}
 #endif
@@ -2931,7 +2952,13 @@ int main(int argc, char** argv)
 	int status;
 	char *skin = NULL;
 	char full_glade_path[MAX_LEN];
-	
+	char *tizen_vms_path = (char*)get_tizen_vms_path();
+
+	if(access(tizen_vms_path, R_OK) != 0){
+		g_mkdir_with_parents(tizen_vms_path, 0755);
+	}
+	free(tizen_vms_path);
+
 	working_dir = g_path_get_dirname(buf);
 	status = g_chdir(working_dir);
 	if(status == -1)

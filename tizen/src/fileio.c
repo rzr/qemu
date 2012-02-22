@@ -471,7 +471,7 @@ const gchar *get_conf_path(void)
 
 	return conf_path;
 }
-/* get_tizen_vms_path = "/home/{USER}/tizen_vms/{ARCH}" */
+/* get_tizen_vms_arch_path = "/home/{USER}/tizen_vms/{ARCH}" */
 const gchar *get_tizen_vms_arch_path(void)
 {
 	char *tizen_vms_arch_path;

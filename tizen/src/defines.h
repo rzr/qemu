@@ -102,6 +102,8 @@ extern "C" {
 #define DEFAULT_TARGET				"default"
 #define EMULATOR_X86				"emulator-x86"
 #define EMULATOR_ARM				"emulator-arm"
+#define EMUL_LOGFILE				"/emulator.log"
+#define EMULMGR_LOGFILE				"/emulator-manager.log"
 #define COMMON_GROUP				"COMMON"
 #define EMULATOR_GROUP				"EMULATOR"
 #define QEMU_GROUP					"QEMU"
@@ -172,7 +174,6 @@ extern "C" {
 #define SBOX_SKIN_KEY				"EmulatorSkinPath"
 #define SBOX_EXEC_KEY				"PackagePath"
 #define DEFAULT						"default"
-#define TARGET_WIN_PATH "/samsung_sdk/target/"
 
 /* buffer generation */
 #ifndef MAXBUF

@@ -100,6 +100,8 @@ SYSINFO SYSTEMINFO;
 STARTUP_OPTION startup_option;
 PHONEMODELINFO *phone_info;
 VIRTUALTARGETINFO virtual_target_info;
+FILE *g_out_fp;
+FILE *g_err_fp;
 
 UIFLAG UISTATE = {
 	.last_index = -1,
@@ -125,7 +127,6 @@ GtkWidget *g_main_window;
 
 GtkWidget *pixmap_widget;
 GtkWidget *fixed;
-static char logfile[256] = { 0, };
 #ifdef __linux__
 struct utsname host_uname_buf;
 #endif
@@ -355,6 +356,12 @@ void exit_emulator_post_process( void ) {
 	fclose(stdout);
 	fclose(stderr);
 
+	/* 6. close fp which is opened when redirect_log() */
+
+	fclose(g_out_fp);
+	fclose(g_err_fp);
+	INFO( "Close fp which is opened when redirect_log()\n");	
+
 #ifdef ENABLE_OPENGL_SERVER
 	pthread_cancel(thread_opengl_id);
 	INFO( "opengl_server thread is quited.\n");
@@ -449,7 +456,6 @@ void exit_emulator(void)
 
 #else
 
-
 	/* 1. emulator and driver destroy */
 
 	destroy_emulator();
@@ -472,7 +478,7 @@ void exit_emulator(void)
 
 	gtk_main_quit();
 	INFO( "Emulator Stop: shutdown qemu system, gtk_main quit complete \n");
-
+	
 #ifdef ENABLE_OPENGL_SERVER
 	pthread_cancel(thread_opengl_id);
 	INFO( "opengl_server thread is quited.\n");
@@ -1055,16 +1061,20 @@ int init_shdmem()
 
 static void redirect_log(void)
 {
-	FILE *fp;
-	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
-	strcat(logfile, "/emulator.log");
+	static char logfile[256] = { 0, };
 
-	fp = freopen(logfile, "a+", stdout);
-	if(fp ==NULL)
+	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
+	strcat(logfile, EMUL_LOGFILE);
+
+	g_out_fp = freopen(logfile, "a+", stdout);
+	if (g_out_fp ==NULL) {
 		fprintf(stderr, "log file open error\n");
-	fp = freopen(logfile, "a+", stderr);
-	if(fp ==NULL)
+	}
+	
+	g_err_fp = freopen(logfile, "a+", stderr);
+	if (g_err_fp ==NULL) {
 		fprintf(stderr, "log file open error\n");
+	}
 
 	setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
 	setvbuf(stderr, NULL, _IOLBF, BUFSIZ);

@@ -64,7 +64,6 @@ extern UIFLAG UISTATE;
 extern GtkWidget *g_main_window;
 extern STARTUP_OPTION startup_option;
 extern VIRTUALTARGETINFO virtual_target_info;
-
 void emulator_mutex_lock(void);
 void emulator_mutex_unlock(void);
 
