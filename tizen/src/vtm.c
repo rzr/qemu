@@ -2901,7 +2901,7 @@ void lock_file(char *path)
 	{
 #ifdef _WIN32
 	HANDLE hFile = NULL;
-	hFile = CreateFile(change_path_from_slas(g_userfile),
+	hFile = CreateFile(change_path_from_slash(g_userfile),
 				GENERIC_READ,
 				0,
 				NULL,
@@ -2917,7 +2917,7 @@ void lock_file(char *path)
 	}	
 	
 #ifdef _WIN32
-	g_hFile = CreateFile(uchange_path_from_slash(g_userfile), // open path
+	g_hFile = CreateFile(change_path_from_slash(g_userfile), // open path
 				GENERIC_READ,             // open for reading
 				0,                        // do not share
 				NULL,                     // no security
