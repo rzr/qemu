@@ -47,7 +47,6 @@
 MULTI_DEBUG_CHANNEL(tizen, emulsignal);
 
 static sigset_t cur_sigset, old_sigset;
-
 extern void emul_kill_all_process(void);
 
 /**
@@ -123,6 +122,7 @@ void destroy_emulator(void)
 	if(hMapFile)
 		CloseHandle(hMapFile);
 #endif
+
 	return;
 }
 

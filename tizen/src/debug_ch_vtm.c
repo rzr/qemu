@@ -289,8 +289,8 @@ static void debug_init(void)
 		free(tmp);
 	}
 
-	strcpy(logfile, get_root_path());
-	strcat(logfile, "/etc/emulator-manager.log");
+	strcpy(logfile, get_tizen_vms_path());
+	strcat(logfile, EMULMGR_LOGFILE);
 
 	if(access(logfile, F_OK | R_OK) == 0)
 		remove(logfile);
