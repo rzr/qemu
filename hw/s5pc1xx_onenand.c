@@ -12,7 +12,7 @@
 
 
 /* OneNAND Device Description:
-   EC - Samsung, 50 - device properties, 2E - version */
+   EC - , 50 - device properties, 2E - version */
 #define ONENAND_DEVICE_ID  0xEC502E
 
 /* Device is mux */

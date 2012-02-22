@@ -517,7 +517,7 @@ static int s5pc1xx_keyif_init1(SysBusDevice *dev)
                                     s5pc1xx_keyif_gpio_readfn,
                                     s5pc1xx_keyif_gpio_writefn, NULL, s);
     s5pc1xx_init_keymap(s);
-    qemu_add_kbd_event_handler(s5pc1xx_keypad_event, s, "Samsung Keypad");
+    qemu_add_kbd_event_handler(s5pc1xx_keypad_event, s, "Keypad");
 
     s5pc1xx_keyif_reset(&s->busdev.qdev);
 

@@ -1,5 +1,5 @@
 /*
- * JPEG codec for Samsung S5PC110-based board emulation
+ * JPEG codec for S5PC110-based board emulation
  *
  * Copyright (c) 2010 Samsung Electronics.
  * Contributed by Vladimir Monakhov <vladimir.monakhov@ispras.ru>

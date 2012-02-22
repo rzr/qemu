@@ -1,5 +1,5 @@
 /*
- * Watchdog Timer for Samsung S5C110-based board emulation
+ * Watchdog Timer for S5C110-based board emulation
  *
  * Copyright (c) 2009 Samsung Electronics.
  * Contributed by Vladimir Monakhov <vladimir.monakhov@ispras.ru>

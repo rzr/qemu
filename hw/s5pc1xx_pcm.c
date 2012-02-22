@@ -1,5 +1,5 @@
 /*
- * PCM audio interface for Samsung S5PC110-based board emulation
+ * PCM audio interface for S5PC110-based board emulation
  *
  * Copyright (c) 2010 Samsung Electronics.
  * Contributed by Vladimir Monakhov <vladimir.monakhov@ispras.ru>
