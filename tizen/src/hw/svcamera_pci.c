@@ -1,5 +1,5 @@
 /*
- * Samsung Qemu webcam device emulation by PCI bus
+ * Qemu webcam device emulation by PCI bus
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *
