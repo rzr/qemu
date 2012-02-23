@@ -132,7 +132,7 @@
 #define IPC_CP_READY                    0xABCDABCD
 
 /*
- * Samsung IPC 4.0 specific definitions
+ * IPC 4.0 specific definitions
  */
 #define INT_MASK_VALID                  0x0080
 #define INT_MASK_COMMAND                0x0040

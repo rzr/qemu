@@ -1,5 +1,5 @@
 /*
- * SPDIF transmitter for Samsung S5PC110-based board emulation
+ * SPDIF transmitter for S5PC110-based board emulation
  *
  * Copyright (c) 2010 Samsung Electronics.
  * Contributed by Vladimir Monakhov <vladimir.monakhov@ispras.ru>

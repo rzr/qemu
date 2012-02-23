@@ -1,5 +1,5 @@
 /*
- * MMC controller for Samsung S5PC1XX-based board emulation
+ * MMC controller for S5PC1XX-based board emulation
  *
  * Copyright (c) 2010 Samsung Electronics.
  * Contributed by Alexey Merkulov <steelart@ispras.ru>

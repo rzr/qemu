@@ -1,5 +1,5 @@
 /*
- * I2C controller for Samsung S5PC1XX-based board emulation
+ * I2C controller for S5PC1XX-based board emulation
  *
  * Copyright (c) 2009 Samsung Electronics.
  * Contributed by Vladimir Monakhov <vladimir.monakhov@ispras.ru>

@@ -1,5 +1,5 @@
 /*
- * Samsung S5PC1XX-based board emulation.
+ * S5PC1XX-based board emulation.
  *
  * Copyright (c) 2009 Samsung Electronics.
  * Contributed by Kirill Batuzov <batuzovk@ispras.ru>

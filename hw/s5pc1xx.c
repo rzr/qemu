@@ -1,5 +1,5 @@
 /*
- * Samsung S5PC1XX-based board emulation.
+ * S5PC1XX-based board emulation.
  *
  * Copyright (c) 2009 Samsung Electronics.
  * Contributed by Kirill Batuzov <batuzovk@ispras.ru>
@@ -698,7 +698,7 @@ static void s5pc110_init(ram_addr_t ram_size, const char *boot_device,
 
 static QEMUMachine s5pc110_machine = {
     .name = "s5pc110",
-    .desc = "Samsung S5PC110-base board",
+    .desc = "S5PC110-base board",
     .init = s5pc110_init,
 };
 

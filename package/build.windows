@@ -24,11 +24,16 @@ build()
 install() 
 {
 	BIN_DIR=$SRCDIR/package/emulator.package.windows/data
+	VTM_DIR=$BIN_DIR/Emulator/bin/emulator-manager.exe
+	EMUL_DIR=$BIN_DIR/Emulator/bin/emulator-x86.exe
+
 	mkdir -p $BIN_DIR
 
     cd $SRCDIR/tizen
     make install
 	mv Emulator $BIN_DIR
+	editbin.exe /SUBSYSTEM:WINDOWS $VTM_DIR
+	editbin.exe /SUBSYSTEM:WINDOWS $EMUL_DIR
 	cp $SRCDIR/package/emulator.install.windows $BIN_DIR/../
 	cp $SRCDIR/package/emulator.remove.windows $BIN_DIR/../
 }

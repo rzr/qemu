@@ -1,5 +1,5 @@
 /*
- * Real Time Clock for Samsung S5C110-based board emulation
+ * Real Time Clock for S5C110-based board emulation
  *
  * Copyright (c) 2009 Samsung Electronics.
  * Contributed by Vladimir Monakhov <vladimir.monakhov@ispras.ru>

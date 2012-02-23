@@ -1,5 +1,5 @@
 /*
- * PWM Timer for Samsung S5PC110-based board emulation
+ * PWM Timer for S5PC110-based board emulation
  *
  * Copyright (c) 2009 Samsung Electronics.
  * Contributed by Vladimir Monakhov <vladimir.monakhov@ispras.ru>
