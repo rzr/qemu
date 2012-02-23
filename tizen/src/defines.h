@@ -285,7 +285,8 @@ extern int intermediate_section;
 #define MODIFY_MODE 3
 #define RESET_MODE 4
 #define DELETE_GROUP_MODE 5
-
+#define STRIKETHROUGH_PREFIX "<s>"
+#define STRIKETHROUGH_SUFFIX "</s>"
 
 /* Front UI TYPE Enum */
 enum {

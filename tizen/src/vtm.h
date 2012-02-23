@@ -119,6 +119,7 @@ char *check_kvm(char *info_file, int *status);
 void version_init(char *default_targetname, char* target_list_filepath);
 int delete_group(char* target_list_filepath, char* target_name, int type);
 void make_tizen_vms(void);
+gboolean remove_markup(char *src, char *dst, char *prefix, char *suffix);
 
 int remove_dir(char *path);
 void lock_file(char *path);

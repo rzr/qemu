@@ -730,6 +730,15 @@ void cursor_changed_cb(GtkWidget *widget, gpointer selection)
 				gtk_widget_set_sensitive(start_button, TRUE);
 				gtk_widget_set_sensitive(details_button, TRUE);
 			}
+			else if(g_str_has_prefix(target_name, STRIKETHROUGH_PREFIX))
+			{
+				gtk_widget_set_sensitive(delete_button, TRUE);
+				gtk_widget_set_sensitive(modify_button, FALSE);
+				gtk_widget_set_sensitive(reset_button, FALSE);
+				gtk_widget_set_sensitive(start_button, FALSE);
+				gtk_widget_set_sensitive(details_button, TRUE);
+
+			}
 			else
 			{
 				gtk_widget_set_sensitive(delete_button, TRUE);
@@ -738,7 +747,9 @@ void cursor_changed_cb(GtkWidget *widget, gpointer selection)
 				gtk_widget_set_sensitive(start_button, TRUE);
 				gtk_widget_set_sensitive(details_button, TRUE);
 
+				
 			}
+
 		}
 	}
 }
@@ -852,12 +863,15 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 
 	if (gtk_tree_model_get_iter_first(model, &iter) == FALSE) 
 		return;
-
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
 				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
-
+		char *real_name = malloc(MAXBUF);
+		if (remove_markup(target_name, real_name, STRIKETHROUGH_PREFIX, STRIKETHROUGH_SUFFIX)){
+			strcpy(target_name, real_name);
+		}
+		free(real_name);
 		virtual_target_path = get_virtual_target_path(target_name);
 		info_file = g_strdup_printf("%sconfig.ini", virtual_target_path);
 		info_file_status = is_exist_file(info_file);
@@ -958,6 +972,26 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	}
 
 	show_message("Warning", "Target is not selected. Firstly select a target and press the button.");
+}
+
+int remove_markup(char *src, char *dst, char *prefix, char *suffix)
+{
+	int name_len = strlen(src);
+	int prefix_len = strlen(prefix);
+	int suffix_len = strlen(suffix);
+	int i;
+	int j = 0;
+	int max = name_len - prefix_len -1;
+	if(g_str_has_prefix(src, prefix))
+	{
+		for(i = suffix_len -1 , j = 0; i < max; i++)
+		{
+			dst[j++] = src[i];
+		}
+		dst[i] = '\0';
+		return TRUE;
+	}
+	return FALSE;
 }
 
 int delete_group(char* target_list_filepath, char* target_name, int type)
@@ -1088,6 +1122,12 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 				&model, &iter)) {
 		//get target name
 		gtk_tree_model_get(model, &iter, TARGET_NAME, &target_name, -1);
+		
+		char *real_name = malloc(MAXBUF);
+		if (remove_markup(target_name, real_name, STRIKETHROUGH_PREFIX, STRIKETHROUGH_SUFFIX)){
+			strcpy(target_name, real_name);
+		}
+		free(real_name);
 
 		//check if selection is group name or target name	
 		if(delete_group(g_target_list_filepath, target_name, DELETE_GROUP_MODE) <= 0)
@@ -1160,7 +1200,7 @@ void refresh_clicked_cb(void)
 	char *virtual_target_path;
 	char *info_file;
 	char *resolution = NULL;
-	int minor_version = 0;
+	int target_minor_ver = 0;
 	char *buf;
 	char *vms_path = NULL;
 	gchar *ram_size = NULL;
@@ -1184,7 +1224,7 @@ void refresh_clicked_cb(void)
 	}
 	else
 		free(vms_path);
-	
+
 	target_groups = get_virtual_target_groups(local_target_list_filepath, &group_num);
 	gtk_tree_store_clear(store);
 	group_num -= 1;
@@ -1222,11 +1262,19 @@ void refresh_clicked_cb(void)
 				i -= 1;
 				continue;
 			}
-
+			//if target minor version is different from latest minor version emulator might not work.
+			target_minor_ver = get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY);
+			if((g_minor_version != target_minor_ver) && (target_minor_ver))
+			{
+				INFO("The minor version of [%s] is wrong!"
+						"version.ini :[%d], target config.ini [%d]\n",
+						target_list[i], g_minor_version, target_minor_ver);
+				target_list[i] = g_strdup_printf("<s>%s</s>", target_list[i]);
+			}
+			
 			buf = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 			ram_size = g_strdup_printf("%sMB", buf); 
 			resolution = get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-			minor_version = get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY);
 			gtk_tree_store_set(store, &child, TARGET_NAME, target_list[i], RESOLUTION, resolution, RAM_SIZE, ram_size, -1);
 
 			g_free(buf);
@@ -1672,7 +1720,7 @@ GtkWidget *setup_tree_view(void)
 	cell = gtk_cell_renderer_text_new();
 
 	//set text alignment 
-	column = gtk_tree_view_column_new_with_attributes("Target Name", cell, "text", TARGET_NAME, NULL);
+	column = gtk_tree_view_column_new_with_attributes("Target Name", cell, "markup", TARGET_NAME, NULL);
 	gtk_tree_view_column_set_alignment(column,0.0);
 	gtk_tree_view_column_set_min_width(column,130);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
