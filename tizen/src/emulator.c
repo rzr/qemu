@@ -990,9 +990,8 @@ static void emul_prepare_process(void)
 }
 #endif
 
-int init_shdmem()
+int make_shdmem()
 {
-
 	char *virtual_target_path = NULL;
 	virtual_target_path = get_virtual_target_path(startup_option.vtm);
 	tizen_base_port = get_sdb_base_port();
@@ -1012,13 +1011,8 @@ int init_shdmem()
 		return -1; 
 	} 
 	sprintf(shared_memory, "%s", virtual_target_path);
-	//memcpy( shared_memory, startup_option.vtm, strlen(startup_option.vtm));
 	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
-
-	//	shmctl(shmid, IPC_RMID, 0);
-	//	shmdt(shared_memory);
 #else
-	tizen_base_port = get_sdb_base_port();
 	HANDLE hMapFile;
 	char* pBuf;
 	char* port_in_use;
@@ -1094,15 +1088,24 @@ int main(int argc, char** argv)
 {
 	//int sensor_port = SENSOR_PORT;
 	int i, r;
-
-
 	pthread_t thread_gtk_id;
+
 	init_emulator(&argc, &argv);
+	
 	startup_option_parser(&argc, &argv);
+
+	/* redirect stderr, stdout to log file */
+
 	redirect_log();
+	
+	/* initailize socket for windows */
+	
 	socket_init();
 
-	init_shdmem();
+	/* make shared memory not for launching multiple instance of one target */
+	
+	make_shdmem();
+
 	/* option parsed and pass to qemu option */
 
 	r = load_config_passed_to_qemu(&g_qemu_arglist, argc, argv);
@@ -1116,14 +1119,14 @@ int main(int argc, char** argv)
 	}
 	dbg_printf("\n");
 
-	/* 4. signal handler */
+	/* signal handler */
 
 	register_sig_handler();
 
 #ifndef _WIN32
 	construct_main_window();
 
-	/* 5.3 create gtk thread  */
+	/* create gtk thread  */
 	if (pthread_create(&thread_gtk_id, NULL, run_gtk_main, NULL) != 0) {
 		ERR( "error creating gtk_id thread!!\n");
 		return -1;
@@ -1144,7 +1147,7 @@ int main(int argc, char** argv)
 	}
 #endif	/* ENABLE_OPENGL_SERVER */
 
-	/* 6. create serial console and vmodem, and other processes */
+	/* create serial console and vmodem, and other processes */
 #ifndef	_WIN32
 	emul_prepare_process();
 #endif
