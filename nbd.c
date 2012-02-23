@@ -110,6 +110,7 @@ size_t nbd_wr_sync(int fd, void *buffer, size_t size, bool do_read)
 int tcp_socket_outgoing(const char *address, uint16_t port)
 {
     int s;
+	int i = 1;
     struct in_addr in;
     struct sockaddr_in addr;
 
@@ -117,6 +118,10 @@ int tcp_socket_outgoing(const char *address, uint16_t port)
     if (s == -1) {
         return -1;
     }
+	
+	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void*)&i, sizeof(int)) == -1) {
+		goto error;
+	}
 
     if (inet_aton(address, &in) == 0) {
         struct hostent *ent;
