@@ -506,7 +506,7 @@ const gchar *get_tizen_vms_arch_path(void)
 const gchar *get_tizen_vms_path(void)
 {
 	static const char tizen_vms[] = "/tizen_vms";
-#ifdef _WIN32
+#ifndef _WIN32
 	char *homedir = (char*)g_getenv("HOME");
 #else
 	char *homedir = (char*)g_getenv("USERPROFILE");

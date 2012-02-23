@@ -247,14 +247,24 @@ void activate_target(char *target_name)
 			binary, target_name, emul_add_opt, path, qemu_add_opt);
 	}
 #endif
+
+#ifdef _WIN32
+	if(WinExec(cmd, SW_SHOW) < 31)
+	{
+		show_message("Error", "Fail to start Emulator!");
+		g_free(cmd);
+		return;
+	}
+#else
 	if(!g_spawn_command_line_async(cmd, &error))
 	{
 		TRACE( "Failed to invoke command: %s\n", error->message);
 		show_message("Failed to invoke command", error->message);
 		g_error_free(error);
 		g_free(cmd);
-		exit(1);
+		return ;
 	}
+#endif
 	g_free(cmd);
 
 	return;
@@ -794,11 +804,12 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 #ifdef _WIN32
 		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %s", 
 				get_root_path(), basedisk_path, disk_path);
+		if (system(cmd)	== -1)
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s", 
 				basedisk_path, disk_path);
-#endif
 		if(!run_cmd(cmd))
+#endif
 		{
 			g_free(cmd);
 			free(basedisk_path);
@@ -806,6 +817,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Error", "emulator image reset failed!");
 			return;
 		}
+	
 		g_free(cmd);
 		g_free(target_name);
 		free(basedisk_path);
@@ -1428,11 +1440,12 @@ void make_default_image(char *default_targetname)
 #ifdef _WIN32
 			cmd = g_strdup_printf("%s/qemu-img.exe create -b %s -f qcow2 %s",
 					get_bin_path(), base_img_path, default_img);
+			if(system(cmd) == -1)
 #else
 			cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s",
 					base_img_path, default_img);
-#endif
 			if(!run_cmd(cmd))
+#endif
 			{
 				free(cmd);
 				ERR("default %s image creation failed!\n", arch);
@@ -1480,7 +1493,6 @@ gboolean run_cmd(char *cmd)
 	GError *err = NULL;
 
 	g_return_val_if_fail(cmd != NULL, FALSE);
-
 	INFO( "Command: %s\n", cmd);
 	if (!g_spawn_command_line_sync(cmd, &s_out, &s_err, &exit_status, &err)) {
 		ERR( "Failed to invoke command: %s\n", err->message);
@@ -2233,7 +2245,7 @@ int create_diskimg(char *arch, char *dest_path)
 	{
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.%s -f qcow2 %semulimg-%s.%s", get_root_path(), get_arch_path(), arch,
+		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2246,8 +2258,11 @@ int create_diskimg(char *arch, char *dest_path)
 		show_message("Error","disk type is wrong");
 		return -1;
 	}
-	
+#ifdef _WIN32
+	if (system(cmd)	== -1)
+#else
 	if(!run_cmd(cmd))
+#endif
 	{
 		g_free(cmd);
 		g_free(dest_path);
@@ -2953,7 +2968,6 @@ int main(int argc, char** argv)
 	char *skin = NULL;
 	char full_glade_path[MAX_LEN];
 	char *tizen_vms_path = (char*)get_tizen_vms_path();
-
 	if(access(tizen_vms_path, R_OK) != 0){
 		g_mkdir_with_parents(tizen_vms_path, 0755);
 	}
@@ -2966,7 +2980,7 @@ int main(int argc, char** argv)
 		ERR( "fail to change working directory\n");
 		exit(1);
 	}
-
+	
 	gtk_init(&argc, &argv);
 	INFO( "virtual target manager start \n");
 
