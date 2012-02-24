@@ -515,7 +515,6 @@ static void construct_main_window(void)
 	const gchar *name;
 	const gchar *skin;
 	GdkBitmap *SkinMask = NULL;
-	GdkPixmap *SkinPixmap = NULL;
 	GtkWidget *popup_menu = NULL;
 	GtkWidget *sdl_widget = NULL;
 
@@ -568,7 +567,7 @@ static void construct_main_window(void)
 
 	name = g_strdup_printf("emulator-%d", get_sdb_base_port()); 
 	gtk_window_set_title (GTK_WINDOW (g_main_window), name);
-
+	g_free(name);
 
 	/* 3. skin load */
 
@@ -580,14 +579,12 @@ static void construct_main_window(void)
 	/* 4. skin mask process */
 
 	pixmap_widget = gtk_image_new_from_pixbuf (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
-	gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, &SkinPixmap, &SkinMask, 1);
-	//gdk_pixbuf_get_has_alpha (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
+	gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, NULL, &SkinMask, 1);
 	gtk_widget_shape_combine_mask (g_main_window, SkinMask, 0, 0);
 
-	if (SkinPixmap != NULL)
-		g_object_unref (SkinPixmap);
-	if (SkinMask != NULL)
+	if (SkinMask != NULL) {
 		g_object_unref (SkinMask);
+	}
 
 	/* 5. emulator container */
 

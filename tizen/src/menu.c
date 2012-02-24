@@ -241,7 +241,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 
     gtk_container_add(GTK_CONTAINER(*pMenu), Item);
     gtk_widget_show(Item);
-    free(emul_name);
+    g_free(emul_name);
 
     MENU_ADD_SEPARTOR(*pMenu);
 

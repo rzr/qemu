@@ -121,7 +121,6 @@ int menu_option_callback(GtkWidget *widget, gpointer data)
 int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfiguration, int nMode)
 {
 	GdkBitmap *SkinMask = NULL;
-	GdkPixmap *SkinPixmap = NULL;
 	GtkWidget *sdl_widget = NULL;
 	GdkGeometry hints;
 
@@ -174,7 +173,7 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 
 	pixmap_widget = gtk_image_new_from_pixbuf (pDev->mode_SkinImg[nMode].pPixImg);
 
-	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, &SkinPixmap, &SkinMask, 1);
+	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, NULL, &SkinMask, 1);
 	//gdk_pixbuf_get_has_alpha (pDev->mode_SkinImg[nMode].pPixImg);
 	gtk_widget_shape_combine_mask (GTK_WIDGET(widget), SkinMask, 0, 0);
 
@@ -184,11 +183,9 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x * UISTATE.scale,
 			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y * UISTATE.scale);
 
-	if (SkinPixmap != NULL)
-		g_object_unref(SkinPixmap);
-
-	if (SkinMask != NULL)
+	if (SkinMask != NULL) {
 		g_object_unref(SkinMask);
+	}
 
 	gtk_window_move(GTK_WINDOW(widget), pconfiguration->main_x, pconfiguration->main_y);
 	gtk_window_set_keep_above(GTK_WINDOW (widget), pconfiguration->always_on_top);
