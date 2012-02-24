@@ -2972,12 +2972,7 @@ int main(int argc, char** argv)
 	int status;
 	char *skin = NULL;
 	char full_glade_path[MAX_LEN];
-	char *tizen_vms_path = (char*)get_tizen_vms_path();
-	if(access(tizen_vms_path, R_OK) != 0){
-		g_mkdir_with_parents(tizen_vms_path, 0755);
-	}
-	free(tizen_vms_path);
-
+	
 	working_dir = g_path_get_dirname(buf);
 	status = g_chdir(working_dir);
 	if(status == -1)
