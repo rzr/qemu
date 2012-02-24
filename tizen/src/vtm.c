@@ -897,7 +897,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		if(strcmp(sdcard_type, "0") == 0)
 		{
 			sdcard_detail = g_strdup_printf("Not supported");
-			sdcard_path_detail = g_strdup_printf(" ");
+			sdcard_path_detail = g_strdup_printf("None");
 		}
 		else
 		{
@@ -928,13 +928,12 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 				" - CPU: %s\n"
 				" - Resolution: %s\n"
 				" - RAM Size: %s\n"
-				" - DPI: %s\n"
 				" - SD Card: %s\n"
 				" - SD Path: %s\n"
 				" - Image Path: %s\n"
 				" - Base Image Path: %s \n"
 				, target_name, arch, resolution, ram_size_detail
-				, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+				, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 		show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
 
@@ -947,13 +946,12 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 				" - CPU: %s\n"
 				" - Resolution: %s\n"
 				" - RAM Size: %s\n"
-				" - DPI: %s\n"
 				" - SD Card: %s\n"
 				" - SD Path: %s\n"
 				" - Image Path: %s\n"
 				" - Base Image Path: %s \n"
 				, target_name, arch, resolution, ram_size_detail
-				, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+				, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 		details_win = change_path_from_slash(details);
 
@@ -1122,7 +1120,7 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 #ifdef _WIN32
 		char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
 		cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
-		if (system(cmd)	== -1)
+		if(WinExec(cmd, SW_HIDE) < 31)
 		{
 			g_free(cmd);
 			g_free(virtual_target_path);
@@ -1270,7 +1268,7 @@ int remove_dir(char *path)
 #ifdef _WIN32
 	char *win_path = change_path_from_slash(path);
 	cmd = g_strdup_printf("rmdir /Q /S %s", win_path);	
-	if (system(cmd)	== -1)
+	if(WinExec(cmd, SW_HIDE) < 31)
 	{
 		free(cmd);
 		TRACE( "Failed to delete directory: %s", win_path);
@@ -1445,7 +1443,7 @@ void make_default_image(char *default_targetname)
 #ifdef _WIN32
 			cmd = g_strdup_printf("\"%s/qemu-img.exe\" create -b \"%s\" -f qcow2 %s",
 					get_bin_path(), base_img_path, default_img);
-			if(WinExec(cmd, SW_HIDE) == -1)
+			if(WinExec(cmd, SW_HIDE) < 31)
 #else
 			cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s",
 					base_img_path, default_img);

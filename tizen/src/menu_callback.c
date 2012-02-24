@@ -709,7 +709,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	if(strcmp(sdcard_type, "0") == 0)
 	{
 		sdcard_detail = g_strdup_printf("Not Supported");
-		sdcard_path_detail = g_strdup_printf(" ");
+		sdcard_path_detail = g_strdup_printf("None");
 	}
 	else
 	{
@@ -725,13 +725,12 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			" - CPU: %s\n"
 			" - Resolution: %s\n"
 			" - RAM Size: %s\n"
-			" - DPI: %s\n"
 			" - SD Card: %s\n"
 			" - SD Path: %s\n"
 			" - Image Path: %s\n"
 			" - Base Image Path: %s \n"
 			, target_name, arch, resolution, ram_size_detail
-			, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 	show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
 
@@ -743,13 +742,12 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			" - CPU: %s\n"
 			" - Resolution: %s\n"
 			" - RAM Size: %s\n"
-			" - DPI: %s\n"
 			" - SD Card: %s\n"
 			" - SD Path: %s\n"
 			" - Image Path: %s\n"
 			" - Base Image Path: %s \n"
 			, target_name, arch, resolution, ram_size_detail
-			, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 	details_win = change_path_from_slash(details);
 
