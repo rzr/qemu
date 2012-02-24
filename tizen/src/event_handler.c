@@ -922,6 +922,25 @@ static void touch_shoot_for_type(GtkWidget *widget, int x, int y, int lcd_status
 	}
 }
 
+static void gdk_delete_pixel (GdkPixbuf *pixbuf, int x, int y, int w, int h)
+{
+	int rowstride, n_channels;
+	guchar *pixels, *p;
+	int i, j, right, bottom;
+
+	n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+	rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+	pixels = gdk_pixbuf_get_pixels (pixbuf);
+	right = x + w;
+	bottom = y + h;
+
+	for (i = x; i < right; i ++) {
+		for (j = y; j < bottom; j++) {
+			p = pixels + j * rowstride + i * n_channels;
+			memset(p, 0, n_channels);
+		}
+	}
+}
 
 /**
   * @brief 	draw image of pressed button
@@ -940,7 +959,26 @@ static void draw_mapping(GtkWidget * widget, GdkEventButton * event, int nPressK
 		y = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.y * UISTATE.scale;
 		nW = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.w * UISTATE.scale;
 		nH = PHONE.mode[UISTATE.current_mode].key_map_list[nPressKey].key_map_region.h * UISTATE.scale;
-		gdk_draw_pixbuf(widget->window, widget->style->fg_gc[GTK_STATE_NORMAL], PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg_P, x, y, x, y, nW, nH, GDK_RGB_DITHER_MAX, 0, 0);
+
+		/* shape combine new mask */
+		GdkPixbuf *temp = gdk_pixbuf_copy(PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
+		if (temp != NULL) {
+			gdk_delete_pixel(temp, x, y, nW, nH);
+			gdk_pixbuf_composite(PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg_P, temp,
+				x, y, nW, nH, 0, 0, 1, 1, GDK_INTERP_BILINEAR, 255);
+
+			GdkBitmap *SkinMask = NULL;
+			gdk_pixbuf_render_pixmap_and_mask (temp, NULL, &SkinMask, 1);
+			gtk_widget_shape_combine_mask (widget, SkinMask, 0, 0);
+			gdk_pixbuf_unref (temp);
+			if (SkinMask != NULL) {
+				g_object_unref(SkinMask);
+			}
+		}
+
+		/* draw image of pressed button */
+		gdk_draw_pixbuf(widget->window, widget->style->fg_gc[GTK_STATE_NORMAL], PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg_P,
+			x, y, x, y, nW, nH, GDK_RGB_DITHER_MAX, 0, 0);
 		gdk_flush();
 	}
 }
@@ -1153,6 +1191,14 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 					TRACE( "release parsing keycode = %d, result = %d\n", keycode, keycode| 0x80);
 					ps2kbd_put_keycode(keycode | 0x80);	
 				}
+			}
+
+			/* shape combine original mask*/
+			GdkBitmap *SkinMask = NULL;
+			gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, NULL, &SkinMask, 1);
+			gtk_widget_shape_combine_mask (widget, SkinMask, 0, 0);
+			if (SkinMask != NULL) {
+				g_object_unref(SkinMask);
 			}
 		}
 

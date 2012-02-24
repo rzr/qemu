@@ -84,7 +84,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="690" top="1055" width="22" height="88"></region>
+					<region left="690" top="1055" width="24" height="88"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_EXT_CAMERA</event_id>
 						<event_value>
@@ -105,7 +105,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="690" top="101" width="22" height="88"></region>
+					<region left="690" top="101" width="24" height="88"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_UP</event_id>
 						<event_value>
@@ -126,7 +126,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="690" top="194" width="22" height="88"></region>
+					<region left="690" top="194" width="24" height="88"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_DOWN</event_id>
 						<event_value>
@@ -225,7 +225,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="1054" top="3" width="88" height="22"></region>
+					<region left="1054" top="1" width="88" height="24"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_EXT_CAMERA</event_id>
 						<event_value>
@@ -246,7 +246,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="99" top="3" width="88" height="22"></region>
+					<region left="99" top="1" width="88" height="24"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_UP</event_id>
 						<event_value>
@@ -267,7 +267,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="194" top="3" width="88" height="22"></region>
+					<region left="194" top="1" width="88" height="24"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_DOWN</event_id>
 						<event_value>
@@ -366,7 +366,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="3" top="106" width="22" height="88"></region>
+					<region left="1" top="106" width="24" height="88"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_EXT_CAMERA</event_id>
 						<event_value>
@@ -387,7 +387,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="3" top="1059" width="22" height="88"></region>
+					<region left="1" top="1059" width="24" height="88"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_UP</event_id>
 						<event_value>
@@ -408,7 +408,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="3" top="964" width="22" height="88"></region>
+					<region left="1" top="964" width="24" height="88"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_DOWN</event_id>
 						<event_value>
@@ -507,7 +507,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="105" top="690" width="88" height="22"></region>
+					<region left="105" top="690" width="88" height="24"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_EXT_CAMERA</event_id>
 						<event_value>
@@ -528,7 +528,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="1058" top="690" width="88" height="22"></region>
+					<region left="1058" top="690" width="88" height="24"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_UP</event_id>
 						<event_value>
@@ -549,7 +549,7 @@
 				</key_map>
 
 				<key_map>
-					<region left="965" top="690" width="88" height="22"></region>
+					<region left="965" top="690" width="88" height="24"></region>
 					<event_info status="VKS_KEY_PRESSED">
 						<event_id>DIKS_PAGE_DOWN</event_id>
 						<event_value>
