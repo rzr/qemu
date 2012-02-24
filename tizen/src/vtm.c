@@ -218,14 +218,14 @@ void activate_target(char *target_name)
 #ifndef _WIN32
 	if(strcmp(arch, X86) == 0)
 	{
-		cmd = g_strdup_printf("./%s --vtm %s %s \
-				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
+		cmd = g_strdup_printf("./%s --vtm %s %s"
+				"-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
 				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt);
 	}
 	else if(strcmp(arch, ARM)== 0)
 	{
-		cmd = g_strdup_printf("./%s --vtm %s %s \
-			--  -kernel %s/data/kernel-img/zImage %s",
+		cmd = g_strdup_printf("./%s --vtm %s %s"
+			"--  -kernel %s/data/kernel-img/zImage %s",
 			binary, target_name, emul_add_opt, path, qemu_add_opt);
 	}
 	else
@@ -807,7 +807,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 
 		// reset emulator image
 #ifdef _WIN32
-		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 %s", 
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%s\"", 
 				get_root_path(), basedisk_path, disk_path);
 		if(WinExec(cmd, SW_HIDE) < 31)
 #else
@@ -1119,17 +1119,11 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 
 #ifdef _WIN32
 		char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
-		cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
-		if(WinExec(cmd, SW_HIDE) < 31)
-		{
-			g_free(cmd);
-			g_free(virtual_target_path);
-			TRACE( "Failed to delete target name: %s", target_name);
-			show_message("Failed to delete target name: %s", target_name);
-			return;
-		}
+		cmd = g_strdup_printf("rmdir /Q /S \"%s\"", virtual_target_win_path);
+		if(system(cmd) == -1)
 #else
 		cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
+#endif
 		if(!run_cmd(cmd))
 		{
 			g_free(cmd);
@@ -1138,7 +1132,6 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Failed to delete target name: %s", target_name);
 			return;
 		}
-#endif
 		//find group of target_name and delete the target_name
 		group_name = get_group_name(g_target_list_filepath, target_name);
 		if(!group_name)
@@ -1267,23 +1260,17 @@ int remove_dir(char *path)
 	char *cmd = NULL;
 #ifdef _WIN32
 	char *win_path = change_path_from_slash(path);
-	cmd = g_strdup_printf("rmdir /Q /S %s", win_path);	
-	if(WinExec(cmd, SW_HIDE) < 31)
-	{
-		free(cmd);
-		TRACE( "Failed to delete directory: %s", win_path);
-		free(win_path);
-		return -1;
-	}
+	cmd = g_strdup_printf("rmdir /Q /S \"%s\"", win_path);	
+	if(system(cmd) == -1)
 #else
 	cmd = g_strdup_printf("rm -rf %s", path);
 	if(!run_cmd(cmd))
+#endif
 	{
 		free(cmd);
 		TRACE( "Failed to delete directory: %s", path);
 		return -1;
 	}
-#endif
 	return 0;
 }
 
@@ -1441,7 +1428,7 @@ void make_default_image(char *default_targetname)
 			}
 		// create emulator image
 #ifdef _WIN32
-			cmd = g_strdup_printf("\"%s/qemu-img.exe\" create -b \"%s\" -f qcow2 %s",
+			cmd = g_strdup_printf("\"%s/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%s\"",
 					get_bin_path(), base_img_path, default_img);
 			if(WinExec(cmd, SW_HIDE) < 31)
 #else
@@ -2237,7 +2224,7 @@ int create_diskimg(char *arch, char *dest_path)
 			return -1;
 		}
 #ifdef _WIN32
-		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%semulimg-%s.%s\"", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2248,7 +2235,7 @@ int create_diskimg(char *arch, char *dest_path)
 	{
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 #ifdef _WIN32
-		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%semulimg-%s.%s\"", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
