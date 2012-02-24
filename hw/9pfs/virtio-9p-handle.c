@@ -39,6 +39,15 @@
 #ifndef BTRFS_SUPER_MAGIC
 #define BTRFS_SUPER_MAGIC 0x9123683E
 #endif
+#ifndef AT_REMOVEDIR
+#define AT_REMOVEDIR    0x200
+#endif
+#ifndef AT_EMPTY_PATH
+#define AT_EMPTY_PATH   0x1000  /* Allow empty relative pathname */
+#endif
+#ifndef O_PATH
+#define O_PATH    010000000
+#endif
 
 struct handle_data {
     int mountfd;
