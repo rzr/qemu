@@ -149,7 +149,6 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	 */
 
 	gtk_widget_destroy (pixmap_widget);
-	g_object_unref (pixmap_widget);
 
 	/* change current skin image */
 	if (UISTATE.scale == 1.0) {

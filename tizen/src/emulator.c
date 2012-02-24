@@ -558,7 +558,6 @@ static void construct_main_window(void)
 
 	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
 		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
-		exit(EXIT_FAILURE);
 	}
 	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), emul_img_dir, NULL);
 	
@@ -581,6 +580,7 @@ static void construct_main_window(void)
 	pixmap_widget = gtk_image_new_from_pixbuf (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
 	gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, NULL, &SkinMask, 1);
 	gtk_widget_shape_combine_mask (g_main_window, SkinMask, 0, 0);
+	INFO("sets a shape for emulator window\n");
 
 	if (SkinMask != NULL) {
 		g_object_unref (SkinMask);
@@ -671,7 +671,7 @@ static void construct_main_window(void)
 
 	/* 7. create popup menu */
 	create_popup_menu (&popup_menu, &PHONE, &configuration);
-	add_widget(EMULATOR_ID, POPUP_MENU, popup_menu);
+	INFO("popup menu is created\n");
 
 	/* 8. Signal connect */
 
@@ -1100,8 +1100,8 @@ int main(int argc, char** argv)
 	socket_init();
 
 	/* make shared memory not for launching multiple instance of one target */
-	
 	make_shdmem();
+	INFO("created a shared memory\n");
 
 	/* option parsed and pass to qemu option */
 
@@ -1135,6 +1135,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 #endif
+	INFO("run_gtk_main\n");
 
 #ifdef ENABLE_OPENGL_SERVER
 	/* create OPENGL server thread */
