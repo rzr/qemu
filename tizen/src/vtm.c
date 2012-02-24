@@ -142,7 +142,6 @@ static int check_port_bind_listen(u_int port)
 void activate_target(char *target_name)
 {
 	char *cmd = NULL;
-	GError *error = NULL;
 	char *enable_kvm = NULL;
 	gchar *path;
 	char *info_file;
@@ -237,14 +236,19 @@ void activate_target(char *target_name)
 #else /*_WIN32 */
 	if(strcmp(arch, X86) == 0)
 	{
-		cmd = g_strdup_printf("%s --vtm %s %s\
-				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
+		cmd = g_strdup_printf("\"%s\" --vtm %s %s"
+				"-- -vga tizen -bios bios.bin -L \"%s/data/pc-bios\" -kernel \"%s/data/kernel-img/bzImage\" %s %s",
 				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 	}else if(strcmp(arch, ARM) == 0)
 	{
-			cmd = g_strdup_printf("%s --vtm %s %s \
-			--  -kernel %s/data/kernel-img/zImage %s",
+			cmd = g_strdup_printf("\"%s\" --vtm %s %s"
+			"--  -kernel \"%s/data/kernel-img/zImage\" %s",
 			binary, target_name, emul_add_opt, path, qemu_add_opt);
+	}
+	else
+	{
+		show_message("Error", "Architecture setting failed.");
+		return ;
 	}
 #endif
 
@@ -256,6 +260,7 @@ void activate_target(char *target_name)
 		return;
 	}
 #else
+	GError *error = NULL;
 	if(!g_spawn_command_line_async(cmd, &error))
 	{
 		TRACE( "Failed to invoke command: %s\n", error->message);
@@ -802,9 +807,9 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 
 		// reset emulator image
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %s", 
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 %s", 
 				get_root_path(), basedisk_path, disk_path);
-		if (system(cmd)	== -1)
+		if(WinExec(cmd, SW_HIDE) < 31)
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s", 
 				basedisk_path, disk_path);
@@ -1438,9 +1443,9 @@ void make_default_image(char *default_targetname)
 			}
 		// create emulator image
 #ifdef _WIN32
-			cmd = g_strdup_printf("%s/qemu-img.exe create -b %s -f qcow2 %s",
+			cmd = g_strdup_printf("\"%s/qemu-img.exe\" create -b \"%s\" -f qcow2 %s",
 					get_bin_path(), base_img_path, default_img);
-			if(system(cmd) == -1)
+			if(WinExec(cmd, SW_HIDE) == -1)
 #else
 			cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s",
 					base_img_path, default_img);
@@ -2234,7 +2239,7 @@ int create_diskimg(char *arch, char *dest_path)
 			return -1;
 		}
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2245,7 +2250,7 @@ int create_diskimg(char *arch, char *dest_path)
 	{
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2259,7 +2264,7 @@ int create_diskimg(char *arch, char *dest_path)
 		return -1;
 	}
 #ifdef _WIN32
-	if (system(cmd)	== -1)
+	if (WinExec(cmd, SW_HIDE) < 31)
 #else
 	if(!run_cmd(cmd))
 #endif
