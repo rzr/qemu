@@ -121,7 +121,6 @@ int menu_option_callback(GtkWidget *widget, gpointer data)
 int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfiguration, int nMode)
 {
 	GdkBitmap *SkinMask = NULL;
-	GdkPixmap *SkinPixmap = NULL;
 	GtkWidget *sdl_widget = NULL;
 	GdkGeometry hints;
 
@@ -150,7 +149,6 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	 */
 
 	gtk_widget_destroy (pixmap_widget);
-	g_object_unref (pixmap_widget);
 
 	/* change current skin image */
 	if (UISTATE.scale == 1.0) {
@@ -174,8 +172,8 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 
 	pixmap_widget = gtk_image_new_from_pixbuf (pDev->mode_SkinImg[nMode].pPixImg);
 
-	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, &SkinPixmap, &SkinMask, 1);
-	//gdk_pixbuf_get_has_alpha (pDev->mode_SkinImg[nMode].pPixImg);
+	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, NULL, &SkinMask, 1);
+	gtk_widget_shape_combine_mask (GTK_WIDGET(widget), NULL, 0, 0);
 	gtk_widget_shape_combine_mask (GTK_WIDGET(widget), SkinMask, 0, 0);
 
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
@@ -184,11 +182,9 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x * UISTATE.scale,
 			PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y * UISTATE.scale);
 
-	if (SkinPixmap != NULL)
-		g_object_unref(SkinPixmap);
-
-	if (SkinMask != NULL)
+	if (SkinMask != NULL) {
 		g_object_unref(SkinMask);
+	}
 
 	gtk_window_move(GTK_WINDOW(widget), pconfiguration->main_x, pconfiguration->main_y);
 	gtk_window_set_keep_above(GTK_WINDOW (widget), pconfiguration->always_on_top);
@@ -709,7 +705,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	if(strcmp(sdcard_type, "0") == 0)
 	{
 		sdcard_detail = g_strdup_printf("Not Supported");
-		sdcard_path_detail = g_strdup_printf(" ");
+		sdcard_path_detail = g_strdup_printf("None");
 	}
 	else
 	{
@@ -725,13 +721,12 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			" - CPU: %s\n"
 			" - Resolution: %s\n"
 			" - RAM Size: %s\n"
-			" - DPI: %s\n"
 			" - SD Card: %s\n"
 			" - SD Path: %s\n"
 			" - Image Path: %s\n"
 			" - Base Image Path: %s \n"
 			, target_name, arch, resolution, ram_size_detail
-			, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 	show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
 
@@ -743,13 +738,12 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			" - CPU: %s\n"
 			" - Resolution: %s\n"
 			" - RAM Size: %s\n"
-			" - DPI: %s\n"
 			" - SD Card: %s\n"
 			" - SD Path: %s\n"
 			" - Image Path: %s\n"
 			" - Base Image Path: %s \n"
 			, target_name, arch, resolution, ram_size_detail
-			, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 	details_win = change_path_from_slash(details);
 

@@ -220,6 +220,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
     int i, j = 0;
 
     *pMenu = gtk_menu_new();
+    add_widget(EMULATOR_ID, POPUP_MENU, *pMenu);
 
     skin_path = get_skin_path();
     if (skin_path == NULL) {
@@ -241,7 +242,7 @@ void create_popup_menu(GtkWidget **pMenu, PHONEMODELINFO *device, CONFIGURATION 
 
     gtk_container_add(GTK_CONTAINER(*pMenu), Item);
     gtk_widget_show(Item);
-    free(emul_name);
+    g_free(emul_name);
 
     MENU_ADD_SEPARTOR(*pMenu);
 

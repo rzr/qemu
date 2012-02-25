@@ -252,6 +252,7 @@ static void debug_init(void)
 	char *debug = NULL;
 	FILE *fp = NULL;
 	char *tmp = NULL;
+	char *tizen_vms_path = NULL;
 
 	if (nb_debug_options != -1)
 		return;  /* already initialized */
@@ -289,8 +290,15 @@ static void debug_init(void)
 		free(tmp);
 	}
 
-	strcpy(logfile, get_tizen_vms_path());
+	//to make logfile, create tizen_vms dir	
+	tizen_vms_path = (char*)get_tizen_vms_path();
+	if(access(tizen_vms_path, R_OK) != 0){
+		g_mkdir_with_parents(tizen_vms_path, 0755);
+	}
+	strcpy(logfile, tizen_vms_path);
 	strcat(logfile, EMULMGR_LOGFILE);
+	
+	free(tizen_vms_path);
 
 	if(access(logfile, F_OK | R_OK) == 0)
 		remove(logfile);

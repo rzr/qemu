@@ -369,6 +369,7 @@ void exit_emulator_post_process( void ) {
 
 }
 
+#if 0
 static int send_info_to_emuld(char *send_buf, int buf_size)
 {
 	int   s;  
@@ -398,6 +399,7 @@ static int send_info_to_emuld(char *send_buf, int buf_size)
 
 	return 1;
 }
+#endif
 
 #if 0
 static void *graceful_shutdown_ftn(void* arg)
@@ -491,6 +493,11 @@ void exit_emulator(void)
 }
 
 #ifdef _WIN32
+/**
+  @brief  enumerates display monitors
+  @param dwData: host screen resolution
+  @return success: TRUE
+ */
 static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
     RECT *pHostScreen;
@@ -512,10 +519,9 @@ static void construct_main_window(void)
 {
 
 	gchar emul_img_dir[512] = {0,};
-	const gchar *name;
+	gchar *name;
 	const gchar *skin;
 	GdkBitmap *SkinMask = NULL;
-	GdkPixmap *SkinPixmap = NULL;
 	GtkWidget *popup_menu = NULL;
 	GtkWidget *sdl_widget = NULL;
 
@@ -532,7 +538,9 @@ static void construct_main_window(void)
 #endif
 	GdkColor color;
 	color.red = color.green = color.blue = 0x8888;
-	gtk_widget_modify_bg(GTK_WINDOW (g_main_window), GTK_STATE_NORMAL, &color);
+	gtk_widget_modify_bg(g_main_window, GTK_STATE_NORMAL, &color);
+	INFO("sets the emulator window background color (%x, %x, %x)\n", color.red, color.green, color.blue);
+
 	gtk_window_set_decorated (GTK_WINDOW (g_main_window), FALSE);
 
 	/* 2.1 emulator taskbar icon image */
@@ -559,7 +567,6 @@ static void construct_main_window(void)
 
 	if (g_file_test(emul_img_dir, G_FILE_TEST_EXISTS) == FALSE) {
 		ERR( "emulator icon directory %s doesn't exist!!\n", emul_img_dir);
-		exit(EXIT_FAILURE);
 	}
 	gtk_window_set_icon_from_file(GTK_WINDOW(g_main_window), emul_img_dir, NULL);
 	
@@ -568,7 +575,7 @@ static void construct_main_window(void)
 
 	name = g_strdup_printf("emulator-%d", get_sdb_base_port()); 
 	gtk_window_set_title (GTK_WINDOW (g_main_window), name);
-
+	g_free(name);
 
 	/* 3. skin load */
 
@@ -580,14 +587,13 @@ static void construct_main_window(void)
 	/* 4. skin mask process */
 
 	pixmap_widget = gtk_image_new_from_pixbuf (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
-	gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, &SkinPixmap, &SkinMask, 1);
-	//gdk_pixbuf_get_has_alpha (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg);
+	gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, NULL, &SkinMask, 1);
 	gtk_widget_shape_combine_mask (g_main_window, SkinMask, 0, 0);
+	INFO("sets a shape for emulator window\n");
 
-	if (SkinPixmap != NULL)
-		g_object_unref (SkinPixmap);
-	if (SkinMask != NULL)
+	if (SkinMask != NULL) {
 		g_object_unref (SkinMask);
+	}
 
 	/* 5. emulator container */
 
@@ -671,10 +677,11 @@ static void construct_main_window(void)
 #endif
 
 	gtk_window_move (GTK_WINDOW (g_main_window), configuration.main_x, configuration.main_y);
+	INFO("emulator window is moved (%d, %d)\n", configuration.main_x, configuration.main_y);
 
 	/* 7. create popup menu */
 	create_popup_menu (&popup_menu, &PHONE, &configuration);
-	add_widget(EMULATOR_ID, POPUP_MENU, popup_menu);
+	INFO("popup menu is created\n");
 
 	/* 8. Signal connect */
 
@@ -1103,8 +1110,8 @@ int main(int argc, char** argv)
 	socket_init();
 
 	/* make shared memory not for launching multiple instance of one target */
-	
 	make_shdmem();
+	INFO("created a shared memory\n");
 
 	/* option parsed and pass to qemu option */
 
@@ -1138,6 +1145,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 #endif
+	INFO("run_gtk_main\n");
 
 #ifdef ENABLE_OPENGL_SERVER
 	/* create OPENGL server thread */

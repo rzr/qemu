@@ -471,7 +471,7 @@ const gchar *get_conf_path(void)
 
 	return conf_path;
 }
-/* get_tizen_vms_arch_path = "/home/{USER}/tizen_vms/{ARCH}" */
+/* get_tizen_vms_arch_path = "/home/{USER}/.tizen_vms/{ARCH}" */
 const gchar *get_tizen_vms_arch_path(void)
 {
 	char *tizen_vms_arch_path;
@@ -504,11 +504,11 @@ const gchar *get_tizen_vms_arch_path(void)
 	return tizen_vms_arch_path;
 }
 
-/* get_tizen_vms_path = "/home/{USER}/tizen_vms" */
+/* get_tizen_vms_path = "/home/{USER}/.tizen_vms" */
 const gchar *get_tizen_vms_path(void)
 {
-	static const char tizen_vms[] = "/tizen_vms";
-#ifdef _WIN32
+	static const char tizen_vms[] = "/.tizen_vms";
+#ifndef _WIN32
 	char *homedir = (char*)g_getenv("HOME");
 #else
 	char *homedir = (char*)g_getenv("USERPROFILE");
@@ -526,8 +526,8 @@ const gchar *get_tizen_vms_path(void)
 	return tizen_vms_path;
 }
 
-/* get_screenshot_path = "/home/{USER}/tizen_vms/screenshots" */
-const gchar *get_screenshots_path(void)
+/* get_screenshot_path = "/home/{USER}/.tizen_vms/screenshots" */
+gchar *get_screenshots_path(void)
 {
 	const char subdir[] = "/screenshots";
 	char *tizen_vms_path = (char*)get_tizen_vms_path();

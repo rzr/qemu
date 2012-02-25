@@ -142,7 +142,6 @@ static int check_port_bind_listen(u_int port)
 void activate_target(char *target_name)
 {
 	char *cmd = NULL;
-	GError *error = NULL;
 	char *enable_kvm = NULL;
 	gchar *path;
 	char *info_file;
@@ -219,14 +218,14 @@ void activate_target(char *target_name)
 #ifndef _WIN32
 	if(strcmp(arch, X86) == 0)
 	{
-		cmd = g_strdup_printf("./%s --vtm %s %s \
-				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
+		cmd = g_strdup_printf("./%s --vtm %s %s"
+				"-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
 				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt);
 	}
 	else if(strcmp(arch, ARM)== 0)
 	{
-		cmd = g_strdup_printf("./%s --vtm %s %s \
-			--  -kernel %s/data/kernel-img/zImage %s",
+		cmd = g_strdup_printf("./%s --vtm %s %s"
+			"--  -kernel %s/data/kernel-img/zImage %s",
 			binary, target_name, emul_add_opt, path, qemu_add_opt);
 	}
 	else
@@ -237,24 +236,40 @@ void activate_target(char *target_name)
 #else /*_WIN32 */
 	if(strcmp(arch, X86) == 0)
 	{
-		cmd = g_strdup_printf("%s --vtm %s %s\
-				-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
+		cmd = g_strdup_printf("\"%s\" --vtm %s %s"
+				"-- -vga tizen -bios bios.bin -L \"%s/data/pc-bios\" -kernel \"%s/data/kernel-img/bzImage\" %s %s",
 				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 	}else if(strcmp(arch, ARM) == 0)
 	{
-			cmd = g_strdup_printf("%s --vtm %s %s \
-			--  -kernel %s/data/kernel-img/zImage %s",
+			cmd = g_strdup_printf("\"%s\" --vtm %s %s"
+			"--  -kernel \"%s/data/kernel-img/zImage\" %s",
 			binary, target_name, emul_add_opt, path, qemu_add_opt);
 	}
+	else
+	{
+		show_message("Error", "Architecture setting failed.");
+		return ;
+	}
 #endif
+
+#ifdef _WIN32
+	if(WinExec(cmd, SW_SHOW) < 31)
+	{
+		show_message("Error", "Fail to start Emulator!");
+		g_free(cmd);
+		return;
+	}
+#else
+	GError *error = NULL;
 	if(!g_spawn_command_line_async(cmd, &error))
 	{
 		TRACE( "Failed to invoke command: %s\n", error->message);
 		show_message("Failed to invoke command", error->message);
 		g_error_free(error);
 		g_free(cmd);
-		exit(1);
+		return ;
 	}
+#endif
 	g_free(cmd);
 
 	return;
@@ -803,13 +818,14 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 
 		// reset emulator image
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %s", 
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%s\"", 
 				get_root_path(), basedisk_path, disk_path);
+		if(WinExec(cmd, SW_HIDE) < 31)
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s", 
 				basedisk_path, disk_path);
-#endif
 		if(!run_cmd(cmd))
+#endif
 		{
 			g_free(cmd);
 			free(basedisk_path);
@@ -817,6 +833,7 @@ void reset_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Error", "emulator image reset failed!");
 			return;
 		}
+	
 		g_free(cmd);
 		g_free(target_name);
 		free(basedisk_path);
@@ -894,7 +911,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		if(strcmp(sdcard_type, "0") == 0)
 		{
 			sdcard_detail = g_strdup_printf("Not supported");
-			sdcard_path_detail = g_strdup_printf(" ");
+			sdcard_path_detail = g_strdup_printf("None");
 		}
 		else
 		{
@@ -925,13 +942,12 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 				" - CPU: %s\n"
 				" - Resolution: %s\n"
 				" - RAM Size: %s\n"
-				" - DPI: %s\n"
 				" - SD Card: %s\n"
 				" - SD Path: %s\n"
 				" - Image Path: %s\n"
 				" - Base Image Path: %s \n"
 				, target_name, arch, resolution, ram_size_detail
-				, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+				, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 		show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
 
@@ -944,13 +960,12 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 				" - CPU: %s\n"
 				" - Resolution: %s\n"
 				" - RAM Size: %s\n"
-				" - DPI: %s\n"
 				" - SD Card: %s\n"
 				" - SD Path: %s\n"
 				" - Image Path: %s\n"
 				" - Base Image Path: %s \n"
 				, target_name, arch, resolution, ram_size_detail
-				, dpi, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+				, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
 
 		details_win = change_path_from_slash(details);
 
@@ -1144,17 +1159,11 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 
 #ifdef _WIN32
 		char *virtual_target_win_path = change_path_from_slash(virtual_target_path);
-		cmd = g_strdup_printf("rmdir /Q /S %s", virtual_target_win_path);	
-		if (system(cmd)	== -1)
-		{
-			g_free(cmd);
-			g_free(virtual_target_path);
-			TRACE( "Failed to delete target name: %s", target_name);
-			show_message("Failed to delete target name: %s", target_name);
-			return;
-		}
+		cmd = g_strdup_printf("rmdir /Q /S \"%s\"", virtual_target_win_path);
+		if(system(cmd) == -1)
 #else
 		cmd = g_strdup_printf("rm -rf %s", virtual_target_path);
+#endif
 		if(!run_cmd(cmd))
 		{
 			g_free(cmd);
@@ -1163,7 +1172,6 @@ void delete_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Failed to delete target name: %s", target_name);
 			return;
 		}
-#endif
 		//find group of target_name and delete the target_name
 		group_name = get_group_name(g_target_list_filepath, target_name);
 		if(!group_name)
@@ -1300,23 +1308,17 @@ int remove_dir(char *path)
 	char *cmd = NULL;
 #ifdef _WIN32
 	char *win_path = change_path_from_slash(path);
-	cmd = g_strdup_printf("rmdir /Q /S %s", win_path);	
-	if (system(cmd)	== -1)
-	{
-		free(cmd);
-		TRACE( "Failed to delete directory: %s", win_path);
-		free(win_path);
-		return -1;
-	}
+	cmd = g_strdup_printf("rmdir /Q /S \"%s\"", win_path);	
+	if(system(cmd) == -1)
 #else
 	cmd = g_strdup_printf("rm -rf %s", path);
 	if(!run_cmd(cmd))
+#endif
 	{
 		free(cmd);
 		TRACE( "Failed to delete directory: %s", path);
 		return -1;
 	}
-#endif
 	return 0;
 }
 
@@ -1474,13 +1476,14 @@ void make_default_image(char *default_targetname)
 			}
 		// create emulator image
 #ifdef _WIN32
-			cmd = g_strdup_printf("%s/qemu-img.exe create -b %s -f qcow2 %s",
+			cmd = g_strdup_printf("\"%s/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%s\"",
 					get_bin_path(), base_img_path, default_img);
+			if(WinExec(cmd, SW_HIDE) < 31)
 #else
 			cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %s",
 					base_img_path, default_img);
-#endif
 			if(!run_cmd(cmd))
+#endif
 			{
 				free(cmd);
 				ERR("default %s image creation failed!\n", arch);
@@ -1528,7 +1531,6 @@ gboolean run_cmd(char *cmd)
 	GError *err = NULL;
 
 	g_return_val_if_fail(cmd != NULL, FALSE);
-
 	INFO( "Command: %s\n", cmd);
 	if (!g_spawn_command_line_sync(cmd, &s_out, &s_err, &exit_status, &err)) {
 		ERR( "Failed to invoke command: %s\n", err->message);
@@ -2270,7 +2272,7 @@ int create_diskimg(char *arch, char *dest_path)
 			return -1;
 		}
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s -f qcow2 %semulimg-%s.%s", get_root_path(), virtual_target_info.basedisk_path,
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%semulimg-%s.%s\"", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2281,7 +2283,7 @@ int create_diskimg(char *arch, char *dest_path)
 	{
 		snprintf(virtual_target_info.basedisk_path, MAXBUF, "%s", get_baseimg_path());
 #ifdef _WIN32
-		cmd = g_strdup_printf("%s/bin/qemu-img.exe create -b %s/emulimg.%s -f qcow2 %semulimg-%s.%s", get_root_path(), get_arch_path(), arch,
+		cmd = g_strdup_printf("\"%s/bin/qemu-img.exe\" create -b \"%s\" -f qcow2 \"%semulimg-%s.%s\"", get_root_path(), virtual_target_info.basedisk_path,
 				dest_path, virtual_target_info.virtual_target_name, arch);
 #else
 		cmd = g_strdup_printf("./qemu-img create -b %s -f qcow2 %semulimg-%s.%s", virtual_target_info.basedisk_path,
@@ -2294,8 +2296,11 @@ int create_diskimg(char *arch, char *dest_path)
 		show_message("Error","disk type is wrong");
 		return -1;
 	}
-	
+#ifdef _WIN32
+	if (WinExec(cmd, SW_HIDE) < 31)
+#else
 	if(!run_cmd(cmd))
+#endif
 	{
 		g_free(cmd);
 		g_free(dest_path);
@@ -3000,13 +3005,7 @@ int main(int argc, char** argv)
 	int status;
 	char *skin = NULL;
 	char full_glade_path[MAX_LEN];
-	char *tizen_vms_path = (char*)get_tizen_vms_path();
-
-	if(access(tizen_vms_path, R_OK) != 0){
-		g_mkdir_with_parents(tizen_vms_path, 0755);
-	}
-	free(tizen_vms_path);
-
+	
 	working_dir = g_path_get_dirname(buf);
 	status = g_chdir(working_dir);
 	if(status == -1)
@@ -3014,7 +3013,7 @@ int main(int argc, char** argv)
 		ERR( "fail to change working directory\n");
 		exit(1);
 	}
-
+	
 	gtk_init(&argc, &argv);
 	INFO( "virtual target manager start \n");
 
