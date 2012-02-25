@@ -525,7 +525,7 @@ const gchar *get_tizen_vms_path(void)
 }
 
 /* get_screenshot_path = "/home/{USER}/.tizen_vms/screenshots" */
-const gchar *get_screenshots_path(void)
+gchar *get_screenshots_path(void)
 {
 	const char subdir[] = "/screenshots";
 	char *tizen_vms_path = (char*)get_tizen_vms_path();

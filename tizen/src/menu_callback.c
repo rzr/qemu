@@ -173,7 +173,7 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 	pixmap_widget = gtk_image_new_from_pixbuf (pDev->mode_SkinImg[nMode].pPixImg);
 
 	gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, NULL, &SkinMask, 1);
-	//gdk_pixbuf_get_has_alpha (pDev->mode_SkinImg[nMode].pPixImg);
+	gtk_widget_shape_combine_mask (GTK_WIDGET(widget), NULL, 0, 0);
 	gtk_widget_shape_combine_mask (GTK_WIDGET(widget), SkinMask, 0, 0);
 
 	gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);

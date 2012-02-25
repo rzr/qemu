@@ -369,6 +369,7 @@ void exit_emulator_post_process( void ) {
 
 }
 
+#if 0
 static int send_info_to_emuld(char *send_buf, int buf_size)
 {
 	int   s;  
@@ -398,6 +399,7 @@ static int send_info_to_emuld(char *send_buf, int buf_size)
 
 	return 1;
 }
+#endif
 
 #if 0
 static void *graceful_shutdown_ftn(void* arg)
@@ -491,6 +493,11 @@ void exit_emulator(void)
 }
 
 #ifdef _WIN32
+/**
+  @brief  enumerates display monitors
+  @param dwData: host screen resolution
+  @return success: TRUE
+ */
 static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
     RECT *pHostScreen;
@@ -512,7 +519,7 @@ static void construct_main_window(void)
 {
 
 	gchar emul_img_dir[512] = {0,};
-	const gchar *name;
+	gchar *name;
 	const gchar *skin;
 	GdkBitmap *SkinMask = NULL;
 	GtkWidget *popup_menu = NULL;
@@ -531,7 +538,9 @@ static void construct_main_window(void)
 #endif
 	GdkColor color;
 	color.red = color.green = color.blue = 0x8888;
-	gtk_widget_modify_bg(GTK_WINDOW (g_main_window), GTK_STATE_NORMAL, &color);
+	gtk_widget_modify_bg(g_main_window, GTK_STATE_NORMAL, &color);
+	INFO("sets the emulator window background color (%x, %x, %x)\n", color.red, color.green, color.blue);
+
 	gtk_window_set_decorated (GTK_WINDOW (g_main_window), FALSE);
 
 	/* 2.1 emulator taskbar icon image */
@@ -668,6 +677,7 @@ static void construct_main_window(void)
 #endif
 
 	gtk_window_move (GTK_WINDOW (g_main_window), configuration.main_x, configuration.main_y);
+	INFO("emulator window is moved (%d, %d)\n", configuration.main_x, configuration.main_y);
 
 	/* 7. create popup menu */
 	create_popup_menu (&popup_menu, &PHONE, &configuration);

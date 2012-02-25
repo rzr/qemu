@@ -68,7 +68,7 @@ const gchar *get_data_path(void);
 const gchar *get_conf_path(void);
 const gchar *get_tizen_vms_path(void);
 const gchar *get_tizen_vms_arch_path(void);
-const gchar *get_screenshots_path(void);
+gchar *get_screenshots_path(void);
 const gchar *get_baseimg_path(void);
 const gchar *get_etc_path(void);
 const gchar *get_tizen_tmp_path(void);
