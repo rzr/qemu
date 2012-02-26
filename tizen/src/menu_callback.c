@@ -655,7 +655,8 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *info_file;
 	int info_file_status;
 	char *resolution = NULL;
-	char *sdcard_type = NULL;
+	int sdcard_type;
+	int share_type;
 	char *sdcard_path = NULL;
 	char *ram_size = NULL;
 	char *dpi = NULL;
@@ -665,6 +666,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 	char *sdcard_detail = NULL;
 	char *ram_size_detail = NULL;
 	char *sdcard_path_detail = NULL;
+	char *share_path = NULL;
 	char *details = NULL;
 
 	target_name = (char*)data;
@@ -678,12 +680,14 @@ void show_info_window(GtkWidget *widget, gpointer data)
 		return;
 	}
 	resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-	sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
+	sdcard_type= get_config_type(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
+	share_type= get_config_type(info_file, HARDWARE_GROUP, SHARE_TYPE_KEY);
 	sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
 	ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 	dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
 	disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
 	basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
+	share_path = get_config_value(info_file, HARDWARE_GROUP, SHARE_PATH_KEY);
 
 	arch = getenv("EMULATOR_ARCH");
 	if(!arch) /* for stand alone */
@@ -702,7 +706,7 @@ void show_info_window(GtkWidget *widget, gpointer data)
 		free(binary);
 	}
 
-	if(strcmp(sdcard_type, "0") == 0)
+	if(sdcard_type == 0)
 	{
 		sdcard_detail = g_strdup_printf("Not Supported");
 		sdcard_path_detail = g_strdup_printf("None");
@@ -712,9 +716,13 @@ void show_info_window(GtkWidget *widget, gpointer data)
 		sdcard_detail = g_strdup_printf("Supported");
 		sdcard_path_detail = g_strdup_printf("%s", sdcard_path); 
 	}
+	
+	if(share_type == 0)
+		share_path = g_strdup_printf("None"); 
+	else
+		share_path = g_strdup_printf("%s", share_path); 
 
 	ram_size_detail = g_strdup_printf("%sMB", ram_size); 
-#ifndef _WIN32		
 
 	details = g_strdup_printf(""
 			" - Name: %s\n"
@@ -725,38 +733,21 @@ void show_info_window(GtkWidget *widget, gpointer data)
 			" - SD Path: %s\n"
 			" - Image Path: %s\n"
 			" - Base Image Path: %s \n"
+			" - Shared Path: %s \n"
 			, target_name, arch, resolution, ram_size_detail
-			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path, share_path);
 
+#ifdef _WIN32
+	show_sized_message("Virtual Target Details", change_path_from_slash(details), DIALOG_MAX_WIDTH);
+#else
 	show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
-
-#else /* _WIN32 */
-	gchar *details_win = NULL;
-
-	details = g_strdup_printf(""
-			" - Name: %s\n"
-			" - CPU: %s\n"
-			" - Resolution: %s\n"
-			" - RAM Size: %s\n"
-			" - SD Card: %s\n"
-			" - SD Path: %s\n"
-			" - Image Path: %s\n"
-			" - Base Image Path: %s \n"
-			, target_name, arch, resolution, ram_size_detail
-			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
-
-	details_win = change_path_from_slash(details);
-
-	show_sized_message("Virtual Target Details", details_win, DIALOG_MAX_WIDTH);
-
-	free(details_win);
 #endif
 	g_free(resolution);
-	g_free(sdcard_type);
 	g_free(sdcard_path);
 	g_free(ram_size);
 	g_free(dpi);
 	g_free(disk_path);
+	g_free(share_path);
 	g_free(basedisk_path);
 	g_free(sdcard_detail);
 	g_free(ram_size_detail);

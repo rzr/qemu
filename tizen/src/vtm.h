@@ -72,11 +72,14 @@ void sdcard_size_select_cb(void);
 void set_sdcard_create_active_cb(void);
 void set_sdcard_select_active_cb(void);
 void set_disk_select_active_cb(void);
+void set_share_select_active_cb(void);
 void set_sdcard_none_active_cb(void);
 void set_default_image(char *target_name);
 void set_disk_default_active_cb(void);
+void set_share_default_active_cb(void);
 void sdcard_file_select_cb(void);
 void disk_file_select_cb(void);
+void share_file_select_cb(void);
 void ram_select_cb(void);
 void ok_clicked_cb(void);
 
@@ -87,6 +90,7 @@ void setup_buttontype_frame(void);
 void setup_sdcard_frame(void);
 void setup_disk_frame(void);
 void setup_ram_frame(void);
+void setup_file_share_frame(void);
 
 void setup_modify_frame(char *target_name);
 void setup_modify_button(char *target_name);
@@ -95,6 +99,7 @@ void setup_modify_sdcard_frame(char *target_name);
 void setup_modify_disk_frame(char *target_name);
 void setup_modify_ram_frame(char *target_name);
 void setup_modify_buttontype_frame(char *target_name);
+void setup_modify_file_share_frame(void);
 void modify_ok_clicked_cb(GtkWidget *widget, gpointer selection);
 
 void show_create_window(void);
@@ -125,6 +130,7 @@ int remove_dir(char *path);
 void lock_file(char *path);
 int create_diskimg(char *arch, char *dest_path);
 int create_sdcard(char *dest_path);
+int create_file_share(void);
 int modify_sdcard(char *arch, char *dest_path);
 int change_modify_target_name(char *arch, char *dest_path, char *name, char* target_name);
 int check_modify_target_name(char *name);

@@ -796,6 +796,7 @@ static int startup_option_parser(int *argc, char ***argv)
 	GOptionEntry options[] = {
 		{"disk", 0, 0, G_OPTION_ARG_STRING, &startup_option.disk, "Disk image path", "\"disk path\""},
 		{"vtm", 0, 0, G_OPTION_ARG_STRING, &startup_option.vtm, "Virtual target image file", "\"*.x86 or *.arm\""},
+		{"file-share", 0, 0, G_OPTION_ARG_STRING, &startup_option.file_share, "Sharing path", "\"directory path\""},
 		{"run-level", 0, 0, G_OPTION_ARG_INT, &startup_option.run_level, "Run level", "5"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
 		{"Port", 0, 0, G_OPTION_ARG_INT, &startup_option.mountPort, "Port for NFS mounting", "\"default is 1301\""},

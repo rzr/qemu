@@ -138,6 +138,8 @@ extern "C" {
 #define DISK_TYPE_KEY				"DISK_TYPE"
 #define DISK_PATH_KEY				"DISK_PATH"
 #define BASEDISK_PATH_KEY			"BASEDISK_PATH"
+#define SHARE_TYPE_KEY				"SHARE_TYPE"
+#define SHARE_PATH_KEY				"SHARE_PATH"
 #define EMULATOR_OPTION_KEY			"EMULATOR_OPTION"
 #define QEMU_OPTION_KEY				"QEMU_OPTION"
 #define MAJOR_VERSION_KEY			"MAJOR_VERSION"
@@ -363,6 +365,7 @@ typedef struct _STARTUP_OPTION
 {
 	gchar		*disk;					/**<Target name> */
 	gchar		*vtm;					/**<VTM name>**/
+	gchar		*file_share;
 	int			run_level;				/**<run level> */
 	gboolean	target_log;				/**<If ture, the target log of emulator is printed */
 	gint		mountPort;
@@ -685,11 +688,13 @@ typedef struct _VIRTUALTARGETINFO {
 	int button_type;
 	int sdcard_type;
 	int disk_type;
+	int share_type;
 	char basedisk_path[MAXBUF];
 	char sdcard_path[MAXBUF];
 	int ram_size;
 	char dpi[MAXBUF];
 	char diskimg_path[MAXBUF];		/* Disk Image Path */
+	char share_path[MAXBUF];	
 	int snapshot_saved;
 	char snapshot_saved_date[MAXBUF];
 } VIRTUALTARGETINFO;

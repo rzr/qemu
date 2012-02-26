@@ -148,6 +148,7 @@ void activate_target(char *target_name)
 	char *virtual_target_path;
 	char *binary = NULL;
 	char *emul_add_opt = NULL;
+	char *file_share_opt = NULL;
 	char *qemu_add_opt = NULL;
 	char *disk_path = NULL;
 	char *basedisk_path = NULL;
@@ -210,23 +211,27 @@ void activate_target(char *target_name)
 	binary = get_config_value(info_file, QEMU_GROUP, BINARY_KEY);
 	emul_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, EMULATOR_OPTION_KEY);
 	qemu_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, QEMU_OPTION_KEY);
-
-	if(emul_add_opt == 0)
+	file_share_opt = get_config_value(info_file, HARDWARE_GROUP, SHARE_PATH_KEY);
+ 
+	if(emul_add_opt == NULL)
 		emul_add_opt = g_strdup_printf(" ");
-	if(qemu_add_opt == 0)
+	if(qemu_add_opt == NULL)
 		qemu_add_opt = g_strdup_printf(" ");
+	if(file_share_opt == NULL)
+		file_share_opt = g_strdup_printf(" ");
+
 #ifndef _WIN32
 	if(strcmp(arch, X86) == 0)
 	{
-		cmd = g_strdup_printf("./%s --vtm %s %s"
+		cmd = g_strdup_printf("./%s --vtm %s --file-share \"%s\" %s"
 				"-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
-				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt);
+				binary, target_name, file_share_opt, emul_add_opt, path, path, enable_kvm, qemu_add_opt);
 	}
 	else if(strcmp(arch, ARM)== 0)
 	{
-		cmd = g_strdup_printf("./%s --vtm %s %s"
+		cmd = g_strdup_printf("./%s --vtm %s --file_share \"%s\" %s"
 			"--  -kernel %s/data/kernel-img/zImage %s",
-			binary, target_name, emul_add_opt, path, qemu_add_opt);
+			binary, target_name, file_share_opt,  emul_add_opt, path, qemu_add_opt);
 	}
 	else
 	{
@@ -236,14 +241,14 @@ void activate_target(char *target_name)
 #else /*_WIN32 */
 	if(strcmp(arch, X86) == 0)
 	{
-		cmd = g_strdup_printf("\"%s\" --vtm %s %s"
+		cmd = g_strdup_printf("\"%s\" --vtm %s --file-share \"%s\" %s"
 				"-- -vga tizen -bios bios.bin -L \"%s/data/pc-bios\" -kernel \"%s/data/kernel-img/bzImage\" %s %s",
-				binary, target_name, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
+				binary, target_name, file_share_opt, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
 	}else if(strcmp(arch, ARM) == 0)
 	{
-			cmd = g_strdup_printf("\"%s\" --vtm %s %s"
+			cmd = g_strdup_printf("\"%s\" --vtm %s --file_share \"%s\" %s"
 			"--  -kernel \"%s/data/kernel-img/zImage\" %s",
-			binary, target_name, emul_add_opt, path, qemu_add_opt);
+			binary, target_name, file_share_opt, emul_add_opt, path, qemu_add_opt);
 	}
 	else
 	{
@@ -855,7 +860,8 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *info_file;
 	int info_file_status;
 	char *resolution = NULL;
-	char *sdcard_type = NULL;
+	int sdcard_type;
+	int share_type;
 	char *sdcard_path = NULL;
 	char *ram_size = NULL;
 	char *dpi = NULL;
@@ -865,6 +871,7 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 	char *sdcard_detail = NULL;
 	char *ram_size_detail = NULL;
 	char *sdcard_path_detail = NULL;
+	char *share_path = NULL;
 	char *details = NULL;
 
 	arch = getenv(EMULATOR_ARCH);
@@ -901,14 +908,16 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 		}
 		//get info from config.ini
 		resolution= get_config_value(info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-		sdcard_type= get_config_value(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
+		sdcard_type= get_config_type(info_file, HARDWARE_GROUP, SDCARD_TYPE_KEY);
+		share_type= get_config_type(info_file, HARDWARE_GROUP, SHARE_TYPE_KEY);
 		sdcard_path= get_config_value(info_file, HARDWARE_GROUP, SDCARD_PATH_KEY);
 		ram_size = get_config_value(info_file, HARDWARE_GROUP, RAM_SIZE_KEY);
 		dpi = get_config_value(info_file, HARDWARE_GROUP, DPI_KEY);
 		disk_path = get_config_value(info_file, HARDWARE_GROUP, DISK_PATH_KEY);
 		basedisk_path = get_config_value(info_file, HARDWARE_GROUP, BASEDISK_PATH_KEY);
+		share_path = get_config_value(info_file, HARDWARE_GROUP, SHARE_PATH_KEY);
 
-		if(strcmp(sdcard_type, "0") == 0)
+		if(sdcard_type == 0)
 		{
 			sdcard_detail = g_strdup_printf("Not supported");
 			sdcard_path_detail = g_strdup_printf("None");
@@ -918,6 +927,11 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 			sdcard_detail = g_strdup_printf("Supported");
 			sdcard_path_detail = g_strdup_printf("%s", sdcard_path); 
 		}
+		
+		if(share_type == 0)
+			share_path = g_strdup_printf("None"); 
+		else
+			share_path = g_strdup_printf("%s", share_path); 
 
 		ram_size_detail = g_strdup_printf("%sMB", ram_size); 
 
@@ -933,55 +947,34 @@ void details_clicked_cb(GtkWidget *widget, gpointer selection)
 			show_message("Error", details);
 			g_free(details);
 		}
-
-#ifndef _WIN32		
-		/* check image & base image */
-
+		
 		details = g_strdup_printf(""
-				" - Name: %s\n"
-				" - CPU: %s\n"
-				" - Resolution: %s\n"
-				" - RAM Size: %s\n"
-				" - SD Card: %s\n"
-				" - SD Path: %s\n"
-				" - Image Path: %s\n"
-				" - Base Image Path: %s \n"
-				, target_name, arch, resolution, ram_size_detail
-				, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
+			" - Name: %s\n"
+			" - CPU: %s\n"
+			" - Resolution: %s\n"
+			" - RAM Size: %s\n"
+			" - SD Card: %s\n"
+			" - SD Path: %s\n"
+			" - Image Path: %s\n"
+			" - Base Image Path: %s \n"
+			" - Shared Path: %s \n"
+			, target_name, arch, resolution, ram_size_detail
+			, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path, share_path);
 
+#ifdef _WIN32
+		show_sized_message("Virtual Target Details", change_path_from_slash(details), DIALOG_MAX_WIDTH);
+#else
 		show_sized_message("Virtual Target Details", details, DIALOG_MAX_WIDTH);
-
-#else /* _WIN32 */
-		/* todo: check image & base image */
-		gchar *details_win = NULL;
-
-		details = g_strdup_printf(""
-				" - Name: %s\n"
-				" - CPU: %s\n"
-				" - Resolution: %s\n"
-				" - RAM Size: %s\n"
-				" - SD Card: %s\n"
-				" - SD Path: %s\n"
-				" - Image Path: %s\n"
-				" - Base Image Path: %s \n"
-				, target_name, arch, resolution, ram_size_detail
-				, sdcard_detail, sdcard_path_detail, disk_path, basedisk_path);
-
-		details_win = change_path_from_slash(details);
-
-		show_sized_message("Virtual Target Details", details_win, DIALOG_MAX_WIDTH);
-
-		free(details_win);
 #endif
 		g_free(resolution);
-		g_free(sdcard_type);
 		g_free(sdcard_path);
 		g_free(ram_size);
 		g_free(dpi);
 		g_free(disk_path);
+		g_free(share_path);
+		g_free(basedisk_path);
 		g_free(sdcard_detail);
 		g_free(ram_size_detail);
-		g_free(sdcard_path_detail);
 		g_free(details);
 		return;
 	}
@@ -1596,8 +1589,6 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "%s=1\n", HTTP_PROXY_KEY);
 		g_fprintf (fp, "%s=1\n", DNS_SERVER_KEY);
 		g_fprintf (fp, "%s=1200\n", TELNET_PORT_KEY);
-		//		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_KEY);
-		//		g_fprintf (fp, "%s=\n", SNAPSHOT_SAVED_DATE_KEY);
 		g_fprintf (fp, "%s=1\n", KVM_KEY);
 
 		g_fprintf (fp, "\n[%s]\n", ADDITIONAL_OPTION_GROUP);
@@ -1616,7 +1607,9 @@ int create_config_file(gchar* filepath)
 		g_fprintf (fp, "%s=0\n", DISK_TYPE_KEY);
 		g_fprintf (fp, "%s=\n", BASEDISK_PATH_KEY);
 		g_fprintf (fp, "%s=\n", DISK_PATH_KEY);
-
+		g_fprintf (fp, "%s=0\n", SHARE_TYPE_KEY);
+		g_fprintf (fp, "%s=\n", SHARE_PATH_KEY);
+		
 		fclose(fp);
 	}
 	else {
@@ -1665,6 +1658,8 @@ int write_config_file(gchar *filepath)
 	//  set_config_type(filepath, HARDWARE_GROUP, BUTTON_TYPE_KEY, virtual_target_info.button_type);
 	set_config_value(filepath, HARDWARE_GROUP, DISK_PATH_KEY, virtual_target_info.diskimg_path);
 	set_config_value(filepath, HARDWARE_GROUP, BASEDISK_PATH_KEY, virtual_target_info.basedisk_path);
+	set_config_type(filepath, HARDWARE_GROUP, SHARE_TYPE_KEY, virtual_target_info.share_type);
+	set_config_value(filepath, HARDWARE_GROUP, SHARE_PATH_KEY, virtual_target_info.share_path);
 
 	return 0;
 }
@@ -1833,6 +1828,23 @@ void set_disk_select_active_cb(void)
 
 }
 
+void set_share_select_active_cb(void)
+{
+	gboolean active = FALSE;
+
+	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton3");
+	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(select_radiobutton));
+
+	if(active == TRUE)
+		virtual_target_info.share_type = 1;
+
+	GtkWidget *filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton3");
+
+	gtk_widget_set_sensitive(filechooser, active);
+	share_file_select_cb();
+
+}
+
 void set_sdcard_select_active_cb(void)
 {
 	gboolean active = FALSE;
@@ -1866,6 +1878,27 @@ void set_disk_default_active_cb(void)
 	else
 		virtual_target_info.disk_type = 1;
 }
+
+void set_share_default_active_cb(void)
+{
+	gboolean active = FALSE;
+	GtkWidget *filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton3");
+
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton7");
+	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(default_radiobutton));
+
+	if(active == TRUE)
+	{
+		virtual_target_info.share_type = 0;
+		INFO( "Not use file sharing\n");
+	}
+	else
+		virtual_target_info.share_type = 1;
+	
+	gtk_widget_set_sensitive(filechooser, FALSE);
+
+}
+
 
 void set_default_image(char *target_name)
 {
@@ -1926,6 +1959,24 @@ void disk_file_select_cb(void)
 
 	g_free(path);
 
+}
+
+void share_file_select_cb(void)
+{
+	gchar *path = NULL;
+
+	GtkWidget *filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton3");
+
+	path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
+	
+#ifdef _WIN32
+	snprintf(virtual_target_info.share_path, MAXBUF, change_path_to_slash(path));
+#else
+	snprintf(virtual_target_info.share_path, MAXBUF, "%s", path);
+#endif
+	INFO( "file share path : %s\n", path);
+
+	g_free(path);
 }
 
 void sdcard_file_select_cb(void)
@@ -2370,6 +2421,17 @@ int create_sdcard(char *dest_path)
 	return 0;
 }	
 
+int create_file_share(void)
+{
+	if(virtual_target_info.share_type == 1) {
+		if(strcmp(virtual_target_info.share_path, "") == 0) {
+			show_message("Warning", "You didn't select share path");
+			return -1;
+		}
+	}
+	return 0;
+}
+
 void ok_clicked_cb(void)
 {
 	char *dest_path = NULL;
@@ -2395,6 +2457,9 @@ void ok_clicked_cb(void)
 	if(create_sdcard(dest_path) == -1)
 		return;
 
+	if(create_file_share() == -1)
+		return;
+
 	if(create_diskimg(arch, dest_path) == -1)
 		return;
 
@@ -2415,6 +2480,7 @@ void ok_clicked_cb(void)
 	g_free(dest_path);
 
 	gtk_widget_destroy(win);
+	
 	refresh_clicked_cb();
 
 	g_object_unref(G_OBJECT(g_create_builder));
@@ -2430,6 +2496,7 @@ void setup_create_frame(void)
 	setup_sdcard_frame();
 	setup_disk_frame();
 	setup_ram_frame();
+	setup_file_share_frame();
 }
 
 void setup_modify_frame(char *target_name)
@@ -2439,6 +2506,7 @@ void setup_modify_frame(char *target_name)
 	setup_modify_sdcard_frame(target_name);
 	setup_modify_disk_frame(target_name);
 	setup_modify_ram_frame(target_name);
+	setup_modify_file_share_frame();
 }
 
 void setup_modify_resolution_frame(char *target_name)
@@ -2509,6 +2577,33 @@ void setup_modify_disk_frame(char *target_name)
 	gtk_widget_set_sensitive(select_radiobutton, FALSE);
 	gtk_widget_set_sensitive(sdcard_filechooser2, FALSE);
 }
+
+void setup_modify_file_share_frame()
+{
+	char *share_path;
+	// radio button setup
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton7");
+	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton3");
+	// file chooser setup
+	GtkWidget *filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton3");
+	int share_type = get_config_type(g_info_file, HARDWARE_GROUP, SHARE_TYPE_KEY);
+	if(share_type == 1)
+	{
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(select_radiobutton), TRUE);
+		share_path= get_config_value(g_info_file, HARDWARE_GROUP, SHARE_PATH_KEY);
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(filechooser), share_path);
+	}
+	else if(share_type == 0)
+	{
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
+		gtk_widget_set_sensitive(filechooser, FALSE);
+	}
+
+	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_share_select_active_cb), NULL);
+	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_share_default_active_cb), NULL);
+	g_signal_connect(G_OBJECT(filechooser), "selection-changed", G_CALLBACK(share_file_select_cb), NULL);
+}
+
 
 void setup_modify_sdcard_frame(char *target_name)
 {
@@ -2696,6 +2791,22 @@ void setup_disk_frame(void)
 	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_disk_default_active_cb), NULL);
 	g_signal_connect(G_OBJECT(disk_filechooser2), "selection-changed", G_CALLBACK(disk_file_select_cb), NULL);
 
+}
+
+void setup_file_share_frame(void)
+{
+	// radio button setup
+	GtkWidget *default_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton7");
+	GtkWidget *select_radiobutton = (GtkWidget *)gtk_builder_get_object(g_create_builder, "radiobutton3");
+	// file chooser setup
+	GtkWidget *filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton3");
+	
+	set_share_default_active_cb();
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
+
+	g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_share_select_active_cb), NULL);
+	g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_share_default_active_cb), NULL);
+	g_signal_connect(G_OBJECT(filechooser), "selection-changed", G_CALLBACK(share_file_select_cb), NULL);
 }
 
 void setup_sdcard_frame(void)
