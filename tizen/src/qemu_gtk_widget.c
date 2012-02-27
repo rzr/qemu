@@ -248,30 +248,16 @@ gint qemu_widget_new (GtkWidget **widget)
 {
 	lcd_list_data *lcd = &PHONE.mode[UISTATE.current_mode].lcd_list[0];
 
-	if (!qemu_state)
+	if (!qemu_state) {
 		qemu_state = g_object_new(qemu_get_type(), NULL);
+	}
 
 	qemu_state->scale = UISTATE.scale;
 	qemu_state->width = lcd->lcd_region.w * qemu_state->scale;
 	qemu_state->height = lcd->lcd_region.h * qemu_state->scale;
 	qemu_state->bpp = lcd->bitsperpixel;
 	qemu_state->flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL|SDL_NOFRAME;
-	if(PHONE.dual_display == 1){
-		intermediate_section = lcd->lcd_region.split;
-		//printf("rotation intermediate_section %d\n", intermediate_section);
-		if(UISTATE.current_mode ==0 || UISTATE.current_mode ==2)
-		{
-			qemu_state->width=qemu_state->width+intermediate_section;
-			qemu_widget_size (qemu_state, qemu_state->width, qemu_state->height);
-		}
-		if(UISTATE.current_mode ==1 || UISTATE.current_mode ==3)
-		{
-			qemu_state->height=qemu_state->height+intermediate_section;
-			qemu_widget_size (qemu_state, qemu_state->width, qemu_state->height);
-		}
-	}
-	else
-		qemu_widget_size (qemu_state, qemu_state->width, qemu_state->height);
+	qemu_widget_size (qemu_state, qemu_state->width, qemu_state->height);
 
 	TRACE( "qemu widget size is width = %d, height = %d\n",
 			qemu_state->width, qemu_state->height);

@@ -12,8 +12,6 @@
 			<image_list>
 				<main_image>default.png</main_image>
 				<keypressed_image>default_p.png</keypressed_image>
-				<led_main_image>default.png</led_main_image>
-				<led_keypressed_image>default_p.png</led_keypressed_image>
 			</image_list>
 			<lcd_list>
 				<lcd id="1" bitsperpixel="32" nonstd="0">
@@ -153,8 +151,6 @@
 			<image_list>
 				<main_image>default_w90.png</main_image>
 				<keypressed_image>default_w90_p.png</keypressed_image>
-				<led_main_image>default_w90.png</led_main_image>
-				<led_keypressed_image>default_w90_p.png</led_keypressed_image>
 			</image_list>
 			<lcd_list>
 				<lcd id="1" bitsperpixel="32" nonstd="0">
@@ -294,8 +290,6 @@
 			<image_list>
 				<main_image>default_180.png</main_image>
 				<keypressed_image>default_180_p.png</keypressed_image>
-				<led_main_image>default_180.png</led_main_image>
-				<led_keypressed_image>default_180_p.png</led_keypressed_image>
 			</image_list>
 			<lcd_list>
 				<lcd id="1" bitsperpixel="32" nonstd="0">
@@ -435,8 +429,6 @@
 			<image_list>
 				<main_image>default_w.png</main_image>
 				<keypressed_image>default_w_p.png</keypressed_image>
-				<led_main_image>default_w.png</led_main_image>
-				<led_keypressed_image>default_w_p.png</led_keypressed_image>
 			</image_list>
 			<lcd_list>
 				<lcd id="1" bitsperpixel="32" nonstd="0">
@@ -574,7 +566,6 @@
 	</mode_section>
 
 	<event_menu>
-	
 		<menu name="Rotate">
 			<event id="Portrait" value="Portrait"></event>
 			<event id="Landscape" value="Landscape"></event>

@@ -156,10 +156,6 @@ extern "C" {
 #define RAM_SIZE_KEY				"RAM_SIZE"
 #define DPI_KEY                     "DPI"
 #define VERSION_GROUP				"VERSION"
-#define FOLDER_CLOSE				"folder_close"
-#define FOLDER_OPEN					"folder_open"
-#define LED_ON						"led_on"
-#define LED_OFF						"led_off"
 #define PORTRAIT					"Portrait"
 #define LANDSCAPE					"Landscape"
 #define REVERSE_PORTRAIT			"Reverse Portrait"
@@ -398,8 +394,6 @@ typedef struct __GDK_KEY_STRING__ {
 typedef struct _SkinImgInfo {
 	GdkPixbuf *pPixImg;			/*Front Image Button UP */
 	GdkPixbuf *pPixImg_P;		/*Front Image Button DOWN */
-	GdkPixbuf *pPixImgLed;		/*Front LED Image Button UP */
-	GdkPixbuf *pPixImgLed_P;	/*Front LED Image Button Down */
 	int nImgWidth;				/*Front Image Width */
 	int nImgHeight;				/*Front Image Height */
 } SkinImgInfo;
@@ -443,9 +437,6 @@ typedef struct _region {
 typedef struct _image_list {
 	char *main_image;
 	char *keypressed_image;
-	char *led_main_image;
-	char *led_keypressed_image;
-	char *splitted_area_image;
 } image_list_data;
 
 
@@ -458,17 +449,6 @@ typedef struct _lcd_list {
 	int nonstd;
 	region lcd_region;
 } lcd_list_data;
-
-
-/** 
- * @brief 		structure to save LED id and name, etc. information
- */
-typedef struct _led_list {
-	char *id;
-	char *name;
-	char *imagepath;
-	region led_region;
-} led_list_data;
 
 
 /** 
@@ -512,11 +492,9 @@ typedef struct _mode {
 	region REGION;		/* there is in XML, but is it really needed? */
 	image_list_data image_list;
 	lcd_list_data lcd_list[MAX_EMULFB];
-	led_list_data led_list[LED_MAX_COUNT];
 	key_map_list_data key_map_list[KEY_MAX_COUNT];
 	int key_map_list_cnt;
 	int lcd_list_cnt;
-	int led_list_cnt;
 } mode_list;
 
 
@@ -542,20 +520,15 @@ typedef struct _event_menu {
 /** 
  * @brief 		structure to save the DBI parsing information
  */
-typedef struct _PHONEMODELINFO{
+typedef struct _PHONEMODELINFO {
 	int mode_cnt;
 	mode_list mode[MODE_MAX];
 	SkinImgInfo mode_SkinImg[MODE_MAX];
 	SkinImgInfo default_SkinImg[MODE_MAX];
-	int cover_mode_cnt;
-	mode_list cover_mode;
-	SkinImgInfo cover_mode_SkinImg;
 
 	event_menu_list event_menu[10];
 	int event_menu_cnt;
 	char model_name[64];
-	int dual_display;
-
 } PHONEMODELINFO;
 
 

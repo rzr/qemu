@@ -355,95 +355,9 @@ void menu_event_callback(GtkWidget *widget, gpointer data)
     buf = data;
 
     /* 1. getting popup_menu */
-
-    GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
+    //GtkWidget *popup_menu = get_widget(EMULATOR_ID, POPUP_MENU);
 
     pWidget = widget;
-
-    /* 2. LED ON/OFF menu */
-
-    if (g_strcmp0(buf, LED_ON) == 0) {
-        if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-            gtk_widget_hide_all(g_main_window);
-            gtk_window_resize(GTK_WINDOW(g_main_window), PHONE.mode_SkinImg[UISTATE.current_mode].nImgWidth, PHONE.mode_SkinImg[UISTATE.current_mode].nImgHeight);
-            gtk_widget_show_all(g_main_window);
-        }
-    }
-
-    else if (g_strcmp0(buf, LED_OFF) == 0) {
-        if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-            gtk_widget_hide_all(g_main_window);
-            gtk_window_resize(GTK_WINDOW(g_main_window), PHONE.mode_SkinImg[UISTATE.current_mode].nImgWidth, PHONE.mode_SkinImg[UISTATE.current_mode].nImgHeight);
-            gtk_widget_show_all(g_main_window);
-        }
-    }
-
-    /* 3. Folder open/ close menu */
-
-    else if (g_strcmp0(buf, FOLDER_OPEN) == 0) {
-        GdkBitmap *SkinMask = NULL;
-        GdkPixmap *SkinPixmap = NULL;
-
-        if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-
-            pWidget = g_object_get_data((GObject *) popup_menu, "SubLCD");
-            if (pWidget != NULL) {
-                gtk_widget_show(pWidget);
-            }
-            pWidget = g_object_get_data((GObject *) popup_menu, "Simple Mode");
-            if (pWidget != NULL) {
-                gtk_widget_show(pWidget);
-            }
-
-            gdk_pixbuf_render_pixmap_and_mask(PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, &SkinPixmap, &SkinMask, 1);
-            gtk_widget_shape_combine_mask(g_main_window, NULL, 0, 0);
-            gtk_widget_shape_combine_mask(g_main_window, SkinMask, 0, 0);
-
-            if (SkinPixmap != NULL) {
-                g_object_unref(SkinPixmap);
-            }
-            if (SkinMask != NULL) {
-                g_object_unref(SkinMask);
-            }
-            gtk_widget_hide_all(g_main_window);
-            gtk_window_resize(GTK_WINDOW(g_main_window), PHONE.mode_SkinImg[UISTATE.current_mode].nImgWidth, PHONE.mode_SkinImg[UISTATE.current_mode].nImgHeight);
-            gtk_widget_show_all(g_main_window);
-
-        }
-    }
-
-    else if (g_strcmp0(buf, FOLDER_CLOSE) == 0) {
-        if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(pWidget)) == TRUE) {
-            GdkBitmap *SkinMask = NULL;
-            GdkPixmap *SkinPixmap = NULL;
-
-            pWidget = g_object_get_data((GObject *) popup_menu, "Simple Mode");
-            if (pWidget != NULL) {
-                gtk_widget_hide(pWidget);
-            }
-
-            pWidget = g_object_get_data((GObject *) popup_menu, "SubLCD");
-            if (pWidget != NULL) {
-                gtk_widget_hide(pWidget);
-            }
-
-            // window MASK
-            gdk_pixbuf_render_pixmap_and_mask(PHONE.cover_mode_SkinImg.pPixImg, &SkinPixmap, &SkinMask, 1);
-            gtk_widget_shape_combine_mask(g_main_window, NULL, 0, 0);
-            gtk_widget_shape_combine_mask(g_main_window, SkinMask, 0, 0);
-
-            if (SkinPixmap != NULL) {
-                g_object_unref(SkinPixmap);
-            }
-            if (SkinMask != NULL) {
-                g_object_unref(SkinMask);
-            }
-
-            gtk_widget_hide_all(g_main_window);
-            gtk_window_resize(GTK_WINDOW(g_main_window), PHONE.cover_mode_SkinImg.nImgWidth, PHONE.cover_mode_SkinImg.nImgHeight);
-            gtk_widget_show_all(g_main_window);
-        }
-    }
 
 
     /* 4.1 Portrait menu */
