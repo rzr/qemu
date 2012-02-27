@@ -825,6 +825,16 @@ void qemu_option_set_to_config(arglist *al)
 	append_argvlist(al, "-m");
 	append_argvlist(al, "%d", virtual_target_info.ram_size);
 
+	if (!qemu_arch_is_arm()) {		
+		if(startup_option.file_share != NULL) {
+#ifdef __linux__
+			append_argvlist(al, "-virtfs");
+            append_argvlist(al, "local,path=%s,security_model=none,mount_tag=fileshare", startup_option.file_share);
+#endif
+		}
+	}
+
+
 #if 0
 	printf("startup option : \n\n");
 	printf("target : %s\n", startup_option.target);
