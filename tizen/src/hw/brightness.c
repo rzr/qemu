@@ -61,10 +61,12 @@ typedef struct BrightnessState {
 
 enum {
 	BRIGHTNESS_LEVEL	= 0x00,
+	BRIGHTNESS_OFF    = 0x04,
 };
 
 //uint8_t* brightness_ptr;	// pointer in qemu space
 uint32_t brightness_level = 24;
+uint32_t brightness_off = 0;
 
 //#define DEBUG_BRIGHTNESS
 
@@ -100,13 +102,17 @@ static void brightness_reg_write(void *opaque, target_phys_addr_t addr, uint32_t
 		fprintf(stderr, "brightness_reg_write: Invalide brightness level.\n");
 	}
 
-    switch (addr & 0xFF) {
-    case BRIGHTNESS_LEVEL:
-    	brightness_level = val;
-        return;
-    default:
-        fprintf(stderr, "wrong brightness register write - addr : %d\n", addr);
-    }
+	switch (addr & 0xFF) {
+	case BRIGHTNESS_LEVEL:
+		brightness_level = val;
+		return;
+	case BRIGHTNESS_OFF:
+		DEBUG_PRINT(("Brightness off : %d\n", val));
+		brightness_off = val;
+		return;
+	default:
+		fprintf(stderr, "wrong brightness register write - addr : %d\n", addr);
+	}
 }
 
 static CPUReadMemoryFunc * const brightness_reg_readfn[3] = {
