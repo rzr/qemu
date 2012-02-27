@@ -204,84 +204,14 @@ int check_region_lcd(int x, int y, PHONEMODELINFO * device)
 {
 	int i = 0;
 	for (i = 0; i < device->mode[UISTATE.current_mode].lcd_list_cnt; i++) {
-#if 0
-		if(device->dual_display == 1){
-			extern int intermediate_section;
-			int curr_rotation = UISTATE.current_mode;
-
-			/* 0 */
-			if(curr_rotation == 0){
-				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.x * UISTATE.scale) +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.w * UISTATE.scale)/2);
-				/* If its within the middle bar then its not a LCD region */
-				if(x >= value && x < (value + intermediate_section)){
-					return NON_LCD_REGION;
-				}
-
-				if (INSIDE_LCD_0_180(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region) == TRUE) {
-					UISTATE.last_index = i;
-					if (i > 0)		return DUAL_LCD_REGION;
-					else 			return LCD_REGION;
-				}
-			}
-			/* 180 */
-			else if(curr_rotation == 2){
-				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.x * UISTATE.scale) +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.w * UISTATE.scale)/2);
-
-				/* If its within the middle bar then its not a LCD region */
-				if(x > value && x <= (value + intermediate_section)){
-					return NON_LCD_REGION;
-				}
-
-				if (INSIDE_LCD_0_180(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region) == TRUE) {
-					UISTATE.last_index = i;
-					if (i > 0)		return DUAL_LCD_REGION;
-					else 			return LCD_REGION;
-				}
-			}
-			/* 90 */
-			else if(curr_rotation == 1){
-				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.y * UISTATE.scale) +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.h * UISTATE.scale)/2);
-
-				/* If its within the middle bar then its not a LCD region */
-				if(y > value && y <= (value + intermediate_section)){
-					return NON_LCD_REGION;
-				}
-
-				if (INSIDE_LCD_90(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region) == TRUE) {
-					UISTATE.last_index = i;
-					if (i > 0)		return DUAL_LCD_REGION;
-					else 			return LCD_REGION;
-				}
-			}
-			/* 270 */
-			else {
-				int value = (device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.y * UISTATE.scale) +
-					((int)(device->mode[UISTATE.current_mode].lcd_list[i].lcd_region.h * UISTATE.scale)/2);
-
-				/* If its within the middle bar then its not a LCD region */
-				if(y > value && y <= (value + intermediate_section)){
-					return NON_LCD_REGION;
-				}
-
-				if (INSIDE_LCD_270(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region) == TRUE) {
-					UISTATE.last_index = i;
-					if (i > 0)		return DUAL_LCD_REGION;
-					else 			return LCD_REGION;
-				}
+		if (INSIDE_LCD(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region, UISTATE.scale) == TRUE) {
+			UISTATE.last_index = i;
+			if (i > 0)	{
+				return DUAL_LCD_REGION;
+			} else {
+				return LCD_REGION;
 			}
 		}
-		else
-		{
-#endif
-			if (INSIDE_LCD(x, y, device->mode[UISTATE.current_mode].lcd_list[i].lcd_region, UISTATE.scale) == TRUE) {
-				UISTATE.last_index = i;
-				if (i > 0)		return DUAL_LCD_REGION;
-				else 			return LCD_REGION;
-			}
-
 	}
 
 	return NON_LCD_REGION;
@@ -302,7 +232,6 @@ int load_skin_image(PHONEMODELINFO * device)
 
 	/*normal mode*/
 	for (i = 0; i < device->mode_cnt; i++) {
-
 		device->mode_SkinImg[i].pPixImg = gdk_pixbuf_new_from_file(device->mode[i].image_list.main_image, &g_err);
 		TRACE( "image = %s\n", device->mode[i].image_list.main_image);
 		if (!device->mode_SkinImg[i].pPixImg) {
@@ -318,82 +247,13 @@ int load_skin_image(PHONEMODELINFO * device)
 			WARN( "Image Generation failed!!\n");
 			return -1;
 		}
-		/*LED*/
-		if (device->mode[i].image_list.led_main_image != NULL && strlen(device->mode[i].image_list.led_main_image) != 0) {
-			TRACE( "led_main_image   Image Generation  %s \n", device->mode[i].image_list.led_main_image );
-			device->mode_SkinImg[i].pPixImgLed = gdk_pixbuf_new_from_file(device->mode[i].image_list.led_main_image, &g_err);
-
-			if (!device->mode_SkinImg[i].pPixImgLed) {
-				g_object_unref(device->mode_SkinImg[i].pPixImg);
-				g_object_unref(device->mode_SkinImg[i].pPixImg_P);
-				WARN( "Image Generation failed!!\n");
-				return -1;
-			}
-		}
-
-		if (device->mode[i].image_list.led_keypressed_image != NULL && strlen(device->mode[i].image_list.led_keypressed_image) != 0) {
-			TRACE( "led_keypressed_image Image Generation  %s \n", device->mode[i].image_list.led_keypressed_image);
-			device->mode_SkinImg[i].pPixImgLed_P = gdk_pixbuf_new_from_file(device->mode[i].image_list.led_keypressed_image, &g_err);
-			if (!device->mode_SkinImg[i].pPixImgLed_P) {
-				g_object_unref(device->mode_SkinImg[i].pPixImg);
-				g_object_unref(device->mode_SkinImg[i].pPixImg_P);
-				g_object_unref(device->mode_SkinImg[i].pPixImgLed);
-				WARN( "Image Generation failed!!\n");
-				return -1;
-			}
-		}
-	}
-
-	/*cover mode*/
-	if (device->cover_mode_cnt == 1) {
-		device->cover_mode_SkinImg.pPixImg = gdk_pixbuf_new_from_file(device->cover_mode.image_list.main_image, &g_err);
-		if (!device->cover_mode_SkinImg.pPixImg) {
-			WARN( "Image Generation failed!!\n");
-			return -1;
-		}
-
-		device->cover_mode_SkinImg.nImgWidth = gdk_pixbuf_get_width(device->cover_mode_SkinImg.pPixImg);
-		device->cover_mode_SkinImg.nImgHeight = gdk_pixbuf_get_height(device->cover_mode_SkinImg.pPixImg);
-
-		device->cover_mode_SkinImg.pPixImg_P = gdk_pixbuf_new_from_file(device->cover_mode.image_list.keypressed_image, &g_err);
-		if (!device->cover_mode_SkinImg.pPixImg_P) {
-			g_object_unref(device->cover_mode_SkinImg.pPixImg);
-			WARN( "Image Generation failed!!\n");
-			return -1;
-		}
-		/*LED*/
-		if (device->cover_mode.image_list.led_main_image != NULL && strlen(device->cover_mode.image_list.led_main_image) != 0) {
-			device->cover_mode_SkinImg.pPixImgLed = gdk_pixbuf_new_from_file(device->cover_mode.image_list.led_main_image, &g_err);
-
-			if (!device->cover_mode_SkinImg.pPixImgLed) {
-				g_object_unref(device->cover_mode_SkinImg.pPixImg);
-				g_object_unref(device->cover_mode_SkinImg.pPixImg_P);
-				WARN( "Image Generation failed!!\n");
-				return -1;
-			}
-		}
-
-		if (device->cover_mode.image_list.led_keypressed_image != NULL && strlen(device->cover_mode.image_list.led_keypressed_image) != 0) {
-
-			device->cover_mode_SkinImg.pPixImgLed_P = gdk_pixbuf_new_from_file(device->cover_mode.image_list.led_keypressed_image, &g_err);
-
-			if (!device->cover_mode_SkinImg.pPixImgLed_P) {
-				g_object_unref(device->cover_mode_SkinImg.pPixImg);
-				g_object_unref(device->cover_mode_SkinImg.pPixImg_P);
-				g_object_unref(device->cover_mode_SkinImg.pPixImgLed);
-				WARN( "Image Generation failed!!\n");
-				return -1;
-			}
-		}
 	}
 
         /* remember the skin image when 1.0 scale */
         for (i = 0; i < MODE_MAX; i++) {
             device->default_SkinImg[i].pPixImg = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImg);
             device->default_SkinImg[i].pPixImg_P = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImg_P);
-            device->default_SkinImg[i].pPixImgLed = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImgLed);
-            device->default_SkinImg[i].pPixImgLed_P = gdk_pixbuf_copy(device->mode_SkinImg[i].pPixImgLed_P);
-	    device->default_SkinImg[i].nImgWidth = device->mode_SkinImg[i].nImgWidth;
+            device->default_SkinImg[i].nImgWidth = device->mode_SkinImg[i].nImgWidth;
             device->default_SkinImg[i].nImgHeight = device->mode_SkinImg[i].nImgHeight;
         }
 

@@ -663,14 +663,10 @@ void qemu_option_set_to_config(arglist *al)
 	/* console */
 
 	if (qemu_arch_is_arm()){
-		/* duallcd command line is used in hw/s5pc1xx.c to change the board revision */
-		if(PHONE.dual_display == 1)
-			strcpy(kernel_kappend, "console=ttySAC2,115200n8 duallcd mem=80M mem=256M@0x40000000 mem=128@0x50000000 mtdparts=tizen-onenand:1m(bootloader),256k(params),2816k(config),8m(csa),7m(kernel),1m(log),12m(modem),60m(qboot),-(UBI) ");
-		else
-			strcpy(kernel_kappend, "console=ttySAC2,115200n8 mem=80M mem=256M@0x40000000 mem=128@0x50000000 mtdparts=tizen-onenand:1m(bootloader),256k(params),2816k(config),8m(csa),7m(kernel),1m(log),12m(modem),60m(qboot),-(UBI) ");
-	}
-	else
+		strcpy(kernel_kappend, "console=ttySAC2,115200n8 mem=80M mem=256M@0x40000000 mem=128@0x50000000 mtdparts=tizen-onenand:1m(bootloader),256k(params),2816k(config),8m(csa),7m(kernel),1m(log),12m(modem),60m(qboot),-(UBI) ");
+	} else {
 		strcpy(kernel_kappend, "console=ttyS0 ");
+	}
 
 	/*  video overlay */
 

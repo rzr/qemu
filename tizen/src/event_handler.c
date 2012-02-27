@@ -1005,44 +1005,6 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 	button_status = check_region_button(x, y, &PHONE);
 	lcd_status = check_region_lcd(x, y, &PHONE);
 
-#if 0
-	if(PHONE.dual_display == 1){
-		int curr_rotation = UISTATE.current_mode;
-		extern int intermediate_section;
-		/* 0 */
-		if(curr_rotation == 0 && lcd_status != NON_LCD_REGION){
-			int value = PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.x + ((int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.w/PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.s)/2);
-			/* 0------------n   n+1-----------
-			     --------------||--------------
-			     --------------||--------------
-			     --------------||--------------
-			     the middle bar is of size intermediate_section so n+1 is actuall n + intermediate_section + 1 
-			     so there is a need to subtract intermediate_section.
-			     Similarly you can derive for other rotation modes.
-			 */
-			if(x >= value)
-				x = x - intermediate_section;
-		}
-		/* 90 */
-		else if(curr_rotation == 1 && lcd_status != NON_LCD_REGION){
-			int value = PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y + ((int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h/PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.s)/2) + intermediate_section;
-			if(y <= value)
-				y = y + intermediate_section;
-		}
-		/* 180 */
-		else if(curr_rotation == 2 && lcd_status != NON_LCD_REGION){
-			int value = PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.x + ((int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.w/PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.s)/2) + intermediate_section;
-			if(x <= value)
-				x = x + intermediate_section;
-		}
-		/* 270 */
-		else if(curr_rotation == 3 && lcd_status != NON_LCD_REGION){
-			int value = PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y + ((int)(PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.h/PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.s)/2);
-			if(y > value)
-				y = y - intermediate_section;
-		}
-	}
-#endif
 	dx = (x - (PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.x * UISTATE.scale)) / UISTATE.scale;
 	dy = (y - (PHONE.mode[UISTATE.current_mode].lcd_list[lcd_status].lcd_region.y * UISTATE.scale)) / UISTATE.scale;
 
