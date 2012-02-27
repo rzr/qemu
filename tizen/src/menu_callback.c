@@ -201,7 +201,7 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 
 /**
  * @brief   handler to rotate
- * @param   device: pointe to structure containg device info
+ * @param   device: pointer to structure containg device info
  * @param   nMode: convert Mode
  */
 void rotate_event_callback(PHONEMODELINFO *device, int nMode)
@@ -221,13 +221,18 @@ void rotate_event_callback(PHONEMODELINFO *device, int nMode)
 
     mask_main_lcd(g_main_window, &PHONE, &configuration, nMode);
 
-    pwidget = g_object_get_data((GObject *) popup_menu, rotate[nMode%4]);
+    pwidget = g_object_get_data((GObject *) popup_menu, rotate[nMode % 4]);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pwidget), TRUE);
 
     INFO( "rotate called\n");
 }
 
 
+/**
+ * @brief   handler to scale
+ * @param   device: pointer to structure containg device info
+ * @param   nMode: convert Mode
+ */
 void scale_event_callback(PHONEMODELINFO *device, int nMode)
 {
     if (device == NULL || nMode < 0)
