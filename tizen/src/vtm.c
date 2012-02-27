@@ -117,8 +117,8 @@ static int check_port_bind_listen(u_int port)
     addr.sin_port = htons(port);
 
     if (((s = socket(AF_INET,SOCK_STREAM,0)) < 0) ||
-            (bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
             (setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
+            (bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
             (listen(s,1) < 0)) {
 
         /* fail */
