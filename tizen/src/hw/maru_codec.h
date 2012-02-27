@@ -40,56 +40,38 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 
-// #define CODEC_THREAD
 // #define CODEC_HOST
 
 /*
  *  Codec Device Structures
  */
-typedef struct _SVCodecThreadInfo
-{
-    pthread_t 		codec_thread;
-    pthread_cond_t 	cond;
-    pthread_mutex_t	lock;
-} SVCodecThreadInfo;
 
 typedef struct _SVCodecParam {
-    uint32_t		func_num;
-    uint32_t		in_args[20];
-    uint32_t		ret_args;
+    uint32_t        func_num;
+    uint32_t        in_args[20];
+    uint32_t        ret_args;
 } SVCodecParam;
 
-typedef struct _SVCodecInfo {
-	uint8_t			num;
-	uint32_t		param[10];
-	uint32_t		tmpParam[10];
-	uint32_t		param_size[10];
-} SVCodecInfo;
 
 typedef struct _SVCodecState {
-    PCIDevice       	dev;
-    SVCodecThreadInfo	thInfo;
-	SVCodecInfo			codecInfo;
-	SVCodecParam		codecParam;
+    PCIDevice           dev;
+    SVCodecParam        codecParam;
 
-    int             	mmioIndex;
+    int                 mmioIndex;
 
-    uint8_t*        	vaddr;
-    ram_addr_t      	vram_offset;
+    uint8_t*            vaddr;
+    ram_addr_t          vram_offset;
 
-    uint32_t        	mem_addr;
-    uint32_t        	mmio_addr;
+    uint32_t            mem_addr;
+    uint32_t            mmio_addr;
 
-	int 				index;
-	bool				bstart;
+    int                 index;
 } SVCodecState;
 
 enum {
     FUNC_NUM            = 0x00,
     IN_ARGS             = 0x04,
     RET_STR             = 0x08,
-    READY_TO_GET_DATA   = 0x0C,
-    COPY_RESULT_DATA    = 0x10,
 };
 
 enum {
@@ -117,22 +99,6 @@ enum {
  */
 int pci_codec_init (PCIBus *bus);
 static int codec_operate(uint32_t value, SVCodecState *opaque);
-
-
-/*
- *  Codec Helper APIs
- */
-void codec_set_context (AVCodecContext *dstctx,
-                        AVCodecContext *srcctx);
-
-#ifdef CODEC_THREAD
-static int codec_copy_info (SVCodecState *s);
-static int codec_thread_init (void *opaque);
-static void* codec_worker_thread (void *opaque);
-static void wake_codec_wrkthread(SVCodecState *s);
-static void sleep_codec_wrkthread(SVCodecState *s);
-static void codec_thread_destroy(void *opaque);
-#endif
 
 /*
  *  FFMPEG APIs
@@ -165,9 +131,6 @@ void qemu_avcodec_flush_buffers (void);
 int qemu_avcodec_decode_video (SVCodecState *s);
 
 int qemu_avcodec_encode_video (SVCodecState *s);
-
-// int qemu_avcodec_decode_audio (void);
-// int qemu_avcodec_encode_audio (void);
 
 void qemu_av_picture_copy (SVCodecState *s);
 
