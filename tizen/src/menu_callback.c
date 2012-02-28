@@ -191,6 +191,11 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
     gtk_widget_show_all(widget);
     gtk_widget_queue_resize (widget);
 
+    /* If you click maximize button when emulator window is snapped to one of your monitor edge,
+     * window title-bar appears suddenly on Ubuntu. So, I do this. */
+    gtk_window_set_decorated (GTK_WINDOW (widget), TRUE);
+    gtk_window_set_decorated (GTK_WINDOW (widget), FALSE);
+
     /* do this when emulator-window does not resize upon scale factor change */
     gtk_widget_hide_all(widget);
     gtk_widget_show_all(widget);
