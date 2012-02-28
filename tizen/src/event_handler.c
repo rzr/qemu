@@ -969,7 +969,7 @@ static void draw_mapping(GtkWidget * widget, GdkEventButton * event, int nPressK
 
 			GdkBitmap *SkinMask = NULL;
 			gdk_pixbuf_render_pixmap_and_mask (temp, NULL, &SkinMask, 1);
-			gtk_widget_shape_combine_mask (widget, NULL, 0, 0);
+			//gtk_widget_shape_combine_mask (widget, NULL, 0, 0);
 			gtk_widget_shape_combine_mask (widget, SkinMask, 0, 0);
 			gdk_pixbuf_unref (temp);
 			if (SkinMask != NULL) {
@@ -1159,7 +1159,7 @@ gint motion_notify_event_handler(GtkWidget *widget, GdkEventButton *event, gpoin
 			/* shape combine original mask*/
 			GdkBitmap *SkinMask = NULL;
 			gdk_pixbuf_render_pixmap_and_mask (PHONE.mode_SkinImg[UISTATE.current_mode].pPixImg, NULL, &SkinMask, 1);
-			gtk_widget_shape_combine_mask (widget, NULL, 0, 0);
+			//gtk_widget_shape_combine_mask (widget, NULL, 0, 0);
 			gtk_widget_shape_combine_mask (widget, SkinMask, 0, 0);
 			if (SkinMask != NULL) {
 				g_object_unref(SkinMask);

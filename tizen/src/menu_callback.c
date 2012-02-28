@@ -172,15 +172,15 @@ int mask_main_lcd(GtkWidget *widget, PHONEMODELINFO *pDev, CONFIGURATION *pconfi
 
     pixmap_widget = gtk_image_new_from_pixbuf (pDev->mode_SkinImg[nMode].pPixImg);
 
-    gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, NULL, &SkinMask, 1);
-    gtk_widget_shape_combine_mask (GTK_WIDGET(widget), NULL, 0, 0);
-    gtk_widget_shape_combine_mask (GTK_WIDGET(widget), SkinMask, 0, 0);
-
     gtk_fixed_put (GTK_FIXED (fixed), pixmap_widget, 0, 0);
     qemu_widget_new(&sdl_widget);
     gtk_fixed_move (GTK_FIXED (fixed), sdl_widget,
             PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.x * UISTATE.scale,
             PHONE.mode[UISTATE.current_mode].lcd_list[0].lcd_region.y * UISTATE.scale);
+
+    gdk_pixbuf_render_pixmap_and_mask (pDev->mode_SkinImg[nMode].pPixImg, NULL, &SkinMask, 1);
+    gtk_widget_shape_combine_mask (GTK_WIDGET(widget), NULL, 0, 0);
+    gtk_widget_shape_combine_mask (GTK_WIDGET(widget), SkinMask, 0, 0);
 
     if (SkinMask != NULL) {
         g_object_unref(SkinMask);
