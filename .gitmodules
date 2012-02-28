@@ -19,3 +19,6 @@
 [submodule "roms/sgabios"]
 	path = roms/sgabios
 	url = git://git.qemu.org/sgabios.git
+[submodule "tizen/src/skin"]
+	path = tizen/src/skin
+	url = ../emulator-skin
