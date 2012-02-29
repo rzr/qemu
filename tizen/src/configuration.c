@@ -746,7 +746,57 @@ void qemu_option_set_to_config(arglist *al)
 	else
 		sprintf(&kernel_kappend[strlen(kernel_kappend)], "ip=" GUEST_IP_ADDRESS "::" HOST_QEMU_ADDRESS ":255.255.255.0::eth0:none ");
 
-	sprintf(&kernel_kappend[strlen(kernel_kappend)], "%d", startup_option.run_level);
+	sprintf(&kernel_kappend[strlen(kernel_kappend)], "%d ", startup_option.run_level);
+    
+    /*To prevent kernel panic, add kernel command below */
+    
+    if (!qemu_arch_is_arm()) {		
+		if(startup_option.file_share != NULL) {
+            sprintf(&kernel_kappend[strlen(kernel_kappend)], "virtio-9p");
+        }
+    }
+
+    /* file sharing for windows */
+
+#ifdef  _WIN32
+	if (!qemu_arch_is_arm()) {		
+		if(startup_option.file_share != NULL) {
+            OSVERSIONINFO osvi;
+            ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+            osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+            GetVersionEx(&osvi);
+
+            if (osvi.dwMajorVersion == 5) {
+                char *title = g_strdup_printf("emulator-%d", get_sdb_base_port());
+                char *cmd1 = g_strdup_printf("net share %s /delete", title);
+                char *cmd2 = g_strdup_printf("net share %s=\"%s\"", title, startup_option.file_share);
+                char *cmd3 = g_strdup_printf("cacls \"%s\", /E /G everyone:F", startup_option.file_share);
+                DWORD  bufCharCount = MAXPATH;
+                TCHAR  username[MAXPATH];
+                GetUserName(username, &bufCharCount);
+                INFO("Host user name is %s\n", username);
+                INFO("cmd1: %s, cmd2: %s, cmd3: %s \n", cmd1, cmd2, cmd3);
+                if (WinExec(cmd1, SW_HIDE) < 31) {
+                    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd1, GetLastError());
+                }
+                if (WinExec(cmd2, SW_HIDE) < 31) {
+                    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd2, GetLastError());
+                }
+                if (WinExec(cmd3, SW_HIDE) < 31) {
+                    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd3, GetLastError());
+                }
+                sprintf(&kernel_kappend[strlen(kernel_kappend)], "cifs=%s,username=%s", title, username);
+              
+                free(cmd1);
+                free(cmd2);
+                free(cmd3);
+                free(title);
+            }
+
+        }
+    }
+#endif
+
 
 	append_argvlist(al, "%s", exec_path);
 	if (qemu_arch_is_arm()) {

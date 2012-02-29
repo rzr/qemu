@@ -117,4 +117,5 @@ int device_set_rotation(int rotation);
 int socket_init(void);
 void exit_emulator_post_process( void );
 int make_shdmem(void);
+void cleanup_file_share(void);
 #endif

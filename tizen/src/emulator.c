@@ -332,6 +332,28 @@ int socket_init(void)
 	return 0;
 }
 
+void cleanup_file_share(void)
+{
+#ifdef _WIN32
+	if (!qemu_arch_is_arm()) {		
+		if(startup_option.file_share != NULL) {
+            OSVERSIONINFO osvi;
+            ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+            osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+            GetVersionEx(&osvi);
+            char *cmd = g_strdup_printf("net share %s /delete", gtk_window_get_title(GTK_WINDOW(g_main_window)));
+            if (osvi.dwMajorVersion == 5) {
+                if(WinExec(cmd, SW_HIDE) < 31) {
+                    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd, GetLastError());
+                }else
+                    INFO("Delete file share successfully\n");
+          }
+          free(cmd);
+        }
+    }
+#endif
+}
+
 void exit_emulator_post_process( void ) {
 
 	set_emulator_condition(EMUL_SHUTTING_DOWN);
@@ -361,6 +383,9 @@ void exit_emulator_post_process( void ) {
 	fclose(g_out_fp);
 	fclose(g_err_fp);
 	INFO( "Close fp which is opened when redirect_log()\n");	
+    
+    /*7. cleanup file share */
+    cleanup_file_share();
 
 #ifdef ENABLE_OPENGL_SERVER
 	pthread_cancel(thread_opengl_id);
