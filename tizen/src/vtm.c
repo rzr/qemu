@@ -1025,7 +1025,7 @@ int remove_markup(char *src, char *dst, char *prefix, char *suffix)
         {
             dst[j++] = src[i];
         }
-        dst[i] = '\0';
+        dst[j] = '\0';
         return TRUE;
     }
     return FALSE;
@@ -1424,7 +1424,7 @@ void make_default_image(char *default_targetname)
         file_status = is_exist_file(info_file);
         if(file_status == FILE_EXISTS)
         {
-            if(get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY) < g_minor_version)
+            if(get_config_type(info_file, COMMON_GROUP, MINOR_VERSION_KEY) != g_minor_version)
             {
                 if(remove_dir(virtual_target_path) == -1)
                 {
