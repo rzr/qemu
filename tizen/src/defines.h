@@ -273,11 +273,12 @@ extern int intermediate_section;
 #define RAM_DEFAULT_SIZE	0
 #define RAM_768_SIZE	1
 #define RAM_1024_SIZE	2
-#define RESOLUTION_DEFAULT_SIZE	1
+#define RESOLUTION_DEFAULT_SIZE	3
 #define RESOLUTION_HVGA	0
 #define RESOLUTION_WVGA	1
 #define RESOLUTION_WSVGA	2
 #define RESOLUTION_HD	3
+#define DPI_DEFAULT    2070
 #define CREATE_MODE	1
 #define DELETE_MODE	2
 #define MODIFY_MODE 3
@@ -665,9 +666,9 @@ typedef struct _VIRTUALTARGETINFO {
 	char basedisk_path[MAXBUF];
 	char sdcard_path[MAXBUF];
 	int ram_size;
-	char dpi[MAXBUF];
 	char diskimg_path[MAXBUF];		/* Disk Image Path */
 	char share_path[MAXBUF];	
+	char dpi[MAXBUF];	
 	int snapshot_saved;
 	char snapshot_saved_date[MAXBUF];
 } VIRTUALTARGETINFO;

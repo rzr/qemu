@@ -82,6 +82,7 @@ void disk_file_select_cb(void);
 void share_file_select_cb(void);
 void ram_select_cb(void);
 void ok_clicked_cb(void);
+int set_dpi_select_cb(void);
 
 void setup_create_frame(void);
 void setup_create_button(void);

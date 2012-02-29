@@ -37,6 +37,7 @@
  */
 #include "vtm.h"
 #include "debug_ch.h"
+#include <math.h>
 #ifndef _WIN32
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -56,7 +57,9 @@
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, emulmgr);
-
+#if 0
+#define ROUND(x, dig) (floor(x) * pow(19,dig) + 0.5) / pow(10,dig)
+#endif
 GtkBuilder *g_builder;
 GtkBuilder *g_create_builder;
 enum {
@@ -156,6 +159,7 @@ void activate_target(char *target_name)
     char *arch= NULL;
     int info_file_status;
     int status;
+    int file_share_type;
 
     if(check_shdmem(target_name, CREATE_MODE) == -1)
         return ;
@@ -211,25 +215,38 @@ void activate_target(char *target_name)
     binary = get_config_value(info_file, QEMU_GROUP, BINARY_KEY);
     emul_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, EMULATOR_OPTION_KEY);
     qemu_add_opt = get_config_value(info_file, ADDITIONAL_OPTION_GROUP, QEMU_OPTION_KEY);
-    file_share_opt = get_config_value(info_file, HARDWARE_GROUP, SHARE_PATH_KEY);
+    file_share_type = get_config_type(info_file, HARDWARE_GROUP, SHARE_TYPE_KEY);
+    if(file_share_type == 1)
+    {
+        char* share_path = get_config_value(info_file, HARDWARE_GROUP, SHARE_PATH_KEY);
+        if(access(share_path, R_OK) != 0){
+            char *message = g_strdup_printf("The shared path does not exist. \n\n"
+                    "   -[%s]", share_path);
+            show_message("Error", message);
+            g_free(message);
+            g_free(share_path);
+        }
+        file_share_opt = g_strdup_printf("--file-shsare \"%s\"", share_path);
+        free(share_path);
+    }
+    else
+        file_share_opt = g_strdup_printf(" ");
 
     if(emul_add_opt == NULL)
         emul_add_opt = g_strdup_printf(" ");
     if(qemu_add_opt == NULL)
         qemu_add_opt = g_strdup_printf(" ");
-    if(file_share_opt == NULL)
-        file_share_opt = g_strdup_printf(" ");
 
 #ifndef _WIN32
     if(strcmp(arch, X86) == 0)
     {
-        cmd = g_strdup_printf("./%s --vtm %s --file-share \"%s\" %s"
+        cmd = g_strdup_printf("./%s --vtm %s %s %s"
                 "-- -vga tizen -bios bios.bin -L %s/data/pc-bios -kernel %s/data/kernel-img/bzImage %s %s",
                 binary, target_name, file_share_opt, emul_add_opt, path, path, enable_kvm, qemu_add_opt);
     }
     else if(strcmp(arch, ARM)== 0)
     {
-        cmd = g_strdup_printf("./%s --vtm %s --file_share \"%s\" %s"
+        cmd = g_strdup_printf("./%s --vtm %s %s %s"
             "--  -kernel %s/data/kernel-img/zImage %s",
             binary, target_name, file_share_opt,  emul_add_opt, path, qemu_add_opt);
     }
@@ -241,12 +258,12 @@ void activate_target(char *target_name)
 #else /*_WIN32 */
     if(strcmp(arch, X86) == 0)
     {
-        cmd = g_strdup_printf("\"%s\" --vtm %s --file-share \"%s\" %s"
+        cmd = g_strdup_printf("\"%s\" --vtm %s %s %s"
                 "-- -vga tizen -bios bios.bin -L \"%s/data/pc-bios\" -kernel \"%s/data/kernel-img/bzImage\" %s %s",
                 binary, target_name, file_share_opt, emul_add_opt, path, path, enable_kvm, qemu_add_opt );
     }else if(strcmp(arch, ARM) == 0)
     {
-            cmd = g_strdup_printf("\"%s\" --vtm %s --file_share \"%s\" %s"
+            cmd = g_strdup_printf("\"%s\" --vtm %s %s %s"
             "--  -kernel \"%s/data/kernel-img/zImage\" %s",
             binary, target_name, file_share_opt, emul_add_opt, path, qemu_add_opt);
     }
@@ -595,6 +612,7 @@ void env_init(void)
 {
     char* arch;
     char version_path[MAX_LEN];
+    int file_status;
     //architecture setting
     if(!g_getenv("EMULATOR_ARCH"))
         arch = g_strdup_printf(X86);
@@ -606,6 +624,17 @@ void env_init(void)
 
     //latest version setting
     sprintf(version_path, "%s/version.ini",get_etc_path());
+    file_status = is_exist_file(version_path);
+    if(file_status == -1 || file_status == FILE_NOT_EXISTS)
+    {
+        ERR( "version file not exists : %s\n", version_path);
+        char *message = g_strdup_printf("Version info file does not exist.\n\n"
+                "   -[%s]", version_path);
+        show_message("Error", message);
+        free(message);
+        exit(0);
+    }
+
     g_major_version = get_config_value(version_path, VERSION_GROUP, MAJOR_VERSION_KEY);
     g_minor_version = get_config_type(version_path, VERSION_GROUP, MINOR_VERSION_KEY);
 
@@ -2249,6 +2278,9 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
     if(check_modify_target_name(name) == -1)
         return;
 
+     if(set_dpi_select_cb() == -1)
+        return;
+
     dest_path = get_virtual_target_path(virtual_target_info.virtual_target_name);
     INFO( "virtual_target_path: %s\n", dest_path);
 
@@ -2281,7 +2313,6 @@ void modify_ok_clicked_cb(GtkWidget *widget, gpointer data)
     conf_file = g_strdup_printf("%sconfig.ini", dest_path);
 
     //  create_config_file(conf_file);
-    snprintf(virtual_target_info.dpi, MAXBUF, "2070");
     if(write_config_file(conf_file) == -1)
     {
         show_message("Error", "Virtual target modification failed!");
@@ -2454,6 +2485,9 @@ void ok_clicked_cb(void)
     if(access(log_path, R_OK) != 0)
         g_mkdir(log_path, 0755);
 
+    if(set_dpi_select_cb() == -1)
+        return;
+
     if(create_sdcard(dest_path) == -1)
         return;
 
@@ -2462,13 +2496,12 @@ void ok_clicked_cb(void)
 
     if(create_diskimg(arch, dest_path) == -1)
         return;
-
+    
     // add virtual target name to targetlist.ini
     set_config_value(g_target_list_filepath, virtual_target_info.major_version, virtual_target_info.virtual_target_name, "");
     // write config.ini
     conf_file = g_strdup_printf("%sconfig.ini", dest_path);
     create_config_file(conf_file);
-    snprintf(virtual_target_info.dpi, MAXBUF, "2070");
     if(write_config_file(conf_file) == -1)
     {
         show_message("Error", "Virtual target creation failed!");
@@ -2512,9 +2545,10 @@ void setup_modify_frame(char *target_name)
 void setup_modify_resolution_frame(char *target_name)
 {
     char *resolution;
+    int dpi;
 
     resolution = get_config_value(g_info_file, HARDWARE_GROUP, RESOLUTION_KEY);
-
+    GtkSpinButton *dpi_spinbutton = (GtkSpinButton*)gtk_builder_get_object(g_create_builder, "spinbutton2");
     GtkWidget *hbox3 = (GtkWidget *)gtk_builder_get_object(g_create_builder, "hbox3");
     GtkComboBox *resolution_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
     gtk_box_pack_start(GTK_BOX(hbox3), GTK_WIDGET(resolution_combo_box), FALSE, FALSE, 1);
@@ -2533,7 +2567,9 @@ void setup_modify_resolution_frame(char *target_name)
         gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_WSVGA);
     else
         gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_HD);
-
+    
+    dpi = get_config_type(g_info_file, HARDWARE_GROUP, DPI_KEY);
+    gtk_spin_button_set_value(dpi_spinbutton, dpi);
     g_signal_connect(G_OBJECT(resolution_combo_box), "changed", G_CALLBACK(resolution_select_cb), NULL);
 
     INFO( "resolution : %s\n", resolution);
@@ -2738,6 +2774,8 @@ void setup_modify_buttontype_frame(char *target_name)
 void setup_resolution_frame(void)
 {
     GtkWidget *hbox = (GtkWidget *)gtk_builder_get_object(g_create_builder, "hbox3");
+    GtkWidget *dpi_radiobutton = (GtkWidget*)gtk_builder_get_object(g_create_builder, "radiobutton2");
+    GtkSpinButton *dpi_spinbutton = (GtkSpinButton*)gtk_builder_get_object(g_create_builder, "spinbutton2");
 
     GtkComboBox *resolution_combo_box = GTK_COMBO_BOX(gtk_combo_box_new_text());
     gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(resolution_combo_box), FALSE, FALSE, 1);
@@ -2749,6 +2787,12 @@ void setup_resolution_frame(void)
     gtk_combo_box_append_text(resolution_combo_box, HD);
 
     gtk_combo_box_set_active(resolution_combo_box, RESOLUTION_DEFAULT_SIZE);
+    
+    gtk_spin_button_set_value(dpi_spinbutton, DPI_DEFAULT);
+    
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(dpi_radiobutton), TRUE);
+
+    set_dpi_select_cb();
 
     g_signal_connect(G_OBJECT(resolution_combo_box), "changed", G_CALLBACK(resolution_select_cb), NULL);
 }
@@ -2801,8 +2845,8 @@ void setup_file_share_frame(void)
     // file chooser setup
     GtkWidget *filechooser = (GtkWidget *)gtk_builder_get_object(g_create_builder, "filechooserbutton3");
 
-    set_share_default_active_cb();
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(default_radiobutton), TRUE);
+    set_share_default_active_cb();
 
     g_signal_connect(G_OBJECT(select_radiobutton), "toggled", G_CALLBACK(set_share_select_active_cb), NULL);
     g_signal_connect(G_OBJECT(default_radiobutton), "toggled", G_CALLBACK(set_share_default_active_cb), NULL);
@@ -2970,6 +3014,20 @@ void construct_main_window(void)
     gtk_widget_show_all(g_main_window);
 }
 
+int set_dpi_select_cb(void)
+{
+    GtkSpinButton *dpi_spinbutton = (GtkSpinButton*)gtk_builder_get_object(g_create_builder, "spinbutton2");
+    gdouble dval = gtk_spin_button_get_value(dpi_spinbutton);
+    if(dval == 0)
+    {
+        show_message("Error", "DPI value is wrong. Input right DPI value.");
+        return -1;
+    }
+    snprintf(virtual_target_info.dpi, MAXBUF, "%d", (int)dval);
+    INFO("virtual_target_info.dpi: %s", virtual_target_info.dpi);
+    return 0;
+}
+
 #ifdef  __linux__
 void set_mesa_lib(void)
 {
@@ -3109,6 +3167,17 @@ void lock_file(char *path)
 #endif
 }
 
+#if 0
+float get_inch_from_dpi(float dpi, int width, int height)
+{
+    return ROUND((sqrt(width * width + height * height) / 25.4), 3);
+}
+
+float get_dpi_from_dpi(float inch, int width, int height)
+{
+    return ROUND((sqrt(width * width + height * height) / inch), 3);
+}
+#endif
 int main(int argc, char** argv)
 {
     char* working_dir;
