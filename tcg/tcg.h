@@ -123,7 +123,7 @@ typedef struct TCGRelocation {
     int type;
     uint8_t *ptr;
     tcg_target_long addend;
-} TCGRelocation; 
+} TCGRelocation;
 
 typedef struct TCGLabel {
     int has_value;
@@ -186,6 +186,31 @@ typedef tcg_target_ulong TCGArg;
    and TCGv_i64 are 32/64-bit variables respectively.  TCGv and TCGv_ptr
    are aliases for target_ulong and host pointer sized values respectively.
  */
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+#if defined(__i386__) || defined(__x86_64__)
+/* Macros and structures for qemu_ld/st IR code optimization:
+   It looks good for TCG_MAX_HELPER_LABELS to be half of OPC_BUF_SIZE in exec-all.h. */
+#define TCG_MAX_QEMU_LDST       320
+#define HL_LDST_SHIFT           4
+#define HL_LDST_MASK            (1 << HL_LDST_SHIFT)
+#define HL_ST_MASK              HL_LDST_MASK
+#define HL_OPC_MASK             (HL_LDST_MASK - 1)
+#define IS_QEMU_LD_LABEL(L)     (!((L)->opc_ext & HL_LDST_MASK))
+#define IS_QEMU_ST_LABEL(L)     ((L)->opc_ext & HL_LDST_MASK)
+
+typedef struct TCGLabelQemuLdst {
+    int opc_ext;                /* | 27bit (reserved) | 1bit (ld/st flag) | 4bit (opc) | */
+    int addrlo_reg;             /* reg index for the low word of guest virtual address */
+    int addrhi_reg;             /* reg index for the high word of guest virtual address */
+    int datalo_reg;             /* reg index for the low word to be loaded or to be stored */
+    int datahi_reg;             /* reg index for the high word to be loaded or to be stored */
+    int mem_index;              /* soft MMU memory index */
+    uint8_t *raddr;             /* return address (located end of TB) */
+    uint32_t *label_ptr[2];     /* label pointers to be updated */
+} TCGLabelQemuLdst;
+#endif
+#endif  /* CONFIG_QEMU_LDST_OPTIMIZATION */
 
 #ifdef CONFIG_DEBUG_TCG
 #define DEBUG_TCGV 1
@@ -260,7 +285,7 @@ typedef int TCGv_i64;
 /* A pure function only reads its arguments and TCG global variables
    and cannot raise exceptions. Hence a call to a pure function can be
    safely suppressed if the return value is not used. */
-#define TCG_CALL_PURE           0x0010 
+#define TCG_CALL_PURE           0x0010
 /* A const function only reads its arguments and does not use TCG
    global variables. Hence a call to such a function does not
    save TCG global variables back to their canonical location. */
@@ -344,7 +369,7 @@ struct TCGContext {
     int nb_globals;
     int nb_temps;
     /* index of free temps, -1 if none */
-    int first_free_temp[TCG_TYPE_COUNT * 2]; 
+    int first_free_temp[TCG_TYPE_COUNT * 2];
 
     /* goto_tb support */
     uint8_t *code_buf;
@@ -355,7 +380,7 @@ struct TCGContext {
     /* liveness analysis */
     uint16_t *op_dead_args; /* for each operation, each bit tells if the
                                corresponding argument is dead */
-    
+
     /* tells in which temporary a given register is. It does not take
        into account fixed registers */
     int reg_to_temp[TCG_TARGET_NB_REGS];
@@ -393,6 +418,13 @@ struct TCGContext {
 
 #ifdef CONFIG_DEBUG_TCG
     int temps_in_use;
+#endif
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+    /* labels info for qemu_ld/st IRs
+       The labels help to generate TLB miss case codes at the end of TB */
+    TCGLabelQemuLdst *qemu_ldst_labels;
+    int nb_qemu_ldst_labels;
 #endif
 };
 
@@ -590,4 +622,9 @@ extern uint8_t code_gen_prologue[];
 #if !defined(tcg_qemu_tb_exec)
 # define tcg_qemu_tb_exec(env, tb_ptr) \
     ((long REGPARM (*)(void *, void *))code_gen_prologue)(env, tb_ptr)
+#endif
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
+/* qemu_ld/st generation at the end of TB */
+void tcg_out_qemu_ldst_slow_path(TCGContext *s);
 #endif

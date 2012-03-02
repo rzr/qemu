@@ -88,7 +88,7 @@ int cpu_restore_state(struct TranslationBlock *tb,
                       CPUState *env, unsigned long searched_pc);
 void cpu_resume_from_signal(CPUState *env1, void *puc);
 void cpu_io_recompile(CPUState *env, void *retaddr);
-TranslationBlock *tb_gen_code(CPUState *env, 
+TranslationBlock *tb_gen_code(CPUState *env,
                               target_ulong pc, target_ulong cs_base, int flags,
                               int cflags);
 void cpu_exec_init(CPUState *env);
@@ -361,6 +361,22 @@ static inline tb_page_addr_t get_page_addr_code(CPUState *env1, target_ulong add
     p = (void *)((uintptr_t)addr + env1->tlb_table[mmu_idx][page_index].addend);
     return qemu_ram_addr_from_host_nofail(p);
 }
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+/* Extended versions of MMU helpers for qemu_ld/st optimization.
+   They get return address arguments because the caller PCs are not where helpers return to. */
+#if defined(__i386__) || defined(__x86_64__)
+uint8_t REGPARM __ldextb_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextb_mmu(target_ulong addr, uint8_t val, int mmu_idx, void *ra);
+uint16_t REGPARM __ldextw_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextw_mmu(target_ulong addr, uint16_t val, int mmu_idx, void *ra);
+uint32_t REGPARM __ldextl_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextl_mmu(target_ulong addr, uint32_t val, int mmu_idx, void *ra);
+uint64_t REGPARM __ldextq_mmu(target_ulong addr, int mmu_idx, void *ra);
+void REGPARM __stextq_mmu(target_ulong addr, uint64_t val, int mmu_idx, void *ra);
+#endif
+#endif  /* CONFIG_QEMU_LDST_OPTIMIZATION */
+
 #endif
 
 typedef void (CPUDebugExcpHandler)(CPUState *env);
