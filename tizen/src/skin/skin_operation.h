@@ -30,7 +30,7 @@
 #ifndef SKIN_OPERATION_H_
 #define SKIN_OPERATION_H_
 
-void start_display( int handle_id );
+void start_display( int handle_id, short scale, short direction );
 
 void do_mouse_event( int event_type, int x, int y );
 

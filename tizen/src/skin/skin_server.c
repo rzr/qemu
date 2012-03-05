@@ -40,7 +40,7 @@
 #include "skin_server.h"
 #include "skin_operation.h"
 
-#define READ_HEADER_SIZE 16
+#define RECV_HEADER_SIZE 16
 #define SEND_HEADER_SIZE 10
 
 #define HEART_BEAT_INTERVAL 2
@@ -55,13 +55,13 @@ enum {
     RECV_HEART_BEAT = 900,
     RECV_RESPONSE_HEART_BEAT = 901,
     RECV_CLOSE = 998,
-    RECV_RESPONSE_SHUTDOWN = 999
+    RECV_RESPONSE_SHUTDOWN = 999,
 };
 
 enum {
     SEND_HEART_BEAT = 1,
     SEND_HEART_BEAT_RESPONSE = 2,
-    SEND_SHUTDOWN = 999
+    SEND_SHUTDOWN = 999,
 };
 
 static uint16_t svr_port = 0;
@@ -91,6 +91,7 @@ pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) 
     if ( 0 != pthread_create( &thread_id, NULL, run_skin_server, NULL ) ) {
         printf( "fail to create skin_server pthread.\n" );
     }
+
     return thread_id;
 
 }
@@ -157,7 +158,7 @@ static void* run_skin_server( void* args ) {
         goto cleanup;
     }
 
-    char readbuf[READ_HEADER_SIZE];
+    char readbuf[RECV_HEADER_SIZE];
 
     printf( "skin server start...port:%d\n", port );
 
@@ -185,9 +186,9 @@ static void* run_skin_server( void* args ) {
             }
 
             stop_heartbeat = 0;
-            memset( &readbuf, 0, READ_HEADER_SIZE );
+            memset( &readbuf, 0, RECV_HEADER_SIZE );
 
-            int read_cnt = read( client_sock, readbuf, READ_HEADER_SIZE );
+            int read_cnt = read( client_sock, readbuf, RECV_HEADER_SIZE );
 
             if ( 0 > read_cnt ) {
 
@@ -246,7 +247,7 @@ static void* run_skin_server( void* args ) {
                         printf( "data read_cnt is 0.\n" );
                         break;
                     } else if ( read_cnt != length ) {
-                        printf( "data read_cnt is not equal to length.\n" );
+                        printf( "read_cnt is not equal to length.\n" );
                         break;
                     }
 
@@ -263,14 +264,22 @@ static void* run_skin_server( void* args ) {
                     }
 
                     int handle_id = 0;
+                    short scale = 0;
+                    short direction = 0;
 
-                    memcpy( &handle_id, readbuf, sizeof( handle_id ) );
+                    char* p = readbuf;
+                    memcpy( &handle_id, p, sizeof( handle_id ) );
+                    p += sizeof( handle_id );
+                    memcpy( &scale, p, sizeof( scale ) );
+                    p += sizeof( scale );
+                    memcpy( &direction, p, sizeof( direction ) );
+
                     handle_id = ntohl( handle_id );
-
-                    printf( "handle_id:%d\n", handle_id );
+                    scale = ntohs( scale );
+                    direction = ntohs( direction );
 
                     if ( start_heart_beat( client_sock ) ) {
-                        start_display( handle_id );
+                        start_display( handle_id, scale, direction );
                     } else {
                         stop = 1;
                     }
@@ -513,11 +522,11 @@ int main( int argc, char** argv ) {
 
     pthread_t thread_id = start_skin_server( 11111, argc, argv );
 
-    if( -1 == thread_id ) {
+    if ( -1 == thread_id ) {
         return -1;
     }
 
-    pthread_join( thread_id, (void**)&thread_return );
+    pthread_join( thread_id, (void**) &thread_return );
 
     printf( "exit program...thread_return:%d\n", thread_return );
 

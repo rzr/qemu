@@ -30,8 +30,14 @@
 #include <stdio.h>
 #include "skin_operation.h"
 
-void start_display( int handle_id ) {
-    printf( "start_display handle_id:%d\n", handle_id );
+enum {
+    ROTATE_DIRECTION_PORTRAIT = 1,
+
+};
+
+
+void start_display( int handle_id, short scale, short direction ) {
+    printf( "start_display handle_id:%d, scale:%d, direction:%d\n", handle_id, scale, direction );
     //TODO sdl init
 }
 
