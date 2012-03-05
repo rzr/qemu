@@ -31,10 +31,29 @@
 #include "skin_operation.h"
 
 enum {
-    ROTATE_DIRECTION_PORTRAIT = 1,
-
+    PORTRAIT = 1,
+    LANDSCAPE = 2,
+    REVERSE_PORTRAIT = 3,
+    REVERSE_LANDSCAPE = 4,
 };
 
+enum {
+    ONE = 1,
+    THREE_QUARTERS = 2,
+    HALF = 3,
+    ONE_QUARTER = 4,
+};
+
+enum {
+    MOUSE_DOWN = 1,
+    MOUSE_UP = 2,
+    MOUSE_DRAG = 3,
+};
+
+enum {
+    KEY_PRESSED = 1,
+    KEY_RELEASED = 2,
+};
 
 void start_display( int handle_id, short scale, short direction ) {
     printf( "start_display handle_id:%d, scale:%d, direction:%d\n", handle_id, scale, direction );
