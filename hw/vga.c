@@ -1583,6 +1583,28 @@ void vga_dirty_log_stop(VGACommonState *s)
 /*
  * graphic modes
  */
+#if defined (TARGET_I386)
+extern uint8_t overlay0_power;
+extern uint16_t overlay0_left;
+extern uint16_t overlay0_top;
+extern uint16_t overlay0_width;
+extern uint16_t overlay0_height;
+
+extern uint8_t overlay1_power;
+extern uint16_t overlay1_left;
+extern uint16_t overlay1_top;
+extern uint16_t overlay1_width;
+extern uint16_t overlay1_height;
+
+extern uint8_t* overlay_ptr;	// pointer in qemu space
+
+/* brightness level :              0,   1,   2,   3,   4,   5,   6,   7,   8,   9 */
+//static const uint8_t brightness_tbl[] = {20, 100, 120, 140, 160, 180, 200, 220, 230, 240};
+static const uint8_t brightness_tbl[] = {20, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
+										130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240};
+extern uint32_t brightness_level;
+extern uint32_t brightness_off;
+#endif
 static void vga_draw_graphic(VGACommonState *s, int full_update)
 {
     int y1, y, update, linesize, y_start, double_scan, mask, depth;
@@ -1754,6 +1776,9 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         }
         /* explicit invalidation for the hardware cursor */
         update |= (s->invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1;
+#if defined (TARGET_I386)
+        update |= 1;
+#endif
         if (update) {
             if (y_start < 0)
                 y_start = y;
@@ -1766,6 +1791,76 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 if (s->cursor_draw_line)
                     s->cursor_draw_line(s, d, y);
             }
+
+#if defined (TARGET_I386)
+	        int i;
+	        uint8_t *fb_sub;
+	        uint8_t *over_sub;
+    	    uint8_t *dst_sub;
+    	    uint8_t alpha, c_alpha;
+    	    uint32_t *dst;
+    	    uint16_t overlay_bottom;
+
+            if (overlay0_power) {
+                overlay_bottom = overlay0_top + overlay0_height;
+
+                if (overlay0_top <= y && y < overlay_bottom) {
+                    fb_sub = s->vram_ptr + addr + overlay0_left * 4;
+                    over_sub = overlay_ptr + (y - overlay0_top) * overlay0_width * 4;
+                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay0_left * 4);
+
+                    for (i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++) {
+                        //alpha = 0x80;
+                        alpha = fb_sub[3];
+                        c_alpha = 0xff - alpha;
+                        //fprintf(stderr, "alpha = %d\n", alpha);
+
+                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
+                               (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
+                    }
+                }
+            }
+
+            if (overlay1_power) {
+                overlay_bottom = overlay1_top + overlay1_height;
+
+                if (overlay1_top <= y && y < overlay_bottom) {
+                    fb_sub = s->vram_ptr + addr + overlay1_left * 4;
+                    over_sub = overlay_ptr + (y - overlay1_top) * overlay1_width * 4 + 0x00400000;
+                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay1_left * 4);
+
+                    for (i = 0; i < overlay1_width; i++, fb_sub += 4, over_sub += 4, dst++) {
+                        //alpha = 0x80;
+                        alpha = fb_sub[3];
+                        c_alpha = 0xff - alpha;
+                        //fprintf(stderr, "alpha = %d\n", alpha);
+
+                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
+                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
+                               (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
+                    }
+                }
+            }
+
+            if( brightness_off ) {
+            	alpha = 0x00;
+            }else if (brightness_level < 24) {
+            	alpha = brightness_tbl[brightness_level];
+            }
+
+            if ( brightness_off || brightness_level < 24 ) {
+            	dst_sub = s->ds->surface->data + addr;
+            	dst = (uint32_t*)(s->ds->surface->data + addr);
+
+            	for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
+            		*dst = ((alpha * dst_sub[0]) >> 8) |
+            				((alpha * dst_sub[1]) & 0xFF00) |
+            				(((alpha * dst_sub[2]) & 0xFF00) << 8);
+            	}
+            }
+#endif	/* TARGET_I386 */
+
         } else {
             if (y_start >= 0) {
                 /* flush to display */
