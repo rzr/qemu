@@ -762,37 +762,62 @@ void qemu_option_set_to_config(arglist *al)
 	if (!qemu_arch_is_arm()) {		
 		if(startup_option.file_share != NULL) {
             OSVERSIONINFO osvi;
+            DWORD bufCharCount = MAXPATH;
+            TCHAR username[MAXPATH];
+
             ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
             osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
             GetVersionEx(&osvi);
-
-            if (osvi.dwMajorVersion == 5) {
+            GetUserName(username, &bufCharCount);
+            INFO("Host user name is %s\n", username);
+ 
+            if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion >=1) {
+                //for windows xp, windows Server 2003
                 char *title = g_strdup_printf("emulator-%d", get_sdb_base_port());
                 char *cmd1 = g_strdup_printf("net share %s /delete", title);
                 char *cmd2 = g_strdup_printf("net share %s=\"%s\"", title, startup_option.file_share);
-                char *cmd3 = g_strdup_printf("cacls \"%s\", /E /G everyone:F", startup_option.file_share);
-                DWORD  bufCharCount = MAXPATH;
-                TCHAR  username[MAXPATH];
-                GetUserName(username, &bufCharCount);
-                INFO("Host user name is %s\n", username);
-                INFO("cmd1: %s, cmd2: %s, cmd3: %s \n", cmd1, cmd2, cmd3);
+                //char *cmd3 = g_strdup_printf("cacls \"%s\", /E /G everyone:F", startup_option.file_share);
+                INFO("cmd1: %s, cmd2: %s\n", cmd1, cmd2);
+               
                 if (WinExec(cmd1, SW_HIDE) < 31) {
                     ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd1, GetLastError());
                 }
                 if (WinExec(cmd2, SW_HIDE) < 31) {
                     ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd2, GetLastError());
                 }
-                if (WinExec(cmd3, SW_HIDE) < 31) {
-                    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd3, GetLastError());
+                //if (WinExec(cmd3, SW_HIDE) < 31) {
+                //    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd3, GetLastError());
+                //}
+                sprintf(&kernel_kappend[strlen(kernel_kappend)], "cifs=%s,username=%s", title, username);
+              
+                free(cmd1);
+                free(cmd2);
+                //free(cmd3);
+                free(title);
+            }
+            else if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion ==1) {
+                //for windows 7, windows Server 2008 R2
+                char *title = g_strdup_printf("emulator-%d", get_sdb_base_port());
+                char *cmd1 = g_strdup_printf("net share %s /delete", title);
+                char *cmd2 = g_strdup_printf("net share %s=\"%s\" /grant:%s", title, startup_option.file_share, username);
+                INFO("cmd1: %s, cmd2: %s\n", cmd1, cmd2);
+                if (WinExec(cmd1, SW_HIDE) < 31) {
+                    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd1, GetLastError());
+                }
+                if (WinExec(cmd2, SW_HIDE) < 31) {
+                    ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd2, GetLastError());
                 }
                 sprintf(&kernel_kappend[strlen(kernel_kappend)], "cifs=%s,username=%s", title, username);
               
                 free(cmd1);
                 free(cmd2);
-                free(cmd3);
                 free(title);
             }
-
+            else
+            {
+                show_message("Warning", "The File Sharing feature is supported only on Windows XP and Windows 7.\n"
+                        "Please check your windows version.");
+            }
         }
     }
 #endif

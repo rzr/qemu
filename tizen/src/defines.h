@@ -526,7 +526,6 @@ typedef struct _PHONEMODELINFO {
 	mode_list mode[MODE_MAX];
 	SkinImgInfo mode_SkinImg[MODE_MAX];
 	SkinImgInfo default_SkinImg[MODE_MAX];
-
 	event_menu_list event_menu[10];
 	int event_menu_cnt;
 	char model_name[64];
