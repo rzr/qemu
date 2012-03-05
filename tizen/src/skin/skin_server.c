@@ -44,6 +44,7 @@
 #define SEND_HEADER_SIZE 10
 
 #define HEART_BEAT_INTERVAL 2
+#define HEART_BEAT_FAIL_COUNT 5
 #define HEART_BEAT_EXPIRE_COUNT 5
 
 enum {
@@ -66,15 +67,19 @@ enum {
 };
 
 static uint16_t svr_port = 0;
-static pthread_t thread_id_heartbeat;
-static pthread_mutex_t mutex_heartbeat = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t cond_heartbeat = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t mutex_recv_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
+static int server_sock = 0;
+static int client_sock = 0;
+static int stop = 0;
+
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
+static pthread_t thread_id_heartbeat = 0;
+static pthread_mutex_t mutex_heartbeat = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond_heartbeat = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
 
 static void* run_skin_server( void* args );
-static void send_skin( int client_sock, short send_cmd );
+static int send_skin( int client_sock, short send_cmd );
 static void* do_heart_beat(void* args);
 static int start_heart_beat( int client_sock );
 static void stop_heart_beat();
@@ -94,9 +99,24 @@ pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) 
 
 }
 
+void shutdown_skin_server() {
+	if( client_sock ) {
+		if( 0 > send_skin( client_sock, SEND_SHUTDOWN ) ) {
+			printf( "fail to send shutdown to skin.\n" );
+			stop = 1;
+			// force close
+			close(client_sock);
+			if( server_sock ) {
+				close(server_sock);
+			}
+		}else {
+			// skin sent RECV_RESPONSE_SHUTDOWN.
+		}
+	}
+}
+
 static void* run_skin_server( void* args ) {
 
-	int server_sock;
 	uint16_t port;
 	struct sockaddr_in server_addr, client_addr;
 	socklen_t client_len;
@@ -145,15 +165,11 @@ static void* run_skin_server( void* args ) {
 
 	printf( "skin server start...port:%d\n", port );
 
-	int stop = 0;
-
 	while (1) {
 
 		if( stop ) {
 			break;
 		}
-
-		int client_sock;
 
 		//TODO receive client retry ?
 
@@ -335,21 +351,23 @@ static void* run_skin_server( void* args ) {
 				}
 				case RECV_HEART_BEAT : {
 					printf("RECV_HEART_BEAT\n");
-					send_skin( client_sock, SEND_HEART_BEAT_RESPONSE );
+					if( 0 > send_skin( client_sock, SEND_HEART_BEAT_RESPONSE ) ) {
+						printf("Fail to send a response of heartbeat to skin.\n");
+					}
 					break;
 				}
 				case RECV_RESPONSE_HEART_BEAT : {
 					printf("RECV_RESPONSE_HEART_BEAT\n");
-					pthread_mutex_lock(&mutex_recv_recv_heartbeat_count);
+					pthread_mutex_lock(&mutex_recv_heartbeat_count);
 					recv_heartbeat_count = 0;
-					pthread_mutex_unlock(&mutex_recv_recv_heartbeat_count);
+					pthread_mutex_unlock(&mutex_recv_heartbeat_count);
 					break;
 				}
 				case RECV_CLOSE : {
 					printf("RECV_CLOSE\n");
 					request_close();
 					//XXX
-					send_skin( client_sock, SEND_SHUTDOWN );
+					shutdown_skin_server();
 					break;
 				}
 				case RECV_RESPONSE_SHUTDOWN : {
@@ -390,7 +408,7 @@ static void* run_skin_server( void* args ) {
 	return NULL;
 }
 
-static void send_skin( int client_sock, short send_cmd ) {
+static int send_skin( int client_sock, short send_cmd ) {
 
 	char sendbuf[SEND_HEADER_SIZE];
 	memset( &sendbuf, 0, SEND_HEADER_SIZE );
@@ -408,7 +426,9 @@ static void send_skin( int client_sock, short send_cmd ) {
 	p += sizeof( request_id );
 	memcpy( p, &data, sizeof( data ) );
 
-	write( client_sock, sendbuf, SEND_HEADER_SIZE );
+	ssize_t write_count = write( client_sock, sendbuf, SEND_HEADER_SIZE );
+
+	return write_count;
 
 }
 
@@ -416,6 +436,7 @@ static void* do_heart_beat(void* args) {
 
 	int client_sock = *(int*)args;
 
+	int fail_count = 0;
 	int shutdown = 0;
 
 	while(1) {
@@ -437,14 +458,24 @@ static void* do_heart_beat(void* args) {
 		}
 
 		printf( "send heartbeat to skin...\n" );
-		send_skin( client_sock, SEND_HEART_BEAT );
+		if( 0 > send_skin( client_sock, SEND_HEART_BEAT ) ) {
+			fail_count++;
+		}else {
+			fail_count = 0;
+		}
+
+		if( HEART_BEAT_FAIL_COUNT < fail_count ) {
+			printf( "fail to write heart beat to skin. shutdown heartbeat thread.\n" );
+			shutdown = 1;
+			break;
+		}
 
 		int count = 0;
-		pthread_mutex_lock(&mutex_recv_recv_heartbeat_count);
+		pthread_mutex_lock(&mutex_recv_heartbeat_count);
 		recv_heartbeat_count++;
 		count = recv_heartbeat_count;
 		printf( "recv_heartbeat_count:%d\n", recv_heartbeat_count );
-		pthread_mutex_unlock(&mutex_recv_recv_heartbeat_count);
+		pthread_mutex_unlock(&mutex_recv_heartbeat_count);
 
 		if( HEART_BEAT_EXPIRE_COUNT < count ) {
 			printf( "received heartbeat count is expired.\n" );
@@ -455,10 +486,8 @@ static void* do_heart_beat(void* args) {
 	}
 
 	if(shutdown) {
-		if (client_sock) {
-			printf("close client_sock in heartbeat thread.\n");
-			close(client_sock);
-		}
+		printf("close client_sock in heartbeat thread.\n");
+		shutdown_skin_server();
 	}
 
 	return NULL;

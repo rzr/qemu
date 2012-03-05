@@ -31,5 +31,6 @@
 #define SKIN_SERVER_H_
 
 pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv );
+void shutdown_skin_server();
 
 #endif /* SKIN_SERVER_H_ */
