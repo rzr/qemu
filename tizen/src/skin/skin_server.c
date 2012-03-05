@@ -51,8 +51,9 @@ enum {
     RECV_START = 1,
     RECV_MOUSE_EVENT = 10,
     RECV_KEY_EVENT = 11,
-    RECV_CHANGE_LCD_STATE = 12,
-    RECV_OPEN_SHELL = 13,
+    RECV_HARD_KEY_EVENT = 12,
+    RECV_CHANGE_LCD_STATE = 13,
+    RECV_OPEN_SHELL = 14,
     RECV_HEART_BEAT = 900,
     RECV_RESPONSE_HEART_BEAT = 901,
     RECV_CLOSE = 998,
@@ -336,6 +337,28 @@ static void* run_skin_server( void* args ) {
                     keycode = ntohl( keycode );
 
                     do_key_event( event_type, keycode );
+                    break;
+                }
+                case RECV_HARD_KEY_EVENT: {
+
+                    printf( "RECV_HARD_KEY_EVENT\n" );
+                    if ( 0 >= length ) {
+                        printf( "there is no data looking at 0 length." );
+                        continue;
+                    }
+
+                    int event_type = 0;
+                    int keycode = 0;
+
+                    char* p = readbuf;
+                    memcpy( &event_type, p, sizeof( event_type ) );
+                    p += sizeof( event_type );
+                    memcpy( &keycode, p, sizeof( keycode ) );
+
+                    event_type = ntohl( event_type );
+                    keycode = ntohl( keycode );
+
+                    do_hardkey_event( event_type, keycode );
                     break;
                 }
                 case RECV_CHANGE_LCD_STATE: {

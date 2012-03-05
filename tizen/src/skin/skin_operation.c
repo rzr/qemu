@@ -81,8 +81,13 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
 
 void do_key_event( int event_type, int keycode ) {
     printf( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
+    //TODO
+}
 
-    //TODO convert keycode
+void do_hardkey_event( int event_type, int keycode ) {
+    printf( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
+
+    //TODO convert keycode ?
 
 //FIXME uncomment
 //    // press
