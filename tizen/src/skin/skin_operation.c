@@ -31,17 +31,17 @@
 #include "skin_operation.h"
 
 enum {
-    PORTRAIT = 1,
-    LANDSCAPE = 2,
-    REVERSE_PORTRAIT = 3,
-    REVERSE_LANDSCAPE = 4,
+    DIRECTION_PORTRAIT = 1,
+    DIRECTION_LANDSCAPE = 2,
+    DIRECTION_REVERSE_PORTRAIT = 3,
+    DIRECTION_REVERSE_LANDSCAPE = 4,
 };
 
 enum {
-    ONE = 1,
-    THREE_QUARTERS = 2,
-    HALF = 3,
-    ONE_QUARTER = 4,
+    SCALE_ONE = 1,
+    SCALE_THREE_QUARTERS = 2,
+    SCALE_HALF = 3,
+    SCALE_ONE_QUARTER = 4,
 };
 
 enum {
