@@ -342,7 +342,7 @@ void cleanup_file_share(void)
             osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
             GetVersionEx(&osvi);
             char *cmd = g_strdup_printf("net share %s /delete", gtk_window_get_title(GTK_WINDOW(g_main_window)));
-            if (osvi.dwMajorVersion == 5) {
+            if (osvi.dwMajorVersion >= 5 && osvi.dwMinorVersion >= 1) {
                 if(WinExec(cmd, SW_HIDE) < 31) {
                     ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd, GetLastError());
                 }else
