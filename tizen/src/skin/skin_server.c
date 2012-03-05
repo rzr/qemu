@@ -465,7 +465,7 @@ static void* do_heart_beat(void* args) {
 		}
 
 		if( HEART_BEAT_FAIL_COUNT < fail_count ) {
-			printf( "fail to write heart beat to skin. shutdown heartbeat thread.\n" );
+			printf( "fail to write heart beat to skin. fail count:%d\n", HEART_BEAT_FAIL_COUNT );
 			shutdown = 1;
 			break;
 		}
@@ -486,7 +486,7 @@ static void* do_heart_beat(void* args) {
 	}
 
 	if(shutdown) {
-		printf("close client_sock in heartbeat thread.\n");
+		printf("shutdown skin_server by heartbeat thread.\n");
 		shutdown_skin_server();
 	}
 
