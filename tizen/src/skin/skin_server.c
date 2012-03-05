@@ -52,6 +52,7 @@ enum {
     RECV_MOUSE_EVENT = 10,
     RECV_KEY_EVENT = 11,
     RECV_CHANGE_LCD_STATE = 12,
+    RECV_OPEN_SHELL = 13,
     RECV_HEART_BEAT = 900,
     RECV_RESPONSE_HEART_BEAT = 901,
     RECV_CLOSE = 998,
@@ -296,6 +297,7 @@ static void* run_skin_server( void* args ) {
                     int event_type = 0;
                     int x = 0;
                     int y = 0;
+                    int z = 0;
 
                     char* p = readbuf;
                     memcpy( &event_type, p, sizeof( event_type ) );
@@ -303,12 +305,15 @@ static void* run_skin_server( void* args ) {
                     memcpy( &x, p, sizeof( x ) );
                     p += sizeof( x );
                     memcpy( &y, p, sizeof( y ) );
+                    p += sizeof( y );
+                    memcpy( &z, p, sizeof( z ) );
 
                     event_type = ntohl( event_type );
                     x = ntohl( x );
                     y = ntohl( y );
+                    z = ntohl( z );
 
-                    do_mouse_event( event_type, x, y );
+                    do_mouse_event( event_type, x, y, z );
                     break;
                 }
                 case RECV_KEY_EVENT: {
@@ -340,18 +345,18 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
-                    short direction = 0;
                     short scale = 0;
+                    short direction = 0;
 
                     char* p = readbuf;
-                    memcpy( &direction, p, sizeof( direction ) );
-                    p += sizeof( direction );
                     memcpy( &scale, p, sizeof( scale ) );
+                    p += sizeof( scale );
+                    memcpy( &direction, p, sizeof( direction ) );
 
-                    direction = ntohs( direction );
                     scale = ntohs( scale );
+                    direction = ntohs( direction );
 
-                    change_lcd_state( direction, scale );
+                    change_lcd_state( scale, direction );
                     break;
                 }
                 case RECV_HEART_BEAT: {
@@ -366,6 +371,11 @@ static void* run_skin_server( void* args ) {
                     pthread_mutex_lock( &mutex_recv_heartbeat_count );
                     recv_heartbeat_count = 0;
                     pthread_mutex_unlock( &mutex_recv_heartbeat_count );
+                    break;
+                }
+                case RECV_OPEN_SHELL: {
+                    printf( "RECV_OPEN_SHELL\n" );
+                    open_shell();
                     break;
                 }
                 case RECV_CLOSE: {

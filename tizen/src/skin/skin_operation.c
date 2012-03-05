@@ -27,8 +27,12 @@
  *
  */
 
+#include <unistd.h>
 #include <stdio.h>
 #include "skin_operation.h"
+//FIXME uncomment
+//#include "console.h"
+//#include "maru_pm.h"
 
 enum {
     DIRECTION_PORTRAIT = 1,
@@ -60,22 +64,75 @@ void start_display( int handle_id, short scale, short direction ) {
     //TODO sdl init
 }
 
-void do_mouse_event( int event_type, int x, int y ) {
-    printf( "mouse_event event_type:%d, x:%d, y:%d\n", event_type, x, y );
-    //TODO send event to qemu
+void do_mouse_event( int event_type, int x, int y, int z ) {
+    printf( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
+
+    // qemu want to get '1' state in both press and drag.
+    int type = ( MOUSE_DRAG == event_type ) ? MOUSE_DOWN : event_type;
+
+    if ( MOUSE_UP == type || MOUSE_DOWN == type ) {
+//FIXME uncomment
+//        kbd_mouse_event(x, y, z, type);
+    } else {
+        printf( "undefined mouse event type:%d\n", type );
+    }
+
 }
 
 void do_key_event( int event_type, int keycode ) {
     printf( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
-    //TODO send event to qemu
+
+    //TODO convert keycode
+
+//FIXME uncomment
+//    // press
+//    if ( KEY_PRESSED ) {
+//
+//        if ( kbd_mouse_is_absolute() ) {
+//
+//            // home key or power key is used for resume.
+//            if ( ( 101 == keycode ) || ( 103 == keycode ) ) {
+//                if ( is_suspended_state() ) {
+//                    INFO( "user requests system resume.\n" );
+//                    resume();
+//                    usleep( 500 * 1000 );
+//                }
+//            }
+//
+//            ps2kbd_put_keycode( keycode & 0x7f );
+//
+//        }
+//
+//    } else if ( KEY_RELEASED ) {
+//
+//        if ( kbd_mouse_is_absolute() ) {
+//            TRACE( "release parsing keycode = %d, result = %d\n", keycode, keycode | 0x80 );
+//            ps2kbd_put_keycode( keycode | 0x80 );
+//        }
+//
+//    }
+
 }
 
-void change_lcd_state( short direction, short scale ) {
-    printf( "change_lcd_state direction:%d, scale:%d\n", direction, scale );
+void change_lcd_state( short scale, short direction ) {
+    printf( "change_lcd_state scale:%d, scale:%d\n", scale, direction );
     //TODO send request to emuld
+}
+
+void open_shell() {
+    //TODO
 }
 
 void request_close( void ) {
     printf( "request_close\n" );
-    //TODO send power key event to qemu
+
+//FIXME uncomment
+//    ps2kbd_put_keycode( 103 & 0x7f );
+//#ifdef _WIN32
+//    Sleep( 1.6 * 1000 ); // 1.6 seconds
+//#else
+//    usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
+//#endif
+//    ps2kbd_put_keycode( 103 | 0x80 );
+
 }

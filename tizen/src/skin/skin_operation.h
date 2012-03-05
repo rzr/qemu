@@ -32,11 +32,13 @@
 
 void start_display( int handle_id, short scale, short direction );
 
-void do_mouse_event( int event_type, int x, int y );
+void do_mouse_event( int event_type, int x, int y, int z );
 
 void do_key_event( int event_type, int keycode );
 
-void change_lcd_state( short direction, short scale );
+void change_lcd_state( short scale, short direction );
+
+void open_shell();
 
 void request_close( void );
 
