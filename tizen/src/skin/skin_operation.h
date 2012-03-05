@@ -1,5 +1,5 @@
 /*
- * socket server for emulator skin
+ * operation for emulator skin
  *
  * Copyright (C) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -38,6 +38,6 @@ void do_key_event( int event_type, int keycode );
 
 void change_lcd_state( short direction, short scale );
 
-void request_close(void);
+void request_close( void );
 
 #endif /* SKIN_OPERATION_H_ */

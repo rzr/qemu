@@ -1,5 +1,5 @@
 /*
- * socket server for emulator skin
+ * operation for emulator skin
  *
  * Copyright (C) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -31,26 +31,26 @@
 #include "skin_operation.h"
 
 void start_display( int handle_id ) {
-	printf( "start_display handle_id:%d\n", handle_id );
-	//TODO sdl init
+    printf( "start_display handle_id:%d\n", handle_id );
+    //TODO sdl init
 }
 
 void do_mouse_event( int event_type, int x, int y ) {
-	printf( "mouse_event event_type:%d, x:%d, y:%d\n", event_type, x, y );
-	//TODO send event to qemu
+    printf( "mouse_event event_type:%d, x:%d, y:%d\n", event_type, x, y );
+    //TODO send event to qemu
 }
 
 void do_key_event( int event_type, int keycode ) {
-	printf( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
-	//TODO send event to qemu
+    printf( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
+    //TODO send event to qemu
 }
 
 void change_lcd_state( short direction, short scale ) {
-	printf( "change_lcd_state direction:%d, scale:%d\n", direction, scale );
-	//TODO send request to emuld
+    printf( "change_lcd_state direction:%d, scale:%d\n", direction, scale );
+    //TODO send request to emuld
 }
 
-void request_close(void) {
-	printf( "request_close\n" );
-	//TODO send power key event to qemu
+void request_close( void ) {
+    printf( "request_close\n" );
+    //TODO send power key event to qemu
 }
