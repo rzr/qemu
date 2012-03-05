@@ -36,7 +36,7 @@ void do_mouse_event( int event_type, int x, int y );
 
 void do_key_event( int event_type, int keycode );
 
-void change_lcd_state( int direction, int scale );
+void change_lcd_state( short direction, short scale );
 
 void request_close(void);
 

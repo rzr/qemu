@@ -45,7 +45,7 @@ void do_key_event( int event_type, int keycode ) {
 	//TODO send event to qemu
 }
 
-void change_lcd_state( int direction, int scale ) {
+void change_lcd_state( short direction, short scale ) {
 	printf( "change_lcd_state direction:%d, scale:%d\n", direction, scale );
 	//TODO send request to emuld
 }
