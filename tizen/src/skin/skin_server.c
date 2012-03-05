@@ -37,6 +37,8 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include "skin_server.h"
+#include "skin_operation.h"
 
 #define READ_HEADER_SIZE 16
 #define SEND_HEADER_SIZE 10
@@ -71,111 +73,25 @@ static pthread_mutex_t mutex_recv_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZ
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
 
-static void send_skin( int client_sock, short send_cmd ) {
+static void* run_skin_server( void* args );
+static void send_skin( int client_sock, short send_cmd );
+static void* do_heart_beat(void* args);
+static int start_heart_beat( int client_sock );
+static void stop_heart_beat();
 
-	char sendbuf[SEND_HEADER_SIZE];
-	memset( &sendbuf, 0, SEND_HEADER_SIZE );
 
-	long long request_id = (long long )rand();
-	printf( "send skin request_id:%lld, send_cmd:%d\n", request_id, send_cmd );
+pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) {
 
-	request_id = htobe64( request_id );
+	svr_port = default_svr_port;
 
-	short data = send_cmd;
-	data = htons( data );
+	pthread_t thread_id = -1;
 
-	char* p = sendbuf;
-	memcpy( p, &request_id, sizeof( request_id ) );
-	p += sizeof( request_id );
-	memcpy( p, &data, sizeof( data ) );
-
-	write( client_sock, sendbuf, SEND_HEADER_SIZE );
-
-}
-
-static void* do_heart_beat(void* args) {
-
-	int client_sock = *(int*)args;
-
-	int shutdown = 0;
-
-	while(1) {
-
-		struct timeval current;
-		gettimeofday(&current, NULL);
-
-		struct timespec ts_heartbeat;
-		ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
-		ts_heartbeat.tv_nsec = current.tv_usec * 1000;
-
-		pthread_mutex_lock(&mutex_heartbeat);
-		pthread_cond_timedwait( &cond_heartbeat, &mutex_heartbeat, &ts_heartbeat );
-		pthread_mutex_unlock(&mutex_heartbeat);
-
-		if( stop_heartbeat ) {
-			printf( "stop heart beat.\n" );
-			break;
-		}
-
-		printf( "send heartbeat to skin...\n" );
-		send_skin( client_sock, SEND_HEART_BEAT );
-
-		int count = 0;
-		pthread_mutex_lock(&mutex_recv_recv_heartbeat_count);
-		recv_heartbeat_count++;
-		count = recv_heartbeat_count;
-		printf( "recv_heartbeat_count:%d\n", recv_heartbeat_count );
-		pthread_mutex_unlock(&mutex_recv_recv_heartbeat_count);
-
-		if( HEART_BEAT_EXPIRE_COUNT < count ) {
-			printf( "received heartbeat count is expired.\n" );
-			shutdown = 1;
-			break;
-		}
-
+	if ( 0 != pthread_create( &thread_id, NULL, run_skin_server, NULL ) ) {
+		printf( "fail to create skin_server pthread.\n");
 	}
 
-	if(shutdown) {
-		if (client_sock) {
-			printf("close client_sock in heartbeat thread.\n");
-			close(client_sock);
-		}
-	}
+	return thread_id;
 
-	return NULL;
-
-}
-
-static int start_heart_beat( int client_sock ) {
-	if ( 0 != pthread_create( &thread_id_heartbeat, NULL, do_heart_beat, (void*)&client_sock ) ) {
-		printf( "fail to create heartbean pthread.\n");
-		return 0;
-	}else {
-		return 1;
-	}
-}
-
-static void stop_heart_beat() {
-	pthread_mutex_lock(&mutex_heartbeat);
-	stop_heartbeat = 1;
-	pthread_cond_signal( &cond_heartbeat );
-	pthread_mutex_unlock(&mutex_heartbeat);
-}
-
-static void start_display( int handle_id ) {
-	printf( "start_display handle_id:%d\n", handle_id );
-}
-
-static void do_mouse_event( int event_type, int x, int y ) {
-	printf( "mouse_event event_type:%d, x:%d, y:%d\n", event_type, x, y );
-}
-
-static void do_key_event( int event_type, int keycode ) {
-	printf( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
-}
-
-static void request_close(void) {
-	//TODO send power key event to qemu
 }
 
 static void* run_skin_server( void* args ) {
@@ -403,6 +319,18 @@ static void* run_skin_server( void* args ) {
 						continue;
 					}
 
+					short direction = 0;
+					short scale = 0;
+
+					char* p = readbuf;
+					memcpy( &direction, p, sizeof(direction) );
+					p += sizeof(direction);
+					memcpy( &scale, p, sizeof(scale) );
+
+					direction = ntohs(direction);
+					scale = ntohs(scale);
+
+					change_lcd_state( direction, scale );
 					break;
 				}
 				case RECV_HEART_BEAT : {
@@ -462,19 +390,95 @@ static void* run_skin_server( void* args ) {
 	return NULL;
 }
 
+static void send_skin( int client_sock, short send_cmd ) {
 
-pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) {
+	char sendbuf[SEND_HEADER_SIZE];
+	memset( &sendbuf, 0, SEND_HEADER_SIZE );
 
-	svr_port = default_svr_port;
+	long long request_id = (long long )rand();
+	printf( "send skin request_id:%lld, send_cmd:%d\n", request_id, send_cmd );
 
-	pthread_t thread_id = -1;
+	request_id = htobe64( request_id );
 
-	if ( 0 != pthread_create( &thread_id, NULL, run_skin_server, NULL ) ) {
-		printf( "fail to create skin_server pthread.\n");
+	short data = send_cmd;
+	data = htons( data );
+
+	char* p = sendbuf;
+	memcpy( p, &request_id, sizeof( request_id ) );
+	p += sizeof( request_id );
+	memcpy( p, &data, sizeof( data ) );
+
+	write( client_sock, sendbuf, SEND_HEADER_SIZE );
+
+}
+
+static void* do_heart_beat(void* args) {
+
+	int client_sock = *(int*)args;
+
+	int shutdown = 0;
+
+	while(1) {
+
+		struct timeval current;
+		gettimeofday(&current, NULL);
+
+		struct timespec ts_heartbeat;
+		ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
+		ts_heartbeat.tv_nsec = current.tv_usec * 1000;
+
+		pthread_mutex_lock(&mutex_heartbeat);
+		pthread_cond_timedwait( &cond_heartbeat, &mutex_heartbeat, &ts_heartbeat );
+		pthread_mutex_unlock(&mutex_heartbeat);
+
+		if( stop_heartbeat ) {
+			printf( "stop heart beat.\n" );
+			break;
+		}
+
+		printf( "send heartbeat to skin...\n" );
+		send_skin( client_sock, SEND_HEART_BEAT );
+
+		int count = 0;
+		pthread_mutex_lock(&mutex_recv_recv_heartbeat_count);
+		recv_heartbeat_count++;
+		count = recv_heartbeat_count;
+		printf( "recv_heartbeat_count:%d\n", recv_heartbeat_count );
+		pthread_mutex_unlock(&mutex_recv_recv_heartbeat_count);
+
+		if( HEART_BEAT_EXPIRE_COUNT < count ) {
+			printf( "received heartbeat count is expired.\n" );
+			shutdown = 1;
+			break;
+		}
+
 	}
 
-	return thread_id;
+	if(shutdown) {
+		if (client_sock) {
+			printf("close client_sock in heartbeat thread.\n");
+			close(client_sock);
+		}
+	}
 
+	return NULL;
+
+}
+
+static int start_heart_beat( int client_sock ) {
+	if ( 0 != pthread_create( &thread_id_heartbeat, NULL, do_heart_beat, (void*)&client_sock ) ) {
+		printf( "fail to create heartbean pthread.\n");
+		return 0;
+	}else {
+		return 1;
+	}
+}
+
+static void stop_heart_beat() {
+	pthread_mutex_lock(&mutex_heartbeat);
+	stop_heartbeat = 1;
+	pthread_cond_signal( &cond_heartbeat );
+	pthread_mutex_unlock(&mutex_heartbeat);
 }
 
 #if 0 //XXX for test
