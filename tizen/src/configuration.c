@@ -752,7 +752,7 @@ void qemu_option_set_to_config(arglist *al)
     
     if (!qemu_arch_is_arm()) {		
 		if(startup_option.file_share != NULL) {
-            sprintf(&kernel_kappend[strlen(kernel_kappend)], "virtio-9p");
+            sprintf(&kernel_kappend[strlen(kernel_kappend)], "virtio-9p ");
         }
     }
 
