@@ -226,7 +226,7 @@ void activate_target(char *target_name)
             g_free(message);
             g_free(share_path);
         }
-        file_share_opt = g_strdup_printf("--file-shsare \"%s\"", share_path);
+        file_share_opt = g_strdup_printf("--file-share \"%s\"", share_path);
         free(share_path);
     }
     else
