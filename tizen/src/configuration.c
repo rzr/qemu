@@ -795,11 +795,11 @@ void qemu_option_set_to_config(arglist *al)
                 //free(cmd3);
                 free(title);
             }
-            else if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion ==1) {
+            else if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 1) {
                 //for windows 7, windows Server 2008 R2
                 char *title = g_strdup_printf("emulator-%d", get_sdb_base_port());
                 char *cmd1 = g_strdup_printf("net share %s /delete", title);
-                char *cmd2 = g_strdup_printf("net share %s=\"%s\" /grant:%s", title, startup_option.file_share, username);
+                char *cmd2 = g_strdup_printf("net share %s=\"%s\" /grant:%s,full", title, startup_option.file_share, username);
                 INFO("cmd1: %s, cmd2: %s\n", cmd1, cmd2);
                 if (WinExec(cmd1, SW_HIDE) < 31) {
                     ERR("Error occured when launch command: %s, GetLastError: %d\n", cmd1, GetLastError());
