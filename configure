@@ -2817,9 +2817,7 @@ if test "$attr" = "yes" ; then
   echo "CONFIG_ATTR=y" >> $config_host_mak
 fi
 if test "$linux" = "yes" ; then
-  if test "$attr" = "yes" ; then
     echo "CONFIG_VIRTFS=y" >> $config_host_mak
-  fi
 fi
 if test "$blobs" = "yes" ; then
   echo "INSTALL_BLOBS=yes" >> $config_host_mak
