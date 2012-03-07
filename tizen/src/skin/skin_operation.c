@@ -4,7 +4,7 @@
  * Copyright (C) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * Hyunjun Son <hj79.son@samsung.com>
+ * HyunJun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "skin_operation.h"
+#include "maruskin_sdl.h"
 //FIXME uncomment
 //#include "console.h"
 //#include "maru_pm.h"
@@ -61,7 +62,7 @@ enum {
 
 void start_display( int handle_id, short scale, short direction ) {
     printf( "start_display handle_id:%d, scale:%d, direction:%d\n", handle_id, scale, direction );
-    //TODO sdl init
+    maruskin_sdl_init(handle_id);
 }
 
 void do_mouse_event( int event_type, int x, int y, int z ) {

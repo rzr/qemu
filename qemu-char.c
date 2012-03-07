@@ -1523,7 +1523,8 @@ static int win_chr_init(CharDriverState *chr, const char *filename)
         goto fail;
     }
 
-    s->hcom = CreateFile(filename, GENERIC_READ|GENERIC_WRITE, 0, NULL,
+    s->hcom = CreateFile(g_win32_locale_filename_from_utf8(filename),
+                      GENERIC_READ|GENERIC_WRITE, 0, NULL,
                       OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
     if (s->hcom == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "Failed CreateFile (%lu)\n", GetLastError());
@@ -1813,7 +1814,7 @@ static int qemu_chr_open_win_file_out(QemuOpts *opts, CharDriverState **_chr)
     const char *file_out = qemu_opt_get(opts, "path");
     HANDLE fd_out;
 
-    fd_out = CreateFile(file_out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+    fd_out = CreateFile(g_win32_locale_filename_from_utf8(file_out), GENERIC_WRITE, FILE_SHARE_READ, NULL,
                         OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (fd_out == INVALID_HANDLE_VALUE) {
         return -EIO;
