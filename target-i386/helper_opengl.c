@@ -35,7 +35,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "exec.h"
+//#include "exec.h"
+#include "cpu.h"
+#include "dyngen-exec.h"
 
 #ifndef _WIN32
 #include <X11/Xlib.h>
