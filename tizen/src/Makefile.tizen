@@ -3,6 +3,7 @@
 
 
 $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
+QEMU_CFLAGS += -I$(SRC_PATH)/hw
 
 # maru hw
 #hw-obj-y += maru_board.o
