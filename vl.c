@@ -167,6 +167,8 @@ int main(int argc, char **argv)
 
 #include "ui/qemu-spice.h"
 
+#include "maruskin_sdl.h"
+
 //#define DEBUG_NET
 //#define DEBUG_SLIRP
 
@@ -2149,6 +2151,7 @@ static void free_and_trace(gpointer mem)
     free(mem);
 }
 
+int use_qemu_display = 0; //0:use tizen qemu sdl, 1:use original qemu sdl
 int main(int argc, char **argv, char **envp)
 {
     const char *gdbstub_dev = NULL;
@@ -3397,7 +3400,13 @@ int main(int argc, char **argv, char **envp)
 #endif
 #if defined(CONFIG_SDL)
     case DT_SDL:
-        sdl_display_init(ds, full_screen, no_frame);
+        if (use_qemu_display) {
+            /* use original qemu sdl */
+            sdl_display_init(ds, full_screen, no_frame);
+        } else {
+            /* use tizen qemu sdl */
+            maruskin_display_init(ds);
+        }
         break;
 #elif defined(CONFIG_COCOA)
     case DT_SDL:

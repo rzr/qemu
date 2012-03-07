@@ -27,7 +27,9 @@
  *
  */
 
+
 #include <pthread.h>
+#include "maruskin_sdl.h"
 
 // TODO : organize
 SDL_Surface *surface_screen;
