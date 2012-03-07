@@ -15,6 +15,11 @@ endif
 
 TARGET_PATH=$(SRC_PATH)/target-$(TARGET_BASE_ARCH)
 $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
+
+# Makefile for TIZEN-maru
+include $(SRC_PATH)/tizen/src/Makefile.tizen
+##
+
 ifdef CONFIG_LINUX
 QEMU_CFLAGS += -I../linux-headers
 endif

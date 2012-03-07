@@ -167,7 +167,9 @@ int main(int argc, char **argv)
 
 #include "ui/qemu-spice.h"
 
-#include "maruskin_sdl.h"
+#ifdef CONFIG_MARU
+#include "tizen/src/skin/maruskin_sdl.h"
+#endif
 
 //#define DEBUG_NET
 //#define DEBUG_SLIRP

@@ -191,6 +191,9 @@ libiscsi=""
 ffmpeg="no"
 ffmpeg_inc="distrib/ffmpeg"
 
+# for TIZEN-maru 
+maru="no"
+
 # parse CC options first
 for opt do
   optarg=`expr "x$opt" : 'x[^=]*=\(.*\)'`
@@ -802,6 +805,9 @@ for opt do
   ;;
   --ffmpeg-inc=*) ffmpeg_inc="$optarg"
   ;;
+# for TIZEN-maru
+  --enable-maru) maru="yes"
+  ;;
   *) echo "ERROR: unknown option $opt"; show_help="yes"
   ;;
   esac
@@ -1091,6 +1097,10 @@ echo "  --enable-guest-agent     enable building of the QEMU Guest Agent"
 echo "  --disable-ffmpeg         disable FFmpeg"
 echo "  --enable-ffmpeg          enable FFmpeg"
 echo "  --ffmpeg-inc             path to FFmpeg includes"
+echo ""
+# for TIZEN-maru
+echo "TIZEN-maru options:"
+echo "  --enable-maru            enable maru board"
 echo ""
 echo "NOTE: The object files are built at the place where configure is launched"
 exit 1
@@ -2901,6 +2911,9 @@ echo "build guest agent $guest_agent"
 # tizen
 echo "FFmpeg support    $ffmpeg"
 
+# for TIZEN-maru
+echo "TIZEN-maru support $maru"
+
 if test "$sdl_too_old" = "yes"; then
 echo "-> Your SDL version is too old - please upgrade to have SDL support"
 fi
@@ -3262,6 +3275,11 @@ esac
 if test "$ffmpeg" = "yes" ; then
   echo "CONFIG_FFMPEG=y" >> $config_host_mak
   echo "FFMPEG_CFLAGS=$ffmpeg_cflags" >> $config_host_mak
+fi
+
+# for TIZEN-maru
+if test "$maru" = "yes" ; then
+  echo "CONFIG_MARU=y" >> $config_host_mak
 fi
 
 # use default implementation for tracing backend-specific routines

@@ -1,0 +1,14 @@
+# Makefile.tizen
+# for TIZEN-maru board
+
+
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
+
+# maru hw
+#hw-obj-y += maru_board.o
+obj-i386-y += maru_overlay.o
+
+# maru loader
+
+# maru skin
+
