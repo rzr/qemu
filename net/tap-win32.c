@@ -593,7 +593,7 @@ static int tap_win32_open(tap_win32_overlapped_t **phandle,
               TAPSUFFIX);
 
     handle = CreateFile (
-        device_path,
+        g_win32_locale_filename_from_utf8(device_path),
         GENERIC_READ | GENERIC_WRITE,
         0,
         0,

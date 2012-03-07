@@ -129,7 +129,7 @@ int qemu_create_pidfile(const char *filename)
     BOOL ret;
     memset(&overlap, 0, sizeof(overlap));
 
-    file = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+    file = CreateFile(g_win32_locale_filename_from_utf8(filename), GENERIC_WRITE, FILE_SHARE_READ, NULL,
                       OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (file == INVALID_HANDLE_VALUE) {
