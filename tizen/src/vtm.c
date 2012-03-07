@@ -2485,6 +2485,8 @@ void ok_clicked_cb(void)
     if(access(log_path, R_OK) != 0)
         g_mkdir(log_path, 0755);
 
+    resolution_select_cb();
+
     if(set_dpi_select_cb() == -1)
         return;
 
