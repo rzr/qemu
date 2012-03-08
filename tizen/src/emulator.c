@@ -34,6 +34,8 @@
 #include "emulator.h"
 #include "sdb.h"
 #include "skin/skin_server.h"
+#include "skin/maruskin_client.h"
+#include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, main);
 

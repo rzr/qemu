@@ -41,9 +41,4 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-int get_emulator_condition(void);
-void set_emulator_condition(int state);
-void exit_emulator(void);
-
-
 #endif
