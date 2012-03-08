@@ -187,10 +187,6 @@ zlib="yes"
 guest_agent="yes"
 libiscsi=""
 
-# tizen
-ffmpeg="no"
-ffmpeg_inc="distrib/ffmpeg"
-
 # for TIZEN-maru 
 maru="no"
 
@@ -799,12 +795,6 @@ for opt do
   ;;
   --disable-guest-agent) guest_agent="no"
   ;;
-  --enable-ffmpeg) ffmpeg="yes"
-  ;;
-  --disable-ffmpeg) ffmpeg="no"
-  ;;
-  --ffmpeg-inc=*) ffmpeg_inc="$optarg"
-  ;;
 # for TIZEN-maru
   --enable-maru) maru="yes"
   ;;
@@ -1094,9 +1084,6 @@ echo "  --disable-usb-redir      disable usb network redirection support"
 echo "  --enable-usb-redir       enable usb network redirection support"
 echo "  --disable-guest-agent    disable building of the QEMU Guest Agent"
 echo "  --enable-guest-agent     enable building of the QEMU Guest Agent"
-echo "  --disable-ffmpeg         disable FFmpeg"
-echo "  --enable-ffmpeg          enable FFmpeg"
-echo "  --ffmpeg-inc             path to FFmpeg includes"
 echo ""
 # for TIZEN-maru
 echo "TIZEN-maru options:"
@@ -2707,40 +2694,6 @@ if compile_prog "" "" ; then
 fi
 
 ##########################################
-# check if we have FFmpeg libraries and headers
-if test "$ffmpeg" = "yes" ; then 
-cat > $TMPC <<EOF
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-
-int main(void) { AVFormatContext *pFormatCtx = NULL; av_find_stream_info(pFormatCtx); return 0; }
-EOF
-  ffmpeg_cflags="-I$source_path/tizen/$ffmpeg_inc/include"
-  if test "$linux" = "yes" ; then
-    ffmpeg_libs="-lavformat -lavcodec -lavutil -lm"
-  elif test "$mingw32" = "yes" ; then
-    ffmpeg_libs="-lavformat.dll -lavcodec.dll -lavutil.dll -lm"
-  fi
-  ffmpeg_libpath="-L$source_path/tizen/$ffmpeg_inc/lib"
-  ffmpeg_libs="$ffmpeg_libpath $ffmpeg_libs"
-  if compile_prog "$ffmpeg_cflags" "$ffmpeg_libs" ; then
-    ffmpeg=yes
-    libs_softmmu="$ffmpeg_libs $libs_softmmu"
-  else
-    if test "$ffmpeg" = "yes" ; then
-      feature_not_found "ffmpeg"
-      exit 1;
-    fi
-    ffmpeg=no
-  fi
-fi
-
-##########################################
 # End of CC checks
 # After here, no more $cc or $ld runs
 
@@ -2907,9 +2860,6 @@ echo "usb net redir     $usb_redir"
 echo "OpenGL support    $opengl"
 echo "libiscsi support  $libiscsi"
 echo "build guest agent $guest_agent"
-
-# tizen
-echo "FFmpeg support    $ffmpeg"
 
 # for TIZEN-maru
 echo "TIZEN-maru support $maru"
@@ -3270,17 +3220,6 @@ bsd)
   echo "HOST_USB=stub" >> $config_host_mak
 ;;
 esac
-
-# tizen FFmpeg support
-if test "$ffmpeg" = "yes" ; then
-  echo "CONFIG_FFMPEG=y" >> $config_host_mak
-  echo "FFMPEG_CFLAGS=$ffmpeg_cflags" >> $config_host_mak
-fi
-
-# for TIZEN-maru
-if test "$maru" = "yes" ; then
-  echo "CONFIG_MARU=y" >> $config_host_mak
-fi
 
 # use default implementation for tracing backend-specific routines
 trace_default=yes

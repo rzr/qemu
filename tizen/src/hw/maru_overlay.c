@@ -196,11 +196,8 @@ static int overlay_initfn(PCIDevice *dev)
     /* setup memory space */
     /* memory #0 device memory (overlay surface) */
     /* memory #1 memory-mapped I/O */
-    pci_register_bar(&s->dev, 0, OVERLAY_MEM_SIZE,
-		     PCI_BASE_ADDRESS_MEM_PREFETCH, overlay_mem_map);
-
-    pci_register_bar(&s->dev, 1, OVERLAY_REG_SIZE,
-                     PCI_BASE_ADDRESS_SPACE_MEMORY, overlay_mmio_map);
+    pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, overlay_mem_map);
+    pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, overlay_mmio_map);
 
     return 0;
 }
