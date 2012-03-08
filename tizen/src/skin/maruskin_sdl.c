@@ -30,6 +30,10 @@
 
 #include <pthread.h>
 #include "maruskin_sdl.h"
+#include "../debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(tizen, maruskin_sdl);
+
 
 // TODO : organize
 SDL_Surface *surface_screen;
@@ -43,6 +47,28 @@ static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized = 0;
 #endif
+
+static void qemu_update(void)
+{
+    SDL_Surface *surface = NULL;
+
+    if (!qemu_ds) {
+        return;
+    }
+
+#ifndef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
+    surface = SDL_GetVideoSurface();
+    SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
+    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
+#ifndef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+}
+
 
 #ifdef SDL_THREAD
 static void* run_qemu_update(void* arg)
@@ -170,40 +196,3 @@ void maruskin_sdl_init(int swt_handle)
     //  opengl_exec_set_parent_window(info.info.x11.display, info.info.x11.window);
 #endif
 }
-
-static void qemu_update(void)
-{
-    SDL_Surface *surface = NULL;
-
-    if (!qemu_ds) {
-        return;
-    }
-
-#ifndef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-#endif
-
-    surface = SDL_GetVideoSurface();
-
-    //if (qemu_state->scale == 1) {
-        if (UISTATE.current_mode % 4 != 0) { //rotation
-            SDL_Surface *rot_screen;
-            rot_screen = rotozoomSurface(surface_qemu,
-                    (UISTATE.current_mode % 4) * 90, 1, SMOOTHING_ON);
-            SDL_BlitSurface(rot_screen, NULL, surface_screen, NULL);
-            
-            SDL_FreeSurface(rot_screen);
-        } else {
-            SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
-        }
-    //} 
-
-    /* If 'x', 'y', 'w' and 'h' are all 0, SDL_UpdateRect will update the entire screen.*/
-
-    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
-
-#ifndef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
-#endif
-}
-
