@@ -28,6 +28,20 @@
  */
 
 
+#include "console.h"
+#ifndef _WIN32
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+#include <SDL/SDL_syswm.h>
+#else
+#include <windows.h>
+#include <winbase.h>
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_syswm.h>
+#include <SDL_getenv.h>
+#endif
+
 void maruskin_display_init(DisplayState *ds);
 void maruskin_sdl_init(int swt_handle);
 
