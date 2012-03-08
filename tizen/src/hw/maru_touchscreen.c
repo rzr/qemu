@@ -135,8 +135,8 @@ static void usb_touchscreen_event(void *opaque, int x, int y, int z, int buttons
     USBTouchscreenState *s = opaque;
 
     /* scale to resolution */
-    s->dx = (x * TOUCHSCREEN_RESOLUTION_X / 0x7FFF);
-    s->dy = (y * TOUCHSCREEN_RESOLUTION_Y / 0x7FFF);
+    s->dx = x; //(x * TOUCHSCREEN_RESOLUTION_X / 0x7FFF);
+    s->dy = y; //(y * TOUCHSCREEN_RESOLUTION_Y / 0x7FFF);
     s->dz = z;
     s->buttons_state = buttons_state;
     s->changed = 1;
