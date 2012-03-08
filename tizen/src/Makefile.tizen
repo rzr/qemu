@@ -29,7 +29,7 @@ obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
 ##########################################################
 
 # maru skin
-obj-i386-y += maruskin_sdl.o
+obj-i386-y += maruskin_sdl.o maruskin_client.o skin_server.o skin_operation.o
 
 ##########################################################
 # Build openGL

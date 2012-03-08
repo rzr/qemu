@@ -27,5 +27,9 @@
  *
  */
 
+#ifndef MARUSKIN_CLIENT_H_
+#define MARUSKIN_CLIENT_H_
 
-bool start_skin_client(void);
+int start_skin_client(void);
+
+#endif /* MARUSKIN_CLIENT_H_ */
