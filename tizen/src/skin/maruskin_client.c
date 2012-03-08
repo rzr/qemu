@@ -34,7 +34,7 @@
 #include "maruskin_client.h"
 
 
-#define JAR_SKINFILE_PATH "~/tizen/Emulator/bin/EmulatorSkin.jar"
+#define JAR_SKINFILE_PATH "EmulatorSkin.jar"
 #define JAVA_EXEFILE_PATH "java"
 #define JAVA_EXEOPTION "-jar"
 
