@@ -32,8 +32,8 @@
 #include "maruskin_operation.h"
 #include "maruskin_sdl.h"
 #include "../debug_ch.h"
+#include "console.h"
 //FIXME uncomment
-//#include "console.h"
 //#include "maru_pm.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maruskin_operation);
@@ -76,8 +76,7 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
     int type = ( MOUSE_DRAG == event_type ) ? MOUSE_DOWN : event_type;
 
     if ( MOUSE_UP == type || MOUSE_DOWN == type ) {
-//FIXME uncomment
-//        kbd_mouse_event(x, y, z, type);
+        kbd_mouse_event(x, y, z, type);
     } else {
         INFO( "undefined mouse event type:%d\n", type );
     }

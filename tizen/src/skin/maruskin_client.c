@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include "maruskin_client.h"
+#include <string.h>
 
 
 #define JAR_SKINFILE_PATH "EmulatorSkin.jar"
@@ -44,7 +45,7 @@
 static int skin_argc;
 static char** skin_argv;
 
-static void* run_skin_client()
+static void* run_skin_client(void* arg)
 {
     char cmd[256];
     char argv[200];
@@ -56,7 +57,11 @@ static void* run_skin_client()
     }
 
     sprintf(cmd, "%s %s %s %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, argv);
-    system(cmd);
+    if( system(cmd) ) {
+
+    }else {
+
+    }
 
     return NULL;
 }
