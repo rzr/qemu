@@ -9,6 +9,9 @@ QEMU_CFLAGS += -I$(SRC_PATH)/hw
 #hw-obj-y += maru_board.o
 obj-i386-y += maru_overlay.o
 
+# sdb
+obj-i386-y += sdb.o
+
 ##########################################################
 # opengl library for i386
 obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
