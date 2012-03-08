@@ -255,9 +255,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     if (pci_enabled) {
 	//svcamera_pci_init(pci_bus);
 	//tizen_ac97_init(pci_bus);
-#ifdef CONFIG_FFMPEG
-    //    pci_codec_init(pci_bus);        
-#endif
+		codec_init(pci_bus);        
     }
 }
 
