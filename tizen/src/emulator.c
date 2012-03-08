@@ -34,6 +34,7 @@
 #include "emulator.h"
 #include "sdb.h"
 #include "skin/skin_server.h"
+#include "string.h"
 
 MULTI_DEBUG_CHANNEL(tizen, main);
 
@@ -57,7 +58,7 @@ void exit_emulator(void)
 
 }
 
-static void construct_main_window(void)
+static void construct_main_window(int skin_argc, char** skin_argv)
 {
     start_skin_server(11111, 0, 0);
     if (start_skin_client() == false) {
@@ -65,13 +66,69 @@ static void construct_main_window(void)
     }
 }
 
-int qemu_main(int argc, char **argv, char **envp);
+static int parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
+{
+	int i;
 
-int main(int argc, char** argv)
+	*skin_argv = &(argv[1]);
+	for(i = 1; i < argc; ++i)	
+	{
+		if(strncmp(argv[i], "--qemu-args", 11) == 0)
+		{
+			*skin_argc = i - 1;
+
+			*qemu_argc = argc - i - 1; 
+			*qemu_argv = &(argv[i + 1]);
+		}
+	}
+
+/*
+	printf("%d\n", *skin_argc);
+	for(i = 0; i < *skin_argc; ++i)
+	{
+		printf("%s\n", (*skin_argv)[i]);
+	}
+
+	printf("%d\n", *qemu_argc);
+	for(i = 0; i < *qemu_argc; ++i)
+	{
+		printf("%s\n", (*qemu_argv)[i]);
+	}
+*/
+}
+
+int qemu_main(int argc, char** argv, char** envp);
+
+int main(int argc, char* argv[])
 {
 	tizen_base_port = get_sdb_base_port();
-	construct_main_window();
-	qemu_main(argc, argv, NULL);
+	
+	int skin_argc;
+	char** skin_argv;
+
+	int qemu_argc;
+	char** qemu_argv;
+
+	parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+
+	int i;
+
+/*
+	printf("%d\n", skin_argc);
+	for(i = 0; i < skin_argc; ++i)
+	{
+		printf("%s\n", skin_argv[i]);
+	}
+
+	printf("%d\n", qemu_argc);
+	for(i = 0; i < qemu_argc; ++i)
+	{
+		printf("%s\n", qemu_argv[i]);
+	}
+*/
+
+	construct_main_window(skin_argc, skin_argv);
+	qemu_main(qemu_argc, qemu_argv, NULL);
 
 	return 0;
 }
