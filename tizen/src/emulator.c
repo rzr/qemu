@@ -60,44 +60,38 @@ void exit_emulator(void)
 
 }
 
-static void construct_main_window(int skin_argc, char** skin_argv)
+static void construct_main_window(int skin_argc, char* skin_argv[])
 {
     INFO("construct main window\n");
     start_skin_server(11111, 0, 0);
-    if (start_skin_client() == 0) {
+    if (start_skin_client(skin_argc, skin_argv) == 0) {
         //TODO:
     }
 }
 
-static int parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
+static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
 {
 	int i;
+	int j;
 
-	*skin_argv = &(argv[1]);
-	for(i = 1; i < argc; ++i)	
+// FIXME !!!
+// TODO:
+	for(i = 1; i < argc; ++i)
 	{
-		if(strncmp(argv[i], "--qemu-args", 11) == 0)
+		if(strncmp(argv[i], "--skin-args", 11) == 0)
 		{
-			*skin_argc = i - 1;
+			*skin_argv = &(argv[i + 1]);
+			break;
+		}
+		if(strncmp(argv[j], "--qemu-args", 11) == 0)
+		{
+			*skin_argc = j - i - 1;
 
-			*qemu_argc = argc - i - 1; 
-			*qemu_argv = &(argv[i + 1]);
+			*qemu_argc = argc - j - i; 
+			*qemu_argv = &(argv[j + 1]);
+			break;
 		}
 	}
-
-/*
-	printf("%d\n", *skin_argc);
-	for(i = 0; i < *skin_argc; ++i)
-	{
-		printf("%s\n", (*skin_argv)[i]);
-	}
-
-	printf("%d\n", *qemu_argc);
-	for(i = 0; i < *qemu_argc; ++i)
-	{
-		printf("%s\n", (*qemu_argv)[i]);
-	}
-*/
 }
 
 int qemu_main(int argc, char** argv, char** envp);
@@ -106,17 +100,16 @@ int main(int argc, char* argv[])
 {
 	tizen_base_port = get_sdb_base_port();
 	
-	int skin_argc;
-	char** skin_argv;
+	int skin_argc = 0;
+	char** skin_argv = NULL;
 
-	int qemu_argc;
-	char** qemu_argv;
+	int qemu_argc = 0;
+	char** qemu_argv = NULL;
 
 	parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
 
 	int i;
 
-/*
 	printf("%d\n", skin_argc);
 	for(i = 0; i < skin_argc; ++i)
 	{
@@ -128,10 +121,9 @@ int main(int argc, char* argv[])
 	{
 		printf("%s\n", qemu_argv[i]);
 	}
-*/
 
-	construct_main_window(skin_argc, skin_argv);
-	qemu_main(qemu_argc, qemu_argv, NULL);
+//	construct_main_window(skin_argc, skin_argv);
+//	qemu_main(qemu_argc, qemu_argv, NULL);
 
 	return 0;
 }

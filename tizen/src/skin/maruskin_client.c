@@ -38,18 +38,34 @@
 #define JAVA_EXEFILE_PATH "java"
 #define JAVA_EXEOPTION "-jar"
 
-static void* run_skin_client(void* args)
+// function modified by caramis
+// for delivery argv
+
+static int skin_argc;
+static char** skin_argv;
+
+static void* run_skin_client()
 {
     char cmd[256];
+    char argv[200];
 
-    sprintf(cmd, "%s %s %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH);
+    int i;
+    for(i = 0; i < skin_argc; ++i) {
+        strncat(argv, skin_argv[i], strlen(skin_argv[i]));
+        strncat(argv, " ", 1);
+    }
+
+    sprintf(cmd, "%s %s %s %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, argv);
     system(cmd);
 
     return NULL;
 }
 
-int start_skin_client(void)
+int start_skin_client(int argc, char* argv[])
 {
+    skin_argc = argc;
+    skin_argv = argv;
+
     pthread_t thread_id = -1;
 
     if (0 != pthread_create(&thread_id, NULL, run_skin_client, NULL)) {
