@@ -147,7 +147,7 @@ static PCIDeviceInfo vga_info = {
     .class_id     = PCI_CLASS_DISPLAY_VGA,
 };
 
-#endif // ONFIG_MARU
+#endif // CONFIG_MARU
 
 static void vga_register(void)
 {
