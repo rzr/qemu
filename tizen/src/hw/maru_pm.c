@@ -38,7 +38,7 @@
 #include "sysemu.h"
 #include "range.h"
 #include "ioport.h"
-//#include "tizen/src/debug_ch.h"
+#include "../debug_ch.h"
 
 //#define DEBUG
 
@@ -59,7 +59,7 @@
 #define PIIX4_PCI_HOTPLUG_STATUS 2
 
 /* define debug channel */
-//MULTI_DEBUG_CHANNEL(tizen, maru_pm);
+MULTI_DEBUG_CHANNEL(qemu, maru_pm);
 
 struct pci_status {
     uint32_t up;
@@ -142,7 +142,7 @@ static void maru_pm1_cnt_write(ACPIPM1EVT *pm1a, ACPIPM1CNT *pm1_cnt, uint16_t v
             qemu_system_reset_request();
             qemu_irq_raise(pm1_cnt->cmos_s3);
 #else
-//            INFO( "suspend is requested.\n" );
+            INFO( "suspend is requested.\n" );
             is_suspended = 1;
             break;
 #endif// end : changed suspend operation for emulator
@@ -636,14 +636,14 @@ void resume( void ) {
 
         if ( acpi_state->pm1_cnt.cmos_s3 ) {
             acpi_state->pm1_cnt.cnt |= ( ACPI_BITMASK_WAKE_STATUS | ACPI_BITMASK_POWER_BUTTON_STATUS );
-//            INFO( "raise irq for ACPI wake." );
+            INFO( "raise irq for ACPI wake." );
             qemu_irq_raise( acpi_state->pm1_cnt.cmos_s3 );
         }else {
-//            ERR( "acpi cmos_s3 is NULL." );
+            ERR( "acpi cmos_s3 is NULL." );
         }
 
     }else {
-//        ERR( "acpi state is NULL." );
+        ERR( "acpi state is NULL." );
     }
 
 }

@@ -71,9 +71,9 @@ typedef struct OverlayState {
     MemoryRegion    mem_addr;
     MemoryRegion    mmio_addr;
 
-    uint8_t*        overlay_ptr;
-
 } OverlayState;
+
+uint8_t* overlay_ptr;
 
 static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned size)
 {
@@ -106,14 +106,12 @@ static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned
 
 static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint64_t val, unsigned size)
 {
-    OverlayState *state = (OverlayState*)opaque;
-
     switch (addr) {
     case OVERLAY_POWER:
         overlay0_power = val;
         if( !overlay0_power ) {
         	// clear the last overlay area.
-        	memset( state->overlay_ptr, 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        	memset( overlay_ptr, 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
         }
         break;
     case OVERLAY_POSITION:
@@ -128,7 +126,7 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint64_t va
         overlay1_power = val;
         if( !overlay1_power ) {
         	// clear the last overlay area.
-        	memset( state->overlay_ptr + OVERLAY1_REG_OFFSET , 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        	memset( overlay_ptr + OVERLAY1_REG_OFFSET , 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
         }
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
@@ -161,7 +159,7 @@ static int overlay_initfn(PCIDevice *dev)
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
     memory_region_init_ram(&s->mem_addr, NULL, "overlay.ram", OVERLAY_MEM_SIZE);
-    s->overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
+    overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
     memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "overlay-mmio", OVERLAY_MEM_SIZE);
 
@@ -174,7 +172,7 @@ static int overlay_initfn(PCIDevice *dev)
     return 0;
 }
 
-int pci_overlay_init(PCIBus *bus)
+int pci_maru_overlay_init(PCIBus *bus)
 {
     pci_create_simple(bus, -1, "overlay");
     return 0;

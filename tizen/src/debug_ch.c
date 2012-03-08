@@ -34,9 +34,12 @@
 #include <assert.h>
 #include <unistd.h>
 #include "debug_ch.h"
-#include "fileio.h"
+// #include "fileio.h"
 
+#if 0
 extern STARTUP_OPTION startup_option;
+#endif
+
 static char logfile[256] = { 0, };
 static char debugchfile[256] = {0, };
 static inline int interlocked_xchg_add( int *dest, int incr )
@@ -257,8 +260,13 @@ static void debug_init(void)
 		return;  /* already initialized */
 
 	nb_debug_options = 0;
+
+#if 0
 	strcpy(debugchfile, get_etc_path());
 	strcat(debugchfile, "/DEBUGCH");
+#endif
+	strcpy(debugchfile, "DEBUGCH");
+
 
 	fp= fopen(debugchfile, "r");
 	if( fp == NULL){
@@ -289,8 +297,11 @@ static void debug_init(void)
 		free(tmp);
 	}
 
+#if 0
 	strcpy(logfile, get_virtual_target_abs_path(startup_option.vtm));
 	strcat(logfile, "logs/emulator.log");
+#endif
+	strcpy(logfile, "emulator.log");
 
 	if(access(logfile, F_OK | R_OK) == 0)
 		remove(logfile);

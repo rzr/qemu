@@ -12,13 +12,15 @@ obj-y += emulator.o
 obj-y += sdb.o
 
 # debugch
-#obj-y += debug_ch.c
+obj-y += debug_ch.o
 
 # maru hw
 #hw-obj-y += maru_board.o
 obj-i386-y += maru_overlay.o
 obj-i386-y += maru_codec.o
 obj-i386-y += maru_pm.o
+obj-i386-y += maru_vga.o
+obj-i386-y += maru_brightness.o
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
 LIBS += -lavformat -lavcodec -lavutil -lm -lGL

@@ -39,6 +39,8 @@
 #ifndef MARU_OVERLAY_H_
 #define MARU_OVERLAY_H_
 
-int pci_overlay_init( PCIBus *bus );
+#include "qemu-common.h"
+
+int pci_maru_overlay_init( PCIBus *bus );
 
 #endif /* MARU_OVERLAY_H_ */
