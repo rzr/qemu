@@ -37,7 +37,8 @@
  */
 #include "pc.h"
 #include "pci.h"
-#include "pci_ids.h"
+#include "maru_pci_ids.h"
+#include "maru_overlay.h"
 
 #define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
 #define OVERLAY_REG_SIZE	256
@@ -62,20 +63,19 @@ uint16_t overlay1_top;
 uint16_t overlay1_width;
 uint16_t overlay1_height;
 
-uint8_t* overlay_ptr;	// pointer in qemu space
-
 typedef struct OverlayState {
-    PCIDevice dev;
+    PCIDevice       dev;
     
-    ram_addr_t	vram_offset;
+    ram_addr_t      vram_offset;
 
-    int overlay_mmio;
+    MemoryRegion    mem_addr;
+    MemoryRegion    mmio_addr;
 
-    uint32_t mem_addr;	// guest addr
-    uint32_t mmio_addr;	// guest addr
+    uint8_t*        overlay_ptr;
+
 } OverlayState;
 
-static uint32_t overlay_reg_read(void *opaque, target_phys_addr_t addr)
+static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned size)
 {
     switch (addr) {
     case OVERLAY_POWER:
@@ -97,21 +97,23 @@ static uint32_t overlay_reg_read(void *opaque, target_phys_addr_t addr)
         return overlay1_width | overlay1_height << 16;
         break;
     default:
-        fprintf(stderr, "wrong overlay register read - addr : %d\n", addr);
+        fprintf(stderr, "wrong overlay register read - addr : %d\n", (int)addr);
         break;
     }
 
     return 0;
 }
 
-static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t val)
+static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint64_t val, unsigned size)
 {
+    OverlayState *state = (OverlayState*)opaque;
+
     switch (addr) {
     case OVERLAY_POWER:
         overlay0_power = val;
         if( !overlay0_power ) {
         	// clear the last overlay area.
-        	memset( overlay_ptr, 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        	memset( state->overlay_ptr, 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
         }
         break;
     case OVERLAY_POSITION:
@@ -126,7 +128,7 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t va
         overlay1_power = val;
         if( !overlay1_power ) {
         	// clear the last overlay area.
-        	memset( overlay_ptr + OVERLAY1_REG_OFFSET , 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        	memset( state->overlay_ptr + OVERLAY1_REG_OFFSET , 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
         }
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
@@ -138,44 +140,16 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint32_t va
         overlay1_height = val >> 16;
         break;
     default:
-        fprintf(stderr, "wrong overlay register write - addr : %d\n", addr);
+        fprintf(stderr, "wrong overlay register write - addr : %d\n", (int)addr);
         break;
     }
 }
 
-static CPUReadMemoryFunc * const overlay_reg_readfn[3] = {
-    overlay_reg_read,
-    overlay_reg_read,
-    overlay_reg_read,
+static const MemoryRegionOps overlay_mmio_ops = {
+    .read = overlay_reg_read,
+    .write = overlay_reg_write,
+    .endianness = DEVICE_LITTLE_ENDIAN,
 };
-
-static CPUWriteMemoryFunc * const overlay_reg_writefn[3] = {
-    overlay_reg_write,
-    overlay_reg_write,
-    overlay_reg_write,
-};
-
-static void overlay_mem_map(PCIDevice *dev, int region_num,
-			       pcibus_t addr, pcibus_t size, int type)
-{
-    OverlayState *s = DO_UPCAST(OverlayState, dev, dev);
-
-    cpu_register_physical_memory(addr, OVERLAY_MEM_SIZE,
-				 s->vram_offset);
-
-    s->mem_addr = addr;
-}
-
-static void overlay_mmio_map(PCIDevice *dev, int region_num,
-			       pcibus_t addr, pcibus_t size, int type)
-{
-    OverlayState *s = DO_UPCAST(OverlayState, dev, dev);
-    
-    cpu_register_physical_memory(addr, OVERLAY_REG_SIZE,
-                                 s->overlay_mmio);
-    
-    s->mmio_addr = addr;
-}
 
 static int overlay_initfn(PCIDevice *dev)
 {
@@ -186,21 +160,16 @@ static int overlay_initfn(PCIDevice *dev)
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_OVERLAY);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    s->vram_offset = qemu_ram_alloc(NULL, "overlay.vram", OVERLAY_MEM_SIZE);
-    overlay_ptr = qemu_get_ram_ptr(s->vram_offset);
+    memory_region_init_ram(&s->mem_addr, NULL, "overlay.ram", OVERLAY_MEM_SIZE);
+    s->overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
-    s->overlay_mmio = cpu_register_io_memory(overlay_reg_readfn,
-                                             overlay_reg_writefn, s,
-                                             DEVICE_LITTLE_ENDIAN);
- 
+    memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "overlay-mmio", OVERLAY_MEM_SIZE);
+
     /* setup memory space */
     /* memory #0 device memory (overlay surface) */
     /* memory #1 memory-mapped I/O */
-    pci_register_bar(&s->dev, 0, OVERLAY_MEM_SIZE,
-		     PCI_BASE_ADDRESS_MEM_PREFETCH, overlay_mem_map);
-
-    pci_register_bar(&s->dev, 1, OVERLAY_REG_SIZE,
-                     PCI_BASE_ADDRESS_SPACE_MEMORY, overlay_mmio_map);
+    pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mem_addr);
+    pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->mmio_addr);
 
     return 0;
 }
