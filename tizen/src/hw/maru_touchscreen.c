@@ -183,15 +183,16 @@ static void usb_touchscreen_handle_reset(USBDevice *dev)
     s->buttons_state = 0;
 }
 
-static int usb_touchscreen_handle_control(USBDevice *dev,
+static int usb_touchscreen_handle_control(USBDevice *dev, USBPacket *p,
     int request, int value, int index, int length, uint8_t *data)
 {
-    return usb_desc_handle_control(dev, request, value, index, length, data);
+    return usb_desc_handle_control(dev, p, request, value, index, length, data);
 }
 
 static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
 {
     USBTouchscreenState *s = (USBTouchscreenState *) dev;
+    uint8_t buf[p->iov.size];
     int ret = 0;
 
     switch (p->pid) {
@@ -202,7 +203,8 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
             }
 
             s->changed = 0;
-            ret = usb_touchscreen_poll(s, p->data, p->len);
+            ret = usb_touchscreen_poll(s, buf, p->iov.size);
+            usb_packet_copy(p, buf, ret);
             break;
         }
         /* Fall through */
