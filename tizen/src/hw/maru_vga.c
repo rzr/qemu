@@ -32,9 +32,10 @@
 #include "console.h"
 #include "pc.h"
 #include "pci.h"
-#include "maru_vga_int.h"
+#include "vga_int.h"
 #include "pixel_ops.h"
 #include "qemu-timer.h"
+#include "maru_vga_int.h"
 
 //#define DEBUG_VGA
 //#define DEBUG_VGA_MEM
@@ -42,43 +43,12 @@
 
 //#define DEBUG_BOCHS_VBE
 
-/* force some bits to zero */
-const uint8_t maru_sr_mask[8] = {
-    0x03,
-    0x3d,
-    0x0f,
-    0x3f,
-    0x0e,
-    0x00,
-    0x00,
-    0xff,
-};
-
-const uint8_t maru_gr_mask[16] = {
-    0x0f, /* 0x00 */
-    0x0f, /* 0x01 */
-    0x0f, /* 0x02 */
-    0x1f, /* 0x03 */
-    0x03, /* 0x04 */
-    0x7b, /* 0x05 */
-    0x0f, /* 0x06 */
-    0x0f, /* 0x07 */
-    0xff, /* 0x08 */
-    0x00, /* 0x09 */
-    0x00, /* 0x0a */
-    0x00, /* 0x0b */
-    0x00, /* 0x0c */
-    0x00, /* 0x0d */
-    0x00, /* 0x0e */
-    0x00, /* 0x0f */
-};
-
 #define cbswap_32(__x) \
 ((uint32_t)( \
-		(((uint32_t)(__x) & (uint32_t)0x000000ffUL) << 24) | \
-		(((uint32_t)(__x) & (uint32_t)0x0000ff00UL) <<  8) | \
-		(((uint32_t)(__x) & (uint32_t)0x00ff0000UL) >>  8) | \
-		(((uint32_t)(__x) & (uint32_t)0xff000000UL) >> 24) ))
+        (((uint32_t)(__x) & (uint32_t)0x000000ffUL) << 24) | \
+        (((uint32_t)(__x) & (uint32_t)0x0000ff00UL) <<  8) | \
+        (((uint32_t)(__x) & (uint32_t)0x00ff0000UL) >>  8) | \
+        (((uint32_t)(__x) & (uint32_t)0xff000000UL) >> 24) ))
 
 #ifdef HOST_WORDS_BIGENDIAN
 #define PAT(x) cbswap_32(x)
@@ -159,56 +129,12 @@ static void vga_screen_dump(void *opaque, const char *filename);
 static const char *screen_dump_filename;
 static DisplayChangeListener *screen_dump_dcl;
 
-static void vga_update_memory_access(MaruVGACommonState *s)
-{
-    MemoryRegion *region, *old_region = s->chain4_alias;
-    target_phys_addr_t base, offset, size;
-
-    s->chain4_alias = NULL;
-
-    if ((s->sr[0x02] & 0xf) == 0xf && s->sr[0x04] & 0x08) {
-        offset = 0;
-        switch ((s->gr[6] >> 2) & 3) {
-        case 0:
-            base = 0xa0000;
-            size = 0x20000;
-            break;
-        case 1:
-            base = 0xa0000;
-            size = 0x10000;
-            offset = s->bank_offset;
-            break;
-        case 2:
-            base = 0xb0000;
-            size = 0x8000;
-            break;
-        case 3:
-        default:
-            base = 0xb8000;
-            size = 0x8000;
-            break;
-        }
-        base += isa_mem_base;
-        region = g_malloc(sizeof(*region));
-        memory_region_init_alias(region, "vga.chain4", &s->vram, offset, size);
-        memory_region_add_subregion_overlap(s->legacy_address_space, base,
-                                            region, 2);
-        s->chain4_alias = region;
-    }
-    if (old_region) {
-        memory_region_del_subregion(s->legacy_address_space, old_region);
-        memory_region_destroy(old_region);
-        g_free(old_region);
-        s->plane_updated = 0xf;
-    }
-}
-
-static void vga_dumb_update_retrace_info(MaruVGACommonState *s)
+static void vga_dumb_update_retrace_info(VGACommonState *s)
 {
     (void) s;
 }
 
-static void vga_precise_update_retrace_info(MaruVGACommonState *s)
+static void vga_precise_update_retrace_info(VGACommonState *s)
 {
     int htotal_chars;
     int hretr_start_char;
@@ -227,7 +153,7 @@ static void vga_precise_update_retrace_info(MaruVGACommonState *s)
     int clock_sel;
     const int clk_hz[] = {25175000, 28322000, 25175000, 25175000};
     int64_t chars_per_sec;
-    struct maru_vga_precise_retrace *r = &s->retrace_info.precise;
+    struct vga_precise_retrace *r = &s->retrace_info.precise;
 
     htotal_chars = s->cr[0x00] + 5;
     hretr_start_char = s->cr[0x04];
@@ -302,9 +228,9 @@ static void vga_precise_update_retrace_info(MaruVGACommonState *s)
 #endif
 }
 
-static uint8_t vga_precise_retrace(MaruVGACommonState *s)
+static uint8_t vga_precise_retrace(VGACommonState *s)
 {
-    struct maru_vga_precise_retrace *r = &s->retrace_info.precise;
+    struct vga_precise_retrace *r = &s->retrace_info.precise;
     uint8_t val = s->st01 & ~(ST01_V_RETRACE | ST01_DISP_ENABLE);
 
     if (r->total_chars) {
@@ -331,624 +257,9 @@ static uint8_t vga_precise_retrace(MaruVGACommonState *s)
     }
 }
 
-static uint8_t vga_dumb_retrace(MaruVGACommonState *s)
+static uint8_t vga_dumb_retrace(VGACommonState *s)
 {
     return s->st01 ^ (ST01_V_RETRACE | ST01_DISP_ENABLE);
-}
-
-int maru_vga_ioport_invalid(MaruVGACommonState *s, uint32_t addr)
-{
-    if (s->msr & MSR_COLOR_EMULATION) {
-        /* Color */
-        return (addr >= 0x3b0 && addr <= 0x3bf);
-    } else {
-        /* Monochrome */
-        return (addr >= 0x3d0 && addr <= 0x3df);
-    }
-}
-
-uint32_t maru_vga_ioport_read(void *opaque, uint32_t addr)
-{
-    MaruVGACommonState *s = opaque;
-    int val, index;
-
-    if (maru_vga_ioport_invalid(s, addr)) {
-        val = 0xff;
-    } else {
-        switch(addr) {
-        case 0x3c0:
-            if (s->ar_flip_flop == 0) {
-                val = s->ar_index;
-            } else {
-                val = 0;
-            }
-            break;
-        case 0x3c1:
-            index = s->ar_index & 0x1f;
-            if (index < 21)
-                val = s->ar[index];
-            else
-                val = 0;
-            break;
-        case 0x3c2:
-            val = s->st00;
-            break;
-        case 0x3c4:
-            val = s->sr_index;
-            break;
-        case 0x3c5:
-            val = s->sr[s->sr_index];
-#ifdef DEBUG_VGA_REG
-            printf("vga: read SR%x = 0x%02x\n", s->sr_index, val);
-#endif
-            break;
-        case 0x3c7:
-            val = s->dac_state;
-            break;
-        case 0x3c8:
-            val = s->dac_write_index;
-            break;
-        case 0x3c9:
-            val = s->palette[s->dac_read_index * 3 + s->dac_sub_index];
-            if (++s->dac_sub_index == 3) {
-                s->dac_sub_index = 0;
-                s->dac_read_index++;
-            }
-            break;
-        case 0x3ca:
-            val = s->fcr;
-            break;
-        case 0x3cc:
-            val = s->msr;
-            break;
-        case 0x3ce:
-            val = s->gr_index;
-            break;
-        case 0x3cf:
-            val = s->gr[s->gr_index];
-#ifdef DEBUG_VGA_REG
-            printf("vga: read GR%x = 0x%02x\n", s->gr_index, val);
-#endif
-            break;
-        case 0x3b4:
-        case 0x3d4:
-            val = s->cr_index;
-            break;
-        case 0x3b5:
-        case 0x3d5:
-            val = s->cr[s->cr_index];
-#ifdef DEBUG_VGA_REG
-            printf("vga: read CR%x = 0x%02x\n", s->cr_index, val);
-#endif
-            break;
-        case 0x3ba:
-        case 0x3da:
-            /* just toggle to fool polling */
-            val = s->st01 = s->retrace(s);
-            s->ar_flip_flop = 0;
-            break;
-        default:
-            val = 0x00;
-            break;
-        }
-    }
-#if defined(DEBUG_VGA)
-    printf("VGA: read addr=0x%04x data=0x%02x\n", addr, val);
-#endif
-    return val;
-}
-
-void maru_vga_ioport_write(void *opaque, uint32_t addr, uint32_t val)
-{
-    MaruVGACommonState *s = opaque;
-    int index;
-
-    /* check port range access depending on color/monochrome mode */
-    if (maru_vga_ioport_invalid(s, addr)) {
-        return;
-    }
-#ifdef DEBUG_VGA
-    printf("VGA: write addr=0x%04x data=0x%02x\n", addr, val);
-#endif
-
-    switch(addr) {
-    case 0x3c0:
-        if (s->ar_flip_flop == 0) {
-            val &= 0x3f;
-            s->ar_index = val;
-        } else {
-            index = s->ar_index & 0x1f;
-            switch(index) {
-            case 0x00 ... 0x0f:
-                s->ar[index] = val & 0x3f;
-                break;
-            case 0x10:
-                s->ar[index] = val & ~0x10;
-                break;
-            case 0x11:
-                s->ar[index] = val;
-                break;
-            case 0x12:
-                s->ar[index] = val & ~0xc0;
-                break;
-            case 0x13:
-                s->ar[index] = val & ~0xf0;
-                break;
-            case 0x14:
-                s->ar[index] = val & ~0xf0;
-                break;
-            default:
-                break;
-            }
-        }
-        s->ar_flip_flop ^= 1;
-        break;
-    case 0x3c2:
-        s->msr = val & ~0x10;
-        s->update_retrace_info(s);
-        break;
-    case 0x3c4:
-        s->sr_index = val & 7;
-        break;
-    case 0x3c5:
-#ifdef DEBUG_VGA_REG
-        printf("vga: write SR%x = 0x%02x\n", s->sr_index, val);
-#endif
-        s->sr[s->sr_index] = val & maru_sr_mask[s->sr_index];
-        if (s->sr_index == 1) s->update_retrace_info(s);
-        vga_update_memory_access(s);
-        break;
-    case 0x3c7:
-        s->dac_read_index = val;
-        s->dac_sub_index = 0;
-        s->dac_state = 3;
-        break;
-    case 0x3c8:
-        s->dac_write_index = val;
-        s->dac_sub_index = 0;
-        s->dac_state = 0;
-        break;
-    case 0x3c9:
-        s->dac_cache[s->dac_sub_index] = val;
-        if (++s->dac_sub_index == 3) {
-            memcpy(&s->palette[s->dac_write_index * 3], s->dac_cache, 3);
-            s->dac_sub_index = 0;
-            s->dac_write_index++;
-        }
-        break;
-    case 0x3ce:
-        s->gr_index = val & 0x0f;
-        break;
-    case 0x3cf:
-#ifdef DEBUG_VGA_REG
-        printf("vga: write GR%x = 0x%02x\n", s->gr_index, val);
-#endif
-        s->gr[s->gr_index] = val & maru_gr_mask[s->gr_index];
-        vga_update_memory_access(s);
-        break;
-    case 0x3b4:
-    case 0x3d4:
-        s->cr_index = val;
-        break;
-    case 0x3b5:
-    case 0x3d5:
-#ifdef DEBUG_VGA_REG
-        printf("vga: write CR%x = 0x%02x\n", s->cr_index, val);
-#endif
-        /* handle CR0-7 protection */
-        if ((s->cr[0x11] & 0x80) && s->cr_index <= 7) {
-            /* can always write bit 4 of CR7 */
-            if (s->cr_index == 7)
-                s->cr[7] = (s->cr[7] & ~0x10) | (val & 0x10);
-            return;
-        }
-        s->cr[s->cr_index] = val;
-
-        switch(s->cr_index) {
-        case 0x00:
-        case 0x04:
-        case 0x05:
-        case 0x06:
-        case 0x07:
-        case 0x11:
-        case 0x17:
-            s->update_retrace_info(s);
-            break;
-        }
-        break;
-    case 0x3ba:
-    case 0x3da:
-        s->fcr = val & 0x10;
-        break;
-    }
-}
-
-#ifdef CONFIG_BOCHS_VBE
-static uint32_t vbe_ioport_read_index(void *opaque, uint32_t addr)
-{
-    MaruVGACommonState *s = opaque;
-    uint32_t val;
-    val = s->vbe_index;
-    return val;
-}
-
-static uint32_t vbe_ioport_read_data(void *opaque, uint32_t addr)
-{
-    MaruVGACommonState *s = opaque;
-    uint32_t val;
-
-    if (s->vbe_index < VBE_DISPI_INDEX_NB) {
-        if (s->vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_GETCAPS) {
-            switch(s->vbe_index) {
-                /* XXX: do not hardcode ? */
-            case VBE_DISPI_INDEX_XRES:
-                val = VBE_DISPI_MAX_XRES;
-                break;
-            case VBE_DISPI_INDEX_YRES:
-                val = VBE_DISPI_MAX_YRES;
-                break;
-            case VBE_DISPI_INDEX_BPP:
-                val = VBE_DISPI_MAX_BPP;
-                break;
-            default:
-                val = s->vbe_regs[s->vbe_index];
-                break;
-            }
-        } else {
-            val = s->vbe_regs[s->vbe_index];
-        }
-    } else if (s->vbe_index == VBE_DISPI_INDEX_VIDEO_MEMORY_64K) {
-        val = s->vram_size / (64 * 1024);
-    } else {
-        val = 0;
-    }
-#ifdef DEBUG_BOCHS_VBE
-    printf("VBE: read index=0x%x val=0x%x\n", s->vbe_index, val);
-#endif
-    return val;
-}
-
-static void vbe_ioport_write_index(void *opaque, uint32_t addr, uint32_t val)
-{
-    MaruVGACommonState *s = opaque;
-    s->vbe_index = val;
-}
-
-static void vbe_ioport_write_data(void *opaque, uint32_t addr, uint32_t val)
-{
-    MaruVGACommonState *s = opaque;
-
-    if (s->vbe_index <= VBE_DISPI_INDEX_NB) {
-#ifdef DEBUG_BOCHS_VBE
-        printf("VBE: write index=0x%x val=0x%x\n", s->vbe_index, val);
-#endif
-        switch(s->vbe_index) {
-        case VBE_DISPI_INDEX_ID:
-            if (val == VBE_DISPI_ID0 ||
-                val == VBE_DISPI_ID1 ||
-                val == VBE_DISPI_ID2 ||
-                val == VBE_DISPI_ID3 ||
-                val == VBE_DISPI_ID4) {
-                s->vbe_regs[s->vbe_index] = val;
-            }
-            break;
-        case VBE_DISPI_INDEX_XRES:
-            if ((val <= VBE_DISPI_MAX_XRES) && ((val & 7) == 0)) {
-                s->vbe_regs[s->vbe_index] = val;
-            }
-            break;
-        case VBE_DISPI_INDEX_YRES:
-            if (val <= VBE_DISPI_MAX_YRES) {
-                s->vbe_regs[s->vbe_index] = val;
-            }
-            break;
-        case VBE_DISPI_INDEX_BPP:
-            if (val == 0)
-                val = 8;
-            if (val == 4 || val == 8 || val == 15 ||
-                val == 16 || val == 24 || val == 32) {
-                s->vbe_regs[s->vbe_index] = val;
-            }
-            break;
-        case VBE_DISPI_INDEX_BANK:
-            if (s->vbe_regs[VBE_DISPI_INDEX_BPP] == 4) {
-              val &= (s->vbe_bank_mask >> 2);
-            } else {
-              val &= s->vbe_bank_mask;
-            }
-            s->vbe_regs[s->vbe_index] = val;
-            s->bank_offset = (val << 16);
-            vga_update_memory_access(s);
-            break;
-        case VBE_DISPI_INDEX_ENABLE:
-            if ((val & VBE_DISPI_ENABLED) &&
-                !(s->vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED)) {
-                int h, shift_control;
-
-                s->vbe_regs[VBE_DISPI_INDEX_VIRT_WIDTH] =
-                    s->vbe_regs[VBE_DISPI_INDEX_XRES];
-                s->vbe_regs[VBE_DISPI_INDEX_VIRT_HEIGHT] =
-                    s->vbe_regs[VBE_DISPI_INDEX_YRES];
-                s->vbe_regs[VBE_DISPI_INDEX_X_OFFSET] = 0;
-                s->vbe_regs[VBE_DISPI_INDEX_Y_OFFSET] = 0;
-
-                if (s->vbe_regs[VBE_DISPI_INDEX_BPP] == 4)
-                    s->vbe_line_offset = s->vbe_regs[VBE_DISPI_INDEX_XRES] >> 1;
-                else
-                    s->vbe_line_offset = s->vbe_regs[VBE_DISPI_INDEX_XRES] *
-                        ((s->vbe_regs[VBE_DISPI_INDEX_BPP] + 7) >> 3);
-                s->vbe_start_addr = 0;
-
-                /* clear the screen (should be done in BIOS) */
-                if (!(val & VBE_DISPI_NOCLEARMEM)) {
-                    memset(s->vram_ptr, 0,
-                           s->vbe_regs[VBE_DISPI_INDEX_YRES] * s->vbe_line_offset);
-                }
-
-                /* we initialize the VGA graphic mode (should be done
-                   in BIOS) */
-                s->gr[0x06] = (s->gr[0x06] & ~0x0c) | 0x05; /* graphic mode + memory map 1 */
-                s->cr[0x17] |= 3; /* no CGA modes */
-                s->cr[0x13] = s->vbe_line_offset >> 3;
-                /* width */
-                s->cr[0x01] = (s->vbe_regs[VBE_DISPI_INDEX_XRES] >> 3) - 1;
-                /* height (only meaningful if < 1024) */
-                h = s->vbe_regs[VBE_DISPI_INDEX_YRES] - 1;
-                s->cr[0x12] = h;
-                s->cr[0x07] = (s->cr[0x07] & ~0x42) |
-                    ((h >> 7) & 0x02) | ((h >> 3) & 0x40);
-                /* line compare to 1023 */
-                s->cr[0x18] = 0xff;
-                s->cr[0x07] |= 0x10;
-                s->cr[0x09] |= 0x40;
-
-                if (s->vbe_regs[VBE_DISPI_INDEX_BPP] == 4) {
-                    shift_control = 0;
-                    s->sr[0x01] &= ~8; /* no double line */
-                } else {
-                    shift_control = 2;
-                    s->sr[4] |= 0x08; /* set chain 4 mode */
-                    s->sr[2] |= 0x0f; /* activate all planes */
-                }
-                s->gr[0x05] = (s->gr[0x05] & ~0x60) | (shift_control << 5);
-                s->cr[0x09] &= ~0x9f; /* no double scan */
-            } else {
-                /* XXX: the bios should do that */
-                s->bank_offset = 0;
-            }
-            s->dac_8bit = (val & VBE_DISPI_8BIT_DAC) > 0;
-            s->vbe_regs[s->vbe_index] = val;
-            vga_update_memory_access(s);
-            break;
-        case VBE_DISPI_INDEX_VIRT_WIDTH:
-            {
-                int w, h, line_offset;
-
-                if (val < s->vbe_regs[VBE_DISPI_INDEX_XRES])
-                    return;
-                w = val;
-                if (s->vbe_regs[VBE_DISPI_INDEX_BPP] == 4)
-                    line_offset = w >> 1;
-                else
-                    line_offset = w * ((s->vbe_regs[VBE_DISPI_INDEX_BPP] + 7) >> 3);
-                h = s->vram_size / line_offset;
-                /* XXX: support weird bochs semantics ? */
-                if (h < s->vbe_regs[VBE_DISPI_INDEX_YRES])
-                    return;
-                s->vbe_regs[VBE_DISPI_INDEX_VIRT_WIDTH] = w;
-                s->vbe_regs[VBE_DISPI_INDEX_VIRT_HEIGHT] = h;
-                s->vbe_line_offset = line_offset;
-            }
-            break;
-        case VBE_DISPI_INDEX_X_OFFSET:
-        case VBE_DISPI_INDEX_Y_OFFSET:
-            {
-                int x;
-                s->vbe_regs[s->vbe_index] = val;
-                s->vbe_start_addr = s->vbe_line_offset * s->vbe_regs[VBE_DISPI_INDEX_Y_OFFSET];
-                x = s->vbe_regs[VBE_DISPI_INDEX_X_OFFSET];
-                if (s->vbe_regs[VBE_DISPI_INDEX_BPP] == 4)
-                    s->vbe_start_addr += x >> 1;
-                else
-                    s->vbe_start_addr += x * ((s->vbe_regs[VBE_DISPI_INDEX_BPP] + 7) >> 3);
-                s->vbe_start_addr >>= 2;
-            }
-            break;
-        default:
-            break;
-        }
-    }
-}
-#endif
-
-/* called for accesses between 0xa0000 and 0xc0000 */
-uint32_t maru_vga_mem_readb(MaruVGACommonState *s, target_phys_addr_t addr)
-{
-    int memory_map_mode, plane;
-    uint32_t ret;
-
-    /* convert to VGA memory offset */
-    memory_map_mode = (s->gr[6] >> 2) & 3;
-    addr &= 0x1ffff;
-    switch(memory_map_mode) {
-    case 0:
-        break;
-    case 1:
-        if (addr >= 0x10000)
-            return 0xff;
-        addr += s->bank_offset;
-        break;
-    case 2:
-        addr -= 0x10000;
-        if (addr >= 0x8000)
-            return 0xff;
-        break;
-    default:
-    case 3:
-        addr -= 0x18000;
-        if (addr >= 0x8000)
-            return 0xff;
-        break;
-    }
-
-    if (s->sr[4] & 0x08) {
-        /* chain 4 mode : simplest access */
-        ret = s->vram_ptr[addr];
-    } else if (s->gr[5] & 0x10) {
-        /* odd/even mode (aka text mode mapping) */
-        plane = (s->gr[4] & 2) | (addr & 1);
-        ret = s->vram_ptr[((addr & ~1) << 1) | plane];
-    } else {
-        /* standard VGA latched access */
-        s->latch = ((uint32_t *)s->vram_ptr)[addr];
-
-        if (!(s->gr[5] & 0x08)) {
-            /* read mode 0 */
-            plane = s->gr[4];
-            ret = GET_PLANE(s->latch, plane);
-        } else {
-            /* read mode 1 */
-            ret = (s->latch ^ mask16[s->gr[2]]) & mask16[s->gr[7]];
-            ret |= ret >> 16;
-            ret |= ret >> 8;
-            ret = (~ret) & 0xff;
-        }
-    }
-    return ret;
-}
-
-/* called for accesses between 0xa0000 and 0xc0000 */
-void maru_vga_mem_writeb(MaruVGACommonState *s, target_phys_addr_t addr, uint32_t val)
-{
-    int memory_map_mode, plane, write_mode, b, func_select, mask;
-    uint32_t write_mask, bit_mask, set_mask;
-
-#ifdef DEBUG_VGA_MEM
-    printf("vga: [0x" TARGET_FMT_plx "] = 0x%02x\n", addr, val);
-#endif
-    /* convert to VGA memory offset */
-    memory_map_mode = (s->gr[6] >> 2) & 3;
-    addr &= 0x1ffff;
-    switch(memory_map_mode) {
-    case 0:
-        break;
-    case 1:
-        if (addr >= 0x10000)
-            return;
-        addr += s->bank_offset;
-        break;
-    case 2:
-        addr -= 0x10000;
-        if (addr >= 0x8000)
-            return;
-        break;
-    default:
-    case 3:
-        addr -= 0x18000;
-        if (addr >= 0x8000)
-            return;
-        break;
-    }
-
-    if (s->sr[4] & 0x08) {
-        /* chain 4 mode : simplest access */
-        plane = addr & 3;
-        mask = (1 << plane);
-        if (s->sr[2] & mask) {
-            s->vram_ptr[addr] = val;
-#ifdef DEBUG_VGA_MEM
-            printf("vga: chain4: [0x" TARGET_FMT_plx "]\n", addr);
-#endif
-            s->plane_updated |= mask; /* only used to detect font change */
-            memory_region_set_dirty(&s->vram, addr);
-        }
-    } else if (s->gr[5] & 0x10) {
-        /* odd/even mode (aka text mode mapping) */
-        plane = (s->gr[4] & 2) | (addr & 1);
-        mask = (1 << plane);
-        if (s->sr[2] & mask) {
-            addr = ((addr & ~1) << 1) | plane;
-            s->vram_ptr[addr] = val;
-#ifdef DEBUG_VGA_MEM
-            printf("vga: odd/even: [0x" TARGET_FMT_plx "]\n", addr);
-#endif
-            s->plane_updated |= mask; /* only used to detect font change */
-            memory_region_set_dirty(&s->vram, addr);
-        }
-    } else {
-        /* standard VGA latched access */
-        write_mode = s->gr[5] & 3;
-        switch(write_mode) {
-        default:
-        case 0:
-            /* rotate */
-            b = s->gr[3] & 7;
-            val = ((val >> b) | (val << (8 - b))) & 0xff;
-            val |= val << 8;
-            val |= val << 16;
-
-            /* apply set/reset mask */
-            set_mask = mask16[s->gr[1]];
-            val = (val & ~set_mask) | (mask16[s->gr[0]] & set_mask);
-            bit_mask = s->gr[8];
-            break;
-        case 1:
-            val = s->latch;
-            goto do_write;
-        case 2:
-            val = mask16[val & 0x0f];
-            bit_mask = s->gr[8];
-            break;
-        case 3:
-            /* rotate */
-            b = s->gr[3] & 7;
-            val = (val >> b) | (val << (8 - b));
-
-            bit_mask = s->gr[8] & val;
-            val = mask16[s->gr[0]];
-            break;
-        }
-
-        /* apply logical operation */
-        func_select = s->gr[3] >> 3;
-        switch(func_select) {
-        case 0:
-        default:
-            /* nothing to do */
-            break;
-        case 1:
-            /* and */
-            val &= s->latch;
-            break;
-        case 2:
-            /* or */
-            val |= s->latch;
-            break;
-        case 3:
-            /* xor */
-            val ^= s->latch;
-            break;
-        }
-
-        /* apply bit mask */
-        bit_mask |= bit_mask << 8;
-        bit_mask |= bit_mask << 16;
-        val = (val & bit_mask) | (s->latch & ~bit_mask);
-
-    do_write:
-        /* mask data according to sr[2] */
-        mask = s->sr[2];
-        s->plane_updated |= mask; /* only used to detect font change */
-        write_mask = mask16[mask];
-        ((uint32_t *)s->vram_ptr)[addr] =
-            (((uint32_t *)s->vram_ptr)[addr] & ~write_mask) |
-            (val & write_mask);
-#ifdef DEBUG_VGA_MEM
-        printf("vga: latch: [0x" TARGET_FMT_plx "] mask=0x%08x val=0x%08x\n",
-               addr * 4, write_mask, val);
-#endif
-        memory_region_set_dirty(&s->vram, addr << 2);
-    }
 }
 
 typedef void maru_vga_draw_glyph8_func(uint8_t *d, int linesize,
@@ -957,7 +268,7 @@ typedef void maru_vga_draw_glyph8_func(uint8_t *d, int linesize,
 typedef void maru_vga_draw_glyph9_func(uint8_t *d, int linesize,
                                   const uint8_t *font_ptr, int h,
                                   uint32_t fgcol, uint32_t bgcol, int dup9);
-typedef void maru_vga_draw_line_func(MaruVGACommonState *s1, uint8_t *d,
+typedef void maru_vga_draw_line_func(VGACommonState *s1, uint8_t *d,
                                 const uint8_t *s, int width);
 
 #define DEPTH 8
@@ -1042,7 +353,7 @@ static unsigned int rgb_to_pixel32bgr_dup(unsigned int r, unsigned int g, unsign
 }
 
 /* return true if the palette was modified */
-static int update_palette16(MaruVGACommonState *s)
+static int update_palette16(VGACommonState *s)
 {
     int full_update, i;
     uint32_t v, col, *palette;
@@ -1056,9 +367,9 @@ static int update_palette16(MaruVGACommonState *s)
         else
             v = ((s->ar[0x14] & 0xc) << 4) | (v & 0x3f);
         v = v * 3;
-        col = s->rgb_to_pixel(maru_c6_to_8(s->palette[v]),
-                              maru_c6_to_8(s->palette[v + 1]),
-                              maru_c6_to_8(s->palette[v + 2]));
+        col = s->rgb_to_pixel(c6_to_8(s->palette[v]),
+                              c6_to_8(s->palette[v + 1]),
+                              c6_to_8(s->palette[v + 2]));
         if (col != palette[i]) {
             full_update = 1;
             palette[i] = col;
@@ -1068,7 +379,7 @@ static int update_palette16(MaruVGACommonState *s)
 }
 
 /* return true if the palette was modified */
-static int update_palette256(MaruVGACommonState *s)
+static int update_palette256(VGACommonState *s)
 {
     int full_update, i;
     uint32_t v, col, *palette;
@@ -1082,9 +393,9 @@ static int update_palette256(MaruVGACommonState *s)
                                 s->palette[v + 1],
                                 s->palette[v + 2]);
         } else {
-          col = s->rgb_to_pixel(maru_c6_to_8(s->palette[v]),
-                                maru_c6_to_8(s->palette[v + 1]),
-                                maru_c6_to_8(s->palette[v + 2]));
+          col = s->rgb_to_pixel(c6_to_8(s->palette[v]),
+                                c6_to_8(s->palette[v + 1]),
+                                c6_to_8(s->palette[v + 2]));
         }
         if (col != palette[i]) {
             full_update = 1;
@@ -1095,7 +406,7 @@ static int update_palette256(MaruVGACommonState *s)
     return full_update;
 }
 
-static void vga_get_offsets(MaruVGACommonState *s,
+static void vga_get_offsets(VGACommonState *s,
                             uint32_t *pline_offset,
                             uint32_t *pstart_addr,
                             uint32_t *pline_compare)
@@ -1127,7 +438,7 @@ static void vga_get_offsets(MaruVGACommonState *s,
 }
 
 /* update start_addr and line_offset. Return TRUE if modified */
-static int update_basic_params(MaruVGACommonState *s)
+static int update_basic_params(VGACommonState *s)
 {
     int full_update;
     uint32_t start_addr, line_offset, line_compare;
@@ -1216,7 +527,7 @@ static const uint8_t cursor_glyph[32 * 4] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-static void vga_get_text_resolution(MaruVGACommonState *s, int *pwidth, int *pheight,
+static void vga_get_text_resolution(VGACommonState *s, int *pwidth, int *pheight,
                                     int *pcwidth, int *pcheight)
 {
     int width, cwidth, height, cheight;
@@ -1265,7 +576,7 @@ static rgb_to_pixel_dup_func * const rgb_to_pixel_dup_table[NB_DEPTHS] = {
  * - underline
  * - flashing
  */
-static void maru_vga_draw_text(MaruVGACommonState *s, int full_update)
+static void vga_draw_text(VGACommonState *s, int full_update)
 {
     int cx, cy, cheight, cw, ch, cattr, height, width, ch_attr;
     int cx_min, cx_max, linesize, x_incr, line, line1;
@@ -1430,20 +741,20 @@ static void maru_vga_draw_text(MaruVGACommonState *s, int full_update)
 }
 
 enum {
-    maru_vga_draw_LINE2,
-    maru_vga_draw_LINE2D2,
-    maru_vga_draw_LINE4,
-    maru_vga_draw_LINE4D2,
-    maru_vga_draw_LINE8D2,
-    maru_vga_draw_LINE8,
-    maru_vga_draw_LINE15,
-    maru_vga_draw_LINE16,
-    maru_vga_draw_LINE24,
-    maru_vga_draw_LINE32,
-    maru_vga_draw_LINE_NB,
+    maru_vga_draw_line2,
+    maru_vga_draw_line2D2,
+    maru_vga_draw_line4,
+    maru_vga_draw_line4D2,
+    maru_vga_draw_line8D2,
+    maru_vga_draw_line8,
+    maru_vga_draw_line15,
+    maru_vga_draw_line16,
+    maru_vga_draw_line24,
+    maru_vga_draw_line32,
+    maru_vga_draw_line_NB,
 };
 
-static maru_vga_draw_line_func * const maru_vga_draw_line_table[NB_DEPTHS * maru_vga_draw_LINE_NB] = {
+static maru_vga_draw_line_func * const maru_vga_draw_line_table[NB_DEPTHS * maru_vga_draw_line_NB] = {
     maru_vga_draw_line2_8,
     maru_vga_draw_line2_16,
     maru_vga_draw_line2_16,
@@ -1525,7 +836,7 @@ static maru_vga_draw_line_func * const maru_vga_draw_line_table[NB_DEPTHS * maru
     maru_vga_draw_line32_16bgr,
 };
 
-static int vga_get_bpp(MaruVGACommonState *s)
+static int vga_get_bpp(VGACommonState *s)
 {
     int ret;
 #ifdef CONFIG_BOCHS_VBE
@@ -1539,7 +850,7 @@ static int vga_get_bpp(MaruVGACommonState *s)
     return ret;
 }
 
-static void vga_get_resolution(MaruVGACommonState *s, int *pwidth, int *pheight)
+static void vga_get_resolution(VGACommonState *s, int *pwidth, int *pheight)
 {
     int width, height;
 
@@ -1560,31 +871,9 @@ static void vga_get_resolution(MaruVGACommonState *s, int *pwidth, int *pheight)
     *pheight = height;
 }
 
-void maru_vga_invalidate_scanlines(MaruVGACommonState *s, int y1, int y2)
-{
-    int y;
-    if (y1 >= VGA_MAX_HEIGHT)
-        return;
-    if (y2 >= VGA_MAX_HEIGHT)
-        y2 = VGA_MAX_HEIGHT;
-    for(y = y1; y < y2; y++) {
-        s->invalidated_y_table[y >> 5] |= 1 << (y & 0x1f);
-    }
-}
-
-static void vga_sync_dirty_bitmap(MaruVGACommonState *s)
+static void vga_sync_dirty_bitmap(VGACommonState *s)
 {
     memory_region_sync_dirty_bitmap(&s->vram);
-}
-
-void maru_vga_dirty_log_start(MaruVGACommonState *s)
-{
-    memory_region_set_log(&s->vram, true, DIRTY_MEMORY_VGA);
-}
-
-void maru_vga_dirty_log_stop(MaruVGACommonState *s)
-{
-    memory_region_set_log(&s->vram, false, DIRTY_MEMORY_VGA);
 }
 
 /*
@@ -1603,16 +892,16 @@ extern uint16_t overlay1_top;
 extern uint16_t overlay1_width;
 extern uint16_t overlay1_height;
 
-extern uint8_t* overlay_ptr;	// pointer in qemu space
+extern uint8_t* overlay_ptr;    // pointer in qemu space
 
 /* brightness level :              0,   1,   2,   3,   4,   5,   6,   7,   8,   9 */
 //static const uint8_t brightness_tbl[] = {20, 100, 120, 140, 160, 180, 200, 220, 230, 240};
 static const uint8_t brightness_tbl[] = {20, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
-										130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240};
+                                        130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240};
 extern uint32_t brightness_level;
 extern uint32_t brightness_off;
 #endif
-static void maru_vga_draw_graphic(MaruVGACommonState *s, int full_update)
+static void vga_draw_graphic(VGACommonState *s, int full_update)
 {
     int y1, y, update, linesize, y_start, double_scan, mask, depth;
     int width, height, shift_control, line_offset, bwidth, bits;
@@ -1697,17 +986,17 @@ static void maru_vga_draw_graphic(MaruVGACommonState *s, int full_update)
     if (shift_control == 0) {
         full_update |= update_palette16(s);
         if (s->sr[0x01] & 8) {
-            v = maru_vga_draw_LINE4D2;
+            v = maru_vga_draw_line4D2;
         } else {
-            v = maru_vga_draw_LINE4;
+            v = maru_vga_draw_line4;
         }
         bits = 4;
     } else if (shift_control == 1) {
         full_update |= update_palette16(s);
         if (s->sr[0x01] & 8) {
-            v = maru_vga_draw_LINE2D2;
+            v = maru_vga_draw_line2D2;
         } else {
-            v = maru_vga_draw_LINE2;
+            v = maru_vga_draw_line2;
         }
         bits = 4;
     } else {
@@ -1715,28 +1004,28 @@ static void maru_vga_draw_graphic(MaruVGACommonState *s, int full_update)
         default:
         case 0:
             full_update |= update_palette256(s);
-            v = maru_vga_draw_LINE8D2;
+            v = maru_vga_draw_line8D2;
             bits = 4;
             break;
         case 8:
             full_update |= update_palette256(s);
-            v = maru_vga_draw_LINE8;
+            v = maru_vga_draw_line8;
             bits = 8;
             break;
         case 15:
-            v = maru_vga_draw_LINE15;
+            v = maru_vga_draw_line15;
             bits = 16;
             break;
         case 16:
-            v = maru_vga_draw_LINE16;
+            v = maru_vga_draw_line16;
             bits = 16;
             break;
         case 24:
-            v = maru_vga_draw_LINE24;
+            v = maru_vga_draw_line24;
             bits = 24;
             break;
         case 32:
-            v = maru_vga_draw_LINE32;
+            v = maru_vga_draw_line32;
             bits = 32;
             break;
         }
@@ -1800,13 +1089,13 @@ static void maru_vga_draw_graphic(MaruVGACommonState *s, int full_update)
             }
 
 #if defined (TARGET_I386)
-	        int i;
-	        uint8_t *fb_sub;
-	        uint8_t *over_sub;
-    	    uint8_t *dst_sub;
-    	    uint8_t alpha, c_alpha;
-    	    uint32_t *dst;
-    	    uint16_t overlay_bottom;
+            int i;
+            uint8_t *fb_sub;
+            uint8_t *over_sub;
+            uint8_t *dst_sub;
+            uint8_t alpha, c_alpha;
+            uint32_t *dst;
+            uint16_t overlay_bottom;
 
             if (overlay0_power) {
                 overlay_bottom = overlay0_top + overlay0_height;
@@ -1851,22 +1140,22 @@ static void maru_vga_draw_graphic(MaruVGACommonState *s, int full_update)
             }
 
             if( brightness_off ) {
-            	alpha = 0x00;
+                alpha = 0x00;
             }else if (brightness_level < 24) {
-            	alpha = brightness_tbl[brightness_level];
+                alpha = brightness_tbl[brightness_level];
             }
 
             if ( brightness_off || brightness_level < 24 ) {
-            	dst_sub = s->ds->surface->data + addr;
-            	dst = (uint32_t*)(s->ds->surface->data + addr);
+                dst_sub = s->ds->surface->data + addr;
+                dst = (uint32_t*)(s->ds->surface->data + addr);
 
-            	for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
-            		*dst = ((alpha * dst_sub[0]) >> 8) |
-            				((alpha * dst_sub[1]) & 0xFF00) |
-            				(((alpha * dst_sub[2]) & 0xFF00) << 8);
-            	}
+                for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
+                    *dst = ((alpha * dst_sub[0]) >> 8) |
+                            ((alpha * dst_sub[1]) & 0xFF00) |
+                            (((alpha * dst_sub[2]) & 0xFF00) << 8);
+                }
             }
-#endif	/* TARGET_I386 */
+#endif  /* TARGET_I386 */
 
         } else {
             if (y_start >= 0) {
@@ -1905,7 +1194,7 @@ static void maru_vga_draw_graphic(MaruVGACommonState *s, int full_update)
     memset(s->invalidated_y_table, 0, ((height + 31) >> 5) * 4);
 }
 
-static void maru_vga_draw_blank(MaruVGACommonState *s, int full_update)
+static void vga_draw_blank(VGACommonState *s, int full_update)
 {
     int i, w, val;
     uint8_t *d;
@@ -1937,7 +1226,7 @@ static void maru_vga_draw_blank(MaruVGACommonState *s, int full_update)
 
 static void vga_update_display(void *opaque)
 {
-    MaruVGACommonState *s = opaque;
+    VGACommonState *s = opaque;
     int full_update, graphic_mode;
 
     qemu_flush_coalesced_mmio_buffer();
@@ -1957,14 +1246,14 @@ static void vga_update_display(void *opaque)
         }
         switch(graphic_mode) {
         case GMODE_TEXT:
-            maru_vga_draw_text(s, full_update);
+            vga_draw_text(s, full_update);
             break;
         case GMODE_GRAPH:
-            maru_vga_draw_graphic(s, full_update);
+            vga_draw_graphic(s, full_update);
             break;
         case GMODE_BLANK:
         default:
-            maru_vga_draw_blank(s, full_update);
+            vga_draw_blank(s, full_update);
             break;
         }
     }
@@ -1973,88 +1262,22 @@ static void vga_update_display(void *opaque)
 /* force a full display refresh */
 static void vga_invalidate_display(void *opaque)
 {
-    MaruVGACommonState *s = opaque;
+    VGACommonState *s = opaque;
 
     s->last_width = -1;
     s->last_height = -1;
 }
 
-void maru_vga_common_reset(MaruVGACommonState *s)
-{
-    s->sr_index = 0;
-    memset(s->sr, '\0', sizeof(s->sr));
-    s->gr_index = 0;
-    memset(s->gr, '\0', sizeof(s->gr));
-    s->ar_index = 0;
-    memset(s->ar, '\0', sizeof(s->ar));
-    s->ar_flip_flop = 0;
-    s->cr_index = 0;
-    memset(s->cr, '\0', sizeof(s->cr));
-    s->msr = 0;
-    s->fcr = 0;
-    s->st00 = 0;
-    s->st01 = 0;
-    s->dac_state = 0;
-    s->dac_sub_index = 0;
-    s->dac_read_index = 0;
-    s->dac_write_index = 0;
-    memset(s->dac_cache, '\0', sizeof(s->dac_cache));
-    s->dac_8bit = 0;
-    memset(s->palette, '\0', sizeof(s->palette));
-    s->bank_offset = 0;
-#ifdef CONFIG_BOCHS_VBE
-    s->vbe_index = 0;
-    memset(s->vbe_regs, '\0', sizeof(s->vbe_regs));
-    s->vbe_regs[VBE_DISPI_INDEX_ID] = VBE_DISPI_ID5;
-    s->vbe_start_addr = 0;
-    s->vbe_line_offset = 0;
-    s->vbe_bank_mask = (s->vram_size >> 16) - 1;
-#endif
-    memset(s->font_offsets, '\0', sizeof(s->font_offsets));
-    s->graphic_mode = -1; /* force full update */
-    s->shift_control = 0;
-    s->double_scan = 0;
-    s->line_offset = 0;
-    s->line_compare = 0;
-    s->start_addr = 0;
-    s->plane_updated = 0;
-    s->last_cw = 0;
-    s->last_ch = 0;
-    s->last_width = 0;
-    s->last_height = 0;
-    s->last_scr_width = 0;
-    s->last_scr_height = 0;
-    s->cursor_start = 0;
-    s->cursor_end = 0;
-    s->cursor_offset = 0;
-    memset(s->invalidated_y_table, '\0', sizeof(s->invalidated_y_table));
-    memset(s->last_palette, '\0', sizeof(s->last_palette));
-    memset(s->last_ch_attr, '\0', sizeof(s->last_ch_attr));
-    switch (vga_retrace_method) {
-    case VGA_RETRACE_DUMB:
-        break;
-    case VGA_RETRACE_PRECISE:
-        memset(&s->retrace_info, 0, sizeof (s->retrace_info));
-        break;
-    }
-    vga_update_memory_access(s);
-}
 
-static void vga_reset(void *opaque)
-{
-    MaruVGACommonState *s =  opaque;
-    maru_vga_common_reset(s);
-}
-
-#define TEXTMODE_X(x)	((x) % width)
-#define TEXTMODE_Y(x)	((x) / width)
-#define VMEM2CHTYPE(v)	((v & 0xff0007ff) | \
+#define TEXTMODE_X(x)   ((x) % width)
+#define TEXTMODE_Y(x)   ((x) / width)
+#define VMEM2CHTYPE(v)  ((v & 0xff0007ff) | \
         ((v & 0x00000800) << 10) | ((v & 0x00007000) >> 1))
 /* relay text rendering to the display driver
  * instead of doing a full vga_update_display() */
 static void vga_update_text(void *opaque, console_ch_t *chardata)
 {
-    MaruVGACommonState *s =  opaque;
+    VGACommonState *s =  opaque;
     int graphic_mode, i, cursor_offset, cursor_visible;
     int cw, cheight, width, height, size, c_min, c_max;
     uint32_t *src;
@@ -2214,84 +1437,7 @@ static void vga_update_text(void *opaque, console_ch_t *chardata)
     dpy_update(s->ds, 0, 0, s->last_width, height);
 }
 
-static uint64_t maru_vga_mem_read(void *opaque, target_phys_addr_t addr,
-                             unsigned size)
-{
-    MaruVGACommonState *s = opaque;
-
-    return maru_vga_mem_readb(s, addr);
-}
-
-static void  maru_vga_mem_write(void *opaque, target_phys_addr_t addr,
-                          uint64_t data, unsigned size)
-{
-    MaruVGACommonState *s = opaque;
-
-    return maru_vga_mem_writeb(s, addr, data);
-}
-
-const MemoryRegionOps maru_vga_mem_ops = {
-    .read = maru_vga_mem_read,
-    .write = maru_vga_mem_write,
-    .endianness = DEVICE_LITTLE_ENDIAN,
-    .impl = {
-        .min_access_size = 1,
-        .max_access_size = 1,
-    },
-};
-
-static int vga_common_post_load(void *opaque, int version_id)
-{
-    MaruVGACommonState *s = opaque;
-
-    /* force refresh */
-    s->graphic_mode = -1;
-    return 0;
-}
-
-const VMStateDescription maru_vmstate_vga_common = {
-    .name = "vga",
-    .version_id = 2,
-    .minimum_version_id = 2,
-    .minimum_version_id_old = 2,
-    .post_load = vga_common_post_load,
-    .fields      = (VMStateField []) {
-        VMSTATE_UINT32(latch, MaruVGACommonState),
-        VMSTATE_UINT8(sr_index, MaruVGACommonState),
-        VMSTATE_PARTIAL_BUFFER(sr, MaruVGACommonState, 8),
-        VMSTATE_UINT8(gr_index, MaruVGACommonState),
-        VMSTATE_PARTIAL_BUFFER(gr, MaruVGACommonState, 16),
-        VMSTATE_UINT8(ar_index, MaruVGACommonState),
-        VMSTATE_BUFFER(ar, MaruVGACommonState),
-        VMSTATE_INT32(ar_flip_flop, MaruVGACommonState),
-        VMSTATE_UINT8(cr_index, MaruVGACommonState),
-        VMSTATE_BUFFER(cr, MaruVGACommonState),
-        VMSTATE_UINT8(msr, MaruVGACommonState),
-        VMSTATE_UINT8(fcr, MaruVGACommonState),
-        VMSTATE_UINT8(st00, MaruVGACommonState),
-        VMSTATE_UINT8(st01, MaruVGACommonState),
-
-        VMSTATE_UINT8(dac_state, MaruVGACommonState),
-        VMSTATE_UINT8(dac_sub_index, MaruVGACommonState),
-        VMSTATE_UINT8(dac_read_index, MaruVGACommonState),
-        VMSTATE_UINT8(dac_write_index, MaruVGACommonState),
-        VMSTATE_BUFFER(dac_cache, MaruVGACommonState),
-        VMSTATE_BUFFER(palette, MaruVGACommonState),
-
-        VMSTATE_INT32(bank_offset, MaruVGACommonState),
-        VMSTATE_UINT8_EQUAL(is_vbe_vmstate, MaruVGACommonState),
-#ifdef CONFIG_BOCHS_VBE
-        VMSTATE_UINT16(vbe_index, MaruVGACommonState),
-        VMSTATE_UINT16_ARRAY(vbe_regs, MaruVGACommonState, VBE_DISPI_INDEX_NB),
-        VMSTATE_UINT32(vbe_start_addr, MaruVGACommonState),
-        VMSTATE_UINT32(vbe_line_offset, MaruVGACommonState),
-        VMSTATE_UINT32(vbe_bank_mask, MaruVGACommonState),
-#endif
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-void maru_vga_common_init(MaruVGACommonState *s, int vga_ram_size)
+void maru_vga_common_init(VGACommonState *s, int vga_ram_size)
 {
     int i, j, v, b;
 
@@ -2323,7 +1469,7 @@ void maru_vga_common_init(MaruVGACommonState *s, int vga_ram_size)
 #else
     s->is_vbe_vmstate = 0;
 #endif
-    memory_region_init_ram(&s->vram, NULL, "vga.vram", vga_ram_size);
+    memory_region_init_ram(&s->vram, NULL, "maru_vga.vram", vga_ram_size);
     s->vram_ptr = memory_region_get_ram_ptr(&s->vram);
     s->vram_size = vga_ram_size;
     s->get_bpp = vga_get_bpp;
@@ -2344,110 +1490,13 @@ void maru_vga_common_init(MaruVGACommonState *s, int vga_ram_size)
         s->update_retrace_info = vga_precise_update_retrace_info;
         break;
     }
-    maru_vga_dirty_log_start(s);
+    vga_dirty_log_start(s);
 }
 
-static const MemoryRegionPortio vga_portio_list[] = {
-    { 0x04,  2, 1, .read = maru_vga_ioport_read, .write = maru_vga_ioport_write }, /* 3b4 */
-    { 0x0a,  1, 1, .read = maru_vga_ioport_read, .write = maru_vga_ioport_write }, /* 3ba */
-    { 0x10, 16, 1, .read = maru_vga_ioport_read, .write = maru_vga_ioport_write }, /* 3c0 */
-    { 0x24,  2, 1, .read = maru_vga_ioport_read, .write = maru_vga_ioport_write }, /* 3d4 */
-    { 0x2a,  1, 1, .read = maru_vga_ioport_read, .write = maru_vga_ioport_write }, /* 3da */
-    PORTIO_END_OF_LIST(),
-};
-
-#ifdef CONFIG_BOCHS_VBE
-static const MemoryRegionPortio vbe_portio_list[] = {
-    { 0, 1, 2, .read = vbe_ioport_read_index, .write = vbe_ioport_write_index },
-# ifdef TARGET_I386
-    { 1, 1, 2, .read = vbe_ioport_read_data, .write = vbe_ioport_write_data },
-# else
-    { 2, 1, 2, .read = vbe_ioport_read_data, .write = vbe_ioport_write_data },
-# endif
-    PORTIO_END_OF_LIST(),
-};
-#endif /* CONFIG_BOCHS_VBE */
-
-/* Used by both ISA and PCI */
-MemoryRegion *maru_vga_init_io(MaruVGACommonState *s,
-                          const MemoryRegionPortio **vga_ports,
-                          const MemoryRegionPortio **vbe_ports)
-{
-    MemoryRegion *vga_mem;
-
-    *vga_ports = vga_portio_list;
-    *vbe_ports = NULL;
-#ifdef CONFIG_BOCHS_VBE
-    *vbe_ports = vbe_portio_list;
-#endif
-
-    vga_mem = g_malloc(sizeof(*vga_mem));
-    memory_region_init_io(vga_mem, &maru_vga_mem_ops, s,
-                          "vga-lowmem", 0x20000);
-
-    return vga_mem;
-}
-
-void maru_vga_init(MaruVGACommonState *s, MemoryRegion *address_space,
-              MemoryRegion *address_space_io, bool init_vga_ports)
-{
-    MemoryRegion *vga_io_memory;
-    const MemoryRegionPortio *vga_ports, *vbe_ports;
-    PortioList *vga_port_list = g_new(PortioList, 1);
-    PortioList *vbe_port_list = g_new(PortioList, 1);
-
-    qemu_register_reset(vga_reset, s);
-
-    s->bank_offset = 0;
-
-    s->legacy_address_space = address_space;
-
-    vga_io_memory = maru_vga_init_io(s, &vga_ports, &vbe_ports);
-    memory_region_add_subregion_overlap(address_space,
-                                        isa_mem_base + 0x000a0000,
-                                        vga_io_memory,
-                                        1);
-    memory_region_set_coalescing(vga_io_memory);
-    if (init_vga_ports) {
-        portio_list_init(vga_port_list, vga_ports, s, "vga");
-        portio_list_add(vga_port_list, address_space_io, 0x3b0);
-    }
-    if (vbe_ports) {
-        portio_list_init(vbe_port_list, vbe_ports, s, "vbe");
-        portio_list_add(vbe_port_list, address_space_io, 0x1ce);
-    }
-}
-
-void maru_vga_init_vbe(MaruVGACommonState *s, MemoryRegion *system_memory)
-{
-#ifdef CONFIG_BOCHS_VBE
-    /* XXX: use optimized standard vga accesses */
-    memory_region_add_subregion(system_memory,
-                                VBE_DISPI_LFB_PHYSICAL_ADDRESS,
-                                &s->vram);
-    s->vbe_mapped = 1;
-#endif 
-}
 /********************************************************/
 /* vga screen dump */
 
-static void vga_save_dpy_update(DisplayState *ds,
-                                int x, int y, int w, int h)
-{
-    if (screen_dump_filename) {
-        maru_ppm_save(screen_dump_filename, ds->surface);
-    }
-}
-
-static void vga_save_dpy_resize(DisplayState *s)
-{
-}
-
-static void vga_save_dpy_refresh(DisplayState *s)
-{
-}
-
-int maru_ppm_save(const char *filename, struct DisplaySurface *ds)
+static int maru_ppm_save(const char *filename, struct DisplaySurface *ds)
 {
     FILE *f;
     uint8_t *d, *d1;
@@ -2492,6 +1541,22 @@ int maru_ppm_save(const char *filename, struct DisplaySurface *ds)
     return 0;
 }
 
+static void vga_save_dpy_update(DisplayState *ds,
+                                int x, int y, int w, int h)
+{
+    if (screen_dump_filename) {
+        maru_ppm_save(screen_dump_filename, ds->surface);
+    }
+}
+
+static void vga_save_dpy_resize(DisplayState *s)
+{
+}
+
+static void vga_save_dpy_refresh(DisplayState *s)
+{
+}
+
 static DisplayChangeListener* vga_screen_dump_init(DisplayState *ds)
 {
     DisplayChangeListener *dcl;
@@ -2508,7 +1573,7 @@ static DisplayChangeListener* vga_screen_dump_init(DisplayState *ds)
    available */
 static void vga_screen_dump(void *opaque, const char *filename)
 {
-    MaruVGACommonState *s = opaque;
+    VGACommonState *s = opaque;
 
     if (!screen_dump_dcl)
         screen_dump_dcl = vga_screen_dump_init(s->ds);

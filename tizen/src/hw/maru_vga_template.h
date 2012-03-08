@@ -1,5 +1,5 @@
 /*
- * Maru vga device
+ *  vga device
  * Based on qemu/hw/vga_template.h
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
@@ -160,7 +160,7 @@ static void glue(maru_vga_draw_glyph9_, DEPTH)(uint8_t *d, int linesize,
 /*
  * 4 color mode
  */
-static void glue(maru_vga_draw_line2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line2_, DEPTH)(VGACommonState *s1, uint8_t *d,
                                          const uint8_t *s, int width)
 {
     uint32_t plane_mask, *palette, data, v;
@@ -202,7 +202,7 @@ static void glue(maru_vga_draw_line2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d
 /*
  * 4 color mode, dup2 horizontal
  */
-static void glue(maru_vga_draw_line2d2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line2d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
                                            const uint8_t *s, int width)
 {
     uint32_t plane_mask, *palette, data, v;
@@ -235,7 +235,7 @@ static void glue(maru_vga_draw_line2d2_, DEPTH)(MaruVGACommonState *s1, uint8_t 
 /*
  * 16 color mode
  */
-static void glue(maru_vga_draw_line4_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line4_, DEPTH)(VGACommonState *s1, uint8_t *d,
                                          const uint8_t *s, int width)
 {
     uint32_t plane_mask, data, v, *palette;
@@ -267,7 +267,7 @@ static void glue(maru_vga_draw_line4_, DEPTH)(MaruVGACommonState *s1, uint8_t *d
 /*
  * 16 color mode, dup2 horizontal
  */
-static void glue(maru_vga_draw_line4d2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line4d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
                                            const uint8_t *s, int width)
 {
     uint32_t plane_mask, data, v, *palette;
@@ -301,7 +301,7 @@ static void glue(maru_vga_draw_line4d2_, DEPTH)(MaruVGACommonState *s1, uint8_t 
  *
  * XXX: add plane_mask support (never used in standard VGA modes)
  */
-static void glue(maru_vga_draw_line8d2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line8d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
                                            const uint8_t *s, int width)
 {
     uint32_t *palette;
@@ -324,7 +324,7 @@ static void glue(maru_vga_draw_line8d2_, DEPTH)(MaruVGACommonState *s1, uint8_t 
  *
  * XXX: add plane_mask support (never used in standard VGA modes)
  */
-static void glue(maru_vga_draw_line8_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line8_, DEPTH)(VGACommonState *s1, uint8_t *d,
                                          const uint8_t *s, int width)
 {
     uint32_t *palette;
@@ -420,7 +420,7 @@ void glue(maru_vga_draw_cursor_line_, DEPTH)(uint8_t *d1,
 /*
  * 15 bit color
  */
-static void glue(maru_vga_draw_line15_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line15_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
 #if DEPTH == 15 && defined(HOST_WORDS_BIGENDIAN) == defined(TARGET_WORDS_BIGENDIAN)
@@ -445,7 +445,7 @@ static void glue(maru_vga_draw_line15_, PIXEL_NAME)(MaruVGACommonState *s1, uint
 /*
  * 16 bit color
  */
-static void glue(maru_vga_draw_line16_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line16_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
 #if DEPTH == 16 && defined(HOST_WORDS_BIGENDIAN) == defined(TARGET_WORDS_BIGENDIAN)
@@ -470,7 +470,7 @@ static void glue(maru_vga_draw_line16_, PIXEL_NAME)(MaruVGACommonState *s1, uint
 /*
  * 24 bit color
  */
-static void glue(maru_vga_draw_line24_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line24_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
     int w;
@@ -496,7 +496,7 @@ static void glue(maru_vga_draw_line24_, PIXEL_NAME)(MaruVGACommonState *s1, uint
 /*
  * 32 bit color
  */
-static void glue(maru_vga_draw_line32_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line32_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
 #if DEPTH == 32 && defined(HOST_WORDS_BIGENDIAN) == defined(TARGET_WORDS_BIGENDIAN) && !defined(BGR_FORMAT)
