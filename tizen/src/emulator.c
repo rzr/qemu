@@ -83,12 +83,15 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
 			*skin_argv = &(argv[i + 1]);
 			break;
 		}
+	}
+	for(j = i; j < argc; ++j)
+	{
 		if(strncmp(argv[j], "--qemu-args", 11) == 0)
 		{
 			*skin_argc = j - i - 1;
 
-			*qemu_argc = argc - j - i; 
-			*qemu_argv = &(argv[j + 1]);
+			*qemu_argc = argc - j - i + 1;
+			*qemu_argv = &(argv[j]);
 			break;
 		}
 	}
