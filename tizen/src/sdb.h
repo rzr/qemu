@@ -10,8 +10,8 @@
 ** GNU General Public License for more details.
 */
 
-#include <stddef.h>
-#include <stdint.h>
+#include "maru_common.h"
+
 #include <errno.h>
 
 #define SDB_HOST_PORT 26099

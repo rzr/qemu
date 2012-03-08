@@ -3,13 +3,16 @@
 
 
 $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
-QEMU_CFLAGS += -I$(SRC_PATH)/hw
+QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
 
 # maru loader
 obj-y += emulator.o
 
 # sdb
 obj-y += sdb.o
+
+# debugch
+#obj-y += debug_ch.c
 
 # maru hw
 #hw-obj-y += maru_board.o

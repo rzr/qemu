@@ -1,11 +1,11 @@
-/* 
+/*
  * Emulator
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: 
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
+ * Hyunjun Son <hj79.son@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
@@ -29,43 +29,21 @@
  *
  */
 
+/**
+ * @file emulator.h
+ * @brief - header of file these are config struecture and defines in emulator
+ */
 
-#include "emulator.h"
-#include "skin/skin_server.h"
+#ifndef __MARU_COMMON_H__
+#define __MARU_COMMON_H__
 
-MULTI_DEBUG_CHANNEL(tizen, main);
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+int get_emulator_condition(void);
+void set_emulator_condition(int state);
+void exit_emulator(void);
 
 
-int _emulator_condition = 0; //TODO:
-
-int get_emulator_condition(void)
-{
-	return _emulator_condition;
-}
-
-void set_emulator_condition(int state)
-{
-	_emulator_condition = state;
-}
-
-void exit_emulator(void)
-{
-
-}
-
-static void construct_main_window(void)
-{
-    start_skin_server(11111, 0, 0);
-    if (start_skin_client() == false) {
-        //TODO:
-    }
-}
-
-int main(int argc, char** argv)
-{
-	construct_main_window();
-	qemu_main(argc, argv, NULL);
-
-	return 0;
-}
-
+#endif

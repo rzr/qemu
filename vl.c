@@ -93,6 +93,9 @@
 #include <windows.h>
 #endif
 
+#ifdef CONFIG_MARU
+#endif
+
 #ifdef CONFIG_SDL
 #if defined(__APPLE__) || defined(main)
 #include <SDL.h>
@@ -166,9 +169,9 @@ int main(int argc, char **argv)
 #include "arch_init.h"
 
 #include "ui/qemu-spice.h"
-#include "sdb.h"
 
 #ifdef CONFIG_MARU
+#include "tizen/src/sdb.h"
 #include "tizen/src/skin/maruskin_sdl.h"
 #endif
 
