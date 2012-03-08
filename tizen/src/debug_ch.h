@@ -33,7 +33,7 @@
 
 #include <sys/types.h>
 
-#define NO_DEBUG
+// #define NO_DEBUG
 
 #ifdef __cplusplus
 extern "C" {

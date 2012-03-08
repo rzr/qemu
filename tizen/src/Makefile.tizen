@@ -12,7 +12,7 @@ obj-y += emulator.o
 obj-y += sdb.o
 
 # debugch
-#obj-y += debug_ch.c
+obj-y += debug_ch.o
 
 # maru hw
 #hw-obj-y += maru_board.o
