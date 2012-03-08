@@ -3406,13 +3406,12 @@ int main(int argc, char **argv, char **envp)
 #endif
 #if defined(CONFIG_SDL)
     case DT_SDL:
-        if (use_qemu_display) {
-            /* use original qemu sdl */
-            sdl_display_init(ds, full_screen, no_frame);
-        } else {
+#if defined(CONFIG_MARU)
             /* use tizen qemu sdl */
             maruskin_display_init(ds);
-        }
+#else
+            sdl_display_init(ds, full_screen, no_frame);
+#endif
         break;
 #elif defined(CONFIG_COCOA)
     case DT_SDL:
