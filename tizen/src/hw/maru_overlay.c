@@ -161,7 +161,7 @@ static int overlay_initfn(PCIDevice *dev)
     memory_region_init_ram(&s->mem_addr, NULL, "overlay.ram", OVERLAY_MEM_SIZE);
     overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
-    memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "overlay-mmio", OVERLAY_MEM_SIZE);
+    memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "overlay-mmio", OVERLAY_REG_SIZE);
 
     /* setup memory space */
     /* memory #0 device memory (overlay surface) */
