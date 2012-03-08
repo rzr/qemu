@@ -28,32 +28,35 @@
  */
 
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include "maruskin_client.h"
 
 
-#define JAR_SKINFILE_PATH ~/tizen/Emulator/bin/EmulatorSkin.jar
-#define JAVA_EXEFILE_PATH java
-#define JAVA_EXEOPTION -jar
+#define JAR_SKINFILE_PATH "~/tizen/Emulator/bin/EmulatorSkin.jar"
+#define JAVA_EXEFILE_PATH "java"
+#define JAVA_EXEOPTION "-jar"
 
 static void* run_skin_client(void* args)
 {
-    pid_t pid;
     char cmd[256];
 
     sprintf(cmd, "%s %s %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH);
     system(cmd);
+
+    return NULL;
 }
 
-bool start_skin_client(void)
+int start_skin_client(void)
 {
     pthread_t thread_id = -1;
 
     if (0 != pthread_create(&thread_id, NULL, run_skin_client, NULL)) {
         fprintf(stderr, "fail to create skin_client pthread.\n");
-        return false;
+        return 0;
     }
 
-    return true;
+    return 1;
 }
 
