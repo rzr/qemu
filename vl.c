@@ -115,6 +115,7 @@ int main(int argc, char **argv)
 #ifdef main
 #undef main
 #endif
+int qemu_main(int argc, char **argv, char **envp);
 #define main qemu_main
 #endif
 
