@@ -8,6 +8,10 @@ QEMU_CFLAGS += -I$(SRC_PATH)/hw
 # maru hw
 #hw-obj-y += maru_board.o
 obj-i386-y += maru_overlay.o
+obj-i386-y += maru_codec.o
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
+QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
+LIBS += -lavformat -lavcodec -lavutil -lm
 
 # sdb
 obj-i386-y += sdb.o

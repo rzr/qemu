@@ -36,6 +36,7 @@
 #include "pci.h"
 #include "pci_ids.h"
 #include "tizen/src/debug_ch.h"
+#include "maru_pci_ids.h"
 
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
@@ -102,50 +103,52 @@ enum {
 /*
  *  Codec Device APIs
  */
-int pci_codec_init (PCIBus *bus);
+int codec_init (PCIBus *bus);
+uint64_t codec_read (void *opaque, target_phys_addr_t addr, unsigned size);
+void codec_write (void *opaque, target_phys_addr_t addr, uint64_t value, unsigned size);
 static int codec_operate(uint32_t value, SVCodecState *opaque);
 
 /*
  *  FFMPEG APIs
  */
 
-void qemu_parser_init (void);
+static void qemu_parser_init (void);
 
-void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src);
+static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src);
 
-void qemu_av_register_all (void);
+static void qemu_av_register_all (void);
 
-int qemu_avcodec_open (SVCodecState *s);
+static int qemu_avcodec_open (SVCodecState *s);
 
-int qemu_avcodec_close (SVCodecState *s);
+static int qemu_avcodec_close (SVCodecState *s);
 
-void qemu_avcodec_alloc_context (void);
+static void qemu_avcodec_alloc_context (void);
 
-void qemu_avcodec_alloc_frame (void);
+static void qemu_avcodec_alloc_frame (void);
 
-void qemu_av_free_context (void);
+static void qemu_av_free_context (void);
 
-void qemu_av_free_picture (void);
+static void qemu_av_free_picture (void);
 
-void qemu_av_free_palctrl (void);
+static void qemu_av_free_palctrl (void);
 
-void qemu_av_free_extradata (void);
+static void qemu_av_free_extradata (void);
 
-void qemu_avcodec_flush_buffers (void);
+static void qemu_avcodec_flush_buffers (void);
 
-int qemu_avcodec_decode_video (SVCodecState *s);
+static int qemu_avcodec_decode_video (SVCodecState *s);
 
-int qemu_avcodec_encode_video (SVCodecState *s);
+static int qemu_avcodec_encode_video (SVCodecState *s);
 
-void qemu_av_picture_copy (SVCodecState *s);
+static void qemu_av_picture_copy (SVCodecState *s);
 
-void qemu_av_parser_init (SVCodecState *s);
+static void qemu_av_parser_init (SVCodecState *s);
 
-int qemu_av_parser_parse (SVCodecState *s);
+static int qemu_av_parser_parse (SVCodecState *s);
 
-void qemu_av_parser_close (void);
+static void qemu_av_parser_close (void);
 
-int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture);
+static int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture);
 
-void qemu_avcodec_release_buffer (AVCodecContext *context, AVFrame *picture);
+static void qemu_avcodec_release_buffer (AVCodecContext *context, AVFrame *picture);
 
