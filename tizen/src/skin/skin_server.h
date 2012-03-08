@@ -34,6 +34,6 @@
 #include <stdint.h>
 
 pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv );
-void shutdown_skin_server();
+void shutdown_skin_server(void);
 
 #endif /* SKIN_SERVER_H_ */

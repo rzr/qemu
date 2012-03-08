@@ -129,7 +129,7 @@ void change_lcd_state( short scale, short direction ) {
     //TODO send request to emuld
 }
 
-void open_shell() {
+void open_shell(void) {
     //TODO
 }
 
