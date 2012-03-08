@@ -1,7 +1,7 @@
 /*
  * socket server for emulator skin
  *
- * Copyright (C) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * Hyunjun Son <hj79.son@samsung.com>
