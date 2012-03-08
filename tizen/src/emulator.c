@@ -30,7 +30,9 @@
  */
 
 
+#include "maru_common.h"
 #include "emulator.h"
+#include "sdb.h"
 #include "skin/skin_server.h"
 
 MULTI_DEBUG_CHANNEL(tizen, main);
@@ -63,8 +65,11 @@ static void construct_main_window(void)
     }
 }
 
+int qemu_main(int argc, char **argv, char **envp);
+
 int main(int argc, char** argv)
 {
+	tizen_base_port = get_sdb_base_port();
 	construct_main_window();
 	qemu_main(argc, argv, NULL);
 
