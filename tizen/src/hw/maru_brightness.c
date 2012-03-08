@@ -1,7 +1,7 @@
 /* 
- * Qemu brightness emulator
+ * Maru brightenss device for VGA
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: 
  * DoHyung Hong <don.hong@samsung.com>
