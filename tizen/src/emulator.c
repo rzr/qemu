@@ -113,21 +113,22 @@ int main(int argc, char* argv[])
 
 	parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
 
-/*
 	int i;
 
+/*
 	printf("%d\n", skin_argc);
 	for(i = 0; i < skin_argc; ++i)
 	{
 		printf("%s\n", skin_argv[i]);
 	}
+*/
 
 	printf("%d\n", qemu_argc);
 	for(i = 0; i < qemu_argc; ++i)
 	{
-		printf("%s\n", qemu_argv[i]);
+		printf("%s ", qemu_argv[i]);
 	}
-*/
+	printf("\n");
 
 	construct_main_window(skin_argc, skin_argv);
 	qemu_main(qemu_argc, qemu_argv, NULL);
