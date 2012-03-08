@@ -1,7 +1,7 @@
 /*
  * socket server for emulator skin
  *
- * Copyright (C) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * Hyunjun Son <hj79.son@samsung.com>
@@ -29,6 +29,8 @@
 
 #ifndef SKIN_SERVER_H_
 #define SKIN_SERVER_H_
+
+#include <pthread.h>
 
 pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv );
 void shutdown_skin_server();
