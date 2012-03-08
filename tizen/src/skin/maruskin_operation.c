@@ -72,13 +72,13 @@ void start_display( int handle_id, short scale, short direction ) {
 void do_mouse_event( int event_type, int x, int y, int z ) {
     INFO( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
-    // qemu want to get '1' state in both press and drag.
-    int type = ( MOUSE_DRAG == event_type ) ? MOUSE_DOWN : event_type;
 
-    if ( MOUSE_UP == type || MOUSE_DOWN == type ) {
-        kbd_mouse_event(x, y, z, type);
+    if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
+        kbd_mouse_event(x, y, z, 1);
+    } else if (MOUSE_UP == event_type) {
+        kbd_mouse_event(x, y, z, 0);
     } else {
-        INFO( "undefined mouse event type:%d\n", type );
+        INFO( "undefined mouse event type:%d\n", event_type );
     }
 
 }
