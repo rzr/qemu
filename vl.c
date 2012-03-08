@@ -1566,6 +1566,10 @@ static void select_vgahw (const char *p)
         vga_interface_type = VGA_XENFB;
     } else if (strstart(p, "qxl", &opts)) {
         vga_interface_type = VGA_QXL;
+#ifdef CONFIG_MARU
+    } else if (strstart(p, "maru", &opts)) {
+        vga_interface_type = VGA_MARU;
+#endif
     } else if (!strstart(p, "none", &opts)) {
     invalid_vga:
         fprintf(stderr, "Unknown vga type: %s\n", p);
