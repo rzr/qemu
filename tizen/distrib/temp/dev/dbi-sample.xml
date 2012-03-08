@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emulatorUI xmlns="http://www.tizen.org/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+  <modeSections>
+    <modeSection id="0" name="Portrait">
+      <lcd id="0">
+        <region height="0" left="0" top="0" width="0"/>
+      </lcd>
+      <imageList>
+        <mainImage>mainImage</mainImage>
+        <keyPressedImage>keyPressedImage</keyPressedImage>
+      </imageList>
+      <keyMapList>
+        <keyMap>
+          <region height="0" left="0" top="0" width="0"/>
+          <eventInfo status="KEY_PRESSED">
+            <eventID>eventID</eventID>
+            <eventValue>
+              <keyCode>0</keyCode>
+              <keyName>keyName</keyName>
+            </eventValue>
+          </eventInfo>
+          <tooltip>tooltip</tooltip>
+        </keyMap>
+      </keyMapList>
+    </modeSection>
+  </modeSections>
+  <colors>
+    <hoverColor B="0" G="0" R="0"/>
+  </colors>
+</emulatorUI>
