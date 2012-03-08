@@ -96,7 +96,7 @@ static PCIDeviceInfo vga_info = {
     .class_id     = PCI_CLASS_DISPLAY_VGA,
 };
 
-#else // ONFIG_MARU
+#else // CONFIG_MARU
 
 static const VMStateDescription vmstate_vga_pci = {
     .name = "vga",
