@@ -27,8 +27,8 @@
  *
  */
 
-#ifndef SKIN_OPERATION_H_
-#define SKIN_OPERATION_H_
+#ifndef MARUSKIN_OPERATION_H_
+#define MARUSKIN_OPERATION_H_
 
 void start_display( int handle_id, short scale, short direction );
 
@@ -44,4 +44,4 @@ void open_shell(void);
 
 void request_close( void );
 
-#endif /* SKIN_OPERATION_H_ */
+#endif /* MARUSKIN_OPERATION_H_ */

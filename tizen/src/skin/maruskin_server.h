@@ -27,8 +27,8 @@
  *
  */
 
-#ifndef SKIN_SERVER_H_
-#define SKIN_SERVER_H_
+#ifndef MARUSKIN_SERVER_H_
+#define MARUSKIN_SERVER_H_
 
 #include <pthread.h>
 #include <stdint.h>
@@ -36,4 +36,4 @@
 pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv );
 void shutdown_skin_server(void);
 
-#endif /* SKIN_SERVER_H_ */
+#endif /* MARUSKIN_SERVER_H_ */

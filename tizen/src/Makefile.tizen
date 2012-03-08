@@ -28,7 +28,7 @@ obj-i386-y += maru_vga.o
 obj-i386-y += maru_brightness.o
 
 # maru skin
-obj-i386-y += maruskin_sdl.o maruskin_client.o skin_server.o skin_operation.o
+obj-i386-y += maruskin_sdl.o maruskin_client.o maruskin_server.o maruskin_operation.o
 
 
 ##########################################################

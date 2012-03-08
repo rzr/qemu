@@ -28,6 +28,9 @@
  */
 
 
+#ifndef MARUSKIN_SDL_H_
+#define MARUSKIN_SDL_H_
+
 #include "console.h"
 #ifndef _WIN32
 #include <SDL/SDL.h>
@@ -45,3 +48,4 @@
 void maruskin_display_init(DisplayState *ds);
 void maruskin_sdl_init(int swt_handle);
 
+#endif /* MARUSKIN_SDL_H_ */

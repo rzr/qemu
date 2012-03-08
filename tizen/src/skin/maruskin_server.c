@@ -37,11 +37,11 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <pthread.h>
-#include "skin_server.h"
-#include "skin_operation.h"
+#include "maruskin_server.h"
+#include "maruskin_operation.h"
 #include "../debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(qemu, skin_server);
+MULTI_DEBUG_CHANNEL(qemu, maruskin_server);
 
 
 
