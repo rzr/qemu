@@ -31,9 +31,13 @@
 #include <stdio.h>
 #include "skin_operation.h"
 #include "maruskin_sdl.h"
+#include "../debug_ch.h"
 //FIXME uncomment
 //#include "console.h"
 //#include "maru_pm.h"
+
+MULTI_DEBUG_CHANNEL(qemu, skin_operation);
+
 
 enum {
     DIRECTION_PORTRAIT = 1,
@@ -61,12 +65,12 @@ enum {
 };
 
 void start_display( int handle_id, short scale, short direction ) {
-    printf( "start_display handle_id:%d, scale:%d, direction:%d\n", handle_id, scale, direction );
+    INFO( "start_display handle_id:%d, scale:%d, direction:%d\n", handle_id, scale, direction );
     maruskin_sdl_init(handle_id);
 }
 
 void do_mouse_event( int event_type, int x, int y, int z ) {
-    printf( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
+    INFO( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
     // qemu want to get '1' state in both press and drag.
     int type = ( MOUSE_DRAG == event_type ) ? MOUSE_DOWN : event_type;
@@ -75,18 +79,18 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
 //FIXME uncomment
 //        kbd_mouse_event(x, y, z, type);
     } else {
-        printf( "undefined mouse event type:%d\n", type );
+        INFO( "undefined mouse event type:%d\n", type );
     }
 
 }
 
 void do_key_event( int event_type, int keycode ) {
-    printf( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
+    INFO( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
     //TODO
 }
 
 void do_hardkey_event( int event_type, int keycode ) {
-    printf( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
+    INFO( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     //TODO convert keycode ?
 
@@ -121,7 +125,7 @@ void do_hardkey_event( int event_type, int keycode ) {
 }
 
 void change_lcd_state( short scale, short direction ) {
-    printf( "change_lcd_state scale:%d, scale:%d\n", scale, direction );
+    INFO( "change_lcd_state scale:%d, scale:%d\n", scale, direction );
     //TODO send request to emuld
 }
 
@@ -130,7 +134,7 @@ void open_shell() {
 }
 
 void request_close( void ) {
-    printf( "request_close\n" );
+    INFO( "request_close\n" );
 
 //FIXME uncomment
 //    ps2kbd_put_keycode( 103 & 0x7f );

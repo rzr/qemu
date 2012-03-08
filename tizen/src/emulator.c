@@ -37,7 +37,7 @@
 #include "skin/maruskin_client.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, main);
+MULTI_DEBUG_CHANNEL(qemu, main);
 
 
 int tizen_base_port = 0;
@@ -61,8 +61,9 @@ void exit_emulator(void)
 
 static void construct_main_window(void)
 {
+    INFO("construct main window\n");
     start_skin_server(11111, 0, 0);
-    if (start_skin_client() == false) {
+    if (start_skin_client() == 0) {
         //TODO:
     }
 }
