@@ -218,6 +218,10 @@ static inline int isa_vga_init(void)
 }
 
 int pci_vga_init(PCIBus *bus);
+#ifdef CONFIG_MARU
+int pci_maru_vga_init(PCIBus *bus);
+#endif
+
 int isa_vga_mm_init(target_phys_addr_t vram_base,
                     target_phys_addr_t ctrl_base, int it_shift,
                     MemoryRegion *address_space);

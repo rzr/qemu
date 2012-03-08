@@ -90,6 +90,9 @@ extern int bios_size;
 
 typedef enum {
     VGA_NONE, VGA_STD, VGA_CIRRUS, VGA_VMWARE, VGA_XENFB, VGA_QXL,
+#ifdef CONFIG_MARU
+    VGA_MARU,
+#endif
 } VGAInterfaceType;
 
 extern int vga_interface_type;
@@ -98,7 +101,9 @@ extern int vga_interface_type;
 #define xenfb_enabled (vga_interface_type == VGA_XENFB)
 #define vmsvga_enabled (vga_interface_type == VGA_VMWARE)
 #define qxl_enabled (vga_interface_type == VGA_QXL)
-
+#ifdef CONFIG_MARU
+#define maru_vga_enabled (vga_interface_type == VGA_MARU)
+#endif
 extern int graphic_width;
 extern int graphic_height;
 extern int graphic_depth;

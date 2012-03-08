@@ -44,6 +44,11 @@
 #include "memory.h"
 #include "exec-memory.h"
 
+#ifdef CONFIG_MARU
+#include "../tizen/src/hw/maru_overlay.h"
+#include "../tizen/src/hw/maru_brightness.h"
+#endif
+
 /* output Bochs bios info messages */
 //#define DEBUG_BIOS
 
@@ -1100,7 +1105,19 @@ void pc_vga_init(PCIBus *pci_bus)
         } else {
             isa_vga_init();
         }
+#ifdef CONFIG_MARU
+    } else if (maru_vga_enabled) {
+        if (pci_bus) {
+            pci_vga_init(pci_bus);
+            pci_maru_overlay_init(pci_bus);
+            pci_maru_brightness_init(pci_bus);
+        } else {
+            isa_vga_init();
+        }
     }
+#else
+    }
+#endif
 }
 
 static void cpu_request_exit(void *opaque, int irq, int level)

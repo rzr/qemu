@@ -25,15 +25,78 @@
 #include "console.h"
 #include "pc.h"
 #include "pci.h"
-#include "vga_int.h"
 #include "pixel_ops.h"
 #include "qemu-timer.h"
 #include "loader.h"
-
+#ifdef CONFIG_MARU
+#include "../tizen/src/hw/maru_pci_ids.h"
+#include "../tizen/src/hw/maru_vga_int.h"
+#else
+#include "vga_int.h"
+#endif
 typedef struct PCIVGAState {
     PCIDevice dev;
     VGACommonState vga;
 } PCIVGAState;
+
+int pci_vga_init(PCIBus *bus)
+{
+    pci_create_simple(bus, -1, "VGA");
+    return 0;
+}
+
+#ifdef CONFIG_MARU
+
+static const VMStateDescription vmstate_vga_pci = {
+    .name = "vga",
+    .version_id = 2,
+    .minimum_version_id = 2,
+    .minimum_version_id_old = 2,
+    .fields      = (VMStateField []) {
+        VMSTATE_PCI_DEVICE(dev, PCIVGAState),
+        VMSTATE_STRUCT(vga, PCIVGAState, 0, maru_vmstate_vga_common, VGACommonState),
+        VMSTATE_END_OF_LIST()
+    }
+};
+
+static int pci_maru_vga_initfn(PCIDevice *dev)
+{
+     PCIVGAState *d = DO_UPCAST(PCIVGAState, dev, dev);
+     VGACommonState *s = &d->vga;
+
+     // vga + console init
+     maru_vga_common_init(s, VGA_RAM_SIZE);
+     maru_vga_init(s, pci_address_space(dev), pci_address_space_io(dev), true);
+
+     s->ds = graphic_console_init(s->update, s->invalidate,
+                                  s->screen_dump, s->text_update, s);
+
+     /* XXX: VGA_RAM_SIZE must be a power of two */
+     pci_register_bar(&d->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->vram);
+
+     if (!dev->rom_bar) {
+         /* compatibility with pc-0.13 and older */
+         maru_vga_init_vbe(s, pci_address_space(dev));
+     }
+
+     return 0;
+}
+
+static PCIDeviceInfo vga_info = {
+    .qdev.name    = "MARU_VGA",
+    .qdev.size    = sizeof(PCIVGAState),
+    .qdev.vmsd    = &vmstate_vga_pci,
+    .no_hotplug   = 1,
+    .init         = pci_maru_vga_initfn,
+    .romfile      = "vgabios-maruvga.bin",
+
+    /* dummy VGA (same as Bochs ID) */
+    .vendor_id    = PCI_VENDOR_ID_TIZEN,
+    .device_id    = PCI_DEVICE_ID_VIRTUAL_VGA,
+    .class_id     = PCI_CLASS_DISPLAY_VGA,
+};
+
+#else // ONFIG_MARU
 
 static const VMStateDescription vmstate_vga_pci = {
     .name = "vga",
@@ -70,12 +133,6 @@ static int pci_vga_initfn(PCIDevice *dev)
      return 0;
 }
 
-int pci_vga_init(PCIBus *bus)
-{
-    pci_create_simple(bus, -1, "VGA");
-    return 0;
-}
-
 static PCIDeviceInfo vga_info = {
     .qdev.name    = "VGA",
     .qdev.size    = sizeof(PCIVGAState),
@@ -89,6 +146,8 @@ static PCIDeviceInfo vga_info = {
     .device_id    = PCI_DEVICE_ID_QEMU_VGA,
     .class_id     = PCI_CLASS_DISPLAY_VGA,
 };
+
+#endif // ONFIG_MARU
 
 static void vga_register(void)
 {
