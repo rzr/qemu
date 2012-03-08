@@ -108,6 +108,7 @@ int main(int argc, char* argv[])
 
 	parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
 
+/*
 	int i;
 
 	printf("%d\n", skin_argc);
@@ -121,9 +122,10 @@ int main(int argc, char* argv[])
 	{
 		printf("%s\n", qemu_argv[i]);
 	}
+*/
 
-//	construct_main_window(skin_argc, skin_argv);
-//	qemu_main(qemu_argc, qemu_argv, NULL);
+	construct_main_window(skin_argc, skin_argv);
+	qemu_main(qemu_argc, qemu_argv, NULL);
 
 	return 0;
 }
