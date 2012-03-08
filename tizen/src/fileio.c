@@ -493,7 +493,7 @@ const gchar *get_tizen_vms_arch_path(void)
 		free(binary);
 	}
 
-	tizen_vms_arch_path = malloc(strlen(tizen_vms) + 1 + strlen(arch));
+	tizen_vms_arch_path = malloc(strlen(tizen_vms) + 1 + strlen(arch) + 1);
 	assert(tizen_vms_arch_path != NULL);
 	strcpy(tizen_vms_arch_path, tizen_vms);
 	strcat(tizen_vms_arch_path, "/");

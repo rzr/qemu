@@ -3112,7 +3112,7 @@ void version_init(char *default_targetname, char* target_list_filepath)
     return;
 }
 
-void lock_file(char *path)
+void lock_file(void)
 {
     const gchar *username;
     int file_status;
@@ -3215,7 +3215,7 @@ int main(int argc, char** argv)
 
     gtk_builder_add_from_file(g_builder, full_glade_path, NULL);
 
-    lock_file(full_glade_path);
+    lock_file();
 
     window_hash_init();
 

@@ -128,7 +128,7 @@ void make_tizen_vms(void);
 gboolean remove_markup(char *src, char *dst, char *prefix, char *suffix);
 
 int remove_dir(char *path);
-void lock_file(char *path);
+void lock_file(void);
 int create_diskimg(char *arch, char *dest_path);
 int create_sdcard(char *dest_path);
 int create_file_share(void);
