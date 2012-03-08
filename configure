@@ -189,6 +189,7 @@ libiscsi=""
 
 # for TIZEN-maru 
 maru="no"
+#
 
 # parse CC options first
 for opt do
@@ -798,6 +799,7 @@ for opt do
 # for TIZEN-maru
   --enable-maru) maru="yes"
   ;;
+#
   *) echo "ERROR: unknown option $opt"; show_help="yes"
   ;;
   esac
@@ -1089,6 +1091,7 @@ echo ""
 echo "TIZEN-maru options:"
 echo "  --enable-maru            enable maru board"
 echo ""
+#
 echo "NOTE: The object files are built at the place where configure is launched"
 exit 1
 fi
@@ -2863,6 +2866,7 @@ echo "build guest agent $guest_agent"
 
 # for TIZEN-maru
 echo "TIZEN-maru support $maru"
+#
 
 if test "$sdl_too_old" = "yes"; then
 echo "-> Your SDL version is too old - please upgrade to have SDL support"
@@ -3220,6 +3224,12 @@ bsd)
   echo "HOST_USB=stub" >> $config_host_mak
 ;;
 esac
+
+# for TIZEN-maru
+if test "$maru" = "yes" ; then
+  echo "CONFIG_MARU=y" >> $config_host_mak
+fi
+#
 
 # use default implementation for tracing backend-specific routines
 trace_default=yes

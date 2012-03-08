@@ -5,19 +5,20 @@
 $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
 QEMU_CFLAGS += -I$(SRC_PATH)/hw
 
+# maru loader
+obj-y += emulator.o
+
+# sdb
+obj-y += sdb.o
+
 # maru hw
 #hw-obj-y += maru_board.o
 obj-i386-y += maru_overlay.o
-
-# sdb
-obj-i386-y += sdb.o
 
 ##########################################################
 # opengl library for i386
 obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
 ##########################################################
-
-# maru loader
 
 # maru skin
 

@@ -14,11 +14,7 @@ include $(HWDIR)/config.mak
 endif
 
 TARGET_PATH=$(SRC_PATH)/target-$(TARGET_BASE_ARCH)
-$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
-
-# Makefile for TIZEN-maru
-include $(SRC_PATH)/tizen/src/Makefile.tizen
-##
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw)
 
 ifdef CONFIG_LINUX
 QEMU_CFLAGS += -I../linux-headers
@@ -405,6 +401,12 @@ obj-y += $(addprefix ../libdis/, $(libdis-y))
 obj-y += $(libobj-y)
 obj-y += $(addprefix $(HWDIR)/, $(hw-obj-y))
 obj-y += $(addprefix ../, $(trace-obj-y))
+
+# Makefile for TIZEN-maru
+ifdef CONFIG_MARU
+include $(SRC_PATH)/tizen/src/Makefile.tizen
+endif
+##
 
 endif # CONFIG_SOFTMMU
 
