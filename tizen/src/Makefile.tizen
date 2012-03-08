@@ -21,7 +21,7 @@ obj-i386-y += maru_codec.o
 obj-i386-y += maru_pm.o
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
-LIBS += -lavformat -lavcodec -lavutil -lm
+LIBS += -lavformat -lavcodec -lavutil -lm -lGL
 
 ##########################################################
 # opengl library for i386

@@ -36,6 +36,8 @@
 MULTI_DEBUG_CHANNEL(tizen, main);
 
 
+int tizen_base_port = 0;
+
 int _emulator_condition = 0; //TODO:
 
 int get_emulator_condition(void)
