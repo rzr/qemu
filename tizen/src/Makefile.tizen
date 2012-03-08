@@ -26,6 +26,7 @@ obj-i386-y += maru_codec.o
 obj-i386-y += maru_pm.o
 obj-i386-y += maru_vga.o
 obj-i386-y += maru_brightness.o
+obj-i386-y += maru_touchscreen.o
 
 # maru skin
 obj-i386-y += maruskin_sdl.o maruskin_client.o maruskin_server.o maruskin_operation.o
