@@ -13,6 +13,7 @@ exec ./configure \
  --audio-drv-list=pa \
  --enable-mixemu \
  --disable-vnc-tls \
+ --audio-card-list=ac97 \
  --enable-maru
 # --enable-ffmpeg
 # --enable-tcg-x86-opt \

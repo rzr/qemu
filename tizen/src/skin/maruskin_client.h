@@ -30,6 +30,6 @@
 #ifndef MARUSKIN_CLIENT_H_
 #define MARUSKIN_CLIENT_H_
 
-int start_skin_client(void);
+int start_skin_client(int argc, char* argv[]);
 
 #endif /* MARUSKIN_CLIENT_H_ */

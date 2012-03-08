@@ -3,7 +3,12 @@
 
 
 $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
+
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
+QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
+
+LIBS += -lavformat -lavcodec -lavutil -lm -lGL
 
 # maru loader
 obj-y += emulator.o
@@ -15,23 +20,21 @@ obj-y += sdb.o
 obj-y += debug_ch.o
 
 # maru hw
-#hw-obj-y += maru_board.o
+obj-i386-y += maru_board.o
 obj-i386-y += maru_overlay.o
 obj-i386-y += maru_codec.o
 obj-i386-y += maru_pm.o
 obj-i386-y += maru_vga.o
 obj-i386-y += maru_brightness.o
-QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
-QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
-LIBS += -lavformat -lavcodec -lavutil -lm -lGL
+
+# maru skin
+obj-i386-y += maruskin_sdl.o maruskin_client.o skin_server.o skin_operation.o
+
 
 ##########################################################
 # opengl library for i386
 obj-i386-y += helper_opengl.o opengl_exec.o opengl_server.o
 ##########################################################
-
-# maru skin
-obj-i386-y += maruskin_sdl.o maruskin_client.o skin_server.o skin_operation.o
 
 ##########################################################
 # Build openGL

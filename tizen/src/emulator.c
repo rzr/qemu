@@ -34,10 +34,11 @@
 #include "emulator.h"
 #include "sdb.h"
 #include "skin/skin_server.h"
+#include "string.h"
 #include "skin/maruskin_client.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, main);
+MULTI_DEBUG_CHANNEL(qemu, main);
 
 
 int tizen_base_port = 0;
@@ -59,21 +60,77 @@ void exit_emulator(void)
 
 }
 
-static void construct_main_window(void)
+static void construct_main_window(int skin_argc, char* skin_argv[])
 {
+    INFO("construct main window\n");
     start_skin_server(11111, 0, 0);
-    if (start_skin_client() == false) {
+#if 0
+    if (start_skin_client(skin_argc, skin_argv) == 0) {
         //TODO:
     }
+#endif
 }
 
-int qemu_main(int argc, char **argv, char **envp);
+static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
+{
+	int i;
+	int j;
 
-int main(int argc, char** argv)
+// FIXME !!!
+// TODO:
+	for(i = 1; i < argc; ++i)
+	{
+		if(strncmp(argv[i], "--skin-args", 11) == 0)
+		{
+			*skin_argv = &(argv[i + 1]);
+			break;
+		}
+	}
+	for(j = i; j < argc; ++j)
+	{
+		if(strncmp(argv[j], "--qemu-args", 11) == 0)
+		{
+			*skin_argc = j - i - 1;
+
+			*qemu_argc = argc - j - i + 1;
+			*qemu_argv = &(argv[j]);
+			break;
+		}
+	}
+}
+
+int qemu_main(int argc, char** argv, char** envp);
+
+int main(int argc, char* argv[])
 {
 	tizen_base_port = get_sdb_base_port();
-	construct_main_window();
-	qemu_main(argc, argv, NULL);
+	
+	int skin_argc = 0;
+	char** skin_argv = NULL;
+
+	int qemu_argc = 0;
+	char** qemu_argv = NULL;
+
+	parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+
+/*
+	int i;
+
+	printf("%d\n", skin_argc);
+	for(i = 0; i < skin_argc; ++i)
+	{
+		printf("%s\n", skin_argv[i]);
+	}
+
+	printf("%d\n", qemu_argc);
+	for(i = 0; i < qemu_argc; ++i)
+	{
+		printf("%s\n", qemu_argv[i]);
+	}
+*/
+
+	construct_main_window(skin_argc, skin_argv);
+	qemu_main(qemu_argc, qemu_argv, NULL);
 
 	return 0;
 }
