@@ -59,7 +59,7 @@
 #define PIIX4_PCI_HOTPLUG_STATUS 2
 
 /* define debug channel */
-MULTI_DEBUG_CHANNEL(tizen, maru_pm);
+MULTI_DEBUG_CHANNEL(qemu, maru_pm);
 
 struct pci_status {
     uint32_t up;
