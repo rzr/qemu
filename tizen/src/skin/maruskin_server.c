@@ -179,6 +179,7 @@ static void* run_skin_server( void* args ) {
 
         INFO( "start accepting socket...\n" );
 
+        client_len = sizeof(client_addr);
         if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr *) &client_addr, &client_len ) ) ) {
             INFO( "skin_servier accept error: " );
             perror( "accept" );
