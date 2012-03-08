@@ -1108,7 +1108,7 @@ void pc_vga_init(PCIBus *pci_bus)
 #ifdef CONFIG_MARU
     } else if (maru_vga_enabled) {
         if (pci_bus) {
-            pci_vga_init(pci_bus);
+            pci_maru_vga_init(pci_bus);
             pci_maru_overlay_init(pci_bus);
             pci_maru_brightness_init(pci_bus);
         } else {

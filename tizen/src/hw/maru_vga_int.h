@@ -91,7 +91,7 @@
 #define CH_ATTR_SIZE (160 * 100)
 #define VGA_MAX_HEIGHT 2048
 
-struct vga_precise_retrace {
+struct maru_vga_precise_retrace {
     int64_t ticks_per_char;
     int64_t total_chars;
     int htotal;
@@ -102,15 +102,15 @@ struct vga_precise_retrace {
     int freq;
 };
 
-union vga_retrace {
-    struct vga_precise_retrace precise;
+union maru_vga_retrace {
+    struct maru_vga_precise_retrace precise;
 };
 
-struct VGACommonState;
-typedef uint8_t (* vga_retrace_fn)(struct VGACommonState *s);
-typedef void (* vga_update_retrace_info_fn)(struct VGACommonState *s);
+struct MaruVGACommonState;
+typedef uint8_t (* maru_vga_retrace_fn)(struct MaruVGACommonState *s);
+typedef void (* maru_vga_update_retrace_info_fn)(struct MaruVGACommonState *s);
 
-typedef struct VGACommonState {
+typedef struct MaruVGACommonState {
     MemoryRegion *legacy_address_space;
     uint8_t *vram_ptr;
     MemoryRegion vram;
@@ -138,12 +138,12 @@ typedef struct VGACommonState {
     int dac_8bit;
     uint8_t palette[768];
     int32_t bank_offset;
-    int (*get_bpp)(struct VGACommonState *s);
-    void (*get_offsets)(struct VGACommonState *s,
+    int (*get_bpp)(struct MaruVGACommonState *s);
+    void (*get_offsets)(struct MaruVGACommonState *s,
                         uint32_t *pline_offset,
                         uint32_t *pstart_addr,
                         uint32_t *pline_compare);
-    void (*get_resolution)(struct VGACommonState *s,
+    void (*get_resolution)(struct MaruVGACommonState *s,
                         int *pwidth,
                         int *pheight);
     VGA_STATE_COMMON_BOCHS_VBE
@@ -172,19 +172,19 @@ typedef struct VGACommonState {
     vga_hw_text_update_ptr text_update;
     /* hardware mouse cursor support */
     uint32_t invalidated_y_table[VGA_MAX_HEIGHT / 32];
-    void (*cursor_invalidate)(struct VGACommonState *s);
-    void (*cursor_draw_line)(struct VGACommonState *s, uint8_t *d, int y);
+    void (*cursor_invalidate)(struct MaruVGACommonState *s);
+    void (*cursor_draw_line)(struct MaruVGACommonState *s, uint8_t *d, int y);
     /* tell for each page if it has been updated since the last time */
     uint32_t last_palette[256];
     uint32_t last_ch_attr[CH_ATTR_SIZE]; /* XXX: make it dynamic */
     /* retrace */
-    vga_retrace_fn retrace;
-    vga_update_retrace_info_fn update_retrace_info;
-    union vga_retrace retrace_info;
+    maru_vga_retrace_fn retrace;
+    maru_vga_update_retrace_info_fn update_retrace_info;
+    union maru_vga_retrace retrace_info;
     uint8_t is_vbe_vmstate;
-} VGACommonState;
+} MaruVGACommonState;
 
-static inline int c6_to_8(int v)
+static inline int maru_c6_to_8(int v)
 {
     int b;
     v &= 0x3f;
@@ -192,23 +192,23 @@ static inline int c6_to_8(int v)
     return (v << 2) | (b << 1) | b;
 }
 
-void maru_vga_common_init(VGACommonState *s, int vga_ram_size);
-void maru_vga_init(VGACommonState *s, MemoryRegion *address_space,
+void maru_vga_common_init(MaruVGACommonState *s, int vga_ram_size);
+void maru_vga_init(MaruVGACommonState *s, MemoryRegion *address_space,
               MemoryRegion *address_space_io, bool init_vga_ports);
-MemoryRegion *maru_vga_init_io(VGACommonState *s,
+MemoryRegion *maru_vga_init_io(MaruVGACommonState *s,
                           const MemoryRegionPortio **vga_ports,
                           const MemoryRegionPortio **vbe_ports);
-void maru_vga_common_reset(VGACommonState *s);
+void maru_vga_common_reset(MaruVGACommonState *s);
 
-void maru_vga_dirty_log_start(VGACommonState *s);
-void maru_vga_dirty_log_stop(VGACommonState *s);
+void maru_vga_dirty_log_start(MaruVGACommonState *s);
+void maru_vga_dirty_log_stop(MaruVGACommonState *s);
 
 extern const VMStateDescription maru_vmstate_vga_common;
 uint32_t maru_vga_ioport_read(void *opaque, uint32_t addr);
 void maru_vga_ioport_write(void *opaque, uint32_t addr, uint32_t val);
-uint32_t maru_vga_mem_readb(VGACommonState *s, target_phys_addr_t addr);
-void maru_vga_mem_writeb(VGACommonState *s, target_phys_addr_t addr, uint32_t val);
-void maru_vga_invalidate_scanlines(VGACommonState *s, int y1, int y2);
+uint32_t maru_vga_mem_readb(MaruVGACommonState *s, target_phys_addr_t addr);
+void maru_vga_mem_writeb(MaruVGACommonState *s, target_phys_addr_t addr, uint32_t val);
+void maru_vga_invalidate_scanlines(MaruVGACommonState *s, int y1, int y2);
 int maru_ppm_save(const char *filename, struct DisplaySurface *ds);
 
 void maru_vga_draw_cursor_line_8(uint8_t *d1, const uint8_t *src1,
@@ -224,14 +224,14 @@ void maru_vga_draw_cursor_line_32(uint8_t *d1, const uint8_t *src1,
                              unsigned int color0, unsigned int color1,
                              unsigned int color_xor);
 
-int maru_vga_ioport_invalid(VGACommonState *s, uint32_t addr);
-void maru_vga_init_vbe(VGACommonState *s, MemoryRegion *address_space);
+int maru_vga_ioport_invalid(MaruVGACommonState *s, uint32_t addr);
+void maru_vga_init_vbe(MaruVGACommonState *s, MemoryRegion *address_space);
 
-extern const uint8_t sr_mask[8];
-extern const uint8_t gr_mask[16];
+extern const uint8_t maru_sr_mask[8];
+extern const uint8_t maru_gr_mask[16];
 
 #define VGA_RAM_SIZE (8192 * 1024)
 #define VGABIOS_FILENAME "vgabios.bin"
 #define VGABIOS_CIRRUS_FILENAME "vgabios-cirrus.bin"
 
-extern const MemoryRegionOps vga_mem_ops;
+extern const MemoryRegionOps maru_vga_mem_ops;

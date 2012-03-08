@@ -159,7 +159,7 @@ static void vga_screen_dump(void *opaque, const char *filename);
 static const char *screen_dump_filename;
 static DisplayChangeListener *screen_dump_dcl;
 
-static void vga_update_memory_access(VGACommonState *s)
+static void vga_update_memory_access(MaruVGACommonState *s)
 {
     MemoryRegion *region, *old_region = s->chain4_alias;
     target_phys_addr_t base, offset, size;
@@ -203,12 +203,12 @@ static void vga_update_memory_access(VGACommonState *s)
     }
 }
 
-static void vga_dumb_update_retrace_info(VGACommonState *s)
+static void vga_dumb_update_retrace_info(MaruVGACommonState *s)
 {
     (void) s;
 }
 
-static void vga_precise_update_retrace_info(VGACommonState *s)
+static void vga_precise_update_retrace_info(MaruVGACommonState *s)
 {
     int htotal_chars;
     int hretr_start_char;
@@ -227,7 +227,7 @@ static void vga_precise_update_retrace_info(VGACommonState *s)
     int clock_sel;
     const int clk_hz[] = {25175000, 28322000, 25175000, 25175000};
     int64_t chars_per_sec;
-    struct vga_precise_retrace *r = &s->retrace_info.precise;
+    struct maru_vga_precise_retrace *r = &s->retrace_info.precise;
 
     htotal_chars = s->cr[0x00] + 5;
     hretr_start_char = s->cr[0x04];
@@ -302,9 +302,9 @@ static void vga_precise_update_retrace_info(VGACommonState *s)
 #endif
 }
 
-static uint8_t vga_precise_retrace(VGACommonState *s)
+static uint8_t vga_precise_retrace(MaruVGACommonState *s)
 {
-    struct vga_precise_retrace *r = &s->retrace_info.precise;
+    struct maru_vga_precise_retrace *r = &s->retrace_info.precise;
     uint8_t val = s->st01 & ~(ST01_V_RETRACE | ST01_DISP_ENABLE);
 
     if (r->total_chars) {
@@ -331,12 +331,12 @@ static uint8_t vga_precise_retrace(VGACommonState *s)
     }
 }
 
-static uint8_t vga_dumb_retrace(VGACommonState *s)
+static uint8_t vga_dumb_retrace(MaruVGACommonState *s)
 {
     return s->st01 ^ (ST01_V_RETRACE | ST01_DISP_ENABLE);
 }
 
-int maru_vga_ioport_invalid(VGACommonState *s, uint32_t addr)
+int maru_vga_ioport_invalid(MaruVGACommonState *s, uint32_t addr)
 {
     if (s->msr & MSR_COLOR_EMULATION) {
         /* Color */
@@ -349,7 +349,7 @@ int maru_vga_ioport_invalid(VGACommonState *s, uint32_t addr)
 
 uint32_t maru_vga_ioport_read(void *opaque, uint32_t addr)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
     int val, index;
 
     if (maru_vga_ioport_invalid(s, addr)) {
@@ -440,7 +440,7 @@ uint32_t maru_vga_ioport_read(void *opaque, uint32_t addr)
 
 void maru_vga_ioport_write(void *opaque, uint32_t addr, uint32_t val)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
     int index;
 
     /* check port range access depending on color/monochrome mode */
@@ -566,7 +566,7 @@ void maru_vga_ioport_write(void *opaque, uint32_t addr, uint32_t val)
 #ifdef CONFIG_BOCHS_VBE
 static uint32_t vbe_ioport_read_index(void *opaque, uint32_t addr)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
     uint32_t val;
     val = s->vbe_index;
     return val;
@@ -574,7 +574,7 @@ static uint32_t vbe_ioport_read_index(void *opaque, uint32_t addr)
 
 static uint32_t vbe_ioport_read_data(void *opaque, uint32_t addr)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
     uint32_t val;
 
     if (s->vbe_index < VBE_DISPI_INDEX_NB) {
@@ -610,13 +610,13 @@ static uint32_t vbe_ioport_read_data(void *opaque, uint32_t addr)
 
 static void vbe_ioport_write_index(void *opaque, uint32_t addr, uint32_t val)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
     s->vbe_index = val;
 }
 
 static void vbe_ioport_write_data(void *opaque, uint32_t addr, uint32_t val)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
 
     if (s->vbe_index <= VBE_DISPI_INDEX_NB) {
 #ifdef DEBUG_BOCHS_VBE
@@ -762,7 +762,7 @@ static void vbe_ioport_write_data(void *opaque, uint32_t addr, uint32_t val)
 #endif
 
 /* called for accesses between 0xa0000 and 0xc0000 */
-uint32_t maru_vga_mem_readb(VGACommonState *s, target_phys_addr_t addr)
+uint32_t maru_vga_mem_readb(MaruVGACommonState *s, target_phys_addr_t addr)
 {
     int memory_map_mode, plane;
     uint32_t ret;
@@ -818,7 +818,7 @@ uint32_t maru_vga_mem_readb(VGACommonState *s, target_phys_addr_t addr)
 }
 
 /* called for accesses between 0xa0000 and 0xc0000 */
-void maru_vga_mem_writeb(VGACommonState *s, target_phys_addr_t addr, uint32_t val)
+void maru_vga_mem_writeb(MaruVGACommonState *s, target_phys_addr_t addr, uint32_t val)
 {
     int memory_map_mode, plane, write_mode, b, func_select, mask;
     uint32_t write_mask, bit_mask, set_mask;
@@ -951,13 +951,13 @@ void maru_vga_mem_writeb(VGACommonState *s, target_phys_addr_t addr, uint32_t va
     }
 }
 
-typedef void vga_draw_glyph8_func(uint8_t *d, int linesize,
+typedef void maru_vga_draw_glyph8_func(uint8_t *d, int linesize,
                              const uint8_t *font_ptr, int h,
                              uint32_t fgcol, uint32_t bgcol);
-typedef void vga_draw_glyph9_func(uint8_t *d, int linesize,
+typedef void maru_vga_draw_glyph9_func(uint8_t *d, int linesize,
                                   const uint8_t *font_ptr, int h,
                                   uint32_t fgcol, uint32_t bgcol, int dup9);
-typedef void vga_draw_line_func(VGACommonState *s1, uint8_t *d,
+typedef void maru_vga_draw_line_func(MaruVGACommonState *s1, uint8_t *d,
                                 const uint8_t *s, int width);
 
 #define DEPTH 8
@@ -1042,7 +1042,7 @@ static unsigned int rgb_to_pixel32bgr_dup(unsigned int r, unsigned int g, unsign
 }
 
 /* return true if the palette was modified */
-static int update_palette16(VGACommonState *s)
+static int update_palette16(MaruVGACommonState *s)
 {
     int full_update, i;
     uint32_t v, col, *palette;
@@ -1056,9 +1056,9 @@ static int update_palette16(VGACommonState *s)
         else
             v = ((s->ar[0x14] & 0xc) << 4) | (v & 0x3f);
         v = v * 3;
-        col = s->rgb_to_pixel(c6_to_8(s->palette[v]),
-                              c6_to_8(s->palette[v + 1]),
-                              c6_to_8(s->palette[v + 2]));
+        col = s->rgb_to_pixel(maru_c6_to_8(s->palette[v]),
+                              maru_c6_to_8(s->palette[v + 1]),
+                              maru_c6_to_8(s->palette[v + 2]));
         if (col != palette[i]) {
             full_update = 1;
             palette[i] = col;
@@ -1068,7 +1068,7 @@ static int update_palette16(VGACommonState *s)
 }
 
 /* return true if the palette was modified */
-static int update_palette256(VGACommonState *s)
+static int update_palette256(MaruVGACommonState *s)
 {
     int full_update, i;
     uint32_t v, col, *palette;
@@ -1082,9 +1082,9 @@ static int update_palette256(VGACommonState *s)
                                 s->palette[v + 1],
                                 s->palette[v + 2]);
         } else {
-          col = s->rgb_to_pixel(c6_to_8(s->palette[v]),
-                                c6_to_8(s->palette[v + 1]),
-                                c6_to_8(s->palette[v + 2]));
+          col = s->rgb_to_pixel(maru_c6_to_8(s->palette[v]),
+                                maru_c6_to_8(s->palette[v + 1]),
+                                maru_c6_to_8(s->palette[v + 2]));
         }
         if (col != palette[i]) {
             full_update = 1;
@@ -1095,7 +1095,7 @@ static int update_palette256(VGACommonState *s)
     return full_update;
 }
 
-static void vga_get_offsets(VGACommonState *s,
+static void vga_get_offsets(MaruVGACommonState *s,
                             uint32_t *pline_offset,
                             uint32_t *pstart_addr,
                             uint32_t *pline_compare)
@@ -1127,7 +1127,7 @@ static void vga_get_offsets(VGACommonState *s,
 }
 
 /* update start_addr and line_offset. Return TRUE if modified */
-static int update_basic_params(VGACommonState *s)
+static int update_basic_params(MaruVGACommonState *s)
 {
     int full_update;
     uint32_t start_addr, line_offset, line_compare;
@@ -1167,34 +1167,34 @@ static inline int get_depth_index(DisplayState *s)
     }
 }
 
-static vga_draw_glyph8_func * const vga_draw_glyph8_table[NB_DEPTHS] = {
-    vga_draw_glyph8_8,
-    vga_draw_glyph8_16,
-    vga_draw_glyph8_16,
-    vga_draw_glyph8_32,
-    vga_draw_glyph8_32,
-    vga_draw_glyph8_16,
-    vga_draw_glyph8_16,
+static maru_vga_draw_glyph8_func * const maru_vga_draw_glyph8_table[NB_DEPTHS] = {
+    maru_vga_draw_glyph8_8,
+    maru_vga_draw_glyph8_16,
+    maru_vga_draw_glyph8_16,
+    maru_vga_draw_glyph8_32,
+    maru_vga_draw_glyph8_32,
+    maru_vga_draw_glyph8_16,
+    maru_vga_draw_glyph8_16,
 };
 
-static vga_draw_glyph8_func * const vga_draw_glyph16_table[NB_DEPTHS] = {
-    vga_draw_glyph16_8,
-    vga_draw_glyph16_16,
-    vga_draw_glyph16_16,
-    vga_draw_glyph16_32,
-    vga_draw_glyph16_32,
-    vga_draw_glyph16_16,
-    vga_draw_glyph16_16,
+static maru_vga_draw_glyph8_func * const maru_vga_draw_glyph16_table[NB_DEPTHS] = {
+    maru_vga_draw_glyph16_8,
+    maru_vga_draw_glyph16_16,
+    maru_vga_draw_glyph16_16,
+    maru_vga_draw_glyph16_32,
+    maru_vga_draw_glyph16_32,
+    maru_vga_draw_glyph16_16,
+    maru_vga_draw_glyph16_16,
 };
 
-static vga_draw_glyph9_func * const vga_draw_glyph9_table[NB_DEPTHS] = {
-    vga_draw_glyph9_8,
-    vga_draw_glyph9_16,
-    vga_draw_glyph9_16,
-    vga_draw_glyph9_32,
-    vga_draw_glyph9_32,
-    vga_draw_glyph9_16,
-    vga_draw_glyph9_16,
+static maru_vga_draw_glyph9_func * const maru_vga_draw_glyph9_table[NB_DEPTHS] = {
+    maru_vga_draw_glyph9_8,
+    maru_vga_draw_glyph9_16,
+    maru_vga_draw_glyph9_16,
+    maru_vga_draw_glyph9_32,
+    maru_vga_draw_glyph9_32,
+    maru_vga_draw_glyph9_16,
+    maru_vga_draw_glyph9_16,
 };
 
 static const uint8_t cursor_glyph[32 * 4] = {
@@ -1216,7 +1216,7 @@ static const uint8_t cursor_glyph[32 * 4] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-static void vga_get_text_resolution(VGACommonState *s, int *pwidth, int *pheight,
+static void vga_get_text_resolution(MaruVGACommonState *s, int *pwidth, int *pheight,
                                     int *pcwidth, int *pcheight)
 {
     int width, cwidth, height, cheight;
@@ -1265,7 +1265,7 @@ static rgb_to_pixel_dup_func * const rgb_to_pixel_dup_table[NB_DEPTHS] = {
  * - underline
  * - flashing
  */
-static void vga_draw_text(VGACommonState *s, int full_update)
+static void maru_vga_draw_text(MaruVGACommonState *s, int full_update)
 {
     int cx, cy, cheight, cw, ch, cattr, height, width, ch_attr;
     int cx_min, cx_max, linesize, x_incr, line, line1;
@@ -1275,8 +1275,8 @@ static void vga_draw_text(VGACommonState *s, int full_update)
     int dup9, line_offset, depth_index;
     uint32_t *palette;
     uint32_t *ch_attr_ptr;
-    vga_draw_glyph8_func *vga_draw_glyph8;
-    vga_draw_glyph9_func *vga_draw_glyph9;
+    maru_vga_draw_glyph8_func *maru_vga_draw_glyph8;
+    maru_vga_draw_glyph9_func *maru_vga_draw_glyph9;
 
     /* compute font data address (in plane 2) */
     v = s->sr[3];
@@ -1345,10 +1345,10 @@ static void vga_draw_text(VGACommonState *s, int full_update)
 
     depth_index = get_depth_index(s->ds);
     if (cw == 16)
-        vga_draw_glyph8 = vga_draw_glyph16_table[depth_index];
+        maru_vga_draw_glyph8 = maru_vga_draw_glyph16_table[depth_index];
     else
-        vga_draw_glyph8 = vga_draw_glyph8_table[depth_index];
-    vga_draw_glyph9 = vga_draw_glyph9_table[depth_index];
+        maru_vga_draw_glyph8 = maru_vga_draw_glyph8_table[depth_index];
+    maru_vga_draw_glyph9 = maru_vga_draw_glyph9_table[depth_index];
 
     dest = ds_get_data(s->ds);
     linesize = ds_get_linesize(s->ds);
@@ -1380,13 +1380,13 @@ static void vga_draw_text(VGACommonState *s, int full_update)
                 bgcol = palette[cattr >> 4];
                 fgcol = palette[cattr & 0x0f];
                 if (cw != 9) {
-                    vga_draw_glyph8(d1, linesize,
+                    maru_vga_draw_glyph8(d1, linesize,
                                     font_ptr, cheight, fgcol, bgcol);
                 } else {
                     dup9 = 0;
                     if (ch >= 0xb0 && ch <= 0xdf && (s->ar[0x10] & 0x04))
                         dup9 = 1;
-                    vga_draw_glyph9(d1, linesize,
+                    maru_vga_draw_glyph9(d1, linesize,
                                     font_ptr, cheight, fgcol, bgcol, dup9);
                 }
                 if (src == cursor_ptr &&
@@ -1402,10 +1402,10 @@ static void vga_draw_text(VGACommonState *s, int full_update)
                         h = line_last - line_start + 1;
                         d = d1 + linesize * line_start;
                         if (cw != 9) {
-                            vga_draw_glyph8(d, linesize,
+                            maru_vga_draw_glyph8(d, linesize,
                                             cursor_glyph, h, fgcol, bgcol);
                         } else {
-                            vga_draw_glyph9(d, linesize,
+                            maru_vga_draw_glyph9(d, linesize,
                                             cursor_glyph, h, fgcol, bgcol, 1);
                         }
                     }
@@ -1430,102 +1430,102 @@ static void vga_draw_text(VGACommonState *s, int full_update)
 }
 
 enum {
-    VGA_DRAW_LINE2,
-    VGA_DRAW_LINE2D2,
-    VGA_DRAW_LINE4,
-    VGA_DRAW_LINE4D2,
-    VGA_DRAW_LINE8D2,
-    VGA_DRAW_LINE8,
-    VGA_DRAW_LINE15,
-    VGA_DRAW_LINE16,
-    VGA_DRAW_LINE24,
-    VGA_DRAW_LINE32,
-    VGA_DRAW_LINE_NB,
+    maru_vga_draw_LINE2,
+    maru_vga_draw_LINE2D2,
+    maru_vga_draw_LINE4,
+    maru_vga_draw_LINE4D2,
+    maru_vga_draw_LINE8D2,
+    maru_vga_draw_LINE8,
+    maru_vga_draw_LINE15,
+    maru_vga_draw_LINE16,
+    maru_vga_draw_LINE24,
+    maru_vga_draw_LINE32,
+    maru_vga_draw_LINE_NB,
 };
 
-static vga_draw_line_func * const vga_draw_line_table[NB_DEPTHS * VGA_DRAW_LINE_NB] = {
-    vga_draw_line2_8,
-    vga_draw_line2_16,
-    vga_draw_line2_16,
-    vga_draw_line2_32,
-    vga_draw_line2_32,
-    vga_draw_line2_16,
-    vga_draw_line2_16,
+static maru_vga_draw_line_func * const maru_vga_draw_line_table[NB_DEPTHS * maru_vga_draw_LINE_NB] = {
+    maru_vga_draw_line2_8,
+    maru_vga_draw_line2_16,
+    maru_vga_draw_line2_16,
+    maru_vga_draw_line2_32,
+    maru_vga_draw_line2_32,
+    maru_vga_draw_line2_16,
+    maru_vga_draw_line2_16,
 
-    vga_draw_line2d2_8,
-    vga_draw_line2d2_16,
-    vga_draw_line2d2_16,
-    vga_draw_line2d2_32,
-    vga_draw_line2d2_32,
-    vga_draw_line2d2_16,
-    vga_draw_line2d2_16,
+    maru_vga_draw_line2d2_8,
+    maru_vga_draw_line2d2_16,
+    maru_vga_draw_line2d2_16,
+    maru_vga_draw_line2d2_32,
+    maru_vga_draw_line2d2_32,
+    maru_vga_draw_line2d2_16,
+    maru_vga_draw_line2d2_16,
 
-    vga_draw_line4_8,
-    vga_draw_line4_16,
-    vga_draw_line4_16,
-    vga_draw_line4_32,
-    vga_draw_line4_32,
-    vga_draw_line4_16,
-    vga_draw_line4_16,
+    maru_vga_draw_line4_8,
+    maru_vga_draw_line4_16,
+    maru_vga_draw_line4_16,
+    maru_vga_draw_line4_32,
+    maru_vga_draw_line4_32,
+    maru_vga_draw_line4_16,
+    maru_vga_draw_line4_16,
 
-    vga_draw_line4d2_8,
-    vga_draw_line4d2_16,
-    vga_draw_line4d2_16,
-    vga_draw_line4d2_32,
-    vga_draw_line4d2_32,
-    vga_draw_line4d2_16,
-    vga_draw_line4d2_16,
+    maru_vga_draw_line4d2_8,
+    maru_vga_draw_line4d2_16,
+    maru_vga_draw_line4d2_16,
+    maru_vga_draw_line4d2_32,
+    maru_vga_draw_line4d2_32,
+    maru_vga_draw_line4d2_16,
+    maru_vga_draw_line4d2_16,
 
-    vga_draw_line8d2_8,
-    vga_draw_line8d2_16,
-    vga_draw_line8d2_16,
-    vga_draw_line8d2_32,
-    vga_draw_line8d2_32,
-    vga_draw_line8d2_16,
-    vga_draw_line8d2_16,
+    maru_vga_draw_line8d2_8,
+    maru_vga_draw_line8d2_16,
+    maru_vga_draw_line8d2_16,
+    maru_vga_draw_line8d2_32,
+    maru_vga_draw_line8d2_32,
+    maru_vga_draw_line8d2_16,
+    maru_vga_draw_line8d2_16,
 
-    vga_draw_line8_8,
-    vga_draw_line8_16,
-    vga_draw_line8_16,
-    vga_draw_line8_32,
-    vga_draw_line8_32,
-    vga_draw_line8_16,
-    vga_draw_line8_16,
+    maru_vga_draw_line8_8,
+    maru_vga_draw_line8_16,
+    maru_vga_draw_line8_16,
+    maru_vga_draw_line8_32,
+    maru_vga_draw_line8_32,
+    maru_vga_draw_line8_16,
+    maru_vga_draw_line8_16,
 
-    vga_draw_line15_8,
-    vga_draw_line15_15,
-    vga_draw_line15_16,
-    vga_draw_line15_32,
-    vga_draw_line15_32bgr,
-    vga_draw_line15_15bgr,
-    vga_draw_line15_16bgr,
+    maru_vga_draw_line15_8,
+    maru_vga_draw_line15_15,
+    maru_vga_draw_line15_16,
+    maru_vga_draw_line15_32,
+    maru_vga_draw_line15_32bgr,
+    maru_vga_draw_line15_15bgr,
+    maru_vga_draw_line15_16bgr,
 
-    vga_draw_line16_8,
-    vga_draw_line16_15,
-    vga_draw_line16_16,
-    vga_draw_line16_32,
-    vga_draw_line16_32bgr,
-    vga_draw_line16_15bgr,
-    vga_draw_line16_16bgr,
+    maru_vga_draw_line16_8,
+    maru_vga_draw_line16_15,
+    maru_vga_draw_line16_16,
+    maru_vga_draw_line16_32,
+    maru_vga_draw_line16_32bgr,
+    maru_vga_draw_line16_15bgr,
+    maru_vga_draw_line16_16bgr,
 
-    vga_draw_line24_8,
-    vga_draw_line24_15,
-    vga_draw_line24_16,
-    vga_draw_line24_32,
-    vga_draw_line24_32bgr,
-    vga_draw_line24_15bgr,
-    vga_draw_line24_16bgr,
+    maru_vga_draw_line24_8,
+    maru_vga_draw_line24_15,
+    maru_vga_draw_line24_16,
+    maru_vga_draw_line24_32,
+    maru_vga_draw_line24_32bgr,
+    maru_vga_draw_line24_15bgr,
+    maru_vga_draw_line24_16bgr,
 
-    vga_draw_line32_8,
-    vga_draw_line32_15,
-    vga_draw_line32_16,
-    vga_draw_line32_32,
-    vga_draw_line32_32bgr,
-    vga_draw_line32_15bgr,
-    vga_draw_line32_16bgr,
+    maru_vga_draw_line32_8,
+    maru_vga_draw_line32_15,
+    maru_vga_draw_line32_16,
+    maru_vga_draw_line32_32,
+    maru_vga_draw_line32_32bgr,
+    maru_vga_draw_line32_15bgr,
+    maru_vga_draw_line32_16bgr,
 };
 
-static int vga_get_bpp(VGACommonState *s)
+static int vga_get_bpp(MaruVGACommonState *s)
 {
     int ret;
 #ifdef CONFIG_BOCHS_VBE
@@ -1539,7 +1539,7 @@ static int vga_get_bpp(VGACommonState *s)
     return ret;
 }
 
-static void vga_get_resolution(VGACommonState *s, int *pwidth, int *pheight)
+static void vga_get_resolution(MaruVGACommonState *s, int *pwidth, int *pheight)
 {
     int width, height;
 
@@ -1560,7 +1560,7 @@ static void vga_get_resolution(VGACommonState *s, int *pwidth, int *pheight)
     *pheight = height;
 }
 
-void maru_vga_invalidate_scanlines(VGACommonState *s, int y1, int y2)
+void maru_vga_invalidate_scanlines(MaruVGACommonState *s, int y1, int y2)
 {
     int y;
     if (y1 >= VGA_MAX_HEIGHT)
@@ -1572,17 +1572,17 @@ void maru_vga_invalidate_scanlines(VGACommonState *s, int y1, int y2)
     }
 }
 
-static void vga_sync_dirty_bitmap(VGACommonState *s)
+static void vga_sync_dirty_bitmap(MaruVGACommonState *s)
 {
     memory_region_sync_dirty_bitmap(&s->vram);
 }
 
-void maru_vga_dirty_log_start(VGACommonState *s)
+void maru_vga_dirty_log_start(MaruVGACommonState *s)
 {
     memory_region_set_log(&s->vram, true, DIRTY_MEMORY_VGA);
 }
 
-void maru_vga_dirty_log_stop(VGACommonState *s)
+void maru_vga_dirty_log_stop(MaruVGACommonState *s)
 {
     memory_region_set_log(&s->vram, false, DIRTY_MEMORY_VGA);
 }
@@ -1612,7 +1612,7 @@ static const uint8_t brightness_tbl[] = {20, 20, 30, 40, 50, 60, 70, 80, 90, 100
 extern uint32_t brightness_level;
 extern uint32_t brightness_off;
 #endif
-static void vga_draw_graphic(VGACommonState *s, int full_update)
+static void maru_vga_draw_graphic(MaruVGACommonState *s, int full_update)
 {
     int y1, y, update, linesize, y_start, double_scan, mask, depth;
     int width, height, shift_control, line_offset, bwidth, bits;
@@ -1620,7 +1620,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     int disp_width, multi_scan, multi_run;
     uint8_t *d;
     uint32_t v, addr1, addr;
-    vga_draw_line_func *vga_draw_line;
+    maru_vga_draw_line_func *maru_vga_draw_line;
 
     full_update |= update_basic_params(s);
 
@@ -1697,17 +1697,17 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     if (shift_control == 0) {
         full_update |= update_palette16(s);
         if (s->sr[0x01] & 8) {
-            v = VGA_DRAW_LINE4D2;
+            v = maru_vga_draw_LINE4D2;
         } else {
-            v = VGA_DRAW_LINE4;
+            v = maru_vga_draw_LINE4;
         }
         bits = 4;
     } else if (shift_control == 1) {
         full_update |= update_palette16(s);
         if (s->sr[0x01] & 8) {
-            v = VGA_DRAW_LINE2D2;
+            v = maru_vga_draw_LINE2D2;
         } else {
-            v = VGA_DRAW_LINE2;
+            v = maru_vga_draw_LINE2;
         }
         bits = 4;
     } else {
@@ -1715,33 +1715,33 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         default:
         case 0:
             full_update |= update_palette256(s);
-            v = VGA_DRAW_LINE8D2;
+            v = maru_vga_draw_LINE8D2;
             bits = 4;
             break;
         case 8:
             full_update |= update_palette256(s);
-            v = VGA_DRAW_LINE8;
+            v = maru_vga_draw_LINE8;
             bits = 8;
             break;
         case 15:
-            v = VGA_DRAW_LINE15;
+            v = maru_vga_draw_LINE15;
             bits = 16;
             break;
         case 16:
-            v = VGA_DRAW_LINE16;
+            v = maru_vga_draw_LINE16;
             bits = 16;
             break;
         case 24:
-            v = VGA_DRAW_LINE24;
+            v = maru_vga_draw_LINE24;
             bits = 24;
             break;
         case 32:
-            v = VGA_DRAW_LINE32;
+            v = maru_vga_draw_LINE32;
             bits = 32;
             break;
         }
     }
-    vga_draw_line = vga_draw_line_table[v * NB_DEPTHS + get_depth_index(s->ds)];
+    maru_vga_draw_line = maru_vga_draw_line_table[v * NB_DEPTHS + get_depth_index(s->ds)];
 
     if (!is_buffer_shared(s->ds->surface) && s->cursor_invalidate)
         s->cursor_invalidate(s);
@@ -1794,7 +1794,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             if (page1 > page_max)
                 page_max = page1;
             if (!(is_buffer_shared(s->ds->surface))) {
-                vga_draw_line(s, d, s->vram_ptr + addr, width);
+                maru_vga_draw_line(s, d, s->vram_ptr + addr, width);
                 if (s->cursor_draw_line)
                     s->cursor_draw_line(s, d, y);
             }
@@ -1905,7 +1905,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     memset(s->invalidated_y_table, 0, ((height + 31) >> 5) * 4);
 }
 
-static void vga_draw_blank(VGACommonState *s, int full_update)
+static void maru_vga_draw_blank(MaruVGACommonState *s, int full_update)
 {
     int i, w, val;
     uint8_t *d;
@@ -1937,7 +1937,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
 
 static void vga_update_display(void *opaque)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
     int full_update, graphic_mode;
 
     qemu_flush_coalesced_mmio_buffer();
@@ -1957,14 +1957,14 @@ static void vga_update_display(void *opaque)
         }
         switch(graphic_mode) {
         case GMODE_TEXT:
-            vga_draw_text(s, full_update);
+            maru_vga_draw_text(s, full_update);
             break;
         case GMODE_GRAPH:
-            vga_draw_graphic(s, full_update);
+            maru_vga_draw_graphic(s, full_update);
             break;
         case GMODE_BLANK:
         default:
-            vga_draw_blank(s, full_update);
+            maru_vga_draw_blank(s, full_update);
             break;
         }
     }
@@ -1973,13 +1973,13 @@ static void vga_update_display(void *opaque)
 /* force a full display refresh */
 static void vga_invalidate_display(void *opaque)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
 
     s->last_width = -1;
     s->last_height = -1;
 }
 
-void maru_vga_common_reset(VGACommonState *s)
+void maru_vga_common_reset(MaruVGACommonState *s)
 {
     s->sr_index = 0;
     memset(s->sr, '\0', sizeof(s->sr));
@@ -2042,7 +2042,7 @@ void maru_vga_common_reset(VGACommonState *s)
 
 static void vga_reset(void *opaque)
 {
-    VGACommonState *s =  opaque;
+    MaruVGACommonState *s =  opaque;
     maru_vga_common_reset(s);
 }
 
@@ -2054,7 +2054,7 @@ static void vga_reset(void *opaque)
  * instead of doing a full vga_update_display() */
 static void vga_update_text(void *opaque, console_ch_t *chardata)
 {
-    VGACommonState *s =  opaque;
+    MaruVGACommonState *s =  opaque;
     int graphic_mode, i, cursor_offset, cursor_visible;
     int cw, cheight, width, height, size, c_min, c_max;
     uint32_t *src;
@@ -2217,7 +2217,7 @@ static void vga_update_text(void *opaque, console_ch_t *chardata)
 static uint64_t maru_vga_mem_read(void *opaque, target_phys_addr_t addr,
                              unsigned size)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
 
     return maru_vga_mem_readb(s, addr);
 }
@@ -2225,7 +2225,7 @@ static uint64_t maru_vga_mem_read(void *opaque, target_phys_addr_t addr,
 static void  maru_vga_mem_write(void *opaque, target_phys_addr_t addr,
                           uint64_t data, unsigned size)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
 
     return maru_vga_mem_writeb(s, addr, data);
 }
@@ -2242,7 +2242,7 @@ const MemoryRegionOps maru_vga_mem_ops = {
 
 static int vga_common_post_load(void *opaque, int version_id)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
 
     /* force refresh */
     s->graphic_mode = -1;
@@ -2256,42 +2256,42 @@ const VMStateDescription maru_vmstate_vga_common = {
     .minimum_version_id_old = 2,
     .post_load = vga_common_post_load,
     .fields      = (VMStateField []) {
-        VMSTATE_UINT32(latch, VGACommonState),
-        VMSTATE_UINT8(sr_index, VGACommonState),
-        VMSTATE_PARTIAL_BUFFER(sr, VGACommonState, 8),
-        VMSTATE_UINT8(gr_index, VGACommonState),
-        VMSTATE_PARTIAL_BUFFER(gr, VGACommonState, 16),
-        VMSTATE_UINT8(ar_index, VGACommonState),
-        VMSTATE_BUFFER(ar, VGACommonState),
-        VMSTATE_INT32(ar_flip_flop, VGACommonState),
-        VMSTATE_UINT8(cr_index, VGACommonState),
-        VMSTATE_BUFFER(cr, VGACommonState),
-        VMSTATE_UINT8(msr, VGACommonState),
-        VMSTATE_UINT8(fcr, VGACommonState),
-        VMSTATE_UINT8(st00, VGACommonState),
-        VMSTATE_UINT8(st01, VGACommonState),
+        VMSTATE_UINT32(latch, MaruVGACommonState),
+        VMSTATE_UINT8(sr_index, MaruVGACommonState),
+        VMSTATE_PARTIAL_BUFFER(sr, MaruVGACommonState, 8),
+        VMSTATE_UINT8(gr_index, MaruVGACommonState),
+        VMSTATE_PARTIAL_BUFFER(gr, MaruVGACommonState, 16),
+        VMSTATE_UINT8(ar_index, MaruVGACommonState),
+        VMSTATE_BUFFER(ar, MaruVGACommonState),
+        VMSTATE_INT32(ar_flip_flop, MaruVGACommonState),
+        VMSTATE_UINT8(cr_index, MaruVGACommonState),
+        VMSTATE_BUFFER(cr, MaruVGACommonState),
+        VMSTATE_UINT8(msr, MaruVGACommonState),
+        VMSTATE_UINT8(fcr, MaruVGACommonState),
+        VMSTATE_UINT8(st00, MaruVGACommonState),
+        VMSTATE_UINT8(st01, MaruVGACommonState),
 
-        VMSTATE_UINT8(dac_state, VGACommonState),
-        VMSTATE_UINT8(dac_sub_index, VGACommonState),
-        VMSTATE_UINT8(dac_read_index, VGACommonState),
-        VMSTATE_UINT8(dac_write_index, VGACommonState),
-        VMSTATE_BUFFER(dac_cache, VGACommonState),
-        VMSTATE_BUFFER(palette, VGACommonState),
+        VMSTATE_UINT8(dac_state, MaruVGACommonState),
+        VMSTATE_UINT8(dac_sub_index, MaruVGACommonState),
+        VMSTATE_UINT8(dac_read_index, MaruVGACommonState),
+        VMSTATE_UINT8(dac_write_index, MaruVGACommonState),
+        VMSTATE_BUFFER(dac_cache, MaruVGACommonState),
+        VMSTATE_BUFFER(palette, MaruVGACommonState),
 
-        VMSTATE_INT32(bank_offset, VGACommonState),
-        VMSTATE_UINT8_EQUAL(is_vbe_vmstate, VGACommonState),
+        VMSTATE_INT32(bank_offset, MaruVGACommonState),
+        VMSTATE_UINT8_EQUAL(is_vbe_vmstate, MaruVGACommonState),
 #ifdef CONFIG_BOCHS_VBE
-        VMSTATE_UINT16(vbe_index, VGACommonState),
-        VMSTATE_UINT16_ARRAY(vbe_regs, VGACommonState, VBE_DISPI_INDEX_NB),
-        VMSTATE_UINT32(vbe_start_addr, VGACommonState),
-        VMSTATE_UINT32(vbe_line_offset, VGACommonState),
-        VMSTATE_UINT32(vbe_bank_mask, VGACommonState),
+        VMSTATE_UINT16(vbe_index, MaruVGACommonState),
+        VMSTATE_UINT16_ARRAY(vbe_regs, MaruVGACommonState, VBE_DISPI_INDEX_NB),
+        VMSTATE_UINT32(vbe_start_addr, MaruVGACommonState),
+        VMSTATE_UINT32(vbe_line_offset, MaruVGACommonState),
+        VMSTATE_UINT32(vbe_bank_mask, MaruVGACommonState),
 #endif
         VMSTATE_END_OF_LIST()
     }
 };
 
-void maru_vga_common_init(VGACommonState *s, int vga_ram_size)
+void maru_vga_common_init(MaruVGACommonState *s, int vga_ram_size)
 {
     int i, j, v, b;
 
@@ -2369,7 +2369,7 @@ static const MemoryRegionPortio vbe_portio_list[] = {
 #endif /* CONFIG_BOCHS_VBE */
 
 /* Used by both ISA and PCI */
-MemoryRegion *maru_vga_init_io(VGACommonState *s,
+MemoryRegion *maru_vga_init_io(MaruVGACommonState *s,
                           const MemoryRegionPortio **vga_ports,
                           const MemoryRegionPortio **vbe_ports)
 {
@@ -2388,7 +2388,7 @@ MemoryRegion *maru_vga_init_io(VGACommonState *s,
     return vga_mem;
 }
 
-void maru_vga_init(VGACommonState *s, MemoryRegion *address_space,
+void maru_vga_init(MaruVGACommonState *s, MemoryRegion *address_space,
               MemoryRegion *address_space_io, bool init_vga_ports)
 {
     MemoryRegion *vga_io_memory;
@@ -2418,7 +2418,7 @@ void maru_vga_init(VGACommonState *s, MemoryRegion *address_space,
     }
 }
 
-void maru_vga_init_vbe(VGACommonState *s, MemoryRegion *system_memory)
+void maru_vga_init_vbe(MaruVGACommonState *s, MemoryRegion *system_memory)
 {
 #ifdef CONFIG_BOCHS_VBE
     /* XXX: use optimized standard vga accesses */
@@ -2508,7 +2508,7 @@ static DisplayChangeListener* vga_screen_dump_init(DisplayState *ds)
    available */
 static void vga_screen_dump(void *opaque, const char *filename)
 {
-    VGACommonState *s = opaque;
+    MaruVGACommonState *s = opaque;
 
     if (!screen_dump_dcl)
         screen_dump_dcl = vga_screen_dump_init(s->ds);

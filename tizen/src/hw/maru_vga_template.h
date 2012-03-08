@@ -49,7 +49,7 @@
 
 #if DEPTH != 15 && !defined(BGR_FORMAT)
 
-static inline void glue(vga_draw_glyph_line_, DEPTH)(uint8_t *d,
+static inline void glue(maru_vga_draw_glyph_line_, DEPTH)(uint8_t *d,
                                                      uint32_t font_data,
                                                      uint32_t xorcol,
                                                      uint32_t bgcol)
@@ -74,7 +74,7 @@ static inline void glue(vga_draw_glyph_line_, DEPTH)(uint8_t *d,
 #endif
 }
 
-static void glue(vga_draw_glyph8_, DEPTH)(uint8_t *d, int linesize,
+static void glue(maru_vga_draw_glyph8_, DEPTH)(uint8_t *d, int linesize,
                                           const uint8_t *font_ptr, int h,
                                           uint32_t fgcol, uint32_t bgcol)
 {
@@ -83,13 +83,13 @@ static void glue(vga_draw_glyph8_, DEPTH)(uint8_t *d, int linesize,
     xorcol = bgcol ^ fgcol;
     do {
         font_data = font_ptr[0];
-        glue(vga_draw_glyph_line_, DEPTH)(d, font_data, xorcol, bgcol);
+        glue(maru_vga_draw_glyph_line_, DEPTH)(d, font_data, xorcol, bgcol);
         font_ptr += 4;
         d += linesize;
     } while (--h);
 }
 
-static void glue(vga_draw_glyph16_, DEPTH)(uint8_t *d, int linesize,
+static void glue(maru_vga_draw_glyph16_, DEPTH)(uint8_t *d, int linesize,
                                           const uint8_t *font_ptr, int h,
                                           uint32_t fgcol, uint32_t bgcol)
 {
@@ -98,10 +98,10 @@ static void glue(vga_draw_glyph16_, DEPTH)(uint8_t *d, int linesize,
     xorcol = bgcol ^ fgcol;
     do {
         font_data = font_ptr[0];
-        glue(vga_draw_glyph_line_, DEPTH)(d,
+        glue(maru_vga_draw_glyph_line_, DEPTH)(d,
                                           expand4to8[font_data >> 4],
                                           xorcol, bgcol);
-        glue(vga_draw_glyph_line_, DEPTH)(d + 8 * BPP,
+        glue(maru_vga_draw_glyph_line_, DEPTH)(d + 8 * BPP,
                                           expand4to8[font_data & 0x0f],
                                           xorcol, bgcol);
         font_ptr += 4;
@@ -109,7 +109,7 @@ static void glue(vga_draw_glyph16_, DEPTH)(uint8_t *d, int linesize,
     } while (--h);
 }
 
-static void glue(vga_draw_glyph9_, DEPTH)(uint8_t *d, int linesize,
+static void glue(maru_vga_draw_glyph9_, DEPTH)(uint8_t *d, int linesize,
                                           const uint8_t *font_ptr, int h,
                                           uint32_t fgcol, uint32_t bgcol, int dup9)
 {
@@ -160,7 +160,7 @@ static void glue(vga_draw_glyph9_, DEPTH)(uint8_t *d, int linesize,
 /*
  * 4 color mode
  */
-static void glue(vga_draw_line2_, DEPTH)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
                                          const uint8_t *s, int width)
 {
     uint32_t plane_mask, *palette, data, v;
@@ -202,7 +202,7 @@ static void glue(vga_draw_line2_, DEPTH)(VGACommonState *s1, uint8_t *d,
 /*
  * 4 color mode, dup2 horizontal
  */
-static void glue(vga_draw_line2d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line2d2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
                                            const uint8_t *s, int width)
 {
     uint32_t plane_mask, *palette, data, v;
@@ -235,7 +235,7 @@ static void glue(vga_draw_line2d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
 /*
  * 16 color mode
  */
-static void glue(vga_draw_line4_, DEPTH)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line4_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
                                          const uint8_t *s, int width)
 {
     uint32_t plane_mask, data, v, *palette;
@@ -267,7 +267,7 @@ static void glue(vga_draw_line4_, DEPTH)(VGACommonState *s1, uint8_t *d,
 /*
  * 16 color mode, dup2 horizontal
  */
-static void glue(vga_draw_line4d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line4d2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
                                            const uint8_t *s, int width)
 {
     uint32_t plane_mask, data, v, *palette;
@@ -301,7 +301,7 @@ static void glue(vga_draw_line4d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
  *
  * XXX: add plane_mask support (never used in standard VGA modes)
  */
-static void glue(vga_draw_line8d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line8d2_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
                                            const uint8_t *s, int width)
 {
     uint32_t *palette;
@@ -324,7 +324,7 @@ static void glue(vga_draw_line8d2_, DEPTH)(VGACommonState *s1, uint8_t *d,
  *
  * XXX: add plane_mask support (never used in standard VGA modes)
  */
-static void glue(vga_draw_line8_, DEPTH)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line8_, DEPTH)(MaruVGACommonState *s1, uint8_t *d,
                                          const uint8_t *s, int width)
 {
     uint32_t *palette;
@@ -420,7 +420,7 @@ void glue(maru_vga_draw_cursor_line_, DEPTH)(uint8_t *d1,
 /*
  * 15 bit color
  */
-static void glue(vga_draw_line15_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line15_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
 #if DEPTH == 15 && defined(HOST_WORDS_BIGENDIAN) == defined(TARGET_WORDS_BIGENDIAN)
@@ -445,7 +445,7 @@ static void glue(vga_draw_line15_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
 /*
  * 16 bit color
  */
-static void glue(vga_draw_line16_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line16_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
 #if DEPTH == 16 && defined(HOST_WORDS_BIGENDIAN) == defined(TARGET_WORDS_BIGENDIAN)
@@ -470,7 +470,7 @@ static void glue(vga_draw_line16_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
 /*
  * 24 bit color
  */
-static void glue(vga_draw_line24_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line24_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
     int w;
@@ -496,7 +496,7 @@ static void glue(vga_draw_line24_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
 /*
  * 32 bit color
  */
-static void glue(vga_draw_line32_, PIXEL_NAME)(VGACommonState *s1, uint8_t *d,
+static void glue(maru_vga_draw_line32_, PIXEL_NAME)(MaruVGACommonState *s1, uint8_t *d,
                                           const uint8_t *s, int width)
 {
 #if DEPTH == 32 && defined(HOST_WORDS_BIGENDIAN) == defined(TARGET_WORDS_BIGENDIAN) && !defined(BGR_FORMAT)

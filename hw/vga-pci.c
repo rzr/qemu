@@ -31,38 +31,38 @@
 #ifdef CONFIG_MARU
 #include "../tizen/src/hw/maru_pci_ids.h"
 #include "../tizen/src/hw/maru_vga_int.h"
-#else
-#include "vga_int.h"
 #endif
-typedef struct PCIVGAState {
-    PCIDevice dev;
-    VGACommonState vga;
-} PCIVGAState;
-
-int pci_vga_init(PCIBus *bus)
-{
-    pci_create_simple(bus, -1, "VGA");
-    return 0;
-}
+#include "vga_int.h"
 
 #ifdef CONFIG_MARU
 
-static const VMStateDescription vmstate_vga_pci = {
+typedef struct MaruPCIVGAState {
+    PCIDevice dev;
+    MaruVGACommonState vga;
+} MaruPCIVGAState;
+
+int pci_maru_vga_init(PCIBus *bus)
+{
+    pci_create_simple(bus, -1, "MARU_VGA");
+    return 0;
+}
+
+static const VMStateDescription maru_vmstate_vga_pci = {
     .name = "vga",
     .version_id = 2,
     .minimum_version_id = 2,
     .minimum_version_id_old = 2,
     .fields      = (VMStateField []) {
-        VMSTATE_PCI_DEVICE(dev, PCIVGAState),
-        VMSTATE_STRUCT(vga, PCIVGAState, 0, maru_vmstate_vga_common, VGACommonState),
+        VMSTATE_PCI_DEVICE(dev, MaruPCIVGAState),
+        VMSTATE_STRUCT(vga, MaruPCIVGAState, 0, maru_vmstate_vga_common, MaruVGACommonState),
         VMSTATE_END_OF_LIST()
     }
 };
 
 static int pci_maru_vga_initfn(PCIDevice *dev)
 {
-     PCIVGAState *d = DO_UPCAST(PCIVGAState, dev, dev);
-     VGACommonState *s = &d->vga;
+     MaruPCIVGAState *d = DO_UPCAST(MaruPCIVGAState, dev, dev);
+     MaruVGACommonState *s = &d->vga;
 
      // vga + console init
      maru_vga_common_init(s, VGA_RAM_SIZE);
@@ -82,10 +82,10 @@ static int pci_maru_vga_initfn(PCIDevice *dev)
      return 0;
 }
 
-static PCIDeviceInfo vga_info = {
+static PCIDeviceInfo maru_vga_info = {
     .qdev.name    = "MARU_VGA",
-    .qdev.size    = sizeof(PCIVGAState),
-    .qdev.vmsd    = &vmstate_vga_pci,
+    .qdev.size    = sizeof(MaruPCIVGAState),
+    .qdev.vmsd    = &maru_vmstate_vga_pci,
     .no_hotplug   = 1,
     .init         = pci_maru_vga_initfn,
     .romfile      = "vgabios-maruvga.bin",
@@ -96,7 +96,18 @@ static PCIDeviceInfo vga_info = {
     .class_id     = PCI_CLASS_DISPLAY_VGA,
 };
 
-#else // CONFIG_MARU
+#endif // CONFIG_MARU
+
+typedef struct PCIVGAState {
+    PCIDevice dev;
+    VGACommonState vga;
+} PCIVGAState;
+
+int pci_vga_init(PCIBus *bus)
+{
+    pci_create_simple(bus, -1, "VGA");
+    return 0;
+}
 
 static const VMStateDescription vmstate_vga_pci = {
     .name = "vga",
@@ -147,10 +158,12 @@ static PCIDeviceInfo vga_info = {
     .class_id     = PCI_CLASS_DISPLAY_VGA,
 };
 
-#endif // CONFIG_MARU
-
 static void vga_register(void)
 {
+#ifdef CONFIG_MARU
+    pci_qdev_register(&maru_vga_info);
+#else
     pci_qdev_register(&vga_info);
+#endif
 }
 device_init(vga_register);
