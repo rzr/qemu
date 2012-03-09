@@ -32,9 +32,7 @@
 #include "maruskin_operation.h"
 #include "maru_sdl.h"
 #include "debug_ch.h"
-#include "console.h"
-//FIXME uncomment
-//#include "maru_pm.h"
+#include "../hw/maru_pm.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
@@ -135,13 +133,12 @@ void open_shell(void) {
 void request_close( void ) {
     INFO( "request_close\n" );
 
-//FIXME uncomment
-//    ps2kbd_put_keycode( 103 & 0x7f );
+    kbd_put_keycode( 103 & 0x7f );
 //#ifdef _WIN32
 //    Sleep( 1.6 * 1000 ); // 1.6 seconds
 //#else
 //    usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
 //#endif
-//    ps2kbd_put_keycode( 103 | 0x80 );
+//    kbd_put_keycode( 103 | 0x80 );
 
 }

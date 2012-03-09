@@ -411,7 +411,7 @@ static void* run_skin_server( void* args ) {
                     INFO( "RECV_CLOSE\n" );
                     request_close();
                     //XXX
-                    shutdown_skin_server();
+//                    shutdown_skin_server();
                     break;
                 }
                 case RECV_RESPONSE_SHUTDOWN: {

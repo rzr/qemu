@@ -39,6 +39,7 @@
 #include "range.h"
 #include "ioport.h"
 #include "debug_ch.h"
+#include "../skin/maruskin_server.h"
 
 //#define DEBUG
 
@@ -132,6 +133,7 @@ static void maru_pm1_cnt_write(ACPIPM1EVT *pm1a, ACPIPM1CNT *pm1_cnt, uint16_t v
         switch(sus_typ) {
         case 0: /* soft power off */
             qemu_system_shutdown_request();
+            shutdown_skin_server();
             break;
         case 1:
 #if 0 // changed suspend operation for emulator
