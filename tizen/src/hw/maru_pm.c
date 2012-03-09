@@ -39,7 +39,6 @@
 #include "range.h"
 #include "ioport.h"
 #include "debug_ch.h"
-#include "../skin/maruskin_server.h"
 
 //#define DEBUG
 
@@ -48,6 +47,9 @@
 #else
 # define PIIX4_DPRINTF(format, ...)     do { } while (0)
 #endif
+
+/* define debug channel */
+MULTI_DEBUG_CHANNEL(qemu, maru_pm);
 
 #define ACPI_DBG_IO_ADDR  0xb044
 
@@ -58,9 +60,6 @@
 #define PCI_RMV_BASE 0xae0c
 
 #define PIIX4_PCI_HOTPLUG_STATUS 2
-
-/* define debug channel */
-MULTI_DEBUG_CHANNEL(qemu, maru_pm);
 
 struct pci_status {
     uint32_t up;
@@ -133,7 +132,6 @@ static void maru_pm1_cnt_write(ACPIPM1EVT *pm1a, ACPIPM1CNT *pm1_cnt, uint16_t v
         switch(sus_typ) {
         case 0: /* soft power off */
             qemu_system_shutdown_request();
-            shutdown_skin_server();
             break;
         case 1:
 #if 0 // changed suspend operation for emulator
@@ -174,11 +172,11 @@ static void pm_ioport_write(IORange *ioport, uint64_t addr, unsigned width,
         pm_update_sci(s);
         break;
     case 0x04:
-#if 0 // changed acpi_pm1_cnt_write for emulator
+#if 0
         acpi_pm1_cnt_write(&s->pm1a, &s->pm1_cnt, val);
 #else
         maru_pm1_cnt_write(&s->pm1a, &s->pm1_cnt, val);
-#endif// end : changed acpi_pm1_cnt_write for emulator
+#endif
         break;
     default:
         break;
@@ -186,7 +184,6 @@ static void pm_ioport_write(IORange *ioport, uint64_t addr, unsigned width,
     PIIX4_DPRINTF("PM writew port=0x%04x val=0x%04x\n", (unsigned int)addr,
                   (unsigned int)val);
 }
-
 
 static void pm_ioport_read(IORange *ioport, uint64_t addr, unsigned width,
                             uint64_t *data)
@@ -437,7 +434,7 @@ i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
     PCIDevice *dev;
     PIIX4PMState *s;
 
-    dev = pci_create(bus, devfn, "PIIX4_PM");
+    dev = pci_create(bus, devfn, "MARU_PM");
     qdev_prop_set_uint32(&dev->qdev, "smb_io_base", smb_io_base);
 
     s = DO_UPCAST(PIIX4PMState, dev, dev);
@@ -452,7 +449,7 @@ i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
 }
 
 static PCIDeviceInfo piix4_pm_info = {
-    .qdev.name          = "PIIX4_PM",
+    .qdev.name          = "MARU_PM",
     .qdev.desc          = "PM",
     .qdev.size          = sizeof(PIIX4PMState),
     .qdev.vmsd          = &vmstate_acpi,

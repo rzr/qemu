@@ -133,12 +133,12 @@ void open_shell(void) {
 void request_close( void ) {
     INFO( "request_close\n" );
 
-    kbd_put_keycode( 103 & 0x7f );
-//#ifdef _WIN32
-//    Sleep( 1.6 * 1000 ); // 1.6 seconds
-//#else
-//    usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
-//#endif
-//    kbd_put_keycode( 103 | 0x80 );
+    ps2kbd_put_keycode( 103 & 0x7f );
+#ifdef _WIN32
+    Sleep( 1.6 * 1000 ); // 1.6 seconds
+#else
+    usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
+#endif
+    kbd_put_keycode( 103 | 0x80 );
 
 }

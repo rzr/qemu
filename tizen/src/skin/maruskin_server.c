@@ -105,6 +105,7 @@ pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) 
 
 void shutdown_skin_server(void) {
     if ( client_sock ) {
+        INFO( "Send shutdown to skin.\n" );
         if ( 0 > send_skin( client_sock, SEND_SHUTDOWN ) ) {
             INFO( "fail to send shutdown to skin.\n" );
             stop = 1;

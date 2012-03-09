@@ -177,6 +177,7 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 #include "tizen/src/maru_sdl.h"
+#include "tizen/src/skin/maruskin_server.h"
 #endif
 
 //#define DEBUG_NET
@@ -1419,6 +1420,9 @@ void qemu_system_killed(int signal, pid_t pid)
 
 void qemu_system_shutdown_request(void)
 {
+#ifdef CONFIG_MARU
+    shutdown_skin_server();
+#endif
     shutdown_requested = 1;
     qemu_notify_event();
 }
