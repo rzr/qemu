@@ -43,6 +43,8 @@
 
 MULTI_DEBUG_CHANNEL(qemu, maru_overlay);
 
+#define QEMU_DEV_NAME           "MARU_OVERLAY"
+
 #define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
 #define OVERLAY_REG_SIZE	256
 #define OVERLAY1_REG_OFFSET	(OVERLAY_REG_SIZE / 2)
@@ -160,10 +162,10 @@ static int overlay_initfn(PCIDevice *dev)
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_OVERLAY);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    memory_region_init_ram(&s->mem_addr, NULL, "overlay.ram", OVERLAY_MEM_SIZE);
+    memory_region_init_ram(&s->mem_addr, NULL, "maru_overlay.ram", OVERLAY_MEM_SIZE);
     overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
-    memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "overlay-mmio", OVERLAY_REG_SIZE);
+    memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "maru_overlay_mmio", OVERLAY_REG_SIZE);
 
     /* setup memory space */
     /* memory #0 device memory (overlay surface) */
@@ -176,12 +178,12 @@ static int overlay_initfn(PCIDevice *dev)
 
 int pci_maru_overlay_init(PCIBus *bus)
 {
-    pci_create_simple(bus, -1, "overlay");
+    pci_create_simple(bus, -1, QEMU_DEV_NAME);
     return 0;
 }
 
 static PCIDeviceInfo overlay_info = {
-    .qdev.name    = "overlay",
+    .qdev.name    = QEMU_DEV_NAME,
     .qdev.size    = sizeof(OverlayState),
     .no_hotplug   = 1,
     .init         = overlay_initfn,
