@@ -39,7 +39,7 @@
 #include <pthread.h>
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
-#include "../debug_ch.h"
+#include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maruskin_server);
 

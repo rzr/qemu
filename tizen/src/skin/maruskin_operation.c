@@ -30,13 +30,13 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "maruskin_operation.h"
-#include "maruskin_sdl.h"
-#include "../debug_ch.h"
+#include "maru_sdl.h"
+#include "debug_ch.h"
 #include "console.h"
 //FIXME uncomment
 //#include "maru_pm.h"
 
-MULTI_DEBUG_CHANNEL(qemu, maruskin_operation);
+MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
 
 enum {

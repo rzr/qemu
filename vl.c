@@ -177,7 +177,7 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 #include "tizen/src/sdb.h"
-#include "tizen/src/skin/maruskin_sdl.h"
+#include "tizen/src/maru_sdl.h"
 #endif
 
 //#define DEBUG_NET

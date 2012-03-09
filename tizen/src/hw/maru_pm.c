@@ -38,7 +38,7 @@
 #include "sysemu.h"
 #include "range.h"
 #include "ioport.h"
-#include "../debug_ch.h"
+#include "debug_ch.h"
 
 //#define DEBUG
 

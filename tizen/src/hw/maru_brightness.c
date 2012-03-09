@@ -41,7 +41,7 @@
 #include "pci.h"
 #include "maru_pci_ids.h"
 #include "maru_brightness.h"
-#include "../debug_ch.h"
+#include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maru_brightness);
 
