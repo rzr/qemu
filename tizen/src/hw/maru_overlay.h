@@ -41,6 +41,19 @@
 
 #include "qemu-common.h"
 
+extern uint8_t* overlay_ptr;
+extern uint8_t overlay0_power;
+extern uint16_t overlay0_left;
+extern uint16_t overlay0_top;
+extern uint16_t overlay0_width;
+extern uint16_t overlay0_height;
+
+extern uint8_t overlay1_power;
+extern uint16_t overlay1_left;
+extern uint16_t overlay1_top;
+extern uint16_t overlay1_width;
+extern uint16_t overlay1_height;
+
 int pci_maru_overlay_init( PCIBus *bus );
 
 #endif /* MARU_OVERLAY_H_ */

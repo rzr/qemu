@@ -1,5 +1,5 @@
 /*
- * 
+ * Maru brightness device for VGA
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -32,6 +32,10 @@
 #define MARU_BRIGHTNESS_H_
 
 #include "qemu-common.h"
+
+extern uint32_t brightness_level;
+extern uint32_t brightness_off;
+extern uint8_t brightness_tbl[];
 
 int pci_get_brightness(void);
 int pci_maru_brightness_init(PCIBus *bus);

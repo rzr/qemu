@@ -39,6 +39,9 @@
 #include "pci.h"
 #include "maru_pci_ids.h"
 #include "maru_overlay.h"
+#include "debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(qemu, maru_overlay);
 
 #define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
 #define OVERLAY_REG_SIZE	256
@@ -50,6 +53,8 @@ enum {
 	OVERLAY_POSITION = 0x04,	// left top position
 	OVERLAY_SIZE     = 0x08,	// width and height
 };
+
+uint8_t* overlay_ptr;
 
 uint8_t overlay0_power;
 uint16_t overlay0_left;
@@ -65,15 +70,12 @@ uint16_t overlay1_height;
 
 typedef struct OverlayState {
     PCIDevice       dev;
-    
-    ram_addr_t      vram_offset;
 
     MemoryRegion    mem_addr;
     MemoryRegion    mmio_addr;
 
 } OverlayState;
 
-uint8_t* overlay_ptr;
 
 static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned size)
 {
@@ -97,7 +99,7 @@ static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned
         return overlay1_width | overlay1_height << 16;
         break;
     default:
-        fprintf(stderr, "wrong overlay register read - addr : %d\n", (int)addr);
+        ERR("wrong overlay register read - addr : %d\n", (int)addr);
         break;
     }
 
@@ -138,7 +140,7 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint64_t va
         overlay1_height = val >> 16;
         break;
     default:
-        fprintf(stderr, "wrong overlay register write - addr : %d\n", (int)addr);
+        ERR("wrong overlay register write - addr : %d\n", (int)addr);
         break;
     }
 }
@@ -166,8 +168,8 @@ static int overlay_initfn(PCIDevice *dev)
     /* setup memory space */
     /* memory #0 device memory (overlay surface) */
     /* memory #1 memory-mapped I/O */
-    pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mem_addr);
-    pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->mmio_addr);
+    pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->mem_addr);
+    pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
 
     return 0;
 }

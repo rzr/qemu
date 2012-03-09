@@ -56,18 +56,19 @@ MULTI_DEBUG_CHANNEL(qemu, maru_brightness);
 typedef struct BrightnessState {
     PCIDevice       dev;
     ram_addr_t      vram_offset;
-    uint8_t*        vram_ptr;
-    MemoryRegion    mem_addr;
     MemoryRegion    mmio_addr;
 } BrightnessState;
 
 enum {
-	BRIGHTNESS_LEVEL	= 0x00,
-	BRIGHTNESS_OFF    = 0x04,
+	BRIGHTNESS_LEVEL    =   0x00,
+	BRIGHTNESS_OFF      =   0x04,
 };
 
 uint32_t brightness_level = 24;
 uint32_t brightness_off = 0;
+
+uint8_t brightness_tbl[] = {20, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
+                            130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240};
 
 static uint64_t brightness_reg_read(void *opaque, target_phys_addr_t addr, unsigned size)
 {
@@ -75,7 +76,9 @@ static uint64_t brightness_reg_read(void *opaque, target_phys_addr_t addr, unsig
     case BRIGHTNESS_LEVEL:
     	INFO("brightness_reg_read: brightness_level = %d\n", brightness_level);
         return brightness_level;
-
+    case BRIGHTNESS_OFF:
+        INFO("brightness_reg_read: brightness_off = %d\n", brightness_off);
+        return brightness_off;
     default:
         ERR("wrong brightness register read - addr : %d\n", (int)addr);
         break;
@@ -86,8 +89,6 @@ static uint64_t brightness_reg_read(void *opaque, target_phys_addr_t addr, unsig
 
 static void brightness_reg_write(void *opaque, target_phys_addr_t addr, uint64_t val, unsigned size)
 {
-	INFO("brightness_reg_write: addr = %d, val = %d\n", (int)addr, val);
-
 #if BRIGHTNESS_MIN > 0
 	if (val < BRIGHTNESS_MIN || val > BRIGHTNESS_MAX) {
 #else
@@ -99,9 +100,10 @@ static void brightness_reg_write(void *opaque, target_phys_addr_t addr, uint64_t
 	switch (addr & 0xFF) {
 	case BRIGHTNESS_LEVEL:
 		brightness_level = val;
+		INFO("brightness_level : %lld\n", val);
 		return;
 	case BRIGHTNESS_OFF:
-		INFO("Brightness off : %d\n", val);
+		INFO("brightness_off : %lld\n", val);
 		brightness_off = val;
 		return;
 	default:
@@ -125,14 +127,7 @@ static int brightness_initfn(PCIDevice *dev)
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    memory_region_init_ram(&s->mem_addr, NULL, "brightness.ram", BRIGHTNESS_MEM_SIZE);
     memory_region_init_io (&s->mmio_addr, &brightness_mmio_ops, s, "brightness-mmio", BRIGHTNESS_REG_SIZE);
-    s->vram_ptr = memory_region_get_ram_ptr(&s->mem_addr);
-
-    /* setup memory space */
-    /* memory #0 device memory (overlay surface) */
-    /* memory #1 memory-mapped I/O */
-    pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->mem_addr);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
 
     return 0;
