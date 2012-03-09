@@ -11,7 +11,7 @@ QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
 LIBS += -lavformat -lavcodec -lavutil -lm -lGL
 
 # maru loader
-obj-y += emulator.o
+obj-y += emulator.o emulsignal.o
 
 # sdb
 obj-y += sdb.o
