@@ -94,6 +94,9 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
 
 			*qemu_argc = argc - j - i + 1;
 			*qemu_argv = &(argv[j]);
+
+			argv[j] = argv[0];
+
 			break;
 		}
 	}
@@ -123,14 +126,19 @@ int main(int argc, char* argv[])
 	}
 */
 
-	printf("%d\n", qemu_argc);
+//	printf("%d\n", qemu_argc);
+	printf("Start emulator : =====================================\n");
 	for(i = 0; i < qemu_argc; ++i)
 	{
 		printf("%s ", qemu_argv[i]);
 	}
 	printf("\n");
+	printf("======================================================\n");
 
 	construct_main_window(skin_argc, skin_argv);
+
+	sdb_setup();
+
 	qemu_main(qemu_argc, qemu_argv, NULL);
 
 	return 0;

@@ -176,7 +176,6 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "ui/qemu-spice.h"
 
 #ifdef CONFIG_MARU
-#include "tizen/src/sdb.h"
 #include "tizen/src/skin/maruskin_sdl.h"
 #endif
 
@@ -3482,11 +3481,6 @@ int main(int argc, char **argv, char **envp)
      * when bus is created by qdev.c */
     qemu_register_reset(qbus_reset_all_fn, sysbus_get_default());
     qemu_run_machine_init_done_notifiers();
-
-#ifdef CONFIG_MARU
-    /* call sdb setup function */
-    sdb_setup();
-#endif
 
     qemu_system_reset(VMRESET_SILENT);
     if (loadvm) {
