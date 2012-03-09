@@ -1,5 +1,5 @@
 /*
- * sdl display
+ * MARU SDL display driver
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -29,10 +29,10 @@
 
 
 #include <pthread.h>
-#include "maruskin_sdl.h"
-#include "../debug_ch.h"
+#include "maru_sdl.h"
+#include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, maruskin_sdl);
+MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
 
 // TODO : organize

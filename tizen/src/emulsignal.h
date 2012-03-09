@@ -1,12 +1,18 @@
 /*
- * Emulator
+ * Emulator signal handler
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: 
+ * DoHyung Hong <don.hong@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * HyunJun Son <hj79.son@samsung.com>
+ * SangJin Kim <sangjin3.kim@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
+ * KiTae Kim <kt920.kim@samsung.com>
+ * JinHyung Jo <jinhyung.jo@samsung.com>
+ * SungMin Ha <sungmin82.ha@samsung.com>
+ * JiHye Kim <jihye1128.kim@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -29,17 +35,21 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config struecture and defines in emulator
- */
 
-#ifndef __EMULATOR_H__
-#define __EMULATOR_H__
+#ifndef __EMULSIGNAL_H__
+#define __EMULSIGNAL_H__
 
-int get_emulator_condition(void);
-void set_emulator_condition(int state);
-void exit_emulator(void);
-
-
+#include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#ifndef _WIN32
+#include <sys/wait.h>
 #endif
+
+
+int sig_block(void);
+int sig_unblock(void);
+void sig_handler (int signo);
+int register_sig_handler(void);
+
+#endif /* __EMULSIGNAL_H__ */

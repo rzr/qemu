@@ -11,7 +11,7 @@ QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
 LIBS += -lavformat -lavcodec -lavutil -lm -lGL
 
 # maru loader
-obj-y += emulator.o
+obj-y += emulator.o emulsignal.o maru_sdl.o
 
 # sdb
 obj-y += sdb.o
@@ -29,7 +29,7 @@ obj-i386-y += maru_brightness.o
 obj-i386-y += maru_touchscreen.o
 
 # maru skin
-obj-i386-y += maruskin_sdl.o maruskin_client.o maruskin_server.o maruskin_operation.o
+obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o
 
 
 ##########################################################

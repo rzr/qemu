@@ -1,5 +1,5 @@
 /*
- * sdl display
+ * MARU SDL display driver
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -28,8 +28,8 @@
  */
 
 
-#ifndef MARUSKIN_SDL_H_
-#define MARUSKIN_SDL_H_
+#ifndef MARU_SDL_H_
+#define MARU_SDL_H_
 
 #include "console.h"
 #ifndef _WIN32
@@ -48,4 +48,4 @@
 void maruskin_display_init(DisplayState *ds);
 void maruskin_sdl_init(int swt_handle);
 
-#endif /* MARUSKIN_SDL_H_ */
+#endif /* MARU_SDL_H_ */

@@ -33,7 +33,7 @@
 #include "console.h"
 #include "usb.h"
 #include "usb-desc.h"
-#include "../debug_ch.h"
+#include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, touchscreen);
 
