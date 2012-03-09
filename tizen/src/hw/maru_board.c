@@ -253,7 +253,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
 // maru specialized device init...
     if (pci_enabled) {
-	//svcamera_pci_init(pci_bus);
+		maru_camera_pci_init(pci_bus);
 	//tizen_ac97_init(pci_bus);
 		codec_init(pci_bus);        
     }

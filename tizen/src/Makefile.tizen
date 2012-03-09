@@ -27,6 +27,14 @@ obj-i386-y += maru_pm.o
 obj-i386-y += maru_vga.o
 obj-i386-y += maru_brightness.o
 obj-i386-y += maru_touchscreen.o
+obj-i386-$(CONFIG_PCI) += maru_camera_common_pci.o
+obj-i386-$(CONFIG_LINUX) += maru_camera_linux_pci.o
+obj-i386-$(CONFIG_WIN32) += maru_camera_win32_pci.o
+# libs for maru camera on linux host
+ifdef CONFIG_LINUX
+LIBS += -lv4l2 -lv4lconvert
+endif
+
 
 # maru skin
 obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o

@@ -37,9 +37,9 @@
 #include "qemu-common.h"
 #include "cpu-common.h"
 
-#include "pc.h"
 #include "pci.h"
 #include "pci_ids.h"
+#include "maru_pci_ids.h"
 
 #include "maru_camera_common.h"
 #include "tizen/src/debug_ch.h"
@@ -86,7 +86,7 @@ static inline uint32_t marucam_mmio_read(void *opaque, target_phys_addr_t offset
 		ret = state->thread->param->errCode;
 		state->thread->param->errCode = 0;
 		break;
-	ldefault:
+	default:
 		WARN("Not supported command!!\n");
 		break;
 	}
@@ -214,7 +214,7 @@ static int marucam_initfn(PCIDevice *dev)
 /*
  *  Termination function
  */
-static int marucam_exitfn(PCIBus *bus)
+static int marucam_exitfn(PCIDevice *dev)
 {
 	MaruCamState *s = DO_UPCAST(MaruCamState, dev, dev);
 
@@ -242,7 +242,7 @@ static PCIDeviceInfo maru_camera_info = {
     .exit         = marucam_exitfn,
     .vendor_id    = PCI_VENDOR_ID_TIZEN,
     .device_id    = PCI_DEVICE_ID_VIRTUAL_CAMERA,
-    .class_id     = PCI_CLASS_MULTIMEDIA_OTHER,
+    .class_id     = PCI_CLASS_OTHERS,
 };
 
 static void maru_camera_pci_register(void)
