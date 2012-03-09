@@ -3,11 +3,33 @@
   <modeSections>
     <modeSection id="0" name="Portrait">
       <lcd id="0">
-        <region height="0" left="0" top="0" width="0"/>
+          <region height="800" left="26" top="70" width="480"/>
       </lcd>
       <imageList>
-        <mainImage>mainImage</mainImage>
-        <keyPressedImage>keyPressedImage</keyPressedImage>
+        <mainImage>default.png</mainImage>
+        <keyPressedImage>default.png</keyPressedImage>
+      </imageList>
+      <keyMapList>
+        <keyMap>
+        <region height="0" left="0" top="0" width="0"/>
+          <eventInfo status="KEY_PRESSED">
+            <eventID>eventID</eventID>
+            <eventValue>
+              <keyCode>0</keyCode>
+              <keyName>keyName</keyName>
+            </eventValue>
+          </eventInfo>
+          <tooltip>tooltip</tooltip>
+        </keyMap>
+      </keyMapList>
+    </modeSection>
+    <modeSection id="1" name="Landscape">
+      <lcd id="0">
+        <region height="480" left="70" top="30" width="800"/>
+      </lcd>
+      <imageList>
+        <mainImage>default_w90.png</mainImage>
+        <keyPressedImage>half_w90.png</keyPressedImage>
       </imageList>
       <keyMapList>
         <keyMap>
