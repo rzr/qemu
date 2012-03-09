@@ -35,7 +35,7 @@
 #include "usb-desc.h"
 #include "../debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(qemu, maru_touchscreen);
+MULTI_DEBUG_CHANNEL(qemu, touchscreen);
 
 
 typedef struct USBTouchscreenState {
@@ -141,7 +141,7 @@ static void usb_touchscreen_event(void *opaque, int x, int y, int z, int buttons
     s->buttons_state = buttons_state;
     s->changed = 1;
 
-    INFO("boo~~~%d,%d,%d,, %d", x, y, z, buttons_state);
+    INFO("boo~~~%d,%d,%d,, %d\n", x, y, z, buttons_state);
 }
 
 static int usb_touchscreen_poll(USBTouchscreenState *s, uint8_t *buf, int len)
@@ -314,7 +314,6 @@ static struct USBDeviceInfo touchscreen_info = {
 
 static void usb_touchscreen_register_devices(void)
 {
-    INFO("boo~~~~~~~~~~~~~");
     usb_qdev_register(&touchscreen_info);
 }
 
