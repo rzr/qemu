@@ -71,8 +71,8 @@
 #define UHCI_PORT_READ_ONLY    (0x1bb)
 #define UHCI_PORT_WRITE_CLEAR  (UHCI_PORT_CSC | UHCI_PORT_ENC)
 
-#ifdef CONFIG_MARU //TODO : temp code
-#define FRAME_TIMER_FREQ 10000
+#ifdef CONFIG_MARU
+#define FRAME_TIMER_FREQ 2000
 #else
 #define FRAME_TIMER_FREQ 1000
 #endif
