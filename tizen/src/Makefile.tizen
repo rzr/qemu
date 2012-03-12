@@ -37,7 +37,7 @@ endif
 
 
 # maru skin
-obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o
+obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
 
 
 ##########################################################

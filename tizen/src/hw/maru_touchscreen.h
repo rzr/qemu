@@ -38,6 +38,7 @@
 #include "usb.h"
 #include "usb-desc.h"
 
+
 typedef struct USBTouchscreenState {
     USBDevice dev;
     QEMUPutMouseEntry *eh_entry;
