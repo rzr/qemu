@@ -131,6 +131,12 @@ void open_shell(void) {
     //TODO
 }
 
+void onoff_usb_kbd( int on ) {
+    INFO( "usb kbd on/off:%d\n", on );
+    //TODO
+}
+
+
 void request_close( void ) {
     INFO( "request_close\n" );
 

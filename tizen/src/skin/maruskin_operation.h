@@ -42,6 +42,8 @@ void change_lcd_state( short scale, short direction );
 
 void open_shell(void);
 
+void onoff_usb_kbd( int on );
+
 void request_close( void );
 
 #endif /* MARUSKIN_OPERATION_H_ */

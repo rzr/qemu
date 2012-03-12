@@ -59,6 +59,7 @@ enum {
     RECV_HARD_KEY_EVENT = 12,
     RECV_CHANGE_LCD_STATE = 13,
     RECV_OPEN_SHELL = 14,
+    RECV_USB_KBD = 15,
     RECV_HEART_BEAT = 900,
     RECV_RESPONSE_HEART_BEAT = 901,
     RECV_CLOSE = 998,
@@ -406,6 +407,25 @@ static void* run_skin_server( void* args ) {
                 case RECV_OPEN_SHELL: {
                     INFO( "RECV_OPEN_SHELL\n" );
                     open_shell();
+                    break;
+                }
+                case RECV_USB_KBD: {
+                    INFO( "RECV_USB_KBD\n" );
+                    if ( 0 >= length ) {
+                        INFO( "there is no data looking at 0 length." );
+                        continue;
+                    }
+
+                    int on = 0;
+
+                    char* p = readbuf;
+                    memcpy( &on, p, sizeof( on ) );
+                    on = ntohs( on );
+                    if( 0 < on ) {
+                        // java boolean is 256bits '1' set.
+                        on = 1;
+                    }
+                    onoff_usb_kbd( on );
                     break;
                 }
                 case RECV_CLOSE: {
