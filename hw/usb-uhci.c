@@ -71,12 +71,7 @@
 #define UHCI_PORT_READ_ONLY    (0x1bb)
 #define UHCI_PORT_WRITE_CLEAR  (UHCI_PORT_CSC | UHCI_PORT_ENC)
 
-#ifdef CONFIG_MARU
-#define FRAME_TIMER_FREQ 2000
-#else
 #define FRAME_TIMER_FREQ 1000
-#endif
-
 #define FRAME_MAX_LOOPS  100
 
 #define NB_PORTS 2

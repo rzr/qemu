@@ -79,7 +79,7 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
         INFO( "undefined mouse event type:%d\n", event_type );
     }
 
-    usleep(5000);
+    usleep(100);
 }
 
 void do_key_event( int event_type, int keycode ) {

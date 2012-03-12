@@ -6,7 +6,7 @@
  *
  * Contact:
  *  GiWoong Kim <giwoong.kim@samsung.com>
- *  Hyunjun Son <hj79.son@samsung.com>
+ *  HyunJun Son <hj79.son@samsung.com>
  *  DongKyun Yun <dk77.yun@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -29,6 +29,8 @@
  *
  */
 
+
+#include <pthread.h>
 #include "hw.h"
 #include "console.h"
 #include "usb.h"
@@ -130,18 +132,40 @@ static const USBDesc desc_touchscreen = {
     .str = desc_strings,
 };
 
+typedef struct TouchEventEntry {
+    USBEmulTouchscreenPacket queue_packet;
+    int index;
+
+    /* used internally by qemu for handling mice */
+    QTAILQ_ENTRY(TouchEventEntry) node;
+} TouchEventEntry;
+
+static QTAILQ_HEAD(, TouchEventEntry) events_queue =
+    QTAILQ_HEAD_INITIALIZER(events_queue);
+
+static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int event_cnt = 0;
+
 static void usb_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state)
 {
+    TouchEventEntry *te;
     USBTouchscreenState *s = opaque;
 
-    /* scale to resolution */
-    s->dx = x; //(x * TOUCHSCREEN_RESOLUTION_X / 0x7FFF);
-    s->dy = y; //(y * TOUCHSCREEN_RESOLUTION_Y / 0x7FFF);
-    s->dz = z;
-    s->buttons_state = buttons_state;
+    te = g_malloc0(sizeof(TouchEventEntry));
+    te->queue_packet.x = x; //(x * TOUCHSCREEN_RESOLUTION_X / 0x7FFF);
+    te->queue_packet.y = y; //(y * TOUCHSCREEN_RESOLUTION_Y / 0x7FFF);
+    te->queue_packet.z = z;
+    te->queue_packet.state = buttons_state;
+
+    pthread_mutex_lock(&event_mutex);
+    te->index = event_cnt++;
+
+    QTAILQ_INSERT_TAIL(&events_queue, te, node);
     s->changed = 1;
 
-    INFO("boo~~~%d,%d,%d,, %d\n", x, y, z, buttons_state);
+    pthread_mutex_unlock(&event_mutex);
+
+    TRACE("touch event(%d) : x=%d, y=%d, z=%d, state=%d\n", te->index, x, y, z, buttons_state);
 }
 
 static int usb_touchscreen_poll(USBTouchscreenState *s, uint8_t *buf, int len)
@@ -204,11 +228,33 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
     switch (p->pid) {
     case USB_TOKEN_IN:
         if (p->devep == 1) {
+            pthread_mutex_lock(&event_mutex);
+
             if (s->changed == 0) {
+                pthread_mutex_unlock(&event_mutex);
                 return USB_RET_NAK;
             }
 
-            s->changed = 0;
+            if (!QTAILQ_EMPTY(&events_queue)) {
+                TouchEventEntry *te = QTAILQ_FIRST(&events_queue);
+
+                s->dx = te->queue_packet.x;
+                s->dy = te->queue_packet.y;
+                s->dz = te->queue_packet.z;
+                s->buttons_state = te->queue_packet.state;
+
+                QTAILQ_REMOVE(&events_queue, te, node);
+                event_cnt--;
+                TRACE("processed touch event(%d) : x=%d, y=%d, z=%d, state=%d\n",
+                    te->index, s->dx, s->dy, s->dz, s->buttons_state);
+
+                if (QTAILQ_EMPTY(&events_queue)) {
+                    s->changed = 0;
+                }
+            }
+
+            pthread_mutex_unlock(&event_mutex);
+
             ret = usb_touchscreen_poll(s, buf, p->iov.size);
             usb_packet_copy(p, buf, ret);
             break;
