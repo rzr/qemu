@@ -14,9 +14,9 @@ exec ./configure \
  --enable-mixemu \
  --disable-vnc-tls \
  --audio-card-list=ac97 \
+ --enable-ldst-optimization \
  --enable-maru
 # --enable-ffmpeg
-# --enable-tcg-x86-opt \
 # --enable-v4l2 \
 # --enable-debug \
 # --enable-profiler \
@@ -29,6 +29,7 @@ exec ./configure \
  --audio-drv-list=winwave \
  --enable-mixemu \
  --disable-vnc-tls \
+ --enable-ldst-optimization \
  --enable-maru
 # --enable-ffmpeg
 # --disable-vnc-jpeg \
