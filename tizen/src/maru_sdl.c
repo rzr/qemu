@@ -49,13 +49,10 @@ static int sdl_thread_initialized = 0;
 
 static void qemu_update(void)
 {
-    SDL_Surface *surface = NULL;
-
 #ifndef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
-    surface = SDL_GetVideoSurface();
     SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
@@ -143,10 +140,10 @@ static void qemu_ds_refresh(DisplayState *ds)
     }
 }
 
-
 void maruskin_display_init(DisplayState *ds)
 {
-    INFO( "qemu_display_init\n");
+    INFO( "qemu display initialize\n");
+
     /*  graphics context information */
     DisplayChangeListener *dcl;
 
@@ -170,7 +167,6 @@ void maruskin_display_init(DisplayState *ds)
 #endif
 }
 
-
 void maruskin_sdl_init(int swt_handle)
 {
     gchar SDL_windowhack[32];
@@ -186,12 +182,12 @@ void maruskin_sdl_init(int swt_handle)
         exit(1);
     }
 
+    INFO( "qemu_sdl_initialize\n");
     surface_screen = SDL_SetVideoMode(480, 800, 0,
             SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME);
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);
     SDL_GetWMInfo(&info);
-    //  opengl_exec_set_parent_window(info.info.x11.display, info.info.x11.window);
 #endif
 }
