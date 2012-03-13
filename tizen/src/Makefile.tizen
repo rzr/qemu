@@ -39,6 +39,8 @@ endif
 # maru skin
 obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
 
+# guest server
+obj-i386-y += guest_server.o 
 
 ##########################################################
 # opengl library for i386

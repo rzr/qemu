@@ -69,6 +69,7 @@ enum {
 enum {
     SEND_HEART_BEAT = 1,
     SEND_HEART_BEAT_RESPONSE = 2,
+    SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
 
@@ -97,7 +98,7 @@ pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) 
     pthread_t thread_id = -1;
 
     if ( 0 != pthread_create( &thread_id, NULL, run_skin_server, NULL ) ) {
-        INFO( "fail to create skin_server pthread.\n" );
+        ERR( "fail to create skin_server pthread.\n" );
     }
 
     return thread_id;
@@ -108,7 +109,7 @@ void shutdown_skin_server(void) {
     if ( client_sock ) {
         INFO( "Send shutdown to skin.\n" );
         if ( 0 > send_skin( client_sock, SEND_SHUTDOWN ) ) {
-            INFO( "fail to send shutdown to skin.\n" );
+            ERR( "fail to send SEND_SHUTDOWN to skin.\n" );
             stop = 1;
             // force close
             close( client_sock );
@@ -118,6 +119,12 @@ void shutdown_skin_server(void) {
         } else {
             // skin sent RECV_RESPONSE_SHUTDOWN.
         }
+    }
+}
+
+void notify_sensor_daemon_start(void) {
+    if ( 0 > send_skin( client_sock, SEND_SENSOR_DAEMON_START ) ) {
+        ERR( "fail to send SEND_SENSOR_DAEMON_START to skin.\n" );
     }
 }
 
@@ -138,7 +145,7 @@ static void* run_skin_server( void* args ) {
     port = svr_port;
 
     if ( ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) < 0 ) {
-        INFO( "create listen socket error: " );
+        ERR( "create listen socket error: " );
         perror( "socket" );
         goto cleanup;
     }
@@ -154,7 +161,7 @@ static void* run_skin_server( void* args ) {
 
     if ( 0 > bind( server_sock, (struct sockaddr *) &server_addr, sizeof( server_addr ) ) ) {
         //TODO rebind in case of port
-        INFO( "skin server bind error: " );
+        ERR( "skin server bind error: " );
         perror( "bind" );
         goto cleanup;
     } else {
@@ -162,7 +169,7 @@ static void* run_skin_server( void* args ) {
     }
 
     if ( listen( server_sock, 4 ) < 0 ) {
-        INFO( "skin_server listen error: " );
+        ERR( "skin_server listen error: " );
         perror( "listen" );
         goto cleanup;
     }
@@ -183,7 +190,7 @@ static void* run_skin_server( void* args ) {
 
         client_len = sizeof(client_addr);
         if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr *) &client_addr, &client_len ) ) ) {
-            INFO( "skin_servier accept error: " );
+            ERR( "skin_servier accept error: " );
             perror( "accept" );
             continue;
         }
@@ -254,10 +261,10 @@ static void* run_skin_server( void* args ) {
                         perror( "error : skin_server read data" );
                         break;
                     } else if ( 0 == read_cnt ) {
-                        INFO( "data read_cnt is 0.\n" );
+                        ERR( "data read_cnt is 0.\n" );
                         break;
                     } else if ( read_cnt != length ) {
-                        INFO( "read_cnt is not equal to length.\n" );
+                        ERR( "read_cnt is not equal to length.\n" );
                         break;
                     }
 
@@ -574,23 +581,3 @@ static void stop_heart_beat(void) {
     pthread_cond_signal( &cond_heartbeat );
     pthread_mutex_unlock( &mutex_heartbeat );
 }
-
-#if 0 //XXX for test
-int main( int argc, char** argv ) {
-
-    int thread_return;
-
-    pthread_t thread_id = start_skin_server( 11111, argc, argv );
-
-    if ( -1 == thread_id ) {
-        return -1;
-    }
-
-    pthread_join( thread_id, (void**) &thread_return );
-
-    INFO( "exit program...thread_return:%d\n", thread_return );
-
-    return 0;
-
-}
-#endif

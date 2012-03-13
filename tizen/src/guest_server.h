@@ -1,9 +1,10 @@
 /*
- * socket server for emulator skin
+ * 
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
+ * JiHye Kim <jihye1128.kim@samsung.com>
  * Hyunjun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
@@ -27,14 +28,13 @@
  *
  */
 
-#ifndef MARUSKIN_SERVER_H_
-#define MARUSKIN_SERVER_H_
+
+#ifndef GUEST_SERVER_H_
+#define GUEST_SERVER_H_
 
 #include <pthread.h>
-#include <stdint.h>
 
-pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv );
-void shutdown_skin_server(void);
-void notify_sensor_daemon_start(void);
+pthread_t start_guest_server( void );
+void shutdown_guest_server( void );
 
-#endif /* MARUSKIN_SERVER_H_ */
+#endif /* GUEST_SERVER_H_ */

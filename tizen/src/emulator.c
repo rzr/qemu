@@ -36,6 +36,7 @@
 #include "string.h"
 #include "skin/maruskin_server.h"
 #include "skin/maruskin_client.h"
+#include "guest_server.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, main);
@@ -69,6 +70,9 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
         //TODO:
     }
 #endif
+
+//    start_guest_server();
+
 }
 
 static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
@@ -127,19 +131,21 @@ int main(int argc, char* argv[])
 */
 
 //	printf("%d\n", qemu_argc);
-	printf("Start emulator : =====================================\n");
+	INFO("Start emulator : =====================================\n");
 	for(i = 0; i < qemu_argc; ++i)
 	{
-		printf("%s ", qemu_argv[i]);
+	    INFO("%s ", qemu_argv[i]);
 	}
-	printf("\n");
-	printf("======================================================\n");
+	INFO("\n");
+	INFO("======================================================\n");
 
 	construct_main_window(skin_argc, skin_argv);
 
 	sdb_setup();
 
 	qemu_main(qemu_argc, qemu_argv, NULL);
+
+//	shutdown_guest_server();
 
 	return 0;
 }
