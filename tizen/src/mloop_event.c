@@ -28,6 +28,7 @@
 
 #ifdef _WIN32
 #include <winsock.h>
+#define	socklen_t     int
 #else
 #include <netinet/in.h>
 #include <sys/ioctl.h>
@@ -206,7 +207,19 @@ static void mloop_evhandle_usb_del(char *name)
 static void mloop_evcb_recv(struct mloop_evsock *ev)
 {
     struct mloop_evpack pack;
-    int ret = read(ev->sockno, (void *)&pack, sizeof(pack));
+    int ret;
+
+    do {
+    	ret = recv(ev->sockno, (void *)&pack, sizeof(pack), 0);
+#ifdef _WIN32
+    } while (ret == -1 && WSAGetLastError() == WSAEINTR);
+#else
+    } while (ret == -1 && errno == EINTR);
+#endif // _WIN32
+
+    if (ret == -1 ) {
+        return;
+    }
 
     if (ret == 0 ) {
         return;
