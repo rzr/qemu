@@ -34,9 +34,14 @@
 #include "debug_ch.h"
 #include "../hw/maru_pm.h"
 #include "maruskin_keymap.h"
+#include "console.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
+enum {
+    HARD_KEY_HOME = 101,
+    HARD_KEY_POWER = 103,
+};
 
 enum {
     DIRECTION_PORTRAIT = 1,
@@ -96,35 +101,31 @@ void do_key_event( int event_type, int keycode ) {
 void do_hardkey_event( int event_type, int keycode ) {
     INFO( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
-    //TODO convert keycode ?
+    // press
+    if ( KEY_PRESSED == event_type ) {
 
-//FIXME uncomment
-//    // press
-//    if ( KEY_PRESSED ) {
-//
-//        if ( kbd_mouse_is_absolute() ) {
-//
-//            // home key or power key is used for resume.
-//            if ( ( 101 == keycode ) || ( 103 == keycode ) ) {
-//                if ( is_suspended_state() ) {
-//                    INFO( "user requests system resume.\n" );
-//                    resume();
-//                    usleep( 500 * 1000 );
-//                }
-//            }
-//
-//            ps2kbd_put_keycode( keycode & 0x7f );
-//
-//        }
-//
-//    } else if ( KEY_RELEASED ) {
-//
-//        if ( kbd_mouse_is_absolute() ) {
-//            TRACE( "release parsing keycode = %d, result = %d\n", keycode, keycode | 0x80 );
-//            ps2kbd_put_keycode( keycode | 0x80 );
-//        }
-//
-//    }
+        if ( kbd_mouse_is_absolute() ) {
+
+            // home key or power key is used for resume.
+            if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
+                if ( is_suspended_state() ) {
+                    INFO( "user requests system resume.\n" );
+                    resume();
+                    usleep( 500 * 1000 );
+                }
+            }
+
+            ps2kbd_put_keycode( keycode & 0x7f );
+
+        }
+
+    } else if ( KEY_RELEASED == event_type ) {
+
+        if ( kbd_mouse_is_absolute() ) {
+            ps2kbd_put_keycode( keycode | 0x80 );
+        }
+
+    }
 
 }
 
