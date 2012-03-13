@@ -395,6 +395,7 @@ static void* run_skin_server( void* args ) {
                     direction = ntohs( direction );
 
                     change_lcd_state( scale, direction );
+                    do_direction_event( direction );
                     break;
                 }
                 case RECV_HEART_BEAT: {

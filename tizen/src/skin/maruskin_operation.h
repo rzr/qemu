@@ -38,6 +38,8 @@ void do_key_event( int event_type, int keycode );
 
 void do_hardkey_event( int event_type, int keycode );
 
+void do_direction_event( int event_type );
+
 void change_lcd_state( short scale, short direction );
 
 void open_shell(void);
