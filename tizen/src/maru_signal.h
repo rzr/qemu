@@ -36,8 +36,8 @@
  */
 
 
-#ifndef __EMULSIGNAL_H__
-#define __EMULSIGNAL_H__
+#ifndef __MARU_SIGNAL_H__
+#define __MARU_SIGNAL_H__
 
 #include <signal.h>
 #include <unistd.h>
@@ -52,4 +52,4 @@ int sig_unblock(void);
 void sig_handler (int signo);
 int register_sig_handler(void);
 
-#endif /* __EMULSIGNAL_H__ */
+#endif /* __MARU_SIGNAL_H__ */
