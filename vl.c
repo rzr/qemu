@@ -167,6 +167,7 @@ int main(int argc, char **argv)
 #include "vl.h"
 #include "ui/qemu-spice.h"
 #include "sdb.h"
+#include "tizen/src/mloop_event.h"
 
 #include "tizen/src/debug_ch.h"
 
@@ -907,8 +908,8 @@ static void smp_parse(const char *optarg)
             cores = smp / (sockets * threads);
         } else {
           if (sockets) {
-			threads = smp / (cores * sockets);
-		  }
+            threads = smp / (cores * sockets);
+          }
         }
     }
     smp_cpus = smp;
@@ -1321,11 +1322,11 @@ void qemu_system_shutdown_request(void)
 
 #if 1 /* graceful shutdown */
     /* graceful shutdown starts with 'qemu_system_shutdown_request'. */
-	exit_emulator_post_process();
+    exit_emulator_post_process();
 #endif
 
 #ifndef _SDK_SIMULATOR
-	emul_kill_all_process();
+    emul_kill_all_process();
 #endif
     shutdown_requested = 1;
     qemu_notify_event();
@@ -1408,13 +1409,13 @@ void main_loop_wait(int nonblocking)
     slirp_select_poll(&rfds, &wfds, &xfds, (ret < 0));
 
 #ifndef _SDK_SIMULATOR  
-	emulator_mutex_lock();
+    emulator_mutex_lock();
 #endif
 
-	qemu_run_all_timers();
+    qemu_run_all_timers();
 
 #ifndef _SDK_SIMULATOR  
-	emulator_mutex_unlock();
+    emulator_mutex_unlock();
 #endif
 
     /* Check bottom-halves last in case any of the earlier events triggered
@@ -2045,7 +2046,7 @@ int qemu_main(int argc, char **argv, char **envp)
         if (optind >= argc)
             break;
         if (argv[optind][0] != '-') {
-	    hda_opts = drive_add(IF_DEFAULT, 0, argv[optind++], HD_OPTS);
+        hda_opts = drive_add(IF_DEFAULT, 0, argv[optind++], HD_OPTS);
         } else {
             const QEMUOption *popt;
 
@@ -2109,15 +2110,15 @@ int qemu_main(int argc, char **argv, char **envp)
                 if (drive_def(optarg) == NULL) {
                     exit(1);
                 }
-	        break;
+            break;
             case QEMU_OPTION_set:
                 if (qemu_set_option(optarg) != 0)
                     exit(1);
-	        break;
+            break;
             case QEMU_OPTION_global:
                 if (qemu_global_option(optarg) != 0)
                     exit(1);
-	        break;
+            break;
             case QEMU_OPTION_mtdblock:
                 drive_add(IF_MTD, -1, optarg, MTD_OPTS);
                 break;
@@ -2164,7 +2165,7 @@ int qemu_main(int argc, char **argv, char **envp)
                         fprintf(stderr, "qemu: invalid physical CHS format\n");
                         exit(1);
                     }
-		    if (hda_opts != NULL) {
+            if (hda_opts != NULL) {
                         char num[16];
                         snprintf(num, sizeof(num), "%d", cyls);
                         qemu_opt_set(hda_opts, "cyls", num);
@@ -2360,9 +2361,9 @@ int qemu_main(int argc, char **argv, char **envp)
             case QEMU_OPTION_S:
                 autostart = 0;
                 break;
-	    case QEMU_OPTION_k:
-		keyboard_layout = optarg;
-		break;
+        case QEMU_OPTION_k:
+        keyboard_layout = optarg;
+        break;
             case QEMU_OPTION_localtime:
                 rtc_utc = 0;
                 break;
@@ -2545,9 +2546,9 @@ int qemu_main(int argc, char **argv, char **envp)
             case QEMU_OPTION_debugcon:
                 add_device_config(DEV_DEBUGCON, optarg);
                 break;
-	    case QEMU_OPTION_loadvm:
-		loadvm = optarg;
-		break;
+        case QEMU_OPTION_loadvm:
+        loadvm = optarg;
+        break;
             case QEMU_OPTION_full_screen:
                 full_screen = 1;
                 break;
@@ -2614,10 +2615,10 @@ int qemu_main(int argc, char **argv, char **envp)
                     exit(1);
                 }
                 break;
-	    case QEMU_OPTION_vnc:
+        case QEMU_OPTION_vnc:
                 display_remote++;
-		vnc_display = optarg;
-		break;
+        vnc_display = optarg;
+        break;
             case QEMU_OPTION_no_acpi:
                 acpi_enabled = 0;
                 break;
@@ -2646,11 +2647,11 @@ int qemu_main(int argc, char **argv, char **envp)
                     exit(1);
                 }
                 break;
-	    case QEMU_OPTION_option_rom:
-		if (nb_option_roms >= MAX_OPTION_ROMS) {
-		    fprintf(stderr, "Too many option ROMs\n");
-		    exit(1);
-		}
+        case QEMU_OPTION_option_rom:
+        if (nb_option_roms >= MAX_OPTION_ROMS) {
+            fprintf(stderr, "Too many option ROMs\n");
+            exit(1);
+        }
                 opts = qemu_opts_parse(qemu_find_opts("option-rom"), optarg, 1);
                 option_rom[nb_option_roms].name = qemu_opt_get(opts, "romfile");
                 option_rom[nb_option_roms].bootindex =
@@ -2659,25 +2660,25 @@ int qemu_main(int argc, char **argv, char **envp)
                     fprintf(stderr, "Option ROM file is not specified\n");
                     exit(1);
                 }
-		nb_option_roms++;
-		break;
+        nb_option_roms++;
+        break;
             case QEMU_OPTION_semihosting:
                 semihosting_enabled = 1;
                 break;
             case QEMU_OPTION_name:
                 qemu_name = qemu_strdup(optarg);
-		 {
-		     char *p = strchr(qemu_name, ',');
-		     if (p != NULL) {
-		        *p++ = 0;
-			if (strncmp(p, "process=", 8)) {
-			    fprintf(stderr, "Unknown subargument %s to -name\n", p);
-			    exit(1);
-			}
-			p += 8;
-			os_set_proc_name(p);
-		     }	
-		 }	
+         {
+             char *p = strchr(qemu_name, ',');
+             if (p != NULL) {
+                *p++ = 0;
+            if (strncmp(p, "process=", 8)) {
+                fprintf(stderr, "Unknown subargument %s to -name\n", p);
+                exit(1);
+            }
+            p += 8;
+            os_set_proc_name(p);
+             }
+         }
                 break;
             case QEMU_OPTION_prom_env:
                 if (nb_prom_envs >= MAX_PROM_ENVS) {
@@ -3091,15 +3092,15 @@ int qemu_main(int argc, char **argv, char **envp)
 #endif
 #if defined(CONFIG_SDL)
     case DT_SDL:{
-			if (use_qemu_display) {
-				/* use qemu SDL */
-				sdl_display_init(ds, full_screen, no_frame);
-			}
-			else {
-				/* use qemu_gtk_widget */
-				qemu_display_init(ds);
-			}
-		}
+            if (use_qemu_display) {
+                /* use qemu SDL */
+                sdl_display_init(ds, full_screen, no_frame);
+            }
+            else {
+                /* use qemu_gtk_widget */
+                qemu_display_init(ds);
+            }
+        }
         break;
 #elif defined(CONFIG_COCOA)
     case DT_SDL:
@@ -3160,9 +3161,12 @@ int qemu_main(int argc, char **argv, char **envp)
      * when bus is created by qdev.c */
     qemu_register_reset(qbus_reset_all_fn, sysbus_get_default());
     qemu_run_machine_init_done_notifiers();
-	
-	/* call sdb setup function */
-	sdb_setup();
+
+    /* call sdb setup function */
+    sdb_setup();
+
+    /* init mloop_event */
+    mloop_ev_init();
 
     qemu_system_reset();
     if (loadvm) {
@@ -3185,6 +3189,9 @@ int qemu_main(int argc, char **argv, char **envp)
     os_setup_post();
 
     main_loop();
+
+    /* clean up mloop_event */
+    mloop_ev_stop();
     quit_timers();
     net_cleanup();
 

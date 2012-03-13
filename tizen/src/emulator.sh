@@ -348,7 +348,7 @@ set_qemu_hw_options () {
 	qemu_x86_opts="$qemu_x86_opts -vga tizen -bios bios.bin -L ${QEMU_BIOS_PATH}"
 
 	#keyboard
-	qemu_common_opts="-usbdevice keyboard $qemu_common_opts"
+#	qemu_common_opts="-usbdevice keyboard $qemu_common_opts"
 }
 
 set_qemu_options () {

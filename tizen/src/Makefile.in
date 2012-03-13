@@ -108,6 +108,7 @@ OBJS_COMMON = \
 	utils.o \
 	vt_utils.o \
 	debug_ch.o \
+	mloop_event.o \
 	vinit_process.o
 
 OBJS_X86 += $(OBJS_COMMON) arch_x86.o

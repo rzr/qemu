@@ -56,6 +56,7 @@
 
 #include "debug_ch.h"
 #include "sdb.h"
+#include "tizen/src/mloop_event.h"
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, menu_callback);
@@ -302,10 +303,12 @@ void menu_rotate_callback(PHONEMODELINFO *device, int nMode)
             sprintf(buf, "1\n270\n");
             break;
         case 7:
-            sprintf(buf, "7\n1\n");
+//            sprintf(buf, "7\n1\n");
+            mloop_evcmd_usbkbd_on();
             break;
         case 8:
-            sprintf(buf, "7\n0\n");
+//            sprintf(buf, "7\n0\n");
+            mloop_evcmd_usbkbd_off();
             break;
     }
 
