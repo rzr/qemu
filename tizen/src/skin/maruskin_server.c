@@ -495,7 +495,7 @@ static int send_skin( int client_sock, short send_cmd ) {
     memset( &sendbuf, 0, SEND_HEADER_SIZE );
 
     long long request_id = (long long) rand();
-    INFO( "send skin request_id:%lld, send_cmd:%d\n", request_id, send_cmd );
+    TRACE( "send skin request_id:%lld, send_cmd:%d\n", request_id, send_cmd );
 
     request_id = htobe64( request_id );
 
