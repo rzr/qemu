@@ -77,21 +77,21 @@ void start_display( int handle_id, short scale, short rotation ) {
 }
 
 void do_mouse_event( int event_type, int x, int y, int z ) {
-    INFO( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
+    TRACE( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
     if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
         kbd_mouse_event(x, y, z, 1);
     } else if (MOUSE_UP == event_type) {
         kbd_mouse_event(x, y, z, 0);
     } else {
-        INFO( "undefined mouse event type:%d\n", event_type );
+        ERR( "undefined mouse event type:%d\n", event_type );
     }
 
     usleep(100);
 }
 
 void do_key_event( int event_type, int keycode ) {
-    INFO( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
+    TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     if (KEY_PRESSED == event_type) {
         kbd_put_keycode(curses2keycode[keycode]);
@@ -101,7 +101,7 @@ void do_key_event( int event_type, int keycode ) {
 }
 
 void do_hardkey_event( int event_type, int keycode ) {
-    INFO( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
+    TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     // press
     if ( KEY_PRESSED == event_type ) {
