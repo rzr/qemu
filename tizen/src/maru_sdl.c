@@ -139,7 +139,19 @@ static void qemu_ds_resize(DisplayState *ds)
 
 static void qemu_ds_refresh(DisplayState *ds)
 {
+    SDL_Event ev1, *ev = &ev1;
+
     vga_hw_update();
+
+    while (SDL_PollEvent(ev)) {
+        switch (ev->type) {
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 

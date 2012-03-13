@@ -30,6 +30,7 @@
  */
 
 
+#include <SDL/SDL.h>
 #include "maru_common.h"
 #include "emulator.h"
 #include "sdb.h"
@@ -48,17 +49,18 @@ int _emulator_condition = 0; //TODO:
 
 int get_emulator_condition(void)
 {
-	return _emulator_condition;
+    return _emulator_condition;
 }
 
 void set_emulator_condition(int state)
 {
-	_emulator_condition = state;
+    _emulator_condition = state;
 }
 
 void exit_emulator(void)
 {
-
+    shutdown_skin_server();
+    SDL_Quit();
 }
 
 static void construct_main_window(int skin_argc, char* skin_argv[])
@@ -77,76 +79,79 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
 
 static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
 {
-	int i;
-	int j;
+    int i;
+    int j;
 
 // FIXME !!!
 // TODO:
-	for(i = 1; i < argc; ++i)
-	{
-		if(strncmp(argv[i], "--skin-args", 11) == 0)
-		{
-			*skin_argv = &(argv[i + 1]);
-			break;
-		}
-	}
-	for(j = i; j < argc; ++j)
-	{
-		if(strncmp(argv[j], "--qemu-args", 11) == 0)
-		{
-			*skin_argc = j - i - 1;
+    for(i = 1; i < argc; ++i)
+    {
+        if(strncmp(argv[i], "--skin-args", 11) == 0)
+        {
+            *skin_argv = &(argv[i + 1]);
+            break;
+        }
+    }
+    for(j = i; j < argc; ++j)
+    {
+        if(strncmp(argv[j], "--qemu-args", 11) == 0)
+        {
+            *skin_argc = j - i - 1;
 
-			*qemu_argc = argc - j - i + 1;
-			*qemu_argv = &(argv[j]);
+            *qemu_argc = argc - j - i + 1;
+            *qemu_argv = &(argv[j]);
 
-			argv[j] = argv[0];
+            argv[j] = argv[0];
 
-			break;
-		}
-	}
+            break;
+        }
+    }
 }
 
 int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
 {
-	tizen_base_port = get_sdb_base_port();
-	
-	int skin_argc = 0;
-	char** skin_argv = NULL;
+    tizen_base_port = get_sdb_base_port();
 
-	int qemu_argc = 0;
-	char** qemu_argv = NULL;
+    int skin_argc = 0;
+    char** skin_argv = NULL;
 
-	parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    int qemu_argc = 0;
+    char** qemu_argv = NULL;
 
-	int i;
+    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+
+    int i;
 
 /*
-	printf("%d\n", skin_argc);
-	for(i = 0; i < skin_argc; ++i)
-	{
-		printf("%s\n", skin_argv[i]);
-	}
+    printf("%d\n", skin_argc);
+    for(i = 0; i < skin_argc; ++i)
+    {
+        printf("%s\n", skin_argv[i]);
+    }
 */
 
-//	printf("%d\n", qemu_argc);
-	INFO("Start emulator : =====================================\n");
-	for(i = 0; i < qemu_argc; ++i)
-	{
-	    INFO("%s ", qemu_argv[i]);
-	}
-	INFO("\n");
-	INFO("======================================================\n");
+//  printf("%d\n", qemu_argc);
+    INFO("Start emulator : =====================================\n");
+    for(i = 0; i < qemu_argc; ++i)
+    {
+        INFO("%s ", qemu_argv[i]);
+    }
+    INFO("\n");
+    INFO("======================================================\n");
 
-	construct_main_window(skin_argc, skin_argv);
+    construct_main_window(skin_argc, skin_argv);
 
-	sdb_setup();
+    sdb_setup();
 
-	qemu_main(qemu_argc, qemu_argv, NULL);
+    INFO("qemu main start!\n");
+    qemu_main(qemu_argc, qemu_argv, NULL);
 
-//	shutdown_guest_server();
+//  shutdown_guest_server();
 
-	return 0;
+    exit_emulator();
+
+    return 0;
 }
 
