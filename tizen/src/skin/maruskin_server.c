@@ -77,6 +77,7 @@ static uint16_t svr_port = 0;
 static int server_sock = 0;
 static int client_sock = 0;
 static int stop = 0;
+static int sensord_initialized = 0;
 
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
@@ -123,6 +124,7 @@ void shutdown_skin_server(void) {
 }
 
 void notify_sensor_daemon_start(void) {
+    sensord_initialized = 1;
     if ( 0 > send_skin( client_sock, SEND_SENSOR_DAEMON_START ) ) {
         ERR( "fail to send SEND_SENSOR_DAEMON_START to skin.\n" );
     }
@@ -395,7 +397,10 @@ static void* run_skin_server( void* args ) {
                     direction = ntohs( direction );
 
                     change_lcd_state( scale, direction );
-                    do_direction_event( direction );
+
+                    if ( sensord_initialized ) {
+                        do_direction_event( direction );
+                    }
                     break;
                 }
                 case RECV_HEART_BEAT: {

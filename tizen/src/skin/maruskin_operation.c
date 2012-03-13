@@ -153,7 +153,7 @@ void do_direction_event( int event_type) {
 
     // send_to_sensor_daemon
     {
-        int s;
+        uint16_t s;
 
         s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_EMULD_INDEX)); 
         if (s < 0) {
