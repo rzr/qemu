@@ -39,9 +39,13 @@
 #include "skin/maruskin_client.h"
 #include "guest_server.h"
 #include "debug_ch.h"
+#include "process.h"
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
+#define IMAGE_PATH_PREFIX "file="
+#define IMAGE_PATH_SUFFIX ",if=virtio"
+#define MAXPATH  512
 
 int tizen_base_port = 0;
 
@@ -59,9 +63,9 @@ void set_emulator_condition(int state)
 
 void exit_emulator(void)
 {
-    shutdown_guest_server();
     shutdown_skin_server();
     SDL_Quit();
+    remove_pidfile();
 }
 
 static void construct_main_window(int skin_argc, char* skin_argv[])
@@ -74,7 +78,7 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     }
 #endif
 
-    start_guest_server();
+//    start_guest_server();
 
 }
 
@@ -109,6 +113,28 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
     }
 }
 
+void get_image_path(int qemu_argc, char* qemu_argv)
+{
+    int i;
+    int j = 0;
+    int name_len = 0;
+    int prefix_len = 0;
+    int suffix_len = 0;
+    int max = 0;
+    char *path = malloc(MAXPATH);
+    name_len = strlen(qemu_argv);
+    prefix_len = strlen(IMAGE_PATH_PREFIX);
+    suffix_len = strlen(IMAGE_PATH_SUFFIX);
+    max = name_len - suffix_len;
+    for(i = prefix_len , j = 0; i < max; i++)
+    {
+        path[j++] = qemu_argv[i];
+    }
+    path[j] = '\0';
+
+    write_pidfile(path);
+}
+
 int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
@@ -138,16 +164,20 @@ int main(int argc, char* argv[])
     for(i = 0; i < qemu_argc; ++i)
     {
         INFO("%s ", qemu_argv[i]);
+        if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL)
+            get_image_path(qemu_argc, qemu_argv[i]);
     }
     INFO("\n");
     INFO("======================================================\n");
 
-    sdb_setup();
-
     construct_main_window(skin_argc, skin_argv);
+
+    sdb_setup();
 
     INFO("qemu main start!\n");
     qemu_main(qemu_argc, qemu_argv, NULL);
+
+//  shutdown_guest_server();
 
     exit_emulator();
 

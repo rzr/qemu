@@ -1,4 +1,4 @@
-/*
+/* 
  * Emulator
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
@@ -29,17 +29,34 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config struecture and defines in emulator
- */
 
-#ifndef __EMULATOR_H__
-#define __EMULATOR_H__
+#ifndef PROCESS_H
+#define PROCESS_H
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
-int get_emulator_condition(void);
-void set_emulator_condition(int state);
-void exit_emulator(void);
-void get_image_path(int qemu_argc, char *qemu_argv);
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <string.h>
+#include <strings.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 
+int write_pidfile(char *path);
+int remove_pidfile(void);
+
+#ifdef _WIN32
+#include <windows.h>
+#include <mbstring.h>
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 #endif
