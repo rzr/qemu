@@ -27,6 +27,22 @@
                     </eventInfo>
                     <tooltip>Power</tooltip>
                 </keyMap>
+                <keyMap>
+                    <region height="74" left="541" top="81" width="20" />
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>VOLUME_UP</keyName>
+                    </eventInfo>
+                    <tooltip>Volume-up</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region height="74" left="541" top="167" width="20" />
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>VOLUME_DOWN</keyName>
+                    </eventInfo>
+                    <tooltip>Volume-down</tooltip>
+                </keyMap>
             </keyMapList>
         </rotation>
         <rotation id="1" name="Landscape">
@@ -53,6 +69,22 @@
                         <keyName>POWER</keyName>
                     </eventInfo>
                     <tooltip>Power</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region height="20" left="80" top="2" width="74" />
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>VOLUME_UP</keyName>
+                    </eventInfo>
+                    <tooltip>Volume-up</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region height="20" left="165" top="2" width="74" />
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>VOLUME_DOWN</keyName>
+                    </eventInfo>
+                    <tooltip>Volume-down</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
