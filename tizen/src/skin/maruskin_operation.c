@@ -46,10 +46,10 @@ enum {
 };
 
 enum {
-    DIRECTION_PORTRAIT = 0,
-    DIRECTION_LANDSCAPE = 1,
-    DIRECTION_REVERSE_PORTRAIT = 2,
-    DIRECTION_REVERSE_LANDSCAPE = 3,
+    ROTATION_PORTRAIT = 0,
+    ROTATION_LANDSCAPE = 1,
+    ROTATION_REVERSE_PORTRAIT = 2,
+    ROTATION_REVERSE_LANDSCAPE = 3,
 };
 
 enum {
@@ -70,8 +70,8 @@ enum {
     KEY_RELEASED = 2,
 };
 
-void start_display( int handle_id, short scale, short direction ) {
-    INFO( "start_display handle_id:%d, scale:%d, direction:%d\n", handle_id, scale, direction );
+void start_display( int handle_id, short scale, short rotation ) {
+    INFO( "start_display handle_id:%d, scale:%d, rotation:%d\n", handle_id, scale, rotation );
 
     maruskin_sdl_init(handle_id);
 }
@@ -131,56 +131,49 @@ void do_hardkey_event( int event_type, int keycode ) {
 
 }
 
-void do_direction_event( int event_type) {
-    INFO( "do_direction_event event_type:%d", event_type);
+void do_rotation_event( int event_type) {
 
-    int  buf_size = 32;
-    char send_buf[32] = {0};
+    INFO( "do_rotation_event event_type:%d", event_type);
+
+    int buf_size = 32;
+    char send_buf[32] = { 0 };
+
     switch ( event_type ) {
-    case DIRECTION_PORTRAIT:
-        sprintf(send_buf, "1\n3\n0\n-9.80665\n0\n");
+    case ROTATION_PORTRAIT:
+        sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
         break;
-    case DIRECTION_LANDSCAPE:
-        sprintf(send_buf, "1\n3\n-9.80665\n0\n0\n");
+    case ROTATION_LANDSCAPE:
+        sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
         break;
-    case DIRECTION_REVERSE_PORTRAIT:
-        sprintf(send_buf, "1\n3\n0\n9.80665\n0\n");
+    case ROTATION_REVERSE_PORTRAIT:
+        sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
         break;
-    case DIRECTION_REVERSE_LANDSCAPE:
-        sprintf(send_buf, "1\n3\n0\n9.80665\n0\n");
+    case ROTATION_REVERSE_LANDSCAPE:
+        sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
         break;
     }
 
     // send_to_sensor_daemon
-    {
-        uint16_t s;
+    int s;
 
-        s = tcp_socket_outgoing("127.0.0.1", (uint16_t)(get_sdb_base_port() + SDB_TCP_EMULD_INDEX)); 
-        if (s < 0) {
-            TRACE( "can't create socket to talk to the sdb forwarding session \n");
-            TRACE( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n"
-                    , get_sdb_base_port() + SDB_TCP_EMULD_INDEX
-                    , errno, strerror(errno));
-            return;
-        }
-
-        socket_send(s, "sensor\n\n\n\n", 10);
-        socket_send(s, &buf_size, 4);
-        socket_send(s, send_buf, buf_size);
-
-        INFO( "send(size: %d) te 127.0.0.1:%d/tcp \n",
-                buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX);
-#ifdef _WIN32
-        closiesocket(s);
-#else
-        close(s);
-#endif
+    s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( get_sdb_base_port() + SDB_TCP_EMULD_INDEX ) );
+    if ( s < 0 ) {
+        ERR( "can't create socket to talk to the sdb forwarding session \n");
+        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , get_sdb_base_port() + SDB_TCP_EMULD_INDEX , errno, strerror(errno));
+        return;
     }
-}
 
-void change_lcd_state( short scale, short direction ) {
-    INFO( "change_lcd_state scale:%d, scale:%d\n", scale, direction );
-    //TODO send request to emuld
+    socket_send( s, "sensor\n\n\n\n", 10 );
+    socket_send( s, &buf_size, 4 );
+    socket_send( s, send_buf, buf_size );
+
+    INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX);
+#ifdef _WIN32
+    closiesocket( s );
+#else
+    close( s );
+#endif
+
 }
 
 void open_shell(void) {

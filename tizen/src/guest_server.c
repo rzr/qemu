@@ -37,21 +37,16 @@
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(qemu, guest_server);
+MULTI_DEBUG_CHANNEL( qemu, guest_server );
 
-//TODO change size
-#define RECV_BUF_SIZE 4
+#define RECV_BUF_SIZE 32
 
 static void* run_guest_server( void* args );
 
-static int stop_svr = 0;
 static int svr_port = 0;
 static int server_sock = 0;
-static int client_sock = 0;
 
-enum {
-    SENSOR_DAEMON_START = 3,
-};
+static int parse_val( char *buff, unsigned char data, char *parsbuf );
 
 pthread_t start_guest_server( void ) {
 
@@ -74,9 +69,9 @@ static void* run_guest_server( void* args ) {
     socklen_t client_len;
     port = svr_port;
 
-    if ( ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) < 0 ) {
-        INFO( "create listen socket error: " );
-        perror( "socket" );
+    if ( ( server_sock = socket( PF_INET, SOCK_DGRAM, 0 ) ) < 0 ) {
+        ERR( "create listen socket error\n" );
+        perror( "create listen socket error\n" );
         goto cleanup;
     }
     memset( &server_addr, '\0', sizeof( server_addr ) );
@@ -92,100 +87,102 @@ static void* run_guest_server( void* args ) {
         perror( "bind" );
         goto cleanup;
     } else {
-        INFO( "success to bind port[127.0.0.1:%d/tcp] for guest_server in host \n", port );
+        INFO( "success to bind port[127.0.0.1:%d/udp] for guest_server in host \n", port );
     }
 
-    if ( listen( server_sock, 1 ) < 0 ) {
-        INFO( "guest_server listen error: " );
-        perror( "listen" );
-        goto cleanup;
-    }
+    client_len = sizeof( client_addr );
 
     char readbuf[RECV_BUF_SIZE];
 
     INFO( "guest server start...port:%d\n", port );
 
     while ( 1 ) {
-        if ( stop_svr ) {
+
+        memset( &readbuf, 0, RECV_BUF_SIZE );
+
+        int read_cnt = recvfrom( server_sock, readbuf, RECV_BUF_SIZE, 0, (struct sockaddr*) &client_addr, &client_len );
+
+        if ( 0 > read_cnt ) {
+
+            perror( "error : guest_server read" );
             break;
-        }
 
-        INFO( "start accepting socket...\n" );
+        } else {
 
-        client_len = sizeof( client_addr );
-        if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr*) &client_addr, &client_len ) ) ) {
-            ERR( "guest_servier accept error: " );
-            perror( "accept" );
-            continue;
-        }
-
-        while ( 1 ) {
-
-            if ( stop_svr ) {
-                INFO( "stop reading this socket.\n" );
+            if ( 0 == read_cnt ) {
+                ERR( "read_cnt is 0.\n" );
                 break;
             }
 
-            memset( &readbuf, 0, RECV_BUF_SIZE );
+            TRACE( "================= recv =================\n" );
+            TRACE( "read_cnt:%d\n", read_cnt );
+            TRACE( "readbuf:%s\n", readbuf );
 
-            int read_cnt = read( client_sock, readbuf, RECV_BUF_SIZE );
+            char command[RECV_BUF_SIZE];
+            memset( command, '\0', sizeof( command ) );
 
-            if ( 0 > read_cnt ) {
+            parse_val( readbuf, 0x0a, command );
 
-                perror( "error : guest_server read" );
-                break;
-
+            TRACE( "----------------------------------------\n" );
+            if ( strcmp( command, "3\n" ) == 0 ) {
+                TRACE( "command:%s\n", command );
+                notify_sensor_daemon_start();
             } else {
-
-                if ( 0 == read_cnt ) {
-                    INFO( "read_cnt is 0.\n" );
-                    break;
-                }
-
-                INFO( "================= recv =================\n" );
-                INFO( "read_cnt:%d\n", read_cnt );
-
-                //TODO parse data
-                char cmd = 0;
-                memcpy( &cmd, readbuf, sizeof( cmd ) );
-                INFO( "cmd:%s\n", cmd );
-
-                INFO( "----------------------------------------\n" );
-                switch ( cmd ) {
-                case SENSOR_DAEMON_START: {
-                    notify_sensor_daemon_start();
-                    break;
-                }
-                default: {
-                    ERR( "!!! unknown command : %d\n", cmd );
-                    break;
-                }
-                }
-
-                INFO( "========================================\n" );
-
+                ERR( "!!! unknown command : %s\n", command );
             }
+            TRACE( "========================================\n" );
 
         }
 
-        if ( client_sock ) {
-            close( client_sock );
-        }
     }
 
-    cleanup: if ( server_sock ) {
+    cleanup:
+#ifdef __MINGW32__
+    if( server_sock ) {
+        closesocket(server_sock);
+    }
+#else
+    if ( server_sock ) {
         close( server_sock );
     }
+#endif
 
     return NULL;
 }
 
-void shutdown_guest_server( void ) {
-    stop_svr = 1;
-    if ( client_sock ) {
-        close( client_sock );
+static int parse_val( char* buff, unsigned char data, char* parsbuf ) {
+
+    int count = 0;
+
+    while ( 1 ) {
+
+        if ( count > 12 ) {
+            return -1;
+        }
+
+        if ( buff[count] == data ) {
+            count++;
+            strncpy( parsbuf, buff, count );
+            return count;
+        }
+
+        count++;
+
     }
+
+    return 0;
+
+}
+
+void shutdown_guest_server( void ) {
+    INFO( "shutdown_guest_server.\n" );
+#ifdef __MINGW32__
+    if( server_sock ) {
+        closesocket( server_sock );
+    }
+#else
     if ( server_sock ) {
         close( server_sock );
     }
+#endif
 }

@@ -59,6 +59,7 @@ void set_emulator_condition(int state)
 
 void exit_emulator(void)
 {
+    shutdown_guest_server();
     shutdown_skin_server();
     SDL_Quit();
 }
@@ -73,7 +74,7 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     }
 #endif
 
-//    start_guest_server();
+    start_guest_server();
 
 }
 
@@ -141,14 +142,12 @@ int main(int argc, char* argv[])
     INFO("\n");
     INFO("======================================================\n");
 
-    construct_main_window(skin_argc, skin_argv);
-
     sdb_setup();
+
+    construct_main_window(skin_argc, skin_argv);
 
     INFO("qemu main start!\n");
     qemu_main(qemu_argc, qemu_argv, NULL);
-
-//  shutdown_guest_server();
 
     exit_emulator();
 
