@@ -38,7 +38,6 @@ MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 // TODO : organize
 SDL_Surface *surface_screen;
 SDL_Surface *surface_qemu;
-DisplayState *qemu_ds;
 
 #define SDL_THREAD
 
@@ -51,10 +50,6 @@ static int sdl_thread_initialized = 0;
 static void qemu_update(void)
 {
     SDL_Surface *surface = NULL;
-
-    if (!qemu_ds) {
-        return;
-    }
 
 #ifndef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
@@ -103,28 +98,22 @@ static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
 
 static void qemu_ds_resize(DisplayState *ds)
 {
-    TRACE("%d, %d\n", ds_get_width(qemu_ds), ds_get_height(qemu_ds));
-
-    /*if (ds_get_width(qemu_ds) == 720 && ds_get_height(qemu_ds) == 400) {
-        TRACE( "blanking BIOS\n");
-        surface_qemu = NULL;
-        return;
-    }*/
+    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
 
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
     /* create surface_qemu */
-    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(qemu_ds),
-            ds_get_width(qemu_ds),
-            ds_get_height(qemu_ds),
-            ds_get_bits_per_pixel(qemu_ds),
-            ds_get_linesize(qemu_ds),
-            qemu_ds->surface->pf.rmask,
-            qemu_ds->surface->pf.gmask,
-            qemu_ds->surface->pf.bmask,
-            qemu_ds->surface->pf.amask);
+    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
+            ds_get_width(ds),
+            ds_get_height(ds),
+            ds_get_bits_per_pixel(ds),
+            ds_get_linesize(ds),
+            ds->surface->pf.rmask,
+            ds->surface->pf.gmask,
+            ds->surface->pf.bmask,
+            ds->surface->pf.amask);
 
 #ifdef SDL_THREAD
     pthread_mutex_unlock(&sdl_mutex);
@@ -161,14 +150,12 @@ void maruskin_display_init(DisplayState *ds)
     /*  graphics context information */
     DisplayChangeListener *dcl;
 
-    qemu_ds = ds;
-
     dcl = g_malloc0(sizeof(DisplayChangeListener));
     dcl->dpy_update = qemu_ds_update;
     dcl->dpy_resize = qemu_ds_resize;
     dcl->dpy_refresh = qemu_ds_refresh;
 
-    register_displaychangelistener(qemu_ds, dcl);
+    register_displaychangelistener(ds, dcl);
 
 #ifdef SDL_THREAD
     if (sdl_thread_initialized == 0 ) {
