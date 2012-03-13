@@ -7,8 +7,8 @@
                 <region height="800" left="35" top="86" width="480" />
             </lcd>
             <imageList>
-                <mainImage>default.png</mainImage>
-                <keyPressedImage>default.png</keyPressedImage>
+                <mainImage>default_0.png</mainImage>
+                <keyPressedImage>default_0_p.png</keyPressedImage>
             </imageList>
             <keyMapList>
                 <keyMap>
@@ -50,8 +50,8 @@
                 <region height="480" left="86" top="46" width="800"/>
             </lcd>
             <imageList>
-                <mainImage>default_w90.png</mainImage>
-                <keyPressedImage>default_w90.png</keyPressedImage>
+                <mainImage>default_L90.png</mainImage>
+                <keyPressedImage>default_L90_p.png</keyPressedImage>
             </imageList>
             <keyMapList>
                 <keyMap>
