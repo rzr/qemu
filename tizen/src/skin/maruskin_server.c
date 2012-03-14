@@ -68,8 +68,7 @@ enum {
     RECV_CHANGE_LCD_STATE = 13,
     RECV_OPEN_SHELL = 14,
     RECV_USB_KBD = 15,
-    RECV_HEART_BEAT = 900,
-    RECV_RESPONSE_HEART_BEAT = 901,
+    RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
 };
@@ -438,13 +437,6 @@ static void* run_skin_server( void* args ) {
 
                     if ( is_sensord_initialized ) {
                         do_rotation_event( rotation );
-                    }
-                    break;
-                }
-                case RECV_HEART_BEAT: {
-                    TRACE( "RECV_HEART_BEAT\n" );
-                    if ( 0 > send_skin( client_sock, SEND_HEART_BEAT_RESPONSE ) ) {
-                        ERR( "Fail to send a response of heartbeat to skin.\n" );
                     }
                     break;
                 }
