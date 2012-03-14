@@ -74,6 +74,7 @@ int sig_unblock(void)
 
 void sig_handler (int signo)
 {
+#ifndef _WIN32
     sigset_t sigset, oldset;
     
     TRACE("signo %d happens\n", signo);
@@ -99,6 +100,7 @@ void sig_handler (int signo)
        default:
             break;
     }
+#endif
 }
 
 int register_sig_handler(void)
