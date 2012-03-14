@@ -48,8 +48,8 @@ extern "C" {
 #include <glib.h>
 #include <glib/gstdio.h>
 
-int write_pidfile(char *path);
-int remove_pidfile(void);
+int write_portfile(char *path);
+int remove_portfile(void);
 
 #ifdef _WIN32
 #include <windows.h>

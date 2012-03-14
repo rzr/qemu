@@ -42,7 +42,7 @@
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, process);
 
-static char pidfname[512] = { 0, };
+static char portfname[512] = { 0, };
 static char tizen_vms_path[512] = {0, };
 extern int tizen_base_port;
 #ifdef _WIN32
@@ -89,18 +89,18 @@ static char *mbstok_r (char *string, const char *delim, char **save_ptr)
 #endif
 
 /**
- * @brief 	make pid directory
- * @param	pidfname : pid file name
+ * @brief 	make port directory
+ * @param	portfname : port file name
  * @date    Nov 25. 2008
  * */ 
 
-static int make_pid_path(const char *pidfname)
+static int make_port_path(const char *portfname)
 {
 	char dir[512] = "", buf[512] = "";
 	char *ptr, *last = NULL, *lptr = NULL;
 	int dirnamelen = 0;
 
-	sprintf(buf, "%s", pidfname);
+	sprintf(buf, "%s", portfname);
 #ifndef _WIN32	
 	lptr = ptr = strtok_r(buf+1, "/", &last);
 #else
@@ -139,12 +139,12 @@ static int make_pid_path(const char *pidfname)
 
 
 /**
- * @brief 	wirte pid file
+ * @brief 	wirte port file
  * @param	mod: emulator, vinit
  * @date    Nov 25. 2008
  * */
 
-int write_pidfile(char *path)
+int write_portfile(char *path)
 {
 	int		fd = -1;
 	char	buf[128] = "";
@@ -154,17 +154,17 @@ int write_pidfile(char *path)
     else
         strcpy(tizen_vms_path, g_path_get_dirname(path));
 
-    sprintf(pidfname, "%s/.port", tizen_vms_path);
+    sprintf(portfname, "%s/.port", tizen_vms_path);
 
 	if (access(tizen_vms_path, R_OK) != 0) {
-		make_pid_path(pidfname);
+		make_port_path(portfname);
 	}
 #ifdef _WIN32
-	if ((fd = open(g_win32_locale_filename_from_utf8(pidfname), O_RDWR | O_CREAT, 0666)) < 0) {
+	if ((fd = open(g_win32_locale_filename_from_utf8(portfname), O_RDWR | O_CREAT, 0666)) < 0) {
 #else
-	if ((fd = open(pidfname, O_RDWR | O_CREAT, 0666)) < 0) {
+	if ((fd = open(portfname, O_RDWR | O_CREAT, 0666)) < 0) {
 #endif
-		ERR("Failed to create .pid file\n");
+		ERR("Failed to create .port file\n");
 		ERR("%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
 	    return -1;
 	}
@@ -180,23 +180,23 @@ int write_pidfile(char *path)
 }
 
 /**
- * @brief 	remove pid file
+ * @brief 	remove port file
  * @param	mod: emulator, vinit
  * @date    Nov 25. 2008
  * */
 
-int remove_pidfile(void)
+int remove_portfile(void)
 {
-	if (strlen(pidfname) <= 0) {
+	if (strlen(portfname) <= 0) {
 		return -1;
 	}
 
 #ifdef _WIN32
-    if (remove(g_win32_locale_filename_from_utf8(pidfname)) < 0) {
+    if (remove(g_win32_locale_filename_from_utf8(portfname)) < 0) {
 #else
-	if (remove(pidfname) < 0) {
+	if (remove(portfname) < 0) {
 #endif
-		ERR( "Can't remove pid file. (%s)\n", pidfname);
+		ERR( "Can't remove port file. (%s)\n", portfname);
 	}
 
 	return 0;
