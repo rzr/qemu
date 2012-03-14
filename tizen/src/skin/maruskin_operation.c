@@ -149,10 +149,10 @@ void do_rotation_event( int event_type) {
         sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
         break;
     case ROTATION_LANDSCAPE:
-        sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
+        sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
         break;
     case ROTATION_REVERSE_PORTRAIT:
-        sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
+        sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
         break;
     case ROTATION_REVERSE_LANDSCAPE:
         sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
@@ -162,10 +162,10 @@ void do_rotation_event( int event_type) {
     // send_to_sensor_daemon
     int s;
 
-    s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( get_sdb_base_port() + SDB_TCP_EMULD_INDEX ) );
+    s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
     if ( s < 0 ) {
         ERR( "can't create socket to talk to the sdb forwarding session \n");
-        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , get_sdb_base_port() + SDB_TCP_EMULD_INDEX , errno, strerror(errno));
+        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , tizen_base_port + SDB_TCP_EMULD_INDEX , errno, strerror(errno));
         return;
     }
 
@@ -173,7 +173,7 @@ void do_rotation_event( int event_type) {
     socket_send( s, &buf_size, 4 );
     socket_send( s, send_buf, buf_size );
 
-    INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX);
+    INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
 #ifdef _WIN32
     closesocket( s );
 #else
