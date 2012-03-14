@@ -51,6 +51,7 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
+extern char tizen_vms_path[256];
 
 int get_emulator_condition(void)
 {
@@ -164,8 +165,9 @@ int main(int argc, char* argv[])
     for(i = 0; i < qemu_argc; ++i)
     {
         INFO("%s ", qemu_argv[i]);
-        if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL)
+        if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
             get_image_path(qemu_argc, qemu_argv[i]);
+        }
     }
     INFO("\n");
     INFO("======================================================\n");

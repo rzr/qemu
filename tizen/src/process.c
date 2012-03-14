@@ -42,7 +42,8 @@
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, process);
 
-static char pidfname[256] = { 0, };
+static char pidfname[512] = { 0, };
+static char tizen_vms_path[512] = {0, };
 
 #ifdef _WIN32
 static char *mbstok_r (char *string, const char *delim, char **save_ptr)
@@ -147,16 +148,15 @@ int write_pidfile(char *path)
 {
 	int		fd = -1;
 	char	buf[128] = "";
-    char *pid_dir;
 
     if(!g_path_is_absolute(path))
-        pid_dir = g_get_current_dir();
+        strcpy(tizen_vms_path, g_get_current_dir());
     else
-        pid_dir = g_path_get_dirname(path);
+        strcpy(tizen_vms_path, g_path_get_dirname(path));
 
-    sprintf(pidfname, "%s/.pid", pid_dir);
+    sprintf(pidfname, "%s/.pid", tizen_vms_path);
 
-	if (access(pid_dir, R_OK) != 0) {
+	if (access(tizen_vms_path, R_OK) != 0) {
 		make_pid_path(pidfname);
 	}
 #ifdef _WIN32
