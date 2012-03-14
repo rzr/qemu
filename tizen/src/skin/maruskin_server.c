@@ -516,7 +516,7 @@ static int send_skin( int client_sock, short send_cmd ) {
     p += sizeof( request_id );
     memcpy( p, &data, sizeof( data ) );
 
-    ssize_t write_count = write( client_sock, sendbuf, SEND_HEADER_SIZE );
+    ssize_t write_count = send( client_sock, sendbuf, SEND_HEADER_SIZE, 0 );
 
     return write_count;
 
