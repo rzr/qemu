@@ -33,6 +33,8 @@
 #include "process.h"
 #ifndef _WIN32
 #include <wait.h>
+#else
+#include <stdlib.h>
 #endif
 #include <assert.h>
 
