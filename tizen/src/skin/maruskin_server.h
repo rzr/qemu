@@ -30,9 +30,7 @@
 #ifndef MARUSKIN_SERVER_H_
 #define MARUSKIN_SERVER_H_
 
-#include <pthread.h>
-
-pthread_t start_skin_server( int argc, char** argv );
+int start_skin_server( int argc, char** argv );
 void shutdown_skin_server( void );
 void notify_sensor_daemon_start( void );
 int is_ready_skin_server( void );

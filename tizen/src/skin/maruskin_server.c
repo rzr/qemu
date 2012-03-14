@@ -98,13 +98,13 @@ static void* do_heart_beat( void* args );
 static int start_heart_beat( int client_sock );
 static void stop_heart_beat( void );
 
-pthread_t start_skin_server( int argc, char** argv ) {
+int start_skin_server( int argc, char** argv ) {
 
     QemuThread qemu_thread;
 
     qemu_thread_create( &qemu_thread, run_skin_server, NULL );
 
-    return qemu_thread.thread;
+    return 1;
 
 }
 
