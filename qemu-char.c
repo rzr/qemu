@@ -1814,8 +1814,13 @@ static int qemu_chr_open_win_file_out(QemuOpts *opts, CharDriverState **_chr)
     const char *file_out = qemu_opt_get(opts, "path");
     HANDLE fd_out;
 
+#ifndef CONFIG_MARU
     fd_out = CreateFile(g_win32_locale_filename_from_utf8(file_out), GENERIC_WRITE, FILE_SHARE_READ, NULL,
                         OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
+    fd_out = CreateFile(g_win32_locale_filename_from_utf8(file_out), GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#endif
     if (fd_out == INVALID_HANDLE_VALUE) {
         return -EIO;
     }
