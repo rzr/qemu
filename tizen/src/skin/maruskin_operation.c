@@ -33,15 +33,23 @@
 #include "maru_sdl.h"
 #include "debug_ch.h"
 #include "../hw/maru_pm.h"
+#include "maruskin_keymap.h"
+#include "console.h"
+#include "sdb.h"
+#include "nbd.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
+enum {
+    HARD_KEY_HOME = 101,
+    HARD_KEY_POWER = 103,
+};
 
 enum {
-    DIRECTION_PORTRAIT = 1,
-    DIRECTION_LANDSCAPE = 2,
-    DIRECTION_REVERSE_PORTRAIT = 3,
-    DIRECTION_REVERSE_LANDSCAPE = 4,
+    ROTATION_PORTRAIT = 0,
+    ROTATION_LANDSCAPE = 1,
+    ROTATION_REVERSE_PORTRAIT = 2,
+    ROTATION_REVERSE_LANDSCAPE = 3,
 };
 
 enum {
@@ -62,74 +70,121 @@ enum {
     KEY_RELEASED = 2,
 };
 
-void start_display( int handle_id, short scale, short direction ) {
-    INFO( "start_display handle_id:%d, scale:%d, direction:%d\n", handle_id, scale, direction );
+void start_display( int handle_id, short scale, short rotation ) {
+    INFO( "start_display handle_id:%d, scale:%d, rotation:%d\n", handle_id, scale, rotation );
+
     maruskin_sdl_init(handle_id);
 }
 
 void do_mouse_event( int event_type, int x, int y, int z ) {
-    INFO( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
-
+    TRACE( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
     if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
         kbd_mouse_event(x, y, z, 1);
     } else if (MOUSE_UP == event_type) {
         kbd_mouse_event(x, y, z, 0);
     } else {
-        INFO( "undefined mouse event type:%d\n", event_type );
+        ERR( "undefined mouse event type:%d\n", event_type );
     }
 
     usleep(100);
 }
 
 void do_key_event( int event_type, int keycode ) {
-    INFO( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
-    //TODO
+    TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
+
+    if (KEY_PRESSED == event_type) {
+        kbd_put_keycode(curses2keycode[keycode]);
+    } else if (KEY_RELEASED == event_type) {
+        kbd_put_keycode(curses2keycode[keycode] | 0x80);
+    }
 }
 
 void do_hardkey_event( int event_type, int keycode ) {
-    INFO( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
+    TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
-    //TODO convert keycode ?
+    // press
+    if ( KEY_PRESSED == event_type ) {
 
-//FIXME uncomment
-//    // press
-//    if ( KEY_PRESSED ) {
-//
-//        if ( kbd_mouse_is_absolute() ) {
-//
-//            // home key or power key is used for resume.
-//            if ( ( 101 == keycode ) || ( 103 == keycode ) ) {
-//                if ( is_suspended_state() ) {
-//                    INFO( "user requests system resume.\n" );
-//                    resume();
-//                    usleep( 500 * 1000 );
-//                }
-//            }
-//
-//            ps2kbd_put_keycode( keycode & 0x7f );
-//
-//        }
-//
-//    } else if ( KEY_RELEASED ) {
-//
-//        if ( kbd_mouse_is_absolute() ) {
-//            TRACE( "release parsing keycode = %d, result = %d\n", keycode, keycode | 0x80 );
-//            ps2kbd_put_keycode( keycode | 0x80 );
-//        }
-//
-//    }
+        if ( kbd_mouse_is_absolute() ) {
+
+            // home key or power key is used for resume.
+            if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
+                if ( is_suspended_state() ) {
+                    INFO( "user requests system resume.\n" );
+                    resume();
+                    usleep( 500 * 1000 );
+                }
+            }
+
+            ps2kbd_put_keycode( keycode & 0x7f );
+
+        }
+
+    } else if ( KEY_RELEASED == event_type ) {
+
+        if ( kbd_mouse_is_absolute() ) {
+            ps2kbd_put_keycode( keycode | 0x80 );
+        }
+
+    }
 
 }
 
-void change_lcd_state( short scale, short direction ) {
-    INFO( "change_lcd_state scale:%d, scale:%d\n", scale, direction );
-    //TODO send request to emuld
+void do_rotation_event( int event_type) {
+
+    INFO( "do_rotation_event event_type:%d", event_type);
+
+    int buf_size = 32;
+    char send_buf[32] = { 0 };
+
+    switch ( event_type ) {
+    case ROTATION_PORTRAIT:
+        sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
+        break;
+    case ROTATION_LANDSCAPE:
+        sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
+        break;
+    case ROTATION_REVERSE_PORTRAIT:
+        sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
+        break;
+    case ROTATION_REVERSE_LANDSCAPE:
+        sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
+        break;
+    }
+
+    // send_to_sensor_daemon
+    int s;
+
+    s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( get_sdb_base_port() + SDB_TCP_EMULD_INDEX ) );
+    if ( s < 0 ) {
+        ERR( "can't create socket to talk to the sdb forwarding session \n");
+        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , get_sdb_base_port() + SDB_TCP_EMULD_INDEX , errno, strerror(errno));
+        return;
+    }
+
+    socket_send( s, "sensor\n\n\n\n", 10 );
+    socket_send( s, &buf_size, 4 );
+    socket_send( s, send_buf, buf_size );
+
+    INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX);
+#ifdef _WIN32
+    closiesocket( s );
+#else
+    close( s );
+#endif
+
 }
 
 void open_shell(void) {
     //TODO
 }
+
+void onoff_usb_kbd( int on ) {
+    INFO( "usb kbd on/off:%d\n", on );
+    //TODO
+}
+
 
 void request_close( void ) {
     INFO( "request_close\n" );

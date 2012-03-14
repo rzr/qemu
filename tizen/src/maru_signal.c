@@ -35,7 +35,7 @@
  *
  */
 
-#include "emulsignal.h"
+#include "maru_signal.h"
 #include "debug_ch.h"
 #ifndef _WIN32
 #include <sys/ipc.h>  

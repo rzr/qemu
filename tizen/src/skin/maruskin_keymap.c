@@ -1,10 +1,10 @@
 /*
- * operation for emulator skin
+ * keymap
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * Hyunjun Son <hj79.son@samsung.com>
+ * HyunJun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -27,23 +27,6 @@
  *
  */
 
-#ifndef MARUSKIN_OPERATION_H_
-#define MARUSKIN_OPERATION_H_
 
-void start_display( int handle_id, short scale, short direction );
-
-void do_mouse_event( int event_type, int x, int y, int z );
-
-void do_key_event( int event_type, int keycode );
-
-void do_hardkey_event( int event_type, int keycode );
-
-void do_rotation_event( int event_type );
-
-void open_shell(void);
-
-void onoff_usb_kbd( int on );
-
-void request_close( void );
-
-#endif /* MARUSKIN_OPERATION_H_ */
+#include <string.h>
+#include "maruskin_keymap.h"

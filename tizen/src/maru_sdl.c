@@ -38,7 +38,6 @@ MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 // TODO : organize
 SDL_Surface *surface_screen;
 SDL_Surface *surface_qemu;
-DisplayState *qemu_ds;
 
 #define SDL_THREAD
 
@@ -50,17 +49,10 @@ static int sdl_thread_initialized = 0;
 
 static void qemu_update(void)
 {
-    SDL_Surface *surface = NULL;
-
-    if (!qemu_ds) {
-        return;
-    }
-
 #ifndef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
-    surface = SDL_GetVideoSurface();
     SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
@@ -103,28 +95,22 @@ static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
 
 static void qemu_ds_resize(DisplayState *ds)
 {
-    TRACE("%d, %d\n", ds_get_width(qemu_ds), ds_get_height(qemu_ds));
-
-    /*if (ds_get_width(qemu_ds) == 720 && ds_get_height(qemu_ds) == 400) {
-        TRACE( "blanking BIOS\n");
-        surface_qemu = NULL;
-        return;
-    }*/
+    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
 
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
     /* create surface_qemu */
-    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(qemu_ds),
-            ds_get_width(qemu_ds),
-            ds_get_height(qemu_ds),
-            ds_get_bits_per_pixel(qemu_ds),
-            ds_get_linesize(qemu_ds),
-            qemu_ds->surface->pf.rmask,
-            qemu_ds->surface->pf.gmask,
-            qemu_ds->surface->pf.bmask,
-            qemu_ds->surface->pf.amask);
+    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
+            ds_get_width(ds),
+            ds_get_height(ds),
+            ds_get_bits_per_pixel(ds),
+            ds_get_linesize(ds),
+            ds->surface->pf.rmask,
+            ds->surface->pf.gmask,
+            ds->surface->pf.bmask,
+            ds->surface->pf.amask);
 
 #ifdef SDL_THREAD
     pthread_mutex_unlock(&sdl_mutex);
@@ -139,24 +125,34 @@ static void qemu_ds_resize(DisplayState *ds)
 
 static void qemu_ds_refresh(DisplayState *ds)
 {
-    vga_hw_update();
-}
+    SDL_Event ev1, *ev = &ev1;
 
+    vga_hw_update();
+
+    while (SDL_PollEvent(ev)) {
+        switch (ev->type) {
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                break;
+            default:
+                break;
+        }
+    }
+}
 
 void maruskin_display_init(DisplayState *ds)
 {
-    INFO( "qemu_display_init\n");
+    INFO( "qemu display initialize\n");
+
     /*  graphics context information */
     DisplayChangeListener *dcl;
-
-    qemu_ds = ds;
 
     dcl = g_malloc0(sizeof(DisplayChangeListener));
     dcl->dpy_update = qemu_ds_update;
     dcl->dpy_resize = qemu_ds_resize;
     dcl->dpy_refresh = qemu_ds_refresh;
 
-    register_displaychangelistener(qemu_ds, dcl);
+    register_displaychangelistener(ds, dcl);
 
 #ifdef SDL_THREAD
     if (sdl_thread_initialized == 0 ) {
@@ -170,7 +166,6 @@ void maruskin_display_init(DisplayState *ds)
     }
 #endif
 }
-
 
 void maruskin_sdl_init(int swt_handle)
 {
@@ -187,12 +182,12 @@ void maruskin_sdl_init(int swt_handle)
         exit(1);
     }
 
+    INFO( "qemu_sdl_initialize\n");
     surface_screen = SDL_SetVideoMode(480, 800, 0,
             SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME);
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);
     SDL_GetWMInfo(&info);
-    //  opengl_exec_set_parent_window(info.info.x11.display, info.info.x11.window);
 #endif
 }

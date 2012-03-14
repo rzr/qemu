@@ -30,34 +30,45 @@
  */
 
 
+#include <stdlib.h>
+#include <SDL/SDL.h>
 #include "maru_common.h"
 #include "emulator.h"
 #include "sdb.h"
 #include "string.h"
 #include "skin/maruskin_server.h"
 #include "skin/maruskin_client.h"
+#include "guest_server.h"
 #include "debug_ch.h"
+#include "process.h"
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
+#define IMAGE_PATH_PREFIX "file="
+#define IMAGE_PATH_SUFFIX ",if=virtio"
+#define MAXPATH  512
 
 int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
+extern char tizen_vms_path[256];
 
 int get_emulator_condition(void)
 {
-	return _emulator_condition;
+    return _emulator_condition;
 }
 
 void set_emulator_condition(int state)
 {
-	_emulator_condition = state;
+    _emulator_condition = state;
 }
 
 void exit_emulator(void)
 {
-
+    shutdown_skin_server();
+    shutdown_guest_server();
+    SDL_Quit();
+    remove_pidfile();
 }
 
 static void construct_main_window(int skin_argc, char* skin_argv[])
@@ -65,82 +76,115 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     INFO("construct main window\n");
     start_skin_server(11111, 0, 0);
 #if 1
-    if (start_skin_client(skin_argc, skin_argv) == 0) {
-        //TODO:
+    if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
+        exit( -1 );
     }
 #endif
+
 }
 
 static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
 {
-	int i;
-	int j;
+    int i;
+    int j;
 
 // FIXME !!!
 // TODO:
-	for(i = 1; i < argc; ++i)
-	{
-		if(strncmp(argv[i], "--skin-args", 11) == 0)
-		{
-			*skin_argv = &(argv[i + 1]);
-			break;
-		}
-	}
-	for(j = i; j < argc; ++j)
-	{
-		if(strncmp(argv[j], "--qemu-args", 11) == 0)
-		{
-			*skin_argc = j - i - 1;
+    for(i = 1; i < argc; ++i)
+    {
+        if(strncmp(argv[i], "--skin-args", 11) == 0)
+        {
+            *skin_argv = &(argv[i + 1]);
+            break;
+        }
+    }
+    for(j = i; j < argc; ++j)
+    {
+        if(strncmp(argv[j], "--qemu-args", 11) == 0)
+        {
+            *skin_argc = j - i - 1;
 
-			*qemu_argc = argc - j - i + 1;
-			*qemu_argv = &(argv[j]);
+            *qemu_argc = argc - j - i + 1;
+            *qemu_argv = &(argv[j]);
 
-			argv[j] = argv[0];
+            argv[j] = argv[0];
 
-			break;
-		}
-	}
+            break;
+        }
+    }
+}
+
+void get_image_path(int qemu_argc, char* qemu_argv)
+{
+    int i;
+    int j = 0;
+    int name_len = 0;
+    int prefix_len = 0;
+    int suffix_len = 0;
+    int max = 0;
+    char *path = malloc(MAXPATH);
+    name_len = strlen(qemu_argv);
+    prefix_len = strlen(IMAGE_PATH_PREFIX);
+    suffix_len = strlen(IMAGE_PATH_SUFFIX);
+    max = name_len - suffix_len;
+    for(i = prefix_len , j = 0; i < max; i++)
+    {
+        path[j++] = qemu_argv[i];
+    }
+    path[j] = '\0';
+
+    write_pidfile(path);
 }
 
 int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
 {
-	tizen_base_port = get_sdb_base_port();
-	
-	int skin_argc = 0;
-	char** skin_argv = NULL;
+    tizen_base_port = get_sdb_base_port();
 
-	int qemu_argc = 0;
-	char** qemu_argv = NULL;
+    int skin_argc = 0;
+    char** skin_argv = NULL;
 
-	parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    int qemu_argc = 0;
+    char** qemu_argv = NULL;
 
-	int i;
+    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+
+    int i;
 
 /*
-	printf("%d\n", skin_argc);
-	for(i = 0; i < skin_argc; ++i)
-	{
-		printf("%s\n", skin_argv[i]);
-	}
+    printf("%d\n", skin_argc);
+    for(i = 0; i < skin_argc; ++i)
+    {
+        printf("%s\n", skin_argv[i]);
+    }
 */
 
-//	printf("%d\n", qemu_argc);
-	printf("Start emulator : =====================================\n");
-	for(i = 0; i < qemu_argc; ++i)
-	{
-		printf("%s ", qemu_argv[i]);
-	}
-	printf("\n");
-	printf("======================================================\n");
+//  printf("%d\n", qemu_argc);
+    INFO("Start emulator : =====================================\n");
+    for(i = 0; i < qemu_argc; ++i)
+    {
+        INFO("%s ", qemu_argv[i]);
+        if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
+            get_image_path(qemu_argc, qemu_argv[i]);
+        }
+    }
+    INFO("\n");
+    INFO("======================================================\n");
 
-	construct_main_window(skin_argc, skin_argv);
+    sdb_setup();
 
-	sdb_setup();
+    construct_main_window(skin_argc, skin_argv);
 
-	qemu_main(qemu_argc, qemu_argv, NULL);
+    //TODO get port number by args from emulator manager
+    int guest_server_port = get_sdb_base_port() + SDB_UDP_SENSOR_INDEX;
+    start_guest_server( guest_server_port );
 
-	return 0;
+    INFO("qemu main start!\n");
+    qemu_main(qemu_argc, qemu_argv, NULL);
+
+    exit_emulator();
+
+    return 0;
 }
 

@@ -1,10 +1,12 @@
-/*
- * operation for emulator skin
+/* 
+ * Emulator
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact:
- * Hyunjun Son <hj79.son@samsung.com>
+ * Contact: 
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
+ * HyunJun Son <hj79.son@samsung.com>
+ * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -27,23 +29,34 @@
  *
  */
 
-#ifndef MARUSKIN_OPERATION_H_
-#define MARUSKIN_OPERATION_H_
 
-void start_display( int handle_id, short scale, short direction );
+#ifndef PROCESS_H
+#define PROCESS_H
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
-void do_mouse_event( int event_type, int x, int y, int z );
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <string.h>
+#include <strings.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 
-void do_key_event( int event_type, int keycode );
+int write_pidfile(char *path);
+int remove_pidfile(void);
 
-void do_hardkey_event( int event_type, int keycode );
+#ifdef _WIN32
+#include <windows.h>
+#include <mbstring.h>
+#endif
 
-void do_rotation_event( int event_type );
-
-void open_shell(void);
-
-void onoff_usb_kbd( int on );
-
-void request_close( void );
-
-#endif /* MARUSKIN_OPERATION_H_ */
+#ifdef __cplusplus
+}
+#endif
+#endif

@@ -40,6 +40,6 @@
 int get_emulator_condition(void);
 void set_emulator_condition(int state);
 void exit_emulator(void);
-
+void get_image_path(int qemu_argc, char *qemu_argv);
 
 #endif

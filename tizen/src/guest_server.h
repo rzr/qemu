@@ -1,18 +1,11 @@
 /*
- * Emulator signal handler
+ * 
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
- * DoHyung Hong <don.hong@samsung.com>
- * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
- * SangJin Kim <sangjin3.kim@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
- * KiTae Kim <kt920.kim@samsung.com>
- * JinHyung Jo <jinhyung.jo@samsung.com>
- * SungMin Ha <sungmin82.ha@samsung.com>
+ * Contact:
  * JiHye Kim <jihye1128.kim@samsung.com>
+ * Hyunjun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -36,20 +29,12 @@
  */
 
 
-#ifndef __EMULSIGNAL_H__
-#define __EMULSIGNAL_H__
+#ifndef GUEST_SERVER_H_
+#define GUEST_SERVER_H_
 
-#include <signal.h>
-#include <unistd.h>
-#include <sys/types.h>
-#ifndef _WIN32
-#include <sys/wait.h>
-#endif
+#include <pthread.h>
 
+pthread_t start_guest_server( int server_port );
+void shutdown_guest_server( void );
 
-int sig_block(void);
-int sig_unblock(void);
-void sig_handler (int signo);
-int register_sig_handler(void);
-
-#endif /* __EMULSIGNAL_H__ */
+#endif /* GUEST_SERVER_H_ */

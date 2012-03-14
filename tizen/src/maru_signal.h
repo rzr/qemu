@@ -1,10 +1,18 @@
 /*
- * operation for emulator skin
+ * Emulator signal handler
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact:
- * Hyunjun Son <hj79.son@samsung.com>
+ * Contact: 
+ * DoHyung Hong <don.hong@samsung.com>
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
+ * HyunJun Son <hj79.son@samsung.com>
+ * SangJin Kim <sangjin3.kim@samsung.com>
+ * MunKyu Im <munkyu.im@samsung.com>
+ * KiTae Kim <kt920.kim@samsung.com>
+ * JinHyung Jo <jinhyung.jo@samsung.com>
+ * SungMin Ha <sungmin82.ha@samsung.com>
+ * JiHye Kim <jihye1128.kim@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -27,23 +35,21 @@
  *
  */
 
-#ifndef MARUSKIN_OPERATION_H_
-#define MARUSKIN_OPERATION_H_
 
-void start_display( int handle_id, short scale, short direction );
+#ifndef __MARU_SIGNAL_H__
+#define __MARU_SIGNAL_H__
 
-void do_mouse_event( int event_type, int x, int y, int z );
+#include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
 
-void do_key_event( int event_type, int keycode );
 
-void do_hardkey_event( int event_type, int keycode );
+int sig_block(void);
+int sig_unblock(void);
+void sig_handler (int signo);
+int register_sig_handler(void);
 
-void do_rotation_event( int event_type );
-
-void open_shell(void);
-
-void onoff_usb_kbd( int on );
-
-void request_close( void );
-
-#endif /* MARUSKIN_OPERATION_H_ */
+#endif /* __MARU_SIGNAL_H__ */

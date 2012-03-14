@@ -5,7 +5,7 @@
  *
  * Contact: 
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * Hyunjun Son <hj79.son@samsung.com>
+ * HyunJun Son <hj79.son@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
@@ -31,7 +31,7 @@
 
 /**
  * @file emulator.h
- * @brief - header of file these are config struecture and defines in emulator
+ * @brief - header of file these are config structures and defines in emulator
  */
 
 #ifndef __MARU_COMMON_H__
@@ -41,4 +41,4 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#endif
+#endif /* __MARU_COMMON_H__ */
