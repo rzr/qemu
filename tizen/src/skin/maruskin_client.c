@@ -44,6 +44,9 @@
 #define JAVA_EXEFILE_PATH "java"
 #define JAVA_EXEOPTION "-jar"
 
+#define OPT_SVR_PORT "svr.port"
+#define OPT_UID "uid"
+
 MULTI_DEBUG_CHANNEL( qemu, maruskin_client );
 
 // function modified by caramis
@@ -63,7 +66,16 @@ static void* run_skin_client(void* arg)
         strncat(argv, " ", 1);
     }
 
-    sprintf(cmd, "%s %s %s %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, argv);
+    int skin_server_port = get_skin_server_port();
+    int uid = rand();
+
+    INFO( "generated skin uid:%d\n", uid );
+
+    sprintf( cmd, "%s %s %s %s=%d %s=%d %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH,
+        OPT_SVR_PORT, skin_server_port,
+        OPT_UID, uid,
+        argv );
+
     if( system(cmd) ) {
 
     }else {

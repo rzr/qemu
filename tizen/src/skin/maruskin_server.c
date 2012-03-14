@@ -46,17 +46,19 @@
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
 #include "debug_ch.h"
-#include "bswap.h"
 #include "qemu-thread.h"
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
-#define RECV_HEADER_SIZE 16
-#define SEND_HEADER_SIZE 10
+#define RECV_BUF_SIZE 32
+#define RECV_HEADER_SIZE 12
+#define SEND_HEADER_SIZE 6
 
 #define HEART_BEAT_INTERVAL 2
 #define HEART_BEAT_FAIL_COUNT 5
 #define HEART_BEAT_EXPIRE_COUNT 5
+
+#define PORT_RETRY_COUNT 50
 
 enum {
     RECV_START = 1,
@@ -96,17 +98,13 @@ static void* do_heart_beat( void* args );
 static int start_heart_beat( int client_sock );
 static void stop_heart_beat( void );
 
-pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) {
+pthread_t start_skin_server( int argc, char** argv ) {
 
-    svr_port = default_svr_port;
+    QemuThread qemu_thread;
 
-    pthread_t thread_id;
+    qemu_thread_create( &qemu_thread, run_skin_server, NULL );
 
-    QemuThread thread;
-
-    qemu_thread_create( &thread, run_skin_server, NULL );
-
-    return thread_id;
+    return qemu_thread.thread;
 
 }
 
@@ -148,13 +146,20 @@ int is_ready_skin_server( void ) {
     return ready_server;
 }
 
+int get_skin_server_port( void ) {
+    return svr_port;
+}
+
 static void* run_skin_server( void* args ) {
 
     uint16_t port;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len;
 
-    port = svr_port;
+
+    // min:10000 ~ max:(20000 + 10000)
+    port = rand() % 20001;
+    port += 10000;
 
     if ( ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) < 0 ) {
         ERR( "create listen socket error: " );
@@ -162,22 +167,39 @@ static void* run_skin_server( void* args ) {
         goto cleanup;
     }
 
-    memset( &server_addr, '\0', sizeof( server_addr ) );
+    int port_fail_count = 0;
 
-    server_addr.sin_family = PF_INET;
-    server_addr.sin_addr.s_addr = inet_addr( "127.0.0.1" );
-    server_addr.sin_port = htons( port );
+    while( 1 ) {
 
-    int opt = 1;
-    setsockopt( server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof( opt ) );
+        memset( &server_addr, '\0', sizeof( server_addr ) );
 
-    if ( 0 > bind( server_sock, (struct sockaddr *) &server_addr, sizeof( server_addr ) ) ) {
-        //TODO rebind in case of port
-        ERR( "skin server bind error: " );
-        perror( "bind" );
-        goto cleanup;
-    } else {
-        INFO( "success to bind port[127.0.0.1:%d/tcp] for skin_server in host \n", port );
+        server_addr.sin_family = PF_INET;
+        server_addr.sin_addr.s_addr = inet_addr( "127.0.0.1" );
+        server_addr.sin_port = htons( port );
+
+        int opt = 1;
+        setsockopt( server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof( opt ) );
+
+        if ( 0 > bind( server_sock, (struct sockaddr *) &server_addr, sizeof( server_addr ) ) ) {
+
+            ERR( "skin server bind error\n" );
+            perror( "skin server bind error\n" );
+            port++;
+
+            if( PORT_RETRY_COUNT < port_fail_count ) {
+                goto cleanup;
+            }else {
+                port_fail_count++;
+                INFO( "Retry bind\n" );
+                continue;
+            }
+
+        } else {
+            svr_port = port;
+            INFO( "success to bind port[127.0.0.1:%d/tcp] for skin_server in host \n", svr_port );
+            break;
+        }
+
     }
 
     if ( listen( server_sock, 4 ) < 0 ) {
@@ -186,7 +208,7 @@ static void* run_skin_server( void* args ) {
         goto cleanup;
     }
 
-    char readbuf[RECV_HEADER_SIZE];
+    char readbuf[RECV_BUF_SIZE];
 
     INFO( "skin server start...port:%d\n", port );
 
@@ -220,7 +242,7 @@ static void* run_skin_server( void* args ) {
             }
 
             stop_heartbeat = 0;
-            memset( &readbuf, 0, RECV_HEADER_SIZE );
+            memset( &readbuf, 0, RECV_BUF_SIZE );
 
             int read_cnt = recv( client_sock, readbuf, RECV_HEADER_SIZE, 0 );
 
@@ -241,7 +263,7 @@ static void* run_skin_server( void* args ) {
                 TRACE( "read_cnt:%d\n", read_cnt );
 
                 int pid = 0;
-                long long req_id = 0;
+                int req_id = 0;
                 short cmd = 0;
                 short length = 0;
 
@@ -256,18 +278,23 @@ static void* run_skin_server( void* args ) {
                 memcpy( &length, p, sizeof( length ) );
 
                 pid = ntohl( pid );
-                req_id = bswap_64(req_id);
+                req_id = ntohl(req_id);
                 cmd = ntohs( cmd );
                 length = ntohs( length );
 
                 //TODO check identification with pid
 
                 TRACE( "pid:%d\n", pid );
-                TRACE( "req_id:%lld\n", req_id );
+                TRACE( "req_id:%d\n", req_id );
                 TRACE( "cmd:%d\n", cmd );
                 TRACE( "length:%d\n", length );
 
                 if ( 0 < length ) {
+
+                    if( RECV_BUF_SIZE < length ) {
+                        ERR( "length is bigger than RECV_BUF_SIZE\n" );
+                        continue;
+                    }
 
                     memset( &readbuf, 0, length );
 
@@ -506,8 +533,9 @@ static int send_skin( int client_sock, short send_cmd ) {
     char sendbuf[SEND_HEADER_SIZE];
     memset( &sendbuf, 0, SEND_HEADER_SIZE );
 
-    long long request_id = (long long) rand();
-    TRACE( "send skin request_id:%lld, send_cmd:%d\n", request_id, send_cmd );
+    int request_id = rand();
+    TRACE( "send skin request_id:%d, send_cmd:%d\n", request_id, send_cmd );
+    request_id = htonl( request_id );
 
     short data = send_cmd;
     data = htons( data );
