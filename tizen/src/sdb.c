@@ -309,7 +309,7 @@ void sdb_setup(void)
 	}
 
 	if( tizen_base_port != port ){
-		ERR( "sdb port is miss match. Aborting\n" );
+		ERR( "sdb port is miss match. Aborting (tizen_base_port=%d, port=%d)\n", tizen_base_port, port);
 		exit(1);
 	}
 
