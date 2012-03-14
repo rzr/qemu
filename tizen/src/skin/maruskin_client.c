@@ -91,7 +91,11 @@ int start_skin_client(int argc, char* argv[])
         }else {
             count++;
             INFO( "sleep for ready. count:%d\n", count );
-            usleep( 1000 * SKIN_SERVER_SLEEP_TIME );
+#ifdef _WIN32
+        Sleep( SKIN_SERVER_SLEEP_TIME );
+#else
+        usleep( 1000 * SKIN_SERVER_SLEEP_TIME );
+#endif
         }
 
     }
