@@ -44,7 +44,7 @@ MULTI_DEBUG_CHANNEL(tizen, process);
 
 static char pidfname[512] = { 0, };
 static char tizen_vms_path[512] = {0, };
-
+extern int tizen_base_port;
 #ifdef _WIN32
 static char *mbstok_r (char *string, const char *delim, char **save_ptr)
 {
@@ -154,7 +154,7 @@ int write_pidfile(char *path)
     else
         strcpy(tizen_vms_path, g_path_get_dirname(path));
 
-    sprintf(pidfname, "%s/.pid", tizen_vms_path);
+    sprintf(pidfname, "%s/.port", tizen_vms_path);
 
 	if (access(tizen_vms_path, R_OK) != 0) {
 		make_pid_path(pidfname);
@@ -171,7 +171,7 @@ int write_pidfile(char *path)
 	
 	ftruncate(fd, 0);
 	memset(buf, 0, sizeof(buf));
-	sprintf(buf, "%d", (int)getpid());
+	sprintf(buf, "%d", tizen_base_port);
 	write(fd, buf, strlen(buf));
 
 	close(fd);
