@@ -209,6 +209,8 @@ static void* run_skin_server( void* args ) {
             continue;
         }
 
+        INFO( "accept client : client_sock:%d\n", client_sock );
+
         while ( 1 ) {
 
             if ( stop_server ) {
@@ -219,11 +221,11 @@ static void* run_skin_server( void* args ) {
             stop_heartbeat = 0;
             memset( &readbuf, 0, RECV_HEADER_SIZE );
 
-            int read_cnt = read( client_sock, readbuf, RECV_HEADER_SIZE );
+            int read_cnt = recv( client_sock, readbuf, RECV_HEADER_SIZE, 0 );
 
             if ( 0 > read_cnt ) {
-                ERR( "skin_server read_cnt is less than 0, read_cnt:%d\n", read_cnt );
-                perror( "skin_server read_cnt is less than 0.\n" );
+                ERR( "skin_server read error:%d\n", read_cnt );
+                perror( "skin_server read error.\n" );
                 break;
 
             } else {
@@ -268,7 +270,7 @@ static void* run_skin_server( void* args ) {
 
                     memset( &readbuf, 0, length );
 
-                    int read_cnt = read( client_sock, readbuf, length );
+                    int read_cnt = recv( client_sock, readbuf, length, 0 );
 
                     TRACE( "data read_cnt:%d\n", read_cnt );
 
