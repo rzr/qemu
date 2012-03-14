@@ -192,7 +192,7 @@ int remove_pidfile(void)
 	}
 
 #ifdef _WIN32
-    if (remove(g_win32_locale_filename_from_utf8(pidname)) < 0) {
+    if (remove(g_win32_locale_filename_from_utf8(pidfname)) < 0) {
 #else
 	if (remove(pidfname) < 0) {
 #endif
