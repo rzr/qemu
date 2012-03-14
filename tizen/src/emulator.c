@@ -65,6 +65,7 @@ void set_emulator_condition(int state)
 void exit_emulator(void)
 {
     shutdown_skin_server();
+    shutdown_guest_server();
     SDL_Quit();
     remove_pidfile();
 }
@@ -179,8 +180,6 @@ int main(int argc, char* argv[])
 
     INFO("qemu main start!\n");
     qemu_main(qemu_argc, qemu_argv, NULL);
-
-    shutdown_guest_server();
 
     exit_emulator();
 
