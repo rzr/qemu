@@ -1,4 +1,4 @@
-/*
+/* 
  * Emulator
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
@@ -29,18 +29,21 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config struecture and defines in emulator
- */
+#ifndef __OPTION_H__
+#define __OPTION_H__
 
-#ifndef __EMULATOR_H__
-#define __EMULATOR_H__
-
-int get_emulator_condition(void);
-void set_emulator_condition(int state);
-void exit_emulator(void);
-void get_image_path(char *qemu_argv);
-void get_tizen_port(char* option);
-
+#include <glib.h>
+#ifndef _WIN32
+#include <error.h>
 #endif
+#include <sys/types.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int gethostDNS(char *dns1, char *dns2);
+int gethostproxy(char *proxy);
+#endif
+
