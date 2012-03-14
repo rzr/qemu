@@ -222,8 +222,8 @@ static void* run_skin_server( void* args ) {
             int read_cnt = read( client_sock, readbuf, RECV_HEADER_SIZE );
 
             if ( 0 > read_cnt ) {
-                ERR( "skin_server read_cnt is less than 0\n" );
-                perror( "skin_server read_cnt is less than 0\n" );
+                ERR( "skin_server read_cnt is less than 0, read_cnt:%d\n", read_cnt );
+                perror( "skin_server read_cnt is less than 0, read_cnt:%d\n", read_cnt );
                 break;
 
             } else {
