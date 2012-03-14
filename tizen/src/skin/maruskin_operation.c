@@ -97,11 +97,13 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
 void do_key_event( int event_type, int keycode ) {
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
+#ifndef _WIN32
     if (KEY_PRESSED == event_type) {
         kbd_put_keycode(curses2keycode[keycode]);
     } else if (KEY_RELEASED == event_type) {
         kbd_put_keycode(curses2keycode[keycode] | 0x80);
     }
+#endif
 }
 
 void do_hardkey_event( int event_type, int keycode ) {

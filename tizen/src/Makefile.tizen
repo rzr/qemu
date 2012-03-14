@@ -43,7 +43,7 @@ endif
 
 # maru skin
 obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o
-ifdef CONFIG_WIN32 
+ifndef CONFIG_WIN32 
 obj-i386-y += maruskin_keymap.o
 endif
 
