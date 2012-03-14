@@ -665,6 +665,7 @@ static void socket_cleanup(void)
 int socket_init(void)
 {
 #ifdef _WIN32
+#ifndef CONFIG_MARU
     WSADATA Data;
     int ret, err;
 
@@ -675,6 +676,7 @@ int socket_init(void)
         return -1;
     }
     atexit(socket_cleanup);
+#endif
 #endif
     return 0;
 }

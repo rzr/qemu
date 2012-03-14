@@ -63,6 +63,8 @@ pthread_t start_guest_server( int server_port ) {
 
     if ( 0 != pthread_create( &thread_id, NULL, run_guest_server, NULL ) ) {
         ERR( "fail to create guest_server pthread.\n" );
+    }else {
+        INFO( "created guest server thread\n" );
     }
 
     return thread_id;
@@ -70,6 +72,8 @@ pthread_t start_guest_server( int server_port ) {
 }
 
 static void* run_guest_server( void* args ) {
+
+    INFO( "start guest server thread.\n" );
 
     uint16_t port;
     struct sockaddr_in server_addr, client_addr;
