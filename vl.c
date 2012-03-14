@@ -93,6 +93,7 @@
 #include <windows.h>
 #endif
 
+#ifndef CONFIG_MARU
 #ifdef CONFIG_SDL
 #if defined(__APPLE__) || defined(main)
 #include <SDL.h>
@@ -105,6 +106,7 @@ int main(int argc, char **argv)
 #define main qemu_main
 #endif
 #endif /* CONFIG_SDL */
+#endif
 
 #ifdef CONFIG_COCOA
 #undef main
