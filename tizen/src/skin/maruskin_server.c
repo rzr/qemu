@@ -73,6 +73,7 @@ static int server_sock = 0;
 static int client_sock = 0;
 static int stop_server = 0;
 static int is_sensord_initialized = 0;
+static int ready_server = 0;
 
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
@@ -128,9 +129,15 @@ void shutdown_skin_server( void ) {
 void notify_sensor_daemon_start( void ) {
     INFO( "notify_sensor_daemon_start\n" );
     is_sensord_initialized = 1;
-    if ( 0 > send_skin( client_sock, SEND_SENSOR_DAEMON_START ) ) {
-        ERR( "fail to send SEND_SENSOR_DAEMON_START to skin.\n" );
+    if( client_sock ) {
+        if ( 0 > send_skin( client_sock, SEND_SENSOR_DAEMON_START ) ) {
+            ERR( "fail to send SEND_SENSOR_DAEMON_START to skin.\n" );
+        }
     }
+}
+
+int is_ready_skin_server( void ) {
+    return ready_server;
 }
 
 static void* run_skin_server( void* args ) {
@@ -194,6 +201,9 @@ static void* run_skin_server( void* args ) {
         INFO( "start accepting socket...\n" );
 
         client_len = sizeof( client_addr );
+
+        ready_server = 1;
+
         if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr *) &client_addr, &client_len ) ) ) {
             ERR( "skin_servier accept error\n" );
             perror( "skin_servier accept error\n" );

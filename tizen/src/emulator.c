@@ -30,6 +30,7 @@
  */
 
 
+#include <stdlib.h>
 #include <SDL/SDL.h>
 #include "maru_common.h"
 #include "emulator.h"
@@ -73,8 +74,8 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     INFO("construct main window\n");
     start_skin_server(11111, 0, 0);
 #if 1
-    if (start_skin_client(skin_argc, skin_argv) == 0) {
-        //TODO:
+    if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
+        exit( -1 );
     }
 #endif
 

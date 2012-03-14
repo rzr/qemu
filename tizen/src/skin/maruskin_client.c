@@ -31,13 +31,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "maruskin_client.h"
 #include <string.h>
+#include <unistd.h>
+#include "maruskin_client.h"
+#include "maruskin_server.h"
+#include "debug_ch.h"
 
+#define SKIN_SERVER_READY_TIME 3 // second
+#define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
 #define JAR_SKINFILE_PATH "EmulatorSkin.jar"
 #define JAVA_EXEFILE_PATH "java"
 #define JAVA_EXEOPTION "-jar"
+
+MULTI_DEBUG_CHANNEL( qemu, maruskin_client );
 
 // function modified by caramis
 // for delivery argv
@@ -68,14 +75,40 @@ static void* run_skin_client(void* arg)
 
 int start_skin_client(int argc, char* argv[])
 {
+
+    int count = 0;
+    int skin_server_ready = 0;
+
+    while( 1 ) {
+
+        if( 100 * SKIN_SERVER_READY_TIME < count ) {
+            break;
+        }
+
+        if( is_ready_skin_server() ) {
+            skin_server_ready = 1;
+            break;
+        }else {
+            count++;
+            INFO( "sleep for ready. count:%d\n", count );
+            usleep( 1000 * SKIN_SERVER_SLEEP_TIME );
+        }
+
+    }
+
+    if( !skin_server_ready ) {
+        ERR( "skin_server is not ready.\n" );
+        return -1;
+    }
+
     skin_argc = argc;
     skin_argv = argv;
 
     pthread_t thread_id = -1;
 
     if (0 != pthread_create(&thread_id, NULL, run_skin_client, NULL)) {
-        fprintf(stderr, "fail to create skin_client pthread.\n");
-        return 0;
+        ERR( "fail to create skin_client pthread.\n" );
+        return -1;
     }
 
     return 1;
