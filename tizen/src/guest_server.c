@@ -33,7 +33,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "guest_server.h"
-#include "sdb.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 
