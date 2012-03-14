@@ -45,7 +45,7 @@
 MULTI_DEBUG_CHANNEL(tizen, process);
 
 static char portfname[512] = { 0, };
-static char tizen_vms_path[512] = {0, };
+char tizen_vms_path[512] = {0, };
 extern int tizen_base_port;
 #ifdef _WIN32
 static char *mbstok_r (char *string, const char *delim, char **save_ptr)

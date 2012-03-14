@@ -56,7 +56,6 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
-extern char tizen_vms_path[256];
 
 int get_emulator_condition(void)
 {
