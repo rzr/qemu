@@ -16,7 +16,7 @@ LIBS += -lavformat -lavcodec -lavutil -lm -lGL
 endif
 
 # maru loader
-obj-y += emulator.o process.o maru_signal.o maru_sdl.o
+obj-y += emulator.o process.o option.o maru_signal.o maru_sdl.o
 
 # sdb
 obj-y += sdb.o

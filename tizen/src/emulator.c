@@ -41,14 +41,15 @@
 #include "guest_server.h"
 #include "debug_ch.h"
 #include "process.h"
+#include "option.h"
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
-#define IMAGE_PATH_PREFIX "file="
-#define IMAGE_PATH_SUFFIX ",if=virtio"
+#define IMAGE_PATH_PREFIX   "file="
+#define IMAGE_PATH_SUFFIX   ",if=virtio"
 #define SDB_PORT_PREFIX     "sdb_port="
 #define MAXLEN  512
 #define MIDBUF  128
@@ -87,13 +88,14 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
 
 }
 
-static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
+static void parse_options(int argc, char* argv[], char* proxy, char* dns1, char* dns2, int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
 {
     int i;
     int j;
-
+    char *point = NULL;
 // FIXME !!!
 // TODO:
+   
     for(i = 1; i < argc; ++i)
     {
         if(strncmp(argv[i], "--skin-args", 11) == 0)
@@ -112,7 +114,10 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
             *qemu_argv = &(argv[j]);
 
             argv[j] = argv[0];
-
+        }
+        if((point = strstr(argv[j], "console")) != NULL)
+        {
+            argv[j] = g_strdup_printf("%s proxy=%s dns1=%s dns2=%s", argv[9], proxy, dns1, dns2);
             break;
         }
     }
@@ -177,8 +182,12 @@ int main(int argc, char* argv[])
 
     int qemu_argc = 0;
     char** qemu_argv = NULL;
+    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
+	
+    gethostproxy(proxy);
+	gethostDNS(dns1, dns2);
 
-    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    parse_options(argc, argv, proxy, dns1, dns2, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
 
     int i;
 
