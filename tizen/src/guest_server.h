@@ -34,7 +34,7 @@
 
 #include <pthread.h>
 
-pthread_t start_guest_server( void );
+pthread_t start_guest_server( int server_port );
 void shutdown_guest_server( void );
 
 #endif /* GUEST_SERVER_H_ */

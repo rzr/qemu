@@ -48,9 +48,9 @@ static int server_sock = 0;
 
 static int parse_val( char *buff, unsigned char data, char *parsbuf );
 
-pthread_t start_guest_server( void ) {
+pthread_t start_guest_server( int server_port ) {
 
-    svr_port = get_sdb_base_port() + SDB_UDP_SENSOR_INDEX;
+    svr_port = server_port;
 
     pthread_t thread_id = -1;
 

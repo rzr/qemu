@@ -79,8 +79,6 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     }
 #endif
 
-//    start_guest_server();
-
 }
 
 static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
@@ -171,14 +169,18 @@ int main(int argc, char* argv[])
     INFO("\n");
     INFO("======================================================\n");
 
+    sdb_setup();
+
     construct_main_window(skin_argc, skin_argv);
 
-    sdb_setup();
+    //TODO get port number by args from emulator manager
+    int guest_server_port = get_sdb_base_port() + SDB_UDP_SENSOR_INDEX;
+    start_guest_server( guest_server_port );
 
     INFO("qemu main start!\n");
     qemu_main(qemu_argc, qemu_argv, NULL);
 
-//  shutdown_guest_server();
+    shutdown_guest_server();
 
     exit_emulator();
 
