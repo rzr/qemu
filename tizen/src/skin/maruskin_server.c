@@ -223,7 +223,7 @@ static void* run_skin_server( void* args ) {
 
             if ( 0 > read_cnt ) {
                 ERR( "skin_server read_cnt is less than 0, read_cnt:%d\n", read_cnt );
-                perror( "skin_server read_cnt is less than 0, read_cnt:%d\n", read_cnt );
+                perror( "skin_server read_cnt is less than 0.\n" );
                 break;
 
             } else {
