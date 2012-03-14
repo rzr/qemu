@@ -188,7 +188,7 @@ int main(int argc, char* argv[])
     construct_main_window(skin_argc, skin_argv);
 
     //TODO get port number by args from emulator manager
-    int guest_server_port = get_sdb_base_port() + SDB_UDP_SENSOR_INDEX;
+    int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server( guest_server_port );
 
     INFO("qemu main start!\n");
