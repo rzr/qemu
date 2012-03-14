@@ -31,7 +31,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <arpa/inet.h>
+#endif
+
 #include "guest_server.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
@@ -51,7 +59,7 @@ pthread_t start_guest_server( int server_port ) {
 
     svr_port = server_port;
 
-    pthread_t thread_id = -1;
+    pthread_t thread_id;
 
     if ( 0 != pthread_create( &thread_id, NULL, run_guest_server, NULL ) ) {
         ERR( "fail to create guest_server pthread.\n" );

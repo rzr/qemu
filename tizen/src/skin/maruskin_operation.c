@@ -33,10 +33,14 @@
 #include "maru_sdl.h"
 #include "debug_ch.h"
 #include "../hw/maru_pm.h"
-#include "maruskin_keymap.h"
+
 #include "console.h"
 #include "sdb.h"
 #include "nbd.h"
+
+#ifndef _WIN32
+#include "maruskin_keymap.h"
+#endif
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
@@ -169,7 +173,7 @@ void do_rotation_event( int event_type) {
 
     INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, get_sdb_base_port() + SDB_TCP_EMULD_INDEX);
 #ifdef _WIN32
-    closiesocket( s );
+    closesocket( s );
 #else
     close( s );
 #endif
