@@ -96,15 +96,15 @@
 #ifdef CONFIG_SDL
 #if defined(__APPLE__) || defined(main)
 #include <SDL.h>
-int qemu_main(int argc, char **argv, char **envp);
 #ifndef CONFIG_MARU
+int qemu_main(int argc, char **argv, char **envp);
 int main(int argc, char **argv)
 {
     return qemu_main(argc, argv, NULL);
 }
-#endif
 #undef main
 #define main qemu_main
+#endif
 #endif
 #endif /* CONFIG_SDL */
 
