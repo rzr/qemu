@@ -153,14 +153,6 @@ static void* run_skin_server( void* args ) {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len;
 
-#ifdef __MINGW32__
-    WSADATA wsadata;
-    if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
-        ERR("Error creating socket.\n");
-        return NULL;
-    }
-#endif
-
     port = svr_port;
 
     if ( ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) < 0 ) {

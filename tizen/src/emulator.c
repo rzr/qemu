@@ -41,6 +41,9 @@
 #include "guest_server.h"
 #include "debug_ch.h"
 #include "process.h"
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
@@ -140,6 +143,14 @@ int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
 {
+#ifdef _WIN32
+    WSADATA wsadata;
+    if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
+        ERR("Error creating socket.\n");
+        return NULL;
+    }
+#endif
+
     tizen_base_port = get_sdb_base_port();
 
     int skin_argc = 0;
@@ -184,6 +195,10 @@ int main(int argc, char* argv[])
     qemu_main(qemu_argc, qemu_argv, NULL);
 
     exit_emulator();
+
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }
