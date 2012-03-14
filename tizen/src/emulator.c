@@ -49,8 +49,9 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 
 #define IMAGE_PATH_PREFIX "file="
 #define IMAGE_PATH_SUFFIX ",if=virtio"
-#define MAXPATH  512
-
+#define SDB_PORT_PREFIX     "sdb_port="
+#define MAXLEN  512
+#define MIDBUF  128
 int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
@@ -117,7 +118,7 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
     }
 }
 
-void get_image_path(int qemu_argc, char* qemu_argv)
+void get_image_path(char* qemu_argv)
 {
     int i;
     int j = 0;
@@ -125,7 +126,7 @@ void get_image_path(int qemu_argc, char* qemu_argv)
     int prefix_len = 0;
     int suffix_len = 0;
     int max = 0;
-    char *path = malloc(MAXPATH);
+    char *path = malloc(MAXLEN);
     name_len = strlen(qemu_argv);
     prefix_len = strlen(IMAGE_PATH_PREFIX);
     suffix_len = strlen(IMAGE_PATH_SUFFIX);
@@ -139,6 +140,27 @@ void get_image_path(int qemu_argc, char* qemu_argv)
     write_portfile(path);
 }
 
+void get_tizen_port(char* option)
+{
+    int i;
+    int j = 0;
+    int max_len = 0;
+    int prefix_len = 0;
+    char *ptr;
+    char *path = malloc(MAXLEN);
+    prefix_len = strlen(SDB_PORT_PREFIX);;
+    max_len = prefix_len + 5;
+    for(i = prefix_len , j = 0; i < max_len; i++)
+    {
+        path[j++] = option[i];
+    }
+    path[j] = '\0';
+    
+    tizen_base_port = strtol(path, &ptr, 10);
+    INFO( "tizen_base_port: %d\n", tizen_base_port);
+}
+
+
 int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
@@ -150,9 +172,6 @@ int main(int argc, char* argv[])
         return NULL;
     }
 #endif
-
-    tizen_base_port = get_sdb_base_port();
-
     int skin_argc = 0;
     char** skin_argv = NULL;
 
@@ -172,13 +191,18 @@ int main(int argc, char* argv[])
 */
 
 //  printf("%d\n", qemu_argc);
+    char *option = NULL;
     INFO("Start emulator : =====================================\n");
     for(i = 0; i < qemu_argc; ++i)
     {
         INFO("%s ", qemu_argv[i]);
         if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
-            get_image_path(qemu_argc, qemu_argv[i]);
+            get_image_path(qemu_argv[i]);
         }
+        if((option = strstr(qemu_argv[i], SDB_PORT_PREFIX)) != NULL) {
+            get_tizen_port(option);
+        }
+
     }
     INFO("\n");
     INFO("======================================================\n");
