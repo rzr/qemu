@@ -46,6 +46,7 @@
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
 #include "debug_ch.h"
+#include "bswap.h"
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
@@ -260,7 +261,7 @@ static void* run_skin_server( void* args ) {
                 memcpy( &length, p, sizeof( length ) );
 
                 pid = ntohl( pid );
-                req_id = be64toh(req_id);
+                req_id = bswap_64(req_id);
                 cmd = ntohs( cmd );
                 length = ntohs( length );
 
