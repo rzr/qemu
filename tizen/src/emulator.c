@@ -31,7 +31,7 @@
 
 
 #include <stdlib.h>
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include "maru_common.h"
 #include "emulator.h"
 #include "sdb.h"
