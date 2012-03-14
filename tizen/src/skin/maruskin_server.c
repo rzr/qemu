@@ -47,6 +47,7 @@
 #include "maruskin_operation.h"
 #include "debug_ch.h"
 #include "bswap.h"
+#include "qemu-thread.h"
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
@@ -101,9 +102,9 @@ pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) 
 
     pthread_t thread_id;
 
-    if ( 0 != pthread_create( &thread_id, NULL, run_skin_server, NULL ) ) {
-        ERR( "fail to create skin_server pthread.\n" );
-    }
+    QemuThread thread;
+
+    qemu_thread_create( &thread, run_skin_server, NULL );
 
     return thread_id;
 
@@ -516,7 +517,7 @@ static int send_skin( int client_sock, short send_cmd ) {
     p += sizeof( request_id );
     memcpy( p, &data, sizeof( data ) );
 
-    ssize_t write_count = write( client_sock, sendbuf, SEND_HEADER_SIZE );
+    ssize_t write_count = send( client_sock, sendbuf, SEND_HEADER_SIZE, 0 );
 
     return write_count;
 
