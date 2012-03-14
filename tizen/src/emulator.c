@@ -68,7 +68,7 @@ void exit_emulator(void)
     shutdown_skin_server();
     shutdown_guest_server();
     SDL_Quit();
-    remove_pidfile();
+    remove_portfile();
 }
 
 static void construct_main_window(int skin_argc, char* skin_argv[])
@@ -133,7 +133,7 @@ void get_image_path(int qemu_argc, char* qemu_argv)
     }
     path[j] = '\0';
 
-    write_pidfile(path);
+    write_portfile(path);
 }
 
 int qemu_main(int argc, char** argv, char** envp);
