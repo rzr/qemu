@@ -77,7 +77,7 @@ static int ready_server = 0;
 
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
-static pthread_t thread_id_heartbeat = 0;
+static pthread_t thread_id_heartbeat;
 static pthread_mutex_t mutex_heartbeat = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond_heartbeat = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
@@ -92,7 +92,7 @@ pthread_t start_skin_server( uint16_t default_svr_port, int argc, char** argv ) 
 
     svr_port = default_svr_port;
 
-    pthread_t thread_id = -1;
+    pthread_t thread_id;
 
     if ( 0 != pthread_create( &thread_id, NULL, run_skin_server, NULL ) ) {
         ERR( "fail to create skin_server pthread.\n" );
