@@ -514,8 +514,6 @@ static int send_skin( int client_sock, short send_cmd ) {
     long long request_id = (long long) rand();
     TRACE( "send skin request_id:%lld, send_cmd:%d\n", request_id, send_cmd );
 
-    request_id = htobe64( request_id );
-
     short data = send_cmd;
     data = htons( data );
 
