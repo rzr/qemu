@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include "maruskin_client.h"
 #include "maruskin_server.h"
+#include "qemu-thread.h"
 #include "debug_ch.h"
 
 #define SKIN_SERVER_READY_TIME 3 // second
@@ -63,6 +64,7 @@ static void* run_skin_client(void* arg)
     char cmd[256];
     char argv[200];
 
+    INFO("run skin client\n");
     int i;
     for(i = 0; i < skin_argc; ++i) {
         strncat(argv, skin_argv[i], strlen(skin_argv[i]));
@@ -94,7 +96,7 @@ static void* run_skin_client(void* arg)
 
 int start_skin_client(int argc, char* argv[])
 {
-
+    QemuThread qemu_thread;
     int count = 0;
     int skin_server_ready = 0;
 
@@ -127,12 +129,16 @@ int start_skin_client(int argc, char* argv[])
     skin_argc = argc;
     skin_argv = argv;
 
-    pthread_t thread_id;
+    /*pthread_t thread_id;
 
     if (0 != pthread_create(&thread_id, NULL, run_skin_client, NULL)) {
         ERR( "fail to create skin_client pthread.\n" );
         return -1;
     }
+
+    return 1;*/
+
+    qemu_thread_create( &qemu_thread, run_skin_client, NULL );
 
     return 1;
 }

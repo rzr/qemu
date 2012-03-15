@@ -156,6 +156,8 @@ static void* run_skin_server( void* args ) {
     socklen_t client_len;
 
 
+    INFO("run skin server\n");
+    
     // min:10000 ~ max:(20000 + 10000)
     port = rand() % 20001;
     port += 10000;
