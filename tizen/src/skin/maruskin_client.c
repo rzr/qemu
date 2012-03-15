@@ -61,14 +61,15 @@ static char** skin_argv;
 
 static void* run_skin_client(void* arg)
 {
-    char cmd[256];
-    char argv[200];
+    char cmd[512];
+    char argv[256];
 
     INFO("run skin client\n");
     int i;
     for(i = 0; i < skin_argc; ++i) {
         strncat(argv, skin_argv[i], strlen(skin_argv[i]));
         strncat(argv, " ", 1);
+        INFO( "[skin args %d] %s\n", i, skin_argv[i] );
     }
 
     int skin_server_port = get_skin_server_port();
