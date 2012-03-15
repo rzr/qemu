@@ -8,7 +8,7 @@ echo "checking for os... targetos $targetos"
 exec ./configure \
  --target-list=i386-softmmu \
  --disable-werror \
- --audio-drv-list=pa \
+ --audio-drv-list=alsa \
  --enable-mixemu \
  --disable-vnc-tls \
  --enable-tcg-x86-opt \
