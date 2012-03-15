@@ -160,44 +160,31 @@ void get_tizen_port(char* option)
     INFO( "tizen_base_port: %d\n", tizen_base_port);
 }
 
-
-int qemu_main(int argc, char** argv, char** envp);
-
-int main(int argc, char* argv[])
+void redir_output(void)
 {
-#ifdef _WIN32
-    WSADATA wsadata;
-    if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
-        ERR("Error creating socket.\n");
-        return NULL;
-    }
-#endif
+	FILE *fp;
+// FIXME !!
+//	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
+//	strcat(logfile, "/emulator.log");
 
-    int skin_argc = 0;
-    char** skin_argv = NULL;
+	fp = freopen("emulator.log", "a+", stdout);
+	if(fp ==NULL)
+		fprintf(stderr, "log file open error\n");
+	fp = freopen("emulator.log", "a+", stderr);
+	if(fp ==NULL)
+		fprintf(stderr, "log file open error\n");
 
-    int qemu_argc = 0;
-    char** qemu_argv = NULL;
+	setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+	setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+}
 
-    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
-
+void extract_info(int qemu_argc, char** qemu_argv)
+{
     int i;
-
-/*
-    printf("%d\n", skin_argc);
-    for(i = 0; i < skin_argc; ++i)
-    {
-        printf("%s\n", skin_argv[i]);
-    }
-*/
-
-//  printf("%d\n", qemu_argc);
     char *option = NULL;
 
-    INFO("qemu args : =====================================\n");
     for(i = 0; i < qemu_argc; ++i)
     {
-        INFO("%s ", qemu_argv[i]);
         if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
             get_image_path(qemu_argv[i]);
         }
@@ -207,24 +194,53 @@ int main(int argc, char* argv[])
         }
 
     }
+}
 
-    INFO("\n");
-    //INFO("======================================================\n");
+int qemu_main(int argc, char** argv, char** envp);
 
-    INFO("skin args : =====================================\n");
+int main(int argc, char* argv[])
+{
+    int skin_argc = 0;
+    char** skin_argv = NULL;
+
+    int qemu_argc = 0;
+    char** qemu_argv = NULL;
+    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
+
+    INFO("Emulator start !!!\n");
+    // redir_output after debug_ch is initialized...
+    redir_output();
+
+#ifdef _WIN32
+    WSADATA wsadata;
+    if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
+        ERR("Error creating socket.\n");
+        return NULL;
+    }
+#endif
+	
+    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    extract_info(qemu_argc, qemu_argv);
+
+    int i;
+
+    char *option = NULL;
+
+    fprintf(stdout, "qemu args : ==========================================\n");
+    for(i = 0; i < qemu_argc; ++i)
+    {
+        fprintf(stdout, "%s ", qemu_argv[i]);
+    }
+    fprintf(stdout, "\n");
+    fprintf(stdout, "======================================================\n");
+
+    fprintf(stdout, "skin args : ==========================================\n");
     for(i = 0; i < skin_argc; ++i)
     {
-        INFO("%s ", skin_argv[i]);
-        if(strstr(skin_argv[i], IMAGE_PATH_PREFIX) != NULL) {
-            get_image_path(skin_argv[i]);
-        }
-        if((option = strstr(skin_argv[i], SDB_PORT_PREFIX)) != NULL) {
-            get_tizen_port(option);
-        }
-
+        fprintf(stdout, "%s ", skin_argv[i]);
     }
-    INFO("\n");
-    INFO("======================================================\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "======================================================\n");
 
     sdb_setup();
 
