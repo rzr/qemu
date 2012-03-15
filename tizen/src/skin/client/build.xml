@@ -1,0 +1,34 @@
+<?xml version="1.0" standalone="yes"?>
+<project name="emulator-skin" basedir="." default="jar">
+    <path id="classpath">
+        <fileset dir="lib/swt/gtk-linux" includes="swt.jar" />
+    </path>
+    
+    <target name="compile">
+        <echo message="compiling..." />
+        <!-- remove hidden .xxx -->
+        <delete dir="bin" excludes=".*"/>
+        <mkdir dir="bin" />
+        <javac fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+            <classpath refid="classpath" />
+        </javac>
+    </target>
+    
+    <target name="jar" depends="compile">
+        <echo message="creating emulator-skin.jar..." />
+        <jar jarfile="emulator-skin.jar" basedir="bin" duplicate="add">
+        	<manifest>
+        		<attribute name="Main-Class" value="org.tizen.emulator.skin.EmulatorSkinMain"/>
+                <attribute name="Class-path" value="swt.jar"/>
+        	</manifest>
+<!--            <fileset dir="src" includes="**/*.properties"/> -->
+        </jar>
+    </target>
+
+<!--
+    <target name="dist" depends="jar">
+        <copy file="./emulator-skin.jar" tofile="../dist/emulator-skin.jar"/>
+    </target>
+-->
+
+</project>
