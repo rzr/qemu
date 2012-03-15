@@ -56,7 +56,7 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
-
+char tizen_target_path[MAXLEN] = {0, };
 int get_emulator_condition(void)
 {
     return _emulator_condition;
@@ -140,8 +140,7 @@ void get_image_path(char* qemu_argv)
         path[j++] = qemu_argv[i];
     }
     path[j] = '\0';
-
-    write_portfile(path);
+    strcpy(tizen_target_path, path);
 }
 
 void get_tizen_port(char* option)
@@ -159,8 +158,7 @@ void get_tizen_port(char* option)
         path[j++] = option[i];
     }
     path[j] = '\0';
-    
-    tizen_base_port = strtol(path, &ptr, 10);
+    tizen_base_port = strtol(path, &ptr, 0);
     INFO( "tizen_base_port: %d\n", tizen_base_port);
 }
 
@@ -210,6 +208,7 @@ int main(int argc, char* argv[])
         }
         if((option = strstr(qemu_argv[i], SDB_PORT_PREFIX)) != NULL) {
             get_tizen_port(option);
+            write_portfile(tizen_target_path);
         }
 
     }
