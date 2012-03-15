@@ -28,8 +28,8 @@ install()
     cd $SRCDIR/tizen
     make install
 	mv Emulator $BIN_DIR
-	cp $SRCDIR/package/emulator.install.linux $BIN_DIR/../
-	cp $SRCDIR/package/emulator.remove.linux $BIN_DIR/../
+#	cp $SRCDIR/package/emulator.install.linux $BIN_DIR/../
+#	cp $SRCDIR/package/emulator.remove.linux $BIN_DIR/../
 }
 
 [ "$1" = "clean" ] && clean
