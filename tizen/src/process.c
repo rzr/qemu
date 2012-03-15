@@ -150,6 +150,9 @@ int write_portfile(char *path)
 {
 	int		fd = -1;
 	char	buf[128] = "";
+    
+    if(tizen_base_port = 0)
+        return 0;
 
     if(!g_path_is_absolute(path))
         strcpy(tizen_vms_path, g_get_current_dir());
@@ -170,7 +173,7 @@ int write_portfile(char *path)
 		ERR("%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
 	    return -1;
 	}
-	
+
 	ftruncate(fd, 0);
 	memset(buf, 0, sizeof(buf));
 	sprintf(buf, "%d", tizen_base_port);
