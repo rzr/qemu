@@ -469,15 +469,8 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
-                    int on = 0;
-
-                    char* p = readbuf;
-                    memcpy( &on, p, sizeof( on ) );
-                    on = ntohs( on );
-                    if ( 0 < on ) {
-                        // java boolean is 256bits '1' set.
-                        on = 1;
-                    }
+                    char on = 0;
+                    memcpy( &on, readbuf, sizeof( on ) );
                     onoff_usb_kbd( on );
                     break;
                 }
