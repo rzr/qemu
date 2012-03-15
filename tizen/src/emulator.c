@@ -90,11 +90,11 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
 
 }
 
-static void parse_options(int argc, char* argv[], char* proxy, char* dns1, char* dns2, int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
+static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
 {
     int i;
     int j;
-    char *point = NULL;
+
 // FIXME !!!
 // TODO:
    
@@ -116,11 +116,6 @@ static void parse_options(int argc, char* argv[], char* proxy, char* dns1, char*
             *qemu_argv = &(argv[j]);
 
             argv[j] = argv[0];
-        }
-        if((point = strstr(argv[j], "console")) != NULL)
-        {
-            argv[j] = g_strdup_printf("%s proxy=%s dns1=%s dns2=%s", argv[j], proxy, dns1, dns2);
-            break;
         }
     }
 }
@@ -177,17 +172,14 @@ int main(int argc, char* argv[])
         return NULL;
     }
 #endif
+
     int skin_argc = 0;
     char** skin_argv = NULL;
 
     int qemu_argc = 0;
     char** qemu_argv = NULL;
-    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
-	
-    gethostproxy(proxy);
-	gethostDNS(dns1, dns2);
 
-    parse_options(argc, argv, proxy, dns1, dns2, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
 
     int i;
 
@@ -217,7 +209,7 @@ int main(int argc, char* argv[])
     }
 
     INFO("\n");
-    INFO("======================================================\n");
+    //INFO("======================================================\n");
 
     INFO("skin args : =====================================\n");
     for(i = 0; i < skin_argc; ++i)

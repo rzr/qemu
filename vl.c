@@ -179,6 +179,7 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 #include "tizen/src/maru_sdl.h"
+#include "tizen/src/option.h"
 #endif
 
 //#define DEBUG_NET
@@ -2203,6 +2204,11 @@ int main(int argc, char **argv, char **envp)
     const char *trace_events = NULL;
     const char *trace_file = NULL;
 
+#ifdef CONFIG_MARU
+    #define MIDBUF  128
+    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
+#endif
+
     atexit(qemu_run_exit_notifiers);
     error_set_progname(argv[0]);
 
@@ -2440,7 +2446,15 @@ int main(int argc, char **argv, char **envp)
                 kernel_filename = optarg;
                 break;
             case QEMU_OPTION_append:
+#ifdef CONFIG_MARU
+                gethostproxy(proxy);
+                gethostDNS(dns1, dns2);
+
+                kernel_cmdline = g_strdup_printf("%s proxy=%s dns1=%s dns2=%s", optarg, proxy, dns1, dns2);
+                fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
+#else
                 kernel_cmdline = optarg;
+#endif
                 break;
             case QEMU_OPTION_cdrom:
                 drive_add(IF_DEFAULT, 2, optarg, CDROM_OPTS);
@@ -3369,6 +3383,9 @@ int main(int argc, char **argv, char **envp)
 
     machine->init(ram_size, boot_devices,
                   kernel_filename, kernel_cmdline, initrd_filename, cpu_model);
+#ifdef CONFIG_MARU
+    g_free((gchar *)kernel_cmdline);
+#endif
 
     cpu_synchronize_all_post_init();
 
