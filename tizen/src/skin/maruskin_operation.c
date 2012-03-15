@@ -78,7 +78,7 @@ void start_display( int handle_id, int lcd_size_width, int lcd_size_height, shor
     INFO( "start_display handle_id:%d, lcd size:%dx%d, scale:%d, rotation:%d\n",
         handle_id, lcd_size_width, lcd_size_height, scale, rotation );
 
-    maruskin_sdl_init(handle_id);
+    maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height);
 }
 
 void do_mouse_event( int event_type, int x, int y, int z ) {

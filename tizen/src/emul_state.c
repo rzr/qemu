@@ -38,7 +38,7 @@ MULTI_DEBUG_CHANNEL(qemu, emul_state);
 
 static emulator_config_info _emul_info;
 
-void set_emul_info_resolution(int width, int height)
+void set_emul_lcd_size(int width, int height)
 {
     _emul_info.resolution_w = width;
     _emul_info.resolution_h = height;
@@ -46,12 +46,12 @@ void set_emul_info_resolution(int width, int height)
    INFO("emulator graphic resolution %dx%d\n", _emul_info.resolution_w,  _emul_info.resolution_h);
 }
 
-int get_emul_info_resolution_width(void)
+int get_emul_lcd_width(void)
 {
     return _emul_info.resolution_w;
 }
 
-int get_emul_info_resolution_height(void)
+int get_emul_lcd_height(void)
 {
     return _emul_info.resolution_h;
 }

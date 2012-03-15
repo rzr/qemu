@@ -168,7 +168,7 @@ void maruskin_display_init(DisplayState *ds)
 #endif
 }
 
-void maruskin_sdl_init(int swt_handle)
+void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
 {
     gchar SDL_windowhack[32];
     SDL_SysWMinfo info;
@@ -184,8 +184,9 @@ void maruskin_sdl_init(int swt_handle)
     }
 
     INFO( "qemu_sdl_initialize\n");
-    surface_screen = SDL_SetVideoMode(480, 800,
+    surface_screen = SDL_SetVideoMode(lcd_size_width, lcd_size_height,
         0, SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME);
+    set_emul_lcd_size(lcd_size_width, lcd_size_height);
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);

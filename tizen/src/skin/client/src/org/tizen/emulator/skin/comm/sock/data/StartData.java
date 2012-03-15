@@ -38,11 +38,15 @@ import java.io.IOException;
 public class StartData extends AbstractSendData {
 
 	private int windowHandleId;
+	private int lcdSizeWidth;
+	private int lcdSizeHeight;
 	private short scale;
 	private short rotation;
 	
-	public StartData(int windowHandleId, short scale, short rotation ) {
+	public StartData(int windowHandleId, int lcdSizeWidth, int lcdSizeHeight, short scale, short rotation ) {
 		this.windowHandleId = windowHandleId;
+		this.lcdSizeWidth = lcdSizeWidth;
+		this.lcdSizeHeight = lcdSizeHeight;
 		this.scale = scale;
 		this.rotation = rotation;
 	}
@@ -50,6 +54,8 @@ public class StartData extends AbstractSendData {
 	@Override
 	protected void write() throws IOException {
 		writeInt( windowHandleId );
+		writeInt( lcdSizeWidth );
+		writeInt( lcdSizeHeight );
 		writeShort( scale );
 		writeShort( rotation );
 	}
@@ -59,6 +65,7 @@ public class StartData extends AbstractSendData {
 		StringBuilder builder = new StringBuilder();
 		builder.append("StartData [windowHandleId=");
 		builder.append(windowHandleId);
+		builder.append(", lcd size " + lcdSizeWidth +"x" + lcdSizeHeight);
 		builder.append(", scale=");
 		builder.append(scale);
 		builder.append(", rotation=");

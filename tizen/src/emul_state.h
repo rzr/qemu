@@ -45,11 +45,11 @@ struct emulator_config_state {
 
 
 /* setter */
-void set_emul_info_resolution(int width, int height);
+void set_emul_lcd_size(int width, int height);
 
 /* getter */
-int get_emul_info_resolution_width(void);
-int get_emul_info_resolution_height(void);
+int get_emul_lcd_width(void);
+int get_emul_lcd_height(void);
 
 
 #endif /* __EMUL_STATE_H__ */

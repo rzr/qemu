@@ -110,7 +110,11 @@ public class SocketCommunicator implements ICommunicator {
 			short scale = config.getPropertyShort(PropertiesConstants.WINDOW_SCALE, Scale.HALF.value() );
 			short rotation = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
 			
-			sendToQEMU(SendCommand.SEND_START, new StartData(windowHandleId, scale, rotation));
+			sendToQEMU(SendCommand.SEND_START,
+					new StartData(windowHandleId,
+							Integer.parseInt( config.getArg(ArgsConstants.RESOLUTION_WIDTH) ),
+							Integer.parseInt( config.getArg(ArgsConstants.RESOLUTION_HEIGHT) ),
+							scale, rotation));
 
 		} catch (IOException e) {
 			e.printStackTrace();
