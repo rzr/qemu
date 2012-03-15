@@ -1,10 +1,22 @@
 EMUL_DIR=../Emulator
 
+include ../../config-host.mak
+
 all: qemu skin_client
 qemu:
 	cd ../../ && $(MAKE)
 skin_client:
-	ant -buildfile skin/client/build.xml
+ifdef CONFIG_WIN32
+	ant -buildfile skin/client/build.xml windows-jar
+else
+ifdef CONFIG_LINUX
+	ant -buildfile skin/client/build.xml linux-jar
+else
+ifdef CONFIG_DARWIN
+	ant -buildfile skin/client/build.xml mac-jar
+endif
+endif
+endif
 clean:
 	cd ../../ && $(MAKE) clean
 distclean:
