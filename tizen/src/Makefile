@@ -1,10 +1,10 @@
 EMUL_DIR=../Emulator
 
+all: qemu skin_client
 qemu:
 	cd ../../ && $(MAKE)
 skin_client:
 	ant -buildfile skin/client/build.xml
-all: qemu skin_client
 clean:
 	cd ../../ && $(MAKE) clean
 distclean:
