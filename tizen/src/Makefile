@@ -1,10 +1,14 @@
 EMUL_DIR=../Emulator
 
-all:
+qemu:
 	cd ../../ && $(MAKE)
+skin_client:
 	ant -buildfile skin/client/build.xml
+all: qemu skin_client
 clean:
 	cd ../../ && $(MAKE) clean
+distclean:
+	cd ../../ && $(MAKE) distclean
 install: all
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
