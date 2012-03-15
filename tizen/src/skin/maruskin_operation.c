@@ -37,6 +37,7 @@
 #include "console.h"
 #include "sdb.h"
 #include "nbd.h"
+#include "../mloop_event.h"
 
 #ifndef _WIN32
 #include "maruskin_keymap.h"
@@ -190,6 +191,12 @@ void open_shell(void) {
 void onoff_usb_kbd( int on ) {
     INFO( "usb kbd on/off:%d\n", on );
     //TODO
+    if(on) {
+        mloop_evcmd_usbkbd_on();
+    }
+    else {
+        mloop_evcmd_usbkbd_off();
+    }
 }
 
 

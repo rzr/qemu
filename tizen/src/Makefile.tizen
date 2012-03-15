@@ -21,6 +21,9 @@ obj-y += emulator.o emul_state.o process.o option.o maru_signal.o maru_sdl.o
 # sdb
 obj-y += sdb.o
 
+# mloop_event
+obj-y += mloop_event.o
+
 # debugch
 obj-y += debug_ch.o
 

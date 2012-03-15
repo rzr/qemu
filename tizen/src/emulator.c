@@ -46,6 +46,8 @@
 #include <winsock2.h>
 #endif
 
+#include "mloop_event.h"
+
 MULTI_DEBUG_CHANNEL(qemu, main);
 
 #define IMAGE_PATH_PREFIX   "file="
@@ -69,6 +71,7 @@ void set_emulator_condition(int state)
 
 void exit_emulator(void)
 {
+    mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
     SDL_Quit();
@@ -240,6 +243,8 @@ int main(int argc, char* argv[])
     //TODO get port number by args from emulator manager
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server( guest_server_port );
+
+    mloop_ev_init();
 
     INFO("qemu main start!\n");
     qemu_main(qemu_argc, qemu_argv, NULL);
