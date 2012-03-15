@@ -17,7 +17,7 @@ install: all
 	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -dpr ../skins $(EMUL_DIR)
+	cp -dpr skin/client/skins $(EMUL_DIR)
 	cp -dpr ../data $(EMUL_DIR)/x86
 	mkdir -p $(EMUL_DIR)/x86/data/pc-bios
 	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/x86/data/pc-bios
