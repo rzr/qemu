@@ -60,8 +60,8 @@ static char** skin_argv;
 
 static void* run_skin_client(void* arg)
 {
-    char cmd[512];
-    char argv[256];
+    char cmd[512] = {0};
+    char argv[256] = {0};
 
     INFO("run skin client\n");
     int i;
