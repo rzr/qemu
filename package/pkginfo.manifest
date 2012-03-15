@@ -3,7 +3,7 @@ Version: 1.2.34
 OS: linux
 Build-host-os: linux
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Install-dependency: emulator-kernel [ linux ]
+Install-dependency: emulator-kernel [ linux ], emulator-manager [ linux ]
 Source: emulator
 Description: Tizen Emulator
 
@@ -12,6 +12,6 @@ Version: 1.2.34
 OS: windows
 Build-host-os: windows
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Install-dependency: emulator-kernel [ windows ],emulator-dll [ windows ]
+Install-dependency: emulator-kernel [ windows ], emulator-manager [ windows ], emulator-dll [ windows ]
 Source: emulator
 Description: Tizen Emulator
