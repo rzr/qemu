@@ -30,6 +30,7 @@
 
 #include <pthread.h>
 #include "maru_sdl.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -183,8 +184,8 @@ void maruskin_sdl_init(int swt_handle)
     }
 
     INFO( "qemu_sdl_initialize\n");
-    surface_screen = SDL_SetVideoMode(480, 800, 0,
-            SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME);
+    surface_screen = SDL_SetVideoMode(480, 800,
+        0, SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME);
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);

@@ -29,16 +29,27 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config structures and defines in emulator
- */
 
-#ifndef __MARU_COMMON_H__
-#define __MARU_COMMON_H__
+#ifndef __EMUL_STATE_H__
+#define __EMUL_STATE_H__
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
 
-#endif /* __MARU_COMMON_H__ */
+typedef  struct emulator_config_info {
+    int resolution_w;
+    int resolution_h;
+} emulator_config_info;
+
+struct emulator_config_state {
+    //TODO:
+};
+
+
+/* setter */
+void set_emul_info_resolution(int width, int height);
+
+/* getter */
+int get_emul_info_resolution_width(void);
+int get_emul_info_resolution_height(void);
+
+
+#endif /* __EMUL_STATE_H__ */

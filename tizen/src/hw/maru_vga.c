@@ -5,7 +5,7 @@
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * Hyunjun Son <hj79.son@samsung.com>
+ * HyunJun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -38,6 +38,10 @@
 #include "maru_vga_int.h"
 #include "maru_brightness.h"
 #include "maru_overlay.h"
+#include "emul_state.h"
+#include "debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(qemu, maru_vga);
 
 //#define DEBUG_VGA
 //#define DEBUG_VGA_MEM
@@ -897,6 +901,8 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         vga_sync_dirty_bitmap(s);
 
     s->get_resolution(s, &width, &height);
+    set_emul_info_resolution(width, height);
+
     disp_width = width;
 
     shift_control = (s->gr[0x05] >> 5) & 3;

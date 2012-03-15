@@ -29,16 +29,29 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config structures and defines in emulator
- */
 
-#ifndef __MARU_COMMON_H__
-#define __MARU_COMMON_H__
+#include "emul_state.h"
+#include "debug_ch.h"
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
+MULTI_DEBUG_CHANNEL(qemu, emul_state);
 
-#endif /* __MARU_COMMON_H__ */
+
+static emulator_config_info _emul_info;
+
+void set_emul_info_resolution(int width, int height)
+{
+    _emul_info.resolution_w = width;
+    _emul_info.resolution_h = height;
+
+   INFO("emulator graphic resolution %dx%d\n", _emul_info.resolution_w,  _emul_info.resolution_h);
+}
+
+int get_emul_info_resolution_width(void)
+{
+    return _emul_info.resolution_w;
+}
+
+int get_emul_info_resolution_height(void)
+{
+    return _emul_info.resolution_h;
+}
