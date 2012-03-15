@@ -29,6 +29,7 @@
 
 package org.tizen.emulator.skin;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -208,8 +209,27 @@ public class EmulatorSkin {
 		// sdl uses this handle id.
 		String platform = SWT.getPlatform();
 		if( "gtk".equalsIgnoreCase( platform ) ) {
-			System.out.println( "lcdCanvas.embeddedHandle:" + ghostCanvas.embeddedHandle );
-			windowHandleId = ghostCanvas.embeddedHandle;
+			try {
+				Field field = ghostCanvas.getClass().getField( "embeddedHandle" );
+				windowHandleId = field.getInt( ghostCanvas );
+				System.out.println( "lcdCanvas.embeddedHandle:" + windowHandleId );
+			} catch ( IllegalArgumentException e ) {
+				e.printStackTrace();
+				shutdown();
+				return windowHandleId;
+			} catch ( IllegalAccessException e ) {
+				e.printStackTrace();
+				shutdown();
+				return windowHandleId;
+			} catch ( SecurityException e ) {
+				e.printStackTrace();
+				shutdown();
+				return windowHandleId;
+			} catch ( NoSuchFieldException e ) {
+				e.printStackTrace();
+				shutdown();
+				return windowHandleId;
+			}
 		}else if( "win32".equalsIgnoreCase( platform ) ) {
 			System.out.println( "lcdCanvas.handle:" + ghostCanvas.handle );
 			windowHandleId = ghostCanvas.handle;
@@ -1086,11 +1106,10 @@ public class EmulatorSkin {
 
 		final MenuItem usbOnItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
 		usbOnItem.setText( "On" );
-		usbOnItem.setSelection( true );
-		// TODO enable use keyboard
 
 		final MenuItem usbOffItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
 		usbOffItem.setText( "Off" );
+		usbOffItem.setSelection( true );
 
 		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
 			@Override
@@ -1100,12 +1119,6 @@ public class EmulatorSkin {
 					boolean on = item.equals( usbOnItem );
 					communicator
 							.sendToQEMU( SendCommand.USB_KBD, new BooleanData( on, SendCommand.USB_KBD.toString() ) );
-					
-					//TODO
-					MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-					messageBox.setMessage( "Under construction..." );
-					messageBox.open();
-
 				}
 
 			}
