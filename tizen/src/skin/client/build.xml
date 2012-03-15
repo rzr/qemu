@@ -4,10 +4,6 @@
     <property name="jar.file" value="emulator-skin.jar" />
     <property name="mainclass" value="org.tizen.emulator.skin.EmulatorSkinMain" />
 
-    <property name="linux-lib" location="lib/swt/gtk-linux" />
-    <property name="windows-lib" location="lib/swt/win32-win32" />
-    <property name="mac-lib" location="lib/swt/cocoa-macosx" />
-
     <property name="swt.file" value="swt.jar" />
 
     <path id="linux-classpath">
@@ -55,7 +51,7 @@
         <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
             <manifest>
                 <attribute name="Main-Class" value="${mainclass}"/>
-                <attribute name="Class-path" value="${linux-lib}/${swt.file}"/>
+                <attribute name="Class-path" value="lib/swt/gtk-linux/${swt.file}"/>
             </manifest>
         </jar>
     </target>
@@ -65,7 +61,7 @@
         <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
             <manifest>
                 <attribute name="Main-Class" value="${mainclass}"/>
-                <attribute name="Class-path" value="${windows-lib}/${swt.file}"/>
+                <attribute name="Class-path" value="lib/swt/win32-win32/${swt.file}"/>
             </manifest>
         </jar>
     </target>
@@ -75,7 +71,7 @@
         <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
             <manifest>
                 <attribute name="Main-Class" value="${mainclass}"/>
-                <attribute name="Class-path" value="${mac-lib}/${swt.file}"/>
+                <attribute name="Class-path" value="lib/swt/cocoa-macosx/${swt.file}"/>
             </manifest>
         </jar>
     </target>
