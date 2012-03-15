@@ -63,6 +63,7 @@ static const int curses2keycode[CURSES_KEYS] = {
     ['='] = 13,
     [0x07f] = 14, /* Backspace */
     [KEY_BACKSPACE] = 14, /* Backspace */
+    [0x008] = 14, /* Backspace */
 
     ['\t'] = 15, /* Tab */
     ['q'] = 16,
@@ -108,6 +109,7 @@ static const int curses2keycode[CURSES_KEYS] = {
 
     [' '] = 57,
 
+#if 0
     [KEY_F(1)] = 59, /* Function Key 1 */
     [KEY_F(2)] = 60, /* Function Key 2 */
     [KEY_F(3)] = 61, /* Function Key 3 */
@@ -225,6 +227,7 @@ static const int curses2keycode[CURSES_KEYS] = {
     ['B' - '@'] = 48 | CNTRL, /* Control + b */
     ['N' - '@'] = 49 | CNTRL, /* Control + n */
     /* Control + m collides with the keycode for Enter */
+#endif
 };
 
 #endif /* MARUSKIN_KEYMAP_H_ */
