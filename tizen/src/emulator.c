@@ -116,7 +116,7 @@ static void parse_options(int argc, char* argv[], char* proxy, char* dns1, char*
         }
         if((point = strstr(argv[j], "console")) != NULL)
         {
-            argv[j] = g_strdup_printf("%s proxy=%s dns1=%s dns2=%s", argv[9], proxy, dns1, dns2);
+            argv[j] = g_strdup_printf("%s proxy=%s dns1=%s dns2=%s", argv[j], proxy, dns1, dns2);
             break;
         }
     }
@@ -200,7 +200,8 @@ int main(int argc, char* argv[])
 
 //  printf("%d\n", qemu_argc);
     char *option = NULL;
-    INFO("Start emulator : =====================================\n");
+
+    INFO("qemu args : =====================================\n");
     for(i = 0; i < qemu_argc; ++i)
     {
         INFO("%s ", qemu_argv[i]);
@@ -212,10 +213,28 @@ int main(int argc, char* argv[])
         }
 
     }
+
+    INFO("\n");
+    INFO("======================================================\n");
+
+    INFO("skin args : =====================================\n");
+    for(i = 0; i < skin_argc; ++i)
+    {
+        INFO("%s ", skin_argv[i]);
+        if(strstr(skin_argv[i], IMAGE_PATH_PREFIX) != NULL) {
+            get_image_path(skin_argv[i]);
+        }
+        if((option = strstr(skin_argv[i], SDB_PORT_PREFIX)) != NULL) {
+            get_tizen_port(option);
+        }
+
+    }
     INFO("\n");
     INFO("======================================================\n");
 
     sdb_setup();
+
+    INFO("call construct_main_window\n");
 
     construct_main_window(skin_argc, skin_argv);
 
