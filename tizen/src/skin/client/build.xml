@@ -29,7 +29,7 @@
     <target name="linux-compile" depends="clean">
         <echo message="compiling..." />
         <mkdir dir="bin" />
-        <javac fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+        <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
             <classpath refid="linux-classpath" />
         </javac>
     </target>
@@ -37,7 +37,7 @@
     <target name="windows-compile" depends="clean">
         <echo message="compiling..." />
         <mkdir dir="bin" />
-        <javac fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+        <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
             <classpath refid="windows-classpath" />
         </javac>
     </target>
@@ -45,7 +45,7 @@
     <target name="mac-compile" depends="clean">
         <echo message="compiling..." />
         <mkdir dir="bin" />
-        <javac fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+        <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
             <classpath refid="mac-classpath" />
         </javac>
     </target>
