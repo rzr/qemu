@@ -151,7 +151,7 @@ int write_portfile(char *path)
 	int		fd = -1;
 	char	buf[128] = "";
     
-    if(tizen_base_port = 0)
+    if(tizen_base_port == 0)
         return 0;
 
     if(!g_path_is_absolute(path))
