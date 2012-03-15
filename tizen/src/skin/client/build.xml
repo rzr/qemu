@@ -1,34 +1,83 @@
 <?xml version="1.0" standalone="yes"?>
-<project name="emulator-skin" basedir="." default="jar">
-    <path id="classpath">
+<project name="emulator-skin" basedir="." default="linux-jar">
+    
+    <property name="jar.file" value="emulator-skin.jar" />
+    <property name="mainclass" value="org.tizen.emulator.skin.EmulatorSkinMain" />
+
+    <property name="linux-lib" location="lib/swt/gtk-linux" />
+    <property name="windows-lib" location="lib/swt/win32-win32" />
+    <property name="mac-lib" location="lib/swt/cocoa-macosx" />
+
+    <property name="swt.file" value="swt.jar" />
+
+    <path id="linux-classpath">
         <fileset dir="lib/swt/gtk-linux" includes="swt.jar" />
     </path>
-    
-    <target name="compile">
+    <path id="windows-classpath">
+        <fileset dir="lib/swt/win32-win32" includes="swt.jar" />
+    </path>
+    <path id="mac-classpath">
+        <fileset dir="lib/swt/cocoa-macosx" includes="swt.jar" />
+    </path>
+
+    <target name="clean">
+        <echo message="cleaning..." />
+        <delete dir="bin"/>
+        <delete file="${jar.file}" />
+    </target>
+
+    <target name="linux-compile" depends="clean">
         <echo message="compiling..." />
-        <!-- remove hidden .xxx -->
-        <delete dir="bin" excludes=".*"/>
         <mkdir dir="bin" />
         <javac fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
-            <classpath refid="classpath" />
+            <classpath refid="linux-classpath" />
         </javac>
     </target>
-    
-    <target name="jar" depends="compile">
-        <echo message="creating emulator-skin.jar..." />
-        <jar jarfile="emulator-skin.jar" basedir="bin" duplicate="add">
-        	<manifest>
-        		<attribute name="Main-Class" value="org.tizen.emulator.skin.EmulatorSkinMain"/>
-                <attribute name="Class-path" value="swt.jar"/>
-        	</manifest>
-<!--            <fileset dir="src" includes="**/*.properties"/> -->
+
+    <target name="windows-compile" depends="clean">
+        <echo message="compiling..." />
+        <mkdir dir="bin" />
+        <javac fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+            <classpath refid="windows-classpath" />
+        </javac>
+    </target>
+
+    <target name="mac-compile" depends="clean">
+        <echo message="compiling..." />
+        <mkdir dir="bin" />
+        <javac fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+            <classpath refid="mac-classpath" />
+        </javac>
+    </target>
+
+    <target name="linux-jar" depends="linux-compile">
+        <echo message="creating jar..." />
+        <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+            <manifest>
+                <attribute name="Main-Class" value="${mainclass}"/>
+                <attribute name="Class-path" value="${linux-lib}/${swt.file}"/>
+            </manifest>
         </jar>
     </target>
 
-<!--
-    <target name="dist" depends="jar">
-        <copy file="./emulator-skin.jar" tofile="../dist/emulator-skin.jar"/>
+    <target name="windows-jar" depends="windows-compile">
+        <echo message="creating jar..." />
+        <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+            <manifest>
+                <attribute name="Main-Class" value="${mainclass}"/>
+                <attribute name="Class-path" value="${windows-lib}/${swt.file}"/>
+            </manifest>
+        </jar>
     </target>
--->
+
+    <target name="mac-jar" depends="mac-compile">
+        <echo message="creating jar..." />
+        <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+            <manifest>
+                <attribute name="Main-Class" value="${mainclass}"/>
+                <attribute name="Class-path" value="${mac-lib}/${swt.file}"/>
+            </manifest>
+        </jar>
+    </target>
 
 </project>
