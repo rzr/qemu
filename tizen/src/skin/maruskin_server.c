@@ -327,22 +327,30 @@ static void* run_skin_server( void* args ) {
                     }
 
                     int handle_id = 0;
+                    int lcd_size_width = 0;
+                    int lcd_size_height = 0;
                     short scale = 0;
                     short rotation = 0;
 
                     char* p = readbuf;
                     memcpy( &handle_id, p, sizeof( handle_id ) );
                     p += sizeof( handle_id );
+                    memcpy( &lcd_size_width, p, sizeof( lcd_size_width ) );
+                    p += sizeof( lcd_size_width );
+                    memcpy( &lcd_size_height, p, sizeof( lcd_size_height ) );
+                    p += sizeof( lcd_size_height );
                     memcpy( &scale, p, sizeof( scale ) );
                     p += sizeof( scale );
                     memcpy( &rotation, p, sizeof( rotation ) );
 
                     handle_id = ntohl( handle_id );
+                    lcd_size_width = ntohl( lcd_size_width );
+                    lcd_size_height = ntohl( lcd_size_height );
                     scale = ntohs( scale );
                     rotation = ntohs( rotation );
 
                     if ( start_heart_beat( client_sock ) ) {
-                        start_display( handle_id, scale, rotation );
+                        start_display( handle_id, lcd_size_width, lcd_size_height, scale, rotation );
                     } else {
                         stop_server = 1;
                     }
