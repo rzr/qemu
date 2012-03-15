@@ -901,7 +901,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         vga_sync_dirty_bitmap(s);
 
     s->get_resolution(s, &width, &height);
-    set_emul_info_resolution(width, height);
 
     disp_width = width;
 
