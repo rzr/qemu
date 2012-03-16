@@ -1013,6 +1013,8 @@ public class EmulatorSkin {
 				int scale = (Integer) item.getData();
 
 				arrangeSkin( currentLcdWidth, currentLcdHeight, scale, currentRotationId );
+				LcdStateData lcdStateData = new LcdStateData( scale, currentRotationId );
+				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
 
 			}
 		};

@@ -62,7 +62,7 @@ int get_emul_lcd_height(void)
 void set_emul_win_scale(int scale)
 {
     _emul_state.scale = scale;
-    INFO("emulator window scale = %d", _emul_state.scale);
+    INFO("emulator window scale = %d\n", _emul_state.scale);
 }
 
 int get_emul_win_scale(void)
@@ -74,7 +74,7 @@ int get_emul_win_scale(void)
 void set_emul_rotation(int rotation)
 {
     _emul_state.rotation = rotation;
-    INFO("emulator rotation = %d", _emul_state.rotation);
+    INFO("emulator rotation = %d\n", _emul_state.rotation);
 }
 
 int get_emul_rotation(void)
