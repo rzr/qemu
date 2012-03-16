@@ -755,9 +755,8 @@ public class EmulatorSkin {
 
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
 		advancedItem.setText( "Advanced" );
-		advancedItem.setEnabled( false );
-//		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
-//		advancedItem.setMenu( advancedMenu );
+		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
+		advancedItem.setMenu( advancedMenu );
 //
 //		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
 //		shellItem.setText( "Shell" );
