@@ -40,7 +40,7 @@
 int get_emulator_condition(void);
 void set_emulator_condition(int state);
 void exit_emulator(void);
-void get_image_path(char *qemu_argv);
+void set_image_and_log_path(char *qemu_argv);
 void get_tizen_port(char* option);
 
 #endif

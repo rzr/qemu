@@ -40,8 +40,14 @@
 extern STARTUP_OPTION startup_option;
 #endif
 
-static char logfile[256] = { 0, };
+static char logfile[512] = {0,};
 static char debugchfile[256] = {0, };
+
+void set_log_path(char *path)
+{
+    strcpy(logfile, path);
+}
+
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
 	int ret;
@@ -301,7 +307,6 @@ static void debug_init(void)
 	strcpy(logfile, get_virtual_target_abs_path(startup_option.vtm));
 	strcat(logfile, "logs/emulator.log");
 #endif
-	strcpy(logfile, "emulator.log");
 
 	if(access(logfile, F_OK | R_OK) == 0)
 		remove(logfile);
