@@ -202,32 +202,40 @@ void extract_info(int qemu_argc, char** qemu_argv)
     }
 }
 
+static int skin_argc = 0;
+static char** skin_argv = NULL;
+
+void prepare_maru() 
+{
+    INFO("Prepare maru specified feature\n");
+
+    sdb_setup(tizen_base_port);
+
+    INFO("call construct_main_window\n");
+
+    construct_main_window(skin_argc, skin_argv);
+
+    //TODO get port number by args from emulator manager
+    int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
+    start_guest_server( guest_server_port );
+
+    mloop_ev_init();
+}
+
 int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
 {
-    int skin_argc = 0;
-    char** skin_argv = NULL;
-
     int qemu_argc = 0;
     char** qemu_argv = NULL;
 
-    // redir_output after debug_ch is initialized...
-
-#ifdef _WIN32
-    WSADATA wsadata;
-    if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
-      //  ERR("Error creating socket.\n");
-        return NULL;
-    }
-#endif
-	
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
     extract_info(qemu_argc, qemu_argv);
     set_log_path(logfile);
     INFO("Emulator start !!!\n");
     
-    redir_output();
+    INFO("Prepare running...\n");
+    redir_output(); // Redirect stdout, stderr after debug_ch is initialized...
 	
     int i;
 
@@ -247,26 +255,10 @@ int main(int argc, char* argv[])
     fprintf(stdout, "\n");
     fprintf(stdout, "======================================================\n");
 
-    sdb_setup(tizen_base_port);
-
-    INFO("call construct_main_window\n");
-
-    construct_main_window(skin_argc, skin_argv);
-
-    //TODO get port number by args from emulator manager
-    int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
-    start_guest_server( guest_server_port );
-
-    mloop_ev_init();
-
     INFO("qemu main start!\n");
     qemu_main(qemu_argc, qemu_argv, NULL);
 
     exit_emulator();
-
-#ifdef _WIN32
-    WSACleanup();
-#endif
 
     return 0;
 }
