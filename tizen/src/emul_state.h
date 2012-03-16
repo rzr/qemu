@@ -35,21 +35,28 @@
 
 
 typedef  struct emulator_config_info {
-    int resolution_w;
-    int resolution_h;
+    int lcd_size_w;
+    int lcd_size_h;
+    //TODO:
 } emulator_config_info;
 
-struct emulator_config_state {
+typedef struct emulator_config_state {
+    int scale;
+    int rotation;
     //TODO:
-};
+} emulator_config_state;
 
 
 /* setter */
 void set_emul_lcd_size(int width, int height);
+void set_emul_win_scale(int scale);
+void set_emul_rotation(int scale);
 
 /* getter */
 int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
+int get_emul_win_scale(void);
+int get_emul_rotation(void);
 
 
 #endif /* __EMUL_STATE_H__ */
