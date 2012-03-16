@@ -3,7 +3,7 @@ Version: 1.2.36
 OS: linux
 Build-host-os: linux
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Install-dependency: emulator-kernel [ linux ], emulator-manager [ linux ]
+Install-dependency: emulator-kernel [ linux ], emulator-manager [ linux ], emulator-dll [ linux ]
 Source: emulator
 Description: Tizen Emulator
 
