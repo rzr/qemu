@@ -129,7 +129,7 @@ public class EmulatorSkinMain {
 			}
 		}
 
-		map.put( ArgsConstants.EMULATOR_NAME, "emulator-26100" );
+		map.put( ArgsConstants.EMULATOR_NAME, "emulator" );
 		
 		System.out.println( "========================================");
 		System.out.println( "args:" + map );
