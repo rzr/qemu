@@ -45,7 +45,7 @@ void set_emul_lcd_size(int width, int height)
     _emul_info.lcd_size_w = width;
     _emul_info.lcd_size_h = height;
 
-   INFO("emulator graphic resolution %dx%d\n", _emul_info.lcd_size_w,  _emul_info.lcd_size_h);
+   INFO("emulator graphic resolution = %dx%d\n", _emul_info.lcd_size_w,  _emul_info.lcd_size_h);
 }
 
 int get_emul_lcd_width(void)
@@ -62,6 +62,7 @@ int get_emul_lcd_height(void)
 void set_emul_win_scale(int scale)
 {
     _emul_state.scale = scale;
+    INFO("emulator window scale = %d", _emul_state.scale);
 }
 
 int get_emul_win_scale(void)
@@ -73,6 +74,7 @@ int get_emul_win_scale(void)
 void set_emul_rotation(int rotation)
 {
     _emul_state.rotation = rotation;
+    INFO("emulator rotation = %d", _emul_state.rotation);
 }
 
 int get_emul_rotation(void)

@@ -139,6 +139,9 @@ void do_hardkey_event( int event_type, int keycode ) {
 
 }
 
+void do_scale_event( int event_type) {
+}
+
 void do_rotation_event( int event_type) {
 
     INFO( "do_rotation_event event_type:%d", event_type);
@@ -176,6 +179,9 @@ void do_rotation_event( int event_type) {
     socket_send( s, send_buf, buf_size );
 
     INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
+
+    set_emul_rotation(ROTATION_PORTRAIT);
+
 #ifdef _WIN32
     closesocket( s );
 #else

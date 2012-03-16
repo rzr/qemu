@@ -445,7 +445,7 @@ static void* run_skin_server( void* args ) {
                     scale = ntohs( scale );
                     rotation = ntohs( rotation );
 
-                    if ( is_sensord_initialized ) {
+                    if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation) {
                         do_rotation_event( rotation );
                     }
                     break;

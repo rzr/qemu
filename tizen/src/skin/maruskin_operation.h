@@ -38,6 +38,8 @@ void do_key_event( int event_type, int keycode );
 
 void do_hardkey_event( int event_type, int keycode );
 
+void do_scale_event( int event_type);
+
 void do_rotation_event( int event_type );
 
 void open_shell(void);
