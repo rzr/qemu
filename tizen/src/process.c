@@ -169,8 +169,8 @@ int write_portfile(char *path)
 #else
 	if ((fd = open(portfname, O_RDWR | O_CREAT, 0666)) < 0) {
 #endif
-		ERR("Failed to create .port file\n");
-		ERR("%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
+//		ERR("Failed to create .port file\n");
+//		ERR("%s at %s(%d)\n", strerror(errno), __FILE__, __LINE__);
 	    return -1;
 	}
 

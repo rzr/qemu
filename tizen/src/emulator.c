@@ -58,7 +58,9 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
-char tizen_target_path[MAXLEN] = {0, };
+static char tizen_target_path[MAXLEN] = {0, };
+static char logfile[MAXLEN] = { 0, };
+
 int get_emulator_condition(void)
 {
     return _emulator_condition;
@@ -120,7 +122,7 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
     }
 }
 
-void get_image_path(char* qemu_argv)
+void set_image_and_log_path(char* qemu_argv)
 {
     int i;
     int j = 0;
@@ -139,6 +141,9 @@ void get_image_path(char* qemu_argv)
     }
     path[j] = '\0';
     strcpy(tizen_target_path, path);
+    strcpy(logfile, g_path_get_dirname(tizen_target_path));
+	strcat(logfile, "/logs/emulator.log");
+
 }
 
 void get_tizen_port(char* option)
@@ -157,20 +162,17 @@ void get_tizen_port(char* option)
     }
     path[j] = '\0';
     tizen_base_port = strtol(path, &ptr, 0);
-    INFO( "tizen_base_port: %d\n", tizen_base_port);
+ // INFO( "tizen_base_port: %d\n", tizen_base_port);
 }
 
 void redir_output(void)
 {
 	FILE *fp;
-// FIXME !!
-//	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
-//	strcat(logfile, "/emulator.log");
 
-	fp = freopen("emulator.log", "a+", stdout);
+	fp = freopen(logfile, "a+", stdout);
 	if(fp ==NULL)
 		fprintf(stderr, "log file open error\n");
-	fp = freopen("emulator.log", "a+", stderr);
+	fp = freopen(logfile, "a+", stderr);
 	if(fp ==NULL)
 		fprintf(stderr, "log file open error\n");
 
@@ -186,7 +188,7 @@ void extract_info(int qemu_argc, char** qemu_argv)
     for(i = 0; i < qemu_argc; ++i)
     {
         if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
-            get_image_path(qemu_argv[i]);
+            set_image_and_log_path(qemu_argv[i]);
         }
         if((option = strstr(qemu_argv[i], SDB_PORT_PREFIX)) != NULL) {
             get_tizen_port(option);
@@ -205,22 +207,24 @@ int main(int argc, char* argv[])
 
     int qemu_argc = 0;
     char** qemu_argv = NULL;
-    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
 
-    INFO("Emulator start !!!\n");
     // redir_output after debug_ch is initialized...
-    redir_output();
 
 #ifdef _WIN32
     WSADATA wsadata;
     if(WSAStartup(MAKEWORD(2,0), &wsadata) == SOCKET_ERROR) {
-        ERR("Error creating socket.\n");
+      //  ERR("Error creating socket.\n");
         return NULL;
     }
 #endif
 	
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
     extract_info(qemu_argc, qemu_argv);
+    set_log_path(logfile);
+    INFO("Emulator start !!!\n");
+    
+    redir_output();
+	
 
     int i;
 
