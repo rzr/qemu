@@ -1,6 +1,12 @@
 EMUL_DIR=../Emulator
 
+ifneq ($(wildcard ../../config-host.mak),)
 include ../../config-host.mak
+else
+config-host.mak:
+	@echo "Please call configure before running make!"
+	@exit 1
+endif
 
 all: qemu skin_client
 qemu:
