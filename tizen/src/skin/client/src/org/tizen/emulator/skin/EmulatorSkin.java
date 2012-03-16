@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DragDetectEvent;
@@ -61,7 +60,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
-import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -101,11 +99,8 @@ import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
  */
 public class EmulatorSkin {
 
-	private static final int GHOST_SHELL_MARGIN = 10000;
-
 	private EmulatorConfig config;
 	private Shell shell;
-	private Shell ghostShell;
 	private ImageRegistry imageRegistry;
 	private Canvas lcdCanvas;
 	private Image currentImage;
@@ -155,7 +150,7 @@ public class EmulatorSkin {
 		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
 		shell.setText( emulatorName );
 
-		this.lcdCanvas = new Canvas( shell, SWT.NONE );
+		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
 
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
@@ -187,31 +182,13 @@ public class EmulatorSkin {
 		if( isDefaultHoverColor ) {
 			hoverColor = shell.getDisplay().getSystemColor( SWT.COLOR_WHITE );			
 		}
-		
-		ghostShell = new Shell( shell, SWT.NO_TRIM );
-
-		final Canvas ghostCanvas = new Canvas( ghostShell, SWT.EMBEDDED );
-		ghostShell.setAlpha( 255 );
-		ghostCanvas.setBounds( 0, 0, lcdWidth, lcdHeight );
-		ghostShell.pack();
-
-		ghostShell.open();
-
-		setGhostShellLocation();
-		
-		ghostShell.addListener( SWT.Activate, new Listener() {
-			@Override
-			public void handleEvent( Event event ) {
-				setGhostShellLocation();
-			}
-		} );
 
 		// sdl uses this handle id.
 		String platform = SWT.getPlatform();
 		if( "gtk".equalsIgnoreCase( platform ) ) {
 			try {
-				Field field = ghostCanvas.getClass().getField( "embeddedHandle" );
-				windowHandleId = field.getInt( ghostCanvas );
+				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
+				windowHandleId = field.getInt( lcdCanvas );
 				System.out.println( "lcdCanvas.embeddedHandle:" + windowHandleId );
 			} catch ( IllegalArgumentException e ) {
 				e.printStackTrace();
@@ -231,8 +208,8 @@ public class EmulatorSkin {
 				return windowHandleId;
 			}
 		}else if( "win32".equalsIgnoreCase( platform ) ) {
-			System.out.println( "lcdCanvas.handle:" + ghostCanvas.handle );
-			windowHandleId = ghostCanvas.handle;
+			System.out.println( "lcdCanvas.handle:" + lcdCanvas.handle );
+			windowHandleId = lcdCanvas.handle;
 		}else if( "cocoa".equalsIgnoreCase( platform ) ) {
 			//TODO
 		}else {
@@ -242,58 +219,6 @@ public class EmulatorSkin {
 
 		addLCDListener( lcdCanvas );
 		addShellListener( shell );
-
-		final Runnable ghostExec = new Runnable() {
-
-			@Override
-			public void run() {
-
-				Image image = new Image( shell.getDisplay(), ghostCanvas.getBounds() );
-				GC ghostCanvasGC = new GC( ghostCanvas );
-				ghostCanvasGC.copyArea( image, 0, 0 );
-				ghostCanvasGC.dispose();
-
-				GC lcdCanvasGC = new GC( lcdCanvas );
-
-				float ratio = currentScale.ratio();
-
-				if ( 1.0 == ratio && 0 == currentAngle ) {
-
-					lcdCanvasGC.drawImage( image, 0, 0 );
-					image.dispose();
-
-				} else {
-
-					Transform transform = new Transform( shell.getDisplay() );
-					transform.scale( currentScale.ratio(), currentScale.ratio() );
-					transform.rotate( currentAngle );
-
-					if ( RotationInfo.LANDSCAPE.angle() == currentAngle ) {
-						transform.translate( -currentLcdWidth, 0 );
-					} else if ( RotationInfo.REVERSE_PORTRAIT.angle() == currentAngle ) {
-						transform.translate( -currentLcdWidth, -currentLcdHeight );
-					} else if ( RotationInfo.REVERSE_LANDSCAPE.angle() == currentAngle ) {
-						transform.translate( 0, -currentLcdHeight );
-					}
-
-					lcdCanvasGC.setTransform( transform );
-					lcdCanvasGC.drawImage( image, 0, 0 );
-					transform.dispose();
-
-				}
-
-				image.dispose();
-				lcdCanvasGC.dispose();
-
-			}
-		};
-
-		canvasExecutor.scheduleAtFixedRate( new Runnable() {
-			@Override
-			public void run() {
-				shell.getDisplay().syncExec( ghostExec );
-			}
-		}, 0, 30, TimeUnit.MILLISECONDS );
 
 		return windowHandleId;
 
@@ -493,13 +418,6 @@ public class EmulatorSkin {
 
 	}
 
-	private void setGhostShellLocation() {
-		Rectangle clientArea = Display.getCurrent().getClientArea();
-		int monitorWidth = clientArea.width;
-		int monitorHeight = clientArea.height;
-		ghostShell.setLocation( monitorWidth + GHOST_SHELL_MARGIN, monitorHeight + GHOST_SHELL_MARGIN );
-	}
-
 	private void addShellListener( final Shell shell ) {
 		
 		shell.addListener( SWT.Close, new Listener() {
@@ -535,22 +453,6 @@ public class EmulatorSkin {
 
 				}
 
-			}
-		} );
-
-		shell.addListener( SWT.Activate, new Listener() {
-			@Override
-			public void handleEvent( Event event ) {
-				// ghostShell show at main shell loction suddenly in activate main shell. Relocate the ghostShell.
-				setGhostShellLocation();
-			}
-		} );
-
-		shell.addListener( SWT.Deactivate, new Listener() {
-			@Override
-			public void handleEvent( Event event ) {
-				// ghostShell show at main shell loction suddenly in deactivate main shell. Relocate the ghostShell.
-				setGhostShellLocation();
 			}
 		} );
 
@@ -779,18 +681,17 @@ public class EmulatorSkin {
 			@Override
 			public void keyReleased( KeyEvent e ) {
 				System.out.println( "key released. key event:" + e );
-				int keyCode = e.keyCode;
-
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
-				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+//				int keyCode = e.keyCode;
+//				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
+//				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
 			@Override
 			public void keyPressed( KeyEvent e ) {
 				System.out.println( "key pressed. key event:" + e );
-				int keyCode = e.keyCode;
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
-				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+//				int keyCode = e.keyCode;
+//				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
+//				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
 		} );
@@ -803,55 +704,61 @@ public class EmulatorSkin {
 
 		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
 		infoItem.setText( emulatorName );
-		infoItem.addSelectionListener( new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				System.out.println( "Selected Info." );
-				//TODO
-				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-				messageBox.setMessage( "Under construction..." );
-				messageBox.open();
-			}
-		} );
+		infoItem.setEnabled( false );
+//		infoItem.addSelectionListener( new SelectionAdapter() {
+//			@Override
+//			public void widgetSelected( SelectionEvent e ) {
+//				System.out.println( "Selected Info." );
+//				//TODO
+//				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
+//				messageBox.setMessage( "Under construction..." );
+//				messageBox.open();
+//			}
+//		} );
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
 		final MenuItem aotItem = new MenuItem( menu, SWT.CHECK );
 		aotItem.setText( "Always On Top" );
-		aotItem.addSelectionListener( new SelectionAdapter() {
-			private boolean isTop;
-
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				System.out.println( "Selected Always On Top." );
-				isTop = !isTop;
-				
-				//TODO
-				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-				messageBox.setMessage( "Under construction..." );
-				messageBox.open();
-
-			}
-		} );
+		aotItem.setEnabled( false );
+//		aotItem.addSelectionListener( new SelectionAdapter() {
+//			private boolean isTop;
+//
+//			@Override
+//			public void widgetSelected( SelectionEvent e ) {
+//				System.out.println( "Selected Always On Top." );
+//				isTop = !isTop;
+//				
+//				//TODO
+//				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
+//				messageBox.setMessage( "Under construction..." );
+//				messageBox.open();
+//
+//			}
+//		} );
 
 		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
 		rotateItem.setText( "Rotate" );
-
-		Menu rotateMenu = createRotateMenu( menu.getShell() );
-		rotateItem.setMenu( rotateMenu );
+		rotateItem.setEnabled( false );
+		
+//		Menu rotateMenu = createRotateMenu( menu.getShell() );
+//		rotateItem.setMenu( rotateMenu );
 
 		final MenuItem scaleItem = new MenuItem( menu, SWT.CASCADE );
 		scaleItem.setText( "Scale" );
-		Menu scaleMenu = createScaleMenu( menu.getShell() );
-		scaleItem.setMenu( scaleMenu );
+		scaleItem.setEnabled( false );
+		
+//		Menu scaleMenu = createScaleMenu( menu.getShell() );
+//		scaleItem.setMenu( scaleMenu );
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
 		advancedItem.setText( "Advanced" );
-		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
-		advancedItem.setMenu( advancedMenu );
-
+		advancedItem.setEnabled( false );
+//		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
+//		advancedItem.setMenu( advancedMenu );
+//
 //		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
 //		shellItem.setText( "Shell" );
 //		shellItem.addSelectionListener( new SelectionAdapter() {
@@ -1005,6 +912,8 @@ public class EmulatorSkin {
 				Scale scale = (Scale) item.getData();
 
 				arrangeSkin( currentLcdWidth, currentLcdHeight, scale, currentRotationId );
+				LcdStateData lcdStateData = new LcdStateData( scale.value(), currentRotationId );
+				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
 
 			}
 		};
@@ -1030,7 +939,8 @@ public class EmulatorSkin {
 
 		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
 		screenshotItem.setText( "Screen Shot" );
-
+		screenshotItem.setEnabled( false );
+		
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -1111,36 +1021,40 @@ public class EmulatorSkin {
 		usbOffItem.setText( "Off" );
 		usbOffItem.setSelection( true );
 
-		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				MenuItem item = (MenuItem) e.getSource();
-				if ( item.getSelection() ) {
-					boolean on = item.equals( usbOnItem );
-					communicator
-							.sendToQEMU( SendCommand.USB_KBD, new BooleanData( on, SendCommand.USB_KBD.toString() ) );
-				}
-
-			}
-		};
-
-		usbOnItem.addSelectionListener( usbSelectionAdaptor );
-		usbOffItem.addSelectionListener( usbSelectionAdaptor );
+		usbOnItem.setEnabled( false );
+		usbOffItem.setEnabled( false );
+		
+//		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
+//			@Override
+//			public void widgetSelected( SelectionEvent e ) {
+//				MenuItem item = (MenuItem) e.getSource();
+//				if ( item.getSelection() ) {
+//					boolean on = item.equals( usbOnItem );
+//					communicator
+//							.sendToQEMU( SendCommand.USB_KBD, new BooleanData( on, SendCommand.USB_KBD.toString() ) );
+//				}
+//
+//			}
+//		};
+//
+//		usbOnItem.addSelectionListener( usbSelectionAdaptor );
+//		usbOffItem.addSelectionListener( usbSelectionAdaptor );
 
 		usbKeyboardItem.setMenu( usbKeyBoardMenu );
 
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "About" );
-		aboutItem.addSelectionListener( new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				// TODO
-				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-				messageBox.setText( "About" );
-				messageBox.setMessage( "Under construction..." );
-				messageBox.open();
-			}
-		} );
+		aboutItem.setEnabled( false );
+//		aboutItem.addSelectionListener( new SelectionAdapter() {
+//			@Override
+//			public void widgetSelected( SelectionEvent e ) {
+//				// TODO
+//				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
+//				messageBox.setText( "About" );
+//				messageBox.setMessage( "Under construction..." );
+//				messageBox.open();
+//			}
+//		} );
 
 		return menu;
 
@@ -1152,12 +1066,11 @@ public class EmulatorSkin {
 
 		canvasExecutor.shutdownNow();
 
-		if ( !this.shell.isDisposed() && !this.ghostShell.isDisposed() ) {
+		if ( !this.shell.isDisposed() ) {
 			this.shell.getDisplay().asyncExec( new Runnable() {
 				@Override
 				public void run() {
 					if ( !shell.isDisposed() ) {
-						EmulatorSkin.this.ghostShell.close();
 						EmulatorSkin.this.shell.close();
 					}
 				}
