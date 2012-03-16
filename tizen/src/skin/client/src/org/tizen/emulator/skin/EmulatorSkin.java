@@ -105,7 +105,6 @@ public class EmulatorSkin {
 
 	private EmulatorConfig config;
 	private Shell shell;
-	private Shell ghostShell;
 	private ImageRegistry imageRegistry;
 	private Canvas lcdCanvas;
 	private Image currentImage;
@@ -155,7 +154,7 @@ public class EmulatorSkin {
 		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
 		shell.setText( emulatorName );
 
-		this.lcdCanvas = new Canvas( shell, SWT.NONE );
+		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
 
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
@@ -191,31 +190,13 @@ public class EmulatorSkin {
 		if( isDefaultHoverColor ) {
 			hoverColor = shell.getDisplay().getSystemColor( SWT.COLOR_WHITE );			
 		}
-		
-		ghostShell = new Shell( shell, SWT.NO_TRIM );
-
-		final Canvas ghostCanvas = new Canvas( ghostShell, SWT.EMBEDDED );
-		ghostShell.setAlpha( 255 );
-		ghostCanvas.setBounds( 0, 0, lcdWidth, lcdHeight );
-		ghostShell.pack();
-
-		ghostShell.open();
-
-		setGhostShellLocation();
-		
-		ghostShell.addListener( SWT.Activate, new Listener() {
-			@Override
-			public void handleEvent( Event event ) {
-				setGhostShellLocation();
-			}
-		} );
 
 		// sdl uses this handle id.
 		String platform = SWT.getPlatform();
 		if( "gtk".equalsIgnoreCase( platform ) ) {
 			try {
-				Field field = ghostCanvas.getClass().getField( "embeddedHandle" );
-				windowHandleId = field.getInt( ghostCanvas );
+				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
+				windowHandleId = field.getInt( lcdCanvas );
 				System.out.println( "lcdCanvas.embeddedHandle:" + windowHandleId );
 			} catch ( IllegalArgumentException e ) {
 				e.printStackTrace();
@@ -235,8 +216,8 @@ public class EmulatorSkin {
 				return windowHandleId;
 			}
 		}else if( "win32".equalsIgnoreCase( platform ) ) {
-			System.out.println( "lcdCanvas.handle:" + ghostCanvas.handle );
-			windowHandleId = ghostCanvas.handle;
+			System.out.println( "lcdCanvas.handle:" + lcdCanvas.handle );
+			windowHandleId = lcdCanvas.handle;
 		}else if( "cocoa".equalsIgnoreCase( platform ) ) {
 			//TODO
 		}else {
@@ -246,58 +227,6 @@ public class EmulatorSkin {
 
 		addLCDListener( lcdCanvas );
 		addShellListener( shell );
-
-		final Runnable ghostExec = new Runnable() {
-
-			@Override
-			public void run() {
-
-				Image image = new Image( shell.getDisplay(), ghostCanvas.getBounds() );
-				GC ghostCanvasGC = new GC( ghostCanvas );
-				ghostCanvasGC.copyArea( image, 0, 0 );
-				ghostCanvasGC.dispose();
-
-				GC lcdCanvasGC = new GC( lcdCanvas );
-
-				float ratio = ((float)currentScale) / 100;
-
-				if ( 1.0 == ratio && 0 == currentAngle ) {
-
-					lcdCanvasGC.drawImage( image, 0, 0 );
-					image.dispose();
-
-				} else {
-
-					Transform transform = new Transform( shell.getDisplay() );
-					transform.scale( ((float)currentScale) / 100, ((float)currentScale) / 100 );
-					transform.rotate( currentAngle );
-
-					if ( RotationInfo.LANDSCAPE.angle() == currentAngle ) {
-						transform.translate( -currentLcdWidth, 0 );
-					} else if ( RotationInfo.REVERSE_PORTRAIT.angle() == currentAngle ) {
-						transform.translate( -currentLcdWidth, -currentLcdHeight );
-					} else if ( RotationInfo.REVERSE_LANDSCAPE.angle() == currentAngle ) {
-						transform.translate( 0, -currentLcdHeight );
-					}
-
-					lcdCanvasGC.setTransform( transform );
-					lcdCanvasGC.drawImage( image, 0, 0 );
-					transform.dispose();
-
-				}
-
-				image.dispose();
-				lcdCanvasGC.dispose();
-
-			}
-		};
-
-		canvasExecutor.scheduleAtFixedRate( new Runnable() {
-			@Override
-			public void run() {
-				shell.getDisplay().syncExec( ghostExec );
-			}
-		}, 0, 30, TimeUnit.MILLISECONDS );
 
 		return windowHandleId;
 
@@ -501,7 +430,6 @@ public class EmulatorSkin {
 		Rectangle clientArea = Display.getCurrent().getClientArea();
 		int monitorWidth = clientArea.width;
 		int monitorHeight = clientArea.height;
-		ghostShell.setLocation( monitorWidth + GHOST_SHELL_MARGIN, monitorHeight + GHOST_SHELL_MARGIN );
 	}
 
 	private void addShellListener( final Shell shell ) {
@@ -991,7 +919,7 @@ public class EmulatorSkin {
 		scaleOneQtrItem.setData( 25 );
 		scaleList.add( scaleOneQtrItem );
 
-		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 50 );
+		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 100 );
 		//TODO:
 		if (storedScale != 100 && storedScale != 75 && storedScale != 50 && storedScale != 25 ) {
 			storedScale = 50;
@@ -1162,12 +1090,11 @@ public class EmulatorSkin {
 
 		canvasExecutor.shutdownNow();
 
-		if ( !this.shell.isDisposed() && !this.ghostShell.isDisposed() ) {
+		if ( !this.shell.isDisposed() ) {
 			this.shell.getDisplay().asyncExec( new Runnable() {
 				@Override
 				public void run() {
 					if ( !shell.isDisposed() ) {
-						EmulatorSkin.this.ghostShell.close();
 						EmulatorSkin.this.shell.close();
 					}
 				}
