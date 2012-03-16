@@ -434,18 +434,22 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
-                    short scale = 0;
-                    short rotation = 0;
+                    int scale = 0;
+                    int rotation = 0;
 
                     char* p = readbuf;
                     memcpy( &scale, p, sizeof( scale ) );
                     p += sizeof( scale );
                     memcpy( &rotation, p, sizeof( rotation ) );
 
-                    scale = ntohs( scale );
-                    rotation = ntohs( rotation );
+                    scale = ntohl( scale );
+                    rotation = ntohl( rotation );
 
-                    if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation) {
+                    if ( get_emul_win_scale() != scale ) {
+                        do_scale_event( scale );
+                    }
+
+                    if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation ) {
                         do_rotation_event( rotation );
                     }
                     break;

@@ -140,6 +140,13 @@ void do_hardkey_event( int event_type, int keycode ) {
 }
 
 void do_scale_event( int event_type) {
+    INFO( "do_scale_event event_type:%d", event_type);
+
+    double scale_factor = event_type / 100; //TODO: define
+
+    //TODO:
+
+    set_emul_win_scale(event_type);
 }
 
 void do_rotation_event( int event_type) {
@@ -180,7 +187,7 @@ void do_rotation_event( int event_type) {
 
     INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
 
-    set_emul_rotation(ROTATION_PORTRAIT);
+    set_emul_rotation(event_type);
 
 #ifdef _WIN32
     closesocket( s );

@@ -81,6 +81,12 @@ void exit_emulator(void)
 static void construct_main_window(int skin_argc, char* skin_argv[])
 {
     INFO("construct main window\n");
+
+    //TODO: init
+    set_emul_win_scale(100);
+    set_emul_rotation(0);
+
+
     start_skin_server(0, 0);
 #if 1
     if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
@@ -205,7 +211,6 @@ int main(int argc, char* argv[])
 
     int qemu_argc = 0;
     char** qemu_argv = NULL;
-    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
 
     INFO("Emulator start !!!\n");
     // redir_output after debug_ch is initialized...
