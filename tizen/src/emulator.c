@@ -42,6 +42,7 @@
 #include "debug_ch.h"
 #include "process.h"
 #include "option.h"
+#include "emul_state.h"
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
@@ -83,7 +84,7 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     INFO("construct main window\n");
 
     //TODO: init
-    set_emul_win_scale(100);
+    set_emul_win_scale(50);
     set_emul_rotation(0);
 
 

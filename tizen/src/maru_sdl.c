@@ -54,8 +54,13 @@ static void qemu_update(void)
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
-    SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
+    SDL_Surface *processing_screen;
+    processing_screen = rotozoomSurface(surface_qemu, 0.0, ((double)get_emul_win_scale()) / 100, 1);
+
+    SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
+    SDL_FreeSurface(processing_screen);
 
 #ifndef SDL_THREAD
     pthread_mutex_unlock(&sdl_mutex);

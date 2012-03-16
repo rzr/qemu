@@ -47,6 +47,7 @@
 #include "maruskin_operation.h"
 #include "debug_ch.h"
 #include "qemu-thread.h"
+#include "emul_state.h"
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
