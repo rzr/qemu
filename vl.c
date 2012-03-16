@@ -3578,6 +3578,10 @@ int main(int argc, char **argv, char **envp)
         vm_start();
     }
 
+#ifdef CONFIG_MARU
+    prepare_maru();
+#endif
+
     os_setup_post();
 
     resume_all_vcpus();
