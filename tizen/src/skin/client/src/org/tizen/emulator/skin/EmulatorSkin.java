@@ -713,7 +713,7 @@ public class EmulatorSkin {
 				System.out.println( "key released. key event:" + e );
 				int keyCode = e.keyCode;
 
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
+				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
@@ -721,7 +721,7 @@ public class EmulatorSkin {
 			public void keyPressed( KeyEvent e ) {
 				System.out.println( "key pressed. key event:" + e );
 				int keyCode = e.keyCode;
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
+				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
