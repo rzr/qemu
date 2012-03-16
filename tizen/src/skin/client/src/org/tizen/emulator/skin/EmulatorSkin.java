@@ -72,7 +72,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
-import org.tizen.emulator.skin.comm.ICommunicator.Scale;
+//import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
@@ -113,7 +113,7 @@ public class EmulatorSkin {
 	private Color hoverColor;
 	private boolean isDefaultHoverColor;
 	
-	private Scale currentScale;
+	private int currentScale;
 	private short currentRotationId;
 	private int currentAngle;
 	private int currentLcdWidth;
@@ -161,10 +161,14 @@ public class EmulatorSkin {
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 
-		short scale = config.getPropertyShort( PropertiesConstants.WINDOW_SCALE, Scale.HALF.value() );
+		int scale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 50 );
+		//TODO:
+		if (scale != 100 && scale != 75 && scale != 50 && scale != 25 ) {
+			scale = 50;
+		}
 		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
 
-		arrangeSkin( lcdWidth, lcdHeight, Scale.getValue( scale ), (short) rotationId );
+		arrangeSkin( lcdWidth, lcdHeight, scale, (short) rotationId );
 
 		Menu menu = new Menu( shell );
 		addMenuItems( menu );
@@ -255,7 +259,7 @@ public class EmulatorSkin {
 
 				GC lcdCanvasGC = new GC( lcdCanvas );
 
-				float ratio = currentScale.ratio();
+				float ratio = ((float)currentScale) / 100;
 
 				if ( 1.0 == ratio && 0 == currentAngle ) {
 
@@ -265,7 +269,7 @@ public class EmulatorSkin {
 				} else {
 
 					Transform transform = new Transform( shell.getDisplay() );
-					transform.scale( currentScale.ratio(), currentScale.ratio() );
+					transform.scale( ((float)currentScale) / 100, ((float)currentScale) / 100 );
 					transform.rotate( currentAngle );
 
 					if ( RotationInfo.LANDSCAPE.angle() == currentAngle ) {
@@ -321,7 +325,7 @@ public class EmulatorSkin {
 
 	}
 
-	private void arrangeSkin( int lcdWidth, int lcdHeight, Scale scale, short rotationId ) {
+	private void arrangeSkin( int lcdWidth, int lcdHeight, int scale, short rotationId ) {
 
 		this.currentLcdWidth = lcdWidth;
 		this.currentLcdHeight = lcdHeight;
@@ -348,13 +352,13 @@ public class EmulatorSkin {
 
 	}
 
-	private Image createScaledImage( short rotationId, Scale scale, ImageType type ) {
+	private Image createScaledImage( short rotationId, int scale, ImageType type ) {
 
 		ImageData originalImageData = imageRegistry.getImageData( rotationId, type );
 
 		ImageData imageData = (ImageData) originalImageData.clone();
-		int width = (int) ( originalImageData.width * scale.ratio() );
-		int height = (int) ( originalImageData.height * scale.ratio() );
+		int width = (int) ( originalImageData.width * (((float)scale) / 100) );
+		int height = (int) ( originalImageData.height * (((float)scale) / 100) );
 		imageData = imageData.scaledTo( width, height );
 
 		Image image = new Image( shell.getDisplay(), imageData );
@@ -387,7 +391,7 @@ public class EmulatorSkin {
 
 	}
 
-	private void adjustLcdGeometry( Canvas lcdCanvas, Scale scale, short rotationId ) {
+	private void adjustLcdGeometry( Canvas lcdCanvas, int scale, short rotationId ) {
 
 		RotationType rotation = SkinRotation.getRotation( rotationId );
 
@@ -399,10 +403,10 @@ public class EmulatorSkin {
 		Integer width = region.getWidth();
 		Integer height = region.getHeight();
 
-		int l = (int) ( left * scale.ratio() );
-		int t = (int) ( top * scale.ratio() );
-		int w = (int) ( width * scale.ratio() );
-		int h = (int) ( height * scale.ratio() );
+		int l = (int) ( left * (((float)scale) / 100) );
+		int t = (int) ( top * (((float)scale) / 100) );
+		int w = (int) ( width * (((float)scale) / 100) );
+		int h = (int) ( height * (((float)scale) / 100) );
 
 		lcdCanvas.setBounds( l, t, w, h );
 
@@ -418,10 +422,10 @@ public class EmulatorSkin {
 
 			RegionType region = keyMap.getRegion();
 
-			int scaledX = (int) ( region.getLeft() * currentScale.ratio() );
-			int scaledY = (int) ( region.getTop() * currentScale.ratio() );
-			int scaledWidth = (int) ( region.getWidth() * currentScale.ratio() );
-			int scaledHeight = (int) ( region.getHeight() * currentScale.ratio() );
+			int scaledX = (int) ( region.getLeft() * (((float)currentScale) / 100) );
+			int scaledY = (int) ( region.getTop() * (((float)currentScale) / 100) );
+			int scaledWidth = (int) ( region.getWidth() * (((float)currentScale) / 100) );
+			int scaledHeight = (int) ( region.getHeight() * (((float)currentScale) / 100) );
 
 			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
 				return new SkinRegion( scaledX, scaledY, scaledWidth, scaledHeight );
@@ -442,10 +446,10 @@ public class EmulatorSkin {
 		for ( KeyMapType keyMap : keyMapList ) {
 			RegionType region = keyMap.getRegion();
 
-			int scaledX = (int) ( region.getLeft() * currentScale.ratio() );
-			int scaledY = (int) ( region.getTop() * currentScale.ratio() );
-			int scaledWidth = (int) ( region.getWidth() * currentScale.ratio() );
-			int scaledHeight = (int) ( region.getHeight() * currentScale.ratio() );
+			int scaledX = (int) ( region.getLeft() * (((float)currentScale) / 100) );
+			int scaledY = (int) ( region.getTop() * (((float)currentScale) / 100) );
+			int scaledWidth = (int) ( region.getWidth() * (((float)currentScale) / 100) );
+			int scaledHeight = (int) ( region.getHeight() * (((float)currentScale) / 100) );
 
 			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
 				EventInfoType eventInfo = keyMap.getEventInfo();
@@ -472,8 +476,8 @@ public class EmulatorSkin {
 
 	private int[] convertMouseGeometry( int originalX, int originalY ) {
 
-		int x = (int) ( originalX * ( 1 / currentScale.ratio() ) );
-		int y = (int) ( originalY * ( 1 / currentScale.ratio() ) );
+		int x = (int) ( originalX * ( 1 / (((float)currentScale) / 100) ) );
+		int y = (int) ( originalY * ( 1 / (((float)currentScale) / 100) ) );
 
 		int rotatedX = x;
 		int rotatedY = y;
@@ -510,7 +514,7 @@ public class EmulatorSkin {
 
 					config.setProperty( PropertiesConstants.WINDOW_X, shell.getLocation().x );
 					config.setProperty( PropertiesConstants.WINDOW_Y, shell.getLocation().y );
-					config.setProperty( PropertiesConstants.WINDOW_SCALE, currentScale.value() );
+					config.setProperty( PropertiesConstants.WINDOW_SCALE, currentScale );
 					config.setProperty( PropertiesConstants.WINDOW_DIRECTION, currentRotationId );
 
 					config.saveProperties();
@@ -948,7 +952,7 @@ public class EmulatorSkin {
 				short rotationId = ( (Short) item.getData() );
 
 				arrangeSkin( currentLcdWidth, currentLcdHeight, currentScale, rotationId );
-				LcdStateData lcdStateData = new LcdStateData( currentScale.value(), rotationId );
+				LcdStateData lcdStateData = new LcdStateData( currentScale, rotationId );
 				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
 
 			}
@@ -969,25 +973,29 @@ public class EmulatorSkin {
 
 		final MenuItem scaleOneItem = new MenuItem( menu, SWT.RADIO );
 		scaleOneItem.setText( "1x" );
-		scaleOneItem.setData( Scale.ONE );
+		scaleOneItem.setData( 100 );
 		scaleList.add( scaleOneItem );
 
 		final MenuItem scaleThreeQtrItem = new MenuItem( menu, SWT.RADIO );
 		scaleThreeQtrItem.setText( "3/4x" );
-		scaleThreeQtrItem.setData( Scale.THREE_QUARTERS );
+		scaleThreeQtrItem.setData( 75 );
 		scaleList.add( scaleThreeQtrItem );
 
 		final MenuItem scalehalfItem = new MenuItem( menu, SWT.RADIO );
 		scalehalfItem.setText( "1/2x" );
-		scalehalfItem.setData( Scale.HALF );
+		scalehalfItem.setData( 50 );
 		scaleList.add( scalehalfItem );
 
 		final MenuItem scaleOneQtrItem = new MenuItem( menu, SWT.RADIO );
 		scaleOneQtrItem.setText( "1/4x" );
-		scaleOneQtrItem.setData( Scale.ONE_QUARTER );
+		scaleOneQtrItem.setData( 25 );
 		scaleList.add( scaleOneQtrItem );
 
-		final short storedScale = config.getPropertyShort( PropertiesConstants.WINDOW_SCALE, Scale.HALF.value() );
+		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 50 );
+		//TODO:
+		if (storedScale != 100 && storedScale != 75 && storedScale != 50 && storedScale != 25 ) {
+			storedScale = 50;
+		}
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 
@@ -1002,7 +1010,7 @@ public class EmulatorSkin {
 					return;
 				}
 
-				Scale scale = (Scale) item.getData();
+				int scale = (Integer) item.getData();
 
 				arrangeSkin( currentLcdWidth, currentLcdHeight, scale, currentRotationId );
 
@@ -1011,8 +1019,8 @@ public class EmulatorSkin {
 
 		for ( MenuItem menuItem : scaleList ) {
 
-			Scale scale = (Scale) menuItem.getData();
-			if ( scale.value() == storedScale ) {
+			int scale = (Integer) menuItem.getData();
+			if ( scale == storedScale ) {
 				menuItem.setSelection( true );
 			}
 

@@ -75,7 +75,7 @@ enum {
     KEY_RELEASED = 2,
 };
 
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, short scale, short rotation ) {
+void start_display( int handle_id, int lcd_size_width, int lcd_size_height, int scale, short rotation ) {
     INFO( "start_display handle_id:%d, lcd size:%dx%d, scale:%d, rotation:%d\n",
         handle_id, lcd_size_width, lcd_size_height, scale, rotation );
 

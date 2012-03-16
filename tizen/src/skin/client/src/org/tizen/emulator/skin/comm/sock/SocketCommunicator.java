@@ -107,7 +107,11 @@ public class SocketCommunicator implements ICommunicator {
 			dis = new DataInputStream(socket.getInputStream());
 			dos = new DataOutputStream(socket.getOutputStream());
 			
-			short scale = config.getPropertyShort(PropertiesConstants.WINDOW_SCALE, Scale.HALF.value() );
+			int scale = config.getPropertyInt(PropertiesConstants.WINDOW_SCALE, 50 );
+			//TODO:
+			if (scale != 100 && scale != 75 && scale != 50 && scale != 25 ) {
+				scale = 50;
+			}
 			short rotation = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
 			
 			sendToQEMU(SendCommand.SEND_START,

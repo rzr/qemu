@@ -329,7 +329,7 @@ static void* run_skin_server( void* args ) {
                     int handle_id = 0;
                     int lcd_size_width = 0;
                     int lcd_size_height = 0;
-                    short scale = 0;
+                    int scale = 0;
                     short rotation = 0;
 
                     char* p = readbuf;
@@ -346,7 +346,7 @@ static void* run_skin_server( void* args ) {
                     handle_id = ntohl( handle_id );
                     lcd_size_width = ntohl( lcd_size_width );
                     lcd_size_height = ntohl( lcd_size_height );
-                    scale = ntohs( scale );
+                    scale = ntohl( scale );
                     rotation = ntohs( rotation );
 
                     if ( start_heart_beat( client_sock ) ) {

@@ -37,17 +37,17 @@ import java.io.IOException;
  */
 public class LcdStateData extends AbstractSendData {
 	
-	short scale;
+	int scale;
 	short rotation;
 	
-	public LcdStateData(short scale, short rotation) {
+	public LcdStateData(int scale, short rotation) {
 		this.scale = scale;
 		this.rotation = rotation;
 	}
 
 	@Override
 	protected void write() throws IOException {
-		writeShort(scale);
+		writeInt(scale);
 		writeShort(rotation);
 	}
 
