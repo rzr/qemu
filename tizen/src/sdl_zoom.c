@@ -28,6 +28,7 @@ static int sdl_zoom_rgb32(SDL_Surface *src, SDL_Surface *dst, int smooth,
 #include  "sdl_zoom_template.h"
 #undef BPP
 
+#if 0
 int sdl_zoom_blit(SDL_Surface *src_sfc, SDL_Surface *dst_sfc, int smooth,
                   SDL_Rect *in_rect)
 {
@@ -92,4 +93,4 @@ int sdl_zoom_blit(SDL_Surface *src_sfc, SDL_Surface *dst_sfc, int smooth,
 
     return 0;
 }
-
+#endif

@@ -19,7 +19,7 @@
 #define SMOOTHING_OFF		0
 #define SMOOTHING_ON		1
 
-int sdl_zoom_blit(SDL_Surface *src_sfc, SDL_Surface *dst_sfc,
-                  int smooth, SDL_Rect *src_rect);
+//int sdl_zoom_blit(SDL_Surface *src_sfc, SDL_Surface *dst_sfc,
+    //              int smooth, SDL_Rect *src_rect);
 
 #endif /* SDL_zoom_h */
