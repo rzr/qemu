@@ -852,24 +852,24 @@ public class EmulatorSkin {
 		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
 		advancedItem.setMenu( advancedMenu );
 
-		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
-		shellItem.setText( "Shell" );
-		shellItem.addSelectionListener( new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				try {
-					//TODO
-					new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
-							"ssh", "-p", "1202", "root@localhost").start();
-					/*new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
-							"sdb", "shell").start();*/
-				} catch (Exception e2) {
-					//TODO
-				}
-
-				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
-			}
-		} );
+//		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
+//		shellItem.setText( "Shell" );
+//		shellItem.addSelectionListener( new SelectionAdapter() {
+//			@Override
+//			public void widgetSelected( SelectionEvent e ) {
+//				try {
+//					//TODO
+//					new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
+//							"ssh", "-p", "1202", "root@localhost").start();
+//					/*new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
+//							"sdb", "shell").start();*/
+//				} catch (Exception e2) {
+//					//TODO
+//				}
+//
+//				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
+//			}
+//		} );
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
