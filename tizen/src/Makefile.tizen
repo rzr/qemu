@@ -22,6 +22,7 @@ else
 GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
 endif
 
+ifndef CONFIG_WIN32
 ###########################################################
 ## Build openGL
 # i386
@@ -49,6 +50,7 @@ opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_p
 
 endif #($(TARGET_ARCH), i386)
 ###########################################################
+endif #CONFIG_WIN32
 	
 # maru loader
 obj-y += emulator.o emul_state.o process.o option.o maru_signal.o maru_sdl.o
