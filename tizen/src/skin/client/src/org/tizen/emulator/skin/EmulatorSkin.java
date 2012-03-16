@@ -156,7 +156,7 @@ public class EmulatorSkin {
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 
-		short scale = config.getPropertyShort( PropertiesConstants.WINDOW_SCALE, Scale.HALF.value() );
+		short scale = config.getPropertyShort( PropertiesConstants.WINDOW_SCALE, Scale.ONE.value() );
 		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
 
 		arrangeSkin( lcdWidth, lcdHeight, Scale.getValue( scale ), (short) rotationId );
