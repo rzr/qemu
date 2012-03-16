@@ -350,6 +350,8 @@ static void* run_skin_server( void* args ) {
                     scale = ntohl( scale );
                     rotation = ntohs( rotation );
 
+                    set_emul_win_scale(scale);
+
                     if ( start_heart_beat( client_sock ) ) {
                         start_display( handle_id, lcd_size_width, lcd_size_height, scale, rotation );
                     } else {

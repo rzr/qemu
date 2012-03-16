@@ -43,6 +43,7 @@
 #include "process.h"
 #include "option.h"
 #include "emul_state.h"
+#include "sdl_rotate.h"
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
