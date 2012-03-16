@@ -140,8 +140,12 @@ void set_image_and_log_path(char* qemu_argv)
         path[j++] = qemu_argv[i];
     }
     path[j] = '\0';
-    strcpy(tizen_target_path, path);
-    strcpy(logfile, g_path_get_dirname(tizen_target_path));
+    if(!g_path_is_absolute(path))
+        strcpy(tizen_target_path, g_get_current_dir());
+    else
+        strcpy(tizen_target_path, g_path_get_dirname(path));
+
+    strcpy(logfile, tizen_target_path);
 	strcat(logfile, "/logs/emulator.log");
 
 }
@@ -225,10 +229,7 @@ int main(int argc, char* argv[])
     
     redir_output();
 	
-
     int i;
-
-    char *option = NULL;
 
     fprintf(stdout, "qemu args : ==========================================\n");
     for(i = 0; i < qemu_argc; ++i)
