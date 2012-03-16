@@ -77,19 +77,23 @@ int glo_initialised(void) {
 }
 
 /* Initialise gloffscreen */
-void glo_init(void) {
+int glo_init(void) {
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     /* Open a connection to the X server */
     glo.dpy = XOpenDisplay( NULL );
     if ( glo.dpy == NULL ) {
         printf( "Unable to open a connection to the X server\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     glo_inited = 1;
     glo_test_readback_methods();
+
+	return 0;
 }
 
 /* Uninitialise gloffscreen */
@@ -147,7 +151,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
                                  bufferAttributes, &numReturned );
   if (numReturned==0) {
       printf( "No matching configs found.\n" );
-      exit( EXIT_FAILURE );
+      //exit( EXIT_FAILURE );
+	  return NULL;
   }
   context = (GloContext*)qemu_malloc(sizeof(GloContext));
   memset(context, 0, sizeof(GloContext));
@@ -162,7 +167,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
 
   if (!context->context) {
     printf( "glXCreateNewContext failed\n" );
-    exit( EXIT_FAILURE );
+    //exit( EXIT_FAILURE );
+	return NULL;
   }
 
   return context;
@@ -222,7 +228,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
 
     if (!surface->xPixmap) {
       printf( "XCreatePixmap failed\n" );
-      exit( EXIT_FAILURE );
+      //exit( EXIT_FAILURE );
+	  return NULL;
     }
 
     /* Create a GLX window to associate the frame buffer configuration
@@ -230,7 +237,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     surface->glxPixmap = glXCreatePixmap( glo.dpy, context->fbConfig, surface->xPixmap, NULL );
     if (!surface->glxPixmap) {
       printf( "glXCreatePixmap failed\n" );
-      exit( EXIT_FAILURE );
+      //exit( EXIT_FAILURE );
+	  return NULL;
     }
 
     // If we're using XImages to pull the data from the graphics card...

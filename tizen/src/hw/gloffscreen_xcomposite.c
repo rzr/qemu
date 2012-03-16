@@ -103,17 +103,19 @@ int glo_sanity_test (void) {
 }
 
 /* Initialise gloffscreen */
-void glo_init(void) {
+int glo_init(void) {
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     /* Open a connection to the X server */
     glo.dpy = XOpenDisplay( NULL );
     if ( glo.dpy == NULL ) {
         printf( "Unable to open a connection to the X server\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     glo_inited = 1; // safe because we are single threaded. Otherwise we cause
@@ -121,6 +123,7 @@ void glo_init(void) {
     // set the X error handler.
     XErrorHandler old_handler = XSetErrorHandler (x_errhandler);
     glo_test_readback_methods();
+	return 0;
 }
 
 /* Uninitialise gloffscreen */
@@ -179,7 +182,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
                                    bufferAttributes, &numReturned );
     if (numReturned==0) {
         printf( "No matching configs found.\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
     context = (GloContext*)g_malloc(sizeof(GloContext));
     memset(context, 0, sizeof(GloContext));
@@ -194,7 +198,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
 
     if (!context->context) {
         printf( "glXCreateNewContext failed\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     return context;
@@ -273,7 +278,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
 
     if (!surface->window) {
         printf( "XCreateWindow failed\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     XMapWindow(glo.dpy, surface->window);
@@ -289,7 +295,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
 
     if(surface->pixmap == 0) {
         fprintf(stderr, "Failed to allocate pixmap!\n");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+		return NULL;
     }
 
     XSync(glo.dpy, 0);
