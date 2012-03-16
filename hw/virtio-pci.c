@@ -779,6 +779,20 @@ static int virtio_balloon_exit_pci(PCIDevice *pci_dev)
     return virtio_exit_pci(pci_dev);
 }
 
+extern VirtIODevice *virtio_gl_init(DeviceState *dev);
+static int virtio_gl_init_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+    VirtIODevice *vdev;
+
+    vdev = virtio_gl_init(&pci_dev->qdev);
+    if (!vdev) {
+        return -1;
+    }
+    virtio_init_pci(proxy, vdev);
+    return 0;
+}
+
 static PCIDeviceInfo virtio_info[] = {
     {
         .qdev.name = "virtio-blk-pci",
@@ -863,7 +877,21 @@ static PCIDeviceInfo virtio_info[] = {
             DEFINE_PROP_END_OF_LIST(),
         },
         .qdev.reset = virtio_pci_reset,
-    },{
+	},{
+		.qdev.name = "virtio-gl-pci",
+        .qdev.alias = "virtio-gl",
+		.qdev.size = sizeof(VirtIOPCIProxy),
+		.init      = virtio_gl_init_pci,
+		.exit      = virtio_exit_pci,
+        .vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET,
+        .device_id = PCI_DEVICE_ID_VIRTIO_GL,
+        .revision  = VIRTIO_PCI_ABI_VERSION,
+        .class_id  = PCI_CLASS_OTHERS,
+		.qdev.props = (Property[]) {
+			DEFINE_PROP_END_OF_LIST(),
+		},
+		.qdev.reset = virtio_pci_reset,
+	},{
         /* end of list */
     }
 };

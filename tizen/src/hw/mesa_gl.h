@@ -50,13 +50,6 @@
 #define __WIN32__
 #endif
 
-/* GLAPI, part 1 (use WINGDIAPI, if defined) */
-#if defined(__WIN32__) && defined(WINGDIAPI)
-#  define GLAPI WINGDIAPI
-#endif
-
-
-#if !defined(GLAPI)
 #if !defined(OPENSTEP) && (defined(__WIN32__) && !defined(__CYGWIN__))
 #  if (defined(_MSC_VER) || defined(__MINGW32__)) && defined(BUILD_GL32) /* tag specify we're building mesa as a DLL */
 #    define GLAPI __declspec(dllexport)
@@ -73,15 +66,6 @@
 #  define GLAPI __attribute__((visibility("default")))
 #  define GLAPIENTRY
 #endif /* WIN32 && !CYGWIN */
-#else
-#if !defined(GLAPIENTRY)
-#  if defined(__WIN32__)
-#    define GLAPIENTRY __stdcall
-#  else
-#    define GLAPIENTRY
-#  endif
-#endif 
-#endif
 
 #if (defined(__BEOS__) && defined(__POWERPC__)) || defined(__QUICKDRAW__)
 #  define PRAGMA_EXPORT_SUPPORTED		1

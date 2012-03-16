@@ -23,6 +23,7 @@
 #ifdef CONFIG_LINUX
 #include "9p.h"
 #endif
+#define VIRTIO_ID_GL 6
 
 /* from Linux's linux/virtio_config.h */
 

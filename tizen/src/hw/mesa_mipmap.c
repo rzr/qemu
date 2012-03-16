@@ -19,6 +19,7 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "mesa_glu.h"
 
 #ifdef PC_HEADER
 #include "all.h"
@@ -46,8 +47,8 @@
 
 /* To work around optimizer bug in MSVC4.1 */
 #if defined(__WIN32__) && !defined(OPENSTEP)
-void dummy(GLuint j, GLuint k);
-void dummy(GLuint j, GLuint k)
+void
+dummy(GLuint j, GLuint k)
 {
 }
 #else
@@ -515,7 +516,6 @@ mesa_gluScaleImage(GLenum format,
 
 
 
-#if 0
 /*
  * Return the largest k such that 2^k <= n.
  */
@@ -529,7 +529,6 @@ ilog2(GLint n)
    for (k = 0; n >>= 1; k++);
    return k;
 }
-#endif
 
 
 
@@ -625,7 +624,6 @@ bytes_per_pixel(GLenum format, GLenum type)
 
 
 
-#if 0
 /*
  * WARNING: This function isn't finished and has never been tested!!!!
  */
@@ -698,11 +696,10 @@ mesa_gluBuild1DMipmaps(GLenum target, GLint components,
 
    return 0;
 }
-#endif
 
 
 
-static GLint GLAPIENTRY
+GLint GLAPIENTRY
 mesa_gluBuild2DMipmaps(GLenum target, GLint components,
 		  GLsizei width, GLsizei height, GLenum format,
 		  GLenum type, const void *data)

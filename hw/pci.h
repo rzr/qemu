@@ -76,6 +76,9 @@
 #define PCI_DEVICE_ID_VIRTIO_BALLOON     0x1002
 #define PCI_DEVICE_ID_VIRTIO_CONSOLE     0x1003
 
+//virtio-gl pci device id
+#define PCI_DEVICE_ID_VIRTIO_GL          0x1006
+
 #define FMT_PCIBUS                      PRIx64
 
 typedef void PCIConfigWriteFunc(PCIDevice *pci_dev,

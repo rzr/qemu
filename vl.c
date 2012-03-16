@@ -189,6 +189,11 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #define MAX_VIRTIO_CONSOLES 1
 
+// virtio-gl pci device 
+#define VIRTIOGL_DEV_NAME "virtio-gl-pci"
+extern int gl_acceleration_capability_check (void);
+
+
 static const char *data_dir;
 const char *bios_name = NULL;
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
@@ -248,6 +253,9 @@ int boot_menu;
 uint8_t *boot_splash_filedata;
 int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
+
+//virtio-gl
+int enable_gl = 1;
 
 typedef struct FWBootEntry FWBootEntry;
 
@@ -1752,6 +1760,15 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
+	// virtio-gl pci device
+	if (!enable_gl) {
+		// ignore virtio-gl-pci device, even if users set it in option.
+		const char *driver = qemu_opt_get(opts, "driver");
+		if (driver && (strcmp (driver, VIRTIOGL_DEV_NAME) == 0)) {
+			return 0;
+		}
+	}
+
     dev = qdev_device_add(opts);
     if (!dev)
         return -1;
@@ -2167,6 +2184,27 @@ static void free_and_trace(gpointer mem)
     trace_g_free(mem);
     free(mem);
 }
+
+// virtio-gl pci device lookup
+typedef struct {
+    const char *device_name;
+    int found;
+} device_opt_finding_t;
+
+static int find_device_opt (QemuOpts *opts, void *opaque)
+{
+    device_opt_finding_t *devp = (device_opt_finding_t *) opaque;
+    if (devp->found == 1) {
+        return 0;
+    }
+
+    const char *str = qemu_opt_get (opts, "driver");
+    if (strcmp (str, devp->device_name) == 0) {
+        devp->found = 1;
+    }
+    return 0;
+}
+
 
 int use_qemu_display = 0; //0:use tizen qemu sdl, 1:use original qemu sdl
 int main(int argc, char **argv, char **envp)
@@ -2863,6 +2901,9 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_reset(olist);
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
+			case QEMU_OPTION_enable_gl:
+				enable_gl = 1;
+				break;
             case QEMU_OPTION_machine:
                 olist = qemu_find_opts("machine");
                 qemu_opts_reset(olist);
@@ -3096,6 +3137,23 @@ int main(int argc, char **argv, char **envp)
         }
     }
     loc_set_none();
+
+
+	if (enable_gl && (gl_acceleration_capability_check () != 0)) {
+		enable_gl = 0;
+		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
+	}
+
+	if (enable_gl) {
+		device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
+		qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+		if (devp.found == 0) {
+			if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, "driver")) {
+				exit(1);
+			}
+		}
+	}
+
 
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the
