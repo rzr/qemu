@@ -211,7 +211,7 @@ void prepare_maru()
 {
     INFO("Prepare maru specified feature\n");
 
-    sdb_setup(tizen_base_port);
+    sdb_setup();
 
     INFO("call construct_main_window\n");
 
@@ -233,7 +233,7 @@ int main(int argc, char* argv[])
 
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
     extract_info(qemu_argc, qemu_argv);
-    set_log_path(logfile);
+//    set_log_path(logfile);
     INFO("Emulator start !!!\n");
     
     INFO("Prepare running...\n");
