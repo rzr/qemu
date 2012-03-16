@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
     fprintf(stdout, "\n");
     fprintf(stdout, "======================================================\n");
 
-    sdb_setup();
+    sdb_setup(tizen_base_port);
 
     INFO("call construct_main_window\n");
 

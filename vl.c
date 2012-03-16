@@ -180,6 +180,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #ifdef CONFIG_MARU
 #include "tizen/src/maru_sdl.h"
 #include "tizen/src/option.h"
+#include "tizen/src/sdb.h"
 #endif
 
 //#define DEBUG_NET
@@ -189,8 +190,12 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #define MAX_VIRTIO_CONSOLES 1
 
+#ifdef CONFIG_MARU
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
+extern int tizen_base_port;
 extern int gl_acceleration_capability_check (void);
+#endif
+
 static const char *data_dir;
 const char *bios_name = NULL;
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
@@ -3572,6 +3577,11 @@ int main(int argc, char **argv, char **envp)
     } else if (autostart) {
         vm_start();
     }
+
+#ifdef CONFIG_MARU
+    /* call sdb setup function */
+	sdb_setup(tizen_base_port);
+#endif
 
     os_setup_post();
 
