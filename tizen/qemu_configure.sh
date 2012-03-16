@@ -15,7 +15,8 @@ exec ./configure \
  --disable-vnc-tls \
  --audio-card-list=ac97 \
  --enable-ldst-optimization \
- --enable-maru
+ --enable-maru \
+ --enable-gl
 # --enable-ffmpeg
 # --enable-v4l2 \
 # --enable-debug \
@@ -30,7 +31,8 @@ exec ./configure \
  --enable-mixemu \
  --disable-vnc-tls \
  --enable-ldst-optimization \
- --enable-maru
+ --enable-maru \
+ --enable-gl
 # --enable-ffmpeg
 # --disable-vnc-jpeg \
 # --disable-jpeg

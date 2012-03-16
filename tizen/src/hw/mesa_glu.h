@@ -49,17 +49,6 @@
 #undef GLAPI
 #endif
 
-/* __WIN32__ */
-#if !defined(__WIN32__) && (defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__))
-#  define __WIN32__
-#endif
-
-/* GLAPI, part 1 (use WINGDIAPI, if defined) */
-#if defined(__WIN32__) && defined(WINGDIAPI)
-#  define GLAPI WINGDIAPI
-#endif
-
-#if !defined(GLAPI)
 #  if (defined(_MSC_VER) || defined(__MINGW32__)) && defined(BUILD_GLU32)
 #    define GLAPI __declspec(dllexport)
 #  elif (defined(_MSC_VER) || defined(__MINGW32__)) && defined(_DLL) /* tag specifying we're building for DLL runtime support */
@@ -68,7 +57,6 @@
 #    define GLAPI extern
 #  endif /* _STATIC_MESA support */
 
-#endif
 
 #ifndef GLAPI
 #define GLAPI
@@ -297,7 +285,7 @@ typedef GLUtesselator GLUtriangulatorObj;
 #define GLU_TESS_MAX_COORD 1.0e150
 
 /* Internal convenience typedefs */
-typedef void (GLAPIENTRYP _GLUfuncptr)(void);
+typedef void (GLAPIENTRYP _GLUfuncptr)();
 
 GLAPI void GLAPIENTRY gluBeginCurve (GLUnurbs* nurb);
 GLAPI void GLAPIENTRY gluBeginPolygon (GLUtesselator* tess);

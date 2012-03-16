@@ -28,6 +28,9 @@
 #include <string.h>
 #include <assert.h>
 
+#define		GL_INCLUDE_PATH		"../tizen/src/hw/"
+
+
 int isExtByName(const char* name)
 {
   return (strstr(name, "ARB") != NULL) ||
@@ -535,7 +538,7 @@ static const char* ignore_func[] =
 
 void get_func_dealt_by_hand()
 {
-  FILE* f = fopen("../target-i386/gl_func_perso.h", "r");
+  FILE* f = fopen(GL_INCLUDE_PATH"gl_func_perso.h", "r");
   char buffer[256];
   int i = 0;
   char* c;
@@ -1104,11 +1107,6 @@ int is_arg_of_length_depending_on_previous_args(FuncDesc* funcDesc, int j)
 static void fprintf_prototype_args(FILE* f, FuncDesc* funcDesc)
 {
   int j;
-  if (!funcDesc->nargs)
-  {
-    fprintf(f, "void");
-    return;
-  }
   for(j=0;j<funcDesc->nargs;j++)
   {
     if (j != 0) fprintf(f,", ");
@@ -1139,15 +1137,16 @@ int main(int argc, char* argv[])
   FuncDesc funcDesc[3000];
   int funcDescCount = 0;
   FILE* f;
-  
-  f = fopen("../target-i386/mesa_gl.h", "r");
+
+	printf("***** path : %s\n", GL_INCLUDE_PATH"mesa_gl.h");
+  f = fopen(GL_INCLUDE_PATH"mesa_gl.h", "r");
   assert(f);
   /*if (!f)
     f = fopen("/usr/include/GL/gl.h", "r");*/
   funcDescCount = parse(f, funcDesc, 0, 1);
   fclose(f);
   
-  f = fopen("../target-i386/mesa_glext.h", "r");
+  f = fopen(GL_INCLUDE_PATH"mesa_glext.h", "r");
   assert(f);
   /*if (!f)
     f = fopen("/usr/include/GL/glext.h", "r");*/
@@ -1157,17 +1156,23 @@ int main(int argc, char* argv[])
   FILE* header = fopen("gl_func.h", "w");
   FILE* client_stub = fopen("client_stub.c", "w");
   FILE* server_stub = fopen("server_stub.c", "w");
-  
-  fprintf(header, "/* This is a generated file. DO NOT EDIT ! */\n\n");
+
+  fprintf(header, "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
+  fprintf(header, "union gl_ret_type {\n"
+    "const char *s;\n"
+    "int i;\n"
+    "char c;\n"
+    "};\n");
+
   fprintf(header, "#define COMPOSE(x,y) x##y\n");
   fprintf(header, "#define MAGIC_MACRO(x)  COMPOSE(x,_func)\n");
   fprintf(header, "enum {\n"
                   "#include \"gl_func_perso.h\"\n");
-  
-  fprintf(client_stub, "/* This is a generated file. DO NOT EDIT ! */\n\n");
-  
-  fprintf(server_stub, "/* This is a generated file. DO NOT EDIT ! */\n\n");
-  
+
+  fprintf(client_stub, "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
+
+  fprintf(server_stub, "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
+
   int i;
   for(i=0;i<funcDescCount;i++)
   {
@@ -1265,9 +1270,9 @@ int main(int argc, char* argv[])
   }
   
   fprintf(header, "  GL_N_CALLS\n};\n");
-  
-  
-  fprintf(server_stub, "void execute_func(int func_number, long* args, int* pret_int, char* pret_char)\n");
+
+
+  fprintf(server_stub, "void execute_func(int func_number, void **args, union gl_ret_type *pret)\n");
   fprintf(server_stub, "{\n");
   fprintf(server_stub, "  switch(func_number)\n");
   fprintf(server_stub, "  {\n");
@@ -1407,10 +1412,10 @@ int main(int argc, char* argv[])
         ;
       else if (strcmp(get_type_string(funcDesc[i].type), "TYPE_INT") == 0 ||
                strcmp(get_type_string(funcDesc[i].type), "TYPE_UNSIGNED_INT") == 0)
-        fprintf(server_stub, "*pret_int = ");
+        fprintf(server_stub, "pret->i = ");
       else if (strcmp(get_type_string(funcDesc[i].type), "TYPE_CHAR") == 0 ||
                strcmp(get_type_string(funcDesc[i].type), "TYPE_UNSIGNED_CHAR") == 0)
-        fprintf(server_stub, "*pret_char = ");
+        fprintf(server_stub, "pret->c = ");
       else
       {
         fprintf(stderr, "unknown ret type = %s\n", get_type_string(funcDesc[i].type));
@@ -1460,7 +1465,7 @@ int main(int argc, char* argv[])
   }
   
   fprintf(server_stub, "    default:\n");
-  fprintf(server_stub, "      fprintf(stderr, \"unknown=%%d\", func_number);\n");
+  fprintf(server_stub, "      DEBUGF(\"unknown=%%d\", func_number);\n");
   fprintf(server_stub, "      break;\n");
   fprintf(server_stub, "  }\n");
   fprintf(server_stub, "}\n");
