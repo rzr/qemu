@@ -53,7 +53,8 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define IMAGE_PATH_PREFIX   "file="
 #define IMAGE_PATH_SUFFIX   ",if=virtio"
 #define SDB_PORT_PREFIX     "sdb_port="
-#define LOGS_SUFFIX         "/logs"
+#define LOGS_SUFFIX         "/logs/"
+#define LOGFILE             "emulator.log"
 #define MAXLEN  512
 #define MIDBUF  128
 int tizen_base_port = 0;
@@ -157,7 +158,7 @@ void set_image_and_log_path(char* qemu_argv)
        g_mkdir(logfile, 0755); 
     }
 #endif
-	strcat(logfile, "/logs/emulator.log");
+	strcat(logfile, LOGFILE);
 
 }
 
