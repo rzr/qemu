@@ -36,6 +36,8 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
@@ -43,24 +45,29 @@ import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.ImageRegistry;
+import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
-
-
+import org.tizen.emulator.skin.util.StringUtil;
 
 /**
  * 
  *
  */
 public class EmulatorSkinMain {
-	
+
+	private static Logger logger;
+
 	public static final String PROPERTIES_FILE_NAME = ".skin.properties";
 	public static final String DBI_FILE_NAME = "default.dbi";
-	
+
 	/**
 	 * @param args
 	 */
 	public static void main( String[] args ) {
+
+		initLog( args );
 
 		Map<String, String> argsMap = parsArgs( args );
 
@@ -68,7 +75,7 @@ public class EmulatorSkinMain {
 		int lcdHeight = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_HEIGHT ) );
 		EmulatorUI dbiContents = loadDbi( lcdWidth, lcdHeight );
 		if ( null == dbiContents ) {
-			System.out.println( "Fail to load dbi file." );
+			logger.severe( "Fail to load dbi file." );
 			return;
 		}
 
@@ -76,7 +83,7 @@ public class EmulatorSkinMain {
 		String propFilePath = vmPath + File.separator + PROPERTIES_FILE_NAME;
 		Properties properties = loadProperties( propFilePath );
 		if ( null == properties ) {
-			System.out.println( "Fail to load properties file." );
+			logger.severe( "Fail to load properties file." );
 			return;
 		}
 
@@ -102,8 +109,38 @@ public class EmulatorSkinMain {
 			skin.open();
 
 		} else {
-			System.out.println( "CommSocket is null." );
+			logger.severe( "CommSocket is null." );
 		}
+
+	}
+
+	private static void initLog( String[] args ) {
+
+		String logLevel = "";
+		for ( int i = 0; i < args.length; i++ ) {
+			String[] split = args[i].split( "=" );
+			if ( split[0].trim().equalsIgnoreCase( ArgsConstants.LOG_LEVEL ) ) {
+				if ( !StringUtil.isEmpty( split[1].trim() ) ) {
+					logLevel = split[1];
+					break;
+				}
+			}
+		}
+
+		SkinLogLevel skinLogLevel = SkinLogLevel.DEBUG;
+		
+		if( !StringUtil.isEmpty( logLevel ) ) {
+			SkinLogLevel[] values = SkinLogLevel.values();
+			for ( SkinLogLevel level : values ) {
+				if ( level.value().equalsIgnoreCase( logLevel ) ) {
+					skinLogLevel = level;
+					break;
+				}
+			}
+		}
+
+		SkinLogger.init( skinLogLevel );
+		logger = SkinLogger.getSkinLogger( EmulatorSkinMain.class ).getLogger();
 
 	}
 
@@ -111,30 +148,29 @@ public class EmulatorSkinMain {
 
 		Map<String, String> map = new HashMap<String, String>();
 
-		// TODO parse
 		for ( int i = 0; i < args.length; i++ ) {
 			String arg = args[i];
-			System.out.println( "arg[" + i + "] " + arg );
+			logger.info( "arg[" + i + "] " + arg );
 			String[] split = arg.split( "=" );
 
 			if ( 1 < split.length ) {
 
-				String argKey = split[0];
-				String argValue = split[1];
-				System.out.println( "argKey:" + argKey + "  argValue:" + argValue );
+				String argKey = split[0].trim();
+				String argValue = split[1].trim();
+				logger.info( "argKey:" + argKey + "  argValue:" + argValue );
 				map.put( argKey, argValue );
 
 			} else {
-				System.out.println( "one argv:" + arg );
+				logger.info( "one argv:" + arg );
 			}
 		}
 
 		map.put( ArgsConstants.EMULATOR_NAME, "emulator-26100" );
-		
-		System.out.println( "========================================");
-		System.out.println( "args:" + map );
-		System.out.println( "========================================");
-		
+
+		logger.info( "========================================" );
+		logger.info( "args:" + map );
+		logger.info( "========================================" );
+
 		return map;
 
 	}
@@ -142,27 +178,26 @@ public class EmulatorSkinMain {
 	private static EmulatorUI loadDbi( int lcdWidth, int lcdHeight ) {
 
 		String skinPath = ImageRegistry.getSkinPath( lcdWidth, lcdHeight ) + File.separator + DBI_FILE_NAME;
-		
+
 		FileInputStream fis = null;
 		EmulatorUI emulatorUI = null;
 
 		try {
 
 			fis = new FileInputStream( skinPath );
-
+			
 			emulatorUI = JaxbUtil.unmarshal( fis, EmulatorUI.class );
 
-			// XXX
 			fis = new FileInputStream( skinPath );
-			System.out.println( "============ dbi contents ============" );
+			logger.info( "============ dbi contents ============" );
 			byte[] bytes = IOUtil.getBytes( fis );
-			System.out.println( new String( bytes, "UTF-8" ) );
-			System.out.println( "=======================================" );
+			logger.info( new String( bytes, "UTF-8" ) );
+			logger.info( "=======================================" );
 
 		} catch ( IOException e ) {
-			e.printStackTrace();
+			logger.log( Level.SEVERE, e.getMessage(), e );
 		} catch ( JaxbException e ) {
-			e.printStackTrace();
+			logger.log( Level.SEVERE, e.getMessage(), e );
 		} finally {
 			IOUtil.close( fis );
 		}
@@ -181,7 +216,7 @@ public class EmulatorSkinMain {
 			File file = new File( filePath );
 			if ( !file.exists() ) {
 				if ( !file.createNewFile() ) {
-					System.out.println( "Fail to create new " + filePath + " property file." );
+					logger.severe( "Fail to create new " + filePath + " property file." );
 					return null;
 				}
 			}
@@ -191,7 +226,7 @@ public class EmulatorSkinMain {
 			properties.load( fis );
 
 		} catch ( IOException e ) {
-			e.printStackTrace();
+			logger.log( Level.SEVERE, e.getMessage(), e );
 		} finally {
 			IOUtil.close( fis );
 		}

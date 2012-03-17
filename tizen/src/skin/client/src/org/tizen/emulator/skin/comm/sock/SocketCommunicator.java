@@ -40,6 +40,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.tizen.emulator.skin.EmulatorConstants;
 import org.tizen.emulator.skin.EmulatorSkin;
@@ -49,6 +51,7 @@ import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.PropertiesConstants;
+import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 
 
@@ -58,6 +61,8 @@ import org.tizen.emulator.skin.util.IOUtil;
  */
 public class SocketCommunicator implements ICommunicator {
 
+	private Logger logger = SkinLogger.getSkinLogger( SocketCommunicator.class ).getLogger();
+	
 	private EmulatorConfig config;
 	private int uId;
 	private int windowHandleId;
@@ -89,12 +94,12 @@ public class SocketCommunicator implements ICommunicator {
 			String portString = config.getArg(ArgsConstants.SERVER_PORT);
 			int port = Integer.parseInt(portString);
 			socket = new Socket("127.0.0.1", port);
-			System.out.println("socket.isConnected():" + socket.isConnected());
+			logger.info("socket.isConnected():" + socket.isConnected());
 
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			logger.log( Level.SEVERE, e.getMessage(), e );
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.log( Level.SEVERE, e.getMessage(), e );
 		}
 
 	}
@@ -121,7 +126,7 @@ public class SocketCommunicator implements ICommunicator {
 							scale, rotation));
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.log( Level.SEVERE, e.getMessage(), e );
 			terminate();
 			return;
 		}
@@ -130,7 +135,7 @@ public class SocketCommunicator implements ICommunicator {
 		Boolean ignoreHeartbeat = Boolean.parseBoolean( ignoreHeartbeatString );
 		
 		if( ignoreHeartbeat ) {
-			System.out.println( "Ignore Skin heartbeat." );
+			logger.info( "Ignore Skin heartbeat." );
 		}else {
 			
 			heartbeatExecutor.scheduleAtFixedRate(new Runnable() {
@@ -161,25 +166,25 @@ public class SocketCommunicator implements ICommunicator {
 				int reqId = dis.readInt();
 				short cmd = dis.readShort();
 
-				System.out.print( "= Socket read - reqId:" + reqId + ", command:" + cmd + ", " );
+				logger.fine( "Socket read - reqId:" + reqId + ", command:" + cmd + ", " );
 
 				ReceiveCommand command = null;
 				
 				try {
 					command = ReceiveCommand.getValue( cmd );
 				} catch ( IllegalArgumentException e ) {
-					System.out.println( "unknown command:" + cmd );
+					logger.severe( "unknown command:" + cmd );
 					continue;
 				}
 
 				switch ( command ) {
 				case HEART_BEAT:
 					resetHeartbeatCount();
-					System.out.println( "received HEAR_BEAT from QEMU." );
+					logger.info( "received HEAR_BEAT from QEMU." );
 					sendToQEMU( SendCommand.RESPONSE_HEART_BEAT, null );
 					break;
 				case SENSOR_DAEMON_START:
-					System.out.println( "received SENSOR_DAEMON_START from QEMU." );
+					logger.info( "received SENSOR_DAEMON_START from QEMU." );
 					synchronized ( this ) {
 						isSensorDaemonStarted = true;
 					}
@@ -194,7 +199,7 @@ public class SocketCommunicator implements ICommunicator {
 				}
 
 			} catch ( IOException e ) {
-				e.printStackTrace();
+				logger.log( Level.SEVERE, e.getMessage(), e );
 				break;
 			}
 
@@ -233,17 +238,16 @@ public class SocketCommunicator implements ICommunicator {
 			dos.write(bao.toByteArray());
 			dos.flush();
 
-			System.out.println("= Socket write - uid:" + uId + ", reqId:" + reqId +
-					", command:" + command.value() + " - " + command.toString() + ", length:" + length );
+			logger.fine( "Socket write - uid:" + uId + ", reqId:" + reqId + ", command:" + command.value() + " - "
+					+ command.toString() + ", length:" + length );
 
-			if (0 < length) {
-				System.out.println("== data ==");
-				System.out.println(data);
+			if ( 0 < length ) {
+				logger.fine( "== data ==" );
+				logger.fine( data.toString() );
 			}
 
-		} catch (IOException e) {
-			System.err.println("Fail to write socket.");
-			e.printStackTrace();
+		} catch ( IOException e ) {
+			logger.log( Level.SEVERE, e.getMessage(), e );
 		}
 
 	}
@@ -258,7 +262,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	private void increaseHeartbeatCount() {
 		int count = heartbeatCount.incrementAndGet();
-		System.out.println("HB count : " + count);
+		logger.fine("HB count : " + count);
 	}
 
 	private boolean isHeartbeatExpired() {
