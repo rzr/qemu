@@ -31,6 +31,7 @@
 #include <pthread.h>
 #include "maru_sdl.h"
 #include "emul_state.h"
+#include "sdl_rotate.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -48,25 +49,27 @@ static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized = 0;
 #endif
 
+#define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
+
 static void qemu_update(void)
 {
 #ifndef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
     SDL_Surface *processing_screen;
-    double angle = 0.0;
+    double angle = 0.0; //ROTATION_PORTRAIT
 
 //TODO: convert type define to angle value
     short rotaton_type = get_emul_rotation();
-    if (rotaton_type == 1) {
+    if (rotaton_type == ROTATION_LANDSCAPE) {
         angle = 90.0;
-    } else if (rotaton_type == 2) {
+    } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
         angle = 180.0;
-    } else if (rotaton_type == 3) {
+    } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
         angle = 270.0;
     }
 
-    processing_screen = rotozoomSurface(surface_qemu, angle, ((double)get_emul_win_scale()) / 100, 1);
+    processing_screen = rotozoomSurface(surface_qemu, angle, get_emul_win_scale(), 1);
 
     SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
@@ -148,9 +151,18 @@ static void qemu_ds_refresh(DisplayState *ds)
 
     while (SDL_PollEvent(ev)) {
         switch (ev->type) {
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
+            case SDL_VIDEORESIZE:
+            {
+                SDL_ResizeEvent *rev = &ev->resize;
+                SDL_Quit();
+
+                surface_screen = SDL_SetVideoMode(rev->w, rev->h, 0, SDL_FLAGS);
+                if (surface_screen == NULL) {
+                    //TODO : SDL_GetError
+                }
                 break;
+            }
+
             default:
                 break;
         }
@@ -200,12 +212,26 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
     }
 
     INFO( "qemu_sdl_initialize\n");
-    surface_screen = SDL_SetVideoMode(lcd_size_width, lcd_size_height,
-        0, SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME);
+    surface_screen = SDL_SetVideoMode(lcd_size_width, lcd_size_height, 0, SDL_FLAGS);
+    if (surface_screen == NULL) {
+        //TODO : SDL_GetError
+    }
     set_emul_lcd_size(lcd_size_width, lcd_size_height);
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);
     SDL_GetWMInfo(&info);
 #endif
+}
+
+void maruskin_sdl_resize(int w, int h)
+{
+    SDL_Event ev;
+
+    /* this fails if SDL is not initialized */
+    memset(&ev, 0, sizeof(ev));
+    ev.resize.type = SDL_VIDEORESIZE;
+    ev.resize.w = w;
+    ev.resize.h = h;
+    SDL_PushEvent(&ev);
 }

@@ -331,6 +331,7 @@ static void* run_skin_server( void* args ) {
                     int lcd_size_width = 0;
                     int lcd_size_height = 0;
                     int scale = 0;
+                    double scale_ratio = 0.0;
                     short rotation = 0;
 
                     char* p = readbuf;
@@ -348,12 +349,13 @@ static void* run_skin_server( void* args ) {
                     lcd_size_width = ntohl( lcd_size_width );
                     lcd_size_height = ntohl( lcd_size_height );
                     scale = ntohl( scale );
+                    scale_ratio = ((double)scale) / 100;
                     rotation = ntohs( rotation );
 
-                    set_emul_win_scale(scale);
+                    set_emul_win_scale(scale_ratio);
 
                     if ( start_heart_beat( client_sock ) ) {
-                        start_display( handle_id, lcd_size_width, lcd_size_height, scale, rotation );
+                        start_display( handle_id, lcd_size_width, lcd_size_height, scale_ratio, rotation );
                     } else {
                         stop_server = 1;
                     }
@@ -438,22 +440,24 @@ static void* run_skin_server( void* args ) {
                     }
 
                     int scale = 0;
-                    short rotation = 0;
+                    double scale_ratio = 0.0;
+                    short rotation_type = 0;
 
                     char* p = readbuf;
                     memcpy( &scale, p, sizeof( scale ) );
                     p += sizeof( scale );
-                    memcpy( &rotation, p, sizeof( rotation ) );
+                    memcpy( &rotation_type, p, sizeof( rotation_type ) );
 
                     scale = ntohl( scale );
-                    rotation = ntohs( rotation );
+                    scale_ratio = ((double)scale) / 100;
+                    rotation_type = ntohs( rotation_type );
 
-                    if ( get_emul_win_scale() != scale ) {
-                        do_scale_event( scale );
+                    if ( get_emul_win_scale() != scale_ratio ) {
+                        do_scale_event( scale_ratio );
                     }
 
-                    if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation ) {
-                        do_rotation_event( rotation );
+                    if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation_type ) {
+                        do_rotation_event( rotation_type );
                     }
                     break;
                 }

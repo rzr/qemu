@@ -59,25 +59,25 @@ int get_emul_lcd_height(void)
 }
 
 /* emulator window scale */
-void set_emul_win_scale(int scale)
+void set_emul_win_scale(double scale_factor)
 {
-    _emul_state.scale = scale;
-    INFO("emulator window scale = %d\n", _emul_state.scale);
+    _emul_state.scale_factor = scale_factor;
+    INFO("emulator window scale_factor = %d\n", _emul_state.scale_factor);
 }
 
-int get_emul_win_scale(void)
+double get_emul_win_scale(void)
 {
-    return _emul_state.scale;
+    return _emul_state.scale_factor;
 }
 
 /* emulator rotation */
-void set_emul_rotation(short rotation)
+void set_emul_rotation(short rotation_type)
 {
-    _emul_state.rotation = rotation;
-    INFO("emulator rotation = %d\n", _emul_state.rotation);
+    _emul_state.rotation_type = rotation_type;
+    INFO("emulator rotation type = %d\n", _emul_state.rotation_type);
 }
 
 short get_emul_rotation(void)
 {
-    return _emul_state.rotation;
+    return _emul_state.rotation_type;
 }
