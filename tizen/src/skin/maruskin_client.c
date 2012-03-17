@@ -86,7 +86,31 @@ static void* run_skin_client(void* arg)
         argv );
 
 #ifdef _WIN32
+#if 0
     WinExec( cmd, SW_SHOW );
+#else
+    {
+        STARTUPINFO sti = { 0 };
+        PROCESS_INFORMATION pi = { 0 };
+         if(!CreateProcess(NULL,
+                          cmd,
+                          NULL,
+                          NULL,
+                          FALSE,
+                          NORMAL_PRIORITY_CLASS,
+                          NULL,
+                          NULL,
+                          &sti,
+                          &pi))
+          {
+          printf("Unable to generate process \n");
+          exit(1);
+        }
+         DWORD rc = WaitForSingleObject(
+                          pi.hProcess, // process handle
+                          INFINITE);
+    }
+#endif
 #else
     if( system(cmd) ) {
 
