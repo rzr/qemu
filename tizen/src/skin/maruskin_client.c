@@ -41,12 +41,7 @@
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
 #define JAR_SKINFILE_PATH "emulator-skin.jar"
-#ifdef _WIN32
-#define JAVA_EXEFILE_PATH "javaw"
-#else
 #define JAVA_EXEFILE_PATH "java"
-#endif
-
 #define JAVA_EXEOPTION "-jar"
 
 #define OPT_SVR_PORT "svr.port"
@@ -90,11 +85,15 @@ static void* run_skin_client(void* arg)
         OPT_VM_PATH, vm_path,
         argv );
 
+#ifdef _WIN32
+    WinExec( cmd, SW_SHOW );
+#else
     if( system(cmd) ) {
 
     }else {
 
     }
+#endif
 
     return NULL;
 }
