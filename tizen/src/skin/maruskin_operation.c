@@ -53,20 +53,6 @@ enum {
 };
 
 enum {
-    ROTATION_PORTRAIT = 0,
-    ROTATION_LANDSCAPE = 1,
-    ROTATION_REVERSE_PORTRAIT = 2,
-    ROTATION_REVERSE_LANDSCAPE = 3,
-};
-
-enum {
-    SCALE_ONE = 1,
-    SCALE_THREE_QUARTERS = 2,
-    SCALE_HALF = 3,
-    SCALE_ONE_QUARTER = 4,
-};
-
-enum {
     MOUSE_DOWN = 1,
     MOUSE_UP = 2,
     MOUSE_DRAG = 3,
@@ -144,8 +130,9 @@ void do_hardkey_event( int event_type, int keycode ) {
 void do_scale_event( int event_type) {
     INFO( "do_scale_event event_type:%d", event_type);
 
-
-    //TODO: qemu refresh
+    //qemu refresh
+    vga_hw_invalidate();
+    vga_hw_update();
 
     set_emul_win_scale(event_type);
 }

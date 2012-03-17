@@ -33,6 +33,13 @@
 #ifndef __EMUL_STATE_H__
 #define __EMUL_STATE_H__
 
+enum {
+    ROTATION_PORTRAIT = 0,
+    ROTATION_LANDSCAPE = 1,
+    ROTATION_REVERSE_PORTRAIT = 2,
+    ROTATION_REVERSE_LANDSCAPE = 3,
+};
+
 
 typedef  struct emulator_config_info {
     int lcd_size_w;
