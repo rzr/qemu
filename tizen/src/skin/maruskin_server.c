@@ -47,6 +47,7 @@
 #include "maruskin_operation.h"
 #include "debug_ch.h"
 #include "qemu-thread.h"
+#include "emul_state.h"
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
@@ -329,7 +330,8 @@ static void* run_skin_server( void* args ) {
                     int handle_id = 0;
                     int lcd_size_width = 0;
                     int lcd_size_height = 0;
-                    short scale = 0;
+                    int scale = 0;
+                    double scale_ratio = 0.0;
                     short rotation = 0;
 
                     char* p = readbuf;
@@ -346,11 +348,14 @@ static void* run_skin_server( void* args ) {
                     handle_id = ntohl( handle_id );
                     lcd_size_width = ntohl( lcd_size_width );
                     lcd_size_height = ntohl( lcd_size_height );
-                    scale = ntohs( scale );
+                    scale = ntohl( scale );
+                    scale_ratio = ((double)scale) / 100;
                     rotation = ntohs( rotation );
 
+                    set_emul_win_scale(scale_ratio);
+
                     if ( start_heart_beat( client_sock ) ) {
-                        start_display( handle_id, lcd_size_width, lcd_size_height, scale, rotation );
+                        start_display( handle_id, lcd_size_width, lcd_size_height, scale_ratio, rotation );
                     } else {
                         stop_server = 1;
                     }
@@ -434,20 +439,29 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
-                    short scale = 0;
-                    short rotation = 0;
+                    int scale = 0;
+                    double scale_ratio = 0.0;
+                    short rotation_type = 0;
 
                     char* p = readbuf;
                     memcpy( &scale, p, sizeof( scale ) );
                     p += sizeof( scale );
-                    memcpy( &rotation, p, sizeof( rotation ) );
+                    memcpy( &rotation_type, p, sizeof( rotation_type ) );
 
-                    scale = ntohs( scale );
-                    rotation = ntohs( rotation );
+                    scale = ntohl( scale );
+                    scale_ratio = ((double)scale) / 100;
+                    rotation_type = ntohs( rotation_type );
 
-                    if ( is_sensord_initialized ) {
-                        do_rotation_event( rotation );
+                    if ( get_emul_win_scale() != scale_ratio ) {
+                        do_scale_event( scale_ratio );
                     }
+
+                    if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation_type ) {
+                        do_rotation_event( rotation_type );
+                    }
+
+                    maruskin_sdl_resize(); //send sdl event
+
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {

@@ -45,5 +45,6 @@
 
 void maruskin_display_init(DisplayState *ds);
 void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height);
+void maruskin_sdl_resize(void);
 
 #endif /* MARU_SDL_H_ */

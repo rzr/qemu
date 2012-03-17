@@ -42,6 +42,8 @@
 #include "debug_ch.h"
 #include "process.h"
 #include "option.h"
+#include "emul_state.h"
+
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
@@ -85,6 +87,12 @@ void exit_emulator(void)
 static void construct_main_window(int skin_argc, char* skin_argv[])
 {
     INFO("construct main window\n");
+
+    //TODO: init
+    set_emul_win_scale(0.5);
+    set_emul_rotation(0);
+
+
     start_skin_server(0, 0);
 #if 1
     if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
@@ -217,7 +225,7 @@ void extract_info(int qemu_argc, char** qemu_argv)
 static int skin_argc = 0;
 static char** skin_argv = NULL;
 
-void prepare_maru(void) 
+void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
 

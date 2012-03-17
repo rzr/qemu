@@ -37,21 +37,47 @@ MULTI_DEBUG_CHANNEL(qemu, emul_state);
 
 
 static emulator_config_info _emul_info;
+static emulator_config_state _emul_state;
 
+/* lcd screen size */
 void set_emul_lcd_size(int width, int height)
 {
-    _emul_info.resolution_w = width;
-    _emul_info.resolution_h = height;
+    _emul_info.lcd_size_w = width;
+    _emul_info.lcd_size_h = height;
 
-   INFO("emulator graphic resolution %dx%d\n", _emul_info.resolution_w,  _emul_info.resolution_h);
+   INFO("emulator graphic resolution = %dx%d\n", _emul_info.lcd_size_w,  _emul_info.lcd_size_h);
 }
 
 int get_emul_lcd_width(void)
 {
-    return _emul_info.resolution_w;
+    return _emul_info.lcd_size_w;
 }
 
 int get_emul_lcd_height(void)
 {
-    return _emul_info.resolution_h;
+    return _emul_info.lcd_size_h;
+}
+
+/* emulator window scale */
+void set_emul_win_scale(double scale_factor)
+{
+    _emul_state.scale_factor = scale_factor;
+    INFO("emulator window scale_factor = %lf\n", _emul_state.scale_factor);
+}
+
+double get_emul_win_scale(void)
+{
+    return _emul_state.scale_factor;
+}
+
+/* emulator rotation */
+void set_emul_rotation(short rotation_type)
+{
+    _emul_state.rotation_type = rotation_type;
+    INFO("emulator rotation type = %d\n", _emul_state.rotation_type);
+}
+
+short get_emul_rotation(void)
+{
+    return _emul_state.rotation_type;
 }

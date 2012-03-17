@@ -37,6 +37,7 @@
 #ifndef __EMULATOR_H__
 #define __EMULATOR_H__
 
+
 int get_emulator_condition(void);
 void set_emulator_condition(int state);
 void exit_emulator(void);

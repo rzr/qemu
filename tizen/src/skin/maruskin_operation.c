@@ -38,6 +38,7 @@
 #include "sdb.h"
 #include "nbd.h"
 #include "../mloop_event.h"
+#include "emul_state.h"
 
 #ifndef _WIN32
 #include "maruskin_keymap.h"
@@ -51,20 +52,6 @@ enum {
 };
 
 enum {
-    ROTATION_PORTRAIT = 0,
-    ROTATION_LANDSCAPE = 1,
-    ROTATION_REVERSE_PORTRAIT = 2,
-    ROTATION_REVERSE_LANDSCAPE = 3,
-};
-
-enum {
-    SCALE_ONE = 1,
-    SCALE_THREE_QUARTERS = 2,
-    SCALE_HALF = 3,
-    SCALE_ONE_QUARTER = 4,
-};
-
-enum {
     MOUSE_DOWN = 1,
     MOUSE_UP = 2,
     MOUSE_DRAG = 3,
@@ -75,9 +62,9 @@ enum {
     KEY_RELEASED = 2,
 };
 
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, short scale, short rotation ) {
-    INFO( "start_display handle_id:%d, lcd size:%dx%d, scale:%d, rotation:%d\n",
-        handle_id, lcd_size_width, lcd_size_height, scale, rotation );
+void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation ) {
+    INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation:%d\n",
+        handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation );
 
     maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height);
 }
@@ -139,26 +126,40 @@ void do_hardkey_event( int event_type, int keycode ) {
 
 }
 
-void do_rotation_event( int event_type) {
+void do_scale_event( double scale_factor ) {
+    INFO( "do_scale_event scale_factor:%lf", scale_factor);
 
-    INFO( "do_rotation_event event_type:%d", event_type);
+    set_emul_win_scale(scale_factor);
+
+    //TODO: thread safe
+    //qemu refresh
+    //vga_hw_invalidate();
+    //vga_hw_update();
+}
+
+void do_rotation_event( int rotation_type) {
+
+    INFO( "do_rotation_event rotation_type:%d", rotation_type);
 
     int buf_size = 32;
     char send_buf[32] = { 0 };
 
-    switch ( event_type ) {
-    case ROTATION_PORTRAIT:
-        sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
-        break;
-    case ROTATION_LANDSCAPE:
-        sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
-        break;
-    case ROTATION_REVERSE_PORTRAIT:
-        sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
-        break;
-    case ROTATION_REVERSE_LANDSCAPE:
-        sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
-        break;
+    switch ( rotation_type ) {
+        case ROTATION_PORTRAIT:
+            sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
+            break;
+        case ROTATION_LANDSCAPE:
+            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
+            break;
+        case ROTATION_REVERSE_PORTRAIT:
+            sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
+            break;
+        case ROTATION_REVERSE_LANDSCAPE:
+            sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
+            break;
+
+        default:
+            break;
     }
 
     // send_to_sensor_daemon
@@ -176,6 +177,9 @@ void do_rotation_event( int event_type) {
     socket_send( s, send_buf, buf_size );
 
     INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
+
+    set_emul_rotation(rotation_type);
+
 #ifdef _WIN32
     closesocket( s );
 #else

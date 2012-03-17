@@ -33,23 +33,37 @@
 #ifndef __EMUL_STATE_H__
 #define __EMUL_STATE_H__
 
+enum {
+    ROTATION_PORTRAIT = 0,
+    ROTATION_LANDSCAPE = 1,
+    ROTATION_REVERSE_PORTRAIT = 2,
+    ROTATION_REVERSE_LANDSCAPE = 3,
+};
+
 
 typedef  struct emulator_config_info {
-    int resolution_w;
-    int resolution_h;
+    int lcd_size_w;
+    int lcd_size_h;
+    //TODO:
 } emulator_config_info;
 
-struct emulator_config_state {
+typedef struct emulator_config_state {
+    double scale_factor;
+    short rotation_type;
     //TODO:
-};
+} emulator_config_state;
 
 
 /* setter */
 void set_emul_lcd_size(int width, int height);
+void set_emul_win_scale(double scale);
+void set_emul_rotation(short rotation_type);
 
 /* getter */
 int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
+double get_emul_win_scale(void);
+short get_emul_rotation(void);
 
 
 #endif /* __EMUL_STATE_H__ */
