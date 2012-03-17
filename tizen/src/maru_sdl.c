@@ -50,12 +50,10 @@ static int sdl_thread_initialized = 0;
 #endif
 
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
+#define SDL_BPP 32
 
 static void qemu_update(void)
 {
-#ifndef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-#endif
     SDL_Surface *processing_screen;
     double angle = 0.0; //ROTATION_PORTRAIT
 
@@ -75,10 +73,6 @@ static void qemu_update(void)
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
     SDL_FreeSurface(processing_screen);
-
-#ifndef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
-#endif
 }
 
 
@@ -136,7 +130,7 @@ static void qemu_ds_resize(DisplayState *ds)
     pthread_mutex_unlock(&sdl_mutex);
 #endif
 
-    if (!surface_qemu) {
+    if (surface_qemu == NULL) {
         ERR( "Unable to set the RGBSurface: %s", SDL_GetError() );
         return;
     }
@@ -156,9 +150,9 @@ static void qemu_ds_refresh(DisplayState *ds)
                 SDL_ResizeEvent *rev = &ev->resize;
                 SDL_Quit();
 
-                surface_screen = SDL_SetVideoMode(rev->w, rev->h, 0, SDL_FLAGS);
+                surface_screen = SDL_SetVideoMode(rev->w, rev->h, SDL_BPP, SDL_FLAGS);
                 if (surface_screen == NULL) {
-                    //TODO : SDL_GetError
+                    ERR("Could not open SDL display (%dx%dx%d): %s\n", rev->w, rev->h, SDL_BPP, SDL_GetError());
                 }
                 break;
             }
@@ -184,7 +178,7 @@ void maruskin_display_init(DisplayState *ds)
     register_displaychangelistener(ds, dcl);
 
 #ifdef SDL_THREAD
-    if (sdl_thread_initialized == 0 ) {
+    if (sdl_thread_initialized == 0) {
         sdl_thread_initialized = 1;
         pthread_t thread_id;
         INFO( "sdl update thread create\n");
@@ -212,9 +206,9 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
     }
 
     INFO( "qemu_sdl_initialize\n");
-    surface_screen = SDL_SetVideoMode(lcd_size_width, lcd_size_height, 0, SDL_FLAGS);
+    surface_screen = SDL_SetVideoMode(lcd_size_width, lcd_size_height, SDL_BPP, SDL_FLAGS);
     if (surface_screen == NULL) {
-        //TODO : SDL_GetError
+        ERR("Could not open SDL display (%dx%dx%d): %s\n", lcd_size_width, lcd_size_height, SDL_BPP, SDL_GetError());
     }
     set_emul_lcd_size(lcd_size_width, lcd_size_height);
 
