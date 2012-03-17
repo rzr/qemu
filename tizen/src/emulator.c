@@ -89,9 +89,8 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     INFO("construct main window\n");
 
     //TODO: init
-    set_emul_win_scale(0.5);
-    set_emul_rotation(0);
-
+    //set_emul_win_scale(0.5);
+    //set_emul_rotation(0);
 
     start_skin_server(0, 0);
 #if 1

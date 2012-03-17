@@ -215,6 +215,7 @@ void maruskin_display_init(DisplayState *ds)
 
 void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
 {
+    int w, h;
     gchar SDL_windowhack[32];
     SDL_SysWMinfo info;
     long window_id = swt_handle;
@@ -228,12 +229,18 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
         exit(1);
     }
 
-    INFO( "qemu_sdl_initialize\n");
-    surface_screen = SDL_SetVideoMode(lcd_size_width, lcd_size_height, SDL_BPP, SDL_FLAGS);
-    if (surface_screen == NULL) {
-        ERR("Could not open SDL display (%dx%dx%d): %s\n", lcd_size_width, lcd_size_height, SDL_BPP, SDL_GetError());
-    }
     set_emul_lcd_size(lcd_size_width, lcd_size_height);
+
+    //get current setting information and calculate screen size
+    scale_factor = get_emul_win_scale();
+    w = lcd_size_width * scale_factor;
+    h = lcd_size_height * scale_factor;
+
+    INFO( "qemu_sdl_initialize\n");
+    surface_screen = SDL_SetVideoMode(w, h, SDL_BPP, SDL_FLAGS);
+    if (surface_screen == NULL) {
+        ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, SDL_BPP, SDL_GetError());
+    }
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);
