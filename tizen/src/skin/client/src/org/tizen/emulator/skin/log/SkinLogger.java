@@ -95,13 +95,30 @@ public class SkinLogger {
 			String path = "";
 			
 			if( !StringUtil.isEmpty( filePath ) ) {
-				path = filePath;
+				path = filePath + File.separator;
 			}
+
+			File dir = new File( path + LOG_FOLDER );
+			dir.mkdir();
 			
+			File file = new File( dir + File.separator + FILE_NAME );
+			if( !file.exists() ) {
+				try {
+					if( !file.createNewFile() ) {
+						System.err.println( "[SkinLog:error]Cannot create skin log file. path:" + file.getAbsolutePath() );
+						System.exit( -1 );
+						return;
+					}
+				} catch ( IOException e ) {
+					e.printStackTrace();
+					System.exit( -1 );
+					return;
+				}
+			}
+
 			try {
-				path = path + File.separator + LOG_FOLDER + File.separator + FILE_NAME;
-				System.out.println( "[SkinLog]log file path:" + path );
-				fileHandler = new FileHandler( path, false );
+				System.out.println( "[SkinLog]log file path:" + file.getAbsolutePath() );
+				fileHandler = new FileHandler( file.getAbsolutePath(), false );
 			} catch ( SecurityException e1 ) {
 				e1.printStackTrace();
 			} catch ( IOException e1 ) {
