@@ -129,18 +129,12 @@ void do_hardkey_event( int event_type, int keycode ) {
 void do_scale_event( double scale_factor ) {
     INFO( "do_scale_event scale_factor:%lf", scale_factor);
 
-    /*int rotation_type = get_emul_rotation();
-    if (rotation_type == ROTATION_PORTRAIT || rotation_type == ROTATION_REVERSE_PORTRAIT) {
-        maruskin_sdl_resize(get_emul_lcd_width() * scale_factor, get_emul_lcd_height() * scale_factor);
-    } else if (rotation_type == ROTATION_LANDSCAPE || rotation_type == ROTATION_REVERSE_LANDSCAPE) {
-        maruskin_sdl_resize(get_emul_lcd_height() * scale_factor, get_emul_lcd_width() * scale_factor);
-    }*/
-
-    //qemu refresh
-    vga_hw_invalidate();
-    vga_hw_update();
-
     set_emul_win_scale(scale_factor);
+
+    //TODO: thread safe
+    //qemu refresh
+    //vga_hw_invalidate();
+    //vga_hw_update();
 }
 
 void do_rotation_event( int rotation_type) {
@@ -184,11 +178,6 @@ void do_rotation_event( int rotation_type) {
 
     INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
 
-    /*if (rotation_type == ROTATION_PORTRAIT || rotation_type == ROTATION_REVERSE_PORTRAIT) {
-        maruskin_sdl_resize(get_emul_lcd_width(), get_emul_lcd_height());
-    } else if (rotation_type == ROTATION_LANDSCAPE || rotation_type == ROTATION_REVERSE_LANDSCAPE) {
-        maruskin_sdl_resize(get_emul_lcd_height(), get_emul_lcd_width());
-    }*/
     set_emul_rotation(rotation_type);
 
 #ifdef _WIN32

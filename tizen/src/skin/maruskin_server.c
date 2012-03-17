@@ -459,6 +459,9 @@ static void* run_skin_server( void* args ) {
                     if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation_type ) {
                         do_rotation_event( rotation_type );
                     }
+
+                    maruskin_sdl_resize(); //send sdl event
+
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {

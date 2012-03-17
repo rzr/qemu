@@ -41,10 +41,13 @@ MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 SDL_Surface *surface_screen;
 SDL_Surface *surface_qemu;
 
+static double scale_factor = 1.0;
+static double screen_degree = 0.0;
+
 #define SDL_THREAD
 
-#ifdef SDL_THREAD
 static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
+#ifdef SDL_THREAD
 static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized = 0;
 #endif
@@ -54,22 +57,15 @@ static int sdl_thread_initialized = 0;
 
 static void qemu_update(void)
 {
-    SDL_Surface *processing_screen;
-    double angle = 0.0; //ROTATION_PORTRAIT
+    SDL_Surface *processing_screen = NULL;
 
-//TODO: convert type define to angle value
-    short rotaton_type = get_emul_rotation();
-    if (rotaton_type == ROTATION_LANDSCAPE) {
-        angle = 90.0;
-    } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
-        angle = 180.0;
-    } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
-        angle = 270.0;
+    if (scale_factor != 1.0 || screen_degree != 0.0) {
+        //image processing
+        processing_screen = rotozoomSurface(surface_qemu, screen_degree, scale_factor, 1);
+        SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
+    } else {
+        SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
     }
-
-    processing_screen = rotozoomSurface(surface_qemu, angle, get_emul_win_scale(), 1);
-
-    SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
     SDL_FreeSurface(processing_screen);
@@ -80,13 +76,13 @@ static void qemu_update(void)
 static void* run_qemu_update(void* arg)
 {
     while(1) { 
-        pthread_mutex_lock(&sdl_mutex);     
+        pthread_mutex_lock(&sdl_mutex);
 
         pthread_cond_wait(&sdl_cond, &sdl_mutex); 
 
         qemu_update();
 
-        pthread_mutex_unlock(&sdl_mutex);    
+        pthread_mutex_unlock(&sdl_mutex);
     } 
 
     return NULL;
@@ -147,13 +143,40 @@ static void qemu_ds_refresh(DisplayState *ds)
         switch (ev->type) {
             case SDL_VIDEORESIZE:
             {
-                SDL_ResizeEvent *rev = &ev->resize;
-                SDL_Quit();
+                int w, h, temp;
 
-                surface_screen = SDL_SetVideoMode(rev->w, rev->h, SDL_BPP, SDL_FLAGS);
-                if (surface_screen == NULL) {
-                    ERR("Could not open SDL display (%dx%dx%d): %s\n", rev->w, rev->h, SDL_BPP, SDL_GetError());
+                //get current setting information and calculate screen size
+                scale_factor = get_emul_win_scale();
+                w = get_emul_lcd_width() * scale_factor;
+                h = get_emul_lcd_height() * scale_factor;
+
+                short rotaton_type = get_emul_rotation();
+                if (rotaton_type == ROTATION_PORTRAIT) {
+                    screen_degree = 0.0;
+                } else if (rotaton_type == ROTATION_LANDSCAPE) {
+                    screen_degree = 90.0;
+                    temp = w;
+                    w = h;
+                    h = temp;
+                } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
+                    screen_degree = 180.0;
+                } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
+                    screen_degree = 270.0;
+                    temp = w;
+                    w = h;
+                    h = temp;
                 }
+
+                pthread_mutex_lock(&sdl_mutex);
+
+                SDL_Quit(); //The returned surface is freed by SDL_Quit and must not be freed by the caller
+                surface_screen = SDL_SetVideoMode(w, h, SDL_BPP, SDL_FLAGS);
+                if (surface_screen == NULL) {
+                    ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, SDL_BPP, SDL_GetError());
+                }
+
+                pthread_mutex_unlock(&sdl_mutex);
+
                 break;
             }
 
@@ -218,14 +241,13 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
 #endif
 }
 
-void maruskin_sdl_resize(int w, int h)
+void maruskin_sdl_resize()
 {
     SDL_Event ev;
 
     /* this fails if SDL is not initialized */
     memset(&ev, 0, sizeof(ev));
     ev.resize.type = SDL_VIDEORESIZE;
-    ev.resize.w = w;
-    ev.resize.h = h;
+
     SDL_PushEvent(&ev);
 }

@@ -62,7 +62,7 @@ int get_emul_lcd_height(void)
 void set_emul_win_scale(double scale_factor)
 {
     _emul_state.scale_factor = scale_factor;
-    INFO("emulator window scale_factor = %d\n", _emul_state.scale_factor);
+    INFO("emulator window scale_factor = %lf\n", _emul_state.scale_factor);
 }
 
 double get_emul_win_scale(void)
