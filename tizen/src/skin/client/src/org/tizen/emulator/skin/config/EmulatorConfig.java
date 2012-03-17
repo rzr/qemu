@@ -33,8 +33,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.tizen.emulator.skin.dbi.EmulatorUI;
+import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 
@@ -45,8 +48,9 @@ import org.tizen.emulator.skin.util.StringUtil;
  */
 public class EmulatorConfig {
 	
+	private Logger logger = SkinLogger.getSkinLogger( EmulatorConfig.class ).getLogger();
+	
 	public interface ArgsConstants {
-		//TODO change as input args
 		public static final String UID = "uid";
 		public static final String SERVER_PORT = "svr.port";
 		public static final String RESOLUTION_WIDTH = "width";
@@ -54,6 +58,7 @@ public class EmulatorConfig {
 		public static final String EMULATOR_NAME = "emulname";
 		public static final String TEST_HEART_BEAT_IGNORE = "test.hb.ignore";
 		public static final String VM_PATH = "vm.path";
+		public static final String LOG_LEVEL = "log.level";
 	}
 	
 	public interface PropertiesConstants {
@@ -85,7 +90,7 @@ public class EmulatorConfig {
 			properties.store( fos, "Generated automatically by emulator." );
 			
 		} catch ( IOException e ) {
-			e.printStackTrace();
+			logger.log( Level.SEVERE, e.getMessage(), e );
 		} finally {
 			IOUtil.close( fos );
 		}

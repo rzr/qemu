@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DragDetectEvent;
@@ -70,7 +72,6 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
-import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
@@ -89,6 +90,7 @@ import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
+import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
@@ -99,6 +101,8 @@ import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
  */
 public class EmulatorSkin {
 
+	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
+
 	private EmulatorConfig config;
 	private Shell shell;
 	private ImageRegistry imageRegistry;
@@ -108,7 +112,7 @@ public class EmulatorSkin {
 	private Color hoverColor;
 	private boolean isDefaultHoverColor;
 	
-	private Scale currentScale;
+	private int currentScale;
 	private short currentRotationId;
 	private int currentAngle;
 	private int currentLcdWidth;
@@ -138,7 +142,6 @@ public class EmulatorSkin {
 
 	public int compose() {
 
-		//TODO resolution
 		imageRegistry = new ImageRegistry( shell.getDisplay(), config );
 
 		shell.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
@@ -150,16 +153,20 @@ public class EmulatorSkin {
 		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
 		shell.setText( emulatorName );
 
-		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
+		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED | SWT.NO_BACKGROUND );
 		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
-
+		
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 
-		short scale = config.getPropertyShort( PropertiesConstants.WINDOW_SCALE, Scale.ONE.value() );
+		int scale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 50 );
+		//TODO:
+		if (scale != 100 && scale != 75 && scale != 50 && scale != 25 ) {
+			scale = 50;
+		}
 		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
 
-		arrangeSkin( lcdWidth, lcdHeight, Scale.getValue( scale ), (short) rotationId );
+		arrangeSkin( lcdWidth, lcdHeight, scale, (short) rotationId );
 
 		Menu menu = new Menu( shell );
 		addMenuItems( menu );
@@ -189,34 +196,34 @@ public class EmulatorSkin {
 			try {
 				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
 				windowHandleId = field.getInt( lcdCanvas );
-				System.out.println( "lcdCanvas.embeddedHandle:" + windowHandleId );
+				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
 			} catch ( IllegalArgumentException e ) {
-				e.printStackTrace();
+				logger.log( Level.SEVERE, e.getMessage(), e );
 				shutdown();
 				return windowHandleId;
 			} catch ( IllegalAccessException e ) {
-				e.printStackTrace();
+				logger.log( Level.SEVERE, e.getMessage(), e );
 				shutdown();
 				return windowHandleId;
 			} catch ( SecurityException e ) {
-				e.printStackTrace();
+				logger.log( Level.SEVERE, e.getMessage(), e );
 				shutdown();
 				return windowHandleId;
 			} catch ( NoSuchFieldException e ) {
-				e.printStackTrace();
+				logger.log( Level.SEVERE, e.getMessage(), e );
 				shutdown();
 				return windowHandleId;
 			}
 		}else if( "win32".equalsIgnoreCase( platform ) ) {
-			System.out.println( "lcdCanvas.handle:" + lcdCanvas.handle );
+			logger.info( "lcdCanvas.handle:" + lcdCanvas.handle );
 			windowHandleId = lcdCanvas.handle;
 		}else if( "cocoa".equalsIgnoreCase( platform ) ) {
 			//TODO
 		}else {
-			System.out.println( "Not Supported OS platform:" + platform );
+			logger.severe( "Not Supported OS platform:" + platform );
 			System.exit( -1 );
 		}
-
+		
 		addLCDListener( lcdCanvas );
 		addShellListener( shell );
 
@@ -227,7 +234,7 @@ public class EmulatorSkin {
 	public void open() {
 
 		if ( null == this.communicator ) {
-			System.out.println( "communicator is null." );
+			logger.severe( "communicator is null." );
 			shell.close();
 			return;
 		}
@@ -246,7 +253,7 @@ public class EmulatorSkin {
 
 	}
 
-	private void arrangeSkin( int lcdWidth, int lcdHeight, Scale scale, short rotationId ) {
+	private void arrangeSkin( int lcdWidth, int lcdHeight, int scale, short rotationId ) {
 
 		this.currentLcdWidth = lcdWidth;
 		this.currentLcdHeight = lcdHeight;
@@ -273,13 +280,13 @@ public class EmulatorSkin {
 
 	}
 
-	private Image createScaledImage( short rotationId, Scale scale, ImageType type ) {
+	private Image createScaledImage( short rotationId, int scale, ImageType type ) {
 
 		ImageData originalImageData = imageRegistry.getImageData( rotationId, type );
 
 		ImageData imageData = (ImageData) originalImageData.clone();
-		int width = (int) ( originalImageData.width * scale.ratio() );
-		int height = (int) ( originalImageData.height * scale.ratio() );
+		int width = (int) ( originalImageData.width * (((float)scale) / 100) );
+		int height = (int) ( originalImageData.height * (((float)scale) / 100) );
 		imageData = imageData.scaledTo( width, height );
 
 		Image image = new Image( shell.getDisplay(), imageData );
@@ -312,7 +319,7 @@ public class EmulatorSkin {
 
 	}
 
-	private void adjustLcdGeometry( Canvas lcdCanvas, Scale scale, short rotationId ) {
+	private void adjustLcdGeometry( Canvas lcdCanvas, int scale, short rotationId ) {
 
 		RotationType rotation = SkinRotation.getRotation( rotationId );
 
@@ -324,10 +331,10 @@ public class EmulatorSkin {
 		Integer width = region.getWidth();
 		Integer height = region.getHeight();
 
-		int l = (int) ( left * scale.ratio() );
-		int t = (int) ( top * scale.ratio() );
-		int w = (int) ( width * scale.ratio() );
-		int h = (int) ( height * scale.ratio() );
+		int l = (int) ( left * (((float)scale) / 100) );
+		int t = (int) ( top * (((float)scale) / 100) );
+		int w = (int) ( width * (((float)scale) / 100) );
+		int h = (int) ( height * (((float)scale) / 100) );
 
 		lcdCanvas.setBounds( l, t, w, h );
 
@@ -343,10 +350,10 @@ public class EmulatorSkin {
 
 			RegionType region = keyMap.getRegion();
 
-			int scaledX = (int) ( region.getLeft() * currentScale.ratio() );
-			int scaledY = (int) ( region.getTop() * currentScale.ratio() );
-			int scaledWidth = (int) ( region.getWidth() * currentScale.ratio() );
-			int scaledHeight = (int) ( region.getHeight() * currentScale.ratio() );
+			int scaledX = (int) ( region.getLeft() * (((float)currentScale) / 100) );
+			int scaledY = (int) ( region.getTop() * (((float)currentScale) / 100) );
+			int scaledWidth = (int) ( region.getWidth() * (((float)currentScale) / 100) );
+			int scaledHeight = (int) ( region.getHeight() * (((float)currentScale) / 100) );
 
 			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
 				return new SkinRegion( scaledX, scaledY, scaledWidth, scaledHeight );
@@ -367,10 +374,10 @@ public class EmulatorSkin {
 		for ( KeyMapType keyMap : keyMapList ) {
 			RegionType region = keyMap.getRegion();
 
-			int scaledX = (int) ( region.getLeft() * currentScale.ratio() );
-			int scaledY = (int) ( region.getTop() * currentScale.ratio() );
-			int scaledWidth = (int) ( region.getWidth() * currentScale.ratio() );
-			int scaledHeight = (int) ( region.getHeight() * currentScale.ratio() );
+			int scaledX = (int) ( region.getLeft() * (((float)currentScale) / 100) );
+			int scaledY = (int) ( region.getTop() * (((float)currentScale) / 100) );
+			int scaledWidth = (int) ( region.getWidth() * (((float)currentScale) / 100) );
+			int scaledHeight = (int) ( region.getHeight() * (((float)currentScale) / 100) );
 
 			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
 				EventInfoType eventInfo = keyMap.getEventInfo();
@@ -397,8 +404,8 @@ public class EmulatorSkin {
 
 	private int[] convertMouseGeometry( int originalX, int originalY ) {
 
-		int x = (int) ( originalX * ( 1 / currentScale.ratio() ) );
-		int y = (int) ( originalY * ( 1 / currentScale.ratio() ) );
+		int x = (int) ( originalX * ( 1 / (((float)currentScale) / 100) ) );
+		int y = (int) ( originalY * ( 1 / (((float)currentScale) / 100) ) );
 
 		int rotatedX = x;
 		int rotatedY = y;
@@ -428,7 +435,7 @@ public class EmulatorSkin {
 
 					config.setProperty( PropertiesConstants.WINDOW_X, shell.getLocation().x );
 					config.setProperty( PropertiesConstants.WINDOW_Y, shell.getLocation().y );
-					config.setProperty( PropertiesConstants.WINDOW_SCALE, currentScale.value() );
+					config.setProperty( PropertiesConstants.WINDOW_SCALE, currentScale );
 					config.setProperty( PropertiesConstants.WINDOW_DIRECTION, currentRotationId );
 
 					config.saveProperties();
@@ -528,7 +535,7 @@ public class EmulatorSkin {
 			@Override
 			public void mouseUp( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
-					System.out.println( "mouseUp in Skin" );
+					logger.info( "mouseUp in Skin" );
 					EmulatorSkin.this.pressedMouseX = 0;
 					EmulatorSkin.this.pressedMouseY = 0;
 					EmulatorSkin.this.isMousePressed = false;
@@ -547,7 +554,7 @@ public class EmulatorSkin {
 			@Override
 			public void mouseDown( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
-					System.out.println( "mouseDown in Skin" );
+					logger.info( "mouseDown in Skin" );
 					EmulatorSkin.this.pressedMouseX = e.x;
 					EmulatorSkin.this.pressedMouseY = e.y;
 
@@ -597,11 +604,11 @@ public class EmulatorSkin {
 
 			@Override
 			public void dragDetected( DragDetectEvent e ) {
-				System.out.println( "dragDetected e.button:" + e.button );
+				logger.fine( "dragDetected e.button:" + e.button );
 				if ( 1 == e.button && // left button
 						e.x > 0 && e.x < canvas.getSize().x && e.y > 0 && e.y < canvas.getSize().y ) {
 
-					System.out.println( "dragDetected in LCD" );
+					logger.fine( "dragDetected in LCD" );
 					EmulatorSkin.this.isDragStartedInLCD = true;
 
 				}
@@ -650,7 +657,7 @@ public class EmulatorSkin {
 				if ( 1 == e.button ) { // left button
 
 					int[] geometry = convertMouseGeometry( e.x, e.y );
-					System.out.println( "mouseUp in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
+					logger.info( "mouseUp in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 					MouseEventData mouseEventData = new MouseEventData( MouseEventType.UP.value(), geometry[0],
 							geometry[1], 0 );
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
@@ -664,7 +671,7 @@ public class EmulatorSkin {
 			public void mouseDown( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
 					int[] geometry = convertMouseGeometry( e.x, e.y );
-					System.out.println( "mouseDown in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
+					logger.info( "mouseDown in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 					MouseEventData mouseEventData = new MouseEventData( MouseEventType.DOWN.value(), geometry[0],
 							geometry[1], 0 );
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
@@ -680,18 +687,19 @@ public class EmulatorSkin {
 
 			@Override
 			public void keyReleased( KeyEvent e ) {
-				System.out.println( "key released. key event:" + e );
-//				int keyCode = e.keyCode;
-//				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
-//				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+				logger.info( "key released. key event:" + e );
+				int keyCode = e.keyCode;
+
+				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
+				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
 			@Override
 			public void keyPressed( KeyEvent e ) {
-				System.out.println( "key pressed. key event:" + e );
-//				int keyCode = e.keyCode;
-//				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
-//				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+				logger.info( "key pressed. key event:" + e );
+				int keyCode = e.keyCode;
+				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
+				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
 		} );
@@ -704,52 +712,42 @@ public class EmulatorSkin {
 
 		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
 		infoItem.setText( emulatorName );
+		//FIXME
 		infoItem.setEnabled( false );
-//		infoItem.addSelectionListener( new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected( SelectionEvent e ) {
-//				System.out.println( "Selected Info." );
-//				//TODO
-//				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-//				messageBox.setMessage( "Under construction..." );
-//				messageBox.open();
-//			}
-//		} );
+		infoItem.addSelectionListener( new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				logger.fine( "Selected Info." );
+			}
+		} );
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
 		final MenuItem aotItem = new MenuItem( menu, SWT.CHECK );
 		aotItem.setText( "Always On Top" );
+		//FIXME
 		aotItem.setEnabled( false );
-//		aotItem.addSelectionListener( new SelectionAdapter() {
-//			private boolean isTop;
-//
-//			@Override
-//			public void widgetSelected( SelectionEvent e ) {
-//				System.out.println( "Selected Always On Top." );
-//				isTop = !isTop;
-//				
-//				//TODO
-//				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-//				messageBox.setMessage( "Under construction..." );
-//				messageBox.open();
-//
-//			}
-//		} );
+		aotItem.addSelectionListener( new SelectionAdapter() {
+			private boolean isTop;
+
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				logger.fine( "Selected Always On Top." );
+				isTop = !isTop;
+				//TODO
+			}
+		} );
 
 		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
 		rotateItem.setText( "Rotate" );
-		rotateItem.setEnabled( false );
-		
-//		Menu rotateMenu = createRotateMenu( menu.getShell() );
-//		rotateItem.setMenu( rotateMenu );
+
+		Menu rotateMenu = createRotateMenu( menu.getShell() );
+		rotateItem.setMenu( rotateMenu );
 
 		final MenuItem scaleItem = new MenuItem( menu, SWT.CASCADE );
 		scaleItem.setText( "Scale" );
-		scaleItem.setEnabled( false );
-		
-//		Menu scaleMenu = createScaleMenu( menu.getShell() );
-//		scaleItem.setMenu( scaleMenu );
+		Menu scaleMenu = createScaleMenu( menu.getShell() );
+		scaleItem.setMenu( scaleMenu );
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
@@ -757,7 +755,7 @@ public class EmulatorSkin {
 		advancedItem.setText( "Advanced" );
 		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
 		advancedItem.setMenu( advancedMenu );
-//
+
 //		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
 //		shellItem.setText( "Shell" );
 //		shellItem.addSelectionListener( new SelectionAdapter() {
@@ -776,8 +774,8 @@ public class EmulatorSkin {
 //				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
 //			}
 //		} );
-
-		new MenuItem( menu, SWT.SEPARATOR );
+//
+//		new MenuItem( menu, SWT.SEPARATOR );
 
 		MenuItem closeItem = new MenuItem( menu, SWT.PUSH );
 		closeItem.setText( "Close" );
@@ -854,7 +852,7 @@ public class EmulatorSkin {
 				short rotationId = ( (Short) item.getData() );
 
 				arrangeSkin( currentLcdWidth, currentLcdHeight, currentScale, rotationId );
-				LcdStateData lcdStateData = new LcdStateData( currentScale.value(), rotationId );
+				LcdStateData lcdStateData = new LcdStateData( currentScale, rotationId );
 				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
 
 			}
@@ -875,25 +873,29 @@ public class EmulatorSkin {
 
 		final MenuItem scaleOneItem = new MenuItem( menu, SWT.RADIO );
 		scaleOneItem.setText( "1x" );
-		scaleOneItem.setData( Scale.ONE );
+		scaleOneItem.setData( 100 );
 		scaleList.add( scaleOneItem );
 
 		final MenuItem scaleThreeQtrItem = new MenuItem( menu, SWT.RADIO );
 		scaleThreeQtrItem.setText( "3/4x" );
-		scaleThreeQtrItem.setData( Scale.THREE_QUARTERS );
+		scaleThreeQtrItem.setData( 75 );
 		scaleList.add( scaleThreeQtrItem );
 
 		final MenuItem scalehalfItem = new MenuItem( menu, SWT.RADIO );
 		scalehalfItem.setText( "1/2x" );
-		scalehalfItem.setData( Scale.HALF );
+		scalehalfItem.setData( 50 );
 		scaleList.add( scalehalfItem );
 
 		final MenuItem scaleOneQtrItem = new MenuItem( menu, SWT.RADIO );
 		scaleOneQtrItem.setText( "1/4x" );
-		scaleOneQtrItem.setData( Scale.ONE_QUARTER );
+		scaleOneQtrItem.setData( 25 );
 		scaleList.add( scaleOneQtrItem );
 
-		final short storedScale = config.getPropertyShort( PropertiesConstants.WINDOW_SCALE, Scale.HALF.value() );
+		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 100 );
+		//TODO:
+		if (storedScale != 100 && storedScale != 75 && storedScale != 50 && storedScale != 25 ) {
+			storedScale = 50;
+		}
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 
@@ -908,10 +910,10 @@ public class EmulatorSkin {
 					return;
 				}
 
-				Scale scale = (Scale) item.getData();
+				int scale = (Integer) item.getData();
 
 				arrangeSkin( currentLcdWidth, currentLcdHeight, scale, currentRotationId );
-				LcdStateData lcdStateData = new LcdStateData( scale.value(), currentRotationId );
+				LcdStateData lcdStateData = new LcdStateData( scale, currentRotationId );
 				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
 
 			}
@@ -919,8 +921,8 @@ public class EmulatorSkin {
 
 		for ( MenuItem menuItem : scaleList ) {
 
-			Scale scale = (Scale) menuItem.getData();
-			if ( scale.value() == storedScale ) {
+			int scale = (Integer) menuItem.getData();
+			if ( scale == storedScale ) {
 				menuItem.setSelection( true );
 			}
 
@@ -938,16 +940,12 @@ public class EmulatorSkin {
 
 		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
 		screenshotItem.setText( "Screen Shot" );
+		//FIXME
 		screenshotItem.setEnabled( false );
 		
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-
-				//TODO
-				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-				messageBox.setMessage( "Under construction..." );
-				messageBox.open();
 				
 //				Display display = shell.getDisplay();
 //				final Image image = new Image( display, lcdCanvas.getBounds() );
@@ -1019,41 +1017,34 @@ public class EmulatorSkin {
 		final MenuItem usbOffItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
 		usbOffItem.setText( "Off" );
 		usbOffItem.setSelection( true );
-
-		usbOnItem.setEnabled( false );
-		usbOffItem.setEnabled( false );
 		
-//		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected( SelectionEvent e ) {
-//				MenuItem item = (MenuItem) e.getSource();
-//				if ( item.getSelection() ) {
-//					boolean on = item.equals( usbOnItem );
-//					communicator
-//							.sendToQEMU( SendCommand.USB_KBD, new BooleanData( on, SendCommand.USB_KBD.toString() ) );
-//				}
-//
-//			}
-//		};
-//
-//		usbOnItem.addSelectionListener( usbSelectionAdaptor );
-//		usbOffItem.addSelectionListener( usbSelectionAdaptor );
+		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				MenuItem item = (MenuItem) e.getSource();
+				if ( item.getSelection() ) {
+					boolean on = item.equals( usbOnItem );
+					communicator
+							.sendToQEMU( SendCommand.USB_KBD, new BooleanData( on, SendCommand.USB_KBD.toString() ) );
+				}
+
+			}
+		};
+
+		usbOnItem.addSelectionListener( usbSelectionAdaptor );
+		usbOffItem.addSelectionListener( usbSelectionAdaptor );
 
 		usbKeyboardItem.setMenu( usbKeyBoardMenu );
 
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "About" );
 		aboutItem.setEnabled( false );
-//		aboutItem.addSelectionListener( new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected( SelectionEvent e ) {
-//				// TODO
-//				MessageBox messageBox = new MessageBox( shell, SWT.OK | SWT.APPLICATION_MODAL );
-//				messageBox.setText( "About" );
-//				messageBox.setMessage( "Under construction..." );
-//				messageBox.open();
-//			}
-//		} );
+		aboutItem.addSelectionListener( new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				// TODO
+			}
+		} );
 
 		return menu;
 

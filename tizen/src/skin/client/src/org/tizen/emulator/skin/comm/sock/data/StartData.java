@@ -40,10 +40,10 @@ public class StartData extends AbstractSendData {
 	private int windowHandleId;
 	private int lcdSizeWidth;
 	private int lcdSizeHeight;
-	private short scale;
+	private int scale;
 	private short rotation;
 	
-	public StartData(int windowHandleId, int lcdSizeWidth, int lcdSizeHeight, short scale, short rotation ) {
+	public StartData(int windowHandleId, int lcdSizeWidth, int lcdSizeHeight, int scale, short rotation ) {
 		this.windowHandleId = windowHandleId;
 		this.lcdSizeWidth = lcdSizeWidth;
 		this.lcdSizeHeight = lcdSizeHeight;
@@ -56,7 +56,7 @@ public class StartData extends AbstractSendData {
 		writeInt( windowHandleId );
 		writeInt( lcdSizeWidth );
 		writeInt( lcdSizeHeight );
-		writeShort( scale );
+		writeInt( scale );
 		writeShort( rotation );
 	}
 

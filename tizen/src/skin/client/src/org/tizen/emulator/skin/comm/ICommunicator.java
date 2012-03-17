@@ -37,44 +37,44 @@ import org.tizen.emulator.skin.comm.sock.data.ISendData;
  */
 public interface ICommunicator extends Runnable {
 
-	public enum Scale {
-		ONE( (short)1, (float)1.0 ),
-		THREE_QUARTERS( (short)2, (float)0.75 ),
-		HALF( (short)3, (float)0.5 ),
-		ONE_QUARTER( (short)4, (float)0.25 );
-		
-		private short value;
-		private float ratio;
-		Scale( short value, float ratio ) {
-			this.value = value;
-			this.ratio = ratio;
-		}
-		public short value() {
-			return this.value;
-		}
-		public float ratio() {
-			return this.ratio;
-		}
-		public static Scale getValue( String val ) {
-			Scale[] values = Scale.values();
-			for (int i = 0; i < values.length; i++) {
-				if( values[i].value == Integer.parseInt( val ) ) {
-					return values[i];
-				}
-			}
-			throw new IllegalArgumentException( val );
-		}
-		public static Scale getValue( short val ) {
-			Scale[] values = Scale.values();
-			for (int i = 0; i < values.length; i++) {
-				if( values[i].value == val ) {
-					return values[i];
-				}
-			}
-			throw new IllegalArgumentException( Integer.toString(val) );
-		}
-
-	}
+//	public enum Scale {
+//		ONE( (short)1, (float)1.0 ),
+//		THREE_QUARTERS( (short)2, (float)0.75 ),
+//		HALF( (short)3, (float)0.5 ),
+//		ONE_QUARTER( (short)4, (float)0.25 );
+//		
+//		private short value;
+//		private float ratio;
+//		Scale( short value, float ratio ) {
+//			this.value = value;
+//			this.ratio = ratio;
+//		}
+//		public short value() {
+//			return this.value;
+//		}
+//		public float ratio() {
+//			return this.ratio;
+//		}
+//		public static Scale getValue( String val ) {
+//			Scale[] values = Scale.values();
+//			for (int i = 0; i < values.length; i++) {
+//				if( values[i].value == Integer.parseInt( val ) ) {
+//					return values[i];
+//				}
+//			}
+//			throw new IllegalArgumentException( val );
+//		}
+//		public static Scale getValue( short val ) {
+//			Scale[] values = Scale.values();
+//			for (int i = 0; i < values.length; i++) {
+//				if( values[i].value == val ) {
+//					return values[i];
+//				}
+//			}
+//			throw new IllegalArgumentException( Integer.toString(val) );
+//		}
+//
+//	}
 
 	public enum MouseEventType {
 		DOWN( (short)1 ),

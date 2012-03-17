@@ -48,8 +48,8 @@ public class SkinRotation {
 	public enum RotationInfo {
 
 		PORTRAIT( RotationNameType.PORTRAIT.value(), (short)0, 0 ),
-		REVERSE_PORTRAIT( RotationNameType.REVERSE_PORTRAIT.value(), (short)1, 180 ),
-		LANDSCAPE( RotationNameType.LANDSCAPE.value(), (short)2, -90 ),
+		LANDSCAPE( RotationNameType.LANDSCAPE.value(), (short)1, -90 ),
+		REVERSE_PORTRAIT( RotationNameType.REVERSE_PORTRAIT.value(), (short)2, 180 ),
 		REVERSE_LANDSCAPE( RotationNameType.REVERSE_LANDSCAPE.value(), (short)3, 90 );
 		
 		private String value;
