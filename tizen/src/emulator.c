@@ -53,6 +53,7 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define IMAGE_PATH_PREFIX   "file="
 #define IMAGE_PATH_SUFFIX   ",if=virtio"
 #define SDB_PORT_PREFIX     "sdb_port="
+#define LOGS_SUFFIX         "/logs"
 #define MAXLEN  512
 #define MIDBUF  128
 int tizen_base_port = 0;
@@ -146,6 +147,16 @@ void set_image_and_log_path(char* qemu_argv)
         strcpy(tizen_target_path, g_path_get_dirname(path));
 
     strcpy(logfile, tizen_target_path);
+    strcat(logfile, LOGS_SUFFIX);
+#ifdef _WIN32
+    if(access(g_win32_locale_filename_from_utf8(logfile), R_OK) != 0) {
+       g_mkdir(g_win32_locale_filename_from_utf8(logfile), 0755); 
+    }
+#else
+    if(access(logfile, R_OK) != 0) {
+       g_mkdir(logfile, 0755); 
+    }
+#endif
 	strcat(logfile, "/logs/emulator.log");
 
 }
@@ -205,7 +216,7 @@ void extract_info(int qemu_argc, char** qemu_argv)
 static int skin_argc = 0;
 static char** skin_argv = NULL;
 
-void prepare_maru() 
+void prepare_maru(void) 
 {
     INFO("Prepare maru specified feature\n");
 
