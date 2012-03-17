@@ -9,6 +9,7 @@ QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
+CFLAGS += -g -O2
 
 ifdef CONFIG_WIN32
 LIBS += -lavformat -lavcodec -lavutil -lm
@@ -30,7 +31,7 @@ ifeq ($(TARGET_ARCH), i386)
 
 GL_CUR_PATH = $(SRC_PATH)/tizen/src/hw
 
-GL_CFLAGS += -I$(QEMU_CFLAGS) -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu -I$(SRC_PATH)/$(TARGET_DIRS)
+GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu -I$(SRC_PATH)/$(TARGET_DIRS) $(CFLAGS)
 
 parse_gl_h: parse_gl_h.c
 	$(CC) -g -o $@ $<
