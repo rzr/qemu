@@ -29,6 +29,7 @@
 
 package org.tizen.emulator.skin.log;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -38,11 +39,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+import org.tizen.emulator.skin.util.StringUtil;
+
 /**
  * 
  *
  */
 public class SkinLogger {
+	
+	public static final String LOG_FOLDER = "logs";
 	
 	public enum SkinLogLevel {
 		
@@ -81,14 +86,22 @@ public class SkinLogger {
 		return this.logger;
 	}
 	
-	public static void init( SkinLogLevel logLevel ) {
+	public static void init( SkinLogLevel logLevel, String filePath ) {
 		
 		if( !isInit ) {
 			
 			isInit = true;
-
+			
+			String path = "";
+			
+			if( !StringUtil.isEmpty( filePath ) ) {
+				path = filePath;
+			}
+			
 			try {
-				fileHandler = new FileHandler( FILE_NAME, false );
+				path = path + File.separator + LOG_FOLDER + File.separator + FILE_NAME;
+				System.out.println( "[SkinLog]log file path:" + path );
+				fileHandler = new FileHandler( path, false );
 			} catch ( SecurityException e1 ) {
 				e1.printStackTrace();
 			} catch ( IOException e1 ) {

@@ -117,13 +117,15 @@ public class EmulatorSkinMain {
 	private static void initLog( String[] args ) {
 
 		String logLevel = "";
+		String vmPath = "";
 		for ( int i = 0; i < args.length; i++ ) {
 			String[] split = args[i].split( "=" );
 			if ( split[0].trim().equalsIgnoreCase( ArgsConstants.LOG_LEVEL ) ) {
 				if ( !StringUtil.isEmpty( split[1].trim() ) ) {
-					logLevel = split[1];
-					break;
+					logLevel = split[1].trim();
 				}
+			}else if ( split[0].trim().equalsIgnoreCase( ArgsConstants.VM_PATH ) ) {
+				vmPath = split[1].trim();
 			}
 		}
 
@@ -139,7 +141,7 @@ public class EmulatorSkinMain {
 			}
 		}
 
-		SkinLogger.init( skinLogLevel );
+		SkinLogger.init( skinLogLevel, vmPath );
 		logger = SkinLogger.getSkinLogger( EmulatorSkinMain.class ).getLogger();
 
 	}
