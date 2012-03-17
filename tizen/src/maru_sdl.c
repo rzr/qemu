@@ -53,9 +53,20 @@ static void qemu_update(void)
 #ifndef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
-
     SDL_Surface *processing_screen;
-    processing_screen = rotozoomSurface(surface_qemu, 0.0, ((double)get_emul_win_scale()) / 100, 1);
+    double angle = 0.0;
+
+//TODO: convert type define to angle value
+    short rotaton_type = get_emul_rotation();
+    if (rotaton_type == 1) {
+        angle = 90.0;
+    } else if (rotaton_type == 2) {
+        angle = 180.0;
+    } else if (rotaton_type == 3) {
+        angle = 270.0;
+    }
+
+    processing_screen = rotozoomSurface(surface_qemu, angle, ((double)get_emul_win_scale()) / 100, 1);
 
     SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);

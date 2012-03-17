@@ -207,7 +207,7 @@ void extract_info(int qemu_argc, char** qemu_argv)
 static int skin_argc = 0;
 static char** skin_argv = NULL;
 
-void prepare_maru() 
+void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
 

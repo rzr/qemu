@@ -71,13 +71,13 @@ int get_emul_win_scale(void)
 }
 
 /* emulator rotation */
-void set_emul_rotation(int rotation)
+void set_emul_rotation(short rotation)
 {
     _emul_state.rotation = rotation;
     INFO("emulator rotation = %d\n", _emul_state.rotation);
 }
 
-int get_emul_rotation(void)
+short get_emul_rotation(void)
 {
     return _emul_state.rotation;
 }

@@ -42,7 +42,7 @@ typedef  struct emulator_config_info {
 
 typedef struct emulator_config_state {
     int scale;
-    int rotation;
+    short rotation;
     //TODO:
 } emulator_config_state;
 
@@ -50,13 +50,13 @@ typedef struct emulator_config_state {
 /* setter */
 void set_emul_lcd_size(int width, int height);
 void set_emul_win_scale(int scale);
-void set_emul_rotation(int scale);
+void set_emul_rotation(short scale);
 
 /* getter */
 int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
 int get_emul_win_scale(void);
-int get_emul_rotation(void);
+short get_emul_rotation(void);
 
 
 #endif /* __EMUL_STATE_H__ */

@@ -438,7 +438,7 @@ static void* run_skin_server( void* args ) {
                     }
 
                     int scale = 0;
-                    int rotation = 0;
+                    short rotation = 0;
 
                     char* p = readbuf;
                     memcpy( &scale, p, sizeof( scale ) );
@@ -446,7 +446,7 @@ static void* run_skin_server( void* args ) {
                     memcpy( &rotation, p, sizeof( rotation ) );
 
                     scale = ntohl( scale );
-                    rotation = ntohl( rotation );
+                    rotation = ntohs( rotation );
 
                     if ( get_emul_win_scale() != scale ) {
                         do_scale_event( scale );

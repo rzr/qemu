@@ -29,13 +29,18 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config struecture and defines in emulator
- */
 
 #ifndef __EMULATOR_H__
 #define __EMULATOR_H__
+
+
+enum {
+    ROTATION_PORTRAIT = 0,
+    ROTATION_LANDSCAPE = 1,
+    ROTATION_REVERSE_PORTRAIT = 2,
+    ROTATION_REVERSE_LANDSCAPE = 3,
+};
+
 
 int get_emulator_condition(void);
 void set_emulator_condition(int state);

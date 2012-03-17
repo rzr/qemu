@@ -144,9 +144,8 @@ void do_hardkey_event( int event_type, int keycode ) {
 void do_scale_event( int event_type) {
     INFO( "do_scale_event event_type:%d", event_type);
 
-    //double scale_factor = event_type / 100; //TODO: define
 
-    //TODO:
+    //TODO: qemu refresh
 
     set_emul_win_scale(event_type);
 }
