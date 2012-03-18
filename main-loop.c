@@ -447,7 +447,7 @@ int main_loop_wait(int nonblocking)
     slirp_select_fill(&nfds, &rfds, &wfds, &xfds);
 #endif
     qemu_iohandler_fill(&nfds, &rfds, &wfds, &xfds);
-#ifdef _WIN32
+#ifndef _WIN32
     glib_select_fill(&nfds, &rfds, &wfds, &xfds, &tv);
 #endif // _WIN32
 
