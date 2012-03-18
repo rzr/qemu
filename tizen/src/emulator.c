@@ -184,6 +184,28 @@ void redir_output(void)
 	setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 }
 
+#ifdef _WIN32
+void socket_cleanup(void)
+{
+	WSACleanup();
+}
+
+int socket_init(void)
+{
+	WSADATA Data;
+	int ret, err;
+
+	ret = WSAStartup(MAKEWORD(2,0), &Data);
+	if (ret != 0) {
+		err = WSAGetLastError();
+		fprintf(stderr, "WSAStartup: %d\n", err);
+		return -1;
+	}
+	atexit(socket_cleanup);
+	return 0;
+}
+#endif
+
 void extract_info(int qemu_argc, char** qemu_argv)
 {
     int i;
@@ -228,6 +250,9 @@ int main(int argc, char* argv[])
     char** qemu_argv = NULL;
     
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+#ifdef _WIN32
+	socket_init();
+#endif
     extract_info(qemu_argc, qemu_argv);
     INFO("Emulator start !!!\n");
     
