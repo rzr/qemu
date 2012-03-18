@@ -135,6 +135,10 @@ static void vga_screen_dump(void *opaque, const char *filename);
 static const char *screen_dump_filename;
 static DisplayChangeListener *screen_dump_dcl;
 
+#ifdef TARGET_I386
+static int is_off_screen = 0;
+#endif
+
 static void vga_dumb_update_retrace_info(VGACommonState *s)
 {
     (void) s;
@@ -895,6 +899,14 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     uint32_t v, addr1, addr;
     maru_vga_draw_line_func *maru_vga_draw_line;
 
+#ifdef TARGET_I386
+    if( brightness_off ) {
+        if( is_off_screen ) {
+            return;
+        }
+    }
+#endif
+
     full_update |= update_basic_params(s);
 
     if (!full_update)
@@ -1057,7 +1069,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         }
         /* explicit invalidation for the hardware cursor */
         update |= (s->invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1;
-#if defined (TARGET_I386)
+#ifdef TARGET_I386
         update |= 1;
 #endif
         if (update) {
@@ -1073,11 +1085,11 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                     s->cursor_draw_line(s, d, y);
             }
 
-#if defined (TARGET_I386)
+#ifdef TARGET_I386
             int i;
             uint8_t *fb_sub;
             uint8_t *over_sub;
-//            uint8_t *dst_sub;
+            uint8_t *dst_sub;
             uint8_t alpha, c_alpha;
             uint32_t *dst;
             uint16_t overlay_bottom;
@@ -1125,22 +1137,29 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             }
 
             //FIXME
-//            if( brightness_off ) {
-//                alpha = 0x00;
-//            }else if (brightness_level < 24) {
-//                alpha = brightness_tbl[brightness_level];
-//            }
-//
-//            if ( brightness_level < 24 ) {
-//                dst_sub = s->ds->surface->data + addr;
-//                dst = (uint32_t*)(s->ds->surface->data + addr);
-//
-//                for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
-//                    *dst = ((alpha * dst_sub[0]) >> 8) |
-//                            ((alpha * dst_sub[1]) & 0xFF00) |
-//                            (((alpha * dst_sub[2]) & 0xFF00) << 8);
-//                }
-//            }
+            if( brightness_off ) {
+
+                dst_sub = s->ds->surface->data + addr;
+                dst = (uint32_t*)(s->ds->surface->data + addr);
+                for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
+                    *dst = 0xFF000000;
+                }
+
+            }else if (brightness_level < 24) {
+
+                alpha = brightness_tbl[brightness_level];
+
+                dst_sub = s->ds->surface->data + addr;
+                dst = (uint32_t*)(s->ds->surface->data + addr);
+
+                for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
+                    *dst = ((alpha * dst_sub[0]) >> 8) |
+                            ((alpha * dst_sub[1]) & 0xFF00) |
+                            (((alpha * dst_sub[2]) & 0xFF00) << 8);
+                }
+
+            }
+
 #endif  /* TARGET_I386 */
 
         } else {
@@ -1170,6 +1189,15 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         dpy_update(s->ds, 0, y_start,
                    disp_width, y - y_start);
     }
+
+    if( brightness_off ) {
+        is_off_screen = 1;
+    }else {
+        if( is_off_screen ) {
+            is_off_screen = 0;
+        }
+    }
+
     /* reset modified pages */
     if (page_max >= page_min) {
         memory_region_reset_dirty(&s->vram,
