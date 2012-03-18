@@ -166,26 +166,7 @@ void set_image_and_log_path(char* qemu_argv)
     }
 #endif
 	strcat(logfile, LOGFILE);
-
-}
-
-void get_tizen_port(char* option)
-{
-    int i;
-    int j = 0;
-    int max_len = 0;
-    int prefix_len = 0;
-    char *ptr;
-    char *path = malloc(MAXLEN);
-    prefix_len = strlen(SDB_PORT_PREFIX);;
-    max_len = prefix_len + 5;
-    for(i = prefix_len , j = 0; i < max_len; i++)
-    {
-        path[j++] = option[i];
-    }
-    path[j] = '\0';
-    tizen_base_port = strtol(path, &ptr, 0);
- // INFO( "tizen_base_port: %d\n", tizen_base_port);
+    set_log_path(logfile);
 }
 
 void redir_output(void)
@@ -206,19 +187,17 @@ void redir_output(void)
 void extract_info(int qemu_argc, char** qemu_argv)
 {
     int i;
-    char *option = NULL;
 
     for(i = 0; i < qemu_argc; ++i)
     {
         if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
             set_image_and_log_path(qemu_argv[i]);
+            break;
         }
-        if((option = strstr(qemu_argv[i], SDB_PORT_PREFIX)) != NULL) {
-            get_tizen_port(option);
-            write_portfile(tizen_target_path);
-        }
-
     }
+    
+    tizen_base_port = get_sdb_base_port();
+    write_portfile(tizen_target_path);
 }
 
 static int skin_argc = 0;
@@ -228,7 +207,7 @@ void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
 
-    sdb_setup(tizen_base_port);
+    sdb_setup();
 
     INFO("call construct_main_window\n");
 
@@ -247,10 +226,9 @@ int main(int argc, char* argv[])
 {
     int qemu_argc = 0;
     char** qemu_argv = NULL;
-
+    
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
     extract_info(qemu_argc, qemu_argv);
-    set_log_path(logfile);
     INFO("Emulator start !!!\n");
     
     INFO("Prepare running...\n");

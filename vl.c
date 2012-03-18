@@ -191,6 +191,7 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
+extern int tizen_base_port;
 #endif
 
 static const char *data_dir;
@@ -2490,8 +2491,7 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_MARU
                 gethostproxy(proxy);
                 gethostDNS(dns1, dns2);
-
-                kernel_cmdline = g_strdup_printf("%s proxy=%s dns1=%s dns2=%s", optarg, proxy, dns1, dns2);
+                kernel_cmdline = g_strdup_printf("%s sdb_port=%d, proxy=%s dns1=%s dns2=%s", optarg, tizen_base_port, proxy, dns1, dns2);
                 fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
 #else
                 kernel_cmdline = optarg;
