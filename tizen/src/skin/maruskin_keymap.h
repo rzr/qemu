@@ -43,11 +43,32 @@
 #define CNTRL_CODE          0x1d
 #define CNTRL               SCANCODE_CTRL*/
 
-#define CURSES_KEYS 0777
-//KEY_MAX     /* KEY_MAX defined in <curses.h> */
+#define KEY_MAX 0777
 
-static const int curses2keycode[CURSES_KEYS] = {
-    [0 ... (CURSES_KEYS - 1)] = -1,
+#define KEY_F0 0410
+#define KEY_F(n) (KEY_F0+(n))
+
+#define GREY 0x80
+#define SHIFT 0x100
+#define KEY_ESCAPE 0x01b
+
+#define KEY_DOWN 0402
+#define KEY_UP 0403
+#define KEY_LEFT 0404
+#define KEY_RIGHT 0405
+#define KEY_HOME 0406
+
+#define KEY_DC 0512
+#define KEY_IC 0513
+#define KEY_NPAGE 0522
+#define KEY_PPAGE 0523
+#define KEY_ENTER 0527
+#define KEY_END 0550
+
+
+
+static const int vkkey2scancode[KEY_MAX] = {
+    [0 ... (KEY_MAX - 1)] = -1,
 
     [0x01b] = 1, /* Escape */
     ['1'] = 2,
@@ -81,7 +102,7 @@ static const int curses2keycode[CURSES_KEYS] = {
     [']'] = 27,
     ['\n'] = 28, /* Return */
     ['\r'] = 28, /* Return */
-    //[KEY_ENTER] = 28, /* Return */
+    [KEY_ENTER] = 28, /* Return */
 
     ['a'] = 30,
     ['s'] = 31,
@@ -110,7 +131,6 @@ static const int curses2keycode[CURSES_KEYS] = {
 
     [' '] = 57,
 
-#if 0
     [KEY_F(1)] = 59, /* Function Key 1 */
     [KEY_F(2)] = 60, /* Function Key 2 */
     [KEY_F(3)] = 61, /* Function Key 3 */
@@ -124,17 +144,18 @@ static const int curses2keycode[CURSES_KEYS] = {
     [KEY_F(11)] = 87, /* Function Key 11 */
     [KEY_F(12)] = 88, /* Function Key 12 */
 
-    [KEY_HOME] = 71 | GREY, /* Home */
-    [KEY_UP] = 72 | GREY, /* Up Arrow */
-    [KEY_PPAGE] = 73 | GREY, /* Page Up */
-    [KEY_LEFT] = 75 | GREY, /* Left Arrow */
-    [KEY_RIGHT] = 77 | GREY, /* Right Arrow */
-    [KEY_END] = 79 | GREY, /* End */
-    [KEY_DOWN] = 80 | GREY, /* Down Arrow */
-    [KEY_NPAGE] = 81 | GREY, /* Page Down */
-    [KEY_IC] = 82 | GREY, /* Insert */
-    [KEY_DC] = 83 | GREY, /* Delete */
+    [KEY_HOME] = 71, /* Home */
+    [KEY_UP] = 72, /* Up Arrow */
+    [KEY_PPAGE] = 73, /* Page Up */
+    [KEY_LEFT] = 75, /* Left Arrow */
+    [KEY_RIGHT] = 77, /* Right Arrow */
+    [KEY_END] = 79, /* End */
+    [KEY_DOWN] = 80, /* Down Arrow */
+    [KEY_NPAGE] = 81, /* Page Down */
+    [KEY_IC] = 82, /* Insert */
+    [KEY_DC] = 83, /* Delete */
 
+#if 0
     ['!'] = 2 | SHIFT,
     ['@'] = 3 | SHIFT,
     ['#'] = 4 | SHIFT,

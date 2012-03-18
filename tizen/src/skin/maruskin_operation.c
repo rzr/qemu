@@ -86,6 +86,10 @@ void do_key_event( int event_type, int keycode ) {
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     int scancode = javakeycode_to_scancode(keycode);
+    if (scancode == -1) {
+        INFO("cannot find scancode\n");
+        return;
+    }
 
     if (KEY_PRESSED == event_type) {
         kbd_put_keycode(scancode);
