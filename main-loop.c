@@ -447,7 +447,9 @@ int main_loop_wait(int nonblocking)
     slirp_select_fill(&nfds, &rfds, &wfds, &xfds);
 #endif
     qemu_iohandler_fill(&nfds, &rfds, &wfds, &xfds);
+#ifdef _WIN32
     glib_select_fill(&nfds, &rfds, &wfds, &xfds, &tv);
+#endif // _WIN32
 
     if (timeout > 0) {
         qemu_mutex_unlock_iothread();
