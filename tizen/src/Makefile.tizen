@@ -86,10 +86,7 @@ endif
 
 
 # maru skin
-obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o
-ifndef CONFIG_WIN32 
-obj-i386-y += maruskin_keymap.o
-endif
+obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
 
 # guest server
 obj-i386-y += guest_server.o 

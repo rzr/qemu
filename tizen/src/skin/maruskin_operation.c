@@ -39,10 +39,8 @@
 #include "nbd.h"
 #include "../mloop_event.h"
 #include "emul_state.h"
-
-#ifndef _WIN32
 #include "maruskin_keymap.h"
-#endif
+
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
@@ -62,10 +60,11 @@ enum {
     KEY_RELEASED = 2,
 };
 
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation ) {
-    INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation:%d\n",
-        handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation );
+void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type ) {
+    INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
+        handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type );
 
+    set_emul_win_scale(scale_factor);
     maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height);
 }
 
@@ -86,13 +85,13 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
 void do_key_event( int event_type, int keycode ) {
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
-#ifndef _WIN32
+    int scancode = javakeycode_to_scancode(keycode);
+
     if (KEY_PRESSED == event_type) {
-        kbd_put_keycode(curses2keycode[keycode]);
+        kbd_put_keycode(scancode);
     } else if (KEY_RELEASED == event_type) {
-        kbd_put_keycode(curses2keycode[keycode] | 0x80);
+        kbd_put_keycode(scancode | 0x80);
     }
-#endif
 }
 
 void do_hardkey_event( int event_type, int keycode ) {

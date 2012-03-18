@@ -31,7 +31,7 @@
 #ifndef MARUSKIN_KEYMAP_H_
 #define MARUSKIN_KEYMAP_H_
 
-#include <curses.h>
+/*#include <curses.h>
 
 #define SCANCODE_GREY   0x80
 #define SCANCODE_SHIFT  0x100
@@ -41,9 +41,10 @@
 #define SHIFT_CODE          0x2a
 #define SHIFT               SCANCODE_SHIFT
 #define CNTRL_CODE          0x1d
-#define CNTRL               SCANCODE_CTRL
+#define CNTRL               SCANCODE_CTRL*/
 
-#define CURSES_KEYS         KEY_MAX     /* KEY_MAX defined in <curses.h> */
+#define CURSES_KEYS 0777
+//KEY_MAX     /* KEY_MAX defined in <curses.h> */
 
 static const int curses2keycode[CURSES_KEYS] = {
     [0 ... (CURSES_KEYS - 1)] = -1,
@@ -62,7 +63,7 @@ static const int curses2keycode[CURSES_KEYS] = {
     ['-'] = 12,
     ['='] = 13,
     [0x07f] = 14, /* Backspace */
-    [KEY_BACKSPACE] = 14, /* Backspace */
+    //[KEY_BACKSPACE] = 14, /* Backspace */
     [0x008] = 14, /* Backspace */
 
     ['\t'] = 15, /* Tab */
@@ -80,7 +81,7 @@ static const int curses2keycode[CURSES_KEYS] = {
     [']'] = 27,
     ['\n'] = 28, /* Return */
     ['\r'] = 28, /* Return */
-    [KEY_ENTER] = 28, /* Return */
+    //[KEY_ENTER] = 28, /* Return */
 
     ['a'] = 30,
     ['s'] = 31,
@@ -229,5 +230,7 @@ static const int curses2keycode[CURSES_KEYS] = {
     /* Control + m collides with the keycode for Enter */
 #endif
 };
+
+int javakeycode_to_scancode(int java_keycode);
 
 #endif /* MARUSKIN_KEYMAP_H_ */

@@ -28,5 +28,13 @@
  */
 
 
-#include <string.h>
 #include "maruskin_keymap.h"
+
+
+int javakeycode_to_scancode(int java_keycode)
+{
+#ifdef _WIN32
+    //TODO:
+#endif
+    return curses2keycode[java_keycode];
+}

@@ -62,8 +62,10 @@ int get_emul_lcd_height(void)
 void set_emul_win_scale(double scale_factor)
 {
     if (scale_factor < 0.0 || scale_factor > 1.0) {
-        scale_factor = 1.0; 
+        INFO("scale_factor is out of range = %lf\n", scale_factor);
+        scale_factor = 1.0;
     }
+
     _emul_state.scale_factor = scale_factor;
     INFO("emulator window scale_factor = %lf\n", _emul_state.scale_factor);
 }
@@ -77,6 +79,7 @@ double get_emul_win_scale(void)
 void set_emul_rotation(short rotation_type)
 {
     if (rotation_type < ROTATION_PORTRAIT || rotation_type > ROTATION_REVERSE_LANDSCAPE) {
+        INFO("rotation type is out of range = %d\n", rotation_type);
         rotation_type = ROTATION_PORTRAIT;
     }
 
