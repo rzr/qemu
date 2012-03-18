@@ -40,12 +40,12 @@
 extern STARTUP_OPTION startup_option;
 #endif
 
-static char logfile[512] = {0,};
+static char logpath[512] = {0,};
 static char debugchfile[256] = {0, };
 
 void set_log_path(char *path)
 {
-    strcpy(logfile, path);
+    strcpy(logpath, path);
 }
 
 static inline int interlocked_xchg_add( int *dest, int incr )
@@ -303,13 +303,8 @@ static void debug_init(void)
 		free(tmp);
 	}
 
-#if 0
-	strcpy(logfile, get_virtual_target_abs_path(startup_option.vtm));
-	strcat(logfile, "logs/emulator.log");
-#endif
-
-	if(access(logfile, F_OK | R_OK) == 0)
-		remove(logfile);
+	if(access(logpath, F_OK | R_OK) == 0)
+		remove(logpath);
 }
 
 /* allocate some tmp string space */
@@ -353,7 +348,7 @@ static int dbg_vprintf( const char *format, va_list args )
 	sprintf(txt, "%s", tmp);
 
 	// unlock
-	if ((fp = fopen(logfile, "a+")) == NULL) {
+	if ((fp = fopen(logpath, "a+")) == NULL) {
 		fprintf(stdout, "Emulator can't open.\n"
 				"Please check if "
 				"this binary file is running on the right path.\n");
@@ -431,7 +426,7 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
 
-	if ((fp = fopen(logfile, "a+")) == NULL) {
+	if ((fp = fopen(logpath, "a+")) == NULL) {
 		fprintf(stdout, "Emulator can't open.\n"
 				"Please check if "
 				"this binary file is running on the right path.\n");

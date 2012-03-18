@@ -43,6 +43,7 @@
 #include "process.h"
 #include "option.h"
 #include "emul_state.h"
+#include "qemu_socket.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -63,7 +64,7 @@ int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
 static char tizen_target_path[MAXLEN] = {0, };
-static char logfile[MAXLEN] = { 0, };
+static char logpath[MAXLEN] = { 0, };
 
 int get_emulator_condition(void)
 {
@@ -154,29 +155,29 @@ void set_image_and_log_path(char* qemu_argv)
     else
         strcpy(tizen_target_path, g_path_get_dirname(path));
 
-    strcpy(logfile, tizen_target_path);
-    strcat(logfile, LOGS_SUFFIX);
+    strcpy(logpath, tizen_target_path);
+    strcat(logpath, LOGS_SUFFIX);
 #ifdef _WIN32
-    if(access(g_win32_locale_filename_from_utf8(logfile), R_OK) != 0) {
-       g_mkdir(g_win32_locale_filename_from_utf8(logfile), 0755); 
+    if(access(g_win32_locale_filename_from_utf8(logpath), R_OK) != 0) {
+       g_mkdir(g_win32_locale_filename_from_utf8(logpath), 0755); 
     }
 #else
-    if(access(logfile, R_OK) != 0) {
-       g_mkdir(logfile, 0755); 
+    if(access(logpath, R_OK) != 0) {
+       g_mkdir(logpath, 0755); 
     }
 #endif
-	strcat(logfile, LOGFILE);
-    set_log_path(logfile);
+	strcat(logpath, LOGFILE);
+    set_log_path(logpath);
 }
 
 void redir_output(void)
 {
 	FILE *fp;
 
-	fp = freopen(logfile, "a+", stdout);
+	fp = freopen(logpath, "a+", stdout);
 	if(fp ==NULL)
 		fprintf(stderr, "log file open error\n");
-	fp = freopen(logfile, "a+", stderr);
+	fp = freopen(logpath, "a+", stderr);
 	if(fp ==NULL)
 		fprintf(stderr, "log file open error\n");
 
@@ -228,6 +229,7 @@ int main(int argc, char* argv[])
     char** qemu_argv = NULL;
     
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    socket_init();
     extract_info(qemu_argc, qemu_argv);
     INFO("Emulator start !!!\n");
     
