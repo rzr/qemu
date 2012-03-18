@@ -104,8 +104,9 @@
 #define SDB_TCP_OPENGL_INDEX  4   /* opengl server port */
 extern int tizen_base_port;
 #define SDB_UDP_SENSOR_INDEX  3   /* sensor server port */
-void sdb_setup(int port);
+void sdb_setup(void);
 int get_sdb_base_port(void);
 int inet_strtoip(const char*  str, uint32_t  *ip);
 int socket_send(int fd, const void*  buf, int  buflen);
 void socket_close(int fd);
+void notify_sdb_daemon_start(void);
