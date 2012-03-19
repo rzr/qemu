@@ -56,14 +56,32 @@ enum JAVA_KEYCODE {
 
 int javakeycode_to_scancode(int java_keycode)
 {
+    int state_mask = java_keycode & JAVA_KEYCODE_BIT;
     int vk = java_keycode & JAVA_KEY_MASK;
+
+    int ctrl_mask = java_keycode & JAVA_KEYCODE_BIT_CTRL;
+    int shift_mask = java_keycode & JAVA_KEYCODE_BIT_SHIFT;
+    int alt_mask = java_keycode & JAVA_KEYCODE_BIT_ALT;
 
 /*#ifdef _WIN32
     return MapVirtualKey(vk, MAPVK_VK_TO_VSC);
 #endif*/
 
-    if (java_keycode & JAVA_KEYCODE_BIT) {
-        if (vk >= JAVA_KEY_F1 && vk <=JAVA_KEY_F20) { //function keys
+    if (vk == 0) { //meta keys
+        if (java_keycode == JAVA_KEYCODE_BIT_CTRL) { //ctrl key
+            return 29;
+        } else if (java_keycode == JAVA_KEYCODE_BIT_SHIFT) { //shift key
+            return 42;
+        } else if (java_keycode == JAVA_KEYCODE_BIT_ALT) { //alt key
+            return 56;
+        } else {
+            return -1;
+        }
+    }
+
+    if (state_mask != 0)
+    { //non-character keys
+        if (vk >= JAVA_KEY_F1 && vk <= JAVA_KEY_F20) { //function keys
             vk += 255;
         } else { //special keys
             switch(vk) {
@@ -98,8 +116,64 @@ int javakeycode_to_scancode(int java_keycode)
                     break;
             }
         }
-        //TODO:
-        //meta keys
+
+    }
+    else //state_mask == 0
+    { //character keys
+        if (ctrl_mask == 0 && shift_mask != 0 && alt_mask == 0) { //shift + character keys
+            switch(vk) {
+                case '`' :
+                    vk = '~';
+                    break;
+                case '1' :
+                    vk = '!';
+                    break;
+                case '2' :
+                    vk = '@';
+                    break;
+                case '3' :
+                    vk = '#';
+                    break;
+                case '4' :
+                    vk = '$';
+                    break;
+                case '5' :
+                    vk = '%';
+                    break;
+                case '6' :
+                    vk = '^';
+                    break;
+                case '7' :
+                    vk = '&';
+                    break;
+                case '8' :
+                    vk = '*';
+                    break;
+                case '9' :
+                    vk = '(';
+                    break;
+                case '0' :
+                    vk = ')';
+                    break;
+                case '-' :
+                    vk = '_';
+                    break;
+                case '=' :
+                    vk = '+';
+                    break;
+                case '\\' :
+                    vk = '|';
+                    break;
+                default :
+                    if (vk > 32 && vk < KEY_MAX) { //text keys
+                        vk -= 32; //case sensitive offset
+                    } else {
+                        return -1;
+                    }
+                    break;
+            }
+        }
+
     }
 
     return vkkey2scancode[vk];

@@ -63,8 +63,8 @@
 #define KEY_NPAGE 0522
 #define KEY_PPAGE 0523
 #define KEY_ENTER 0527
+#define KEY_BTAB 0541
 #define KEY_END 0550
-
 
 
 static const int vkkey2scancode[KEY_MAX] = {
@@ -129,7 +129,7 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['.'] = 52,
     ['/'] = 53,
 
-    [' '] = 57,
+    [' '] = 57, /* Space */
 
     [KEY_F(1)] = 59, /* Function Key 1 */
     [KEY_F(2)] = 60, /* Function Key 2 */
@@ -155,7 +155,6 @@ static const int vkkey2scancode[KEY_MAX] = {
     [KEY_IC] = 82, /* Insert */
     [KEY_DC] = 83, /* Delete */
 
-#if 0
     ['!'] = 2 | SHIFT,
     ['@'] = 3 | SHIFT,
     ['#'] = 4 | SHIFT,
@@ -208,6 +207,7 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['>'] = 52 | SHIFT,
     ['?'] = 53 | SHIFT,
 
+#if 0
     [KEY_F(13)] = 59 | SHIFT, /* Shift + Function Key 1 */
     [KEY_F(14)] = 60 | SHIFT, /* Shift + Function Key 2 */
     [KEY_F(15)] = 61 | SHIFT, /* Shift + Function Key 3 */

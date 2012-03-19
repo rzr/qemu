@@ -42,6 +42,7 @@ enum {
 
 
 typedef  struct emulator_config_info {
+    char emulator_name[256];
     int lcd_size_w;
     int lcd_size_h;
     //TODO:

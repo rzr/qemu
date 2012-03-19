@@ -688,7 +688,7 @@ public class EmulatorSkin {
 			@Override
 			public void keyReleased( KeyEvent e ) {
 				logger.info( "key released. key event:" + e );
-				int keyCode = e.keyCode;
+				int keyCode = e.keyCode | e.stateMask;
 
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
@@ -697,7 +697,7 @@ public class EmulatorSkin {
 			@Override
 			public void keyPressed( KeyEvent e ) {
 				logger.info( "key pressed. key event:" + e );
-				int keyCode = e.keyCode;
+				int keyCode = e.keyCode | e.stateMask;
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
