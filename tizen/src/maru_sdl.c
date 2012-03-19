@@ -133,13 +133,24 @@ static void qemu_ds_resize(DisplayState *ds)
 
 }
 
+static int maru_sdl_poll_event(SDL_Event *ev)
+{
+    int ret = 0;
+
+    pthread_mutex_lock(&sdl_mutex);
+    ret = SDL_PollEvent(ev);
+    pthread_mutex_unlock(&sdl_mutex);
+
+    return ret;
+}
+
 static void qemu_ds_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
 
     vga_hw_update();
 
-    while (SDL_PollEvent(ev)) {
+    while (maru_sdl_poll_event(ev)) {
         switch (ev->type) {
             case SDL_VIDEORESIZE:
             {
