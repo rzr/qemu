@@ -51,6 +51,12 @@ enum JAVA_KEYCODE {
     JAVA_KEY_INSERT,
     JAVA_KEY_F1 = 10,
     JAVA_KEY_F20 = 29,
+    JAVA_KEY_CAPS_LOCK = 82,
+    JAVA_KEY_NUM_LOCK,
+    JAVA_KEY_SCROLL_LOCK,
+    JAVA_KEY_PAUSE,
+    JAVA_KEY_BREAK,
+    JAVA_KEY_PRINT_SCREEN
 };
 
 
@@ -112,7 +118,17 @@ int javakeycode_to_scancode(int java_keycode)
                 case JAVA_KEY_INSERT :
                     vk = KEY_IC;
                     break;
+                case JAVA_KEY_CAPS_LOCK :
+                case JAVA_KEY_NUM_LOCK :
+                case JAVA_KEY_SCROLL_LOCK :
+                case JAVA_KEY_PAUSE :
+                case JAVA_KEY_BREAK :
+                case JAVA_KEY_PRINT_SCREEN :
+                    //TODO:
+                    return -1;
+                    break;
                 default :
+                    return -1;
                     break;
             }
         }
@@ -163,6 +179,27 @@ int javakeycode_to_scancode(int java_keycode)
                     break;
                 case '\\' :
                     vk = '|';
+                    break;
+                case '[' :
+                    vk = '{';
+                    break;
+                case ']' :
+                    vk = '}';
+                    break;
+                case ';' :
+                    vk = ':';
+                    break;
+                case '\'' :
+                    vk = '\"';
+                    break;
+                case ',' :
+                    vk = '<';
+                    break;
+                case '.' :
+                    vk = '>';
+                    break;
+                case '/' :
+                    vk = '?';
                     break;
                 default :
                     if (vk > 32 && vk < KEY_MAX) { //text keys

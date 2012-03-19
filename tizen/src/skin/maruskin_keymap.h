@@ -83,8 +83,7 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['0'] = 11,
     ['-'] = 12,
     ['='] = 13,
-    [0x07f] = 14, /* Backspace */
-    //[KEY_BACKSPACE] = 14, /* Backspace */
+    [0x07f] = 14, /* Delete */
     [0x008] = 14, /* Backspace */
 
     ['\t'] = 15, /* Tab */
