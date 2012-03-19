@@ -27,9 +27,10 @@ MINGW*)
 echo "checking for os... targetos $targetos"
 exec ./configure \
  --target-list=i386-softmmu \
- --audio-drv-list=winwave \
+ --audio-drv-list=dsound \
  --enable-mixemu \
  --disable-vnc-tls \
+ --audio-card-list=ac97 \
  --enable-ldst-optimization \
  --enable-maru \
  --enable-gl
