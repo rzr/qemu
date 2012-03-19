@@ -85,6 +85,10 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
 void do_key_event( int event_type, int keycode ) {
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
+    if (!mloop_evcmd_get_usbkbd_status()) {
+    	return;
+    }
+
     int scancode = javakeycode_to_scancode(keycode);
     if (scancode == -1) {
         INFO("cannot find scancode\n");
