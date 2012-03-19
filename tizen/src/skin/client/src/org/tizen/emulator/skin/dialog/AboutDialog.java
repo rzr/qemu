@@ -12,14 +12,16 @@ public class AboutDialog {
 	Properties properties;
 	
 	public AboutDialog(Shell shell) {
-		if(!getProperties())
-			return;
-		
 		messageBox = new MessageBox(shell);
 		messageBox.setText("About");
 		
-		String message = makeMessage();
-		messageBox.setMessage(message);
+		if(getProperties()) {
+			String message = makeMessage();
+			messageBox.setMessage(message);
+		}
+		else {
+			messageBox.setMessage("No version information");
+		}
 	}
 
 	private String makeMessage() {
