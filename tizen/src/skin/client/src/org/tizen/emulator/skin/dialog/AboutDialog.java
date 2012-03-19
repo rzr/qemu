@@ -24,7 +24,7 @@ public class AboutDialog {
 
 	private String makeMessage() {
 		String version = "Version : " + properties.getProperty("version");
-		String buildTime = "Build time : " + properties.getProperty("build_time");
+		String buildTime = "Build time : " + properties.getProperty("build_time") + " (GMT)";
 		String gitCommit = "Git : " + properties.getProperty("build_git_commit");
 		
 		return version + "\n" + buildTime + "\n" + gitCommit;
