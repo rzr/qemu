@@ -88,6 +88,7 @@ import org.tizen.emulator.skin.dbi.LcdType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
+import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -1038,11 +1039,12 @@ public class EmulatorSkin {
 
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "About" );
-		aboutItem.setEnabled( false );
+		aboutItem.setEnabled( true );
 		aboutItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				// TODO
+				AboutDialog dialog = new AboutDialog(shell);
+				dialog.open();
 			}
 		} );
 
