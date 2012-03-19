@@ -96,10 +96,12 @@ static int raw_open(BlockDriverState *bs, const char *filename, int flags)
         overlapped |= FILE_FLAG_NO_BUFFERING;
     if (!(flags & BDRV_O_CACHE_WB))
         overlapped |= FILE_FLAG_WRITE_THROUGH;
+#ifdef CONFIG_MARU
     s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
                           access_flags,
                           FILE_SHARE_READ, NULL,
                           OPEN_EXISTING, overlapped, NULL);
+#endif
     if (s->hfile == INVALID_HANDLE_VALUE) {
         int err = GetLastError();
 
@@ -387,10 +389,12 @@ static int hdev_open(BlockDriverState *bs, const char *filename, int flags)
         overlapped |= FILE_FLAG_NO_BUFFERING;
     if (!(flags & BDRV_O_CACHE_WB))
         overlapped |= FILE_FLAG_WRITE_THROUGH;
+#ifdef CONFIG_MARU
     s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
                           access_flags,
                           FILE_SHARE_READ, NULL,
                           create_flags, overlapped, NULL);
+#endif
     if (s->hfile == INVALID_HANDLE_VALUE) {
         int err = GetLastError();
 

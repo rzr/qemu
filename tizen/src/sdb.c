@@ -226,8 +226,8 @@ static int check_port_bind_listen(u_int port)
 	addr.sin_port = htons(port);
 
 	if (((s = qemu_socket(AF_INET,SOCK_STREAM,0)) < 0) ||
-			(bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
 			(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
+			(bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
 			(listen(s,1) < 0)) {
 
 		/* fail */
@@ -308,7 +308,7 @@ void sdb_setup(void)
 	}
 
 	if( tizen_base_port != port ){
-		ERR( "sdb port is miss match. Aborting\n" );
+		ERR( "sdb port is miss match. Aborting port :%d, tizen_base_port: %d\n", port, tizen_base_port);
 		exit(1);
 	}
 
