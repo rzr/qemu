@@ -124,6 +124,7 @@ public class EmulatorSkin {
 	private boolean isMousePressed;
 	private boolean isDragStartedInLCD;
 	private boolean isHoverState;
+	private SkinRegion currentHoverRegion;
 	private boolean isShutdownRequested;
 	
 	private SocketCommunicator communicator;
@@ -483,8 +484,14 @@ public class EmulatorSkin {
 				// MouseMoveListener of shell does not receive event only with MouseMoveListener
 				// in case that : hover hardkey -> mouse move into LCD area
 				if( isHoverState ) {
-					shell.redraw();
+					if (currentHoverRegion.width == 0 && currentHoverRegion.height == 0) {
+						shell.redraw();
+					} else {
+						shell.redraw( currentHoverRegion.x, currentHoverRegion.y,
+								currentHoverRegion.width + 1, currentHoverRegion.height + 1, false );
+					}
 					isHoverState = false;
+					currentHoverRegion.width = currentHoverRegion.height = 0;
 				}
 			}
 			
@@ -514,8 +521,14 @@ public class EmulatorSkin {
 
 					if ( null == region ) {
 						if( isHoverState ) {
-							shell.redraw();
+							if (currentHoverRegion.width == 0 && currentHoverRegion.height == 0) {
+								shell.redraw();
+							} else {
+								shell.redraw( currentHoverRegion.x, currentHoverRegion.y,
+										currentHoverRegion.width + 1, currentHoverRegion.height + 1, false );
+							}
 							isHoverState = false;
+							currentHoverRegion.width = currentHoverRegion.height = 0;
 						}
 					} else {
 						isHoverState = true;
@@ -523,6 +536,7 @@ public class EmulatorSkin {
 						gc.setLineWidth( 1 );
 						gc.setForeground( hoverColor );
 						gc.drawRectangle( region.x, region.y, region.width, region.height );
+						currentHoverRegion = region;
 						gc.dispose();
 					}
 
@@ -544,7 +558,12 @@ public class EmulatorSkin {
 					int keyCode = getHardKeyCode( e.x, e.y );
 
 					if ( EmulatorConstants.UNKNOWN_KEYCODE != keyCode ) {
-						shell.redraw();
+						if (currentHoverRegion.width == 0 && currentHoverRegion.height == 0) {
+							shell.redraw();
+						} else {
+							shell.redraw( currentHoverRegion.x, currentHoverRegion.y,
+									currentHoverRegion.width + 1, currentHoverRegion.height + 1, false );
+						}
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
