@@ -43,6 +43,7 @@ SDL_Surface *surface_qemu;
 
 static double scale_factor = 1.0;
 static double screen_degree = 0.0;
+static int sdl_initialized = 0;
 
 #define SDL_THREAD
 
@@ -137,9 +138,11 @@ static int maru_sdl_poll_event(SDL_Event *ev)
 {
     int ret = 0;
 
-    pthread_mutex_lock(&sdl_mutex);
-    ret = SDL_PollEvent(ev);
-    pthread_mutex_unlock(&sdl_mutex);
+    if (sdl_initialized == 1) {
+        pthread_mutex_lock(&sdl_mutex);
+        ret = SDL_PollEvent(ev);
+        pthread_mutex_unlock(&sdl_mutex);
+    }
 
     return ret;
 }
@@ -257,6 +260,8 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
     SDL_VERSION(&info.version);
     SDL_GetWMInfo(&info);
 #endif
+
+    sdl_initialized = 1;
 }
 
 void maruskin_sdl_resize()
@@ -267,5 +272,5 @@ void maruskin_sdl_resize()
     memset(&ev, 0, sizeof(ev));
     ev.resize.type = SDL_VIDEORESIZE;
 
-    SDL_PushEvent(&ev);
+    SDL_PushEvent(&ev); //This function is thread safe, and can be called from other threads safely.
 }
