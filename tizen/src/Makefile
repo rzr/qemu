@@ -45,4 +45,4 @@ install: all
 	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/x86/data/pc-bios
 	cp -dpr ../../pc-bios/vgabios-maruvga.bin $(EMUL_DIR)/x86/data/pc-bios
 	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr ../icons $(EMUL_DIR)
+	cp -dpr icons $(EMUL_DIR)
