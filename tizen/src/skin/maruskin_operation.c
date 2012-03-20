@@ -71,6 +71,11 @@ void start_display( int handle_id, int lcd_size_width, int lcd_size_height, doub
 void do_mouse_event( int event_type, int x, int y, int z ) {
     TRACE( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
+    if (get_emul_multi_touch_state()->multitouch_enable == 1 && MOUSE_DOWN == event_type) {
+        int  finger_cnt = add_finger_point(x, y);
+        //TODO:
+    }
+
     if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
         kbd_mouse_event(x, y, z, 1);
     } else if (MOUSE_UP == event_type) {
@@ -84,6 +89,18 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
 
 void do_key_event( int event_type, int keycode ) {
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
+
+    //check for multi-touch
+    if (keycode == JAVA_KEYCODE_BIT_CTRL) {
+        if (KEY_PRESSED == event_type) {
+            get_emul_multi_touch_state()->multitouch_enable = 1;
+            INFO("multi-touch enabled\n");
+        } else if (KEY_RELEASED == event_type) {
+            get_emul_multi_touch_state()->multitouch_enable = 0;
+            clear_finger_slot();
+            INFO("multi-touch disabled\n");
+        }
+    }
 
     if (!mloop_evcmd_get_usbkbd_status()) {
     	return;

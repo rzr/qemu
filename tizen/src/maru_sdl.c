@@ -32,6 +32,7 @@
 #include "maru_sdl.h"
 #include "emul_state.h"
 #include "sdl_rotate.h"
+#include "maru_finger.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -262,9 +263,10 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
 #endif
 
     sdl_initialized = 1;
+    init_multi_touch_state();
 }
 
-void maruskin_sdl_resize()
+void maruskin_sdl_resize(void)
 {
     SDL_Event ev;
 

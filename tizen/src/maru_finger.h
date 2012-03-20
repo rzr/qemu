@@ -1,12 +1,10 @@
 /*
- * Emulator
+ * Multi-touch processing
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: 
- * SeokYeon Hwang <syeon.hwang@samsung.com>
  * HyunJun Son <hj79.son@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -30,47 +28,41 @@
  */
 
 
-#ifndef __EMUL_STATE_H__
-#define __EMUL_STATE_H__
-
-#include "maru_common.h"
-#include "maru_finger.h"
-
-enum {
-    ROTATION_PORTRAIT = 0,
-    ROTATION_LANDSCAPE = 1,
-    ROTATION_REVERSE_PORTRAIT = 2,
-    ROTATION_REVERSE_LANDSCAPE = 3,
-};
+#ifndef __MARU_FINGER_H__
+#define __MARU_FINGER_H__
 
 
-typedef  struct EmulatorConfigInfo {
-    char emulator_name[256];
-    int lcd_size_w;
-    int lcd_size_h;
-    int dpi;
-    //TODO:
-} EmulatorConfigInfo;
+/* multi-touch related definitions */
+//TODO : from arg
+#define MAX_FINGER_CNT 2
+#define DEFAULT_FINGER_POINT_SIZE 32
+#define DEFAULT_FINGER_POINT_COLOR 0x7E0f0f0f
+#define DEFAULT_FINGER_POINT_OUTLINE_COLOR 0xDDDDDDDD
 
-typedef struct EmulatorConfigState {
-    double scale_factor;
-    short rotation_type;
-    MultiTouchState qemu_mts;
-    //TODO:
-} EmulatorConfigState;
+typedef struct FingerPoint {
+    int id;
+    int x;
+    int y;
+} FingerPoint;
 
+typedef struct MultiTouchState {
+    int multitouch_enable;
+    int finger_cnt;
+    int finger_cnt_max;
+    FingerPoint *finger_slot;
 
-/* setter */
-void set_emul_lcd_size(int width, int height);
-void set_emul_win_scale(double scale);
-void set_emul_rotation(short rotation_type);
-
-/* getter */
-int get_emul_lcd_width(void);
-int get_emul_lcd_height(void);
-double get_emul_win_scale(void);
-short get_emul_rotation(void);
-MultiTouchState *get_emul_multi_touch_state(void);
+    int finger_point_size;
+    int finger_point_color;
+    int finger_point_outline_color;
+    void *finger_point; //SDL_Surface
+} MultiTouchState;
 
 
-#endif /* __EMUL_STATE_H__ */
+void init_multi_touch_state(void);
+void set_multi_touch_enable(int enable);
+int get_multi_touch_enable(void);
+int add_finger_point(int x, int y);
+FingerPoint *get_finger_point_from_slot(int index);
+void clear_finger_slot(void);
+
+#endif /* __MARU_FINGER_H__ */

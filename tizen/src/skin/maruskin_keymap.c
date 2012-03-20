@@ -31,35 +31,6 @@
 #include "maruskin_keymap.h"
 
 
-/* keep it consistent with java virtual keycode */
-#define JAVA_KEYCODE_BIT (1 << 24)
-#define JAVA_KEYCODE_BIT_CTRL (1 << 18)
-#define JAVA_KEYCODE_BIT_SHIFT (1 << 17)
-#define JAVA_KEYCODE_BIT_ALT (1 << 16)
-
-#define JAVA_KEY_MASK 0xFFFF;
-
-enum JAVA_KEYCODE {
-    JAVA_KEY_ARROW_UP = 1,
-    JAVA_KEY_ARROW_DOWN,
-    JAVA_KEY_ARROW_LEFT,
-    JAVA_KEY_ARROW_RIGHT,
-    JAVA_KEY_PAGE_UP,
-    JAVA_KEY_PAGE_DOWN,
-    JAVA_KEY_HOME,
-    JAVA_KEY_END,
-    JAVA_KEY_INSERT,
-    JAVA_KEY_F1 = 10,
-    JAVA_KEY_F20 = 29,
-    JAVA_KEY_CAPS_LOCK = 82,
-    JAVA_KEY_NUM_LOCK,
-    JAVA_KEY_SCROLL_LOCK,
-    JAVA_KEY_PAUSE,
-    JAVA_KEY_BREAK,
-    JAVA_KEY_PRINT_SCREEN
-};
-
-
 int javakeycode_to_scancode(int java_keycode)
 {
     int state_mask = java_keycode & JAVA_KEYCODE_BIT;

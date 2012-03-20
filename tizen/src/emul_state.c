@@ -36,8 +36,8 @@
 MULTI_DEBUG_CHANNEL(qemu, emul_state);
 
 
-static emulator_config_info _emul_info;
-static emulator_config_state _emul_state;
+static EmulatorConfigInfo _emul_info;
+static EmulatorConfigState _emul_state;
 
 /* lcd screen size */
 void set_emul_lcd_size(int width, int height)
@@ -90,4 +90,10 @@ void set_emul_rotation(short rotation_type)
 short get_emul_rotation(void)
 {
     return _emul_state.rotation_type;
+}
+
+/* emulator multi-touch */
+MultiTouchState *get_emul_multi_touch_state(void)
+{
+    return &(_emul_state.qemu_mts);
 }

@@ -57,18 +57,18 @@ endif #CONFIG_WIN32
 obj-y += emulator.o emul_state.o process.o option.o maru_signal.o
 
 # display
-obj-y += maru_sdl.o sdl_rotate.o sdl_zoom.o
+obj-y += maru_sdl.o sdl_rotate.o sdl_zoom.o maru_finger.o
 
 # sdb
 obj-y += sdb.o
 
-# mloop_event
+# mloop event
 obj-y += mloop_event.o
 
-# debugch
+# debug channel
 obj-y += debug_ch.o
 
-# maru hw
+# maru hardware
 obj-i386-y += maru_board.o
 obj-i386-y += maru_overlay.o
 obj-i386-y += maru_codec.o
