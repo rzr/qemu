@@ -115,7 +115,11 @@ void do_hardkey_event( int event_type, int keycode ) {
                 if ( is_suspended_state() ) {
                     INFO( "user requests system resume.\n" );
                     resume();
+#ifdef _WIN32
+                    Sleep( 500 );
+#else
                     usleep( 500 * 1000 );
+#endif
                 }
             }
 

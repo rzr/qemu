@@ -77,7 +77,7 @@ static void* run_skin_client(void* arg)
     char* vm_path = tizen_target_path;
     INFO( "vm_path:%s\n", vm_path );
 
-    sprintf( cmd, "%s %s %s %s=%d %s=%d %s=%s %s=%d %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH,
+    sprintf( cmd, "%s %s %s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH,
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
