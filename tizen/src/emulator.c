@@ -63,8 +63,8 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 int tizen_base_port = 0;
 
 int _emulator_condition = 0; //TODO:
-static char tizen_target_path[MAXLEN] = {0, };
-static char logpath[MAXLEN] = { 0, };
+char tizen_target_path[MAXLEN] = {0, };
+char logpath[MAXLEN] = { 0, };
 
 int get_emulator_condition(void)
 {
