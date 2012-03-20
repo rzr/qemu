@@ -31,6 +31,7 @@
 #include "hw/qdev.h"
 #include "osdep.h"
 #include "kvm.h"
+#include "hax.h"
 #include "hw/xen.h"
 #include "qemu-timer.h"
 #include "memory.h"
@@ -2672,6 +2673,7 @@ void cpu_register_physical_memory_log(target_phys_addr_t start_addr,
     subpage_t *subpage;
 
     assert(size);
+
     cpu_notify_set_memory(start_addr, size, phys_offset, log_dirty);
 
     if (phys_offset == IO_MEM_UNASSIGNED) {
@@ -2974,6 +2976,23 @@ ram_addr_t qemu_ram_alloc_from_ptr(DeviceState *dev, const char *name,
                 xen_ram_alloc(new_block->offset, size);
             } else {
                 new_block->host = qemu_vmalloc(size);
+#ifdef CONFIG_HAX
+		/*
+		 * In Hax, the qemu allocate the virtual address, and HAX kernel
+		 * populate the memory with physical memory. Currently we have no
+		 * paging, so user should make sure enough free memory in advance
+		 */
+		if (hax_enabled())
+		{
+			int ret;
+			ret = hax_populate_ram((uint64_t)new_block->host, size);
+			if (ret < 0)
+			{
+				fprintf(stderr, "Hax failed to populate ram\n");
+				exit(-1);
+			}
+		}
+#endif
             }
 #endif
             qemu_madvise(new_block->host, size, QEMU_MADV_MERGEABLE);

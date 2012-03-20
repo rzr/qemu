@@ -30,6 +30,7 @@
 #include "gdbstub.h"
 #include "dma.h"
 #include "kvm.h"
+#include "hax.h"
 #include "qmp-commands.h"
 
 #include "qemu-thread.h"
@@ -422,7 +423,8 @@ static bool cpu_thread_is_idle(CPUState *env)
         return true;
     }
     if (!env->halted || qemu_cpu_has_work(env) ||
-        (kvm_enabled() && kvm_irqchip_in_kernel())) {
+        (kvm_enabled() && kvm_irqchip_in_kernel()) ||
+	 hax_enabled()) {
         return false;
     }
     return true;
@@ -540,6 +542,7 @@ static void qemu_init_sigbus(void)
 static void qemu_kvm_eat_signals(CPUState *env)
 {
 }
+
 #endif /* !CONFIG_LINUX */
 
 #ifndef _WIN32
@@ -598,6 +601,7 @@ static void qemu_kvm_init_cpu_signals(CPUState *env)
 static void qemu_tcg_init_cpu_signals(void)
 {
 }
+
 #endif /* _WIN32 */
 
 QemuMutex qemu_global_mutex;
@@ -805,7 +809,7 @@ void qemu_cpu_kick(void *_env)
     CPUState *env = _env;
 
     qemu_cond_broadcast(env->halt_cond);
-    if (kvm_enabled() && !env->thread_kicked) {
+    if ((kvm_enabled()) && !env->thread_kicked) {
         qemu_cpu_kick_thread(env);
         env->thread_kicked = true;
     }
@@ -904,6 +908,10 @@ static void qemu_tcg_init_vcpu(void *_env)
 {
     CPUState *env = _env;
 
+#ifdef	CONFIG_HAX
+	if (hax_enabled())
+		hax_init_vcpu(env);
+#endif
     /* share a single thread for all cpus with TCG */
     if (!tcg_cpu_thread) {
         env->thread = g_malloc0(sizeof(QemuThread));
@@ -941,9 +949,9 @@ void qemu_init_vcpu(void *_env)
     env->stopped = 1;
     if (kvm_enabled()) {
         qemu_kvm_start_vcpu(env);
-    } else {
-        qemu_tcg_init_vcpu(env);
     }
+    else
+        qemu_tcg_init_vcpu(env);
 }
 
 void cpu_stop_current(void)
@@ -1136,3 +1144,13 @@ CpuInfoList *qmp_query_cpus(Error **errp)
 
     return head;
 }
+
+#ifdef 	CONFIG_HAX
+void qemu_notify_hax_event(void)
+{
+	CPUState *env = cpu_single_env;
+
+	if (hax_enabled() && env)
+		hax_raise_event(env);
+}
+#endif

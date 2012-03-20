@@ -183,8 +183,13 @@ static int qemu_event_init(void)
     return 0;
 }
 
+extern void qemu_notify_hax_event(void);
+
 void qemu_notify_event(void)
 {
+#ifdef CONFIG_HAX
+    qemu_notify_hax_event();
+#endif
     if (!SetEvent(qemu_event_handle)) {
         fprintf(stderr, "qemu_notify_event: SetEvent failed: %ld\n",
                 GetLastError());

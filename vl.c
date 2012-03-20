@@ -153,6 +153,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "audio/audio.h"
 #include "migration.h"
 #include "kvm.h"
+#include "hax.h"
 #include "qjson.h"
 #include "qemu-option.h"
 #include "qemu-config.h"
@@ -233,6 +234,7 @@ const char *vnc_display;
 #endif
 int acpi_enabled = 1;
 int no_hpet = 0;
+int hax_disabled = 0;
 int fd_bootchk = 1;
 int no_reboot = 0;
 int no_shutdown = 0;
@@ -289,6 +291,7 @@ static NotifierList machine_init_done_notifiers =
 static int tcg_allowed = 1;
 int kvm_allowed = 0;
 int xen_allowed = 0;
+int hax_allowed = 0;
 uint32_t xen_domid;
 enum xen_mode xen_mode = XEN_EMULATE;
 static int tcg_tb_size;
@@ -1499,8 +1502,13 @@ static void main_loop(void)
 #ifdef CONFIG_PROFILER
     int64_t ti;
 #endif
+
+#ifdef CONFIG_HAX
+    hax_sync_vcpus();
+#endif
+
     do {
-        nonblocking = !kvm_enabled() && last_io > 0;
+        nonblocking = !(kvm_enabled()|| hax_enabled()) && last_io > 0;
 #ifdef CONFIG_PROFILER
         ti = profile_getclock();
 #endif
@@ -2028,7 +2036,18 @@ static QEMUMachine *machine_parse(const char *name)
 
 static int tcg_init(void)
 {
+    int ret = 0;
     tcg_exec_init(tcg_tb_size * 1024 * 1024);
+#ifdef	CONFIG_HAX
+    if (!hax_disabled)
+    {
+    	ret = hax_init();
+	dprint("HAX is %s and emulator runs in %s mode\n",
+		!ret ? "working" : "not working",
+		!ret ? "fast virt" : "emulation");
+    } else
+    	dprint("HAX is disabled and emulator runs in emulation mode.\n");
+#endif	
     return 0;
 }
 
@@ -2042,6 +2061,7 @@ static struct {
     { "tcg", "tcg", tcg_available, tcg_init, &tcg_allowed },
     { "xen", "Xen", xen_available, xen_init, &xen_allowed },
     { "kvm", "KVM", kvm_available, kvm_init, &kvm_allowed },
+    //{ "hax", "HAX", hax_available, hax_init, &hax_allowed },
 };
 
 static int configure_accelerator(void)
@@ -3136,6 +3156,14 @@ int main(int argc, char **argv, char **envp)
                     fclose(fp);
                     break;
                 }
+            case QEMU_OPTION_enable_hax:
+                olist = qemu_find_opts("machine");
+                qemu_opts_reset(olist);
+                //qemu_opts_parse(olist, "accel=hax", 0);
+                break;
+            case QEMU_OPTION_disable_hax:
+                hax_disabled = 1;
+                break;
             default:
                 os_parse_cmd_args(popt->index, optarg);
             }
@@ -3302,6 +3330,10 @@ int main(int argc, char **argv, char **envp)
         ram_size = DEFAULT_RAM_SIZE * 1024 * 1024;
     }
 
+#ifdef CONFIG_HAX
+    hax_pre_init(ram_size);
+#endif
+
     configure_accelerator();
 
     qemu_init_cpu_loop();
@@ -3328,7 +3360,7 @@ int main(int argc, char **argv, char **envp)
         exit(1);
     }
 
-    if (icount_option && (kvm_enabled() || xen_enabled())) {
+    if (icount_option && (kvm_enabled() || xen_enabled() || hax_enabled())) {
         fprintf(stderr, "-icount is not allowed with kvm or xen\n");
         exit(1);
     }
@@ -3454,6 +3486,11 @@ int main(int argc, char **argv, char **envp)
     set_numa_modes();
 
     current_machine = machine;
+
+#ifdef CONFIG_HAX
+    if (hax_enabled())
+        hax_sync_vcpus();
+#endif
 
     /* init USB devices */
     if (usb_enabled) {
