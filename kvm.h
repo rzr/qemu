@@ -164,12 +164,19 @@ void kvm_cpu_synchronize_post_reset(CPUState *env);
 void kvm_cpu_synchronize_post_init(CPUState *env);
 
 /* generic hooks - to be moved/refactored once there are more users */
-
+#ifdef CONFIG_HAX
+void hax_cpu_synchronize_state(CPUState *env);
+void hax_cpu_synchronize_post_reset(CPUState *env);
+void hax_cpu_synchronize_post_init(CPUState *env);
+#endif
 static inline void cpu_synchronize_state(CPUState *env)
 {
     if (kvm_enabled()) {
         kvm_cpu_synchronize_state(env);
     }
+#ifdef CONFIG_HAX
+	hax_cpu_synchronize_state(env);
+#endif
 }
 
 static inline void cpu_synchronize_post_reset(CPUState *env)
@@ -177,6 +184,9 @@ static inline void cpu_synchronize_post_reset(CPUState *env)
     if (kvm_enabled()) {
         kvm_cpu_synchronize_post_reset(env);
     }
+#ifdef CONFIG_HAX
+    	hax_cpu_synchronize_post_reset(env);
+#endif
 }
 
 static inline void cpu_synchronize_post_init(CPUState *env)
@@ -184,6 +194,9 @@ static inline void cpu_synchronize_post_init(CPUState *env)
     if (kvm_enabled()) {
         kvm_cpu_synchronize_post_init(env);
     }
+#ifdef CONFIG_HAX
+        hax_cpu_synchronize_post_init(env);
+#endif
 }
 
 
