@@ -60,7 +60,9 @@ enum {
     KEY_RELEASED = 2,
 };
 
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type ) {
+
+void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
+{
     INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
         handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type );
 
@@ -68,11 +70,12 @@ void start_display( int handle_id, int lcd_size_width, int lcd_size_height, doub
     maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height);
 }
 
-void do_mouse_event( int event_type, int x, int y, int z ) {
+void do_mouse_event( int event_type, int x, int y, int z )
+{
     TRACE( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
     if (get_emul_multi_touch_state()->multitouch_enable == 1 && MOUSE_DOWN == event_type) {
-        int  finger_cnt = add_finger_point(x, y);
+        int finger_cnt = add_finger_point(x, y);
         //TODO:
     }
 
@@ -87,7 +90,8 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
     usleep(100);
 }
 
-void do_key_event( int event_type, int keycode ) {
+void do_key_event( int event_type, int keycode )
+{
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     //check for multi-touch
@@ -119,7 +123,8 @@ void do_key_event( int event_type, int keycode ) {
     }
 }
 
-void do_hardkey_event( int event_type, int keycode ) {
+void do_hardkey_event( int event_type, int keycode )
+{
     TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     // press
@@ -154,7 +159,8 @@ void do_hardkey_event( int event_type, int keycode ) {
 
 }
 
-void do_scale_event( double scale_factor ) {
+void do_scale_event( double scale_factor )
+{
     INFO( "do_scale_event scale_factor:%lf", scale_factor);
 
     set_emul_win_scale(scale_factor);
@@ -165,7 +171,8 @@ void do_scale_event( double scale_factor ) {
     //vga_hw_update();
 }
 
-void do_rotation_event( int rotation_type) {
+void do_rotation_event( int rotation_type)
+{
 
     INFO( "do_rotation_event rotation_type:%d", rotation_type);
 
@@ -216,11 +223,13 @@ void do_rotation_event( int rotation_type) {
 
 }
 
-void open_shell(void) {
+void open_shell(void)
+{
     //TODO
 }
 
-void onoff_usb_kbd( int on ) {
+void onoff_usb_kbd( int on )
+{
     INFO( "usb kbd on/off:%d\n", on );
     //TODO
     if(on) {
@@ -232,7 +241,8 @@ void onoff_usb_kbd( int on ) {
 }
 
 
-void request_close( void ) {
+void request_close( void )
+{
     INFO( "request_close\n" );
 
     ps2kbd_put_keycode( 103 & 0x7f );

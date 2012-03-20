@@ -76,7 +76,7 @@ int get_multi_touch_enable(void)
 int add_finger_point(int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
-    
+
     if (mts->finger_cnt == mts->finger_cnt_max) {
         return -1;
     }
