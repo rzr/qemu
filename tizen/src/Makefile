@@ -32,14 +32,12 @@ install: all
 	mkdir -p $(EMUL_DIR)/etc
 	mkdir -p $(EMUL_DIR)/x86
 	mkdir -p $(EMUL_DIR)/arm
-	mkdir -p $(EMUL_DIR)/icons
 	mkdir -p $(EMUL_DIR)/x86/data/pc-bios
 	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp -dpr skin/client/skins $(EMUL_DIR)
 	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr icons $(EMUL_DIR)
 	cp -dpr ../data $(EMUL_DIR)/x86
 	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/x86/data/pc-bios
 	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/x86/data/pc-bios
