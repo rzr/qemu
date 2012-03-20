@@ -128,7 +128,10 @@ int qemu_create_pidfile(const char *filename)
     OVERLAPPED overlap;
     BOOL ret;
     memset(&overlap, 0, sizeof(overlap));
-#ifdef CONFIG_MARU
+#ifndef CONFIG_MARU
+    file = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                      OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
     file = CreateFile(g_win32_locale_filename_from_utf8(filename), GENERIC_WRITE, FILE_SHARE_READ, NULL,
                       OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
