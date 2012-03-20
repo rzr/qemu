@@ -94,6 +94,7 @@ import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
+import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
 
 /**
@@ -152,7 +153,7 @@ public class EmulatorSkin {
 		int y = config.getPropertyInt( PropertiesConstants.WINDOW_Y, 50 );
 		shell.setLocation( x, y );
 
-		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
+		String emulatorName = SkinUtil.makeEmulatorName( config );
 		shell.setText( emulatorName );
 
 		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED | SWT.NO_BACKGROUND );
@@ -730,7 +731,7 @@ public class EmulatorSkin {
 
 		final MenuItem infoItem = new MenuItem( menu, SWT.PUSH );
 
-		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
+		String emulatorName = SkinUtil.makeEmulatorName( config );
 		infoItem.setText( emulatorName );
 		//FIXME
 		infoItem.setEnabled( false );
@@ -1058,12 +1059,16 @@ public class EmulatorSkin {
 
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "About" );
-		aboutItem.setEnabled( true );
 		aboutItem.addSelectionListener( new SelectionAdapter() {
+			private boolean isOpen;
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				AboutDialog dialog = new AboutDialog(shell);
-				dialog.open();
+				if( !isOpen ) {
+					isOpen = true;
+					AboutDialog dialog = new AboutDialog( shell, "Tizen Emulator Info", SWT.DIALOG_TRIM );
+					dialog.open();
+					isOpen = false;
+				}
 			}
 		} );
 

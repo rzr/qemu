@@ -66,50 +66,62 @@ public class EmulatorSkinMain {
 	 * @param args
 	 */
 	public static void main( String[] args ) {
+		
+		try {
+			
+			initLog( args );
 
-		initLog( args );
+			Map<String, String> argsMap = parsArgs( args );
 
-		Map<String, String> argsMap = parsArgs( args );
+			int lcdWidth = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_WIDTH ) );
+			int lcdHeight = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_HEIGHT ) );
+			EmulatorUI dbiContents = loadDbi( lcdWidth, lcdHeight );
+			if ( null == dbiContents ) {
+				logger.severe( "Fail to load dbi file." );
+				return;
+			}
 
-		int lcdWidth = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_WIDTH ) );
-		int lcdHeight = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_HEIGHT ) );
-		EmulatorUI dbiContents = loadDbi( lcdWidth, lcdHeight );
-		if ( null == dbiContents ) {
-			logger.severe( "Fail to load dbi file." );
-			return;
-		}
+			String vmPath = (String) argsMap.get( ArgsConstants.VM_PATH );
+			String propFilePath = vmPath + File.separator + PROPERTIES_FILE_NAME;
+			Properties properties = loadProperties( propFilePath );
+			if ( null == properties ) {
+				logger.severe( "Fail to load properties file." );
+				return;
+			}
 
-		String vmPath = (String) argsMap.get( ArgsConstants.VM_PATH );
-		String propFilePath = vmPath + File.separator + PROPERTIES_FILE_NAME;
-		Properties properties = loadProperties( propFilePath );
-		if ( null == properties ) {
-			logger.severe( "Fail to load properties file." );
-			return;
-		}
+			EmulatorConfig config = new EmulatorConfig( argsMap, dbiContents, properties, propFilePath );
 
-		EmulatorConfig config = new EmulatorConfig( argsMap, dbiContents, properties, propFilePath );
+			EmulatorSkin skin = new EmulatorSkin( config );
+			int windowHandleId = skin.compose();
 
-		EmulatorSkin skin = new EmulatorSkin( config );
-		int windowHandleId = skin.compose();
+			int pid = Integer.parseInt( config.getArg( ArgsConstants.UID ) );
+			SocketCommunicator communicator = new SocketCommunicator( config, pid, windowHandleId, skin );
 
-		int pid = Integer.parseInt( config.getArg( ArgsConstants.UID ) );
-		SocketCommunicator communicator = new SocketCommunicator( config, pid, windowHandleId, skin );
+			skin.setCommunicator( communicator );
 
-		skin.setCommunicator( communicator );
+			Socket commSocket = communicator.getSocket();
 
-		Socket commSocket = communicator.getSocket();
+			if ( null != commSocket ) {
 
-		if ( null != commSocket ) {
+				Runtime.getRuntime().addShutdownHook( new EmulatorShutdownhook( communicator, skin ) );
 
-			Runtime.getRuntime().addShutdownHook( new EmulatorShutdownhook( communicator, skin ) );
+				Thread communicatorThread = new Thread( communicator );
+				communicatorThread.start();
 
-			Thread communicatorThread = new Thread( communicator );
-			communicatorThread.start();
+				skin.open();
 
-			skin.open();
+			} else {
+				logger.severe( "CommSocket is null." );
+			}
 
-		} else {
-			logger.severe( "CommSocket is null." );
+		} catch ( Throwable e ) {
+			
+			if( null != logger ) {
+				logger.log( Level.SEVERE, e.getMessage(), e );
+			}else {
+				e.printStackTrace();
+			}
+			
 		}
 
 	}
@@ -166,8 +178,6 @@ public class EmulatorSkinMain {
 				logger.info( "one argv:" + arg );
 			}
 		}
-
-		map.put( ArgsConstants.EMULATOR_NAME, "emulator-26100" );
 
 		logger.info( "========================================" );
 		logger.info( "args:" + map );

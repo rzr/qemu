@@ -58,7 +58,6 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define SDB_PORT_PREFIX     "sdb_port="
 #define LOGS_SUFFIX         "/logs/"
 #define LOGFILE             "emulator.log"
-#define MAXLEN  512
 #define MIDBUF  128
 int tizen_base_port = 0;
 

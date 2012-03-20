@@ -156,10 +156,10 @@ void do_rotation_event( int rotation_type) {
             sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
             break;
         case ROTATION_LANDSCAPE:
-            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
+            sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
             break;
         case ROTATION_REVERSE_PORTRAIT:
-            sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
+            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
             break;
         case ROTATION_REVERSE_LANDSCAPE:
             sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");

@@ -37,6 +37,9 @@
 #ifndef __EMULATOR_H__
 #define __EMULATOR_H__
 
+#define MAXLEN  512
+
+extern char tizen_target_path[MAXLEN];
 
 int get_emulator_condition(void);
 void set_emulator_condition(int state);

@@ -29,6 +29,9 @@
 
 package org.tizen.emulator.skin.util;
 
+import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
+
 
 /**
  * 
@@ -36,7 +39,21 @@ package org.tizen.emulator.skin.util;
  */
 public class SkinUtil {
 
+	public static final String EMULATOR_PREFIX = "emulator";
+	
 	private SkinUtil() {
+	}
+	
+	public static String makeEmulatorName( EmulatorConfig config ) {
+		
+		String portNumber = StringUtil.nvl( config.getArg( ArgsConstants.NET_BASE_PORT ) );
+		
+		if( StringUtil.isEmpty( portNumber ) ) {
+			return EMULATOR_PREFIX;
+		}else {
+			return EMULATOR_PREFIX + "-" + portNumber;
+		}
+		
 	}
 	
 }
