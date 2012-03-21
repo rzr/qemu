@@ -92,6 +92,7 @@ import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
@@ -967,7 +968,8 @@ public class EmulatorSkin {
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				
+				ScreenShotDialog dialog = new ScreenShotDialog( shell, lcdCanvas );
+				dialog.open();
 //				Display display = shell.getDisplay();
 //				final Image image = new Image( display, lcdCanvas.getBounds() );
 //
