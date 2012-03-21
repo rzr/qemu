@@ -28,20 +28,135 @@
  */
 
 
+#include <math.h>
 #include <glib.h>
+#include <SDL/SDL.h>
 #include "maru_finger.h"
 #include "emul_state.h"
 #include "debug_ch.h"
+#include "console.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maru_finger);
 
+
+/* ===== Reference: http://content.gpwiki.org/index.php/SDL:Tutorials:Drawing_and_Filling_Circles ===== */
+/*
+ * This is a 32-bit pixel function created with help from this
+* website: http://www.libsdl.org/intro.en/usingvideo.html
+*
+* You will need to make changes if you want it to work with
+* 8-, 16- or 24-bit surfaces.  Consult the above website for
+* more information.
+*/
+static void sdl_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel) {
+   Uint8 *target_pixel = (Uint8 *)surface->pixels + y * surface->pitch + x * 4;
+   *(Uint32 *)target_pixel = pixel;
+}
+
+/*
+* This is an implementation of the Midpoint Circle Algorithm 
+* found on Wikipedia at the following link:
+*
+*   http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
+*
+* The algorithm elegantly draws a circle quickly, using a
+* set_pixel function for clarity.
+*/
+static void sdl_draw_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel) {
+   int error = -radius;
+   int x = radius;
+   int y = 0;
+
+   while (x >= y) {
+       sdl_set_pixel(surface, cx + x, cy + y, pixel);
+       sdl_set_pixel(surface, cx + y, cy + x, pixel);
+
+       if (x != 0) {
+           sdl_set_pixel(surface, cx - x, cy + y, pixel);
+           sdl_set_pixel(surface, cx + y, cy - x, pixel);
+       }
+
+       if (y != 0) {
+           sdl_set_pixel(surface, cx + x, cy - y, pixel);
+           sdl_set_pixel(surface, cx - y, cy + x, pixel);
+       }
+
+       if (x != 0 && y != 0) {
+           sdl_set_pixel(surface, cx - x, cy - y, pixel);
+           sdl_set_pixel(surface, cx - y, cy - x, pixel);
+       }
+
+       error += y;
+       ++y;
+       error += y;
+
+       if (error >= 0) {
+           --x;
+           error -= x;
+           error -= x;
+       }
+   }
+}
+
+/*
+ * SDL_Surface 32-bit circle-fill algorithm without using trig
+*
+* While I humbly call this "Celdecea's Method", odds are that the
+* procedure has already been documented somewhere long ago.  All of
+* the circle-fill examples I came across utilized trig functions or
+* scanning neighbor pixels.  This algorithm identifies the width of
+* a semi-circle at each pixel height and draws a scan-line covering
+* that width.
+*
+* The code is not optimized but very fast, owing to the fact that it
+* alters pixels in the provided surface directly rather than through
+* function calls.
+*
+* WARNING:  This function does not lock surfaces before altering, so
+* use SDL_LockSurface in any release situation.
+*/
+static void sdl_fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel)
+{
+   // Note that there is more to altering the bitrate of this
+   // method than just changing this value.  See how pixels are
+   // altered at the following web page for tips:
+   //   http://www.libsdl.org/intro.en/usingvideo.html
+   const int bpp = 4;
+   double dy;
+
+   double r = (double)radius;
+
+   for (dy = 1; dy <= r; dy += 1.0)
+   {
+       // This loop is unrolled a bit, only iterating through half of the
+       // height of the circle.  The result is used to draw a scan line and
+       // its mirror image below it.
+       // The following formula has been simplified from our original.  We
+       // are using half of the width of the circle because we are provided
+       // with a center and we need left/right coordinates.
+       double dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
+       int x = cx - dx;
+       // Grab a pointer to the left-most pixel for each half of the circle
+       Uint8 *target_pixel_a = (Uint8 *)surface->pixels + ((int)(cy + r - dy)) * surface->pitch + x * bpp;
+       Uint8 *target_pixel_b = (Uint8 *)surface->pixels + ((int)(cy - r + dy)) * surface->pitch + x * bpp;
+
+       for (; x <= cx + dx; x++)
+       {
+           *(Uint32 *)target_pixel_a = pixel;
+           *(Uint32 *)target_pixel_b = pixel;
+           target_pixel_a += bpp;
+           target_pixel_b += bpp;
+       }
+   }
+}
+/* ==================================================================================================== */
 
 void init_multi_touch_state(void)
 {
     int i;
     MultiTouchState* mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
-    INFO("multi-touch state initailize\n");
+    INFO("multi-touch state initialization\n");
 
     mts->multitouch_enable = 0;
     mts->finger_cnt_max = MAX_FINGER_CNT; //temp
@@ -59,8 +174,26 @@ void init_multi_touch_state(void)
     }
 
     mts->finger_point_size = DEFAULT_FINGER_POINT_SIZE; //temp
+    int finger_point_size_half = mts->finger_point_size / 2;
     mts->finger_point_color = DEFAULT_FINGER_POINT_COLOR; //temp
     mts->finger_point_outline_color = DEFAULT_FINGER_POINT_OUTLINE_COLOR; //temp
+
+    /* create finger point surface */
+    Uint32 rmask, gmask, bmask, amask;
+    rmask = 0xff000000;
+    gmask = 0x00ff0000;
+    bmask = 0x0000ff00;
+    amask = 0x000000ff;
+
+    SDL_Surface *point = SDL_CreateRGBSurface(SDL_SRCALPHA | SDL_HWSURFACE,
+		mts->finger_point_size + 2, mts->finger_point_size + 2, 32, rmask, gmask, bmask, amask);
+
+    sdl_fill_circle(point, finger_point_size_half, finger_point_size_half,
+        finger_point_size_half, mts->finger_point_color); //finger point circle
+    sdl_draw_circle(point, finger_point_size_half, finger_point_size_half, finger_point_size_half,
+        mts->finger_point_outline_color); // finger point circle outline
+
+    mts->finger_point_surface = (void *)point;
 }
 
 void set_multi_touch_enable(int enable)
@@ -73,15 +206,16 @@ int get_multi_touch_enable(void)
     return get_emul_multi_touch_state()->multitouch_enable;
 }
 
-int add_finger_point(int x, int y)
+static int add_finger_point(int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
 
     if (mts->finger_cnt == mts->finger_cnt_max) {
+        INFO("support multi-touch up to %d fingers\n", mts->finger_cnt_max);
         return -1;
     }
 
-    mts->finger_cnt++;
+    mts->finger_cnt += 1;
 
     mts->finger_slot[mts->finger_cnt - 1].id = mts->finger_cnt;
     mts->finger_slot[mts->finger_cnt - 1].x = x;
@@ -102,6 +236,81 @@ FingerPoint *get_finger_point_from_slot(int index)
     return &(mts->finger_slot[index]);
 }
 
+FingerPoint *get_finger_point_search(int x, int y)
+{
+    int i;
+    MultiTouchState *mts = get_emul_multi_touch_state();
+    FingerPoint *finger = NULL;
+    int finger_point_size_half = (mts->finger_point_size / 2) + 2;
+
+    for (i = mts->finger_cnt - 1; i >= 0; i--) {
+        finger = get_finger_point_from_slot(i);
+        if (x >= (finger->x - finger_point_size_half) &&
+            x < (finger->x + finger_point_size_half) &&
+            y >= (finger->y - finger_point_size_half) &&
+            y < (finger->y + finger_point_size_half)) {
+                return finger;
+            }
+    }
+
+    return NULL;
+}
+
+static int _grab_finger_id = 0;
+void maru_finger_processing(int x, int y, int touch_type)
+{
+    MultiTouchState *mts = get_emul_multi_touch_state();
+    FingerPoint *finger = NULL;
+
+    if (touch_type == MOUSE_DOWN || touch_type == MOUSE_DRAG) { /* pressed */
+        if (_grab_finger_id > 0) {
+            finger = get_finger_point_from_slot(_grab_finger_id - 1);
+            finger->x = x;
+            finger->y = y;
+            if (finger->id != 0) {
+                kbd_mouse_event(x, y, _grab_finger_id - 1, 1);
+                TRACE("%d finger multi-touch dragging = (%d, %d)\n", _grab_finger_id, x, y);
+            }
+            return;
+        }
+
+        if (mts->finger_cnt == 0)
+        { //first finger touch input
+            if (add_finger_point(x, y) == -1) {
+                return;
+            }
+            kbd_mouse_event(x, y, 0, 1);
+        }
+        else if ((finger = get_finger_point_search(x, y)) != NULL) //check the position of previous touch event
+        {
+            //finger point is selected
+            _grab_finger_id = finger->id;
+        }
+        else if (mts->finger_cnt == mts->finger_cnt_max) //Let's assume that this event is last finger touch input
+        {
+            finger = get_finger_point_from_slot(mts->finger_cnt_max - 1);
+#if 0 //send release event??
+            kbd_mouse_event(finger->x, finger->y, mts->finger_cnt_max - 1, 0);
+#endif
+
+            finger->x = x;
+            finger->y = y;
+            if (finger->id != 0) {
+                kbd_mouse_event(x, y, mts->finger_cnt_max - 1, 1);
+            }
+        }
+        else //one more finger
+        {
+            add_finger_point(x, y) ;
+            kbd_mouse_event(x, y, mts->finger_cnt - 1, 1);
+        }
+
+    } else if (touch_type == MOUSE_UP) { /* released */
+        _grab_finger_id = 0;
+    }
+
+}
+
 void clear_finger_slot(void)
 {
     int i;
@@ -110,7 +319,20 @@ void clear_finger_slot(void)
 
     for (i = 0; i < mts->finger_cnt; i++) {
         finger = get_finger_point_from_slot(i);
+        if (finger->id != 0) {
+            kbd_mouse_event(finger->x, finger->y, finger->id - 1, 0);
+        }
+
         finger->id = 0;
         finger->x = finger->y = -1;
     }
+
+    mts->finger_cnt = 0;
+    INFO("clear multi-touch\n");
 }
+
+void cleanup_multi_touch_state(void)
+{
+    //TODO:
+}
+

@@ -36,7 +36,7 @@
 //TODO : from arg
 #define MAX_FINGER_CNT 2
 #define DEFAULT_FINGER_POINT_SIZE 32
-#define DEFAULT_FINGER_POINT_COLOR 0x7E0f0f0f
+#define DEFAULT_FINGER_POINT_COLOR 0x0f0f0f7E
 #define DEFAULT_FINGER_POINT_OUTLINE_COLOR 0xDDDDDDDD
 
 typedef struct FingerPoint {
@@ -54,15 +54,18 @@ typedef struct MultiTouchState {
     int finger_point_size;
     int finger_point_color;
     int finger_point_outline_color;
-    void *finger_point; //SDL_Surface
+    void *finger_point_surface; //SDL_Surface
 } MultiTouchState;
 
 
 void init_multi_touch_state(void);
 void set_multi_touch_enable(int enable);
 int get_multi_touch_enable(void);
-int add_finger_point(int x, int y);
 FingerPoint *get_finger_point_from_slot(int index);
+FingerPoint *get_finger_point_search(int x, int y);
+void maru_finger_processing(int x, int y, int touch_type);
 void clear_finger_slot(void);
+void cleanup_multi_touch_state(void);
+
 
 #endif /* __MARU_FINGER_H__ */

@@ -33,8 +33,26 @@
 #ifndef __EMUL_STATE_H__
 #define __EMUL_STATE_H__
 
+
 #include "maru_common.h"
 #include "maru_finger.h"
+
+/* keep it consistent with java definition */
+enum {
+    HARD_KEY_HOME = 101,
+    HARD_KEY_POWER = 103,
+};
+
+enum {
+    MOUSE_DOWN = 1,
+    MOUSE_UP = 2,
+    MOUSE_DRAG = 3,
+};
+
+enum {
+    KEY_PRESSED = 1,
+    KEY_RELEASED = 2,
+};
 
 enum {
     ROTATION_PORTRAIT = 0,

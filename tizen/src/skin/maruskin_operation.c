@@ -27,6 +27,7 @@
  *
  */
 
+
 #include <unistd.h>
 #include <stdio.h>
 #include "maruskin_operation.h"
@@ -41,24 +42,7 @@
 #include "emul_state.h"
 #include "maruskin_keymap.h"
 
-
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
-
-enum {
-    HARD_KEY_HOME = 101,
-    HARD_KEY_POWER = 103,
-};
-
-enum {
-    MOUSE_DOWN = 1,
-    MOUSE_UP = 2,
-    MOUSE_DRAG = 3,
-};
-
-enum {
-    KEY_PRESSED = 1,
-    KEY_RELEASED = 2,
-};
 
 
 void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
@@ -74,12 +58,10 @@ void do_mouse_event( int event_type, int x, int y, int z )
 {
     TRACE( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
-    if (get_emul_multi_touch_state()->multitouch_enable == 1 && MOUSE_DOWN == event_type) {
-        int finger_cnt = add_finger_point(x, y);
-        //TODO:
+    if (get_emul_multi_touch_state()->multitouch_enable == 1) {
+        maru_finger_processing(x, y, event_type);
     }
-
-    if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
+    else if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) { //single touch
         kbd_mouse_event(x, y, z, 1);
     } else if (MOUSE_UP == event_type) {
         kbd_mouse_event(x, y, z, 0);
