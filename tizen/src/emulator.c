@@ -92,7 +92,7 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     //set_emul_win_scale(0.5);
     //set_emul_rotation(0);
 
-    start_skin_server(0, 0);
+    start_skin_server( skin_argc, skin_argv );
 #if 1
     if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
         exit( -1 );

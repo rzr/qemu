@@ -151,7 +151,7 @@ static void* run_guest_server( void* args ) {
     }
 
     cleanup:
-#ifdef __MINGW32__
+#ifdef _WIN32
     if( server_sock ) {
         closesocket(server_sock);
     }
@@ -190,7 +190,7 @@ static int parse_val( char* buff, unsigned char data, char* parsbuf ) {
 
 void shutdown_guest_server( void ) {
     INFO( "shutdown_guest_server.\n" );
-#ifdef __MINGW32__
+#ifdef _WIN32
     if( server_sock ) {
         closesocket( server_sock );
     }

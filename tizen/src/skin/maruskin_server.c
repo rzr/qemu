@@ -31,6 +31,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <pthread.h>
+#include "maruskin_server.h"
+#include "maruskin_operation.h"
+#include "qemu-thread.h"
+#include "emul_state.h"
+#include "maru_sdl.h"
+#include "debug_ch.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <winsock2.h>
@@ -40,14 +49,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #endif
-#include <sys/types.h>
-#include <sys/time.h>
-#include <pthread.h>
-#include "maruskin_server.h"
-#include "maruskin_operation.h"
-#include "debug_ch.h"
-#include "qemu-thread.h"
-#include "emul_state.h"
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
@@ -55,11 +56,13 @@ MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 #define RECV_HEADER_SIZE 12
 #define SEND_HEADER_SIZE 6
 
-#define HEART_BEAT_INTERVAL 2
+#define HEART_BEAT_INTERVAL 1
 #define HEART_BEAT_FAIL_COUNT 5
 #define HEART_BEAT_EXPIRE_COUNT 5
 
 #define PORT_RETRY_COUNT 50
+
+#define TEST_HB_IGNORE "test.hb.ignore"
 
 enum {
     RECV_START = 1,
@@ -75,7 +78,10 @@ enum {
 };
 
 enum {
-    SEND_HEART_BEAT = 1, SEND_HEART_BEAT_RESPONSE = 2, SEND_SENSOR_DAEMON_START = 800, SEND_SHUTDOWN = 999,
+    SEND_HEART_BEAT = 1,
+    SEND_HEART_BEAT_RESPONSE = 2,
+    SEND_SENSOR_DAEMON_START = 800,
+    SEND_SHUTDOWN = 999,
 };
 
 static uint16_t svr_port = 0;
@@ -84,6 +90,7 @@ static int client_sock = 0;
 static int stop_server = 0;
 static int is_sensord_initialized = 0;
 static int ready_server = 0;
+static int ignore_heartbeat = 0;
 
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
@@ -93,12 +100,43 @@ static pthread_cond_t cond_heartbeat = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
 
 static void* run_skin_server( void* args );
+static int recv_n( int client_sock, char* read_buf, int recv_len );
 static int send_skin( int client_sock, short send_cmd );
 static void* do_heart_beat( void* args );
 static int start_heart_beat( int client_sock );
 static void stop_heart_beat( void );
 
 int start_skin_server( int argc, char** argv ) {
+
+    int i;
+    for( i = 0; i < argc; i++ ) {
+
+        char* arg = NULL;
+        arg = strdup( argv[i] );
+
+        if( arg ) {
+
+            char* key = strtok( arg, "=" );
+            char* value = strtok( NULL, "=" );
+
+            INFO( "skin params key:%s, value:%s\n", key, value );
+
+            if( 0 == strcmp( TEST_HB_IGNORE, key ) ) {
+                if( 0 == strcmp( "true", value ) ) {
+                    ignore_heartbeat = 1;
+                    break;
+                }
+            }
+
+            free( arg );
+
+        }else {
+            ERR( "fail to strdup." );
+        }
+
+    }
+
+    INFO( "ignore_heartbeat:%d\n", ignore_heartbeat );
 
     QemuThread qemu_thread;
 
@@ -110,12 +148,12 @@ int start_skin_server( int argc, char** argv ) {
 
 void shutdown_skin_server( void ) {
     if ( client_sock ) {
-        INFO( "Send shutdown to skin.\n" );
+        INFO( "send shutdown to skin.\n" );
         if ( 0 > send_skin( client_sock, SEND_SHUTDOWN ) ) {
             ERR( "fail to send SEND_SHUTDOWN to skin.\n" );
             stop_server = 1;
             // force close
-#ifdef __MINGW32__
+#ifdef _WIN32
             closesocket( client_sock );
             if ( server_sock ) {
                 closesocket( server_sock );
@@ -135,7 +173,7 @@ void shutdown_skin_server( void ) {
 void notify_sensor_daemon_start( void ) {
     INFO( "notify_sensor_daemon_start\n" );
     is_sensord_initialized = 1;
-    if( client_sock ) {
+    if ( client_sock ) {
         if ( 0 > send_skin( client_sock, SEND_SENSOR_DAEMON_START ) ) {
             ERR( "fail to send SEND_SENSOR_DAEMON_START to skin.\n" );
         }
@@ -156,22 +194,21 @@ static void* run_skin_server( void* args ) {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len;
 
-
     INFO("run skin server\n");
-    
+
     // min:10000 ~ max:(20000 + 10000)
     port = rand() % 20001;
     port += 10000;
 
-    if ( ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) < 0 ) {
-        ERR( "create listen socket error: " );
-        perror( "socket" );
+    if ( 0 > ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) ) {
+        ERR( "create listen socket error\n" );
+        perror( "create listen socket error : " );
         goto cleanup;
     }
 
     int port_fail_count = 0;
 
-    while( 1 ) {
+    while ( 1 ) {
 
         memset( &server_addr, '\0', sizeof( server_addr ) );
 
@@ -185,12 +222,12 @@ static void* run_skin_server( void* args ) {
         if ( 0 > bind( server_sock, (struct sockaddr *) &server_addr, sizeof( server_addr ) ) ) {
 
             ERR( "skin server bind error\n" );
-            perror( "skin server bind error\n" );
+            perror( "skin server bind error : " );
             port++;
 
-            if( PORT_RETRY_COUNT < port_fail_count ) {
+            if ( PORT_RETRY_COUNT < port_fail_count ) {
                 goto cleanup;
-            }else {
+            } else {
                 port_fail_count++;
                 INFO( "Retry bind\n" );
                 continue;
@@ -204,13 +241,13 @@ static void* run_skin_server( void* args ) {
 
     }
 
-    if ( listen( server_sock, 4 ) < 0 ) {
-        ERR( "skin_server listen error: " );
-        perror( "listen" );
+    if ( 0 > listen( server_sock, 4 ) ) {
+        ERR( "skin_server listen error\n" );
+        perror( "skin_server listen error : " );
         goto cleanup;
     }
 
-    char readbuf[RECV_BUF_SIZE];
+    char recvbuf[RECV_BUF_SIZE];
 
     INFO( "skin server start...port:%d\n", port );
 
@@ -230,7 +267,7 @@ static void* run_skin_server( void* args ) {
 
         if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr *) &client_addr, &client_len ) ) ) {
             ERR( "skin_servier accept error\n" );
-            perror( "skin_servier accept error\n" );
+            perror( "skin_servier accept error : " );
             continue;
         }
 
@@ -239,89 +276,89 @@ static void* run_skin_server( void* args ) {
         while ( 1 ) {
 
             if ( stop_server ) {
-                INFO( "stop reading this socket.\n" );
+                INFO( "stop receiving this socket.\n" );
                 break;
             }
 
             stop_heartbeat = 0;
-            memset( &readbuf, 0, RECV_BUF_SIZE );
+            memset( &recvbuf, 0, RECV_BUF_SIZE );
 
-            int read_cnt = recv( client_sock, readbuf, RECV_HEADER_SIZE, 0 );
+            int read_cnt = recv_n( client_sock, recvbuf, RECV_HEADER_SIZE );
 
             if ( 0 > read_cnt ) {
                 ERR( "skin_server read error:%d\n", read_cnt );
-                perror( "skin_server read error.\n" );
+                perror( "skin_server read error : " );
                 break;
 
             } else {
 
                 if ( 0 == read_cnt ) {
                     ERR( "read_cnt is 0.\n" );
-                    perror( "read_cnt is 0.\n" );
                     break;
                 }
 
-                TRACE( "================= recv =================\n" );
-                TRACE( "read_cnt:%d\n", read_cnt );
+                int log_cnt;
+                char log_buf[512];
+                memset( log_buf, 0, 512 );
 
-                int pid = 0;
+                log_cnt = sprintf( log_buf, "== RECV read_cnt:%d ", read_cnt );
+
+                int uid = 0;
                 int req_id = 0;
                 short cmd = 0;
                 short length = 0;
 
-                char* p = readbuf;
+                char* p = recvbuf;
 
-                memcpy( &pid, p, sizeof( pid ) );
-                p += sizeof( pid );
+                memcpy( &uid, p, sizeof( uid ) );
+                p += sizeof( uid );
                 memcpy( &req_id, p, sizeof( req_id ) );
                 p += sizeof( req_id );
                 memcpy( &cmd, p, sizeof( cmd ) );
                 p += sizeof( cmd );
                 memcpy( &length, p, sizeof( length ) );
 
-                pid = ntohl( pid );
-                req_id = ntohl(req_id);
+                uid = ntohl( uid );
+                req_id = ntohl( req_id );
                 cmd = ntohs( cmd );
                 length = ntohs( length );
 
-                //TODO check identification with pid
+                //TODO check identification with uid
 
-                TRACE( "pid:%d\n", pid );
-                TRACE( "req_id:%d\n", req_id );
-                TRACE( "cmd:%d\n", cmd );
-                TRACE( "length:%d\n", length );
+                log_cnt += sprintf( log_buf + log_cnt, "uid:%d, req_id:%d, cmd:%d, length:%d ", uid, req_id, cmd, length );
 
                 if ( 0 < length ) {
 
-                    if( RECV_BUF_SIZE < length ) {
+                    if ( RECV_BUF_SIZE < length ) {
                         ERR( "length is bigger than RECV_BUF_SIZE\n" );
                         continue;
                     }
 
-                    memset( &readbuf, 0, length );
+                    memset( &recvbuf, 0, length );
 
-                    int read_cnt = recv( client_sock, readbuf, length, 0 );
+                    int recv_cnt = recv_n( client_sock, recvbuf, length );
 
-                    TRACE( "data read_cnt:%d\n", read_cnt );
+                    log_cnt += sprintf( log_buf + log_cnt, "data read_cnt:%d ", recv_cnt );
 
-                    if ( 0 > read_cnt ) {
-                        perror( "error : skin_server read data" );
+                    if ( 0 > recv_cnt ) {
+                        ERR( "skin_server read data\n" );
+                        perror( "skin_server read data : " );
                         break;
-                    } else if ( 0 == read_cnt ) {
+                    } else if ( 0 == recv_cnt ) {
                         ERR( "data read_cnt is 0.\n" );
                         break;
-                    } else if ( read_cnt != length ) {
+                    } else if ( recv_cnt != length ) {
                         ERR( "read_cnt is not equal to length.\n" );
                         break;
                     }
 
                 }
 
-                TRACE( "----------------------------------------\n" );
-
                 switch ( cmd ) {
                 case RECV_START: {
-                    TRACE( "RECV_START\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_START ==\n" );
+                    TRACE( log_buf );
+
                     if ( 0 >= length ) {
                         ERR( "there is no data looking at 0 length." );
                         continue;
@@ -334,7 +371,7 @@ static void* run_skin_server( void* args ) {
                     double scale_ratio = 0.0;
                     short rotation = 0;
 
-                    char* p = readbuf;
+                    char* p = recvbuf;
                     memcpy( &handle_id, p, sizeof( handle_id ) );
                     p += sizeof( handle_id );
                     memcpy( &lcd_size_width, p, sizeof( lcd_size_width ) );
@@ -349,20 +386,23 @@ static void* run_skin_server( void* args ) {
                     lcd_size_width = ntohl( lcd_size_width );
                     lcd_size_height = ntohl( lcd_size_height );
                     scale = ntohl( scale );
-                    scale_ratio = ((double)scale) / 100;
+                    scale_ratio = ( (double) scale ) / 100;
                     rotation = ntohs( rotation );
 
-                    set_emul_win_scale(scale_ratio);
+                    set_emul_win_scale( scale_ratio );
 
                     if ( start_heart_beat( client_sock ) ) {
                         start_display( handle_id, lcd_size_width, lcd_size_height, scale_ratio, rotation );
                     } else {
                         stop_server = 1;
                     }
+
                     break;
                 }
                 case RECV_MOUSE_EVENT: {
-                    TRACE( "RECV_MOUSE_EVENT\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_MOUSE_EVENT ==\n" );
+                    TRACE( log_buf );
+
                     if ( 0 >= length ) {
                         ERR( "there is no data looking at 0 length." );
                         continue;
@@ -373,7 +413,7 @@ static void* run_skin_server( void* args ) {
                     int y = 0;
                     int z = 0;
 
-                    char* p = readbuf;
+                    char* p = recvbuf;
                     memcpy( &event_type, p, sizeof( event_type ) );
                     p += sizeof( event_type );
                     memcpy( &x, p, sizeof( x ) );
@@ -391,7 +431,9 @@ static void* run_skin_server( void* args ) {
                     break;
                 }
                 case RECV_KEY_EVENT: {
-                    TRACE( "RECV_KEY_EVENT\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_KEY_EVENT ==\n" );
+                    TRACE( log_buf );
+
                     if ( 0 >= length ) {
                         ERR( "there is no data looking at 0 length." );
                         continue;
@@ -400,7 +442,7 @@ static void* run_skin_server( void* args ) {
                     int event_type = 0;
                     int keycode = 0;
 
-                    char* p = readbuf;
+                    char* p = recvbuf;
                     memcpy( &event_type, p, sizeof( event_type ) );
                     p += sizeof( event_type );
                     memcpy( &keycode, p, sizeof( keycode ) );
@@ -412,7 +454,9 @@ static void* run_skin_server( void* args ) {
                     break;
                 }
                 case RECV_HARD_KEY_EVENT: {
-                    TRACE( "RECV_HARD_KEY_EVENT\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_HARD_KEY_EVENT ==\n" );
+                    TRACE( log_buf );
+
                     if ( 0 >= length ) {
                         ERR( "there is no data looking at 0 length." );
                         continue;
@@ -421,7 +465,7 @@ static void* run_skin_server( void* args ) {
                     int event_type = 0;
                     int keycode = 0;
 
-                    char* p = readbuf;
+                    char* p = recvbuf;
                     memcpy( &event_type, p, sizeof( event_type ) );
                     p += sizeof( event_type );
                     memcpy( &keycode, p, sizeof( keycode ) );
@@ -433,7 +477,9 @@ static void* run_skin_server( void* args ) {
                     break;
                 }
                 case RECV_CHANGE_LCD_STATE: {
-                    TRACE( "RECV_CHANGE_LCD_STATE\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_CHANGE_LCD_STATE ==\n" );
+                    TRACE( log_buf );
+
                     if ( 0 >= length ) {
                         ERR( "there is no data looking at 0 length." );
                         continue;
@@ -443,13 +489,13 @@ static void* run_skin_server( void* args ) {
                     double scale_ratio = 0.0;
                     short rotation_type = 0;
 
-                    char* p = readbuf;
+                    char* p = recvbuf;
                     memcpy( &scale, p, sizeof( scale ) );
                     p += sizeof( scale );
                     memcpy( &rotation_type, p, sizeof( rotation_type ) );
 
                     scale = ntohl( scale );
-                    scale_ratio = ((double)scale) / 100;
+                    scale_ratio = ( (double) scale ) / 100;
                     rotation_type = ntohs( rotation_type );
 
                     if ( get_emul_win_scale() != scale_ratio ) {
@@ -461,70 +507,72 @@ static void* run_skin_server( void* args ) {
                     }
 
                     maruskin_sdl_resize(); //send sdl event
-
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
-                    TRACE( "RECV_RESPONSE_HEART_BEAT\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n" );
+                    TRACE( log_buf );
+
                     pthread_mutex_lock( &mutex_recv_heartbeat_count );
                     recv_heartbeat_count = 0;
                     pthread_mutex_unlock( &mutex_recv_heartbeat_count );
+
                     break;
                 }
                 case RECV_OPEN_SHELL: {
-                    TRACE( "RECV_OPEN_SHELL\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_OPEN_SHELL ==\n" );
+                    TRACE( log_buf );
+
                     open_shell();
                     break;
                 }
                 case RECV_USB_KBD: {
-                    TRACE( "RECV_USB_KBD\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_USB_KBD ==\n" );
+                    TRACE( log_buf );
+
                     if ( 0 >= length ) {
                         INFO( "there is no data looking at 0 length." );
                         continue;
                     }
 
                     char on = 0;
-                    memcpy( &on, readbuf, sizeof( on ) );
+                    memcpy( &on, recvbuf, sizeof( on ) );
                     onoff_usb_kbd( on );
                     break;
                 }
                 case RECV_CLOSE: {
-                    TRACE( "RECV_CLOSE\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_CLOSE ==\n" );
+                    TRACE( log_buf );
+
                     request_close();
                     break;
                 }
                 case RECV_RESPONSE_SHUTDOWN: {
-                    TRACE( "RECV_RESPONSE_SHUTDOWN\n" );
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_RESPONSE_SHUTDOWN ==\n" );
+                    TRACE( log_buf );
+
                     stop_server = 1;
                     break;
                 }
                 default: {
+                    log_cnt += sprintf( log_buf + log_cnt, "!!! unknown command : %d\n", cmd );
+                    TRACE( log_buf );
+
                     ERR( "!!! unknown command : %d\n", cmd );
                     break;
                 }
                 }
 
-                TRACE( "========================================\n" );
-
             }
 
         }
 
-        stop_heart_beat();
-
-#ifdef __MINGW32__
-        if( client_sock ) {
-            closesocket( client_sock );
-        }
-#else
-        if ( client_sock ) {
-            close( client_sock );
-        }
-#endif
     }
 
-    cleanup:
-#ifdef __MINGW32__
+    stop_heart_beat();
+
+cleanup:
+#ifdef _WIN32
     if(server_sock) {
         closesocket( server_sock );
     }
@@ -537,13 +585,52 @@ static void* run_skin_server( void* args ) {
     return NULL;
 }
 
+static int recv_n( int client_sock, char* read_buf, int recv_len ) {
+
+    int total_cnt = 0;
+    int recv_cnt = 0;
+
+    while ( 1 ) {
+
+        recv_cnt = recv( client_sock, (void*) read_buf, ( recv_len - recv_cnt ), 0 );
+
+        if ( 0 > recv_cnt ) {
+
+            return recv_cnt;
+
+        } else if ( 0 == recv_cnt ) {
+
+            if ( total_cnt == recv_len ) {
+                return total_cnt;
+            } else {
+                continue;
+            }
+
+        } else {
+
+            total_cnt += recv_cnt;
+
+            if ( total_cnt == recv_len ) {
+                return total_cnt;
+            } else {
+                continue;
+            }
+
+        }
+
+    }
+
+    return 0;
+
+}
+
 static int send_skin( int client_sock, short send_cmd ) {
 
     char sendbuf[SEND_HEADER_SIZE];
     memset( &sendbuf, 0, SEND_HEADER_SIZE );
 
     int request_id = rand();
-    TRACE( "send skin request_id:%d, send_cmd:%d\n", request_id, send_cmd );
+    TRACE( "== SEND skin request_id:%d, send_cmd:%d ==\n", request_id, send_cmd );
     request_id = htonl( request_id );
 
     short data = send_cmd;
@@ -554,9 +641,9 @@ static int send_skin( int client_sock, short send_cmd ) {
     p += sizeof( request_id );
     memcpy( p, &data, sizeof( data ) );
 
-    ssize_t write_count = send( client_sock, sendbuf, SEND_HEADER_SIZE, 0 );
+    ssize_t send_count = send( client_sock, sendbuf, SEND_HEADER_SIZE, 0 );
 
-    return write_count;
+    return send_count;
 
 }
 
@@ -581,11 +668,11 @@ static void* do_heart_beat( void* args ) {
         pthread_mutex_unlock( &mutex_heartbeat );
 
         if ( stop_heartbeat ) {
-            INFO( "stop heart beat.\n" );
+            INFO( "[HB] stop heart beat.\n" );
             break;
         }
 
-        TRACE( "send heartbeat to skin...\n" );
+        TRACE( "[HB] send heartbeat to skin.\n" );
         if ( 0 > send_skin( client_sock, SEND_HEART_BEAT ) ) {
             fail_count++;
         } else {
@@ -593,7 +680,7 @@ static void* do_heart_beat( void* args ) {
         }
 
         if ( HEART_BEAT_FAIL_COUNT < fail_count ) {
-            ERR( "fail to write heart beat to skin. fail count:%d\n", HEART_BEAT_FAIL_COUNT );
+            ERR( "[HB] fail to write heart beat to skin. fail count:%d\n", HEART_BEAT_FAIL_COUNT );
             shutdown = 1;
             break;
         }
@@ -602,7 +689,7 @@ static void* do_heart_beat( void* args ) {
         pthread_mutex_lock( &mutex_recv_heartbeat_count );
         recv_heartbeat_count++;
         count = recv_heartbeat_count;
-        TRACE( "recv_heartbeat_count:%d\n", recv_heartbeat_count );
+        TRACE( "[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count );
         pthread_mutex_unlock( &mutex_recv_heartbeat_count );
 
         if ( HEART_BEAT_EXPIRE_COUNT < count ) {
@@ -614,7 +701,7 @@ static void* do_heart_beat( void* args ) {
     }
 
     if ( shutdown ) {
-        INFO( "shutdown skin_server by heartbeat thread.\n" );
+        INFO( "[HB] shutdown skin_server by heartbeat thread.\n" );
         shutdown_skin_server();
     }
 
@@ -623,12 +710,18 @@ static void* do_heart_beat( void* args ) {
 }
 
 static int start_heart_beat( int client_sock ) {
-    if ( 0 != pthread_create( &thread_id_heartbeat, NULL, do_heart_beat, (void*) &client_sock ) ) {
-        ERR( "fail to create heartbean pthread.\n" );
-        return 0;
-    } else {
+
+    if( ignore_heartbeat ) {
         return 1;
+    }else {
+        if ( 0 != pthread_create( &thread_id_heartbeat, NULL, do_heart_beat, (void*) &client_sock ) ) {
+            ERR( "[HB] fail to create heartbean pthread.\n" );
+            return 0;
+        } else {
+            return 1;
+        }
     }
+
 }
 
 static void stop_heart_beat( void ) {

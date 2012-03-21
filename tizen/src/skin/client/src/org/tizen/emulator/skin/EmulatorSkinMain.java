@@ -115,13 +115,15 @@ public class EmulatorSkinMain {
 			}
 
 		} catch ( Throwable e ) {
-			
-			if( null != logger ) {
+
+			if ( null != logger ) {
 				logger.log( Level.SEVERE, e.getMessage(), e );
-			}else {
+			} else {
 				e.printStackTrace();
 			}
-			
+
+		} finally {
+			SkinLogger.end();
 		}
 
 	}
