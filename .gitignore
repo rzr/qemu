@@ -78,3 +78,5 @@ TAGS
 *~
 tizen/Emulator
 tizen/src/skin/client/src/about.properties
+tizen/src/skin/client/bin
+tizen/src/skin/client/emulator-skin.jar
