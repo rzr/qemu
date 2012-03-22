@@ -77,10 +77,14 @@ void set_emulator_condition(int state)
 
 void exit_emulator(void)
 {
+    cleanup_multi_touch_state();
+
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
+
     SDL_Quit();
+
     remove_portfile();
 }
 

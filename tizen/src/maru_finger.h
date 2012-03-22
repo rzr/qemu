@@ -32,7 +32,7 @@
 #define __MARU_FINGER_H__
 
 
-/* multi-touch related definitions */
+/* definitions relating to multi-touch */
 //TODO : from arg
 #define MAX_FINGER_CNT 2
 #define DEFAULT_FINGER_POINT_SIZE 32
