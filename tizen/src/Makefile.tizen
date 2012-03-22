@@ -56,8 +56,8 @@ endif #CONFIG_WIN32
 # maru loader
 obj-y += emulator.o emul_state.o process.o option.o maru_signal.o
 
-# display
-obj-y += maru_sdl.o sdl_rotate.o sdl_zoom.o maru_finger.o
+# maru display
+obj-y += maru_sdl.o sdl_rotate.o maru_finger.o
 
 # sdb
 obj-y += sdb.o
