@@ -102,6 +102,8 @@ static void pm_update_sci(PIIX4PMState *s)
 {
     int sci_level, pmsts;
 
+    acpi_state = s;
+
     pmsts = acpi_pm1_evt_get_sts(&s->pm1a, s->tmr.overflow_time);
     sci_level = (((pmsts & s->pm1a.en) &
                   (ACPI_BITMASK_RT_CLOCK_ENABLE |
@@ -634,15 +636,15 @@ void resume( void ) {
     if ( acpi_state ) {
 
         if ( acpi_state->pm1_cnt.cmos_s3 ) {
-            acpi_state->pm1_cnt.cnt |= ( ACPI_BITMASK_WAKE_STATUS | ACPI_BITMASK_POWER_BUTTON_STATUS );
-            INFO( "raise irq for ACPI wake." );
+            acpi_state->pm1a.sts |= ( ACPI_BITMASK_WAKE_STATUS | ACPI_BITMASK_POWER_BUTTON_STATUS );
+            INFO( "raise irq for ACPI wake.\n" );
             qemu_irq_raise( acpi_state->pm1_cnt.cmos_s3 );
         }else {
-            ERR( "acpi cmos_s3 is NULL." );
+            ERR( "acpi cmos_s3 is NULL.\n" );
         }
 
     }else {
-        ERR( "acpi state is NULL." );
+        ERR( "acpi state is NULL.\n" );
     }
 
 }

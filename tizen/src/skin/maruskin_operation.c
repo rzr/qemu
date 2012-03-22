@@ -33,17 +33,17 @@
 #include "maruskin_operation.h"
 #include "maru_sdl.h"
 #include "debug_ch.h"
-#include "../hw/maru_pm.h"
 
-#include "console.h"
 #include "sdb.h"
 #include "nbd.h"
 #include "../mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
+#include "emul_state.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
+#define CLOSE_POWER_KEY_INTERVAL 1.2 // seconds
 
 void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
 {
@@ -109,35 +109,18 @@ void do_hardkey_event( int event_type, int keycode )
 {
     TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
-    // press
-    if ( KEY_PRESSED == event_type ) {
+    SDL_Event event;
+    memset( &event, 0, sizeof(SDL_Event) );
 
-        if ( kbd_mouse_is_absolute() ) {
+    event.type = SDL_USEREVENT;
+    event.user.code = SDL_USER_EVENT_CODE_HARDKEY;
 
-            // home key or power key is used for resume.
-            if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
-                if ( is_suspended_state() ) {
-                    INFO( "user requests system resume.\n" );
-                    resume();
-#ifdef _WIN32
-                    Sleep( 500 );
-#else
-                    usleep( 500 * 1000 );
-#endif
-                }
-            }
+    // use pointer as integer
+    event.user.data1 = (void*) event_type;
+    event.user.data2 = (void*) keycode;
 
-            ps2kbd_put_keycode( keycode & 0x7f );
-
-        }
-
-    } else if ( KEY_RELEASED == event_type ) {
-
-        if ( kbd_mouse_is_absolute() ) {
-            ps2kbd_put_keycode( keycode | 0x80 );
-        }
-
-    }
+    // see qemu_ds_refresh in maru_sdl.c
+    SDL_PushEvent( &event );
 
 }
 
@@ -227,12 +210,14 @@ void request_close( void )
 {
     INFO( "request_close\n" );
 
-    ps2kbd_put_keycode( 103 & 0x7f );
+    do_hardkey_event( KEY_PRESSED, HARD_KEY_POWER );
+
 #ifdef _WIN32
-    Sleep( 1.6 * 1000 ); // 1.6 seconds
+        Sleep( CLOSE_POWER_KEY_INTERVAL * 1000 ); // 1.6 seconds
 #else
-    usleep( 1.6 * 1000 * 1000 ); // 1.6 seconds
+        usleep( CLOSE_POWER_KEY_INTERVAL * 1000 * 1000 ); // 1.6 seconds
 #endif
-    kbd_put_keycode( 103 | 0x80 );
+
+    do_hardkey_event( KEY_RELEASED, HARD_KEY_POWER );
 
 }

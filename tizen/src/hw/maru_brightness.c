@@ -43,15 +43,12 @@
 #include "maru_brightness.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(qemu, maru_brightness);
+MULTI_DEBUG_CHANNEL( qemu, maru_brightness );
 
 #define QEMU_DEV_NAME           "MARU_BRIGHTNESS"
 
 #define BRIGHTNESS_MEM_SIZE     (4 * 1024)		/* 4KB */
 #define BRIGHTNESS_REG_SIZE     256
-
-#define BRIGHTNESS_MIN          (0)
-#define BRIGHTNESS_MAX          (24)
 
 typedef struct BrightnessState {
     PCIDevice       dev;
@@ -60,8 +57,8 @@ typedef struct BrightnessState {
 } BrightnessState;
 
 enum {
-	BRIGHTNESS_LEVEL    =   0x00,
-	BRIGHTNESS_OFF      =   0x04,
+    BRIGHTNESS_LEVEL = 0x00,
+    BRIGHTNESS_OFF = 0x04,
 };
 
 uint32_t brightness_level = 24;
@@ -70,11 +67,10 @@ uint32_t brightness_off = 0;
 uint8_t brightness_tbl[] = {20, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
                             130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240};
 
-static uint64_t brightness_reg_read(void *opaque, target_phys_addr_t addr, unsigned size)
-{
-    switch (addr & 0xFF) {
+static uint64_t brightness_reg_read( void *opaque, target_phys_addr_t addr, unsigned size ) {
+    switch ( addr & 0xFF ) {
     case BRIGHTNESS_LEVEL:
-    	INFO("brightness_reg_read: brightness_level = %d\n", brightness_level);
+        INFO("brightness_reg_read: brightness_level = %d\n", brightness_level);
         return brightness_level;
     case BRIGHTNESS_OFF:
         INFO("brightness_reg_read: brightness_off = %d\n", brightness_off);
@@ -87,29 +83,28 @@ static uint64_t brightness_reg_read(void *opaque, target_phys_addr_t addr, unsig
     return 0;
 }
 
-static void brightness_reg_write(void *opaque, target_phys_addr_t addr, uint64_t val, unsigned size)
-{
+static void brightness_reg_write( void *opaque, target_phys_addr_t addr, uint64_t val, unsigned size ) {
 #if BRIGHTNESS_MIN > 0
-	if (val < BRIGHTNESS_MIN || val > BRIGHTNESS_MAX) {
+    if (val < BRIGHTNESS_MIN || val > BRIGHTNESS_MAX) {
 #else
-	if (val > BRIGHTNESS_MAX) {
+    if ( val > BRIGHTNESS_MAX ) {
 #endif
-	    ERR("brightness_reg_write: Invalide brightness level.\n");
-	}
+        ERR("brightness_reg_write: Invalide brightness level.\n");
+    }
 
-	switch (addr & 0xFF) {
-	case BRIGHTNESS_LEVEL:
-		brightness_level = val;
-		INFO("brightness_level : %lld\n", val);
-		return;
-	case BRIGHTNESS_OFF:
-		INFO("brightness_off : %lld\n", val);
-		brightness_off = val;
-		return;
-	default:
-	    ERR("wrong brightness register write - addr : %d\n", (int)addr);
-	    break;
-	}
+    switch ( addr & 0xFF ) {
+    case BRIGHTNESS_LEVEL:
+        brightness_level = val;
+        INFO("brightness_level : %lld\n", val);
+        return;
+    case BRIGHTNESS_OFF:
+        INFO("brightness_off : %lld\n", val);
+        brightness_off = val;
+        return;
+    default:
+        ERR("wrong brightness register write - addr : %d\n", (int)addr);
+        break;
+    }
 }
 
 static const MemoryRegionOps brightness_mmio_ops = {
@@ -118,43 +113,39 @@ static const MemoryRegionOps brightness_mmio_ops = {
     .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
-static int brightness_initfn(PCIDevice *dev)
-{
-	BrightnessState *s = DO_UPCAST(BrightnessState, dev, dev);
+static int brightness_initfn( PCIDevice *dev ) {
+    BrightnessState *s = DO_UPCAST(BrightnessState, dev, dev);
     uint8_t *pci_conf = s->dev.config;
 
-    pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_TIZEN);
-    pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS);
-    pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
+    pci_config_set_vendor_id( pci_conf, PCI_VENDOR_ID_TIZEN );
+    pci_config_set_device_id( pci_conf, PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS );
+    pci_config_set_class( pci_conf, PCI_CLASS_DISPLAY_OTHER );
 
-    memory_region_init_io (&s->mmio_addr, &brightness_mmio_ops, s, "maru_brightness_mmio", BRIGHTNESS_REG_SIZE);
-    pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
+    memory_region_init_io( &s->mmio_addr, &brightness_mmio_ops, s, "maru_brightness_mmio", BRIGHTNESS_REG_SIZE );
+    pci_register_bar( &s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr );
 
     return 0;
 }
 
 /* external interface */
-int pci_get_brightness(void)
-{
-	return brightness_level;
+int pci_get_brightness( void ) {
+    return brightness_level;
 }
 
-int pci_maru_brightness_init(PCIBus *bus)
-{
-    pci_create_simple(bus, -1, QEMU_DEV_NAME);
+int pci_maru_brightness_init( PCIBus *bus ) {
+    pci_create_simple( bus, -1, QEMU_DEV_NAME );
     return 0;
 }
 
 static PCIDeviceInfo brightness_info = {
-    .qdev.name    = QEMU_DEV_NAME,
-    .qdev.size    = sizeof(BrightnessState),
-    .no_hotplug   = 1,
-    .init         = brightness_initfn,
+    .qdev.name  = QEMU_DEV_NAME,
+    .qdev.size  = sizeof(BrightnessState),
+    .no_hotplug = 1,
+    .init       = brightness_initfn,
 };
 
-static void brightness_register(void)
-{
-    pci_qdev_register(&brightness_info);
+static void brightness_register( void ) {
+    pci_qdev_register( &brightness_info );
 }
 
 device_init(brightness_register);

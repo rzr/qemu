@@ -29,10 +29,12 @@
 
 
 #include <pthread.h>
+#include "console.h"
 #include "maru_sdl.h"
 #include "emul_state.h"
 #include "sdl_rotate.h"
 #include "maru_finger.h"
+#include "hw/maru_pm.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -64,6 +66,13 @@ static void qemu_update(void)
     SDL_Surface *processing_screen = NULL;
 
     if (scale_factor != 1.0 || screen_degree != 0.0) {
+
+        // workaround
+        if ( surface_qemu ) {
+            // set color key 'magenta'
+            surface_qemu->format->colorkey = 0xFF00FF;
+        }
+
         //image processing
         processing_screen = rotozoomSurface(surface_qemu, screen_degree, scale_factor, 1);
         SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
@@ -170,6 +179,57 @@ static int maru_sdl_poll_event(SDL_Event *ev)
     return ret;
 }
 
+static void put_hardkey_code( SDL_UserEvent event ) {
+
+    // use pointer as integer
+    int event_type = (int) event.data1;
+    int keycode = (int) event.data2;
+
+    if ( KEY_PRESSED == event_type ) {
+
+        if ( kbd_mouse_is_absolute() ) {
+
+            // home key or power key is used for resume.
+            if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
+                if ( is_suspended_state() ) {
+                    INFO( "user requests system resume.\n" );
+                    resume();
+                }
+            }
+
+            ps2kbd_put_keycode( keycode & 0x7f );
+
+        }
+
+    } else if ( KEY_RELEASED == event_type ) {
+
+        if ( kbd_mouse_is_absolute() ) {
+            ps2kbd_put_keycode( keycode | 0x80 );
+        }
+
+    } else {
+        ERR( "Unknown hardkey event type.[event_type:%d]", event_type );
+    }
+
+}
+
+static void handle_sdl_user_event ( SDL_UserEvent event ) {
+
+    int code = event.code;
+
+    switch ( code ) {
+    case SDL_USER_EVENT_CODE_HARDKEY: {
+        put_hardkey_code( event );
+        break;
+    }
+    default: {
+        ERR( "Unknown sdl user event.[event code:%d]\n", code );
+        break;
+    }
+    }
+
+}
+
 static void qemu_ds_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
@@ -214,6 +274,10 @@ static void qemu_ds_refresh(DisplayState *ds)
 
                 pthread_mutex_unlock(&sdl_mutex);
 
+                break;
+            }
+            case SDL_USEREVENT: {
+                handle_sdl_user_event( ev->user );
                 break;
             }
 

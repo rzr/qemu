@@ -74,6 +74,8 @@ MULTI_DEBUG_CHANNEL(qemu, maru_vga);
 #define GET_PLANE(data, p) (((data) >> ((p) * 8)) & 0xff)
 #endif
 
+#define MARU_VGA
+
 static const uint32_t mask16[16] = {
     PAT(0x00000000),
     PAT(0x000000ff),
@@ -134,10 +136,6 @@ static uint8_t expand4to8[16];
 static void vga_screen_dump(void *opaque, const char *filename);
 static const char *screen_dump_filename;
 static DisplayChangeListener *screen_dump_dcl;
-
-#ifdef TARGET_I386
-static int is_off_screen = 0;
-#endif
 
 static void vga_dumb_update_retrace_info(VGACommonState *s)
 {
@@ -899,14 +897,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     uint32_t v, addr1, addr;
     maru_vga_draw_line_func *maru_vga_draw_line;
 
-#ifdef TARGET_I386
-    if( brightness_off ) {
-        if( is_off_screen ) {
-            return;
-        }
-    }
-#endif
-
     full_update |= update_basic_params(s);
 
     if (!full_update)
@@ -954,9 +944,15 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         if (depth == 32) {
 #endif
             qemu_free_displaysurface(s->ds);
+
+#ifdef MARU_VGA // create new sufrace by malloc in MARU VGA
+            s->ds->surface = qemu_create_displaysurface( s->ds, disp_width, height );
+#else
             s->ds->surface = qemu_create_displaysurface_from(disp_width, height, depth,
                     s->line_offset,
                     s->vram_ptr + (s->start_addr * 4));
+#endif
+
 #if defined(HOST_WORDS_BIGENDIAN) != defined(TARGET_WORDS_BIGENDIAN)
             s->ds->surface->pf = qemu_different_endianness_pixelformat(depth);
 #endif
@@ -1069,9 +1065,11 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         }
         /* explicit invalidation for the hardware cursor */
         update |= (s->invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1;
-#ifdef TARGET_I386
+
+#ifdef MARU_VGA // needs full update
         update |= 1;
 #endif
+
         if (update) {
             if (y_start < 0)
                 y_start = y;
@@ -1085,7 +1083,8 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                     s->cursor_draw_line(s, d, y);
             }
 
-#ifdef TARGET_I386
+#ifdef MARU_VGA
+
             int i;
             uint8_t *fb_sub;
             uint8_t *over_sub;
@@ -1094,73 +1093,82 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             uint32_t *dst;
             uint16_t overlay_bottom;
 
-            if (overlay0_power) {
+            if ( overlay0_power ) {
+
                 overlay_bottom = overlay0_top + overlay0_height;
 
-                if (overlay0_top <= y && y < overlay_bottom) {
-                    fb_sub = s->vram_ptr + addr + overlay0_left * 4;
-                    over_sub = overlay_ptr + (y - overlay0_top) * overlay0_width * 4;
-                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay0_left * 4);
+                if ( overlay0_top <= y && y < overlay_bottom ) {
 
-                    for (i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++) {
-                        //alpha = 0x80;
+                    fb_sub = s->vram_ptr + addr + overlay0_left * 4;
+                    over_sub = overlay_ptr + ( y - overlay0_top ) * overlay0_width * 4;
+                    dst = (uint32_t*) ( s->ds->surface->data + addr + overlay0_left * 4 );
+
+                    for ( i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++ ) {
+
                         alpha = fb_sub[3];
                         c_alpha = 0xff - alpha;
-                        //fprintf(stderr, "alpha = %d\n", alpha);
 
-                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
-                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
-                               (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
+                        *dst = ( ( c_alpha * over_sub[0] + alpha * fb_sub[0] ) >> 8 )
+                            | ( ( c_alpha * over_sub[1] + alpha * fb_sub[1] ) & 0xFF00 )
+                            | ( ( ( c_alpha * over_sub[2] + alpha * fb_sub[2] ) & 0xFF00 ) << 8 );
                     }
+
                 }
+
             }
 
-            if (overlay1_power) {
+            if ( overlay1_power ) {
+
                 overlay_bottom = overlay1_top + overlay1_height;
 
-                if (overlay1_top <= y && y < overlay_bottom) {
-                    fb_sub = s->vram_ptr + addr + overlay1_left * 4;
-                    over_sub = overlay_ptr + (y - overlay1_top) * overlay1_width * 4 + 0x00400000;
-                    dst = (uint32_t*)(s->ds->surface->data + addr + overlay1_left * 4);
+                if ( overlay1_top <= y && y < overlay_bottom ) {
 
-                    for (i = 0; i < overlay1_width; i++, fb_sub += 4, over_sub += 4, dst++) {
-                        //alpha = 0x80;
+                    fb_sub = s->vram_ptr + addr + overlay1_left * 4;
+                    over_sub = overlay_ptr + ( y - overlay1_top ) * overlay1_width * 4 + 0x00400000;
+                    dst = (uint32_t*) ( s->ds->surface->data + addr + overlay1_left * 4 );
+
+                    for ( i = 0; i < overlay1_width; i++, fb_sub += 4, over_sub += 4, dst++ ) {
+
                         alpha = fb_sub[3];
                         c_alpha = 0xff - alpha;
-                        //fprintf(stderr, "alpha = %d\n", alpha);
 
-                        *dst = ((c_alpha * over_sub[0] + alpha * fb_sub[0]) >> 8) |
-                               ((c_alpha * over_sub[1] + alpha * fb_sub[1]) & 0xFF00) |
-                               (((c_alpha * over_sub[2] + alpha * fb_sub[2]) & 0xFF00) << 8);
+                        *dst = ( ( c_alpha * over_sub[0] + alpha * fb_sub[0] ) >> 8 )
+                            | ( ( c_alpha * over_sub[1] + alpha * fb_sub[1] ) & 0xFF00 )
+                            | ( ( ( c_alpha * over_sub[2] + alpha * fb_sub[2] ) & 0xFF00 ) << 8 );
+                    }
+
+                }
+
+            }
+
+            if ( brightness_off ) {
+
+                dst_sub = s->ds->surface->data + addr;
+                dst = (uint32_t*) ( s->ds->surface->data + addr );
+
+                for ( i = 0; i < disp_width; i++, dst_sub += 4, dst++ ) {
+                    *dst = 0xFF000000; // black
+                }
+
+            } else  {
+
+                if ( brightness_level < BRIGHTNESS_MAX ) {
+
+                    alpha = brightness_tbl[brightness_level];
+
+                    dst_sub = s->ds->surface->data + addr;
+                    dst = (uint32_t*) ( s->ds->surface->data + addr );
+
+                    for ( i = 0; i < disp_width; i++, dst_sub += 4, dst++ ) {
+                        *dst = ( ( alpha * dst_sub[0] ) >> 8 )
+                                | ( ( alpha * dst_sub[1] ) & 0xFF00 )
+                                | ( ( ( alpha * dst_sub[2] ) & 0xFF00 ) << 8 );
                     }
                 }
-            }
-
-            //FIXME
-            if( brightness_off ) {
-
-                dst_sub = s->ds->surface->data + addr;
-                dst = (uint32_t*)(s->ds->surface->data + addr);
-                for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
-                    *dst = 0xFF000000;
-                }
-
-            }else if (brightness_level < 24) {
-
-                alpha = brightness_tbl[brightness_level];
-
-                dst_sub = s->ds->surface->data + addr;
-                dst = (uint32_t*)(s->ds->surface->data + addr);
-
-                for (i=0; i < disp_width; i++, dst_sub += 4, dst++) {
-                    *dst = ((alpha * dst_sub[0]) >> 8) |
-                            ((alpha * dst_sub[1]) & 0xFF00) |
-                            (((alpha * dst_sub[2]) & 0xFF00) << 8);
-                }
 
             }
 
-#endif  /* TARGET_I386 */
+#endif /* MARU_VGA */
 
         } else {
             if (y_start >= 0) {
@@ -1188,14 +1196,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         /* flush to display */
         dpy_update(s->ds, 0, y_start,
                    disp_width, y - y_start);
-    }
-
-    if( brightness_off ) {
-        is_off_screen = 1;
-    }else {
-        if( is_off_screen ) {
-            is_off_screen = 0;
-        }
     }
 
     /* reset modified pages */
