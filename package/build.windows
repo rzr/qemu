@@ -43,6 +43,8 @@ prepare()
 # build
 build() 
 {
+	prepare
+
 	cd $SRCDIR/tizen/
 	./qemu_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
 	make
