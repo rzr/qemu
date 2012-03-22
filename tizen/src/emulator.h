@@ -41,10 +41,8 @@
 
 extern char tizen_target_path[MAXLEN];
 
-int get_emulator_condition(void);
-void set_emulator_condition(int state);
 void exit_emulator(void);
 void set_image_and_log_path(char *qemu_argv);
 void get_tizen_port(char* option);
 
-#endif
+#endif /* __EMULATOR_H__ */

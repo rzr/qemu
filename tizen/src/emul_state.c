@@ -39,6 +39,18 @@ MULTI_DEBUG_CHANNEL(qemu, emul_state);
 static EmulatorConfigInfo _emul_info;
 static EmulatorConfigState _emul_state;
 
+
+/* current emulator condition */
+int get_emulator_condition(void)
+{
+    return _emul_state.emulator_condition;
+}
+
+void set_emulator_condition(int state)
+{
+    _emul_state.emulator_condition = state;
+}
+
 /* lcd screen size */
 void set_emul_lcd_size(int width, int height)
 {

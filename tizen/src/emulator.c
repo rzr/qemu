@@ -53,6 +53,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
+
 #define IMAGE_PATH_PREFIX   "file="
 #define IMAGE_PATH_SUFFIX   ",if=virtio"
 #define SDB_PORT_PREFIX     "sdb_port="
@@ -61,19 +62,9 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define MIDBUF  128
 int tizen_base_port = 0;
 
-int _emulator_condition = 0; //TODO:
 char tizen_target_path[MAXLEN] = {0, };
 char logpath[MAXLEN] = { 0, };
 
-int get_emulator_condition(void)
-{
-    return _emulator_condition;
-}
-
-void set_emulator_condition(int state)
-{
-    _emulator_condition = state;
-}
 
 void exit_emulator(void)
 {

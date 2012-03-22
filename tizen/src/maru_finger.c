@@ -207,7 +207,7 @@ int get_multi_touch_enable(void)
     return get_emul_multi_touch_state()->multitouch_enable;
 }
 
-static int add_finger_point(int x, int y)
+static int _add_finger_point(int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
 
@@ -283,7 +283,7 @@ void maru_finger_processing(int x, int y, int touch_type)
 
         if (mts->finger_cnt == 0)
         { //first finger touch input
-            if (add_finger_point(x, y) == -1) {
+            if (_add_finger_point(x, y) == -1) {
                 return;
             }
             kbd_mouse_event(x, y, 0, QEMU_MOUSE_PRESSED);
@@ -311,7 +311,7 @@ void maru_finger_processing(int x, int y, int touch_type)
         }
         else //one more finger
         {
-            add_finger_point(x, y) ;
+            _add_finger_point(x, y) ;
             kbd_mouse_event(x, y, mts->finger_cnt - 1, QEMU_MOUSE_PRESSED);
         }
 
