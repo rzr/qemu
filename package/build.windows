@@ -53,6 +53,9 @@ build()
 # install
 install() 
 {
+
+	prepare
+
 	BIN_DIR=$SRCDIR/package/emulator.package.windows/data
 	EMUL_DIR=$BIN_DIR/Emulator/bin/emulator-x86.exe
 
