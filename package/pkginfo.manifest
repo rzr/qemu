@@ -1,17 +1,18 @@
 Package: emulator
-Version: 1.2.34
+Version: 1.2.43
 OS: linux
 Build-host-os: linux
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Install-dependency: emulator-kernel [ linux ], emulator-manager [ linux ]
+Install-dependency: emulator-kernel [ linux ], emulator-manager [ linux ], emulator-dll [ linux ]
 Source: emulator
 Description: Tizen Emulator
 
 Package: emulator
-Version: 1.2.34
+Version: 1.2.43
 OS: windows
 Build-host-os: windows
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
+Build-dependency: SDL-1.2.14 [ windows ], SDL_gfx-2.0.22 [ windows ], SDL_image-1.2.10 [ windows ], jpeg-8b [ windows ], libpng-1.4.5 [ windows ], libxml2-2.7.8 [ windows ], apache-ant-1.8.3-bin [ windows ]
 Install-dependency: emulator-kernel [ windows ], emulator-manager [ windows ], emulator-dll [ windows ]
 Source: emulator
 Description: Tizen Emulator
