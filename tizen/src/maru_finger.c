@@ -30,7 +30,7 @@
 
 #include <math.h>
 #include <glib.h>
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include "maru_finger.h"
 #include "emul_state.h"
 #include "debug_ch.h"
