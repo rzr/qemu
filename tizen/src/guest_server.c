@@ -44,6 +44,7 @@
 #include "guest_server.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
+#include "sdb.h"
 
 MULTI_DEBUG_CHANNEL( qemu, guest_server );
 
@@ -138,6 +139,7 @@ static void* run_guest_server( void* args ) {
             TRACE( "----------------------------------------\n" );
             if ( strcmp( command, "3\n" ) == 0 ) {
                 TRACE( "command:%s\n", command );
+                notify_sdb_daemon_start();
                 notify_sensor_daemon_start();
             } else {
                 ERR( "!!! unknown command : %s\n", command );
@@ -149,7 +151,7 @@ static void* run_guest_server( void* args ) {
     }
 
     cleanup:
-#ifdef __MINGW32__
+#ifdef _WIN32
     if( server_sock ) {
         closesocket(server_sock);
     }
@@ -188,7 +190,7 @@ static int parse_val( char* buff, unsigned char data, char* parsbuf ) {
 
 void shutdown_guest_server( void ) {
     INFO( "shutdown_guest_server.\n" );
-#ifdef __MINGW32__
+#ifdef _WIN32
     if( server_sock ) {
         closesocket( server_sock );
     }

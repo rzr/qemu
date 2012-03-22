@@ -23,6 +23,7 @@ else
 GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
 endif
 
+ifndef CONFIG_WIN32
 ###########################################################
 ## Build openGL
 # i386
@@ -50,23 +51,24 @@ opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_p
 
 endif #($(TARGET_ARCH), i386)
 ###########################################################
+endif #CONFIG_WIN32
 	
 # maru loader
 obj-y += emulator.o emul_state.o process.o option.o maru_signal.o
 
-# display
-obj-y += maru_sdl.o sdl_rotate.o sdl_zoom.o
+# maru display
+obj-y += maru_sdl.o sdl_rotate.o maru_finger.o
 
 # sdb
 obj-y += sdb.o
 
-# mloop_event
+# mloop event
 obj-y += mloop_event.o
 
-# debugch
+# debug channel
 obj-y += debug_ch.o
 
-# maru hw
+# maru hardware
 obj-i386-y += maru_board.o
 obj-i386-y += maru_overlay.o
 obj-i386-y += maru_codec.o
@@ -84,15 +86,14 @@ endif
 
 
 # maru skin
-obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o
-ifndef CONFIG_WIN32 
-obj-i386-y += maruskin_keymap.o
-endif
+obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
 
 # guest server
 obj-i386-y += guest_server.o 
 
+ifndef CONFIG_WIN32
 ###########################################################
 ## opengl library for i386
 obj-i386-y += virtio-gl.o helper_opengl.o opengl_exec.o mesa_mipmap.o gloffscreen_common.o gloffscreen_xcomposite.o gloffscreen_wgl.o gloffscreen_test.o
 ###########################################################
+endif

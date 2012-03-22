@@ -32,10 +32,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "maruskin_client.h"
 #include "maruskin_server.h"
+#include "emulator.h"
+#include "sdb.h"
 #include "debug_ch.h"
-#include <pthread.h>
 
 #define SKIN_SERVER_READY_TIME 3 // second
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
@@ -47,13 +49,9 @@
 #define OPT_SVR_PORT "svr.port"
 #define OPT_UID "uid"
 #define OPT_VM_PATH "vm.path"
+#define OPT_NET_BASE_PORT "net.baseport"
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_client );
-
-extern char tizen_vms_path[512];
-
-// function modified by caramis
-// for delivery argv
 
 static int skin_argc;
 static char** skin_argv;
@@ -76,13 +74,14 @@ static void* run_skin_client(void* arg)
     int uid = rand();
     INFO( "generated skin uid:%d\n", uid );
 
-    char* vm_path = tizen_vms_path;
+    char* vm_path = tizen_target_path;
     INFO( "vm_path:%s\n", vm_path );
 
-    sprintf( cmd, "%s %s %s %s=%d %s=%d %s=%s %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH,
+    sprintf( cmd, "%s %s %s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH,
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
+        OPT_NET_BASE_PORT, tizen_base_port,
         argv );
 
 #ifdef _WIN32

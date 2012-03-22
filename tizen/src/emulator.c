@@ -43,6 +43,7 @@
 #include "process.h"
 #include "option.h"
 #include "emul_state.h"
+#include "qemu_socket.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -52,31 +53,29 @@
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
+
 #define IMAGE_PATH_PREFIX   "file="
 #define IMAGE_PATH_SUFFIX   ",if=virtio"
 #define SDB_PORT_PREFIX     "sdb_port="
-#define MAXLEN  512
+#define LOGS_SUFFIX         "/logs/"
+#define LOGFILE             "emulator.log"
 #define MIDBUF  128
 int tizen_base_port = 0;
 
-int _emulator_condition = 0; //TODO:
 char tizen_target_path[MAXLEN] = {0, };
-int get_emulator_condition(void)
-{
-    return _emulator_condition;
-}
+char logpath[MAXLEN] = { 0, };
 
-void set_emulator_condition(int state)
-{
-    _emulator_condition = state;
-}
 
 void exit_emulator(void)
 {
+    cleanup_multi_touch_state();
+
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
+
     SDL_Quit();
+
     remove_portfile();
 }
 
@@ -85,11 +84,10 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     INFO("construct main window\n");
 
     //TODO: init
-    set_emul_win_scale(0.5);
-    set_emul_rotation(0);
+    //set_emul_win_scale(0.5);
+    //set_emul_rotation(0);
 
-
-    start_skin_server(0, 0);
+    start_skin_server( skin_argc, skin_argv );
 #if 1
     if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
         exit( -1 );
@@ -128,7 +126,7 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
     }
 }
 
-void get_image_path(char* qemu_argv)
+void set_image_and_log_path(char* qemu_argv)
 {
     int i;
     int j = 0;
@@ -146,39 +144,34 @@ void get_image_path(char* qemu_argv)
         path[j++] = qemu_argv[i];
     }
     path[j] = '\0';
-    strcpy(tizen_target_path, path);
-}
+    if(!g_path_is_absolute(path))
+        strcpy(tizen_target_path, g_get_current_dir());
+    else
+        strcpy(tizen_target_path, g_path_get_dirname(path));
 
-void get_tizen_port(char* option)
-{
-    int i;
-    int j = 0;
-    int max_len = 0;
-    int prefix_len = 0;
-    char *ptr;
-    char *path = malloc(MAXLEN);
-    prefix_len = strlen(SDB_PORT_PREFIX);;
-    max_len = prefix_len + 5;
-    for(i = prefix_len , j = 0; i < max_len; i++)
-    {
-        path[j++] = option[i];
+    strcpy(logpath, tizen_target_path);
+    strcat(logpath, LOGS_SUFFIX);
+#ifdef _WIN32
+    if(access(g_win32_locale_filename_from_utf8(logpath), R_OK) != 0) {
+       g_mkdir(g_win32_locale_filename_from_utf8(logpath), 0755); 
     }
-    path[j] = '\0';
-    tizen_base_port = strtol(path, &ptr, 0);
-    INFO( "tizen_base_port: %d\n", tizen_base_port);
+#else
+    if(access(logpath, R_OK) != 0) {
+       g_mkdir(logpath, 0755); 
+    }
+#endif
+	strcat(logpath, LOGFILE);
+    set_log_path(logpath);
 }
 
 void redir_output(void)
 {
 	FILE *fp;
-// FIXME !!
-//	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
-//	strcat(logfile, "/emulator.log");
 
-	fp = freopen("emulator.log", "a+", stdout);
+	fp = freopen(logpath, "a+", stdout);
 	if(fp ==NULL)
 		fprintf(stderr, "log file open error\n");
-	fp = freopen("emulator.log", "a+", stderr);
+	fp = freopen(logpath, "a+", stderr);
 	if(fp ==NULL)
 		fprintf(stderr, "log file open error\n");
 
@@ -189,19 +182,17 @@ void redir_output(void)
 void extract_info(int qemu_argc, char** qemu_argv)
 {
     int i;
-    char *option = NULL;
 
     for(i = 0; i < qemu_argc; ++i)
     {
         if(strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
-            get_image_path(qemu_argv[i]);
+            set_image_and_log_path(qemu_argv[i]);
+            break;
         }
-        if((option = strstr(qemu_argv[i], SDB_PORT_PREFIX)) != NULL) {
-            get_tizen_port(option);
-            write_portfile(tizen_target_path);
-        }
-
     }
+    
+    tizen_base_port = get_sdb_base_port();
+    write_portfile(tizen_target_path);
 }
 
 static int skin_argc = 0;
@@ -230,15 +221,15 @@ int main(int argc, char* argv[])
 {
     int qemu_argc = 0;
     char** qemu_argv = NULL;
-
+    
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    socket_init();
     extract_info(qemu_argc, qemu_argv);
-//    set_log_path(logfile);
     INFO("Emulator start !!!\n");
     
     INFO("Prepare running...\n");
     redir_output(); // Redirect stdout, stderr after debug_ch is initialized...
-
+	
     int i;
 
     fprintf(stdout, "qemu args : ==========================================\n");

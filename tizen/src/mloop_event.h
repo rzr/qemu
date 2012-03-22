@@ -38,6 +38,9 @@ void mloop_ev_stop(void);
 void mloop_evcmd_usbkbd_on(void);
 void mloop_evcmd_usbkbd_off(void);
 
+int mloop_evcmd_get_usbkbd_status(void);
+
+
 #ifdef __cplusplus
 }
 #endif

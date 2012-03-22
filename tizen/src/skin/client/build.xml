@@ -3,7 +3,7 @@
     
     <property name="jar.file" value="emulator-skin.jar" />
     <property name="mainclass" value="org.tizen.emulator.skin.EmulatorSkinMain" />
-
+	
     <property name="swt.file" value="swt.jar" />
 
     <path id="linux-classpath">
@@ -22,7 +22,30 @@
         <delete file="${jar.file}" />
     </target>
 
-    <target name="linux-compile" depends="clean">
+	<target name="make-properties">
+    	<echo message="Make properties..." />
+		<tstamp>
+			<format property="build_time" pattern="MM/dd/yyyy hh:mm aa" timezone="GMT" locale="en" />
+		</tstamp>
+		<exec executable="cat" outputproperty="version">
+			<arg value="../../VERSION" />
+		</exec>
+		<property name="build_git_commit" value="Not identified" />
+		<exec executable="git" outputproperty="build_git_commit" failifexecutionfails="false">
+			<arg value="rev-parse" />
+			<arg value="--short" />
+			<arg value="HEAD" />
+		</exec>
+		
+		<propertyfile file="src/about.properties"
+			comment="Auto-generated properties - DO NOT EDIT">
+			<entry key="version" value="${version}" />
+			<entry key="build_time" value="${build_time}" />
+			<entry key="build_git_commit" value="${build_git_commit}" />
+		</propertyfile>
+	</target>
+	
+    <target name="linux-compile" depends="make-properties, clean">
         <echo message="compiling..." />
         <mkdir dir="bin" />
         <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
@@ -30,7 +53,7 @@
         </javac>
     </target>
 
-    <target name="windows-compile" depends="clean">
+    <target name="windows-compile" depends="make-properties, clean">
         <echo message="compiling..." />
         <mkdir dir="bin" />
         <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
@@ -38,7 +61,7 @@
         </javac>
     </target>
 
-    <target name="mac-compile" depends="clean">
+    <target name="mac-compile" depends="make-properties, clean">
         <echo message="compiling..." />
         <mkdir dir="bin" />
         <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
@@ -49,6 +72,7 @@
     <target name="linux-jar" depends="linux-compile">
         <echo message="creating jar..." />
         <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+			<fileset file="src/about.properties" />
             <manifest>
                 <attribute name="Main-Class" value="${mainclass}"/>
                 <attribute name="Class-path" value="lib/swt/gtk-linux/${swt.file}"/>
@@ -59,6 +83,7 @@
     <target name="windows-jar" depends="windows-compile">
         <echo message="creating jar..." />
         <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+			<fileset file="src/about.properties" />
             <manifest>
                 <attribute name="Main-Class" value="${mainclass}"/>
                 <attribute name="Class-path" value="lib/swt/win32-win32/${swt.file}"/>
@@ -69,6 +94,7 @@
     <target name="mac-jar" depends="mac-compile">
         <echo message="creating jar..." />
         <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+			<fileset file="src/about.properties" />
             <manifest>
                 <attribute name="Main-Class" value="${mainclass}"/>
                 <attribute name="Class-path" value="lib/swt/cocoa-macosx/${swt.file}"/>

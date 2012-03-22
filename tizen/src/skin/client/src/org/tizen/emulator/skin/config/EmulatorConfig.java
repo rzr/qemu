@@ -55,10 +55,13 @@ public class EmulatorConfig {
 		public static final String SERVER_PORT = "svr.port";
 		public static final String RESOLUTION_WIDTH = "width";
 		public static final String RESOLUTION_HEIGHT = "height";
-		public static final String EMULATOR_NAME = "emulname";
 		public static final String TEST_HEART_BEAT_IGNORE = "test.hb.ignore";
 		public static final String VM_PATH = "vm.path";
 		public static final String LOG_LEVEL = "log.level";
+<<<<<<< HEAD
+=======
+		public static final String NET_BASE_PORT = "net.baseport";
+>>>>>>> release-0.21
 	}
 	
 	public interface PropertiesConstants {

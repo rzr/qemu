@@ -30,7 +30,7 @@
 #ifndef MARUSKIN_OPERATION_H_
 #define MARUSKIN_OPERATION_H_
 
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short direction );
+void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type );
 
 void do_mouse_event( int event_type, int x, int y, int z );
 

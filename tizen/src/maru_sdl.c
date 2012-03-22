@@ -32,6 +32,7 @@
 #include "maru_sdl.h"
 #include "emul_state.h"
 #include "sdl_rotate.h"
+#include "maru_finger.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -43,6 +44,7 @@ SDL_Surface *surface_qemu;
 
 static double scale_factor = 1.0;
 static double screen_degree = 0.0;
+static int sdl_initialized = 0;
 
 #define SDL_THREAD
 
@@ -55,8 +57,10 @@ static int sdl_thread_initialized = 0;
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
 
+
 static void qemu_update(void)
 {
+    int i;
     SDL_Surface *processing_screen = NULL;
 
     if (scale_factor != 1.0 || screen_degree != 0.0) {
@@ -66,6 +70,26 @@ static void qemu_update(void)
     } else {
         SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
     }
+
+    /* draw multi-touch finger points */
+    MultiTouchState *mts = get_emul_multi_touch_state();
+    if (mts->multitouch_enable == 1 && mts->finger_point_surface != NULL) {
+        FingerPoint *finger = NULL;
+        int finger_point_size_half = mts->finger_point_size / 2;
+        SDL_Rect rect;
+
+        for (i = 0; i < mts->finger_cnt; i++) {
+            finger = get_finger_point_from_slot(i);
+            if (finger != NULL && finger->id != 0) {
+                rect.x = (finger->x * get_emul_win_scale()) - finger_point_size_half;
+                rect.y = (finger->y * get_emul_win_scale()) - finger_point_size_half;
+                rect.w = rect.h = mts->finger_point_size;
+
+                SDL_BlitSurface((SDL_Surface *)mts->finger_point_surface, NULL, surface_screen, &rect);
+            }
+        }
+    }
+
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
     SDL_FreeSurface(processing_screen);
@@ -133,13 +157,26 @@ static void qemu_ds_resize(DisplayState *ds)
 
 }
 
+static int maru_sdl_poll_event(SDL_Event *ev)
+{
+    int ret = 0;
+
+    if (sdl_initialized == 1) {
+        pthread_mutex_lock(&sdl_mutex);
+        ret = SDL_PollEvent(ev);
+        pthread_mutex_unlock(&sdl_mutex);
+    }
+
+    return ret;
+}
+
 static void qemu_ds_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
 
     vga_hw_update();
 
-    while (SDL_PollEvent(ev)) {
+    while (maru_sdl_poll_event(ev)) {
         switch (ev->type) {
             case SDL_VIDEORESIZE:
             {
@@ -188,7 +225,7 @@ static void qemu_ds_refresh(DisplayState *ds)
 
 void maruskin_display_init(DisplayState *ds)
 {
-    INFO( "qemu display initialize\n");
+    INFO( "qemu display initialization\n");
 
     /*  graphics context information */
     DisplayChangeListener *dcl;
@@ -215,6 +252,7 @@ void maruskin_display_init(DisplayState *ds)
 
 void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
 {
+    int w, h;
     gchar SDL_windowhack[32];
     SDL_SysWMinfo info;
     long window_id = swt_handle;
@@ -228,20 +266,29 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
         exit(1);
     }
 
-    INFO( "qemu_sdl_initialize\n");
-    surface_screen = SDL_SetVideoMode(lcd_size_width, lcd_size_height, SDL_BPP, SDL_FLAGS);
-    if (surface_screen == NULL) {
-        ERR("Could not open SDL display (%dx%dx%d): %s\n", lcd_size_width, lcd_size_height, SDL_BPP, SDL_GetError());
-    }
     set_emul_lcd_size(lcd_size_width, lcd_size_height);
+
+    //get current setting information and calculate screen size
+    scale_factor = get_emul_win_scale();
+    w = lcd_size_width * scale_factor;
+    h = lcd_size_height * scale_factor;
+
+    INFO( "maru sdl initialization\n");
+    surface_screen = SDL_SetVideoMode(w, h, SDL_BPP, SDL_FLAGS);
+    if (surface_screen == NULL) {
+        ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, SDL_BPP, SDL_GetError());
+    }
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);
     SDL_GetWMInfo(&info);
 #endif
+
+    sdl_initialized = 1;
+    init_multi_touch_state();
 }
 
-void maruskin_sdl_resize()
+void maruskin_sdl_resize(void)
 {
     SDL_Event ev;
 
@@ -249,5 +296,6 @@ void maruskin_sdl_resize()
     memset(&ev, 0, sizeof(ev));
     ev.resize.type = SDL_VIDEORESIZE;
 
+    //This function is thread safe, and can be called from other threads safely.
     SDL_PushEvent(&ev);
 }

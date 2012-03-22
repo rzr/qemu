@@ -57,7 +57,6 @@ void qemu_remove_kbd_event_handler(void)
 
 void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
 {
-    qemu_add_kbd_event_handler(func,opaque); // temporary code for compatibility with Xserver
     qemu_put_ps2kbd_event_opaque = opaque;
     qemu_put_ps2kbd_event = func;
 }

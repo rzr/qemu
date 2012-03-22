@@ -103,18 +103,19 @@ int glo_sanity_test (void) {
 }
 
 /* Initialise gloffscreen */
-void glo_init(void) {
-	fprintf(stdout, "[rla1957]glo_init() in gloffscreen_xcomposite.c\n");
+int glo_init(void) {
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     /* Open a connection to the X server */
     glo.dpy = XOpenDisplay( NULL );
     if ( glo.dpy == NULL ) {
         printf( "Unable to open a connection to the X server\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     glo_inited = 1; // safe because we are single threaded. Otherwise we cause
@@ -122,6 +123,7 @@ void glo_init(void) {
     // set the X error handler.
     XErrorHandler old_handler = XSetErrorHandler (x_errhandler);
     glo_test_readback_methods();
+	return 0;
 }
 
 /* Uninitialise gloffscreen */
@@ -251,7 +253,7 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     XVisualInfo *vis;
 
     if (!context)
-      return NULL;
+      return 0;
 
     surface = (GloSurface*)g_malloc(sizeof(GloSurface));
     memset(surface, 0, sizeof(GloSurface));
@@ -260,8 +262,6 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     surface->context = context;
 
     vis = glXGetVisualFromFBConfig(glo.dpy, ((struct _GloContext*)context)->fbConfig);
-	if (vis == NULL)
-		return NULL;
 
     attr.background_pixel = 0xff000000;
     attr.border_pixel = 0;

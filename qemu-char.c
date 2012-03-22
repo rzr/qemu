@@ -1522,10 +1522,15 @@ static int win_chr_init(CharDriverState *chr, const char *filename)
         fprintf(stderr, "Failed CreateEvent\n");
         goto fail;
     }
-
+#ifndef CONFIG_MARU
+    s->hcom = CreateFile(filename,
+                      GENERIC_READ|GENERIC_WRITE, 0, NULL,
+                      OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
+#else
     s->hcom = CreateFile(g_win32_locale_filename_from_utf8(filename),
                       GENERIC_READ|GENERIC_WRITE, 0, NULL,
                       OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
+#endif
     if (s->hcom == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "Failed CreateFile (%lu)\n", GetLastError());
         s->hcom = NULL;
@@ -1815,12 +1820,13 @@ static int qemu_chr_open_win_file_out(QemuOpts *opts, CharDriverState **_chr)
     HANDLE fd_out;
 
 #ifndef CONFIG_MARU
-    fd_out = CreateFile(g_win32_locale_filename_from_utf8(file_out), GENERIC_WRITE, FILE_SHARE_READ, NULL,
+    fd_out = CreateFile(file_out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
                         OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
     fd_out = CreateFile(g_win32_locale_filename_from_utf8(file_out), GENERIC_WRITE, FILE_SHARE_READ, NULL,
                         CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
+
     if (fd_out == INVALID_HANDLE_VALUE) {
         return -EIO;
     }

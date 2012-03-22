@@ -29,15 +29,20 @@
  *
  */
 
+/**
+ * @file emulator.h
+ * @brief - header of file these are config struecture and defines in emulator
+ */
 
 #ifndef __EMULATOR_H__
 #define __EMULATOR_H__
 
+#define MAXLEN  512
 
-int get_emulator_condition(void);
-void set_emulator_condition(int state);
+extern char tizen_target_path[MAXLEN];
+
 void exit_emulator(void);
-void get_image_path(char *qemu_argv);
+void set_image_and_log_path(char *qemu_argv);
 void get_tizen_port(char* option);
 
-#endif
+#endif /* __EMULATOR_H__ */

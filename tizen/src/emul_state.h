@@ -33,6 +33,27 @@
 #ifndef __EMUL_STATE_H__
 #define __EMUL_STATE_H__
 
+
+#include "maru_common.h"
+#include "maru_finger.h"
+
+/* keep it consistent with java definition */
+enum {
+    HARD_KEY_HOME = 101,
+    HARD_KEY_POWER = 103,
+};
+
+enum {
+    MOUSE_DOWN = 1,
+    MOUSE_UP = 2,
+    MOUSE_DRAG = 3,
+};
+
+enum {
+    KEY_PRESSED = 1,
+    KEY_RELEASED = 2,
+};
+
 enum {
     ROTATION_PORTRAIT = 0,
     ROTATION_LANDSCAPE = 1,
@@ -41,29 +62,36 @@ enum {
 };
 
 
-typedef  struct emulator_config_info {
+typedef  struct EmulatorConfigInfo {
+    char emulator_name[256]; //TODO:
     int lcd_size_w;
     int lcd_size_h;
+    int dpi; //not used yet
     //TODO:
-} emulator_config_info;
+} EmulatorConfigInfo;
 
-typedef struct emulator_config_state {
+typedef struct EmulatorConfigState {
+    int emulator_condition; //TODO : enum
     double scale_factor;
     short rotation_type;
+    MultiTouchState qemu_mts;
     //TODO:
-} emulator_config_state;
+} EmulatorConfigState;
 
 
 /* setter */
+void set_emulator_condition(int state);
 void set_emul_lcd_size(int width, int height);
 void set_emul_win_scale(double scale);
 void set_emul_rotation(short rotation_type);
 
 /* getter */
+int get_emulator_condition(void);
 int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
 double get_emul_win_scale(void);
 short get_emul_rotation(void);
+MultiTouchState *get_emul_multi_touch_state(void);
 
 
 #endif /* __EMUL_STATE_H__ */

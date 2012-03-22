@@ -20,6 +20,7 @@
 #include "cpu.h"
 #include "disas.h"
 #include "tcg.h"
+#include "hax.h"
 #include "qemu-barrier.h"
 
 int tb_invalidated_flag;
@@ -181,6 +182,24 @@ static void cpu_handle_debug_exception(CPUState *env)
 
 volatile sig_atomic_t exit_request;
 
+/*
+ * QEMU emulate can happens because of MMIO or emulation mode, i.e. non-PG mode,
+ * when it's because of MMIO, the MMIO, the interrupt should not be emulated,
+ * because MMIO is emulated for only one instruction now and then back to
+ * HAX kernel
+ */
+int need_handle_intr_request(CPUState *env)
+{
+#ifdef CONFIG_HAX
+    if (!hax_enabled() || hax_vcpu_emulation_mode(env))
+        return env->interrupt_request;
+    return 0;
+#else
+    return env->interrupt_request;
+#endif
+}
+
+
 int cpu_exec(CPUState *env)
 {
     int ret, interrupt_request;
@@ -260,10 +279,15 @@ int cpu_exec(CPUState *env)
                 }
             }
 
+#ifdef CONFIG_HAX
+            if (hax_enabled() && !hax_vcpu_exec(env))
+                longjmp(env->jmp_env, 1);
+#endif
+
             next_tb = 0; /* force lookup of first TB */
             for(;;) {
                 interrupt_request = env->interrupt_request;
-                if (unlikely(interrupt_request)) {
+		 if (unlikely(need_handle_intr_request(env))) {
                     if (unlikely(env->singlestep_enabled & SSTEP_NOIRQ)) {
                         /* Mask out external interrupts for this step. */
                         interrupt_request &= ~CPU_INTERRUPT_SSTEP_MASK;
@@ -593,6 +617,11 @@ int cpu_exec(CPUState *env)
                     }
                 }
                 env->current_tb = NULL;
+#ifdef CONFIG_HAX
+                if (hax_enabled() && hax_stop_emulation(env))
+                    cpu_loop_exit(env);
+#endif
+
                 /* reset soft MMU for next block (it can currently
                    only be set by a memory fault) */
             } /* for(;;) */

@@ -88,11 +88,17 @@ import org.tizen.emulator.skin.dbi.LcdType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
+import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
+<<<<<<< HEAD
+=======
+import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
+>>>>>>> release-0.21
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
+import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
 
 /**
@@ -123,6 +129,7 @@ public class EmulatorSkin {
 	private boolean isMousePressed;
 	private boolean isDragStartedInLCD;
 	private boolean isHoverState;
+	private SkinRegion currentHoverRegion;
 	private boolean isShutdownRequested;
 	
 	private SocketCommunicator communicator;
@@ -150,7 +157,7 @@ public class EmulatorSkin {
 		int y = config.getPropertyInt( PropertiesConstants.WINDOW_Y, 50 );
 		shell.setLocation( x, y );
 
-		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
+		String emulatorName = SkinUtil.makeEmulatorName( config );
 		shell.setText( emulatorName );
 
 		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED | SWT.NO_BACKGROUND );
@@ -482,8 +489,14 @@ public class EmulatorSkin {
 				// MouseMoveListener of shell does not receive event only with MouseMoveListener
 				// in case that : hover hardkey -> mouse move into LCD area
 				if( isHoverState ) {
-					shell.redraw();
+					if (currentHoverRegion.width == 0 && currentHoverRegion.height == 0) {
+						shell.redraw();
+					} else {
+						shell.redraw( currentHoverRegion.x, currentHoverRegion.y,
+								currentHoverRegion.width + 1, currentHoverRegion.height + 1, false );
+					}
 					isHoverState = false;
+					currentHoverRegion.width = currentHoverRegion.height = 0;
 				}
 			}
 			
@@ -513,8 +526,14 @@ public class EmulatorSkin {
 
 					if ( null == region ) {
 						if( isHoverState ) {
-							shell.redraw();
+							if (currentHoverRegion.width == 0 && currentHoverRegion.height == 0) {
+								shell.redraw();
+							} else {
+								shell.redraw( currentHoverRegion.x, currentHoverRegion.y,
+										currentHoverRegion.width + 1, currentHoverRegion.height + 1, false );
+							}
 							isHoverState = false;
+							currentHoverRegion.width = currentHoverRegion.height = 0;
 						}
 					} else {
 						isHoverState = true;
@@ -522,6 +541,7 @@ public class EmulatorSkin {
 						gc.setLineWidth( 1 );
 						gc.setForeground( hoverColor );
 						gc.drawRectangle( region.x, region.y, region.width, region.height );
+						currentHoverRegion = region;
 						gc.dispose();
 					}
 
@@ -543,7 +563,12 @@ public class EmulatorSkin {
 					int keyCode = getHardKeyCode( e.x, e.y );
 
 					if ( EmulatorConstants.UNKNOWN_KEYCODE != keyCode ) {
-						shell.redraw();
+						if (currentHoverRegion.width == 0 && currentHoverRegion.height == 0) {
+							shell.redraw();
+						} else {
+							shell.redraw( currentHoverRegion.x, currentHoverRegion.y,
+									currentHoverRegion.width + 1, currentHoverRegion.height + 1, false );
+						}
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
@@ -688,7 +713,11 @@ public class EmulatorSkin {
 			@Override
 			public void keyReleased( KeyEvent e ) {
 				logger.info( "key released. key event:" + e );
+<<<<<<< HEAD
 				int keyCode = e.keyCode;
+=======
+				int keyCode = e.keyCode | e.stateMask;
+>>>>>>> release-0.21
 
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
@@ -697,7 +726,11 @@ public class EmulatorSkin {
 			@Override
 			public void keyPressed( KeyEvent e ) {
 				logger.info( "key pressed. key event:" + e );
+<<<<<<< HEAD
 				int keyCode = e.keyCode;
+=======
+				int keyCode = e.keyCode | e.stateMask;
+>>>>>>> release-0.21
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
@@ -710,7 +743,7 @@ public class EmulatorSkin {
 
 		final MenuItem infoItem = new MenuItem( menu, SWT.PUSH );
 
-		String emulatorName = config.getArg( ArgsConstants.EMULATOR_NAME );
+		String emulatorName = SkinUtil.makeEmulatorName( config );
 		infoItem.setText( emulatorName );
 		//FIXME
 		infoItem.setEnabled( false );
@@ -946,7 +979,12 @@ public class EmulatorSkin {
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
+<<<<<<< HEAD
 				
+=======
+				ScreenShotDialog dialog = new ScreenShotDialog( shell, lcdCanvas );
+				dialog.open();
+>>>>>>> release-0.21
 //				Display display = shell.getDisplay();
 //				final Image image = new Image( display, lcdCanvas.getBounds() );
 //
@@ -1040,9 +1078,19 @@ public class EmulatorSkin {
 		aboutItem.setText( "About" );
 		aboutItem.setEnabled( false );
 		aboutItem.addSelectionListener( new SelectionAdapter() {
+			private boolean isOpen;
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
+<<<<<<< HEAD
 				// TODO
+=======
+				if( !isOpen ) {
+					isOpen = true;
+					AboutDialog dialog = new AboutDialog( shell, "Tizen Emulator Info", SWT.DIALOG_TRIM );
+					dialog.open();
+					isOpen = false;
+				}
+>>>>>>> release-0.21
 			}
 		} );
 

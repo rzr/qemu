@@ -266,3 +266,8 @@ void mloop_evcmd_usbkbd_off(void)
     struct mloop_evpack pack = { htons(MLOOP_EVTYPE_USB_DEL), htons(13), "keyboard" };
     mloop_evsock_send(&mloop, &pack);
 }
+
+int mloop_evcmd_get_usbkbd_status(void)
+{
+	return (usbkbd ? 1 : 0);
+}

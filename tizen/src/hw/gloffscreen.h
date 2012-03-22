@@ -60,7 +60,7 @@ typedef struct _GloSurface GloSurface;
 extern int glo_initialised(void);
 
 /* Initialise gloffscreen */
-extern void glo_init(void);
+extern int glo_init(void);
 
 /* Uninitialise gloffscreen */
 extern void glo_kill(void);

@@ -57,6 +57,8 @@ struct _debug_channel
 	char multiname[15];
 };
 
+void set_log_path(char *path);
+
 #ifndef NO_DEBUG
 #define MSGSIZE_MAX 2048
 #define __GET_DEBUGGING_FIXME(dbch) ((dbch)->flags & (1 << __DBCL_FIXME))

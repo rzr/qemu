@@ -153,6 +153,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "audio/audio.h"
 #include "migration.h"
 #include "kvm.h"
+#include "hax.h"
 #include "qjson.h"
 #include "qemu-option.h"
 #include "qemu-config.h"
@@ -189,10 +190,10 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #define MAX_VIRTIO_CONSOLES 1
 
-// virtio-gl pci device 
+#ifdef CONFIG_MARU
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
-extern int gl_acceleration_capability_check (void);
-
+extern int tizen_base_port;
+#endif
 
 static const char *data_dir;
 const char *bios_name = NULL;
@@ -233,6 +234,7 @@ const char *vnc_display;
 #endif
 int acpi_enabled = 1;
 int no_hpet = 0;
+int hax_disabled = 0;
 int fd_bootchk = 1;
 int no_reboot = 0;
 int no_shutdown = 0;
@@ -255,7 +257,10 @@ int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
 
 //virtio-gl
+#ifndef _WIN32
+extern int gl_acceleration_capability_check (void);
 int enable_gl = 1;
+#endif
 
 typedef struct FWBootEntry FWBootEntry;
 
@@ -286,6 +291,7 @@ static NotifierList machine_init_done_notifiers =
 static int tcg_allowed = 1;
 int kvm_allowed = 0;
 int xen_allowed = 0;
+int hax_allowed = 0;
 uint32_t xen_domid;
 enum xen_mode xen_mode = XEN_EMULATE;
 static int tcg_tb_size;
@@ -1496,8 +1502,13 @@ static void main_loop(void)
 #ifdef CONFIG_PROFILER
     int64_t ti;
 #endif
+
+#ifdef CONFIG_HAX
+    hax_sync_vcpus();
+#endif
+
     do {
-        nonblocking = !kvm_enabled() && last_io > 0;
+        nonblocking = !(kvm_enabled()|| hax_enabled()) && last_io > 0;
 #ifdef CONFIG_PROFILER
         ti = profile_getclock();
 #endif
@@ -1760,6 +1771,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
+#ifndef _WIN32
 	// virtio-gl pci device
 	if (!enable_gl) {
 		// ignore virtio-gl-pci device, even if users set it in option.
@@ -1768,7 +1780,8 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 			return 0;
 		}
 	}
-
+#endif
+	
     dev = qdev_device_add(opts);
     if (!dev)
         return -1;
@@ -2023,7 +2036,18 @@ static QEMUMachine *machine_parse(const char *name)
 
 static int tcg_init(void)
 {
+    int ret = 0;
     tcg_exec_init(tcg_tb_size * 1024 * 1024);
+#ifdef	CONFIG_HAX
+    if (!hax_disabled)
+    {
+    	ret = hax_init();
+	dprint("HAX is %s and emulator runs in %s mode\n",
+		!ret ? "working" : "not working",
+		!ret ? "fast virt" : "emulation");
+    } else
+    	dprint("HAX is disabled and emulator runs in emulation mode.\n");
+#endif	
     return 0;
 }
 
@@ -2037,6 +2061,7 @@ static struct {
     { "tcg", "tcg", tcg_available, tcg_init, &tcg_allowed },
     { "xen", "Xen", xen_available, xen_init, &xen_allowed },
     { "kvm", "KVM", kvm_available, kvm_init, &kvm_allowed },
+    //{ "hax", "HAX", hax_available, hax_init, &hax_allowed },
 };
 
 static int configure_accelerator(void)
@@ -2204,7 +2229,6 @@ static int find_device_opt (QemuOpts *opts, void *opaque)
     }
     return 0;
 }
-
 
 int use_qemu_display = 0; //0:use tizen qemu sdl, 1:use original qemu sdl
 int main(int argc, char **argv, char **envp)
@@ -2487,8 +2511,7 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_MARU
                 gethostproxy(proxy);
                 gethostDNS(dns1, dns2);
-
-                kernel_cmdline = g_strdup_printf("%s proxy=%s dns1=%s dns2=%s", optarg, proxy, dns1, dns2);
+                kernel_cmdline = g_strdup_printf("%s sdb_port=%d, proxy=%s dns1=%s dns2=%s", optarg, tizen_base_port, proxy, dns1, dns2);
                 fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
 #else
                 kernel_cmdline = optarg;
@@ -2902,7 +2925,9 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
 			case QEMU_OPTION_enable_gl:
+#ifndef _WIN32
 				enable_gl = 1;
+#endif
 				break;
             case QEMU_OPTION_machine:
                 olist = qemu_find_opts("machine");
@@ -3131,6 +3156,14 @@ int main(int argc, char **argv, char **envp)
                     fclose(fp);
                     break;
                 }
+            case QEMU_OPTION_enable_hax:
+                olist = qemu_find_opts("machine");
+                qemu_opts_reset(olist);
+                //qemu_opts_parse(olist, "accel=hax", 0);
+                break;
+            case QEMU_OPTION_disable_hax:
+                hax_disabled = 1;
+                break;
             default:
                 os_parse_cmd_args(popt->index, optarg);
             }
@@ -3138,12 +3171,12 @@ int main(int argc, char **argv, char **envp)
     }
     loc_set_none();
 
-
+#ifndef _WIN32
 	if (enable_gl && (gl_acceleration_capability_check () != 0)) {
 		enable_gl = 0;
 		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
 	}
-
+	
 	if (enable_gl) {
 		device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
 		qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
@@ -3153,8 +3186,9 @@ int main(int argc, char **argv, char **envp)
 			}
 		}
 	}
-
-
+#endif
+	
+	
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the
      * other one may be encountered later on the command line, changing the
@@ -3276,8 +3310,6 @@ int main(int argc, char **argv, char **envp)
     if (default_vga)
         vga_interface_type = VGA_CIRRUS;
 
-    socket_init();
-
     if (qemu_opts_foreach(qemu_find_opts("chardev"), chardev_init_func, NULL, 1) != 0)
         exit(1);
 #ifdef CONFIG_VIRTFS
@@ -3297,6 +3329,10 @@ int main(int argc, char **argv, char **envp)
     if (ram_size == 0) {
         ram_size = DEFAULT_RAM_SIZE * 1024 * 1024;
     }
+
+#ifdef CONFIG_HAX
+    hax_pre_init(ram_size);
+#endif
 
     configure_accelerator();
 
@@ -3324,7 +3360,7 @@ int main(int argc, char **argv, char **envp)
         exit(1);
     }
 
-    if (icount_option && (kvm_enabled() || xen_enabled())) {
+    if (icount_option && (kvm_enabled() || xen_enabled() || hax_enabled())) {
         fprintf(stderr, "-icount is not allowed with kvm or xen\n");
         exit(1);
     }
@@ -3450,6 +3486,11 @@ int main(int argc, char **argv, char **envp)
     set_numa_modes();
 
     current_machine = machine;
+
+#ifdef CONFIG_HAX
+    if (hax_enabled())
+        hax_sync_vcpus();
+#endif
 
     /* init USB devices */
     if (usb_enabled) {

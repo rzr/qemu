@@ -591,8 +591,17 @@ static int tap_win32_open(tap_win32_overlapped_t **phandle,
               USERMODEDEVICEDIR,
               device_guid,
               TAPSUFFIX);
-
+#ifndef CONFIG_MARU
     handle = CreateFile (
+        device_path,
+        GENERIC_READ | GENERIC_WRITE,
+        0,
+        0,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
+        0 );
+#else
+     handle = CreateFile (
         g_win32_locale_filename_from_utf8(device_path),
         GENERIC_READ | GENERIC_WRITE,
         0,
@@ -601,6 +610,7 @@ static int tap_win32_open(tap_win32_overlapped_t **phandle,
         FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
         0 );
 
+#endif
     if (handle == INVALID_HANDLE_VALUE) {
         return -1;
     }

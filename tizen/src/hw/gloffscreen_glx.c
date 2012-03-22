@@ -77,20 +77,23 @@ int glo_initialised(void) {
 }
 
 /* Initialise gloffscreen */
-void glo_init(void) {
-	fprintf(stdout, "[rla1957]glo_init() in gloffscreen_glx.c\n");
+int glo_init(void) {
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     /* Open a connection to the X server */
     glo.dpy = XOpenDisplay( NULL );
     if ( glo.dpy == NULL ) {
         printf( "Unable to open a connection to the X server\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     glo_inited = 1;
     glo_test_readback_methods();
+
+	return 0;
 }
 
 /* Uninitialise gloffscreen */
@@ -212,8 +215,7 @@ static void glo_surface_try_alloc_xshm_image(GloSurface *surface) {
 GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     GloSurface           *surface;
 
-    if (!context) 
-		return NULL;
+    if (!context) return 0;
 
     surface = (GloSurface*)qemu_malloc(sizeof(GloSurface));
     memset(surface, 0, sizeof(GloSurface));

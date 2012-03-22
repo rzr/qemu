@@ -89,9 +89,8 @@ int gl_acceleration_capability_check (void) {
     int glFormat, glType;
 
     if (glo_sanity_test () != 0) {
-        printf ("glo_sanity_test() failed.\n");
-        test_failure = 1;
-        goto TEST_END;
+        // test failed.
+        return 1;
     }
 
     memset(datain_flip, 0, TX*TY*4);
@@ -109,33 +108,11 @@ int gl_acceleration_capability_check (void) {
       memcpy(&datain_flip[((TY-1)-y)*bpp*TX], &datain[y*bpp*TX], bpp*TX);
     }
 
-    if (glo_init() != 0) {
-        printf ("glo_init() failed.\n");
-        test_failure = 1;
-        goto TEST_END;
-    }
-
+    glo_init();
     // new surface
     context = glo_context_create(bufferFlags, 0);
-	if (context == NULL) {
-        printf ("glo_context_create() failed.\n");
-        test_failure = 1;
-        goto TEST_END;
-    }
-
     surface = glo_surface_create(TX, TY, context);
-	if (surface == NULL) {
-        printf ("glo_surface_create() failed.\n");
-        test_failure = 1;
-        goto TEST_END;
-    }
-
-    if (!glo_surface_makecurrent(surface)) {
-        printf ("glo_surface_makecurrent() failed.\n");
-        test_failure = 1;
-        goto TEST_END;
-    }
-
+    glo_surface_makecurrent(surface);
     printf("GL VENDOR %s\n", glGetString(GL_VENDOR));
     printf("GL RENDERER %s\n", glGetString(GL_RENDERER));
     printf("GL VERSION %s\n", glGetString(GL_VERSION));

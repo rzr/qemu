@@ -226,8 +226,8 @@ static int check_port_bind_listen(u_int port)
 	addr.sin_port = htons(port);
 
 	if (((s = qemu_socket(AF_INET,SOCK_STREAM,0)) < 0) ||
-			(bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
 			(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
+			(bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
 			(listen(s,1) < 0)) {
 
 		/* fail */
@@ -281,7 +281,6 @@ void sdb_setup(void)
 	int   tries     = 10;
 	const char *base_port = "26100";
 	int   success   = 0;
-	int   s;
 	int   port;
 	uint32_t  guest_ip;
 	const char *p;
@@ -292,12 +291,12 @@ void sdb_setup(void)
 	port = strtol(base_port, (char **)&p, 0);
 
 	for ( ; tries > 0; tries--, port += 10 ) {
-		// redir form [tcp:26100:10.0.2.16:26101]
+		// redir form [tcp:26101:10.0.2.16:26101]
 		sprintf(buf, "tcp:%d:10.0.2.16:26101", port+1);
 		if(net_slirp_redir((char*)buf) < 0)
 			continue;
 
-		//		fprintf(stdout,"SDBD established on port %d\n", port+1);
+		INFO( "SDBD established on port %d\n", port+1);
 		success = 1;
 		break;
 	}
@@ -308,10 +307,10 @@ void sdb_setup(void)
 		exit(1);
 	}
 
-//	if( tizen_base_port != port ){
-//		ERR( "sdb port is miss match. Aborting (tizen_base_port=%d, port=%d)\n", tizen_base_port, port);
-//		exit(1);
-//	}
+	if( tizen_base_port != port ){
+		ERR( "sdb port is miss match. Aborting port :%d, tizen_base_port: %d\n", port, tizen_base_port);
+		exit(1);
+	}
 
 	/* Save base port. */
 	tizen_base_port = port;
@@ -324,11 +323,16 @@ void sdb_setup(void)
 	}else{
 		INFO("redirect [%s] success\n", buf);
 	}
+}
 
-	/* send a simple message to the SDB host server to tell it we just started.
-	 * it should be listening on port 26099. if we can't reach it, don't bother
+void notify_sdb_daemon_start(void)
+{
+	int s;
+    /* 
+     * send a simple message to the SDB host server to tell it we just started.
+	 * it should be listening on port 26099.
 	 */
-	do
+    do
 	{
 		char tmp[32] = {0};
 
@@ -340,12 +344,16 @@ void sdb_setup(void)
 		}
 
 		/* length is hex: 0x13 = 19 */
-		sprintf(tmp,"0013host:emulator:%d",port+1);
-		socket_send(s, tmp, 30);
+		sprintf(tmp,"0013host:emulator:%d", tizen_base_port +1);
+		
+        if(socket_send(s, tmp, 30) < 0) {
+            ERR( "message sending to sdb server error!\n");
+        }
 
 	}
 	while (0);
 
 	if (s >= 0)
 		socket_close(s);
+   
 }

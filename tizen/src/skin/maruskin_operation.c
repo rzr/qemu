@@ -27,6 +27,7 @@
  *
  */
 
+
 #include <unistd.h>
 #include <stdio.h>
 #include "maruskin_operation.h"
@@ -39,40 +40,28 @@
 #include "nbd.h"
 #include "../mloop_event.h"
 #include "emul_state.h"
-
-#ifndef _WIN32
 #include "maruskin_keymap.h"
-#endif
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
-enum {
-    HARD_KEY_HOME = 101,
-    HARD_KEY_POWER = 103,
-};
 
-enum {
-    MOUSE_DOWN = 1,
-    MOUSE_UP = 2,
-    MOUSE_DRAG = 3,
-};
+void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
+{
+    INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
+        handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type );
 
-enum {
-    KEY_PRESSED = 1,
-    KEY_RELEASED = 2,
-};
-
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation ) {
-    INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation:%d\n",
-        handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation );
-
+    set_emul_win_scale(scale_factor);
     maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height);
 }
 
-void do_mouse_event( int event_type, int x, int y, int z ) {
+void do_mouse_event( int event_type, int x, int y, int z )
+{
     TRACE( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
-    if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
+    if (get_emul_multi_touch_state()->multitouch_enable == 1) {
+        maru_finger_processing(x, y, event_type);
+    }
+    else if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) { //single touch
         kbd_mouse_event(x, y, z, 1);
     } else if (MOUSE_UP == event_type) {
         kbd_mouse_event(x, y, z, 0);
@@ -83,19 +72,41 @@ void do_mouse_event( int event_type, int x, int y, int z ) {
     usleep(100);
 }
 
-void do_key_event( int event_type, int keycode ) {
+void do_key_event( int event_type, int keycode )
+{
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
-#ifndef _WIN32
-    if (KEY_PRESSED == event_type) {
-        kbd_put_keycode(curses2keycode[keycode]);
-    } else if (KEY_RELEASED == event_type) {
-        kbd_put_keycode(curses2keycode[keycode] | 0x80);
+    //check for multi-touch
+    if (keycode == JAVA_KEYCODE_BIT_CTRL) {
+        if (KEY_PRESSED == event_type) {
+            get_emul_multi_touch_state()->multitouch_enable = 1;
+            INFO("multi-touch enabled\n");
+        } else if (KEY_RELEASED == event_type) {
+            get_emul_multi_touch_state()->multitouch_enable = 0;
+            clear_finger_slot();
+            INFO("multi-touch disabled\n");
+        }
     }
-#endif
+
+    if (!mloop_evcmd_get_usbkbd_status()) {
+    	return;
+    }
+
+    int scancode = javakeycode_to_scancode(keycode);
+    if (scancode == -1) {
+        INFO("cannot find scancode\n");
+        return;
+    }
+
+    if (KEY_PRESSED == event_type) {
+        kbd_put_keycode(scancode);
+    } else if (KEY_RELEASED == event_type) {
+        kbd_put_keycode(scancode | 0x80);
+    }
 }
 
-void do_hardkey_event( int event_type, int keycode ) {
+void do_hardkey_event( int event_type, int keycode )
+{
     TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     // press
@@ -108,7 +119,11 @@ void do_hardkey_event( int event_type, int keycode ) {
                 if ( is_suspended_state() ) {
                     INFO( "user requests system resume.\n" );
                     resume();
+#ifdef _WIN32
+                    Sleep( 500 );
+#else
                     usleep( 500 * 1000 );
+#endif
                 }
             }
 
@@ -126,7 +141,8 @@ void do_hardkey_event( int event_type, int keycode ) {
 
 }
 
-void do_scale_event( double scale_factor ) {
+void do_scale_event( double scale_factor )
+{
     INFO( "do_scale_event scale_factor:%lf", scale_factor);
 
     set_emul_win_scale(scale_factor);
@@ -137,7 +153,8 @@ void do_scale_event( double scale_factor ) {
     //vga_hw_update();
 }
 
-void do_rotation_event( int rotation_type) {
+void do_rotation_event( int rotation_type)
+{
 
     INFO( "do_rotation_event rotation_type:%d", rotation_type);
 
@@ -149,10 +166,10 @@ void do_rotation_event( int rotation_type) {
             sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
             break;
         case ROTATION_LANDSCAPE:
-            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
+            sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
             break;
         case ROTATION_REVERSE_PORTRAIT:
-            sprintf( send_buf, "1\n3\n-9.80665\n0\n0\n" );
+            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
             break;
         case ROTATION_REVERSE_LANDSCAPE:
             sprintf(send_buf, "1\n3\n9.80665\n0\n0\n");
@@ -188,11 +205,13 @@ void do_rotation_event( int rotation_type) {
 
 }
 
-void open_shell(void) {
+void open_shell(void)
+{
     //TODO
 }
 
-void onoff_usb_kbd( int on ) {
+void onoff_usb_kbd( int on )
+{
     INFO( "usb kbd on/off:%d\n", on );
     //TODO
     if(on) {
@@ -204,7 +223,8 @@ void onoff_usb_kbd( int on ) {
 }
 
 
-void request_close( void ) {
+void request_close( void )
+{
     INFO( "request_close\n" );
 
     ps2kbd_put_keycode( 103 & 0x7f );

@@ -134,6 +134,7 @@ xfs=""
 
 vhost_net="no"
 kvm="no"
+hax="no"
 gprof="no"
 debug_tcg="no"
 debug_mon="no"
@@ -674,6 +675,10 @@ for opt do
   ;;
   --enable-gl) gl="yes"
   ;;
+  --disable-hax) hax="no"
+  ;;
+  --enable-hax) hax="yes"
+  ;;
   --disable-tcg-interpreter) tcg_interpreter="no"
   ;;
   --enable-tcg-interpreter) tcg_interpreter="yes"
@@ -1037,6 +1042,11 @@ echo "  --enable-bluez           enable bluez stack connectivity"
 echo "  --disable-slirp          disable SLIRP userspace network connectivity"
 echo "  --disable-kvm            disable KVM acceleration support"
 echo "  --enable-kvm             enable KVM acceleration support"
+echo "  --disable-gl             disable GL acceleration support"
+
+echo "  --disable-hax            disable HAX acceleration support"
+echo "  --enable-hax             enable HAX acceleration support"
+
 echo "  --disable-gl             disable GL acceleration support"
 echo "  --enable-gl              enable GL acceleration support"
 echo "  --enable-tcg-interpreter enable TCG with bytecode interpreter (TCI)"
@@ -2852,6 +2862,7 @@ echo "Linux AIO support $linux_aio"
 echo "ATTR/XATTR support $attr"
 echo "Install blobs     $blobs"
 echo "KVM support       $kvm"
+echo "HAX support       $hax"
 echo "GL support        $gl"
 echo "TCG interpreter   $tcg_interpreter"
 echo "fdt support       $fdt"
@@ -3581,6 +3592,15 @@ case "$target_arch2" in
       fi
     fi
 esac
+
+case "$target_arch2" in
+  i386|x86_64)
+  if test "$hax" = "yes" ; then
+	echo "CONFIG_HAX=y" >> $config_target_mak
+	echo "CONFIG_HAX=y" >> $config_host_mak
+  fi
+esac
+
 if test "$target_arch2" = "ppc64" -a "$fdt" = "yes"; then
   echo "CONFIG_PSERIES=y" >> $config_target_mak
 fi

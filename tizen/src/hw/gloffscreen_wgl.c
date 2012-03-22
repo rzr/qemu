@@ -129,13 +129,14 @@ int glo_sanity_test (void) {
 }
 
 /* Initialise gloffscreen */
-void glo_init(void) {
+int glo_init(void) {
     WNDCLASSEX wcx;
     PIXELFORMATDESCRIPTOR pfd;
 
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     glo.hInstance = GetModuleHandle(NULL); // Grab An Instance For Our Window
@@ -163,7 +164,8 @@ void glo_init(void) {
 
     if (!glo.hWnd) {
         printf( "Unable to create window\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     glo.hDC = GetDC(glo.hWnd);
 
@@ -177,12 +179,13 @@ void glo_init(void) {
     unsigned int pixelFormat = ChoosePixelFormat(glo.hDC, &pfd);
     DescribePixelFormat(glo.hDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
     if (!SetPixelFormat(glo.hDC, pixelFormat, &pfd))
-        return;
+        return 1;
 
     glo.hContext = wglCreateContext(glo.hDC);
     if (glo.hContext == NULL) {
         printf( "Unable to create GL context\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     wglMakeCurrent(glo.hDC, glo.hContext);
 
@@ -204,10 +207,13 @@ void glo_init(void) {
         !wglCreatePbufferARB ||
         !wglDestroyPbufferARB) {
         printf( "Unable to load the required WGL extensions\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     glo_inited = 1;
+
+	return 0
 }
 
 /* Uninitialise gloffscreen */

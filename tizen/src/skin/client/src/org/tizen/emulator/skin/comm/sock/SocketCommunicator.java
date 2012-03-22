@@ -180,7 +180,11 @@ public class SocketCommunicator implements ICommunicator {
 				switch ( command ) {
 				case HEART_BEAT:
 					resetHeartbeatCount();
+<<<<<<< HEAD
 					logger.info( "received HEAR_BEAT from QEMU." );
+=======
+					logger.fine( "received HEAR_BEAT from QEMU." );
+>>>>>>> release-0.21
 					sendToQEMU( SendCommand.RESPONSE_HEART_BEAT, null );
 					break;
 				case SENSOR_DAEMON_START:
@@ -190,6 +194,7 @@ public class SocketCommunicator implements ICommunicator {
 					}
 					break;
 				case SHUTDOWN:
+					logger.info( "received RESPONSE_SHUTDOWN from QEMU." );
 					sendToQEMU( SendCommand.RESPONSE_SHUTDOWN, null );
 					isTerminated = true;
 					terminate();

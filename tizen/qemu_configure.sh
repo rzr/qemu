@@ -17,6 +17,7 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-maru \
  --enable-gl
+# --enable-ffmpeg
 # --enable-v4l2 \
 # --enable-debug \
 # --enable-profiler \
@@ -29,9 +30,12 @@ exec ./configure \
  --audio-drv-list=winwave \
  --enable-mixemu \
  --disable-vnc-tls \
+ --audio-card-list=ac97 \
  --enable-ldst-optimization \
+ --enable-hax \
  --enable-maru \
- --enable-gl $1
+ --enable-gl
+# --enable-ffmpeg
 # --disable-vnc-jpeg \
 # --disable-jpeg
 ;;

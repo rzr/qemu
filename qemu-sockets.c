@@ -665,18 +665,16 @@ static void socket_cleanup(void)
 int socket_init(void)
 {
 #ifdef _WIN32
-#ifndef CONFIG_MARU
     WSADATA Data;
     int ret, err;
 
-    ret = WSAStartup(MAKEWORD(2,2), &Data);
+    ret = WSAStartup(MAKEWORD(2,0), &Data);
     if (ret != 0) {
         err = WSAGetLastError();
         fprintf(stderr, "WSAStartup: %d\n", err);
         return -1;
     }
     atexit(socket_cleanup);
-#endif
 #endif
     return 0;
 }
