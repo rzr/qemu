@@ -129,13 +129,14 @@ int glo_sanity_test (void) {
 }
 
 /* Initialise gloffscreen */
-void glo_init(void) {
+int glo_init(void) {
     WNDCLASSEX wcx;
     PIXELFORMATDESCRIPTOR pfd;
 
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     glo.hInstance = GetModuleHandle(NULL); // Grab An Instance For Our Window
@@ -163,7 +164,8 @@ void glo_init(void) {
 
     if (!glo.hWnd) {
         printf( "Unable to create window\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     glo.hDC = GetDC(glo.hWnd);
 
@@ -177,12 +179,13 @@ void glo_init(void) {
     unsigned int pixelFormat = ChoosePixelFormat(glo.hDC, &pfd);
     DescribePixelFormat(glo.hDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
     if (!SetPixelFormat(glo.hDC, pixelFormat, &pfd))
-        return;
+        return 1;
 
     glo.hContext = wglCreateContext(glo.hDC);
     if (glo.hContext == NULL) {
         printf( "Unable to create GL context\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
     wglMakeCurrent(glo.hDC, glo.hContext);
 
@@ -204,10 +207,13 @@ void glo_init(void) {
         !wglCreatePbufferARB ||
         !wglDestroyPbufferARB) {
         printf( "Unable to load the required WGL extensions\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return 1;
     }
 
     glo_inited = 1;
+
+	return 0
 }
 
 /* Uninitialise gloffscreen */
@@ -697,7 +703,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
     wglChoosePixelFormatARB( glo.hDC, pf_attri, pf_attrf, 1, &context->wglPixelFormat, &numReturned);
     if( numReturned == 0 ) {
         printf( "No matching configs found.\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     // We create a tiny pbuffer - just so we can make a context of the right pixel format
@@ -705,18 +712,21 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
                                              16, 16, pb_attr );
     if( !context->hPBuffer ) {
         printf( "Couldn't create the PBuffer\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
     context->hDC      = wglGetPbufferDCARB( context->hPBuffer );
     if( !context->hDC ) {
         printf( "Couldn't create the DC\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     context->hContext = wglCreateContext(context->hDC);
     if (context->hContext == NULL) {
         printf( "Unable to create GL context\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     if (shareLists) {
@@ -764,12 +774,14 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
                                              surface->width, surface->height, pb_attr );
     if( !surface->hPBuffer ) {
         printf( "Couldn't create the PBuffer\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
     surface->hDC      = wglGetPbufferDCARB( surface->hPBuffer );
     if( !surface->hDC ) {
         printf( "Couldn't create the DC\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     return surface;
