@@ -104,6 +104,7 @@ int glo_sanity_test (void) {
 
 /* Initialise gloffscreen */
 void glo_init(void) {
+	fprintf(stdout, "[rla1957]glo_init() in gloffscreen_xcomposite.c\n");
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
         exit( EXIT_FAILURE );
@@ -179,7 +180,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
                                    bufferAttributes, &numReturned );
     if (numReturned==0) {
         printf( "No matching configs found.\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
     context = (GloContext*)g_malloc(sizeof(GloContext));
     memset(context, 0, sizeof(GloContext));
@@ -194,7 +196,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
 
     if (!context->context) {
         printf( "glXCreateNewContext failed\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     return context;
@@ -248,7 +251,7 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     XVisualInfo *vis;
 
     if (!context)
-      return 0;
+      return NULL;
 
     surface = (GloSurface*)g_malloc(sizeof(GloSurface));
     memset(surface, 0, sizeof(GloSurface));
@@ -257,6 +260,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     surface->context = context;
 
     vis = glXGetVisualFromFBConfig(glo.dpy, ((struct _GloContext*)context)->fbConfig);
+	if (vis == NULL)
+		return NULL;
 
     attr.background_pixel = 0xff000000;
     attr.border_pixel = 0;
@@ -273,7 +278,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
 
     if (!surface->window) {
         printf( "XCreateWindow failed\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     XMapWindow(glo.dpy, surface->window);
@@ -289,7 +295,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
 
     if(surface->pixmap == 0) {
         fprintf(stderr, "Failed to allocate pixmap!\n");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+		return NULL;
     }
 
     XSync(glo.dpy, 0);

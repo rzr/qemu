@@ -78,6 +78,7 @@ int glo_initialised(void) {
 
 /* Initialise gloffscreen */
 void glo_init(void) {
+	fprintf(stdout, "[rla1957]glo_init() in gloffscreen_glx.c\n");
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
         exit( EXIT_FAILURE );
@@ -147,7 +148,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
                                  bufferAttributes, &numReturned );
   if (numReturned==0) {
       printf( "No matching configs found.\n" );
-      exit( EXIT_FAILURE );
+      //exit( EXIT_FAILURE );
+	  return NULL;
   }
   context = (GloContext*)qemu_malloc(sizeof(GloContext));
   memset(context, 0, sizeof(GloContext));
@@ -162,7 +164,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
 
   if (!context->context) {
     printf( "glXCreateNewContext failed\n" );
-    exit( EXIT_FAILURE );
+    //exit( EXIT_FAILURE );
+	return NULL;
   }
 
   return context;
@@ -209,7 +212,8 @@ static void glo_surface_try_alloc_xshm_image(GloSurface *surface) {
 GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     GloSurface           *surface;
 
-    if (!context) return 0;
+    if (!context) 
+		return NULL;
 
     surface = (GloSurface*)qemu_malloc(sizeof(GloSurface));
     memset(surface, 0, sizeof(GloSurface));
@@ -222,7 +226,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
 
     if (!surface->xPixmap) {
       printf( "XCreatePixmap failed\n" );
-      exit( EXIT_FAILURE );
+      //exit( EXIT_FAILURE );
+	  return NULL;
     }
 
     /* Create a GLX window to associate the frame buffer configuration
@@ -230,7 +235,8 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     surface->glxPixmap = glXCreatePixmap( glo.dpy, context->fbConfig, surface->xPixmap, NULL );
     if (!surface->glxPixmap) {
       printf( "glXCreatePixmap failed\n" );
-      exit( EXIT_FAILURE );
+      //exit( EXIT_FAILURE );
+	  return NULL;
     }
 
     // If we're using XImages to pull the data from the graphics card...

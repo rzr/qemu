@@ -132,11 +132,13 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
 
                 CASE_OUT_POINTERS:
                 {
-                    /* It seems that we never experience NULL out pointers!!! */
-                    if (args_size == 0 && func_number != 4) // FIXMEIM - hack for now
-                        return 0;
-
-                    if(*(int*)argptr) {
+					/* NULL pointer is used as output pointer
+					   since the argument size is zero. */
+					if (args_size == 0) {
+						*(int*)r_buffer = 0;
+						r_buffer += 4;
+						args[i] = NULL;
+					} else if(*(int*)argptr) {
                         *(int*)r_buffer = args_size;
                         r_buffer+=4;
                         args[i] = (host_ptr)r_buffer;

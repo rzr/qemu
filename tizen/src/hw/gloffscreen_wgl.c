@@ -697,7 +697,8 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
     wglChoosePixelFormatARB( glo.hDC, pf_attri, pf_attrf, 1, &context->wglPixelFormat, &numReturned);
     if( numReturned == 0 ) {
         printf( "No matching configs found.\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     // We create a tiny pbuffer - just so we can make a context of the right pixel format
@@ -705,18 +706,21 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
                                              16, 16, pb_attr );
     if( !context->hPBuffer ) {
         printf( "Couldn't create the PBuffer\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
     context->hDC      = wglGetPbufferDCARB( context->hPBuffer );
     if( !context->hDC ) {
         printf( "Couldn't create the DC\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     context->hContext = wglCreateContext(context->hDC);
     if (context->hContext == NULL) {
         printf( "Unable to create GL context\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     if (shareLists) {
@@ -764,12 +768,14 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
                                              surface->width, surface->height, pb_attr );
     if( !surface->hPBuffer ) {
         printf( "Couldn't create the PBuffer\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
     surface->hDC      = wglGetPbufferDCARB( surface->hPBuffer );
     if( !surface->hDC ) {
         printf( "Couldn't create the DC\n" );
-        exit( EXIT_FAILURE );
+        //exit( EXIT_FAILURE );
+		return NULL;
     }
 
     return surface;
