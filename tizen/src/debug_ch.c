@@ -33,6 +33,9 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#ifdef _win32
+#include <share.h>
+#endif
 #include "debug_ch.h"
 // #include "fileio.h"
 
@@ -425,18 +428,18 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
  	va_start(valist, format);
 	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
-
+#ifdef _WIN32
+	if ((fp = _fsopen(logpath, "a+", _SH_DENYNO)) == NULL) {
+#else
 	if ((fp = fopen(logpath, "a+")) == NULL) {
+#endif
 		fprintf(stdout, "Emulator can't open.\n"
 				"Please check if "
 				"this binary file is running on the right path.\n");
 		exit(1);
 	}
 	fprintf(fp,"%s", buf);
-//	fputs(buf, fp);
 	fclose(fp);
-//	ret = fprintf(logfile, "%s\n", buf);
-//	fflush(stderr);
 
 	return ret;
 }
