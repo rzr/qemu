@@ -58,10 +58,7 @@ public class EmulatorConfig {
 		public static final String TEST_HEART_BEAT_IGNORE = "test.hb.ignore";
 		public static final String VM_PATH = "vm.path";
 		public static final String LOG_LEVEL = "log.level";
-<<<<<<< HEAD
-=======
 		public static final String NET_BASE_PORT = "net.baseport";
->>>>>>> release-0.21
 	}
 	
 	public interface PropertiesConstants {

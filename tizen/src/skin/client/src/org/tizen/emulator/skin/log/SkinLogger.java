@@ -142,27 +142,18 @@ public class SkinLogger {
 		
 	}
 	
-<<<<<<< HEAD
-=======
 	public static void end() {
 		loggerMap.clear();
 	}
 	
->>>>>>> release-0.21
 	public static <T> SkinLogger getSkinLogger( Class<T> clazz ) {
 		
 		String name = null;
 		
 		if( null == clazz ) {
-<<<<<<< HEAD
-			name = SkinLogger.class.getSimpleName();
-		}else {
-			name = clazz.getSimpleName();
-=======
 			name = SkinLogger.class.getName();
 		}else {
 			name = clazz.getName();
->>>>>>> release-0.21
 		}
 		
 		SkinLogger skinLogger = loggerMap.get( clazz );

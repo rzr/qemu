@@ -29,7 +29,6 @@
 
 package org.tizen.emulator.skin.screenshot;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -57,7 +56,6 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
-
 import org.tizen.emulator.skin.util.IOUtil;
 
 public class ScreenShotDialog {

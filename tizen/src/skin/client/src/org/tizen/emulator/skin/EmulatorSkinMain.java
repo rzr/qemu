@@ -71,27 +71,6 @@ public class EmulatorSkinMain {
 			
 			initLog( args );
 
-<<<<<<< HEAD
-		initLog( args );
-
-		Map<String, String> argsMap = parsArgs( args );
-
-		int lcdWidth = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_WIDTH ) );
-		int lcdHeight = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_HEIGHT ) );
-		EmulatorUI dbiContents = loadDbi( lcdWidth, lcdHeight );
-		if ( null == dbiContents ) {
-			logger.severe( "Fail to load dbi file." );
-			return;
-		}
-
-		String vmPath = (String) argsMap.get( ArgsConstants.VM_PATH );
-		String propFilePath = vmPath + File.separator + PROPERTIES_FILE_NAME;
-		Properties properties = loadProperties( propFilePath );
-		if ( null == properties ) {
-			logger.severe( "Fail to load properties file." );
-			return;
-		}
-=======
 			Map<String, String> argsMap = parsArgs( args );
 
 			int lcdWidth = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_WIDTH ) );
@@ -114,7 +93,6 @@ public class EmulatorSkinMain {
 
 			EmulatorSkin skin = new EmulatorSkin( config );
 			int windowHandleId = skin.compose();
->>>>>>> release-0.21
 
 			int pid = Integer.parseInt( config.getArg( ArgsConstants.UID ) );
 			SocketCommunicator communicator = new SocketCommunicator( config, pid, windowHandleId, skin );
@@ -144,13 +122,8 @@ public class EmulatorSkinMain {
 				e.printStackTrace();
 			}
 
-<<<<<<< HEAD
-		} else {
-			logger.severe( "CommSocket is null." );
-=======
 		} finally {
 			SkinLogger.end();
->>>>>>> release-0.21
 		}
 
 	}
@@ -208,11 +181,6 @@ public class EmulatorSkinMain {
 			}
 		}
 
-<<<<<<< HEAD
-		map.put( ArgsConstants.EMULATOR_NAME, "emulator-26100" );
-
-=======
->>>>>>> release-0.21
 		logger.info( "========================================" );
 		logger.info( "args:" + map );
 		logger.info( "========================================" );
