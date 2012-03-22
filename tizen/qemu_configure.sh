@@ -17,7 +17,6 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-maru \
  --enable-gl
-# --enable-ffmpeg
 # --enable-v4l2 \
 # --enable-debug \
 # --enable-profiler \
@@ -32,8 +31,7 @@ exec ./configure \
  --disable-vnc-tls \
  --enable-ldst-optimization \
  --enable-maru \
- --enable-gl
-# --enable-ffmpeg
+ --enable-gl $1
 # --disable-vnc-jpeg \
 # --disable-jpeg
 ;;

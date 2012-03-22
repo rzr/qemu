@@ -5,6 +5,7 @@ clean()
 	cd $SRCDIR/tizen/
 	if test -e "Makefile"
 	then
+		./qemu_configure.sh
 		make clean
 	fi
 	rm -rf $SRCDIR/*.zip
