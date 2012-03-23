@@ -29,6 +29,7 @@
 
 package org.tizen.emulator.skin;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -88,9 +89,9 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
-import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
 import org.tizen.emulator.skin.util.SkinUtil;
+import org.tizen.emulator.skin.util.StringUtil;
 
 /**
  * 
@@ -681,25 +682,35 @@ public class EmulatorSkin {
 		shellItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				int portNumber = Integer.parseInt(StringUtil.nvl(config.getArg( ArgsConstants.NET_BASE_PORT ))) + 1;
-				String sdbPath = "./../../SDK/sdb/sdb"; //TOOD:
 
-				try {
+				String sdbPath = SkinUtil.getSdbPath();
+				String portNumber = StringUtil.nvl(config.getArg( ArgsConstants.NET_BASE_PORT ));
+
+				if (!StringUtil.isEmpty(portNumber) && !StringUtil.isEmpty(portNumber)) {
+					int portSdb = Integer.parseInt(portNumber) + 1;
+
+					ProcessBuilder procConnect = new ProcessBuilder(sdbPath, "connect", "localhost:" + portSdb);
+					ProcessBuilder procSdb = new ProcessBuilder();
+
 					if (SkinUtil.isLinuxPlatform()) {
-						ProcessBuilder procConnect = new ProcessBuilder(sdbPath, "connect", "localhost:" + portNumber);					
-						ProcessBuilder procSDB = new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
-								sdbPath, "-s", "localhost:" + portNumber, "shell");
-
-						procConnect.start();
-						procSDB.start();
+						procSdb.command("/usr/bin/gnome-terminal", "--disable-factory", "-x",
+								sdbPath, "-s", "localhost:" + portSdb, "shell");
 					} else if (SkinUtil.isWindowsPlatform()) {
-						//TODO:
+						procSdb.command("cmd.exe", "/c", "start",
+								sdbPath, "-s", "localhost:" + portSdb, "shell");
 					}
-				} catch (Exception e2) {
-					//TODO
-					MessageBox messageBox = new MessageBox( shell );
-					messageBox.setMessage( "ERR" );
-					messageBox.open();
+
+					try {
+						procConnect.start(); //connect with sdb
+						procSdb.start(); //open sdb shell
+					} catch (Exception ee) {
+						logger.log(Level.SEVERE, ee.getMessage(), ee);
+
+						MessageBox messageBox = new MessageBox(shell, SWT.ICON_ERROR);
+						messageBox.setText(SkinUtil.makeEmulatorName(config));
+						messageBox.setMessage(ee.getMessage());
+						messageBox.open();
+					}
 				}
 
 				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
@@ -938,14 +949,19 @@ public class EmulatorSkin {
 
 		isShutdownRequested = true;
 
-		//close sdb shell
-		int portNumber = Integer.parseInt(StringUtil.nvl(config.getArg( ArgsConstants.NET_BASE_PORT ))) + 1;
-		String sdbPath = "./../../SDK/sdb/sdb"; //TOOD:
-		ProcessBuilder procDisconnect = new ProcessBuilder(sdbPath, "connect", "localhost:" + portNumber);
-		try {
-			procDisconnect.start();
-		} catch (Exception e) {
-			//TODO
+		/* disconnect with sdb */
+		String sdbPath = SkinUtil.getSdbPath();
+		String portNumber = StringUtil.nvl(config.getArg( ArgsConstants.NET_BASE_PORT ));
+
+		if (!StringUtil.isEmpty(portNumber) && !StringUtil.isEmpty(portNumber)) {
+			int portSdb = Integer.parseInt(portNumber) + 1;
+
+			ProcessBuilder procDisconnect = new ProcessBuilder(sdbPath, "connect", "localhost:" + portSdb);
+			try {
+				procDisconnect.start();
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+			}
 		}
 
 		if ( !this.shell.isDisposed() ) {

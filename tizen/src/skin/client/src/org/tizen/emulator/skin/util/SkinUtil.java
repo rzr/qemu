@@ -30,9 +30,7 @@
 package org.tizen.emulator.skin.util;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
@@ -112,6 +110,18 @@ public class SkinUtil {
 			return vmName + ":" + portNumber;
 		}
 
+	}
+
+	public static String getSdbPath() {
+		String sdbPath = null;
+
+		if (SkinUtil.isLinuxPlatform()) {
+			sdbPath = "./../../SDK/sdb/sdb";
+		} else if (SkinUtil.isWindowsPlatform()) {
+			sdbPath = ".\\..\\..\\SDK\\sdb\\sdb.exe";
+		}
+
+		return sdbPath;
 	}
 
 	public static void adjustLcdGeometry( Canvas lcdCanvas, int scale, short rotationId ) {
