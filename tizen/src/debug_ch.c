@@ -33,18 +33,11 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#ifdef _WIN32
-#include <share.h>
-#endif
 #include "debug_ch.h"
-// #include "fileio.h"
-
-#if 0
-extern STARTUP_OPTION startup_option;
-#endif
 
 static char logpath[512] = {0,};
 static char debugchfile[256] = {0, };
+static HANDLE handle;
 
 void set_log_path(char *path)
 {
@@ -84,6 +77,7 @@ unsigned char _dbg_get_channel_flags( struct _debug_channel *channel )
 		debug_init();
 
 	if(nb_debug_options){
+        		
 		struct _debug_channel *opt;
 
 		/* first check for multi channel */
@@ -305,9 +299,19 @@ static void debug_init(void)
 	if( tmp != NULL ){
 		free(tmp);
 	}
-
-	if(access(logpath, F_OK | R_OK) == 0)
+	
+#ifdef _WIN32
+	handle = CreateFile(logpath, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL,
+                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+		if (handle == INVALID_HANDLE_VALUE) {
+			fprintf(stderr, "logfile can't open: %s\n", GetLastError());
+			exit(1);
+		}
+#else
+	if(access(logpath, F_OK | R_OK) == 0) {
 		remove(logpath);
+	}
+#endif
 }
 
 /* allocate some tmp string space */
@@ -413,7 +417,6 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	int ret = 0;
 	char buf[2048];
 	va_list valist;
-	FILE *fp;
 	
 	if (!(_dbg_get_channel_flags( channel ) & (1 << cls)))
 		return -1;
@@ -429,17 +432,25 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
 #ifdef _WIN32
-	if ((fp = _fsopen(logpath, "a+", _SH_DENYNO)) == NULL) {
+	DWORD dwWritten;
+	handle = CreateFile(logpath, FILE_APPEND_DATA, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL,
+                        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if (handle == INVALID_HANDLE_VALUE) {
+			fprintf(stderr, "logfile can't open: %s\n", GetLastError());
+		exit(1);
+	}
+	
+	WriteFile(handle, buf, strlen(buf), &dwWritten, 0);
+	CloseHandle(handle);
 #else
+	FILE *fp;
 	if ((fp = fopen(logpath, "a+")) == NULL) {
-#endif
-		fprintf(stdout, "Emulator can't open.\n"
-				"Please check if "
-				"this binary file is running on the right path.\n");
+		fprintf(stderr, "logfile can't open: %s\n", strerror(errno);
 		exit(1);
 	}
 	fprintf(fp,"%s", buf);
 	fclose(fp);
+#endif
 
 	return ret;
 }
