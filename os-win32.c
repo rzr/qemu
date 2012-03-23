@@ -54,6 +54,12 @@ static BOOL WINAPI qemu_ctrl_handler(DWORD type)
     return TRUE;
 }
 
+#ifdef CONFIG_MARU
+void os_setup_early_signal_handling(void)
+{
+    SetConsoleCtrlHandler(qemu_ctrl_handler, TRUE);
+}
+#else
 void os_setup_early_signal_handling(void)
 {
     /* Note: cpu_interrupt() is currently not SMP safe, so we force
@@ -76,6 +82,7 @@ void os_setup_early_signal_handling(void)
         }
     }
 }
+#endif  /* CONFIG_MARU */
 
 /* Look for support files in the same directory as the executable.  */
 char *os_find_datadir(const char *argv0)
