@@ -43,7 +43,8 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
-#define CLOSE_POWER_KEY_INTERVAL 1.2 // seconds
+#define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
+#define CLOSE_POWER_KEY_INTERVAL 1200 // milli-seconds
 
 void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
 {
@@ -112,6 +113,23 @@ void do_key_event( int event_type, int keycode )
 void do_hardkey_event( int event_type, int keycode )
 {
     TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
+
+    if ( KEY_PRESSED == event_type ) {
+        if ( kbd_mouse_is_absolute() ) {
+            // home key or power key is used for resume.
+            if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
+                if ( is_suspended_state() ) {
+                    INFO( "user requests system resume.\n" );
+                    resume();
+#ifdef _WIN32
+                    Sleep( RESUME_KEY_SEND_INTERVAL );
+#else
+                    usleep( RESUME_KEY_SEND_INTERVAL * 1000 );
+#endif
+                }
+            }
+        }
+    }
 
     SDL_Event event;
     memset( &event, 0, sizeof(SDL_Event) );
@@ -217,9 +235,9 @@ void request_close( void )
     do_hardkey_event( KEY_PRESSED, HARD_KEY_POWER );
 
 #ifdef _WIN32
-        Sleep( CLOSE_POWER_KEY_INTERVAL * 1000 ); // 1.6 seconds
+        Sleep( CLOSE_POWER_KEY_INTERVAL );
 #else
-        usleep( CLOSE_POWER_KEY_INTERVAL * 1000 * 1000 ); // 1.6 seconds
+        usleep( CLOSE_POWER_KEY_INTERVAL * 1000 );
 #endif
 
     do_hardkey_event( KEY_RELEASED, HARD_KEY_POWER );

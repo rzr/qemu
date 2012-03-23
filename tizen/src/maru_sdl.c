@@ -188,17 +188,7 @@ static void put_hardkey_code( SDL_UserEvent event ) {
     if ( KEY_PRESSED == event_type ) {
 
         if ( kbd_mouse_is_absolute() ) {
-
-            // home key or power key is used for resume.
-            if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
-                if ( is_suspended_state() ) {
-                    INFO( "user requests system resume.\n" );
-                    resume();
-                }
-            }
-
             ps2kbd_put_keycode( keycode & 0x7f );
-
         }
 
     } else if ( KEY_RELEASED == event_type ) {
