@@ -82,9 +82,16 @@ public class SkinUtil {
 	public static String getVmName( EmulatorConfig config ) {
 		
 		String vmPath = config.getArg( ArgsConstants.VM_PATH );
-		String[] split = StringUtil.nvl( vmPath ).split( File.separator );
+
+		String regex = "";
+		if ( isWindowsPlatform() ) {
+			regex = "\\" + File.separator;
+		} else {
+			regex = File.separator;
+		}
+		String[] split = StringUtil.nvl( vmPath ).split( regex );
 		String vmName = split[split.length - 1];
-		
+
 		return vmName;
 		
 	}
