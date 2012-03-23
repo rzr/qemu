@@ -312,6 +312,9 @@ public class EmulatorSkin {
 					if ( null != currentImage ) {
 						currentImage.dispose();
 					}
+					if ( null != currentKeyPressedImage ) {
+						currentKeyPressedImage.dispose();
+					}
 
 					imageRegistry.dispose();
 					
@@ -491,11 +494,15 @@ public class EmulatorSkin {
 
 			@Override
 			public void dragDetected( DragDetectEvent e ) {
-				logger.fine( "dragDetected e.button:" + e.button );
+				if( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( "dragDetected e.button:" + e.button );
+				}
 				if ( 1 == e.button && // left button
 						e.x > 0 && e.x < canvas.getSize().x && e.y > 0 && e.y < canvas.getSize().y ) {
 
-					logger.fine( "dragDetected in LCD" );
+					if( logger.isLoggable( Level.FINE ) ) {
+						logger.fine( "dragDetected in LCD" );
+					}
 					EmulatorSkin.this.isDragStartedInLCD = true;
 
 				}
@@ -612,7 +619,9 @@ public class EmulatorSkin {
 		deviceInfoItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				logger.fine( "Selected Info." );
+				if( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( "Open device info" );
+				}
 			}
 		} );
 
@@ -627,7 +636,9 @@ public class EmulatorSkin {
 
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				logger.fine( "Selected Always On Top." );
+				if( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( "Select Always On Top. : " + aotItem.getSelection() );
+				}
 				isTop = !isTop;
 				//TODO
 			}

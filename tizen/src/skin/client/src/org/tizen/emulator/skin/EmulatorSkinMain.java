@@ -103,7 +103,7 @@ public class EmulatorSkinMain {
 
 			if ( null != commSocket ) {
 
-				Runtime.getRuntime().addShutdownHook( new EmulatorShutdownhook( communicator, skin ) );
+				Runtime.getRuntime().addShutdownHook( new EmulatorShutdownhook( communicator ) );
 
 				Thread communicatorThread = new Thread( communicator );
 				communicatorThread.start();

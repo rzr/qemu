@@ -18,12 +18,12 @@
 
 	<target name="clean">
 		<echo message="cleaning..." />
-		<delete dir="bin" />
+		<delete dir="dist" />
 		<delete file="${jar.file}" />
 	</target>
 
 	<target name="make-properties">
-		<echo message="Make properties..." />
+		<echo message="make properties..." />
 		<tstamp>
 			<format property="build_time" pattern="MM/dd/yyyy hh:mm aa" timezone="GMT" locale="en" />
 		</tstamp>
@@ -44,91 +44,79 @@
 		</propertyfile>
 	</target>
 
-	<target name="linux-compile" depends="make-properties, clean">
+	<target name="linux-compile" depends="make-properties">
 		<echo message="compiling..." />
-		<mkdir dir="bin" />
-		<javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+        <delete dir="build" />
+		<mkdir dir="build" />
+		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
 			<classpath refid="linux-classpath" />
 		</javac>
 	</target>
 
-	<target name="windows-compile" depends="make-properties, clean">
+	<target name="windows-compile" depends="make-properties">
 		<echo message="compiling..." />
-		<mkdir dir="bin" />
-		<javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+        <delete dir="build" />
+        <mkdir dir="build" />
+		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
 			<classpath refid="windows-classpath" />
 		</javac>
 	</target>
 
-	<target name="mac-compile" depends="make-properties, clean">
+	<target name="mac-compile" depends="make-properties">
 		<echo message="compiling..." />
-		<mkdir dir="bin" />
-		<javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+        <delete dir="build" />
+        <mkdir dir="build" />
+		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
 			<classpath refid="mac-classpath" />
 		</javac>
 	</target>
 
 	<target name="linux-jar" depends="linux-compile">
 		<echo message="creating jar..." />
-		<delete dir="dist" />
-		<mkdir dir="dist" />
-		<mkdir dir="dist/icons" />
-		<copy todir="dist">
-			<fileset dir="bin" />
+		<mkdir dir="build/icons" />
+		<copy todir="build/icons">
+			<fileset dir="resource/icons" />
 		</copy>
-		<copy todir="dist/icons">
-			<fileset dir="icons" />
-		</copy>
-		<jar jarfile="${jar.file}" basedir="dist" duplicate="add">
+		<jar jarfile="${jar.file}" basedir="build" duplicate="add">
 			<fileset file="src/about.properties" />
 			<manifest>
 				<attribute name="Main-Class" value="${mainclass}" />
 				<attribute name="Class-path" value="lib/swt/gtk-linux/${swt.file}" />
 			</manifest>
 		</jar>
-		<delete dir="dist" />
+		<delete dir="build" />
 	</target>
 
 	<target name="windows-jar" depends="windows-compile">
-		<echo message="creating jar..." />
-		<delete dir="dist" />
-		<mkdir dir="dist" />
-		<mkdir dir="dist/icons" />
-		<copy todir="dist">
-			<fileset dir="bin" />
-		</copy>
-		<copy todir="dist/icons">
-			<fileset dir="icons" />
-		</copy>
-		<jar jarfile="${jar.file}" basedir="dist" duplicate="add">
+        <echo message="creating jar..." />
+        <mkdir dir="build/icons" />
+        <copy todir="build/icons">
+            <fileset dir="resource/icons" />
+        </copy>
+		<jar jarfile="${jar.file}" basedir="build" duplicate="add">
 			<fileset file="src/about.properties" />
 			<manifest>
 				<attribute name="Main-Class" value="${mainclass}" />
 				<attribute name="Class-path" value="lib/swt/win32-win32/${swt.file}" />
 			</manifest>
 		</jar>
-		<delete dir="dist" />
+		<delete dir="build" />
 	</target>
 
 	<target name="mac-jar" depends="mac-compile">
-		<echo message="creating jar..." />
-		<delete dir="dist" />
-		<mkdir dir="dist" />
-		<mkdir dir="dist/icons" />
-		<copy todir="dist">
-			<fileset dir="bin" />
-		</copy>
-		<copy todir="dist/icons">
-			<fileset dir="icons" />
-		</copy>
-		<jar jarfile="${jar.file}" basedir="dist" duplicate="add">
+        <echo message="creating jar..." />
+        <mkdir dir="build/icons" />
+        <copy todir="build/icons">
+            <fileset dir="resource/icons" />
+        </copy>
+		<jar jarfile="${jar.file}" basedir="build" duplicate="add">
 			<fileset file="src/about.properties" />
 			<manifest>
 				<attribute name="Main-Class" value="${mainclass}" />
 				<attribute name="Class-path" value="lib/swt/cocoa-macosx/${swt.file}" />
 			</manifest>
 		</jar>
-		<delete dir="dist" />
+		<delete dir="build" />
 	</target>
 
 </project>

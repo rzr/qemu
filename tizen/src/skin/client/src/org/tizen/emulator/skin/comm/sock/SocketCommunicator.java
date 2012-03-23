@@ -164,7 +164,9 @@ public class SocketCommunicator implements ICommunicator {
 				int reqId = dis.readInt();
 				short cmd = dis.readShort();
 
-				logger.fine( "Socket read - reqId:" + reqId + ", command:" + cmd + ", " );
+				if( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( "[Socket] read - reqId:" + reqId + ", command:" + cmd + ", " );
+				}
 
 				ReceiveCommand command = null;
 				
@@ -176,25 +178,32 @@ public class SocketCommunicator implements ICommunicator {
 				}
 
 				switch ( command ) {
-				case HEART_BEAT:
+				case HEART_BEAT: {
 					resetHeartbeatCount();
-					logger.fine( "received HEAR_BEAT from QEMU." );
+					if( logger.isLoggable( Level.FINE ) ) {
+						logger.fine( "received HEAR_BEAT from QEMU." );
+					}
 					sendToQEMU( SendCommand.RESPONSE_HEART_BEAT, null );
 					break;
-				case SENSOR_DAEMON_START:
+				}
+				case SENSOR_DAEMON_START: {
 					logger.info( "received SENSOR_DAEMON_START from QEMU." );
 					synchronized ( this ) {
 						isSensorDaemonStarted = true;
 					}
 					break;
-				case SHUTDOWN:
+				}
+				case SHUTDOWN: {
 					logger.info( "received RESPONSE_SHUTDOWN from QEMU." );
 					sendToQEMU( SendCommand.RESPONSE_SHUTDOWN, null );
 					isTerminated = true;
 					terminate();
 					break;
-				default:
+				}
+				default: {
+					logger.warning( "Unknown command from QEMU. command:" + cmd );
 					break;
+				}
 				}
 
 			} catch ( IOException e ) {
@@ -237,12 +246,16 @@ public class SocketCommunicator implements ICommunicator {
 			dos.write(bao.toByteArray());
 			dos.flush();
 
-			logger.fine( "Socket write - uid:" + uId + ", reqId:" + reqId + ", command:" + command.value() + " - "
-					+ command.toString() + ", length:" + length );
+			if( logger.isLoggable( Level.FINE ) ) {
+				logger.fine( "[Socket] write - uid:" + uId + ", reqId:" + reqId + ", command:" + command.value() + " - "
+						+ command.toString() + ", length:" + length );
+			}
 
 			if ( 0 < length ) {
-				logger.fine( "== data ==" );
-				logger.fine( data.toString() );
+				if( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( "== data ==" );
+					logger.fine( data.toString() );
+				}
 			}
 
 		} catch ( IOException e ) {
@@ -261,7 +274,9 @@ public class SocketCommunicator implements ICommunicator {
 
 	private void increaseHeartbeatCount() {
 		int count = heartbeatCount.incrementAndGet();
-		logger.fine("HB count : " + count);
+		if( logger.isLoggable( Level.FINE ) ) {
+			logger.fine("HB count : " + count);
+		}
 	}
 
 	private boolean isHeartbeatExpired() {

@@ -29,7 +29,10 @@
 
 package org.tizen.emulator.skin;
 
+import java.util.logging.Logger;
+
 import org.tizen.emulator.skin.comm.ICommunicator;
+import org.tizen.emulator.skin.log.SkinLogger;
 
 /**
  * 
@@ -37,18 +40,17 @@ import org.tizen.emulator.skin.comm.ICommunicator;
  */
 public class EmulatorShutdownhook extends Thread {
 
+	private Logger logger = SkinLogger.getSkinLogger( EmulatorShutdownhook.class ).getLogger();
 	private ICommunicator communicator;
-	private EmulatorSkin skin;
 	
-	public EmulatorShutdownhook( ICommunicator communicator, EmulatorSkin skin ) {
+	public EmulatorShutdownhook( ICommunicator communicator ) {
 		this.communicator = communicator;
-		this.skin = skin;
 	}
 
 	@Override
 	public void run() {
+		logger.warning( " EmulatorShutdownhook run by a signal." );
 		communicator.terminate();
-		skin.shutdown();
 	}
 	
 }
