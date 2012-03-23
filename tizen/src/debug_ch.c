@@ -33,7 +33,7 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#ifdef _win32
+#ifdef _WIN32
 #include <share.h>
 #endif
 #include "debug_ch.h"
