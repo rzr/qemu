@@ -161,9 +161,11 @@ public class EmulatorSkin {
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 		
 		int scale = SkinUtil.getValidScale( config );
-		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
-
-		arrangeSkin( lcdWidth, lcdHeight, scale, (short) rotationId );
+		
+//		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
+		// has to be portrait mode at first booting time
+		arrangeSkin( lcdWidth, lcdHeight, scale, RotationInfo.PORTRAIT.id() );
+		
 		decideHoverColor();
 
 		Menu menu = new Menu( shell );
@@ -625,6 +627,13 @@ public class EmulatorSkin {
 			}
 		} );
 
+		deviceInfoItem.addListener( SWT.PaintItem, new Listener() {
+			@Override
+			public void handleEvent( Event event ) {
+				event.gc.drawImage( imageRegistry.getIcon( IconName.DEVICE_INFO ), 0, 0 );
+			}
+		} );
+		
 		new MenuItem( menu, SWT.SEPARATOR );
 
 		final MenuItem aotItem = new MenuItem( menu, SWT.CHECK );
@@ -855,7 +864,7 @@ public class EmulatorSkin {
 			public void widgetSelected( SelectionEvent e ) {
 				if( !isOpen ) {
 					isOpen = true;
-					ScreenShotDialog dialog = new ScreenShotDialog( shell, lcdCanvas );
+					ScreenShotDialog dialog = new ScreenShotDialog( shell, lcdCanvas, config );
 					dialog.open();
 					isOpen = false;
 				}
