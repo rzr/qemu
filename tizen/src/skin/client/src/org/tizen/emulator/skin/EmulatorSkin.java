@@ -693,7 +693,8 @@ public class EmulatorSkin {
 					ProcessBuilder procSdb = new ProcessBuilder();
 
 					if (SkinUtil.isLinuxPlatform()) {
-						procSdb.command("/usr/bin/gnome-terminal", "--disable-factory", "-x",
+						procSdb.command("/usr/bin/gnome-terminal", "--disable-factory",
+								"--title=" + SkinUtil.makeEmulatorName(config), "-x",
 								sdbPath, "-s", "localhost:" + portSdb, "shell");
 					} else if (SkinUtil.isWindowsPlatform()) {
 						procSdb.command("cmd.exe", "/c", "start",
