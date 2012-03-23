@@ -88,6 +88,7 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
+import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
 import org.tizen.emulator.skin.util.SkinUtil;
 
@@ -674,27 +675,38 @@ public class EmulatorSkin {
 		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
 		advancedItem.setMenu( advancedMenu );
 
-//		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
-//		shellItem.setText( "Shell" );
-//		shellItem.setImage( imageRegistry.getIcon( IconName.SHELL ) );
-//		shellItem.addSelectionListener( new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected( SelectionEvent e ) {
-//				try {
-//					//TODO
-//					new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
-//							"ssh", "-p", "1202", "root@localhost").start();
-//					/*new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
-//							"sdb", "shell").start();*/
-//				} catch (Exception e2) {
-//					//TODO
-//				}
-//
-//				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
-//			}
-//		} );
-//
-//		new MenuItem( menu, SWT.SEPARATOR );
+		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
+		shellItem.setText( "Shell" );
+		shellItem.setImage( imageRegistry.getIcon( IconName.SHELL ) );
+		shellItem.addSelectionListener( new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				int portNumber = Integer.parseInt(StringUtil.nvl(config.getArg( ArgsConstants.NET_BASE_PORT ))) + 1;
+				String sdbPath = "./../../SDK/sdb/sdb"; //TOOD:
+
+				try {
+					if (SkinUtil.isLinuxPlatform()) {
+						ProcessBuilder procConnect = new ProcessBuilder(sdbPath, "connect", "localhost:" + portNumber);					
+						ProcessBuilder procSDB = new ProcessBuilder("/usr/bin/gnome-terminal", "--disable-factory", "-x",
+								sdbPath, "-s", "localhost:" + portNumber, "shell");
+
+						procConnect.start();
+						procSDB.start();
+					} else if (SkinUtil.isWindowsPlatform()) {
+						//TODO:
+					}
+				} catch (Exception e2) {
+					//TODO
+					MessageBox messageBox = new MessageBox( shell );
+					messageBox.setMessage( "ERR" );
+					messageBox.open();
+				}
+
+				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
+			}
+		} );
+
+		new MenuItem( menu, SWT.SEPARATOR );
 
 		MenuItem closeItem = new MenuItem( menu, SWT.PUSH );
 		closeItem.setText( "Close" );
@@ -925,6 +937,16 @@ public class EmulatorSkin {
 	public void shutdown() {
 
 		isShutdownRequested = true;
+
+		//close sdb shell
+		int portNumber = Integer.parseInt(StringUtil.nvl(config.getArg( ArgsConstants.NET_BASE_PORT ))) + 1;
+		String sdbPath = "./../../SDK/sdb/sdb"; //TOOD:
+		ProcessBuilder procDisconnect = new ProcessBuilder(sdbPath, "connect", "localhost:" + portNumber);
+		try {
+			procDisconnect.start();
+		} catch (Exception e) {
+			//TODO
+		}
 
 		if ( !this.shell.isDisposed() ) {
 			this.shell.getDisplay().asyncExec( new Runnable() {
