@@ -69,7 +69,11 @@ void do_mouse_event( int event_type, int x, int y, int z )
         ERR( "undefined mouse event type:%d\n", event_type );
     }
 
-    usleep(100);
+#ifdef _WIN32
+        Sleep(1);
+#else
+        usleep(1000);
+#endif
 }
 
 void do_key_event( int event_type, int keycode )
