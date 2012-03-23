@@ -33,11 +33,16 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#ifndef __WIN32
+#include <errno.h>
+#endif
 #include "debug_ch.h"
 
 static char logpath[512] = {0,};
 static char debugchfile[256] = {0, };
+#ifdef _WIN32
 static HANDLE handle;
+#endif
 
 void set_log_path(char *path)
 {
@@ -445,7 +450,7 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 #else
 	FILE *fp;
 	if ((fp = fopen(logpath, "a+")) == NULL) {
-		fprintf(stderr, "logfile can't open: %s\n", strerror(errno);
+		fprintf(stderr, "logfile can't open: %s\n", strerror(errno));
 		exit(1);
 	}
 	fprintf(fp,"%s", buf);
