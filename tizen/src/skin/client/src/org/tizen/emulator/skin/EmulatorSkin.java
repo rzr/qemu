@@ -34,8 +34,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,8 +58,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -82,21 +78,18 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.PropertiesConstants;
 import org.tizen.emulator.skin.dbi.ColorsType;
-import org.tizen.emulator.skin.dbi.EventInfoType;
-import org.tizen.emulator.skin.dbi.KeyMapType;
-import org.tizen.emulator.skin.dbi.LcdType;
-import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.image.ImageRegistry;
+import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
-import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
+import org.tizen.emulator.skin.util.SkinUtil;
 
 /**
  * 
@@ -120,19 +113,17 @@ public class EmulatorSkin {
 	private int currentAngle;
 	private int currentLcdWidth;
 	private int currentLcdHeight;
+	private SkinRegion currentHoverRegion;
 
 	private int pressedMouseX;
 	private int pressedMouseY;
 	private boolean isMousePressed;
 	private boolean isDragStartedInLCD;
 	private boolean isHoverState;
-	private SkinRegion currentHoverRegion;
 	private boolean isShutdownRequested;
 	
 	private SocketCommunicator communicator;
 	private int windowHandleId;
-
-	private ScheduledExecutorService canvasExecutor = Executors.newSingleThreadScheduledExecutor();
 
 	protected EmulatorSkin( EmulatorConfig config ) {
 		this.config = config;
@@ -156,25 +147,82 @@ public class EmulatorSkin {
 
 		String emulatorName = SkinUtil.makeEmulatorName( config );
 		shell.setText( emulatorName );
-
-		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED | SWT.NO_BACKGROUND );
+		
+		if( SkinUtil.isWindowsPlatform() ) {
+			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE_ICO ) );
+		}else {
+			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE ) );
+		}
+		
+		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
 		
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
-
-		int scale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 50 );
-		//TODO:
-		if (scale != 100 && scale != 75 && scale != 50 && scale != 25 ) {
-			scale = 50;
-		}
+		
+		int scale = SkinUtil.getValidScale( config );
 		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
 
 		arrangeSkin( lcdWidth, lcdHeight, scale, (short) rotationId );
+		decideHoverColor();
 
 		Menu menu = new Menu( shell );
 		addMenuItems( menu );
 		shell.setMenu( menu );
+		
+		// sdl uses this handle id.
+		windowHandleId = getWindowHandleId( lcdCanvas );
+		
+		addLCDListener( lcdCanvas );
+		addShellListener( shell );
+
+		return windowHandleId;
+
+	}
+	
+	private int getWindowHandleId( Canvas lcdCanvas ) {
+		
+		int windowHandleId = 0;
+		
+		if( SkinUtil.isLinuxPlatform() ) {
+			
+			try {
+				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
+				windowHandleId = field.getInt( lcdCanvas );
+				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
+			} catch ( IllegalArgumentException e ) {
+				logger.log( Level.SEVERE, e.getMessage(), e );
+				shutdown();
+			} catch ( IllegalAccessException e ) {
+				logger.log( Level.SEVERE, e.getMessage(), e );
+				shutdown();
+			} catch ( SecurityException e ) {
+				logger.log( Level.SEVERE, e.getMessage(), e );
+				shutdown();
+			} catch ( NoSuchFieldException e ) {
+				logger.log( Level.SEVERE, e.getMessage(), e );
+				shutdown();
+			}
+			
+		}else if( SkinUtil.isWindowsPlatform() ) {
+			
+			logger.info( "lcdCanvas.handle:" + lcdCanvas.handle );
+			windowHandleId = lcdCanvas.handle;
+			
+		}else if( SkinUtil.isMacPlatform() ) {
+			
+			//TODO
+			
+		}else {
+			logger.severe( "Not Supported OS platform:" + SWT.getPlatform() );
+			System.exit( -1 );
+		}
+
+		return windowHandleId;
+		
+	}
+	
+	private void decideHoverColor() {
 		
 		ColorsType colors = config.getDbiContents().getColors();
 		if ( null != colors ) {
@@ -194,47 +242,8 @@ public class EmulatorSkin {
 			hoverColor = shell.getDisplay().getSystemColor( SWT.COLOR_WHITE );			
 		}
 
-		// sdl uses this handle id.
-		String platform = SWT.getPlatform();
-		if( "gtk".equalsIgnoreCase( platform ) ) {
-			try {
-				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
-				windowHandleId = field.getInt( lcdCanvas );
-				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
-			} catch ( IllegalArgumentException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
-				shutdown();
-				return windowHandleId;
-			} catch ( IllegalAccessException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
-				shutdown();
-				return windowHandleId;
-			} catch ( SecurityException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
-				shutdown();
-				return windowHandleId;
-			} catch ( NoSuchFieldException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
-				shutdown();
-				return windowHandleId;
-			}
-		}else if( "win32".equalsIgnoreCase( platform ) ) {
-			logger.info( "lcdCanvas.handle:" + lcdCanvas.handle );
-			windowHandleId = lcdCanvas.handle;
-		}else if( "cocoa".equalsIgnoreCase( platform ) ) {
-			//TODO
-		}else {
-			logger.severe( "Not Supported OS platform:" + platform );
-			System.exit( -1 );
-		}
-		
-		addLCDListener( lcdCanvas );
-		addShellListener( shell );
-
-		return windowHandleId;
-
 	}
-
+	
 	public void open() {
 
 		if ( null == this.communicator ) {
@@ -272,160 +281,16 @@ public class EmulatorSkin {
 			currentKeyPressedImage.dispose();
 		}
 
-		currentImage = createScaledImage( rotationId, scale, ImageType.IMG_TYPE_MAIN );
-		currentKeyPressedImage = createScaledImage( rotationId, scale, ImageType.IMG_TYPE_PRESSED );
+		currentImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN );
+		currentKeyPressedImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale,
+				ImageType.IMG_TYPE_PRESSED );
 
-		trimSkin( currentImage );
-		adjustLcdGeometry( lcdCanvas, scale, rotationId );
+		SkinUtil.trimShell( shell, currentImage );
+		SkinUtil.adjustLcdGeometry( lcdCanvas, scale, rotationId );
 
 		ImageData imageData = currentImage.getImageData();
 		shell.setMinimumSize( imageData.width, imageData.height );
 		shell.setSize( imageData.width, imageData.height );
-
-	}
-
-	private Image createScaledImage( short rotationId, int scale, ImageType type ) {
-
-		ImageData originalImageData = imageRegistry.getImageData( rotationId, type );
-
-		ImageData imageData = (ImageData) originalImageData.clone();
-		int width = (int) ( originalImageData.width * (((float)scale) / 100) );
-		int height = (int) ( originalImageData.height * (((float)scale) / 100) );
-		imageData = imageData.scaledTo( width, height );
-
-		Image image = new Image( shell.getDisplay(), imageData );
-		return image;
-
-	}
-
-	private void trimSkin( Image image ) {
-
-		// trim transparent pixels in image. especially, corner round areas.
-
-		ImageData imageData = image.getImageData();
-
-		int width = imageData.width;
-		int height = imageData.height;
-
-		Region region = new Region();
-		region.add( new Rectangle( 0, 0, width, height ) );
-
-		for ( int i = 0; i < width; i++ ) {
-			for ( int j = 0; j < height; j++ ) {
-				int alpha = imageData.getAlpha( i, j );
-				if ( 0 == alpha ) {
-					region.subtract( i, j, 1, 1 );
-				}
-			}
-		}
-
-		shell.setRegion( region );
-
-	}
-
-	private void adjustLcdGeometry( Canvas lcdCanvas, int scale, short rotationId ) {
-
-		RotationType rotation = SkinRotation.getRotation( rotationId );
-
-		LcdType lcd = rotation.getLcd();
-		RegionType region = lcd.getRegion();
-
-		Integer left = region.getLeft();
-		Integer top = region.getTop();
-		Integer width = region.getWidth();
-		Integer height = region.getHeight();
-
-		int l = (int) ( left * (((float)scale) / 100) );
-		int t = (int) ( top * (((float)scale) / 100) );
-		int w = (int) ( width * (((float)scale) / 100) );
-		int h = (int) ( height * (((float)scale) / 100) );
-
-		lcdCanvas.setBounds( l, t, w, h );
-
-	}
-
-	private SkinRegion getHardKeyArea( int currentX, int currentY ) {
-
-		RotationType rotation = SkinRotation.getRotation( currentRotationId );
-
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-		for ( KeyMapType keyMap : keyMapList ) {
-
-			RegionType region = keyMap.getRegion();
-
-			int scaledX = (int) ( region.getLeft() * (((float)currentScale) / 100) );
-			int scaledY = (int) ( region.getTop() * (((float)currentScale) / 100) );
-			int scaledWidth = (int) ( region.getWidth() * (((float)currentScale) / 100) );
-			int scaledHeight = (int) ( region.getHeight() * (((float)currentScale) / 100) );
-
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
-				return new SkinRegion( scaledX, scaledY, scaledWidth, scaledHeight );
-			}
-
-		}
-
-		return null;
-
-	}
-
-	private int getHardKeyCode( int currentX, int currentY ) {
-
-		RotationType rotation = SkinRotation.getRotation( currentRotationId );
-
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-		for ( KeyMapType keyMap : keyMapList ) {
-			RegionType region = keyMap.getRegion();
-
-			int scaledX = (int) ( region.getLeft() * (((float)currentScale) / 100) );
-			int scaledY = (int) ( region.getTop() * (((float)currentScale) / 100) );
-			int scaledWidth = (int) ( region.getWidth() * (((float)currentScale) / 100) );
-			int scaledHeight = (int) ( region.getHeight() * (((float)currentScale) / 100) );
-
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
-				EventInfoType eventInfo = keyMap.getEventInfo();
-				return eventInfo.getKeyCode();
-			}
-		}
-
-		return EmulatorConstants.UNKNOWN_KEYCODE;
-
-	}
-
-	private boolean isInGeometry( int currentX, int currentY, int targetX, int targetY, int targetWidth,
-			int targetHeight ) {
-
-		if ( ( currentX >= targetX ) && ( currentY >= targetY ) ) {
-			if ( ( currentX <= ( targetX + targetWidth ) ) && ( currentY <= ( targetY + targetHeight ) ) ) {
-				return true;
-			}
-		}
-
-		return false;
-
-	}
-
-	private int[] convertMouseGeometry( int originalX, int originalY ) {
-
-		int x = (int) ( originalX * ( 1 / (((float)currentScale) / 100) ) );
-		int y = (int) ( originalY * ( 1 / (((float)currentScale) / 100) ) );
-
-		int rotatedX = x;
-		int rotatedY = y;
-
-		if ( RotationInfo.LANDSCAPE.angle() == currentAngle ) {
-			rotatedX = currentLcdWidth - y;
-			rotatedY = x;
-		}else if ( RotationInfo.REVERSE_PORTRAIT.angle() == currentAngle ) {
-			rotatedX = currentLcdWidth - x;
-			rotatedY = currentLcdHeight - y;
-		}else if ( RotationInfo.REVERSE_LANDSCAPE.angle() == currentAngle ) {
-			rotatedX = y;
-			rotatedY = currentLcdHeight - x;
-		}
-
-		return new int[] { rotatedX, rotatedY };
 
 	}
 
@@ -506,7 +371,7 @@ public class EmulatorSkin {
 				if ( EmulatorSkin.this.isMousePressed ) {
 					if ( 0 == e.button ) { // left button
 
-						SkinRegion hardkeyRegion = getHardKeyArea( e.x, e.y );
+						SkinRegion hardkeyRegion = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 
 						if ( null == hardkeyRegion ) {
 							Point previouseLocation = shell.getLocation();
@@ -519,7 +384,7 @@ public class EmulatorSkin {
 					}
 				} else {
 
-					SkinRegion region = getHardKeyArea( e.x, e.y );
+					SkinRegion region = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 
 					if ( null == region ) {
 						if( isHoverState ) {
@@ -557,7 +422,7 @@ public class EmulatorSkin {
 					EmulatorSkin.this.pressedMouseY = 0;
 					EmulatorSkin.this.isMousePressed = false;
 
-					int keyCode = getHardKeyCode( e.x, e.y );
+					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
 					if ( EmulatorConstants.UNKNOWN_KEYCODE != keyCode ) {
 						if (currentHoverRegion.width == 0 && currentHoverRegion.height == 0) {
@@ -582,11 +447,11 @@ public class EmulatorSkin {
 
 					EmulatorSkin.this.isMousePressed = true;
 
-					int keyCode = getHardKeyCode( e.x, e.y );
+					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
 					if ( EmulatorConstants.UNKNOWN_KEYCODE != keyCode ) {
 						// draw the button region as the cropped keyPressed image area
-						SkinRegion region = getHardKeyArea( e.x, e.y );
+						SkinRegion region = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 
 						if ( null != currentKeyPressedImage ) {
 							GC gc = new GC( shell );
@@ -665,7 +530,9 @@ public class EmulatorSkin {
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					}
 
-					int[] geometry = convertMouseGeometry( e.x, e.y );
+					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
+							currentScale, currentAngle );
+					
 					MouseEventData mouseEventData = new MouseEventData( eventType, geometry[0], geometry[1], 0 );
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
 				}
@@ -678,7 +545,9 @@ public class EmulatorSkin {
 			public void mouseUp( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
 
-					int[] geometry = convertMouseGeometry( e.x, e.y );
+					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
+							currentScale, currentAngle );
+
 					logger.info( "mouseUp in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 					MouseEventData mouseEventData = new MouseEventData( MouseEventType.UP.value(), geometry[0],
 							geometry[1], 0 );
@@ -692,7 +561,10 @@ public class EmulatorSkin {
 			@Override
 			public void mouseDown( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
-					int[] geometry = convertMouseGeometry( e.x, e.y );
+
+					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
+							currentScale, currentAngle );
+
 					logger.info( "mouseDown in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 					MouseEventData mouseEventData = new MouseEventData( MouseEventType.DOWN.value(), geometry[0],
 							geometry[1], 0 );
@@ -730,13 +602,14 @@ public class EmulatorSkin {
 
 	private void addMenuItems( final Menu menu ) {
 
-		final MenuItem infoItem = new MenuItem( menu, SWT.PUSH );
+		final MenuItem deviceInfoItem = new MenuItem( menu, SWT.PUSH );
 
 		String emulatorName = SkinUtil.makeEmulatorName( config );
-		infoItem.setText( emulatorName );
+		deviceInfoItem.setText( emulatorName );
+		deviceInfoItem.setImage( imageRegistry.getIcon( IconName.DEVICE_INFO ) );
 		//FIXME
-		infoItem.setEnabled( false );
-		infoItem.addSelectionListener( new SelectionAdapter() {
+//		deviceInfoItem.setEnabled( false );
+		deviceInfoItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				logger.fine( "Selected Info." );
@@ -762,12 +635,14 @@ public class EmulatorSkin {
 
 		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
 		rotateItem.setText( "Rotate" );
+		rotateItem.setImage( imageRegistry.getIcon( IconName.ROTATE ) );
 
 		Menu rotateMenu = createRotateMenu( menu.getShell() );
 		rotateItem.setMenu( rotateMenu );
 
 		final MenuItem scaleItem = new MenuItem( menu, SWT.CASCADE );
 		scaleItem.setText( "Scale" );
+		scaleItem.setImage( imageRegistry.getIcon( IconName.SCALING ) );
 		Menu scaleMenu = createScaleMenu( menu.getShell() );
 		scaleItem.setMenu( scaleMenu );
 
@@ -775,11 +650,13 @@ public class EmulatorSkin {
 
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
 		advancedItem.setText( "Advanced" );
+		advancedItem.setImage( imageRegistry.getIcon( IconName.ADVANCED ) );
 		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
 		advancedItem.setMenu( advancedMenu );
 
 //		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
 //		shellItem.setText( "Shell" );
+//		shellItem.setImage( imageRegistry.getIcon( IconName.SHELL ) );
 //		shellItem.addSelectionListener( new SelectionAdapter() {
 //			@Override
 //			public void widgetSelected( SelectionEvent e ) {
@@ -801,6 +678,7 @@ public class EmulatorSkin {
 
 		MenuItem closeItem = new MenuItem( menu, SWT.PUSH );
 		closeItem.setText( "Close" );
+		closeItem.setImage( imageRegistry.getIcon( IconName.CLOSE ) );
 		closeItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -816,7 +694,8 @@ public class EmulatorSkin {
 
 		final List<MenuItem> rotationList = new ArrayList<MenuItem>();
 
-		final short storedDirectionId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
+		final short storedDirectionId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION,
+				(short) RotationInfo.PORTRAIT.id() );
 
 		Iterator<Entry<Short, RotationType>> iterator = SkinRotation.getRotationIterator();
 
@@ -861,7 +740,7 @@ public class EmulatorSkin {
 							break;
 						}
 					}
-					// ////////
+					///////////
 
 					MessageBox messageBox = new MessageBox( shell );
 					messageBox.setMessage( "Rotation is not ready." );
@@ -913,12 +792,6 @@ public class EmulatorSkin {
 		scaleOneQtrItem.setData( 25 );
 		scaleList.add( scaleOneQtrItem );
 
-		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, 100 );
-		//TODO:
-		if (storedScale != 100 && storedScale != 75 && storedScale != 50 && storedScale != 25 ) {
-			storedScale = 50;
-		}
-
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 
 			@Override
@@ -941,6 +814,8 @@ public class EmulatorSkin {
 			}
 		};
 
+		int storedScale = SkinUtil.getValidScale( config );
+
 		for ( MenuItem menuItem : scaleList ) {
 
 			int scale = (Integer) menuItem.getData();
@@ -962,76 +837,24 @@ public class EmulatorSkin {
 
 		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
 		screenshotItem.setText( "Screen Shot" );
-		//FIXME
-		screenshotItem.setEnabled( false );
-		
+		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
+			private boolean isOpen;
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				ScreenShotDialog dialog = new ScreenShotDialog( shell, lcdCanvas );
-				dialog.open();
-//				Display display = shell.getDisplay();
-//				final Image image = new Image( display, lcdCanvas.getBounds() );
-//
-//				GC gc = null;
-//
-//				try {
-//					gc = new GC( lcdCanvas );
-//					gc.copyArea( image, 0, 0 );
-//				} finally {
-//					if ( null != gc ) {
-//						gc.dispose();
-//					}
-//				}
-//
-//				Shell popup = new Shell( shell, SWT.DIALOG_TRIM );
-//				popup.setLayout( new FillLayout() );
-//				popup.setText( "Screen Shot" );
-//				popup.setBounds( 0, 0, lcdCanvas.getSize().x + 50, lcdCanvas.getSize().y + 50 );
-//
-//				popup.addListener( SWT.Close, new Listener() {
-//					@Override
-//					public void handleEvent( Event event ) {
-//						image.dispose();
-//					}
-//				} );
-//
-//				ScrolledComposite composite = new ScrolledComposite( popup, SWT.V_SCROLL | SWT.H_SCROLL );
-//
-//				Canvas canvas = new Canvas( composite, SWT.NONE );
-//				composite.setContent( canvas );
-//				canvas.setBounds( popup.getBounds() );
-//
-//				canvas.addPaintListener( new PaintListener() {
-//					public void paintControl( PaintEvent e ) {
-//						e.gc.drawImage( image, 0, 0 );
-//					}
-//				} );
-//
-//				// FileOutputStream fos = null;
-//				//
-//				// try {
-//				//
-//				// fos = new FileOutputStream( "./screenshot-" + System.currentTimeMillis() + ".png", false );
-//				//
-//				// ImageLoader loader = new ImageLoader();
-//				// loader.data = new ImageData[] { image.getImageData() };
-//				// loader.save( fos, SWT.IMAGE_PNG );
-//				//
-//				// } catch ( IOException ex ) {
-//				// ex.printStackTrace();
-//				// } finally {
-//				// IOUtil.close( fos );
-//				// }
-//
-//				popup.open();
-
+				if( !isOpen ) {
+					isOpen = true;
+					ScreenShotDialog dialog = new ScreenShotDialog( shell, lcdCanvas );
+					dialog.open();
+					isOpen = false;
+				}
 			}
 		} );
 
 		final MenuItem usbKeyboardItem = new MenuItem( menu, SWT.CASCADE );
 		usbKeyboardItem.setText( "USB Keyboard" );
-
+		usbKeyboardItem.setImage( imageRegistry.getIcon( IconName.USB_KEBOARD ) );
+		
 		Menu usbKeyBoardMenu = new Menu( shell, SWT.DROP_DOWN );
 
 		final MenuItem usbOnItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
@@ -1061,6 +884,7 @@ public class EmulatorSkin {
 
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "About" );
+		aboutItem.setImage( imageRegistry.getIcon( IconName.ABOUT ) );
 		aboutItem.addSelectionListener( new SelectionAdapter() {
 			private boolean isOpen;
 			@Override
@@ -1081,8 +905,6 @@ public class EmulatorSkin {
 	public void shutdown() {
 
 		isShutdownRequested = true;
-
-		canvasExecutor.shutdownNow();
 
 		if ( !this.shell.isDisposed() ) {
 			this.shell.getDisplay().asyncExec( new Runnable() {

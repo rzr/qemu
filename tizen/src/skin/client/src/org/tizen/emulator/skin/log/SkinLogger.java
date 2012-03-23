@@ -138,6 +138,8 @@ public class SkinLogger {
 			
 			fileHandler.setLevel( logLevel.level() );
 			
+			System.out.println( "[SkinLog]SkinLogger level:" + logLevel.value() );
+			
 		}
 		
 	}

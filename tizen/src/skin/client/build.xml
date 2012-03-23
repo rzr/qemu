@@ -1,29 +1,29 @@
 <?xml version="1.0" standalone="yes"?>
 <project name="emulator-skin" basedir="." default="linux-jar">
-    
-    <property name="jar.file" value="emulator-skin.jar" />
-    <property name="mainclass" value="org.tizen.emulator.skin.EmulatorSkinMain" />
-	
-    <property name="swt.file" value="swt.jar" />
 
-    <path id="linux-classpath">
-        <fileset dir="lib/swt/gtk-linux" includes="swt.jar" />
-    </path>
-    <path id="windows-classpath">
-        <fileset dir="lib/swt/win32-win32" includes="swt.jar" />
-    </path>
-    <path id="mac-classpath">
-        <fileset dir="lib/swt/cocoa-macosx" includes="swt.jar" />
-    </path>
+	<property name="jar.file" value="emulator-skin.jar" />
+	<property name="mainclass" value="org.tizen.emulator.skin.EmulatorSkinMain" />
 
-    <target name="clean">
-        <echo message="cleaning..." />
-        <delete dir="bin"/>
-        <delete file="${jar.file}" />
-    </target>
+	<property name="swt.file" value="swt.jar" />
+
+	<path id="linux-classpath">
+		<fileset dir="lib/swt/gtk-linux" includes="swt.jar" />
+	</path>
+	<path id="windows-classpath">
+		<fileset dir="lib/swt/win32-win32" includes="swt.jar" />
+	</path>
+	<path id="mac-classpath">
+		<fileset dir="lib/swt/cocoa-macosx" includes="swt.jar" />
+	</path>
+
+	<target name="clean">
+		<echo message="cleaning..." />
+		<delete dir="bin" />
+		<delete file="${jar.file}" />
+	</target>
 
 	<target name="make-properties">
-    	<echo message="Make properties..." />
+		<echo message="Make properties..." />
 		<tstamp>
 			<format property="build_time" pattern="MM/dd/yyyy hh:mm aa" timezone="GMT" locale="en" />
 		</tstamp>
@@ -36,70 +36,99 @@
 			<arg value="--short" />
 			<arg value="HEAD" />
 		</exec>
-		
-		<propertyfile file="src/about.properties"
-			comment="Auto-generated properties - DO NOT EDIT">
+
+		<propertyfile file="src/about.properties" comment="Auto-generated properties - DO NOT EDIT">
 			<entry key="version" value="${version}" />
 			<entry key="build_time" value="${build_time}" />
 			<entry key="build_git_commit" value="${build_git_commit}" />
 		</propertyfile>
 	</target>
-	
-    <target name="linux-compile" depends="make-properties, clean">
-        <echo message="compiling..." />
-        <mkdir dir="bin" />
-        <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
-            <classpath refid="linux-classpath" />
-        </javac>
-    </target>
 
-    <target name="windows-compile" depends="make-properties, clean">
-        <echo message="compiling..." />
-        <mkdir dir="bin" />
-        <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
-            <classpath refid="windows-classpath" />
-        </javac>
-    </target>
+	<target name="linux-compile" depends="make-properties, clean">
+		<echo message="compiling..." />
+		<mkdir dir="bin" />
+		<javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+			<classpath refid="linux-classpath" />
+		</javac>
+	</target>
 
-    <target name="mac-compile" depends="make-properties, clean">
-        <echo message="compiling..." />
-        <mkdir dir="bin" />
-        <javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
-            <classpath refid="mac-classpath" />
-        </javac>
-    </target>
+	<target name="windows-compile" depends="make-properties, clean">
+		<echo message="compiling..." />
+		<mkdir dir="bin" />
+		<javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+			<classpath refid="windows-classpath" />
+		</javac>
+	</target>
 
-    <target name="linux-jar" depends="linux-compile">
-        <echo message="creating jar..." />
-        <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+	<target name="mac-compile" depends="make-properties, clean">
+		<echo message="compiling..." />
+		<mkdir dir="bin" />
+		<javac encoding="UTF-8" fork="true" srcdir="src" destdir="bin" debug="on" memorymaximumsize="128m">
+			<classpath refid="mac-classpath" />
+		</javac>
+	</target>
+
+	<target name="linux-jar" depends="linux-compile">
+		<echo message="creating jar..." />
+		<delete dir="dist" />
+		<mkdir dir="dist" />
+		<mkdir dir="dist/icons" />
+		<copy todir="dist">
+			<fileset dir="bin" />
+		</copy>
+		<copy todir="dist/icons">
+			<fileset dir="icons" />
+		</copy>
+		<jar jarfile="${jar.file}" basedir="dist" duplicate="add">
 			<fileset file="src/about.properties" />
-            <manifest>
-                <attribute name="Main-Class" value="${mainclass}"/>
-                <attribute name="Class-path" value="lib/swt/gtk-linux/${swt.file}"/>
-            </manifest>
-        </jar>
-    </target>
+			<manifest>
+				<attribute name="Main-Class" value="${mainclass}" />
+				<attribute name="Class-path" value="lib/swt/gtk-linux/${swt.file}" />
+			</manifest>
+		</jar>
+		<delete dir="dist" />
+	</target>
 
-    <target name="windows-jar" depends="windows-compile">
-        <echo message="creating jar..." />
-        <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+	<target name="windows-jar" depends="windows-compile">
+		<echo message="creating jar..." />
+		<delete dir="dist" />
+		<mkdir dir="dist" />
+		<mkdir dir="dist/icons" />
+		<copy todir="dist">
+			<fileset dir="bin" />
+		</copy>
+		<copy todir="dist/icons">
+			<fileset dir="icons" />
+		</copy>
+		<jar jarfile="${jar.file}" basedir="dist" duplicate="add">
 			<fileset file="src/about.properties" />
-            <manifest>
-                <attribute name="Main-Class" value="${mainclass}"/>
-                <attribute name="Class-path" value="lib/swt/win32-win32/${swt.file}"/>
-            </manifest>
-        </jar>
-    </target>
+			<manifest>
+				<attribute name="Main-Class" value="${mainclass}" />
+				<attribute name="Class-path" value="lib/swt/win32-win32/${swt.file}" />
+			</manifest>
+		</jar>
+		<delete dir="dist" />
+	</target>
 
-    <target name="mac-jar" depends="mac-compile">
-        <echo message="creating jar..." />
-        <jar jarfile="${jar.file}" basedir="bin" duplicate="add">
+	<target name="mac-jar" depends="mac-compile">
+		<echo message="creating jar..." />
+		<delete dir="dist" />
+		<mkdir dir="dist" />
+		<mkdir dir="dist/icons" />
+		<copy todir="dist">
+			<fileset dir="bin" />
+		</copy>
+		<copy todir="dist/icons">
+			<fileset dir="icons" />
+		</copy>
+		<jar jarfile="${jar.file}" basedir="dist" duplicate="add">
 			<fileset file="src/about.properties" />
-            <manifest>
-                <attribute name="Main-Class" value="${mainclass}"/>
-                <attribute name="Class-path" value="lib/swt/cocoa-macosx/${swt.file}"/>
-            </manifest>
-        </jar>
-    </target>
+			<manifest>
+				<attribute name="Main-Class" value="${mainclass}" />
+				<attribute name="Class-path" value="lib/swt/cocoa-macosx/${swt.file}" />
+			</manifest>
+		</jar>
+		<delete dir="dist" />
+	</target>
 
 </project>

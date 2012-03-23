@@ -57,11 +57,11 @@ import org.tizen.emulator.skin.util.StringUtil;
  */
 public class EmulatorSkinMain {
 
-	private static Logger logger;
-
 	public static final String PROPERTIES_FILE_NAME = ".skin.properties";
 	public static final String DBI_FILE_NAME = "default.dbi";
 
+	private static Logger logger;
+	
 	/**
 	 * @param args
 	 */
@@ -94,8 +94,8 @@ public class EmulatorSkinMain {
 			EmulatorSkin skin = new EmulatorSkin( config );
 			int windowHandleId = skin.compose();
 
-			int pid = Integer.parseInt( config.getArg( ArgsConstants.UID ) );
-			SocketCommunicator communicator = new SocketCommunicator( config, pid, windowHandleId, skin );
+			int uid = Integer.parseInt( config.getArg( ArgsConstants.UID ) );
+			SocketCommunicator communicator = new SocketCommunicator( config, uid, windowHandleId, skin );
 
 			skin.setCommunicator( communicator );
 
@@ -132,8 +132,11 @@ public class EmulatorSkinMain {
 
 		String logLevel = "";
 		String vmPath = "";
+		
 		for ( int i = 0; i < args.length; i++ ) {
+			
 			String[] split = args[i].split( "=" );
+			
 			if ( split[0].trim().equalsIgnoreCase( ArgsConstants.LOG_LEVEL ) ) {
 				if ( !StringUtil.isEmpty( split[1].trim() ) ) {
 					logLevel = split[1].trim();
@@ -141,18 +144,22 @@ public class EmulatorSkinMain {
 			}else if ( split[0].trim().equalsIgnoreCase( ArgsConstants.VM_PATH ) ) {
 				vmPath = split[1].trim();
 			}
+			
 		}
 
-		SkinLogLevel skinLogLevel = SkinLogLevel.DEBUG;
+		SkinLogLevel skinLogLevel = SkinLogLevel.WARN;
 		
 		if( !StringUtil.isEmpty( logLevel ) ) {
+			
 			SkinLogLevel[] values = SkinLogLevel.values();
+			
 			for ( SkinLogLevel level : values ) {
 				if ( level.value().equalsIgnoreCase( logLevel ) ) {
 					skinLogLevel = level;
 					break;
 				}
 			}
+			
 		}
 
 		SkinLogger.init( skinLogLevel, vmPath );

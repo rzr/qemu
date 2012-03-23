@@ -53,6 +53,7 @@ import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.PropertiesConstants;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
+import org.tizen.emulator.skin.util.SkinUtil;
 
 
 /**
@@ -112,11 +113,8 @@ public class SocketCommunicator implements ICommunicator {
 			dis = new DataInputStream(socket.getInputStream());
 			dos = new DataOutputStream(socket.getOutputStream());
 			
-			int scale = config.getPropertyInt(PropertiesConstants.WINDOW_SCALE, 50 );
-			//TODO:
-			if (scale != 100 && scale != 75 && scale != 50 && scale != 25 ) {
-				scale = 50;
-			}
+			int scale = SkinUtil.getValidScale( config );
+			
 			short rotation = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
 			
 			sendToQEMU(SendCommand.SEND_START,

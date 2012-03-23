@@ -71,8 +71,10 @@ public abstract class SkinDialog extends Dialog {
 	public void open() {
 
 		shell = new Shell( parent, style );
-		shell.setLocation( parent.getLocation().x + 30, parent.getLocation().y + 100 );
+		shell.setLocation( parent.getLocation().x + 50, parent.getLocation().y + 50 );
 		shell.setText( title );
+		shell.setImage( parent.getImage() );
+		
 		shell.setLayout( new GridLayout( 1, true ) );
 
 		Composite parent = new Composite( shell, SWT.NONE );

@@ -30,12 +30,14 @@
 package org.tizen.emulator.skin.image;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
@@ -46,6 +48,8 @@ import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.dbi.ImageListType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dbi.RotationsType;
+import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinRotation;
 
 
@@ -54,6 +58,8 @@ import org.tizen.emulator.skin.util.SkinRotation;
  *
  */
 public class ImageRegistry {
+	
+	private Logger logger = SkinLogger.getSkinLogger( ImageRegistry.class ).getLogger();
 
 	public static final String SKIN_FOLDER = "skins";
 	public static final String IMAGE_FOLDER_PREFIX = "emul_";
@@ -66,6 +72,29 @@ public class ImageRegistry {
 	
 	public enum IconName {
 		
+		DEVICE_INFO( "device_info.png" ),
+		ROTATE( "rotate.png" ),
+		SCALING( "scaling.png" ),
+		SHELL( "shell.png" ),
+		ADVANCED( "advanced.png" ),
+		CLOSE( "close.png" ),
+		SCREENSHOT( "screenshot.png" ),
+		USB_KEBOARD( "keypad.png" ),
+		ABOUT( "about.png" ),
+		
+		EMULATOR_TITLE( "Emulator_20x20.png" ),
+		EMULATOR_TITLE_ICO( "Emulator.ico" );
+		
+		private String name;
+		
+		private IconName( String name ) {
+			this.name = name;
+		}
+		
+		public String getName() {
+			return this.name;
+		}
+		
 	}
 	
 	private Display display;
@@ -73,7 +102,8 @@ public class ImageRegistry {
 	private int resolutionHeight;
 	private EmulatorUI dbiContents;
 	
-	private Map<String, Image> imageMap;
+	private Map<String, Image> skinImageMap;
+	private Map<String, Image> iconMap;
 	
 	public ImageRegistry(Display display, EmulatorConfig config ) {
 		
@@ -85,7 +115,8 @@ public class ImageRegistry {
 		this.resolutionWidth = lcdWidth;
 		this.resolutionHeight = lcdHeight;
 		this.dbiContents = config.getDbiContents();
-		this.imageMap = new HashMap<String, Image>();
+		this.skinImageMap = new HashMap<String, Image>();
+		this.iconMap = new HashMap<String, Image>();
 		
 		init();
 		
@@ -95,7 +126,7 @@ public class ImageRegistry {
 		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator + IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
 		return skinPath;
 	}
-	
+
 	private void init() {
 
 		String skinPath = getSkinPath( resolutionWidth, resolutionHeight );
@@ -122,25 +153,44 @@ public class ImageRegistry {
 				if ( entry.getValue().getName().value().equals( rotation.getName().value() ) ) {
 
 					String mainKey = makeKey( entry.getKey(), ImageType.IMG_TYPE_MAIN );
-					imageMap.put( mainKey, new Image( display, skinPath + File.separator + mainImage ) );
+					skinImageMap.put( mainKey, new Image( display, skinPath + File.separator + mainImage ) );
 
 					String pressedKey = makeKey( entry.getKey(), ImageType.IMG_TYPE_PRESSED );
-					imageMap.put( pressedKey, new Image( display, skinPath + File.separator + keyPressedImage ) );
+					skinImageMap.put( pressedKey, new Image( display, skinPath + File.separator + keyPressedImage ) );
 
 				}
 			}
 
 		}
+		
+		ClassLoader classLoader = this.getClass().getClassLoader();
+		IconName[] values = IconName.values();
+		
+		for ( IconName iconName : values ) {
+			
+			String name = iconName.getName();
+			
+			String iconPath = ICON_FOLDER + "/" + name;
+			
+			InputStream is = null;
+			try {
+				is = classLoader.getResourceAsStream( iconPath );
+				if( null != is ) {
+					logger.info( "load icon:" + iconPath );
+					iconMap.put( name, new Image( display, is ) );
+				}else {
+					logger.severe( "missing icon:" + iconPath );
+				}
+			} finally {
+				IOUtil.close( is );
+			}
+			
+		}
 
 	}
 	
-//	public Image getImage( Short id, ImageType imageType ) {
-//		Image image = imageMap.get( makeKey(id, imageType) );
-//		return image;
-//	}
-	
-	public ImageData getImageData( Short id, ImageType imageType ) {
-		Image image = imageMap.get( makeKey(id, imageType) );
+	public ImageData getSkinImageData( Short id, ImageType imageType ) {
+		Image image = skinImageMap.get( makeKey(id, imageType) );
 		if( null != image ) {
 			return image.getImageData();
 		}else {
@@ -152,17 +202,30 @@ public class ImageRegistry {
 		return id + ":" + imageType.ordinal();
 	}
 	
+	public Image getIcon( IconName name ) {
+		return iconMap.get( name.getName() );
+	}
+	
 	public void dispose() {
-		
-		Collection<Image> images = imageMap.values();
-		
-		Iterator<Image> iterator = images.iterator();
-		
-		while(iterator.hasNext()) {
-			Image image = iterator.next();
+
+		Collection<Image> images = skinImageMap.values();
+
+		Iterator<Image> imageIterator = images.iterator();
+
+		while ( imageIterator.hasNext() ) {
+			Image image = imageIterator.next();
 			image.dispose();
 		}
-		
+
+		Collection<Image> icons = iconMap.values();
+
+		Iterator<Image> iconIterator = icons.iterator();
+
+		while ( iconIterator.hasNext() ) {
+			Image image = iconIterator.next();
+			image.dispose();
+		}
+
 	}
 	
 }
