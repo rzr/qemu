@@ -109,10 +109,16 @@ static void usb_touchscreen_handle_reset(USBDevice *dev)
 {
     USBTouchscreenState *s = (USBTouchscreenState *) dev;
 
+    pthread_mutex_lock(&event_mutex);
+
     s->dx = 0;
     s->dy = 0;
     s->dz = 0;
     s->buttons_state = 0;
+
+    event_cnt = 0;
+
+     pthread_mutex_unlock(&event_mutex);
 }
 
 static int usb_touchscreen_handle_control(USBDevice *dev, USBPacket *p,
@@ -150,6 +156,8 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
                     event_cnt--;
                     TRACE("processed touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
                         te->index, s->dx, s->dy, s->dz, s->buttons_state);
+
+                    g_free(te);
 
                     if (QTAILQ_EMPTY(&events_queue)) {
                         s->changed = 0;
