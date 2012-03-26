@@ -75,7 +75,8 @@ public class EmulatorSkinMain {
 
 			int lcdWidth = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_WIDTH ) );
 			int lcdHeight = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_HEIGHT ) );
-			EmulatorUI dbiContents = loadDbi( lcdWidth, lcdHeight );
+			String argSkinPath = (String) argsMap.get( ArgsConstants.SKIN_PATH );
+			EmulatorUI dbiContents = loadDbi( argSkinPath, lcdWidth, lcdHeight );
 			if ( null == dbiContents ) {
 				logger.severe( "Fail to load dbi file." );
 				return;
@@ -196,9 +197,9 @@ public class EmulatorSkinMain {
 
 	}
 
-	private static EmulatorUI loadDbi( int lcdWidth, int lcdHeight ) {
+	private static EmulatorUI loadDbi( String argSkinPath, int lcdWidth, int lcdHeight ) {
 
-		String skinPath = ImageRegistry.getSkinPath( lcdWidth, lcdHeight ) + File.separator + DBI_FILE_NAME;
+		String skinPath = ImageRegistry.getSkinPath( argSkinPath, lcdWidth, lcdHeight ) + File.separator + DBI_FILE_NAME;
 
 		FileInputStream fis = null;
 		EmulatorUI emulatorUI = null;
