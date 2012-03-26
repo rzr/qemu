@@ -474,16 +474,17 @@ public class ScreenShotDialog extends Dialog {
 				}
 			}
 
-			fos = new FileOutputStream( fileFullPath, false );
-
 			ImageLoader loader = new ImageLoader();
 			loader.data = new ImageData[] { image.getImageData() };
 
 			if ( StringUtil.isEmpty( format ) || format.equalsIgnoreCase( "png" ) ) {
+				fos = new FileOutputStream( fileFullPath, false );
 				loader.save( fos, SWT.IMAGE_PNG );
 			} else if ( format.equalsIgnoreCase( "jpg" ) || format.equalsIgnoreCase( "jpeg" ) ) {
+				fos = new FileOutputStream( fileFullPath, false );
 				loader.save( fos, SWT.IMAGE_JPEG );
 			} else if ( format.equalsIgnoreCase( "bmp" ) ) {
+				fos = new FileOutputStream( fileFullPath, false );
 				loader.save( fos, SWT.IMAGE_BMP );
 			} else {
 
