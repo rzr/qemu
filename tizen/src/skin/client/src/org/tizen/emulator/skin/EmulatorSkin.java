@@ -82,6 +82,7 @@ import org.tizen.emulator.skin.dbi.ColorsType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
+import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
@@ -887,20 +888,35 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				
+				ScreenShotDialog dialog = null;
+				
 				try {
 					
 					if( !isOpen ) {
 						isOpen = true;
-						ScreenShotDialog dialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config );
+						dialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config );
 						dialog.open();
 					}
 					
+				} catch ( ScreenShotException ex ) {
+					
+					logger.log( Level.SEVERE, ex.getMessage(), ex );
+					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ICON_ERROR, config );
+					
 				} catch ( Exception ex ) {
-					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
-					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
+					
+					// defense exception handling.
+					logger.log( Level.SEVERE, ex.getMessage(), ex );
+					String errorMessage = "Internal Error.\n[" + ex.getMessage() + "]";
+					SkinUtil.openMessage( shell, null, errorMessage, SWT.ICON_ERROR, config );
+					if( null != dialog ) {
+						dialog.close();
+					}
+					
 				} finally {
 					isOpen = false;
 				}
+				
 			}
 		} );
 
