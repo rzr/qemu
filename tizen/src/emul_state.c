@@ -70,6 +70,21 @@ int get_emul_lcd_height(void)
     return _emul_info.lcd_size_h;
 }
 
+/* sdl bits per pixel */
+void set_emul_sdl_bpp(int bpp)
+{
+    _emul_info.sdl_bpp = bpp;
+
+    if (_emul_info.sdl_bpp != 32) {
+        INFO("?? sdl bpp = %d\n", _emul_info.sdl_bpp);
+    }
+}
+
+int get_emul_sdl_bpp(void)
+{
+    return _emul_info.sdl_bpp;
+}
+
 /* emulator window scale */
 void set_emul_win_scale(double scale_factor)
 {

@@ -68,7 +68,8 @@ typedef  struct EmulatorConfigInfo {
     char emulator_name[256]; //TODO:
     int lcd_size_w;
     int lcd_size_h;
-    int dpi; //not used yet
+    int guest_dpi; //not used yet
+    int sdl_bpp;
     //TODO:
 } EmulatorConfigInfo;
 
@@ -86,6 +87,7 @@ void set_emulator_condition(int state);
 void set_emul_lcd_size(int width, int height);
 void set_emul_win_scale(double scale);
 void set_emul_rotation(short rotation_type);
+void set_emul_sdl_bpp(int bpp);
 
 /* getter */
 int get_emulator_condition(void);
@@ -93,6 +95,7 @@ int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
 double get_emul_win_scale(void);
 short get_emul_rotation(void);
+int get_emul_sdl_bpp(void);
 MultiTouchState *get_emul_multi_touch_state(void);
 
 

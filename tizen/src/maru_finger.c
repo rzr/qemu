@@ -194,7 +194,7 @@ void init_multi_touch_state(void)
 #endif
 
     SDL_Surface *point = SDL_CreateRGBSurface(SDL_SRCALPHA | SDL_HWSURFACE,
-		mts->finger_point_size + 2, mts->finger_point_size + 2, 32, rmask, gmask, bmask, amask);
+		mts->finger_point_size + 2, mts->finger_point_size + 2, get_emul_sdl_bpp(), rmask, gmask, bmask, amask);
 
     sdl_fill_circle(point, finger_point_size_half, finger_point_size_half,
         finger_point_size_half, mts->finger_point_color); //finger point circle

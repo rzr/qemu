@@ -66,19 +66,19 @@ static void qemu_update(void)
     int i;
     SDL_Surface *processing_screen = NULL;
 
-    if (scale_factor != 1.0 || screen_degree != 0.0) {
+    if (surface_qemu != NULL) {
+        if (scale_factor != 1.0 || screen_degree != 0.0) {
 
-        // workaround
-        if ( surface_qemu ) {
+            // workaround
             // set color key 'magenta'
             surface_qemu->format->colorkey = 0xFF00FF;
-        }
 
-        //image processing
-        processing_screen = rotozoomSurface(surface_qemu, screen_degree, scale_factor, 1);
-        SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
-    } else {
-        SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
+            //image processing
+            processing_screen = rotozoomSurface(surface_qemu, screen_degree, scale_factor, 1);
+            SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
+        } else {
+            SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
+        }
     }
 
     /* draw multi-touch finger points */
@@ -331,10 +331,12 @@ void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
     w = lcd_size_width * scale_factor;
     h = lcd_size_height * scale_factor;
 
+    set_emul_sdl_bpp(SDL_BPP);
+
     INFO( "maru sdl initialization\n");
-    surface_screen = SDL_SetVideoMode(w, h, SDL_BPP, SDL_FLAGS);
+    surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
     if (surface_screen == NULL) {
-        ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, SDL_BPP, SDL_GetError());
+        ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
     }
 
 #ifndef _WIN32
