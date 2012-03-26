@@ -682,6 +682,10 @@ public class EmulatorSkin {
 		shellItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
+				if ( !communicator.isSensorDaemonStarted() ) {
+					SkinUtil.openMessage( shell, null, "SDB is not ready.\nPlease, wait.", SWT.ICON_WARNING, config );
+					return;
+				}
 
 				String sdbPath = SkinUtil.getSdbPath();
 				String portNumber = StringUtil.nvl(config.getArg( ArgsConstants.NET_BASE_PORT ));
@@ -787,7 +791,7 @@ public class EmulatorSkin {
 					}
 					///////////
 					
-					SkinUtil.openMessage( shell, null, "Rotation is not ready.", SWT.ICON_WARNING, config );
+					SkinUtil.openMessage( shell, null, "Rotation is not ready.\nPlease, wait.", SWT.ICON_WARNING, config );
 
 					return;
 
