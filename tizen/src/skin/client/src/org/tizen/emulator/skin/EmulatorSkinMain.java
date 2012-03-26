@@ -148,7 +148,7 @@ public class EmulatorSkinMain {
 			
 		}
 
-		SkinLogLevel skinLogLevel = SkinLogLevel.TRACE;
+		SkinLogLevel skinLogLevel = SkinLogLevel.DEBUG;
 		
 		if( !StringUtil.isEmpty( logLevel ) ) {
 			
