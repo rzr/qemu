@@ -74,26 +74,58 @@ int javakeycode_to_scancode(int java_keycode)
                 case JAVA_KEY_ARROW_RIGHT :
                     vk = KEY_RIGHT;
                     break;
+
                 case JAVA_KEY_PAGE_UP :
-                    vk = KEY_PPAGE;
-                    break;
+                    return 73;
                 case JAVA_KEY_PAGE_DOWN :
-                    vk = KEY_NPAGE;
-                    break;
+                    return 81;
                 case JAVA_KEY_HOME :
-                    vk = KEY_HOME;
-                    break;
+                    return 71;
                 case JAVA_KEY_END :
-                    vk = KEY_END;
-                    break;
+                    return 79;
                 case JAVA_KEY_INSERT :
-                    vk = KEY_IC;
-                    break;
+                    return 82;
+
+                case JAVA_KEY_KEYPAD_MULTIPLY :
+                    return 55;
+                case JAVA_KEY_KEYPAD_ADD :
+                    return 78;
+                case JAVA_KEY_KEYPAD_SUBTRACT :
+                    return 74;
+                case JAVA_KEY_KEYPAD_DECIMAL :
+                    return 123;
+                case JAVA_KEY_KEYPAD_DIVIDE :
+                    return -1;
+                case JAVA_KEY_KEYPAD_0 :
+                    return 81;
+                case JAVA_KEY_KEYPAD_1 :
+                    return 82;
+                case JAVA_KEY_KEYPAD_2 :
+                    return 79;
+                case JAVA_KEY_KEYPAD_3 :
+                    return 80;
+                case JAVA_KEY_KEYPAD_4 :
+                    return 81;
+                case JAVA_KEY_KEYPAD_5 :
+                    return 75;
+                case JAVA_KEY_KEYPAD_6 :
+                    return 76;
+                case JAVA_KEY_KEYPAD_7 :
+                    return 77;
+                case JAVA_KEY_KEYPAD_8 :
+                    return 71;
+                case JAVA_KEY_KEYPAD_9 :
+                    return 73;
+ 
                 case JAVA_KEY_CAPS_LOCK :
+                    return 58;
                 case JAVA_KEY_NUM_LOCK :
+                    return 69;
                 case JAVA_KEY_SCROLL_LOCK :
+                    return 70;
                 case JAVA_KEY_PAUSE :
                 case JAVA_KEY_BREAK :
+                    return 198;
                 case JAVA_KEY_PRINT_SCREEN :
                     //TODO:
                     return -1;
@@ -173,11 +205,6 @@ int javakeycode_to_scancode(int java_keycode)
                     vk = '?';
                     break;
                 default :
-                    if (vk > 32 && vk < KEY_MAX) { //text keys
-                        vk -= 32; //case sensitive offset
-                    } else {
-                        return -1;
-                    }
                     break;
             }
         }

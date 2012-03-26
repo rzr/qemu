@@ -52,6 +52,21 @@ enum JAVA_KEYCODE {
     JAVA_KEY_INSERT,
     JAVA_KEY_F1 = 10,
     JAVA_KEY_F20 = 29,
+    JAVA_KEY_KEYPAD_MULTIPLY = 42,
+    JAVA_KEY_KEYPAD_ADD,
+    JAVA_KEY_KEYPAD_SUBTRACT,
+    JAVA_KEY_KEYPAD_DECIMAL,
+    JAVA_KEY_KEYPAD_DIVIDE,
+    JAVA_KEY_KEYPAD_0,
+    JAVA_KEY_KEYPAD_1,
+    JAVA_KEY_KEYPAD_2,
+    JAVA_KEY_KEYPAD_3,
+    JAVA_KEY_KEYPAD_4,
+    JAVA_KEY_KEYPAD_5,
+    JAVA_KEY_KEYPAD_6,
+    JAVA_KEY_KEYPAD_7,
+    JAVA_KEY_KEYPAD_8,
+    JAVA_KEY_KEYPAD_9,
     JAVA_KEY_CAPS_LOCK = 82,
     JAVA_KEY_NUM_LOCK,
     JAVA_KEY_SCROLL_LOCK,
@@ -61,42 +76,20 @@ enum JAVA_KEYCODE {
 };
 
 
-/*#include <curses.h>
-
-#define SCANCODE_GREY   0x80
-#define SCANCODE_SHIFT  0x100
-#define SCANCODE_CTRL   0x200
-
-#define GREY                SCANCODE_GREY
-#define SHIFT_CODE          0x2a
-#define SHIFT               SCANCODE_SHIFT
-#define CNTRL_CODE          0x1d
-#define CNTRL               SCANCODE_CTRL*/
-
 #define KEY_MAX 0777
 
 #define KEY_F0 0410
 #define KEY_F(n) (KEY_F0+(n))
 
-#define GREY 0x80
-#define SHIFT 0x100
-#define KEY_ESCAPE 0x01b
-
 #define KEY_DOWN 0402
 #define KEY_UP 0403
 #define KEY_LEFT 0404
 #define KEY_RIGHT 0405
-#define KEY_HOME 0406
 
-#define KEY_DC 0512
-#define KEY_IC 0513
-#define KEY_NPAGE 0522
-#define KEY_PPAGE 0523
-#define KEY_ENTER 0527
 #define KEY_BTAB 0541
-#define KEY_END 0550
 
 
+#define SHIFT 0
 static const int vkkey2scancode[KEY_MAX] = {
     [0 ... (KEY_MAX - 1)] = -1,
 
@@ -113,7 +106,7 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['0'] = 11,
     ['-'] = 12,
     ['='] = 13,
-    [0x07f] = 14, /* Delete */
+    [0x07f] = 83, /* Delete */
     [0x008] = 14, /* Backspace */
 
     ['\t'] = 15, /* Tab */
@@ -131,7 +124,6 @@ static const int vkkey2scancode[KEY_MAX] = {
     [']'] = 27,
     ['\n'] = 28, /* Return */
     ['\r'] = 28, /* Return */
-    [KEY_ENTER] = 28, /* Return */
 
     ['a'] = 30,
     ['s'] = 31,
@@ -173,16 +165,10 @@ static const int vkkey2scancode[KEY_MAX] = {
     [KEY_F(11)] = 87, /* Function Key 11 */
     [KEY_F(12)] = 88, /* Function Key 12 */
 
-    [KEY_HOME] = 71, /* Home */
     [KEY_UP] = 72, /* Up Arrow */
-    [KEY_PPAGE] = 73, /* Page Up */
     [KEY_LEFT] = 75, /* Left Arrow */
     [KEY_RIGHT] = 77, /* Right Arrow */
-    [KEY_END] = 79, /* End */
     [KEY_DOWN] = 80, /* Down Arrow */
-    [KEY_NPAGE] = 81, /* Page Down */
-    [KEY_IC] = 82, /* Insert */
-    [KEY_DC] = 83, /* Delete */
 
     ['!'] = 2 | SHIFT,
     ['@'] = 3 | SHIFT,
@@ -235,50 +221,6 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['<'] = 51 | SHIFT,
     ['>'] = 52 | SHIFT,
     ['?'] = 53 | SHIFT,
-
-#if 0
-    [KEY_F(13)] = 59 | SHIFT, /* Shift + Function Key 1 */
-    [KEY_F(14)] = 60 | SHIFT, /* Shift + Function Key 2 */
-    [KEY_F(15)] = 61 | SHIFT, /* Shift + Function Key 3 */
-    [KEY_F(16)] = 62 | SHIFT, /* Shift + Function Key 4 */
-    [KEY_F(17)] = 63 | SHIFT, /* Shift + Function Key 5 */
-    [KEY_F(18)] = 64 | SHIFT, /* Shift + Function Key 6 */
-    [KEY_F(19)] = 65 | SHIFT, /* Shift + Function Key 7 */
-    [KEY_F(20)] = 66 | SHIFT, /* Shift + Function Key 8 */
-    [KEY_F(21)] = 67 | SHIFT, /* Shift + Function Key 9 */
-    [KEY_F(22)] = 68 | SHIFT, /* Shift + Function Key 10 */
-    [KEY_F(23)] = 69 | SHIFT, /* Shift + Function Key 11 */
-    [KEY_F(24)] = 70 | SHIFT, /* Shift + Function Key 12 */
-
-    ['Q' - '@'] = 16 | CNTRL, /* Control + q */
-    ['W' - '@'] = 17 | CNTRL, /* Control + w */
-    ['E' - '@'] = 18 | CNTRL, /* Control + e */
-    ['R' - '@'] = 19 | CNTRL, /* Control + r */
-    ['T' - '@'] = 20 | CNTRL, /* Control + t */
-    ['Y' - '@'] = 21 | CNTRL, /* Control + y */
-    ['U' - '@'] = 22 | CNTRL, /* Control + u */
-    /* Control + i collides with Tab */
-    ['O' - '@'] = 24 | CNTRL, /* Control + o */
-    ['P' - '@'] = 25 | CNTRL, /* Control + p */
-
-    ['A' - '@'] = 30 | CNTRL, /* Control + a */
-    ['S' - '@'] = 31 | CNTRL, /* Control + s */
-    ['D' - '@'] = 32 | CNTRL, /* Control + d */
-    ['F' - '@'] = 33 | CNTRL, /* Control + f */
-    ['G' - '@'] = 34 | CNTRL, /* Control + g */
-    ['H' - '@'] = 35 | CNTRL, /* Control + h */
-    /* Control + j collides with Return */
-    ['K' - '@'] = 37 | CNTRL, /* Control + k */
-    ['L' - '@'] = 38 | CNTRL, /* Control + l */
-
-    ['Z' - '@'] = 44 | CNTRL, /* Control + z */
-    ['X' - '@'] = 45 | CNTRL, /* Control + x */
-    ['C' - '@'] = 46 | CNTRL, /* Control + c */
-    ['V' - '@'] = 47 | CNTRL, /* Control + v */
-    ['B' - '@'] = 48 | CNTRL, /* Control + b */
-    ['N' - '@'] = 49 | CNTRL, /* Control + n */
-    /* Control + m collides with the keycode for Enter */
-#endif
 };
 
 int javakeycode_to_scancode(int java_keycode);
