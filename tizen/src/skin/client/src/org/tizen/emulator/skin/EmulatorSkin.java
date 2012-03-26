@@ -82,6 +82,7 @@ import org.tizen.emulator.skin.dbi.ColorsType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
+import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
@@ -616,7 +617,7 @@ public class EmulatorSkin {
 
 		String emulatorName = SkinUtil.makeEmulatorName( config );
 		deviceInfoItem.setText( emulatorName );
-		deviceInfoItem.setImage( imageRegistry.getIcon( IconName.DEVICE_INFO ) );
+//		deviceInfoItem.setImage( imageRegistry.getIcon( IconName.DEVICE_INFO ) );
 		//FIXME
 		deviceInfoItem.setEnabled( false );
 		deviceInfoItem.addSelectionListener( new SelectionAdapter() {
@@ -656,14 +657,14 @@ public class EmulatorSkin {
 
 		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
 		rotateItem.setText( "Rotate" );
-		rotateItem.setImage( imageRegistry.getIcon( IconName.ROTATE ) );
+//		rotateItem.setImage( imageRegistry.getIcon( IconName.ROTATE ) );
 
 		Menu rotateMenu = createRotateMenu( menu.getShell() );
 		rotateItem.setMenu( rotateMenu );
 
 		final MenuItem scaleItem = new MenuItem( menu, SWT.CASCADE );
 		scaleItem.setText( "Scale" );
-		scaleItem.setImage( imageRegistry.getIcon( IconName.SCALING ) );
+//		scaleItem.setImage( imageRegistry.getIcon( IconName.SCALING ) );
 		Menu scaleMenu = createScaleMenu( menu.getShell() );
 		scaleItem.setMenu( scaleMenu );
 
@@ -671,13 +672,13 @@ public class EmulatorSkin {
 
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
 		advancedItem.setText( "Advanced" );
-		advancedItem.setImage( imageRegistry.getIcon( IconName.ADVANCED ) );
+//		advancedItem.setImage( imageRegistry.getIcon( IconName.ADVANCED ) );
 		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
 		advancedItem.setMenu( advancedMenu );
 
 		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
 		shellItem.setText( "Shell" );
-		shellItem.setImage( imageRegistry.getIcon( IconName.SHELL ) );
+//		shellItem.setImage( imageRegistry.getIcon( IconName.SHELL ) );
 		shellItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -717,7 +718,7 @@ public class EmulatorSkin {
 
 		MenuItem closeItem = new MenuItem( menu, SWT.PUSH );
 		closeItem.setText( "Close" );
-		closeItem.setImage( imageRegistry.getIcon( IconName.CLOSE ) );
+//		closeItem.setImage( imageRegistry.getIcon( IconName.CLOSE ) );
 		closeItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -879,7 +880,7 @@ public class EmulatorSkin {
 
 		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
 		screenshotItem.setText( "Screen Shot" );
-		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
+//		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
 			
 			private boolean isOpen;
@@ -887,26 +888,41 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				
+				ScreenShotDialog dialog = null;
+				
 				try {
 					
 					if( !isOpen ) {
 						isOpen = true;
-						ScreenShotDialog dialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config );
+						dialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config );
 						dialog.open();
 					}
 					
+				} catch ( ScreenShotException ex ) {
+					
+					logger.log( Level.SEVERE, ex.getMessage(), ex );
+					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ICON_ERROR, config );
+					
 				} catch ( Exception ex ) {
-					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
-					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
+					
+					// defense exception handling.
+					logger.log( Level.SEVERE, ex.getMessage(), ex );
+					String errorMessage = "Internal Error.\n[" + ex.getMessage() + "]";
+					SkinUtil.openMessage( shell, null, errorMessage, SWT.ICON_ERROR, config );
+					if( null != dialog ) {
+						dialog.close();
+					}
+					
 				} finally {
 					isOpen = false;
 				}
+				
 			}
 		} );
 
 		final MenuItem usbKeyboardItem = new MenuItem( menu, SWT.CASCADE );
 		usbKeyboardItem.setText( "USB Keyboard" );
-		usbKeyboardItem.setImage( imageRegistry.getIcon( IconName.USB_KEBOARD ) );
+//		usbKeyboardItem.setImage( imageRegistry.getIcon( IconName.USB_KEBOARD ) );
 		
 		Menu usbKeyBoardMenu = new Menu( shell, SWT.DROP_DOWN );
 
@@ -937,14 +953,14 @@ public class EmulatorSkin {
 
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "About" );
-		aboutItem.setImage( imageRegistry.getIcon( IconName.ABOUT ) );
+//		aboutItem.setImage( imageRegistry.getIcon( IconName.ABOUT ) );
 		aboutItem.addSelectionListener( new SelectionAdapter() {
 			private boolean isOpen;
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				if( !isOpen ) {
 					isOpen = true;
-					AboutDialog dialog = new AboutDialog( shell, "Tizen Emulator Info", SWT.DIALOG_TRIM );
+					AboutDialog dialog = new AboutDialog( shell, SWT.DIALOG_TRIM );
 					dialog.open();
 					isOpen = false;
 				}
