@@ -60,6 +60,7 @@ import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
  */
 public class SkinUtil {
 
+	public static final int DEFAULT_SCALE = 50; // 1/2x
 	public static final int SCALE_CONVERTER = 100;
 	public static final String EMULATOR_PREFIX = "emulator";
 
@@ -289,25 +290,14 @@ public class SkinUtil {
 
 	public static int getValidScale( EmulatorConfig config ) {
 
-		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
-		int defaultScale = SkinUtil.getDefaultScale( lcdHeight );
-
-		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, defaultScale );
+		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, DEFAULT_SCALE );
 		
 		if ( !SkinUtil.isValidScale( storedScale ) ) {
-			return defaultScale;
+			return DEFAULT_SCALE;
 		}else {
 			return storedScale;
 		}
 		
-	}
-
-	public static int getDefaultScale( int lcdHeight ) {
-		int defaultScale = 100;
-		if ( 800 < lcdHeight ) {
-			defaultScale = 50;
-		}
-		return defaultScale;
 	}
 
 	public static boolean isValidScale( int scale ) {

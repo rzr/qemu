@@ -60,8 +60,9 @@ public class EmulatorConfig {
 		public static final String VM_PATH = "vm.path";
 		public static final String LOG_LEVEL = "log.level";
 		public static final String NET_BASE_PORT = "net.baseport";
+		public static final String SKIN_PATH = "skin.path";
 	}
-	
+
 	public interface PropertiesConstants {
 		public static final String WINDOW_X = "window.x";
 		public static final String WINDOW_Y = "window.y";

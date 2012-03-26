@@ -111,6 +111,7 @@ public class ImageRegistry {
 		
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
+		String skinPath = (String) config.getArg( ArgsConstants.SKIN_PATH );
 
 		this.resolutionWidth = lcdWidth;
 		this.resolutionHeight = lcdHeight;
@@ -118,18 +119,29 @@ public class ImageRegistry {
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();
 		
-		init();
+		init(skinPath);
 		
 	}
 	
-	public static String getSkinPath( int lcdWidth, int lcdHeight ) {
-		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator + IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
-		return skinPath;
+	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
+		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator +
+				IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
+
+		if (argSkinPath == null) {
+			return skinPath;
+		}
+
+		File f = new File(argSkinPath);
+		if (f.isDirectory() == false) {
+			return skinPath;
+		}
+
+		return argSkinPath;
 	}
 
-	private void init() {
+	private void init(String argSkinPath) {
 
-		String skinPath = getSkinPath( resolutionWidth, resolutionHeight );
+		String skinPath = getSkinPath( argSkinPath, resolutionWidth, resolutionHeight );
 		
 		RotationsType rotations = dbiContents.getRotations();
 		List<RotationType> rotationList = rotations.getRotation();
