@@ -40,11 +40,11 @@
 #include "skin/maruskin_client.h"
 #include "guest_server.h"
 #include "debug_ch.h"
-#include "process.h"
 #include "option.h"
 #include "emul_state.h"
 #include "qemu_socket.h"
-
+#include <glib.h>
+#include <glib/gstdio.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
@@ -75,8 +75,6 @@ void exit_emulator(void)
     shutdown_guest_server();
 
     SDL_Quit();
-
-    remove_portfile();
 }
 
 static void construct_main_window(int skin_argc, char* skin_argv[])
@@ -192,7 +190,6 @@ void extract_info(int qemu_argc, char** qemu_argv)
     }
     
     tizen_base_port = get_sdb_base_port();
-    write_portfile(tizen_target_path);
 }
 
 static int skin_argc = 0;
