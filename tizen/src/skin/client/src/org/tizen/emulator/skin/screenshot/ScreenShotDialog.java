@@ -292,6 +292,7 @@ public class ScreenShotDialog extends Dialog {
 
 				this.image = new Image( parent.getDisplay(), imageData );
 
+				needToStoreRotatedImage = true;
 				imageCanvas.redraw();
 
 			} else {
@@ -301,8 +302,6 @@ public class ScreenShotDialog extends Dialog {
 		} else {
 			throw new ScreenShotException( "Fail to received image data." );
 		}
-
-		needToStoreRotatedImage = true;
 		
 	}
 
