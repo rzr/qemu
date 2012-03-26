@@ -104,7 +104,8 @@ public class ScreenShotDialog extends Dialog {
 	private EmulatorConfig config;
 
 	private RotationInfo currentRotation;
-
+	private boolean needToStoreRotatedImage;
+	
 	public ScreenShotDialog( Shell parent, SocketCommunicator commuicator, EmulatorSkin emulatorSkin,
 			EmulatorConfig config ) throws ScreenShotException {
 
@@ -114,7 +115,8 @@ public class ScreenShotDialog extends Dialog {
 		this.communicator = commuicator;
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
-
+		this.needToStoreRotatedImage = true;
+		
 		shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.RESIZE );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
 		shell.setLocation( parent.getLocation().x + parent.getSize().x + 30, parent.getLocation().y );
@@ -153,56 +155,65 @@ public class ScreenShotDialog extends Dialog {
 		imageCanvas.addPaintListener( new PaintListener() {
 			@Override
 			public void paintControl( PaintEvent e ) {
-
+				
 				logger.info( "capture screen." );
 
 				if ( null != image && !image.isDisposed() ) {
 
-					RotationInfo rotation = getCurrentRotation();
-
-					if ( RotationInfo.PORTRAIT.equals( rotation ) ) {
+					if ( RotationInfo.PORTRAIT.equals( currentRotation ) ) {
 
 						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-
+						needToStoreRotatedImage = false;
+						
 					} else {
 						
-						Transform transform = new Transform( shell.getDisplay() );
+						if( needToStoreRotatedImage ) {
+							
+							Transform transform = new Transform( shell.getDisplay() );
 
-						float angle = rotation.angle();
-						transform.rotate( angle );
+							float angle = currentRotation.angle();
+							transform.rotate( angle );
 
-						int w = 0;
-						int h = 0;
-						ImageData imageData = image.getImageData();
+							int w = 0;
+							int h = 0;
+							ImageData imageData = image.getImageData();
 
-						if ( RotationInfo.LANDSCAPE.equals( rotation ) ) {
-							transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
-							w = imageData.height;
-							h = imageData.width;
-						} else if ( RotationInfo.REVERSE_PORTRAIT.equals( rotation ) ) {
-							transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
-							w = imageData.width;
-							h = imageData.height;
-						} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( rotation ) ) {
-							transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
-							w = imageData.height;
-							h = imageData.width;
-						} else {
-							w = imageData.width;
-							h = imageData.height;
+							if ( RotationInfo.LANDSCAPE.equals( currentRotation ) ) {
+								transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
+								w = imageData.height;
+								h = imageData.width;
+							} else if ( RotationInfo.REVERSE_PORTRAIT.equals( currentRotation ) ) {
+								transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
+								w = imageData.width;
+								h = imageData.height;
+							} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( currentRotation ) ) {
+								transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
+								w = imageData.height;
+								h = imageData.width;
+							} else {
+								w = imageData.width;
+								h = imageData.height;
+							}
+
+							e.gc.setTransform( transform );
+
+							e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
+
+							transform.dispose();
+
+							// 'gc.drawImage' is only for the showing without changing image data,
+							// so change image data fully to support the roated image in a saved file and a pasted image.
+							Image rotatedImage = new Image( shell.getDisplay(), w, h );
+							e.gc.copyArea( rotatedImage, CANVAS_MARGIN, CANVAS_MARGIN );
+							image.dispose();
+							image = rotatedImage;
+
+							needToStoreRotatedImage = false;
+
+						}else {
+							//just redraw rotated image
+							e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 						}
-
-						e.gc.setTransform( transform );
-						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-
-						transform.dispose();
-
-						// 'gc.drawImage' is only for the showing without changing image data,
-						// so change image data fully to support the roated image in a saved file and a pasted image.
-						Image rotatedImage = new Image( shell.getDisplay(), w, h );
-						e.gc.copyArea( rotatedImage, CANVAS_MARGIN, CANVAS_MARGIN );
-						image.dispose();
-						image = rotatedImage;
 
 					}
 
@@ -291,6 +302,8 @@ public class ScreenShotDialog extends Dialog {
 			throw new ScreenShotException( "Fail to received image data." );
 		}
 
+		needToStoreRotatedImage = true;
+		
 	}
 
 	private void arrageImageLayout() {
