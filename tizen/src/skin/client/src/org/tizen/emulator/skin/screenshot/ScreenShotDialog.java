@@ -165,24 +165,44 @@ public class ScreenShotDialog extends Dialog {
 						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 
 					} else {
-
+						
 						Transform transform = new Transform( shell.getDisplay() );
 
 						float angle = rotation.angle();
 						transform.rotate( angle );
 
+						int w = 0;
+						int h = 0;
+						ImageData imageData = image.getImageData();
+
 						if ( RotationInfo.LANDSCAPE.equals( rotation ) ) {
 							transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
+							w = imageData.height;
+							h = imageData.width;
 						} else if ( RotationInfo.REVERSE_PORTRAIT.equals( rotation ) ) {
 							transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
+							w = imageData.width;
+							h = imageData.height;
 						} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( rotation ) ) {
 							transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
+							w = imageData.height;
+							h = imageData.width;
+						} else {
+							w = imageData.width;
+							h = imageData.height;
 						}
 
 						e.gc.setTransform( transform );
 						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 
 						transform.dispose();
+
+						// 'gc.drawImage' is only for the showing without changing image data,
+						// so change image data fully to support the roated image in a saved file and a pasted image.
+						Image rotatedImage = new Image( shell.getDisplay(), w, h );
+						e.gc.copyArea( rotatedImage, CANVAS_MARGIN, CANVAS_MARGIN );
+						image.dispose();
+						image = rotatedImage;
 
 					}
 
@@ -481,7 +501,7 @@ public class ScreenShotDialog extends Dialog {
 		}
 
 	}
-
+	
 	public void open() {
 
 		if ( shell.isDisposed() ) {
