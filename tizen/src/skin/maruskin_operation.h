@@ -30,6 +30,12 @@
 #ifndef MARUSKIN_OPERATION_H_
 #define MARUSKIN_OPERATION_H_
 
+struct QemuSurfaceInfo {
+    unsigned char* pixel_data;
+    int pixel_data_length;
+};
+typedef struct QemuSurfaceInfo QemuSurfaceInfo;
+
 void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type );
 
 void do_mouse_event( int event_type, int x, int y, int z );
@@ -41,6 +47,10 @@ void do_hardkey_event( int event_type, int keycode );
 void do_scale_event( double scale_factor);
 
 void do_rotation_event( int rotation_type );
+
+QemuSurfaceInfo* get_screenshot_info( void );
+
+void free_screenshot_info( QemuSurfaceInfo* );
 
 void open_shell(void);
 

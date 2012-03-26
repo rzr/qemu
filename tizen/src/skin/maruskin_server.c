@@ -54,7 +54,10 @@ MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
 #define RECV_BUF_SIZE 32
 #define RECV_HEADER_SIZE 12
-#define SEND_HEADER_SIZE 6
+
+#define SEND_HEADER_SIZE 10
+#define SEND_BIG_BUF_SIZE 1024 * 1024 * 2
+#define SEND_BUF_SIZE 512
 
 #define HEART_BEAT_INTERVAL 1
 #define HEART_BEAT_FAIL_COUNT 5
@@ -72,6 +75,7 @@ enum {
     RECV_CHANGE_LCD_STATE = 13,
     RECV_OPEN_SHELL = 14,
     RECV_USB_KBD = 15,
+    RECV_SCREEN_SHOT = 16,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
@@ -79,7 +83,7 @@ enum {
 
 enum {
     SEND_HEART_BEAT = 1,
-    SEND_HEART_BEAT_RESPONSE = 2,
+    SEND_SCREEN_SHOT = 2,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
@@ -101,7 +105,10 @@ static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
 
 static void* run_skin_server( void* args );
 static int recv_n( int client_sock, char* read_buf, int recv_len );
-static int send_skin( int client_sock, short send_cmd );
+static int send_skin_header_only( int client_sock, short send_cmd );
+static int send_skin_data( int client_sock, short send_cmd, unsigned char* data, int length, int big_data );
+static int send_n( int client_sock, unsigned char* data, int length, int big_data );
+
 static void* do_heart_beat( void* args );
 static int start_heart_beat( int client_sock );
 static void stop_heart_beat( void );
@@ -149,7 +156,7 @@ int start_skin_server( int argc, char** argv ) {
 void shutdown_skin_server( void ) {
     if ( client_sock ) {
         INFO( "send shutdown to skin.\n" );
-        if ( 0 > send_skin( client_sock, SEND_SHUTDOWN ) ) {
+        if ( 0 > send_skin_header_only( client_sock, SEND_SHUTDOWN ) ) {
             ERR( "fail to send SEND_SHUTDOWN to skin.\n" );
             stop_server = 1;
             // force close
@@ -174,7 +181,7 @@ void notify_sensor_daemon_start( void ) {
     INFO( "notify_sensor_daemon_start\n" );
     is_sensord_initialized = 1;
     if ( client_sock ) {
-        if ( 0 > send_skin( client_sock, SEND_SENSOR_DAEMON_START ) ) {
+        if ( 0 > send_skin_header_only( client_sock, SEND_SENSOR_DAEMON_START ) ) {
             ERR( "fail to send SEND_SENSOR_DAEMON_START to skin.\n" );
         }
     }
@@ -509,6 +516,21 @@ static void* run_skin_server( void* args ) {
                     maruskin_sdl_resize(); //send sdl event
                     break;
                 }
+                case RECV_SCREEN_SHOT: {
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_SCREEN_SHOT ==\n" );
+                    TRACE( log_buf );
+
+                    QemuSurfaceInfo* info = get_screenshot_info();
+
+                    if ( info ) {
+                        send_skin_data( client_sock, SEND_SCREEN_SHOT, info->pixel_data, info->pixel_data_length, 1 );
+                        free_screenshot_info( info );
+                    } else {
+                        ERR( "Fail to get screenshot data.\n" );
+                    }
+
+                    break;
+                }
                 case RECV_RESPONSE_HEART_BEAT: {
                     log_cnt += sprintf( log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n" );
                     TRACE( log_buf );
@@ -592,7 +614,7 @@ static int recv_n( int client_sock, char* read_buf, int recv_len ) {
 
     while ( 1 ) {
 
-        recv_cnt = recv( client_sock, (void*) read_buf, ( recv_len - recv_cnt ), 0 );
+        recv_cnt = recv( client_sock, (void*) ( read_buf + recv_cnt ), ( recv_len - recv_cnt ), 0 );
 
         if ( 0 > recv_cnt ) {
 
@@ -624,26 +646,102 @@ static int recv_n( int client_sock, char* read_buf, int recv_len ) {
 
 }
 
-static int send_skin( int client_sock, short send_cmd ) {
+static void make_header( int client_sock, short send_cmd, int data_length, char* sendbuf ) {
 
-    char sendbuf[SEND_HEADER_SIZE];
-    memset( &sendbuf, 0, SEND_HEADER_SIZE );
+    memset( sendbuf, 0, SEND_HEADER_SIZE );
 
     int request_id = rand();
     TRACE( "== SEND skin request_id:%d, send_cmd:%d ==\n", request_id, send_cmd );
     request_id = htonl( request_id );
 
-    short data = send_cmd;
-    data = htons( data );
+    short cmd = send_cmd;
+    cmd = htons( cmd );
+
+    int length = data_length;
+    length = htonl( length );
 
     char* p = sendbuf;
     memcpy( p, &request_id, sizeof( request_id ) );
     p += sizeof( request_id );
-    memcpy( p, &data, sizeof( data ) );
+    memcpy( p, &cmd, sizeof( cmd ) );
+    p += sizeof( cmd );
+    memcpy( p, &length, sizeof( length ) );
 
-    ssize_t send_count = send( client_sock, sendbuf, SEND_HEADER_SIZE, 0 );
+}
 
+static int send_n( int client_sock, unsigned char* data, int length, int big_data ) {
+
+    int send_cnt = 0;
+    int total_cnt = 0;
+
+    int buf_size = big_data ? SEND_BIG_BUF_SIZE : SEND_BUF_SIZE;
+    char databuf[buf_size];
+
+    INFO( "send_n start. length:%d\n", length );
+
+    while ( 1 ) {
+
+        if ( total_cnt == length ) {
+            break;
+        }
+
+        if ( buf_size < ( length - total_cnt ) ) {
+            send_cnt = buf_size;
+        } else {
+            send_cnt = ( length - total_cnt );
+        }
+
+        memset( &databuf, 0, send_cnt );
+        memcpy( &databuf, (char*) ( data + total_cnt ), send_cnt );
+
+        send_cnt = send( client_sock, databuf, send_cnt, 0 );
+
+        if ( 0 > send_cnt ) {
+            ERR( "send_n error. error code:%d\n", send_cnt );
+            return send_cnt;
+        } else {
+            total_cnt += send_cnt;
+        }
+
+    }
+
+    INFO( "send_n finished.\n" );
+
+    return total_cnt;
+
+}
+
+static int send_skin_header_only( int client_sock, short send_cmd ) {
+
+    char headerbuf[SEND_HEADER_SIZE];
+    make_header( client_sock, send_cmd, 0, headerbuf );
+
+    int send_count = send( client_sock, headerbuf, SEND_HEADER_SIZE, 0 );
     return send_count;
+
+}
+
+static int send_skin_data( int client_sock, short send_cmd, unsigned char* data, int length, int big_data ) {
+
+    char headerbuf[SEND_HEADER_SIZE];
+    make_header( client_sock, send_cmd, length, headerbuf );
+
+    int header_cnt = send( client_sock, headerbuf, SEND_HEADER_SIZE, 0 );
+
+    if ( 0 > header_cnt ) {
+        ERR( "send header for data is NULL.\n" );
+        return header_cnt;
+    }
+
+    if ( !data ) {
+        ERR( "send data is NULL.\n" );
+        return -1;
+    }
+
+    int send_cnt = send_n( client_sock, data, length, big_data );
+    INFO( "send_n result:%d\n", send_cnt );
+
+    return send_cnt;
 
 }
 
@@ -673,7 +771,7 @@ static void* do_heart_beat( void* args ) {
         }
 
         TRACE( "[HB] send heartbeat to skin.\n" );
-        if ( 0 > send_skin( client_sock, SEND_HEART_BEAT ) ) {
+        if ( 0 > send_skin_header_only( client_sock, SEND_HEART_BEAT ) ) {
             fail_count++;
         } else {
             fail_count = 0;

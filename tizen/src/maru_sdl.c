@@ -59,6 +59,7 @@ static int sdl_thread_initialized = 0;
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
 
+DisplaySurface* qemu_display_surface = NULL;
 
 static void qemu_update(void)
 {
@@ -226,6 +227,9 @@ static void qemu_ds_refresh(DisplayState *ds)
 
     vga_hw_update();
 
+    // surface may be NULL in init func.
+    qemu_display_surface = ds->surface;
+
     while (maru_sdl_poll_event(ev)) {
         switch (ev->type) {
             case SDL_VIDEORESIZE:
@@ -352,4 +356,8 @@ void maruskin_sdl_resize(void)
 
     //This function is thread safe, and can be called from other threads safely.
     SDL_PushEvent(&ev);
+}
+
+DisplaySurface* get_qemu_display_surface( void ) {
+    return qemu_display_surface;
 }

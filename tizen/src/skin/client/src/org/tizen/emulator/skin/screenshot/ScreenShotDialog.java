@@ -29,8 +29,9 @@
 
 package org.tizen.emulator.skin.screenshot;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
@@ -42,206 +43,364 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
-import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.layout.FormLayout;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
+import org.tizen.emulator.skin.EmulatorSkin;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
+import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
+import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
+import org.tizen.emulator.skin.util.StringUtil;
 
 public class ScreenShotDialog extends Dialog {
 
+	public final static String DEFAULT_FILE_EXTENSION = "png";
+	
+	public final static int SCREENSHOT_WAIT_INTERVAL = 3; // milli-seconds
+	public final static int SCREENSHOT_WAIT_LIMIT = 3000; // milli-seconds
+	
+	public final static int RED_MASK = 0x0000FF00;
+	public final static int GREEN_MASK = 0x00FF0000;
+	public final static int BLUE_MASK = 0xFF000000;
+	public final static int COLOR_DEPTH = 32;
+
+	public final static int LEFT_MARGIN = 30;
+	public final static int TOP_MARGIN = 30;
+
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
+	private PaletteData paletteData;
 	private Image image;
+	private Canvas imageCanvas;
 	private Shell shell;
 	private Shell parent;
-	private EmulatorConfig config;
 	
-	private Canvas canvas;
+	private SocketCommunicator communicator;
+	private EmulatorSkin emulatorSkin;
+	private EmulatorConfig config;
 
-	public ScreenShotDialog( Shell parent, Canvas lcdCanvas, EmulatorConfig config ) {
-		super( parent );
+	public ScreenShotDialog( Shell parent, SocketCommunicator commuicator, EmulatorSkin emulatorSkin, EmulatorConfig config )
+			throws ScreenShotException {
+		
+		super( parent, SWT.DIALOG_TRIM | SWT.RESIZE );
 
 		this.parent = parent;
+		this.communicator = commuicator;
+		this.emulatorSkin = emulatorSkin;
 		this.config = config;
-		
-		// image copy
-		capture( lcdCanvas );
 
-		shell = new Shell( parent, SWT.DIALOG_TRIM );
-		shell.setLayout( new FormLayout() );
-		shell.setText( "Screen Shot" );
-		shell.setLocation( parent.getLocation().x + parent.getSize().x + 50, parent.getLocation().y );
+		shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.RESIZE );
+		shell.setText( "Screen Shot - " + SkinUtil.getVmName( config ) );
+		shell.setLocation( parent.getLocation().x + parent.getSize().x + 30, parent.getLocation().y );
 		shell.addListener( SWT.Close, new Listener() {
 			@Override
 			public void handleEvent( Event event ) {
-				image.dispose();
+				if( null != image ) {
+					image.dispose();
+				}
 			}
 		} );
 		
-		Menu menu = new Menu( shell, SWT.BAR );
-		makeToolBarMenu( menu );
-		shell.setMenuBar( menu );
+		GridLayout gridLayout = new GridLayout();
+		gridLayout.marginWidth = 0;
+		gridLayout.marginHeight = 0;
+		gridLayout.horizontalSpacing = 0;
+		gridLayout.verticalSpacing = 0;
+		shell.setLayout( gridLayout );
+		
+		makeMenuBar( shell );
+		
+		final ScrolledComposite scrollComposite = new ScrolledComposite( shell, SWT.V_SCROLL | SWT.H_SCROLL );
+		GridData gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
+		scrollComposite.setLayoutData( gridData );
+		
+		scrollComposite.setExpandHorizontal( true );
+		scrollComposite.setExpandVertical( true );
+		
+		final int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
+		final int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 
-		// canvas
-		ScrolledComposite composite = new ScrolledComposite( shell, SWT.V_SCROLL | SWT.H_SCROLL );
-		
-		canvas = new Canvas( composite, SWT.NONE );
-		composite.setContent( canvas );
-		
-		ImageData imageData = image.getImageData();
-		Rectangle rect = new Rectangle( 0, 0, imageData.width, imageData.height );
-		canvas.setBounds( rect );
-		
-		canvas.addPaintListener( new PaintListener() {
+		imageCanvas = new Canvas( scrollComposite, SWT.NONE );
+		imageCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_DARK_GRAY ) );
+		imageCanvas.addPaintListener( new PaintListener() {
 			@Override
 			public void paintControl( PaintEvent e ) {
-				e.gc.drawImage( image, 0, 0 );
+				
+				logger.info( "capture screen." );
+
+				//TODO rotation
+//				if( null != image && !image.isDisposed() ) {
+//					
+//					short currentRotationId = ScreenShotDialog.this.emulatorSkin.getCurrentRotationId();
+//					RotationInfo rotationInfo = RotationInfo.getValue( currentRotationId );
+//					float angle = (float) rotationInfo.angle();
+//					
+//					if( 0 != angle ) {
+//						
+//						Transform transform = new Transform( shell.getDisplay() );
+//						transform.rotate( angle );
+//						transform.translate( -width, 0 );
+//						
+//						e.gc.setTransform( transform );
+//						e.gc.drawImage( image, LEFT_MARGIN, TOP_MARGIN );
+//						transform.dispose();
+//						
+//					}else {
+//						e.gc.drawImage( image, LEFT_MARGIN, TOP_MARGIN );
+//					}
+//					
+//				}
+				
+				e.gc.drawImage( image, LEFT_MARGIN, TOP_MARGIN );
+
 			}
 		} );
 
-		int width = 0;
-		int height = 0;
+		paletteData = new PaletteData( RED_MASK, GREEN_MASK, BLUE_MASK );
 
-		Point shellLocation = shell.getLocation();
-		Rectangle monitorSize = shell.getDisplay().getClientArea();
-
-		if( shellLocation.y + imageData.height > monitorSize.height ) {
-			shell.setSize( imageData.width, imageData.height );
-		}else {
-			shell.pack();
+		try {
+			capture();
+		} catch ( ScreenShotException e ) {
+			if( !shell.isDisposed() ) {
+				shell.close();
+			}
+			throw e;
 		}
+		
+		scrollComposite.setContent( imageCanvas );
+		ImageData imageData = image.getImageData();
+		scrollComposite.setMinSize( imageData.width + ( 2 * LEFT_MARGIN ), imageData.height + ( 2 * TOP_MARGIN ) );
+		
+		shell.pack();
 		
 	}
 
-	private void capture( Canvas canvas ) {
+	private void capture() throws ScreenShotException {
+
+		communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
+		DataTranfer dataTranfer = communicator.getDataTranfer();
+
+		int count = 0;
+		boolean isFail = false;
+		byte[] receivedData = null;
+		int limitCount = SCREENSHOT_WAIT_LIMIT / SCREENSHOT_WAIT_INTERVAL;
 		
-		if( null != this.image ) {
-			this.image.dispose();
-		}
-		
-		this.image = new Image( parent.getDisplay(), canvas.getBounds() );
-		
-		GC gc = null;
-		try {
-			gc = new GC( canvas );
-			gc.copyArea( image, 0, 0 );
-		} finally {
-			if ( null != gc ) {
-				gc.dispose();
+		synchronized ( dataTranfer ) {
+			
+			while( dataTranfer.isTransferState() ) {
+				
+				if( limitCount < count ) {
+					isFail = true;
+					break;
+				}
+				
+				try {
+					dataTranfer.wait( SCREENSHOT_WAIT_INTERVAL );
+				} catch ( InterruptedException e ) {
+					logger.log( Level.SEVERE, e.getMessage(), e );
+				}
+				
+				count++;
+				logger.info( "wait image data... count:" + count );
+				
 			}
+			
+			receivedData = dataTranfer.getReceivedData();
+			
 		}
 		
-		canvas.update();
+		if( !isFail ) {
+
+			if( null != receivedData ) {
+				
+				if( null != this.image ) {
+					this.image.dispose();
+				}
+
+				int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
+				int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
+				ImageData imageData = new ImageData(width, height, COLOR_DEPTH, paletteData, 1, receivedData );
+				
+				this.image = new Image( parent.getDisplay(), imageData );
+				
+				imageCanvas.redraw();
+				
+			}else {
+				throw new ScreenShotException( "Received image data is null." );
+			}
+			
+		}else {
+			throw new ScreenShotException( "Fail to received image data." );
+		}
 		
 	}
 	
-	private void makeToolBarMenu( Menu menu ) {
+	private void makeMenuBar( final Shell shell ) {
 		
-		MenuItem saveItem = new MenuItem( menu, SWT.FLAT );
+		ToolBar toolBar = new ToolBar( shell, SWT.HORIZONTAL );
+		GridData gridData = new GridData( GridData.FILL_HORIZONTAL );
+		toolBar.setLayoutData( gridData );
+		
+		ToolItem saveItem = new ToolItem( toolBar, SWT.PUSH );
+		//FIXME icon
+//		saveItem.setImage( shell.getDisplay().getSystemImage( SWT.ICON_QUESTION ) );
 		saveItem.setText( "Save" );
+		saveItem.setToolTipText( "Save" );
+		saveItem.setSelection( false );
 		
 		saveItem.addSelectionListener( new SelectionAdapter() {
-			
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				
-				FileDialog fd = new FileDialog( shell, SWT.SAVE );
-				fd.setText( "Save Image... " );
+				FileDialog fileDialog = new FileDialog( shell, SWT.SAVE );
+				fileDialog.setText( "Save Image" );
+				
 				String[] filter = { "*.png;*.PNG;*.jpg;*.JPG;*.jpeg;*.JPEG;*.bmp;*.BMP" };
-				String[] filterName = { "Image Files" };
-				fd.setFilterExtensions( filter );
-				fd.setFilterNames( filterName );
+				fileDialog.setFilterExtensions( filter );
 
-				SimpleDateFormat formatter = new SimpleDateFormat( "yyyy-mm-dd-hhmmss" );
-				
+				String[] filterName = { "Image files (*.png *.jpg *.jpeg *.bmp)" };
+				fileDialog.setFilterNames( filterName );
+
 				String vmName = SkinUtil.getVmName( config );
+				SimpleDateFormat formatter = new SimpleDateFormat( "yyyy-MM-dd-hhmmss" );
+				String dateString = formatter.format( new Date( System.currentTimeMillis() ) );
 				
-				fd.setFileName( vmName + "-" + formatter.format( new Date( System.currentTimeMillis() ) ) + ".png" );
+				fileDialog.setFileName( vmName + "-" + dateString + "." + DEFAULT_FILE_EXTENSION );
 
-				String path = fd.open();
-				if ( null == path ) {
-					return;
+				String userHome = System.getProperty( "user.home" );
+				if( !StringUtil.isEmpty( userHome ) ) {
+					fileDialog.setFilterPath( userHome );
+				}else {
+					logger.warning( "Cannot find user home path int java System properties." );
 				}
-
-				int i = path.lastIndexOf( '.' );
-				String filePath = path;
-				String format = "";
 				
-				if ( -1 != i ) {
-					filePath = path.substring( 0, i - 1 );
-					format = path.substring( i + 1, path.length() );
-					format = format.toLowerCase();
-				}
-
-				FileOutputStream fos = null;
+				String filePath = fileDialog.open();
+				saveFile( filePath, fileDialog );
 				
-				try {
-					
-					fos = new FileOutputStream( filePath + "." + format, true );
-					
-					ImageLoader loader = new ImageLoader();
-					loader.data = new ImageData[] { image.getImageData() };
-					
-					if ( null == format || format.equals( "png" ) ) {
-						loader.save( fos, SWT.IMAGE_PNG );
-					} else if ( format.equals( "jpg" ) || format.equals( "jpeg" ) ) {
-						loader.save( fos, SWT.IMAGE_JPEG );
-					} else if ( format.equals( "bmp" ) ) {
-						loader.save( fos, SWT.IMAGE_BMP );
-					} else {
-						
-						MessageBox msg = new MessageBox( shell, SWT.ICON_WARNING );
-						msg.setText( "Warning" );
-						msg.setMessage( "You have to use specific image formats. (PNG/JPG/BMP)" );
-						msg.open();
-						
-					}
-					
-				} catch ( IOException ex ) {
-					logger.log( Level.SEVERE, ex.getMessage(), ex );
-				} finally {
-					IOUtil.close( fos );
-				}
 			}
 
 		} );
-
 		
-		MenuItem refreshItem = new MenuItem( menu, SWT.FLAT );
+		ToolItem refreshItem = new ToolItem( toolBar, SWT.PUSH );
+		//FIXME icon
+//		refreshItem.setImage( shell.getDisplay().getSystemImage( SWT.ICON_INFORMATION ) );
 		refreshItem.setText( "Refresh" );
+		refreshItem.setToolTipText( "Refresh" );
+		refreshItem.setSelection( false );
 		
-		saveItem.addSelectionListener( new SelectionAdapter() {
-			
+		refreshItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				capture( canvas );
+				try {
+					capture();
+				} catch ( ScreenShotException ex ) {
+					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
+					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
+				}
 			}
 
 		} );
 		
 	}
 
+	private void saveFile( String fileFullPath, FileDialog fileDialog ) {
+		
+		if ( null == fileFullPath ) {
+			return;
+		}
+
+		String format = "";
+		String[] split = fileFullPath.split( "\\." );
+		
+		if( 1 < split.length ) {
+			
+			format = split[split.length - 1];
+
+			if ( new File( split[split.length - 2] ).isDirectory() ) {
+				// There is no file name.
+				SkinUtil.openMessage( shell, null, "Use correct file name.", SWT.ICON_WARNING, config );
+				String path = fileDialog.open();
+				saveFile( path, fileDialog );
+
+			}
+			
+		}
+		
+		FileOutputStream fos = null;
+		
+		try {
+			
+			if( StringUtil.isEmpty( format ) ) {
+				if( fileFullPath.endsWith( "." ) ) {
+					fileFullPath += DEFAULT_FILE_EXTENSION;
+				}else {
+					fileFullPath += "." + DEFAULT_FILE_EXTENSION;
+				}
+			}
+			
+			fos = new FileOutputStream( fileFullPath, false );
+			
+			ImageLoader loader = new ImageLoader();
+			loader.data = new ImageData[] { image.getImageData() };
+			
+			if ( StringUtil.isEmpty( format ) || format.equalsIgnoreCase( "png" ) ) {
+				loader.save( fos, SWT.IMAGE_PNG );
+			} else if ( format.equalsIgnoreCase( "jpg" ) || format.equalsIgnoreCase( "jpeg" ) ) {
+				loader.save( fos, SWT.IMAGE_JPEG );
+			} else if ( format.equalsIgnoreCase( "bmp" ) ) {
+				loader.save( fos, SWT.IMAGE_BMP );
+			} else {
+				
+				SkinUtil.openMessage( shell, null, "Use the specified image formats. ( PNG / JPG / JPEG / BMP )",
+						SWT.ICON_WARNING, config );
+				String path = fileDialog.open();
+				saveFile( path, fileDialog );
+				
+			}
+			
+		} catch ( FileNotFoundException ex ) {
+			
+			logger.log( Level.WARNING, "Use correct file name.", ex );
+			SkinUtil.openMessage( shell, null, "Use correct file name.", SWT.ICON_WARNING, config );
+			String path = fileDialog.open();
+			saveFile( path, fileDialog );
+
+		} catch ( Exception ex ) {
+			
+			logger.log( Level.SEVERE, "Fail to save this image file.", ex );
+			SkinUtil.openMessage( shell, null, "Fail to save this image file.", SWT.ERROR, config );
+			String path = fileDialog.open();
+			saveFile( path, fileDialog );
+
+		} finally {
+			IOUtil.close( fos );
+		}
+
+	}
+	
 	public void open() {
 
+		if( shell.isDisposed() ) {
+			return;
+		}
+		
 		shell.open();
 
 		while ( !shell.isDisposed() ) {
@@ -251,4 +410,5 @@ public class ScreenShotDialog extends Dialog {
 		}
 
 	}
+		
 }

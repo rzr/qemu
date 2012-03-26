@@ -65,10 +65,10 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
@@ -89,7 +89,6 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
-import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 
@@ -164,7 +163,7 @@ public class EmulatorSkin {
 		
 		int scale = SkinUtil.getValidScale( config );
 		
-//		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
+//		short rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION, RotationInfo.PORTRAIT.id() );
 		// has to be portrait mode at first booting time
 		arrangeSkin( lcdWidth, lcdHeight, scale, RotationInfo.PORTRAIT.id() );
 		
@@ -174,11 +173,11 @@ public class EmulatorSkin {
 		addMenuItems( menu );
 		shell.setMenu( menu );
 		
-		// sdl uses this handle id.
-		windowHandleId = getWindowHandleId( lcdCanvas );
-		
 		addLCDListener( lcdCanvas );
 		addShellListener( shell );
+
+		// sdl uses this handle id.
+		windowHandleId = getWindowHandleId( lcdCanvas );
 
 		return windowHandleId;
 
@@ -309,7 +308,7 @@ public class EmulatorSkin {
 					config.setProperty( PropertiesConstants.WINDOW_X, shell.getLocation().x );
 					config.setProperty( PropertiesConstants.WINDOW_Y, shell.getLocation().y );
 					config.setProperty( PropertiesConstants.WINDOW_SCALE, currentScale );
-					config.setProperty( PropertiesConstants.WINDOW_DIRECTION, currentRotationId );
+					config.setProperty( PropertiesConstants.WINDOW_ROTATION, currentRotationId );
 
 					config.saveProperties();
 
@@ -619,7 +618,7 @@ public class EmulatorSkin {
 		deviceInfoItem.setText( emulatorName );
 		deviceInfoItem.setImage( imageRegistry.getIcon( IconName.DEVICE_INFO ) );
 		//FIXME
-//		deviceInfoItem.setEnabled( false );
+		deviceInfoItem.setEnabled( false );
 		deviceInfoItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -706,11 +705,7 @@ public class EmulatorSkin {
 						procSdb.start(); //open sdb shell
 					} catch (Exception ee) {
 						logger.log(Level.SEVERE, ee.getMessage(), ee);
-
-						MessageBox messageBox = new MessageBox(shell, SWT.ICON_ERROR);
-						messageBox.setText(SkinUtil.makeEmulatorName(config));
-						messageBox.setMessage(ee.getMessage());
-						messageBox.open();
+						SkinUtil.openMessage( shell, null, "Fail to open Shell.", SWT.ICON_ERROR, config );
 					}
 				}
 
@@ -738,9 +733,10 @@ public class EmulatorSkin {
 
 		final List<MenuItem> rotationList = new ArrayList<MenuItem>();
 
-		final short storedDirectionId = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION,
-				(short) RotationInfo.PORTRAIT.id() );
-
+//		final short storedDirectionId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION,
+//				(short) RotationInfo.PORTRAIT.id() );
+		final short storedDirectionId = RotationInfo.PORTRAIT.id();
+		
 		Iterator<Entry<Short, RotationType>> iterator = SkinRotation.getRotationIterator();
 
 		while ( iterator.hasNext() ) {
@@ -753,6 +749,10 @@ public class EmulatorSkin {
 			menuItem.setText( section.getName().value() );
 			menuItem.setData( rotationId );
 			if ( storedDirectionId == rotationId ) {
+				menuItem.setSelection( true );
+			}
+
+			if ( RotationInfo.PORTRAIT.id() == rotationId ) {
 				menuItem.setSelection( true );
 			}
 
@@ -785,10 +785,8 @@ public class EmulatorSkin {
 						}
 					}
 					///////////
-
-					MessageBox messageBox = new MessageBox( shell );
-					messageBox.setMessage( "Rotation is not ready." );
-					messageBox.open();
+					
+					SkinUtil.openMessage( shell, null, "Rotation is not ready.", SWT.ICON_WARNING, config );
 
 					return;
 
@@ -883,13 +881,24 @@ public class EmulatorSkin {
 		screenshotItem.setText( "Screen Shot" );
 		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
+			
 			private boolean isOpen;
+			
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-				if( !isOpen ) {
-					isOpen = true;
-					ScreenShotDialog dialog = new ScreenShotDialog( shell, lcdCanvas, config );
-					dialog.open();
+				
+				try {
+					
+					if( !isOpen ) {
+						isOpen = true;
+						ScreenShotDialog dialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config );
+						dialog.open();
+					}
+					
+				} catch ( Exception ex ) {
+					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
+					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
+				} finally {
 					isOpen = false;
 				}
 			}
@@ -976,6 +985,10 @@ public class EmulatorSkin {
 			} );
 		}
 
+	}
+
+	public short getCurrentRotationId() {
+		return currentRotationId;
 	}
 
 }

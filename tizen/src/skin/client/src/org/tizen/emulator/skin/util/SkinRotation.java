@@ -35,7 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.tizen.emulator.skin.dbi.RotationNameType;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.dbi.RotationType;
 
 
@@ -44,33 +44,6 @@ import org.tizen.emulator.skin.dbi.RotationType;
  *
  */
 public class SkinRotation {
-
-	public enum RotationInfo {
-
-		PORTRAIT( RotationNameType.PORTRAIT.value(), (short)0, 0 ),
-		LANDSCAPE( RotationNameType.LANDSCAPE.value(), (short)1, -90 ),
-		REVERSE_PORTRAIT( RotationNameType.REVERSE_PORTRAIT.value(), (short)2, 180 ),
-		REVERSE_LANDSCAPE( RotationNameType.REVERSE_LANDSCAPE.value(), (short)3, 90 );
-		
-		private String value;
-		private short id;
-		private int angle;
-		
-		RotationInfo( String value, short id, int ratio ) {
-			this.value = value;
-			this.id = id;
-			this.angle = ratio;
-		}
-		public String value() {
-			return this.value;
-		}
-		public int angle() {
-			return this.angle;
-		}
-		public short id() {
-			return this.id;
-		}
-	}
 	
 	private static Map<Short, RotationType> rotationMap;
 	private static Map<Short, RotationInfo> angleMap;

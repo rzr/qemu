@@ -30,6 +30,7 @@
 package org.tizen.emulator.skin.comm;
 
 import org.tizen.emulator.skin.comm.sock.data.ISendData;
+import org.tizen.emulator.skin.dbi.RotationNameType;
 
 /**
  * 
@@ -102,6 +103,44 @@ public interface ICommunicator extends Runnable {
 
 	}
 
+	public enum RotationInfo {
+
+		PORTRAIT( RotationNameType.PORTRAIT.value(), (short)0, 0 ),
+		LANDSCAPE( RotationNameType.LANDSCAPE.value(), (short)1, -90 ),
+		REVERSE_PORTRAIT( RotationNameType.REVERSE_PORTRAIT.value(), (short)2, 180 ),
+		REVERSE_LANDSCAPE( RotationNameType.REVERSE_LANDSCAPE.value(), (short)3, 90 );
+		
+		private String value;
+		private short id;
+		private int angle;
+		
+		RotationInfo( String value, short id, int ratio ) {
+			this.value = value;
+			this.id = id;
+			this.angle = ratio;
+		}
+		public String value() {
+			return this.value;
+		}
+		public int angle() {
+			return this.angle;
+		}
+		public short id() {
+			return this.id;
+		}
+		
+		public static RotationInfo getValue( short id ) {
+			RotationInfo[] values = RotationInfo.values();
+			for (int i = 0; i < values.length; i++) {
+				if( values[i].id == id ) {
+					return values[i];
+				}
+			}
+			throw new IllegalArgumentException( Integer.toString(id) );
+		}
+
+	}
+
 	public enum SendCommand {
 		
 		SEND_START( (short)1 ),
@@ -112,6 +151,7 @@ public interface ICommunicator extends Runnable {
 		CHANGE_LCD_STATE( (short)13 ),
 		OPEN_SHELL( (short)14 ),
 		USB_KBD( (short)15 ),
+		SCREEN_SHOT( (short)16 ),
 		
 		RESPONSE_HEART_BEAT( (short)900 ),
 		CLOSE( (short)998 ),
@@ -147,6 +187,7 @@ public interface ICommunicator extends Runnable {
 	public enum ReceiveCommand {
 		
 		HEART_BEAT( (short)1 ),
+		SCREEN_SHOT_DATA( (short)2 ),
 		SENSOR_DAEMON_START( (short)800 ),
 		SHUTDOWN( (short)999 );
 		

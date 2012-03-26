@@ -33,13 +33,14 @@
 #include "maruskin_operation.h"
 #include "maru_sdl.h"
 #include "debug_ch.h"
-
 #include "sdb.h"
 #include "nbd.h"
-#include "../mloop_event.h"
+#include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
 #include "emul_state.h"
+#include "hw/maru_pm.h"
+#include "qemu-common.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
@@ -114,11 +115,11 @@ void do_hardkey_event( int event_type, int keycode )
 {
     TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
-    if ( KEY_PRESSED == event_type ) {
-        if ( kbd_mouse_is_absolute() ) {
-            // home key or power key is used for resume.
-            if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
-                if ( is_suspended_state() ) {
+    if ( is_suspended_state() ) {
+        if ( KEY_PRESSED == event_type ) {
+            if ( kbd_mouse_is_absolute() ) {
+                // home key or power key is used for resume.
+                if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
                     INFO( "user requests system resume.\n" );
                     resume();
 #ifdef _WIN32
@@ -198,7 +199,7 @@ void do_rotation_event( int rotation_type)
     socket_send( s, &buf_size, 4 );
     socket_send( s, send_buf, buf_size );
 
-    INFO( "send to sendord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
+    INFO( "send to sensord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
 
     set_emul_rotation(rotation_type);
 
@@ -208,6 +209,53 @@ void do_rotation_event( int rotation_type)
     close( s );
 #endif
 
+}
+
+QemuSurfaceInfo* get_screenshot_info( void ) {
+
+    DisplaySurface* qemu_display_surface = get_qemu_display_surface();
+
+    if ( !qemu_display_surface ) {
+        ERR( "qemu surface is NULL.\n" );
+        return NULL;
+    }
+
+    QemuSurfaceInfo* info = (QemuSurfaceInfo*) g_malloc0( sizeof(QemuSurfaceInfo) );
+    if ( !info ) {
+        ERR( "Fail to malloc for QemuSurfaceInfo.\n");
+        return NULL;
+    }
+
+    int length = qemu_display_surface->linesize * qemu_display_surface->height;
+    INFO( "screenshot data length:%d\n", length );
+
+    if ( 0 >= length ) {
+        g_free( info );
+        ERR( "screenshot data ( 0 >=length ). length:%d\n", length );
+        return NULL;
+    }
+
+    info->pixel_data = (unsigned char*) g_malloc0( length );
+    if ( !info->pixel_data ) {
+        g_free( info );
+        ERR( "Fail to malloc for pixel data.\n");
+        return NULL;
+    }
+
+    memcpy( info->pixel_data, qemu_display_surface->data, length );
+    info->pixel_data_length = length;
+
+    return info;
+
+}
+
+void free_screenshot_info( QemuSurfaceInfo* info ) {
+    if( info ) {
+        if( info->pixel_data ) {
+            g_free( info->pixel_data );
+        }
+        g_free( info );
+    }
 }
 
 void open_shell(void)

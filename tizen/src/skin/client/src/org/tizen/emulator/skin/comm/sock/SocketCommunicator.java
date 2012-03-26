@@ -29,6 +29,7 @@
 
 package org.tizen.emulator.skin.comm.sock;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -62,8 +63,36 @@ import org.tizen.emulator.skin.util.SkinUtil;
  */
 public class SocketCommunicator implements ICommunicator {
 
+	public class DataTranfer {
+
+		private boolean isTransferState;
+		private byte[] receivedData;
+
+		private DataTranfer() {
+		}
+
+		private void reset() {
+			receivedData = null;
+			isTransferState = true;
+		}
+
+		private void setData( byte[] data ) {
+			this.receivedData = data;
+			isTransferState = false;
+		}
+
+		public synchronized boolean isTransferState() {
+			return isTransferState;
+		}
+
+		public synchronized byte[] getReceivedData() {
+			return receivedData;
+		}
+
+	}
+
 	private Logger logger = SkinLogger.getSkinLogger( SocketCommunicator.class ).getLogger();
-	
+
 	private EmulatorConfig config;
 	private int uId;
 	private int windowHandleId;
@@ -73,33 +102,37 @@ public class SocketCommunicator implements ICommunicator {
 	private DataInputStream dis;
 	private DataOutputStream dos;
 
+	private DataTranfer dataTransfer;
+
 	private AtomicInteger heartbeatCount;
 
 	private boolean isTerminated;
 	private ScheduledExecutorService heartbeatExecutor;
-	
+
 	private boolean isSensorDaemonStarted;
 
-	public SocketCommunicator(EmulatorConfig config, int uId, int windowHandleId, EmulatorSkin skin) {
+	public SocketCommunicator( EmulatorConfig config, int uId, int windowHandleId, EmulatorSkin skin ) {
 
 		this.config = config;
 		this.uId = uId;
 		this.windowHandleId = windowHandleId;
 		this.skin = skin;
 
-		this.heartbeatCount = new AtomicInteger(0);
+		this.dataTransfer = new DataTranfer();
+
+		this.heartbeatCount = new AtomicInteger( 0 );
 		this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
 
 		try {
 
-			String portString = config.getArg(ArgsConstants.SERVER_PORT);
-			int port = Integer.parseInt(portString);
-			socket = new Socket("127.0.0.1", port);
-			logger.info("socket.isConnected():" + socket.isConnected());
+			String portString = config.getArg( ArgsConstants.SERVER_PORT );
+			int port = Integer.parseInt( portString );
+			socket = new Socket( "127.0.0.1", port );
+			logger.info( "socket.isConnected():" + socket.isConnected() );
 
-		} catch (UnknownHostException e) {
+		} catch ( UnknownHostException e ) {
 			logger.log( Level.SEVERE, e.getMessage(), e );
-		} catch (IOException e) {
+		} catch ( IOException e ) {
 			logger.log( Level.SEVERE, e.getMessage(), e );
 		}
 
@@ -110,47 +143,46 @@ public class SocketCommunicator implements ICommunicator {
 
 		try {
 
-			dis = new DataInputStream(socket.getInputStream());
-			dos = new DataOutputStream(socket.getOutputStream());
-			
-			int scale = SkinUtil.getValidScale( config );
-			
-			short rotation = config.getPropertyShort( PropertiesConstants.WINDOW_DIRECTION, (short) 0 );
-			
-			sendToQEMU(SendCommand.SEND_START,
-					new StartData(windowHandleId,
-							Integer.parseInt( config.getArg(ArgsConstants.RESOLUTION_WIDTH) ),
-							Integer.parseInt( config.getArg(ArgsConstants.RESOLUTION_HEIGHT) ),
-							scale, rotation));
+			dis = new DataInputStream( socket.getInputStream() );
+			dos = new DataOutputStream( socket.getOutputStream() );
 
-		} catch (IOException e) {
+			int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
+			int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
+			int scale = SkinUtil.getValidScale( config );
+			short rotation = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION, RotationInfo.PORTRAIT.id() );
+
+			StartData startData = new StartData( windowHandleId, width, height, scale, rotation );
+
+			sendToQEMU( SendCommand.SEND_START, startData );
+
+		} catch ( IOException e ) {
 			logger.log( Level.SEVERE, e.getMessage(), e );
 			terminate();
 			return;
 		}
-		
+
 		String ignoreHeartbeatString = config.getArg( ArgsConstants.TEST_HEART_BEAT_IGNORE, Boolean.FALSE.toString() );
 		Boolean ignoreHeartbeat = Boolean.parseBoolean( ignoreHeartbeatString );
-		
-		if( ignoreHeartbeat ) {
+
+		if ( ignoreHeartbeat ) {
 			logger.info( "Ignore Skin heartbeat." );
-		}else {
-			
-			heartbeatExecutor.scheduleAtFixedRate(new Runnable() {
-				
+		} else {
+
+			heartbeatExecutor.scheduleAtFixedRate( new Runnable() {
+
 				@Override
 				public void run() {
-					
+
 					increaseHeartbeatCount();
-					
-					if (isHeartbeatExpired()) {
+
+					if ( isHeartbeatExpired() ) {
 						terminate();
 					}
-					
+
 				}
-				
-			}, 0, EmulatorConstants.HEART_BEAT_INTERVAL, TimeUnit.SECONDS);
-			
+
+			}, 0, EmulatorConstants.HEART_BEAT_INTERVAL, TimeUnit.SECONDS );
+
 		}
 
 		while ( true ) {
@@ -163,13 +195,14 @@ public class SocketCommunicator implements ICommunicator {
 
 				int reqId = dis.readInt();
 				short cmd = dis.readShort();
+				int length = dis.readInt();
 
-				if( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "[Socket] read - reqId:" + reqId + ", command:" + cmd + ", " );
+				if ( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( "[Socket] read - reqId:" + reqId + ", command:" + cmd + ", dataLength:" + length );
 				}
 
 				ReceiveCommand command = null;
-				
+
 				try {
 					command = ReceiveCommand.getValue( cmd );
 				} catch ( IllegalArgumentException e ) {
@@ -180,10 +213,23 @@ public class SocketCommunicator implements ICommunicator {
 				switch ( command ) {
 				case HEART_BEAT: {
 					resetHeartbeatCount();
-					if( logger.isLoggable( Level.FINE ) ) {
+					if ( logger.isLoggable( Level.FINE ) ) {
 						logger.fine( "received HEAR_BEAT from QEMU." );
 					}
 					sendToQEMU( SendCommand.RESPONSE_HEART_BEAT, null );
+					break;
+				}
+				case SCREEN_SHOT_DATA: {
+					logger.info( "received SCREEN_SHOT_DATA from QEMU." );
+
+					synchronized ( dataTransfer ) {
+						byte[] imageData = readData( dis, length );
+						dataTransfer.setData( imageData );
+						dataTransfer.notifyAll();
+					}
+
+					logger.info( "finish receiving data from QEMU." );
+
 					break;
 				}
 				case SENSOR_DAEMON_START: {
@@ -212,47 +258,91 @@ public class SocketCommunicator implements ICommunicator {
 			}
 
 		}
-		
+
+	}
+
+	private byte[] readData( DataInputStream is, int length ) throws IOException {
+
+		if ( 0 >= length ) {
+			return null;
+		}
+
+		BufferedInputStream bfis = new BufferedInputStream( is, length );
+		byte[] data = new byte[length];
+
+		int read = 0;
+		int total = 0;
+
+		while ( true ) {
+
+			if ( total == length ) {
+				break;
+			}
+
+			read = bfis.read( data, total, length - total );
+
+			if ( 0 > read ) {
+				if ( total < length ) {
+					continue;
+				}
+			} else {
+				total += read;
+			}
+
+		}
+
+		logger.info( "finished reading stream. read:" + total );
+
+		return data;
+
+	}
+
+	public void sendToQEMU( SendCommand command, ISendData data, boolean useDataTransfer ) {
+		if ( useDataTransfer ) {
+			this.dataTransfer.reset();
+		}
+		sendToQEMU( command, data );
 	}
 
 	@Override
-	public void sendToQEMU(SendCommand command, ISendData data) {
+	public void sendToQEMU( SendCommand command, ISendData data ) {
 
 		try {
 
-			//anyway down casting
-			int reqId = (int) UUID.randomUUID().getMostSignificantBits();
-			
+			// anyway down casting
+			long longReqId = UUID.randomUUID().getMostSignificantBits();
+			int reqId = (int) ( longReqId >> 32 );
+
 			ByteArrayOutputStream bao = new ByteArrayOutputStream();
-			DataOutputStream dataOutputStream = new DataOutputStream(bao);
-			
-			dataOutputStream.writeInt(uId);
-			dataOutputStream.writeInt(reqId);
-			dataOutputStream.writeShort(command.value());
-			
+			DataOutputStream dataOutputStream = new DataOutputStream( bao );
+
+			dataOutputStream.writeInt( uId );
+			dataOutputStream.writeInt( reqId );
+			dataOutputStream.writeShort( command.value() );
+
 			short length = 0;
-			if( null == data ) {
+			if ( null == data ) {
 				length = 0;
-				dataOutputStream.writeShort(length);
-			}else {
+				dataOutputStream.writeShort( length );
+			} else {
 				byte[] byteData = data.serialize();
 				length = (short) byteData.length;
-				dataOutputStream.writeShort(length);
-				dataOutputStream.write(byteData);
+				dataOutputStream.writeShort( length );
+				dataOutputStream.write( byteData );
 			}
 
 			dataOutputStream.flush();
-			
-			dos.write(bao.toByteArray());
+
+			dos.write( bao.toByteArray() );
 			dos.flush();
 
-			if( logger.isLoggable( Level.FINE ) ) {
-				logger.fine( "[Socket] write - uid:" + uId + ", reqId:" + reqId + ", command:" + command.value() + " - "
-						+ command.toString() + ", length:" + length );
+			if ( logger.isLoggable( Level.FINE ) ) {
+				logger.fine( "[Socket] write - uid:" + uId + ", reqId:" + reqId + ", command:" + command.value()
+						+ " - " + command.toString() + ", length:" + length );
 			}
 
 			if ( 0 < length ) {
-				if( logger.isLoggable( Level.FINE ) ) {
+				if ( logger.isLoggable( Level.FINE ) ) {
 					logger.fine( "== data ==" );
 					logger.fine( data.toString() );
 				}
@@ -274,8 +364,8 @@ public class SocketCommunicator implements ICommunicator {
 
 	private void increaseHeartbeatCount() {
 		int count = heartbeatCount.incrementAndGet();
-		if( logger.isLoggable( Level.FINE ) ) {
-			logger.fine("HB count : " + count);
+		if ( logger.isLoggable( Level.FINE ) ) {
+			logger.fine( "HB count : " + count );
 		}
 	}
 
@@ -284,15 +374,19 @@ public class SocketCommunicator implements ICommunicator {
 	}
 
 	private void resetHeartbeatCount() {
-		heartbeatCount.set(0);
+		heartbeatCount.set( 0 );
+	}
+
+	public DataTranfer getDataTranfer() {
+		return dataTransfer;
 	}
 
 	@Override
 	public void terminate() {
-		if (null != heartbeatExecutor) {
+		if ( null != heartbeatExecutor ) {
 			heartbeatExecutor.shutdownNow();
 		}
-		IOUtil.closeSocket(socket);
+		IOUtil.closeSocket( socket );
 		skin.shutdown();
 	}
 

@@ -65,7 +65,7 @@ public class EmulatorConfig {
 	public interface PropertiesConstants {
 		public static final String WINDOW_X = "window.x";
 		public static final String WINDOW_Y = "window.y";
-		public static final String WINDOW_DIRECTION = "window.rotate";
+		public static final String WINDOW_ROTATION = "window.rotate";
 		public static final String WINDOW_SCALE = "window.scale";
 	}
 	

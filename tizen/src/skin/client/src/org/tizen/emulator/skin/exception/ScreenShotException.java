@@ -1,10 +1,10 @@
-/*
- * MARU SDL display driver
+/**
+ * 
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * HyunJun Son <hj79.son@samsung.com>
+ * Hyunjun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -27,29 +27,30 @@
  *
  */
 
+package org.tizen.emulator.skin.exception;
 
-#ifndef MARU_SDL_H_
-#define MARU_SDL_H_
+/**
+ * 
+ *
+ */
+public class ScreenShotException extends EmulatorException {
 
-#include "console.h"
+	private static final long serialVersionUID = 7527776121326217994L;
 
-#if 0
-#ifdef _WIN32
-#include <windows.h>
-#include <winbase.h>
-#endif
-#endif
+	public ScreenShotException() {
+		super();
+	}
 
-#include <SDL.h>
-#include <SDL_syswm.h>
-#include "qemu-common.h"
+	public ScreenShotException( Throwable cause ) {
+		super( cause );
+	}
 
-#define SDL_USER_EVENT_CODE_HARDKEY 1
+    public ScreenShotException( String message ) {
+        super( message );
+    }
 
-void maruskin_display_init(DisplayState *ds);
-void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height);
-void maruskin_sdl_resize(void);
+    public ScreenShotException( String message, Throwable cause ) {
+        super( message, cause );
+    }
 
-DisplaySurface* get_qemu_display_surface( void );
-
-#endif /* MARU_SDL_H_ */
+}

@@ -38,8 +38,10 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorConstants;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.PropertiesConstants;
@@ -50,7 +52,6 @@ import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
-import org.tizen.emulator.skin.util.SkinRotation.RotationInfo;
 
 
 /**
@@ -315,6 +316,21 @@ public class SkinUtil {
 		} else {
 			return false;
 		}
+	}
+	
+	public static <T> void openMessage( Shell shell, String title, String message, int style, EmulatorConfig config ) {
+		
+		MessageBox messageBox = new MessageBox( shell, style );
+		
+		if( !StringUtil.isEmpty( title ) ) {
+			messageBox.setText( title );
+		}else {
+			messageBox.setText( makeEmulatorName( config ) );
+		}
+		
+		messageBox.setMessage( StringUtil.nvl( message ) );
+		messageBox.open();
+		
 	}
 
 }
