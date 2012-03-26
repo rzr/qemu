@@ -47,6 +47,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Canvas;
@@ -58,6 +59,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.tizen.emulator.skin.EmulatorSkin;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
@@ -81,8 +83,7 @@ public class ScreenShotDialog extends Dialog {
 	public final static int BLUE_MASK = 0xFF000000;
 	public final static int COLOR_DEPTH = 32;
 
-	public final static int LEFT_MARGIN = 30;
-	public final static int TOP_MARGIN = 30;
+	public final static int CANVAS_MARGIN = 30;
 
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
@@ -91,10 +92,14 @@ public class ScreenShotDialog extends Dialog {
 	private Canvas imageCanvas;
 	private Shell shell;
 	private Shell parent;
+	private ScrolledComposite scrollComposite;
 	
 	private SocketCommunicator communicator;
 	private EmulatorSkin emulatorSkin;
 	private EmulatorConfig config;
+
+	private RotationInfo currentRotation;
+
 
 	public ScreenShotDialog( Shell parent, SocketCommunicator commuicator, EmulatorSkin emulatorSkin, EmulatorConfig config )
 			throws ScreenShotException {
@@ -127,12 +132,14 @@ public class ScreenShotDialog extends Dialog {
 		
 		makeMenuBar( shell );
 		
-		final ScrolledComposite scrollComposite = new ScrolledComposite( shell, SWT.V_SCROLL | SWT.H_SCROLL );
+		scrollComposite = new ScrolledComposite( shell, SWT.V_SCROLL | SWT.H_SCROLL );
 		GridData gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
 		scrollComposite.setLayoutData( gridData );
 		
 		scrollComposite.setExpandHorizontal( true );
 		scrollComposite.setExpandVertical( true );
+		
+		currentRotation = getCurrentRotation();
 		
 		final int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		final int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
@@ -145,38 +152,48 @@ public class ScreenShotDialog extends Dialog {
 				
 				logger.info( "capture screen." );
 
-				//TODO rotation
-//				if( null != image && !image.isDisposed() ) {
-//					
-//					short currentRotationId = ScreenShotDialog.this.emulatorSkin.getCurrentRotationId();
-//					RotationInfo rotationInfo = RotationInfo.getValue( currentRotationId );
-//					float angle = (float) rotationInfo.angle();
-//					
-//					if( 0 != angle ) {
-//						
-//						Transform transform = new Transform( shell.getDisplay() );
-//						transform.rotate( angle );
-//						transform.translate( -width, 0 );
-//						
-//						e.gc.setTransform( transform );
-//						e.gc.drawImage( image, LEFT_MARGIN, TOP_MARGIN );
-//						transform.dispose();
-//						
-//					}else {
-//						e.gc.drawImage( image, LEFT_MARGIN, TOP_MARGIN );
-//					}
-//					
-//				}
-				
-				e.gc.drawImage( image, LEFT_MARGIN, TOP_MARGIN );
+				if( null != image && !image.isDisposed() ) {
+					
+					RotationInfo rotation = getCurrentRotation();
+					
+					if( RotationInfo.PORTRAIT.equals( rotation ) ) {
+						
+						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
+						
+					}else {
+
+						float angle = rotation.angle();
+						
+						Transform transform = new Transform( shell.getDisplay() );
+						
+						transform.rotate( angle );
+
+						if ( RotationInfo.LANDSCAPE.equals( rotation ) ) {
+							transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
+						} else if ( RotationInfo.REVERSE_PORTRAIT.equals( rotation ) ) {
+							transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
+						} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( rotation ) ) {
+							transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
+						}
+
+						e.gc.setTransform( transform );
+						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
+
+						transform.dispose();
+
+					}
+					
+				}
 
 			}
 		} );
 
 		paletteData = new PaletteData( RED_MASK, GREEN_MASK, BLUE_MASK );
 
+		scrollComposite.setContent( imageCanvas );
+
 		try {
-			capture();
+			clickShutter();
 		} catch ( ScreenShotException e ) {
 			if( !shell.isDisposed() ) {
 				shell.close();
@@ -184,12 +201,13 @@ public class ScreenShotDialog extends Dialog {
 			throw e;
 		}
 		
-		scrollComposite.setContent( imageCanvas );
-		ImageData imageData = image.getImageData();
-		scrollComposite.setMinSize( imageData.width + ( 2 * LEFT_MARGIN ), imageData.height + ( 2 * TOP_MARGIN ) );
-		
 		shell.pack();
 		
+	}
+
+	private void clickShutter() throws ScreenShotException {
+		capture();
+		arrageImageLayout();
 	}
 
 	private void capture() throws ScreenShotException {
@@ -252,6 +270,40 @@ public class ScreenShotDialog extends Dialog {
 		
 	}
 	
+	private void arrageImageLayout() {
+
+		ImageData imageData = image.getImageData();
+		RotationInfo rotation = getCurrentRotation();
+
+		int width = 0;
+		int height = 0;
+		
+		if ( RotationInfo.PORTRAIT.equals( rotation ) || RotationInfo.REVERSE_PORTRAIT.equals( rotation ) ) {
+			width = imageData.width + ( 2 * CANVAS_MARGIN );
+			height = imageData.height + ( 2 * CANVAS_MARGIN );
+		} else if ( RotationInfo.LANDSCAPE.equals( rotation ) || RotationInfo.REVERSE_LANDSCAPE.equals( rotation ) ) {
+			width = imageData.height + ( 2 * CANVAS_MARGIN );
+			height = imageData.width + ( 2 * CANVAS_MARGIN );
+		}
+
+		scrollComposite.setMinSize( width, height );
+		
+		rotation = getCurrentRotation();
+
+		if ( !currentRotation.equals( rotation ) ) {
+			shell.pack();
+		}
+
+		currentRotation = rotation;
+		
+	}
+	
+	private RotationInfo getCurrentRotation() {
+		short currentRotationId = ScreenShotDialog.this.emulatorSkin.getCurrentRotationId();
+		RotationInfo rotationInfo = RotationInfo.getValue( currentRotationId );
+		return rotationInfo;
+	}
+	
 	private void makeMenuBar( final Shell shell ) {
 		
 		ToolBar toolBar = new ToolBar( shell, SWT.HORIZONTAL );
@@ -309,7 +361,7 @@ public class ScreenShotDialog extends Dialog {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				try {
-					capture();
+					clickShutter();
 				} catch ( ScreenShotException ex ) {
 					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
 					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
