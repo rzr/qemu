@@ -124,11 +124,15 @@ public class ImageRegistry {
 	}
 	
 	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
-		String skinPath = null;
+		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator +
+				IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
+
+		if (argSkinPath == null) {
+			return skinPath;
+		}
 
 		File f = new File(argSkinPath);
-		if (argSkinPath == null || f.isDirectory() == false) {
-			skinPath = ".." + File.separator + SKIN_FOLDER + File.separator + IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
+		if (f.isDirectory() == false) {
 			return skinPath;
 		}
 
