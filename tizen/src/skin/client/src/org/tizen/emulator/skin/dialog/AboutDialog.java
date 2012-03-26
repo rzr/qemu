@@ -57,8 +57,8 @@ public class AboutDialog extends SkinDialog {
 	
 	private Logger logger = SkinLogger.getSkinLogger( AboutDialog.class ).getLogger();
 
-	public AboutDialog( Shell parent, String title, int style ) {
-		super( parent, title, style );
+	public AboutDialog( Shell parent, int style ) {
+		super( parent, "About Tizen Emulator", style );
 	}
 
 	@Override

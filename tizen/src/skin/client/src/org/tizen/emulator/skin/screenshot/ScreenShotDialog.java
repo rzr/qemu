@@ -116,7 +116,7 @@ public class ScreenShotDialog extends Dialog {
 		this.config = config;
 
 		shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.RESIZE );
-		shell.setText( "Screen Shot - " + SkinUtil.getVmName( config ) );
+		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
 		shell.setLocation( parent.getLocation().x + parent.getSize().x + 30, parent.getLocation().y );
 		shell.addListener( SWT.Close, new Listener() {
 			@Override
@@ -315,7 +315,7 @@ public class ScreenShotDialog extends Dialog {
 
 		ToolItem saveItem = new ToolItem( toolBar, SWT.FLAT );
 		// FIXME icon
-		// saveItem.setImage( shell.getDisplay().getSystemImage( SWT.ICON_QUESTION ) );
+		// saveItem.setImage( null );
 		saveItem.setText( "Save" );
 		saveItem.setToolTipText( "Save" );
 
@@ -352,29 +352,9 @@ public class ScreenShotDialog extends Dialog {
 
 		} );
 
-		ToolItem refreshItem = new ToolItem( toolBar, SWT.FLAT );
-		// FIXME icon
-		// refreshItem.setImage( shell.getDisplay().getSystemImage( SWT.ICON_INFORMATION ) );
-		refreshItem.setText( "Refresh" );
-		refreshItem.setToolTipText( "Refresh" );
-
-		refreshItem.addSelectionListener( new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-
-				try {
-					clickShutter();
-				} catch ( ScreenShotException ex ) {
-					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
-					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
-				}
-			}
-
-		} );
-
 		ToolItem copyItem = new ToolItem( toolBar, SWT.FLAT );
 		// FIXME icon
-		// refreshItem.setImage( shell.getDisplay().getSystemImage( SWT.ICON_INFORMATION ) );
+		// refreshItem.setImage( null );
 		copyItem.setText( "Copy" );
 		copyItem.setToolTipText( "Copy to clipboard" );
 
@@ -401,6 +381,26 @@ public class ScreenShotDialog extends Dialog {
 				Clipboard clipboard = new Clipboard( shell.getDisplay() );
 				clipboard.setContents( imageObject, transfer );
 
+			}
+
+		} );
+
+		ToolItem refreshItem = new ToolItem( toolBar, SWT.FLAT );
+		// FIXME icon
+		// refreshItem.setImage( null );
+		refreshItem.setText( "Refresh" );
+		refreshItem.setToolTipText( "Refresh" );
+
+		refreshItem.addSelectionListener( new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+
+				try {
+					clickShutter();
+				} catch ( ScreenShotException ex ) {
+					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
+					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
+				}
 			}
 
 		} );
