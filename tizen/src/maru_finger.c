@@ -181,10 +181,17 @@ void init_multi_touch_state(void)
 
     /* create finger point surface */
     Uint32 rmask, gmask, bmask, amask;
+#ifdef HOST_WORDS_BIGENDIAN
     rmask = 0xff000000;
     gmask = 0x00ff0000;
     bmask = 0x0000ff00;
     amask = 0x000000ff;
+#else
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = 0xff000000;
+#endif
 
     SDL_Surface *point = SDL_CreateRGBSurface(SDL_SRCALPHA | SDL_HWSURFACE,
 		mts->finger_point_size + 2, mts->finger_point_size + 2, 32, rmask, gmask, bmask, amask);
