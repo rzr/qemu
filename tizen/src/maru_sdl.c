@@ -172,9 +172,9 @@ static int maru_sdl_poll_event(SDL_Event *ev)
     int ret = 0;
 
     if (sdl_initialized == 1) {
-        pthread_mutex_lock(&sdl_mutex);
+        //pthread_mutex_lock(&sdl_mutex);
         ret = SDL_PollEvent(ev);
-        pthread_mutex_unlock(&sdl_mutex);
+        //pthread_mutex_unlock(&sdl_mutex);
     }
 
     return ret;
