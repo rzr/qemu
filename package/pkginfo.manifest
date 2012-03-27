@@ -1,9 +1,5 @@
 Package: emulator
-<<<<<<< HEAD
-Version: 1.2.51
-=======
 Version: 1.2.53
->>>>>>> release-pre1.0
 OS: linux
 Build-host-os: linux
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
@@ -12,11 +8,7 @@ Source: emulator
 Description: Tizen Emulator
 
 Package: emulator
-<<<<<<< HEAD
-Version: 1.2.51
-=======
 Version: 1.2.53
->>>>>>> release-pre1.0
 OS: windows
 Build-host-os: windows
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
