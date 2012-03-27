@@ -44,7 +44,7 @@ import org.tizen.emulator.skin.EmulatorConstants;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.PropertiesConstants;
+import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.LcdType;
@@ -290,7 +290,7 @@ public class SkinUtil {
 
 	public static int getValidScale( EmulatorConfig config ) {
 
-		int storedScale = config.getPropertyInt( PropertiesConstants.WINDOW_SCALE, DEFAULT_SCALE );
+		int storedScale = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_SCALE, DEFAULT_SCALE );
 		
 		if ( !SkinUtil.isValidScale( storedScale ) ) {
 			return DEFAULT_SCALE;

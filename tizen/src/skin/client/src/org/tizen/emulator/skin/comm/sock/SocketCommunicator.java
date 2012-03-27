@@ -44,17 +44,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.tizen.emulator.skin.EmulatorConstants;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.PropertiesConstants;
+import org.tizen.emulator.skin.config.EmulatorConfig.ConfigPropertiesConstants;
+import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
+import org.tizen.emulator.skin.util.StringUtil;
 
 
 /**
@@ -91,6 +92,9 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
+	public static final int HEART_BEAT_INTERVAL = 1; //second
+	public static final int HEART_BEAT_EXPIRE = 5;
+	
 	private Logger logger = SkinLogger.getSkinLogger( SocketCommunicator.class ).getLogger();
 
 	private EmulatorConfig config;
@@ -149,7 +153,7 @@ public class SocketCommunicator implements ICommunicator {
 			int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 			int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 			int scale = SkinUtil.getValidScale( config );
-			short rotation = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION, RotationInfo.PORTRAIT.id() );
+			short rotation = config.getSkinPropertyShort( SkinPropertiesConstants.WINDOW_ROTATION, RotationInfo.PORTRAIT.id() );
 
 			StartData startData = new StartData( windowHandleId, width, height, scale, rotation );
 
@@ -161,7 +165,12 @@ public class SocketCommunicator implements ICommunicator {
 			return;
 		}
 
-		String ignoreHeartbeatString = config.getArg( ArgsConstants.TEST_HEART_BEAT_IGNORE, Boolean.FALSE.toString() );
+		String ignoreHeartbeatString = config.getArg( ArgsConstants.TEST_HEART_BEAT_IGNORE );
+		if ( StringUtil.isEmpty( ignoreHeartbeatString ) ) {
+			ignoreHeartbeatString = config.getConfigProperty( ConfigPropertiesConstants.TEST_HEART_BEAT_IGNORE,
+					Boolean.FALSE.toString() );
+		}
+
 		Boolean ignoreHeartbeat = Boolean.parseBoolean( ignoreHeartbeatString );
 
 		if ( ignoreHeartbeat ) {
@@ -181,7 +190,7 @@ public class SocketCommunicator implements ICommunicator {
 
 				}
 
-			}, 0, EmulatorConstants.HEART_BEAT_INTERVAL, TimeUnit.SECONDS );
+			}, 0, HEART_BEAT_INTERVAL, TimeUnit.SECONDS );
 
 		}
 
@@ -370,7 +379,7 @@ public class SocketCommunicator implements ICommunicator {
 	}
 
 	private boolean isHeartbeatExpired() {
-		return EmulatorConstants.HEART_BEAT_EXPIRE < heartbeatCount.get();
+		return HEART_BEAT_EXPIRE < heartbeatCount.get();
 	}
 
 	private void resetHeartbeatCount() {

@@ -34,9 +34,6 @@ package org.tizen.emulator.skin;
  *
  */
 public interface EmulatorConstants {
-
-	public static final int HEART_BEAT_INTERVAL = 1; //second
-	public static final int HEART_BEAT_EXPIRE = 5;
 	
 	public static final int UNKNOWN_KEYCODE = -1;
 	

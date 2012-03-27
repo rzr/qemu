@@ -29,6 +29,7 @@
 
 package org.tizen.emulator.skin.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -49,7 +50,11 @@ import org.tizen.emulator.skin.exception.JaxbException;
 public class JaxbUtil {
 	
 	private JaxbUtil(){}
-	
+
+	public static <T> T unmarshal( byte[] inputBytes, Class<T> clazz ) throws JaxbException {
+		return unmarshal( new ByteArrayInputStream( inputBytes ), clazz );
+	}
+
 	public static <T> T unmarshal( InputStream in, Class<T> clazz ) throws JaxbException {
 		
 		try{

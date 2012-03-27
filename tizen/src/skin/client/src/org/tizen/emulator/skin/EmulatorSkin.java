@@ -77,7 +77,7 @@ import org.tizen.emulator.skin.comm.sock.data.LcdStateData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.PropertiesConstants;
+import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.ColorsType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
@@ -143,8 +143,8 @@ public class EmulatorSkin {
 
 		shell.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
 
-		int x = config.getPropertyInt( PropertiesConstants.WINDOW_X, 50 );
-		int y = config.getPropertyInt( PropertiesConstants.WINDOW_Y, 50 );
+		int x = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_X, 50 );
+		int y = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_Y, 50 );
 		shell.setLocation( x, y );
 
 		String emulatorName = SkinUtil.makeEmulatorName( config );
@@ -306,12 +306,12 @@ public class EmulatorSkin {
 
 				if ( isShutdownRequested ) {
 
-					config.setProperty( PropertiesConstants.WINDOW_X, shell.getLocation().x );
-					config.setProperty( PropertiesConstants.WINDOW_Y, shell.getLocation().y );
-					config.setProperty( PropertiesConstants.WINDOW_SCALE, currentScale );
-					config.setProperty( PropertiesConstants.WINDOW_ROTATION, currentRotationId );
+					config.setSkinProperty( SkinPropertiesConstants.WINDOW_X, shell.getLocation().x );
+					config.setSkinProperty( SkinPropertiesConstants.WINDOW_Y, shell.getLocation().y );
+					config.setSkinProperty( SkinPropertiesConstants.WINDOW_SCALE, currentScale );
+					config.setSkinProperty( SkinPropertiesConstants.WINDOW_ROTATION, currentRotationId );
 
-					config.saveProperties();
+					config.saveSkinProperties();
 
 					if ( null != currentImage ) {
 						currentImage.dispose();
