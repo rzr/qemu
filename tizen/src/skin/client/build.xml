@@ -30,13 +30,11 @@
 		<exec executable="cat" outputproperty="version">
 			<arg value="../../VERSION" />
 		</exec>
-		<property name="build_git_commit" value="Not identified" />
 		<exec executable="git" outputproperty="build_git_commit" failifexecutionfails="false">
 			<arg value="rev-parse" />
 			<arg value="--short" />
 			<arg value="HEAD" />
 		</exec>
-
 		<propertyfile file="src/about.properties" comment="Auto-generated properties - DO NOT EDIT">
 			<entry key="version" value="${version}" />
 			<entry key="build_time" value="${build_time}" />
