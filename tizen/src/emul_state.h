@@ -57,6 +57,11 @@ enum {
 };
 
 enum {
+    HOST_CAPSLOCK_KEY = 1,
+    HOST_NUMLOCK_KEY = 2,
+};
+
+enum {
     ROTATION_PORTRAIT = 0,
     ROTATION_LANDSCAPE = 1,
     ROTATION_REVERSE_PORTRAIT = 2,
@@ -79,6 +84,7 @@ typedef struct EmulatorConfigState {
     short rotation_type;
     MultiTouchState qemu_mts;
     int qemu_caps_lock;
+    int qemu_num_lock;
     //TODO:
 } EmulatorConfigState;
 
@@ -90,6 +96,7 @@ void set_emul_sdl_bpp(int bpp);
 void set_emulator_condition(int state);
 void set_emul_rotation(short rotation_type);
 void set_emul_caps_lock_state(int state);
+void set_emul_num_lock_state(int state);
 
 /* getter */
 int get_emul_lcd_width(void);
@@ -99,8 +106,9 @@ int get_emul_sdl_bpp(void);
 int get_emulator_condition(void);
 short get_emul_rotation(void);
 MultiTouchState *get_emul_multi_touch_state(void);
-int get_host_caps_lock_state(void);
+int get_host_lock_key_state(int key);
 int get_emul_caps_lock_state(void);
+int get_emul_num_lock_state(void);
 
 
 #endif /* __EMUL_STATE_H__ */

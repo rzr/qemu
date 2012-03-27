@@ -33,9 +33,9 @@
 #include "emul_state.h"
 #include "debug_ch.h"
 
-#ifdef __linux__
+#if defined( __linux__)
 #include <X11/XKBlib.h>
-#elif _WIN32
+#elif defined(_WIN32)
 #include <windows.h>
 #endif
 
@@ -131,10 +131,10 @@ MultiTouchState *get_emul_multi_touch_state(void)
     return &(_emul_state.qemu_mts);
 }
 
-/* manage CapsLock key state for usb keyboard input */
-int get_host_caps_lock_state(void)
+/* get host key state */
+int get_host_lock_key_state(int key)
 {
-#ifdef __linux__
+#if defined( __linux__)
     unsigned state = 0;
     Display *display = XOpenDisplay((char*)0);
     if (display) {
@@ -142,14 +142,22 @@ int get_host_caps_lock_state(void)
     }
     XCloseDisplay(display);
 
-    return (state & 1);
-#elif _WIN32
+
+    if (key == HOST_CAPSLOCK_KEY) {
+        return (state & 0x01) != NULL;
+    } else if (key == HOST_NUMLOCK_KEY) {
+        return (state & 0x02) != NULL;
+    }
+
+    return -1;
+#elif defined(_WIN32)
     //TODO:
 #endif
 
     return 0;
 }
 
+/* manage CapsLock key state for usb keyboard input */
 void set_emul_caps_lock_state(int state)
 {
     _emul_state.qemu_caps_lock = state;
@@ -159,3 +167,16 @@ int get_emul_caps_lock_state(void)
 {
     return  _emul_state.qemu_caps_lock;
 }
+
+/* manage NumLock key state for usb keyboard input */
+void set_emul_num_lock_state(int state)
+{
+    _emul_state.qemu_num_lock = state;
+}
+
+int get_emul_num_lock_state(void)
+{
+    return  _emul_state.qemu_num_lock;
+}
+
+

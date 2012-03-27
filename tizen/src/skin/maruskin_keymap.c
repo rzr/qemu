@@ -45,6 +45,38 @@ int javakeycode_to_scancode(int java_keycode, int event_type)
     int shift_mask = java_keycode & JAVA_KEYCODE_BIT_SHIFT;
     int alt_mask = java_keycode & JAVA_KEYCODE_BIT_ALT;
 
+
+    /* CapsLock & NumLock key processing */
+    if (state_mask != 0) {
+        if (vk == JAVA_KEY_CAPS_LOCK) {
+            if (event_type == KEY_PRESSED) {
+                set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1); //toggle
+            }
+            return 58;
+        } else if (vk == JAVA_KEY_NUM_LOCK) {
+            if (event_type == KEY_PRESSED) {
+                set_emul_num_lock_state(get_emul_num_lock_state() ^ 1); //toggle
+            }
+            return 69;
+        }
+    }
+    /* check CapsLock & NumLock key sync */
+    if (event_type == KEY_PRESSED) {
+        if (get_emul_caps_lock_state() != get_host_lock_key_state(HOST_CAPSLOCK_KEY)) {
+            kbd_put_keycode(58);
+            kbd_put_keycode(58 | 0x80);
+            set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1);
+            INFO("qemu CapsLock state was synchronized with host key value (%d)\n", get_emul_caps_lock_state());
+        }
+        if (get_emul_num_lock_state() != get_host_lock_key_state(HOST_NUMLOCK_KEY)) {
+            kbd_put_keycode(69);
+            kbd_put_keycode(69 | 0x80);
+            set_emul_num_lock_state(get_emul_num_lock_state() ^ 1);
+            INFO("qemu NumLock state was synchronized with host key value (%d)\n", get_emul_num_lock_state());
+        }
+    }
+
+
 /*#ifdef _WIN32
     return MapVirtualKey(vk, MAPVK_VK_TO_VSC);
 #endif*/
@@ -96,41 +128,34 @@ int javakeycode_to_scancode(int java_keycode, int event_type)
                 case JAVA_KEY_KEYPAD_ADD :
                     return 78;
                 case JAVA_KEY_KEYPAD_SUBTRACT :
-                    return 114; //
+                    return 74;
                 case JAVA_KEY_KEYPAD_DECIMAL :
-                    return 123;
+                    return 83;
                 case JAVA_KEY_KEYPAD_DIVIDE :
-                    return 138; //
+                    return 53;
                 case JAVA_KEY_KEYPAD_0 :
-                    return 81;
-                case JAVA_KEY_KEYPAD_1 :
                     return 82;
-                case JAVA_KEY_KEYPAD_2 :
+                case JAVA_KEY_KEYPAD_1 :
                     return 79;
-                case JAVA_KEY_KEYPAD_3 :
+                case JAVA_KEY_KEYPAD_2 :
                     return 80;
-                case JAVA_KEY_KEYPAD_4 :
+                case JAVA_KEY_KEYPAD_3 :
                     return 81;
-                case JAVA_KEY_KEYPAD_5 :
+                case JAVA_KEY_KEYPAD_4 :
                     return 75;
-                case JAVA_KEY_KEYPAD_6 :
+                case JAVA_KEY_KEYPAD_5 :
                     return 76;
-                case JAVA_KEY_KEYPAD_7 :
+                case JAVA_KEY_KEYPAD_6 :
                     return 77;
-                case JAVA_KEY_KEYPAD_8 :
+                case JAVA_KEY_KEYPAD_7 :
                     return 71;
+                case JAVA_KEY_KEYPAD_8 :
+                    return 72;
                 case JAVA_KEY_KEYPAD_9 :
                     return 73;
                 case JAVA_KEY_KEYPAD_CR :
-                    return 136; //
+                    return 28;
  
-                case JAVA_KEY_CAPS_LOCK :
-                    if (event_type == KEY_PRESSED) {
-                        set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1); //toggle
-                    }
-                    return 58;
-                case JAVA_KEY_NUM_LOCK :
-                    return 69;
                 case JAVA_KEY_SCROLL_LOCK :
                     return 70;
                 case JAVA_KEY_PAUSE :
@@ -218,14 +243,6 @@ int javakeycode_to_scancode(int java_keycode, int event_type)
                     break;
             }
         }
-
-        if (get_emul_caps_lock_state() != get_host_caps_lock_state()) {
-            kbd_put_keycode(58);
-            kbd_put_keycode(58 | 0x80);
-            set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1); //toggle
-            INFO("qemu CapsLock state was synchronized with host key value (%d)\n", get_emul_caps_lock_state());
-        }
-
     }
 
     return vkkey2scancode[vk];

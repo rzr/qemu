@@ -88,7 +88,8 @@ static void construct_main_window(int skin_argc, char* skin_argv[])
     }
 #endif
 
-    set_emul_caps_lock_state(get_host_caps_lock_state());
+    set_emul_caps_lock_state(0);
+    set_emul_num_lock_state(0);
 }
 
 static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_argv, int* qemu_argc, char*** qemu_argv)
