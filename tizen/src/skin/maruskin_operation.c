@@ -82,7 +82,7 @@ void do_key_event( int event_type, int keycode )
 {
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
-    //check for multi-touch
+    //is multi-touch mode ?
     if (keycode == JAVA_KEYCODE_BIT_CTRL) {
         if (KEY_PRESSED == event_type) {
             get_emul_multi_touch_state()->multitouch_enable = 1;
@@ -98,7 +98,7 @@ void do_key_event( int event_type, int keycode )
     	return;
     }
 
-    int scancode = javakeycode_to_scancode(keycode);
+    int scancode = javakeycode_to_scancode(keycode, event_type);
     if (scancode == -1) {
         INFO("cannot find scancode\n");
         return;

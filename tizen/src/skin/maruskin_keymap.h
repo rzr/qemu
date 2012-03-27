@@ -67,6 +67,7 @@ enum JAVA_KEYCODE {
     JAVA_KEY_KEYPAD_7,
     JAVA_KEY_KEYPAD_8,
     JAVA_KEY_KEYPAD_9,
+    JAVA_KEY_KEYPAD_CR = 80,
     JAVA_KEY_CAPS_LOCK = 82,
     JAVA_KEY_NUM_LOCK,
     JAVA_KEY_SCROLL_LOCK,
@@ -223,6 +224,6 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['?'] = 53 | SHIFT,
 };
 
-int javakeycode_to_scancode(int java_keycode);
+int javakeycode_to_scancode(int java_keycode, int event_type);
 
 #endif /* MARUSKIN_KEYMAP_H_ */

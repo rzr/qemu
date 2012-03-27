@@ -33,6 +33,12 @@
 #include "emul_state.h"
 #include "debug_ch.h"
 
+#ifdef __linux__
+#include <X11/XKBlib.h>
+#elif _WIN32
+#include <windows.h>
+#endif
+
 MULTI_DEBUG_CHANNEL(qemu, emul_state);
 
 
@@ -123,4 +129,33 @@ short get_emul_rotation(void)
 MultiTouchState *get_emul_multi_touch_state(void)
 {
     return &(_emul_state.qemu_mts);
+}
+
+/* manage CapsLock key state for usb keyboard input */
+int get_host_caps_lock_state(void)
+{
+#ifdef __linux__
+    unsigned state = 0;
+    Display *display = XOpenDisplay((char*)0);
+    if (display) {
+        XkbGetIndicatorState(display, XkbUseCoreKbd, &state);
+    }
+    XCloseDisplay(display);
+
+    return (state & 1);
+#elif _WIN32
+    //TODO:
+#endif
+
+    return 0;
+}
+
+void set_emul_caps_lock_state(int state)
+{
+    _emul_state.qemu_caps_lock = state;
+}
+
+int get_emul_caps_lock_state(void)
+{
+    return  _emul_state.qemu_caps_lock;
 }

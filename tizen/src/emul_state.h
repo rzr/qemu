@@ -78,25 +78,29 @@ typedef struct EmulatorConfigState {
     double scale_factor;
     short rotation_type;
     MultiTouchState qemu_mts;
+    int qemu_caps_lock;
     //TODO:
 } EmulatorConfigState;
 
 
 /* setter */
-void set_emulator_condition(int state);
 void set_emul_lcd_size(int width, int height);
 void set_emul_win_scale(double scale);
-void set_emul_rotation(short rotation_type);
 void set_emul_sdl_bpp(int bpp);
+void set_emulator_condition(int state);
+void set_emul_rotation(short rotation_type);
+void set_emul_caps_lock_state(int state);
 
 /* getter */
-int get_emulator_condition(void);
 int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
 double get_emul_win_scale(void);
-short get_emul_rotation(void);
 int get_emul_sdl_bpp(void);
+int get_emulator_condition(void);
+short get_emul_rotation(void);
 MultiTouchState *get_emul_multi_touch_state(void);
+int get_host_caps_lock_state(void);
+int get_emul_caps_lock_state(void);
 
 
 #endif /* __EMUL_STATE_H__ */

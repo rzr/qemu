@@ -29,9 +29,14 @@
 
 
 #include "maruskin_keymap.h"
+#include "emul_state.h"
+#include "console.h"
+#include "debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(qemu, skin_keymap);
 
 
-int javakeycode_to_scancode(int java_keycode)
+int javakeycode_to_scancode(int java_keycode, int event_type)
 {
     int state_mask = java_keycode & JAVA_KEYCODE_BIT;
     int vk = java_keycode & JAVA_KEY_MASK;
@@ -91,11 +96,11 @@ int javakeycode_to_scancode(int java_keycode)
                 case JAVA_KEY_KEYPAD_ADD :
                     return 78;
                 case JAVA_KEY_KEYPAD_SUBTRACT :
-                    return 74;
+                    return 114; //
                 case JAVA_KEY_KEYPAD_DECIMAL :
                     return 123;
                 case JAVA_KEY_KEYPAD_DIVIDE :
-                    return -1;
+                    return 138; //
                 case JAVA_KEY_KEYPAD_0 :
                     return 81;
                 case JAVA_KEY_KEYPAD_1 :
@@ -116,8 +121,13 @@ int javakeycode_to_scancode(int java_keycode)
                     return 71;
                 case JAVA_KEY_KEYPAD_9 :
                     return 73;
+                case JAVA_KEY_KEYPAD_CR :
+                    return 136; //
  
                 case JAVA_KEY_CAPS_LOCK :
+                    if (event_type == KEY_PRESSED) {
+                        set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1); //toggle
+                    }
                     return 58;
                 case JAVA_KEY_NUM_LOCK :
                     return 69;
@@ -207,6 +217,13 @@ int javakeycode_to_scancode(int java_keycode)
                 default :
                     break;
             }
+        }
+
+        if (get_emul_caps_lock_state() != get_host_caps_lock_state()) {
+            kbd_put_keycode(58);
+            kbd_put_keycode(58 | 0x80);
+            set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1); //toggle
+            INFO("qemu CapsLock state was synchronized with host key value (%d)\n", get_emul_caps_lock_state());
         }
 
     }
