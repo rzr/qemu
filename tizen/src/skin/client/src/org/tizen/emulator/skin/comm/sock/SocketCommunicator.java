@@ -114,7 +114,7 @@ public class SocketCommunicator implements ICommunicator {
 	private ScheduledExecutorService heartbeatExecutor;
 
 	private boolean isSensorDaemonStarted;
-
+	
 	public SocketCommunicator( EmulatorConfig config, int uId, int windowHandleId, EmulatorSkin skin ) {
 
 		this.config = config;
@@ -396,7 +396,15 @@ public class SocketCommunicator implements ICommunicator {
 			heartbeatExecutor.shutdownNow();
 		}
 		IOUtil.closeSocket( socket );
-		skin.shutdown();
+		synchronized ( this ) {
+			skin.shutdown();
+		}
+	}
+
+	public void resetSkin( EmulatorSkin skin ) {
+		synchronized ( this ) {
+			this.skin = skin;
+		}
 	}
 
 }

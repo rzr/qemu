@@ -72,16 +72,20 @@ public class ImageRegistry {
 	
 	public enum IconName {
 		
-		DEVICE_INFO( "device_info.png" ),
+		DETAIL_INFO( "detail_info.png" ),
 		ROTATE( "rotate.png" ),
-		SCALING( "scaling.png" ),
+		SCALE( "scale.png" ),
 		SHELL( "shell.png" ),
 		ADVANCED( "advanced.png" ),
 		CLOSE( "close.png" ),
 		SCREENSHOT( "screenshot.png" ),
-		USB_KEBOARD( "keypad.png" ),
+		USB_KEBOARD( "usb_keyboard.png" ),
 		ABOUT( "about.png" ),
-		
+
+		COPY_SCREEN_SHOT( "copy_screenshot_dialog.png" ),
+		REFRESH_SCREEN_SHOT( "refresh_screenshot_dialog.png" ),
+		SAVE_SCREEN_SHOT( "save_screenshot_dialog.png" ),
+
 		EMULATOR_TITLE( "Emulator_20x20.png" ),
 		EMULATOR_TITLE_ICO( "Emulator.ico" );
 		
@@ -104,11 +108,29 @@ public class ImageRegistry {
 	
 	private Map<String, Image> skinImageMap;
 	private Map<String, Image> iconMap;
+
+	private static ImageRegistry instance;
+	private static boolean isInitialized;
 	
-	public ImageRegistry(Display display, EmulatorConfig config ) {
+	private ImageRegistry() {
+	}
+	
+	public static ImageRegistry getInstance() {
+		if( null == instance ) {
+			instance = new ImageRegistry();
+		}
+		return instance;
+	}
+	
+	public void initialize(  EmulatorConfig config  ) {
 		
-		this.display = display;
+		if( isInitialized ) {
+			return;
+		}
+		isInitialized = true;
 		
+		this.display = Display.getDefault();
+
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 		String skinPath = (String) config.getArg( ArgsConstants.SKIN_PATH );
@@ -118,9 +140,9 @@ public class ImageRegistry {
 		this.dbiContents = config.getDbiContents();
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();
-		
-		init(skinPath);
-		
+
+		init( skinPath );
+
 	}
 	
 	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
@@ -188,7 +210,7 @@ public class ImageRegistry {
 			try {
 				is = classLoader.getResourceAsStream( iconPath );
 				if( null != is ) {
-					logger.info( "load icon:" + iconPath );
+					logger.fine( "load icon:" + iconPath );
 					iconMap.put( name, new Image( display, is ) );
 				}else {
 					logger.severe( "missing icon:" + iconPath );

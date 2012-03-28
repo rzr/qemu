@@ -48,6 +48,7 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
@@ -56,7 +57,7 @@ import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Canvas;
-import org.eclipse.swt.widgets.Dialog;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Listener;
@@ -71,12 +72,14 @@ import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
+import org.tizen.emulator.skin.image.ImageRegistry;
+import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 
-public class ScreenShotDialog extends Dialog {
+public class ScreenShotDialog {
 
 	public final static String DEFAULT_FILE_EXTENSION = "png";
 
@@ -96,7 +99,6 @@ public class ScreenShotDialog extends Dialog {
 	private Image image;
 	private Canvas imageCanvas;
 	private Shell shell;
-	private Shell parent;
 	private ScrolledComposite scrollComposite;
 
 	private SocketCommunicator communicator;
@@ -105,32 +107,32 @@ public class ScreenShotDialog extends Dialog {
 
 	private RotationInfo currentRotation;
 	private boolean needToStoreRotatedImage;
+	private boolean reserveImage;
 	
-	public ScreenShotDialog( Shell parent, SocketCommunicator commuicator, EmulatorSkin emulatorSkin,
+	public ScreenShotDialog( Shell parent, SocketCommunicator communicator, EmulatorSkin emulatorSkin,
 			EmulatorConfig config ) throws ScreenShotException {
 
-		super( parent, SWT.DIALOG_TRIM | SWT.RESIZE );
-
-		this.parent = parent;
-		this.communicator = commuicator;
+		this.communicator = communicator;
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
 		this.needToStoreRotatedImage = true;
 		
-		shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.RESIZE );
+		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
 		shell.setLocation( parent.getLocation().x + parent.getSize().x + 30, parent.getLocation().y );
 		shell.addListener( SWT.Close, new Listener() {
 			@Override
 			public void handleEvent( Event event ) {
 				if ( null != image ) {
-					image.dispose();
+					if( !reserveImage ) {
+						image.dispose();
+					}
 				}
 			}
 		} );
 
 		GridLayout gridLayout = new GridLayout();
-		gridLayout.marginWidth = 2;
+		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		gridLayout.horizontalSpacing = 0;
 		gridLayout.verticalSpacing = 0;
@@ -168,48 +170,8 @@ public class ScreenShotDialog extends Dialog {
 					} else {
 						
 						if( needToStoreRotatedImage ) {
-							
-							Transform transform = new Transform( shell.getDisplay() );
-
-							float angle = currentRotation.angle();
-							transform.rotate( angle );
-
-							int w = 0;
-							int h = 0;
-							ImageData imageData = image.getImageData();
-
-							if ( RotationInfo.LANDSCAPE.equals( currentRotation ) ) {
-								transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
-								w = imageData.height;
-								h = imageData.width;
-							} else if ( RotationInfo.REVERSE_PORTRAIT.equals( currentRotation ) ) {
-								transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
-								w = imageData.width;
-								h = imageData.height;
-							} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( currentRotation ) ) {
-								transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
-								w = imageData.height;
-								h = imageData.width;
-							} else {
-								w = imageData.width;
-								h = imageData.height;
-							}
-
-							e.gc.setTransform( transform );
-
-							e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-
-							transform.dispose();
-
-							// 'gc.drawImage' is only for the showing without changing image data,
-							// so change image data fully to support the roated image in a saved file and a pasted image.
-							Image rotatedImage = new Image( shell.getDisplay(), w, h );
-							e.gc.copyArea( rotatedImage, CANVAS_MARGIN, CANVAS_MARGIN );
-							image.dispose();
-							image = rotatedImage;
-
+							drawRotatedImage( e.gc, width, height );
 							needToStoreRotatedImage = false;
-
 						}else {
 							//just redraw rotated image
 							e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
@@ -236,9 +198,53 @@ public class ScreenShotDialog extends Dialog {
 		}
 
 		shell.pack();
-
+		
 	}
 
+	
+	private void drawRotatedImage( GC gc, int width, int height ) {
+		
+		Transform transform = new Transform( shell.getDisplay() );
+
+		float angle = currentRotation.angle();
+		transform.rotate( angle );
+
+		int w = 0;
+		int h = 0;
+		ImageData imageData = image.getImageData();
+
+		if ( RotationInfo.LANDSCAPE.equals( currentRotation ) ) {
+			transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
+			w = imageData.height;
+			h = imageData.width;
+		} else if ( RotationInfo.REVERSE_PORTRAIT.equals( currentRotation ) ) {
+			transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
+			w = imageData.width;
+			h = imageData.height;
+		} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( currentRotation ) ) {
+			transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
+			w = imageData.height;
+			h = imageData.width;
+		} else {
+			w = imageData.width;
+			h = imageData.height;
+		}
+
+		gc.setTransform( transform );
+
+		gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
+
+		transform.dispose();
+
+		// 'gc.drawImage' is only for the showing without changing image data,
+		// so change image data fully to support the roated image in a saved file and a pasted image.
+		Image rotatedImage = new Image( shell.getDisplay(), w, h );
+		gc.copyArea( rotatedImage, CANVAS_MARGIN, CANVAS_MARGIN );
+		image.dispose();
+		image = rotatedImage;
+
+	}
+	
 	private void clickShutter() throws ScreenShotException {
 		capture();
 		arrageImageLayout();
@@ -290,7 +296,7 @@ public class ScreenShotDialog extends Dialog {
 				int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 				ImageData imageData = new ImageData( width, height, COLOR_DEPTH, paletteData, 1, receivedData );
 
-				this.image = new Image( parent.getDisplay(), imageData );
+				this.image = new Image( Display.getDefault(), imageData );
 
 				needToStoreRotatedImage = true;
 				imageCanvas.redraw();
@@ -334,7 +340,7 @@ public class ScreenShotDialog extends Dialog {
 	}
 
 	private RotationInfo getCurrentRotation() {
-		short currentRotationId = ScreenShotDialog.this.emulatorSkin.getCurrentRotationId();
+		short currentRotationId = emulatorSkin.getCurrentRotationId();
 		RotationInfo rotationInfo = RotationInfo.getValue( currentRotationId );
 		return rotationInfo;
 	}
@@ -344,13 +350,11 @@ public class ScreenShotDialog extends Dialog {
 		ToolBar toolBar = new ToolBar( shell, SWT.HORIZONTAL );
 		GridData gridData = new GridData( GridData.FILL_HORIZONTAL );
 		toolBar.setLayoutData( gridData );
-
+		
 		ToolItem saveItem = new ToolItem( toolBar, SWT.FLAT );
-		// FIXME icon
-		// saveItem.setImage( null );
-		saveItem.setText( "Save" );
-		saveItem.setToolTipText( "Save" );
-
+		saveItem.setImage( ImageRegistry.getInstance().getIcon( IconName.SAVE_SCREEN_SHOT ) );
+		saveItem.setToolTipText( "Save to file" );
+		
 		saveItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -383,11 +387,9 @@ public class ScreenShotDialog extends Dialog {
 			}
 
 		} );
-
+		
 		ToolItem copyItem = new ToolItem( toolBar, SWT.FLAT );
-		// FIXME icon
-		// refreshItem.setImage( null );
-		copyItem.setText( "Copy" );
+		copyItem.setImage( ImageRegistry.getInstance().getIcon( IconName.COPY_SCREEN_SHOT ) );
 		copyItem.setToolTipText( "Copy to clipboard" );
 
 		copyItem.addSelectionListener( new SelectionAdapter() {
@@ -418,10 +420,8 @@ public class ScreenShotDialog extends Dialog {
 		} );
 
 		ToolItem refreshItem = new ToolItem( toolBar, SWT.FLAT );
-		// FIXME icon
-		// refreshItem.setImage( null );
-		refreshItem.setText( "Refresh" );
-		refreshItem.setToolTipText( "Refresh" );
+		refreshItem.setImage( ImageRegistry.getInstance().getIcon( IconName.REFRESH_SCREEN_SHOT ) );
+		refreshItem.setToolTipText( "Refresh image" );
 
 		refreshItem.addSelectionListener( new SelectionAdapter() {
 			@Override
@@ -525,16 +525,26 @@ public class ScreenShotDialog extends Dialog {
 
 		while ( !shell.isDisposed() ) {
 			if ( !shell.getDisplay().readAndDispatch() ) {
-				shell.getDisplay().sleep();
+				if( reserveImage ) {
+					break;
+				}else {
+					shell.getDisplay().sleep();
+				}
 			}
 		}
-
+		
 	}
 
-	public void close() {
-		if ( null != shell ) {
-			shell.close();
-		}
+	public void setEmulatorSkin( EmulatorSkin emulatorSkin ) {
+		this.emulatorSkin = emulatorSkin;
 	}
 
+	public void setReserveImage( boolean reserveImage ) {
+		this.reserveImage = reserveImage;
+	}
+	
+	public Shell getShell() {
+		return shell;
+	}
+	
 }

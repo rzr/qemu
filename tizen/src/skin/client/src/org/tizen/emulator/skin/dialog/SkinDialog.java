@@ -53,19 +53,12 @@ public abstract class SkinDialog extends Dialog {
 	private Shell parent;
 	private String title;
 	private int style;
-	private boolean pack;
 
 	public SkinDialog( Shell parent, String title, int style ) {
 		super( parent, style );
 		this.parent = parent;
 		this.title = title;
 		this.style = style;
-		this.pack = true;
-	}
-
-	public SkinDialog( Shell parent, String title, int style, boolean pack ) {
-		this( parent, title, style );
-		this.pack = pack;
 	}
 
 	public void open() {
@@ -98,10 +91,8 @@ public abstract class SkinDialog extends Dialog {
 		buttonComposite.setLayout( new FillLayout( SWT.HORIZONTAL ) );
 
 		createButtons( buttonComposite );
-
-		if ( pack ) {
-			shell.pack();
-		}
+		
+		shell.pack();
 
 		if ( !isReady ) {
 			return;

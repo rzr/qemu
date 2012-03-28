@@ -55,10 +55,14 @@ public class AboutDialog extends SkinDialog {
 	
 	public static final String ABOUT_PROP_FILENAME = "about.properties";
 	
+	public static final String PROP_KEY_VERSION = "version";
+	public static final String PROP_KEY_BUILD_TIME = "build_time";
+	public static final String PROP_KEY_GIT_VERSION = "build_git_commit";
+	
 	private Logger logger = SkinLogger.getSkinLogger( AboutDialog.class ).getLogger();
 
-	public AboutDialog( Shell parent, int style ) {
-		super( parent, "About Tizen Emulator", style );
+	public AboutDialog( Shell parent ) {
+		super( parent, "About Tizen Emulator", SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL );
 	}
 
 	@Override
@@ -94,31 +98,36 @@ public class AboutDialog extends SkinDialog {
 			noInformation = true;
 		}
 		
-		String defaultInformation = "no information";
+		String defaultInformation = "No information";
 		
 		Text versionText = new Text( composite, SWT.NONE );
 		if( noInformation ) {
-			versionText.setText( "Version      : " + defaultInformation );
+			versionText.setText( "Version" + "      : " + defaultInformation );
 		}else {
-			versionText.setText( "Version      : Tizen SDK " + StringUtil.nvl( properties.getProperty( "version" ) ) );
+			versionText.setText( "Version" + "      : Tizen SDK " + getValue( properties, PROP_KEY_VERSION ) );
 		}
 		versionText.setEditable( false );
 		versionText.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WIDGET_BACKGROUND ) );
 
 		Text buildText = new Text( composite, SWT.NONE );
 		if( noInformation ) {
-			buildText.setText( "Build time  : " + defaultInformation );
+			buildText.setText( "Build time" + "  : " + defaultInformation );
 		}else {
-			buildText.setText( "Build time  : " + StringUtil.nvl( properties.getProperty( "build_time" ) ) + " (GMT)" );
+			String time = properties.getProperty( PROP_KEY_BUILD_TIME );
+			if( StringUtil.isEmpty( time ) ) {
+				buildText.setText( "Build time" + "  : " + "Not identified" );
+			}else {
+				buildText.setText( "Build time" + "  : " + time + " (GMT)" );
+			}
 		}
 		buildText.setEditable( false );
 		buildText.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WIDGET_BACKGROUND ) );
 
 		Text gitText = new Text( composite, SWT.NONE );
 		if( noInformation ) {
-			gitText.setText( "Git version : " + defaultInformation );
+			gitText.setText( "Git version" + " : " + defaultInformation );
 		}else {
-			gitText.setText( "Git version : " + StringUtil.nvl( properties.getProperty( "build_git_commit" ) ) );
+			gitText.setText( "Git version" + " : " + getValue( properties, PROP_KEY_GIT_VERSION ) );
 		}
 		gitText.setEditable( false );
 		gitText.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WIDGET_BACKGROUND ) );
@@ -127,6 +136,15 @@ public class AboutDialog extends SkinDialog {
 
 	}
 
+	private String getValue( Properties properties, String key ) {
+		String property = properties.getProperty(  key );
+		if( StringUtil.isEmpty( property ) ) {
+			return "Not identified";
+		}else {
+			return property;
+		}
+	}
+	
 	@Override
 	protected void createButtons( Composite parent ) {
 
@@ -140,7 +158,7 @@ public class AboutDialog extends SkinDialog {
 			public void widgetSelected( SelectionEvent e ) {
 				if ( !isOpen ) {
 					isOpen = true;
-					LicenseDialog licenseDialog = new LicenseDialog( shell, "License", SWT.DIALOG_TRIM );
+					LicenseDialog licenseDialog = new LicenseDialog( shell, "License" );
 					licenseDialog.open();
 					isOpen = false;
 				}
