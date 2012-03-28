@@ -1,7 +1,7 @@
 /*
  * Common header of MARU Virtual Camera device.
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  * JinHyung Jo <jinhyung.jo@samsung.com>
@@ -30,7 +30,7 @@
 #define _MARU_CAMERA_COMMON_H_
 
 #include "pci.h"
-#include <pthread.h>
+#include "qemu-thread.h"
 
 #define MARUCAM_MAX_PARAM	 20
 
@@ -59,7 +59,6 @@
 #define MARUCAM_CMD_REQFRAME       0x54
 
 typedef struct MaruCamState MaruCamState;
-typedef struct MaruCamThreadInfo MaruCamThreadInfo;
 typedef struct MaruCamParam MaruCamParam;
 
 struct MaruCamParam {
@@ -69,17 +68,12 @@ struct MaruCamParam {
 	uint32_t	stack[MARUCAM_MAX_PARAM];
 };
 
-struct MaruCamThreadInfo {
-	MaruCamState*    state;
-	MaruCamParam*    param;
-
-	pthread_t        thread_id;
-	pthread_cond_t   thread_cond;
-	pthread_mutex_t  mutex_lock;
-};
-
 struct MaruCamState {
 	PCIDevice           dev;
+	MaruCamParam        *param;
+	QemuThread          thread_id;
+	QemuMutex           thread_mutex;;
+	QemuCond            thread_cond;
 
 	void                *vaddr;		/* vram ptr */
 	uint32_t            streamon;
@@ -88,8 +82,6 @@ struct MaruCamState {
 
     MemoryRegion        vram;
     MemoryRegion        mmio;
-
-	MaruCamThreadInfo	*thread;
 };
 
 /* ----------------------------------------------------------------------------- */

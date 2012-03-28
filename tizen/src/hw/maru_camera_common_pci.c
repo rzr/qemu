@@ -1,7 +1,7 @@
 /*
  * Common implementation of MARU Virtual Camera device by PCI bus.
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  * JinHyung Jo <jinhyung.jo@samsung.com>
@@ -61,12 +61,12 @@ static inline uint32_t marucam_mmio_read(void *opaque, target_phys_addr_t offset
 
 	switch (offset & 0xFF) {
 	case MARUCAM_CMD_ISSTREAM:
-		pthread_mutex_lock(&state->thread->mutex_lock);
+		qemu_mutex_lock(&state->thread_mutex);
 		ret = state->streamon;
-		pthread_mutex_unlock(&state->thread->mutex_lock);
+		qemu_mutex_unlock(&state->thread_mutex);
 		break;
 	case MARUCAM_CMD_G_DATA:
-		ret = state->thread->param->stack[state->thread->param->top++];
+		ret = state->param->stack[state->param->top++];
 		break;
 	case MARUCAM_CMD_OPEN:
 	case MARUCAM_CMD_CLOSE:
@@ -83,8 +83,8 @@ static inline uint32_t marucam_mmio_read(void *opaque, target_phys_addr_t offset
 	case MARUCAM_CMD_G_CTRL:
 	case MARUCAM_CMD_ENUM_FSIZES:
 	case MARUCAM_CMD_ENUM_FINTV:
-		ret = state->thread->param->errCode;
-		state->thread->param->errCode = 0;
+		ret = state->param->errCode;
+		state->param->errCode = 0;
 		break;
 	default:
 		WARN("Not supported command!!\n");
@@ -144,18 +144,18 @@ static inline void marucam_mmio_write(void *opaque, target_phys_addr_t offset, u
 		marucam_device_enum_fintv(state);
 		break;
 	case MARUCAM_CMD_S_DATA:
-		state->thread->param->stack[state->thread->param->top++] = value;
+		state->param->stack[state->param->top++] = value;
 		break;
 	case MARUCAM_CMD_DATACLR:
-		memset(state->thread->param, 0, sizeof(MaruCamParam));
+		memset(state->param, 0, sizeof(MaruCamParam));
 		break;
 	case MARUCAM_CMD_CLRIRQ:
 		qemu_irq_lower(state->dev.irq[2]);
 		break;
 	case MARUCAM_CMD_REQFRAME:
-		pthread_mutex_lock(&state->thread->mutex_lock);
+		qemu_mutex_lock(&state->thread_mutex);
 		state->req_frame = value + 1;
-		pthread_mutex_unlock(&state->thread->mutex_lock);
+		qemu_mutex_unlock(&state->thread_mutex);
 		break;
 	default:
 		WARN("Not supported command!!\n");
@@ -186,8 +186,6 @@ static int marucam_initfn(PCIDevice *dev)
 {
 	MaruCamState *s = DO_UPCAST(MaruCamState, dev, dev);
 	uint8_t *pci_conf = s->dev.config;
-	MaruCamThreadInfo *thread;
-	MaruCamParam *param;
 
 	pci_config_set_interrupt_pin(pci_conf, 0x03);
 
@@ -199,12 +197,9 @@ static int marucam_initfn(PCIDevice *dev)
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio);
 
 	/* for worker thread */
-	thread = (MaruCamThreadInfo*)g_malloc0(sizeof(MaruCamThreadInfo));
-	param = (MaruCamParam*)g_malloc0(sizeof(MaruCamParam));
-
-	thread->state = s;
-	thread->param = param;
-	s->thread = thread;
+	s->param = (MaruCamParam*)g_malloc0(sizeof(MaruCamParam));
+	qemu_cond_init(&s->thread_cond);
+	qemu_mutex_init(&s->thread_mutex);
 
 	marucam_device_init(s);
 
@@ -218,8 +213,9 @@ static int marucam_exitfn(PCIDevice *dev)
 {
 	MaruCamState *s = DO_UPCAST(MaruCamState, dev, dev);
 
-	g_free((gpointer)s->thread->param);
-	g_free((gpointer)s->thread);
+	g_free((gpointer)s->param);
+	qemu_cond_destroy(&s->thread_cond);
+	qemu_mutex_destroy(&s->thread_mutex);
 
     memory_region_destroy (&s->vram);
     memory_region_destroy (&s->mmio);

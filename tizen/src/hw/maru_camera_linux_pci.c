@@ -1,7 +1,7 @@
 /*
  * Implementation of MARU Virtual Camera device by PCI bus on Linux.
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  * JinHyung Jo <jinhyung.jo@samsung.com>
@@ -180,7 +180,7 @@ static int __v4l2_grab(MaruCamState *state)
 
 	index = !index;
 
-	pthread_mutex_lock(&state->thread->mutex_lock);
+	qemu_mutex_lock(&state->thread_mutex);
 	if (state->streamon) {
 		if (state->req_frame) {
 			qemu_irq_raise(state->dev.irq[2]);
@@ -190,7 +190,7 @@ static int __v4l2_grab(MaruCamState *state)
 	} else {
 		ret = -1;
 	}
-	pthread_mutex_unlock(&state->thread->mutex_lock);
+	qemu_mutex_unlock(&state->thread_mutex);
 
 	return ret;
 }
@@ -198,57 +198,43 @@ static int __v4l2_grab(MaruCamState *state)
 // Worker thread
 static void *marucam_worker_thread(void *thread_param)
 {
-	MaruCamThreadInfo* thread = (MaruCamThreadInfo*)thread_param;
+	MaruCamState *state = (MaruCamState*)thread_param;
 
 wait_worker_thread:
-	pthread_mutex_lock(&thread->mutex_lock);
-	thread->state->streamon = 0;
+	qemu_mutex_lock(&state->thread_mutex);
+	state->streamon = 0;
 	convert_trial = 10;
-	pthread_cond_wait(&thread->thread_cond, &thread->mutex_lock);
-	pthread_mutex_unlock(&thread->mutex_lock);
+	qemu_cond_wait(&state->thread_cond, &state->thread_mutex);
+	qemu_mutex_unlock(&state->thread_mutex);
 	INFO("Streaming on ......\n");
 
 	while (1)
 	{
-		pthread_mutex_lock(&thread->mutex_lock);
-		if (thread->state->streamon) {
-			pthread_mutex_unlock(&thread->mutex_lock);
-			if (__v4l2_grab(thread->state) < 0) {
+		qemu_mutex_lock(&state->thread_mutex);
+		if (state->streamon) {
+			qemu_mutex_unlock(&state->thread_mutex);
+			if (__v4l2_grab(state) < 0) {
 				INFO("...... Streaming off\n");
 				goto wait_worker_thread;
 			}
 		} else {
-			pthread_mutex_unlock(&thread->mutex_lock);
+			qemu_mutex_unlock(&state->thread_mutex);
 			goto wait_worker_thread;
 		}
 	}
-	pthread_exit(0);
+	qemu_thread_exit((void*)0);
 }
 
 void marucam_device_init(MaruCamState* state)
 {
-	MaruCamThreadInfo *thread = state->thread;
-
-	if (pthread_cond_init(&thread->thread_cond, NULL)) {
-		ERR("failed to initialize thread condition\n");
-		exit(61);
-	}
-	if (pthread_mutex_init(&thread->mutex_lock, NULL)) {
-		ERR("failed to initialize mutex\n");
-		exit(62);
-	}
-
-	if (pthread_create(&thread->thread_id, NULL, marucam_worker_thread, (void*)thread) != 0) {
-		perror("failed to create a worker thread for webcam connection\n");
-		exit(63);
-	}
+	qemu_thread_create(&state->thread_id, marucam_worker_thread, (void*)state);
 }
 
 // MARUCAM_CMD_OPEN
 void marucam_device_open(MaruCamState* state)
 {
 	struct v4l2_capability cap;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	v4l2_fd = v4l2_open("/dev/video0", O_RDWR | O_NONBLOCK);
@@ -278,28 +264,27 @@ void marucam_device_open(MaruCamState* state)
 // MARUCAM_CMD_START_PREVIEW
 void marucam_device_start_preview(MaruCamState* state)
 {
-	pthread_mutex_lock(&state->thread->mutex_lock);
+	qemu_mutex_lock(&state->thread_mutex);
 	state->streamon = 1;
 	state->buf_size = dst_fmt.fmt.pix.sizeimage;
-	if (pthread_cond_signal(&state->thread->thread_cond))
-		ERR("failed to send a signal to the worker thread\n");
-	pthread_mutex_unlock(&state->thread->mutex_lock);
+	qemu_cond_signal(&state->thread_cond);
+	qemu_mutex_unlock(&state->thread_mutex);
 }
 
 // MARUCAM_CMD_STOP_PREVIEW
 void marucam_device_stop_preview(MaruCamState* state)
 {
-	pthread_mutex_lock(&state->thread->mutex_lock);
+	qemu_mutex_lock(&state->thread_mutex);
 	state->streamon = 0;
 	state->buf_size = 0;
-	pthread_mutex_unlock(&state->thread->mutex_lock);
+	qemu_mutex_unlock(&state->thread_mutex);
 	sleep(0);
 }
 
 void marucam_device_s_param(MaruCamState* state)
 {
 	struct v4l2_streamparm sp;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&sp, 0, sizeof(struct v4l2_streamparm));
@@ -316,7 +301,7 @@ void marucam_device_s_param(MaruCamState* state)
 void marucam_device_g_param(MaruCamState* state)
 {
 	struct v4l2_streamparm sp;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 	
 	param->top = 0;
 	memset(&sp, 0, sizeof(struct v4l2_streamparm));
@@ -334,7 +319,7 @@ void marucam_device_g_param(MaruCamState* state)
 
 void marucam_device_s_fmt(MaruCamState* state)
 {
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&dst_fmt, 0, sizeof(struct v4l2_format));
@@ -363,7 +348,7 @@ void marucam_device_s_fmt(MaruCamState* state)
 void marucam_device_g_fmt(MaruCamState* state)
 {
 	struct v4l2_format format;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&format, 0, sizeof(struct v4l2_format));
@@ -388,7 +373,7 @@ void marucam_device_g_fmt(MaruCamState* state)
 void marucam_device_try_fmt(MaruCamState* state)
 {
 	struct v4l2_format format;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&format, 0, sizeof(struct v4l2_format));
@@ -416,7 +401,7 @@ void marucam_device_try_fmt(MaruCamState* state)
 void marucam_device_enum_fmt(MaruCamState* state)
 {
 	struct v4l2_fmtdesc format;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&format, 0, sizeof(struct v4l2_fmtdesc));
@@ -441,7 +426,7 @@ void marucam_device_qctrl(MaruCamState* state)
 	uint32_t i;
 	char name[32] = {0,};
 	struct v4l2_queryctrl ctrl;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&ctrl, 0, sizeof(struct v4l2_queryctrl));
@@ -514,7 +499,7 @@ void marucam_device_s_ctrl(MaruCamState* state)
 {
 	uint32_t i;
 	struct v4l2_control ctrl;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&ctrl, 0, sizeof(struct v4l2_control));
@@ -556,7 +541,7 @@ void marucam_device_g_ctrl(MaruCamState* state)
 {
 	uint32_t i;
 	struct v4l2_control ctrl;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&ctrl, 0, sizeof(struct v4l2_control));
@@ -598,7 +583,7 @@ void marucam_device_g_ctrl(MaruCamState* state)
 void marucam_device_enum_fsizes(MaruCamState* state)
 {
 	struct v4l2_frmsizeenum fsize;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&fsize, 0, sizeof(struct v4l2_frmsizeenum));
@@ -624,7 +609,7 @@ void marucam_device_enum_fsizes(MaruCamState* state)
 void marucam_device_enum_fintv(MaruCamState* state)
 {
 	struct v4l2_frmivalenum ival;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	memset(&ival, 0, sizeof(struct v4l2_frmivalenum));
@@ -652,9 +637,9 @@ void marucam_device_enum_fintv(MaruCamState* state)
 // MARUCAM_CMD_CLOSE
 void marucam_device_close(MaruCamState* state)
 {
-	pthread_mutex_lock(&state->thread->mutex_lock);
+	qemu_mutex_lock(&state->thread_mutex);
 	state->streamon = 0;
-	pthread_mutex_unlock(&state->thread->mutex_lock);
+	qemu_mutex_unlock(&state->thread_mutex);
 
 	marucam_reset_controls();
 

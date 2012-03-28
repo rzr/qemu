@@ -1,7 +1,7 @@
 /*
  * Implementation of MARU Virtual Camera device by PCI bus on Windows.
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  * JinHyung Jo <jinhyung.jo@samsung.com>
@@ -29,15 +29,928 @@
 
 #include "qemu-common.h"
 #include "maru_camera_common.h"
-#include "pci.h"
-#include "kvm.h"
 #include "tizen/src/debug_ch.h"
 
-#include "windows.h"
-#include "basetyps.h"
-#include "mmsystem.h"
+#define CINTERFACE
+#define COBJMACROS
+#include "ocidl.h"
+#include "errors.h"      /* for VFW_E_XXXX */
+#include "mmsystem.h"    /* for MAKEFOURCC macro */
+#include "maru_camera_win32_interface.h"
 
 MULTI_DEBUG_CHANNEL(tizen, camera_win32);
+
+/*
+ * COM Interface implementations
+ *
+ */
+
+#define SAFE_RELEASE(x) { if (x) x->lpVtbl->Release(x); x = NULL; }
+
+typedef HRESULT (STDAPICALLTYPE *CallbackFn)(ULONG dwSize, BYTE *pBuffer);
+
+/*
+ * HWCGrabCallback
+ */
+
+typedef struct HWCGrabCallback
+{
+	IGrabCallback IGrabCallback_iface;
+	long m_cRef;
+    CallbackFn m_pCallback;
+    STDMETHODIMP (*SetCallback)(IGrabCallback *iface, CallbackFn pCallbackFn);
+} HWCGrabCallback;
+
+static inline HWCGrabCallback *impl_from_IGrabCallback(IGrabCallback *iface)
+{
+	return CONTAINING_RECORD(iface, HWCGrabCallback, IGrabCallback_iface);
+}
+
+static STDMETHODIMP HWCGrabCallback_QueryInterface(IGrabCallback *iface, REFIID riid, void **ppv)
+{
+	if (IsEqualIID(riid, &IID_IUnknown)) {
+		*ppv = (IUnknown*)iface;
+	} else if (IsEqualIID(riid, &IID_IGrabCallback)) {
+		*ppv = (IGrabCallback*)iface;
+	} else {
+		*ppv = NULL;
+		return E_NOINTERFACE;
+	}
+
+	IGrabCallback_AddRef(iface);
+	return S_OK;
+}
+
+static STDMETHODIMP_(ULONG) HWCGrabCallback_AddRef(IGrabCallback *iface)
+{
+	HWCGrabCallback *This = impl_from_IGrabCallback(iface);
+
+	return InterlockedIncrement(&This->m_cRef);
+}
+
+static STDMETHODIMP_(ULONG) HWCGrabCallback_Release(IGrabCallback *iface)
+{
+	HWCGrabCallback *This = impl_from_IGrabCallback(iface);
+
+	if( InterlockedDecrement(&This->m_cRef) == 0)
+	{
+		This->m_pCallback = NULL;
+		g_free((void*)This);
+		return 0;
+	}
+
+	return This->m_cRef;
+}
+
+static STDMETHODIMP HWCGrabCallback_Grab(IGrabCallback *iface, ULONG dwSize, BYTE *pBuffer)
+{
+	HWCGrabCallback *This = impl_from_IGrabCallback(iface);
+
+	if (This->m_pCallback) {
+		This->m_pCallback(dwSize, pBuffer);
+		return S_OK;
+	}
+
+	return E_FAIL;
+}
+
+static STDMETHODIMP HWCGrabCallback_SetCallback(IGrabCallback *iface, CallbackFn pCallbackFn)
+{
+	HWCGrabCallback *This = impl_from_IGrabCallback(iface);
+
+	This->m_pCallback = pCallbackFn;
+	return S_OK;
+}
+
+static IGrabCallbackVtbl HWCGrabCallback_Vtbl =
+{
+		HWCGrabCallback_QueryInterface,
+		HWCGrabCallback_AddRef,
+		HWCGrabCallback_Release,
+		HWCGrabCallback_Grab
+};
+
+static STDMETHODIMP HWCGrabCallback_Construct(IGrabCallback **ppv)
+{
+	HWCGrabCallback *This = (HWCGrabCallback *)g_malloc0(sizeof(HWCGrabCallback));
+
+	if (!This) {
+		return E_OUTOFMEMORY;
+	}
+
+	This->IGrabCallback_iface.lpVtbl = &HWCGrabCallback_Vtbl;
+	This->m_cRef = 1;
+	This->m_pCallback = NULL;
+	This->SetCallback = HWCGrabCallback_SetCallback;
+	*ppv = &This->IGrabCallback_iface;
+	return S_OK;
+}
+
+/*
+ * HWCPin
+ */
+
+typedef struct HWCInPin
+{
+	IPin IPin_iface;
+	IMemInputPin IMemInputPin_iface;
+	IBaseFilter *m_pCFilter;
+	IPin *m_pConnectedPin;
+	IGrabCallback *m_pCallback;
+	BOOL m_bReadOnly;
+	long m_cRef;
+	STDMETHODIMP (*SetGrabCallbackIF)(IPin *iface, IGrabCallback *pCaptureCB);
+} HWCInPin;
+
+static inline HWCInPin *impl_from_IPin(IPin *iface)
+{
+	return CONTAINING_RECORD(iface, HWCInPin, IPin_iface);
+}
+
+static inline HWCInPin *impl_from_IMemInputPin(IMemInputPin *iface)
+{
+	return CONTAINING_RECORD(iface, HWCInPin, IMemInputPin_iface);
+}
+
+static STDMETHODIMP HWCPin_QueryInterface(IPin *iface, REFIID riid, void **ppv)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IPin)) {
+		*ppv = &This->IPin_iface;
+		IPin_AddRef((IPin*)*ppv);
+	} else if (IsEqualIID(riid, &IID_IMemInputPin)) {
+		*ppv = &This->IMemInputPin_iface;
+		IPin_AddRef((IMemInputPin*)*ppv);
+	} else {
+		*ppv = NULL;
+		return E_NOINTERFACE;
+	}
+
+	return S_OK;
+}
+
+static STDMETHODIMP_(ULONG) HWCPin_AddRef(IPin *iface)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	return InterlockedIncrement(&This->m_cRef);
+}
+
+static STDMETHODIMP_(ULONG) HWCPin_Release(IPin *iface)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	if( InterlockedDecrement(&This->m_cRef) == 0)
+	{
+		if (This->m_pCFilter) {
+			IBaseFilter_Release(This->m_pCFilter);
+			This->m_pCFilter = NULL;
+		}
+		if (This->m_pCallback) {
+			IGrabCallback_Release(This->m_pCallback);
+			This->m_pCallback = NULL;
+		}
+		if (This->m_pConnectedPin) {
+			IPin_Release(This->m_pConnectedPin);
+			This->m_pConnectedPin = NULL;
+		}
+		g_free((void*)This);
+		return 0;
+	}
+	return This->m_cRef;
+}
+
+static STDMETHODIMP HWCPin_Connect(IPin *iface, IPin *pReceivePin, const AM_MEDIA_TYPE *pmt)
+{
+	if ( !pmt )
+		return S_OK;
+	return S_FALSE;
+}
+
+static STDMETHODIMP HWCPin_ReceiveConnection(IPin *iface, IPin *pConnector, const AM_MEDIA_TYPE *pmt)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	if (pConnector == NULL || pmt == NULL)
+		return E_POINTER;
+
+	if (This->m_pConnectedPin) {
+		return VFW_E_ALREADY_CONNECTED;
+	}
+	FILTER_STATE fs;
+	IBaseFilter_GetState(This->m_pCFilter, 0, &fs);
+	if (fs != State_Stopped) {
+		return VFW_E_NOT_STOPPED;
+	}
+	PIN_DIRECTION pd;
+	IPin_QueryDirection(pConnector, &pd);
+	if (pd == PINDIR_INPUT) {
+		return VFW_E_INVALID_DIRECTION;
+	}
+
+	This->m_pConnectedPin = pConnector;
+	IPin_AddRef(This->m_pConnectedPin);
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_Disconnect(IPin *iface)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	HRESULT hr;
+	if (This->m_pConnectedPin == NULL) {
+		hr = S_FALSE;
+	} else {
+		IPin_Release(This->m_pConnectedPin);
+		This->m_pConnectedPin = NULL;
+		hr = S_OK;
+	}
+	return hr;
+}
+
+static STDMETHODIMP HWCPin_ConnectedTo(IPin *iface, IPin **pPin)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	if (pPin == NULL)
+		return E_POINTER;
+
+	if (This->m_pConnectedPin == NULL) {
+		return VFW_E_NOT_CONNECTED;
+	} else {
+		*pPin = This->m_pConnectedPin;
+		IPin_AddRef(This->m_pConnectedPin);
+	}
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_ConnectionMediaType(IPin *iface, AM_MEDIA_TYPE *pmt)
+{
+	if (pmt == NULL) {
+		return E_POINTER;
+	}
+	return VFW_E_NOT_CONNECTED;
+}
+
+static STDMETHODIMP HWCPin_QueryPinInfo(IPin *iface, PIN_INFO *pInfo)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	if (pInfo == NULL)
+		return E_POINTER;
+
+	pInfo->pFilter = This->m_pCFilter;
+	if (This->m_pCFilter) {
+		IBaseFilter_AddRef(This->m_pCFilter);
+	}
+	memcpy((void*)pInfo->achName, (void*)HWCPinName, sizeof(HWCPinName));
+	pInfo->dir = PINDIR_INPUT;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_QueryDirection(IPin *iface, PIN_DIRECTION *pPinDir)
+{
+	if (pPinDir == NULL)
+		return E_POINTER;
+	*pPinDir = PINDIR_INPUT;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_QueryId(IPin *iface, LPWSTR *Id)
+{
+	if (Id == NULL)
+		return E_POINTER;
+	PVOID pId = CoTaskMemAlloc(sizeof(HWCPinName));
+	memcpy((void*)pId, (void*)HWCPinName, sizeof(HWCPinName));
+	*Id = (LPWSTR)pId;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_QueryAccept(IPin *iface, const AM_MEDIA_TYPE *pmt)
+{
+	if (pmt == NULL)
+		return E_POINTER;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_EnumMediaTypes(IPin *iface, IEnumMediaTypes **ppEnum)
+{
+	if (ppEnum == NULL)
+			return E_POINTER;
+	return E_NOTIMPL;
+}
+
+static STDMETHODIMP HWCPin_QueryInternalConnections(IPin *iface, IPin **ppPin, ULONG *nPin)
+{
+	return E_NOTIMPL;
+}
+
+static STDMETHODIMP HWCPin_EndOfStream(IPin *iface)
+{
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_BeginFlush(IPin *iface)
+{
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_EndFlush(IPin *iface)
+{
+	return S_OK;
+}
+
+static STDMETHODIMP HWCPin_NewSegment(IPin *iface, REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
+{
+	return S_OK;
+}
+
+static STDMETHODIMP HWCMemInputPin_QueryInterface(IMemInputPin *iface, REFIID riid, void **ppv)
+{
+	HWCInPin *This = impl_from_IMemInputPin(iface);
+
+	if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IMemInputPin)) {
+		*ppv = &This->IMemInputPin_iface;
+		IMemInputPin_AddRef((IMemInputPin*)*ppv);
+	} else if (IsEqualIID(riid, &IID_IPin)) {
+		*ppv = &This->IPin_iface;
+		IPin_AddRef((IPin*)*ppv);
+	} else {
+		*ppv = NULL;
+		return E_NOINTERFACE;
+	}
+
+	return S_OK;
+}
+
+static STDMETHODIMP_(ULONG) HWCMemInputPin_AddRef(IMemInputPin *iface)
+{
+	HWCInPin *This = impl_from_IMemInputPin(iface);
+
+	return InterlockedIncrement(&This->m_cRef);
+}
+
+static STDMETHODIMP_(ULONG) HWCMemInputPin_Release(IMemInputPin *iface)
+{
+	HWCInPin *This = impl_from_IMemInputPin(iface);
+
+	if( InterlockedDecrement(&This->m_cRef) == 0)
+	{
+		if (This->m_pCFilter) {
+			IBaseFilter_Release(This->m_pCFilter);
+			This->m_pCFilter = NULL;
+		}
+		if (This->m_pCallback) {
+			IGrabCallback_Release(This->m_pCallback);
+			This->m_pCallback = NULL;
+		}
+		if (This->m_pConnectedPin) {
+			IPin_Release(This->m_pConnectedPin);
+			This->m_pConnectedPin = NULL;
+		}
+		g_free((void*)This);
+		return 0;
+	}
+	return This->m_cRef;
+}
+
+static STDMETHODIMP HWCMemInputPin_GetAllocator(IMemInputPin *iface, IMemAllocator **ppAllocator)
+{
+	if (ppAllocator == NULL)
+		return E_POINTER;
+	return VFW_E_NO_ALLOCATOR;
+}
+
+static STDMETHODIMP HWCMemInputPin_NotifyAllocator(IMemInputPin *iface, IMemAllocator *pAllocator, BOOL bReadOnly)
+{
+	if (pAllocator == NULL)
+		return E_POINTER;
+
+	return NOERROR;
+}
+
+static STDMETHODIMP HWCMemInputPin_GetAllocatorRequirements(IMemInputPin *iface, ALLOCATOR_PROPERTIES *pProps)
+{
+	return E_NOTIMPL;
+}
+
+static STDMETHODIMP HWCMemInputPin_Receive(IMemInputPin *iface, IMediaSample *pSample)
+{
+	HWCInPin *This = impl_from_IMemInputPin(iface);
+
+	if (pSample == NULL)
+		return E_POINTER;
+	if (This->m_pCallback != NULL) {
+		HRESULT hr;
+		BYTE* pBuffer = NULL;
+		BYTE* pTmp_Buffer = NULL;	/* is this required? */
+		DWORD dwSize = 0;
+		dwSize = IMediaSample_GetSize(pSample);
+		hr = IMediaSample_GetPointer(pSample, &pBuffer);
+		if (FAILED(hr))
+			return hr;
+
+		pTmp_Buffer = (BYTE *)g_malloc0((size_t)dwSize);
+		if (!pTmp_Buffer)
+			return E_OUTOFMEMORY;
+		memcpy((void*)pTmp_Buffer, (void*)pBuffer, (size_t)dwSize);
+
+		hr = IGrabCallback_Grab(This->m_pCallback, dwSize, pTmp_Buffer);
+		if (FAILED(hr))
+			return hr;
+	}
+	return S_OK;
+}
+
+static STDMETHODIMP HWCMemInputPin_ReceiveMultiple(IMemInputPin *iface, IMediaSample **pSamples, long nSamples, long *nSamplesProcessed)
+{
+	HRESULT hr = S_OK;
+
+	if (pSamples == NULL)
+		return E_POINTER;
+
+	*nSamplesProcessed = 0;
+
+	while (nSamples-- > 0)
+	{
+		hr = IMemInputPin_Receive(iface, pSamples[*nSamplesProcessed]);
+		if (hr != S_OK)
+			break;
+		(*nSamplesProcessed)++;
+	}
+	return hr;
+}
+
+static STDMETHODIMP HWCMemInputPin_ReceiveCanBlock(IMemInputPin *iface)
+{
+	return S_FALSE;
+}
+
+static STDMETHODIMP HWCPin_SetCallback(IPin *iface, IGrabCallback *pCaptureCB)
+{
+	HWCInPin *This = impl_from_IPin(iface);
+
+	if (pCaptureCB == NULL) {
+		IGrabCallback_Release(This->m_pCallback);
+		This->m_pCallback = NULL;
+	} else {
+		This->m_pCallback = pCaptureCB;
+		IGrabCallback_AddRef(This->m_pCallback);
+	}
+
+	return S_OK;
+}
+
+
+static IPinVtbl HWCPin_Vtbl =
+{
+	HWCPin_QueryInterface,
+	HWCPin_AddRef,
+	HWCPin_Release,
+	HWCPin_Connect,
+	HWCPin_ReceiveConnection,
+	HWCPin_Disconnect,
+	HWCPin_ConnectedTo,
+	HWCPin_ConnectionMediaType,
+	HWCPin_QueryPinInfo,
+	HWCPin_QueryDirection,
+	HWCPin_QueryId,
+	HWCPin_QueryAccept,
+	HWCPin_EnumMediaTypes,
+	HWCPin_QueryInternalConnections,
+	HWCPin_EndOfStream,
+	HWCPin_BeginFlush,
+	HWCPin_EndFlush,
+	HWCPin_NewSegment
+};
+
+static IMemInputPinVtbl HWCMemInputPin_Vtbl =
+{
+	HWCMemInputPin_QueryInterface,
+	HWCMemInputPin_AddRef,
+	HWCMemInputPin_Release,
+	HWCMemInputPin_GetAllocator,
+	HWCMemInputPin_NotifyAllocator,
+	HWCMemInputPin_GetAllocatorRequirements,
+	HWCMemInputPin_Receive,
+	HWCMemInputPin_ReceiveMultiple,
+	HWCMemInputPin_ReceiveCanBlock
+};
+
+static STDMETHODIMP HWCInPin_Construct(IBaseFilter *pFilter, IPin **ppv)
+{
+	HWCInPin *This = (HWCInPin *)g_malloc0(sizeof(HWCInPin));
+
+	if (!This) {
+		return E_OUTOFMEMORY;
+	}
+
+	This->IPin_iface.lpVtbl = &HWCPin_Vtbl;
+	This->IMemInputPin_iface.lpVtbl = &HWCMemInputPin_Vtbl;
+	This->m_bReadOnly = FALSE;
+	This->m_pCFilter = pFilter;
+	if (This->m_pCFilter) {
+		IBaseFilter_AddRef(This->m_pCFilter);
+	}
+	This->m_pConnectedPin = NULL;
+	This->m_pCallback = NULL;
+	This->m_cRef = 1;
+	This->SetGrabCallbackIF = HWCPin_SetCallback;
+	*ppv = &This->IPin_iface;
+
+	return S_OK;
+}
+
+/*
+ * HWCEnumPins
+ */
+
+typedef struct HWCEnumPins
+{
+	IEnumPins IEnumPins_iface;
+	IBaseFilter *m_pFilter;
+	int m_nPos;
+	long m_cRef;
+} HWCEnumPins;
+
+static inline HWCEnumPins *impl_from_IEnumPins(IEnumPins *iface)
+{
+	return CONTAINING_RECORD(iface, HWCEnumPins, IEnumPins_iface);
+}
+
+static STDMETHODIMP HWCEnumPins_QueryInterface(IEnumPins *iface, REFIID riid, void **ppv)
+{
+	if (ppv == NULL)
+		return E_POINTER;
+
+	if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IEnumPins)) {
+		*ppv = iface;
+	} else {
+		*ppv = NULL;
+		return E_NOINTERFACE;
+	}
+
+	IEnumPins_AddRef(iface);
+	return S_OK;
+}
+
+static STDMETHODIMP_(ULONG) HWCEnumPins_AddRef(IEnumPins *iface)
+{
+	HWCEnumPins *This = impl_from_IEnumPins(iface);
+
+	return InterlockedIncrement(&This->m_cRef);
+}
+
+static STDMETHODIMP_(ULONG) HWCEnumPins_Release(IEnumPins *iface)
+{
+	HWCEnumPins *This = impl_from_IEnumPins(iface);
+
+	if (InterlockedDecrement(&This->m_cRef) == 0) {
+		if (This->m_pFilter) {
+			IBaseFilter_Release(This->m_pFilter);
+			This->m_pFilter = NULL;
+		}
+		This->m_nPos = 0;
+		g_free((void*)This);
+		return 0;
+	}
+	return This->m_cRef;
+}
+
+static STDMETHODIMP HWCEnumPins_Next(IEnumPins *iface, ULONG cPins, IPin **ppPins,
+								ULONG *pcFetched)
+{
+	HWCEnumPins *This = impl_from_IEnumPins(iface);
+
+	if (ppPins == NULL)
+			return E_POINTER;
+
+	ULONG fetched;
+	if (This->m_nPos < 1 && cPins > 0) {
+		IPin *pPin;
+		IBaseFilter_FindPin(This->m_pFilter, HWCPinName, &pPin);
+		*ppPins = pPin;
+		IPin_AddRef(pPin);
+		fetched = 1;
+		This->m_nPos++;
+	} else {
+		fetched = 0;
+	}
+
+	if (pcFetched != NULL ) {
+		*pcFetched = fetched;
+	}
+
+	return ( fetched == cPins ) ? S_OK : S_FALSE;
+}
+
+static STDMETHODIMP HWCEnumPins_Skip(IEnumPins *iface, ULONG cPins)
+{
+	HWCEnumPins *This = impl_from_IEnumPins(iface);
+	This->m_nPos += cPins;
+	return ( This->m_nPos >= 1 ) ? S_FALSE : S_OK;
+}
+
+static STDMETHODIMP HWCEnumPins_Reset(IEnumPins *iface)
+{
+	HWCEnumPins *This = impl_from_IEnumPins(iface);
+	This->m_nPos = 0;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCEnumPins_Construct(IBaseFilter *pFilter, int nPos, IEnumPins **ppv);
+
+static STDMETHODIMP HWCEnumPins_Clone(IEnumPins *iface, IEnumPins **ppEnum)
+{
+	HWCEnumPins *This = impl_from_IEnumPins(iface);
+
+	if (ppEnum == NULL)
+		return E_POINTER;
+
+	HWCEnumPins_Construct(This->m_pFilter, This->m_nPos, ppEnum);
+	if (*ppEnum == NULL) {
+		return E_OUTOFMEMORY;
+	}
+
+	return S_OK;
+}
+
+static IEnumPinsVtbl HWCEnumPins_Vtbl =
+{
+	HWCEnumPins_QueryInterface,
+	HWCEnumPins_AddRef,
+	HWCEnumPins_Release,
+	HWCEnumPins_Next,
+	HWCEnumPins_Skip,
+	HWCEnumPins_Reset,
+	HWCEnumPins_Clone
+};
+
+
+static STDMETHODIMP HWCEnumPins_Construct(IBaseFilter *pFilter, int nPos, IEnumPins **ppv)
+{
+	HWCEnumPins *This = (HWCEnumPins *)g_malloc0(sizeof(HWCEnumPins));
+
+	if (!This) {
+		return E_OUTOFMEMORY;
+	}
+
+	This->IEnumPins_iface.lpVtbl = &HWCEnumPins_Vtbl;
+	This->m_pFilter = pFilter;
+	if (This->m_pFilter) {
+		IBaseFilter_AddRef(This->m_pFilter);
+	}
+	This->m_cRef = 1;
+	This->m_nPos = nPos;
+	*ppv = &This->IEnumPins_iface;
+
+	return S_OK;
+}
+
+/*
+ * HWCFilter
+ */
+
+typedef struct HWCFilter
+{
+	IBaseFilter IBaseFilter_iface;
+	IPin *m_pPin;
+	IFilterGraph *m_pFilterGraph;
+	FILTER_STATE m_state;
+	long m_cRef;
+} HWCFilter;
+
+static inline HWCFilter *impl_from_IBaseFilter(IBaseFilter *iface)
+{
+	return CONTAINING_RECORD(iface, HWCFilter, IBaseFilter_iface);
+}
+
+static STDMETHODIMP HWCFilter_QueryInterface(IBaseFilter *iface, REFIID riid, void **ppv)
+{
+	if(IsEqualIID(riid, &IID_IUnknown)) {
+		*ppv = (IUnknown*)iface;
+	} else if (IsEqualIID(riid, &IID_IPersist)) {
+		*ppv = (IPersist*)iface;
+	} else if (IsEqualIID(riid, &IID_IMediaFilter)) {
+		*ppv = (IMediaFilter*)iface;
+	} else if (IsEqualIID(riid, &IID_IBaseFilter)) {
+		*ppv = (IBaseFilter*)iface;
+	} else {
+		*ppv = NULL;
+		return E_NOINTERFACE;
+	}
+
+	IBaseFilter_AddRef(iface);
+	return S_OK;
+}
+
+static STDMETHODIMP_(ULONG) HWCFilter_AddRef(IBaseFilter *iface)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+
+	return InterlockedIncrement(&This->m_cRef);
+}
+
+static STDMETHODIMP_(ULONG) HWCFilter_Release(IBaseFilter *iface)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+
+	if( InterlockedDecrement(&This->m_cRef) == 0) {
+		if (This->m_pPin) {
+			IPin_Release(This->m_pPin);
+			This->m_pPin = NULL;
+		}
+		if (This->m_pFilterGraph) {
+			IFilterGraph_Release(This->m_pFilterGraph);
+			This->m_pFilterGraph = NULL;
+		}
+		g_free((void*)This);
+		return 0;
+	}
+	return This->m_cRef;
+}
+
+static STDMETHODIMP HWCFilter_GetClassID(IBaseFilter *iface, CLSID *pClsID)
+{
+	if (pClsID == NULL)
+		return E_POINTER;
+	return E_NOTIMPL;
+}
+
+static STDMETHODIMP HWCFilter_GetState(IBaseFilter *iface, DWORD dwMSecs, FILTER_STATE *State)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+	*State = This->m_state;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_SetSyncSource(IBaseFilter *iface, IReferenceClock *pClock)
+{
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_GetSyncSource(IBaseFilter *iface, IReferenceClock **pClock)
+{
+	*pClock = NULL;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_Stop(IBaseFilter *iface)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+
+	IPin_EndFlush(This->m_pPin);
+	This->m_state = State_Stopped;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_Pause(IBaseFilter *iface)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+	This->m_state = State_Paused;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_Run(IBaseFilter *iface, REFERENCE_TIME tStart)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+
+	if (This->m_state == State_Stopped){
+		HRESULT hr;
+		hr = IBaseFilter_Pause(iface);
+		if (FAILED(hr)) {
+			return hr;
+		}
+	}
+
+	This->m_state = State_Running;
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_EnumPins(IBaseFilter *iface, IEnumPins **ppEnum)
+{
+	if (ppEnum == NULL)
+		return E_POINTER;
+
+	HWCEnumPins_Construct(iface, 0, ppEnum);
+	return *ppEnum == NULL ? E_OUTOFMEMORY : S_OK;
+}
+
+static STDMETHODIMP HWCFilter_FindPin(IBaseFilter *iface, LPCWSTR Id, IPin **ppPin)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+
+	if (ppPin == NULL)
+		return E_POINTER;
+
+	if (memcmp((void*)Id, (void*)HWCPinName, sizeof(HWCPinName))) {
+		return VFW_E_NOT_FOUND;
+	}
+
+	if (!This->m_pPin) {
+		 HWCInPin_Construct(iface, &This->m_pPin);
+	}
+	*ppPin = This->m_pPin;
+
+	IPin_AddRef(This->m_pPin);
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_QueryFilterInfo(IBaseFilter *iface, FILTER_INFO *pInfo)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+
+	if (pInfo == NULL)
+		return E_POINTER;
+
+	memcpy((void*)pInfo->achName, (void*)HWCFilterName, sizeof(HWCFilterName));
+	pInfo->pGraph = This->m_pFilterGraph;
+	if(This->m_pFilterGraph) {
+		IFilterGraph_AddRef(This->m_pFilterGraph);
+	}
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_JoinFilterGraph(IBaseFilter *iface, IFilterGraph *pGraph,
+										LPCWSTR pName)
+{
+	HWCFilter *This = impl_from_IBaseFilter(iface);
+
+	This->m_pFilterGraph = pGraph;
+	if (pGraph) {
+		IFilterGraph_AddRef(pGraph);
+	}
+	return S_OK;
+}
+
+static STDMETHODIMP HWCFilter_QueryVendorInfo(IBaseFilter *iface, LPWSTR* pVendorInfo)
+{
+	return E_NOTIMPL;
+}
+
+static IBaseFilterVtbl HWCFilter_Vtbl =
+{
+	HWCFilter_QueryInterface,
+	HWCFilter_AddRef,
+	HWCFilter_Release,
+	HWCFilter_GetClassID,
+	HWCFilter_Stop,
+	HWCFilter_Pause,
+	HWCFilter_Run,
+	HWCFilter_GetState,
+	HWCFilter_SetSyncSource,
+	HWCFilter_GetSyncSource,
+	HWCFilter_EnumPins,
+	HWCFilter_FindPin,
+	HWCFilter_QueryFilterInfo,
+	HWCFilter_JoinFilterGraph,
+	HWCFilter_QueryVendorInfo
+};
+
+static STDMETHODIMP HWCFilter_Construct(IBaseFilter **ppv)
+{
+	HWCFilter *This = (HWCFilter *)g_malloc0(sizeof(HWCFilter));
+
+	if (!This) {
+		return E_OUTOFMEMORY;
+	}
+
+	This->IBaseFilter_iface.lpVtbl = &HWCFilter_Vtbl;
+	This->m_pFilterGraph = NULL;
+	This->m_state = State_Stopped;
+	This->m_cRef = 1;
+	HWCInPin_Construct(&This->IBaseFilter_iface, &This->m_pPin);
+	*ppv = &This->IBaseFilter_iface;
+
+	return S_OK;
+}
+
+/**********************************************************
+ *
+ * Virtual device implementations
+ *
+ **********************************************************/
+
+
+/*
+ * Declaration global variables for Win32 COM Interfaces
+ */
+IGraphBuilder *g_pGB ;
+ICaptureGraphBuilder2 *g_pCGB;
+IMediaControl *g_pMediaControl;
+
+IPin *g_pOutputPin;
+IPin *g_pInputPin;
+IBaseFilter *g_pDstFilter;
+IBaseFilter *g_pSrcFilter;
+
+IGrabCallback *g_pCallback;
+
+DWORD g_dwFourcc;
+LONG g_dwWidth;
+LONG g_dwHeight;
+REFERENCE_TIME g_dwAvgInterval;
 
 // V4L2 defines copy from videodev2.h
 #define V4L2_CTRL_FLAG_SLIDER 		0x0020
@@ -52,45 +965,6 @@ MULTI_DEBUG_CHANNEL(tizen, camera_win32);
 #define V4L2_PIX_FMT_YUYV    MAKEFOURCC('Y', 'U', 'Y', 'V') /* 16  YUV 4:2:2     */
 #define V4L2_PIX_FMT_YUV420  MAKEFOURCC('Y', 'U', '1', '2') /* 12  YUV 4:2:0     */
 #define V4L2_PIX_FMT_YVU420  MAKEFOURCC('Y', 'V', '1', '2') /* 12  YVU 4:2:0     */
-
-enum {
-	HWC_OPEN,
-	HWC_CLOSE,
-	HWC_START,
-	HWC_STOP,
-	HWC_S_FPS,
-	HWC_G_FPS,
-	HWC_S_FMT,
-	HWC_G_FMT,
-	HWC_TRY_FMT,
-	HWC_ENUM_FMT,
-	HWC_QCTRL,
-	HWC_S_CTRL,
-	HWC_G_CTRL,
-	HWC_ENUM_FSIZES,
-	HWC_ENUM_INTERVALS
-};
-
-typedef enum tagVideoProcAmpProperty {
-  VideoProcAmp_Brightness,
-  VideoProcAmp_Contrast,
-  VideoProcAmp_Hue,
-  VideoProcAmp_Saturation,
-  VideoProcAmp_Sharpness,
-  VideoProcAmp_Gamma,
-  VideoProcAmp_ColorEnable,
-  VideoProcAmp_WhiteBalance,
-  VideoProcAmp_BacklightCompensation,
-  VideoProcAmp_Gain
-} VideoProcAmpProperty;
-
-typedef struct tagHWCParam {
-	long val1;
-	long val2;
-	long val3;
-	long val4;
-	long val5;
-} HWCParam;
 
 typedef struct tagMaruCamConvertPixfmt {
 	uint32_t fmt;	/* fourcc */
@@ -138,19 +1012,15 @@ static struct marucam_qctrl qctrl_tbl[] = {
 	{ V4L2_CID_SHARPNESS, 0, },
 };
 
-typedef int (STDAPICALLTYPE *CallbackFn)(ULONG dwSize, BYTE *pBuffer);
-typedef HRESULT (STDAPICALLTYPE *CTRLFN)(UINT, UINT, LPVOID);
-typedef HRESULT (STDAPICALLTYPE *SETCALLBACKFN)(CallbackFn);
-
-
-static HINSTANCE g_hInst = NULL;
 static MaruCamState *g_state = NULL;
-
-static CTRLFN MaruCamCtrl;
-static SETCALLBACKFN MaruCamSetCallbackFn;
 
 static uint32_t cur_fmt_idx = 0;
 static uint32_t cur_frame_idx = 0;
+
+
+/*
+ * Helper functions - converting image formats, converting values
+ */
 
 void v4lconvert_yuyv_to_yuv420(const unsigned char *src, unsigned char *dest,
 		uint32_t width, uint32_t height, uint32_t yvu);
@@ -191,13 +1061,22 @@ static long value_convert_to_guest(long min, long max, long value)
 	return ret;
 }
 
-static int STDAPICALLTYPE marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
+/*
+ * Callback function for grab frames
+ */
+static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 {
 	static uint32_t index = 0;
+	static uint32_t is_init = 1;
 	uint32_t width, height;
 	width = supported_dst_frames[cur_frame_idx].width;
 	height = supported_dst_frames[cur_frame_idx].height;
 	void *buf = g_state->vaddr + (g_state->buf_size * index);
+
+	if (is_init == 1) {
+		qemu_thread_get_self(&g_state->thread_id);
+		is_init = 0;
+	}
 
 	switch (supported_dst_pixfmts[cur_fmt_idx].fmt) {
 	case V4L2_PIX_FMT_YUV420:
@@ -216,17 +1095,374 @@ static int STDAPICALLTYPE marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 		qemu_irq_raise(g_state->dev.irq[2]);
 		g_state->req_frame = 0;
 	}
-	return 1;
+	return S_OK;
+}
+
+/*
+ * Internal functions for manipulate interfaces
+ */
+
+static STDMETHODIMP_(void) CloseInterfaces(void)
+{
+	INFO("%s\n", __func__);
+	if (g_pMediaControl)
+		g_pMediaControl->lpVtbl->Stop(g_pMediaControl);
+
+	if (g_pOutputPin)
+		g_pOutputPin->lpVtbl->Disconnect(g_pOutputPin);
+
+	SAFE_RELEASE(g_pGB);
+	SAFE_RELEASE(g_pCGB);
+	SAFE_RELEASE(g_pMediaControl);
+	SAFE_RELEASE(g_pOutputPin);
+	SAFE_RELEASE(g_pInputPin);
+	SAFE_RELEASE(g_pDstFilter);
+	SAFE_RELEASE(g_pSrcFilter);
+	SAFE_RELEASE(g_pCallback);
+}
+
+static STDMETHODIMP_(void) DeleteMediaType(AM_MEDIA_TYPE *pmt)
+{
+	INFO("%s\n", __func__);
+	if (pmt == NULL) {
+		return;
+	}
+
+	if (pmt->cbFormat != 0) {
+		CoTaskMemFree((PVOID)pmt->pbFormat);
+		pmt->cbFormat = 0;
+		pmt->pbFormat = NULL;
+	}
+	if (pmt->pUnk != NULL) {
+		pmt->pUnk->lpVtbl->Release(pmt->pUnk);
+		pmt->pUnk = NULL;
+	}
+
+	CoTaskMemFree((PVOID)pmt);
+}
+
+static STDMETHODIMP GetPin(IBaseFilter *pFilter, PIN_DIRECTION PinDir, IPin **ppPin)
+{
+	HRESULT	hr;
+	IEnumPins *pEnum = NULL;
+	IPin *pPin = NULL;
+
+	INFO("%s\n", __func__);
+
+	if (ppPin == NULL)
+	{
+		return E_POINTER;
+	}
+
+	hr = pFilter->lpVtbl->EnumPins(pFilter, &pEnum);
+	if (FAILED(hr))
+		return hr;
+
+	while(pEnum->lpVtbl->Next(pEnum, 1, &pPin, 0) == S_OK)
+	{
+		PIN_DIRECTION PinDirThis;
+		hr = pPin->lpVtbl->QueryDirection(pPin, &PinDirThis);
+		if (FAILED(hr))
+		{
+			SAFE_RELEASE(pPin);
+			SAFE_RELEASE(pEnum);
+			return hr;
+		}
+		if (PinDir == PinDirThis)
+		{
+			*ppPin = pPin;
+			SAFE_RELEASE(pEnum);
+			return S_OK;
+		}
+		SAFE_RELEASE(pPin);
+	}
+
+	SAFE_RELEASE(pEnum);
+	return S_FALSE;
+}
+
+static STDMETHODIMP GraphBuilder_Init(void)
+{
+	HRESULT hr;
+	INFO("%s\n", __func__);
+
+	hr = CoCreateInstance(&CLSID_FilterGraph, NULL, CLSCTX_INPROC, &IID_IGraphBuilder, (void**)&g_pGB);
+	if (FAILED(hr))
+		return hr;
+
+	hr = CoCreateInstance(&CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC, &IID_ICaptureGraphBuilder2, (void**)&g_pCGB);
+	if (FAILED(hr))
+		return hr;
+
+	hr = g_pCGB->lpVtbl->SetFiltergraph(g_pCGB, g_pGB);
+	if (FAILED(hr))
+		return hr;
+
+	hr = g_pGB->lpVtbl->QueryInterface(g_pGB, &IID_IMediaControl, (void **)&g_pMediaControl);
+	if (FAILED(hr))
+		return hr;
+
+	hr = HWCGrabCallback_Construct(&g_pCallback);
+	if (g_pCallback == NULL)
+		hr = E_OUTOFMEMORY;
+
+	hr = ((HWCGrabCallback*)g_pCallback)->SetCallback(g_pCallback, (CallbackFn)marucam_device_callbackfn);
+
+	return hr;
+}
+
+static STDMETHODIMP BindSourceFilter(void)
+{
+	HRESULT hr;
+	ICreateDevEnum *pCreateDevEnum = NULL;
+	IEnumMoniker *pEnumMK = NULL;
+	IMoniker *pMoniKer;
+
+	INFO("%s\n", __func__);
+	hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC, &IID_ICreateDevEnum, (void**)&pCreateDevEnum);
+	if (FAILED(hr))
+		return hr;
+
+	hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum, &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
+	if (FAILED(hr))
+	{
+		pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+		return hr;
+	}
+
+	if (!pEnumMK)
+	{
+		pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+		return E_FAIL;
+	}
+	pEnumMK->lpVtbl->Reset(pEnumMK);
+
+	hr = pEnumMK->lpVtbl->Next(pEnumMK, 1, &pMoniKer, NULL);
+	if (hr == S_FALSE)
+	{
+		hr = E_FAIL;
+	}
+	if (SUCCEEDED(hr))
+	{
+		IPropertyBag *pBag = NULL;
+		hr = pMoniKer->lpVtbl->BindToStorage(pMoniKer, 0, 0, &IID_IPropertyBag, (void **)&pBag);
+		if(SUCCEEDED(hr))
+		{
+			VARIANT var;
+			var.vt = VT_BSTR;
+			hr = pBag->lpVtbl->Read(pBag, L"FriendlyName", &var, NULL);
+			if (hr == NOERROR)
+			{
+				hr = pMoniKer->lpVtbl->BindToObject(pMoniKer, NULL, NULL, &IID_IBaseFilter, (void**)&g_pSrcFilter);
+				if (FAILED(hr))
+				{
+					ERR("Counldn't bind moniker to filter object!!\n");
+				}
+				else
+				{
+					g_pSrcFilter->lpVtbl->AddRef(g_pSrcFilter);
+				}
+				SysFreeString(var.bstrVal);
+			}
+			pBag->lpVtbl->Release(pBag);
+		}
+		pMoniKer->lpVtbl->Release(pMoniKer);
+	}
+
+	if (SUCCEEDED(hr))
+	{
+		hr = g_pGB->lpVtbl->AddFilter(g_pGB, g_pSrcFilter, L"Video Capture");
+		if (hr != S_OK && hr != S_FALSE)
+		{
+			ERR("Counldn't add Video Capture filter to our graph!\n");
+		}
+	}
+
+	return hr;
+}
+
+static STDMETHODIMP BindTargetFilter(void)
+{
+	HRESULT hr;
+	hr = HWCFilter_Construct(&g_pDstFilter);
+
+	INFO("%s\n", __func__);
+	if (SUCCEEDED(hr) && g_pDstFilter)
+	{
+		hr = g_pGB->lpVtbl->AddFilter(g_pGB, g_pDstFilter, L"HWCFilter");
+		if (FAILED(hr))
+		{
+			ERR("Counldn't add HWCFilterr to our graph!\n");
+		}
+	}
+	return hr;
+}
+
+static STDMETHODIMP ConnectFilters(void)
+{
+	HRESULT hr;
+
+	INFO("%s\n", __func__);
+	hr = GetPin(g_pSrcFilter, PINDIR_OUTPUT , &g_pOutputPin);
+	if (FAILED(hr))
+		return hr;
+
+	hr = GetPin(g_pDstFilter, PINDIR_INPUT , &g_pInputPin);
+	if (FAILED(hr))
+		return hr;
+
+	hr = g_pGB->lpVtbl->Connect(g_pGB, g_pOutputPin, g_pInputPin);
+	return hr;
+}
+
+static STDMETHODIMP SetDefaultValues(void)
+{
+	HRESULT hr;
+	IAMStreamConfig *pSConfig;
+	int iCount = 0, iSize = 0;
+
+	INFO("%s\n", __func__);
+	hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, 0, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&pSConfig);
+	if (FAILED(hr)) {
+		ERR("failed to FindInterface method\n");
+		return hr;
+	}
+
+	hr = pSConfig->lpVtbl->GetNumberOfCapabilities(pSConfig, &iCount, &iSize);
+	if (FAILED(hr))
+	{
+		ERR("failed to GetNumberOfCapabilities method\n");
+		pSConfig->lpVtbl->Release(pSConfig);
+		return hr;
+	}
+
+	if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
+	{
+		int iFormat = 0;
+		for (iFormat = 0; iFormat < iCount; iFormat++)
+		{
+			VIDEO_STREAM_CONFIG_CAPS scc;
+			AM_MEDIA_TYPE *pmtConfig;
+
+			hr = pSConfig->lpVtbl->GetStreamCaps(pSConfig, iFormat, &pmtConfig, (BYTE*)&scc);
+			if (hr == S_OK)
+			{
+				if (IsEqualIID(&pmtConfig->formattype, &FORMAT_VideoInfo))
+				{
+					VIDEOINFOHEADER* pvi = (VIDEOINFOHEADER*)pmtConfig->pbFormat;
+					if ((pvi->bmiHeader.biWidth == g_dwWidth) &&
+						(pvi->bmiHeader.biHeight == g_dwHeight) &&
+						(pvi->bmiHeader.biCompression == g_dwFourcc))
+					{
+						pvi->AvgTimePerFrame = g_dwAvgInterval;
+						hr = pSConfig->lpVtbl->SetFormat(pSConfig, pmtConfig);
+						DeleteMediaType(pmtConfig);
+						INFO("Setting default values.\n");
+						break;
+					}
+				}
+				DeleteMediaType(pmtConfig);
+			}
+		}
+	}
+	pSConfig->lpVtbl->Release(pSConfig);
+	return hr;
+}
+
+static STDMETHODIMP SetResolution(LONG width, LONG height)
+{
+	HRESULT hr;
+	IAMStreamConfig* vsc = NULL;
+	AM_MEDIA_TYPE* pmt = NULL;
+
+	INFO("%s\n", __func__);
+	hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&vsc);
+	if (FAILED(hr))
+		return hr;
+
+	hr = vsc->lpVtbl->GetFormat(vsc, &pmt);
+	if (FAILED(hr))
+	{
+		vsc->lpVtbl->Release(vsc);
+		return hr;
+	}
+
+	if (pmt != NULL)
+	{
+		if (IsEqualIID(&pmt->formattype, &FORMAT_VideoInfo))
+		{
+			VIDEOINFOHEADER* pvi = (VIDEOINFOHEADER*)pmt->pbFormat;
+			pvi->bmiHeader.biWidth = width;
+			pvi->bmiHeader.biHeight = height;
+			pvi->AvgTimePerFrame = g_dwAvgInterval;
+			pvi->bmiHeader.biSizeImage = ((width * pvi->bmiHeader.biBitCount) >> 3 ) * height;
+			hr = vsc->lpVtbl->SetFormat(vsc, pmt);
+		}
+		DeleteMediaType(pmt);
+	}
+	vsc->lpVtbl->Release(vsc);
+	return hr;
+}
+
+static STDMETHODIMP QueryVideoProcAmp(long nProperty, long *pMin, long *pMax, long *pStep, long *pDefault)
+{
+	HRESULT hr;
+	long Flags;
+	IAMVideoProcAmp *pProcAmp = NULL;
+
+	INFO("%s\n", __func__);
+
+	hr = g_pSrcFilter->lpVtbl->QueryInterface(g_pSrcFilter, &IID_IAMVideoProcAmp, (void**)&pProcAmp);
+	if (FAILED(hr)) {
+		return hr;
+	}
+
+	hr = pProcAmp->lpVtbl->GetRange(pProcAmp, nProperty, pMin, pMax, pStep, pDefault, &Flags);
+
+	SAFE_RELEASE(pProcAmp);
+	return hr;
+}
+
+static STDMETHODIMP GetVideoProcAmp(long nProperty, long *pValue)
+{
+	HRESULT hr;
+	long Flags;
+	IAMVideoProcAmp *pProcAmp = NULL;
+
+	INFO("%s\n", __func__);
+	hr = g_pSrcFilter->lpVtbl->QueryInterface(g_pSrcFilter, &IID_IAMVideoProcAmp, (void**)&pProcAmp);
+	if (FAILED(hr))
+		return hr;
+
+	hr = pProcAmp->lpVtbl->Get(pProcAmp, nProperty, pValue, &Flags);
+	if (FAILED(hr)) {
+		ERR("Failed to get property for video\n");
+	}
+
+	SAFE_RELEASE(pProcAmp);
+	return hr;
+}
+
+static STDMETHODIMP SetVideoProcAmp(long nProperty, long value)
+{
+	HRESULT hr;
+
+	IAMVideoProcAmp *pProcAmp = NULL;
+	hr = g_pSrcFilter->lpVtbl->QueryInterface(g_pSrcFilter, &IID_IAMVideoProcAmp, (void**)&pProcAmp);
+	if (FAILED(hr))
+		return hr;
+
+	hr = pProcAmp->lpVtbl->Set(pProcAmp, nProperty, value, VideoProcAmp_Flags_Manual);
+	if (FAILED(hr)) {
+		ERR("Failed to set property for video\n");
+	}
+	SAFE_RELEASE(pProcAmp);
+	return hr;
 }
 
 // MARUCAM_CMD_INIT
 void marucam_device_init(MaruCamState* state)
 {
-	MaruCamThreadInfo *thread = state->thread;
-
-	pthread_cond_init(&thread->thread_cond, NULL);
-	pthread_mutex_init(&thread->mutex_lock, NULL);
-
 	g_state = state;
 }
 
@@ -234,67 +1470,65 @@ void marucam_device_init(MaruCamState* state)
 void marucam_device_open(MaruCamState* state)
 {
 	HRESULT hr;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 	param->top = 0;
 
-	g_hInst = LoadLibrary("hwcfilter.dll");
+	INFO("%s\n", __func__);
+	CoInitialize(NULL);
 
-	if (!g_hInst) {
-		g_hInst = LoadLibrary("bin\\hwcfilter.dll");
-		if (!g_hInst) {
-			ERR("load library failed!!!!\n");
-			param->errCode = EINVAL;
-			return;
-		}
-	}
-
-	MaruCamCtrl = (CTRLFN)GetProcAddress(g_hInst, "HWCCtrl");
-	if (!MaruCamCtrl) {
-		ERR("HWCCtrl get failed!!!\n");
-		FreeLibrary(g_hInst);
-		param->errCode = EINVAL;
-		return;
-	}
-
-	MaruCamSetCallbackFn = (SETCALLBACKFN)GetProcAddress(g_hInst, "HWCSetCallback");
-	if (!MaruCamSetCallbackFn) {
-		ERR("HWCSetCallback get failed!!!\n");
-		FreeLibrary(g_hInst);
-		param->errCode = EINVAL;
-		return;
-	}
-
-	hr = MaruCamCtrl(HWC_OPEN, 0, NULL);
+	hr = GraphBuilder_Init();
 	if (FAILED(hr)) {
-		param->errCode = EINVAL;
-		FreeLibrary(g_hInst);
-		ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
-		return;
-	}
-	hr = MaruCamSetCallbackFn((CallbackFn)marucam_device_callbackfn);
-	if (FAILED(hr)) {
-		param->errCode = EINVAL;
-		MaruCamCtrl(HWC_CLOSE, 0, NULL);
-		FreeLibrary(g_hInst);
-		ERR("call back function set failed!!!, [HRESULT : 0x%x]\n", hr);
+		ERR("GraphBuilder_Init\n");
+		goto error_failed;
 	}
 
-	TRACE("camera device open success!!!, [HRESULT : 0x%x]\n", hr);
+	hr = BindSourceFilter();
+	if (FAILED(hr)) {
+		ERR("BindSourceFilter\n");
+		goto error_failed;
+	}
+
+	hr = BindTargetFilter();
+	if (FAILED(hr)) {
+		ERR("BindTargetFilter\n");
+		goto error_failed;
+	}
+
+	hr = ConnectFilters();
+	if (FAILED(hr)) {
+		ERR("ConnectFilters\n");
+		goto error_failed;
+	}
+
+	g_dwAvgInterval = 333333;
+	g_dwFourcc = MAKEFOURCC('Y','U','Y','2');
+	g_dwHeight = 480;
+	g_dwWidth = 640;
+	hr = SetDefaultValues();
+	if (hr != S_OK) {
+		ERR("SetDefaultValues\n");
+		goto error_failed;
+	}
+
+	INFO("Open successfully!!!\n");
+	return;
+
+error_failed:
+	CloseInterfaces();
+	CoUninitialize();
+	param->errCode = EINVAL;
+	ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
 }
 
 // MARUCAM_CMD_CLOSE
 void marucam_device_close(MaruCamState* state)
 {
-	HRESULT hr;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 	param->top = 0;
-	hr = MaruCamCtrl(HWC_CLOSE, 0, NULL);
-	if (FAILED(hr)) {
-		param->errCode = EINVAL;
-		ERR("camera device close failed!!!, [HRESULT : 0x%x]\n", hr);
-	}
-	FreeLibrary(g_hInst);
-	TRACE("camera device close success!!!, [HRESULT : 0x%x]\n", hr);
+
+	CloseInterfaces();
+	CoUninitialize();
+	INFO("Close successfully!!!\n");
 }
 
 // MARUCAM_CMD_START_PREVIEW
@@ -302,46 +1536,69 @@ void marucam_device_start_preview(MaruCamState* state)
 {
 	HRESULT hr;
 	uint32_t width, height;
-	MaruCamParam *param = state->thread->param;
-	TRACE("marucam_device_start_preview\n");
+	MaruCamParam *param = state->param;
 	param->top = 0;
-	hr = MaruCamCtrl(HWC_START, 0, NULL);
+
+	INFO("%s\n", __func__);
+	assert(g_pCallback != NULL);
+	hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, g_pCallback);
 	if (FAILED(hr)) {
+		ERR("Failed to set IGrabCallback interface.\n");
 		param->errCode = EINVAL;
-		ERR("start preview failed!!!, [HRESULT : 0x%x]\n", hr);
 		return;
 	}
-	pthread_mutex_lock(&state->thread->mutex_lock);
+
+	hr = g_pMediaControl->lpVtbl->Run(g_pMediaControl);
+	if (FAILED(hr)) {
+		ERR("Failed to run media control.\n");
+		param->errCode = EINVAL;
+		return;
+	}
+
+	qemu_mutex_lock(&state->thread_mutex);
 	state->streamon = 1;
-	pthread_mutex_unlock(&state->thread->mutex_lock);
+	qemu_mutex_unlock(&state->thread_mutex);
 
 	width = supported_dst_frames[cur_frame_idx].width;
 	height = supported_dst_frames[cur_frame_idx].height;
 	state->buf_size = height * ((width * supported_dst_pixfmts[cur_fmt_idx].bpp) >> 3);
+
+	INFO("Start preview!!!\n");
 }
 
 // MARUCAM_CMD_STOP_PREVIEW
 void marucam_device_stop_preview(MaruCamState* state)
 {
 	HRESULT hr;
-	MaruCamParam *param = state->thread->param;
-	TRACE("marucam_device_stop_preview\n");
+	MaruCamParam *param = state->param;
 	param->top = 0;
-	hr = MaruCamCtrl(HWC_STOP, 0, NULL);
+
+	hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, NULL);
 	if (FAILED(hr)) {
+		ERR("Failed to set IGrabCallback interface.\n");
 		param->errCode = EINVAL;
-		ERR("stop preview failed!!!, [HRESULT : 0x%x]\n", hr);
+		return;
 	}
-	pthread_mutex_lock(&state->thread->mutex_lock);
+
+	hr = g_pMediaControl->lpVtbl->Stop(g_pMediaControl);
+	if (FAILED(hr)) {
+		ERR("Failed to stop media control.\n");
+		param->errCode = EINVAL;
+		return;
+	}
+
+	qemu_mutex_lock(&state->thread_mutex);
 	state->streamon = 0;
-	pthread_mutex_unlock(&state->thread->mutex_lock);
+	qemu_mutex_unlock(&state->thread_mutex);
 	state->buf_size = 0;
+
+	INFO("Stop preview!!!\n");
 }
 
 // MARUCAM_CMD_S_PARAM
 void marucam_device_s_param(MaruCamState* state)
 {
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	TRACE("setting fps : %d/%d\n", param->stack[0], param->stack[1]);
@@ -350,7 +1607,7 @@ void marucam_device_s_param(MaruCamState* state)
 // MARUCAM_CMD_G_PARAM
 void marucam_device_g_param(MaruCamState* state)
 {
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	TRACE("getting fps : 30/1\n");
@@ -364,7 +1621,7 @@ void marucam_device_g_param(MaruCamState* state)
 void marucam_device_s_fmt(MaruCamState* state)
 {
 	uint32_t width, height, pixfmt, pidx, fidx;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	width = param->stack[0];		// width
@@ -393,14 +1650,13 @@ void marucam_device_s_fmt(MaruCamState* state)
 
 	if ((supported_dst_frames[cur_frame_idx].width != width) &&
 			(supported_dst_frames[cur_frame_idx].height != height)) {
-		HWCParam inParam = {0,};
-		inParam.val1 = width;
-		inParam.val2 = height;
-		HRESULT hr = MaruCamCtrl(HWC_S_FMT, sizeof(HWCParam), &inParam);
+		HRESULT hr = SetResolution((LONG)width, (LONG)height);
 		if (FAILED(hr)) {
 			param->errCode = EINVAL;
 			return;
 		}
+		g_dwWidth = (LONG)width;
+		g_dwHeight = (LONG)height;
 	}
 
 	param->stack[0] = width;
@@ -415,12 +1671,14 @@ void marucam_device_s_fmt(MaruCamState* state)
 
 	cur_frame_idx = fidx;
 	cur_fmt_idx = pidx;
+
+	TRACE("Set format...\n");
 }
 
 // MARUCAM_CMD_G_FMT
 void marucam_device_g_fmt(MaruCamState* state)
 {
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 
@@ -433,12 +1691,14 @@ void marucam_device_g_fmt(MaruCamState* state)
 	param->stack[5] = param->stack[1] * param->stack[4];	// height * bytesperline
 	param->stack[6] = 0;
 	param->stack[7] = 0;
+
+	TRACE("Get format...\n");
 }
 
 void marucam_device_try_fmt(MaruCamState* state)
 {
 	uint32_t width, height, pixfmt, i;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	width = param->stack[0];		// width
@@ -479,7 +1739,7 @@ void marucam_device_try_fmt(MaruCamState* state)
 void marucam_device_enum_fmt(MaruCamState* state)
 {
 	uint32_t index;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	index = param->stack[0];
@@ -508,9 +1768,9 @@ void marucam_device_qctrl(MaruCamState* state)
 {
 	HRESULT hr;
 	uint32_t id, i;
-	HWCParam inParam = {0,};
+	long property, min, max, step, def_val, set_val;
 	char name[32] = {0,};
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	id = param->stack[0];
@@ -518,25 +1778,25 @@ void marucam_device_qctrl(MaruCamState* state)
 	switch (id) {
 	case V4L2_CID_BRIGHTNESS:
 		TRACE("V4L2_CID_BRIGHTNESS\n");
-		inParam.val1 = VideoProcAmp_Brightness;
+		property = VideoProcAmp_Brightness;
 		memcpy((void*)name, (void*)"brightness", 32);
 		i = 0;
 		break;
 	case V4L2_CID_CONTRAST:
 		TRACE("V4L2_CID_CONTRAST\n");
-		inParam.val1 = VideoProcAmp_Contrast;
+		property = VideoProcAmp_Contrast;
 		memcpy((void*)name, (void*)"contrast", 32);
 		i = 1;
 		break;
 	case V4L2_CID_SATURATION:
 		TRACE("V4L2_CID_SATURATION\n");
-		inParam.val1 = VideoProcAmp_Saturation;
+		property = VideoProcAmp_Saturation;
 		memcpy((void*)name, (void*)"saturation", 32);
 		i = 2;
 		break;
 	case V4L2_CID_SHARPNESS:
 		TRACE("V4L2_CID_SHARPNESS\n");
-		inParam.val1 = VideoProcAmp_Sharpness;
+		property = VideoProcAmp_Sharpness;
 		memcpy((void*)name, (void*)"sharpness", 32);
 		i = 3;
 		break;
@@ -544,24 +1804,24 @@ void marucam_device_qctrl(MaruCamState* state)
 		param->errCode = EINVAL;
 		return;
 	}
-	hr = MaruCamCtrl(HWC_QCTRL, sizeof(inParam), &inParam);
+	hr = QueryVideoProcAmp(property, &min, &max, &step, &def_val);
 	if (FAILED(hr)) {
 		param->errCode = EINVAL;
 		ERR("failed to query video controls [HRESULT : 0x%x]\n", hr);
 		return;
 	} else {
 		qctrl_tbl[i].hit = 1;
-		qctrl_tbl[i].min = inParam.val2;
-		qctrl_tbl[i].max = inParam.val3;
-		qctrl_tbl[i].step = inParam.val4;
-		qctrl_tbl[i].init_val = inParam.val5;
+		qctrl_tbl[i].min = min;
+		qctrl_tbl[i].max = max;
+		qctrl_tbl[i].step = step;
+		qctrl_tbl[i].init_val = def_val;
 
 		if ((qctrl_tbl[i].min + qctrl_tbl[i].max) == 0) {
-			inParam.val2 = 0;
+			set_val = 0;
 		} else {
-			inParam.val2 = (qctrl_tbl[i].min + qctrl_tbl[i].max) / 2;
+			set_val = (qctrl_tbl[i].min + qctrl_tbl[i].max) / 2;
 		}
-		hr = MaruCamCtrl(HWC_S_CTRL, sizeof(inParam), &inParam);
+		hr = SetVideoProcAmp(property, set_val);
 		if (FAILED(hr)) {
 			param->errCode = EINVAL;
 			ERR("failed to set video control value, [HRESULT : 0x%x]\n", hr);
@@ -583,35 +1843,35 @@ void marucam_device_s_ctrl(MaruCamState* state)
 {
 	HRESULT hr;
 	uint32_t i;
-	HWCParam inParam = {0,};
-	MaruCamParam *param = state->thread->param;
+	long property, set_val;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 
 	switch (param->stack[0]) {
 	case V4L2_CID_BRIGHTNESS:
 		i = 0;
-		inParam.val1 = VideoProcAmp_Brightness;
+		property = VideoProcAmp_Brightness;
 		break;
 	case V4L2_CID_CONTRAST:
 		i = 1;
-		inParam.val1 = VideoProcAmp_Contrast;
+		property = VideoProcAmp_Contrast;
 		break;
 	case V4L2_CID_SATURATION:
 		i = 2;
-		inParam.val1 = VideoProcAmp_Saturation;
+		property = VideoProcAmp_Saturation;
 		break;
 	case V4L2_CID_SHARPNESS:
 		i = 3;
-		inParam.val1 = VideoProcAmp_Sharpness;
+		property = VideoProcAmp_Sharpness;
 		break;
 	default:
 		param->errCode = EINVAL;
 		return;
 	}
-	inParam.val2 = value_convert_from_guest(qctrl_tbl[i].min,
+	set_val = value_convert_from_guest(qctrl_tbl[i].min,
 			qctrl_tbl[i].max, (long)param->stack[1]);
-	hr = MaruCamCtrl(HWC_S_CTRL, sizeof(inParam), &inParam);
+	hr = SetVideoProcAmp(property, set_val);
 	if (FAILED(hr)) {
 		param->errCode = EINVAL;
 		ERR("failed to set video control value, [HRESULT : 0x%x]\n", hr);
@@ -623,46 +1883,46 @@ void marucam_device_g_ctrl(MaruCamState* state)
 {
 	HRESULT hr;
 	uint32_t i;
-	HWCParam inParam = {0,};
-	MaruCamParam *param = state->thread->param;
+	long property, get_val;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	switch (param->stack[0]) {
 	case V4L2_CID_BRIGHTNESS:
 		i = 0;
-		inParam.val1 = VideoProcAmp_Brightness;
+		property = VideoProcAmp_Brightness;
 		break;
 	case V4L2_CID_CONTRAST:
 		i = 1;
-		inParam.val1 = VideoProcAmp_Contrast;
+		property = VideoProcAmp_Contrast;
 		break;
 	case V4L2_CID_SATURATION:
 		i = 2;
-		inParam.val1 = VideoProcAmp_Saturation;
+		property = VideoProcAmp_Saturation;
 		break;
 	case V4L2_CID_SHARPNESS:
 		i = 3;
-		inParam.val1 = VideoProcAmp_Sharpness;
+		property = VideoProcAmp_Sharpness;
 		break;
 	default:
 		param->errCode = EINVAL;
 		return;
 	}
 
-	hr = MaruCamCtrl(HWC_G_CTRL, sizeof(inParam), &inParam);
+	hr = GetVideoProcAmp(property, &get_val);
 	if (FAILED(hr)) {
 		param->errCode = EINVAL;
 		ERR("failed to get video control value!!!, [HRESULT : 0x%x]\n", hr);
 		return;
 	}
 	param->stack[0] = (uint32_t)value_convert_to_guest(qctrl_tbl[i].min,
-				qctrl_tbl[i].max, inParam.val2);
+				qctrl_tbl[i].max, get_val);
 }
 
 void marucam_device_enum_fsizes(MaruCamState* state)
 {
 	uint32_t index, pixfmt, i;
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 	index = param->stack[0];
@@ -688,7 +1948,7 @@ void marucam_device_enum_fsizes(MaruCamState* state)
 
 void marucam_device_enum_fintv(MaruCamState* state)
 {
-	MaruCamParam *param = state->thread->param;
+	MaruCamParam *param = state->param;
 
 	param->top = 0;
 
