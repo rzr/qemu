@@ -39,10 +39,13 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.swt.widgets.Display;
+import org.tizen.emulator.skin.EmulatorSkin.SkinReopenPolicy;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.ConfigPropertiesConstants;
+import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.ImageRegistry;
@@ -101,7 +104,12 @@ public class EmulatorSkinMain {
 			EmulatorConfig config = new EmulatorConfig( argsMap, dbiContents, skinProperties, skinPropFilePath,
 					configProperties );
 
-			EmulatorSkin skin = new EmulatorSkin( config );
+			ImageRegistry.getInstance().initialize( config );
+			
+			String onTopVal = config.getSkinProperty( SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString() );
+			boolean isOnTop = Boolean.parseBoolean( onTopVal );
+
+			EmulatorSkin skin = new EmulatorSkin( config, isOnTop );
 			int windowHandleId = skin.compose();
 
 			int uid = Integer.parseInt( config.getArg( ArgsConstants.UID ) );
@@ -117,9 +125,29 @@ public class EmulatorSkinMain {
 
 				Thread communicatorThread = new Thread( communicator );
 				communicatorThread.start();
+				
+				SkinReopenPolicy reopenPolicy = skin.open();
+				
+				while( true ) {
 
-				skin.open();
+					if( null != reopenPolicy ) {
+						
+						if( reopenPolicy.isReopen() ) {
+							
+							EmulatorSkin reopenSkin = reopenPolicy.getReopenSkin();
+							logger.info( "Reopen skin dialog." );
+							reopenPolicy = reopenSkin.open();
+							
+						}else {
+							break;
+						}
+						
+					}else {
+						break;
+					}
 
+				}
+				
 			} else {
 				logger.severe( "CommSocket is null." );
 			}
@@ -133,6 +161,8 @@ public class EmulatorSkinMain {
 			}
 
 		} finally {
+			ImageRegistry.getInstance().dispose();
+			Display.getDefault().close();
 			SkinLogger.end();
 		}
 
@@ -281,7 +311,5 @@ public class EmulatorSkinMain {
 		return properties;
 
 	}
-
-	
 	
 }

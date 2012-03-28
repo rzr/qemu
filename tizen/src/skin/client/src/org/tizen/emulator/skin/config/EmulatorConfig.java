@@ -68,6 +68,7 @@ public class EmulatorConfig {
 		public static final String WINDOW_Y = "window.y";
 		public static final String WINDOW_ROTATION = "window.rotate";
 		public static final String WINDOW_SCALE = "window.scale";
+		public static final String WINDOW_ONTOP = "window.ontop"; // always on top
 	}
 
 	public interface ConfigPropertiesConstants {

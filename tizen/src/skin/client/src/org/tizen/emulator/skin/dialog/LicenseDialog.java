@@ -58,10 +58,10 @@ public class LicenseDialog extends SkinDialog {
 	
 	private Logger logger = SkinLogger.getSkinLogger( LicenseDialog.class ).getLogger();
 
-	public LicenseDialog( Shell parent, String title, int style ) {
+	public LicenseDialog( Shell parent, String title ) {
 		// FIXME resizable
-		// super( parent, title, style | SWT.MAX | SWT.RESIZE );
-		super( parent, title, style );
+		// super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.MAX | SWT.RESIZE );
+		super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 	}
 
 	@Override
