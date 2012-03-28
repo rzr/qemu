@@ -44,6 +44,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
+
 #define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
 #define CLOSE_POWER_KEY_INTERVAL 1200 // milli-seconds
 
@@ -72,9 +73,9 @@ void do_mouse_event( int event_type, int x, int y, int z )
     }
 
 #ifdef _WIN32
-        Sleep(1);
+    Sleep(1);
 #else
-        usleep(1000);
+    usleep(1000);
 #endif
 }
 

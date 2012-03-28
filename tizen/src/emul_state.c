@@ -144,9 +144,9 @@ int get_host_lock_key_state(int key)
 
 
     if (key == HOST_CAPSLOCK_KEY) {
-        return (state & 0x01) != NULL;
+        return (state & 0x01) != 0;
     } else if (key == HOST_NUMLOCK_KEY) {
-        return (state & 0x02) != NULL;
+        return (state & 0x02) != 0;
     }
 
     return -1;

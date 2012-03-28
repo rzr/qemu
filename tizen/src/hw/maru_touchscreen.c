@@ -35,36 +35,42 @@
 MULTI_DEBUG_CHANNEL(qemu, touchscreen);
 
 
-#define MAX_TOUCH_EVENT_CNT  256
+#define MAX_TOUCH_EVENT_CNT  128
+
+static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static QTAILQ_HEAD(, TouchEventEntry) events_queue =
     QTAILQ_HEAD_INITIALIZER(events_queue);
 
-static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int event_cnt = 0;
+static unsigned int event_cnt = 0;
+static unsigned int _processed_buf_cnt = 0;
+static TouchEventEntry _event_buf[MAX_TOUCH_EVENT_CNT];
 
 static void usb_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state)
 {
     TouchEventEntry *te;
     USBTouchscreenState *s = opaque;
 
-    te = g_malloc0(sizeof(TouchEventEntry));
+    pthread_mutex_lock(&event_mutex);
+    if (event_cnt >= MAX_TOUCH_EVENT_CNT) {
+        pthread_mutex_unlock(&event_mutex);
+        INFO("full touch event queue, lose event\n", event_cnt);
+        return;
+    }
+
+    //using prepared memory
+    te = &(_event_buf[_processed_buf_cnt % MAX_TOUCH_EVENT_CNT]);
+    _processed_buf_cnt++;
+
+    /* mouse event is copied into the packet */
+    te->index = ++event_cnt;
     te->queue_packet.x = x; //(x * TOUCHSCREEN_RESOLUTION_X / 0x7FFF);
     te->queue_packet.y = y; //(y * TOUCHSCREEN_RESOLUTION_Y / 0x7FFF);
     te->queue_packet.z = z;
     te->queue_packet.state = buttons_state;
 
-    pthread_mutex_lock(&event_mutex);
-    if (event_cnt > MAX_TOUCH_EVENT_CNT) {
-        pthread_mutex_unlock(&event_mutex);
-        INFO("full touch event queue, lose event\n", event_cnt);
-        return;
-    }
-    te->index = ++event_cnt;
-
     QTAILQ_INSERT_TAIL(&events_queue, te, node);
     s->changed = 1;
-
     pthread_mutex_unlock(&event_mutex);
 
     TRACE("touch event (%d) : x=%d, y=%d, z=%d, state=%d\n", te->index, x, y, z, buttons_state);
@@ -117,8 +123,9 @@ static void usb_touchscreen_handle_reset(USBDevice *dev)
     s->buttons_state = 0;
 
     event_cnt = 0;
+    _processed_buf_cnt = 0;
 
-     pthread_mutex_unlock(&event_mutex);
+    pthread_mutex_unlock(&event_mutex);
 }
 
 static int usb_touchscreen_handle_control(USBDevice *dev, USBPacket *p,
@@ -156,8 +163,6 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
                     event_cnt--;
                     TRACE("processed touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
                         te->index, s->dx, s->dy, s->dz, s->buttons_state);
-
-                    g_free(te);
 
                     if (QTAILQ_EMPTY(&events_queue)) {
                         s->changed = 0;
