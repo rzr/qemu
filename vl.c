@@ -3177,6 +3177,12 @@ int main(int argc, char **argv, char **envp)
 		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
 	}
 	
+	// To check host gl driver capability and notify to guest.
+	gchar *tmp = kernel_cmdline;
+	kernel_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
+	fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
+	g_free(tmp);
+
 	if (enable_gl) {
 		device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
 		qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
