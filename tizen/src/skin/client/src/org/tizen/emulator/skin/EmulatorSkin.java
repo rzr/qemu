@@ -904,21 +904,20 @@ public class EmulatorSkin {
 				String portNumber = StringUtil.nvl( config.getArg( ArgsConstants.NET_BASE_PORT ) );
 
 				if ( !StringUtil.isEmpty( portNumber ) && !StringUtil.isEmpty( portNumber ) ) {
-					int portSdb = Integer.parseInt( portNumber ) + 1;
+					int portSdb = Integer.parseInt( portNumber );
 
-					ProcessBuilder procConnect = new ProcessBuilder( sdbPath, "connect", "localhost:" + portSdb );
 					ProcessBuilder procSdb = new ProcessBuilder();
 
 					if ( SkinUtil.isLinuxPlatform() ) {
 						procSdb.command( "/usr/bin/gnome-terminal", "--disable-factory",
-								"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "localhost:"
+								"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
 										+ portSdb, "shell" );
 					} else if ( SkinUtil.isWindowsPlatform() ) {
-						procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "localhost:" + portSdb, "shell" );
+						procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
 					}
+					logger.log( Level.INFO, procSdb.command().toString() );
 
 					try {
-						procConnect.start(); // connect with sdb
 						procSdb.start(); // open sdb shell
 					} catch ( Exception ee ) {
 						logger.log( Level.SEVERE, ee.getMessage(), ee );
@@ -1182,21 +1181,6 @@ public class EmulatorSkin {
 	public void shutdown() {
 
 		isShutdownRequested = true;
-
-		/* disconnect with sdb */
-		String sdbPath = SkinUtil.getSdbPath();
-		String portNumber = StringUtil.nvl( config.getArg( ArgsConstants.NET_BASE_PORT ) );
-
-		if ( !StringUtil.isEmpty( portNumber ) && !StringUtil.isEmpty( portNumber ) ) {
-			int portSdb = Integer.parseInt( portNumber ) + 1;
-
-			ProcessBuilder procDisconnect = new ProcessBuilder( sdbPath, "connect", "localhost:" + portSdb );
-			try {
-				procDisconnect.start();
-			} catch ( IOException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
-			}
-		}
 
 		if ( !this.shell.isDisposed() ) {
 			this.shell.getDisplay().asyncExec( new Runnable() {
