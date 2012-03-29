@@ -237,7 +237,20 @@ public class SocketCommunicator implements ICommunicator {
 						dataTransfer.notifyAll();
 					}
 
-					logger.info( "finish receiving data from QEMU." );
+					logger.info( "finish receiving image data from QEMU." );
+
+					break;
+				}
+				case DETAIL_INFO_DATA: {
+					logger.info( "received DETAIL_INFO_DATA from QEMU." );
+
+					synchronized ( dataTransfer ) {
+						byte[] infoData = readData( dis, length );
+						dataTransfer.setData( infoData );
+						dataTransfer.notifyAll();
+					}
+
+					logger.info( "finish receiving info data from QEMU." );
 
 					break;
 				}

@@ -74,7 +74,7 @@ public class AboutDialog extends SkinDialog {
 	private Composite displayInfo( Composite parent ) {
 
 		Composite composite = new Composite( parent, SWT.NONE );
-
+		
 		composite.setLayout( new GridLayout( 1, false ) );
 
 		Label titleLabel = new Label( composite, SWT.NONE );

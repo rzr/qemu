@@ -53,14 +53,14 @@ public abstract class SkinDialog extends Dialog {
 	private Shell parent;
 	private String title;
 	private int style;
-
+	
 	public SkinDialog( Shell parent, String title, int style ) {
 		super( parent, style );
 		this.parent = parent;
 		this.title = title;
 		this.style = style;
 	}
-
+	
 	public void open() {
 
 		shell = new Shell( parent, style );
@@ -71,13 +71,14 @@ public abstract class SkinDialog extends Dialog {
 		shell.setLayout( new GridLayout( 1, true ) );
 
 		Composite parent = new Composite( shell, SWT.NONE );
+		parent.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 		GridLayout gridLayout = new GridLayout( 1, true );
 		gridLayout.marginWidth = 20;
 		parent.setLayout( gridLayout );
 
 		Composite composite = new Composite( parent, SWT.NONE );
-		composite.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ) );
-		composite.setLayout( new GridLayout( 1, true ) );
+		composite.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
+		composite.setLayout( new FillLayout( SWT.VERTICAL ) );
 
 		Composite area = createArea( composite );
 		if ( null == area ) {
@@ -87,13 +88,15 @@ public abstract class SkinDialog extends Dialog {
 		isReady = true;
 
 		buttonComposite = new Composite( parent, SWT.NONE );
-		buttonComposite.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ) );
+		buttonComposite.setLayoutData( new GridData( SWT.FILL, SWT.CENTER, true, false ) );
 		buttonComposite.setLayout( new FillLayout( SWT.HORIZONTAL ) );
 
 		createButtons( buttonComposite );
 		
 		shell.pack();
 
+		setShellSize();
+		
 		if ( !isReady ) {
 			return;
 		}
@@ -108,6 +111,9 @@ public abstract class SkinDialog extends Dialog {
 
 	}
 
+	protected void setShellSize() {
+	}
+	
 	protected abstract Composite createArea( Composite parent );
 
 	protected void createButtons( Composite parent ) {

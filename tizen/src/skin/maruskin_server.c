@@ -76,6 +76,7 @@ enum {
     RECV_OPEN_SHELL = 14,
     RECV_USB_KBD = 15,
     RECV_SCREEN_SHOT = 16,
+    RECV_DETAIL_INFO = 17,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
@@ -84,6 +85,7 @@ enum {
 enum {
     SEND_HEART_BEAT = 1,
     SEND_SCREEN_SHOT = 2,
+    SEND_DETAIL_INFO = 3,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
@@ -103,6 +105,9 @@ static pthread_mutex_t mutex_heartbeat = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond_heartbeat = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
 
+static int qmu_argc = 0;
+static char** qmu_argv = NULL;
+
 static void* run_skin_server( void* args );
 static int recv_n( int client_sock, char* read_buf, int recv_len );
 static int send_skin_header_only( int client_sock, short send_cmd );
@@ -113,7 +118,7 @@ static void* do_heart_beat( void* args );
 static int start_heart_beat( int client_sock );
 static void stop_heart_beat( void );
 
-int start_skin_server( int argc, char** argv ) {
+int start_skin_server( int argc, char** argv, int qemu_argc, char** qemu_argv ) {
 
     int i;
     for( i = 0; i < argc; i++ ) {
@@ -144,6 +149,9 @@ int start_skin_server( int argc, char** argv ) {
     }
 
     INFO( "ignore_heartbeat:%d\n", ignore_heartbeat );
+
+    qmu_argc = qemu_argc;
+    qmu_argv = qemu_argv;
 
     QemuThread qemu_thread;
 
@@ -529,6 +537,16 @@ static void* run_skin_server( void* args ) {
                         ERR( "Fail to get screenshot data.\n" );
                     }
 
+                    break;
+                }
+                case RECV_DETAIL_INFO: {
+                    log_cnt += sprintf( log_buf + log_cnt, "RECV_DETAIL_INFO ==\n" );
+                    TRACE( log_buf );
+
+                    char* info_data = get_detail_info( qmu_argc, qmu_argv );
+                    int len = strlen( info_data );
+                    send_skin_data( client_sock, SEND_DETAIL_INFO, (unsigned char*)info_data, len, 0 );
+                    free_detail_info( info_data );
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {

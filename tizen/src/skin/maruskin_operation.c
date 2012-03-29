@@ -48,6 +48,8 @@ MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 #define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
 #define CLOSE_POWER_KEY_INTERVAL 1200 // milli-seconds
 
+#define DATA_DELIMITER "#"
+
 void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
 {
     INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
@@ -259,9 +261,45 @@ void free_screenshot_info( QemuSurfaceInfo* info ) {
     }
 }
 
-void open_shell(void)
-{
-    //TODO
+char* get_detail_info( int qemu_argc, char** qemu_argv ) {
+
+    int i;
+    int total_len = 0;
+
+    int delimiter_len = strlen( DATA_DELIMITER );
+
+    for ( i = 0; i < qemu_argc; i++ ) {
+        total_len += strlen( qemu_argv[i] );
+        total_len += delimiter_len;
+    }
+
+    char* info_data = g_malloc0( total_len );
+
+    int len = 0;
+    total_len = 0;
+
+    for ( i = 0; i < qemu_argc; ++i ) {
+
+        len = strlen( qemu_argv[i] );
+        sprintf( info_data + total_len, "%s", qemu_argv[i] );
+        sprintf( info_data + total_len + len, "%s", DATA_DELIMITER );
+
+        total_len += len;
+        total_len += delimiter_len;
+
+    }
+
+    return info_data;
+
+}
+
+void free_detail_info( char* detail_info ) {
+    if ( detail_info ) {
+        g_free( detail_info );
+    }
+}
+
+void open_shell( void ) {
 }
 
 void onoff_usb_kbd( int on )

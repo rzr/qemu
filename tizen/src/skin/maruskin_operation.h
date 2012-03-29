@@ -50,6 +50,10 @@ void do_rotation_event( int rotation_type );
 
 QemuSurfaceInfo* get_screenshot_info( void );
 
+char* get_detail_info( int qemu_argc, char** qemu_argv );
+
+void free_detail_info( char* detail_info );
+
 void free_screenshot_info( QemuSurfaceInfo* );
 
 void open_shell(void);

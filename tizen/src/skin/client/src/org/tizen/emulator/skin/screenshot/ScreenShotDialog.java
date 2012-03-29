@@ -348,7 +348,7 @@ public class ScreenShotDialog {
 	private void makeMenuBar( final Shell shell ) {
 
 		ToolBar toolBar = new ToolBar( shell, SWT.HORIZONTAL );
-		GridData gridData = new GridData( GridData.FILL_HORIZONTAL );
+		GridData gridData = new GridData( GridData.FILL_HORIZONTAL, GridData.CENTER, true, false );
 		toolBar.setLayoutData( gridData );
 		
 		ToolItem saveItem = new ToolItem( toolBar, SWT.FLAT );

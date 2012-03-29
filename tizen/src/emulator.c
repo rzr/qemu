@@ -65,6 +65,10 @@ int tizen_base_port = 0;
 char tizen_target_path[MAXLEN] = {0, };
 char logpath[MAXLEN] = { 0, };
 
+static int skin_argc = 0;
+static char** skin_argv = NULL;
+static int qemu_argc = 0;
+static char** qemu_argv = NULL;
 
 void exit_emulator(void)
 {
@@ -77,11 +81,11 @@ void exit_emulator(void)
     SDL_Quit();
 }
 
-static void construct_main_window(int skin_argc, char* skin_argv[])
+static void construct_main_window(int skin_argc, char* skin_argv[], int qemu_argc, char* qemu_argv[] )
 {
     INFO("construct main window\n");
 
-    start_skin_server( skin_argc, skin_argv );
+    start_skin_server( skin_argc, skin_argv, qemu_argc, qemu_argv );
 #if 1
     if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
         exit( -1 );
@@ -190,9 +194,6 @@ void extract_info(int qemu_argc, char** qemu_argv)
     tizen_base_port = get_sdb_base_port();
 }
 
-static int skin_argc = 0;
-static char** skin_argv = NULL;
-
 void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
@@ -201,7 +202,7 @@ void prepare_maru(void)
 
     INFO("call construct_main_window\n");
 
-    construct_main_window(skin_argc, skin_argv);
+    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv );
 
     //TODO get port number by args from emulator manager
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
@@ -214,8 +215,6 @@ int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
 {
-    int qemu_argc = 0;
-    char** qemu_argv = NULL;
     
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
     socket_init();

@@ -152,6 +152,7 @@ public interface ICommunicator extends Runnable {
 		OPEN_SHELL( (short)14 ),
 		USB_KBD( (short)15 ),
 		SCREEN_SHOT( (short)16 ),
+		DETAIL_INFO( (short)17 ),
 		
 		RESPONSE_HEART_BEAT( (short)900 ),
 		CLOSE( (short)998 ),
@@ -188,6 +189,7 @@ public interface ICommunicator extends Runnable {
 		
 		HEART_BEAT( (short)1 ),
 		SCREEN_SHOT_DATA( (short)2 ),
+		DETAIL_INFO_DATA( (short)3 ),
 		SENSOR_DAEMON_START( (short)800 ),
 		SHUTDOWN( (short)999 );
 		

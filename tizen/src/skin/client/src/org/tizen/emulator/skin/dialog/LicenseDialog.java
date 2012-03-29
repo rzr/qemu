@@ -55,37 +55,35 @@ import org.tizen.emulator.skin.util.StringUtil;
 public class LicenseDialog extends SkinDialog {
 
 	public static final String LICENSE_FILE_PATH = "../license/Open_Source_Announcement.txt";
-	
+
 	private Logger logger = SkinLogger.getSkinLogger( LicenseDialog.class ).getLogger();
 
 	public LicenseDialog( Shell parent, String title ) {
-		// FIXME resizable
-		// super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.MAX | SWT.RESIZE );
-		super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+		super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE );
 	}
 
 	@Override
 	protected Composite createArea( Composite parent ) {
 
-		shell.setSize( 400, 300 );
-
 		Composite composite = new Composite( parent, SWT.NONE );
 		composite.setLayout( new GridLayout() );
 
 		final Text text = new Text( composite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI );
-		GridData gridData = new GridData( GridData.FILL_BOTH );
-		gridData.widthHint = (int) ( 400 * 1.618 );
-		gridData.heightHint = 400;
+		GridData gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
 		text.setLayoutData( gridData );
 
 		text.setEditable( false );
 		text.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WHITE ) );
-
 		String license = StringUtil.nvl( getLicense() );
 		text.setText( license );
 
 		return composite;
 
+	}
+
+	@Override
+	protected void setShellSize() {
+		shell.setSize( (int) ( 400 * 1.618 ), 400 );
 	}
 
 	@Override

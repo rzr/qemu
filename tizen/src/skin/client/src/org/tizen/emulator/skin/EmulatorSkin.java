@@ -86,6 +86,7 @@ import org.tizen.emulator.skin.dbi.ColorsType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
+import org.tizen.emulator.skin.dialog.DetailInfoDialog;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
@@ -829,17 +830,20 @@ public class EmulatorSkin {
 
 	private void addMenuItems( final Shell shell, final Menu menu ) {
 
-		final MenuItem deviceInfoItem = new MenuItem( menu, SWT.PUSH );
+		final MenuItem detailInfoItem = new MenuItem( menu, SWT.PUSH );
 
 		String emulatorName = SkinUtil.makeEmulatorName( config );
-		deviceInfoItem.setText( emulatorName );
-		deviceInfoItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.DETAIL_INFO ) );
-		deviceInfoItem.addSelectionListener( new SelectionAdapter() {
+		detailInfoItem.setText( emulatorName );
+		detailInfoItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.DETAIL_INFO ) );
+		detailInfoItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "Open device info" );
+					logger.fine( "Open detail info" );
 				}
+				String emulatorName = SkinUtil.makeEmulatorName( config );
+				DetailInfoDialog detailInfoDialog = new DetailInfoDialog( shell, emulatorName, communicator, config );
+				detailInfoDialog.open();
 			}
 		} );
 
