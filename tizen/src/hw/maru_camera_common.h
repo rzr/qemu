@@ -32,7 +32,7 @@
 #include "pci.h"
 #include "qemu-thread.h"
 
-#define MARUCAM_MAX_PARAM	 20
+#define MARUCAM_MAX_PARAM    20
 
 /* must sync with GUEST camera_driver */
 #define MARUCAM_CMD_INIT           0x00
@@ -62,30 +62,30 @@ typedef struct MaruCamState MaruCamState;
 typedef struct MaruCamParam MaruCamParam;
 
 struct MaruCamParam {
-	uint32_t	top;
-	uint32_t	retVal;
-	uint32_t	errCode;
-	uint32_t	stack[MARUCAM_MAX_PARAM];
+    uint32_t    top;
+    uint32_t    retVal;
+    uint32_t    errCode;
+    uint32_t    stack[MARUCAM_MAX_PARAM];
 };
 
 struct MaruCamState {
-	PCIDevice           dev;
-	MaruCamParam        *param;
-	QemuThread          thread_id;
-	QemuMutex           thread_mutex;;
-	QemuCond            thread_cond;
+    PCIDevice           dev;
+    MaruCamParam        *param;
+    QemuThread          thread_id;
+    QemuMutex           thread_mutex;;
+    QemuCond            thread_cond;
 
-	void                *vaddr;		/* vram ptr */
-	uint32_t            streamon;
-	uint32_t            buf_size;
-	uint32_t            req_frame;
+    void                *vaddr;     /* vram ptr */
+    uint32_t            streamon;
+    uint32_t            buf_size;
+    uint32_t            req_frame;
 
     MemoryRegion        vram;
     MemoryRegion        mmio;
 };
 
 /* ----------------------------------------------------------------------------- */
-/* Fucntion prototype 						                                     */
+/* Fucntion prototype                                                            */
 /* ----------------------------------------------------------------------------- */
 void marucam_device_init(MaruCamState *state);
 void marucam_device_open(MaruCamState *state);
@@ -105,4 +105,4 @@ void marucam_device_enum_fsizes(MaruCamState *state);
 void marucam_device_enum_fintv(MaruCamState *state);
 
 
-#endif	/* _MARU_CAMERA_COMMON_H_ */
+#endif  /* _MARU_CAMERA_COMMON_H_ */
