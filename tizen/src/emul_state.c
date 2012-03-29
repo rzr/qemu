@@ -131,7 +131,7 @@ MultiTouchState *get_emul_multi_touch_state(void)
     return &(_emul_state.qemu_mts);
 }
 
-/* get host key state */
+/* retrieves the status of the host lock key */
 int get_host_lock_key_state(int key)
 {
 #if defined( __linux__)
@@ -151,7 +151,15 @@ int get_host_lock_key_state(int key)
 
     return -1;
 #elif defined(_WIN32)
-    //TODO:
+    int nVirtKey = 0;
+
+    if (key == HOST_CAPSLOCK_KEY) {
+        nVirtKey = VK_CAPITAL;
+    } else if (key == HOST_NUMLOCK_KEY) {
+        nVirtKey = VK_NUMLOCK;
+    }
+
+    return (GetKeyState(nVirtKey) & 1) != 0;
 #endif
 
     return 0;
