@@ -153,10 +153,16 @@ static int __v4l2_grab(MaruCamState *state)
 		return 0;
 	}
 
-	if (!v4l2_fd) {
+	if (!v4l2_fd || (v4l2_fd == -1)) {
 		WARN("file descriptor is closed or not opened \n");
 		return -1;
 	}
+
+       qemu_mutex_lock(&state->thread_mutex);
+       ret = state->streamon;
+       qemu_mutex_unlock(&state->thread_mutex);
+       if (!ret)
+              return -1;
 
 	buf = state->vaddr + (state->buf_size * index);
 	ret = v4l2_read(v4l2_fd, buf, state->buf_size);
@@ -219,6 +225,7 @@ wait_worker_thread:
 			}
 		} else {
 			qemu_mutex_unlock(&state->thread_mutex);
+			INFO("...... Streaming off\n");
 			goto wait_worker_thread;
 		}
 	}
@@ -237,7 +244,7 @@ void marucam_device_open(MaruCamState* state)
 	MaruCamParam *param = state->param;
 
 	param->top = 0;
-	v4l2_fd = v4l2_open("/dev/video0", O_RDWR | O_NONBLOCK);
+	v4l2_fd = v4l2_open("/dev/video0", O_RDWR);
 	if (v4l2_fd < 0) {
 		ERR("v4l2 device open failed.(/dev/video0)\n");
 		param->errCode = EINVAL;
@@ -269,16 +276,22 @@ void marucam_device_start_preview(MaruCamState* state)
 	state->buf_size = dst_fmt.fmt.pix.sizeimage;
 	qemu_cond_signal(&state->thread_cond);
 	qemu_mutex_unlock(&state->thread_mutex);
+       INFO("Starting preview!\n");
 }
 
 // MARUCAM_CMD_STOP_PREVIEW
 void marucam_device_stop_preview(MaruCamState* state)
 {
+       struct timespec req;
+       req.tv_sec = 0;
+       req.tv_nsec = 333333333;
+
 	qemu_mutex_lock(&state->thread_mutex);
 	state->streamon = 0;
 	state->buf_size = 0;
 	qemu_mutex_unlock(&state->thread_mutex);
-	sleep(0);
+	nanosleep(&req, NULL);
+       INFO("Stopping preview!\n");
 }
 
 void marucam_device_s_param(MaruCamState* state)
@@ -356,7 +369,7 @@ void marucam_device_g_fmt(MaruCamState* state)
 
 	if (xioctl(v4l2_fd, VIDIOC_G_FMT, &format) < 0) {
 		ERR("failed to get video format: %s\n", strerror(errno));
-		param->errCode = errno;		
+		param->errCode = errno;
 	} else {
 		param->stack[0] = format.fmt.pix.width;
 		param->stack[1] = format.fmt.pix.height;
@@ -637,9 +650,14 @@ void marucam_device_enum_fintv(MaruCamState* state)
 // MARUCAM_CMD_CLOSE
 void marucam_device_close(MaruCamState* state)
 {
+       uint32_t is_streamon;
+
 	qemu_mutex_lock(&state->thread_mutex);
-	state->streamon = 0;
+	is_streamon = state->streamon;
 	qemu_mutex_unlock(&state->thread_mutex);
+
+       if (is_streamon)
+              marucam_device_stop_preview(state);
 
 	marucam_reset_controls();
 
