@@ -39,6 +39,10 @@
 #include "sdb.h"
 #include "debug_ch.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #define SKIN_SERVER_READY_TIME 3 // second
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
