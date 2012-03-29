@@ -33,9 +33,13 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#ifndef __WIN32
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <errno.h>
 #endif
+
 #include "debug_ch.h"
 
 static char logpath[512] = {0,};
