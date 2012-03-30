@@ -261,11 +261,16 @@ void free_screenshot_info( QemuSurfaceInfo* info ) {
     }
 }
 
-char* get_detail_info( int qemu_argc, char** qemu_argv ) {
+DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
 
-    int i;
+    DetailInfo* detail_info = g_malloc0( sizeof(DetailInfo) );
+    if ( !detail_info ) {
+        ERR( "Fail to malloc for DetailInfo.\n" );
+        return NULL;
+    }
+
+    int i = 0;
     int total_len = 0;
-
     int delimiter_len = strlen( DATA_DELIMITER );
 
     for ( i = 0; i < qemu_argc; i++ ) {
@@ -274,11 +279,16 @@ char* get_detail_info( int qemu_argc, char** qemu_argv ) {
     }
 
     char* info_data = g_malloc0( total_len );
+    if ( !info_data ) {
+        g_free( detail_info );
+        ERR( "Fail to malloc for info data.\n" );
+        return NULL;
+    }
 
     int len = 0;
     total_len = 0;
 
-    for ( i = 0; i < qemu_argc; ++i ) {
+    for ( i = 0; i < qemu_argc; i++ ) {
 
         len = strlen( qemu_argv[i] );
         sprintf( info_data + total_len, "%s", qemu_argv[i] );
@@ -289,12 +299,18 @@ char* get_detail_info( int qemu_argc, char** qemu_argv ) {
 
     }
 
-    return info_data;
+    detail_info->data = info_data;
+    detail_info->data_length = total_len;
+
+    return detail_info;
 
 }
 
-void free_detail_info( char* detail_info ) {
+void free_detail_info( DetailInfo* detail_info ) {
     if ( detail_info ) {
+        if ( detail_info->data ) {
+            g_free( detail_info->data );
+        }
         g_free( detail_info );
     }
 }

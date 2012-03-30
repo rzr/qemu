@@ -36,6 +36,12 @@ struct QemuSurfaceInfo {
 };
 typedef struct QemuSurfaceInfo QemuSurfaceInfo;
 
+struct DetailInfo {
+    char* data;
+    int data_length;
+};
+typedef struct DetailInfo DetailInfo;
+
 void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type );
 
 void do_mouse_event( int event_type, int x, int y, int z );
@@ -50,9 +56,9 @@ void do_rotation_event( int rotation_type );
 
 QemuSurfaceInfo* get_screenshot_info( void );
 
-char* get_detail_info( int qemu_argc, char** qemu_argv );
+DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv );
 
-void free_detail_info( char* detail_info );
+void free_detail_info( DetailInfo* detail_info );
 
 void free_screenshot_info( QemuSurfaceInfo* );
 

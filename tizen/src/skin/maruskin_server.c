@@ -543,10 +543,16 @@ static void* run_skin_server( void* args ) {
                     log_cnt += sprintf( log_buf + log_cnt, "RECV_DETAIL_INFO ==\n" );
                     TRACE( log_buf );
 
-                    char* info_data = get_detail_info( qmu_argc, qmu_argv );
-                    int len = strlen( info_data );
-                    send_skin_data( client_sock, SEND_DETAIL_INFO, (unsigned char*)info_data, len, 0 );
-                    free_detail_info( info_data );
+                    DetailInfo* detail_info = get_detail_info( qmu_argc, qmu_argv );
+
+                    if ( detail_info ) {
+                        send_skin_data( client_sock, SEND_DETAIL_INFO, (unsigned char*) detail_info->data,
+                            detail_info->data_length, 0 );
+                        free_detail_info( detail_info );
+                    } else {
+                        ERR( "Fail to get detail info.\n" );
+                    }
+
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
