@@ -693,7 +693,9 @@ static int send_n( int client_sock, unsigned char* data, int length, int big_dat
     int total_cnt = 0;
 
     int buf_size = big_data ? SEND_BIG_BUF_SIZE : SEND_BUF_SIZE;
-    char databuf[buf_size];
+
+    // use malloc instead of general array definition to avoid seg fault in 'alloca' in MinGW env, only using big buf size.
+    char* databuf = (char*)g_malloc0( buf_size );
 
     INFO( "send_n start. length:%d\n", length );
 
@@ -709,8 +711,8 @@ static int send_n( int client_sock, unsigned char* data, int length, int big_dat
             send_cnt = ( length - total_cnt );
         }
 
-        memset( &databuf, 0, send_cnt );
-        memcpy( &databuf, (char*) ( data + total_cnt ), send_cnt );
+        memset( databuf, 0, send_cnt );
+        memcpy( databuf, (char*) ( data + total_cnt ), send_cnt );
 
         send_cnt = send( client_sock, databuf, send_cnt, 0 );
 
@@ -722,6 +724,8 @@ static int send_n( int client_sock, unsigned char* data, int length, int big_dat
         }
 
     }
+
+    g_free( databuf );
 
     INFO( "send_n finished.\n" );
 
