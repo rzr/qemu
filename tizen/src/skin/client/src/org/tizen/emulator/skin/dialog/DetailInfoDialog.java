@@ -72,7 +72,8 @@ public class DetailInfoDialog extends SkinDialog {
 	private EmulatorConfig config;
 
 	public DetailInfoDialog( Shell parent, String emulatorName, SocketCommunicator communicator, EmulatorConfig config ) {
-		super( parent, "Detail Info" + " - " + emulatorName, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE );
+		super( parent, "Detail Info" + " - " + emulatorName, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE
+				| SWT.MAX );
 		this.communicator = communicator;
 		this.config = config;
 	}
@@ -88,7 +89,7 @@ public class DetailInfoDialog extends SkinDialog {
 		Composite composite = new Composite( parent, SWT.NONE );
 		composite.setLayout( new FillLayout() );
 
-		Table table = new Table( composite, SWT.BORDER | SWT.MULTI );
+		Table table = new Table( composite, SWT.BORDER | SWT.MULTI | SWT.FULL_SELECTION );
 		table.setHeaderVisible( true );
 		table.setLinesVisible( true );
 

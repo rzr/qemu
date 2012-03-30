@@ -59,7 +59,7 @@ public class LicenseDialog extends SkinDialog {
 	private Logger logger = SkinLogger.getSkinLogger( LicenseDialog.class ).getLogger();
 
 	public LicenseDialog( Shell parent, String title ) {
-		super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE );
+		super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX );
 	}
 
 	@Override

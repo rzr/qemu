@@ -117,7 +117,7 @@ public class ScreenShotDialog {
 		this.config = config;
 		this.needToStoreRotatedImage = true;
 		
-		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE );
+		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
 		shell.setLocation( parent.getLocation().x + parent.getSize().x + 30, parent.getLocation().y );
 		shell.addListener( SWT.Close, new Listener() {
