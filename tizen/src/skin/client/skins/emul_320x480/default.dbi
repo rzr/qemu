@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<EmulatorUI xmlns="http://www.tizen.org/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.tizen.org/dbi dbi.xsd ">
+<EmulatorUI xmlns="http://www.tizen.org/emulator/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <rotations>
         <rotation id="0" name="Portrait">
             <lcd id="0">

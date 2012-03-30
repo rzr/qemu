@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.tizen.org/dbi"
-xmlns:dbi="http://www.tizen.org/dbi" elementFormDefault="qualified">
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.tizen.org/emulator/dbi"
+xmlns:dbi="http://www.tizen.org/emulator/dbi" elementFormDefault="qualified">
 
 	<element name="EmulatorUI" >
 		<complexType>
@@ -23,7 +23,6 @@ xmlns:dbi="http://www.tizen.org/dbi" elementFormDefault="qualified">
 			<element name="imageList" type="dbi:imageListType" minOccurs="1" maxOccurs="1" ></element>
 			<element name="keyMapList" type="dbi:keyMapListType" minOccurs="1" maxOccurs="1" ></element>
 		</sequence>
-		<attribute name="id" type="int" use="required"></attribute>
 		<attribute name="name" type="dbi:rotationNameType" use="required"></attribute>
 	</complexType>
 
