@@ -42,11 +42,8 @@ import org.eclipse.swt.events.DragDetectEvent;
 import org.eclipse.swt.events.DragDetectListener;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
-import org.eclipse.swt.events.MenuAdapter;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
-import org.eclipse.swt.events.MenuEvent;
-import org.eclipse.swt.events.MenuListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -125,8 +122,6 @@ public class EmulatorSkin {
 
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
-	private static final String MENU_ITEM_IMAGE = "ITEM_IMAGE";
-
 	private EmulatorConfig config;
 	private Shell shell;
 	private ImageRegistry imageRegistry;
@@ -169,8 +164,6 @@ public class EmulatorSkin {
 	private MouseListener canvasMouseListener;
 	private KeyListener canvasKeyListener;
 	private MenuDetectListener canvasMenuDetectListener;
-
-	private MenuListener menuListener;
 
 	private EmulatorSkin reopenSkin;
 
@@ -245,34 +238,6 @@ public class EmulatorSkin {
 	private void setMenu() {
 
 		Menu contextMenu = new Menu( shell );
-
-		menuListener = new MenuAdapter() {
-			@Override
-			public void menuShown( MenuEvent e ) {
-
-				Menu menu = (Menu) e.getSource();
-				MenuItem[] items = menu.getItems();
-
-				for ( MenuItem menuItem : items ) {
-
-					Image image = (Image) menuItem.getData( MENU_ITEM_IMAGE );
-					if ( null != image ) {
-						menuItem.setImage( image );
-					}
-
-					Menu subMenu = menuItem.getMenu();
-					if ( null != subMenu ) {
-						subMenu.removeMenuListener( menuListener );
-						subMenu.addMenuListener( menuListener );
-					}
-
-				}
-
-			}
-
-		};
-
-		contextMenu.addMenuListener( menuListener );
 
 		addMenuItems( shell, contextMenu );
 
@@ -833,7 +798,7 @@ public class EmulatorSkin {
 
 		String emulatorName = SkinUtil.makeEmulatorName( config );
 		detailInfoItem.setText( emulatorName );
-		detailInfoItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.DETAIL_INFO ) );
+		detailInfoItem.setImage( imageRegistry.getIcon( IconName.DETAIL_INFO ) );
 		detailInfoItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -870,15 +835,13 @@ public class EmulatorSkin {
 
 		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
 		rotateItem.setText( "Rotate" );
-		rotateItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.ROTATE ) );
-
+		rotateItem.setImage( imageRegistry.getIcon( IconName.ROTATE ) );
 		Menu rotateMenu = createRotateMenu( menu.getShell() );
 		rotateItem.setMenu( rotateMenu );
 
 		final MenuItem scaleItem = new MenuItem( menu, SWT.CASCADE );
 		scaleItem.setText( "Scale" );
-		scaleItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.SCALE ) );
-
+		scaleItem.setImage( imageRegistry.getIcon( IconName.SCALE ) );
 		Menu scaleMenu = createScaleMenu( menu.getShell() );
 		scaleItem.setMenu( scaleMenu );
 
@@ -886,15 +849,14 @@ public class EmulatorSkin {
 
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
 		advancedItem.setText( "Advanced" );
-		advancedItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.ADVANCED ) );
-
+		advancedItem.setImage( imageRegistry.getIcon( IconName.ADVANCED ) );
 		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
 		advancedItem.setMenu( advancedMenu );
 
 		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
 		shellItem.setText( "Shell" );
-		shellItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.SHELL ) );
-
+		shellItem.setImage( imageRegistry.getIcon( IconName.SHELL ) );
+		
 		shellItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -936,7 +898,7 @@ public class EmulatorSkin {
 
 		MenuItem closeItem = new MenuItem( menu, SWT.PUSH );
 		closeItem.setText( "Close" );
-		closeItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.CLOSE ) );
+		closeItem.setImage( imageRegistry.getIcon( IconName.CLOSE ) );
 		closeItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -1092,7 +1054,7 @@ public class EmulatorSkin {
 
 		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
 		screenshotItem.setText( "Screen Shot" );
-		screenshotItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.SCREENSHOT ) );
+		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
 		screenshotItem.addSelectionListener( new SelectionAdapter() {
 
 			@Override
@@ -1130,8 +1092,8 @@ public class EmulatorSkin {
 
 		final MenuItem usbKeyboardItem = new MenuItem( menu, SWT.CASCADE );
 		usbKeyboardItem.setText( "USB Keyboard" );
-		usbKeyboardItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.USB_KEBOARD ) );
-
+		usbKeyboardItem.setImage( imageRegistry.getIcon( IconName.USB_KEBOARD ) );
+		
 		Menu usbKeyBoardMenu = new Menu( shell, SWT.DROP_DOWN );
 
 		final MenuItem usbOnItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
@@ -1161,7 +1123,7 @@ public class EmulatorSkin {
 
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "About" );
-		aboutItem.setData( MENU_ITEM_IMAGE, imageRegistry.getIcon( IconName.ABOUT ) );
+		aboutItem.setImage( imageRegistry.getIcon( IconName.ABOUT ) );
 
 		aboutItem.addSelectionListener( new SelectionAdapter() {
 			private boolean isOpen;

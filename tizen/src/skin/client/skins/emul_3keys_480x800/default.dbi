@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EmulatorUI xmlns="http://www.tizen.org/emulator/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <rotations>
-        <rotation id="0" name="Portrait">
+        <rotation id name="Portrait">
             <lcd id="0">
                 <region height="800" left="35" top="86" width="480"/>
             </lcd>
@@ -60,7 +60,7 @@
                 </keyMap>
             </keyMapList>
         </rotation>
-        <rotation id="1" name="Landscape">
+        <rotation name="Landscape">
             <lcd id="0">
                 <region height="480" left="86" top="46" width="800"/>
             </lcd>
@@ -119,7 +119,7 @@
                 </keyMap>
             </keyMapList>
         </rotation>
-        <rotation id="2" name="Reverse Portrait">
+        <rotation name="Reverse Portrait">
             <lcd id="0">
                 <region left="46" top="89" width="480" height="800"/>
             </lcd>
@@ -178,7 +178,7 @@
                 </keyMap>
             </keyMapList>
         </rotation>
-        <rotation id="3" name="Reverse Landscape">
+        <rotation name="Reverse Landscape">
             <lcd id="0">
                 <region left="90" top="35" width="800" height="480"/>
             </lcd>
