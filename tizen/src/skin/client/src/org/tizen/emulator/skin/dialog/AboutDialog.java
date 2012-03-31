@@ -92,43 +92,23 @@ public class AboutDialog extends SkinDialog {
 		titleLabel.setFont( font );
 		font.dispose();
 
-		boolean noInformation = false;
 		Properties properties = getProperties();
-		if ( null == getProperties() ) {
-			noInformation = true;
-		}
-		
-		String defaultInformation = "No information";
 		
 		Text versionText = new Text( composite, SWT.NONE );
-		if( noInformation ) {
-			versionText.setText( "Version" + "      : " + defaultInformation );
-		}else {
-			versionText.setText( "Version" + "      : Tizen SDK " + getValue( properties, PROP_KEY_VERSION ) );
-		}
+		String version = getValue( properties, PROP_KEY_VERSION );
+		versionText.setText( "Version" + "      : Tizen SDK " + version );
 		versionText.setEditable( false );
 		versionText.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WIDGET_BACKGROUND ) );
 
 		Text buildText = new Text( composite, SWT.NONE );
-		if( noInformation ) {
-			buildText.setText( "Build time" + "  : " + defaultInformation );
-		}else {
-			String time = properties.getProperty( PROP_KEY_BUILD_TIME );
-			if( StringUtil.isEmpty( time ) ) {
-				buildText.setText( "Build time" + "  : " + "Not identified" );
-			}else {
-				buildText.setText( "Build time" + "  : " + time + " (GMT)" );
-			}
-		}
+		String time = getValue( properties, PROP_KEY_BUILD_TIME );
+		buildText.setText( "Build time" + "  : " + time + " (GMT)" );
 		buildText.setEditable( false );
 		buildText.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WIDGET_BACKGROUND ) );
 
 		Text gitText = new Text( composite, SWT.NONE );
-		if( noInformation ) {
-			gitText.setText( "Git version" + " : " + defaultInformation );
-		}else {
-			gitText.setText( "Git version" + " : " + getValue( properties, PROP_KEY_GIT_VERSION ) );
-		}
+		String gitVersion = getValue( properties, PROP_KEY_GIT_VERSION );
+		gitText.setText( "Git version" + " : " + gitVersion );
 		gitText.setEditable( false );
 		gitText.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WIDGET_BACKGROUND ) );
 
@@ -137,12 +117,28 @@ public class AboutDialog extends SkinDialog {
 	}
 
 	private String getValue( Properties properties, String key ) {
-		String property = properties.getProperty(  key );
-		if( StringUtil.isEmpty( property ) ) {
-			return "Not identified";
+		
+		if( null != properties ) {
+
+			String property = properties.getProperty( key );
+			
+			if( !StringUtil.isEmpty( property ) ) {
+				
+				if( !property.contains( key ) ) {
+					return property;
+				}else {
+					// ex) '${build_git_commit}' is default expression in build.xml
+					return "Not identified";
+				}
+				
+			}else {
+				return "Not identified";
+			}
+
 		}else {
-			return property;
+			return "Not identified";
 		}
+		
 	}
 	
 	@Override

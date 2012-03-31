@@ -166,6 +166,12 @@ public class ImageRegistry {
 		String skinPath = getSkinPath( argSkinPath, resolutionWidth, resolutionHeight );
 		
 		RotationsType rotations = dbiContents.getRotations();
+		
+		if( null == rotations ) {
+			logger.severe( "Fail to loading rotations element from dbi." );
+			return;
+		}
+		
 		List<RotationType> rotationList = rotations.getRotation();
 
 		for ( RotationType rotation : rotationList ) {
