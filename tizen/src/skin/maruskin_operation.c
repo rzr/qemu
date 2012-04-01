@@ -41,6 +41,7 @@
 #include "emul_state.h"
 #include "hw/maru_pm.h"
 #include "qemu-common.h"
+#include "sysemu.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
@@ -345,4 +346,8 @@ void request_close( void )
 
     do_hardkey_event( KEY_RELEASED, HARD_KEY_POWER );
 
+}
+
+void shutdown_qemu( void ) {
+    qemu_system_shutdown_request();
 }

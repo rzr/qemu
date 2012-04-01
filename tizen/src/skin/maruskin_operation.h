@@ -68,4 +68,6 @@ void onoff_usb_kbd( int on );
 
 void request_close( void );
 
+void shutdown_qemu( void );
+
 #endif /* MARUSKIN_OPERATION_H_ */

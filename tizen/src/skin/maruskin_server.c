@@ -39,6 +39,7 @@
 #include "qemu-thread.h"
 #include "emul_state.h"
 #include "maru_sdl.h"
+#include "maruskin_client.h"
 #include "debug_ch.h"
 #ifdef _WIN32
 #include <windows.h>
@@ -62,6 +63,7 @@ MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 #define HEART_BEAT_INTERVAL 1
 #define HEART_BEAT_FAIL_COUNT 5
 #define HEART_BEAT_EXPIRE_COUNT 5
+#define RESTART_CLIENT_MAX_COUNT 3
 
 #define PORT_RETRY_COUNT 50
 
@@ -98,6 +100,7 @@ static int is_sensord_initialized = 0;
 static int ready_server = 0;
 static int ignore_heartbeat = 0;
 
+static int is_started_heartbeat = 0;
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
 static pthread_t thread_id_heartbeat;
@@ -105,6 +108,8 @@ static pthread_mutex_t mutex_heartbeat = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond_heartbeat = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
 
+static int skin_argc = 0;
+static char** skin_argv = NULL;
 static int qmu_argc = 0;
 static char** qmu_argv = NULL;
 
@@ -115,10 +120,13 @@ static int send_skin_data( int client_sock, short send_cmd, unsigned char* data,
 static int send_n( int client_sock, unsigned char* data, int length, int big_data );
 
 static void* do_heart_beat( void* args );
-static int start_heart_beat( int client_sock );
+static int start_heart_beat( void );
 static void stop_heart_beat( void );
 
 int start_skin_server( int argc, char** argv, int qemu_argc, char** qemu_argv ) {
+
+    skin_argc = argc;
+    skin_argv = argv;
 
     int i;
     for( i = 0; i < argc; i++ ) {
@@ -170,19 +178,14 @@ void shutdown_skin_server( void ) {
             // force close
 #ifdef _WIN32
             closesocket( client_sock );
-            if ( server_sock ) {
-                closesocket( server_sock );
-            }
 #else
             close( client_sock );
-            if ( server_sock ) {
-                close( server_sock );
-            }
 #endif
         } else {
             // skin sent RECV_RESPONSE_SHUTDOWN.
         }
     }
+
 }
 
 void notify_sensor_daemon_start( void ) {
@@ -222,6 +225,7 @@ static void* run_skin_server( void* args ) {
     }
 
     int port_fail_count = 0;
+    int shutdown_qmu = 0;
 
     while ( 1 ) {
 
@@ -241,6 +245,7 @@ static void* run_skin_server( void* args ) {
             port++;
 
             if ( PORT_RETRY_COUNT < port_fail_count ) {
+                shutdown_qmu = 1;
                 goto cleanup;
             } else {
                 port_fail_count++;
@@ -259,8 +264,11 @@ static void* run_skin_server( void* args ) {
     if ( 0 > listen( server_sock, 4 ) ) {
         ERR( "skin_server listen error\n" );
         perror( "skin_server listen error : " );
+        shutdown_qmu = 1;
         goto cleanup;
     }
+
+    client_len = sizeof( client_addr );
 
     char recvbuf[RECV_BUF_SIZE];
 
@@ -272,13 +280,17 @@ static void* run_skin_server( void* args ) {
             break;
         }
 
-        //TODO receive client retry ?
+        ready_server = 1;
+
+        if( !is_started_heartbeat ) {
+            if ( !start_heart_beat() ) {
+                ERR( "Fail to start heartbeat thread.\n" );
+                shutdown_qmu = 1;
+                break;
+            }
+        }
 
         INFO( "start accepting socket...\n" );
-
-        client_len = sizeof( client_addr );
-
-        ready_server = 1;
 
         if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr *) &client_addr, &client_len ) ) ) {
             ERR( "skin_servier accept error\n" );
@@ -337,8 +349,6 @@ static void* run_skin_server( void* args ) {
                 req_id = ntohl( req_id );
                 cmd = ntohs( cmd );
                 length = ntohs( length );
-
-                //TODO check identification with uid
 
                 log_cnt += sprintf( log_buf + log_cnt, "uid:%d, req_id:%d, cmd:%d, length:%d ", uid, req_id, cmd, length );
 
@@ -406,11 +416,7 @@ static void* run_skin_server( void* args ) {
 
                     set_emul_win_scale( scale_ratio );
 
-                    if ( start_heart_beat( client_sock ) ) {
-                        start_display( handle_id, lcd_size_width, lcd_size_height, scale_ratio, rotation );
-                    } else {
-                        stop_server = 1;
-                    }
+                    start_display( handle_id, lcd_size_width, lcd_size_height, scale_ratio, rotation );
 
                     break;
                 }
@@ -628,6 +634,13 @@ cleanup:
     }
 #endif
 
+    if( shutdown_qmu ) {
+        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+        ERR( "!!! Fail to initialize for skin server operation. Shutdown QEMU !!!\n" );
+        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+        shutdown_qemu();
+    }
+
     return NULL;
 }
 
@@ -775,10 +788,12 @@ static int send_skin_data( int client_sock, short send_cmd, unsigned char* data,
 
 static void* do_heart_beat( void* args ) {
 
-    int client_sock = *(int*) args;
+    is_started_heartbeat = 1;
 
-    int fail_count = 0;
-    int shutdown = 0;
+    int send_fail_count = 0;
+    int restart_client_count = 0;
+    int need_restart_skin_client = 0;
+    int shutdown_qmu = 0;
 
     while ( 1 ) {
 
@@ -798,49 +813,94 @@ static void* do_heart_beat( void* args ) {
             break;
         }
 
-        TRACE( "[HB] send heartbeat to skin.\n" );
-        if ( 0 > send_skin_header_only( client_sock, SEND_HEART_BEAT ) ) {
-            fail_count++;
-        } else {
-            fail_count = 0;
+        if( client_sock ) {
+            TRACE( "[HB] send heartbeat to skin.\n" );
+            if ( 0 > send_skin_header_only( client_sock, SEND_HEART_BEAT ) ) {
+                send_fail_count++;
+            } else {
+                send_fail_count = 0;
+            }
+        }else {
+            // fail to get socket in accepting or client is not yet accepted.
+            send_fail_count++;
+            TRACE( "[HB] client socket is NULL yet.\n" );
         }
 
-        if ( HEART_BEAT_FAIL_COUNT < fail_count ) {
-            ERR( "[HB] fail to write heart beat to skin. fail count:%d\n", HEART_BEAT_FAIL_COUNT );
-            shutdown = 1;
-            break;
+        if ( HEART_BEAT_FAIL_COUNT < send_fail_count ) {
+            ERR( "[HB] fail to send heart beat to skin. fail count:%d\n", HEART_BEAT_FAIL_COUNT );
+            need_restart_skin_client = 1;
         }
 
-        int count = 0;
         pthread_mutex_lock( &mutex_recv_heartbeat_count );
         recv_heartbeat_count++;
-        count = recv_heartbeat_count;
         TRACE( "[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count );
         pthread_mutex_unlock( &mutex_recv_heartbeat_count );
 
-        if ( HEART_BEAT_EXPIRE_COUNT < count ) {
+        if ( HEART_BEAT_EXPIRE_COUNT < recv_heartbeat_count ) {
             ERR( "received heartbeat count is expired.\n" );
-            shutdown = 1;
-            break;
+            need_restart_skin_client = 1;
+        }
+
+        if( need_restart_skin_client ) {
+
+            if ( RESTART_CLIENT_MAX_COUNT <= restart_client_count ) {
+                shutdown_qmu = 1;
+                break;
+            } else {
+
+                send_fail_count = 0;
+                recv_heartbeat_count = 0;
+                need_restart_skin_client = 0;
+                restart_client_count++;
+
+                WARN( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+                WARN( "!!! restart skin client process !!!\n" );
+                WARN( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+
+                shutdown_skin_server();
+                start_skin_client( skin_argc, skin_argv );
+
+            }
+
         }
 
     }
 
-    if ( shutdown ) {
+    if ( shutdown_qmu ) {
+
         INFO( "[HB] shutdown skin_server by heartbeat thread.\n" );
         shutdown_skin_server();
+
+        if ( server_sock ) {
+#ifdef _WIN32
+            closesocket( server_sock );
+#else
+            close( server_sock );
+#endif
+        }
+
+        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+        ERR( "!!! Fail to operate with heartbeat from skin client. Shutdown QEMU !!!\n" );
+        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+
+        shutdown_qemu();
+
     }
 
     return NULL;
 
 }
 
-static int start_heart_beat( int client_sock ) {
+static int start_heart_beat( void ) {
+
+    if( is_started_heartbeat ) {
+        return 1;
+    }
 
     if( ignore_heartbeat ) {
         return 1;
     }else {
-        if ( 0 != pthread_create( &thread_id_heartbeat, NULL, do_heart_beat, (void*) &client_sock ) ) {
+        if ( 0 != pthread_create( &thread_id_heartbeat, NULL, do_heart_beat, NULL ) ) {
             ERR( "[HB] fail to create heartbean pthread.\n" );
             return 0;
         } else {

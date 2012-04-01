@@ -116,10 +116,9 @@ static void* run_guest_server( void* args ) {
         int read_cnt = recvfrom( server_sock, readbuf, RECV_BUF_SIZE, 0, (struct sockaddr*) &client_addr, &client_len );
 
         if ( 0 > read_cnt ) {
-
-            perror( "error : guest_server read" );
+            ERR( "fail to recvfrom in guest_server.\n" );
+            perror( "fail to recvfrom in guest_server.:" );
             break;
-
         } else {
 
             if ( 0 == read_cnt ) {
