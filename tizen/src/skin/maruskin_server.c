@@ -40,6 +40,7 @@
 #include "emul_state.h"
 #include "maru_sdl.h"
 #include "maruskin_client.h"
+#include "emulator.h"
 #include "debug_ch.h"
 #ifdef _WIN32
 #include <windows.h>
@@ -68,6 +69,7 @@ MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 #define PORT_RETRY_COUNT 50
 
 #define TEST_HB_IGNORE "test.hb.ignore"
+#define SKIN_CONFIG_PROP ".skinconfig.properties"
 
 enum {
     RECV_START = 1,
@@ -113,6 +115,8 @@ static char** skin_argv = NULL;
 static int qmu_argc = 0;
 static char** qmu_argv = NULL;
 
+static void parse_skin_args( void );
+static void parse_skinconfig_prop( void );
 static void* run_skin_server( void* args );
 static int recv_n( int client_sock, char* read_buf, int recv_len );
 static int send_skin_header_only( int client_sock, short send_cmd );
@@ -128,33 +132,10 @@ int start_skin_server( int argc, char** argv, int qemu_argc, char** qemu_argv ) 
     skin_argc = argc;
     skin_argv = argv;
 
-    int i;
-    for( i = 0; i < argc; i++ ) {
+    parse_skinconfig_prop();
 
-        char* arg = NULL;
-        arg = strdup( argv[i] );
-
-        if( arg ) {
-
-            char* key = strtok( arg, "=" );
-            char* value = strtok( NULL, "=" );
-
-            INFO( "skin params key:%s, value:%s\n", key, value );
-
-            if( 0 == strcmp( TEST_HB_IGNORE, key ) ) {
-                if( 0 == strcmp( "true", value ) ) {
-                    ignore_heartbeat = 1;
-                    break;
-                }
-            }
-
-            free( arg );
-
-        }else {
-            ERR( "fail to strdup." );
-        }
-
-    }
+    // arguments have higher priority than '.skinconfig.properties'
+    parse_skin_args();
 
     INFO( "ignore_heartbeat:%d\n", ignore_heartbeat );
 
@@ -206,11 +187,132 @@ int get_skin_server_port( void ) {
     return svr_port;
 }
 
+static void parse_skin_args( void ) {
+
+    int i;
+    for( i = 0; i < skin_argc; i++ ) {
+
+        char* arg = NULL;
+        arg = strdup( skin_argv[i] );
+
+        if( arg ) {
+
+            char* key = strtok( arg, "=" );
+            char* value = strtok( NULL, "=" );
+
+            INFO( "skin params key:%s, value:%s\n", key, value );
+
+            if( 0 == strcmp( TEST_HB_IGNORE, key ) ) {
+                if( 0 == strcmp( "true", value ) ) {
+                    ignore_heartbeat = 1;
+                }
+            }
+
+            free( arg );
+
+        }else {
+            ERR( "fail to strdup." );
+        }
+
+    }
+
+}
+
+static void parse_skinconfig_prop( void ) {
+
+    int target_path_len = strlen( tizen_target_path );
+    char skin_config_path[target_path_len + 32];
+
+    memset( skin_config_path, 0, target_path_len + 32 );
+    strcpy( skin_config_path, tizen_target_path );
+#ifdef _WIN32
+    strcat( skin_config_path, "\\" );
+#else
+    strcat( skin_config_path, "/" );
+#endif
+    strcat( skin_config_path, SKIN_CONFIG_PROP );
+
+    FILE* fp = fopen( skin_config_path, "r" );
+
+    if ( !fp ) {
+        INFO( "There is no %s. skin_config_path:%s\n", SKIN_CONFIG_PROP, skin_config_path );
+        return;
+    }
+
+    fseek( fp, 0L, SEEK_END );
+    int buf_size = ftell( fp );
+    rewind( fp );
+
+    if ( 0 >= buf_size ) {
+        WARN( "%s contents is empty.\n", SKIN_CONFIG_PROP );
+        return;
+    }
+
+    char* buf = g_malloc0( buf_size );
+    if ( !buf ) {
+        ERR( "Fail to malloc for %s\n", SKIN_CONFIG_PROP );
+        return;
+    }
+
+    int read_cnt = 0;
+    int total_cnt = 0;
+
+    while ( 1 ) {
+
+        if ( total_cnt == buf_size ) {
+            break;
+        }
+
+        read_cnt = fread( (void*) ( buf + read_cnt ), 1, buf_size - total_cnt, fp );
+        if ( 0 > read_cnt ) {
+            break;
+        } else {
+            total_cnt += read_cnt;
+        }
+
+    }
+
+    fclose( fp );
+
+    INFO( "====== %s ======\n%s\n====================================\n", SKIN_CONFIG_PROP, buf );
+
+    char hb_ignore_prop[32];
+    memset( hb_ignore_prop, 0, 32 );
+    strcat( hb_ignore_prop, TEST_HB_IGNORE );
+    strcat( hb_ignore_prop, "=true" );
+
+    char* line_str = strtok( buf, "\n" );
+
+    while ( 1 ) {
+
+        if ( line_str ) {
+
+            TRACE( "prop line_str:%s\n", line_str );
+
+            if ( 0 == strcmp( line_str, hb_ignore_prop ) ) {
+                ignore_heartbeat = 1;
+                INFO( "ignore heartbeat by %s\n", SKIN_CONFIG_PROP );
+            }
+
+        } else {
+            break;
+        }
+
+        line_str = strtok( NULL, "\n" );
+
+    }
+
+    g_free( buf );
+
+}
+
 static void* run_skin_server( void* args ) {
 
     uint16_t port;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len;
+    int shutdown_qmu = 0;
+    int port_fail_count = 0;
 
     INFO("run skin server\n");
 
@@ -223,9 +325,6 @@ static void* run_skin_server( void* args ) {
         perror( "create listen socket error : " );
         goto cleanup;
     }
-
-    int port_fail_count = 0;
-    int shutdown_qmu = 0;
 
     while ( 1 ) {
 
