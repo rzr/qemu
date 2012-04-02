@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
@@ -105,35 +104,37 @@ public class ImageRegistry {
 	private int resolutionWidth;
 	private int resolutionHeight;
 	private EmulatorUI dbiContents;
-	
+
 	private Map<String, Image> skinImageMap;
 	private Map<String, Image> iconMap;
 
+	private String argSkinPath;
+
 	private static ImageRegistry instance;
 	private static boolean isInitialized;
-	
+
 	private ImageRegistry() {
 	}
-	
+
 	public static ImageRegistry getInstance() {
-		if( null == instance ) {
+		if ( null == instance ) {
 			instance = new ImageRegistry();
 		}
 		return instance;
 	}
-	
-	public void initialize(  EmulatorConfig config  ) {
-		
-		if( isInitialized ) {
+
+	public void initialize( EmulatorConfig config ) {
+
+		if ( isInitialized ) {
 			return;
 		}
 		isInitialized = true;
-		
+
 		this.display = Display.getDefault();
 
 		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
 		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
-		String skinPath = (String) config.getArg( ArgsConstants.SKIN_PATH );
+		this.argSkinPath = (String) config.getArg( ArgsConstants.SKIN_PATH );
 
 		this.resolutionWidth = lcdWidth;
 		this.resolutionHeight = lcdHeight;
@@ -141,111 +142,142 @@ public class ImageRegistry {
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();
 
-		init( skinPath );
+		init( this.argSkinPath );
 
 	}
-	
-	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
-		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator +
-				IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
 
-		if (argSkinPath == null) {
+	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
+		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator + IMAGE_FOLDER_PREFIX + lcdWidth + "x"
+				+ lcdHeight;
+
+		if ( argSkinPath == null ) {
 			return skinPath;
 		}
 
-		File f = new File(argSkinPath);
-		if (f.isDirectory() == false) {
+		File f = new File( argSkinPath );
+		if ( f.isDirectory() == false ) {
 			return skinPath;
 		}
 
 		return argSkinPath;
 	}
 
-	private void init(String argSkinPath) {
+	private void init( String argSkinPath ) {
 
-		String skinPath = getSkinPath( argSkinPath, resolutionWidth, resolutionHeight );
-		
 		RotationsType rotations = dbiContents.getRotations();
-		
-		if( null == rotations ) {
+
+		if ( null == rotations ) {
 			logger.severe( "Fail to loading rotations element from dbi." );
 			return;
 		}
-		
+
 		List<RotationType> rotationList = rotations.getRotation();
 
 		for ( RotationType rotation : rotationList ) {
 			SkinRotation.put( rotation );
 		}
 
-		for ( RotationType rotation : rotationList ) {
+	}
 
-			ImageListType imageList = rotation.getImageList();
-			String mainImage = imageList.getMainImage();
-			String keyPressedImage = imageList.getKeyPressedImage();
+	public ImageData getSkinImageData( Short id, ImageType imageType ) {
 
-			Iterator<Entry<Short, RotationType>> rotationIterator = SkinRotation.getRotationIterator();
+		Image image = skinImageMap.get( makeKey( id, imageType ) );
 
-			while ( rotationIterator.hasNext() ) {
+		if ( null != image ) {
 
-				Entry<Short, RotationType> entry = rotationIterator.next();
+			return image.getImageData();
 
-				if ( entry.getValue().getName().value().equals( rotation.getName().value() ) ) {
+		} else {
 
-					String mainKey = makeKey( entry.getKey(), ImageType.IMG_TYPE_MAIN );
+			RotationsType rotations = dbiContents.getRotations();
+
+			if ( null == rotations ) {
+				logger.severe( "Fail to loading rotations element from dbi." );
+				return null;
+			}
+
+			String skinPath = getSkinPath( argSkinPath, resolutionWidth, resolutionHeight );
+
+			RotationType targetRotation = SkinRotation.getRotation( id );
+
+			List<RotationType> rotationList = rotations.getRotation();
+
+			for ( RotationType rotation : rotationList ) {
+
+				ImageListType imageList = rotation.getImageList();
+				String mainImage = imageList.getMainImage();
+				String keyPressedImage = imageList.getKeyPressedImage();
+
+				if ( targetRotation.getName().value().equals( rotation.getName().value() ) ) {
+
+					String mainKey = makeKey( id, ImageType.IMG_TYPE_MAIN );
 					skinImageMap.put( mainKey, new Image( display, skinPath + File.separator + mainImage ) );
 
-					String pressedKey = makeKey( entry.getKey(), ImageType.IMG_TYPE_PRESSED );
+					String pressedKey = makeKey( id, ImageType.IMG_TYPE_PRESSED );
 					skinImageMap.put( pressedKey, new Image( display, skinPath + File.separator + keyPressedImage ) );
 
+					break;
+
 				}
+
+			}
+
+			Image registeredImage = skinImageMap.get( makeKey( id, imageType ) );
+
+			if ( null != registeredImage ) {
+				return registeredImage.getImageData();
+			} else {
+				return null;
 			}
 
 		}
-		
-		ClassLoader classLoader = this.getClass().getClassLoader();
-		IconName[] values = IconName.values();
-		
-		for ( IconName iconName : values ) {
-			
-			String name = iconName.getName();
-			
-			String iconPath = ICON_FOLDER + "/" + name;
-			
-			InputStream is = null;
-			try {
-				is = classLoader.getResourceAsStream( iconPath );
-				if( null != is ) {
-					logger.fine( "load icon:" + iconPath );
-					iconMap.put( name, new Image( display, is ) );
-				}else {
-					logger.severe( "missing icon:" + iconPath );
-				}
-			} finally {
-				IOUtil.close( is );
-			}
-			
-		}
+	}
 
-	}
-	
-	public ImageData getSkinImageData( Short id, ImageType imageType ) {
-		Image image = skinImageMap.get( makeKey(id, imageType) );
-		if( null != image ) {
-			return image.getImageData();
-		}else {
-			return null;
-		}
-	}
-	
 	private String makeKey( Short id, ImageType imageType ) {
 		return id + ":" + imageType.ordinal();
 	}
-	
+
 	public Image getIcon( IconName name ) {
-		return iconMap.get( name.getName() );
+
+		if ( 0 != iconMap.size() ) {
+
+			Image image = iconMap.get( name.getName() );
+			return image;
+
+		} else {
+
+			// load all of the icons at once.
+
+			ClassLoader classLoader = this.getClass().getClassLoader();
+			IconName[] values = IconName.values();
+
+			for ( IconName iconName : values ) {
+
+				String icoNname = iconName.getName();
+
+				String iconPath = ICON_FOLDER + "/" + icoNname;
+
+				InputStream is = null;
+				try {
+					is = classLoader.getResourceAsStream( iconPath );
+					if ( null != is ) {
+						logger.fine( "load icon:" + iconPath );
+						iconMap.put( icoNname, new Image( display, is ) );
+					} else {
+						logger.severe( "missing icon:" + iconPath );
+					}
+				} finally {
+					IOUtil.close( is );
+				}
+
+			}
+
+			return iconMap.get( name.getName() );
+
+		}
+
 	}
-	
+
 	public void dispose() {
 
 		Collection<Image> images = skinImageMap.values();

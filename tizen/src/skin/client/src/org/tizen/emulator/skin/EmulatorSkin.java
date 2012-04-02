@@ -229,6 +229,12 @@ public class EmulatorSkin {
 
 		arrangeSkin( lcdWidth, lcdHeight, scale, rotationId );
 
+		if ( null == currentImage ) {
+			logger.severe( "Fail to load initial skin image file. Kill this skin process!!!" );
+			SkinUtil.openMessage( shell, null, "Fail to load Skin image file.", SWT.ICON_ERROR, config );
+			System.exit( -1 );
+		}
+
 		seteHoverColor();
 
 		setMenu();
@@ -400,9 +406,11 @@ public class EmulatorSkin {
 		SkinUtil.trimShell( shell, currentImage );
 		SkinUtil.adjustLcdGeometry( lcdCanvas, scale, rotationId );
 
-		ImageData imageData = currentImage.getImageData();
-		shell.setMinimumSize( imageData.width, imageData.height );
-		shell.setSize( imageData.width, imageData.height );
+		if( null != currentImage ) {
+			ImageData imageData = currentImage.getImageData();
+			shell.setMinimumSize( imageData.width, imageData.height );
+			shell.setSize( imageData.width, imageData.height );
+		}
 
 	}
 

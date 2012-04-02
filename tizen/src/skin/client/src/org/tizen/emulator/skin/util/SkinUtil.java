@@ -219,6 +219,10 @@ public class SkinUtil {
 
 		// trim transparent pixels in image. especially, corner round areas.
 
+		if ( null == image ) {
+			return;
+		}
+
 		ImageData imageData = image.getImageData();
 
 		int width = imageData.width;
@@ -270,6 +274,10 @@ public class SkinUtil {
 			ImageType type ) {
 
 		ImageData originalImageData = imageRegistry.getSkinImageData( rotationId, type );
+
+		if ( null == originalImageData ) {
+			return null;
+		}
 
 		ImageData imageData = (ImageData) originalImageData.clone();
 
