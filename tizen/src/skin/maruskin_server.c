@@ -187,37 +187,6 @@ int get_skin_server_port( void ) {
     return svr_port;
 }
 
-static void parse_skin_args( void ) {
-
-    int i;
-    for( i = 0; i < skin_argc; i++ ) {
-
-        char* arg = NULL;
-        arg = strdup( skin_argv[i] );
-
-        if( arg ) {
-
-            char* key = strtok( arg, "=" );
-            char* value = strtok( NULL, "=" );
-
-            INFO( "skin params key:%s, value:%s\n", key, value );
-
-            if( 0 == strcmp( TEST_HB_IGNORE, key ) ) {
-                if( 0 == strcmp( "true", value ) ) {
-                    ignore_heartbeat = 1;
-                }
-            }
-
-            free( arg );
-
-        }else {
-            ERR( "fail to strdup." );
-        }
-
-    }
-
-}
-
 static void parse_skinconfig_prop( void ) {
 
     int target_path_len = strlen( tizen_target_path );
@@ -245,12 +214,14 @@ static void parse_skinconfig_prop( void ) {
 
     if ( 0 >= buf_size ) {
         WARN( "%s contents is empty.\n", SKIN_CONFIG_PROP );
+        fclose( fp );
         return;
     }
 
     char* buf = g_malloc0( buf_size );
     if ( !buf ) {
         ERR( "Fail to malloc for %s\n", SKIN_CONFIG_PROP );
+        fclose( fp );
         return;
     }
 
@@ -303,6 +274,39 @@ static void parse_skinconfig_prop( void ) {
     }
 
     g_free( buf );
+
+}
+
+static void parse_skin_args( void ) {
+
+    int i;
+    for( i = 0; i < skin_argc; i++ ) {
+
+        char* arg = NULL;
+        arg = strdup( skin_argv[i] );
+
+        if( arg ) {
+
+            char* key = strtok( arg, "=" );
+            char* value = strtok( NULL, "=" );
+
+            INFO( "skin params key:%s, value:%s\n", key, value );
+
+            if( 0 == strcmp( TEST_HB_IGNORE, key ) ) {
+                if( 0 == strcmp( "true", value ) ) {
+                    ignore_heartbeat = 1;
+                }else if( 0 == strcmp( "false", value ) ) {
+                    ignore_heartbeat = 0;
+                }
+            }
+
+            free( arg );
+
+        }else {
+            ERR( "fail to strdup." );
+        }
+
+    }
 
 }
 
