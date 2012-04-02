@@ -64,8 +64,9 @@ enum {
 uint32_t brightness_level = 24;
 uint32_t brightness_off = 0;
 
-uint8_t brightness_tbl[] = {20, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
-                            130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240};
+// level : 0 ~ 23, interval : 6 or 7.
+uint8_t brightness_tbl[] = {110, 110, 116, 122, 128, 134, 140, 146, 152, 158, 164, 170,
+                            176, 182, 188, 194, 200, 206, 213, 220, 227, 234, 241, 248};
 
 static uint64_t brightness_reg_read( void *opaque, target_phys_addr_t addr, unsigned size ) {
     switch ( addr & 0xFF ) {
