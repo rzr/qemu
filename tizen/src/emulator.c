@@ -43,6 +43,7 @@
 #include "option.h"
 #include "emul_state.h"
 #include "qemu_socket.h"
+#include "build_info.h"
 #include <glib.h>
 #include <glib/gstdio.h>
 
@@ -230,6 +231,7 @@ int main(int argc, char* argv[])
     INFO("Emulator start !!!\n");
 
     /* timestamp */
+    INFO("* Build date : %s\n", build_date);
     gettimeofday(&tval, NULL);
     tm_time = localtime(&(tval.tv_sec));
     strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
