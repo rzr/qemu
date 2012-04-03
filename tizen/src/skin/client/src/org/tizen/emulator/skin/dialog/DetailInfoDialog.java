@@ -127,7 +127,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 	@Override
 	protected void setShellSize() {
-		shell.setSize( (int) ( 350 * 1.618 ), 350 );
+		shell.setSize( (int) ( 380 * 1.618 ), 380 );
 	}
 
 	private String queryData() {
@@ -196,11 +196,20 @@ public class DetailInfoDialog extends SkinDialog {
 
 		String cpu = "";
 		String ram = "";
+		String dpi = "";
 		String sdPath = "";
 		String imagePath = "";
 		boolean isFirstDrive = true;
 		String sharedPath = "";
+		boolean isHwVirtual = false;
+		String hwVirtualCompare = "";
 
+		if ( SkinUtil.isLinuxPlatform() ) {
+			hwVirtualCompare = "-enable-kvm";
+		} else if ( SkinUtil.isWindowsPlatform() ) {
+			hwVirtualCompare = "-enable-hax";
+		}
+		
 		String[] split = infoData.split( DATA_DELIMITER );
 
 		for ( int i = 0; i < split.length; i++ ) {
@@ -257,6 +266,27 @@ public class DetailInfoDialog extends SkinDialog {
 							sharedPath = sp[1].substring( spIndex + 1, sp[1].length() );
 						}
 
+					} else if ( "-append".equals( arg ) ) {
+
+						arg = split[i + 1].trim();
+
+						int idx = arg.indexOf( "dpi" );
+
+						if ( -1 != idx ) {
+							if( idx + 7 <= arg.length() ) {
+								
+								dpi = arg.substring( idx, idx + 7 ); // end index is not 8, remove last '0'
+								
+								String[] sp = dpi.split( "=" );
+								if ( 1 < sp.length ) {
+									dpi = sp[1];
+								}
+								
+							}
+						}
+
+					} else if ( hwVirtualCompare.equals( arg ) ) {
+						isHwVirtual = true;
 					}
 
 				}
@@ -272,27 +302,37 @@ public class DetailInfoDialog extends SkinDialog {
 
 		String width = config.getArg( ArgsConstants.RESOLUTION_WIDTH );
 		String height = config.getArg( ArgsConstants.RESOLUTION_HEIGHT );
-		result.put( "Resolution", width + "x" + height );
-		result.put( "RAM", ram );
+		result.put( "Display Resolution", width + "x" + height );
+		result.put( "Display Density", dpi );
 
 		if ( StringUtil.isEmpty( sdPath ) ) {
 			result.put( "SD Card", "Not Supported" );
-			result.put( "SD Path", "None" );
+			result.put( "SD Card Path", "None" );
 		} else {
 			result.put( "SD Card", "Supported" );
-			result.put( "SD Path", sdPath );
+			result.put( "SD Card Path", sdPath );
 		}
 
+		result.put( "RAM Size", ram );
+
+		if ( StringUtil.isEmpty( sharedPath ) ) {
+			result.put( "File Sharing", "Not Supported" );
+			result.put( "File Shared Path", "None" );
+		}else {
+			result.put( "File Sharing", "Supported" );
+			result.put( "File Shared Path", sharedPath );
+		}
+
+		if( isHwVirtual ) {
+			result.put( "HW Virtualization", "Supported" );
+		}else {
+			result.put( "HW Virtualization", "Not Supported" );
+		}
+		
 		if ( StringUtil.isEmpty( imagePath ) ) {
 			result.put( "Image Path", "Not identified" );			
 		}else {
 			result.put( "Image Path", imagePath );			
-		}
-
-		if ( StringUtil.isEmpty( sharedPath ) ) {
-			result.put( "Shared Path", "None" );
-		}else {
-			result.put( "Shared Path", sharedPath );
 		}
 
 		return result;
