@@ -8,7 +8,7 @@ config-host.mak:
 	@exit 1
 endif
 
-all: qemu skin_client build_info
+all: build_info qemu skin_client
 qemu:
 	cd ../../ && $(MAKE)
 skin_client:
