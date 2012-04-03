@@ -45,8 +45,12 @@
 #include "qemu_socket.h"
 #include <glib.h>
 #include <glib/gstdio.h>
-#ifdef _WIN32
-#include <winsock2.h>
+
+#if defined( _WIN32)
+//#include <winsock2.h>
+#elif defined(__linux__)
+#include <linux/version.h>
+#include <sys/utsname.h>
 #endif
 
 #include "mloop_event.h"
@@ -215,15 +219,61 @@ int qemu_main(int argc, char** argv, char** envp);
 
 int main(int argc, char* argv[])
 {
-    
+    char timeinfo[64] = {0, };
+    struct tm *tm_time;
+    struct timeval tval;
+
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
     socket_init();
     extract_info(qemu_argc, qemu_argv);
+
     INFO("Emulator start !!!\n");
-    
+
+    /* timestamp */
+    gettimeofday(&tval, NULL);
+    tm_time = localtime(&(tval.tv_sec));
+    strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
+    INFO("* Current time : %s\n", timeinfo);
+
+    /* Gets the version of the dynamically linked SDL library */
+    INFO("* Host sdl version : (%d, %d, %d)\n",
+        SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
+
+#if defined( _WIN32)
+    /* Retrieves information about the current os */
+    OSVERSIONINFO osvi;
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+
+    if (GetVersionEx(&osvi)) {
+        INFO("* MajorVersion : %d, MinorVersion : %d, BuildNumber : %d, PlatformId : %d, CSDVersion : %s\n",
+            osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, osvi.dwPlatformId, osvi.szCSDVersion);
+    }
+
+    /* Retrieves information about the current system */
+    SYSTEM_INFO sysi;
+    ZeroMemory(&sysi, sizeof(SYSTEM_INFO));
+
+    GetSystemInfo(&sysi);
+    INFO("* Processor type : %d, Number of processors : %d\n", sysi.dwProcessorType,  sysi.dwNumberOfProcessors);
+
+#elif defined(__linux__)
+    /* depends on building */
+    INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
+        LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff , LINUX_VERSION_CODE & 0xff);
+
+     /* depends on launching */
+    struct utsname host_uname_buf;
+    if (uname(&host_uname_buf) == 0) {
+        INFO("* Host machine uname : %s %s %s %s %s\n", host_uname_buf.sysname, host_uname_buf.nodename,
+            host_uname_buf.release, host_uname_buf.version, host_uname_buf.machine);
+    }
+
+#endif
+
     INFO("Prepare running...\n");
     redir_output(); // Redirect stdout, stderr after debug_ch is initialized...
-	
+
     int i;
 
     fprintf(stdout, "qemu args : ==========================================\n");
