@@ -2626,11 +2626,6 @@ the @var{simple} tracing backend.
 @end table
 ETEXI
 
-HXCOMM This is the last statement. Insert new options before this line!
-STEXI
-@end table
-ETEXI
-
 DEF("max-touch-point", HAS_ARG, QEMU_OPTION_max_touch_point, \
     "-max-touch-point [count]\n"
     "                define maximum number of touch point\n",
@@ -2638,4 +2633,9 @@ DEF("max-touch-point", HAS_ARG, QEMU_OPTION_max_touch_point, \
 STEXI
 @item -max-touch-point @var{max_count}
 Use @var{max_count} as Integer
+ETEXI
+
+HXCOMM This is the last statement. Insert new options before this line!
+STEXI
+@end table
 ETEXI
