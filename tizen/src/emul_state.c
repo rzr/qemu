@@ -91,6 +91,23 @@ int get_emul_sdl_bpp(void)
     return _emul_info.sdl_bpp;
 }
 
+/* maximum number of touch point */
+void set_emul_max_touch_point(int cnt)
+{
+    if (cnt <= 0) {
+        cnt = 1;
+    }
+    _emul_info.max_touch_point = cnt;
+}
+
+int get_emul_max_touch_point(void)
+{
+    if (_emul_info.max_touch_point <= 0) {
+        set_emul_max_touch_point(1);
+    }
+    return _emul_info.max_touch_point;
+}
+
 /* emulator window scale */
 void set_emul_win_scale(double scale_factor)
 {

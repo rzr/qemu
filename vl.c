@@ -181,6 +181,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #ifdef CONFIG_MARU
 #include "tizen/src/maru_sdl.h"
 #include "tizen/src/option.h"
+#include "tizen/src/emul_state.h"
 #endif
 
 //#define DEBUG_NET
@@ -3164,6 +3165,15 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_disable_hax:
                 hax_disabled = 1;
                 break;
+#ifdef CONFIG_MARU
+            case QEMU_OPTION_max_touch_point:
+                {
+                    int cnt = atoi(optarg);
+                    fprintf(stderr, "maxTouchPoint:%d\n", cnt);
+                    set_emul_max_touch_point(cnt);
+                }
+                break;
+#endif
             default:
                 os_parse_cmd_args(popt->index, optarg);
             }

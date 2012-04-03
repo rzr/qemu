@@ -87,7 +87,7 @@ void do_key_event( int event_type, int keycode )
     TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     //is multi-touch mode ?
-    if (keycode == JAVA_KEYCODE_BIT_CTRL) {
+    if (keycode == JAVA_KEYCODE_BIT_CTRL && get_emul_max_touch_point() > 1) {
         if (KEY_PRESSED == event_type) {
             get_emul_multi_touch_state()->multitouch_enable = 1;
             INFO("multi-touch enabled\n");
