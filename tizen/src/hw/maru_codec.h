@@ -70,11 +70,9 @@ typedef struct _SVCodecState {
     pthread_mutex_t     codec_mutex;
 
     int                 mmioIndex;
-
     uint32_t            mem_addr;
     uint32_t            mmio_addr;
 
-	/* For Memory API in QEMU 1.0 */
     uint8_t*            vaddr;
     MemoryRegion        vram;
 	MemoryRegion		mmio;
@@ -171,4 +169,3 @@ static void qemu_av_parser_close (SVCodecState *s, int ctxIndex);
 static int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture);
 
 static void qemu_avcodec_release_buffer (AVCodecContext *context, AVFrame *picture);
-
