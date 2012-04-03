@@ -229,6 +229,7 @@ int main(int argc, char* argv[])
     extract_info(qemu_argc, qemu_argv);
 
     INFO("Emulator start !!!\n");
+    INFO("* SDK version : %s\n", build_version);
 
     /* timestamp */
     INFO("* Build date : %s\n", build_date);
