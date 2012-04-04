@@ -350,7 +350,7 @@ static void* run_timed_shutdown_thread( void* args ) {
     int i;
     for ( i = 0; i < TIMEOUT_FOR_SHUTDOWN; i++ ) {
 #ifdef _WIN32
-        Sleep( sleep_time );
+        Sleep( sleep_interval_time );
 #else
         usleep( sleep_interval_time * 1000 );
 #endif
