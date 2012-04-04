@@ -217,6 +217,12 @@ public class DetailInfoDialog extends SkinDialog {
 			if ( 0 == i ) {
 
 				String exec = split[i].trim().toLowerCase();
+				if( SkinUtil.isWindowsPlatform() ) {
+					if( 4 <= exec.length() ) {
+						// remove '.exe' in Windows
+						exec = exec.substring( 0, exec.length() - 4 );
+					}
+				}
 				logger.info( "exec:" + exec );
 				if ( exec.endsWith( "x86" ) ) {
 					cpu = "X86";
