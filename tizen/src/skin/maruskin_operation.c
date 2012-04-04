@@ -30,6 +30,7 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "maruskin_operation.h"
 #include "maru_sdl.h"
 #include "debug_ch.h"
@@ -48,8 +49,11 @@ MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
 #define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
 #define CLOSE_POWER_KEY_INTERVAL 1200 // milli-seconds
+#define DATA_DELIMITER "#" // in detail info data
+#define TIMEOUT_FOR_SHUTDOWN 10 // seconds
 
-#define DATA_DELIMITER "#"
+static void* run_timed_shutdown_thread( void* args );
+static void send_to_emuld( const char* request_type, int request_size, const char* send_buf, int buf_size );
 
 void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
 {
@@ -168,7 +172,6 @@ void do_rotation_event( int rotation_type)
 
     INFO( "do_rotation_event rotation_type:%d", rotation_type);
 
-    int buf_size = 32;
     char send_buf[32] = { 0 };
 
     switch ( rotation_type ) {
@@ -189,29 +192,9 @@ void do_rotation_event( int rotation_type)
             break;
     }
 
-    // send_to_sensor_daemon
-    int s;
+    send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
 
-    s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
-    if ( s < 0 ) {
-        ERR( "can't create socket to talk to the sdb forwarding session \n");
-        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , tizen_base_port + SDB_TCP_EMULD_INDEX , errno, strerror(errno));
-        return;
-    }
-
-    socket_send( s, "sensor\n\n\n\n", 10 );
-    socket_send( s, &buf_size, 4 );
-    socket_send( s, send_buf, buf_size );
-
-    INFO( "send to sensord(size: %d) 127.0.0.1:%d/tcp \n", buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX);
-
-    set_emul_rotation(rotation_type);
-
-#ifdef _WIN32
-    closesocket( s );
-#else
-    close( s );
-#endif
+    set_emul_rotation( rotation_type );
 
 }
 
@@ -348,6 +331,61 @@ void request_close( void )
 
 }
 
-void shutdown_qemu( void ) {
+void shutdown_qemu_gracefully( void ) {
+
+    pthread_t thread_id;
+    if( 0 > pthread_create( &thread_id, NULL, run_timed_shutdown_thread, NULL ) ) {
+        ERR( "!!! Fail to create run_timed_shutdown_thread. shutdown qemu right now !!!\n"  );
+        qemu_system_shutdown_request();
+    }
+
+}
+
+static void* run_timed_shutdown_thread( void* args ) {
+
+    send_to_emuld( "system\n\n\n\n", 10, "shutdown", 8 );
+
+    int sleep_interval_time = 1000; // milli-seconds
+
+    int i;
+    for ( i = 0; i < TIMEOUT_FOR_SHUTDOWN; i++ ) {
+#ifdef _WIN32
+        Sleep( sleep_time );
+#else
+        usleep( sleep_interval_time * 1000 );
+#endif
+        // do not use logger to help user see log in console
+        fprintf( stdout, "Wait for shutdown qemu...%d\n", ( i + 1 ) );
+    }
+
+    WARN( "Shutdown qemu !!!\n" );
     qemu_system_shutdown_request();
+
+    return NULL;
+
+}
+
+static void send_to_emuld( const char* request_type, int request_size, const char* send_buf, int buf_size ) {
+
+    int s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
+
+    if ( s < 0 ) {
+        ERR( "can't create socket to talk to the sdb forwarding session \n" );
+        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , tizen_base_port + SDB_TCP_EMULD_INDEX , errno, strerror(errno) );
+        return;
+    }
+
+    socket_send( s, (char*)request_type, request_size );
+    socket_send( s, &buf_size, 4 );
+    socket_send( s, (char*)send_buf, buf_size );
+
+    INFO( "send to emuld [req_type:%s, send_data:%s, send_size:%d] 127.0.0.1:%d/tcp \n",
+        request_type, send_buf, buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX );
+
+#ifdef _WIN32
+    closesocket( s );
+#else
+    close( s );
+#endif
+
 }

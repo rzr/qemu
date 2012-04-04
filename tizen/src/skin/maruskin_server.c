@@ -741,7 +741,7 @@ cleanup:
         ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
         ERR( "!!! Fail to initialize for skin server operation. Shutdown QEMU !!!\n" );
         ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
-        shutdown_qemu();
+        shutdown_qemu_gracefully();
     }
 
     return NULL;
@@ -986,7 +986,7 @@ static void* do_heart_beat( void* args ) {
         ERR( "!!! Fail to operate with heartbeat from skin client. Shutdown QEMU !!!\n" );
         ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
 
-        shutdown_qemu();
+        shutdown_qemu_gracefully();
 
     }
 
