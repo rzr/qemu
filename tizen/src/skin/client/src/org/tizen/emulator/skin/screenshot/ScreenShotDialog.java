@@ -402,7 +402,17 @@ public class ScreenShotDialog {
 				}
 
 				ImageLoader loader = new ImageLoader();
-				loader.data = new ImageData[] { image.getImageData() };
+
+				if ( SkinUtil.isWindowsPlatform() ) {
+					// change RGB mask
+					ImageData imageData = image.getImageData();
+					PaletteData paletteData = new PaletteData( BLUE_MASK, GREEN_MASK, RED_MASK );
+					ImageData data = new ImageData( imageData.width, imageData.height, imageData.depth, paletteData,
+							imageData.bytesPerLine, imageData.data );
+					loader.data = new ImageData[] { data };
+				} else {
+					loader.data = new ImageData[] { image.getImageData() };
+				}
 
 				ByteArrayOutputStream bao = new ByteArrayOutputStream();
 				loader.save( bao, SWT.IMAGE_PNG );
