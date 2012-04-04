@@ -91,11 +91,12 @@ static void construct_main_window(int skin_argc, char* skin_argv[], int qemu_arg
     INFO("construct main window\n");
 
     start_skin_server( skin_argc, skin_argv, qemu_argc, qemu_argv );
-#if 1
-    if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
-        exit( -1 );
+
+    if (get_emul_skin_enable() == 1) { //check for debugging, etc..
+        if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
+            exit( -1 );
+        }
     }
-#endif
 
     set_emul_caps_lock_state(0);
     set_emul_num_lock_state(0);

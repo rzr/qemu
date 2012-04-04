@@ -194,6 +194,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #ifdef CONFIG_MARU
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
 extern int tizen_base_port;
+int skin_disabled = 0;
 #endif
 
 static const char *data_dir;
@@ -3171,7 +3172,10 @@ int main(int argc, char **argv, char **envp)
                     int cnt = atoi(optarg);
                     fprintf(stderr, "maxTouchPoint:%d\n", cnt);
                     set_emul_max_touch_point(cnt);
+                    break;
                 }
+            case QEMU_OPTION_disable_skin:
+                skin_disabled = 1;
                 break;
 #endif
             default:
@@ -3551,6 +3555,13 @@ int main(int argc, char **argv, char **envp)
 #if defined(CONFIG_MARU)
             /* use tizen qemu sdl */
             maruskin_display_init(ds);
+
+            if (skin_disabled == 1) {
+                //do not start skin client process
+                set_emul_skin_enable(0);
+            } else {
+                set_emul_skin_enable(1);
+            }
 #else
             sdl_display_init(ds, full_screen, no_frame);
 #endif

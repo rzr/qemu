@@ -45,6 +45,16 @@ MULTI_DEBUG_CHANNEL(qemu, emul_state);
 static EmulatorConfigInfo _emul_info;
 static EmulatorConfigState _emul_state;
 
+/* start_skin_client or not ? */
+void set_emul_skin_enable(int enable)
+{
+    _emul_info.skin_enable = enable;
+}
+
+int get_emul_skin_enable(void)
+{
+    return _emul_info.skin_enable;
+}
 
 /* current emulator condition */
 int get_emulator_condition(void)

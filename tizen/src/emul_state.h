@@ -45,22 +45,20 @@ enum {
     HARD_KEY_VOL_DOWN = 114,
 };
 
+/* keep it consistent with java definition */
 enum {
     MOUSE_DOWN = 1,
     MOUSE_UP = 2,
     MOUSE_DRAG = 3,
 };
 
+/* keep it consistent with java definition */
 enum {
     KEY_PRESSED = 1,
     KEY_RELEASED = 2,
 };
 
-enum {
-    HOST_CAPSLOCK_KEY = 1,
-    HOST_NUMLOCK_KEY = 2,
-};
-
+/* keep it consistent with java definition */
 enum {
     ROTATION_PORTRAIT = 0,
     ROTATION_LANDSCAPE = 1,
@@ -68,12 +66,16 @@ enum {
     ROTATION_REVERSE_LANDSCAPE = 3,
 };
 
+enum {
+    HOST_CAPSLOCK_KEY = 1,
+    HOST_NUMLOCK_KEY = 2,
+};
+
 
 typedef  struct EmulatorConfigInfo {
-    char emulator_name[256]; //TODO:
+    int skin_enable;
     int lcd_size_w;
     int lcd_size_h;
-    int guest_dpi; //not used yet
     int sdl_bpp;
     int max_touch_point;
     //TODO:
@@ -91,6 +93,7 @@ typedef struct EmulatorConfigState {
 
 
 /* setter */
+void set_emul_skin_enable(int enable);
 void set_emul_lcd_size(int width, int height);
 void set_emul_win_scale(double scale);
 void set_emul_sdl_bpp(int bpp);
@@ -101,6 +104,7 @@ void set_emul_caps_lock_state(int state);
 void set_emul_num_lock_state(int state);
 
 /* getter */
+int get_emul_skin_enable(void);
 int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
 double get_emul_win_scale(void);

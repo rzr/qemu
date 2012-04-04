@@ -2632,7 +2632,17 @@ DEF("max-touch-point", HAS_ARG, QEMU_OPTION_max_touch_point, \
     QEMU_ARCH_ALL)
 STEXI
 @item -max-touch-point @var{max_count}
+@findex -max-touch-point
 Use @var{max_count} as Integer
+ETEXI
+
+DEF("disable-skin", 0, QEMU_OPTION_disable_skin, \
+    "-disable-skin\n"
+    "                do not start with java skin process\n",
+    QEMU_ARCH_ALL)
+STEXI
+@item -disable-skin
+@findex -disable-skin
 ETEXI
 
 HXCOMM This is the last statement. Insert new options before this line!
