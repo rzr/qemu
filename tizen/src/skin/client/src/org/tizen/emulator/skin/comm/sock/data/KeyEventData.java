@@ -39,16 +39,19 @@ public class KeyEventData extends AbstractSendData {
 
 	int eventType;
 	int keycode;
+	int keyLocation;
 
-	public KeyEventData(int eventType, int keycode) {
+	public KeyEventData(int eventType, int keycode, int keyLocation) {
 		this.eventType = eventType;
 		this.keycode = keycode;
+		this.keyLocation = keyLocation;
 	}
 	
 	@Override
 	protected void write() throws IOException {
 		writeInt(eventType);
 		writeInt(keycode);
+		writeInt(keyLocation);
 	}
 	
 	@Override
@@ -58,6 +61,8 @@ public class KeyEventData extends AbstractSendData {
 		builder.append(eventType);
 		builder.append(", keycode=");
 		builder.append(keycode);
+		builder.append(", keyLocation=");
+		builder.append(keyLocation);
 		builder.append("]");
 		return builder.toString();
 	}

@@ -575,7 +575,7 @@ public class EmulatorSkin {
 							shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
 									currentHoverRegion.height + 1, false );
 						}
-						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
+						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, 0 );
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
 
@@ -605,7 +605,7 @@ public class EmulatorSkin {
 							gc.dispose();
 						}
 
-						KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
+						KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, 0 );
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
 				}
@@ -762,7 +762,7 @@ public class EmulatorSkin {
 				logger.info( "key released. key event:" + e );
 				int keyCode = e.keyCode | e.stateMask;
 
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode );
+				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, e.keyLocation );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
@@ -770,7 +770,7 @@ public class EmulatorSkin {
 			public void keyPressed( KeyEvent e ) {
 				logger.info( "key pressed. key event:" + e );
 				int keyCode = e.keyCode | e.stateMask;
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode );
+				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, e.keyLocation );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 

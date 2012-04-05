@@ -49,7 +49,7 @@ public class EmulatorShutdownhook extends Thread {
 
 	@Override
 	public void run() {
-		logger.warning( " EmulatorShutdownhook run by a signal." );
+		logger.info( " EmulatorShutdownhook run by a signal." );
 		communicator.terminate();
 	}
 	

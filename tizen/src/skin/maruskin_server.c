@@ -495,6 +495,7 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
+                    /* keep it consistent with emulator-skin definition */
                     int handle_id = 0;
                     int lcd_size_width = 0;
                     int lcd_size_height = 0;
@@ -535,6 +536,7 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
+                    /* keep it consistent with emulator-skin definition */
                     int event_type = 0;
                     int x = 0;
                     int y = 0;
@@ -566,18 +568,23 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
+                    /* keep it consistent with emulator-skin definition */
                     int event_type = 0;
                     int keycode = 0;
+                    int key_location = 0;
 
                     char* p = recvbuf;
                     memcpy( &event_type, p, sizeof( event_type ) );
                     p += sizeof( event_type );
                     memcpy( &keycode, p, sizeof( keycode ) );
+                    p += sizeof( keycode );
+                    memcpy( &key_location, p, sizeof( key_location ) );
 
                     event_type = ntohl( event_type );
                     keycode = ntohl( keycode );
+                    key_location = ntohl( key_location );
 
-                    do_key_event( event_type, keycode );
+                    do_key_event( event_type, keycode, key_location );
                     break;
                 }
                 case RECV_HARD_KEY_EVENT: {
@@ -589,6 +596,7 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
+                    /* keep it consistent with emulator-skin definition */
                     int event_type = 0;
                     int keycode = 0;
 
@@ -612,6 +620,7 @@ static void* run_skin_server( void* args ) {
                         continue;
                     }
 
+                    /* keep it consistent with emulator-skin definition */
                     int scale = 0;
                     double scale_ratio = 0.0;
                     short rotation_type = 0;

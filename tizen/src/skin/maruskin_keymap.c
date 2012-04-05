@@ -36,7 +36,7 @@
 MULTI_DEBUG_CHANNEL(qemu, skin_keymap);
 
 
-int javakeycode_to_scancode(int java_keycode, int event_type)
+int javakeycode_to_scancode(int java_keycode, int event_type, int key_location)
 {
     int state_mask = java_keycode & JAVA_KEYCODE_BIT;
     int vk = java_keycode & JAVA_KEY_MASK;
@@ -83,10 +83,19 @@ int javakeycode_to_scancode(int java_keycode, int event_type)
 
     if (vk == 0) { //meta keys
         if (java_keycode == JAVA_KEYCODE_BIT_CTRL) { //ctrl key
+            if (key_location == JAVA_KEYLOCATION_RIGHT) {
+                kbd_put_keycode(224); //0xE0
+            }
             return 29;
         } else if (java_keycode == JAVA_KEYCODE_BIT_SHIFT) { //shift key
+            if (key_location == JAVA_KEYLOCATION_RIGHT) {
+                return 54; //Shift_R
+            }
             return 42;
         } else if (java_keycode == JAVA_KEYCODE_BIT_ALT) { //alt key
+            if (key_location == JAVA_KEYLOCATION_RIGHT) {
+                kbd_put_keycode(224);
+            }
             return 56;
         } else {
             return -1;
@@ -100,15 +109,27 @@ int javakeycode_to_scancode(int java_keycode, int event_type)
         } else { //special keys
             switch(vk) {
                 case JAVA_KEY_ARROW_UP :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     vk = KEY_UP;
                     break;
                 case JAVA_KEY_ARROW_DOWN :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     vk = KEY_DOWN;
                     break;
                 case JAVA_KEY_ARROW_LEFT :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     vk = KEY_LEFT;
                     break;
                 case JAVA_KEY_ARROW_RIGHT :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     vk = KEY_RIGHT;
                     break;
 
@@ -162,7 +183,7 @@ int javakeycode_to_scancode(int java_keycode, int event_type)
                 case JAVA_KEY_BREAK :
                     return 198;
                 case JAVA_KEY_PRINT_SCREEN :
-                    //TODO:
+                    //not support
                     return -1;
                     break;
                 default :

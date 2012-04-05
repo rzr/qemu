@@ -32,11 +32,16 @@
 #define MARUSKIN_KEYMAP_H_
 
 
-/* keep it consistent with java virtual keycode */
+/* keep it consistent with emulator-skin(swt) virtual keycode */
 #define JAVA_KEYCODE_BIT (1 << 24)
 #define JAVA_KEYCODE_BIT_CTRL (1 << 18)
 #define JAVA_KEYCODE_BIT_SHIFT (1 << 17)
 #define JAVA_KEYCODE_BIT_ALT (1 << 16)
+
+//key location
+#define JAVA_KEYLOCATION_KEYPAD (1 << 1)
+#define JAVA_KEYLOCATION_LEFT (1 << 14)
+#define JAVA_KEYLOCATION_RIGHT (1 << 17)
 
 #define JAVA_KEY_MASK 0xFFFF;
 
@@ -224,6 +229,6 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['?'] = 53 | SHIFT,
 };
 
-int javakeycode_to_scancode(int java_keycode, int event_type);
+int javakeycode_to_scancode(int java_keycode, int event_type, int key_location);
 
 #endif /* MARUSKIN_KEYMAP_H_ */

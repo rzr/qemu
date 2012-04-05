@@ -46,7 +46,7 @@ void start_display( int handle_id, int lcd_size_width, int lcd_size_height, doub
 
 void do_mouse_event( int event_type, int x, int y, int z );
 
-void do_key_event( int event_type, int keycode );
+void do_key_event( int event_type, int keycode, int key_location );
 
 void do_hardkey_event( int event_type, int keycode );
 

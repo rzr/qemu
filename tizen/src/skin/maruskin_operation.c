@@ -86,9 +86,9 @@ void do_mouse_event( int event_type, int x, int y, int z )
 #endif
 }
 
-void do_key_event( int event_type, int keycode )
+void do_key_event( int event_type, int keycode, int key_location )
 {
-    TRACE( "key_event event_type:%d, keycode:%d\n", event_type, keycode );
+    TRACE( "key_event event_type:%d, keycode:%d, key_location:%d\n", event_type, keycode, key_location );
 
     //is multi-touch mode ?
     if (keycode == JAVA_KEYCODE_BIT_CTRL && get_emul_max_touch_point() > 1) {
@@ -106,7 +106,9 @@ void do_key_event( int event_type, int keycode )
     	return;
     }
 
-    int scancode = javakeycode_to_scancode(keycode, event_type);
+    int scancode = javakeycode_to_scancode(keycode, event_type, key_location);
+    TRACE("javakeycode_to_scancode : %d\n", scancode);
+
     if (scancode == -1) {
         INFO("cannot find scancode\n");
         return;

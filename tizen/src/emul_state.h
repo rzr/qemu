@@ -37,7 +37,7 @@
 #include "maru_common.h"
 #include "maru_finger.h"
 
-/* keep it consistent with java definition */
+/* keep it consistent with emulator-skin definition */
 enum {
     HARD_KEY_HOME = 101,
     HARD_KEY_POWER = 103,
@@ -45,20 +45,20 @@ enum {
     HARD_KEY_VOL_DOWN = 114,
 };
 
-/* keep it consistent with java definition */
+/* keep it consistent with emulator-skin definition */
 enum {
     MOUSE_DOWN = 1,
     MOUSE_UP = 2,
     MOUSE_DRAG = 3,
 };
 
-/* keep it consistent with java definition */
+/* keep it consistent with emulator-skin definition */
 enum {
     KEY_PRESSED = 1,
     KEY_RELEASED = 2,
 };
 
-/* keep it consistent with java definition */
+/* keep it consistent with emulator-skin definition */
 enum {
     ROTATION_PORTRAIT = 0,
     ROTATION_LANDSCAPE = 1,
