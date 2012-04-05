@@ -36,7 +36,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -94,6 +93,8 @@ public class SocketCommunicator implements ICommunicator {
 
 	public static final int HEART_BEAT_INTERVAL = 1; //second
 	public static final int HEART_BEAT_EXPIRE = 5;
+	
+	private static int reqId;
 	
 	private Logger logger = SkinLogger.getSkinLogger( SocketCommunicator.class ).getLogger();
 
@@ -331,10 +332,8 @@ public class SocketCommunicator implements ICommunicator {
 
 		try {
 
-			// anyway down casting
-			long longReqId = UUID.randomUUID().getMostSignificantBits();
-			int reqId = (int) ( longReqId >> 32 );
-
+			reqId = ( Integer.MAX_VALUE == reqId ) ? 0 : ++reqId;
+			
 			ByteArrayOutputStream bao = new ByteArrayOutputStream();
 			DataOutputStream dataOutputStream = new DataOutputStream( bao );
 

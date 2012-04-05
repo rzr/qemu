@@ -54,6 +54,7 @@
 
 MULTI_DEBUG_CHANNEL( qemu, maruskin_server );
 
+#define MAX_REQ_ID 0x7fffffff
 #define RECV_BUF_SIZE 32
 #define RECV_HEADER_SIZE 12
 
@@ -93,6 +94,8 @@ enum {
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
+
+static int seq_req_id = 0;
 
 static uint16_t svr_port = 0;
 static int server_sock = 0;
@@ -790,7 +793,7 @@ static void make_header( int client_sock, short send_cmd, int data_length, char*
 
     memset( sendbuf, 0, SEND_HEADER_SIZE );
 
-    int request_id = rand();
+    int request_id = ( MAX_REQ_ID == seq_req_id ) ? 0 : ++seq_req_id;
     TRACE( "== SEND skin request_id:%d, send_cmd:%d ==\n", request_id, send_cmd );
     request_id = htonl( request_id );
 
