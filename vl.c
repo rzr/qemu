@@ -1433,7 +1433,12 @@ void qemu_system_killed(int signal, pid_t pid)
     shutdown_signal = signal;
     shutdown_pid = pid;
     no_shutdown = 0;
+
+#ifdef CONFIG_MARU
+    shutdown_qemu_gracefully();
+#else
     qemu_system_shutdown_request();
+#endif
 }
 
 void qemu_system_shutdown_request(void)
