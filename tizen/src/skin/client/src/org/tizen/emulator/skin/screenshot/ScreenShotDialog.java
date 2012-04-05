@@ -106,17 +106,15 @@ public class ScreenShotDialog {
 	private EmulatorConfig config;
 
 	private RotationInfo currentRotation;
-	private boolean needToStoreRotatedImage;
 	private boolean reserveImage;
-	
+
 	public ScreenShotDialog( Shell parent, SocketCommunicator communicator, EmulatorSkin emulatorSkin,
 			EmulatorConfig config ) throws ScreenShotException {
 
 		this.communicator = communicator;
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
-		this.needToStoreRotatedImage = true;
-		
+
 		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
 		shell.setLocation( parent.getLocation().x + parent.getSize().x + 30, parent.getLocation().y );
@@ -124,7 +122,7 @@ public class ScreenShotDialog {
 			@Override
 			public void handleEvent( Event event ) {
 				if ( null != image ) {
-					if( !reserveImage ) {
+					if ( !reserveImage ) {
 						image.dispose();
 					}
 				}
@@ -157,26 +155,15 @@ public class ScreenShotDialog {
 		imageCanvas.addPaintListener( new PaintListener() {
 			@Override
 			public void paintControl( PaintEvent e ) {
-				
-				logger.info( "capture screen." );
+
+				logger.info( "paint image." );
 
 				if ( null != image && !image.isDisposed() ) {
 
 					if ( RotationInfo.PORTRAIT.equals( currentRotation ) ) {
-
 						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-						needToStoreRotatedImage = false;
-						
 					} else {
-						
-						if( needToStoreRotatedImage ) {
-							drawRotatedImage( e.gc, width, height );
-							needToStoreRotatedImage = false;
-						}else {
-							//just redraw rotated image
-							e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-						}
-
+						drawRotatedImage( e.gc, width, height );
 					}
 
 				}
@@ -198,53 +185,31 @@ public class ScreenShotDialog {
 		}
 
 		shell.pack();
-		
+
 	}
 
-	
 	private void drawRotatedImage( GC gc, int width, int height ) {
-		
+
 		Transform transform = new Transform( shell.getDisplay() );
 
 		float angle = currentRotation.angle();
 		transform.rotate( angle );
 
-		int w = 0;
-		int h = 0;
-		ImageData imageData = image.getImageData();
-
 		if ( RotationInfo.LANDSCAPE.equals( currentRotation ) ) {
 			transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
-			w = imageData.height;
-			h = imageData.width;
 		} else if ( RotationInfo.REVERSE_PORTRAIT.equals( currentRotation ) ) {
 			transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
-			w = imageData.width;
-			h = imageData.height;
 		} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( currentRotation ) ) {
 			transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
-			w = imageData.height;
-			h = imageData.width;
-		} else {
-			w = imageData.width;
-			h = imageData.height;
 		}
-
 		gc.setTransform( transform );
 
 		gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 
 		transform.dispose();
 
-		// 'gc.drawImage' is only for the showing without changing image data,
-		// so change image data fully to support the roated image in a saved file and a pasted image.
-		Image rotatedImage = new Image( shell.getDisplay(), w, h );
-		gc.copyArea( rotatedImage, CANVAS_MARGIN, CANVAS_MARGIN );
-		image.dispose();
-		image = rotatedImage;
-
 	}
-	
+
 	private void clickShutter() throws ScreenShotException {
 		capture();
 		arrageImageLayout();
@@ -298,7 +263,6 @@ public class ScreenShotDialog {
 
 				this.image = new Image( Display.getDefault(), imageData );
 
-				needToStoreRotatedImage = true;
 				imageCanvas.redraw();
 
 			} else {
@@ -308,7 +272,7 @@ public class ScreenShotDialog {
 		} else {
 			throw new ScreenShotException( "Fail to received image data." );
 		}
-		
+
 	}
 
 	private void arrageImageLayout() {
@@ -339,6 +303,74 @@ public class ScreenShotDialog {
 
 	}
 
+	private ImageData rotateImageData( ImageData srcData, RotationInfo rotation ) {
+
+		int direction = SWT.NONE;
+
+		switch ( rotation ) {
+		case PORTRAIT:
+			return srcData;
+		case LANDSCAPE:
+			direction = SWT.LEFT;
+			break;
+		case REVERSE_PORTRAIT:
+			direction = SWT.DOWN;
+			break;
+		case REVERSE_LANDSCAPE:
+			direction = SWT.RIGHT;
+			break;
+		default:
+			return srcData;
+		}
+
+		ImageData rotatedData = rotateImageData( srcData, direction );
+		return rotatedData;
+
+	}
+
+	/*
+	 * refrence web page : http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/Rotateandflipanimage.htm
+	 */
+	private ImageData rotateImageData( ImageData srcData, int direction ) {
+		int bytesPerPixel = srcData.bytesPerLine / srcData.width;
+		int destBytesPerLine = ( direction == SWT.DOWN ) ? srcData.width * bytesPerPixel : srcData.height
+				* bytesPerPixel;
+		byte[] newData = new byte[srcData.data.length];
+		int width = 0, height = 0;
+		for ( int srcY = 0; srcY < srcData.height; srcY++ ) {
+			for ( int srcX = 0; srcX < srcData.width; srcX++ ) {
+				int destX = 0, destY = 0, destIndex = 0, srcIndex = 0;
+				switch ( direction ) {
+				case SWT.LEFT: // left 90 degrees
+					destX = srcY;
+					destY = srcData.width - srcX - 1;
+					width = srcData.height;
+					height = srcData.width;
+					break;
+				case SWT.RIGHT: // right 90 degrees
+					destX = srcData.height - srcY - 1;
+					destY = srcX;
+					width = srcData.height;
+					height = srcData.width;
+					break;
+				case SWT.DOWN: // 180 degrees
+					destX = srcData.width - srcX - 1;
+					destY = srcData.height - srcY - 1;
+					width = srcData.width;
+					height = srcData.height;
+					break;
+				}
+				destIndex = ( destY * destBytesPerLine ) + ( destX * bytesPerPixel );
+				srcIndex = ( srcY * srcData.bytesPerLine ) + ( srcX * bytesPerPixel );
+				System.arraycopy( srcData.data, srcIndex, newData, destIndex, bytesPerPixel );
+			}
+		}
+		// destBytesPerLine is used as scanlinePad to ensure that no padding is
+		// required
+		return new ImageData( width, height, srcData.depth, srcData.palette, destBytesPerLine, newData );
+
+	}
+
 	private RotationInfo getCurrentRotation() {
 		short currentRotationId = emulatorSkin.getCurrentRotationId();
 		RotationInfo rotationInfo = RotationInfo.getValue( currentRotationId );
@@ -350,11 +382,11 @@ public class ScreenShotDialog {
 		ToolBar toolBar = new ToolBar( shell, SWT.HORIZONTAL );
 		GridData gridData = new GridData( GridData.FILL_HORIZONTAL, GridData.CENTER, true, false );
 		toolBar.setLayoutData( gridData );
-		
+
 		ToolItem saveItem = new ToolItem( toolBar, SWT.FLAT );
 		saveItem.setImage( ImageRegistry.getInstance().getIcon( IconName.SAVE_SCREEN_SHOT ) );
 		saveItem.setToolTipText( "Save to file" );
-		
+
 		saveItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
@@ -387,7 +419,7 @@ public class ScreenShotDialog {
 			}
 
 		} );
-		
+
 		ToolItem copyItem = new ToolItem( toolBar, SWT.FLAT );
 		copyItem.setImage( ImageRegistry.getInstance().getIcon( IconName.COPY_SCREEN_SHOT ) );
 		copyItem.setToolTipText( "Copy to clipboard" );
@@ -403,16 +435,20 @@ public class ScreenShotDialog {
 
 				ImageLoader loader = new ImageLoader();
 
+				ImageData data = null;
+
 				if ( SkinUtil.isWindowsPlatform() ) {
 					// change RGB mask
 					ImageData imageData = image.getImageData();
 					PaletteData paletteData = new PaletteData( BLUE_MASK, GREEN_MASK, RED_MASK );
-					ImageData data = new ImageData( imageData.width, imageData.height, imageData.depth, paletteData,
+					data = new ImageData( imageData.width, imageData.height, imageData.depth, paletteData,
 							imageData.bytesPerLine, imageData.data );
-					loader.data = new ImageData[] { data };
 				} else {
-					loader.data = new ImageData[] { image.getImageData() };
+					data = image.getImageData();
 				}
+
+				data = rotateImageData( data, currentRotation );
+				loader.data = new ImageData[] { data };
 
 				ByteArrayOutputStream bao = new ByteArrayOutputStream();
 				loader.save( bao, SWT.IMAGE_PNG );
@@ -485,7 +521,8 @@ public class ScreenShotDialog {
 			}
 
 			ImageLoader loader = new ImageLoader();
-			loader.data = new ImageData[] { image.getImageData() };
+			ImageData data = rotateImageData( image.getImageData(), currentRotation );
+			loader.data = new ImageData[] { data };
 
 			if ( StringUtil.isEmpty( format ) || format.equalsIgnoreCase( "png" ) ) {
 				fos = new FileOutputStream( fileFullPath, false );
@@ -524,7 +561,7 @@ public class ScreenShotDialog {
 		}
 
 	}
-	
+
 	public void open() {
 
 		if ( shell.isDisposed() ) {
@@ -535,14 +572,14 @@ public class ScreenShotDialog {
 
 		while ( !shell.isDisposed() ) {
 			if ( !shell.getDisplay().readAndDispatch() ) {
-				if( reserveImage ) {
+				if ( reserveImage ) {
 					break;
-				}else {
+				} else {
 					shell.getDisplay().sleep();
 				}
 			}
 		}
-		
+
 	}
 
 	public void setEmulatorSkin( EmulatorSkin emulatorSkin ) {
@@ -552,9 +589,9 @@ public class ScreenShotDialog {
 	public void setReserveImage( boolean reserveImage ) {
 		this.reserveImage = reserveImage;
 	}
-	
+
 	public Shell getShell() {
 		return shell;
 	}
-	
+
 }
