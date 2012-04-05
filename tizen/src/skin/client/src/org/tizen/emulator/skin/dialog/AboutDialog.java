@@ -161,7 +161,7 @@ public class AboutDialog extends SkinDialog {
 			}
 		} );
 
-		createCloseButton( parent, true );
+		createOKButton( parent, true );
 
 	}
 

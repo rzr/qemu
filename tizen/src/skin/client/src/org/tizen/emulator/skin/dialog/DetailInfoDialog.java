@@ -348,16 +348,16 @@ public class DetailInfoDialog extends SkinDialog {
 	protected void createButtons( Composite parent ) {
 		super.createButtons( parent );
 
-		Button closeButton = createButton( parent, "Close" );
+		Button okButton = createButton( parent, OK );
 
 		GridData gd = new GridData();
 		gd.grabExcessHorizontalSpace = true;
 		gd.horizontalAlignment = SWT.RIGHT;
-		closeButton.setLayoutData( gd );
+		okButton.setLayoutData( gd );
 
-		closeButton.setFocus();
+		okButton.setFocus();
 
-		closeButton.addSelectionListener( new SelectionAdapter() {
+		okButton.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				DetailInfoDialog.this.shell.close();

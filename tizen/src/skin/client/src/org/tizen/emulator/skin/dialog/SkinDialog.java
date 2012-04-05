@@ -47,6 +47,8 @@ import org.tizen.emulator.skin.util.StringUtil;
  */
 public abstract class SkinDialog extends Dialog {
 
+	public static final String OK = "        " + "OK" + "        ";
+	
 	protected Shell shell;
 	private boolean isReady;
 	private Composite buttonComposite;
@@ -143,10 +145,10 @@ public abstract class SkinDialog extends Dialog {
 
 	}
 
-	protected Button createCloseButton( Composite parent, boolean setFocus ) {
+	protected Button createOKButton( Composite parent, boolean setFocus ) {
 
-		Button closeButton = createButton( parent, "Close" );
-		closeButton.addSelectionListener( new SelectionAdapter() {
+		Button okButton = createButton( parent, OK );
+		okButton.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				SkinDialog.this.shell.close();
@@ -154,10 +156,10 @@ public abstract class SkinDialog extends Dialog {
 		} );
 
 		if ( setFocus ) {
-			closeButton.setFocus();
+			okButton.setFocus();
 		}
 
-		return closeButton;
+		return okButton;
 
 	}
 
