@@ -104,6 +104,7 @@ static int stop_server = 0;
 static int is_sensord_initialized = 0;
 static int ready_server = 0;
 static int ignore_heartbeat = 0;
+static int is_force_close_client = 0;
 
 static int is_started_heartbeat = 0;
 static int stop_heartbeat = 0;
@@ -158,7 +159,6 @@ void shutdown_skin_server( void ) {
         INFO( "send shutdown to skin.\n" );
         if ( 0 > send_skin_header_only( client_sock, SEND_SHUTDOWN ) ) {
             ERR( "fail to send SEND_SHUTDOWN to skin.\n" );
-            stop_server = 1;
             // force close
 #ifdef _WIN32
             closesocket( client_sock );
@@ -330,6 +330,7 @@ static void* run_skin_server( void* args ) {
     if ( 0 > ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) ) {
         ERR( "create listen socket error\n" );
         perror( "create listen socket error : " );
+        shutdown_qmu = 1;
         goto cleanup;
     }
 
@@ -419,8 +420,14 @@ static void* run_skin_server( void* args ) {
             int read_cnt = recv_n( client_sock, recvbuf, RECV_HEADER_SIZE );
 
             if ( 0 > read_cnt ) {
-                ERR( "skin_server read error:%d\n", read_cnt );
-                perror( "skin_server read error : " );
+
+                if( is_force_close_client ) {
+                    WARN( "force close client socket.\n" );
+                    is_force_close_client = 0;
+                }else {
+                    ERR( "skin_server read error:%d\n", read_cnt );
+                    perror( "skin_server read error : " );
+                }
                 break;
 
             } else {
@@ -908,7 +915,7 @@ static void* do_heart_beat( void* args ) {
     int send_fail_count = 0;
     int restart_client_count = 0;
     int need_restart_skin_client = 0;
-    int shutdown_qmu = 0;
+    int shutdown = 0;
 
     while ( 1 ) {
 
@@ -959,7 +966,7 @@ static void* do_heart_beat( void* args ) {
         if( need_restart_skin_client ) {
 
             if ( RESTART_CLIENT_MAX_COUNT <= restart_client_count ) {
-                shutdown_qmu = 1;
+                shutdown = 1;
                 break;
             } else {
 
@@ -972,6 +979,7 @@ static void* do_heart_beat( void* args ) {
                 WARN( "!!! restart skin client process !!!\n" );
                 WARN( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
 
+                is_force_close_client = 1;
                 shutdown_skin_server();
                 start_skin_client( skin_argc, skin_argv );
 
@@ -981,10 +989,14 @@ static void* do_heart_beat( void* args ) {
 
     }
 
-    if ( shutdown_qmu ) {
+    if ( shutdown ) {
 
         INFO( "[HB] shutdown skin_server by heartbeat thread.\n" );
+
+        is_force_close_client = 1;
         shutdown_skin_server();
+
+        stop_server = 1;
 
         if ( server_sock ) {
 #ifdef _WIN32
