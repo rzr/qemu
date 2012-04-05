@@ -48,12 +48,10 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
-import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Canvas;
@@ -147,9 +145,6 @@ public class ScreenShotDialog {
 
 		currentRotation = getCurrentRotation();
 
-		final int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
-		final int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
-
 		imageCanvas = new Canvas( scrollComposite, SWT.NONE );
 		imageCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_DARK_GRAY ) );
 		imageCanvas.addPaintListener( new PaintListener() {
@@ -159,13 +154,7 @@ public class ScreenShotDialog {
 				logger.info( "paint image." );
 
 				if ( null != image && !image.isDisposed() ) {
-
-					if ( RotationInfo.PORTRAIT.equals( currentRotation ) ) {
-						e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-					} else {
-						drawRotatedImage( e.gc, width, height );
-					}
-
+					e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 				}
 
 			}
@@ -188,27 +177,27 @@ public class ScreenShotDialog {
 
 	}
 
-	private void drawRotatedImage( GC gc, int width, int height ) {
-
-		Transform transform = new Transform( shell.getDisplay() );
-
-		float angle = currentRotation.angle();
-		transform.rotate( angle );
-
-		if ( RotationInfo.LANDSCAPE.equals( currentRotation ) ) {
-			transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
-		} else if ( RotationInfo.REVERSE_PORTRAIT.equals( currentRotation ) ) {
-			transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
-		} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( currentRotation ) ) {
-			transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
-		}
-		gc.setTransform( transform );
-
-		gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-
-		transform.dispose();
-
-	}
+//	private void drawRotatedImage( GC gc, int width, int height ) {
+//
+//		Transform transform = new Transform( shell.getDisplay() );
+//
+//		float angle = currentRotation.angle();
+//		transform.rotate( angle );
+//
+//		if ( RotationInfo.LANDSCAPE.equals( currentRotation ) ) {
+//			transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
+//		} else if ( RotationInfo.REVERSE_PORTRAIT.equals( currentRotation ) ) {
+//			transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
+//		} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( currentRotation ) ) {
+//			transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
+//		}
+//		gc.setTransform( transform );
+//
+//		gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
+//
+//		transform.dispose();
+//
+//	}
 
 	private void clickShutter() throws ScreenShotException {
 		capture();
@@ -261,8 +250,10 @@ public class ScreenShotDialog {
 				int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
 				ImageData imageData = new ImageData( width, height, COLOR_DEPTH, paletteData, 1, receivedData );
 
-				this.image = new Image( Display.getDefault(), imageData );
+				RotationInfo rotation = getCurrentRotation();
+				imageData = rotateImageData( imageData, rotation );
 
+				this.image = new Image( Display.getDefault(), imageData );
 				imageCanvas.redraw();
 
 			} else {
@@ -278,24 +269,14 @@ public class ScreenShotDialog {
 	private void arrageImageLayout() {
 
 		ImageData imageData = image.getImageData();
-		RotationInfo rotation = getCurrentRotation();
 
-		int width = 0;
-		int height = 0;
-
-		if ( RotationInfo.PORTRAIT.equals( rotation ) || RotationInfo.REVERSE_PORTRAIT.equals( rotation ) ) {
-			width = imageData.width + ( 2 * CANVAS_MARGIN );
-			height = imageData.height + ( 2 * CANVAS_MARGIN );
-		} else if ( RotationInfo.LANDSCAPE.equals( rotation ) || RotationInfo.REVERSE_LANDSCAPE.equals( rotation ) ) {
-			width = imageData.height + ( 2 * CANVAS_MARGIN );
-			height = imageData.width + ( 2 * CANVAS_MARGIN );
-		}
+		int width = imageData.width + ( 2 * CANVAS_MARGIN );
+		int height = imageData.height + ( 2 * CANVAS_MARGIN );
 
 		scrollComposite.setMinSize( width, height );
 
-		rotation = getCurrentRotation();
-
-		if ( !currentRotation.equals( rotation ) ) {
+		RotationInfo rotation = getCurrentRotation();
+		if ( !currentRotation.equals( rotation ) ) { // reserve changed shell size by user
 			shell.pack();
 		}
 
@@ -447,7 +428,6 @@ public class ScreenShotDialog {
 					data = image.getImageData();
 				}
 
-				data = rotateImageData( data, currentRotation );
 				loader.data = new ImageData[] { data };
 
 				ByteArrayOutputStream bao = new ByteArrayOutputStream();
@@ -521,8 +501,7 @@ public class ScreenShotDialog {
 			}
 
 			ImageLoader loader = new ImageLoader();
-			ImageData data = rotateImageData( image.getImageData(), currentRotation );
-			loader.data = new ImageData[] { data };
+			loader.data = new ImageData[] { image.getImageData() };
 
 			if ( StringUtil.isEmpty( format ) || format.equalsIgnoreCase( "png" ) ) {
 				fos = new FileOutputStream( fileFullPath, false );
