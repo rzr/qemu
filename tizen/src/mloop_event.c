@@ -282,7 +282,6 @@ void mloop_evcmd_usbdisk(char *img)
     		// Need log
     		return;
     	}
-    	}
 
     	pack.type = htons(MLOOP_EVTYPE_USB_ADD);
     	pack.size = htons(5 + sprintf(pack.data, "disk:%s", img));
