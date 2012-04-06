@@ -53,7 +53,7 @@ struct mloop_evsock {
 #define MLOOP_EVSOCK_BOUND        3
 #define MLOOP_EVSOCK_CONNECTED    4
 
-#define PACKET_LEN 128
+#define PACKET_LEN 512
 struct mloop_evpack {
     short type;
     short size;
@@ -175,6 +175,7 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
 }
 
 static USBDevice *usbkbd = NULL;
+static USBDevice *usbdisk = NULL;
 static void mloop_evhandle_usb_add(char *name)
 {
     if (name == NULL) {
@@ -189,6 +190,11 @@ static void mloop_evhandle_usb_add(char *name)
             usb_device_attach(usbkbd);
         }
     }
+    else if (strncmp(name, "disk:", 5) == 0) {
+        if (usbdisk == NULL) {
+        	usbdisk = usbdevice_create(name);
+        }
+    }
 }
 
 static void mloop_evhandle_usb_del(char *name)
@@ -201,6 +207,11 @@ static void mloop_evhandle_usb_del(char *name)
         if (usbkbd && usbkbd->attached != 0) {
             usb_device_detach(usbkbd);
         }
+    }
+    else if (strncmp(name, "disk:", 5) == 0) {
+    	if (usbdisk) {
+    	    qdev_free(&usbdisk->qdev);
+    	}
     }
 }
 
@@ -240,7 +251,6 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     }
 }
 
-extern int qemu_set_fd_handler(int fd, IOHandler *fd_read, IOHandler *fd_write, void *opaque);
 void mloop_ev_init(void)
 {
     int ret = mloop_evsock_create(&mloop);
@@ -255,19 +265,47 @@ void mloop_ev_stop(void)
     mloop_evsock_remove(&mloop);
 }
 
-void mloop_evcmd_usbkbd_on(void)
+void mloop_evcmd_usbkbd(int on)
 {
+	mloop_evcmd_usbdisk(on ? "sdcard.img" : NULL);
     struct mloop_evpack pack = { htons(MLOOP_EVTYPE_USB_ADD), htons(13), "keyboard" };
+    if (on == 0)
+    	pack.type = htons(MLOOP_EVTYPE_USB_DEL);
     mloop_evsock_send(&mloop, &pack);
 }
 
-void mloop_evcmd_usbkbd_off(void)
+void mloop_evcmd_usbdisk(char *img)
 {
-    struct mloop_evpack pack = { htons(MLOOP_EVTYPE_USB_DEL), htons(13), "keyboard" };
+    struct mloop_evpack pack;
+
+    if (img) {
+    	if (strlen(img) > PACKET_LEN-5) {
+    		// Need log
+    		return;
+    	}
+
+    	pack.type = htons(MLOOP_EVTYPE_USB_ADD);
+    	pack.size = htons(5 + sprintf(pack.data, "disk:%s", img));
+    }
+    else {
+    	pack.type = htons(MLOOP_EVTYPE_USB_DEL);
+    	pack.size = htons(5 + sprintf(pack.data, "disk:"));
+    }
+
     mloop_evsock_send(&mloop, &pack);
 }
 
 int mloop_evcmd_get_usbkbd_status(void)
 {
-	return (usbkbd ? 1 : 0);
+	return (usbkbd && usbkbd->attached ? 1 : 0);
+}
+
+void mloop_evcmd_set_usbkbd(void *dev)
+{
+	usbkbd = (USBDevice *)dev;
+}
+
+void mloop_evcmd_set_usbdisk(void *dev)
+{
+	usbdisk = (USBDevice *)dev;
 }

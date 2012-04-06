@@ -35,10 +35,13 @@ extern "C" {
 void mloop_ev_init(void);
 void mloop_ev_stop(void);
 
-void mloop_evcmd_usbkbd_on(void);
-void mloop_evcmd_usbkbd_off(void);
+void mloop_evcmd_usbkbd(int on);
+void mloop_evcmd_usbdisk(char *img);
 
 int mloop_evcmd_get_usbkbd_status(void);
+
+void mloop_evcmd_set_usbkbd(void *dev);
+void mloop_evcmd_set_usbdisk(void *dev);
 
 
 #ifdef __cplusplus

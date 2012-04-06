@@ -308,12 +308,7 @@ void onoff_usb_kbd( int on )
 {
     INFO( "usb kbd on/off:%d\n", on );
     //TODO
-    if(on) {
-        mloop_evcmd_usbkbd_on();
-    }
-    else {
-        mloop_evcmd_usbkbd_off();
-    }
+    mloop_evcmd_usbkbd(on);
 }
 
 

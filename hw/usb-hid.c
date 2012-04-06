@@ -29,6 +29,10 @@
 #include "qemu-timer.h"
 #include "hid.h"
 
+#ifdef CONFIG_MARU
+#include "../tizen/src/mloop_event.h"
+#endif
+
 /* HID interface requests */
 #define GET_REPORT   0xa101
 #define GET_IDLE     0xa102
@@ -500,6 +504,12 @@ static void usb_hid_handle_destroy(USBDevice *dev)
 {
     USBHIDState *us = DO_UPCAST(USBHIDState, dev, dev);
 
+#ifdef CONFIG_MARU
+    if (us->hid.kind == HID_KEYBOARD) {
+        mloop_evcmd_set_usbkbd(NULL);
+    }
+#endif
+
     hid_free(&us->hid);
 }
 
@@ -524,6 +534,9 @@ static int usb_mouse_initfn(USBDevice *dev)
 
 static int usb_keyboard_initfn(USBDevice *dev)
 {
+#ifdef CONFIG_MARU
+    mloop_evcmd_set_usbkbd(dev);
+#endif
     return usb_hid_initfn(dev, HID_KEYBOARD);
 }
 

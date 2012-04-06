@@ -18,6 +18,10 @@
 #include "sysemu.h"
 #include "blockdev.h"
 
+#ifdef CONFIG_MARU
+#include "../tizen/src/mloop_event.h"
+#endif
+
 //#define DEBUG_MSD
 
 #ifdef DEBUG_MSD
@@ -501,6 +505,13 @@ static int usb_msd_handle_data(USBDevice *dev, USBPacket *p)
     return ret;
 }
 
+#ifdef CONFIG_MARU
+static void usb_msd_handle_destroy(USBDevice *dev)
+{
+    mloop_evcmd_set_usbdisk(NULL);
+}
+#endif
+
 static void usb_msd_password_cb(void *opaque, int err)
 {
     MSDState *s = opaque;
@@ -632,6 +643,10 @@ static USBDevice *usb_msd_init(const char *filename)
     if (qdev_init(&dev->qdev) < 0)
         return NULL;
 
+#ifdef CONFIG_MARU
+    mloop_evcmd_set_usbdisk(dev);
+#endif
+
     return dev;
 }
 
@@ -660,6 +675,9 @@ static struct USBDeviceInfo msd_info = {
     .handle_reset   = usb_msd_handle_reset,
     .handle_control = usb_msd_handle_control,
     .handle_data    = usb_msd_handle_data,
+#ifdef CONFIG_MARU
+    .handle_destroy = usb_msd_handle_destroy,
+#endif
     .usbdevice_name = "disk",
     .usbdevice_init = usb_msd_init,
     .qdev.props     = (Property[]) {
