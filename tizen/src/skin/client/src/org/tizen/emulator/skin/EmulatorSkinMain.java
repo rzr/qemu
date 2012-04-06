@@ -91,6 +91,10 @@ public class EmulatorSkinMain {
 			// able to use log file after loading properties
 			initLog( argsMap, configProperties );
 
+			EmulatorConfig.validateArgs( argsMap );
+			EmulatorConfig.validateSkinProperties( skinProperties );
+			EmulatorConfig.validateSkinConfigProperties( configProperties );
+			
 			int lcdWidth = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_WIDTH ) );
 			int lcdHeight = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_HEIGHT ) );
 			String argSkinPath = (String) argsMap.get( ArgsConstants.SKIN_PATH );
@@ -112,7 +116,7 @@ public class EmulatorSkinMain {
 			EmulatorSkin skin = new EmulatorSkin( config, isOnTop );
 			int windowHandleId = skin.compose();
 
-			int uid = Integer.parseInt( config.getArg( ArgsConstants.UID ) );
+			int uid = config.getArgInt( ArgsConstants.UID );
 			SocketCommunicator communicator = new SocketCommunicator( config, uid, windowHandleId, skin );
 
 			skin.setCommunicator( communicator );
@@ -186,10 +190,10 @@ public class EmulatorSkinMain {
 		}else if( !StringUtil.isEmpty( configPropertyLogLevel ) ) {
 			logLevel = configPropertyLogLevel;
 		}else {
-			logLevel = SkinLogLevel.DEBUG.value();
+			logLevel = EmulatorConfig.DEFAULT_LOG_LEVEL.value();
 		}
 		
-		SkinLogLevel skinLogLevel = SkinLogLevel.DEBUG;
+		SkinLogLevel skinLogLevel = EmulatorConfig.DEFAULT_LOG_LEVEL;
 		
 		SkinLogLevel[] values = SkinLogLevel.values();
 		

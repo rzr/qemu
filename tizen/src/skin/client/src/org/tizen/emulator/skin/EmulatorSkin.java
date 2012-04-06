@@ -68,7 +68,7 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
+import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
@@ -92,7 +92,6 @@ import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
-import org.tizen.emulator.skin.util.StringUtil;
 
 /**
  * 
@@ -189,14 +188,15 @@ public class EmulatorSkin {
 
 		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 
-		int x = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_X, 50 );
-		int y = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_Y, 50 );
-		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
-		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
+		int x = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_X, EmulatorConfig.DEFAULT_WINDOW_X );
+		int y = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_Y, EmulatorConfig.DEFAULT_WINDOW_Y );
+		int lcdWidth = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
+		int lcdHeight = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
 		int scale = SkinUtil.getValidScale( config );
-		// int rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION, RotationInfo.PORTRAIT.id() );
+//		int rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION,
+//				EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 		// has to be portrait mode at first booting time
-		short rotationId = RotationInfo.PORTRAIT.id();
+		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 		
 		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId );
 
@@ -568,7 +568,7 @@ public class EmulatorSkin {
 
 					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
-					if ( EmulatorConstants.UNKNOWN_KEYCODE != keyCode ) {
+					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
 						if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
 							shell.redraw();
 						} else {
@@ -593,7 +593,7 @@ public class EmulatorSkin {
 
 					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
-					if ( EmulatorConstants.UNKNOWN_KEYCODE != keyCode ) {
+					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
 						// draw the button region as the cropped keyPressed image area
 						SkinRegion region = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 
@@ -874,28 +874,24 @@ public class EmulatorSkin {
 				}
 
 				String sdbPath = SkinUtil.getSdbPath();
-				String portNumber = StringUtil.nvl( config.getArg( ArgsConstants.NET_BASE_PORT ) );
+				int portSdb = config.getArgInt( ArgsConstants.NET_BASE_PORT );
 
-				if ( !StringUtil.isEmpty( portNumber ) && !StringUtil.isEmpty( portNumber ) ) {
-					int portSdb = Integer.parseInt( portNumber );
+				ProcessBuilder procSdb = new ProcessBuilder();
 
-					ProcessBuilder procSdb = new ProcessBuilder();
+				if ( SkinUtil.isLinuxPlatform() ) {
+					procSdb.command( "/usr/bin/gnome-terminal", "--disable-factory",
+							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
+									+ portSdb, "shell" );
+				} else if ( SkinUtil.isWindowsPlatform() ) {
+					procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
+				}
+				logger.log( Level.INFO, procSdb.command().toString() );
 
-					if ( SkinUtil.isLinuxPlatform() ) {
-						procSdb.command( "/usr/bin/gnome-terminal", "--disable-factory",
-								"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
-										+ portSdb, "shell" );
-					} else if ( SkinUtil.isWindowsPlatform() ) {
-						procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
-					}
-					logger.log( Level.INFO, procSdb.command().toString() );
-
-					try {
-						procSdb.start(); // open sdb shell
-					} catch ( Exception ee ) {
-						logger.log( Level.SEVERE, ee.getMessage(), ee );
-						SkinUtil.openMessage( shell, null, "Fail to open Shell.", SWT.ICON_ERROR, config );
-					}
+				try {
+					procSdb.start(); // open sdb shell
+				} catch ( Exception ee ) {
+					logger.log( Level.SEVERE, ee.getMessage(), ee );
+					SkinUtil.openMessage( shell, null, "Fail to open Shell.", SWT.ICON_ERROR, config );
 				}
 
 				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
@@ -999,22 +995,22 @@ public class EmulatorSkin {
 
 		final MenuItem scaleOneItem = new MenuItem( menu, SWT.RADIO );
 		scaleOneItem.setText( "1x" );
-		scaleOneItem.setData( 100 );
+		scaleOneItem.setData( Scale.SCALE_100 );
 		scaleList.add( scaleOneItem );
 
 		final MenuItem scaleThreeQtrItem = new MenuItem( menu, SWT.RADIO );
 		scaleThreeQtrItem.setText( "3/4x" );
-		scaleThreeQtrItem.setData( 75 );
+		scaleThreeQtrItem.setData( Scale.SCALE_75 );
 		scaleList.add( scaleThreeQtrItem );
 
 		final MenuItem scalehalfItem = new MenuItem( menu, SWT.RADIO );
 		scalehalfItem.setText( "1/2x" );
-		scalehalfItem.setData( 50 );
+		scalehalfItem.setData( Scale.SCALE_50 );
 		scaleList.add( scalehalfItem );
 
 		final MenuItem scaleOneQtrItem = new MenuItem( menu, SWT.RADIO );
 		scaleOneQtrItem.setText( "1/4x" );
-		scaleOneQtrItem.setData( 25 );
+		scaleOneQtrItem.setData( Scale.SCALE_25 );
 		scaleList.add( scaleOneQtrItem );
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
@@ -1030,7 +1026,7 @@ public class EmulatorSkin {
 					return;
 				}
 
-				int scale = (Integer) item.getData();
+				int scale = ( (Scale) item.getData() ).value();
 
 				arrangeSkin( currentLcdWidth, currentLcdHeight, scale, currentRotationId );
 				LcdStateData lcdStateData = new LcdStateData( scale, currentRotationId );
@@ -1043,7 +1039,7 @@ public class EmulatorSkin {
 
 		for ( MenuItem menuItem : scaleList ) {
 
-			int scale = (Integer) menuItem.getData();
+			int scale = ( (Scale) menuItem.getData() ).value();
 			if ( scale == storedScale ) {
 				menuItem.setSelection( true );
 			}

@@ -49,12 +49,9 @@ import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.ConfigPropertiesConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
-import org.tizen.emulator.skin.util.StringUtil;
 
 
 /**
@@ -130,8 +127,7 @@ public class SocketCommunicator implements ICommunicator {
 
 		try {
 
-			String portString = config.getArg( ArgsConstants.SERVER_PORT );
-			int port = Integer.parseInt( portString );
+			int port = config.getArgInt( ArgsConstants.SERVER_PORT );
 			socket = new Socket( "127.0.0.1", port );
 			logger.info( "socket.isConnected():" + socket.isConnected() );
 
@@ -151,11 +147,13 @@ public class SocketCommunicator implements ICommunicator {
 			dis = new DataInputStream( socket.getInputStream() );
 			dos = new DataOutputStream( socket.getOutputStream() );
 
-			int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
-			int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
+			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
+			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
 			int scale = SkinUtil.getValidScale( config );
-			short rotation = config.getSkinPropertyShort( SkinPropertiesConstants.WINDOW_ROTATION, RotationInfo.PORTRAIT.id() );
-
+//			short rotation = config.getSkinPropertyShort( SkinPropertiesConstants.WINDOW_ROTATION,
+//					EmulatorConfig.DEFAULT_WINDOW_ROTATION );
+			// has to be portrait mode at first booting time
+			short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 			StartData startData = new StartData( windowHandleId, width, height, scale, rotation );
 
 			sendToQEMU( SendCommand.SEND_START, startData );
@@ -166,13 +164,7 @@ public class SocketCommunicator implements ICommunicator {
 			return;
 		}
 
-		String ignoreHeartbeatString = config.getArg( ArgsConstants.TEST_HEART_BEAT_IGNORE );
-		if ( StringUtil.isEmpty( ignoreHeartbeatString ) ) {
-			ignoreHeartbeatString = config.getConfigProperty( ConfigPropertiesConstants.TEST_HEART_BEAT_IGNORE,
-					Boolean.FALSE.toString() );
-		}
-
-		Boolean ignoreHeartbeat = Boolean.parseBoolean( ignoreHeartbeatString );
+		boolean ignoreHeartbeat = config.getArgBoolean( ArgsConstants.TEST_HEART_BEAT_IGNORE );
 
 		if ( ignoreHeartbeat ) {
 			logger.info( "Ignore Skin heartbeat." );

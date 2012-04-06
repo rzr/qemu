@@ -37,8 +37,12 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
+import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
+import org.tizen.emulator.skin.exception.ConfigException;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 
@@ -48,9 +52,15 @@ import org.tizen.emulator.skin.util.StringUtil;
  *
  */
 public class EmulatorConfig {
-	
+
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorConfig.class ).getLogger();
-	
+
+	public static final int DEFAULT_WINDOW_SCALE = Scale.SCALE_50.value();
+	public static final short DEFAULT_WINDOW_ROTATION = RotationInfo.PORTRAIT.id();
+	public static final int DEFAULT_WINDOW_X = 50;
+	public static final int DEFAULT_WINDOW_Y = 50;
+	public static final SkinLogLevel DEFAULT_LOG_LEVEL = SkinLogLevel.DEBUG;
+
 	public interface ArgsConstants {
 		public static final String UID = "uid";
 		public static final String SERVER_PORT = "svr.port";
@@ -76,12 +86,12 @@ public class EmulatorConfig {
 		public static final String LOG_LEVEL = "log.level";
 	}
 
-	private Map<String,String> args;
+	private Map<String, String> args;
 	private EmulatorUI dbiContents;
 	private Properties skinProperties;
 	private Properties configProperties;
 	private String skinPropertiesFilePath;
-	
+
 	public EmulatorConfig( Map<String, String> args, EmulatorUI dbiContents, Properties skinProperties,
 			String skinPropertiesFilePath, Properties configProperties ) {
 		this.args = args;
@@ -89,8 +99,92 @@ public class EmulatorConfig {
 		this.skinProperties = skinProperties;
 		this.skinPropertiesFilePath = skinPropertiesFilePath;
 		this.configProperties = configProperties;
-		if( null == configProperties ) {
+		if ( null == configProperties ) {
 			this.configProperties = new Properties();
+		}
+	}
+
+	public static void validateArgs( Map<String, String> args ) throws ConfigException {
+		if ( null == args ) {
+			return;
+		}
+
+		String uid = args.get( ArgsConstants.UID );
+		try {
+			Integer.parseInt( uid );
+		} catch ( NumberFormatException e ) {
+			String msg = ArgsConstants.UID + " argument is not numeric. : " + uid;
+			throw new ConfigException( msg );
+		}
+
+		String serverPort = args.get( ArgsConstants.SERVER_PORT );
+		try {
+			Integer.parseInt( serverPort );
+		} catch ( NumberFormatException e ) {
+			String msg = ArgsConstants.SERVER_PORT + " argument is not numeric. : " + serverPort;
+			throw new ConfigException( msg );
+		}
+
+		String width = args.get( ArgsConstants.RESOLUTION_WIDTH );
+		try {
+			Integer.parseInt( width );
+		} catch ( NumberFormatException e ) {
+			String msg = ArgsConstants.RESOLUTION_WIDTH + " argument is not numeric. : " + width;
+			throw new ConfigException( msg );
+		}
+
+		String height = args.get( ArgsConstants.RESOLUTION_HEIGHT );
+		try {
+			Integer.parseInt( height );
+		} catch ( NumberFormatException e ) {
+			String msg = ArgsConstants.RESOLUTION_HEIGHT + " argument is not numeric. : " + height;
+			throw new ConfigException( msg );
+		}
+
+	}
+
+	public static void validateSkinProperties( Properties skinProperties ) throws ConfigException {
+		if ( null == skinProperties ) {
+			return;
+		}
+
+		String x = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_X );
+		try {
+			Integer.parseInt( x );
+		} catch ( NumberFormatException e ) {
+			String msg = SkinPropertiesConstants.WINDOW_X + " in .skin.properties is not numeric. : " + x;
+			throw new ConfigException( msg );
+		}
+
+		String y = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_Y );
+		try {
+			Integer.parseInt( y );
+		} catch ( NumberFormatException e ) {
+			String msg = SkinPropertiesConstants.WINDOW_Y + " in .skin.properties is not numeric. : " + y;
+			throw new ConfigException( msg );
+		}
+
+		String rotation = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_ROTATION );
+		try {
+			Integer.parseInt( rotation );
+		} catch ( NumberFormatException e ) {
+			String msg = SkinPropertiesConstants.WINDOW_ROTATION + " in .skin.properties is not numeric. : " + rotation;
+			throw new ConfigException( msg );
+		}
+
+		String scale = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_SCALE );
+		try {
+			Integer.parseInt( scale );
+		} catch ( NumberFormatException e ) {
+			String msg = SkinPropertiesConstants.WINDOW_SCALE + " in .skin.properties is not numeric. : " + scale;
+			throw new ConfigException( msg );
+		}
+
+	}
+
+	public static void validateSkinConfigProperties( Properties skinConfigProperties ) throws ConfigException {
+		if ( null == skinConfigProperties ) {
+			return;
 		}
 	}
 
@@ -143,6 +237,27 @@ public class EmulatorConfig {
 		}
 	}
 
+	public int getArgInt( String argKey ) {
+		String arg = args.get( argKey );
+		if ( StringUtil.isEmpty( arg ) ) {
+			return 0;
+		}
+		return Integer.parseInt( arg );
+	}
+
+	public int getArgInt( String argKey, int defaultValue ) {
+		String arg = args.get( argKey );
+		if ( StringUtil.isEmpty( arg ) ) {
+			return defaultValue;
+		}
+		return Integer.parseInt( arg );
+	}
+
+	public boolean getArgBoolean( String argKey ) {
+		String arg = args.get( argKey );
+		return Boolean.parseBoolean( arg );
+	}
+
 	private String getProperty( Properties properties, String key ) {
 		return properties.getProperty( key );
 	}
@@ -188,7 +303,7 @@ public class EmulatorConfig {
 	}
 
 	// skin properties //
-	
+
 	public String getSkinProperty( String key ) {
 		return getProperty( skinProperties, key );
 	}
@@ -222,7 +337,7 @@ public class EmulatorConfig {
 	}
 
 	// config properties //
-	
+
 	public String getConfigProperty( String key ) {
 		return getProperty( configProperties, key );
 	}

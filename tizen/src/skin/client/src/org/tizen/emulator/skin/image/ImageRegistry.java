@@ -132,9 +132,9 @@ public class ImageRegistry {
 
 		this.display = Display.getDefault();
 
-		int lcdWidth = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
-		int lcdHeight = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
-		this.argSkinPath = (String) config.getArg( ArgsConstants.SKIN_PATH );
+		int lcdWidth = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
+		int lcdHeight = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
+		this.argSkinPath = config.getArg( ArgsConstants.SKIN_PATH );
 
 		this.resolutionWidth = lcdWidth;
 		this.resolutionHeight = lcdHeight;
@@ -280,22 +280,30 @@ public class ImageRegistry {
 
 	public void dispose() {
 
-		Collection<Image> images = skinImageMap.values();
+		if ( null != skinImageMap ) {
 
-		Iterator<Image> imageIterator = images.iterator();
+			Collection<Image> images = skinImageMap.values();
 
-		while ( imageIterator.hasNext() ) {
-			Image image = imageIterator.next();
-			image.dispose();
+			Iterator<Image> imageIterator = images.iterator();
+
+			while ( imageIterator.hasNext() ) {
+				Image image = imageIterator.next();
+				image.dispose();
+			}
+
 		}
 
-		Collection<Image> icons = iconMap.values();
+		if ( null != iconMap ) {
 
-		Iterator<Image> iconIterator = icons.iterator();
+			Collection<Image> icons = iconMap.values();
 
-		while ( iconIterator.hasNext() ) {
-			Image image = iconIterator.next();
-			image.dispose();
+			Iterator<Image> iconIterator = icons.iterator();
+
+			while ( iconIterator.hasNext() ) {
+				Image image = iconIterator.next();
+				image.dispose();
+			}
+
 		}
 
 	}

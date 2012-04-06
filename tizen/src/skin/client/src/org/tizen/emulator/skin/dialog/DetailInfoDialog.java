@@ -223,7 +223,7 @@ public class DetailInfoDialog extends SkinDialog {
 						exec = exec.substring( 0, exec.length() - 4 );
 					}
 				}
-				logger.info( "exec:" + exec );
+				
 				if ( exec.endsWith( "x86" ) ) {
 					cpu = "X86";
 				} else if ( exec.endsWith( "arm" ) ) {
@@ -239,7 +239,6 @@ public class DetailInfoDialog extends SkinDialog {
 					if ( "-m".equals( arg ) ) {
 
 						ram = split[i + 1].trim();
-						logger.info( "ram:" + ram );
 
 					} else if ( "-drive".equals( arg ) ) {
 
@@ -306,8 +305,8 @@ public class DetailInfoDialog extends SkinDialog {
 		result.put( "Name", SkinUtil.getVmName( config ) );
 		result.put( "CPU", cpu );
 
-		String width = config.getArg( ArgsConstants.RESOLUTION_WIDTH );
-		String height = config.getArg( ArgsConstants.RESOLUTION_HEIGHT );
+		int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
+		int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
 		result.put( "Display Resolution", width + "x" + height );
 		result.put( "Display Density", dpi );
 

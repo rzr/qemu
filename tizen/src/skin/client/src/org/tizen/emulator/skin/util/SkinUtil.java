@@ -40,8 +40,8 @@ import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
-import org.tizen.emulator.skin.EmulatorConstants;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
+import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -60,7 +60,7 @@ import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
  */
 public class SkinUtil {
 
-	public static final int DEFAULT_SCALE = 50; // 1/2x
+	public static final int UNKNOWN_KEYCODE = -1;
 	public static final int SCALE_CONVERTER = 100;
 	public static final String EMULATOR_PREFIX = "emulator";
 
@@ -104,13 +104,8 @@ public class SkinUtil {
 			vmName = EMULATOR_PREFIX;
 		}
 
-		String portNumber = StringUtil.nvl( config.getArg( ArgsConstants.NET_BASE_PORT ) );
-
-		if ( StringUtil.isEmpty( portNumber ) ) {
-			return vmName;
-		} else {
-			return vmName + ":" + portNumber;
-		}
+		int portNumber = config.getArgInt( ArgsConstants.NET_BASE_PORT );
+		return vmName + ":" + portNumber;
 
 	}
 
@@ -198,7 +193,7 @@ public class SkinUtil {
 			}
 		}
 
-		return EmulatorConstants.UNKNOWN_KEYCODE;
+		return UNKNOWN_KEYCODE;
 
 	}
 
@@ -298,10 +293,11 @@ public class SkinUtil {
 
 	public static int getValidScale( EmulatorConfig config ) {
 
-		int storedScale = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_SCALE, DEFAULT_SCALE );
-		
+		int storedScale = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_SCALE,
+				EmulatorConfig.DEFAULT_WINDOW_SCALE );
+
 		if ( !SkinUtil.isValidScale( storedScale ) ) {
-			return DEFAULT_SCALE;
+			return EmulatorConfig.DEFAULT_WINDOW_SCALE;
 		}else {
 			return storedScale;
 		}
@@ -309,7 +305,8 @@ public class SkinUtil {
 	}
 
 	public static boolean isValidScale( int scale ) {
-		if ( 100 == scale || 75 == scale || 50 == scale || 25 == scale ) {
+		if ( Scale.SCALE_100.value() == scale || Scale.SCALE_75.value() == scale
+		|| Scale.SCALE_50.value() == scale || Scale.SCALE_25.value() == scale ) {
 			return true;
 		} else {
 			return false;

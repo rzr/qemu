@@ -246,8 +246,8 @@ public class ScreenShotDialog {
 					this.image.dispose();
 				}
 
-				int width = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_WIDTH ) );
-				int height = Integer.parseInt( config.getArg( ArgsConstants.RESOLUTION_HEIGHT ) );
+				int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
+				int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
 				ImageData imageData = new ImageData( width, height, COLOR_DEPTH, paletteData, 1, receivedData );
 
 				RotationInfo rotation = getCurrentRotation();

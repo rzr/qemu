@@ -38,6 +38,23 @@ import org.tizen.emulator.skin.dbi.RotationNameType;
  */
 public interface ICommunicator extends Runnable {
 
+	public enum Scale {
+		SCALE_25(25),
+		SCALE_50(50),
+		SCALE_75(75),
+		SCALE_100(100);
+
+		private int value;
+
+		Scale( int value ) {
+			this.value = value;
+		}
+
+		public int value() {
+			return this.value;
+		}
+	}
+	
 	public enum MouseEventType {
 		DOWN( (short)1 ),
 		UP( (short)2 ),

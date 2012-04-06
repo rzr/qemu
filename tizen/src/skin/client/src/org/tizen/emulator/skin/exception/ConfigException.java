@@ -27,14 +27,30 @@
  *
  */
 
-package org.tizen.emulator.skin;
+package org.tizen.emulator.skin.exception;
 
 /**
  * 
  *
  */
-public interface EmulatorConstants {
-	
-	public static final int UNKNOWN_KEYCODE = -1;
-	
+public class ConfigException extends EmulatorException {
+
+	private static final long serialVersionUID = -1363305002416148505L;
+
+	public ConfigException() {
+		super();
+	}
+
+	public ConfigException( Throwable cause ) {
+		super( cause );
+	}
+
+    public ConfigException( String message ) {
+        super( message );
+    }
+
+    public ConfigException( String message, Throwable cause ) {
+        super( message, cause );
+    }
+
 }
