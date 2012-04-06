@@ -1034,13 +1034,11 @@ public class EmulatorSkin {
 
 			}
 		};
-
-		int storedScale = SkinUtil.getValidScale( config );
-
+		
 		for ( MenuItem menuItem : scaleList ) {
 
 			int scale = ( (Scale) menuItem.getData() ).value();
-			if ( scale == storedScale ) {
+			if ( scale == currentScale ) {
 				menuItem.setSelection( true );
 			}
 
