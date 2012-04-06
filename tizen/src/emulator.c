@@ -259,8 +259,8 @@ static void system_info(void)
     /* pci device description */
     INFO("* Pci devices :\n");
     strcat(lscmd, logpath);
-    system(lscmd);
-    INFO("\n");
+    int i = system(lscmd);
+    INFO("system function command : %s, system function returned value : %d\n", lscmd, i);
 #endif
 }
 
