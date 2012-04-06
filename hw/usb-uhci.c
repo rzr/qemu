@@ -33,6 +33,11 @@
 #include "iov.h"
 #include "dma.h"
 
+#ifdef CONFIG_MARU
+#include "kvm.h"
+#include "hax.h"
+#endif
+
 //#define DEBUG
 //#define DEBUG_DUMP_DATA
 
@@ -429,8 +434,18 @@ static void uhci_ioport_writew(void *opaque, uint32_t addr, uint32_t val)
     case 0x00:
         if ((val & UHCI_CMD_RS) && !(s->cmd & UHCI_CMD_RS)) {
             /* start frame processing */
+#ifdef CONFIG_MARU
+            if (kvm_enabled() || hax_enabled()) { //kvm or haxm machine
+                s->expire_time = qemu_get_clock_ns(vm_clock) +
+                    (get_ticks_per_sec() / FRAME_TIMER_FREQ);
+            } else {
+                s->expire_time = qemu_get_clock_ns(vm_clock) +
+                    (get_ticks_per_sec() / (FRAME_TIMER_FREQ / 2));
+            }
+#else
             s->expire_time = qemu_get_clock_ns(vm_clock) +
                 (get_ticks_per_sec() / FRAME_TIMER_FREQ);
+#endif
             qemu_mod_timer(s->frame_timer, qemu_get_clock_ns(vm_clock));
             s->status &= ~UHCI_STS_HCHALTED;
         } else if (!(val & UHCI_CMD_RS)) {
@@ -1063,7 +1078,15 @@ static void uhci_frame_timer(void *opaque)
     UHCIState *s = opaque;
 
     /* prepare the timer for the next frame */
+#ifdef CONFIG_MARU
+    if (kvm_enabled() || hax_enabled()) { //kvm or haxm machine
+        s->expire_time += (get_ticks_per_sec() / FRAME_TIMER_FREQ);
+    } else {
+        s->expire_time += (get_ticks_per_sec() / (FRAME_TIMER_FREQ / 2));
+    }
+#else
     s->expire_time += (get_ticks_per_sec() / FRAME_TIMER_FREQ);
+#endif
 
     if (!(s->cmd & UHCI_CMD_RS)) {
         /* Full stop */

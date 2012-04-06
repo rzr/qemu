@@ -81,10 +81,12 @@ void do_mouse_event( int event_type, int x, int y, int z )
         ERR( "undefined mouse event type:%d\n", event_type );
     }
 
+#if 0
 #ifdef _WIN32
     Sleep(1);
 #else
     usleep(1000);
+#endif
 #endif
 }
 
