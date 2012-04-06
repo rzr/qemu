@@ -500,6 +500,8 @@ public class EmulatorSkin {
 						shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
 								currentHoverRegion.height + 1, false );
 					}
+					shell.setToolTipText(null);
+
 					isHoverState = false;
 					currentHoverRegion.width = currentHoverRegion.height = 0;
 				}
@@ -539,10 +541,16 @@ public class EmulatorSkin {
 								shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
 										currentHoverRegion.height + 1, false );
 							}
+							shell.setToolTipText(null);
+
 							isHoverState = false;
 							currentHoverRegion.width = currentHoverRegion.height = 0;
 						}
 					} else {
+						if (isHoverState == false) {
+							shell.setToolTipText(SkinUtil.getHardKeyToolTip(e.x, e.y, currentRotationId, currentScale));
+						}
+
 						isHoverState = true;
 						GC gc = new GC( shell );
 						gc.setLineWidth( 1 );

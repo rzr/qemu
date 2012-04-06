@@ -197,6 +197,32 @@ public class SkinUtil {
 
 	}
 
+	//TODO: HardKey object
+	public static String getHardKeyToolTip( int currentX, int currentY, short rotationId, int scale ) {
+
+		float convertedScale = convertScale( scale );
+
+		RotationType rotation = SkinRotation.getRotation( rotationId );
+
+		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
+
+		for ( KeyMapType keyMap : keyMapList ) {
+			RegionType region = keyMap.getRegion();
+
+			int scaledX = (int) ( region.getLeft() * convertedScale );
+			int scaledY = (int) ( region.getTop() * convertedScale );
+			int scaledWidth = (int) ( region.getWidth() * convertedScale );
+			int scaledHeight = (int) ( region.getHeight() * convertedScale );
+
+			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
+				return keyMap.getTooltip();
+			}
+		}
+
+		return null;
+
+	}
+
 	public static boolean isInGeometry( int currentX, int currentY, int targetX, int targetY, int targetWidth,
 			int targetHeight ) {
 
