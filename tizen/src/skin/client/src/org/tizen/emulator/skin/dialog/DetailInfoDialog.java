@@ -29,7 +29,6 @@
 
 package org.tizen.emulator.skin.dialog;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
@@ -174,11 +173,7 @@ public class DetailInfoDialog extends SkinDialog {
 		} else {
 
 			if ( null != receivedData ) {
-				try {
-					infoData = new String( receivedData, "UTF-8" );
-				} catch ( UnsupportedEncodingException e ) {
-					e.printStackTrace();
-				}
+				infoData = new String( receivedData );
 			} else {
 				logger.severe( "Received detail info is null" );
 				SkinUtil.openMessage( shell, null, "Internal error.", SWT.ICON_ERROR, config );
@@ -225,7 +220,7 @@ public class DetailInfoDialog extends SkinDialog {
 				}
 				
 				if ( exec.endsWith( "x86" ) ) {
-					cpu = "X86";
+					cpu = "x86";
 				} else if ( exec.endsWith( "arm" ) ) {
 					cpu = "ARM";
 				}
