@@ -146,6 +146,7 @@ public class EmulatorSkin {
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
 	private boolean isScreenShotOpened;
+	private boolean isOnUsbKbd;
 
 	private ScreenShotDialog screenShotDialog;
 
@@ -198,7 +199,7 @@ public class EmulatorSkin {
 		// has to be portrait mode at first booting time
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 		
-		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId );
+		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId, false );
 
 		// sdl uses this handle id.
 		windowHandleId = getWindowHandleId();
@@ -208,7 +209,7 @@ public class EmulatorSkin {
 	}
 
 	private void composeInternal( Canvas lcdCanvas, int x, int y, int lcdWidth, int lcdHeight, int scale,
-			short rotationId ) {
+			short rotationId, boolean isOnUsbKbd ) {
 
 		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
 
@@ -229,6 +230,8 @@ public class EmulatorSkin {
 
 		arrangeSkin( lcdWidth, lcdHeight, scale, rotationId );
 
+		this.isOnUsbKbd = isOnUsbKbd;
+		
 		if ( null == currentImage ) {
 			logger.severe( "Fail to load initial skin image file. Kill this skin process!!!" );
 			SkinUtil.openMessage( shell, null, "Fail to load Skin image file.", SWT.ICON_ERROR, config );
@@ -265,7 +268,7 @@ public class EmulatorSkin {
 
 		sourceSkin.reopenSkin.composeInternal( sourceSkin.lcdCanvas, previousLocation.x, previousLocation.y,
 				sourceSkin.currentLcdWidth, sourceSkin.currentLcdHeight, sourceSkin.currentScale,
-				sourceSkin.currentRotationId );
+				sourceSkin.currentRotationId, sourceSkin.isOnUsbKbd );
 
 		sourceSkin.reopenSkin.windowHandleId = sourceSkin.windowHandleId;
 
@@ -1100,10 +1103,11 @@ public class EmulatorSkin {
 
 		final MenuItem usbOnItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
 		usbOnItem.setText( "On" );
-
+		usbOnItem.setSelection( isOnUsbKbd );
+		
 		final MenuItem usbOffItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
 		usbOffItem.setText( "Off" );
-		usbOffItem.setSelection( true );
+		usbOffItem.setSelection( !isOnUsbKbd );
 
 		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
 			@Override
@@ -1111,6 +1115,7 @@ public class EmulatorSkin {
 				MenuItem item = (MenuItem) e.getSource();
 				if ( item.getSelection() ) {
 					boolean on = item.equals( usbOnItem );
+					isOnUsbKbd = on;
 					communicator
 							.sendToQEMU( SendCommand.USB_KBD, new BooleanData( on, SendCommand.USB_KBD.toString() ) );
 				}
