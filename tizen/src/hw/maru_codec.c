@@ -57,6 +57,27 @@ static void qemu_parser_init (SVCodecState *s, int ctxIndex)
     TRACE("[%s] Leave\n", __func__);
 }
 
+static void qemu_codec_close (SVCodecState *s, uint32_t value)
+{
+    int i, ctxIndex;
+    TRACE("[%s] Enter\n", __func__);
+
+    pthread_mutex_lock(&s->codec_mutex);
+    for (i = 0; i < CODEC_MAX_CONTEXT; i++) {
+        if (s->ctxArr[i].nFileValue == value) {
+            ctxIndex = i;
+            break;
+        }
+    }
+
+    TRACE("[%s] Close %d context\n", __func__, ctxIndex);
+
+    s->ctxArr[ctxIndex].bUsed = false;
+    pthread_mutex_unlock(&s->codec_mutex);
+
+    TRACE("[%s] Leave\n", __func__);
+}
+
 static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src) {
     TRACE("[%s] Enter\n", __func__);
 
@@ -376,6 +397,7 @@ static void qemu_avcodec_alloc_context (SVCodecState* s)
     TRACE("[%s] context index :%d.\n", __func__, ctxArrIndex);
 
     s->ctxArr[ctxArrIndex].pAVCtx = avcodec_alloc_context();
+    s->ctxArr[ctxArrIndex].nFileValue = s->codecParam.fileIndex;
     s->ctxArr[ctxArrIndex].bUsed = true;
     memcpy((uint8_t*)s->vaddr + offset, &ctxArrIndex, sizeof(int));
     qemu_parser_init(s, ctxArrIndex);
@@ -423,7 +445,6 @@ static void qemu_av_free_picture (SVCodecState* s, int ctxIndex)
         av_free(avframe);
         s->ctxArr[ctxIndex].pFrame = NULL;
     }
-    s->ctxArr[ctxIndex].bUsed = false;
 
     pthread_mutex_unlock(&s->codec_mutex);
     TRACE("free AVFrame\n");
@@ -1187,7 +1208,7 @@ uint64_t codec_read (void *opaque, target_phys_addr_t addr, unsigned size)
 {
     switch (addr) {
         default:
-            ERR("There is no avaiable command for svcodece\n");
+            ERR("There is no avaiable command for %s\n", QEMU_DEV_NAME);
     }
     return 0;
 }
@@ -1223,6 +1244,12 @@ void codec_write (void *opaque, target_phys_addr_t addr, uint64_t value, unsigne
             state->codecParam.mmapOffset = value * MARU_CODEC_MMAP_MEM_SIZE;
             TRACE("MMAP Offset :%d\n", state->codecParam.mmapOffset);
             break;
+        case CODEC_FILE_INDEX:
+            state->codecParam.fileIndex = value;
+            break;
+        case CODEC_CLOSED:
+            qemu_codec_close(state, value);
+            break;
         default:
             ERR("There is no avaiable command for %s\n", QEMU_DEV_NAME);
     }
@@ -1238,6 +1265,8 @@ static int codec_initfn (PCIDevice *dev)
 {
     SVCodecState *s = DO_UPCAST(SVCodecState, dev, dev);
     uint8_t *pci_conf = s->dev.config;
+
+    INFO("[%s] device init\n", __func__);
 
     memset(&s->codecParam, 0x00, sizeof(SVCodecParam));
     pthread_mutex_init(&s->codec_mutex, NULL);
@@ -1258,6 +1287,7 @@ static int codec_initfn (PCIDevice *dev)
 static int codec_exitfn (PCIDevice *dev)
 {
     SVCodecState *s = DO_UPCAST(SVCodecState, dev, dev);
+    INFO("[%s] device exit\n", __func__);
 
     memory_region_destroy (&s->vram);
     memory_region_destroy (&s->mmio);
@@ -1266,7 +1296,7 @@ static int codec_exitfn (PCIDevice *dev)
 
 int codec_init (PCIBus *bus)
 {
-    INFO("[%s] device init\n", __func__);
+    INFO("[%s] device create\n", __func__);
     pci_create_simple (bus, -1, QEMU_DEV_NAME);
     return 0;
 }

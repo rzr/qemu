@@ -53,6 +53,7 @@ typedef struct _SVCodecParam {
     uint32_t        in_args[20];
     uint32_t        ret_args;
     uint32_t        mmapOffset;
+    uint32_t        fileIndex;
 } SVCodecParam;
 
 typedef struct _SVCodecContext {
@@ -62,6 +63,7 @@ typedef struct _SVCodecContext {
     uint8_t                 *pParserBuffer;
     bool                    bParser;
     bool                    bUsed;
+    uint32_t                nFileValue;
 } SVCodecContext;
 
 typedef struct _SVCodecState {
@@ -71,13 +73,12 @@ typedef struct _SVCodecState {
     pthread_mutex_t     codec_mutex;
 
     int                 mmioIndex;
-
     uint32_t            mem_addr;
     uint32_t            mmio_addr;
 
     uint8_t*            vaddr;
     MemoryRegion        vram;
-	MemoryRegion		mmio;
+    MemoryRegion        mmio;
 } SVCodecState;
 
 enum {
@@ -86,6 +87,8 @@ enum {
     CODEC_RETURN_VALUE      = 0x08,
     CODEC_CONTEXT_INDEX     = 0x0c,
     CODEC_MMAP_OFFSET       = 0x10,
+    CODEC_FILE_INDEX        = 0x14,
+    CODEC_CLOSED            = 0x18,
 };
 
 enum {
