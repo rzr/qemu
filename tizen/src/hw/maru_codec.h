@@ -61,6 +61,7 @@ typedef struct _SVCodecContext {
     AVCodecParserContext    *pParserCtx;
     uint8_t                 *pParserBuffer;
     bool                    bParser;
+    bool                    bUsed;
 } SVCodecContext;
 
 typedef struct _SVCodecState {
@@ -70,6 +71,7 @@ typedef struct _SVCodecState {
     pthread_mutex_t     codec_mutex;
 
     int                 mmioIndex;
+
     uint32_t            mem_addr;
     uint32_t            mmio_addr;
 
