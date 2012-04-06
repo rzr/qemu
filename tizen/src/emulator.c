@@ -92,7 +92,7 @@ static void construct_main_window(int skin_argc, char* skin_argv[], int qemu_arg
 
     start_skin_server( skin_argc, skin_argv, qemu_argc, qemu_argv );
 
-    if (get_emul_skin_enable() == 1) { //check for debugging, etc..
+    if (get_emul_skin_enable() == 1) { //this line is check for debugging, etc..
         if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
             exit( -1 );
         }
@@ -200,37 +200,20 @@ void extract_info(int qemu_argc, char** qemu_argv)
     tizen_base_port = get_sdb_base_port();
 }
 
-void prepare_maru(void)
+static void system_info(void)
 {
-    INFO("Prepare maru specified feature\n");
-
-    sdb_setup();
-
-    INFO("call construct_main_window\n");
-
-    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv );
-
-    //TODO get port number by args from emulator manager
-    int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
-    start_guest_server( guest_server_port );
-
-    mloop_ev_init();
-}
-
-int qemu_main(int argc, char** argv, char** envp);
-
-int main(int argc, char* argv[])
-{
+#ifdef __linux__
+    char lscmd[MAXLEN] = "lspci >> ";
+#endif
     char timeinfo[64] = {0, };
     struct tm *tm_time;
     struct timeval tval;
 
-    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
-    socket_init();
-    extract_info(qemu_argc, qemu_argv);
-
-    INFO("Emulator start !!!\n");
     INFO("* SDK version : %s\n", build_version);
+    INFO("* User name : %s\n", g_get_real_name());
+#ifdef _WIN32
+    INFO("* Host name : %s\n", g_get_host_name());
+#endif
 
     /* timestamp */
     INFO("* Build date : %s\n", build_date);
@@ -273,7 +256,41 @@ int main(int argc, char* argv[])
             host_uname_buf.release, host_uname_buf.version, host_uname_buf.machine);
     }
 
+    /* pci device description */
+    INFO("* Pci devices :\n");
+    strcat(lscmd, logpath);
+    system(lscmd);
+    INFO("\n");
 #endif
+}
+
+void prepare_maru(void)
+{
+    INFO("Prepare maru specified feature\n");
+
+    sdb_setup();
+
+    INFO("call construct_main_window\n");
+
+    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv );
+
+    //TODO get port number by args from emulator manager
+    int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
+    start_guest_server( guest_server_port );
+
+    mloop_ev_init();
+}
+
+int qemu_main(int argc, char** argv, char** envp);
+
+int main(int argc, char* argv[])
+{
+    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    socket_init();
+    extract_info(qemu_argc, qemu_argv);
+
+    INFO("Emulator start !!!\n");
+    system_info();
 
     INFO("Prepare running...\n");
     redir_output(); // Redirect stdout, stderr after debug_ch is initialized...
