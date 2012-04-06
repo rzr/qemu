@@ -267,7 +267,6 @@ void mloop_ev_stop(void)
 
 void mloop_evcmd_usbkbd(int on)
 {
-	mloop_evcmd_usbdisk(on ? "sdcard.img" : NULL);
     struct mloop_evpack pack = { htons(MLOOP_EVTYPE_USB_ADD), htons(13), "keyboard" };
     if (on == 0)
     	pack.type = htons(MLOOP_EVTYPE_USB_DEL);
@@ -282,6 +281,7 @@ void mloop_evcmd_usbdisk(char *img)
     	if (strlen(img) > PACKET_LEN-5) {
     		// Need log
     		return;
+    	}
     	}
 
     	pack.type = htons(MLOOP_EVTYPE_USB_ADD);
