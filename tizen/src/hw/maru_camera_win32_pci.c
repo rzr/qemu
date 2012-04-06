@@ -30,6 +30,7 @@
 #include "qemu-common.h"
 #include "maru_camera_common.h"
 #include "tizen/src/debug_ch.h"
+#include "tizen/src/mloop_event.h"
 
 #define CINTERFACE
 #define COBJMACROS
@@ -444,19 +445,12 @@ static STDMETHODIMP HWCMemInputPin_Receive(IMemInputPin *iface, IMediaSample *pS
     if (This->m_pCallback != NULL) {
         HRESULT hr;
         BYTE* pBuffer = NULL;
-        BYTE* pTmp_Buffer = NULL;   /* is this required? */
         DWORD dwSize = 0;
         dwSize = IMediaSample_GetSize(pSample);
         hr = IMediaSample_GetPointer(pSample, &pBuffer);
         if (FAILED(hr))
             return hr;
-
-        pTmp_Buffer = (BYTE *)g_malloc0((size_t)dwSize);
-        if (!pTmp_Buffer)
-            return E_OUTOFMEMORY;
-        memcpy((void*)pTmp_Buffer, (void*)pBuffer, (size_t)dwSize);
-
-        hr = IGrabCallback_Grab(This->m_pCallback, dwSize, pTmp_Buffer);
+        hr = IGrabCallback_Grab(This->m_pCallback, dwSize, pBuffer);
         if (FAILED(hr))
             return hr;
     }
@@ -1067,16 +1061,10 @@ static long value_convert_to_guest(long min, long max, long value)
 static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 {
     static uint32_t index = 0;
-    static uint32_t is_init = 1;
     uint32_t width, height;
     width = supported_dst_frames[cur_frame_idx].width;
     height = supported_dst_frames[cur_frame_idx].height;
     void *buf = g_state->vaddr + (g_state->buf_size * index);
-
-    if (is_init == 1) {
-        qemu_thread_get_self(&g_state->thread_id);
-        is_init = 0;
-    }
 
     switch (supported_dst_pixfmts[cur_fmt_idx].fmt) {
     case V4L2_PIX_FMT_YUV420:
@@ -1092,8 +1080,8 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
     index = !index;
 
     if (g_state->req_frame) {
-        qemu_irq_raise(g_state->dev.irq[2]);
-        g_state->req_frame = 0;
+		mloop_evcmd_raise_intr(g_state->dev.irq[2]);
+		g_state->req_frame = 0;
     }
     return S_OK;
 }
@@ -1104,7 +1092,6 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 
 static STDMETHODIMP_(void) CloseInterfaces(void)
 {
-    INFO("%s\n", __func__);
     if (g_pMediaControl)
         g_pMediaControl->lpVtbl->Stop(g_pMediaControl);
 
@@ -1123,7 +1110,6 @@ static STDMETHODIMP_(void) CloseInterfaces(void)
 
 static STDMETHODIMP_(void) DeleteMediaType(AM_MEDIA_TYPE *pmt)
 {
-    INFO("%s\n", __func__);
     if (pmt == NULL) {
         return;
     }
@@ -1146,8 +1132,6 @@ static STDMETHODIMP GetPin(IBaseFilter *pFilter, PIN_DIRECTION PinDir, IPin **pp
     HRESULT hr;
     IEnumPins *pEnum = NULL;
     IPin *pPin = NULL;
-
-    INFO("%s\n", __func__);
 
     if (ppPin == NULL)
     {
@@ -1184,7 +1168,6 @@ static STDMETHODIMP GetPin(IBaseFilter *pFilter, PIN_DIRECTION PinDir, IPin **pp
 static STDMETHODIMP GraphBuilder_Init(void)
 {
     HRESULT hr;
-    INFO("%s\n", __func__);
 
     hr = CoCreateInstance(&CLSID_FilterGraph, NULL, CLSCTX_INPROC, &IID_IGraphBuilder, (void**)&g_pGB);
     if (FAILED(hr))
@@ -1218,7 +1201,6 @@ static STDMETHODIMP BindSourceFilter(void)
     IEnumMoniker *pEnumMK = NULL;
     IMoniker *pMoniKer;
 
-    INFO("%s\n", __func__);
     hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC, &IID_ICreateDevEnum, (void**)&pCreateDevEnum);
     if (FAILED(hr))
         return hr;
@@ -1286,7 +1268,6 @@ static STDMETHODIMP BindTargetFilter(void)
     HRESULT hr;
     hr = HWCFilter_Construct(&g_pDstFilter);
 
-    INFO("%s\n", __func__);
     if (SUCCEEDED(hr) && g_pDstFilter)
     {
         hr = g_pGB->lpVtbl->AddFilter(g_pGB, g_pDstFilter, L"HWCFilter");
@@ -1302,7 +1283,6 @@ static STDMETHODIMP ConnectFilters(void)
 {
     HRESULT hr;
 
-    INFO("%s\n", __func__);
     hr = GetPin(g_pSrcFilter, PINDIR_OUTPUT , &g_pOutputPin);
     if (FAILED(hr))
         return hr;
@@ -1321,7 +1301,6 @@ static STDMETHODIMP SetDefaultValues(void)
     IAMStreamConfig *pSConfig;
     int iCount = 0, iSize = 0;
 
-    INFO("%s\n", __func__);
     hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, 0, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&pSConfig);
     if (FAILED(hr)) {
         ERR("failed to FindInterface method\n");
@@ -1375,7 +1354,6 @@ static STDMETHODIMP SetResolution(LONG width, LONG height)
     IAMStreamConfig* vsc = NULL;
     AM_MEDIA_TYPE* pmt = NULL;
 
-    INFO("%s\n", __func__);
     hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&vsc);
     if (FAILED(hr))
         return hr;
@@ -1410,8 +1388,6 @@ static STDMETHODIMP QueryVideoProcAmp(long nProperty, long *pMin, long *pMax, lo
     long Flags;
     IAMVideoProcAmp *pProcAmp = NULL;
 
-    INFO("%s\n", __func__);
-
     hr = g_pSrcFilter->lpVtbl->QueryInterface(g_pSrcFilter, &IID_IAMVideoProcAmp, (void**)&pProcAmp);
     if (FAILED(hr)) {
         return hr;
@@ -1429,7 +1405,6 @@ static STDMETHODIMP GetVideoProcAmp(long nProperty, long *pValue)
     long Flags;
     IAMVideoProcAmp *pProcAmp = NULL;
 
-    INFO("%s\n", __func__);
     hr = g_pSrcFilter->lpVtbl->QueryInterface(g_pSrcFilter, &IID_IAMVideoProcAmp, (void**)&pProcAmp);
     if (FAILED(hr))
         return hr;
@@ -1473,9 +1448,6 @@ void marucam_device_open(MaruCamState* state)
     MaruCamParam *param = state->param;
     param->top = 0;
 
-    INFO("%s\n", __func__);
-    CoInitialize(NULL);
-
     hr = GraphBuilder_Init();
     if (FAILED(hr)) {
         ERR("GraphBuilder_Init\n");
@@ -1500,7 +1472,7 @@ void marucam_device_open(MaruCamState* state)
         goto error_failed;
     }
 
-    g_dwAvgInterval = 333333;
+    g_dwAvgInterval = 666666;
     g_dwFourcc = MAKEFOURCC('Y','U','Y','2');
     g_dwHeight = 480;
     g_dwWidth = 640;
@@ -1515,7 +1487,6 @@ void marucam_device_open(MaruCamState* state)
 
 error_failed:
     CloseInterfaces();
-    CoUninitialize();
     param->errCode = EINVAL;
     ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
 }
@@ -1527,7 +1498,6 @@ void marucam_device_close(MaruCamState* state)
     param->top = 0;
 
     CloseInterfaces();
-    CoUninitialize();
     INFO("Close successfully!!!\n");
 }
 
@@ -1539,7 +1509,6 @@ void marucam_device_start_preview(MaruCamState* state)
     MaruCamParam *param = state->param;
     param->top = 0;
 
-    INFO("%s\n", __func__);
     assert(g_pCallback != NULL);
     hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, g_pCallback);
     if (FAILED(hr)) {
@@ -1601,7 +1570,6 @@ void marucam_device_s_param(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    TRACE("setting fps : %d/%d\n", param->stack[0], param->stack[1]);
 }
 
 // MARUCAM_CMD_G_PARAM
@@ -1610,7 +1578,6 @@ void marucam_device_g_param(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    TRACE("getting fps : 30/1\n");
 
     param->stack[0] = 0x1000; // V4L2_CAP_TIMEPERFRAME
     param->stack[1] = 1; // numerator;

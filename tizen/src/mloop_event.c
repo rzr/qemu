@@ -37,6 +37,7 @@
 #include "qobject.h"
 #include "qemu-common.h"
 #include "hw/usb.h"
+#include "hw/irq.h"
 #include "mloop_event.h"
 
 #define error_report(x, ...)
@@ -62,6 +63,8 @@ struct mloop_evpack {
 
 #define MLOOP_EVTYPE_USB_ADD    1
 #define MLOOP_EVTYPE_USB_DEL    2
+#define MLOOP_EVTYPE_INTR_UP    3
+#define MLOOP_EVTYPE_INTR_DOWN  4
 
 static struct mloop_evsock mloop = {-1,0,0};
 
@@ -215,6 +218,24 @@ static void mloop_evhandle_usb_del(char *name)
     }
 }
 
+static void mloop_evhandle_intr_up(long data)
+{
+	if (data == 0) {
+		return;
+	}
+
+	qemu_irq_raise((qemu_irq)data);
+}
+
+static void mloop_evhandle_intr_down(long data)
+{
+	if (data == 0) {
+		return;
+	}
+
+	qemu_irq_lower((qemu_irq)data);
+}
+
 static void mloop_evcb_recv(struct mloop_evsock *ev)
 {
     struct mloop_evpack pack;
@@ -245,7 +266,13 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         break;
     case MLOOP_EVTYPE_USB_DEL:
         mloop_evhandle_usb_del(pack.data);
-        break;
+		break;
+	case MLOOP_EVTYPE_INTR_UP:
+		mloop_evhandle_intr_up(ntohl(*(long*)&pack.data[0]));
+		break;
+	case MLOOP_EVTYPE_INTR_DOWN:
+		mloop_evhandle_intr_down(ntohl(*(long*)&pack.data[0]));
+		break;
     default:
         break;
     }
@@ -307,4 +334,24 @@ void mloop_evcmd_set_usbkbd(void *dev)
 void mloop_evcmd_set_usbdisk(void *dev)
 {
 	usbdisk = (USBDevice *)dev;
+}
+
+void mloop_evcmd_raise_intr(void *irq)
+{
+	struct mloop_evpack pack;
+	memset((void*)&pack, 0, sizeof(struct mloop_evpack));
+	pack.type = htons(MLOOP_EVTYPE_INTR_UP);
+	pack.size = htons(8);
+	*(long*)&pack.data[0] = htonl((long)irq);
+	mloop_evsock_send(&mloop, &pack);
+}
+
+void mloop_evcmd_lower_intr(void *irq)
+{
+	struct mloop_evpack pack;
+	memset((void*)&pack, 0, sizeof(struct mloop_evpack));
+	pack.type = htons(MLOOP_EVTYPE_INTR_DOWN);
+	pack.size = htons(8);
+	*(long*)&pack.data[0] = htonl((long)irq);
+	mloop_evsock_send(&mloop, &pack);
 }
