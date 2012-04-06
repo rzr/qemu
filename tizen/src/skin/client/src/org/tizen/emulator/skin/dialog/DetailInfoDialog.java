@@ -126,7 +126,11 @@ public class DetailInfoDialog extends SkinDialog {
 
 	@Override
 	protected void setShellSize() {
-		shell.setSize( (int) ( 380 * 1.618 ), 380 );
+		if( SkinUtil.isLinuxPlatform() ) {
+			shell.setSize( (int) ( 380 * 1.618 ), 380 );
+		}else {
+			shell.setSize( (int) ( 350 * 1.618 ), 350 );
+		}
 	}
 
 	private String queryData() {
@@ -315,12 +319,14 @@ public class DetailInfoDialog extends SkinDialog {
 
 		result.put( "RAM Size", ram );
 
-		if ( StringUtil.isEmpty( sharedPath ) ) {
-			result.put( "File Sharing", "Not Supported" );
-			result.put( "File Shared Path", "None" );
-		}else {
-			result.put( "File Sharing", "Supported" );
-			result.put( "File Shared Path", sharedPath );
+		if( SkinUtil.isLinuxPlatform() ) {
+			if ( StringUtil.isEmpty( sharedPath ) ) {
+				result.put( "File Sharing", "Not Supported" );
+				result.put( "File Shared Path", "None" );
+			}else {
+				result.put( "File Sharing", "Supported" );
+				result.put( "File Shared Path", sharedPath );
+			}
 		}
 
 		if( isHwVirtual ) {
