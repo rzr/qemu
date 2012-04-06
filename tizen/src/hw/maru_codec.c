@@ -31,15 +31,15 @@
 #include "maru_codec.h"
 #include <pthread.h>
 
-#define QEMU_DEV_NAME           "codec"
+#define QEMU_DEV_NAME   "codec"
 
-/*	Needs 16M to support 1920x1080 video resolution.
- *	Output size for encoding has to be greater than (width * height * 6)
+/*  Needs 16M to support 1920x1080 video resolution.
+ *  Output size for encoding has to be greater than (width * height * 6)
  */
-#define MARU_CODEC_MMAP_MEM_SIZE	(16 * 1024 * 1024)
-#define MARU_CODEC_MMAP_COUNT		(4)
-#define MARU_CODEC_MEM_SIZE		(MARU_CODEC_MMAP_COUNT * MARU_CODEC_MMAP_MEM_SIZE)
-#define MARU_CODEC_REG_SIZE		(256)
+#define MARU_CODEC_MMAP_MEM_SIZE    (16 * 1024 * 1024)
+#define MARU_CODEC_MMAP_COUNT       (4)
+#define MARU_CODEC_MEM_SIZE     (MARU_CODEC_MMAP_COUNT * MARU_CODEC_MMAP_MEM_SIZE)
+#define MARU_CODEC_REG_SIZE     (256)
 
 /* define debug channel */
 MULTI_DEBUG_CHANNEL(qemu, marucodec);
@@ -49,12 +49,17 @@ static int ctxArrIndex = 0;
 
 static void qemu_parser_init (SVCodecState *s, int ctxIndex)
 {
+    TRACE("[%s] Enter\n", __func__);
+
     s->ctxArr[ctxIndex].pParserBuffer = NULL;
     s->ctxArr[ctxIndex].bParser = false;
+
+    TRACE("[%s] Leave\n", __func__);
 }
 
-static void qemu_restore_context (AVCodecContext *dst,
-										 AVCodecContext *src) {
+static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src) {
+    TRACE("[%s] Enter\n", __func__);
+
     dst->av_class = src->av_class;
     dst->extradata = src->extradata;
     dst->codec = src->codec;
@@ -75,6 +80,8 @@ static void qemu_restore_context (AVCodecContext *dst,
     dst->execute = src->execute;
     dst->thread_opaque = src->thread_opaque;
     dst->execute2 = src->execute2;
+
+    TRACE("[%s] Leave\n", __func__);
 }
 
 /* void av_register_all() */
@@ -118,7 +125,7 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
 
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     if (!avctx) {
-        ERR("AVCodecContext is NULL!!\n");
+        ERR("[%s][%d] AVCodecContext is NULL!!\n", __func__, __LINE__);
         return -1;
     }
     avctx = gAVCtx;
@@ -182,7 +189,7 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
 
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     if (!avctx) {
-        ERR("AVCodecContext is NULL!!\n");
+        ERR("[%s][%d] AVCodecContext is NULL!!\n", __func__, __LINE__);
         return -1;
     }
 
@@ -344,17 +351,32 @@ static int qemu_avcodec_close (SVCodecState* s, int ctxIndex)
 static void qemu_avcodec_alloc_context (SVCodecState* s)
 {
     off_t offset;
+    int index;
 
     TRACE("[%s] Enter\n", __func__);
     pthread_mutex_lock(&s->codec_mutex);
 
     offset = s->codecParam.mmapOffset;
 
-    if (ctxArrIndex > (CODEC_MAX_CONTEXT - 1)) {
-        TRACE("[%s] context needs to be zero, %d\n", __func__, ctxArrIndex);
-        ctxArrIndex = 0;
+    for (index = 0; index < CODEC_MAX_CONTEXT; index++) {
+        if (s->ctxArr[index].bUsed == false) {
+            TRACE("[%s] Succeeded to get context[%d].\n", __func__, index);
+            ctxArrIndex = index;
+            break;
+        }
+        TRACE("[%s] Failed to get context[%d].\n", __func__, index);
     }
+
+    if (index == CODEC_MAX_CONTEXT) {
+        ERR("[%s] Failed to get available codec context from now\n", __func__);
+        ERR("[%s] Try to run codec again\n", __func__);
+        return;
+    }
+
+    TRACE("[%s] context index :%d.\n", __func__, ctxArrIndex);
+
     s->ctxArr[ctxArrIndex].pAVCtx = avcodec_alloc_context();
+    s->ctxArr[ctxArrIndex].bUsed = true;
     memcpy((uint8_t*)s->vaddr + offset, &ctxArrIndex, sizeof(int));
     qemu_parser_init(s, ctxArrIndex);
 
@@ -369,8 +391,7 @@ static void qemu_avcodec_alloc_frame (SVCodecState* s)
     TRACE("[%s] Enter\n", __func__);
     pthread_mutex_lock(&s->codec_mutex);
 
-    s->ctxArr[ctxArrIndex++].pFrame = avcodec_alloc_frame();
-
+    s->ctxArr[ctxArrIndex].pFrame = avcodec_alloc_frame();
     pthread_mutex_unlock(&s->codec_mutex);
     TRACE("[%s] Leave\n", __func__);
 }
@@ -378,9 +399,13 @@ static void qemu_avcodec_alloc_frame (SVCodecState* s)
 /* void av_free (void *ptr) */
 static void qemu_av_free_context (SVCodecState* s, int ctxIndex)
 {
+    AVCodecContext *avctx;
+
     pthread_mutex_lock(&s->codec_mutex);
-    if (s->ctxArr[ctxIndex].pAVCtx) {
-        av_free(s->ctxArr[ctxIndex].pAVCtx);
+
+    avctx = s->ctxArr[ctxIndex].pAVCtx;
+    if (avctx) {
+        av_free(avctx);
         s->ctxArr[ctxIndex].pAVCtx = NULL;
     }
     pthread_mutex_unlock(&s->codec_mutex);
@@ -389,21 +414,32 @@ static void qemu_av_free_context (SVCodecState* s, int ctxIndex)
 
 static void qemu_av_free_picture (SVCodecState* s, int ctxIndex)
 {
+    AVFrame *avframe;
+
     pthread_mutex_lock(&s->codec_mutex);
-    if (s->ctxArr[ctxIndex].pAVCtx) {
-        av_free(s->ctxArr[ctxIndex].pAVCtx);
-        s->ctxArr[ctxIndex].pAVCtx = NULL;
+
+    avframe = s->ctxArr[ctxIndex].pFrame;
+    if (avframe) {
+        av_free(avframe);
+        s->ctxArr[ctxIndex].pFrame = NULL;
     }
+    s->ctxArr[ctxIndex].bUsed = false;
+
     pthread_mutex_unlock(&s->codec_mutex);
     TRACE("free AVFrame\n");
 }
 
 static void qemu_av_free_palctrl (SVCodecState* s, int ctxIndex)
 {
+    AVCodecContext *avctx;
+
     pthread_mutex_lock(&s->codec_mutex);
-    if (s->ctxArr[ctxIndex].pAVCtx->extradata) {
-        av_free(s->ctxArr[ctxIndex].pAVCtx->extradata);
-        s->ctxArr[ctxIndex].pAVCtx->extradata = NULL;
+
+    avctx = s->ctxArr[ctxIndex].pAVCtx;
+
+    if (avctx->palctrl) {
+        av_free(avctx->palctrl);
+        avctx->palctrl = NULL;
     }
     pthread_mutex_unlock(&s->codec_mutex);
     TRACE("free AVCodecContext palctrl\n");
@@ -437,7 +473,7 @@ static void qemu_avcodec_flush_buffers (SVCodecState* s, int ctxIndex)
     if (avctx) {
         avcodec_flush_buffers(avctx);
     } else {
-        ERR("AVCodecContext is NULL\n");
+        ERR("[%s][%d] AVCodecContext is NULL\n", __func__, __LINE__);
     }
 
     pthread_mutex_unlock(&s->codec_mutex);
@@ -487,8 +523,8 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
         TRACE("There is no input buffer\n");
     }
 
-	avpkt.data = buf;
-	avpkt.size = buf_size;
+    avpkt.data = buf;
+    avpkt.size = buf_size;
 
     TRACE("before avcodec_decode_video\n");
     ret = avcodec_decode_video2(avctx, picture, &got_picture_ptr, &avpkt);
@@ -517,7 +553,7 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
 {
     AVCodecContext *avctx;
     AVFrame *picture;
-	AVPacket avpkt;
+    AVPacket avpkt;
     int got_picture_ptr;
     uint8_t *buf;
     uint8_t *pParserBuffer;
@@ -554,11 +590,11 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
         buf = (uint8_t*)s->vaddr + offset + size;
     } else {
         TRACE("There is no input buffer\n");
-		buf = NULL;
+        buf = NULL;
     }
 
-	avpkt.data = buf;
-	avpkt.size = buf_size;
+    avpkt.data = buf;
+    avpkt.size = buf_size;
     
     TRACE("before avcodec_decode_video\n");
     ret = avcodec_decode_video2(avctx, picture, &got_picture_ptr, &avpkt);
@@ -744,7 +780,7 @@ static int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
 static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex)
 {
     AVCodecContext *avctx;
-	AVPacket avpkt;
+    AVPacket avpkt;
     int16_t *samples;
     int frame_size_ptr;
     uint8_t *buf;
@@ -760,7 +796,7 @@ static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex)
 
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     if (!avctx) {
-        ERR("AVCodecContext is NULL!\n");
+        ERR("[%s][%d] AVCodecContext is NULL!\n", __func__, __LINE__);
         return -1;
     }
 
@@ -780,10 +816,10 @@ static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex)
         buf = (uint8_t*)s->vaddr + offset + size;
     } else {
         TRACE("There is no input buffer\n");
-		buf = NULL;
+        buf = NULL;
     }
-	avpkt.data = buf;
-	avpkt.size = buf_size;
+    avpkt.data = buf;
+    avpkt.size = buf_size;
 
     frame_size_ptr = AVCODEC_MAX_AUDIO_FRAME_SIZE;
     outbuf_size = frame_size_ptr;
@@ -827,8 +863,8 @@ static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex)
 
 static int qemu_avcodec_encode_audio (SVCodecState *s, int ctxIndex)
 {
-	INFO("[%s] Does not support audio encoder using FFmpeg\n", __func__);
-	return 0;
+    INFO("[%s] Does not support audio encoder using FFmpeg\n", __func__);
+    return 0;
 }
 
 /* void av_picture_copy (AVPicture *dst, const AVPicture *src,
@@ -915,11 +951,11 @@ static void qemu_av_parser_init (SVCodecState* s, int ctxIndex)
 
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     if (!avctx) {
-        ERR("AVCodecContext is NULL!!\n");
+        ERR("[%s][%d] AVCodecContext is NULL!!\n", __func__, __LINE__);
         return;
     }
 
-    TRACE("before av_parser_init, codec_id:%d\n", avctx->codec_id);
+    INFO("before av_parser_init, codec_id:%d\n", avctx->codec_id);
     parserctx = av_parser_init(avctx->codec_id);
     if (!parserctx) {
         ERR("Failed to initialize AVCodecParserContext\n");
@@ -953,7 +989,7 @@ static int qemu_av_parser_parse (SVCodecState* s, int ctxIndex)
     parserctx = s->ctxArr[ctxIndex].pParserCtx;
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     if (!parserctx && !avctx) {
-        ERR("AVCodecParserContext or AVCodecContext is NULL\n");
+        ERR("[%s][%d] AVCodecParserContext or AVCodecContext is NULL\n", __func__, __LINE__);
     }
 
     memcpy(&tmp_ctx, avctx, sizeof(AVCodecContext));
@@ -1017,7 +1053,7 @@ static int qemu_av_parser_parse (SVCodecState *s, int ctxIndex)
     parserctx = s->ctxArr[ctxIndex].pParserCtx;
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     if (!parserctx && !avctx) {
-        ERR("AVCodecParserContext or AVCodecContext is NULL\n");
+        ERR("[%s][%d] AVCodecParserContext or AVCodecContext is NULL\n", __func__, __LINE__);
     }
 
     offset = s->codecParam.mmapOffset;
@@ -1038,7 +1074,7 @@ static int qemu_av_parser_parse (SVCodecState *s, int ctxIndex)
     TRACE("input buffer size :%d\n", inbuf_size);
 
     ret = av_parser_parse2(parserctx, avctx, &poutbuf, &poutbuf_size,
-						   inbuf, inbuf_size, pts, dts, AV_NOPTS_VALUE);
+                           inbuf, inbuf_size, pts, dts, AV_NOPTS_VALUE);
 
     TRACE("after parsing, output buffer size :%d, ret:%d\n", poutbuf_size, ret);
 
@@ -1194,7 +1230,7 @@ void codec_write (void *opaque, target_phys_addr_t addr, uint64_t value, unsigne
 
 static const MemoryRegionOps codec_mmio_ops = {
     .read = codec_read,
-	.write = codec_write,
+    .write = codec_write,
     .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
