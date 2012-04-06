@@ -109,81 +109,107 @@ public class EmulatorConfig {
 			return;
 		}
 
-		String uid = args.get( ArgsConstants.UID );
-		try {
-			Integer.parseInt( uid );
-		} catch ( NumberFormatException e ) {
-			String msg = ArgsConstants.UID + " argument is not numeric. : " + uid;
+		if( args.containsKey( ArgsConstants.UID ) ) {
+			String uid = args.get( ArgsConstants.UID );
+			try {
+				Integer.parseInt( uid );
+			} catch ( NumberFormatException e ) {
+				String msg = ArgsConstants.UID + " argument is not numeric. : " + uid;
+				throw new ConfigException( msg );
+			}
+		}
+
+		if( args.containsKey( ArgsConstants.SERVER_PORT ) ) {
+			String serverPort = args.get( ArgsConstants.SERVER_PORT );
+			try {
+				Integer.parseInt( serverPort );
+			} catch ( NumberFormatException e ) {
+				String msg = ArgsConstants.SERVER_PORT + " argument is not numeric. : " + serverPort;
+				throw new ConfigException( msg );
+			}
+		}else {
+			String msg = ArgsConstants.SERVER_PORT + " is required argument.";
 			throw new ConfigException( msg );
 		}
 
-		String serverPort = args.get( ArgsConstants.SERVER_PORT );
-		try {
-			Integer.parseInt( serverPort );
-		} catch ( NumberFormatException e ) {
-			String msg = ArgsConstants.SERVER_PORT + " argument is not numeric. : " + serverPort;
+		if( args.containsKey( ArgsConstants.RESOLUTION_WIDTH ) ) {
+			String width = args.get( ArgsConstants.RESOLUTION_WIDTH );
+			try {
+				Integer.parseInt( width );
+			} catch ( NumberFormatException e ) {
+				String msg = ArgsConstants.RESOLUTION_WIDTH + " argument is not numeric. : " + width;
+				throw new ConfigException( msg );
+			}
+		}else {
+			String msg = ArgsConstants.RESOLUTION_WIDTH + " is required argument.";
 			throw new ConfigException( msg );
 		}
 
-		String width = args.get( ArgsConstants.RESOLUTION_WIDTH );
-		try {
-			Integer.parseInt( width );
-		} catch ( NumberFormatException e ) {
-			String msg = ArgsConstants.RESOLUTION_WIDTH + " argument is not numeric. : " + width;
-			throw new ConfigException( msg );
-		}
-
-		String height = args.get( ArgsConstants.RESOLUTION_HEIGHT );
-		try {
-			Integer.parseInt( height );
-		} catch ( NumberFormatException e ) {
-			String msg = ArgsConstants.RESOLUTION_HEIGHT + " argument is not numeric. : " + height;
+		if( args.containsKey( ArgsConstants.RESOLUTION_HEIGHT ) ) {
+			String height = args.get( ArgsConstants.RESOLUTION_HEIGHT );
+			try {
+				Integer.parseInt( height );
+			} catch ( NumberFormatException e ) {
+				String msg = ArgsConstants.RESOLUTION_HEIGHT + " argument is not numeric. : " + height;
+				throw new ConfigException( msg );
+			}
+		}else {
+			String msg = ArgsConstants.RESOLUTION_HEIGHT + " is required argument.";
 			throw new ConfigException( msg );
 		}
 
 	}
 
 	public static void validateSkinProperties( Properties skinProperties ) throws ConfigException {
-		if ( null == skinProperties ) {
+		if ( null == skinProperties || 0 == skinProperties.size() ) {
 			return;
 		}
 
-		String x = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_X );
-		try {
-			Integer.parseInt( x );
-		} catch ( NumberFormatException e ) {
-			String msg = SkinPropertiesConstants.WINDOW_X + " in .skin.properties is not numeric. : " + x;
-			throw new ConfigException( msg );
+		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_X ) ) {
+			String x = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_X );
+			
+			try {
+				Integer.parseInt( x );
+			} catch ( NumberFormatException e ) {
+				String msg = SkinPropertiesConstants.WINDOW_X + " in .skin.properties is not numeric. : " + x;
+				throw new ConfigException( msg );
+			}
 		}
 
-		String y = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_Y );
-		try {
-			Integer.parseInt( y );
-		} catch ( NumberFormatException e ) {
-			String msg = SkinPropertiesConstants.WINDOW_Y + " in .skin.properties is not numeric. : " + y;
-			throw new ConfigException( msg );
+		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_Y ) ) {
+			String y = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_Y );
+			try {
+				Integer.parseInt( y );
+			} catch ( NumberFormatException e ) {
+				String msg = SkinPropertiesConstants.WINDOW_Y + " in .skin.properties is not numeric. : " + y;
+				throw new ConfigException( msg );
+			}
 		}
 
-		String rotation = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_ROTATION );
-		try {
-			Integer.parseInt( rotation );
-		} catch ( NumberFormatException e ) {
-			String msg = SkinPropertiesConstants.WINDOW_ROTATION + " in .skin.properties is not numeric. : " + rotation;
-			throw new ConfigException( msg );
+		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_ROTATION ) ) {
+			String rotation = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_ROTATION );
+			try {
+				Integer.parseInt( rotation );
+			} catch ( NumberFormatException e ) {
+				String msg = SkinPropertiesConstants.WINDOW_ROTATION + " in .skin.properties is not numeric. : " + rotation;
+				throw new ConfigException( msg );
+			}
 		}
 
-		String scale = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_SCALE );
-		try {
-			Integer.parseInt( scale );
-		} catch ( NumberFormatException e ) {
-			String msg = SkinPropertiesConstants.WINDOW_SCALE + " in .skin.properties is not numeric. : " + scale;
-			throw new ConfigException( msg );
+		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_SCALE ) ) {
+			String scale = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_SCALE );
+			try {
+				Integer.parseInt( scale );
+			} catch ( NumberFormatException e ) {
+				String msg = SkinPropertiesConstants.WINDOW_SCALE + " in .skin.properties is not numeric. : " + scale;
+				throw new ConfigException( msg );
+			}
 		}
 
 	}
 
 	public static void validateSkinConfigProperties( Properties skinConfigProperties ) throws ConfigException {
-		if ( null == skinConfigProperties ) {
+		if ( null == skinConfigProperties || 0 == skinConfigProperties.size() ) {
 			return;
 		}
 	}
