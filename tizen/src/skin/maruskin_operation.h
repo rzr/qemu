@@ -70,4 +70,6 @@ void request_close( void );
 
 void shutdown_qemu_gracefully( void );
 
+int is_requested_shutdown_qemu_gracefully( void );
+
 #endif /* MARUSKIN_OPERATION_H_ */

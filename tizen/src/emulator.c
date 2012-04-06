@@ -274,7 +274,6 @@ void prepare_maru(void)
 
     construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv );
 
-    //TODO get port number by args from emulator manager
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server( guest_server_port );
 

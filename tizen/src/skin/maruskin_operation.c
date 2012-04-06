@@ -52,6 +52,8 @@ MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 #define DATA_DELIMITER "#" // in detail info data
 #define TIMEOUT_FOR_SHUTDOWN 10 // seconds
 
+static int requested_shutdown_qemu_gracefully = 0;
+
 static void* run_timed_shutdown_thread( void* args );
 static void send_to_emuld( const char* request_type, int request_size, const char* send_buf, int buf_size );
 
@@ -330,12 +332,18 @@ void request_close( void )
 
 void shutdown_qemu_gracefully( void ) {
 
+    requested_shutdown_qemu_gracefully = 1;
+
     pthread_t thread_id;
     if( 0 > pthread_create( &thread_id, NULL, run_timed_shutdown_thread, NULL ) ) {
         ERR( "!!! Fail to create run_timed_shutdown_thread. shutdown qemu right now !!!\n"  );
         qemu_system_shutdown_request();
     }
 
+}
+
+int is_requested_shutdown_qemu_gracefully( void ) {
+    return requested_shutdown_qemu_gracefully;
 }
 
 static void* run_timed_shutdown_thread( void* args ) {
