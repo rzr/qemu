@@ -368,58 +368,38 @@ static void parse_skin_args( void ) {
 
 static void* run_skin_server( void* args ) {
 
-    uint16_t port;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_len;
+    struct sockaddr server_addr, client_addr;
+    socklen_t server_len, client_len;
     int shutdown_qmu = 0;
-    int port_fail_count = 0;
 
     INFO("run skin server\n");
 
-    // min:10000 ~ max:(20000 + 10000)
-    port = rand() % 20001;
-    port += 10000;
-
-    if ( 0 > ( server_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP ) ) ) {
+    if ( 0 > ( server_sock = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP ) ) ) {
         ERR( "create listen socket error\n" );
         perror( "create listen socket error : " );
         shutdown_qmu = 1;
         goto cleanup;
     }
 
-    while ( 1 ) {
+    memset( &server_addr, '\0', sizeof( server_addr ) );
+    ( (struct sockaddr_in *) &server_addr )->sin_family = AF_INET;
+    memcpy( &( (struct sockaddr_in *) &server_addr )->sin_addr, "\177\000\000\001", 4 ); // 127.0.0.1
+    ( (struct sockaddr_in *) &server_addr )->sin_port = htons( 0 );
 
-        memset( &server_addr, '\0', sizeof( server_addr ) );
+    server_len = sizeof( server_addr );
 
-        server_addr.sin_family = PF_INET;
-        server_addr.sin_addr.s_addr = inet_addr( "127.0.0.1" );
-        server_addr.sin_port = htons( port );
-
-        int opt = 1;
-        setsockopt( server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof( opt ) );
-
-        if ( 0 > bind( server_sock, (struct sockaddr *) &server_addr, sizeof( server_addr ) ) ) {
-
-            ERR( "skin server bind error\n" );
-            perror( "skin server bind error : " );
-            port++;
-
-            if ( PORT_RETRY_COUNT < port_fail_count ) {
-                shutdown_qmu = 1;
-                goto cleanup;
-            } else {
-                port_fail_count++;
-                INFO( "Retry bind\n" );
-                continue;
-            }
-
-        } else {
-            svr_port = port;
-            INFO( "success to bind port[127.0.0.1:%d/tcp] for skin_server in host \n", svr_port );
-            break;
-        }
-
+    if ( 0 != bind( server_sock, &server_addr, server_len ) ) {
+        ERR( "skin server bind error\n" );
+        perror( "skin server bind error : " );
+        shutdown_qmu = 1;
+        goto cleanup;
     }
+
+    memset( &server_addr, '\0', sizeof( server_addr ) );
+    getsockname( server_sock, (struct sockaddr *) &server_addr, &server_len );
+    svr_port = ntohs( ( (struct sockaddr_in *) &server_addr )->sin_port );
+
+    INFO( "success to bind port[127.0.0.1:%d/tcp] for skin_server in host \n", svr_port );
 
     if ( 0 > listen( server_sock, 4 ) ) {
         ERR( "skin_server listen error\n" );
@@ -432,7 +412,7 @@ static void* run_skin_server( void* args ) {
 
     char recvbuf[RECV_BUF_SIZE];
 
-    INFO( "skin server start...port:%d\n", port );
+    INFO( "skin server start...port:%d\n", svr_port );
 
     while ( 1 ) {
 

@@ -75,6 +75,7 @@ static void* run_skin_client(void* arg)
 
     int skin_server_port = get_skin_server_port();
 
+    srand( time( NULL ) );
     int uid = rand();
     INFO( "generated skin uid:%d\n", uid );
 
