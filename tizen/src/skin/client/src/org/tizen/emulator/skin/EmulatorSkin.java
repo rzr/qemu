@@ -767,19 +767,82 @@ public class EmulatorSkin {
 		canvas.addMouseListener( canvasMouseListener );
 
 		canvasKeyListener = new KeyListener() {
-
+			
+			private KeyEvent previous;
+			private KeyEvent previousMeta;
+			
 			@Override
 			public void keyReleased( KeyEvent e ) {
-				logger.info( "key released. key event:" + e );
+				if( logger.isLoggable( Level.INFO ) ) {
+					logger.info( "'" + e.character + "':" + e.keyCode + ":" + e.stateMask + ":" + e.keyLocation );
+				}else if( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( e.toString() );
+				}
 				int keyCode = e.keyCode | e.stateMask;
 
+				previous = null;
+				
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, e.keyLocation );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
 			@Override
 			public void keyPressed( KeyEvent e ) {
-				logger.info( "key pressed. key event:" + e );
+				
+				if( SkinUtil.isWindowsPlatform() ) {
+					
+					if( null != previousMeta ) {
+						
+						if ( 0 == ( e.stateMask & SWT.SHIFT ) && 0 == ( e.stateMask & SWT.CTRL )
+								&& 0 == ( e.stateMask & SWT.ALT ) ) {
+
+							if ( logger.isLoggable( Level.INFO ) ) {
+								logger.info( "send previous release : '" + previousMeta.character + "':"
+										+ previousMeta.keyCode + ":" + previousMeta.stateMask + ":"
+										+ previousMeta.keyLocation );
+							} else if ( logger.isLoggable( Level.FINE ) ) {
+								logger.fine( "send previous release :" + previousMeta.toString() );
+							}
+							int keyCode = previousMeta.keyCode | previousMeta.stateMask;
+							KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode,
+									previous.keyLocation );
+							communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+							previousMeta = null;
+						}
+
+					}
+
+					if ( null != previous ) {
+						if ( ( previous.keyCode != e.keyCode ) && !isMetaKey( previous ) ) {
+
+							if ( isMetaKey( previous ) ) {
+								previousMeta = previous;
+							} else {
+
+								if ( logger.isLoggable( Level.INFO ) ) {
+									logger.info( "send previous release : '" + previous.character + "':"
+											+ previous.keyCode + ":" + previous.stateMask + ":" + previous.keyLocation );
+								} else if ( logger.isLoggable( Level.FINE ) ) {
+									logger.fine( "send previous release :" + previous.toString() );
+								}
+								int keyCode = previous.keyCode | previous.stateMask;
+								KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode,
+										previous.keyLocation );
+								communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+
+							}
+
+						}
+					}
+				}
+				
+				previous = e;
+				
+				if( logger.isLoggable( Level.INFO ) ) {
+					logger.info( "'" + e.character + "':" + e.keyCode + ":" + e.stateMask + ":" + e.keyLocation );
+				}else if( logger.isLoggable( Level.FINE ) ) {
+					logger.fine( e.toString() );
+				}
 				int keyCode = e.keyCode | e.stateMask;
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, e.keyLocation );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
@@ -791,6 +854,13 @@ public class EmulatorSkin {
 
 	}
 
+	private boolean isMetaKey( KeyEvent event ) {
+		if( SWT.CTRL == event.keyCode || SWT.ALT == event.keyCode || SWT.SHIFT == event.keyCode ) {
+			return true;
+		}
+		return false;
+	}
+	
 	private void removeCanvasListeners() {
 
 		if ( null != canvasDragDetectListener ) {
