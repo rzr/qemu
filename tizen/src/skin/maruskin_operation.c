@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include "maruskin_operation.h"
+#include "hw/maru_brightness.h"
 #include "maru_sdl.h"
 #include "debug_ch.h"
 #include "sdb.h"
@@ -68,6 +69,11 @@ void start_display( int handle_id, int lcd_size_width, int lcd_size_height, doub
 
 void do_mouse_event( int event_type, int x, int y, int z )
 {
+    if( brightness_off ) {
+        TRACE( "reject mouse touch in lcd off : %d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
+        return;
+    }
+
     TRACE( "mouse_event event_type:%d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
 
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
