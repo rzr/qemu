@@ -88,9 +88,12 @@ int javakeycode_to_scancode(int java_keycode, int event_type, int key_location)
             }
             return 29;
         } else if (java_keycode == JAVA_KEYCODE_BIT_SHIFT) { //shift key
+#ifndef _WIN32
+            //keyLocation information is not supported at swt of windows version
             if (key_location == JAVA_KEYLOCATION_RIGHT) {
                 return 54; //Shift_R
             }
+#endif
             return 42;
         } else if (java_keycode == JAVA_KEYCODE_BIT_ALT) { //alt key
             if (key_location == JAVA_KEYLOCATION_RIGHT) {
