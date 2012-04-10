@@ -769,8 +769,10 @@ public class EmulatorSkin {
 		canvasKeyListener = new KeyListener() {
 			
 			private KeyEvent previous;
-			private KeyEvent previousMeta;
-			
+			private boolean disappearEvent = false;
+			private int disappearKeycode = 0;
+			private int disappearKeyLocation = 0;
+
 			@Override
 			public void keyReleased( KeyEvent e ) {
 				if( logger.isLoggable( Level.INFO ) ) {
@@ -782,68 +784,61 @@ public class EmulatorSkin {
 
 				previous = null;
 				
+				if( SkinUtil.isWindowsPlatform() && disappearEvent) {
+					disappearEvent = false;
+					if (isMetaKey(e) && e.character != '\0') {
+						logger.info( "send previous release : keycode=" + disappearKeycode +
+								", disappearKeyLocation=" + disappearKeyLocation);
+
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.RELEASED.value(), disappearKeycode, disappearKeyLocation );
+						communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+
+						disappearKeycode = 0;
+						disappearKeyLocation = 0;
+					}
+				}
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, e.keyLocation );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
 			@Override
 			public void keyPressed( KeyEvent e ) {
+				int keyCode = e.keyCode | e.stateMask;
 				
 				if( SkinUtil.isWindowsPlatform() ) {
-					
-					if( null != previousMeta ) {
-						
-						if ( 0 == ( e.stateMask & SWT.SHIFT ) && 0 == ( e.stateMask & SWT.CTRL )
-								&& 0 == ( e.stateMask & SWT.ALT ) ) {
-
-							if ( logger.isLoggable( Level.INFO ) ) {
-								logger.info( "send previous release : '" + previousMeta.character + "':"
-										+ previousMeta.keyCode + ":" + previousMeta.stateMask + ":"
-										+ previousMeta.keyLocation );
-							} else if ( logger.isLoggable( Level.FINE ) ) {
-								logger.fine( "send previous release :" + previousMeta.toString() );
-							}
-							int keyCode = previousMeta.keyCode | previousMeta.stateMask;
-							KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode,
-									previous.keyLocation );
-							communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
-							previousMeta = null;
-						}
-
-					}
-
 					if ( null != previous ) {
-						if ( ( previous.keyCode != e.keyCode ) && !isMetaKey( previous ) ) {
+						if ( previous.keyCode != e.keyCode ) {
 
 							if ( isMetaKey( previous ) ) {
-								previousMeta = previous;
+								disappearEvent = true;
+								disappearKeycode = keyCode;
+								disappearKeyLocation = e.keyLocation;
 							} else {
-
+								int previousKeyCode = previous.keyCode | previous.stateMask;
+								
 								if ( logger.isLoggable( Level.INFO ) ) {
 									logger.info( "send previous release : '" + previous.character + "':"
 											+ previous.keyCode + ":" + previous.stateMask + ":" + previous.keyLocation );
 								} else if ( logger.isLoggable( Level.FINE ) ) {
 									logger.fine( "send previous release :" + previous.toString() );
 								}
-								int keyCode = previous.keyCode | previous.stateMask;
-								KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode,
+								KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), previousKeyCode,
 										previous.keyLocation );
 								communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
-
 							}
 
 						}
 					}
-				}
-				
+				} //end isWindowsPlatform
+
 				previous = e;
-				
-				if( logger.isLoggable( Level.INFO ) ) {
+
+				if ( logger.isLoggable( Level.INFO ) ) {
 					logger.info( "'" + e.character + "':" + e.keyCode + ":" + e.stateMask + ":" + e.keyLocation );
-				}else if( logger.isLoggable( Level.FINE ) ) {
+				} else if ( logger.isLoggable( Level.FINE ) ) {
 					logger.fine( e.toString() );
 				}
-				int keyCode = e.keyCode | e.stateMask;
 				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, e.keyLocation );
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
