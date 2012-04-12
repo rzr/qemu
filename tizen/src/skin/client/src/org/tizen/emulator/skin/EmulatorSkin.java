@@ -29,6 +29,7 @@
 
 package org.tizen.emulator.skin;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -38,8 +39,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DragDetectEvent;
-import org.eclipse.swt.events.DragDetectListener;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MenuDetectEvent;
@@ -953,6 +952,16 @@ public class EmulatorSkin {
 				}
 
 				String sdbPath = SkinUtil.getSdbPath();
+
+				File sdbFile = new File(sdbPath);
+				if (!sdbFile.exists()) {
+					logger.log( Level.INFO, "SDB file is not exist : " + sdbFile.getAbsolutePath());
+					SkinUtil.openMessage( shell, null,
+							"SDB file is not exist in the following folder.\n" + sdbFile.getAbsolutePath()
+							, SWT.ICON_ERROR, config );
+					return;
+				}
+
 				int portSdb = config.getArgInt( ArgsConstants.NET_BASE_PORT );
 
 				ProcessBuilder procSdb = new ProcessBuilder();
