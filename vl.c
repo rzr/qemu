@@ -198,6 +198,8 @@ extern int tizen_base_port;
 int skin_disabled = 0;
 #endif
 
+int ret_hax_init = 0;
+
 static const char *data_dir;
 const char *bios_name = NULL;
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
@@ -2050,6 +2052,7 @@ static int tcg_init(void)
     if (!hax_disabled)
     {
     	ret = hax_init();
+    	ret_hax_init = ret;
 	if (ret && (ret != -ENOSPC))
 		dprint("No accelerator found.\n");
 	else {

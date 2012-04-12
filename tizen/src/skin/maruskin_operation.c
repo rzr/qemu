@@ -45,6 +45,10 @@
 #include "qemu-common.h"
 #include "sysemu.h"
 
+#ifdef _WIN32
+#include "target-i386/hax-i386.h"
+#endif
+
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
 
@@ -274,6 +278,23 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
         total_len += delimiter_len;
     }
 
+#ifdef _WIN32
+    const int HAX_LEN = 32;
+    char hax_error[HAX_LEN];
+    memset( hax_error, 0, HAX_LEN );
+
+    int hax_err_len = sprintf( hax_error + hax_err_len, "%s", "hax_error=" );
+
+    int error = 0;
+    if ( !ret_hax_init ) {
+        if ( -ENOSPC == ret_hax_init ) {
+            error = 1;
+        }
+    }
+    hax_err_len += sprintf( hax_error + hax_err_len, "%s", error ? "true" : "false" );
+    total_len += hax_err_len;
+#endif
+
     char* info_data = g_malloc0( total_len );
     if ( !info_data ) {
         g_free( detail_info );
@@ -294,6 +315,14 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
         total_len += delimiter_len;
 
     }
+
+#ifdef _WIN32
+    sprintf( info_data + total_len, "%s", hax_error );
+    total_len += hax_err_len;
+#endif
+
+    INFO( "################## detail info data ####################\n" );
+    INFO( "%s\n", info_data );
 
     detail_info->data = info_data;
     detail_info->data_length = total_len;

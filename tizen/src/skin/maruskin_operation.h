@@ -30,6 +30,8 @@
 #ifndef MARUSKIN_OPERATION_H_
 #define MARUSKIN_OPERATION_H_
 
+extern int ret_hax_init;
+
 struct QemuSurfaceInfo {
     unsigned char* pixel_data;
     int pixel_data_length;

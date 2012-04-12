@@ -202,7 +202,9 @@ public class DetailInfoDialog extends SkinDialog {
 		String sharedPath = "";
 		boolean isHwVirtual = false;
 		String hwVirtualCompare = "";
-
+		String haxError = "hax_error=";
+		boolean isHaxError = false;
+		
 		if ( SkinUtil.isLinuxPlatform() ) {
 			hwVirtualCompare = "-enable-kvm";
 		} else if ( SkinUtil.isWindowsPlatform() ) {
@@ -291,6 +293,11 @@ public class DetailInfoDialog extends SkinDialog {
 
 					} else if ( hwVirtualCompare.equals( arg ) ) {
 						isHwVirtual = true;
+					} else if ( arg.startsWith( haxError ) ) {
+						String[] sp = arg.split( "=" );
+						if( 1 < sp.length ) {
+							isHaxError = Boolean.parseBoolean( sp[1] );
+						}
 					}
 
 				}
@@ -330,9 +337,13 @@ public class DetailInfoDialog extends SkinDialog {
 		}
 
 		if( isHwVirtual ) {
-			result.put( "HW Virtualization", "Supported" );
+			if( isHaxError ) {
+				result.put( "HW Virtualization State", "Disable(insufficient memory for driver)" );
+			}else {
+				result.put( "HW Virtualization State", "Enable" );
+			}
 		}else {
-			result.put( "HW Virtualization", "Not Supported" );
+			result.put( "HW Virtualization State", "Disable" );
 		}
 		
 		if ( StringUtil.isEmpty( imagePath ) ) {
