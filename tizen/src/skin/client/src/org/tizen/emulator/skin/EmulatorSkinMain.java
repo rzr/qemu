@@ -39,7 +39,10 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin.SkinReopenPolicy;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
@@ -110,6 +113,16 @@ public class EmulatorSkinMain {
 			EmulatorUI dbiContents = loadDbi( argSkinPath, lcdWidth, lcdHeight );
 			if ( null == dbiContents ) {
 				logger.severe( "Fail to load dbi file." );
+
+				Shell temp = new Shell( Display.getDefault());
+				MessageBox messageBox = new MessageBox( temp, SWT.ICON_ERROR );
+				messageBox.setText( "Emulator" );
+				messageBox.setMessage( "Fail to load \"" + DBI_FILE_NAME + "\" file\n" +
+						"Check if the file is corrupted or missing from the following path.\n" +
+						argSkinPath );
+				messageBox.open();
+				temp.dispose();
+
 				System.exit( -1 );
 			}
 
