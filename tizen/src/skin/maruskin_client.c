@@ -67,7 +67,7 @@ static void* run_skin_client(void* arg)
 
     INFO("run skin client\n");
     int i;
-    for(i = 0; i < skin_argc; ++i) {
+    for (i = 0; i < skin_argc; ++i) {
         strncat(argv, skin_argv[i], strlen(skin_argv[i]));
         strncat(argv, " ", 1);
         INFO( "[skin args %d] %s\n", i, skin_argv[i] );
@@ -96,7 +96,7 @@ static void* run_skin_client(void* arg)
     {
         STARTUPINFO sti = { 0 };
         PROCESS_INFORMATION pi = { 0 };
-         if(!CreateProcess(NULL,
+        if (!CreateProcess(NULL,
                           cmd,
                           NULL,
                           NULL,
@@ -106,21 +106,63 @@ static void* run_skin_client(void* arg)
                           NULL,
                           &sti,
                           &pi))
-          {
-          printf("Unable to generate process \n");
-          exit(1);
+        {
+            ERR("Unable to generate process!error %u\n", GetLastError());
+            exit(1);
         }
-         DWORD rc = WaitForSingleObject(
+
+        INFO("wait for single object..\n");
+        DWORD dwRet = WaitForSingleObject(
                           pi.hProcess, // process handle
                           INFINITE);
+
+        switch(dwRet) {
+        case WAIT_OBJECT_0:
+            INFO("the child thread state was signaled!\n");
+            break;
+        case WAIT_TIMEOUT:
+            INFO("time-out interval elapsed, and the child thread's state is nonsignaled.\n");
+            break;
+        case WAIT_FAILED:
+            ERR("WaitForSingleObject() failed, error %u\n", GetLastError());
+            break;
+        }
+
+        //retrieves the termination status of the specified process
+        GetExitCodeProcess(pi.hProcess, &dwRet);
+        INFO("child return value : %d\n", dwRet);
+
+        if (dwRet == -1) {
+            //TODO:
+            exit(1);
+        }
+
+        if (CloseHandle(pi.hProcess) != 0) {
+            INFO("child thread handle was closed successfully!\n");
+        } else {
+            ERR("failed to close child thread handle, error %u\n", GetLastError());
+        }
     }
 #endif
 #else
-    if( system(cmd) ) {
+    int ret = system(cmd);
 
-    }else {
+    if (ret == 127) {
+        INFO("can't execute /bin/sh!\n");
+    } else if(ret == -1) {
+        INFO("fork error!\n");
+    } else {
+        ret = WEXITSTATUS(ret);
+        //The high-order 8 bits are the exit code from exit().
+        //The low-order 8 bits are zero if the process exited normally.
+        INFO("child return value : %d\n", ret);
 
+        if (ret == 0xff) {
+            //TODO:
+            exit(1);
+        }
     }
+
 #endif
 
     return NULL;
@@ -137,10 +179,10 @@ int start_skin_client(int argc, char* argv[])
             break;
         }
 
-        if( is_ready_skin_server() ) {
+        if ( is_ready_skin_server() ) {
             skin_server_ready = 1;
             break;
-        }else {
+        } else {
             count++;
             INFO( "sleep for ready. count:%d\n", count );
 #ifdef _WIN32
@@ -152,7 +194,7 @@ int start_skin_client(int argc, char* argv[])
 
     }
 
-    if( !skin_server_ready ) {
+    if ( !skin_server_ready ) {
         ERR( "skin_server is not ready.\n" );
         return -1;
     }
