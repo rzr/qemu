@@ -283,7 +283,8 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     char hax_error[HAX_LEN];
     memset( hax_error, 0, HAX_LEN );
 
-    int hax_err_len = sprintf( hax_error + hax_err_len, "%s", "hax_error=" );
+    int hax_err_len = 0;
+    hax_err_len = sprintf( hax_error + hax_err_len, "%s", "hax_error=" );
 
     int error = 0;
     if ( !ret_hax_init ) {
@@ -317,7 +318,7 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     }
 
 #ifdef _WIN32
-    sprintf( info_data + total_len, "%s", hax_error );
+    snprintf( info_data + total_len, hax_err_len, "%s", hax_error );
     total_len += hax_err_len;
 #endif
 
