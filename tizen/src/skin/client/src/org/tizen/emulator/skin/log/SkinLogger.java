@@ -31,13 +31,18 @@ package org.tizen.emulator.skin.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 import org.tizen.emulator.skin.util.StringUtil;
 
@@ -85,6 +90,13 @@ public class SkinLogger {
 	public Logger getLogger() {
 		return this.logger;
 	}
+
+	public static void setLevel( Level level ) {
+		if( null != fileHandler ) {
+			fileHandler.setLevel( level );
+		}
+	}
+
 	
 	public static void init( SkinLogLevel logLevel, String filePath ) {
 		
@@ -117,7 +129,6 @@ public class SkinLogger {
 			}
 
 			try {
-				System.out.println( "[SkinLog]log file path:" + file.getAbsolutePath() );
 				fileHandler = new FileHandler( file.getAbsolutePath(), false );
 			} catch ( SecurityException e1 ) {
 				e1.printStackTrace();
@@ -133,12 +144,8 @@ public class SkinLogger {
 				e.printStackTrace();
 			}
 			
-			SimpleFormatter simpleFormatter = new SimpleFormatter();
-			fileHandler.setFormatter( simpleFormatter );
-			
+			fileHandler.setFormatter( new SkinFormatter() );
 			fileHandler.setLevel( logLevel.level() );
-			
-			System.out.println( "[SkinLog]SkinLogger level:" + logLevel.value() );
 			
 		}
 		
@@ -179,3 +186,63 @@ public class SkinLogger {
 	}
 
 }
+
+class SkinFormatter extends Formatter {
+
+	private SimpleDateFormat simpleDateFormat = new SimpleDateFormat( "yyyyMMdd-HHmmss" );
+	private String lineSeparator = System.getProperty( "line.separator" );
+
+	@Override
+	public String format( LogRecord record ) {
+
+		StringBuilder builder = new StringBuilder();
+
+		builder.append( "[" );
+		builder.append( record.getLevel().toString() );
+		builder.append( ":" );
+
+		String formattedDate = simpleDateFormat.format( new Date( record.getMillis() ) );
+		builder.append( formattedDate );
+		builder.append( ":" );
+
+		if ( null != record.getSourceClassName() ) {
+			String sourceClassName = record.getSourceClassName();
+			String[] split = sourceClassName.split( "\\." );
+			builder.append( split[split.length - 1] );
+		} else {
+			builder.append( record.getLoggerName() );
+		}
+		
+		if ( null != record.getSourceMethodName() ) {
+			builder.append( "." );
+			builder.append( record.getSourceMethodName() );
+		}
+
+		builder.append( "] " );
+
+		String message = formatMessage( record );
+		builder.append( message );
+
+		builder.append( lineSeparator );
+
+		if ( null != record.getThrown() ) {
+			
+			try {
+				
+				StringWriter sw = new StringWriter();
+				PrintWriter pw = new PrintWriter( sw );
+				record.getThrown().printStackTrace( pw );
+				pw.close();
+				
+				builder.append( sw.toString() );
+				
+			} catch ( Exception ex ) {
+			}
+		}
+
+		return builder.toString();
+
+	}
+
+}
+	

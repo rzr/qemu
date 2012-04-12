@@ -74,14 +74,22 @@ public class EmulatorSkinMain {
 		
 		try {
 
-			Map<String, String> argsMap = parsArgs( args );
+			String vmPath = getVmPath( args );
+			if ( StringUtil.isEmpty( vmPath ) ) {
+				throw new IllegalArgumentException( ArgsConstants.VM_PATH + " in arguments is null." );
+			}
 
-			String vmPath = (String) argsMap.get( ArgsConstants.VM_PATH );
+			SkinLogger.init( SkinLogLevel.DEBUG, vmPath );
+
+			logger = SkinLogger.getSkinLogger( EmulatorSkinMain.class ).getLogger();
+			logger.info( "!!! Start Emualtor Skin !!!" );
+			
+			Map<String, String> argsMap = parsArgs( args );
 			
 			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
 			Properties skinProperties = loadProperties( skinPropFilePath, true );
 			if ( null == skinProperties ) {
-				System.err.println( "[SkinLog]Fail to load skin properties file." );
+				logger.severe( "Fail to load skin properties file." );
 				System.exit( -1 );
 			}
 
@@ -203,39 +211,50 @@ public class EmulatorSkinMain {
 				break;
 			}
 		}
-		
-		String vmPath = argsMap.get( ArgsConstants.VM_PATH );
-		
-		SkinLogger.init( skinLogLevel, vmPath );
-		
-		logger = SkinLogger.getSkinLogger( EmulatorSkinMain.class ).getLogger();
+
+		SkinLogger.setLevel( skinLogLevel.level() );
 		
 	}
 
+	private static String getVmPath( String[] args ) {
+
+		for ( int i = 0; i < args.length; i++ ) {
+			String arg = args[i];
+			String[] split = arg.split( "=" );
+			if ( 1 < split.length ) {
+				if ( ArgsConstants.VM_PATH.equals( split[0].trim() ) ) {
+					return split[1].trim();
+				}
+			}
+		}
+
+		return null;
+
+	}
+	
 	private static Map<String, String> parsArgs( String[] args ) {
 
 		Map<String, String> map = new HashMap<String, String>();
 
 		for ( int i = 0; i < args.length; i++ ) {
 			String arg = args[i];
-			System.out.println( "[SkinLog]arg[" + i + "] " + arg );
+			logger.info( "arg[" + i + "] " + arg );
 			String[] split = arg.split( "=" );
 
 			if ( 1 < split.length ) {
 
 				String argKey = split[0].trim();
 				String argValue = split[1].trim();
-				System.out.println( "[SkinLog]argKey:" + argKey + "  argValue:" + argValue );
 				map.put( argKey, argValue );
 
 			} else {
-				System.out.println( "[SkinLog]only one argv:" + arg );
+				logger.info( "sinlge argv:" + arg );
 			}
 		}
 
-		System.out.println( "[SkinLog]========================================" );
-		System.out.println( "[SkinLog]args:" + map );
-		System.out.println( "[SkinLog]========================================" );
+		logger.info( "================= argsMap =====================" );
+		logger.info( map.toString() );
+		logger.info( "===============================================" );
 
 		return map;
 
@@ -283,7 +302,7 @@ public class EmulatorSkinMain {
 				
 				if ( !file.exists() ) {
 					if ( !file.createNewFile() ) {
-						System.err.println( "[SkinLog]Fail to create new " + filePath + " property file." );
+						logger.severe( "Fail to create new " + filePath + " property file." );
 						return null;
 					}
 				}
@@ -300,14 +319,13 @@ public class EmulatorSkinMain {
 					properties = new Properties();
 					properties.load( fis );
 				}
-				
+
 			}
 
-			System.out.println( "[SkinLog]load properties file : " + filePath );
+			logger.info( "load properties file : " + filePath );
 
 		} catch ( IOException e ) {
-			System.err.println( "[SkinLog]Fail to load skin properties file." );
-			e.printStackTrace();
+			logger.log( Level.SEVERE, "Fail to load skin properties file.", e );
 		} finally {
 			IOUtil.close( fis );
 		}

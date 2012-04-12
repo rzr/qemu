@@ -262,7 +262,7 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				default: {
-					logger.warning( "Unknown command from QEMU. command:" + cmd );
+					logger.severe( "Unknown command from QEMU. command:" + cmd );
 					break;
 				}
 				}
@@ -356,8 +356,7 @@ public class SocketCommunicator implements ICommunicator {
 
 			if ( 0 < length ) {
 				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "== data ==" );
-					logger.fine( data.toString() );
+					logger.fine( "[Socket] data  - " + data.toString() );
 				}
 			}
 

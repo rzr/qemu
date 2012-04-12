@@ -151,7 +151,7 @@ public class ScreenShotDialog {
 			@Override
 			public void paintControl( PaintEvent e ) {
 
-				logger.info( "paint image." );
+				logger.fine( "paint image." );
 
 				if ( null != image && !image.isDisposed() ) {
 					e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
