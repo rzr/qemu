@@ -82,6 +82,11 @@ obj-i386-$(CONFIG_WIN32) += maru_camera_win32_pci.o
 ifdef CONFIG_LINUX # libs for maru camera on linux host
 LIBS += -lv4l2 -lv4lconvert
 endif
+
+ifdef CONFIG_WIN32
+obj-i386-y += check_hax.o
+endif
+
 ifdef CONFIG_WIN32 # libs for maru camera on windows host
 LIBS += -lole32 -loleaut32 -luuid -lstrmiids
 endif
