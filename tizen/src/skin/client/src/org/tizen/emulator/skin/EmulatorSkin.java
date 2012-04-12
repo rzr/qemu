@@ -30,6 +30,7 @@
 package org.tizen.emulator.skin;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -956,9 +957,13 @@ public class EmulatorSkin {
 				File sdbFile = new File(sdbPath);
 				if (!sdbFile.exists()) {
 					logger.log( Level.INFO, "SDB file is not exist : " + sdbFile.getAbsolutePath());
-					SkinUtil.openMessage( shell, null,
-							"SDB file is not exist in the following folder.\n" + sdbFile.getAbsolutePath()
-							, SWT.ICON_ERROR, config );
+					try {
+						SkinUtil.openMessage( shell, null,
+								"SDB file is not exist in the following path.\n" + sdbFile.getCanonicalPath()
+								, SWT.ICON_ERROR, config );
+					} catch (IOException ee) {
+						logger.log( Level.SEVERE, ee.getMessage(), ee );
+					}
 					return;
 				}
 
