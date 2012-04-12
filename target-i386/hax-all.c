@@ -424,10 +424,13 @@ int hax_init(void)
         goto error;
     }
 
-    if (hax_get_capability(hax))
+    ret = hax_get_capability(hax);
+
+    if (ret)
     {
+    	if (ret != -ENOSPC)
 	    ret = -EINVAL;
-	    goto error;
+	goto error;
     }
 
     if (!hax_version_support(hax))
@@ -450,7 +453,7 @@ int hax_init(void)
 
     hax_support = 1;
 
-    return 0;
+    return ret;
 error:
     if (hax->vm)
         hax_vm_destroy(hax->vm);

@@ -237,7 +237,7 @@ const char *vnc_display;
 #endif
 int acpi_enabled = 1;
 int no_hpet = 0;
-int hax_disabled = 0;
+int hax_disabled = 1;
 int fd_bootchk = 1;
 int no_reboot = 0;
 int no_shutdown = 0;
@@ -2050,13 +2050,19 @@ static int tcg_init(void)
     if (!hax_disabled)
     {
     	ret = hax_init();
-	dprint("HAX is %s and emulator runs in %s mode\n",
-		!ret ? "working" : "not working",
+	if (ret && (ret != -ENOSPC))
+		dprint("No accelerator found.\n");
+	else {
+		dprint("HAX is %s and emulator runs in %s mode.\n", 
+		!ret ? "working" : "not working", 
 		!ret ? "fast virt" : "emulation");
+		return 0;
+	}
+
     } else
     	dprint("HAX is disabled and emulator runs in emulation mode.\n");
 #endif	
-    return 0;
+    return ret;
 }
 
 static struct {
@@ -2069,7 +2075,6 @@ static struct {
     { "tcg", "tcg", tcg_available, tcg_init, &tcg_allowed },
     { "xen", "Xen", xen_available, xen_init, &xen_allowed },
     { "kvm", "KVM", kvm_available, kvm_init, &kvm_allowed },
-    //{ "hax", "HAX", hax_available, hax_init, &hax_allowed },
 };
 
 static int configure_accelerator(void)
@@ -3168,9 +3173,6 @@ int main(int argc, char **argv, char **envp)
                 olist = qemu_find_opts("machine");
                 qemu_opts_reset(olist);
                 //qemu_opts_parse(olist, "accel=hax", 0);
-                break;
-            case QEMU_OPTION_disable_hax:
-                hax_disabled = 1;
                 break;
 #ifdef CONFIG_MARU
             case QEMU_OPTION_max_touch_point:

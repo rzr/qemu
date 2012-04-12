@@ -2264,15 +2264,6 @@ Enable HAX (Hardware-based Acceleration eXecution) support. When HAX support det
 HAX is only supported in MAC and Windows platform and is not conflict with KVM.
 ETEXI
 
-DEF("disable-hax", 0, QEMU_OPTION_disable_hax, \
-    "-disable-hax   Disable HAX full virtualization support\n", QEMU_ARCH_I386)
-STEXI
-@item -disable-hax
-@findex -disable-hax
-Disable HAX (Hardware-based Acceleration eXecution) support. When HAX support detected, emulator will enable it by default. This option will disable the default action
-HAX is only supported in MAC and Windows platform and is not conflict with KVM.
-ETEXI
-
 DEF("xen-domid", HAS_ARG, QEMU_OPTION_xen_domid,
     "-xen-domid id   specify xen guest domain id\n", QEMU_ARCH_ALL)
 DEF("xen-create", 0, QEMU_OPTION_xen_create,
