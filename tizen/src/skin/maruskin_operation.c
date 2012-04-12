@@ -296,7 +296,7 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     total_len += hax_err_len;
 #endif
 
-    char* info_data = g_malloc0( total_len );
+    char* info_data = g_malloc0( total_len + 1 );
     if ( !info_data ) {
         g_free( detail_info );
         ERR( "Fail to malloc for info data.\n" );
@@ -307,18 +307,13 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     total_len = 0;
 
     for ( i = 0; i < qemu_argc; i++ ) {
-
         len = strlen( qemu_argv[i] );
-        sprintf( info_data + total_len, "%s", qemu_argv[i] );
-        sprintf( info_data + total_len + len, "%s", DATA_DELIMITER );
-
-        total_len += len;
-        total_len += delimiter_len;
-
+        sprintf( info_data + total_len, "%s%s", qemu_argv[i], DATA_DELIMITER );
+        total_len += len + delimiter_len;
     }
 
 #ifdef _WIN32
-    snprintf( info_data + total_len, hax_err_len, "%s", hax_error );
+    snprintf( info_data + total_len, total_len + 1, "%s", hax_error );
     total_len += hax_err_len;
 #endif
 
