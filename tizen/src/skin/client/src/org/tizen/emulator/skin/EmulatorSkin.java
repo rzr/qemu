@@ -159,7 +159,7 @@ public class EmulatorSkin {
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
 
-	private DragDetectListener canvasDragDetectListener;
+	//private DragDetectListener canvasDragDetectListener;
 	private MouseMoveListener canvasMouseMoveListener;
 	private MouseListener canvasMouseListener;
 	private KeyListener canvasKeyListener;
@@ -666,7 +666,7 @@ public class EmulatorSkin {
 		// remove 'input method' menu item ( avoid bug )
 		canvas.addMenuDetectListener( canvasMenuDetectListener );
 
-		canvasDragDetectListener = new DragDetectListener() {
+		/*canvasDragDetectListener = new DragDetectListener() {
 
 			@Override
 			public void dragDetected( DragDetectEvent e ) {
@@ -685,7 +685,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		canvas.addDragDetectListener( canvasDragDetectListener );
+		canvas.addDragDetectListener( canvasDragDetectListener );*/
 
 		canvasMouseMoveListener = new MouseMoveListener() {
 
@@ -756,6 +756,9 @@ public class EmulatorSkin {
 					MouseEventData mouseEventData = new MouseEventData( MouseEventType.DOWN.value(), geometry[0],
 							geometry[1], 0 );
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
+					if ( false == EmulatorSkin.this.isDragStartedInLCD ) {
+						EmulatorSkin.this.isDragStartedInLCD = true;
+					}
 				}
 			}
 
@@ -858,9 +861,9 @@ public class EmulatorSkin {
 	
 	private void removeCanvasListeners() {
 
-		if ( null != canvasDragDetectListener ) {
-			lcdCanvas.removeDragDetectListener( canvasDragDetectListener );
-		}
+//		if ( null != canvasDragDetectListener ) {
+//			lcdCanvas.removeDragDetectListener( canvasDragDetectListener );
+//		}
 		if ( null != canvasMouseMoveListener ) {
 			lcdCanvas.removeMouseMoveListener( canvasMouseMoveListener );
 		}

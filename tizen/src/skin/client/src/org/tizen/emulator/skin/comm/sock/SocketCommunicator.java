@@ -312,7 +312,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	public void sendToQEMU( SendCommand command, ISendData data, boolean useDataTransfer ) {
+	public synchronized void sendToQEMU( SendCommand command, ISendData data, boolean useDataTransfer ) {
 		if ( useDataTransfer ) {
 			this.dataTransfer.reset();
 		}
@@ -320,7 +320,7 @@ public class SocketCommunicator implements ICommunicator {
 	}
 
 	@Override
-	public void sendToQEMU( SendCommand command, ISendData data ) {
+	public synchronized void sendToQEMU( SendCommand command, ISendData data ) {
 
 		try {
 
