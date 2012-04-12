@@ -209,7 +209,8 @@ static void system_info(void)
     struct tm *tm_time;
     struct timeval tval;
 
-    INFO("* SDK version : %s\n", build_version);
+    INFO("* SDK Version : %s\n", build_version);
+    INFO("* Package %s\n", pkginfo_version);
     INFO("* User name : %s\n", g_get_real_name());
 #ifdef _WIN32
     INFO("* Host name : %s\n", g_get_host_name());
