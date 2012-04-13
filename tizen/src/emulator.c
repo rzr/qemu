@@ -154,6 +154,7 @@ static void get_bin_dir( char* exec_argv ) {
     p = strrchr( data, '/' );
 #endif
     if ( !p ) {
+        free( data );
         return;
     }
 
