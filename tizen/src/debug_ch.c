@@ -40,10 +40,14 @@
 #include <errno.h>
 #endif
 
+#include "emulator.h"
 #include "debug_ch.h"
 
+// DEBUGCH file is located in binary directory.
+char bin_dir[256] = {0,};
+
 static char logpath[512] = {0,};
-static char debugchfile[256] = {0, };
+static char debugchfile[512] = {0, };
 #ifdef _WIN32
 static HANDLE handle;
 #endif
@@ -277,8 +281,18 @@ static void debug_init(void)
 	strcpy(debugchfile, get_etc_path());
 	strcat(debugchfile, "/DEBUGCH");
 #endif
-	strcpy(debugchfile, "DEBUGCH");
 
+    if ( 0 == strlen( bin_dir ) ) {
+        strcpy( debugchfile, "DEBUGCH" );
+    } else {
+        strcat( debugchfile, bin_dir );
+#ifdef _WIN32
+        strcat( debugchfile, "\\" );
+#else
+        strcat( debugchfile, "/" );
+#endif
+        strcat( debugchfile, "DEBUGCH" );
+    }
 
 	fp= fopen(debugchfile, "r");
 	if( fp == NULL){

@@ -132,6 +132,37 @@ static void parse_options(int argc, char* argv[], int* skin_argc, char*** skin_a
     }
 }
 
+static void get_bin_dir( char* exec_argv ) {
+
+    if ( !exec_argv ) {
+        return;
+    }
+
+    char* data = strdup( exec_argv );
+    if ( !data ) {
+        fprintf( stderr, "Fail to strdup for paring a binary directory.\n" );
+        return;
+    }
+
+    char* p = NULL;
+#ifdef _WIN32
+    p = strrchr( data, '\\' );
+    if ( !p ) {
+        p = strrchr( data, '/' );
+    }
+#else
+    p = strrchr( data, '/' );
+#endif
+    if ( !p ) {
+        return;
+    }
+
+    strncpy( bin_dir, data, strlen( data ) - strlen( p ) );
+
+    free( data );
+
+}
+
 void set_image_and_log_path(char* qemu_argv)
 {
     int i;
@@ -286,6 +317,7 @@ int qemu_main(int argc, char** argv, char** envp);
 int main(int argc, char* argv[])
 {
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    get_bin_dir( qemu_argv[0] );
     socket_init();
     extract_info(qemu_argc, qemu_argv);
 
