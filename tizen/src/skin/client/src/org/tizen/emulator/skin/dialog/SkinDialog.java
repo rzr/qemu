@@ -32,6 +32,7 @@ package org.tizen.emulator.skin.dialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -101,6 +102,16 @@ public abstract class SkinDialog extends Dialog {
 		
 		if ( !isReady ) {
 			return;
+		}
+
+		if (this.parent != null) {
+			Point central = new Point(
+					this.parent.getLocation().x + (this.parent.getSize().x / 2),
+					this.parent.getLocation().y + (this.parent.getSize().y / 2));
+
+			shell.setLocation(
+					central.x - (shell.getSize().x / 2),
+					central.y - (shell.getSize().y / 2));
 		}
 
 		shell.open();
