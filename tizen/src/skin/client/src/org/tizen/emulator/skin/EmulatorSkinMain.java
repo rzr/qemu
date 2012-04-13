@@ -75,6 +75,8 @@ public class EmulatorSkinMain {
 	 */
 	public static void main( String[] args ) {
 		
+		SocketCommunicator communicator = null;
+		
 		try {
 
 			String vmPath = getVmPath( args );
@@ -138,7 +140,7 @@ public class EmulatorSkinMain {
 			int windowHandleId = skin.compose();
 
 			int uid = config.getArgInt( ArgsConstants.UID );
-			SocketCommunicator communicator = new SocketCommunicator( config, uid, windowHandleId, skin );
+			communicator = new SocketCommunicator( config, uid, windowHandleId, skin );
 
 			skin.setCommunicator( communicator );
 
@@ -181,10 +183,16 @@ public class EmulatorSkinMain {
 
 			if ( null != logger ) {
 				logger.log( Level.SEVERE, e.getMessage(), e );
+				logger.warning( "Shutdown skin process !!!" );
 			} else {
 				e.printStackTrace();
+				System.out.println( "Shutdown skin process !!!" );
 			}
-
+			
+			if( null != communicator ) {
+				communicator.terminate();
+			}
+			
 		} finally {
 			ImageRegistry.getInstance().dispose();
 			Display.getDefault().close();

@@ -580,12 +580,17 @@ public class EmulatorSkin {
 					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
 					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
-						if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
-							shell.redraw();
-						} else {
-							shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
-									currentHoverRegion.height + 1, false );
+						
+						// null check : prevent from mouse up without a hover (ex. doing always on top in hardkey area)
+						if( null != currentHoverRegion ) {
+							if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
+								shell.redraw();
+							} else {
+								shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
+										currentHoverRegion.height + 1, false );
+							}
 						}
+						
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, 0 );
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
