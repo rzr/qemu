@@ -95,6 +95,9 @@ void set_log_path(char *path);
 	 (dbg_log(__DBCL##dbcl,(dbch), "") == -1)) ? \
 (void)0 : (void)dbg_printf
 */
+
+extern char bin_dir[256];
+
 extern unsigned char _dbg_get_channel_flags( struct _debug_channel *channel );
 extern int _dbg_set_channel_flags( struct _debug_channel *channel,
 		unsigned char set, unsigned char clear );
