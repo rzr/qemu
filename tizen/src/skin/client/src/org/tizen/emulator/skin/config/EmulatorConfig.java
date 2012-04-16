@@ -37,6 +37,8 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
@@ -53,7 +55,7 @@ import org.tizen.emulator.skin.util.StringUtil;
  */
 public class EmulatorConfig {
 
-	private Logger logger = SkinLogger.getSkinLogger( EmulatorConfig.class ).getLogger();
+	private static Logger logger = SkinLogger.getSkinLogger( EmulatorConfig.class ).getLogger();
 
 	public static final int DEFAULT_WINDOW_SCALE = Scale.SCALE_50.value();
 	public static final short DEFAULT_WINDOW_ROTATION = RotationInfo.PORTRAIT.id();
@@ -165,25 +167,61 @@ public class EmulatorConfig {
 			return;
 		}
 
+		Rectangle monitorBound = Display.getDefault().getBounds();
+		logger.info("current display size : " + monitorBound);
+
 		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_X ) ) {
 			String x = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_X );
-			
+			int xx = 0;
+
 			try {
-				Integer.parseInt( x );
+				xx = Integer.parseInt( x );
 			} catch ( NumberFormatException e ) {
 				String msg = SkinPropertiesConstants.WINDOW_X + " in .skin.properties is not numeric. : " + x;
 				throw new ConfigException( msg );
 			}
+
+			//location correction
+			if (xx < monitorBound.x) {
+				int correction = monitorBound.x;
+				logger.info("WINDOW_X = " + xx + ", set to " + correction);
+				xx = correction;
+			} else if (xx > monitorBound.x + monitorBound.width - 30) {
+				int correction = monitorBound.x + monitorBound.width - 100;
+				logger.info("WINDOW_X = " + xx + ", set to " + correction);
+				xx = correction;
+			} else {
+				logger.info("WINDOW_X = " + xx);
+			}
+
+			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_X, "" + xx);
 		}
 
 		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_Y ) ) {
 			String y = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_Y );
+			int yy = 0;
+
 			try {
-				Integer.parseInt( y );
+				yy = Integer.parseInt( y );
 			} catch ( NumberFormatException e ) {
 				String msg = SkinPropertiesConstants.WINDOW_Y + " in .skin.properties is not numeric. : " + y;
 				throw new ConfigException( msg );
 			}
+
+			//location correction
+			if (yy < monitorBound.y) {
+				int correction = monitorBound.y;
+				logger.info("WINDOW_Y = " + yy + ", set to " + correction);
+				yy = correction;
+			} else if (yy > monitorBound.y + monitorBound.height - 30) {
+				int correction = monitorBound.y + monitorBound.height - 100;
+				logger.info("WINDOW_Y = " + yy + ", set to " + correction);
+				yy = correction;
+			} else {
+				logger.info("WINDOW_Y = " + yy);
+			}
+
+			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_Y, "" + yy);
 		}
 
 		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_ROTATION ) ) {
