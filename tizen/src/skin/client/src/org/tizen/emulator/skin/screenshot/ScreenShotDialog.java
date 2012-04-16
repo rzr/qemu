@@ -52,6 +52,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Canvas;
@@ -115,7 +116,6 @@ public class ScreenShotDialog {
 
 		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
-		shell.setLocation( parent.getLocation().x + parent.getSize().x + 30, parent.getLocation().y );
 		shell.addListener( SWT.Close, new Listener() {
 			@Override
 			public void handleEvent( Event event ) {
@@ -174,6 +174,15 @@ public class ScreenShotDialog {
 		}
 
 		shell.pack();
+
+		Rectangle  monitorBound = Display.getDefault().getBounds();
+		logger.info("current display size : " + monitorBound);
+		int x = parent.getLocation().x + parent.getSize().x + 20;
+		int y = parent.getLocation().y;
+		if ((x + shell.getSize().x) > (monitorBound.x + monitorBound.width)) {
+			x = parent.getLocation().x - shell.getSize().x - 20;
+		}
+		shell.setLocation(x, y);
 
 	}
 
