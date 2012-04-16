@@ -65,7 +65,12 @@ MULTI_DEBUG_CHANNEL( qemu, skin_server );
 #define HEART_BEAT_INTERVAL 1
 #define HEART_BEAT_FAIL_COUNT 5
 #define HEART_BEAT_EXPIRE_COUNT 5
+
+#if 0 // do not restarting skin process ( prevent from abnormal behavior killing a skin process in Windows )
 #define RESTART_CLIENT_MAX_COUNT 1
+#else
+#define RESTART_CLIENT_MAX_COUNT 0
+#endif
 
 #define PORT_RETRY_COUNT 50
 

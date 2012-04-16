@@ -54,7 +54,7 @@ endif #($(TARGET_ARCH), i386)
 endif #CONFIG_WIN32
 	
 # maru loader
-obj-y += emulator.o emul_state.o option.o maru_signal.o
+obj-y += emulator.o emul_state.o option.o
 
 # maru display
 obj-y += maru_sdl.o sdl_rotate.o maru_finger.o
