@@ -108,7 +108,7 @@ public class ScreenShotDialog {
 	private boolean reserveImage;
 
 	public ScreenShotDialog( Shell parent, SocketCommunicator communicator, EmulatorSkin emulatorSkin,
-			EmulatorConfig config ) throws ScreenShotException {
+			EmulatorConfig config, Image icon ) throws ScreenShotException {
 
 		this.communicator = communicator;
 		this.emulatorSkin = emulatorSkin;
@@ -116,6 +116,10 @@ public class ScreenShotDialog {
 
 		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
+		if (icon != null) {
+			shell.setImage(icon);
+		}
+
 		shell.addListener( SWT.Close, new Listener() {
 			@Override
 			public void handleEvent( Event event ) {

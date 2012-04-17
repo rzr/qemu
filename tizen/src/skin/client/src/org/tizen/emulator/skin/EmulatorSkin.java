@@ -1524,7 +1524,8 @@ public class EmulatorSkin {
 
 					isScreenShotOpened = true;
 
-					screenShotDialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config );
+					screenShotDialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config,
+							imageRegistry.getIcon(IconName.SCREENSHOT) );
 					screenShotDialog.open();
 
 				} catch ( ScreenShotException ex ) {
