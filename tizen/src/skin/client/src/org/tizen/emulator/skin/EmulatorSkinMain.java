@@ -43,7 +43,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
-import org.tizen.emulator.skin.EmulatorSkin.SkinReopenPolicy;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
@@ -153,27 +152,29 @@ public class EmulatorSkinMain {
 				Thread communicatorThread = new Thread( communicator );
 				communicatorThread.start();
 				
-				SkinReopenPolicy reopenPolicy = skin.open();
+//				SkinReopenPolicy reopenPolicy = skin.open();
+//				
+//				while( true ) {
+//
+//					if( null != reopenPolicy ) {
+//						
+//						if( reopenPolicy.isReopen() ) {
+//							
+//							EmulatorSkin reopenSkin = reopenPolicy.getReopenSkin();
+//							logger.info( "Reopen skin dialog." );
+//							reopenPolicy = reopenSkin.open();
+//							
+//						}else {
+//							break;
+//						}
+//						
+//					}else {
+//						break;
+//					}
+//
+//				}
 				
-				while( true ) {
-
-					if( null != reopenPolicy ) {
-						
-						if( reopenPolicy.isReopen() ) {
-							
-							EmulatorSkin reopenSkin = reopenPolicy.getReopenSkin();
-							logger.info( "Reopen skin dialog." );
-							reopenPolicy = reopenSkin.open();
-							
-						}else {
-							break;
-						}
-						
-					}else {
-						break;
-					}
-
-				}
+				skin.open();
 				
 			} else {
 				logger.severe( "CommSocket is null." );
