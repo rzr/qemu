@@ -312,7 +312,7 @@ void maru_finger_processing(int x, int y, int touch_type)
         {
             finger = get_finger_point_from_slot(mts->finger_cnt_max - 1);
             if (finger != NULL) {
-#if 0 //send release event??
+#if 1 //send release event??
                 kbd_mouse_event(finger->x, finger->y, mts->finger_cnt_max - 1, 0);
 #endif
 
@@ -350,6 +350,8 @@ void clear_finger_slot(void)
         finger->id = 0;
         finger->x = finger->y = -1;
     }
+
+    _grab_finger_id = 0;
 
     mts->finger_cnt = 0;
     INFO("clear multi-touch\n");

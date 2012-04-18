@@ -34,6 +34,7 @@
 
 /* keep it consistent with emulator-skin(swt) virtual keycode */
 #define JAVA_KEYCODE_BIT (1 << 24)
+#define JAVA_KEYCODE_NO_FOCUS (1 << 19)
 #define JAVA_KEYCODE_BIT_CTRL (1 << 18)
 #define JAVA_KEYCODE_BIT_SHIFT (1 << 17)
 #define JAVA_KEYCODE_BIT_ALT (1 << 16)

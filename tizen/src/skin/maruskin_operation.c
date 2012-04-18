@@ -105,14 +105,23 @@ void do_key_event( int event_type, int keycode, int key_location )
     TRACE( "key_event event_type:%d, keycode:%d, key_location:%d\n", event_type, keycode, key_location );
 
     //is multi-touch mode ?
-    if (keycode == JAVA_KEYCODE_BIT_CTRL && get_emul_max_touch_point() > 1) {
-        if (KEY_PRESSED == event_type) {
-            get_emul_multi_touch_state()->multitouch_enable = 1;
-            INFO("multi-touch enabled\n");
-        } else if (KEY_RELEASED == event_type) {
-            get_emul_multi_touch_state()->multitouch_enable = 0;
-            clear_finger_slot();
-            INFO("multi-touch disabled\n");
+    if (get_emul_max_touch_point() > 1) {
+        if (keycode == JAVA_KEYCODE_BIT_CTRL) {
+            if (KEY_PRESSED == event_type) {
+                get_emul_multi_touch_state()->multitouch_enable = 1;
+                INFO("multi-touch enabled\n");
+            } else if (KEY_RELEASED == event_type) {
+                get_emul_multi_touch_state()->multitouch_enable = 0;
+                clear_finger_slot();
+                INFO("multi-touch disabled\n");
+            }
+        } else if (keycode == (JAVA_KEYCODE_NO_FOCUS | JAVA_KEYCODE_BIT_CTRL)) {
+            //release ctrl key when dragging
+            if (KEY_RELEASED == event_type) {
+                get_emul_multi_touch_state()->multitouch_enable = 0;
+                clear_finger_slot();
+                INFO("multi-touch disabled\n");
+            }
         }
     }
 
