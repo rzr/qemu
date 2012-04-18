@@ -82,9 +82,6 @@ public class ScreenShotDialog {
 
 	public final static String DEFAULT_FILE_EXTENSION = "png";
 
-	public final static int SCREENSHOT_WAIT_INTERVAL = 3; // milli-seconds
-	public final static int SCREENSHOT_WAIT_LIMIT = 3000; // milli-seconds
-
 	public final static int RED_MASK = 0x0000FF00;
 	public final static int GREEN_MASK = 0x00FF0000;
 	public final static int BLUE_MASK = 0xFF000000;
@@ -219,62 +216,27 @@ public class ScreenShotDialog {
 
 	private void capture() throws ScreenShotException {
 
-		communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
-		DataTranfer dataTranfer = communicator.getDataTranfer();
+		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
+		byte[] receivedData = communicator.getReceivedData( dataTranfer );
 
-		int count = 0;
-		boolean isFail = false;
-		byte[] receivedData = null;
-		int limitCount = SCREENSHOT_WAIT_LIMIT / SCREENSHOT_WAIT_INTERVAL;
+		if ( null != receivedData ) {
 
-		synchronized ( dataTranfer ) {
-
-			while ( dataTranfer.isTransferState() ) {
-
-				if ( limitCount < count ) {
-					isFail = true;
-					break;
-				}
-
-				try {
-					dataTranfer.wait( SCREENSHOT_WAIT_INTERVAL );
-				} catch ( InterruptedException e ) {
-					logger.log( Level.SEVERE, e.getMessage(), e );
-				}
-
-				count++;
-				logger.info( "wait image data... count:" + count );
-
+			if ( null != this.image ) {
+				this.image.dispose();
 			}
 
-			receivedData = dataTranfer.getReceivedData();
+			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
+			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
+			ImageData imageData = new ImageData( width, height, COLOR_DEPTH, paletteData, 1, receivedData );
 
-		}
+			RotationInfo rotation = getCurrentRotation();
+			imageData = rotateImageData( imageData, rotation );
 
-		if ( !isFail ) {
-
-			if ( null != receivedData ) {
-
-				if ( null != this.image ) {
-					this.image.dispose();
-				}
-
-				int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-				int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-				ImageData imageData = new ImageData( width, height, COLOR_DEPTH, paletteData, 1, receivedData );
-
-				RotationInfo rotation = getCurrentRotation();
-				imageData = rotateImageData( imageData, rotation );
-
-				this.image = new Image( Display.getDefault(), imageData );
-				imageCanvas.redraw();
-
-			} else {
-				throw new ScreenShotException( "Received image data is null." );
-			}
+			this.image = new Image( Display.getDefault(), imageData );
+			imageCanvas.redraw();
 
 		} else {
-			throw new ScreenShotException( "Fail to received image data." );
+			throw new ScreenShotException( "Fail to get image data." );
 		}
 
 	}

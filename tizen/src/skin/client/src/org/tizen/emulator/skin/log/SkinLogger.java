@@ -113,6 +113,15 @@ public class SkinLogger {
 			File dir = new File( path + LOG_FOLDER );
 			dir.mkdir();
 			
+			// delete .lck files after abnomal skin termination
+			File[] listFiles = dir.listFiles();
+			for ( File f : listFiles ) {
+				String name = f.getName();
+				if ( !FILE_NAME.equals( name ) && name.startsWith( FILE_NAME ) ) {
+					f.delete();
+				}
+			}
+			
 			File file = new File( dir + File.separator + FILE_NAME );
 			if( !file.exists() ) {
 				try {
@@ -127,7 +136,7 @@ public class SkinLogger {
 					return;
 				}
 			}
-
+			
 			try {
 				fileHandler = new FileHandler( file.getAbsolutePath(), false );
 			} catch ( SecurityException e1 ) {

@@ -36,6 +36,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +48,7 @@ import java.util.logging.Logger;
 
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
@@ -65,12 +69,11 @@ public class SocketCommunicator implements ICommunicator {
 		private boolean isTransferState;
 		private byte[] receivedData;
 
+		private long sleep;
+		private long maxWaitTime;
+		private Timer timer;
+		
 		private DataTranfer() {
-		}
-
-		private void reset() {
-			receivedData = null;
-			isTransferState = true;
 		}
 
 		private void setData( byte[] data ) {
@@ -78,18 +81,15 @@ public class SocketCommunicator implements ICommunicator {
 			isTransferState = false;
 		}
 
-		public synchronized boolean isTransferState() {
-			return isTransferState;
-		}
-
-		public synchronized byte[] getReceivedData() {
-			return receivedData;
-		}
-
 	}
 
 	public static final int HEART_BEAT_INTERVAL = 1; //second
 	public static final int HEART_BEAT_EXPIRE = 5;
+
+	public final static int SCREENSHOT_WAIT_INTERVAL = 3; // milli-seconds
+	public final static int SCREENSHOT_WAIT_LIMIT = 3000; // milli-seconds
+	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; // milli-seconds
+	public final static int DETAIL_INFO_WAIT_LIMIT = 3000; // milli-seconds
 	
 	private static int reqId;
 	
@@ -104,15 +104,17 @@ public class SocketCommunicator implements ICommunicator {
 	private DataInputStream dis;
 	private DataOutputStream dos;
 
-	private DataTranfer dataTransfer;
-
 	private AtomicInteger heartbeatCount;
-
 	private boolean isTerminated;
+	private boolean isSensorDaemonStarted;
 	private ScheduledExecutorService heartbeatExecutor;
 
-	private boolean isSensorDaemonStarted;
+	private DataTranfer screenShotDataTransfer;
+	private DataTranfer detailInfoTransfer;
 	
+	private Thread sendThread;
+	private ConcurrentLinkedQueue<SkinSendData> sendQueue;
+
 	public SocketCommunicator( EmulatorConfig config, int uId, int windowHandleId, EmulatorSkin skin ) {
 
 		this.config = config;
@@ -120,7 +122,13 @@ public class SocketCommunicator implements ICommunicator {
 		this.windowHandleId = windowHandleId;
 		this.skin = skin;
 
-		this.dataTransfer = new DataTranfer();
+		this.screenShotDataTransfer = new DataTranfer();
+		this.screenShotDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
+		this.screenShotDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+
+		this.detailInfoTransfer = new DataTranfer();
+		this.detailInfoTransfer.sleep = DETAIL_INFO_WAIT_INTERVAL;
+		this.detailInfoTransfer.maxWaitTime = DETAIL_INFO_WAIT_LIMIT;
 
 		this.heartbeatCount = new AtomicInteger( 0 );
 		this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -143,6 +151,43 @@ public class SocketCommunicator implements ICommunicator {
 	public void run() {
 
 		try {
+
+			sendQueue = new ConcurrentLinkedQueue<SkinSendData>();
+
+			sendThread = new Thread() {
+				@Override
+				public void run() {
+
+					while ( true ) {
+
+						synchronized ( sendThread ) {
+							try {
+								sendThread.wait();
+							} catch ( InterruptedException e ) {
+								logger.log( Level.SEVERE, e.getMessage(), e );
+							}
+						}
+
+						SkinSendData sendData = null;
+						while ( true ) {
+							sendData = sendQueue.poll();
+							if ( null != sendData ) {
+								sendToQEMUInternal( sendData );
+							} else {
+								break;
+							}
+						}
+
+						if ( isTerminated ) {
+							break;
+						}
+
+					}
+
+				}
+			};
+
+			sendThread.start();
 
 			dis = new DataInputStream( socket.getInputStream() );
 			dos = new DataOutputStream( socket.getOutputStream() );
@@ -223,27 +268,13 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case SCREEN_SHOT_DATA: {
 					logger.info( "received SCREEN_SHOT_DATA from QEMU." );
-
-					synchronized ( dataTransfer ) {
-						byte[] imageData = readData( dis, length );
-						dataTransfer.setData( imageData );
-						dataTransfer.notifyAll();
-					}
-
-					logger.info( "finish receiving image data from QEMU." );
+					receiveData( screenShotDataTransfer, length );
 
 					break;
 				}
 				case DETAIL_INFO_DATA: {
 					logger.info( "received DETAIL_INFO_DATA from QEMU." );
-
-					synchronized ( dataTransfer ) {
-						byte[] infoData = readData( dis, length );
-						dataTransfer.setData( infoData );
-						dataTransfer.notifyAll();
-					}
-
-					logger.info( "finish receiving info data from QEMU." );
+					receiveData( detailInfoTransfer, length );
 
 					break;
 				}
@@ -257,7 +288,6 @@ public class SocketCommunicator implements ICommunicator {
 				case SHUTDOWN: {
 					logger.info( "received RESPONSE_SHUTDOWN from QEMU." );
 					sendToQEMU( SendCommand.RESPONSE_SHUTDOWN, null );
-					isTerminated = true;
 					terminate();
 					break;
 				}
@@ -272,6 +302,32 @@ public class SocketCommunicator implements ICommunicator {
 				break;
 			}
 
+		}
+
+	}
+
+	private void receiveData( DataTranfer dataTransfer, int length ) throws IOException {
+		
+		synchronized ( dataTransfer ) {
+			
+			if( null != dataTransfer.timer ) {
+				dataTransfer.timer.cancel();
+			}
+			
+			byte[] data = readData( dis, length );
+			
+			if( null != data ) {
+				logger.info( "finished receiving data from QEMU." );
+			}else {
+				logger.severe( "Fail to receiving data from QEMU." );
+			}
+			
+			dataTransfer.isTransferState = false;
+			dataTransfer.timer = null;
+			
+			dataTransfer.setData( data );
+			dataTransfer.notifyAll();
+			
 		}
 
 	}
@@ -312,18 +368,79 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	public synchronized void sendToQEMU( SendCommand command, ISendData data, boolean useDataTransfer ) {
-		if ( useDataTransfer ) {
-			this.dataTransfer.reset();
-		}
-		sendToQEMU( command, data );
-	}
+	public synchronized DataTranfer sendToQEMU( SendCommand command, ISendData data, boolean useDataTransfer ) {
 
+		DataTranfer dataTranfer = null;
+		
+		if ( useDataTransfer ) {
+
+			if ( SendCommand.SCREEN_SHOT.equals( command ) ) {
+				dataTranfer = resetDataTransfer( screenShotDataTransfer );
+			} else if ( SendCommand.DETAIL_INFO.equals( command ) ) {
+				dataTranfer = resetDataTransfer( detailInfoTransfer );
+			}
+		}
+
+		sendToQEMU( command, data );
+		
+		return dataTranfer;
+
+	}
+	
+	private DataTranfer resetDataTransfer( final DataTranfer dataTransfer ) {
+		
+		synchronized ( dataTransfer ) {
+			
+			if ( dataTransfer.isTransferState ) {
+				logger.severe( "Already transter state for getting data." );
+				return null;
+			}
+
+			dataTransfer.isTransferState = true;
+
+			Timer timer = new Timer();
+			dataTransfer.timer = timer;
+
+			TimerTask timerTask = new TimerTask() {
+				@Override
+				public void run() {
+					synchronized ( dataTransfer ) {
+						dataTransfer.isTransferState = false;
+						dataTransfer.timer = null;
+						dataTransfer.receivedData = null;
+					}
+				}
+			};
+			timer.schedule( timerTask, dataTransfer.maxWaitTime );
+
+			return dataTransfer;
+
+		}
+
+	}
+	
 	@Override
-	public synchronized void sendToQEMU( SendCommand command, ISendData data ) {
+	public void sendToQEMU( SendCommand command, ISendData data ) {
+		
+		sendQueue.add( new SkinSendData( command, data ) );
+		
+		synchronized ( sendThread ) {
+			sendThread.notifyAll();
+		}
+
+	}
+	
+	private void sendToQEMUInternal( SkinSendData sendData ) {
 
 		try {
 
+			if( null == sendData ) {
+				return;
+			}
+			
+			SendCommand command = sendData.getCommand();
+			ISendData data = sendData.getSendData();
+			
 			reqId = ( Integer.MAX_VALUE == reqId ) ? 0 : ++reqId;
 			
 			ByteArrayOutputStream bao = new ByteArrayOutputStream();
@@ -366,6 +483,48 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
+	public byte[] getReceivedData( DataTranfer dataTranfer ) {
+
+		if( null == dataTranfer ) {
+			return null;
+		}
+		
+		synchronized ( dataTranfer ) {
+			
+			int count = 0;
+			byte[] receivedData = null;
+			long sleep = dataTranfer.sleep;
+			long maxWaitTime = dataTranfer.maxWaitTime;
+			int limitCount = (int) ( maxWaitTime / sleep );
+
+			while ( dataTranfer.isTransferState ) {
+
+				if ( limitCount < count ) {
+					logger.severe( "time out for receiving data from skin server." );
+					dataTranfer.receivedData = null;
+					break;
+				}
+
+				try {
+					dataTranfer.wait( sleep );
+				} catch ( InterruptedException e ) {
+					logger.log( Level.SEVERE, e.getMessage(), e );
+				}
+
+				count++;
+				logger.info( "wait data... count:" + count );
+
+			}
+
+			receivedData = dataTranfer.receivedData;
+			dataTranfer.receivedData = null;
+			
+			return receivedData;
+
+		}
+
+	}
+	
 	public Socket getSocket() {
 		return socket;
 	}
@@ -389,25 +548,53 @@ public class SocketCommunicator implements ICommunicator {
 		heartbeatCount.set( 0 );
 	}
 
-	public DataTranfer getDataTranfer() {
-		return dataTransfer;
-	}
-
 	@Override
 	public void terminate() {
+		
+		isTerminated = true;
+		
 		if ( null != heartbeatExecutor ) {
 			heartbeatExecutor.shutdownNow();
 		}
+		
+		if( null != sendThread ) {
+			synchronized ( sendThread ) {
+				sendThread.notifyAll();
+			}
+		}
+		
 		IOUtil.closeSocket( socket );
+		
 		synchronized ( this ) {
 			skin.shutdown();
 		}
+		
 	}
 
 	public void resetSkin( EmulatorSkin skin ) {
 		synchronized ( this ) {
 			this.skin = skin;
 		}
+	}
+
+}
+
+class SkinSendData {
+
+	private SendCommand command;
+	private ISendData data;
+
+	public SkinSendData( SendCommand command, ISendData data ) {
+		this.command = command;
+		this.data = data;
+	}
+
+	public SendCommand getCommand() {
+		return command;
+	}
+
+	public ISendData getSendData() {
+		return data;
 	}
 
 }

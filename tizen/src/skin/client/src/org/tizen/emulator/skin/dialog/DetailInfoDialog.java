@@ -32,7 +32,6 @@ package org.tizen.emulator.skin.dialog;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
@@ -61,8 +60,6 @@ import org.tizen.emulator.skin.util.StringUtil;
  */
 public class DetailInfoDialog extends SkinDialog {
 
-	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; // milli-seconds
-	public final static int DETAIL_INFO_WAIT_LIMIT = 3000; // milli-seconds
 	public final static String DATA_DELIMITER = "#";
 
 	private Logger logger = SkinLogger.getSkinLogger( DetailInfoDialog.class ).getLogger();
@@ -137,52 +134,14 @@ public class DetailInfoDialog extends SkinDialog {
 
 		String infoData = null;
 
-		communicator.sendToQEMU( SendCommand.DETAIL_INFO, null, true );
-		DataTranfer dataTranfer = communicator.getDataTranfer();
+		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.DETAIL_INFO, null, true );
+		byte[] receivedData = communicator.getReceivedData( dataTranfer );
 
-		int count = 0;
-		boolean isFail = false;
-		byte[] receivedData = null;
-		int limitCount = DETAIL_INFO_WAIT_LIMIT / DETAIL_INFO_WAIT_INTERVAL;
-
-		synchronized ( dataTranfer ) {
-
-			while ( dataTranfer.isTransferState() ) {
-
-				if ( limitCount < count ) {
-					isFail = true;
-					break;
-				}
-
-				try {
-					dataTranfer.wait( DETAIL_INFO_WAIT_INTERVAL );
-				} catch ( InterruptedException e ) {
-					logger.log( Level.SEVERE, e.getMessage(), e );
-				}
-
-				count++;
-				logger.info( "wait detail info data... count:" + count );
-
-			}
-
-			receivedData = dataTranfer.getReceivedData();
-
-		}
-
-		if ( isFail ) {
-
-			logger.severe( "Fail to get detail info from server." );
-			SkinUtil.openMessage( shell, null, "Internal error.", SWT.ICON_ERROR, config );
-
+		if ( null != receivedData ) {
+			infoData = new String( receivedData );
 		} else {
-
-			if ( null != receivedData ) {
-				infoData = new String( receivedData );
-			} else {
-				logger.severe( "Received detail info is null" );
-				SkinUtil.openMessage( shell, null, "Internal error.", SWT.ICON_ERROR, config );
-			}
-
+			logger.severe( "Fail to get detail info." );
+			SkinUtil.openMessage( shell, null, "Fail to get detail info.", SWT.ICON_ERROR, config );
 		}
 
 		return infoData;
