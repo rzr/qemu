@@ -86,6 +86,8 @@ public class SocketCommunicator implements ICommunicator {
 	public static final int HEART_BEAT_INTERVAL = 1; //second
 	public static final int HEART_BEAT_EXPIRE = 5;
 
+	public final static int SEND_QUEUE_WAIT_INTERVAL = 10; // milli-seconds
+	
 	public final static int SCREENSHOT_WAIT_INTERVAL = 3; // milli-seconds
 	public final static int SCREENSHOT_WAIT_LIMIT = 3000; // milli-seconds
 	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; // milli-seconds
@@ -162,7 +164,7 @@ public class SocketCommunicator implements ICommunicator {
 
 						synchronized ( sendThread ) {
 							try {
-								sendThread.wait();
+								sendThread.wait( SEND_QUEUE_WAIT_INTERVAL );
 							} catch ( InterruptedException e ) {
 								logger.log( Level.SEVERE, e.getMessage(), e );
 							}
