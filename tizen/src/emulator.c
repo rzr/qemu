@@ -48,10 +48,11 @@
 #include <glib/gstdio.h>
 
 #if defined( _WIN32)
-//#include <winsock2.h>
+#include <windows.h>
 #elif defined(__linux__)
 #include <linux/version.h>
 #include <sys/utsname.h>
+#include <sys/sysinfo.h>
 #endif
 
 #include "mloop_event.h"
@@ -234,6 +235,8 @@ void extract_info(int qemu_argc, char** qemu_argv)
 
 static void system_info(void)
 {
+#define DIV 1024
+
 #ifdef __linux__
     char lscmd[MAXLEN] = "lspci >> ";
 #endif
@@ -277,6 +280,12 @@ static void system_info(void)
     GetSystemInfo(&sysi);
     INFO("* Processor type : %d, Number of processors : %d\n", sysi.dwProcessorType,  sysi.dwNumberOfProcessors);
 
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    GlobalMemoryStatusEx(&memInfo);
+    INFO("* Total Ram : %llu kB, Free: %lld kB\n",
+        memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
+
 #elif defined(__linux__)
     /* depends on building */
     INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
@@ -287,6 +296,13 @@ static void system_info(void)
     if (uname(&host_uname_buf) == 0) {
         INFO("* Host machine uname : %s %s %s %s %s\n", host_uname_buf.sysname, host_uname_buf.nodename,
             host_uname_buf.release, host_uname_buf.version, host_uname_buf.machine);
+    }
+
+    struct sysinfo sys_info;
+    if (sysinfo(&sys_info) == 0) {
+        INFO("* Total Ram : %llu kB, Free: %llu kB\n",
+            sys_info.totalram * (unsigned long long)sys_info.mem_unit / DIV,
+            sys_info.freeram * (unsigned long long)sys_info.mem_unit / DIV);
     }
 
     /* pci device description */
