@@ -325,35 +325,55 @@ void sdb_setup(void)
 	}
 }
 
-void notify_sdb_daemon_start(void)
+int sdb_loopback_client(int port, int type)
 {
-	int s;
+    struct sockaddr_in addr;
+    int s;
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    s = socket(AF_INET, type, 0);
+    if(s < 0) return -1;
+
+    if(connect(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+        close(s);
+        return -1;
+    }
+
+    return s;
+
+}
+
+void notify_sdb_daemon_start(void) {
+    int s;
     /* 
      * send a simple message to the SDB host server to tell it we just started.
-	 * it should be listening on port 26099.
-	 */
-    do
-	{
-		char tmp[32] = {0};
+     * it should be listening on port 26099.
+     */
+    do {
+        char tmp[32] = { 0 };
 
-		s = tcp_socket_outgoing("127.0.0.1", SDB_HOST_PORT);
-		if (s < 0) {
-			INFO("can't create socket to talk to the SDB server \n");
-			INFO("This emulator will be scaned by the SDB server \n");
-			break;
-		}
+        // when connecting to loopback:26099, do not use tcp_socket_outgoing function
+        // tcp_socket_outgoing may occur "dns name service not known" in case of network unavaliable status.
+        s = sdb_loopback_client(SDB_HOST_PORT, SOCK_STREAM);
+        if (s < 0) {
+            INFO("can't create socket to talk to the SDB server \n");
+            INFO("This emulator will be scaned by the SDB server \n");
+            break;
+        }
 
-		/* length is hex: 0x13 = 19 */
-		sprintf(tmp,"0013host:emulator:%d", tizen_base_port +1);
-		
-        if(socket_send(s, tmp, 30) < 0) {
+        /* length is hex: 0x13 = 19 */
+        sprintf(tmp, "0013host:emulator:%d", tizen_base_port + 1);
+
+        if (socket_send(s, tmp, 30) < 0) {
             ERR( "message sending to sdb server error!\n");
         }
 
-	}
-	while (0);
+    } while (0);
 
-	if (s >= 0)
-		socket_close(s);
-   
+    if (s >= 0)
+        socket_close(s);
 }
