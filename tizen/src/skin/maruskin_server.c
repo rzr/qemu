@@ -63,8 +63,8 @@ MULTI_DEBUG_CHANNEL( qemu, skin_server );
 #define SEND_BUF_SIZE 512
 
 #define HEART_BEAT_INTERVAL 1
-#define HEART_BEAT_FAIL_COUNT 5
-#define HEART_BEAT_EXPIRE_COUNT 5
+#define HEART_BEAT_FAIL_COUNT 10
+#define HEART_BEAT_EXPIRE_COUNT 10
 
 #if 0 // do not restarting skin process ( prevent from abnormal behavior killing a skin process in Windows )
 #define RESTART_CLIENT_MAX_COUNT 1
@@ -216,7 +216,7 @@ void shutdown_skin_server( void ) {
     }
 
     if ( close_server_socket ) {
-        WARN( "skin client did not send normal shutdown response.\n" );
+        INFO( "skin client did not send normal shutdown response.\n" );
         if ( server_sock ) {
 #ifdef _WIN32
             closesocket( server_sock );
@@ -272,7 +272,7 @@ static void parse_skinconfig_prop( void ) {
     rewind( fp );
 
     if ( 0 >= buf_size ) {
-        WARN( "%s contents is empty.\n", SKIN_CONFIG_PROP );
+        INFO( "%s contents is empty.\n", SKIN_CONFIG_PROP );
         fclose( fp );
         return;
     }
@@ -459,7 +459,7 @@ static void* run_skin_server( void* args ) {
             if ( 0 > read_cnt ) {
 
                 if( is_force_close_client ) {
-                    WARN( "force close client socket.\n" );
+                    INFO( "force close client socket.\n" );
                     is_force_close_client = 0;
                 }else {
                     ERR( "skin_server read error:%d\n", read_cnt );
@@ -1020,9 +1020,9 @@ static void* do_heart_beat( void* args ) {
                     need_restart_skin_client = 0;
                     restart_client_count++;
 
-                    WARN( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
-                    WARN( "!!! restart skin client process !!!\n" );
-                    WARN( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+                    INFO( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+                    INFO( "!!! restart skin client process !!!\n" );
+                    INFO( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
 
                     is_force_close_client = 1;
                     if ( client_sock ) {

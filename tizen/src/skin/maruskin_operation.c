@@ -405,7 +405,7 @@ static void* run_timed_shutdown_thread( void* args ) {
         fprintf( stdout, "Wait for shutdown qemu...%d\n", ( i + 1 ) );
     }
 
-    WARN( "Shutdown qemu !!!\n" );
+    INFO( "Shutdown qemu !!!\n" );
     qemu_system_shutdown_request();
 
     return NULL;

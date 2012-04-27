@@ -36,9 +36,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -84,14 +86,14 @@ public class SocketCommunicator implements ICommunicator {
 	}
 
 	public static final int HEART_BEAT_INTERVAL = 1; //second
-	public static final int HEART_BEAT_EXPIRE = 5;
-
-	public final static int SEND_QUEUE_WAIT_INTERVAL = 10; // milli-seconds
+	public static final int HEART_BEAT_EXPIRE = 10;
 	
 	public final static int SCREENSHOT_WAIT_INTERVAL = 3; // milli-seconds
 	public final static int SCREENSHOT_WAIT_LIMIT = 3000; // milli-seconds
 	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; // milli-seconds
 	public final static int DETAIL_INFO_WAIT_LIMIT = 3000; // milli-seconds
+	
+	public final static int MAX_SEND_QUEUE_SIZE = 100000;
 	
 	private static int reqId;
 	
@@ -115,7 +117,7 @@ public class SocketCommunicator implements ICommunicator {
 	private DataTranfer detailInfoTransfer;
 	
 	private Thread sendThread;
-	private ConcurrentLinkedQueue<SkinSendData> sendQueue;
+	private LinkedList<SkinSendData> sendQueue;
 
 	public SocketCommunicator( EmulatorConfig config, int uId, int windowHandleId, EmulatorSkin skin ) {
 
@@ -152,19 +154,22 @@ public class SocketCommunicator implements ICommunicator {
 	@Override
 	public void run() {
 
-		try {
+		sendQueue = new LinkedList<SkinSendData>();
 
-			sendQueue = new ConcurrentLinkedQueue<SkinSendData>();
+		sendThread = new Thread() {
 
-			sendThread = new Thread() {
-				@Override
-				public void run() {
+			List<SkinSendData> list = new ArrayList<SkinSendData>();
 
-					while ( true ) {
+			@Override
+			public void run() {
 
-						synchronized ( sendThread ) {
+				while ( true ) {
+
+					synchronized ( sendQueue ) {
+
+						if ( sendQueue.isEmpty() ) {
 							try {
-								sendThread.wait( SEND_QUEUE_WAIT_INTERVAL );
+								sendQueue.wait();
 							} catch ( InterruptedException e ) {
 								logger.log( Level.SEVERE, e.getMessage(), e );
 							}
@@ -174,22 +179,32 @@ public class SocketCommunicator implements ICommunicator {
 						while ( true ) {
 							sendData = sendQueue.poll();
 							if ( null != sendData ) {
-								sendToQEMUInternal( sendData );
+								list.add( sendData );
 							} else {
 								break;
 							}
 						}
 
-						if ( isTerminated ) {
-							break;
-						}
+					}
 
+					for ( SkinSendData data : list ) {
+						sendToQEMUInternal( data );
+					}
+
+					list.clear();
+
+					if ( isTerminated ) {
+						break;
 					}
 
 				}
-			};
 
-			sendThread.start();
+			}
+		};
+
+		sendThread.start();
+
+		try {
 
 			dis = new DataInputStream( socket.getInputStream() );
 			dos = new DataOutputStream( socket.getOutputStream() );
@@ -423,11 +438,14 @@ public class SocketCommunicator implements ICommunicator {
 	
 	@Override
 	public void sendToQEMU( SendCommand command, ISendData data ) {
-		
-		sendQueue.add( new SkinSendData( command, data ) );
-		
-		synchronized ( sendThread ) {
-			sendThread.notifyAll();
+
+		synchronized ( sendQueue ) {
+			if ( MAX_SEND_QUEUE_SIZE < sendQueue.size() ) {
+				logger.warning( "Send queue size exceeded max value, do not push data into send queue." );
+			} else {
+				sendQueue.add( new SkinSendData( command, data ) );
+				sendQueue.notifyAll();
+			}
 		}
 
 	}
@@ -559,9 +577,9 @@ public class SocketCommunicator implements ICommunicator {
 			heartbeatExecutor.shutdownNow();
 		}
 		
-		if( null != sendThread ) {
-			synchronized ( sendThread ) {
-				sendThread.notifyAll();
+		if( null != sendQueue ) {
+			synchronized ( sendQueue ) {
+				sendQueue.notifyAll();
 			}
 		}
 		
