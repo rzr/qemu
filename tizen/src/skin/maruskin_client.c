@@ -76,11 +76,11 @@ static void* run_skin_client(void* arg)
     int skin_server_port = get_skin_server_port();
 
     srand( time( NULL ) );
-    int uid = rand();
-    INFO( "generated skin uid:%d\n", uid );
+    int uid = 0; //rand();
+    //INFO( "generated skin uid:%d\n", uid );
 
     char* vm_path = tizen_target_path;
-    INFO( "vm_path:%s\n", vm_path );
+    //INFO( "vm_path:%s\n", vm_path );
 
     sprintf( cmd, "%s %s %s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH,
         OPT_SVR_PORT, skin_server_port,
@@ -88,6 +88,7 @@ static void* run_skin_client(void* arg)
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, tizen_base_port,
         argv );
+    INFO( "command for swt : %s\n", cmd );
 
 #ifdef _WIN32
 #if 0
@@ -143,8 +144,9 @@ static void* run_skin_client(void* arg)
             ERR("failed to close child thread handle, error %u\n", GetLastError());
         }
     }
+
 #endif
-#else
+#else //ifndef _WIN32
     int ret = system(cmd);
 
     if (ret == 127) {

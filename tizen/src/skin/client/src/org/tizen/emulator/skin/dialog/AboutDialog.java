@@ -96,7 +96,7 @@ public class AboutDialog extends SkinDialog {
 		
 		Text versionText = new Text( composite, SWT.NONE );
 		String version = getValue( properties, PROP_KEY_VERSION );
-		versionText.setText( "Version" + "      : Tizen SDK " + version );
+		versionText.setText( "Version" + "        : " + version );
 		versionText.setEditable( false );
 		versionText.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WIDGET_BACKGROUND ) );
 
