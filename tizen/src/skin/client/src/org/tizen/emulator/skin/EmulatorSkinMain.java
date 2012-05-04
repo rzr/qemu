@@ -73,6 +73,19 @@ public class EmulatorSkinMain {
 	 * @param args
 	 */
 	public static void main( String[] args ) {
+
+		String simpleMsg = getSimpleMsg(args);
+		if (simpleMsg != null) {
+			/* just show one message box. that's all. */
+			Shell temp = new Shell(Display.getDefault());
+			MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
+			messageBox.setText("Emulator");
+			messageBox.setMessage(simpleMsg);
+			messageBox.open();
+			temp.dispose();
+
+			System.exit(-1);
+		}
 		
 		SocketCommunicator communicator = null;
 		
@@ -236,6 +249,23 @@ public class EmulatorSkinMain {
 
 		SkinLogger.setLevel( skinLogLevel.level() );
 		
+	}
+
+	private static String getSimpleMsg( String[] args ) {
+
+		for ( int i = 0; i < args.length; i++ ) {
+			final String simple = "simple.msg";
+			String arg = args[i];
+			String[] split = arg.split( "=" );
+			if ( 1 < split.length ) {
+				if ( simple.equals( split[0].trim() ) ) {
+					return split[1].trim();
+				}
+			}
+		}
+
+		return null;
+
 	}
 
 	private static String getVmPath( String[] args ) {

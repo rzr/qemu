@@ -31,5 +31,7 @@
 #define MARUSKIN_CLIENT_H_
 
 int start_skin_client(int argc, char* argv[]);
+int start_simple_client(char* msg);
+
 
 #endif /* MARUSKIN_CLIENT_H_ */

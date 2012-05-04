@@ -43,6 +43,10 @@
 #include <windows.h>
 #endif
 
+MULTI_DEBUG_CHANNEL(qemu, maruskin_client);
+
+
+
 #define SKIN_SERVER_READY_TIME 3 // second
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
@@ -55,14 +59,14 @@
 #define OPT_VM_PATH "vm.path"
 #define OPT_NET_BASE_PORT "net.baseport"
 
-MULTI_DEBUG_CHANNEL( qemu, maruskin_client );
+#define MAX_COMMAND 512
 
 static int skin_argc;
 static char** skin_argv;
 
 static void* run_skin_client(void* arg)
 {
-    char cmd[512] = {0};
+    char cmd[MAX_COMMAND] = {0};
     char argv[256] = {0};
 
     INFO("run skin client\n");
@@ -75,7 +79,7 @@ static void* run_skin_client(void* arg)
 
     int skin_server_port = get_skin_server_port();
 
-    srand( time( NULL ) );
+    //srand( time( NULL ) );
     int uid = 0; //rand();
     //INFO( "generated skin uid:%d\n", uid );
 
@@ -91,9 +95,7 @@ static void* run_skin_client(void* arg)
     INFO( "command for swt : %s\n", cmd );
 
 #ifdef _WIN32
-#if 0
-    WinExec( cmd, SW_SHOW );
-#else
+    //WinExec( cmd, SW_SHOW );
     {
         STARTUPINFO sti = { 0 };
         PROCESS_INFORMATION pi = { 0 };
@@ -145,7 +147,6 @@ static void* run_skin_client(void* arg)
         }
     }
 
-#endif
 #else //ifndef _WIN32
     int ret = system(cmd);
 
@@ -210,6 +211,27 @@ int start_skin_client(int argc, char* argv[])
         ERR( "fail to create skin_client pthread.\n" );
         return -1;
     }
+
+    return 1;
+}
+
+
+int start_simple_client(char* msg) {
+    int ret = 0;
+    char cmd[MAX_COMMAND] = {0};
+
+    INFO("run simple client\n");
+
+    sprintf(cmd, "%s %s %s %s=\"%s\"", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, "simple.msg", msg);
+    INFO("command for swt : %s\n", cmd);
+
+#ifdef __WIN32
+    ret = WinExec(cmd, SW_SHOW);
+#else
+    ret = system(cmd);
+#endif
+
+    INFO("child return value : %d\n", ret);
 
     return 1;
 }

@@ -662,6 +662,10 @@ static long get_file_size(FILE *f)
     return size;
 }
 
+#ifdef CONFIG_MARU
+extern int start_simple_client(char* msg);
+#endif
+
 static void load_linux(void *fw_cfg,
                        const char *kernel_filename,
 		       const char *initrd_filename,
@@ -686,6 +690,22 @@ static void load_linux(void *fw_cfg,
 	MIN(ARRAY_SIZE(header), kernel_size)) {
 	fprintf(stderr, "qemu: could not load kernel '%s': %s\n",
 		kernel_filename, strerror(errno));
+
+#ifdef CONFIG_MARU
+    const char _msg[] = "Kernel image file could not load from following path\n";
+    char* current_path = (char *)g_get_current_dir();
+
+    int len = strlen(_msg) + strlen(current_path) + strlen(kernel_filename) + 3;
+
+    char* error_msg = g_malloc0(len * sizeof(char));
+    snprintf(error_msg, len - 1, "%s%s/%s", _msg, current_path, kernel_filename);
+
+    start_simple_client(error_msg);
+
+    g_free(current_path);
+    g_free(error_msg);
+#endif
+
 	exit(1);
     }
 
@@ -969,6 +989,10 @@ void pc_cpus_init(const char *cpu_model)
     }
 }
 
+#ifdef CONFIG_MARU
+extern char* qemu_get_data_dir(void);
+#endif
+
 void pc_memory_init(MemoryRegion *system_memory,
                     const char *kernel_filename,
                     const char *kernel_cmdline,
@@ -1027,6 +1051,23 @@ void pc_memory_init(MemoryRegion *system_memory,
     if (ret != 0) {
     bios_error:
         fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
+
+#ifdef CONFIG_MARU
+        const char _msg[] = "Bios image file could not load from following path\n";
+        char* current_path = (char *)g_get_current_dir();
+        const char* _path = qemu_get_data_dir();
+
+        int len = strlen(_msg) + strlen(current_path) + strlen(_path) + strlen(bios_name) + 4;
+
+        char* error_msg = g_malloc0(len * sizeof(char));
+        snprintf(error_msg, len - 1, "%s%s/%s/%s", _msg, current_path, _path, bios_name);
+
+        start_simple_client(error_msg);
+
+        g_free(current_path);
+        g_free(error_msg);
+#endif
+
         exit(1);
     }
     if (filename) {

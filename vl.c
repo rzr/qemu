@@ -1772,6 +1772,15 @@ char *qemu_find_file(int type, const char *name)
     return buf;
 }
 
+#ifdef CONFIG_MARU
+const char *qemu_get_data_dir(void);
+
+const char *qemu_get_data_dir(void)
+{
+    return data_dir;
+}
+#endif
+
 static int device_help_func(QemuOpts *opts, void *opaque)
 {
     return qdev_device_help(opts);

@@ -216,6 +216,10 @@ static int parse_block_error_action(const char *buf, int is_read)
     }
 }
 
+#ifdef CONFIG_MARU
+extern int start_simple_client(char* msg);
+#endif
+
 DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
 {
     const char *buf;
@@ -518,6 +522,22 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
     if (ret < 0) {
         error_report("could not open disk image %s: %s",
                      file, strerror(-ret));
+
+#ifdef CONFIG_MARU
+        const char _msg[] = "Disk image file could not load from following path\n";
+        char* current_path = (char *)g_get_current_dir();
+
+        int len = strlen(_msg) + strlen(current_path) + strlen(file) + 3;
+
+        char* error_msg = g_malloc0(len * sizeof(char));
+        snprintf(error_msg, len - 1, "%s%s/%s", _msg, current_path, file);
+
+        start_simple_client(error_msg);
+
+        g_free(current_path);
+        g_free(error_msg);
+#endif
+
         goto err;
     }
 
