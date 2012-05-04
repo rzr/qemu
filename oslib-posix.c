@@ -61,10 +61,39 @@ int qemu_daemon(int nochdir, int noclose)
     return daemon(nochdir, noclose);
 }
 
+#ifdef CONFIG_MARU
+//TODO: temp
+#define JAR_SKINFILE_PATH "emulator-skin.jar"
+#define JAVA_EXEFILE_PATH "java"
+#define JAVA_EXEOPTION "-jar"
+#define MAX_COMMAND 512
+
+static int start_simple_client(char* msg) {
+    int ret = 0;
+    char cmd[MAX_COMMAND] = {0};
+
+    sprintf(cmd, "%s %s %s %s=\"%s\"", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, "simple.msg", msg);
+
+#ifdef __WIN32
+    ret = WinExec(cmd, SW_SHOW);
+#else
+    ret = system(cmd);
+#endif
+
+    return 1;
+}
+#endif
+
 void *qemu_oom_check(void *ptr)
 {
     if (ptr == NULL) {
         fprintf(stderr, "Failed to allocate memory: %s\n", strerror(errno));
+
+#ifdef CONFIG_MARU
+        char _msg[] = "Failed to allocate memory in qemu";
+        start_simple_client(_msg);
+#endif
+
         abort();
     }
     return ptr;

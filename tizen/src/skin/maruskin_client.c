@@ -132,11 +132,14 @@ static void* run_skin_client(void* arg)
         }
 
         //retrieves the termination status of the specified process
-        GetExitCodeProcess(pi.hProcess, &dwRet);
+        if (GetExitCodeProcess(pi.hProcess, &dwRet) != 0) {
+            ERR("failed to GetExitCodeProcess, error %u\n", GetLastError());
+        }
         INFO("child return value : %d\n", dwRet);
 
         if (dwRet == -1) {
-            //TODO:
+            //child process is terminated with some problem.
+            //so qemu process will terminate, too. immediately.
             exit(1);
         }
 
@@ -161,7 +164,8 @@ static void* run_skin_client(void* arg)
         INFO("child return value : %d\n", ret);
 
         if (ret == 0xff) {
-            //TODO:
+            //child process is terminated with some problem.
+            //so qemu process will terminate, too. immediately.
             exit(1);
         }
     }
