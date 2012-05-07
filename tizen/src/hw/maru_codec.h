@@ -62,7 +62,7 @@ typedef struct _SVCodecContext {
     uint8_t                 *pParserBuffer;
     bool                    bParser;
     bool                    bUsed;
-    uint32_t				nFileValue;
+    uint32_t                nFileValue;
 } SVCodecContext;
 
 typedef struct _SVCodecState {

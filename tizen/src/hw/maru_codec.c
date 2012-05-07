@@ -32,6 +32,7 @@
 #include <pthread.h>
 
 #define QEMU_DEV_NAME   "codec"
+#define MARU_CODEC_VERSION "1.0"
 
 /*  Needs 16M to support 1920x1080 video resolution.
  *  Output size for encoding has to be greater than (width * height * 6)
@@ -43,11 +44,14 @@
 
 #define MARU_ROUND_UP_16(num)   (((num) + 15) & ~15)
 
+#define CODEC_DUMMY
+
 /* define debug channel */
 MULTI_DEBUG_CHANNEL(qemu, marucodec);
 
 static int paramCount = 0;
 static int ctxArrIndex = 0;
+// static uint8_t *gTempBuffer = NULL;
 
 static void qemu_parser_init (SVCodecState *s, int ctxIndex)
 {
@@ -78,7 +82,7 @@ static void qemu_codec_close (SVCodecState *s, uint32_t value)
     TRACE("[%s] Close %d context\n", __func__, ctxIndex);
 
     s->ctxArr[ctxIndex].bUsed = false;
-	qemu_parser_init(s, ctxIndex);
+    qemu_parser_init(s, ctxIndex);
 
     pthread_mutex_unlock(&s->codec_mutex);
 
@@ -92,6 +96,8 @@ static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src) {
     dst->extradata = src->extradata;
     dst->codec = src->codec;
     dst->priv_data = src->priv_data;
+    dst->draw_horiz_band = src->draw_horiz_band;
+    dst->rtp_callback = src->rtp_callback;
     dst->opaque = src->opaque;
     dst->get_buffer = src->get_buffer;
     dst->release_buffer = src->release_buffer;
@@ -104,10 +110,15 @@ static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src) {
     dst->internal_buffer = src->internal_buffer;
     dst->intra_matrix = src->intra_matrix;
     dst->inter_matrix = src->inter_matrix;
+    dst->palctrl = src->palctrl;
     dst->reget_buffer = src->reget_buffer;
     dst->execute = src->execute;
     dst->thread_opaque = src->thread_opaque;
+    dst->hwaccel_context = src->hwaccel_context;
     dst->execute2 = src->execute2;
+    dst->subtitle_header = src->subtitle_header;
+    dst->coded_frame = src->coded_frame;
+    dst->pkt = src->pkt;
 
     TRACE("[%s] Leave\n", __func__);
 }
@@ -207,11 +218,10 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     AVCodecContext *avctx;
     AVCodecContext tempCtx;
     AVCodec *codec;
-    AVCodec tmpCodec;
     enum CodecID codec_id;
     off_t offset;
     int ret;
-	int bEncode = 0;
+    int bEncode = 0;
     int size = 0;
 
     pthread_mutex_lock(&s->codec_mutex);
@@ -230,9 +240,11 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size = sizeof(AVCodecContext);
     memcpy(&tempCtx, avctx, size);
     memcpy(avctx, (uint8_t*)s->vaddr + offset, size);
-    memcpy(&tmpCodec, (uint8_t*)s->vaddr + offset + size, sizeof(AVCodec));
-    size += sizeof(AVCodec);
     qemu_restore_context(avctx, &tempCtx);
+    memcpy(&codec_id, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    size += sizeof(int);
+    memcpy(&bEncode, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    size += sizeof(int);
 #else
     memcpy(&avctx->bit_rate, (uint8_t*)s->vaddr + offset, sizeof(int));
     size = sizeof(int);
@@ -256,6 +268,8 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size += sizeof(int);
     memcpy(&avctx->codec_tag, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
+    memcpy(&avctx->block_align, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    size += sizeof(int);
     memcpy(&avctx->rc_strategy, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
     memcpy(&avctx->strict_std_compliance, (uint8_t*)s->vaddr + offset + size, sizeof(int));
@@ -264,9 +278,9 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size += sizeof(float);
     memcpy(&avctx->sample_aspect_ratio, (uint8_t*)s->vaddr + offset + size, sizeof(AVRational));
     size += sizeof(AVRational);
-    memcpy(&avctx->mb_qmin, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    memcpy(&avctx->qmin, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
-    memcpy(&avctx->mb_qmax, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    memcpy(&avctx->qmax, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
     memcpy(&avctx->pre_me, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
@@ -274,15 +288,13 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size += sizeof(int);
     memcpy(&avctx->extradata_size, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
-    memcpy(&tmpCodec.id, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    memcpy(&codec_id, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
     memcpy(&bEncode, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
 #endif
     TRACE("Context Index:%d, width:%d, height:%d\n", ctxIndex, avctx->width, avctx->height);
 
-    codec_id = tmpCodec.id;
-    TRACE("[%s] codec type:%d codec id : %x\n", __func__, tmpCodec.type, codec_id);
     if (avctx->extradata_size > 0) {
         avctx->extradata = (uint8_t*)av_malloc(avctx->extradata_size);
         memcpy(avctx->extradata, (uint8_t*)s->vaddr + offset + size, avctx->extradata_size);
@@ -291,18 +303,17 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
         avctx->extradata = av_mallocz (MARU_ROUND_UP_16(FF_INPUT_BUFFER_PADDING_SIZE));
     }
 
-#ifndef CODEC_DUMMY
-    if (tmpCodec.encode) {
-#else
     if (bEncode) {
-#endif
-		TRACE("[%s] Encoder\n", __func__);
+        TRACE("[%s] find encoder :%d\n", __func__, codec_id);
         codec = avcodec_find_encoder(codec_id);
     } else {
-	    TRACE("[%s] find decoder, codec_id:%x\n", __func__, codec_id);
+        TRACE("[%s] find decoder :%d\n", __func__, codec_id);
         codec = avcodec_find_decoder(codec_id);
     }
 
+    if (!codec) {
+        ERR("failed to find codec of %d\n", codec_id);
+    }
     avctx->get_buffer = qemu_avcodec_get_buffer;
     avctx->release_buffer = qemu_avcodec_release_buffer;
 
@@ -313,7 +324,7 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
 
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         TRACE("[%s] sample_rate:%d, channels:%d\n", __func__,
-			  avctx->sample_rate, avctx->channels);
+              avctx->sample_rate, avctx->channels);
     }
 
 #ifndef CODEC_DUMMY
@@ -338,8 +349,10 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->chroma_sample_location, sizeof(int));
     size += sizeof(int);
+#if 0
     memcpy((uint8_t*)s->vaddr + offset + size, avctx->priv_data, codec->priv_data_size);
     size += codec->priv_data_size;
+#endif
     memcpy((uint8_t*)s->vaddr + offset + size, &ret, sizeof(int));
 #endif
 
@@ -366,6 +379,13 @@ static int qemu_avcodec_close (SVCodecState* s, int ctxIndex)
         memcpy((uint8_t*)s->vaddr + offset, &ret, sizeof(int));
         return ret;
     }
+
+#if 0
+    if ((avctx->codec_type == AVMEDIA_TYPE_VIDEO) && gTempBuffer) {
+        av_free(gTempBuffer);
+        gTempBuffer = NULL;
+    }
+#endif
 
     ret = avcodec_close(avctx);
     TRACE("after avcodec_close. ret:%d\n", ret);
@@ -532,7 +552,7 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
     picture = s->ctxArr[ctxIndex].pFrame;
     if (!avctx || !picture) {
         ERR("AVCodecContext or AVFrame is NULL!\n")
-        ERR("avctx:0x%x, picture:0x%x\n", avctx, picture);
+        ERR("avctx:%p, picture:%p\n", avctx, picture);
         return -1;
     }
 
@@ -584,6 +604,7 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
 static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
 {
     AVCodecContext *avctx;
+//    AVCodecContext tmpCtx;
     AVFrame *picture;
     AVPacket avpkt;
     int got_picture_ptr;
@@ -591,7 +612,7 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
     uint8_t *pParserBuffer;
     bool bParser;
     int buf_size;
-    int size;
+    int size = 0;
     int ret;
     off_t offset;
 
@@ -612,26 +633,43 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
     bParser = s->ctxArr[ctxIndex].bParser;
     TRACE("[%s] Parser Buffer : %p, Parser:%d\n", __func__, pParserBuffer, bParser);
 
-    memcpy(&buf_size, (uint8_t*)s->vaddr + offset, sizeof(int));
-    size = sizeof(int);
+    memcpy(&avctx->reordered_opaque, (uint8_t*)s->vaddr + offset, sizeof(int64_t));
+    size = sizeof(int64_t);
+    memcpy(&avctx->skip_frame, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    size += sizeof(int);
+/*  memcpy(&tmpCtx, avctx, sizeof(AVCodecContext));
+    memcpy(avctx, (uint8_t*)s->vaddr + offset, sizeof(AVCodecContext));
+    size = sizeof(AVCodecContext);
+    qemu_restore_context(avctx, &tmpCtx); */
+    memcpy(&buf_size, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    size += sizeof(int);
+
+    picture->reordered_opaque = avctx->reordered_opaque;
+    TRACE("input buffer size : %d\n", buf_size);
 
     if (pParserBuffer && bParser) {
         buf = pParserBuffer;
     } else if (buf_size > 0) {
-        TRACE("[%s] not use parser, codec_id:%d\n", __func__, avctx->codec_id);
+        TRACE("[%s] not use parser, codec_id:%x\n", __func__, avctx->codec_id);
+//      buf = av_mallocz(buf_size);
+//      memcpy(buf, (uint8_t*)s->vaddr + offset + size, buf_size);
         buf = (uint8_t*)s->vaddr + offset + size;
     } else {
         TRACE("There is no input buffer\n");
         buf = NULL;
     }
 
-    av_init_packet(&avpkt);
+    memset(&avpkt, 0x00, sizeof(AVPacket));
     avpkt.data = buf;
     avpkt.size = buf_size;
     
     TRACE("[%s] before avcodec_decode_video\n", __func__);
     ret = avcodec_decode_video2(avctx, picture, &got_picture_ptr, &avpkt);
     TRACE("[%s] after avcodec_decode_video, ret:%d\n", __func__, ret);
+
+    if (ret < 0) {
+        ERR("[%s] failed to decode video!!, ret:%d\n", __func__, ret);
+    }
     if (got_picture_ptr == 0) {
         TRACE("[%s] There is no frame\n", __func__);
     }
@@ -661,11 +699,27 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->level, sizeof(int));
     size += sizeof(int);
 #endif
-    memcpy((uint8_t*)s->vaddr + offset + size, picture, sizeof(AVFrame));
-    size += sizeof(AVFrame);
+//    memcpy((uint8_t*)s->vaddr + offset + size, picture, sizeof(AVFrame));
+//    size += sizeof(AVFrame);
+    memcpy((uint8_t*)s->vaddr + offset + size, &picture->pts, sizeof(int64_t));
+    size += sizeof(int64_t);
+    memcpy((uint8_t*)s->vaddr + offset + size, &picture->coded_picture_number, sizeof(int));
+    size += sizeof(int);
+    memcpy((uint8_t*)s->vaddr + offset + size, &picture->reference, sizeof(int));
+    size += sizeof(int);
+    memcpy((uint8_t*)s->vaddr + offset + size, &picture->display_picture_number, sizeof(int));
+    size += sizeof(int);
+    memcpy((uint8_t*)s->vaddr + offset + size, &picture->reordered_opaque, sizeof(int64_t));
+    size += sizeof(int64_t);
+    memcpy((uint8_t*)s->vaddr + offset + size, &picture->repeat_pict, sizeof(int));
+    size += sizeof(int);
+    memcpy((uint8_t*)s->vaddr + offset + size, &picture->interlaced_frame, sizeof(int));
+    size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &got_picture_ptr, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &ret, sizeof(int));
+
+//  av_free(buf);
 
 #if 0
     if (pParserBuffer && bParser) {
@@ -745,6 +799,7 @@ static int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
     AVCodecContext *avctx = NULL;
     AVFrame *pict = NULL;
     uint8_t *inputBuf = NULL;
+//  uint8_t *outBuf = NULL;
     int outputBufSize = 0;
     int numBytes = 0;
     int bPict = -1;
@@ -769,18 +824,23 @@ static int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
     if (bPict == 0) {
         memcpy(&outputBufSize, (uint8_t*)s->vaddr + offset + size, size);
         size += sizeof(int);
-
         memcpy(pict, (uint8_t*)s->vaddr + offset + size, sizeof(AVFrame));
         size += sizeof(AVFrame);
-
         numBytes = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
         TRACE("input buffer size :%d\n", numBytes);
 
         inputBuf = (uint8_t*)s->vaddr + offset + size;
         if (!inputBuf) {
-            ERR("failed to allocate decoded frame inputBuf\n");
+            ERR("failed to get input buffer\n");
             return -1;
         }
+
+#if 0
+        outBuf = av_malloc(outputBufSize);
+        if (!outBuf) {
+            ERR("failed to allocate output buffer as many as :%d\n", outputBufSize);
+        }
+#endif
 
         ret = avpicture_fill((AVPicture*)pict, inputBuf, avctx->pix_fmt,
                 avctx->width, avctx->height);
@@ -789,19 +849,23 @@ static int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
         }
 
         TRACE("before encode video, ticks_per_frame:%d, pts:%d\n",
-                avctx->ticks_per_frame, pict->pts);
+               avctx->ticks_per_frame, pict->pts);
     } else {
-        TRACE("Flush encoded buffers\n");
+        TRACE("flush encoded buffers\n");
         pict = NULL;
     }
 
     TRACE("before encoding video\n");
     ret = avcodec_encode_video (avctx, (uint8_t*)s->vaddr + offset, outputBufSize, pict);
-
+//  ret = avcodec_encode_video (avctx, outBuf, outputBufSize, pict);
     TRACE("after encoding video, ret:%d\n");
+
     if (ret < 0) {
-        ERR("Failed to encode video\n");
+        ERR("[%s] failed to encode video, ret:%d\n", __func__, ret);
     }
+
+//  memcpy((uint8_t*)s->vaddr + offset, outBuf, sizeof(int));
+//  size = outputBufSize;
     memcpy((uint8_t*)s->vaddr + offset + outputBufSize, &ret, sizeof(int));
 
     pthread_mutex_unlock(&s->codec_mutex);
@@ -810,8 +874,8 @@ static int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
 #endif
 
 /* 
- *  int avcodec_decode_audio2 (AVCodecContext *avctx, int16_t *samples,
- *                             int *frame_size_ptr, uint8_t *buf, int buf_size)
+ *  int avcodec_decode_audio3 (AVCodecContext *avctx, int16_t *samples,
+ *                             int *frame_size_ptr, AVPacket *avpkt)
  */
 static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex)
 {
@@ -840,17 +904,17 @@ static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex)
 
     pParserBuffer = s->ctxArr[ctxIndex].pParserBuffer;
     bParser = s->ctxArr[ctxIndex].bParser;
-    TRACE("Parser Buffer : %p, Parser:%d\n", pParserBuffer, bParser);
+    TRACE("[%s] Parser Buffer : %p, Parser:%d\n", __func__, pParserBuffer, bParser);
 
     memcpy(&buf_size, (uint8_t*)s->vaddr + offset, sizeof(int));
     size = sizeof(int);
     TRACE("input buffer size : %d\n", buf_size);
 
     if (pParserBuffer && bParser) {
-        TRACE("use parser, buf:%p codec_id:%x\n", pParserBuffer, avctx->codec_id);
+        TRACE("[%s] use parser, buf:%p codec_id:%x\n", __func__, pParserBuffer, avctx->codec_id);
         buf = pParserBuffer;
     } else if (buf_size > 0) {
-        TRACE("not use parser, codec_id:%x\n", avctx->codec_id);
+        TRACE("[%s] not use parser, codec_id:%x\n", __func__, avctx->codec_id);
         buf = (uint8_t*)s->vaddr + offset + size;
     } else {
         TRACE("There is no input buffer\n");
@@ -952,6 +1016,7 @@ static void qemu_av_picture_copy (SVCodecState* s, int ctxIndex)
     AVPicture dst;
     AVPicture *src;
     int numBytes;
+    int ret;
     uint8_t *buffer = NULL;
     off_t offset;
 
@@ -968,12 +1033,25 @@ static void qemu_av_picture_copy (SVCodecState* s, int ctxIndex)
     offset = s->codecParam.mmapOffset;
 
     numBytes = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-    buffer = (uint8_t*)av_malloc(numBytes * sizeof(uint8_t));
-    avpicture_fill(&dst, buffer, avctx->pix_fmt, avctx->width, avctx->height);
-    av_picture_copy(&dst, src, avctx->pix_fmt, avctx->width, avctx->height);
+    if (numBytes < 0 ) {
+        ERR("[%s] failed to get size of pixel format:%d\n", __func__, avctx->pix_fmt);
+    }
+    TRACE("After avpicture_get_size:%d\n", numBytes);
 
+#if 0
+    if (!gTempBuffer) {
+        buffer = (uint8_t*)av_mallocz(numBytes * sizeof(uint8_t));
+        gTempBuffer = buffer;
+    } else {
+        buffer = gTempBuffer;
+    }
+#endif
+    buffer = (uint8_t*)av_mallocz(numBytes);
+    ret = avpicture_fill(&dst, buffer, avctx->pix_fmt, avctx->width, avctx->height);
+    TRACE("[%s] After avpicture_fill, ret:%d\n", __func__, ret);
+    av_picture_copy(&dst, src, avctx->pix_fmt, avctx->width, avctx->height);
     memcpy((uint8_t*)s->vaddr + offset, dst.data[0], numBytes);
-    TRACE("After copy image buffer from host to guest\n");
+    TRACE("After copy image buffer from host to guest.\n");
 
     av_free(buffer);
 
@@ -997,16 +1075,19 @@ static void qemu_av_parser_init (SVCodecState* s, int ctxIndex)
         return;
     }
 
-    INFO("before av_parser_init, codec_type:%d codec_id:%x\n", avctx->codec_type, avctx->codec_id);
+    TRACE("before av_parser_init, codec_type:%d codec_id:%x\n", avctx->codec_type, avctx->codec_id);
     parserctx = av_parser_init(avctx->codec_id);
-    if (!parserctx) {
-        ERR("Failed to initialize AVCodecParserContext\n");
+    if (parserctx) {
+        TRACE("[%s] Using parser %p\n", __func__, parserctx);
+        s->ctxArr[ctxIndex].bParser = true;
+    } else {
+        INFO("[%s] No parser for codec\n", __func__);
+        s->ctxArr[ctxIndex].bParser = false;
     }
     s->ctxArr[ctxIndex].pParserCtx = parserctx;
-    s->ctxArr[ctxIndex].bParser = true;
 
     pthread_mutex_unlock(&s->codec_mutex);
-    TRACE("Leave :%s\n", __func__);
+    TRACE("[%s] Leave\n", __func__);
 }
 
 /* int av_parser_parse(AVCodecParserContext *s, AVCodecContext *avctx,
@@ -1081,11 +1162,12 @@ static int qemu_av_parser_parse (SVCodecState *s, int ctxIndex)
     AVCodecParserContext *parserctx = NULL;
     AVCodecContext *avctx = NULL;
     uint8_t *poutbuf;
-    int poutbuf_size;
+    int poutbuf_size = 0;
     uint8_t *inbuf = NULL;
     int inbuf_size;
     int64_t pts;
     int64_t dts;
+    int64_t pos;
     int size, ret;
     off_t offset;
 
@@ -1104,34 +1186,51 @@ static int qemu_av_parser_parse (SVCodecState *s, int ctxIndex)
     size = sizeof(int64_t);
     memcpy(&dts, (uint8_t*)s->vaddr + offset + size, sizeof(int64_t));
     size += sizeof(int64_t);
+    memcpy(&pos, (uint8_t*)s->vaddr + offset + size, sizeof(int64_t));
+    size += sizeof(int64_t);
     memcpy(&inbuf_size, (uint8_t*)s->vaddr + offset + size, sizeof(int));
+    size += sizeof(int);
 
-    TRACE("[%s] input buffer size :%d\n", __func__, inbuf_size);
     if (inbuf_size > 0) {
-        size += sizeof(int);
         inbuf = av_mallocz(inbuf_size);
         memcpy(inbuf, (uint8_t*)s->vaddr + offset + size, inbuf_size);
     } else {
         inbuf = NULL;
+        INFO("[%s] input buffer size is zero.\n", __func__);
     }
 
+    TRACE("[%s] inbuf:%p inbuf_size :%d\n", __func__, inbuf, inbuf_size);
     ret = av_parser_parse2(parserctx, avctx, &poutbuf, &poutbuf_size,
-                           inbuf, inbuf_size, pts, dts, AV_NOPTS_VALUE);
+                           inbuf, inbuf_size, pts, dts, pos);
+    TRACE("after parsing, output buffer size :%d, ret:%d\n", poutbuf_size, ret);
 
-    TRACE("[%s] after parsing, output buffer size :%d, ret:%d\n", __func__, poutbuf_size, ret);
-    TRACE("[%s] inbuf:%p, outbuf:%p\n", __func__, inbuf, poutbuf);
-
-    s->ctxArr[ctxIndex].pParserBuffer = poutbuf;
-
-    memcpy((uint8_t*)s->vaddr + offset, &poutbuf_size, sizeof(int));
-    size = sizeof(int);
-    if (poutbuf_size != 0) {
-        memcpy((uint8_t*)s->vaddr + offset + size, poutbuf, poutbuf_size);
-        size += poutbuf_size;
+    if (poutbuf) {
+        s->ctxArr[ctxIndex].pParserBuffer = poutbuf;
     }
-    memcpy((uint8_t*)s->vaddr + offset + size, &ret, sizeof(int));
 
-#if 1
+    TRACE("[%s] inbuf : %p, outbuf : %p\n", __func__, inbuf, poutbuf);
+#ifndef CODEC_DUMMY
+//    memcpy((uint8_t*)s->vaddr + offset, parserctx, sizeof(AVCodecParserContext));
+//    size = sizeof(AVCodecParserContext);
+    memcpy((uint8_t*)s->vaddr + offset, &parserctx->pts, sizeof(int64_t));
+    size = sizeof(int64_t);
+#else
+    memcpy((uint8_t*)s->vaddr + offset, &parserctx->pts, sizeof(int64_t));
+    size = sizeof(int64_t);
+#endif
+//    memcpy((uint8_t*)s->vaddr + offset, avctx, sizeof(AVCodecContext));
+//    size += sizeof(AVCodecContext);
+    memcpy((uint8_t*)s->vaddr + offset + size, &poutbuf_size, sizeof(int));
+    size += sizeof(int);
+    memcpy((uint8_t*)s->vaddr + offset + size, &ret, sizeof(int));
+    size += sizeof(int);
+    if (poutbuf && poutbuf_size > 0) {
+        memcpy((uint8_t*)s->vaddr + offset + size, poutbuf, poutbuf_size);
+    } else {
+        av_free(inbuf);
+    }
+
+#if 0
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         TRACE("[%s] free parser inbuf\n", __func__);
         av_free(inbuf);

@@ -5,8 +5,10 @@
 $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
 
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
-QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
-QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
+#QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
+#QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/include
+QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 CFLAGS += -g -O2
