@@ -225,10 +225,12 @@ static int check_port_bind_listen(u_int port)
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(port);
 
-	if (((s = qemu_socket(AF_INET,SOCK_STREAM,0)) < 0) ||
-			(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
-			(bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
-			(listen(s,1) < 0)) {
+	if (((s = qemu_socket(AF_INET, SOCK_STREAM, 0)) < 0) ||
+#ifndef _WIN32
+			(setsockopt(s, SOL_SOCKET,SO_REUSEADDR, (char *)&opt, sizeof(int)) < 0) ||
+#endif
+			(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) ||
+			(listen(s, 1) < 0)) {
 
 		/* fail */
 		ret = -1;
@@ -257,7 +259,7 @@ int get_sdb_base_port(void)
 	if(tizen_base_port == 0){
 
 		for ( ; tries > 0; tries--, port += 10 ) {
-			if(check_port_bind_listen(port+1) < 0 )
+			if(check_port_bind_listen(port + 1) < 0 )
 				continue;
 
 			success = 1;
@@ -279,24 +281,19 @@ int get_sdb_base_port(void)
 void sdb_setup(void)
 {
 	int   tries     = 10;
-	const char *base_port = "26100";
 	int   success   = 0;
-	int   port;
 	uint32_t  guest_ip;
-	const char *p;
 	char buf[64] = {0,};
 
 	inet_strtoip("10.0.2.16", &guest_ip);
 
-	port = strtol(base_port, (char **)&p, 0);
-
-	for ( ; tries > 0; tries--, port += 10 ) {
+	for ( ; tries > 0; tries--, tizen_base_port += 10 ) {
 		// redir form [tcp:26101:10.0.2.16:26101]
-		sprintf(buf, "tcp:%d:10.0.2.16:26101", port+1);
+		sprintf(buf, "tcp:%d:10.0.2.16:26101", tizen_base_port + 1);
 		if(net_slirp_redir((char*)buf) < 0)
 			continue;
 
-		INFO( "SDBD established on port %d\n", port+1);
+		INFO( "SDBD established on port %d\n", tizen_base_port + 1);
 		success = 1;
 		break;
 	}
@@ -307,17 +304,10 @@ void sdb_setup(void)
 		exit(1);
 	}
 
-	if( tizen_base_port != port ){
-		ERR( "sdb port is miss match. Aborting port :%d, tizen_base_port: %d\n", port, tizen_base_port);
-		exit(1);
-	}
-
-	/* Save base port. */
-	tizen_base_port = port;
 	INFO( "Port(%d/tcp) listen for SDB \n", tizen_base_port + 1);
 
 	/* for sensort */
-	sprintf(buf, "tcp:%d:10.0.2.16:3577", get_sdb_base_port() + SDB_TCP_EMULD_INDEX );
+	sprintf(buf, "tcp:%d:10.0.2.16:3577", tizen_base_port + SDB_TCP_EMULD_INDEX );
 	if(net_slirp_redir((char*)buf) < 0){
 		ERR( "redirect [%s] fail \n", buf);
 	}else{

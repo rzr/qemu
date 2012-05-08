@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh -xe
 # clean
 
 clean()
@@ -48,6 +48,13 @@ build()
 	cd $SRCDIR/tizen/
 	./qemu_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
 	make
+    if [ -f "../i386-softmmu/qemu-system-i386.exe" ]
+    then
+        echo "BUILD SUCCESS"
+    else
+        echo "BUILD FAIL!!!"
+        exit 1;
+    fi
 }
 
 # install
@@ -57,14 +64,12 @@ install()
 	prepare
 
 	BIN_DIR=$SRCDIR/package/emulator.package.windows/data
-	EMUL_DIR=$BIN_DIR/Emulator/bin/emulator-x86.exe
 
 	mkdir -p $BIN_DIR
 
 	cd $SRCDIR/tizen
 	make install
 	mv Emulator $BIN_DIR
-	editbin.exe /SUBSYSTEM:WINDOWS $EMUL_DIR
 }
 
 [ "$1" = "clean" ] && clean

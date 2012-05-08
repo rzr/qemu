@@ -39,6 +39,11 @@
 #define SW_NAME(sw) (sw)->name ? (sw)->name : "unknown"
 
 
+#ifdef CONFIG_MARU
+#include "../tizen/src/debug_ch.h"
+MULTI_DEBUG_CHANNEL(tizen, qemu_audio);
+#endif
+
 /* Order of CONFIG_AUDIO_DRIVERS is import.
    The 1st one is the one used by default, that is the reason
     that we generate the list.
@@ -339,11 +344,15 @@ void AUD_vlog (const char *cap, const char *fmt, va_list ap)
         monitor_vprintf(default_mon, fmt, ap);
     }
     else {
+#ifdef CONFIG_MARU
+        TRACE(fmt, ap);
+#else
         if (cap) {
             fprintf (stderr, "%s: ", cap);
         }
 
         vfprintf (stderr, fmt, ap);
+#endif
     }
 }
 
@@ -1871,6 +1880,31 @@ static void audio_init (void)
             }
         }
     }
+
+#ifdef CONFIG_MARU
+// Try to avoid certain wave out locking action in recent Windows...
+// If wave out is locked (because nothing is wired to output jack, ...),
+// QEMU can find voice out device, but open will failed. And it will cause guest audio lock-up.
+// So, we test whether opening is success or not.
+// It can not prevent lock-up caused by runtime voice out lock.
+// To prevent it, QEMU audio backend structure must be changed.
+// We should do it, but now we used simple fix temporarily.
+    HWVoiceOut* hw = audio_calloc(AUDIO_FUNC, 1, s->drv->voice_size_out);
+    if (!hw) {
+        dolog ("Can not allocate voice `%s' size %d\n",
+               s->drv->name, s->drv->voice_size_out);
+    }
+    if(s->drv->pcm_ops->init_out(hw, &conf.fixed_out.settings)) {
+        INFO("Host audio out [%s] is malfunction. Change to noaudio driver\n",
+                s->drv->name);
+        done = 0;
+    }
+    else {
+        INFO("Host audio out [%s] is normal.\n", s->drv->name);
+        s->drv->pcm_ops->fini_out(hw);
+    }
+    g_free(hw);
+#endif
 
     if (!done) {
         done = !audio_driver_init (s, &no_audio_driver);
