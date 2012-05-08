@@ -118,7 +118,7 @@ static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src)
     TRACE("[%s] Leave\n", __func__);
 }
 
-void qemu_get_codec_ver (SVCodecState *s, int ctxIndex)
+static void qemu_get_codec_ver (SVCodecState *s, int ctxIndex)
 {
     char codec_ver[32];
     off_t offset;
@@ -345,6 +345,8 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size = sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->time_base, sizeof(AVRational));
     size += sizeof(AVRational);
+    memcpy((uint8_t*)s->vaddr + offset + size, &avctx->channels, sizeof(int));
+    size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->sample_fmt, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->codec_type, sizeof(int));

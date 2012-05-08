@@ -132,6 +132,7 @@ static void qemu_parser_init (SVCodecState *s, int ctxIndex);
 
 static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src);
 
+static void qemu_get_codec_ver (SVCodecState *s, int ctxIndex);
 /*
  *  FFMPEG APIs
  */
