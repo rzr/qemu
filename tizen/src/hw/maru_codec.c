@@ -29,10 +29,9 @@
  */
 
 #include "maru_codec.h"
-#include <pthread.h>
 
-#define QEMU_DEV_NAME   "codec"
-#define MARU_CODEC_VERSION "1.0"
+#define MARU_CODEC_DEV_NAME     "codec"
+#define MARU_CODEC_VERSION      "1.0"
 
 /*  Needs 16M to support 1920x1080 video resolution.
  *  Output size for encoding has to be greater than (width * height * 6)
@@ -43,8 +42,6 @@
 #define MARU_CODEC_REG_SIZE     (256)
 
 #define MARU_ROUND_UP_16(num)   (((num) + 15) & ~15)
-
-#define CODEC_DUMMY
 
 /* define debug channel */
 MULTI_DEBUG_CHANNEL(qemu, marucodec);
@@ -69,7 +66,6 @@ static void qemu_codec_close (SVCodecState *s, uint32_t value)
     int ctxIndex = 0;
 
     TRACE("[%s] Enter\n", __func__);
-
     pthread_mutex_lock(&s->codec_mutex);
 
     for (i = 0; i < CODEC_MAX_CONTEXT; i++) {
@@ -78,18 +74,17 @@ static void qemu_codec_close (SVCodecState *s, uint32_t value)
             break;
         }
     }
-
     TRACE("[%s] Close %d context\n", __func__, ctxIndex);
 
     s->ctxArr[ctxIndex].bUsed = false;
     qemu_parser_init(s, ctxIndex);
 
     pthread_mutex_unlock(&s->codec_mutex);
-
     TRACE("[%s] Leave\n", __func__);
 }
 
-static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src) {
+static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src)
+{
     TRACE("[%s] Enter\n", __func__);
 
     dst->av_class = src->av_class;
@@ -121,6 +116,19 @@ static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src) {
     dst->pkt = src->pkt;
 
     TRACE("[%s] Leave\n", __func__);
+}
+
+void qemu_get_codec_ver (SVCodecState *s, int ctxIndex)
+{
+    char codec_ver[32];
+    off_t offset;
+
+    offset = s->codecParam.mmapOffset;
+
+    memset(codec_ver, 0x00, 32);
+    strncpy(codec_ver, MARU_CODEC_VERSION, strlen(MARU_CODEC_VERSION));
+    printf("codec_version:%s\n", codec_ver);
+    memcpy((uint8_t*)s->vaddr + offset, codec_ver, 32);
 }
 
 /* void av_register_all() */
@@ -216,7 +224,9 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
 static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
 {
     AVCodecContext *avctx;
+#ifndef CODEC_COPY_DATA
     AVCodecContext tempCtx;
+#endif
     AVCodec *codec;
     enum CodecID codec_id;
     off_t offset;
@@ -236,7 +246,7 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
 
     TRACE("[%s] Context Index:%d, offset:%d\n", __func__, ctxIndex, offset);
 
-#ifndef CODEC_DUMMY
+#ifndef CODEC_COPY_DATA
     size = sizeof(AVCodecContext);
     memcpy(&tempCtx, avctx, size);
     memcpy(avctx, (uint8_t*)s->vaddr + offset, size);
@@ -327,7 +337,7 @@ static int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
               avctx->sample_rate, avctx->channels);
     }
 
-#ifndef CODEC_DUMMY
+#ifndef CODEC_COPY_DATA
     memcpy((uint8_t*)s->vaddr + offset, avctx, sizeof(AVCodecContext));
     memcpy((uint8_t*)s->vaddr + offset + sizeof(AVCodecContext), &ret, sizeof(int));
 #else
@@ -674,7 +684,7 @@ static int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
         TRACE("[%s] There is no frame\n", __func__);
     }
 
-#ifndef CODEC_DUMMY
+#ifndef CODEC_COPY_DATA
     size = sizeof(AVCodecContext);
     memcpy((uint8_t*)s->vaddr + offset, avctx, size);
 #else
@@ -932,7 +942,7 @@ static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex)
     ret = avcodec_decode_audio3(avctx, samples, &frame_size_ptr, &avpkt);
     TRACE("After decoding audio!, ret:%d\n", ret);
 
-#ifndef CODEC_DUMMY
+#ifndef CODEC_COPY_DATA
     size = sizeof(AVCodecContext);
     memcpy((uint8_t*)s->vaddr + offset, avctx, size);
 #else
@@ -1209,7 +1219,7 @@ static int qemu_av_parser_parse (SVCodecState *s, int ctxIndex)
     }
 
     TRACE("[%s] inbuf : %p, outbuf : %p\n", __func__, inbuf, poutbuf);
-#ifndef CODEC_DUMMY
+#ifndef CODEC_COPY_DATA
 //    memcpy((uint8_t*)s->vaddr + offset, parserctx, sizeof(AVCodecParserContext));
 //    size = sizeof(AVCodecParserContext);
     memcpy((uint8_t*)s->vaddr + offset, &parserctx->pts, sizeof(int64_t));
@@ -1258,7 +1268,6 @@ static void qemu_av_parser_close (SVCodecState *s, int ctxIndex)
     }
     av_parser_close(parserctx);
     pthread_mutex_unlock(&s->codec_mutex);
-
 }
 
 static int codec_operate (uint32_t apiIndex, uint32_t ctxIndex, SVCodecState *state)
@@ -1323,6 +1332,9 @@ static int codec_operate (uint32_t apiIndex, uint32_t ctxIndex, SVCodecState *st
         case EMUL_AV_PARSER_CLOSE:
             qemu_av_parser_close(state, ctxIndex);
             break;
+        case EMUL_GET_CODEC_VER:
+            qemu_get_codec_ver(state, ctxIndex);
+            break;
         default:
             WARN("The api index does not exsit!. api index:%d\n", apiIndex);
     }
@@ -1336,7 +1348,7 @@ uint64_t codec_read (void *opaque, target_phys_addr_t addr, unsigned size)
 {
     switch (addr) {
         default:
-            ERR("There is no avaiable command for %s\n", QEMU_DEV_NAME);
+            ERR("There is no avaiable command for %s\n", MARU_CODEC_DEV_NAME);
     }
     return 0;
 }
@@ -1379,7 +1391,7 @@ void codec_write (void *opaque, target_phys_addr_t addr, uint64_t value, unsigne
             qemu_codec_close(state, value);
             break;
         default:
-            ERR("There is no avaiable command for %s\n", QEMU_DEV_NAME);
+            ERR("There is no avaiable command for %s\n", MARU_CODEC_DEV_NAME);
     }
 }
 
@@ -1425,12 +1437,12 @@ static int codec_exitfn (PCIDevice *dev)
 int codec_init (PCIBus *bus)
 {
     INFO("[%s] device create\n", __func__);
-    pci_create_simple (bus, -1, QEMU_DEV_NAME);
+    pci_create_simple (bus, -1, MARU_CODEC_DEV_NAME);
     return 0;
 }
 
 static PCIDeviceInfo codec_info = {
-    .qdev.name      = QEMU_DEV_NAME,
+    .qdev.name      = MARU_CODEC_DEV_NAME,
     .qdev.desc      = "Virtual Codec device for Tizen emulator",
     .qdev.size      = sizeof (SVCodecState),
     .init           = codec_initfn,

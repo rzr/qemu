@@ -41,6 +41,7 @@
 #include <libavformat/avformat.h>
 
 #define CODEC_MAX_CONTEXT   10
+#define CODEC_COPY_DATA
 
 /*
  *  Codec Device Structures
@@ -109,6 +110,7 @@ enum {
     EMUL_AV_PARSER_INIT,
     EMUL_AV_PARSER_PARSE,
     EMUL_AV_PARSER_CLOSE,
+    EMUL_GET_CODEC_VER = 50,
 };
 
 
