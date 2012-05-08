@@ -470,7 +470,11 @@ static int glo_can_readback(void) {
     }
 
     context = glo_context_create(bufferFlags, 0);
+	if (context == NULL)
+		return 1;
     surface = glo_surface_create(TX, TY, context);
+	if (surface == NULL)
+		return 1;
 
     glo_surface_makecurrent(surface);
 

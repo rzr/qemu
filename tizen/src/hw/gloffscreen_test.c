@@ -111,7 +111,11 @@ int gl_acceleration_capability_check (void) {
     glo_init();
     // new surface
     context = glo_context_create(bufferFlags, 0);
+	if (context == NULL)
+		return 1;
     surface = glo_surface_create(TX, TY, context);
+	if (surface == NULL)
+		return 1;
     glo_surface_makecurrent(surface);
     printf("GL VENDOR %s\n", glGetString(GL_VENDOR));
     printf("GL RENDERER %s\n", glGetString(GL_RENDERER));

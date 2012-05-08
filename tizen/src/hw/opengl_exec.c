@@ -521,6 +521,13 @@ static inline void resize_surface(ProcessState *process, QGloSurface *qsurface,
     // Client doesnt know surface is new - need to MakeCurrent
     if(process->current_state == qsurface->glstate) {
         glo_surface_makecurrent(qsurface->surface);
+        // set the viewport while the window size is changed. It is needed
+        // especially for the case that glViewport is not explicitly called
+        // in program. In this case, the viewport is set to incorrectly
+        // in the first MakeCurrent when the window size is not known.
+        // It will not impact normal GL programs with glViewport set as 
+        // programmers want.
+        glViewport (0, 0, w, h);
     }
     else {
         DEBUGF("Error: Surface is not current! %p %p\n",
@@ -1008,6 +1015,12 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
                     s++, (*n)--;
                 } while (*n > 2 && (s[1] != '*' || s[2] != '/'));
                 s++, (*n)--;
+				s++, (*n)--;
+				if (*n == 0) {
+				        break;
+				}
+			} else {
+				break;
             }
         }
     }
@@ -1022,6 +1035,11 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
 	retlen = s - start;
 	ret = malloc(retlen + 1);
 	p = ret;
+
+	if (retlen == 0) {
+		*p = 0;
+		return;
+	}
 
 	while (retlen > 0) {
         if (*start == '/' && retlen > 1) {
