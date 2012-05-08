@@ -47,6 +47,7 @@
 #ifdef CONFIG_MARU
 #include "../tizen/src/hw/maru_overlay.h"
 #include "../tizen/src/hw/maru_brightness.h"
+#include "../tizen/src/maru_err_table.h"
 #endif
 
 /* output Bochs bios info messages */
@@ -662,10 +663,6 @@ static long get_file_size(FILE *f)
     return size;
 }
 
-#ifdef CONFIG_MARU
-extern int start_simple_client(char* msg);
-#endif
-
 static void load_linux(void *fw_cfg,
                        const char *kernel_filename,
 		       const char *initrd_filename,
@@ -692,15 +689,13 @@ static void load_linux(void *fw_cfg,
 		kernel_filename, strerror(errno));
 
 #ifdef CONFIG_MARU
-    const char _msg[] = "Kernel image file could not load from following path\n";
     char* current_path = (char *)g_get_current_dir();
-
-    int len = strlen(_msg) + strlen(current_path) + strlen(kernel_filename) + 3;
+    int len = strlen(current_path) + strlen(kernel_filename) + 2;
 
     char* error_msg = g_malloc0(len * sizeof(char));
-    snprintf(error_msg, len - 1, "%s%s/%s", _msg, current_path, kernel_filename);
+    snprintf(error_msg, len, "%s/%s", current_path, kernel_filename);
 
-    start_simple_client(error_msg);
+    maru_register_exit_msg(MARU_EXIT_KERNEL_FILE_EXCEPTION, error_msg);
 
     g_free(current_path);
     g_free(error_msg);
@@ -1053,16 +1048,15 @@ void pc_memory_init(MemoryRegion *system_memory,
         fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
 
 #ifdef CONFIG_MARU
-        const char _msg[] = "Bios image file could not load from following path\n";
         char* current_path = (char *)g_get_current_dir();
         const char* _path = qemu_get_data_dir();
 
-        int len = strlen(_msg) + strlen(current_path) + strlen(_path) + strlen(bios_name) + 4;
+        int len = strlen(current_path) + strlen(_path) + strlen(bios_name) + 3;
 
         char* error_msg = g_malloc0(len * sizeof(char));
-        snprintf(error_msg, len - 1, "%s%s/%s/%s", _msg, current_path, _path, bios_name);
+        snprintf(error_msg, len, "%s/%s/%s", current_path, _path, bios_name);
 
-        start_simple_client(error_msg);
+        maru_register_exit_msg(MARU_EXIT_BIOS_FILE_EXCEPTION, error_msg);
 
         g_free(current_path);
         g_free(error_msg);

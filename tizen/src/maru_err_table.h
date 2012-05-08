@@ -1,10 +1,10 @@
 /*
- * communicate with java skin process
+ * Error message
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact:
- * HyunJun Son <hj79.son@samsung.com>
+ * Contact: 
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -27,13 +27,25 @@
  *
  */
 
-#ifndef MARUSKIN_CLIENT_H_
-#define MARUSKIN_CLIENT_H_
 
-#define JAVA_MAX_COMMAND_LENGTH 512
+#ifndef __EMUL_ERR_TABLE_H__
+#define __EMUL_ERR_TABLE_H__
 
-int start_skin_client(int argc, char* argv[]);
-int start_simple_client(char* msg);
+#include "skin/maruskin_client.h"
 
 
-#endif /* MARUSKIN_CLIENT_H_ */
+/* TODO: define macro for fair of definition */
+
+enum { //This enum must match the table definition
+    MARU_EXIT_NORMAL = 0,
+    MARU_EXIT_MEMORY_EXCEPTION,
+    MARU_EXIT_KERNEL_FILE_EXCEPTION,
+    MARU_EXIT_BIOS_FILE_EXCEPTION
+    /* add here */
+};
+
+
+void maru_register_exit_msg(int maru_exit_status, char* additional_msg);
+void maru_atexit(void);
+
+#endif /* __EMUL_ERR_TABLE_H__ */

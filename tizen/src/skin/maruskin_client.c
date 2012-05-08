@@ -46,7 +46,6 @@
 MULTI_DEBUG_CHANNEL(qemu, maruskin_client);
 
 
-
 #define SKIN_SERVER_READY_TIME 3 // second
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
@@ -59,14 +58,13 @@ MULTI_DEBUG_CHANNEL(qemu, maruskin_client);
 #define OPT_VM_PATH "vm.path"
 #define OPT_NET_BASE_PORT "net.baseport"
 
-#define MAX_COMMAND 512
 
 static int skin_argc;
 static char** skin_argv;
 
 static void* run_skin_client(void* arg)
 {
-    char cmd[MAX_COMMAND] = {0};
+    char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
     char argv[256] = {0};
 
     INFO("run skin client\n");
@@ -222,7 +220,7 @@ int start_skin_client(int argc, char* argv[])
 
 int start_simple_client(char* msg) {
     int ret = 0;
-    char cmd[MAX_COMMAND] = {0};
+    char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
 
     INFO("run simple client\n");
 

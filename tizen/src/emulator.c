@@ -44,6 +44,7 @@
 #include "emul_state.h"
 #include "qemu_socket.h"
 #include "build_info.h"
+#include "maru_err_table.h"
 #include <glib.h>
 #include <glib/gstdio.h>
 
@@ -339,6 +340,7 @@ int main(int argc, char* argv[])
     extract_info(qemu_argc, qemu_argv);
 
     INFO("Emulator start !!!\n");
+    atexit(maru_atexit);
     system_info();
 
     INFO("Prepare running...\n");
