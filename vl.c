@@ -3184,6 +3184,7 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_enable_hax:
                 olist = qemu_find_opts("machine");
                 qemu_opts_reset(olist);
+                hax_disabled = 0;
                 //qemu_opts_parse(olist, "accel=hax", 0);
                 break;
 #ifdef CONFIG_MARU

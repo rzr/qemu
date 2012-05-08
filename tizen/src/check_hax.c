@@ -83,7 +83,7 @@ static int hax_open_device( hax_fd *fd );
 static int hax_get_capability( struct hax_state *hax );
 static int hax_capability( struct hax_state *hax, struct hax_capabilityinfo *cap );
 
-int check_hax( void ) {
+static int check_hax( void ) {
 
     struct hax_state hax;
     memset( &hax, 0, sizeof( struct hax_state ) );
@@ -156,12 +156,14 @@ static int hax_get_capability( struct hax_state *hax ) {
         return -ENXIO;
     }
 
+/*
     if ( cap->wstatus & HAX_CAP_MEMQUOTA ) {
         if ( cap->mem_quota < hax->mem_quota ) {
             fprintf( stderr, "The memory needed by this VM exceeds the driver limit.\n" );
             return -ENOSPC;
         }
     }
+*/
     return 0;
 }
 
@@ -187,4 +189,8 @@ static int hax_capability( struct hax_state *hax, struct hax_capabilityinfo *cap
     } else
         return 0;
 
+}
+
+int main(int argc, char* argv[]) {
+    return check_hax();
 }

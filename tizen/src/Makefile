@@ -8,9 +8,15 @@ config-host.mak:
 	@exit 1
 endif
 
-all: build_info qemu skin_client
+all: build_info qemu skin_client check_hax
 qemu:
 	cd ../../ && $(MAKE)
+check_hax:
+ifdef CONFIG_WIN32
+	$(CC) -o check-hax.exe check_hax.c
+else
+	
+endif
 skin_client:
 ifdef CONFIG_WIN32
 	ant -buildfile skin/client/build.xml windows-jar
@@ -30,6 +36,11 @@ build_info:
 	@echo "const char pkginfo_version[] = \"`sed -n '2p' ./../../package/pkginfo.manifest`\";" >> build_info.h
 
 clean:
+ifdef CONFIG_WIN32
+	rm -f check-hax.exe
+else
+	
+endif
 	cd ../../ && $(MAKE) clean
 distclean:
 	cd ../../ && $(MAKE) distclean
@@ -37,14 +48,19 @@ install: all
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
 	mkdir -p $(EMUL_DIR)/x86
+	mkdir -p $(EMUL_DIR)/x86/data 
 	mkdir -p $(EMUL_DIR)/arm
 	mkdir -p $(EMUL_DIR)/x86/data/pc-bios
 	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
+ifdef CONFIG_WIN32
+	cp check-hax.exe $(EMUL_DIR)/bin
+else
+	
+endif
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp -dpr skin/client/skins $(EMUL_DIR)
 	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr ../data $(EMUL_DIR)/x86
 	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/x86/data/pc-bios
 	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/x86/data/pc-bios
 	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/x86/data/pc-bios
