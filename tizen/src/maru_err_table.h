@@ -37,11 +37,12 @@
 /* TODO: define macro for fair of definition */
 
 enum { //This enum must match the table definition
-    MARU_EXIT_NORMAL = 0,
-    MARU_EXIT_MEMORY_EXCEPTION,
-    MARU_EXIT_KERNEL_FILE_EXCEPTION,
-    MARU_EXIT_BIOS_FILE_EXCEPTION
-    /* add here */
+    /* 0 */ MARU_EXIT_UNKNOWN = 0,
+    /* 1 */ MARU_EXIT_MEMORY_EXCEPTION,
+    /* 2 */ MARU_EXIT_KERNEL_FILE_EXCEPTION,
+    /* 3 */ MARU_EXIT_BIOS_FILE_EXCEPTION,
+    /* add here.. */
+    MARU_EXIT_NORMAL
 };
 
 

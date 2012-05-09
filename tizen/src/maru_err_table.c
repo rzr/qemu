@@ -35,11 +35,12 @@
 
 /* This table must match the enum definition */
 static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
-    "", //MARU_EXIT_NORMAL
-    "Failed to allocate memory in qemu.", //MARU_EXIT_MEMORY_EXCEPTION
-    "Fail to load kernel file. Check if the file is corrupted or missing from the following path.\n\n", //MARU_EXIT_KERNEL_FILE_EXCEPTION
-    "Fail to load bios file. Check if the file is corrupted or missing from the following path.\n\n" //MARU_EXIT_BIOS_FILE_EXCEPTION
-    /* add here */
+    /* 0 */ "", //MARU_EXIT_UNKNOWN
+    /* 1 */ "Failed to allocate memory in qemu.", //MARU_EXIT_MEMORY_EXCEPTION
+    /* 2 */ "Fail to load kernel file. Check if the file is corrupted or missing from the following path.\n\n", //MARU_EXIT_KERNEL_FILE_EXCEPTION
+    /* 3 */ "Fail to load bios file. Check if the file is corrupted or missing from the following path.\n\n", //MARU_EXIT_BIOS_FILE_EXCEPTION
+    /* add here.. */
+    "" //MARU_EXIT_NORMAL
 };
 
 
@@ -50,9 +51,13 @@ void maru_register_exit_msg(int maru_exit_index, char* additional_msg)
 {
     int len = 0;
 
+    if (maru_exit_index >= MARU_EXIT_NORMAL) {
+        return;
+    }
+
     maru_exit_status = maru_exit_index;
 
-    if (maru_exit_status != MARU_EXIT_NORMAL) {
+    if (maru_exit_status != MARU_EXIT_UNKNOWN) {
         len = strlen(_maru_string_table[maru_exit_status]) + strlen(additional_msg) + 1;
         if (len >= JAVA_MAX_COMMAND_LENGTH) {
             len = JAVA_MAX_COMMAND_LENGTH;

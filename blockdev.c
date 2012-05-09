@@ -524,13 +524,14 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
                      file, strerror(-ret));
 
 #ifdef CONFIG_MARU
-        const char _msg[] = "Disk image file could not load from following path\n";
+        const char _msg[] = "Fail to load disk file. \
+            Check if the file is corrupted or missing from the following path.\n\n";
         char* current_path = (char *)g_get_current_dir();
 
-        int len = strlen(_msg) + strlen(current_path) + strlen(file) + 3;
+        int len = strlen(_msg) + strlen(current_path) + strlen(file) + 2;
 
         char* error_msg = g_malloc0(len * sizeof(char));
-        snprintf(error_msg, len - 1, "%s%s/%s", _msg, current_path, file);
+        snprintf(error_msg, len, "%s%s/%s", _msg, current_path, file);
 
         start_simple_client(error_msg);
 

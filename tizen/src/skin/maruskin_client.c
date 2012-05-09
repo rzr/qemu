@@ -49,10 +49,6 @@ MULTI_DEBUG_CHANNEL(qemu, maruskin_client);
 #define SKIN_SERVER_READY_TIME 3 // second
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
-#define JAR_SKINFILE_PATH "emulator-skin.jar"
-#define JAVA_EXEFILE_PATH "java"
-#define JAVA_EXEOPTION "-jar"
-
 #define OPT_SVR_PORT "svr.port"
 #define OPT_UID "uid"
 #define OPT_VM_PATH "vm.path"

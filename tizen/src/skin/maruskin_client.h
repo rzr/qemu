@@ -32,6 +32,11 @@
 
 #define JAVA_MAX_COMMAND_LENGTH 512
 
+#define JAR_SKINFILE_PATH "emulator-skin.jar"
+#define JAVA_EXEFILE_PATH "java"
+#define JAVA_EXEOPTION "-jar"
+
+
 int start_skin_client(int argc, char* argv[]);
 int start_simple_client(char* msg);
 

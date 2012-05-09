@@ -50,6 +50,11 @@ extern int daemon(int, int);
 #include "trace.h"
 #include "qemu_socket.h"
 
+
+#ifdef CONFIG_MARU
+#include "../tizen/src/skin/maruskin_client.h"
+#endif
+
 #if defined(CONFIG_VALGRIND)
 static int running_on_valgrind = -1;
 #else
@@ -61,37 +66,16 @@ int qemu_daemon(int nochdir, int noclose)
     return daemon(nochdir, noclose);
 }
 
-#ifdef CONFIG_MARU
-//TODO: temp
-#define JAR_SKINFILE_PATH "emulator-skin.jar"
-#define JAVA_EXEFILE_PATH "java"
-#define JAVA_EXEOPTION "-jar"
-#define MAX_COMMAND 512
-
-static int start_simple_client(char* msg) {
-    int ret = 0;
-    char cmd[MAX_COMMAND] = {0};
-
-    sprintf(cmd, "%s %s %s %s=\"%s\"", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, "simple.msg", msg);
-
-#ifdef __WIN32
-    ret = WinExec(cmd, SW_SHOW);
-#else
-    ret = system(cmd);
-#endif
-
-    return 1;
-}
-#endif
-
 void *qemu_oom_check(void *ptr)
 {
     if (ptr == NULL) {
         fprintf(stderr, "Failed to allocate memory: %s\n", strerror(errno));
 
 #ifdef CONFIG_MARU
-        char _msg[] = "Failed to allocate memory in qemu";
-        start_simple_client(_msg);
+        char _msg[] = "Failed to allocate memory in qemu.";
+        char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
+        sprintf(cmd, "%s %s %s %s=\"%s\"", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, "simple.msg", _msg);
+        int ret = system(cmd);
 #endif
 
         abort();
