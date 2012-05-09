@@ -41,6 +41,7 @@ enum { //This enum must match the table definition
     /* 1 */ MARU_EXIT_MEMORY_EXCEPTION,
     /* 2 */ MARU_EXIT_KERNEL_FILE_EXCEPTION,
     /* 3 */ MARU_EXIT_BIOS_FILE_EXCEPTION,
+    /* 4 */ MARU_EXIT_SKIN_SERVER_FAILED,
     /* add here.. */
     MARU_EXIT_NORMAL
 };

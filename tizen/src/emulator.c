@@ -96,6 +96,7 @@ static void construct_main_window(int skin_argc, char* skin_argv[], int qemu_arg
 
     if (get_emul_skin_enable() == 1) { //this line is check for debugging, etc..
         if ( 0 > start_skin_client(skin_argc, skin_argv) ) {
+            maru_register_exit_msg(MARU_EXIT_SKIN_SERVER_FAILED, NULL);
             exit( -1 );
         }
     }

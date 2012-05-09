@@ -39,6 +39,7 @@ static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
     /* 1 */ "Failed to allocate memory in qemu.", //MARU_EXIT_MEMORY_EXCEPTION
     /* 2 */ "Fail to load kernel file. Check if the file is corrupted or missing from the following path.\n\n", //MARU_EXIT_KERNEL_FILE_EXCEPTION
     /* 3 */ "Fail to load bios file. Check if the file is corrupted or missing from the following path.\n\n", //MARU_EXIT_BIOS_FILE_EXCEPTION
+    /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
     /* add here.. */
     "" //MARU_EXIT_NORMAL
 };
@@ -58,13 +59,22 @@ void maru_register_exit_msg(int maru_exit_index, char* additional_msg)
     maru_exit_status = maru_exit_index;
 
     if (maru_exit_status != MARU_EXIT_UNKNOWN) {
-        len = strlen(_maru_string_table[maru_exit_status]) + strlen(additional_msg) + 1;
-        if (len >= JAVA_MAX_COMMAND_LENGTH) {
-            len = JAVA_MAX_COMMAND_LENGTH;
-        }
+        if (additional_msg != NULL) {
+            len = strlen(_maru_string_table[maru_exit_status]) + strlen(additional_msg) + 1;
+            if (len > JAVA_MAX_COMMAND_LENGTH) {
+                len = JAVA_MAX_COMMAND_LENGTH;
+            }
 
-        snprintf(maru_exit_msg, len, "%s%s", _maru_string_table[maru_exit_status], additional_msg);
-    } else {
+            snprintf(maru_exit_msg, len, "%s%s", _maru_string_table[maru_exit_status], additional_msg);
+        } else {
+            len = strlen(_maru_string_table[maru_exit_status]) + 1;
+            if (len > JAVA_MAX_COMMAND_LENGTH) {
+                len = JAVA_MAX_COMMAND_LENGTH;
+            }
+
+            snprintf(maru_exit_msg, len, "%s", _maru_string_table[maru_exit_status]);
+        }
+    } else if (additional_msg != NULL) {
         len = strlen(additional_msg);
         if (len >= JAVA_MAX_COMMAND_LENGTH) {
             additional_msg[JAVA_MAX_COMMAND_LENGTH - 1] = '\0';

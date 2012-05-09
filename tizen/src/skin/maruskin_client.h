@@ -35,10 +35,10 @@
 #define JAR_SKINFILE_PATH "emulator-skin.jar"
 #define JAVA_EXEFILE_PATH "java"
 #define JAVA_EXEOPTION "-jar"
+#define JAVA_SIMPLEMODE_OPTION "simple.msg"
 
 
 int start_skin_client(int argc, char* argv[]);
 int start_simple_client(char* msg);
-
 
 #endif /* MARUSKIN_CLIENT_H_ */
