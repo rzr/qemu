@@ -40,6 +40,7 @@
 #include "debug_ch.h"
 
 #ifdef _WIN32
+#include "maru_err_table.h"
 #include <windows.h>
 #endif
 
