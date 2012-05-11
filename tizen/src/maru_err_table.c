@@ -32,6 +32,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 /* This table must match the enum definition */
 static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
@@ -88,7 +91,131 @@ void maru_register_exit_msg(int maru_exit_index, char* additional_msg)
 void maru_atexit(void)
 {
     if (maru_exit_status != MARU_EXIT_NORMAL || strlen(maru_exit_msg) != 0) {
+	maru_dump_backtrace(NULL, 0);
         start_simple_client(maru_exit_msg);
     }
 }
 
+// for pirnt 'backtrace'
+#ifdef _WIN32
+struct frame_layout {
+	void*	pNext;
+	void*	pReturnAddr;
+};
+
+static char * aqua_get_filename_from_path(char * path_buf){
+    char * ret_slash;
+    char * ret_rslash;
+
+    ret_slash = strrchr(path_buf, '/');
+    ret_rslash = strrchr(path_buf, '\\');
+
+    if(ret_slash || ret_rslash){
+        if(ret_slash > ret_rslash){
+            return ret_slash + 1;
+        }
+        else{
+            return ret_rslash + 1;
+        }
+    }
+
+    return path_buf;
+}
+
+
+static HMODULE aqua_get_module_handle(DWORD dwAddress)
+{
+	MEMORY_BASIC_INFORMATION Buffer;
+	return VirtualQuery((LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (HMODULE) Buffer.AllocationBase : (HMODULE) 0;
+}
+#endif
+
+void maru_dump_backtrace(void* ptr, int depth)
+{
+#ifdef _WIN32
+    int	     	                nCount;
+    void*	        	pTopFrame;
+    struct frame_layout 	currentFrame;
+    struct frame_layout *	pCurrentFrame;
+
+    char module_buf[1024];
+    HMODULE hModule;
+
+    PCONTEXT pContext = ptr;
+    if(!pContext){
+        __asm__ __volatile__ (
+                "movl	%%ebp, %0"
+                : "=m" (pTopFrame)
+                );
+    } else {
+        pTopFrame = (void*)((PCONTEXT)pContext)->Ebp;
+    }
+
+    nCount = 0;
+    currentFrame.pNext = ((struct frame_layout*)pTopFrame)->pNext;
+    currentFrame.pReturnAddr = ((struct frame_layout*)pTopFrame)->pReturnAddr;
+    pCurrentFrame = (struct frame_layout*)pTopFrame;
+
+    fprintf(stderr, "\nBacktrace Dump Start : \n");
+    if(pContext){
+        fprintf(stderr, "[%02d]Addr = 0x%p", nCount, ((PCONTEXT)pContext)->Eip);
+        memset(module_buf, 0, sizeof(module_buf));
+        hModule = aqua_get_module_handle((DWORD)((PCONTEXT)pContext)->Eip);
+        if(hModule){
+            if(!GetModuleFileNameA(hModule, module_buf, sizeof(module_buf))){
+                memset(module_buf, 0, sizeof(module_buf));
+            }
+        }
+        fprintf(stderr, " : %s\n", aqua_get_filename_from_path(module_buf));
+        nCount++;
+    }
+
+    while (1){
+        if ((void*)pCurrentFrame < pTopFrame || (void*)pCurrentFrame >= (void*)0xC0000000){
+	    break;
+        }
+
+        fprintf(stderr, "[%02d]Addr = 0x%p", nCount, currentFrame.pReturnAddr);
+        memset(module_buf, 0, sizeof(module_buf));
+        hModule = aqua_get_module_handle((DWORD)currentFrame.pReturnAddr);
+        if(hModule){
+            if(!GetModuleFileNameA(hModule, module_buf, sizeof(module_buf))){
+                memset(module_buf, 0, sizeof(module_buf));
+            }
+        }
+        fprintf(stderr, " : %s\n", aqua_get_filename_from_path(module_buf));
+
+	if(!ReadProcessMemory(GetCurrentProcess(), currentFrame.pNext, (void*)&currentFrame, sizeof(struct frame_layout), NULL)){
+            break;
+        }
+        pCurrentFrame = (struct frame_layout *)pCurrentFrame->pNext;
+
+        if(depth){
+            if(!--depth){
+                break;
+            }
+        }
+        nCount++;
+    }
+#else
+	int i, ndepth;
+	void* trace[1024];
+	char** symbols;
+
+	fprintf(stderr, "\n Backtrace Dump Start : \n");
+
+	ndepth = backtrace(trace, 1024);
+	fprintf(stderr, "Backtrace depth is %d. \n", ndepth);
+
+	symbols = backtrace_symbols(trace, ndepth);
+	if (symbols == NULL) {
+		fprintf(stderr, "'backtrace_symbols()' return error");
+		return;
+	}
+
+	for (i = 0; i < ndepth; i++) {
+		fprintf(stderr,"%s\n", symbols[i]);
+	}
+	free(symbols);
+#endif
+}
