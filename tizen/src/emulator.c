@@ -367,6 +367,7 @@ int main(int argc, char* argv[])
 
     INFO("qemu main start!\n");
     qemu_main(qemu_argc, qemu_argv, NULL);
+    INFO("qemu main exit!\n");
 
     exit_emulator();
 
