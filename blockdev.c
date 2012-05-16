@@ -524,8 +524,7 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
                      file, strerror(-ret));
 
 #ifdef CONFIG_MARU
-        const char _msg[] = "Fail to load disk file. \
-            Check if the file is corrupted or missing from the following path.\n\n";
+        const char _msg[] = "Fail to load disk file. Check if the file is corrupted or missing from the following path.\n\n";
         char* current_path = (char *)g_get_current_dir();
 
         int len = strlen(_msg) + strlen(current_path) + strlen(file) + 2;
