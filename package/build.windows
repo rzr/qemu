@@ -36,6 +36,7 @@ prepare()
 
 	PATH=$PATH:$ROOTDIR/bin:$ROOTDIR/apache-ant-1.8.3/bin
 	export PATH
+	export PKG_CONFIG_PATH=$ROOTDIR/lib/pkgconfig
 	BUILD_CFLAGS=--extra-cflags=-I$ROOTDIR/include
     BUILD_LDFLAGS=--extra-ldflags=-L$ROOTDIR/lib
 }
