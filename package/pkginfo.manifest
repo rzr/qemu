@@ -12,7 +12,7 @@ Version: 1.2.91
 OS: windows
 Build-host-os: windows
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Build-dependency: SDL-1.2.14 [ windows ], jpeg-8b [ windows ], libpng-1.4.5 [ windows ], apache-ant-1.8.3-bin [ windows ]
+Build-dependency: SDL-1.2.14 [ windows ], jpeg-8b [ windows ], libpng-1.4.5 [ windows ], apache-ant-1.8.3-bin [ windows ], gtk-bundle_2.16.6 [ windows ], directx-dev [ windows ]
 Install-dependency: emulator-kernel [ windows ], emulator-manager [ windows ], emulator-dll [ windows ]
 Source: emulator
 Description: Tizen Emulator
