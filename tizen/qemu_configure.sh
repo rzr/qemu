@@ -34,7 +34,7 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-hax \
  --enable-maru \
- --enable-gl
+ --enable-gl $1
 # --enable-ffmpeg
 # --disable-vnc-jpeg \
 # --disable-jpeg
