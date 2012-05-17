@@ -265,6 +265,35 @@ public class SkinUtil {
 
 	}
 
+	public static void trimShell( Shell shell, Image image, int left, int top, int width, int height ) {
+
+		if ( null == image ) {
+			return;
+		}
+
+		ImageData imageData = image.getImageData();
+
+		int right = left + width;
+		int bottom = top + height;
+
+		Region region = shell.getRegion();
+		if (region == null) {
+			return;
+		}
+
+		for ( int i = left; i < right; i++ ) {
+			for ( int j = top; j < bottom; j++ ) {
+				int alpha = imageData.getAlpha( i, j );
+				if ( 0 == alpha ) {
+					region.subtract( i, j, 1, 1 );
+				}
+			}
+		}
+
+		shell.setRegion( region );
+
+	}
+
 	public static int[] convertMouseGeometry( int originalX, int originalY, int lcdWidth, int lcdHeight, int scale,
 			int angle ) {
 
