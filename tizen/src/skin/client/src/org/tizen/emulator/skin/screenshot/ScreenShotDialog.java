@@ -59,6 +59,7 @@ import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
@@ -97,6 +98,7 @@ public class ScreenShotDialog {
 	private Canvas imageCanvas;
 	private Shell shell;
 	private ScrolledComposite scrollComposite;
+	private Label label;
 
 	private SocketCommunicator communicator;
 	private EmulatorSkin emulatorSkin;
@@ -177,16 +179,31 @@ public class ScreenShotDialog {
 			throw e;
 		}
 
+		label = new Label(shell, SWT.BORDER);
+
 		shell.pack();
 
-		Rectangle  monitorBound = Display.getDefault().getBounds();
-		logger.info("current display size : " + monitorBound);
-		int x = parent.getLocation().x + parent.getSize().x + 20;
-		int y = parent.getLocation().y;
-		if ((x + shell.getSize().x) > (monitorBound.x + monitorBound.width)) {
-			x = parent.getLocation().x - shell.getSize().x - 20;
+		Rectangle monitorBound = Display.getDefault().getBounds();
+		logger.info("host monitor display bound : " + monitorBound);
+		Rectangle emulatorBound = parent.getBounds();
+		logger.info("current Emulator window bound : " + emulatorBound);
+		Rectangle dialogBound = shell.getBounds();
+		logger.info("current ScreenShot Dialog bound : " + dialogBound);
+
+		/* size correction */
+		shell.setSize(emulatorBound.width, emulatorBound.height);
+		dialogBound = shell.getBounds();
+		logger.info("current ScreenShot Dialog bound : " + dialogBound);
+
+		/* location correction */
+		int x = emulatorBound.x + emulatorBound.width + 20;
+		int y = emulatorBound.y;
+		if ((x + dialogBound.width) > (monitorBound.x + monitorBound.width)) {
+			x = emulatorBound.x - dialogBound.width - 20;
 		}
 		shell.setLocation(x, y);
+		dialogBound = shell.getBounds();
+		logger.info("current ScreenShot Dialog bound : " + dialogBound);
 
 	}
 
