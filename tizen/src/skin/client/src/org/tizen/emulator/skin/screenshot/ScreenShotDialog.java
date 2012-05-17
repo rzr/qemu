@@ -88,6 +88,7 @@ public class ScreenShotDialog {
 	public final static int COLOR_DEPTH = 32;
 
 	public final static int CANVAS_MARGIN = 30;
+	public final static int TOOLITEM_COOLTIME = 200;
 
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
@@ -103,6 +104,8 @@ public class ScreenShotDialog {
 
 	private RotationInfo currentRotation;
 	private boolean reserveImage;
+	private ToolItem refreshItem;
+	private ToolItem copyItem;
 
 	public ScreenShotDialog( Shell parent, SocketCommunicator communicator, EmulatorSkin emulatorSkin,
 			EmulatorConfig config, Image icon ) throws ScreenShotException {
@@ -376,7 +379,7 @@ public class ScreenShotDialog {
 
 		} );
 
-		ToolItem copyItem = new ToolItem( toolBar, SWT.FLAT );
+		copyItem = new ToolItem( toolBar, SWT.FLAT );
 		copyItem.setImage( ImageRegistry.getInstance().getIcon( IconName.COPY_SCREEN_SHOT ) );
 		copyItem.setToolTipText( "Copy to clipboard" );
 
@@ -388,6 +391,18 @@ public class ScreenShotDialog {
 					SkinUtil.openMessage( shell, null, "Fail to copy to clipboard.", SWT.ICON_ERROR, config );
 					return;
 				}
+
+				copyItem.setEnabled(false);
+				shell.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(TOOLITEM_COOLTIME);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						copyItem.setEnabled(true);
+					}
+				});
 
 				ImageLoader loader = new ImageLoader();
 
@@ -420,13 +435,25 @@ public class ScreenShotDialog {
 
 		} );
 
-		ToolItem refreshItem = new ToolItem( toolBar, SWT.FLAT );
+		refreshItem = new ToolItem( toolBar, SWT.FLAT );
 		refreshItem.setImage( ImageRegistry.getInstance().getIcon( IconName.REFRESH_SCREEN_SHOT ) );
 		refreshItem.setToolTipText( "Refresh image" );
 
 		refreshItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
+
+				refreshItem.setEnabled(false);
+				shell.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(TOOLITEM_COOLTIME);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						refreshItem.setEnabled(true);
+					}
+				});
 
 				try {
 					clickShutter();
