@@ -8,7 +8,7 @@ clean()
 	cd $SRCDIR/tizen/
 	if test -e "Makefile"
 	then
-		./qemu_configure.sh
+		./qemu_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
 		make clean
 	fi
 	rm -rf $SRCDIR/*.zip
