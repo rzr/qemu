@@ -1,5 +1,5 @@
 /**
- * 
+ * Capture a screenshot of the Emulator framebuffer
  *
  * Copyright ( C ) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -52,6 +52,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -109,6 +110,10 @@ public class ScreenShotDialog {
 	private ToolItem refreshItem;
 	private ToolItem copyItem;
 
+	/**
+	 * @brief constructor
+	 * @param Image icon : screenshot window icon resource
+	*/
 	public ScreenShotDialog( Shell parent, SocketCommunicator communicator, EmulatorSkin emulatorSkin,
 			EmulatorConfig config, Image icon ) throws ScreenShotException {
 
@@ -179,7 +184,9 @@ public class ScreenShotDialog {
 			throw e;
 		}
 
-		label = new Label(shell, SWT.BORDER);
+		label = new Label(shell, SWT.BORDER | SWT.WRAP);
+		label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
+						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " ");
 
 		shell.pack();
 
@@ -472,11 +479,18 @@ public class ScreenShotDialog {
 					}
 				});
 
+				Point dialogSize = shell.getSize();
+
 				try {
 					clickShutter();
 				} catch ( ScreenShotException ex ) {
 					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
 					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
+				}
+
+				/* restoration */
+				if (shell.getSize() != dialogSize) {
+					shell.setSize(dialogSize);
 				}
 			}
 

@@ -1,5 +1,5 @@
 /**
- * 
+ * Emulator Skin Process
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -172,7 +172,12 @@ public class EmulatorSkin {
 	private MenuDetectListener canvasMenuDetectListener;
 
 	private EmulatorSkin reopenSkin;
-	
+
+	/**
+	 * @brief constructor
+	 * @param config : configuration of emulator skin
+	 * @param isOnTop : always on top flag
+	*/
 	protected EmulatorSkin( EmulatorConfig config, boolean isOnTop ) {
 		this.config = config;
 		this.isDefaultHoverColor = true;
