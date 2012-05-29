@@ -32,6 +32,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <assert.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -71,6 +72,28 @@ pthread_t start_guest_server( int server_port ) {
 
     return thread_id;
 
+}
+
+/* get_tizen_vms_path = "/home/{USER}/.tizen_vms/" */
+char* get_tizen_vms_path(void)
+{
+	char tizen_vms[] = "/tizen_vms/";
+#ifndef _WIN32
+	char *homedir = (char*)g_getenv("HOME");
+#else
+	char *homedir = (char*)g_getenv("USERPROFILE");
+#endif
+	char *tizen_vms_path;
+	
+	if(!homedir)
+		homedir = (char*)g_get_home_dir();
+
+	tizen_vms_path = malloc(strlen(homedir) + sizeof tizen_vms + 1);
+	assert(tizen_vms_path != NULL);
+	strcpy(tizen_vms_path, homedir);
+	strcat(tizen_vms_path, tizen_vms);
+
+	return tizen_vms_path;
 }
 
 static void* run_guest_server( void* args ) {
@@ -140,7 +163,41 @@ static void* run_guest_server( void* args ) {
                 TRACE( "command:%s\n", command );
                 notify_sdb_daemon_start();
                 notify_sensor_daemon_start();
-            } else {
+            } 
+	    else if ( strcmp( command, "4\n" ) == 0 ) {
+		/* sdcard mount/umount msg recv from emuld */
+		INFO( "command:%s\n", command );
+		char token[] = "\n";
+		char* ret = NULL;
+		ret = strtok(readbuf, token);
+		INFO( "%s\n", ret);
+
+		ret = strtok(NULL, token);	
+		INFO( "%s\n", ret);
+
+		/* umount sdcard */
+		if ( atoi(ret) == 0 ) {
+			mloop_evcmd_usbdisk( NULL );
+
+		} else if( atoi(ret) == 1 ) {
+			/* mount sdcard */
+			char sdcard_path[256];
+			char* vms_path = get_tizen_vms_path(); 
+			memset(sdcard_path, '\0', sizeof(sdcard_path));
+			
+			strcpy(sdcard_path, vms_path);
+			
+			/* tizen_vms_path + sdcard img name */
+			ret = strtok(NULL, token);
+			strcat(sdcard_path, ret);
+			INFO( "%s\n", sdcard_path);
+			
+			mloop_evcmd_usbdisk(sdcard_path);
+			free(vms_path);
+		} else {
+			ERR( "!!! unknown command : %s\n", ret );
+		}
+	    } else {
                 ERR( "!!! unknown command : %s\n", command );
             }
             TRACE( "========================================\n" );
