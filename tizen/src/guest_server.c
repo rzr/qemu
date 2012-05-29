@@ -74,10 +74,10 @@ pthread_t start_guest_server( int server_port ) {
 
 }
 
-/* get_tizen_vms_path = "/home/{USER}/.tizen_vms/" */
-char* get_tizen_vms_path(void)
+/* get_tizen_vms_sdcard_path = "/home/{USER}/tizen_vms/sdcard" */
+char* get_tizen_vms_sdcard_path(void)
 {
-	char tizen_vms[] = "/tizen_vms/";
+	char tizen_vms[] = "/tizen_vms/sdcard/";
 #ifndef _WIN32
 	char *homedir = (char*)g_getenv("HOME");
 #else
@@ -182,12 +182,12 @@ static void* run_guest_server( void* args ) {
 		} else if( atoi(ret) == 1 ) {
 			/* mount sdcard */
 			char sdcard_path[256];
-			char* vms_path = get_tizen_vms_path(); 
+			char* vms_path = get_tizen_vms_sdcard_path(); 
 			memset(sdcard_path, '\0', sizeof(sdcard_path));
 			
 			strcpy(sdcard_path, vms_path);
 			
-			/* tizen_vms_path + sdcard img name */
+			/* tizen_vms_sdcard_path + sdcard img name */
 			ret = strtok(NULL, token);
 			strcat(sdcard_path, ret);
 			INFO( "%s\n", sdcard_path);
