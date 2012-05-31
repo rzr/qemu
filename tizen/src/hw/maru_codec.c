@@ -50,6 +50,84 @@ static int paramCount = 0;
 static int ctxArrIndex = 0;
 // static uint8_t *gTempBuffer = NULL;
 
+#define CODEC_COPY_DATA
+
+static int qemu_serialize_rational(const AVRational* elem, uint8_t* buff)
+{
+    int size = 0;
+
+    memcpy(buff + size, &elem->num, sizeof(elem->num));
+    size += sizeof(elem->num);
+    memcpy(buff + size, &elem->den, sizeof(elem->den));
+    size += sizeof(elem->den);
+
+    return size;
+}
+
+static int qemu_deserialize_rational(const uint8_t* buff, AVRational* elem)
+{
+    int size = 0;
+
+    memset(elem, 0, sizeof(*elem));
+
+    memcpy(&elem->num, buff + size, sizeof(elem->num));
+    size += sizeof(elem->num);
+    memcpy(&elem->den, buff + size, sizeof(elem->den));
+    size += sizeof(elem->den);
+
+    return size;
+}
+
+static int qemu_deserialize_frame(const uint8_t* buff, AVFrame* elem)
+{
+    int size = 0;
+
+    memset(elem, 0, sizeof(*elem));
+
+    memcpy(&elem->linesize, buff + size, sizeof(elem->linesize));
+    size += sizeof(elem->linesize);
+    memcpy(&elem->key_frame, buff + size, sizeof(elem->key_frame));
+    size += sizeof(elem->key_frame);
+    memcpy(&elem->pict_type, buff + size, sizeof(elem->pict_type));
+    size += sizeof(elem->pict_type);
+    memcpy(&elem->pts, buff + size, sizeof(elem->pts));
+    size += sizeof(elem->pts);
+    memcpy(&elem->coded_picture_number, buff + size, sizeof(elem->coded_picture_number));
+    size += sizeof(elem->coded_picture_number);
+    memcpy(&elem->display_picture_number, buff + size, sizeof(elem->display_picture_number));
+    size += sizeof(elem->display_picture_number);
+    memcpy(&elem->quality, buff + size, sizeof(elem->quality));
+    size += sizeof(elem->quality);
+    memcpy(&elem->age, buff + size, sizeof(elem->age));
+    size += sizeof(elem->age);
+    memcpy(&elem->reference, buff + size, sizeof(elem->reference));
+    size += sizeof(elem->reference);
+    memcpy(&elem->qstride, buff + size, sizeof(elem->qstride));
+    size += sizeof(elem->qstride);
+    memcpy(&elem->motion_subsample_log2, buff + size, sizeof(elem->motion_subsample_log2));
+    size += sizeof(elem->motion_subsample_log2);
+    memcpy(&elem->error, buff + size, sizeof(elem->error));
+    size += sizeof(elem->error);
+    memcpy(&elem->type, buff + size, sizeof(elem->type));
+    size += sizeof(elem->type);
+    memcpy(&elem->repeat_pict, buff + size, sizeof(elem->repeat_pict));
+    size += sizeof(elem->repeat_pict);
+    memcpy(&elem->qscale_type, buff + size, sizeof(elem->qscale_type));
+    size += sizeof(elem->qscale_type);
+    memcpy(&elem->interlaced_frame, buff + size, sizeof(elem->interlaced_frame));
+    size += sizeof(elem->interlaced_frame);
+    memcpy(&elem->top_field_first, buff + size, sizeof(elem->top_field_first));
+    size += sizeof(elem->top_field_first);
+    memcpy(&elem->palette_has_changed, buff + size, sizeof(elem->palette_has_changed));
+    size += sizeof(elem->palette_has_changed);
+    memcpy(&elem->buffer_hints, buff + size, sizeof(elem->buffer_hints));
+    size += sizeof(elem->buffer_hints);
+    memcpy(&elem->reordered_opaque, buff + size, sizeof(elem->reordered_opaque));
+    size += sizeof(elem->reordered_opaque);
+
+    return size;
+}
+
 void qemu_parser_init (SVCodecState *s, int ctxIndex)
 {
     TRACE("[%s] Enter\n", __func__);
@@ -262,8 +340,7 @@ int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size += sizeof(int);
     memcpy(&avctx->flags, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
-    memcpy(&avctx->time_base, (uint8_t*)s->vaddr + offset + size, sizeof(AVRational));
-    size += sizeof(AVRational);
+    size += qemu_deserialize_rational((uint8_t*)s->vaddr + offset + size, &avctx->time_base);
     memcpy(&avctx->width, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
     memcpy(&avctx->height, (uint8_t*)s->vaddr + offset + size, sizeof(int));
@@ -286,8 +363,7 @@ int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
     size += sizeof(int);
     memcpy(&avctx->rc_qsquish, (uint8_t*)s->vaddr + offset + size, sizeof(float));
     size += sizeof(float);
-    memcpy(&avctx->sample_aspect_ratio, (uint8_t*)s->vaddr + offset + size, sizeof(AVRational));
-    size += sizeof(AVRational);
+    size += qemu_deserialize_rational((uint8_t*)s->vaddr + offset + size, &avctx->sample_aspect_ratio);
     memcpy(&avctx->qmin, (uint8_t*)s->vaddr + offset + size, sizeof(int));
     size += sizeof(int);
     memcpy(&avctx->qmax, (uint8_t*)s->vaddr + offset + size, sizeof(int));
@@ -344,8 +420,7 @@ int qemu_avcodec_open (SVCodecState *s, int ctxIndex)
 #else
     memcpy((uint8_t*)s->vaddr + offset, &avctx->pix_fmt, sizeof(int));
     size = sizeof(int);
-    memcpy((uint8_t*)s->vaddr + offset + size, &avctx->time_base, sizeof(AVRational));
-    size += sizeof(AVRational);
+    size += qemu_serialize_rational(&avctx->time_base, (uint8_t*)s->vaddr + offset + size);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->channels, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->sample_fmt, sizeof(int));
@@ -680,7 +755,7 @@ int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
     memset(&avpkt, 0x00, sizeof(AVPacket));
     avpkt.data = buf;
     avpkt.size = buf_size;
-    
+
     TRACE("[%s] before avcodec_decode_video\n", __func__);
     ret = avcodec_decode_video2(avctx, picture, &got_picture_ptr, &avpkt);
     TRACE("[%s] after avcodec_decode_video, ret:%d\n", __func__, ret);
@@ -698,8 +773,7 @@ int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
 #else
     memcpy((uint8_t*)s->vaddr + offset, &avctx->pix_fmt, sizeof(int));
     size = sizeof(int);
-    memcpy((uint8_t*)s->vaddr + offset + size, &avctx->time_base, sizeof(AVRational));
-    size += sizeof(AVRational);
+    size += qemu_serialize_rational(&avctx->time_base, (uint8_t*)s->vaddr + offset + size);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->width, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->height, sizeof(int));
@@ -708,8 +782,7 @@ int qemu_avcodec_decode_video (SVCodecState* s, int ctxIndex)
     size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->frame_number, sizeof(int));
     size += sizeof(int);
-    memcpy((uint8_t*)s->vaddr + offset + size, &avctx->sample_aspect_ratio, sizeof(AVRational));
-    size += sizeof(AVRational);
+    size += qemu_serialize_rational(&avctx->sample_aspect_ratio, (uint8_t*)s->vaddr + offset + size);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->internal_buffer_count, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t*)s->vaddr + offset + size, &avctx->profile, sizeof(int));
@@ -800,7 +873,7 @@ int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
     inBuf = (uint8_t*)av_malloc(inBufSize * sizeof(uint8_t));
     cpu_memory_rw_debug(cpu_single_env, s->codecParam.in_args[4],
                         (uint8_t*)inBuf, inBufSize, 0);
-    
+
     ret = avpicture_fill((AVPicture*)pict, inBuf, avctx->pix_fmt,
                         avctx->width, avctx->height);
     if (ret < 0) {
@@ -850,8 +923,8 @@ int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
     if (bPict == 0) {
         memcpy(&outputBufSize, (uint8_t*)s->vaddr + offset + size, size);
         size += sizeof(int);
-        memcpy(pict, (uint8_t*)s->vaddr + offset + size, sizeof(AVFrame));
-        size += sizeof(AVFrame);
+        size += qemu_deserialize_frame((uint8_t*)s->vaddr + offset + size, pict);
+
         numBytes = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
         TRACE("input buffer size :%d\n", numBytes);
 
@@ -899,7 +972,7 @@ int qemu_avcodec_encode_video (SVCodecState* s, int ctxIndex)
 }
 #endif
 
-/* 
+/*
  *  int avcodec_decode_audio3 (AVCodecContext *avctx, int16_t *samples,
  *                             int *frame_size_ptr, AVPacket *avpkt)
  */
@@ -1014,7 +1087,7 @@ void qemu_av_picture_copy (SVCodecState* s, int ctxIndex)
 
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     src = (AVPicture*)s->ctxArr[ctxIndex].pFrame;
-    if (!avctx && !src) { 
+    if (!avctx && !src) {
         ERR("AVCodecContext or AVFrame is NULL\n");
         return;
     }
@@ -1051,7 +1124,7 @@ void qemu_av_picture_copy (SVCodecState* s, int ctxIndex)
 
     avctx = s->ctxArr[ctxIndex].pAVCtx;
     src = (AVPicture*)s->ctxArr[ctxIndex].pFrame;
-    if (!avctx && !src) { 
+    if (!avctx && !src) {
         ERR("AVCodecContext or AVFrame is NULL\n");
         return;
     }
@@ -1159,7 +1232,7 @@ int qemu_av_parser_parse (SVCodecState* s, int ctxIndex)
                         (uint8_t*)&pts, sizeof(int64_t), 0);
     cpu_memory_rw_debug(cpu_single_env, s->codecParam.in_args[7],
                         (uint8_t*)&dts, sizeof(int64_t), 0);
-    
+
     ret = av_parser_parse2(parserctx, avctx, &poutbuf, &poutbuf_size,
                           inbuf, inbuf_size, pts, dts, AV_NOPTS_VALUE);
     s->ctxArr[ctxIndex].pParserBuffer = poutbuf;
@@ -1441,7 +1514,7 @@ static int codec_initfn (PCIDevice *dev)
 
     memset(&s->codecParam, 0x00, sizeof(SVCodecParam));
     pthread_mutex_init(&s->codec_mutex, NULL);
- 
+
     pci_config_set_interrupt_pin(pci_conf, 2);
 
     memory_region_init_ram(&s->vram, "codec.ram", MARU_CODEC_MEM_SIZE);
