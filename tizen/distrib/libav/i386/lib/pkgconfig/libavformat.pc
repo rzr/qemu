@@ -1,4 +1,4 @@
-prefix=./
+prefix=./i386
 exec_prefix=${prefix}
 libdir=${prefix}/lib
 includedir=${prefix}/include

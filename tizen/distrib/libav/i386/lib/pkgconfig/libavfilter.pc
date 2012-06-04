@@ -1,14 +1,14 @@
-prefix=./
+prefix=./i386
 exec_prefix=${prefix}
 libdir=${prefix}/lib
 includedir=${prefix}/include
 
-Name: libavutil
-Description: Libav utility library
-Version: 51.7.0
+Name: libavfilter
+Description: Libav video filtering library
+Version: 2.4.0
 Requires: 
 Requires.private: 
 Conflicts:
-Libs: -L${libdir} -lavutil -lm
+Libs: -L${libdir} -lavfilter -lm -pthread -lbz2 -lz
 Libs.private: 
 Cflags: -I${includedir}
