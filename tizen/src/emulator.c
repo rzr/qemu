@@ -54,6 +54,9 @@
 #include <linux/version.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
+#include <sys/ipc.h>  
+#include <sys/shm.h>
+
 #endif
 
 #include "mloop_event.h"
@@ -87,6 +90,198 @@ void exit_emulator(void)
 
     SDL_Quit();
 }
+
+static int check_port_bind_listen(u_int port)
+{
+    struct sockaddr_in addr;
+    int s, opt = 1;
+    int ret = -1;
+    socklen_t addrlen = sizeof(addr);
+    memset(&addr, 0, addrlen);
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+
+    if (((s = socket(AF_INET,SOCK_STREAM,0)) < 0) ||
+            (setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
+            (bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
+            (listen(s,1) < 0)) {
+
+        /* fail */
+        ret = -1;
+        ERR( "check port(%d) bind listen  fail \n", port);
+    }else{
+        /*fsucess*/
+        ret = 1;
+        INFO( "check port(%d) bind listen  ok \n", port);
+    }
+
+#ifdef _WIN32
+    closesocket(s);
+#else
+    close(s);
+#endif
+
+    return ret;
+}
+
+
+void check_shdmem(void)
+{
+#ifndef _WIN32
+    int shm_id;
+    void *shm_addr;
+    u_int port;
+    int val;
+    struct shmid_ds shm_info;
+
+    for(port=26100;port < 26200; port += 10)
+    {
+        if ( -1 != ( shm_id = shmget( (key_t)port, 0, 0)))
+        {
+            if((void *)-1 == (shm_addr = shmat(shm_id, (void *)0, 0)))
+            {
+                ERR( "error occured at shmat()\n");
+                break;
+            }
+
+            val = shmctl(shm_id, IPC_STAT, &shm_info);
+            if(val != -1)
+            {
+                INFO( "count of process that use shared memory : %d\n", shm_info.shm_nattch);
+                if(shm_info.shm_nattch > 0 && strcmp(tizen_target_path, (char*)shm_addr) == 0)
+                {
+                    if(check_port_bind_listen(port+1) > 0){
+                        shmdt(shm_addr);
+                        continue;
+                    }
+                    shmdt(shm_addr);
+                    maru_register_exit_msg(MARU_EXIT_UNKNOWN, (char*)"Can not execute this VM.\nThe same name is running now.");
+                    exit(0);
+                }
+                else{
+                    shmdt(shm_addr);
+                }
+            }
+        }
+    }
+
+#else /* _WIN32*/
+    u_int port;
+    char* base_port = NULL;
+    char* pBuf;
+    HANDLE hMapFile;
+    for(port=26100;port < 26200; port += 10)
+    {
+        base_port = g_strdup_printf("%d", port);
+        hMapFile = OpenFileMapping(
+                 FILE_MAP_READ,
+                 TRUE,
+                 base_port);
+        if(hMapFile == NULL)
+        {
+            INFO("port %s is not used.\n", base_port);
+            continue;
+        }
+        else
+        {
+             pBuf = (char*)MapViewOfFile(hMapFile,
+                        FILE_MAP_READ,
+                        0,
+                        0,
+                        50);
+            if (pBuf == NULL)
+            {
+                ERR("Could not map view of file (%d).\n", GetLastError());
+                CloseHandle(hMapFile);
+                return -1;
+            }
+
+            if(strcmp(pBuf, tizen_target_path) == 0)
+            {
+                if(check_port_bind_listen(port+1) > 0)
+                {
+                    UnmapViewOfFile(pBuf);
+                    CloseHandle(hMapFile);
+                    continue;
+                }
+
+                maru_register_exit_msg(MARU_EXIT_UNKNOWN, "Can not execute this VM.\nThe same name is running now.");
+                UnmapViewOfFile(pBuf);
+                CloseHandle(hMapFile);
+                free(base_port);
+                exit(0);
+            }
+            else
+                UnmapViewOfFile(pBuf);
+        }
+
+        CloseHandle(hMapFile);
+        free(base_port);
+    }
+#endif
+}
+
+void make_shdmem(void)
+{
+#ifndef _WIN32
+	int shmid; 
+	char *shared_memory;
+	shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT); 
+	if (shmid == -1) 
+	{ 
+		ERR("shmget failed\n"); 
+		return; 
+	} 
+	shared_memory = shmat(shmid, (char*)0x00, 0); 
+	if (shared_memory == (void *)-1) 
+	{ 
+		ERR("shmat failed\n"); 
+		return; 
+	} 
+	sprintf(shared_memory, "%s", tizen_target_path);
+	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
+#else
+	HANDLE hMapFile;
+	char* pBuf;
+	char* port_in_use;
+	char *shared_memory;
+	shared_memory = g_strdup_printf("%s", tizen_target_path);
+	port_in_use =  g_strdup_printf("%d", tizen_base_port);
+    hMapFile = CreateFileMapping(
+                 INVALID_HANDLE_VALUE,    // use paging file
+                 NULL,                    // default security
+                 PAGE_READWRITE,          // read/write access
+                 0,                       // maximum object size (high-order DWORD)
+                 50,                // maximum object size (low-order DWORD)
+                 port_in_use);                 // name of mapping object
+    if (hMapFile == NULL)
+    {
+		ERR("Could not create file mapping object (%d).\n", GetLastError());
+		return;
+    }
+    pBuf = MapViewOfFile(hMapFile,   // handle to map object
+                        FILE_MAP_ALL_ACCESS, // read/write permission
+                        0,
+                        0,
+                        50);
+
+    if (pBuf == NULL)
+    {
+		ERR("Could not map view of file (%d).\n", GetLastError());
+		CloseHandle(hMapFile);
+		return;
+    }
+	
+	CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
+	free(port_in_use);
+	free(shared_memory);
+#endif
+	return;
+}
+
+
 
 static void construct_main_window(int skin_argc, char* skin_argv[], int qemu_argc, char* qemu_argv[] )
 {
@@ -341,7 +536,12 @@ int main(int argc, char* argv[])
     extract_info(qemu_argc, qemu_argv);
 
     INFO("Emulator start !!!\n");
+    
     atexit(maru_atexit);
+    
+    check_shdmem();
+    make_shdmem();
+
     system_info();
 
     INFO("Prepare running...\n");

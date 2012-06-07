@@ -46,5 +46,6 @@ void set_image_and_log_path(char *qemu_argv);
 void redir_output(void);
 void extract_info(int qemu_argc, char** qemu_argv);
 void prepare_maru(void);
-
+void check_shdmem(void);
+void make_shdmem(void);
 #endif /* __EMULATOR_H__ */
