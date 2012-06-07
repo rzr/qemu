@@ -1,5 +1,5 @@
 /**
- * 
+ * Emulator Skin Process
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -173,6 +173,11 @@ public class EmulatorSkin {
 
 	private EmulatorSkin reopenSkin;
 	
+	/**
+	 * @brief constructor
+	 * @param config : configuration of emulator skin
+	 * @param isOnTop : always on top flag
+	*/
 	protected EmulatorSkin( EmulatorConfig config, boolean isOnTop ) {
 		this.config = config;
 		this.isDefaultHoverColor = true;
@@ -595,6 +600,8 @@ public class EmulatorSkin {
 							}
 						}
 						
+						SkinUtil.trimShell( shell, currentImage );
+
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, 0 );
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
@@ -623,6 +630,8 @@ public class EmulatorSkin {
 									region.height - 1, // src
 									region.x + 1, region.y + 1, region.width - 1, region.height - 1 ); // dst
 							gc.dispose();
+
+							SkinUtil.trimShell( shell, currentKeyPressedImage, region.x, region.y, region.width, region.height );
 						}
 
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, 0 );
