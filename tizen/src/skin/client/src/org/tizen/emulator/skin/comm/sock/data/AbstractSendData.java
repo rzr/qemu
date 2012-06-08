@@ -63,7 +63,7 @@ public abstract class AbstractSendData implements ISendData {
 		dos.writeInt( val );
 	}
 
-	protected void writeLong ( int val ) throws IOException {
+	protected void writeLong ( long val ) throws IOException {
 		dos.writeLong( val );
 	}
 

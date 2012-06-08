@@ -157,7 +157,7 @@ public class EmulatorSkin {
 	private ScreenShotDialog screenShotDialog;
 
 	private SocketCommunicator communicator;
-	private int windowHandleId;
+	private long windowHandleId;
 
 	private Listener shellCloseListener;
 	private PaintListener shellPaintListener;
@@ -192,7 +192,7 @@ public class EmulatorSkin {
 		this.communicator = communicator;
 	}
 
-	public int compose() {
+	public long compose() {
 
 		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 
@@ -298,15 +298,15 @@ public class EmulatorSkin {
 //
 //	}
 
-	private int getWindowHandleId() {
+	private long getWindowHandleId() {
 
-		int windowHandleId = 0;
+		long windowHandleId = 0;
 
 		if ( SkinUtil.isLinuxPlatform() ) {
 
 			try {
 				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
-				windowHandleId = field.getInt( lcdCanvas );
+				windowHandleId = field.getLong( lcdCanvas );
 				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
 			} catch ( IllegalArgumentException e ) {
 				logger.log( Level.SEVERE, e.getMessage(), e );

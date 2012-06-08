@@ -30,6 +30,9 @@
 #ifndef MARUSKIN_OPERATION_H_
 #define MARUSKIN_OPERATION_H_
 
+#include "qemu-common.h"
+
+
 extern int ret_hax_init;
 
 struct QemuSurfaceInfo {
@@ -44,7 +47,7 @@ struct DetailInfo {
 };
 typedef struct DetailInfo DetailInfo;
 
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type );
+void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type);
 
 void do_mouse_event( int event_type, int x, int y, int z );
 

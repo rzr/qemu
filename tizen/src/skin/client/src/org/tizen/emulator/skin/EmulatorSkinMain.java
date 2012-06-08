@@ -149,7 +149,7 @@ public class EmulatorSkinMain {
 			boolean isOnTop = Boolean.parseBoolean( onTopVal );
 
 			EmulatorSkin skin = new EmulatorSkin( config, isOnTop );
-			int windowHandleId = skin.compose();
+			long windowHandleId = skin.compose();
 
 			int uid = config.getArgInt( ArgsConstants.UID );
 			communicator = new SocketCommunicator( config, uid, windowHandleId, skin );

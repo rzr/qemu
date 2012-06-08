@@ -37,13 +37,13 @@ import java.io.IOException;
  */
 public class StartData extends AbstractSendData {
 
-	private int windowHandleId;
+	private long windowHandleId;
 	private int lcdSizeWidth;
 	private int lcdSizeHeight;
 	private int scale;
 	private short rotation;
 	
-	public StartData(int windowHandleId, int lcdSizeWidth, int lcdSizeHeight, int scale, short rotation ) {
+	public StartData(long windowHandleId, int lcdSizeWidth, int lcdSizeHeight, int scale, short rotation ) {
 		this.windowHandleId = windowHandleId;
 		this.lcdSizeWidth = lcdSizeWidth;
 		this.lcdSizeHeight = lcdSizeHeight;
@@ -53,7 +53,7 @@ public class StartData extends AbstractSendData {
 
 	@Override
 	protected void write() throws IOException {
-		writeInt( windowHandleId );
+		writeLong( windowHandleId );
 		writeInt( lcdSizeWidth );
 		writeInt( lcdSizeHeight );
 		writeInt( scale );

@@ -540,7 +540,7 @@ static void* run_skin_server( void* args ) {
                     }
 
                     /* keep it consistent with emulator-skin definition */
-                    int handle_id = 0;
+                    uint64 handle_id = 0;
                     int lcd_size_width = 0;
                     int lcd_size_height = 0;
                     int scale = 0;
@@ -558,7 +558,13 @@ static void* run_skin_server( void* args ) {
                     p += sizeof( scale );
                     memcpy( &rotation, p, sizeof( rotation ) );
 
-                    handle_id = ntohl( handle_id );
+                    int low_id = (int)handle_id;
+                    int high_id = (int)(handle_id >> 32);
+                    low_id = ntohl(high_id);
+                    high_id = ntohl(low_id);
+                    handle_id = high_id;
+                    handle_id = (handle_id << 32) | low_id;
+
                     lcd_size_width = ntohl( lcd_size_width );
                     lcd_size_height = ntohl( lcd_size_height );
                     scale = ntohl( scale );
