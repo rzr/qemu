@@ -133,20 +133,29 @@ int pci_get_brightness( void ) {
     return brightness_level;
 }
 
-int pci_maru_brightness_init( PCIBus *bus ) {
-    pci_create_simple( bus, -1, QEMU_DEV_NAME );
-    return 0;
+DeviceState *pci_maru_brightness_init(PCIBus *bus)
+{
+    return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
 }
 
-static PCIDeviceInfo brightness_info = {
-    .qdev.name  = QEMU_DEV_NAME,
-    .qdev.size  = sizeof(BrightnessState),
-    .no_hotplug = 1,
-    .init       = brightness_initfn,
+static void brightness_classinit(ObjectClass *klass, void *data)
+{
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->no_hotplug = 1;
+    k->init = brightness_initfn;
+}
+
+static TypeInfo brightness_info = {
+    .name = QEMU_DEV_NAME,
+    .parent = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(BrightnessState),
+    .class_init = brightness_classinit,
 };
 
-static void brightness_register( void ) {
-    pci_qdev_register( &brightness_info );
+static void brightness_register_types(void)
+{
+    type_register_static(&brightness_info);
 }
 
-device_init(brightness_register);
+type_init(brightness_register_types);

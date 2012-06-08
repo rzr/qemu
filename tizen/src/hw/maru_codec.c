@@ -1415,7 +1415,7 @@ static int codec_initfn (PCIDevice *dev)
  
     pci_config_set_interrupt_pin(pci_conf, 2);
 
-    memory_region_init_ram(&s->vram, NULL, "codec.ram", MARU_CODEC_MEM_SIZE);
+    memory_region_init_ram(&s->vram, "codec.ram", MARU_CODEC_MEM_SIZE);
     s->vaddr = memory_region_get_ram_ptr(&s->vram);
 
     memory_region_init_io (&s->mmio, &codec_mmio_ops, s, "codec-mmio", MARU_CODEC_REG_SIZE);
@@ -1426,36 +1426,47 @@ static int codec_initfn (PCIDevice *dev)
     return 0;
 }
 
-static int codec_exitfn (PCIDevice *dev)
+static int codec_exitfn(PCIDevice *dev)
 {
     SVCodecState *s = DO_UPCAST(SVCodecState, dev, dev);
     INFO("[%s] device exit\n", __func__);
 
     memory_region_destroy (&s->vram);
     memory_region_destroy (&s->mmio);
+
     return 0;
 }
 
-int codec_init (PCIBus *bus)
+int codec_init(PCIBus *bus)
 {
     INFO("[%s] device create\n", __func__);
     pci_create_simple (bus, -1, MARU_CODEC_DEV_NAME);
     return 0;
 }
 
-static PCIDeviceInfo codec_info = {
-    .qdev.name      = MARU_CODEC_DEV_NAME,
-    .qdev.desc      = "Virtual Codec device for Tizen emulator",
-    .qdev.size      = sizeof (SVCodecState),
-    .init           = codec_initfn,
-    .exit           = codec_exitfn,
-    .vendor_id      = PCI_VENDOR_ID_TIZEN,
-    .device_id      = PCI_DEVICE_ID_VIRTUAL_CODEC,
-    .class_id       = PCI_CLASS_MULTIMEDIA_AUDIO,
+static void codec_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = codec_initfn;
+    k->exit = codec_exitfn;
+    k->vendor_id = PCI_VENDOR_ID_TIZEN;
+    k->device_id = PCI_DEVICE_ID_VIRTUAL_CODEC;
+    k->class_id = PCI_CLASS_MULTIMEDIA_AUDIO;
+    dc->desc = "Virtual Codec device for Tizen emulator";
+}
+
+static TypeInfo codec_info = {
+    .name          = MARU_CODEC_DEV_NAME,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(SVCodecState),
+    .class_init    = codec_class_init,
 };
 
-static void codec_register (void)
+static void codec_register_types(void)
 {
-    pci_qdev_register(&codec_info);
+    type_register_static(&codec_info);
 }
-device_init(codec_register);
+
+type_init(codec_register_types)

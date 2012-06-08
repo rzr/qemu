@@ -189,10 +189,11 @@ static int marucam_initfn(PCIDevice *dev)
 
     pci_config_set_interrupt_pin(pci_conf, 0x03);
 
-    memory_region_init_ram(&s->vram, NULL, "marucamera.ram", MARUCAM_MEM_SIZE);
+    memory_region_init_ram(&s->vram, "marucamera.ram", MARUCAM_MEM_SIZE);
     s->vaddr = memory_region_get_ram_ptr(&s->vram);
 
-    memory_region_init_io (&s->mmio, &maru_camera_mmio_ops, s, "maru-camera-mmio", MARUCAM_REG_SIZE);
+    memory_region_init_io (&s->mmio, &maru_camera_mmio_ops, s,
+            "maru-camera-mmio", MARUCAM_REG_SIZE);
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->vram);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio);
 
@@ -209,16 +210,18 @@ static int marucam_initfn(PCIDevice *dev)
 /*
  *  Termination function
  */
-static int marucam_exitfn(PCIDevice *dev)
+static int marucam_exitfn(PCIDevice *obj)
 {
-    MaruCamState *s = DO_UPCAST(MaruCamState, dev, dev);
+    MaruCamState *s =
+        OBJECT_CHECK(MaruCamState, obj, MARU_PCI_CAMERA_DEVICE_NAME);
 
-    g_free((gpointer)s->param);
+    g_free(s->param);
     qemu_cond_destroy(&s->thread_cond);
     qemu_mutex_destroy(&s->thread_mutex);
 
-    memory_region_destroy (&s->vram);
-    memory_region_destroy (&s->mmio);
+    memory_region_destroy(&s->vram);
+    memory_region_destroy(&s->mmio);
+
     return 0;
 }
 
@@ -229,21 +232,30 @@ int maru_camera_pci_init(PCIBus *bus)
     return 0;
 }
 
-static PCIDeviceInfo maru_camera_info = {
-    .qdev.name    = MARU_PCI_CAMERA_DEVICE_NAME,
-    .qdev.desc    = "MARU Virtual Camera device for Tizen emulator",
-    .qdev.size    = sizeof(MaruCamState),
-    .no_hotplug   = 1,
-    .init         = marucam_initfn,
-    .exit         = marucam_exitfn,
-    .vendor_id    = PCI_VENDOR_ID_TIZEN,
-    .device_id    = PCI_DEVICE_ID_VIRTUAL_CAMERA,
-    .class_id     = PCI_CLASS_OTHERS,
-};
-
-static void maru_camera_pci_register(void)
+static void maru_camera_pci_class_init(ObjectClass *klass, void *data)
 {
-    pci_qdev_register(&maru_camera_info);
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->no_hotplug = 1;
+    k->init = marucam_initfn;
+    k->exit = marucam_exitfn;
+    k->vendor_id = PCI_VENDOR_ID_TIZEN;
+    k->device_id = PCI_DEVICE_ID_VIRTUAL_CAMERA;
+    k->class_id = PCI_CLASS_OTHERS;
+    dc->desc = "MARU Virtual Camera device for Tizen emulator";
 }
 
-device_init(maru_camera_pci_register);
+static TypeInfo maru_camera_info = {
+    .name          = MARU_PCI_CAMERA_DEVICE_NAME,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(MaruCamState),
+    .class_init    = maru_camera_pci_class_init,
+};
+
+static void maru_camera_pci_register_types(void)
+{
+    type_register_static(&maru_camera_info);
+}
+
+type_init(maru_camera_pci_register_types)

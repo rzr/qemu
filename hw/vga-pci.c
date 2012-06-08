@@ -39,12 +39,6 @@ typedef struct PCIVGAState {
     VGACommonState vga;
 } PCIVGAState;
 
-int pci_vga_init(PCIBus *bus)
-{
-    pci_create_simple(bus, -1, "VGA");
-    return 0;
-}
-
 static const VMStateDescription vmstate_vga_pci = {
     .name = "vga",
     .version_id = 2,
@@ -80,26 +74,37 @@ static int pci_vga_initfn(PCIDevice *dev)
      return 0;
 }
 
-static PCIDeviceInfo vga_info = {
-    .qdev.name    = "VGA",
-    .qdev.size    = sizeof(PCIVGAState),
-    .qdev.vmsd    = &vmstate_vga_pci,
-    .no_hotplug   = 1,
-    .init         = pci_vga_initfn,
-    .romfile      = "vgabios-stdvga.bin",
+DeviceState *pci_vga_init(PCIBus *bus)
+{
+    return &pci_create_simple(bus, -1, "VGA")->qdev;
+}
 
-    /* dummy VGA (same as Bochs ID) */
-    .vendor_id    = PCI_VENDOR_ID_QEMU,
-    .device_id    = PCI_DEVICE_ID_QEMU_VGA,
-    .class_id     = PCI_CLASS_DISPLAY_VGA,
+static void vga_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->no_hotplug = 1;
+    k->init = pci_vga_initfn;
+    k->romfile = "vgabios-stdvga.bin";
+    k->vendor_id = PCI_VENDOR_ID_QEMU;
+    k->device_id = PCI_DEVICE_ID_QEMU_VGA;
+    k->class_id = PCI_CLASS_DISPLAY_VGA;
+    dc->vmsd = &vmstate_vga_pci;
+}
+
+static TypeInfo vga_info = {
+    .name          = "VGA",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(PCIVGAState),
+    .class_init    = vga_class_init,
 };
 
 #ifdef CONFIG_MARU
 
-int pci_maru_vga_init(PCIBus *bus)
+DeviceState *pci_maru_vga_init(PCIBus *bus)
 {
-    pci_create_simple(bus, -1, "MARU_VGA");
-    return 0;
+    return &pci_create_simple(bus, -1, "MARU_VGA")->qdev;
 }
 
 static int maru_pci_vga_initfn(PCIDevice *dev)
@@ -125,27 +130,35 @@ static int maru_pci_vga_initfn(PCIDevice *dev)
      return 0;
 }
 
-static PCIDeviceInfo maru_vga_info = {
-    .qdev.name    = "MARU_VGA",
-    .qdev.size    = sizeof(PCIVGAState),
-    .qdev.vmsd    = &vmstate_vga_pci,
-    .no_hotplug   = 1,
-    .init         = maru_pci_vga_initfn,
-    .romfile      = "vgabios-maruvga.bin",
+static void maru_pci_vga_classinit(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
-    /* dummy VGA (same as Bochs ID) */
-    .vendor_id    = PCI_VENDOR_ID_QEMU,
-    .device_id    = PCI_DEVICE_ID_QEMU_VGA,
-    .class_id     = PCI_CLASS_DISPLAY_VGA,
+    k->no_hotplug = 1;
+    k->init = maru_pci_vga_initfn;
+    k->romfile = "vgabios-maruvga.bin";
+    k->vendor_id = PCI_VENDOR_ID_QEMU;
+    k->device_id = PCI_DEVICE_ID_QEMU_VGA;
+    k->class_id = PCI_CLASS_DISPLAY_VGA;
+    dc->vmsd = &vmstate_vga_pci;
+}
+
+static TypeInfo maru_vga_info = {
+    .name = "MARU_VGA",
+    .parent = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(PCIVGAState),
+    .class_init = maru_pci_vga_classinit,
 };
 
 #endif // CONFIG_MARU
 
-static void vga_register(void)
+static void vga_register_types(void)
 {
-    pci_qdev_register(&vga_info);
+    type_register_static(&vga_info);
 #ifdef CONFIG_MARU
-    pci_qdev_register(&maru_vga_info);
+    type_register_static(&maru_vga_info);
 #endif
 }
-device_init(vga_register);
+
+type_init(vga_register_types)

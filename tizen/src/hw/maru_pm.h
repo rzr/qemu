@@ -34,7 +34,7 @@
 #include "qemu-common.h"
 
 i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
-                       qemu_irq sci_irq, qemu_irq cmos_s3, qemu_irq smi_irq,
+                       qemu_irq sci_irq, qemu_irq smi_irq,
                        int kvm_enabled);
 
 void resume( void );

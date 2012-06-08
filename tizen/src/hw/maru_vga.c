@@ -133,7 +133,7 @@ static uint32_t expand4[256];
 static uint16_t expand2[256];
 static uint8_t expand4to8[16];
 
-static void vga_screen_dump(void *opaque, const char *filename);
+static void vga_screen_dump(void *opaque, const char *filename, bool cswitch);
 static const char *screen_dump_filename;
 static DisplayChangeListener *screen_dump_dcl;
 
@@ -1052,17 +1052,11 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         if (!(s->cr[0x17] & 2)) {
             addr = (addr & ~0x8000) | ((y1 & 2) << 14);
         }
-        page0 = addr & TARGET_PAGE_MASK;
-        page1 = (addr + bwidth - 1) & TARGET_PAGE_MASK;
-        update = full_update |
-            memory_region_get_dirty(&s->vram, page0, DIRTY_MEMORY_VGA) |
-            memory_region_get_dirty(&s->vram, page1, DIRTY_MEMORY_VGA);
-        if ((page1 - page0) > TARGET_PAGE_SIZE) {
-            /* if wide line, can use another page */
-            update |= memory_region_get_dirty(&s->vram,
-                                              page0 + TARGET_PAGE_SIZE,
-                                              DIRTY_MEMORY_VGA);
-        }
+        update = full_update;
+        page0 = addr;
+        page1 = addr + bwidth - 1;
+        update |= memory_region_get_dirty(&s->vram, page0, page1 - page0,
+                                          DIRTY_MEMORY_VGA);
         /* explicit invalidation for the hardware cursor */
         update |= (s->invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1;
 
@@ -1202,7 +1196,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     if (page_max >= page_min) {
         memory_region_reset_dirty(&s->vram,
                                   page_min,
-                                  page_max + TARGET_PAGE_SIZE - page_min,
+                                  page_max - page_min,
                                   DIRTY_MEMORY_VGA);
     }
     memset(s->invalidated_y_table, 0, ((height + 31) >> 5) * 4);
@@ -1483,7 +1477,7 @@ void maru_vga_common_init(VGACommonState *s, int vga_ram_size)
 #else
     s->is_vbe_vmstate = 0;
 #endif
-    memory_region_init_ram(&s->vram, NULL, "maru_vga.vram", vga_ram_size);
+    memory_region_init_ram(&s->vram, "maru_vga.vram", vga_ram_size);
     s->vram_ptr = memory_region_get_ram_ptr(&s->vram);
     s->vram_size = vga_ram_size;
     s->get_bpp = vga_get_bpp;
@@ -1585,7 +1579,7 @@ static DisplayChangeListener* vga_screen_dump_init(DisplayState *ds)
 
 /* save the vga display in a PPM image even if no display is
    available */
-static void vga_screen_dump(void *opaque, const char *filename)
+static void vga_screen_dump(void *opaque, const char *filename, bool cswitch)
 {
     VGACommonState *s = opaque;
 

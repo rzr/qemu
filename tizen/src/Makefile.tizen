@@ -17,6 +17,9 @@ ifdef CONFIG_WIN32
 LIBS += -lavformat -lavcodec -lavutil -lm
 else
 LIBS += -lavformat -lavcodec -lavutil -lm -lGL
+ifeq ($(ARCH),x86_64)
+LIBS += -lva
+endif
 endif
 
 ifdef CONFIG_DEBUG_EXEC

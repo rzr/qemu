@@ -162,7 +162,7 @@ static int overlay_initfn(PCIDevice *dev)
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_OVERLAY);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    memory_region_init_ram(&s->mem_addr, NULL, "maru_overlay.ram", OVERLAY_MEM_SIZE);
+    memory_region_init_ram(&s->mem_addr, "maru_overlay.ram", OVERLAY_MEM_SIZE);
     overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
     memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "maru_overlay_mmio", OVERLAY_REG_SIZE);
@@ -176,22 +176,29 @@ static int overlay_initfn(PCIDevice *dev)
     return 0;
 }
 
-int pci_maru_overlay_init(PCIBus *bus)
+DeviceState *pci_maru_overlay_init(PCIBus *bus)
 {
-    pci_create_simple(bus, -1, QEMU_DEV_NAME);
-    return 0;
+    return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
 }
 
-static PCIDeviceInfo overlay_info = {
-    .qdev.name    = QEMU_DEV_NAME,
-    .qdev.size    = sizeof(OverlayState),
-    .no_hotplug   = 1,
-    .init         = overlay_initfn,
+static void overlay_classinit(ObjectClass *klass, void *data)
+{
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->no_hotplug = 1;
+    k->init = overlay_initfn;
+}
+
+static TypeInfo overlay_info = {
+    .name          = QEMU_DEV_NAME,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(OverlayState),
+    .class_init    = overlay_classinit,
 };
 
-static void overlay_register(void)
+static void overlay_register_types(void)
 {
-    pci_qdev_register(&overlay_info);
+    type_register_static(&overlay_info);
 }
 
-device_init(overlay_register);
+type_init(overlay_register_types);
