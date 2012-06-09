@@ -1041,22 +1041,6 @@ void pc_memory_init(MemoryRegion *system_memory,
     /* Initialize PC system firmware */
     pc_system_firmware_init(rom_memory);
 
-#ifdef CONFIG_MARU
-        char* current_path = (char *)g_get_current_dir();
-        const char* _path = qemu_get_data_dir();
-
-        int len = strlen(current_path) + strlen(_path) + strlen(bios_name) + 3;
-
-        char* error_msg = g_malloc0(len * sizeof(char));
-        snprintf(error_msg, len, "%s/%s/%s", current_path, _path, bios_name);
-
-        maru_register_exit_msg(MARU_EXIT_BIOS_FILE_EXCEPTION, error_msg);
-
-        g_free(current_path);
-        g_free(error_msg);
-#endif
-
-
     option_rom_mr = g_malloc(sizeof(*option_rom_mr));
     memory_region_init_ram(option_rom_mr, "pc.rom", PC_ROM_SIZE);
     vmstate_register_ram_global(option_rom_mr);

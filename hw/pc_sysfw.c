@@ -32,6 +32,10 @@
 #include "flash.h"
 #include "kvm.h"
 
+#ifdef CONFIG_MARU
+#include "../tizen/src/maru_err_table.h"
+#endif
+
 #define BIOS_FILENAME "bios.bin"
 
 typedef struct PcSysFwDevice {
@@ -160,6 +164,17 @@ static void old_pc_system_rom_init(MemoryRegion *rom_memory)
     if (ret != 0) {
     bios_error:
         fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
+#ifdef CONFIG_MARU
+        char* current_path = (char *)g_get_current_dir();
+        int len = strlen(current_path) + strlen(bios_name) + 3;
+        char* error_msg = g_malloc0(len * sizeof(char));
+
+        snprintf(error_msg, len, "%s/%s", current_path, bios_name);
+        maru_register_exit_msg(MARU_EXIT_BIOS_FILE_EXCEPTION, error_msg);
+
+        g_free(current_path);
+        g_free(error_msg);
+#endif
         exit(1);
     }
     if (filename) {
