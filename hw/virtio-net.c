@@ -13,6 +13,7 @@
 
 #include "iov.h"
 #include "virtio.h"
+#include "virtio-transport.h"
 #include "net.h"
 #include "net/checksum.h"
 #include "net/tap.h"
@@ -1080,3 +1081,48 @@ void virtio_net_exit(VirtIODevice *vdev)
     qemu_del_vlan_client(&n->nic->nc);
     virtio_cleanup(&n->vdev);
 }
+
+/******************** VirtIONet Device **********************/
+
+static int virtio_netdev_init(DeviceState *dev)
+{
+    VirtIODevice *vdev;
+    VirtIONetState *proxy = VIRTIO_NET_FROM_QDEV(dev);
+    vdev = virtio_net_init(dev, &proxy->nic, &proxy->net);
+    if (!vdev) {
+        return -1;
+    }
+    return virtio_init_transport(dev, vdev);
+}
+
+static Property virtio_net_properties[] = {
+    DEFINE_NIC_PROPERTIES(VirtIONetState, nic),
+    DEFINE_PROP_UINT32("x-txtimer", VirtIONetState,
+                       net.txtimer, TX_TIMER_INTERVAL),
+    DEFINE_PROP_INT32("x-txburst", VirtIONetState,
+                      net.txburst, TX_BURST),
+    DEFINE_PROP_STRING("tx", VirtIONetState, net.tx),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void virtio_net_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    dc->init = virtio_netdev_init;
+    dc->props = virtio_net_properties;
+    dc->bus_info = &virtio_transport_bus_info;
+}
+
+static TypeInfo virtio_net_info = {
+    .name = "virtio-net",
+    .parent = TYPE_DEVICE,
+    .instance_size = sizeof(VirtIONetState),
+    .class_init = virtio_net_class_init,
+};
+
+static void virtio_net_register_types(void)
+{
+    type_register_static(&virtio_net_info);
+}
+
+type_init(virtio_net_register_types)

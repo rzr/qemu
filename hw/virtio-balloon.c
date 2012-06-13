@@ -20,6 +20,7 @@
 #include "cpu.h"
 #include "balloon.h"
 #include "virtio-balloon.h"
+#include "virtio-transport.h"
 #include "kvm.h"
 #include "exec-memory.h"
 
@@ -267,3 +268,36 @@ void virtio_balloon_exit(VirtIODevice *vdev)
     unregister_savevm(s->qdev, "virtio-balloon", s);
     virtio_cleanup(vdev);
 }
+
+/******************** VirtIOBaloon Device **********************/
+
+static int virtio_balloondev_init(DeviceState *dev)
+{
+    VirtIODevice *vdev;
+    vdev = virtio_balloon_init(dev);
+    if (!vdev) {
+        return -1;
+    }
+    return virtio_init_transport(dev, vdev);
+}
+
+static void virtio_balloon_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    dc->init = virtio_balloondev_init;
+    dc->bus_info = &virtio_transport_bus_info;
+}
+
+static TypeInfo virtio_balloon_info = {
+    .name = "virtio-balloon",
+    .parent = TYPE_DEVICE,
+    .instance_size = sizeof(VirtIOBaloonState),
+    .class_init = virtio_balloon_class_init,
+};
+
+static void virtio_baloon_register_types(void)
+{
+    type_register_static(&virtio_balloon_info);
+}
+
+type_init(virtio_baloon_register_types)

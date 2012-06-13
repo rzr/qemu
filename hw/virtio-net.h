@@ -14,6 +14,7 @@
 #ifndef _QEMU_VIRTIO_NET_H
 #define _QEMU_VIRTIO_NET_H
 
+#include "sysbus.h"
 #include "virtio.h"
 #include "net.h"
 #include "pci.h"
@@ -187,4 +188,14 @@ struct virtio_net_ctrl_mac {
         DEFINE_PROP_BIT("ctrl_rx", _state, _field, VIRTIO_NET_F_CTRL_RX, true), \
         DEFINE_PROP_BIT("ctrl_vlan", _state, _field, VIRTIO_NET_F_CTRL_VLAN, true), \
         DEFINE_PROP_BIT("ctrl_rx_extra", _state, _field, VIRTIO_NET_F_CTRL_RX_EXTRA, true)
+
+typedef struct {
+    DeviceState qdev;
+    /* virtio-net */
+    NICConf nic;
+    virtio_net_conf net;
+} VirtIONetState;
+
+#define VIRTIO_NET_FROM_QDEV(dev) DO_UPCAST(VirtIONetState, qdev, dev)
+
 #endif

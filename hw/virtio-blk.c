@@ -15,6 +15,7 @@
 #include "qemu-error.h"
 #include "trace.h"
 #include "blockdev.h"
+#include "virtio-transport.h"
 #include "virtio-blk.h"
 #include "scsi-defs.h"
 #ifdef __linux__
@@ -150,12 +151,6 @@ static void virtio_blk_handle_scsi(VirtIOBlockReq *req)
     int ret;
     int status = VIRTIO_BLK_S_OK;
     int i;
-
-    if ((req->dev->vdev.guest_features & (1 << VIRTIO_BLK_F_SCSI)) == 0) {
-        virtio_blk_req_complete(req, VIRTIO_BLK_S_UNSUPP);
-        g_free(req);
-        return;
-    }
 
     /*
      * We require at least one output segment each for the virtio_blk_outhdr
@@ -635,3 +630,44 @@ void virtio_blk_exit(VirtIODevice *vdev)
     blockdev_mark_auto_del(s->bs);
     virtio_cleanup(vdev);
 }
+
+/******************** VirtIOBlk Device **********************/
+
+static int virtio_blkdev_init(DeviceState *dev)
+{
+    VirtIODevice *vdev;
+    VirtIOBlockState *proxy = VIRTIO_BLK_FROM_QDEV(dev);
+    vdev = virtio_blk_init(dev, &proxy->block);
+    if (!vdev) {
+        return -1;
+    }
+    return virtio_init_transport(dev, vdev);
+}
+
+static Property virtio_blkdev_properties[] = {
+    DEFINE_BLOCK_PROPERTIES(VirtIOBlockState, block.conf),
+    DEFINE_PROP_STRING("serial", VirtIOBlockState, block.serial),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void virtio_blkdev_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    dc->init = virtio_blkdev_init;
+    dc->props = virtio_blkdev_properties;
+    dc->bus_info = &virtio_transport_bus_info;
+}
+
+static TypeInfo virtio_blkdev_info = {
+    .name = "virtio-blk",
+    .parent = TYPE_DEVICE,
+    .instance_size = sizeof(VirtIOBlockState),
+    .class_init = virtio_blkdev_class_init,
+};
+
+static void virtio_blk_register_types(void)
+{
+    type_register_static(&virtio_blkdev_info);
+}
+
+type_init(virtio_blk_register_types)

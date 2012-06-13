@@ -24,6 +24,7 @@
 #include "sysbus.h"
 #include "trace.h"
 #include "virtio-serial.h"
+#include "virtio-transport.h"
 
 /* The virtio-serial bus on top of which the ports will ride as devices */
 struct VirtIOSerialBus {
@@ -1000,3 +1001,44 @@ static void virtio_serial_register_types(void)
 }
 
 type_init(virtio_serial_register_types)
+
+/******************** VirtIOSer Device **********************/
+
+static int virtio_serialdev_init(DeviceState *dev)
+{
+    VirtIODevice *vdev;
+    VirtIOSerState *proxy = VIRTIO_SERIAL_FROM_QDEV(dev);
+    vdev = virtio_serial_init(dev, &proxy->serial);
+    if (!vdev) {
+        return -1;
+    }
+    return virtio_init_transport(dev, vdev);
+}
+
+static Property virtio_serial_properties[] = {
+    DEFINE_PROP_UINT32("max_ports", VirtIOSerState,
+                       serial.max_virtserial_ports, 31),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void virtio_serial_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    dc->init = virtio_serialdev_init;
+    dc->props = virtio_serial_properties;
+    dc->bus_info = &virtio_transport_bus_info;
+}
+
+static TypeInfo virtio_serial_info = {
+    .name = "virtio-serial",
+    .parent = TYPE_DEVICE,
+    .instance_size = sizeof(VirtIOSerState),
+    .class_init = virtio_serial_class_init,
+};
+
+static void virtio_ser_register_types(void)
+{
+    type_register_static(&virtio_serial_info);
+}
+
+type_init(virtio_ser_register_types)
