@@ -47,7 +47,7 @@
 #define SDL_USER_EVENT_CODE_HARDKEY 1
 
 void maruskin_display_init(DisplayState *ds);
-void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height);
+void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height);
 void maruskin_sdl_resize(void);
 
 DisplaySurface* get_qemu_display_surface( void );

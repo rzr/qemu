@@ -308,7 +308,7 @@ void maruskin_display_init(DisplayState *ds)
 #endif
 }
 
-void maruskin_sdl_init(int swt_handle, int lcd_size_width, int lcd_size_height)
+void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height)
 {
     int w, h;
     gchar SDL_windowhack[32];

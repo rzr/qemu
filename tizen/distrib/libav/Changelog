@@ -1,6 +1,48 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.2:
+
+- check buffer and input values in various parts of the code:
+  H.264, VC-1, APE, FLV, Indeo 2, XAN, Ogg, MXF, wavpack, ffv1, MOV,
+  cavs (OCERT-2011-002, CVE-2011-3362), Smacker, cpu detection, lavf,
+  Matroska (CVE-2011-3504), RV10, RV30/RV40
+- memory leaks: vf_scale, eval
+
+- ARM: workaround for bug in GNU assembler
+- AVOptions: fix av_set_string3() doxy to match reality. (Bug #28)
+- Reintroduce AVInputStream.nb_streams to avoid crashes
+- aac: Only output configure if audio was found
+- aac: Remove some suspicious illegal memcpy()s from LTP
+- aacps: skip some memcpy() if src and dst would be equal
+- adts: fix PCE copying
+- alsa: fallback to buffer_size/4 for period_size
+- alsa: limit buffer_size to 32768 frames
+- cljr, indeo2: init_get_bits size in bits instead of bytes
+- configure: add missing CFLAGS to fix building on the HURD
+- dca: set AVCodecContext frame_size for DTS audio
+- fate: allow testing with libavfilter disabled
+- gxf: fix 25 fps DV material in GXF being misdetected as 50 fps
+- h264: correct implicit weight table computation for long ref pics
+- h264: correct the check for invalid long term frame index in MMCO decode
+- h264: fix PCM intra-coded blocks in monochrome case
+- jpegdec: actually search for and parse RSTn
+- lavc: fix type for thread_type option
+- lavf: fix context pointer in av_open_input_stream when avformat_open_input fails
+- lavf: do not set codec_tag for rawvideo
+- libx264: do not set pic quality if no frame is output
+- movenc: create an alternate group for each media type
+- mpegts: fix Continuity Counter error detection
+- mxfenc: fix ignored drop flag in binary timecode representation
+- fix crashes in 32-bit PIC builds (cf e.g. http://bugs.debian.org/639948)
+- ppc64: fix cast related random failures
+- riff: Add mpgv MPEG-2 fourcc
+- swscale: don't use planar output functions to write to NV12/21
+- vc1: properly zero coded_block[] edges on new slice entry
+- vp3/theora: flush after seek
+
+- various bug other fixes
+
 
 version 0.7.1:
 
@@ -12,29 +54,32 @@ version 0.7.1:
 - behavioral fix in av_open_input_stream()
 - Licensing clarification for LGPL'ed vf_gradfun
 - bugfixes while seeking in multithreaded decoding
+- support newer versions of OpenCV
+- ffmpeg: fix operation with --disable-avfilter
+- fixed integer underflow in matroska decoder
 
 
 version 0.7:
 
 - E-AC-3 audio encoder
 - ac3enc: add channel coupling support
-- floating-point sample format support to the ac3, eac3, dca, aac, and vorbis decoders.
-- H264/MPEG frame-level multi-threading
-- All av_metadata_* functions renamed to av_dict_* and moved to libavutil
+- floating-point sample format support for (E-)AC-3, DCA, AAC, Vorbis decoders
+- H.264/MPEG frame-level multithreading
+- av_metadata_* functions renamed to av_dict_* and moved to libavutil
 - 4:4:4 H.264 decoding support
 - 10-bit H.264 optimizations for x86
-- Bump libswscale for recently reported ABI break
+- bump libswscale for recently reported ABI break
 
 
 version 0.7_beta2:
 
-- VP8 frame-multithreading
+- VP8 frame-level multithreading
 - NEON optimizations for VP8
-- Lots of deprecated API cruft removed
-- fft and imdct optimizations for AVX (Sandy Bridge) processors
+- removed a lot of deprecated API cruft
+- FFT and IMDCT optimizations for AVX (Sandy Bridge) processors
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
-- Remove support for quitting ffmpeg with 'q', ctrl+c should be used.
+- ffmpeg no longer quits after the 'q' key is pressed; use 'ctrl+c' instead
 - 9bit and 10bit per sample support in the H.264 decoder
 
 
@@ -87,10 +132,10 @@ version 0.7_beta1:
 - demuxer for receiving raw rtp:// URLs without an SDP description
 - single stream LATM/LOAS decoder
 - setpts filter added
-- Win64 support for optimized asm functions
+- Win64 support for optimized x86 assembly functions
 - MJPEG/AVI1 to JPEG/JFIF bitstream filter
 - ASS subtitle encoder and decoder
-- IEC 61937 encapsulation for E-AC3, TrueHD, DTS-HD (for HDMI passthrough)
+- IEC 61937 encapsulation for E-AC-3, TrueHD, DTS-HD (for HDMI passthrough)
 - overlay filter added
 - rename aspect filter to setdar, and pixelaspect to setsar
 - IEC 61937 demuxer

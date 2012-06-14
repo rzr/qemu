@@ -329,6 +329,7 @@ typedef struct AVInputFile {
     int eof_reached;      /* true if eof reached */
     int ist_index;        /* index of first stream in ist_table */
     int buffer_size;      /* current total buffer size */
+    int nb_streams;       /* nb streams we are aware of */
 } AVInputFile;
 
 static AVInputStream *input_streams = NULL;
@@ -1983,7 +1984,7 @@ static int transcode(AVFormatContext **output_files,
         int si = stream_maps[i].stream_index;
 
         if (fi < 0 || fi > nb_input_files - 1 ||
-            si < 0 || si > input_files[fi].ctx->nb_streams - 1) {
+            si < 0 || si > input_files[fi].nb_streams - 1) {
             fprintf(stderr,"Could not find input stream #%d.%d\n", fi, si);
             ret = AVERROR(EINVAL);
             goto fail;
@@ -1991,7 +1992,7 @@ static int transcode(AVFormatContext **output_files,
         fi = stream_maps[i].sync_file_index;
         si = stream_maps[i].sync_stream_index;
         if (fi < 0 || fi > nb_input_files - 1 ||
-            si < 0 || si > input_files[fi].ctx->nb_streams - 1) {
+            si < 0 || si > input_files[fi].nb_streams - 1) {
             fprintf(stderr,"Could not find sync stream #%d.%d\n", fi, si);
             ret = AVERROR(EINVAL);
             goto fail;
@@ -2206,6 +2207,12 @@ static int transcode(AVFormatContext **output_files,
                     fprintf(stderr, "Video pixel format is unknown, stream cannot be encoded\n");
                     ffmpeg_exit(1);
                 }
+
+                if (!codec->width || !codec->height) {
+                    codec->width  = icodec->width;
+                    codec->height = icodec->height;
+                }
+
                 ost->video_resample = codec->width   != icodec->width  ||
                                       codec->height  != icodec->height ||
                                       codec->pix_fmt != icodec->pix_fmt;
@@ -2232,10 +2239,7 @@ static int transcode(AVFormatContext **output_files,
 #endif
                     codec->bits_per_raw_sample= 0;
                 }
-                if (!codec->width || !codec->height) {
-                    codec->width  = icodec->width;
-                    codec->height = icodec->height;
-                }
+
                 ost->resample_height = icodec->height;
                 ost->resample_width  = icodec->width;
                 ost->resample_pix_fmt= icodec->pix_fmt;
@@ -2604,7 +2608,7 @@ static int transcode(AVFormatContext **output_files,
         }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        if (pkt.stream_index >= input_files[file_index].ctx->nb_streams)
+        if (pkt.stream_index >= input_files[file_index].nb_streams)
             goto discard_packet;
         ist_index = input_files[file_index].ist_index + pkt.stream_index;
         ist = &input_streams[ist_index];
@@ -3362,6 +3366,7 @@ static int opt_input_file(const char *opt, const char *filename)
     input_files = grow_array(input_files, sizeof(*input_files), &nb_input_files, nb_input_files + 1);
     input_files[nb_input_files - 1].ctx        = ic;
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
+    input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
 
     frame_rate    = (AVRational){0, 0};
     frame_pix_fmt = PIX_FMT_NONE;

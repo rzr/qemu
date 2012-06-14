@@ -42,7 +42,6 @@
 #include "maruskin_keymap.h"
 #include "emul_state.h"
 #include "hw/maru_pm.h"
-#include "qemu-common.h"
 #include "sysemu.h"
 
 #ifdef _WIN32
@@ -62,9 +61,9 @@ static int requested_shutdown_qemu_gracefully = 0;
 static void* run_timed_shutdown_thread( void* args );
 static void send_to_emuld( const char* request_type, int request_size, const char* send_buf, int buf_size );
 
-void start_display( int handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type )
+void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type)
 {
-    INFO( "start_display handle_id:%d, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
+    INFO( "start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
         handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type );
 
     set_emul_win_scale(scale_factor);

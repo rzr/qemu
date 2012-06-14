@@ -1,5 +1,5 @@
 /**
- * 
+ * Emulator Skin Process
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -157,7 +157,7 @@ public class EmulatorSkin {
 	private ScreenShotDialog screenShotDialog;
 
 	private SocketCommunicator communicator;
-	private int windowHandleId;
+	private long windowHandleId;
 
 	private Listener shellCloseListener;
 	private PaintListener shellPaintListener;
@@ -173,6 +173,11 @@ public class EmulatorSkin {
 
 	private EmulatorSkin reopenSkin;
 	
+	/**
+	 * @brief constructor
+	 * @param config : configuration of emulator skin
+	 * @param isOnTop : always on top flag
+	*/
 	protected EmulatorSkin( EmulatorConfig config, boolean isOnTop ) {
 		this.config = config;
 		this.isDefaultHoverColor = true;
@@ -187,7 +192,7 @@ public class EmulatorSkin {
 		this.communicator = communicator;
 	}
 
-	public int compose() {
+	public long compose() {
 
 		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 
@@ -293,15 +298,15 @@ public class EmulatorSkin {
 //
 //	}
 
-	private int getWindowHandleId() {
+	private long getWindowHandleId() {
 
-		int windowHandleId = 0;
+		long windowHandleId = 0;
 
 		if ( SkinUtil.isLinuxPlatform() ) {
 
 			try {
 				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
-				windowHandleId = field.getInt( lcdCanvas );
+				windowHandleId = field.getLong( lcdCanvas );
 				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
 			} catch ( IllegalArgumentException e ) {
 				logger.log( Level.SEVERE, e.getMessage(), e );
@@ -595,6 +600,8 @@ public class EmulatorSkin {
 							}
 						}
 						
+						SkinUtil.trimShell( shell, currentImage );
+
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, 0 );
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
@@ -623,6 +630,8 @@ public class EmulatorSkin {
 									region.height - 1, // src
 									region.x + 1, region.y + 1, region.width - 1, region.height - 1 ); // dst
 							gc.dispose();
+
+							SkinUtil.trimShell( shell, currentKeyPressedImage, region.x, region.y, region.width, region.height );
 						}
 
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, 0 );

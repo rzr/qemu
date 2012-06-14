@@ -28,7 +28,7 @@
 
 #ifdef _WIN32
 #include <winsock.h>
-#define	socklen_t     int
+#define socklen_t     int
 #else
 #include <netinet/in.h>
 #include <sys/ioctl.h>
@@ -195,7 +195,7 @@ static void mloop_evhandle_usb_add(char *name)
     }
     else if (strncmp(name, "disk:", 5) == 0) {
         if (usbdisk == NULL) {
-        	usbdisk = usbdevice_create(name);
+            usbdisk = usbdevice_create(name);
         }
     }
 }
@@ -212,28 +212,28 @@ static void mloop_evhandle_usb_del(char *name)
         }
     }
     else if (strncmp(name, "disk:", 5) == 0) {
-    	if (usbdisk) {
-    	    qdev_free(&usbdisk->qdev);
-    	}
+        if (usbdisk) {
+            qdev_free(&usbdisk->qdev);
+        }
     }
 }
 
 static void mloop_evhandle_intr_up(long data)
 {
-	if (data == 0) {
-		return;
-	}
+    if (data == 0) {
+        return;
+    }
 
-	qemu_irq_raise((qemu_irq)data);
+    qemu_irq_raise((qemu_irq)data);
 }
 
 static void mloop_evhandle_intr_down(long data)
 {
-	if (data == 0) {
-		return;
-	}
+    if (data == 0) {
+        return;
+    }
 
-	qemu_irq_lower((qemu_irq)data);
+    qemu_irq_lower((qemu_irq)data);
 }
 
 static void mloop_evcb_recv(struct mloop_evsock *ev)
@@ -242,7 +242,7 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     int ret;
 
     do {
-    	ret = recv(ev->sockno, (void *)&pack, sizeof(pack), 0);
+        ret = recv(ev->sockno, (void *)&pack, sizeof(pack), 0);
 #ifdef _WIN32
     } while (ret == -1 && WSAGetLastError() == WSAEINTR);
 #else
@@ -266,13 +266,13 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         break;
     case MLOOP_EVTYPE_USB_DEL:
         mloop_evhandle_usb_del(pack.data);
-		break;
-	case MLOOP_EVTYPE_INTR_UP:
-		mloop_evhandle_intr_up(ntohl(*(long*)&pack.data[0]));
-		break;
-	case MLOOP_EVTYPE_INTR_DOWN:
-		mloop_evhandle_intr_down(ntohl(*(long*)&pack.data[0]));
-		break;
+        break;
+    case MLOOP_EVTYPE_INTR_UP:
+        mloop_evhandle_intr_up(ntohl(*(long*)&pack.data[0]));
+        break;
+    case MLOOP_EVTYPE_INTR_DOWN:
+        mloop_evhandle_intr_down(ntohl(*(long*)&pack.data[0]));
+        break;
     default:
         break;
     }
@@ -296,7 +296,7 @@ void mloop_evcmd_usbkbd(int on)
 {
     struct mloop_evpack pack = { htons(MLOOP_EVTYPE_USB_ADD), htons(13), "keyboard" };
     if (on == 0)
-    	pack.type = htons(MLOOP_EVTYPE_USB_DEL);
+        pack.type = htons(MLOOP_EVTYPE_USB_DEL);
     mloop_evsock_send(&mloop, &pack);
 }
 
@@ -305,17 +305,17 @@ void mloop_evcmd_usbdisk(char *img)
     struct mloop_evpack pack;
 
     if (img) {
-    	if (strlen(img) > PACKET_LEN-5) {
-    		// Need log
-    		return;
-    	}
+        if (strlen(img) > PACKET_LEN-5) {
+            // Need log
+            return;
+        }
 
-    	pack.type = htons(MLOOP_EVTYPE_USB_ADD);
-    	pack.size = htons(5 + sprintf(pack.data, "disk:%s", img));
+        pack.type = htons(MLOOP_EVTYPE_USB_ADD);
+        pack.size = htons(5 + sprintf(pack.data, "disk:%s", img));
     }
     else {
-    	pack.type = htons(MLOOP_EVTYPE_USB_DEL);
-    	pack.size = htons(5 + sprintf(pack.data, "disk:"));
+        pack.type = htons(MLOOP_EVTYPE_USB_DEL);
+        pack.size = htons(5 + sprintf(pack.data, "disk:"));
     }
 
     mloop_evsock_send(&mloop, &pack);
@@ -323,35 +323,35 @@ void mloop_evcmd_usbdisk(char *img)
 
 int mloop_evcmd_get_usbkbd_status(void)
 {
-	return (usbkbd && usbkbd->attached ? 1 : 0);
+    return (usbkbd && usbkbd->attached ? 1 : 0);
 }
 
 void mloop_evcmd_set_usbkbd(void *dev)
 {
-	usbkbd = (USBDevice *)dev;
+    usbkbd = (USBDevice *)dev;
 }
 
 void mloop_evcmd_set_usbdisk(void *dev)
 {
-	usbdisk = (USBDevice *)dev;
+    usbdisk = (USBDevice *)dev;
 }
 
 void mloop_evcmd_raise_intr(void *irq)
 {
-	struct mloop_evpack pack;
-	memset((void*)&pack, 0, sizeof(struct mloop_evpack));
-	pack.type = htons(MLOOP_EVTYPE_INTR_UP);
-	pack.size = htons(8);
-	*(long*)&pack.data[0] = htonl((long)irq);
-	mloop_evsock_send(&mloop, &pack);
+    struct mloop_evpack pack;
+    memset((void*)&pack, 0, sizeof(struct mloop_evpack));
+    pack.type = htons(MLOOP_EVTYPE_INTR_UP);
+    pack.size = htons(8);
+    *(long*)&pack.data[0] = htonl((long)irq);
+    mloop_evsock_send(&mloop, &pack);
 }
 
 void mloop_evcmd_lower_intr(void *irq)
 {
-	struct mloop_evpack pack;
-	memset((void*)&pack, 0, sizeof(struct mloop_evpack));
-	pack.type = htons(MLOOP_EVTYPE_INTR_DOWN);
-	pack.size = htons(8);
-	*(long*)&pack.data[0] = htonl((long)irq);
-	mloop_evsock_send(&mloop, &pack);
+    struct mloop_evpack pack;
+    memset((void*)&pack, 0, sizeof(struct mloop_evpack));
+    pack.type = htons(MLOOP_EVTYPE_INTR_DOWN);
+    pack.size = htons(8);
+    *(long*)&pack.data[0] = htonl((long)irq);
+    mloop_evsock_send(&mloop, &pack);
 }

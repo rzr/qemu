@@ -123,56 +123,56 @@ uint64_t codec_read (void *opaque, target_phys_addr_t addr, unsigned size);
 
 void codec_write (void *opaque, target_phys_addr_t addr, uint64_t value, unsigned size);
 
-static int codec_operate(uint32_t apiIndex, uint32_t ctxIndex, SVCodecState *state);
+int codec_operate(uint32_t apiIndex, uint32_t ctxIndex, SVCodecState *state);
 
 /*
  *  Codec Helper APIs
  */
-static void qemu_parser_init (SVCodecState *s, int ctxIndex);
+void qemu_parser_init (SVCodecState *s, int ctxIndex);
 
-static void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src);
+void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src);
 
-static void qemu_get_codec_ver (SVCodecState *s, int ctxIndex);
+void qemu_get_codec_ver (SVCodecState *s, int ctxIndex);
 /*
  *  FFMPEG APIs
  */
 
-static void qemu_av_register_all (void);
+void qemu_av_register_all (void);
 
-static int qemu_avcodec_open (SVCodecState *s, int ctxIndex);
+int qemu_avcodec_open (SVCodecState *s, int ctxIndex);
 
-static int qemu_avcodec_close (SVCodecState *s, int ctxIndex);
+int qemu_avcodec_close (SVCodecState *s, int ctxIndex);
 
-static void qemu_avcodec_alloc_context (SVCodecState *s);
+void qemu_avcodec_alloc_context (SVCodecState *s);
 
-static void qemu_avcodec_alloc_frame (SVCodecState *s);
+void qemu_avcodec_alloc_frame (SVCodecState *s);
 
-static void qemu_av_free_context (SVCodecState* s, int ctxIndex);
+void qemu_av_free_context (SVCodecState* s, int ctxIndex);
 
-static void qemu_av_free_picture (SVCodecState* s, int ctxIndex);
+void qemu_av_free_picture (SVCodecState* s, int ctxIndex);
 
-static void qemu_av_free_palctrl (SVCodecState* s, int ctxIndex);
+void qemu_av_free_palctrl (SVCodecState* s, int ctxIndex);
 
-static void qemu_av_free_extradata (SVCodecState* s, int ctxIndex);
+void qemu_av_free_extradata (SVCodecState* s, int ctxIndex);
 
-static void qemu_avcodec_flush_buffers (SVCodecState *s, int ctxIndex);
+void qemu_avcodec_flush_buffers (SVCodecState *s, int ctxIndex);
 
-static int qemu_avcodec_decode_video (SVCodecState *s, int ctxIndex);
+int qemu_avcodec_decode_video (SVCodecState *s, int ctxIndex);
 
-static int qemu_avcodec_encode_video (SVCodecState *s, int ctxIndex);
+int qemu_avcodec_encode_video (SVCodecState *s, int ctxIndex);
 
-static int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex);
+int qemu_avcodec_decode_audio (SVCodecState *s, int ctxIndex);
 
-static int qemu_avcodec_encode_audio (SVCodecState *s, int ctxIndex);
+int qemu_avcodec_encode_audio (SVCodecState *s, int ctxIndex);
 
-static void qemu_av_picture_copy (SVCodecState *s, int ctxIndex);
+void qemu_av_picture_copy (SVCodecState *s, int ctxIndex);
 
-static void qemu_av_parser_init (SVCodecState *s, int ctxIndex);
+void qemu_av_parser_init (SVCodecState *s, int ctxIndex);
 
-static int qemu_av_parser_parse (SVCodecState *s, int ctxIndex);
+int qemu_av_parser_parse (SVCodecState *s, int ctxIndex);
 
-static void qemu_av_parser_close (SVCodecState *s, int ctxIndex);
+void qemu_av_parser_close (SVCodecState *s, int ctxIndex);
 
-static int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture);
+int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture);
 
-static void qemu_avcodec_release_buffer (AVCodecContext *context, AVFrame *picture);
+void qemu_avcodec_release_buffer (AVCodecContext *context, AVFrame *picture);
