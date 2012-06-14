@@ -305,8 +305,16 @@ public class EmulatorSkin {
 		if ( SkinUtil.isLinuxPlatform() ) {
 
 			try {
+				/*
+				 * Accessing private fields of other classes via reflection
+				 * is VERY BAD, must be fixed !
+				 */
 				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
-				windowHandleId = field.getLong( lcdCanvas );
+				try {
+				windowHandleId = field.getInt( lcdCanvas );
+				} catch ( Exception e ) {
+					windowHandleId = (int)field.getLong( lcdCanvas );
+				}
 				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
 			} catch ( IllegalArgumentException e ) {
 				logger.log( Level.SEVERE, e.getMessage(), e );
