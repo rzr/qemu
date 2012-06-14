@@ -1,5 +1,5 @@
 /**
- * 
+ * Capture a screenshot of the Emulator framebuffer
  *
  * Copyright ( C ) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -52,6 +52,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -59,6 +60,7 @@ import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
@@ -88,6 +90,7 @@ public class ScreenShotDialog {
 	public final static int COLOR_DEPTH = 32;
 
 	public final static int CANVAS_MARGIN = 30;
+	public final static int TOOLITEM_COOLTIME = 200;
 
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
@@ -96,6 +99,7 @@ public class ScreenShotDialog {
 	private Canvas imageCanvas;
 	private Shell shell;
 	private ScrolledComposite scrollComposite;
+	private Label label;
 
 	private SocketCommunicator communicator;
 	private EmulatorSkin emulatorSkin;
@@ -103,14 +107,22 @@ public class ScreenShotDialog {
 
 	private RotationInfo currentRotation;
 	private boolean reserveImage;
-
+	private ToolItem refreshItem;
+	private ToolItem copyItem;
+	private ToolItem IncreaseScaleItem;
+	private ToolItem DecreaseScaleItem;
+	private double scaleLevel;
+	/**
+	 * @brief constructor
+	 * @param Image icon : screenshot window icon resource
+	*/
 	public ScreenShotDialog( Shell parent, SocketCommunicator communicator, EmulatorSkin emulatorSkin,
 			EmulatorConfig config, Image icon ) throws ScreenShotException {
 
 		this.communicator = communicator;
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
-
+		scaleLevel = 100d;
 		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
 		if (icon != null) {
@@ -155,7 +167,10 @@ public class ScreenShotDialog {
 				logger.fine( "paint image." );
 
 				if ( null != image && !image.isDisposed() ) {
-					e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
+					//e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
+					Rectangle r = image.getBounds();
+					e.gc.drawImage(image, 0, 0, r.width, r.height,
+							CANVAS_MARGIN, CANVAS_MARGIN, (int)(r.width * scaleLevel * 1/100), (int)(r.height * scaleLevel * 1/100));
 				}
 
 			}
@@ -173,17 +188,56 @@ public class ScreenShotDialog {
 			}
 			throw e;
 		}
-
+		
 		shell.pack();
+		
+		label = new Label(shell, SWT.NORMAL );
+		label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
+				"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
+		
+//		imageCanvas.addMouseMoveListener(new MouseMoveListener() {
+//		      public void mouseMove(MouseEvent e) {
+//		    		  Rectangle rectangle = imageCanvas.getBounds();
+//		    		  if(rectangle.contains(e.x - CANVAS_MARGIN, e.y - CANVAS_MARGIN) == true ) {
+//		    			  ImageData imageData = image.getImageData();
+//		    			  
+//		    			  try {
+//		    				  int pixel = imageData.getPixel(e.x - CANVAS_MARGIN , e.y - CANVAS_MARGIN);
+//		    				  if(pixel != 0) {
+//				    		  PaletteData paletteData = new PaletteData( RED_MASK, GREEN_MASK, BLUE_MASK );
+//				    		  RGB rgb =  paletteData.getRGB(pixel);
+//				    		  label.setText("R: "+ rgb.red + " G: " + rgb.green + " B: " + rgb.blue);
+//				    		  label.update();
+//		    			  		}
+//		    			  		}catch (IllegalArgumentException e1) {
+//		    			  			logger.warning(e1.getMessage());
+//		    			  		}
+//		    			  
+//		    			  } 
+//		      		}
+//		 });
 
-		Rectangle  monitorBound = Display.getDefault().getBounds();
-		logger.info("current display size : " + monitorBound);
-		int x = parent.getLocation().x + parent.getSize().x + 20;
-		int y = parent.getLocation().y;
-		if ((x + shell.getSize().x) > (monitorBound.x + monitorBound.width)) {
-			x = parent.getLocation().x - shell.getSize().x - 20;
+		Rectangle monitorBound = Display.getDefault().getBounds();
+		logger.info("host monitor display bound : " + monitorBound);
+		Rectangle emulatorBound = parent.getBounds();
+		logger.info("current Emulator window bound : " + emulatorBound);
+		Rectangle dialogBound = shell.getBounds();
+		logger.info("current ScreenShot Dialog bound : " + dialogBound);
+
+		/* size correction */
+		shell.setSize(emulatorBound.width, emulatorBound.height);
+		dialogBound = shell.getBounds();
+		logger.info("current ScreenShot Dialog bound : " + dialogBound);
+
+		/* location correction */
+		int x = emulatorBound.x + emulatorBound.width + 20;
+		int y = emulatorBound.y;
+		if ((x + dialogBound.width) > (monitorBound.x + monitorBound.width)) {
+			x = emulatorBound.x - dialogBound.width - 20;
 		}
 		shell.setLocation(x, y);
+		dialogBound = shell.getBounds();
+		logger.info("current ScreenShot Dialog bound : " + dialogBound);
 
 	}
 
@@ -227,20 +281,35 @@ public class ScreenShotDialog {
 
 			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
 			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-			ImageData imageData = new ImageData( width, height, COLOR_DEPTH, paletteData, 1, receivedData );
-
+			ImageData imageData = new ImageData( width , height, COLOR_DEPTH, paletteData, 1, receivedData );
+			
 			RotationInfo rotation = getCurrentRotation();
 			imageData = rotateImageData( imageData, rotation );
 
-			this.image = new Image( Display.getDefault(), imageData );
-			imageCanvas.redraw();
-
+		 this.image = new Image( Display.getDefault(), imageData );
+		 
+		 imageCanvas.redraw();
+			
 		} else {
 			throw new ScreenShotException( "Fail to get image data." );
 		}
 
 	}
+	
+	public double getScaleLevel() {
+		return scaleLevel;
+	}
 
+	public void DownScaleLevel() {
+		scaleLevel /= 2;
+		logger.info("down scaling level : " + scaleLevel);
+	}
+	
+	public void UpScaleLevel() {
+		scaleLevel *= 2;
+		logger.info("up scaling level : " + scaleLevel);
+	}
+	
 	private void arrageImageLayout() {
 
 		ImageData imageData = image.getImageData();
@@ -376,7 +445,7 @@ public class ScreenShotDialog {
 
 		} );
 
-		ToolItem copyItem = new ToolItem( toolBar, SWT.FLAT );
+		copyItem = new ToolItem( toolBar, SWT.FLAT );
 		copyItem.setImage( ImageRegistry.getInstance().getIcon( IconName.COPY_SCREEN_SHOT ) );
 		copyItem.setToolTipText( "Copy to clipboard" );
 
@@ -388,6 +457,18 @@ public class ScreenShotDialog {
 					SkinUtil.openMessage( shell, null, "Fail to copy to clipboard.", SWT.ICON_ERROR, config );
 					return;
 				}
+
+				copyItem.setEnabled(false);
+				shell.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(TOOLITEM_COOLTIME);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						copyItem.setEnabled(true);
+					}
+				});
 
 				ImageLoader loader = new ImageLoader();
 
@@ -420,7 +501,7 @@ public class ScreenShotDialog {
 
 		} );
 
-		ToolItem refreshItem = new ToolItem( toolBar, SWT.FLAT );
+		refreshItem = new ToolItem( toolBar, SWT.FLAT );
 		refreshItem.setImage( ImageRegistry.getInstance().getIcon( IconName.REFRESH_SCREEN_SHOT ) );
 		refreshItem.setToolTipText( "Refresh image" );
 
@@ -428,16 +509,100 @@ public class ScreenShotDialog {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 
+				refreshItem.setEnabled(false);
+				shell.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(TOOLITEM_COOLTIME);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						refreshItem.setEnabled(true);
+					}
+				});
+
+				Point dialogSize = shell.getSize();
+
 				try {
 					clickShutter();
 				} catch ( ScreenShotException ex ) {
 					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
 					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
 				}
+
+				/* restoration */
+				if (shell.getSize() != dialogSize) {
+					shell.setSize(dialogSize);
+				}
 			}
 
 		} );
 
+		IncreaseScaleItem = new ToolItem( toolBar, SWT.FLAT );
+		IncreaseScaleItem.setImage( ImageRegistry.getInstance().getIcon( IconName.INCREASE_SCALE ) );
+		IncreaseScaleItem.setToolTipText( "Increase view size" );
+		IncreaseScaleItem.addSelectionListener( new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				double level = getScaleLevel();
+				Point dialogSize = shell.getSize();	
+				
+				UpScaleLevel();
+				imageCanvas.redraw();
+				arrageImageLayout();
+				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
+						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
+				label.update();
+				
+				if(level >= 400d) {
+					IncreaseScaleItem.setEnabled(false);
+					DecreaseScaleItem.setEnabled(true);
+				}else {
+					IncreaseScaleItem.setEnabled(true);
+					DecreaseScaleItem.setEnabled(true);	
+				}
+				
+				/* restoration */
+				if (shell.getSize() != dialogSize) {
+					shell.setSize(dialogSize);
+				}
+			}
+
+		} );
+
+		DecreaseScaleItem = new ToolItem( toolBar, SWT.FLAT );
+		DecreaseScaleItem.setImage( ImageRegistry.getInstance().getIcon( IconName.DECREASE_SCALE ) );
+		DecreaseScaleItem.setToolTipText( "Decrease view size" );
+		DecreaseScaleItem.addSelectionListener( new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				double level = getScaleLevel();
+				Point dialogSize = shell.getSize();
+				
+				DownScaleLevel();
+				imageCanvas.redraw();
+				arrageImageLayout();
+				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
+						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
+				label.update();
+			
+				if(level <= 25) {
+					DecreaseScaleItem.setEnabled(false);
+					IncreaseScaleItem.setEnabled(true);
+				}else {
+					DecreaseScaleItem.setEnabled(true);
+					IncreaseScaleItem.setEnabled(true);
+				}
+					
+				/* restoration */
+				if (shell.getSize() != dialogSize) {
+					shell.setSize(dialogSize);
+				}
+			}
+
+		} );
+
+		
 	}
 
 	private void saveFile( String fileFullPath, FileDialog fileDialog ) {

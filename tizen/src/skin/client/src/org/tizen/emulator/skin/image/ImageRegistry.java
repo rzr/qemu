@@ -83,6 +83,8 @@ public class ImageRegistry {
 
 		COPY_SCREEN_SHOT( "copy_screenshot_dialog.png" ),
 		REFRESH_SCREEN_SHOT( "refresh_screenshot_dialog.png" ),
+		INCREASE_SCALE( "increase_scale.png" ),
+		DECREASE_SCALE( "decrease_scale.png" ),
 		SAVE_SCREEN_SHOT( "save_screenshot_dialog.png" ),
 
 		EMULATOR_TITLE( "Emulator_20x20.png" ),
