@@ -25,19 +25,13 @@
 
 #include "exynos4210.h"
 
-#undef DEBUG_UART
-#undef DEBUG_UART_EXTEND
-#undef DEBUG_IRQ
-#undef DEBUG_Rx_DATA
-#undef DEBUG_Tx_DATA
-
 #define DEBUG_UART            0
 #define DEBUG_UART_EXTEND     0
 #define DEBUG_IRQ             0
 #define DEBUG_Rx_DATA         0
 #define DEBUG_Tx_DATA         0
 
-#if DEBUG_UART
+#if DEBUG_UART || DEBUG_UART_EXTEND
 #define  PRINT_DEBUG(fmt, args...)  \
         do { \
             fprintf(stderr, "  [%s:%d]   "fmt, __func__, __LINE__, ##args); \
@@ -160,6 +154,8 @@ static Exynos4210UartReg exynos4210_uart_regs[] = {
 #define UERSTAT_FRAME    0x4
 #define UERSTAT_BREAK    0x8
 
+#define TYPE_EXYNOS4210_UART "exynos4210.uart"
+
 typedef struct {
     uint8_t    *data;
     uint32_t    sp, rp; /* store and retrieve pointers */
@@ -182,7 +178,7 @@ typedef struct {
 } Exynos4210UartState;
 
 
-#if DEBUG_UART
+#if DEBUG_UART || DEBUG_UART_EXTEND
 /* Used only for debugging inside PRINT_DEBUG_... macros */
 static const char *exynos4210_uart_regname(target_phys_addr_t  offset)
 {
@@ -307,6 +303,7 @@ static void exynos4210_uart_update_parameters(Exynos4210UartState *s)
     uint64_t uclk_rate;
 
     if (s->reg[I_(UBRDIV)] == 0) {
+        PRINT_DEBUG("Baud rate division value is 0\n");
         return;
     }
 
@@ -332,7 +329,19 @@ static void exynos4210_uart_update_parameters(Exynos4210UartState *s)
 
     frame_size += data_bits + stop_bits;
 
-    uclk_rate = 24000000;
+    switch (s->channel) {
+    case 0:
+        uclk_rate = exynos4210_cmu_get_rate(EXYNOS4210_SCLK_UART0); break;
+    case 1:
+        uclk_rate = exynos4210_cmu_get_rate(EXYNOS4210_SCLK_UART1); break;
+    case 2:
+        uclk_rate = exynos4210_cmu_get_rate(EXYNOS4210_SCLK_UART2); break;
+    case 3:
+        uclk_rate = exynos4210_cmu_get_rate(EXYNOS4210_SCLK_UART3); break;
+    default:
+        hw_error("%s: Incorrect UART channel: %d\n",
+                 __func__, s->channel);
+    }
 
     speed = uclk_rate / ((16 * (s->reg[I_(UBRDIV)]) & 0xffff) +
             (s->reg[I_(UFRACVAL)] & 0x7) + 16);
@@ -346,6 +355,15 @@ static void exynos4210_uart_update_parameters(Exynos4210UartState *s)
 
     PRINT_DEBUG("UART%d: speed: %d, parity: %c, data: %d, stop: %d\n",
                 s->channel, speed, parity, data_bits, stop_bits);
+}
+
+static void uclk_rate_changed(void *opaque)
+{
+    Exynos4210UartState *s = (Exynos4210UartState *)opaque;
+
+    PRINT_DEBUG("Clock sclk_uart%d was changed\n", s->channel);
+
+    exynos4210_uart_update_parameters(s);
 }
 
 static void exynos4210_uart_write(void *opaque, target_phys_addr_t offset,
@@ -542,6 +560,7 @@ static void exynos4210_uart_reset(DeviceState *dev)
             container_of(dev, Exynos4210UartState, busdev.qdev);
     int regs_number = sizeof(exynos4210_uart_regs)/sizeof(Exynos4210UartReg);
     int i;
+    Exynos4210Clock clock_id;
 
     for (i = 0; i < regs_number; i++) {
         s->reg[I_(exynos4210_uart_regs[i].offset)] =
@@ -550,6 +569,17 @@ static void exynos4210_uart_reset(DeviceState *dev)
 
     fifo_reset(&s->rx);
     fifo_reset(&s->tx);
+
+    switch (s->channel) {
+    case 0: clock_id = EXYNOS4210_SCLK_UART0; break;
+    case 1: clock_id = EXYNOS4210_SCLK_UART1; break;
+    case 2: clock_id = EXYNOS4210_SCLK_UART2; break;
+    case 3: clock_id = EXYNOS4210_SCLK_UART3; break;
+    default:
+        hw_error("Wrong channel number: %d.\n", s->channel);
+    }
+
+    exynos4210_register_clock_handler(uclk_rate_changed, clock_id, s);
 
     PRINT_DEBUG("UART%d: Rx FIFO size: %d\n", s->channel, s->rx.size);
 }
@@ -642,6 +672,7 @@ static int exynos4210_uart_init(SysBusDevice *dev)
     return 0;
 }
 
+
 static Property exynos4210_uart_properties[] = {
     DEFINE_PROP_CHR("chardev", Exynos4210UartState, chr),
     DEFINE_PROP_UINT32("channel", Exynos4210UartState, channel, 0),
@@ -662,7 +693,7 @@ static void exynos4210_uart_class_init(ObjectClass *klass, void *data)
 }
 
 static TypeInfo exynos4210_uart_info = {
-    .name          = "exynos4210.uart",
+    .name          = TYPE_EXYNOS4210_UART,
     .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(Exynos4210UartState),
     .class_init    = exynos4210_uart_class_init,

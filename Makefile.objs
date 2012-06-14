@@ -106,6 +106,7 @@ common-obj-y += irq.o input.o
 common-obj-$(CONFIG_PTIMER) += ptimer.o
 common-obj-$(CONFIG_MAX7310) += max7310.o
 common-obj-$(CONFIG_WM8750) += wm8750.o
+common-obj-$(CONFIG_WM8994) += wm8994.o
 common-obj-$(CONFIG_TWL92230) += twl92230.o
 common-obj-$(CONFIG_TSC2005) += tsc2005.o
 common-obj-$(CONFIG_LM832X) += lm832x.o

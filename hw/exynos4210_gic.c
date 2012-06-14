@@ -106,7 +106,8 @@ enum ExtInt {
     EXT_GIC_ID_EXTINT12,
     EXT_GIC_ID_EXTINT13,
     EXT_GIC_ID_EXTINT14,
-    EXT_GIC_ID_EXTINT15
+    EXT_GIC_ID_EXTINT15,
+    EXT_GIC_ID_EXTINT16_31,
 };
 
 /*
@@ -160,9 +161,19 @@ combiner_grp_to_gic_id[64-EXYNOS4210_MAX_EXT_COMBINER_OUT_IRQ][8] = {
     { EXT_GIC_ID_MIXER },
     /* int combiner group 37 */
     { EXT_GIC_ID_EXTINT4, EXT_GIC_ID_EXTINT5, EXT_GIC_ID_EXTINT6,
-     EXT_GIC_ID_EXTINT7 },
-    /* groups 38-50 */
-    { }, { }, { }, { }, { }, { }, { }, { }, { }, { }, { }, { }, { },
+      EXT_GIC_ID_EXTINT7 },
+    /* int combiner group 38 */
+    { EXT_GIC_ID_EXTINT8, EXT_GIC_ID_EXTINT9, EXT_GIC_ID_EXTINT10,
+      EXT_GIC_ID_EXTINT11, EXT_GIC_ID_EXTINT12, EXT_GIC_ID_EXTINT13,
+      EXT_GIC_ID_EXTINT14, EXT_GIC_ID_EXTINT15 },
+    /* int combiner groups 39-43 */
+    { EXT_GIC_ID_EXTINT16_31 },
+    { EXT_GIC_ID_EXTINT0 },
+    { EXT_GIC_ID_EXTINT1 },
+    { EXT_GIC_ID_EXTINT2 },
+    { EXT_GIC_ID_EXTINT3 },
+    /* groups 44-50 */
+    { }, { }, { }, { }, { }, { }, { },
     /* int combiner group 51 */
     { EXT_GIC_ID_MCT_L0, 0, 0, 0, EXT_GIC_ID_MCT_G0, EXT_GIC_ID_MCT_G1 },
     /* group 52 */
@@ -369,9 +380,18 @@ type_init(exynos4210_gic_register_types)
 typedef struct {
     SysBusDevice busdev;
 
-    qemu_irq pic_irq[EXYNOS4210_NCPUS]; /* output IRQs to PICs */
-    uint32_t gpio_level[EXYNOS4210_IRQ_GATE_NINPUTS]; /* Input levels */
+    qemu_irq out[QDEV_MAX_IRQ]; /* output IRQs */
+    uint32_t n_out;             /* outputs amount */
+    uint32_t gpio_level[QDEV_MAX_IRQ]; /* Input levels */
+    uint32_t n_in;              /* inputs amount */
+    uint32_t group_size;         /* input group size */
 } Exynos4210IRQGateState;
+
+static Property exynos4210_irq_gate_properties[] = {
+    DEFINE_PROP_UINT32("n_out", Exynos4210IRQGateState, n_out, 1),
+    DEFINE_PROP_UINT32("n_in", Exynos4210IRQGateState, n_in, 1),
+    DEFINE_PROP_END_OF_LIST(),
+};
 
 static const VMStateDescription vmstate_exynos4210_irq_gate = {
     .name = "exynos4210.irq_gate",
@@ -379,8 +399,10 @@ static const VMStateDescription vmstate_exynos4210_irq_gate = {
     .minimum_version_id = 1,
     .minimum_version_id_old = 1,
     .fields = (VMStateField[]) {
-        VMSTATE_UINT32_ARRAY(gpio_level, Exynos4210IRQGateState,
-                EXYNOS4210_IRQ_GATE_NINPUTS),
+        VMSTATE_UINT32(n_out, Exynos4210IRQGateState),
+        VMSTATE_UINT32_ARRAY(gpio_level, Exynos4210IRQGateState, QDEV_MAX_IRQ),
+        VMSTATE_UINT32(n_in, Exynos4210IRQGateState),
+        VMSTATE_UINT32(group_size, Exynos4210IRQGateState),
         VMSTATE_END_OF_LIST()
     }
 };
@@ -390,24 +412,23 @@ static void exynos4210_irq_gate_handler(void *opaque, int irq, int level)
 {
     Exynos4210IRQGateState *s =
             (Exynos4210IRQGateState *)opaque;
-    uint32_t odd, even;
+    uint32_t n_out, n_group, i;
 
-    if (irq & 1) {
-        odd = irq;
-        even = irq & ~1;
-    } else {
-        even = irq;
-        odd = irq | 1;
-    }
+    assert(irq < s->n_in);
 
-    assert(irq < EXYNOS4210_IRQ_GATE_NINPUTS);
+    n_out = irq / s->group_size;
+    n_group = n_out * s->group_size;
+
     s->gpio_level[irq] = level;
 
-    if (s->gpio_level[odd] >= 1 || s->gpio_level[even] >= 1) {
-        qemu_irq_raise(s->pic_irq[even >> 1]);
-    } else {
-        qemu_irq_lower(s->pic_irq[even >> 1]);
+    for (i = 0; i < s->group_size; i++) {
+        if (s->gpio_level[n_group + i] >= 1) {
+            qemu_irq_raise(s->out[n_out]);
+            return;
+        }
     }
+
+    qemu_irq_lower(s->out[n_out]);
 
     return;
 }
@@ -428,14 +449,19 @@ static int exynos4210_irq_gate_init(SysBusDevice *dev)
     Exynos4210IRQGateState *s =
             FROM_SYSBUS(Exynos4210IRQGateState, dev);
 
+    /* Gate will make each input group of size n_in / n_out */
+    assert((s->n_in % s->n_out) == 0);
+
+    s->group_size = s->n_in / s->n_out;
+
     /* Allocate general purpose input signals and connect a handler to each of
      * them */
     qdev_init_gpio_in(&s->busdev.qdev, exynos4210_irq_gate_handler,
-            EXYNOS4210_IRQ_GATE_NINPUTS);
+            s->n_in);
 
-    /* Connect SysBusDev irqs to device specific irqs */
-    for (i = 0; i < EXYNOS4210_NCPUS; i++) {
-        sysbus_init_irq(dev, &s->pic_irq[i]);
+    /* Pass gate outs to SysBusDev */
+    for (i = 0; i < s->n_out; i++) {
+        sysbus_init_irq(dev, &s->out[i]);
     }
 
     return 0;
@@ -449,6 +475,7 @@ static void exynos4210_irq_gate_class_init(ObjectClass *klass, void *data)
     k->init = exynos4210_irq_gate_init;
     dc->reset = exynos4210_irq_gate_reset;
     dc->vmsd = &vmstate_exynos4210_irq_gate;
+    dc->props = exynos4210_irq_gate_properties;
 }
 
 static TypeInfo exynos4210_irq_gate_info = {

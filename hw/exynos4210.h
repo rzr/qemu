@@ -43,6 +43,11 @@
 #define EXYNOS4210_IRAM_BASE_ADDR           0x02020000
 #define EXYNOS4210_IRAM_SIZE                0x00020000  /* 128 KB */
 
+#define EXYNOS4210_AUDSS_INTMEM_BASE_ADDR   0x03000000
+#define EXYNOS4210_AUDSS_INTMEM_SIZE        0x00039000  /* 228 KB */
+
+#define EXYNOS4210_VPCI_CFG_BASE_ADDR       0xC2000000
+
 /* Secondary CPU startup code is in IROM memory */
 #define EXYNOS4210_SMP_BOOT_ADDR            EXYNOS4210_IROM_BASE_ADDR
 #define EXYNOS4210_SMP_BOOT_SIZE            0x1000
@@ -52,6 +57,8 @@
 
 #define EXYNOS4210_SMP_PRIVATE_BASE_ADDR    0x10500000
 #define EXYNOS4210_L2X0_BASE_ADDR           0x10502000
+
+#define EXYNOS4210_I2C_NUMBER               9
 
 /*
  * exynos4210 IRQ subsystem stub definitions.
@@ -95,6 +102,10 @@ typedef struct Exynos4210State {
     MemoryRegion dram1_mem;
     MemoryRegion boot_secondary;
     MemoryRegion bootreg_mem;
+    MemoryRegion audss_intmem;
+    i2c_bus *i2c_if[EXYNOS4210_I2C_NUMBER];
+    BusState *i2s_bus[3];
+    SysBusDevice *vpci_bus;
 } Exynos4210State;
 
 void exynos4210_write_secondary(CPUARMState *env,
@@ -123,8 +134,54 @@ void exynos4210_combiner_get_gpioin(Exynos4210Irq *irqs, DeviceState *dev,
         int ext);
 
 /*
+ * Interface for exynos4210 Clock Management Units (CMUs)
+ */
+typedef enum {
+    UNSPECIFIED_CMU = -1,
+    EXYNOS4210_CMU_LEFTBUS,
+    EXYNOS4210_CMU_RIGHTBUS,
+    EXYNOS4210_CMU_TOP,
+    EXYNOS4210_CMU_DMC,
+    EXYNOS4210_CMU_CPU,
+    EXYNOS4210_CMU_NUMBER
+} Exynos4210Cmu;
+
+typedef enum {
+    UNSPECIFIED_CLOCK,
+    EXYNOS4210_XXTI,
+    EXYNOS4210_XUSBXTI,
+//    EXYNOS4210_USB_PHY,
+//    EXYNOS4210_USB_HOST_PHY,
+//    EXYNOS4210_HDMI_PHY,
+    EXYNOS4210_APLL,
+    EXYNOS4210_MPLL,
+    EXYNOS4210_SCLK_HDMI24M,
+    EXYNOS4210_SCLK_USBPHY0,
+    EXYNOS4210_SCLK_USBPHY1,
+    EXYNOS4210_SCLK_HDMIPHY,
+    EXYNOS4210_SCLK_APLL,
+    EXYNOS4210_SCLK_MPLL,
+    EXYNOS4210_ACLK_100,
+    EXYNOS4210_SCLK_UART0,
+    EXYNOS4210_SCLK_UART1,
+    EXYNOS4210_SCLK_UART2,
+    EXYNOS4210_SCLK_UART3,
+    EXYNOS4210_SCLK_UART4,
+    EXYNOS4210_CLOCKS_NUMBER
+} Exynos4210Clock;
+
+typedef void ClockChangeHandler(void *opaque);
+
+DeviceState *exynos4210_cmu_create(target_phys_addr_t addr, Exynos4210Cmu cmu);
+uint64_t exynos4210_cmu_get_rate(Exynos4210Clock clock_id);
+void exynos4210_register_clock_handler(ClockChangeHandler *func,
+                                       Exynos4210Clock clock_id,
+                                       void *opaque);
+
+/*
  * exynos4210 UART
  */
+
 DeviceState *exynos4210_uart_create(target_phys_addr_t addr,
                                     int fifo_size,
                                     int channel,
