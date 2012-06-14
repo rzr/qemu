@@ -3358,6 +3358,7 @@ int main(int argc, char **argv, char **envp)
     }
 
 #ifndef _WIN32
+#ifdef CONFIG_GL
 	if (enable_gl && (gl_acceleration_capability_check () != 0)) {
 		enable_gl = 0;
 		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
@@ -3380,6 +3381,7 @@ int main(int argc, char **argv, char **envp)
             }
         }
     }
+#endif
 #endif
 	
     /* Open the logfile at this point, if necessary. We can't open the logfile

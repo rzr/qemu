@@ -121,6 +121,11 @@ static void pl050_write(void *opaque, target_phys_addr_t offset,
         break;
     case 3: /* KMICLKDIV */
         s->clk = value;
+#ifdef CONFIG_MARU
+        if (!s->is_mouse) {
+        	ps2_keyboard_set_translation(s->dev, 1);
+        }
+#endif
         return;
     default:
         hw_error("pl050_write: Bad offset %x\n", (int)offset);

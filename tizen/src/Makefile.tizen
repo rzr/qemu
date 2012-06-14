@@ -92,12 +92,25 @@ ifdef CONFIG_WIN32 # libs for maru camera on windows host
 LIBS += -lole32 -loleaut32 -luuid -lstrmiids
 endif
 
+obj-arm-y += maru_arm.o
+obj-arm-y += maru_arm_board.o
+obj-arm-y += maru_codec.o
+obj-arm-y += maru_brightness.o
+obj-arm-y += maru_touchscreen.o
+obj-arm-y += maru_arm_vpci.o
+obj-arm-y += maru_arm_pmu.o
+obj-arm-y += maru_camera_common_pci.o
+obj-arm-$(CONFIG_LINUX) += maru_camera_linux_pci.o
+obj-arm-$(CONFIG_WIN32) += maru_camera_win32_pci.o
+
 
 # maru skin
 obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
+obj-arm-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
 
 # guest server
-obj-i386-y += guest_server.o 
+obj-i386-y += guest_server.o
+obj-arm-y += guest_server.o
 
 ifndef CONFIG_WIN32
 ###########################################################

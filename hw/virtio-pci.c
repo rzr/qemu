@@ -811,6 +811,7 @@ static int virtio_balloon_exit_pci(PCIDevice *pci_dev)
 }
 
 #ifndef _WIN32
+#ifdef CONFIG_GL
 extern VirtIODevice *virtio_gl_init(DeviceState *dev);
 static int virtio_gl_init_pci(PCIDevice *pci_dev)
 {
@@ -824,6 +825,7 @@ static int virtio_gl_init_pci(PCIDevice *pci_dev)
     virtio_init_pci(proxy, vdev);
     return 0;
 }
+#endif
 #endif
 
 static Property virtio_blk_properties[] = {
@@ -1010,6 +1012,7 @@ static TypeInfo virtio_scsi_info = {
 
 
 #ifndef _WIN32
+#ifdef CONFIG_GL
 static void virtio_gl_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -1031,6 +1034,7 @@ static TypeInfo virtio_gl_info = {
     .class_init    = virtio_gl_class_init,
 };
 #endif
+#endif
 
 static void virtio_pci_register_types(void)
 {
@@ -1040,7 +1044,9 @@ static void virtio_pci_register_types(void)
     type_register_static(&virtio_balloon_info);
     type_register_static(&virtio_scsi_info);
 #ifndef _WIN32
+#ifdef CONFIG_GL
     type_register_static(&virtio_gl_info);
+#endif
 #endif
 
 }

@@ -39,6 +39,13 @@ i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
 
 void resume( void );
 
+#ifdef TARGET_ARM
+static int is_suspended_state( void )
+{
+    return 0;
+}
+#else
 int is_suspended_state( void );
+#endif
 
 #endif /* MARU_PM_H_ */

@@ -50,8 +50,10 @@ install: all
 	mkdir -p $(EMUL_DIR)/x86
 	mkdir -p $(EMUL_DIR)/x86/data 
 	mkdir -p $(EMUL_DIR)/arm
+	mkdir -p $(EMUL_DIR)/arm/data
 	mkdir -p $(EMUL_DIR)/x86/data/pc-bios
 	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
+	cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
