@@ -300,6 +300,9 @@ uint32_t xen_domid;
 enum xen_mode xen_mode = XEN_EMULATE;
 static int tcg_tb_size;
 
+#ifdef CONFIG_OPENGLES
+int gles2_quality = 100;
+#endif
 static int default_serial = 1;
 static int default_parallel = 1;
 static int default_virtcon = 1;
@@ -3078,6 +3081,11 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_smbios:
                 do_smbios_option(optarg);
                 break;
+#ifdef CONFIG_OPENGLES
+            case QEMU_OPTION_gles2_quality:
+                gles2_quality = strtoul(optarg, NULL, 10);
+                break;
+#endif
             case QEMU_OPTION_enable_kvm:
                 olist = qemu_find_opts("machine");
                 qemu_opts_parse(olist, "accel=kvm", 0);

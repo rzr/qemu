@@ -22,6 +22,9 @@
 
 #include "qemu-common.h"
 #include "sysbus.h"
+#ifdef CONFIG_BUILD_GLES
+#include "gles2.h"
+#endif
 
 /* Debug messages configuration */
 #define EXY_G3D_DEBUG               0
@@ -391,6 +394,9 @@ typedef struct Exynos4210G3DState {
     MaliMMU gp_mmu;
     MaliMMU pp_mmu[NUM_OF_PIXPROC];
     MaliL2Cache l2_cache;
+#ifdef CONFIG_BUILD_GLES
+    void *gles2;
+#endif
     qemu_irq irq_pmu;             /* power unit interrupt */
 } Exynos4210G3DState;
 
@@ -805,6 +811,9 @@ static int exynos4210_g3d_init(SysBusDevice *dev)
     memory_region_init_io(&s->iomem, &exynos4210_g3d_mmio_ops, s,
             "exynos4210.g3d", EXYNOS4210_G3D_REG_MEM_SIZE);
     sysbus_init_mmio(dev, &s->iomem);
+#ifdef CONFIG_BUILD_GLES
+    s->gles2 = gles2_init(first_cpu);
+#endif
 
     return 0;
 }

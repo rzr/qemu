@@ -965,7 +965,15 @@ static int get_phys_addr_mpu(CPUARMState *env, uint32_t address, int access_type
     return 0;
 }
 
-static inline int get_phys_addr(CPUARMState *env, uint32_t address,
+#ifdef CONFIG_BUILD_GLES
+int get_phys_addr(CPUARMState *env, uint32_t address,
+                                int access_type, int is_user,
+                                uint32_t *phys_ptr, int *prot,
+                                target_ulong *page_size);
+#else
+static inline
+#endif
+int get_phys_addr(CPUARMState *env, uint32_t address,
                                 int access_type, int is_user,
                                 uint32_t *phys_ptr, int *prot,
                                 target_ulong *page_size)

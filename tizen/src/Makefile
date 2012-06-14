@@ -55,6 +55,8 @@ install: all
 	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
 	cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
+	@if test -d "../../arm-softmmu/lib/gles"; then \
+	mkdir -p $(EMUL_DIR)/bin/lib; cp -dpr ../../arm-softmmu/lib/gles $(EMUL_DIR)/bin/lib; fi
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
 else

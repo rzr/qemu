@@ -417,6 +417,36 @@ include $(SRC_PATH)/tizen/src/Makefile.tizen
 endif
 ##
 
+ifdef CONFIG_BUILD_GLES
+
+gles2.o: gles2.c gles2.h
+gles2_egl.o: gles2_egl.c gles2.h
+gles2_es11.o: gles2_es11.c gles2.h
+gles2_es20.o: gles2_es20.c gles2.h
+gles2_kernel_calls.o: gles2_kernel_calls.c gles2.h gles2_calls.h
+gles2_egl_calls.o: gles2_egl_calls.c gles2.h gles2_calls.h
+gles2_es11_calls.o: gles2_es11_calls.c gles2.h gles2_calls.h
+gles2_es20_calls.o: gles2_es20_calls.c gles2.h gles2_calls.h
+obj-$(TARGET_BASE_ARCH)-y += gles2.o gles2_egl.o gles2_es11.o gles2_es20.o
+obj-$(TARGET_BASE_ARCH)-y += gles2_kernel_calls.o  gles2_egl_calls.o gles2_es11_calls.o
+obj-$(TARGET_BASE_ARCH)-y += gles2_es20_calls.o
+
+PROG_GLESLIBS_ORIGIN=./lib/gles
+PROG_GLESLIB_DEP:=$(addprefix $(PROG_GLESLIBS_ORIGIN)/,$(notdir $(wildcard \
+$(CONFIG_GLES_LIBDIR)/lib*)))
+
+ifdef QEMU_PROGW
+$(QEMU_PROGW): $(PROG_GLESLIB_DEP)
+else
+$(QEMU_PROG): $(PROG_GLESLIB_DEP)
+endif
+
+$(PROG_GLESLIB_DEP):
+	@mkdir -p $(PROG_GLESLIBS_ORIGIN)
+	@cp -dp -t $(PROG_GLESLIBS_ORIGIN) $(wildcard $(CONFIG_GLES_LIBDIR)/lib*)
+
+endif # CONFIG_BUILD_GLES
+
 endif # CONFIG_SOFTMMU
 
 ifndef CONFIG_LINUX_USER
@@ -462,6 +492,10 @@ ifneq ($(PROGS),)
 	$(INSTALL) -m 755 $(PROGS) "$(DESTDIR)$(bindir)"
 ifneq ($(STRIP),)
 	$(STRIP) $(patsubst %,"$(DESTDIR)$(bindir)/%",$(PROGS))
+endif
+ifneq ($(PROG_GLESLIB_DEP),)
+	@mkdir -p $(DESTDIR)$(bindir)/$(PROG_GLESLIBS_ORIGIN)
+	$(INSTALL) -m 644 $(PROG_GLESLIB_DEP) "$(DESTDIR)$(bindir)/$(PROG_GLESLIBS_ORIGIN)"
 endif
 endif
 ifdef CONFIG_TRACE_SYSTEMTAP

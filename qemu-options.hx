@@ -1216,6 +1216,18 @@ STEXI
 @end table
 ETEXI
 
+#ifdef CONFIG_OPENGLES
+STEXI
+@table @option
+ETEXI
+DEF("gles2-quality", HAS_ARG, QEMU_OPTION_gles2_quality,
+    "-gles2-quality  set GLES 2.0 rendering quality [0 ... 100]\n",
+    QEMU_ARCH_ALL)
+STEXI
+@end table
+ETEXI
+#endif
+
 DEFHEADING(Network options:)
 STEXI
 @table @option

@@ -166,6 +166,9 @@ struct DisplayChangeListener {
     void (*dpy_fill)(struct DisplayState *s, int x, int y,
                      int w, int h, uint32_t c);
     void (*dpy_text_cursor)(struct DisplayState *s, int x, int y);
+#ifdef CONFIG_OPENGLES
+    void (*dpy_updatecaption)(void);
+#endif
 
     struct DisplayChangeListener *next;
 };
@@ -246,6 +249,20 @@ static inline void dpy_update(DisplayState *s, int x, int y, int w, int h)
         dcl = dcl->next;
     }
 }
+
+#ifdef CONFIG_OPENGLES
+static inline void dpy_updatecaption(DisplayState *s)
+{
+    struct DisplayChangeListener *dcl = s->listeners;
+    while (dcl != NULL) {
+        if(dcl->dpy_updatecaption != NULL)
+        {
+            dcl->dpy_updatecaption();
+        }
+        dcl = dcl->next;
+    }
+}
+#endif
 
 static inline void dpy_resize(DisplayState *s)
 {
