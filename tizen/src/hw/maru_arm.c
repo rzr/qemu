@@ -414,6 +414,21 @@ Exynos4210State *maru_arm_init(MemoryRegion *system_mem,
             s->irq_table[exynos4210_get_irq(11, 2)],
             NULL);
 
+    /*** GPU MALI400 (G3D) ***/
+    sysbus_create_varargs("exynos4210.g3d", EXYNOS4210_G3D_BASE_ADDR,
+            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_0_IRQ)],
+            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_1_IRQ)],
+            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_2_IRQ)],
+            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_3_IRQ)],
+            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_GEOM_PROC_IRQ)],
+            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PMU_IRQ)],
+            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU0_IRQ)],
+            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU1_IRQ)],
+            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU2_IRQ)],
+            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU3_IRQ)],
+            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_GPMMU_IRQ)],
+            NULL);
+
     /* I2S0 */
     s->i2s_bus[0] = exynos4210_i2s_bus_new("exynos4210.i2s",
                                  EXYNOS4210_I2S0_BASE_ADDR,

@@ -13,6 +13,7 @@ exec ./configure \
  --audio-drv-list=alsa \
  --disable-vnc-tls \
  --audio-card-list=ac97 \
+ --enable-opengles \
  --enable-maru
 # --enable-mixemu \
 # --enable-ldst-optimization \
