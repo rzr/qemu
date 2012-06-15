@@ -281,12 +281,14 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     int total_len = 0;
     int delimiter_len = strlen( DATA_DELIMITER );
 
+    /* collect QEMU information */
     for ( i = 0; i < qemu_argc; i++ ) {
         total_len += strlen( qemu_argv[i] );
         total_len += delimiter_len;
     }
 
 #ifdef _WIN32
+    /* collect HAXM information */
     const int HAX_LEN = 32;
     char hax_error[HAX_LEN];
     memset( hax_error, 0, HAX_LEN );
@@ -300,10 +302,17 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
             error = 1;
         }
     }
-    hax_err_len += sprintf( hax_error + hax_err_len, "%s", error ? "true" : "false" );
-    total_len += hax_err_len;
+    hax_err_len += sprintf( hax_error + hax_err_len, "%s#", error ? "true" : "false" );
+    total_len += (hax_err_len + 1);
 #endif
 
+    /* collect log path information */
+#define LOGPATH_TEXT "log_path="
+    char* log_path = get_log_path();
+    int log_path_len = strlen(LOGPATH_TEXT) + strlen(log_path) + delimiter_len;
+    total_len += (log_path_len + 1);
+
+    /* memory allocation */
     char* info_data = g_malloc0( total_len + 1 );
     if ( !info_data ) {
         g_free( detail_info );
@@ -311,8 +320,10 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
         return NULL;
     }
 
+
+    /* write informations */
     int len = 0;
-    total_len = 0;
+    total_len = 0; //recycle
 
     for ( i = 0; i < qemu_argc; i++ ) {
         len = strlen( qemu_argv[i] );
@@ -321,9 +332,12 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     }
 
 #ifdef _WIN32
-    snprintf( info_data + total_len, total_len + 1, "%s", hax_error );
+    snprintf( info_data + total_len, hax_err_len + 1, "%s#", hax_error );
     total_len += hax_err_len;
 #endif
+
+    snprintf( info_data + total_len, log_path_len + 1, "%s%s#", LOGPATH_TEXT, log_path );
+    total_len += log_path_len;
 
     INFO( "################## detail info data ####################\n" );
     INFO( "%s\n", info_data );
@@ -332,7 +346,6 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     detail_info->data_length = total_len;
 
     return detail_info;
-
 }
 
 void free_detail_info( DetailInfo* detail_info ) {
@@ -345,6 +358,7 @@ void free_detail_info( DetailInfo* detail_info ) {
 }
 
 void open_shell( void ) {
+    INFO("open shell\n");
 }
 
 void onoff_usb_kbd( int on )

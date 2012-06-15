@@ -58,6 +58,7 @@ struct _debug_channel
 };
 
 void set_log_path(char *path);
+char *get_log_path(void);
 
 #ifndef NO_DEBUG
 #define MSGSIZE_MAX 2048
