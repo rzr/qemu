@@ -183,6 +183,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "tizen/src/option.h"
 #include "tizen/src/emul_state.h"
 #include "tizen/src/skin/maruskin_operation.h"
+#include "tizen/src/maru_err_table.h"
 #endif
 
 //#define DEBUG_NET
@@ -2140,6 +2141,9 @@ static int configure_accelerator(void)
 
     if (!accel_initalised) {
         fprintf(stderr, "No accelerator found!\n");
+#ifdef CONFIG_MARU
+        maru_register_exit_msg(MARU_EXIT_UNKNOWN, "No accelerator found.");
+#endif
         exit(1);
     }
 
@@ -2192,6 +2196,9 @@ static const QEMUOption *lookup_opt(int argc, char **argv,
     for(;;) {
         if (!popt->name) {
             error_report("invalid option");
+#ifdef CONFIG_MARU
+            maru_register_exit_msg(MARU_EXIT_UNKNOWN, "invalid option.");
+#endif
             exit(1);
         }
         if (!strcmp(popt->name, r + 1))
@@ -2201,6 +2208,9 @@ static const QEMUOption *lookup_opt(int argc, char **argv,
     if (popt->flags & HAS_ARG) {
         if (optind >= argc) {
             error_report("requires an argument");
+#ifdef CONFIG_MARU
+            maru_register_exit_msg(MARU_EXIT_UNKNOWN, "requires an argument.");
+#endif
             exit(1);
         }
         optarg = argv[optind++];
