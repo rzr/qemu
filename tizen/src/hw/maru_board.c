@@ -61,6 +61,12 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 
+int codec_init(PCIBus *bus);
+int maru_camera_pci_init(PCIBus *bus);
+i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
+                       qemu_irq sci_irq, qemu_irq smi_irq,
+                       int kvm_enabled);
+
 #define MAX_IDE_BUS 2
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
