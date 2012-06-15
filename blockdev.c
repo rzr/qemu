@@ -524,18 +524,64 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
                      file, strerror(-ret));
 
 #ifdef CONFIG_MARU
-        const char _msg[] = "Fail to load disk file. Check if the file is corrupted or missing from the following path.\n\n";
-        char* current_path = (char *)g_get_current_dir();
+        const char _msg[] = "Failed to load disk file from the following path. Check if the file was corrupted or missing.\n\n";
+        char* current_path = NULL;
+        char* err_msg = NULL;
+#ifdef _WIN32
+        char* dos_err_msg = NULL;
+#endif
+        int total_len = 0;
+        int msg_len = 0;
+        int cur_path_len = 0;
+        int disk_path_len = 0;
+        int res = -1;
 
-        int len = strlen(_msg) + strlen(current_path) + strlen(file) + 2;
+        res = (int)g_path_is_absolute((gchar*)file);
+        disk_path_len = (strlen(file) + 1);
+        msg_len = strlen(_msg) + 1;
 
-        char* error_msg = g_malloc0(len * sizeof(char));
-        snprintf(error_msg, len, "%s%s/%s", _msg, current_path, file);
+        if (!res) {
+            current_path = (char*)g_get_current_dir();
+            cur_path_len = strlen(current_path) + strlen("/") + 1;
+            total_len += cur_path_len;
+        }
+        total_len += (disk_path_len + msg_len);
 
-        start_simple_client(error_msg);
+        err_msg = g_malloc0(total_len * sizeof(char));
+        if (!err_msg) {
+            printf("failed to allocate memory\n");
+        }
+
+        snprintf(err_msg, msg_len, "%s", _msg);
+        total_len = msg_len - 1;
+        if (!res) {
+            snprintf(err_msg + total_len, cur_path_len, "%s%s", current_path, "/");
+            total_len += (cur_path_len - 1);
+        }
+        snprintf(err_msg + total_len, disk_path_len, "%s", file);
+
+#ifdef _WIN32
+        {
+            int i;
+
+            dos_err_msg = strdup(err_msg);
+            if (!dos_err_msg) {
+                printf("failed to duplicate an error message from %p\n", err_msg);
+            }
+
+            for (i = (total_len - 1); dos_err_msg[i]; i++) {
+                if (dos_err_msg[i] == '/') {
+                    dos_err_msg[i] = '\\';
+                }
+            }
+            strncpy(err_msg, dos_err_msg, strlen(dos_err_msg));
+            free(dos_err_msg);
+        }
+#endif
+        start_simple_client(err_msg);
 
         g_free(current_path);
-        g_free(error_msg);
+        g_free(err_msg);
 #endif
 
         goto err;
