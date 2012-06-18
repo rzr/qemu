@@ -21,10 +21,10 @@
 #ifndef COMMON_VERTEX_H_
 #define COMMON_VERTEX_H_
 
-#if(defined BUILD_GLES)
-#	include "hglapi.h"
-#else
+#if(defined BUILD_GLES2)
 #	include "hgl2api.h"
+#else
+#	include "hglapi.h"
 #endif
 
 // set to 1 to enable extra vertex debug info

@@ -56,10 +56,11 @@
 extern "C" {
 #endif
 
-#ifdef BUILD_GLES
-# include "GLES/gl.h"
-#else
+#ifdef BUILD_GLES2
 # include "GLES2/gl2.h"
+#else
+# include "GLES/gl.h"
+#define GL_APICALL GL_API
 #endif
 
 #define OSMESA_MAJOR_VERSION 6

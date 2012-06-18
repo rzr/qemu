@@ -12,6 +12,12 @@ if test "$TARGET_ARCH" != "i386" -a "$TARGET_ARCH" != "i486" -a "$TARGET_ARCH" !
 fi;
 
 TARGET_OS=`uname -s`
+case $TARGET_OS in
+MINGW*)
+TARGET_OS="MINGW"
+;;
+esac
+
 if test "$TARGET_ARCH" = "x86_64" ; then
  TARGET_DIR="x86_64"
 else
@@ -28,7 +34,11 @@ make distclean && \
 CFLAGS="-D_GNU_SOURCE=1 -U_FORTIFY_SOURCE -fno-stack-protector" make install
 make distclean
 ;;
-*)
+MINGW*)
+make distclean && \
+./configure --disable-static --enable-wgl --disable-cocoa --disable-osmesa --enable-offscreen --disable-glx --disable-x11 --prefix="`pwd`/.." --arch=$TARGET_ARCH && \
+make install
+make distclean
 echo "OpenGL acceleration is not currently supported for $TARGET_OS"
 ;;
 esac
