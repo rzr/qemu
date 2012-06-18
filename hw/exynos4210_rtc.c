@@ -526,14 +526,21 @@ static void exynos4210_rtc_reset(DeviceState *d)
 
 #if EXYNOS4210_RTC_GETSYSTIME
     time_t ct;
+#ifdef _WIN32
+    struct tm *ptm;
+#endif
 
     time(&ct);
+
 #ifndef _WIN32
     gmtime_r(&ct, &s->current_tm);
+#else
+    ptm = gmtime(&ct);
+    s->current_tm = *ptm;
+#endif
     DPRINTF("Get time from host: %d-%d-%d %2d:%02d:%02d\n",
             s->current_tm.tm_year, s->current_tm.tm_mon, s->current_tm.tm_mday,
             s->current_tm.tm_hour, s->current_tm.tm_min, s->current_tm.tm_sec);
-#endif
 #endif
 
     s->reg_intp = 0;
