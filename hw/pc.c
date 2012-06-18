@@ -689,16 +689,13 @@ static void load_linux(void *fw_cfg,
 		kernel_filename, strerror(errno));
 
 #ifdef CONFIG_MARU
-    char* current_path = (char *)g_get_current_dir();
-    int len = strlen(current_path) + strlen(kernel_filename) + 2;
+	char *error_msg = NULL;
 
-    char* error_msg = g_malloc0(len * sizeof(char));
-    snprintf(error_msg, len, "%s/%s", current_path, kernel_filename);
-
+	error_msg = maru_convert_path(error_msg, kernel_filename);
     maru_register_exit_msg(MARU_EXIT_KERNEL_FILE_EXCEPTION, error_msg);
-
-    g_free(current_path);
-    g_free(error_msg);
+	if (error_msg) {
+	    g_free(error_msg);
+	}
 #endif
 
 	exit(1);
@@ -1048,18 +1045,26 @@ void pc_memory_init(MemoryRegion *system_memory,
         fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
 
 #ifdef CONFIG_MARU
-        char* current_path = (char *)g_get_current_dir();
-        const char* _path = qemu_get_data_dir();
+        char *error_msg = NULL;
+		const char *path = qemu_get_data_dir();
+		char *bios_path = NULL;
+		int bios_len = 0;
 
-        int len = strlen(current_path) + strlen(_path) + strlen(bios_name) + 3;
+		bios_len = strlen(path) + strlen("/") + strlen(bios_name) + 1;
+		bios_path = g_malloc(bios_len * sizeof(char));
+        if (!bios_path) {
+            fprintf(stderr, "qemu: failed to allocate memory\n");
+		}
+        snprintf(bios_path, bios_len, "%s/%s", path, bios_name);
+        error_msg = maru_convert_path(error_msg, bios_path);
+	    maru_register_exit_msg(MARU_EXIT_BIOS_FILE_EXCEPTION, error_msg);
 
-        char* error_msg = g_malloc0(len * sizeof(char));
-        snprintf(error_msg, len, "%s/%s/%s", current_path, _path, bios_name);
-
-        maru_register_exit_msg(MARU_EXIT_BIOS_FILE_EXCEPTION, error_msg);
-
-        g_free(current_path);
-        g_free(error_msg);
+        if (bios_path) {
+            g_free(bios_path);
+        }
+        if (error_msg) {
+            g_free(error_msg);
+        }
 #endif
 
         exit(1);

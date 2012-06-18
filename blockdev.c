@@ -218,6 +218,7 @@ static int parse_block_error_action(const char *buf, int is_read)
 
 #ifdef CONFIG_MARU
 extern int start_simple_client(char* msg);
+extern char* maru_convert_path(char* msg, const char *path);
 #endif
 
 DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
@@ -524,64 +525,13 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
                      file, strerror(-ret));
 
 #ifdef CONFIG_MARU
-        const char _msg[] = "Failed to load disk file from the following path. Check if the file was corrupted or missing.\n\n";
-        char* current_path = NULL;
-        char* err_msg = NULL;
-#ifdef _WIN32
-        char* dos_err_msg = NULL;
-#endif
-        int total_len = 0;
-        int msg_len = 0;
-        int cur_path_len = 0;
-        int disk_path_len = 0;
-        int res = -1;
-
-        res = (int)g_path_is_absolute((gchar*)file);
-        disk_path_len = (strlen(file) + 1);
-        msg_len = strlen(_msg) + 1;
-
-        if (!res) {
-            current_path = (char*)g_get_current_dir();
-            cur_path_len = strlen(current_path) + strlen("/") + 1;
-            total_len += cur_path_len;
-        }
-        total_len += (disk_path_len + msg_len);
-
-        err_msg = g_malloc0(total_len * sizeof(char));
-        if (!err_msg) {
-            printf("failed to allocate memory\n");
-        }
-
-        snprintf(err_msg, msg_len, "%s", _msg);
-        total_len = msg_len - 1;
-        if (!res) {
-            snprintf(err_msg + total_len, cur_path_len, "%s%s", current_path, "/");
-            total_len += (cur_path_len - 1);
-        }
-        snprintf(err_msg + total_len, disk_path_len, "%s", file);
-
-#ifdef _WIN32
-        {
-            int i;
-
-            dos_err_msg = strdup(err_msg);
-            if (!dos_err_msg) {
-                printf("failed to duplicate an error message from %p\n", err_msg);
-            }
-
-            for (i = (total_len - 1); dos_err_msg[i]; i++) {
-                if (dos_err_msg[i] == '/') {
-                    dos_err_msg[i] = '\\';
-                }
-            }
-            strncpy(err_msg, dos_err_msg, strlen(dos_err_msg));
-            free(dos_err_msg);
-        }
-#endif
+        const char _msg[] = "Failed to load disk file from the following path. Check if the file is corrupted or missing.\n\n";
+	    char* err_msg = NULL;
+        err_msg = maru_convert_path((char*)_msg, file);
         start_simple_client(err_msg);
-
-        g_free(current_path);
-        g_free(err_msg);
+        if (err_msg) {
+            g_free(err_msg);
+        }
 #endif
 
         goto err;
