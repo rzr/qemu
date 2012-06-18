@@ -79,6 +79,10 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
     while (len) {
         target_ulong start_page = TARGET_PAGE(start_addr);
         target_ulong start_pa = gles2_pa(s, start_page, 0);
+        if (!start_pa)
+        {
+            return 0;
+        }
 #if (GLES2_DEBUG == 1)
         target_ulong end_pa = start_pa;
 #endif // GLES2_DEBUG == 1
@@ -88,6 +92,10 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
         while(end_page < last_page) {
             target_ulong next_page = end_page + TARGET_PAGE_SIZE;
             target_ulong next_pa = gles2_pa(s, next_page, 0);
+            if (!next_pa)
+            {
+                return 0;
+            }
 
             // If the target pages are not linearly spaced, stop..
             if((next_pa < start_pa) ||
@@ -181,6 +189,10 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
     while (len) {
         target_ulong start_page = TARGET_PAGE(start_addr);
         target_ulong start_pa = gles2_pa(s, start_page, access_type);
+        if (!start_pa)
+        {
+            return 0;
+        }
 #if (GLES2_DEBUG == 1)
         target_ulong end_pa = start_pa;
 #endif // GLES2_DEBUG == 1
@@ -190,6 +202,10 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
         while(end_page < last_page) {
             target_ulong next_page = end_page + TARGET_PAGE_SIZE;
             target_ulong next_pa = gles2_pa(s, next_page, access_type);
+            if (!next_pa)
+            {
+                return 0;
+            }
 
             // If the target pages are not linearly spaced, stop..
             if ((next_pa < start_pa) ||

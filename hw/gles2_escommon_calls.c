@@ -16,13 +16,18 @@ static unsigned gles2_glTexParameterCount(TGLenum pname)
     return count;
 }
 
-static unsigned gles2_get_stride(unsigned bpp)
+static unsigned gles2_get_stride(unsigned width, unsigned bpp)
 {
     unsigned alignment = 0;
 
     hgl.glGetIntegerv(GL_UNPACK_ALIGNMENT, (GLint *)&alignment);
 
-    return (alignment > bpp) ? alignment : bpp;
+    if (!alignment)
+    {
+        alignment = 1;
+    }
+
+    return ((width * bpp) + alignment - 1) & ~(alignment - 1);
 }
 
 static void gles2_TransferArrays(gles2_State *s, gles2_Context *c,
@@ -840,7 +845,7 @@ GLES2_CB(glReadPixels)
 
         GLES2_PRINT("Reading %dx%dx%d image at %d,%d...\n",
                     width, height, bpp, x, y);
-        nbytes = width*height*gles2_get_stride(bpp);
+        nbytes = height*gles2_get_stride(width, bpp);
         pixels = malloc(nbytes);
     }
     hgl.glReadPixels(x, y, width, height, format, type, pixels);
@@ -928,7 +933,7 @@ GLES2_CB(glTexImage2D)
     GLES2_PRINT("Uploading %dx%dx%d image...\n", width, height, bpp);
     char* pixels = NULL;
     if (pixelsp && width > 0 && height > 0) {
-        TGLsizei nbytes = width*height*gles2_get_stride(bpp);
+        TGLsizei nbytes = height*gles2_get_stride(width, bpp);
         pixels = malloc(nbytes);
         gles2_transfer(s, pixelsp, nbytes, pixels, 0);
     }
@@ -1034,7 +1039,7 @@ GLES2_CB(glTexSubImage2D)
 
     char *pixels = NULL;
     if (pixelsp && width > 0 && height > 0) {
-        TGLsizei nbytes = width*height*gles2_get_stride(bpp);
+        TGLsizei nbytes = height*gles2_get_stride(width, bpp);
         pixels = malloc(nbytes);
         gles2_transfer(s, pixelsp, nbytes, pixels, 0);
     }
