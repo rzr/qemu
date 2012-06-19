@@ -109,15 +109,15 @@ static void qemu_update(void)
 #ifdef SDL_THREAD
 static void* run_qemu_update(void* arg)
 {
-    while(1) { 
+    while(1) {
         pthread_mutex_lock(&sdl_mutex);
 
-        pthread_cond_wait(&sdl_cond, &sdl_mutex); 
+        pthread_cond_wait(&sdl_cond, &sdl_mutex);
 
         qemu_update();
 
         pthread_mutex_unlock(&sdl_mutex);
-    } 
+    }
 
     return NULL;
 }
@@ -281,6 +281,23 @@ static void qemu_ds_refresh(DisplayState *ds)
                 break;
         }
     }
+
+#ifdef TARGET_ARM
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
+    /*
+     * It is necessary only for exynos4210 FIMD in connection with
+     * some WM (xfwm4, for example)
+     */
+
+    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
+#ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+#endif
 }
 
 void maruskin_display_init(DisplayState *ds)
