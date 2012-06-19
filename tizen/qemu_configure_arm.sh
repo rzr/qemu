@@ -14,7 +14,8 @@ exec ./configure \
  --disable-vnc-tls \
  --audio-card-list=ac97 \
  --enable-opengles \
- --enable-maru
+ --enable-maru \
+ --disable-pie
 # --enable-mixemu \
 # --enable-ldst-optimization \
 # --enable-gl
