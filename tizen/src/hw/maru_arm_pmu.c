@@ -437,7 +437,7 @@ static void exynos4210_pmu_write(void *opaque, target_phys_addr_t offset,
     switch (offset) {
     case SYSTEM_POWER_DOWN_CTRL:
         if (!(val & (1 << 16))) {
-            qemu_system_powerdown_request();
+            qemu_system_shutdown_request();
             return;
         }
     case SWRESET:
@@ -471,53 +471,14 @@ static void exynos4210_pmu_reset(DeviceState *dev)
     }
 }
 
-static void maru_arm_powerdown_tick(void *opaque)
-{
-    Exynos4210PmuState *s = opaque;
-    const Exynos4210PmuReg *reg_p = exynos4210_pmu_regs;
-    unsigned i;
-
-    for (i = 0; i < PMU_NUM_OF_REGISTERS; i++) {
-        if (reg_p->offset == SYSTEM_POWER_DOWN_CTRL) {
-            if (s->reg[i] & 0x00010000) {
-                /* Reset value arrived in register. Do not powerdown, we are in
-                 * the process of resetting. */
-                return;
-            }
-        }
-        reg_p++;
-    }
-    qemu_system_shutdown_request();
-}
-
-static void maru_arm_powerdown(void *opaque, int irq, int power_failing)
-{
-    Exynos4210PmuState *s = opaque;
-
-    assert(s != NULL);
-    /* Wait 100 ms */
-    ptimer_set_count(s->ptimer, POWER_OFF_TIMER_FREQ / 100);
-    ptimer_run(s->ptimer, 1);
-}
-
 static int exynos4210_pmu_init(SysBusDevice *dev)
 {
     Exynos4210PmuState *s = FROM_SYSBUS(Exynos4210PmuState, dev);
-    QEMUBH *bh;
 
     /* memory mapping */
     memory_region_init_io(&s->iomem, &exynos4210_pmu_ops, s, "maru_arm.pmu",
                           EXYNOS4210_PMU_REGS_MEM_SIZE);
     sysbus_init_mmio(dev, &s->iomem);
-
-    /* We register powerdown handler here for the purpose to find out
-     * if reset was requested after powerdown. If so, then do reset.
-     * Here we hope that reset request will be set to the moment when
-     * timer allocated in maru_arm_powerdown shoots. */
-    bh = qemu_bh_new(maru_arm_powerdown_tick, s);
-    s->ptimer = ptimer_init(bh);
-    ptimer_set_freq(s->ptimer, POWER_OFF_TIMER_FREQ);
-    qemu_system_powerdown = *qemu_allocate_irqs(maru_arm_powerdown, s, 1);
 
     return 0;
 }
