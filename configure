@@ -3214,9 +3214,6 @@ fi
 if test "$profiler" = "yes" ; then
   echo "CONFIG_PROFILER=y" >> $config_host_mak
 fi
-if test "$ldst_optimization" = "yes" ; then
-  echo "CONFIG_QEMU_LDST_OPTIMIZATION=y" >> $config_host_mak
-fi
 if test "$slirp" = "yes" ; then
   echo "CONFIG_SLIRP=y" >> $config_host_mak
   echo "CONFIG_SMBD_COMMAND=\"$smbd\"" >> $config_host_mak
@@ -3861,6 +3858,11 @@ case "$target_arch2" in
   fi
 esac
 
+if test "$ldst_optimization" = "yes" ; then
+  if test "$target_arch2" = "i386" -o "$target_arch2" = "x86_64"; then
+    echo "CONFIG_QEMU_LDST_OPTIMIZATION=y" >> $config_target_mak
+  fi
+fi
 if test "$target_arch2" = "ppc64" -a "$fdt" = "yes"; then
   echo "CONFIG_PSERIES=y" >> $config_target_mak
 fi
