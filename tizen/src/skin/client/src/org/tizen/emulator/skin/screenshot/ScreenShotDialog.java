@@ -169,8 +169,9 @@ public class ScreenShotDialog {
 				if ( null != image && !image.isDisposed() ) {
 					//e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 					Rectangle r = image.getBounds();
+					logger.info("r.width: " +r.width +", r.height " + r.height);
 					e.gc.drawImage(image, 0, 0, r.width, r.height,
-							CANVAS_MARGIN, CANVAS_MARGIN, (int)(r.width * scaleLevel * 1/100), (int)(r.height * scaleLevel * 1/100));
+							CANVAS_MARGIN, CANVAS_MARGIN, (int)(r.width  * scaleLevel * 1/100), (int)(r.height * scaleLevel * 1/100));
 				}
 
 			}
@@ -296,16 +297,16 @@ public class ScreenShotDialog {
 
 	}
 	
-	public double getScaleLevel() {
+	private double getScaleLevel() {
 		return scaleLevel;
 	}
 
-	public void DownScaleLevel() {
+	private void DownScaleLevel() {
 		scaleLevel /= 2;
 		logger.info("down scaling level : " + scaleLevel);
 	}
 	
-	public void UpScaleLevel() {
+	private void UpScaleLevel() {
 		scaleLevel *= 2;
 		logger.info("up scaling level : " + scaleLevel);
 	}
@@ -313,12 +314,12 @@ public class ScreenShotDialog {
 	private void arrageImageLayout() {
 
 		ImageData imageData = image.getImageData();
-
+		scaleLevel = 100d;
 		int width = imageData.width + ( 2 * CANVAS_MARGIN );
 		int height = imageData.height + ( 2 * CANVAS_MARGIN );
-
+		logger.info("arrageImageLayout width:" + width + ", height: "+ height);
 		scrollComposite.setMinSize( width, height );
-
+		
 		RotationInfo rotation = getCurrentRotation();
 		if ( !currentRotation.equals( rotation ) ) { // reserve changed shell size by user
 			shell.pack();
@@ -327,6 +328,28 @@ public class ScreenShotDialog {
 		currentRotation = rotation;
 
 	}
+	
+	private void scaledImageLayout() {
+
+		ImageData imageData = image.getImageData();
+
+		int width = imageData.width + ( 2 * CANVAS_MARGIN );
+		int height = imageData.height + ( 2 * CANVAS_MARGIN );
+		logger.info("arrageImageLayout2 width:" + width + ", height: "+ height);
+		int reWidth = (int)(width * scaleLevel * 1/100);
+		int reHeight = (int)(height * scaleLevel * 1/100);
+		logger.info("arrageImageLayout2 Rewidth:" + reWidth + ", Reheight: "+ reHeight);
+		scrollComposite.setMinSize( (int)(imageData.width * scaleLevel * 1/100) + ( 2 * CANVAS_MARGIN ), (int)(imageData.height * scaleLevel * 1/100) + ( 2 * CANVAS_MARGIN ));
+		
+		RotationInfo rotation = getCurrentRotation();
+		if ( !currentRotation.equals( rotation ) ) { // reserve changed shell size by user
+			shell.pack();
+		}
+
+		currentRotation = rotation;
+
+	}
+	
 
 	private ImageData rotateImageData( ImageData srcData, RotationInfo rotation ) {
 
@@ -549,7 +572,7 @@ public class ScreenShotDialog {
 				
 				UpScaleLevel();
 				imageCanvas.redraw();
-				arrageImageLayout();
+				scaledImageLayout();
 				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
 						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
 				label.update();
@@ -581,7 +604,7 @@ public class ScreenShotDialog {
 				
 				DownScaleLevel();
 				imageCanvas.redraw();
-				arrageImageLayout();
+				scaledImageLayout();
 				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
 						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
 				label.update();

@@ -57,6 +57,11 @@ void set_log_path(char *path)
     strcpy(logpath, path);
 }
 
+char *get_log_path(void)
+{
+    return logpath;
+}
+
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
 	int ret;

@@ -29,14 +29,18 @@
 
 package org.tizen.emulator.skin.dialog;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
@@ -66,6 +70,8 @@ public class DetailInfoDialog extends SkinDialog {
 
 	private SocketCommunicator communicator;
 	private EmulatorConfig config;
+	private Table table;
+	private LinkedHashMap<String, String> refinedData;
 
 	public DetailInfoDialog( Shell parent, String emulatorName, SocketCommunicator communicator, EmulatorConfig config ) {
 		super( parent, "Detail Info" + " - " + emulatorName, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE
@@ -85,7 +91,7 @@ public class DetailInfoDialog extends SkinDialog {
 		Composite composite = new Composite( parent, SWT.NONE );
 		composite.setLayout( new FillLayout() );
 
-		Table table = new Table( composite, SWT.BORDER | SWT.MULTI | SWT.FULL_SELECTION );
+		table = new Table( composite, SWT.BORDER | SWT.MULTI | SWT.FULL_SELECTION );
 		table.setHeaderVisible( true );
 		table.setLinesVisible( true );
 
@@ -99,7 +105,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 		int index = 0;
 
-		LinkedHashMap<String, String> refinedData = composeAndParseData( infoData );
+		refinedData = composeAndParseData( infoData );
 		Iterator<Entry<String, String>> iterator = refinedData.entrySet().iterator();
 
 		while ( iterator.hasNext() ) {
@@ -114,8 +120,47 @@ public class DetailInfoDialog extends SkinDialog {
 
 		column[0].pack();
 		column[1].pack();
-
 		table.pack();
+
+		/* browse the log path when log path item is selected */
+		table.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				//do nothing
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent event) {
+				if (table.getSelectionCount() > 1) {
+					return;
+				}
+
+				TableItem tableItem = ((TableItem)table.getSelection()[0]);
+				final String logKey = "Log Path";
+
+				if (tableItem.getText().compareTo(logKey) == 0) {
+					String logPath = refinedData.get(logKey);
+					ProcessBuilder procBrowser = new ProcessBuilder();
+
+					if (SkinUtil.isLinuxPlatform()) {
+						procBrowser.command("nautilus", "--browser", logPath);
+					} else if (SkinUtil.isWindowsPlatform()) {
+						procBrowser.command("explorer", "\"" + logPath + "\"");
+					} else if (SkinUtil.isMacPlatform()) {
+						//TODO:
+					}
+
+					if (procBrowser.command().isEmpty() == false) {
+						try {
+							procBrowser.start();
+						} catch (Exception e) {
+							logger.log( Level.SEVERE, e.getMessage(), e);
+						}
+					}
+				}
+
+			}
+		});
 
 		return composite;
 
@@ -124,9 +169,9 @@ public class DetailInfoDialog extends SkinDialog {
 	@Override
 	protected void setShellSize() {
 		if( SkinUtil.isLinuxPlatform() ) {
-			shell.setSize( (int) ( 380 * 1.618 ), 380 );
-		}else {
-			shell.setSize( (int) ( 350 * 1.618 ), 350 );
+			shell.setSize( (int) ( 402 * 1.618 ), 402 );
+		} else {
+			shell.setSize( (int) ( 372 * 1.618 ), 372 );
 		}
 	}
 
@@ -161,7 +206,7 @@ public class DetailInfoDialog extends SkinDialog {
 		String sharedPath = "";
 		boolean isHwVirtual = false;
 		String hwVirtualCompare = "";
-		String haxError = "hax_error=";
+		String logPath = "";
 		boolean isHaxError = false;
 		
 		if ( SkinUtil.isLinuxPlatform() ) {
@@ -252,10 +297,19 @@ public class DetailInfoDialog extends SkinDialog {
 
 					} else if ( hwVirtualCompare.equals( arg ) ) {
 						isHwVirtual = true;
-					} else if ( arg.startsWith( haxError ) ) {
+					} else if ( arg.startsWith("hax_error=") ) {
 						String[] sp = arg.split( "=" );
 						if( 1 < sp.length ) {
 							isHaxError = Boolean.parseBoolean( sp[1] );
+						}
+					} else if (arg.startsWith("log_path=")) {
+						String[] sp = arg.split("=");
+						if( 1 < sp.length ) {
+							final String logSuffix = "/logs/";
+
+							logPath = sp[1];
+							logPath = logPath.substring(0, logPath.lastIndexOf(logSuffix) + logSuffix.length());
+							logger.info("log path = " + logPath); //without filename
 						}
 					}
 
@@ -285,7 +339,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 		result.put( "RAM Size", ram );
 
-		if( SkinUtil.isLinuxPlatform() ) {
+		if ( SkinUtil.isLinuxPlatform() ) {
 			if ( StringUtil.isEmpty( sharedPath ) ) {
 				result.put( "File Sharing", "Not Supported" );
 				result.put( "File Shared Path", "None" );
@@ -295,7 +349,7 @@ public class DetailInfoDialog extends SkinDialog {
 			}
 		}
 
-		if( isHwVirtual ) {
+		if ( isHwVirtual ) {
 			if( isHaxError ) {
 				result.put( "HW Virtualization State", "Disable(insufficient memory for driver)" );
 			}else {
@@ -309,6 +363,17 @@ public class DetailInfoDialog extends SkinDialog {
 			result.put( "Image Path", "Not identified" );			
 		}else {
 			result.put( "Image Path", imagePath );			
+		}
+
+		if (logPath.isEmpty() == false) {
+			File logFile = new File(logPath);
+			try {
+				logPath = logFile.getCanonicalPath();
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+			}
+
+			result.put("Log Path", logPath);
 		}
 
 		return result;

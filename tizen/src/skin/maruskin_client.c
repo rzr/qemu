@@ -151,7 +151,7 @@ static void* run_skin_client(void* arg)
         }
         INFO("child return value : %d\n", dwRet);
 
-        if (dwRet == -1) {
+        if (dwRet != 0) {
             //child process is terminated with some problem.
             //so qemu process will terminate, too. immediately.
             exit(1);
@@ -177,7 +177,7 @@ static void* run_skin_client(void* arg)
         //The low-order 8 bits are zero if the process exited normally.
         INFO("child return value : %d\n", ret);
 
-        if (ret == 0xff) {
+        if (ret != 0) {
             //child process is terminated with some problem.
             //so qemu process will terminate, too. immediately.
             exit(1);

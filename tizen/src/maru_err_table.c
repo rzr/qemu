@@ -30,7 +30,9 @@
 
 #include "maru_err_table.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <glib.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -40,8 +42,8 @@
 static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
     /* 0 */ "", //MARU_EXIT_UNKNOWN
     /* 1 */ "Failed to allocate memory in qemu.", //MARU_EXIT_MEMORY_EXCEPTION
-    /* 2 */ "Fail to load kernel file. Check if the file is corrupted or missing from the following path.\n\n", //MARU_EXIT_KERNEL_FILE_EXCEPTION
-    /* 3 */ "Fail to load bios file. Check if the file is corrupted or missing from the following path.\n\n", //MARU_EXIT_BIOS_FILE_EXCEPTION
+    /* 2 */ "Failed to load a kernel file the following path. Check if the file is corrupted or missing.\n\n", //MARU_EXIT_KERNEL_FILE_EXCEPTION
+    /* 3 */ "Failed to load a bios file the following path. Check if the file is corrupted or missing.\n\n", //MARU_EXIT_BIOS_FILE_EXCEPTION
     /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
     /* add here.. */
     "" //MARU_EXIT_NORMAL
@@ -91,9 +93,87 @@ void maru_register_exit_msg(int maru_exit_index, char* additional_msg)
 void maru_atexit(void)
 {
     if (maru_exit_status != MARU_EXIT_NORMAL || strlen(maru_exit_msg) != 0) {
-	maru_dump_backtrace(NULL, 0);
+        maru_dump_backtrace(NULL, 0);
         start_simple_client(maru_exit_msg);
     }
+}
+
+char* maru_convert_path(char *msg, const char *path)
+{
+	char* current_path = NULL;
+	char* err_msg = NULL;
+#ifdef _WIN32
+	char* dos_err_msg = NULL;
+#endif
+	int total_len = 0;
+	int msg_len = 0;
+	int cur_path_len = 0;
+	int path_len = 0;
+	int res = -1;
+
+	res = (int)g_path_is_absolute(path);
+	path_len = (strlen(path) + 1);
+	if (msg) {
+		msg_len = strlen(msg) + 1;
+	}
+
+	if (!res) {
+		current_path = (char*)g_get_current_dir();
+		cur_path_len = strlen(current_path) + strlen("/") + 1;
+		total_len += cur_path_len;
+	}
+	total_len += (path_len + msg_len);
+
+	err_msg = g_malloc0(total_len * sizeof(char));
+	if (!err_msg) {
+		fprintf(stderr, "failed to allocate memory\n");
+		if (current_path) {
+			g_free(current_path);
+		}
+		return NULL;
+	}
+
+	if (msg) {
+		snprintf(err_msg, msg_len, "%s", msg);
+		total_len = msg_len - 1;
+	} else {
+		total_len = 0;
+	}
+
+	if (!res) {
+		snprintf(err_msg + total_len, cur_path_len, "%s%s", current_path, "/");
+		total_len += (cur_path_len - 1);
+	}
+	snprintf(err_msg + total_len, path_len, "%s", path);
+
+#ifdef _WIN32
+	{
+		int i;
+
+		dos_err_msg = strdup(err_msg);
+		if (!dos_err_msg) {
+			printf(stderr, "failed to duplicate an error message from %p\n", err_msg);
+			if (current_path) {
+				g_free(current_path);
+			}
+			g_free(err_msg);
+			return NULL;
+		}
+
+		for (i = (total_len - 1); dos_err_msg[i]; i++) {
+			if (dos_err_msg[i] == '/') {
+				dos_err_msg[i] = '\\';
+			}
+		}
+		strncpy(err_msg, dos_err_msg, strlen(dos_err_msg));
+		free(dos_err_msg);
+	}
+#endif
+	if (current_path) {
+		g_free(current_path);
+	}
+
+	return err_msg;
 }
 
 // for pirnt 'backtrace'

@@ -256,6 +256,7 @@ static int parse_block_error_action(const char *buf, int is_read)
 
 #ifdef CONFIG_MARU
 extern int start_simple_client(char* msg);
+extern char* maru_convert_path(char* msg, const char *path);
 #endif
 
 static bool do_check_io_limits(BlockIOLimit *io_limits)
@@ -622,18 +623,13 @@ DriveInfo *drive_init(QemuOpts *opts, int default_to_scsi)
                      file, strerror(-ret));
 
 #ifdef CONFIG_MARU
-        const char _msg[] = "Fail to load disk file. Check if the file is corrupted or missing from the following path.\n\n";
-        char* current_path = (char *)g_get_current_dir();
-
-        int len = strlen(_msg) + strlen(current_path) + strlen(file) + 2;
-
-        char* error_msg = g_malloc0(len * sizeof(char));
-        snprintf(error_msg, len, "%s%s/%s", _msg, current_path, file);
-
-        start_simple_client(error_msg);
-
-        g_free(current_path);
-        g_free(error_msg);
+        const char _msg[] = "Failed to load disk file from the following path. Check if the file is corrupted or missing.\n\n";
+	    char* err_msg = NULL;
+        err_msg = maru_convert_path((char*)_msg, file);
+        start_simple_client(err_msg);
+        if (err_msg) {
+            g_free(err_msg);
+        }
 #endif
 
         goto err;

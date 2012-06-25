@@ -700,16 +700,13 @@ static void load_linux(void *fw_cfg,
 		kernel_filename, strerror(errno));
 
 #ifdef CONFIG_MARU
-    char* current_path = (char *)g_get_current_dir();
-    int len = strlen(current_path) + strlen(kernel_filename) + 2;
+	char *error_msg = NULL;
 
-    char* error_msg = g_malloc0(len * sizeof(char));
-    snprintf(error_msg, len, "%s/%s", current_path, kernel_filename);
-
+	error_msg = maru_convert_path(error_msg, kernel_filename);
     maru_register_exit_msg(MARU_EXIT_KERNEL_FILE_EXCEPTION, error_msg);
-
-    g_free(current_path);
-    g_free(error_msg);
+	if (error_msg) {
+	    g_free(error_msg);
+	}
 #endif
 
 	exit(1);
@@ -995,10 +992,6 @@ void pc_cpus_init(const char *cpu_model)
         pc_new_cpu(cpu_model);
     }
 }
-
-#ifdef CONFIG_MARU
-extern char* qemu_get_data_dir(void);
-#endif
 
 void pc_memory_init(MemoryRegion *system_memory,
                     const char *kernel_filename,
