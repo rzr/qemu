@@ -38,12 +38,16 @@ import java.io.IOException;
 public class MouseEventData extends AbstractSendData {
 
 	int eventType;
+	int originX;
+	int originY;
 	int x;
 	int y;
 	int z;
 
-	public MouseEventData(int eventType, int x, int y, int z) {
+	public MouseEventData(int eventType, int originX, int originY, int x, int y, int z) {
 		this.eventType = eventType;
+		this.originX = originX;
+		this.originY = originY;
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -52,6 +56,8 @@ public class MouseEventData extends AbstractSendData {
 	@Override
 	protected void write() throws IOException {
 		writeInt(eventType);
+		writeInt(originX);
+		writeInt(originY);
 		writeInt(x);
 		writeInt(y);
 		writeInt(z);
@@ -62,11 +68,15 @@ public class MouseEventData extends AbstractSendData {
 		StringBuilder builder = new StringBuilder();
 		builder.append("MouseEventData [eventType=");
 		builder.append(eventType);
-		builder.append(", x=");
+		builder.append(", originX=");
+		builder.append(originX);
+		builder.append(", originY=");
+		builder.append(originY);
+		builder.append(", transposeX=");
 		builder.append(x);
-		builder.append(", y=");
+		builder.append(", transposeY=");
 		builder.append(y);
-		builder.append(", z=");
+		builder.append(", id=");
 		builder.append(z);
 		builder.append("]");
 		return builder.toString();

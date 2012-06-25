@@ -140,7 +140,7 @@ static void sdl_fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Ui
        Uint8 *target_pixel_a = (Uint8 *)surface->pixels + ((int)(cy + r - dy)) * surface->pitch + x * bpp;
        Uint8 *target_pixel_b = (Uint8 *)surface->pixels + ((int)(cy - r + dy)) * surface->pitch + x * bpp;
 
-       for (; x <= cx + dx; x++)
+       for ( ; x <= cx + dx; x++)
        {
            *(Uint32 *)target_pixel_a = pixel;
            *(Uint32 *)target_pixel_b = pixel;
@@ -178,7 +178,7 @@ void init_multi_touch_state(void)
     for (i = 0; i < mts->finger_cnt_max; i++) {
         finger = get_finger_point_from_slot(i);
         //finger->id = 0;
-        finger->x = finger->y = -1;
+        finger->origin_x = finger->origin_y = finger->x = finger->y = -1;
     }
 
     mts->finger_point_size = DEFAULT_FINGER_POINT_SIZE; //temp
@@ -221,7 +221,7 @@ int get_multi_touch_enable(void)
     return get_emul_multi_touch_state()->multitouch_enable;
 }
 
-static int _add_finger_point(int x, int y)
+static int _add_finger_point(int origin_x, int origin_y, int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
 
@@ -233,6 +233,8 @@ static int _add_finger_point(int x, int y)
     mts->finger_cnt += 1;
 
     mts->finger_slot[mts->finger_cnt - 1].id = mts->finger_cnt;
+    mts->finger_slot[mts->finger_cnt - 1].origin_x = origin_x;
+    mts->finger_slot[mts->finger_cnt - 1].origin_y = origin_y;
     mts->finger_slot[mts->finger_cnt - 1].x = x;
     mts->finger_slot[mts->finger_cnt - 1].y = y;
     INFO("%d finger touching\n", mts->finger_cnt);
@@ -260,6 +262,7 @@ FingerPoint *get_finger_point_search(int x, int y)
 
     for (i = mts->finger_cnt - 1; i >= 0; i--) {
         finger = get_finger_point_from_slot(i);
+
         if (finger != NULL) {
             if (x >= (finger->x - finger_point_size_half) &&
                 x < (finger->x + finger_point_size_half) &&
@@ -276,7 +279,7 @@ FingerPoint *get_finger_point_search(int x, int y)
 static int _grab_finger_id = 0;
 #define QEMU_MOUSE_PRESSED 1
 #define QEMU_MOUSE_RELEASEED 0
-void maru_finger_processing(int x, int y, int touch_type)
+void maru_finger_processing(int touch_type, int origin_x, int origin_y, int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
@@ -285,6 +288,8 @@ void maru_finger_processing(int x, int y, int touch_type)
         if (_grab_finger_id > 0) {
             finger = get_finger_point_from_slot(_grab_finger_id - 1);
             if (finger != NULL) {
+                finger->origin_x = origin_x;
+                finger->origin_y = origin_y;
                 finger->x = x;
                 finger->y = y;
                 if (finger->id != 0) {
@@ -297,7 +302,7 @@ void maru_finger_processing(int x, int y, int touch_type)
 
         if (mts->finger_cnt == 0)
         { //first finger touch input
-            if (_add_finger_point(x, y) == -1) {
+            if (_add_finger_point(origin_x, origin_y, x, y) == -1) {
                 return;
             }
             kbd_mouse_event(x, y, 0, QEMU_MOUSE_PRESSED);
@@ -316,6 +321,8 @@ void maru_finger_processing(int x, int y, int touch_type)
                 kbd_mouse_event(finger->x, finger->y, mts->finger_cnt_max - 1, 0);
 #endif
 
+                finger->origin_x = origin_x;
+                finger->origin_y = origin_y;
                 finger->x = x;
                 finger->y = y;
                 if (finger->id != 0) {
@@ -325,7 +332,7 @@ void maru_finger_processing(int x, int y, int touch_type)
         }
         else //one more finger
         {
-            _add_finger_point(x, y) ;
+            _add_finger_point(origin_x, origin_y, x, y) ;
             kbd_mouse_event(x, y, mts->finger_cnt - 1, QEMU_MOUSE_PRESSED);
         }
 
@@ -348,7 +355,7 @@ void clear_finger_slot(void)
         }
 
         finger->id = 0;
-        finger->x = finger->y = -1;
+        finger->origin_x = finger->origin_y = finger->x = finger->y = -1;
     }
 
     _grab_finger_id = 0;
