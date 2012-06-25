@@ -357,14 +357,14 @@ tb_page_addr_t get_page_addr_code(CPUArchState *env1, target_ulong addr);
 /* Extended versions of MMU helpers for qemu_ld/st optimization.
    They get return address arguments because the caller PCs are not where helpers return to. */
 #if defined(__i386__) || defined(__x86_64__)
-uint8_t __ldextb_mmu(target_ulong addr, int mmu_idx, void *ra);
-void __stextb_mmu(target_ulong addr, uint8_t val, int mmu_idx, void *ra);
-uint16_t __ldextw_mmu(target_ulong addr, int mmu_idx, void *ra);
-void __stextw_mmu(target_ulong addr, uint16_t val, int mmu_idx, void *ra);
-uint32_t __ldextl_mmu(target_ulong addr, int mmu_idx, void *ra);
-void __stextl_mmu(target_ulong addr, uint32_t val, int mmu_idx, void *ra);
-uint64_t  __ldextq_mmu(target_ulong addr, int mmu_idx, void *ra);
-void __stextq_mmu(target_ulong addr, uint64_t val, int mmu_idx, void *ra);
+uint8_t __ldextb_mmu(target_ulong addr, int mmu_idx, uintptr_t retaddr);
+void __stextb_mmu(target_ulong addr, uint8_t val, int mmu_idx, uintptr_t retaddr);
+uint16_t __ldextw_mmu(target_ulong addr, int mmu_idx, uintptr_t retaddr);
+void __stextw_mmu(target_ulong addr, uint16_t val, int mmu_idx, uintptr_t retaddr);
+uint32_t __ldextl_mmu(target_ulong addr, int mmu_idx, uintptr_t retaddr);
+void __stextl_mmu(target_ulong addr, uint32_t val, int mmu_idx, uintptr_t retaddr);
+uint64_t  __ldextq_mmu(target_ulong addr, int mmu_idx, uintptr_t retaddr);
+void __stextq_mmu(target_ulong addr, uint64_t val, int mmu_idx, uintptr_t retaddr);
 #endif
 #endif  /* CONFIG_QEMU_LDST_OPTIMIZATION */
 

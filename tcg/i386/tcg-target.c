@@ -1559,14 +1559,20 @@ static void add_qemu_ldst_label(TCGContext *s,
 /* generates slow case of qemu_ld at the end of TB */
 static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 {
-    int s_bits, arg_idx;
+    int s_bits;
     int opc = label->opc_ext & HL_OPC_MASK;
     int mem_index = label->mem_index;
     int data_reg = label->datalo_reg;
     int data_reg2 = label->datahi_reg;
+    int addrlo_reg = label->addrlo_reg;
     int addrhi_reg = label->addrhi_reg;
     uint8_t *raddr = label->raddr;
     uint32_t **label_ptr = &label->label_ptr[0];
+#if TCG_TARGET_REG_BITS == 64
+    int arg_idx;
+#else
+    int stack_adjust;
+#endif
 
     s_bits = opc & 3;
 
@@ -1576,27 +1582,50 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         *label_ptr[1] = (uint32_t)(s->code_ptr - (uint8_t *)label_ptr[1] - 4);
     }
 
-    /* 1st parameter(vaddr) has been alreay set in %eax */
+#if TCG_TARGET_REG_BITS == 32
+    tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
+    tcg_out_pushi(s, mem_index);
+    stack_adjust = 8;
+    if (TARGET_LONG_BITS == 64) {
+        tcg_out_push(s, addrhi_reg);
+        /* 4 bytes addrhi_reg and +4 bytes (raddr - 1) */
+        stack_adjust += 8;
+    }
+    tcg_out_push(s, addrlo_reg);
+    stack_adjust += 4;
+#ifdef CONFIG_TCG_PASS_AREG0
+    tcg_out_push(s, TCG_AREG0);
+    stack_adjust += 4;
+#endif
+#else
+    /* The first argument is already loaded with addrlo.  */
     arg_idx = 1;
-    if (TCG_TARGET_REG_BITS == 32 && TARGET_LONG_BITS == 64) {
-        tcg_out_mov(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
-                    addrhi_reg);
-    }
-    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
+    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx],
                  mem_index);
-    /* return address should indicate qemu_ld IR codes */
-    if (TCG_TARGET_REG_BITS == 32 && TARGET_LONG_BITS == 64) {
-        /* 4 word parameters */
-        tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-    } else {
-        /* 3 word parameters */
-        tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_ECX, (tcg_target_long)(raddr - 1));
-    }
+    tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_ECX, (tcg_target_long)(raddr - 1));
+#ifdef CONFIG_TCG_PASS_AREG0
+    /* XXX/FIXME: suboptimal */
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
+                tcg_target_call_iarg_regs[2]);
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[2],
+                tcg_target_call_iarg_regs[1]);
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[1],
+                tcg_target_call_iarg_regs[0]);
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[0],
+                TCG_AREG0);
+#endif
+#endif
+
     tcg_out_calli(s, (tcg_target_long)qemu_ldext_helpers[s_bits]);
-    if (TCG_TARGET_REG_BITS == 32 && TARGET_LONG_BITS == 64) {
+
+#if TCG_TARGET_REG_BITS == 32
+    if (stack_adjust == (TCG_TARGET_REG_BITS / 8)) {
         /* Pop and discard.  This is 2 bytes smaller than the add.  */
         tcg_out_pop(s, TCG_REG_ECX);
+    } else if (stack_adjust != 0) {
+        tcg_out_addi(s, TCG_REG_CALL_STACK, stack_adjust);
     }
+#endif
 
     switch(opc) {
     case 0 | 4:
@@ -1634,9 +1663,8 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     default:
         tcg_abort();
     }
-
     /* jump back to original code */
-    tcg_out_jmp(s, (tcg_target_long) raddr);
+    tcg_out_jmp(s, (tcg_target_long)raddr);
 }
 
 /* generates slow case of qemu_st at the end of TB */
@@ -1648,6 +1676,7 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     int mem_index = label->mem_index;
     int data_reg = label->datalo_reg;
     int data_reg2 = label->datahi_reg;
+    int addrlo_reg = label->addrlo_reg;
     int addrhi_reg = label->addrhi_reg;
     uint8_t *raddr = label->raddr;
     uint32_t **label_ptr = &label->label_ptr[0];
@@ -1660,54 +1689,46 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         *label_ptr[1] = (uint32_t)(s->code_ptr - (uint8_t *)label_ptr[1] - 4);
     }
 
-    /* 1st parameter(vaddr) has been already set */
-    /* return address should indicate qemu_st IR codes */
-    if (TCG_TARGET_REG_BITS == 64) {
-        tcg_out_mov(s, (opc == 3 ? TCG_TYPE_I64 : TCG_TYPE_I32),
-                    TCG_REG_RSI, data_reg);
-        tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_RDX, mem_index);
-        /* return address should indicate qemu_st IR codes */
-        /* stack growth: 1word * 64bit */
-        tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-        stack_adjust = 8;
-    } else if (TARGET_LONG_BITS == 32) {
-        tcg_out_mov(s, TCG_TYPE_I32, TCG_REG_EDX, data_reg);
-        if (opc == 3) {
-            tcg_out_mov(s, TCG_TYPE_I32, TCG_REG_ECX, data_reg2);
-            tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-            tcg_out_pushi(s, mem_index);
-            stack_adjust = 8;
-        } else {
-            tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_ECX, mem_index);
-            tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-            stack_adjust = 4;
-        }
-    } else {
-        if (opc == 3) {
-            tcg_out_mov(s, TCG_TYPE_I32, TCG_REG_EDX, addrhi_reg);
-            tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-            tcg_out_pushi(s, mem_index);
-            tcg_out_push(s, data_reg2);
-            tcg_out_push(s, data_reg);
-            stack_adjust = 16;
-        } else {
-            tcg_out_mov(s, TCG_TYPE_I32, TCG_REG_EDX, addrhi_reg);
-            switch(opc) {
-            case 0:
-                tcg_out_ext8u(s, TCG_REG_ECX, data_reg);
-                break;
-            case 1:
-                tcg_out_ext16u(s, TCG_REG_ECX, data_reg);
-                break;
-            case 2:
-                tcg_out_mov(s, TCG_TYPE_I32, TCG_REG_ECX, data_reg);
-                break;
-            }
-            tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-            tcg_out_pushi(s, mem_index);
-            stack_adjust = 8;
-        }
+#if TCG_TARGET_REG_BITS == 32
+    tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
+    tcg_out_pushi(s, mem_index);
+    stack_adjust = 8;
+    if (opc == 3) {
+        tcg_out_push(s, data_reg2);
+        stack_adjust += 4;
     }
+    tcg_out_push(s, data_reg);
+    stack_adjust += 4;
+    if (TARGET_LONG_BITS == 64) {
+        tcg_out_push(s, addrhi_reg);
+        stack_adjust += 4;
+    }
+    tcg_out_push(s, addrlo_reg);
+    stack_adjust += 4;
+#ifdef CONFIG_TCG_PASS_AREG0
+    tcg_out_push(s, TCG_AREG0);
+    stack_adjust += 4;
+#endif
+#else
+    tcg_out_mov(s, (opc == 3 ? TCG_TYPE_I64 : TCG_TYPE_I32),
+                tcg_target_call_iarg_regs[1], data_reg);
+    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], mem_index);
+    /* return address should indicate qemu_st IR codes */
+    /* stack growth: 1word * 64bit */
+    tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
+    stack_adjust = 8;
+#ifdef CONFIG_TCG_PASS_AREG0
+    /* XXX/FIXME: suboptimal */
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
+                tcg_target_call_iarg_regs[2]);
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[2],
+                tcg_target_call_iarg_regs[1]);
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[1],
+                tcg_target_call_iarg_regs[0]);
+    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[0],
+                TCG_AREG0);
+#endif
+#endif
 
     tcg_out_calli(s, (tcg_target_long)qemu_stext_helpers[s_bits]);
 
@@ -1715,7 +1736,7 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         /* Pop and discard.  This is 2 bytes smaller than the add.  */
         tcg_out_pop(s, TCG_REG_ECX);
     } else if (stack_adjust != 0) {
-        tcg_out_addi(s, TCG_REG_ESP, stack_adjust);
+        tcg_out_addi(s, TCG_REG_CALL_STACK, stack_adjust);
     }
 
     /* jump back to original code */
@@ -1816,6 +1837,7 @@ static void tcg_out_qemu_ld_opt(TCGContext *s, const TCGArg *args,
     uint32_t *label_ptr[2];
 
     data_reg = args[0];
+    label_ptr[1] = 0;
     addrlo_idx = 1;
     if (TCG_TARGET_REG_BITS == 32 && opc == 3) {
         data_reg2 = args[1];
@@ -1854,6 +1876,7 @@ static void tcg_out_qemu_st_opt(TCGContext *s, const TCGArg *args,
     uint32_t *label_ptr[2];
 
     data_reg = args[0];
+    label_ptr[1] = 0;
     addrlo_idx = 1;
     if (TCG_TARGET_REG_BITS == 32 && opc == 3) {
         data_reg2 = args[1];
