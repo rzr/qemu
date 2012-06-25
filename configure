@@ -194,6 +194,7 @@ smartcard_nss=""
 usb_redir=""
 opengl=""
 opengles="no"
+efence="no"
 glesincdir=""
 gleslibdir=""
 zlib="yes"
@@ -823,6 +824,10 @@ for opt do
   ;;
   --disable-opengles) opengles="no"
   ;;
+  --enable-efence) efence="yes"
+  ;;
+  --disable-efence) efence="no"
+  ;;
   --glesincdir=*) glesincdir="$optarg"
   ;;
   --gleslibdir=*) gleslibdir="$optarg"
@@ -1149,6 +1154,8 @@ echo "  --enable-libiscsi        enable iscsi support"
 echo "  --enable-opengles        enable OpenGL ES 2.0 passthrough device compilation"
 echo "                           Available for targets: ARM"
 echo "  --disable-opengles       disable OpenGL ES 2.0 passthrough device compilation"
+echo "  --enable-efence          enable Electic Fence"
+echo "  --disable-efence         disable Electic Fence"
 echo "  --glesincdir=PATH        search for EGL and GLES headers in PATH"
 echo "  --gleslibdir=PATH        search for EGL and GLES libs in PATH"
 echo "  --disable-smartcard      disable smartcard support"
@@ -3114,6 +3121,7 @@ if test "$opengles" = "yes"; then
   echo "OpenGLES libdir   $gleslibdir"
   echo "OpenGLES debug    $debug_gles"
 fi
+echo "EFence support    $efence"
 echo "libiscsi support  $libiscsi"
 echo "build guest agent $guest_agent"
 echo "coroutine backend $coroutine_backend"
@@ -3407,6 +3415,10 @@ if test "$opengles" = "yes" ; then
   if test "$debug_gles" = "yes" ; then
     echo "OPENGLES_DEBUG=y" >> $config_host_mak
   fi
+fi
+
+if test "$efence" = "yes" ; then
+  echo "CONFIG_EFENCE=y" >> $config_host_mak
 fi
 
 if test "$smartcard" = "yes" ; then
@@ -3940,6 +3952,11 @@ if test "$target_arch2" = "arm" -a "$opengles" = "yes" ; then
     fi
     echo "LIBS+=-ldl" >> $config_target_mak
   fi
+fi
+
+if test "$efence" = "yes" ; then
+  echo "CONFIG_BUILD_WITH_EFENCE=y" >> $config_target_mak
+  echo "LIBS+=-lefence" >> $config_target_mak
 fi
 
 for i in $ARCH $TARGET_BASE_ARCH ; do
