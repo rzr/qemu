@@ -38,7 +38,8 @@ ifeq ($(TARGET_ARCH), i386)
 
 GL_CUR_PATH = $(SRC_PATH)/tizen/src/hw
 
-GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu -I$(SRC_PATH)/$(TARGET_DIRS) $(QEMU_CFLAGS) $(CFLAGS)
+GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu
+GL_CFLAGS += $(addprefix -I$(SRC_PATH)/,$(TARGET_DIRS)) $(QEMU_CFLAGS) $(CFLAGS)
 
 parse_gl_h: parse_gl_h.c
 	$(CC) -g -o $@ $<
