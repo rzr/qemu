@@ -527,7 +527,7 @@ typedef struct {
         MemoryRegion iomem;
 
         /* registers values */
-        uint32_t reg[EXYNOS4210_CMU_REGS_MEM_SIZE];
+        uint32_t reg[EXYNOS4210_CMU_REGS_MEM_SIZE / sizeof(uint32_t)];
 
         /* which CMU it is */
         Exynos4210Cmu cmu_id;
@@ -1360,7 +1360,7 @@ static const VMStateDescription vmstate_exynos4210_cmu = {
          * TODO: Maybe we should save Exynos4210ClockState structs as well
          */
             VMSTATE_UINT32_ARRAY(reg, Exynos4210CmuState,
-                                 EXYNOS4210_CMU_REGS_MEM_SIZE),
+                              EXYNOS4210_CMU_REGS_MEM_SIZE / sizeof(uint32_t)),
             VMSTATE_END_OF_LIST()
         }
 };
