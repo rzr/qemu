@@ -483,20 +483,21 @@ typedef struct ClockChangeEntry {
     void *opaque;
 } ClockChangeEntry;
 
-#define TYPE_EXYNOS4210_CMU "exynos4210.cmu"
+#define TYPE_EXYNOS4210_CMU   "exynos4210.cmu"
+#define TYPE_EXYNOS4210_CLOCK "exynos4210.clock"
 
 typedef struct {
 
         const char      *name;
-        Exynos4210Clock  id;
+        int32_t          id;
         uint64_t         rate;
 
         /* Current source clock */
-        Exynos4210Clock  src_id;
+        int32_t  src_id;
         /*
          * Available sources. Their order must correspond to CLK_SRC_ register
          */
-        Exynos4210Clock  src_ids[SOURCES_NUMBER];
+        int32_t  src_ids[SOURCES_NUMBER];
 
         uint32_t src_reg; /* Offset of CLK_SRC_<*> register */
         uint32_t div_reg; /* Offset of CLK_DIV_<*> register */
@@ -514,7 +515,7 @@ typedef struct {
         uint8_t div_shift;
 
         /* Which CMU controls this clock */
-        Exynos4210Cmu cmu_id;
+        int32_t cmu_id;
 
         QTAILQ_HEAD(, ClockChangeEntry) clock_change_handler;
 
@@ -1349,6 +1350,22 @@ static void exynos4210_cmu_reset(DeviceState *dev)
     PRINT_DEBUG("CMU %d reset completed\n", s->cmu_id);
 }
 
+static const VMStateDescription vmstate_exynos4210_clock = {
+        .name = TYPE_EXYNOS4210_CLOCK,
+        .version_id = 1,
+        .minimum_version_id = 1,
+        .minimum_version_id_old = 1,
+        .fields = (VMStateField[]) {
+            VMSTATE_UINT64(rate, Exynos4210ClockState),
+            VMSTATE_INT32(src_id, Exynos4210ClockState),
+            VMSTATE_INT32_ARRAY(src_ids, Exynos4210ClockState, SOURCES_NUMBER),
+            VMSTATE_UINT32(src_reg, Exynos4210ClockState),
+            VMSTATE_UINT32(div_reg, Exynos4210ClockState),
+            VMSTATE_UINT8(mux_shift, Exynos4210ClockState),
+            VMSTATE_UINT8(div_shift, Exynos4210ClockState),
+            VMSTATE_END_OF_LIST()
+        }
+};
 
 static const VMStateDescription vmstate_exynos4210_cmu = {
         .name = TYPE_EXYNOS4210_CMU,
@@ -1356,11 +1373,12 @@ static const VMStateDescription vmstate_exynos4210_cmu = {
         .minimum_version_id = 1,
         .minimum_version_id_old = 1,
         .fields = (VMStateField[]) {
-        /*
-         * TODO: Maybe we should save Exynos4210ClockState structs as well
-         */
             VMSTATE_UINT32_ARRAY(reg, Exynos4210CmuState,
                               EXYNOS4210_CMU_REGS_MEM_SIZE / sizeof(uint32_t)),
+            VMSTATE_STRUCT_VARRAY_INT32(clock, Exynos4210CmuState,
+                                          clock_number, 0,
+                                          vmstate_exynos4210_clock,
+                                          Exynos4210ClockState),
             VMSTATE_END_OF_LIST()
         }
 };
@@ -1425,7 +1443,7 @@ static int exynos4210_cmu_init(SysBusDevice *dev)
     }
 
     s->clock =
-            (Exynos4210ClockState *)g_malloc0(n * sizeof(Exynos4210ClockState));
+           (Exynos4210ClockState *)g_malloc0(n * sizeof(Exynos4210ClockState));
 
     for (i = 1, s->clock_number = 0; i < EXYNOS4210_CLOCKS_NUMBER; i++) {
 
@@ -1441,7 +1459,6 @@ static int exynos4210_cmu_init(SysBusDevice *dev)
                         exynos4210_cmu_path[s->cmu_id]);
 
             s->clock_number++;
-
         }
     }
 
