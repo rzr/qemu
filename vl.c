@@ -195,7 +195,6 @@ int qemu_main(int argc, char **argv, char **envp);
 #define MAX_VIRTIO_CONSOLES 1
 
 #ifdef CONFIG_MARU
-#define VIRTIOGL_DEV_NAME "virtio-gl-pci"
 extern int tizen_base_port;
 int skin_disabled = 0;
 #endif
@@ -262,8 +261,9 @@ int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
 
 //virtio-gl
-#ifndef _WIN32
-extern int gl_acceleration_capability_check (void);
+#ifdef CONFIG_VIRTIO_GL
+#define VIRTIOGL_DEV_NAME "virtio-gl-pci"
+int gl_acceleration_capability_check(void);
 int enable_gl = 1;
 #endif
 
@@ -1896,7 +1896,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
-#ifndef _WIN32
+#ifdef CONFIG_VIRTIO_GL
 	// virtio-gl pci device
 	if (!enable_gl) {
 		// ignore virtio-gl-pci device, even if users set it in option.
@@ -3110,7 +3110,7 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
            case QEMU_OPTION_enable_gl:
-#ifndef _WIN32
+#ifdef CONFIG_VIRTIO_GL
                 enable_gl = 1;
 #endif
                 break;
@@ -3384,18 +3384,16 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
-#ifndef _WIN32
-#ifdef CONFIG_GL
+#ifdef CONFIG_VIRTIO_GL
 	if (enable_gl && (gl_acceleration_capability_check () != 0)) {
 		enable_gl = 0;
 		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
 	}
-	
+
 	// To check host gl driver capability and notify to guest.
 	gchar *tmp = tmp_cmdline;
 	tmp_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
-	qemu_opts_set(qemu_find_opts("machine"), 0, "append",
-	                        tmp_cmdline);
+	qemu_opts_set(qemu_find_opts("machine"), 0, "append", tmp_cmdline);
 	fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
 	g_free(tmp);
 
@@ -3408,7 +3406,6 @@ int main(int argc, char **argv, char **envp)
             }
         }
     }
-#endif
 #endif
 	
     /* Open the logfile at this point, if necessary. We can't open the logfile

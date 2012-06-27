@@ -207,7 +207,9 @@ VirtIODevice *virtio_scsi_init(DeviceState *dev, VirtIOSCSIConf *conf);
 #ifdef CONFIG_LINUX
 VirtIODevice *virtio_9p_init(DeviceState *dev, V9fsConf *conf);
 #endif
-
+#ifdef CONFIG_VIRTIO_GL
+VirtIODevice *virtio_gl_init(DeviceState *dev);
+#endif
 
 void virtio_net_exit(VirtIODevice *vdev);
 void virtio_blk_exit(VirtIODevice *vdev);
