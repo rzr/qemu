@@ -47,26 +47,34 @@ distclean:
 install: all
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
-	mkdir -p $(EMUL_DIR)/x86
-	mkdir -p $(EMUL_DIR)/x86/data 
-	mkdir -p $(EMUL_DIR)/arm
-	mkdir -p $(EMUL_DIR)/arm/data
-	mkdir -p $(EMUL_DIR)/x86/data/pc-bios
-	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
-	cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm
+	@for target in $(TARGET_DIRS); do \
+	  case "$$target" in \
+	  i386-softmmu) \
+	    mkdir -p $(EMUL_DIR)/x86 ;\
+	    mkdir -p $(EMUL_DIR)/x86/data ;\
+	    mkdir -p $(EMUL_DIR)/x86/data/pc-bios ;\
+	    cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
+	    cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/x86/data/pc-bios ;\
+	    cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/x86/data/pc-bios ;\
+	    cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/x86/data/pc-bios ;\
+	    cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/x86/data/pc-bios ;\
+	    cp -dpr ../../pc-bios/vgabios-maruvga.bin $(EMUL_DIR)/x86/data/pc-bios \
+	  ;; \
+	  arm-softmmu) \
+	    mkdir -p $(EMUL_DIR)/arm ;\
+	    mkdir -p $(EMUL_DIR)/arm/data ;\
+	    cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ; \
+	    if [ ! -z "$$CONFIG_OPENGLES" ] ; then mkdir -p $(EMUL_DIR)/bin/lib ; \
+	    cp -dpr ../../arm-softmmu/lib/gles $(EMUL_DIR)/bin/lib ; \
+	    fi \
+	  ;; \
+	  esac \
+	done
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
-	@if test -d "../../arm-softmmu/lib/gles"; then \
-	mkdir -p $(EMUL_DIR)/bin/lib; cp -dpr ../../arm-softmmu/lib/gles $(EMUL_DIR)/bin/lib; fi
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
-else
-	
 endif
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp -dpr skin/client/skins $(EMUL_DIR)
 	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/vgabios-maruvga.bin $(EMUL_DIR)/x86/data/pc-bios
+
