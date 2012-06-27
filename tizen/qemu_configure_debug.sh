@@ -16,7 +16,10 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-maru \
  --enable-opengles \
- --enable-gl
+ --enable-gl \
+ --enable-efence \
+ --enable-debug \
+ --disable-pie
 ;;
 MINGW*)
 echo "checking for os... targetos $targetos"
@@ -30,6 +33,9 @@ exec ./configure \
  --enable-hax \
  --enable-maru \
  --enable-opengles \
- --enable-gl
+ --enable-gl \
+ --enable-efence \
+ --enable-debug \
+ --disable-pie
 ;;
 esac

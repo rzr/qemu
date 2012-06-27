@@ -1,6 +1,5 @@
 #!/bin/sh
 # OS specific
-#--target-list=i386-softmmu,arm-softmmu \
 targetos=`uname -s`
 
 cd ..
@@ -17,12 +16,9 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-maru \
  --enable-gl \
- --enable-efence
-# --enable-ffmpeg
-# --enable-v4l2 \
-# --enable-debug \
-# --enable-profiler \
-# --enable-gles2 --gles2dir=/usr
+ --enable-efence \
+ --enable-debug \
+ --disable-pie
 ;;
 MINGW*)
 echo "checking for os... targetos $targetos"
@@ -35,9 +31,9 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-hax \
  --enable-maru \
- --enable-gl $1
-# --enable-ffmpeg
-# --disable-vnc-jpeg \
-# --disable-jpeg
+ --enable-gl \
+ --enable-efence \
+ --enable-debug \
+ --disable-pie
 ;;
 esac
