@@ -638,7 +638,7 @@ void _transformSurfaceRGBA(SDL_Surface * src, SDL_Surface * dst, int cx, int cy,
 			for (x = 0; x < dst->w; x++) {
 				dx = (sdx >> 16);
 				dy = (sdy >> 16);
-				if ((dx > -1) && (dy > -1) && (dx < src->w) && (dy < src->h)) {
+				if ((dx > -1) && (dy > -1) && (dx < src->w - 1) && (dy < src->h - 1)) {
 					if (flipx) dx = sw - dx;
 					if (flipy) dy = sh - dy;
 					sp = (tColorRGBA *) ((Uint8 *) src->pixels + src->pitch * dy);
