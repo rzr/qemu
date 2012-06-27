@@ -1,5 +1,5 @@
 Package: emulator
-Version: 1.2.94
+Version: 1.2.95
 OS: linux
 Build-host-os: linux
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
@@ -8,7 +8,7 @@ Source: emulator
 Description: Tizen Emulator
 
 Package: emulator
-Version: 1.2.94
+Version: 1.2.95
 OS: windows
 Build-host-os: windows
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
