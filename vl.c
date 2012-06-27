@@ -264,7 +264,9 @@ uint8_t qemu_extra_params_fw[2];
 #ifdef CONFIG_VIRTIO_GL
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
 int gl_acceleration_capability_check(void);
-int enable_gl = 1;
+static int enable_gl = 1;
+#else
+static int enable_gl = 0;
 #endif
 
 typedef struct FWBootEntry FWBootEntry;
@@ -3112,6 +3114,8 @@ int main(int argc, char **argv, char **envp)
            case QEMU_OPTION_enable_gl:
 #ifdef CONFIG_VIRTIO_GL
                 enable_gl = 1;
+#else
+                fprintf(stderr, "Virtio GL support is disabled, ignoring -enable-gl\n");
 #endif
                 break;
             case QEMU_OPTION_machine:
@@ -3390,13 +3394,6 @@ int main(int argc, char **argv, char **envp)
 		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
 	}
 
-	// To check host gl driver capability and notify to guest.
-	gchar *tmp = tmp_cmdline;
-	tmp_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
-	qemu_opts_set(qemu_find_opts("machine"), 0, "append", tmp_cmdline);
-	fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
-	g_free(tmp);
-
     if (enable_gl) {
         device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
         qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
@@ -3407,6 +3404,12 @@ int main(int argc, char **argv, char **envp)
         }
     }
 #endif
+	// To check host gl driver capability and notify to guest.
+	gchar *tmp = tmp_cmdline;
+	tmp_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
+	qemu_opts_set(qemu_find_opts("machine"), 0, "append", tmp_cmdline);
+	fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
+	g_free(tmp);
 	
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the
