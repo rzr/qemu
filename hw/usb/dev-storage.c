@@ -590,8 +590,10 @@ static USBDevice *usb_msd_init(USBBus *bus, const char *filename)
     QemuOpts *opts;
     DriveInfo *dinfo;
     USBDevice *dev;
+#ifndef CONFIG_MARU
     const char *p1;
     char fmt[32];
+#endif
 
     /* parse -usbdevice disk: syntax into drive opts */
     snprintf(id, sizeof(id), "usb%d", nr++);
