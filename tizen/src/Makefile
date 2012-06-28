@@ -8,6 +8,8 @@ config-host.mak:
 	@exit 1
 endif
 
+export CONFIG_OPENGLES
+
 all: build_info qemu skin_client check_hax
 qemu:
 	cd ../../ && $(MAKE)
@@ -53,6 +55,7 @@ install: all
 	    mkdir -p $(EMUL_DIR)/x86 ;\
 	    mkdir -p $(EMUL_DIR)/x86/data ;\
 	    mkdir -p $(EMUL_DIR)/x86/data/pc-bios ;\
+	    echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
 	    cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
 	    cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/x86/data/pc-bios ;\
 	    cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/x86/data/pc-bios ;\
@@ -63,9 +66,11 @@ install: all
 	  arm-softmmu) \
 	    mkdir -p $(EMUL_DIR)/arm ;\
 	    mkdir -p $(EMUL_DIR)/arm/data ;\
-	    cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ; \
-	    if [ ! -z "$$CONFIG_OPENGLES" ] ; then mkdir -p $(EMUL_DIR)/bin/lib ; \
-	    cp -dpr ../../arm-softmmu/lib/gles $(EMUL_DIR)/bin/lib ; \
+	    echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
+	    cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
+	    if [ ! -z "$$CONFIG_OPENGLES" ] ; then mkdir -p $(EMUL_DIR)/bin/lib ;\
+	    echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/lib" ;\
+	    cp -dpr ../../arm-softmmu/lib/gles $(EMUL_DIR)/bin/lib ;\
 	    fi \
 	  ;; \
 	  esac \
