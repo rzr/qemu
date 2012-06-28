@@ -44,17 +44,14 @@
 #endif
 
 #ifndef DEBUG_LOG_PATH
-#define DEBUG_LOG_PATH              "./debug.log"
+#define DEBUG_LOG_PATH                     "./debug.log"
 #endif
 
-#define EXYNOS4210_WM8994_ADDR      0x1A
-
-int codec_init(PCIBus *bus);
-int maru_camera_pci_init(PCIBus *bus);
-
-static int maru_arm_board_id = 0xF3B;
-static int maru_arm_board_smp_bootreg_addr = EXYNOS4210_SECOND_CPU_BOOTREG;
-static unsigned long maru_arm_board_ram_size = 0x40000000;
+#define EXYNOS4210_WM8994_ADDR             0x1A
+#define MARU_ARM_BOARD_ID                  0xF3B
+#define MARU_ARM_BOARD_SMP_BOOTREG_ADDR    EXYNOS4210_SECOND_CPU_BOOTREG
+#define MARU_ARM_BOARD_RAMSIZE_MIN         0x20000000
+#define MARU_ARM_BOARD_RAMSIZE_DEFAULT     0x40000000
 
 static struct arm_boot_info maru_arm_board_binfo = {
     .loader_start     = EXYNOS4210_BASE_BOOT_ADDR,
@@ -62,33 +59,6 @@ static struct arm_boot_info maru_arm_board_binfo = {
     .nb_cpus          = EXYNOS4210_NCPUS,
     .write_secondary_boot = maru_arm_write_secondary,
 };
-
-static Exynos4210State *maru_arm_board_init_common(
-        const char *kernel_filename,
-        const char *kernel_cmdline,
-        const char *initrd_filename)
-{
-    maru_arm_board_binfo.ram_size = maru_arm_board_ram_size;
-    maru_arm_board_binfo.board_id = maru_arm_board_id;
-    maru_arm_board_binfo.smp_bootreg_addr = maru_arm_board_smp_bootreg_addr;
-    maru_arm_board_binfo.kernel_filename = kernel_filename;
-    maru_arm_board_binfo.initrd_filename = initrd_filename;
-    maru_arm_board_binfo.kernel_cmdline = kernel_cmdline;
-    maru_arm_board_binfo.gic_cpu_if_addr =
-                        EXYNOS4210_SMP_PRIVATE_BASE_ADDR + 0x100;
-
-    PRINT_DEBUG("\n ram_size: %luMiB [0x%08lx]\n"
-            " kernel_filename: %s\n"
-            " kernel_cmdline: %s\n"
-            " initrd_filename: %s\n",
-            exynos4_board_ram_size[board_type] / 1048576,
-            exynos4_board_ram_size[board_type],
-            kernel_filename,
-            kernel_cmdline,
-            initrd_filename);
-
-    return maru_arm_init(get_system_memory(), maru_arm_board_ram_size);
-}
 
 static void maru_arm_machine_init(ram_addr_t ram_size,
                         const char *boot_device,
@@ -101,8 +71,31 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
     DeviceState *dev, *i2c_dev;
     PCIBus *pci_bus;
 
-    s = maru_arm_board_init_common(kernel_filename,
-                kernel_cmdline, initrd_filename);
+    if (ram_size < MARU_ARM_BOARD_RAMSIZE_MIN) {
+    	ram_size = MARU_ARM_BOARD_RAMSIZE_DEFAULT;
+    	fprintf(stderr, "RAM size is too small, setting to default value 0x%lx",
+    			(long unsigned int)ram_size);
+    }
+
+    maru_arm_board_binfo.ram_size = ram_size;
+    maru_arm_board_binfo.board_id = MARU_ARM_BOARD_ID;
+    maru_arm_board_binfo.smp_bootreg_addr = MARU_ARM_BOARD_SMP_BOOTREG_ADDR;
+    maru_arm_board_binfo.kernel_filename = kernel_filename;
+    maru_arm_board_binfo.initrd_filename = initrd_filename;
+    maru_arm_board_binfo.kernel_cmdline = kernel_cmdline;
+    maru_arm_board_binfo.gic_cpu_if_addr =
+                        EXYNOS4210_SMP_PRIVATE_BASE_ADDR + 0x100;
+
+    PRINT_DEBUG("\n ram_size: %luMiB [0x%08lx]\n"
+            " kernel_filename: %s\n"
+            " kernel_cmdline: %s\n"
+            " initrd_filename: %s\n",
+            (long unsigned int)ram_size / 1048576,
+            (long unsigned int)ram_size,
+            kernel_filename,
+            kernel_cmdline,
+            initrd_filename);
+    s = maru_arm_soc_init(get_system_memory(), ram_size);
 
     /* WM8994 */
     i2c_dev = i2c_create_slave(s->i2c_if[1], "wm8994", EXYNOS4210_WM8994_ADDR);
@@ -130,45 +123,16 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
     arm_load_kernel(first_cpu, &maru_arm_board_binfo);
 }
 
-static void maru_common_init(ram_addr_t ram_size,
-                        const char *boot_device,
-                        const char *kernel_filename,
-                        const char *kernel_cmdline,
-                        const char *initrd_filename,
-                        const char *cpu_model)
-{
-// prepare for universal virtual board...
-#if defined(TARGET_I386)
-#elif defined(TARGET_ARM)
-#endif
-}
-static void maru_arm_board_init(ram_addr_t ram_size,
-                        const char *boot_device,
-                        const char *kernel_filename,
-                        const char *kernel_cmdline,
-                        const char *initrd_filename,
-                        const char *cpu_model)
-{
-    maru_arm_machine_init(ram_size, boot_device, kernel_filename,
-                        kernel_cmdline, initrd_filename, cpu_model);
-    maru_common_init(ram_size, boot_device, kernel_filename,
-                        kernel_cmdline, initrd_filename, cpu_model);
-}
-
 static QEMUMachine maru_arm_machine = {
     .name = "maru-arm-machine",
     .desc = "maru board(ARM)",
-    .init = maru_arm_board_init,
+    .init = maru_arm_machine_init,
     .max_cpus = 255,
 };
 
 static void maru_machine_init(void)
 {
-#if defined(TARGET_ARM)
     qemu_register_machine(&maru_arm_machine);
-#else
-#error
-#endif
 }
 
 machine_init(maru_machine_init);

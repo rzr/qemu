@@ -29,7 +29,10 @@
 void maru_arm_write_secondary(CPUARMState *env,
         const struct arm_boot_info *info);
 
-Exynos4210State *maru_arm_init(MemoryRegion *system_mem,
+Exynos4210State *maru_arm_soc_init(MemoryRegion *system_mem,
         unsigned long ram_size);
+
+int codec_init(PCIBus *bus);
+int maru_camera_pci_init(PCIBus *bus);
 
 #endif /* MARU_ARM_H_ */

@@ -30,6 +30,9 @@
 #include "maru_arm.h"
 #include "i2c.h"
 #include "exec-memory.h"
+#ifdef CONFIG_BUILD_GLES
+#include "gles2.h"
+#endif
 
 #include "loader.h"
 #include "virtio-transport.h"
@@ -134,7 +137,7 @@
 /* pl050 ps/2 interface */
 #define EXYNOS4210_PL050_BASE_ADDR          0x12E30000
 
-static uint8_t chipid_and_omr[] = { 0x11, 0x02, 0x21, 0x43,
+static uint8_t chipid_and_omr[TARGET_PAGE_SIZE] = { 0x11, 0x02, 0x21, 0x43,
                                     0x09, 0x00, 0x00, 0x00 };
 
 void maru_arm_write_secondary(CPUARMState *env,
@@ -166,7 +169,7 @@ void maru_arm_write_secondary(CPUARMState *env,
                        info->smp_loader_start);
 }
 
-Exynos4210State *maru_arm_init(MemoryRegion *system_mem,
+Exynos4210State *maru_arm_soc_init(MemoryRegion *system_mem,
         unsigned long ram_size)
 {
     qemu_irq cpu_irq[4];
@@ -275,6 +278,7 @@ Exynos4210State *maru_arm_init(MemoryRegion *system_mem,
     memory_region_init_ram_ptr(&s->chipid_mem, "exynos4210.chipid",
             sizeof(chipid_and_omr), chipid_and_omr);
     memory_region_set_readonly(&s->chipid_mem, true);
+    vmstate_register_ram_global(&s->chipid_mem);
     memory_region_add_subregion(system_mem, EXYNOS4210_CHIPID_ADDR,
                                 &s->chipid_mem);
 
@@ -282,12 +286,13 @@ Exynos4210State *maru_arm_init(MemoryRegion *system_mem,
     memory_region_init_ram(&s->irom_mem, "exynos4210.irom",
                            EXYNOS4210_IROM_SIZE);
     memory_region_set_readonly(&s->irom_mem, true);
+    vmstate_register_ram_global(&s->irom_mem);
     memory_region_add_subregion(system_mem, EXYNOS4210_IROM_BASE_ADDR,
                                 &s->irom_mem);
     /* mirror of iROM */
     memory_region_init_alias(&s->irom_alias_mem, "exynos4210.irom_alias",
                              &s->irom_mem,
-                             EXYNOS4210_IROM_BASE_ADDR,
+                             0,
                              EXYNOS4210_IROM_SIZE);
     memory_region_set_readonly(&s->irom_alias_mem, true);
     memory_region_add_subregion(system_mem, EXYNOS4210_IROM_MIRROR_BASE_ADDR,
@@ -414,20 +419,10 @@ Exynos4210State *maru_arm_init(MemoryRegion *system_mem,
             s->irq_table[exynos4210_get_irq(11, 2)],
             NULL);
 
-    /*** GPU MALI400 (G3D) ***/
-    sysbus_create_varargs("exynos4210.g3d", EXYNOS4210_G3D_BASE_ADDR,
-            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_0_IRQ)],
-            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_1_IRQ)],
-            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_2_IRQ)],
-            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PIXEL_PROC_3_IRQ)],
-            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_GEOM_PROC_IRQ)],
-            s->irq_table[exynos4210_get_irq(14, EXYNOS4210_G3D_PMU_IRQ)],
-            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU0_IRQ)],
-            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU1_IRQ)],
-            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU2_IRQ)],
-            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_PPMMU3_IRQ)],
-            s->irq_table[exynos4210_get_irq(13, EXYNOS4210_G3D_GPMMU_IRQ)],
-            NULL);
+    /*** GPU openGLES passthrough device ***/
+#ifdef CONFIG_BUILD_GLES
+    gles2_init(first_cpu);
+#endif
 
     /* I2S0 */
     s->i2s_bus[0] = exynos4210_i2s_bus_new("exynos4210.i2s",

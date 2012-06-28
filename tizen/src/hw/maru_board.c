@@ -317,28 +317,6 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     }
 }
 
-static void maru_arm_machine_init(ram_addr_t ram_size,
-                        const char *boot_device,
-                        const char *kernel_filename,
-                        const char *kernel_cmdline,
-                        const char *initrd_filename,
-                        const char *cpu_model)
-{
-}
-
-static void maru_common_init(ram_addr_t ram_size,
-                        const char *boot_device,
-                        const char *kernel_filename,
-                        const char *kernel_cmdline,
-                        const char *initrd_filename,
-                        const char *cpu_model)
-{
-// prepare for universal virtual board...
-#if defined(TARGET_I386)
-#elif defined(TARGET_ARM)
-#endif
-}
-
 static void maru_x86_board_init(ram_addr_t ram_size,
                         const char *boot_device,
                         const char *kernel_filename,
@@ -351,20 +329,6 @@ static void maru_x86_board_init(ram_addr_t ram_size,
              ram_size, boot_device,
              kernel_filename, kernel_cmdline,
              initrd_filename, cpu_model, 1, 1);
-    maru_common_init(ram_size, boot_device, kernel_filename, 
-                        kernel_cmdline, initrd_filename, cpu_model);
-}
-static void maru_arm_board_init(ram_addr_t ram_size,
-                        const char *boot_device,
-                        const char *kernel_filename,
-                        const char *kernel_cmdline,
-                        const char *initrd_filename,
-                        const char *cpu_model)
-{
-    maru_arm_machine_init(ram_size, boot_device, kernel_filename, 
-                        kernel_cmdline, initrd_filename, cpu_model);
-    maru_common_init(ram_size, boot_device, kernel_filename, 
-                        kernel_cmdline, initrd_filename, cpu_model);
 }
 
 static QEMUMachine maru_x86_machine = {
@@ -374,22 +338,9 @@ static QEMUMachine maru_x86_machine = {
     .max_cpus = 255,
 };
 
-static QEMUMachine maru_arm_machine = {
-    .name = "maru-arm-machine",
-    .desc = "maru board(ARM)",
-    .init = maru_arm_board_init,
-    .max_cpus = 255,
-};
-
 static void maru_machine_init(void)
 {
-#if defined(TARGET_I386)
     qemu_register_machine(&maru_x86_machine);
-#elif defined(TARGET_ARM)
-    qemu_register_machine(&maru_arm_machine);
-#else
-#error
-#endif
 }
 
 machine_init(maru_machine_init);
