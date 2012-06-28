@@ -596,7 +596,7 @@ static USBDevice *usb_msd_init(USBBus *bus, const char *filename)
     /* parse -usbdevice disk: syntax into drive opts */
     snprintf(id, sizeof(id), "usb%d", nr++);
     opts = qemu_opts_create(qemu_find_opts("drive"), id, 0);
-
+#ifndef CONFIG_MARU
     p1 = strchr(filename, ':');
     if (p1++) {
         const char *p2;
@@ -611,6 +611,7 @@ static USBDevice *usb_msd_init(USBBus *bus, const char *filename)
         }
         filename = p1;
     }
+#endif
     if (!*filename) {
         printf("block device specification needed\n");
         return NULL;

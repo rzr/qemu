@@ -589,6 +589,8 @@ static void* run_skin_server( void* args ) {
 
                     /* keep it consistent with emulator-skin definition */
                     int event_type = 0;
+                    int origin_x = 0;
+                    int origin_y = 0;
                     int x = 0;
                     int y = 0;
                     int z = 0;
@@ -596,6 +598,10 @@ static void* run_skin_server( void* args ) {
                     char* p = recvbuf;
                     memcpy( &event_type, p, sizeof( event_type ) );
                     p += sizeof( event_type );
+                    memcpy( &origin_x, p, sizeof( origin_x ) );
+                    p += sizeof( origin_x );
+                    memcpy( &origin_y, p, sizeof( origin_y ) );
+                    p += sizeof( origin_y );
                     memcpy( &x, p, sizeof( x ) );
                     p += sizeof( x );
                     memcpy( &y, p, sizeof( y ) );
@@ -603,11 +609,13 @@ static void* run_skin_server( void* args ) {
                     memcpy( &z, p, sizeof( z ) );
 
                     event_type = ntohl( event_type );
+                    origin_x = ntohl( origin_x );
+                    origin_y = ntohl( origin_y );
                     x = ntohl( x );
                     y = ntohl( y );
                     z = ntohl( z );
 
-                    do_mouse_event( event_type, x, y, z );
+                    do_mouse_event( event_type, origin_x, origin_y, x, y, z );
                     break;
                 }
                 case RECV_KEY_EVENT: {

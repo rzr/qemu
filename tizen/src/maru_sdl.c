@@ -91,8 +91,8 @@ static void qemu_update(void)
         for (i = 0; i < mts->finger_cnt; i++) {
             finger = get_finger_point_from_slot(i);
             if (finger != NULL && finger->id != 0) {
-                rect.x = (finger->x * get_emul_win_scale()) - finger_point_size_half;
-                rect.y = (finger->y * get_emul_win_scale()) - finger_point_size_half;
+                rect.x = finger->origin_x - finger_point_size_half;
+                rect.y = finger->origin_y - finger_point_size_half;
                 rect.w = rect.h = mts->finger_point_size;
 
                 SDL_BlitSurface((SDL_Surface *)mts->finger_point_surface, NULL, surface_screen, &rect);
