@@ -7,10 +7,6 @@ $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/sr
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
-ifeq ($(ARCH), i386)
-else
-QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/lib_x86_64
-endif
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 CFLAGS += -g -O2
@@ -19,9 +15,6 @@ ifdef CONFIG_WIN32
 LIBS += -lavformat -lavcodec -lavutil -lm
 else
 LIBS += -lavformat -lavcodec -lavutil -lm -lGL
-#ifeq ($(ARCH),x86_64)
-#LIBS += -lva
-#endif
 endif
 
 ifdef CONFIG_DEBUG_EXEC
