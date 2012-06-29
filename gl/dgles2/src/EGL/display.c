@@ -19,6 +19,7 @@
  */
 
 #include <stdlib.h>
+#include <assert.h>
 #include <pthread.h>
 #include "common.h"
 #include "display.h"
@@ -27,96 +28,107 @@
 #include "context.h"
 
 pthread_once_t degl_init_control = PTHREAD_ONCE_INIT;
+DEGLDisplay* degl_display = NULL;
 
+void deglInitDisplayInternal(EGLNativeDisplayType display_id)
+{
+    degl_display = malloc(sizeof(DEGLDisplay));
+    degl_display->initialized = 0;
+    degl_display->config_count = 0;
+
+#   if(CONFIG_GLX == 1)
+    if(degl_backend == DEGLBackend_glx)
+    {
+        int display_opened = 0;
+        if(display_id == EGL_DEFAULT_DISPLAY)
+        {
+            if(!(display_id = XOpenDisplay(NULL)))
+            {
+                Dprintf("Can't open default display!\n");
+                free(degl_display);
+                degl_display = NULL;
+                return;
+            }
+            display_opened = 1;
+        }
+
+        Dprintf("Opened X11 display %p!\n", display_id);
+
+        int error_base = 0, event_base = 0, glx_major = 0, glx_minor = 0;
+        Bool glx_ok = hglX.QueryExtension(display_id, &error_base, &event_base);
+        if(glx_ok == False)
+        {
+            Dprintf("glXQueryExtension failed!\n");
+        }
+        else
+        {
+            glx_ok = hglX.QueryVersion(display_id, &glx_major, &glx_minor);
+            if(glx_ok == False)
+            {
+                Dprintf("glXQueryVersion failed!\n");
+            }
+            else
+            {
+                if(glx_major < 1 || (glx_major == 1 && glx_minor < 1))
+                {
+                    Dprintf("Insufficient GLX version (%d.%d)!\n",
+                        glx_major, glx_minor);
+                    glx_ok = False;
+                }
+                else
+                {
+                    Dprintf("GLX version %d.%d\n", glx_major, glx_minor);
+                }
+            }
+        }
+        if(glx_ok == False)
+        {
+            if(display_opened)
+            {
+                XCloseDisplay(display_id);
+            }
+            free(degl_display);
+            degl_display = NULL;
+            return;
+        }
+
+        degl_display->dpy = display_id;
+        degl_display->scr = (Screen*)-1;
+    }
+    if(degl_frontend == DEGLFrontend_x11)
+    {
+        degl_display->x11_config = NULL;
+    }
+#   endif // (CONFIG_GLX == 1)
+
+#   if(CONFIG_COCOA == 1)
+    if(degl_frontend == DEGLFrontend_cocoa)
+    {
+        degl_display->cocoa_config = NULL;
+        if(degl_display_id == EGL_DEFAULT_DISPLAY)
+        {
+            degl_display->id = CGMainDisplayID();
+        }
+        else
+        {
+            degl_display->id = (CGDirectDisplayID)(uintptr_t)display_id;
+        }
+    }
+#   endif // (CONFIG_COCOA == 1)
+}
 
 EGLAPI_BUILD EGLDisplay EGLAPIENTRY eglGetDisplay(EGLNativeDisplayType display_id)
 {
+    /*
+     * We always get default display
+     */
+
+    assert(display_id == EGL_DEFAULT_DISPLAY);
+
 	extern void deglInit(void);
 	pthread_once(&degl_init_control, deglInit);
 
-	DEGLDisplay* display = malloc(sizeof(DEGLDisplay));
-	display->initialized = 0;
-	display->config_count = 0;
-
-#	if(CONFIG_GLX == 1)
-	if(degl_backend == DEGLBackend_glx)
-	{
-		int display_opened = 0;
-		if(display_id == EGL_DEFAULT_DISPLAY)
-		{
-			if(!(display_id = XOpenDisplay(NULL)))
-			{
-				Dprintf("Can't open default display!\n");
-				free(display);
-				return EGL_NO_DISPLAY;
-			}
-			display_opened = 1;
-		}
-
-		Dprintf("Opened X11 display %p!\n", display_id);
-
-		int error_base = 0, event_base = 0, glx_major = 0, glx_minor = 0;
-		Bool glx_ok = hglX.QueryExtension(display_id, &error_base, &event_base);
-		if(glx_ok == False)
-		{
-			Dprintf("glXQueryExtension failed!\n");
-		}
-		else
-		{
-			glx_ok = hglX.QueryVersion(display_id, &glx_major, &glx_minor);
-			if(glx_ok == False)
-			{
-				Dprintf("glXQueryVersion failed!\n");
-			}
-			else
-			{
-				if(glx_major < 1 || (glx_major == 1 && glx_minor < 1))
-				{
-					Dprintf("Insufficient GLX version (%d.%d)!\n",
-						glx_major, glx_minor);
-					glx_ok = False;
-				}
-				else
-				{
-					Dprintf("GLX version %d.%d\n", glx_major, glx_minor);
-				}
-			}
-		}
-		if(glx_ok == False)
-		{
-			if(display_opened)
-			{
-				XCloseDisplay(display_id);
-			}
-			free(display);
-			return EGL_NO_DISPLAY;
-		}
-
-		display->dpy = display_id;
-		display->scr = (Screen*)-1;
-	}
-	if(degl_frontend == DEGLFrontend_x11)
-	{
-		display->x11_config = NULL;
-	}
-#	endif // (CONFIG_GLX == 1)
-
-#	if(CONFIG_COCOA == 1)
-	if(degl_frontend == DEGLFrontend_cocoa)
-	{
-		display->cocoa_config = NULL;
-		if(display_id == EGL_DEFAULT_DISPLAY)
-		{
-			display->id = CGMainDisplayID();
-		}
-		else
-		{
-			display->id = (CGDirectDisplayID)(uintptr_t)display_id;
-		}
-	}
-#	endif // (CONFIG_COCOA == 1)
-
-	return display;
+	return degl_display;
 }
 
 #if(CONFIG_COCOA == 1)

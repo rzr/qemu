@@ -435,6 +435,8 @@ void deglFreeTLS(void)
 	}
 }
 
+void deglInitDisplayInternal(EGLNativeDisplayType display_id);
+
 // Library initalizer.
 void deglInit(void)
 {
@@ -775,6 +777,8 @@ void deglInit(void)
 
 	degl_initialized = 1;
 	Dprintf("Successfully initialized!\n");
+
+	deglInitDisplayInternal(EGL_DEFAULT_DISPLAY);
 }
 
 DGLES2_EXPORT degl_vbo* deglFindVBO(GLuint name)
