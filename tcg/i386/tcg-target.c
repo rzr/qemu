@@ -1527,7 +1527,7 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         tcg_out_pushi(s, (int)(raddr - 1));
     } else {
         /* 3 word parameters */
-        tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_ECX, (int)(raddr - 1));
+        tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++], (int)(raddr - 1));
     }
     tcg_out_calli(s, (tcg_target_long)qemu_ldext_helpers[s_bits]);
     if (TCG_TARGET_REG_BITS == 32 && TARGET_LONG_BITS == 64) {
@@ -1605,8 +1605,7 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_RDX, mem_index);
         /* return address should indicate qemu_st IR codes */
         /* stack growth: 1word * 64bit */
-        tcg_out_pushi(s, (int)(raddr - 1));
-        stack_adjust = 8;
+        tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_RCX, (int)(raddr - 1));
     } else if (TARGET_LONG_BITS == 32) {
         tcg_out_mov(s, TCG_TYPE_I32, TCG_REG_EDX, data_reg);
         if (opc == 3) {
