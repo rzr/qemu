@@ -432,6 +432,8 @@ obj-$(TARGET_BASE_ARCH)-y += gles2_kernel_calls.o  gles2_egl_calls.o gles2_es11_
 obj-$(TARGET_BASE_ARCH)-y += gles2_es20_calls.o
 
 PROG_GLESLIBS_ORIGIN=./lib/gles
+PROG_GLESLIB_SRC:=$(addprefix $(CONFIG_GLES_LIBDIR)/,$(notdir $(wildcard \
+$(CONFIG_GLES_LIBDIR)/lib*)))
 PROG_GLESLIB_DEP:=$(addprefix $(PROG_GLESLIBS_ORIGIN)/,$(notdir $(wildcard \
 $(CONFIG_GLES_LIBDIR)/lib*)))
 
@@ -441,9 +443,11 @@ else
 $(QEMU_PROG): $(PROG_GLESLIB_DEP)
 endif
 
-$(PROG_GLESLIB_DEP):
+$(PROG_GLESLIB_DEP): $(PROG_GLESLIB_SRC)
 	@mkdir -p $(PROG_GLESLIBS_ORIGIN)
 	@cp -dp -t $(PROG_GLESLIBS_ORIGIN) $(wildcard $(CONFIG_GLES_LIBDIR)/lib*)
+
+$(PROG_GLESLIB_SRC):
 
 endif # CONFIG_BUILD_GLES
 
