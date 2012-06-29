@@ -108,9 +108,23 @@ GLES2_CB(eglGetDisplay)
     GLES2_PRINT("\tGot host display %p...\n", dpy);
 
     GLES2_BARRIER_RET;
-    gles2_ret_TEGLDisplay(s, gles2_handle_create(s, dpy));
 
-    dpy_updatecaption(get_displaystate());
+    pthread_mutex_lock(&s->m);
+
+    uint32_t handle = gles2_handle_find(s, dpy);
+
+    if (!handle)
+    {
+        handle = gles2_handle_create(s, dpy);
+        gles2_ret_TEGLDisplay(s, handle);
+        dpy_updatecaption(get_displaystate());
+    }
+    else
+    {
+        gles2_ret_TEGLDisplay(s, handle);
+    }
+
+    pthread_mutex_unlock(&s->m);
 }
 
 GLES2_CB(eglInitialize)
@@ -119,16 +133,20 @@ GLES2_CB(eglInitialize)
     GLES2_ARG(Tptr, majorp);
     GLES2_ARG(Tptr, minorp);
 
-    GLES2_BARRIER_ARG_NORET;
+    GLES2_BARRIER_ARG;
+
+    pthread_mutex_lock(&s->m);
 
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
+
+    pthread_mutex_unlock(&s->m);
 
     GLES2_PRINT("Request to initialize display %p...\n", dpy);
 
     EGLint major, minor;
     if (eglInitialize(dpy, &major, &minor)) {
         GLES2_PRINT("Display initialized (EGL %d.%d)!\n", major, minor);
-        //GLES2_BARRIER_RET;
+        GLES2_BARRIER_RET;
         gles2_put_TEGLint(s, majorp, major);
         gles2_put_TEGLint(s, minorp, minor);
         gles2_ret_TEGLBoolean(s, EGL_TRUE);
@@ -136,7 +154,7 @@ GLES2_CB(eglInitialize)
     }
 
     GLES2_PRINT("Failed to initialize...\n");
-    //GLES2_BARRIER_RET;
+    GLES2_BARRIER_RET;
     gles2_ret_TEGLBoolean(s, EGL_FALSE);
 }
 
@@ -149,7 +167,11 @@ GLES2_CB(eglGetConfigs)
 
     GLES2_BARRIER_ARG;
 
+    pthread_mutex_lock(&s->m);
+
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
+
+    pthread_mutex_unlock(&s->m);
 
     EGLConfig* configs = configsp ? malloc(sizeof(EGLConfig)*config_size) : NULL;
 
@@ -160,6 +182,7 @@ GLES2_CB(eglGetConfigs)
     if (configs) {
         EGLint i;
 
+        pthread_mutex_lock(&s->m);
         for (i = 0; i < num_config; ++i) {
             uint32_t handle;
             if (!(handle = gles2_handle_find(s, configs[i]))) {
@@ -167,6 +190,7 @@ GLES2_CB(eglGetConfigs)
             }
             gles2_put_TEGLConfig(s, configsp + i*sizeof(TEGLConfig), handle);
         }
+        pthread_mutex_unlock(&s->m);
 
         free(configs);
     }
@@ -199,17 +223,23 @@ GLES2_CB(eglChooseConfig)
     }
     attrib_list[attrib_list_n] = EGL_NONE;
 
+    pthread_mutex_lock(&s->m);
+
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
 
-    GLES2_BARRIER_ARG_NORET;
+    pthread_mutex_unlock(&s->m);
+
+    GLES2_BARRIER_ARG;
     EGLConfig* configs = configsp ? malloc(sizeof(EGLConfig)*config_size) : NULL;
 
     EGLint num_config;
     EGLBoolean ret = eglChooseConfig(dpy, attrib_list, configs, config_size, &num_config);
     free(attrib_list);
-    //GLES2_BARRIER_RET;
+    GLES2_BARRIER_RET;
     if (configs) {
         EGLint i;
+
+        pthread_mutex_lock(&s->m);
 
         for (i = 0; i < num_config; ++i) {
             uint32_t handle;
@@ -218,6 +248,8 @@ GLES2_CB(eglChooseConfig)
             }
             gles2_put_TEGLConfig(s, configsp + i*sizeof(TEGLConfig), handle);
         }
+
+        pthread_mutex_unlock(&s->m);
 
         free(configs);
     }
@@ -234,11 +266,14 @@ GLES2_CB(eglGetConfigAttrib)
     GLES2_ARG(Tptr, valuep);
     GLES2_BARRIER_ARG;
 
+    pthread_mutex_lock(&s->m);
 
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
 
     EGLint value;
     EGLBoolean ret = eglGetConfigAttrib(dpy, gles2_handle_get(s, config), attribute, &value);
+
+    pthread_mutex_unlock(&s->m);
 
     GLES2_BARRIER_RET;
 
@@ -253,9 +288,13 @@ GLES2_CB(eglCreateWindowSurface)
     GLES2_ARG(Tptr, winp);
     GLES2_ARG(Tptr, attrib_listp);
 
+    pthread_mutex_lock(&s->m);
 
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     EGLConfig config = (EGLConfig)gles2_handle_get(s, config_);
+
+    pthread_mutex_unlock(&s->m);
+
     (void)attrib_listp;
 
     gles2_Surface* fsurf;
@@ -267,6 +306,8 @@ GLES2_CB(eglCreateWindowSurface)
         gles2_ret_TEGLSurface(s, 0);
         return;
     }
+
+    memset(fsurf, 0, sizeof(*fsurf));
 
     fsurf->id = surf_id++;
 
@@ -299,7 +340,11 @@ GLES2_CB(eglCreateWindowSurface)
     GLES2_PRINT("Created at %p!\n", fsurf);
     GLES2_BARRIER_RET;
     gles2_transfer_compile(&fsurf->tfr, s, fsurf->pixelsp, nbytes);
+    pthread_mutex_lock(&s->m);
+
     gles2_ret_TEGLSurface(s, gles2_handle_create(s, fsurf));
+
+    pthread_mutex_unlock(&s->m);
 }
 
 GLES2_CB(eglCreatePixmapSurface)
@@ -309,8 +354,13 @@ GLES2_CB(eglCreatePixmapSurface)
     GLES2_ARG(Tptr, pixmapp);
     GLES2_ARG(Tptr, attrib_listp);
 
+    pthread_mutex_lock(&s->m);
+
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     EGLConfig config = (EGLConfig)gles2_handle_get(s, config_);
+
+    pthread_mutex_unlock(&s->m);
+
     (void)attrib_listp;
 
     gles2_Surface* fsurf;
@@ -322,6 +372,8 @@ GLES2_CB(eglCreatePixmapSurface)
         gles2_ret_TEGLSurface(s, 0);
         return;
     }
+
+    memset(fsurf, 0, sizeof(*fsurf));
 
     fsurf->id = surf_id++;
     fsurf->ddrawp = pixmapp;
@@ -354,7 +406,9 @@ GLES2_CB(eglCreatePixmapSurface)
     GLES2_PRINT("Created at %p!\n", fsurf);
     GLES2_BARRIER_RET;
     gles2_transfer_compile(&fsurf->tfr, s, fsurf->pixelsp, nbytes);
+    pthread_mutex_lock(&s->m);
     gles2_ret_TEGLSurface(s, gles2_handle_create(s, fsurf));
+    pthread_mutex_unlock(&s->m);
 }
 
 GLES2_CB(eglCreatePbufferSurface)
@@ -363,8 +417,10 @@ GLES2_CB(eglCreatePbufferSurface)
     GLES2_ARG(TEGLConfig, config_);
     GLES2_ARG(Tptr, attrib_listp);
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     EGLConfig config = (EGLConfig)gles2_handle_get(s, config_);
+    pthread_mutex_unlock(&s->m);
      EGLint attrib_list_n = 0;
     while (gles2_get_TEGLint(s, attrib_listp
         + attrib_list_n*sizeof(EGLint)) != EGL_NONE) {
@@ -389,6 +445,8 @@ GLES2_CB(eglCreatePbufferSurface)
         return;
     }
 
+    memset(fsurf, 0, sizeof(*fsurf));
+
     fsurf->id = surf_id++;
 
     fsurf->ddrawp = 0;
@@ -407,7 +465,9 @@ GLES2_CB(eglCreatePbufferSurface)
 
     GLES2_PRINT("Created at %p!\n", fsurf);
     GLES2_BARRIER_RET;
+    pthread_mutex_lock(&s->m);
     gles2_ret_TEGLSurface(s, gles2_handle_create(s, fsurf));
+    pthread_mutex_unlock(&s->m);
 }
 
 GLES2_CB(eglDestroySurface)
@@ -416,9 +476,11 @@ GLES2_CB(eglDestroySurface)
     GLES2_ARG(TEGLSurface, surface_);
     GLES2_BARRIER_ARG_NORET;
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     gles2_Surface* fsurf = (EGLSurface)gles2_handle_get(s, surface_);
     gles2_handle_free(s, surface_);
+    pthread_mutex_unlock(&s->m);
 
     GLES2_PRINT("Destroyed surface ID = %d...\n", fsurf->id);
     fsurf->id = -1;
@@ -440,8 +502,10 @@ GLES2_CB(eglBindTexImage)
     GLES2_ARG(TEGLint, buffer);
     gles2_CompiledTransfer tfr;
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     gles2_Surface* fsurf = (gles2_Surface*)gles2_handle_get(s, surface_);
+    pthread_mutex_unlock(&s->m);
 
     // FIXME: Not a very clean way..
     uint32_t pixelsp = gles2_get_dword(s, fsurf->ddrawp + 4*sizeof(uint32_t));
@@ -475,8 +539,10 @@ GLES2_CB(eglReleaseTexImage)
     GLES2_ARG(TEGLint, buffer);
     GLES2_BARRIER_ARG;
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     gles2_Surface* fsurf = (gles2_Surface*)gles2_handle_get(s, surface_);
+    pthread_mutex_unlock(&s->m);
 
     GLES2_PRINT("Unbinding surface ID = %d!\n", fsurf->id);
 
@@ -491,11 +557,12 @@ GLES2_CB(eglCreateContext)
     GLES2_ARG(TEGLConfig, config_);
     GLES2_ARG(TEGLContext, share_context_);
     GLES2_ARG(Tptr, attrib_listp);
-    GLES2_BARRIER_ARG;
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     EGLConfig config = (EGLConfig)gles2_handle_get(s, config_);
     gles2_Context* share_context = gles2_handle_get(s, share_context_);
+    pthread_mutex_unlock(&s->m);
 
 
     EGLint *attribs= NULL;
@@ -516,7 +583,7 @@ GLES2_CB(eglCreateContext)
                     + i*sizeof(EGLint));
         }
     }
-
+    GLES2_BARRIER_ARG;
     GLES2_PRINT("Host context creation requested...\n");
     EGLContext hctx = eglCreateContext(dpy, config, share_context?share_context->hctx:NULL, attribs);
     GLES2_BARRIER_RET;
@@ -527,6 +594,7 @@ GLES2_CB(eglCreateContext)
         gles2_ret_TEGLContext(s, 0);
     } else {
         gles2_Context * ctx = malloc(sizeof(gles2_Context));
+        memset(ctx, 0, sizeof(*ctx));
         ctx->hctx = hctx;
         int version = 1;
         //if OpenGL ES check for client version from attrib_list
@@ -556,8 +624,11 @@ GLES2_CB(eglCreateContext)
         ctx->ebo_list->next = NULL;
         if (attribs)
             free(attribs);
+        memset(ctx->ebo_list, 0, sizeof(*ctx->ebo_list));
         GLES2_PRINT("Created at %p!\n", ctx);
+        pthread_mutex_lock(&s->m);
         gles2_ret_TEGLContext(s, gles2_handle_create(s, ctx));
+        pthread_mutex_unlock(&s->m);
     }
 }
 
@@ -567,6 +638,7 @@ GLES2_CB(eglDestroyContext)
     GLES2_ARG(TEGLContext, ctx_);
     GLES2_BARRIER_ARG;
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     gles2_Context* ctx = (gles2_Context*) gles2_handle_get(s, ctx_);
     EGLBoolean ret = eglDestroyContext(dpy, ctx->hctx);
@@ -578,6 +650,7 @@ GLES2_CB(eglDestroyContext)
         gles2_handle_free(s, ctx_);
         GLES2_PRINT("Destroyed %p!\n", ctx);
     }
+    pthread_mutex_unlock(&s->m);
 
     GLES2_BARRIER_RET;
     gles2_ret_TEGLBoolean(s,ret);
@@ -591,10 +664,21 @@ GLES2_CB(eglMakeCurrent)
     GLES2_ARG(TEGLContext, ctx_);
     GLES2_BARRIER_ARG;
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     gles2_Surface* draw = (EGLSurface)gles2_handle_get(s, draw_);
     gles2_Surface* read = (EGLSurface)gles2_handle_get(s, read_);
     gles2_Context* ctx = (gles2_Context*)gles2_handle_get(s, ctx_);
+    pthread_mutex_unlock(&s->m);
+
+    if (!dpy)
+    {
+        /*
+         * Evas sets 'dpy' to NULL and calls this function after it
+         * destroys a context
+         */
+        dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    }
 
     GLES2_PRINT("Making host context current...\n");
 
@@ -623,11 +707,7 @@ GLES2_CB(eglMakeCurrent)
             }
             int i;
             for (i = 0; i < ctx->narrays; ++i) {
-                    ctx->arrays[i].type = GL_NONE;
-                    ctx->arrays[i].enabled = 0;
-                    ctx->arrays[i].ptr = 0;
-                    ctx->arrays[i].apply = 0;
-                    ctx->arrays[i].tptr = 0;
+                    memset(&ctx->arrays[i], 0, sizeof(ctx->arrays[i]));
             }
         }
     }
@@ -645,8 +725,10 @@ GLES2_CB(eglSwapBuffers)
     GLES2_ARG(TEGLDisplay, dpy_);
     GLES2_ARG(TEGLSurface, surface_);
 
+    pthread_mutex_lock(&s->m);
     EGLDisplay dpy = (EGLDisplay)gles2_handle_get(s, dpy_);
     gles2_Surface* fsurf = (EGLSurface)gles2_handle_get(s, surface_);
+    pthread_mutex_unlock(&s->m);
     if (!fsurf) {
         fprintf(stderr, "ERROR: Trying to swap NULL surface!\n");
         GLES2_BARRIER_ARG;

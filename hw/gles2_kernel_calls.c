@@ -48,6 +48,7 @@ GLES2_CB(init)
     GLES2_PRINT("Selected ABI %d\n", s->abi);
 
     client = malloc(sizeof(*client));
+    memset(client, 0, sizeof(*client));
     client->s = s;
     client->nr = i + 1;
     client->rendering_api = EGL_OPENGL_ES_API;

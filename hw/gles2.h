@@ -250,6 +250,7 @@ struct gles2_State
     MemoryRegion io_egl;
     MemoryRegion io_es11;
     MemoryRegion io_es20;
+    pthread_mutex_t m;
 };
 
 #if(GLES2_DEBUG==1)

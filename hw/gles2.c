@@ -535,6 +535,7 @@ void *gles2_init(CPUArchState *env)
     s->env = env;
     s->abi = gles2_abi_arm_hardfp;
     s->quality = gles2_quality;
+    pthread_mutex_init(&s->m, NULL);
 
     GLES2_PRINT("GLES2 quality: %d\n", s->quality);
 
@@ -593,6 +594,7 @@ gles2_ebo* gles2_ebo_find(unsigned int name, gles2_ebo* list)
 gles2_ebo* gles2_ebo_add(unsigned int name, gles2_ebo* list)
 {
     gles2_ebo* ebo = malloc(sizeof(gles2_ebo));
+    memset(ebo, 0, sizeof(*ebo));
     ebo->name = name;
     ebo->data = NULL;
     ebo->next = NULL;
