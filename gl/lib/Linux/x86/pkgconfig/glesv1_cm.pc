@@ -1,4 +1,4 @@
-prefix=/home/mackross/eclipse_linux_cdt_space/qemu_exynos4_gles/gl/dgles2/../lib/Linux/x86
+prefix=/home/stas/Projects/qemu/gl/dgles2/../lib/Linux/x86
 exec_prefix=${prefix}
 libdir=${prefix}/lib
 includedir=${prefix}/include
