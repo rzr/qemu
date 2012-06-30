@@ -965,7 +965,6 @@ static void tcg_out_jmp(TCGContext *s, tcg_target_long dest)
 
 #include "../../softmmu_defs.h"
 
-#if !defined(CONFIG_QEMU_LDST_OPTIMIZATION)
 #ifdef CONFIG_TCG_PASS_AREG0
 /* helper signature: helper_ld_mmu(CPUState *env, target_ulong addr,
    int mmu_idx) */
@@ -985,6 +984,8 @@ static const void *qemu_st_helpers[4] = {
     helper_stq_mmu,
 };
 #else
+
+#ifndef CONFIG_QEMU_LDST_OPTIMIZATION
 /* legacy helper signature: __ld_mmu(target_ulong addr, int
    mmu_idx) */
 static void *qemu_ld_helpers[4] = {
@@ -1002,8 +1003,36 @@ static void *qemu_st_helpers[4] = {
     __stl_mmu,
     __stq_mmu,
 };
-#endif
+#else
+/* extended legacy helper signature: __ext_ld_mmu(target_ulong addr, int
+   mmu_idx, uintptr raddr) */
+static void *qemu_ld_helpers[4] = {
+    __ext_ldb_mmu,
+    __ext_ldw_mmu,
+    __ext_ldl_mmu,
+    __ext_ldq_mmu,
+};
+
+/* extended legacy helper signature: __ext_st_mmu(target_ulong addr, uintxx_t val,
+   int mmu_idx) */
+static void *qemu_st_helpers[4] = {
+    __ext_stb_mmu,
+    __ext_stw_mmu,
+    __ext_stl_mmu,
+    __ext_stq_mmu,
+};
+
+static void add_qemu_ldst_label(TCGContext *s,
+                                int opc_ext,
+                                int data_reg,
+                                int data_reg2,
+                                int addrlo_reg,
+                                int addrhi_reg,
+                                int mem_index,
+                                uint8_t *raddr,
+                                uint8_t **label_ptr);
 #endif  /* !CONFIG_QEMU_LDST_OPTIMIZATION */
+#endif
 
 /* Perform the TLB load and compare.
 
@@ -1063,19 +1092,36 @@ static inline void tcg_out_tlb_load(TCGContext *s, int addrlo_idx,
 
     tcg_out_mov(s, type, r0, addrlo);
 
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
+    /* jne slow_path */
+    tcg_out_opc(s, OPC_JCC_long + JCC_JNE, 0, 0, 0);
+    if (!label_ptr) {
+        tcg_abort();
+    }
+    label_ptr[0] = s->code_ptr;
+    s->code_ptr += 4;
+#else
     /* jne label1 */
     tcg_out8(s, OPC_JCC_short + JCC_JNE);
     label_ptr[0] = s->code_ptr;
     s->code_ptr++;
+#endif
 
     if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
         /* cmp 4(r1), addrhi */
         tcg_out_modrm_offset(s, OPC_CMP_GvEv, args[addrlo_idx+1], r1, 4);
 
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
+        /* jne slow_path */
+        tcg_out_opc(s, OPC_JCC_long + JCC_JNE, 0, 0, 0);
+        label_ptr[1] = s->code_ptr;
+        s->code_ptr += 4;
+#else
         /* jne label1 */
         tcg_out8(s, OPC_JCC_short + JCC_JNE);
         label_ptr[1] = s->code_ptr;
         s->code_ptr++;
+#endif
     }
 
     /* TLB Hit.  */
@@ -1163,7 +1209,6 @@ static void tcg_out_qemu_ld_direct(TCGContext *s, int datalo, int datahi,
     }
 }
 
-#if !defined(CONFIG_QEMU_LDST_OPTIMIZATION)
 /* XXX: qemu_ld and qemu_st could be modified to clobber only EDX and
    EAX. It will be useful once fixed registers globals are less
    common. */
@@ -1174,11 +1219,13 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
     int addrlo_idx;
 #if defined(CONFIG_SOFTMMU)
     int mem_index, s_bits;
+#if !defined(CONFIG_QEMU_LDST_OPTIMIZATION)
 #if TCG_TARGET_REG_BITS == 64
     int arg_idx;
 #else
     int stack_adjust;
 #endif
+#endif  /* !defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
     uint8_t *label_ptr[3];
 #endif
 
@@ -1200,6 +1247,18 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
     tcg_out_qemu_ld_direct(s, data_reg, data_reg2,
                            tcg_target_call_iarg_regs[0], 0, opc);
 
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
+    /* helper stub will be jumped back here */
+    add_qemu_ldst_label(s,
+                        opc,
+                        data_reg,
+                        data_reg2,
+                        args[addrlo_idx],
+                        args[addrlo_idx + 1],
+                        mem_index,
+                        s->code_ptr,
+                        label_ptr);
+#else
     /* jmp label2 */
     tcg_out8(s, OPC_JMP_short);
     label_ptr[2] = s->code_ptr;
@@ -1295,6 +1354,7 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
 
     /* label2: */
     *label_ptr[2] = s->code_ptr - label_ptr[2] - 1;
+#endif  /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
 #else
     {
         int32_t offset = GUEST_BASE;
@@ -1321,7 +1381,6 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
     }
 #endif
 }
-#endif  /* !defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
 
 static void tcg_out_qemu_st_direct(TCGContext *s, int datalo, int datahi,
                                    int base, tcg_target_long ofs, int sizeop)
@@ -1382,7 +1441,6 @@ static void tcg_out_qemu_st_direct(TCGContext *s, int datalo, int datahi,
     }
 }
 
-#if !defined(CONFIG_QEMU_LDST_OPTIMIZATION)
 static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
                             int opc)
 {
@@ -1390,7 +1448,9 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
     int addrlo_idx;
 #if defined(CONFIG_SOFTMMU)
     int mem_index, s_bits;
+#if !defined(CONFIG_QEMU_LDST_OPTIMIZATION)
     int stack_adjust;
+#endif
     uint8_t *label_ptr[3];
 #endif
 
@@ -1412,6 +1472,18 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
     tcg_out_qemu_st_direct(s, data_reg, data_reg2,
                            tcg_target_call_iarg_regs[0], 0, opc);
 
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
+    /* helper stub will be jumped back here */
+    add_qemu_ldst_label(s,
+                        opc | HL_ST_MASK,
+                        data_reg,
+                        data_reg2,
+                        args[addrlo_idx],
+                        args[addrlo_idx + 1],
+                        mem_index,
+                        s->code_ptr,
+                        label_ptr);
+#else
     /* jmp label2 */
     tcg_out8(s, OPC_JMP_short);
     label_ptr[2] = s->code_ptr;
@@ -1474,6 +1546,7 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
 
     /* label2: */
     *label_ptr[2] = s->code_ptr - label_ptr[2] - 1;
+#endif  /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
 #else
     {
         int32_t offset = GUEST_BASE;
@@ -1501,24 +1574,8 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
 #endif
 }
 
-#endif  /* !defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
-
 #if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
 /* optimization to reduce jump overheads for qemu_ld/st IRs */
-
-/* extened versions of MMU helpers */
-static void *qemu_ldext_helpers[4] = {
-    __ldextb_mmu,
-    __ldextw_mmu,
-    __ldextl_mmu,
-    __ldextq_mmu,
-};
-static void *qemu_stext_helpers[4] = {
-    __stextb_mmu,
-    __stextw_mmu,
-    __stextl_mmu,
-    __stextq_mmu,
-};
 
 /*
  * qemu_ld/st code generator call add_qemu_ldst_label,
@@ -1532,7 +1589,7 @@ static void add_qemu_ldst_label(TCGContext *s,
                                 int addrhi_reg,
                                 int mem_index,
                                 uint8_t *raddr,
-                                uint32_t **label_ptr)
+                                uint8_t **label_ptr)
 {
     int idx;
     TCGLabelQemuLdst *label;
@@ -1562,36 +1619,38 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     int s_bits;
     int opc = label->opc_ext & HL_OPC_MASK;
     int mem_index = label->mem_index;
-    int data_reg = label->datalo_reg;
-    int data_reg2 = label->datahi_reg;
-    int addrlo_reg = label->addrlo_reg;
-    int addrhi_reg = label->addrhi_reg;
-    uint8_t *raddr = label->raddr;
-    uint32_t **label_ptr = &label->label_ptr[0];
 #if TCG_TARGET_REG_BITS == 64
     int arg_idx;
 #else
     int stack_adjust;
 #endif
+    int data_reg = label->datalo_reg;
+    int data_reg2 = label->datahi_reg;
+    int addrlo_reg = label->addrlo_reg;
+    int addrhi_reg = label->addrhi_reg;
+    uint8_t *raddr = label->raddr;
+    uint8_t **label_ptr = &label->label_ptr[0];
 
     s_bits = opc & 3;
 
-    /* resolove label address */
-    *label_ptr[0] = (uint32_t)(s->code_ptr - (uint8_t *)label_ptr[0] - 4);
+    /* resolve label address */
+    *(uint32_t *)label_ptr[0] = (uint32_t)(s->code_ptr - label_ptr[0] - 4);
     if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
-        *label_ptr[1] = (uint32_t)(s->code_ptr - (uint8_t *)label_ptr[1] - 4);
+        *(uint32_t *)label_ptr[1] = (uint32_t)(s->code_ptr - label_ptr[1] - 4);
     }
 
+    /* extended helper signature: __ext_ld_mmu(target_ulong addr, int mmu_idx,
+       uintptr_t raddr) */
 #if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-    tcg_out_pushi(s, mem_index);
-    stack_adjust = 8;
+    tcg_out_pushi(s, (int)(raddr - 1)); /* return address */
+    stack_adjust = 4;
+    tcg_out_pushi(s, mem_index);        /* mmu index */
+    stack_adjust += 4;
     if (TARGET_LONG_BITS == 64) {
         tcg_out_push(s, addrhi_reg);
-        /* 4 bytes addrhi_reg and +4 bytes (raddr - 1) */
-        stack_adjust += 8;
+        stack_adjust += 4;
     }
-    tcg_out_push(s, addrlo_reg);
+    tcg_out_push(s, addrlo_reg); /* guest addr */
     stack_adjust += 4;
 #ifdef CONFIG_TCG_PASS_AREG0
     tcg_out_push(s, TCG_AREG0);
@@ -1600,9 +1659,10 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 #else
     /* The first argument is already loaded with addrlo.  */
     arg_idx = 1;
-    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx],
+    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
                  mem_index);
-    tcg_out_movi(s, TCG_TYPE_I32, TCG_REG_ECX, (tcg_target_long)(raddr - 1));
+    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
+                 (int)(raddr - 1));
 #ifdef CONFIG_TCG_PASS_AREG0
     /* XXX/FIXME: suboptimal */
     tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
@@ -1616,7 +1676,7 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 #endif
 #endif
 
-    tcg_out_calli(s, (tcg_target_long)qemu_ldext_helpers[s_bits]);
+    tcg_out_calli(s, (tcg_target_long)qemu_ld_helpers[s_bits]);
 
 #if TCG_TARGET_REG_BITS == 32
     if (stack_adjust == (TCG_TARGET_REG_BITS / 8)) {
@@ -1663,8 +1723,9 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     default:
         tcg_abort();
     }
+
     /* jump back to original code */
-    tcg_out_jmp(s, (tcg_target_long)raddr);
+    tcg_out_jmp(s, (tcg_target_long) raddr);
 }
 
 /* generates slow case of qemu_st at the end of TB */
@@ -1679,31 +1740,34 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     int addrlo_reg = label->addrlo_reg;
     int addrhi_reg = label->addrhi_reg;
     uint8_t *raddr = label->raddr;
-    uint32_t **label_ptr = &label->label_ptr[0];
+    uint8_t **label_ptr = &label->label_ptr[0];
 
     s_bits = opc & 3;
 
-    /* resolove label address */
-    *label_ptr[0] = (uint32_t)(s->code_ptr - (uint8_t *)label_ptr[0] - 4);
+    /* resolve label address */
+    *(uint32_t *)label_ptr[0] = (uint32_t)(s->code_ptr - label_ptr[0] - 4);
     if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
-        *label_ptr[1] = (uint32_t)(s->code_ptr - (uint8_t *)label_ptr[1] - 4);
+        *(uint32_t *)label_ptr[1] = (uint32_t)(s->code_ptr - label_ptr[1] - 4);
     }
 
+    /* extended helper signature: __ext_st_mmu(target_ulong addr, uintxx_t val,
+       int mmu_idx, uintptr_t raddr) */
 #if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-    tcg_out_pushi(s, mem_index);
-    stack_adjust = 8;
+    tcg_out_pushi(s, (int)(raddr - 1)); /* return address */
+    stack_adjust = 4;
+    tcg_out_pushi(s, mem_index); /* mmu index */
+    stack_adjust += 4;
     if (opc == 3) {
         tcg_out_push(s, data_reg2);
         stack_adjust += 4;
     }
-    tcg_out_push(s, data_reg);
+    tcg_out_push(s, data_reg);   /* guest data */
     stack_adjust += 4;
     if (TARGET_LONG_BITS == 64) {
         tcg_out_push(s, addrhi_reg);
         stack_adjust += 4;
     }
-    tcg_out_push(s, addrlo_reg);
+    tcg_out_push(s, addrlo_reg); /* guest addr */
     stack_adjust += 4;
 #ifdef CONFIG_TCG_PASS_AREG0
     tcg_out_push(s, TCG_AREG0);
@@ -1713,10 +1777,8 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     tcg_out_mov(s, (opc == 3 ? TCG_TYPE_I64 : TCG_TYPE_I32),
                 tcg_target_call_iarg_regs[1], data_reg);
     tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], mem_index);
-    /* return address should indicate qemu_st IR codes */
-    /* stack growth: 1word * 64bit */
-    tcg_out_pushi(s, (tcg_target_long)(raddr - 1));
-    stack_adjust = 8;
+    tcg_out_movi(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3], (int)(raddr - 1);
+    stack_adjust = 0;
 #ifdef CONFIG_TCG_PASS_AREG0
     /* XXX/FIXME: suboptimal */
     tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
@@ -1730,7 +1792,7 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 #endif
 #endif
 
-    tcg_out_calli(s, (tcg_target_long)qemu_stext_helpers[s_bits]);
+    tcg_out_calli(s, (tcg_target_long)qemu_st_helpers[s_bits]);
 
     if (stack_adjust == (TCG_TARGET_REG_BITS / 8)) {
         /* Pop and discard.  This is 2 bytes smaller than the add.  */
@@ -1757,152 +1819,6 @@ void tcg_out_qemu_ldst_slow_path(TCGContext *s)
             tcg_out_qemu_st_slow_path(s, label);
         }
     }
-}
-
-/*
- * almost same with tcg_out_tlb_load except that forward jump target is different
- *
- */
-
-static inline void tcg_out_tlb_load_opt(TCGContext *s, int addrlo_idx,
-                                        int mem_index, int s_bits,
-                                        const TCGArg *args,
-                                        uint32_t **label_ptr, int which)
-{
-    const int addrlo = args[addrlo_idx];
-    const int r0 = tcg_target_call_iarg_regs[0];
-    const int r1 = tcg_target_call_iarg_regs[1];
-    TCGType type = TCG_TYPE_I32;
-    int rexw = 0;
-
-    if (TCG_TARGET_REG_BITS == 64 && TARGET_LONG_BITS == 64) {
-        type = TCG_TYPE_I64;
-        rexw = P_REXW;
-    }
-
-    tcg_out_mov(s, type, r1, addrlo);
-    tcg_out_mov(s, type, r0, addrlo);
-
-    tcg_out_shifti(s, SHIFT_SHR + rexw, r1,
-                   TARGET_PAGE_BITS - CPU_TLB_ENTRY_BITS);
-
-    tgen_arithi(s, ARITH_AND + rexw, r0,
-                TARGET_PAGE_MASK | ((1 << s_bits) - 1), 0);
-    tgen_arithi(s, ARITH_AND + rexw, r1,
-                (CPU_TLB_SIZE - 1) << CPU_TLB_ENTRY_BITS, 0);
-
-    tcg_out_modrm_sib_offset(s, OPC_LEA + P_REXW, r1, TCG_AREG0, r1, 0,
-                             offsetof(CPUArchState, tlb_table[mem_index][0])
-                             + which);
-
-    /* cmp 0(r1), r0 */
-    tcg_out_modrm_offset(s, OPC_CMP_GvEv + rexw, r0, r1, 0);
-
-    tcg_out_mov(s, type, r0, addrlo);
-
-    /* jne label1; short jump is not enough in case of big TB */
-    tcg_out_opc(s, OPC_JCC_long + JCC_JNE, 0, 0, 0);
-    if (!label_ptr) {
-        tcg_abort();
-    }
-    label_ptr[0] = (uint32_t *)s->code_ptr;
-    s->code_ptr += 4;
-
-    if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
-        /* cmp 4(r1), addrhi */
-        tcg_out_modrm_offset(s, OPC_CMP_GvEv, args[addrlo_idx+1], r1, 4);
-
-        /* jne label1 */
-        tcg_out_opc(s, OPC_JCC_long + JCC_JNE, 0, 0, 0);
-        label_ptr[1] = (uint32_t *)s->code_ptr;
-        s->code_ptr += 4;
-    }
-
-    /* TLB Hit.  */
-
-    /* add addend(r1), r0 */
-    tcg_out_modrm_offset(s, OPC_ADD_GvEv + P_REXW, r0, r1,
-                         offsetof(CPUTLBEntry, addend) - which);
-}
-
-/* XXX: qemu_ld and qemu_st could be modified to clobber only EDX and
-   EAX. It will be useful once fixed registers globals are less
-   common. */
-static void tcg_out_qemu_ld_opt(TCGContext *s, const TCGArg *args,
-                                int opc)
-{
-    int data_reg, data_reg2 = 0;
-    int addrlo_idx;
-    int mem_index, s_bits;
-    uint32_t *label_ptr[2];
-
-    data_reg = args[0];
-    label_ptr[1] = 0;
-    addrlo_idx = 1;
-    if (TCG_TARGET_REG_BITS == 32 && opc == 3) {
-        data_reg2 = args[1];
-        addrlo_idx = 2;
-    }
-
-    mem_index = args[addrlo_idx + 1 + (TARGET_LONG_BITS > TCG_TARGET_REG_BITS)];
-    s_bits = opc & 3;
-
-    tcg_out_tlb_load_opt(s, addrlo_idx, mem_index, s_bits, args,
-                         &label_ptr[0], offsetof(CPUTLBEntry, addr_read));
-
-    /* TLB Hit.  */
-    tcg_out_qemu_ld_direct(s, data_reg, data_reg2,
-                           tcg_target_call_iarg_regs[0], 0, opc);
-
-    /* helper stub will be jumped back here */
-    add_qemu_ldst_label(s,
-                        opc,
-                        data_reg,
-                        data_reg2,
-                        args[addrlo_idx],
-                        args[addrlo_idx + 1],
-                        mem_index,
-                        s->code_ptr,
-                        label_ptr);
-
-}
-
-static void tcg_out_qemu_st_opt(TCGContext *s, const TCGArg *args,
-                                int opc)
-{
-    int data_reg, data_reg2 = 0;
-    int addrlo_idx;
-    int mem_index, s_bits;
-    uint32_t *label_ptr[2];
-
-    data_reg = args[0];
-    label_ptr[1] = 0;
-    addrlo_idx = 1;
-    if (TCG_TARGET_REG_BITS == 32 && opc == 3) {
-        data_reg2 = args[1];
-        addrlo_idx = 2;
-    }
-
-    mem_index = args[addrlo_idx + 1 + (TARGET_LONG_BITS > TCG_TARGET_REG_BITS)];
-    s_bits = opc;
-
-    tcg_out_tlb_load_opt(s, addrlo_idx, mem_index, s_bits, args,
-                         &label_ptr[0], offsetof(CPUTLBEntry, addr_write));
-
-    /* TLB Hit.  */
-    tcg_out_qemu_st_direct(s, data_reg, data_reg2,
-                           tcg_target_call_iarg_regs[0], 0, opc);
-
-    /* helper stub will be jumped back here */
-    add_qemu_ldst_label(s,
-                        opc | HL_ST_MASK,
-                        data_reg,
-                        data_reg2,
-                        args[addrlo_idx],
-                        args[addrlo_idx + 1],
-                        mem_index,
-                        s->code_ptr,
-                        label_ptr);
 }
 #endif  /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
 
@@ -2118,9 +2034,6 @@ static inline void tcg_out_op(TCGContext *s, TCGOpcode opc,
         tcg_out_ext16u(s, args[0], args[1]);
         break;
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-#define tcg_out_qemu_ld(S, ARGS, OPC)   tcg_out_qemu_ld_opt(S, ARGS, OPC)
-#endif /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU) */
     case INDEX_op_qemu_ld8u:
         tcg_out_qemu_ld(s, args, 0);
         break;
@@ -2143,9 +2056,6 @@ static inline void tcg_out_op(TCGContext *s, TCGOpcode opc,
         tcg_out_qemu_ld(s, args, 3);
         break;
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-#define tcg_out_qemu_st(S, ARGS, OPC)   tcg_out_qemu_st_opt(S, ARGS, OPC)
-#endif /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU) */
     case INDEX_op_qemu_st8:
         tcg_out_qemu_st(s, args, 0);
         break;

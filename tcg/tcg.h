@@ -188,7 +188,6 @@ typedef tcg_target_ulong TCGArg;
  */
 
 #if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-#if defined(__i386__) || defined(__x86_64__)
 /* Macros and structures for qemu_ld/st IR code optimization:
    It looks good for TCG_MAX_HELPER_LABELS to be half of OPC_BUF_SIZE in exec-all.h. */
 #define TCG_MAX_QEMU_LDST       320
@@ -207,9 +206,8 @@ typedef struct TCGLabelQemuLdst {
     int datahi_reg;             /* reg index for the high word to be loaded or to be stored */
     int mem_index;              /* soft MMU memory index */
     uint8_t *raddr;             /* return address (located end of TB) */
-    uint32_t *label_ptr[2];     /* label pointers to be updated */
+    uint8_t *label_ptr[2];      /* label pointers to be updated */
 } TCGLabelQemuLdst;
-#endif
 #endif  /* CONFIG_QEMU_LDST_OPTIMIZATION */
 
 #ifdef CONFIG_DEBUG_TCG
@@ -619,7 +617,7 @@ extern uint8_t code_gen_prologue[];
     ((tcg_target_ulong (*)(void *, void *))code_gen_prologue)(env, tb_ptr)
 #endif
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
 /* qemu_ld/st generation at the end of TB */
 void tcg_out_qemu_ldst_slow_path(TCGContext *s);
 #endif

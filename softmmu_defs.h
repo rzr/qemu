@@ -19,6 +19,19 @@ void __stl_mmu(target_ulong addr, uint32_t val, int mmu_idx);
 uint64_t __ldq_mmu(target_ulong addr, int mmu_idx);
 void __stq_mmu(target_ulong addr, uint64_t val, int mmu_idx);
 
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+/* Extended versions of MMU helpers for qemu_ld/st optimization.
+   They get return address arguments because the caller PCs are not where helpers return to. */
+uint8_t __ext_ldb_mmu(target_ulong addr, int mmu_idx, uintptr_t ra);
+void __ext_stb_mmu(target_ulong addr, uint8_t val, int mmu_idx, uintptr_t ra);
+uint16_t __ext_ldw_mmu(target_ulong addr, int mmu_idx, uintptr_t ra);
+void __ext_stw_mmu(target_ulong addr, uint16_t val, int mmu_idx, uintptr_t ra);
+uint32_t __ext_ldl_mmu(target_ulong addr, int mmu_idx, uintptr_t ra);
+void __ext_stl_mmu(target_ulong addr, uint32_t val, int mmu_idx, uintptr_t ra);
+uint64_t __ext_ldq_mmu(target_ulong addr, int mmu_idx, uintptr_t ra);
+void __ext_stq_mmu(target_ulong addr, uint64_t val, int mmu_idx, uintptr_t ra);
+#endif  /* CONFIG_QEMU_LDST_OPTIMIZATION && CONFIG_SOFTMMU */
+
 uint8_t __ldb_cmmu(target_ulong addr, int mmu_idx);
 void __stb_cmmu(target_ulong addr, uint8_t val, int mmu_idx);
 uint16_t __ldw_cmmu(target_ulong addr, int mmu_idx);

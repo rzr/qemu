@@ -71,6 +71,29 @@ uint32_t HELPER(neon_tbl)(uint32_t ireg, uint32_t def,
 #define SHIFT 3
 #include "softmmu_template.h"
 
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+/* Exteneded MMU helper funtions for qemu_ld/st optimization
+   Note that normal helper functions should be defined above
+   to avoid duplication of common functions, slow_ld/st and io_read/write.
+ */
+#define USE_EXTENDED_HELPER
+
+#define SHIFT 0
+#include "softmmu_template.h"
+
+#define SHIFT 1
+#include "softmmu_template.h"
+
+#define SHIFT 2
+#include "softmmu_template.h"
+
+#define SHIFT 3
+#include "softmmu_template.h"
+
+#undef USE_EXTENDED_HELPER
+#endif  /* CONFIG_QEMU_LDST_OPTIMIZATION && CONFIG_SOFTMMU */
+
 /* try to fill the TLB and return an exception if error. If retaddr is
    NULL, it means that the function was called in C code (i.e. not
    from generated code or from helper.c) */

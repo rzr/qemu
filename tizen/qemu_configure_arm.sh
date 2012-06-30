@@ -14,10 +14,10 @@ exec ./configure \
  --disable-vnc-tls \
  --audio-card-list=ac97 \
  --enable-opengles \
+ --enable-ldst-optimization \
  --enable-maru \
  --disable-pie
 # --enable-mixemu \
-# --enable-ldst-optimization \
 # --enable-gl
 # --enable-ffmpeg
 # --enable-v4l2 \
@@ -33,8 +33,8 @@ exec ./configure \
  --disable-vnc-tls \
  --audio-card-list=ac97 \
  --enable-hax \
+ --enable-ldst-optimization \
  --enable-maru
-# --enable-ldst-optimization \
 # --enable-gl
 # --enable-ffmpeg
 # --disable-vnc-jpeg \
