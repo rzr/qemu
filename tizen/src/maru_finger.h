@@ -34,7 +34,7 @@
 
 /* definitions relating to multi-touch */
 //TODO : from arg
-#define MAX_FINGER_CNT 2
+#define MAX_FINGER_CNT 3
 #define DEFAULT_FINGER_POINT_SIZE 32
 #define DEFAULT_FINGER_POINT_COLOR 0x7E0F0F0F
 #define DEFAULT_FINGER_POINT_OUTLINE_COLOR 0xDDDDDDDD
