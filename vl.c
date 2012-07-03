@@ -265,7 +265,7 @@ uint8_t qemu_extra_params_fw[2];
 //virtio-gl
 #ifndef _WIN32
 extern int gl_acceleration_capability_check (void);
-int enable_gl = 1;
+int enable_gl = 0;
 #endif
 
 typedef struct FWBootEntry FWBootEntry;
