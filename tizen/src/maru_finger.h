@@ -65,7 +65,8 @@ void set_multi_touch_enable(int enable);
 int get_multi_touch_enable(void);
 FingerPoint *get_finger_point_from_slot(int index);
 FingerPoint *get_finger_point_search(int x, int y);
-void maru_finger_processing(int touch_type, int origin_x, int origin_y, int x, int y);
+void maru_finger_processing_A(int touch_type, int origin_x, int origin_y, int x, int y);
+void maru_finger_processing_B(int touch_type, int origin_x, int origin_y, int x, int y);
 void clear_finger_slot(void);
 void cleanup_multi_touch_state(void);
 
