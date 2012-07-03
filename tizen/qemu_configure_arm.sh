@@ -12,6 +12,7 @@ exec ./configure \
  --audio-drv-list=alsa \
  --enable-opengles \
  --disable-gl \
+ --disable-pie \
  --enable-maru
 ;;
 MINGW*)
