@@ -573,7 +573,7 @@ static int hax_vcpu_hax_exec(CPUState *env)
     }
 
     
-    hax_cpu_synchronize_state(env);
+    //hax_cpu_synchronize_state(env);
 
     do {
         int hax_ret;
@@ -584,10 +584,12 @@ static int hax_vcpu_hax_exec(CPUState *env)
             break;
         }
 
+#if 0
 	if (env->hax_vcpu_dirty) {
 		hax_vcpu_sync_state(env, 1);
 		env->hax_vcpu_dirty = 0;
 	}
+#endif
 
         hax_vcpu_interrupt(env);
 
