@@ -28,11 +28,52 @@
 #define TIZEN_VPCI_DEVICE_ID 0x0300
 #define TIZEN_VPCI_CLASS_ID  PCI_CLASS_PROCESSOR_CO
 
+#define TIZEN_VPCI_IO_ADDR 0xC3000000
+#define TIZEN_VPCI_IO_SIZE 0xFFFF
+
 typedef struct {
     SysBusDevice busdev;
     qemu_irq irq[4];
     MemoryRegion mem_config;
+    MemoryRegion iospace_alias_mem;
 } TizenVPCIState;
+
+static uint64_t tizen_vpci_io_read(void *opaque, target_phys_addr_t addr,
+                                   unsigned size)
+{
+    switch (size) {
+    case 1:
+        return cpu_inb(addr);
+    case 2:
+        return cpu_inw(addr);
+    case 4:
+        return cpu_inl(addr);
+    }
+    assert(0);
+}
+
+static void tizen_vpci_io_write(void *opaque, target_phys_addr_t addr,
+                                uint64_t data, unsigned size)
+{
+    switch (size) {
+    case 1:
+        cpu_outb(addr, data);
+        return;
+    case 2:
+        cpu_outw(addr, data);
+        return;
+    case 4:
+        cpu_outl(addr, data);
+        return;
+    }
+    assert(0);
+}
+
+static const MemoryRegionOps tizen_vpci_io_ops = {
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .read = tizen_vpci_io_read,
+    .write = tizen_vpci_io_write
+};
 
 static inline uint32_t tizen_vpci_config_addr(target_phys_addr_t addr)
 {
@@ -80,6 +121,20 @@ static int tizen_vpci_init(SysBusDevice *dev)
     for (i = 0; i < 4; i++) {
         sysbus_init_irq(dev, &s->irq[i]);
     }
+
+    /* On ARM, we only have MMIO no specific IO space from the CPU
+     * perspective.  In theory we ought to be able to embed the PCI IO
+     * memory region direction in the system memory space.  However,
+     * if any of the IO BAR subregions use the old_portio mechanism,
+     * that won't be processed properly unless accessed from the
+     * system io address space.  This hack to bounce things via
+     * system_io works around the problem until all the users of
+     * old_portion are updated */
+
+    memory_region_init_io(&s->iospace_alias_mem, &tizen_vpci_io_ops, s,
+                          "tizen_vpci.io-alias", TIZEN_VPCI_IO_SIZE);
+    memory_region_add_subregion(get_system_memory(), TIZEN_VPCI_IO_ADDR,
+                                &s->iospace_alias_mem);
 
     bus = pci_register_bus(&dev->qdev, "pci",
                            tizen_vpci_set_irq, tizen_vpci_map_irq, s->irq,
