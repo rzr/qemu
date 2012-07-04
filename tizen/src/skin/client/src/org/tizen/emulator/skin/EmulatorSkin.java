@@ -1469,13 +1469,15 @@ public class EmulatorSkin {
 
 				// readyToReopen( EmulatorSkin.this, isOnTop );
 
+				//internal/Library.java::arch()
 				String osArch = System.getProperty("os.arch"); //$NON-NLS-1$
-				if (osArch.equals ("i386") || osArch.equals ("i686")) { //$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
-					logger.info("32bit architecture");
-					setTopMost32(isOnTop);
-				} else { //64bit OS
+				logger.info(osArch);
+				if (osArch.equals ("amd64") || osArch.equals ("IA64N") || osArch.equals("IA64W")) { //$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
 					logger.info("64bit architecture");
 					setTopMost64(isOnTop);
+				} else {
+					logger.info("32bit architecture");
+					setTopMost32(isOnTop);
 				}
 			}
 		} );
