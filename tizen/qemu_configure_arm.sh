@@ -12,8 +12,9 @@ exec ./configure \
  --audio-drv-list=alsa \
  --enable-opengles \
  --disable-gl \
- --disable-pie \
- --enable-maru
+ --enable-ldst-optimization \
+ --enable-maru \
+ --disable-pie
 ;;
 MINGW*)
 echo "checking for os... targetos $targetos"
@@ -23,6 +24,7 @@ exec ./configure \
  --audio-drv-list=winwave \
  --enable-opengles \
  --disable-gl \
+ --enable-ldst-optimization \
  --enable-maru
 ;;
 esac

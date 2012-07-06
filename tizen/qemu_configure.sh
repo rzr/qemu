@@ -16,7 +16,8 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-maru \
  --enable-opengles \
- --enable-gl
+ --enable-gl \
+ --disable-pie
 ;;
 MINGW*)
 echo "checking for os... targetos $targetos"
