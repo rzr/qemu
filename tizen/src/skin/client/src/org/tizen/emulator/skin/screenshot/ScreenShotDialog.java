@@ -461,6 +461,7 @@ public class ScreenShotDialog {
 					logger.warning( "Cannot find user home path int java System properties." );
 				}
 
+				fileDialog.setOverwrite(true);
 				String filePath = fileDialog.open();
 				saveFile( filePath, fileDialog );
 
