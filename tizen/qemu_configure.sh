@@ -15,6 +15,8 @@ exec ./configure \
  --audio-card-list=ac97 \
  --enable-ldst-optimization \
  --enable-maru \
+ --disable-vnc-jpeg \
+ --disable-vnc-png \
  --enable-opengles \
  --enable-gl \
  --disable-pie
@@ -30,6 +32,8 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-hax \
  --enable-maru \
+ --disable-vnc-jpeg \
+ --disable-vnc-png \
  --enable-opengles \
  --enable-gl
 ;;

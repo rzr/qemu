@@ -80,7 +80,9 @@ void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, i
     TRACE( "mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n", event_type, origin_x, origin_y, x, y, z );
 
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
-        maru_finger_processing(event_type, origin_x, origin_y, x, y);
+        maru_finger_processing_A(event_type, origin_x, origin_y, x, y);
+    } else if (get_emul_multi_touch_state()->multitouch_enable == 2) {
+        maru_finger_processing_B(event_type, origin_x, origin_y, x, y);
     }
     else if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) { //single touch
         kbd_mouse_event(x, y, z, 1);
@@ -108,7 +110,7 @@ void do_key_event( int event_type, int keycode, int key_location )
         if (keycode == JAVA_KEYCODE_BIT_CTRL) {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 1;
-                INFO("multi-touch enabled\n");
+                INFO("multi-touch enabled = A\n");
             } else if (KEY_RELEASED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 0;
                 clear_finger_slot();
@@ -120,6 +122,14 @@ void do_key_event( int event_type, int keycode, int key_location )
                 get_emul_multi_touch_state()->multitouch_enable = 0;
                 clear_finger_slot();
                 INFO("multi-touch disabled\n");
+            }
+        } else if (keycode == (JAVA_KEYCODE_BIT_SHIFT | JAVA_KEYCODE_BIT_CTRL)) {
+            if (KEY_PRESSED == event_type) {
+                get_emul_multi_touch_state()->multitouch_enable = 2;
+                INFO("multi-touch enabled = B\n");
+            } else if (KEY_RELEASED == event_type) {
+                get_emul_multi_touch_state()->multitouch_enable = 1;
+                INFO("multi-touch enabled = A\n");
             }
         }
     }

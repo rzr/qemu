@@ -34,7 +34,7 @@
 
 /* definitions relating to multi-touch */
 //TODO : from arg
-#define MAX_FINGER_CNT 2
+#define MAX_FINGER_CNT 3
 #define DEFAULT_FINGER_POINT_SIZE 32
 #define DEFAULT_FINGER_POINT_COLOR 0x7E0F0F0F
 #define DEFAULT_FINGER_POINT_OUTLINE_COLOR 0xDDDDDDDD
@@ -65,7 +65,8 @@ void set_multi_touch_enable(int enable);
 int get_multi_touch_enable(void);
 FingerPoint *get_finger_point_from_slot(int index);
 FingerPoint *get_finger_point_search(int x, int y);
-void maru_finger_processing(int touch_type, int origin_x, int origin_y, int x, int y);
+void maru_finger_processing_A(int touch_type, int origin_x, int origin_y, int x, int y);
+void maru_finger_processing_B(int touch_type, int origin_x, int origin_y, int x, int y);
 void clear_finger_slot(void);
 void cleanup_multi_touch_state(void);
 

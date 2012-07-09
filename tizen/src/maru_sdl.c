@@ -83,7 +83,7 @@ static void qemu_update(void)
 
     /* draw multi-touch finger points */
     MultiTouchState *mts = get_emul_multi_touch_state();
-    if (mts->multitouch_enable == 1 && mts->finger_point_surface != NULL) {
+    if (mts->multitouch_enable != 0 && mts->finger_point_surface != NULL) {
         FingerPoint *finger = NULL;
         int finger_point_size_half = mts->finger_point_size / 2;
         SDL_Rect rect;

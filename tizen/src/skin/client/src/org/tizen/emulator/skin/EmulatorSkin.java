@@ -142,6 +142,7 @@ public class EmulatorSkin {
 	private int currentLcdWidth;
 	private int currentLcdHeight;
 	private SkinRegion currentHoverRegion;
+	private SkinRegion currentPressedRegion;
 
 	private int pressedMouseX;
 	private int pressedMouseY;
@@ -529,7 +530,6 @@ public class EmulatorSkin {
 		shell.addMouseTrackListener( shellMouseTrackListener );
 
 		shellMouseMoveListener = new MouseMoveListener() {
-
 			@Override
 			public void mouseMove( MouseEvent e ) {
 				if ( EmulatorSkin.this.isMousePressed ) {
@@ -547,7 +547,6 @@ public class EmulatorSkin {
 
 					}
 				} else {
-
 					SkinRegion region = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 
 					if ( null == region ) {
@@ -569,23 +568,30 @@ public class EmulatorSkin {
 						}
 
 						isHoverState = true;
-						GC gc = new GC( shell );
-						gc.setLineWidth( 1 );
-						gc.setForeground( hoverColor );
-						gc.drawRectangle( region.x, region.y, region.width, region.height );
 						currentHoverRegion = region;
-						gc.dispose();
-					}
 
+						/* draw hover */
+						shell.getDisplay().asyncExec(new Runnable() {
+							public void run() {
+								if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
+									GC gc = new GC(shell);
+									gc.setLineWidth(1);
+									gc.setForeground(hoverColor);
+									gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
+
+									gc.dispose();
+								}
+							}
+						});
+					}
 				}
 
-			}
+			} //end of mouseMove
 		};
 
 		shell.addMouseMoveListener( shellMouseMoveListener );
 
 		shellMouseListener = new MouseListener() {
-
 			@Override
 			public void mouseUp( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
@@ -597,9 +603,8 @@ public class EmulatorSkin {
 					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
 					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
-						
 						// null check : prevent from mouse up without a hover (ex. doing always on top in hardkey area)
-						if( null != currentHoverRegion ) {
+						if ( null != currentHoverRegion ) {
 							if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
 								shell.redraw();
 							} else {
@@ -607,7 +612,7 @@ public class EmulatorSkin {
 										currentHoverRegion.height + 1, false );
 							}
 						}
-						
+
 						SkinUtil.trimShell( shell, currentImage );
 
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, 0 );
@@ -629,17 +634,39 @@ public class EmulatorSkin {
 					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
 					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
-						// draw the button region as the cropped keyPressed image area
-						SkinRegion region = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
+						shell.setToolTipText(null);
 
-						if ( null != currentKeyPressedImage ) {
-							GC gc = new GC( shell );
-							gc.drawImage( currentKeyPressedImage, region.x + 1, region.y + 1, region.width - 1,
-									region.height - 1, // src
-									region.x + 1, region.y + 1, region.width - 1, region.height - 1 ); // dst
-							gc.dispose();
+						/* draw the button region as the cropped keyPressed image area */
+						currentPressedRegion = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
+						if (currentPressedRegion != null && currentPressedRegion.width != 0 && currentPressedRegion.height != 0) {
+							shell.getDisplay().asyncExec(new Runnable() {
+								public void run() {
+									if ( null != currentKeyPressedImage ) {
+										GC gc = new GC( shell );
 
-							SkinUtil.trimShell( shell, currentKeyPressedImage, region.x, region.y, region.width, region.height );
+										/* button */
+										gc.drawImage(currentKeyPressedImage,
+												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
+												currentPressedRegion.width - 1, currentPressedRegion.height - 1, //src
+												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
+												currentPressedRegion.width - 1, currentPressedRegion.height - 1); //dst
+
+										/* hover */
+										if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
+											gc.setLineWidth(1);
+											gc.setForeground(hoverColor);
+											gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
+										}
+
+										gc.dispose();
+
+										SkinUtil.trimShell(shell, currentKeyPressedImage,
+												currentPressedRegion.x, currentPressedRegion.y, currentPressedRegion.width, currentPressedRegion.height);
+
+										currentPressedRegion = null;
+									}
+								}
+							});
 						}
 
 						KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, 0 );
@@ -1477,13 +1504,15 @@ public class EmulatorSkin {
 
 				// readyToReopen( EmulatorSkin.this, isOnTop );
 
+				//internal/Library.java::arch()
 				String osArch = System.getProperty("os.arch"); //$NON-NLS-1$
-				if (osArch.equals ("i386") || osArch.equals ("i686")) { //$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
+				logger.info(osArch);
+				if (osArch.equals("amd64") || osArch.equals("IA64N") || osArch.equals("IA64W")) { //$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
+					logger.info("64bit architecture");
+					setTopMost64(isOnTop); //64bit
+				} else {
 					logger.info("32bit architecture");
 					setTopMost32(isOnTop);
-				} else { //64bit OS
-					logger.info("64bit architecture");
-					setTopMost64(isOnTop);
 				}
 			}
 		} );

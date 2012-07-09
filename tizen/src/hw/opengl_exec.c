@@ -1343,8 +1343,13 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             int i;
             for (i = 0; i < process->nb_states; i ++) {
                 if (process->glstates[i]->fake_ctxt == fake_ctxt) {
+		     /*XXX: DestroyContext should not switch current context, or
+		     * else guest still try to access it and cause qemu
+		     * segfalt. But not sure if any corner case, so comment it
+		     * for now and will remove it completely in future.
+		     */
                     // this was our GLState...
-                    process->current_state = &process->default_state;
+                    // process->current_state = &process->default_state;
 
                     int fake_shareList =
                         process->glstates[i]->fake_shareList;

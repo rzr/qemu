@@ -279,7 +279,7 @@ FingerPoint *get_finger_point_search(int x, int y)
 static int _grab_finger_id = 0;
 #define QEMU_MOUSE_PRESSED 1
 #define QEMU_MOUSE_RELEASEED 0
-void maru_finger_processing(int touch_type, int origin_x, int origin_y, int x, int y)
+void maru_finger_processing_A(int touch_type, int origin_x, int origin_y, int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
@@ -339,7 +339,72 @@ void maru_finger_processing(int touch_type, int origin_x, int origin_y, int x, i
     } else if (touch_type == MOUSE_UP) { /* released */
         _grab_finger_id = 0;
     }
+}
 
+void maru_finger_processing_B(int touch_type, int origin_x, int origin_y, int x, int y)
+{
+    MultiTouchState *mts = get_emul_multi_touch_state();
+    FingerPoint *finger = NULL;
+
+    if (touch_type == MOUSE_DOWN || touch_type == MOUSE_DRAG) { /* pressed */
+        if (_grab_finger_id > 0) {
+            finger = get_finger_point_from_slot(_grab_finger_id - 1);
+            if (finger != NULL) {
+                int origin_distance_x = origin_x - finger->origin_x;
+                int origin_distance_y = origin_y - finger->origin_y;
+                int distance_x = x - finger->x;
+                int distance_y = y - finger->y;
+
+                int i = 0;
+                for( ; i < get_emul_multi_touch_state()->finger_cnt; i++) {
+                    finger = get_finger_point_from_slot(i);
+
+                    if (finger != NULL) {
+                        finger->origin_x += origin_distance_x;
+                        finger->origin_y += origin_distance_y;
+                        finger->x += distance_x;
+                        finger->y += distance_y;
+                        if (finger->id != 0) {
+                            kbd_mouse_event(finger->x, finger->y, i, QEMU_MOUSE_PRESSED);
+                            TRACE("id %d finger multi-touch dragging = (%d, %d)\n", i + 1, finger->x, finger->y);
+                        }
+#ifdef _WIN32
+                        Sleep(2);
+#else
+                        usleep(2000);
+#endif
+                    }
+                }
+            }
+            return;
+        }
+
+        if (mts->finger_cnt == 0)
+        { //first finger touch input
+            if (_add_finger_point(origin_x, origin_y, x, y) == -1) {
+                return;
+            }
+            kbd_mouse_event(x, y, 0, QEMU_MOUSE_PRESSED);
+        }
+        else if ((finger = get_finger_point_search(x, y)) != NULL) //check the position of previous touch event
+        {
+            //finger point is selected
+            _grab_finger_id = finger->id;
+            TRACE("id %d finger is grabbed\n", _grab_finger_id);
+        }
+        else if (mts->finger_cnt == mts->finger_cnt_max) //Let's assume that this event is last finger touch input
+        {
+            //do nothing
+        }
+        else //one more finger
+        {
+            _add_finger_point(origin_x, origin_y, x, y) ;
+            kbd_mouse_event(x, y, mts->finger_cnt - 1, QEMU_MOUSE_PRESSED);
+        }
+
+    } else if (touch_type == MOUSE_UP) { /* released */
+        _grab_finger_id = 0;
+    }
 }
 
 void clear_finger_slot(void)
