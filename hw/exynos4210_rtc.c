@@ -37,8 +37,6 @@
 #include "exynos4210.h"
 
 #define DEBUG_RTC 0
-/* Get time from host */
-#define EXYNOS4210_RTC_GETSYSTIME 1
 
 #if DEBUG_RTC
 #define DPRINTF(fmt, ...) \
@@ -61,7 +59,7 @@
 #define     ALMMON          0x0064
 #define     ALMYEAR         0x0068
 #define     BCDSEC          0x0070
-#define     BDCMIN          0x0074
+#define     BCDMIN          0x0074
 #define     BCDHOUR         0x0078
 #define     BCDDAY          0x007C
 #define     BCDDAYWEEK      0x0080
@@ -143,23 +141,9 @@ static const VMStateDescription vmstate_exynos4210_rtc_state = {
     }
 };
 
-static inline int rtc_to_bcd(int a, int count)
-{
-    int ret = (((a % 100) / 10) << 4) | (a % 10);
-    if (count == 3) {
-        ret |= (((a % 1000) / 100) << 8);
-    }
-    return ret;
-}
-
-static inline int rtc_from_bcd(uint32_t a, int count)
-{
-    int ret = (((a >> 4) & 0x0f) * 10) + (a & 0x0f);
-    if (count == 3) {
-        ret += (((a >> 8) & 0x0f) * 100);
-    }
-    return ret;
-}
+#define BCD3DIGITS(x) \
+    ((uint32_t)to_bcd((uint8_t)(x % 100)) + \
+    ((uint32_t)to_bcd((uint8_t)((x % 1000) / 100)) << 8))
 
 static void check_alarm_raise(Exynos4210RTCState *s)
 {
@@ -167,27 +151,27 @@ static void check_alarm_raise(Exynos4210RTCState *s)
     struct tm stm = s->current_tm;
 
     if ((s->reg_rtcalm & 0x01) &&
-        (rtc_to_bcd(stm.tm_sec, 2) == s->reg_almsec)) {
+        (to_bcd((uint8_t)stm.tm_sec) == (uint8_t)s->reg_almsec)) {
         alarm_raise = 1;
     }
     if ((s->reg_rtcalm & 0x02) &&
-        (rtc_to_bcd(stm.tm_min, 2) == s->reg_almmin)) {
+        (to_bcd((uint8_t)stm.tm_min) == (uint8_t)s->reg_almmin)) {
         alarm_raise = 1;
     }
     if ((s->reg_rtcalm & 0x04) &&
-        (rtc_to_bcd(stm.tm_hour, 2) == s->reg_almhour)) {
+        (to_bcd((uint8_t)stm.tm_hour) == (uint8_t)s->reg_almhour)) {
         alarm_raise = 1;
     }
     if ((s->reg_rtcalm & 0x08) &&
-        (rtc_to_bcd(stm.tm_mday, 2) == s->reg_almday)) {
+        (to_bcd((uint8_t)stm.tm_mday) == (uint8_t)s->reg_almday)) {
         alarm_raise = 1;
     }
     if ((s->reg_rtcalm & 0x10) &&
-         (rtc_to_bcd(stm.tm_mon, 2) == s->reg_almmon)) {
+         (to_bcd((uint8_t)stm.tm_mon) == (uint8_t)s->reg_almmon)) {
         alarm_raise = 1;
     }
     if ((s->reg_rtcalm & 0x20) &&
-        (rtc_to_bcd(stm.tm_year, 3) == s->reg_almyear)) {
+        (BCD3DIGITS(stm.tm_year) == s->reg_almyear)) {
         alarm_raise = 1;
     }
 
@@ -354,25 +338,25 @@ static uint64_t exynos4210_rtc_read(void *opaque, target_phys_addr_t offset,
         break;
 
     case BCDSEC:
-        value = (uint32_t)rtc_to_bcd(s->current_tm.tm_sec, 2);
+        value = (uint32_t)to_bcd((uint8_t)s->current_tm.tm_sec);
         break;
-    case BDCMIN:
-        value = (uint32_t)rtc_to_bcd(s->current_tm.tm_min, 2);
+    case BCDMIN:
+        value = (uint32_t)to_bcd((uint8_t)s->current_tm.tm_min);
         break;
     case BCDHOUR:
-        value = (uint32_t)rtc_to_bcd(s->current_tm.tm_hour, 2);
+        value = (uint32_t)to_bcd((uint8_t)s->current_tm.tm_hour);
         break;
     case BCDDAYWEEK:
-        value = (uint32_t)rtc_to_bcd(s->current_tm.tm_wday, 2);
+        value = (uint32_t)to_bcd((uint8_t)s->current_tm.tm_wday);
         break;
     case BCDDAY:
-        value = (uint32_t)rtc_to_bcd(s->current_tm.tm_mday, 2);
+        value = (uint32_t)to_bcd((uint8_t)s->current_tm.tm_mday);
         break;
     case BCDMON:
-        value = (uint32_t)rtc_to_bcd(s->current_tm.tm_mon + 1, 2);
+        value = (uint32_t)to_bcd((uint8_t)s->current_tm.tm_mon + 1);
         break;
     case BCDYEAR:
-        value = (uint32_t)rtc_to_bcd(s->current_tm.tm_year, 3);
+        value = BCD3DIGITS(s->current_tm.tm_year);
         break;
 
     case CURTICNT:
@@ -474,37 +458,39 @@ static void exynos4210_rtc_write(void *opaque, target_phys_addr_t offset,
 
     case BCDSEC:
         if (s->reg_rtccon & RTC_ENABLE) {
-            s->current_tm.tm_sec = rtc_from_bcd(value, 2);
+            s->current_tm.tm_sec = (int)from_bcd((uint8_t)value);
         }
         break;
-    case BDCMIN:
+    case BCDMIN:
         if (s->reg_rtccon & RTC_ENABLE) {
-            s->current_tm.tm_min = rtc_from_bcd(value, 2);
+            s->current_tm.tm_min = (int)from_bcd((uint8_t)value);
         }
         break;
     case BCDHOUR:
         if (s->reg_rtccon & RTC_ENABLE) {
-            s->current_tm.tm_hour = rtc_from_bcd(value, 2);
+            s->current_tm.tm_hour = (int)from_bcd((uint8_t)value);
         }
         break;
     case BCDDAYWEEK:
         if (s->reg_rtccon & RTC_ENABLE) {
-            s->current_tm.tm_wday = rtc_from_bcd(value, 2);
+            s->current_tm.tm_wday = (int)from_bcd((uint8_t)value);
         }
         break;
     case BCDDAY:
         if (s->reg_rtccon & RTC_ENABLE) {
-            s->current_tm.tm_mday = rtc_from_bcd(value, 2);
+            s->current_tm.tm_mday = (int)from_bcd((uint8_t)value);
         }
         break;
     case BCDMON:
         if (s->reg_rtccon & RTC_ENABLE) {
-            s->current_tm.tm_mon = rtc_from_bcd(value, 2) - 1;
+            s->current_tm.tm_mon = (int)from_bcd((uint8_t)value) - 1;
         }
         break;
     case BCDYEAR:
         if (s->reg_rtccon & RTC_ENABLE) {
-            s->current_tm.tm_year = rtc_from_bcd(value, 3);
+            /* 3 digits */
+            s->current_tm.tm_year = (int)from_bcd((uint8_t)value) +
+                    (int)from_bcd((uint8_t)((value >> 8) & 0x0f)) * 100;
         }
         break;
 
@@ -524,24 +510,11 @@ static void exynos4210_rtc_reset(DeviceState *d)
 {
     Exynos4210RTCState *s = (Exynos4210RTCState *)d;
 
-#if EXYNOS4210_RTC_GETSYSTIME
-    time_t ct;
-#ifdef _WIN32
-    struct tm *ptm;
-#endif
+    qemu_get_timedate(&s->current_tm, 0);
 
-    time(&ct);
-
-#ifndef _WIN32
-    gmtime_r(&ct, &s->current_tm);
-#else
-    ptm = gmtime(&ct);
-    s->current_tm = *ptm;
-#endif
     DPRINTF("Get time from host: %d-%d-%d %2d:%02d:%02d\n",
             s->current_tm.tm_year, s->current_tm.tm_mon, s->current_tm.tm_mday,
             s->current_tm.tm_hour, s->current_tm.tm_min, s->current_tm.tm_sec);
-#endif
 
     s->reg_intp = 0;
     s->reg_rtccon = 0;
@@ -604,7 +577,7 @@ static void exynos4210_rtc_class_init(ObjectClass *klass, void *data)
     dc->vmsd = &vmstate_exynos4210_rtc_state;
 }
 
-static TypeInfo exynos4210_rtc_info = {
+static const TypeInfo exynos4210_rtc_info = {
     .name          = "exynos4210.rtc",
     .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(Exynos4210RTCState),
