@@ -9,7 +9,11 @@ QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
+ifndef CONFIG_DEBUG_EXEC
 CFLAGS += -g -O2
+else
+CFLAGS += -g -O0
+endif
 
 ifdef CONFIG_WIN32
 LIBS += -lavformat -lavcodec -lavutil -lm
