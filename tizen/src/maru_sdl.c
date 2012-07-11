@@ -225,8 +225,6 @@ static void qemu_ds_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
 
-    vga_hw_update();
-
     // surface may be NULL in init func.
     qemu_display_surface = ds->surface;
 
@@ -259,10 +257,7 @@ static void qemu_ds_refresh(DisplayState *ds)
                 }
 
                 pthread_mutex_lock(&sdl_mutex);
-#ifndef TARGET_ARM
-                /* FIXME: For some reason quit should be called here for x86*/
-                SDL_Quit(); //The returned surface is freed by SDL_Quit and must not be freed by the caller
-#endif
+
                 surface_screen = SDL_SetVideoMode(w, h, SDL_BPP, SDL_FLAGS);
                 if (surface_screen == NULL) {
                     ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, SDL_BPP, SDL_GetError());
@@ -281,6 +276,8 @@ static void qemu_ds_refresh(DisplayState *ds)
                 break;
         }
     }
+
+    vga_hw_update();
 
 #ifdef TARGET_ARM
 #ifdef SDL_THREAD
