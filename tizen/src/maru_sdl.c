@@ -379,6 +379,12 @@ void maruskin_sdl_resize(void)
     SDL_PushEvent(&ev);
 }
 
+void maruskin_sdl_free(void)
+{
+    SDL_FreeSurface(surface_screen);
+    SDL_FreeSurface(surface_qemu);
+}
+
 DisplaySurface* get_qemu_display_surface( void ) {
     return qemu_display_surface;
 }

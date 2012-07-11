@@ -80,6 +80,8 @@ static char** skin_argv = NULL;
 static int qemu_argc = 0;
 static char** qemu_argv = NULL;
 
+extern void maruskin_sdl_free(void);
+
 void exit_emulator(void)
 {
     cleanup_multi_touch_state();
@@ -88,6 +90,7 @@ void exit_emulator(void)
     shutdown_skin_server();
     shutdown_guest_server();
 
+    maruskin_sdl_free();
     SDL_Quit();
 }
 
