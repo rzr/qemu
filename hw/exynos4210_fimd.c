@@ -28,6 +28,7 @@
 #include "console.h"
 #include "pixel_ops.h"
 #include "bswap.h"
+#include "../tizen/src/hw/maru_brightness.h"
 
 /* Debug messages configuration */
 #define EXYNOS4210_FIMD_DEBUG              0
@@ -860,28 +861,64 @@ static void draw_line_mapcolor(Exynos4210fimdWindow *w, uint8_t *src,
 
 static int put_to_qemufb_pixel8(const rgba p, uint8_t *d)
 {
-    uint32_t pixel = rgb_to_pixel8(p.r, p.g, p.b);
+    uint32_t pixel;
+    uint8_t alpha;
+
+    if ( brightness_level < BRIGHTNESS_MAX ) {
+        alpha = brightness_tbl[brightness_level];
+        pixel = rgb_to_pixel8(alpha * p.r >> 8, alpha * p.g >> 8,
+                              alpha * p.b >> 8);
+    } else {
+        pixel = rgb_to_pixel8(p.r, p.g, p.b);
+    }
     *(uint8_t *)d = pixel;
     return 1;
 }
 
 static int put_to_qemufb_pixel15(const rgba p, uint8_t *d)
 {
-    uint32_t pixel = rgb_to_pixel15(p.r, p.g, p.b);
+    uint32_t pixel;
+    uint8_t alpha;
+
+    if ( brightness_level < BRIGHTNESS_MAX ) {
+        alpha = brightness_tbl[brightness_level];
+        pixel = rgb_to_pixel15(alpha * p.r >> 8, alpha * p.g >> 8,
+                               alpha * p.b >> 8);
+    } else {
+        pixel = rgb_to_pixel15(p.r, p.g, p.b);
+    }
     *(uint16_t *)d = pixel;
     return 2;
 }
 
 static int put_to_qemufb_pixel16(const rgba p, uint8_t *d)
 {
-    uint32_t pixel = rgb_to_pixel16(p.r, p.g, p.b);
+    uint32_t pixel;
+    uint8_t alpha;
+
+    if ( brightness_level < BRIGHTNESS_MAX ) {
+        alpha = brightness_tbl[brightness_level];
+        pixel = rgb_to_pixel16(alpha * p.r >> 8, alpha * p.g >> 8,
+                               alpha * p.b >> 8);
+    } else {
+        pixel = rgb_to_pixel16(p.r, p.g, p.b);
+    }
     *(uint16_t *)d = pixel;
     return 2;
 }
 
 static int put_to_qemufb_pixel24(const rgba p, uint8_t *d)
 {
-    uint32_t pixel = rgb_to_pixel24(p.r, p.g, p.b);
+    uint32_t pixel;
+    uint8_t alpha;
+
+    if ( brightness_level < BRIGHTNESS_MAX ) {
+        alpha = brightness_tbl[brightness_level];
+        pixel = rgb_to_pixel24(alpha * p.r >> 8, alpha * p.g >> 8,
+                               alpha * p.b >> 8);
+    } else {
+        pixel = rgb_to_pixel24(p.r, p.g, p.b);
+    }
     *(uint8_t *)d++ = (pixel >>  0) & 0xFF;
     *(uint8_t *)d++ = (pixel >>  8) & 0xFF;
     *(uint8_t *)d++ = (pixel >> 16) & 0xFF;
@@ -890,7 +927,16 @@ static int put_to_qemufb_pixel24(const rgba p, uint8_t *d)
 
 static int put_to_qemufb_pixel32(const rgba p, uint8_t *d)
 {
-    uint32_t pixel = rgb_to_pixel24(p.r, p.g, p.b);
+    uint32_t pixel;
+    uint8_t alpha;
+
+    if ( brightness_level < BRIGHTNESS_MAX ) {
+        alpha = brightness_tbl[brightness_level];
+        pixel = rgb_to_pixel24(alpha * p.r >> 8, alpha * p.g >> 8,
+                               alpha * p.b >> 8);
+    } else {
+        pixel = rgb_to_pixel24(p.r, p.g, p.b);
+    }
     *(uint32_t *)d = pixel;
     return 4;
 }
@@ -1283,6 +1329,7 @@ static void exynos4210_fimd_update(void *opaque)
                         w->lefttop_x * RGBA_SIZE + (w->lefttop_y + line) *
                         global_width * RGBA_SIZE, blend);
                 }
+
                 host_fb_addr += inc_size;
                 fb_line_addr += inc_size;
                 is_dirty = false;

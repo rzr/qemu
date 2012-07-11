@@ -38,6 +38,9 @@
 
 
 #include "pc.h"
+#ifdef TARGET_ARM
+#include "console.h"
+#endif
 #include "pci.h"
 #include "maru_pci_ids.h"
 #include "maru_brightness.h"
@@ -97,10 +100,16 @@ static void brightness_reg_write( void *opaque, target_phys_addr_t addr, uint64_
     case BRIGHTNESS_LEVEL:
         brightness_level = val;
         INFO("brightness_level : %lld\n", val);
+#ifdef TARGET_ARM
+        vga_hw_invalidate();
+#endif
         return;
     case BRIGHTNESS_OFF:
         INFO("brightness_off : %lld\n", val);
         brightness_off = val;
+#ifdef TARGET_ARM
+        vga_hw_invalidate();
+#endif
         return;
     default:
         ERR("wrong brightness register write - addr : %d\n", (int)addr);

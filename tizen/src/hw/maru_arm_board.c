@@ -30,6 +30,7 @@
 #include "maru_arm.h"
 #include "i2c.h"
 #include "exec-memory.h"
+#include "../tizen/src/hw/maru_brightness.h"
 
 #undef DEBUG
 //#define DEBUG
@@ -118,6 +119,7 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
 
     pci_create_simple(pci_bus, -1, "pci-ohci");
     maru_camera_pci_init(pci_bus);
+    pci_maru_brightness_init(pci_bus);
     codec_init(pci_bus);
 
     arm_load_kernel(first_cpu, &maru_arm_board_binfo);
