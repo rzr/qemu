@@ -204,7 +204,7 @@ void do_scale_event( double scale_factor )
 void do_rotation_event( int rotation_type)
 {
 
-    INFO( "do_rotation_event rotation_type:%d", rotation_type);
+    INFO( "do_rotation_event rotation_type:%d\n", rotation_type);
 
     char send_buf[32] = { 0 };
 
