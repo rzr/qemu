@@ -3,7 +3,7 @@
  * some code from KVM side
  */
 
-#include "target-i386/hax-i386.h"
+#include "hax-i386.h"
 
 #define HAX_EMUL_ONE    0x1
 #define HAX_EMUL_REAL   0x2
@@ -16,10 +16,10 @@
 #define HAX_EMULATE_STATE_INITIAL       0x4
 
 struct hax_state hax_global;
-
-int hax_support = -1;
 int ret_hax_init = 0;
 static int hax_disabled = 1;
+
+int hax_support = -1;
 
 /* Called after hax_init */
 int hax_enabled(void)
@@ -29,7 +29,7 @@ int hax_enabled(void)
 
 void hax_disable(int disable)
 {
-   hax_disabled = disable;
+	hax_disabled = disable;
 }
 
 /* Currently non-PG modes are emulated by QEMU */
@@ -324,70 +324,68 @@ int hax_vm_destroy(struct hax_vm *vm)
     return 0;
 }
 
-static void hax_client_set_memory(struct CPUPhysMemoryClient *client,
-                                  target_phys_addr_t start_addr,
-                                  ram_addr_t size, ram_addr_t phys_offset,
-                                  bool log_dirty)
+static void
+hax_region_add(MemoryListener *listener, MemoryRegionSection *section)
 {
-    hax_set_phys_mem(start_addr, size, phys_offset);
+	hax_set_phys_mem(section);
 }
+
+static void
+hax_region_del(MemoryListener *listener, MemoryRegionSection *section)
+{
+	hax_set_phys_mem(section);
+}
+
 
 /* currently we fake the dirty bitmap sync, always dirty */
-
-static int hax_client_sync_dirty_bitmap(struct CPUPhysMemoryClient *client,
-                                        target_phys_addr_t start_addr,
-                                        target_phys_addr_t end_addr)
+static void hax_log_sync(MemoryListener *listener, MemoryRegionSection *section)
 {
-    ram_addr_t size = end_addr - start_addr;
-    ram_addr_t ram_addr;
-    unsigned long page_number, addr, c;
-    unsigned int len = ((size /TARGET_PAGE_SIZE) + HOST_LONG_BITS - 1) /
+    MemoryRegion *mr = section->mr;
+    unsigned long c;
+    unsigned int len = ((section->size / TARGET_PAGE_SIZE) + HOST_LONG_BITS - 1) /
     			HOST_LONG_BITS;
     unsigned long bitmap[len];
-    unsigned long map;
     int i, j;
 
-
     for (i = 0; i < len; i++) {
-	map = bitmap[i] = 1;
-	c = leul_to_cpu(bitmap[i]);
-	do {
-	    j = ffsl(c) - 1;
-	    c &= ~(1ul << j);
-	    page_number = i * HOST_LONG_BITS + j;
-	    addr = page_number * TARGET_PAGE_SIZE;
-	    ram_addr = cpu_get_physical_page_desc(addr);
-	    cpu_physical_memory_set_dirty(ram_addr);
-	} while (c != 0);
+	    bitmap[i] = 1;
+	    c = leul_to_cpu(bitmap[i]);
+	    do {
+	        j = ffsl(c) - 1;
+	        c &= ~(1ul << j);
+            memory_region_set_dirty(mr, (i * HOST_LONG_BITS + j) *
+            		TARGET_PAGE_SIZE, TARGET_PAGE_SIZE);
+	    } while (c != 0);
     }
-
-    return 0;
 }
 
-static int hax_client_migration_log(struct CPUPhysMemoryClient *client,
-                                    int enable)
+static void hax_log_global_start(struct MemoryListener *listener)
 {
-    return 0;
 }
 
-static int hax_log_start(CPUPhysMemoryClient *client,
-                         target_phys_addr_t phys_addr, ram_addr_t size)
+static void hax_log_global_stop(struct MemoryListener *listener)
 {
-    return 0;
 }
 
-static int hax_log_stop(CPUPhysMemoryClient *client,
-                        target_phys_addr_t phys_addr, ram_addr_t size)
+static void hax_log_start(MemoryListener *listener,
+                           MemoryRegionSection *section)
 {
-    return 0;
 }
 
-static CPUPhysMemoryClient hax_cpu_phys_memory_client = {
-    .set_memory = hax_client_set_memory,
-    .sync_dirty_bitmap = hax_client_sync_dirty_bitmap,
-    .migration_log = hax_client_migration_log,
+static void hax_log_stop(MemoryListener *listener,
+                          MemoryRegionSection *section)
+{
+}
+
+
+static MemoryListener hax_memory_listener = {
+    .region_add = hax_region_add,
+    .region_del = hax_region_del,
     .log_start = hax_log_start,
     .log_stop = hax_log_stop,
+    .log_sync = hax_log_sync,
+    .log_global_start = hax_log_global_start,
+    .log_global_stop = hax_log_global_stop,
 };
 
 static void hax_handle_interrupt(CPUArchState *env, int mask)
@@ -456,7 +454,7 @@ static int hax_init(void)
         goto error;
     }
 
-    cpu_register_phys_memory_client(&hax_cpu_phys_memory_client);
+    memory_listener_register(&hax_memory_listener, NULL);
 
     hax_support = 1;
 
@@ -472,21 +470,21 @@ error:
 
 int hax_accel_init(void)
 {
-   if (hax_disabled) {
-       dprint("HAX is disabled and emulator runs in emulation mode.\n");
-       return 0;
-   }
+	if (hax_disabled) {
+		dprint("HAX is disabled and emulator runs in emulation mode.\n");
+		return 0;
+	}
 
-   ret_hax_init = hax_init();
-   if (ret_hax_init && (ret_hax_init != -ENOSPC)) {
-       dprint("No accelerator found.\n");
-       return ret_hax_init;
-   } else {
-       dprint("HAX is %s and emulator runs in %s mode.\n",
-       !ret_hax_init ? "working" : "not working",
-       !ret_hax_init ? "fast virt" : "emulation");
-       return 0;
-   }
+	ret_hax_init = hax_init();
+	if (ret_hax_init && (ret_hax_init != -ENOSPC)) {
+		dprint("No accelerator found.\n");
+	    return ret_hax_init;
+	} else {
+		dprint("HAX is %s and emulator runs in %s mode.\n",
+		!ret_hax_init ? "working" : "not working",
+		!ret_hax_init ? "fast virt" : "emulation");
+		return 0;
+	}
 }
 
 int hax_handle_io(CPUArchState *env, uint32_t df, uint16_t port, int direction,
@@ -599,7 +597,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
     }
 
     
-    //hax_cpu_synchronize_state(env);
+    hax_cpu_synchronize_state(env);
 
     do {
         int hax_ret;
@@ -610,12 +608,10 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
             break;
         }
 
-#if 0
 	if (env->hax_vcpu_dirty) {
 		hax_vcpu_sync_state(env, 1);
 		env->hax_vcpu_dirty = 0;
 	}
-#endif
 
         hax_vcpu_interrupt(env);
 

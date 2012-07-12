@@ -8,6 +8,7 @@
 #include "kvm.h"
 #include "hw/hw.h"
 #include "bitops.h"
+#include "memory.h"
 
 #define dprint	printf
 #ifdef CONFIG_HAX_BACKEND
@@ -24,8 +25,7 @@ void hax_vcpu_sync_state(CPUArchState *env, int modified);
 //extern void hax_cpu_synchronize_post_reset(CPUArchState *env);
 //extern void hax_cpu_synchronize_post_init(CPUArchState *env);
 int hax_populate_ram(uint64_t va, uint32_t size);
-int hax_set_phys_mem(target_phys_addr_t start_addr,
-                     ram_addr_t size, ram_addr_t phys_offset);
+int hax_set_phys_mem(MemoryRegionSection *section);
 int hax_vcpu_emulation_mode(CPUArchState *env);
 int hax_stop_emulation(CPUArchState *env);
 int hax_stop_translate(CPUArchState *env);
