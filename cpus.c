@@ -1327,13 +1327,12 @@ void qmp_inject_nmi(Error **errp)
 #endif
 }
 
-#ifdef 	CONFIG_HAX
+#ifdef  CONFIG_HAX
 void qemu_notify_hax_event(void)
 {
-	CPUState *env = cpu_single_env;
+	CPUArchState *env = cpu_single_env;
 
 	if (hax_enabled() && env)
 		hax_raise_event(env);
 }
 #endif
-

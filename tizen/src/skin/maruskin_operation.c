@@ -44,7 +44,7 @@
 #include "hw/maru_pm.h"
 #include "sysemu.h"
 
-#ifdef _WIN32
+#ifdef CONFIG_HAX
 #include "target-i386/hax-i386.h"
 #endif
 

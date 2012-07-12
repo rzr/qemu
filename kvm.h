@@ -180,9 +180,9 @@ void kvm_cpu_synchronize_post_init(CPUArchState *env);
 
 /* generic hooks - to be moved/refactored once there are more users */
 #ifdef CONFIG_HAX
-void hax_cpu_synchronize_state(CPUState *env);
-void hax_cpu_synchronize_post_reset(CPUState *env);
-void hax_cpu_synchronize_post_init(CPUState *env);
+void hax_cpu_synchronize_state(CPUArchState *env);
+void hax_cpu_synchronize_post_reset(CPUArchState *env);
+void hax_cpu_synchronize_post_init(CPUArchState *env);
 #endif
 static inline void cpu_synchronize_state(CPUArchState *env)
 {

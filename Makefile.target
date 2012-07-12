@@ -208,13 +208,8 @@ obj-$(CONFIG_NO_XEN) += xen-stub.o
 obj-i386-$(CONFIG_XEN) += xen_platform.o xen_apic.o
 
 # HAX support
-ifeq ($(TARGET_ARCH), i386)
-ifdef CONFIG_WIN32
-obj-$(CONFIG_HAX) += \
-    hax-all.o   \
-    hax-windows.o
-endif
-endif
+obj-$(CONFIG_HAX) += hax-all.o hax-windows.o
+obj-$(CONFIG_NO_HAX) += hax-stub.o
 
 # Inter-VM PCI shared memory
 CONFIG_IVSHMEM =

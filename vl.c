@@ -199,8 +199,6 @@ extern int tizen_base_port;
 int skin_disabled = 0;
 #endif
 
-int ret_hax_init = 0;
-
 static const char *data_dir;
 const char *bios_name = NULL;
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
@@ -239,7 +237,6 @@ const char *vnc_display;
 #endif
 int acpi_enabled = 1;
 int no_hpet = 0;
-int hax_disabled = 1;
 int fd_bootchk = 1;
 int no_reboot = 0;
 int no_shutdown = 0;
@@ -1604,9 +1601,7 @@ static void main_loop(void)
     int64_t ti;
 #endif
 
-#ifdef CONFIG_HAX
     hax_sync_vcpus();
-#endif
 
     do {
         nonblocking = !(kvm_enabled()|| hax_enabled()) && last_io > 0;
@@ -2174,23 +2169,7 @@ static int tcg_init(void)
 {
     int ret = 0;
     tcg_exec_init(tcg_tb_size * 1024 * 1024);
-#ifdef	CONFIG_HAX
-    if (!hax_disabled)
-    {
-    	ret = hax_init();
-    	ret_hax_init = ret;
-	if (ret && (ret != -ENOSPC))
-		dprint("No accelerator found.\n");
-	else {
-		dprint("HAX is %s and emulator runs in %s mode.\n", 
-		!ret ? "working" : "not working", 
-		!ret ? "fast virt" : "emulation");
-		return 0;
-	}
-
-    } else
-    	dprint("HAX is disabled and emulator runs in emulation mode.\n");
-#endif	
+    ret = hax_accel_init();
     return ret;
 }
 
@@ -3352,10 +3331,15 @@ int main(int argc, char **argv, char **envp)
                 qtest_log = optarg;
                 break;
             case QEMU_OPTION_enable_hax:
+#ifdef CONFIG_HAX_BACKEND
                 olist = qemu_find_opts("machine");
                 qemu_opts_reset(olist);
-                hax_disabled = 0;
+                hax_disable(0);
                 //qemu_opts_parse(olist, "accel=hax", 0);
+#else
+                fprintf(stderr,
+                        "HAX support is disabled, ignoring -enable-hax\n");
+#endif
                 break;
 #ifdef CONFIG_MARU
             case QEMU_OPTION_max_touch_point:
@@ -3536,9 +3520,7 @@ int main(int argc, char **argv, char **envp)
         ram_size = DEFAULT_RAM_SIZE * 1024 * 1024;
     }
 
-#ifdef CONFIG_HAX
     hax_pre_init(ram_size);
-#endif
 
     configure_accelerator();
 
@@ -3723,10 +3705,8 @@ int main(int argc, char **argv, char **envp)
 
     current_machine = machine;
 
-#ifdef CONFIG_HAX
     if (hax_enabled())
         hax_sync_vcpus();
-#endif
 
     /* init USB devices */
     if (usb_enabled) {

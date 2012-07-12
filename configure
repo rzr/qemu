@@ -3527,6 +3527,13 @@ echo "CONFIG_TRACE_FILE=$trace_file" >> $config_host_mak
 if test "$trace_default" = "yes"; then
   echo "CONFIG_TRACE_DEFAULT=y" >> $config_host_mak
 fi
+if test "$hax" = "yes" ; then
+  if test "$mingw32" = "yes" ; then
+    echo "CONFIG_HAX_BACKEND=y" >> $config_host_mak
+  else
+    hax="no"
+  fi
+fi
 
 echo "TOOLS=$tools" >> $config_host_mak
 echo "ROMS=$roms" >> $config_host_mak
@@ -3853,15 +3860,20 @@ case "$target_arch2" in
       fi
     fi
 esac
-
-case "$target_arch2" in
-  i386|x86_64)
-  if test "$hax" = "yes" ; then
-	echo "CONFIG_HAX=y" >> $config_target_mak
-	echo "CONFIG_HAX=y" >> $config_host_mak
+if test "$hax" = "yes" ; then
+  if test "$target_softmmu" = "yes" ; then
+    case "$target_arch2" in
+    i386|x86_64)
+      echo "CONFIG_HAX=y" >> $config_target_mak
+    ;;
+    *)
+      echo "CONFIG_NO_HAX=y" >> $config_target_mak
+    ;;
+    esac
+  else
+    echo "CONFIG_NO_HAX=y" >> $config_target_mak
   fi
-esac
-
+fi
 if test "$ldst_optimization" = "yes" ; then
   if test "$target_arch2" = "i386" -o "$target_arch2" = "x86_64"; then
     echo "CONFIG_QEMU_LDST_OPTIMIZATION=y" >> $config_target_mak
