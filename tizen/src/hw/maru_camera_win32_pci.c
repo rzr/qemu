@@ -1343,6 +1343,10 @@ static STDMETHODIMP SetDefaultValues(void)
                 DeleteMediaType(pmtConfig);
             }
         }
+        if (iFormat >= iCount) {
+            ERR("Maybe connected webcam does not support %ld x %ld resolution.\n", g_dwWidth, g_dwHeight);
+            hr = E_FAIL;
+        }
     }
     pSConfig->lpVtbl->Release(pSConfig);
     return hr;
@@ -1375,6 +1379,9 @@ static STDMETHODIMP SetResolution(LONG width, LONG height)
             pvi->AvgTimePerFrame = g_dwAvgInterval;
             pvi->bmiHeader.biSizeImage = ((width * pvi->bmiHeader.biBitCount) >> 3 ) * height;
             hr = vsc->lpVtbl->SetFormat(vsc, pmt);
+            if (hr != S_OK) {
+                ERR("failed to set the resolution.(w:%ld, h:%ld), Maybe connected webcam does not support the resolution.\n", width, height);
+            }
         }
         DeleteMediaType(pmt);
     }
@@ -1481,6 +1488,8 @@ void marucam_device_open(MaruCamState* state)
         ERR("SetDefaultValues\n");
         goto error_failed;
     }
+    cur_frame_idx = 0;
+    cur_fmt_idx = 0;
 
     INFO("Open successfully!!!\n");
     return;
