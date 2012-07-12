@@ -14,7 +14,7 @@ fi;
 TARGET_OS=`uname -s`
 case $TARGET_OS in
 MINGW*)
-TARGET_OS="MINGW"
+TARGET_OS="MINGW32"
 ;;
 esac
 
@@ -39,6 +39,8 @@ make distclean && \
 ./configure --disable-static --enable-wgl --disable-cocoa --disable-osmesa --enable-offscreen --disable-glx --disable-x11 --prefix="`pwd`/.." --arch=$TARGET_ARCH && \
 make install
 make distclean
+;;
+*)
 echo "OpenGL acceleration is not currently supported for $TARGET_OS"
 ;;
 esac

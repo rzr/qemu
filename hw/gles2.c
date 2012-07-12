@@ -526,7 +526,11 @@ void *gles2_init(CPUArchState *env)
     MemoryRegion *system_mem = get_system_memory();
 
     setenv("DGLES2_FRONTEND", "offscreen", 1);
+#ifdef _WIN32
+    setenv("DGLES2_BACKEND", "wgl", 0);
+#else
     setenv("DGLES2_BACKEND", "glx", 0);
+#endif
     setenv("DGLES2_NO_ALPHA", "1", 1);
 
     gles2_State *s = g_malloc0(sizeof(*s));
