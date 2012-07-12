@@ -129,6 +129,15 @@ int gethostDNS(char *dns1, char *dns2)
 	}
 	free(pAdapterAddr);
 #endif
+
+	// by caramis... change DNS address if localhost has DNS server or DNS cache.
+	if(!strncmp(dns1, "127.0.0.1", 9) || !strncmp(dns1, "localhost", 9)) {
+		strncpy(dns1, "10.0.2.2", 9);
+	}
+	if(!strncmp(dns2, "127.0.0.1", 9) || !strncmp(dns2, "localhost", 9)) {
+		strncpy(dns2, "10.0.2.2", 9);
+	}
+
 	return 0;
 }
 
