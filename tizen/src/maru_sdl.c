@@ -36,6 +36,7 @@
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "debug_ch.h"
+//#include "SDL_opengl.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
@@ -234,40 +235,12 @@ static void qemu_ds_refresh(DisplayState *ds)
         switch (ev->type) {
             case SDL_VIDEORESIZE:
             {
-                int w, h, temp;
-
-                //get current setting information and calculate screen size
-                scale_factor = get_emul_win_scale();
-                w = get_emul_lcd_width() * scale_factor;
-                h = get_emul_lcd_height() * scale_factor;
-
-                short rotaton_type = get_emul_rotation();
-                if (rotaton_type == ROTATION_PORTRAIT) {
-                    screen_degree = 0.0;
-                } else if (rotaton_type == ROTATION_LANDSCAPE) {
-                    screen_degree = 90.0;
-                    temp = w;
-                    w = h;
-                    h = temp;
-                } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
-                    screen_degree = 180.0;
-                } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
-                    screen_degree = 270.0;
-                    temp = w;
-                    w = h;
-                    h = temp;
-                }
-
                 pthread_mutex_lock(&sdl_mutex);
 
                 SDL_Quit(); //The returned surface is freed by SDL_Quit and must not be freed by the caller
-                surface_screen = SDL_SetVideoMode(w, h, SDL_BPP, SDL_FLAGS);
-                if (surface_screen == NULL) {
-                    ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, SDL_BPP, SDL_GetError());
-                }
+                maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
 
                 pthread_mutex_unlock(&sdl_mutex);
-
                 break;
             }
             case SDL_USEREVENT: {
@@ -294,6 +267,56 @@ void maruskin_display_init(DisplayState *ds)
     dcl->dpy_refresh = qemu_ds_refresh;
 
     register_displaychangelistener(ds, dcl);
+}
+
+void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+{
+    int w, h, temp;
+    gchar SDL_windowhack[32];
+    SDL_SysWMinfo info;
+    long window_id = swt_handle;
+
+    if (is_resize == FALSE) {
+        sprintf(SDL_windowhack, "%ld", window_id);
+        g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
+        INFO("register SDL environment variable. (SDL_WINDOWID = %s)\n", SDL_windowhack);
+
+        if (SDL_Init(SDL_INIT_VIDEO) < 0 ) {
+            ERR( "unable to init SDL: %s", SDL_GetError() );
+            exit(1);
+        }
+
+        set_emul_lcd_size(lcd_size_width, lcd_size_height);
+        set_emul_sdl_bpp(SDL_BPP);
+    }
+
+    //get current setting information and calculate screen size
+    scale_factor = get_emul_win_scale();
+    w = lcd_size_width * scale_factor;
+    h = lcd_size_height * scale_factor;
+
+    short rotaton_type = get_emul_rotation();
+    if (rotaton_type == ROTATION_PORTRAIT) {
+        screen_degree = 0.0;
+    } else if (rotaton_type == ROTATION_LANDSCAPE) {
+        screen_degree = 90.0;
+        temp = w;
+        w = h;
+        h = temp;
+    } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
+        screen_degree = 180.0;
+    } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
+        screen_degree = 270.0;
+        temp = w;
+        w = h;
+        h = temp;
+    }
+
+    INFO( "maru sdl initialization\n");
+    surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
+    if (surface_screen == NULL) {
+        ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
+    }
 
 #ifdef SDL_THREAD
     if (sdl_thread_initialized == 0) {
@@ -306,46 +329,16 @@ void maruskin_display_init(DisplayState *ds)
         }
     }
 #endif
-}
-
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height)
-{
-    int w, h;
-    gchar SDL_windowhack[32];
-    SDL_SysWMinfo info;
-    long window_id = swt_handle;
-
-    sprintf(SDL_windowhack, "%ld", window_id);
-    g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
-    INFO("register SDL environment variable. (SDL_WINDOWID = %s)\n", SDL_windowhack);
-
-    if (SDL_Init(SDL_INIT_VIDEO) < 0 ) {
-        ERR( "unable to init SDL: %s", SDL_GetError() );
-        exit(1);
-    }
-
-    set_emul_lcd_size(lcd_size_width, lcd_size_height);
-
-    //get current setting information and calculate screen size
-    scale_factor = get_emul_win_scale();
-    w = lcd_size_width * scale_factor;
-    h = lcd_size_height * scale_factor;
-
-    set_emul_sdl_bpp(SDL_BPP);
-
-    INFO( "maru sdl initialization\n");
-    surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
-    if (surface_screen == NULL) {
-        ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
-    }
 
 #ifndef _WIN32
     SDL_VERSION(&info.version);
     SDL_GetWMInfo(&info);
 #endif
 
-    sdl_initialized = 1;
-    init_multi_touch_state();
+    if (sdl_initialized == 0) {
+        sdl_initialized = 1;
+        init_multi_touch_state();
+    }
 }
 
 void maruskin_sdl_resize(void)

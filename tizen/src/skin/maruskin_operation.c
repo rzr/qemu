@@ -67,7 +67,7 @@ void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, do
         handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type );
 
     set_emul_win_scale(scale_factor);
-    maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height);
+    maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height, false);
 }
 
 void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, int z )
