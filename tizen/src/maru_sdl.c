@@ -127,6 +127,10 @@ static void _sdl_init(void)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
+
+    /* remove multi-touch finger points */
+    get_emul_multi_touch_state()->multitouch_enable = 0;
+    clear_finger_slot();
 }
 
 static int point_degree = 0;
