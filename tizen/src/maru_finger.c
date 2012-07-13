@@ -258,16 +258,16 @@ FingerPoint *get_finger_point_search(int x, int y)
     int i;
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
-    int finger_point_size_half = (mts->finger_point_size / 2) + 2;
+    int finger_region = (mts->finger_point_size / 2) + 2 + (int)((1 - get_emul_win_scale()) * 4);
 
     for (i = mts->finger_cnt - 1; i >= 0; i--) {
         finger = get_finger_point_from_slot(i);
 
         if (finger != NULL) {
-            if (x >= (finger->x - finger_point_size_half) &&
-                x < (finger->x + finger_point_size_half) &&
-                y >= (finger->y - finger_point_size_half) &&
-                y < (finger->y + finger_point_size_half)) {
+            if (x >= (finger->x - finger_region) &&
+                x < (finger->x + finger_region) &&
+                y >= (finger->y - finger_region) &&
+                y < (finger->y + finger_region)) {
                     return finger;
             }
         }
