@@ -1663,10 +1663,13 @@ public class EmulatorSkin {
 
 				short rotationId = ( (Short) item.getData() );
 
+				/* remove multi-touch finger points */
+				KeyEventData clearMultiTouch = new KeyEventData(KeyEventType.RELEASED.value(), SWT.CTRL, SWT.LEFT);
+				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, clearMultiTouch);
+
 				arrangeSkin( currentLcdWidth, currentLcdHeight, currentScale, rotationId );
 				LcdStateData lcdStateData = new LcdStateData( currentScale, rotationId );
 				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
-
 			}
 		};
 
