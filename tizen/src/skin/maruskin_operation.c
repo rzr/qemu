@@ -191,7 +191,7 @@ void do_hardkey_event( int event_type, int keycode )
 
 void do_scale_event( double scale_factor )
 {
-    INFO( "do_scale_event scale_factor:%lf", scale_factor);
+    INFO("do_scale_event scale_factor:%lf\n", scale_factor);
 
     set_emul_win_scale(scale_factor);
 
