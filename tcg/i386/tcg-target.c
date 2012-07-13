@@ -1623,11 +1623,11 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     int arg_idx;
 #else
     int stack_adjust;
+    int addrlo_reg = label->addrlo_reg;
+    int addrhi_reg = label->addrhi_reg;
 #endif
     int data_reg = label->datalo_reg;
     int data_reg2 = label->datahi_reg;
-    int addrlo_reg = label->addrlo_reg;
-    int addrhi_reg = label->addrhi_reg;
     uint8_t *raddr = label->raddr;
     uint8_t **label_ptr = &label->label_ptr[0];
 
@@ -1642,7 +1642,7 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     /* extended helper signature: __ext_ld_mmu(target_ulong addr, int mmu_idx,
        uintptr_t raddr) */
 #if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, (int)(raddr - 1)); /* return address */
+    tcg_out_pushi(s, (uintptr_t)(raddr - 1)); /* return address */
     stack_adjust = 4;
     tcg_out_pushi(s, mem_index);        /* mmu index */
     stack_adjust += 4;
@@ -1662,7 +1662,7 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
                  mem_index);
     tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
-                 (int)(raddr - 1));
+                 (uintptr_t)(raddr - 1));
 #ifdef CONFIG_TCG_PASS_AREG0
     /* XXX/FIXME: suboptimal */
     tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
@@ -1736,9 +1736,11 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     int opc = label->opc_ext & HL_OPC_MASK;
     int mem_index = label->mem_index;
     int data_reg = label->datalo_reg;
+#if TCG_TARGET_REG_BITS == 32
     int data_reg2 = label->datahi_reg;
     int addrlo_reg = label->addrlo_reg;
     int addrhi_reg = label->addrhi_reg;
+#endif
     uint8_t *raddr = label->raddr;
     uint8_t **label_ptr = &label->label_ptr[0];
 
@@ -1753,7 +1755,7 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     /* extended helper signature: __ext_st_mmu(target_ulong addr, uintxx_t val,
        int mmu_idx, uintptr_t raddr) */
 #if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, (int)(raddr - 1)); /* return address */
+    tcg_out_pushi(s, (uintptr_t)(raddr - 1)); /* return address */
     stack_adjust = 4;
     tcg_out_pushi(s, mem_index); /* mmu index */
     stack_adjust += 4;
@@ -1777,7 +1779,7 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     tcg_out_mov(s, (opc == 3 ? TCG_TYPE_I64 : TCG_TYPE_I32),
                 tcg_target_call_iarg_regs[1], data_reg);
     tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], mem_index);
-    tcg_out_movi(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3], (int)(raddr - 1);
+    tcg_out_movi(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3], (uintptr_t)(raddr - 1));
     stack_adjust = 0;
 #ifdef CONFIG_TCG_PASS_AREG0
     /* XXX/FIXME: suboptimal */
