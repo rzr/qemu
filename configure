@@ -3976,7 +3976,7 @@ if test "$target_arch2" = "arm" -a "$opengles" = "yes" ; then
   fi
   includes="-I$glesincdir $includes"
   ldflags="-L$gleslibdir $ldflags"
-  ldflags="-Wl,-rpath,'\$\$ORIGIN/lib/gles' $ldflags"
+  ldflags="-Wl,-rpath,'\$\$ORIGIN' $ldflags"
   echo "LIBS+=-lEGL" >> $config_target_mak
   echo "CONFIG_GLES_LIBDIR=$gleslibdir" >> $config_target_mak
   if test "$mingw32" = "no" ; then

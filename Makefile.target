@@ -422,31 +422,24 @@ gles2_kernel_calls.o: gles2_kernel_calls.c gles2.h gles2_calls.h
 gles2_egl_calls.o: gles2_egl_calls.c gles2.h gles2_calls.h
 gles2_es11_calls.o: gles2_es11_calls.c gles2.h gles2_calls.h
 gles2_es20_calls.o: gles2_es20_calls.c gles2.h gles2_calls.h
-obj-$(TARGET_BASE_ARCH)-y += gles2.o gles2_egl.o gles2_es11.o gles2_es20.o
-obj-$(TARGET_BASE_ARCH)-y += gles2_kernel_calls.o  gles2_egl_calls.o gles2_es11_calls.o
-obj-$(TARGET_BASE_ARCH)-y += gles2_es20_calls.o
-
-PROG_GLESLIBS_ORIGIN=./lib/gles
+obj-y += gles2.o gles2_egl.o gles2_es11.o gles2_es20.o
+obj-y += gles2_kernel_calls.o  gles2_egl_calls.o gles2_es11_calls.o
+obj-y += gles2_es20_calls.o
 
 ifdef QEMU_PROGW
-PROG_GLESLIB_SRC:=$(addprefix $(CONFIG_GLES_LIBDIR)/,$(notdir $(wildcard \
-$(CONFIG_GLES_LIBDIR)/*.dll)))
-PROG_GLESLIB_DEP:=$(addprefix $(PROG_GLESLIBS_ORIGIN)/,$(notdir $(wildcard \
-$(CONFIG_GLES_LIBDIR)/*.dll)))
-$(QEMU_PROGW): $(PROG_GLESLIB_DEP)
+GLESLIBS_LINK_LIST:=$(wildcard $(CONFIG_GLES_LIBDIR)/*.dll)
 else
-PROG_GLESLIB_SRC:=$(addprefix $(CONFIG_GLES_LIBDIR)/,$(notdir $(wildcard \
-$(CONFIG_GLES_LIBDIR)/lib*)))
-PROG_GLESLIB_DEP:=$(addprefix $(PROG_GLESLIBS_ORIGIN)/,$(notdir $(wildcard \
-$(CONFIG_GLES_LIBDIR)/lib*)))
-$(QEMU_PROG): $(PROG_GLESLIB_DEP)
+GLESLIBS_LINK_LIST:=$(wildcard $(CONFIG_GLES_LIBDIR)/lib*)
 endif
 
-$(PROG_GLESLIB_DEP): $(PROG_GLESLIB_SRC)
-	@mkdir -p $(PROG_GLESLIBS_ORIGIN)
-	@cp -dp -t $(PROG_GLESLIBS_ORIGIN) $(PROG_GLESLIB_SRC)
+$(GLESLIBS_LINK_LIST):
 
-$(PROG_GLESLIB_SRC):
+GLESLIBS_RUNTIME_LIST:=$(addprefix ./,$(notdir $(GLESLIBS_LINK_LIST)))
+
+$(GLESLIBS_RUNTIME_LIST): $(GLESLIBS_LINK_LIST)
+	@cp -dp -t ./ $(GLESLIBS_LINK_LIST)
+
+$(QEMU_PROG): $(GLESLIBS_RUNTIME_LIST)
 
 endif # CONFIG_BUILD_GLES
 
@@ -496,9 +489,8 @@ ifneq ($(PROGS),)
 ifneq ($(STRIP),)
 	$(STRIP) $(patsubst %,"$(DESTDIR)$(bindir)/%",$(PROGS))
 endif
-ifneq ($(PROG_GLESLIB_DEP),)
-	@mkdir -p $(DESTDIR)$(bindir)/$(PROG_GLESLIBS_ORIGIN)
-	$(INSTALL) -m 644 $(PROG_GLESLIB_DEP) "$(DESTDIR)$(bindir)/$(PROG_GLESLIBS_ORIGIN)"
+ifneq ($(GLESLIBS_RUNTIME_LIST),)
+	$(INSTALL) -m 644 $(GLESLIBS_RUNTIME_LIST) "$(DESTDIR)$(bindir)"
 endif
 endif
 ifdef CONFIG_TRACE_SYSTEMTAP

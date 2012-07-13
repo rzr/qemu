@@ -10,6 +10,14 @@ endif
 
 export CONFIG_OPENGLES
 
+ifdef CONFIG_OPENGLES
+ifdef CONFIG_WIN32
+GLESLIBS_LIST:=$(wildcard ../../arm-softmmu/*.dll)
+else
+GLESLIBS_LIST:=$(wildcard ../../arm-softmmu/lib*)
+endif
+endif
+
 all: build_info qemu skin_client check_hax
 qemu:
 	cd ../../ && $(MAKE)
@@ -68,10 +76,10 @@ install: all
 	    mkdir -p $(EMUL_DIR)/arm/data ;\
 	    echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
 	    cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
-	    if [ ! -z "$$CONFIG_OPENGLES" ] ; then mkdir -p $(EMUL_DIR)/bin/lib ;\
-	    echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/lib" ;\
-	    cp -dpr ../../arm-softmmu/lib/gles $(EMUL_DIR)/bin/lib ;\
-	    fi \
+	    if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
+	    echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
+	    cp -dp -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
+	    fi ;\
 	  ;; \
 	  esac \
 	done
