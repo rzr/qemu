@@ -69,6 +69,7 @@ static int sdl_thread_initialized = 0;
 #define SDL_BPP 32
 
 
+extern int gl_acceleration_capability_check (void);
 static void _sdl_init(void)
 {
     int w, h, temp;
@@ -97,7 +98,13 @@ static void _sdl_init(void)
         h = temp;
     }
 
-    surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_OPENGL);
+    if (gl_acceleration_capability_check () != 0) {
+        fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
+        surface_screen = NULL;
+    } else {
+        surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_OPENGL);
+    }
+
     if (surface_screen == NULL) {
         sdl_opengl = 0;
         INFO("No OpenGL support on this system!??\n");
