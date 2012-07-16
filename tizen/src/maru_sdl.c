@@ -430,10 +430,6 @@ static void qemu_ds_refresh(DisplayState *ds)
                 pthread_mutex_unlock(&sdl_mutex);
                 break;
             }
-            case SDL_USEREVENT: {
-                handle_sdl_user_event( ev->user );
-                break;
-            }
 
             default:
                 break;
@@ -471,7 +467,6 @@ void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_heigh
 
         if (SDL_Init(SDL_INIT_VIDEO) < 0 ) {
             ERR("unable to init SDL: %s\n", SDL_GetError());
-            exit(1);
         }
 
         set_emul_lcd_size(lcd_size_width, lcd_size_height);

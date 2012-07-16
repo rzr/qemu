@@ -39,6 +39,8 @@
 #include "hw/usb.h"
 #include "hw/irq.h"
 #include "mloop_event.h"
+#include "console.h"
+#include "emul_state.h"
 
 #define error_report(x, ...)
 
@@ -65,6 +67,7 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_USB_DEL    2
 #define MLOOP_EVTYPE_INTR_UP    3
 #define MLOOP_EVTYPE_INTR_DOWN  4
+#define MLLOP_EVTYPE_HWKEY      5
 
 static struct mloop_evsock mloop = {-1,0,0};
 
@@ -236,6 +239,27 @@ static void mloop_evhandle_intr_down(long data)
     qemu_irq_lower((qemu_irq)data);
 }
 
+static void mloop_evhandle_hwkey(struct mloop_evpack* pack)
+{
+    int event_type;
+    int keycode;
+
+    memcpy(&event_type, pack->data, sizeof(int));
+    memcpy(&keycode, pack->data + sizeof(int), sizeof(int));
+
+    if (KEY_PRESSED == event_type) {
+        if (kbd_mouse_is_absolute()) {
+            ps2kbd_put_keycode(keycode & 0x7f);
+        }
+    } else if ( KEY_RELEASED == event_type ) {
+        if (kbd_mouse_is_absolute()) {
+            ps2kbd_put_keycode(keycode | 0x80);
+        }
+    } else {
+        fprintf(stderr, "Unknown hardkey event type.[event_type:%d, keycode:%d]", event_type, keycode);
+    }
+}
+
 static void mloop_evcb_recv(struct mloop_evsock *ev)
 {
     struct mloop_evpack pack;
@@ -272,6 +296,9 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         break;
     case MLOOP_EVTYPE_INTR_DOWN:
         mloop_evhandle_intr_down(ntohl(*(long*)&pack.data[0]));
+        break;
+    case MLLOP_EVTYPE_HWKEY:
+        mloop_evhandle_hwkey(&pack);
         break;
     default:
         break;
@@ -355,3 +382,18 @@ void mloop_evcmd_lower_intr(void *irq)
     *(long*)&pack.data[0] = htonl((long)irq);
     mloop_evsock_send(&mloop, &pack);
 }
+
+void mloop_evcmd_hwkey(int event_type, int keycode)
+{
+    struct mloop_evpack pack;
+
+    pack.type = htons(MLLOP_EVTYPE_HWKEY);
+    pack.size = htons(5 + 8); //TODO: ?
+
+    memcpy(pack.data, &event_type, sizeof(int));
+    memcpy(pack.data + sizeof(int), &keycode, sizeof(int));
+    //pack.data = htons(pack.data);
+
+    mloop_evsock_send(&mloop, &pack);
+}
+
