@@ -190,9 +190,24 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
             r_buffer[0] = 0; // In case high bits are set.
 
         ret = do_function_call(process, func_number, args, r_buffer);
-
+	switch(signature->ret_type) {
+        case TYPE_INT:
+        case TYPE_UNSIGNED_INT:
+            memcpy(r_buffer, &ret, sizeof(int));
+            break;
+        case TYPE_CHAR:
+        case TYPE_UNSIGNED_CHAR:
+            *r_buffer = ret & 0xff;
+            break;
+        case TYPE_CONST_CHAR:
+        case TYPE_NONE:
+            break;
+        default:
+           DEBUGF("Unsupported GL API return type %i!\n", signature->ret_type);
+           exit (-1);
+        }
     }  // endwhile
-
+/*
     switch(signature->ret_type) {
         case TYPE_INT:
         case TYPE_UNSIGNED_INT:
@@ -209,7 +224,7 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
            DEBUGF("Unsupported GL API return type %i!\n", signature->ret_type);
            exit (-1);
     }
-
+*/
     return 1;
 }
 #define GL_PASSINGTHROUGH_ABI 1

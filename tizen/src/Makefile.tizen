@@ -12,7 +12,7 @@ QEMU_CFLAGS += $(GLIB_CFLAGS)
 CFLAGS += -g -O2
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm
+LIBS += -lavformat -lavcodec -lavutil -lm -lopengl32 -lglu32 -lgdi32
 else
 LIBS += -lavformat -lavcodec -lavutil -lm -lGL
 endif
@@ -23,7 +23,7 @@ else
 GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
 endif
 
-ifndef CONFIG_WIN32
+#ifndef CONFIG_WIN32
 ###########################################################
 ## Build openGL
 # i386
@@ -51,7 +51,7 @@ opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_p
 
 endif #($(TARGET_ARCH), i386)
 ###########################################################
-endif #CONFIG_WIN32
+#endif #CONFIG_WIN32
 	
 # maru loader
 obj-y += emulator.o emul_state.o option.o maru_err_table.o
@@ -94,9 +94,9 @@ obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_
 # guest server
 obj-i386-y += guest_server.o 
 
-ifndef CONFIG_WIN32
+#ifndef CONFIG_WIN32
 ###########################################################
 ## opengl library for i386
 obj-i386-y += virtio-gl.o helper_opengl.o opengl_exec.o mesa_mipmap.o gloffscreen_common.o gloffscreen_xcomposite.o gloffscreen_wgl.o gloffscreen_test.o
 ###########################################################
-endif
+#endif

@@ -1741,7 +1741,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
     case glGenTextures_fake_func:
         {
-            GET_EXT_PTR(void, glGenTextures, (GLsizei n, GLuint *textures));
+            //GET_EXT_PTR(void, glGenTextures, (GLsizei n, GLuint *textures));
             int i;
             int n = args[0];
             unsigned int *clientTabTextures = g_malloc(n * sizeof(int));
@@ -1750,7 +1750,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             alloc_range(process->current_state->textureAllocator, n,
                         clientTabTextures);
 
-            ptr_func_glGenTextures(n, serverTabTextures);
+            //ptr_func_glGenTextures(n, serverTabTextures);
+		glGenTextures(n, serverTabTextures);
             for (i = 0; i < n; i++) {
                 process->current_state->tabTextures[clientTabTextures[i]] =
                     serverTabTextures[i];
@@ -1764,8 +1765,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
     case glDeleteTextures_func:
         {
-            GET_EXT_PTR(void, glDeleteTextures,
-                        (GLsizei n, const GLuint *textures));
+            //GET_EXT_PTR(void, glDeleteTextures,
+            //            (GLsizei n, const GLuint *textures));
             int i;
             int n = args[0];
             unsigned int *clientTabTextures = (unsigned int *) args[1];
@@ -1779,7 +1780,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 serverTabTextures[i] =
                     get_server_texture(process, clientTabTextures[i]);
             }
-            ptr_func_glDeleteTextures(n, serverTabTextures);
+            //ptr_func_glDeleteTextures(n, serverTabTextures);
+		glDeleteTextures(n, serverTabTextures);
             for (i = 0; i < n; i++) {
                 process->current_state->tabTextures[clientTabTextures[i]] = 0;
             }
@@ -1825,12 +1827,13 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
     case glIsTexture_func:
     case glIsTextureEXT_func:
         {
-            GET_EXT_PTR(GLboolean, glIsTexture, (GLuint texture));
+            //GET_EXT_PTR(GLboolean, glIsTexture, (GLuint texture));
             unsigned int client_texture = args[0];
             unsigned int server_texture =
                 get_server_texture(process, client_texture);
             if (server_texture)
-                ret.c = ptr_func_glIsTexture(server_texture);
+            //    ret.c = ptr_func_glIsTexture(server_texture);
+		ret.c = glIsTexture(server_texture);
             else
                 ret.c = 0;
             break;
