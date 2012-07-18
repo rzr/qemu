@@ -36,11 +36,6 @@ echo "##### QEMU configure for emulator"
  --disable-vnc-jpeg \
  --disable-vnc-png \
  --enable-gl
-# --enable-ffmpeg
-# --enable-v4l2 \
-# --enable-debug \
-# --enable-profiler \
-# --enable-gles2 --gles2dir=/usr
 ;;
 MINGW*)
 cd distrib/libav
@@ -65,8 +60,5 @@ echo "##### QEMU configure for emulator"
  --disable-vnc-jpeg \
  --disable-vnc-png \
  --enable-gl $1
-# --enable-ffmpeg
-# --disable-vnc-jpeg \
-# --disable-jpeg
 ;;
 esac

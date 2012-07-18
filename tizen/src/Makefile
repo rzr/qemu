@@ -68,10 +68,8 @@ else
 	
 endif
 	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -dpr skin/client/skins $(EMUL_DIR)
 	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/x86/data/pc-bios
-	cp -dpr ../../pc-bios/vgabios-maruvga.bin $(EMUL_DIR)/x86/data/pc-bios
+	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
+	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
+	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
+	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
