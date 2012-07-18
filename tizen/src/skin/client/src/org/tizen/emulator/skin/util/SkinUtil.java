@@ -113,9 +113,9 @@ public class SkinUtil {
 		String sdbPath = null;
 
 		if (SkinUtil.isLinuxPlatform()) {
-			sdbPath = "./../../SDK/sdb/sdb";
+			sdbPath = "./../../sdb";
 		} else if (SkinUtil.isWindowsPlatform()) {
-			sdbPath = ".\\..\\..\\SDK\\sdb\\sdb.exe";
+			sdbPath = ".\\..\\..\\sdb.exe";
 		}
 
 		return sdbPath;
