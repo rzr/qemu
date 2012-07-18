@@ -149,8 +149,9 @@ public class ImageRegistry {
 	}
 
 	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
-		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator + IMAGE_FOLDER_PREFIX + lcdWidth + "x"
-				+ lcdHeight;
+		String skinPath = ".." + File.separator + ".." + File.separator +
+				"platforms" + File.separator + "tizen1.0" + File.separator + "emulator-resources" + File.separator + //TODO:
+				SKIN_FOLDER + File.separator + IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
 
 		if ( argSkinPath == null ) {
 			return skinPath;
