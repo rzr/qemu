@@ -1,4 +1,4 @@
-EMUL_DIR=../Emulator
+EMUL_DIR=../emulator
 
 ifneq ($(wildcard ../../config-host.mak),)
 include ../../config-host.mak
@@ -8,9 +8,13 @@ config-host.mak:
 	@exit 1
 endif
 
-all: build_info qemu skin_client check_hax
-qemu:
+all: qemu skin_client
+qemu: build_info ffmpeg_install check_hax
 	cd ../../ && $(MAKE)
+qemu_clean:
+	cd ../../ && $(MAKE) clean
+qemu_distclean:
+	cd ../../ && $(MAKE) distclean
 check_hax:
 ifdef CONFIG_WIN32
 	$(CC) -o check-hax.exe check_hax.c
@@ -34,16 +38,21 @@ build_info:
 	@echo "const char build_version[] = \"`cat VERSION`\";" >> build_info.h
 	@echo "const char build_date[] = \"`date +"%F %T %Z"`\";" >> build_info.h
 	@echo "const char pkginfo_version[] = \"`sed -n '2p' ./../../package/pkginfo.manifest`\";" >> build_info.h
-
-clean:
+ffmpeg:
+	cd ../distrib/libav/ && $(MAKE)
+ffmpeg_install: ffmpeg
+	cd ../distrib/libav/ && $(MAKE) install
+ffmpeg_clean:
+	cd ../distrib/libav/ && $(MAKE) clean
+ffmpeg_distclean:
+	cd ../distrib/libav/ && $(MAKE) clean
+clean: qemu_clean ffmpeg_clean
 ifdef CONFIG_WIN32
 	rm -f check-hax.exe
 else
 	
 endif
-	cd ../../ && $(MAKE) clean
-distclean:
-	cd ../../ && $(MAKE) distclean
+distclean: qemu_distclean ffmpeg_distclean
 install: all
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
