@@ -111,15 +111,7 @@ static int usb_touchscreen_poll(USBTouchscreenState *s, uint8_t *buf, int len)
     if (s->buttons_state == 0) {
         packet->state = 0;
     } else {
-        if (s->buttons_state & MOUSE_EVENT_LBUTTON) {
-            packet->state |= 1;
-        }
-        if (s->buttons_state & MOUSE_EVENT_RBUTTON) {
-            packet->state |= 2;
-        }
-        if (s->buttons_state & MOUSE_EVENT_MBUTTON) {
-            packet->state |= 4;
-        }
+        packet->state = 1;
     }
 
     return EMUL_TOUCHSCREEN_PACKET_LEN;
@@ -194,6 +186,7 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
 
             pthread_mutex_unlock(&event_mutex);
 
+            memset(buf, 0, sizeof(buf) * (p->iov.size - 1));
             ret = usb_touchscreen_poll(s, buf, p->iov.size); //write event to packet
             usb_packet_copy(p, buf, ret);
             break;
