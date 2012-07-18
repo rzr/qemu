@@ -70,7 +70,7 @@ install()
 
 	cd $SRCDIR/tizen
 	make install
-	mv Emulator $BIN_DIR
+	mv emulator $BIN_DIR
 }
 
 [ "$1" = "clean" ] && clean
