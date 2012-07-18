@@ -61,7 +61,7 @@ public class ImageRegistry {
 	private Logger logger = SkinLogger.getSkinLogger( ImageRegistry.class ).getLogger();
 
 	public static final String SKIN_FOLDER = "skins";
-	public static final String IMAGE_FOLDER_PREFIX = "emul_";
+	public static final String IMAGE_FOLDER_PREFIX = "emul-";
 	public static final String ICON_FOLDER = "icons";
 	
 	public enum ImageType {
@@ -149,9 +149,8 @@ public class ImageRegistry {
 	}
 
 	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
-		String skinPath = ".." + File.separator + ".." + File.separator +
-				"platforms" + File.separator + "tizen1.0" + File.separator + "emulator-resources" + File.separator + //TODO:
-				SKIN_FOLDER + File.separator + IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
+		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator +
+				IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
 
 		if ( argSkinPath == null ) {
 			return skinPath;
