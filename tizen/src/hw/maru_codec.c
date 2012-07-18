@@ -78,7 +78,7 @@ static int qemu_deserialize_rational(const uint8_t* buff, AVRational* elem)
     return size;
 }
 
-static int qemu_serialize_frame (AVFrame* elem, const uint8_t* buff)
+static int qemu_serialize_frame (const AVFrame* elem, uint8_t* buff)
 {
 	int size = 0;
 
