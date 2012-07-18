@@ -76,7 +76,7 @@ cscope.*
 tags
 TAGS
 *~
-tizen/Emulator
+tizen/emulator
 tizen/src/build_info.h
 tizen/src/skin/client/src/about.properties
 tizen/src/skin/client/bin

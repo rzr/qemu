@@ -1,18 +1,18 @@
-Package: emulator
-Version:1.3.0
+Package: emulator-qemu-x86
+Version: 1.3.0
 OS: linux
 Build-host-os: linux
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Install-dependency: emulator-kernel [ linux ], emulator-manager [ linux ], emulator-dll [ linux ]
+Install-dependency: emulator-kernel-x86 [ linux ], vgabios [ linux ]
 Source: emulator
 Description: Tizen Emulator
 
-Package: emulator
-Version:1.3.0
+Package: emulator-qemu-x86
+Version: 1.3.0
 OS: windows
 Build-host-os: windows
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
 Build-dependency: SDL-1.2.14 [ windows ], apache-ant-1.8.3-bin [ windows ], gtk-bundle_2.16.6 [ windows ], directx-dev [ windows ]
-Install-dependency: emulator-kernel [ windows ], emulator-manager [ windows ], emulator-dll [ windows ]
+Install-dependency: emulator-kernel-x86 [ windows ], vgabios [ windows ]
 Source: emulator
 Description: Tizen Emulator

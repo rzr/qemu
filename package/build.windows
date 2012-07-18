@@ -8,7 +8,7 @@ clean()
 	cd $SRCDIR/tizen/
 	if test -e "Makefile"
 	then
-		./qemu_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
+		./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
 		make clean
 	fi
 	rm -rf $SRCDIR/*.zip
@@ -47,7 +47,7 @@ build()
 	prepare
 
 	cd $SRCDIR/tizen/
-	./qemu_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
+	./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
 	make
     if [ -f "../i386-softmmu/qemu-system-i386.exe" ]
     then
@@ -64,7 +64,7 @@ install()
 
 	prepare
 
-	BIN_DIR=$SRCDIR/package/emulator.package.windows/data
+	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.windows/data/tools
 
 	mkdir -p $BIN_DIR
 
