@@ -94,7 +94,7 @@ char* get_emulator_vms_sdcard_path(void)
 #else
 	char emulator_vms[] = "\\tizen-sdk-data\\emulator-vms\\sdcard\\";
 	HKEY hKey;
-	char strLocalAppDataPath[MAX] = {0};
+	char strLocalAppDataPath[1024] = {0};
 	DWORD dwBufLen = 1024;
 	RegOpenKeyEx(HKEY_CURRENT_USER,
         "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
