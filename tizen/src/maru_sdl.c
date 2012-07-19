@@ -68,8 +68,7 @@ static int sdl_thread_initialized = 0;
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
 
-
-extern int gl_acceleration_capability_check (void);
+extern int capability_check_gl;
 static void _sdl_init(void)
 {
     int w, h, temp;
@@ -98,8 +97,8 @@ static void _sdl_init(void)
         h = temp;
     }
 
-    /*if (gl_acceleration_capability_check () != 0) {
-        fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
+    if (capability_check_gl != 0) {
+        ERR("GL check returned non-zero\n");
         surface_screen = NULL;
     } else {
         surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_OPENGL);
@@ -108,31 +107,33 @@ static void _sdl_init(void)
     if (surface_screen == NULL) {
         sdl_opengl = 0;
         INFO("No OpenGL support on this system!??\n");
-        ERR("%s\n", SDL_GetError());*/
+        ERR("%s\n", SDL_GetError());
 
         surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
         if (surface_screen == NULL) {
             ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
             return;
         }
-    /*} else {
+    } else {
         sdl_opengl = 1;
         INFO("OpenGL is supported on this system.\n");
-    }*/
+    }
 
     if (sdl_opengl == 1) {
         /* Set the OpenGL state */
-        glClearColor(0, 0, 0, 0);
-        glViewport(0, 0, w, h);
+        glClear(GL_COLOR_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, 1);
         glMatrixMode(GL_MODELVIEW);
+        glViewport(0, 0, w, h);
+        glLoadIdentity();
 
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        //glGenerateMipmapEXT(GL_TEXTURE_2D); // GL_MIPMAP_LINEAR
     }
 
     /* remove multi-touch finger points */
@@ -153,10 +154,10 @@ static void draw_outline_circle(int cx, int cy, int r, int num_segments)
     float y = 0;
 
     glEnable(GL_LINE_STIPPLE);
+    glLoadIdentity();
     glColor3f(0.9, 0.9, 0.9);
     glLineStipple(1, 0xcccc);
     glLineWidth(3.f);
-    glLoadIdentity();
 
     glTranslatef(cx, cy, 0);
     glRotated(point_degree++ % 360, 0, 0, 1);
@@ -178,11 +179,11 @@ static void draw_outline_circle(int cx, int cy, int r, int num_segments)
 static void draw_fill_circle(int cx, int cy, int r)
 {
     glEnable(GL_POINT_SMOOTH);
+    glLoadIdentity();
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glColor4f(0.1, 0.1, 0.1, 0.6);
     glPointSize(r - 2);
-    glLoadIdentity();
 
     glBegin(GL_POINTS);
         glVertex2f(cx, cy);
@@ -205,14 +206,13 @@ static void qemu_update(void)
 
         if (sdl_opengl == 1)
         { //gl surface
-            glEnable(GL_TEXTURE_2D); //enable server-side GL capabilities
+            glEnable(GL_TEXTURE_2D);
+            glLoadIdentity();
             glColor3f(1.0, 1.0, 1.0);
             glTexImage2D(GL_TEXTURE_2D,
                 0, 3, surface_qemu->w, surface_qemu->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, surface_qemu->pixels);
-            glBindTexture(GL_TEXTURE_2D, texture);
 
             glClear(GL_COLOR_BUFFER_BIT);
-            glLoadIdentity();
 
             /* rotation */
             if (current_screen_degree == 270.0) { //reverse landscape
@@ -506,6 +506,20 @@ void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_heigh
     }
 #endif
 }
+
+void maruskin_sdl_quit(void)
+{
+    /* remove multi-touch finger points */
+    get_emul_multi_touch_state()->multitouch_enable = 0;
+    clear_finger_slot();
+
+    if (sdl_opengl == 1) {
+        glDeleteTextures(1, &texture);
+    }
+
+    SDL_Quit();
+}
+
 
 void maruskin_sdl_resize(void)
 {

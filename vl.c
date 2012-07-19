@@ -266,6 +266,7 @@ uint8_t qemu_extra_params_fw[2];
 //#ifndef _WIN32
 extern int gl_acceleration_capability_check (void);
 int enable_gl = 0;
+int capability_check_gl = 0;
 //#endif
 
 typedef struct FWBootEntry FWBootEntry;
@@ -3217,11 +3218,12 @@ int main(int argc, char **argv, char **envp)
     loc_set_none();
 
 //#ifndef _WIN32
-	if (enable_gl && (gl_acceleration_capability_check () != 0)) {
-		enable_gl = 0;
-		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
-	}
-	
+    capability_check_gl = gl_acceleration_capability_check();
+    if (enable_gl && (capability_check_gl != 0)) {
+        enable_gl = 0;
+        fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
+    }
+
 	// To check host gl driver capability and notify to guest.
 	gchar *tmp = kernel_cmdline;
 	kernel_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);

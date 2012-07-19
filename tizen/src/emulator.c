@@ -80,6 +80,7 @@ static char** skin_argv = NULL;
 static int qemu_argc = 0;
 static char** qemu_argv = NULL;
 
+extern void maruskin_sdl_quit(void);
 void exit_emulator(void)
 {
     cleanup_multi_touch_state();
@@ -88,7 +89,7 @@ void exit_emulator(void)
     shutdown_skin_server();
     shutdown_guest_server();
 
-    SDL_Quit();
+    maruskin_sdl_quit();
 }
 
 static int check_port_bind_listen(u_int port)
@@ -475,7 +476,7 @@ static void system_info(void)
     ZeroMemory(&sysi, sizeof(SYSTEM_INFO));
 
     GetSystemInfo(&sysi);
-    INFO("* Processor type : %d, Number of processors : %d\n", sysi.dwProcessorType,  sysi.dwNumberOfProcessors);
+    INFO("* Processor type : %d, Number of processors : %d\n", sysi.dwProcessorType, sysi.dwNumberOfProcessors);
 
     MEMORYSTATUSEX memInfo;
     memInfo.dwLength = sizeof(MEMORYSTATUSEX);
@@ -486,7 +487,7 @@ static void system_info(void)
 #elif defined(__linux__)
     /* depends on building */
     INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
-        LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff , LINUX_VERSION_CODE & 0xff);
+        LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff, LINUX_VERSION_CODE & 0xff);
 
      /* depends on launching */
     struct utsname host_uname_buf;
@@ -508,6 +509,8 @@ static void system_info(void)
     int i = system(lscmd);
     INFO("system function command : %s, system function returned value : %d\n", lscmd, i);
 #endif
+
+    INFO("\n");
 }
 
 void prepare_maru(void)
@@ -518,7 +521,7 @@ void prepare_maru(void)
 
     INFO("call construct_main_window\n");
 
-    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv );
+    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv);
 
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server( guest_server_port );
