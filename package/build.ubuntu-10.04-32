@@ -17,7 +17,7 @@ build()
 {
 	cd $SRCDIR/tizen/
 	./emulator_configure.sh
-	make
+	make all_dibs
 }
 
 # install
@@ -27,7 +27,7 @@ install()
 	mkdir -p $BIN_DIR
 
     cd $SRCDIR/tizen
-    make install
+    make install_dibs
 	mv emulator $BIN_DIR
 }
 

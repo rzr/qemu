@@ -5,7 +5,7 @@ clean()
 {
 	prepare
 
-	cd $SRCDIR/tizen/
+	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
 		./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
@@ -38,7 +38,7 @@ prepare()
 	export PATH
 	export PKG_CONFIG_PATH=$ROOTDIR/lib/pkgconfig
 	BUILD_CFLAGS=--extra-cflags=-I$ROOTDIR/include
-    BUILD_LDFLAGS=--extra-ldflags=-L$ROOTDIR/lib
+	BUILD_LDFLAGS=--extra-ldflags=-L$ROOTDIR/lib
 }
 
 # build
@@ -46,22 +46,21 @@ build()
 {
 	prepare
 
-	cd $SRCDIR/tizen/
+	cd $SRCDIR/tizen
 	./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
-	make
-    if [ -f "../i386-softmmu/qemu-system-i386.exe" ]
-    then
-        echo "BUILD SUCCESS"
-    else
-        echo "BUILD FAIL!!!"
-        exit 1;
-    fi
+	make all_dibs
+	if [ -f "../i386-softmmu/qemu-system-i386.exe" ]
+	then
+		echo "BUILD SUCCESS"
+	else
+		echo "BUILD FAIL!!!"
+		exit 1;
+	fi
 }
 
 # install
 install() 
 {
-
 	prepare
 
 	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
@@ -69,7 +68,7 @@ install()
 	mkdir -p $BIN_DIR
 
 	cd $SRCDIR/tizen
-	make install
+	make install_dibs
 	mv emulator $BIN_DIR
 }
 
