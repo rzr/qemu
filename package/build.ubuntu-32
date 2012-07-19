@@ -16,7 +16,7 @@ clean()
 build()
 {
 	cd $SRCDIR/tizen/
-	./emulator_configure.sh
+#	./emulator_configure.sh
 	make all_dibs
 }
 

@@ -47,7 +47,7 @@ build()
 	prepare
 
 	cd $SRCDIR/tizen
-	./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
+#	./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
 	make all_dibs
 	if [ -f "../i386-softmmu/qemu-system-i386.exe" ]
 	then
