@@ -355,8 +355,27 @@ void maru_finger_processing_B(int touch_type, int origin_x, int origin_y, int x,
                 int distance_x = x - finger->x;
                 int distance_y = y - finger->y;
 
-                int i = 0;
-                for( ; i < get_emul_multi_touch_state()->finger_cnt; i++) {
+                int current_screen_w = get_emul_lcd_width();
+                int current_screen_h = get_emul_lcd_height();
+                int temp_finger_x, temp_finger_y;
+
+                int i;
+                /* bounds checking */
+                for(i = 0; i < get_emul_multi_touch_state()->finger_cnt; i++) {
+                    finger = get_finger_point_from_slot(i);
+
+                    if (finger != NULL) {
+                        temp_finger_x = finger->x + distance_x;
+                        temp_finger_y = finger->y + distance_y;
+                        if (temp_finger_x > current_screen_w || temp_finger_x < 0
+                            || temp_finger_y > current_screen_h || temp_finger_y < 0) {
+                            TRACE("id %d finger is out of bounds (%d, %d)\n", i + 1, temp_finger_x, temp_finger_y);
+                            return;
+                        }
+                    }
+                }
+
+                for(i = 0; i < get_emul_multi_touch_state()->finger_cnt; i++) {
                     finger = get_finger_point_from_slot(i);
 
                     if (finger != NULL) {
