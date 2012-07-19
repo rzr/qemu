@@ -64,7 +64,7 @@ install()
 
 	prepare
 
-	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.windows/data/tools
+	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
 
 	mkdir -p $BIN_DIR
 

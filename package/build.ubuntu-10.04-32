@@ -23,7 +23,7 @@ build()
 # install
 install() 
 {
-	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.linux/data/tools
+	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
 	mkdir -p $BIN_DIR
 
     cd $SRCDIR/tizen
