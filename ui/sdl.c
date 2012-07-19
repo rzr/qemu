@@ -256,7 +256,7 @@ static uint8_t sdl_keyevent_to_keycode(const SDL_KeyboardEvent *ev)
 
 #else
 
-#if defined(SDL_VIDEO_DRIVER_X11)
+#if (defined(SDL_VIDEO_DRIVER_X11) && !defined(__APPLE__))
 #include <X11/XKBlib.h>
 
 static int check_for_evdev(void)
