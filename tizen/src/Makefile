@@ -50,12 +50,10 @@ else
 endif
 distclean: qemu_distclean ffmpeg_distclean
 
-install_common: all
+install: all
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
-	mkdir -p $(EMUL_DIR)/x86
 	mkdir -p $(EMUL_DIR)/data 
-	mkdir -p $(EMUL_DIR)/arm
 	mkdir -p $(EMUL_DIR)/data/bios
 	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
@@ -70,12 +68,28 @@ endif
 	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
 	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
 	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
-install: install_common
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 
 # for dibs system...
 all_dibs: qemu skin_client_dibs
 skin_client_dibs:
-	ant -buildfile skin/client/build.xml -Dclasspath.dibs=$(ROOTDIR)/toos/emulator/bin make-jar-dibs
-install_dibs: install_common
+	ant -buildfile skin/client/build.xml -Dclasspath.dibs=$(ROOTDIR)/tools/emulator/bin make-jar-dibs
+install_dibs: all_dibs
+	mkdir -p $(EMUL_DIR)/bin
+	mkdir -p $(EMUL_DIR)/etc
+	mkdir -p $(EMUL_DIR)/data 
+	mkdir -p $(EMUL_DIR)/data/bios
+	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
+	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
+ifdef CONFIG_WIN32
+	cp check-hax.exe $(EMUL_DIR)/bin
+else
+	
+endif
+	cp ../../qemu-img $(EMUL_DIR)/bin
+	cp -dpr ../license $(EMUL_DIR)
+	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
+	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
+	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
+	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
 

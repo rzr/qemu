@@ -3,7 +3,7 @@
 #--target-list=i386-softmmu,arm-softmmu \
 
 targetos=`uname -s`
-targetarch=`echo | gcc -E -dM | grep __x86_64`
+targetarch=`echo | gcc -E -dM - | grep __x86_64`
 bindir="i386"
 
 if test "$targetarch" = "x86_64"
