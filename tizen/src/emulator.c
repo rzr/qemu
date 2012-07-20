@@ -130,7 +130,7 @@ static int check_port_bind_listen(u_int port)
 
 void check_shdmem(void)
 {
-#ifndef _WIN32
+#ifndef CONFIG_WIN32
     int shm_id;
     void *shm_addr;
     u_int port;
@@ -435,9 +435,6 @@ static void system_info(void)
 {
 #define DIV 1024
 
-#ifdef __linux__
-    char lscmd[MAXLEN] = "lspci >> ";
-#endif
     char timeinfo[64] = {0, };
     struct tm *tm_time;
     struct timeval tval;
@@ -445,9 +442,7 @@ static void system_info(void)
     INFO("* SDK Version : %s\n", build_version);
     INFO("* Package %s\n", pkginfo_version);
     INFO("* User name : %s\n", g_get_real_name());
-#ifdef _WIN32
     INFO("* Host name : %s\n", g_get_host_name());
-#endif
 
     /* timestamp */
     INFO("* Build date : %s\n", build_date);
@@ -460,7 +455,7 @@ static void system_info(void)
     INFO("* Host sdl version : (%d, %d, %d)\n",
         SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
 
-#if defined( _WIN32)
+#if defined(CONFIG_WIN32)
     /* Retrieves information about the current os */
     OSVERSIONINFO osvi;
     ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
@@ -484,7 +479,7 @@ static void system_info(void)
     INFO("* Total Ram : %llu kB, Free: %lld kB\n",
         memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
 
-#elif defined(__linux__)
+#elif defined(CONFIG_LINUX)
     /* depends on building */
     INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
         LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff, LINUX_VERSION_CODE & 0xff);
@@ -505,9 +500,13 @@ static void system_info(void)
 
     /* pci device description */
     INFO("* Pci devices :\n");
+    char lscmd[MAXLEN] = "lspci >> ";
     strcat(lscmd, logpath);
     int i = system(lscmd);
     INFO("system function command : %s, system function returned value : %d\n", lscmd, i);
+
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
 
     INFO("\n");

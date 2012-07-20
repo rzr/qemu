@@ -161,14 +161,15 @@ MultiTouchState *get_emul_multi_touch_state(void)
 /* retrieves the status of the host lock key */
 int get_host_lock_key_state(int key)
 {
-#if defined( __linux__)
+    /* support only capslock, numlock */
+
+#if defined(CONFIG_LINUX)
     unsigned state = 0;
     Display *display = XOpenDisplay((char*)0);
     if (display) {
         XkbGetIndicatorState(display, XkbUseCoreKbd, &state);
     }
     XCloseDisplay(display);
-
 
     if (key == HOST_CAPSLOCK_KEY) {
         return (state & 0x01) != 0;
@@ -177,16 +178,18 @@ int get_host_lock_key_state(int key)
     }
 
     return -1;
-#elif defined(_WIN32)
-    int nVirtKey = 0;
 
+#elif defined(CONFIG_WIN32)
     if (key == HOST_CAPSLOCK_KEY) {
-        nVirtKey = VK_CAPITAL;
+        return (GetKeyState(VK_CAPITAL) & 1) != 0;
     } else if (key == HOST_NUMLOCK_KEY) {
-        nVirtKey = VK_NUMLOCK;
+        return (GetKeyState(VK_NUMLOCK) & 1) != 0;
     }
 
-    return (GetKeyState(nVirtKey) & 1) != 0;
+    return -1;
+
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
 
     return 0;
