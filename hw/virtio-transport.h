@@ -38,5 +38,10 @@ typedef struct VirtIOTransportBusState {
 
 int virtio_init_transport(DeviceState *dev, VirtIODevice *vdev);
 uint32_t virtio_count_siblings(BusState *parent_bus, const char *child_bus);
+/*
+ * Get transport device which does not have a child.
+ */
+DeviceState* virtio_get_free_transport(BusState *parent_bus,
+                                       const char *child_bus);
 
 #endif /* VIRTIO_TRANSPORT_H_ */

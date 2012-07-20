@@ -53,17 +53,48 @@ uint32_t virtio_count_siblings(BusState *parent_bus, const char *child_bus)
     char *buf;
     int len;
 
-    len = strlen(child_bus) + 1;
-    buf = g_malloc(len);
-    snprintf(buf, len, "%s.", child_bus);
-
-    QTAILQ_FOREACH(dev, &parent_bus->children, sibling) {
-        QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-            if (strncmp(buf, bus->name, strlen(buf)) == 0) {
-                i++;
+    if (child_bus) {
+        len = strlen(child_bus) + 1;
+        buf = g_malloc(len);
+        snprintf(buf, len, "%s.", child_bus);
+        len = strlen(buf);
+        QTAILQ_FOREACH(dev, &parent_bus->children, sibling) {
+            QLIST_FOREACH(bus, &dev->child_bus, sibling) {
+                if (strncmp(buf, bus->name, len) == 0) {
+                    i++;
+                }
             }
+        }
+
+    } else {
+        QTAILQ_FOREACH(dev, &parent_bus->children, sibling) {
+            i++;
         }
     }
 
     return i;
+}
+
+/*
+ * Get transport device which does not have a child.
+ */
+DeviceState* virtio_get_free_transport(BusState *parent_bus,
+                                       const char *child_bus)
+{
+    DeviceState *dev;
+    BusState *bus;
+
+    assert(child_bus != NULL);
+
+    QTAILQ_FOREACH(dev, &parent_bus->children, sibling) {
+        QLIST_FOREACH(bus, &dev->child_bus, sibling) {
+            if (strncmp(child_bus, bus->name, strlen(child_bus)) == 0) {
+                if (!virtio_count_siblings(bus, NULL)) {
+                    return dev;
+                }
+            }
+        }
+    }
+
+    return NULL;
 }

@@ -334,6 +334,24 @@ static int virtio_init_mmio_transport(DeviceState *dev, VirtIODevice *vdev)
     SysBusDevice *transport_sysbus = sysbus_from_qdev(transport_dev);
     VirtIOMMIOTransportState *transport =
             FROM_SYSBUS(VirtIOMMIOTransportState, transport_sysbus);
+    uint32_t i;
+
+    /* Find a free transport where we will not have any siblings */
+    i = virtio_count_siblings(qdev_get_parent_bus(dev), NULL);
+    if (i > 1) {
+        transport_dev =
+                virtio_get_free_transport(qdev_get_parent_bus(transport_dev),
+                                          VIRTIO_MMIO);
+        assert(transport_dev != NULL);
+        transport_sysbus = sysbus_from_qdev(transport_dev);
+        transport = FROM_SYSBUS(VirtIOMMIOTransportState, transport_sysbus);
+
+        /* Reconnect back-end to free transport. Access by QLIST because we
+         * don't know actual suffix for virtio-pci.x */
+        QTAILQ_REMOVE(&qdev_get_parent_bus(dev)->children, dev, sibling);
+        qdev_set_parent_bus(dev, qdev_get_child_bus(transport_dev,
+                ((BusState *)QLIST_FIRST(&transport_dev->child_bus))->name));
+    }
 
     transport->vdev = vdev;
     transport->vdev->nvectors = 0;
