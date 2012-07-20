@@ -263,11 +263,11 @@ int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
 
 //virtio-gl
-//#ifndef _WIN32
+#ifndef CONFIG_DARWIN
 extern int gl_acceleration_capability_check (void);
 int enable_gl = 0;
 int capability_check_gl = 0;
-//#endif
+#endif
 
 typedef struct FWBootEntry FWBootEntry;
 
@@ -1792,7 +1792,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
-//#ifndef _WIN32
+#ifndef CONFIG_DARWIN
 	// virtio-gl pci device
 	if (!enable_gl) {
 		// ignore virtio-gl-pci device, even if users set it in option.
@@ -1801,7 +1801,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 			return 0;
 		}
 	}
-//#endif
+#endif
 	
     dev = qdev_device_add(opts);
     if (!dev)
@@ -2961,9 +2961,9 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
 			case QEMU_OPTION_enable_gl:
-//#ifndef _WIN32
+#ifndef CONFIG_DARWIN
 				enable_gl = 1;
-//#endif
+#endif
 				break;
             case QEMU_OPTION_machine:
                 olist = qemu_find_opts("machine");
@@ -3217,7 +3217,7 @@ int main(int argc, char **argv, char **envp)
     }
     loc_set_none();
 
-//#ifndef _WIN32
+#ifndef CONFIG_DARWIN
     capability_check_gl = gl_acceleration_capability_check();
     if (enable_gl && (capability_check_gl != 0)) {
         enable_gl = 0;
@@ -3239,7 +3239,7 @@ int main(int argc, char **argv, char **envp)
 			}
 		}
 	}
-//#endif
+#endif
 	
 	
     /* Open the logfile at this point, if necessary. We can't open the logfile

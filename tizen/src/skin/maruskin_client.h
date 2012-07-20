@@ -34,7 +34,11 @@
 
 #define JAR_SKINFILE_PATH "emulator-skin.jar"
 #define JAVA_EXEFILE_PATH "java"
+#ifndef CONFIG_DARWIN
 #define JAVA_EXEOPTION "-jar"
+#else
+#define JAVA_EXEOPTION "-XstartOnFirstThread -jar" // Must start the Java window on the first thread on Mac
+#endif
 #define JAVA_SIMPLEMODE_OPTION "simple.msg"
 
 
