@@ -69,6 +69,7 @@ endif
 	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
 	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
+	cp -dpr skin/client/skins $(EMUL_DIR)
 
 # for dibs system...
 all_dibs: qemu skin_client_dibs
@@ -92,4 +93,5 @@ endif
 	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
 	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
 	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
+	cp -dpr skin/client/skins $(EMUL_DIR)
 
