@@ -12,7 +12,7 @@
 
 	<target name="clean">
 		<echo message="cleaning..." />
-		<delete dir="dist" />
+		<delete dir="build" />
 		<delete file="${jar.file}" />
 	</target>
 

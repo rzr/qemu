@@ -34,8 +34,11 @@ prepare()
 		exit 1
 	fi
 
-	PATH=$PATH:$ROOTDIR/bin:$ROOTDIR/apache-ant-1.8.3/bin
+	
+	PURIFIED_ROOTDIR=`TEMP=\`echo "${ROOTDIR}" | cut -c-2 | sed "s/[:/]//g" | awk {'print tolower ($_)'}\`; echo \`echo "${ROOTDIR}" | sed "s/^../\/${TEMP}/"\``
+	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant-1.8.3/bin
 	export PATH
+
 	export PKG_CONFIG_PATH=$ROOTDIR/lib/pkgconfig
 	BUILD_CFLAGS=--extra-cflags=-I$ROOTDIR/include
 	BUILD_LDFLAGS=--extra-ldflags=-L$ROOTDIR/lib
