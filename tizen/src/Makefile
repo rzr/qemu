@@ -40,15 +40,15 @@ ffmpeg_install: ffmpeg
 ffmpeg_clean:
 	cd ../distrib/libav/ && $(MAKE) clean
 ffmpeg_distclean:
-	cd ../distrib/libav/ && $(MAKE) clean
+	cd ../distrib/libav/ && $(MAKE) clean && rm -rf ${ARCH}
 
-clean: qemu_clean ffmpeg_clean
+clean: ffmpeg_clean qemu_clean
 ifdef CONFIG_WIN32
 	rm -f check-hax.exe
 else
 	
 endif
-distclean: qemu_distclean ffmpeg_distclean
+distclean: ffmpeg_distclean qemu_distclean
 
 install: all
 	mkdir -p $(EMUL_DIR)/bin
