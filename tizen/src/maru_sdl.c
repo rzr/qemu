@@ -97,7 +97,7 @@ static void _sdl_init(void)
         h = temp;
     }
 
-    if (capability_check_gl != 0) {
+    /*if (capability_check_gl != 0) {
         ERR("GL check returned non-zero\n");
         surface_screen = NULL;
     } else {
@@ -107,17 +107,17 @@ static void _sdl_init(void)
     if (surface_screen == NULL) {
         sdl_opengl = 0;
         INFO("No OpenGL support on this system!??\n");
-        ERR("%s\n", SDL_GetError());
+        ERR("%s\n", SDL_GetError());*/
 
         surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
         if (surface_screen == NULL) {
             ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
             return;
         }
-    } else {
+    /*} else {
         sdl_opengl = 1;
         INFO("OpenGL is supported on this system.\n");
-    }
+    }*/
 
     if (sdl_opengl == 1) {
         /* Set the OpenGL state */
