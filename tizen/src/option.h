@@ -44,6 +44,8 @@
 #include <string.h>
 
 int gethostDNS(char *dns1, char *dns2);
-int gethostproxy(char *proxy);
+int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy);
+void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy);
+void remove_protocol(char *src, char *dst, const char *protocol);
 #endif
 

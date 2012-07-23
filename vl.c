@@ -2304,7 +2304,9 @@ int main(int argc, char **argv, char **envp)
 
 #ifdef CONFIG_MARU
     #define MIDBUF  128
-    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
+    char http_proxy[MIDBUF] ={0},https_proxy[MIDBUF] = {0,},
+	ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},	
+     dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
 #endif
 
     atexit(qemu_run_exit_notifiers);
@@ -2545,10 +2547,14 @@ int main(int argc, char **argv, char **envp)
                 break;
             case QEMU_OPTION_append:
 #ifdef CONFIG_MARU
-                gethostproxy(proxy);
+                gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
                 gethostDNS(dns1, dns2);
-                kernel_cmdline = g_strdup_printf("%s sdb_port=%d, proxy=%s dns1=%s dns2=%s", optarg, tizen_base_port, proxy, dns1, dns2);
-                fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
+                kernel_cmdline = g_strdup_printf("%s sdb_port=%d,"
+                	" http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s" 
+	                " dns1=%s dns2=%s", optarg, tizen_base_port, 
+        	        http_proxy, https_proxy, ftp_proxy, socks_proxy,
+                	dns1, dns2);
+fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
 #else
                 kernel_cmdline = optarg;
 #endif

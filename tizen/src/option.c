@@ -35,7 +35,7 @@
  */
 
 #include "option.h"
-
+#include "emulator.h"
 #ifndef _WIN32
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -56,6 +56,11 @@
 #endif
 
 #include "debug_ch.h"
+
+#define HTTP_PROTOCOL "http="
+#define HTTPS_PROTOCOL "https="
+#define FTP_PROTOCOL "ftp="
+#define SOCKS_PROTOCOL "socks="
 
 //DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, option);
@@ -141,12 +146,80 @@ int gethostDNS(char *dns1, char *dns2)
 	return 0;
 }
 
+void remove_protocol(char *src, char *dst, const char *protocol)
+{
+    int len = strlen(protocol);
+    int i, j;
+    int max_len = strlen(src);
+    
+    for(i = len, j = 0; i < max_len; i++)
+    {
+        dst[j++] = src[i];
+    }
+    
+    dst[j] = '\0';
+}
+
+void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+{
+    char buf[MAXLEN];
+	FILE *output;
+    memset(buf, 0, MAXLEN);
+    
+    output = popen("gconftool-2 --get /system/http_proxy/host", "r");
+	fscanf(output , "%s", buf);
+	sprintf(http_proxy, "%s", buf);
+    pclose(output);
+
+	output = popen("gconftool-2 --get /system/http_proxy/port", "r");
+	fscanf(output , "%s", buf);
+	sprintf(http_proxy, "%s:%s", http_proxy, buf);
+	pclose(output);
+    memset(buf, 0, MAXLEN);
+    INFO("http_proxy : %s\n", http_proxy);
+
+    output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
+	fscanf(output , "%s", buf);
+	sprintf(https_proxy, "%s", buf);
+	pclose(output);
+        
+    output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
+	fscanf(output , "%s", buf);
+	sprintf(https_proxy, "%s:%s", https_proxy, buf);
+	pclose(output);
+    memset(buf, 0, MAXLEN);
+    INFO("https_proxy : %s\n", https_proxy);
+
+    output = popen("gconftool-2 --get /system/proxy/ftp_host", "r");
+	fscanf(output , "%s", buf);
+	sprintf(ftp_proxy, "%s", buf);
+    pclose(output);
+        
+    output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
+	fscanf(output , "%s", buf);
+	sprintf(ftp_proxy, "%s:%s", ftp_proxy, buf);
+	pclose(output);
+    memset(buf, 0, MAXLEN);
+    INFO("ftp_proxy : %s\n", ftp_proxy);
+    
+    output = popen("gconftool-2 --get /system/proxy/socks_host", "r");
+	fscanf(output , "%s", buf);
+	sprintf(socks_proxy, "%s", buf);
+	pclose(output);
+  
+    output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
+	fscanf(output , "%s", buf);
+	sprintf(socks_proxy, "%s:%s", socks_proxy, buf);
+	pclose(output);
+    INFO("socks_proxy : %s\n", socks_proxy);
+}
+
 /**
   @brief	get host proxy server address
   @param	proxy: return value (proxy server address)
   @return always 0
  */
-int gethostproxy(char *proxy)
+int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
 #ifndef _WIN32
 	char buf[255];
@@ -157,17 +230,8 @@ int gethostproxy(char *proxy)
 	pclose(output);
 
 	if (strcmp(buf, "manual") == 0){
-		output = popen("gconftool-2 --get /system/http_proxy/host", "r");
-		fscanf(output , "%s", buf);
-		sprintf(proxy, "%s", buf);
-		pclose(output);
-
-		output = popen("gconftool-2 --get /system/http_proxy/port", "r");
-		fscanf(output , "%s", buf);
-		sprintf(proxy, "%s:%s", proxy, buf);
-		pclose(output);
-
-	}else if (strcmp(buf, "auto") == 0){
+        getlinuxproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+			}else if (strcmp(buf, "auto") == 0){
 		INFO( "Emulator can't support automatic proxy currently. starts up with normal proxy.\n");
 		//can't support proxy auto setting
 //		output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
@@ -181,6 +245,9 @@ int gethostproxy(char *proxy)
 	int nRet;
 	LONG lRet;
 	BYTE *proxyenable, *proxyserver;
+    char *p;
+	char *real_proxy;
+
 	DWORD dwLength = 0;
 	nRet = RegOpenKeyEx(HKEY_CURRENT_USER,
 			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
@@ -243,8 +310,35 @@ int gethostproxy(char *proxy)
 		RegCloseKey(hKey);
 		return 0;
 	}
-	if (proxyserver != NULL) strcpy(proxy, (char*)proxyserver);
-	free(proxyserver);
+    if((char*)proxyserver != NULL) {
+        INFO("proxy value: is %s\n", (char*)proxyserver);
+        for(p = strtok((char*)proxyserver, ";"); p; p = strtok(NULL, ";")){
+            real_proxy = malloc(MAXLEN);
+            if(strstr(p, HTTP_PROTOCOL)) {
+                remove_protocol(p, real_proxy, HTTP_PROTOCOL);
+                strcpy(http_proxy, real_proxy);
+            }
+            else if(strstr(p, HTTPS_PROTOCOL)) {
+                remove_protocol(p, real_proxy, HTTPS_PROTOCOL);
+                strcpy(https_proxy, real_proxy);
+            }
+            else if(strstr(p, FTP_PROTOCOL)) {
+                remove_protocol(p, real_proxy, FTP_PROTOCOL);
+                strcpy(ftp_proxy, real_proxy);
+            }
+            else if(strstr(p, SOCKS_PROTOCOL)) {
+                remove_protocol(p, real_proxy, SOCKS_PROTOCOL);
+                strcpy(socks_proxy, real_proxy);
+            }
+            else {
+                fprintf(stderr, "%s is wrong proxy format\n", p);
+            }
+        }
+	}
+    else {
+        fprintf(stderr, "proxy is null\n");
+        return 0;
+    }
 	RegCloseKey(hKey);
 #endif
 	return 0;
