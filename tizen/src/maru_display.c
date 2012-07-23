@@ -1,5 +1,5 @@
 /*
- * SDL_WINDOWID hack
+ * MARU display driver
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -28,24 +28,41 @@
  */
 
 
-#ifndef MARU_SDL_H_
-#define MARU_SDL_H_
+#include "maru_display.h"
+#include "debug_ch.h"
+#include "maru_sdl.h"
+#include "maru_shm.h"
 
-#include "console.h"
-#include <SDL.h>
-#include <SDL_syswm.h>
-#include "qemu-common.h"
-
-
-void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h);
-void qemu_ds_sdl_resize(DisplayState *ds);
-void qemu_ds_sdl_refresh(DisplayState *ds);
-
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
-void maruskin_sdl_resize(void);
-void maruskin_sdl_quit(void);
+MULTI_DEBUG_CHANNEL(tizen, display);
 
 
-DisplaySurface* get_qemu_display_surface( void );
+void maru_display_init(DisplayState *ds)
+{
+    INFO("init qemu display\n");
 
-#endif /* MARU_SDL_H_ */
+    /*  graphics context information */
+    DisplayChangeListener *dcl;
+
+    dcl = g_malloc0(sizeof(DisplayChangeListener));
+#ifndef CONFIG_DARWING
+    /* sdl library */
+    dcl->dpy_update = qemu_ds_sdl_update;
+    dcl->dpy_resize = qemu_ds_sdl_resize;
+    dcl->dpy_refresh = qemu_ds_sdl_refresh;
+#else
+    /* shared memroy */
+    dcl->dpy_update = qemu_ds_shm_update;
+    dcl->dpy_resize = qemu_ds_shm_resize;
+    dcl->dpy_refresh = qemu_ds_shm_refresh;
+#endif
+
+    register_displaychangelistener(ds, dcl);
+}
+
+void maru_display_fini(void)
+{
+    INFO("fini qemu display\n");
+
+    //TODO:
+}
+

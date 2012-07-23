@@ -1,5 +1,5 @@
 /*
- * SDL_WINDOWID hack
+ * Shared memory
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -28,24 +28,14 @@
  */
 
 
-#ifndef MARU_SDL_H_
-#define MARU_SDL_H_
+#ifndef MARU_SHM_H_
+#define MARU_SHM_H_
 
 #include "console.h"
-#include <SDL.h>
-#include <SDL_syswm.h>
-#include "qemu-common.h"
 
 
-void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h);
-void qemu_ds_sdl_resize(DisplayState *ds);
-void qemu_ds_sdl_refresh(DisplayState *ds);
+void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h);
+void qemu_ds_shm_resize(DisplayState *ds);
+void qemu_ds_shm_refresh(DisplayState *ds);
 
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
-void maruskin_sdl_resize(void);
-void maruskin_sdl_quit(void);
-
-
-DisplaySurface* get_qemu_display_surface( void );
-
-#endif /* MARU_SDL_H_ */
+#endif /* MARU_SHM_H_ */

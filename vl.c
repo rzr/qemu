@@ -179,7 +179,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "ui/qemu-spice.h"
 
 #ifdef CONFIG_MARU
-#include "tizen/src/maru_sdl.h"
+#include "tizen/src/maru_display.h"
 #include "tizen/src/option.h"
 #include "tizen/src/emul_state.h"
 #include "tizen/src/skin/maruskin_operation.h"
@@ -3597,7 +3597,7 @@ int main(int argc, char **argv, char **envp)
 #endif
 #if defined(CONFIG_MARU)
     case DT_MARU:
-        maruskin_display_init(ds);
+        maru_display_init(ds);
         if (skin_disabled == 1) {
             set_emul_skin_enable(0);
         } else {

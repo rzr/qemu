@@ -1,11 +1,11 @@
 /*
- * MARU SDL display driver
+ * SDL_WINDOWID hack
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * HyunJun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -67,6 +67,91 @@ static int sdl_thread_initialized = 0;
 
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
+
+
+void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
+{
+    /* call sdl update */
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+
+    pthread_cond_signal(&sdl_cond);
+
+    pthread_mutex_unlock(&sdl_mutex);
+#else
+    qemu_update();
+#endif
+}
+
+void qemu_ds_sdl_resize(DisplayState *ds)
+{
+    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
+
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
+    /* create surface_qemu */
+    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
+            ds_get_width(ds),
+            ds_get_height(ds),
+            ds_get_bits_per_pixel(ds),
+            ds_get_linesize(ds),
+            ds->surface->pf.rmask,
+            ds->surface->pf.gmask,
+            ds->surface->pf.bmask,
+            ds->surface->pf.amask);
+
+#ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+
+    if (surface_qemu == NULL) {
+        ERR("Unable to set the RGBSurface: %s\n", SDL_GetError());
+        return;
+    }
+
+}
+
+static int maru_sdl_poll_event(SDL_Event *ev)
+{
+    int ret = 0;
+
+    if (sdl_initialized == 1) {
+        //pthread_mutex_lock(&sdl_mutex);
+        ret = SDL_PollEvent(ev);
+        //pthread_mutex_unlock(&sdl_mutex);
+    }
+
+    return ret;
+}
+void qemu_ds_sdl_refresh(DisplayState *ds)
+{
+    SDL_Event ev1, *ev = &ev1;
+
+    vga_hw_update();
+
+    // surface may be NULL in init func.
+    qemu_display_surface = ds->surface;
+
+    while (maru_sdl_poll_event(ev)) {
+        switch (ev->type) {
+            case SDL_VIDEORESIZE:
+            {
+                pthread_mutex_lock(&sdl_mutex);
+
+                SDL_Quit(); //The returned surface is freed by SDL_Quit and must not be freed by the caller
+                maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
+
+                pthread_mutex_unlock(&sdl_mutex);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+}
 
 extern int capability_check_gl;
 static void _sdl_init(void)
@@ -317,147 +402,6 @@ static void* run_qemu_update(void* arg)
     return NULL;
 }
 #endif
-
-static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
-{
-    /* call sdl update */
-#ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-
-    pthread_cond_signal(&sdl_cond);
-
-    pthread_mutex_unlock(&sdl_mutex);
-#else
-    qemu_update();
-#endif
-}
-
-static void qemu_ds_resize(DisplayState *ds)
-{
-    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
-
-#ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-#endif
-
-    /* create surface_qemu */
-    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
-            ds_get_width(ds),
-            ds_get_height(ds),
-            ds_get_bits_per_pixel(ds),
-            ds_get_linesize(ds),
-            ds->surface->pf.rmask,
-            ds->surface->pf.gmask,
-            ds->surface->pf.bmask,
-            ds->surface->pf.amask);
-
-#ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
-#endif
-
-    if (surface_qemu == NULL) {
-        ERR("Unable to set the RGBSurface: %s\n", SDL_GetError());
-        return;
-    }
-
-}
-
-static int maru_sdl_poll_event(SDL_Event *ev)
-{
-    int ret = 0;
-
-    if (sdl_initialized == 1) {
-        //pthread_mutex_lock(&sdl_mutex);
-        ret = SDL_PollEvent(ev);
-        //pthread_mutex_unlock(&sdl_mutex);
-    }
-
-    return ret;
-}
-
-static void put_hardkey_code( SDL_UserEvent event )
-{
-    // use pointer as integer
-    int event_type = (int) event.data1;
-    int keycode = (int) event.data2;
-
-    if ( KEY_PRESSED == event_type ) {
-
-        if ( kbd_mouse_is_absolute() ) {
-            ps2kbd_put_keycode( keycode & 0x7f );
-        }
-
-    } else if ( KEY_RELEASED == event_type ) {
-
-        if ( kbd_mouse_is_absolute() ) {
-            ps2kbd_put_keycode( keycode | 0x80 );
-        }
-
-    } else {
-        ERR( "Unknown hardkey event type.[event_type:%d]\n", event_type );
-    }
-
-}
-
-static void handle_sdl_user_event ( SDL_UserEvent event )
-{
-    int code = event.code;
-
-    switch ( code ) {
-    case SDL_USER_EVENT_CODE_HARDKEY: {
-        put_hardkey_code( event );
-        break;
-    }
-    default: {
-        ERR( "Unknown sdl user event.[event code:%d]\n", code );
-        break;
-    }
-    }
-
-}
-
-static void qemu_ds_refresh(DisplayState *ds)
-{
-    SDL_Event ev1, *ev = &ev1;
-
-    vga_hw_update();
-
-    // surface may be NULL in init func.
-    qemu_display_surface = ds->surface;
-
-    while (maru_sdl_poll_event(ev)) {
-        switch (ev->type) {
-            case SDL_VIDEORESIZE:
-            {
-                pthread_mutex_lock(&sdl_mutex);
-
-                SDL_Quit(); //The returned surface is freed by SDL_Quit and must not be freed by the caller
-                maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
-
-                pthread_mutex_unlock(&sdl_mutex);
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-}
-
-void maruskin_display_init(DisplayState *ds)
-{
-    INFO("qemu display initialization\n");
-
-    /*  graphics context information */
-    DisplayChangeListener *dcl;
-
-    dcl = g_malloc0(sizeof(DisplayChangeListener));
-    dcl->dpy_update = qemu_ds_update;
-    dcl->dpy_resize = qemu_ds_resize;
-    dcl->dpy_refresh = qemu_ds_refresh;
-
-    register_displaychangelistener(ds, dcl);
-}
 
 void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
 {
