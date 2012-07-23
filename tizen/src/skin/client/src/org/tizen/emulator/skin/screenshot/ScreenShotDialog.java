@@ -79,6 +79,7 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class ScreenShotDialog {
 
@@ -498,7 +499,7 @@ public class ScreenShotDialog {
 
 				ImageData data = null;
 
-				if ( SkinUtil.isWindowsPlatform() ) {
+				if ( SwtUtil.isWindowsPlatform() ) {
 					// change RGB mask
 					ImageData imageData = image.getImageData();
 					PaletteData paletteData = new PaletteData( BLUE_MASK, GREEN_MASK, RED_MASK );

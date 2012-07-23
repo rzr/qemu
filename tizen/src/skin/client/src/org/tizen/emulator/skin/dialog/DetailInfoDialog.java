@@ -57,6 +57,7 @@ import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 /**
  * 
@@ -142,11 +143,11 @@ public class DetailInfoDialog extends SkinDialog {
 					String logPath = refinedData.get(logKey);
 					ProcessBuilder procBrowser = new ProcessBuilder();
 
-					if (SkinUtil.isLinuxPlatform()) {
+					if (SwtUtil.isLinuxPlatform()) {
 						procBrowser.command("nautilus", "--browser", logPath);
-					} else if (SkinUtil.isWindowsPlatform()) {
+					} else if (SwtUtil.isWindowsPlatform()) {
 						procBrowser.command("explorer", "\"" + logPath + "\"");
-					} else if (SkinUtil.isMacPlatform()) {
+					} else if (SwtUtil.isMacPlatform()) {
 						//TODO:
 					}
 
@@ -168,7 +169,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 	@Override
 	protected void setShellSize() {
-		if( SkinUtil.isLinuxPlatform() ) {
+		if( SwtUtil.isLinuxPlatform() ) {
 			shell.setSize( (int) ( 402 * 1.618 ), 402 );
 		} else {
 			shell.setSize( (int) ( 372 * 1.618 ), 372 );
@@ -209,9 +210,9 @@ public class DetailInfoDialog extends SkinDialog {
 		String logPath = "";
 		boolean isHaxError = false;
 		
-		if ( SkinUtil.isLinuxPlatform() ) {
+		if ( SwtUtil.isLinuxPlatform() ) {
 			hwVirtualCompare = "-enable-kvm";
-		} else if ( SkinUtil.isWindowsPlatform() ) {
+		} else if ( SwtUtil.isWindowsPlatform() ) {
 			hwVirtualCompare = "-enable-hax";
 		}
 		
@@ -222,7 +223,7 @@ public class DetailInfoDialog extends SkinDialog {
 			if ( 0 == i ) {
 
 				String exec = split[i].trim().toLowerCase();
-				if( SkinUtil.isWindowsPlatform() ) {
+				if( SwtUtil.isWindowsPlatform() ) {
 					if( 4 <= exec.length() ) {
 						// remove '.exe' in Windows
 						exec = exec.substring( 0, exec.length() - 4 );
@@ -339,7 +340,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 		result.put( "RAM Size", ram );
 
-		if ( SkinUtil.isLinuxPlatform() ) {
+		if ( SwtUtil.isLinuxPlatform() ) {
 			if ( StringUtil.isEmpty( sharedPath ) ) {
 				result.put( "File Sharing", "Not Supported" );
 				result.put( "File Shared Path", "None" );
