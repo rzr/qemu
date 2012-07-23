@@ -155,7 +155,7 @@ void do_key_event( int event_type, int keycode, int key_location )
 
 void do_hardkey_event( int event_type, int keycode )
 {
-    TRACE( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
+    INFO( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
 
     if ( is_suspended_state() ) {
         if ( KEY_PRESSED == event_type ) {
@@ -174,24 +174,12 @@ void do_hardkey_event( int event_type, int keycode )
         }
     }
 
-    SDL_Event event;
-    memset( &event, 0, sizeof(SDL_Event) );
-
-    event.type = SDL_USEREVENT;
-    event.user.code = SDL_USER_EVENT_CODE_HARDKEY;
-
-    // use pointer as integer
-    event.user.data1 = (void*) event_type;
-    event.user.data2 = (void*) keycode;
-
-    // see qemu_ds_refresh in maru_sdl.c
-    SDL_PushEvent( &event );
-
+    mloop_evcmd_hwkey(event_type, keycode);
 }
 
 void do_scale_event( double scale_factor )
 {
-    INFO( "do_scale_event scale_factor:%lf", scale_factor);
+    INFO("do_scale_event scale_factor:%lf\n", scale_factor);
 
     set_emul_win_scale(scale_factor);
 

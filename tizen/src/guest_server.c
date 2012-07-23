@@ -76,26 +76,39 @@ pthread_t start_guest_server( int server_port ) {
 
 }
 
-/* get_tizen_vms_sdcard_path = "/home/{USER}/tizen_vms/sdcard" */
-char* get_tizen_vms_sdcard_path(void)
+/* get_emulator_vms_sdcard_path = "/home/{USER}/tizen-sdk-data/emulator-vms/sdcard" */
+char* get_emulator_vms_sdcard_path(void)
 {
-	char tizen_vms[] = "/tizen_vms/sdcard/";
+	char *emulator_vms_sdcard_path;
 #ifndef _WIN32
+	char emulator_vms[] = "/tizen-sdk-data/emulator-vms/sdcard/";
 	char *homedir = (char*)g_getenv("HOME");
+
+        if(!homedir)
+                homedir = (char*)g_get_home_dir();
+
+        emulator_vms_sdcard_path = malloc(strlen(homedir) + sizeof emulator_vms + 1);
+        assert(emulator_vms_sdcard_path != NULL);
+        strcpy(emulator_vms_sdcard_path, homedir);
+        strcat(emulator_vms_sdcard_path, emulator_vms);
 #else
-	char *homedir = (char*)g_getenv("USERPROFILE");
+	char emulator_vms[] = "\\tizen-sdk-data\\emulator-vms\\sdcard\\";
+	HKEY hKey;
+	char strLocalAppDataPath[1024] = {0};
+	DWORD dwBufLen = 1024;
+	RegOpenKeyEx(HKEY_CURRENT_USER,
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+        0, KEY_QUERY_VALUE, &hKey);
+
+	RegQueryValueEx(hKey, "Local AppData", NULL, NULL, (LPBYTE)strLocalAppDataPath, &dwBufLen);
+        RegCloseKey(hKey);
+
+	emulator_vms_sdcard_path = malloc(strlen(strLocalAppDataPath) + sizeof emulator_vms + 1);	
+	strcpy(emulator_vms_sdcard_path, strLocalAppDataPath);
+        strcat(emulator_vms_sdcard_path, emulator_vms);
 #endif
-	char *tizen_vms_path;
-	
-	if(!homedir)
-		homedir = (char*)g_get_home_dir();
 
-	tizen_vms_path = malloc(strlen(homedir) + sizeof tizen_vms + 1);
-	assert(tizen_vms_path != NULL);
-	strcpy(tizen_vms_path, homedir);
-	strcat(tizen_vms_path, tizen_vms);
-
-	return tizen_vms_path;
+	return emulator_vms_sdcard_path;
 }
 
 static void* run_guest_server( void* args ) {
@@ -184,12 +197,12 @@ static void* run_guest_server( void* args ) {
 		} else if( atoi(ret) == 1 ) {
 			/* mount sdcard */
 			char sdcard_path[256];
-			char* vms_path = get_tizen_vms_sdcard_path(); 
+			char* vms_path = get_emulator_vms_sdcard_path(); 
 			memset(sdcard_path, '\0', sizeof(sdcard_path));
 			
 			strcpy(sdcard_path, vms_path);
 			
-			/* tizen_vms_sdcard_path + sdcard img name */
+			/* emulator_vms_sdcard_path + sdcard img name */
 			ret = strtok(NULL, token);
 			strcat(sdcard_path, ret);
 			INFO( "%s\n", sdcard_path);

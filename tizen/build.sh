@@ -2,7 +2,7 @@
 
 UNAME=`uname`
 # Build both x86 and ARM emulators by default
-CONFIGURE_SCRIPT="./qemu_configure.sh"
+CONFIGURE_SCRIPT="./emulator_configure.sh"
 
 case "$UNAME" in
 Linux)
@@ -24,13 +24,13 @@ fi
 if [ ! -z "$1" ] ; then
   case "$1" in
   x86|i386|i486|i586|i686)
-    CONFIGURE_SCRIPT="./qemu_configure_x86.sh"
+    CONFIGURE_SCRIPT="./emulator_configure_x86.sh"
   ;;
   arm)
-    CONFIGURE_SCRIPT="./qemu_configure_arm.sh"
+    CONFIGURE_SCRIPT="./emulator_configure_arm.sh"
   ;;
   all)
-    CONFIGURE_SCRIPT="./qemu_configure.sh"
+    CONFIGURE_SCRIPT="./emulator_configure.sh"
   ;;
   *)
     echo "ERROR: unknown target architecture"

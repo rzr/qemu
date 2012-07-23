@@ -49,7 +49,8 @@
 void maruskin_display_init(DisplayState *ds);
 void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
 void maruskin_sdl_resize(void);
-void maruskin_sdl_free(void);
+void maruskin_sdl_quit(void);
+
 
 DisplaySurface* get_qemu_display_surface( void );
 

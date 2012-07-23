@@ -28,6 +28,7 @@
  */
 
 
+#include "qemu-common.h"
 #include "maru_err_table.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,7 +87,7 @@ void maru_register_exit_msg(int maru_exit_index, char* additional_msg)
             len = JAVA_MAX_COMMAND_LENGTH - 1;
         }
 
-        strcpy(maru_exit_msg, additional_msg);   
+        pstrcpy(maru_exit_msg, sizeof(maru_exit_msg), additional_msg);
     }
 }
 
@@ -125,6 +126,7 @@ char* maru_convert_path(char *msg, const char *path)
 	total_len += (path_len + msg_len);
 
 	err_msg = g_malloc0(total_len * sizeof(char));
+#if 0
 	if (!err_msg) {
 		fprintf(stderr, "failed to allocate memory\n");
 		if (current_path) {
@@ -132,6 +134,7 @@ char* maru_convert_path(char *msg, const char *path)
 		}
 		return NULL;
 	}
+#endif
 
 	if (msg) {
 		snprintf(err_msg, msg_len, "%s", msg);
@@ -150,7 +153,7 @@ char* maru_convert_path(char *msg, const char *path)
 	{
 		int i;
 
-		dos_err_msg = strdup(err_msg);
+		dos_err_msg = g_strdup(err_msg);
 		if (!dos_err_msg) {
 			printf(stderr, "failed to duplicate an error message from %p\n", err_msg);
 			if (current_path) {
@@ -165,8 +168,8 @@ char* maru_convert_path(char *msg, const char *path)
 				dos_err_msg[i] = '\\';
 			}
 		}
-		strncpy(err_msg, dos_err_msg, strlen(dos_err_msg));
-		free(dos_err_msg);
+		pstrcpy(err_msg, sizeof(err_msg), dos_err_msg);
+		g_free(dos_err_msg);
 	}
 #endif
 	if (current_path) {

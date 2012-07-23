@@ -258,13 +258,11 @@ int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
 
 //virtio-gl
-#ifdef CONFIG_VIRTIO_GL
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
-int gl_acceleration_capability_check(void);
-static int enable_gl = 1;
-#else
-static int enable_gl = 0;
-#endif
+extern int gl_acceleration_capability_check(void);
+int enable_gl = 0;
+int capability_check_gl = 0;
+
 
 typedef struct FWBootEntry FWBootEntry;
 
@@ -3372,12 +3370,13 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
-#ifdef CONFIG_VIRTIO_GL
-	if (enable_gl && (gl_acceleration_capability_check () != 0)) {
-		enable_gl = 0;
-		fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
-	}
+    capability_check_gl = gl_acceleration_capability_check();
+    if (enable_gl && (capability_check_gl != 0)) {
+        enable_gl = 0;
+        fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
+    }
 
+#ifdef CONFIG_VIRTIO_GL
     if (enable_gl) {
         device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
         qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
