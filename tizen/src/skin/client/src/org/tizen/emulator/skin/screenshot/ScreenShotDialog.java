@@ -85,13 +85,13 @@ public class ScreenShotDialog {
 
 	public final static String DEFAULT_FILE_EXTENSION = "png";
 
-	public final static int RED_MASK = 0x0000FF00;
-	public final static int GREEN_MASK = 0x00FF0000;
-	public final static int BLUE_MASK = 0xFF000000;
-	public final static int COLOR_DEPTH = 32;
+	public static final int RED_MASK = 0x0000FF00;
+	public static final int GREEN_MASK = 0x00FF0000;
+	public static final int BLUE_MASK = 0xFF000000;
+	public static final int COLOR_DEPTH = 32;
 
-	public final static int CANVAS_MARGIN = 30;
-	public final static int TOOLITEM_COOLTIME = 200;
+	public static final int CANVAS_MARGIN = 30;
+	public static final int TOOLITEM_COOLTIME = 200;
 
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 

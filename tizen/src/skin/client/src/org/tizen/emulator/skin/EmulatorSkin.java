@@ -125,25 +125,26 @@ public class EmulatorSkin {
 
 	public static final String GTK_OS_CLASS = "org.eclipse.swt.internal.gtk.OS";
 	public static final String WIN32_OS_CLASS = "org.eclipse.swt.internal.win32.OS";
+	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
 	
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
-	private EmulatorConfig config;
+	protected EmulatorConfig config;
 	private Shell shell;
 	private ImageRegistry imageRegistry;
-	private Canvas lcdCanvas;
+	protected Canvas lcdCanvas;
 	private Image currentImage;
 	private Image currentKeyPressedImage;
 	private Color hoverColor;
 	private boolean isDefaultHoverColor;
 
-	private int currentScale;
-	private short currentRotationId;
-	private int currentAngle;
-	private int currentLcdWidth;
-	private int currentLcdHeight;
-	private SkinRegion currentHoverRegion;
-	private SkinRegion currentPressedRegion;
+	protected int currentScale;
+	protected short currentRotationId;
+	protected int currentAngle;
+	protected int currentLcdWidth;
+	protected int currentLcdHeight;
+	protected SkinRegion currentHoverRegion;
+	protected SkinRegion currentPressedRegion;
 
 	private int pressedMouseX;
 	private int pressedMouseY;
@@ -209,6 +210,7 @@ public class EmulatorSkin {
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 		
 		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId, false );
+		logger.info("lcdWidth : " + lcdWidth + ", lcdHeight : " + lcdHeight + ", scale : " + scale);
 
 		// sdl uses this handle id.
 		windowHandleId = getWindowHandleId();
@@ -331,7 +333,8 @@ public class EmulatorSkin {
 
 		} else if ( SwtUtil.isMacPlatform() ) {
 
-			// TODO
+			// not supported
+			windowHandleId = 0;
 
 		} else {
 			logger.severe( "Not Supported OS platform:" + SWT.getPlatform() );
@@ -929,10 +932,12 @@ public class EmulatorSkin {
 	private Field getOSField( String field ) {
 
 		String className = "";
-		if ( SwtUtil.isLinuxPlatform() ) {
+		if (SwtUtil.isLinuxPlatform()) {
 			className = GTK_OS_CLASS;
-		} else if ( SwtUtil.isWindowsPlatform() ) {
+		} else if (SwtUtil.isWindowsPlatform()) {
 			className = WIN32_OS_CLASS;
+		} else if (SwtUtil.isMacPlatform()) {
+			className = COCOA_OS_CLASS;
 		}
 
 		Field f = null;
@@ -952,10 +957,12 @@ public class EmulatorSkin {
 	private Method getOSMethod( String method, Class<?>... parameterTypes ) {
 
 		String className = "";
-		if ( SwtUtil.isLinuxPlatform() ) {
+		if (SwtUtil.isLinuxPlatform()) {
 			className = GTK_OS_CLASS;
-		} else if ( SwtUtil.isWindowsPlatform() ) {
+		} else if (SwtUtil.isWindowsPlatform()) {
 			className = WIN32_OS_CLASS;
+		} else if (SwtUtil.isMacPlatform()) {
+			className = COCOA_OS_CLASS;
 		}
 
 		Method m = null;
