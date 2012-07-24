@@ -331,7 +331,11 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
                 strcpy(socks_proxy, real_proxy);
             }
             else {
-                fprintf(stderr, "%s is wrong proxy format\n", p);
+                INFO("all protocol uses the same proxy server: %s\n", p);
+                strcpy(http_proxy, p);
+                strcpy(https_proxy, p);
+                strcpy(ftp_proxy, p);
+                strcpy(socks_proxy, p);
             }
         }
 	}
