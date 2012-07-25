@@ -29,6 +29,7 @@
 
 
 #include "maru_shm.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_shm);
@@ -47,5 +48,15 @@ void qemu_ds_shm_resize(DisplayState *ds)
 void qemu_ds_shm_refresh(DisplayState *ds)
 {
     //TODO:
+}
+
+void maruskin_shm_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+{
+    INFO("maru shm initialization = %d\n", is_resize);
+
+    if (is_resize == FALSE) { //once
+        set_emul_lcd_size(lcd_size_width, lcd_size_height);
+        set_emul_sdl_bpp(32);
+    }
 }
 

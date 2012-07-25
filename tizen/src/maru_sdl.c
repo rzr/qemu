@@ -411,7 +411,7 @@ void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_heigh
 
     INFO("maru sdl initialization = %d\n", is_resize);
 
-    if (is_resize == FALSE) {
+    if (is_resize == FALSE) { //once
         sprintf(SDL_windowhack, "%ld", window_id);
         g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
         INFO("register SDL environment variable. (SDL_WINDOWID = %s)\n", SDL_windowhack);
@@ -477,7 +477,7 @@ void maruskin_sdl_resize(void)
     SDL_PushEvent(&ev);
 }
 
-DisplaySurface* get_qemu_display_surface( void ) {
+DisplaySurface* maruskin_sdl_get_display(void) {
     return qemu_display_surface;
 }
 

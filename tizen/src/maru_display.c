@@ -44,6 +44,7 @@
 MULTI_DEBUG_CHANNEL(tizen, display);
 
 
+//TODO: interface
 void maru_display_init(DisplayState *ds)
 {
     INFO("init qemu display\n");
@@ -71,6 +72,29 @@ void maru_display_fini(void)
 {
     INFO("fini qemu display\n");
 
+#ifndef USE_SHM
+    maruskin_sdl_quit();
+#else
     //TODO:
+#endif
+}
+
+void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+{
+#ifndef USE_SHM
+    maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
+#else
+    maruskin_shm_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
+#endif
+}
+
+DisplaySurface* get_qemu_display_surface(void) {
+#ifndef USE_SHM
+    return maruskin_sdl_get_display();
+#else
+    //TODO:
+#endif
+
+    return NULL;
 }
 

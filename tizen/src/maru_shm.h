@@ -37,5 +37,6 @@
 void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h);
 void qemu_ds_shm_resize(DisplayState *ds);
 void qemu_ds_shm_refresh(DisplayState *ds);
+void maruskin_shm_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
 
 #endif /* MARU_SHM_H_ */
