@@ -62,7 +62,10 @@ endif #!CONFIG_DARWIN
 obj-y += emulator.o emul_state.o option.o maru_err_table.o
 
 # maru display
-obj-y += maru_display.o maru_shm.o maru_sdl.o sdl_rotate.o maru_finger.o
+obj-y += maru_display.o maru_shm.o
+ifndef CONFIG_DARWIN
+obj-y += maru_sdl.o sdl_rotate.o maru_finger.o
+endif
 
 # sdb
 obj-y += sdb.o

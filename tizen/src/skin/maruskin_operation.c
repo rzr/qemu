@@ -28,8 +28,11 @@
  */
 
 
+#include "maru_common.h"
+
 #ifdef CONFIG_DARWIN
-#define USE_SHM //shared memory
+//shared memory
+#define USE_SHM
 #endif
 
 #include <unistd.h>

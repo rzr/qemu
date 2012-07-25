@@ -30,6 +30,7 @@
  */
 
 
+#include "maru_common.h"
 #include <stdlib.h>
 #include <SDL.h>
 #include "maru_common.h"

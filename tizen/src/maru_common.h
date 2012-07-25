@@ -37,6 +37,7 @@
 #ifndef __MARU_COMMON_H__
 #define __MARU_COMMON_H__
 
+#include "config-host.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>

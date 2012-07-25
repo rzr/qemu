@@ -30,6 +30,7 @@
  */
 
 
+#include "maru_common.h"
 #include "emul_state.h"
 #include "debug_ch.h"
 
