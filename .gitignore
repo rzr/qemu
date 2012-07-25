@@ -83,4 +83,7 @@ tizen/src/skin/client/bin
 tizen/src/skin/client/build
 tizen/src/skin/client/emulator-skin.jar
 tizen/src/skin/client/lib
+tizen/src/skin/client/native_src/*.so
+tizen/src/skin/client/native_src/*.dynlib
+
 
