@@ -49,8 +49,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
-import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class AboutDialog extends SkinDialog {
 	
@@ -97,7 +97,7 @@ public class AboutDialog extends SkinDialog {
 		
 		Text versionText = new Text( composite, SWT.NONE );
 		String version = getValue( properties, PROP_KEY_VERSION );
-		if (SkinUtil.isWindowsPlatform()) {
+		if (SwtUtil.isWindowsPlatform()) {
 			versionText.setText("Version" + "      : " + version);
 		} else {
 			versionText.setText("Version" + "        : " + version);

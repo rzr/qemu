@@ -1,24 +1,29 @@
 <?xml version="1.0" standalone="yes"?>
-<project name="emulator-skin" basedir="." default="linux-jar">
+<project name="emulator-skin" basedir="." default="make-jar">
 
+	<condition property="isWindows">
+		<os family="windows" />
+	</condition>
+	<condition property="isLinux">
+		<os family="unix" />
+	</condition>
+	<condition property="isMac">
+		<os family="mac" />
+	</condition>
+
+	<property environment="env" />
 	<property name="jar.file" value="emulator-skin.jar" />
 	<property name="mainclass" value="org.tizen.emulator.skin.EmulatorSkinMain" />
 
 	<property name="swt.file" value="swt.jar" />
 
-	<path id="linux-classpath">
-		<fileset dir="lib/swt/gtk-linux" includes="swt.jar" />
-	</path>
-	<path id="windows-classpath">
-		<fileset dir="lib/swt/win32-win32" includes="swt.jar" />
-	</path>
-	<path id="mac-classpath">
-		<fileset dir="lib/swt/cocoa-macosx" includes="swt.jar" />
+	<path id="classpath">
+		<fileset dir="lib" includes="${swt.file}" />
 	</path>
 
 	<target name="clean">
 		<echo message="cleaning..." />
-		<delete dir="dist" />
+		<delete dir="build" />
 		<delete file="${jar.file}" />
 	</target>
 
@@ -42,34 +47,20 @@
 		</propertyfile>
 	</target>
 
-	<target name="linux-compile" depends="make-properties">
-		<echo message="compiling..." />
-        <delete dir="build" />
+	<target name="prepare-compile" depends="make-properties">
+		<echo message="prepare for compile..." />
+        	<delete dir="build" />
 		<mkdir dir="build" />
-		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
-			<classpath refid="linux-classpath" />
-		</javac>
 	</target>
 
-	<target name="windows-compile" depends="make-properties">
+	<target name="compile" depends="prepare-compile">
 		<echo message="compiling..." />
-        <delete dir="build" />
-        <mkdir dir="build" />
 		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
-			<classpath refid="windows-classpath" />
+			<classpath refid="classpath" />
 		</javac>
 	</target>
 
-	<target name="mac-compile" depends="make-properties">
-		<echo message="compiling..." />
-        <delete dir="build" />
-        <mkdir dir="build" />
-		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
-			<classpath refid="mac-classpath" />
-		</javac>
-	</target>
-
-	<target name="linux-jar" depends="linux-compile">
+	<target name="create-jar">
 		<echo message="creating jar..." />
 		<mkdir dir="build/icons" />
 		<copy todir="build/icons">
@@ -79,42 +70,63 @@
 			<fileset file="src/about.properties" />
 			<manifest>
 				<attribute name="Main-Class" value="${mainclass}" />
-				<attribute name="Class-path" value="lib/swt/gtk-linux/${swt.file}" />
+				<attribute name="Class-path" value="${swt.file}" />
 			</manifest>
 		</jar>
 		<delete dir="build" />
 	</target>
 
-	<target name="windows-jar" depends="windows-compile">
-        <echo message="creating jar..." />
-        <mkdir dir="build/icons" />
-        <copy todir="build/icons">
-            <fileset dir="resource/icons" />
-        </copy>
-		<jar jarfile="${jar.file}" basedir="build" duplicate="add">
-			<fileset file="src/about.properties" />
-			<manifest>
-				<attribute name="Main-Class" value="${mainclass}" />
-				<attribute name="Class-path" value="lib/swt/win32-win32/${swt.file}" />
-			</manifest>
-		</jar>
-		<delete dir="build" />
+	<target name="create-native-linux" if="isLinux">
+		<echo message="create native shared library on linux..." />
+		<javah classpath="build;lib/swt.jar" destdir="native_src">
+			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+		</javah>
+		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="-shared" />
+			<arg line="-c" />
+			<arg line="Share.c" />
+			<arg line="-o" />
+			<arg line="libshare.so" />
+			<arg line="-I${env.JAVA_HOME}/include" />
+			<arg line="-fPIC" />
+		</exec>
+		<delete>
+			<fileset dir="native_src" includes="**/*.h" />
+		</delete>
 	</target>
 
-	<target name="mac-jar" depends="mac-compile">
-        <echo message="creating jar..." />
-        <mkdir dir="build/icons" />
-        <copy todir="build/icons">
-            <fileset dir="resource/icons" />
-        </copy>
-		<jar jarfile="${jar.file}" basedir="build" duplicate="add">
-			<fileset file="src/about.properties" />
-			<manifest>
-				<attribute name="Main-Class" value="${mainclass}" />
-				<attribute name="Class-path" value="lib/swt/cocoa-macosx/${swt.file}" />
-			</manifest>
-		</jar>
-		<delete dir="build" />
+	<target name="create-native-mac" if="isMac">
+		<echo message="create native shared library on mac..." />
+		<javah classpath="build;lib/swt.jar" destdir="native_src">
+			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+		</javah>
+		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="-dynamiclib" />
+			<arg line="-c" />
+			<arg line="Share.c" />
+			<arg line="-o" />
+			<arg line="libshare.dylib" />
+			<arg line="-I${env.JAVA_HOME}/Headers" />
+			<arg line="-fPIC" />
+		</exec>
+		<delete>
+			<fileset dir="native_src" includes="**/*.h" />
+		</delete>
 	</target>
 
+	<target name="make-jar" depends="compile, create-native-linux, create-native-mac, create-jar" />
+
+	<!-- for dibs system... -->
+	<path id="classpath-dibs">
+		<fileset dir="${classpath.dibs}" includes="${swt.file}" />
+	</path>
+
+	<target name="compile-dibs" depends="prepare-compile">
+		<echo message="compiling..." />
+		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
+			<classpath refid="classpath-dibs" />
+		</javac>
+	</target>
+
+	<target name="make-jar-dibs" depends="compile-dibs, create-native-linux, create-native-mac, create-jar" />
 </project>

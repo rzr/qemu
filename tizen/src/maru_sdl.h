@@ -1,11 +1,11 @@
 /*
- * MARU SDL display driver
+ * SDL_WINDOWID hack
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * HyunJun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -32,24 +32,19 @@
 #define MARU_SDL_H_
 
 #include "console.h"
-
-#if 0
-#ifdef _WIN32
-#include <windows.h>
-#include <winbase.h>
-#endif
-#endif
-
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include "qemu-common.h"
 
-#define SDL_USER_EVENT_CODE_HARDKEY 1
 
-void maruskin_display_init(DisplayState *ds);
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height);
+void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h);
+void qemu_ds_sdl_resize(DisplayState *ds);
+void qemu_ds_sdl_refresh(DisplayState *ds);
+
+void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
 void maruskin_sdl_resize(void);
+void maruskin_sdl_quit(void);
 
-DisplaySurface* get_qemu_display_surface( void );
+DisplaySurface* maruskin_sdl_get_display(void);
 
 #endif /* MARU_SDL_H_ */

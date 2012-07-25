@@ -1,18 +1,29 @@
-Package: emulator
-Version:1.2.99
-OS: linux
-Build-host-os: linux
+Package: emulator-qemu-x86
+Version: 1.3.6
+OS: ubuntu-32
+Build-host-os: ubuntu-32
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Install-dependency: emulator-kernel [ linux ], emulator-manager [ linux ], emulator-dll [ linux ]
+Build-dependency: emulator-lib [ ubuntu-32]
+Install-dependency: emulator-kernel-x86 [ ubuntu-32 ], vgabios [ ubuntu-32 ]
 Source: emulator
 Description: Tizen Emulator
 
-Package: emulator
-Version:1.2.99
-OS: windows
-Build-host-os: windows
+Package: emulator-qemu-x86
+Version: 1.3.6
+OS: ubuntu-64
+Build-host-os: ubuntu-64
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
-Build-dependency: SDL-1.2.14 [ windows ], jpeg-8b [ windows ], libpng-1.4.5 [ windows ], apache-ant-1.8.3-bin [ windows ], gtk-bundle_2.16.6 [ windows ], directx-dev [ windows ]
-Install-dependency: emulator-kernel [ windows ], emulator-manager [ windows ], emulator-dll [ windows ]
+Build-dependency: emulator-lib [ ubuntu-64]
+Install-dependency: emulator-kernel-x86 [ ubuntu-64 ], vgabios [ ubuntu-64 ]
+Source: emulator
+Description: Tizen Emulator
+
+Package: emulator-qemu-x86
+Version: 1.3.6
+OS: windows-32
+Build-host-os: windows-32
+Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
+Build-dependency: SDL-1.2.14 [ windows-32 ], apache-ant-1.8.3-bin [ windows-32 ], gtk-bundle_2.16.6 [ windows-32 ], directx-dev [ windows-32 ], emulator-lib [ windows-32 ] 
+Install-dependency: emulator-kernel-x86 [ windows-32 ], vgabios [ windows-32 ]
 Source: emulator
 Description: Tizen Emulator

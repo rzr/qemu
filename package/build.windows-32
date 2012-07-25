@@ -1,0 +1,81 @@
+#!/bin/sh -xe
+# clean
+
+clean()
+{
+	prepare
+
+	cd $SRCDIR/tizen
+	if test -e "Makefile"
+	then
+		./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
+		make clean
+	fi
+	rm -rf $SRCDIR/*.zip
+	rm -rf $SRCDIR/*.tar.gz
+}
+
+#prepare
+prepare()
+{
+	if [ "$JAVA_HOME" = "" ]
+	then
+		echo "Make sure that you have installed JDK"
+        echo "and then set installed JDK/bin path into JAVA_HOME"
+        echo "as a system environment variable on your PC!!"
+		exit 1
+	fi
+
+	PYTHON_DIR=`env | grep PATH | grep Python`
+	if [ "$PYTHON_DIR" = "" ]
+	then
+		echo "Make sure that you have installed Python 2.x version"
+        echo "and then set installed Python/bin path into PATH system variable on your PC!"
+		exit 1
+	fi
+
+	
+	PURIFIED_ROOTDIR=`TEMP=\`echo "${ROOTDIR}" | cut -c-2 | sed "s/[:/]//g" | awk {'print tolower ($_)'}\`; echo \`echo "${ROOTDIR}" | sed "s/^../\/${TEMP}/"\``
+	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant-1.8.3/bin
+	export PATH
+
+	export PKG_CONFIG_PATH=$ROOTDIR/lib/pkgconfig
+	BUILD_CFLAGS=--extra-cflags=-I$ROOTDIR/include
+	BUILD_LDFLAGS=--extra-ldflags=-L$ROOTDIR/lib
+}
+
+# build
+build() 
+{
+	prepare
+
+	cd $SRCDIR/tizen
+#	./emulator_configure.sh "$BUILD_CFLAGS $BUILD_LDFLAGS"
+	make all_dibs
+	if [ -f "../i386-softmmu/qemu-system-i386.exe" ]
+	then
+		echo "BUILD SUCCESS"
+	else
+		echo "BUILD FAIL!!!"
+		exit 1;
+	fi
+}
+
+# install
+install() 
+{
+	prepare
+
+	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
+
+	mkdir -p $BIN_DIR
+
+	cd $SRCDIR/tizen
+	make install_dibs
+	mv emulator $BIN_DIR
+}
+
+[ "$1" = "clean" ] && clean
+[ "$1" = "build" ] && build
+[ "$1" = "install" ] && install
+echo "Success"

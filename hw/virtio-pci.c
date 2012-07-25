@@ -779,7 +779,7 @@ static int virtio_balloon_exit_pci(PCIDevice *pci_dev)
     return virtio_exit_pci(pci_dev);
 }
 
-#ifndef _WIN32
+#ifndef CONFIG_DARWIN
 extern VirtIODevice *virtio_gl_init(DeviceState *dev);
 static int virtio_gl_init_pci(PCIDevice *pci_dev)
 {
@@ -880,7 +880,7 @@ static PCIDeviceInfo virtio_info[] = {
         },
         .qdev.reset = virtio_pci_reset,
     },{
-#ifndef _WIN32
+#ifndef CONFIG_DARWIN
 		.qdev.name = "virtio-gl-pci",
         .qdev.alias = "virtio-gl",
 		.qdev.size = sizeof(VirtIOPCIProxy),

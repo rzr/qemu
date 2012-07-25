@@ -87,12 +87,12 @@ int gl_acceleration_capability_check (void) {
     int bufferFlags = glo_flags_get_from_glx(bufferAttributes, 0);
     int bpp = glo_flags_get_bytes_per_pixel(bufferFlags);
     int glFormat, glType;
-
+/*
     if (glo_sanity_test () != 0) {
         // test failed.
         return 1;
     }
-
+*/
     memset(datain_flip, 0, TX*TY*4);
     memset(datain, 0, TX*TY*4);
     p = datain;

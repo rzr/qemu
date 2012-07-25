@@ -35,7 +35,7 @@
 #include <wingdi.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <GL/wglext.h>
+#include "GL/wglext.h"
 
 /* In Windows, you must create a window *before* you can create a pbuffer or
  * get a context. So we create a hidden Window on startup (see glo_init/GloMain).
@@ -213,7 +213,7 @@ int glo_init(void) {
 
     glo_inited = 1;
 
-	return 0
+	return 0;
 }
 
 /* Uninitialise gloffscreen */
@@ -639,7 +639,13 @@ void *glo_getprocaddress(const char *procName) {
     opengl_exec), so all we need to do is return a nunzero value...
 
     But we also have to check for 'standard' GL function names
-    too as wgl doesn't return those either! */ 
+    too as wgl doesn't return those either! */
+	/* Caller in opengl_exec.c may query some base GL API, then call them
+	* directly. On windows, wglGetProcAddress usually return NULL in such
+	* case, then we return 1, which casue segfault when accessing (void*)1. We
+	* should call base GL API directly instead of GET_EXT_PTR + ptr_func_*.
+ 	* TODO: add LoadLibrary + GetProcAddress as call back.
+	*/ 
     if (procAddr==0) {
         const char *p = STANDARD_GL_FUNCTIONS;
         while (*p) {

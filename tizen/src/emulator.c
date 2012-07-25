@@ -30,6 +30,7 @@
  */
 
 
+#include "maru_common.h"
 #include <stdlib.h>
 #include <SDL.h>
 #include "maru_common.h"
@@ -80,6 +81,7 @@ static char** skin_argv = NULL;
 static int qemu_argc = 0;
 static char** qemu_argv = NULL;
 
+extern void maruskin_sdl_quit(void);
 void exit_emulator(void)
 {
     cleanup_multi_touch_state();
@@ -88,7 +90,7 @@ void exit_emulator(void)
     shutdown_skin_server();
     shutdown_guest_server();
 
-    SDL_Quit();
+    maruskin_sdl_quit();
 }
 
 static int check_port_bind_listen(u_int port)
@@ -129,7 +131,7 @@ static int check_port_bind_listen(u_int port)
 
 void check_shdmem(void)
 {
-#ifndef _WIN32
+#if defined(CONFIG_LINUX)
     int shm_id;
     void *shm_addr;
     u_int port;
@@ -167,7 +169,7 @@ void check_shdmem(void)
         }
     }
 
-#else /* _WIN32*/
+#elif defined(CONFIG_WIN32)
     u_int port;
     char* base_port = NULL;
     char* pBuf;
@@ -220,12 +222,14 @@ void check_shdmem(void)
         CloseHandle(hMapFile);
         free(base_port);
     }
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
 }
 
 void make_shdmem(void)
 {
-#ifndef _WIN32
+#if defined(CONFIG_LINUX)
 	int shmid; 
 	char *shared_memory;
 	shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT); 
@@ -242,7 +246,7 @@ void make_shdmem(void)
 	} 
 	sprintf(shared_memory, "%s", tizen_target_path);
 	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
-#else
+#elif defined(CONFIG_WIN32)
 	HANDLE hMapFile;
 	char* pBuf;
 	char* port_in_use;
@@ -277,6 +281,8 @@ void make_shdmem(void)
 	CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
 	free(port_in_use);
 	free(shared_memory);
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
 	return;
 }
@@ -434,9 +440,6 @@ static void system_info(void)
 {
 #define DIV 1024
 
-#ifdef __linux__
-    char lscmd[MAXLEN] = "lspci >> ";
-#endif
     char timeinfo[64] = {0, };
     struct tm *tm_time;
     struct timeval tval;
@@ -444,9 +447,7 @@ static void system_info(void)
     INFO("* SDK Version : %s\n", build_version);
     INFO("* Package %s\n", pkginfo_version);
     INFO("* User name : %s\n", g_get_real_name());
-#ifdef _WIN32
     INFO("* Host name : %s\n", g_get_host_name());
-#endif
 
     /* timestamp */
     INFO("* Build date : %s\n", build_date);
@@ -455,11 +456,13 @@ static void system_info(void)
     strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
     INFO("* Current time : %s\n", timeinfo);
 
+#ifdef CONFIG_SDL
     /* Gets the version of the dynamically linked SDL library */
     INFO("* Host sdl version : (%d, %d, %d)\n",
         SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
+#endif
 
-#if defined( _WIN32)
+#if defined(CONFIG_WIN32)
     /* Retrieves information about the current os */
     OSVERSIONINFO osvi;
     ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
@@ -475,7 +478,7 @@ static void system_info(void)
     ZeroMemory(&sysi, sizeof(SYSTEM_INFO));
 
     GetSystemInfo(&sysi);
-    INFO("* Processor type : %d, Number of processors : %d\n", sysi.dwProcessorType,  sysi.dwNumberOfProcessors);
+    INFO("* Processor type : %d, Number of processors : %d\n", sysi.dwProcessorType, sysi.dwNumberOfProcessors);
 
     MEMORYSTATUSEX memInfo;
     memInfo.dwLength = sizeof(MEMORYSTATUSEX);
@@ -483,10 +486,10 @@ static void system_info(void)
     INFO("* Total Ram : %llu kB, Free: %lld kB\n",
         memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
 
-#elif defined(__linux__)
+#elif defined(CONFIG_LINUX)
     /* depends on building */
     INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
-        LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff , LINUX_VERSION_CODE & 0xff);
+        LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff, LINUX_VERSION_CODE & 0xff);
 
      /* depends on launching */
     struct utsname host_uname_buf;
@@ -504,10 +507,16 @@ static void system_info(void)
 
     /* pci device description */
     INFO("* Pci devices :\n");
+    char lscmd[MAXLEN] = "lspci >> ";
     strcat(lscmd, logpath);
     int i = system(lscmd);
     INFO("system function command : %s, system function returned value : %d\n", lscmd, i);
+
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
+
+    INFO("\n");
 }
 
 void prepare_maru(void)
@@ -518,7 +527,7 @@ void prepare_maru(void)
 
     INFO("call construct_main_window\n");
 
-    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv );
+    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv);
 
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server( guest_server_port );

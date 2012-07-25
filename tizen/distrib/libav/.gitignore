@@ -44,3 +44,5 @@ tools/qt-faststart
 tools/trasher
 tools/trasher*.d
 version.h
+i386
+x86_64

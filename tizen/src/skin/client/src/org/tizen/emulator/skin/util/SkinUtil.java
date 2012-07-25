@@ -67,24 +67,12 @@ public class SkinUtil {
 	private SkinUtil() {
 	}
 
-	public static boolean isLinuxPlatform() {
-		return "gtk".equalsIgnoreCase( SWT.getPlatform() );
-	}
-
-	public static boolean isWindowsPlatform() {
-		return "win32".equalsIgnoreCase( SWT.getPlatform() );
-	}
-
-	public static boolean isMacPlatform() {
-		return "cocoa".equalsIgnoreCase( SWT.getPlatform() );
-	}
-
 	public static String getVmName( EmulatorConfig config ) {
 		
 		String vmPath = config.getArg( ArgsConstants.VM_PATH );
 
 		String regex = "";
-		if ( isWindowsPlatform() ) {
+		if ( SwtUtil.isWindowsPlatform() ) {
 			regex = "\\" + File.separator;
 		} else {
 			regex = File.separator;
@@ -112,10 +100,10 @@ public class SkinUtil {
 	public static String getSdbPath() {
 		String sdbPath = null;
 
-		if (SkinUtil.isLinuxPlatform()) {
-			sdbPath = "./../../SDK/sdb/sdb";
-		} else if (SkinUtil.isWindowsPlatform()) {
-			sdbPath = ".\\..\\..\\SDK\\sdb\\sdb.exe";
+		if (SwtUtil.isWindowsPlatform()) {
+			sdbPath = ".\\..\\..\\sdb.exe";
+		} else {
+			sdbPath = "./../../sdb";
 		}
 
 		return sdbPath;

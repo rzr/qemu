@@ -1343,6 +1343,10 @@ static STDMETHODIMP SetDefaultValues(void)
                 DeleteMediaType(pmtConfig);
             }
         }
+        if (iFormat >= iCount) {
+            ERR("Maybe connected webcam does not support %ld x %ld resolution.\n", g_dwWidth, g_dwHeight);
+            hr = E_FAIL;
+        }
     }
     pSConfig->lpVtbl->Release(pSConfig);
     return hr;
@@ -1375,6 +1379,9 @@ static STDMETHODIMP SetResolution(LONG width, LONG height)
             pvi->AvgTimePerFrame = g_dwAvgInterval;
             pvi->bmiHeader.biSizeImage = ((width * pvi->bmiHeader.biBitCount) >> 3 ) * height;
             hr = vsc->lpVtbl->SetFormat(vsc, pmt);
+            if (hr != S_OK) {
+                ERR("failed to set the resolution.(w:%ld, h:%ld), Maybe connected webcam does not support the resolution.\n", width, height);
+            }
         }
         DeleteMediaType(pmt);
     }
@@ -1448,6 +1455,14 @@ void marucam_device_open(MaruCamState* state)
     MaruCamParam *param = state->param;
     param->top = 0;
 
+    hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr)) {
+        ERR("CoInitailizeEx\n");
+        ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
+        param->errCode = EINVAL;
+        return;
+    }
+
     hr = GraphBuilder_Init();
     if (FAILED(hr)) {
         ERR("GraphBuilder_Init\n");
@@ -1481,12 +1496,15 @@ void marucam_device_open(MaruCamState* state)
         ERR("SetDefaultValues\n");
         goto error_failed;
     }
+    cur_frame_idx = 0;
+    cur_fmt_idx = 0;
 
     INFO("Open successfully!!!\n");
     return;
 
 error_failed:
     CloseInterfaces();
+    CoUninitialize();
     param->errCode = EINVAL;
     ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
 }
@@ -1498,6 +1516,7 @@ void marucam_device_close(MaruCamState* state)
     param->top = 0;
 
     CloseInterfaces();
+    CoUninitialize();
     INFO("Close successfully!!!\n");
 }
 

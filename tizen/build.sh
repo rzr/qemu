@@ -1,4 +1,4 @@
 #!/bin/sh -xe
 
-./qemu_configure.sh
-make && make install
+./emulator_configure.sh
+make -j12 install
