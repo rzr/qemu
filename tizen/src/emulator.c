@@ -32,8 +32,9 @@
 
 #include "maru_common.h"
 #include <stdlib.h>
+#ifdef CONFIG_SDL
 #include <SDL.h>
-#include "maru_common.h"
+#endif
 #include "emulator.h"
 #include "sdb.h"
 #include "string.h"
@@ -49,15 +50,14 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
-#if defined( _WIN32)
+#if defined(CONFIG_WIN32)
 #include <windows.h>
-#elif defined(__linux__)
+#elif defined(CONFIG_LINUX)
 #include <linux/version.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
 #include <sys/ipc.h>  
 #include <sys/shm.h>
-
 #endif
 
 #include "mloop_event.h"
@@ -81,16 +81,14 @@ static char** skin_argv = NULL;
 static int qemu_argc = 0;
 static char** qemu_argv = NULL;
 
-extern void maruskin_sdl_quit(void);
+extern void maru_display_fini(void);
 void exit_emulator(void)
 {
-    cleanup_multi_touch_state();
-
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
 
-    maruskin_sdl_quit();
+    maru_display_fini();
 }
 
 static int check_port_bind_listen(u_int port)
@@ -119,7 +117,7 @@ static int check_port_bind_listen(u_int port)
         INFO( "check port(%d) bind listen  ok \n", port);
     }
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     closesocket(s);
 #else
     close(s);
@@ -393,7 +391,7 @@ void set_image_and_log_path(char* qemu_argv)
 
     strcpy(logpath, tizen_target_path);
     strcat(logpath, LOGS_SUFFIX);
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     if(access(g_win32_locale_filename_from_utf8(logpath), R_OK) != 0) {
        g_mkdir(g_win32_locale_filename_from_utf8(logpath), 0755); 
     }
