@@ -456,6 +456,7 @@ void maruskin_sdl_quit(void)
     /* remove multi-touch finger points */
     get_emul_multi_touch_state()->multitouch_enable = 0;
     clear_finger_slot();
+    cleanup_multi_touch_state();
 
     if (sdl_opengl == 1) {
         glDeleteTextures(1, &texture);

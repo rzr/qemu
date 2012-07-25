@@ -28,6 +28,7 @@
  */
 
 
+#include "maru_common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,12 +40,12 @@
 #include "sdb.h"
 #include "debug_ch.h"
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
 #include "maru_err_table.h"
 #include <windows.h>
 #endif
 
-MULTI_DEBUG_CHANNEL(qemu, maruskin_client);
+MULTI_DEBUG_CHANNEL(qemu, skin_client);
 
 
 #define SKIN_SERVER_READY_TIME 3 // second
@@ -106,7 +107,7 @@ static void* run_skin_client(void* arg)
         argv );
     INFO( "command for swt : %s\n", cmd );
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     //WinExec( cmd, SW_SHOW );
     {
         STARTUPINFO sti = { 0 };
@@ -164,7 +165,7 @@ static void* run_skin_client(void* arg)
         }
     }
 
-#else //ifndef _WIN32
+#else //ifndef CONFIG_WIN32
     int ret = system(cmd);
 
     if (ret == 127) {
@@ -206,7 +207,7 @@ int start_skin_client(int argc, char* argv[])
         } else {
             count++;
             INFO( "sleep for ready. count:%d\n", count );
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
         Sleep( SKIN_SERVER_SLEEP_TIME );
 #else
         usleep( 1000 * SKIN_SERVER_SLEEP_TIME );
@@ -249,7 +250,7 @@ int start_simple_client(char* msg) {
     snprintf(cmd, len, "%s %s %s %s=\"%s\"", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, JAVA_SIMPLEMODE_OPTION, msg);
     INFO("command for swt : %s\n", cmd);
 
-#ifdef __WIN32
+#ifdef CONFIG_WIN32
     ret = WinExec(cmd, SW_SHOW);
 #else
     ret = system(cmd);
