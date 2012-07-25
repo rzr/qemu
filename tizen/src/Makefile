@@ -62,6 +62,8 @@ ifdef CONFIG_WIN32
 else
 	
 endif
+
+ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp -dpr ../license $(EMUL_DIR)
 	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
@@ -70,6 +72,16 @@ endif
 	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -dpr skin/client/skins $(EMUL_DIR)
+else
+	cp ../../qemu-img $(EMUL_DIR)/bin
+	cp -pPR ../license $(EMUL_DIR)
+	cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
+	cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
+	cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
+	cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
+	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
+	cp -pPR skin/client/skins $(EMUL_DIR)
+endif
 
 # for dibs system...
 all_dibs: qemu skin_client_dibs
@@ -87,6 +99,8 @@ ifdef CONFIG_WIN32
 else
 	
 endif
+
+ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp -dpr ../license $(EMUL_DIR)
 	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
@@ -94,4 +108,12 @@ endif
 	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
 	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
 	cp -dpr skin/client/skins $(EMUL_DIR)
-
+else
+	cp ../../qemu-img $(EMUL_DIR)/bin
+	cp -pPR ../license $(EMUL_DIR)
+	cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
+	cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
+	cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
+	cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
+	cp -pPR skin/client/skins $(EMUL_DIR)
+endif

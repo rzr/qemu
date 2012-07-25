@@ -28,10 +28,18 @@
  */
 
 
+#ifdef CONFIG_DARWIN
+#define USE_SHM //shared memory
+#endif
+
 #include "maru_display.h"
 #include "debug_ch.h"
+
+#ifndef USE_SHM
 #include "maru_sdl.h"
+#else
 #include "maru_shm.h"
+#endif
 
 MULTI_DEBUG_CHANNEL(tizen, display);
 
@@ -44,7 +52,7 @@ void maru_display_init(DisplayState *ds)
     DisplayChangeListener *dcl;
 
     dcl = g_malloc0(sizeof(DisplayChangeListener));
-#ifndef CONFIG_DARWING
+#ifndef USE_SHM
     /* sdl library */
     dcl->dpy_update = qemu_ds_sdl_update;
     dcl->dpy_resize = qemu_ds_sdl_resize;

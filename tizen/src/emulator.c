@@ -130,7 +130,7 @@ static int check_port_bind_listen(u_int port)
 
 void check_shdmem(void)
 {
-#ifndef CONFIG_WIN32
+#if defined(CONFIG_LINUX)
     int shm_id;
     void *shm_addr;
     u_int port;
@@ -168,7 +168,7 @@ void check_shdmem(void)
         }
     }
 
-#else /* _WIN32*/
+#elif defined(CONFIG_WIN32)
     u_int port;
     char* base_port = NULL;
     char* pBuf;
@@ -221,12 +221,14 @@ void check_shdmem(void)
         CloseHandle(hMapFile);
         free(base_port);
     }
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
 }
 
 void make_shdmem(void)
 {
-#ifndef _WIN32
+#if defined(CONFIG_LINUX)
 	int shmid; 
 	char *shared_memory;
 	shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT); 
@@ -243,7 +245,7 @@ void make_shdmem(void)
 	} 
 	sprintf(shared_memory, "%s", tizen_target_path);
 	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
-#else
+#elif defined(CONFIG_WIN32)
 	HANDLE hMapFile;
 	char* pBuf;
 	char* port_in_use;
@@ -278,6 +280,8 @@ void make_shdmem(void)
 	CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
 	free(port_in_use);
 	free(shared_memory);
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
 	return;
 }
@@ -451,9 +455,11 @@ static void system_info(void)
     strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
     INFO("* Current time : %s\n", timeinfo);
 
+#ifdef CONFIG_SDL
     /* Gets the version of the dynamically linked SDL library */
     INFO("* Host sdl version : (%d, %d, %d)\n",
         SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
+#endif
 
 #if defined(CONFIG_WIN32)
     /* Retrieves information about the current os */

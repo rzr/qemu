@@ -251,12 +251,14 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         pc_pci_device_init(pci_bus);
     }
 
-// maru specialized device init...
+#ifndef CONFIG_DARWIN
+    // maru specialized device init...
     if (pci_enabled) {
 		maru_camera_pci_init(pci_bus);
 	//tizen_ac97_init(pci_bus);
 		codec_init(pci_bus);        
     }
+#endif
 }
 
 static void maru_arm_machine_init(ram_addr_t ram_size,
