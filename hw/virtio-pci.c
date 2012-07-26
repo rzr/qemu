@@ -14,9 +14,6 @@
  */
 
 
-#ifdef CONFIG_MARU
-#include "config-host.h"
-#endif
 #include <inttypes.h>
 
 #include "virtio.h"
