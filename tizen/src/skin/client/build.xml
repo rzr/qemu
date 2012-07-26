@@ -76,7 +76,7 @@
 		<delete dir="build" />
 	</target>
 
-	<target name="create-native-linux" if="isLinux">
+	<target name="create-native-linux" if="isLinux" unless="isMac">
 		<echo message="create native shared library on linux..." />
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
 			<class name="org.tizen.emulator.skin.EmulatorSkin" />
