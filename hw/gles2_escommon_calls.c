@@ -309,7 +309,7 @@ GLES2_CB(glCompressedTexImage2D)
 
     char *pixels = NULL;
     if (imageSize > 0 && data) { 
-        char* pixels = malloc(imageSize);
+        pixels = malloc(imageSize);
         gles2_transfer(s, data, imageSize, pixels, 0);
     }
     GLES2_BARRIER_ARG_NORET;
