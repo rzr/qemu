@@ -129,10 +129,9 @@
 /* I2S */
 #define EXYNOS4210_I2S0_BASE_ADDR           0x03830000
 
-/* VirtIO BLK */
-#define EXYNOS4210_VIRTIO_BLK_BASE_ADDR     0x10AD0000
-/* VirtIO NET */
-#define EXYNOS4210_VIRTIO_NET_BASE_ADDR     0x10AC0000
+/* VirtIO MMIO */
+#define EXYNOS4210_VIRTIO_MMIO0_BASE_ADDR   0x10AD0000
+#define EXYNOS4210_VIRTIO_MMIO1_BASE_ADDR   0x10AC0000
 
 /* pl050 ps/2 interface */
 #define EXYNOS4210_PL050_BASE_ADDR          0x12E30000
@@ -429,9 +428,12 @@ Exynos4210State *maru_arm_soc_init(MemoryRegion *system_mem,
                                  EXYNOS4210_I2S0_BASE_ADDR,
                                  s->irqs.ext_gic_irq[97]);
 
-    sysbus_create_simple(VIRTIO_MMIO_TRANSPORT, EXYNOS4210_VIRTIO_BLK_BASE_ADDR,
+    sysbus_create_simple(VIRTIO_MMIO_TRANSPORT,
+            EXYNOS4210_VIRTIO_MMIO0_BASE_ADDR,
             s->irq_table[exynos4210_get_irq(37, 3)]);
-    sysbus_create_simple(VIRTIO_MMIO_TRANSPORT, EXYNOS4210_VIRTIO_NET_BASE_ADDR,
+
+    sysbus_create_simple(VIRTIO_MMIO_TRANSPORT,
+            EXYNOS4210_VIRTIO_MMIO1_BASE_ADDR,
             s->irq_table[exynos4210_get_irq(37, 2)]);
 
     /* PL050 PS/2 if keyboard */
