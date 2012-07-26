@@ -65,7 +65,7 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
     tfr->nsections = 0;
     tfr->sections = 0;
 
-#if (CONFIG_DEBUG_GLES == 1)
+#ifdef CONFIG_DEBUG_GLES
     target_ulong first_page = TARGET_PAGE(va);
 #endif // CONFIG_DEBUG_GLES == 1
 
@@ -83,7 +83,7 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
         {
             return 0;
         }
-#if (CONFIG_DEBUG_GLES == 1)
+#ifdef CONFIG_DEBUG_GLES
         target_ulong end_pa = start_pa;
 #endif // CONFIG_DEBUG_GLES == 1
 
@@ -104,7 +104,7 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
             }
 
             end_page = next_page;
-#if (CONFIG_DEBUG_GLES == 1)
+#ifdef CONFIG_DEBUG_GLES
             end_pa = next_pa;
 #endif // CONFIG_DEBUG_GLES == 1
         }
@@ -175,7 +175,7 @@ void gles2_transfer_free(gles2_CompiledTransfer* tfr)
 int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
     void* data, int access_type)
 {
-#if (CONFIG_DEBUG_GLES == 1)
+#ifdef CONFIG_DEBUG_GLES
     target_ulong first_page = TARGET_PAGE(va);
 #endif // CONFIG_DEBUG_GLES == 1
 
@@ -193,7 +193,7 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
         {
             return 0;
         }
-#if (CONFIG_DEBUG_GLES == 1)
+#ifdef CONFIG_DEBUG_GLES
         target_ulong end_pa = start_pa;
 #endif // CONFIG_DEBUG_GLES == 1
 
@@ -214,7 +214,7 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
             }
 
             end_page = next_page;
-#if (CONFIG_DEBUG_GLES == 1)
+#ifdef CONFIG_DEBUG_GLES
             end_pa = next_pa;
 #endif // CONFIG_DEBUG_GLES == 1
         }
