@@ -46,10 +46,13 @@
 #include "maruskin_operation.h"
 #include "qemu-thread.h"
 #include "emul_state.h"
-#include "maru_sdl.h"
 #include "maruskin_client.h"
 #include "emulator.h"
-#include "debug_ch.h"
+
+#ifndef USE_SHM
+#include "maru_sdl.h"
+#endif
+
 #ifdef CONFIG_WIN32
 #include <windows.h>
 #include <winsock2.h>
@@ -60,7 +63,10 @@
 #include <sys/socket.h>
 #endif
 
+#include "debug_ch.h"
+
 MULTI_DEBUG_CHANNEL(qemu, skin_server);
+
 
 #define MAX_REQ_ID 0x7fffffff
 #define RECV_BUF_SIZE 32
