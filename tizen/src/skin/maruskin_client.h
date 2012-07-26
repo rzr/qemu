@@ -27,8 +27,11 @@
  *
  */
 
+
 #ifndef MARUSKIN_CLIENT_H_
 #define MARUSKIN_CLIENT_H_
+
+#include "../maru_common.h"
 
 #define JAVA_MAX_COMMAND_LENGTH 512
 

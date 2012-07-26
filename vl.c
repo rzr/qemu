@@ -263,7 +263,7 @@ int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
 
 //virtio-gl
-#ifndef CONFIG_DARWIN
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 extern int gl_acceleration_capability_check (void);
 int enable_gl = 0;
 int capability_check_gl = 0;
@@ -1792,7 +1792,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
-#ifndef CONFIG_DARWIN
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 	// virtio-gl pci device
 	if (!enable_gl) {
 		// ignore virtio-gl-pci device, even if users set it in option.
@@ -2967,7 +2967,7 @@ fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
 			case QEMU_OPTION_enable_gl:
-#ifndef CONFIG_DARWIN
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 				enable_gl = 1;
 #endif
 				break;
@@ -3223,7 +3223,7 @@ fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
     }
     loc_set_none();
 
-#ifndef CONFIG_DARWIN
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
     capability_check_gl = gl_acceleration_capability_check();
     if (enable_gl && (capability_check_gl != 0)) {
         enable_gl = 0;
