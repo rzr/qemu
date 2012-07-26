@@ -69,7 +69,14 @@ public class EmulatorSkinMain {
 	public static final String DBI_FILE_NAME = "default.dbi";
 
 	private static Logger logger;
-	
+
+	static {
+		/* shared memory */
+		if (SwtUtil.isMacPlatform()) {
+		    System.loadLibrary("shared");
+		}
+	 }
+
 	/**
 	 * @param args
 	 */
