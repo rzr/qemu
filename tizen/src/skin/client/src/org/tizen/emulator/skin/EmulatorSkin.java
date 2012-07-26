@@ -306,39 +306,55 @@ public class EmulatorSkin {
 
 		long windowHandleId = 0;
 
-		if ( SwtUtil.isLinuxPlatform() ) {
+		/* org.eclipse.swt.widgets.Widget */
+		if (SwtUtil.isLinuxPlatform()) {
 
 			try {
-				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
-				windowHandleId = field.getLong( lcdCanvas );
-				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
-			} catch ( IllegalArgumentException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+				Field field = lcdCanvas.getClass().getField("embeddedHandle");
+				windowHandleId = field.getLong(lcdCanvas);
+				logger.info("lcdCanvas.embeddedHandle:" + windowHandleId);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
-			} catch ( IllegalAccessException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (IllegalAccessException e ) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
-			} catch ( SecurityException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (SecurityException e ) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
-			} catch ( NoSuchFieldException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
 			}
 
-		} else if ( SwtUtil.isWindowsPlatform() ) {
+		} else if (SwtUtil.isWindowsPlatform()) {
 
-			logger.info( "lcdCanvas.handle:" + lcdCanvas.handle );
-			windowHandleId = lcdCanvas.handle;
+			try {
+				Field field = lcdCanvas.getClass().getField("handle");
+				windowHandleId = field.getLong( lcdCanvas );
+				logger.info("lcdCanvas.handle:" + windowHandleId);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (IllegalAccessException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (SecurityException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			}
 
-		} else if ( SwtUtil.isMacPlatform() ) {
+		} else if (SwtUtil.isMacPlatform()) {
 
 			// not supported
 			windowHandleId = 0;
 
 		} else {
-			logger.severe( "Not Supported OS platform:" + SWT.getPlatform() );
-			System.exit( -1 );
+			logger.severe("Not Supported OS platform:" + SWT.getPlatform());
+			System.exit(-1);
 		}
 
 		return windowHandleId;
