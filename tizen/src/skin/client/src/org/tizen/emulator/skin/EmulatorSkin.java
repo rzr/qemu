@@ -331,7 +331,7 @@ public class EmulatorSkin {
 
 			try {
 				Field field = lcdCanvas.getClass().getField("handle");
-				windowHandleId = field.getLong( lcdCanvas );
+				windowHandleId = field.getLong(lcdCanvas);
 				logger.info("lcdCanvas.handle:" + windowHandleId);
 			} catch (IllegalArgumentException e) {
 				logger.log(Level.SEVERE, e.getMessage(), e);
@@ -1294,7 +1294,27 @@ public class EmulatorSkin {
 			Method m = getOSMethod( "SetWindowPos", int.class, int.class, int.class, int.class, int.class,
 					int.class, int.class );
 
-			invokeOSMethod( m, shell.handle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
+			/* org.eclipse.swt.widgets.Shell */
+			int shellHandle = 0;
+			try {
+				Field field = shell.getClass().getField("handle");
+				shellHandle = field.getInt(shell);
+				logger.info("shell.handle:" + shellHandle);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (IllegalAccessException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (SecurityException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			}
+
+			invokeOSMethod( m, shellHandle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
 		} else if( SwtUtil.isMacPlatform() ) {
 			//TODO:
 		}
