@@ -72,11 +72,7 @@
 // Return the page offset part of address.
 #define TARGET_OFFSET(addr) ((addr) & (TARGET_PAGE_SIZE - 1))
 
-#ifndef GLES2_DEBUG
-#   define GLES2_DEBUG 0
-#endif
-
-#if(GLES2_DEBUG == 1)
+#ifdef CONFIG_DEBUG_GLES
 #   define GLES2_DEBUG_ARGS 1
 #   define GLES2_TRACING 1
 #   define GLES2_PRINT(format, args...) \
@@ -85,7 +81,7 @@
 #   define GLES2_DEBUG_ARGS 0
 #   define GLES2_PRINT(format, args...) (void)0
 #   define GLES2_TRACING 0
-#endif // GLES2_DEBUG != 1
+#endif // CONFIG_DEBUG_GLES != 1
 
 #if(GLES2_TRACING == 1)
 #   define GLES2_TRACE(format, args...) \
@@ -253,7 +249,7 @@ struct gles2_State
     pthread_mutex_t m;
 };
 
-#if(GLES2_DEBUG==1)
+#ifdef CONFIG_DEBUG_GLES
 unsigned int gles20_glGetError(void);
 #endif
 

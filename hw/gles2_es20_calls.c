@@ -183,7 +183,7 @@ static unsigned gles2_GetCount(TGLenum pname)
 
 #include "gles2_escommon_calls.c"
 
-#if(GLES2_DEBUG==1)
+#ifdef CONFIG_DEBUG_GLES
 unsigned int gles20_glGetError(void)
 {
     return hgl.glGetError();
@@ -587,11 +587,11 @@ GLES2_CB(glShaderSource)
     GLES2_BARRIER_ARG_NORET;
 
     GLES2_PRINT("shader %d source:\n", shader);
-    #if(GLES2_DEBUG == 1)
+    #ifdef CONFIG_DEBUG_GLES
     for(i = 0; i < count; ++i) {
         fprintf(stderr, "%.*s", length_fgl[i], string_fgl[i]);
     }
-    #endif // GLES2_DEBUG == 1
+    #endif // CONFIG_DEBUG_GLES == 1
     GLES2_PRINT("\n--END--");
 
     hgl.glShaderSource(shader, (GLsizei)count,

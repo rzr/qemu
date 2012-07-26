@@ -173,7 +173,7 @@ void* gles2_client_worker(void *opaque)
             GLES2_TRACE("WORKER(%d): Calling function %s (%p)...\n",
                         client->nr, client->call->name, client->call);
             client->call->callback(client->s, &d, client);
-#if(GLES2_DEBUG == 1)
+#ifdef CONFIG_DEBUG_GLES
             /*if (client->call->name[0] == 'g') {
                 unsigned int error = gles20_glGetError();
                 if (error) {
@@ -181,7 +181,7 @@ void* gles2_client_worker(void *opaque)
                             error, client->call->name);
                 }
             }*/
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
             GLES2_PRINT("\tWORKER(%d): Done.\n", client->nr);
             client->prev_call = client->call;
             client->state = gles2_ClientState_done;

@@ -65,9 +65,9 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
     tfr->nsections = 0;
     tfr->sections = 0;
 
-#if (GLES2_DEBUG == 1)
+#if (CONFIG_DEBUG_GLES == 1)
     target_ulong first_page = TARGET_PAGE(va);
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
     target_ulong last_page = TARGET_PAGE(va + len - 1);
     target_ulong start_addr = va;
@@ -83,9 +83,9 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
         {
             return 0;
         }
-#if (GLES2_DEBUG == 1)
+#if (CONFIG_DEBUG_GLES == 1)
         target_ulong end_pa = start_pa;
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
         // Solve length of continuous section.
         target_ulong end_page = start_page;
@@ -104,9 +104,9 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
             }
 
             end_page = next_page;
-#if (GLES2_DEBUG == 1)
+#if (CONFIG_DEBUG_GLES == 1)
             end_pa = next_pa;
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
         }
 
         unsigned id = tfr->nsections++;
@@ -175,9 +175,9 @@ void gles2_transfer_free(gles2_CompiledTransfer* tfr)
 int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
     void* data, int access_type)
 {
-#if (GLES2_DEBUG == 1)
+#if (CONFIG_DEBUG_GLES == 1)
     target_ulong first_page = TARGET_PAGE(va);
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
     target_ulong last_page = TARGET_PAGE(va + len - 1);
     target_ulong start_addr = va;
@@ -193,9 +193,9 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
         {
             return 0;
         }
-#if (GLES2_DEBUG == 1)
+#if (CONFIG_DEBUG_GLES == 1)
         target_ulong end_pa = start_pa;
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
         // Solve length of continuous section.
         target_ulong end_page = start_page;
@@ -214,9 +214,9 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
             }
 
             end_page = next_page;
-#if (GLES2_DEBUG == 1)
+#if (CONFIG_DEBUG_GLES == 1)
             end_pa = next_pa;
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
         }
 
         GLES2_PRINT("\tContinuous from 0x%x to 0x%x (0x%x to 0x%x).\n",
@@ -433,13 +433,13 @@ uint32_t gles2_handle_find(gles2_State *s, void* data)
 
 void* gles2_handle_get(gles2_State *s, uint32_t i)
 {
-#if(GLES2_DEBUG == 1)
+#ifdef CONFIG_DEBUG_GLES
     if(i && (i & ~GLES2_HANDLE_MASK) != GLES2_HANDLE_BASE)
     {
         GLES2_PRINT("ERROR: Invalid handle %x!\n", i);
         exit(1);
     }
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
     void* data = i ? s->handles[i & GLES2_HANDLE_MASK] : NULL;
 
