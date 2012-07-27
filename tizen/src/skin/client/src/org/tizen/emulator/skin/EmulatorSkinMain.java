@@ -73,7 +73,7 @@ public class EmulatorSkinMain {
 	static {
 		/* shared memory */
 		if (SwtUtil.isMacPlatform()) {
-		    System.loadLibrary("shared");
+		    System.loadLibrary("share");
 		}
 	 }
 
