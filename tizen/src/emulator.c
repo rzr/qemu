@@ -91,42 +91,6 @@ void exit_emulator(void)
     maru_display_fini();
 }
 
-static int check_port_bind_listen(u_int port)
-{
-    struct sockaddr_in addr;
-    int s, opt = 1;
-    int ret = -1;
-    socklen_t addrlen = sizeof(addr);
-    memset(&addr, 0, addrlen);
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-
-    if (((s = socket(AF_INET,SOCK_STREAM,0)) < 0) ||
-            (setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
-            (bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
-            (listen(s,1) < 0)) {
-
-        /* fail */
-        ret = -1;
-        ERR( "check port(%d) bind listen  fail \n", port);
-    }else{
-        /*fsucess*/
-        ret = 1;
-        INFO( "check port(%d) bind listen  ok \n", port);
-    }
-
-#ifdef CONFIG_WIN32
-    closesocket(s);
-#else
-    close(s);
-#endif
-
-    return ret;
-}
-
-
 void check_shdmem(void)
 {
 #if defined(CONFIG_LINUX)
@@ -195,18 +159,10 @@ void check_shdmem(void)
             {
                 ERR("Could not map view of file (%d).\n", GetLastError());
                 CloseHandle(hMapFile);
-                return -1;
             }
 
             if(strcmp(pBuf, tizen_target_path) == 0)
             {
-                if(check_port_bind_listen(port+1) > 0)
-                {
-                    UnmapViewOfFile(pBuf);
-                    CloseHandle(hMapFile);
-                    continue;
-                }
-
                 maru_register_exit_msg(MARU_EXIT_UNKNOWN, "Can not execute this VM.\nThe same name is running now.");
                 UnmapViewOfFile(pBuf);
                 CloseHandle(hMapFile);
@@ -521,8 +477,6 @@ void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
 
-    sdb_setup();
-
     INFO("call construct_main_window\n");
 
     construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv);
@@ -548,6 +502,7 @@ int main(int argc, char* argv[])
     
     check_shdmem();
     make_shdmem();
+    sdb_setup();
 
     system_info();
 
