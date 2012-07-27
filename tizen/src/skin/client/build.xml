@@ -79,7 +79,7 @@
 	<target name="create-native-linux" if="isLinux" unless="isMac">
 		<echo message="create native shared library on linux..." />
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
-			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-shared" />
@@ -98,15 +98,14 @@
 	<target name="create-native-mac" if="isMac">
 		<echo message="create native shared library on mac..." />
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
-			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-dynamiclib" />
-			<arg line="-c" />
 			<arg line="Share.c" />
 			<arg line="-o" />
 			<arg line="libshare.dylib" />
-			<arg line="-I${env.JAVA_HOME}/Headers" />
+			<arg line="-I${env.JAVA_HOME}/../Headers" />
 			<arg line="-fPIC" />
 		</exec>
 		<delete>

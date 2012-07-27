@@ -81,6 +81,7 @@ else
 	cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -pPR skin/client/skins $(EMUL_DIR)
+	cp -pPR skin/client/native_src/libshare.dylib $(EMUL_DIR)/bin
 endif
 
 # for dibs system...
@@ -116,4 +117,5 @@ else
 	cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
 	cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
 	cp -pPR skin/client/skins $(EMUL_DIR)
+	cp -pPR skin/client/native_src/libshare.dylib $(EMUL_DIR)/bin
 endif

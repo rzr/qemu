@@ -5,14 +5,14 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include "org_tizen_emulator_skin_EmulatorSkin.h"
+#include "org_tizen_emulator_skin_EmulatorShmSkin.h"
 
 
 void *shared_memory = (void *)0;
 int shmid;
 
 
-JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorSkin_shmget
+JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
   (JNIEnv *env, jobject obj, jint vga_ram_size)
 {
     int mykey = getuid();
@@ -33,7 +33,7 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorSkin_shmget
     return 0;
 }
 
-JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorSkin_shmdt
+JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
   (JNIEnv *env, jobject obj)
 {
     /* Lastly, the shared memory is detached */
@@ -44,7 +44,7 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorSkin_shmdt
     return 0;
 }
 
-JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorSkin_getPixels
+JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
   (JNIEnv *env, jobject obj, jintArray array)
 {
     int i = 0;
