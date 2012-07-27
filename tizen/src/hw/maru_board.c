@@ -241,7 +241,11 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         }
         smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt, first_cpu, 1);
         /* TODO: Populate SPD eeprom data.  */
+#if defined(__x86_64__)
+        smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
+#else
         smbus = maru_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
+#endif
                               gsi[9], *cmos_s3, *smi_irq,
                               kvm_enabled());
         smbus_eeprom_init(smbus, 8, NULL, 0);
