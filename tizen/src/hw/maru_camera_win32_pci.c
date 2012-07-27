@@ -1008,6 +1008,7 @@ static struct marucam_qctrl qctrl_tbl[] = {
 
 static MaruCamState *g_state = NULL;
 
+static uint32_t ready_count = 0;
 static uint32_t cur_fmt_idx = 0;
 static uint32_t cur_frame_idx = 0;
 
@@ -1079,10 +1080,17 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
     }
     index = !index;
 
-    if (g_state->req_frame) {
-		mloop_evcmd_raise_intr(g_state->dev.irq[2]);
-		g_state->req_frame = 0;
+    qemu_mutex_lock(&g_state->thread_mutex);
+    if (ready_count >= 4) {
+        if (g_state->req_frame) {
+            g_state->req_frame = 0; // clear request
+            g_state->isr |= 0x01; // set a flag raising a interrupt.
+            mloop_evcmd_raise_intr(g_state->dev.irq[2]);
+        }
+    } else {
+        ++ready_count; // skip a frame cause first some frame are distorted.
     }
+    qemu_mutex_unlock(&g_state->thread_mutex);
     return S_OK;
 }
 
@@ -1545,6 +1553,7 @@ void marucam_device_start_preview(MaruCamState* state)
 
     qemu_mutex_lock(&state->thread_mutex);
     state->streamon = 1;
+    ready_count = 0;
     qemu_mutex_unlock(&state->thread_mutex);
 
     width = supported_dst_frames[cur_frame_idx].width;
