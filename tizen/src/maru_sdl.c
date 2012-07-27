@@ -198,7 +198,6 @@ static void qemu_update(void)
     if (sdl_alteration == 1) {
         sdl_alteration = 0;
         _sdl_init();
-        return;
     }
 
     if (surface_qemu != NULL) {
