@@ -284,6 +284,7 @@ void sdb_setup(void)
 	int   success   = 0;
 	uint32_t  guest_ip;
 	char buf[64] = {0,};
+
 	inet_strtoip("10.0.2.16", &guest_ip);
 
 	for ( ; tries > 0; tries--, tizen_base_port += 10 ) {
