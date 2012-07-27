@@ -1,11 +1,11 @@
 /*
- * MARU SDL display driver
+ * SDL_WINDOWID hack
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * HyunJun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -68,6 +68,112 @@ static int sdl_thread_initialized = 0;
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
 
+
+void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
+{
+    /* call sdl update */
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+
+    pthread_cond_signal(&sdl_cond);
+
+    pthread_mutex_unlock(&sdl_mutex);
+#else
+    qemu_update();
+#endif
+}
+
+void qemu_ds_sdl_resize(DisplayState *ds)
+{
+    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
+
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
+    /* create surface_qemu */
+    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
+            ds_get_width(ds),
+            ds_get_height(ds),
+            ds_get_bits_per_pixel(ds),
+            ds_get_linesize(ds),
+            ds->surface->pf.rmask,
+            ds->surface->pf.gmask,
+            ds->surface->pf.bmask,
+            ds->surface->pf.amask);
+
+#ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+
+    if (surface_qemu == NULL) {
+        ERR("Unable to set the RGBSurface: %s\n", SDL_GetError());
+        return;
+    }
+
+}
+
+static int maru_sdl_poll_event(SDL_Event *ev)
+{
+    int ret = 0;
+
+    if (sdl_initialized == 1) {
+        //pthread_mutex_lock(&sdl_mutex);
+        ret = SDL_PollEvent(ev);
+        //pthread_mutex_unlock(&sdl_mutex);
+    }
+
+    return ret;
+}
+void qemu_ds_sdl_refresh(DisplayState *ds)
+{
+    SDL_Event ev1, *ev = &ev1;
+
+    // surface may be NULL in init func.
+    qemu_display_surface = ds->surface;
+
+    while (maru_sdl_poll_event(ev)) {
+        switch (ev->type) {
+            case SDL_VIDEORESIZE:
+            {
+                pthread_mutex_lock(&sdl_mutex);
+
+                maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
+
+                pthread_mutex_unlock(&sdl_mutex);
+                vga_hw_invalidate();
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    vga_hw_update();
+
+#ifdef TARGET_ARM
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
+    /*
+    * It is necessary only for exynos4210 FIMD in connection with
+    * some WM (xfwm4, for example)
+    */
+
+    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
+#ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+#endif
+}
+
+
+
+
+
 extern int capability_check_gl;
 static void _sdl_init(void)
 {
@@ -97,7 +203,7 @@ static void _sdl_init(void)
         h = temp;
     }
 
-    if (capability_check_gl != 0) {
+    /*if (capability_check_gl != 0) {
         ERR("GL check returned non-zero\n");
         surface_screen = NULL;
     } else {
@@ -107,17 +213,17 @@ static void _sdl_init(void)
     if (surface_screen == NULL) {
         sdl_opengl = 0;
         INFO("No OpenGL support on this system!??\n");
-        ERR("%s\n", SDL_GetError());
+        ERR("%s\n", SDL_GetError());*/
 
         surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
         if (surface_screen == NULL) {
             ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
             return;
         }
-    } else {
+    /*} else {
         sdl_opengl = 1;
         INFO("OpenGL is supported on this system.\n");
-    }
+    }*/
 
     if (sdl_opengl == 1) {
         /* Set the OpenGL state */
@@ -317,164 +423,6 @@ static void* run_qemu_update(void* arg)
 }
 #endif
 
-static void qemu_ds_update(DisplayState *ds, int x, int y, int w, int h)
-{
-    /* call sdl update */
-#ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-
-    pthread_cond_signal(&sdl_cond);
-
-    pthread_mutex_unlock(&sdl_mutex);
-#else
-    qemu_update();
-#endif
-}
-
-static void qemu_ds_resize(DisplayState *ds)
-{
-    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
-
-#ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-#endif
-
-    /* create surface_qemu */
-    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
-            ds_get_width(ds),
-            ds_get_height(ds),
-            ds_get_bits_per_pixel(ds),
-            ds_get_linesize(ds),
-            ds->surface->pf.rmask,
-            ds->surface->pf.gmask,
-            ds->surface->pf.bmask,
-            ds->surface->pf.amask);
-
-#ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
-#endif
-
-    if (surface_qemu == NULL) {
-        ERR("Unable to set the RGBSurface: %s\n", SDL_GetError());
-        return;
-    }
-
-}
-
-static int maru_sdl_poll_event(SDL_Event *ev)
-{
-    int ret = 0;
-
-    if (sdl_initialized == 1) {
-        //pthread_mutex_lock(&sdl_mutex);
-        ret = SDL_PollEvent(ev);
-        //pthread_mutex_unlock(&sdl_mutex);
-    }
-
-    return ret;
-}
-
-static void put_hardkey_code( SDL_UserEvent event )
-{
-    // use pointer as integer
-    int event_type = (int) event.data1;
-    int keycode = (int) event.data2;
-
-    if ( KEY_PRESSED == event_type ) {
-
-        if ( kbd_mouse_is_absolute() ) {
-            ps2kbd_put_keycode( keycode & 0x7f );
-        }
-
-    } else if ( KEY_RELEASED == event_type ) {
-
-        if ( kbd_mouse_is_absolute() ) {
-            ps2kbd_put_keycode( keycode | 0x80 );
-        }
-
-    } else {
-        ERR( "Unknown hardkey event type.[event_type:%d]\n", event_type );
-    }
-
-}
-
-static void handle_sdl_user_event ( SDL_UserEvent event )
-{
-    int code = event.code;
-
-    switch ( code ) {
-    case SDL_USER_EVENT_CODE_HARDKEY: {
-        put_hardkey_code( event );
-        break;
-    }
-    default: {
-        ERR( "Unknown sdl user event.[event code:%d]\n", code );
-        break;
-    }
-    }
-
-}
-
-static void qemu_ds_refresh(DisplayState *ds)
-{
-    SDL_Event ev1, *ev = &ev1;
-
-    // surface may be NULL in init func.
-    qemu_display_surface = ds->surface;
-
-    while (maru_sdl_poll_event(ev)) {
-        switch (ev->type) {
-            case SDL_VIDEORESIZE:
-            {
-                pthread_mutex_lock(&sdl_mutex);
-
-                maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
-
-                pthread_mutex_unlock(&sdl_mutex);
-                vga_hw_invalidate();
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-
-    vga_hw_update();
-
-#ifdef TARGET_ARM
-#ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-#endif
-
-    /*
-     * It is necessary only for exynos4210 FIMD in connection with
-     * some WM (xfwm4, for example)
-     */
-
-    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
-
-#ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
-#endif
-#endif
-}
-
-void maruskin_display_init(DisplayState *ds)
-{
-    INFO("qemu display initialization\n");
-
-    /*  graphics context information */
-    DisplayChangeListener *dcl;
-
-    dcl = g_malloc0(sizeof(DisplayChangeListener));
-    dcl->dpy_update = qemu_ds_update;
-    dcl->dpy_resize = qemu_ds_resize;
-    dcl->dpy_refresh = qemu_ds_refresh;
-
-    register_displaychangelistener(ds, dcl);
-}
-
 void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
 {
     gchar SDL_windowhack[32];
@@ -483,7 +431,7 @@ void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_heigh
 
     INFO("maru sdl initialization = %d\n", is_resize);
 
-    if (is_resize == FALSE) {
+    if (is_resize == FALSE) { //once
         sprintf(SDL_windowhack, "%ld", window_id);
         g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
         INFO("register SDL environment variable. (SDL_WINDOWID = %s)\n", SDL_windowhack);
@@ -528,6 +476,7 @@ void maruskin_sdl_quit(void)
     /* remove multi-touch finger points */
     get_emul_multi_touch_state()->multitouch_enable = 0;
     clear_finger_slot();
+    cleanup_multi_touch_state();
 
     if (sdl_opengl == 1) {
         glDeleteTextures(1, &texture);
@@ -549,13 +498,7 @@ void maruskin_sdl_resize(void)
     SDL_PushEvent(&ev);
 }
 
-void maruskin_sdl_free(void)
-{
-    SDL_FreeSurface(surface_screen);
-    SDL_FreeSurface(surface_qemu);
-}
-
-DisplaySurface* get_qemu_display_surface( void ) {
+DisplaySurface* maruskin_sdl_get_display(void) {
     return qemu_display_surface;
 }
 

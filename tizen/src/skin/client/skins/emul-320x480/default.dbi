@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EmulatorUI xmlns="http://www.tizen.org/emulator/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dbi version="2.0"/>
     <rotations>
         <rotation name="Portrait">
             <lcd id="0">
-                <region left="67" top="116" width="720" height="1280"/>
+                <region left="26" top="70" width="320" height="480"/>
             </lcd>
             <imageList>
                 <mainImage>default_0.png</mainImage>
@@ -11,7 +12,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="390" top="1401" width="84" height="84"/>
+                    <region left="159" top="552" width="54" height="54"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
@@ -19,7 +20,7 @@
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="841" top="1309" width="24" height="96"/>
+                    <region left="362" top="487" width="15" height="70"/>
                     <eventInfo>
                         <keyCode>103</keyCode>
                         <keyName>POWER</keyName>
@@ -27,7 +28,7 @@
                     <tooltip>Power</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="841" top="108" width="24" height="96"/>
+                    <region left="362" top="63" width="15" height="70"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
@@ -35,7 +36,7 @@
                     <tooltip>Volume-up</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="841" top="219" width="24" height="96"/>
+                    <region left="362" top="140" width="15" height="70"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
@@ -46,7 +47,7 @@
         </rotation>
         <rotation name="Landscape">
             <lcd id="0">
-                <region left="116" top="78" width="1280" height="720"/>
+                <region left="70" top="34" width="480" height="320"/>
             </lcd>
             <imageList>
                 <mainImage>default_L90.png</mainImage>
@@ -54,7 +55,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="1400" top="392" width="84" height="84"/>
+                    <region left="552" top="167" width="54" height="54"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
@@ -62,7 +63,7 @@
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="1308" top="2" width="96" height="24"/>
+                    <region left="486" top="3" width="70" height="15"/>
                     <eventInfo>
                         <keyCode>103</keyCode>
                         <keyName>POWER</keyName>
@@ -70,7 +71,7 @@
                     <tooltip>Power</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="108" top="2" width="96" height="24"/>
+                    <region left="63" top="3" width="70" height="15"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
@@ -78,7 +79,7 @@
                     <tooltip>Volume-up</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="217" top="2" width="96" height="24"/>
+                    <region left="139" top="3" width="70" height="15"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
@@ -89,7 +90,7 @@
         </rotation>
         <rotation name="Reverse Portrait">
             <lcd id="0">
-                <region left="78" top="117" width="720" height="1280"/>
+                <region left="34" top="70" width="320" height="480"/>
             </lcd>
             <imageList>
                 <mainImage>default_180.png</mainImage>
@@ -97,7 +98,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="390" top="30" width="84" height="84"/>
+                    <region left="167" top="14" width="54" height="54"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
@@ -105,7 +106,7 @@
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="2" top="110" width="24" height="96"/>
+                    <region left="3" top="64" width="15" height="70"/>
                     <eventInfo>
                         <keyCode>103</keyCode>
                         <keyName>POWER</keyName>
@@ -113,7 +114,7 @@
                     <tooltip>Power</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="2" top="1310" width="24" height="96"/>
+                    <region left="3" top="488" width="15" height="70"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
@@ -121,7 +122,7 @@
                     <tooltip>Volume-up</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="2" top="1200" width="24" height="96"/>
+                    <region left="3" top="412" width="15" height="70"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
@@ -132,7 +133,7 @@
         </rotation>
         <rotation name="Reverse Landscape">
             <lcd id="0">
-                <region left="117" top="67" width="1280" height="720"/>
+                <region left="70" top="26" width="480" height="320"/>
             </lcd>
             <imageList>
                 <mainImage>default_R90.png</mainImage>
@@ -140,7 +141,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="28" top="391" width="84" height="84"/>
+                    <region left="14" top="159" width="54" height="54"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
@@ -148,7 +149,7 @@
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="109" top="841" width="96" height="24"/>
+                    <region left="64" top="362" width="70" height="15"/>
                     <eventInfo>
                         <keyCode>103</keyCode>
                         <keyName>POWER</keyName>
@@ -156,7 +157,7 @@
                     <tooltip>Power</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="1309" top="841" width="96" height="24"/>
+                    <region left="488" top="362" width="70" height="15"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
@@ -164,7 +165,7 @@
                     <tooltip>Volume-up</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="1199" top="841" width="96" height="24"/>
+                    <region left="412" top="362" width="70" height="15"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>

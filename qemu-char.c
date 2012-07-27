@@ -1516,9 +1516,22 @@ static int win_chr_init(CharDriverState *chr, const char *filename)
                       GENERIC_READ|GENERIC_WRITE, 0, NULL,
                       OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
 #else
-    s->hcom = CreateFile(g_win32_locale_filename_from_utf8(filename),
+	/*
+	s->hcom = CreateFile(g_win32_locale_filename_from_utf8(filename),
                       GENERIC_READ|GENERIC_WRITE, 0, NULL,
                       OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
+	*/
+	int open_flags = O_BINARY;
+	open_flags |= O_RDWR;
+	// TODO : FILE_FLAG_OVERLAPPED
+
+	int ret = qemu_open(filename, open_flags, 0644);
+	if (ret < 0) {
+		error_report("win_chr_init failed(%d) \n", ret);
+		return -errno;
+	}
+	s->hcom = (HANDLE)_get_osfhandle(ret);
+
 #endif
     if (s->hcom == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "Failed CreateFile (%lu)\n", GetLastError());
@@ -1807,8 +1820,21 @@ static CharDriverState *qemu_chr_open_win_file_out(QemuOpts *opts)
     fd_out = CreateFile(file_out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
                         OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
+	/*
     fd_out = CreateFile(g_win32_locale_filename_from_utf8(file_out), GENERIC_WRITE, FILE_SHARE_READ, NULL,
                         CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	*/
+	int open_flags = O_BINARY;
+	open_flags |= O_RDWR;
+	open_flags |= O_CREAT;
+
+	int ret = qemu_open(file_out, open_flags, 0644);
+	if (ret < 0) {
+		error_report("qemu_chr_open_win_file_out failed(%d) \n", ret);
+		return -errno;
+	}
+	fd_out = (HANDLE)_get_osfhandle(ret);
+
 #endif
 
     if (fd_out == INVALID_HANDLE_VALUE) {

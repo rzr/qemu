@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EmulatorUI xmlns="http://www.tizen.org/emulator/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dbi version="2.0"/>
     <rotations>
         <rotation name="Portrait">
             <lcd id="0">
@@ -11,28 +12,12 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="118" top="887" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>100</keyCode>
-                        <keyName>SEND</keyName>
-                    </eventInfo>
-                    <tooltip>Send</tooltip>
-                </keyMap>
-                <keyMap>
                     <region height="74" left="238" top="887" width="74"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
-                </keyMap>
-                <keyMap>
-                    <region left="360" top="887" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>102</keyCode>
-                        <keyName>END</keyName>
-                    </eventInfo>
-                    <tooltip>End</tooltip>
                 </keyMap>
                 <keyMap>
                     <region height="74" left="541" top="819" width="20"/>
@@ -70,28 +55,12 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="887" top="369" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>100</keyCode>
-                        <keyName>SEND</keyName>
-                    </eventInfo>
-                    <tooltip>Send</tooltip>
-                </keyMap>
-                <keyMap>
                     <region height="74" left="887" top="249" width="74"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
-                </keyMap>
-                <keyMap>
-                    <region left="887" top="127" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>102</keyCode>
-                        <keyName>END</keyName>
-                    </eventInfo>
-                    <tooltip>End</tooltip>
                 </keyMap>
                 <keyMap>
                     <region height="20" left="818" top="2" width="74"/>
@@ -129,28 +98,12 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="368" top="14" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>100</keyCode>
-                        <keyName>SEND</keyName>
-                    </eventInfo>
-                    <tooltip>Send</tooltip>
-                </keyMap>
-                <keyMap>
                     <region left="249" top="14" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
-                </keyMap>
-                <keyMap>
-                    <region left="126" top="14" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>102</keyCode>
-                        <keyName>END</keyName>
-                    </eventInfo>
-                    <tooltip>End</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="2" top="84" width="20" height="74"/>
@@ -188,28 +141,12 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="15" top="118" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>100</keyCode>
-                        <keyName>SEND</keyName>
-                    </eventInfo>
-                    <tooltip>Send</tooltip>
-                </keyMap>
-                <keyMap>
                     <region left="15" top="239" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
-                </keyMap>
-                <keyMap>
-                    <region left="15" top="360" width="74" height="74"/>
-                    <eventInfo>
-                        <keyCode>102</keyCode>
-                        <keyName>END</keyName>
-                    </eventInfo>
-                    <tooltip>End</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="84" top="539" width="74" height="20"/>

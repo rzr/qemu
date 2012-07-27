@@ -1,13 +1,11 @@
 /*
- * Emulator
+ * MARU display driver
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
- * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
+ * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,17 +27,16 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config structures and defines in emulator
- */
 
-#ifndef __MARU_COMMON_H__
-#define __MARU_COMMON_H__
+#ifndef MARU_DISPLAY_H_
+#define MARU_DISPLAY_H_
 
-#include "config-host.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include "console.h"
 
-#endif /* __MARU_COMMON_H__ */
+
+void maru_display_init(DisplayState *ds);
+void maru_display_fini(void);
+void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
+DisplaySurface* get_qemu_display_surface(void);
+
+#endif /* MARU_DISPLAY_H_ */

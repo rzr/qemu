@@ -85,6 +85,7 @@ static int raw_open(BlockDriverState *bs, const char *filename, int flags)
 
     s->type = FTYPE_FILE;
 
+#ifndef CONFIG_MARU
     if (flags & BDRV_O_RDWR) {
         access_flags = GENERIC_READ | GENERIC_WRITE;
     } else {
@@ -96,25 +97,55 @@ static int raw_open(BlockDriverState *bs, const char *filename, int flags)
         overlapped |= FILE_FLAG_NO_BUFFERING;
     if (!(flags & BDRV_O_CACHE_WB))
         overlapped |= FILE_FLAG_WRITE_THROUGH;
-#ifndef CONFIG_MARU
     s->hfile = CreateFile(filename,
                           access_flags,
                           FILE_SHARE_READ, NULL,
                           OPEN_EXISTING, overlapped, NULL);
-#else
-    s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
-                          access_flags,
-                          FILE_SHARE_READ, NULL,
-                          OPEN_EXISTING, overlapped, NULL);
-#endif
-    if (s->hfile == INVALID_HANDLE_VALUE) {
+	if (s->hfile == INVALID_HANDLE_VALUE) {
         int err = GetLastError();
 
         if (err == ERROR_ACCESS_DENIED)
             return -EACCES;
         return -1;
     }
-    return 0;
+
+#else
+	/*
+    s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
+                          access_flags,
+                          FILE_SHARE_READ, NULL,
+                          OPEN_EXISTING, overlapped, NULL);
+	*/
+
+#include <errno.h>
+	int open_flags = O_BINARY;
+	open_flags &= ~O_ACCMODE;
+	if (flags & BDRV_O_RDWR) {
+		open_flags |= O_RDWR;
+	} else {
+		open_flags |= O_RDONLY;
+	}
+
+	/* Use O_DSYNC for write-through caching, no flags for write-back caching,
+     * and O_DIRECT for no caching. */
+	/*
+	if ((flags & BDRV_O_NOCACHE)) {
+		open_flags |= O_DIRECT;
+	}
+    if (!(flags & BDRV_O_CACHE_WB)) {
+        open_flags |= O_DSYNC;
+	}
+	*/
+
+	int ret = qemu_open(filename, open_flags, 0644);
+	if (ret < 0) {
+		error_report("raw_open failed(%d) \n", ret);
+		return -errno;
+	}
+	s->hfile = (HANDLE)_get_osfhandle(ret);
+
+#endif
+       return 0;
 }
 
 static int raw_read(BlockDriverState *bs, int64_t sector_num,
@@ -382,7 +413,8 @@ static int hdev_open(BlockDriverState *bs, const char *filename, int flags)
     }
     s->type = find_device_type(bs, filename);
 
-    if (flags & BDRV_O_RDWR) {
+#ifndef CONFIG_MARU
+	if (flags & BDRV_O_RDWR) {
         access_flags = GENERIC_READ | GENERIC_WRITE;
     } else {
         access_flags = GENERIC_READ;
@@ -394,25 +426,56 @@ static int hdev_open(BlockDriverState *bs, const char *filename, int flags)
         overlapped |= FILE_FLAG_NO_BUFFERING;
     if (!(flags & BDRV_O_CACHE_WB))
         overlapped |= FILE_FLAG_WRITE_THROUGH;
-#ifndef CONFIG_MARU
+
     s->hfile = CreateFile(filename,
                           access_flags,
                           FILE_SHARE_READ, NULL,
                           create_flags, overlapped, NULL);
-#else
-    s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
-                          access_flags,
-                          FILE_SHARE_READ, NULL,
-                          create_flags, overlapped, NULL);
-#endif
-    if (s->hfile == INVALID_HANDLE_VALUE) {
+	if (s->hfile == INVALID_HANDLE_VALUE) {
         int err = GetLastError();
 
         if (err == ERROR_ACCESS_DENIED)
             return -EACCES;
         return -1;
     }
-    return 0;
+
+#else
+	/*
+    s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
+                          access_flags,
+                          FILE_SHARE_READ, NULL,
+                          create_flags, overlapped, NULL);
+	*/
+#include <errno.h>
+
+	int open_flags = O_BINARY;
+	open_flags &= ~O_ACCMODE;
+	if (flags & BDRV_O_RDWR) {
+		open_flags |= O_RDWR;
+	} else {
+		open_flags |= O_RDONLY;
+	}
+
+	/* Use O_DSYNC for write-through caching, no flags for write-back caching,
+     * and O_DIRECT for no caching. */
+	/*
+	if ((flags & BDRV_O_NOCACHE)) {
+		open_flags |= O_DIRECT;
+	}
+    if (!(flags & BDRV_O_CACHE_WB)) {
+        open_flags |= O_DSYNC;
+	}
+	*/
+
+	int ret = qemu_open(filename, open_flags, 0644);
+	if (ret < 0) {
+		error_report("raw_open failed(%d) \n", ret);
+		return -errno;
+	}
+	s->hfile = (HANDLE)_get_osfhandle(ret);
+
+#endif
+       return 0;
 }
 
 static int hdev_has_zero_init(BlockDriverState *bs)

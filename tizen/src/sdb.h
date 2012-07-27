@@ -111,3 +111,4 @@ int socket_send(int fd, const void*  buf, int  buflen);
 void socket_close(int fd);
 void notify_sdb_daemon_start(void);
 int sdb_loopback_client(int port, int type);
+int check_port_bind_listen(u_int port);

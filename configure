@@ -435,7 +435,7 @@ Darwin)
   else
     QEMU_CFLAGS="-mdynamic-no-pic $QEMU_CFLAGS"
   fi
-  cocoa="yes"
+  cocoa="no"
   audio_drv_list="coreaudio"
   audio_possible_drivers="coreaudio sdl fmod"
   LDFLAGS="-framework CoreFoundation -framework IOKit $LDFLAGS"

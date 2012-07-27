@@ -35,7 +35,7 @@
 #include <wingdi.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <GL/wglext.h>
+#include "GL/wglext.h"
 
 /* In Windows, you must create a window *before* you can create a pbuffer or
  * get a context. So we create a hidden Window on startup (see glo_init/GloMain).

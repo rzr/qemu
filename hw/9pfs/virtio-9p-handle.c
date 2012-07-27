@@ -54,6 +54,16 @@ struct handle_data {
     int handle_bytes;
 };
 
+#ifndef AT_REMOVEDIR
+#define AT_REMOVEDIR    0x200
+#endif
+#ifndef AT_EMPTY_PATH
+#define AT_EMPTY_PATH   0x1000  /* Allow empty relative pathname */
+#endif
+#ifndef O_PATH
+#define O_PATH    010000000
+#endif
+
 static inline int name_to_handle(int dirfd, const char *name,
                                  struct file_handle *fh, int *mnt_id, int flags)
 {

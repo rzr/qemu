@@ -28,12 +28,19 @@
  */
 
 
+#include "maru_common.h"
+
+#ifdef CONFIG_DARWIN
+//shared memory
+#define USE_SHM
+#endif
+
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
 #include "maruskin_operation.h"
 #include "hw/maru_brightness.h"
-#include "maru_sdl.h"
+#include "maru_display.h"
 #include "debug_ch.h"
 #include "sdb.h"
 #include "nbd.h"
@@ -58,16 +65,16 @@ MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
 static int requested_shutdown_qemu_gracefully = 0;
 
-static void* run_timed_shutdown_thread( void* args );
-static void send_to_emuld( const char* request_type, int request_size, const char* send_buf, int buf_size );
+static void* run_timed_shutdown_thread(void* args);
+static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
 
 void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type)
 {
-    INFO( "start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
-        handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type );
+    INFO("start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%lf, rotation_type:%d\n",
+        (long)handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type);
 
     set_emul_win_scale(scale_factor);
-    maruskin_sdl_init(handle_id, lcd_size_width, lcd_size_height, false);
+    maruskin_init(handle_id, lcd_size_width, lcd_size_height, false);
 }
 
 void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, int z )
@@ -77,23 +84,31 @@ void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, i
         return;
     }
 
-    TRACE( "mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n", event_type, origin_x, origin_y, x, y, z );
+    TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n",
+        event_type, origin_x, origin_y, x, y, z);
 
+#ifndef USE_SHM
+    /* multi-touch */
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
         maru_finger_processing_A(event_type, origin_x, origin_y, x, y);
+        return;
     } else if (get_emul_multi_touch_state()->multitouch_enable == 2) {
         maru_finger_processing_B(event_type, origin_x, origin_y, x, y);
+        return;
     }
-    else if ( MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) { //single touch
+#endif
+
+    /* single touch */
+    if (MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
         kbd_mouse_event(x, y, z, 1);
     } else if (MOUSE_UP == event_type) {
         kbd_mouse_event(x, y, z, 0);
     } else {
-        ERR( "undefined mouse event type:%d\n", event_type );
+        ERR("undefined mouse event type:%d\n", event_type);
     }
 
 #if 0
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     Sleep(1);
 #else
     usleep(1000);
@@ -105,6 +120,7 @@ void do_key_event( int event_type, int keycode, int key_location )
 {
     TRACE( "key_event event_type:%d, keycode:%d, key_location:%d\n", event_type, keycode, key_location );
 
+#ifndef USE_SHM
     //is multi-touch mode ?
     if (get_emul_max_touch_point() > 1) {
         if (keycode == JAVA_KEYCODE_BIT_CTRL) {
@@ -133,6 +149,7 @@ void do_key_event( int event_type, int keycode, int key_location )
             }
         }
     }
+#endif
 
     if (!mloop_evcmd_get_usbkbd_status()) {
     	return;
@@ -164,7 +181,7 @@ void do_hardkey_event( int event_type, int keycode )
                 if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
                     INFO( "user requests system resume.\n" );
                     resume();
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
                     Sleep( RESUME_KEY_SEND_INTERVAL );
 #else
                     usleep( RESUME_KEY_SEND_INTERVAL * 1000 );
@@ -285,7 +302,7 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
         total_len += delimiter_len;
     }
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     /* collect HAXM information */
     const int HAX_LEN = 32;
     char hax_error[HAX_LEN];
@@ -329,7 +346,7 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
         total_len += len + delimiter_len;
     }
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     snprintf( info_data + total_len, hax_err_len + 1, "%s#", hax_error );
     total_len += hax_err_len;
 #endif
@@ -373,7 +390,7 @@ void request_close( void )
 
     do_hardkey_event( KEY_PRESSED, HARD_KEY_POWER );
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
         Sleep( CLOSE_POWER_KEY_INTERVAL );
 #else
         usleep( CLOSE_POWER_KEY_INTERVAL * 1000 );
@@ -407,7 +424,7 @@ static void* run_timed_shutdown_thread( void* args ) {
 
     int i;
     for ( i = 0; i < TIMEOUT_FOR_SHUTDOWN; i++ ) {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
         Sleep( sleep_interval_time );
 #else
         usleep( sleep_interval_time * 1000 );
@@ -440,7 +457,7 @@ static void send_to_emuld( const char* request_type, int request_size, const cha
     INFO( "send to emuld [req_type:%s, send_data:%s, send_size:%d] 127.0.0.1:%d/tcp \n",
         request_type, send_buf, buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX );
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     closesocket( s );
 #else
     close( s );

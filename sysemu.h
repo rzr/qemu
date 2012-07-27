@@ -92,6 +92,9 @@ typedef enum DisplayType
     DT_CURSES,
     DT_SDL,
     DT_NOGRAPHIC,
+#ifdef CONFIG_MARU
+    DT_MARU,
+#endif
     DT_NONE,
 } DisplayType;
 

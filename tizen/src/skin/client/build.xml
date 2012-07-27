@@ -1,6 +1,17 @@
 <?xml version="1.0" standalone="yes"?>
 <project name="emulator-skin" basedir="." default="make-jar">
 
+	<condition property="isWindows">
+		<os family="windows" />
+	</condition>
+	<condition property="isLinux">
+		<os family="unix" />
+	</condition>
+	<condition property="isMac">
+		<os family="mac" />
+	</condition>
+
+	<property environment="env" />
 	<property name="jar.file" value="emulator-skin.jar" />
 	<property name="mainclass" value="org.tizen.emulator.skin.EmulatorSkinMain" />
 
@@ -65,7 +76,45 @@
 		<delete dir="build" />
 	</target>
 
-	<target name="make-jar" depends="compile, create-jar" />
+	<target name="create-native-linux" if="isLinux" unless="isMac">
+		<echo message="create native shared library on linux..." />
+		<javah classpath="build;lib/swt.jar" destdir="native_src">
+			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+		</javah>
+		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="-shared" />
+			<arg line="-c" />
+			<arg line="Share.c" />
+			<arg line="-o" />
+			<arg line="libshare.so" />
+			<arg line="-I${env.JAVA_HOME}/include" />
+			<arg line="-fPIC" />
+		</exec>
+		<delete>
+			<fileset dir="native_src" includes="**/*.h" />
+		</delete>
+	</target>
+
+	<target name="create-native-mac" if="isMac">
+		<echo message="create native shared library on mac..." />
+		<javah classpath="build;lib/swt.jar" destdir="native_src">
+			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+		</javah>
+		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="-dynamiclib" />
+			<arg line="-c" />
+			<arg line="Share.c" />
+			<arg line="-o" />
+			<arg line="libshare.dylib" />
+			<arg line="-I${env.JAVA_HOME}/Headers" />
+			<arg line="-fPIC" />
+		</exec>
+		<delete>
+			<fileset dir="native_src" includes="**/*.h" />
+		</delete>
+	</target>
+
+	<target name="make-jar" depends="compile, create-native-linux, create-native-mac, create-jar" />
 
 	<!-- for dibs system... -->
 	<path id="classpath-dibs">
@@ -79,5 +128,5 @@
 		</javac>
 	</target>
 
-	<target name="make-jar-dibs" depends="compile-dibs, create-jar" />
+	<target name="make-jar-dibs" depends="compile-dibs, create-native-linux, create-native-mac, create-jar" />
 </project>

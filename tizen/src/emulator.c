@@ -71,7 +71,7 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define LOGFILE             "emulator.log"
 #define MIDBUF  128
 int tizen_base_port = 0;
-
+static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 char tizen_target_path[MAXLEN] = {0, };
 char logpath[MAXLEN] = { 0, };
 
@@ -93,45 +93,9 @@ void exit_emulator(void)
     maruskin_sdl_quit();
 }
 
-static int check_port_bind_listen(u_int port)
-{
-    struct sockaddr_in addr;
-    int s, opt = 1;
-    int ret = -1;
-    socklen_t addrlen = sizeof(addr);
-    memset(&addr, 0, addrlen);
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-
-    if (((s = socket(AF_INET,SOCK_STREAM,0)) < 0) ||
-            (setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
-            (bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
-            (listen(s,1) < 0)) {
-
-        /* fail */
-        ret = -1;
-        ERR( "check port(%d) bind listen  fail \n", port);
-    }else{
-        /*fsucess*/
-        ret = 1;
-        INFO( "check port(%d) bind listen  ok \n", port);
-    }
-
-#ifdef _WIN32
-    closesocket(s);
-#else
-    close(s);
-#endif
-
-    return ret;
-}
-
-
 void check_shdmem(void)
 {
-#ifndef _WIN32
+#ifndef CONFIG_WIN32
     int shm_id;
     void *shm_addr;
     u_int port;
@@ -197,18 +161,18 @@ void check_shdmem(void)
             {
                 ERR("Could not map view of file (%d).\n", GetLastError());
                 CloseHandle(hMapFile);
-                return -1;
             }
 
             if(strcmp(pBuf, tizen_target_path) == 0)
             {
+			/*
                 if(check_port_bind_listen(port+1) > 0)
                 {
                     UnmapViewOfFile(pBuf);
                     CloseHandle(hMapFile);
                     continue;
                 }
-
+			*/
                 maru_register_exit_msg(MARU_EXIT_UNKNOWN, "Can not execute this VM.\nThe same name is running now.");
                 UnmapViewOfFile(pBuf);
                 CloseHandle(hMapFile);
@@ -436,9 +400,6 @@ static void system_info(void)
 {
 #define DIV 1024
 
-#ifdef __linux__
-    char lscmd[MAXLEN] = "lspci >> ";
-#endif
     char timeinfo[64] = {0, };
     struct tm *tm_time;
     struct timeval tval;
@@ -446,9 +407,7 @@ static void system_info(void)
     INFO("* SDK Version : %s\n", build_version);
     INFO("* Package %s\n", pkginfo_version);
     INFO("* User name : %s\n", g_get_real_name());
-#ifdef _WIN32
     INFO("* Host name : %s\n", g_get_host_name());
-#endif
 
     /* timestamp */
     INFO("* Build date : %s\n", build_date);
@@ -461,7 +420,7 @@ static void system_info(void)
     INFO("* Host sdl version : (%d, %d, %d)\n",
         SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
 
-#if defined( _WIN32)
+#if defined(CONFIG_WIN32)
     /* Retrieves information about the current os */
     OSVERSIONINFO osvi;
     ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
@@ -485,7 +444,7 @@ static void system_info(void)
     INFO("* Total Ram : %llu kB, Free: %lld kB\n",
         memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
 
-#elif defined(__linux__)
+#elif defined(CONFIG_LINUX)
     /* depends on building */
     INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
         LINUX_VERSION_CODE >> 16, (LINUX_VERSION_CODE >> 8) & 0xff, LINUX_VERSION_CODE & 0xff);
@@ -506,9 +465,13 @@ static void system_info(void)
 
     /* pci device description */
     INFO("* Pci devices :\n");
+    char lscmd[MAXLEN] = "lspci >> ";
     strcat(lscmd, logpath);
     int i = system(lscmd);
     INFO("system function command : %s, system function returned value : %d\n", lscmd, i);
+
+#elif defined(CONFIG_DARWIN)
+    //TODO:
 #endif
 
     INFO("\n");
@@ -517,8 +480,6 @@ static void system_info(void)
 void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
-
-    sdb_setup();
 
     INFO("call construct_main_window\n");
 
@@ -543,10 +504,11 @@ int main(int argc, char* argv[])
     
     atexit(maru_atexit);
     
-    check_shdmem();
+	check_shdmem();
     make_shdmem();
-
-    system_info();
+	sdb_setup();
+    
+	system_info();
 
     INFO("Prepare running...\n");
     redir_output(); // Redirect stdout, stderr after debug_ch is initialized...

@@ -95,6 +95,7 @@ import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 /**
  * 
@@ -124,25 +125,26 @@ public class EmulatorSkin {
 
 	public static final String GTK_OS_CLASS = "org.eclipse.swt.internal.gtk.OS";
 	public static final String WIN32_OS_CLASS = "org.eclipse.swt.internal.win32.OS";
+	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
 	
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
-	private EmulatorConfig config;
+	protected EmulatorConfig config;
 	private Shell shell;
 	private ImageRegistry imageRegistry;
-	private Canvas lcdCanvas;
+	protected Canvas lcdCanvas;
 	private Image currentImage;
 	private Image currentKeyPressedImage;
 	private Color hoverColor;
 	private boolean isDefaultHoverColor;
 
-	private int currentScale;
-	private short currentRotationId;
-	private int currentAngle;
-	private int currentLcdWidth;
-	private int currentLcdHeight;
-	private SkinRegion currentHoverRegion;
-	private SkinRegion currentPressedRegion;
+	protected int currentScale;
+	protected short currentRotationId;
+	protected int currentAngle;
+	protected int currentLcdWidth;
+	protected int currentLcdHeight;
+	protected SkinRegion currentHoverRegion;
+	protected SkinRegion currentPressedRegion;
 
 	private int pressedMouseX;
 	private int pressedMouseY;
@@ -208,6 +210,7 @@ public class EmulatorSkin {
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 		
 		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId, false );
+		logger.info("lcdWidth : " + lcdWidth + ", lcdHeight : " + lcdHeight + ", scale : " + scale);
 
 		// sdl uses this handle id.
 		windowHandleId = getWindowHandleId();
@@ -230,7 +233,7 @@ public class EmulatorSkin {
 		String emulatorName = SkinUtil.makeEmulatorName( config );
 		shell.setText( emulatorName );
 
-		if ( SkinUtil.isWindowsPlatform() ) {
+		if ( SwtUtil.isWindowsPlatform() ) {
 			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE_ICO ) );
 		} else {
 			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE ) );
@@ -303,46 +306,63 @@ public class EmulatorSkin {
 
 		long windowHandleId = 0;
 
-		if ( SkinUtil.isLinuxPlatform() ) {
+		/* org.eclipse.swt.widgets.Widget */
+		if (SwtUtil.isLinuxPlatform()) {
 
 			try {
 				/*
 				 * Accessing private fields of other classes via reflection
 				 * is VERY BAD, must be fixed !
 				 */
-				Field field = lcdCanvas.getClass().getField( "embeddedHandle" );
+				Field field = lcdCanvas.getClass().getField("embeddedHandle");
 				try {
 				windowHandleId = field.getInt( lcdCanvas );
 				} catch ( Exception e ) {
 					windowHandleId = (int)field.getLong( lcdCanvas );
 				}
-				logger.info( "lcdCanvas.embeddedHandle:" + windowHandleId );
-			} catch ( IllegalArgumentException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+				logger.info("lcdCanvas.embeddedHandle:" + windowHandleId);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
-			} catch ( IllegalAccessException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (IllegalAccessException e ) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
-			} catch ( SecurityException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (SecurityException e ) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
-			} catch ( NoSuchFieldException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
 			}
 
-		} else if ( SkinUtil.isWindowsPlatform() ) {
+		} else if (SwtUtil.isWindowsPlatform()) {
 
-			logger.info( "lcdCanvas.handle:" + lcdCanvas.handle );
-			windowHandleId = lcdCanvas.handle;
+			try {
+				Field field = lcdCanvas.getClass().getField("handle");
+				windowHandleId = field.getLong(lcdCanvas);
+				logger.info("lcdCanvas.handle:" + windowHandleId);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (IllegalAccessException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (SecurityException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			}
 
-		} else if ( SkinUtil.isMacPlatform() ) {
+		} else if (SwtUtil.isMacPlatform()) {
 
-			// TODO
+			// not supported
+			windowHandleId = 0;
 
 		} else {
-			logger.severe( "Not Supported OS platform:" + SWT.getPlatform() );
-			System.exit( -1 );
+			logger.severe("Not Supported OS platform:" + SWT.getPlatform());
+			System.exit(-1);
 		}
 
 		return windowHandleId;
@@ -841,7 +861,7 @@ public class EmulatorSkin {
 
 				previous = null;
 				
-				if( SkinUtil.isWindowsPlatform() && disappearEvent) {
+				if( SwtUtil.isWindowsPlatform() && disappearEvent) {
 					disappearEvent = false;
 					if (isMetaKey(e) && e.character != '\0') {
 						logger.info( "send previous release : keycode=" + disappearKeycode +
@@ -863,7 +883,7 @@ public class EmulatorSkin {
 			public void keyPressed( KeyEvent e ) {
 				int keyCode = e.keyCode | e.stateMask;
 				
-				if( SkinUtil.isWindowsPlatform() ) {
+				if( SwtUtil.isWindowsPlatform() ) {
 					if ( null != previous ) {
 						if ( previous.keyCode != e.keyCode ) {
 
@@ -936,10 +956,12 @@ public class EmulatorSkin {
 	private Field getOSField( String field ) {
 
 		String className = "";
-		if ( SkinUtil.isLinuxPlatform() ) {
+		if (SwtUtil.isLinuxPlatform()) {
 			className = GTK_OS_CLASS;
-		} else if ( SkinUtil.isWindowsPlatform() ) {
+		} else if (SwtUtil.isWindowsPlatform()) {
 			className = WIN32_OS_CLASS;
+		} else if (SwtUtil.isMacPlatform()) {
+			className = COCOA_OS_CLASS;
 		}
 
 		Field f = null;
@@ -959,10 +981,12 @@ public class EmulatorSkin {
 	private Method getOSMethod( String method, Class<?>... parameterTypes ) {
 
 		String className = "";
-		if ( SkinUtil.isLinuxPlatform() ) {
+		if (SwtUtil.isLinuxPlatform()) {
 			className = GTK_OS_CLASS;
-		} else if ( SkinUtil.isWindowsPlatform() ) {
+		} else if (SwtUtil.isWindowsPlatform()) {
 			className = WIN32_OS_CLASS;
+		} else if (SwtUtil.isMacPlatform()) {
+			className = COCOA_OS_CLASS;
 		}
 
 		Method m = null;
@@ -1008,7 +1032,7 @@ public class EmulatorSkin {
 	}
 
 	private boolean setTopMost32(boolean isOnTop) {
-		if ( SkinUtil.isLinuxPlatform() ) {
+		if ( SwtUtil.isLinuxPlatform() ) {
 			// reference : http://wmctrl.sourcearchive.com/documentation/1.07/main_8c-source.html
 
 			/* if ( !OS.GDK_WINDOWING_X11() ) {
@@ -1232,7 +1256,7 @@ public class EmulatorSkin {
 			invokeOSMethod( xSendEvent, xDisplay, rootWin, false, (int) ( 1L << 20 | 1L << 19 ), malloc );
 			invokeOSMethod( getOSMethod( "g_free", int.class ), malloc ) ;
 
-		} else if( SkinUtil.isWindowsPlatform() ) {
+		} else if( SwtUtil.isWindowsPlatform() ) {
 			Point location = shell.getLocation();
 
 			/* int hWndInsertAfter = 0;
@@ -1278,8 +1302,28 @@ public class EmulatorSkin {
 			Method m = getOSMethod( "SetWindowPos", int.class, int.class, int.class, int.class, int.class,
 					int.class, int.class );
 
-			invokeOSMethod( m, shell.handle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
-		} else if( SkinUtil.isMacPlatform() ) {
+			/* org.eclipse.swt.widgets.Shell */
+			int shellHandle = 0;
+			try {
+				Field field = shell.getClass().getField("handle");
+				shellHandle = field.getInt(shell);
+				logger.info("shell.handle:" + shellHandle);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (IllegalAccessException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (SecurityException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			}
+
+			invokeOSMethod( m, shellHandle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
+		} else if( SwtUtil.isMacPlatform() ) {
 			//TODO:
 		}
 
@@ -1288,7 +1332,7 @@ public class EmulatorSkin {
 
 	private boolean setTopMost64(boolean isOnTop)
 	{
-		if ( SkinUtil.isLinuxPlatform() ) {
+		if ( SwtUtil.isLinuxPlatform() ) {
 			Boolean gdkWindowingX11 = (Boolean) invokeOSMethod( getOSMethod( "GDK_WINDOWING_X11" ) );
 			if (null == gdkWindowingX11) {
 				return false;
@@ -1458,9 +1502,9 @@ public class EmulatorSkin {
 			// SubstructureRedirectMask:1L<<20 | SubstructureNotifyMask:1L<<19
 			invokeOSMethod( xSendEvent, xDisplay, rootWin, false, (long) ( 1L << 20 | 1L << 19 ), malloc );
 			invokeOSMethod( getOSMethod( "g_free", long.class ), malloc );
-		} else if (SkinUtil.isWindowsPlatform()) {
+		} else if (SwtUtil.isWindowsPlatform()) {
 			//TODO:
-		} else if( SkinUtil.isMacPlatform() ) {
+		} else if( SwtUtil.isMacPlatform() ) {
 			//TODO:
 		}
 
@@ -1568,11 +1612,11 @@ public class EmulatorSkin {
 
 				ProcessBuilder procSdb = new ProcessBuilder();
 
-				if ( SkinUtil.isLinuxPlatform() ) {
+				if ( SwtUtil.isLinuxPlatform() ) {
 					procSdb.command( "/usr/bin/gnome-terminal", "--disable-factory",
 							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
 									+ portSdb, "shell" );
-				} else if ( SkinUtil.isWindowsPlatform() ) {
+				} else if ( SwtUtil.isWindowsPlatform() ) {
 					procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
 				}
 				logger.log( Level.INFO, procSdb.command().toString() );

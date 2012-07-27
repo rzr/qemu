@@ -1455,6 +1455,14 @@ void marucam_device_open(MaruCamState* state)
     MaruCamParam *param = state->param;
     param->top = 0;
 
+    hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr)) {
+        ERR("CoInitailizeEx\n");
+        ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
+        param->errCode = EINVAL;
+        return;
+    }
+
     hr = GraphBuilder_Init();
     if (FAILED(hr)) {
         ERR("GraphBuilder_Init\n");
@@ -1496,6 +1504,7 @@ void marucam_device_open(MaruCamState* state)
 
 error_failed:
     CloseInterfaces();
+    CoUninitialize();
     param->errCode = EINVAL;
     ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
 }
@@ -1507,6 +1516,7 @@ void marucam_device_close(MaruCamState* state)
     param->top = 0;
 
     CloseInterfaces();
+    CoUninitialize();
     INFO("Close successfully!!!\n");
 }
 

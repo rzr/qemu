@@ -213,7 +213,7 @@ int inet_strtoip(const char*  str, uint32_t  *ip)
 	return 0;
 }
 
-static int check_port_bind_listen(u_int port)
+int check_port_bind_listen(u_int port)
 {
 	struct sockaddr_in addr;
 	int s, opt = 1;
@@ -284,7 +284,6 @@ void sdb_setup(void)
 	int   success   = 0;
 	uint32_t  guest_ip;
 	char buf[64] = {0,};
-
 	inet_strtoip("10.0.2.16", &guest_ip);
 
 	for ( ; tries > 0; tries--, tizen_base_port += 10 ) {

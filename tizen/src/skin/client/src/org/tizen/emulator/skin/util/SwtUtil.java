@@ -1,12 +1,9 @@
-/*
- * Emulator
+/**
+ * 
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
- * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
+ * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -29,17 +26,28 @@
  *
  */
 
+package org.tizen.emulator.skin.util;
+
+import org.eclipse.swt.SWT;
+
+
 /**
- * @file emulator.h
- * @brief - header of file these are config structures and defines in emulator
+ * 
+ *
  */
+public class SwtUtil {
+	private SwtUtil() {
+	}
 
-#ifndef __MARU_COMMON_H__
-#define __MARU_COMMON_H__
+	public static boolean isLinuxPlatform() {
+		return "gtk".equalsIgnoreCase( SWT.getPlatform() );
+	}
 
-#include "config-host.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
+	public static boolean isWindowsPlatform() {
+		return "win32".equalsIgnoreCase( SWT.getPlatform() ); //win32-win32-x86_64
+	}
 
-#endif /* __MARU_COMMON_H__ */
+	public static boolean isMacPlatform() {
+		return "cocoa".equalsIgnoreCase( SWT.getPlatform() );
+	}
+}

@@ -180,7 +180,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "ui/qemu-spice.h"
 
 #ifdef CONFIG_MARU
-#include "tizen/src/maru_sdl.h"
+#include "tizen/src/maru_display.h"
 #include "tizen/src/option.h"
 #include "tizen/src/emul_state.h"
 #include "tizen/src/skin/maruskin_operation.h"
@@ -259,10 +259,11 @@ uint8_t qemu_extra_params_fw[2];
 
 //virtio-gl
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 extern int gl_acceleration_capability_check(void);
 int enable_gl = 0;
 int capability_check_gl = 0;
-
+#endif
 
 typedef struct FWBootEntry FWBootEntry;
 
@@ -1892,6 +1893,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
     DeviceState *dev;
 
 #ifdef CONFIG_VIRTIO_GL
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 	// virtio-gl pci device
 	if (!enable_gl) {
 		// ignore virtio-gl-pci device, even if users set it in option.
@@ -1900,6 +1902,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 			return 0;
 		}
 	}
+#endif
 #endif
 	
     dev = qdev_device_add(opts);
@@ -2405,7 +2408,9 @@ int main(int argc, char **argv, char **envp)
 
 #ifdef CONFIG_MARU
     #define MIDBUF  128
-    char proxy[MIDBUF] ={0}, dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
+    char http_proxy[MIDBUF] ={0},https_proxy[MIDBUF] = {0,},
+	ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},	
+     dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
 #endif
 
     atexit(qemu_run_exit_notifiers);
@@ -2641,9 +2646,13 @@ int main(int argc, char **argv, char **envp)
                 break;
             case QEMU_OPTION_append:
 #ifdef CONFIG_MARU
-                gethostproxy(proxy);
+                gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
                 gethostDNS(dns1, dns2);
-                tmp_cmdline = g_strdup_printf("%s sdb_port=%d, proxy=%s dns1=%s dns2=%s", optarg, tizen_base_port, proxy, dns1, dns2);
+                tmp_cmdline = g_strdup_printf("%s sdb_port=%d,"
+                	" http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s" 
+	                " dns1=%s dns2=%s", optarg, tizen_base_port, 
+        	        http_proxy, https_proxy, ftp_proxy, socks_proxy,
+                	dns1, dns2);
                 qemu_opts_set(qemu_find_opts("machine"), 0, "append",
                         tmp_cmdline);
                 fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
@@ -3090,7 +3099,9 @@ int main(int argc, char **argv, char **envp)
                 break;
            case QEMU_OPTION_enable_gl:
 #ifdef CONFIG_VIRTIO_GL
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
                 enable_gl = 1;
+#endif
 #else
                 fprintf(stderr, "Virtio GL support is disabled, ignoring -enable-gl\n");
 #endif
@@ -3377,6 +3388,7 @@ int main(int argc, char **argv, char **envp)
     }
 
 #ifdef CONFIG_VIRTIO_GL
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
     if (enable_gl) {
         device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
         qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
@@ -3386,6 +3398,7 @@ int main(int argc, char **argv, char **envp)
             }
         }
     }
+#endif
 #endif
 	// To check host gl driver capability and notify to guest.
 	gchar *tmp = tmp_cmdline;
@@ -3725,7 +3738,10 @@ int main(int argc, char **argv, char **envp)
     if (using_spice)
         display_remote++;
     if (display_type == DT_DEFAULT && !display_remote) {
-#if defined(CONFIG_SDL) || defined(CONFIG_COCOA)
+#if defined(CONFIG_MARU)
+        /* maru display */
+        display_type = DT_MARU;
+#elif defined(CONFIG_SDL) || defined(CONFIG_COCOA)
         display_type = DT_SDL;
 #elif defined(CONFIG_VNC)
         vnc_display = "localhost:0,to=99";
@@ -3747,23 +3763,21 @@ int main(int argc, char **argv, char **envp)
 #endif
 #if defined(CONFIG_SDL)
     case DT_SDL:
-#if defined(CONFIG_MARU)
-            /* use tizen qemu sdl */
-            maruskin_display_init(ds);
-
-            if (skin_disabled == 1) {
-                //do not start skin client process
-                set_emul_skin_enable(0);
-            } else {
-                set_emul_skin_enable(1);
-            }
-#else
-            sdl_display_init(ds, full_screen, no_frame);
-#endif
+        sdl_display_init(ds, full_screen, no_frame);
         break;
 #elif defined(CONFIG_COCOA)
     case DT_SDL:
         cocoa_display_init(ds, full_screen);
+        break;
+#endif
+#if defined(CONFIG_MARU)
+    case DT_MARU:
+        maru_display_init(ds);
+        if (skin_disabled == 1) {
+            set_emul_skin_enable(0);
+        } else {
+            set_emul_skin_enable(1);
+        }
         break;
 #endif
     default:

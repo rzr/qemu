@@ -15,6 +15,7 @@
  * GNU GPL, version 2 or (at your option) any later version.
  */
 
+
 #include <inttypes.h>
 
 #include "virtio.h"
@@ -811,6 +812,7 @@ static int virtio_balloon_exit_pci(PCIDevice *pci_dev)
 }
 
 #ifdef CONFIG_VIRTIO_GL
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 static int virtio_gl_init_pci(PCIDevice *pci_dev)
 {
     VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
@@ -823,6 +825,7 @@ static int virtio_gl_init_pci(PCIDevice *pci_dev)
     virtio_init_pci(proxy, vdev);
     return 0;
 }
+#endif
 #endif
 
 static Property virtio_blk_properties[] = {
@@ -1007,7 +1010,7 @@ static TypeInfo virtio_scsi_info = {
     .class_init    = virtio_scsi_class_init,
 };
 
-
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 #ifdef CONFIG_VIRTIO_GL
 static void virtio_gl_class_init(ObjectClass *klass, void *data)
 {
@@ -1029,6 +1032,7 @@ static TypeInfo virtio_gl_info = {
     .instance_size = sizeof(VirtIOPCIProxy),
     .class_init    = virtio_gl_class_init,
 };
+#endif
 #endif
 
 static void virtio_pci_register_types(void)

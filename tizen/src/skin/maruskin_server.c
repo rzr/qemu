@@ -27,6 +27,14 @@
  *
  */
 
+
+#include "maru_common.h"
+
+#ifdef CONFIG_DARWIN
+//shared memory
+#define USE_SHM
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -38,11 +46,14 @@
 #include "maruskin_operation.h"
 #include "qemu-thread.h"
 #include "emul_state.h"
-#include "maru_sdl.h"
 #include "maruskin_client.h"
 #include "emulator.h"
-#include "debug_ch.h"
-#ifdef _WIN32
+
+#ifndef USE_SHM
+#include "maru_sdl.h"
+#endif
+
+#ifdef CONFIG_WIN32
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -52,7 +63,10 @@
 #include <sys/socket.h>
 #endif
 
-MULTI_DEBUG_CHANNEL( qemu, skin_server );
+#include "debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(qemu, skin_server);
+
 
 #define MAX_REQ_ID 0x7fffffff
 #define RECV_BUF_SIZE 32
@@ -195,7 +209,7 @@ void shutdown_skin_server( void ) {
                 INFO( "skin client sent normal shutdown response.\n" );
                 break;
             } else {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
                 Sleep( 1 ); // 1ms
 #else
                 usleep( 1000 ); // 1ms
@@ -209,7 +223,7 @@ void shutdown_skin_server( void ) {
     is_force_close_client = 1;
 
     if ( client_sock ) {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
         closesocket( client_sock );
 #else
         close( client_sock );
@@ -219,7 +233,7 @@ void shutdown_skin_server( void ) {
     if ( close_server_socket ) {
         INFO( "skin client did not send normal shutdown response.\n" );
         if ( server_sock ) {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
             closesocket( server_sock );
 #else
             close( server_sock );
@@ -254,7 +268,7 @@ static void parse_skinconfig_prop( void ) {
 
     memset( skin_config_path, 0, target_path_len + 32 );
     strcpy( skin_config_path, tizen_target_path );
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     strcat( skin_config_path, "\\" );
 #else
     strcat( skin_config_path, "/" );
@@ -362,7 +376,7 @@ static void parse_skin_args( void ) {
 
             free( arg );
 
-        }else {
+        } else {
             ERR( "fail to strdup." );
         }
 
@@ -701,7 +715,9 @@ static void* run_skin_server( void* args ) {
                         do_rotation_event( rotation_type );
                     }
 
-                    maruskin_sdl_resize(); //send sdl event
+#ifndef USE_SHM
+                    maruskin_sdl_resize(); // send sdl event
+#endif
                     break;
                 }
                 case RECV_SCREEN_SHOT: {
@@ -800,7 +816,7 @@ static void* run_skin_server( void* args ) {
 
 cleanup:
     if ( server_sock ) {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
         closesocket( server_sock );
 #else
         close( server_sock );
@@ -1041,7 +1057,7 @@ static void* do_heart_beat( void* args ) {
 
                     is_force_close_client = 1;
                     if ( client_sock ) {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
                         closesocket( client_sock );
 #else
                         close( client_sock );
@@ -1064,7 +1080,7 @@ static void* do_heart_beat( void* args ) {
 
         is_force_close_client = 1;
         if ( client_sock ) {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
             closesocket( client_sock );
 #else
             close( client_sock );
@@ -1073,7 +1089,7 @@ static void* do_heart_beat( void* args ) {
 
         stop_server = 1;
         if ( server_sock ) {
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
             closesocket( server_sock );
 #else
             close( server_sock );

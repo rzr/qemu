@@ -1,13 +1,11 @@
 /*
- * Emulator
+ * Shared memory
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
- * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
+ * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,17 +27,36 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header of file these are config structures and defines in emulator
- */
 
-#ifndef __MARU_COMMON_H__
-#define __MARU_COMMON_H__
+#include "maru_shm.h"
+#include "emul_state.h"
+#include "debug_ch.h"
 
-#include "config-host.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
+MULTI_DEBUG_CHANNEL(tizen, maru_shm);
 
-#endif /* __MARU_COMMON_H__ */
+
+void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h)
+{
+    //TODO:
+}
+
+void qemu_ds_shm_resize(DisplayState *ds)
+{
+    //TODO:
+}
+
+void qemu_ds_shm_refresh(DisplayState *ds)
+{
+    //TODO:
+}
+
+void maruskin_shm_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+{
+    INFO("maru shm initialization = %d\n", is_resize);
+
+    if (is_resize == FALSE) { //once
+        set_emul_lcd_size(lcd_size_width, lcd_size_height);
+        set_emul_sdl_bpp(32);
+    }
+}
+

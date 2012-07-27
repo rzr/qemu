@@ -108,8 +108,7 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
 
                     if ((args[i] == 0 && args_size == 0 &&
                         !IS_NULL_POINTER_OK_FOR_FUNC(func_number)) ||
-                        (args[i] == 0 && args_size != 0) ||
-                        (args[i] != 0 && args_size == 0))
+                        (args[i] == 0 && args_size != 0))
                             return 0;
 
                     argptr += 4;

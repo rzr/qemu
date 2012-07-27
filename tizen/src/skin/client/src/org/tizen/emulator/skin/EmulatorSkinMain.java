@@ -56,6 +56,7 @@ import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.StringUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 /**
  * 
@@ -68,7 +69,14 @@ public class EmulatorSkinMain {
 	public static final String DBI_FILE_NAME = "default.dbi";
 
 	private static Logger logger;
-	
+
+	static {
+		/* shared memory */
+		if (SwtUtil.isMacPlatform()) {
+		    System.loadLibrary("shared");
+		}
+	 }
+
 	/**
 	 * @param args
 	 */
@@ -148,7 +156,14 @@ public class EmulatorSkinMain {
 			String onTopVal = config.getSkinProperty( SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString() );
 			boolean isOnTop = Boolean.parseBoolean( onTopVal );
 
-			EmulatorSkin skin = new EmulatorSkin( config, isOnTop );
+			/* create skin */
+			EmulatorSkin skin;
+			if (SwtUtil.isMacPlatform()) {
+				skin = new EmulatorShmSkin(config, isOnTop);
+			} else { // linux & windows
+				skin = new EmulatorSdlSkin(config, isOnTop);
+			}
+
 			long windowHandleId = skin.compose();
 
 			int uid = config.getArgInt( ArgsConstants.UID );

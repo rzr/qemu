@@ -79,18 +79,19 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class ScreenShotDialog {
 
 	public final static String DEFAULT_FILE_EXTENSION = "png";
 
-	public final static int RED_MASK = 0x0000FF00;
-	public final static int GREEN_MASK = 0x00FF0000;
-	public final static int BLUE_MASK = 0xFF000000;
-	public final static int COLOR_DEPTH = 32;
+	public static final int RED_MASK = 0x0000FF00;
+	public static final int GREEN_MASK = 0x00FF0000;
+	public static final int BLUE_MASK = 0xFF000000;
+	public static final int COLOR_DEPTH = 32;
 
-	public final static int CANVAS_MARGIN = 30;
-	public final static int TOOLITEM_COOLTIME = 200;
+	public static final int CANVAS_MARGIN = 30;
+	public static final int TOOLITEM_COOLTIME = 200;
 
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
@@ -498,7 +499,7 @@ public class ScreenShotDialog {
 
 				ImageData data = null;
 
-				if ( SkinUtil.isWindowsPlatform() ) {
+				if ( SwtUtil.isWindowsPlatform() ) {
 					// change RGB mask
 					ImageData imageData = image.getImageData();
 					PaletteData paletteData = new PaletteData( BLUE_MASK, GREEN_MASK, RED_MASK );

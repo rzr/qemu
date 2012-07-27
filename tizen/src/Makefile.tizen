@@ -16,9 +16,14 @@ CFLAGS += -g -O0
 endif
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm
-else
+LIBS += -lavformat -lavcodec -lavutil -lm -lopengl32 -lglu32 -lgdi32
+endif
+ifdef CONFIG_LINUX
 LIBS += -lavformat -lavcodec -lavutil -lm -lGL
+endif
+ifdef CONFIG_DARWIN
+# FIXME: disabled codec on Mac now
+# LIBS += -lavformat -lavcodec -lavutil -lm
 endif
 
 ifdef CONFIG_DEBUG_EXEC
@@ -27,6 +32,7 @@ else
 GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
 endif
 
+ifndef CONFIG_DARWIN
 ###########################################################
 ## Build openGL
 # i386
@@ -55,12 +61,16 @@ opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_p
 
 endif #CONFIG_GL
 ###########################################################
+endif #!CONFIG_DARWIN
 
 # maru loader
 obj-y += emulator.o emul_state.o option.o maru_err_table.o
 
 # maru display
+obj-y += maru_display.o maru_shm.o
+ifndef CONFIG_DARWIN
 obj-y += maru_sdl.o sdl_rotate.o maru_finger.o
+endif
 
 # sdb
 obj-y += sdb.o
@@ -82,10 +92,13 @@ obj-arm-y += maru_arm_vpci.o
 obj-arm-y += maru_arm_pmu.o
 obj-y += maru_brightness.o
 obj-y += maru_touchscreen.o
+ifndef CONFIG_DARWIN
 obj-y += maru_codec.o
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
 obj-$(CONFIG_WIN32) += maru_camera_win32_pci.o
+endif
+
 ifdef CONFIG_LINUX # libs for maru camera on linux host
 LIBS += -lv4l2 -lv4lconvert
 endif
@@ -100,7 +113,7 @@ obj-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keyma
 # guest server
 obj-y += guest_server.o
 
-ifndef CONFIG_WIN32
+ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
 obj-$(CONFIG_GL) += virtio-gl.o 
