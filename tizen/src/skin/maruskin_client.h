@@ -33,10 +33,12 @@
 
 #include "../maru_common.h"
 
-#define JAVA_MAX_COMMAND_LENGTH 512
+#define JAVA_MAX_COMMAND_LENGTH 1024
 
 #define JAR_SKINFILE_PATH "emulator-skin.jar"
 #define JAVA_EXEFILE_PATH "java"
+#define JAVA_LIBRARY_PATH "-Djava.library.path"
+
 #ifndef CONFIG_DARWIN
 #define JAVA_EXEOPTION "-jar"
 #else

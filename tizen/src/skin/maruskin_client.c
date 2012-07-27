@@ -63,7 +63,7 @@ static char** skin_argv;
 static void* run_skin_client(void* arg)
 {
     char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
-    char argv[256] = {0};
+    char argv[JAVA_MAX_COMMAND_LENGTH] = { 0, };
 
     INFO("run skin client\n");
     int i;
@@ -92,14 +92,14 @@ static void* run_skin_client(void* arg)
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
         strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
         strlen(OPT_VM_PATH) + strlen(vm_path) + strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
-        strlen(argv) + 20;
+        strlen(argv) + 42;
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         INFO("swt command length is too long! (%d)\n", len);
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf( cmd, len, "%s %s %s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s",
-        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH,
+    snprintf( cmd, len, "%s %s %s=. %s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s",
+        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, JAR_SKINFILE_PATH,
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
