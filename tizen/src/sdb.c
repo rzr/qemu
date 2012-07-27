@@ -213,7 +213,7 @@ int inet_strtoip(const char*  str, uint32_t  *ip)
 	return 0;
 }
 
-static int check_port_bind_listen(u_int port)
+int check_port_bind_listen(uint32_t port)
 {
 	struct sockaddr_in addr;
 	int s, opt = 1;
@@ -254,7 +254,7 @@ int get_sdb_base_port(void)
 {
 	int   tries     = 10;
 	int   success   = 0;
-	u_int port = 26100;
+	uint32_t port = 26100;
 
 	if(tizen_base_port == 0){
 
