@@ -42,6 +42,7 @@ MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 
 static int v4l2_fd;
 static int convert_trial;
+static int ready_count;
 
 static struct v4l2_format dst_fmt;
 
@@ -188,11 +189,17 @@ static int __v4l2_grab(MaruCamState *state)
 
     qemu_mutex_lock(&state->thread_mutex);
     if (state->streamon) {
-        if (state->req_frame) {
-            qemu_irq_raise(state->dev.irq[2]);
-            state->req_frame = 0;
+        if (ready_count >= 4) {
+            if (state->req_frame) {
+                state->req_frame = 0; // clear request
+                state->isr |= 0x01; // set a flag of rasing a interrupt.
+                qemu_irq_raise(state->dev.irq[2]);
+            }
+            ret = 1;
+        } else {
+            ++ready_count; // skip a frame cause first some frame are distorted.
+            ret = 0;
         }
-        ret = 1;
     } else {
         ret = -1;
     }
@@ -273,6 +280,7 @@ void marucam_device_start_preview(MaruCamState* state)
 {
     qemu_mutex_lock(&state->thread_mutex);
     state->streamon = 1;
+    ready_count = 0;
     state->buf_size = dst_fmt.fmt.pix.sizeimage;
     qemu_cond_signal(&state->thread_cond);
     qemu_mutex_unlock(&state->thread_mutex);
