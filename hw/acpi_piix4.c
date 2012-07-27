@@ -379,7 +379,11 @@ i2c_bus *piix4_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
     PCIDevice *dev;
     PIIX4PMState *s;
 
+#if defined(CONFIG_MARU) && defined(__x86_64__)
+    dev = pci_create(bus, devfn, "MARU_PM");
+#else
     dev = pci_create(bus, devfn, "PIIX4_PM");
+#endif
     qdev_prop_set_uint32(&dev->qdev, "smb_io_base", smb_io_base);
 
     s = DO_UPCAST(PIIX4PMState, dev, dev);
@@ -394,7 +398,11 @@ i2c_bus *piix4_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
 }
 
 static PCIDeviceInfo piix4_pm_info = {
+#if defined(CONFIG_MARU) && defined(__x86_64__)
+    .qdev.name          = "MARU_PM",
+#else
     .qdev.name          = "PIIX4_PM",
+#endif
     .qdev.desc          = "PM",
     .qdev.size          = sizeof(PIIX4PMState),
     .qdev.vmsd          = &vmstate_acpi,
