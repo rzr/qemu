@@ -30,11 +30,9 @@
  */
 
 
-#include "maru_common.h"
 #include <stdlib.h>
-#ifdef CONFIG_SDL
 #include <SDL.h>
-#endif
+#include "maru_common.h"
 #include "emulator.h"
 #include "sdb.h"
 #include "string.h"
@@ -50,14 +48,15 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
-#if defined(CONFIG_WIN32)
+#if defined( _WIN32)
 #include <windows.h>
-#elif defined(CONFIG_LINUX)
+#elif defined(__linux__)
 #include <linux/version.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
 #include <sys/ipc.h>  
 #include <sys/shm.h>
+
 #endif
 
 #include "mloop_event.h"
@@ -72,7 +71,7 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define LOGFILE             "emulator.log"
 #define MIDBUF  128
 int tizen_base_port = 0;
-
+static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 char tizen_target_path[MAXLEN] = {0, };
 char logpath[MAXLEN] = { 0, };
 
@@ -81,55 +80,21 @@ static char** skin_argv = NULL;
 static int qemu_argc = 0;
 static char** qemu_argv = NULL;
 
-extern void maru_display_fini(void);
+extern void maruskin_sdl_quit(void);
 void exit_emulator(void)
 {
+    cleanup_multi_touch_state();
+
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
 
-    maru_display_fini();
+    maruskin_sdl_quit();
 }
-
-static int check_port_bind_listen(u_int port)
-{
-    struct sockaddr_in addr;
-    int s, opt = 1;
-    int ret = -1;
-    socklen_t addrlen = sizeof(addr);
-    memset(&addr, 0, addrlen);
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-
-    if (((s = socket(AF_INET,SOCK_STREAM,0)) < 0) ||
-            (setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *)&opt,sizeof(int)) < 0) ||
-            (bind(s,(struct sockaddr *)&addr, sizeof(addr)) < 0) ||
-            (listen(s,1) < 0)) {
-
-        /* fail */
-        ret = -1;
-        ERR( "check port(%d) bind listen  fail \n", port);
-    }else{
-        /*fsucess*/
-        ret = 1;
-        INFO( "check port(%d) bind listen  ok \n", port);
-    }
-
-#ifdef CONFIG_WIN32
-    closesocket(s);
-#else
-    close(s);
-#endif
-
-    return ret;
-}
-
 
 void check_shdmem(void)
 {
-#if defined(CONFIG_LINUX)
+#ifndef CONFIG_WIN32
     int shm_id;
     void *shm_addr;
     u_int port;
@@ -167,7 +132,7 @@ void check_shdmem(void)
         }
     }
 
-#elif defined(CONFIG_WIN32)
+#else /* _WIN32*/
     u_int port;
     char* base_port = NULL;
     char* pBuf;
@@ -195,18 +160,18 @@ void check_shdmem(void)
             {
                 ERR("Could not map view of file (%d).\n", GetLastError());
                 CloseHandle(hMapFile);
-                return -1;
             }
 
             if(strcmp(pBuf, tizen_target_path) == 0)
             {
+			/*
                 if(check_port_bind_listen(port+1) > 0)
                 {
                     UnmapViewOfFile(pBuf);
                     CloseHandle(hMapFile);
                     continue;
                 }
-
+			*/
                 maru_register_exit_msg(MARU_EXIT_UNKNOWN, "Can not execute this VM.\nThe same name is running now.");
                 UnmapViewOfFile(pBuf);
                 CloseHandle(hMapFile);
@@ -220,14 +185,12 @@ void check_shdmem(void)
         CloseHandle(hMapFile);
         free(base_port);
     }
-#elif defined(CONFIG_DARWIN)
-    //TODO:
 #endif
 }
 
 void make_shdmem(void)
 {
-#if defined(CONFIG_LINUX)
+#ifndef _WIN32
 	int shmid; 
 	char *shared_memory;
 	shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT); 
@@ -244,7 +207,7 @@ void make_shdmem(void)
 	} 
 	sprintf(shared_memory, "%s", tizen_target_path);
 	INFO( "shared memory key: %d value: %s\n", tizen_base_port, (char*)shared_memory);
-#elif defined(CONFIG_WIN32)
+#else
 	HANDLE hMapFile;
 	char* pBuf;
 	char* port_in_use;
@@ -279,8 +242,6 @@ void make_shdmem(void)
 	CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
 	free(port_in_use);
 	free(shared_memory);
-#elif defined(CONFIG_DARWIN)
-    //TODO:
 #endif
 	return;
 }
@@ -391,7 +352,7 @@ void set_image_and_log_path(char* qemu_argv)
 
     strcpy(logpath, tizen_target_path);
     strcat(logpath, LOGS_SUFFIX);
-#ifdef CONFIG_WIN32
+#ifdef _WIN32
     if(access(g_win32_locale_filename_from_utf8(logpath), R_OK) != 0) {
        g_mkdir(g_win32_locale_filename_from_utf8(logpath), 0755); 
     }
@@ -454,11 +415,9 @@ static void system_info(void)
     strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
     INFO("* Current time : %s\n", timeinfo);
 
-#ifdef CONFIG_SDL
     /* Gets the version of the dynamically linked SDL library */
     INFO("* Host sdl version : (%d, %d, %d)\n",
         SDL_Linked_Version()->major, SDL_Linked_Version()->minor, SDL_Linked_Version()->patch);
-#endif
 
 #if defined(CONFIG_WIN32)
     /* Retrieves information about the current os */
@@ -521,8 +480,6 @@ void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
 
-    sdb_setup();
-
     INFO("call construct_main_window\n");
 
     construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv);
@@ -546,10 +503,11 @@ int main(int argc, char* argv[])
     
     atexit(maru_atexit);
     
-    check_shdmem();
+	check_shdmem();
     make_shdmem();
-
-    system_info();
+	sdb_setup();
+    
+	system_info();
 
     INFO("Prepare running...\n");
     redir_output(); // Redirect stdout, stderr after debug_ch is initialized...
