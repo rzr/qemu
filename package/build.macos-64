@@ -32,6 +32,13 @@ build()
 	cd $SRCDIR/tizen/
 #	./emulator_configure.sh
 	make all_dibs
+    if [ $? -eq 0 ] 
+    then
+        echo "build success"
+    else
+        echo "build failure"
+        exit 1
+    fi
 }
 
 # install
