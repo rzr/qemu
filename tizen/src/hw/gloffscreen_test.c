@@ -108,14 +108,27 @@ int gl_acceleration_capability_check (void) {
       memcpy(&datain_flip[((TY-1)-y)*bpp*TX], &datain[y*bpp*TX], bpp*TX);
     }
 
-    glo_init();
+    if (glo_init() != 0) {
+        printf ("Host does not have GL hardware acceleration!(glo_init() failed)\n");
+        test_failure = 1;
+        goto TEST_END;
+    }
+
     // new surface
     context = glo_context_create(bufferFlags, 0);
-	if (context == NULL)
-		return 1;
+	if (context == NULL) {
+        printf ("Host does not have GL hardware acceleration!(context_create() failed)\n");
+        test_failure = 1;
+        goto TEST_END;
+    }
+
     surface = glo_surface_create(TX, TY, context);
-	if (surface == NULL)
-		return 1;
+	if (surface == NULL) {
+        printf ("Host does not have GL hardware acceleration!(surface_create() failed)\n");
+        test_failure = 1;
+        goto TEST_END;
+    }
+
     glo_surface_makecurrent(surface);
     printf("GL VENDOR %s\n", glGetString(GL_VENDOR));
     printf("GL RENDERER %s\n", glGetString(GL_RENDERER));
