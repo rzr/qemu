@@ -158,6 +158,7 @@ public class EmulatorSkin {
 	private boolean isOnUsbKbd;
 
 	private ScreenShotDialog screenShotDialog;
+	private Menu contextMenu;
 
 	private SocketCommunicator communicator;
 	private long windowHandleId;
@@ -167,6 +168,7 @@ public class EmulatorSkin {
 	private MouseTrackListener shellMouseTrackListener;
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
+	private MenuDetectListener shellMenuDetectListener;
 
 	//private DragDetectListener canvasDragDetectListener;
 	private MouseMoveListener canvasMouseMoveListener;
@@ -256,16 +258,14 @@ public class EmulatorSkin {
 	}
 
 	private void setMenu() {
+		contextMenu = new Menu(shell);
 
-		Menu contextMenu = new Menu( shell );
+		addMenuItems(shell, contextMenu);
 
-		addMenuItems( shell, contextMenu );
+		addShellListener(shell);
+		addCanvasListener(shell, lcdCanvas);
 
-		addShellListener( shell );
-		addCanvasListener( shell, lcdCanvas );
-
-		shell.setMenu( contextMenu );
-
+		shell.setMenu(contextMenu);
 	}
 
 //	private void readyToReopen( EmulatorSkin sourceSkin, boolean isOnTop ) {
@@ -707,6 +707,20 @@ public class EmulatorSkin {
 
 		shell.addMouseListener( shellMouseListener );
 
+		shellMenuDetectListener = new MenuDetectListener() {
+			@Override
+			public void menuDetected(MenuDetectEvent e) {
+				if (EmulatorSkin.this.contextMenu != null && EmulatorSkin.this.isMousePressed == false) {
+					shell.setMenu(EmulatorSkin.this.contextMenu);
+					EmulatorSkin.this.contextMenu.setVisible(true);
+					e.doit = false;
+				} else {
+					shell.setMenu(null);
+				}
+			}
+		};
+
+		shell.addMenuDetectListener(shellMenuDetectListener);
 	}
 
 	private void removeShellListeners() {
