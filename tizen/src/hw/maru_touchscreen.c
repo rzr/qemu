@@ -186,7 +186,7 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
 
             pthread_mutex_unlock(&event_mutex);
 
-            memset(buf, 0, sizeof(buf) * (p->iov.size - 1));
+            memset(buf, 0, sizeof(buf));
             ret = usb_touchscreen_poll(s, buf, p->iov.size); //write event to packet
             usb_packet_copy(p, buf, ret);
             break;
