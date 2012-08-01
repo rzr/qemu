@@ -106,11 +106,7 @@
 			<arg line="Share.c" />
 			<arg line="-o" />
 			<arg line="libshare.dylib" />
-<<<<<<< HEAD
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
-=======
-			<arg line="-I${env.JAVA_HOME}/../Headers" />
->>>>>>> c82a28fbb7e784e38e8536466461ef35ab766688
 			<arg line="-fPIC" />
 		</exec>
 		<delete>
