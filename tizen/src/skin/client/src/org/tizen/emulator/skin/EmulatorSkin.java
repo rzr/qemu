@@ -518,6 +518,19 @@ public class EmulatorSkin {
 
 		shell.addPaintListener( shellPaintListener );
 
+		/* FocusListener shellFocusListener = new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent event) {
+				logger.info("gain focus");
+			}
+
+			public void focusLost(FocusEvent event) {
+				logger.info("lost focus");
+			}
+		};
+
+		lcdCanvas.addFocusListener(shellFocusListener); */
+
 		shellMouseTrackListener = new MouseTrackAdapter() {
 			@Override
 			public void mouseExit( MouseEvent e ) {
@@ -720,11 +733,16 @@ public class EmulatorSkin {
 
 		canvasMenuDetectListener = new MenuDetectListener() {
 			@Override
-			public void menuDetected( MenuDetectEvent e ) {
+			public void menuDetected(MenuDetectEvent e) {
 				Menu menu = shell.getMenu();
-				lcdCanvas.setMenu( menu );
-				menu.setVisible( true );
-				e.doit = false;
+
+				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
+					lcdCanvas.setMenu(menu);
+					menu.setVisible(true);
+					e.doit = false;
+				} else {
+					lcdCanvas.setMenu(null);
+				}
 			}
 		};
 
