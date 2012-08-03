@@ -33,6 +33,7 @@
 #include "maru_sdl.h"
 #include "emul_state.h"
 #include "sdl_rotate.h"
+#include "maru_sdl_rotozoom.h"
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "debug_ch.h"
@@ -347,15 +348,19 @@ static void qemu_update(void)
         { //sdl surface
             SDL_Surface *processing_screen = NULL;
 
-            if (current_scale_factor != 1.0 || current_screen_degree != 0.0) {
+            if (current_scale_factor <= 0.5) {
+                /* zoom filter : c00 c0-1 c01 c-10 c10 */
+                processing_screen = maru_rotozoom(surface_qemu, (int)current_screen_degree, current_scale_factor);
+                SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
+            } else if (current_scale_factor != 1.0 || current_screen_degree != 0.0) {
                 // workaround
                 // set color key 'magenta'
                 surface_qemu->format->colorkey = 0xFF00FF;
 
-                //image processing
+                /* zoom filter : c00 c01 c10 c11  */
                 processing_screen = rotozoomSurface(surface_qemu, current_screen_degree, current_scale_factor, 1);
                 SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
-            } else {
+            } else { //as-is
                 SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
             }
 
