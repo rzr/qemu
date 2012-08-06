@@ -74,6 +74,7 @@ static void interpolate_pixel_cpy(unsigned int *dst, unsigned int *src_addr, uns
         (((unsigned int) round(sum_b)) & 0x000000ff);
 #endif
 
+#if 0
     unsigned int sum_r = 0; //0x00ff0000
     unsigned int sum_g = 0; //0x0000ff00
     unsigned int sum_b = 0; //0x000000ff
@@ -97,6 +98,28 @@ static void interpolate_pixel_cpy(unsigned int *dst, unsigned int *src_addr, uns
         (src_addr[index_n] & B_CHANNEL_MASK) + (src_addr[index_s] & B_CHANNEL_MASK);
 
     *dst = 0xff000000 | ((sum_r / 5) & R_CHANNEL_MASK) | ((sum_g / 5) & G_CHANNEL_MASK) | ((sum_b / 5) & B_CHANNEL_MASK);
+#endif
+
+    unsigned int sum_r = 0; //0x00ff0000
+    unsigned int sum_g = 0; //0x0000ff00
+    unsigned int sum_b = 0; //0x000000ff
+
+    unsigned int c00 = (x * src_w) + y;
+    unsigned int c01 = (y + 1 > src_w) ? c00 : c00 + 1;
+    unsigned int c10 = (x + 1 > src_h) ? c00 : ((x + 1) * src_w) + y;
+    unsigned int c11 = (y + 1 > src_w) ? c00 : c10 + 1;
+
+    sum_r = (src_addr[c00] & R_CHANNEL_MASK) + (src_addr[c01] & R_CHANNEL_MASK) +
+        (src_addr[c10] & R_CHANNEL_MASK) + (src_addr[c11] & R_CHANNEL_MASK);
+
+    sum_g = (src_addr[c00] & G_CHANNEL_MASK) + (src_addr[c01] & G_CHANNEL_MASK) +
+        (src_addr[c10] & G_CHANNEL_MASK) + (src_addr[c11] & G_CHANNEL_MASK);
+
+    sum_b = (src_addr[c00] & B_CHANNEL_MASK) + (src_addr[c01] & B_CHANNEL_MASK) +
+        (src_addr[c10] & B_CHANNEL_MASK) + (src_addr[c11] & B_CHANNEL_MASK);
+
+    *dst = 0xff000000 | ((sum_r / 4) & R_CHANNEL_MASK) |
+        ((sum_g / 4) & G_CHANNEL_MASK) | ((sum_b / 4) & B_CHANNEL_MASK);
 }
 
 //TODO: optimization
