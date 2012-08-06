@@ -596,7 +596,7 @@ public class EmulatorSkin {
 						currentHoverRegion = region;
 
 						/* draw hover */
-						shell.getDisplay().asyncExec(new Runnable() {
+						shell.getDisplay().syncExec(new Runnable() {
 							public void run() {
 								if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
 									GC gc = new GC(shell);
@@ -664,7 +664,7 @@ public class EmulatorSkin {
 						/* draw the button region as the cropped keyPressed image area */
 						currentPressedRegion = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 						if (currentPressedRegion != null && currentPressedRegion.width != 0 && currentPressedRegion.height != 0) {
-							shell.getDisplay().asyncExec(new Runnable() {
+							shell.getDisplay().syncExec(new Runnable() {
 								public void run() {
 									if ( null != currentKeyPressedImage ) {
 										GC gc = new GC( shell );
