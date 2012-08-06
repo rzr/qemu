@@ -93,7 +93,7 @@ void maru_register_exit_msg(int maru_exit_index, char *additional_msg)
             len = JAVA_MAX_COMMAND_LENGTH - 1;
         }
 
-        pstrcpy(maru_exit_msg, sizeof(maru_exit_msg), additional_msg);
+        pstrcpy(maru_exit_msg, strlen(additional_msg) + 1, additional_msg);
     }
 }
 
@@ -166,7 +166,7 @@ char *maru_convert_path(char *msg, const char *path)
                 dos_err_msg[i] = '\\';
             }
         }
-        pstrcpy(err_msg, sizeof(err_msg), dos_err_msg);
+        pstrcpy(err_msg, strlen(dos_err_msg) + 1, dos_err_msg);
         g_free(dos_err_msg);
     }
 #endif
