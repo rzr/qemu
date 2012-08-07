@@ -39,7 +39,8 @@
 #define G_CHANNEL_MASK 0x0000ff00
 #define B_CHANNEL_MASK 0x000000ff
 
-SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, int angle, double zoom);
+SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle);
+
 
 static void interpolate_pixel_cpy(unsigned int *dst, unsigned int *src_addr, unsigned int src_w, unsigned int src_h, int x, int y)
 {
@@ -122,40 +123,39 @@ static void interpolate_pixel_cpy(unsigned int *dst, unsigned int *src_addr, uns
         ((sum_g / 4) & G_CHANNEL_MASK) | ((sum_b / 4) & B_CHANNEL_MASK);
 }
 
-//TODO: optimization
-SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, int angle, double zoom)
+SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
 {
 #define PRECISION 4096
 #define SHIFT 12
 
     int i, j;
-    SDL_Surface *rz_dst;
-    unsigned int dst_width = (unsigned int)(rz_src->w * zoom);
-    unsigned int dst_height = (unsigned int)(rz_src->h * zoom);
+    unsigned int dst_width = 0;
+    unsigned int dst_height = 0;
 
-    switch(angle) {
-        case 90:
-        case 270:
-            rz_dst = SDL_CreateRGBSurface(SDL_SWSURFACE, dst_height, dst_width, 32,
-                rz_src->format->Rmask, rz_src->format->Gmask,
-                rz_src->format->Bmask, rz_src->format->Amask);
-            break;
-        case 0:
-        case 180:
-        default:
-            rz_dst = SDL_CreateRGBSurface(SDL_SWSURFACE, dst_width, dst_height, 32,
-                rz_src->format->Rmask, rz_src->format->Gmask,
-                rz_src->format->Bmask, rz_src->format->Amask);
-            break;
-    } //TODO: exile 
-
-    unsigned int sx = (rz_src->w) * PRECISION / dst_width;
-    unsigned int sy = (rz_src->h) * PRECISION / dst_height; //TODO: exile 
+    unsigned int sx = 0;
+    unsigned int sy = 0;
     unsigned int row_index = 0;
     unsigned int col_index = 0;
 
     unsigned int *out = NULL;
     unsigned int *row = NULL;
+
+    switch(angle) {
+        case 90:
+        case 270:
+            dst_width = rz_dst->h;
+            dst_height = rz_dst->w;
+            break;
+        case 0:
+        case 180:
+        default:
+            dst_width = rz_dst->w;
+            dst_height = rz_dst->h;
+            break;
+    }
+
+    sx = (rz_src->w) * PRECISION / dst_width;
+    sy = (rz_src->h) * PRECISION / dst_height;
 
     SDL_LockSurface(rz_src);
 
