@@ -417,6 +417,8 @@ public class EmulatorSkin {
 
 	private void arrangeSkin( int lcdWidth, int lcdHeight, int scale, short rotationId ) {
 
+		Image tempImage = null;
+		Image tempKeyPressedImage = null;
 		this.currentLcdWidth = lcdWidth;
 		this.currentLcdHeight = lcdHeight;
 		this.currentScale = scale;
@@ -424,10 +426,10 @@ public class EmulatorSkin {
 		this.currentAngle = SkinRotation.getAngle( rotationId );
 
 		if ( null != currentImage ) {
-			currentImage.dispose();
+			tempImage = currentImage;
 		}
 		if ( null != currentKeyPressedImage ) {
-			currentKeyPressedImage.dispose();
+			tempKeyPressedImage = currentKeyPressedImage;
 		}
 
 		shell.redraw();
@@ -435,6 +437,13 @@ public class EmulatorSkin {
 		currentImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN );
 		currentKeyPressedImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale,
 				ImageType.IMG_TYPE_PRESSED );
+
+		if (tempImage != null) {
+			tempImage.dispose();
+		}
+		if (tempKeyPressedImage != null) {
+			tempKeyPressedImage.dispose();
+		}
 
 		SkinUtil.trimShell( shell, currentImage );
 		SkinUtil.adjustLcdGeometry( lcdCanvas, scale, rotationId );
@@ -600,11 +609,13 @@ public class EmulatorSkin {
 							public void run() {
 								if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
 									GC gc = new GC(shell);
-									gc.setLineWidth(1);
-									gc.setForeground(hoverColor);
-									gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
+									if (gc != null) {
+										gc.setLineWidth(1);
+										gc.setForeground(hoverColor);
+										gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
 
-									gc.dispose();
+										gc.dispose();
+									}
 								}
 							}
 						});
@@ -668,27 +679,29 @@ public class EmulatorSkin {
 								public void run() {
 									if ( null != currentKeyPressedImage ) {
 										GC gc = new GC( shell );
+										if (gc != null) {
 
-										/* button */
-										gc.drawImage(currentKeyPressedImage,
+											/* button */
+											gc.drawImage(currentKeyPressedImage,
 												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
 												currentPressedRegion.width - 1, currentPressedRegion.height - 1, //src
 												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
 												currentPressedRegion.width - 1, currentPressedRegion.height - 1); //dst
 
-										/* hover */
-										if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
-											gc.setLineWidth(1);
-											gc.setForeground(hoverColor);
-											gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
-										}
+											/* hover */
+											if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
+												gc.setLineWidth(1);
+												gc.setForeground(hoverColor);
+												gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
+											}
 
-										gc.dispose();
+											gc.dispose();
 
-										SkinUtil.trimShell(shell, currentKeyPressedImage,
+											SkinUtil.trimShell(shell, currentKeyPressedImage,
 												currentPressedRegion.x, currentPressedRegion.y, currentPressedRegion.width, currentPressedRegion.height);
 
-										currentPressedRegion = null;
+											currentPressedRegion = null;
+										}
 									}
 								}
 							});
