@@ -792,8 +792,8 @@ public class EmulatorSkin {
 					int eventType = MouseEventType.DRAG.value();
 					Point canvasSize = canvas.getSize();
 
-					if ( e.x <= 0 ) {
-						e.x = 1;
+					if ( e.x < 0 ) {
+						e.x = 0;
 						eventType = MouseEventType.UP.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					} else if ( e.x >= canvasSize.x ) {
@@ -802,8 +802,8 @@ public class EmulatorSkin {
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					}
 
-					if ( e.y <= 0 ) {
-						e.y = 1;
+					if ( e.y < 0 ) {
+						e.y = 0;
 						eventType = MouseEventType.UP.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					} else if ( e.y >= canvasSize.y ) {
