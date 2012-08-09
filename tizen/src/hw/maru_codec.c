@@ -21,7 +21,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
  *
  * Contributors:
  * - S-Core Co., Ltd
@@ -39,7 +40,8 @@
  */
 #define MARU_CODEC_MMAP_MEM_SIZE    (16 * 1024 * 1024)
 #define MARU_CODEC_MMAP_COUNT       (4)
-#define MARU_CODEC_MEM_SIZE     (MARU_CODEC_MMAP_COUNT * MARU_CODEC_MMAP_MEM_SIZE)
+#define MARU_CODEC_MEM_SIZE \
+            (MARU_CODEC_MMAP_COUNT * MARU_CODEC_MMAP_MEM_SIZE)
 #define MARU_CODEC_REG_SIZE     (256)
 
 #define MARU_ROUND_UP_16(num)   (((num) + 15) & ~15)
@@ -357,8 +359,6 @@ void qemu_get_codec_ver(SVCodecState *s)
 
     offset = s->codecParam.mmapOffset;
     ctxIndex = s->codecParam.ctxIndex;
-
-    printf("offset:%d\n", offset);
 
     memset(codec_ver, 0, 32);
     pstrcpy(codec_ver, sizeof(codec_ver), MARU_CODEC_VERSION);
@@ -915,7 +915,7 @@ int qemu_avcodec_encode_video(SVCodecState *s, int ctxIndex)
             ERR("[%s] failed to get input buffer\n", __func__);
             return ret;
         }
-        ret = avpicture_fill((AVPicture*)pict, inputBuf, avctx->pix_fmt,
+        ret = avpicture_fill((AVPicture *)pict, inputBuf, avctx->pix_fmt,
                             avctx->width, avctx->height);
         if (ret < 0) {
             ERR("after avpicture_fill, ret:%d\n", ret);
@@ -944,7 +944,7 @@ int qemu_avcodec_encode_video(SVCodecState *s, int ctxIndex)
     return ret;
 }
 
-/* 
+/*
  *  int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
  *                            int *frame_size_ptr, AVPacket *avpkt)
  */
@@ -1063,7 +1063,7 @@ int qemu_avcodec_encode_audio(SVCodecState *s, int ctxIndex)
  */
 void qemu_av_picture_copy(SVCodecState *s, int ctxIndex)
 {
-    AVCodecContext* avctx;
+    AVCodecContext *avctx;
     AVPicture dst;
     AVPicture *src;
     int numBytes;
@@ -1086,7 +1086,7 @@ void qemu_av_picture_copy(SVCodecState *s, int ctxIndex)
 
     numBytes =
         avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-    if (numBytes < 0 ) {
+    if (numBytes < 0) {
         ERR("[%s] failed to get size of pixel format:%d\n",
             __func__, avctx->pix_fmt);
     }
@@ -1364,6 +1364,8 @@ uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
     switch (addr) {
     case CODEC_QUERY_STATE:
         ret = s->thread_state;
+        s->thread_state = 0;
+        TRACE("thread state: %d\n", s->thread_state);
         qemu_irq_lower(s->dev.irq[0]);
         break;
     default:
@@ -1384,10 +1386,6 @@ void codec_write(void *opaque, target_phys_addr_t addr,
     switch (addr) {
     case CODEC_API_INDEX:
         ret = codec_operate(value, s->codecParam.ctxIndex, s);
-        break;
-    case CODEC_QUERY_STATE:
-        s->thread_state = value;
-        TRACE("worker thread s: %d\n", s->thread_state);
         break;
     case CODEC_CONTEXT_INDEX:
         s->codecParam.ctxIndex = value;
@@ -1487,7 +1485,7 @@ int codec_init(PCIBus *bus)
 static PCIDeviceInfo codec_info = {
     .qdev.name      = MARU_CODEC_DEV_NAME,
     .qdev.desc      = "Virtual Codec device for Tizen emulator",
-    .qdev.size      = sizeof (SVCodecState),
+    .qdev.size      = sizeof(SVCodecState),
     .init           = codec_initfn,
     .exit           = codec_exitfn,
     .vendor_id      = PCI_VENDOR_ID_TIZEN,
