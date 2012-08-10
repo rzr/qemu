@@ -85,7 +85,7 @@ endif
 obj-i386-y += maru_pm.o
 obj-i386-y += maru_vga.o
 obj-i386-y += maru_brightness.o
-obj-i386-y += maru_touchscreen.o
+obj-i386-y += maru_touchscreen.o maru_virtio_touchscreen.o
 
 # FIXME: camera disabled
 ifndef CONFIG_DARWIN
