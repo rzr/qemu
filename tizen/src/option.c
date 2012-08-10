@@ -166,9 +166,14 @@ static void download_url(char *url)
     if (curl) { 
         fp = fopen(pactempfile,"wb");
         curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data); 
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+        //just in case network does not work.
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 3000);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         res = curl_easy_perform(curl);
+        if(res != 0) {
+            ERR("Fail to download pac file: %s\n", url);
+        }
         curl_easy_cleanup(curl); 
         fclose(fp);
     }     
@@ -263,16 +268,17 @@ static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, c
     output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
     fscanf(output, "%s", buf);
     pclose(output);
+    INFO("pac address: %s\n", buf);
     download_url(buf);
 #elif defined(CONFIG_WIN32)    
+    INFO("pac address: %s\n", (char*)url);
     download_url((char*)url);
 #endif
-    
     fp_pacfile = fopen(pactempfile, "r");
     if(fp_pacfile != NULL) {
 		while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
 			if( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
-				INFO("line found %s\n", line);
+				INFO("line found %s", line);
 				sscanf(line, "%*[^\"]\"%s %s", type, proxy);
 			}
 		}
@@ -294,13 +300,15 @@ static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, c
 		}
         else
         {
-            ERR("the type pac file is wrong!\n");
+            ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
 			fclose(fp_pacfile);
         }
     } 
     else {
         ERR("fail to get pacfile fp\n");
     }
+    
+    remove(pactempfile);
     return ;
 }
 
@@ -315,16 +323,24 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
 #if defined(CONFIG_LINUX) 
     char buf[MAXLEN];
 	FILE *output;
-	    
+   
     output = popen("gconftool-2 --get /system/proxy/mode", "r");
 	fscanf(output, "%s", buf);
    // strcpy(url, buf);
 	pclose(output);
-
-	if (strcmp(buf, "manual") == 0){
-        getlinuxproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-	}else if (strcmp(buf, "auto") == 0){
+    
+    //priority : auto > manual > none	    
+    if (strcmp(buf, "auto") == 0){
+        INFO("AUTO PROXY MODE\n");
         getautoproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+        return 0;
+	}
+    else if (strcmp(buf, "manual") == 0){
+        INFO("MENUAL PROXY MODE\n");
+        getlinuxproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+    }
+	else if (strcmp(buf, "none") == 0){
+        INFO("DIRECT PROXY MODE\n");
         return 0;
     }
 
