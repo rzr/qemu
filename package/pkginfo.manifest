@@ -19,7 +19,7 @@ Description: Tizen Emulator
 Package: emulator-qemu-x86
 OS: windows-32, windows-64
 Build-host-os: windows-32
-Build-dependency: SDL-1.2.14 [ windows-32 ], apache-ant-1.8.3-bin [ windows-32 ], gtk-bundle_2.16.6 [ windows-32 ], directx-dev [ windows-32 ], libcurl4 [ windows-32 ], [winemulator-lib [ windows-32 ] 
+Build-dependency: SDL-1.2.14 [ windows-32 ], apache-ant-1.8.3-bin [ windows-32 ], gtk-bundle_2.16.6 [ windows-32 ], directx-dev [ windows-32 ], libcurl-4 [ windows-32 ], [winemulator-lib [ windows-32 ] 
 Install-dependency: emulator-kernel-x86 [ windows-32 ], vgabios [ windows-32 ]
 Description: Tizen Emulator
 
