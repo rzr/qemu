@@ -29,6 +29,9 @@
 #include "blockdev.h"
 #include "virtio-pci.h"
 #include "range.h"
+#ifdef CONFIG_MARU
+#include "../tizen/src/hw/maru_pci_ids.h"
+#endif
 
 /* from Linux's linux/virtio_pci.h */
 
@@ -796,6 +799,31 @@ static int virtio_gl_init_pci(PCIDevice *pci_dev)
 }
 #endif
 
+#ifdef CONFIG_MARU
+static int maru_virtio_touchscreen_init_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+    VirtIODevice *vdev;
+
+    vdev = maru_virtio_touchscreen_init(&pci_dev->qdev);
+    if (!vdev) {
+        return -1;
+    }
+    virtio_init_pci(proxy, vdev);
+    return 0;
+}
+
+static int maru_virtio_touchscreen_exit_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+
+    virtio_pci_stop_ioeventfd(proxy);
+    maru_virtio_touchscreen_exit(proxy->vdev);
+    return virtio_exit_pci(pci_dev);
+}
+#endif
+
+
 static PCIDeviceInfo virtio_info[] = {
     {
         .qdev.name = "virtio-blk-pci",
@@ -897,6 +925,24 @@ static PCIDeviceInfo virtio_info[] = {
 		.qdev.reset = virtio_pci_reset,
 	},{
 #endif
+
+#ifdef CONFIG_MARU
+        .qdev.name = "virtio-touchscreen-pci",
+        .qdev.alias = "virtio-touchscreen",
+        .qdev.size = sizeof(VirtIOPCIProxy),
+        .init      = maru_virtio_touchscreen_init_pci,
+        .exit      = maru_virtio_touchscreen_exit_pci,
+        .vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET,
+        .device_id = PCI_DEVICE_ID_VIRTUAL_TOUCHSCREEN,
+        .revision  = VIRTIO_PCI_ABI_VERSION,
+        .class_id  = PCI_CLASS_OTHERS,
+        .qdev.props = (Property[]) {
+            DEFINE_PROP_END_OF_LIST(),
+        },
+        .qdev.reset = virtio_pci_reset,
+    },{
+#endif
+
         /* end of list */
     }
 };

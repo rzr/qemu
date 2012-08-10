@@ -210,6 +210,13 @@ void virtio_blk_exit(VirtIODevice *vdev);
 void virtio_serial_exit(VirtIODevice *vdev);
 void virtio_balloon_exit(VirtIODevice *vdev);
 
+/* Maru devices */
+#ifdef CONFIG_MARU
+VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev);
+void maru_virtio_touchscreen_exit(VirtIODevice *vdev);
+#endif
+
+
 #define DEFINE_VIRTIO_COMMON_FEATURES(_state, _field) \
 	DEFINE_PROP_BIT("indirect_desc", _state, _field, \
 			VIRTIO_RING_F_INDIRECT_DESC, true), \

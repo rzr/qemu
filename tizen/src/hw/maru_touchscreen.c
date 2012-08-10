@@ -32,7 +32,7 @@
 #include "maru_touchscreen.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(qemu, touchscreen);
+MULTI_DEBUG_CHANNEL(qemu, usb_touchscreen);
 
 
 #define MAX_TOUCH_EVENT_CNT 128
