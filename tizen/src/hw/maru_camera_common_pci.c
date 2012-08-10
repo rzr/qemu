@@ -63,8 +63,10 @@ static inline uint32_t marucam_mmio_read(void *opaque, target_phys_addr_t offset
     case MARUCAM_CMD_ISR:
         qemu_mutex_lock(&state->thread_mutex);
         ret = state->isr;
-        state->isr = 0;
-        qemu_irq_lower(state->dev.irq[2]);
+        if (ret != 0) {
+            qemu_irq_lower(state->dev.irq[2]);
+            state->isr = 0;
+        }
         qemu_mutex_unlock(&state->thread_mutex);
         break;
     case MARUCAM_CMD_G_DATA:
@@ -180,6 +182,20 @@ static const MemoryRegionOps maru_camera_mmio_ops = {
 };
 
 /*
+ *  QEMU bottom half funtion
+ */
+static void marucam_tx_bh(void *opaque)
+{
+    MaruCamState *state = (MaruCamState *)opaque;
+
+    qemu_mutex_lock(&state->thread_mutex);
+    if (state->isr) {
+        qemu_irq_raise(state->dev.irq[2]);
+    }
+    qemu_mutex_unlock(&state->thread_mutex);
+}
+
+/*
  *  Initialization function
  */
 static int marucam_initfn(PCIDevice *dev)
@@ -204,6 +220,8 @@ static int marucam_initfn(PCIDevice *dev)
 
     marucam_device_init(s);
 
+    s->tx_bh = qemu_bh_new(marucam_tx_bh, s);
+
     return 0;
 }
 
@@ -220,6 +238,8 @@ static int marucam_exitfn(PCIDevice *dev)
 
     memory_region_destroy (&s->vram);
     memory_region_destroy (&s->mmio);
+
+    INFO("[%s] camera device was released.\n", __func__);
     return 0;
 }
 

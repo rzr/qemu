@@ -73,6 +73,7 @@ struct MaruCamState {
     QemuThread          thread_id;
     QemuMutex           thread_mutex;;
     QemuCond            thread_cond;
+    QEMUBH              *tx_bh;
 
     void                *vaddr;     /* vram ptr */
     uint32_t            isr;
