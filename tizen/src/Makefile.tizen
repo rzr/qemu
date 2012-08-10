@@ -12,10 +12,10 @@ QEMU_CFLAGS += $(GLIB_CFLAGS)
 CFLAGS += -g -O2
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm -lopengl32 -lglu32 -lgdi32
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lGL
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
