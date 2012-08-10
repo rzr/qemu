@@ -29,7 +29,7 @@
 
 #include <pthread.h>
 #include "maru_virtio_touchscreen.h"
-#include "maru_pci_ids.h"
+#include "maru_device_ids.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, touchscreen);

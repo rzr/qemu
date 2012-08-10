@@ -30,7 +30,7 @@
 #include "virtio-pci.h"
 #include "range.h"
 #ifdef CONFIG_MARU
-#include "../tizen/src/hw/maru_pci_ids.h"
+#include "../tizen/src/hw/maru_device_ids.h"
 #endif
 
 /* from Linux's linux/virtio_pci.h */
@@ -933,7 +933,7 @@ static PCIDeviceInfo virtio_info[] = {
         .init      = maru_virtio_touchscreen_init_pci,
         .exit      = maru_virtio_touchscreen_exit_pci,
         .vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET,
-        .device_id = PCI_DEVICE_ID_VIRTUAL_TOUCHSCREEN,
+        .device_id = PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN,
         .revision  = VIRTIO_PCI_ABI_VERSION,
         .class_id  = PCI_CLASS_OTHERS,
         .qdev.props = (Property[]) {
