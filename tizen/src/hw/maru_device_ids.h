@@ -1,5 +1,5 @@
 /*
- * Maru PCI device id
+ * Maru Device IDs
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -37,17 +37,20 @@
  */
 
 
-#ifndef MARU_PCI_IDS_H_
-#define MARU_PCI_IDS_H_
+#ifndef MARU_DEVICE_IDS_H_
+#define MARU_DEVICE_IDS_H_
 
+
+/* PCI */
 #define PCI_VENDOR_ID_TIZEN              0xC9B5
 #define PCI_DEVICE_ID_VIRTUAL_OVERLAY    0x1010
 #define PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS 0x1014
 #define PCI_DEVICE_ID_VIRTUAL_CAMERA     0x1018
 #define PCI_DEVICE_ID_VIRTUAL_CODEC      0x101C
-#define PCI_DEVICE_ID_VIRTUAL_TOUCHSCREEN 0x101D
+#define PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN 0x101D
 
-
+/* virtio */
 #define VIRTIO_ID_TOUCHSCREEN 10
 
-#endif /* MARU_PCI_IDS_H_ */
+
+#endif /* MARU_DEVICE_IDS_H_ */

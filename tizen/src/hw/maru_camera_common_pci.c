@@ -39,7 +39,7 @@
 
 #include "pci.h"
 #include "pci_ids.h"
-#include "maru_pci_ids.h"
+#include "maru_device_ids.h"
 
 #include "maru_camera_common.h"
 #include "tizen/src/debug_ch.h"

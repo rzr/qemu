@@ -39,7 +39,7 @@
 
 #include "pc.h"
 #include "pci.h"
-#include "maru_pci_ids.h"
+#include "maru_device_ids.h"
 #include "maru_brightness.h"
 #include "debug_ch.h"
 
