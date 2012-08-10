@@ -193,7 +193,7 @@ static int __v4l2_grab(MaruCamState *state)
             if (state->req_frame) {
                 state->req_frame = 0; // clear request
                 state->isr |= 0x01; // set a flag of rasing a interrupt.
-                qemu_irq_raise(state->dev.irq[2]);
+                qemu_bh_schedule(state->tx_bh);
             }
             ret = 1;
         } else {
