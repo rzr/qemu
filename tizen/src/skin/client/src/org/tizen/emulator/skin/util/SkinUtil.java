@@ -101,7 +101,7 @@ public class SkinUtil {
 		String sdbPath = null;
 
 		if (SwtUtil.isWindowsPlatform()) {
-			sdbPath = ".\\..\\..\\sdb.exe";
+			sdbPath = ".\\..\\..\\sdb-run.bat";
 		} else {
 			sdbPath = "./../../sdb";
 		}
