@@ -158,6 +158,7 @@ public class EmulatorSkin {
 	private boolean isOnUsbKbd;
 
 	private ScreenShotDialog screenShotDialog;
+	private Menu contextMenu;
 
 	private SocketCommunicator communicator;
 	private long windowHandleId;
@@ -167,6 +168,7 @@ public class EmulatorSkin {
 	private MouseTrackListener shellMouseTrackListener;
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
+	private MenuDetectListener shellMenuDetectListener;
 
 	//private DragDetectListener canvasDragDetectListener;
 	private MouseMoveListener canvasMouseMoveListener;
@@ -256,16 +258,14 @@ public class EmulatorSkin {
 	}
 
 	private void setMenu() {
+		contextMenu = new Menu(shell);
 
-		Menu contextMenu = new Menu( shell );
+		addMenuItems(shell, contextMenu);
 
-		addMenuItems( shell, contextMenu );
+		addShellListener(shell);
+		addCanvasListener(shell, lcdCanvas);
 
-		addShellListener( shell );
-		addCanvasListener( shell, lcdCanvas );
-
-		shell.setMenu( contextMenu );
-
+		shell.setMenu(contextMenu);
 	}
 
 //	private void readyToReopen( EmulatorSkin sourceSkin, boolean isOnTop ) {
@@ -417,6 +417,8 @@ public class EmulatorSkin {
 
 	private void arrangeSkin( int lcdWidth, int lcdHeight, int scale, short rotationId ) {
 
+		Image tempImage = null;
+		Image tempKeyPressedImage = null;
 		this.currentLcdWidth = lcdWidth;
 		this.currentLcdHeight = lcdHeight;
 		this.currentScale = scale;
@@ -424,10 +426,10 @@ public class EmulatorSkin {
 		this.currentAngle = SkinRotation.getAngle( rotationId );
 
 		if ( null != currentImage ) {
-			currentImage.dispose();
+			tempImage = currentImage;
 		}
 		if ( null != currentKeyPressedImage ) {
-			currentKeyPressedImage.dispose();
+			tempKeyPressedImage = currentKeyPressedImage;
 		}
 
 		shell.redraw();
@@ -435,6 +437,13 @@ public class EmulatorSkin {
 		currentImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN );
 		currentKeyPressedImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale,
 				ImageType.IMG_TYPE_PRESSED );
+
+		if (tempImage != null) {
+			tempImage.dispose();
+		}
+		if (tempKeyPressedImage != null) {
+			tempKeyPressedImage.dispose();
+		}
 
 		SkinUtil.trimShell( shell, currentImage );
 		SkinUtil.adjustLcdGeometry( lcdCanvas, scale, rotationId );
@@ -518,6 +527,19 @@ public class EmulatorSkin {
 
 		shell.addPaintListener( shellPaintListener );
 
+		/* FocusListener shellFocusListener = new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent event) {
+				logger.info("gain focus");
+			}
+
+			public void focusLost(FocusEvent event) {
+				logger.info("lost focus");
+			}
+		};
+
+		lcdCanvas.addFocusListener(shellFocusListener); */
+
 		shellMouseTrackListener = new MouseTrackAdapter() {
 			@Override
 			public void mouseExit( MouseEvent e ) {
@@ -583,15 +605,17 @@ public class EmulatorSkin {
 						currentHoverRegion = region;
 
 						/* draw hover */
-						shell.getDisplay().asyncExec(new Runnable() {
+						shell.getDisplay().syncExec(new Runnable() {
 							public void run() {
 								if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
 									GC gc = new GC(shell);
-									gc.setLineWidth(1);
-									gc.setForeground(hoverColor);
-									gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
+									if (gc != null) {
+										gc.setLineWidth(1);
+										gc.setForeground(hoverColor);
+										gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
 
-									gc.dispose();
+										gc.dispose();
+									}
 								}
 							}
 						});
@@ -651,31 +675,33 @@ public class EmulatorSkin {
 						/* draw the button region as the cropped keyPressed image area */
 						currentPressedRegion = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 						if (currentPressedRegion != null && currentPressedRegion.width != 0 && currentPressedRegion.height != 0) {
-							shell.getDisplay().asyncExec(new Runnable() {
+							shell.getDisplay().syncExec(new Runnable() {
 								public void run() {
 									if ( null != currentKeyPressedImage ) {
 										GC gc = new GC( shell );
+										if (gc != null) {
 
-										/* button */
-										gc.drawImage(currentKeyPressedImage,
+											/* button */
+											gc.drawImage(currentKeyPressedImage,
 												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
 												currentPressedRegion.width - 1, currentPressedRegion.height - 1, //src
 												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
 												currentPressedRegion.width - 1, currentPressedRegion.height - 1); //dst
 
-										/* hover */
-										if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
-											gc.setLineWidth(1);
-											gc.setForeground(hoverColor);
-											gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
-										}
+											/* hover */
+											if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
+												gc.setLineWidth(1);
+												gc.setForeground(hoverColor);
+												gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width, currentHoverRegion.height);
+											}
 
-										gc.dispose();
+											gc.dispose();
 
-										SkinUtil.trimShell(shell, currentKeyPressedImage,
+											SkinUtil.trimShell(shell, currentKeyPressedImage,
 												currentPressedRegion.x, currentPressedRegion.y, currentPressedRegion.width, currentPressedRegion.height);
 
-										currentPressedRegion = null;
+											currentPressedRegion = null;
+										}
 									}
 								}
 							});
@@ -694,6 +720,20 @@ public class EmulatorSkin {
 
 		shell.addMouseListener( shellMouseListener );
 
+		shellMenuDetectListener = new MenuDetectListener() {
+			@Override
+			public void menuDetected(MenuDetectEvent e) {
+				if (EmulatorSkin.this.contextMenu != null && EmulatorSkin.this.isMousePressed == false) {
+					shell.setMenu(EmulatorSkin.this.contextMenu);
+					EmulatorSkin.this.contextMenu.setVisible(true);
+					e.doit = false;
+				} else {
+					shell.setMenu(null);
+				}
+			}
+		};
+
+		shell.addMenuDetectListener(shellMenuDetectListener);
 	}
 
 	private void removeShellListeners() {
@@ -720,11 +760,16 @@ public class EmulatorSkin {
 
 		canvasMenuDetectListener = new MenuDetectListener() {
 			@Override
-			public void menuDetected( MenuDetectEvent e ) {
+			public void menuDetected(MenuDetectEvent e) {
 				Menu menu = shell.getMenu();
-				lcdCanvas.setMenu( menu );
-				menu.setVisible( true );
-				e.doit = false;
+
+				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
+					lcdCanvas.setMenu(menu);
+					menu.setVisible(true);
+					e.doit = false;
+				} else {
+					lcdCanvas.setMenu(null);
+				}
 			}
 		};
 
@@ -760,8 +805,8 @@ public class EmulatorSkin {
 					int eventType = MouseEventType.DRAG.value();
 					Point canvasSize = canvas.getSize();
 
-					if ( e.x <= 0 ) {
-						e.x = 1;
+					if ( e.x < 0 ) {
+						e.x = 0;
 						eventType = MouseEventType.UP.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					} else if ( e.x >= canvasSize.x ) {
@@ -770,8 +815,8 @@ public class EmulatorSkin {
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					}
 
-					if ( e.y <= 0 ) {
-						e.y = 1;
+					if ( e.y < 0 ) {
+						e.y = 0;
 						eventType = MouseEventType.UP.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					} else if ( e.y >= canvasSize.y ) {

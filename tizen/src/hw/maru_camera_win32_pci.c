@@ -30,7 +30,6 @@
 #include "qemu-common.h"
 #include "maru_camera_common.h"
 #include "tizen/src/debug_ch.h"
-#include "tizen/src/mloop_event.h"
 
 #define CINTERFACE
 #define COBJMACROS
@@ -1085,7 +1084,7 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
         if (g_state->req_frame) {
             g_state->req_frame = 0; // clear request
             g_state->isr |= 0x01; // set a flag raising a interrupt.
-            mloop_evcmd_raise_intr(g_state->dev.irq[2]);
+            qemu_bh_schedule(g_state->tx_bh);
         }
     } else {
         ++ready_count; // skip a frame cause first some frame are distorted.

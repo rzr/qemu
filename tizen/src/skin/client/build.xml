@@ -87,7 +87,8 @@
 			<arg line="Share.c" />
 			<arg line="-o" />
 			<arg line="libshare.so" />
-			<arg line="-I${env.JAVA_HOME}/include" />
+			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
+			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}/linux" />
 			<arg line="-fPIC" />
 		</exec>
 		<delete>

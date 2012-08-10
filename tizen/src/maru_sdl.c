@@ -29,10 +29,12 @@
 
 
 #include <pthread.h>
+#include <math.h>
 #include "console.h"
 #include "maru_sdl.h"
 #include "emul_state.h"
 #include "sdl_rotate.h"
+#include "maru_sdl_rotozoom.h"
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "debug_ch.h"
@@ -45,6 +47,7 @@ DisplaySurface* qemu_display_surface = NULL;
 
 SDL_Surface *surface_screen;
 SDL_Surface *surface_qemu;
+SDL_Surface *processing_screen = NULL;
 GLuint texture;
 
 static double current_scale_factor = 1.0;
@@ -182,7 +185,8 @@ static void _sdl_init(void)
         h = temp;
     }
 
-    /*if (capability_check_gl != 0) {
+#if 0
+    if (capability_check_gl != 0) {
         ERR("GL check returned non-zero\n");
         surface_screen = NULL;
     } else {
@@ -192,17 +196,26 @@ static void _sdl_init(void)
     if (surface_screen == NULL) {
         sdl_opengl = 0;
         INFO("No OpenGL support on this system!??\n");
-        ERR("%s\n", SDL_GetError());*/
+        ERR("%s\n", SDL_GetError());
+#endif
 
         surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
         if (surface_screen == NULL) {
             ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
             return;
         }
-    /*} else {
+#if 0
+    } else {
         sdl_opengl = 1;
         INFO("OpenGL is supported on this system.\n");
-    }*/
+    }
+#endif
+
+    /* create buffer for image processing */
+    SDL_FreeSurface(processing_screen);
+    processing_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, get_emul_sdl_bpp(),
+        surface_qemu->format->Rmask, surface_qemu->format->Gmask,
+        surface_qemu->format->Bmask, surface_qemu->format->Amask);
 
     if (sdl_opengl == 1) {
         /* Set the OpenGL state */
@@ -345,21 +358,32 @@ static void qemu_update(void)
         }
         else
         { //sdl surface
-            SDL_Surface *processing_screen = NULL;
-
-            if (current_scale_factor != 1.0 || current_screen_degree != 0.0) {
+            if (current_scale_factor < 0.5)
+            {
+                /* process by sdl_gfx */
                 // workaround
                 // set color key 'magenta'
                 surface_qemu->format->colorkey = 0xFF00FF;
 
+                SDL_Surface *temp_surface = NULL;
+
+                temp_surface = rotozoomSurface(
+                    surface_qemu, current_screen_degree, current_scale_factor, 1);
+                SDL_BlitSurface(temp_surface, NULL, surface_screen, NULL);
+
+                SDL_FreeSurface(temp_surface);
+            }
+            else if (current_scale_factor != 1.0 || current_screen_degree != 0.0)
+            {
                 //image processing
-                processing_screen = rotozoomSurface(surface_qemu, current_screen_degree, current_scale_factor, 1);
+                processing_screen = maru_rotozoom(
+                    surface_qemu, processing_screen, (int)current_screen_degree);
                 SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
-            } else {
+            }
+            else //as-is
+            {
                 SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
             }
-
-            SDL_FreeSurface(processing_screen);
 
             /* draw multi-touch finger points */
             MultiTouchState *mts = get_emul_multi_touch_state();
@@ -462,6 +486,7 @@ void maruskin_sdl_quit(void)
         glDeleteTextures(1, &texture);
     }
 
+    SDL_FreeSurface(processing_screen);
     SDL_Quit();
 }
 
