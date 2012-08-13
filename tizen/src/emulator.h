@@ -38,6 +38,7 @@
 #define __EMULATOR_H__
 
 #define MAXLEN  512
+#define MAXPACKETLEN 60
 
 extern char tizen_target_path[MAXLEN];
 
