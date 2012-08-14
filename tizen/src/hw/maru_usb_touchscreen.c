@@ -29,7 +29,7 @@
  */
 
 
-#include "maru_touchscreen.h"
+#include "maru_usb_touchscreen.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, usb_touchscreen);
