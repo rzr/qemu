@@ -94,6 +94,11 @@ void qemu_ds_sdl_resize(DisplayState *ds)
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
+    if (surface_qemu != NULL) {
+        SDL_FreeSurface(surface_qemu);
+        surface_qemu = NULL;
+    }
+
     /* create surface_qemu */
     surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
             ds_get_width(ds),
@@ -296,6 +301,14 @@ static void qemu_update(void)
     if (sdl_alteration == 1) {
         sdl_alteration = 0;
         _sdl_init();
+
+        return;
+    } else if (sdl_alteration == -1) {
+        SDL_FreeSurface(processing_screen);
+        SDL_FreeSurface(surface_qemu);
+        surface_qemu = NULL;
+        SDL_Quit();
+
         return;
     }
 
@@ -486,8 +499,7 @@ void maruskin_sdl_quit(void)
         glDeleteTextures(1, &texture);
     }
 
-    SDL_FreeSurface(processing_screen);
-    SDL_Quit();
+    sdl_alteration = -1;
 }
 
 
