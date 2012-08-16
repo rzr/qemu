@@ -985,13 +985,22 @@ static void* do_heart_beat( void* args ) {
     int need_restart_skin_client = 0;
     int shutdown = 0;
 
-    while ( 1 ) {
+    int booting_handicap_cnt = 0;
 
-        struct timeval current;
+    struct timeval current;
+    struct timespec ts_heartbeat;
+
+    while ( 1 ) {
         gettimeofday( &current, NULL );
 
-        struct timespec ts_heartbeat;
-        ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
+        if (booting_handicap_cnt < 5) {
+            booting_handicap_cnt++;
+            ts_heartbeat.tv_sec = current.tv_sec +
+                (HEART_BEAT_INTERVAL * (HEART_BEAT_FAIL_COUNT / 2));
+        } else {
+            ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
+        }
+
         ts_heartbeat.tv_nsec = current.tv_usec * 1000;
 
         pthread_mutex_lock( &mutex_heartbeat );
@@ -1003,14 +1012,14 @@ static void* do_heart_beat( void* args ) {
             break;
         }
 
-        if( client_sock ) {
+        if ( client_sock ) {
             TRACE( "send HB\n" );
             if ( 0 > send_skin_header_only( client_sock, SEND_HEART_BEAT, 0 ) ) {
                 send_fail_count++;
             } else {
                 send_fail_count = 0;
             }
-        }else {
+        } else {
             // fail to get socket in accepting or client is not yet accepted.
             send_fail_count++;
             TRACE( "[HB] client socket is NULL yet.\n" );
@@ -1023,7 +1032,7 @@ static void* do_heart_beat( void* args ) {
 
         pthread_mutex_lock( &mutex_recv_heartbeat_count );
         recv_heartbeat_count++;
-        if( 1 < recv_heartbeat_count ) {
+        if ( 1 < recv_heartbeat_count ) {
             TRACE( "[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count );
         }
         pthread_mutex_unlock( &mutex_recv_heartbeat_count );
@@ -1033,7 +1042,7 @@ static void* do_heart_beat( void* args ) {
             need_restart_skin_client = 1;
         }
 
-        if( need_restart_skin_client ) {
+        if ( need_restart_skin_client ) {
 
             if ( RESTART_CLIENT_MAX_COUNT <= restart_client_count ) {
                 shutdown = 1;
@@ -1043,7 +1052,7 @@ static void* do_heart_beat( void* args ) {
                 if ( is_requested_shutdown_qemu_gracefully() ) {
                     INFO( "requested shutdown_qemu_gracefully, do not retry starting skin client process.\n" );
                     break;
-                }else {
+                } else {
 
                     send_fail_count = 0;
                     recv_heartbeat_count = 0;
