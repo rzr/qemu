@@ -239,9 +239,11 @@ static void _sdl_init(void)
         //glGenerateMipmapEXT(GL_TEXTURE_2D); // GL_MIPMAP_LINEAR
     }
 
-    /* remove multi-touch finger points */
-    get_emul_multi_touch_state()->multitouch_enable = 0;
-    clear_finger_slot();
+    /* rearrange multi-touch finger points */
+    if (get_emul_multi_touch_state()->multitouch_enable == 1) {
+        rearrange_finger_points(get_emul_lcd_width(), get_emul_lcd_height(),
+            current_scale_factor, rotaton_type);
+    }
 }
 
 static int point_degree = 0;

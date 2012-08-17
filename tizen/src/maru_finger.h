@@ -67,6 +67,7 @@ FingerPoint *get_finger_point_from_slot(int index);
 FingerPoint *get_finger_point_search(int x, int y);
 void maru_finger_processing_A(int touch_type, int origin_x, int origin_y, int x, int y);
 void maru_finger_processing_B(int touch_type, int origin_x, int origin_y, int x, int y);
+int rearrange_finger_points(int lcd_w, int lcd_h, double scale_factor, int rotaton_type);
 void clear_finger_slot(void);
 void cleanup_multi_touch_state(void);
 
