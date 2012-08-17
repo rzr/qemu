@@ -426,9 +426,77 @@ void maru_finger_processing_B(int touch_type, int origin_x, int origin_y, int x,
     }
 }
 
+static bool _calculate_origin_coordinates(int scaled_lcd_w, int scaled_lcd_h,
+    double scale_factor, int rotaton_type, FingerPoint *finger)
+{
+    int point_x, point_y, rotated_point_x, rotated_point_y, flag;
+
+    flag = 0;
+
+    rotated_point_x = point_x = (int)(finger->x * scale_factor);
+    rotated_point_y = point_y = (int)(finger->y * scale_factor);
+
+    if (rotaton_type == ROTATION_LANDSCAPE) {
+        rotated_point_x = point_y;
+        rotated_point_y = scaled_lcd_w - point_x;
+    } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
+        rotated_point_x = scaled_lcd_w - point_x;
+        rotated_point_y = scaled_lcd_h - point_y;
+    } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
+        rotated_point_x = scaled_lcd_h - point_y;
+        rotated_point_y = point_x;
+    }
+
+    if (finger->origin_x != rotated_point_x) {
+        finger->origin_x = rotated_point_x;
+        flag = 1;
+    }
+    if (finger->origin_y != rotated_point_y) {
+        finger->origin_y = rotated_point_y;
+        flag = 1;
+    }
+
+    if (flag) {
+        return true;
+    }
+
+    return false;
+}
+
+int rearrange_finger_points(int lcd_w, int lcd_h, double scale_factor, int rotaton_type)
+{
+    int i = 0;
+    int count = 0;
+    MultiTouchState *mts = get_emul_multi_touch_state();
+    FingerPoint *finger = NULL;
+
+    if (mts->multitouch_enable == 0) {
+        return 0;
+    }
+
+    lcd_w *= scale_factor;
+    lcd_h *= scale_factor;
+
+    for (i = 0; i < mts->finger_cnt; i++) {
+        finger = get_finger_point_from_slot(i);
+        if (finger != NULL && finger->id != 0) {
+            if (_calculate_origin_coordinates(lcd_w, lcd_h,
+                scale_factor, rotaton_type, finger) == true) {
+                count++;
+            }
+        }
+    }
+
+    if (count != 0) {
+        _grab_finger_id = 0;
+    }
+
+    return count;
+}
+
 void clear_finger_slot(void)
 {
-    int i;
+    int i = 0;
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
 
