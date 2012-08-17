@@ -31,6 +31,7 @@
 #include "i2c.h"
 #include "exec-memory.h"
 #include "../tizen/src/hw/maru_brightness.h"
+#include "arch_init.h"
 
 #undef DEBUG
 //#define DEBUG
@@ -98,14 +99,6 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
             initrd_filename);
     s = maru_arm_soc_init(get_system_memory(), ram_size);
 
-    /* WM8994 */
-    i2c_dev = i2c_create_slave(s->i2c_if[1], "wm8994", EXYNOS4210_WM8994_ADDR);
-
-    /* Audio */
-    dev = qdev_create(s->i2s_bus[0], "exynos4210.audio");
-    qdev_prop_set_ptr(dev, "wm8994", i2c_dev);
-    qdev_init_nofail(dev);
-
     /* PCI config */
     dev = qdev_create(NULL, "tizen_vpci");
     s->vpci_bus = sysbus_from_qdev(dev);
@@ -121,6 +114,8 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
     maru_camera_pci_init(pci_bus);
     codec_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
+
+    audio_init(NULL, pci_bus);
 
     arm_load_kernel(first_cpu, &maru_arm_board_binfo);
 }
