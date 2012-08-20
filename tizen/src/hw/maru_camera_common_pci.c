@@ -221,6 +221,7 @@ static int marucam_initfn(PCIDevice *dev)
     marucam_device_init(s);
 
     s->tx_bh = qemu_bh_new(marucam_tx_bh, s);
+    INFO("[%s] camera device was initialized.\n", __func__);
 
     return 0;
 }

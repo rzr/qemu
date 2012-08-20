@@ -239,6 +239,32 @@ wait_worker_thread:
     qemu_thread_exit((void*)0);
 }
 
+int marucam_device_check(void)
+{
+    int tmp_fd;
+    struct v4l2_capability cap;
+
+    tmp_fd = open("/dev/video0", O_RDWR);
+    if (tmp_fd < 0) {
+        ERR("camera device open failed.(/dev/video0)\n");
+        return 0;
+    }
+    if (ioctl(tmp_fd, VIDIOC_QUERYCAP, &cap) < 0) {
+        ERR("Could not qeury video capabilities\n");
+        close(tmp_fd);
+        return 0;
+    }
+    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
+            !(cap.capabilities & V4L2_CAP_STREAMING)) {
+        ERR("Not supported video driver.\n");
+        close(tmp_fd);
+        return 0;
+    }
+
+    close(tmp_fd);
+    return 1;
+}
+
 void marucam_device_init(MaruCamState* state)
 {
     qemu_thread_create(&state->thread_id, marucam_worker_thread, (void*)state);
