@@ -34,7 +34,7 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-maru \
  --disable-vnc \
- --enable-opengles \
+ --disable-opengles \
  --enable-gl \
  --enable-debug \
  --disable-pie
@@ -59,7 +59,7 @@ exec ./configure \
  --enable-hax \
  --enable-maru \
  --disable-vnc \
- --enable-opengles \
+ --disable-opengles \
  --enable-debug \
  --enable-gl $1
 ;;

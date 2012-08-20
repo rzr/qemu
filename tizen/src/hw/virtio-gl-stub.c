@@ -17,14 +17,9 @@
  */
 
 #include "virtio.h"
-int gl_acceleration_capability_check(void);
 
 VirtIODevice *virtio_gl_init(DeviceState *dev)
 {
 	return NULL;
 }
 
-int gl_acceleration_capability_check (void)
-{
-	return 1;
-}

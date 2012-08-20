@@ -19,7 +19,7 @@ ifdef CONFIG_WIN32
 LIBS += -lavformat -lavcodec -lavutil -lm -lopengl32 -lglu32 -lgdi32
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lGL
+LIBS += -lavformat -lavcodec -lavutil -lm -lGL -lXcomposite -lXext
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
@@ -41,7 +41,7 @@ ifdef CONFIG_GL
 GL_CUR_PATH = $(SRC_PATH)/tizen/src/hw
 
 GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu
-GL_CFLAGS += $(addprefix -I$(SRC_PATH)/,$(TARGET_DIRS)) $(QEMU_CFLAGS) $(CFLAGS)
+GL_CFLAGS += -I$(SRC_PATH)/i386-softmmu $(QEMU_CFLAGS) $(CFLAGS)
 
 parse_gl_h: parse_gl_h.c
 	$(CC) -g -o $@ $<
@@ -60,6 +60,24 @@ opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_p
 	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $<
 
 endif #CONFIG_GL
+
+ifdef CONFIG_OPENGLES
+
+parse_gl_h: parse_gl_h.c
+	$(CC) -g -o $@ $<
+
+gl_mangled.h: parse_gl_h
+	./parse_gl_h mangle 2>/dev/null
+
+gl_mangled.c: gl_mangled.h
+	./parse_gl_h mangle 2>/dev/null
+
+gloffscreen_glx.o gloffscreen_wgl.o gloffscreen_xcomposite.o: gl_mangled.h
+maru_sdl.o gloffscreen_test.o gloffscreen_common.o: gl_mangled.h
+
+obj-y += gl_mangled.o
+
+endif #CONFIG_OPENGLES
 ###########################################################
 endif #!CONFIG_DARWIN
 
@@ -117,8 +135,8 @@ ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
 obj-$(CONFIG_GL) += virtio-gl.o 
-obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o gloffscreen_common.o
-obj-$(CONFIG_GL) += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_wgl.o
+obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o gloffscreen_wgl.o
 obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
+obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o
 ###########################################################
 endif

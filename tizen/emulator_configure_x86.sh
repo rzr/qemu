@@ -34,7 +34,7 @@ exec ./configure \
  --enable-ldst-optimization \
  --enable-maru \
  --disable-vnc \
- --enable-opengles \
+ --disable-opengles \
  --enable-gl \
  --disable-pie
 ;;
@@ -58,7 +58,7 @@ exec ./configure \
  --enable-hax \
  --enable-maru \
  --disable-vnc \
- --enable-opengles \
+ --disable-opengles \
  --enable-gl $1
 ;;
 Darwin*)

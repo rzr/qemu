@@ -3886,7 +3886,7 @@ if test "$gl" = "yes" ; then
     if test "$mingw32" = "yes" ; then
       echo "LIBS+=-lopengl32 -lglu32" >> $config_target_mak
     else
-      echo "LIBS+=-lGL -lGLU -lXcomposite -lXext -ldl" >> $config_target_mak
+      echo "LIBS+=-lGLU -ldl" >> $config_target_mak
     fi
   ;;
   *)
@@ -3970,6 +3970,9 @@ fi
 
 if test "$target_arch2" = "arm" -a "$opengles" = "yes" ; then
   echo "CONFIG_BUILD_GLES=y" >> $config_target_mak
+# When OpenGLES enabled, QEMU uses two libGL and libGLES with the same symbols
+# Explicitly load openGL symbols from host libGL library
+  cflags="-DMANGLE_OPENGL_SYMBOLS $cflags"
   if test "$mingw32" = "yes" ; then
     cflags="-mthreads $cflags"
     ldflags="-mthreads $ldflags"

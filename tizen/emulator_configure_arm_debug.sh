@@ -35,7 +35,7 @@ exec ./configure \
  --enable-maru \
  --disable-vnc \
  --enable-opengles \
- --enable-gl \
+ --disable-gl \
  --enable-debug \
  --disable-pie
 ;;
@@ -61,7 +61,7 @@ exec ./configure \
  --disable-vnc \
  --enable-opengles \
  --enable-debug \
- --enable-gl $1
+ --disable-gl $1
 ;;
 Darwin*)
 cd distrib/libav
@@ -86,7 +86,7 @@ exec ./configure \
  --disable-vnc \
  --enable-opengles \
  --enable-debug \
- --enable-gl \
+ --disable-gl \
  --disable-pie
 ;;
 esac
