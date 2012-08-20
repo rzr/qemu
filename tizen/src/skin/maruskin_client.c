@@ -258,6 +258,20 @@ int start_simple_client(char* msg) {
 
     INFO("run simple client\n");
 
+#ifdef CONFIG_WIN32
+    // find java path in 64bit windows
+    JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
+	memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
+    if (is_wow64()) {
+        INFO("This process is running under WOW64.\n");
+        if (!get_java_path(&JAVA_EXEFILE_PATH)) {
+             strcpy(JAVA_EXEFILE_PATH, "java");
+	    }
+    } else {
+        strcpy(JAVA_EXEFILE_PATH, "java");
+    }
+#endif
+
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
         strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 7;
     if (len > JAVA_MAX_COMMAND_LENGTH) {
@@ -268,6 +282,10 @@ int start_simple_client(char* msg) {
     INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32
+    // for 64bit windows
+    free(JAVA_EXEFILE_PATH);
+    JAVA_EXEFILE_PATH=0;
+
     ret = WinExec(cmd, SW_SHOW);
 #else
     ret = system(cmd);
