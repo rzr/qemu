@@ -82,20 +82,24 @@ typedef struct VirtIOTouchscreen
 // lock for between communication thread and IO thread
 static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+VirtQueueElement elem;
 void maru_mouse_to_touchevent(int x, int y, int z, int buttons_state)
 {
     TouchEventEntry *te = NULL;
 
     pthread_mutex_lock(&event_mutex);
 
+#if 0
     if (queue_cnt >= MAX_TOUCH_EVENT_CNT) {
         pthread_mutex_unlock(&event_mutex);
         INFO("full touch event queue, lose event\n", queue_cnt);
         return;
     }
+#endif
 
     te = &(_events_buf[ringbuf_cnt % MAX_TOUCH_EVENT_CNT]);
     ringbuf_cnt++;
+
 
     /* mouse event is copied into the queue */
     te->index = ++queue_cnt; // 1 ~
@@ -104,20 +108,29 @@ void maru_mouse_to_touchevent(int x, int y, int z, int buttons_state)
     te->touch.z = z;
     te->touch.state = buttons_state;
 
-    QTAILQ_INSERT_TAIL(&events_queue, te, node);
+    //QTAILQ_INSERT_TAIL(&events_queue, te, node);
 
     pthread_mutex_unlock(&event_mutex);
 
-    TRACE("touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
+    INFO("touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
             te->index, te->touch.x, te->touch.y, te->touch.z, te->touch.state);
 
     // TODO:
-
+    memcpy(elem.in_sg[0].iov_base, &(te->touch), sizeof(EmulTouchState));
+    virtqueue_push(touchscreen_state.vq, &elem, 0);
     virtio_notify(touchscreen_state.vdev, touchscreen_state.vq);
 }
 
 static void maru_virtio_touchscreen_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
+    EmulTouchState touch;
+    INFO("maru_virtio_touchscreen_handle\n");
+
+    virtqueue_pop(vq, &elem);
+    memcpy(&touch, elem.in_sg[0].iov_base, sizeof(EmulTouchState));
+
+    INFO("!!!! x=%d, y=%d, z=%d, state=%d\n",
+            touch.x, touch.y, touch.z, touch.state);
 }
 
 static uint32_t virtio_touchscreen_get_features(VirtIODevice *vdev, uint32_t request_features)
@@ -140,7 +153,7 @@ VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
     }
 
     s->vdev.get_features = virtio_touchscreen_get_features;
-    s->vq = virtio_add_queue(&s->vdev, 128 /*check*/, maru_virtio_touchscreen_handle);
+    s->vq = virtio_add_queue(&s->vdev, 128, maru_virtio_touchscreen_handle);
 
     s->qdev = dev;
 
