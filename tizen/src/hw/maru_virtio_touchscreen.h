@@ -25,7 +25,7 @@
  * - S-Core Co., Ltd
  *
  */
- 
+
 
 #ifndef MARU_TOUCHSCREEN_H_
 #define MARU_TOUCHSCREEN_H_

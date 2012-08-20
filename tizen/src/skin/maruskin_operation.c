@@ -100,9 +100,17 @@ void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, i
 
     /* single touch */
     if (MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
+#if 1
         kbd_mouse_event(x, y, z, 1);
+#else
+        maru_mouse_to_touchevent(x, y, z, 1);
+#endif
     } else if (MOUSE_UP == event_type) {
+#if 1
         kbd_mouse_event(x, y, z, 0);
+#else
+        maru_mouse_to_touchevent(x, y, z, 0);
+#endif
     } else {
         ERR("undefined mouse event type:%d\n", event_type);
     }
