@@ -26,16 +26,13 @@ cd ..
 echo ""
 echo "##### QEMU configure for emulator"
 exec ./configure \
- --target-list="i386-softmmu arm-softmmu" \
  --disable-werror \
  --audio-drv-list=alsa \
  --audio-card-list=ac97 \
  --enable-ldst-optimization \
  --enable-maru \
  --disable-vnc \
- --enable-opengles \
- --enable-gl \
- --disable-pie
+ --disable-pie $1
 ;;
 MINGW*)
 cd distrib/libav
@@ -49,15 +46,12 @@ cd ..
 echo ""
 echo "##### QEMU configure for emulator"
 exec ./configure \
- --target-list="i386-softmmu arm-softmmu" \
  --audio-drv-list=winwave \
  --audio-card-list=ac97 \
  --enable-ldst-optimization \
  --enable-hax \
  --enable-maru \
- --disable-vnc \
- --enable-opengles \
- --enable-gl $1
+ --disable-vnc $1
 ;;
 Darwin*)
 cd distrib/libav
@@ -71,13 +65,11 @@ cd ..
 echo ""
 echo "##### QEMU configure for emulator"
 ./configure \
- --target-list=i386-softmmu \
  --audio-drv-list=coreaudio \
  --enable-mixemu \
  --audio-card-list=ac97 \
  --enable-maru \
  --disable-vnc \
- --disable-sdl \
- --disable-gl
+ --disable-sdl $1
 ;;
 esac
