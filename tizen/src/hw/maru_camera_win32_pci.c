@@ -1449,6 +1449,136 @@ static STDMETHODIMP SetVideoProcAmp(long nProperty, long value)
     return hr;
 }
 
+int marucam_device_check(void)
+{
+    int ret = 0;
+    HRESULT hr;
+    ICreateDevEnum *pCreateDevEnum = NULL;
+    IEnumMoniker *pEnumMK = NULL;
+    IMoniker *pMoniKer;
+
+    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+        ERR("[%s] failed to CoInitailizeEx\n", __func__);
+        goto error;
+    }
+
+    hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC, &IID_ICreateDevEnum, (void**)&pCreateDevEnum);
+    if (FAILED(hr)) {
+        ERR("[%s] failed to create instance of CLSID_SystemDeviceEnum\n", __func__);
+        goto error;
+    }
+
+    hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum, &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
+    if (FAILED(hr))
+    {
+        pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+        ERR("[%s] failed to create class enumerator\n");
+        goto error;
+    }
+
+    if (!pEnumMK)
+    {
+        pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+        ERR("[%s] class enumerator is NULL!!\n");
+        goto error;
+    }
+    pEnumMK->lpVtbl->Reset(pEnumMK);
+
+    hr = pEnumMK->lpVtbl->Next(pEnumMK, 1, &pMoniKer, NULL);
+    if (hr == S_FALSE)
+    {
+        hr = E_FAIL;
+    }
+    if (SUCCEEDED(hr))
+    {
+        IPropertyBag *pBag = NULL;
+        hr = pMoniKer->lpVtbl->BindToStorage(pMoniKer, 0, 0, &IID_IPropertyBag, (void **)&pBag);
+        if(SUCCEEDED(hr))
+        {
+            VARIANT var;
+            var.vt = VT_BSTR;
+            hr = pBag->lpVtbl->Read(pBag, L"FriendlyName", &var, NULL);
+            if (hr == NOERROR)
+            {
+                ret = 1;
+                SysFreeString(var.bstrVal);
+            }
+            pBag->lpVtbl->Release(pBag);
+        }
+        pMoniKer->lpVtbl->Release(pMoniKer);
+    }
+
+error:
+    CoUninitialize();
+    return ret;
+}
+
+int marucam_device_check(void)
+{
+    int ret = 0;
+    HRESULT hr;
+    ICreateDevEnum *pCreateDevEnum = NULL;
+    IEnumMoniker *pEnumMK = NULL;
+    IMoniker *pMoniKer;
+
+    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+        ERR("[%s] failed to CoInitailizeEx\n", __func__);
+        goto error;
+    }
+
+    hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC, &IID_ICreateDevEnum, (void**)&pCreateDevEnum);
+    if (FAILED(hr)) {
+        ERR("[%s] failed to create instance of CLSID_SystemDeviceEnum\n", __func__);
+        goto error;
+    }
+
+    hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum, &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
+    if (FAILED(hr))
+    {
+        pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+        ERR("[%s] failed to create class enumerator\n", __func__);
+        goto error;
+    }
+
+    if (!pEnumMK)
+    {
+        pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+        ERR("[%s] class enumerator is NULL!!\n", __func__);
+        goto error;
+    }
+    pEnumMK->lpVtbl->Reset(pEnumMK);
+
+    hr = pEnumMK->lpVtbl->Next(pEnumMK, 1, &pMoniKer, NULL);
+    if (hr == S_FALSE)
+    {
+        hr = E_FAIL;
+    }
+    if (SUCCEEDED(hr))
+    {
+        IPropertyBag *pBag = NULL;
+        hr = pMoniKer->lpVtbl->BindToStorage(pMoniKer, 0, 0, &IID_IPropertyBag, (void **)&pBag);
+        if(SUCCEEDED(hr))
+        {
+            VARIANT var;
+            var.vt = VT_BSTR;
+            hr = pBag->lpVtbl->Read(pBag, L"FriendlyName", &var, NULL);
+            if (hr == NOERROR)
+            {
+                ret = 1;
+                SysFreeString(var.bstrVal);
+            }
+            pBag->lpVtbl->Release(pBag);
+        }
+        pMoniKer->lpVtbl->Release(pMoniKer);
+    }
+
+error:
+    CoUninitialize();
+    return ret;
+}
+
 // MARUCAM_CMD_INIT
 void marucam_device_init(MaruCamState* state)
 {
