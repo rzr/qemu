@@ -943,7 +943,6 @@ IGrabCallback *g_pCallback;
 DWORD g_dwFourcc;
 LONG g_dwWidth;
 LONG g_dwHeight;
-REFERENCE_TIME g_dwAvgInterval;
 
 // V4L2 defines copy from videodev2.h
 #define V4L2_CTRL_FLAG_SLIDER       0x0020
@@ -1340,7 +1339,6 @@ static STDMETHODIMP SetDefaultValues(void)
                         (pvi->bmiHeader.biHeight == g_dwHeight) &&
                         (pvi->bmiHeader.biCompression == g_dwFourcc))
                     {
-                        pvi->AvgTimePerFrame = g_dwAvgInterval;
                         hr = pSConfig->lpVtbl->SetFormat(pSConfig, pmtConfig);
                         DeleteMediaType(pmtConfig);
                         INFO("Setting default values.\n");
@@ -1383,7 +1381,6 @@ static STDMETHODIMP SetResolution(LONG width, LONG height)
             VIDEOINFOHEADER* pvi = (VIDEOINFOHEADER*)pmt->pbFormat;
             pvi->bmiHeader.biWidth = width;
             pvi->bmiHeader.biHeight = height;
-            pvi->AvgTimePerFrame = g_dwAvgInterval;
             pvi->bmiHeader.biSizeImage = ((width * pvi->bmiHeader.biBitCount) >> 3 ) * height;
             hr = vsc->lpVtbl->SetFormat(vsc, pmt);
             if (hr != S_OK) {
@@ -1560,7 +1557,6 @@ void marucam_device_open(MaruCamState* state)
         goto error_failed;
     }
 
-    g_dwAvgInterval = 666666;
     g_dwFourcc = MAKEFOURCC('Y','U','Y','2');
     g_dwHeight = 480;
     g_dwWidth = 640;
@@ -1662,6 +1658,7 @@ void marucam_device_s_param(MaruCamState* state)
 {
     MaruCamParam *param = state->param;
 
+    /* We use default FPS of the webcam */
     param->top = 0;
 }
 
@@ -1670,11 +1667,13 @@ void marucam_device_g_param(MaruCamState* state)
 {
     MaruCamParam *param = state->param;
 
+    /* We use default FPS of the webcam
+     * return a fixed value on guest ini file (1/30).
+     */
     param->top = 0;
-
-    param->stack[0] = 0x1000; // V4L2_CAP_TIMEPERFRAME
-    param->stack[1] = 1; // numerator;
-    param->stack[2] = 30; // denominator;
+    param->stack[0] = 0x1000; /* V4L2_CAP_TIMEPERFRAME */
+    param->stack[1] = 1; /* numerator */
+    param->stack[2] = 30; /* denominator */
 }
 
 // MARUCAM_CMD_S_FMT

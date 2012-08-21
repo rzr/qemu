@@ -330,38 +330,23 @@ void marucam_device_stop_preview(MaruCamState* state)
 
 void marucam_device_s_param(MaruCamState* state)
 {
-    struct v4l2_streamparm sp;
     MaruCamParam *param = state->param;
 
+    /* We use default FPS of the webcam */
     param->top = 0;
-    memset(&sp, 0, sizeof(struct v4l2_streamparm));
-    sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    sp.parm.capture.timeperframe.numerator = param->stack[0];
-    sp.parm.capture.timeperframe.denominator = param->stack[1];
-
-    if (xioctl(v4l2_fd, VIDIOC_S_PARM, &sp) < 0) {
-        ERR("failed to set FPS: %s\n", strerror(errno));
-        param->errCode = errno;
-    }
 }
 
 void marucam_device_g_param(MaruCamState* state)
 {
-    struct v4l2_streamparm sp;
     MaruCamParam *param = state->param;
-    
-    param->top = 0;
-    memset(&sp, 0, sizeof(struct v4l2_streamparm));
-    sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    if (xioctl(v4l2_fd, VIDIOC_G_PARM, &sp) < 0) {
-        ERR("failed to get FPS: %s\n", strerror(errno));
-        param->errCode = errno;
-        return;
-    }
-    param->stack[0] = sp.parm.capture.capability;
-    param->stack[1] = sp.parm.capture.timeperframe.numerator;
-    param->stack[2] = sp.parm.capture.timeperframe.denominator;
+    /* We use default FPS of the webcam
+     * return a fixed value on guest ini file (1/30).
+     */
+    param->top = 0;
+    param->stack[0] = 0x1000; /* V4L2_CAP_TIMEPERFRAME */
+    param->stack[1] = 1; /* numerator */
+    param->stack[2] = 30; /* denominator */
 }
 
 void marucam_device_s_fmt(MaruCamState* state)
