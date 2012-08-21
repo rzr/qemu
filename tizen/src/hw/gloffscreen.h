@@ -71,11 +71,20 @@ extern void *glo_getprocaddress(const char *procName);
 /* OS-independent glXQueryExtensionsString */
 extern const char *glo_glXQueryExtensionsString(void);
 
+/* Create a light-weight context just for creating surface */
+extern GloContext *__glo_context_create(int formatFlags);
+
 /* Create an OpenGL context for a certain pixel format. formatflags are from the GLO_ constants */
 extern GloContext *glo_context_create(int formatFlags, GloContext *shareLists);
 
 /* Destroy a previouslu created OpenGL context */
 extern void glo_context_destroy(GloContext *context);
+
+/* Update the context in surface and free previous light-weight context */
+extern void glo_surface_update_context(GloSurface *surface, GloContext *context);
+
+/* Link the pixmap associated with surface as texture */
+extern void glo_surface_as_texture(GloSurface *surface);
 
 /* Create a surface with given width and height, */
 extern GloSurface *glo_surface_create(int width, int height, GloContext *context);

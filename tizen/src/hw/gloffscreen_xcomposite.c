@@ -69,6 +69,7 @@ struct _GloSurface {
     Pixmap		pixmap;
     XImage               *image;
     XShmSegmentInfo       shminfo;
+	GLXPixmap			glxPixmap;
 };
 
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride,
@@ -143,12 +144,8 @@ void *glo_getprocaddress(const char *procName) {
 
 /* ------------------------------------------------------------------------ */
 
-/* Create an OpenGL context for a certain pixel format.
-   formatflags are from the GLO_ constants */
-
-GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
-    if (!glo_inited)
-        glo_init();
+/* Create a light-weight context just for creating surface */
+GloContext *__glo_context_create(int formatFlags) {
 
     GLXFBConfig          *fbConfigs;
     int                   numReturned;
@@ -189,6 +186,16 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
     memset(context, 0, sizeof(GloContext));
     context->formatFlags = formatFlags;
     context->fbConfig = fbConfigs[0];
+
+	return context;
+}
+
+/* Create an OpenGL context for a certain pixel format.
+      formatflags are from the GLO_ constants */
+
+GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
+
+	GloContext *context = __glo_context_create(formatFlags);
 
     /* Create a GLX context for OpenGL rendering */
     context->context = glXCreateNewContext(glo.dpy, context->fbConfig,
@@ -244,6 +251,14 @@ static void glo_surface_try_alloc_xshm_image(GloSurface *surface) {
 
 /* ------------------------------------------------------------------------ */
 
+/* Update the context in surface and free previous light-weight context */
+void glo_surface_update_context(GloSurface *surface, GloContext *context)
+{
+    if ( surface->context )
+        g_free(surface->context);
+    surface->context = context;
+}
+
 /* Create a surface with given width and height, formatflags are from the
  * GLO_ constants */
 GloSurface *glo_surface_create(int width, int height, GloContext *context) {
@@ -297,6 +312,16 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
         fprintf(stderr, "Failed to allocate pixmap!\n");
         //exit(EXIT_FAILURE);
 		return NULL;
+    }
+
+    /* Create a GLX pixmap to associate the frame buffer configuration with the
+     * created X window */
+    /*XXX: need attribute_list? */
+    surface->glxPixmap = glXCreatePixmap( glo.dpy, context->fbConfig, surface->pixmap, NULL );
+    if (!surface->glxPixmap) {
+      printf( "glXCreatePixmap failed\n" );
+      //exit( EXIT_FAILURE );
+     return NULL;
     }
 
     XSync(glo.dpy, 0);
@@ -419,6 +444,22 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
         *width = surface->width;
     if (height)
         *height = surface->height;
+}
+
+/* Bind the surface as texture */
+void glo_surface_as_texture(GloSurface *surface)
+{
+    void (*ptr_func_glXBindTexImageEXT) (Display *dpy, GLXDrawable draw, int buffer, int *attrib_list);
+    ptr_func_glXBindTexImageEXT =
+        (void(*)(Display*, GLXDrawable, int, int*))glo_getprocaddress((const char*)"glXBindTexImageEXT");
+
+    /*XXX: When to call the glXReleaseTexImageEXT?*/
+    if (!ptr_func_glXBindTexImageEXT)
+    {
+        fprintf (stderr, "glXBindTexImageEXT not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
+    }
+
+    ptr_func_glXBindTexImageEXT(glo.dpy, surface->glxPixmap, GLX_FRONT_LEFT_EXT, NULL);
 }
 
 /* Abstract glXQueryExtensionString() */
