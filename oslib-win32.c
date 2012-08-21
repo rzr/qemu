@@ -90,8 +90,9 @@ int get_java_path_temp(char** java_path)
   	RegQueryValueEx(hKeyNew, "JavaHome", NULL, NULL, (LPBYTE)strJavaHome, &dwBufLen);
   	RegCloseKey(hKey);
 	if (strJavaHome[0] != '\0') {
-  		strcpy(*java_path, strJavaHome);
-  		strcat(*java_path, "\\bin\\java");
+        sprintf(*java_path, "\"%s\\bin\\java\"", strJavaHome);
+  		//strcpy(*java_path, strJavaHome);
+  		//strcat(*java_path, "\\bin\\java");
     } else {
 		return 0;
 	}
