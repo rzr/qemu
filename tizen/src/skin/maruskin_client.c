@@ -121,9 +121,9 @@ static void* run_skin_client(void* arg)
     INFO( "command for swt : %s\n", cmd );
 
 #ifdef CONFIG_WIN32
-	// for 64bit windows
-	free(JAVA_EXEFILE_PATH);
-	JAVA_EXEFILE_PATH=0;
+    // for 64bit windows
+    free(JAVA_EXEFILE_PATH);
+    JAVA_EXEFILE_PATH=0;
 
     //WinExec( cmd, SW_SHOW );
     {
@@ -352,8 +352,9 @@ int get_java_path(char** java_path)
   	RegQueryValueEx(hKeyNew, "JavaHome", NULL, NULL, (LPBYTE)strJavaHome, &dwBufLen);
   	RegCloseKey(hKey);
 	if (strJavaHome[0] != '\0') {
-  		strcpy(*java_path, strJavaHome);
-  		strcat(*java_path, "\\bin\\java");
+        sprintf(*java_path, "\"%s\\bin\\java\"", strJavaHome);
+        //strcpy(*java_path, strJavaHome);
+        //strcat(*java_path, "\\bin\\java");
     } else {
 		return 0;
 	}
