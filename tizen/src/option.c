@@ -30,8 +30,8 @@
  */
 
 /**
-  @file	option.c
-  @brief	collection of dialog function
+  @file option.c
+  @brief    collection of dialog function
  */
 
 #include "option.h"
@@ -69,84 +69,84 @@ BYTE *url;
 const char *pactempfile = ".autoproxy"; 
 
 /**
-  @brief	get host DNS server address
-  @param	dns1: return value (first dns server address)
-  @param	dns2: return value (second dns server address)
+  @brief    get host DNS server address
+  @param    dns1: return value (first dns server address)
+  @param    dns2: return value (second dns server address)
   @return always 0
  */
 int gethostDNS(char *dns1, char *dns2)
 {
 #ifndef _WIN32
-	FILE *resolv;
-	char buf[255];
-	memset(buf, 0, sizeof(char)*255);
+    FILE *resolv;
+    char buf[255];
+    memset(buf, 0, sizeof(char)*255);
 
-	resolv = fopen("/etc/resolv.conf", "r");
-	if (resolv <= 0) {
-		ERR( "Cann't open \"/etc/resolv.conf.\"\n");
-		return 1;
-	}
+    resolv = fopen("/etc/resolv.conf", "r");
+    if (resolv <= 0) {
+        ERR( "Cann't open \"/etc/resolv.conf.\"\n");
+        return 1;
+    }
 
-	while(fscanf(resolv , "%s", buf) != EOF) {
-		if(strcmp(buf, "nameserver") == 0)
-		{
-			fscanf(resolv , "%s", dns1);
-			break;
-		}
-	}
+    while(fscanf(resolv , "%s", buf) != EOF) {
+        if(strcmp(buf, "nameserver") == 0)
+        {
+            fscanf(resolv , "%s", dns1);
+            break;
+        }
+    }
 
-	while(fscanf(resolv , "%s", buf) != EOF) {
-		if(strcmp(buf, "nameserver") == 0)
-		{
-			fscanf(resolv , "%s", dns2);
-			break;
-		}
-	}
+    while(fscanf(resolv , "%s", buf) != EOF) {
+        if(strcmp(buf, "nameserver") == 0)
+        {
+            fscanf(resolv , "%s", dns2);
+            break;
+        }
+    }
 
-	fclose(resolv);
+    fclose(resolv);
 #else
-	PIP_ADAPTER_ADDRESSES pAdapterAddr;
-	PIP_ADAPTER_ADDRESSES pAddr;
-	PIP_ADAPTER_DNS_SERVER_ADDRESS pDnsAddr;
-	unsigned long dwResult;
-	unsigned long nBufferLength = sizeof(IP_ADAPTER_ADDRESSES);
-	pAdapterAddr = (PIP_ADAPTER_ADDRESSES)malloc(nBufferLength);
-	memset(pAdapterAddr, 0x00, nBufferLength);
+    PIP_ADAPTER_ADDRESSES pAdapterAddr;
+    PIP_ADAPTER_ADDRESSES pAddr;
+    PIP_ADAPTER_DNS_SERVER_ADDRESS pDnsAddr;
+    unsigned long dwResult;
+    unsigned long nBufferLength = sizeof(IP_ADAPTER_ADDRESSES);
+    pAdapterAddr = (PIP_ADAPTER_ADDRESSES)malloc(nBufferLength);
+    memset(pAdapterAddr, 0x00, nBufferLength);
 
-	while ((dwResult = GetAdaptersAddresses(AF_INET, 0, NULL, pAdapterAddr, &nBufferLength))
-			== ERROR_BUFFER_OVERFLOW) {
-		free(pAdapterAddr);
-		pAdapterAddr = (PIP_ADAPTER_ADDRESSES)malloc(nBufferLength);
-		memset(pAdapterAddr, 0x00, nBufferLength);
-	}
+    while ((dwResult = GetAdaptersAddresses(AF_INET, 0, NULL, pAdapterAddr, &nBufferLength))
+            == ERROR_BUFFER_OVERFLOW) {
+        free(pAdapterAddr);
+        pAdapterAddr = (PIP_ADAPTER_ADDRESSES)malloc(nBufferLength);
+        memset(pAdapterAddr, 0x00, nBufferLength);
+    }
 
-	pAddr = pAdapterAddr;
-	for (; pAddr != NULL; pAddr = pAddr->Next) {
-		pDnsAddr = pAddr->FirstDnsServerAddress;
-		for (; pDnsAddr != NULL; pDnsAddr = pDnsAddr->Next) {
-			struct sockaddr_in *pSockAddr = (struct sockaddr_in*)pDnsAddr->Address.lpSockaddr;
-			if(*dns1 == 0) {
-				strcpy(dns1, inet_ntoa(pSockAddr->sin_addr));
-				continue;
-			}
-			if(*dns2 == 0) {
-				strcpy(dns2, inet_ntoa(pSockAddr->sin_addr));
-				continue;
-			}
-		}
-	}
-	free(pAdapterAddr);
+    pAddr = pAdapterAddr;
+    for (; pAddr != NULL; pAddr = pAddr->Next) {
+        pDnsAddr = pAddr->FirstDnsServerAddress;
+        for (; pDnsAddr != NULL; pDnsAddr = pDnsAddr->Next) {
+            struct sockaddr_in *pSockAddr = (struct sockaddr_in*)pDnsAddr->Address.lpSockaddr;
+            if(*dns1 == 0) {
+                strcpy(dns1, inet_ntoa(pSockAddr->sin_addr));
+                continue;
+            }
+            if(*dns2 == 0) {
+                strcpy(dns2, inet_ntoa(pSockAddr->sin_addr));
+                continue;
+            }
+        }
+    }
+    free(pAdapterAddr);
 #endif
 
-	// by caramis... change DNS address if localhost has DNS server or DNS cache.
-	if(!strncmp(dns1, "127.0.0.1", 9) || !strncmp(dns1, "localhost", 9)) {
-		strncpy(dns1, "10.0.2.2", 9);
-	}
-	if(!strncmp(dns2, "127.0.0.1", 9) || !strncmp(dns2, "localhost", 9)) {
-		strncpy(dns2, "10.0.2.2", 9);
-	}
+    // by caramis... change DNS address if localhost has DNS server or DNS cache.
+    if(!strncmp(dns1, "127.0.0.1", 9) || !strncmp(dns1, "localhost", 9)) {
+        strncpy(dns1, "10.0.2.2", 9);
+    }
+    if(!strncmp(dns2, "127.0.0.1", 9) || !strncmp(dns2, "localhost", 9)) {
+        strncpy(dns2, "10.0.2.2", 9);
+    }
 
-	return 0;
+    return 0;
 }
 
 static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) 
@@ -198,61 +198,61 @@ void remove_string(char *src, char *dst, const char *toremove)
 void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char buf[MAXLEN];
-	FILE *output;
+    FILE *output;
     memset(buf, 0, MAXLEN);
     
     output = popen("gconftool-2 --get /system/http_proxy/host", "r");
-	fscanf(output , "%s", buf);
-	sprintf(http_proxy, "%s", buf);
+    fscanf(output , "%s", buf);
+    sprintf(http_proxy, "%s", buf);
     pclose(output);
 
-	output = popen("gconftool-2 --get /system/http_proxy/port", "r");
-	fscanf(output , "%s", buf);
-	sprintf(http_proxy, "%s:%s", http_proxy, buf);
-	pclose(output);
+    output = popen("gconftool-2 --get /system/http_proxy/port", "r");
+    fscanf(output , "%s", buf);
+    sprintf(http_proxy, "%s:%s", http_proxy, buf);
+    pclose(output);
     memset(buf, 0, MAXLEN);
     INFO("http_proxy : %s\n", http_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
-	fscanf(output , "%s", buf);
-	sprintf(https_proxy, "%s", buf);
-	pclose(output);
+    fscanf(output , "%s", buf);
+    sprintf(https_proxy, "%s", buf);
+    pclose(output);
         
     output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
-	fscanf(output , "%s", buf);
-	sprintf(https_proxy, "%s:%s", https_proxy, buf);
-	pclose(output);
+    fscanf(output , "%s", buf);
+    sprintf(https_proxy, "%s:%s", https_proxy, buf);
+    pclose(output);
     memset(buf, 0, MAXLEN);
     INFO("https_proxy : %s\n", https_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/ftp_host", "r");
-	fscanf(output , "%s", buf);
-	sprintf(ftp_proxy, "%s", buf);
+    fscanf(output , "%s", buf);
+    sprintf(ftp_proxy, "%s", buf);
     pclose(output);
         
     output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
-	fscanf(output , "%s", buf);
-	sprintf(ftp_proxy, "%s:%s", ftp_proxy, buf);
-	pclose(output);
+    fscanf(output , "%s", buf);
+    sprintf(ftp_proxy, "%s:%s", ftp_proxy, buf);
+    pclose(output);
     memset(buf, 0, MAXLEN);
     INFO("ftp_proxy : %s\n", ftp_proxy);
     
     output = popen("gconftool-2 --get /system/proxy/socks_host", "r");
-	fscanf(output , "%s", buf);
-	sprintf(socks_proxy, "%s", buf);
-	pclose(output);
+    fscanf(output , "%s", buf);
+    sprintf(socks_proxy, "%s", buf);
+    pclose(output);
   
     output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
-	fscanf(output , "%s", buf);
-	sprintf(socks_proxy, "%s:%s", socks_proxy, buf);
-	pclose(output);
+    fscanf(output , "%s", buf);
+    sprintf(socks_proxy, "%s:%s", socks_proxy, buf);
+    pclose(output);
     INFO("socks_proxy : %s\n", socks_proxy);
 }
 
 static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char type[MAXLEN];
-	char proxy[MAXLEN];
+    char proxy[MAXLEN];
     char line[MAXLEN];
     FILE *fp_pacfile;
     char *out;
@@ -262,8 +262,8 @@ static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, c
     out = g_malloc0(MAXLEN);
     err = g_malloc0(MAXLEN);
 #if defined(CONFIG_LINUX)
-	FILE *output;
-	char buf[MAXLEN];
+    FILE *output;
+    char buf[MAXLEN];
 
     output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
     fscanf(output, "%s", buf);
@@ -276,32 +276,34 @@ static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, c
 #endif
     fp_pacfile = fopen(pactempfile, "r");
     if(fp_pacfile != NULL) {
-		while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
-			if( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
-				INFO("line found %s", line);
-				sscanf(line, "%*[^\"]\"%s %s", type, proxy);
-			}
-		}
+        while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
+            if( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
+                INFO("line found %s", line);
+                sscanf(line, "%*[^\"]\"%s %s", type, proxy);
+            }
+        }
 
-		if(g_str_has_prefix(type, DIRECT)) {
-			INFO("auto proxy is set to direct mode\n");
-			fclose(fp_pacfile);
-		}
+        if(g_str_has_prefix(type, DIRECT)) {
+            INFO("auto proxy is set to direct mode\n");
+            fclose(fp_pacfile);
+        }
         else if(g_str_has_prefix(type, PROXY)) {
-			INFO("auto proxy is set to proxy mode\n");
-			INFO("type: %s, proxy: %s\n", type, proxy);
-			p = strtok(proxy, "\";");
-			strcpy(http_proxy, p);
-			strcpy(https_proxy, p);
-			strcpy(ftp_proxy, p);
-			strcpy(socks_proxy, p);
-			free(p);
-			fclose(fp_pacfile);
-		}
+            INFO("auto proxy is set to proxy mode\n");
+            INFO("type: %s, proxy: %s\n", type, proxy);
+            p = strtok(proxy, "\";");
+            if(p != NULL) {
+                INFO("auto proxy to set: %s\n",p);
+                strcpy(http_proxy, p);
+                strcpy(https_proxy, p);
+                strcpy(ftp_proxy, p);
+                strcpy(socks_proxy, p);
+            }
+            fclose(fp_pacfile);
+        }
         else
         {
             ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
-			fclose(fp_pacfile);
+            fclose(fp_pacfile);
         }
     } 
     else {
@@ -314,68 +316,68 @@ static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, c
 
 
 /**
-  @brief	get host proxy server address
-  @param	proxy: return value (proxy server address)
+  @brief    get host proxy server address
+  @param    proxy: return value (proxy server address)
   @return always 0
  */
 int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
 #if defined(CONFIG_LINUX) 
     char buf[MAXLEN];
-	FILE *output;
+    FILE *output;
    
     output = popen("gconftool-2 --get /system/proxy/mode", "r");
-	fscanf(output, "%s", buf);
+    fscanf(output, "%s", buf);
    // strcpy(url, buf);
-	pclose(output);
+    pclose(output);
     
-    //priority : auto > manual > none	    
+    //priority : auto > manual > none       
     if (strcmp(buf, "auto") == 0){
         INFO("AUTO PROXY MODE\n");
         getautoproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
         return 0;
-	}
+    }
     else if (strcmp(buf, "manual") == 0){
         INFO("MENUAL PROXY MODE\n");
         getlinuxproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
     }
-	else if (strcmp(buf, "none") == 0){
+    else if (strcmp(buf, "none") == 0){
         INFO("DIRECT PROXY MODE\n");
         return 0;
     }
 
 #elif defined(CONFIG_WIN32)
-	HKEY hKey;
-	int nRet;
-	LONG lRet;
-	BYTE *proxyenable, *proxyserver;
+    HKEY hKey;
+    int nRet;
+    LONG lRet;
+    BYTE *proxyenable, *proxyserver;
     char *p;
-	char *real_proxy;
+    char *real_proxy;
 
-	DWORD dwLength = 0;
-	nRet = RegOpenKeyEx(HKEY_CURRENT_USER,
-			"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
-			0, KEY_QUERY_VALUE, &hKey);
-	if (nRet != ERROR_SUCCESS) {
-		fprintf(stderr, "Failed to open registry from %s\n",
-				"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
-		return 0;
-	}
-	lRet = RegQueryValueEx(hKey, "AutoConfigURL", 0, NULL, NULL, &dwLength);
-	if (lRet != ERROR_SUCCESS && dwLength == 0) {
-		fprintf(stderr, "Failed to query value from from %s\n",
-				"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
-		RegCloseKey(hKey);
-		return 0;
-	}
-	url = (char*)malloc(dwLength);
-	if (url == NULL) {
-		fprintf(stderr, "Failed to allocate a buffer\n");
-		RegCloseKey(hKey);
-		return 0;
-	}
+    DWORD dwLength = 0;
+    nRet = RegOpenKeyEx(HKEY_CURRENT_USER,
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
+            0, KEY_QUERY_VALUE, &hKey);
+    if (nRet != ERROR_SUCCESS) {
+        fprintf(stderr, "Failed to open registry from %s\n",
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+        return 0;
+    }
+    lRet = RegQueryValueEx(hKey, "AutoConfigURL", 0, NULL, NULL, &dwLength);
+    if (lRet != ERROR_SUCCESS && dwLength == 0) {
+        fprintf(stderr, "Failed to query value from from %s\n",
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+        RegCloseKey(hKey);
+        return 0;
+    }
+    url = (char*)malloc(dwLength);
+    if (url == NULL) {
+        fprintf(stderr, "Failed to allocate a buffer\n");
+        RegCloseKey(hKey);
+        return 0;
+    }
     memset(url, 0x00, dwLength);
-	lRet = RegQueryValueEx(hKey, "AutoConfigURL", 0, NULL, url, &dwLength);
+    lRet = RegQueryValueEx(hKey, "AutoConfigURL", 0, NULL, url, &dwLength);
     if (lRet == ERROR_SUCCESS && dwLength != 0) {
         getautoproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
         return 0;
@@ -404,7 +406,7 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
         }
         if (*(char*)proxyenable == 0) {
             free(proxyenable);
-            RegCloseKey(hKey);		
+            RegCloseKey(hKey);      
             return 0;
         }
 
@@ -413,14 +415,14 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
         if (lRet != ERROR_SUCCESS && dwLength == 0) {
             fprintf(stderr, "Failed to query value from from %s\n",
                     "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
-            RegCloseKey(hKey);		
+            RegCloseKey(hKey);      
             return 0;
         }
 
         proxyserver = (BYTE*)malloc(dwLength);
         if (proxyserver == NULL) {
             fprintf(stderr, "Failed to allocate a buffer\n");
-            RegCloseKey(hKey);		
+            RegCloseKey(hKey);      
             return 0;
         }
 
@@ -469,5 +471,5 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
         RegCloseKey(hKey);
     }
 #endif
-	return 0;
+    return 0;
 }
