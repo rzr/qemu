@@ -667,6 +667,11 @@ void *glo_getprocaddress(const char *procName) {
 
 /* ------------------------------------------------------------------------ */
 
+GloContext *__glo_context_create(int formatFlags) {
+	/* NOT IMPLEMENTED YET. */
+	printf("__glo_context_create() is not implemented for windows. \n");
+}
+
 /* Create an OpenGL context for a certain pixel format. formatflags are from the GLO_ constants */
 GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
     GloContext *context;
@@ -763,6 +768,17 @@ void glo_context_destroy(GloContext *context) {
 
 /* ------------------------------------------------------------------------ */
 
+/* Update the context in surface and free previous light-weight context */
+void glo_surface_update_context(GloSurface *surface, GloContext *context)
+{
+	/* NOT IMPLEMENTED YET. */
+    /*if ( surface->context )
+        g_free(surface->context);
+    surface->context = context;
+	*/
+	printf("glo_surface_update_context() is not implemented for windows. \n");
+}
+
 /* Create a surface with given width and height, formatflags are from the
  * GLO_ constants */
 GloSurface *glo_surface_create(int width, int height, GloContext *context) {
@@ -834,6 +850,11 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
         *width = surface->width;
     if (height)
         *height = surface->height;
+}
+
+void glo_surface_as_texture(GloSurface *surface) {
+	/* NOT IMPLEMENTED YET. */
+	printf("glo_surface_as_texture() is not implemented for windows. \n");
 }
 
 #endif
