@@ -1,5 +1,5 @@
 /*
- * Maru Virtual Virtio Touchscreen emulation
+ * Maru Virtio Touchscreen Device
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
  *

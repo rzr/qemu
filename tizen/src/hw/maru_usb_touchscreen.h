@@ -1,5 +1,5 @@
 /*
- * Maru Virtual USB Touchscreen emulation.
+ * Maru USB Touchscreen Device
  * Based on hw/usb-wacom.c:
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
@@ -67,7 +67,7 @@ enum {
 
 static const USBDescStrings desc_strings = {
     [STR_MANUFACTURER]     = "QEMU " QEMU_VERSION,
-    [STR_PRODUCT]          = "Maru Virtual Touchscreen",
+    [STR_PRODUCT]          = "Maru USB Touchscreen",
     [STR_SERIALNUMBER]     = "1",
 };
 
