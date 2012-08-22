@@ -1,5 +1,5 @@
 /*
- * Maru Virtual USB Touchscreen emulation.
+ * Maru USB Touchscreen Device
  * Based on hw/usb-wacom.c:
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
@@ -95,7 +95,7 @@ static int usb_touchscreen_poll(USBTouchscreenState *s, uint8_t *buf, int len)
     USBEmulTouchscreenPacket *packet = (USBEmulTouchscreenPacket *)buf;
 
     if (s->mouse_grabbed == 0) {
-        s->eh_entry = qemu_add_mouse_event_handler(usb_touchscreen_event, s, 1, "QEMU Virtual touchscreen");
+        s->eh_entry = qemu_add_mouse_event_handler(usb_touchscreen_event, s, 1, "QEMU USB touchscreen");
         qemu_activate_mouse_event_handler(s->eh_entry);
         s->mouse_grabbed = 1;
     }
@@ -250,7 +250,7 @@ static int touchscreen_post_load(void *opaque, int version_id)
     pthread_mutex_unlock(&event_mutex);
 
     if (s->mouse_grabbed == 1) {
-        s->eh_entry = qemu_add_mouse_event_handler(usb_touchscreen_event, s, 1, "QEMU Virtual touchscreen");
+        s->eh_entry = qemu_add_mouse_event_handler(usb_touchscreen_event, s, 1, "QEMU USB touchscreen");
         qemu_activate_mouse_event_handler(s->eh_entry);
     }
 
@@ -289,9 +289,9 @@ static VMStateDescription vmsd = {
 };
 
 static struct USBDeviceInfo touchscreen_info = {
-    .product_desc   = "QEMU Virtual Touchscreen",
+    .product_desc   = "Maru USB Touchscreen",
     .qdev.name      = "usb-maru-touchscreen",
-    .qdev.desc      = "QEMU Virtual Touchscreen",
+    .qdev.desc      = "Maru USB Touchscreen",
     .usbdevice_name = "maru-touchscreen",
     .usb_desc       = &desc_touchscreen,
     .qdev.size      = sizeof(USBTouchscreenState),
