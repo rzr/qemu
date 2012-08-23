@@ -49,6 +49,7 @@ Check if the file is corrupted or missing.\n\n",
     /* 3 */ "Failed to load a bios file the following path.\
 Check if the file is corrupted or missing.\n\n",
     /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
+    /* 5 */ "Skin client cannot connected to Skin server. The time of internal heartbeat has expired.",
     /* add here.. */
     ""
 };
@@ -62,6 +63,11 @@ void maru_register_exit_msg(int maru_exit_index, char *additional_msg)
     int len = 0;
 
     if (maru_exit_index >= MARU_EXIT_NORMAL) {
+        fprintf(stderr, "Invalid error message index = %d\n", maru_exit_index);
+        return;
+    }
+    if (maru_exit_status != MARU_EXIT_NORMAL) {
+        fprintf(stderr, "The error message is already registered = %d\n", maru_exit_status);
         return;
     }
 
@@ -95,6 +101,9 @@ void maru_register_exit_msg(int maru_exit_index, char *additional_msg)
 
         pstrcpy(maru_exit_msg, strlen(additional_msg) + 1, additional_msg);
     }
+
+    fprintf(stdout, "The error message is registered = %d : %s\n",
+        maru_exit_status, maru_exit_msg);
 }
 
 void maru_atexit(void)
@@ -152,7 +161,7 @@ char *maru_convert_path(char *msg, const char *path)
 
         dos_err_msg = g_strdup(err_msg);
         if (!dos_err_msg) {
-            printf(stderr,
+            fprintf(stderr,
                 "failed to duplicate an error message from %p\n", err_msg);
             if (current_path) {
                 g_free(current_path);
@@ -300,3 +309,4 @@ void maru_dump_backtrace(void *ptr, int depth)
     free(symbols);
 #endif
 }
+
