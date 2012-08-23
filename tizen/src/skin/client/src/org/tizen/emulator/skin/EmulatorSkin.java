@@ -1125,6 +1125,7 @@ public class EmulatorSkin {
 
 			Boolean gdkWindowingX11  = (Boolean) invokeOSMethod( getOSMethod( "GDK_WINDOWING_X11" ) );
 			if( null == gdkWindowingX11 ) {
+				logger.warning( "GDK_WINDOWING_X11 returned null" );
 				return false;
 			}
 			if( !gdkWindowingX11 ) {
@@ -1160,17 +1161,20 @@ public class EmulatorSkin {
 			Integer gtkWidgetWindow = (Integer) invokeOSMethod(
 					getOSMethod( "GTK_WIDGET_WINDOW", int.class ), topHandle );
 			if( null == gtkWidgetWindow ) {
+				logger.warning( "GTK_WIDGET_WINDOW returned null" );
 				return false;
 			}
 
 			Integer xWindow = (Integer) invokeOSMethod( getOSMethod( "gdk_x11_drawable_get_xid", int.class ),
 					gtkWidgetWindow );
 			if( null == xWindow ) {
+				logger.warning( "gdk_x11_drawable_get_xid returned null" );
 				return false;
 			}
 
 			Integer xDisplay = (Integer) invokeOSMethod( getOSMethod( "GDK_DISPLAY" ) );
 			if( null == xDisplay ) {
+				logger.warning( "GDK_DISPLAY returned null" );
 				return false;
 			}
 
@@ -1214,11 +1218,13 @@ public class EmulatorSkin {
 
 			Integer xMessageAtomType = (Integer) invokeOSMethod( xInternAtom, xDisplay, messageBufferState, false );
 			if( null == xMessageAtomType ) {
+				logger.warning( "xMessageAtomType is null" );
 				return false;
 			}
 
 			Integer xMessageAtomAbove = (Integer) invokeOSMethod( xInternAtom, xDisplay, messageBufferAbove, false );
 			if( null == xMessageAtomAbove ) {
+				logger.warning( "xMessageAtomAbove is null" );
 				return false;
 			}
 
@@ -1246,6 +1252,7 @@ public class EmulatorSkin {
 
 				Field clientMessageField = getOSField( "ClientMessage" );
 				if( null == clientMessageField ) {
+					logger.warning( "clientMessageField is null" );
 					return false;
 				}
 				type.set( event, clientMessageField.get( null ) );
@@ -1311,12 +1318,14 @@ public class EmulatorSkin {
 				if ( isOnTop ) {
 					Field topMost = getOSField( "HWND_TOPMOST" );
 					if ( null == topMost ) {
+						logger.warning( "topMost is null" );
 						return false;
 					}
 					hWndInsertAfter = topMost.getInt( null );
 				} else {
 					Field noTopMost = getOSField( "HWND_NOTOPMOST" );
 					if ( null == noTopMost ) {
+						logger.warning( "HWND_NOTOPMOST is null" );
 						return false;
 					}
 					hWndInsertAfter = noTopMost.getInt( null );
@@ -1324,6 +1333,7 @@ public class EmulatorSkin {
 
 				Field noSizeField = getOSField( "SWP_NOSIZE" );
 				if ( null == noSizeField ) {
+					logger.warning( "SWP_NOSIZE is null" );
 					return false;
 				}
 				noSize = noSizeField.getInt( null );
@@ -1362,6 +1372,7 @@ public class EmulatorSkin {
 			invokeOSMethod( m, shellHandle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
 		} else if( SwtUtil.isMacPlatform() ) {
 			//TODO:
+			logger.warning( "not supported yet" );
 		}
 
 		return true;
@@ -1372,6 +1383,7 @@ public class EmulatorSkin {
 		if ( SwtUtil.isLinuxPlatform() ) {
 			Boolean gdkWindowingX11 = (Boolean) invokeOSMethod( getOSMethod( "GDK_WINDOWING_X11" ) );
 			if (null == gdkWindowingX11) {
+				logger.warning( "GDK_WINDOWING_X11 returned null" );
 				return false;
 			}
 			if (!gdkWindowingX11) {
@@ -1407,17 +1419,20 @@ public class EmulatorSkin {
 			Long gtkWidgetWindow = (Long) invokeOSMethod(
 					getOSMethod( "GTK_WIDGET_WINDOW", long.class ), topHandle );
 			if( null == gtkWidgetWindow ) {
+				logger.warning( "GTK_WIDGET_WINDOW returned null" );
 				return false;
 			}
 
 			Long xWindow = (Long) invokeOSMethod( getOSMethod( "gdk_x11_drawable_get_xid", long.class ),
 					gtkWidgetWindow );
 			if( null == xWindow ) {
+				logger.warning( "gdk_x11_drawable_get_xid returned null" );
 				return false;
 			}
 
 			Long xDisplay = (Long) invokeOSMethod( getOSMethod( "GDK_DISPLAY" ) );
 			if( null == xDisplay ) {
+				logger.warning( "GDK_DISPLAY returned null" );
 				return false;
 			}
 
@@ -1461,11 +1476,13 @@ public class EmulatorSkin {
 
 			Long xMessageAtomType = (Long) invokeOSMethod( xInternAtom, xDisplay, messageBufferState, false );
 			if( null == xMessageAtomType ) {
+				logger.warning( "xMessageAtomType is null" );
 				return false;
 			}
 
 			Long xMessageAtomAbove = (Long) invokeOSMethod( xInternAtom, xDisplay, messageBufferAbove, false );
 			if( null == xMessageAtomAbove ) {
+				logger.warning( "xMessageAtomAbove is null" );
 				return false;
 			}
 
@@ -1540,9 +1557,70 @@ public class EmulatorSkin {
 			invokeOSMethod( xSendEvent, xDisplay, rootWin, false, (long) ( 1L << 20 | 1L << 19 ), malloc );
 			invokeOSMethod( getOSMethod( "g_free", long.class ), malloc );
 		} else if (SwtUtil.isWindowsPlatform()) {
-			//TODO:
+			Point location = shell.getLocation();
+
+			long hWndInsertAfter = 0;
+			int noSize = 0;
+
+			try {
+				if ( isOnTop ) {
+					Field topMost = getOSField( "HWND_TOPMOST" );
+					if ( null == topMost ) {
+						logger.warning( "topMost is null" );
+						return false;
+					}
+					hWndInsertAfter = topMost.getLong( null );
+				} else {
+					Field noTopMost = getOSField( "HWND_NOTOPMOST" );
+					if ( null == noTopMost ) {
+						logger.warning( "noTopMost is null" );
+						return false;
+					}
+					hWndInsertAfter = noTopMost.getLong( null );
+				}
+
+				Field noSizeField = getOSField( "SWP_NOSIZE" );
+				if ( null == noSizeField ) {
+					logger.warning( "noSizeField is null" );
+					return false;
+				}
+				noSize = noSizeField.getInt( null );
+
+			} catch ( IllegalArgumentException ex ) {
+				logger.log( Level.SEVERE, ex.getMessage(), ex );
+				return false;
+			} catch ( IllegalAccessException ex ) {
+				logger.log( Level.SEVERE, ex.getMessage(), ex );
+				return false;
+			}
+
+			Method m = getOSMethod( "SetWindowPos", long.class, long.class, int.class, int.class, int.class,
+					int.class, int.class );
+
+			/* org.eclipse.swt.widgets.Shell */
+			long shellHandle = 0;
+			try {
+				Field field = shell.getClass().getField("handle");
+				shellHandle = field.getLong(shell);
+				logger.info("shell.handle:" + shellHandle);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (IllegalAccessException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (SecurityException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				shutdown();
+			}
+
+			invokeOSMethod( m, shellHandle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
 		} else if( SwtUtil.isMacPlatform() ) {
 			//TODO:
+			logger.warning( "not supported yet" );
 		}
 
 		return true;
