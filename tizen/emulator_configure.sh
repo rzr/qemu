@@ -29,7 +29,6 @@ exec ./configure \
  --target-list="i386-softmmu arm-softmmu" \
  --disable-werror \
  --audio-drv-list=alsa \
- --enable-mixemu \
  --audio-card-list=ac97 \
  --enable-ldst-optimization \
  --enable-maru \
@@ -52,7 +51,6 @@ echo "##### QEMU configure for emulator"
 exec ./configure \
  --target-list="i386-softmmu arm-softmmu" \
  --audio-drv-list=winwave \
- --enable-mixemu \
  --audio-card-list=ac97 \
  --enable-ldst-optimization \
  --enable-hax \
