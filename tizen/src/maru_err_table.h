@@ -43,6 +43,7 @@ enum {
     /* 2 */ MARU_EXIT_KERNEL_FILE_EXCEPTION,
     /* 3 */ MARU_EXIT_BIOS_FILE_EXCEPTION,
     /* 4 */ MARU_EXIT_SKIN_SERVER_FAILED,
+    /* 5 */ MARU_EXIT_HB_TIME_EXPIRED,
     /* add here.. */
     MARU_EXIT_NORMAL
 };

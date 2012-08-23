@@ -48,6 +48,7 @@
 #include "emul_state.h"
 #include "maruskin_client.h"
 #include "emulator.h"
+#include "maru_err_table.h"
 
 #ifndef USE_SHM
 #include "maru_sdl.h"
@@ -996,7 +997,7 @@ static void* do_heart_beat( void* args ) {
         if (booting_handicap_cnt < 5) {
             booting_handicap_cnt++;
             ts_heartbeat.tv_sec = current.tv_sec +
-                (HEART_BEAT_INTERVAL * (HEART_BEAT_FAIL_COUNT / 2));
+                (HEART_BEAT_INTERVAL * 10);
         } else {
             ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
         }
@@ -1108,6 +1109,7 @@ static void* do_heart_beat( void* args ) {
         ERR( "!!! Fail to operate with heartbeat from skin client. Shutdown QEMU !!!\n" );
         ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
 
+        maru_register_exit_msg(MARU_EXIT_HB_TIME_EXPIRED, NULL);
         shutdown_qemu_gracefully();
 
     }
