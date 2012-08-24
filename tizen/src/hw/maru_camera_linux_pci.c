@@ -35,16 +35,30 @@
 
 #include <linux/videodev2.h>
 
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+
 #include <libv4l2.h>
 #include <libv4lconvert.h>
 
 MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 
+#define MARUCAM_SKIPFRAMES    2
+
+enum {
+    _MC_THREAD_PAUSED,
+    _MC_THREAD_STREAMON,
+    _MC_THREAD_STREAMOFF,
+};
+
+static const char *dev_name = "/dev/video0";
 static int v4l2_fd;
 static int convert_trial;
 static int ready_count;
 
 static struct v4l2_format dst_fmt;
+
+#define CLEAR(x) memset(&(x), 0, sizeof(x))
 
 static int xioctl(int fd, int req, void *arg)
 {
@@ -128,6 +142,24 @@ static int32_t value_convert_to_guest(int32_t min, int32_t max, int32_t value)
     return ret;
 }
 
+static int is_streamon(MaruCamState *state)
+{
+    int st;
+    qemu_mutex_lock(&state->thread_mutex);
+    st = state->streamon;
+    qemu_mutex_unlock(&state->thread_mutex);
+    return (st == _MC_THREAD_STREAMON);
+}
+
+static int is_stream_paused(MaruCamState *state)
+{
+    int st;
+    qemu_mutex_lock(&state->thread_mutex);
+    st = state->streamon;
+    qemu_mutex_unlock(&state->thread_mutex);
+    return (st == _MC_THREAD_PAUSED);
+}
+
 static int __v4l2_grab(MaruCamState *state)
 {
     fd_set fds;
@@ -139,8 +171,8 @@ static int __v4l2_grab(MaruCamState *state)
     FD_ZERO(&fds);
     FD_SET(v4l2_fd, &fds);
 
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
+    tv.tv_sec = 0;
+    tv.tv_usec = 500000;
 
     ret = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
     if ( ret < 0) {
@@ -159,11 +191,8 @@ static int __v4l2_grab(MaruCamState *state)
         return -1;
     }
 
-       qemu_mutex_lock(&state->thread_mutex);
-       ret = state->streamon;
-       qemu_mutex_unlock(&state->thread_mutex);
-       if (!ret)
-              return -1;
+    if (!is_streamon(state))
+        return -1;
 
     buf = state->vaddr + (state->buf_size * index);
     ret = v4l2_read(v4l2_fd, buf, state->buf_size);
@@ -188,8 +217,8 @@ static int __v4l2_grab(MaruCamState *state)
     index = !index;
 
     qemu_mutex_lock(&state->thread_mutex);
-    if (state->streamon) {
-        if (ready_count >= 4) {
+    if (state->streamon == _MC_THREAD_STREAMON) {
+        if (ready_count >= MARUCAM_SKIPFRAMES) {
             if (state->req_frame) {
                 state->req_frame = 0; // clear request
                 state->isr |= 0x01; // set a flag of rasing a interrupt.
@@ -208,45 +237,59 @@ static int __v4l2_grab(MaruCamState *state)
     return ret;
 }
 
-// Worker thread
+/* Worker thread */
 static void *marucam_worker_thread(void *thread_param)
 {
     MaruCamState *state = (MaruCamState*)thread_param;
 
 wait_worker_thread:
     qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 0;
-    convert_trial = 10;
+    state->streamon = _MC_THREAD_PAUSED;
     qemu_cond_wait(&state->thread_cond, &state->thread_mutex);
+    qemu_mutex_unlock(&state->thread_mutex);
+
+    convert_trial = 10;
+    ready_count = 0;
+    qemu_mutex_lock(&state->thread_mutex);
+    state->buf_size = dst_fmt.fmt.pix.sizeimage;
+    state->streamon = _MC_THREAD_STREAMON;
     qemu_mutex_unlock(&state->thread_mutex);
     INFO("Streaming on ......\n");
 
     while (1)
     {
-        qemu_mutex_lock(&state->thread_mutex);
-        if (state->streamon) {
-            qemu_mutex_unlock(&state->thread_mutex);
+        if (is_streamon(state)) {
             if (__v4l2_grab(state) < 0) {
                 INFO("...... Streaming off\n");
                 goto wait_worker_thread;
             }
         } else {
-            qemu_mutex_unlock(&state->thread_mutex);
             INFO("...... Streaming off\n");
             goto wait_worker_thread;
         }
     }
-    qemu_thread_exit((void*)0);
+    return NULL;
 }
 
 int marucam_device_check(void)
 {
     int tmp_fd;
+    struct stat st;
     struct v4l2_capability cap;
 
-    tmp_fd = open("/dev/video0", O_RDWR);
+    if (stat(dev_name, &st) < 0) {
+        ERR("Cannot identify '%s': %s\n", dev_name, strerror(errno));
+        return 0;
+    }
+
+    if (!S_ISCHR(st.st_mode)) {
+        ERR("%s is no device.\n", dev_name);
+        return 0;
+    }
+
+    tmp_fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
     if (tmp_fd < 0) {
-        ERR("camera device open failed.(/dev/video0)\n");
+        ERR("camera device open failed.(%s)\n", dev_name);
         return 0;
     }
     if (ioctl(tmp_fd, VIDIOC_QUERYCAP, &cap) < 0) {
@@ -270,62 +313,46 @@ void marucam_device_init(MaruCamState* state)
     qemu_thread_create(&state->thread_id, marucam_worker_thread, (void*)state);
 }
 
-// MARUCAM_CMD_OPEN
 void marucam_device_open(MaruCamState* state)
 {
-    struct v4l2_capability cap;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    v4l2_fd = v4l2_open("/dev/video0", O_RDWR);
+    v4l2_fd = v4l2_open(dev_name, O_RDWR | O_NONBLOCK, 0);
     if (v4l2_fd < 0) {
-        ERR("v4l2 device open failed.(/dev/video0)\n");
-        param->errCode = EINVAL;
-        return;
-    }
-    if (xioctl(v4l2_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-        ERR("Could not qeury video capabilities\n");
-        v4l2_close(v4l2_fd);
-        param->errCode = EINVAL;
-        return;
-    }
-    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
-            !(cap.capabilities & V4L2_CAP_STREAMING)) {
-        ERR("Not supported video driver.\n");
-        v4l2_close(v4l2_fd);
+        ERR("v4l2 device open failed.(%s)\n", dev_name);
         param->errCode = EINVAL;
         return;
     }
 
-    memset(&dst_fmt, 0, sizeof(dst_fmt));
+    CLEAR(dst_fmt);
     INFO("Opened\n");
 }
 
-// MARUCAM_CMD_START_PREVIEW
 void marucam_device_start_preview(MaruCamState* state)
 {
     qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 1;
-    ready_count = 0;
-    state->buf_size = dst_fmt.fmt.pix.sizeimage;
     qemu_cond_signal(&state->thread_cond);
     qemu_mutex_unlock(&state->thread_mutex);
-       INFO("Starting preview!\n");
+    INFO("Starting preview!\n");
 }
 
-// MARUCAM_CMD_STOP_PREVIEW
 void marucam_device_stop_preview(MaruCamState* state)
 {
-       struct timespec req;
-       req.tv_sec = 0;
-       req.tv_nsec = 333333333;
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 50000000;
 
     qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 0;
+    state->streamon = _MC_THREAD_STREAMOFF;
     state->buf_size = 0;
     qemu_mutex_unlock(&state->thread_mutex);
-    nanosleep(&req, NULL);
-       INFO("Stopping preview!\n");
+
+    /* nanosleep until thread is paused  */
+    while (!is_stream_paused(state))
+        nanosleep(&req, NULL);
+
+    INFO("Stopping preview!\n");
 }
 
 void marucam_device_s_param(MaruCamState* state)
@@ -354,7 +381,7 @@ void marucam_device_s_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&dst_fmt, 0, sizeof(struct v4l2_format));
+    CLEAR(dst_fmt);
     dst_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     dst_fmt.fmt.pix.width = param->stack[0];
     dst_fmt.fmt.pix.height = param->stack[1];
@@ -383,7 +410,7 @@ void marucam_device_g_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&format, 0, sizeof(struct v4l2_format));
+    CLEAR(format);
     format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     if (xioctl(v4l2_fd, VIDIOC_G_FMT, &format) < 0) {
@@ -408,7 +435,7 @@ void marucam_device_try_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&format, 0, sizeof(struct v4l2_format));
+    CLEAR(format);
     format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     format.fmt.pix.width = param->stack[0];
     format.fmt.pix.height = param->stack[1];
@@ -436,7 +463,7 @@ void marucam_device_enum_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&format, 0, sizeof(struct v4l2_fmtdesc));
+    CLEAR(format);
     format.index = param->stack[0];
     format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -461,7 +488,7 @@ void marucam_device_qctrl(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ctrl, 0, sizeof(struct v4l2_queryctrl));
+    CLEAR(ctrl);
     ctrl.id = param->stack[0];
 
     switch (ctrl.id) {
@@ -497,7 +524,7 @@ void marucam_device_qctrl(MaruCamState* state)
         return;
     } else {
         struct v4l2_control sctrl;
-        memset(&sctrl, 0, sizeof(struct v4l2_control));
+        CLEAR(sctrl);
         sctrl.id = ctrl.id;
         if ((ctrl.maximum + ctrl.minimum) == 0) {
             sctrl.value = 0;
@@ -534,7 +561,7 @@ void marucam_device_s_ctrl(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ctrl, 0, sizeof(struct v4l2_control));
+    CLEAR(ctrl);
     ctrl.id = param->stack[0];
 
     switch (ctrl.id) {
@@ -576,7 +603,7 @@ void marucam_device_g_ctrl(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ctrl, 0, sizeof(struct v4l2_control));
+    CLEAR(ctrl);
     ctrl.id = param->stack[0];
 
     switch (ctrl.id) {
@@ -618,7 +645,7 @@ void marucam_device_enum_fsizes(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&fsize, 0, sizeof(struct v4l2_frmsizeenum));
+    CLEAR(fsize);
     fsize.index = param->stack[0];
     fsize.pixel_format = param->stack[1];
 
@@ -644,7 +671,7 @@ void marucam_device_enum_fintv(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ival, 0, sizeof(struct v4l2_frmivalenum));
+    CLEAR(ival);
     ival.index = param->stack[0];
     ival.pixel_format = param->stack[1];
     ival.width = param->stack[2];
@@ -666,21 +693,14 @@ void marucam_device_enum_fintv(MaruCamState* state)
     }
 }
 
-// MARUCAM_CMD_CLOSE
 void marucam_device_close(MaruCamState* state)
 {
-       uint32_t is_streamon;
-
-    qemu_mutex_lock(&state->thread_mutex);
-    is_streamon = state->streamon;
-    qemu_mutex_unlock(&state->thread_mutex);
-
-       if (is_streamon)
-              marucam_device_stop_preview(state);
+    if (!is_stream_paused(state))
+        marucam_device_stop_preview(state);
 
     marucam_reset_controls();
 
     v4l2_close(v4l2_fd);
-    v4l2_fd = 0;
+    v4l2_fd = -1;
     INFO("Closed\n");
 }
