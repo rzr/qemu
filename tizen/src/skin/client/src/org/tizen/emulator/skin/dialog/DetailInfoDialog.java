@@ -227,8 +227,8 @@ public class DetailInfoDialog extends SkinDialog {
 			if ( 0 == i ) {
 
 				String exec = split[i].trim().toLowerCase();
-				if( SwtUtil.isWindowsPlatform() ) {
-					if( 4 <= exec.length() ) {
+				if ( SwtUtil.isWindowsPlatform() ) {
+					if ( 4 <= exec.length() ) {
 						// remove '.exe' in Windows
 						exec = exec.substring( 0, exec.length() - 4 );
 					}
@@ -370,7 +370,7 @@ public class DetailInfoDialog extends SkinDialog {
 		if ( isHwVirtual ) {
 			if( isHaxError ) {
 				result.put( "HW Virtualization State", "Disable(insufficient memory for driver)" );
-			}else {
+			} else {
 				result.put( "HW Virtualization State", "Enable" );
 			}
 		} else {

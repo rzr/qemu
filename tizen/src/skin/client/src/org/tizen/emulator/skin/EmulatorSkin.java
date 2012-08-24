@@ -1628,6 +1628,7 @@ public class EmulatorSkin {
 
 	private void addMenuItems( final Shell shell, final Menu menu ) {
 
+		/* Emulator detail info menu */
 		final MenuItem detailInfoItem = new MenuItem( menu, SWT.PUSH );
 
 		String emulatorName = SkinUtil.makeEmulatorName( config );
@@ -1647,6 +1648,7 @@ public class EmulatorSkin {
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
+		/* Always on top menu */
 		final MenuItem onTopItem = new MenuItem( menu, SWT.CHECK );
 		onTopItem.setText( "&Always On Top" );
 		onTopItem.setSelection( isOnTop );
@@ -1676,12 +1678,14 @@ public class EmulatorSkin {
 			}
 		} );
 
+		/* Rotate menu */
 		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
 		rotateItem.setText( "&Rotate" );
 		rotateItem.setImage( imageRegistry.getIcon( IconName.ROTATE ) );
 		Menu rotateMenu = createRotateMenu( menu.getShell() );
 		rotateItem.setMenu( rotateMenu );
 
+		/* Scale menu */
 		final MenuItem scaleItem = new MenuItem( menu, SWT.CASCADE );
 		scaleItem.setText( "&Scale" );
 		scaleItem.setImage( imageRegistry.getIcon( IconName.SCALE ) );
@@ -1690,12 +1694,14 @@ public class EmulatorSkin {
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
+		/* Advanced menu */
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
 		advancedItem.setText( "Ad&vanced" );
 		advancedItem.setImage( imageRegistry.getIcon( IconName.ADVANCED ) );
 		Menu advancedMenu = createAdvancedMenu( menu.getShell() );
 		advancedItem.setMenu( advancedMenu );
 
+		/* Shell menu */
 		final MenuItem shellItem = new MenuItem( menu, SWT.PUSH );
 		shellItem.setText( "S&hell" );
 		shellItem.setImage( imageRegistry.getIcon( IconName.SHELL ) );
@@ -1749,6 +1755,7 @@ public class EmulatorSkin {
 
 		new MenuItem( menu, SWT.SEPARATOR );
 
+		/* Close menu */
 		MenuItem closeItem = new MenuItem( menu, SWT.PUSH );
 		closeItem.setText( "&Close" );
 		closeItem.setImage( imageRegistry.getIcon( IconName.CLOSE ) );
@@ -1902,6 +1909,7 @@ public class EmulatorSkin {
 
 		final Menu menu = new Menu( shell, SWT.DROP_DOWN );
 
+		/* Screen shot menu */
 		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
 		screenshotItem.setText( "&Screen Shot" );
 		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
@@ -1941,10 +1949,11 @@ public class EmulatorSkin {
 			}
 		} );
 
+		/* USB Keyboard menu */
 		final MenuItem usbKeyboardItem = new MenuItem( menu, SWT.CASCADE );
 		usbKeyboardItem.setText( "&USB Keyboard" );
 		usbKeyboardItem.setImage( imageRegistry.getIcon( IconName.USB_KEBOARD ) );
-		
+
 		Menu usbKeyBoardMenu = new Menu( shell, SWT.DROP_DOWN );
 
 		final MenuItem usbOnItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
@@ -1974,6 +1983,19 @@ public class EmulatorSkin {
 
 		usbKeyboardItem.setMenu( usbKeyBoardMenu );
 
+		/*
+		// Diagnosis menu
+		final MenuItem diagnosisItem = new MenuItem(menu, SWT.PUSH);
+		diagnosisItem.setText("Diagnosis");
+
+		// Force close menu
+		final MenuItem forceCloseItem = new MenuItem(menu, SWT.PUSH);
+		forceCloseItem.setText("Force Close");
+		*/
+
+		new MenuItem( menu, SWT.SEPARATOR );
+
+		/* About menu */
 		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
 		aboutItem.setText( "&About" );
 		aboutItem.setImage( imageRegistry.getIcon( IconName.ABOUT ) );
