@@ -1,5 +1,5 @@
 /**
- * 
+ * Display the emulator detail information
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -66,6 +66,10 @@ import org.tizen.emulator.skin.util.SwtUtil;
 public class DetailInfoDialog extends SkinDialog {
 
 	public final static String DATA_DELIMITER = "#";
+	public final static String KEY_LOGPATH = "Log Path";
+	public final static String VALUE_NONE = "None";
+	public final static String VALUE_SUPPORTED = "Supported";
+	public final static String VALUE_NOTSUPPORTED = "Not Supported";
 
 	private Logger logger = SkinLogger.getSkinLogger( DetailInfoDialog.class ).getLogger();
 
@@ -99,7 +103,7 @@ public class DetailInfoDialog extends SkinDialog {
 		TableColumn[] column = new TableColumn[2];
 
 		column[0] = new TableColumn( table, SWT.LEFT );
-		column[0].setText( "Name" );
+		column[0].setText( "Feature" );
 
 		column[1] = new TableColumn( table, SWT.LEFT );
 		column[1].setText( "Value" );
@@ -137,10 +141,9 @@ public class DetailInfoDialog extends SkinDialog {
 				}
 
 				TableItem tableItem = ((TableItem)table.getSelection()[0]);
-				final String logKey = "Log Path";
 
-				if (tableItem.getText().compareTo(logKey) == 0) {
-					String logPath = refinedData.get(logKey);
+				if (tableItem.getText().compareTo(KEY_LOGPATH) == 0) {
+					String logPath = refinedData.get(KEY_LOGPATH);
 					ProcessBuilder procBrowser = new ProcessBuilder();
 
 					if (SwtUtil.isLinuxPlatform()) {
@@ -149,6 +152,7 @@ public class DetailInfoDialog extends SkinDialog {
 						procBrowser.command("explorer", "\"" + logPath + "\"");
 					} else if (SwtUtil.isMacPlatform()) {
 						//TODO:
+						logger.warning( "not supported yet" );
 					}
 
 					if (procBrowser.command().isEmpty() == false) {
@@ -248,7 +252,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 					} else if ( "-drive".equals( arg ) ) {
 
-						// arg : file=/home/xxx/.tizen_vms/x86/xxx/emulimg-emulator.x86
+						// arg : file=/home/xxx/tizen-sdk-data/emulator-vms/vms/xxx/emulimg-xxx.x86
 						arg = split[i + 1].trim();
 
 						if ( arg.startsWith( "file=" ) ) {
@@ -306,10 +310,13 @@ public class DetailInfoDialog extends SkinDialog {
 					} else if (arg.startsWith("log_path=")) {
 						String[] sp = arg.split("=");
 						if( 1 < sp.length ) {
-							final String logSuffix = "/logs/";
-
 							logPath = sp[1];
-							logPath = logPath.substring(0, logPath.lastIndexOf(logSuffix) + logSuffix.length());
+
+							try {
+								logPath = StringUtil.getCanonicalPath(logPath);
+							} catch (IOException e) {
+								logger.log(Level.SEVERE, e.getMessage(), e);
+							}
 							logger.info("log path = " + logPath); //without filename
 						}
 					}
@@ -322,59 +329,66 @@ public class DetailInfoDialog extends SkinDialog {
 
 		LinkedHashMap<String, String> result = new LinkedHashMap<String, String>();
 
+		/* Target name */
 		result.put( "Name", SkinUtil.getVmName( config ) );
+
+		/* CPU srchitecture */
 		result.put( "CPU", cpu );
 
+		/* Target display resolution */
 		int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
 		int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
 		result.put( "Display Resolution", width + "x" + height );
+
+		/* DPI (dots per inch) */
 		result.put( "Display Density", dpi );
 
+		/* SD card path */
 		if ( StringUtil.isEmpty( sdPath ) ) {
-			result.put( "SD Card", "Not Supported" );
-			result.put( "SD Card Path", "None" );
+			result.put( "SD Card", VALUE_NOTSUPPORTED );
+			result.put( "SD Card Path", VALUE_NONE );
 		} else {
-			result.put( "SD Card", "Supported" );
+			result.put( "SD Card", VALUE_SUPPORTED );
 			result.put( "SD Card Path", sdPath );
 		}
 
+		/* RAM size */
 		result.put( "RAM Size", ram );
 
+		/* Whether host file sharing is supported */
 		if ( SwtUtil.isLinuxPlatform() ) {
 			if ( StringUtil.isEmpty( sharedPath ) ) {
-				result.put( "File Sharing", "Not Supported" );
-				result.put( "File Shared Path", "None" );
-			}else {
-				result.put( "File Sharing", "Supported" );
+				result.put( "File Sharing", VALUE_NOTSUPPORTED );
+				result.put( "File Shared Path", VALUE_NONE );
+			} else {
+				result.put( "File Sharing", VALUE_SUPPORTED );
 				result.put( "File Shared Path", sharedPath );
 			}
 		}
 
+		/* Whether hardware virtualization is supported */
 		if ( isHwVirtual ) {
 			if( isHaxError ) {
 				result.put( "HW Virtualization State", "Disable(insufficient memory for driver)" );
 			}else {
 				result.put( "HW Virtualization State", "Enable" );
 			}
-		}else {
+		} else {
 			result.put( "HW Virtualization State", "Disable" );
 		}
-		
+
+		/* Target image path */
 		if ( StringUtil.isEmpty( imagePath ) ) {
 			result.put( "Image Path", "Not identified" );			
-		}else {
-			result.put( "Image Path", imagePath );			
+		} else {
+			result.put( "Image Path", imagePath );
 		}
 
-		if (logPath.isEmpty() == false) {
-			File logFile = new File(logPath);
-			try {
-				logPath = logFile.getCanonicalPath();
-			} catch (IOException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-			}
-
-			result.put("Log Path", logPath);
+		/* Emulator log file path */
+		if (StringUtil.isEmpty(logPath)) {
+			result.put(KEY_LOGPATH, VALUE_NONE);
+		} else {
+			result.put(KEY_LOGPATH, logPath);
 		}
 
 		return result;

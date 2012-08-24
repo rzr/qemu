@@ -29,6 +29,9 @@
 
 package org.tizen.emulator.skin.util;
 
+import java.io.File;
+import java.io.IOException;
+
 /**
  * 
  *
@@ -45,4 +48,25 @@ public class StringUtil {
 		return ( null == value ) ? "" : value;
 	}
 
+	public static String getCanonicalPath(String filePath) throws IOException {
+		String canonicalPath = "";
+
+		File file = new File(filePath);
+		if (file.exists() == false) {
+			return "";
+		}
+
+		try {
+			canonicalPath = file.getCanonicalPath();
+
+			if (file.isDirectory() == false) {
+				canonicalPath =
+						canonicalPath.substring(0, canonicalPath.lastIndexOf(File.separator));
+			}
+		} catch (IOException e) {
+			throw e;
+		}
+
+		return canonicalPath;
+	}
 }
