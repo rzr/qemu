@@ -379,7 +379,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 		/* Target image path */
 		if ( StringUtil.isEmpty( imagePath ) ) {
-			result.put( "Image Path", "Not identified" );			
+			result.put( "Image Path", "Not identified" );
 		} else {
 			result.put( "Image Path", imagePath );
 		}
