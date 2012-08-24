@@ -33,7 +33,7 @@
 #include "console.h"
 #include "maru_sdl.h"
 #include "emul_state.h"
-#include "sdl_rotate.h"
+#include "SDL_rotozoom.h"
 #include "maru_sdl_rotozoom.h"
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
