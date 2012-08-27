@@ -120,6 +120,8 @@ extern int glo_flags_get_from_glx(const int *fbConfig, int assumeBooleans);
 /* Use in place of glxGetConfig - returns information from flags based on a GLX enum */
 extern int glo_get_glx_from_flags(int formatFlags, int glxEnum);
 
+/* Get the width and height from attrib_list */
+extern void glo_geometry_get_from_glx(const int* attrib_list, int* width, int* height);
 
 /* In terms of speed, glReadPixels actually seems the best we can do.
  * * On Windows PFB_DRAW_TO_BITMAP is software-only.

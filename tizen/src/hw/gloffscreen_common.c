@@ -89,6 +89,8 @@ void g_free(void *ptr);
 #define GLX_MAX_PBUFFER_HEIGHT		0x8017
 #define GLX_MAX_PBUFFER_PIXELS		0x8018
 #define GLX_LARGEST_PBUFFER		0x801C
+#define GLX_WIDTH			0x801D
+#define GLX_HEIGHT			0x801E
 #define GLX_RGBA_BIT			0x00000001
 
 // ---------------------------------------------------
@@ -338,6 +340,25 @@ int glo_flags_get_from_glx(const int *fbConfig, int assumeBooleans) {
         flags |= GLO_FF_STENCIL_8;
 
     return flags;
+}
+
+void glo_geometry_get_from_glx(const int* attrib_list, int* width, int* height)
+{
+    while ( *attrib_list )
+    {
+        switch (*attrib_list)
+        {
+            case GLX_WIDTH:
+                *width = attrib_list[1];
+                break;
+            case GLX_HEIGHT:
+                *height = attrib_list[1];
+                break;
+            default:
+                fprintf(stderr, "Should not pass any attribs except for width and height for glXCreiatePixmap. \n");
+        }
+        attrib_list += 2;
+    }
 }
 
 void glo_surface_getcontents_readpixels(int formatFlags, int stride, int bpp,

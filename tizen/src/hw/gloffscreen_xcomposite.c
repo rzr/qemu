@@ -266,6 +266,9 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     XSetWindowAttributes attr = { 0 };
     unsigned long mask;
     XVisualInfo *vis;
+    int pixmapAttribs[] = { GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
+                        GLX_TEXTURE_FORMAT_EXT, GLX_TEXTURE_FORMAT_RGB_EXT,
+                                        None };
 
     if (!context)
       return 0;
@@ -376,6 +379,24 @@ int glo_surface_makecurrent(GloSurface *surface) {
     return ret;
 }
 
+void glo_surface_updatecontents(GloSurface *surface) {
+    XImage *img;
+    if (!surface)
+        return;
+
+    if(glo.use_ximage) {
+        glXWaitGL();
+
+        if(surface->image) {
+            XShmGetImage (glo.dpy, surface->pixmap, surface->image, 0, 0, AllPlanes);
+        }
+        else {
+            img = XGetImage(glo.dpy, surface->pixmap, 0, 0, surface->width, surface->height, AllPlanes, ZPixmap);
+        }
+    }
+
+}
+
 /* Get the contents of the given surface */
 void glo_surface_getcontents(GloSurface *surface, int stride, int bpp, void *data) {
     static int once;
@@ -449,6 +470,7 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
 /* Bind the surface as texture */
 void glo_surface_as_texture(GloSurface *surface)
 {
+#if 0
     void (*ptr_func_glXBindTexImageEXT) (Display *dpy, GLXDrawable draw, int buffer, int *attrib_list);
     ptr_func_glXBindTexImageEXT =
         (void(*)(Display*, GLXDrawable, int, int*))glo_getprocaddress((const char*)"glXBindTexImageEXT");
@@ -459,10 +481,20 @@ void glo_surface_as_texture(GloSurface *surface)
         fprintf (stderr, "glXBindTexImageEXT not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
     }
 
+    fprintf(stderr, "surface_as_texture:error=%d.\n", glGetError());
     ptr_func_glXBindTexImageEXT(glo.dpy, surface->glxPixmap, GLX_FRONT_LEFT_EXT, NULL);
+    fprintf(stderr, "surface_as_texture:2:error=%d.\n", glGetError());
+#else
+    glo_surface_updatecontents(surface);
+    /*XXX: changet the fixed target: GL_TEXTURE_2D*/
+    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d.\n", surface->width, surface->height);
+    /* glTexImage2D use different RGB order than the contexts in the pixmap surface */
+/*    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->image->data);*/
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, surface->image->data);
+#endif
 }
 
-/* Abstract glXQueryExtensionString() */
+ /* Abstract glXQueryExtensionString() */
 const char *glo_glXQueryExtensionsString(void) {
     return glXQueryExtensionsString(glo.dpy, 0);
 }
