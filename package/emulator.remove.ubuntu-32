@@ -7,6 +7,6 @@ then
    exit 2;
 fi
 
-sudo update-rc.d tizen-kvm remove
-sudo rm -f /etc/init.d/tizen_kvm
+gksudo update-rc.d tizen-kvm remove
+gksudo rm -f /etc/init.d/tizen_kvm
 
