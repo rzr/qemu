@@ -85,6 +85,12 @@ else
 	cp -pPR skin/client/native_src/libshare.dylib $(EMUL_DIR)/bin
 endif
 
+ifdef CONFIG_LINUX
+	cp -pPr ../distrib/initscript/tizen_kvm $(EMUL_DIR)/etc
+else
+
+endif
+
 # for dibs system...
 all_dibs: qemu skin_client_dibs
 skin_client_dibs:
@@ -119,4 +125,10 @@ else
 	cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
 	cp -pPR skin/client/skins $(EMUL_DIR)
 	cp -pPR skin/client/native_src/libshare.dylib $(EMUL_DIR)/bin
+endif
+
+ifdef CONFIG_LINUX
+	cp -pPr ../distrib/initscript/tizen_kvm $(EMUL_DIR)/etc
+else
+
 endif
