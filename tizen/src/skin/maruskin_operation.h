@@ -71,6 +71,8 @@ void open_shell(void);
 
 void onoff_usb_kbd( int on );
 
+void ram_dump(void);
+
 void request_close( void );
 
 void shutdown_qemu_gracefully( void );

@@ -170,6 +170,7 @@ public interface ICommunicator extends Runnable {
 		USB_KBD( (short)15 ),
 		SCREEN_SHOT( (short)16 ),
 		DETAIL_INFO( (short)17 ),
+		RAM_DUMP( (short)18 ),
 		
 		RESPONSE_HEART_BEAT( (short)900 ),
 		CLOSE( (short)998 ),

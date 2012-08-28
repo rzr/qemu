@@ -383,6 +383,11 @@ void onoff_usb_kbd( int on )
     mloop_evcmd_usbkbd(on);
 }
 
+void ram_dump(void) {
+    INFO("ram dump!\n");
+
+    //TODO:
+}
 
 void request_close( void )
 {
