@@ -102,6 +102,7 @@ enum {
     RECV_USB_KBD = 15,
     RECV_SCREEN_SHOT = 16,
     RECV_DETAIL_INFO = 17,
+    RECV_RAM_DUMP = 18,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
@@ -749,6 +750,13 @@ static void* run_skin_server( void* args ) {
                         ERR( "Fail to get detail info.\n" );
                     }
 
+                    break;
+                }
+                case RECV_RAM_DUMP: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_RAM_DUMP ==\n");
+                    TRACE(log_buf);
+
+                    ram_dump();
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {

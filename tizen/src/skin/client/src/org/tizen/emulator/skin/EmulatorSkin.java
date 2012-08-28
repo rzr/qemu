@@ -1905,6 +1905,24 @@ public class EmulatorSkin {
 
 	}
 
+	private Menu createDiagnosisMenu(Shell shell) {
+		Menu menu = new Menu(shell, SWT.DROP_DOWN);
+
+		final MenuItem ramdumpItem = new MenuItem(menu, SWT.PUSH);
+		ramdumpItem.setText("&Ram Dump");
+
+		ramdumpItem.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				logger.info("Ram dump menu is selected");
+
+				communicator.sendToQEMU(SendCommand.RAM_DUMP, null);
+			}
+		});
+
+		return menu;
+	}
+
 	private Menu createAdvancedMenu( final Shell shell ) {
 
 		final Menu menu = new Menu( shell, SWT.DROP_DOWN );
@@ -1971,8 +1989,8 @@ public class EmulatorSkin {
 				if ( item.getSelection() ) {
 					boolean on = item.equals( usbOnItem );
 					isOnUsbKbd = on;
-					communicator
-							.sendToQEMU( SendCommand.USB_KBD, new BooleanData( on, SendCommand.USB_KBD.toString() ) );
+					communicator.sendToQEMU(
+							SendCommand.USB_KBD, new BooleanData(on, SendCommand.USB_KBD.toString()) );
 				}
 
 			}
@@ -1983,11 +2001,14 @@ public class EmulatorSkin {
 
 		usbKeyboardItem.setMenu( usbKeyBoardMenu );
 
-		/*
-		// Diagnosis menu
-		final MenuItem diagnosisItem = new MenuItem(menu, SWT.PUSH);
-		diagnosisItem.setText("Diagnosis");
+		/* Diagnosis menu */
+		final MenuItem diagnosisItem = new MenuItem(menu, SWT.CASCADE);
+		diagnosisItem.setText("&Diagnosis");
+		//diagnosisItem.setImage(imageRegistry.getIcon(IconName.XXX));
+		Menu diagnosisMenu = createDiagnosisMenu(menu.getShell());
+		diagnosisItem.setMenu(diagnosisMenu);
 
+		/*
 		// Force close menu
 		final MenuItem forceCloseItem = new MenuItem(menu, SWT.PUSH);
 		forceCloseItem.setText("Force Close");
