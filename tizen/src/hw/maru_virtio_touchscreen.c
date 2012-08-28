@@ -64,25 +64,24 @@ typedef struct TouchscreenState
 {
     VirtIODevice vdev;
     VirtQueue *vq;
-    VirtQueueElement elem;
 
     DeviceState *qdev;
     QEMUPutMouseEntry *eh_entry;
-
 } TouchscreenState;
 TouchscreenState *ts;
 
 
 // lock for between communication thread and IO thread
-static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
+//static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-;
+
 void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state)
 {
     TouchEventEntry *entry = NULL;
     TouchscreenState *ts = opaque;
+    VirtQueueElement elem;
 
-    pthread_mutex_lock(&event_mutex);
+    //pthread_mutex_lock(&event_mutex);
 
 #if 0
     if (queue_cnt >= MAX_TOUCH_EVENT_CNT) {
@@ -104,27 +103,41 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
 
     //QTAILQ_INSERT_TAIL(&events_queue, entry, node);
 
-    pthread_mutex_unlock(&event_mutex);
+    /* virtio */
+    virtqueue_pop(ts->vq, &elem);
+    memcpy(elem.in_sg[0].iov_base, &(entry->touch), sizeof(EmulTouchEvent));
+    virtqueue_push(ts->vq, &elem, 0);
+    virtio_notify(&(ts->vdev), ts->vq);
+
+    //pthread_mutex_unlock(&event_mutex);
 
     INFO("touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
-            entry->index, entry->touch.x, entry->touch.y, entry->touch.z, entry->touch.state);
-
-    // TODO:
-    memcpy(ts->elem.in_sg[0].iov_base, &(entry->touch), sizeof(EmulTouchEvent));
-    virtqueue_push(ts->vq, &(ts->elem), 0);
-    virtio_notify(&(ts->vdev), ts->vq);
+        entry->index, entry->touch.x, entry->touch.y, entry->touch.z, entry->touch.state);
 }
 
 static void maru_virtio_touchscreen_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
-    EmulTouchEvent touch;
-    INFO("maru_virtio_touchscreen_handle\n");
+    if (ts->eh_entry == NULL) {
+        VirtQueueElement elem;
+        int max_trkid = 0;
 
-    virtqueue_pop(vq, &(ts->elem));
-    memcpy(&touch, ts->elem.in_sg[0].iov_base, sizeof(EmulTouchEvent));
+        virtqueue_pop(ts->vq, &elem);
+        memcpy(&max_trkid, elem.in_sg[0].iov_base, sizeof(int));
 
-    INFO("!!!! x=%d, y=%d, z=%d, state=%d\n",
-            touch.x, touch.y, touch.z, touch.state);
+        if (max_trkid > 0) {
+            INFO("virtio touchscreen's maximum of tracking id = %d\n", max_trkid);
+
+            /* register a event handler */
+            ts->eh_entry = qemu_add_mouse_event_handler(virtio_touchscreen_event, ts, 1, "QEMU Virtio Touchscreen");
+            qemu_activate_mouse_event_handler(ts->eh_entry);
+
+            virtqueue_push(ts->vq, &elem, 0);
+            virtio_notify(&(ts->vdev), ts->vq);
+        } else {
+            INFO("virtio touchscreen is not added to qemu mouse event handler\n");
+        }
+    }
+
 }
 
 static uint32_t virtio_touchscreen_get_features(VirtIODevice *vdev, uint32_t request_features)
@@ -149,8 +162,6 @@ VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
     ts->vq = virtio_add_queue(&ts->vdev, 128, maru_virtio_touchscreen_handle);
 
     ts->qdev = dev;
-    ts->eh_entry = qemu_add_mouse_event_handler(virtio_touchscreen_event, ts, 1, "QEMU Virtio Touchscreen");
-    qemu_activate_mouse_event_handler(ts->eh_entry);
 
     /* reset the event counter */
     queue_cnt = ringbuf_cnt = 0;
