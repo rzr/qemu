@@ -664,6 +664,10 @@ void *glo_getprocaddress(const char *procName) {
 
     return procAddr;
 }
+void glo_surface_updatecontents(GloSurface *surface) {
+	/* NOT IMPLEMENTED YET. */
+	printf("glo_surface_updatecontents() is not implemented for windows. \n");
+}
 
 /* ------------------------------------------------------------------------ */
 
