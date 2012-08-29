@@ -40,37 +40,33 @@
 
 #include <libavformat/avformat.h>
 
-#define CODEC_MAX_CONTEXT   20
+#define CODEC_MAX_CONTEXT   1024
 #define CODEC_COPY_DATA
 
 /*
  *  Codec Device Structures
  */
 typedef struct _SVCodecParam {
-    uint32_t        apiIndex;
-    uint32_t        ctxIndex;
-    uint32_t        mmapOffset;
-    uint32_t        fileIndex;
+    uint32_t        api_index;
+    uint32_t        ctx_index;
+    uint32_t        file_index;
+    uint32_t        mmap_offset;
 } SVCodecParam;
 
 typedef struct _SVCodecContext {
     AVCodecContext          *avctx;
     AVFrame                 *frame;
-    AVCodecParserContext    *parserctx;
-    uint8_t                 *parserBuffer;
+    AVCodecParserContext    *parser_ctx;
+    uint8_t                 *parser_buf;
     bool                    parser_use;
-    bool                    bUsed;
-    uint32_t                nFileValue;
+    bool                    ctx_used;
+    uint32_t                file_value;
 } SVCodecContext;
 
 typedef struct _SVCodecState {
     PCIDevice           dev;
-    SVCodecContext      ctxArr[CODEC_MAX_CONTEXT];
-    SVCodecParam        codecParam;
-
-    int                 mmioIndex;
-    uint32_t            mem_addr;
-    uint32_t            mmio_addr;
+    SVCodecContext      ctx_arr[CODEC_MAX_CONTEXT];
+    SVCodecParam        codec_param;
 
     uint8_t             *vaddr;
     MemoryRegion        vram;
@@ -95,7 +91,6 @@ enum {
 enum {
     EMUL_AV_REGISTER_ALL = 1,
     EMUL_AVCODEC_ALLOC_CONTEXT,
-    EMUL_AVCODEC_ALLOC_FRAME,
     EMUL_AVCODEC_OPEN,
     EMUL_AVCODEC_CLOSE,
     EMUL_AV_FREE,
@@ -130,36 +125,32 @@ uint64_t codec_read(void *opaque, target_phys_addr_t addr,
                     unsigned size);
 void codec_write(void *opaque, target_phys_addr_t addr,
                 uint64_t value, unsigned size);
-int codec_operate(uint32_t apiIndex, uint32_t ctxIndex,
+int codec_operate(uint32_t api_index, uint32_t ctx_index,
                 SVCodecState *state);
 
 /*
  *  Codec Helper Functions
  */
-void qemu_parser_init(SVCodecState *s, int ctxIndex);
+void qemu_parser_init(SVCodecState *s, int ctx_index);
 void qemu_codec_close(SVCodecState *s, uint32_t value);
 void qemu_get_codec_ver(SVCodecState *s);
-#ifndef CODEC_COPY_DATA
-void qemu_restore_context(AVCodecContext *dst, AVCodecContext *src);
-#endif
 
 /*
  *  FFMPEG Functions
  */
 void qemu_av_register_all(void);
-int qemu_avcodec_open(SVCodecState *s, int ctxIndex);
-int qemu_avcodec_close(SVCodecState *s, int ctxIndex);
+int qemu_avcodec_open(SVCodecState *s, int ctx_index);
+int qemu_avcodec_close(SVCodecState *s, int ctx_index);
 void qemu_avcodec_alloc_context(SVCodecState *s);
-void qemu_avcodec_alloc_frame(SVCodecState *s, int ctxIndex);
-void qemu_avcodec_flush_buffers(SVCodecState *s, int ctxIndex);
-int qemu_avcodec_decode_video(SVCodecState *s, int ctxIndex);
-int qemu_avcodec_encode_video(SVCodecState *s, int ctxIndex);
-int qemu_avcodec_decode_audio(SVCodecState *s, int ctxIndex);
-int qemu_avcodec_encode_audio(SVCodecState *s, int ctxIndex);
-void qemu_av_picture_copy(SVCodecState *s, int ctxIndex);
-void qemu_av_parser_init(SVCodecState *s, int ctxIndex);
-int qemu_av_parser_parse(SVCodecState *s, int ctxIndex);
-void qemu_av_parser_close(SVCodecState *s, int ctxIndex);
+void qemu_avcodec_flush_buffers(SVCodecState *s, int ctx_index);
+int qemu_avcodec_decode_video(SVCodecState *s, int ctx_index);
+int qemu_avcodec_encode_video(SVCodecState *s, int ctx_index);
+int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index);
+int qemu_avcodec_encode_audio(SVCodecState *s, int ctx_index);
+void qemu_av_picture_copy(SVCodecState *s, int ctx_index);
+void qemu_av_parser_init(SVCodecState *s, int ctx_index);
+int qemu_av_parser_parse(SVCodecState *s, int ctx_index);
+void qemu_av_parser_close(SVCodecState *s, int ctx_index);
 int qemu_avcodec_get_buffer(AVCodecContext *context, AVFrame *picture);
 void qemu_avcodec_release_buffer(AVCodecContext *context, AVFrame *picture);
-void qemu_av_free(SVCodecState *s, int ctxIndex);
+void qemu_av_free(SVCodecState *s, int ctx_index);
