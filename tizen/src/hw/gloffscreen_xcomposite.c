@@ -292,7 +292,7 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask |
            CWOverrideRedirect | CWSaveUnder;
 
-    surface->window = XCreateWindow(glo.dpy, DefaultRootWindow(glo.dpy), -width-1000, 0, width, height, 0, vis->depth, InputOutput, vis->visual, mask, &attr);
+    surface->window = XCreateWindow(glo.dpy, DefaultRootWindow(glo.dpy), 0, 3000, width, height, 0, vis->depth, InputOutput, vis->visual, mask, &attr);
 
     if (!surface->window) {
         printf( "XCreateWindow failed\n" );
