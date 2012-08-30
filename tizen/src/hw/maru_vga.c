@@ -1190,7 +1190,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
 
             } else  {
 
-                if ( brightness_level < BRIGHTNESS_MAX ) {
+                if ( brightness_level <= BRIGHTNESS_MAX ) {
 
                     alpha = brightness_tbl[brightness_level];
 
