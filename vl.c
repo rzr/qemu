@@ -3224,27 +3224,30 @@ fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
     loc_set_none();
 
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
-    capability_check_gl = gl_acceleration_capability_check();
-    if (enable_gl && (capability_check_gl != 0)) {
-        enable_gl = 0;
-        fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
+    if (enable_gl) {
+        capability_check_gl = gl_acceleration_capability_check();
+
+        if (capability_check_gl != 0) {
+            enable_gl = 0;
+            fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
+        }
+
+        // To check host gl driver capability and notify to guest.
+	    gchar *tmp = kernel_cmdline;
+        kernel_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
+	    fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
+        g_free(tmp);
+
+        if (enable_gl) {
+            device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
+            qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+            if (devp.found == 0) {
+                if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, "driver")) {
+                    exit(1);
+                }
+            }
+        }
     }
-
-	// To check host gl driver capability and notify to guest.
-	gchar *tmp = kernel_cmdline;
-	kernel_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
-	fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
-	g_free(tmp);
-
-	if (enable_gl) {
-		device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
-		qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
-		if (devp.found == 0) {
-			if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, "driver")) {
-				exit(1);
-			}
-		}
-	}
 #endif
 	
 	
