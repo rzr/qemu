@@ -389,13 +389,16 @@ void onoff_usb_kbd( int on )
 #define MAX_PATH 256
 static void dump_ram( void )
 {
+#if defined(CONFIG_LINUX)
     MemoryRegion* rm = get_ram_memory();
+    unsigned int size = rm->size.lo;
     char dump_fullpath[MAX_PATH];
     char dump_filename[MAX_PATH];
 
     char* dump_path = g_path_get_dirname(get_logpath());
 
-    sprintf(dump_filename, "0x%08x%s", rm->ram_addr, "_RAM.dump");
+    sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-", 
+        rm->ram_addr + size, "_RAM.dump");
     sprintf(dump_fullpath, "%s/%s", dump_path, dump_filename);
     free(dump_path);
 
@@ -407,7 +410,6 @@ static void dump_ram( void )
     }
 
     size_t written;
-    unsigned int size = rm->size.lo;
     written = fwrite(qemu_get_ram_ptr(rm->ram_addr), sizeof(char), size, dump_file);
     fprintf(stdout, "Dump file written [%08x][%d bytes]\n", rm->ram_addr, written);
     if(written != size) {
@@ -417,6 +419,7 @@ static void dump_ram( void )
     fprintf(stdout, "Dump file create success [%s, %d bytes]\n", dump_fullpath, size);
 
     fclose(dump_file);
+#endif
 }
 
 void ram_dump(void) {
