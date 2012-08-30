@@ -62,6 +62,9 @@ public class StringUtil {
 			if (file.isDirectory() == false) {
 				canonicalPath =
 						canonicalPath.substring(0, canonicalPath.lastIndexOf(File.separator));
+				if (canonicalPath.compareTo("") == 0) {
+					return "./";
+				}
 			}
 		} catch (IOException e) {
 			throw e;

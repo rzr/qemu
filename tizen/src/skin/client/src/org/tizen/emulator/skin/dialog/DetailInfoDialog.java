@@ -66,7 +66,10 @@ import org.tizen.emulator.skin.util.SwtUtil;
 public class DetailInfoDialog extends SkinDialog {
 
 	public final static String DATA_DELIMITER = "#";
-	public final static String KEY_LOGPATH = "Log Path";
+	public final static String KEY_SDCARD_PATH = "SD Card Path";
+	public final static String KEY_FILESHARED_PATH = "File Shared Path";
+	public final static String KEY_IMAGE_PATH = "Image Path";
+	public final static String KEY_LOG_PATH = "Log Path";
 	public final static String VALUE_NONE = "None";
 	public final static String VALUE_SUPPORTED = "Supported";
 	public final static String VALUE_NOTSUPPORTED = "Not Supported";
@@ -127,7 +130,7 @@ public class DetailInfoDialog extends SkinDialog {
 		column[1].pack();
 		table.pack();
 
-		/* browse the log path when log path item is selected */
+		/* browse the appropriate path when item is double clicked */
 		table.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
@@ -141,26 +144,44 @@ public class DetailInfoDialog extends SkinDialog {
 				}
 
 				TableItem tableItem = ((TableItem)table.getSelection()[0]);
+				String openPath = VALUE_NONE;
 
-				if (tableItem.getText().compareTo(KEY_LOGPATH) == 0) {
-					String logPath = refinedData.get(KEY_LOGPATH);
-					ProcessBuilder procBrowser = new ProcessBuilder();
+				if (tableItem.getText().compareTo(KEY_LOG_PATH) == 0) {
+					openPath = refinedData.get(KEY_LOG_PATH);
+				} else if (tableItem.getText().compareTo(KEY_IMAGE_PATH) == 0) {
+					openPath = refinedData.get(KEY_IMAGE_PATH);
+				} else if (tableItem.getText().compareTo(KEY_FILESHARED_PATH) == 0) {
+					openPath = refinedData.get(KEY_FILESHARED_PATH);
+				} else if (tableItem.getText().compareTo(KEY_SDCARD_PATH) == 0) {
+					openPath = refinedData.get(KEY_SDCARD_PATH);
+				}
 
-					if (SwtUtil.isLinuxPlatform()) {
-						procBrowser.command("nautilus", "--browser", logPath);
-					} else if (SwtUtil.isWindowsPlatform()) {
-						procBrowser.command("explorer", "\"" + logPath + "\"");
-					} else if (SwtUtil.isMacPlatform()) {
-						//TODO:
-						logger.warning( "not supported yet" );
-					}
+				try {
+					openPath = StringUtil.getCanonicalPath(openPath);
+				} catch (IOException e) {
+					logger.warning( "Invalid path" );
+				}
 
-					if (procBrowser.command().isEmpty() == false) {
-						try {
-							procBrowser.start();
-						} catch (Exception e) {
-							logger.log( Level.SEVERE, e.getMessage(), e);
-						}
+				if (openPath.compareTo(VALUE_NONE) == 0 || openPath.compareTo("") == 0) {
+					return;
+				}
+
+				ProcessBuilder procBrowser = new ProcessBuilder();
+
+				if (SwtUtil.isLinuxPlatform()) {
+					procBrowser.command("nautilus", "--browser", openPath);
+				} else if (SwtUtil.isWindowsPlatform()) {
+					procBrowser.command("explorer", "\"" + openPath + "\"");
+				} else if (SwtUtil.isMacPlatform()) {
+					//TODO:
+					logger.warning( "not supported yet" );
+				}
+
+				if (procBrowser.command().isEmpty() == false) {
+					try {
+						procBrowser.start();
+					} catch (Exception e) {
+						logger.log( Level.SEVERE, e.getMessage(), e);
 					}
 				}
 
@@ -288,7 +309,7 @@ public class DetailInfoDialog extends SkinDialog {
 						int idx = arg.indexOf( "dpi" );
 
 						if ( -1 != idx ) {
-							if( idx + 7 <= arg.length() ) {
+							if ( idx + 7 <= arg.length() ) {
 								
 								dpi = arg.substring( idx, idx + 7 ); // end index is not 8, remove last '0'
 								
@@ -304,12 +325,12 @@ public class DetailInfoDialog extends SkinDialog {
 						isHwVirtual = true;
 					} else if ( arg.startsWith("hax_error=") ) {
 						String[] sp = arg.split( "=" );
-						if( 1 < sp.length ) {
+						if ( 1 < sp.length ) {
 							isHaxError = Boolean.parseBoolean( sp[1] );
 						}
 					} else if (arg.startsWith("log_path=")) {
 						String[] sp = arg.split("=");
-						if( 1 < sp.length ) {
+						if ( 1 < sp.length ) {
 							logPath = sp[1];
 
 							try {
@@ -345,30 +366,28 @@ public class DetailInfoDialog extends SkinDialog {
 
 		/* SD card path */
 		if ( StringUtil.isEmpty( sdPath ) ) {
-			result.put( "SD Card", VALUE_NOTSUPPORTED );
-			result.put( "SD Card Path", VALUE_NONE );
+			result.put("SD Card", VALUE_NOTSUPPORTED);
+			result.put(KEY_SDCARD_PATH, VALUE_NONE);
 		} else {
-			result.put( "SD Card", VALUE_SUPPORTED );
-			result.put( "SD Card Path", sdPath );
+			result.put("SD Card", VALUE_SUPPORTED);
+			result.put(KEY_SDCARD_PATH, sdPath);
 		}
 
 		/* RAM size */
 		result.put( "RAM Size", ram );
 
 		/* Whether host file sharing is supported */
-		if ( SwtUtil.isLinuxPlatform() ) {
-			if ( StringUtil.isEmpty( sharedPath ) ) {
-				result.put( "File Sharing", VALUE_NOTSUPPORTED );
-				result.put( "File Shared Path", VALUE_NONE );
-			} else {
-				result.put( "File Sharing", VALUE_SUPPORTED );
-				result.put( "File Shared Path", sharedPath );
-			}
+		if ( StringUtil.isEmpty( sharedPath ) ) {
+			result.put("File Sharing", VALUE_NOTSUPPORTED);
+			result.put(KEY_FILESHARED_PATH, VALUE_NONE);
+		} else {
+			result.put("File Sharing", VALUE_SUPPORTED);
+			result.put(KEY_FILESHARED_PATH, sharedPath);
 		}
 
 		/* Whether hardware virtualization is supported */
 		if ( isHwVirtual ) {
-			if( isHaxError ) {
+			if ( isHaxError ) {
 				result.put( "HW Virtualization State", "Disable(insufficient memory for driver)" );
 			} else {
 				result.put( "HW Virtualization State", "Enable" );
@@ -379,16 +398,16 @@ public class DetailInfoDialog extends SkinDialog {
 
 		/* Target image path */
 		if ( StringUtil.isEmpty( imagePath ) ) {
-			result.put( "Image Path", "Not identified" );
+			result.put(KEY_IMAGE_PATH, "Not identified");
 		} else {
-			result.put( "Image Path", imagePath );
+			result.put(KEY_IMAGE_PATH, imagePath);
 		}
 
 		/* Emulator log file path */
 		if (StringUtil.isEmpty(logPath)) {
-			result.put(KEY_LOGPATH, VALUE_NONE);
+			result.put(KEY_LOG_PATH, VALUE_NONE);
 		} else {
-			result.put(KEY_LOGPATH, logPath);
+			result.put(KEY_LOG_PATH, logPath);
 		}
 
 		return result;
