@@ -33,6 +33,7 @@
 #include "qemu-thread.h"
 
 #define MARUCAM_MAX_PARAM    20
+#define MARUCAM_SKIPFRAMES    2
 
 /* must sync with GUEST camera_driver */
 #define MARUCAM_CMD_INIT           0x00

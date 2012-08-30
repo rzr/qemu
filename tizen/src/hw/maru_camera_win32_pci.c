@@ -40,6 +40,8 @@
 
 MULTI_DEBUG_CHANNEL(tizen, camera_win32);
 
+extern int hax_enabled(void);
+
 /*
  * COM Interface implementations
  *
@@ -940,10 +942,6 @@ IBaseFilter *g_pSrcFilter;
 
 IGrabCallback *g_pCallback;
 
-DWORD g_dwFourcc;
-LONG g_dwWidth;
-LONG g_dwHeight;
-
 // V4L2 defines copy from videodev2.h
 #define V4L2_CTRL_FLAG_SLIDER       0x0020
 
@@ -1059,35 +1057,41 @@ static long value_convert_to_guest(long min, long max, long value)
  */
 static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 {
-    static uint32_t index = 0;
+    void *tmp_buf;
     uint32_t width, height;
+
+    qemu_mutex_lock(&g_state->thread_mutex);
+    if (ready_count < MARUCAM_SKIPFRAMES) {
+        ++ready_count; /* skip a frame cause first some frame are distorted */
+        qemu_mutex_unlock(&g_state->thread_mutex);
+        return S_OK;
+    }
+    if (g_state->req_frame == 0) {
+        qemu_mutex_unlock(&g_state->thread_mutex);
+        return S_OK;
+    }
+    tmp_buf = g_state->vaddr + g_state->buf_size * (g_state->req_frame - 1);
+    qemu_mutex_unlock(&g_state->thread_mutex);
+
     width = supported_dst_frames[cur_frame_idx].width;
     height = supported_dst_frames[cur_frame_idx].height;
-    void *buf = g_state->vaddr + (g_state->buf_size * index);
 
     switch (supported_dst_pixfmts[cur_fmt_idx].fmt) {
     case V4L2_PIX_FMT_YUV420:
-        v4lconvert_yuyv_to_yuv420(pBuffer, buf, width, height, 0);
+        v4lconvert_yuyv_to_yuv420(pBuffer, tmp_buf, width, height, 0);
         break;
     case V4L2_PIX_FMT_YVU420:
-        v4lconvert_yuyv_to_yuv420(pBuffer, buf, width, height, 1);
+        v4lconvert_yuyv_to_yuv420(pBuffer, tmp_buf, width, height, 1);
         break;
     case V4L2_PIX_FMT_YUYV:
-        memcpy(buf, (void*)pBuffer, dwSize);
+        memcpy(tmp_buf, (void*)pBuffer, (size_t)dwSize);
         break;
     }
-    index = !index;
 
     qemu_mutex_lock(&g_state->thread_mutex);
-    if (ready_count >= 4) {
-        if (g_state->req_frame) {
-            g_state->req_frame = 0; // clear request
-            g_state->isr |= 0x01; // set a flag raising a interrupt.
-            qemu_bh_schedule(g_state->tx_bh);
-        }
-    } else {
-        ++ready_count; // skip a frame cause first some frame are distorted.
-    }
+    g_state->req_frame = 0; /* clear request */
+    g_state->isr |= 0x01; /* set a flag raising a interrupt. */
+    qemu_bh_schedule(g_state->tx_bh);
     qemu_mutex_unlock(&g_state->thread_mutex);
     return S_OK;
 }
@@ -1301,13 +1305,23 @@ static STDMETHODIMP ConnectFilters(void)
     return hr;
 }
 
-static STDMETHODIMP SetDefaultValues(void)
+/* default fps is 15 */
+#define MARUCAM_DEFAULT_FRAMEINTERVAL    666666
+
+static STDMETHODIMP SetFormat(uint32_t dwWidth, uint32_t dwHeight,
+                              uint32_t dwFourcc)
 {
     HRESULT hr;
     IAMStreamConfig *pSConfig;
     int iCount = 0, iSize = 0;
 
-    hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, 0, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&pSConfig);
+    if (dwFourcc == 0) {
+        dwFourcc = MAKEFOURCC('Y','U','Y','2');
+    }
+
+    hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, 0,
+                                       g_pSrcFilter, &IID_IAMStreamConfig,
+                                       (void**)&pSConfig);
     if (FAILED(hr)) {
         ERR("failed to FindInterface method\n");
         return hr;
@@ -1329,19 +1343,29 @@ static STDMETHODIMP SetDefaultValues(void)
             VIDEO_STREAM_CONFIG_CAPS scc;
             AM_MEDIA_TYPE *pmtConfig;
 
-            hr = pSConfig->lpVtbl->GetStreamCaps(pSConfig, iFormat, &pmtConfig, (BYTE*)&scc);
+            hr = pSConfig->lpVtbl->GetStreamCaps(pSConfig, iFormat, &pmtConfig,
+                                                 (BYTE*)&scc);
             if (hr == S_OK)
             {
                 if (IsEqualIID(&pmtConfig->formattype, &FORMAT_VideoInfo))
                 {
-                    VIDEOINFOHEADER* pvi = (VIDEOINFOHEADER*)pmtConfig->pbFormat;
-                    if ((pvi->bmiHeader.biWidth == g_dwWidth) &&
-                        (pvi->bmiHeader.biHeight == g_dwHeight) &&
-                        (pvi->bmiHeader.biCompression == g_dwFourcc))
+                    VIDEOINFOHEADER *pvi =
+                                         (VIDEOINFOHEADER *)pmtConfig->pbFormat;
+                    if ((pvi->bmiHeader.biWidth == (LONG)dwWidth) &&
+                        (pvi->bmiHeader.biHeight == (LONG)dwHeight) &&
+                        (pvi->bmiHeader.biCompression == (DWORD)dwFourcc))
                     {
+                        /* use minimum FPS(maximum frameinterval)
+                           with non-VT system  */
+                       if (!hax_enabled()) {
+                            pvi->AvgTimePerFrame =
+                                    (REFERENCE_TIME)scc.MaxFrameInterval;
+                        } else {
+                            pvi->AvgTimePerFrame =
+                                (REFERENCE_TIME)MARUCAM_DEFAULT_FRAMEINTERVAL;
+                        }
                         hr = pSConfig->lpVtbl->SetFormat(pSConfig, pmtConfig);
                         DeleteMediaType(pmtConfig);
-                        INFO("Setting default values.\n");
                         break;
                     }
                 }
@@ -1349,47 +1373,14 @@ static STDMETHODIMP SetDefaultValues(void)
             }
         }
         if (iFormat >= iCount) {
-            ERR("Maybe connected webcam does not support %ld x %ld resolution.\n", g_dwWidth, g_dwHeight);
+            ERR("Failed to Set format. "
+                "Maybe connected webcam does not support "
+                "(%ldx%ld) resolution or YUY2 image format.\n",
+                dwWidth, dwHeight);
             hr = E_FAIL;
         }
     }
     pSConfig->lpVtbl->Release(pSConfig);
-    return hr;
-}
-
-static STDMETHODIMP SetResolution(LONG width, LONG height)
-{
-    HRESULT hr;
-    IAMStreamConfig* vsc = NULL;
-    AM_MEDIA_TYPE* pmt = NULL;
-
-    hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&vsc);
-    if (FAILED(hr))
-        return hr;
-
-    hr = vsc->lpVtbl->GetFormat(vsc, &pmt);
-    if (FAILED(hr))
-    {
-        vsc->lpVtbl->Release(vsc);
-        return hr;
-    }
-
-    if (pmt != NULL)
-    {
-        if (IsEqualIID(&pmt->formattype, &FORMAT_VideoInfo))
-        {
-            VIDEOINFOHEADER* pvi = (VIDEOINFOHEADER*)pmt->pbFormat;
-            pvi->bmiHeader.biWidth = width;
-            pvi->bmiHeader.biHeight = height;
-            pvi->bmiHeader.biSizeImage = ((width * pvi->bmiHeader.biBitCount) >> 3 ) * height;
-            hr = vsc->lpVtbl->SetFormat(vsc, pmt);
-            if (hr != S_OK) {
-                ERR("failed to set the resolution.(w:%ld, h:%ld), Maybe connected webcam does not support the resolution.\n", width, height);
-            }
-        }
-        DeleteMediaType(pmt);
-    }
-    vsc->lpVtbl->Release(vsc);
     return hr;
 }
 
@@ -1522,6 +1513,7 @@ void marucam_device_init(MaruCamState* state)
 void marucam_device_open(MaruCamState* state)
 {
     HRESULT hr;
+    uint32_t dwHeight, dwWidth;
     MaruCamParam *param = state->param;
     param->top = 0;
 
@@ -1557,16 +1549,16 @@ void marucam_device_open(MaruCamState* state)
         goto error_failed;
     }
 
-    g_dwFourcc = MAKEFOURCC('Y','U','Y','2');
-    g_dwHeight = 480;
-    g_dwWidth = 640;
-    hr = SetDefaultValues();
-    if (hr != S_OK) {
-        ERR("SetDefaultValues\n");
-        goto error_failed;
-    }
     cur_frame_idx = 0;
     cur_fmt_idx = 0;
+
+    dwHeight = supported_dst_frames[cur_frame_idx].height;
+    dwWidth = supported_dst_frames[cur_frame_idx].width;
+    hr = SetFormat(dwWidth, dwHeight, 0);
+    if (hr != S_OK) {
+        ERR("failed to Set default values\n");
+        goto error_failed;
+    }
 
     INFO("Open successfully!!!\n");
     return;
@@ -1709,13 +1701,11 @@ void marucam_device_s_fmt(MaruCamState* state)
 
     if ((supported_dst_frames[cur_frame_idx].width != width) &&
             (supported_dst_frames[cur_frame_idx].height != height)) {
-        HRESULT hr = SetResolution((LONG)width, (LONG)height);
+        HRESULT hr = SetFormat(width, height, 0);
         if (FAILED(hr)) {
             param->errCode = EINVAL;
             return;
         }
-        g_dwWidth = (LONG)width;
-        g_dwHeight = (LONG)height;
     }
 
     param->stack[0] = width;

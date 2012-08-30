@@ -43,8 +43,6 @@
 
 MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 
-#define MARUCAM_SKIPFRAMES    2
-
 enum {
     _MC_THREAD_PAUSED,
     _MC_THREAD_STREAMON,
@@ -163,7 +161,6 @@ static int is_stream_paused(MaruCamState *state)
 static int __v4l2_grab(MaruCamState *state)
 {
     fd_set fds;
-    static uint32_t index = 0;
     struct timeval tv;
     void *buf;
     int ret;
@@ -194,7 +191,19 @@ static int __v4l2_grab(MaruCamState *state)
     if (!is_streamon(state))
         return -1;
 
-    buf = state->vaddr + (state->buf_size * index);
+    qemu_mutex_lock(&state->thread_mutex);
+	if (ready_count < MARUCAM_SKIPFRAMES) {
+        ++ready_count; /* skip a frame cause first some frame are distorted */
+        qemu_mutex_unlock(&state->thread_mutex);
+        return 0;
+    }
+    if (state->req_frame == 0) {
+        qemu_mutex_unlock(&state->thread_mutex);
+        return 0;
+    }
+    buf = state->vaddr + state->buf_size * (state->req_frame -1);
+    qemu_mutex_unlock(&state->thread_mutex);
+
     ret = v4l2_read(v4l2_fd, buf, state->buf_size);
     if ( ret < 0) {
         switch (errno) {
@@ -214,26 +223,17 @@ static int __v4l2_grab(MaruCamState *state)
         }
     }
 
-    index = !index;
-
     qemu_mutex_lock(&state->thread_mutex);
     if (state->streamon == _MC_THREAD_STREAMON) {
-        if (ready_count >= MARUCAM_SKIPFRAMES) {
-            if (state->req_frame) {
-                state->req_frame = 0; // clear request
-                state->isr |= 0x01; // set a flag of rasing a interrupt.
-                qemu_bh_schedule(state->tx_bh);
-            }
-            ret = 1;
-        } else {
-            ++ready_count; // skip a frame cause first some frame are distorted.
-            ret = 0;
-        }
+        state->req_frame = 0; /* clear request */
+        state->isr |= 0x01;   /* set a flag of rasing a interrupt */
+        qemu_bh_schedule(state->tx_bh);
+		ret = 1;
     } else {
         ret = -1;
     }
-    qemu_mutex_unlock(&state->thread_mutex);
 
+    qemu_mutex_unlock(&state->thread_mutex);
     return ret;
 }
 

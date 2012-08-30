@@ -244,13 +244,6 @@ static int marucam_exitfn(PCIDevice *dev)
     return 0;
 }
 
-int maru_camera_pci_init(PCIBus *bus)
-{
-    INFO("[%s] camera device was initialized.\n", __func__);
-    pci_create_simple(bus, -1, MARU_PCI_CAMERA_DEVICE_NAME);
-    return 0;
-}
-
 static PCIDeviceInfo maru_camera_info = {
     .qdev.name    = MARU_PCI_CAMERA_DEVICE_NAME,
     .qdev.desc    = "MARU Virtual Camera device for Tizen emulator",
