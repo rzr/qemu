@@ -112,6 +112,7 @@ enum {
     SEND_HEART_BEAT = 1,
     SEND_SCREEN_SHOT = 2,
     SEND_DETAIL_INFO = 3,
+    SEND_RAMDUMP_COMPLETE = 4,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
@@ -194,7 +195,7 @@ void shutdown_skin_server( void ) {
         }
     }
 
-    if( success_send ) {
+    if ( success_send ) {
 
         int count = 0;
         int max_sleep_count = 10;
@@ -253,6 +254,17 @@ void notify_sensor_daemon_start( void ) {
         }
     }
 }
+
+void notify_ramdump_complete(void) {
+    INFO("notify_ramdump_complete\n");
+
+    if (client_sock) {
+        if (0 > send_skin_header_only( client_sock, SEND_RAMDUMP_COMPLETE, 1)) {
+            ERR("fail to send SEND_RAMDUMP_COMPLETE to skin.\n");
+        }
+    }
+}
+
 
 int is_ready_skin_server( void ) {
     return ready_server;
@@ -355,12 +367,12 @@ static void parse_skinconfig_prop( void ) {
 static void parse_skin_args( void ) {
 
     int i;
-    for( i = 0; i < skin_argc; i++ ) {
+    for ( i = 0; i < skin_argc; i++ ) {
 
         char* arg = NULL;
         arg = strdup( skin_argv[i] );
 
-        if( arg ) {
+        if ( arg ) {
 
             char* key = strtok( arg, "=" );
             char* value = strtok( NULL, "=" );

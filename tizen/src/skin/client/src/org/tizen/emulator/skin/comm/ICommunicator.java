@@ -208,6 +208,7 @@ public interface ICommunicator extends Runnable {
 		HEART_BEAT( (short)1 ),
 		SCREEN_SHOT_DATA( (short)2 ),
 		DETAIL_INFO_DATA( (short)3 ),
+		RAMDUMP_COMPLETE( (short)4 ),
 		SENSOR_DAEMON_START( (short)800 ),
 		SHUTDOWN( (short)999 );
 		
