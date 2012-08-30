@@ -63,6 +63,8 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 
+#include "guest_debug.h"
+
 #define MAX_IDE_BUS 2
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
@@ -83,6 +85,13 @@ static void ioapic_init(GSIState *gsi_state)
     for (i = 0; i < IOAPIC_NUM_PINS; i++) {
         gsi_state->ioapic_irq[i] = qdev_get_gpio_in(dev, i);
     }
+}
+
+MemoryRegion *global_ram_memory;
+
+MemoryRegion *get_ram_memory(void)
+{
+    return global_ram_memory;
 }
 
 static void maru_x86_machine_init(MemoryRegion *system_memory,
@@ -145,6 +154,9 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
                        below_4g_mem_size, above_4g_mem_size,
                        pci_enabled ? rom_memory : system_memory, &ram_memory);
     }
+
+    // for ramdump...
+    global_ram_memory = ram_memory;
 
     gsi_state = g_malloc0(sizeof(*gsi_state));
     gsi = qemu_allocate_irqs(gsi_handler, gsi_state, GSI_NUM_PINS);

@@ -37,6 +37,7 @@
 #include <SDL.h>
 #endif
 #include "emulator.h"
+#include "guest_debug.h"
 #include "sdb.h"
 #include "string.h"
 #include "skin/maruskin_server.h"
@@ -83,6 +84,11 @@ static int qemu_argc;
 static char **qemu_argv;
 
 void maru_display_fini(void);
+
+char *get_logpath(void)
+{
+    return logpath;
+}
 
 void exit_emulator(void)
 {
