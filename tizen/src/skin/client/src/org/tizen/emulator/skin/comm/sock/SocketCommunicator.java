@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.swt.SWT;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -111,6 +112,7 @@ public class SocketCommunicator implements ICommunicator {
 	private AtomicInteger heartbeatCount;
 	private boolean isTerminated;
 	private boolean isSensorDaemonStarted;
+	private boolean isRamdumpCompleted;
 	private ScheduledExecutorService heartbeatExecutor;
 
 	private DataTranfer screenShotDataTransfer;
@@ -294,6 +296,13 @@ public class SocketCommunicator implements ICommunicator {
 					logger.info( "received DETAIL_INFO_DATA from QEMU." );
 					receiveData( detailInfoTransfer, length );
 
+					break;
+				}
+				case RAMDUMP_COMPLETE: {
+					logger.info("received RAMDUMP_COMPLETE from QEMU.");
+					synchronized ( this ) {
+						isRamdumpCompleted = true;
+					}
 					break;
 				}
 				case SENSOR_DAEMON_START: {
@@ -552,6 +561,10 @@ public class SocketCommunicator implements ICommunicator {
 
 	public synchronized boolean isSensorDaemonStarted() {
 		return isSensorDaemonStarted;
+	}
+
+	public synchronized boolean isRamdumpCompleted() {
+		return isRamdumpCompleted;
 	}
 
 	private void increaseHeartbeatCount() {

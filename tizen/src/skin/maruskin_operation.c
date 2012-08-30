@@ -82,7 +82,7 @@ void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, do
 
 void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, int z )
 {
-    if( brightness_off ) {
+    if ( brightness_off ) {
         TRACE( "reject mouse touch in lcd off : %d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
         return;
     }
@@ -426,6 +426,8 @@ void ram_dump(void) {
     INFO("ram dump!\n");
 
     dump_ram();
+
+    notify_ramdump_complete();
 }
 
 void request_close( void )
