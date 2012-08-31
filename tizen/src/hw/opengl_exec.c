@@ -1644,6 +1644,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                     else {
 //                       DEBUGF( " --Client drawable found, using surface: %16x %16lx\n", (unsigned int)glstate->current_qsurface, (unsigned long int)client_drawable);
                     }
+#if 0
                     /*Test old surface contents */
                     int reset_texture = 0;
                     GLState *old_glstate = NULL;
@@ -1656,13 +1657,14 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                     }
                     fprintf(stderr, "edwin:MakeCurrent: drawable=0x%x,qsurface=%p.\n", client_drawable, glstate->current_qsurface);
 
-                    /* Switch to pixmap */
+#endif
+                    /* Switch in pixmap surface */
                     if (glstate->current_qsurface && SURFACE_PIXMAP == glstate->current_qsurface->type )
                     {
-                        /* get the windows contents */
-                        if ( process->current_state->current_qsurface )
-                        glo_surface_updatecontents(process->current_state->current_qsurface->surface);
+                        /* Release it if the surface is used as texture target */
+                        glo_surface_release_texture(glstate->current_qsurface);
                     }
+
                     process->current_state = glstate;
 
                     ret.i = glo_surface_makecurrent(glstate->current_qsurface->surface);
@@ -2021,7 +2023,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
                 process->current_state->bindTexture2D = client_texture;
             }
-	break;
+			break;
         }
 
     case glGenTextures_fake_func:
