@@ -723,9 +723,11 @@ public class EmulatorSkin {
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
-				if (EmulatorSkin.this.contextMenu != null && EmulatorSkin.this.isMousePressed == false) {
-					shell.setMenu(EmulatorSkin.this.contextMenu);
-					EmulatorSkin.this.contextMenu.setVisible(true);
+				Menu menu = EmulatorSkin.this.contextMenu;
+
+				if (menu != null && EmulatorSkin.this.isMousePressed == false) {
+					shell.setMenu(menu);
+					menu.setVisible(true);
 					e.doit = false;
 				} else {
 					shell.setMenu(null);
@@ -761,7 +763,7 @@ public class EmulatorSkin {
 		canvasMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
-				Menu menu = shell.getMenu();
+				Menu menu = EmulatorSkin.this.contextMenu;
 
 				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
 					lcdCanvas.setMenu(menu);
