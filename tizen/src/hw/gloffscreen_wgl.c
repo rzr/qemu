@@ -625,6 +625,7 @@ static const char *STANDARD_GL_FUNCTIONS ={
 "glXQueryDrawable\0"
 "glXGetVisualFromFBConfig\0"
 "glXIsDirect\0"
+"glXCreatePixmap\0"
 "\0"
 };
 
