@@ -8,5 +8,6 @@ then
 fi
 
 gksudo cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/tizen_kvm /etc/init.d/
+gksudo cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/45-tizen-kvm.rules /lib/udev/rules.d/
 gksudo update-rc.d tizen-kvm defaults
 

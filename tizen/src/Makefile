@@ -87,6 +87,7 @@ endif
 
 ifdef CONFIG_LINUX
 	cp -pPr ../distrib/initscript/tizen_kvm $(EMUL_DIR)/etc
+	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 else
 
 endif
@@ -129,6 +130,7 @@ endif
 
 ifdef CONFIG_LINUX
 	cp -pPr ../distrib/initscript/tizen_kvm $(EMUL_DIR)/etc
+	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 else
 
 endif

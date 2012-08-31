@@ -1,7 +1,7 @@
 #!/bin/sh
 do_start () {
 	if grep -qs "^flags.* vmx" /proc/cpuinfo; then
-		modprobe -b kvm_intel "$KVM_NESTED"
+		modprobe -b kvm_intel
 	elif grep -qs "^flags.* svm" /proc/cpuinfo; then
 		modprobe -b kvm_amd
 	fi
