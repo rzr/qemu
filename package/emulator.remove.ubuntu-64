@@ -7,6 +7,6 @@ then
    exit 2;
 fi
 
-sudo cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/tizen_kvm /etc/init.d/
-sudo update-rc.d tizen-kvm defaults
+gksudo update-rc.d tizen-kvm remove
+gksudo rm -f /etc/init.d/tizen_kvm
 
