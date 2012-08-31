@@ -246,6 +246,7 @@ static void _sdl_init(void)
     }
 }
 
+#if 0
 static int point_degree = 0;
 static void draw_outline_circle(int cx, int cy, int r, int num_segments)
 {
@@ -297,6 +298,7 @@ static void draw_fill_circle(int cx, int cy, int r)
     glDisable(GL_POINT_SMOOTH);
     glDisable(GL_BLEND);
 }
+#endif
 
 static void qemu_update(void)
 {
@@ -317,6 +319,7 @@ static void qemu_update(void)
     if (surface_qemu != NULL) {
         int i;
 
+#if 0
         if (sdl_opengl == 1)
         { //gl surface
             glEnable(GL_TEXTURE_2D);
@@ -373,6 +376,7 @@ static void qemu_update(void)
         }
         else
         { //sdl surface
+#endif
             if (current_scale_factor < 0.5)
             {
                 /* process by sdl_gfx */
@@ -419,7 +423,6 @@ static void qemu_update(void)
                 }
             } //end  of draw multi-touch
         }
-    }
 
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 }

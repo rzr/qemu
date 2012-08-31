@@ -42,7 +42,7 @@
 SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle);
 
 
-static void interpolate_pixel_cpy(unsigned int *dst, unsigned int *src_addr, unsigned int src_w, unsigned int src_h, int x, int y)
+static inline void interpolate_pixel_cpy(unsigned int *dst, unsigned int *src_addr, unsigned int src_w, unsigned int src_h, int x, int y)
 {
 #if 0
     int i, j, n, m;
@@ -119,8 +119,8 @@ static void interpolate_pixel_cpy(unsigned int *dst, unsigned int *src_addr, uns
     sum_b = (src_addr[c00] & B_CHANNEL_MASK) + (src_addr[c01] & B_CHANNEL_MASK) +
         (src_addr[c10] & B_CHANNEL_MASK) + (src_addr[c11] & B_CHANNEL_MASK);
 
-    *dst = 0xff000000 | ((sum_r / 4) & R_CHANNEL_MASK) |
-        ((sum_g / 4) & G_CHANNEL_MASK) | ((sum_b / 4) & B_CHANNEL_MASK);
+    *dst = 0xff000000 | ((sum_r >> 2) & R_CHANNEL_MASK) |
+        ((sum_g >> 2) & G_CHANNEL_MASK) | ((sum_b >> 2) & B_CHANNEL_MASK);
 }
 
 SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
@@ -137,6 +137,7 @@ SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
     unsigned int row_index = 0;
     unsigned int col_index = 0;
 
+    unsigned int *in = NULL;
     unsigned int *out = NULL;
     unsigned int *row = NULL;
 
@@ -157,68 +158,70 @@ SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
     sx = (rz_src->w) * PRECISION / dst_width;
     sy = (rz_src->h) * PRECISION / dst_height;
 
+    in = (unsigned int *) rz_src->pixels;
+
     SDL_LockSurface(rz_src);
 
     switch(angle) {
-        case 0:
+        case 0: /* portrait */
             out = (unsigned int *) rz_dst->pixels;
 
             for (i = 0; i < dst_height; i++, out += dst_width) {
                 row_index = (i * sy) >> SHIFT;
-                row	= ((unsigned int *) rz_src->pixels) + (row_index * rz_src->w);
+                row	= in + (row_index * rz_src->w);
 
                 for (j = 0; j < dst_width; j++) {
                     col_index = (sx * j) >> SHIFT;
                     //out[j] = row[col_index];
-                    interpolate_pixel_cpy(&out[j], ((unsigned int *) rz_src->pixels),
+                    interpolate_pixel_cpy(&out[j], in,
                         rz_src->w, rz_src->h, row_index, col_index);
                 }
             }
             break;
 
-        case 90: //landscape
+        case 90: /* landscape */
             for (i = 0; i < dst_height; i++) {
                 row_index  = (i * sy) >> SHIFT;
-                row = ((unsigned int *) rz_src->pixels) + (row_index * rz_src->w);
+                row = in + (row_index * rz_src->w);
                 
                 out = ((unsigned int *) rz_dst->pixels) + i;
 
                 for (j = 0; j < dst_width; j++, out += dst_height) {
                     col_index = (sx * j) >> SHIFT;
                     //out[0] = row[rz_src->w - col_index - 1];
-                    interpolate_pixel_cpy(&out[0], ((unsigned int *) rz_src->pixels),
+                    interpolate_pixel_cpy(&out[0], in,
                         rz_src->w, rz_src->h, row_index, rz_src->w - col_index - 1);
                 }
             }
             break;
 
-        case 180:
+        case 180: /* reverse portrait */
             out = (unsigned int *) rz_dst->pixels;
 
             for (i = 0; i < dst_height; i++, out += dst_width) {
                 row_index = ((dst_height - i - 1) * sy) >> SHIFT;
-                row = ((unsigned int *) rz_src->pixels) + (row_index * rz_src->w);
+                row = in + (row_index * rz_src->w);
 
                 for (j = 0; j < dst_width; j++) {
                     col_index = (sx * j) >> SHIFT;
                     //out[dst_width - j - 1] = row[col_index];
-                    interpolate_pixel_cpy(&out[dst_width - j - 1], ((unsigned int *) rz_src->pixels),
+                    interpolate_pixel_cpy(&out[dst_width - j - 1], in,
                         rz_src->w, rz_src->h, row_index, col_index);
                 }
             }
             break;
 
-        case 270: //reverse landscape
+        case 270: /* reverse landscape */
             for (i = 0; i < dst_height; i++) {
                 row_index = ((dst_height - i - 1) * sy) >> SHIFT;
-                row = ((unsigned int *) rz_src->pixels) + (row_index * rz_src->w);
+                row = in + (row_index * rz_src->w);
 
                 out = ((unsigned int *) rz_dst->pixels) + i;
 
                 for (j = 0; j < dst_width; j++, out += dst_height) {
                     col_index = (sx * j) >> SHIFT;
                     //out[0] = row[col_index];
-                    interpolate_pixel_cpy(&out[0], ((unsigned int *) rz_src->pixels),
+                    interpolate_pixel_cpy(&out[0], in,
                         rz_src->w, rz_src->h, row_index, col_index);
                 }
             }
