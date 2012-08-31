@@ -165,6 +165,10 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
 
   GloContext *context = __glo_context_create(formatFlags);
 
+  if (!context) {
+	  return NULL;
+  }
+
   /* Create a GLX context for OpenGL rendering */
   context->context = glXCreateNewContext(glo.dpy, context->fbConfig,
                                          GLX_RGBA_TYPE,
