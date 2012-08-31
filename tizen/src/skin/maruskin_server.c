@@ -230,6 +230,7 @@ void shutdown_skin_server( void ) {
 #else
         close( client_sock );
 #endif
+        client_sock = 0;
     }
 
     if ( close_server_socket ) {
@@ -240,6 +241,7 @@ void shutdown_skin_server( void ) {
 #else
             close( server_sock );
 #endif
+            server_sock = 0;
         }
     }
 
@@ -841,6 +843,7 @@ cleanup:
 #else
         close( server_sock );
 #endif
+        server_sock = 0;
     }
 
     if( shutdown_qmu ) {
@@ -1091,6 +1094,7 @@ static void* do_heart_beat( void* args ) {
 #else
                         close( client_sock );
 #endif
+                        client_sock = 0;
                     }
 
                     start_skin_client( skin_argc, skin_argv );
@@ -1114,6 +1118,7 @@ static void* do_heart_beat( void* args ) {
 #else
             close( client_sock );
 #endif
+            client_sock = 0;
         }
 
         stop_server = 1;
@@ -1123,6 +1128,7 @@ static void* do_heart_beat( void* args ) {
 #else
             close( server_sock );
 #endif
+            server_sock = 0;
         }
 
         ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );

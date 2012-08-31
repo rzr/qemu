@@ -170,9 +170,9 @@ static void* run_skin_client(void* arg)
         INFO("child return value : %d\n", dwRet);
 
         if (dwRet != 0) {
-            //child process is terminated with some problem.
-            //so qemu process will terminate, too. immediately.
-            exit(1);
+            /* child process is terminated with some problem.
+            So qemu process will terminate, too. immediately. */
+            shutdown_qemu_gracefully();
         }
 
         if (CloseHandle(pi.hProcess) != 0) {
@@ -196,9 +196,9 @@ static void* run_skin_client(void* arg)
         INFO("child return value : %d\n", ret);
 
         if (ret != 0) {
-            //child process is terminated with some problem.
-            //so qemu process will terminate, too. immediately.
-            exit(1);
+            /* child process is terminated with some problem.
+            So qemu process will terminate, too. immediately. */
+            shutdown_qemu_gracefully();
         }
     }
 
