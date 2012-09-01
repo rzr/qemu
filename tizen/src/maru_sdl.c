@@ -38,26 +38,29 @@
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "debug_ch.h"
-#include "SDL_opengl.h"
+//#include "SDL_opengl.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
 
-DisplaySurface* qemu_display_surface = NULL;
+DisplaySurface* qemu_display_surface;
 
-SDL_Surface *surface_screen;
-SDL_Surface *surface_qemu;
-SDL_Surface *processing_screen = NULL;
-GLuint texture;
+static SDL_Surface *surface_screen;
+static SDL_Surface *surface_qemu;
+static SDL_Surface *processing_screen;
 
 static double current_scale_factor = 1.0;
-static double current_screen_degree = 0.0;
+static double current_screen_degree;
 static int current_screen_width;
 static int current_screen_height;
 
-static int sdl_initialized = 0;
-static int sdl_alteration = 0;
+static int sdl_initialized;
+static int sdl_alteration;
+
+#if 0
 static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
+GLuint texture;
+#endif
 
 
 #define SDL_THREAD
@@ -65,7 +68,7 @@ static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
 static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifdef SDL_THREAD
 static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
-static int sdl_thread_initialized = 0;
+static int sdl_thread_initialized;
 #endif
 
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
@@ -88,7 +91,12 @@ void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
 
 void qemu_ds_sdl_resize(DisplayState *ds)
 {
-    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
+    int w, h;
+
+    w = ds_get_width(ds);
+    h = ds_get_height(ds);
+
+    INFO("qemu_ds_sdl_resize = (%d, %d)\n", w, h);
 
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
@@ -100,15 +108,19 @@ void qemu_ds_sdl_resize(DisplayState *ds)
     }
 
     /* create surface_qemu */
-    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
-            ds_get_width(ds),
-            ds_get_height(ds),
+    if (w == get_emul_lcd_width() && h == get_emul_lcd_height()) {
+        surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds), w, h,
             ds_get_bits_per_pixel(ds),
             ds_get_linesize(ds),
             ds->surface->pf.rmask,
             ds->surface->pf.gmask,
             ds->surface->pf.bmask,
             ds->surface->pf.amask);
+    } else {
+        INFO("create blank screen\n");
+        surface_qemu = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h,
+            ds_get_bits_per_pixel(ds), 0, 0, 0, 0);
+    }
 
 #ifdef SDL_THREAD
     pthread_mutex_unlock(&sdl_mutex);
@@ -161,7 +173,7 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
     }
 }
 
-extern int capability_check_gl;
+//extern int capability_check_gl;
 static void _sdl_init(void)
 {
     int w, h, temp;
@@ -222,6 +234,7 @@ static void _sdl_init(void)
         surface_qemu->format->Rmask, surface_qemu->format->Gmask,
         surface_qemu->format->Bmask, surface_qemu->format->Amask);
 
+#if 0
     if (sdl_opengl == 1) {
         /* Set the OpenGL state */
         glClear(GL_COLOR_BUFFER_BIT);
@@ -238,6 +251,7 @@ static void _sdl_init(void)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         //glGenerateMipmapEXT(GL_TEXTURE_2D); // GL_MIPMAP_LINEAR
     }
+#endif
 
     /* rearrange multi-touch finger points */
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
@@ -469,7 +483,7 @@ void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_heigh
     if (sdl_initialized == 0) {
         sdl_initialized = 1;
 
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         init_multi_touch_state();
 
 #ifndef _WIN32
@@ -500,9 +514,11 @@ void maruskin_sdl_quit(void)
     clear_finger_slot();
     cleanup_multi_touch_state();
 
+#if 0
     if (sdl_opengl == 1) {
         glDeleteTextures(1, &texture);
     }
+#endif
 
     sdl_alteration = -1;
 }
