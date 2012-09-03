@@ -69,6 +69,29 @@ static int xioctl(int fd, int req, void *arg)
     return r;
 }
 
+typedef struct tagMaruCamConvertPixfmt {
+    uint32_t fmt;   /* fourcc */
+} MaruCamConvertPixfmt;
+
+static MaruCamConvertPixfmt supported_dst_pixfmts[] = {
+        { V4L2_PIX_FMT_YUYV },
+        { V4L2_PIX_FMT_YUV420 },
+        { V4L2_PIX_FMT_YVU420 },
+};
+
+typedef struct tagMaruCamConvertFrameInfo {
+    uint32_t width;
+    uint32_t height;
+} MaruCamConvertFrameInfo;
+
+static MaruCamConvertFrameInfo supported_dst_frames[] = {
+        { 640, 480 },
+        { 352, 288 },
+        { 320, 240 },
+        { 176, 144 },
+        { 160, 120 },
+};
+
 #define MARUCAM_CTRL_VALUE_MAX      20
 #define MARUCAM_CTRL_VALUE_MIN      1
 #define MARUCAM_CTRL_VALUE_MID      10
@@ -138,6 +161,69 @@ static int32_t value_convert_to_guest(int32_t min, int32_t max, int32_t value)
     }
 
     return ret;
+}
+
+static void set_maxframeinterval(MaruCamState *state, uint32_t pixel_format,
+                        uint32_t width, uint32_t height)
+{
+    struct v4l2_frmivalenum fival;
+    struct v4l2_streamparm sp;
+    uint32_t min_num = 0, min_denom = 0;
+
+    CLEAR(fival);
+    fival.pixel_format = pixel_format;
+    fival.width = width;
+    fival.height = height;
+
+    if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &fival) < 0) {
+        ERR("Unable to enumerate intervals for pixelformat(0x%x), (%d:%d)\n",
+            pixel_format, width, height);
+        return;
+    }
+
+    if (fival.type == V4L2_FRMIVAL_TYPE_DISCRETE) {
+        float max_ival = -1.0;
+        do {
+            float cur_ival = (float)fival.discrete.numerator
+                        / (float)fival.discrete.denominator;
+            if (cur_ival > max_ival) {
+                max_ival = cur_ival;
+                min_num = fival.discrete.numerator;
+                min_denom = fival.discrete.denominator;
+            }
+            TRACE("Discrete frame interval %u/%u supported\n",
+                 fival.discrete.numerator, fival.discrete.denominator);
+            fival.index++;
+        } while (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &fival) >= 0);
+    } else if ((fival.type == V4L2_FRMIVAL_TYPE_STEPWISE) ||
+                (fival.type == V4L2_FRMIVAL_TYPE_CONTINUOUS)) {
+        TRACE("Frame intervals from %u/%u to %u/%u supported",
+            fival.stepwise.min.numerator, fival.stepwise.min.denominator,
+            fival.stepwise.max.numerator, fival.stepwise.max.denominator);
+        if(fival.type == V4L2_FRMIVAL_TYPE_STEPWISE)
+            TRACE("with %u/%u step",
+                 fival.stepwise.step.numerator, fival.stepwise.step.denominator);
+        if (((float)fival.stepwise.max.denominator /
+             (float)fival.stepwise.max.numerator) >
+            ((float)fival.stepwise.min.denominator /
+             (float)fival.stepwise.min.numerator)) {
+            min_num = fival.stepwise.max.numerator;
+            min_denom = fival.stepwise.max.denominator;
+        } else {
+            min_num = fival.stepwise.min.numerator;
+            min_denom = fival.stepwise.min.denominator;
+        }
+    }
+    TRACE("actual min values : %u/%u\n", min_num, min_denom);
+
+    CLEAR(sp);
+    sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    sp.parm.capture.timeperframe.numerator = min_num;
+    sp.parm.capture.timeperframe.denominator = min_denom;
+
+    if (xioctl(v4l2_fd, VIDIOC_S_PARM, &sp) < 0) {
+        ERR("Failed to set to minimum FPS(%u/%u)\n", min_num, min_denom);
+    }
 }
 
 static int is_streamon(MaruCamState *state)
@@ -330,10 +416,18 @@ void marucam_device_open(MaruCamState* state)
 
 void marucam_device_start_preview(MaruCamState* state)
 {
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 10000000;
+
+    INFO("Starting preview!\n");
     qemu_mutex_lock(&state->thread_mutex);
     qemu_cond_signal(&state->thread_cond);
     qemu_mutex_unlock(&state->thread_mutex);
-    INFO("Starting preview!\n");
+
+    /* nanosleep until thread is streamon  */
+    while (!is_stream_on(state))
+        nanosleep(&req, NULL);
 }
 
 void marucam_device_stop_preview(MaruCamState* state)
@@ -358,8 +452,15 @@ void marucam_device_s_param(MaruCamState* state)
 {
     MaruCamParam *param = state->param;
 
-    /* We use default FPS of the webcam */
     param->top = 0;
+
+    /* If KVM enabled, We use default FPS of the webcam.
+     * If KVM disabled, we use mininum FPS of the webcam */
+    if (!kvm_enabled()) {
+        set_maxframeinterval(state, dst_fmt.fmt.pix.pixelformat,
+                     dst_fmt.fmt.pix.width,
+                     dst_fmt.fmt.pix.height);
+    }
 }
 
 void marucam_device_g_param(MaruCamState* state)
@@ -458,25 +559,30 @@ void marucam_device_try_fmt(MaruCamState* state)
 
 void marucam_device_enum_fmt(MaruCamState* state)
 {
-    struct v4l2_fmtdesc format;
+    uint32_t index;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    CLEAR(format);
-    format.index = param->stack[0];
-    format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    index = param->stack[0];
 
-    if (xioctl(v4l2_fd, VIDIOC_ENUM_FMT, &format) < 0) {
-        if (errno != EINVAL)
-            ERR("failed to enumerate video formats: %s\n", strerror(errno));
-        param->errCode = errno;
+    if (index >= ARRAY_SIZE(supported_dst_pixfmts)) {
+        param->errCode = EINVAL;
         return;
     }
-    param->stack[0] = format.index;
-    param->stack[1] = format.flags;
-    param->stack[2] = format.pixelformat;
+    param->stack[1] = 0; /* flags = NONE */
+    param->stack[2] = supported_dst_pixfmts[index].fmt; /* pixelformat */
     /* set description */
-    memcpy(&param->stack[3], format.description, sizeof(format.description));
+    switch (supported_dst_pixfmts[index].fmt) {
+    case V4L2_PIX_FMT_YUYV:
+        memcpy(&param->stack[3], "YUYV", 32);
+        break;
+    case V4L2_PIX_FMT_YUV420:
+        memcpy(&param->stack[3], "YU12", 32);
+        break;
+    case V4L2_PIX_FMT_YVU420:
+        memcpy(&param->stack[3], "YV12", 32);
+        break;
+    }
 }
 
 void marucam_device_qctrl(MaruCamState* state)
@@ -640,56 +746,48 @@ void marucam_device_g_ctrl(MaruCamState* state)
 
 void marucam_device_enum_fsizes(MaruCamState* state)
 {
-    struct v4l2_frmsizeenum fsize;
+    uint32_t index, pixfmt, i;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    CLEAR(fsize);
-    fsize.index = param->stack[0];
-    fsize.pixel_format = param->stack[1];
+    index = param->stack[0];
+    pixfmt = param->stack[1];
 
-    if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMESIZES, &fsize) < 0) {
-        if (errno != EINVAL)
-            ERR("failed to get frame sizes : %s\n", strerror(errno));
-        param->errCode = errno;
+    if (index >= ARRAY_SIZE(supported_dst_frames)) {
+        param->errCode = EINVAL;
+        return;
+    }
+    for (i = 0; i < ARRAY_SIZE(supported_dst_pixfmts); i++) {
+        if (supported_dst_pixfmts[i].fmt == pixfmt)
+            break;
+    }
+
+    if (i == ARRAY_SIZE(supported_dst_pixfmts)) {
+        param->errCode = EINVAL;
         return;
     }
 
-    if (fsize.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
-        param->stack[0] = fsize.discrete.width;
-        param->stack[1] = fsize.discrete.height;
-    } else {
-        param->errCode = EINVAL;
-        ERR("Not Supported mode, we only support DISCRETE\n");
-    }
+    param->stack[0] = supported_dst_frames[index].width;
+    param->stack[1] = supported_dst_frames[index].height;
 }
 
 void marucam_device_enum_fintv(MaruCamState* state)
 {
-    struct v4l2_frmivalenum ival;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    CLEAR(ival);
-    ival.index = param->stack[0];
-    ival.pixel_format = param->stack[1];
-    ival.width = param->stack[2];
-    ival.height = param->stack[3];
 
-    if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &ival) < 0) {
-        if (errno != EINVAL)
-            ERR("failed to get frame intervals : %s\n", strerror(errno));
-        param->errCode = errno;
+    /* switch by index(param->stack[0]) */
+    switch (param->stack[0]) {
+    case 0:
+        /* we only use 1/30 frame interval */
+        param->stack[1] = 30;   /* denominator */
+        break;
+    default:
+        param->errCode = EINVAL;
         return;
     }
-
-    if (ival.type == V4L2_FRMIVAL_TYPE_DISCRETE) {
-        param->stack[0] = ival.discrete.numerator;
-        param->stack[1] = ival.discrete.denominator;
-    } else {
-        param->errCode = EINVAL;
-        ERR("Not Supported mode, we only support DISCRETE\n");
-    }
+    param->stack[0] = 1;    /* numerator */
 }
 
 void marucam_device_close(MaruCamState* state)
