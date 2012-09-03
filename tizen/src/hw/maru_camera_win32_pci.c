@@ -1061,11 +1061,6 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
     uint32_t width, height;
 
     qemu_mutex_lock(&g_state->thread_mutex);
-    if (ready_count < MARUCAM_SKIPFRAMES) {
-        ++ready_count; /* skip a frame cause first some frame are distorted */
-        qemu_mutex_unlock(&g_state->thread_mutex);
-        return S_OK;
-    }
     if (g_state->req_frame == 0) {
         qemu_mutex_unlock(&g_state->thread_mutex);
         return S_OK;
@@ -1089,6 +1084,11 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
     }
 
     qemu_mutex_lock(&g_state->thread_mutex);
+    if (ready_count < MARUCAM_SKIPFRAMES) {
+        ++ready_count; /* skip a frame cause first some frame are distorted */
+        qemu_mutex_unlock(&g_state->thread_mutex);
+        return S_OK;
+    }
     g_state->req_frame = 0; /* clear request */
     g_state->isr |= 0x01; /* set a flag raising a interrupt. */
     qemu_bh_schedule(g_state->tx_bh);
