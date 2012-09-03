@@ -64,10 +64,11 @@ enum {
 uint32_t brightness_level = 24;
 uint32_t brightness_off = 0;
 
-/* level : 1 ~ 24, interval : 6 or 7. */
+/* level : 1 ~ 23, interval : 6 or 7. */
+/* skip 24 level, set to default alpha */
 uint8_t brightness_tbl[] = {97, /* level 0 : reserved for dimming */
-/* level 1 ~ 12 */          104, 110, 116, 122, 128, 134, 140, 146, 152, 158, 164, 170,
-/* level 13 ~ 24 */         176, 182, 188, 194, 200, 206, 213, 220, 227, 234, 241, 248};
+/* level 1 ~ 11 */          110, 116, 122, 128, 134, 140, 146, 152, 158, 164, 170,
+/* level 12 ~ 23 */         176, 182, 188, 194, 200, 206, 213, 220, 227, 234, 241, 248};
 
 static uint64_t brightness_reg_read( void *opaque, target_phys_addr_t addr, unsigned size ) {
     switch ( addr & 0xFF ) {
