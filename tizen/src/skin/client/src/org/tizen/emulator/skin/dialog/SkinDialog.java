@@ -51,7 +51,6 @@ public abstract class SkinDialog extends Dialog {
 	public static final String OK = "        " + "OK" + "        ";
 	
 	protected Shell shell;
-	private boolean isReady;
 	private Composite buttonComposite;
 	private Shell parent;
 	private String title;
@@ -67,7 +66,6 @@ public abstract class SkinDialog extends Dialog {
 	public void open() {
 
 		shell = new Shell( parent, style );
-		shell.setLocation( parent.getLocation().x + 50, parent.getLocation().y + 50 );
 		shell.setText( title );
 		shell.setImage( parent.getImage() );
 		
@@ -88,8 +86,6 @@ public abstract class SkinDialog extends Dialog {
 			return;
 		}
 
-		isReady = true;
-
 		buttonComposite = new Composite( parent, SWT.NONE );
 		buttonComposite.setLayoutData( new GridData( SWT.FILL, SWT.CENTER, true, false ) );
 		buttonComposite.setLayout( new FillLayout( SWT.HORIZONTAL ) );
@@ -99,10 +95,6 @@ public abstract class SkinDialog extends Dialog {
 		shell.pack();
 
 		setShellSize();
-		
-		if ( !isReady ) {
-			return;
-		}
 
 		if (this.parent != null) {
 			Point central = new Point(
