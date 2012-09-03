@@ -86,6 +86,7 @@ import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.dialog.DetailInfoDialog;
+import org.tizen.emulator.skin.dialog.RamdumpDialog;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
@@ -1915,10 +1916,19 @@ public class EmulatorSkin {
 
 		ramdumpItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
 				logger.info("Ram dump menu is selected");
 
+				communicator.setRamdumpFlag(true);
 				communicator.sendToQEMU(SendCommand.RAM_DUMP, null);
+
+				RamdumpDialog ramdumpDialog;
+				try {
+					ramdumpDialog = new RamdumpDialog(EmulatorSkin.this.shell, communicator, config);
+					ramdumpDialog.open();
+				} catch (IOException ee) {
+					logger.log( Level.SEVERE, ee.getMessage(), ee);
+				}
 			}
 		});
 
@@ -2013,7 +2023,17 @@ public class EmulatorSkin {
 		/*
 		// Force close menu
 		final MenuItem forceCloseItem = new MenuItem(menu, SWT.PUSH);
-		forceCloseItem.setText("Force Close");
+		forceCloseItem.setText("&Force Close");
+		//forceCloseItem.setImage(imageRegistry.getIcon(IconName.XXX));
+		forceCloseItem.addSelectionListener( new SelectionAdapter() {
+			@Override
+			public void widgetSelected( SelectionEvent e ) {
+				logger.info("Force close is selected");
+
+				//TODO : y or n popup
+				System.exit(-1);
+			}
+		});
 		*/
 
 		new MenuItem( menu, SWT.SEPARATOR );
