@@ -192,11 +192,6 @@ static int __v4l2_grab(MaruCamState *state)
         return -1;
 
     qemu_mutex_lock(&state->thread_mutex);
-	if (ready_count < MARUCAM_SKIPFRAMES) {
-        ++ready_count; /* skip a frame cause first some frame are distorted */
-        qemu_mutex_unlock(&state->thread_mutex);
-        return 0;
-    }
     if (state->req_frame == 0) {
         qemu_mutex_unlock(&state->thread_mutex);
         return 0;
@@ -224,15 +219,19 @@ static int __v4l2_grab(MaruCamState *state)
     }
 
     qemu_mutex_lock(&state->thread_mutex);
+    if (ready_count < MARUCAM_SKIPFRAMES) {
+        ++ready_count; /* skip a frame cause first some frame are distorted */
+        qemu_mutex_unlock(&state->thread_mutex);
+        return 0;
+    }
     if (state->streamon == _MC_THREAD_STREAMON) {
         state->req_frame = 0; /* clear request */
         state->isr |= 0x01;   /* set a flag of rasing a interrupt */
         qemu_bh_schedule(state->tx_bh);
-		ret = 1;
+        ret = 1;
     } else {
         ret = -1;
     }
-
     qemu_mutex_unlock(&state->thread_mutex);
     return ret;
 }
