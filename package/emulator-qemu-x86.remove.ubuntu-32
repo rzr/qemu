@@ -8,5 +8,5 @@ then
 fi
 
 gksudo update-rc.d tizen-kvm remove
-gksudo rm -f /etc/init.d/tizen_kvm
-
+gksudo rm -f /etc/init.d/tizen-kvm
+gksudo rm -f /lib/udev/rules.d/45-tizen-kvm.rules
