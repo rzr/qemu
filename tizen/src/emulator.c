@@ -390,6 +390,8 @@ static void system_info(void)
 
     INFO("* SDK Version : %s\n", build_version);
     INFO("* Package %s\n", pkginfo_version);
+    INFO("* Package %s\n", pkginfo_maintainer);
+    INFO("* Git Head : %s\n", pkginfo_githead);
     INFO("* User name : %s\n", g_get_real_name());
     INFO("* Host name : %s\n", g_get_host_name());
 
