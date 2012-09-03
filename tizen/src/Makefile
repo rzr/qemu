@@ -33,6 +33,7 @@ build_info:
 	@echo "const char build_date[] = \"`date +"%F %T %Z"`\";" >> build_info.h
 	@echo "const char pkginfo_version[] = \"`sed -n '1p' ./../../package/pkginfo.manifest`\";" >> build_info.h
 	@echo "const char pkginfo_maintainer[] = \"`sed -n '2p' ./../../package/pkginfo.manifest`\";" >> build_info.h
+	@echo "const char pkginfo_githead[] = \"`git rev-parse HEAD`\";" >> build_info.h
 
 ffmpeg:
 	cd ../distrib/libav/ && $(MAKE)
