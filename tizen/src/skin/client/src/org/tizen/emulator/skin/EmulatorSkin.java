@@ -2014,11 +2014,13 @@ public class EmulatorSkin {
 		usbKeyboardItem.setMenu( usbKeyBoardMenu );
 
 		/* Diagnosis menu */
-		final MenuItem diagnosisItem = new MenuItem(menu, SWT.CASCADE);
-		diagnosisItem.setText("&Diagnosis");
-		//diagnosisItem.setImage(imageRegistry.getIcon(IconName.XXX));
-		Menu diagnosisMenu = createDiagnosisMenu(menu.getShell());
-		diagnosisItem.setMenu(diagnosisMenu);
+		if (SwtUtil.isLinuxPlatform()) { //TODO: windows
+			final MenuItem diagnosisItem = new MenuItem(menu, SWT.CASCADE);
+			diagnosisItem.setText("&Diagnosis");
+			//diagnosisItem.setImage(imageRegistry.getIcon(IconName.XXX));
+			Menu diagnosisMenu = createDiagnosisMenu(menu.getShell());
+			diagnosisItem.setMenu(diagnosisMenu);
+		}
 
 		/*
 		// Force close menu
