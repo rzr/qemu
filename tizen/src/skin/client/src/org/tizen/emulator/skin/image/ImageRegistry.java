@@ -79,6 +79,7 @@ public class ImageRegistry {
 		CLOSE( "close.png" ),
 		SCREENSHOT( "screenshot.png" ),
 		USB_KEBOARD( "usb_keyboard.png" ),
+		DIAGNOSIS( "diagnosis.png" ),
 		ABOUT( "about.png" ),
 
 		COPY_SCREEN_SHOT( "copy_screenshot_dialog.png" ),
