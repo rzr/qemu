@@ -426,7 +426,7 @@ void marucam_device_start_preview(MaruCamState* state)
     qemu_mutex_unlock(&state->thread_mutex);
 
     /* nanosleep until thread is streamon  */
-    while (!is_stream_on(state))
+    while (!is_streamon(state))
         nanosleep(&req, NULL);
 }
 
