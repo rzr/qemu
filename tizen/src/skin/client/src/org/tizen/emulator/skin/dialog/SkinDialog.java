@@ -51,7 +51,7 @@ public abstract class SkinDialog extends Dialog {
 	public static final String OK = "        " + "OK" + "        ";
 	
 	protected Shell shell;
-	private Composite buttonComposite;
+	protected Composite buttonComposite;
 	private Shell parent;
 	private String title;
 	private int style;
@@ -62,15 +62,8 @@ public abstract class SkinDialog extends Dialog {
 		this.title = title;
 		this.style = style;
 	}
-	
-	public void open() {
 
-		shell = new Shell( parent, style );
-		shell.setText( title );
-		shell.setImage( parent.getImage() );
-		
-		shell.setLayout( new GridLayout( 1, true ) );
-
+	protected void createComposite() {
 		Composite parent = new Composite( shell, SWT.NONE );
 		parent.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 		GridLayout gridLayout = new GridLayout( 1, true );
@@ -81,8 +74,8 @@ public abstract class SkinDialog extends Dialog {
 		composite.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 		composite.setLayout( new FillLayout( SWT.VERTICAL ) );
 
-		Composite area = createArea( composite );
-		if ( null == area ) {
+		Composite area = createArea(composite);
+		if (null == area) {
 			return;
 		}
 
@@ -91,6 +84,16 @@ public abstract class SkinDialog extends Dialog {
 		buttonComposite.setLayout( new FillLayout( SWT.HORIZONTAL ) );
 
 		createButtons( buttonComposite );
+	}
+
+	public void open() {
+		shell = new Shell( parent, style );
+		shell.setText( title );
+		shell.setImage( parent.getImage() );
+
+		shell.setLayout( new GridLayout( 1, true ) );
+
+		createComposite();
 		
 		shell.pack();
 
