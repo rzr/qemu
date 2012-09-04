@@ -66,6 +66,9 @@
 		<copy todir="build/icons">
 			<fileset dir="resource/icons" />
 		</copy>
+		<copy todir="build/images">
+			<fileset dir="resource/images" />
+		</copy>
 		<jar jarfile="${jar.file}" basedir="build" duplicate="add">
 			<fileset file="src/about.properties" />
 			<manifest>
