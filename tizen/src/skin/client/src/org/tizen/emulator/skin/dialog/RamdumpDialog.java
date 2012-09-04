@@ -67,10 +67,11 @@ public class RamdumpDialog extends SkinDialog {
 
 		final Display display = Display.getDefault();
 
+		ClassLoader classLoader = this.getClass().getClassLoader();
 		ImageLoader loader = new ImageLoader();
 
 		try {
-			frames = loader.load("indicator.gif");
+			frames = loader.load(classLoader.getResourceAsStream("images/process.gif"));
 		} catch (Exception e) {
 			// TODO: register a indicator file
 			frames = null;
@@ -82,7 +83,7 @@ public class RamdumpDialog extends SkinDialog {
 		}
 
 		Label waitMsg = new Label(composite, SWT.NONE);
-		waitMsg.setText("  Please wait...");
+		waitMsg.setText("   Please wait...");
 
 		Thread animation = new Thread() {
 			int currentFrame = 0;
@@ -93,7 +94,7 @@ public class RamdumpDialog extends SkinDialog {
 				while (!isDisposed) {
 					try {
 						if (frames != null) {
-							sleep(frames[currentFrame].delayTime * 10);
+							sleep(50);
 						} else {
 							sleep(500);
 						}
@@ -144,6 +145,6 @@ public class RamdumpDialog extends SkinDialog {
 
 	@Override
 	protected void setShellSize() {
-		shell.setSize(240, 120);
+		shell.setSize(240, 110);
 	}
 }
