@@ -2017,7 +2017,7 @@ public class EmulatorSkin {
 		if (SwtUtil.isLinuxPlatform()) { //TODO: windows
 			final MenuItem diagnosisItem = new MenuItem(menu, SWT.CASCADE);
 			diagnosisItem.setText("&Diagnosis");
-			//diagnosisItem.setImage(imageRegistry.getIcon(IconName.XXX));
+			diagnosisItem.setImage(imageRegistry.getIcon(IconName.DIAGNOSIS));
 			Menu diagnosisMenu = createDiagnosisMenu(menu.getShell());
 			diagnosisItem.setMenu(diagnosisMenu);
 		}
