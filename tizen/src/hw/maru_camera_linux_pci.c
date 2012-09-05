@@ -109,7 +109,7 @@ struct marucam_qctrl {
 static struct marucam_qctrl qctrl_tbl[] = {
     { V4L2_CID_BRIGHTNESS, 0, },
     { V4L2_CID_CONTRAST, 0, },
-    { V4L2_CID_SATURATION,0, },
+    { V4L2_CID_SATURATION, 0, },
     { V4L2_CID_SHARPNESS, 0, },
 };
 
@@ -119,10 +119,12 @@ static void marucam_reset_controls(void)
     for (i = 0; i < ARRAY_SIZE(qctrl_tbl); i++) {
         if (qctrl_tbl[i].hit) {
             struct v4l2_control ctrl = {0,};
+            qctrl_tbl[i].hit = 0;
             ctrl.id = qctrl_tbl[i].id;
             ctrl.value = qctrl_tbl[i].init_val;
             if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-                ERR("failed to set video control value while reset values : %s\n", strerror(errno));
+                ERR("failed to reset control value : id(0x%x), errstr(%s)\n",
+                    ctrl.id, strerror(errno));
             }
         }
     }
@@ -489,7 +491,9 @@ void marucam_device_s_fmt(MaruCamState* state)
     dst_fmt.fmt.pix.field = param->stack[3];
 
     if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
-        ERR("failed to set video format: %s\n", strerror(errno));
+        ERR("failed to set video format: format(0x%x), width:height(%d:%d), "
+          "errstr(%s)\n", dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.width,
+          dst_fmt.fmt.pix.height, strerror(errno));
         param->errCode = errno;
         return;
     }
@@ -543,7 +547,9 @@ void marucam_device_try_fmt(MaruCamState* state)
     format.fmt.pix.field = param->stack[3];
 
     if (xioctl(v4l2_fd, VIDIOC_TRY_FMT, &format) < 0) {
-        ERR("failed to check video format: %s\n", strerror(errno));
+        ERR("failed to check video format: format(0x%x), width:height(%d:%d),"
+            " errstr(%s)\n", format.fmt.pix.pixelformat, format.fmt.pix.width,
+            format.fmt.pix.height, strerror(errno));
         param->errCode = errno;
         return;
     }
@@ -637,7 +643,8 @@ void marucam_device_qctrl(MaruCamState* state)
             sctrl.value = (ctrl.maximum + ctrl.minimum) / 2;
         }
         if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &sctrl) < 0) {
-            ERR("failed to set video control value : %s\n", strerror(errno));
+            ERR("failed to set control value: id(0x%x), value(%d), "
+                "errstr(%s)\n", sctrl.id, sctrl.value, strerror(errno));
             param->errCode = errno;
             return;
         }
@@ -695,7 +702,9 @@ void marucam_device_s_ctrl(MaruCamState* state)
     ctrl.value = value_convert_from_guest(qctrl_tbl[i].min,
             qctrl_tbl[i].max, param->stack[1]);
     if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-        ERR("failed to set video control value : value(%d), %s\n", param->stack[1], strerror(errno));
+        ERR("failed to set control value : id0x%x), value(r:%d, c:%d), "
+            "errstr(%s)\n", ctrl.id, param->stack[1], ctrl.value,
+            strerror(errno));
         param->errCode = errno;
         return;
     }
