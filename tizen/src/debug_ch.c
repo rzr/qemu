@@ -33,7 +33,7 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-
+#include "qemu-common.h"
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -276,8 +276,10 @@ static void debug_init(void)
 	char *debug = NULL;
 	FILE *fp = NULL;
 	char *tmp = NULL;
+    int open_flags;
+    int fd;
 
-	if (nb_debug_options != -1)
+    if (nb_debug_options != -1)
 		return;  /* already initialized */
 
 	nb_debug_options = 0;
@@ -328,18 +330,13 @@ static void debug_init(void)
 		free(tmp);
 	}
 	
-#ifdef _WIN32
-	handle = CreateFile(logpath, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL,
-                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-		if (handle == INVALID_HANDLE_VALUE) {
-			fprintf(stderr, "logfile can't open: %s\n", GetLastError());
-			exit(1);
-		}
-#else
-	if(access(logpath, F_OK | R_OK) == 0) {
-		remove(logpath);
-	}
-#endif
+	open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
+	fd = qemu_open(logpath, open_flags, 0666);
+    if(fd < 0) {
+        fprintf(stderr, "Can't open logfile: %s\n", logpath);
+    	exit(1);
+    }
+    close(fd);
 }
 
 /* allocate some tmp string space */
@@ -392,7 +389,6 @@ static int dbg_vprintf( const char *format, va_list args )
 
 	fputs(txt, fp);
 	fclose(fp);
-
 	return ret;
 }
 
@@ -445,8 +441,10 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	int ret = 0;
 	char buf[2048];
 	va_list valist;
-	
-	if (!(_dbg_get_channel_flags( channel ) & (1 << cls)))
+	int open_flags;
+	int fd;
+    
+    if (!(_dbg_get_channel_flags( channel ) & (1 << cls)))
 		return -1;
 
 	ret += snprintf(buf, sizeof(buf),"[%s:%s", debug_classes[cls], channel->name);
@@ -459,26 +457,15 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
  	va_start(valist, format);
 	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
-#ifdef _WIN32
-	DWORD dwWritten;
-	handle = CreateFile(logpath, FILE_APPEND_DATA, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL,
-                        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-	if (handle == INVALID_HANDLE_VALUE) {
-			fprintf(stderr, "logfile can't open: %s\n", GetLastError());
-		exit(1);
-	}
-	
-	WriteFile(handle, buf, strlen(buf), &dwWritten, 0);
-	CloseHandle(handle);
-#else
-	FILE *fp;
-	if ((fp = fopen(logpath, "a+")) == NULL) {
-		fprintf(stderr, "logfile can't open: %s\n", strerror(errno));
-		exit(1);
-	}
-	fprintf(fp,"%s", buf);
-	fclose(fp);
-#endif
+   
+    open_flags = O_RDWR | O_APPEND | O_BINARY ;
+	fd = qemu_open(logpath, open_flags, 0666);
+	if(fd < 0) {
+        fprintf(stderr, "Can't open logfile: %s\n", logpath);
+    	exit(1);
+    }
+    qemu_write_full(fd, buf, ret);
+    close(fd);
 
 	return ret;
 }
