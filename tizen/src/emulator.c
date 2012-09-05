@@ -257,12 +257,54 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
 {
     int i;
     int j;
+    int q = 0;
 
     /* TODO: */
 
     for (i = 1; i < argc; ++i) {
         if (strncmp(argv[i], "--skin-args", 11) == 0) {
+            int w = 0;
+            int h = 0;
+            char *temp = NULL;
+
             *skin_argv = &(argv[i + 1]);
+
+            /* find out the size of lcd */
+            for(q = 0; q < (argc - i - 7); ++q) {
+                if (strncmp(**skin_argv + q, "width=", 6) == 0) {
+                    char *width = NULL;
+                    char *width_argv = **skin_argv + q;
+                    int len = strlen(width_argv) + 1;
+
+                    temp = calloc(0, len * sizeof(char));
+                    strcpy(temp, width_argv);
+                    temp[len - 1] = '\0';
+
+                    width = strtok(temp + 6, " ");
+                    w = atoi(width);
+
+                    free(temp);
+                } else if (strncmp(**skin_argv + q, "height=", 7) == 0) {
+                    char *height = NULL;
+                    char *height_argv = **skin_argv + q;
+                    int len = strlen(height_argv) + 1;
+
+                    temp = calloc(0, len * sizeof(char));
+                    strcpy(temp, height_argv);
+                    temp[len - 1] = '\0';
+
+                    height = strtok(temp + 7, " ");
+                    h = atoi(height);
+
+                    free(temp);
+                }
+
+                if (w != 0 && h != 0) {
+                    set_emul_lcd_size(w, h);
+                    break;
+                }
+            }
+
             break;
         }
     }
