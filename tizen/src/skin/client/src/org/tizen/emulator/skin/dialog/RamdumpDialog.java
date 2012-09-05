@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
@@ -137,11 +138,14 @@ public class RamdumpDialog extends SkinDialog {
 						if (label.getImage() != null) {
 							label.getImage().dispose();
 						}
+						shell.setCursor(null);
 						RamdumpDialog.this.shell.close();
 					}
 				});
 			}
 		};
+
+		shell.setCursor(display.getSystemCursor(SWT.CURSOR_WAIT));
 		animation.start();
 
 		return composite;
