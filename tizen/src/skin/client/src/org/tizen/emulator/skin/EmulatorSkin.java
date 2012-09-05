@@ -1662,9 +1662,7 @@ public class EmulatorSkin {
 
 				final boolean isOnTop = onTopItem.getSelection();
 
-				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "Select Always On Top : " + isOnTop );
-				}
+				logger.info( "Select Always On Top : " + isOnTop );
 
 				// readyToReopen( EmulatorSkin.this, isOnTop );
 
@@ -1765,6 +1763,7 @@ public class EmulatorSkin {
 		closeItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
+				logger.info("Close Menu is selected");
 				communicator.sendToQEMU( SendCommand.CLOSE, null );
 			}
 		} );
@@ -2001,6 +2000,8 @@ public class EmulatorSkin {
 				if ( item.getSelection() ) {
 					boolean on = item.equals( usbOnItem );
 					isOnUsbKbd = on;
+					logger.info("USB keyboard " + isOnUsbKbd);
+
 					communicator.sendToQEMU(
 							SendCommand.USB_KBD, new BooleanData(on, SendCommand.USB_KBD.toString()) );
 				}
@@ -2052,6 +2053,8 @@ public class EmulatorSkin {
 			public void widgetSelected( SelectionEvent e ) {
 				if ( !isOpen ) {
 					isOpen = true;
+
+					logger.info("Open the about dialog");
 					AboutDialog dialog = new AboutDialog( shell );
 					dialog.open();
 					isOpen = false;

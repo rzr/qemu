@@ -170,7 +170,7 @@ public class ScreenShotDialog {
 				if ( null != image && !image.isDisposed() ) {
 					//e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 					Rectangle r = image.getBounds();
-					logger.info("r.width: " +r.width +", r.height " + r.height);
+					//logger.info("r.width: " +r.width +", r.height " + r.height);
 					e.gc.drawImage(image, 0, 0, r.width, r.height,
 							CANVAS_MARGIN, CANVAS_MARGIN, (int)(r.width  * scaleLevel * 1/100), (int)(r.height * scaleLevel * 1/100));
 				}

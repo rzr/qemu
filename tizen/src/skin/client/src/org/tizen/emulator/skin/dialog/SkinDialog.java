@@ -117,6 +117,10 @@ public abstract class SkinDialog extends Dialog {
 			}
 		}
 
+		close();
+	}
+
+	protected void close() {
 	}
 
 	protected void setShellSize() {
