@@ -59,6 +59,8 @@ public class AboutDialog extends SkinDialog {
 	public static final String PROP_KEY_BUILD_TIME = "build_time";
 	public static final String PROP_KEY_GIT_VERSION = "build_git_commit";
 
+	private Image aboutImage;
+
 	private Logger logger = SkinLogger.getSkinLogger(AboutDialog.class).getLogger();
 
 	public AboutDialog(Shell parent) {
@@ -111,7 +113,7 @@ public class AboutDialog extends SkinDialog {
 		compositeLeft.setLayout(getNopaddedGridLayout(1, false));
 
 		Label imageLabel = new Label(compositeLeft, SWT.NONE);
-		Image aboutImage = new Image(shell.getDisplay(),
+		aboutImage = new Image(shell.getDisplay(),
 				this.getClass().getClassLoader().getResourceAsStream("images/about_Tizen_SDK.png"));
 		imageLabel.setImage(aboutImage);
 
@@ -247,4 +249,8 @@ public class AboutDialog extends SkinDialog {
 		shell.setSize(436, shell.getSize().y);
 	}
 
+	protected void close() {
+		logger.info("close the about dialog");
+		aboutImage.dispose();
+	}
 }

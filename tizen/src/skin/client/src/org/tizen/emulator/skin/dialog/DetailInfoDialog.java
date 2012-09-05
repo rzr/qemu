@@ -435,4 +435,7 @@ public class DetailInfoDialog extends SkinDialog {
 
 	};
 
+	protected void close() {
+		logger.info("close the detail info dialog");
+	}
 }

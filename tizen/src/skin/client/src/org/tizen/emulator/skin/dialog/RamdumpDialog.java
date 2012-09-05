@@ -48,10 +48,10 @@ public class RamdumpDialog extends SkinDialog {
 		RamdumpDialog.this.shell.addListener(SWT.Close, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				// do nothing
-				logger.info("do nothing");
-
 				if (communicator.getRamdumpFlag() == true) {
+					// do nothing
+					logger.info("do nothing");
+
 					event.doit = false;
 				}
 			}
@@ -133,6 +133,10 @@ public class RamdumpDialog extends SkinDialog {
 					@Override
 					public void run() {
 						logger.info("close the Ramdump dialog");
+
+						if (label.getImage() != null) {
+							label.getImage().dispose();
+						}
 						RamdumpDialog.this.shell.close();
 					}
 				});
