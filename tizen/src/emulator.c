@@ -66,12 +66,16 @@
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
-
+#define QEMU_ARGS_PREFIX "--qemu-args"
+#define SKIN_ARGS_PREFIX "--skin-args"
 #define IMAGE_PATH_PREFIX   "file="
 #define IMAGE_PATH_SUFFIX   ",if=virtio"
 #define SDB_PORT_PREFIX     "sdb_port="
 #define LOGS_SUFFIX         "/logs/"
 #define LOGFILE             "emulator.log"
+#define LCD_WIDTH_PREFIX "width="
+#define LCD_HEIGHT_PREFIX "height="
+
 #define MIDBUF  128
 
 int tizen_base_port;
@@ -255,64 +259,19 @@ static void construct_main_window(int skin_argc, char *skin_argv[],
 static void parse_options(int argc, char *argv[], int *skin_argc,
                         char ***skin_argv, int *qemu_argc, char ***qemu_argv)
 {
-    int i;
-    int j;
-    int q = 0;
+    int i = 0;
+    int j = 0; //skin args index
 
-    /* TODO: */
-
+    /* classification */
     for (i = 1; i < argc; ++i) {
-        if (strncmp(argv[i], "--skin-args", 11) == 0) {
-            int w = 0;
-            int h = 0;
-            char *temp = NULL;
-
+        if (strstr(argv[i], SKIN_ARGS_PREFIX)) {
             *skin_argv = &(argv[i + 1]);
-
-#if 0
-            /* find out the size of lcd */
-            for(q = 0; q < (argc - i - 7); ++q) {
-                if (strncmp(**skin_argv + q, "width=", 6) == 0) {
-                    char *width = NULL;
-                    char *width_argv = **skin_argv + q;
-                    int len = strlen(width_argv) + 1;
-
-                    temp = calloc(0, len * sizeof(char));
-                    strcpy(temp, width_argv);
-                    temp[len - 1] = '\0';
-
-                    width = strtok(temp + 6, " ");
-                    w = atoi(width);
-
-                    free(temp);
-                } else if (strncmp(**skin_argv + q, "height=", 7) == 0) {
-                    char *height = NULL;
-                    char *height_argv = **skin_argv + q;
-                    int len = strlen(height_argv) + 1;
-
-                    temp = calloc(0, len * sizeof(char));
-                    strcpy(temp, height_argv);
-                    temp[len - 1] = '\0';
-
-                    height = strtok(temp + 7, " ");
-                    h = atoi(height);
-
-                    free(temp);
-                }
-
-                if (w != 0 && h != 0) {
-                    set_emul_lcd_size(w, h);
-                    break;
-                }
-            }
-#endif
-
             break;
         }
     }
 
     for (j = i; j < argc; ++j) {
-        if (strncmp(argv[j], "--qemu-args", 11) == 0) {
+        if (strstr(argv[j], QEMU_ARGS_PREFIX)) {
             *skin_argc = j - i - 1;
 
             *qemu_argc = argc - j - i + 1;
@@ -410,9 +369,9 @@ void redir_output(void)
     setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 }
 
-void extract_info(int qemu_argc, char **qemu_argv)
+void extract_qemu_info(int qemu_argc, char **qemu_argv)
 {
-    int i;
+    int i = 0;
 
     for (i = 0; i < qemu_argc; ++i) {
         if (strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
@@ -423,6 +382,32 @@ void extract_info(int qemu_argc, char **qemu_argv)
 
     tizen_base_port = get_sdb_base_port();
 }
+
+void extract_skin_info(int skin_argc, char **skin_argv)
+{
+    int i = 0;
+    int w = 0, h = 0;
+
+    for (i = 0; i < skin_argc; ++i) {
+        if (strstr(skin_argv[i], LCD_WIDTH_PREFIX) != NULL) {
+            char *width_arg = skin_argv[i] + strlen(LCD_WIDTH_PREFIX);
+            w = atoi(width_arg);
+
+            INFO("lcd width option = %d\n", w);
+        } else if (strstr(skin_argv[i], LCD_HEIGHT_PREFIX) != NULL) {
+            char *height_arg = skin_argv[i] + strlen(LCD_HEIGHT_PREFIX);
+            h = atoi(height_arg);
+
+            INFO("lcd height option = %d\n", h);
+        }
+
+        if (w != 0 && h != 0) {
+            set_emul_lcd_size(w, h);
+            break;
+        }
+    }
+}
+
 
 static void system_info(void)
 {
@@ -540,10 +525,12 @@ int main(int argc, char *argv[])
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
     get_bin_dir(qemu_argv[0]);
     socket_init();
-    extract_info(qemu_argc, qemu_argv);
+    extract_qemu_info(qemu_argc, qemu_argv);
 
     INFO("Emulator start !!!\n");
     atexit(maru_atexit);
+
+    extract_skin_info(skin_argc, skin_argv);
 
     check_shdmem();
     make_shdmem();
