@@ -108,7 +108,7 @@ void qemu_ds_sdl_resize(DisplayState *ds)
     }
 
     /* create surface_qemu */
-    //if (w == get_emul_lcd_width() && h == get_emul_lcd_height()) {
+    if (w == get_emul_lcd_width() && h == get_emul_lcd_height()) {
         surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds), w, h,
             ds_get_bits_per_pixel(ds),
             ds_get_linesize(ds),
@@ -116,13 +116,11 @@ void qemu_ds_sdl_resize(DisplayState *ds)
             ds->surface->pf.gmask,
             ds->surface->pf.bmask,
             ds->surface->pf.amask);
-#if 0
     } else {
         INFO("create blank screen = (%d, %d)\n", get_emul_lcd_width(), get_emul_lcd_height());
         surface_qemu = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h,
             ds_get_bits_per_pixel(ds), 0, 0, 0, 0);
     }
-#endif
 
 #ifdef SDL_THREAD
     pthread_mutex_unlock(&sdl_mutex);
