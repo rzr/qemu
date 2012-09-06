@@ -38,18 +38,24 @@ import java.util.logging.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.StringUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class AboutDialog extends SkinDialog {
 
@@ -58,6 +64,8 @@ public class AboutDialog extends SkinDialog {
 	public static final String PROP_KEY_VERSION = "version";
 	public static final String PROP_KEY_BUILD_TIME = "build_time";
 	public static final String PROP_KEY_GIT_VERSION = "build_git_commit";
+
+	public static final String URL_TIZEN_ORG = "https://developer.tizen.org";
 
 	private Image aboutImage;
 
@@ -105,8 +113,10 @@ public class AboutDialog extends SkinDialog {
 
 	private Composite displayInfo(Composite parent) {
 		Composite compositeBase = new Composite(parent, SWT.BORDER);
-		compositeBase.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		compositeBase.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		compositeBase.setLayout(getNopaddedGridLayout(2, false));
+		Color white = Display.getCurrent().getSystemColor(SWT.COLOR_WHITE);
+		compositeBase.setBackground(white);
 
 		/* left side */
 		Composite compositeLeft = new Composite(compositeBase, SWT.BORDER);
@@ -119,15 +129,19 @@ public class AboutDialog extends SkinDialog {
 
 		/* right side */
 		Composite compositeRight = new Composite(compositeBase, SWT.NONE);
-		compositeRight.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true));
-		compositeRight.setLayout(getNopaddedGridLayout(1, false));
+		compositeRight.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+		GridLayout layout = getNopaddedGridLayout(1, true);
+		layout.marginLeft = layout.marginRight = 6;
+		compositeRight.setLayout(layout);
+		compositeRight.setBackground(white);
 
+		/* SDK name */
 		Label titleLabel = new Label(compositeRight, SWT.NONE);
 		/*GridData gridData = new GridData();
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalAlignment = SWT.CENTER;
 		titleLabel.setLayoutData(gridData);*/
-		titleLabel.setText("\n Tizen SDK\n");
+		titleLabel.setText("\nTizen SDK\n");
 		/*Font systemFont = shell.getDisplay().getSystemFont();
 		FontData[] fontData = systemFont.getFontData();
 		fontData[0].setStyle(SWT.BOLD);
@@ -135,22 +149,34 @@ public class AboutDialog extends SkinDialog {
 		Font font = new Font(shell.getDisplay(), fontData[0]);
 		titleLabel.setFont(font);
 		font.dispose();*/
+		titleLabel.setBackground(white);
+
+		if (SwtUtil.isWindowsPlatform()) {
+			Label space = new Label(compositeRight, SWT.NONE);
+			space.setText("\n");
+		}
 
 		Properties properties = getProperties();
 
+		/* SDK version */
 		Text versionText = new Text(compositeRight, SWT.NONE);
 		String version = getValue(properties, PROP_KEY_VERSION);
-		versionText.setText(" Version : " + version);
+		if (version.isEmpty()) {
+			version = "Not identified";
+		}
+		versionText.setText("Version : " + version);
 		versionText.setEditable(false);
-		versionText.setBackground(
-				shell.getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+		versionText.setBackground(white);
 
+		/* build id */
 		Text buildText = new Text(compositeRight, SWT.NONE);
 		String time = getValue(properties, PROP_KEY_BUILD_TIME);
-		buildText.setText(" Build id : " + time);
+		if (time.isEmpty()) {
+			time = "Not identified";
+		}
+		buildText.setText("Build id : " + time);
 		buildText.setEditable(false);
-		buildText.setBackground(
-				shell.getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+		buildText.setBackground(white);
 
 		/*Text gitText = new Text(compositeRight, SWT.NONE);
 		String gitVersion = getValue(properties, PROP_KEY_GIT_VERSION);
@@ -158,14 +184,22 @@ public class AboutDialog extends SkinDialog {
 		gitText.setEditable(false);
 		gitText.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));*/
 
-		Label spaceLabel = new Label(compositeRight, SWT.NONE);
-		spaceLabel.setText("\n");
+		/* link to URL */
+		Link visit = new Link(compositeRight, SWT.NONE);
+		visit.setText("\n\n Visit <a>" + URL_TIZEN_ORG + "</a>");
+		visit.setBackground(white);
+		visit.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+				//do nothing
+			}
 
-		Text visitText = new Text(compositeRight, SWT.NONE);
-		visitText.setText(" Visit https://developer.tizen.org");
-		visitText.setEditable(false);
-		visitText.setBackground(
-				shell.getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+			@Override
+			public void widgetSelected(SelectionEvent arg0) {
+				Program.launch(URL_TIZEN_ORG);
+			}
+
+		});
 
 		return compositeBase;
 	}
