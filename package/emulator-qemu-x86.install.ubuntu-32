@@ -7,13 +7,13 @@ then
    exit 2;
 fi
 
-TMP_INST_FILE=tmp_inst.sh
-echo "cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/tizen-kvm /etc/init.d/" >> $TMP_INST_FILE
-echo "cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/45-tizen-kvm.rules /lib/udev/rules.d/" >> $TMP_INST_FILE
-echo "/etc/init.d/tizen-kvm start" >> $TMP_INST_FILE
-echo "update-rc.d tizen-kvm defaults" >> $TMP_INST_FILE
+TMP_FILE=init_tizen-kvm.sh
+echo "cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/tizen-kvm /etc/init.d/" >> $TMP_FILE
+echo "cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/45-tizen-kvm.rules /lib/udev/rules.d/" >> $TMP_FILE
+echo "/etc/init.d/tizen-kvm start" >> $TMP_FILE
+echo "update-rc.d tizen-kvm defaults" >> $TMP_FILE
 
-chmod +x $TMP_INST_FILE
-gksudo ./$TMP_INST_FILE
+chmod +x $TMP_FILE
+gksudo ./$TMP_FILE
 
-rm $TMP_INST_FILE
+rm $TMP_FILE

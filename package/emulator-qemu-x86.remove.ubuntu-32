@@ -7,12 +7,12 @@ then
    exit 2;
 fi
 
-TMP_REMOVE_FILE=tmp_inst.sh
-echo "update-rc.d -f tizen-kvm remove" >> $TMP_REMOVE_FILE
-echo "rm -f /etc/init.d/tizen-kvm" >> $TMP_REMOVE_FILE
-echo "rm -f /lib/udev/rules.d/45-tizen-kvm.rules" >> $TMP_REMOVE_FILE
+TMP_FILE=remove_tizen-kvm.sh
+echo "update-rc.d -f tizen-kvm remove" >> $TMP_FILE
+echo "rm -f /etc/init.d/tizen-kvm" >> $TMP_FILE
+echo "rm -f /lib/udev/rules.d/45-tizen-kvm.rules" >> $TMP_FILE
 
-chmod +x $TMP_REMOVE_FILE
-gksudo ./$TMP_REMOVE_FILE
+chmod +x $TMP_FILE
+gksudo ./$TMP_FILE
 
-rm $TMP_REMOVE_FILE
+rm $TMP_FILE
