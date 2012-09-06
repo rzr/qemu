@@ -74,7 +74,8 @@ void set_emul_lcd_size(int width, int height)
     _emul_info.lcd_size_w = width;
     _emul_info.lcd_size_h = height;
 
-   //INFO("emulator graphic resolution = %dx%d\n", _emul_info.lcd_size_w,  _emul_info.lcd_size_h);
+    INFO("emulator graphic resolution = %dx%d\n",
+        _emul_info.lcd_size_w,  _emul_info.lcd_size_h);
 }
 
 int get_emul_lcd_width(void)
