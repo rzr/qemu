@@ -269,6 +269,7 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
 
             *skin_argv = &(argv[i + 1]);
 
+#if 0
             /* find out the size of lcd */
             for(q = 0; q < (argc - i - 7); ++q) {
                 if (strncmp(**skin_argv + q, "width=", 6) == 0) {
@@ -304,6 +305,7 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
                     break;
                 }
             }
+#endif
 
             break;
         }
