@@ -55,11 +55,44 @@ public interface ICommunicator extends Runnable {
 		}
 	}
 	
+	public enum MouseButtonType {
+		LEFT( (short)1 ),
+		WHEEL( (short)2 ),
+		RIGHT( (short)3 );
+
+		private short value;
+		MouseButtonType( short value ) {
+			this.value = value;
+		}
+		public short value() {
+			return this.value;
+		}
+		public static MouseButtonType getValue( String val ) {
+			MouseButtonType[] values = MouseButtonType.values();
+			for (int i = 0; i < values.length; i++) {
+				if( values[i].value == Integer.parseInt( val ) ) {
+					return values[i];
+				}
+			}
+			throw new IllegalArgumentException( val );
+		}
+		public static MouseButtonType getValue( short val ) {
+			MouseButtonType[] values = MouseButtonType.values();
+			for (int i = 0; i < values.length; i++) {
+				if( values[i].value == val ) {
+					return values[i];
+				}
+			}
+			throw new IllegalArgumentException( Integer.toString(val) );
+		}
+
+	}
+
 	public enum MouseEventType {
 		DOWN( (short)1 ),
 		UP( (short)2 ),
 		DRAG( (short)3 );
-		
+
 		private short value;
 		MouseEventType( short value ) {
 			this.value = value;

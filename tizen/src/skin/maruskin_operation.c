@@ -47,6 +47,7 @@
 #include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
+#include "maruskin_server.h"
 #include "emul_state.h"
 #include "hw/maru_pm.h"
 #include "sysemu.h"
@@ -80,15 +81,17 @@ void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, do
     maruskin_init(handle_id, lcd_size_width, lcd_size_height, false);
 }
 
-void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, int z )
+void do_mouse_event(int button_type, int event_type,
+    int origin_x, int origin_y, int x, int y, int z)
 {
-    if ( brightness_off ) {
-        TRACE( "reject mouse touch in lcd off : %d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
+    if (brightness_off) {
+        TRACE("reject mouse touch in lcd off = button:%d, type:%d, x:%d, y:%d, z:%d\n",
+            button_type, event_type, x, y, z);
         return;
     }
 
-    TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n",
-        event_type, origin_x, origin_y, x, y, z);
+    TRACE("mouse_event button:%d, type:%d, host:(%d, %d), x:%d, y:%d, z:%d\n",
+        button_type, event_type, origin_x, origin_y, x, y, z);
 
 #ifndef USE_SHM
     /* multi-touch */

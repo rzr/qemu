@@ -70,6 +70,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -831,8 +832,10 @@ public class EmulatorSkin {
 					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
 							currentScale, currentAngle );
 
-					MouseEventData mouseEventData = new MouseEventData( eventType,
-							e.x, e.y, geometry[0], geometry[1], 0 );
+					MouseEventData mouseEventData = new MouseEventData(
+							MouseButtonType.LEFT.value(), eventType,
+							e.x, e.y, geometry[0], geometry[1], 0);
+
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
 				}
 			}
@@ -848,14 +851,18 @@ public class EmulatorSkin {
 
 					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
 							currentScale, currentAngle );
-
 					logger.info( "mouseUp in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
-					MouseEventData mouseEventData = new MouseEventData( MouseEventType.UP.value(),
-							e.x, e.y, geometry[0], geometry[1], 0 );
+
+					MouseEventData mouseEventData = new MouseEventData(
+							MouseButtonType.LEFT.value(), MouseEventType.UP.value(),
+							e.x, e.y, geometry[0], geometry[1], 0);
+
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
 					if ( true == EmulatorSkin.this.isDragStartedInLCD ) {
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					}
+				} else if (2 == e.button) { // wheel button
+					logger.info("wheelUp in LCD");
 				}
 			}
 
@@ -865,10 +872,12 @@ public class EmulatorSkin {
 
 					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
 							currentScale, currentAngle );
-
 					logger.info( "mouseDown in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
-					MouseEventData mouseEventData = new MouseEventData( MouseEventType.DOWN.value(),
-							e.x, e.y, geometry[0], geometry[1], 0 );
+
+					MouseEventData mouseEventData = new MouseEventData(
+							MouseButtonType.LEFT.value(), MouseEventType.DOWN.value(),
+							e.x, e.y, geometry[0], geometry[1], 0);
+
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
 					if ( false == EmulatorSkin.this.isDragStartedInLCD ) {
 						EmulatorSkin.this.isDragStartedInLCD = true;

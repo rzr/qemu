@@ -49,7 +49,7 @@ typedef struct DetailInfo DetailInfo;
 
 void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type);
 
-void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, int z );
+void do_mouse_event(int button_type, int event_type, int origin_x, int origin_y, int x, int y, int z);
 
 void do_key_event( int event_type, int keycode, int key_location );
 

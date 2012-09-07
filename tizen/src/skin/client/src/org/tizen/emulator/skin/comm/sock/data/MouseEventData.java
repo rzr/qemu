@@ -37,45 +37,51 @@ import java.io.IOException;
  */
 public class MouseEventData extends AbstractSendData {
 
+	int mouseButton;
 	int eventType;
-	int originX;
-	int originY;
-	int x;
-	int y;
+	int hostX;
+	int hostY;
+	int guestX;
+	int guestY;
 	int z;
 
-	public MouseEventData(int eventType, int originX, int originY, int x, int y, int z) {
+	public MouseEventData(int mouseButton, int eventType,
+			int hostX, int hostY, int guestX, int guestY, int z) {
+		this.mouseButton = mouseButton;
 		this.eventType = eventType;
-		this.originX = originX;
-		this.originY = originY;
-		this.x = x;
-		this.y = y;
+		this.hostX = hostX;
+		this.hostY = hostY;
+		this.guestX = guestX;
+		this.guestY = guestY;
 		this.z = z;
 	}
 
 	@Override
 	protected void write() throws IOException {
+		writeInt(mouseButton);
 		writeInt(eventType);
-		writeInt(originX);
-		writeInt(originY);
-		writeInt(x);
-		writeInt(y);
+		writeInt(hostX);
+		writeInt(hostY);
+		writeInt(guestX);
+		writeInt(guestY);
 		writeInt(z);
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("MouseEventData [eventType=");
+		builder.append("MouseEventData [mouseButton=");
+		builder.append(mouseButton);
+		builder.append(", eventType=");
 		builder.append(eventType);
-		builder.append(", originX=");
-		builder.append(originX);
-		builder.append(", originY=");
-		builder.append(originY);
-		builder.append(", transposeX=");
-		builder.append(x);
-		builder.append(", transposeY=");
-		builder.append(y);
+		builder.append(", hostX=");
+		builder.append(hostX);
+		builder.append(", hostY=");
+		builder.append(hostY);
+		builder.append(", guestX=");
+		builder.append(guestX);
+		builder.append(", guestY=");
+		builder.append(guestY);
 		builder.append(", id=");
 		builder.append(z);
 		builder.append("]");

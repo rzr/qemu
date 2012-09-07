@@ -617,34 +617,39 @@ static void* run_skin_server( void* args ) {
                     }
 
                     /* keep it consistent with emulator-skin definition */
+                    int button_type = 0;
                     int event_type = 0;
-                    int origin_x = 0;
-                    int origin_y = 0;
-                    int x = 0;
-                    int y = 0;
+                    int host_x = 0;
+                    int host_y = 0;
+                    int guest_x = 0;
+                    int guest_y = 0;
                     int z = 0;
 
                     char* p = recvbuf;
+                    memcpy( &button_type, p, sizeof( button_type ) );
+                    p += sizeof( button_type );
                     memcpy( &event_type, p, sizeof( event_type ) );
                     p += sizeof( event_type );
-                    memcpy( &origin_x, p, sizeof( origin_x ) );
-                    p += sizeof( origin_x );
-                    memcpy( &origin_y, p, sizeof( origin_y ) );
-                    p += sizeof( origin_y );
-                    memcpy( &x, p, sizeof( x ) );
-                    p += sizeof( x );
-                    memcpy( &y, p, sizeof( y ) );
-                    p += sizeof( y );
+                    memcpy( &host_x, p, sizeof( host_x ) );
+                    p += sizeof( host_x );
+                    memcpy( &host_y, p, sizeof( host_y ) );
+                    p += sizeof( host_y );
+                    memcpy( &guest_x, p, sizeof( guest_x ) );
+                    p += sizeof( guest_x );
+                    memcpy( &guest_y, p, sizeof( guest_y ) );
+                    p += sizeof( guest_y );
                     memcpy( &z, p, sizeof( z ) );
 
+                    button_type = ntohl( button_type );
                     event_type = ntohl( event_type );
-                    origin_x = ntohl( origin_x );
-                    origin_y = ntohl( origin_y );
-                    x = ntohl( x );
-                    y = ntohl( y );
+                    host_x = ntohl( host_x );
+                    host_y = ntohl( host_y );
+                    guest_x = ntohl( guest_x );
+                    guest_y = ntohl( guest_y );
                     z = ntohl( z );
 
-                    do_mouse_event( event_type, origin_x, origin_y, x, y, z );
+                    do_mouse_event(button_type, event_type,
+                        host_x, host_y, guest_x, guest_y, z);
                     break;
                 }
                 case RECV_KEY_EVENT: {
