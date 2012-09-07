@@ -166,6 +166,29 @@ public class DetailInfoDialog extends SkinDialog {
 					return;
 				}
 
+				ProcessBuilder procBrowser = new ProcessBuilder();
+
+				if (SwtUtil.isLinuxPlatform()) {
+					procBrowser.command("nautilus", "--browser", openPath);
+				} else if (SwtUtil.isWindowsPlatform()) {
+					procBrowser.command("explorer", "\"" + openPath + "\"");
+				} else if (SwtUtil.isMacPlatform()) {
+					//TODO:
+					logger.warning( "not supported yet" );
+				}
+
+				if (procBrowser.command().isEmpty() == false) {
+					try {
+						procBrowser.start();
+					} catch (Exception e) {
+						logger.log( Level.SEVERE, e.getMessage(), e);
+					}
+				}
+
+				if (openPath.compareTo(VALUE_NONE) == 0 || openPath.compareTo("") == 0) {
+					return;
+				}
+
 				Program.launch(openPath);
 
 				/*ProcessBuilder procBrowser = new ProcessBuilder();

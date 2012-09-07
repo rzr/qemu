@@ -112,10 +112,8 @@ void *glo_getprocaddress(const char *procName) {
 
 /* ------------------------------------------------------------------------ */
 
-/* Create an OpenGL context for a certain pixel format. formatflags are from the GLO_ constants */
-GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
-  if (!glo_inited)
-    glo_init();
+/* Create a light-weight context just for creating surface */
+GloContext *__glo_context_create(int formatFlags) {
 
   GLXFBConfig          *fbConfigs;
   int                   numReturned;
@@ -158,6 +156,18 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
   memset(context, 0, sizeof(GloContext));
   context->formatFlags = formatFlags;
   context->fbConfig = fbConfigs[0];
+
+  return context;
+}
+
+/* Create an OpenGL context for a certain pixel format. formatflags are from the GLO_ constants */
+GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
+
+  GloContext *context = __glo_context_create(formatFlags);
+
+  if (!context) {
+	  return NULL;
+  }
 
   /* Create a GLX context for OpenGL rendering */
   context->context = glXCreateNewContext(glo.dpy, context->fbConfig,
@@ -209,6 +219,14 @@ static void glo_surface_try_alloc_xshm_image(GloSurface *surface) {
 }
 
 /* ------------------------------------------------------------------------ */
+
+/* Update the context in surface and free previous light-weight context */
+void glo_surface_update_context(GloSurface *surface, GloContext *context)
+{
+    if ( surface->context )
+        qemu_free(surface->context);
+    surface->context = context;
+}
 
 /* Create a surface with given width and height, formatflags are from the
  * GLO_ constants */

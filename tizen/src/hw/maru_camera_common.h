@@ -33,6 +33,7 @@
 #include "qemu-thread.h"
 
 #define MARUCAM_MAX_PARAM    20
+#define MARUCAM_SKIPFRAMES    2
 
 /* must sync with GUEST camera_driver */
 #define MARUCAM_CMD_INIT           0x00
@@ -88,6 +89,7 @@ struct MaruCamState {
 /* ----------------------------------------------------------------------------- */
 /* Fucntion prototype                                                            */
 /* ----------------------------------------------------------------------------- */
+int marucam_device_check(void);
 void marucam_device_init(MaruCamState *state);
 void marucam_device_open(MaruCamState *state);
 void marucam_device_close(MaruCamState *state);

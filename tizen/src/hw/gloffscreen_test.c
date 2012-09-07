@@ -133,6 +133,7 @@ int gl_acceleration_capability_check (void) {
     printf("GL VENDOR %s\n", glGetString(GL_VENDOR));
     printf("GL RENDERER %s\n", glGetString(GL_RENDERER));
     printf("GL VERSION %s\n", glGetString(GL_VERSION));
+    //printf("GLSL VERSION %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     if (strstr (glGetString(GL_RENDERER), "Software")) {
         printf ("Host does not have GL hardware acceleration!\n");

@@ -221,6 +221,7 @@ static int marucam_initfn(PCIDevice *dev)
     marucam_device_init(s);
 
     s->tx_bh = qemu_bh_new(marucam_tx_bh, s);
+    INFO("[%s] camera device was initialized.\n", __func__);
 
     return 0;
 }
@@ -240,13 +241,6 @@ static int marucam_exitfn(PCIDevice *dev)
     memory_region_destroy (&s->mmio);
 
     INFO("[%s] camera device was released.\n", __func__);
-    return 0;
-}
-
-int maru_camera_pci_init(PCIBus *bus)
-{
-    INFO("[%s] camera device was initialized.\n", __func__);
-    pci_create_simple(bus, -1, MARU_PCI_CAMERA_DEVICE_NAME);
     return 0;
 }
 

@@ -69,6 +69,7 @@ struct _GloSurface {
     Pixmap		pixmap;
     XImage               *image;
     XShmSegmentInfo       shminfo;
+	GLXPixmap			glxPixmap;
 };
 
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride,
@@ -143,12 +144,8 @@ void *glo_getprocaddress(const char *procName) {
 
 /* ------------------------------------------------------------------------ */
 
-/* Create an OpenGL context for a certain pixel format.
-   formatflags are from the GLO_ constants */
-
-GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
-    if (!glo_inited)
-        glo_init();
+/* Create a light-weight context just for creating surface */
+GloContext *__glo_context_create(int formatFlags) {
 
     GLXFBConfig          *fbConfigs;
     int                   numReturned;
@@ -189,6 +186,20 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
     memset(context, 0, sizeof(GloContext));
     context->formatFlags = formatFlags;
     context->fbConfig = fbConfigs[0];
+
+	return context;
+}
+
+/* Create an OpenGL context for a certain pixel format.
+      formatflags are from the GLO_ constants */
+
+GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
+
+	GloContext *context = __glo_context_create(formatFlags);
+
+	if (!context) {
+		return NULL;
+	}
 
     /* Create a GLX context for OpenGL rendering */
     context->context = glXCreateNewContext(glo.dpy, context->fbConfig,
@@ -244,6 +255,14 @@ static void glo_surface_try_alloc_xshm_image(GloSurface *surface) {
 
 /* ------------------------------------------------------------------------ */
 
+/* Update the context in surface and free previous light-weight context */
+void glo_surface_update_context(GloSurface *surface, GloContext *context)
+{
+    if ( surface->context )
+        g_free(surface->context);
+    surface->context = context;
+}
+
 /* Create a surface with given width and height, formatflags are from the
  * GLO_ constants */
 GloSurface *glo_surface_create(int width, int height, GloContext *context) {
@@ -251,6 +270,9 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     XSetWindowAttributes attr = { 0 };
     unsigned long mask;
     XVisualInfo *vis;
+    int pixmapAttribs[] = { GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
+                        GLX_TEXTURE_FORMAT_EXT, GLX_TEXTURE_FORMAT_RGB_EXT,
+                                        None };
 
     if (!context)
       return 0;
@@ -274,7 +296,7 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask |
            CWOverrideRedirect | CWSaveUnder;
 
-    surface->window = XCreateWindow(glo.dpy, DefaultRootWindow(glo.dpy), -width-1000, 0, width, height, 0, vis->depth, InputOutput, vis->visual, mask, &attr);
+    surface->window = XCreateWindow(glo.dpy, DefaultRootWindow(glo.dpy), 0, 3000, width, height, 0, vis->depth, InputOutput, vis->visual, mask, &attr);
 
     if (!surface->window) {
         printf( "XCreateWindow failed\n" );
@@ -297,6 +319,16 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
         fprintf(stderr, "Failed to allocate pixmap!\n");
         //exit(EXIT_FAILURE);
 		return NULL;
+    }
+
+    /* Create a GLX pixmap to associate the frame buffer configuration with the
+     * created X window */
+    /*XXX: need attribute_list? */
+    surface->glxPixmap = glXCreatePixmap( glo.dpy, context->fbConfig, surface->pixmap, NULL );
+    if (!surface->glxPixmap) {
+      printf( "glXCreatePixmap failed\n" );
+      //exit( EXIT_FAILURE );
+     return NULL;
     }
 
     XSync(glo.dpy, 0);
@@ -349,6 +381,24 @@ int glo_surface_makecurrent(GloSurface *surface) {
         ret = glXMakeCurrent(glo.dpy, 0, NULL);
 
     return ret;
+}
+
+void glo_surface_updatecontents(GloSurface *surface) {
+    XImage *img;
+    if (!surface)
+        return;
+
+    if(glo.use_ximage) {
+        glXWaitGL();
+
+        if(surface->image) {
+            XShmGetImage (glo.dpy, surface->pixmap, surface->image, 0, 0, AllPlanes);
+        }
+        else {
+            img = XGetImage(glo.dpy, surface->pixmap, 0, 0, surface->width, surface->height, AllPlanes, ZPixmap);
+        }
+    }
+
 }
 
 /* Get the contents of the given surface */
@@ -421,7 +471,40 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
         *height = surface->height;
 }
 
-/* Abstract glXQueryExtensionString() */
+/* Bind the surface as texture */
+void glo_surface_as_texture(GloSurface *surface)
+{
+#if 0
+    void (*ptr_func_glXBindTexImageEXT) (Display *dpy, GLXDrawable draw, int buffer, int *attrib_list);
+    ptr_func_glXBindTexImageEXT =
+        (void(*)(Display*, GLXDrawable, int, int*))glo_getprocaddress((const char*)"glXBindTexImageEXT");
+
+    /*XXX: When to call the glXReleaseTexImageEXT?*/
+    if (!ptr_func_glXBindTexImageEXT)
+    {
+        fprintf (stderr, "glXBindTexImageEXT not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
+    }
+
+    fprintf(stderr, "surface_as_texture:error=%d.\n", glGetError());
+    ptr_func_glXBindTexImageEXT(glo.dpy, surface->glxPixmap, GLX_FRONT_LEFT_EXT, NULL);
+    fprintf(stderr, "surface_as_texture:2:error=%d.\n", glGetError());
+#else
+	int glFormat, glType;
+    glo_surface_updatecontents(surface);
+    /*XXX: changet the fixed target: GL_TEXTURE_2D*/
+	glo_flags_get_readpixel_type(surface->context->formatFlags, &glFormat, &glType);
+    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d, glFormat=0x%x, glType=0x%x.\n", surface->width, surface->height, glFormat, glType);
+    /* glTexImage2D use different RGB order than the contexts in the pixmap surface */
+/*    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->image->data);*/
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->image->data);
+#endif
+}
+
+void glo_surface_release_texture(GloSurface *surface)
+{
+}
+
+ /* Abstract glXQueryExtensionString() */
 const char *glo_glXQueryExtensionsString(void) {
     return glXQueryExtensionsString(glo.dpy, 0);
 }

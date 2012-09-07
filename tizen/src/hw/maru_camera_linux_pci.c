@@ -35,16 +35,28 @@
 
 #include <linux/videodev2.h>
 
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+
 #include <libv4l2.h>
 #include <libv4lconvert.h>
 
 MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 
+enum {
+    _MC_THREAD_PAUSED,
+    _MC_THREAD_STREAMON,
+    _MC_THREAD_STREAMOFF,
+};
+
+static const char *dev_name = "/dev/video0";
 static int v4l2_fd;
 static int convert_trial;
 static int ready_count;
 
 static struct v4l2_format dst_fmt;
+
+#define CLEAR(x) memset(&(x), 0, sizeof(x))
 
 static int xioctl(int fd, int req, void *arg)
 {
@@ -56,6 +68,29 @@ static int xioctl(int fd, int req, void *arg)
 
     return r;
 }
+
+typedef struct tagMaruCamConvertPixfmt {
+    uint32_t fmt;   /* fourcc */
+} MaruCamConvertPixfmt;
+
+static MaruCamConvertPixfmt supported_dst_pixfmts[] = {
+        { V4L2_PIX_FMT_YUYV },
+        { V4L2_PIX_FMT_YUV420 },
+        { V4L2_PIX_FMT_YVU420 },
+};
+
+typedef struct tagMaruCamConvertFrameInfo {
+    uint32_t width;
+    uint32_t height;
+} MaruCamConvertFrameInfo;
+
+static MaruCamConvertFrameInfo supported_dst_frames[] = {
+        { 640, 480 },
+        { 352, 288 },
+        { 320, 240 },
+        { 176, 144 },
+        { 160, 120 },
+};
 
 #define MARUCAM_CTRL_VALUE_MAX      20
 #define MARUCAM_CTRL_VALUE_MIN      1
@@ -74,7 +109,7 @@ struct marucam_qctrl {
 static struct marucam_qctrl qctrl_tbl[] = {
     { V4L2_CID_BRIGHTNESS, 0, },
     { V4L2_CID_CONTRAST, 0, },
-    { V4L2_CID_SATURATION,0, },
+    { V4L2_CID_SATURATION, 0, },
     { V4L2_CID_SHARPNESS, 0, },
 };
 
@@ -84,10 +119,12 @@ static void marucam_reset_controls(void)
     for (i = 0; i < ARRAY_SIZE(qctrl_tbl); i++) {
         if (qctrl_tbl[i].hit) {
             struct v4l2_control ctrl = {0,};
+            qctrl_tbl[i].hit = 0;
             ctrl.id = qctrl_tbl[i].id;
             ctrl.value = qctrl_tbl[i].init_val;
             if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-                ERR("failed to set video control value while reset values : %s\n", strerror(errno));
+                ERR("failed to reset control value : id(0x%x), errstr(%s)\n",
+                    ctrl.id, strerror(errno));
             }
         }
     }
@@ -128,10 +165,90 @@ static int32_t value_convert_to_guest(int32_t min, int32_t max, int32_t value)
     return ret;
 }
 
+static void set_maxframeinterval(MaruCamState *state, uint32_t pixel_format,
+                        uint32_t width, uint32_t height)
+{
+    struct v4l2_frmivalenum fival;
+    struct v4l2_streamparm sp;
+    uint32_t min_num = 0, min_denom = 0;
+
+    CLEAR(fival);
+    fival.pixel_format = pixel_format;
+    fival.width = width;
+    fival.height = height;
+
+    if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &fival) < 0) {
+        ERR("Unable to enumerate intervals for pixelformat(0x%x), (%d:%d)\n",
+            pixel_format, width, height);
+        return;
+    }
+
+    if (fival.type == V4L2_FRMIVAL_TYPE_DISCRETE) {
+        float max_ival = -1.0;
+        do {
+            float cur_ival = (float)fival.discrete.numerator
+                        / (float)fival.discrete.denominator;
+            if (cur_ival > max_ival) {
+                max_ival = cur_ival;
+                min_num = fival.discrete.numerator;
+                min_denom = fival.discrete.denominator;
+            }
+            TRACE("Discrete frame interval %u/%u supported\n",
+                 fival.discrete.numerator, fival.discrete.denominator);
+            fival.index++;
+        } while (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &fival) >= 0);
+    } else if ((fival.type == V4L2_FRMIVAL_TYPE_STEPWISE) ||
+                (fival.type == V4L2_FRMIVAL_TYPE_CONTINUOUS)) {
+        TRACE("Frame intervals from %u/%u to %u/%u supported",
+            fival.stepwise.min.numerator, fival.stepwise.min.denominator,
+            fival.stepwise.max.numerator, fival.stepwise.max.denominator);
+        if(fival.type == V4L2_FRMIVAL_TYPE_STEPWISE)
+            TRACE("with %u/%u step",
+                 fival.stepwise.step.numerator, fival.stepwise.step.denominator);
+        if (((float)fival.stepwise.max.denominator /
+             (float)fival.stepwise.max.numerator) >
+            ((float)fival.stepwise.min.denominator /
+             (float)fival.stepwise.min.numerator)) {
+            min_num = fival.stepwise.max.numerator;
+            min_denom = fival.stepwise.max.denominator;
+        } else {
+            min_num = fival.stepwise.min.numerator;
+            min_denom = fival.stepwise.min.denominator;
+        }
+    }
+    TRACE("actual min values : %u/%u\n", min_num, min_denom);
+
+    CLEAR(sp);
+    sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    sp.parm.capture.timeperframe.numerator = min_num;
+    sp.parm.capture.timeperframe.denominator = min_denom;
+
+    if (xioctl(v4l2_fd, VIDIOC_S_PARM, &sp) < 0) {
+        ERR("Failed to set to minimum FPS(%u/%u)\n", min_num, min_denom);
+    }
+}
+
+static int is_streamon(MaruCamState *state)
+{
+    int st;
+    qemu_mutex_lock(&state->thread_mutex);
+    st = state->streamon;
+    qemu_mutex_unlock(&state->thread_mutex);
+    return (st == _MC_THREAD_STREAMON);
+}
+
+static int is_stream_paused(MaruCamState *state)
+{
+    int st;
+    qemu_mutex_lock(&state->thread_mutex);
+    st = state->streamon;
+    qemu_mutex_unlock(&state->thread_mutex);
+    return (st == _MC_THREAD_PAUSED);
+}
+
 static int __v4l2_grab(MaruCamState *state)
 {
     fd_set fds;
-    static uint32_t index = 0;
     struct timeval tv;
     void *buf;
     int ret;
@@ -139,8 +256,8 @@ static int __v4l2_grab(MaruCamState *state)
     FD_ZERO(&fds);
     FD_SET(v4l2_fd, &fds);
 
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
+    tv.tv_sec = 0;
+    tv.tv_usec = 500000;
 
     ret = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
     if ( ret < 0) {
@@ -159,13 +276,17 @@ static int __v4l2_grab(MaruCamState *state)
         return -1;
     }
 
-       qemu_mutex_lock(&state->thread_mutex);
-       ret = state->streamon;
-       qemu_mutex_unlock(&state->thread_mutex);
-       if (!ret)
-              return -1;
+    if (!is_streamon(state))
+        return -1;
 
-    buf = state->vaddr + (state->buf_size * index);
+    qemu_mutex_lock(&state->thread_mutex);
+    if (state->req_frame == 0) {
+        qemu_mutex_unlock(&state->thread_mutex);
+        return 0;
+    }
+    buf = state->vaddr + state->buf_size * (state->req_frame -1);
+    qemu_mutex_unlock(&state->thread_mutex);
+
     ret = v4l2_read(v4l2_fd, buf, state->buf_size);
     if ( ret < 0) {
         switch (errno) {
@@ -185,58 +306,93 @@ static int __v4l2_grab(MaruCamState *state)
         }
     }
 
-    index = !index;
-
     qemu_mutex_lock(&state->thread_mutex);
-    if (state->streamon) {
-        if (ready_count >= 4) {
-            if (state->req_frame) {
-                state->req_frame = 0; // clear request
-                state->isr |= 0x01; // set a flag of rasing a interrupt.
-                qemu_bh_schedule(state->tx_bh);
-            }
-            ret = 1;
-        } else {
-            ++ready_count; // skip a frame cause first some frame are distorted.
-            ret = 0;
-        }
+    if (ready_count < MARUCAM_SKIPFRAMES) {
+        ++ready_count; /* skip a frame cause first some frame are distorted */
+        qemu_mutex_unlock(&state->thread_mutex);
+        return 0;
+    }
+    if (state->streamon == _MC_THREAD_STREAMON) {
+        state->req_frame = 0; /* clear request */
+        state->isr |= 0x01;   /* set a flag of rasing a interrupt */
+        qemu_bh_schedule(state->tx_bh);
+        ret = 1;
     } else {
         ret = -1;
     }
     qemu_mutex_unlock(&state->thread_mutex);
-
     return ret;
 }
 
-// Worker thread
+/* Worker thread */
 static void *marucam_worker_thread(void *thread_param)
 {
     MaruCamState *state = (MaruCamState*)thread_param;
 
 wait_worker_thread:
     qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 0;
-    convert_trial = 10;
+    state->streamon = _MC_THREAD_PAUSED;
     qemu_cond_wait(&state->thread_cond, &state->thread_mutex);
+    qemu_mutex_unlock(&state->thread_mutex);
+
+    convert_trial = 10;
+    ready_count = 0;
+    qemu_mutex_lock(&state->thread_mutex);
+    state->buf_size = dst_fmt.fmt.pix.sizeimage;
+    state->streamon = _MC_THREAD_STREAMON;
     qemu_mutex_unlock(&state->thread_mutex);
     INFO("Streaming on ......\n");
 
     while (1)
     {
-        qemu_mutex_lock(&state->thread_mutex);
-        if (state->streamon) {
-            qemu_mutex_unlock(&state->thread_mutex);
+        if (is_streamon(state)) {
             if (__v4l2_grab(state) < 0) {
                 INFO("...... Streaming off\n");
                 goto wait_worker_thread;
             }
         } else {
-            qemu_mutex_unlock(&state->thread_mutex);
             INFO("...... Streaming off\n");
             goto wait_worker_thread;
         }
     }
-    qemu_thread_exit((void*)0);
+    return NULL;
+}
+
+int marucam_device_check(void)
+{
+    int tmp_fd;
+    struct stat st;
+    struct v4l2_capability cap;
+
+    if (stat(dev_name, &st) < 0) {
+        ERR("Cannot identify '%s': %s\n", dev_name, strerror(errno));
+        return 0;
+    }
+
+    if (!S_ISCHR(st.st_mode)) {
+        ERR("%s is no device.\n", dev_name);
+        return 0;
+    }
+
+    tmp_fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
+    if (tmp_fd < 0) {
+        ERR("camera device open failed.(%s)\n", dev_name);
+        return 0;
+    }
+    if (ioctl(tmp_fd, VIDIOC_QUERYCAP, &cap) < 0) {
+        ERR("Could not qeury video capabilities\n");
+        close(tmp_fd);
+        return 0;
+    }
+    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
+            !(cap.capabilities & V4L2_CAP_STREAMING)) {
+        ERR("Not supported video driver.\n");
+        close(tmp_fd);
+        return 0;
+    }
+
+    close(tmp_fd);
+    return 1;
 }
 
 void marucam_device_init(MaruCamState* state)
@@ -244,98 +400,82 @@ void marucam_device_init(MaruCamState* state)
     qemu_thread_create(&state->thread_id, marucam_worker_thread, (void*)state);
 }
 
-// MARUCAM_CMD_OPEN
 void marucam_device_open(MaruCamState* state)
 {
-    struct v4l2_capability cap;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    v4l2_fd = v4l2_open("/dev/video0", O_RDWR);
+    v4l2_fd = v4l2_open(dev_name, O_RDWR | O_NONBLOCK, 0);
     if (v4l2_fd < 0) {
-        ERR("v4l2 device open failed.(/dev/video0)\n");
-        param->errCode = EINVAL;
-        return;
-    }
-    if (xioctl(v4l2_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-        ERR("Could not qeury video capabilities\n");
-        v4l2_close(v4l2_fd);
-        param->errCode = EINVAL;
-        return;
-    }
-    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
-            !(cap.capabilities & V4L2_CAP_STREAMING)) {
-        ERR("Not supported video driver.\n");
-        v4l2_close(v4l2_fd);
+        ERR("v4l2 device open failed.(%s)\n", dev_name);
         param->errCode = EINVAL;
         return;
     }
 
-    memset(&dst_fmt, 0, sizeof(dst_fmt));
+    CLEAR(dst_fmt);
     INFO("Opened\n");
 }
 
-// MARUCAM_CMD_START_PREVIEW
 void marucam_device_start_preview(MaruCamState* state)
 {
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 10000000;
+
+    INFO("Starting preview!\n");
     qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 1;
-    ready_count = 0;
-    state->buf_size = dst_fmt.fmt.pix.sizeimage;
     qemu_cond_signal(&state->thread_cond);
     qemu_mutex_unlock(&state->thread_mutex);
-       INFO("Starting preview!\n");
+
+    /* nanosleep until thread is streamon  */
+    while (!is_streamon(state))
+        nanosleep(&req, NULL);
 }
 
-// MARUCAM_CMD_STOP_PREVIEW
 void marucam_device_stop_preview(MaruCamState* state)
 {
-       struct timespec req;
-       req.tv_sec = 0;
-       req.tv_nsec = 333333333;
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 50000000;
 
     qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 0;
+    state->streamon = _MC_THREAD_STREAMOFF;
     state->buf_size = 0;
     qemu_mutex_unlock(&state->thread_mutex);
-    nanosleep(&req, NULL);
-       INFO("Stopping preview!\n");
+
+    /* nanosleep until thread is paused  */
+    while (!is_stream_paused(state))
+        nanosleep(&req, NULL);
+
+    INFO("Stopping preview!\n");
 }
 
 void marucam_device_s_param(MaruCamState* state)
 {
-    struct v4l2_streamparm sp;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&sp, 0, sizeof(struct v4l2_streamparm));
-    sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    sp.parm.capture.timeperframe.numerator = param->stack[0];
-    sp.parm.capture.timeperframe.denominator = param->stack[1];
 
-    if (xioctl(v4l2_fd, VIDIOC_S_PARM, &sp) < 0) {
-        ERR("failed to set FPS: %s\n", strerror(errno));
-        param->errCode = errno;
+    /* If KVM enabled, We use default FPS of the webcam.
+     * If KVM disabled, we use mininum FPS of the webcam */
+    if (!kvm_enabled()) {
+        set_maxframeinterval(state, dst_fmt.fmt.pix.pixelformat,
+                     dst_fmt.fmt.pix.width,
+                     dst_fmt.fmt.pix.height);
     }
 }
 
 void marucam_device_g_param(MaruCamState* state)
 {
-    struct v4l2_streamparm sp;
     MaruCamParam *param = state->param;
-    
-    param->top = 0;
-    memset(&sp, 0, sizeof(struct v4l2_streamparm));
-    sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    if (xioctl(v4l2_fd, VIDIOC_G_PARM, &sp) < 0) {
-        ERR("failed to get FPS: %s\n", strerror(errno));
-        param->errCode = errno;
-        return;
-    }
-    param->stack[0] = sp.parm.capture.capability;
-    param->stack[1] = sp.parm.capture.timeperframe.numerator;
-    param->stack[2] = sp.parm.capture.timeperframe.denominator;
+    /* We use default FPS of the webcam
+     * return a fixed value on guest ini file (1/30).
+     */
+    param->top = 0;
+    param->stack[0] = 0x1000; /* V4L2_CAP_TIMEPERFRAME */
+    param->stack[1] = 1; /* numerator */
+    param->stack[2] = 30; /* denominator */
 }
 
 void marucam_device_s_fmt(MaruCamState* state)
@@ -343,7 +483,7 @@ void marucam_device_s_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&dst_fmt, 0, sizeof(struct v4l2_format));
+    CLEAR(dst_fmt);
     dst_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     dst_fmt.fmt.pix.width = param->stack[0];
     dst_fmt.fmt.pix.height = param->stack[1];
@@ -351,7 +491,9 @@ void marucam_device_s_fmt(MaruCamState* state)
     dst_fmt.fmt.pix.field = param->stack[3];
 
     if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
-        ERR("failed to set video format: %s\n", strerror(errno));
+        ERR("failed to set video format: format(0x%x), width:height(%d:%d), "
+          "errstr(%s)\n", dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.width,
+          dst_fmt.fmt.pix.height, strerror(errno));
         param->errCode = errno;
         return;
     }
@@ -372,7 +514,7 @@ void marucam_device_g_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&format, 0, sizeof(struct v4l2_format));
+    CLEAR(format);
     format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     if (xioctl(v4l2_fd, VIDIOC_G_FMT, &format) < 0) {
@@ -397,7 +539,7 @@ void marucam_device_try_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&format, 0, sizeof(struct v4l2_format));
+    CLEAR(format);
     format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     format.fmt.pix.width = param->stack[0];
     format.fmt.pix.height = param->stack[1];
@@ -405,7 +547,9 @@ void marucam_device_try_fmt(MaruCamState* state)
     format.fmt.pix.field = param->stack[3];
 
     if (xioctl(v4l2_fd, VIDIOC_TRY_FMT, &format) < 0) {
-        ERR("failed to check video format: %s\n", strerror(errno));
+        ERR("failed to check video format: format(0x%x), width:height(%d:%d),"
+            " errstr(%s)\n", format.fmt.pix.pixelformat, format.fmt.pix.width,
+            format.fmt.pix.height, strerror(errno));
         param->errCode = errno;
         return;
     }
@@ -421,25 +565,30 @@ void marucam_device_try_fmt(MaruCamState* state)
 
 void marucam_device_enum_fmt(MaruCamState* state)
 {
-    struct v4l2_fmtdesc format;
+    uint32_t index;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&format, 0, sizeof(struct v4l2_fmtdesc));
-    format.index = param->stack[0];
-    format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    index = param->stack[0];
 
-    if (xioctl(v4l2_fd, VIDIOC_ENUM_FMT, &format) < 0) {
-        if (errno != EINVAL)
-            ERR("failed to enumerate video formats: %s\n", strerror(errno));
-        param->errCode = errno;
+    if (index >= ARRAY_SIZE(supported_dst_pixfmts)) {
+        param->errCode = EINVAL;
         return;
     }
-    param->stack[0] = format.index;
-    param->stack[1] = format.flags;
-    param->stack[2] = format.pixelformat;
+    param->stack[1] = 0; /* flags = NONE */
+    param->stack[2] = supported_dst_pixfmts[index].fmt; /* pixelformat */
     /* set description */
-    memcpy(&param->stack[3], format.description, sizeof(format.description));
+    switch (supported_dst_pixfmts[index].fmt) {
+    case V4L2_PIX_FMT_YUYV:
+        memcpy(&param->stack[3], "YUYV", 32);
+        break;
+    case V4L2_PIX_FMT_YUV420:
+        memcpy(&param->stack[3], "YU12", 32);
+        break;
+    case V4L2_PIX_FMT_YVU420:
+        memcpy(&param->stack[3], "YV12", 32);
+        break;
+    }
 }
 
 void marucam_device_qctrl(MaruCamState* state)
@@ -450,7 +599,7 @@ void marucam_device_qctrl(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ctrl, 0, sizeof(struct v4l2_queryctrl));
+    CLEAR(ctrl);
     ctrl.id = param->stack[0];
 
     switch (ctrl.id) {
@@ -486,7 +635,7 @@ void marucam_device_qctrl(MaruCamState* state)
         return;
     } else {
         struct v4l2_control sctrl;
-        memset(&sctrl, 0, sizeof(struct v4l2_control));
+        CLEAR(sctrl);
         sctrl.id = ctrl.id;
         if ((ctrl.maximum + ctrl.minimum) == 0) {
             sctrl.value = 0;
@@ -494,7 +643,8 @@ void marucam_device_qctrl(MaruCamState* state)
             sctrl.value = (ctrl.maximum + ctrl.minimum) / 2;
         }
         if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &sctrl) < 0) {
-            ERR("failed to set video control value : %s\n", strerror(errno));
+            ERR("failed to set control value: id(0x%x), value(%d), "
+                "errstr(%s)\n", sctrl.id, sctrl.value, strerror(errno));
             param->errCode = errno;
             return;
         }
@@ -523,7 +673,7 @@ void marucam_device_s_ctrl(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ctrl, 0, sizeof(struct v4l2_control));
+    CLEAR(ctrl);
     ctrl.id = param->stack[0];
 
     switch (ctrl.id) {
@@ -552,7 +702,9 @@ void marucam_device_s_ctrl(MaruCamState* state)
     ctrl.value = value_convert_from_guest(qctrl_tbl[i].min,
             qctrl_tbl[i].max, param->stack[1]);
     if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
-        ERR("failed to set video control value : value(%d), %s\n", param->stack[1], strerror(errno));
+        ERR("failed to set control value : id0x%x), value(r:%d, c:%d), "
+            "errstr(%s)\n", ctrl.id, param->stack[1], ctrl.value,
+            strerror(errno));
         param->errCode = errno;
         return;
     }
@@ -565,7 +717,7 @@ void marucam_device_g_ctrl(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ctrl, 0, sizeof(struct v4l2_control));
+    CLEAR(ctrl);
     ctrl.id = param->stack[0];
 
     switch (ctrl.id) {
@@ -603,73 +755,58 @@ void marucam_device_g_ctrl(MaruCamState* state)
 
 void marucam_device_enum_fsizes(MaruCamState* state)
 {
-    struct v4l2_frmsizeenum fsize;
+    uint32_t index, pixfmt, i;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&fsize, 0, sizeof(struct v4l2_frmsizeenum));
-    fsize.index = param->stack[0];
-    fsize.pixel_format = param->stack[1];
+    index = param->stack[0];
+    pixfmt = param->stack[1];
 
-    if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMESIZES, &fsize) < 0) {
-        if (errno != EINVAL)
-            ERR("failed to get frame sizes : %s\n", strerror(errno));
-        param->errCode = errno;
+    if (index >= ARRAY_SIZE(supported_dst_frames)) {
+        param->errCode = EINVAL;
+        return;
+    }
+    for (i = 0; i < ARRAY_SIZE(supported_dst_pixfmts); i++) {
+        if (supported_dst_pixfmts[i].fmt == pixfmt)
+            break;
+    }
+
+    if (i == ARRAY_SIZE(supported_dst_pixfmts)) {
+        param->errCode = EINVAL;
         return;
     }
 
-    if (fsize.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
-        param->stack[0] = fsize.discrete.width;
-        param->stack[1] = fsize.discrete.height;
-    } else {
-        param->errCode = EINVAL;
-        ERR("Not Supported mode, we only support DISCRETE\n");
-    }
+    param->stack[0] = supported_dst_frames[index].width;
+    param->stack[1] = supported_dst_frames[index].height;
 }
 
 void marucam_device_enum_fintv(MaruCamState* state)
 {
-    struct v4l2_frmivalenum ival;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    memset(&ival, 0, sizeof(struct v4l2_frmivalenum));
-    ival.index = param->stack[0];
-    ival.pixel_format = param->stack[1];
-    ival.width = param->stack[2];
-    ival.height = param->stack[3];
 
-    if (xioctl(v4l2_fd, VIDIOC_ENUM_FRAMEINTERVALS, &ival) < 0) {
-        if (errno != EINVAL)
-            ERR("failed to get frame intervals : %s\n", strerror(errno));
-        param->errCode = errno;
+    /* switch by index(param->stack[0]) */
+    switch (param->stack[0]) {
+    case 0:
+        /* we only use 1/30 frame interval */
+        param->stack[1] = 30;   /* denominator */
+        break;
+    default:
+        param->errCode = EINVAL;
         return;
     }
-
-    if (ival.type == V4L2_FRMIVAL_TYPE_DISCRETE) {
-        param->stack[0] = ival.discrete.numerator;
-        param->stack[1] = ival.discrete.denominator;
-    } else {
-        param->errCode = EINVAL;
-        ERR("Not Supported mode, we only support DISCRETE\n");
-    }
+    param->stack[0] = 1;    /* numerator */
 }
 
-// MARUCAM_CMD_CLOSE
 void marucam_device_close(MaruCamState* state)
 {
-       uint32_t is_streamon;
-
-    qemu_mutex_lock(&state->thread_mutex);
-    is_streamon = state->streamon;
-    qemu_mutex_unlock(&state->thread_mutex);
-
-       if (is_streamon)
-              marucam_device_stop_preview(state);
+    if (!is_stream_paused(state))
+        marucam_device_stop_preview(state);
 
     marucam_reset_controls();
 
     v4l2_close(v4l2_fd);
-    v4l2_fd = 0;
+    v4l2_fd = -1;
     INFO("Closed\n");
 }

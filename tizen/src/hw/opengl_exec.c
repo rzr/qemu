@@ -114,7 +114,7 @@ void *g_malloc(size_t size);
 void *g_realloc(void *ptr, size_t size);
 void g_free(void *ptr);
 
-#define glGetError() 0
+/*#define glGetError() 0*/
 
 #define GET_EXT_PTR(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
@@ -186,6 +186,9 @@ typedef struct {
 
 #define MAX_FBCONFIG 10
 
+#define MAX_PENDING_QSURFACE 8
+#define MAX_PENDING_DRAWABLE 8
+
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define DIM(X) (sizeof(X) / sizeof(X[0]))
 
@@ -200,14 +203,28 @@ typedef void *ClientGLXDrawable;
 
 typedef struct GLState GLState;
 
+enum {
+    SURFACE_WINDOW,
+    SURFACE_PIXMAP,
+    SURFACE_PBUFFER,
+};
+
 typedef struct QGloSurface {
     GLState *glstate;
     GloSurface *surface;
     ClientGLXDrawable *client_drawable;
+    int type; /* window, pixmap or pbuffer */
     int ready;
     int ref;
     QTAILQ_ENTRY(QGloSurface) next;
 } QGloSurface;
+
+#define MAX_PIXMAP_TEXTURE 32
+typedef struct PixmapTexture {
+    unsigned int used;
+    unsigned int texture;
+    ClientGLXDrawable drawable;
+} PixmapTexture;
 
 struct GLState {
     int ref;
@@ -262,6 +279,9 @@ struct GLState {
 
     unsigned int ownTabTextures[32768];
     unsigned int *tabTextures;
+    /* The mapping between the texture and pixmap used as texture */
+    PixmapTexture pixmapTextures[MAX_PIXMAP_TEXTURE];
+    unsigned int bindTexture2D;
     RangeAllocator ownTextureAllocator;
     RangeAllocator *textureAllocator;
 
@@ -286,6 +306,12 @@ typedef struct {
     GLState default_state;
     GLState **glstates;
     GLState *current_state;
+
+    /* Pending drawables that will be used as texture  */
+    ClientGLXDrawable pending_drawables[MAX_PENDING_DRAWABLE];
+
+    /* Created Pixmap surfaces, will link to context in MakeCurrent */
+    QGloSurface *pending_qsurfaces[MAX_PENDING_QSURFACE];
 
     int nfbconfig;
     const GLXFBConfig *fbconfigs[MAX_FBCONFIG];
@@ -582,6 +608,27 @@ static void bind_qsurface(GLState *state,
     state->current_qsurface = qsurface;
 }
 
+/* Find the qsurface with required drawable in active & pending qsurfaces */
+QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLXDrawable client_drawable)
+{
+    /* search for surfaces in current conetxt */
+    int i;
+    QGloSurface *qsurface = get_qsurface_from_client_drawable(process->current_state, client_drawable);
+
+    if (qsurface)
+        return qsurface;
+
+    /* search the pending surfaces */
+    for ( i = 0; i < MAX_PENDING_QSURFACE; i++ )
+    {
+        qsurface = process->pending_qsurfaces[i];
+        if ( qsurface && qsurface->client_drawable == client_drawable )
+            return qsurface;
+    }
+
+    return NULL;
+}
+
 /* Make the appropriate qsurface current for a given client_drawable */
 static int set_current_qsurface(GLState *state,
                                 ClientGLXDrawable client_drawable)
@@ -599,6 +646,130 @@ static int set_current_qsurface(GLState *state,
     }
 
     state->current_qsurface = NULL;
+
+    return 0;
+}
+
+/* */
+static int keep_drawable(ProcessState *process, ClientGLXDrawable drawable)
+{
+    int i;
+    for ( i = 0; i < MAX_PENDING_DRAWABLE; i++)
+    {
+        if ( process->pending_drawables[i] == 0 )
+        {
+            process->pending_drawables[i] = drawable;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int link_drawable(ProcessState *process, ClientGLXDrawable drawable)
+{
+    int i;
+    for ( i = 0; i < MAX_PENDING_DRAWABLE; i++ )
+    {
+        if ( process->pending_drawables[i] == drawable )
+        {
+            process->pending_drawables[i] = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Need to create pixmap surface when guest do so, as guest may use it before
+ * MakeCurrent. As no context available at this point, we do the follwoing:
+ * 1. Create one light-weight context just for surface creation.
+ * 2. Store this qsurface, and link it with right context when MakeCurrent
+ */
+static int keep_qsurface(ProcessState *process, QGloSurface *qsurface)
+{
+    int i;
+    for ( i = 0; i < MAX_PENDING_QSURFACE; i++)
+    {
+        if ( process->pending_qsurfaces[i] == NULL )
+        {
+            process->pending_qsurfaces[i] = qsurface;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawable client_drawable)
+{
+    int i;
+    QGloSurface *qsurface;
+    for ( i = 0; i < MAX_PENDING_QSURFACE; i++ )
+    {
+        qsurface = process->pending_qsurfaces[i];
+        if ( qsurface && qsurface->client_drawable == client_drawable )
+        {
+	    /* Do not reset, as need it in another context */
+/*            process->pending_qsurfaces[i] = NULL;*/
+            qsurface->ref = 1;
+/*            qsurface->surface->context = glstate->context;*/
+            glo_surface_update_context(qsurface->surface, glstate->context);
+            bind_qsurface(glstate, qsurface);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/* Pixmap can be used as texture via glEGLImageTargetTexture2DOES, so need keep
+ * the mapping between them to add proper action when bind the texture again
+ */
+static void del_pixmap_texture_mapping(GLState *state,
+        unsigned int texture)
+{
+    int i;
+    for ( i = 0; i < MAX_PIXMAP_TEXTURE; i++ )
+    {
+        if ( state->pixmapTextures[i].used &&
+             state->pixmapTextures[i].texture == texture )
+        {
+            state->pixmapTextures[i].used = 0;
+            state->pixmapTextures[i].texture = 0;
+            state->pixmapTextures[i].drawable = 0;
+            return;
+        }
+    }
+}
+
+static int add_pixmap_texture_mapping(GLState *state,
+        unsigned int texture, ClientGLXDrawable drawable)
+{
+    int i;
+    for ( i = 0; i < MAX_PIXMAP_TEXTURE; i++ )
+    {
+        if (  state->pixmapTextures[i].texture == texture ||
+             !state->pixmapTextures[i].used )
+        {
+            state->pixmapTextures[i].used = 1;
+            state->pixmapTextures[i].texture = texture;
+            state->pixmapTextures[i].drawable = drawable;
+            return 1;
+        }
+    }
+
+    if ( i >= MAX_PIXMAP_TEXTURE )
+        return 0;
+}
+
+static ClientGLXDrawable find_pixmap_texture(GLState *state,
+        unsigned int texture)
+{
+    int i;
+    for ( i = 0; i < MAX_PIXMAP_TEXTURE; i++ )
+    {
+        if ( state->pixmapTextures[i].used &&
+             state->pixmapTextures[i].texture == texture )
+            return state->pixmapTextures[i].drawable;
+    }
 
     return 0;
 }
@@ -1457,7 +1628,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 if (!glstate) {
                     DEBUGF( " --invalid fake_ctxt (%d)!\n", fake_ctxt);
                 } else {
-                    if(!set_current_qsurface(glstate, client_drawable)) {
+					if(!set_current_qsurface(glstate, client_drawable) &&
+					   !link_qsurface(process, glstate, client_drawable) ) {
                        // If there is no surface, create one.
                        QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
                        qsurface->surface = glo_surface_create(4, 4,
@@ -1472,10 +1644,32 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                     else {
 //                       DEBUGF( " --Client drawable found, using surface: %16x %16lx\n", (unsigned int)glstate->current_qsurface, (unsigned long int)client_drawable);
                     }
+#if 0
+                    /*Test old surface contents */
+                    int reset_texture = 0;
+                    GLState *old_glstate = NULL;
+                    /* Switch from pixmap */
+                    if (process->current_state->current_qsurface && SURFACE_PIXMAP == process->current_state->current_qsurface->type )
+                    {
+                        glo_surface_updatecontents(process->current_state->current_qsurface->surface);
+                        reset_texture = 1;
+                        old_glstate = process->current_state;
+                    }
+                    fprintf(stderr, "edwin:MakeCurrent: drawable=0x%x,qsurface=%p.\n", client_drawable, glstate->current_qsurface);
+
+#endif
+                    /* Switch in pixmap surface */
+                    if (glstate->current_qsurface && SURFACE_PIXMAP == glstate->current_qsurface->type )
+                    {
+                        /* Release it if the surface is used as texture target */
+                        glo_surface_release_texture(glstate->current_qsurface);
+                    }
 
                     process->current_state = glstate;
 
                     ret.i = glo_surface_makecurrent(glstate->current_qsurface->surface);
+/*                    if (reset_texture)*/
+/*                        glo_surface_as_texture(old_glstate->current_qsurface->surface);*/
                 }
             }
             break;
@@ -1714,6 +1908,80 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             }
             break;
         }
+    case glXCreatePixmap_func:
+        {
+            int client_fbconfig = args[1];
+
+            ret.i = 0;
+            const GLXFBConfig *fbconfig = get_fbconfig(process, client_fbconfig);
+
+            if (fbconfig) {
+
+                /* Create a light-weight context just for creating surface */
+                GloContext *context = __glo_context_create(fbconfig->formatFlags);
+
+                /* glXPixmap same as input Pixmap */
+                ClientGLXDrawable client_drawable = to_drawable(args[2]);
+
+                QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+
+                /* get the width and height */
+                int width, height;
+                glo_geometry_get_from_glx((int*)args[3], &width, &height);
+
+                DEBUGF( "glXCreatePixmap: %dX%d.\n", width, height);
+                qsurface->surface = glo_surface_create(width, height, context);
+                qsurface->client_drawable = client_drawable;
+		qsurface->type = SURFACE_PIXMAP;
+                /*                qsurface->ref = 1;*/
+
+                /* Keep this surface, will link it with context in MakeCurrent */
+                if (!keep_qsurface(process, qsurface))
+                {
+                    DEBUGF( "No space to store create pixmap surface. Need call MakeCurrent to free them.\n");
+                    ret.i = 0;
+                    break;
+                }
+
+                /* If this pixmap is linked as texture previously */
+                if (link_drawable(process, client_drawable))
+                        glo_surface_as_texture(qsurface->surface);
+
+                ret.i = client_drawable;
+
+            }
+            break;
+        }
+    case glXDestroyPixmap_func:
+        {
+            break;
+        }
+    case glEGLImageTargetTexture2DOES_fake_func:
+        {
+            int target = args[0];
+            ClientGLXDrawable client_drawable = to_drawable(args[1]);
+            QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
+
+	    /* Only support GL_TEXTURE_2D according to spec */
+            if ( target == GL_TEXTURE_2D )
+                add_pixmap_texture_mapping(process->current_state,
+                        process->current_state->bindTexture2D,
+                        client_drawable);
+	    
+            if ( !qsurface )
+            {
+                if ( !keep_drawable(process, client_drawable) )
+                {
+                    DEBUGF( "No space to store drawable for ImageTargetTexture. Need call CreatePixmapSurface     to free them.\n");
+                    break;
+                }
+            }
+            else
+                glo_surface_as_texture(qsurface->surface);
+
+            break;
+        }
+
 /* Begin of texture stuff */
     case glBindTexture_func:
     case glBindTextureEXT_func:
@@ -1736,7 +2004,26 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 }
                 glBindTexture(target, server_texture);
             }
-            break;
+
+            if ( target == GL_TEXTURE_2D ) {
+                QGloSurface *qsurface = NULL;
+                ClientGLXDrawable drawable =
+                    find_pixmap_texture(process->current_state, client_texture);
+
+                if ( drawable )
+                {
+                    qsurface = find_qsurface_from_client_drawable(process, drawable);
+
+                    if ( qsurface )
+                    {
+                        glo_surface_as_texture(qsurface->surface);
+                        fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);
+                    }
+                }
+
+                process->current_state->bindTexture2D = client_texture;
+            }
+			break;
         }
 
     case glGenTextures_fake_func:
@@ -1786,7 +2073,12 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 process->current_state->tabTextures[clientTabTextures[i]] = 0;
             }
             g_free(serverTabTextures);
-            break;
+
+            for ( i = 0; i < n; i++ )
+            {
+                del_pixmap_texture_mapping(process->current_state, clientTabTextures[i]);
+            }
+	    break;
         }
 
     case glPrioritizeTextures_func:

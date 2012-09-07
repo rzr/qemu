@@ -418,6 +418,12 @@ static const int glXGetVideoSyncSGI_signature[] =
 static const int glXSwapIntervalSGI_signature[] =
     { TYPE_INT, 0, 1, TYPE_INT };
 
+static const int glXCreatePixmap_signature[] =
+    { TYPE_INT, 0, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT, TYPE_ARRAY_INT };
+
+static const int glXDestroyPixmap_signature[] =
+    { TYPE_NONE, 0, 2, TYPE_IN_IGNORED_POINTER, TYPE_INT };
+
 static const int glXBindTexImageATI_signature[] =
     { TYPE_NONE, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
 static const int glXReleaseTexImageATI_signature[] =
@@ -426,6 +432,9 @@ static const int glXBindTexImageARB_signature[] =
     { TYPE_INT, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
 static const int glXReleaseTexImageARB_signature[] =
     { TYPE_INT, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
+
+static const int glEGLImageTargetTexture2DOES_fake_signature[] =
+    { TYPE_NONE, 0, 2, TYPE_UNSIGNED_INT, TYPE_INT };
 
 /* const GLubyte * glGetString( GLenum name ) */
 static const int glGetString_signature[] =
