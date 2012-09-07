@@ -29,7 +29,6 @@
 
 package org.tizen.emulator.skin.dialog;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -43,6 +42,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
@@ -166,7 +166,9 @@ public class DetailInfoDialog extends SkinDialog {
 					return;
 				}
 
-				ProcessBuilder procBrowser = new ProcessBuilder();
+				Program.launch(openPath);
+
+				/*ProcessBuilder procBrowser = new ProcessBuilder();
 
 				if (SwtUtil.isLinuxPlatform()) {
 					procBrowser.command("nautilus", "--browser", openPath);
@@ -183,7 +185,7 @@ public class DetailInfoDialog extends SkinDialog {
 					} catch (Exception e) {
 						logger.log( Level.SEVERE, e.getMessage(), e);
 					}
-				}
+				}*/
 
 			}
 		});
