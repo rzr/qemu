@@ -104,6 +104,7 @@ static STDMETHODIMP_(ULONG) HWCGrabCallback_Release(IGrabCallback *iface)
     {
         This->m_pCallback = NULL;
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
 
@@ -166,6 +167,7 @@ typedef struct HWCInPin
     IBaseFilter *m_pCFilter;
     IPin *m_pConnectedPin;
     IGrabCallback *m_pCallback;
+    IMemAllocator *m_pAllocator;
     BOOL m_bReadOnly;
     long m_cRef;
     STDMETHODIMP (*SetGrabCallbackIF)(IPin *iface, IGrabCallback *pCaptureCB);
@@ -218,7 +220,11 @@ static STDMETHODIMP_(ULONG) HWCPin_Release(IPin *iface)
         if (This->m_pConnectedPin) {
             SAFE_RELEASE(This->m_pConnectedPin);
         }
+        if (This->m_pAllocator) {
+            SAFE_RELEASE(This->m_pAllocator);
+        }
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -406,7 +412,11 @@ static STDMETHODIMP_(ULONG) HWCMemInputPin_Release(IMemInputPin *iface)
         if (This->m_pConnectedPin) {
             SAFE_RELEASE(This->m_pConnectedPin);
         }
+        if (This->m_pAllocator) {
+            SAFE_RELEASE(This->m_pAllocator);
+        }
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -414,17 +424,46 @@ static STDMETHODIMP_(ULONG) HWCMemInputPin_Release(IMemInputPin *iface)
 
 static STDMETHODIMP HWCMemInputPin_GetAllocator(IMemInputPin *iface, IMemAllocator **ppAllocator)
 {
+    HWCInPin *This = impl_from_IMemInputPin(iface);
+
     if (ppAllocator == NULL)
         return E_POINTER;
-    return VFW_E_NO_ALLOCATOR;
+
+    if (This->m_pAllocator == NULL) {
+        HRESULT hr = CoCreateInstance(&CLSID_MemoryAllocator, NULL,
+                                        CLSCTX_INPROC_SERVER,
+                                        &IID_IMemAllocator,
+                                        (void **)&(This->m_pAllocator));
+        if (FAILED(hr)) {
+            ERR("Failed to CoCreateInstance for retrieving MemoryAllocator\n");
+            return hr;
+        }
+    }
+    ASSERT(This->m_pAllocator != NULL);
+    *ppAllocator = This->m_pAllocator;
+    IMemAllocator_AddRef(This->m_pAllocator);
+
+    return S_OK;
 }
 
 static STDMETHODIMP HWCMemInputPin_NotifyAllocator(IMemInputPin *iface, IMemAllocator *pAllocator, BOOL bReadOnly)
 {
+    HWCInPin *This = impl_from_IMemInputPin(iface);
+
     if (pAllocator == NULL)
         return E_POINTER;
 
-    return NOERROR;
+    IMemAllocator *pOldAllocator = This->m_pAllocator;
+    IMemAllocator_AddRef(pAllocator);
+    This->m_pAllocator = pAllocator;
+
+    if (pOldAllocator != NULL) {
+        SAFE_RELEASE(pOldAllocator);
+    }
+
+    This->m_bReadOnly = bReadOnly;
+
+    return S_OK;
 }
 
 static STDMETHODIMP HWCMemInputPin_GetAllocatorRequirements(IMemInputPin *iface, ALLOCATOR_PROPERTIES *pProps)
@@ -539,6 +578,7 @@ static STDMETHODIMP HWCInPin_Construct(IBaseFilter *pFilter, IPin **ppv)
     HWCInPin *This = (HWCInPin *)g_malloc0(sizeof(HWCInPin));
 
     if (!This) {
+        ERR("failed to HWCInPin_Construct, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -548,6 +588,7 @@ static STDMETHODIMP HWCInPin_Construct(IBaseFilter *pFilter, IPin **ppv)
     This->m_pCFilter = pFilter;
     This->m_pConnectedPin = NULL;
     This->m_pCallback = NULL;
+    This->m_pAllocator = NULL;
     This->m_cRef = 1;
     This->SetGrabCallbackIF = HWCPin_SetCallback;
     *ppv = &This->IPin_iface;
@@ -605,6 +646,7 @@ static STDMETHODIMP_(ULONG) HWCEnumPins_Release(IEnumPins *iface)
         }
         This->m_nPos = 0;
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -661,6 +703,7 @@ static STDMETHODIMP HWCEnumPins_Clone(IEnumPins *iface, IEnumPins **ppEnum)
 
     HWCEnumPins_Construct(This->m_pFilter, This->m_nPos, ppEnum);
     if (*ppEnum == NULL) {
+        ERR("failed to HWCEnumPins_Construct in clone, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -684,6 +727,7 @@ static STDMETHODIMP HWCEnumPins_Construct(IBaseFilter *pFilter, int nPos, IEnumP
     HWCEnumPins *This = (HWCEnumPins *)g_malloc0(sizeof(HWCEnumPins));
 
     if (!This) {
+        ERR("failed to HWCEnumPins_Construct, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -752,6 +796,7 @@ static STDMETHODIMP_(ULONG) HWCFilter_Release(IBaseFilter *iface)
             SAFE_RELEASE(This->m_pPin);
         }
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -897,6 +942,7 @@ static STDMETHODIMP HWCFilter_Construct(IBaseFilter **ppv)
     HWCFilter *This = (HWCFilter *)g_malloc0(sizeof(HWCFilter));
 
     if (!This) {
+        ERR("failed to HWCFilter_Construct, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -1101,9 +1147,11 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
         qemu_mutex_unlock(&g_state->thread_mutex);
         return S_OK;
     }
-    g_state->req_frame = 0; /* clear request */
-    g_state->isr |= 0x01; /* set a flag raising a interrupt. */
-    qemu_bh_schedule(g_state->tx_bh);
+    if (g_state->streamon) {
+        g_state->req_frame = 0; /* clear request */
+        g_state->isr |= 0x01;   /* set a flag of rasing a interrupt */
+        qemu_bh_schedule(g_state->tx_bh);
+    }
     qemu_mutex_unlock(&g_state->thread_mutex);
     return S_OK;
 }
@@ -1669,6 +1717,9 @@ void marucam_device_start_preview(MaruCamState* state)
     pixfmt = supported_dst_pixfmts[cur_fmt_idx].fmt;
     state->buf_size = get_sizeimage(pixfmt, width, height);
 
+    INFO("Pixfmt(0x%x), Width:Height(%d:%d), buffer size(%u)\n",
+         pixfmt, width, height, state->buf_size);
+
     assert(g_pCallback != NULL);
     hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, g_pCallback);
     if (FAILED(hr)) {
@@ -1698,12 +1749,9 @@ void marucam_device_stop_preview(MaruCamState* state)
     MaruCamParam *param = state->param;
     param->top = 0;
 
-    hr = g_pMediaControl->lpVtbl->Stop(g_pMediaControl);
-    if (FAILED(hr)) {
-        ERR("Failed to stop media control.\n");
-        param->errCode = EINVAL;
-        return;
-    }
+    qemu_mutex_lock(&state->thread_mutex);
+    state->streamon = 0;
+    qemu_mutex_unlock(&state->thread_mutex);
 
     hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, NULL);
     if (FAILED(hr)) {
@@ -1712,9 +1760,13 @@ void marucam_device_stop_preview(MaruCamState* state)
         return;
     }
 
-    qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 0;
-    qemu_mutex_unlock(&state->thread_mutex);
+    hr = g_pMediaControl->lpVtbl->Stop(g_pMediaControl);
+    if (FAILED(hr)) {
+        ERR("Failed to stop media control.\n");
+        param->errCode = EINVAL;
+        return;
+    }
+
     state->buf_size = 0;
 
     INFO("Stop preview!!!\n");
