@@ -365,18 +365,16 @@ int marucam_device_check(void)
     struct v4l2_capability cap;
 
     if (stat(dev_name, &st) < 0) {
-        ERR("Cannot identify '%s': %s\n", dev_name, strerror(errno));
-        return 0;
-    }
-
-    if (!S_ISCHR(st.st_mode)) {
-        ERR("%s is no device.\n", dev_name);
-        return 0;
+        INFO("<WARNING>Cannot identify '%s': %s\n", dev_name, strerror(errno));
+    } else {
+        if (!S_ISCHR(st.st_mode)) {
+            INFO("<WARNING>%s is no character device.\n", dev_name);
+        }
     }
 
     tmp_fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
     if (tmp_fd < 0) {
-        ERR("camera device open failed.(%s)\n", dev_name);
+        ERR("Camera device open failed.(%s)\n", dev_name);
         return 0;
     }
     if (ioctl(tmp_fd, VIDIOC_QUERYCAP, &cap) < 0) {
