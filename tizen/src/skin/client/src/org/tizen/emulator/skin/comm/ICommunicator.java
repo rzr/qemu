@@ -91,7 +91,9 @@ public interface ICommunicator extends Runnable {
 	public enum MouseEventType {
 		DOWN( (short)1 ),
 		UP( (short)2 ),
-		DRAG( (short)3 );
+		DRAG( (short)3 ),
+       WHEELUP( (short)4 ),
+       WHEELDOWN( (short)5 );
 
 		private short value;
 		MouseEventType( short value ) {

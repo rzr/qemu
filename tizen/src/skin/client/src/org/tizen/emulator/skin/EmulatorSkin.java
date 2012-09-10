@@ -52,6 +52,7 @@ import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.events.MouseTrackListener;
+import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -175,6 +176,7 @@ public class EmulatorSkin {
 	//private DragDetectListener canvasDragDetectListener;
 	private MouseMoveListener canvasMouseMoveListener;
 	private MouseListener canvasMouseListener;
+	private MouseWheelListener canvasMouseWheelListener;
 	private KeyListener canvasKeyListener;
 	private MenuDetectListener canvasMenuDetectListener;
 
@@ -891,6 +893,29 @@ public class EmulatorSkin {
 		};
 
 		canvas.addMouseListener( canvasMouseListener );
+       canvasMouseWheelListener = new MouseWheelListener() {
+			 
+			@Override
+			public void mouseScrolled(MouseEvent e) {
+				int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
+						currentScale, currentAngle );
+				logger.info( "mousewheel in LCD" + " x:" + geometry[0] + " y:" + geometry[1] + " value:" + e.count);
+				int eventType;
+				
+				if(e.count < 0)
+					eventType = MouseEventType.WHEELDOWN.value();
+				else
+					eventType = MouseEventType.WHEELUP.value();
+				
+				MouseEventData mouseEventData = new MouseEventData( MouseButtonType.WHEEL.value(), eventType, 
+							e.x, e.y, geometry[0], geometry[1], e.count );
+					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
+			}
+		};	
+		
+		canvas.addMouseWheelListener( canvasMouseWheelListener );
+
+
 
 		canvasKeyListener = new KeyListener() {
 			
@@ -998,6 +1023,9 @@ public class EmulatorSkin {
 		}
 		if ( null != canvasMenuDetectListener ) {
 			lcdCanvas.removeMenuDetectListener( canvasMenuDetectListener );
+		}
+       if ( null != canvasMouseWheelListener ) {
+			lcdCanvas.removeMouseWheelListener( canvasMouseWheelListener );
 		}
 
 	}

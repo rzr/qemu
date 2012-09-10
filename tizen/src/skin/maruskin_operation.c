@@ -68,6 +68,7 @@ MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 #define TIMEOUT_FOR_SHUTDOWN 10 // seconds
 
 static int requested_shutdown_qemu_gracefully = 0;
+static int guest_x, guest_y = 0;
 
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
@@ -105,14 +106,37 @@ void do_mouse_event(int button_type, int event_type,
 #endif
 
     /* single touch */
-    if (MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
-        kbd_mouse_event(x, y, z, 1);
-    } else if (MOUSE_UP == event_type) {
-        kbd_mouse_event(x, y, z, 0);
-    } else {
-        ERR("undefined mouse event type:%d\n", event_type);
+    switch(event_type) {
+        case MOUSE_DOWN:
+        case MOUSE_DRAG:
+            guest_x = x;
+            guest_y = y;
+            kbd_mouse_event(x, y, z, 1);
+            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
+            event_type, origin_x, origin_y, x, y, z);
+            break;
+        case MOUSE_UP:
+            guest_x = x;
+            guest_y = y;
+            kbd_mouse_event(x, y, z, 0);
+            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
+            event_type, origin_x, origin_y, x, y, z);
+            break;
+        case MOUSE_WHEELUP:
+        case MOUSE_WHEELDOWN:
+            x -= guest_x;
+            y -= guest_y;
+            guest_x += x;
+            guest_y += y;
+            kbd_mouse_event(x, y, -z, event_type);
+            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
+            event_type, origin_x, origin_y, x, y, z);
+            break;
+        default:
+            ERR("undefined mouse event type passed:%d\n", event_type);
+            break;
     }
-
+   
 #if 0
 #ifdef CONFIG_WIN32
     Sleep(1);

@@ -50,6 +50,8 @@ enum {
     MOUSE_DOWN = 1,
     MOUSE_UP = 2,
     MOUSE_DRAG = 3,
+    MOUSE_WHEELUP = 4,
+    MOUSE_WHEELDOWN = 5,
 };
 
 /* keep it consistent with emulator-skin definition */
