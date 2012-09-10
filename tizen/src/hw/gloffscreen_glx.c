@@ -223,7 +223,7 @@ static void glo_surface_try_alloc_xshm_image(GloSurface *surface) {
 /* Update the context in surface and free previous light-weight context */
 void glo_surface_update_context(GloSurface *surface, GloContext *context)
 {
-    if ( surface->context )
+    if ( surface->context && (surface->context->context == 0))
         qemu_free(surface->context);
     surface->context = context;
 }
