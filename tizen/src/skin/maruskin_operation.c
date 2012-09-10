@@ -146,9 +146,12 @@ void do_mouse_event(int button_type, int event_type,
 #endif
 }
 
-void do_key_event( int event_type, int keycode, int key_location )
+void do_key_event(int event_type, int keycode, int state_mask, int key_location)
 {
-    TRACE( "key_event event_type:%d, keycode:%d, key_location:%d\n", event_type, keycode, key_location );
+    int scancode = -1;
+
+    TRACE("key_event event_type:%d, keycode:%d, state_mask:%d, key_location:%d\n",
+        event_type, keycode, state_mask, key_location);
 
 #ifndef USE_SHM
     //is multi-touch mode ?
@@ -156,26 +159,26 @@ void do_key_event( int event_type, int keycode, int key_location )
         if (keycode == JAVA_KEYCODE_BIT_CTRL) {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 1;
-                INFO("multi-touch enabled = A\n");
+                INFO("1)multi-touch enabled = A\n");
             } else if (KEY_RELEASED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 0;
                 clear_finger_slot();
-                INFO("multi-touch disabled\n");
+                INFO("1)multi-touch disabled\n");
             }
         } else if (keycode == (JAVA_KEYCODE_NO_FOCUS | JAVA_KEYCODE_BIT_CTRL)) {
             //release ctrl key when dragging
             if (KEY_RELEASED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 0;
                 clear_finger_slot();
-                INFO("multi-touch disabled\n");
+                INFO("2)multi-touch disabled\n");
             }
         } else if (keycode == (JAVA_KEYCODE_BIT_SHIFT | JAVA_KEYCODE_BIT_CTRL)) {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 2;
-                INFO("multi-touch enabled = B\n");
+                INFO("2)multi-touch enabled = B\n");
             } else if (KEY_RELEASED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 1;
-                INFO("multi-touch enabled = A\n");
+                INFO("2)multi-touch enabled = A\n");
             }
         }
     }
@@ -185,7 +188,7 @@ void do_key_event( int event_type, int keycode, int key_location )
         return;
     }
 
-    int scancode = javakeycode_to_scancode(keycode, event_type, key_location);
+    scancode = javakeycode_to_scancode(event_type, keycode, state_mask, key_location);
     TRACE("javakeycode_to_scancode : %d\n", scancode);
 
     if (scancode == -1) {

@@ -664,6 +664,7 @@ static void* run_skin_server( void* args ) {
                     /* keep it consistent with emulator-skin definition */
                     int event_type = 0;
                     int keycode = 0;
+                    int state_mask = 0;
                     int key_location = 0;
 
                     char* p = recvbuf;
@@ -671,13 +672,16 @@ static void* run_skin_server( void* args ) {
                     p += sizeof( event_type );
                     memcpy( &keycode, p, sizeof( keycode ) );
                     p += sizeof( keycode );
+                    memcpy( &state_mask, p, sizeof( state_mask ) );
+                    p += sizeof( state_mask );
                     memcpy( &key_location, p, sizeof( key_location ) );
 
                     event_type = ntohl( event_type );
                     keycode = ntohl( keycode );
+                    state_mask = ntohl( state_mask );
                     key_location = ntohl( key_location );
 
-                    do_key_event( event_type, keycode, key_location );
+                    do_key_event(event_type, keycode, state_mask, key_location);
                     break;
                 }
                 case RECV_HARD_KEY_EVENT: {

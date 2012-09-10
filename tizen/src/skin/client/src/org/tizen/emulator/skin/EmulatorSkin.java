@@ -655,7 +655,8 @@ public class EmulatorSkin {
 
 						SkinUtil.trimShell( shell, currentImage );
 
-						KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, 0 );
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.RELEASED.value(), keyCode, 0, 0);
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
 
@@ -711,7 +712,8 @@ public class EmulatorSkin {
 							});
 						}
 
-						KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, 0 );
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.PRESSED.value(), keyCode, 0, 0);
 						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
 				}
@@ -922,60 +924,70 @@ public class EmulatorSkin {
 			private KeyEvent previous;
 			private boolean disappearEvent = false;
 			private int disappearKeycode = 0;
+			private int disappearStateMask = 0;
 			private int disappearKeyLocation = 0;
 
 			@Override
 			public void keyReleased( KeyEvent e ) {
-				if( logger.isLoggable( Level.INFO ) ) {
+				if ( logger.isLoggable( Level.INFO ) ) {
 					logger.info( "'" + e.character + "':" + e.keyCode + ":" + e.stateMask + ":" + e.keyLocation );
-				}else if( logger.isLoggable( Level.FINE ) ) {
+				} else if ( logger.isLoggable( Level.FINE ) ) {
 					logger.fine( e.toString() );
 				}
-				int keyCode = e.keyCode | e.stateMask;
+				int keyCode = e.keyCode;
+				int stateMask = e.stateMask;
 
 				previous = null;
-				
+
 				if( SwtUtil.isWindowsPlatform() && disappearEvent) {
 					disappearEvent = false;
 					if (isMetaKey(e) && e.character != '\0') {
 						logger.info( "send previous release : keycode=" + disappearKeycode +
-								", disappearKeyLocation=" + disappearKeyLocation);
+								", stateMask=" + disappearStateMask + ", keyLocation=" + disappearKeyLocation);
 
 						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), disappearKeycode, disappearKeyLocation );
-						communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+								KeyEventType.RELEASED.value(),
+								disappearKeycode, disappearStateMask, disappearKeyLocation);
+						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
 
 						disappearKeycode = 0;
+						disappearStateMask = 0;
 						disappearKeyLocation = 0;
 					}
 				}
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), keyCode, e.keyLocation );
-				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+
+				KeyEventData keyEventData = new KeyEventData(
+						KeyEventType.RELEASED.value(), keyCode, stateMask, e.keyLocation);
+				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
 			}
 
 			@Override
 			public void keyPressed( KeyEvent e ) {
-				int keyCode = e.keyCode | e.stateMask;
-				
-				if( SwtUtil.isWindowsPlatform() ) {
-					if ( null != previous ) {
-						if ( previous.keyCode != e.keyCode ) {
+				int keyCode = e.keyCode;
+				int stateMask = e.stateMask;
 
-							if ( isMetaKey( previous ) ) {
+				if( SwtUtil.isWindowsPlatform() ) {
+					if (null != previous) {
+						if (previous.keyCode != e.keyCode) {
+
+							if (isMetaKey(previous)) {
 								disappearEvent = true;
 								disappearKeycode = keyCode;
+								disappearStateMask = stateMask;
 								disappearKeyLocation = e.keyLocation;
 							} else {
-								int previousKeyCode = previous.keyCode | previous.stateMask;
-								
+								int previousKeyCode = previous.keyCode;
+								int previousStateMask = previous.stateMask;
+
 								if ( logger.isLoggable( Level.INFO ) ) {
 									logger.info( "send previous release : '" + previous.character + "':"
 											+ previous.keyCode + ":" + previous.stateMask + ":" + previous.keyLocation );
 								} else if ( logger.isLoggable( Level.FINE ) ) {
 									logger.fine( "send previous release :" + previous.toString() );
 								}
-								KeyEventData keyEventData = new KeyEventData( KeyEventType.RELEASED.value(), previousKeyCode,
-										previous.keyLocation );
+
+								KeyEventData keyEventData = new KeyEventData(KeyEventType.RELEASED.value(),
+										previousKeyCode, previousStateMask, previous.keyLocation);
 								communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 							}
 
@@ -990,7 +1002,9 @@ public class EmulatorSkin {
 				} else if ( logger.isLoggable( Level.FINE ) ) {
 					logger.fine( e.toString() );
 				}
-				KeyEventData keyEventData = new KeyEventData( KeyEventType.PRESSED.value(), keyCode, e.keyLocation );
+
+				KeyEventData keyEventData = new KeyEventData(
+						KeyEventType.PRESSED.value(), keyCode, stateMask, e.keyLocation);
 				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
 			}
 
@@ -1000,13 +1014,15 @@ public class EmulatorSkin {
 
 	}
 
-	private boolean isMetaKey( KeyEvent event ) {
-		if( SWT.CTRL == event.keyCode || SWT.ALT == event.keyCode || SWT.SHIFT == event.keyCode ) {
+	private boolean isMetaKey(KeyEvent event) {
+		if (SWT.CTRL == event.keyCode ||
+				SWT.ALT == event.keyCode ||
+				SWT.SHIFT == event.keyCode) {
 			return true;
 		}
 		return false;
 	}
-	
+
 	private void removeCanvasListeners() {
 
 //		if ( null != canvasDragDetectListener ) {

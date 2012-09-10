@@ -230,6 +230,7 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['?'] = 53 | SHIFT,
 };
 
-int javakeycode_to_scancode(int java_keycode, int event_type, int key_location);
+int javakeycode_to_scancode(
+    int event_type, int java_keycode, int state_mask, int key_location);
 
 #endif /* MARUSKIN_KEYMAP_H_ */

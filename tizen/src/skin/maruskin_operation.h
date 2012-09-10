@@ -51,32 +51,32 @@ void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, do
 
 void do_mouse_event(int button_type, int event_type, int origin_x, int origin_y, int x, int y, int z);
 
-void do_key_event( int event_type, int keycode, int key_location );
+void do_key_event(int event_type, int keycode, int state_mask, int key_location);
 
-void do_hardkey_event( int event_type, int keycode );
+void do_hardkey_event(int event_type, int keycode);
 
-void do_scale_event( double scale_factor);
+void do_scale_event(double scale_factor);
 
-void do_rotation_event( int rotation_type );
+void do_rotation_event(int rotation_type);
 
-QemuSurfaceInfo* get_screenshot_info( void );
+QemuSurfaceInfo *get_screenshot_info(void);
 
-DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv );
+DetailInfo *get_detail_info(int qemu_argc, char **qemu_argv);
 
-void free_detail_info( DetailInfo* detail_info );
+void free_detail_info(DetailInfo *detail_info);
 
-void free_screenshot_info( QemuSurfaceInfo* );
+void free_screenshot_info(QemuSurfaceInfo *);
 
 void open_shell(void);
 
-void onoff_usb_kbd( int on );
+void onoff_usb_kbd(int on);
 
 void ram_dump(void);
 
-void request_close( void );
+void request_close(void);
 
-void shutdown_qemu_gracefully( void );
+void shutdown_qemu_gracefully(void);
 
-int is_requested_shutdown_qemu_gracefully( void );
+int is_requested_shutdown_qemu_gracefully(void);
 
 #endif /* MARUSKIN_OPERATION_H_ */
