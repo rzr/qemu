@@ -653,7 +653,9 @@ public class EmulatorSkin {
 							}
 						}
 
-						SkinUtil.trimShell( shell, currentImage );
+						if (keyCode != 101) { // TODO: not necessary for home key
+							SkinUtil.trimShell(shell, currentImage);
+						}
 
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), keyCode, 0, 0);
@@ -672,7 +674,7 @@ public class EmulatorSkin {
 
 					EmulatorSkin.this.isMousePressed = true;
 
-					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
+					final int keyCode = SkinUtil.getHardKeyCode(e.x, e.y, currentRotationId, currentScale);
 
 					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
 						shell.setToolTipText(null);
@@ -702,8 +704,11 @@ public class EmulatorSkin {
 
 											gc.dispose();
 
-											SkinUtil.trimShell(shell, currentKeyPressedImage,
-												currentPressedRegion.x, currentPressedRegion.y, currentPressedRegion.width, currentPressedRegion.height);
+											if (keyCode != 101) { // TODO: not necessary for home key
+												SkinUtil.trimShell(shell, currentKeyPressedImage,
+														currentPressedRegion.x, currentPressedRegion.y,
+														currentPressedRegion.width, currentPressedRegion.height);
+											}
 
 											currentPressedRegion = null;
 										}
