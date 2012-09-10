@@ -195,6 +195,8 @@ usb_redir=""
 opengl=""
 opengles="no"
 efence="no"
+yagl="no"
+yagl_stats="no"
 glesincdir=""
 gleslibdir=""
 zlib="yes"
@@ -828,6 +830,14 @@ for opt do
   ;;
   --disable-efence) efence="no"
   ;;
+  --enable-yagl) yagl="yes"
+  ;;
+  --disable-yagl) yagl="no"
+  ;;
+  --enable-yagl-stats) yagl_stats="yes"
+  ;;
+  --disable-yagl-stats) yagl_stats="no"
+  ;;
   --glesincdir=*) glesincdir="$optarg"
   ;;
   --gleslibdir=*) gleslibdir="$optarg"
@@ -1156,6 +1166,10 @@ echo "                           Available for targets: ARM"
 echo "  --disable-opengles       disable OpenGL ES 2.0 passthrough device compilation"
 echo "  --enable-efence          enable Electic Fence"
 echo "  --disable-efence         disable Electic Fence"
+echo "  --enable-yagl            enable YaGL device"
+echo "  --disable-yagl           disable YaGL device"
+echo "  --enable-yagl-stats      enable YaGL stats"
+echo "  --disable-yagl-stats     disable YaGL stats"
 echo "  --glesincdir=PATH        search for EGL and GLES headers in PATH"
 echo "  --gleslibdir=PATH        search for EGL and GLES libs in PATH"
 echo "  --disable-smartcard      disable smartcard support"
@@ -3122,6 +3136,8 @@ if test "$opengles" = "yes"; then
   echo "OpenGLES debug    $debug_gles"
 fi
 echo "EFence support    $efence"
+echo "YaGL support      $yagl"
+echo "YaGL stats        $yagl_stats"
 echo "libiscsi support  $libiscsi"
 echo "build guest agent $guest_agent"
 echo "coroutine backend $coroutine_backend"
@@ -3416,6 +3432,14 @@ fi
 
 if test "$efence" = "yes" ; then
   echo "CONFIG_EFENCE=y" >> $config_host_mak
+fi
+
+if test "$yagl" = "yes" ; then
+  echo "CONFIG_YAGL=y" >> $config_host_mak
+fi
+
+if test "$yagl_stats" = "yes" ; then
+  echo "CONFIG_YAGL_STATS=y" >> $config_host_mak
 fi
 
 if test "$smartcard" = "yes" ; then
@@ -3993,6 +4017,10 @@ fi
 if test "$efence" = "yes" ; then
   echo "CONFIG_BUILD_WITH_EFENCE=y" >> $config_target_mak
   echo "LIBS+=-lefence" >> $config_target_mak
+fi
+
+if test "$yagl" = "yes" ; then
+  echo "CONFIG_BUILD_YAGL=y" >> $config_target_mak
 fi
 
 for i in $ARCH $TARGET_BASE_ARCH ; do

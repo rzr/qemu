@@ -413,6 +413,97 @@ include $(SRC_PATH)/tizen/src/Makefile.tizen
 endif
 ##
 
+ifdef CONFIG_BUILD_YAGL
+
+# YaGL
+QEMU_CFLAGS += -I$(SRC_PATH)/hw/yagl_inc
+
+$(call set-vpath, $(SRC_PATH)/hw/yagl_apis/egl: \
+                  $(SRC_PATH)/hw/yagl_apis/gles: \
+                  $(SRC_PATH)/hw/yagl_apis/gles1: \
+                  $(SRC_PATH)/hw/yagl_apis/gles2: \
+                  $(SRC_PATH)/hw/yagl_drivers/egl_glx: \
+                  $(SRC_PATH)/hw/yagl_drivers/gles_ogl: \
+                  $(SRC_PATH)/hw/yagl_drivers/gles1_ogl: \
+                  $(SRC_PATH)/hw/yagl_drivers/gles2_ogl)
+
+obj-$(TARGET_BASE_ARCH)-y += yagl_device.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_log.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_process.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_thread.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_server.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_ref.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_mem.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_mem_egl.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_mem_gl.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_event.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_handle_gen.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_dyn_lib.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_api.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_vector.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_avl.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_range_list.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_driver.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_driver.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles1_driver.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_driver.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_interface.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_client_interface.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_client_context.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_resource.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_resource_list.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_object.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_namespace.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_sharegroup.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_stats.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_compiled_transfer.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_native_config.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_surface_attribs.o
+# EGL api
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_api.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_api_ps.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_api_ts.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_calls.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_display.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_config.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_surface.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_context.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_validate.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_host_egl_calls.o
+# GLES common api
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_context.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_array.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_buffer.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_texture.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_framebuffer.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_renderbuffer.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_texture_unit.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_validate.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_host_gles_calls.o
+# GLESv1_CM api
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles1_calls.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_host_gles1_calls.o
+# GLESv2 api
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_api.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_api_ps.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_api_ts.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_calls.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_context.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_shader.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_program.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_validate.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_host_gles2_calls.o
+# EGL GLX driver
+obj-$(TARGET_BASE_ARCH)-y += yagl_egl_glx.o
+# GLES OpenGL common driver
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles_ogl.o
+# GLESv1_CM OpenGL driver
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles1_ogl.o
+# GLESv2 OpenGL driver
+obj-$(TARGET_BASE_ARCH)-y += yagl_gles2_ogl.o
+
+endif
+
 ifdef CONFIG_BUILD_GLES
 
 gles2.o: gles2.c gles2.h

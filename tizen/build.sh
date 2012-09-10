@@ -7,6 +7,7 @@ CONFIGURE_APPEND=""
 EMUL_TARGET_LIST=""
 VIRTIOGL_EN=""
 OPENGLES_EN=""
+YAGL_EN=""
 
 usage() {
     echo "usage: build.sh [options] [target]"
@@ -23,6 +24,8 @@ usage() {
     echo "    enable virtio GL support"
     echo "-gles|--opengles"
     echo "    enable openGLES passthrough device"
+    echo "-yagl|--yagl-device"
+    echo "    enable YaGL passthrough device"
     echo "-e|--extra"
     echo "    extra options for QEMU configure"
     echo "-u|-h|--help|--usage"
@@ -59,6 +62,21 @@ opengles_enable() {
   esac
 }
 
+yagl_enable() {
+  case "$1" in
+  0|no|disable)
+    YAGL_EN="no"
+  ;;
+  1|yes|enable)
+    YAGL_EN="yes"
+  ;;
+  *)
+    usage
+    exit 1
+  ;;
+  esac
+}
+
 set_target() {
   if [ ! -z "$EMUL_TARGET_LIST" ] ; then
       usage
@@ -75,7 +93,7 @@ set_target() {
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
     if [ -z "$OPENGLES_EN" ] ; then
-      opengles_enable yes
+      yagl_enable yes
     fi
   ;;
   all)
@@ -84,7 +102,7 @@ set_target() {
       virtgl_enable yes
     fi
     if [ -z "$OPENGLES_EN" ] ; then
-      opengles_enable yes
+      yagl_enable yes
     fi
   ;;
   esac
@@ -113,6 +131,10 @@ do
     -gles|--opengles)
         shift
         opengles_enable $1
+    ;;
+    -yagl|--yagl-device)
+        shift
+        yagl_enable $1
     ;;
     -u|-h|--help|--usage)
         usage
@@ -160,6 +182,12 @@ if test "$OPENGLES_EN" = "yes" ; then
   CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-opengles"
 else
   CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-opengles"
+fi
+
+if test "$YAGL_EN" = "yes" ; then
+  CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-yagl"
+else
+  CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-yagl"
 fi
 
 echo $CONFIGURE_SCRIPT $CONFIGURE_APPEND

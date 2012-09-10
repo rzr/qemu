@@ -317,6 +317,9 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 		codec_init(pci_bus);        
     }
 #endif
+#ifdef CONFIG_YAGL
+    pci_create_simple(pci_bus, -1, "yagl");
+#endif
 }
 
 static void maru_x86_board_init(ram_addr_t ram_size,
