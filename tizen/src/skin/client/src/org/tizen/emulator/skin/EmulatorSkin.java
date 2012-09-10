@@ -1769,7 +1769,9 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
 				if ( !communicator.isSensorDaemonStarted() ) {
-					SkinUtil.openMessage( shell, null, "SDB is not ready.\nPlease, wait.", SWT.ICON_WARNING, config );
+					SkinUtil.openMessage(shell, null,
+							"SDB is not ready.\nPlease wait until the emulator is completely boot up.",
+							SWT.ICON_WARNING, config);
 					return;
 				}
 
@@ -2054,6 +2056,16 @@ public class EmulatorSkin {
 		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
+				if (!communicator.isSensorDaemonStarted()) {
+					SkinUtil.openMessage(shell, null,
+							"USB is not ready.\nPlease wait until the emulator is completely boot up.",
+							SWT.ICON_WARNING, config);
+					usbOnItem.setSelection(isOnUsbKbd);
+					usbOffItem.setSelection(!isOnUsbKbd);
+
+					return;
+				}
+
 				MenuItem item = (MenuItem) e.getSource();
 				if ( item.getSelection() ) {
 					boolean on = item.equals( usbOnItem );
