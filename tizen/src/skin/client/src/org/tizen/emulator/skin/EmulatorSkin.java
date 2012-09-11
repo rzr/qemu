@@ -643,7 +643,8 @@ public class EmulatorSkin {
 					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
 					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
-						// null check : prevent from mouse up without a hover (ex. doing always on top in hardkey area)
+						/* null check : prevent from mouse up without a hover
+						ex. doing always on top in hardkey area */
 						if ( null != currentHoverRegion ) {
 							if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
 								shell.redraw();
@@ -653,8 +654,10 @@ public class EmulatorSkin {
 							}
 						}
 
+						SkinRegion region = SkinUtil.getHardKeyArea(e.x, e.y, currentRotationId, currentScale);
 						if (keyCode != 101) { // TODO: not necessary for home key
-							SkinUtil.trimShell(shell, currentImage);
+							SkinUtil.trimShell(shell, currentImage,
+									region.x, region.y, region.width, region.height);
 						}
 
 						KeyEventData keyEventData = new KeyEventData(
