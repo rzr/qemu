@@ -36,8 +36,8 @@ typedef enum
 
 struct yagl_thread_state;
 
-typedef void (*yagl_api_func)(struct yagl_thread_state */*ts*/,
-                              uint8_t */*out_buff*/,
-                              uint8_t */*in_buff*/);
+typedef uint8_t *(*yagl_api_func)(struct yagl_thread_state */*ts*/,
+                                  uint8_t */*out_buff*/,
+                                  uint8_t */*in_buff*/);
 
 #endif

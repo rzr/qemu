@@ -4,12 +4,6 @@
 #include "yagl_types.h"
 #include "exec-memory.h"
 
-typedef enum
-{
-    yagl_command_id_call = 1,
-    yagl_command_id_ret  = 2,
-} yagl_command_id;
-
 /*
  * All marshalling/unmarshalling must be done with 8-byte alignment,
  * since this is the maximum alignment possible. This way we can
@@ -21,9 +15,9 @@ typedef enum
 /*
  * Each marshalled value is aligned
  * at 8-byte boundary and there may be maximum
- * 3 values returned (yagl_command_id_ret response)
+ * 2 values returned (status and return value)
  */
-#define YAGL_MARSHAL_MAX_RESPONSE (8 * 3)
+#define YAGL_MARSHAL_MAX_RESPONSE (8 * 2)
 
 static __inline int yagl_marshal_skip(uint8_t** buff)
 {
@@ -102,7 +96,6 @@ static __inline yagl_host_handle yagl_marshal_get_host_handle(uint8_t** buff)
 #define yagl_marshal_get_uint32_t(buff) yagl_marshal_get_uint32(buff)
 #define yagl_marshal_put_int(buff, value) yagl_marshal_put_int32(buff, (value))
 #define yagl_marshal_get_int(buff) yagl_marshal_get_int32(buff)
-#define yagl_marshal_get_command_id(buff) yagl_marshal_get_uint32(buff)
 #define yagl_marshal_get_pid(buff) yagl_marshal_get_uint32(buff)
 #define yagl_marshal_get_tid(buff) yagl_marshal_get_uint32(buff)
 #define yagl_marshal_get_api_id(buff) yagl_marshal_get_uint32(buff)

@@ -16,6 +16,8 @@
 
 #define YAGL_MEM_SIZE 0x1000
 
+#define YAGL_BUFF_SIZE 0x1000
+
 #define YAGL_MAX_USERS (YAGL_MEM_SIZE / YAGL_REGS_SIZE)
 
 struct yagl_user
@@ -33,8 +35,7 @@ typedef struct YaGLState
     struct yagl_user users[YAGL_MAX_USERS];
 
     /*
-     * TARGET_PAGE_SIZE byte buffer to hold the response since we can't
-     * 'cpu_physical_memory_map' for both read and write.
+     * YAGL_MARSHAL_MAX_RESPONSE byte buffer to hold the response.
      */
     uint8_t *in_buff;
 } YaGLState;
@@ -47,7 +48,7 @@ static void yagl_device_operate(YaGLState *s,
 {
     yagl_pid target_pid;
     yagl_tid target_tid;
-    target_phys_addr_t buff_len = TARGET_PAGE_SIZE;
+    target_phys_addr_t buff_len = YAGL_BUFF_SIZE;
     uint8_t *buff = NULL, *tmp = NULL;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_device_operate,
@@ -72,7 +73,7 @@ static void yagl_device_operate(YaGLState *s,
 
         buff = cpu_physical_memory_map(buff_pa, &buff_len, false);
 
-        if (!buff || (buff_len != TARGET_PAGE_SIZE)) {
+        if (!buff || (buff_len != YAGL_BUFF_SIZE)) {
             YAGL_LOG_CRITICAL("cpu_physical_memory_map(read) failed for user %d, buff_ptr = 0x%X",
                               user_index,
                               (uint32_t)buff_pa);
@@ -100,13 +101,13 @@ static void yagl_device_operate(YaGLState *s,
                                       buff,
                                       s->in_buff)) {
             cpu_physical_memory_unmap(buff,
-                                      TARGET_PAGE_SIZE,
+                                      YAGL_BUFF_SIZE,
                                       0,
-                                      TARGET_PAGE_SIZE);
+                                      YAGL_BUFF_SIZE);
 
             buff = cpu_physical_memory_map(buff_pa, &buff_len, true);
 
-            if (!buff || (buff_len != TARGET_PAGE_SIZE)) {
+            if (!buff || (buff_len != YAGL_BUFF_SIZE)) {
                 YAGL_LOG_CRITICAL("cpu_physical_memory_map(write) failed for user %d, buff_ptr = 0x%X",
                                   user_index,
                                   (uint32_t)buff_pa);
@@ -138,9 +139,9 @@ static void yagl_device_operate(YaGLState *s,
 out:
     if (buff) {
         cpu_physical_memory_unmap(buff,
-                                  TARGET_PAGE_SIZE,
+                                  YAGL_BUFF_SIZE,
                                   0,
-                                  TARGET_PAGE_SIZE);
+                                  YAGL_BUFF_SIZE);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -148,8 +149,9 @@ out:
 
 static void yagl_device_trigger(YaGLState *s, int user_index)
 {
-    target_phys_addr_t buff_len = TARGET_PAGE_SIZE;
+    target_phys_addr_t buff_len = YAGL_BUFF_SIZE;
     uint8_t *buff = NULL;
+    uint8_t *current_buff;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_device_trigger, "%d", user_index);
 
@@ -162,33 +164,49 @@ static void yagl_device_trigger(YaGLState *s, int user_index)
                                    &buff_len,
                                    false);
 
-    if (!buff || (buff_len != TARGET_PAGE_SIZE)) {
+    if (!buff || (buff_len != YAGL_BUFF_SIZE)) {
         YAGL_LOG_CRITICAL("cpu_physical_memory_map(read) failed for user %d, buff_ptr = 0x%X",
                           user_index,
                           (uint32_t)s->users[user_index].buff_pa);
         goto out;
     }
 
-    yagl_server_dispatch(s->ss,
-                         s->users[user_index].process_id,
-                         s->users[user_index].thread_id,
-                         buff,
-                         s->in_buff);
+    current_buff = buff;
 
-    cpu_physical_memory_unmap(buff,
-                              TARGET_PAGE_SIZE,
-                              0,
-                              TARGET_PAGE_SIZE);
+    while (true) {
+        uint8_t *tmp;
 
-    buff = cpu_physical_memory_map(s->users[user_index].buff_pa,
-                                   &buff_len,
-                                   true);
+        if (current_buff >= (buff + YAGL_BUFF_SIZE)) {
+            YAGL_LOG_CRITICAL("batch passes the end of buffer, protocol error");
 
-    if (!buff || (buff_len != TARGET_PAGE_SIZE)) {
-        YAGL_LOG_CRITICAL("cpu_physical_memory_map(write) failed for user %d, buff_ptr = 0x%X",
-                          user_index,
-                          (uint32_t)s->users[user_index].buff_pa);
-        goto out;
+            memset(s->in_buff, 0, YAGL_MARSHAL_MAX_RESPONSE);
+
+            break;
+        }
+
+        current_buff = yagl_server_dispatch(s->ss,
+                                            s->users[user_index].process_id,
+                                            s->users[user_index].thread_id,
+                                            current_buff,
+                                            s->in_buff);
+
+        if (!current_buff) {
+            /*
+             * Error occured.
+             */
+
+            break;
+        }
+
+        tmp = current_buff;
+
+        /*
+         * Take a peak to see if there's a batch terminator.
+         */
+
+        if (!yagl_marshal_get_uint32(&tmp)) {
+            break;
+        }
     }
 
     memcpy(buff, s->in_buff, YAGL_MARSHAL_MAX_RESPONSE);
@@ -196,9 +214,9 @@ static void yagl_device_trigger(YaGLState *s, int user_index)
 out:
     if (buff) {
         cpu_physical_memory_unmap(buff,
-                                  TARGET_PAGE_SIZE,
+                                  YAGL_BUFF_SIZE,
                                   0,
-                                  TARGET_PAGE_SIZE);
+                                  YAGL_BUFF_SIZE);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -276,7 +294,7 @@ static int yagl_device_init(PCIDevice *dev)
         return -1;
     }
 
-    s->in_buff = g_malloc(TARGET_PAGE_SIZE);
+    s->in_buff = g_malloc(YAGL_MARSHAL_MAX_RESPONSE);
 
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->iomem);
 

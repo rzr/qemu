@@ -29,148 +29,6 @@ static struct yagl_thread_state
     return NULL;
 }
 
-/*
- * call command out_buff is:
- *  (yagl_api_id) api_id
- *  (yagl_func_id) func_id
- *  ... api_id/func_id dependent
- * in_buff must be:
- *  (uint32_t) 0 - call error
- * or
- *  (uint32_t) 1 - call ok
- *  (uint32_t) 0 - not ready yet
- * or
- *  (uint32_t) 1 - call ok
- *  (uint32_t) 1 - ready
- *  ... api_id/func_id dependent
- */
-static void yagl_server_handle_call(struct yagl_server_state *ss,
-                                    yagl_pid target_pid,
-                                    yagl_tid target_tid,
-                                    uint8_t *out_buff,
-                                    uint8_t *in_buff)
-{
-    yagl_api_id api_id = yagl_marshal_get_api_id(&out_buff);
-    yagl_func_id func_id = yagl_marshal_get_func_id(&out_buff);
-    struct yagl_api* api;
-    struct yagl_thread_state *ts;
-    uint32_t returned = 0;
-    uint8_t *in_buff_ret;
-
-    YAGL_LOG_FUNC_ENTER(target_pid,
-                        target_tid,
-                        yagl_server_handle_call,
-                        "api_id = %u, func_id = %u",
-                        api_id,
-                        func_id);
-
-    ts = yagl_server_find_thread(ss, target_pid, target_tid);
-
-    if (!ts) {
-        YAGL_LOG_CRITICAL(
-            "process/thread %u/%u not found",
-            target_pid, target_tid);
-
-        yagl_marshal_put_uint32(&in_buff, 0);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        return;
-    }
-
-    if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
-        YAGL_LOG_CRITICAL(
-            "target-host protocol error, bad api_id - %u", api_id);
-
-        yagl_marshal_put_uint32(&in_buff, 0);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        return;
-    }
-
-    api = ss->apis[api_id - 1];
-
-    if (!api) {
-        YAGL_LOG_CRITICAL(
-            "uninitialized api - %u. host logic error", api_id);
-
-        yagl_marshal_put_uint32(&in_buff, 0);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        return;
-    }
-
-    in_buff_ret = in_buff;
-
-    yagl_marshal_skip(&in_buff);
-    yagl_marshal_skip(&in_buff);
-
-    if (yagl_thread_call(ts, api_id, func_id, out_buff, in_buff, &returned)) {
-        yagl_marshal_put_uint32(&in_buff_ret, 1);
-        yagl_marshal_put_uint32(&in_buff_ret, returned);
-    } else {
-        yagl_marshal_put_uint32(&in_buff_ret, 0);
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-/*
- * in_buff must be:
- *  (uint32_t) 0 - ret error
- * or
- *  (uint32_t) 1 - ret ok
- *  (uint32_t) 0 - not ready yet
- * or
- *  (uint32_t) 1 - ret ok
- *  (uint32_t) 1 - ready
- *  ... api_id/func_id dependent
- */
-static void yagl_server_handle_ret(struct yagl_server_state *ss,
-                                   yagl_pid target_pid,
-                                   yagl_tid target_tid,
-                                   uint8_t *in_buff)
-{
-    uint8_t *in_buff_ret;
-    struct yagl_thread_state *ts;
-    uint32_t returned = 0;
-
-    YAGL_LOG_FUNC_ENTER(target_pid,
-                        target_tid,
-                        yagl_server_handle_ret,
-                        NULL);
-
-    ts = yagl_server_find_thread(ss, target_pid, target_tid);
-
-    if (!ts) {
-        YAGL_LOG_CRITICAL(
-            "process/thread %u/%u not found",
-            target_pid, target_tid);
-
-        yagl_marshal_put_uint32(&in_buff, 0);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        return;
-    }
-
-    in_buff_ret = in_buff;
-
-    yagl_marshal_skip(&in_buff);
-    yagl_marshal_skip(&in_buff);
-
-    if (yagl_thread_try_return(ts, in_buff, &returned)) {
-        yagl_marshal_put_uint32(&in_buff_ret, 1);
-        yagl_marshal_put_uint32(&in_buff_ret, returned);
-    } else {
-        yagl_marshal_put_uint32(&in_buff_ret, 0);
-    }
-
-    YAGL_LOG_FUNC_EXIT("%u", returned);
-}
-
 struct yagl_server_state *yagl_server_state_create(void)
 {
     int i;
@@ -368,30 +226,83 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
     }
 }
 
-void yagl_server_dispatch(struct yagl_server_state *ss,
-                          yagl_pid target_pid,
-                          yagl_tid target_tid,
-                          uint8_t *out_buff,
-                          uint8_t *in_buff)
+/*
+ * out_buff is:
+ *  (yagl_api_id) api_id
+ *  (yagl_func_id) func_id
+ *  ... api_id/func_id dependent
+ * in_buff must be:
+ *  (uint32_t) 1/0 - call ok/failed
+ *  ... api_id/func_id dependent
+ */
+uint8_t *yagl_server_dispatch(struct yagl_server_state *ss,
+                              yagl_pid target_pid,
+                              yagl_tid target_tid,
+                              uint8_t *out_buff,
+                              uint8_t *in_buff)
 {
-    yagl_command_id command_id = yagl_marshal_get_command_id(&out_buff);
+    yagl_api_id api_id = yagl_marshal_get_api_id(&out_buff);
+    yagl_func_id func_id = yagl_marshal_get_func_id(&out_buff);
+    struct yagl_api* api;
+    struct yagl_thread_state *ts;
+    uint8_t *in_buff_ret;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_server_dispatch, NULL);
+    YAGL_LOG_FUNC_ENTER(target_pid,
+                        target_tid,
+                        yagl_server_dispatch,
+                        "api_id = %u, func_id = %u",
+                        api_id,
+                        func_id);
 
-    switch (command_id) {
-    case yagl_command_id_call:
-        yagl_server_handle_call(ss, target_pid, target_tid, out_buff, in_buff);
-        break;
-    case yagl_command_id_ret:
-        yagl_server_handle_ret(ss, target_pid, target_tid, in_buff);
-        break;
-    default:
+    ts = yagl_server_find_thread(ss, target_pid, target_tid);
+
+    if (!ts) {
         YAGL_LOG_CRITICAL(
-            "target-host protocol error, unknown command id - %d\n", command_id);
-        memset(in_buff, 0, TARGET_PAGE_SIZE);
+            "process/thread %u/%u not found",
+            target_pid, target_tid);
+
+        yagl_marshal_put_uint32(&in_buff, 0);
+
+        YAGL_LOG_FUNC_EXIT(NULL);
+
+        return NULL;
     }
 
+    if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
+        YAGL_LOG_CRITICAL(
+            "target-host protocol error, bad api_id - %u", api_id);
+
+        yagl_marshal_put_uint32(&in_buff, 0);
+
+        YAGL_LOG_FUNC_EXIT(NULL);
+
+        return NULL;
+    }
+
+    api = ss->apis[api_id - 1];
+
+    if (!api) {
+        YAGL_LOG_CRITICAL(
+            "uninitialized api - %u. host logic error", api_id);
+
+        yagl_marshal_put_uint32(&in_buff, 0);
+
+        YAGL_LOG_FUNC_EXIT(NULL);
+
+        return NULL;
+    }
+
+    in_buff_ret = in_buff;
+
+    yagl_marshal_skip(&in_buff);
+
+    out_buff = yagl_thread_call(ts, api_id, func_id, out_buff, in_buff);
+
+    yagl_marshal_put_uint32(&in_buff_ret, (out_buff ? 1 : 0));
+
     YAGL_LOG_FUNC_EXIT(NULL);
+
+    return out_buff;
 }
 
 void yagl_server_dispatch_exit(struct yagl_server_state *ss,

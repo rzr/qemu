@@ -32,8 +32,7 @@ void yagl_server_state_destroy(struct yagl_server_state *ss);
 void yagl_server_reset(struct yagl_server_state *ss);
 
 /*
- * This is called for first YaGL call. 'buff' is guaranteed to be one
- * target page long, server code should not read/write more.
+ * This is called for first YaGL call.
  */
 bool yagl_server_dispatch_init(struct yagl_server_state *ss,
                                yagl_pid target_pid,
@@ -42,14 +41,14 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
                                uint8_t *in_buff);
 
 /*
- * This is called for each host YaGL call. 'buff' is guaranteed to be one
- * target page long, server code should not read/write more.
+ * This is called for each host YaGL call. Returns new
+ * position of 'out_buff' on success and NULL on failure.
  */
-void yagl_server_dispatch(struct yagl_server_state *ss,
-                          yagl_pid target_pid,
-                          yagl_tid target_tid,
-                          uint8_t *out_buff,
-                          uint8_t *in_buff);
+uint8_t *yagl_server_dispatch(struct yagl_server_state *ss,
+                              yagl_pid target_pid,
+                              yagl_tid target_tid,
+                              uint8_t *out_buff,
+                              uint8_t *in_buff);
 
 /*
  * This is called for last YaGL call.
