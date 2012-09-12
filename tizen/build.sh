@@ -92,7 +92,7 @@ set_target() {
   ;;
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
-    if [ -z "$OPENGLES_EN" ] ; then
+    if [ -z "$YAGL_EN" ] && [ -z "$OPENGLES_EN" ] ; then
       yagl_enable yes
     fi
   ;;
@@ -101,7 +101,7 @@ set_target() {
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
-    if [ -z "$OPENGLES_EN" ] ; then
+    if [ -z "$YAGL_EN" ] && [ -z "$OPENGLES_EN" ] ; then
       yagl_enable yes
     fi
   ;;
@@ -125,16 +125,13 @@ do
         CONFIGURE_APPEND="$CONFIGURE_APPEND $1"
     ;;
     -vgl|--virtio-gl)
-        shift
-        virtgl_enable $1
+        virtgl_enable 1
     ;;
     -gles|--opengles)
-        shift
-        opengles_enable $1
+        opengles_enable 1
     ;;
     -yagl|--yagl-device)
-        shift
-        yagl_enable $1
+        yagl_enable 1
     ;;
     -u|-h|--help|--usage)
         usage
