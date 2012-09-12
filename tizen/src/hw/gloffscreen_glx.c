@@ -234,7 +234,7 @@ int glo_surface_update_context(GloSurface *surface, GloContext *context)
         if ( !prev_context_valid ) /* light-weight context */
             g_free(surface->context);
     }
-     surface->context = context;
+    surface->context = context;
     return prev_context_valid;
 }
  

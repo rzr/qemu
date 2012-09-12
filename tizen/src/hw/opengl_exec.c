@@ -616,8 +616,8 @@ static void unbind_qsurface(GLState *state,
 
     QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
 
-    /*XXX: need this?*/
-    state->current_qsurface = NULL;
+	if ( state->current_qsurface == qsurface )
+		state->current_qsurface = NULL;
 }
 
 /* Find the qsurface with required drawable in active & pending qsurfaces */

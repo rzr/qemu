@@ -804,7 +804,7 @@ int glo_surface_update_context(GloSurface *surface, GloContext *context)
 
     if ( surface->context )
     {
-        prev_context_valid = (surface->context->context != 0);
+        prev_context_valid = (surface->context->hContext != 0);
         if ( !prev_context_valid ) /* light-weight context */
             g_free(surface->context);
     }
