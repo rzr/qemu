@@ -608,6 +608,18 @@ static void bind_qsurface(GLState *state,
     state->current_qsurface = qsurface;
 }
 
+/* Unbind a qsurface from a context (GLState) */
+static void unbind_qsurface(GLState *state,
+                          QGloSurface *qsurface)
+{
+    qsurface->glstate = NULL;
+
+    QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
+
+    /*XXX: need this?*/
+    state->current_qsurface = NULL;
+}
+
 /* Find the qsurface with required drawable in active & pending qsurfaces */
 QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLXDrawable client_drawable)
 {
@@ -711,7 +723,8 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
 /*            process->pending_qsurfaces[i] = NULL;*/
             qsurface->ref = 1;
 /*            qsurface->surface->context = glstate->context;*/
-            glo_surface_update_context(qsurface->surface, glstate->context);
+            if ( glo_surface_update_context(qsurface->surface, glstate->context) )
+                unbind_qsurface(qsurface->glstate, qsurface);
             bind_qsurface(glstate, qsurface);
             return 1;
         }
