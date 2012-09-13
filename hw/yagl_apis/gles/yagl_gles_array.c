@@ -37,6 +37,7 @@ static void yagl_gles_array_reset(struct yagl_gles_array *array)
     if (array->vbo) {
         yagl_gles_buffer_release(array->vbo);
         array->vbo = NULL;
+        array->vbo_local_name = 0;
         array->offset = 0;
     } else {
         array->target_data = 0;
@@ -63,6 +64,7 @@ void yagl_gles_array_cleanup(struct yagl_gles_array *array)
     if (array->vbo) {
         yagl_sharegroup_reap_object(array->ctx->base.sg, &array->vbo->base);
         array->vbo = NULL;
+        array->vbo_local_name = 0;
         array->offset = 0;
     } else {
         array->target_data = 0;
@@ -110,6 +112,7 @@ bool yagl_gles_array_update_vbo(struct yagl_gles_array *array,
                                 GLboolean normalized,
                                 GLsizei stride,
                                 struct yagl_gles_buffer *vbo,
+                                yagl_object_name vbo_local_name,
                                 GLint offset)
 {
     if (!yagl_get_el_size(type, &array->el_size)) {
@@ -130,6 +133,7 @@ bool yagl_gles_array_update_vbo(struct yagl_gles_array *array,
     }
 
     array->vbo = vbo;
+    array->vbo_local_name = vbo_local_name;
     array->offset = offset;
 
     return true;

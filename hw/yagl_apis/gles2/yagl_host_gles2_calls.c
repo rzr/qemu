@@ -11,6 +11,7 @@
 #include "yagl_gles2_context.h"
 #include "yagl_gles2_shader.h"
 #include "yagl_gles2_program.h"
+#include "yagl_gles2_validate.h"
 #include "yagl_egl_interface.h"
 #include "yagl_tls.h"
 #include "yagl_log.h"
@@ -1105,9 +1106,62 @@ void yagl_host_glGetVertexAttribfv(GLuint index,
 
 void yagl_host_glGetVertexAttribiv(GLuint index,
     GLenum pname,
-    target_ulong /* GLint* */ params)
+    target_ulong /* GLint* */ params_)
 {
-    YAGL_UNIMPLEMENTED(glGetVertexAttribiv);
+    struct yagl_gles_array *array = NULL;
+    int i, count = 0;
+    GLint *params = NULL;
+
+    YAGL_GET_CTX(glGetVertexAttribiv);
+
+    array = yagl_gles_context_get_array(&ctx->base, index);
+
+    if (!array) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!yagl_gles2_get_array_param_count(pname, &count)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    params = g_malloc0(count * sizeof(*params));
+
+    switch (pname) {
+    case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
+        params[0] = array->vbo_local_name;
+        break;
+    case GL_VERTEX_ATTRIB_ARRAY_ENABLED:
+        params[0] = array->enabled;
+        break;
+    case GL_VERTEX_ATTRIB_ARRAY_SIZE:
+        params[0] = array->size;
+        break;
+    case GL_VERTEX_ATTRIB_ARRAY_STRIDE:
+        params[0] = array->stride;
+        break;
+    case GL_VERTEX_ATTRIB_ARRAY_TYPE:
+        params[0] = array->type;
+        break;
+    case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
+        params[0] = array->normalized;
+        break;
+    default:
+        ctx->driver_ps->GetVertexAttribiv(ctx->driver_ps, index, pname, params);
+        break;
+    }
+
+    if (params_) {
+        for (i = 0; i < count; ++i) {
+            yagl_mem_put_GLint(gles2_api_ts->ts,
+                               params_ + (i * sizeof(*params)),
+                               params[i]);
+        }
+    }
+
+out:
+    g_free(params);
 }
 
 void yagl_host_glGetVertexAttribPointerv(GLuint index,
@@ -1834,6 +1888,7 @@ void yagl_host_glVertexAttribPointer(GLuint indx,
                                         normalized,
                                         stride,
                                         ctx->base.vbo,
+                                        ctx->base.vbo_local_name,
                                         ptr)) {
             YAGL_SET_ERR(GL_INVALID_VALUE);
         }

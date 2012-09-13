@@ -119,7 +119,7 @@ void yagl_host_glGetVertexAttribfv(GLuint index,
     target_ulong /* GLfloat* */ params);
 void yagl_host_glGetVertexAttribiv(GLuint index,
     GLenum pname,
-    target_ulong /* GLint* */ params);
+    target_ulong /* GLint* */ params_);
 void yagl_host_glGetVertexAttribPointerv(GLuint index,
     GLenum pname,
     target_ulong /* GLvoid** */ pointer);

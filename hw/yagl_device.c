@@ -20,7 +20,7 @@
 
 struct yagl_user
 {
-    target_phys_addr_t buff_pa;
+    uint8_t *buff;
     yagl_pid process_id;
     yagl_tid thread_id;
 };
@@ -46,7 +46,7 @@ static void yagl_device_operate(YaGLState *s,
 {
     yagl_pid target_pid;
     yagl_tid target_tid;
-    target_phys_addr_t buff_len = YAGL_BUFF_SIZE;
+    target_phys_addr_t buff_len = YAGL_MARSHAL_SIZE;
     uint8_t *buff = NULL, *tmp = NULL;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_device_operate,
@@ -54,12 +54,12 @@ static void yagl_device_operate(YaGLState *s,
                             user_index,
                             (uint32_t)buff_pa);
 
-    if (buff_pa && s->users[user_index].buff_pa) {
+    if (buff_pa && s->users[user_index].buff) {
         YAGL_LOG_CRITICAL("user %d is already activated", user_index);
         goto out;
     }
 
-    if (!buff_pa && !s->users[user_index].buff_pa) {
+    if (!buff_pa && !s->users[user_index].buff) {
         YAGL_LOG_CRITICAL("user %d is not activated", user_index);
         goto out;
     }
@@ -71,7 +71,7 @@ static void yagl_device_operate(YaGLState *s,
 
         buff = cpu_physical_memory_map(buff_pa, &buff_len, false);
 
-        if (!buff || (buff_len != YAGL_BUFF_SIZE)) {
+        if (!buff || (buff_len != YAGL_MARSHAL_SIZE)) {
             YAGL_LOG_CRITICAL("cpu_physical_memory_map(read) failed for user %d, buff_ptr = 0x%X",
                               user_index,
                               (uint32_t)buff_pa);
@@ -98,25 +98,14 @@ static void yagl_device_operate(YaGLState *s,
                                       target_tid,
                                       buff,
                                       s->in_buff)) {
-            cpu_physical_memory_unmap(buff,
-                                      YAGL_BUFF_SIZE,
-                                      0,
-                                      YAGL_BUFF_SIZE);
-
-            buff = cpu_physical_memory_map(buff_pa, &buff_len, true);
-
-            if (!buff || (buff_len != YAGL_BUFF_SIZE)) {
-                YAGL_LOG_CRITICAL("cpu_physical_memory_map(write) failed for user %d, buff_ptr = 0x%X",
-                                  user_index,
-                                  (uint32_t)buff_pa);
-                goto out;
-            }
 
             memcpy(buff, s->in_buff, YAGL_MARSHAL_MAX_RESPONSE);
 
-            s->users[user_index].buff_pa = buff_pa;
+            s->users[user_index].buff = buff;
             s->users[user_index].process_id = target_pid;
             s->users[user_index].thread_id = target_tid;
+
+            buff = NULL;
 
             YAGL_LOG_INFO("user %d activated", user_index);
         }
@@ -129,6 +118,11 @@ static void yagl_device_operate(YaGLState *s,
                                   s->users[user_index].process_id,
                                   s->users[user_index].thread_id);
 
+        cpu_physical_memory_unmap(s->users[user_index].buff,
+                                  YAGL_MARSHAL_SIZE,
+                                  0,
+                                  YAGL_MARSHAL_SIZE);
+
         memset(&s->users[user_index], 0, sizeof(s->users[user_index]));
 
         YAGL_LOG_INFO("user %d deactivated", user_index);
@@ -137,9 +131,9 @@ static void yagl_device_operate(YaGLState *s,
 out:
     if (buff) {
         cpu_physical_memory_unmap(buff,
-                                  YAGL_BUFF_SIZE,
+                                  YAGL_MARSHAL_SIZE,
                                   0,
-                                  YAGL_BUFF_SIZE);
+                                  YAGL_MARSHAL_SIZE);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -147,43 +141,22 @@ out:
 
 static void yagl_device_trigger(YaGLState *s, int user_index)
 {
-    target_phys_addr_t buff_len = YAGL_BUFF_SIZE;
-    uint8_t *buff = NULL;
-
     YAGL_LOG_FUNC_ENTER_NPT(yagl_device_trigger, "%d", user_index);
 
-    if (!s->users[user_index].buff_pa) {
+    if (!s->users[user_index].buff) {
         YAGL_LOG_CRITICAL("user %d not activated", user_index);
-        goto out;
-    }
-
-    buff = cpu_physical_memory_map(s->users[user_index].buff_pa,
-                                   &buff_len,
-                                   false);
-
-    if (!buff || (buff_len != YAGL_BUFF_SIZE)) {
-        YAGL_LOG_CRITICAL("cpu_physical_memory_map(read) failed for user %d, buff_ptr = 0x%X",
-                          user_index,
-                          (uint32_t)s->users[user_index].buff_pa);
         goto out;
     }
 
     yagl_server_dispatch(s->ss,
                          s->users[user_index].process_id,
                          s->users[user_index].thread_id,
-                         buff,
+                         s->users[user_index].buff,
                          s->in_buff);
 
-    memcpy(buff, s->in_buff, YAGL_MARSHAL_MAX_RESPONSE);
+    memcpy(s->users[user_index].buff, s->in_buff, YAGL_MARSHAL_MAX_RESPONSE);
 
 out:
-    if (buff) {
-        cpu_physical_memory_unmap(buff,
-                                  YAGL_BUFF_SIZE,
-                                  0,
-                                  YAGL_BUFF_SIZE);
-    }
-
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 

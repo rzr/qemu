@@ -66,7 +66,7 @@ static void *yagl_thread_func(void* arg)
             struct yagl_api_ps *api_ps;
             yagl_api_func func;
 
-            if (current_buff >= (ts->current_out_buff + YAGL_BUFF_SIZE)) {
+            if (current_buff >= (ts->current_out_buff + YAGL_MARSHAL_SIZE)) {
                 YAGL_LOG_CRITICAL("batch passes the end of buffer, protocol error");
 
                 ret = false;
