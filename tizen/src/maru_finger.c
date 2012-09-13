@@ -162,7 +162,7 @@ void init_multi_touch_state(void)
 
     mts->finger_cnt_max = get_emul_max_touch_point();
     if (mts->finger_cnt_max > MAX_FINGER_CNT) {
-        mts->finger_cnt_max = MAX_FINGER_CNT; //TODO:
+        mts->finger_cnt_max = MAX_FINGER_CNT;
         set_emul_max_touch_point(mts->finger_cnt_max);
     }
     INFO("maxTouchPoint=%d\n", get_emul_max_touch_point());
