@@ -97,10 +97,10 @@ void do_mouse_event(int button_type, int event_type,
 #ifndef USE_SHM
     /* multi-touch */
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
-        maru_finger_processing_A(event_type, origin_x, origin_y, x, y);
+        maru_finger_processing_1(event_type, origin_x, origin_y, x, y);
         return;
     } else if (get_emul_multi_touch_state()->multitouch_enable == 2) {
-        maru_finger_processing_B(event_type, origin_x, origin_y, x, y);
+        maru_finger_processing_2(event_type, origin_x, origin_y, x, y);
         return;
     }
 #endif
@@ -156,31 +156,36 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
 #ifndef USE_SHM
     //is multi-touch mode ?
     if (get_emul_max_touch_point() > 1) {
-        if (keycode == JAVA_KEYCODE_BIT_CTRL) {
-            if (KEY_PRESSED == event_type) {
-                get_emul_multi_touch_state()->multitouch_enable = 1;
-                INFO("1)multi-touch enabled = A\n");
-            } else if (KEY_RELEASED == event_type) {
-                get_emul_multi_touch_state()->multitouch_enable = 0;
-                clear_finger_slot();
-                INFO("1)multi-touch disabled\n");
-            }
-        } else if (keycode == (JAVA_KEYCODE_NO_FOCUS | JAVA_KEYCODE_BIT_CTRL)) {
-            //release ctrl key when dragging
-            if (KEY_RELEASED == event_type) {
-                get_emul_multi_touch_state()->multitouch_enable = 0;
-                clear_finger_slot();
-                INFO("2)multi-touch disabled\n");
-            }
-        } else if (keycode == (JAVA_KEYCODE_BIT_SHIFT | JAVA_KEYCODE_BIT_CTRL)) {
+        int state_mask_temp = state_mask & ~JAVA_KEYCODE_NO_FOCUS;
+
+        if ((keycode == JAVA_KEYCODE_BIT_SHIFT &&
+            state_mask_temp == JAVA_KEYCODE_BIT_CTRL) ||
+            (keycode == JAVA_KEYCODE_BIT_CTRL &&
+            state_mask_temp == JAVA_KEYCODE_BIT_SHIFT))
+        {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 2;
-                INFO("2)multi-touch enabled = B\n");
-            } else if (KEY_RELEASED == event_type) {
-                get_emul_multi_touch_state()->multitouch_enable = 1;
-                INFO("2)multi-touch enabled = A\n");
+                INFO("enable multi-touch = mode2\n");
             }
         }
+        else if (keycode == JAVA_KEYCODE_BIT_CTRL ||
+            keycode == JAVA_KEYCODE_BIT_SHIFT)
+        {
+            if (KEY_PRESSED == event_type) {
+                get_emul_multi_touch_state()->multitouch_enable = 1;
+                INFO("enable multi-touch = mode1\n");
+            } else if (KEY_RELEASED == event_type) {
+                if (state_mask_temp == (JAVA_KEYCODE_BIT_CTRL | JAVA_KEYCODE_BIT_SHIFT)) {
+                    get_emul_multi_touch_state()->multitouch_enable = 1;
+                    INFO("enabled multi-touch = mode1\'\n");
+                } else {
+                    get_emul_multi_touch_state()->multitouch_enable = 0;
+                    clear_finger_slot();
+                    INFO("disable multi-touch\n");
+                }
+            }
+        }
+
     }
 #endif
 
