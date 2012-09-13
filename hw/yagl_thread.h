@@ -55,8 +55,4 @@ void yagl_thread_call(struct yagl_thread_state *ts,
                       uint8_t *out_buff,
                       uint8_t *in_buff);
 
-#define YAGL_BARRIER_ARG(ts)
-#define YAGL_BARRIER_RET(ts) 1
-#define YAGL_BARRIER_ARG_NORET(ts)
-
 #endif

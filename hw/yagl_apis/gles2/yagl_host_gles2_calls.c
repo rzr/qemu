@@ -182,8 +182,6 @@ void yagl_host_glAttachShader(GLuint program,
 
     YAGL_GET_CTX(glAttachShader);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
         YAGL_NS_PROGRAM, program);
 
@@ -236,8 +234,6 @@ void yagl_host_glBindAttribLocation(GLuint program,
         YAGL_LOG_TRACE("binding attrib %s location to %d", name, index);
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     yagl_gles2_program_bind_attrib_location(program_obj, index, name);
 
 out:
@@ -251,8 +247,6 @@ void yagl_host_glBindFramebuffer(GLenum target,
     struct yagl_gles_framebuffer *framebuffer_obj = NULL;
 
     YAGL_GET_CTX(glBindFramebuffer);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     if (framebuffer != 0) {
         framebuffer_obj = (struct yagl_gles_framebuffer*)yagl_sharegroup_acquire_object(ctx->sg,
@@ -290,8 +284,6 @@ void yagl_host_glBindRenderbuffer(GLenum target,
 
     YAGL_GET_CTX(glBindRenderbuffer);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     if (renderbuffer != 0) {
         renderbuffer_obj = (struct yagl_gles_renderbuffer*)yagl_sharegroup_acquire_object(ctx->sg,
             YAGL_NS_RENDERBUFFER, renderbuffer);
@@ -328,16 +320,12 @@ void yagl_host_glBlendColor(GLclampf red,
 {
     YAGL_GET_CTX(glBlendColor);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->BlendColor(ctx->driver_ps, red, green, blue, alpha);
 }
 
 void yagl_host_glBlendEquation(GLenum mode)
 {
     YAGL_GET_CTX(glBlendEquation);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->BlendEquation(ctx->driver_ps, mode);
 }
@@ -346,8 +334,6 @@ void yagl_host_glBlendEquationSeparate(GLenum modeRGB,
     GLenum modeAlpha)
 {
     YAGL_GET_CTX(glBlendEquationSeparate);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->BlendEquationSeparate(ctx->driver_ps, modeRGB, modeAlpha);
 }
@@ -358,8 +344,6 @@ void yagl_host_glBlendFuncSeparate(GLenum srcRGB,
     GLenum dstAlpha)
 {
     YAGL_GET_CTX(glBlendFuncSeparate);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->BlendFuncSeparate(ctx->driver_ps,
                                       srcRGB,
@@ -380,8 +364,6 @@ void yagl_host_glCompileShader(GLuint shader)
     struct yagl_gles2_shader *shader_obj = NULL;
 
     YAGL_GET_CTX(glCompileShader);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
         YAGL_NS_SHADER, shader);
@@ -465,8 +447,6 @@ void yagl_host_glDeleteFramebuffers(GLsizei n,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     if (framebuffer_names) {
         for (i = 0; i < n; ++i) {
             yagl_gles_context_unbind_framebuffer(&ctx->base, framebuffer_names[i]);
@@ -484,8 +464,6 @@ out:
 void yagl_host_glDeleteProgram(GLuint program)
 {
     YAGL_GET_CTX(glDeleteProgram);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     yagl_gles2_context_unuse_program(ctx, program);
 
@@ -519,8 +497,6 @@ void yagl_host_glDeleteRenderbuffers(GLsizei n,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     if (renderbuffer_names) {
         for (i = 0; i < n; ++i) {
             yagl_gles_context_unbind_renderbuffer(&ctx->base, renderbuffer_names[i]);
@@ -539,8 +515,6 @@ void yagl_host_glDeleteShader(GLuint shader)
 {
     YAGL_GET_CTX(glDeleteShader);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     yagl_sharegroup_remove(ctx->sg,
                            YAGL_NS_SHADER,
                            shader);
@@ -553,8 +527,6 @@ void yagl_host_glDetachShader(GLuint program,
     struct yagl_gles2_shader *shader_obj = NULL;
 
     YAGL_GET_CTX(glDetachShader);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
         YAGL_NS_PROGRAM, program);
@@ -588,8 +560,6 @@ void yagl_host_glDisableVertexAttribArray(GLuint index)
 
     YAGL_GET_CTX(glDisableVertexAttribArray);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     array = yagl_gles_context_get_array(&ctx->base, index);
 
     if (!array) {
@@ -607,8 +577,6 @@ void yagl_host_glEnableVertexAttribArray(GLuint index)
     struct yagl_gles_array *array = NULL;
 
     YAGL_GET_CTX(glEnableVertexAttribArray);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     array = yagl_gles_context_get_array(&ctx->base, index);
 
@@ -631,8 +599,6 @@ void yagl_host_glFramebufferRenderbuffer(GLenum target,
     struct yagl_gles_renderbuffer *renderbuffer_obj = NULL;
 
     YAGL_GET_CTX(glFramebufferRenderbuffer);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     framebuffer_obj = yagl_gles_context_acquire_binded_framebuffer(&ctx->base, target);
 
@@ -677,8 +643,6 @@ void yagl_host_glFramebufferTexture2D(GLenum target,
 
     YAGL_GET_CTX(glFramebufferTexture2D);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     framebuffer_obj = yagl_gles_context_acquire_binded_framebuffer(&ctx->base, target);
 
     if (!framebuffer_obj) {
@@ -715,8 +679,6 @@ out:
 void yagl_host_glGenerateMipmap(GLenum target)
 {
     YAGL_GET_CTX(glGenerateMipmap);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->common->GenerateMipmap(ctx->driver_ps->common, target);
 }
@@ -1181,8 +1143,6 @@ void yagl_host_glLinkProgram(GLuint program)
 
     YAGL_GET_CTX(glLinkProgram);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
         YAGL_NS_PROGRAM, program);
 
@@ -1201,8 +1161,6 @@ void yagl_host_glReleaseShaderCompiler(void)
 {
     YAGL_GET_CTX(glReleaseShaderCompiler);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->ReleaseShaderCompiler(ctx->driver_ps);
 }
 
@@ -1212,8 +1170,6 @@ void yagl_host_glRenderbufferStorage(GLenum target,
     GLsizei height)
 {
     YAGL_GET_CTX(glRenderbufferStorage);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->common->RenderbufferStorage(ctx->driver_ps->common,
                                                 target,
@@ -1298,8 +1254,6 @@ void yagl_host_glShaderSource(GLuint shader,
         YAGL_LOG_TRACE("string %d = %s", i, tmp);
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     yagl_gles2_shader_source(shader_obj,
                              strings,
                              count,
@@ -1324,8 +1278,6 @@ void yagl_host_glStencilFuncSeparate(GLenum face,
 {
     YAGL_GET_CTX(glStencilFuncSeparate);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->StencilFuncSeparate(ctx->driver_ps, face, func, ref, mask);
 }
 
@@ -1333,8 +1285,6 @@ void yagl_host_glStencilMaskSeparate(GLenum face,
     GLuint mask)
 {
     YAGL_GET_CTX(glStencilMaskSeparate);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->StencilMaskSeparate(ctx->driver_ps, face, mask);
 }
@@ -1346,8 +1296,6 @@ void yagl_host_glStencilOpSeparate(GLenum face,
 {
     YAGL_GET_CTX(glStencilOpSeparate);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->StencilOpSeparate(ctx->driver_ps, face, fail, zfail, zpass);
 }
 
@@ -1355,8 +1303,6 @@ void yagl_host_glUniform1f(GLint location,
     GLfloat x)
 {
     YAGL_GET_CTX(glUniform1f);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform1f(ctx->driver_ps, location, x);
 }
@@ -1380,8 +1326,6 @@ void yagl_host_glUniform1fv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->Uniform1fv(ctx->driver_ps, location, count, v);
 
 out:
@@ -1392,8 +1336,6 @@ void yagl_host_glUniform1i(GLint location,
     GLint x)
 {
     YAGL_GET_CTX(glUniform1i);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform1i(ctx->driver_ps, location, x);
 }
@@ -1417,8 +1359,6 @@ void yagl_host_glUniform1iv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->Uniform1iv(ctx->driver_ps, location, count, v);
 
 out:
@@ -1430,8 +1370,6 @@ void yagl_host_glUniform2f(GLint location,
     GLfloat y)
 {
     YAGL_GET_CTX(glUniform2f);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform2f(ctx->driver_ps, location, x, y);
 }
@@ -1455,8 +1393,6 @@ void yagl_host_glUniform2fv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->Uniform2fv(ctx->driver_ps, location, count, v);
 
 out:
@@ -1468,8 +1404,6 @@ void yagl_host_glUniform2i(GLint location,
     GLint y)
 {
     YAGL_GET_CTX(glUniform2i);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform2i(ctx->driver_ps, location, x, y);
 }
@@ -1493,8 +1427,6 @@ void yagl_host_glUniform2iv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->Uniform2iv(ctx->driver_ps, location, count, v);
 
 out:
@@ -1507,8 +1439,6 @@ void yagl_host_glUniform3f(GLint location,
     GLfloat z)
 {
     YAGL_GET_CTX(glUniform3f);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform3f(ctx->driver_ps, location, x, y, z);
 }
@@ -1532,8 +1462,6 @@ void yagl_host_glUniform3fv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->Uniform3fv(ctx->driver_ps, location, count, v);
 
 out:
@@ -1546,8 +1474,6 @@ void yagl_host_glUniform3i(GLint location,
     GLint z)
 {
     YAGL_GET_CTX(glUniform3i);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform3i(ctx->driver_ps, location, x, y, z);
 }
@@ -1571,8 +1497,6 @@ void yagl_host_glUniform3iv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->Uniform3iv(ctx->driver_ps, location, count, v);
 
 out:
@@ -1586,8 +1510,6 @@ void yagl_host_glUniform4f(GLint location,
     GLfloat w)
 {
     YAGL_GET_CTX(glUniform4f);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform4f(ctx->driver_ps, location, x, y, z, w);
 }
@@ -1611,8 +1533,6 @@ void yagl_host_glUniform4fv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->Uniform4fv(ctx->driver_ps, location, count, v);
 
 out:
@@ -1626,8 +1546,6 @@ void yagl_host_glUniform4i(GLint location,
     GLint w)
 {
     YAGL_GET_CTX(glUniform4i);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform4i(ctx->driver_ps, location, x, y, z, w);
 }
@@ -1650,8 +1568,6 @@ void yagl_host_glUniform4iv(GLint location,
             goto out;
         }
     }
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->Uniform4iv(ctx->driver_ps, location, count, v);
 
@@ -1679,8 +1595,6 @@ void yagl_host_glUniformMatrix2fv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->UniformMatrix2fv(ctx->driver_ps, location, count, transpose, value);
 
 out:
@@ -1706,8 +1620,6 @@ void yagl_host_glUniformMatrix3fv(GLint location,
             goto out;
         }
     }
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->UniformMatrix3fv(ctx->driver_ps, location, count, transpose, value);
 
@@ -1735,8 +1647,6 @@ void yagl_host_glUniformMatrix4fv(GLint location,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->UniformMatrix4fv(ctx->driver_ps, location, count, transpose, value);
 
 out:
@@ -1748,8 +1658,6 @@ void yagl_host_glUseProgram(GLuint program)
     struct yagl_gles2_program *program_obj = NULL;
 
     YAGL_GET_CTX(glUseProgram);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     if (program != 0) {
         program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
@@ -1780,8 +1688,6 @@ void yagl_host_glVertexAttrib1f(GLuint indx,
 {
     YAGL_GET_CTX(glVertexAttrib1f);
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->VertexAttrib1f(ctx->driver_ps, indx, x);
 }
 
@@ -1802,8 +1708,6 @@ void yagl_host_glVertexAttrib1fv(GLuint indx,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->VertexAttrib1fv(ctx->driver_ps,
                                     indx,
                                     (values_ ? &values[0] : NULL));
@@ -1814,8 +1718,6 @@ void yagl_host_glVertexAttrib2f(GLuint indx,
     GLfloat y)
 {
     YAGL_GET_CTX(glVertexAttrib2f);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->VertexAttrib2f(ctx->driver_ps, indx, x, y);
 }
@@ -1837,8 +1739,6 @@ void yagl_host_glVertexAttrib2fv(GLuint indx,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->VertexAttrib2fv(ctx->driver_ps,
                                     indx,
                                     (values_ ? &values[0] : NULL));
@@ -1850,8 +1750,6 @@ void yagl_host_glVertexAttrib3f(GLuint indx,
     GLfloat z)
 {
     YAGL_GET_CTX(glVertexAttrib3f);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->VertexAttrib3f(ctx->driver_ps, indx, x, y, z);
 }
@@ -1873,8 +1771,6 @@ void yagl_host_glVertexAttrib3fv(GLuint indx,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
-
     ctx->driver_ps->VertexAttrib3fv(ctx->driver_ps,
                                     indx,
                                     (values_ ? &values[0] : NULL));
@@ -1887,8 +1783,6 @@ void yagl_host_glVertexAttrib4f(GLuint indx,
     GLfloat w)
 {
     YAGL_GET_CTX(glVertexAttrib4f);
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->VertexAttrib4f(ctx->driver_ps, indx, x, y, z, w);
 }
@@ -1909,8 +1803,6 @@ void yagl_host_glVertexAttrib4fv(GLuint indx,
             return;
         }
     }
-
-    YAGL_BARRIER_ARG_NORET(gles2_api_ts->ts);
 
     ctx->driver_ps->VertexAttrib4fv(ctx->driver_ps,
                                     indx,

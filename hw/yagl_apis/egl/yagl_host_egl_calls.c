@@ -319,8 +319,6 @@ EGLBoolean yagl_host_eglInitialize(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglInitialize);
 
-    YAGL_BARRIER_ARG(egl_api_ts->ts);
-
     dpy = yagl_egl_api_ps_display_get(egl_api_ts->api_ps, dpy_);
 
     if (!dpy) {
@@ -329,10 +327,6 @@ EGLBoolean yagl_host_eglInitialize(yagl_host_handle dpy_,
     }
 
     yagl_egl_display_initialize(dpy);
-
-    if (!YAGL_BARRIER_RET(egl_api_ts->ts)) {
-        return EGL_FALSE;
-    }
 
     if (major) {
         yagl_mem_put_EGLint(egl_api_ts->ts, major, YAGL_EGL_VERSION_MAJOR);
@@ -1033,8 +1027,6 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
         }
     }
 
-    YAGL_BARRIER_ARG(egl_api_ts->ts);
-
     if (!yagl_validate_display(dpy_, &dpy)) {
         goto out;
     }
@@ -1150,8 +1142,6 @@ EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
     struct yagl_egl_surface *read = NULL;
 
     YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglMakeCurrent);
-
-    YAGL_BARRIER_ARG(egl_api_ts->ts);
 
     if (bad_match) {
         YAGL_SET_ERR(EGL_BAD_MATCH);
@@ -1319,8 +1309,6 @@ EGLBoolean yagl_host_eglSwapBuffers(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglSwapBuffers);
 
-    YAGL_BARRIER_ARG(egl_api_ts->ts);
-
     if (!yagl_validate_display(dpy_, &dpy)) {
         goto out;
     }
@@ -1348,10 +1336,6 @@ EGLBoolean yagl_host_eglSwapBuffers(yagl_host_handle dpy_,
                                                       surface->host_pixels)) {
         YAGL_LOG_ERROR("read_pixels failed");
         YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
-    if (!YAGL_BARRIER_RET(egl_api_ts->ts)) {
         goto out;
     }
 
@@ -1419,8 +1403,6 @@ yagl_host_handle yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle 
         YAGL_SET_ERR(EGL_BAD_NATIVE_WINDOW);
         goto out;
     }
-
-    YAGL_BARRIER_ARG(egl_api_ts->ts);
 
     yagl_egl_window_attribs_init(&attribs);
 
@@ -1547,8 +1529,6 @@ EGLBoolean yagl_host_eglResizeOffscreenSurfaceYAGL(yagl_host_handle dpy_,
         YAGL_SET_ERR(EGL_BAD_ALLOC);
         goto out;
     }
-
-    YAGL_BARRIER_ARG(egl_api_ts->ts);
 
     native_sfc = egl_api_ts->driver_ps->pbuffer_surface_create(egl_api_ts->driver_ps,
                                                                dpy->native_dpy,

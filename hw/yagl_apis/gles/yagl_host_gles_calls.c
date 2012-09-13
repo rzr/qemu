@@ -143,8 +143,6 @@ void yagl_host_glActiveTexture(GLenum texture)
 {
     YAGL_GET_CTX(glActiveTexture);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     if (!yagl_gles_context_set_active_texture(ctx, texture)) {
         YAGL_SET_ERR(GL_INVALID_ENUM);
     }
@@ -157,8 +155,6 @@ void yagl_host_glBindBuffer(GLenum target,
     struct yagl_gles_buffer *buffer_obj = NULL;
 
     YAGL_GET_CTX(glBindBuffer);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     if (buffer != 0) {
         buffer_obj = (struct yagl_gles_buffer*)yagl_sharegroup_acquire_object(ctx->base.sg,
@@ -192,8 +188,6 @@ void yagl_host_glBindTexture(GLenum target,
     yagl_gles_texture_target texture_target;
 
     YAGL_GET_CTX(glBindTexture);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     if (!yagl_gles_validate_texture_target(target, &texture_target)) {
         YAGL_SET_ERR(GL_INVALID_ENUM);
@@ -233,8 +227,6 @@ void yagl_host_glBlendFunc(GLenum sfactor,
     GLenum dfactor)
 {
     YAGL_GET_CTX(glBlendFunc);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->BlendFunc(ctx->driver_ps, sfactor, dfactor);
 }
@@ -281,8 +273,6 @@ void yagl_host_glBufferData(GLenum target,
             goto out;
         }
     }
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     yagl_gles_buffer_set_data(buffer_obj, size, data, usage);
 
@@ -331,8 +321,6 @@ void yagl_host_glBufferSubData(GLenum target,
         goto out;
     }
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     if (!yagl_gles_buffer_update_data(buffer_obj, offset, size, data)) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
         goto out;
@@ -347,8 +335,6 @@ void yagl_host_glClear(GLbitfield mask)
 {
     YAGL_GET_CTX(glClear);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->Clear(ctx->driver_ps, mask);
 }
 
@@ -359,8 +345,6 @@ void yagl_host_glClearColor(GLclampf red,
 {
     YAGL_GET_CTX(glClearColor);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->ClearColor(ctx->driver_ps, red, green, blue, alpha);
 }
 
@@ -368,16 +352,12 @@ void yagl_host_glClearDepthf(GLclampf depth)
 {
     YAGL_GET_CTX(glClearDepthf);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->ClearDepthf(ctx->driver_ps, depth);
 }
 
 void yagl_host_glClearStencil(GLint s)
 {
     YAGL_GET_CTX(glClearStencil);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->ClearStencil(ctx->driver_ps, s);
 }
@@ -388,8 +368,6 @@ void yagl_host_glColorMask(GLboolean red,
     GLboolean alpha)
 {
     YAGL_GET_CTX(glColorMask);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->ColorMask(ctx->driver_ps, red, green, blue, alpha);
 }
@@ -417,8 +395,6 @@ void yagl_host_glCompressedTexImage2D(GLenum target,
             goto out;
         }
     }
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->CompressedTexImage2D(ctx->driver_ps,
                                          target,
@@ -459,8 +435,6 @@ void yagl_host_glCompressedTexSubImage2D(GLenum target,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->CompressedTexSubImage2D(ctx->driver_ps,
                                             target,
                                             level,
@@ -487,8 +461,6 @@ void yagl_host_glCopyTexImage2D(GLenum target,
 {
     YAGL_GET_CTX(glCopyTexImage2D);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->CopyTexImage2D(ctx->driver_ps,
                                    target,
                                    level,
@@ -511,8 +483,6 @@ void yagl_host_glCopyTexSubImage2D(GLenum target,
 {
     YAGL_GET_CTX(glCopyTexSubImage2D);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->CopyTexSubImage2D(ctx->driver_ps,
                                       target,
                                       level,
@@ -527,8 +497,6 @@ void yagl_host_glCopyTexSubImage2D(GLenum target,
 void yagl_host_glCullFace(GLenum mode)
 {
     YAGL_GET_CTX(glCullFace);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->CullFace(ctx->driver_ps, mode);
 }
@@ -558,8 +526,6 @@ void yagl_host_glDeleteBuffers(GLsizei n,
             goto out;
         }
     }
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     if (buffer_names) {
         for (i = 0; i < n; ++i) {
@@ -607,8 +573,6 @@ void yagl_host_glDeleteTextures(GLsizei n,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     if (texture_names) {
         for (i = 0; i < n; ++i) {
             yagl_gles_context_unbind_texture(ctx, texture_names[i]);
@@ -628,16 +592,12 @@ void yagl_host_glDepthFunc(GLenum func)
 {
     YAGL_GET_CTX(glDepthFunc);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->DepthFunc(ctx->driver_ps, func);
 }
 
 void yagl_host_glDepthMask(GLboolean flag)
 {
     YAGL_GET_CTX(glDepthMask);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->DepthMask(ctx->driver_ps, flag);
 }
@@ -647,16 +607,12 @@ void yagl_host_glDepthRangef(GLclampf zNear,
 {
     YAGL_GET_CTX(glDepthRangef);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->DepthRangef(ctx->driver_ps, zNear, zFar);
 }
 
 void yagl_host_glDisable(GLenum cap)
 {
     YAGL_GET_CTX(glEnable);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->Disable(ctx->driver_ps, cap);
 }
@@ -680,8 +636,6 @@ void yagl_host_glDrawArrays(GLenum mode,
         YAGL_SET_ERR(GL_INVALID_VALUE);
         return;
     }
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->DrawArrays(ctx->driver_ps, mode, first, count);
 }
@@ -772,8 +726,6 @@ void yagl_host_glDrawElements(GLenum mode,
         goto out;
     }
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->DrawElements(ctx->driver_ps,
                                  mode,
                                  count,
@@ -793,16 +745,12 @@ void yagl_host_glEnable(GLenum cap)
 {
     YAGL_GET_CTX(glEnable);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->Enable(ctx->driver_ps, cap);
 }
 
 void yagl_host_glFinish(void)
 {
     YAGL_GET_CTX(glFinish);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->Finish(ctx->driver_ps);
 }
@@ -811,16 +759,12 @@ void yagl_host_glFlush(void)
 {
     YAGL_GET_CTX(glFlush);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->Flush(ctx->driver_ps);
 }
 
 void yagl_host_glFrontFace(GLenum mode)
 {
     YAGL_GET_CTX(glFrontFace);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->FrontFace(ctx->driver_ps, mode);
 }
@@ -1059,8 +1003,6 @@ void yagl_host_glHint(GLenum target,
 {
     YAGL_GET_CTX(glHint);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->Hint(ctx->driver_ps, target, mode);
 }
 
@@ -1084,8 +1026,6 @@ void yagl_host_glLineWidth(GLfloat width)
 {
     YAGL_GET_CTX(glLineWidth);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->LineWidth(ctx->driver_ps, width);
 }
 
@@ -1094,8 +1034,6 @@ void yagl_host_glPixelStorei(GLenum pname,
 {
     YAGL_GET_CTX(glPixelStorei);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->PixelStorei(ctx->driver_ps, pname, param);
 }
 
@@ -1103,8 +1041,6 @@ void yagl_host_glPolygonOffset(GLfloat factor,
     GLfloat units)
 {
     YAGL_GET_CTX(glPolygonOffset);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->PolygonOffset(ctx->driver_ps, factor, units);
 }
@@ -1125,8 +1061,6 @@ void yagl_host_glSampleCoverage(GLclampf value,
 {
     YAGL_GET_CTX(glSampleCoverage);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->SampleCoverage(ctx->driver_ps, value, invert);
 }
 
@@ -1137,8 +1071,6 @@ void yagl_host_glScissor(GLint x,
 {
     YAGL_GET_CTX(glScissor);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->Scissor(ctx->driver_ps, x, y, width, height);
 }
 
@@ -1148,16 +1080,12 @@ void yagl_host_glStencilFunc(GLenum func,
 {
     YAGL_GET_CTX(glStencilFunc);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->StencilFunc(ctx->driver_ps, func, ref, mask);
 }
 
 void yagl_host_glStencilMask(GLuint mask)
 {
     YAGL_GET_CTX(glStencilMask);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->StencilMask(ctx->driver_ps, mask);
 }
@@ -1167,8 +1095,6 @@ void yagl_host_glStencilOp(GLenum fail,
     GLenum zpass)
 {
     YAGL_GET_CTX(glStencilOp);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->StencilOp(ctx->driver_ps, fail, zfail, zpass);
 }
@@ -1208,8 +1134,6 @@ void yagl_host_glTexImage2D(GLenum target,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->TexImage2D(ctx->driver_ps,
                                target,
                                level,
@@ -1231,8 +1155,6 @@ void yagl_host_glTexParameterf(GLenum target,
 {
     YAGL_GET_CTX(glTexParameterf);
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->TexParameterf(ctx->driver_ps, target, pname, param);
 }
 
@@ -1248,8 +1170,6 @@ void yagl_host_glTexParameteri(GLenum target,
     GLint param)
 {
     YAGL_GET_CTX(glTexParameteri);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->TexParameteri(ctx->driver_ps, target, pname, param);
 }
@@ -1296,8 +1216,6 @@ void yagl_host_glTexSubImage2D(GLenum target,
         }
     }
 
-    YAGL_BARRIER_ARG_NORET(ts);
-
     ctx->driver_ps->TexSubImage2D(ctx->driver_ps,
                                   target,
                                   level,
@@ -1319,8 +1237,6 @@ void yagl_host_glViewport(GLint x,
     GLsizei height)
 {
     YAGL_GET_CTX(glViewport);
-
-    YAGL_BARRIER_ARG_NORET(ts);
 
     ctx->driver_ps->Viewport(ctx->driver_ps, x, y, width, height);
 }
