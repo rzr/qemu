@@ -179,12 +179,6 @@ static bool yagl_egl_release_current_context(struct yagl_egl_display *dpy)
     return true;
 }
 
-static void yagl_host_egl_bad_call(void)
-{
-    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, yagl_host_egl_bad_call);
-    YAGL_SET_ERR(EGL_BAD_PARAMETER);
-}
-
 static yagl_api_func yagl_host_egl_get_func(struct yagl_api_ps *api_ps,
                                             uint32_t func_id)
 {
@@ -287,7 +281,6 @@ struct yagl_api_ps
 
     egl_api_ps->base.thread_init = &yagl_host_egl_thread_init;
     egl_api_ps->base.get_func = &yagl_host_egl_get_func;
-    egl_api_ps->base.bad_call = &yagl_host_egl_bad_call;
     egl_api_ps->base.thread_fini = &yagl_host_egl_thread_fini;
     egl_api_ps->base.fini = &yagl_host_egl_process_fini;
     egl_api_ps->base.destroy = &yagl_host_egl_process_destroy;

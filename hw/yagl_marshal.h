@@ -19,6 +19,11 @@
  */
 #define YAGL_MARSHAL_MAX_RESPONSE (8 * 2)
 
+/*
+ * Max batch buffer size.
+ */
+#define YAGL_BUFF_SIZE 0x1000
+
 static __inline int yagl_marshal_skip(uint8_t** buff)
 {
     *buff += 8;

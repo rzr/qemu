@@ -38,8 +38,9 @@ static void *yagl_thread_func(void* arg)
     }
 
     while (true) {
-        struct yagl_api_ps *api_ps;
-        yagl_api_func func;
+        bool ret = true;
+        uint8_t *current_buff;
+        uint8_t *tmp;
 
         yagl_event_wait(&ts->call_event);
 
@@ -47,23 +48,90 @@ static void *yagl_thread_func(void* arg)
             break;
         }
 
-        YAGL_LOG_TRACE("calling (api = %u, func = %u)",
-                       ts->current_api,
-                       ts->current_func);
+        current_buff = ts->current_out_buff;
 
-        api_ps = ts->ps->api_states[ts->current_api - 1];
-        assert(api_ps);
+        /*
+         * current_buff is:
+         *  (yagl_api_id) api_id
+         *  (yagl_func_id) func_id
+         *  ... api_id/func_id dependent
+         * current_in_buff must be:
+         *  (uint32_t) 1/0 - call ok/failed
+         *  ... api_id/func_id dependent
+         */
 
-        func = api_ps->get_func(api_ps, ts->current_func);
+        while (true) {
+            yagl_api_id api_id;
+            yagl_func_id func_id;
+            struct yagl_api_ps *api_ps;
+            yagl_api_func func;
 
-        if (!func) {
-            api_ps->bad_call();
-            ts->current_out_buff = NULL;
-        } else {
-            ts->current_out_buff = func(ts,
-                                        ts->current_out_buff,
-                                        ts->current_in_buff);
+            if (current_buff >= (ts->current_out_buff + YAGL_BUFF_SIZE)) {
+                YAGL_LOG_CRITICAL("batch passes the end of buffer, protocol error");
+
+                ret = false;
+
+                break;
+            }
+
+            api_id = yagl_marshal_get_api_id(&current_buff);
+
+            if (api_id == 0) {
+                /*
+                 * Batch ended.
+                 */
+
+                break;
+            }
+
+            func_id = yagl_marshal_get_func_id(&current_buff);
+
+            YAGL_LOG_TRACE("calling (api = %u, func = %u)",
+                           api_id,
+                           func_id);
+
+            if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
+                YAGL_LOG_CRITICAL("target-host protocol error, bad api_id - %u", api_id);
+
+                ret = false;
+
+                break;
+            }
+
+            api_ps = ts->ps->api_states[api_id - 1];
+
+            if (!api_ps) {
+                YAGL_LOG_CRITICAL("uninitialized api - %u. host logic error", api_id);
+
+                ret = false;
+
+                break;
+            }
+
+            func = api_ps->get_func(api_ps, func_id);
+
+            if (func) {
+                tmp = ts->current_in_buff;
+
+                yagl_marshal_skip(&tmp);
+
+                current_buff = func(ts,
+                                    current_buff,
+                                    tmp);
+            } else {
+                YAGL_LOG_CRITICAL("bad function call (api = %u, func = %u)",
+                                  api_id,
+                                  func_id);
+
+                ret = false;
+
+                break;
+            }
         }
+
+        tmp = ts->current_in_buff;
+
+        yagl_marshal_put_uint32(&tmp, (ret ? 1 : 0));
 
         yagl_event_set(&ts->call_processed_event);
     }
@@ -116,29 +184,17 @@ void yagl_thread_state_destroy(struct yagl_thread_state *ts)
     g_free(ts);
 }
 
-uint8_t *yagl_thread_call(struct yagl_thread_state *ts,
-                          yagl_api_id api_id,
-                          yagl_func_id func_id,
-                          uint8_t *out_buff,
-                          uint8_t *in_buff)
+void yagl_thread_call(struct yagl_thread_state *ts,
+                      uint8_t *out_buff,
+                      uint8_t *in_buff)
 {
-    YAGL_LOG_FUNC_ENTER_TS(ts,
-                           yagl_thread_call,
-                           "api = %u, func = %u",
-                           api_id,
-                           func_id);
+    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_thread_call, NULL);
 
     assert(cpu_single_env);
 
-    ts->current_api = api_id;
-    ts->current_func = func_id;
     ts->current_out_buff = out_buff;
     ts->current_in_buff = in_buff;
     ts->current_env = cpu_single_env;
-
-    YAGL_LOG_TRACE("calling (api = %u, func = %u)",
-                   ts->current_api,
-                   ts->current_func);
 
     yagl_cpu_synchronize_state(ts->ps);
 
@@ -146,6 +202,4 @@ uint8_t *yagl_thread_call(struct yagl_thread_state *ts,
     yagl_event_wait(&ts->call_processed_event);
 
     YAGL_LOG_FUNC_EXIT(NULL);
-
-    return ts->current_out_buff;
 }

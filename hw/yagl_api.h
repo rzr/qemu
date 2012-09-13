@@ -23,8 +23,6 @@ struct yagl_api_ps
     yagl_api_func (*get_func)(struct yagl_api_ps */*api_ps*/,
                               uint32_t /*func_id*/);
 
-    void (*bad_call)(void);
-
     void (*thread_fini)(struct yagl_api_ps */*api_ps*/);
 
     void (*fini)(struct yagl_api_ps */*api_ps*/);

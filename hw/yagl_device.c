@@ -16,8 +16,6 @@
 
 #define YAGL_MEM_SIZE 0x1000
 
-#define YAGL_BUFF_SIZE 0x1000
-
 #define YAGL_MAX_USERS (YAGL_MEM_SIZE / YAGL_REGS_SIZE)
 
 struct yagl_user
@@ -151,7 +149,6 @@ static void yagl_device_trigger(YaGLState *s, int user_index)
 {
     target_phys_addr_t buff_len = YAGL_BUFF_SIZE;
     uint8_t *buff = NULL;
-    uint8_t *current_buff;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_device_trigger, "%d", user_index);
 
@@ -171,43 +168,11 @@ static void yagl_device_trigger(YaGLState *s, int user_index)
         goto out;
     }
 
-    current_buff = buff;
-
-    while (true) {
-        uint8_t *tmp;
-
-        if (current_buff >= (buff + YAGL_BUFF_SIZE)) {
-            YAGL_LOG_CRITICAL("batch passes the end of buffer, protocol error");
-
-            memset(s->in_buff, 0, YAGL_MARSHAL_MAX_RESPONSE);
-
-            break;
-        }
-
-        current_buff = yagl_server_dispatch(s->ss,
-                                            s->users[user_index].process_id,
-                                            s->users[user_index].thread_id,
-                                            current_buff,
-                                            s->in_buff);
-
-        if (!current_buff) {
-            /*
-             * Error occured.
-             */
-
-            break;
-        }
-
-        tmp = current_buff;
-
-        /*
-         * Take a peak to see if there's a batch terminator.
-         */
-
-        if (!yagl_marshal_get_uint32(&tmp)) {
-            break;
-        }
-    }
+    yagl_server_dispatch(s->ss,
+                         s->users[user_index].process_id,
+                         s->users[user_index].thread_id,
+                         buff,
+                         s->in_buff);
 
     memcpy(buff, s->in_buff, YAGL_MARSHAL_MAX_RESPONSE);
 

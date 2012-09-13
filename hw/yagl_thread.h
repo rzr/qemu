@@ -30,10 +30,6 @@ struct yagl_thread_state
      * @}
      */
 
-    volatile yagl_api_id current_api;
-
-    volatile yagl_func_id current_func;
-
     /*
      * Allocated by the caller of yagl_thread_call,
      * invalidated after function return.
@@ -55,14 +51,9 @@ struct yagl_thread_state
 
 void yagl_thread_state_destroy(struct yagl_thread_state *ts);
 
-/*
- * Returns new position of 'out_buff' on success and NULL on failure.
- */
-uint8_t *yagl_thread_call(struct yagl_thread_state *ts,
-                          yagl_api_id api_id,
-                          yagl_func_id func_id,
-                          uint8_t *out_buff,
-                          uint8_t *in_buff);
+void yagl_thread_call(struct yagl_thread_state *ts,
+                      uint8_t *out_buff,
+                      uint8_t *in_buff);
 
 #define YAGL_BARRIER_ARG(ts)
 #define YAGL_BARRIER_RET(ts) 1

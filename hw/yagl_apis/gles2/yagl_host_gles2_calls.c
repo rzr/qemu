@@ -61,10 +61,6 @@ static struct yagl_client_context
     return &ctx->base.base;
 }
 
-static void yagl_host_gles2_bad_call(void)
-{
-}
-
 static yagl_api_func yagl_host_gles2_get_func(struct yagl_api_ps *api_ps,
                                               uint32_t func_id)
 {
@@ -167,7 +163,6 @@ struct yagl_api_ps
 
     gles2_api_ps->base.thread_init = &yagl_host_gles2_thread_init;
     gles2_api_ps->base.get_func = &yagl_host_gles2_get_func;
-    gles2_api_ps->base.bad_call = &yagl_host_gles2_bad_call;
     gles2_api_ps->base.thread_fini = &yagl_host_gles2_thread_fini;
     gles2_api_ps->base.fini = &yagl_host_gles2_process_fini;
     gles2_api_ps->base.destroy = &yagl_host_gles2_process_destroy;
