@@ -269,8 +269,10 @@ extern int gl_acceleration_capability_check (void);
 int enable_gl = 0;
 int capability_check_gl = 0;
 #endif
-#if defined(CONFIG_MARU)
-extern int marucam_device_check(void);
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#define WEBCAM_INFO_IGNORE 0x00
+#define WEBCAM_INFO_WRITE 0x04
+extern int marucam_device_check(int log_flag);
 int is_webcam_enabled = 0;
 #endif
 
@@ -1808,7 +1810,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 		}
 	}
 #endif
-#if defined(CONFIG_MARU)
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
     if (!is_webcam_enabled) {
         const char *driver = qemu_opt_get(opts, "driver");
         if (driver && (strcmp (driver, MARUCAM_DEV_NAME) == 0)) {
@@ -3264,26 +3266,27 @@ fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
     }
 #endif
 
-#if defined(CONFIG_MARU)
-    is_webcam_enabled = marucam_device_check();
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+    is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
     if (!is_webcam_enabled) {
-        fprintf (stderr, "WARNING: Webcam support was disabled due to "
-                         "the fail of webcam capability check!\n");
+        fprintf (stderr, "[Webcam] <WARNING> Webcam support was disabled "
+                         "due to the fail of webcam capability check!\n");
     }
 
     gchar *tmp_cam_kcmd = kernel_cmdline;
     kernel_cmdline = g_strdup_printf("%s enable_cam=%d", tmp_cam_kcmd, is_webcam_enabled);
-    fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
     g_free(tmp_cam_kcmd);
 
     if (is_webcam_enabled) {
         device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
         qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
         if (devp.found == 0) {
-            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, "driver")) {
+            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, 1)) {
+                fprintf(stderr, "Failed to initialize the marucam device.\n");
                 exit(1);
             }
         }
+        fprintf(stdout, "[Webcam] Webcam support was enabled.\n");
     }
 #endif
 	

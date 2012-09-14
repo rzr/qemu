@@ -1555,69 +1555,208 @@ static STDMETHODIMP SetVideoProcAmp(long nProperty, long value)
     return hr;
 }
 
-int marucam_device_check(void)
+static char* __wchar_to_char(const WCHAR *pwstr)
 {
+    char *pstr = NULL;
+    int len = 0;
+
+    len = wcslen(pwstr) + 1;
+    pstr = (char *)g_malloc0(sizeof(char) * len);
+    wcstombs(pstr, pwstr, len + 1);
+
+    return pstr;
+}
+
+int marucam_device_check(int log_flag)
+{
+    struct timeval t1, t2;
     int ret = 0;
+    char *device_name = NULL;
     HRESULT hr = E_FAIL;
     ICreateDevEnum *pCreateDevEnum = NULL;
+    IGraphBuilder *pGB = NULL;
+    ICaptureGraphBuilder2 *pCGB = NULL;
+    IBaseFilter *pSrcFilter = NULL;
     IEnumMoniker *pEnumMK = NULL;
     IMoniker *pMoniKer = NULL;
+    IAMStreamConfig *pSConfig = NULL;
+    int iCount = 0, iSize = 0;
 
+    gettimeofday(&t1, NULL);
     hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) {
-        ERR("[%s] failed to CoInitailizeEx\n", __func__);
-        goto error;
+        fprintf(stdout, "[Webcam] failed to CoInitailizeEx\n");
+        goto leave_check;
     }
 
-    hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC, &IID_ICreateDevEnum, (void**)&pCreateDevEnum);
+    hr = CoCreateInstance(&CLSID_FilterGraph, NULL,
+                          CLSCTX_INPROC,
+                          &IID_IGraphBuilder,
+                          (void**)&pGB);
     if (FAILED(hr)) {
-        ERR("[%s] failed to create instance of CLSID_SystemDeviceEnum\n", __func__);
-        goto error;
+        fprintf(stdout, "[Webcam] Failed to create GraphBuilder, 0x%x\n", hr);
+        goto leave_check;
     }
 
-    hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum, &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
-    if (FAILED(hr))
-    {
-        ERR("[%s] failed to create class enumerator\n", __func__);
-        goto error;
+    hr = CoCreateInstance(&CLSID_CaptureGraphBuilder2, NULL,
+                          CLSCTX_INPROC,
+                          &IID_ICaptureGraphBuilder2,
+                          (void**)&pCGB);
+    if (FAILED(hr)) {
+        fprintf(stdout,
+        "[Webcam] Failed to create CaptureGraphBuilder2, 0x%x\n", hr);
+        goto leave_check;
     }
 
-    if (!pEnumMK)
-    {
-        ERR("[%s] class enumerator is NULL!!\n", __func__);
-        goto error;
+    hr = pCGB->lpVtbl->SetFiltergraph(pCGB, pGB);
+    if (FAILED(hr)) {
+        fprintf(stdout, "[Webcam] Failed to SetFiltergraph, 0x%x\n", hr);
+        goto leave_check;
+    }
+
+    hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL,
+                          CLSCTX_INPROC,
+                          &IID_ICreateDevEnum,
+                          (void**)&pCreateDevEnum);
+    if (FAILED(hr)) {
+        fprintf(stdout,
+            "[Webcam] failed to create instance of CLSID_SystemDeviceEnum\n");
+        goto leave_check;
+    }
+
+    hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum,
+                                  &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
+    if (FAILED(hr)) {
+        fprintf(stdout, "[Webcam] failed to create class enumerator\n");
+        goto leave_check;
+    }
+
+    if (!pEnumMK) {
+        fprintf(stdout, "[Webcam] class enumerator is NULL!!\n");
+        goto leave_check;
     }
     pEnumMK->lpVtbl->Reset(pEnumMK);
 
     hr = pEnumMK->lpVtbl->Next(pEnumMK, 1, &pMoniKer, NULL);
-    if (hr == S_FALSE)
-    {
-        ERR("[%s] enum moniker returns a invalid value.\n", __func__);
-        hr = E_FAIL;
-    }
-    if (SUCCEEDED(hr))
-    {
-        IPropertyBag *pBag = NULL;
-        hr = pMoniKer->lpVtbl->BindToStorage(pMoniKer, 0, 0, &IID_IPropertyBag, (void **)&pBag);
-        if (SUCCEEDED(hr))
-        {
-            VARIANT var;
-            var.vt = VT_BSTR;
-            hr = pBag->lpVtbl->Read(pBag, L"FriendlyName", &var, NULL);
-            if (hr == NOERROR)
-            {
-                ret = 1;
-                SysFreeString(var.bstrVal);
-            }
-            SAFE_RELEASE(pBag);
-        }
-        SAFE_RELEASE(pMoniKer);
+    if (FAILED(hr) || (hr == S_FALSE)) {
+        fprintf(stdout, "[Webcam] enum moniker returns a invalid value.\n");
+        goto leave_check;
     }
 
-error:
+    IPropertyBag *pBag = NULL;
+    hr = pMoniKer->lpVtbl->BindToStorage(pMoniKer, 0, 0,
+                                         &IID_IPropertyBag,
+                                         (void **)&pBag);
+    if (FAILED(hr)) {
+        fprintf(stdout, "[Webcam] failed to bind to storage.\n");
+        goto leave_check;
+    } else {
+        VARIANT var;
+        var.vt = VT_BSTR;
+        hr = pBag->lpVtbl->Read(pBag, L"FriendlyName", &var, NULL);
+        if (hr == S_OK) {
+            ret = 1;
+            if (!log_flag) {
+                SysFreeString(var.bstrVal);
+                SAFE_RELEASE(pBag);
+                SAFE_RELEASE(pMoniKer);
+                goto leave_check;
+            }
+            device_name = __wchar_to_char(var.bstrVal);
+            fprintf(stdout, "[Webcam] Device name : %s\n", device_name);
+            g_free(device_name);
+            hr = pMoniKer->lpVtbl->BindToObject(pMoniKer, NULL, NULL,
+                                                &IID_IBaseFilter,
+                                                (void**)&pSrcFilter);
+            if (FAILED(hr)) {
+                fprintf(stdout,
+                   "[Webcam] Counldn't bind moniker to filter object!!\n");
+                goto leave_check;
+            } else {
+                pSrcFilter->lpVtbl->AddRef(pSrcFilter);
+            }
+            SysFreeString(var.bstrVal);
+        }
+        SAFE_RELEASE(pBag);
+    }
+    SAFE_RELEASE(pMoniKer);
+
+    hr = pGB->lpVtbl->AddFilter(pGB, pSrcFilter, L"Video Capture");
+    if (hr != S_OK && hr != S_FALSE) {
+        fprintf(stdout,
+                "[Webcam] Counldn't add Video Capture filter to our graph!\n");
+        goto leave_check;
+    }
+
+    hr = pCGB->lpVtbl->FindInterface(pCGB, &PIN_CATEGORY_CAPTURE, 0,
+                                       pSrcFilter, &IID_IAMStreamConfig,
+                                       (void**)&pSConfig);
+    if (FAILED(hr)) {
+        fprintf(stdout, "[Webcam] failed to FindInterface method\n");
+        goto leave_check;
+    }
+
+    hr = pSConfig->lpVtbl->GetNumberOfCapabilities(pSConfig, &iCount, &iSize);
+    if (FAILED(hr))
+    {
+        fprintf(stdout, "[Webcam] failed to GetNumberOfCapabilities method\n");
+        goto leave_check;
+    }
+
+    if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
+    {
+        int iFormat = 0;
+        for (iFormat = 0; iFormat < iCount; iFormat++)
+        {
+            VIDEO_STREAM_CONFIG_CAPS scc;
+            AM_MEDIA_TYPE *pmtConfig;
+
+            hr = pSConfig->lpVtbl->GetStreamCaps(pSConfig, iFormat, &pmtConfig,
+                                                 (BYTE*)&scc);
+            if (hr == S_OK)
+            {
+                if (IsEqualIID(&pmtConfig->formattype, &FORMAT_VideoInfo))
+                {
+                    VIDEOINFOHEADER *pvi =
+                                         (VIDEOINFOHEADER *)pmtConfig->pbFormat;
+                    if (pvi->bmiHeader.biCompression == BI_RGB) {
+                        fprintf(stdout, "[Webcam] RGB BitCount: %d, %ux%u\n",
+                                pvi->bmiHeader.biBitCount,
+                                pvi->bmiHeader.biWidth,
+                                pvi->bmiHeader.biHeight);
+                    } else {
+                        fprintf(stdout,
+                                "[Webcam] PixelFormat: %c%c%c%c, %ux%u\n",
+                                (char)(pvi->bmiHeader.biCompression),
+                                (char)(pvi->bmiHeader.biCompression >> 8),
+                                (char)(pvi->bmiHeader.biCompression >> 16),
+                                (char)(pvi->bmiHeader.biCompression >> 24),
+                                pvi->bmiHeader.biWidth,
+                                pvi->bmiHeader.biHeight);
+                    }
+                }
+                DeleteMediaType(pmtConfig);
+            }
+        }
+    }
+
+    hr = pGB->lpVtbl->RemoveFilter(pGB, pSrcFilter);
+    if (FAILED(hr)) {
+        fprintf(stdout, "[Webcam] Failed to remove source filer. 0x%x\n", hr);
+    }
+
+leave_check:
+    SAFE_RELEASE(pSConfig);
+    SAFE_RELEASE(pSrcFilter);
+    SAFE_RELEASE(pCGB);
+    SAFE_RELEASE(pGB);
     SAFE_RELEASE(pEnumMK);
     SAFE_RELEASE(pCreateDevEnum);
     CoUninitialize();
+    gettimeofday(&t2, NULL);
+    fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                    t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+
     return ret;
 }
 
@@ -1678,7 +1817,7 @@ void marucam_device_open(MaruCamState* state)
         goto error_failed;
     }
 
-    INFO("Open successfully!!!\n");
+    INFO("Opened\n");
     return;
 
 error_failed:
@@ -1700,7 +1839,7 @@ void marucam_device_close(MaruCamState* state)
     RemoveFilters();
     CloseInterfaces();
     CoUninitialize();
-    INFO("Close successfully!!!\n");
+    INFO("Closed\n");
 }
 
 /* MARUCAM_CMD_START_PREVIEW */
@@ -1717,8 +1856,11 @@ void marucam_device_start_preview(MaruCamState* state)
     pixfmt = supported_dst_pixfmts[cur_fmt_idx].fmt;
     state->buf_size = get_sizeimage(pixfmt, width, height);
 
-    INFO("Pixfmt(0x%x), Width:Height(%d:%d), buffer size(%u)\n",
-         pixfmt, width, height, state->buf_size);
+    INFO("Pixfmt(%c%c%c%c), W:H(%d:%d), buf size(%u)\n",
+         (char)(pixfmt), (char)(pixfmt >> 8),
+         (char)(pixfmt >> 16), (char)(pixfmt >> 24),
+         width, height, state->buf_size);
+    INFO("Starting preview\n");
 
     assert(g_pCallback != NULL);
     hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, g_pCallback);
@@ -1739,7 +1881,7 @@ void marucam_device_start_preview(MaruCamState* state)
     state->streamon = 1;
     qemu_mutex_unlock(&state->thread_mutex);
 
-    INFO("Start preview!!!\n");
+    INFO("Streaming on ......\n");
 }
 
 /* MARUCAM_CMD_STOP_PREVIEW */
@@ -1749,6 +1891,7 @@ void marucam_device_stop_preview(MaruCamState* state)
     MaruCamParam *param = state->param;
     param->top = 0;
 
+    INFO("...... Streaming off\n");
     qemu_mutex_lock(&state->thread_mutex);
     state->streamon = 0;
     qemu_mutex_unlock(&state->thread_mutex);
@@ -1769,7 +1912,7 @@ void marucam_device_stop_preview(MaruCamState* state)
 
     state->buf_size = 0;
 
-    INFO("Stop preview!!!\n");
+    INFO("Stopping preview\n");
 }
 
 /* MARUCAM_CMD_S_PARAM */

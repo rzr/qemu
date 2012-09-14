@@ -89,7 +89,7 @@ struct MaruCamState {
 /* ----------------------------------------------------------------------------- */
 /* Fucntion prototype                                                            */
 /* ----------------------------------------------------------------------------- */
-int marucam_device_check(void);
+int marucam_device_check(int log_flag);
 void marucam_device_init(MaruCamState *state);
 void marucam_device_open(MaruCamState *state);
 void marucam_device_close(MaruCamState *state);
