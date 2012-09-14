@@ -30,7 +30,7 @@
 	<target name="make-properties">
 		<echo message="make properties..." />
 		<tstamp>
-			<format property="build_time" pattern="MM/dd/yyyy hh:mm aa" timezone="GMT" locale="en" />
+			<format property="build_time" pattern="yyyyMMdd-hhmm" timezone="GMT+9" locale="en" />
 		</tstamp>
 		<exec executable="cat" outputproperty="version">
 			<arg value="../../VERSION" />
@@ -66,6 +66,9 @@
 		<copy todir="build/icons">
 			<fileset dir="resource/icons" />
 		</copy>
+		<copy todir="build/images">
+			<fileset dir="resource/images" />
+		</copy>
 		<jar jarfile="${jar.file}" basedir="build" duplicate="add">
 			<fileset file="src/about.properties" />
 			<manifest>
@@ -79,7 +82,7 @@
 	<target name="create-native-linux" if="isLinux" unless="isMac">
 		<echo message="create native shared library on linux..." />
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
-			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-shared" />
@@ -87,7 +90,8 @@
 			<arg line="Share.c" />
 			<arg line="-o" />
 			<arg line="libshare.so" />
-			<arg line="-I${env.JAVA_HOME}/include" />
+			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
+			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}/linux" />
 			<arg line="-fPIC" />
 		</exec>
 		<delete>
@@ -98,15 +102,14 @@
 	<target name="create-native-mac" if="isMac">
 		<echo message="create native shared library on mac..." />
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
-			<class name="org.tizen.emulator.skin.EmulatorSkin" />
+			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-dynamiclib" />
-			<arg line="-c" />
 			<arg line="Share.c" />
 			<arg line="-o" />
 			<arg line="libshare.dylib" />
-			<arg line="-I${env.JAVA_HOME}/Headers" />
+			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
 			<arg line="-fPIC" />
 		</exec>
 		<delete>

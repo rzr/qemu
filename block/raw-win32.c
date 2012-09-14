@@ -110,13 +110,6 @@ static int raw_open(BlockDriverState *bs, const char *filename, int flags)
     }
 
 #else
-	/*
-    s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
-                          access_flags,
-                          FILE_SHARE_READ, NULL,
-                          OPEN_EXISTING, overlapped, NULL);
-	*/
-
 #include <errno.h>
 	int open_flags = O_BINARY;
 	open_flags &= ~O_ACCMODE;

@@ -135,4 +135,7 @@ public class LicenseDialog extends SkinDialog {
 
 	}
 
+	protected void close() {
+		logger.info("close the license dialog");
+	}
 }

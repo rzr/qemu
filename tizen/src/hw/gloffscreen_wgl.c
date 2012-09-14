@@ -86,6 +86,8 @@ PFNWGLGETPBUFFERDCARBPROC wglGetPbufferDCARB;
 PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB;
 PFNWGLCREATEPBUFFERARBPROC wglCreatePbufferARB;
 PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
+PFNWGLBINDTEXIMAGEARBPROC wglBindTexImageARB;
+PFNWGLRELEASETEXIMAGEARBPROC wglReleaseTexImageARB;
 
 /* ------------------------------------------------------------------------ */
 
@@ -109,6 +111,8 @@ int glo_sanity_test (void) {
     PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB;
     PFNWGLCREATEPBUFFERARBPROC wglCreatePbufferARB;
     PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
+	PFNWGLBINDTEXIMAGEARBPROC wglBindTexImageARB;
+	PFNWGLRELEASETEXIMAGEARBPROC wglReleaseTexImageARB;
 
     wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
     wglGetPbufferDCARB = (PFNWGLGETPBUFFERDCARBPROC)wglGetProcAddress("wglGetPbufferDCARB");
@@ -205,6 +209,9 @@ int glo_init(void) {
     wglReleasePbufferDCARB = (PFNWGLRELEASEPBUFFERDCARBPROC)wglGetProcAddress("wglReleasePbufferDCARB");
     wglCreatePbufferARB = (PFNWGLCREATEPBUFFERARBPROC)wglGetProcAddress("wglCreatePbufferARB");
     wglDestroyPbufferARB = (PFNWGLDESTROYPBUFFERARBPROC)wglGetProcAddress("wglDestroyPbufferARB");
+    wglBindTexImageARB = (PFNWGLBINDTEXIMAGEARBPROC)wglGetProcAddress("wglBindTexImageARB");
+    wglReleaseTexImageARB = (PFNWGLRELEASETEXIMAGEARBPROC)wglGetProcAddress("wglReleaseTexImageARB");
+
     if (!wglChoosePixelFormatARB ||
         !wglGetPbufferDCARB ||
         !wglReleasePbufferDCARB ||
@@ -214,6 +221,10 @@ int glo_init(void) {
         //exit( EXIT_FAILURE );
 		return 1;
     }
+
+    if ( !wglBindTexImageARB ||
+         !wglReleaseTexImageARB )
+        fprintf (stderr, "Warning: no [Bind|Release]TexImageARB extensions.\n");
 
     glo_inited = 1;
 
@@ -618,6 +629,7 @@ static const char *STANDARD_GL_FUNCTIONS ={
 "glXQueryDrawable\0"
 "glXGetVisualFromFBConfig\0"
 "glXIsDirect\0"
+"glXCreatePixmap\0"
 "\0"
 };
 
@@ -668,11 +680,15 @@ void *glo_getprocaddress(const char *procName) {
 
     return procAddr;
 }
+void glo_surface_updatecontents(GloSurface *surface) {
+	/* NOT IMPLEMENTED YET. */
+	printf("glo_surface_updatecontents() is not implemented for windows. \n");
+}
 
 /* ------------------------------------------------------------------------ */
 
-/* Create an OpenGL context for a certain pixel format. formatflags are from the GLO_ constants */
-GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
+/* Create a light-weight context just for creating surface */
+GloContext *__glo_context_create(int formatFlags) {
     GloContext *context;
     // pixel format attributes
     int          pf_attri[] = {
@@ -685,6 +701,9 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
         WGL_DEPTH_BITS_ARB, 0,
         WGL_STENCIL_BITS_ARB, 0,
         WGL_DOUBLE_BUFFER_ARB, FALSE,      
+        /* Need following 2 to suport surface as texture */
+        WGL_DRAW_TO_PBUFFER_ARB, TRUE,
+        WGL_BIND_TO_TEXTURE_RGBA_ARB, TRUE,
         0                                
     };
     float        pf_attrf[] = {0, 0};
@@ -732,6 +751,18 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
 		return NULL;
     }
 
+	return context;
+}
+
+/* Create an OpenGL context for a certain pixel format. formatflags are from the GLO_ constants */
+GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
+
+    GloContext *context = __glo_context_create(formatFlags);
+
+	if (!context) {
+		return NULL;
+	}
+
     context->hContext = wglCreateContext(context->hDC);
     if (context->hContext == NULL) {
         printf( "Unable to create GL context\n" );
@@ -767,11 +798,24 @@ void glo_context_destroy(GloContext *context) {
 
 /* ------------------------------------------------------------------------ */
 
+/* Update the context in surface and free previous light-weight context */
+void glo_surface_update_context(GloSurface *surface, GloContext *context)
+{
+    if ( surface->context && !surface->context->hDC)
+        g_free(surface->context);
+    surface->context = context;
+}
+
 /* Create a surface with given width and height, formatflags are from the
  * GLO_ constants */
 GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     GloSurface           *surface;
-    int                   pb_attr[] = { 0 };
+    int                   pb_attr[] = {
+        /* Need following 2 to support surface as texture */
+        WGL_TEXTURE_FORMAT_ARB,  WGL_TEXTURE_RGBA_ARB,
+        WGL_TEXTURE_TARGET_ARB,  WGL_TEXTURE_2D_ARB,
+        0
+    };
     
     // Create the p-buffer...
     surface = (GloSurface*)malloc(sizeof(GloSurface));
@@ -838,6 +882,45 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
         *width = surface->width;
     if (height)
         *height = surface->height;
+}
+
+/* Bind the surface as texture */
+void glo_surface_as_texture(GloSurface *surface)
+{
+#if 0
+    int glFormat, glType;
+    glo_surface_updatecontents(surface);
+    /*XXX: change the fixed target: GL_TEXTURE_2D*/
+    glo_flags_get_readpixel_type(surface->context->formatFlags, &glFormat, &glType);
+    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d,glFormat=0x%x,glType=0x%x.\n", surface->width, surface->height, glFormat, glType);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->image->data);
+#else
+    if (!wglBindTexImageARB)
+    {
+        fprintf (stderr, "wglBindTexImageEXT not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
+        return;
+    }
+
+    if ( !wglBindTexImageARB(surface->hPBuffer, WGL_FRONT_LEFT_ARB) )
+    {
+        fprintf(stderr, "wglBindTexImageARBr error=%d.\n", glGetError());
+    }
+
+#endif
+}
+void glo_surface_release_texture(GloSurface *surface)
+{
+    if (!wglReleaseTexImageARB)
+    {
+        fprintf (stderr, "wglReleaseTexImageARB not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
+        return;
+    }
+
+    if ( !wglReleaseTexImageARB(surface->hPBuffer, WGL_FRONT_LEFT_ARB) )
+    {
+        fprintf(stderr, "wglBindTexImageARBr error=%d.\n", glGetError());
+    }
+
 }
 
 #endif

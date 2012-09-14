@@ -33,12 +33,13 @@
 #include "qemu-thread.h"
 
 #define MARUCAM_MAX_PARAM    20
+#define MARUCAM_SKIPFRAMES    2
 
 /* must sync with GUEST camera_driver */
 #define MARUCAM_CMD_INIT           0x00
 #define MARUCAM_CMD_OPEN           0x04
 #define MARUCAM_CMD_CLOSE          0x08
-#define MARUCAM_CMD_ISSTREAM       0x0C
+#define MARUCAM_CMD_ISR            0x0C
 #define MARUCAM_CMD_START_PREVIEW  0x10
 #define MARUCAM_CMD_STOP_PREVIEW   0x14
 #define MARUCAM_CMD_S_PARAM        0x18
@@ -54,7 +55,6 @@
 #define MARUCAM_CMD_ENUM_FINTV     0x40
 #define MARUCAM_CMD_S_DATA         0x44
 #define MARUCAM_CMD_G_DATA         0x48
-#define MARUCAM_CMD_CLRIRQ         0x4C
 #define MARUCAM_CMD_DATACLR        0x50
 #define MARUCAM_CMD_REQFRAME       0x54
 
@@ -74,8 +74,10 @@ struct MaruCamState {
     QemuThread          thread_id;
     QemuMutex           thread_mutex;;
     QemuCond            thread_cond;
+    QEMUBH              *tx_bh;
 
     void                *vaddr;     /* vram ptr */
+    uint32_t            isr;
     uint32_t            streamon;
     uint32_t            buf_size;
     uint32_t            req_frame;
@@ -87,6 +89,7 @@ struct MaruCamState {
 /* ----------------------------------------------------------------------------- */
 /* Fucntion prototype                                                            */
 /* ----------------------------------------------------------------------------- */
+int marucam_device_check(void);
 void marucam_device_init(MaruCamState *state);
 void marucam_device_open(MaruCamState *state);
 void marucam_device_close(MaruCamState *state);

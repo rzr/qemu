@@ -32,6 +32,9 @@
 #include "blockdev.h"
 #include "virtio-pci.h"
 #include "range.h"
+#ifdef CONFIG_MARU
+#include "../tizen/src/hw/maru_device_ids.h"
+#endif
 
 /* from Linux's linux/virtio_pci.h */
 
@@ -828,6 +831,30 @@ static int virtio_gl_init_pci(PCIDevice *pci_dev)
 #endif
 #endif
 
+#ifdef CONFIG_MARU
+static int maru_virtio_touchscreen_init_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+    VirtIODevice *vdev;
+
+    vdev = maru_virtio_touchscreen_init(&pci_dev->qdev);
+    if (!vdev) {
+        return -1;
+    }
+    virtio_init_pci(proxy, vdev);
+    return 0;
+}
+
+static int maru_virtio_touchscreen_exit_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+
+    virtio_pci_stop_ioeventfd(proxy);
+    maru_virtio_touchscreen_exit(proxy->vdev);
+    return virtio_exit_pci(pci_dev);
+}
+#endif
+
 static Property virtio_blk_properties[] = {
     DEFINE_PROP_HEX32("class", VirtIOPCIProxy, class_code, 0),
     DEFINE_BLOCK_PROPERTIES(VirtIOPCIProxy, blk.conf),
@@ -1035,6 +1062,29 @@ static TypeInfo virtio_gl_info = {
 #endif
 #endif
 
+#ifdef CONFIG_MARU
+static void maru_virtio_touchscreen_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = maru_virtio_touchscreen_init_pci;
+    k->exit = maru_virtio_touchscreen_exit_pci;
+    k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    k->device_id = PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN;
+    k->revision = VIRTIO_PCI_ABI_VERSION;
+    k->class_id = PCI_CLASS_OTHERS;
+    dc->reset = virtio_pci_reset;
+}
+
+static TypeInfo maru_virtio_touchscreen_info = {
+    .name          = "virtio-touchscreen-pci",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOPCIProxy),
+    .class_init    = maru_virtio_touchscreen_class_init,
+};
+#endif
+
 static void virtio_pci_register_types(void)
 {
     type_register_static(&virtio_blk_info);
@@ -1044,6 +1094,9 @@ static void virtio_pci_register_types(void)
     type_register_static(&virtio_scsi_info);
 #ifdef CONFIG_VIRTIO_GL
     type_register_static(&virtio_gl_info);
+#endif
+#ifdef CONFIG_MARU
+    type_register_static(&maru_virtio_touchscreen_info);
 #endif
 }
 

@@ -1,0 +1,24 @@
+#!/bin/sh
+do_start () {
+	if grep -qs "^flags.* vmx" /proc/cpuinfo; then
+		modprobe -b kvm_intel
+	elif grep -qs "^flags.* svm" /proc/cpuinfo; then
+		modprobe -b kvm_amd
+	fi
+}
+
+case "$1" in
+  start)
+	do_start
+	;;
+  restart|reload|force-reload)
+	# No-op
+	;;
+  stop)
+	# No-op
+	;;
+  *)
+	echo "Usage: $0 start|stop" >&2
+	exit 3
+	;;
+esac

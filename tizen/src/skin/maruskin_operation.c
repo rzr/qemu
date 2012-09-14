@@ -47,11 +47,15 @@
 #include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
+#include "maruskin_server.h"
 #include "emul_state.h"
 #include "hw/maru_pm.h"
 #include "sysemu.h"
+#include "sysbus.h"
 
 #ifdef CONFIG_HAX
+#include "guest_debug.h"
+
 #include "target-i386/hax-i386.h"
 #endif
 
@@ -64,6 +68,7 @@ MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 #define TIMEOUT_FOR_SHUTDOWN 10 // seconds
 
 static int requested_shutdown_qemu_gracefully = 0;
+static int guest_x, guest_y = 0;
 
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
@@ -77,15 +82,17 @@ void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, do
     maruskin_init(handle_id, lcd_size_width, lcd_size_height, false);
 }
 
-void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, int z )
+void do_mouse_event(int button_type, int event_type,
+    int origin_x, int origin_y, int x, int y, int z)
 {
-    if( brightness_off ) {
-        TRACE( "reject mouse touch in lcd off : %d, x:%d, y:%d, z:%d\n", event_type, x, y, z );
+    if (brightness_off) {
+        TRACE("reject mouse touch in lcd off = button:%d, type:%d, x:%d, y:%d, z:%d\n",
+            button_type, event_type, x, y, z);
         return;
     }
 
-    TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n",
-        event_type, origin_x, origin_y, x, y, z);
+    TRACE("mouse_event button:%d, type:%d, host:(%d, %d), x:%d, y:%d, z:%d\n",
+        button_type, event_type, origin_x, origin_y, x, y, z);
 
 #ifndef USE_SHM
     /* multi-touch */
@@ -99,14 +106,37 @@ void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, i
 #endif
 
     /* single touch */
-    if (MOUSE_DOWN == event_type || MOUSE_DRAG == event_type) {
-        kbd_mouse_event(x, y, z, 1);
-    } else if (MOUSE_UP == event_type) {
-        kbd_mouse_event(x, y, z, 0);
-    } else {
-        ERR("undefined mouse event type:%d\n", event_type);
+    switch(event_type) {
+        case MOUSE_DOWN:
+        case MOUSE_DRAG:
+            guest_x = x;
+            guest_y = y;
+            kbd_mouse_event(x, y, z, 1);
+            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
+            event_type, origin_x, origin_y, x, y, z);
+            break;
+        case MOUSE_UP:
+            guest_x = x;
+            guest_y = y;
+            kbd_mouse_event(x, y, z, 0);
+            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
+            event_type, origin_x, origin_y, x, y, z);
+            break;
+        case MOUSE_WHEELUP:
+        case MOUSE_WHEELDOWN:
+            x -= guest_x;
+            y -= guest_y;
+            guest_x += x;
+            guest_y += y;
+            kbd_mouse_event(x, y, -z, event_type);
+            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
+            event_type, origin_x, origin_y, x, y, z);
+            break;
+        default:
+            ERR("undefined mouse event type passed:%d\n", event_type);
+            break;
     }
-
+   
 #if 0
 #ifdef CONFIG_WIN32
     Sleep(1);
@@ -116,9 +146,12 @@ void do_mouse_event( int event_type, int origin_x, int origin_y, int x, int y, i
 #endif
 }
 
-void do_key_event( int event_type, int keycode, int key_location )
+void do_key_event(int event_type, int keycode, int state_mask, int key_location)
 {
-    TRACE( "key_event event_type:%d, keycode:%d, key_location:%d\n", event_type, keycode, key_location );
+    int scancode = -1;
+
+    TRACE("key_event event_type:%d, keycode:%d, state_mask:%d, key_location:%d\n",
+        event_type, keycode, state_mask, key_location);
 
 #ifndef USE_SHM
     //is multi-touch mode ?
@@ -126,36 +159,36 @@ void do_key_event( int event_type, int keycode, int key_location )
         if (keycode == JAVA_KEYCODE_BIT_CTRL) {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 1;
-                INFO("multi-touch enabled = A\n");
+                INFO("1)multi-touch enabled = A\n");
             } else if (KEY_RELEASED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 0;
                 clear_finger_slot();
-                INFO("multi-touch disabled\n");
+                INFO("1)multi-touch disabled\n");
             }
         } else if (keycode == (JAVA_KEYCODE_NO_FOCUS | JAVA_KEYCODE_BIT_CTRL)) {
             //release ctrl key when dragging
             if (KEY_RELEASED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 0;
                 clear_finger_slot();
-                INFO("multi-touch disabled\n");
+                INFO("2)multi-touch disabled\n");
             }
         } else if (keycode == (JAVA_KEYCODE_BIT_SHIFT | JAVA_KEYCODE_BIT_CTRL)) {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 2;
-                INFO("multi-touch enabled = B\n");
+                INFO("2)multi-touch enabled = B\n");
             } else if (KEY_RELEASED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 1;
-                INFO("multi-touch enabled = A\n");
+                INFO("2)multi-touch enabled = A\n");
             }
         }
     }
 #endif
 
     if (!mloop_evcmd_get_usbkbd_status()) {
-    	return;
+        return;
     }
 
-    int scancode = javakeycode_to_scancode(keycode, event_type, key_location);
+    scancode = javakeycode_to_scancode(event_type, keycode, state_mask, key_location);
     TRACE("javakeycode_to_scancode : %d\n", scancode);
 
     if (scancode == -1) {
@@ -383,6 +416,49 @@ void onoff_usb_kbd( int on )
     mloop_evcmd_usbkbd(on);
 }
 
+#define MAX_PATH 256
+static void dump_ram( void )
+{
+#if defined(CONFIG_LINUX)
+    MemoryRegion* rm = get_ram_memory();
+    unsigned int size = rm->size.lo;
+    char dump_fullpath[MAX_PATH];
+    char dump_filename[MAX_PATH];
+
+    char* dump_path = g_path_get_dirname(get_logpath());
+
+    sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-", 
+        rm->ram_addr + size, "_RAM.dump");
+    sprintf(dump_fullpath, "%s/%s", dump_path, dump_filename);
+    free(dump_path);
+
+    FILE *dump_file = fopen(dump_fullpath, "w+");
+    if(!dump_file) {
+        fprintf(stderr, "Dump file create failed [%s]\n", dump_fullpath);
+
+        return;
+    }
+
+    size_t written;
+    written = fwrite(qemu_get_ram_ptr(rm->ram_addr), sizeof(char), size, dump_file);
+    fprintf(stdout, "Dump file written [%08x][%d bytes]\n", rm->ram_addr, written);
+    if(written != size) {
+        fprintf(stderr, "Dump file size error [%d, %d, %d]\n", written, size, errno);
+    }
+
+    fprintf(stdout, "Dump file create success [%s, %d bytes]\n", dump_fullpath, size);
+
+    fclose(dump_file);
+#endif
+}
+
+void ram_dump(void) {
+    INFO("ram dump!\n");
+
+    dump_ram();
+
+    notify_ramdump_complete();
+}
 
 void request_close( void )
 {

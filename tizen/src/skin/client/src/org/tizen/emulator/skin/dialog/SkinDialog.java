@@ -51,8 +51,7 @@ public abstract class SkinDialog extends Dialog {
 	public static final String OK = "        " + "OK" + "        ";
 	
 	protected Shell shell;
-	private boolean isReady;
-	private Composite buttonComposite;
+	protected Composite buttonComposite;
 	private Shell parent;
 	private String title;
 	private int style;
@@ -63,16 +62,8 @@ public abstract class SkinDialog extends Dialog {
 		this.title = title;
 		this.style = style;
 	}
-	
-	public void open() {
 
-		shell = new Shell( parent, style );
-		shell.setLocation( parent.getLocation().x + 50, parent.getLocation().y + 50 );
-		shell.setText( title );
-		shell.setImage( parent.getImage() );
-		
-		shell.setLayout( new GridLayout( 1, true ) );
-
+	protected void createComposite() {
 		Composite parent = new Composite( shell, SWT.NONE );
 		parent.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 		GridLayout gridLayout = new GridLayout( 1, true );
@@ -83,26 +74,30 @@ public abstract class SkinDialog extends Dialog {
 		composite.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 		composite.setLayout( new FillLayout( SWT.VERTICAL ) );
 
-		Composite area = createArea( composite );
-		if ( null == area ) {
+		Composite area = createArea(composite);
+		if (null == area) {
 			return;
 		}
-
-		isReady = true;
 
 		buttonComposite = new Composite( parent, SWT.NONE );
 		buttonComposite.setLayoutData( new GridData( SWT.FILL, SWT.CENTER, true, false ) );
 		buttonComposite.setLayout( new FillLayout( SWT.HORIZONTAL ) );
 
 		createButtons( buttonComposite );
+	}
+
+	public void open() {
+		shell = new Shell( parent, style );
+		shell.setText( title );
+		shell.setImage( parent.getImage() );
+
+		shell.setLayout( new GridLayout( 1, true ) );
+
+		createComposite();
 		
 		shell.pack();
 
 		setShellSize();
-		
-		if ( !isReady ) {
-			return;
-		}
 
 		if (this.parent != null) {
 			Point central = new Point(
@@ -122,6 +117,10 @@ public abstract class SkinDialog extends Dialog {
 			}
 		}
 
+		close();
+	}
+
+	protected void close() {
 	}
 
 	protected void setShellSize() {

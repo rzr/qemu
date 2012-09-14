@@ -101,7 +101,7 @@ public class SkinUtil {
 		String sdbPath = null;
 
 		if (SwtUtil.isWindowsPlatform()) {
-			sdbPath = ".\\..\\..\\sdb.exe";
+			sdbPath = ".\\..\\..\\sdb-run.bat";
 		} else {
 			sdbPath = "./../../sdb";
 		}
@@ -253,8 +253,8 @@ public class SkinUtil {
 
 	}
 
-	public static void trimShell(Shell shell, Image image, int left, int top,
-		int width, int height) {
+	public static void trimShell(Shell shell, Image image,
+			int left, int top, int width, int height) {
 
 		if (null == image) {
 			return;
@@ -275,6 +275,8 @@ public class SkinUtil {
 				int alpha = imageData.getAlpha(i, j);
 				if (0 == alpha) {
 					region.subtract(i, j, 1, 1);
+				} else {
+					region.add(i, j, 1, 1);
 				}
 			}
 		}

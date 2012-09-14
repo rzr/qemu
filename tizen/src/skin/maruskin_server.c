@@ -48,6 +48,7 @@
 #include "emul_state.h"
 #include "maruskin_client.h"
 #include "emulator.h"
+#include "maru_err_table.h"
 
 #ifndef USE_SHM
 #include "maru_sdl.h"
@@ -101,6 +102,7 @@ enum {
     RECV_USB_KBD = 15,
     RECV_SCREEN_SHOT = 16,
     RECV_DETAIL_INFO = 17,
+    RECV_RAM_DUMP = 18,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
@@ -110,6 +112,7 @@ enum {
     SEND_HEART_BEAT = 1,
     SEND_SCREEN_SHOT = 2,
     SEND_DETAIL_INFO = 3,
+    SEND_RAMDUMP_COMPLETE = 4,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
@@ -193,7 +196,7 @@ void shutdown_skin_server( void ) {
         }
     }
 
-    if( success_send ) {
+    if ( success_send ) {
 
         int count = 0;
         int max_sleep_count = 10;
@@ -228,6 +231,7 @@ void shutdown_skin_server( void ) {
 #else
         close( client_sock );
 #endif
+        client_sock = 0;
     }
 
     if ( close_server_socket ) {
@@ -238,6 +242,7 @@ void shutdown_skin_server( void ) {
 #else
             close( server_sock );
 #endif
+            server_sock = 0;
         }
     }
 
@@ -252,6 +257,17 @@ void notify_sensor_daemon_start( void ) {
         }
     }
 }
+
+void notify_ramdump_complete(void) {
+    INFO("notify_ramdump_complete\n");
+
+    if (client_sock) {
+        if (0 > send_skin_header_only( client_sock, SEND_RAMDUMP_COMPLETE, 1)) {
+            ERR("fail to send SEND_RAMDUMP_COMPLETE to skin.\n");
+        }
+    }
+}
+
 
 int is_ready_skin_server( void ) {
     return ready_server;
@@ -354,12 +370,12 @@ static void parse_skinconfig_prop( void ) {
 static void parse_skin_args( void ) {
 
     int i;
-    for( i = 0; i < skin_argc; i++ ) {
+    for ( i = 0; i < skin_argc; i++ ) {
 
         char* arg = NULL;
         arg = strdup( skin_argv[i] );
 
-        if( arg ) {
+        if ( arg ) {
 
             char* key = strtok( arg, "=" );
             char* value = strtok( NULL, "=" );
@@ -602,34 +618,39 @@ static void* run_skin_server( void* args ) {
                     }
 
                     /* keep it consistent with emulator-skin definition */
+                    int button_type = 0;
                     int event_type = 0;
-                    int origin_x = 0;
-                    int origin_y = 0;
-                    int x = 0;
-                    int y = 0;
+                    int host_x = 0;
+                    int host_y = 0;
+                    int guest_x = 0;
+                    int guest_y = 0;
                     int z = 0;
 
                     char* p = recvbuf;
+                    memcpy( &button_type, p, sizeof( button_type ) );
+                    p += sizeof( button_type );
                     memcpy( &event_type, p, sizeof( event_type ) );
                     p += sizeof( event_type );
-                    memcpy( &origin_x, p, sizeof( origin_x ) );
-                    p += sizeof( origin_x );
-                    memcpy( &origin_y, p, sizeof( origin_y ) );
-                    p += sizeof( origin_y );
-                    memcpy( &x, p, sizeof( x ) );
-                    p += sizeof( x );
-                    memcpy( &y, p, sizeof( y ) );
-                    p += sizeof( y );
+                    memcpy( &host_x, p, sizeof( host_x ) );
+                    p += sizeof( host_x );
+                    memcpy( &host_y, p, sizeof( host_y ) );
+                    p += sizeof( host_y );
+                    memcpy( &guest_x, p, sizeof( guest_x ) );
+                    p += sizeof( guest_x );
+                    memcpy( &guest_y, p, sizeof( guest_y ) );
+                    p += sizeof( guest_y );
                     memcpy( &z, p, sizeof( z ) );
 
+                    button_type = ntohl( button_type );
                     event_type = ntohl( event_type );
-                    origin_x = ntohl( origin_x );
-                    origin_y = ntohl( origin_y );
-                    x = ntohl( x );
-                    y = ntohl( y );
+                    host_x = ntohl( host_x );
+                    host_y = ntohl( host_y );
+                    guest_x = ntohl( guest_x );
+                    guest_y = ntohl( guest_y );
                     z = ntohl( z );
 
-                    do_mouse_event( event_type, origin_x, origin_y, x, y, z );
+                    do_mouse_event(button_type, event_type,
+                        host_x, host_y, guest_x, guest_y, z);
                     break;
                 }
                 case RECV_KEY_EVENT: {
@@ -644,6 +665,7 @@ static void* run_skin_server( void* args ) {
                     /* keep it consistent with emulator-skin definition */
                     int event_type = 0;
                     int keycode = 0;
+                    int state_mask = 0;
                     int key_location = 0;
 
                     char* p = recvbuf;
@@ -651,13 +673,16 @@ static void* run_skin_server( void* args ) {
                     p += sizeof( event_type );
                     memcpy( &keycode, p, sizeof( keycode ) );
                     p += sizeof( keycode );
+                    memcpy( &state_mask, p, sizeof( state_mask ) );
+                    p += sizeof( state_mask );
                     memcpy( &key_location, p, sizeof( key_location ) );
 
                     event_type = ntohl( event_type );
                     keycode = ntohl( keycode );
+                    state_mask = ntohl( state_mask );
                     key_location = ntohl( key_location );
 
-                    do_key_event( event_type, keycode, key_location );
+                    do_key_event(event_type, keycode, state_mask, key_location);
                     break;
                 }
                 case RECV_HARD_KEY_EVENT: {
@@ -751,6 +776,13 @@ static void* run_skin_server( void* args ) {
 
                     break;
                 }
+                case RECV_RAM_DUMP: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_RAM_DUMP ==\n");
+                    TRACE(log_buf);
+
+                    ram_dump();
+                    break;
+                }
                 case RECV_RESPONSE_HEART_BEAT: {
                     log_cnt += sprintf( log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n" );
 //                    TRACE( log_buf );
@@ -821,6 +853,7 @@ cleanup:
 #else
         close( server_sock );
 #endif
+        server_sock = 0;
     }
 
     if( shutdown_qmu ) {
@@ -986,13 +1019,22 @@ static void* do_heart_beat( void* args ) {
     int need_restart_skin_client = 0;
     int shutdown = 0;
 
-    while ( 1 ) {
+    int booting_handicap_cnt = 0;
 
-        struct timeval current;
+    struct timeval current;
+    struct timespec ts_heartbeat;
+
+    while ( 1 ) {
         gettimeofday( &current, NULL );
 
-        struct timespec ts_heartbeat;
-        ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
+        if (booting_handicap_cnt < 5) {
+            booting_handicap_cnt++;
+            ts_heartbeat.tv_sec = current.tv_sec +
+                (HEART_BEAT_INTERVAL * 10);
+        } else {
+            ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
+        }
+
         ts_heartbeat.tv_nsec = current.tv_usec * 1000;
 
         pthread_mutex_lock( &mutex_heartbeat );
@@ -1004,14 +1046,14 @@ static void* do_heart_beat( void* args ) {
             break;
         }
 
-        if( client_sock ) {
+        if ( client_sock ) {
             TRACE( "send HB\n" );
             if ( 0 > send_skin_header_only( client_sock, SEND_HEART_BEAT, 0 ) ) {
                 send_fail_count++;
             } else {
                 send_fail_count = 0;
             }
-        }else {
+        } else {
             // fail to get socket in accepting or client is not yet accepted.
             send_fail_count++;
             TRACE( "[HB] client socket is NULL yet.\n" );
@@ -1024,7 +1066,7 @@ static void* do_heart_beat( void* args ) {
 
         pthread_mutex_lock( &mutex_recv_heartbeat_count );
         recv_heartbeat_count++;
-        if( 1 < recv_heartbeat_count ) {
+        if ( 1 < recv_heartbeat_count ) {
             TRACE( "[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count );
         }
         pthread_mutex_unlock( &mutex_recv_heartbeat_count );
@@ -1034,7 +1076,7 @@ static void* do_heart_beat( void* args ) {
             need_restart_skin_client = 1;
         }
 
-        if( need_restart_skin_client ) {
+        if ( need_restart_skin_client ) {
 
             if ( RESTART_CLIENT_MAX_COUNT <= restart_client_count ) {
                 shutdown = 1;
@@ -1044,7 +1086,7 @@ static void* do_heart_beat( void* args ) {
                 if ( is_requested_shutdown_qemu_gracefully() ) {
                     INFO( "requested shutdown_qemu_gracefully, do not retry starting skin client process.\n" );
                     break;
-                }else {
+                } else {
 
                     send_fail_count = 0;
                     recv_heartbeat_count = 0;
@@ -1062,6 +1104,7 @@ static void* do_heart_beat( void* args ) {
 #else
                         close( client_sock );
 #endif
+                        client_sock = 0;
                     }
 
                     start_skin_client( skin_argc, skin_argv );
@@ -1085,6 +1128,7 @@ static void* do_heart_beat( void* args ) {
 #else
             close( client_sock );
 #endif
+            client_sock = 0;
         }
 
         stop_server = 1;
@@ -1094,12 +1138,14 @@ static void* do_heart_beat( void* args ) {
 #else
             close( server_sock );
 #endif
+            server_sock = 0;
         }
 
         ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
         ERR( "!!! Fail to operate with heartbeat from skin client. Shutdown QEMU !!!\n" );
         ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
 
+        maru_register_exit_msg(MARU_EXIT_HB_TIME_EXPIRED, NULL);
         shutdown_qemu_gracefully();
 
     }

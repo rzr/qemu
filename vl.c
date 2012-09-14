@@ -195,6 +195,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #define MAX_VIRTIO_CONSOLES 1
 
 #ifdef CONFIG_MARU
+#define MARUCAM_DEV_NAME "maru_camera_pci"
 extern int tizen_base_port;
 int skin_disabled = 0;
 #endif
@@ -264,6 +265,11 @@ extern int gl_acceleration_capability_check(void);
 int enable_gl = 0;
 int capability_check_gl = 0;
 #endif
+#if defined(CONFIG_MARU)
+extern int marucam_device_check(void);
+int is_webcam_enabled = 0;
+#endif
+
 
 typedef struct FWBootEntry FWBootEntry;
 
@@ -1904,6 +1910,14 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 	}
 #endif
 #endif
+#if defined(CONFIG_MARU)
+    if (!is_webcam_enabled) {
+        const char *driver = qemu_opt_get(opts, "driver");
+        if (driver && (strcmp (driver, MARUCAM_DEV_NAME) == 0)) {
+            return 0;
+        }
+    }
+#endif
 	
     dev = qdev_device_add(opts);
     if (!dev)
@@ -3381,31 +3395,58 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
-    capability_check_gl = gl_acceleration_capability_check();
-    if (enable_gl && (capability_check_gl != 0)) {
-        enable_gl = 0;
-        fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
-    }
-
 #ifdef CONFIG_VIRTIO_GL
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
     if (enable_gl) {
-        device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
-        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
-        if (devp.found == 0) {
-            if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, "driver")) {
-                exit(1);
-            }
+        capability_check_gl = gl_acceleration_capability_check();
+
+        if (capability_check_gl != 0) {
+            enable_gl = 0;
+            fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
         }
-    }
-#endif
-#endif
+        
 	// To check host gl driver capability and notify to guest.
 	gchar *tmp = tmp_cmdline;
 	tmp_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
 	qemu_opts_set(qemu_find_opts("machine"), 0, "append", tmp_cmdline);
 	fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
 	g_free(tmp);
+
+        if (enable_gl) {
+            device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
+            qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+            if (devp.found == 0) {
+                if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, "driver")) {
+                    exit(1);
+                }
+            }
+        }
+    }
+#endif
+#endif
+
+#if defined(CONFIG_MARU)
+    is_webcam_enabled = marucam_device_check();
+    if (!is_webcam_enabled) {
+        fprintf (stderr, "WARNING: Webcam support was disabled due to "
+                         "the fail of webcam capability check!\n");
+    }
+
+    gchar *tmp_cam_kcmd = kernel_cmdline;
+    kernel_cmdline = g_strdup_printf("%s enable_cam=%d", tmp_cam_kcmd, is_webcam_enabled);
+    fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
+    g_free(tmp_cam_kcmd);
+
+    if (is_webcam_enabled) {
+        device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
+        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+        if (devp.found == 0) {
+            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, "driver")) {
+                exit(1);
+            }
+        }
+    }
+#endif
 	
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the

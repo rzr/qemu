@@ -36,7 +36,6 @@
 #define JAVA_MAX_COMMAND_LENGTH 1024
 
 #define JAR_SKINFILE_PATH "emulator-skin.jar"
-#define JAVA_EXEFILE_PATH "java"
 #define JAVA_LIBRARY_PATH "-Djava.library.path"
 
 #ifndef CONFIG_DARWIN
@@ -46,6 +45,14 @@
 #endif
 #define JAVA_SIMPLEMODE_OPTION "simple.msg"
 
+#ifdef CONFIG_WIN32
+#define  MY_KEY_WOW64_64KEY 0x0100
+int is_wow64(void);
+int get_java_path(char**);
+static char* JAVA_EXEFILE_PATH = 0;
+#else
+#define JAVA_EXEFILE_PATH "java"
+#endif
 
 int start_skin_client(int argc, char* argv[]);
 int start_simple_client(char* msg);

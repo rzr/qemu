@@ -16,10 +16,10 @@ CFLAGS += -g -O0
 endif
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm -lopengl32 -lglu32 -lgdi32
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lGL -lXcomposite -lXext
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
@@ -87,7 +87,7 @@ obj-y += emulator.o emul_state.o option.o maru_err_table.o
 # maru display
 obj-y += maru_display.o maru_shm.o
 ifndef CONFIG_DARWIN
-obj-y += maru_sdl.o sdl_rotate.o maru_finger.o
+obj-y += maru_sdl.o SDL_rotozoom.o maru_finger.o
 endif
 
 # sdb
@@ -109,7 +109,7 @@ obj-arm-y += maru_arm_board.o
 obj-arm-y += maru_arm_vpci.o
 obj-arm-y += maru_arm_pmu.o
 obj-y += maru_brightness.o
-obj-y += maru_touchscreen.o
+obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 ifndef CONFIG_DARWIN
 obj-y += maru_codec.o
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o

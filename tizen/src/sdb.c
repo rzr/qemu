@@ -23,6 +23,7 @@
 #include <netdb.h>
 #endif /* !_WIN32 */
 
+#include "emulator.h"
 #include "net/slirp.h"
 #include "qemu_socket.h"
 #include "sdb.h"
@@ -213,7 +214,7 @@ int inet_strtoip(const char*  str, uint32_t  *ip)
 	return 0;
 }
 
-int check_port_bind_listen(u_int port)
+int check_port_bind_listen(uint32_t port)
 {
 	struct sockaddr_in addr;
 	int s, opt = 1;
@@ -254,7 +255,7 @@ int get_sdb_base_port(void)
 {
 	int   tries     = 10;
 	int   success   = 0;
-	u_int port = 26100;
+	uint32_t port = 26100;
 
 	if(tizen_base_port == 0){
 
@@ -284,6 +285,7 @@ void sdb_setup(void)
 	int   success   = 0;
 	uint32_t  guest_ip;
 	char buf[64] = {0,};
+
 	inet_strtoip("10.0.2.16", &guest_ip);
 
 	for ( ; tries > 0; tries--, tizen_base_port += 10 ) {
@@ -337,32 +339,33 @@ int sdb_loopback_client(int port, int type)
 }
 
 void notify_sdb_daemon_start(void) {
+    
     int s;
     /* 
      * send a simple message to the SDB host server to tell it we just started.
      * it should be listening on port 26099.
      */
-    do {
-        char tmp[32] = { 0 };
+    char *targetname = g_path_get_basename(tizen_target_path);
+    char tmp[MAXPACKETLEN] = { 0 };
+    // when connecting to loopback:26099, do not use tcp_socket_outgoing function
+    // tcp_socket_outgoing may occur "dns name service not known" in case of network unavaliable status.
+    s = sdb_loopback_client(SDB_HOST_PORT, SOCK_STREAM);
+    if (s < 0) {
+        INFO("can not create socket to talk to the SDB server.\n");
+        INFO("SDB server might not be started yet.\n");
+        free(targetname);
+        return;
+    }
 
-        // when connecting to loopback:26099, do not use tcp_socket_outgoing function
-        // tcp_socket_outgoing may occur "dns name service not known" in case of network unavaliable status.
-        s = sdb_loopback_client(SDB_HOST_PORT, SOCK_STREAM);
-        if (s < 0) {
-            INFO("can't create socket to talk to the SDB server \n");
-            INFO("This emulator will be scaned by the SDB server \n");
-            break;
-        }
-
-        /* length is hex: 0x13 = 19 */
-        sprintf(tmp, "0013host:emulator:%d", tizen_base_port + 1);
-
-        if (socket_send(s, tmp, 30) < 0) {
-            ERR( "message sending to sdb server error!\n");
-        }
-
-    } while (0);
+    /* length is hex host:emulator:port: -> 0x13 = 20 */
+    sprintf(tmp, "00%2xhost:emulator:%d:%s", 20 + strlen(targetname), tizen_base_port + 1, targetname);
+    INFO("message to send to SDB server: %s\n", tmp);
+    if (socket_send(s, tmp, MAXPACKETLEN) < 0) {
+        ERR( "message sending to SDB server error!\n");
+    }
 
     if (s >= 0)
         socket_close(s);
+   
+    free(targetname);
 }

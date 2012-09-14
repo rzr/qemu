@@ -29,14 +29,16 @@
 
 
 #include <pthread.h>
+#include <math.h>
 #include "console.h"
 #include "maru_sdl.h"
 #include "emul_state.h"
-#include "sdl_rotate.h"
+#include "SDL_rotozoom.h"
+#include "maru_sdl_rotozoom.h"
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "debug_ch.h"
-#include "SDL_opengl.h"
+//#include "SDL_opengl.h"
 
 #ifdef MANGLE_OPENGL_SYMBOLS
 #include "gl_mangled.h"
@@ -47,18 +49,22 @@ MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
 DisplaySurface* qemu_display_surface = NULL;
 
-SDL_Surface *surface_screen;
-SDL_Surface *surface_qemu;
-GLuint texture;
+static SDL_Surface *surface_screen;
+static SDL_Surface *surface_qemu;
+static SDL_Surface *processing_screen;
 
 static double current_scale_factor = 1.0;
-static double current_screen_degree = 0.0;
+static double current_screen_degree;
 static int current_screen_width;
 static int current_screen_height;
 
-static int sdl_initialized = 0;
-static int sdl_alteration = 0;
+static int sdl_initialized;
+static int sdl_alteration;
+
+#if 0
 static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
+GLuint texture;
+#endif
 
 
 #define SDL_THREAD
@@ -66,12 +72,11 @@ static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
 static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifdef SDL_THREAD
 static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
-static int sdl_thread_initialized = 0;
+static int sdl_thread_initialized;
 #endif
 
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
-
 
 void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
 {
@@ -89,22 +94,36 @@ void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
 
 void qemu_ds_sdl_resize(DisplayState *ds)
 {
-    TRACE("%d, %d\n", ds_get_width(ds), ds_get_height(ds));
+    int w, h;
+
+    w = ds_get_width(ds);
+    h = ds_get_height(ds);
+
+    INFO("qemu_ds_sdl_resize = (%d, %d)\n", w, h);
 
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
+    if (surface_qemu != NULL) {
+        SDL_FreeSurface(surface_qemu);
+        surface_qemu = NULL;
+    }
+
     /* create surface_qemu */
-    surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds),
-            ds_get_width(ds),
-            ds_get_height(ds),
+    if (w == get_emul_lcd_width() && h == get_emul_lcd_height()) {
+        surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds), w, h,
             ds_get_bits_per_pixel(ds),
             ds_get_linesize(ds),
             ds->surface->pf.rmask,
             ds->surface->pf.gmask,
             ds->surface->pf.bmask,
             ds->surface->pf.amask);
+    } else {
+        INFO("create blank screen = (%d, %d)\n", get_emul_lcd_width(), get_emul_lcd_height());
+        surface_qemu = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h,
+            ds_get_bits_per_pixel(ds), 0, 0, 0, 0);
+    }
 
 #ifdef SDL_THREAD
     pthread_mutex_unlock(&sdl_mutex);
@@ -174,11 +193,7 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
 #endif
 }
 
-
-
-
-
-extern int capability_check_gl;
+//extern int capability_check_gl;
 static void _sdl_init(void)
 {
     int w, h, temp;
@@ -207,7 +222,8 @@ static void _sdl_init(void)
         h = temp;
     }
 
-    /*if (capability_check_gl != 0) {
+#if 0
+    if (capability_check_gl != 0) {
         ERR("GL check returned non-zero\n");
         surface_screen = NULL;
     } else {
@@ -217,18 +233,28 @@ static void _sdl_init(void)
     if (surface_screen == NULL) {
         sdl_opengl = 0;
         INFO("No OpenGL support on this system!??\n");
-        ERR("%s\n", SDL_GetError());*/
+        ERR("%s\n", SDL_GetError());
+#endif
 
         surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_FLAGS);
         if (surface_screen == NULL) {
             ERR("Could not open SDL display (%dx%dx%d): %s\n", w, h, get_emul_sdl_bpp(), SDL_GetError());
             return;
         }
-    /*} else {
+#if 0
+    } else {
         sdl_opengl = 1;
         INFO("OpenGL is supported on this system.\n");
-    }*/
+    }
+#endif
 
+    /* create buffer for image processing */
+    SDL_FreeSurface(processing_screen);
+    processing_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, get_emul_sdl_bpp(),
+        surface_qemu->format->Rmask, surface_qemu->format->Gmask,
+        surface_qemu->format->Bmask, surface_qemu->format->Amask);
+
+#if 0
     if (sdl_opengl == 1) {
         /* Set the OpenGL state */
         glClear(GL_COLOR_BUFFER_BIT);
@@ -245,12 +271,16 @@ static void _sdl_init(void)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         //glGenerateMipmapEXT(GL_TEXTURE_2D); // GL_MIPMAP_LINEAR
     }
+#endif
 
-    /* remove multi-touch finger points */
-    get_emul_multi_touch_state()->multitouch_enable = 0;
-    clear_finger_slot();
+    /* rearrange multi-touch finger points */
+    if (get_emul_multi_touch_state()->multitouch_enable == 1) {
+        rearrange_finger_points(get_emul_lcd_width(), get_emul_lcd_height(),
+            current_scale_factor, rotaton_type);
+    }
 }
 
+#if 0
 static int point_degree = 0;
 static void draw_outline_circle(int cx, int cy, int r, int num_segments)
 {
@@ -302,17 +332,28 @@ static void draw_fill_circle(int cx, int cy, int r)
     glDisable(GL_POINT_SMOOTH);
     glDisable(GL_BLEND);
 }
+#endif
 
 static void qemu_update(void)
 {
     if (sdl_alteration == 1) {
         sdl_alteration = 0;
         _sdl_init();
+
+        return;
+    } else if (sdl_alteration == -1) {
+        SDL_FreeSurface(processing_screen);
+        SDL_FreeSurface(surface_qemu);
+        surface_qemu = NULL;
+        SDL_Quit();
+
+        return;
     }
 
     if (surface_qemu != NULL) {
         int i;
 
+#if 0
         if (sdl_opengl == 1)
         { //gl surface
             glEnable(GL_TEXTURE_2D);
@@ -369,21 +410,33 @@ static void qemu_update(void)
         }
         else
         { //sdl surface
-            SDL_Surface *processing_screen = NULL;
-
-            if (current_scale_factor != 1.0 || current_screen_degree != 0.0) {
+#endif
+            if (current_scale_factor < 0.5)
+            {
+                /* process by sdl_gfx */
                 // workaround
                 // set color key 'magenta'
                 surface_qemu->format->colorkey = 0xFF00FF;
 
+                SDL_Surface *temp_surface = NULL;
+
+                temp_surface = rotozoomSurface(
+                    surface_qemu, current_screen_degree, current_scale_factor, 1);
+                SDL_BlitSurface(temp_surface, NULL, surface_screen, NULL);
+
+                SDL_FreeSurface(temp_surface);
+            }
+            else if (current_scale_factor != 1.0 || current_screen_degree != 0.0)
+            {
                 //image processing
-                processing_screen = rotozoomSurface(surface_qemu, current_screen_degree, current_scale_factor, 1);
+                processing_screen = maru_rotozoom(
+                    surface_qemu, processing_screen, (int)current_screen_degree);
                 SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
-            } else {
+            }
+            else //as-is
+            {
                 SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
             }
-
-            SDL_FreeSurface(processing_screen);
 
             /* draw multi-touch finger points */
             MultiTouchState *mts = get_emul_multi_touch_state();
@@ -404,7 +457,6 @@ static void qemu_update(void)
                 }
             } //end  of draw multi-touch
         }
-    }
 
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 }
@@ -413,15 +465,15 @@ static void qemu_update(void)
 #ifdef SDL_THREAD
 static void* run_qemu_update(void* arg)
 {
-    while(1) {
+    while(1) { 
         pthread_mutex_lock(&sdl_mutex);
 
-        pthread_cond_wait(&sdl_cond, &sdl_mutex);
+        pthread_cond_wait(&sdl_cond, &sdl_mutex); 
 
         qemu_update();
 
         pthread_mutex_unlock(&sdl_mutex);
-    }
+    } 
 
     return NULL;
 }
@@ -451,7 +503,7 @@ void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_heigh
     if (sdl_initialized == 0) {
         sdl_initialized = 1;
 
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         init_multi_touch_state();
 
 #ifndef _WIN32
@@ -482,9 +534,13 @@ void maruskin_sdl_quit(void)
     clear_finger_slot();
     cleanup_multi_touch_state();
 
+#if 0
     if (sdl_opengl == 1) {
         glDeleteTextures(1, &texture);
     }
+#endif
+
+    sdl_alteration = -1;
 
     SDL_Quit();
 }

@@ -55,11 +55,46 @@ public interface ICommunicator extends Runnable {
 		}
 	}
 	
+	public enum MouseButtonType {
+		LEFT( (short)1 ),
+		WHEEL( (short)2 ),
+		RIGHT( (short)3 );
+
+		private short value;
+		MouseButtonType( short value ) {
+			this.value = value;
+		}
+		public short value() {
+			return this.value;
+		}
+		public static MouseButtonType getValue( String val ) {
+			MouseButtonType[] values = MouseButtonType.values();
+			for (int i = 0; i < values.length; i++) {
+				if( values[i].value == Integer.parseInt( val ) ) {
+					return values[i];
+				}
+			}
+			throw new IllegalArgumentException( val );
+		}
+		public static MouseButtonType getValue( short val ) {
+			MouseButtonType[] values = MouseButtonType.values();
+			for (int i = 0; i < values.length; i++) {
+				if( values[i].value == val ) {
+					return values[i];
+				}
+			}
+			throw new IllegalArgumentException( Integer.toString(val) );
+		}
+
+	}
+
 	public enum MouseEventType {
 		DOWN( (short)1 ),
 		UP( (short)2 ),
-		DRAG( (short)3 );
-		
+		DRAG( (short)3 ),
+       WHEELUP( (short)4 ),
+       WHEELDOWN( (short)5 );
+
 		private short value;
 		MouseEventType( short value ) {
 			this.value = value;
@@ -170,6 +205,7 @@ public interface ICommunicator extends Runnable {
 		USB_KBD( (short)15 ),
 		SCREEN_SHOT( (short)16 ),
 		DETAIL_INFO( (short)17 ),
+		RAM_DUMP( (short)18 ),
 		
 		RESPONSE_HEART_BEAT( (short)900 ),
 		CLOSE( (short)998 ),
@@ -207,6 +243,7 @@ public interface ICommunicator extends Runnable {
 		HEART_BEAT( (short)1 ),
 		SCREEN_SHOT_DATA( (short)2 ),
 		DETAIL_INFO_DATA( (short)3 ),
+		RAMDUMP_COMPLETE( (short)4 ),
 		SENSOR_DAEMON_START( (short)800 ),
 		SHUTDOWN( (short)999 );
 		

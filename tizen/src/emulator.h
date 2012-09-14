@@ -38,13 +38,15 @@
 #define __EMULATOR_H__
 
 #define MAXLEN  512
+#define MAXPACKETLEN 60
 
 extern char tizen_target_path[MAXLEN];
 
 void exit_emulator(void);
 void set_image_and_log_path(char *qemu_argv);
 void redir_output(void);
-void extract_info(int qemu_argc, char** qemu_argv);
+void extract_qemu_info(int qemu_argc, char **qemu_argv);
+void extract_skin_info(int skin_argc, char **skin_argv);
 void prepare_maru(void);
 void check_shdmem(void);
 void make_shdmem(void);

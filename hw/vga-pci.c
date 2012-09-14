@@ -30,7 +30,7 @@
 #include "qemu-timer.h"
 #include "loader.h"
 #ifdef CONFIG_MARU
-#include "../tizen/src/hw/maru_pci_ids.h"
+#include "../tizen/src/hw/maru_device_ids.h"
 #include "../tizen/src/hw/maru_vga_int.h"
 #endif
 

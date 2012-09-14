@@ -79,6 +79,7 @@ public class ImageRegistry {
 		CLOSE( "close.png" ),
 		SCREENSHOT( "screenshot.png" ),
 		USB_KEBOARD( "usb_keyboard.png" ),
+		DIAGNOSIS( "diagnosis.png" ),
 		ABOUT( "about.png" ),
 
 		COPY_SCREEN_SHOT( "copy_screenshot_dialog.png" ),
@@ -87,8 +88,8 @@ public class ImageRegistry {
 		DECREASE_SCALE( "decrease_scale.png" ),
 		SAVE_SCREEN_SHOT( "save_screenshot_dialog.png" ),
 
-		EMULATOR_TITLE( "Emulator_20x20.png" ),
-		EMULATOR_TITLE_ICO( "Emulator.ico" );
+		EMULATOR_TITLE( "emulator_icon.png" ),
+		EMULATOR_TITLE_ICO( "emulator_icon.ico" );
 		
 		private String name;
 		

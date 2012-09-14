@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.swt.SWT;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -111,6 +112,7 @@ public class SocketCommunicator implements ICommunicator {
 	private AtomicInteger heartbeatCount;
 	private boolean isTerminated;
 	private boolean isSensorDaemonStarted;
+	private boolean isRamdump;
 	private ScheduledExecutorService heartbeatExecutor;
 
 	private DataTranfer screenShotDataTransfer;
@@ -296,6 +298,11 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
+				case RAMDUMP_COMPLETE: {
+					logger.info("received RAMDUMP_COMPLETE from QEMU.");
+					setRamdumpFlag(false);
+					break;
+				}
 				case SENSOR_DAEMON_START: {
 					logger.info( "received SENSOR_DAEMON_START from QEMU." );
 					synchronized ( this ) {
@@ -328,7 +335,7 @@ public class SocketCommunicator implements ICommunicator {
 		
 		synchronized ( dataTransfer ) {
 			
-			if( null != dataTransfer.timer ) {
+			if ( null != dataTransfer.timer ) {
 				dataTransfer.timer.cancel();
 			}
 			
@@ -336,7 +343,7 @@ public class SocketCommunicator implements ICommunicator {
 			
 			if( null != data ) {
 				logger.info( "finished receiving data from QEMU." );
-			}else {
+			} else {
 				logger.severe( "Fail to receiving data from QEMU." );
 			}
 			
@@ -552,6 +559,14 @@ public class SocketCommunicator implements ICommunicator {
 
 	public synchronized boolean isSensorDaemonStarted() {
 		return isSensorDaemonStarted;
+	}
+
+	public synchronized void setRamdumpFlag(boolean flag) {
+		isRamdump = flag;
+	}
+
+	public synchronized boolean getRamdumpFlag() {
+		return isRamdump;
 	}
 
 	private void increaseHeartbeatCount() {

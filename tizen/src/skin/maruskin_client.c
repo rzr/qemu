@@ -56,7 +56,6 @@ MULTI_DEBUG_CHANNEL(qemu, skin_client);
 #define OPT_VM_PATH "vm.path"
 #define OPT_NET_BASE_PORT "net.baseport"
 
-
 static int skin_argc;
 static char** skin_argv;
 
@@ -65,7 +64,7 @@ static void* run_skin_client(void* arg)
     char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
     char argv[JAVA_MAX_COMMAND_LENGTH] = { 0, };
 
-    INFO("run skin client\n");
+	INFO("run skin client\n");
     int i;
     for (i = 0; i < skin_argc; ++i) {
         strncat(argv, skin_argv[i], strlen(skin_argv[i]));
@@ -81,13 +80,26 @@ static void* run_skin_client(void* arg)
 
     char* vm_path = tizen_target_path;
     //INFO( "vm_path:%s\n", vm_path );
-
     char buf_skin_server_port[16];
     char buf_uid[16];
     char buf_tizen_base_port[16];
     sprintf(buf_skin_server_port, "%d", skin_server_port);
     sprintf(buf_uid, "%d", uid);
     sprintf(buf_tizen_base_port, "%d", tizen_base_port);
+
+#ifdef CONFIG_WIN32
+    // find java path in 64bit windows
+    JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
+	memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
+    if (is_wow64()) {
+        INFO("This process is running under WOW64.\n");
+        if (!get_java_path(&JAVA_EXEFILE_PATH)) {
+             strcpy(JAVA_EXEFILE_PATH, "java");
+	    }
+    } else {
+        strcpy(JAVA_EXEFILE_PATH, "java");
+    }
+#endif
 
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
         strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
@@ -105,9 +117,14 @@ static void* run_skin_client(void* arg)
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, tizen_base_port,
         argv );
+
     INFO( "command for swt : %s\n", cmd );
 
 #ifdef CONFIG_WIN32
+    // for 64bit windows
+    free(JAVA_EXEFILE_PATH);
+    JAVA_EXEFILE_PATH=0;
+
     //WinExec( cmd, SW_SHOW );
     {
         STARTUPINFO sti = { 0 };
@@ -153,9 +170,9 @@ static void* run_skin_client(void* arg)
         INFO("child return value : %d\n", dwRet);
 
         if (dwRet != 0) {
-            //child process is terminated with some problem.
-            //so qemu process will terminate, too. immediately.
-            exit(1);
+            /* child process is terminated with some problem.
+            So qemu process will terminate, too. immediately. */
+            shutdown_qemu_gracefully();
         }
 
         if (CloseHandle(pi.hProcess) != 0) {
@@ -179,9 +196,9 @@ static void* run_skin_client(void* arg)
         INFO("child return value : %d\n", ret);
 
         if (ret != 0) {
-            //child process is terminated with some problem.
-            //so qemu process will terminate, too. immediately.
-            exit(1);
+            /* child process is terminated with some problem.
+            So qemu process will terminate, too. immediately. */
+            shutdown_qemu_gracefully();
         }
     }
 
@@ -241,6 +258,20 @@ int start_simple_client(char* msg) {
 
     INFO("run simple client\n");
 
+#ifdef CONFIG_WIN32
+    // find java path in 64bit windows
+    JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
+	memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
+    if (is_wow64()) {
+        INFO("This process is running under WOW64.\n");
+        if (!get_java_path(&JAVA_EXEFILE_PATH)) {
+             strcpy(JAVA_EXEFILE_PATH, "java");
+	    }
+    } else {
+        strcpy(JAVA_EXEFILE_PATH, "java");
+    }
+#endif
+
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
         strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 7;
     if (len > JAVA_MAX_COMMAND_LENGTH) {
@@ -251,6 +282,10 @@ int start_simple_client(char* msg) {
     INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32
+    // for 64bit windows
+    free(JAVA_EXEFILE_PATH);
+    JAVA_EXEFILE_PATH=0;
+
     ret = WinExec(cmd, SW_SHOW);
 #else
     ret = system(cmd);
@@ -261,3 +296,68 @@ int start_simple_client(char* msg) {
     return 1;
 }
 
+#ifdef CONFIG_WIN32
+typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
+LPFN_ISWOW64PROCESS fnIsWow64Process;
+
+int is_wow64(void)
+{
+    int result = 0;
+
+    //IsWow64Process is not available on all supported versions of Windows.
+    //Use GetModuleHandle to get a handle to the DLL that contains the function
+    //and GetProcAddress to get a pointer to the function if available.
+
+    fnIsWow64Process = (LPFN_ISWOW64PROCESS) GetProcAddress(
+        GetModuleHandle(TEXT("kernel32")),"IsWow64Process");
+
+    if(NULL != fnIsWow64Process)
+    {
+        if (!fnIsWow64Process(GetCurrentProcess(),&result))
+        {
+            //handle error
+			INFO("Can not find 'IsWow64Process'\n");
+        }
+    }
+    return result;
+}
+
+int get_java_path(char** java_path)
+{
+	HKEY hKeyNew;
+	HKEY hKey;
+	//char strJavaRuntimePath[JAVA_MAX_COMMAND_LENGTH] = {0};
+	char strChoosenName[JAVA_MAX_COMMAND_LENGTH] = {0};
+	char strSubKeyName[JAVA_MAX_COMMAND_LENGTH] = {0};
+	char strJavaHome[JAVA_MAX_COMMAND_LENGTH] = {0};
+	int index;
+	DWORD dwSubKeyNameMax = JAVA_MAX_COMMAND_LENGTH;
+	DWORD dwBufLen = JAVA_MAX_COMMAND_LENGTH;
+
+    RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SOFTWARE\\JavaSoft\\Java Runtime Environment", 0,
+                                     KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | MY_KEY_WOW64_64KEY, &hKey);
+    RegEnumKeyEx(hKey, 0, (LPSTR)strSubKeyName, &dwSubKeyNameMax, NULL, NULL, NULL, NULL);
+    strcpy(strChoosenName, strSubKeyName);
+
+  	index = 1;
+  	while (ERROR_SUCCESS == RegEnumKeyEx(hKey, index, (LPSTR)strSubKeyName, &dwSubKeyNameMax,
+			NULL, NULL, NULL, NULL)) {
+        if (strcmp(strChoosenName, strSubKeyName) < 0) {
+            strcpy(strChoosenName, strSubKeyName);
+        }
+        index++;
+  	}
+
+  	RegOpenKeyEx(hKey, strChoosenName, 0, KEY_QUERY_VALUE | MY_KEY_WOW64_64KEY, &hKeyNew);
+  	RegQueryValueEx(hKeyNew, "JavaHome", NULL, NULL, (LPBYTE)strJavaHome, &dwBufLen);
+  	RegCloseKey(hKey);
+	if (strJavaHome[0] != '\0') {
+        sprintf(*java_path, "\"%s\\bin\\java\"", strJavaHome);
+        //strcpy(*java_path, strJavaHome);
+        //strcat(*java_path, "\\bin\\java");
+    } else {
+		return 0;
+	}
+    return 1;
+}
+#endif

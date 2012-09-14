@@ -62,6 +62,14 @@ static struct arm_boot_info maru_arm_board_binfo = {
     .write_secondary_boot = maru_arm_write_secondary,
 };
 
+/* FIXME: This is a workaround to get get_ram_memory compiled for ARM */
+MemoryRegion *global_ram_memory;
+
+MemoryRegion *get_ram_memory(void)
+{
+    return global_ram_memory;
+}
+
 static void maru_arm_machine_init(ram_addr_t ram_size,
                         const char *boot_device,
                         const char *kernel_filename,

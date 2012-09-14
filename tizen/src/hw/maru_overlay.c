@@ -37,7 +37,7 @@
  */
 #include "pc.h"
 #include "pci.h"
-#include "maru_pci_ids.h"
+#include "maru_device_ids.h"
 #include "maru_overlay.h"
 #include "debug_ch.h"
 
@@ -83,21 +83,31 @@ static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned
 {
     switch (addr) {
     case OVERLAY_POWER:
+        TRACE("GET => overlay0 power status(%d)\n", overlay0_power);
         return overlay0_power;
         break;
-    case OVERLAY_SIZE:
+    case OVERLAY_POSITION:
+        TRACE("GET => overlay0 position, left(%d):top(%d)\n",
+              overlay0_left, overlay0_top);
         return overlay0_left | overlay0_top << 16;
         break;
-    case OVERLAY_POSITION:
+    case OVERLAY_SIZE:
+        TRACE("GET => overlay0 size, width(%d):height(%d)\n",
+              overlay0_width, overlay0_height);
         return overlay0_width | overlay0_height << 16;
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
+        TRACE("GET => overlay1 power status(%d)\n", overlay1_power);
         return overlay1_power;
         break;
-    case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
+    case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
+        TRACE("GET => overlay1 position, left(%d):top(%d)\n",
+              overlay1_left, overlay1_top);
         return overlay1_left | overlay1_top << 16;
         break;
-    case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
+    case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
+        TRACE("GET => overlay1 size, width(%d):height(%d)\n",
+              overlay1_width, overlay1_height);
         return overlay1_width | overlay1_height << 16;
         break;
     default:
@@ -113,33 +123,48 @@ static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint64_t va
     switch (addr) {
     case OVERLAY_POWER:
         overlay0_power = val;
-        if( !overlay0_power ) {
-        	// clear the last overlay area.
-        	memset( overlay_ptr, 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        TRACE("SET => overlay0 power status(%d)\n", overlay0_power);
+        if (!overlay0_power) {
+            /* clear the last overlay area. */
+            memset(overlay_ptr, 0x00, (OVERLAY_MEM_SIZE / 2));
+            overlay0_left = overlay0_top = overlay0_width = overlay0_height = 0;
+            TRACE("clear the last overlay0 area\n");
         }
         break;
     case OVERLAY_POSITION:
         overlay0_left = val & 0xFFFF;
         overlay0_top = val >> 16;
+        TRACE("SET => overlay0 position, left(%d):top(%d)\n",
+              overlay0_left, overlay0_top);
         break;
     case OVERLAY_SIZE:
         overlay0_width = val & 0xFFFF;
         overlay0_height = val >> 16;
+        TRACE("SET => overlay0 size, width(%d):height(%d)\n",
+              overlay0_width, overlay0_height);
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
         overlay1_power = val;
-        if( !overlay1_power ) {
-        	// clear the last overlay area.
-        	memset( overlay_ptr + OVERLAY1_REG_OFFSET , 0x00, ( OVERLAY_MEM_SIZE / 2 ) );
+        TRACE("SET => overlay1 power status(%d)\n", overlay1_power);
+        if (!overlay1_power) {
+            /* clear the last overlay area. */
+            memset(overlay_ptr + OVERLAY1_REG_OFFSET,
+                   0x00, (OVERLAY_MEM_SIZE / 2));
+            overlay1_left = overlay1_top = overlay1_width = overlay1_height = 0;
+            TRACE("clear the last overlay1 area\n");
         }
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
         overlay1_left = val & 0xFFFF;
         overlay1_top = val >> 16;
+        TRACE("SET => overlay1 position, left(%d):top(%d)\n",
+              overlay1_left, overlay1_top);
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
         overlay1_width = val & 0xFFFF;
         overlay1_height = val >> 16;
+        TRACE("SET => overlay1 size, width(%d):height(%d)\n",
+              overlay1_width, overlay1_height);
         break;
     default:
         ERR("wrong overlay register write - addr : %d\n", (int)addr);
@@ -178,6 +203,7 @@ static int overlay_initfn(PCIDevice *dev)
 
 DeviceState *pci_maru_overlay_init(PCIBus *bus)
 {
+    INFO("Maru overlay was initailized!\n");
     return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
 }
 

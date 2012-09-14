@@ -30,7 +30,6 @@
 #include "qemu-common.h"
 #include "maru_camera_common.h"
 #include "tizen/src/debug_ch.h"
-#include "tizen/src/mloop_event.h"
 
 #define CINTERFACE
 #define COBJMACROS
@@ -41,12 +40,20 @@
 
 MULTI_DEBUG_CHANNEL(tizen, camera_win32);
 
+extern int hax_enabled(void);
+
 /*
  * COM Interface implementations
  *
  */
 
-#define SAFE_RELEASE(x) { if (x) x->lpVtbl->Release(x); x = NULL; }
+#define SAFE_RELEASE(x) \
+    do { \
+        if (x) { \
+            (x)->lpVtbl->Release(x); \
+            x = NULL; \
+        } \
+    } while(0)
 
 typedef HRESULT (STDAPICALLTYPE *CallbackFn)(ULONG dwSize, BYTE *pBuffer);
 
@@ -93,10 +100,11 @@ static STDMETHODIMP_(ULONG) HWCGrabCallback_Release(IGrabCallback *iface)
 {
     HWCGrabCallback *This = impl_from_IGrabCallback(iface);
 
-    if( InterlockedDecrement(&This->m_cRef) == 0)
+    if (InterlockedDecrement(&This->m_cRef) == 0)
     {
         This->m_pCallback = NULL;
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
 
@@ -136,6 +144,7 @@ static STDMETHODIMP HWCGrabCallback_Construct(IGrabCallback **ppv)
     HWCGrabCallback *This = (HWCGrabCallback *)g_malloc0(sizeof(HWCGrabCallback));
 
     if (!This) {
+        ERR("failed to HWCGrabCallback_Construct, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -158,6 +167,7 @@ typedef struct HWCInPin
     IBaseFilter *m_pCFilter;
     IPin *m_pConnectedPin;
     IGrabCallback *m_pCallback;
+    IMemAllocator *m_pAllocator;
     BOOL m_bReadOnly;
     long m_cRef;
     STDMETHODIMP (*SetGrabCallbackIF)(IPin *iface, IGrabCallback *pCaptureCB);
@@ -202,21 +212,19 @@ static STDMETHODIMP_(ULONG) HWCPin_Release(IPin *iface)
 {
     HWCInPin *This = impl_from_IPin(iface);
 
-    if( InterlockedDecrement(&This->m_cRef) == 0)
+    if (InterlockedDecrement(&This->m_cRef) == 0)
     {
-        if (This->m_pCFilter) {
-            IBaseFilter_Release(This->m_pCFilter);
-            This->m_pCFilter = NULL;
-        }
         if (This->m_pCallback) {
-            IGrabCallback_Release(This->m_pCallback);
-            This->m_pCallback = NULL;
+            SAFE_RELEASE(This->m_pCallback);
         }
         if (This->m_pConnectedPin) {
-            IPin_Release(This->m_pConnectedPin);
-            This->m_pConnectedPin = NULL;
+            SAFE_RELEASE(This->m_pConnectedPin);
+        }
+        if (This->m_pAllocator) {
+            SAFE_RELEASE(This->m_pAllocator);
         }
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -224,13 +232,15 @@ static STDMETHODIMP_(ULONG) HWCPin_Release(IPin *iface)
 
 static STDMETHODIMP HWCPin_Connect(IPin *iface, IPin *pReceivePin, const AM_MEDIA_TYPE *pmt)
 {
-    if ( !pmt )
+    if (!pmt)
         return S_OK;
     return S_FALSE;
 }
 
 static STDMETHODIMP HWCPin_ReceiveConnection(IPin *iface, IPin *pConnector, const AM_MEDIA_TYPE *pmt)
 {
+    PIN_DIRECTION pd;
+    FILTER_STATE fs;
     HWCInPin *This = impl_from_IPin(iface);
 
     if (pConnector == NULL || pmt == NULL)
@@ -239,12 +249,10 @@ static STDMETHODIMP HWCPin_ReceiveConnection(IPin *iface, IPin *pConnector, cons
     if (This->m_pConnectedPin) {
         return VFW_E_ALREADY_CONNECTED;
     }
-    FILTER_STATE fs;
     IBaseFilter_GetState(This->m_pCFilter, 0, &fs);
     if (fs != State_Stopped) {
         return VFW_E_NOT_STOPPED;
     }
-    PIN_DIRECTION pd;
     IPin_QueryDirection(pConnector, &pd);
     if (pd == PINDIR_INPUT) {
         return VFW_E_INVALID_DIRECTION;
@@ -263,8 +271,7 @@ static STDMETHODIMP HWCPin_Disconnect(IPin *iface)
     if (This->m_pConnectedPin == NULL) {
         hr = S_FALSE;
     } else {
-        IPin_Release(This->m_pConnectedPin);
-        This->m_pConnectedPin = NULL;
+        SAFE_RELEASE(This->m_pConnectedPin);
         hr = S_OK;
     }
     return hr;
@@ -320,9 +327,10 @@ static STDMETHODIMP HWCPin_QueryDirection(IPin *iface, PIN_DIRECTION *pPinDir)
 
 static STDMETHODIMP HWCPin_QueryId(IPin *iface, LPWSTR *Id)
 {
+    PVOID pId;
     if (Id == NULL)
         return E_POINTER;
-    PVOID pId = CoTaskMemAlloc(sizeof(HWCPinName));
+    pId = CoTaskMemAlloc(sizeof(HWCPinName));
     memcpy((void*)pId, (void*)HWCPinName, sizeof(HWCPinName));
     *Id = (LPWSTR)pId;
     return S_OK;
@@ -396,21 +404,19 @@ static STDMETHODIMP_(ULONG) HWCMemInputPin_Release(IMemInputPin *iface)
 {
     HWCInPin *This = impl_from_IMemInputPin(iface);
 
-    if( InterlockedDecrement(&This->m_cRef) == 0)
+    if (InterlockedDecrement(&This->m_cRef) == 0)
     {
-        if (This->m_pCFilter) {
-            IBaseFilter_Release(This->m_pCFilter);
-            This->m_pCFilter = NULL;
-        }
         if (This->m_pCallback) {
-            IGrabCallback_Release(This->m_pCallback);
-            This->m_pCallback = NULL;
+            SAFE_RELEASE(This->m_pCallback);
         }
         if (This->m_pConnectedPin) {
-            IPin_Release(This->m_pConnectedPin);
-            This->m_pConnectedPin = NULL;
+            SAFE_RELEASE(This->m_pConnectedPin);
+        }
+        if (This->m_pAllocator) {
+            SAFE_RELEASE(This->m_pAllocator);
         }
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -418,17 +424,46 @@ static STDMETHODIMP_(ULONG) HWCMemInputPin_Release(IMemInputPin *iface)
 
 static STDMETHODIMP HWCMemInputPin_GetAllocator(IMemInputPin *iface, IMemAllocator **ppAllocator)
 {
+    HWCInPin *This = impl_from_IMemInputPin(iface);
+
     if (ppAllocator == NULL)
         return E_POINTER;
-    return VFW_E_NO_ALLOCATOR;
+
+    if (This->m_pAllocator == NULL) {
+        HRESULT hr = CoCreateInstance(&CLSID_MemoryAllocator, NULL,
+                                        CLSCTX_INPROC_SERVER,
+                                        &IID_IMemAllocator,
+                                        (void **)&(This->m_pAllocator));
+        if (FAILED(hr)) {
+            ERR("Failed to CoCreateInstance for retrieving MemoryAllocator\n");
+            return hr;
+        }
+    }
+    ASSERT(This->m_pAllocator != NULL);
+    *ppAllocator = This->m_pAllocator;
+    IMemAllocator_AddRef(This->m_pAllocator);
+
+    return S_OK;
 }
 
 static STDMETHODIMP HWCMemInputPin_NotifyAllocator(IMemInputPin *iface, IMemAllocator *pAllocator, BOOL bReadOnly)
 {
+    HWCInPin *This = impl_from_IMemInputPin(iface);
+
     if (pAllocator == NULL)
         return E_POINTER;
 
-    return NOERROR;
+    IMemAllocator *pOldAllocator = This->m_pAllocator;
+    IMemAllocator_AddRef(pAllocator);
+    This->m_pAllocator = pAllocator;
+
+    if (pOldAllocator != NULL) {
+        SAFE_RELEASE(pOldAllocator);
+    }
+
+    This->m_bReadOnly = bReadOnly;
+
+    return S_OK;
 }
 
 static STDMETHODIMP HWCMemInputPin_GetAllocatorRequirements(IMemInputPin *iface, ALLOCATOR_PROPERTIES *pProps)
@@ -440,19 +475,26 @@ static STDMETHODIMP HWCMemInputPin_Receive(IMemInputPin *iface, IMediaSample *pS
 {
     HWCInPin *This = impl_from_IMemInputPin(iface);
 
-    if (pSample == NULL)
+    if (pSample == NULL) {
+        ERR("pSample is NULL\n");
         return E_POINTER;
+    }
     if (This->m_pCallback != NULL) {
         HRESULT hr;
         BYTE* pBuffer = NULL;
         DWORD dwSize = 0;
         dwSize = IMediaSample_GetSize(pSample);
         hr = IMediaSample_GetPointer(pSample, &pBuffer);
-        if (FAILED(hr))
+        if (FAILED(hr)) {
+            ERR("Receive function : "
+                "failed to IMediaSample_GetPointer, 0x%ld\n", hr);
             return hr;
+        }
         hr = IGrabCallback_Grab(This->m_pCallback, dwSize, pBuffer);
-        if (FAILED(hr))
+        if (FAILED(hr)) {
+            ERR("Receive function : failed to IGrabCallback_Grab, 0x%ld\n", hr);
             return hr;
+        }
     }
     return S_OK;
 }
@@ -486,8 +528,7 @@ static STDMETHODIMP HWCPin_SetCallback(IPin *iface, IGrabCallback *pCaptureCB)
     HWCInPin *This = impl_from_IPin(iface);
 
     if (pCaptureCB == NULL) {
-        IGrabCallback_Release(This->m_pCallback);
-        This->m_pCallback = NULL;
+        SAFE_RELEASE(This->m_pCallback);
     } else {
         This->m_pCallback = pCaptureCB;
         IGrabCallback_AddRef(This->m_pCallback);
@@ -537,6 +578,7 @@ static STDMETHODIMP HWCInPin_Construct(IBaseFilter *pFilter, IPin **ppv)
     HWCInPin *This = (HWCInPin *)g_malloc0(sizeof(HWCInPin));
 
     if (!This) {
+        ERR("failed to HWCInPin_Construct, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -544,11 +586,9 @@ static STDMETHODIMP HWCInPin_Construct(IBaseFilter *pFilter, IPin **ppv)
     This->IMemInputPin_iface.lpVtbl = &HWCMemInputPin_Vtbl;
     This->m_bReadOnly = FALSE;
     This->m_pCFilter = pFilter;
-    if (This->m_pCFilter) {
-        IBaseFilter_AddRef(This->m_pCFilter);
-    }
     This->m_pConnectedPin = NULL;
     This->m_pCallback = NULL;
+    This->m_pAllocator = NULL;
     This->m_cRef = 1;
     This->SetGrabCallbackIF = HWCPin_SetCallback;
     *ppv = &This->IPin_iface;
@@ -602,11 +642,11 @@ static STDMETHODIMP_(ULONG) HWCEnumPins_Release(IEnumPins *iface)
 
     if (InterlockedDecrement(&This->m_cRef) == 0) {
         if (This->m_pFilter) {
-            IBaseFilter_Release(This->m_pFilter);
-            This->m_pFilter = NULL;
+            SAFE_RELEASE(This->m_pFilter);
         }
         This->m_nPos = 0;
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -615,35 +655,34 @@ static STDMETHODIMP_(ULONG) HWCEnumPins_Release(IEnumPins *iface)
 static STDMETHODIMP HWCEnumPins_Next(IEnumPins *iface, ULONG cPins, IPin **ppPins,
                                 ULONG *pcFetched)
 {
+    ULONG fetched;
     HWCEnumPins *This = impl_from_IEnumPins(iface);
 
     if (ppPins == NULL)
             return E_POINTER;
 
-    ULONG fetched;
     if (This->m_nPos < 1 && cPins > 0) {
         IPin *pPin;
         IBaseFilter_FindPin(This->m_pFilter, HWCPinName, &pPin);
         *ppPins = pPin;
-        IPin_AddRef(pPin);
         fetched = 1;
         This->m_nPos++;
     } else {
         fetched = 0;
     }
 
-    if (pcFetched != NULL ) {
+    if (pcFetched != NULL) {
         *pcFetched = fetched;
     }
 
-    return ( fetched == cPins ) ? S_OK : S_FALSE;
+    return (fetched == cPins) ? S_OK : S_FALSE;
 }
 
 static STDMETHODIMP HWCEnumPins_Skip(IEnumPins *iface, ULONG cPins)
 {
     HWCEnumPins *This = impl_from_IEnumPins(iface);
     This->m_nPos += cPins;
-    return ( This->m_nPos >= 1 ) ? S_FALSE : S_OK;
+    return (This->m_nPos >= 1) ? S_FALSE : S_OK;
 }
 
 static STDMETHODIMP HWCEnumPins_Reset(IEnumPins *iface)
@@ -664,6 +703,7 @@ static STDMETHODIMP HWCEnumPins_Clone(IEnumPins *iface, IEnumPins **ppEnum)
 
     HWCEnumPins_Construct(This->m_pFilter, This->m_nPos, ppEnum);
     if (*ppEnum == NULL) {
+        ERR("failed to HWCEnumPins_Construct in clone, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -687,6 +727,7 @@ static STDMETHODIMP HWCEnumPins_Construct(IBaseFilter *pFilter, int nPos, IEnumP
     HWCEnumPins *This = (HWCEnumPins *)g_malloc0(sizeof(HWCEnumPins));
 
     if (!This) {
+        ERR("failed to HWCEnumPins_Construct, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -722,7 +763,7 @@ static inline HWCFilter *impl_from_IBaseFilter(IBaseFilter *iface)
 
 static STDMETHODIMP HWCFilter_QueryInterface(IBaseFilter *iface, REFIID riid, void **ppv)
 {
-    if(IsEqualIID(riid, &IID_IUnknown)) {
+    if (IsEqualIID(riid, &IID_IUnknown)) {
         *ppv = (IUnknown*)iface;
     } else if (IsEqualIID(riid, &IID_IPersist)) {
         *ppv = (IPersist*)iface;
@@ -750,16 +791,12 @@ static STDMETHODIMP_(ULONG) HWCFilter_Release(IBaseFilter *iface)
 {
     HWCFilter *This = impl_from_IBaseFilter(iface);
 
-    if( InterlockedDecrement(&This->m_cRef) == 0) {
+    if (InterlockedDecrement(&This->m_cRef) == 0) {
         if (This->m_pPin) {
-            IPin_Release(This->m_pPin);
-            This->m_pPin = NULL;
-        }
-        if (This->m_pFilterGraph) {
-            IFilterGraph_Release(This->m_pFilterGraph);
-            This->m_pFilterGraph = NULL;
+            SAFE_RELEASE(This->m_pPin);
         }
         g_free((void*)This);
+        This = NULL;
         return 0;
     }
     return This->m_cRef;
@@ -814,6 +851,7 @@ static STDMETHODIMP HWCFilter_Run(IBaseFilter *iface, REFERENCE_TIME tStart)
         HRESULT hr;
         hr = IBaseFilter_Pause(iface);
         if (FAILED(hr)) {
+            ERR("HWCFilter_Run : Failed to IBaseFilter_Pause, ret=0xld%\n", hr);
             return hr;
         }
     }
@@ -860,7 +898,7 @@ static STDMETHODIMP HWCFilter_QueryFilterInfo(IBaseFilter *iface, FILTER_INFO *p
 
     memcpy((void*)pInfo->achName, (void*)HWCFilterName, sizeof(HWCFilterName));
     pInfo->pGraph = This->m_pFilterGraph;
-    if(This->m_pFilterGraph) {
+    if (This->m_pFilterGraph) {
         IFilterGraph_AddRef(This->m_pFilterGraph);
     }
     return S_OK;
@@ -872,9 +910,6 @@ static STDMETHODIMP HWCFilter_JoinFilterGraph(IBaseFilter *iface, IFilterGraph *
     HWCFilter *This = impl_from_IBaseFilter(iface);
 
     This->m_pFilterGraph = pGraph;
-    if (pGraph) {
-        IFilterGraph_AddRef(pGraph);
-    }
     return S_OK;
 }
 
@@ -907,6 +942,7 @@ static STDMETHODIMP HWCFilter_Construct(IBaseFilter **ppv)
     HWCFilter *This = (HWCFilter *)g_malloc0(sizeof(HWCFilter));
 
     if (!This) {
+        ERR("failed to HWCFilter_Construct, E_OUTOFMEMORY\n");
         return E_OUTOFMEMORY;
     }
 
@@ -941,12 +977,7 @@ IBaseFilter *g_pSrcFilter;
 
 IGrabCallback *g_pCallback;
 
-DWORD g_dwFourcc;
-LONG g_dwWidth;
-LONG g_dwHeight;
-REFERENCE_TIME g_dwAvgInterval;
-
-// V4L2 defines copy from videodev2.h
+/* V4L2 defines copy from videodev2.h */
 #define V4L2_CTRL_FLAG_SLIDER       0x0020
 
 #define V4L2_CTRL_CLASS_USER        0x00980000
@@ -956,9 +987,9 @@ REFERENCE_TIME g_dwAvgInterval;
 #define V4L2_CID_SATURATION         (V4L2_CID_BASE+2)
 #define V4L2_CID_SHARPNESS          (V4L2_CID_BASE+27)
 
-#define V4L2_PIX_FMT_YUYV    MAKEFOURCC('Y', 'U', 'Y', 'V') /* 16  YUV 4:2:2     */
-#define V4L2_PIX_FMT_YUV420  MAKEFOURCC('Y', 'U', '1', '2') /* 12  YUV 4:2:0     */
-#define V4L2_PIX_FMT_YVU420  MAKEFOURCC('Y', 'V', '1', '2') /* 12  YVU 4:2:0     */
+#define V4L2_PIX_FMT_YUYV    MAKEFOURCC('Y', 'U', 'Y', 'V') /* 16  YUV 4:2:2 */
+#define V4L2_PIX_FMT_YUV420  MAKEFOURCC('Y', 'U', '1', '2') /* 12  YUV 4:2:0 */
+#define V4L2_PIX_FMT_YVU420  MAKEFOURCC('Y', 'V', '1', '2') /* 12  YVU 4:2:0 */
 
 typedef struct tagMaruCamConvertPixfmt {
     uint32_t fmt;   /* fourcc */
@@ -1008,6 +1039,7 @@ static struct marucam_qctrl qctrl_tbl[] = {
 
 static MaruCamState *g_state = NULL;
 
+static uint32_t ready_count = 0;
 static uint32_t cur_fmt_idx = 0;
 static uint32_t cur_frame_idx = 0;
 
@@ -1015,6 +1047,29 @@ static uint32_t cur_frame_idx = 0;
 /*
  * Helper functions - converting image formats, converting values
  */
+
+static uint32_t get_bytesperline(uint32_t pixfmt, uint32_t width)
+{
+    uint32_t bytesperline;
+
+    switch (pixfmt) {
+    case V4L2_PIX_FMT_YUV420:
+    case V4L2_PIX_FMT_YVU420:
+        bytesperline = (width * 12) >> 3;
+        break;
+    case V4L2_PIX_FMT_YUYV:
+    default:
+        bytesperline = width * 2;
+        break;
+    }
+
+    return bytesperline;
+}
+
+static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
+{
+    return (get_bytesperline(pixfmt, width) * height);
+}
 
 void v4lconvert_yuyv_to_yuv420(const unsigned char *src, unsigned char *dest,
         uint32_t width, uint32_t height, uint32_t yvu);
@@ -1060,29 +1115,44 @@ static long value_convert_to_guest(long min, long max, long value)
  */
 static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 {
-    static uint32_t index = 0;
+    void *tmp_buf;
     uint32_t width, height;
+
+    qemu_mutex_lock(&g_state->thread_mutex);
+    if (g_state->req_frame == 0) {
+        qemu_mutex_unlock(&g_state->thread_mutex);
+        return S_OK;
+    }
+    tmp_buf = g_state->vaddr + g_state->buf_size * (g_state->req_frame - 1);
+    qemu_mutex_unlock(&g_state->thread_mutex);
+
     width = supported_dst_frames[cur_frame_idx].width;
     height = supported_dst_frames[cur_frame_idx].height;
-    void *buf = g_state->vaddr + (g_state->buf_size * index);
 
     switch (supported_dst_pixfmts[cur_fmt_idx].fmt) {
     case V4L2_PIX_FMT_YUV420:
-        v4lconvert_yuyv_to_yuv420(pBuffer, buf, width, height, 0);
+        v4lconvert_yuyv_to_yuv420(pBuffer, tmp_buf, width, height, 0);
         break;
     case V4L2_PIX_FMT_YVU420:
-        v4lconvert_yuyv_to_yuv420(pBuffer, buf, width, height, 1);
+        v4lconvert_yuyv_to_yuv420(pBuffer, tmp_buf, width, height, 1);
         break;
     case V4L2_PIX_FMT_YUYV:
-        memcpy(buf, (void*)pBuffer, dwSize);
+        memcpy(tmp_buf, (void*)pBuffer, (size_t)dwSize);
         break;
     }
-    index = !index;
 
-    if (g_state->req_frame) {
-		mloop_evcmd_raise_intr(g_state->dev.irq[2]);
-		g_state->req_frame = 0;
+    qemu_mutex_lock(&g_state->thread_mutex);
+    if (ready_count < MARUCAM_SKIPFRAMES) {
+        ++ready_count; /* skip a frame cause first some frame are distorted */
+        qemu_mutex_unlock(&g_state->thread_mutex);
+        return S_OK;
     }
+    if (g_state->streamon) {
+        g_state->req_frame = 0; /* clear request */
+        g_state->isr |= 0x01;   /* set a flag of rasing a interrupt */
+        qemu_bh_schedule(g_state->tx_bh);
+    }
+    qemu_mutex_unlock(&g_state->thread_mutex);
     return S_OK;
 }
 
@@ -1170,20 +1240,28 @@ static STDMETHODIMP GraphBuilder_Init(void)
     HRESULT hr;
 
     hr = CoCreateInstance(&CLSID_FilterGraph, NULL, CLSCTX_INPROC, &IID_IGraphBuilder, (void**)&g_pGB);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        ERR("Failed to create instance of GraphBuilder, 0x%x\n", hr);
         return hr;
+    }
 
     hr = CoCreateInstance(&CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC, &IID_ICaptureGraphBuilder2, (void**)&g_pCGB);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        ERR("Failed to create instance of CaptureGraphBuilder2, 0x%x\n", hr);
         return hr;
+    }
 
     hr = g_pCGB->lpVtbl->SetFiltergraph(g_pCGB, g_pGB);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        ERR("Failed to SetFiltergraph, 0x%x\n", hr);
         return hr;
+    }
 
     hr = g_pGB->lpVtbl->QueryInterface(g_pGB, &IID_IMediaControl, (void **)&g_pMediaControl);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        ERR("Failed to QueryInterface for IMediaControl, 0x%x\n", hr);
         return hr;
+    }
 
     hr = HWCGrabCallback_Construct(&g_pCallback);
     if (g_pCallback == NULL)
@@ -1202,19 +1280,22 @@ static STDMETHODIMP BindSourceFilter(void)
     IMoniker *pMoniKer;
 
     hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC, &IID_ICreateDevEnum, (void**)&pCreateDevEnum);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        ERR("Failed to create instance of CreateDevEnum, 0x%x\n", hr);
         return hr;
+    }
 
     hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum, &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
-    if (FAILED(hr))
-    {
-        pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+    if (FAILED(hr)) {
+        ERR("Failed to get VideoInputDeviceCategory, 0x%x\n", hr);
+        SAFE_RELEASE(pCreateDevEnum);
         return hr;
     }
 
     if (!pEnumMK)
     {
-        pCreateDevEnum->lpVtbl->Release(pCreateDevEnum);
+        ERR("ClassEnumerator moniker is NULL\n");
+        SAFE_RELEASE(pCreateDevEnum);
         return E_FAIL;
     }
     pEnumMK->lpVtbl->Reset(pEnumMK);
@@ -1228,7 +1309,7 @@ static STDMETHODIMP BindSourceFilter(void)
     {
         IPropertyBag *pBag = NULL;
         hr = pMoniKer->lpVtbl->BindToStorage(pMoniKer, 0, 0, &IID_IPropertyBag, (void **)&pBag);
-        if(SUCCEEDED(hr))
+        if (SUCCEEDED(hr))
         {
             VARIANT var;
             var.vt = VT_BSTR;
@@ -1246,9 +1327,9 @@ static STDMETHODIMP BindSourceFilter(void)
                 }
                 SysFreeString(var.bstrVal);
             }
-            pBag->lpVtbl->Release(pBag);
+            SAFE_RELEASE(pBag);
         }
-        pMoniKer->lpVtbl->Release(pMoniKer);
+        SAFE_RELEASE(pMoniKer);
     }
 
     if (SUCCEEDED(hr))
@@ -1257,8 +1338,11 @@ static STDMETHODIMP BindSourceFilter(void)
         if (hr != S_OK && hr != S_FALSE)
         {
             ERR("Counldn't add Video Capture filter to our graph!\n");
+            SAFE_RELEASE(g_pSrcFilter);
         }
     }
+    SAFE_RELEASE(pEnumMK);
+    SAFE_RELEASE(pCreateDevEnum);
 
     return hr;
 }
@@ -1274,6 +1358,7 @@ static STDMETHODIMP BindTargetFilter(void)
         if (FAILED(hr))
         {
             ERR("Counldn't add HWCFilterr to our graph!\n");
+            SAFE_RELEASE(g_pDstFilter);
         }
     }
     return hr;
@@ -1284,24 +1369,77 @@ static STDMETHODIMP ConnectFilters(void)
     HRESULT hr;
 
     hr = GetPin(g_pSrcFilter, PINDIR_OUTPUT , &g_pOutputPin);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        ERR("Failed to get output pin. 0x%x\n", hr);
         return hr;
+    }
 
     hr = GetPin(g_pDstFilter, PINDIR_INPUT , &g_pInputPin);
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+        ERR("Failed to get input pin. 0x%x\n", hr);
         return hr;
+    }
 
     hr = g_pGB->lpVtbl->Connect(g_pGB, g_pOutputPin, g_pInputPin);
+    if (FAILED(hr)) {
+        ERR("Failed to connect pins. 0x%x\n", hr);
+    }
     return hr;
 }
 
-static STDMETHODIMP SetDefaultValues(void)
+static STDMETHODIMP DisconnectPins(void)
+{
+    HRESULT hr;
+
+    hr = g_pGB->lpVtbl->Disconnect(g_pGB, g_pOutputPin);
+    if (FAILED(hr)) {
+        ERR("Failed to disconnect output pin. 0x%x\n", hr);
+        return hr;
+    }
+
+    hr = g_pGB->lpVtbl->Disconnect(g_pGB, g_pInputPin);
+    if (FAILED(hr)) {
+        ERR("Failed to disconnect input pin. 0x%x\n", hr);
+    }
+
+    return hr;
+}
+
+static STDMETHODIMP RemoveFilters(void)
+{
+    HRESULT hr;
+
+    hr = g_pGB->lpVtbl->RemoveFilter(g_pGB, g_pSrcFilter);
+    if (FAILED(hr)) {
+        ERR("Failed to remove source filer. 0x%x\n", hr);
+        return hr;
+    }
+
+    hr = g_pGB->lpVtbl->RemoveFilter(g_pGB, g_pDstFilter);
+    if (FAILED(hr)) {
+        ERR("Failed to remove destination filer. 0x%x\n", hr);
+    }
+
+    return hr;
+}
+
+/* default fps is 15 */
+#define MARUCAM_DEFAULT_FRAMEINTERVAL    666666
+
+static STDMETHODIMP SetFormat(uint32_t dwWidth, uint32_t dwHeight,
+                              uint32_t dwFourcc)
 {
     HRESULT hr;
     IAMStreamConfig *pSConfig;
     int iCount = 0, iSize = 0;
 
-    hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, 0, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&pSConfig);
+    if (dwFourcc == 0) {
+        dwFourcc = MAKEFOURCC('Y','U','Y','2');
+    }
+
+    hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, 0,
+                                       g_pSrcFilter, &IID_IAMStreamConfig,
+                                       (void**)&pSConfig);
     if (FAILED(hr)) {
         ERR("failed to FindInterface method\n");
         return hr;
@@ -1311,7 +1449,7 @@ static STDMETHODIMP SetDefaultValues(void)
     if (FAILED(hr))
     {
         ERR("failed to GetNumberOfCapabilities method\n");
-        pSConfig->lpVtbl->Release(pSConfig);
+        SAFE_RELEASE(pSConfig);
         return hr;
     }
 
@@ -1323,20 +1461,29 @@ static STDMETHODIMP SetDefaultValues(void)
             VIDEO_STREAM_CONFIG_CAPS scc;
             AM_MEDIA_TYPE *pmtConfig;
 
-            hr = pSConfig->lpVtbl->GetStreamCaps(pSConfig, iFormat, &pmtConfig, (BYTE*)&scc);
+            hr = pSConfig->lpVtbl->GetStreamCaps(pSConfig, iFormat, &pmtConfig,
+                                                 (BYTE*)&scc);
             if (hr == S_OK)
             {
                 if (IsEqualIID(&pmtConfig->formattype, &FORMAT_VideoInfo))
                 {
-                    VIDEOINFOHEADER* pvi = (VIDEOINFOHEADER*)pmtConfig->pbFormat;
-                    if ((pvi->bmiHeader.biWidth == g_dwWidth) &&
-                        (pvi->bmiHeader.biHeight == g_dwHeight) &&
-                        (pvi->bmiHeader.biCompression == g_dwFourcc))
+                    VIDEOINFOHEADER *pvi =
+                                         (VIDEOINFOHEADER *)pmtConfig->pbFormat;
+                    if ((pvi->bmiHeader.biWidth == (LONG)dwWidth) &&
+                        (pvi->bmiHeader.biHeight == (LONG)dwHeight) &&
+                        (pvi->bmiHeader.biCompression == (DWORD)dwFourcc))
                     {
-                        pvi->AvgTimePerFrame = g_dwAvgInterval;
+                        /* use minimum FPS(maximum frameinterval)
+                           with non-VT system  */
+                       if (!hax_enabled()) {
+                            pvi->AvgTimePerFrame =
+                                    (REFERENCE_TIME)scc.MaxFrameInterval;
+                        } else {
+                            pvi->AvgTimePerFrame =
+                                (REFERENCE_TIME)MARUCAM_DEFAULT_FRAMEINTERVAL;
+                        }
                         hr = pSConfig->lpVtbl->SetFormat(pSConfig, pmtConfig);
                         DeleteMediaType(pmtConfig);
-                        INFO("Setting default values.\n");
                         break;
                     }
                 }
@@ -1344,48 +1491,14 @@ static STDMETHODIMP SetDefaultValues(void)
             }
         }
         if (iFormat >= iCount) {
-            ERR("Maybe connected webcam does not support %ld x %ld resolution.\n", g_dwWidth, g_dwHeight);
+            ERR("Failed to Set format. "
+                "Maybe connected webcam does not support "
+                "(%ldx%ld) resolution or YUY2 image format.\n",
+                dwWidth, dwHeight);
             hr = E_FAIL;
         }
     }
-    pSConfig->lpVtbl->Release(pSConfig);
-    return hr;
-}
-
-static STDMETHODIMP SetResolution(LONG width, LONG height)
-{
-    HRESULT hr;
-    IAMStreamConfig* vsc = NULL;
-    AM_MEDIA_TYPE* pmt = NULL;
-
-    hr = g_pCGB->lpVtbl->FindInterface(g_pCGB, &PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, g_pSrcFilter, &IID_IAMStreamConfig, (void**)&vsc);
-    if (FAILED(hr))
-        return hr;
-
-    hr = vsc->lpVtbl->GetFormat(vsc, &pmt);
-    if (FAILED(hr))
-    {
-        vsc->lpVtbl->Release(vsc);
-        return hr;
-    }
-
-    if (pmt != NULL)
-    {
-        if (IsEqualIID(&pmt->formattype, &FORMAT_VideoInfo))
-        {
-            VIDEOINFOHEADER* pvi = (VIDEOINFOHEADER*)pmt->pbFormat;
-            pvi->bmiHeader.biWidth = width;
-            pvi->bmiHeader.biHeight = height;
-            pvi->AvgTimePerFrame = g_dwAvgInterval;
-            pvi->bmiHeader.biSizeImage = ((width * pvi->bmiHeader.biBitCount) >> 3 ) * height;
-            hr = vsc->lpVtbl->SetFormat(vsc, pmt);
-            if (hr != S_OK) {
-                ERR("failed to set the resolution.(w:%ld, h:%ld), Maybe connected webcam does not support the resolution.\n", width, height);
-            }
-        }
-        DeleteMediaType(pmt);
-    }
-    vsc->lpVtbl->Release(vsc);
+    SAFE_RELEASE(pSConfig);
     return hr;
 }
 
@@ -1442,20 +1555,87 @@ static STDMETHODIMP SetVideoProcAmp(long nProperty, long value)
     return hr;
 }
 
-// MARUCAM_CMD_INIT
+int marucam_device_check(void)
+{
+    int ret = 0;
+    HRESULT hr = E_FAIL;
+    ICreateDevEnum *pCreateDevEnum = NULL;
+    IEnumMoniker *pEnumMK = NULL;
+    IMoniker *pMoniKer = NULL;
+
+    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+        ERR("[%s] failed to CoInitailizeEx\n", __func__);
+        goto error;
+    }
+
+    hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC, &IID_ICreateDevEnum, (void**)&pCreateDevEnum);
+    if (FAILED(hr)) {
+        ERR("[%s] failed to create instance of CLSID_SystemDeviceEnum\n", __func__);
+        goto error;
+    }
+
+    hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum, &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
+    if (FAILED(hr))
+    {
+        ERR("[%s] failed to create class enumerator\n", __func__);
+        goto error;
+    }
+
+    if (!pEnumMK)
+    {
+        ERR("[%s] class enumerator is NULL!!\n", __func__);
+        goto error;
+    }
+    pEnumMK->lpVtbl->Reset(pEnumMK);
+
+    hr = pEnumMK->lpVtbl->Next(pEnumMK, 1, &pMoniKer, NULL);
+    if (hr == S_FALSE)
+    {
+        ERR("[%s] enum moniker returns a invalid value.\n", __func__);
+        hr = E_FAIL;
+    }
+    if (SUCCEEDED(hr))
+    {
+        IPropertyBag *pBag = NULL;
+        hr = pMoniKer->lpVtbl->BindToStorage(pMoniKer, 0, 0, &IID_IPropertyBag, (void **)&pBag);
+        if (SUCCEEDED(hr))
+        {
+            VARIANT var;
+            var.vt = VT_BSTR;
+            hr = pBag->lpVtbl->Read(pBag, L"FriendlyName", &var, NULL);
+            if (hr == NOERROR)
+            {
+                ret = 1;
+                SysFreeString(var.bstrVal);
+            }
+            SAFE_RELEASE(pBag);
+        }
+        SAFE_RELEASE(pMoniKer);
+    }
+
+error:
+    SAFE_RELEASE(pEnumMK);
+    SAFE_RELEASE(pCreateDevEnum);
+    CoUninitialize();
+    return ret;
+}
+
+/* MARUCAM_CMD_INIT */
 void marucam_device_init(MaruCamState* state)
 {
     g_state = state;
 }
 
-// MARUCAM_CMD_OPEN
+/* MARUCAM_CMD_OPEN */
 void marucam_device_open(MaruCamState* state)
 {
     HRESULT hr;
+    uint32_t dwHeight, dwWidth;
     MaruCamParam *param = state->param;
     param->top = 0;
 
-    hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) {
         ERR("CoInitailizeEx\n");
         ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
@@ -1487,46 +1667,58 @@ void marucam_device_open(MaruCamState* state)
         goto error_failed;
     }
 
-    g_dwAvgInterval = 666666;
-    g_dwFourcc = MAKEFOURCC('Y','U','Y','2');
-    g_dwHeight = 480;
-    g_dwWidth = 640;
-    hr = SetDefaultValues();
-    if (hr != S_OK) {
-        ERR("SetDefaultValues\n");
-        goto error_failed;
-    }
     cur_frame_idx = 0;
     cur_fmt_idx = 0;
+
+    dwHeight = supported_dst_frames[cur_frame_idx].height;
+    dwWidth = supported_dst_frames[cur_frame_idx].width;
+    hr = SetFormat(dwWidth, dwHeight, 0);
+    if (hr != S_OK) {
+        ERR("failed to Set default values\n");
+        goto error_failed;
+    }
 
     INFO("Open successfully!!!\n");
     return;
 
 error_failed:
+    DisconnectPins();
+    RemoveFilters();
     CloseInterfaces();
     CoUninitialize();
     param->errCode = EINVAL;
     ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
 }
 
-// MARUCAM_CMD_CLOSE
+/* MARUCAM_CMD_CLOSE */
 void marucam_device_close(MaruCamState* state)
 {
     MaruCamParam *param = state->param;
     param->top = 0;
 
+    DisconnectPins();
+    RemoveFilters();
     CloseInterfaces();
     CoUninitialize();
     INFO("Close successfully!!!\n");
 }
 
-// MARUCAM_CMD_START_PREVIEW
+/* MARUCAM_CMD_START_PREVIEW */
 void marucam_device_start_preview(MaruCamState* state)
 {
     HRESULT hr;
-    uint32_t width, height;
+    uint32_t pixfmt, width, height;
     MaruCamParam *param = state->param;
     param->top = 0;
+
+    ready_count = 0;
+    width = supported_dst_frames[cur_frame_idx].width;
+    height = supported_dst_frames[cur_frame_idx].height;
+    pixfmt = supported_dst_pixfmts[cur_fmt_idx].fmt;
+    state->buf_size = get_sizeimage(pixfmt, width, height);
+
+    INFO("Pixfmt(0x%x), Width:Height(%d:%d), buffer size(%u)\n",
+         pixfmt, width, height, state->buf_size);
 
     assert(g_pCallback != NULL);
     hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, g_pCallback);
@@ -1538,7 +1730,7 @@ void marucam_device_start_preview(MaruCamState* state)
 
     hr = g_pMediaControl->lpVtbl->Run(g_pMediaControl);
     if (FAILED(hr)) {
-        ERR("Failed to run media control.\n");
+        ERR("Failed to run media control. hr=0x%x\n", hr);
         param->errCode = EINVAL;
         return;
     }
@@ -1547,19 +1739,19 @@ void marucam_device_start_preview(MaruCamState* state)
     state->streamon = 1;
     qemu_mutex_unlock(&state->thread_mutex);
 
-    width = supported_dst_frames[cur_frame_idx].width;
-    height = supported_dst_frames[cur_frame_idx].height;
-    state->buf_size = height * ((width * supported_dst_pixfmts[cur_fmt_idx].bpp) >> 3);
-
     INFO("Start preview!!!\n");
 }
 
-// MARUCAM_CMD_STOP_PREVIEW
+/* MARUCAM_CMD_STOP_PREVIEW */
 void marucam_device_stop_preview(MaruCamState* state)
 {
     HRESULT hr;
     MaruCamParam *param = state->param;
     param->top = 0;
+
+    qemu_mutex_lock(&state->thread_mutex);
+    state->streamon = 0;
+    qemu_mutex_unlock(&state->thread_mutex);
 
     hr = ((HWCInPin*)g_pInputPin)->SetGrabCallbackIF(g_pInputPin, NULL);
     if (FAILED(hr)) {
@@ -1575,44 +1767,44 @@ void marucam_device_stop_preview(MaruCamState* state)
         return;
     }
 
-    qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = 0;
-    qemu_mutex_unlock(&state->thread_mutex);
     state->buf_size = 0;
 
     INFO("Stop preview!!!\n");
 }
 
-// MARUCAM_CMD_S_PARAM
+/* MARUCAM_CMD_S_PARAM */
 void marucam_device_s_param(MaruCamState* state)
 {
     MaruCamParam *param = state->param;
 
+    /* We use default FPS of the webcam */
     param->top = 0;
 }
 
-// MARUCAM_CMD_G_PARAM
+/* MARUCAM_CMD_G_PARAM */
 void marucam_device_g_param(MaruCamState* state)
 {
     MaruCamParam *param = state->param;
 
+    /* We use default FPS of the webcam
+     * return a fixed value on guest ini file (1/30).
+     */
     param->top = 0;
-
-    param->stack[0] = 0x1000; // V4L2_CAP_TIMEPERFRAME
-    param->stack[1] = 1; // numerator;
-    param->stack[2] = 30; // denominator;
+    param->stack[0] = 0x1000; /* V4L2_CAP_TIMEPERFRAME */
+    param->stack[1] = 1; /* numerator */
+    param->stack[2] = 30; /* denominator */
 }
 
-// MARUCAM_CMD_S_FMT
+/* MARUCAM_CMD_S_FMT */
 void marucam_device_s_fmt(MaruCamState* state)
 {
     uint32_t width, height, pixfmt, pidx, fidx;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    width = param->stack[0];        // width
-    height = param->stack[1];       // height
-    pixfmt = param->stack[2];       // pixelformat
+    width = param->stack[0];
+    height = param->stack[1];
+    pixfmt = param->stack[2];
 
     for (fidx = 0; fidx < ARRAY_SIZE(supported_dst_frames); fidx++) {
         if ((supported_dst_frames[fidx].width == width) &&
@@ -1636,45 +1828,49 @@ void marucam_device_s_fmt(MaruCamState* state)
 
     if ((supported_dst_frames[cur_frame_idx].width != width) &&
             (supported_dst_frames[cur_frame_idx].height != height)) {
-        HRESULT hr = SetResolution((LONG)width, (LONG)height);
+        HRESULT hr = SetFormat(width, height, 0);
         if (FAILED(hr)) {
             param->errCode = EINVAL;
             return;
         }
-        g_dwWidth = (LONG)width;
-        g_dwHeight = (LONG)height;
     }
-
-    param->stack[0] = width;
-    param->stack[1] = height;
-    param->stack[2] = 1; // V4L2_FIELD_NONE
-    param->stack[3] = pixfmt;
-    // bytes per line = (width * bpp) / 8
-    param->stack[4] = (width * supported_dst_pixfmts[pidx].bpp) >> 3;
-    param->stack[5] = param->stack[4] * height; // height * bytesperline
-    param->stack[6] = 0;
-    param->stack[7] = 0;
 
     cur_frame_idx = fidx;
     cur_fmt_idx = pidx;
 
+    pixfmt = supported_dst_pixfmts[cur_fmt_idx].fmt;
+    width = supported_dst_frames[cur_frame_idx].width;
+    height = supported_dst_frames[cur_frame_idx].height;
+
+    param->stack[0] = width;
+    param->stack[1] = height;
+    param->stack[2] = 1; /* V4L2_FIELD_NONE */
+    param->stack[3] = pixfmt;
+    param->stack[4] = get_bytesperline(pixfmt, width);
+    param->stack[5] = get_sizeimage(pixfmt, width, height);
+    param->stack[6] = 0;
+    param->stack[7] = 0;
+
     TRACE("Set format...\n");
 }
 
-// MARUCAM_CMD_G_FMT
+/* MARUCAM_CMD_G_FMT */
 void marucam_device_g_fmt(MaruCamState* state)
 {
+    uint32_t width, height, pixfmt;
     MaruCamParam *param = state->param;
 
     param->top = 0;
+    pixfmt = supported_dst_pixfmts[cur_fmt_idx].fmt;
+    width = supported_dst_frames[cur_frame_idx].width;
+    height = supported_dst_frames[cur_frame_idx].height;
 
-    param->stack[0] = supported_dst_frames[cur_frame_idx].width;    // width
-    param->stack[1] = supported_dst_frames[cur_frame_idx].height;   // height
-    param->stack[2] = 1; // V4L2_FIELD_NONE
-    param->stack[3] = supported_dst_pixfmts[cur_fmt_idx].fmt;   // pixelformat
-    // bytes per line = (width * bpp) / 8
-    param->stack[4] = (param->stack[0] * supported_dst_pixfmts[cur_fmt_idx].bpp) >> 3;
-    param->stack[5] = param->stack[1] * param->stack[4];    // height * bytesperline
+    param->stack[0] = width;
+    param->stack[1] = height;
+    param->stack[2] = 1; /* V4L2_FIELD_NONE */
+    param->stack[3] = pixfmt;
+    param->stack[4] = get_bytesperline(pixfmt, width);
+    param->stack[5] = get_sizeimage(pixfmt, width, height);
     param->stack[6] = 0;
     param->stack[7] = 0;
 
@@ -1687,9 +1883,9 @@ void marucam_device_try_fmt(MaruCamState* state)
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    width = param->stack[0];        // width
-    height = param->stack[1];       // height
-    pixfmt = param->stack[2];       // pixelformat
+    width = param->stack[0];
+    height = param->stack[1];
+    pixfmt = param->stack[2];
 
     for (i = 0; i < ARRAY_SIZE(supported_dst_frames); i++) {
         if ((supported_dst_frames[i].width == width) &&
@@ -1713,11 +1909,10 @@ void marucam_device_try_fmt(MaruCamState* state)
 
     param->stack[0] = width;
     param->stack[1] = height;
-    param->stack[2] = 1; // V4L2_FIELD_NONE
+    param->stack[2] = 1; /* V4L2_FIELD_NONE */
     param->stack[3] = pixfmt;
-    // bytes per line = (width * bpp) / 8
-    param->stack[4] = (width * supported_dst_pixfmts[i].bpp) >> 3;
-    param->stack[5] = param->stack[4] * height; // height * bytesperline
+    param->stack[4] = get_bytesperline(pixfmt, width);
+    param->stack[5] = get_sizeimage(pixfmt, width, height);
     param->stack[6] = 0;
     param->stack[7] = 0;
 }
@@ -1734,12 +1929,12 @@ void marucam_device_enum_fmt(MaruCamState* state)
         param->errCode = EINVAL;
         return;
     }
-    param->stack[1] = 0;                            // flags = NONE;
-    param->stack[2] = supported_dst_pixfmts[index].fmt; // pixelformat;
+    param->stack[1] = 0; /* flags = NONE */
+    param->stack[2] = supported_dst_pixfmts[index].fmt; /* pixelformat */
     /* set description */
     switch (supported_dst_pixfmts[index].fmt) {
     case V4L2_PIX_FMT_YUYV:
-        memcpy(&param->stack[3], "YUY2", 32);
+        memcpy(&param->stack[3], "YUYV", 32);
         break;
     case V4L2_PIX_FMT_YUV420:
         memcpy(&param->stack[3], "YU12", 32);
@@ -1816,10 +2011,10 @@ void marucam_device_qctrl(MaruCamState* state)
     }
 
     param->stack[0] = id;
-    param->stack[1] = MARUCAM_CTRL_VALUE_MIN;   // minimum
-    param->stack[2] = MARUCAM_CTRL_VALUE_MAX;   // maximum
-    param->stack[3] = MARUCAM_CTRL_VALUE_STEP;// step
-    param->stack[4] = MARUCAM_CTRL_VALUE_MID;   // default_value
+    param->stack[1] = MARUCAM_CTRL_VALUE_MIN;  /* minimum */
+    param->stack[2] = MARUCAM_CTRL_VALUE_MAX;  /* maximum */
+    param->stack[3] = MARUCAM_CTRL_VALUE_STEP; /*  step   */
+    param->stack[4] = MARUCAM_CTRL_VALUE_MID;  /* default_value */
     param->stack[5] = V4L2_CTRL_FLAG_SLIDER;
     /* name field setting */
     memcpy(&param->stack[6], (void*)name, sizeof(name)/sizeof(name[0]));
@@ -1938,16 +2133,16 @@ void marucam_device_enum_fintv(MaruCamState* state)
 
     param->top = 0;
 
-    // switch by index(param->stack[0])
+    /* switch by index(param->stack[0]) */
     switch (param->stack[0]) {
     case 0:
-        param->stack[1] = 30;   // denominator
+        param->stack[1] = 30; /* denominator */
         break;
     default:
         param->errCode = EINVAL;
         return;
     }
-    param->stack[0] = 1;    // numerator
+    param->stack[0] = 1; /* numerator */
 }
 
 void v4lconvert_yuyv_to_yuv420(const unsigned char *src, unsigned char *dest,

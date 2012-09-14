@@ -36,9 +36,10 @@
 MULTI_DEBUG_CHANNEL(qemu, skin_keymap);
 
 
-int javakeycode_to_scancode(int java_keycode, int event_type, int key_location)
+int javakeycode_to_scancode(
+    int event_type, int java_keycode, int state_mask, int key_location)
 {
-    int state_mask = java_keycode & JAVA_KEYCODE_BIT;
+    int state = java_keycode & JAVA_KEYCODE_BIT;
     int vk = java_keycode & JAVA_KEY_MASK;
 
     int ctrl_mask = java_keycode & JAVA_KEYCODE_BIT_CTRL;
@@ -47,7 +48,7 @@ int javakeycode_to_scancode(int java_keycode, int event_type, int key_location)
 
 
     /* CapsLock & NumLock key processing */
-    if (state_mask != 0) {
+    if (state != 0) {
         if (vk == JAVA_KEY_CAPS_LOCK) {
             if (event_type == KEY_PRESSED) {
                 set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1); //toggle
@@ -62,13 +63,19 @@ int javakeycode_to_scancode(int java_keycode, int event_type, int key_location)
     }
     /* check CapsLock & NumLock key sync */
     if (event_type == KEY_PRESSED) {
-        if (get_emul_caps_lock_state() != get_host_lock_key_state(HOST_CAPSLOCK_KEY)) {
+        int caps_lock = -1;
+        int num_lock = -1;
+
+        caps_lock = get_host_lock_key_state(HOST_CAPSLOCK_KEY);
+        num_lock = get_host_lock_key_state(HOST_NUMLOCK_KEY);
+
+        if (caps_lock != -1 && get_emul_caps_lock_state() != caps_lock) {
             kbd_put_keycode(58);
             kbd_put_keycode(58 | 0x80);
             set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1);
             INFO("qemu CapsLock state was synchronized with host key value (%d)\n", get_emul_caps_lock_state());
         }
-        if (get_emul_num_lock_state() != get_host_lock_key_state(HOST_NUMLOCK_KEY)) {
+        if (num_lock != -1 && get_emul_num_lock_state() != num_lock) {
             kbd_put_keycode(69);
             kbd_put_keycode(69 | 0x80);
             set_emul_num_lock_state(get_emul_num_lock_state() ^ 1);
@@ -105,7 +112,7 @@ int javakeycode_to_scancode(int java_keycode, int event_type, int key_location)
         }
     }
 
-    if (state_mask != 0)
+    if (state != 0)
     { //non-character keys
         if (vk >= JAVA_KEY_F1 && vk <= JAVA_KEY_F20) { //function keys
             vk += 255;

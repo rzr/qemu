@@ -110,5 +110,6 @@ int inet_strtoip(const char*  str, uint32_t  *ip);
 int socket_send(int fd, const void*  buf, int  buflen);
 void socket_close(int fd);
 void notify_sdb_daemon_start(void);
+int check_port_bind_listen(uint32_t port);
 int sdb_loopback_client(int port, int type);
 int check_port_bind_listen(u_int port);

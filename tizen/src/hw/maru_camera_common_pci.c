@@ -39,7 +39,7 @@
 
 #include "pci.h"
 #include "pci_ids.h"
-#include "maru_pci_ids.h"
+#include "maru_device_ids.h"
 
 #include "maru_camera_common.h"
 #include "tizen/src/debug_ch.h"
@@ -60,9 +60,13 @@ static inline uint32_t marucam_mmio_read(void *opaque, target_phys_addr_t offset
     MaruCamState *state = (MaruCamState*)opaque;
 
     switch (offset & 0xFF) {
-    case MARUCAM_CMD_ISSTREAM:
+    case MARUCAM_CMD_ISR:
         qemu_mutex_lock(&state->thread_mutex);
-        ret = state->streamon;
+        ret = state->isr;
+        if (ret != 0) {
+            qemu_irq_lower(state->dev.irq[2]);
+            state->isr = 0;
+        }
         qemu_mutex_unlock(&state->thread_mutex);
         break;
     case MARUCAM_CMD_G_DATA:
@@ -109,6 +113,7 @@ static inline void marucam_mmio_write(void *opaque, target_phys_addr_t offset, u
         break;
     case MARUCAM_CMD_STOP_PREVIEW:
         marucam_device_stop_preview(state);
+        memset(state->vaddr, 0, MARUCAM_MEM_SIZE);
         break;
     case MARUCAM_CMD_S_PARAM:
         marucam_device_s_param(state);
@@ -149,9 +154,6 @@ static inline void marucam_mmio_write(void *opaque, target_phys_addr_t offset, u
     case MARUCAM_CMD_DATACLR:
         memset(state->param, 0, sizeof(MaruCamParam));
         break;
-    case MARUCAM_CMD_CLRIRQ:
-        qemu_irq_lower(state->dev.irq[2]);
-        break;
     case MARUCAM_CMD_REQFRAME:
         qemu_mutex_lock(&state->thread_mutex);
         state->req_frame = value + 1;
@@ -180,6 +182,20 @@ static const MemoryRegionOps maru_camera_mmio_ops = {
 };
 
 /*
+ *  QEMU bottom half funtion
+ */
+static void marucam_tx_bh(void *opaque)
+{
+    MaruCamState *state = (MaruCamState *)opaque;
+
+    qemu_mutex_lock(&state->thread_mutex);
+    if (state->isr) {
+        qemu_irq_raise(state->dev.irq[2]);
+    }
+    qemu_mutex_unlock(&state->thread_mutex);
+}
+
+/*
  *  Initialization function
  */
 static int marucam_initfn(PCIDevice *dev)
@@ -191,6 +207,7 @@ static int marucam_initfn(PCIDevice *dev)
 
     memory_region_init_ram(&s->vram, "marucamera.ram", MARUCAM_MEM_SIZE);
     s->vaddr = memory_region_get_ram_ptr(&s->vram);
+    memset(s->vaddr, 0, MARUCAM_MEM_SIZE);
 
     memory_region_init_io (&s->mmio, &maru_camera_mmio_ops, s,
             "maru-camera-mmio", MARUCAM_REG_SIZE);
@@ -203,6 +220,9 @@ static int marucam_initfn(PCIDevice *dev)
     qemu_mutex_init(&s->thread_mutex);
 
     marucam_device_init(s);
+
+    s->tx_bh = qemu_bh_new(marucam_tx_bh, s);
+    INFO("[%s] camera device was initialized.\n", __func__);
 
     return 0;
 }
@@ -222,6 +242,8 @@ static int marucam_exitfn(PCIDevice *obj)
     memory_region_destroy(&s->vram);
     memory_region_destroy(&s->mmio);
 
+
+    INFO("[%s] camera device was released.\n", __func__);
     return 0;
 }
 

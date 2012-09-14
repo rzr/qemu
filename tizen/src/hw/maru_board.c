@@ -61,8 +61,9 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 
+#include "guest_debug.h"
+
 int codec_init(PCIBus *bus);
-int maru_camera_pci_init(PCIBus *bus);
 i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
                        qemu_irq sci_irq, qemu_irq smi_irq,
                        int kvm_enabled);
@@ -141,6 +142,13 @@ static void ioapic_init(GSIState *gsi_state)
     }
 }
 
+MemoryRegion *global_ram_memory;
+
+MemoryRegion *get_ram_memory(void)
+{
+    return global_ram_memory;
+}
+
 static void maru_x86_machine_init(MemoryRegion *system_memory,
                      MemoryRegion *system_io,
                      ram_addr_t ram_size,
@@ -201,6 +209,9 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
                        below_4g_mem_size, above_4g_mem_size,
                        pci_enabled ? rom_memory : system_memory, &ram_memory);
     }
+
+    // for ramdump...
+    global_ram_memory = ram_memory;
 
     gsi_state = g_malloc0(sizeof(*gsi_state));
     if (kvm_irqchip_in_kernel()) {
@@ -300,8 +311,14 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
         smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt, first_cpu, 1);
         /* TODO: Populate SPD eeprom data.  */
+#if defined(__x86_64__)
+        smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
+                              gsi[9], *smi_irq, kvm_enabled());
+ 
+#else
         smbus = maru_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
                               gsi[9], *smi_irq, kvm_enabled());
+#endif
         smbus_eeprom_init(smbus, 8, NULL, 0);
     }
 
@@ -312,7 +329,6 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 #ifndef CONFIG_DARWIN
     // maru specialized device init...
     if (pci_enabled) {
-		maru_camera_pci_init(pci_bus);
 	//tizen_ac97_init(pci_bus);
 		codec_init(pci_bus);        
     }
