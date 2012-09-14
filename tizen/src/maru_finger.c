@@ -162,7 +162,7 @@ void init_multi_touch_state(void)
 
     mts->finger_cnt_max = get_emul_max_touch_point();
     if (mts->finger_cnt_max > MAX_FINGER_CNT) {
-        mts->finger_cnt_max = MAX_FINGER_CNT; //TODO:
+        mts->finger_cnt_max = MAX_FINGER_CNT;
         set_emul_max_touch_point(mts->finger_cnt_max);
     }
     INFO("maxTouchPoint=%d\n", get_emul_max_touch_point());
@@ -279,7 +279,7 @@ FingerPoint *get_finger_point_search(int x, int y)
 static int _grab_finger_id = 0;
 #define QEMU_MOUSE_PRESSED 1
 #define QEMU_MOUSE_RELEASEED 0
-void maru_finger_processing_A(int touch_type, int origin_x, int origin_y, int x, int y)
+void maru_finger_processing_1(int touch_type, int origin_x, int origin_y, int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
@@ -341,7 +341,7 @@ void maru_finger_processing_A(int touch_type, int origin_x, int origin_y, int x,
     }
 }
 
-void maru_finger_processing_B(int touch_type, int origin_x, int origin_y, int x, int y)
+void maru_finger_processing_2(int touch_type, int origin_x, int origin_y, int x, int y)
 {
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
