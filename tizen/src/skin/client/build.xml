@@ -30,7 +30,7 @@
 	<target name="make-properties">
 		<echo message="make properties..." />
 		<tstamp>
-			<format property="build_time" pattern="yyyyMMdd-hhmm" timezone="GMT+9" locale="en" />
+			<format property="build_time" pattern="yyyyMMdd-HHmm" timezone="GMT+9" locale="en" />
 		</tstamp>
 		<exec executable="cat" outputproperty="version">
 			<arg value="../../VERSION" />
