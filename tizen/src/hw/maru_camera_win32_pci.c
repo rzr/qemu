@@ -187,11 +187,14 @@ static STDMETHODIMP HWCPin_QueryInterface(IPin *iface, REFIID riid, void **ppv)
 {
     HWCInPin *This = impl_from_IPin(iface);
 
-    if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IPin)) {
-        *ppv = &This->IPin_iface;
+    if (IsEqualIID(riid, &IID_IUnknown)) {
+        *ppv = (IUnknown *)(&This->IPin_iface);
+        IPin_AddRef((IPin*)*ppv);
+    } else if (IsEqualIID(riid, &IID_IPin)) {
+        *ppv = (IPin *)(&This->IPin_iface);
         IPin_AddRef((IPin*)*ppv);
     } else if (IsEqualIID(riid, &IID_IMemInputPin)) {
-        *ppv = &This->IMemInputPin_iface;
+        *ppv = (IMemInputPin *)(&This->IMemInputPin_iface);
         IPin_AddRef((IMemInputPin*)*ppv);
     } else {
         *ppv = NULL;
@@ -221,6 +224,7 @@ static STDMETHODIMP_(ULONG) HWCPin_Release(IPin *iface)
             SAFE_RELEASE(This->m_pConnectedPin);
         }
         if (This->m_pAllocator) {
+            IMemAllocator_Decommit(This->m_pAllocator);
             SAFE_RELEASE(This->m_pAllocator);
         }
         g_free((void*)This);
@@ -232,6 +236,16 @@ static STDMETHODIMP_(ULONG) HWCPin_Release(IPin *iface)
 
 static STDMETHODIMP HWCPin_Connect(IPin *iface, IPin *pReceivePin, const AM_MEDIA_TYPE *pmt)
 {
+    HWCInPin *This = impl_from_IPin(iface);
+
+    if (!pReceivePin) {
+        return E_POINTER;
+    }
+
+    if (This->m_pConnectedPin) {
+        return VFW_E_ALREADY_CONNECTED;
+    }
+
     if (!pmt)
         return S_OK;
     return S_FALSE;
@@ -268,26 +282,39 @@ static STDMETHODIMP HWCPin_Disconnect(IPin *iface)
     HWCInPin *This = impl_from_IPin(iface);
 
     HRESULT hr;
+    FILTER_STATE fs;
+    IBaseFilter_GetState(This->m_pCFilter, 0, &fs);
+    if (fs != State_Stopped) {
+        return VFW_E_NOT_STOPPED;
+    }
     if (This->m_pConnectedPin == NULL) {
         hr = S_FALSE;
     } else {
+        if (This->m_pAllocator) {
+            hr = IMemAllocator_Decommit(This->m_pAllocator);
+            if (FAILED(hr)) {
+                return hr;
+            }
+            SAFE_RELEASE(This->m_pAllocator);
+        }
         SAFE_RELEASE(This->m_pConnectedPin);
         hr = S_OK;
     }
     return hr;
 }
 
-static STDMETHODIMP HWCPin_ConnectedTo(IPin *iface, IPin **pPin)
+static STDMETHODIMP HWCPin_ConnectedTo(IPin *iface, IPin **ppPin)
 {
     HWCInPin *This = impl_from_IPin(iface);
 
-    if (pPin == NULL)
+    if (ppPin == NULL)
         return E_POINTER;
 
     if (This->m_pConnectedPin == NULL) {
+        *ppPin = NULL;
         return VFW_E_NOT_CONNECTED;
     } else {
-        *pPin = This->m_pConnectedPin;
+        *ppPin = This->m_pConnectedPin;
         IPin_AddRef(This->m_pConnectedPin);
     }
     return S_OK;
@@ -379,12 +406,15 @@ static STDMETHODIMP HWCMemInputPin_QueryInterface(IMemInputPin *iface, REFIID ri
 {
     HWCInPin *This = impl_from_IMemInputPin(iface);
 
-    if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IMemInputPin)) {
-        *ppv = &This->IMemInputPin_iface;
-        IMemInputPin_AddRef((IMemInputPin*)*ppv);
-    } else if (IsEqualIID(riid, &IID_IPin)) {
-        *ppv = &This->IPin_iface;
+    if (IsEqualIID(riid, &IID_IUnknown)) {
+        *ppv = (IUnknown *)(&This->IMemInputPin_iface);
         IPin_AddRef((IPin*)*ppv);
+    } else if (IsEqualIID(riid, &IID_IPin)) {
+        *ppv = (IPin *)(&This->IPin_iface);
+        IPin_AddRef((IPin*)*ppv);
+    } else if (IsEqualIID(riid, &IID_IMemInputPin)) {
+        *ppv = (IMemInputPin *)(&This->IMemInputPin_iface);
+        IPin_AddRef((IMemInputPin*)*ppv);
     } else {
         *ppv = NULL;
         return E_NOINTERFACE;
@@ -413,6 +443,7 @@ static STDMETHODIMP_(ULONG) HWCMemInputPin_Release(IMemInputPin *iface)
             SAFE_RELEASE(This->m_pConnectedPin);
         }
         if (This->m_pAllocator) {
+            IMemAllocator_Decommit(This->m_pAllocator);
             SAFE_RELEASE(This->m_pAllocator);
         }
         g_free((void*)This);
