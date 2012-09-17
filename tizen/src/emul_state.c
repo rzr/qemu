@@ -124,12 +124,12 @@ int get_emul_max_touch_point(void)
 void set_emul_win_scale(double scale_factor)
 {
     if (scale_factor < 0.0 || scale_factor > 1.0) {
-        INFO("scale_factor is out of range = %lf\n", scale_factor);
+        INFO("scale_factor is out of range = %f\n", scale_factor);
         scale_factor = 1.0;
     }
 
     _emul_state.scale_factor = scale_factor;
-    INFO("emulator window scale_factor = %lf\n", _emul_state.scale_factor);
+    INFO("emulator window scale_factor = %f\n", _emul_state.scale_factor);
 }
 
 double get_emul_win_scale(void)
