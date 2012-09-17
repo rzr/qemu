@@ -22,7 +22,7 @@
 /*
  * Max marshal buffer size.
  */
-#define YAGL_MARSHAL_SIZE 0x1000
+#define YAGL_MARSHAL_SIZE 0x8000
 
 static __inline int yagl_marshal_skip(uint8_t** buff)
 {
