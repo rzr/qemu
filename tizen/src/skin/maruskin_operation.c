@@ -424,7 +424,7 @@ void onoff_usb_kbd( int on )
 #define MAX_PATH 256
 static void dump_ram( void )
 {
-#if defined(CONFIG_LINUX)
+#if defined(CONFIG_LINUX) && !defined(TARGET_ARM) /* FIXME: Handle ARM ram as list */
     MemoryRegion* rm = get_ram_memory();
     unsigned int size = rm->size.lo;
     char dump_fullpath[MAX_PATH];
