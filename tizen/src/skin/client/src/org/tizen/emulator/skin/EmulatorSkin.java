@@ -1994,6 +1994,19 @@ public class EmulatorSkin {
 			}
 		});
 
+		final MenuItem guestdumpItem = new MenuItem(menu, SWT.PUSH);
+		guestdumpItem.setText("&Guest Memory Dump");
+
+		guestdumpItem.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("Guest memory dump menu is selected");
+
+				communicator.setRamdumpFlag(true);
+				communicator.sendToQEMU(SendCommand.GUEST_DUMP, null);
+			}
+		});
+
 		return menu;
 	}
 

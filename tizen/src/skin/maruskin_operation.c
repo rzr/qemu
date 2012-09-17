@@ -465,6 +465,12 @@ void ram_dump(void) {
     notify_ramdump_complete();
 }
 
+void guestmemory_dump(void) {
+    INFO("guest memory dump!\n");
+
+    //TODO:
+}
+
 void request_close( void )
 {
     INFO( "request_close\n" );

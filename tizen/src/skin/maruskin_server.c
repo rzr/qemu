@@ -103,6 +103,7 @@ enum {
     RECV_SCREEN_SHOT = 16,
     RECV_DETAIL_INFO = 17,
     RECV_RAM_DUMP = 18,
+    RECV_GUESTMEMORY_DUMP = 19,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
@@ -780,6 +781,13 @@ static void* run_skin_server( void* args ) {
                     TRACE(log_buf);
 
                     ram_dump();
+                    break;
+                }
+                case RECV_GUESTMEMORY_DUMP: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_GUESTMEMORY_DUMP ==\n");
+                    TRACE(log_buf);
+
+                    guestmemory_dump();
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
