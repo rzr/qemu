@@ -81,7 +81,7 @@ extern GloContext *glo_context_create(int formatFlags, GloContext *shareLists);
 extern void glo_context_destroy(GloContext *context);
 
 /* Update the context in surface and free previous light-weight context */
-extern void glo_surface_update_context(GloSurface *surface, GloContext *context);
+extern int glo_surface_update_context(GloSurface *surface, GloContext *context);
 
 /* Link the pixmap associated with surface as texture */
 extern void glo_surface_as_texture(GloSurface *surface);
