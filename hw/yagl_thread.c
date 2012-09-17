@@ -4,6 +4,7 @@
 #include "yagl_api.h"
 #include "yagl_log.h"
 #include "yagl_marshal.h"
+#include "yagl_stats.h"
 #include "kvm.h"
 #include "hax.h"
 
@@ -41,6 +42,9 @@ static void *yagl_thread_func(void* arg)
         bool ret = true;
         uint8_t *current_buff;
         uint8_t *tmp;
+#ifdef CONFIG_YAGL_STATS
+        uint32_t num_calls = 0;
+#endif
 
         yagl_event_wait(&ts->call_event);
 
@@ -127,9 +131,16 @@ static void *yagl_thread_func(void* arg)
 
                 break;
             }
+
+#ifdef CONFIG_YAGL_STATS
+            ++num_calls;
+#endif
         }
 
         tmp = ts->current_in_buff;
+
+        yagl_stats_batch(num_calls,
+            (ts->current_out_buff + YAGL_MARSHAL_SIZE - current_buff));
 
         yagl_marshal_put_uint32(&tmp, (ret ? 1 : 0));
 

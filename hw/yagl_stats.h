@@ -10,8 +10,9 @@ void yagl_stats_init(void);
 void yagl_stats_cleanup(void);
 
 void yagl_stats_new_ref(void);
-
 void yagl_stats_delete_ref(void);
+
+void yagl_stats_batch(uint32_t num_calls, uint32_t bytes_unused);
 
 void yagl_stats_dump(void);
 
@@ -20,6 +21,7 @@ void yagl_stats_dump(void);
 #define yagl_stats_cleanup()
 #define yagl_stats_new_ref()
 #define yagl_stats_delete_ref()
+#define yagl_stats_batch(num_calls, bytes_unused)
 #define yagl_stats_dump()
 #endif
 
