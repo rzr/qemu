@@ -8,6 +8,7 @@ EMUL_TARGET_LIST=""
 VIRTIOGL_EN=""
 OPENGLES_EN=""
 YAGL_EN=""
+YAGL_STATS_EN=""
 
 usage() {
     echo "usage: build.sh [options] [target]"
@@ -26,6 +27,8 @@ usage() {
     echo "    enable openGLES passthrough device"
     echo "-yagl|--yagl-device"
     echo "    enable YaGL passthrough device"
+    echo "-ys|--yagl-stats"
+    echo "    enable YaGL stats"
     echo "-e|--extra"
     echo "    extra options for QEMU configure"
     echo "-u|-h|--help|--usage"
@@ -69,6 +72,21 @@ yagl_enable() {
   ;;
   1|yes|enable)
     YAGL_EN="yes"
+  ;;
+  *)
+    usage
+    exit 1
+  ;;
+  esac
+}
+
+yagl_stats_enable() {
+  case "$1" in
+  0|no|disable)
+    YAGL_STATS_EN="no"
+  ;;
+  1|yes|enable)
+    YAGL_STATS_EN="yes"
   ;;
   *)
     usage
@@ -133,6 +151,9 @@ do
     -yagl|--yagl-device)
         yagl_enable 1
     ;;
+    -ys|--yagl-stats)
+        yagl_stats_enable 1
+    ;;
     -u|-h|--help|--usage)
         usage
         exit 0
@@ -185,6 +206,12 @@ if test "$YAGL_EN" = "yes" ; then
   CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-yagl"
 else
   CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-yagl"
+fi
+
+if test "$YAGL_STATS_EN" = "yes" ; then
+  CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-yagl-stats"
+else
+  CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-yagl-stats"
 fi
 
 echo $CONFIGURE_SCRIPT $CONFIGURE_APPEND
