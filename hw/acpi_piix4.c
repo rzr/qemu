@@ -446,10 +446,6 @@ i2c_bus *piix4_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
 }
 
 static Property piix4_pm_properties[] = {
-#if defined(CONFIG_MARU) && defined(__x86_64__)
-    .qdev.name          = "MARU_PM",
-#else
-#endif
     DEFINE_PROP_UINT32("smb_io_base", PIIX4PMState, smb_io_base, 0),
     DEFINE_PROP_END_OF_LIST(),
 };
@@ -473,7 +469,11 @@ static void piix4_pm_class_init(ObjectClass *klass, void *data)
 }
 
 static TypeInfo piix4_pm_info = {
+#if defined(CONFIG_MARU) && defined(__x86_64__)
+    .name          = "MARU_PM",
+#else
     .name          = "PIIX4_PM",
+#endif
     .parent        = TYPE_PCI_DEVICE,
     .instance_size = sizeof(PIIX4PMState),
     .class_init    = piix4_pm_class_init,
