@@ -171,6 +171,9 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
 
     ctx->driver_ps = driver_ps;
 
+    ctx->malloc_buff_size = 100;
+    ctx->malloc_buff = g_malloc(ctx->malloc_buff_size);
+
     ctx->error = GL_NO_ERROR;
 
     ctx->arrays = NULL;
@@ -288,6 +291,9 @@ void yagl_gles_context_cleanup(struct yagl_gles_context *ctx)
 
     g_free(ctx->arrays);
     ctx->arrays = NULL;
+
+    g_free(ctx->malloc_buff);
+    ctx->malloc_buff = NULL;
 }
 
 void yagl_gles_context_set_error(struct yagl_gles_context *ctx, GLenum error)
@@ -304,6 +310,26 @@ GLenum yagl_gles_context_get_error(struct yagl_gles_context *ctx)
     ctx->error = GL_NO_ERROR;
 
     return error;
+}
+
+void *yagl_gles_context_malloc(struct yagl_gles_context *ctx, GLsizei size)
+{
+    if (size > ctx->malloc_buff_size) {
+        ctx->malloc_buff_size = size;
+        g_free(ctx->malloc_buff);
+        ctx->malloc_buff = g_malloc(ctx->malloc_buff_size);
+    }
+
+    return ctx->malloc_buff;
+}
+
+void *yagl_gles_context_malloc0(struct yagl_gles_context *ctx, GLsizei size)
+{
+    void *tmp = yagl_gles_context_malloc(ctx, size);
+
+    memset(tmp, 0, size);
+
+    return tmp;
 }
 
 struct yagl_gles_array

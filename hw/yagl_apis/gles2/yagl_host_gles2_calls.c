@@ -436,7 +436,7 @@ void yagl_host_glDeleteFramebuffers(GLsizei n,
         goto out;
     }
 
-    framebuffer_names = g_malloc0(n * sizeof(*framebuffer_names));
+    framebuffer_names = yagl_gles_context_malloc0(&ctx->base, n * sizeof(*framebuffer_names));
 
     if (framebuffers_) {
         if (!yagl_mem_get(gles2_api_ts->ts,
@@ -459,7 +459,7 @@ void yagl_host_glDeleteFramebuffers(GLsizei n,
     }
 
 out:
-    g_free(framebuffer_names);
+    (void)0;
 }
 
 void yagl_host_glDeleteProgram(GLuint program)
@@ -486,7 +486,7 @@ void yagl_host_glDeleteRenderbuffers(GLsizei n,
         goto out;
     }
 
-    renderbuffer_names = g_malloc0(n * sizeof(*renderbuffer_names));
+    renderbuffer_names = yagl_gles_context_malloc0(&ctx->base, n * sizeof(*renderbuffer_names));
 
     if (renderbuffers_) {
         if (!yagl_mem_get(gles2_api_ts->ts,
@@ -509,7 +509,7 @@ void yagl_host_glDeleteRenderbuffers(GLsizei n,
     }
 
 out:
-    g_free(renderbuffer_names);
+    (void)0;
 }
 
 void yagl_host_glDeleteShader(GLuint shader)
@@ -795,7 +795,7 @@ void yagl_host_glGetActiveAttrib(GLuint program,
     }
 
     if (bufsize > 0) {
-        name = g_malloc(bufsize);
+        name = yagl_gles_context_malloc(&ctx->base, bufsize);
     }
 
     yagl_gles2_program_get_active_attrib(program_obj,
@@ -826,7 +826,6 @@ void yagl_host_glGetActiveAttrib(GLuint program,
     }
 
 out:
-    g_free(name);
     yagl_gles2_program_release(program_obj);
 }
 
@@ -855,7 +854,7 @@ void yagl_host_glGetActiveUniform(GLuint program,
     }
 
     if (bufsize > 0) {
-        name = g_malloc(bufsize);
+        name = yagl_gles_context_malloc(&ctx->base, bufsize);
     }
 
     yagl_gles2_program_get_active_uniform(program_obj,
@@ -886,7 +885,6 @@ void yagl_host_glGetActiveUniform(GLuint program,
     }
 
 out:
-    g_free(name);
     yagl_gles2_program_release(program_obj);
 }
 
@@ -1126,7 +1124,7 @@ void yagl_host_glGetVertexAttribiv(GLuint index,
         goto out;
     }
 
-    params = g_malloc0(count * sizeof(*params));
+    params = yagl_gles_context_malloc0(&ctx->base, count * sizeof(*params));
 
     switch (pname) {
     case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
@@ -1161,7 +1159,7 @@ void yagl_host_glGetVertexAttribiv(GLuint index,
     }
 
 out:
-    g_free(params);
+    (void)0;
 }
 
 void yagl_host_glGetVertexAttribPointerv(GLuint index,
@@ -1370,7 +1368,7 @@ void yagl_host_glUniform1fv(GLint location,
     YAGL_GET_CTX(glUniform1fv);
 
     if (v_) {
-        v = g_malloc(count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           count * sizeof(*v),
@@ -1383,7 +1381,7 @@ void yagl_host_glUniform1fv(GLint location,
     ctx->driver_ps->Uniform1fv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniform1i(GLint location,
@@ -1403,7 +1401,7 @@ void yagl_host_glUniform1iv(GLint location,
     YAGL_GET_CTX(glUniform1iv);
 
     if (v_) {
-        v = g_malloc(count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           count * sizeof(*v),
@@ -1416,7 +1414,7 @@ void yagl_host_glUniform1iv(GLint location,
     ctx->driver_ps->Uniform1iv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniform2f(GLint location,
@@ -1437,7 +1435,7 @@ void yagl_host_glUniform2fv(GLint location,
     YAGL_GET_CTX(glUniform2fv);
 
     if (v_) {
-        v = g_malloc(2 * count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, 2 * count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           2 * count * sizeof(*v),
@@ -1450,7 +1448,7 @@ void yagl_host_glUniform2fv(GLint location,
     ctx->driver_ps->Uniform2fv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniform2i(GLint location,
@@ -1471,7 +1469,7 @@ void yagl_host_glUniform2iv(GLint location,
     YAGL_GET_CTX(glUniform2iv);
 
     if (v_) {
-        v = g_malloc(2 * count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, 2 * count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           2 * count * sizeof(*v),
@@ -1484,7 +1482,7 @@ void yagl_host_glUniform2iv(GLint location,
     ctx->driver_ps->Uniform2iv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniform3f(GLint location,
@@ -1506,7 +1504,7 @@ void yagl_host_glUniform3fv(GLint location,
     YAGL_GET_CTX(glUniform3fv);
 
     if (v_) {
-        v = g_malloc(3 * count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, 3 * count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           3 * count * sizeof(*v),
@@ -1519,7 +1517,7 @@ void yagl_host_glUniform3fv(GLint location,
     ctx->driver_ps->Uniform3fv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniform3i(GLint location,
@@ -1541,7 +1539,7 @@ void yagl_host_glUniform3iv(GLint location,
     YAGL_GET_CTX(glUniform3iv);
 
     if (v_) {
-        v = g_malloc(3 * count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, 3 * count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           3 * count * sizeof(*v),
@@ -1554,7 +1552,7 @@ void yagl_host_glUniform3iv(GLint location,
     ctx->driver_ps->Uniform3iv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniform4f(GLint location,
@@ -1577,7 +1575,7 @@ void yagl_host_glUniform4fv(GLint location,
     YAGL_GET_CTX(glUniform4fv);
 
     if (v_) {
-        v = g_malloc(4 * count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, 4 * count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           4 * count * sizeof(*v),
@@ -1590,7 +1588,7 @@ void yagl_host_glUniform4fv(GLint location,
     ctx->driver_ps->Uniform4fv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniform4i(GLint location,
@@ -1613,7 +1611,7 @@ void yagl_host_glUniform4iv(GLint location,
     YAGL_GET_CTX(glUniform4iv);
 
     if (v_) {
-        v = g_malloc(4 * count * sizeof(*v));
+        v = yagl_gles_context_malloc(&ctx->base, 4 * count * sizeof(*v));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           v_,
                           4 * count * sizeof(*v),
@@ -1626,7 +1624,7 @@ void yagl_host_glUniform4iv(GLint location,
     ctx->driver_ps->Uniform4iv(ctx->driver_ps, location, count, v);
 
 out:
-    g_free(v);
+    (void)0;
 }
 
 void yagl_host_glUniformMatrix2fv(GLint location,
@@ -1639,7 +1637,7 @@ void yagl_host_glUniformMatrix2fv(GLint location,
     YAGL_GET_CTX(glUniformMatrix2fv);
 
     if (value_) {
-        value = g_malloc(2 * 2 * count * sizeof(*value));
+        value = yagl_gles_context_malloc(&ctx->base, 2 * 2 * count * sizeof(*value));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           value_,
                           2 * 2 * count * sizeof(*value),
@@ -1652,7 +1650,7 @@ void yagl_host_glUniformMatrix2fv(GLint location,
     ctx->driver_ps->UniformMatrix2fv(ctx->driver_ps, location, count, transpose, value);
 
 out:
-    g_free(value);
+    (void)0;
 }
 
 void yagl_host_glUniformMatrix3fv(GLint location,
@@ -1665,7 +1663,7 @@ void yagl_host_glUniformMatrix3fv(GLint location,
     YAGL_GET_CTX(glUniformMatrix3fv);
 
     if (value_) {
-        value = g_malloc(3 * 3 * count * sizeof(*value));
+        value = yagl_gles_context_malloc(&ctx->base, 3 * 3 * count * sizeof(*value));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           value_,
                           3 * 3 * count * sizeof(*value),
@@ -1678,7 +1676,7 @@ void yagl_host_glUniformMatrix3fv(GLint location,
     ctx->driver_ps->UniformMatrix3fv(ctx->driver_ps, location, count, transpose, value);
 
 out:
-    g_free(value);
+    (void)0;
 }
 
 void yagl_host_glUniformMatrix4fv(GLint location,
@@ -1691,7 +1689,7 @@ void yagl_host_glUniformMatrix4fv(GLint location,
     YAGL_GET_CTX(glUniformMatrix4fv);
 
     if (value_) {
-        value = g_malloc(4 * 4 * count * sizeof(*value));
+        value = yagl_gles_context_malloc(&ctx->base, 4 * 4 * count * sizeof(*value));
         if (!yagl_mem_get(gles2_api_ts->ts,
                           value_,
                           4 * 4 * count * sizeof(*value),
@@ -1704,7 +1702,7 @@ void yagl_host_glUniformMatrix4fv(GLint location,
     ctx->driver_ps->UniformMatrix4fv(ctx->driver_ps, location, count, transpose, value);
 
 out:
-    g_free(value);
+    (void)0;
 }
 
 void yagl_host_glUseProgram(GLuint program)

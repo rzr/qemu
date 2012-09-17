@@ -264,7 +264,7 @@ void yagl_host_glBufferData(GLenum target,
     }
 
     if (data_ && (size > 0)) {
-        data = g_malloc(size);
+        data = yagl_gles_context_malloc(ctx, size);
         if (!yagl_mem_get(ts,
                           data_,
                           size,
@@ -277,7 +277,6 @@ void yagl_host_glBufferData(GLenum target,
     yagl_gles_buffer_set_data(buffer_obj, size, data, usage);
 
 out:
-    g_free(data);
     yagl_gles_buffer_release(buffer_obj);
 }
 
@@ -312,7 +311,7 @@ void yagl_host_glBufferSubData(GLenum target,
         goto out;
     }
 
-    data = g_malloc(size);
+    data = yagl_gles_context_malloc(ctx, size);
     if (!yagl_mem_get(ts,
                       data_,
                       size,
@@ -327,7 +326,6 @@ void yagl_host_glBufferSubData(GLenum target,
     }
 
 out:
-    g_free(data);
     yagl_gles_buffer_release(buffer_obj);
 }
 
@@ -386,7 +384,7 @@ void yagl_host_glCompressedTexImage2D(GLenum target,
     YAGL_GET_CTX(glCompressedTexImage2D);
 
     if (data_ && (imageSize > 0)) {
-        data = g_malloc(imageSize);
+        data = yagl_gles_context_malloc(ctx, imageSize);
         if (!yagl_mem_get(ts,
                           data_,
                           imageSize,
@@ -407,7 +405,7 @@ void yagl_host_glCompressedTexImage2D(GLenum target,
                                          data);
 
 out:
-    g_free(data);
+    (void)0;
 }
 
 void yagl_host_glCompressedTexSubImage2D(GLenum target,
@@ -425,7 +423,7 @@ void yagl_host_glCompressedTexSubImage2D(GLenum target,
     YAGL_GET_CTX(glCompressedTexSubImage2D);
 
     if (data_ && (imageSize > 0)) {
-        data = g_malloc(imageSize);
+        data = yagl_gles_context_malloc(ctx, imageSize);
         if (!yagl_mem_get(ts,
                           data_,
                           imageSize,
@@ -447,7 +445,7 @@ void yagl_host_glCompressedTexSubImage2D(GLenum target,
                                             data);
 
 out:
-    g_free(data);
+    (void)0;
 }
 
 void yagl_host_glCopyTexImage2D(GLenum target,
@@ -515,7 +513,7 @@ void yagl_host_glDeleteBuffers(GLsizei n,
         goto out;
     }
 
-    buffer_names = g_malloc0(n * sizeof(*buffer_names));
+    buffer_names = yagl_gles_context_malloc0(ctx, n * sizeof(*buffer_names));
 
     if (buffers_) {
         if (!yagl_mem_get(ts,
@@ -545,7 +543,7 @@ void yagl_host_glDeleteBuffers(GLsizei n,
     }
 
 out:
-    g_free(buffer_names);
+    (void)0;
 }
 
 void yagl_host_glDeleteTextures(GLsizei n,
@@ -561,7 +559,7 @@ void yagl_host_glDeleteTextures(GLsizei n,
         goto out;
     }
 
-    texture_names = g_malloc0(n * sizeof(*texture_names));
+    texture_names = yagl_gles_context_malloc0(ctx, n * sizeof(*texture_names));
 
     if (textures_) {
         if (!yagl_mem_get(ts,
@@ -585,7 +583,7 @@ void yagl_host_glDeleteTextures(GLsizei n,
     }
 
 out:
-    g_free(texture_names);
+    (void)0;
 }
 
 void yagl_host_glDepthFunc(GLenum func)
@@ -686,7 +684,7 @@ void yagl_host_glDrawElements(GLenum mode,
         }
 
         if (indices_) {
-            indices = g_malloc(index_size * count);
+            indices = yagl_gles_context_malloc0(ctx, index_size * count);
             if (!yagl_mem_get(ts,
                               indices_,
                               index_size * count,
@@ -738,7 +736,6 @@ out:
                                    GL_ELEMENT_ARRAY_BUFFER,
                                    old_buffer_name);
     }
-    g_free(indices);
 }
 
 void yagl_host_glEnable(GLenum cap)
@@ -868,7 +865,7 @@ void yagl_host_glGetBooleanv(GLenum pname,
         goto out;
     }
 
-    params = g_malloc0(count * sizeof(*params));
+    params = yagl_gles_context_malloc0(ctx, count * sizeof(*params));
 
     if (!ctx->get_booleanv(ctx, pname, params)) {
         GLint param;
@@ -889,7 +886,7 @@ void yagl_host_glGetBooleanv(GLenum pname,
     }
 
 out:
-    g_free(params);
+    (void)0;
 }
 
 void yagl_host_glGetBufferParameteriv(GLenum target,
@@ -927,7 +924,7 @@ void yagl_host_glGetFloatv(GLenum pname,
         goto out;
     }
 
-    params = g_malloc0(count * sizeof(*params));
+    params = yagl_gles_context_malloc0(ctx, count * sizeof(*params));
 
     if (!ctx->get_floatv(ctx, pname, params)) {
         GLint param;
@@ -948,7 +945,7 @@ void yagl_host_glGetFloatv(GLenum pname,
     }
 
 out:
-    g_free(params);
+    (void)0;
 }
 
 void yagl_host_glGetIntegerv(GLenum pname,
@@ -964,7 +961,7 @@ void yagl_host_glGetIntegerv(GLenum pname,
         goto out;
     }
 
-    params = g_malloc0(count * sizeof(*params));
+    params = yagl_gles_context_malloc0(ctx, count * sizeof(*params));
 
     if (!ctx->get_integerv(ctx, pname, params)) {
         if (!yagl_get_integer(ctx, pname, params)) {
@@ -981,7 +978,7 @@ void yagl_host_glGetIntegerv(GLenum pname,
     }
 
 out:
-    g_free(params);
+    (void)0;
 }
 
 void yagl_host_glGetTexParameterfv(GLenum target,
@@ -1124,7 +1121,7 @@ void yagl_host_glTexImage2D(GLenum target,
             YAGL_SET_ERR(GL_INVALID_VALUE);
             goto out;
         }
-        pixels = g_malloc(stride * height);
+        pixels = yagl_gles_context_malloc(ctx, stride * height);
         if (!yagl_mem_get(ts,
                           pixels_,
                           stride * height,
@@ -1146,7 +1143,7 @@ void yagl_host_glTexImage2D(GLenum target,
                                pixels);
 
 out:
-    g_free(pixels);
+    (void)0;
 }
 
 void yagl_host_glTexParameterf(GLenum target,
@@ -1206,7 +1203,7 @@ void yagl_host_glTexSubImage2D(GLenum target,
             YAGL_SET_ERR(GL_INVALID_VALUE);
             goto out;
         }
-        pixels = g_malloc(stride * height);
+        pixels = yagl_gles_context_malloc(ctx, stride * height);
         if (!yagl_mem_get(ts,
                           pixels_,
                           stride * height,
@@ -1228,7 +1225,7 @@ void yagl_host_glTexSubImage2D(GLenum target,
                                   pixels);
 
 out:
-    g_free(pixels);
+    (void)0;
 }
 
 void yagl_host_glViewport(GLint x,

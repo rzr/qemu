@@ -35,6 +35,14 @@ struct yagl_gles_context
     GLenum error;
 
     /*
+     * Buffer that is used for reading target data that is
+     * accessed via target pointers. Instead of doing
+     * g_malloc/g_free every time we'll just use this.
+     */
+    void *malloc_buff;
+    GLsizei malloc_buff_size;
+
+    /*
      * GLES arrays, the number of arrays is different depending on
      * GLES version, 'num_arrays' holds that number.
      */
@@ -115,6 +123,12 @@ void yagl_gles_context_cleanup(struct yagl_gles_context *ctx);
 void yagl_gles_context_set_error(struct yagl_gles_context *ctx, GLenum error);
 
 GLenum yagl_gles_context_get_error(struct yagl_gles_context *ctx);
+
+/*
+ * Allocate per-call memory, no need to free it.
+ */
+void *yagl_gles_context_malloc(struct yagl_gles_context *ctx, GLsizei size);
+void *yagl_gles_context_malloc0(struct yagl_gles_context *ctx, GLsizei size);
 
 struct yagl_gles_array
     *yagl_gles_context_get_array(struct yagl_gles_context *ctx, GLuint index);
