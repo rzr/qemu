@@ -33,6 +33,7 @@
 #include "virtio.h"
 
 void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state);
+void maru_virtio_touchscreen_notify(void);
 
 
 #endif /* MARU_TOUCHSCREEN_H_ */
