@@ -224,13 +224,24 @@ static void glo_surface_try_alloc_xshm_image(GloSurface *surface) {
 
 /* ------------------------------------------------------------------------ */
 
-/* Update the context in surface and free previous light-weight context */
-void glo_surface_update_context(GloSurface *surface, GloContext *context)
-{
-    if ( surface->context && (surface->context->context == 0))
-        qemu_free(surface->context);
+/* Update the context in surface and handle previous context */
+int glo_surface_update_context(GloSurface *surface, GloContext *context)
+ {
+    /* If previous context is light-weight context, just free it. If previous
+     * context is valid one binded with surface via MakeCurrent, we need unbind
+     * from original glstate */
+    int prev_context_valid = 0;
+
+     if ( surface->context )
+    {
+        prev_context_valid = (surface->context->context != 0);
+        if ( !prev_context_valid ) /* light-weight context */
+            g_free(surface->context);
+    }
     surface->context = context;
+    return prev_context_valid;
 }
+ 
 
 /* Create a surface with given width and height, formatflags are from the
  * GLO_ constants */

@@ -47,10 +47,37 @@
 #define PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS 0x1014
 #define PCI_DEVICE_ID_VIRTUAL_CAMERA     0x1018
 #define PCI_DEVICE_ID_VIRTUAL_CODEC      0x101C
+// Device ID 0x1000 through 0x103F inclusive is a virtio device
 #define PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN 0x101D
 
-/* virtio */
-#define VIRTIO_ID_TOUCHSCREEN 10
+/* Virtio */
+/*
++----------------------+--------------------+---------------+
+| Subsystem Device ID  |   Virtio Device    | Specification |
++----------------------+--------------------+---------------+
++----------------------+--------------------+---------------+
+|          1           |   network card     |  Appendix C   |
++----------------------+--------------------+---------------+
+|          2           |   block device     |  Appendix D   |
++----------------------+--------------------+---------------+
+|          3           |      console       |  Appendix E   |
++----------------------+--------------------+---------------+
+|          4           |  entropy source    |  Appendix F   |
++----------------------+--------------------+---------------+
+|          5           | memory ballooning  |  Appendix G   |
++----------------------+--------------------+---------------+
+|          6           |     ioMemory       |       -       |
++----------------------+--------------------+---------------+
+|          7           |       rpmsg        |  Appendix H   |
++----------------------+--------------------+---------------+
+|          8           |     SCSI host      |  Appendix I   |
++----------------------+--------------------+---------------+
+|          9           |   9P transport     |       -       |
++----------------------+--------------------+---------------+
+|         10           |   mac80211 wlan    |       -       |
++----------------------+--------------------+---------------+
+*/
+#define VIRTIO_ID_TOUCHSCREEN 11
 
 
 #endif /* MARU_DEVICE_IDS_H_ */

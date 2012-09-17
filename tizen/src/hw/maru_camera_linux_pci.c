@@ -58,6 +58,17 @@ static struct v4l2_format dst_fmt;
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
+static int yioctl(int fd, int req, void *arg)
+{
+    int r;
+
+    do {
+        r = ioctl(fd, req, arg);
+    } while ( r < 0 && errno == EINTR);
+
+    return r;
+}
+
 static int xioctl(int fd, int req, void *arg)
 {
     int r;
@@ -358,39 +369,102 @@ wait_worker_thread:
     return NULL;
 }
 
-int marucam_device_check(void)
+int marucam_device_check(int log_flag)
 {
     int tmp_fd;
+    struct timeval t1, t2;
     struct stat st;
+    struct v4l2_fmtdesc format;
+    struct v4l2_frmsizeenum size;
     struct v4l2_capability cap;
+    int ret = 0;
 
+    gettimeofday(&t1, NULL);
     if (stat(dev_name, &st) < 0) {
-        INFO("<WARNING>Cannot identify '%s': %s\n", dev_name, strerror(errno));
+        fprintf(stdout, "[Webcam] <WARNING> Cannot identify '%s': %s\n",
+                dev_name, strerror(errno));
     } else {
         if (!S_ISCHR(st.st_mode)) {
-            INFO("<WARNING>%s is no character device.\n", dev_name);
+            fprintf(stdout, "[Webcam] <WARNING>%s is no character device.\n",
+                    dev_name);
         }
     }
 
     tmp_fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
     if (tmp_fd < 0) {
-        ERR("Camera device open failed.(%s)\n", dev_name);
-        return 0;
+        fprintf(stdout, "[Webcam] Camera device open failed.(%s)\n", dev_name);
+        goto error;
     }
     if (ioctl(tmp_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-        ERR("Could not qeury video capabilities\n");
-        close(tmp_fd);
-        return 0;
+        fprintf(stdout, "[Webcam] Could not qeury video capabilities\n");
+        goto error;
     }
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
             !(cap.capabilities & V4L2_CAP_STREAMING)) {
-        ERR("Not supported video driver.\n");
-        close(tmp_fd);
-        return 0;
+        fprintf(stdout, "[Webcam] Not supported video driver.\n");
+        goto error;
     }
+    ret = 1;
 
+    if (log_flag) {
+        fprintf(stdout, "[Webcam] Driver : %s\n", cap.driver);
+        fprintf(stdout, "[Webcam] Card : %s\n", cap.card);
+        fprintf(stdout, "[Webcam] Bus info : %s\n", cap.bus_info);
+
+        CLEAR(format);
+        format.index = 0;
+        format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+        if (yioctl(tmp_fd, VIDIOC_ENUM_FMT, &format) < 0) {
+            goto error;
+        }
+
+        do {
+            CLEAR(size);
+            size.index = 0;
+            size.pixel_format = format.pixelformat;
+
+            fprintf(stdout, "[Webcam] PixelFormat : %c%c%c%c\n",
+                             (char)(format.pixelformat),
+                             (char)(format.pixelformat >> 8),
+                             (char)(format.pixelformat >> 16),
+                             (char)(format.pixelformat >> 24));
+
+            if (yioctl(tmp_fd, VIDIOC_ENUM_FRAMESIZES, &size) < 0) {
+                goto error;
+            }
+
+            if (size.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
+                do {
+                    fprintf(stdout, "[Webcam] got discrete frame size %dx%d\n",
+                                    size.discrete.width, size.discrete.height);
+                    size.index++;
+                } while (yioctl(tmp_fd, VIDIOC_ENUM_FRAMESIZES, &size) >= 0);
+            } else if (size.type == V4L2_FRMSIZE_TYPE_STEPWISE) {
+                fprintf(stdout, "[Webcam] we have stepwise frame sizes:\n");
+                fprintf(stdout, "[Webcam] min width: %d, min height: %d\n",
+                        size.stepwise.min_width, size.stepwise.min_height);
+                fprintf(stdout, "[Webcam] max width: %d, max height: %d\n",
+                        size.stepwise.max_width, size.stepwise.max_height);
+                fprintf(stdout, "[Webcam] step width: %d, step height: %d\n",
+                        size.stepwise.step_width, size.stepwise.step_height);
+            } else if (size.type == V4L2_FRMSIZE_TYPE_CONTINUOUS) {
+                fprintf(stdout, "[Webcam] we have continuous frame sizes:\n");
+                fprintf(stdout, "[Webcam] min width: %d, min height: %d\n",
+                        size.stepwise.min_width, size.stepwise.min_height);
+                fprintf(stdout, "[Webcam] max width: %d, max height: %d\n",
+                        size.stepwise.max_width, size.stepwise.max_height);
+
+            }
+            format.index++;
+        } while (yioctl(tmp_fd, VIDIOC_ENUM_FMT, &format) >= 0);
+    }
+error:
     close(tmp_fd);
-    return 1;
+    gettimeofday(&t2, NULL);
+    fprintf(stdout, "[Webcam] Elapsed time : %lu:%06lu\n",
+                    t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+    return ret;
 }
 
 void marucam_device_init(MaruCamState* state)
@@ -420,8 +494,15 @@ void marucam_device_start_preview(MaruCamState* state)
     struct timespec req;
     req.tv_sec = 0;
     req.tv_nsec = 10000000;
-
-    INFO("Starting preview!\n");
+    INFO("Pixfmt(%c%c%c%C), W:H(%d:%d), buf size(%u)\n",
+         (char)(dst_fmt.fmt.pix.pixelformat),
+         (char)(dst_fmt.fmt.pix.pixelformat >> 8),
+         (char)(dst_fmt.fmt.pix.pixelformat >> 16),
+         (char)(dst_fmt.fmt.pix.pixelformat >> 24),
+         dst_fmt.fmt.pix.width,
+         dst_fmt.fmt.pix.height,
+         dst_fmt.fmt.pix.sizeimage);
+    INFO("Starting preview\n");
     qemu_mutex_lock(&state->thread_mutex);
     qemu_cond_signal(&state->thread_cond);
     qemu_mutex_unlock(&state->thread_mutex);
@@ -446,7 +527,7 @@ void marucam_device_stop_preview(MaruCamState* state)
     while (!is_stream_paused(state))
         nanosleep(&req, NULL);
 
-    INFO("Stopping preview!\n");
+    INFO("Stopping preview\n");
 }
 
 void marucam_device_s_param(MaruCamState* state)
