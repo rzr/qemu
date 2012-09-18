@@ -339,8 +339,6 @@ static void qemu_update(void)
     if (sdl_alteration == 1) {
         sdl_alteration = 0;
         _sdl_init();
-
-        return;
     } else if (sdl_alteration == -1) {
         SDL_FreeSurface(processing_screen);
         SDL_FreeSurface(surface_qemu);
