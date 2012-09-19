@@ -12,6 +12,7 @@ all: qemu skin_client
 
 qemu: build_info ffmpeg_install check_hax
 	cd ../../ && $(MAKE)
+
 qemu_clean:
 	cd ../../ && $(MAKE) clean
 qemu_distclean:
@@ -19,11 +20,11 @@ qemu_distclean:
 
 check_hax:
 ifdef CONFIG_WIN32
-	$(CC) -o check-hax.exe check_hax.c
-else
-	
+	$(CC) -o check-hax.exe check_hax.c	
 endif
-
+ifdef CONFIG_DARWIN
+	$(CC) -o check-hax check_hax.c	
+endif
 skin_client:
 	ant -buildfile skin/client/build.xml make-jar
 
@@ -47,8 +48,9 @@ ffmpeg_distclean:
 clean: ffmpeg_clean qemu_clean
 ifdef CONFIG_WIN32
 	rm -f check-hax.exe
-else
-	
+endif
+ifdef CONFIG_DARWIN
+	rm -f check-hax
 endif
 distclean: ffmpeg_distclean qemu_distclean
 
@@ -61,8 +63,9 @@ install: all
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
-else
-	
+endif
+ifdef CONFIG_DARWIN
+	cp check-hax $(EMUL_DIR)/bin
 endif
 
 ifndef CONFIG_DARWIN

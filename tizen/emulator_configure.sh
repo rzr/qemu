@@ -75,6 +75,7 @@ echo "##### QEMU configure for emulator"
  --enable-mixemu \
  --audio-card-list=ac97 \
  --enable-maru \
+ --enable-hax \
  --disable-vnc \
  --disable-sdl \
  --disable-gl

@@ -228,6 +228,11 @@ obj-$(CONFIG_HAX) += \
 	hax-all.o	\
 	hax-windows.o
 endif
+ifdef CONFIG_DARWIN
+obj-$(CONFIG_HAX) += \
+        hax-all.o       \
+        hax-darwin.o
+endif
 endif
 
 # Inter-VM PCI shared memory
