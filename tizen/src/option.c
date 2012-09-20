@@ -289,7 +289,7 @@ static void getmacproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, ch
 }
 #endif
 
-#if defined (CONFIG_LINUX)    
+#if defined (CONFIG_WIN32)    
 static void remove_string(char *src, char *dst, const char *toremove)
 {
     int len = strlen(toremove);
@@ -303,7 +303,9 @@ static void remove_string(char *src, char *dst, const char *toremove)
 
     dst[j] = '\0';
 }
+#endif
 
+#if defined (CONFIG_LINUX)    
 static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char buf[MAXLEN];

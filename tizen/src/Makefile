@@ -9,16 +9,15 @@ config-host.mak:
 endif
 
 all: qemu skin_client
-
 qemu: build_info ffmpeg_install check_hax
 	cd ../../ && $(MAKE)
-
 qemu_clean:
 	cd ../../ && $(MAKE) clean
 qemu_distclean:
 	cd ../../ && $(MAKE) distclean
 
 check_hax:
+	@echo "build check hax"	
 ifdef CONFIG_WIN32
 	$(CC) -o check-hax.exe check_hax.c	
 endif
