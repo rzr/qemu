@@ -51,27 +51,26 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
          * No buffer yet, create one.
          */
 
-        gles_ctx->driver_ps->GenBuffers(gles_ctx->driver_ps,
-                                        1,
-                                        &gles_ctx->rp_pbo);
+        gles_ctx->rp_pbo = yagl_gles_buffer_create(gles_ctx->driver_ps);
 
         if (!gles_ctx->rp_pbo) {
-            YAGL_LOG_ERROR("GenBuffers failed");
+            YAGL_LOG_ERROR("yagl_gles_buffer_create failed");
             goto out;
         }
 
-        YAGL_LOG_TRACE("Created pbo %u", gles_ctx->rp_pbo);
+        YAGL_LOG_TRACE("Created pbo %u",
+                       gles_ctx->rp_pbo->default_part.global_name);
     }
 
     gles_ctx->driver_ps->GetIntegerv(gles_ctx->driver_ps,
                                      GL_PIXEL_PACK_BUFFER_BINDING_ARB,
                                      (GLint*)&current_pbo);
 
-    if (current_pbo != gles_ctx->rp_pbo) {
+    if (current_pbo != gles_ctx->rp_pbo->default_part.global_name) {
         YAGL_LOG_TRACE("Binding pbo");
         gles_ctx->driver_ps->BindBuffer(gles_ctx->driver_ps,
                                         GL_PIXEL_PACK_BUFFER_ARB,
-                                        gles_ctx->rp_pbo);
+                                        gles_ctx->rp_pbo->default_part.global_name);
     }
 
     if ((width != gles_ctx->rp_pbo_width) ||
@@ -150,7 +149,7 @@ out:
         gles_ctx->driver_ps->PopClientAttrib(gles_ctx->driver_ps);
     }
     if ((current_pbo != 0) &&
-        (current_pbo != gles_ctx->rp_pbo)) {
+        (current_pbo != gles_ctx->rp_pbo->default_part.global_name)) {
         YAGL_LOG_ERROR("Target binded a pbo ?");
         gles_ctx->driver_ps->BindBuffer(gles_ctx->driver_ps,
                                         GL_PIXEL_PACK_BUFFER_ARB,
@@ -171,10 +170,15 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
 
     ctx->driver_ps = driver_ps;
 
-    ctx->malloc_buff_size = 100;
-    ctx->malloc_buff = g_malloc(ctx->malloc_buff_size);
+    ctx->rp_pbo = NULL;
+    ctx->rp_pbo_width = 0;
+    ctx->rp_pbo_height = 0;
+    ctx->rp_pbo_bpp = 0;
 
     ctx->error = GL_NO_ERROR;
+
+    ctx->malloc_buff_size = 100;
+    ctx->malloc_buff = g_malloc(ctx->malloc_buff_size);
 
     ctx->arrays = NULL;
     ctx->num_arrays = 0;
@@ -198,11 +202,6 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
     ctx->rbo_local_name = 0;
 
     ctx->ts = NULL;
-
-    ctx->rp_pbo = 0;
-    ctx->rp_pbo_width = 0;
-    ctx->rp_pbo_height = 0;
-    ctx->rp_pbo_bpp = 0;
 }
 
 void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
@@ -250,14 +249,6 @@ void yagl_gles_context_activate(struct yagl_gles_context *ctx,
 
 void yagl_gles_context_deactivate(struct yagl_gles_context *ctx)
 {
-    if (ctx->rp_pbo) {
-        ctx->driver_ps->DeleteBuffers(ctx->driver_ps, 1, &ctx->rp_pbo);
-        ctx->rp_pbo = 0;
-        ctx->rp_pbo_width = 0;
-        ctx->rp_pbo_height = 0;
-        ctx->rp_pbo_bpp = 0;
-    }
-
     assert(ctx->ts != NULL);
     ctx->ts = NULL;
 }
@@ -294,6 +285,10 @@ void yagl_gles_context_cleanup(struct yagl_gles_context *ctx)
 
     g_free(ctx->malloc_buff);
     ctx->malloc_buff = NULL;
+
+    if (ctx->rp_pbo) {
+        yagl_sharegroup_reap_object(ctx->base.sg, &ctx->rp_pbo->base);
+    }
 }
 
 void yagl_gles_context_set_error(struct yagl_gles_context *ctx, GLenum error)

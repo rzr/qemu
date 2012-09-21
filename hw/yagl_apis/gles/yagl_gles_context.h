@@ -32,6 +32,16 @@ struct yagl_gles_context
                        GLenum /*pname*/,
                        GLfloat */*params*/);
 
+    /*
+     * Pixel Buffer Object (PBO) for quick access to current surface pixels.
+     * 'read_pixels' will automatically detect surface size changes and
+     * will recreate this pbo accordingly.
+     */
+    struct yagl_gles_buffer *rp_pbo;
+    uint32_t rp_pbo_width;
+    uint32_t rp_pbo_height;
+    uint32_t rp_pbo_bpp;
+
     GLenum error;
 
     /*
@@ -80,18 +90,6 @@ struct yagl_gles_context
      * The thread this context is currently running on.
      */
     struct yagl_thread_state *ts;
-
-    /*
-     * Pixel Buffer Object (PBO) for quick access to current surface pixels.
-     * 'read_pixels' will automatically detect surface size changes and
-     * will recreate this pbo accordingly. Whenever this context resigns
-     * current state we'll destroy this pbo, otherwise we might get host GL
-     * object leaks.
-     */
-    yagl_object_name rp_pbo;
-    uint32_t rp_pbo_width;
-    uint32_t rp_pbo_height;
-    uint32_t rp_pbo_bpp;
 
     /*
      * @}
