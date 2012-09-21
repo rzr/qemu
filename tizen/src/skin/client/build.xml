@@ -89,7 +89,7 @@
 			<arg line="-c" />
 			<arg line="Share.c" />
 			<arg line="-o" />
-			<arg line="libshare.so" />
+			<arg line="libshared.so" />
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}/linux" />
 			<arg line="-fPIC" />
@@ -115,7 +115,7 @@
 			<arg line="-dynamiclib" />
 			<arg line="Share.o" />
 			<arg line="-o" />
-			<arg line="libshare.dylib" />
+			<arg line="libshared.dylib" />
 		</exec>
 		<delete>
 			<fileset dir="native_src" includes="**/*.h" />
