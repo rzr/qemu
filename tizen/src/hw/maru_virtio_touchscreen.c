@@ -71,6 +71,8 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
     if (queue_cnt >= MAX_TOUCH_EVENT_CNT) {
         pthread_mutex_unlock(&event_mutex);
         INFO("full touch event queue, lose event\n", queue_cnt);
+
+        mloop_evcmd_touch();
         return;
     }
 
@@ -129,6 +131,7 @@ void maru_virtio_touchscreen_notify(void)
     TouchEventEntry *entry = NULL;
     VirtQueueElement elem;
     int ii = 0;
+    int sg_index = 0;
 
     TRACE("maru_virtio_touchscreen_notify\n");
 
@@ -143,16 +146,22 @@ void maru_virtio_touchscreen_notify(void)
         while (queue_cnt > 0)
         {
             /* get from virtio queue */
-            virtqueue_pop(ts->vq, &elem);
-            vbuf = elem.in_sg[elem.in_num - 1].iov_base;
+            sg_index = virtqueue_pop(ts->vq, &elem);
+            if (sg_index == 0) {
+                pthread_mutex_unlock(&event_mutex);
+
+                ERR("sg_index is 0\n");
+                return;
+            }
+            vbuf = elem.in_sg[sg_index - 1].iov_base;
 
             /* get from host event queue */
             entry = QTAILQ_FIRST(&events_queue);
 #if 1
             INFO("touch(%d) : x=%d, y=%d, z=%d, state=%d | \
-                queue_cnt=%d, elem.index=%d, elem.in_num=%d\n",
+                queue_cnt=%d, elem.index=%d, elem.in_num=%d, sg_index=%d\n",
                 entry->index, entry->touch.x, entry->touch.y, entry->touch.z, entry->touch.state,
-                queue_cnt, elem.index, elem.in_num);
+                queue_cnt, elem.index, elem.in_num, sg_index);
 #endif
 
             /* copy host event into virtio queue */
