@@ -3567,6 +3567,12 @@ fi
 
 if test "$yagl" = "yes" ; then
   echo "CONFIG_YAGL=y" >> $config_host_mak
+  if test "$linux" = "yes" ; then
+    echo "CONFIG_YAGL_EGL_GLX=y" >> $config_host_mak
+  else
+    echo "ERROR: YaGL is not available on $targetos"
+    exit 1
+  fi
 fi
 
 if test "$yagl_stats" = "yes" ; then

@@ -254,7 +254,9 @@ obj-y += yagl_gles2_program.o
 obj-y += yagl_gles2_validate.o
 obj-y += yagl_host_gles2_calls.o
 # EGL GLX driver
+ifdef CONFIG_YAGL_EGL_GLX
 obj-y += yagl_egl_glx.o
+endif
 # GLES OpenGL common driver
 obj-y += yagl_gles_ogl.o
 # GLESv1_CM OpenGL driver
