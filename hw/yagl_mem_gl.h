@@ -11,5 +11,9 @@
 #define yagl_mem_get_GLsizei(ts, va, value) yagl_mem_get_int32((ts), (va), (value))
 #define yagl_mem_put_GLenum(ts, va, value) yagl_mem_put_uint32((ts), (va), (value))
 #define yagl_mem_get_GLenum(ts, va, value) yagl_mem_get_uint32((ts), (va), (value))
+#define yagl_mem_put_GLfloat(ts, va, value) yagl_mem_put_float((ts), (va), (value))
+#define yagl_mem_get_GLfloat(ts, va, value) yagl_mem_get_float((ts), (va), (value))
+#define yagl_mem_put_GLboolean(ts, va, value) yagl_mem_put_uint8((ts), (va), (value))
+#define yagl_mem_get_GLboolean(ts, va, value) yagl_mem_get_uint8((ts), (va), (value))
 
 #endif

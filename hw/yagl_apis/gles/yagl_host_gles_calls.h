@@ -119,7 +119,7 @@ void yagl_host_glReadPixels(GLint x,
     GLsizei height,
     GLenum format,
     GLenum type,
-    target_ulong /* GLvoid* */ pixels);
+    target_ulong /* GLvoid* */ pixels_);
 void yagl_host_glSampleCoverage(GLclampf value,
     GLboolean invert);
 void yagl_host_glScissor(GLint x,

@@ -861,6 +861,7 @@ void yagl_host_glGetBooleanv(GLenum pname,
     YAGL_GET_CTX(glGetBooleanv);
 
     if (!ctx->get_param_count(ctx, pname, &count)) {
+        YAGL_LOG_ERROR("Bad pname = 0x%X", pname);
         YAGL_SET_ERR(GL_INVALID_ENUM);
         goto out;
     }
@@ -879,9 +880,9 @@ void yagl_host_glGetBooleanv(GLenum pname,
 
     if (params_) {
         for (i = 0; i < count; ++i) {
-            yagl_mem_put_GLuint(ts,
-                                params_ + (i * sizeof(*params)),
-                                params[i]);
+            yagl_mem_put_GLboolean(ts,
+                                   params_ + (i * sizeof(*params)),
+                                   params[i]);
         }
     }
 
@@ -920,6 +921,7 @@ void yagl_host_glGetFloatv(GLenum pname,
     YAGL_GET_CTX(glGetFloatv);
 
     if (!ctx->get_param_count(ctx, pname, &count)) {
+        YAGL_LOG_ERROR("Bad pname = 0x%X", pname);
         YAGL_SET_ERR(GL_INVALID_ENUM);
         goto out;
     }
@@ -938,9 +940,9 @@ void yagl_host_glGetFloatv(GLenum pname,
 
     if (params_) {
         for (i = 0; i < count; ++i) {
-            yagl_mem_put_GLuint(ts,
-                                params_ + (i * sizeof(*params)),
-                                params[i]);
+            yagl_mem_put_GLfloat(ts,
+                                 params_ + (i * sizeof(*params)),
+                                 params[i]);
         }
     }
 
@@ -957,6 +959,7 @@ void yagl_host_glGetIntegerv(GLenum pname,
     YAGL_GET_CTX(glGetIntegerv);
 
     if (!ctx->get_param_count(ctx, pname, &count)) {
+        YAGL_LOG_ERROR("Bad pname = 0x%X", pname);
         YAGL_SET_ERR(GL_INVALID_ENUM);
         goto out;
     }
@@ -1048,9 +1051,54 @@ void yagl_host_glReadPixels(GLint x,
     GLsizei height,
     GLenum format,
     GLenum type,
-    target_ulong /* GLvoid* */ pixels)
+    target_ulong /* GLvoid* */ pixels_)
 {
-    YAGL_UNIMPLEMENTED(glReadPixels);
+    yagl_object_name current_pbo = 0;
+    GLvoid *pixels = NULL;
+    GLsizei stride = 0;
+
+    YAGL_GET_CTX(glReadPixels);
+
+    if (pixels_ && (width > 0) && (height > 0)) {
+        if (!yagl_get_stride(ctx->driver_ps,
+                             GL_PACK_ALIGNMENT,
+                             width,
+                             format,
+                             type,
+                             &stride)) {
+            YAGL_SET_ERR(GL_INVALID_VALUE);
+            goto out;
+        }
+        pixels = yagl_gles_context_malloc(ctx, stride * height);
+        ctx->driver_ps->GetIntegerv(ctx->driver_ps,
+                                    GL_PIXEL_PACK_BUFFER_BINDING_ARB,
+                                    (GLint*)&current_pbo);
+        if (current_pbo != 0) {
+            ctx->driver_ps->BindBuffer(ctx->driver_ps,
+                                       GL_PIXEL_PACK_BUFFER_ARB,
+                                       0);
+        }
+
+        ctx->driver_ps->ReadPixels(ctx->driver_ps,
+                                   x,
+                                   y,
+                                   width,
+                                   height,
+                                   format,
+                                   type,
+                                   pixels);
+
+        if (current_pbo != 0) {
+            ctx->driver_ps->BindBuffer(ctx->driver_ps,
+                                       GL_PIXEL_PACK_BUFFER_ARB,
+                                       current_pbo);
+        }
+
+        yagl_mem_put(ts, pixels_, stride * height, pixels);
+    }
+
+out:
+    (void)0;
 }
 
 void yagl_host_glSampleCoverage(GLclampf value,

@@ -6,6 +6,7 @@
 #include "yagl_thread.h"
 #include "yagl_sharegroup.h"
 #include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 #include "yagl_gles2_driver.h"
 
 static void yagl_gles2_array_apply(struct yagl_gles_array *array)
@@ -137,6 +138,7 @@ static bool yagl_gles2_context_get_param_count(struct yagl_gles_context *ctx,
     case GL_TEXTURE_BINDING_CUBE_MAP: *count = 1; break;
     case GL_UNPACK_ALIGNMENT: *count = 1; break;
     case GL_VIEWPORT: *count = 4; break;
+    case GL_MAX_SAMPLES_IMG: *count = 1; break;
     default: return false;
     }
     return true;

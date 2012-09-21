@@ -1237,6 +1237,12 @@ EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
         yagl_egl_context_update_surfaces(prev_ctx, NULL, NULL);
     }
 
+    YAGL_LOG_TRACE("Context switched (%u, %u, %u, %u)",
+                   dpy_,
+                   draw_,
+                   read_,
+                   ctx_);
+
     ret = EGL_TRUE;
 
 out:
@@ -1480,7 +1486,82 @@ yagl_host_handle yagl_host_eglCreatePixmapSurfaceOffscreenYAGL(yagl_host_handle 
     target_ulong /* void* */ pixels_,
     target_ulong /* const EGLint* */ attrib_list_)
 {
-    YAGL_UNIMPLEMENTED(eglCreatePixmapSurfaceOffscreenYAGL, 0);
+    yagl_host_handle ret = 0;
+    EGLint *attrib_list = NULL;
+    struct yagl_compiled_transfer *bimage_ct = NULL;
+    struct yagl_egl_pixmap_attribs attribs;
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_config *config = NULL;
+    struct yagl_egl_surface *surface = NULL;
+
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglCreatePixmapSurfaceOffscreenYAGL);
+
+    if (attrib_list_) {
+        attrib_list = yagl_mem_get_attrib_list(egl_api_ts->ts,
+                                               attrib_list_);
+
+        if (!attrib_list) {
+            YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+            goto out;
+        }
+    }
+
+    bimage_ct = yagl_compiled_transfer_create(egl_api_ts->ts,
+                                              pixels_,
+                                              (width * height * bpp),
+                                              true);
+
+    if (!bimage_ct) {
+        YAGL_SET_ERR(EGL_BAD_NATIVE_PIXMAP);
+        goto out;
+    }
+
+    yagl_egl_pixmap_attribs_init(&attribs);
+
+    if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
+        YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+        goto out;
+    }
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_config(dpy, config_, &config)) {
+        goto out;
+    }
+
+    surface = yagl_egl_surface_create_pixmap(dpy,
+                                             config,
+                                             &attribs,
+                                             bimage_ct,
+                                             width,
+                                             height,
+                                             bpp);
+
+    if (!surface) {
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
+        goto out;
+    }
+
+    /*
+     * Owned by 'surface' now.
+     */
+    bimage_ct = NULL;
+
+    yagl_egl_display_add_surface(dpy, surface);
+    yagl_egl_surface_release(surface);
+
+    ret = surface->res.handle;
+
+out:
+    yagl_egl_config_release(config);
+    if (bimage_ct) {
+        yagl_compiled_transfer_destroy(bimage_ct);
+    }
+    g_free(attrib_list);
+
+    return ret;
 }
 
 EGLBoolean yagl_host_eglResizeOffscreenSurfaceYAGL(yagl_host_handle dpy_,
