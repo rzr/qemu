@@ -635,7 +635,11 @@ void yagl_host_glDrawArrays(GLenum mode,
         return;
     }
 
+    ctx->pre_draw(ctx, mode);
+
     ctx->driver_ps->DrawArrays(ctx->driver_ps, mode, first, count);
+
+    ctx->post_draw(ctx, mode);
 }
 
 void yagl_host_glDrawElements(GLenum mode,
@@ -724,11 +728,15 @@ void yagl_host_glDrawElements(GLenum mode,
         goto out;
     }
 
+    ctx->pre_draw(ctx, mode);
+
     ctx->driver_ps->DrawElements(ctx->driver_ps,
                                  mode,
                                  count,
                                  type,
                                  (ctx->ebo ? (GLvoid*)indices_ : indices));
+
+    ctx->post_draw(ctx, mode);
 
 out:
     if (ebo_bound) {
@@ -1284,4 +1292,24 @@ void yagl_host_glViewport(GLint x,
     YAGL_GET_CTX(glViewport);
 
     ctx->driver_ps->Viewport(ctx->driver_ps, x, y, width, height);
+}
+
+GLuint yagl_host_glGetExtensionStringYAGL(target_ulong /* GLchar* */ str_)
+{
+    GLchar *str;
+    GLuint str_len;
+
+    YAGL_GET_CTX_RET(glGetExtensionStringYAGL, 1);
+
+    str = ctx->get_extensions(ctx);
+
+    str_len = strlen(str);
+
+    if (str_) {
+        yagl_mem_put(ts, str_, str_len + 1, str);
+    }
+
+    g_free(str);
+
+    return str_len + 1;
 }

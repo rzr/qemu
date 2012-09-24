@@ -2255,7 +2255,22 @@ static uint8_t* yagl_func_glViewport(struct yagl_thread_state *ts,
     return out_buff;
 }
 
-const uint32_t yagl_gles1_api_num_funcs = 143;
+/*
+ * glGetExtensionStringYAGL dispatcher. id = 144
+ */
+static uint8_t* yagl_func_glGetExtensionStringYAGL(struct yagl_thread_state *ts,
+    uint8_t *out_buff,
+    uint8_t *in_buff)
+{
+    target_ulong str = yagl_marshal_get_ptr(&out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glGetExtensionStringYAGL, target_ulong, str);
+    GLuint ret = yagl_host_glGetExtensionStringYAGL(str);
+    YAGL_LOG_FUNC_EXIT_SPLIT(GLuint, ret);
+    yagl_marshal_put_GLuint(&in_buff, ret);
+    return out_buff;
+}
+
+const uint32_t yagl_gles1_api_num_funcs = 144;
 
 yagl_api_func yagl_gles1_api_funcs[] = {
     &yagl_func_glAlphaFunc,
@@ -2400,5 +2415,6 @@ yagl_api_func yagl_gles1_api_funcs[] = {
     &yagl_func_glTexSubImage2D,
     &yagl_func_glTranslatex,
     &yagl_func_glVertexPointer,
-    &yagl_func_glViewport
+    &yagl_func_glViewport,
+    &yagl_func_glGetExtensionStringYAGL
 };

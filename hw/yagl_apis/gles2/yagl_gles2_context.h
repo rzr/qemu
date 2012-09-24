@@ -28,6 +28,12 @@ struct yagl_gles2_context
 
     int num_shader_binary_formats;
 
+    bool texture_half_float;
+
+    bool vertex_half_float;
+
+    bool standard_derivatives;
+
     yagl_object_name program_local_name;
 };
 

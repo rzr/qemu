@@ -188,6 +188,14 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
 
     ctx->num_compressed_texture_formats = 0;
 
+    ctx->pack_depth_stencil = false;
+
+    ctx->texture_npot = false;
+
+    ctx->texture_rectangle = false;
+
+    ctx->texture_filter_anisotropic = false;
+
     ctx->active_texture_unit = 0;
 
     ctx->vbo = NULL;
@@ -211,6 +219,7 @@ void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
                                int num_texture_units)
 {
     int i;
+    const char *extensions;
 
     if (num_texture_units < 1) {
         num_texture_units = 1;
@@ -236,6 +245,19 @@ void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
     ctx->driver_ps->GetIntegerv(ctx->driver_ps,
                                 GL_NUM_COMPRESSED_TEXTURE_FORMATS,
                                 &ctx->num_compressed_texture_formats);
+
+    extensions = (const char*)ctx->driver_ps->GetString(ctx->driver_ps, GL_EXTENSIONS);
+
+    ctx->pack_depth_stencil = (strstr(extensions, "GL_EXT_packed_depth_stencil ") != NULL);
+
+    ctx->texture_npot = (strstr(extensions, "GL_OES_texture_npot ") != NULL) ||
+                        (strstr(extensions, "GL_ARB_texture_non_power_of_two ") != NULL);
+
+    ctx->texture_rectangle = (strstr(extensions, "GL_NV_texture_rectangle ") != NULL) ||
+                             (strstr(extensions, "GL_EXT_texture_rectangle ") != NULL) ||
+                             (strstr(extensions, "GL_ARB_texture_rectangle ") != NULL);
+
+    ctx->texture_filter_anisotropic = (strstr(extensions, "GL_EXT_texture_filter_anisotropic ") != NULL);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }

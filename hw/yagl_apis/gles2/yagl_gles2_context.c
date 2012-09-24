@@ -9,6 +9,12 @@
 #include <GLES2/gl2ext.h>
 #include "yagl_gles2_driver.h"
 
+/*
+ * We can't include GL/glext.h here
+ */
+#define GL_POINT_SPRITE                   0x8861
+#define GL_VERTEX_PROGRAM_POINT_SIZE      0x8642
+
 static void yagl_gles2_array_apply(struct yagl_gles_array *array)
 {
     struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)array->ctx;
@@ -139,6 +145,7 @@ static bool yagl_gles2_context_get_param_count(struct yagl_gles_context *ctx,
     case GL_UNPACK_ALIGNMENT: *count = 1; break;
     case GL_VIEWPORT: *count = 4; break;
     case GL_MAX_SAMPLES_IMG: *count = 1; break;
+    case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT: *count = 1; break;
     default: return false;
     }
     return true;
@@ -211,6 +218,110 @@ static bool yagl_gles2_context_get_floatv(struct yagl_gles_context *ctx,
     return true;
 }
 
+static GLchar *yagl_gles2_context_get_extensions(struct yagl_gles_context *ctx)
+{
+    struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)ctx;
+
+    const GLchar *mandatory_extensions =
+        "GL_OES_depth24 GL_OES_depth32 "
+        "GL_OES_texture_float GL_OES_texture_float_linear "
+        "GL_OES_depth_texture ";
+    const GLchar *pack_depth_stencil = "GL_OES_packed_depth_stencil ";
+    const GLchar *texture_npot = "GL_OES_texture_npot ";
+    const GLchar *texture_rectangle = "GL_ARB_texture_rectangle ";
+    const GLchar *texture_filter_anisotropic = "GL_EXT_texture_filter_anisotropic ";
+    const GLchar *texture_half_float = "GL_OES_texture_half_float GL_OES_texture_half_float_linear ";
+    const GLchar *vertex_half_float = "GL_OES_vertex_half_float ";
+    const GLchar *standard_derivatives = "GL_OES_standard_derivatives ";
+
+    GLuint len = strlen(mandatory_extensions);
+    GLchar *str;
+
+    if (gles2_ctx->base.pack_depth_stencil) {
+        len += strlen(pack_depth_stencil);
+    }
+
+    if (gles2_ctx->base.texture_npot) {
+        len += strlen(texture_npot);
+    }
+
+    if (gles2_ctx->base.texture_rectangle) {
+        len += strlen(texture_rectangle);
+    }
+
+    if (gles2_ctx->base.texture_filter_anisotropic) {
+        len += strlen(texture_filter_anisotropic);
+    }
+
+    if (gles2_ctx->texture_half_float) {
+        len += strlen(texture_half_float);
+    }
+
+    if (gles2_ctx->vertex_half_float) {
+        len += strlen(vertex_half_float);
+    }
+
+    if (gles2_ctx->standard_derivatives) {
+        len += strlen(standard_derivatives);
+    }
+
+    str = g_malloc0(len + 1);
+
+    strcpy(str, mandatory_extensions);
+
+    if (gles2_ctx->base.pack_depth_stencil) {
+        strcat(str, pack_depth_stencil);
+    }
+
+    if (gles2_ctx->base.texture_npot) {
+        strcat(str, texture_npot);
+    }
+
+    if (gles2_ctx->base.texture_rectangle) {
+        strcat(str, texture_rectangle);
+    }
+
+    if (gles2_ctx->base.texture_filter_anisotropic) {
+        strcat(str, texture_filter_anisotropic);
+    }
+
+    if (gles2_ctx->texture_half_float) {
+        strcat(str, texture_half_float);
+    }
+
+    if (gles2_ctx->vertex_half_float) {
+        strcat(str, vertex_half_float);
+    }
+
+    if (gles2_ctx->standard_derivatives) {
+        strcat(str, standard_derivatives);
+    }
+
+    return str;
+}
+
+static void yagl_gles2_context_pre_draw(struct yagl_gles_context *ctx, GLenum mode)
+{
+    /*
+     * Enable texture generation for GL_POINTS and gl_PointSize shader variable.
+     * GLESv2 assumes this is enabled by default, we need to set this
+     * state for GL.
+     */
+
+    if (mode == GL_POINTS) {
+        ctx->driver_ps->Enable(ctx->driver_ps, GL_POINT_SPRITE);
+        ctx->driver_ps->Enable(ctx->driver_ps, GL_VERTEX_PROGRAM_POINT_SIZE);
+    }
+}
+
+static void yagl_gles2_context_post_draw(struct yagl_gles_context *ctx, GLenum mode)
+{
+    if (mode == GL_POINTS) {
+        ctx->driver_ps->Disable(ctx->driver_ps, GL_VERTEX_PROGRAM_POINT_SIZE);
+        ctx->driver_ps->Disable(ctx->driver_ps, GL_POINT_SPRITE);
+    }
+}
+
 static void yagl_gles2_context_destroy(struct yagl_client_context *ctx)
 {
     struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)ctx;
@@ -265,6 +376,7 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx,
     struct yagl_gles_driver_ps *gles_driver = gles2_ctx->driver_ps->common;
     GLint i, num_arrays = 0, num_texture_units = 0;
     struct yagl_gles_array *arrays;
+    const char *extensions;
 
     YAGL_LOG_FUNC_ENTER_TS(ts,
                            yagl_gles2_context_prepare,
@@ -294,6 +406,15 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx,
     gles_driver->GetIntegerv(gles_driver,
                              GL_NUM_SHADER_BINARY_FORMATS,
                              &gles2_ctx->num_shader_binary_formats);
+
+    extensions = (const char*)gles_driver->GetString(gles_driver, GL_EXTENSIONS);
+
+    gles2_ctx->texture_half_float = (strstr(extensions, "GL_ARB_half_float_pixel ") != NULL) ||
+                                    (strstr(extensions, "GL_NV_half_float ") != NULL);
+
+    gles2_ctx->vertex_half_float = (strstr(extensions, "GL_ARB_half_float_vertex ") != NULL);
+
+    gles2_ctx->standard_derivatives = (strstr(extensions, "GL_OES_standard_derivatives ") != NULL);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
@@ -343,6 +464,9 @@ struct yagl_gles2_context
     gles2_ctx->base.get_booleanv = &yagl_gles2_context_get_booleanv;
     gles2_ctx->base.get_integerv = &yagl_gles2_context_get_integerv;
     gles2_ctx->base.get_floatv = &yagl_gles2_context_get_floatv;
+    gles2_ctx->base.get_extensions = &yagl_gles2_context_get_extensions;
+    gles2_ctx->base.pre_draw = &yagl_gles2_context_pre_draw;
+    gles2_ctx->base.post_draw = &yagl_gles2_context_post_draw;
 
     gles2_ctx->driver_ps = driver_ps;
     gles2_ctx->prepared = false;
@@ -350,6 +474,10 @@ struct yagl_gles2_context
     gles2_ctx->shader_strip_precision = true;
 
     gles2_ctx->num_shader_binary_formats = 0;
+
+    gles2_ctx->texture_half_float = false;
+    gles2_ctx->vertex_half_float = false;
+    gles2_ctx->standard_derivatives = false;
 
     gles2_ctx->program_local_name = 0;
 

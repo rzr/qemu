@@ -167,5 +167,6 @@ void yagl_host_glViewport(GLint x,
     GLint y,
     GLsizei width,
     GLsizei height);
+GLuint yagl_host_glGetExtensionStringYAGL(target_ulong /* GLchar* */ str_);
 
 #endif

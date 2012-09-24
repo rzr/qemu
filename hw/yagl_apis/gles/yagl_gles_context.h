@@ -32,6 +32,12 @@ struct yagl_gles_context
                        GLenum /*pname*/,
                        GLfloat */*params*/);
 
+    GLchar *(*get_extensions)(struct yagl_gles_context */*ctx*/);
+
+    void (*pre_draw)(struct yagl_gles_context */*ctx*/, GLenum mode);
+
+    void (*post_draw)(struct yagl_gles_context */*ctx*/, GLenum mode);
+
     /*
      * Pixel Buffer Object (PBO) for quick access to current surface pixels.
      * 'read_pixels' will automatically detect surface size changes and
@@ -67,6 +73,14 @@ struct yagl_gles_context
     int num_texture_units;
 
     int num_compressed_texture_formats;
+
+    bool pack_depth_stencil;
+
+    bool texture_npot;
+
+    bool texture_rectangle;
+
+    bool texture_filter_anisotropic;
 
     int active_texture_unit;
 
