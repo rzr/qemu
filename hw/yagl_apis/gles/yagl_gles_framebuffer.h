@@ -28,6 +28,8 @@ struct yagl_gles_framebuffer
     QemuMutex mutex;
 
     struct yagl_gles_framebuffer_attachment_state attachment_states[YAGL_NUM_GLES_FRAMEBUFFER_ATTACHMENTS];
+
+    bool was_bound;
 };
 
 struct yagl_gles_framebuffer
@@ -57,5 +59,14 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
                                      GLint level,
                                      struct yagl_gles_texture *texture,
                                      yagl_object_name texture_local_name);
+
+bool yagl_gles_framebuffer_get_attachment_parameter(struct yagl_gles_framebuffer *fb,
+                                                    GLenum attachment,
+                                                    GLenum pname,
+                                                    GLint *value);
+
+void yagl_gles_framebuffer_set_bound(struct yagl_gles_framebuffer *fb);
+
+bool yagl_gles_framebuffer_was_bound(struct yagl_gles_framebuffer *fb);
 
 #endif

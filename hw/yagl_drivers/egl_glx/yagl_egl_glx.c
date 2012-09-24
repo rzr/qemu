@@ -345,7 +345,7 @@ static EGLSurface yagl_egl_glx_pbuffer_surface_create(struct yagl_egl_driver_ps 
     int glx_attribs[] = {
         GLX_PBUFFER_WIDTH, width,
         GLX_PBUFFER_HEIGHT, height,
-        GLX_LARGEST_PBUFFER, (attribs->largest ? True : False),
+        GLX_LARGEST_PBUFFER, False,
         GLX_PRESERVED_CONTENTS, True,
         None
     };

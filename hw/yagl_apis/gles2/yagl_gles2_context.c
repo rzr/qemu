@@ -223,7 +223,7 @@ static GLchar *yagl_gles2_context_get_extensions(struct yagl_gles_context *ctx)
     struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)ctx;
 
     const GLchar *mandatory_extensions =
-        "GL_OES_depth24 GL_OES_depth32 "
+        "GL_OES_EGL_image GL_OES_depth24 GL_OES_depth32 "
         "GL_OES_texture_float GL_OES_texture_float_linear "
         "GL_OES_depth_texture ";
     const GLchar *pack_depth_stencil = "GL_OES_packed_depth_stencil ";

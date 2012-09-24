@@ -623,10 +623,14 @@ EGLBoolean yagl_host_eglChooseConfig(yagl_host_handle dpy_,
         }
 
         if (has_config_id) {
+            yagl_host_handle handle = 0;
             struct yagl_egl_config *cfg =
                 yagl_egl_display_acquire_config_by_id(dpy, config_id);
-            yagl_host_handle handle = cfg->res.handle;
-            yagl_egl_config_release(cfg);
+
+            if (cfg) {
+                handle = cfg->res.handle;
+                yagl_egl_config_release(cfg);
+            }
 
             YAGL_LOG_DEBUG("requesting config with id = %d", config_id);
 
@@ -881,11 +885,6 @@ EGLBoolean yagl_host_eglBindAPI(EGLenum api)
     return EGL_TRUE;
 }
 
-EGLenum yagl_host_eglQueryAPI(void)
-{
-    return egl_api_ts->api;
-}
-
 EGLBoolean yagl_host_eglWaitClient(void)
 {
     EGLBoolean ret = EGL_FALSE;
@@ -991,12 +990,6 @@ EGLBoolean yagl_host_eglReleaseTexImage(yagl_host_handle dpy,
     EGLint buffer)
 {
     YAGL_UNIMPLEMENTED(eglReleaseTexImage, EGL_FALSE);
-}
-
-EGLBoolean yagl_host_eglSwapInterval(yagl_host_handle dpy,
-    EGLint interval)
-{
-    YAGL_UNIMPLEMENTED(eglSwapInterval, EGL_FALSE);
 }
 
 yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
@@ -1254,18 +1247,102 @@ out:
     return ret;
 }
 
-EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy,
-    yagl_host_handle ctx,
+EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy_,
+    yagl_host_handle ctx_,
     EGLint attribute,
-    target_ulong /* EGLint* */ value)
+    target_ulong /* EGLint* */ value_)
 {
-    YAGL_UNIMPLEMENTED(eglQueryContext, EGL_FALSE);
+    EGLBoolean ret = EGL_FALSE;
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_context *ctx = NULL;
+    EGLint value = 0;
+
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglQueryContext);
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_context(dpy, ctx_, &ctx)) {
+        goto out;
+    }
+
+    switch (attribute) {
+    case EGL_CONFIG_ID:
+        value = ctx->cfg->native.config_id;
+        break;
+    case EGL_CONTEXT_CLIENT_TYPE:
+        switch (ctx->client_ctx->client_api) {
+        case yagl_client_api_gles1:
+        case yagl_client_api_gles2:
+            value = EGL_OPENGL_ES_API;
+            break;
+        case yagl_client_api_ogl:
+            value = EGL_OPENGL_API;
+            break;
+        case yagl_client_api_ovg:
+            value = EGL_OPENVG_API;
+            break;
+        default:
+            assert(false);
+            value = EGL_NONE;
+            break;
+        }
+        break;
+    case EGL_CONTEXT_CLIENT_VERSION:
+        switch (ctx->client_ctx->client_api) {
+        case yagl_client_api_gles1:
+            value = 1;
+            break;
+        case yagl_client_api_gles2:
+            value = 2;
+            break;
+        case yagl_client_api_ogl:
+        case yagl_client_api_ovg:
+        default:
+            value = 0;
+            break;
+        }
+        break;
+    case EGL_RENDER_BUFFER:
+        if (ctx->draw) {
+            switch (ctx->draw->type) {
+            case EGL_PBUFFER_BIT:
+            case EGL_WINDOW_BIT:
+                value = EGL_BACK_BUFFER;
+                break;
+            case EGL_PIXMAP_BIT:
+                value = EGL_SINGLE_BUFFER;
+                break;
+            default:
+                assert(0);
+                value = EGL_NONE;
+            }
+        } else {
+            value = EGL_NONE;
+        }
+        break;
+    default:
+        YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+        goto out;
+    }
+
+    if (value_) {
+        yagl_mem_put_EGLint(egl_api_ts->ts, value_, value);
+    }
+
+    ret = EGL_TRUE;
+
+out:
+    yagl_egl_context_release(ctx);
+
+    return ret;
 }
 
 EGLBoolean yagl_host_eglWaitGL(void)
 {
     EGLBoolean ret;
-    EGLenum api = yagl_host_eglQueryAPI();
+    EGLenum api = egl_api_ts->api;
     yagl_host_eglBindAPI(EGL_OPENGL_ES_API);
     ret = yagl_host_eglWaitClient();
     yagl_host_eglBindAPI(api);
@@ -1364,11 +1441,63 @@ out:
     return ret;
 }
 
-EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy,
-    yagl_host_handle surface,
+EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLNativePixmapType target)
 {
-    YAGL_UNIMPLEMENTED(eglCopyBuffers, EGL_FALSE);
+    EGLBoolean ret = EGL_FALSE;
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_surface *surface = NULL;
+
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglCopyBuffers);
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+        goto out;
+    }
+
+    if (!egl_api_ts->context) {
+        YAGL_LOG_ERROR("No current context");
+        YAGL_SET_ERR(EGL_BAD_SURFACE);
+        goto out;
+    }
+
+    if (!yagl_egl_context_uses_surface(egl_api_ts->context, surface)) {
+        YAGL_LOG_ERROR("Surface not attached to current context");
+        YAGL_SET_ERR(EGL_BAD_SURFACE);
+        goto out;
+    }
+
+    if (!egl_api_ts->context->client_ctx->read_pixels(egl_api_ts->context->client_ctx,
+                                                      surface->width,
+                                                      surface->height,
+                                                      surface->bpp,
+                                                      surface->host_pixels)) {
+        YAGL_LOG_ERROR("read_pixels failed");
+        YAGL_SET_ERR(EGL_BAD_SURFACE);
+        goto out;
+    }
+
+    yagl_egl_surface_lock(surface);
+
+    if (surface->bimage_ct) {
+        yagl_compiled_transfer_exec(surface->bimage_ct, surface->host_pixels);
+
+        ret = EGL_TRUE;
+    } else {
+        YAGL_LOG_ERROR("surface was destroyed, weird scenario!");
+        YAGL_SET_ERR(EGL_BAD_SURFACE);
+    }
+
+    yagl_egl_surface_unlock(surface);
+
+out:
+    yagl_egl_surface_release(surface);
+
+    return ret;
 }
 
 yagl_host_handle yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle dpy_,
@@ -1475,7 +1604,122 @@ yagl_host_handle yagl_host_eglCreatePbufferSurfaceOffscreenYAGL(yagl_host_handle
     target_ulong /* void* */ pixels_,
     target_ulong /* const EGLint* */ attrib_list_)
 {
-    YAGL_UNIMPLEMENTED(eglCreatePbufferSurfaceOffscreenYAGL, 0);
+    yagl_host_handle ret = 0;
+    EGLint *attrib_list = NULL;
+    struct yagl_compiled_transfer *bimage_ct = NULL;
+    struct yagl_egl_pbuffer_attribs attribs;
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_config *config = NULL;
+    struct yagl_egl_surface *surface = NULL;
+    int i = 0;
+
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglCreatePbufferSurfaceOffscreenYAGL);
+
+    if (attrib_list_) {
+        attrib_list = yagl_mem_get_attrib_list(egl_api_ts->ts,
+                                               attrib_list_);
+
+        if (!attrib_list) {
+            YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+            goto out;
+        }
+    }
+
+    bimage_ct = yagl_compiled_transfer_create(egl_api_ts->ts,
+                                              pixels_,
+                                              (width * height * bpp),
+                                              true);
+
+    if (!bimage_ct) {
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
+        goto out;
+    }
+
+    yagl_egl_pbuffer_attribs_init(&attribs);
+
+    if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
+        while (attrib_list[i] != EGL_NONE) {
+            switch (attrib_list[i]) {
+            case EGL_LARGEST_PBUFFER:
+                attribs.largest = (attrib_list[i + 1] ? EGL_TRUE : EGL_FALSE);
+                break;
+            case EGL_MIPMAP_TEXTURE:
+                attribs.tex_mipmap = (attrib_list[i + 1] ? EGL_TRUE : EGL_FALSE);
+                break;
+            case EGL_TEXTURE_FORMAT:
+                switch (attrib_list[i + 1]) {
+                case EGL_NO_TEXTURE:
+                case EGL_TEXTURE_RGB:
+                case EGL_TEXTURE_RGBA:
+                    attribs.tex_format = attrib_list[i + 1];
+                    break;
+                default:
+                    YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+                    goto out;
+                }
+                break;
+            case EGL_TEXTURE_TARGET:
+                switch (attrib_list[i + 1]) {
+                case EGL_NO_TEXTURE:
+                case EGL_TEXTURE_2D:
+                    attribs.tex_target = attrib_list[i + 1];
+                    break;
+                default:
+                    YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+                    goto out;
+                }
+                break;
+            case EGL_HEIGHT:
+            case EGL_WIDTH:
+                break;
+            default:
+                YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+                goto out;
+            }
+
+            i += 2;
+        }
+    }
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_config(dpy, config_, &config)) {
+        goto out;
+    }
+
+    surface = yagl_egl_surface_create_pbuffer(dpy,
+                                              config,
+                                              &attribs,
+                                              bimage_ct,
+                                              width,
+                                              height,
+                                              bpp);
+
+    if (!surface) {
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
+        goto out;
+    }
+
+    /*
+     * Owned by 'surface' now.
+     */
+    bimage_ct = NULL;
+
+    yagl_egl_display_add_surface(dpy, surface);
+    yagl_egl_surface_release(surface);
+
+    ret = surface->res.handle;
+
+out:
+    yagl_egl_config_release(config);
+    if (bimage_ct) {
+        yagl_compiled_transfer_destroy(bimage_ct);
+    }
+    g_free(attrib_list);
+
+    return ret;
 }
 
 yagl_host_handle yagl_host_eglCreatePixmapSurfaceOffscreenYAGL(yagl_host_handle dpy_,

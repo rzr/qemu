@@ -91,7 +91,7 @@ void yagl_host_glGetBooleanv(GLenum pname,
     target_ulong /* GLboolean* */ params_);
 void yagl_host_glGetBufferParameteriv(GLenum target,
     GLenum pname,
-    target_ulong /* GLint* */ params);
+    target_ulong /* GLint* */ params_);
 GLenum yagl_host_glGetError(void);
 void yagl_host_glGetFloatv(GLenum pname,
     target_ulong /* GLfloat* */ params_);
@@ -99,10 +99,10 @@ void yagl_host_glGetIntegerv(GLenum pname,
     target_ulong /* GLint* */ params_);
 void yagl_host_glGetTexParameterfv(GLenum target,
     GLenum pname,
-    target_ulong /* GLfloat* */ params);
+    target_ulong /* GLfloat* */ params_);
 void yagl_host_glGetTexParameteriv(GLenum target,
     GLenum pname,
-    target_ulong /* GLint* */ params);
+    target_ulong /* GLint* */ params_);
 void yagl_host_glHint(GLenum target,
     GLenum mode);
 GLboolean yagl_host_glIsBuffer(GLuint buffer);
@@ -147,13 +147,13 @@ void yagl_host_glTexParameterf(GLenum target,
     GLfloat param);
 void yagl_host_glTexParameterfv(GLenum target,
     GLenum pname,
-    target_ulong /* const GLfloat* */ params);
+    target_ulong /* const GLfloat* */ params_);
 void yagl_host_glTexParameteri(GLenum target,
     GLenum pname,
     GLint param);
 void yagl_host_glTexParameteriv(GLenum target,
     GLenum pname,
-    target_ulong /* const GLint* */ params);
+    target_ulong /* const GLint* */ params_);
 void yagl_host_glTexSubImage2D(GLenum target,
     GLint level,
     GLint xoffset,
@@ -168,5 +168,10 @@ void yagl_host_glViewport(GLint x,
     GLsizei width,
     GLsizei height);
 GLuint yagl_host_glGetExtensionStringYAGL(target_ulong /* GLchar* */ str_);
+void yagl_host_glEGLImageTargetTexture2DYAGL(GLenum target,
+    uint32_t width,
+    uint32_t height,
+    uint32_t bpp,
+    target_ulong /* const void* */ pixels_);
 
 #endif

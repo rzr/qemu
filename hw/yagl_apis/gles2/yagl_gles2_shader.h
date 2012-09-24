@@ -34,6 +34,16 @@ void yagl_gles2_shader_get_param(struct yagl_gles2_shader *shader,
                                  GLenum pname,
                                  GLint *param);
 
+void yagl_gles2_shader_get_source(struct yagl_gles2_shader *shader,
+                                  GLsizei bufsize,
+                                  GLsizei *length,
+                                  GLchar *source);
+
+void yagl_gles2_shader_get_info_log(struct yagl_gles2_shader *shader,
+                                    GLsizei bufsize,
+                                    GLsizei *length,
+                                    GLchar *infolog);
+
 /*
  * Passing NULL won't hurt, this is for convenience.
  */

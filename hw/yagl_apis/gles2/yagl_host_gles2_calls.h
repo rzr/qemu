@@ -73,39 +73,39 @@ void yagl_host_glGetActiveUniform(GLuint program,
     target_ulong /* GLchar* */ name_);
 void yagl_host_glGetAttachedShaders(GLuint program,
     GLsizei maxcount,
-    target_ulong /* GLsizei* */ count,
-    target_ulong /* GLuint* */ shaders);
+    target_ulong /* GLsizei* */ count_,
+    target_ulong /* GLuint* */ shaders_);
 int yagl_host_glGetAttribLocation(GLuint program,
     target_ulong /* const GLchar* */ name_);
 void yagl_host_glGetFramebufferAttachmentParameteriv(GLenum target,
     GLenum attachment,
     GLenum pname,
-    target_ulong /* GLint* */ params);
+    target_ulong /* GLint* */ params_);
 void yagl_host_glGetProgramiv(GLuint program,
     GLenum pname,
     target_ulong /* GLint* */ params_);
 void yagl_host_glGetProgramInfoLog(GLuint program,
     GLsizei bufsize,
-    target_ulong /* GLsizei* */ length,
-    target_ulong /* GLchar* */ infolog);
+    target_ulong /* GLsizei* */ length_,
+    target_ulong /* GLchar* */ infolog_);
 void yagl_host_glGetRenderbufferParameteriv(GLenum target,
     GLenum pname,
-    target_ulong /* GLint* */ params);
+    target_ulong /* GLint* */ params_);
 void yagl_host_glGetShaderiv(GLuint shader,
     GLenum pname,
     target_ulong /* GLint* */ params_);
 void yagl_host_glGetShaderInfoLog(GLuint shader,
     GLsizei bufsize,
-    target_ulong /* GLsizei* */ length,
-    target_ulong /* GLchar* */ infolog);
+    target_ulong /* GLsizei* */ length_,
+    target_ulong /* GLchar* */ infolog_);
 void yagl_host_glGetShaderPrecisionFormat(GLenum shadertype,
     GLenum precisiontype,
-    target_ulong /* GLint* */ range,
-    target_ulong /* GLint* */ precision);
+    target_ulong /* GLint* */ range_,
+    target_ulong /* GLint* */ precision_);
 void yagl_host_glGetShaderSource(GLuint shader,
     GLsizei bufsize,
-    target_ulong /* GLsizei* */ length,
-    target_ulong /* GLchar* */ source);
+    target_ulong /* GLsizei* */ length_,
+    target_ulong /* GLchar* */ source_);
 void yagl_host_glGetUniformfv(GLuint program,
     GLint location,
     target_ulong /* GLfloat* */ params);
@@ -116,13 +116,13 @@ int yagl_host_glGetUniformLocation(GLuint program,
     target_ulong /* const GLchar* */ name_);
 void yagl_host_glGetVertexAttribfv(GLuint index,
     GLenum pname,
-    target_ulong /* GLfloat* */ params);
+    target_ulong /* GLfloat* */ params_);
 void yagl_host_glGetVertexAttribiv(GLuint index,
     GLenum pname,
     target_ulong /* GLint* */ params_);
 void yagl_host_glGetVertexAttribPointerv(GLuint index,
     GLenum pname,
-    target_ulong /* GLvoid** */ pointer);
+    target_ulong /* GLvoid** */ pointer_);
 GLboolean yagl_host_glIsFramebuffer(GLuint framebuffer);
 GLboolean yagl_host_glIsProgram(GLuint program);
 GLboolean yagl_host_glIsRenderbuffer(GLuint renderbuffer);

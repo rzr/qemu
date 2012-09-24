@@ -51,4 +51,10 @@ char *yagl_mem_get_string(struct yagl_thread_state *ts, target_ulong va);
 #define yagl_mem_put_host_handle(ts, va, value) yagl_mem_put_uint32((ts), (va), (value))
 #define yagl_mem_get_host_handle(ts, va, value) yagl_mem_get_uint32((ts), (va), (value))
 
+#if TARGET_LONG_SIZE == 4
+#define yagl_mem_put_ptr(ts, va, value) yagl_mem_put_uint32((ts), (va), (value))
+#else
+#error 64-bit ptr not supported
+#endif
+
 #endif

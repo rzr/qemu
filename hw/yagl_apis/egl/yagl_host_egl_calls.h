@@ -67,16 +67,16 @@ EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
 yagl_host_handle yagl_host_eglGetCurrentContext(void);
 yagl_host_handle yagl_host_eglGetCurrentSurface(EGLint readdraw);
 yagl_host_handle yagl_host_eglGetCurrentDisplay(void);
-EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy,
-    yagl_host_handle ctx,
+EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy_,
+    yagl_host_handle ctx_,
     EGLint attribute,
-    target_ulong /* EGLint* */ value);
+    target_ulong /* EGLint* */ value_);
 EGLBoolean yagl_host_eglWaitGL(void);
 EGLBoolean yagl_host_eglWaitNative(EGLint engine);
 EGLBoolean yagl_host_eglSwapBuffers(yagl_host_handle dpy_,
     yagl_host_handle surface_);
-EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy,
-    yagl_host_handle surface,
+EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLNativePixmapType target);
 yagl_host_handle yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle dpy_,
     yagl_host_handle config_,

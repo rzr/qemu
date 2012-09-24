@@ -17,4 +17,7 @@ bool yagl_gles_validate_texture_target(GLenum target,
 bool yagl_gles_validate_framebuffer_attachment(GLenum attachment,
     yagl_gles_framebuffer_attachment *framebuffer_attachment);
 
+bool yagl_gles_validate_texture_target_squash(GLenum target,
+    GLenum *squashed_target);
+
 #endif

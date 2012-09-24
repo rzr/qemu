@@ -67,6 +67,13 @@ void yagl_gles2_program_get_active_uniform(struct yagl_gles2_program *program,
                                            GLenum *type,
                                            GLchar *name);
 
+void yagl_gles2_program_get_info_log(struct yagl_gles2_program *program,
+                                     GLsizei bufsize,
+                                     GLsizei *length,
+                                     GLchar *infolog);
+
+void yagl_gles2_program_validate(struct yagl_gles2_program *program);
+
 /*
  * Passing NULL won't hurt, this is for convenience.
  */

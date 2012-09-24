@@ -143,6 +143,8 @@ struct yagl_gles_driver_ps
     YAGL_GLES_DRIVER_FUNC_RET1(struct yagl_gles_driver_ps *driver_ps, GLenum, CheckFramebufferStatus, GLenum, target)
     YAGL_GLES_DRIVER_FUNC1(struct yagl_gles_driver_ps *driver_ps, GenerateMipmap, GLenum, target)
     YAGL_GLES_DRIVER_FUNC_RET1(struct yagl_gles_driver_ps *driver_ps, const GLubyte*, GetString, GLenum, name)
+    YAGL_GLES_DRIVER_FUNC4(struct yagl_gles_driver_ps *driver_ps, GetFramebufferAttachmentParameteriv, GLenum, GLenum, GLenum, GLint*, target, attachment, pname, params);
+    YAGL_GLES_DRIVER_FUNC3(struct yagl_gles_driver_ps *driver_ps, GetRenderbufferParameteriv, GLenum, GLenum, GLint*, target, pname, params);
 };
 
 void yagl_gles_driver_ps_init(struct yagl_gles_driver_ps *driver_ps,

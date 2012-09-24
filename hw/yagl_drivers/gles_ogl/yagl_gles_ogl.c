@@ -81,6 +81,8 @@ struct yagl_gles_ogl
     YAGL_GLES_OGL_PROC_RET1(GLenum, glCheckFramebufferStatusEXT, GLenum, target)
     YAGL_GLES_OGL_PROC1(glGenerateMipmapEXT, GLenum, target)
     YAGL_GLES_OGL_PROC_RET1(const GLubyte*, glGetString, GLenum, name)
+    YAGL_GLES_OGL_PROC4(glGetFramebufferAttachmentParameterivEXT, GLenum, GLenum, GLenum, GLint*, target, attachment, pname, params);
+    YAGL_GLES_OGL_PROC3(glGetRenderbufferParameterivEXT, GLenum, GLenum, GLint*, target, pname, params);
 };
 
 YAGL_GLES_OGL_PROC_IMPL1(yagl_gles_driver_ps, yagl_gles_ogl_ps, yagl_gles_ogl, ActiveTexture, GLenum, texture)
@@ -156,6 +158,8 @@ YAGL_GLES_OGL_PROC_IMPL4(yagl_gles_driver_ps, yagl_gles_ogl_ps, yagl_gles_ogl, F
 YAGL_GLES_OGL_PROC_IMPL_RET1(yagl_gles_driver_ps, yagl_gles_ogl_ps, yagl_gles_ogl, GLenum, CheckFramebufferStatusEXT, GLenum, target)
 YAGL_GLES_OGL_PROC_IMPL1(yagl_gles_driver_ps, yagl_gles_ogl_ps, yagl_gles_ogl, GenerateMipmapEXT, GLenum, target)
 YAGL_GLES_OGL_PROC_IMPL_RET1(yagl_gles_driver_ps, yagl_gles_ogl_ps, yagl_gles_ogl, const GLubyte*, GetString, GLenum, name)
+YAGL_GLES_OGL_PROC_IMPL4(yagl_gles_driver_ps, yagl_gles_ogl_ps, yagl_gles_ogl, GetFramebufferAttachmentParameterivEXT, GLenum, GLenum, GLenum, GLint*, target, attachment, pname, params);
+YAGL_GLES_OGL_PROC_IMPL3(yagl_gles_driver_ps, yagl_gles_ogl_ps, yagl_gles_ogl, GetRenderbufferParameterivEXT, GLenum, GLenum, GLint*, target, pname, params);
 
 struct yagl_gles_ogl_ps
     *yagl_gles_ogl_ps_create(struct yagl_gles_ogl *gles_ogl,
@@ -243,6 +247,8 @@ struct yagl_gles_ogl_ps
     gles_ogl_ps->base.CheckFramebufferStatus = &yagl_gles_ogl_CheckFramebufferStatusEXT;
     gles_ogl_ps->base.GenerateMipmap = &yagl_gles_ogl_GenerateMipmapEXT;
     YAGL_GLES_OGL_ASSIGN_PROC(yagl_gles_ogl, gles_ogl_ps, GetString);
+    gles_ogl_ps->base.GetFramebufferAttachmentParameteriv = &yagl_gles_ogl_GetFramebufferAttachmentParameterivEXT;
+    gles_ogl_ps->base.GetRenderbufferParameteriv = &yagl_gles_ogl_GetRenderbufferParameterivEXT;
 
     YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -349,6 +355,8 @@ struct yagl_gles_ogl
     YAGL_GLES_OGL_GET_PROC(gles_ogl, glCheckFramebufferStatusEXT);
     YAGL_GLES_OGL_GET_PROC(gles_ogl, glGenerateMipmapEXT);
     YAGL_GLES_OGL_GET_PROC(gles_ogl, glGetString);
+    YAGL_GLES_OGL_GET_PROC(gles_ogl, glGetFramebufferAttachmentParameterivEXT);
+    YAGL_GLES_OGL_GET_PROC(gles_ogl, glGetRenderbufferParameterivEXT);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 

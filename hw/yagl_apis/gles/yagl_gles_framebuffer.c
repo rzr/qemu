@@ -118,6 +118,7 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
                                      yagl_object_name texture_local_name)
 {
     yagl_gles_framebuffer_attachment framebuffer_attachment;
+    GLenum squashed_textarget;
 
     if (!yagl_gles_validate_framebuffer_attachment(attachment,
                                                    &framebuffer_attachment)) {
@@ -128,7 +129,12 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
         return false;
     }
 
-    if (texture && (yagl_gles_texture_get_target(texture) != textarget)) {
+    if (!yagl_gles_validate_texture_target_squash(textarget,
+                                                  &squashed_textarget)) {
+        return false;
+    }
+
+    if (texture && (yagl_gles_texture_get_target(texture) != squashed_textarget)) {
         return false;
     }
 
@@ -154,4 +160,65 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
     qemu_mutex_unlock(&fb->mutex);
 
     return true;
+}
+
+bool yagl_gles_framebuffer_get_attachment_parameter(struct yagl_gles_framebuffer *fb,
+                                                    GLenum attachment,
+                                                    GLenum pname,
+                                                    GLint *value)
+{
+    yagl_gles_framebuffer_attachment framebuffer_attachment;
+
+    if (!yagl_gles_validate_framebuffer_attachment(attachment,
+                                                   &framebuffer_attachment)) {
+        return false;
+    }
+
+    qemu_mutex_lock(&fb->mutex);
+
+    switch (pname) {
+    case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
+        *value = fb->attachment_states[framebuffer_attachment].type;
+        break;
+    case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
+        *value = fb->attachment_states[framebuffer_attachment].local_name;
+        break;
+    case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
+    case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
+        fb->driver_ps->GetFramebufferAttachmentParameteriv(fb->driver_ps,
+                                                           fb->global_name,
+                                                           attachment,
+                                                           pname,
+                                                           value);
+        break;
+    default:
+        qemu_mutex_unlock(&fb->mutex);
+        return false;
+    }
+
+    qemu_mutex_unlock(&fb->mutex);
+
+    return true;
+}
+
+void yagl_gles_framebuffer_set_bound(struct yagl_gles_framebuffer *fb)
+{
+    qemu_mutex_lock(&fb->mutex);
+
+    fb->was_bound = true;
+
+    qemu_mutex_unlock(&fb->mutex);
+}
+
+bool yagl_gles_framebuffer_was_bound(struct yagl_gles_framebuffer *fb)
+{
+    bool ret = false;
+
+    qemu_mutex_lock(&fb->mutex);
+
+    ret = fb->was_bound;
+
+    qemu_mutex_unlock(&fb->mutex);
+
+    return ret;
 }

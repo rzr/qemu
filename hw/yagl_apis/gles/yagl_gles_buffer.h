@@ -47,6 +47,8 @@ struct yagl_gles_buffer
     GLint size;
     void *data;
     GLenum usage;
+
+    bool was_bound;
 };
 
 struct yagl_gles_buffer
@@ -87,5 +89,13 @@ bool yagl_gles_buffer_bind(struct yagl_gles_buffer *buffer,
 bool yagl_gles_buffer_transfer(struct yagl_gles_buffer *buffer,
                                GLenum type,
                                GLenum target);
+
+bool yagl_gles_buffer_get_parameter(struct yagl_gles_buffer *buffer,
+                                    GLenum pname,
+                                    GLint *param);
+
+void yagl_gles_buffer_set_bound(struct yagl_gles_buffer *buffer);
+
+bool yagl_gles_buffer_was_bound(struct yagl_gles_buffer *buffer);
 
 #endif

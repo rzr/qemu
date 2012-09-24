@@ -175,6 +175,24 @@ void yagl_gles2_program_get_active_uniform(struct yagl_gles2_program *program,
                                          name);
 }
 
+void yagl_gles2_program_get_info_log(struct yagl_gles2_program *program,
+                                     GLsizei bufsize,
+                                     GLsizei *length,
+                                     GLchar *infolog)
+{
+    program->driver_ps->GetProgramInfoLog(program->driver_ps,
+                                          program->global_name,
+                                          bufsize,
+                                          length,
+                                          infolog);
+}
+
+void yagl_gles2_program_validate(struct yagl_gles2_program *program)
+{
+    program->driver_ps->ValidateProgram(program->driver_ps,
+                                        program->global_name);
+}
+
 void yagl_gles2_program_acquire(struct yagl_gles2_program *program)
 {
     if (program) {

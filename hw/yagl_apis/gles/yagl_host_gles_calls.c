@@ -177,6 +177,10 @@ void yagl_host_glBindBuffer(GLenum target,
         goto out;
     }
 
+    if (buffer_obj) {
+        yagl_gles_buffer_set_bound(buffer_obj);
+    }
+
 out:
     yagl_gles_buffer_release(buffer_obj);
 }
@@ -900,9 +904,38 @@ out:
 
 void yagl_host_glGetBufferParameteriv(GLenum target,
     GLenum pname,
-    target_ulong /* GLint* */ params)
+    target_ulong /* GLint* */ params_)
 {
-    YAGL_UNIMPLEMENTED(glGetBufferParameteriv);
+    struct yagl_gles_buffer *buffer_obj = NULL;
+    GLint param = 0;
+
+    YAGL_GET_CTX(glGetBufferParameteriv);
+
+    if (!yagl_gles_is_buffer_target_valid(target)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    buffer_obj = yagl_gles_context_acquire_binded_buffer(ctx, target);
+
+    if (!buffer_obj) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles_buffer_get_parameter(buffer_obj,
+                                        pname,
+                                        &param)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    if (params_) {
+        yagl_mem_put_GLint(ts, params_, param);
+    }
+
+out:
+    yagl_gles_buffer_release(buffer_obj);
 }
 
 GLenum yagl_host_glGetError(void)
@@ -994,16 +1027,38 @@ out:
 
 void yagl_host_glGetTexParameterfv(GLenum target,
     GLenum pname,
-    target_ulong /* GLfloat* */ params)
+    target_ulong /* GLfloat* */ params_)
 {
-    YAGL_UNIMPLEMENTED(glGetTexParameterfv);
+    GLfloat params[10];
+
+    YAGL_GET_CTX(glGetTexParameterfv);
+
+    ctx->driver_ps->GetTexParameterfv(ctx->driver_ps,
+                                      target,
+                                      pname,
+                                      params);
+
+    if (params_) {
+        yagl_mem_put_GLfloat(ts, params_, params[0]);
+    }
 }
 
 void yagl_host_glGetTexParameteriv(GLenum target,
     GLenum pname,
-    target_ulong /* GLint* */ params)
+    target_ulong /* GLint* */ params_)
 {
-    YAGL_UNIMPLEMENTED(glGetTexParameteriv);
+    GLint params[10];
+
+    YAGL_GET_CTX(glGetTexParameteriv);
+
+    ctx->driver_ps->GetTexParameteriv(ctx->driver_ps,
+                                      target,
+                                      pname,
+                                      params);
+
+    if (params_) {
+        yagl_mem_put_GLint(ts, params_, params[0]);
+    }
 }
 
 void yagl_host_glHint(GLenum target,
@@ -1016,7 +1071,21 @@ void yagl_host_glHint(GLenum target,
 
 GLboolean yagl_host_glIsBuffer(GLuint buffer)
 {
-    YAGL_UNIMPLEMENTED_RET(glIsBuffer, GL_FALSE);
+    struct yagl_gles_buffer *buffer_obj = NULL;
+    GLboolean ret = GL_FALSE;
+
+    YAGL_GET_CTX_RET(glIsBuffer, GL_FALSE);
+
+    buffer_obj = (struct yagl_gles_buffer*)yagl_sharegroup_acquire_object(ctx->base.sg,
+        YAGL_NS_BUFFER, buffer);
+
+    if (buffer_obj && yagl_gles_buffer_was_bound(buffer_obj)) {
+        ret = GL_TRUE;
+    }
+
+    yagl_gles_buffer_release(buffer_obj);
+
+    return ret;
 }
 
 GLboolean yagl_host_glIsEnabled(GLenum cap)
@@ -1027,7 +1096,21 @@ GLboolean yagl_host_glIsEnabled(GLenum cap)
 
 GLboolean yagl_host_glIsTexture(GLuint texture)
 {
-    YAGL_UNIMPLEMENTED_RET(glIsTexture, GL_FALSE);
+    struct yagl_gles_texture *texture_obj = NULL;
+    GLboolean ret = GL_FALSE;
+
+    YAGL_GET_CTX_RET(glIsTexture, GL_FALSE);
+
+    texture_obj = (struct yagl_gles_texture*)yagl_sharegroup_acquire_object(ctx->base.sg,
+        YAGL_NS_TEXTURE, texture);
+
+    if (texture_obj && (yagl_gles_texture_get_target(texture_obj) != 0)) {
+        ret = GL_TRUE;
+    }
+
+    yagl_gles_texture_release(texture_obj);
+
+    return ret;
 }
 
 void yagl_host_glLineWidth(GLfloat width)
@@ -1213,9 +1296,28 @@ void yagl_host_glTexParameterf(GLenum target,
 
 void yagl_host_glTexParameterfv(GLenum target,
     GLenum pname,
-    target_ulong /* const GLfloat* */ params)
+    target_ulong /* const GLfloat* */ params_)
 {
-    YAGL_UNIMPLEMENTED(glTexParameterfv);
+    GLfloat params[10];
+
+    YAGL_GET_CTX(glTexParameterfv);
+
+    memset(params, 0, sizeof(params));
+
+    if (params_) {
+        if (!yagl_mem_get_GLfloat(ts, params_, params)) {
+            YAGL_SET_ERR(GL_INVALID_VALUE);
+            goto out;
+        }
+    }
+
+    ctx->driver_ps->TexParameterfv(ctx->driver_ps,
+                                   target,
+                                   pname,
+                                   (params_ ? params : NULL));
+
+out:
+    (void)0;
 }
 
 void yagl_host_glTexParameteri(GLenum target,
@@ -1229,9 +1331,28 @@ void yagl_host_glTexParameteri(GLenum target,
 
 void yagl_host_glTexParameteriv(GLenum target,
     GLenum pname,
-    target_ulong /* const GLint* */ params)
+    target_ulong /* const GLint* */ params_)
 {
-    YAGL_UNIMPLEMENTED(glTexParameteriv);
+    GLint params[10];
+
+    YAGL_GET_CTX(glTexParameteriv);
+
+    memset(params, 0, sizeof(params));
+
+    if (params_) {
+        if (!yagl_mem_get_GLint(ts, params_, params)) {
+            YAGL_SET_ERR(GL_INVALID_VALUE);
+            goto out;
+        }
+    }
+
+    ctx->driver_ps->TexParameteriv(ctx->driver_ps,
+                                   target,
+                                   pname,
+                                   (params_ ? params : NULL));
+
+out:
+    (void)0;
 }
 
 void yagl_host_glTexSubImage2D(GLenum target,
@@ -1312,4 +1433,66 @@ GLuint yagl_host_glGetExtensionStringYAGL(target_ulong /* GLchar* */ str_)
     g_free(str);
 
     return str_len + 1;
+}
+
+void yagl_host_glEGLImageTargetTexture2DYAGL(GLenum target,
+    uint32_t width,
+    uint32_t height,
+    uint32_t bpp,
+    target_ulong /* const void* */ pixels_)
+{
+    void *pixels = NULL;
+    GLenum format = 0;
+    GLsizei unpack_alignment = 0;
+
+    YAGL_GET_CTX(glEGLImageTargetTexture2DYAGL);
+
+    if (pixels_ && (width > 0) && (height > 0) && (bpp > 0)) {
+        pixels = yagl_gles_context_malloc(ctx, width * height * bpp);
+        if (!yagl_mem_get(ts,
+                          pixels_,
+                          width * height * bpp,
+                          pixels)) {
+            YAGL_SET_ERR(GL_INVALID_VALUE);
+            goto out;
+        }
+    }
+
+    switch (bpp) {
+    case 3:
+        format = GL_RGB;
+        break;
+    case 4:
+        format = GL_BGRA;
+        break;
+    default:
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    ctx->driver_ps->GetIntegerv(ctx->driver_ps,
+                                GL_UNPACK_ALIGNMENT,
+                                &unpack_alignment);
+
+    ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                GL_UNPACK_ALIGNMENT,
+                                1);
+
+    ctx->driver_ps->TexImage2D(ctx->driver_ps,
+                               target,
+                               0,
+                               GL_RGB,
+                               width,
+                               height,
+                               0,
+                               format,
+                               GL_UNSIGNED_BYTE,
+                               pixels);
+
+    ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                GL_UNPACK_ALIGNMENT,
+                                unpack_alignment);
+
+out:
+    (void)0;
 }

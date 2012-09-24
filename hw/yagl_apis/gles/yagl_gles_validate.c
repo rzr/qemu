@@ -90,3 +90,25 @@ bool yagl_gles_validate_framebuffer_attachment(GLenum attachment,
 
     return true;
 }
+
+bool yagl_gles_validate_texture_target_squash(GLenum target,
+    GLenum *squashed_target)
+{
+    switch (target) {
+    case GL_TEXTURE_2D:
+        *squashed_target = GL_TEXTURE_2D;
+        break;
+    case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+    case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+    case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+    case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+        *squashed_target = GL_TEXTURE_CUBE_MAP;
+        break;
+    default:
+        return false;
+    }
+
+    return true;
+}

@@ -247,6 +247,30 @@ void yagl_gles2_shader_get_param(struct yagl_gles2_shader *shader,
                                    param);
 }
 
+void yagl_gles2_shader_get_source(struct yagl_gles2_shader *shader,
+                                  GLsizei bufsize,
+                                  GLsizei *length,
+                                  GLchar *source)
+{
+    shader->driver_ps->GetShaderSource(shader->driver_ps,
+                                       shader->global_name,
+                                       bufsize,
+                                       length,
+                                       source);
+}
+
+void yagl_gles2_shader_get_info_log(struct yagl_gles2_shader *shader,
+                                    GLsizei bufsize,
+                                    GLsizei *length,
+                                    GLchar *infolog)
+{
+    shader->driver_ps->GetShaderInfoLog(shader->driver_ps,
+                                        shader->global_name,
+                                        bufsize,
+                                        length,
+                                        infolog);
+}
+
 void yagl_gles2_shader_acquire(struct yagl_gles2_shader *shader)
 {
     if (shader) {

@@ -329,3 +329,48 @@ bool yagl_gles_buffer_transfer(struct yagl_gles_buffer *buffer,
 
     return true;
 }
+
+bool yagl_gles_buffer_get_parameter(struct yagl_gles_buffer *buffer,
+                                    GLenum pname,
+                                    GLint *param)
+{
+    qemu_mutex_lock(&buffer->mutex);
+
+    switch (pname) {
+    case GL_BUFFER_SIZE:
+        *param = buffer->size;
+        break;
+    case GL_BUFFER_USAGE:
+        *param = buffer->usage;
+        break;
+    default:
+        qemu_mutex_unlock(&buffer->mutex);
+        return false;
+    }
+
+    qemu_mutex_unlock(&buffer->mutex);
+
+    return true;
+}
+
+void yagl_gles_buffer_set_bound(struct yagl_gles_buffer *buffer)
+{
+    qemu_mutex_lock(&buffer->mutex);
+
+    buffer->was_bound = true;
+
+    qemu_mutex_unlock(&buffer->mutex);
+}
+
+bool yagl_gles_buffer_was_bound(struct yagl_gles_buffer *buffer)
+{
+    bool ret = false;
+
+    qemu_mutex_lock(&buffer->mutex);
+
+    ret = buffer->was_bound;
+
+    qemu_mutex_unlock(&buffer->mutex);
+
+    return ret;
+}
