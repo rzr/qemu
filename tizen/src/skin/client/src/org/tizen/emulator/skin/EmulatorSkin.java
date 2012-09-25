@@ -1797,12 +1797,13 @@ public class EmulatorSkin {
 
 				ProcessBuilder procSdb = new ProcessBuilder();
 
-				if ( SwtUtil.isLinuxPlatform() ) {
-					procSdb.command( "/usr/bin/gnome-terminal", "--disable-factory",
-							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
-									+ portSdb, "shell" );
-				} else if ( SwtUtil.isWindowsPlatform() ) {
-					procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
+				if (SwtUtil.isLinuxPlatform()) {
+					procSdb.command("/usr/bin/gnome-terminal", "--disable-factory",
+							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath,
+							"-s", "emulator-"	+ portSdb, "shell");
+				} else if (SwtUtil.isWindowsPlatform()) {
+					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
+							"-s", "emulator-" + portSdb, "shell");
 				}
 				logger.log( Level.INFO, procSdb.command().toString() );
 

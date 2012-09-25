@@ -101,7 +101,7 @@ public class SkinUtil {
 		String sdbPath = null;
 
 		if (SwtUtil.isWindowsPlatform()) {
-			sdbPath = ".\\..\\..\\sdb-run.bat";
+			sdbPath = ".\\..\\..\\ansicon.exe";
 		} else {
 			sdbPath = "./../../sdb";
 		}
