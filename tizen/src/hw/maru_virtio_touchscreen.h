@@ -38,6 +38,7 @@ typedef struct TouchscreenState
     /* simply a queue into which buffers are posted
     by the guest for consumption by the host */
     VirtQueue *vq;
+    bool waitBuf;
 
     DeviceState *qdev;
     QEMUPutMouseEntry *eh_entry;
