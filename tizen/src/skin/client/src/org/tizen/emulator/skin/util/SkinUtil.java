@@ -72,7 +72,7 @@ public class SkinUtil {
 		String vmPath = config.getArg( ArgsConstants.VM_PATH );
 
 		String regex = "";
-		if ( SwtUtil.isWindowsPlatform() ) {
+		if (SwtUtil.isWindowsPlatform()) {
 			regex = "\\" + File.separator;
 		} else {
 			regex = File.separator;

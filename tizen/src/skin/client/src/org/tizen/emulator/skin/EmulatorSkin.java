@@ -61,6 +61,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Canvas;
@@ -125,11 +126,17 @@ public class EmulatorSkin {
 		}
 
 	}
+	public native int getPixels(int[] array); 
 
 	public static final String GTK_OS_CLASS = "org.eclipse.swt.internal.gtk.OS";
 	public static final String WIN32_OS_CLASS = "org.eclipse.swt.internal.win32.OS";
 	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
 	
+	public final static int RED_MASK = 0x00FF0000;
+	public final static int GREEN_MASK = 0x0000FF00;
+	public final static int BLUE_MASK = 0x000000FF;
+	public final static int COLOR_DEPTH = 32;
+
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
 	protected EmulatorConfig config;
@@ -166,6 +173,7 @@ public class EmulatorSkin {
 	private SocketCommunicator communicator;
 	private long windowHandleId;
 
+	private PaletteData paletteData;
 	private Listener shellCloseListener;
 	private PaintListener shellPaintListener;
 	private MouseTrackListener shellMouseTrackListener;
@@ -191,6 +199,7 @@ public class EmulatorSkin {
 		this.config = config;
 		this.isDefaultHoverColor = true;
 		this.isOnTop = isOnTop;
+		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 		
 		int style = SWT.NO_TRIM;
 		this.shell = new Shell( Display.getDefault(), style );
@@ -199,6 +208,9 @@ public class EmulatorSkin {
 
 	public void setCommunicator( SocketCommunicator communicator ) {
 		this.communicator = communicator;
+	}
+	public PaletteData getPalette() {
+		return paletteData;
 	}
 
 	public long compose() {
@@ -1797,13 +1809,12 @@ public class EmulatorSkin {
 
 				ProcessBuilder procSdb = new ProcessBuilder();
 
-				if (SwtUtil.isLinuxPlatform()) {
-					procSdb.command("/usr/bin/gnome-terminal", "--disable-factory",
-							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath,
-							"-s", "emulator-"	+ portSdb, "shell");
-				} else if (SwtUtil.isWindowsPlatform()) {
-					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
-							"-s", "emulator-" + portSdb, "shell");
+				if ( SwtUtil.isLinuxPlatform() ) {
+					procSdb.command( "/usr/bin/gnome-terminal", "--disable-factory",
+							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
+									+ portSdb, "shell" );
+				} else if ( SwtUtil.isWindowsPlatform() ) {
+					procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
 				}
 				logger.log( Level.INFO, procSdb.command().toString() );
 
