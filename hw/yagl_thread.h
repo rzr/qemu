@@ -7,6 +7,7 @@
 #include "qemu-thread.h"
 
 struct yagl_process_state;
+struct yagl_mem_transfer;
 
 struct yagl_thread_state
 {
@@ -15,6 +16,21 @@ struct yagl_thread_state
     QLIST_ENTRY(yagl_thread_state) entry;
 
     yagl_tid id;
+
+    /*
+     * Memory transfers cached for speed. To be used
+     * in EGL/GL implementations.
+     * @{
+     */
+
+    struct yagl_mem_transfer *mt1;
+    struct yagl_mem_transfer *mt2;
+    struct yagl_mem_transfer *mt3;
+    struct yagl_mem_transfer *mt4;
+
+    /*
+     * @}
+     */
 
     QemuThread host_thread;
 

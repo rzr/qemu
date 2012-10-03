@@ -5,6 +5,7 @@
 #include "yagl_log.h"
 #include "yagl_marshal.h"
 #include "yagl_stats.h"
+#include "yagl_mem_transfer.h"
 #include "kvm.h"
 #include "hax.h"
 
@@ -39,7 +40,7 @@ static void *yagl_thread_func(void* arg)
     }
 
     while (true) {
-        bool ret = true;
+        yagl_call_result res = yagl_call_result_ok;
         uint8_t *current_buff;
         uint8_t *tmp;
 #ifdef CONFIG_YAGL_STATS
@@ -73,7 +74,7 @@ static void *yagl_thread_func(void* arg)
             if (current_buff >= (ts->current_out_buff + YAGL_MARSHAL_SIZE)) {
                 YAGL_LOG_CRITICAL("batch passes the end of buffer, protocol error");
 
-                ret = false;
+                res = yagl_call_result_fail;
 
                 break;
             }
@@ -97,7 +98,7 @@ static void *yagl_thread_func(void* arg)
             if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
                 YAGL_LOG_CRITICAL("target-host protocol error, bad api_id - %u", api_id);
 
-                ret = false;
+                res = yagl_call_result_fail;
 
                 break;
             }
@@ -107,7 +108,7 @@ static void *yagl_thread_func(void* arg)
             if (!api_ps) {
                 YAGL_LOG_CRITICAL("uninitialized api - %u. host logic error", api_id);
 
-                ret = false;
+                res = yagl_call_result_fail;
 
                 break;
             }
@@ -119,15 +120,30 @@ static void *yagl_thread_func(void* arg)
 
                 yagl_marshal_skip(&tmp);
 
-                current_buff = func(ts,
-                                    current_buff,
-                                    tmp);
+                if (!func(ts, &current_buff, tmp)) {
+                    /*
+                     * Retry is requested. Check if this is the last function
+                     * in the batch, if it's not, then there's a logic error
+                     * in target <-> host interaction.
+                     */
+
+                    if (((current_buff + 8) > (ts->current_out_buff + YAGL_MARSHAL_SIZE)) ||
+                        (yagl_marshal_get_api_id(&current_buff) != 0)) {
+                        YAGL_LOG_CRITICAL("retry request not at the end of the batch");
+
+                        res = yagl_call_result_fail;
+                    } else {
+                        res = yagl_call_result_retry;
+                    }
+
+                    break;
+                }
             } else {
                 YAGL_LOG_CRITICAL("bad function call (api = %u, func = %u)",
                                   api_id,
                                   func_id);
 
-                ret = false;
+                res = yagl_call_result_fail;
 
                 break;
             }
@@ -142,7 +158,7 @@ static void *yagl_thread_func(void* arg)
         yagl_stats_batch(num_calls,
             (ts->current_out_buff + YAGL_MARSHAL_SIZE - current_buff));
 
-        yagl_marshal_put_uint32(&tmp, (ret ? 1 : 0));
+        yagl_marshal_put_call_result(&tmp, res);
 
         yagl_event_set(&ts->call_processed_event);
     }
@@ -172,6 +188,11 @@ struct yagl_thread_state
     ts->ps = ps;
     ts->id = id;
 
+    ts->mt1 = yagl_mem_transfer_create(ts);
+    ts->mt2 = yagl_mem_transfer_create(ts);
+    ts->mt3 = yagl_mem_transfer_create(ts);
+    ts->mt4 = yagl_mem_transfer_create(ts);
+
     yagl_event_init(&ts->call_event, 0, 0);
     yagl_event_init(&ts->call_processed_event, 0, 0);
 
@@ -191,6 +212,11 @@ void yagl_thread_state_destroy(struct yagl_thread_state *ts)
 
     yagl_event_cleanup(&ts->call_processed_event);
     yagl_event_cleanup(&ts->call_event);
+
+    yagl_mem_transfer_destroy(ts->mt1);
+    yagl_mem_transfer_destroy(ts->mt2);
+    yagl_mem_transfer_destroy(ts->mt3);
+    yagl_mem_transfer_destroy(ts->mt4);
 
     g_free(ts);
 }

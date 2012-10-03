@@ -436,6 +436,7 @@ obj-$(TARGET_BASE_ARCH)-y += yagl_ref.o
 obj-$(TARGET_BASE_ARCH)-y += yagl_mem.o
 obj-$(TARGET_BASE_ARCH)-y += yagl_mem_egl.o
 obj-$(TARGET_BASE_ARCH)-y += yagl_mem_gl.o
+obj-$(TARGET_BASE_ARCH)-y += yagl_mem_transfer.o
 obj-$(TARGET_BASE_ARCH)-y += yagl_event.o
 obj-$(TARGET_BASE_ARCH)-y += yagl_handle_gen.o
 obj-$(TARGET_BASE_ARCH)-y += yagl_dyn_lib.o

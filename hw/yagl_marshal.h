@@ -24,6 +24,13 @@
  */
 #define YAGL_MARSHAL_SIZE 0x8000
 
+typedef enum
+{
+    yagl_call_result_fail = 0,  /* Call failed, fatal error. */
+    yagl_call_result_retry = 1, /* Page fault on host, retry is required. */
+    yagl_call_result_ok = 2     /* Call is ok. */
+} yagl_call_result;
+
 static __inline int yagl_marshal_skip(uint8_t** buff)
 {
     *buff += 8;
@@ -91,6 +98,12 @@ static __inline yagl_host_handle yagl_marshal_get_host_handle(uint8_t** buff)
     yagl_host_handle tmp = le32_to_cpu(*(uint32_t*)*buff);
     *buff += 8;
     return tmp;
+}
+
+static __inline void yagl_marshal_put_call_result(uint8_t** buff, yagl_call_result value)
+{
+    *(uint32_t*)(*buff) = cpu_to_le32(value);
+    *buff += 8;
 }
 
 #define yagl_marshal_put_int8(buff, value) yagl_marshal_put_uint8(buff, (uint8_t)(value))

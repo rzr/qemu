@@ -248,7 +248,7 @@ void yagl_server_dispatch(struct yagl_server_state *ss,
             "process/thread %u/%u not found",
             target_pid, target_tid);
 
-        yagl_marshal_put_uint32(&in_buff, 0);
+        yagl_marshal_put_call_result(&in_buff, yagl_call_result_fail);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);

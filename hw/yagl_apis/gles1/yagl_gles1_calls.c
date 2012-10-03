@@ -11,2284 +11,2327 @@
 /*
  * glAlphaFunc dispatcher. id = 1
  */
-static uint8_t* yagl_func_glAlphaFunc(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glAlphaFunc(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum func = yagl_marshal_get_GLenum(&out_buff);
-    GLclampf ref = yagl_marshal_get_GLclampf(&out_buff);
+    GLenum func = yagl_marshal_get_GLenum(out_buff);
+    GLclampf ref = yagl_marshal_get_GLclampf(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glAlphaFunc, GLenum, GLclampf, func, ref);
-    yagl_host_glAlphaFunc(func, ref);
+    bool res = yagl_host_glAlphaFunc(func, ref);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClearColor dispatcher. id = 2
  */
-static uint8_t* yagl_func_glClearColor(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClearColor(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampf red = yagl_marshal_get_GLclampf(&out_buff);
-    GLclampf green = yagl_marshal_get_GLclampf(&out_buff);
-    GLclampf blue = yagl_marshal_get_GLclampf(&out_buff);
-    GLclampf alpha = yagl_marshal_get_GLclampf(&out_buff);
+    GLclampf red = yagl_marshal_get_GLclampf(out_buff);
+    GLclampf green = yagl_marshal_get_GLclampf(out_buff);
+    GLclampf blue = yagl_marshal_get_GLclampf(out_buff);
+    GLclampf alpha = yagl_marshal_get_GLclampf(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glClearColor, GLclampf, GLclampf, GLclampf, GLclampf, red, green, blue, alpha);
-    yagl_host_glClearColor(red, green, blue, alpha);
+    bool res = yagl_host_glClearColor(red, green, blue, alpha);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClearDepthf dispatcher. id = 3
  */
-static uint8_t* yagl_func_glClearDepthf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClearDepthf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampf depth = yagl_marshal_get_GLclampf(&out_buff);
+    GLclampf depth = yagl_marshal_get_GLclampf(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glClearDepthf, GLclampf, depth);
-    yagl_host_glClearDepthf(depth);
+    bool res = yagl_host_glClearDepthf(depth);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClipPlanef dispatcher. id = 4
  */
-static uint8_t* yagl_func_glClipPlanef(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClipPlanef(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum plane = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong equation = yagl_marshal_get_ptr(&out_buff);
+    GLenum plane = yagl_marshal_get_GLenum(out_buff);
+    target_ulong equation = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glClipPlanef, GLenum, target_ulong, plane, equation);
-    yagl_host_glClipPlanef(plane, equation);
+    bool res = yagl_host_glClipPlanef(plane, equation);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glColor4f dispatcher. id = 5
  */
-static uint8_t* yagl_func_glColor4f(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glColor4f(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat red = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat green = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat blue = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat alpha = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat red = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat green = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat blue = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat alpha = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glColor4f, GLfloat, GLfloat, GLfloat, GLfloat, red, green, blue, alpha);
-    yagl_host_glColor4f(red, green, blue, alpha);
+    bool res = yagl_host_glColor4f(red, green, blue, alpha);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDepthRangef dispatcher. id = 6
  */
-static uint8_t* yagl_func_glDepthRangef(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDepthRangef(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampf zNear = yagl_marshal_get_GLclampf(&out_buff);
-    GLclampf zFar = yagl_marshal_get_GLclampf(&out_buff);
+    GLclampf zNear = yagl_marshal_get_GLclampf(out_buff);
+    GLclampf zFar = yagl_marshal_get_GLclampf(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glDepthRangef, GLclampf, GLclampf, zNear, zFar);
-    yagl_host_glDepthRangef(zNear, zFar);
+    bool res = yagl_host_glDepthRangef(zNear, zFar);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFogf dispatcher. id = 7
  */
-static uint8_t* yagl_func_glFogf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFogf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat param = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfloat param = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glFogf, GLenum, GLfloat, pname, param);
-    yagl_host_glFogf(pname, param);
+    bool res = yagl_host_glFogf(pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFogfv dispatcher. id = 8
  */
-static uint8_t* yagl_func_glFogfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFogfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glFogfv, GLenum, target_ulong, pname, params);
-    yagl_host_glFogfv(pname, params);
+    bool res = yagl_host_glFogfv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFrustumf dispatcher. id = 9
  */
-static uint8_t* yagl_func_glFrustumf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFrustumf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat left = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat right = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat bottom = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat top = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat zNear = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat zFar = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat left = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat right = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat bottom = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat top = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat zNear = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat zFar = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT6(ts->ps->id, ts->id, glFrustumf, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, left, right, bottom, top, zNear, zFar);
-    yagl_host_glFrustumf(left, right, bottom, top, zNear, zFar);
+    bool res = yagl_host_glFrustumf(left, right, bottom, top, zNear, zFar);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetClipPlanef dispatcher. id = 10
  */
-static uint8_t* yagl_func_glGetClipPlanef(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetClipPlanef(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong eqn = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong eqn = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGetClipPlanef, GLenum, target_ulong, pname, eqn);
-    yagl_host_glGetClipPlanef(pname, eqn);
+    bool res = yagl_host_glGetClipPlanef(pname, eqn);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetFloatv dispatcher. id = 11
  */
-static uint8_t* yagl_func_glGetFloatv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetFloatv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGetFloatv, GLenum, target_ulong, pname, params);
-    yagl_host_glGetFloatv(pname, params);
+    bool res = yagl_host_glGetFloatv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetLightfv dispatcher. id = 12
  */
-static uint8_t* yagl_func_glGetLightfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetLightfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum light = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum light = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetLightfv, GLenum, GLenum, target_ulong, light, pname, params);
-    yagl_host_glGetLightfv(light, pname, params);
+    bool res = yagl_host_glGetLightfv(light, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetMaterialfv dispatcher. id = 13
  */
-static uint8_t* yagl_func_glGetMaterialfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetMaterialfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum face = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum face = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetMaterialfv, GLenum, GLenum, target_ulong, face, pname, params);
-    yagl_host_glGetMaterialfv(face, pname, params);
+    bool res = yagl_host_glGetMaterialfv(face, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetTexEnvfv dispatcher. id = 14
  */
-static uint8_t* yagl_func_glGetTexEnvfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetTexEnvfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum env = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum env = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetTexEnvfv, GLenum, GLenum, target_ulong, env, pname, params);
-    yagl_host_glGetTexEnvfv(env, pname, params);
+    bool res = yagl_host_glGetTexEnvfv(env, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetTexParameterfv dispatcher. id = 15
  */
-static uint8_t* yagl_func_glGetTexParameterfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetTexParameterfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetTexParameterfv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glGetTexParameterfv(target, pname, params);
+    bool res = yagl_host_glGetTexParameterfv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLightModelf dispatcher. id = 16
  */
-static uint8_t* yagl_func_glLightModelf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightModelf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat param = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfloat param = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glLightModelf, GLenum, GLfloat, pname, param);
-    yagl_host_glLightModelf(pname, param);
+    bool res = yagl_host_glLightModelf(pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLightModelfv dispatcher. id = 17
  */
-static uint8_t* yagl_func_glLightModelfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightModelfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glLightModelfv, GLenum, target_ulong, pname, params);
-    yagl_host_glLightModelfv(pname, params);
+    bool res = yagl_host_glLightModelfv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLightf dispatcher. id = 18
  */
-static uint8_t* yagl_func_glLightf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum light = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat param = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum light = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfloat param = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glLightf, GLenum, GLenum, GLfloat, light, pname, param);
-    yagl_host_glLightf(light, pname, param);
+    bool res = yagl_host_glLightf(light, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLightfv dispatcher. id = 19
  */
-static uint8_t* yagl_func_glLightfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum light = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum light = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glLightfv, GLenum, GLenum, target_ulong, light, pname, params);
-    yagl_host_glLightfv(light, pname, params);
+    bool res = yagl_host_glLightfv(light, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLineWidth dispatcher. id = 20
  */
-static uint8_t* yagl_func_glLineWidth(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLineWidth(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat width = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat width = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glLineWidth, GLfloat, width);
-    yagl_host_glLineWidth(width);
+    bool res = yagl_host_glLineWidth(width);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLoadMatrixf dispatcher. id = 21
  */
-static uint8_t* yagl_func_glLoadMatrixf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLoadMatrixf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    target_ulong m = yagl_marshal_get_ptr(&out_buff);
+    target_ulong m = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glLoadMatrixf, target_ulong, m);
-    yagl_host_glLoadMatrixf(m);
+    bool res = yagl_host_glLoadMatrixf(m);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMaterialf dispatcher. id = 22
  */
-static uint8_t* yagl_func_glMaterialf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMaterialf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum face = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat param = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum face = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfloat param = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glMaterialf, GLenum, GLenum, GLfloat, face, pname, param);
-    yagl_host_glMaterialf(face, pname, param);
+    bool res = yagl_host_glMaterialf(face, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMaterialfv dispatcher. id = 23
  */
-static uint8_t* yagl_func_glMaterialfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMaterialfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum face = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum face = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glMaterialfv, GLenum, GLenum, target_ulong, face, pname, params);
-    yagl_host_glMaterialfv(face, pname, params);
+    bool res = yagl_host_glMaterialfv(face, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMultMatrixf dispatcher. id = 24
  */
-static uint8_t* yagl_func_glMultMatrixf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMultMatrixf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    target_ulong m = yagl_marshal_get_ptr(&out_buff);
+    target_ulong m = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glMultMatrixf, target_ulong, m);
-    yagl_host_glMultMatrixf(m);
+    bool res = yagl_host_glMultMatrixf(m);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMultiTexCoord4f dispatcher. id = 25
  */
-static uint8_t* yagl_func_glMultiTexCoord4f(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMultiTexCoord4f(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat s = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat t = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat r = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat q = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLfloat s = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat t = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat r = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat q = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT5(ts->ps->id, ts->id, glMultiTexCoord4f, GLenum, GLfloat, GLfloat, GLfloat, GLfloat, target, s, t, r, q);
-    yagl_host_glMultiTexCoord4f(target, s, t, r, q);
+    bool res = yagl_host_glMultiTexCoord4f(target, s, t, r, q);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glNormal3f dispatcher. id = 26
  */
-static uint8_t* yagl_func_glNormal3f(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glNormal3f(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat nx = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat ny = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat nz = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat nx = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat ny = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat nz = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glNormal3f, GLfloat, GLfloat, GLfloat, nx, ny, nz);
-    yagl_host_glNormal3f(nx, ny, nz);
+    bool res = yagl_host_glNormal3f(nx, ny, nz);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glOrthof dispatcher. id = 27
  */
-static uint8_t* yagl_func_glOrthof(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glOrthof(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat left = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat right = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat bottom = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat top = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat zNear = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat zFar = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat left = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat right = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat bottom = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat top = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat zNear = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat zFar = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT6(ts->ps->id, ts->id, glOrthof, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, left, right, bottom, top, zNear, zFar);
-    yagl_host_glOrthof(left, right, bottom, top, zNear, zFar);
+    bool res = yagl_host_glOrthof(left, right, bottom, top, zNear, zFar);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPointParameterf dispatcher. id = 28
  */
-static uint8_t* yagl_func_glPointParameterf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPointParameterf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat param = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfloat param = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glPointParameterf, GLenum, GLfloat, pname, param);
-    yagl_host_glPointParameterf(pname, param);
+    bool res = yagl_host_glPointParameterf(pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPointParameterfv dispatcher. id = 29
  */
-static uint8_t* yagl_func_glPointParameterfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPointParameterfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glPointParameterfv, GLenum, target_ulong, pname, params);
-    yagl_host_glPointParameterfv(pname, params);
+    bool res = yagl_host_glPointParameterfv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPointSize dispatcher. id = 30
  */
-static uint8_t* yagl_func_glPointSize(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPointSize(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat size = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat size = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glPointSize, GLfloat, size);
-    yagl_host_glPointSize(size);
+    bool res = yagl_host_glPointSize(size);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPolygonOffset dispatcher. id = 31
  */
-static uint8_t* yagl_func_glPolygonOffset(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPolygonOffset(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat factor = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat units = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat factor = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat units = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glPolygonOffset, GLfloat, GLfloat, factor, units);
-    yagl_host_glPolygonOffset(factor, units);
+    bool res = yagl_host_glPolygonOffset(factor, units);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glRotatef dispatcher. id = 32
  */
-static uint8_t* yagl_func_glRotatef(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glRotatef(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat angle = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat x = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat y = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat z = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat angle = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat x = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat y = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat z = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glRotatef, GLfloat, GLfloat, GLfloat, GLfloat, angle, x, y, z);
-    yagl_host_glRotatef(angle, x, y, z);
+    bool res = yagl_host_glRotatef(angle, x, y, z);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glScalef dispatcher. id = 33
  */
-static uint8_t* yagl_func_glScalef(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glScalef(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat x = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat y = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat z = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat x = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat y = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat z = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glScalef, GLfloat, GLfloat, GLfloat, x, y, z);
-    yagl_host_glScalef(x, y, z);
+    bool res = yagl_host_glScalef(x, y, z);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexEnvf dispatcher. id = 34
  */
-static uint8_t* yagl_func_glTexEnvf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexEnvf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat param = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfloat param = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexEnvf, GLenum, GLenum, GLfloat, target, pname, param);
-    yagl_host_glTexEnvf(target, pname, param);
+    bool res = yagl_host_glTexEnvf(target, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexEnvfv dispatcher. id = 35
  */
-static uint8_t* yagl_func_glTexEnvfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexEnvfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexEnvfv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glTexEnvfv(target, pname, params);
+    bool res = yagl_host_glTexEnvfv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexParameterf dispatcher. id = 36
  */
-static uint8_t* yagl_func_glTexParameterf(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexParameterf(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfloat param = yagl_marshal_get_GLfloat(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfloat param = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexParameterf, GLenum, GLenum, GLfloat, target, pname, param);
-    yagl_host_glTexParameterf(target, pname, param);
+    bool res = yagl_host_glTexParameterf(target, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexParameterfv dispatcher. id = 37
  */
-static uint8_t* yagl_func_glTexParameterfv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexParameterfv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexParameterfv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glTexParameterfv(target, pname, params);
+    bool res = yagl_host_glTexParameterfv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTranslatef dispatcher. id = 38
  */
-static uint8_t* yagl_func_glTranslatef(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTranslatef(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfloat x = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat y = yagl_marshal_get_GLfloat(&out_buff);
-    GLfloat z = yagl_marshal_get_GLfloat(&out_buff);
+    GLfloat x = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat y = yagl_marshal_get_GLfloat(out_buff);
+    GLfloat z = yagl_marshal_get_GLfloat(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTranslatef, GLfloat, GLfloat, GLfloat, x, y, z);
-    yagl_host_glTranslatef(x, y, z);
+    bool res = yagl_host_glTranslatef(x, y, z);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glActiveTexture dispatcher. id = 39
  */
-static uint8_t* yagl_func_glActiveTexture(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glActiveTexture(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum texture = yagl_marshal_get_GLenum(&out_buff);
+    GLenum texture = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glActiveTexture, GLenum, texture);
-    yagl_host_glActiveTexture(texture);
+    bool res = yagl_host_glActiveTexture(texture);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glAlphaFuncx dispatcher. id = 40
  */
-static uint8_t* yagl_func_glAlphaFuncx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glAlphaFuncx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum func = yagl_marshal_get_GLenum(&out_buff);
-    GLclampx ref = yagl_marshal_get_GLclampx(&out_buff);
+    GLenum func = yagl_marshal_get_GLenum(out_buff);
+    GLclampx ref = yagl_marshal_get_GLclampx(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glAlphaFuncx, GLenum, GLclampx, func, ref);
-    yagl_host_glAlphaFuncx(func, ref);
+    bool res = yagl_host_glAlphaFuncx(func, ref);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glBindBuffer dispatcher. id = 41
  */
-static uint8_t* yagl_func_glBindBuffer(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glBindBuffer(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLuint buffer = yagl_marshal_get_GLuint(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLuint buffer = yagl_marshal_get_GLuint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glBindBuffer, GLenum, GLuint, target, buffer);
-    yagl_host_glBindBuffer(target, buffer);
+    bool res = yagl_host_glBindBuffer(target, buffer);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glBindTexture dispatcher. id = 42
  */
-static uint8_t* yagl_func_glBindTexture(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glBindTexture(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLuint texture = yagl_marshal_get_GLuint(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLuint texture = yagl_marshal_get_GLuint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glBindTexture, GLenum, GLuint, target, texture);
-    yagl_host_glBindTexture(target, texture);
+    bool res = yagl_host_glBindTexture(target, texture);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glBlendFunc dispatcher. id = 43
  */
-static uint8_t* yagl_func_glBlendFunc(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glBlendFunc(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum sfactor = yagl_marshal_get_GLenum(&out_buff);
-    GLenum dfactor = yagl_marshal_get_GLenum(&out_buff);
+    GLenum sfactor = yagl_marshal_get_GLenum(out_buff);
+    GLenum dfactor = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glBlendFunc, GLenum, GLenum, sfactor, dfactor);
-    yagl_host_glBlendFunc(sfactor, dfactor);
+    bool res = yagl_host_glBlendFunc(sfactor, dfactor);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glBufferData dispatcher. id = 44
  */
-static uint8_t* yagl_func_glBufferData(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glBufferData(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLsizeiptr size = yagl_marshal_get_GLsizeiptr(&out_buff);
-    target_ulong data = yagl_marshal_get_ptr(&out_buff);
-    GLenum usage = yagl_marshal_get_GLenum(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLsizeiptr size = yagl_marshal_get_GLsizeiptr(out_buff);
+    target_ulong data = yagl_marshal_get_ptr(out_buff);
+    GLenum usage = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glBufferData, GLenum, GLsizeiptr, target_ulong, GLenum, target, size, data, usage);
-    yagl_host_glBufferData(target, size, data, usage);
+    bool res = yagl_host_glBufferData(target, size, data, usage);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glBufferSubData dispatcher. id = 45
  */
-static uint8_t* yagl_func_glBufferSubData(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glBufferSubData(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLintptr offset = yagl_marshal_get_GLintptr(&out_buff);
-    GLsizeiptr size = yagl_marshal_get_GLsizeiptr(&out_buff);
-    target_ulong data = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLintptr offset = yagl_marshal_get_GLintptr(out_buff);
+    GLsizeiptr size = yagl_marshal_get_GLsizeiptr(out_buff);
+    target_ulong data = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glBufferSubData, GLenum, GLintptr, GLsizeiptr, target_ulong, target, offset, size, data);
-    yagl_host_glBufferSubData(target, offset, size, data);
+    bool res = yagl_host_glBufferSubData(target, offset, size, data);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClear dispatcher. id = 46
  */
-static uint8_t* yagl_func_glClear(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClear(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLbitfield mask = yagl_marshal_get_GLbitfield(&out_buff);
+    GLbitfield mask = yagl_marshal_get_GLbitfield(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glClear, GLbitfield, mask);
-    yagl_host_glClear(mask);
+    bool res = yagl_host_glClear(mask);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClearColorx dispatcher. id = 47
  */
-static uint8_t* yagl_func_glClearColorx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClearColorx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampx red = yagl_marshal_get_GLclampx(&out_buff);
-    GLclampx green = yagl_marshal_get_GLclampx(&out_buff);
-    GLclampx blue = yagl_marshal_get_GLclampx(&out_buff);
-    GLclampx alpha = yagl_marshal_get_GLclampx(&out_buff);
+    GLclampx red = yagl_marshal_get_GLclampx(out_buff);
+    GLclampx green = yagl_marshal_get_GLclampx(out_buff);
+    GLclampx blue = yagl_marshal_get_GLclampx(out_buff);
+    GLclampx alpha = yagl_marshal_get_GLclampx(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glClearColorx, GLclampx, GLclampx, GLclampx, GLclampx, red, green, blue, alpha);
-    yagl_host_glClearColorx(red, green, blue, alpha);
+    bool res = yagl_host_glClearColorx(red, green, blue, alpha);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClearDepthx dispatcher. id = 48
  */
-static uint8_t* yagl_func_glClearDepthx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClearDepthx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampx depth = yagl_marshal_get_GLclampx(&out_buff);
+    GLclampx depth = yagl_marshal_get_GLclampx(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glClearDepthx, GLclampx, depth);
-    yagl_host_glClearDepthx(depth);
+    bool res = yagl_host_glClearDepthx(depth);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClearStencil dispatcher. id = 49
  */
-static uint8_t* yagl_func_glClearStencil(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClearStencil(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLint s = yagl_marshal_get_GLint(&out_buff);
+    GLint s = yagl_marshal_get_GLint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glClearStencil, GLint, s);
-    yagl_host_glClearStencil(s);
+    bool res = yagl_host_glClearStencil(s);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClientActiveTexture dispatcher. id = 50
  */
-static uint8_t* yagl_func_glClientActiveTexture(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClientActiveTexture(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum texture = yagl_marshal_get_GLenum(&out_buff);
+    GLenum texture = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glClientActiveTexture, GLenum, texture);
-    yagl_host_glClientActiveTexture(texture);
+    bool res = yagl_host_glClientActiveTexture(texture);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glClipPlanex dispatcher. id = 51
  */
-static uint8_t* yagl_func_glClipPlanex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glClipPlanex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum plane = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong equation = yagl_marshal_get_ptr(&out_buff);
+    GLenum plane = yagl_marshal_get_GLenum(out_buff);
+    target_ulong equation = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glClipPlanex, GLenum, target_ulong, plane, equation);
-    yagl_host_glClipPlanex(plane, equation);
+    bool res = yagl_host_glClipPlanex(plane, equation);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glColor4ub dispatcher. id = 52
  */
-static uint8_t* yagl_func_glColor4ub(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glColor4ub(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLubyte red = yagl_marshal_get_GLubyte(&out_buff);
-    GLubyte green = yagl_marshal_get_GLubyte(&out_buff);
-    GLubyte blue = yagl_marshal_get_GLubyte(&out_buff);
-    GLubyte alpha = yagl_marshal_get_GLubyte(&out_buff);
+    GLubyte red = yagl_marshal_get_GLubyte(out_buff);
+    GLubyte green = yagl_marshal_get_GLubyte(out_buff);
+    GLubyte blue = yagl_marshal_get_GLubyte(out_buff);
+    GLubyte alpha = yagl_marshal_get_GLubyte(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glColor4ub, GLubyte, GLubyte, GLubyte, GLubyte, red, green, blue, alpha);
-    yagl_host_glColor4ub(red, green, blue, alpha);
+    bool res = yagl_host_glColor4ub(red, green, blue, alpha);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glColor4x dispatcher. id = 53
  */
-static uint8_t* yagl_func_glColor4x(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glColor4x(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed red = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed green = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed blue = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed alpha = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed red = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed green = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed blue = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed alpha = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glColor4x, GLfixed, GLfixed, GLfixed, GLfixed, red, green, blue, alpha);
-    yagl_host_glColor4x(red, green, blue, alpha);
+    bool res = yagl_host_glColor4x(red, green, blue, alpha);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glColorMask dispatcher. id = 54
  */
-static uint8_t* yagl_func_glColorMask(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glColorMask(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLboolean red = yagl_marshal_get_GLboolean(&out_buff);
-    GLboolean green = yagl_marshal_get_GLboolean(&out_buff);
-    GLboolean blue = yagl_marshal_get_GLboolean(&out_buff);
-    GLboolean alpha = yagl_marshal_get_GLboolean(&out_buff);
+    GLboolean red = yagl_marshal_get_GLboolean(out_buff);
+    GLboolean green = yagl_marshal_get_GLboolean(out_buff);
+    GLboolean blue = yagl_marshal_get_GLboolean(out_buff);
+    GLboolean alpha = yagl_marshal_get_GLboolean(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glColorMask, GLboolean, GLboolean, GLboolean, GLboolean, red, green, blue, alpha);
-    yagl_host_glColorMask(red, green, blue, alpha);
+    bool res = yagl_host_glColorMask(red, green, blue, alpha);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glColorPointer dispatcher. id = 55
  */
-static uint8_t* yagl_func_glColorPointer(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glColorPointer(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLint size = yagl_marshal_get_GLint(&out_buff);
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    GLsizei stride = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong pointer = yagl_marshal_get_ptr(&out_buff);
+    GLint size = yagl_marshal_get_GLint(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    GLsizei stride = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong pointer = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glColorPointer, GLint, GLenum, GLsizei, target_ulong, size, type, stride, pointer);
-    yagl_host_glColorPointer(size, type, stride, pointer);
+    bool res = yagl_host_glColorPointer(size, type, stride, pointer);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glCompressedTexImage2D dispatcher. id = 56
  */
-static uint8_t* yagl_func_glCompressedTexImage2D(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glCompressedTexImage2D(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLint level = yagl_marshal_get_GLint(&out_buff);
-    GLenum internalformat = yagl_marshal_get_GLenum(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
-    GLint border = yagl_marshal_get_GLint(&out_buff);
-    GLsizei imageSize = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong data = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLint level = yagl_marshal_get_GLint(out_buff);
+    GLenum internalformat = yagl_marshal_get_GLenum(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
+    GLint border = yagl_marshal_get_GLint(out_buff);
+    GLsizei imageSize = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong data = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT8(ts->ps->id, ts->id, glCompressedTexImage2D, GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, target_ulong, target, level, internalformat, width, height, border, imageSize, data);
-    yagl_host_glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
+    bool res = yagl_host_glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glCompressedTexSubImage2D dispatcher. id = 57
  */
-static uint8_t* yagl_func_glCompressedTexSubImage2D(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glCompressedTexSubImage2D(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLint level = yagl_marshal_get_GLint(&out_buff);
-    GLint xoffset = yagl_marshal_get_GLint(&out_buff);
-    GLint yoffset = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
-    GLenum format = yagl_marshal_get_GLenum(&out_buff);
-    GLsizei imageSize = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong data = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLint level = yagl_marshal_get_GLint(out_buff);
+    GLint xoffset = yagl_marshal_get_GLint(out_buff);
+    GLint yoffset = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
+    GLenum format = yagl_marshal_get_GLenum(out_buff);
+    GLsizei imageSize = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong data = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT9(ts->ps->id, ts->id, glCompressedTexSubImage2D, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, target_ulong, target, level, xoffset, yoffset, width, height, format, imageSize, data);
-    yagl_host_glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
+    bool res = yagl_host_glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glCopyTexImage2D dispatcher. id = 58
  */
-static uint8_t* yagl_func_glCopyTexImage2D(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glCopyTexImage2D(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLint level = yagl_marshal_get_GLint(&out_buff);
-    GLenum internalformat = yagl_marshal_get_GLenum(&out_buff);
-    GLint x = yagl_marshal_get_GLint(&out_buff);
-    GLint y = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
-    GLint border = yagl_marshal_get_GLint(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLint level = yagl_marshal_get_GLint(out_buff);
+    GLenum internalformat = yagl_marshal_get_GLenum(out_buff);
+    GLint x = yagl_marshal_get_GLint(out_buff);
+    GLint y = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
+    GLint border = yagl_marshal_get_GLint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT8(ts->ps->id, ts->id, glCopyTexImage2D, GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLsizei, GLint, target, level, internalformat, x, y, width, height, border);
-    yagl_host_glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
+    bool res = yagl_host_glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glCopyTexSubImage2D dispatcher. id = 59
  */
-static uint8_t* yagl_func_glCopyTexSubImage2D(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glCopyTexSubImage2D(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLint level = yagl_marshal_get_GLint(&out_buff);
-    GLint xoffset = yagl_marshal_get_GLint(&out_buff);
-    GLint yoffset = yagl_marshal_get_GLint(&out_buff);
-    GLint x = yagl_marshal_get_GLint(&out_buff);
-    GLint y = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLint level = yagl_marshal_get_GLint(out_buff);
+    GLint xoffset = yagl_marshal_get_GLint(out_buff);
+    GLint yoffset = yagl_marshal_get_GLint(out_buff);
+    GLint x = yagl_marshal_get_GLint(out_buff);
+    GLint y = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT8(ts->ps->id, ts->id, glCopyTexSubImage2D, GLenum, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei, target, level, xoffset, yoffset, x, y, width, height);
-    yagl_host_glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
+    bool res = yagl_host_glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glCullFace dispatcher. id = 60
  */
-static uint8_t* yagl_func_glCullFace(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glCullFace(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum mode = yagl_marshal_get_GLenum(&out_buff);
+    GLenum mode = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glCullFace, GLenum, mode);
-    yagl_host_glCullFace(mode);
+    bool res = yagl_host_glCullFace(mode);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDeleteBuffers dispatcher. id = 61
  */
-static uint8_t* yagl_func_glDeleteBuffers(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDeleteBuffers(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLsizei n = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong buffers = yagl_marshal_get_ptr(&out_buff);
+    GLsizei n = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong buffers = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glDeleteBuffers, GLsizei, target_ulong, n, buffers);
-    yagl_host_glDeleteBuffers(n, buffers);
+    bool res = yagl_host_glDeleteBuffers(n, buffers);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDeleteTextures dispatcher. id = 62
  */
-static uint8_t* yagl_func_glDeleteTextures(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDeleteTextures(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLsizei n = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong textures = yagl_marshal_get_ptr(&out_buff);
+    GLsizei n = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong textures = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glDeleteTextures, GLsizei, target_ulong, n, textures);
-    yagl_host_glDeleteTextures(n, textures);
+    bool res = yagl_host_glDeleteTextures(n, textures);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDepthFunc dispatcher. id = 63
  */
-static uint8_t* yagl_func_glDepthFunc(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDepthFunc(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum func = yagl_marshal_get_GLenum(&out_buff);
+    GLenum func = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glDepthFunc, GLenum, func);
-    yagl_host_glDepthFunc(func);
+    bool res = yagl_host_glDepthFunc(func);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDepthMask dispatcher. id = 64
  */
-static uint8_t* yagl_func_glDepthMask(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDepthMask(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLboolean flag = yagl_marshal_get_GLboolean(&out_buff);
+    GLboolean flag = yagl_marshal_get_GLboolean(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glDepthMask, GLboolean, flag);
-    yagl_host_glDepthMask(flag);
+    bool res = yagl_host_glDepthMask(flag);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDepthRangex dispatcher. id = 65
  */
-static uint8_t* yagl_func_glDepthRangex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDepthRangex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampx zNear = yagl_marshal_get_GLclampx(&out_buff);
-    GLclampx zFar = yagl_marshal_get_GLclampx(&out_buff);
+    GLclampx zNear = yagl_marshal_get_GLclampx(out_buff);
+    GLclampx zFar = yagl_marshal_get_GLclampx(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glDepthRangex, GLclampx, GLclampx, zNear, zFar);
-    yagl_host_glDepthRangex(zNear, zFar);
+    bool res = yagl_host_glDepthRangex(zNear, zFar);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDisable dispatcher. id = 66
  */
-static uint8_t* yagl_func_glDisable(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDisable(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum cap = yagl_marshal_get_GLenum(&out_buff);
+    GLenum cap = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glDisable, GLenum, cap);
-    yagl_host_glDisable(cap);
+    bool res = yagl_host_glDisable(cap);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDisableClientState dispatcher. id = 67
  */
-static uint8_t* yagl_func_glDisableClientState(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDisableClientState(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum array = yagl_marshal_get_GLenum(&out_buff);
+    GLenum array = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glDisableClientState, GLenum, array);
-    yagl_host_glDisableClientState(array);
+    bool res = yagl_host_glDisableClientState(array);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDrawArrays dispatcher. id = 68
  */
-static uint8_t* yagl_func_glDrawArrays(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDrawArrays(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum mode = yagl_marshal_get_GLenum(&out_buff);
-    GLint first = yagl_marshal_get_GLint(&out_buff);
-    GLsizei count = yagl_marshal_get_GLsizei(&out_buff);
+    GLenum mode = yagl_marshal_get_GLenum(out_buff);
+    GLint first = yagl_marshal_get_GLint(out_buff);
+    GLsizei count = yagl_marshal_get_GLsizei(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glDrawArrays, GLenum, GLint, GLsizei, mode, first, count);
-    yagl_host_glDrawArrays(mode, first, count);
+    bool res = yagl_host_glDrawArrays(mode, first, count);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glDrawElements dispatcher. id = 69
  */
-static uint8_t* yagl_func_glDrawElements(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glDrawElements(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum mode = yagl_marshal_get_GLenum(&out_buff);
-    GLsizei count = yagl_marshal_get_GLsizei(&out_buff);
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong indices = yagl_marshal_get_ptr(&out_buff);
+    GLenum mode = yagl_marshal_get_GLenum(out_buff);
+    GLsizei count = yagl_marshal_get_GLsizei(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    target_ulong indices = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glDrawElements, GLenum, GLsizei, GLenum, target_ulong, mode, count, type, indices);
-    yagl_host_glDrawElements(mode, count, type, indices);
+    bool res = yagl_host_glDrawElements(mode, count, type, indices);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glEnable dispatcher. id = 70
  */
-static uint8_t* yagl_func_glEnable(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glEnable(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum cap = yagl_marshal_get_GLenum(&out_buff);
+    GLenum cap = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glEnable, GLenum, cap);
-    yagl_host_glEnable(cap);
+    bool res = yagl_host_glEnable(cap);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glEnableClientState dispatcher. id = 71
  */
-static uint8_t* yagl_func_glEnableClientState(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glEnableClientState(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum array = yagl_marshal_get_GLenum(&out_buff);
+    GLenum array = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glEnableClientState, GLenum, array);
-    yagl_host_glEnableClientState(array);
+    bool res = yagl_host_glEnableClientState(array);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFinish dispatcher. id = 72
  */
-static uint8_t* yagl_func_glFinish(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFinish(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
     YAGL_LOG_FUNC_ENTER_SPLIT0(ts->ps->id, ts->id, glFinish);
-    yagl_host_glFinish();
+    bool res = yagl_host_glFinish();
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFlush dispatcher. id = 73
  */
-static uint8_t* yagl_func_glFlush(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFlush(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
     YAGL_LOG_FUNC_ENTER_SPLIT0(ts->ps->id, ts->id, glFlush);
-    yagl_host_glFlush();
+    bool res = yagl_host_glFlush();
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFogx dispatcher. id = 74
  */
-static uint8_t* yagl_func_glFogx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFogx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed param = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfixed param = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glFogx, GLenum, GLfixed, pname, param);
-    yagl_host_glFogx(pname, param);
+    bool res = yagl_host_glFogx(pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFogxv dispatcher. id = 75
  */
-static uint8_t* yagl_func_glFogxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFogxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glFogxv, GLenum, target_ulong, pname, params);
-    yagl_host_glFogxv(pname, params);
+    bool res = yagl_host_glFogxv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFrontFace dispatcher. id = 76
  */
-static uint8_t* yagl_func_glFrontFace(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFrontFace(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum mode = yagl_marshal_get_GLenum(&out_buff);
+    GLenum mode = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glFrontFace, GLenum, mode);
-    yagl_host_glFrontFace(mode);
+    bool res = yagl_host_glFrontFace(mode);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glFrustumx dispatcher. id = 77
  */
-static uint8_t* yagl_func_glFrustumx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glFrustumx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed left = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed right = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed bottom = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed top = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed zNear = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed zFar = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed left = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed right = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed bottom = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed top = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed zNear = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed zFar = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT6(ts->ps->id, ts->id, glFrustumx, GLfixed, GLfixed, GLfixed, GLfixed, GLfixed, GLfixed, left, right, bottom, top, zNear, zFar);
-    yagl_host_glFrustumx(left, right, bottom, top, zNear, zFar);
+    bool res = yagl_host_glFrustumx(left, right, bottom, top, zNear, zFar);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetBooleanv dispatcher. id = 78
  */
-static uint8_t* yagl_func_glGetBooleanv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetBooleanv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGetBooleanv, GLenum, target_ulong, pname, params);
-    yagl_host_glGetBooleanv(pname, params);
+    bool res = yagl_host_glGetBooleanv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetBufferParameteriv dispatcher. id = 79
  */
-static uint8_t* yagl_func_glGetBufferParameteriv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetBufferParameteriv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetBufferParameteriv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glGetBufferParameteriv(target, pname, params);
+    bool res = yagl_host_glGetBufferParameteriv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetClipPlanex dispatcher. id = 80
  */
-static uint8_t* yagl_func_glGetClipPlanex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetClipPlanex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong eqn = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong eqn = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGetClipPlanex, GLenum, target_ulong, pname, eqn);
-    yagl_host_glGetClipPlanex(pname, eqn);
+    bool res = yagl_host_glGetClipPlanex(pname, eqn);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGenBuffers dispatcher. id = 81
  */
-static uint8_t* yagl_func_glGenBuffers(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGenBuffers(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLsizei n = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong buffers = yagl_marshal_get_ptr(&out_buff);
+    GLsizei n = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong buffers = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGenBuffers, GLsizei, target_ulong, n, buffers);
-    yagl_host_glGenBuffers(n, buffers);
+    bool res = yagl_host_glGenBuffers(n, buffers);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGenTextures dispatcher. id = 82
  */
-static uint8_t* yagl_func_glGenTextures(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGenTextures(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLsizei n = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong textures = yagl_marshal_get_ptr(&out_buff);
+    GLsizei n = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong textures = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGenTextures, GLsizei, target_ulong, n, textures);
-    yagl_host_glGenTextures(n, textures);
+    bool res = yagl_host_glGenTextures(n, textures);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetError dispatcher. id = 83
  */
-static uint8_t* yagl_func_glGetError(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetError(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
     YAGL_LOG_FUNC_ENTER_SPLIT0(ts->ps->id, ts->id, glGetError);
-    GLenum ret = yagl_host_glGetError();
-    YAGL_LOG_FUNC_EXIT_SPLIT(GLenum, ret);
-    yagl_marshal_put_GLenum(&in_buff, ret);
-    return out_buff;
+    GLenum retval;
+    bool res = yagl_host_glGetError(&retval);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(GLenum, retval);
+    yagl_marshal_put_GLenum(&in_buff, retval);
+    return true;
 }
 
 /*
  * glGetFixedv dispatcher. id = 84
  */
-static uint8_t* yagl_func_glGetFixedv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetFixedv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGetFixedv, GLenum, target_ulong, pname, params);
-    yagl_host_glGetFixedv(pname, params);
+    bool res = yagl_host_glGetFixedv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetIntegerv dispatcher. id = 85
  */
-static uint8_t* yagl_func_glGetIntegerv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetIntegerv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGetIntegerv, GLenum, target_ulong, pname, params);
-    yagl_host_glGetIntegerv(pname, params);
+    bool res = yagl_host_glGetIntegerv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetLightxv dispatcher. id = 86
  */
-static uint8_t* yagl_func_glGetLightxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetLightxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum light = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum light = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetLightxv, GLenum, GLenum, target_ulong, light, pname, params);
-    yagl_host_glGetLightxv(light, pname, params);
+    bool res = yagl_host_glGetLightxv(light, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetMaterialxv dispatcher. id = 87
  */
-static uint8_t* yagl_func_glGetMaterialxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetMaterialxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum face = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum face = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetMaterialxv, GLenum, GLenum, target_ulong, face, pname, params);
-    yagl_host_glGetMaterialxv(face, pname, params);
+    bool res = yagl_host_glGetMaterialxv(face, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetPointerv dispatcher. id = 88
  */
-static uint8_t* yagl_func_glGetPointerv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetPointerv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glGetPointerv, GLenum, target_ulong, pname, params);
-    yagl_host_glGetPointerv(pname, params);
+    bool res = yagl_host_glGetPointerv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetTexEnviv dispatcher. id = 89
  */
-static uint8_t* yagl_func_glGetTexEnviv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetTexEnviv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum env = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum env = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetTexEnviv, GLenum, GLenum, target_ulong, env, pname, params);
-    yagl_host_glGetTexEnviv(env, pname, params);
+    bool res = yagl_host_glGetTexEnviv(env, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetTexEnvxv dispatcher. id = 90
  */
-static uint8_t* yagl_func_glGetTexEnvxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetTexEnvxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum env = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum env = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetTexEnvxv, GLenum, GLenum, target_ulong, env, pname, params);
-    yagl_host_glGetTexEnvxv(env, pname, params);
+    bool res = yagl_host_glGetTexEnvxv(env, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetTexParameteriv dispatcher. id = 91
  */
-static uint8_t* yagl_func_glGetTexParameteriv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetTexParameteriv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetTexParameteriv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glGetTexParameteriv(target, pname, params);
+    bool res = yagl_host_glGetTexParameteriv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetTexParameterxv dispatcher. id = 92
  */
-static uint8_t* yagl_func_glGetTexParameterxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetTexParameterxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glGetTexParameterxv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glGetTexParameterxv(target, pname, params);
+    bool res = yagl_host_glGetTexParameterxv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glHint dispatcher. id = 93
  */
-static uint8_t* yagl_func_glHint(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glHint(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum mode = yagl_marshal_get_GLenum(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum mode = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glHint, GLenum, GLenum, target, mode);
-    yagl_host_glHint(target, mode);
+    bool res = yagl_host_glHint(target, mode);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glIsBuffer dispatcher. id = 94
  */
-static uint8_t* yagl_func_glIsBuffer(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glIsBuffer(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLuint buffer = yagl_marshal_get_GLuint(&out_buff);
+    GLuint buffer = yagl_marshal_get_GLuint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glIsBuffer, GLuint, buffer);
-    GLboolean ret = yagl_host_glIsBuffer(buffer);
-    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, ret);
-    yagl_marshal_put_GLboolean(&in_buff, ret);
-    return out_buff;
+    GLboolean retval;
+    bool res = yagl_host_glIsBuffer(&retval, buffer);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, retval);
+    yagl_marshal_put_GLboolean(&in_buff, retval);
+    return true;
 }
 
 /*
  * glIsEnabled dispatcher. id = 95
  */
-static uint8_t* yagl_func_glIsEnabled(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glIsEnabled(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum cap = yagl_marshal_get_GLenum(&out_buff);
+    GLenum cap = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glIsEnabled, GLenum, cap);
-    GLboolean ret = yagl_host_glIsEnabled(cap);
-    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, ret);
-    yagl_marshal_put_GLboolean(&in_buff, ret);
-    return out_buff;
+    GLboolean retval;
+    bool res = yagl_host_glIsEnabled(&retval, cap);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, retval);
+    yagl_marshal_put_GLboolean(&in_buff, retval);
+    return true;
 }
 
 /*
  * glIsTexture dispatcher. id = 96
  */
-static uint8_t* yagl_func_glIsTexture(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glIsTexture(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLuint texture = yagl_marshal_get_GLuint(&out_buff);
+    GLuint texture = yagl_marshal_get_GLuint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glIsTexture, GLuint, texture);
-    GLboolean ret = yagl_host_glIsTexture(texture);
-    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, ret);
-    yagl_marshal_put_GLboolean(&in_buff, ret);
-    return out_buff;
+    GLboolean retval;
+    bool res = yagl_host_glIsTexture(&retval, texture);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, retval);
+    yagl_marshal_put_GLboolean(&in_buff, retval);
+    return true;
 }
 
 /*
  * glLightModelx dispatcher. id = 97
  */
-static uint8_t* yagl_func_glLightModelx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightModelx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed param = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfixed param = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glLightModelx, GLenum, GLfixed, pname, param);
-    yagl_host_glLightModelx(pname, param);
+    bool res = yagl_host_glLightModelx(pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLightModelxv dispatcher. id = 98
  */
-static uint8_t* yagl_func_glLightModelxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightModelxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glLightModelxv, GLenum, target_ulong, pname, params);
-    yagl_host_glLightModelxv(pname, params);
+    bool res = yagl_host_glLightModelxv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLightx dispatcher. id = 99
  */
-static uint8_t* yagl_func_glLightx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum light = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed param = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum light = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfixed param = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glLightx, GLenum, GLenum, GLfixed, light, pname, param);
-    yagl_host_glLightx(light, pname, param);
+    bool res = yagl_host_glLightx(light, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLightxv dispatcher. id = 100
  */
-static uint8_t* yagl_func_glLightxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLightxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum light = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum light = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glLightxv, GLenum, GLenum, target_ulong, light, pname, params);
-    yagl_host_glLightxv(light, pname, params);
+    bool res = yagl_host_glLightxv(light, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLineWidthx dispatcher. id = 101
  */
-static uint8_t* yagl_func_glLineWidthx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLineWidthx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed width = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed width = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glLineWidthx, GLfixed, width);
-    yagl_host_glLineWidthx(width);
+    bool res = yagl_host_glLineWidthx(width);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLoadIdentity dispatcher. id = 102
  */
-static uint8_t* yagl_func_glLoadIdentity(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLoadIdentity(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
     YAGL_LOG_FUNC_ENTER_SPLIT0(ts->ps->id, ts->id, glLoadIdentity);
-    yagl_host_glLoadIdentity();
+    bool res = yagl_host_glLoadIdentity();
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLoadMatrixx dispatcher. id = 103
  */
-static uint8_t* yagl_func_glLoadMatrixx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLoadMatrixx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    target_ulong m = yagl_marshal_get_ptr(&out_buff);
+    target_ulong m = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glLoadMatrixx, target_ulong, m);
-    yagl_host_glLoadMatrixx(m);
+    bool res = yagl_host_glLoadMatrixx(m);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glLogicOp dispatcher. id = 104
  */
-static uint8_t* yagl_func_glLogicOp(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glLogicOp(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum opcode = yagl_marshal_get_GLenum(&out_buff);
+    GLenum opcode = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glLogicOp, GLenum, opcode);
-    yagl_host_glLogicOp(opcode);
+    bool res = yagl_host_glLogicOp(opcode);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMaterialx dispatcher. id = 105
  */
-static uint8_t* yagl_func_glMaterialx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMaterialx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum face = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed param = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum face = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfixed param = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glMaterialx, GLenum, GLenum, GLfixed, face, pname, param);
-    yagl_host_glMaterialx(face, pname, param);
+    bool res = yagl_host_glMaterialx(face, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMaterialxv dispatcher. id = 106
  */
-static uint8_t* yagl_func_glMaterialxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMaterialxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum face = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum face = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glMaterialxv, GLenum, GLenum, target_ulong, face, pname, params);
-    yagl_host_glMaterialxv(face, pname, params);
+    bool res = yagl_host_glMaterialxv(face, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMatrixMode dispatcher. id = 107
  */
-static uint8_t* yagl_func_glMatrixMode(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMatrixMode(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum mode = yagl_marshal_get_GLenum(&out_buff);
+    GLenum mode = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glMatrixMode, GLenum, mode);
-    yagl_host_glMatrixMode(mode);
+    bool res = yagl_host_glMatrixMode(mode);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMultMatrixx dispatcher. id = 108
  */
-static uint8_t* yagl_func_glMultMatrixx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMultMatrixx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    target_ulong m = yagl_marshal_get_ptr(&out_buff);
+    target_ulong m = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glMultMatrixx, target_ulong, m);
-    yagl_host_glMultMatrixx(m);
+    bool res = yagl_host_glMultMatrixx(m);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glMultiTexCoord4x dispatcher. id = 109
  */
-static uint8_t* yagl_func_glMultiTexCoord4x(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glMultiTexCoord4x(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed s = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed t = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed r = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed q = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLfixed s = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed t = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed r = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed q = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT5(ts->ps->id, ts->id, glMultiTexCoord4x, GLenum, GLfixed, GLfixed, GLfixed, GLfixed, target, s, t, r, q);
-    yagl_host_glMultiTexCoord4x(target, s, t, r, q);
+    bool res = yagl_host_glMultiTexCoord4x(target, s, t, r, q);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glNormal3x dispatcher. id = 110
  */
-static uint8_t* yagl_func_glNormal3x(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glNormal3x(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed nx = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed ny = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed nz = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed nx = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed ny = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed nz = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glNormal3x, GLfixed, GLfixed, GLfixed, nx, ny, nz);
-    yagl_host_glNormal3x(nx, ny, nz);
+    bool res = yagl_host_glNormal3x(nx, ny, nz);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glNormalPointer dispatcher. id = 111
  */
-static uint8_t* yagl_func_glNormalPointer(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glNormalPointer(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    GLsizei stride = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong pointer = yagl_marshal_get_ptr(&out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    GLsizei stride = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong pointer = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glNormalPointer, GLenum, GLsizei, target_ulong, type, stride, pointer);
-    yagl_host_glNormalPointer(type, stride, pointer);
+    bool res = yagl_host_glNormalPointer(type, stride, pointer);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glOrthox dispatcher. id = 112
  */
-static uint8_t* yagl_func_glOrthox(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glOrthox(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed left = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed right = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed bottom = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed top = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed zNear = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed zFar = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed left = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed right = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed bottom = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed top = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed zNear = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed zFar = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT6(ts->ps->id, ts->id, glOrthox, GLfixed, GLfixed, GLfixed, GLfixed, GLfixed, GLfixed, left, right, bottom, top, zNear, zFar);
-    yagl_host_glOrthox(left, right, bottom, top, zNear, zFar);
+    bool res = yagl_host_glOrthox(left, right, bottom, top, zNear, zFar);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPixelStorei dispatcher. id = 113
  */
-static uint8_t* yagl_func_glPixelStorei(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPixelStorei(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLint param = yagl_marshal_get_GLint(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLint param = yagl_marshal_get_GLint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glPixelStorei, GLenum, GLint, pname, param);
-    yagl_host_glPixelStorei(pname, param);
+    bool res = yagl_host_glPixelStorei(pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPointParameterx dispatcher. id = 114
  */
-static uint8_t* yagl_func_glPointParameterx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPointParameterx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed param = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfixed param = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glPointParameterx, GLenum, GLfixed, pname, param);
-    yagl_host_glPointParameterx(pname, param);
+    bool res = yagl_host_glPointParameterx(pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPointParameterxv dispatcher. id = 115
  */
-static uint8_t* yagl_func_glPointParameterxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPointParameterxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glPointParameterxv, GLenum, target_ulong, pname, params);
-    yagl_host_glPointParameterxv(pname, params);
+    bool res = yagl_host_glPointParameterxv(pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPointSizex dispatcher. id = 116
  */
-static uint8_t* yagl_func_glPointSizex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPointSizex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed size = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed size = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glPointSizex, GLfixed, size);
-    yagl_host_glPointSizex(size);
+    bool res = yagl_host_glPointSizex(size);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPolygonOffsetx dispatcher. id = 117
  */
-static uint8_t* yagl_func_glPolygonOffsetx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPolygonOffsetx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed factor = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed units = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed factor = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed units = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glPolygonOffsetx, GLfixed, GLfixed, factor, units);
-    yagl_host_glPolygonOffsetx(factor, units);
+    bool res = yagl_host_glPolygonOffsetx(factor, units);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPopMatrix dispatcher. id = 118
  */
-static uint8_t* yagl_func_glPopMatrix(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPopMatrix(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
     YAGL_LOG_FUNC_ENTER_SPLIT0(ts->ps->id, ts->id, glPopMatrix);
-    yagl_host_glPopMatrix();
+    bool res = yagl_host_glPopMatrix();
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glPushMatrix dispatcher. id = 119
  */
-static uint8_t* yagl_func_glPushMatrix(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glPushMatrix(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
     YAGL_LOG_FUNC_ENTER_SPLIT0(ts->ps->id, ts->id, glPushMatrix);
-    yagl_host_glPushMatrix();
+    bool res = yagl_host_glPushMatrix();
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glReadPixels dispatcher. id = 120
  */
-static uint8_t* yagl_func_glReadPixels(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glReadPixels(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLint x = yagl_marshal_get_GLint(&out_buff);
-    GLint y = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
-    GLenum format = yagl_marshal_get_GLenum(&out_buff);
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong pixels = yagl_marshal_get_ptr(&out_buff);
+    GLint x = yagl_marshal_get_GLint(out_buff);
+    GLint y = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
+    GLenum format = yagl_marshal_get_GLenum(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    target_ulong pixels = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT7(ts->ps->id, ts->id, glReadPixels, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, target_ulong, x, y, width, height, format, type, pixels);
-    yagl_host_glReadPixels(x, y, width, height, format, type, pixels);
+    bool res = yagl_host_glReadPixels(x, y, width, height, format, type, pixels);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glRotatex dispatcher. id = 121
  */
-static uint8_t* yagl_func_glRotatex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glRotatex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed angle = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed x = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed y = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed z = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed angle = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed x = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed y = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed z = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glRotatex, GLfixed, GLfixed, GLfixed, GLfixed, angle, x, y, z);
-    yagl_host_glRotatex(angle, x, y, z);
+    bool res = yagl_host_glRotatex(angle, x, y, z);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glSampleCoverage dispatcher. id = 122
  */
-static uint8_t* yagl_func_glSampleCoverage(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glSampleCoverage(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampf value = yagl_marshal_get_GLclampf(&out_buff);
-    GLboolean invert = yagl_marshal_get_GLboolean(&out_buff);
+    GLclampf value = yagl_marshal_get_GLclampf(out_buff);
+    GLboolean invert = yagl_marshal_get_GLboolean(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glSampleCoverage, GLclampf, GLboolean, value, invert);
-    yagl_host_glSampleCoverage(value, invert);
+    bool res = yagl_host_glSampleCoverage(value, invert);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glSampleCoveragex dispatcher. id = 123
  */
-static uint8_t* yagl_func_glSampleCoveragex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glSampleCoveragex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLclampx value = yagl_marshal_get_GLclampx(&out_buff);
-    GLboolean invert = yagl_marshal_get_GLboolean(&out_buff);
+    GLclampx value = yagl_marshal_get_GLclampx(out_buff);
+    GLboolean invert = yagl_marshal_get_GLboolean(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glSampleCoveragex, GLclampx, GLboolean, value, invert);
-    yagl_host_glSampleCoveragex(value, invert);
+    bool res = yagl_host_glSampleCoveragex(value, invert);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glScalex dispatcher. id = 124
  */
-static uint8_t* yagl_func_glScalex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glScalex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed x = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed y = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed z = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed x = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed y = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed z = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glScalex, GLfixed, GLfixed, GLfixed, x, y, z);
-    yagl_host_glScalex(x, y, z);
+    bool res = yagl_host_glScalex(x, y, z);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glScissor dispatcher. id = 125
  */
-static uint8_t* yagl_func_glScissor(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glScissor(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLint x = yagl_marshal_get_GLint(&out_buff);
-    GLint y = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
+    GLint x = yagl_marshal_get_GLint(out_buff);
+    GLint y = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glScissor, GLint, GLint, GLsizei, GLsizei, x, y, width, height);
-    yagl_host_glScissor(x, y, width, height);
+    bool res = yagl_host_glScissor(x, y, width, height);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glShadeModel dispatcher. id = 126
  */
-static uint8_t* yagl_func_glShadeModel(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glShadeModel(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum mode = yagl_marshal_get_GLenum(&out_buff);
+    GLenum mode = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glShadeModel, GLenum, mode);
-    yagl_host_glShadeModel(mode);
+    bool res = yagl_host_glShadeModel(mode);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glStencilFunc dispatcher. id = 127
  */
-static uint8_t* yagl_func_glStencilFunc(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glStencilFunc(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum func = yagl_marshal_get_GLenum(&out_buff);
-    GLint ref = yagl_marshal_get_GLint(&out_buff);
-    GLuint mask = yagl_marshal_get_GLuint(&out_buff);
+    GLenum func = yagl_marshal_get_GLenum(out_buff);
+    GLint ref = yagl_marshal_get_GLint(out_buff);
+    GLuint mask = yagl_marshal_get_GLuint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glStencilFunc, GLenum, GLint, GLuint, func, ref, mask);
-    yagl_host_glStencilFunc(func, ref, mask);
+    bool res = yagl_host_glStencilFunc(func, ref, mask);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glStencilMask dispatcher. id = 128
  */
-static uint8_t* yagl_func_glStencilMask(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glStencilMask(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLuint mask = yagl_marshal_get_GLuint(&out_buff);
+    GLuint mask = yagl_marshal_get_GLuint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glStencilMask, GLuint, mask);
-    yagl_host_glStencilMask(mask);
+    bool res = yagl_host_glStencilMask(mask);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glStencilOp dispatcher. id = 129
  */
-static uint8_t* yagl_func_glStencilOp(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glStencilOp(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum fail = yagl_marshal_get_GLenum(&out_buff);
-    GLenum zfail = yagl_marshal_get_GLenum(&out_buff);
-    GLenum zpass = yagl_marshal_get_GLenum(&out_buff);
+    GLenum fail = yagl_marshal_get_GLenum(out_buff);
+    GLenum zfail = yagl_marshal_get_GLenum(out_buff);
+    GLenum zpass = yagl_marshal_get_GLenum(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glStencilOp, GLenum, GLenum, GLenum, fail, zfail, zpass);
-    yagl_host_glStencilOp(fail, zfail, zpass);
+    bool res = yagl_host_glStencilOp(fail, zfail, zpass);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexCoordPointer dispatcher. id = 130
  */
-static uint8_t* yagl_func_glTexCoordPointer(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexCoordPointer(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLint size = yagl_marshal_get_GLint(&out_buff);
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    GLsizei stride = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong pointer = yagl_marshal_get_ptr(&out_buff);
+    GLint size = yagl_marshal_get_GLint(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    GLsizei stride = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong pointer = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glTexCoordPointer, GLint, GLenum, GLsizei, target_ulong, size, type, stride, pointer);
-    yagl_host_glTexCoordPointer(size, type, stride, pointer);
+    bool res = yagl_host_glTexCoordPointer(size, type, stride, pointer);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexEnvi dispatcher. id = 131
  */
-static uint8_t* yagl_func_glTexEnvi(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexEnvi(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLint param = yagl_marshal_get_GLint(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLint param = yagl_marshal_get_GLint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexEnvi, GLenum, GLenum, GLint, target, pname, param);
-    yagl_host_glTexEnvi(target, pname, param);
+    bool res = yagl_host_glTexEnvi(target, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexEnvx dispatcher. id = 132
  */
-static uint8_t* yagl_func_glTexEnvx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexEnvx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed param = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfixed param = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexEnvx, GLenum, GLenum, GLfixed, target, pname, param);
-    yagl_host_glTexEnvx(target, pname, param);
+    bool res = yagl_host_glTexEnvx(target, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexEnviv dispatcher. id = 133
  */
-static uint8_t* yagl_func_glTexEnviv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexEnviv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexEnviv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glTexEnviv(target, pname, params);
+    bool res = yagl_host_glTexEnviv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexEnvxv dispatcher. id = 134
  */
-static uint8_t* yagl_func_glTexEnvxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexEnvxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexEnvxv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glTexEnvxv(target, pname, params);
+    bool res = yagl_host_glTexEnvxv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexImage2D dispatcher. id = 135
  */
-static uint8_t* yagl_func_glTexImage2D(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexImage2D(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLint level = yagl_marshal_get_GLint(&out_buff);
-    GLint internalformat = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
-    GLint border = yagl_marshal_get_GLint(&out_buff);
-    GLenum format = yagl_marshal_get_GLenum(&out_buff);
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong pixels = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLint level = yagl_marshal_get_GLint(out_buff);
+    GLint internalformat = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
+    GLint border = yagl_marshal_get_GLint(out_buff);
+    GLenum format = yagl_marshal_get_GLenum(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    target_ulong pixels = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT9(ts->ps->id, ts->id, glTexImage2D, GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, target_ulong, target, level, internalformat, width, height, border, format, type, pixels);
-    yagl_host_glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+    bool res = yagl_host_glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexParameteri dispatcher. id = 136
  */
-static uint8_t* yagl_func_glTexParameteri(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexParameteri(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLint param = yagl_marshal_get_GLint(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLint param = yagl_marshal_get_GLint(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexParameteri, GLenum, GLenum, GLint, target, pname, param);
-    yagl_host_glTexParameteri(target, pname, param);
+    bool res = yagl_host_glTexParameteri(target, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexParameterx dispatcher. id = 137
  */
-static uint8_t* yagl_func_glTexParameterx(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexParameterx(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    GLfixed param = yagl_marshal_get_GLfixed(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    GLfixed param = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexParameterx, GLenum, GLenum, GLfixed, target, pname, param);
-    yagl_host_glTexParameterx(target, pname, param);
+    bool res = yagl_host_glTexParameterx(target, pname, param);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexParameteriv dispatcher. id = 138
  */
-static uint8_t* yagl_func_glTexParameteriv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexParameteriv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexParameteriv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glTexParameteriv(target, pname, params);
+    bool res = yagl_host_glTexParameteriv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexParameterxv dispatcher. id = 139
  */
-static uint8_t* yagl_func_glTexParameterxv(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexParameterxv(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLenum pname = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong params = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLenum pname = yagl_marshal_get_GLenum(out_buff);
+    target_ulong params = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTexParameterxv, GLenum, GLenum, target_ulong, target, pname, params);
-    yagl_host_glTexParameterxv(target, pname, params);
+    bool res = yagl_host_glTexParameterxv(target, pname, params);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTexSubImage2D dispatcher. id = 140
  */
-static uint8_t* yagl_func_glTexSubImage2D(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTexSubImage2D(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    GLint level = yagl_marshal_get_GLint(&out_buff);
-    GLint xoffset = yagl_marshal_get_GLint(&out_buff);
-    GLint yoffset = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
-    GLenum format = yagl_marshal_get_GLenum(&out_buff);
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    target_ulong pixels = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    GLint level = yagl_marshal_get_GLint(out_buff);
+    GLint xoffset = yagl_marshal_get_GLint(out_buff);
+    GLint yoffset = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
+    GLenum format = yagl_marshal_get_GLenum(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    target_ulong pixels = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT9(ts->ps->id, ts->id, glTexSubImage2D, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, target_ulong, target, level, xoffset, yoffset, width, height, format, type, pixels);
-    yagl_host_glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    bool res = yagl_host_glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glTranslatex dispatcher. id = 141
  */
-static uint8_t* yagl_func_glTranslatex(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glTranslatex(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLfixed x = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed y = yagl_marshal_get_GLfixed(&out_buff);
-    GLfixed z = yagl_marshal_get_GLfixed(&out_buff);
+    GLfixed x = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed y = yagl_marshal_get_GLfixed(out_buff);
+    GLfixed z = yagl_marshal_get_GLfixed(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT3(ts->ps->id, ts->id, glTranslatex, GLfixed, GLfixed, GLfixed, x, y, z);
-    yagl_host_glTranslatex(x, y, z);
+    bool res = yagl_host_glTranslatex(x, y, z);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glVertexPointer dispatcher. id = 142
  */
-static uint8_t* yagl_func_glVertexPointer(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glVertexPointer(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLint size = yagl_marshal_get_GLint(&out_buff);
-    GLenum type = yagl_marshal_get_GLenum(&out_buff);
-    GLsizei stride = yagl_marshal_get_GLsizei(&out_buff);
-    target_ulong pointer = yagl_marshal_get_ptr(&out_buff);
+    GLint size = yagl_marshal_get_GLint(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    GLsizei stride = yagl_marshal_get_GLsizei(out_buff);
+    target_ulong pointer = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glVertexPointer, GLint, GLenum, GLsizei, target_ulong, size, type, stride, pointer);
-    yagl_host_glVertexPointer(size, type, stride, pointer);
+    bool res = yagl_host_glVertexPointer(size, type, stride, pointer);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glViewport dispatcher. id = 143
  */
-static uint8_t* yagl_func_glViewport(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glViewport(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLint x = yagl_marshal_get_GLint(&out_buff);
-    GLint y = yagl_marshal_get_GLint(&out_buff);
-    GLsizei width = yagl_marshal_get_GLsizei(&out_buff);
-    GLsizei height = yagl_marshal_get_GLsizei(&out_buff);
+    GLint x = yagl_marshal_get_GLint(out_buff);
+    GLint y = yagl_marshal_get_GLint(out_buff);
+    GLsizei width = yagl_marshal_get_GLsizei(out_buff);
+    GLsizei height = yagl_marshal_get_GLsizei(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT4(ts->ps->id, ts->id, glViewport, GLint, GLint, GLsizei, GLsizei, x, y, width, height);
-    yagl_host_glViewport(x, y, width, height);
+    bool res = yagl_host_glViewport(x, y, width, height);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
 /*
  * glGetExtensionStringYAGL dispatcher. id = 144
  */
-static uint8_t* yagl_func_glGetExtensionStringYAGL(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glGetExtensionStringYAGL(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    target_ulong str = yagl_marshal_get_ptr(&out_buff);
+    target_ulong str = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT1(ts->ps->id, ts->id, glGetExtensionStringYAGL, target_ulong, str);
-    GLuint ret = yagl_host_glGetExtensionStringYAGL(str);
-    YAGL_LOG_FUNC_EXIT_SPLIT(GLuint, ret);
-    yagl_marshal_put_GLuint(&in_buff, ret);
-    return out_buff;
+    GLuint retval;
+    bool res = yagl_host_glGetExtensionStringYAGL(&retval, str);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(GLuint, retval);
+    yagl_marshal_put_GLuint(&in_buff, retval);
+    return true;
 }
 
 /*
  * glEGLImageTargetTexture2DYAGL dispatcher. id = 145
  */
-static uint8_t* yagl_func_glEGLImageTargetTexture2DYAGL(struct yagl_thread_state *ts,
-    uint8_t *out_buff,
+static bool yagl_func_glEGLImageTargetTexture2DYAGL(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
     uint8_t *in_buff)
 {
-    GLenum target = yagl_marshal_get_GLenum(&out_buff);
-    uint32_t width = yagl_marshal_get_uint32_t(&out_buff);
-    uint32_t height = yagl_marshal_get_uint32_t(&out_buff);
-    uint32_t bpp = yagl_marshal_get_uint32_t(&out_buff);
-    target_ulong pixels = yagl_marshal_get_ptr(&out_buff);
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    uint32_t width = yagl_marshal_get_uint32_t(out_buff);
+    uint32_t height = yagl_marshal_get_uint32_t(out_buff);
+    uint32_t bpp = yagl_marshal_get_uint32_t(out_buff);
+    target_ulong pixels = yagl_marshal_get_ptr(out_buff);
     YAGL_LOG_FUNC_ENTER_SPLIT5(ts->ps->id, ts->id, glEGLImageTargetTexture2DYAGL, GLenum, uint32_t, uint32_t, uint32_t, target_ulong, target, width, height, bpp, pixels);
-    yagl_host_glEGLImageTargetTexture2DYAGL(target, width, height, bpp, pixels);
+    bool res = yagl_host_glEGLImageTargetTexture2DYAGL(target, width, height, bpp, pixels);
     YAGL_LOG_FUNC_EXIT(NULL);
-    return out_buff;
+    return res;
 }
 
-const uint32_t yagl_gles1_api_num_funcs = 145;
+/*
+ * glGetVertexAttribRangeYAGL dispatcher. id = 146
+ */
+static bool yagl_func_glGetVertexAttribRangeYAGL(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    GLsizei count = yagl_marshal_get_GLsizei(out_buff);
+    GLenum type = yagl_marshal_get_GLenum(out_buff);
+    target_ulong indices = yagl_marshal_get_ptr(out_buff);
+    target_ulong range_first = yagl_marshal_get_ptr(out_buff);
+    target_ulong range_count = yagl_marshal_get_ptr(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT5(ts->ps->id, ts->id, glGetVertexAttribRangeYAGL, GLsizei, GLenum, target_ulong, target_ulong, target_ulong, count, type, indices, range_first, range_count);
+    bool res = yagl_host_glGetVertexAttribRangeYAGL(count, type, indices, range_first, range_count);
+    YAGL_LOG_FUNC_EXIT(NULL);
+    return res;
+}
+
+const uint32_t yagl_gles1_api_num_funcs = 146;
 
 yagl_api_func yagl_gles1_api_funcs[] = {
     &yagl_func_glAlphaFunc,
@@ -2435,5 +2478,6 @@ yagl_api_func yagl_gles1_api_funcs[] = {
     &yagl_func_glVertexPointer,
     &yagl_func_glViewport,
     &yagl_func_glGetExtensionStringYAGL,
-    &yagl_func_glEGLImageTargetTexture2DYAGL
+    &yagl_func_glEGLImageTargetTexture2DYAGL,
+    &yagl_func_glGetVertexAttribRangeYAGL
 };

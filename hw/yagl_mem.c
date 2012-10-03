@@ -4,25 +4,6 @@
 #include "yagl_process.h"
 #include "yagl_vector.h"
 
-bool yagl_mem_put_uint8(struct yagl_thread_state *ts, target_ulong va, uint8_t value)
-{
-    int ret;
-
-    assert(ts->current_env);
-
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_put_uint8, "va = 0x%X, value = 0x%X", (uint32_t)va, (uint32_t)value);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, &value, sizeof(value), 1);
-
-    if (ret == -1) {
-        YAGL_LOG_ERROR("write 0x%X failed", (uint32_t)va);
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-
-    return ret != -1;
-}
-
 bool yagl_mem_get_uint8(struct yagl_thread_state *ts, target_ulong va, uint8_t* value)
 {
     int ret;
@@ -34,31 +15,12 @@ bool yagl_mem_get_uint8(struct yagl_thread_state *ts, target_ulong va, uint8_t* 
     ret = cpu_memory_rw_debug(ts->current_env, va, value, sizeof(*value), 0);
 
     if (ret == -1) {
-        YAGL_LOG_ERROR("read 0x%X failed", (uint32_t)va);
+        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
 
         YAGL_LOG_FUNC_EXIT(NULL);
     } else {
         YAGL_LOG_FUNC_EXIT("0x%X", (uint32_t)*value);
     }
-
-    return ret != -1;
-}
-
-bool yagl_mem_put_uint16(struct yagl_thread_state *ts, target_ulong va, uint16_t value)
-{
-    int ret;
-
-    assert(ts->current_env);
-
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_put_uint16, "va = 0x%X, value = 0x%X", (uint32_t)va, (uint32_t)value);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)&value, sizeof(value), 1);
-
-    if (ret == -1) {
-        YAGL_LOG_ERROR("write 0x%X failed", (uint32_t)va);
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
 
     return ret != -1;
 }
@@ -74,31 +36,12 @@ bool yagl_mem_get_uint16(struct yagl_thread_state *ts, target_ulong va, uint16_t
     ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
 
     if (ret == -1) {
-        YAGL_LOG_ERROR("read 0x%X failed", (uint32_t)va);
+        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
 
         YAGL_LOG_FUNC_EXIT(NULL);
     } else {
         YAGL_LOG_FUNC_EXIT("0x%X", (uint32_t)*value);
     }
-
-    return ret != -1;
-}
-
-bool yagl_mem_put_uint32(struct yagl_thread_state *ts, target_ulong va, uint32_t value)
-{
-    int ret;
-
-    assert(ts->current_env);
-
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_put_uint32, "va = 0x%X, value = 0x%X", (uint32_t)va, value);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)&value, sizeof(value), 1);
-
-    if (ret == -1) {
-        YAGL_LOG_ERROR("write 0x%X failed", (uint32_t)va);
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
 
     return ret != -1;
 }
@@ -114,31 +57,12 @@ bool yagl_mem_get_uint32(struct yagl_thread_state *ts, target_ulong va, uint32_t
     ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
 
     if (ret == -1) {
-        YAGL_LOG_ERROR("read 0x%X failed", (uint32_t)va);
+        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
 
         YAGL_LOG_FUNC_EXIT(NULL);
     } else {
         YAGL_LOG_FUNC_EXIT("0x%X", *value);
     }
-
-    return ret != -1;
-}
-
-bool yagl_mem_put_float(struct yagl_thread_state *ts, target_ulong va, float value)
-{
-    int ret;
-
-    assert(ts->current_env);
-
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_put_float, "va = 0x%X, value = %f", (uint32_t)va, value);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)&value, sizeof(value), 1);
-
-    if (ret == -1) {
-        YAGL_LOG_ERROR("write 0x%X failed", (uint32_t)va);
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
 
     return ret != -1;
 }
@@ -154,7 +78,7 @@ bool yagl_mem_get_float(struct yagl_thread_state *ts, target_ulong va, float* va
     ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
 
     if (ret == -1) {
-        YAGL_LOG_ERROR("read 0x%X failed", (uint32_t)va);
+        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
 
         YAGL_LOG_FUNC_EXIT(NULL);
     } else {
@@ -175,26 +99,7 @@ bool yagl_mem_get(struct yagl_thread_state *ts, target_ulong va, uint32_t len, v
     ret = cpu_memory_rw_debug(ts->current_env, va, data, len, 0);
 
     if (ret == -1) {
-        YAGL_LOG_ERROR("read 0x%X:%u failed", (uint32_t)va, len);
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-
-    return ret != -1;
-}
-
-bool yagl_mem_put(struct yagl_thread_state *ts, target_ulong va, uint32_t len, const void* data)
-{
-    int ret;
-
-    assert(ts->current_env);
-
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_put, "va = 0x%X, len = %u", (uint32_t)va, len);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, (void*)data, len, 1);
-
-    if (ret == -1) {
-        YAGL_LOG_ERROR("write 0x%X:%u failed", (uint32_t)va, len);
+        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va, len);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -228,7 +133,7 @@ bool yagl_mem_get_array(struct yagl_thread_state *ts,
                                 &buff[rem],
                                 len,
                                 0) == -1) {
-            YAGL_LOG_ERROR("read 0x%X:%u failed", (uint32_t)va, (uint32_t)len);
+            YAGL_LOG_WARN("page fault at 0x%X:%u", (uint32_t)va, (uint32_t)len);
             res = false;
             break;
         }
