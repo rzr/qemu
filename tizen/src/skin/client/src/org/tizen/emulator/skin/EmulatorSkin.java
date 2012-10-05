@@ -43,6 +43,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MenuDetectEvent;
@@ -543,7 +545,7 @@ public class EmulatorSkin {
 
 		shell.addPaintListener( shellPaintListener );
 
-		/* FocusListener shellFocusListener = new FocusListener() {
+		FocusListener shellFocusListener = new FocusListener() {
 			@Override
 			public void focusGained(FocusEvent event) {
 				logger.info("gain focus");
@@ -554,7 +556,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		lcdCanvas.addFocusListener(shellFocusListener); */
+		lcdCanvas.addFocusListener(shellFocusListener);
 
 		shellMouseTrackListener = new MouseTrackAdapter() {
 			@Override
@@ -835,21 +837,21 @@ public class EmulatorSkin {
 
 					if ( e.x < 0 ) {
 						e.x = 0;
-						eventType = MouseEventType.UP.value();
+						eventType = MouseEventType.RELEASE.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					} else if ( e.x >= canvasSize.x ) {
 						e.x = canvasSize.x - 1;
-						eventType = MouseEventType.UP.value();
+						eventType = MouseEventType.RELEASE.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					}
 
 					if ( e.y < 0 ) {
 						e.y = 0;
-						eventType = MouseEventType.UP.value();
+						eventType = MouseEventType.RELEASE.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					} else if ( e.y >= canvasSize.y ) {
 						e.y = canvasSize.y - 1;
-						eventType = MouseEventType.UP.value();
+						eventType = MouseEventType.RELEASE.value();
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					}
 
@@ -878,7 +880,7 @@ public class EmulatorSkin {
 					logger.info( "mouseUp in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 
 					MouseEventData mouseEventData = new MouseEventData(
-							MouseButtonType.LEFT.value(), MouseEventType.UP.value(),
+							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
@@ -899,7 +901,7 @@ public class EmulatorSkin {
 					logger.info( "mouseDown in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 
 					MouseEventData mouseEventData = new MouseEventData(
-							MouseButtonType.LEFT.value(), MouseEventType.DOWN.value(),
+							MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
@@ -1809,14 +1811,15 @@ public class EmulatorSkin {
 
 				ProcessBuilder procSdb = new ProcessBuilder();
 
-				if ( SwtUtil.isLinuxPlatform() ) {
-					procSdb.command( "/usr/bin/gnome-terminal", "--disable-factory",
-							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
-									+ portSdb, "shell" );
-				} else if ( SwtUtil.isWindowsPlatform() ) {
-					procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
+				if (SwtUtil.isLinuxPlatform()) {
+					procSdb.command("/usr/bin/gnome-terminal", "--disable-factory",
+							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath,
+							"-s", "emulator-" + portSdb, "shell");
+				} else if (SwtUtil.isWindowsPlatform()) {
+					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
+							"-s", "emulator-" + portSdb, "shell");
 				}
-				logger.log( Level.INFO, procSdb.command().toString() );
+				logger.log(Level.INFO, procSdb.command().toString());
 
 				try {
 					procSdb.start(); // open sdb shell
