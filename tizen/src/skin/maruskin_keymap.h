@@ -57,6 +57,7 @@ enum JAVA_KEYCODE {
     JAVA_KEY_END,
     JAVA_KEY_INSERT,
     JAVA_KEY_F1 = 10,
+    JAVA_KEY_ESC = 27,
     JAVA_KEY_F20 = 29,
     JAVA_KEY_KEYPAD_MULTIPLY = 42,
     JAVA_KEY_KEYPAD_ADD = 43,
@@ -79,14 +80,15 @@ enum JAVA_KEYCODE {
     JAVA_KEY_SCROLL_LOCK,
     JAVA_KEY_PAUSE,
     JAVA_KEY_BREAK,
-    JAVA_KEY_PRINT_SCREEN
+    JAVA_KEY_PRINT_SCREEN,
+    JAVA_KEY_DELETE = 127
 };
 
 
 #define KEY_MAX 0777
 
 #define KEY_F0 0410
-#define KEY_F(n) (KEY_F0+(n))
+#define KEY_F(n) (KEY_F0 + (n))
 
 #define KEY_DOWN 0402
 #define KEY_UP 0403
@@ -100,7 +102,7 @@ enum JAVA_KEYCODE {
 static const int vkkey2scancode[KEY_MAX] = {
     [0 ... (KEY_MAX - 1)] = -1,
 
-    [0x01b] = 1, /* Escape */
+    [JAVA_KEY_ESC] = 1, /* Escape */
     ['1'] = 2,
     ['2'] = 3,
     ['3'] = 4,
@@ -113,7 +115,7 @@ static const int vkkey2scancode[KEY_MAX] = {
     ['0'] = 11,
     ['-'] = 12,
     ['='] = 13,
-    [0x07f] = 83, /* Delete */
+    [JAVA_KEY_DELETE] = 83, /* Delete */
     [0x008] = 14, /* Backspace */
 
     ['\t'] = 15, /* Tab */

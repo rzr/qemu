@@ -74,8 +74,8 @@ static ElementEntry _elem_buf[10];
 static QTAILQ_HEAD(, ElementEntry) elem_queue =
     QTAILQ_HEAD_INITIALIZER(elem_queue);
 
-static unsigned int elem_ringbuf_cnt;
-static unsigned int elem_queue_cnt;
+static unsigned int elem_ringbuf_cnt; /* _elem_buf */
+static unsigned int elem_queue_cnt; /* elem_queue */
 
 
 TouchscreenState *ts;

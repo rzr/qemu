@@ -36,19 +36,33 @@
 MULTI_DEBUG_CHANNEL(qemu, skin_keymap);
 
 
+static void trace_binary(int decimal)
+{
+    if (decimal != 0) {
+        trace_binary(decimal / 2);
+        fprintf(stdout, "%d", decimal % 2);
+        fflush(stdout);
+    }
+}
+
 int javakeycode_to_scancode(
     int event_type, int java_keycode, int state_mask, int key_location)
 {
-    int state = java_keycode & JAVA_KEYCODE_BIT;
-    int vk = java_keycode & JAVA_KEY_MASK;
+    bool character = true;
+    int vk = 0;
 
-    int ctrl_mask = java_keycode & JAVA_KEYCODE_BIT_CTRL;
-    int shift_mask = java_keycode & JAVA_KEYCODE_BIT_SHIFT;
-    int alt_mask = java_keycode & JAVA_KEYCODE_BIT_ALT;
+#if 0
+    /* print key information */
+    TRACE("keycode = %d(", java_keycode);
+    trace_binary(java_keycode);
+    fprintf(stdout, ")\n");
+#endif
 
+    character = !(java_keycode & JAVA_KEYCODE_BIT);
+    vk = java_keycode & JAVA_KEY_MASK;
 
     /* CapsLock & NumLock key processing */
-    if (state != 0) {
+    if (character == false) {
         if (vk == JAVA_KEY_CAPS_LOCK) {
             if (event_type == KEY_PRESSED) {
                 set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1); //toggle
@@ -61,6 +75,7 @@ int javakeycode_to_scancode(
             return 69;
         }
     }
+
     /* check CapsLock & NumLock key sync */
     if (event_type == KEY_PRESSED) {
         int caps_lock = -1;
@@ -89,20 +104,22 @@ int javakeycode_to_scancode(
 #endif*/
 
     if (vk == 0) { //meta keys
-        if (java_keycode == JAVA_KEYCODE_BIT_CTRL) { //ctrl key
+        TRACE("meta key\n");
+
+        if (java_keycode == JAVA_KEYCODE_BIT_CTRL) { /* ctrl key */
             if (key_location == JAVA_KEYLOCATION_RIGHT) {
                 kbd_put_keycode(224); //0xE0
             }
             return 29;
-        } else if (java_keycode == JAVA_KEYCODE_BIT_SHIFT) { //shift key
+        } else if (java_keycode == JAVA_KEYCODE_BIT_SHIFT) { /* shift key */
 #ifndef _WIN32
             //keyLocation information is not supported at swt of windows version
             if (key_location == JAVA_KEYLOCATION_RIGHT) {
-                return 54; //Shift_R
+                return 54; /* Shift_R */
             }
 #endif
             return 42;
-        } else if (java_keycode == JAVA_KEYCODE_BIT_ALT) { //alt key
+        } else if (java_keycode == JAVA_KEYCODE_BIT_ALT) { /* alt key */
             if (key_location == JAVA_KEYLOCATION_RIGHT) {
                 kbd_put_keycode(224);
             }
@@ -112,11 +129,15 @@ int javakeycode_to_scancode(
         }
     }
 
-    if (state != 0)
-    { //non-character keys
-        if (vk >= JAVA_KEY_F1 && vk <= JAVA_KEY_F20) { //function keys
+    if (character == false)
+    { /* non-character keys */
+        if (vk >= JAVA_KEY_F1 && vk <= JAVA_KEY_F20) { /* function keys */
+            TRACE("function key\n");
+
             vk += 255;
-        } else { //special keys
+        } else { /* special keys */
+            TRACE("special key\n");
+
             switch(vk) {
                 case JAVA_KEY_ARROW_UP :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
@@ -144,14 +165,29 @@ int javakeycode_to_scancode(
                     break;
 
                 case JAVA_KEY_PAGE_UP :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     return 73;
                 case JAVA_KEY_PAGE_DOWN :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     return 81;
                 case JAVA_KEY_HOME :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     return 71;
                 case JAVA_KEY_END :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     return 79;
                 case JAVA_KEY_INSERT :
+                    if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                        kbd_put_keycode(224);
+                    }
                     return 82;
 
                 case JAVA_KEY_KEYPAD_MULTIPLY :
@@ -184,7 +220,8 @@ int javakeycode_to_scancode(
                     return 72;
                 case JAVA_KEY_KEYPAD_9 :
                     return 73;
-                case JAVA_KEY_KEYPAD_CR :
+                case JAVA_KEY_KEYPAD_CR : /* KP_ENTER */
+                    kbd_put_keycode(224);
                     return 28;
  
                 case JAVA_KEY_SCROLL_LOCK :
@@ -201,78 +238,17 @@ int javakeycode_to_scancode(
                     break;
             }
         }
-
     }
-    else //state_mask == 0
-    { //character keys
-        if (ctrl_mask == 0 && shift_mask != 0 && alt_mask == 0) { //shift + character keys
-            switch(vk) {
-                case '`' :
-                    vk = '~';
-                    break;
-                case '1' :
-                    vk = '!';
-                    break;
-                case '2' :
-                    vk = '@';
-                    break;
-                case '3' :
-                    vk = '#';
-                    break;
-                case '4' :
-                    vk = '$';
-                    break;
-                case '5' :
-                    vk = '%';
-                    break;
-                case '6' :
-                    vk = '^';
-                    break;
-                case '7' :
-                    vk = '&';
-                    break;
-                case '8' :
-                    vk = '*';
-                    break;
-                case '9' :
-                    vk = '(';
-                    break;
-                case '0' :
-                    vk = ')';
-                    break;
-                case '-' :
-                    vk = '_';
-                    break;
-                case '=' :
-                    vk = '+';
-                    break;
-                case '\\' :
-                    vk = '|';
-                    break;
-                case '[' :
-                    vk = '{';
-                    break;
-                case ']' :
-                    vk = '}';
-                    break;
-                case ';' :
-                    vk = ':';
-                    break;
-                case '\'' :
-                    vk = '\"';
-                    break;
-                case ',' :
-                    vk = '<';
-                    break;
-                case '.' :
-                    vk = '>';
-                    break;
-                case '/' :
-                    vk = '?';
-                    break;
-                default :
-                    break;
-            }
+    else
+    { /* character keys */
+        switch(vk) {
+            case JAVA_KEY_DELETE :
+                if (key_location != JAVA_KEYLOCATION_KEYPAD) {
+                    kbd_put_keycode(224);
+                }
+                break;
+            default :
+                break;
         }
     }
 
