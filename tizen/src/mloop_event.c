@@ -67,9 +67,11 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_USB_DEL    2
 #define MLOOP_EVTYPE_INTR_UP    3
 #define MLOOP_EVTYPE_INTR_DOWN  4
-#define MLLOP_EVTYPE_HWKEY      5
+#define MLOOP_EVTYPE_HWKEY      5
+#define MLOOP_EVTYPE_TOUCH      6
 
-static struct mloop_evsock mloop = {-1,0,0};
+
+static struct mloop_evsock mloop = {-1, 0, 0};
 
 static int mloop_evsock_create(struct mloop_evsock *ev)
 {
@@ -241,8 +243,8 @@ static void mloop_evhandle_intr_down(long data)
 
 static void mloop_evhandle_hwkey(struct mloop_evpack* pack)
 {
-    int event_type;
-    int keycode;
+    int event_type = 0;
+    int keycode = 0;
 
     memcpy(&event_type, pack->data, sizeof(int));
     memcpy(&keycode, pack->data + sizeof(int), sizeof(int));
@@ -258,6 +260,11 @@ static void mloop_evhandle_hwkey(struct mloop_evpack* pack)
     } else {
         fprintf(stderr, "Unknown hardkey event type.[event_type:%d, keycode:%d]", event_type, keycode);
     }
+}
+
+static void mloop_evhandle_touch(struct mloop_evpack* pack)
+{
+    maru_virtio_touchscreen_notify();
 }
 
 static void mloop_evcb_recv(struct mloop_evsock *ev)
@@ -297,8 +304,11 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     case MLOOP_EVTYPE_INTR_DOWN:
         mloop_evhandle_intr_down(ntohl(*(long*)&pack.data[0]));
         break;
-    case MLLOP_EVTYPE_HWKEY:
+    case MLOOP_EVTYPE_HWKEY:
         mloop_evhandle_hwkey(&pack);
+        break;
+    case MLOOP_EVTYPE_TOUCH:
+        mloop_evhandle_touch(&pack);
         break;
     default:
         break;
@@ -387,13 +397,23 @@ void mloop_evcmd_hwkey(int event_type, int keycode)
 {
     struct mloop_evpack pack;
 
-    pack.type = htons(MLLOP_EVTYPE_HWKEY);
+    pack.type = htons(MLOOP_EVTYPE_HWKEY);
     pack.size = htons(5 + 8); //TODO: ?
 
     memcpy(pack.data, &event_type, sizeof(int));
     memcpy(pack.data + sizeof(int), &keycode, sizeof(int));
     //pack.data = htons(pack.data);
 
+    mloop_evsock_send(&mloop, &pack);
+}
+
+void mloop_evcmd_touch(void)
+{
+    struct mloop_evpack pack;
+    memset(&pack, 0, sizeof(struct mloop_evpack));
+
+    pack.type = htons(MLOOP_EVTYPE_TOUCH);
+    pack.size = htons(5);
     mloop_evsock_send(&mloop, &pack);
 }
 

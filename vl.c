@@ -3782,16 +3782,15 @@ int main(int argc, char **argv, char **envp)
     if (using_spice)
         display_remote++;
     if (display_type == DT_DEFAULT && !display_remote) {
-#if defined(CONFIG_MARU)
-        /* maru display */
-        display_type = DT_MARU;
-#elif defined(CONFIG_SDL) || defined(CONFIG_COCOA)
+#if defined(CONFIG_SDL) || defined(CONFIG_COCOA)
         display_type = DT_SDL;
 #elif defined(CONFIG_VNC)
         vnc_display = "localhost:0,to=99";
         show_vnc_port = 1;
+#elif defined(CONFIG_MARU) && defined (__APPLE__)
+        display_type = DT_MARU;
 #else
-        display_type = DT_NONE;
+	display_type = DT_NONE;
 #endif
     }
 
@@ -3807,25 +3806,38 @@ int main(int argc, char **argv, char **envp)
 #endif
 #if defined(CONFIG_SDL)
     case DT_SDL:
-        sdl_display_init(ds, full_screen, no_frame);
+#if defined(CONFIG_MARU)
+            /* use tizen qemu sdl */
+            maru_display_init(ds);
+
+            if (skin_disabled == 1) {
+                //do not start skin client process
+                set_emul_skin_enable(0);
+            } else {
+                set_emul_skin_enable(1);
+            }
+#else
+            sdl_display_init(ds, full_screen, no_frame);
+#endif
         break;
 #elif defined(CONFIG_COCOA)
     case DT_SDL:
         cocoa_display_init(ds, full_screen);
         break;
 #endif
-#if defined(CONFIG_MARU)
+#if defined(CONFIG_MARU) && defined(__APPLE__)
     case DT_MARU:
-        maru_display_init(ds);
-        if (skin_disabled == 1) {
-            set_emul_skin_enable(0);
-        } else {
-            set_emul_skin_enable(1);
-        }
-        break;
+      maru_display_init(ds);
+      if (skin_disabled == 1) {
+      //do not start skin client process
+          set_emul_skin_enable(0);
+      } else {
+	  set_emul_skin_enable(1);
+      }
+    break;
 #endif
     default:
-        break;
+  break;
     }
 
     /* must be after terminal init, SDL library changes signal handlers */

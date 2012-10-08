@@ -257,6 +257,17 @@ static int is_stream_paused(MaruCamState *state)
     return (st == _MC_THREAD_PAUSED);
 }
 
+static void __raise_err_intr(MaruCamState *state)
+{
+    qemu_mutex_lock(&state->thread_mutex);
+    if (state->streamon == _MC_THREAD_STREAMON) {
+        state->req_frame = 0; /* clear request */
+        state->isr = 0x08;   /* set a error flag of rasing a interrupt */
+        qemu_bh_schedule(state->tx_bh);
+    }
+    qemu_mutex_unlock(&state->thread_mutex);
+}
+
 static int __v4l2_grab(MaruCamState *state)
 {
     fd_set fds;
@@ -271,10 +282,11 @@ static int __v4l2_grab(MaruCamState *state)
     tv.tv_usec = 500000;
 
     ret = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
-    if ( ret < 0) {
-        if (errno == EINTR)
+    if (ret < 0) {
+        if (errno == EAGAIN || errno == EINTR)
             return 0;
-        ERR("select : %s\n", strerror(errno));
+        ERR("failed to select : %s\n", strerror(errno));
+        __raise_err_intr(state);
         return -1;
     }
     if (!ret) {
@@ -283,7 +295,8 @@ static int __v4l2_grab(MaruCamState *state)
     }
 
     if (!v4l2_fd || (v4l2_fd == -1)) {
-        WARN("file descriptor is closed or not opened \n");
+        ERR("file descriptor is closed or not opened \n");
+        __raise_err_intr(state);
         return -1;
     }
 
@@ -299,21 +312,22 @@ static int __v4l2_grab(MaruCamState *state)
     qemu_mutex_unlock(&state->thread_mutex);
 
     ret = v4l2_read(v4l2_fd, buf, state->buf_size);
-    if ( ret < 0) {
+    if (ret < 0) {
         switch (errno) {
-        case EINVAL:
-        case ENOMEM:
-            ERR("v4l2_read failed : %s\n", strerror(errno));
-            return -1;
         case EAGAIN:
         case EIO:
         case EINTR:
-        default:
             if (convert_trial-- == -1) {
-                ERR("Try count for v4l2_read is exceeded\n");
+                ERR("Try count for v4l2_read is exceeded: %s\n",
+                    strerror(errno));
+                __raise_err_intr(state);
                 return -1;
             }
             return 0;
+        default:
+            ERR("v4l2_read failed : %s\n", strerror(errno));
+            __raise_err_intr(state);
+            return -1;
         }
     }
 
@@ -518,14 +532,16 @@ void marucam_device_stop_preview(MaruCamState* state)
     req.tv_sec = 0;
     req.tv_nsec = 50000000;
 
-    qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = _MC_THREAD_STREAMOFF;
-    state->buf_size = 0;
-    qemu_mutex_unlock(&state->thread_mutex);
+    if (is_streamon(state)) {
+        qemu_mutex_lock(&state->thread_mutex);
+        state->streamon = _MC_THREAD_STREAMOFF;
+        state->buf_size = 0;
+        qemu_mutex_unlock(&state->thread_mutex);
 
-    /* nanosleep until thread is paused  */
-    while (!is_stream_paused(state))
-        nanosleep(&req, NULL);
+        /* nanosleep until thread is paused  */
+        while (!is_stream_paused(state))
+            nanosleep(&req, NULL);
+    }
 
     INFO("Stopping preview\n");
 }

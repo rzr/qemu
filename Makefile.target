@@ -210,6 +210,11 @@ obj-i386-$(CONFIG_XEN) += xen_platform.o xen_apic.o
 # HAX support
 obj-$(CONFIG_HAX) += hax-all.o hax-windows.o
 obj-$(CONFIG_NO_HAX) += hax-stub.o
+ifdef CONFIG_DARWIN
+obj-$(CONFIG_HAX) += \
+        hax-all.o       \
+        hax-darwin.o
+endif
 
 # Inter-VM PCI shared memory
 CONFIG_IVSHMEM =

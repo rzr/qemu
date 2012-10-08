@@ -32,7 +32,26 @@
 
 #include "virtio.h"
 
-void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state);
+typedef struct TouchscreenState
+{
+    VirtIODevice vdev;
+    /* simply a queue into which buffers are posted
+    by the guest for consumption by the host */
+    VirtQueue *vq;
+    bool waitBuf;
 
+    DeviceState *qdev;
+    QEMUPutMouseEntry *eh_entry;
+} TouchscreenState;
+
+/* This structure must match the kernel definitions */
+typedef struct EmulTouchEvent {
+    uint16_t x, y, z;
+    uint8_t state;
+} EmulTouchEvent;
+
+
+void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state);
+void maru_virtio_touchscreen_notify(void);
 
 #endif /* MARU_TOUCHSCREEN_H_ */

@@ -47,6 +47,7 @@ void mloop_evcmd_raise_intr(void *irq);
 void mloop_evcmd_lower_intr(void *irq);
 
 void mloop_evcmd_hwkey(int event_type, int keycode);
+void mloop_evcmd_touch(void);
 
 #ifdef __cplusplus
 }

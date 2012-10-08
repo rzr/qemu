@@ -45,7 +45,5 @@
 
 int gethostDNS(char *dns1, char *dns2);
 int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy);
-void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy);
-void remove_string(char *src, char *dst, const char *toremove);
 #endif
 

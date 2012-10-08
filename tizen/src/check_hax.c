@@ -27,14 +27,28 @@
  *
  */
 
-#include <stdint.h>
 #include <stdio.h>
+
+#ifdef _WIN32
+#include <stdint.h>
 #include <errno.h>
 #include <windows.h>
 #include <winioctl.h>
+#endif
 
-#define HAX_DEVICE_TYPE 0x4000
-#define HAX_IOCTL_CAPABILITY    CTL_CODE(HAX_DEVICE_TYPE, 0x910, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#ifdef __APPLE__
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <stdarg.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#endif
+
+
+
 #define HAX_MAX_VCPU 0x10
 
 #define HAX_CAP_STATUS_NOTWORKING  0x0
@@ -44,7 +58,16 @@
 
 #define HAX_CAP_MEMQUOTA    0x2
 
+#ifdef __APPLE__
+#define HAX_IOCTL_CAPABILITY _IOR(0, 0x23, struct hax_capabilityinfo)
+typedef int hax_fd;
+#endif
+
+#ifdef _WIN32
+#define HAX_DEVICE_TYPE 0x4000
+#define HAX_IOCTL_CAPABILITY    CTL_CODE(HAX_DEVICE_TYPE, 0x910, METHOD_BUFFERED, FILE_ANY_ACCESS)
 typedef HANDLE hax_fd;
+#endif
 
 struct hax_vm {
     hax_fd fd;
@@ -73,10 +96,18 @@ struct hax_capabilityinfo {
     uint32_t pad;
     uint64_t mem_quota;
 };
-
+#ifdef _WIN32
 static inline int hax_invalid_fd( hax_fd fd ) {
     return ( fd == INVALID_HANDLE_VALUE );
 }
+#endif
+#ifdef __APPLE__
+static inline int hax_invalid_fd(hax_fd fd)
+{
+    return fd <= 0;
+}
+#endif
+
 
 static hax_fd hax_mod_open( void );
 static int hax_open_device( hax_fd *fd );
@@ -105,19 +136,7 @@ static int check_hax( void ) {
     return 0;
 
 }
-
-static hax_fd hax_mod_open( void ) {
-    int ret;
-    hax_fd fd;
-
-    ret = hax_open_device( &fd );
-    if ( ret != 0 ) {
-        fprintf( stderr, "Open HAX device failed\n" );
-    }
-
-    return fd;
-}
-
+#ifdef _WIN32
 static int hax_open_device( hax_fd *fd ) {
     uint32_t errNum = 0;
     HANDLE hDevice;
@@ -139,6 +158,33 @@ static int hax_open_device( hax_fd *fd ) {
     fprintf( stdout, "device fd:%d\n", *fd );
     return 0;
 }
+
+static hax_fd hax_mod_open( void ) {
+    int ret;
+    hax_fd fd;
+
+    ret = hax_open_device( &fd );
+    if ( ret != 0 ) {
+        fprintf( stderr, "Open HAX device failed\n" );
+    }
+
+    return fd;
+}
+#else
+static hax_fd hax_mod_open(void)
+{
+    int fd = open("/dev/HAX", O_RDWR);
+
+    if (fd == -1)
+    {
+        fprintf(stderr, "hahFailed to open the hax module\n");
+        //return -errno;
+    }
+
+    return fd;
+}
+
+#endif
 
 static int hax_get_capability( struct hax_state *hax ) {
     int ret;
@@ -166,7 +212,7 @@ static int hax_get_capability( struct hax_state *hax ) {
 */
     return 0;
 }
-
+#ifdef _WIN32
 static int hax_capability( struct hax_state *hax, struct hax_capabilityinfo *cap ) {
     int ret;
     HANDLE hDevice = hax->fd; //handle to hax module
@@ -190,6 +236,23 @@ static int hax_capability( struct hax_state *hax, struct hax_capabilityinfo *cap
         return 0;
 
 }
+#endif
+
+#ifdef __APPLE__
+int hax_capability(struct hax_state *hax, struct hax_capabilityinfo *cap)
+{
+    int ret;
+
+    ret = ioctl(hax->fd, HAX_IOCTL_CAPABILITY, cap);
+    if (ret == -1)
+    {
+        fprintf(stderr, "Failed to get HAX capability\n");
+        return -errno;
+    }
+
+    return 0;
+}
+#endif
 
 int main(int argc, char* argv[]) {
     return check_hax();

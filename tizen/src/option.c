@@ -37,7 +37,7 @@
 #include "option.h"
 #include "emulator.h"
 #include "maru_common.h"
-#ifndef _WIN32
+#if defined (CONFIG_LINUX)
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -45,11 +45,14 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <net/if.h>
-#else
+#elif defined (CONFIG_WIN32)
 #include <windows.h>
 #include <winsock2.h>
 #include <iphlpapi.h>
 #include <winreg.h>
+#elif defined (CONFIG_DARWIN)
+#include <SystemConfiguration/SystemConfiguration.h>
+CFDictionaryRef proxySettings;
 #endif
 #include <curl/curl.h>
 
@@ -149,6 +152,30 @@ int gethostDNS(char *dns1, char *dns2)
     return 0;
 }
 
+#if defined (CONFIG_DARWIN)
+static char *cfstring_to_cstring(CFStringRef str) {
+    if (str == NULL) {
+        return NULL;
+    }
+
+    CFIndex length = CFStringGetLength(str);
+    CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
+    char *buffer = (char *)malloc(maxSize);
+    if (CFStringGetCString(str, buffer, maxSize, kCFStringEncodingUTF8))
+        return buffer;
+    return NULL;
+}
+
+static int cfnumber_to_int(CFNumberRef num) {
+    if (!num)
+        return 0;
+
+    int value;
+    CFNumberGetValue(num, kCFNumberIntType, &value);
+    return value;
+}
+#endif
+
 static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) 
 {     
     size_t written;
@@ -181,7 +208,89 @@ static void download_url(char *url)
     return; 
 } 
 
-void remove_string(char *src, char *dst, const char *toremove)
+#if defined (CONFIG_DARWIN)
+static void getmacproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+{
+    char *hostname;
+    int port;
+    CFNumberRef isEnable;
+    CFStringRef proxyHostname;
+    CFNumberRef proxyPort;
+    CFDictionaryRef proxySettings;
+    proxySettings = SCDynamicStoreCopyProxies(NULL);
+
+    isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPEnable);
+    if (cfnumber_to_int(isEnable)) {        
+        // Get proxy hostname
+        proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPProxy);
+        hostname = cfstring_to_cstring(proxyHostname);
+        // Get proxy port
+        proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPPort);
+        port = cfnumber_to_int(proxyPort);
+        // Save hostname & port
+        sprintf(http_proxy, "%s:%d", hostname, port);
+
+        free(hostname);
+        //CFRelease(proxySettings);
+    } else {
+        INFO("http proxy is null\n");
+    }
+    
+    isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPSEnable);
+    if (cfnumber_to_int(isEnable)) {        
+        // Get proxy hostname
+        proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPSProxy);
+        hostname = cfstring_to_cstring(proxyHostname);
+        // Get proxy port
+        proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPSPort);
+        port = cfnumber_to_int(proxyPort);
+        // Save hostname & port
+        sprintf(https_proxy, "%s:%d", hostname, port);
+
+        free(hostname);
+        //CFRelease(proxySettings);
+    } else {
+        INFO("https proxy is null\n");
+    }
+    
+    isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesFTPEnable);
+    if (cfnumber_to_int(isEnable)) {        
+        // Get proxy hostname
+        proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesFTPProxy);
+        hostname = cfstring_to_cstring(proxyHostname);
+        // Get proxy port
+        proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesFTPPort);
+        port = cfnumber_to_int(proxyPort);
+        // Save hostname & port
+        sprintf(ftp_proxy, "%s:%d", hostname, port);
+
+        free(hostname);
+        //CFRelease(proxySettings);
+    } else {
+        INFO("ftp proxy is null\n");
+    }
+    
+    isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesSOCKSEnable);
+    if (cfnumber_to_int(isEnable)) {        
+        // Get proxy hostname
+        proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesSOCKSProxy);
+        hostname = cfstring_to_cstring(proxyHostname);
+        // Get proxy port
+        proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesSOCKSPort);
+        port = cfnumber_to_int(proxyPort);
+        // Save hostname & port
+        sprintf(socks_proxy, "%s:%d", hostname, port);
+
+        free(hostname);
+    } else {
+        INFO("socks proxy is null\n");
+    }
+    CFRelease(proxySettings);
+}
+#endif
+
+#if defined (CONFIG_WIN32)    
+static void remove_string(char *src, char *dst, const char *toremove)
 {
     int len = strlen(toremove);
     int i, j;
@@ -194,8 +303,10 @@ void remove_string(char *src, char *dst, const char *toremove)
 
     dst[j] = '\0';
 }
+#endif
 
-void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+#if defined (CONFIG_LINUX)    
+static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char buf[MAXLEN];
     FILE *output;
@@ -248,19 +359,16 @@ void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *s
     pclose(output);
     INFO("socks_proxy : %s\n", socks_proxy);
 }
+#endif
 
-static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+static int getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char type[MAXLEN];
     char proxy[MAXLEN];
     char line[MAXLEN];
     FILE *fp_pacfile;
-    char *out;
-    char *err;
     char *p = NULL;
 
-    out = g_malloc0(MAXLEN);
-    err = g_malloc0(MAXLEN);
 #if defined(CONFIG_LINUX)
     FILE *output;
     char buf[MAXLEN];
@@ -273,6 +381,15 @@ static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, c
 #elif defined(CONFIG_WIN32)    
     INFO("pac address: %s\n", (char*)url);
     download_url((char*)url);
+#elif defined(CONFIG_DARWIN)
+    CFStringRef pacURL = (CFStringRef)CFDictionaryGetValue(proxySettings,
+			        kSCPropNetProxiesProxyAutoConfigURLString);
+	if (pacURL) {
+		char url[MAXLEN] = {};
+		CFStringGetCString(pacURL, url, sizeof url, kCFStringEncodingASCII);
+                INFO("pac address: %s\n", (char*)url);
+		download_url(url);
+        }
 #endif
     fp_pacfile = fopen(pactempfile, "r");
     if(fp_pacfile != NULL) {
@@ -308,10 +425,11 @@ static void getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, c
     } 
     else {
         ERR("fail to get pacfile fp\n");
+	return -1;
     }
 
     remove(pactempfile);
-    return ;
+    return 0;
 }
 
 
@@ -469,10 +587,21 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
         }
     }
     else {
-        ERR("proxy is null\n");
+        INFO("proxy is null\n");
         return 0;
     }
     RegCloseKey(hKey);
+#elif defined (CONFIG_DARWIN)
+    int ret;
+    proxySettings = SCDynamicStoreCopyProxies(NULL);
+    if(proxySettings) {
+        INFO("AUTO PROXY MODE\n");
+        ret = getautoproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy); 
+        if(strlen(http_proxy) == 0 && ret < 0) {
+            INFO("MANUAL PROXY MODE\n");
+	    getmacproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy); 
+	}
+    }
 #endif
     return 0;
 }

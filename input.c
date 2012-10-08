@@ -195,7 +195,7 @@ void kbd_mouse_event(int dx, int dy, int dz, int buttons_state)
         /* if mouse event is wheelup ,wheeldown or move
            then go to ps2 mouse event(index == 0) */
         if((buttons_state > 3  && entry->index == 0)) {
-            INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
+            //INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
             buttons_state = 0; 
             mouse_event = entry->qemu_put_mouse_event;
             mouse_event_opaque = entry->qemu_put_mouse_event_opaque;
@@ -207,7 +207,7 @@ void kbd_mouse_event(int dx, int dy, int dz, int buttons_state)
         entry = QTAILQ_FIRST(&mouse_handlers);
         mouse_event = entry->qemu_put_mouse_event;
         mouse_event_opaque = entry->qemu_put_mouse_event_opaque;
-        INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
+        //INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
     }
 #else
     entry = QTAILQ_FIRST(&mouse_handlers);

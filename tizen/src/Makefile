@@ -19,7 +19,6 @@ endif
 endif
 
 all: qemu skin_client
-
 qemu: build_info ffmpeg_install check_hax
 	cd ../../ && $(MAKE)
 qemu_clean:
@@ -28,12 +27,13 @@ qemu_distclean:
 	cd ../../ && $(MAKE) distclean
 
 check_hax:
+	@echo "build check hax"	
 ifdef CONFIG_WIN32
-	$(CC) -o check-hax.exe check_hax.c
-else
-	
+	$(CC) -o check-hax.exe check_hax.c	
 endif
-
+ifdef CONFIG_DARWIN
+	$(CC) -o check-hax check_hax.c	
+endif
 skin_client:
 	ant -buildfile skin/client/build.xml make-jar
 
@@ -57,8 +57,9 @@ ffmpeg_distclean:
 clean: ffmpeg_clean qemu_clean
 ifdef CONFIG_WIN32
 	rm -f check-hax.exe
-else
-	
+endif
+ifdef CONFIG_DARWIN
+	rm -f check-hax
 endif
 distclean: ffmpeg_distclean qemu_distclean
 
@@ -117,8 +118,15 @@ endif
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
+endif
+ifdef CONFIG_DARWIN
+	cp check-hax $(EMUL_DIR)/bin
+endif
+ifdef CONFIG_LINUX
+	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
+	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 else
-	
+
 endif
 
 ifndef CONFIG_DARWIN
@@ -131,6 +139,7 @@ else
 	cp -pPR ../license $(EMUL_DIR)
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -pPR skin/client/skins $(EMUL_DIR)
+	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
 endif
 
 # for dibs system...
@@ -196,15 +205,21 @@ ifdef CONFIG_WIN32
 else
 	
 endif
+ifdef CONFIG_LINUX
+	echo "Copying tizen-kvm to $(EMUL_DIR)/etc"
+	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
+	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
+else
+
+endif
 
 ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp -dpr ../license $(EMUL_DIR)
-	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -dpr skin/client/skins $(EMUL_DIR)
 else
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp -pPR ../license $(EMUL_DIR)
-	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -pPR skin/client/skins $(EMUL_DIR)
+	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
 endif

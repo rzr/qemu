@@ -72,7 +72,7 @@ public class SkinUtil {
 		String vmPath = config.getArg( ArgsConstants.VM_PATH );
 
 		String regex = "";
-		if ( SwtUtil.isWindowsPlatform() ) {
+		if (SwtUtil.isWindowsPlatform()) {
 			regex = "\\" + File.separator;
 		} else {
 			regex = File.separator;
@@ -101,7 +101,7 @@ public class SkinUtil {
 		String sdbPath = null;
 
 		if (SwtUtil.isWindowsPlatform()) {
-			sdbPath = ".\\..\\..\\sdb-run.bat";
+			sdbPath = ".\\..\\..\\ansicon.exe";
 		} else {
 			sdbPath = "./../../sdb";
 		}

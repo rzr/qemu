@@ -51,7 +51,6 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
-import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
@@ -67,9 +66,7 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
-import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
@@ -78,24 +75,17 @@ import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
-import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
+import org.tizen.emulator.skin.util.StringUtil;
 
 public class ScreenShotDialog {
 
 	public final static String DEFAULT_FILE_EXTENSION = "png";
-
-	public static final int RED_MASK = 0x0000FF00;
-	public static final int GREEN_MASK = 0x00FF0000;
-	public static final int BLUE_MASK = 0xFF000000;
-	public static final int COLOR_DEPTH = 32;
-
-	public static final int CANVAS_MARGIN = 30;
-	public static final int TOOLITEM_COOLTIME = 200;
+	public final static int CANVAS_MARGIN = 30;
+	public final static int TOOLITEM_COOLTIME = 200;
 
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
-	private PaletteData paletteData;
 	private Image image;
 	private Canvas imageCanvas;
 	private Shell shell;
@@ -170,15 +160,13 @@ public class ScreenShotDialog {
 				if ( null != image && !image.isDisposed() ) {
 					//e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 					Rectangle r = image.getBounds();
-					//logger.info("r.width: " +r.width +", r.height " + r.height);
+					logger.info("r.width: " +r.width +", r.height " + r.height);
 					e.gc.drawImage(image, 0, 0, r.width, r.height,
 							CANVAS_MARGIN, CANVAS_MARGIN, (int)(r.width  * scaleLevel * 1/100), (int)(r.height * scaleLevel * 1/100));
 				}
 
 			}
 		} );
-
-		paletteData = new PaletteData( RED_MASK, GREEN_MASK, BLUE_MASK );
 
 		scrollComposite.setContent( imageCanvas );
 
@@ -272,7 +260,7 @@ public class ScreenShotDialog {
 
 	private void capture() throws ScreenShotException {
 
-		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
+		/* DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
 		byte[] receivedData = communicator.getReceivedData( dataTranfer );
 
 		if ( null != receivedData ) {
@@ -294,10 +282,30 @@ public class ScreenShotDialog {
 			
 		} else {
 			throw new ScreenShotException( "Fail to get image data." );
+		}*/
+
+		int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+
+		int[] array = new int[width * height];
+		int result = emulatorSkin.getPixels(array); //from shared memory
+		//logger.info("getPixels navtive function returned " + result);
+
+		ImageData imageData = new ImageData(width, height, EmulatorSkin.COLOR_DEPTH, emulatorSkin.getPalette());
+		for (int i = 0; i < height; i++) {
+			imageData.setPixels(0, i, width, array, i * width);
 		}
 
+		RotationInfo rotation = getCurrentRotation();
+		imageData = rotateImageData(imageData, rotation);
+
+		if (image != null) {
+			image.dispose();
+		}
+		image = new Image(Display.getDefault(), imageData);
+		imageCanvas.redraw();
 	}
-	
+
 	private double getScaleLevel() {
 		return scaleLevel;
 	}
@@ -502,8 +510,7 @@ public class ScreenShotDialog {
 				if ( SwtUtil.isWindowsPlatform() ) {
 					// change RGB mask
 					ImageData imageData = image.getImageData();
-					PaletteData paletteData = new PaletteData( BLUE_MASK, GREEN_MASK, RED_MASK );
-					data = new ImageData( imageData.width, imageData.height, imageData.depth, paletteData,
+					data = new ImageData( imageData.width, imageData.height, imageData.depth, emulatorSkin.getPalette(),
 							imageData.bytesPerLine, imageData.data );
 				} else {
 					data = image.getImageData();
