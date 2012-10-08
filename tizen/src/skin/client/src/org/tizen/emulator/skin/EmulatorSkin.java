@@ -37,6 +37,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -190,6 +191,8 @@ public class EmulatorSkin {
 	private KeyListener canvasKeyListener;
 	private MenuDetectListener canvasMenuDetectListener;
 
+	private LinkedList<KeyEventData> pressedKeyEventList;
+
 	private EmulatorSkin reopenSkin;
 	
 	/**
@@ -202,6 +205,7 @@ public class EmulatorSkin {
 		this.isDefaultHoverColor = true;
 		this.isOnTop = isOnTop;
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 		
 		int style = SWT.NO_TRIM;
 		this.shell = new Shell( Display.getDefault(), style );
@@ -553,6 +557,22 @@ public class EmulatorSkin {
 
 			public void focusLost(FocusEvent event) {
 				logger.info("lost focus");
+
+				/* key event compensation */
+				if (pressedKeyEventList.isEmpty() == false) {
+					for (KeyEventData data : pressedKeyEventList) {
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.RELEASED.value(), data.keycode,
+								data.stateMask, data.keyLocation);
+						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+
+						logger.info("auto release : keycode=" + keyEventData.keycode +
+								", stateMask=" + keyEventData.stateMask +
+								", keyLocation=" + keyEventData.keyLocation);
+					}
+				}
+
+				pressedKeyEventList.clear();
 			}
 		};
 
@@ -806,6 +826,7 @@ public class EmulatorSkin {
 		// remove 'input method' menu item ( avoid bug )
 		canvas.addMenuDetectListener( canvasMenuDetectListener );
 
+		/* mouse event */
 		/*canvasDragDetectListener = new DragDetectListener() {
 
 			@Override
@@ -913,36 +934,39 @@ public class EmulatorSkin {
 
 			@Override
 			public void mouseDoubleClick( MouseEvent e ) {
+				/* do nothing */
 			}
 		};
 
 		canvas.addMouseListener( canvasMouseListener );
-       canvasMouseWheelListener = new MouseWheelListener() {
-			 
+
+		canvasMouseWheelListener = new MouseWheelListener() {
+
 			@Override
 			public void mouseScrolled(MouseEvent e) {
-				int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
-						currentScale, currentAngle );
-				logger.info( "mousewheel in LCD" + " x:" + geometry[0] + " y:" + geometry[1] + " value:" + e.count);
+				int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y, currentLcdWidth, currentLcdHeight,
+						currentScale, currentAngle);
+				logger.info("mousewheel in LCD" + " x:" + geometry[0] + " y:" + geometry[1] + " value:" + e.count);
+
 				int eventType;
-				
-				if(e.count < 0)
+				if (e.count < 0) {
 					eventType = MouseEventType.WHEELDOWN.value();
-				else
+				} else {
 					eventType = MouseEventType.WHEELUP.value();
-				
-				MouseEventData mouseEventData = new MouseEventData( MouseButtonType.WHEEL.value(), eventType, 
-							e.x, e.y, geometry[0], geometry[1], e.count );
-					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
+				}
+
+				MouseEventData mouseEventData = new MouseEventData(
+						MouseButtonType.WHEEL.value(), eventType,
+						e.x, e.y, geometry[0], geometry[1], e.count);
+				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
 			}
-		};	
-		
+		};
+
 		canvas.addMouseWheelListener( canvasMouseWheelListener );
 
-
-
+		/* keyboard event */
 		canvasKeyListener = new KeyListener() {
-			
+
 			private KeyEvent previous;
 			private boolean disappearEvent = false;
 			private int disappearKeycode = 0;
@@ -961,16 +985,20 @@ public class EmulatorSkin {
 
 				previous = null;
 
-				if( SwtUtil.isWindowsPlatform() && disappearEvent) {
+				/* generate a disappeared key event in Windows */
+				if (SwtUtil.isWindowsPlatform() && disappearEvent) {
 					disappearEvent = false;
 					if (isMetaKey(e) && e.character != '\0') {
-						logger.info( "send previous release : keycode=" + disappearKeycode +
-								", stateMask=" + disappearStateMask + ", keyLocation=" + disappearKeyLocation);
+						logger.info("send previous release : keycode=" + disappearKeycode +
+								", stateMask=" + disappearStateMask +
+								", keyLocation=" + disappearKeyLocation);
 
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(),
 								disappearKeycode, disappearStateMask, disappearKeyLocation);
 						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+
+						removePressedKey(keyEventData);
 
 						disappearKeycode = 0;
 						disappearStateMask = 0;
@@ -981,6 +1009,8 @@ public class EmulatorSkin {
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.RELEASED.value(), keyCode, stateMask, e.keyLocation);
 				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+
+				removePressedKey(keyEventData);
 			}
 
 			@Override
@@ -988,7 +1018,11 @@ public class EmulatorSkin {
 				int keyCode = e.keyCode;
 				int stateMask = e.stateMask;
 
-				if( SwtUtil.isWindowsPlatform() ) {
+				/* When the pressed key event is overwritten by next key event,
+				 * the release event of previous key does not occur in Windows.
+				 * So, we generate a release key event by ourselves
+				 * that had been disappeared. */
+				if (SwtUtil.isWindowsPlatform()) {
 					if (null != previous) {
 						if (previous.keyCode != e.keyCode) {
 
@@ -1010,7 +1044,9 @@ public class EmulatorSkin {
 
 								KeyEventData keyEventData = new KeyEventData(KeyEventType.RELEASED.value(),
 										previousKeyCode, previousStateMask, previous.keyLocation);
-								communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+								communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+
+								removePressedKey(keyEventData);
 							}
 
 						}
@@ -1027,7 +1063,9 @@ public class EmulatorSkin {
 
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.PRESSED.value(), keyCode, stateMask, e.keyLocation);
-				communicator.sendToQEMU( SendCommand.SEND_KEY_EVENT, keyEventData );
+				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+
+				addPressedKey(keyEventData);
 			}
 
 		};
@@ -1042,6 +1080,34 @@ public class EmulatorSkin {
 				SWT.SHIFT == event.keyCode) {
 			return true;
 		}
+		return false;
+	}
+
+	private synchronized boolean addPressedKey(KeyEventData pressData) {
+		for (KeyEventData data : pressedKeyEventList) {
+			if (data.keycode == pressData.keycode &&
+					data.stateMask == pressData.stateMask &&
+					data.keyLocation == pressData.keyLocation) {
+				return false;
+			}
+		}
+
+		pressedKeyEventList.add(pressData);
+		return true;
+	}
+
+	private synchronized boolean removePressedKey(KeyEventData releaseData) {
+
+		for (KeyEventData data : pressedKeyEventList) {
+			if (data.keycode == releaseData.keycode &&
+					data.stateMask == releaseData.stateMask &&
+					data.keyLocation == releaseData.keyLocation) {
+				pressedKeyEventList.remove(data);
+
+				return true;
+			}
+		}
+
 		return false;
 	}
 
