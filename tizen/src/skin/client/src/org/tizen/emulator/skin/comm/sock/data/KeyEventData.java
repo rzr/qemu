@@ -37,10 +37,10 @@ import java.io.IOException;
  */
 public class KeyEventData extends AbstractSendData {
 
-	int eventType;
-	int keycode;
-	int stateMask;
-	int keyLocation;
+	public int eventType;
+	public int keycode;
+	public int stateMask;
+	public int keyLocation;
 
 	public KeyEventData(int eventType, int keycode, int stateMask, int keyLocation) {
 		this.eventType = eventType;
