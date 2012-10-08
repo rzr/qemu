@@ -1,5 +1,5 @@
 /**
- * Emulator Skin Process
+ * 
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -26,17 +26,36 @@
  *
  */
 
-package org.tizen.emulator.skin;
+package org.tizen.emulator.skin.mode;
 
-import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.mode.SkinMode;
+/**
+ *
+ */
+public enum SkinMode {
+	NONE("none"),
+	FULLSCREEN("fullscreen"),
+	DEFAULT("default"),
+	CUSTOM("custom");
 
-public class EmulatorSdlSkin extends EmulatorSkin {
-	/**
-	 *  Constructor
-	 */
-	public EmulatorSdlSkin(EmulatorConfig config, SkinMode mode, boolean isOnTop) {
-		super(config, mode, isOnTop);
+	private String value;
+
+	SkinMode(String value) {
+		this.value = value;
 	}
 
+	public String value() {
+		return this.value;
+	}
+	
+	public static SkinMode getValue(String val) {
+		SkinMode[] values = SkinMode.values();
+		for (int i = 0; i < values.length; i++) {
+			if (values[i].value.equalsIgnoreCase(val) == true) {
+				return values[i];
+			}
+		}
+
+		return SkinMode.DEFAULT;
+	}
 }
+

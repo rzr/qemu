@@ -53,6 +53,7 @@ import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
+import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.StringUtil;
@@ -94,9 +95,9 @@ public class EmulatorSkinMain {
 
 			System.exit(-1);
 		}
-		
+
 		SocketCommunicator communicator = null;
-		
+
 		try {
 
 			String vmPath = getVmPath( args );
@@ -108,9 +109,11 @@ public class EmulatorSkinMain {
 
 			logger = SkinLogger.getSkinLogger( EmulatorSkinMain.class ).getLogger();
 			logger.info( "!!! Start Emualtor Skin !!!" );
-			
+
+			/* startup arguments parsing */
 			Map<String, String> argsMap = parsArgs( args );
-			
+
+			/* set emulator window skin property */
 			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
 			Properties skinProperties = loadProperties( skinPropFilePath, true );
 			if ( null == skinProperties ) {
@@ -118,6 +121,7 @@ public class EmulatorSkinMain {
 				System.exit( -1 );
 			}
 
+			/* set emulator window config property */
 			String configPropFilePath = vmPath + File.separator + CONFIG_PROPERTIES_FILE_NAME;
 			Properties configProperties = loadProperties( configPropFilePath, false );
 
@@ -127,7 +131,7 @@ public class EmulatorSkinMain {
 			EmulatorConfig.validateArgs( argsMap );
 			EmulatorConfig.validateSkinProperties( skinProperties );
 			EmulatorConfig.validateSkinConfigProperties( configProperties );
-			
+
 			int lcdWidth = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_WIDTH ) );
 			int lcdHeight = Integer.parseInt( argsMap.get( ArgsConstants.RESOLUTION_HEIGHT ) );
 			String argSkinPath = (String) argsMap.get( ArgsConstants.SKIN_PATH );
@@ -151,17 +155,23 @@ public class EmulatorSkinMain {
 			EmulatorConfig config = new EmulatorConfig( argsMap, dbiContents, skinProperties, skinPropFilePath,
 					configProperties );
 
-			ImageRegistry.getInstance().initialize( config );
-			
-			String onTopVal = config.getSkinProperty( SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString() );
-			boolean isOnTop = Boolean.parseBoolean( onTopVal );
+			/* load image resource */
+			ImageRegistry.getInstance().initialize(config);
+
+			String onTopVal = config.getSkinProperty(
+					SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString());
+			boolean isOnTop = Boolean.parseBoolean(onTopVal);
+
+			/* determine skin mode */
+			SkinMode skinMode = SkinMode.getValue(argsMap.get(ArgsConstants.SKIN_MODE));
+			logger.info("skin mode is " + skinMode);
 
 			/* create skin */
 			EmulatorSkin skin;
 			if (SwtUtil.isMacPlatform()) {
-				skin = new EmulatorShmSkin(config, isOnTop);
+				skin = new EmulatorShmSkin(config, skinMode, isOnTop);
 			} else { // linux & windows
-				skin = new EmulatorSdlSkin(config, isOnTop);
+				skin = new EmulatorSdlSkin(config, skinMode, isOnTop);
 			}
 
 			long windowHandleId = skin.compose();

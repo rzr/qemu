@@ -36,6 +36,7 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.mode.SkinMode;
 
 public class EmulatorShmSkin extends EmulatorSkin {
 	public static final int RED_MASK = 0x00FF0000;
@@ -113,8 +114,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorShmSkin(EmulatorConfig config, boolean isOnTop) {
-		super(config, isOnTop);
+	public EmulatorShmSkin(EmulatorConfig config, SkinMode mode, boolean isOnTop) {
+		super(config, mode, isOnTop);
 
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 	}

@@ -97,6 +97,7 @@ import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
@@ -139,6 +140,7 @@ public class EmulatorSkin {
 	private Shell shell;
 	private ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
+	private SkinMode skinMode;
 	private Image currentImage;
 	private Image currentKeyPressedImage;
 	private Color hoverColor;
@@ -192,8 +194,9 @@ public class EmulatorSkin {
 	 * @param config : configuration of emulator skin
 	 * @param isOnTop : always on top flag
 	*/
-	protected EmulatorSkin( EmulatorConfig config, boolean isOnTop ) {
+	protected EmulatorSkin(EmulatorConfig config, SkinMode mode, boolean isOnTop) {
 		this.config = config;
+		this.skinMode = mode;
 		this.isDefaultHoverColor = true;
 		this.isOnTop = isOnTop;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
@@ -455,8 +458,11 @@ public class EmulatorSkin {
 			tempKeyPressedImage.dispose();
 		}
 
-		SkinUtil.trimShell( shell, currentImage );
-		SkinUtil.adjustLcdGeometry( lcdCanvas, scale, rotationId );
+		/* custom window shape */
+		SkinUtil.trimShell(shell, currentImage);
+
+		/* not using a layout */
+		SkinUtil.adjustLcdGeometry(lcdCanvas, scale, rotationId);
 
 		if( null != currentImage ) {
 			ImageData imageData = currentImage.getImageData();
