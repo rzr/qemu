@@ -55,6 +55,8 @@ static void *yagl_thread_func(void* arg)
 
         current_buff = ts->current_out_buff;
 
+        YAGL_LOG_TRACE("batch started");
+
         /*
          * current_buff is:
          *  (yagl_api_id) api_id
@@ -90,10 +92,6 @@ static void *yagl_thread_func(void* arg)
             }
 
             func_id = yagl_marshal_get_func_id(&current_buff);
-
-            YAGL_LOG_TRACE("calling (api = %u, func = %u)",
-                           api_id,
-                           func_id);
 
             if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
                 YAGL_LOG_CRITICAL("target-host protocol error, bad api_id - %u", api_id);
@@ -152,6 +150,8 @@ static void *yagl_thread_func(void* arg)
             ++num_calls;
 #endif
         }
+
+        YAGL_LOG_TRACE("batch ended");
 
         tmp = ts->current_in_buff;
 
@@ -225,8 +225,6 @@ void yagl_thread_call(struct yagl_thread_state *ts,
                       uint8_t *out_buff,
                       uint8_t *in_buff)
 {
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_thread_call, NULL);
-
     assert(cpu_single_env);
 
     ts->current_out_buff = out_buff;
@@ -237,6 +235,4 @@ void yagl_thread_call(struct yagl_thread_state *ts,
 
     yagl_event_set(&ts->call_event);
     yagl_event_wait(&ts->call_processed_event);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
 }
