@@ -16,6 +16,7 @@
 
 #include "sysbus.h"
 #include "virtio.h"
+#include "virtio-transport.h"
 #include "net.h"
 #include "pci.h"
 
@@ -194,6 +195,10 @@ typedef struct {
     /* virtio-net */
     NICConf nic;
     virtio_net_conf net;
+
+    uint32_t host_features;
+
+    VirtIOTransportLink *trl;
 } VirtIONetState;
 
 #define VIRTIO_NET_FROM_QDEV(dev) DO_UPCAST(VirtIONetState, qdev, dev)

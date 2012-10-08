@@ -23,78 +23,125 @@
 
 #define VIRTIO_TRANSPORT_BUS "virtio-transport"
 
-struct BusInfo virtio_transport_bus_info = {
-    .name = VIRTIO_TRANSPORT_BUS,
-    .size = sizeof(VirtIOTransportBusState),
-};
-
-int virtio_init_transport(DeviceState *dev, VirtIODevice *vdev)
-{
-    DeviceState *transport_dev = qdev_get_parent_bus(dev)->parent;
-    BusState *bus;
-    VirtIOTransportBusState *virtio_transport_bus;
-
-    /* transport device has single child bus */
-    bus = QLIST_FIRST(&transport_dev->child_bus);
-    virtio_transport_bus = DO_UPCAST(VirtIOTransportBusState, bus, bus);
-
-    if (virtio_transport_bus->init_fn) {
-        return virtio_transport_bus->init_fn(dev, vdev);
-    }
-
-    return 0;
-}
-
-uint32_t virtio_count_siblings(BusState *parent_bus, const char *child_bus)
-{
-    DeviceState *dev;
-    BusState *bus;
-    uint32_t i = 0;
-    char *buf;
-    int len;
-
-    if (child_bus) {
-        len = strlen(child_bus) + 1;
-        buf = g_malloc(len);
-        snprintf(buf, len, "%s.", child_bus);
-        len = strlen(buf);
-        QTAILQ_FOREACH(dev, &parent_bus->children, sibling) {
-            QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-                if (strncmp(buf, bus->name, len) == 0) {
-                    i++;
-                }
-            }
-        }
-
-    } else {
-        QTAILQ_FOREACH(dev, &parent_bus->children, sibling) {
-            i++;
-        }
-    }
-
-    return i;
-}
+static QTAILQ_HEAD(, VirtIOTransportLink) transport_links =
+        QTAILQ_HEAD_INITIALIZER(transport_links);
 
 /*
- * Get transport device which does not have a child.
+ * Find transport device by its ID.
  */
-DeviceState* virtio_get_free_transport(BusState *parent_bus,
-                                       const char *child_bus)
+VirtIOTransportLink* virtio_find_transport(const char *name)
 {
-    DeviceState *dev;
-    BusState *bus;
+    VirtIOTransportLink *trl;
 
-    assert(child_bus != NULL);
+    assert(name != NULL);
 
-    QTAILQ_FOREACH(dev, &parent_bus->children, sibling) {
-        QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-            if (strncmp(child_bus, bus->name, strlen(child_bus)) == 0) {
-                if (!virtio_count_siblings(bus, NULL)) {
-                    return dev;
-                }
+    QTAILQ_FOREACH(trl, &transport_links, sibling) {
+        if (trl->tr->id != NULL) {
+            if (!strcmp(name, trl->tr->id)) {
+                return trl;
             }
         }
     }
 
     return NULL;
 }
+
+/*
+ * Count transport devices by ID.
+ */
+uint32_t virtio_count_transports(const char *name)
+{
+    VirtIOTransportLink *trl;
+    uint32_t i = 0;
+
+    QTAILQ_FOREACH(trl, &transport_links, sibling) {
+        if (name == NULL) {
+            i++;
+            continue;
+        }
+
+        if (trl->tr->id != NULL) {
+            if (!strncmp(name, trl->tr->id,strlen(name))) {
+                i++;
+            }
+        }
+    }
+    return i;
+}
+
+/*
+ * Initialize new transport device
+ */
+char* virtio_init_transport(DeviceState *dev, VirtIOTransportLink **trl,
+        const char* name, virtio_backend_init_cb cb)
+{
+    VirtIOTransportLink *link = g_malloc0(sizeof(VirtIOTransportLink));
+    char *buf;
+    size_t len;
+    uint32_t i;
+
+    assert(dev != NULL);
+    assert(name != NULL);
+    assert(trl != NULL);
+
+    i = virtio_count_transports(name);
+    len = strlen(name) + 16;
+    buf = g_malloc(len);
+    snprintf(buf, len, "%s.%d", name, i);
+    qbus_create(TYPE_VIRTIO_BUS, dev, buf);
+
+    /* Add new transport */
+    QTAILQ_INSERT_TAIL(&transport_links, link, sibling);
+    link->tr = dev;
+    link->cb = cb;
+    // TODO: Add a link property
+    *trl = link;
+    return buf;
+}
+
+/*
+ * Unplug back-end from system bus and plug it into transport bus.
+ */
+void virtio_plug_into_transport(DeviceState *dev, VirtIOTransportLink *trl)
+{
+    BusChild *kid;
+
+    /* Unplug back-end from system bus */
+    QTAILQ_FOREACH(kid, &qdev_get_parent_bus(dev)->children, sibling) {
+        if (kid->child == dev) {
+            QTAILQ_REMOVE(&qdev_get_parent_bus(dev)->children, kid, sibling);
+            break;
+        }
+    }
+
+    /* Plug back-end into transport's bus */
+    qdev_set_parent_bus(dev, QLIST_FIRST(&trl->tr->child_bus));
+
+}
+
+/*
+ * Execute call-back on back-end initialization.
+ * Performs initialization of MMIO or PCI transport.
+ */
+int virtio_call_backend_init_cb(DeviceState *dev, VirtIOTransportLink *trl,
+        VirtIODevice *vdev)
+{
+    if (trl->cb) {
+        return trl->cb(dev, vdev, trl);
+    }
+
+    return 0;
+}
+
+static const TypeInfo virtio_bus_info = {
+    .name = TYPE_VIRTIO_BUS,
+    .parent = TYPE_BUS,
+    .instance_size = sizeof(BusState),
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_bus_info);
+}
+
+type_init(virtio_register_types)

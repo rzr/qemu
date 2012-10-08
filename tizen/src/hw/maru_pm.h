@@ -35,7 +35,7 @@
 
 i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
                        qemu_irq sci_irq, qemu_irq smi_irq,
-                       int kvm_enabled);
+                       int kvm_enabled, void *fw_cfg);
 
 #ifdef TARGET_ARM
 static int is_suspended_state( void )

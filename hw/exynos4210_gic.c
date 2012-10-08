@@ -373,71 +373,64 @@ static void exynos4210_gic_register_types(void)
 
 type_init(exynos4210_gic_register_types)
 
-/*
- * IRQGate struct.
- * IRQ Gate represents OR gate between GICs to pass IRQ to PIC.
+/* IRQ OR Gate struct.
+ *
+ * This device models an OR gate. There are n_in input qdev gpio lines and one
+ * output sysbus IRQ line. The output IRQ level is formed as OR between all
+ * gpio inputs.
  */
 typedef struct {
     SysBusDevice busdev;
 
-    qemu_irq out[QDEV_MAX_IRQ]; /* output IRQs */
-    uint32_t n_out;             /* outputs amount */
-    uint32_t gpio_level[QDEV_MAX_IRQ]; /* Input levels */
-    uint32_t n_in;              /* inputs amount */
-    uint32_t group_size;         /* input group size */
+    uint32_t n_in;      /* inputs amount */
+    uint32_t *level;    /* input levels */
+    qemu_irq out;       /* output IRQ */
 } Exynos4210IRQGateState;
 
 static Property exynos4210_irq_gate_properties[] = {
-    DEFINE_PROP_UINT32("n_out", Exynos4210IRQGateState, n_out, 1),
     DEFINE_PROP_UINT32("n_in", Exynos4210IRQGateState, n_in, 1),
     DEFINE_PROP_END_OF_LIST(),
 };
 
 static const VMStateDescription vmstate_exynos4210_irq_gate = {
     .name = "exynos4210.irq_gate",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .minimum_version_id_old = 1,
+    .version_id = 2,
+    .minimum_version_id = 2,
+    .minimum_version_id_old = 2,
     .fields = (VMStateField[]) {
-        VMSTATE_UINT32(n_out, Exynos4210IRQGateState),
-        VMSTATE_UINT32_ARRAY(gpio_level, Exynos4210IRQGateState, QDEV_MAX_IRQ),
-        VMSTATE_UINT32(n_in, Exynos4210IRQGateState),
-        VMSTATE_UINT32(group_size, Exynos4210IRQGateState),
+        VMSTATE_VBUFFER_UINT32(level, Exynos4210IRQGateState, 1, NULL, 0, n_in),
         VMSTATE_END_OF_LIST()
     }
 };
 
-/* Process a change in an external IRQ input.  */
+/* Process a change in IRQ input. */
 static void exynos4210_irq_gate_handler(void *opaque, int irq, int level)
 {
-    Exynos4210IRQGateState *s =
-            (Exynos4210IRQGateState *)opaque;
-    uint32_t n_out, n_group, i;
+    Exynos4210IRQGateState *s = (Exynos4210IRQGateState *)opaque;
+    uint32_t i;
 
     assert(irq < s->n_in);
 
-    n_out = irq / s->group_size;
-    n_group = n_out * s->group_size;
+    s->level[irq] = level;
 
-    s->gpio_level[irq] = level;
-
-    for (i = 0; i < s->group_size; i++) {
-        if (s->gpio_level[n_group + i] >= 1) {
-            qemu_irq_raise(s->out[n_out]);
+    for (i = 0; i < s->n_in; i++) {
+        if (s->level[i] >= 1) {
+            qemu_irq_raise(s->out);
             return;
         }
     }
 
-    qemu_irq_lower(s->out[n_out]);
+    qemu_irq_lower(s->out);
 
     return;
 }
 
 static void exynos4210_irq_gate_reset(DeviceState *d)
 {
-    Exynos4210IRQGateState *s = (Exynos4210IRQGateState *)d;
+    Exynos4210IRQGateState *s =
+            DO_UPCAST(Exynos4210IRQGateState, busdev.qdev, d);
 
-    memset(&s->gpio_level, 0, sizeof(s->gpio_level));
+    memset(s->level, 0, s->n_in * sizeof(*s->level));
 }
 
 /*
@@ -445,24 +438,15 @@ static void exynos4210_irq_gate_reset(DeviceState *d)
  */
 static int exynos4210_irq_gate_init(SysBusDevice *dev)
 {
-    unsigned int i;
-    Exynos4210IRQGateState *s =
-            FROM_SYSBUS(Exynos4210IRQGateState, dev);
-
-    /* Gate will make each input group of size n_in / n_out */
-    assert((s->n_in % s->n_out) == 0);
-
-    s->group_size = s->n_in / s->n_out;
+    Exynos4210IRQGateState *s = FROM_SYSBUS(Exynos4210IRQGateState, dev);
 
     /* Allocate general purpose input signals and connect a handler to each of
      * them */
-    qdev_init_gpio_in(&s->busdev.qdev, exynos4210_irq_gate_handler,
-            s->n_in);
+    qdev_init_gpio_in(&s->busdev.qdev, exynos4210_irq_gate_handler, s->n_in);
 
-    /* Pass gate outs to SysBusDev */
-    for (i = 0; i < s->n_out; i++) {
-        sysbus_init_irq(dev, &s->out[i]);
-    }
+    s->level = g_malloc0(s->n_in * sizeof(*s->level));
+
+    sysbus_init_irq(dev, &s->out);
 
     return 0;
 }

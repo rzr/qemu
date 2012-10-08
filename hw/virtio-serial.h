@@ -18,6 +18,7 @@
 #include "sysbus.h"
 #include "qdev.h"
 #include "virtio.h"
+#include "virtio-transport.h"
 
 /* == Interface shared between the guest kernel and qemu == */
 
@@ -178,6 +179,7 @@ typedef struct {
     DeviceState qdev;
     /* virtio-serial */
     virtio_serial_conf serial;
+    VirtIOTransportLink *trl;
 } VirtIOSerState;
 
 #define VIRTIO_SERIAL_FROM_QDEV(dev) DO_UPCAST(VirtIOSerState, qdev, dev)

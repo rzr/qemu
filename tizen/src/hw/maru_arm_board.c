@@ -120,7 +120,7 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
 
     audio_init(NULL, pci_bus);
 
-    arm_load_kernel(first_cpu, &maru_arm_board_binfo);
+    arm_load_kernel(arm_env_get_cpu(first_cpu), &maru_arm_board_binfo);
 }
 
 static QEMUMachine maru_arm_machine = {

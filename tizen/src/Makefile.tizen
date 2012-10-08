@@ -103,14 +103,8 @@ obj-y += mloop_event.o
 obj-y += debug_ch.o
 
 # maru hardware
-obj-i386-y += maru_board.o
-obj-i386-y += maru_overlay.o
-obj-i386-y += maru_pm.o
-obj-i386-y += maru_vga.o
-obj-arm-y += maru_arm_soc.o
-obj-arm-y += maru_arm_board.o
-obj-arm-y += maru_arm_vpci.o
-obj-arm-y += maru_arm_pmu.o
+include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
+
 obj-y += maru_brightness.o
 obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 ifndef CONFIG_DARWIN

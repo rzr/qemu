@@ -29,10 +29,10 @@ exec ./configure \
  --disable-werror \
  --audio-drv-list=alsa \
  --audio-card-list=ac97 \
- --enable-ldst-optimization \
  --enable-maru \
  --disable-vnc \
  --disable-pie $1
+ # --enable-ldst-optimization \
 ;;
 MINGW*)
 cd distrib/libav
@@ -48,10 +48,10 @@ echo "##### QEMU configure for emulator"
 exec ./configure \
  --audio-drv-list=winwave \
  --audio-card-list=ac97 \
- --enable-ldst-optimization \
  --enable-hax \
  --enable-maru \
  --disable-vnc $1
+ # --enable-ldst-optimization \
 ;;
 Darwin*)
 cd distrib/libav

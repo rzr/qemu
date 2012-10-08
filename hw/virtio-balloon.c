@@ -78,7 +78,7 @@ static void virtio_balloon_handle_output(VirtIODevice *vdev, VirtQueue *vq)
         size_t offset = 0;
         uint32_t pfn;
 
-        while (iov_to_buf(elem.out_sg, elem.out_num, &pfn, offset, 4) == 4) {
+        while (iov_to_buf(elem.out_sg, elem.out_num, offset, &pfn, 4) == 4) {
             ram_addr_t pa;
             ram_addr_t addr;
 
@@ -119,7 +119,7 @@ static void virtio_balloon_receive_stats(VirtIODevice *vdev, VirtQueue *vq)
      */
     reset_stats(s);
 
-    while (iov_to_buf(elem->out_sg, elem->out_num, &stat, offset, sizeof(stat))
+    while (iov_to_buf(elem->out_sg, elem->out_num, offset, &stat, sizeof(stat))
            == sizeof(stat)) {
         uint16_t tag = tswap16(stat.tag);
         uint64_t val = tswap64(stat.val);
@@ -147,8 +147,13 @@ static void virtio_balloon_set_config(VirtIODevice *vdev,
 {
     VirtIOBalloon *dev = to_virtio_balloon(vdev);
     struct virtio_balloon_config config;
+    uint32_t oldactual = dev->actual;
     memcpy(&config, config_data, 8);
     dev->actual = le32_to_cpu(config.actual);
+    if (dev->actual != oldactual) {
+        qemu_balloon_changed(ram_size -
+                             (dev->actual << VIRTIO_BALLOON_PFN_SHIFT));
+    }
 }
 
 static uint32_t virtio_balloon_get_features(VirtIODevice *vdev, uint32_t f)
@@ -274,18 +279,26 @@ void virtio_balloon_exit(VirtIODevice *vdev)
 static int virtio_balloondev_init(DeviceState *dev)
 {
     VirtIODevice *vdev;
+    VirtIOBaloonState *s = VIRTIO_BALLOON_FROM_QDEV(dev);
     vdev = virtio_balloon_init(dev);
     if (!vdev) {
         return -1;
     }
-    return virtio_init_transport(dev, vdev);
+
+    assert(s->trl != NULL);
+
+    return virtio_call_backend_init_cb(dev, s->trl, vdev);
 }
+
+static Property virtio_balloon_properties[] = {
+    DEFINE_PROP_END_OF_LIST(),
+};
 
 static void virtio_balloon_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     dc->init = virtio_balloondev_init;
-    dc->bus_info = &virtio_transport_bus_info;
+    dc->props = virtio_balloon_properties;
 }
 
 static TypeInfo virtio_balloon_info = {

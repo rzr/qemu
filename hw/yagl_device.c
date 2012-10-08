@@ -259,7 +259,7 @@ static void yagl_device_reset(DeviceState *d)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static int yagl_device_exit(PCIDevice *dev)
+static void yagl_device_exit(PCIDevice *dev)
 {
     YaGLState *s = DO_UPCAST(YaGLState, dev, dev);
 
@@ -279,8 +279,6 @@ static int yagl_device_exit(PCIDevice *dev)
     YAGL_LOG_FUNC_EXIT(NULL);
 
     yagl_log_cleanup();
-
-    return 0;
 }
 
 static void yagl_class_init(ObjectClass *klass, void *data)

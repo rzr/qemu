@@ -1,0 +1,7 @@
+# Makefile.tizen
+# for TIZEN-maru board
+
+obj-y += maru_arm_soc.o
+obj-y += maru_arm_board.o
+obj-y += maru_arm_vpci.o
+obj-y += maru_arm_pmu.o

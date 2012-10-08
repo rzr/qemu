@@ -69,14 +69,6 @@ do { printf("virtio_mmio: " fmt , ## __VA_ARGS__); } while (0)
 #define VIRT_VERSION 1
 #define VIRT_VENDOR 0x554D4551 /* 'QEMU' */
 
-#define VIRTIO_MMIO "virtio-mmio"
-#define VIRTIO_MMIO_BUS "virtio-mmio-bus"
-
-struct BusInfo virtio_mmio_bus_info = {
-    .name = VIRTIO_MMIO_BUS,
-    .size = sizeof(BusState),
-};
-
 enum VIRTIO_MMIO_MAPPINGS {
     VIRTIO_MMIO_IOMAP,
     VIRTIO_MMIO_IOMEM,
@@ -85,6 +77,8 @@ enum VIRTIO_MMIO_MAPPINGS {
 typedef struct {
     SysBusDevice busdev;
     VirtIODevice *vdev;
+    VirtIOTransportLink *trl;
+
     MemoryRegion iomap; /* hold base address */
     MemoryRegion iomem; /* hold io funcs */
     MemoryRegion alias;
@@ -94,13 +88,13 @@ typedef struct {
     uint32_t host_features_sel;
     uint32_t guest_features_sel;
     uint32_t guest_page_shift;
-} VirtIOMMIOTransportState;
+} VirtIOMMIO;
 
 static uint64_t virtio_mmio_read(void *opaque, target_phys_addr_t offset,
                                  unsigned size)
 {
-    VirtIOMMIOTransportState *transport = (VirtIOMMIOTransportState *)opaque;
-    VirtIODevice *vdev = transport->vdev;
+    VirtIOMMIO *s = (VirtIOMMIO *)opaque;
+    VirtIODevice *vdev = s->vdev;
     DPRINTF("virtio_mmio_read offset 0x%x\n", (int)offset);
     if (offset >= VIRTIO_MMIO_CONFIG) {
         offset -= VIRTIO_MMIO_CONFIG;
@@ -129,15 +123,15 @@ static uint64_t virtio_mmio_read(void *opaque, target_phys_addr_t offset,
     case VIRTIO_MMIO_VENDORID:
         return VIRT_VENDOR;
     case VIRTIO_MMIO_HOSTFEATURES:
-        if (transport->host_features_sel) {
+        if (s->host_features_sel) {
             return 0;
         }
-        return transport->host_features;
+        return s->host_features;
     case VIRTIO_MMIO_QUEUENUMMAX:
         return VIRTQUEUE_MAX_SIZE;
     case VIRTIO_MMIO_QUEUEPFN:
         return virtio_queue_get_addr(vdev, vdev->queue_sel)
-            >> transport->guest_page_shift;
+            >> s->guest_page_shift;
     case VIRTIO_MMIO_INTERRUPTSTATUS:
         return vdev->isr;
     case VIRTIO_MMIO_STATUS:
@@ -163,8 +157,8 @@ static uint64_t virtio_mmio_read(void *opaque, target_phys_addr_t offset,
 static void virtio_mmio_write(void *opaque, target_phys_addr_t offset,
                               uint64_t value, unsigned size)
 {
-    VirtIOMMIOTransportState *transport = (VirtIOMMIOTransportState *)opaque;
-    VirtIODevice *vdev = transport->vdev;
+    VirtIOMMIO *s = (VirtIOMMIO *)opaque;
+    VirtIODevice *vdev = s->vdev;
     DPRINTF("virtio_mmio_write offset 0x%x value 0x%" PRIx64 "\n",
             (int)offset, value);
     if (offset >= VIRTIO_MMIO_CONFIG) {
@@ -190,23 +184,23 @@ static void virtio_mmio_write(void *opaque, target_phys_addr_t offset,
     }
     switch (offset) {
     case VIRTIO_MMIO_HOSTFEATURESSEL:
-        transport->host_features_sel = value;
+        s->host_features_sel = value;
         break;
     case VIRTIO_MMIO_GUESTFEATURES:
-        if (!transport->guest_features_sel) {
+        if (!s->guest_features_sel) {
             virtio_set_features(vdev, value);
         }
         break;
     case VIRTIO_MMIO_GUESTFEATURESSEL:
-        transport->guest_features_sel = value;
+        s->guest_features_sel = value;
         break;
     case VIRTIO_MMIO_GUESTPAGESIZE:
-        transport->guest_page_shift = ctz32(value);
-        if (transport->guest_page_shift > 31) {
-            transport->guest_page_shift = 0;
+        s->guest_page_shift = ctz32(value);
+        if (s->guest_page_shift > 31) {
+            s->guest_page_shift = 0;
         }
         DPRINTF("guest page size %" PRIx64 " shift %d\n", value,
-                transport->guest_page_shift);
+                s->guest_page_shift);
         break;
     case VIRTIO_MMIO_QUEUESEL:
         if (value < VIRTIO_PCI_QUEUE_MAX) {
@@ -228,7 +222,7 @@ static void virtio_mmio_write(void *opaque, target_phys_addr_t offset,
             virtio_reset(vdev);
         } else {
             virtio_queue_set_addr(vdev, vdev->queue_sel,
-                                  value << transport->guest_page_shift);
+                                  value << s->guest_page_shift);
         }
         break;
     case VIRTIO_MMIO_QUEUENOTIFY:
@@ -269,37 +263,37 @@ static const MemoryRegionOps virtio_mem_ops = {
 
 static void virtio_mmio_update_irq(void *opaque, uint16_t vector)
 {
-    VirtIOMMIOTransportState *transport = opaque;
-    int level = (transport->vdev->isr != 0);
+    VirtIOMMIO *s = opaque;
+    int level = (s->vdev->isr != 0);
     DPRINTF("virtio_mmio setting IRQ %d\n", level);
-    qemu_set_irq(transport->irq, level);
+    qemu_set_irq(s->irq, level);
 }
 
 static unsigned int virtio_mmio_get_features(void *opaque)
 {
-    VirtIOMMIOTransportState *transport = opaque;
-    return transport->host_features;
+    VirtIOMMIO *s = opaque;
+    return s->host_features;
 }
 
 static int virtio_mmio_load_config(void *opaque, QEMUFile *f)
 {
-    VirtIOMMIOTransportState *transport = opaque;
-    transport->int_enable = qemu_get_be32(f);
-    transport->host_features = qemu_get_be32(f);
-    transport->host_features_sel = qemu_get_be32(f);
-    transport->guest_features_sel = qemu_get_be32(f);
-    transport->guest_page_shift = qemu_get_be32(f);
+    VirtIOMMIO *s = opaque;
+    s->int_enable = qemu_get_be32(f);
+    s->host_features = qemu_get_be32(f);
+    s->host_features_sel = qemu_get_be32(f);
+    s->guest_features_sel = qemu_get_be32(f);
+    s->guest_page_shift = qemu_get_be32(f);
     return 0;
 }
 
 static void virtio_mmio_save_config(void *opaque, QEMUFile *f)
 {
-    VirtIOMMIOTransportState *transport = opaque;
-    qemu_put_be32(f, transport->int_enable);
-    qemu_put_be32(f, transport->host_features);
-    qemu_put_be32(f, transport->host_features_sel);
-    qemu_put_be32(f, transport->guest_features_sel);
-    qemu_put_be32(f, transport->guest_page_shift);
+    VirtIOMMIO *s = opaque;
+    qemu_put_be32(f, s->int_enable);
+    qemu_put_be32(f, s->host_features);
+    qemu_put_be32(f, s->host_features_sel);
+    qemu_put_be32(f, s->guest_features_sel);
+    qemu_put_be32(f, s->guest_page_shift);
 }
 
 static VirtIOBindings virtio_mmio_bindings = {
@@ -309,131 +303,98 @@ static VirtIOBindings virtio_mmio_bindings = {
     .load_config = virtio_mmio_load_config,
 };
 
-static void virtio_mmio_attach_to_transport(DeviceState *dev)
+static int virtio_mmio_transport_cb(DeviceState *dev, VirtIODevice *vdev,
+        VirtIOTransportLink *trl)
 {
-    DeviceState *transport_dev = qdev_get_parent_bus(dev)->parent;
-    SysBusDevice *transport_sysbus = sysbus_from_qdev(transport_dev);
-    VirtIOMMIOTransportState *transport =
-            FROM_SYSBUS(VirtIOMMIOTransportState, transport_sysbus);
+    VirtIOMMIO *s =
+            FROM_SYSBUS(VirtIOMMIO, sysbus_from_qdev(trl->tr));
 
-    /* Create alias and add it as subregion to transport iomem */
-    memory_region_init_alias(&transport->alias,
+    virtio_plug_into_transport(dev, trl);
+
+    s->vdev = vdev;
+    s->vdev->nvectors = 0;
+    sysbus_init_irq(&s->busdev, &s->irq);
+    memory_region_init_io(&s->iomem, &virtio_mem_ops, s,
+                          "virtio-mmio-iomem", 0x1000);
+    sysbus_init_mmio(&s->busdev, &s->iomem);
+    virtio_bind_device(vdev, &virtio_mmio_bindings, s);
+    s->host_features |= (0x1 << VIRTIO_F_NOTIFY_ON_EMPTY);
+    s->host_features =
+            vdev->get_features(vdev, s->host_features);
+
+    /* Create alias and add it as subregion to s iomem */
+    memory_region_init_alias(&s->alias,
                              "virtio-mmio-alias",
-                             &transport->iomem,
+                             &s->iomem,
                              0,
                              0x1000);
-    /* add alias as subregion to transport iomap */
-    memory_region_add_subregion(&transport->iomap,
+    /* add alias as subregion to s iomap */
+    memory_region_add_subregion(&s->iomap,
                                 0,
-                                &transport->alias);
-}
-
-static int virtio_init_mmio_transport(DeviceState *dev, VirtIODevice *vdev)
-{
-    DeviceState *transport_dev = qdev_get_parent_bus(dev)->parent;
-    SysBusDevice *transport_sysbus = sysbus_from_qdev(transport_dev);
-    VirtIOMMIOTransportState *transport =
-            FROM_SYSBUS(VirtIOMMIOTransportState, transport_sysbus);
-    uint32_t i;
-
-    /* Find a free transport where we will not have any siblings */
-    i = virtio_count_siblings(qdev_get_parent_bus(dev), NULL);
-    if (i > 1) {
-        transport_dev =
-                virtio_get_free_transport(qdev_get_parent_bus(transport_dev),
-                                          VIRTIO_MMIO);
-        assert(transport_dev != NULL);
-        transport_sysbus = sysbus_from_qdev(transport_dev);
-        transport = FROM_SYSBUS(VirtIOMMIOTransportState, transport_sysbus);
-
-        /* Reconnect back-end to free transport. Access by QLIST because we
-         * don't know actual suffix for virtio-pci.x */
-        QTAILQ_REMOVE(&qdev_get_parent_bus(dev)->children, dev, sibling);
-        qdev_set_parent_bus(dev, qdev_get_child_bus(transport_dev,
-                ((BusState *)QLIST_FIRST(&transport_dev->child_bus))->name));
-    }
-
-    transport->vdev = vdev;
-    transport->vdev->nvectors = 0;
-    sysbus_init_irq(&transport->busdev, &transport->irq);
-    memory_region_init_io(&transport->iomem, &virtio_mem_ops, transport,
-                          "virtio-mmio-iomem", 0x1000);
-    sysbus_init_mmio(&transport->busdev, &transport->iomem);
-    virtio_bind_device(vdev, &virtio_mmio_bindings, transport);
-    transport->host_features |= (0x1 << VIRTIO_F_NOTIFY_ON_EMPTY);
-    transport->host_features =
-            vdev->get_features(vdev, transport->host_features);
-
-    virtio_mmio_attach_to_transport(dev);
+                                &s->alias);
     return 0;
 }
 
-static void virtio_mmio_transport_handler(void *opaque, int irq, int level)
+static void virtio_mmio_handler(void *opaque, int irq, int level)
 {
-    VirtIOMMIOTransportState *s = (VirtIOMMIOTransportState *)opaque;
+    VirtIOMMIO *s = (VirtIOMMIO *)opaque;
 
     qemu_set_irq(s->irq, level);
 
     return;
 }
 
-static int virtio_mmio_transport_device_init(SysBusDevice *busdev)
+static int sice_init(SysBusDevice *busdev)
 {
-    VirtIOMMIOTransportState *s =
-            DO_UPCAST(VirtIOMMIOTransportState, busdev, busdev);
-    BusState *parent_bus = qdev_get_parent_bus(&busdev->qdev);
-    BusState *child_bus;
-    VirtIOTransportBusState *virtio_transport_bus;
+    VirtIOMMIO *s =
+            DO_UPCAST(VirtIOMMIO, busdev, busdev);
     char *buf;
-    int len;
-    uint32_t i;
 
-    i = virtio_count_siblings(parent_bus, VIRTIO_MMIO);
+    /* Count transports before we assigned a device ID to our new transport */
+    buf = virtio_init_transport(&busdev->qdev, &s->trl, VIRTIO_MMIO,
+            virtio_mmio_transport_cb);
 
-    len = strlen(VIRTIO_MMIO) + 16;
-    buf = g_malloc(len);
-    snprintf(buf, len, "%s.%d", VIRTIO_MMIO, i);
-    child_bus = qbus_create(&virtio_transport_bus_info, &busdev->qdev, buf);
+    /* assign new device id */
+    busdev->qdev.id = buf;
 
-    /* Populate mmio init transport function */
-    virtio_transport_bus = DO_UPCAST(VirtIOTransportBusState, bus, child_bus);
-    virtio_transport_bus->init_fn = virtio_init_mmio_transport;
-
-    qdev_init_gpio_in(&s->busdev.qdev, virtio_mmio_transport_handler, 1);
-
+    qdev_init_gpio_in(&s->busdev.qdev, virtio_mmio_handler, 1);
     sysbus_init_irq(busdev, &s->irq);
     memory_region_init(&s->iomap, "virtio-mmio-iomap", 0x1000);
     sysbus_init_mmio(busdev, &s->iomap);
+
     return 0;
 }
 
 static void virtio_mmio_reset(DeviceState *d)
 {
-    VirtIOMMIOTransportState *transport =
-            FROM_SYSBUS(VirtIOMMIOTransportState, sysbus_from_qdev(d));
-    if (transport->vdev) {
-        virtio_reset(transport->vdev);
+    VirtIOMMIO *s = FROM_SYSBUS(VirtIOMMIO, sysbus_from_qdev(d));
+    if (s->vdev) {
+        virtio_reset(s->vdev);
     }
 }
 
-static void virtio_mmio_transport_class_init(ObjectClass *klass, void *data)
+/******************** VirtIOMMIO Device *********************/
+
+static void virtio_mmio_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     SysBusDeviceClass *k = SYS_BUS_DEVICE_CLASS(klass);
-    k->init = virtio_mmio_transport_device_init;
+    k->init = sice_init;
     dc->reset = virtio_mmio_reset;
 }
 
-static TypeInfo virtio_mmio_transport_info = {
-    .name = VIRTIO_MMIO_TRANSPORT,
+static TypeInfo virtio_mmio_info = {
+    .name = VIRTIO_MMIO,
     .parent = TYPE_SYS_BUS_DEVICE,
-    .instance_size = sizeof(VirtIOMMIOTransportState),
-    .class_init = virtio_mmio_transport_class_init,
+    .instance_size = sizeof(VirtIOMMIO),
+    .class_init = virtio_mmio_class_init,
 };
+
+/************************************************************/
 
 static void virtio_mmio_register_types(void)
 {
-    type_register_static(&virtio_mmio_transport_info);
+    type_register_static(&virtio_mmio_info);
 }
 
 type_init(virtio_mmio_register_types)

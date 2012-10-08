@@ -44,6 +44,8 @@
 #include "pc.h"
 #include "apic.h"
 #include "pci.h"
+#include "pci_ids.h"
+#include "usb.h"
 #include "net.h"
 #include "boards.h"
 #include "ide.h"
@@ -62,11 +64,10 @@
 #endif
 
 #include "guest_debug.h"
+#include "maru_pm.h"
 
 int codec_init(PCIBus *bus);
-i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
-                       qemu_irq sci_irq, qemu_irq smi_irq,
-                       int kvm_enabled);
+
 
 #define MAX_IDE_BUS 2
 
@@ -78,30 +79,26 @@ static void kvm_piix3_setup_irq_routing(bool pci_enabled)
 {
 #ifdef CONFIG_KVM
     KVMState *s = kvm_state;
-    int ret, i;
+    int i;
 
     if (kvm_check_extension(s, KVM_CAP_IRQ_ROUTING)) {
         for (i = 0; i < 8; ++i) {
             if (i == 2) {
                 continue;
             }
-            kvm_irqchip_add_route(s, i, KVM_IRQCHIP_PIC_MASTER, i);
+            kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_PIC_MASTER, i);
         }
         for (i = 8; i < 16; ++i) {
-            kvm_irqchip_add_route(s, i, KVM_IRQCHIP_PIC_SLAVE, i - 8);
+            kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_PIC_SLAVE, i - 8);
         }
         if (pci_enabled) {
             for (i = 0; i < 24; ++i) {
                 if (i == 0) {
-                    kvm_irqchip_add_route(s, i, KVM_IRQCHIP_IOAPIC, 2);
+                    kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_IOAPIC, 2);
                 } else if (i != 2) {
-                    kvm_irqchip_add_route(s, i, KVM_IRQCHIP_IOAPIC, i);
+                    kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_IOAPIC, i);
                 }
             }
-        }
-        ret = kvm_irqchip_commit_routes(s);
-        if (ret < 0) {
-            hw_error("KVM IRQ routing setup failed");
         }
     }
 #endif /* CONFIG_KVM */
@@ -178,6 +175,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     MemoryRegion *ram_memory;
     MemoryRegion *pci_memory;
     MemoryRegion *rom_memory;
+    void *fw_cfg = NULL;
 
     pc_cpus_init(cpu_model);
 
@@ -204,7 +202,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
     /* allocate ram and load rom/bios */
     if (!xen_enabled()) {
-        pc_memory_init(system_memory,
+        fw_cfg = pc_memory_init(system_memory,
                        kernel_filename, kernel_cmdline, initrd_filename,
                        below_4g_mem_size, above_4g_mem_size,
                        pci_enabled ? rom_memory : system_memory, &ram_memory);
@@ -313,11 +311,11 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         /* TODO: Populate SPD eeprom data.  */
 #if defined(__x86_64__)
         smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
-                              gsi[9], *smi_irq, kvm_enabled());
+                              gsi[9], *smi_irq, kvm_enabled(), fw_cfg);
  
 #else
         smbus = maru_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
-                              gsi[9], *smi_irq, kvm_enabled());
+                              gsi[9], *smi_irq, kvm_enabled(), fw_cfg);
 #endif
         smbus_eeprom_init(smbus, 8, NULL, 0);
     }

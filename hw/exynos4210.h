@@ -63,7 +63,7 @@
 /*
  * exynos4210 IRQ subsystem stub definitions.
  */
-#define EXYNOS4210_IRQ_GATE_NINPUTS 8
+#define EXYNOS4210_IRQ_GATE_NINPUTS 2 /* Internal and External GIC */
 
 #define EXYNOS4210_MAX_INT_COMBINER_OUT_IRQ  64
 #define EXYNOS4210_MAX_EXT_COMBINER_OUT_IRQ  16
@@ -81,6 +81,8 @@
 #define EXYNOS4210_EXT_GIC_NIRQ     (160-32)
 #define EXYNOS4210_INT_GIC_NIRQ     64
 
+#define EXYNOS4210_I2C_NUMBER               9
+
 typedef struct Exynos4210Irq {
     qemu_irq int_combiner_irq[EXYNOS4210_MAX_INT_COMBINER_IN_IRQ];
     qemu_irq ext_combiner_irq[EXYNOS4210_MAX_EXT_COMBINER_IN_IRQ];
@@ -90,7 +92,7 @@ typedef struct Exynos4210Irq {
 } Exynos4210Irq;
 
 typedef struct Exynos4210State {
-    CPUARMState * env[EXYNOS4210_NCPUS];
+    ARMCPU *cpu[EXYNOS4210_NCPUS];
     Exynos4210Irq irqs;
     qemu_irq *irq_table;
 
@@ -108,7 +110,7 @@ typedef struct Exynos4210State {
     SysBusDevice *vpci_bus;
 } Exynos4210State;
 
-void exynos4210_write_secondary(CPUARMState *env,
+void exynos4210_write_secondary(ARMCPU *cpu,
         const struct arm_boot_info *info);
 
 Exynos4210State *exynos4210_init(MemoryRegion *system_mem,
@@ -181,7 +183,6 @@ void exynos4210_register_clock_handler(ClockChangeHandler *func,
 /*
  * exynos4210 UART
  */
-
 DeviceState *exynos4210_uart_create(target_phys_addr_t addr,
                                     int fifo_size,
                                     int channel,

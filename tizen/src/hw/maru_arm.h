@@ -26,7 +26,7 @@
 #include "memory.h"
 #include "exynos4210.h"
 
-void maru_arm_write_secondary(CPUARMState *env,
+void maru_arm_write_secondary(ARMCPU *cpu,
         const struct arm_boot_info *info);
 
 Exynos4210State *maru_arm_soc_init(MemoryRegion *system_mem,

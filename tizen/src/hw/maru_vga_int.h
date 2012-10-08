@@ -31,7 +31,7 @@
 #ifndef MARU_VGA_INT_H_
 #define MARU_VGA_INT_H_
 
-void maru_vga_common_init(VGACommonState *s, int vga_ram_size);
+void maru_vga_common_init(VGACommonState *s);
 
 void maru_vga_draw_cursor_line_8(uint8_t *d1, const uint8_t *src1,
                             int poffset, int w,

@@ -157,6 +157,8 @@ static struct {
     { IISAHB_LVL0EN, IISAHB_LVL0INT, IISAHB_LVL0CLR, IISLVL0ADDR },
 };
 
+#define TYPE_EXYNOS4210_I2S_BUS "exynos4210-i2s"
+
 typedef struct {
     BusState qbus;
 
@@ -167,10 +169,14 @@ typedef struct {
 
 static Exynos4210I2SSlave *get_slave(Exynos4210I2SBus *bus)
 {
-    DeviceState *dev = QTAILQ_FIRST(&bus->qbus.children);
+    BusChild *kid = QTAILQ_FIRST(&bus->qbus.children);
+    DeviceState *dev;
 
-    if (dev) {
-        return EXYNOS4210_I2S_SLAVE_FROM_QDEV(dev);
+    if (kid) {
+        dev = kid->child;
+        if (dev) {
+            return EXYNOS4210_I2S_SLAVE_FROM_QDEV(dev);
+        }
     }
 
     return NULL;
@@ -220,10 +226,18 @@ static void set_dma_trncnt_words(Exynos4210I2SBus *bus, uint32_t trncnt_words)
 
 static int exynos4210_i2s_bus_reset(BusState *qbus);
 
-static struct BusInfo exynos4210_i2s_bus_info = {
-    .name = "Exynos4210.I2S",
-    .size = sizeof(Exynos4210I2SBus),
-    .reset = exynos4210_i2s_bus_reset
+static void exynos4210_i2s_bus_class_init(ObjectClass *klass, void *data)
+{
+    BusClass *k = BUS_CLASS(klass);
+
+    k->reset    = exynos4210_i2s_bus_reset;
+}
+
+static struct TypeInfo exynos4210_i2s_bus_info = {
+    .name          = TYPE_EXYNOS4210_I2S_BUS,
+    .parent        = TYPE_BUS,
+    .instance_size = sizeof(Exynos4210I2SBus),
+    .class_init    = exynos4210_i2s_bus_class_init,
 };
 
 static const VMStateDescription vmstate_exynos4210_i2s_bus = {
@@ -420,7 +434,7 @@ BusState *exynos4210_i2s_bus_new(const char *name,
     Exynos4210I2SBus *bus;
 
     bus = FROM_QBUS(Exynos4210I2SBus,
-                    qbus_create(&exynos4210_i2s_bus_info, NULL, name));
+                    qbus_create(TYPE_EXYNOS4210_I2S_BUS, NULL, name));
     vmstate_register(NULL, -1, &vmstate_exynos4210_i2s_bus, bus);
 
     memory_region_init_io(&bus->iomem,
@@ -557,7 +571,7 @@ static void exynos4210_i2s_slave_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *k = DEVICE_CLASS(klass);
     k->init = exynos4210_i2s_slave_qdev_init;
-    k->bus_info = &exynos4210_i2s_bus_info;
+    k->bus_type = TYPE_EXYNOS4210_I2S_BUS;
 }
 
 static TypeInfo exynos4210_i2s_slave_type_info = {
@@ -571,6 +585,7 @@ static TypeInfo exynos4210_i2s_slave_type_info = {
 
 static void exynos4210_i2s_slave_register_types(void)
 {
+    type_register_static(&exynos4210_i2s_bus_info);
     type_register_static(&exynos4210_i2s_slave_type_info);
 }
 

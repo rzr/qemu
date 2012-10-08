@@ -22,26 +22,53 @@
 #ifndef VIRTIO_TRANSPORT_H_
 #define VIRTIO_TRANSPORT_H_
 
-#include "sysbus.h"
-#include "virtio.h"
+#include "qdev.h"
+#include "qemu-common.h"
 
-#define VIRTIO_MMIO_TRANSPORT "virtio-mmio-transport"
+#define VIRTIO_MMIO "virtio-mmio"
+#define VIRTIO_PCI "virtio-pci"
 
-extern struct BusInfo virtio_transport_bus_info;
+#define TYPE_VIRTIO_BUS "virtio-bus"
+#define VIRTIO_BUS(obj) OBJECT_CHECK(virtio_bus, (obj), TYPE_VIRTIO_BUS)
 
-typedef int (*virtio_init_transport_fn)(DeviceState *dev, VirtIODevice *vdev);
+struct VirtIOTransportLink;
 
-typedef struct VirtIOTransportBusState {
-    BusState bus;
-    virtio_init_transport_fn init_fn;
-} VirtIOTransportBusState;
+typedef int (*virtio_backend_init_cb)(DeviceState *dev, VirtIODevice *vdev,
+             struct VirtIOTransportLink *trl);
 
-int virtio_init_transport(DeviceState *dev, VirtIODevice *vdev);
-uint32_t virtio_count_siblings(BusState *parent_bus, const char *child_bus);
+typedef struct VirtIOTransportLink {
+    DeviceState *tr;
+    virtio_backend_init_cb cb;
+    uint32_t host_features;
+    QTAILQ_ENTRY(VirtIOTransportLink) sibling;
+} VirtIOTransportLink;
+
 /*
- * Get transport device which does not have a child.
+ * Find transport device by its ID.
  */
-DeviceState* virtio_get_free_transport(BusState *parent_bus,
-                                       const char *child_bus);
+VirtIOTransportLink* virtio_find_transport(const char *name);
+
+/*
+ * Count transport devices by ID.
+ */
+uint32_t virtio_count_transports(const char *name);
+
+/*
+ * Initialize new transport device
+ */
+char* virtio_init_transport(DeviceState *dev, VirtIOTransportLink **trl,
+        const char* name, virtio_backend_init_cb cb);
+
+/*
+ * Unplug back-end from system bus and plug it into transport bus.
+ */
+void virtio_plug_into_transport(DeviceState *dev, VirtIOTransportLink *trl);
+
+/*
+ * Execute call-back on back-end initialization.
+ * Performs initialization of MMIO or PCI transport.
+ */
+int virtio_call_backend_init_cb(DeviceState *dev, VirtIOTransportLink *trl,
+        VirtIODevice *vdev);
 
 #endif /* VIRTIO_TRANSPORT_H_ */

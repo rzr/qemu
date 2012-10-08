@@ -319,7 +319,7 @@ static void exynos4210_i2c_class_init(ObjectClass *klass, void *data)
     sbdc->init = exynos4210_i2c_realize;
 }
 
-static const TypeInfo exynos4210_i2c_info = {
+static const TypeInfo exynos4210_i2c_type_info = {
     .name = TYPE_EXYNOS4_I2C,
     .parent = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(Exynos4210I2CState),
@@ -328,7 +328,7 @@ static const TypeInfo exynos4210_i2c_info = {
 
 static void exynos4210_i2c_register_types(void)
 {
-    type_register_static(&exynos4210_i2c_info);
+    type_register_static(&exynos4210_i2c_type_info);
 }
 
 type_init(exynos4210_i2c_register_types)
