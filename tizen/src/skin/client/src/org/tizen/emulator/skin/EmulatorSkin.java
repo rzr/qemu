@@ -202,8 +202,11 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 		
 		int style = SWT.NO_TRIM;
-		this.shell = new Shell( Display.getDefault(), style );
+		if (skinMode == SkinMode.NONE) {
+			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
+		}
 
+		this.shell = new Shell(Display.getDefault(), style);
 	}
 
 	public void setCommunicator( SocketCommunicator communicator ) {
@@ -254,20 +257,19 @@ public class EmulatorSkin {
 			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE ) );
 		}
 
-		arrangeSkin( lcdWidth, lcdHeight, scale, rotationId );
+		arrangeSkin(lcdWidth, lcdHeight, scale, rotationId);
 
-		this.isOnUsbKbd = isOnUsbKbd;
-		
-		if ( null == currentImage ) {
-			logger.severe( "Fail to load initial skin image file. Kill this skin process!!!" );
-			SkinUtil.openMessage( shell, null, "Fail to load Skin image file.", SWT.ICON_ERROR, config );
-			System.exit( -1 );
+		if (skinMode != SkinMode.NONE && null == currentImage) {
+			logger.severe("Failed to load initial skin image file. Kill this skin process.");
+			SkinUtil.openMessage(shell, null,
+					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
+			System.exit(-1);
 		}
 
 		seteHoverColor();
 
+		this.isOnUsbKbd = isOnUsbKbd;
 		setMenu();
-
 	}
 
 	private void setMenu() {
@@ -430,46 +432,51 @@ public class EmulatorSkin {
 
 	private void arrangeSkin( int lcdWidth, int lcdHeight, int scale, short rotationId ) {
 
-		Image tempImage = null;
-		Image tempKeyPressedImage = null;
 		this.currentLcdWidth = lcdWidth;
 		this.currentLcdHeight = lcdHeight;
 		this.currentScale = scale;
 		this.currentRotationId = rotationId;
 		this.currentAngle = SkinRotation.getAngle( rotationId );
 
-		if ( null != currentImage ) {
-			tempImage = currentImage;
+		if (skinMode != SkinMode.NONE) {
+			Image tempImage = null;
+			Image tempKeyPressedImage = null;
+
+			if (null != currentImage) {
+				tempImage = currentImage;
+			}
+			if (null != currentKeyPressedImage) {
+				tempKeyPressedImage = currentKeyPressedImage;
+			}
+
+			currentImage = SkinUtil.createScaledImage(
+					imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN);
+			currentKeyPressedImage = SkinUtil.createScaledImage(
+					imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_PRESSED);
+
+			if (tempImage != null) {
+				tempImage.dispose();
+			}
+			if (tempKeyPressedImage != null) {
+				tempKeyPressedImage.dispose();
+			}
+
+			/* custom window shape */
+			SkinUtil.trimShell(shell, currentImage);
 		}
-		if ( null != currentKeyPressedImage ) {
-			tempKeyPressedImage = currentKeyPressedImage;
+
+		/* not using a layout */
+		SkinUtil.adjustLcdGeometry(lcdCanvas, scale, rotationId, skinMode);
+
+		/* set window size */
+		if (null != currentImage) {
+			ImageData imageData = currentImage.getImageData();
+			shell.setMinimumSize(imageData.width, imageData.height);
+			shell.setSize(imageData.width, imageData.height);
 		}
 
 		shell.redraw();
-
-		currentImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN );
-		currentKeyPressedImage = SkinUtil.createScaledImage( imageRegistry, shell, rotationId, scale,
-				ImageType.IMG_TYPE_PRESSED );
-
-		if (tempImage != null) {
-			tempImage.dispose();
-		}
-		if (tempKeyPressedImage != null) {
-			tempKeyPressedImage.dispose();
-		}
-
-		/* custom window shape */
-		SkinUtil.trimShell(shell, currentImage);
-
-		/* not using a layout */
-		SkinUtil.adjustLcdGeometry(lcdCanvas, scale, rotationId);
-
-		if( null != currentImage ) {
-			ImageData imageData = currentImage.getImageData();
-			shell.setMinimumSize( imageData.width, imageData.height );
-			shell.setSize( imageData.width, imageData.height );
-		}
-
+		shell.pack();
 	}
 
 	private void addShellListener( final Shell shell ) {
@@ -541,7 +548,9 @@ public class EmulatorSkin {
 			}
 		};
 
-		shell.addPaintListener( shellPaintListener );
+		if (skinMode != SkinMode.NONE) {
+			shell.addPaintListener(shellPaintListener);
+		}
 
 		FocusListener shellFocusListener = new FocusListener() {
 			@Override
@@ -593,7 +602,9 @@ public class EmulatorSkin {
 
 		};
 
-		shell.addMouseTrackListener( shellMouseTrackListener );
+		if (skinMode != SkinMode.NONE) {
+			shell.addMouseTrackListener(shellMouseTrackListener);
+		}
 
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
@@ -657,7 +668,9 @@ public class EmulatorSkin {
 			} //end of mouseMove
 		};
 
-		shell.addMouseMoveListener( shellMouseMoveListener );
+		if (skinMode != SkinMode.NONE) {
+			shell.addMouseMoveListener(shellMouseMoveListener);
+		}
 
 		shellMouseListener = new MouseListener() {
 			@Override
@@ -760,7 +773,9 @@ public class EmulatorSkin {
 			}
 		};
 
-		shell.addMouseListener( shellMouseListener );
+		if (skinMode != SkinMode.NONE) {
+			shell.addMouseListener(shellMouseListener);
+		}
 
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override

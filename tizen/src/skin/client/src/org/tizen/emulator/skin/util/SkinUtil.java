@@ -32,7 +32,6 @@ package org.tizen.emulator.skin.util;
 import java.io.File;
 import java.util.List;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
@@ -52,6 +51,7 @@ import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
+import org.tizen.emulator.skin.mode.SkinMode;
 
 
 /**
@@ -109,27 +109,27 @@ public class SkinUtil {
 		return sdbPath;
 	}
 
-	public static void adjustLcdGeometry( Canvas lcdCanvas, int scale, short rotationId ) {
+	public static void adjustLcdGeometry(
+			Canvas lcdCanvas, int scale, short rotationId, SkinMode mode) {
 
-		RotationType rotation = SkinRotation.getRotation( rotationId );
+		RotationType rotation = SkinRotation.getRotation(rotationId);
 
 		LcdType lcd = rotation.getLcd();
 		RegionType region = lcd.getRegion();
 
-		Integer left = region.getLeft();
-		Integer top = region.getTop();
+		Integer left = (mode != SkinMode.NONE) ? region.getLeft() : 0;
+		Integer top = (mode != SkinMode.NONE) ? region.getTop() : 0;
 		Integer width = region.getWidth();
 		Integer height = region.getHeight();
 
-		float convertedScale = convertScale( scale );
+		float convertedScale = convertScale(scale);
 
-		int l = (int) ( left * convertedScale );
-		int t = (int) ( top * convertedScale );
-		int w = (int) ( width * convertedScale );
-		int h = (int) ( height * convertedScale );
+		int l = (int) (left * convertedScale);
+		int t = (int) (top * convertedScale);
+		int w = (int) (width * convertedScale);
+		int h = (int) (height * convertedScale);
 
-		lcdCanvas.setBounds( l, t, w, h );
-
+		lcdCanvas.setBounds(l, t, w, h);
 	}
 
 	public static SkinRegion getHardKeyArea( int currentX, int currentY, short rotationId, int scale ) {

@@ -33,9 +33,9 @@ package org.tizen.emulator.skin.mode;
  */
 public enum SkinMode {
 	NONE("none"),
-	FULLSCREEN("fullscreen"),
+	FULLSCREEN("fullscreen"), /* not used yet */
 	DEFAULT("default"),
-	CUSTOM("custom");
+	CUSTOM("custom"); /* not used yet */
 
 	private String value;
 
