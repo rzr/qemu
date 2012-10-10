@@ -26,6 +26,7 @@ cd ..
 echo ""
 echo "##### QEMU configure for emulator"
 exec ./configure \
+ --target-list=i386-softmmu \
  --disable-werror \
  --audio-drv-list=alsa \
  --audio-card-list=ac97 \
@@ -46,6 +47,7 @@ cd ..
 echo ""
 echo "##### QEMU configure for emulator"
 exec ./configure \
+ --target-list=i386-softmmu \
  --audio-drv-list=winwave \
  --audio-card-list=ac97 \
  --enable-hax \
@@ -65,6 +67,7 @@ cd ..
 echo ""
 echo "##### QEMU configure for emulator"
 ./configure \
+ --target-list=i386-softmmu \
  --audio-drv-list=coreaudio \
  --enable-mixemu \
  --audio-card-list=ac97 \

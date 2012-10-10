@@ -142,12 +142,11 @@ obj-$(CONFIG_XEN) += xen-all.o xen-mapcache.o
 obj-$(CONFIG_NO_XEN) += xen-stub.o
 
 # HAX support
-obj-$(CONFIG_HAX) += hax-all.o hax-windows.o
-obj-$(CONFIG_NO_HAX) += hax-stub.o
+ifdef CONFIG_WIN32
+obj-$(CONFIG_HAX) += target-i386/hax-all.o target-i386/hax-windows.o
+endif
 ifdef CONFIG_DARWIN
-obj-$(CONFIG_HAX) += \
-        hax-all.o       \
-        hax-darwin.o
+obj-$(CONFIG_HAX) += target-i386/hax-all.o target-i386/hax-darwin.o
 endif
 
 # Hardware support
