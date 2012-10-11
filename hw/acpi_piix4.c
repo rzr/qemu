@@ -434,7 +434,7 @@ i2c_bus *piix4_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
     PCIDevice *dev;
     PIIX4PMState *s;
 
-#if defined(CONFIG_MARU) && defined(__x86_64__)
+#if 0 //#if defined(CONFIG_MARU) && defined(__x86_64__)
     dev = pci_create(bus, devfn, "MARU_PM");
 #else
     dev = pci_create(bus, devfn, "PIIX4_PM");
@@ -487,7 +487,7 @@ static void piix4_pm_class_init(ObjectClass *klass, void *data)
 }
 
 static TypeInfo piix4_pm_info = {
-#if defined(CONFIG_MARU) && defined(__x86_64__)
+#if 0 //#if defined(CONFIG_MARU) && defined(__x86_64__)
     .name          = "MARU_PM",
 #else
     .name          = "PIIX4_PM",

@@ -71,6 +71,8 @@ echo "##### QEMU configure for emulator"
  --enable-maru \
  --enable-hax \
  --disable-vnc \
+ --disable-cocoa \
+ --disable-gl \
  --disable-sdl $1
 ;;
 esac
