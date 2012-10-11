@@ -7,6 +7,8 @@
 #include <sys/shm.h>
 #include "org_tizen_emulator_skin_EmulatorShmSkin.h"
 
+#define MAXLEN 512
+#define SHMKEY 26099
 
 void *shared_memory = (void *)0;
 int shmid;
@@ -15,9 +17,23 @@ int shmid;
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
   (JNIEnv *env, jobject obj, jint vga_ram_size)
 {
-    int mykey = getuid();
+    void *temp;
+    int keyval;
+    shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
+    if (shmid == -1) {
+	fprintf(stderr, "Share.c: shmget failed\n");
+        exit(1);
+    }
+    
+    temp = shmat(shmid, (char*)0x0, 0);
+    if (temp == (void *)-1) {
+        fprintf(stderr, "Share.c: shmat failed\n");
+        exit(1);
+    }
+    keyval = atoi(temp);
+    shmdt(temp);
 
-    shmid = shmget((key_t)mykey, (size_t)vga_ram_size, 0666 | IPC_CREAT);
+    shmid = shmget((key_t)keyval, (size_t)vga_ram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
         return 1;
     }

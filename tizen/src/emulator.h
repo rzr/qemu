@@ -39,7 +39,7 @@
 
 #define MAXLEN  512
 #define MAXPACKETLEN 60
-
+#define SHMKEY	26099
 extern char tizen_target_path[MAXLEN];
 
 void exit_emulator(void);

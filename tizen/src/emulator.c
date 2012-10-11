@@ -62,6 +62,12 @@
 #include <sys/shm.h>
 #endif
 
+#if defined(CONFIG_DARWIN)
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#endif
+
 #include "mloop_event.h"
 
 MULTI_DEBUG_CHANNEL(qemu, main);
@@ -75,7 +81,6 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define LOGFILE             "emulator.log"
 #define LCD_WIDTH_PREFIX "width="
 #define LCD_HEIGHT_PREFIX "height="
-
 #define MIDBUF  128
 
 int tizen_base_port;
@@ -233,6 +238,22 @@ void make_shdmem(void)
     free(shared_memory);
 #elif defined(CONFIG_DARWIN)
     /* TODO: */
+    int shmid;
+    char *shared_memory;
+    
+    shmid = shmget((key_t)SHMKEY, MAXLEN, 0666|IPC_CREAT);
+    if (shmid == -1) {
+        ERR("shmget failed\n");
+        return;
+    }
+    shared_memory = shmat(shmid, (char *)0x00, 0);
+    if (shared_memory == (void *)-1) {
+        ERR("shmat failed\n");
+        return;
+    }
+    sprintf(shared_memory, "%d", get_sdb_base_port() + 2);
+    INFO("shared memory key: %d, value: %s\n", SHMKEY, (char *)shared_memory);
+    shmdt(shared_memory);
 #endif
     return;
 }

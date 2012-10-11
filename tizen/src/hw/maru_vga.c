@@ -50,7 +50,14 @@
 #include "debug_ch.h"
 
 #ifdef USE_SHM
+#include "emulator.h"
+#include <sys/types.h>
+#include <sys/ipc.h>
 #include <sys/shm.h>
+#endif
+
+#ifdef USE_SHM
+void *shared_memory = (void*)0;
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, maru_vga);
@@ -88,13 +95,6 @@ MULTI_DEBUG_CHANNEL(qemu, maru_vga);
 #endif
 
 #define MARU_VGA
-
-#ifdef USE_SHM
-/* shared memory */
-void *shared_memory = (void*)0;
-int shmid;
-#endif
-
 
 static const uint32_t mask16[16] = {
     PAT(0x00000000),
@@ -1545,19 +1545,41 @@ void maru_vga_common_init(VGACommonState *s, int vga_ram_size)
     vga_dirty_log_start(s);
 
 #ifdef USE_SHM
-    int mykey = getuid();
+    int mykey;
+    void *temp; 
+    int shmid;
+
+    shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
+    if (shmid == -1) {
+        ERR( "shmget failed\n");
+        perror("maru_vga: ");
+        exit(1);
+    }
+    
+    temp = shmat(shmid, (char*)0x0, 0);
+    if (temp == (void *)-1) {
+        ERR( "shmat failed\n");
+        perror("maru_vga: ");
+        exit(1);
+    }
+    mykey = atoi(temp);
+    shmdt(temp);
+    INFO("shared memory key: %d, ram_size : %d\n", mykey, vga_ram_size);
     shmid = shmget((key_t)mykey, (size_t)vga_ram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
-        fprintf(stderr, "shmget failed\n");
+	ERR( "shmget failed\n");
+        perror("maru_vga: ");
         exit(1);
     }
-
+    
     shared_memory = shmat(shmid, (void*)0, 0);
     if (shared_memory == (void *)-1) {
-        fprintf(stderr, "shmat failed\n");
+        ERR( "shmat failed\n");
+        perror("maru_vga: ");
         exit(1);
     }
 
+    memset(shared_memory, 0x00, (size_t)vga_ram_size); 
     printf("Memory attached at %X\n", (int)shared_memory);
 #endif
 
