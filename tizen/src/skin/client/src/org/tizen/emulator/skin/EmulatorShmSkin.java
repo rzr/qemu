@@ -74,7 +74,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.runnable = new Runnable() {
 				public void run() {
 					// logger.info("update lcd framebuffer");
-					lcdCanvas.redraw();
+					if(lcdCanvas.isDisposed() == false) {
+						lcdCanvas.redraw();
+					}
 				}
 			};
 		}
@@ -101,8 +103,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				Image temp = framebuffer;
 				framebuffer = new Image(display, imageData);
 				temp.dispose();
-
-				display.asyncExec(runnable); //redraw canvas
+				if(display.isDisposed() == false) {
+					display.asyncExec(runnable); //redraw canvas
+				}
 			}
 		}
 
