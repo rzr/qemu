@@ -1855,7 +1855,7 @@ void maru_vga_common_init(VGACommonState *s)
 
 #ifdef USE_SHM
     int mykey = getuid();
-    shmid = shmget((key_t)mykey, (size_t)vga_ram_size, 0666 | IPC_CREAT);
+    shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
         fprintf(stderr, "shmget failed\n");
         exit(1);
