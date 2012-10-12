@@ -108,7 +108,9 @@ set_target() {
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
     if [ -z "$YAGL_EN" ] && [ -z "$OPENGLES_EN" ] ; then
-      yagl_enable yes
+      if test "$targetos" = "Linux" ; then
+        yagl_enable yes
+      fi
     fi
   ;;
   all)
@@ -117,7 +119,9 @@ set_target() {
       virtgl_enable yes
     fi
     if [ -z "$YAGL_EN" ] && [ -z "$OPENGLES_EN" ] ; then
-      yagl_enable yes
+      if test "$targetos" = "Linux" ; then    
+        yagl_enable yes
+      fi
     fi
   ;;
   esac
