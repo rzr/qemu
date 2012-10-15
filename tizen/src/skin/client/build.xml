@@ -105,6 +105,7 @@
 			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="-mmacosx-version-min=10.4" />
 			<arg line="-c" />
 			<arg line="Share.c" />
 			<arg line="-o" />
