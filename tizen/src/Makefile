@@ -22,7 +22,7 @@ ifdef CONFIG_WIN32
 	$(CC) -o check-hax.exe check_hax.c	
 endif
 ifdef CONFIG_DARWIN
-	$(CC) -o check-hax check_hax.c	
+	$(CC) -mmacosx-version-min=10.4 -o check-hax check_hax.c	
 endif
 skin_client:
 	ant -buildfile skin/client/build.xml make-jar
