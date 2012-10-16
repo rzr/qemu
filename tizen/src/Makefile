@@ -108,8 +108,10 @@ install_dibs: all_dibs
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
-else
-	
+endif
+
+ifdef CONFIG_DARWIN
+	cp check-hax $(EMUL_DIR)/bin
 endif
 
 ifndef CONFIG_DARWIN
