@@ -132,8 +132,8 @@ ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
 obj-$(CONFIG_GL) += virtio-gl.o 
-obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o gloffscreen_wgl.o
+obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
 obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
-obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o
+obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o
 ###########################################################
 endif
