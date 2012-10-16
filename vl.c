@@ -1976,7 +1976,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
-#ifdef CONFIG_VIRTIO_GL
+#ifdef CONFIG_GL_BACKEND
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 	// virtio-gl pci device
 	if (!enable_gl) {
@@ -3195,7 +3195,7 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
            case QEMU_OPTION_enable_gl:
-#ifdef CONFIG_VIRTIO_GL
+#ifdef CONFIG_GL_BACKEND
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
                 enable_gl = 1;
 #endif
@@ -3497,7 +3497,7 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
-#ifdef CONFIG_VIRTIO_GL
+#ifdef CONFIG_GL_BACKEND
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
     if (enable_gl) {
         capability_check_gl = gl_acceleration_capability_check();

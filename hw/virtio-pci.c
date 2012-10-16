@@ -884,7 +884,7 @@ static void virtio_balloon_exit_pci(PCIDevice *pci_dev)
     virtio_exit_pci(pci_dev);
 }
 
-#ifdef CONFIG_VIRTIO_GL
+#ifdef CONFIG_GL_BACKEND
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
 static int virtio_gl_init_pci(PCIDevice *pci_dev)
 {
@@ -1113,7 +1113,7 @@ static TypeInfo virtio_scsi_info = {
 };
 
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
-#ifdef CONFIG_VIRTIO_GL
+#ifdef CONFIG_GL_BACKEND
 static void virtio_gl_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -1167,7 +1167,7 @@ static void virtio_pci_register_types(void)
     type_register_static(&virtio_serial_info);
     type_register_static(&virtio_balloon_info);
     type_register_static(&virtio_scsi_info);
-#ifdef CONFIG_VIRTIO_GL
+#ifdef CONFIG_GL_BACKEND
     type_register_static(&virtio_gl_info);
 #endif
 #ifdef CONFIG_MARU

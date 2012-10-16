@@ -3659,11 +3659,11 @@ fi
 #
 if test "$gl" = "yes" ; then
   if test "$mingw32" = "yes" ; then
-    echo "CONFIG_VIRTIO_GL=y" >> $config_host_mak
+    echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
 #    echo "ERROR: Virtio GL not supported for Windows"
 #    gl="no"
   else
-    echo "CONFIG_VIRTIO_GL=y" >> $config_host_mak
+    echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
   fi
 fi
 # use default implementation for tracing backend-specific routines
