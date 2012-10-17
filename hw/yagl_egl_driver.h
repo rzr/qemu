@@ -100,6 +100,19 @@ struct yagl_egl_driver
     void (*destroy)(struct yagl_egl_driver */*driver*/);
 };
 
+#ifdef CONFIG_YAGL_EGL_GLX
+
+struct yagl_egl_driver *yagl_egl_glx_create(void);
+
+static inline struct yagl_egl_driver *yagl_egl_create(void)
+{
+    return yagl_egl_glx_create();
+}
+
+#else
+#error Unknown EGL backend
+#endif
+
 void yagl_egl_driver_init(struct yagl_egl_driver *driver);
 void yagl_egl_driver_cleanup(struct yagl_egl_driver *driver);
 

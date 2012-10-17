@@ -8,7 +8,6 @@
 #include "yagl_egl_driver.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
 #include "yagl_apis/gles2/yagl_gles2_api.h"
-#include "yagl_drivers/egl_glx/yagl_egl_glx.h"
 #include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
 #include <GL/gl.h>
 #include "yagl_gles2_driver.h"
@@ -39,7 +38,7 @@ struct yagl_server_state *yagl_server_state_create(void)
 
     QLIST_INIT(&ss->processes);
 
-    egl_driver = yagl_egl_glx_create();
+    egl_driver = yagl_egl_create();
 
     if (!egl_driver) {
         goto fail;

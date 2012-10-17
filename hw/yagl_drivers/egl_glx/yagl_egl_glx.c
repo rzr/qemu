@@ -1,4 +1,3 @@
-#include "yagl_egl_glx.h"
 #include "yagl_egl_driver.h"
 #include "yagl_dyn_lib.h"
 #include "yagl_log.h"
