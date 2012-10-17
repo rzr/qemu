@@ -3527,30 +3527,6 @@ int main(int argc, char **argv, char **envp)
 #endif
 #endif
 
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
-    is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
-    if (!is_webcam_enabled) {
-        fprintf (stderr, "[Webcam] <WARNING> Webcam support was disabled "
-                         "due to the fail of webcam capability check!\n");
-    }
-
-    gchar *tmp_cam_kcmd = kernel_cmdline;
-    kernel_cmdline = g_strdup_printf("%s enable_cam=%d", tmp_cam_kcmd, is_webcam_enabled);
-    g_free(tmp_cam_kcmd);
-
-    if (is_webcam_enabled) {
-        device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
-        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
-        if (devp.found == 0) {
-            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, 1)) {
-                fprintf(stderr, "Failed to initialize the marucam device.\n");
-                exit(1);
-            }
-        }
-        fprintf(stdout, "[Webcam] Webcam support was enabled.\n");
-    }
-#endif
-	
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the
      * other one may be encountered later on the command line, changing the
@@ -3698,6 +3674,30 @@ int main(int argc, char **argv, char **envp)
     if (!kernel_cmdline) {
         kernel_cmdline = "";
     }
+
+#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+    is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
+    if (!is_webcam_enabled) {
+        fprintf (stderr, "[Webcam] <WARNING> Webcam support was disabled "
+                         "due to the fail of webcam capability check!\n");
+    }
+
+    gchar *tmp_cam_kcmd = kernel_cmdline;
+    kernel_cmdline = g_strdup_printf("%s enable_cam=%d", tmp_cam_kcmd, is_webcam_enabled);
+    g_free(tmp_cam_kcmd);
+
+    if (is_webcam_enabled) {
+        device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
+        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+        if (devp.found == 0) {
+            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, 1)) {
+                fprintf(stderr, "Failed to initialize the marucam device.\n");
+                exit(1);
+            }
+        }
+        fprintf(stdout, "[Webcam] Webcam support was enabled.\n");
+    }
+#endif
 
     linux_boot = (kernel_filename != NULL);
 
