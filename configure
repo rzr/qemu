@@ -3656,15 +3656,8 @@ esac
 if test "$maru" = "yes" ; then
   echo "CONFIG_MARU=y" >> $config_host_mak
 fi
-#
 if test "$gl" = "yes" ; then
-  if test "$mingw32" = "yes" ; then
-    echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
-#    echo "ERROR: Virtio GL not supported for Windows"
-#    gl="no"
-  else
-    echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
-  fi
+  echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
 fi
 # use default implementation for tracing backend-specific routines
 trace_default=yes
