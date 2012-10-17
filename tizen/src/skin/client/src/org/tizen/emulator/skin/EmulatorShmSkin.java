@@ -28,6 +28,10 @@
 
 package org.tizen.emulator.skin;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Image;
@@ -36,9 +40,17 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.exception.ScreenShotException;
+import org.tizen.emulator.skin.image.ImageRegistry.IconName;
+import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.mode.SkinMode;
+import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
+import org.tizen.emulator.skin.util.SkinUtil;
 
 public class EmulatorShmSkin extends EmulatorSkin {
+	private Logger logger = SkinLogger.getSkinLogger(
+			EmulatorShmSkin.class).getLogger();
+
 	public static final int RED_MASK = 0x00FF0000;
 	public static final int GREEN_MASK = 0x0000FF00;
 	public static final int BLUE_MASK = 0x000000FF;
@@ -178,5 +190,31 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		pollThread.start();
 
 		return ret;
+	}
+
+	protected void openScreenShotWindow() {
+		if (screenShotDialog != null) {
+			return;
+		}
+
+		try {
+			screenShotDialog = new ShmScreenShotWindow(shell, communicator, this, config,
+					imageRegistry.getIcon(IconName.SCREENSHOT));
+			screenShotDialog.open();
+
+		} catch (ScreenShotException ex) {
+			logger.log(Level.SEVERE, ex.getMessage(), ex);
+			SkinUtil.openMessage(shell, null,
+					"Fail to create a screen shot.", SWT.ICON_ERROR, config);
+
+		} catch (Exception ex) {
+			// defense exception handling.
+			logger.log(Level.SEVERE, ex.getMessage(), ex);
+			String errorMessage = "Internal Error.\n[" + ex.getMessage() + "]";
+			SkinUtil.openMessage(shell, null, errorMessage, SWT.ICON_ERROR, config);
+
+		} finally {
+			screenShotDialog = null;
+		}
 	}
 }

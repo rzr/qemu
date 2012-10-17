@@ -137,8 +137,8 @@ public class EmulatorSkin {
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
 	protected EmulatorConfig config;
-	private Shell shell;
-	private ImageRegistry imageRegistry;
+	protected Shell shell;
+	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
 	private SkinMode skinMode;
 	private Image currentImage;
@@ -162,13 +162,12 @@ public class EmulatorSkin {
 	private boolean isShutdownRequested;
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
-	private boolean isScreenShotOpened;
 	private boolean isOnUsbKbd;
 
-	private ScreenShotDialog screenShotDialog;
+	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
 
-	private SocketCommunicator communicator;
+	protected SocketCommunicator communicator;
 	private long windowHandleId;
 
 	private Listener shellCloseListener;
@@ -410,14 +409,14 @@ public class EmulatorSkin {
 		this.shell.open();
 
 		// logic only for reopen case ///////
-		if ( isScreenShotOpened && ( null != screenShotDialog ) ) {
-			try {
-				screenShotDialog.setReserveImage( false );
-				screenShotDialog.open();
-			} finally {
-				isScreenShotOpened = false;
-			}
-		}
+//		if ( isScreenShotOpened && ( null != screenShotDialog ) ) {
+//			try {
+//				screenShotDialog.setReserveImage( false );
+//				screenShotDialog.open();
+//			} finally {
+//				isScreenShotOpened = false;
+//			}
+//		}
 		// ///////////////////////////////////
 
 		while ( !shell.isDisposed() ) {
@@ -492,11 +491,12 @@ public class EmulatorSkin {
 
 					if ( !isAboutToReopen ) {
 
-						if ( isScreenShotOpened && ( null != screenShotDialog ) ) {
+						if (null != screenShotDialog) {
 							Shell scShell = screenShotDialog.getShell();
 							if ( !scShell.isDisposed() ) {
 								scShell.close();
 							}
+							screenShotDialog = null;
 						}
 
 						// save config only for emulator close
@@ -1779,6 +1779,10 @@ public class EmulatorSkin {
 		return true;
 	}
 
+	protected void openScreenShotWindow() {
+		//TODO:
+	}
+
 	private void addMenuItems( final Shell shell, final Menu menu ) {
 
 		/* Emulator detail info menu */
@@ -2115,35 +2119,7 @@ public class EmulatorSkin {
 
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-
-				if ( isScreenShotOpened ) {
-					return;
-				}
-
-				try {
-
-					isScreenShotOpened = true;
-
-					screenShotDialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config,
-							imageRegistry.getIcon(IconName.SCREENSHOT) );
-					screenShotDialog.open();
-
-				} catch ( ScreenShotException ex ) {
-
-					logger.log( Level.SEVERE, ex.getMessage(), ex );
-					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ICON_ERROR, config );
-
-				} catch ( Exception ex ) {
-
-					// defense exception handling.
-					logger.log( Level.SEVERE, ex.getMessage(), ex );
-					String errorMessage = "Internal Error.\n[" + ex.getMessage() + "]";
-					SkinUtil.openMessage( shell, null, errorMessage, SWT.ICON_ERROR, config );
-
-				} finally {
-					isScreenShotOpened = false;
-				}
-
+				openScreenShotWindow();
 			}
 		} );
 
