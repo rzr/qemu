@@ -33,7 +33,7 @@ static void yagl_gles2_array_apply(struct yagl_gles_array *array)
                                                   array->type,
                                                   array->normalized,
                                                   array->stride,
-                                                  (GLvoid*)array->offset);
+                                          (GLvoid*)(uintptr_t)array->offset);
 
         gles2_ctx->driver_ps->common->BindBuffer(gles2_ctx->driver_ps->common,
                                                  GL_ARRAY_BUFFER,

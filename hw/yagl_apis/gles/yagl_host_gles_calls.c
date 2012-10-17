@@ -792,7 +792,8 @@ bool yagl_host_glDrawElements(GLenum mode,
                                  mode,
                                  count,
                                  type,
-                                 (ctx->ebo ? (GLvoid*)indices_ : indices));
+                                 (ctx->ebo ?
+                                 (GLvoid *)(uintptr_t)indices_ : indices));
 
     ctx->post_draw(ctx, mode);
 
