@@ -641,17 +641,17 @@ fail:
 void *yagl_egl_glx_procaddr_get(struct yagl_dyn_lib *dyn_lib,
                                 const char *sym_name)
 {
-    PFNGLXGETPROCADDRESSPROC get_address = NULL;
+    static PFNGLXGETPROCADDRESSPROC get_address = NULL;
     void *ret_func = NULL;
-
-    get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
-
-    if (!get_address) {
-        get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
-    }
 
     if (get_address) {
         ret_func = (void *)get_address((const GLubyte *)sym_name);
+    } else {
+        get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
+
+        if (!get_address) {
+            get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
+        }
     }
 
     if (!ret_func) {
