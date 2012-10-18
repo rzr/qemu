@@ -96,6 +96,7 @@ public class ScreenShotDialog {
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
 	protected PaletteData paletteData;
+	protected PaletteData paletteData2;
 	protected Image image;
 	protected Canvas imageCanvas;
 	private Shell shell;
@@ -103,7 +104,7 @@ public class ScreenShotDialog {
 	private Label label;
 
 	protected SocketCommunicator communicator;
-	private EmulatorSkin emulatorSkin;
+	protected EmulatorSkin emulatorSkin;
 	protected EmulatorConfig config;
 
 	private RotationInfo currentRotation;
@@ -178,7 +179,8 @@ public class ScreenShotDialog {
 			}
 		} );
 
-		paletteData = new PaletteData( RED_MASK, GREEN_MASK, BLUE_MASK );
+		paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+		paletteData2 = new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF);
 
 		scrollComposite.setContent( imageCanvas );
 

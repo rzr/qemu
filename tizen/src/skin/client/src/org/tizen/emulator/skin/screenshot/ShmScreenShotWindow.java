@@ -28,8 +28,6 @@
 
 package org.tizen.emulator.skin.screenshot;
 
-import java.util.logging.Logger;
-
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
@@ -40,13 +38,8 @@ import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
-import org.tizen.emulator.skin.log.SkinLogger;
 
 public class ShmScreenShotWindow extends ScreenShotDialog {
-	private Logger logger = SkinLogger.getSkinLogger(
-			ShmScreenShotWindow.class).getLogger();
-	
-	private EmulatorShmSkin emulatorSkin;
 
 	/**
 	 * @brief constructor
@@ -56,20 +49,17 @@ public class ShmScreenShotWindow extends ScreenShotDialog {
 			SocketCommunicator communicator, EmulatorShmSkin emulatorSkin,
 			EmulatorConfig config, Image icon) throws ScreenShotException {
 		super(parent, communicator, emulatorSkin, config, icon);
-		
-		this.emulatorSkin = emulatorSkin;
 	}
-	
+
 	protected void capture() throws ScreenShotException {
 		int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
 		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
 
 		int[] array = new int[width * height];
-		//TODO:
-		//int result = emulatorSkin.getPixels(array); //from shared memory
+		int result = ((EmulatorShmSkin)emulatorSkin).getPixels(array); //from shared memory
 		//logger.info("getPixels navtive function returned " + result);
 
-		ImageData imageData = new ImageData(width, height, COLOR_DEPTH, paletteData);
+		ImageData imageData = new ImageData(width, height, COLOR_DEPTH, paletteData2);
 		for (int i = 0; i < height; i++) {
 			imageData.setPixels(0, i, width, array, i * width);
 		 }
