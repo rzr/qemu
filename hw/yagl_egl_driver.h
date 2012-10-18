@@ -2,6 +2,7 @@
 #define _QEMU_YAGL_EGL_DRIVER_H
 
 #include "yagl_types.h"
+#include "yagl_dyn_lib.h"
 #include <EGL/egl.h>
 
 struct yagl_thread_state;
@@ -98,6 +99,8 @@ struct yagl_egl_driver
                                                struct yagl_process_state */*ps*/);
 
     void (*destroy)(struct yagl_egl_driver */*driver*/);
+
+    struct yagl_dyn_lib *dyn_lib;
 };
 
 #ifdef CONFIG_YAGL_EGL_GLX

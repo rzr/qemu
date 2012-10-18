@@ -52,7 +52,7 @@ struct yagl_server_state *yagl_server_state_create(void)
         goto fail;
     }
 
-    gles2_driver = yagl_gles2_ogl_create();
+    gles2_driver = yagl_gles2_ogl_create(egl_driver->dyn_lib);
 
     if (!gles2_driver) {
         goto fail;
