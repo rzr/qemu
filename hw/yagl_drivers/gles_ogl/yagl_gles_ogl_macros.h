@@ -161,16 +161,11 @@ static void driver_type##_##func(struct obj_type *driver_ps, arg0_type arg0, arg
 
 #define YAGL_GLES_OGL_GET_PROC(driver, func) \
     do { \
-        if (get_address) { \
-            *(void**)(&driver->func) = get_address((const GLubyte*)#func); \
-        } \
+        *(void**)(&driver->func) = yagl_dyn_lib_procaddr_get(dyn_lib, #func); \
         if (!driver->func) { \
-            *(void**)(&driver->func) = yagl_dyn_lib_get_sym(dyn_lib, #func); \
-            if (!driver->func) { \
-                YAGL_LOG_ERROR("Unable to get symbol: %s", \
-                               yagl_dyn_lib_get_error(dyn_lib)); \
-                goto fail; \
-            } \
+            YAGL_LOG_ERROR("Unable to get symbol: %s", \
+                           yagl_dyn_lib_get_error(dyn_lib)); \
+            goto fail; \
         } \
     } while (0)
 

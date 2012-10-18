@@ -4,7 +4,6 @@
 #include "yagl_log.h"
 #include "yagl_dyn_lib.h"
 #include "yagl_process.h"
-#include <GL/glx.h>
 
 struct yagl_gles_ogl
 {
@@ -270,17 +269,10 @@ struct yagl_gles_ogl
     *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
 {
     struct yagl_gles_ogl *gles_ogl;
-    PFNGLXGETPROCADDRESSPROC get_address = NULL;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_gles_ogl_create, NULL);
 
     gles_ogl = g_malloc0(sizeof(*gles_ogl));
-
-    get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
-
-    if (!get_address) {
-        get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
-    }
 
     YAGL_GLES_OGL_GET_PROC(gles_ogl, glActiveTexture);
     YAGL_GLES_OGL_GET_PROC(gles_ogl, glBindBuffer);

@@ -8,7 +8,6 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_tls.h"
-#include <GL/glx.h>
 
 static YAGL_DEFINE_TLS(struct yagl_thread_state*, gles1_ogl_ts);
 
@@ -238,7 +237,6 @@ static void yagl_gles1_ogl_destroy(struct yagl_gles1_driver *driver)
 struct yagl_gles1_driver *yagl_gles1_ogl_create(struct yagl_dyn_lib *dyn_lib)
 {
     struct yagl_gles1_ogl *gles1_ogl = NULL;
-    PFNGLXGETPROCADDRESSPROC get_address = NULL;
     struct yagl_gles_ogl *gles_ogl = NULL;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_gles1_ogl_create, NULL);
@@ -251,12 +249,6 @@ struct yagl_gles1_driver *yagl_gles1_ogl_create(struct yagl_dyn_lib *dyn_lib)
 
     if (!gles_ogl) {
         goto fail;
-    }
-
-    get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
-
-    if (!get_address) {
-        get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
     }
 
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, glAlphaFunc);
