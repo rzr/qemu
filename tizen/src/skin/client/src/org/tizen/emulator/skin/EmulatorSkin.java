@@ -478,6 +478,10 @@ public class EmulatorSkin {
 		shell.pack();
 	}
 
+	protected void skinFinalize() {
+		//TODO:
+	}
+
 	private void addShellListener( final Shell shell ) {
 
 		shellCloseListener = new Listener() {
@@ -519,6 +523,8 @@ public class EmulatorSkin {
 					if ( !isDefaultHoverColor ) {
 						hoverColor.dispose();
 					}
+
+					skinFinalize();
 
 				} else {
 

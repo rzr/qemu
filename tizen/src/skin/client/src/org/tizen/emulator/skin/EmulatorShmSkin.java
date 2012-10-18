@@ -119,6 +119,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					display.asyncExec(runnable); //redraw canvas
 				}
 			}
+
+			//logger.info("PollFBThread is stopped");
 		}
 
 		public void stopRequest() {
@@ -133,6 +135,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		super(config, mode, isOnTop);
 
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+	}
+
+	protected void skinFinalize() {
+		pollThread.stopRequest();
 	}
 
 	public long compose() {
