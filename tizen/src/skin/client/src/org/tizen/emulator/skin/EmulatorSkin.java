@@ -1779,7 +1779,11 @@ public class EmulatorSkin {
 			invokeOSMethod( m, shellHandle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
 		} else if( SwtUtil.isMacPlatform() ) {
 			//TODO:
-			logger.warning( "not supported yet" );
+			logger.warning("not supported yet");
+
+			SkinUtil.openMessage(shell, null,
+					"Sorry. This feature is not supported yet.",
+					SWT.ICON_WARNING, config);
 		}
 
 		return true;
@@ -1826,14 +1830,18 @@ public class EmulatorSkin {
 
 				// readyToReopen( EmulatorSkin.this, isOnTop );
 
-				//internal/Library.java::arch()
+				/* internal/Library.java::arch() */
 				String osArch = System.getProperty("os.arch"); //$NON-NLS-1$
 				logger.info(osArch);
-				if (osArch.equals("amd64") || osArch.equals("IA64N") || osArch.equals("IA64W")) { //$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
+				if (osArch.equals("amd64") || osArch.equals("x86_64") ||
+						osArch.equals("IA64W") || osArch.equals("ia64")) {
+					//$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
 					logger.info("64bit architecture");
-					setTopMost64(isOnTop); //64bit
+
+					setTopMost64(isOnTop); /* 64bit */
 				} else {
 					logger.info("32bit architecture");
+
 					setTopMost32(isOnTop);
 				}
 			}
