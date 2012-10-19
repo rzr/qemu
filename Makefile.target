@@ -182,6 +182,7 @@ $(call set-vpath, $(SRC_PATH)/hw/yagl_apis/egl: \
                   $(SRC_PATH)/hw/yagl_apis/gles1: \
                   $(SRC_PATH)/hw/yagl_apis/gles2: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_glx: \
+                  $(SRC_PATH)/hw/yagl_drivers/egl_wgl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles_ogl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles1_ogl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles2_ogl)
@@ -256,6 +257,10 @@ obj-y += yagl_host_gles2_calls.o
 # EGL GLX driver
 ifdef CONFIG_YAGL_EGL_GLX
 obj-y += yagl_egl_glx.o
+endif
+# EGL WGL driver
+ifdef CONFIG_YAGL_EGL_WGL
+obj-y += yagl_egl_wgl.o
 endif
 # GLES OpenGL common driver
 obj-y += yagl_gles_ogl.o

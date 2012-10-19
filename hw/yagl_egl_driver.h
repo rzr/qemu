@@ -103,13 +103,22 @@ struct yagl_egl_driver
     struct yagl_dyn_lib *dyn_lib;
 };
 
-#ifdef CONFIG_YAGL_EGL_GLX
+#if defined(CONFIG_YAGL_EGL_GLX)
 
 struct yagl_egl_driver *yagl_egl_glx_create(void);
 
 static inline struct yagl_egl_driver *yagl_egl_create(void)
 {
     return yagl_egl_glx_create();
+}
+
+#elif defined(CONFIG_YAGL_EGL_WGL)
+
+struct yagl_egl_driver *yagl_egl_wgl_create(void);
+
+static inline struct yagl_egl_driver *yagl_egl_create(void)
+{
+    return yagl_egl_wgl_create();
 }
 
 #else
