@@ -92,7 +92,6 @@ import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.dialog.DetailInfoDialog;
 import org.tizen.emulator.skin.dialog.RamdumpDialog;
-import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
@@ -103,6 +102,8 @@ import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
+import org.tizen.emulator.skin.window.ControlPanel;
+import org.tizen.emulator.skin.window.SkinWindow;
 
 /**
  * 
@@ -164,6 +165,7 @@ public class EmulatorSkin {
 	private boolean isOnTop;
 	private boolean isOnUsbKbd;
 
+	private SkinWindow controlPanel;
 	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
 
@@ -494,13 +496,22 @@ public class EmulatorSkin {
 					removeCanvasListeners();
 
 					if ( !isAboutToReopen ) {
-
+						/* close the screen shot window */
 						if (null != screenShotDialog) {
 							Shell scShell = screenShotDialog.getShell();
-							if ( !scShell.isDisposed() ) {
+							if (!scShell.isDisposed()) {
 								scShell.close();
 							}
 							screenShotDialog = null;
+						}
+
+						/* close the control panel window */
+						if (null != controlPanel) {
+							Shell cpShell = controlPanel.getShell();
+							if (!cpShell.isDisposed()) {
+								cpShell.close();
+							}
+							controlPanel = null;
 						}
 
 						// save config only for emulator close
@@ -2121,18 +2132,42 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	private Menu createAdvancedMenu( final Shell shell ) {
+	private Menu createAdvancedMenu(final Shell shell) {
 
-		final Menu menu = new Menu( shell, SWT.DROP_DOWN );
+		final Menu menu = new Menu(shell, SWT.DROP_DOWN);
+
+		/* Control Panel menu */
+		/*final MenuItem panelItem = new MenuItem(menu, SWT.PUSH);
+		panelItem.setText("&Control Panel");
+		//panelItem.setImage(imageRegistry.getIcon(IconName.XXX));
+		panelItem.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("Control Panel Menu is selected");
+
+				if (controlPanel != null) {
+					//TODO: move a window focus to controlPanel
+					return;
+				}
+
+				try {
+					controlPanel = new ControlPanel(shell);
+					controlPanel.open();
+				} finally {
+					controlPanel = null;
+				}
+			}
+		} );*/
 
 		/* Screen shot menu */
-		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
-		screenshotItem.setText( "&Screen Shot" );
-		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
-		screenshotItem.addSelectionListener( new SelectionAdapter() {
-
+		final MenuItem screenshotItem = new MenuItem(menu, SWT.PUSH);
+		screenshotItem.setText("&Screen Shot");
+		screenshotItem.setImage(imageRegistry.getIcon(IconName.SCREENSHOT));
+		screenshotItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("ScreenShot Menu is selected");
+
 				openScreenShotWindow();
 			}
 		} );
