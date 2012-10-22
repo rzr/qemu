@@ -87,6 +87,7 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.ColorsType;
+import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
@@ -2150,8 +2151,11 @@ public class EmulatorSkin {
 					return;
 				}
 
+				RotationType rotation = SkinRotation.getRotation(currentRotationId);
+				List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
+
 				try {
-					controlPanel = new ControlPanel(shell);
+					controlPanel = new ControlPanel(shell, communicator, keyMapList);
 					controlPanel.open();
 				} finally {
 					controlPanel = null;

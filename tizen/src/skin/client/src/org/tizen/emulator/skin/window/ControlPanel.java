@@ -28,14 +28,70 @@
 
 package org.tizen.emulator.skin.window;
 
+import java.util.List;
+
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
+import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
+import org.tizen.emulator.skin.dbi.KeyMapType;
 
 public class ControlPanel extends SkinWindow {
+	private SocketCommunicator communicator;
+	private List<KeyMapType> keyMapList;
 
-	public ControlPanel(Shell parent) {
+	public ControlPanel(Shell parent,
+			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent);
+
+		shell.setText("Control Panel");
+		this.keyMapList = keyMapList;
+		this.communicator = communicator;
+
+		createContents();
 	}
 
 	protected void createContents() {
+		shell.setLayout(new GridLayout(1, true));
+
+		if (keyMapList != null && keyMapList.isEmpty() == false) {
+			for (KeyMapType keyEntry : keyMapList) {
+				Button hardKeyButton = new Button(shell, SWT.FLAT);
+				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
+				hardKeyButton.setToolTipText(keyEntry.getTooltip());
+
+				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+
+				final int keycode = keyEntry.getEventInfo().getKeyCode();
+				hardKeyButton.addMouseListener(new MouseListener() {
+					@Override
+					public void mouseDown(MouseEvent e) {
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.PRESSED.value(), keycode, 0, 0);
+						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+					}
+
+					@Override
+					public void mouseUp(MouseEvent e) {
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.RELEASED.value(), keycode, 0, 0);
+						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+					}
+
+					@Override
+					public void mouseDoubleClick(MouseEvent e) {
+						/* do nothing */
+					}
+				});
+			}
+		}
+
 	}
 }
