@@ -117,8 +117,8 @@ public class SkinUtil {
 		LcdType lcd = rotation.getLcd();
 		RegionType region = lcd.getRegion();
 
-		Integer left = (mode != SkinMode.NONE) ? region.getLeft() : 0;
-		Integer top = (mode != SkinMode.NONE) ? region.getTop() : 0;
+		Integer left = (mode != SkinMode.GENERAL) ? region.getLeft() : 0;
+		Integer top = (mode != SkinMode.GENERAL) ? region.getTop() : 0;
 		Integer width = region.getWidth();
 		Integer height = region.getHeight();
 

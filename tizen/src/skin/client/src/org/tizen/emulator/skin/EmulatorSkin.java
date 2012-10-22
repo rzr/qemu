@@ -203,7 +203,7 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 		
 		int style = SWT.NO_TRIM;
-		if (skinMode == SkinMode.NONE) {
+		if (skinMode == SkinMode.GENERAL) {
 			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
 		}
 
@@ -260,7 +260,7 @@ public class EmulatorSkin {
 
 		arrangeSkin(lcdWidth, lcdHeight, scale, rotationId);
 
-		if (skinMode != SkinMode.NONE && null == currentImage) {
+		if (skinMode != SkinMode.GENERAL && null == currentImage) {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
@@ -439,7 +439,7 @@ public class EmulatorSkin {
 		this.currentRotationId = rotationId;
 		this.currentAngle = SkinRotation.getAngle( rotationId );
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			Image tempImage = null;
 			Image tempKeyPressedImage = null;
 
@@ -565,7 +565,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addPaintListener(shellPaintListener);
 		}
 
@@ -619,7 +619,7 @@ public class EmulatorSkin {
 
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addMouseTrackListener(shellMouseTrackListener);
 		}
 
@@ -685,7 +685,7 @@ public class EmulatorSkin {
 			} //end of mouseMove
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addMouseMoveListener(shellMouseMoveListener);
 		}
 
@@ -790,7 +790,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addMouseListener(shellMouseListener);
 		}
 
