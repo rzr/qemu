@@ -142,7 +142,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	}
 
 	public long compose() {
-		long ret = super.compose();
+		super.compose();
 
 		int result = shmget(currentLcdWidth * currentLcdHeight); //initialize shared memory
 		//logger.info("shmget navtive function returned " + result);
@@ -195,7 +195,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		pollThread.start();
 
-		return ret;
+		return 0;
 	}
 
 	protected void openScreenShotWindow() {

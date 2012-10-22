@@ -171,7 +171,7 @@ public class EmulatorSkin {
 	private Menu contextMenu;
 
 	protected SocketCommunicator communicator;
-	private long windowHandleId;
+	protected long windowHandleId;
 
 	private Listener shellCloseListener;
 	private PaintListener shellPaintListener;
@@ -216,7 +216,6 @@ public class EmulatorSkin {
 	}
 
 	public long compose() {
-
 		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 
 		int x = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_X, EmulatorConfig.DEFAULT_WINDOW_X );
@@ -232,11 +231,7 @@ public class EmulatorSkin {
 		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId, false );
 		logger.info("lcdWidth : " + lcdWidth + ", lcdHeight : " + lcdHeight + ", scale : " + scale);
 
-		// sdl uses this handle id.
-		windowHandleId = getWindowHandleId();
-
-		return windowHandleId;
-
+		return 0;
 	}
 
 	private void composeInternal( Canvas lcdCanvas, int x, int y, int lcdWidth, int lcdHeight, int scale,
@@ -318,65 +313,6 @@ public class EmulatorSkin {
 //		sourceSkin.shell.close();
 //
 //	}
-
-	private long getWindowHandleId() {
-
-		long windowHandleId = 0;
-
-		/* org.eclipse.swt.widgets.Widget */
-		if (SwtUtil.isLinuxPlatform()) {
-
-			try {
-				Field field = lcdCanvas.getClass().getField("embeddedHandle");
-				windowHandleId = field.getLong(lcdCanvas);
-				logger.info("lcdCanvas.embeddedHandle:" + windowHandleId);
-			} catch (IllegalArgumentException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (IllegalAccessException e ) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (SecurityException e ) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (NoSuchFieldException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			}
-
-		} else if (SwtUtil.isWindowsPlatform()) {
-
-			try {
-				Field field = lcdCanvas.getClass().getField("handle");
-				windowHandleId = field.getLong(lcdCanvas);
-				logger.info("lcdCanvas.handle:" + windowHandleId);
-			} catch (IllegalArgumentException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (IllegalAccessException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (SecurityException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (NoSuchFieldException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			}
-
-		} else if (SwtUtil.isMacPlatform()) {
-
-			// not supported
-			windowHandleId = 0;
-
-		} else {
-			logger.severe("Not Supported OS platform:" + SWT.getPlatform());
-			System.exit(-1);
-		}
-
-		return windowHandleId;
-
-	}
 
 	private void seteHoverColor() {
 
