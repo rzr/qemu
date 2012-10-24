@@ -218,24 +218,28 @@ public class EmulatorSkin {
 	public long compose() {
 		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
 
-		int x = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_X, EmulatorConfig.DEFAULT_WINDOW_X );
-		int y = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_Y, EmulatorConfig.DEFAULT_WINDOW_Y );
-		int lcdWidth = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-		int lcdHeight = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-		int scale = SkinUtil.getValidScale( config );
+		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
+				EmulatorConfig.DEFAULT_WINDOW_X);
+		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
+				EmulatorConfig.DEFAULT_WINDOW_Y);
+
+		int resolutionW = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		int resolutionH = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+		int scale = SkinUtil.getValidScale(config);
 //		int rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION,
 //				EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 		// has to be portrait mode at first booting time
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 		
-		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId, false );
-		logger.info("lcdWidth : " + lcdWidth + ", lcdHeight : " + lcdHeight + ", scale : " + scale);
+		composeInternal(lcdCanvas, x, y, resolutionW, resolutionH, scale, rotationId, false);
+		logger.info("resolution : " + resolutionW + "x" + resolutionH + ", scale : " + scale);
 
 		return 0;
 	}
 
-	private void composeInternal( Canvas lcdCanvas, int x, int y, int lcdWidth, int lcdHeight, int scale,
-			short rotationId, boolean isOnUsbKbd ) {
+	private void composeInternal(Canvas lcdCanvas,
+			int x, int y, int resolutionW, int resolutionH,
+			int scale, short rotationId, boolean isOnUsbKbd) {
 
 		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
 
@@ -254,7 +258,7 @@ public class EmulatorSkin {
 			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE ) );
 		}
 
-		arrangeSkin(lcdWidth, lcdHeight, scale, rotationId);
+		arrangeSkin(resolutionW, resolutionH, scale, rotationId);
 
 		if (skinMode != SkinMode.GENERAL && null == currentImage) {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
@@ -368,10 +372,10 @@ public class EmulatorSkin {
 
 	}
 
-	private void arrangeSkin( int lcdWidth, int lcdHeight, int scale, short rotationId ) {
+	private void arrangeSkin(int resolutionW, int resolutionH, int scale, short rotationId) {
 
-		this.currentLcdWidth = lcdWidth;
-		this.currentLcdHeight = lcdHeight;
+		this.currentLcdWidth = resolutionW;
+		this.currentLcdHeight = resolutionH;
 		this.currentScale = scale;
 		this.currentRotationId = rotationId;
 		this.currentAngle = SkinRotation.getAngle( rotationId );
@@ -404,7 +408,8 @@ public class EmulatorSkin {
 		}
 
 		/* not using a layout */
-		SkinUtil.adjustLcdGeometry(lcdCanvas, scale, rotationId, skinMode);
+		SkinUtil.adjustLcdGeometry(lcdCanvas, currentLcdWidth, currentLcdHeight,
+				scale, rotationId, skinMode);
 
 		/* set window size */
 		if (null != currentImage) {

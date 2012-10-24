@@ -110,19 +110,26 @@ public class SkinUtil {
 	}
 
 	public static void adjustLcdGeometry(
-			Canvas lcdCanvas, int scale, short rotationId, SkinMode mode) {
+			Canvas lcdCanvas, int resolutionW, int resolutionH,
+			int scale, short rotationId, SkinMode mode) {
 
 		RotationType rotation = SkinRotation.getRotation(rotationId);
+		float convertedScale = convertScale(scale);
+
+		if (mode == SkinMode.GENERAL) {
+			lcdCanvas.setBounds(0, 0,
+					(int)(resolutionW * convertedScale),
+					(int)(resolutionH * convertedScale));
+			return;
+		}
 
 		LcdType lcd = rotation.getLcd();
 		RegionType region = lcd.getRegion();
 
-		Integer left = (mode != SkinMode.GENERAL) ? region.getLeft() : 0;
-		Integer top = (mode != SkinMode.GENERAL) ? region.getTop() : 0;
+		Integer left = region.getLeft();
+		Integer top = region.getTop();
 		Integer width = region.getWidth();
 		Integer height = region.getHeight();
-
-		float convertedScale = convertScale(scale);
 
 		int l = (int) (left * convertedScale);
 		int t = (int) (top * convertedScale);
