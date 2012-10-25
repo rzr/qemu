@@ -66,6 +66,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -216,7 +217,9 @@ public class EmulatorSkin {
 	}
 
 	public long compose() {
-		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
+		shell.setLayout(new FormLayout());
+
+		this.lcdCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
 
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
 				EmulatorConfig.DEFAULT_WINDOW_X);
@@ -230,7 +233,7 @@ public class EmulatorSkin {
 //				EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 		// has to be portrait mode at first booting time
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-		
+
 		composeInternal(lcdCanvas, x, y, resolutionW, resolutionH, scale, rotationId, false);
 		logger.info("resolution : " + resolutionW + "x" + resolutionH + ", scale : " + scale);
 
@@ -241,21 +244,19 @@ public class EmulatorSkin {
 			int x, int y, int resolutionW, int resolutionH,
 			int scale, short rotationId, boolean isOnUsbKbd) {
 
-		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
+		shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+		shell.setLocation(x, y);
+
+		String emulatorName = SkinUtil.makeEmulatorName(config);
+		shell.setText(emulatorName);
+
+		lcdCanvas.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 
 		imageRegistry = ImageRegistry.getInstance();
-
-		shell.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
-
-		shell.setLocation( x, y );
-
-		String emulatorName = SkinUtil.makeEmulatorName( config );
-		shell.setText( emulatorName );
-
-		if ( SwtUtil.isWindowsPlatform() ) {
-			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE_ICO ) );
+		if (SwtUtil.isWindowsPlatform()) {
+			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE_ICO));
 		} else {
-			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE ) );
+			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
 		}
 
 		arrangeSkin(resolutionW, resolutionH, scale, rotationId);
@@ -407,7 +408,7 @@ public class EmulatorSkin {
 			SkinUtil.trimShell(shell, currentImage);
 		}
 
-		/* not using a layout */
+		/* arrange the lcd */
 		SkinUtil.adjustLcdGeometry(lcdCanvas, currentLcdWidth, currentLcdHeight,
 				scale, rotationId, skinMode);
 

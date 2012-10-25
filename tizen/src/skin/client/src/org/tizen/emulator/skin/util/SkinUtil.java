@@ -36,6 +36,8 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
+import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
@@ -113,39 +115,44 @@ public class SkinUtil {
 			Canvas lcdCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId, SkinMode mode) {
 
-		RotationType rotation = SkinRotation.getRotation(rotationId);
 		float convertedScale = convertScale(scale);
+		int l = 0, t = 0, w = 0, h = 0;
 
 		if (mode == SkinMode.GENERAL) {
-			/* resoultion, that is lcd size in general skin mode */
-			if (RotationInfo.LANDSCAPE == RotationInfo.getValue(rotationId) ||
-					RotationInfo.REVERSE_LANDSCAPE == RotationInfo.getValue(rotationId)) {
-				lcdCanvas.setBounds(0, 0,
-						(int)(resolutionH * convertedScale),
-						(int)(resolutionW * convertedScale));
-			} else {
-				lcdCanvas.setBounds(0, 0,
-						(int)(resolutionW * convertedScale),
-						(int)(resolutionH * convertedScale));
-			}
+			RotationInfo rotation = RotationInfo.getValue(rotationId);
 
-			return;
+			/* resoultion, that is lcd size in general skin mode */
+			if (RotationInfo.LANDSCAPE == rotation ||
+					RotationInfo.REVERSE_LANDSCAPE == rotation) {
+				w = (int)(resolutionH * convertedScale);
+				h = (int)(resolutionW * convertedScale);
+			} else {
+				w = (int)(resolutionW * convertedScale);
+				h = (int)(resolutionH * convertedScale);
+			}
+		} else {
+			RotationType rotation = SkinRotation.getRotation(rotationId);
+
+			LcdType lcd = rotation.getLcd(); /* from dbi */
+			RegionType region = lcd.getRegion();
+
+			Integer left = region.getLeft();
+			Integer top = region.getTop();
+			Integer width = region.getWidth();
+			Integer height = region.getHeight();
+
+			l = (int) (left * convertedScale);
+			t = (int) (top * convertedScale);
+			w = (int) (width * convertedScale);
+			h = (int) (height * convertedScale);
 		}
 
-		LcdType lcd = rotation.getLcd(); /* from dbi */
-		RegionType region = lcd.getRegion();
-
-		Integer left = region.getLeft();
-		Integer top = region.getTop();
-		Integer width = region.getWidth();
-		Integer height = region.getHeight();
-
-		int l = (int) (left * convertedScale);
-		int t = (int) (top * convertedScale);
-		int w = (int) (width * convertedScale);
-		int h = (int) (height * convertedScale);
-
-		lcdCanvas.setBounds(l, t, w, h);
+		FormData data = new FormData();
+		data.left = new FormAttachment(0, l);
+		data.top = new FormAttachment(0, t);
+		data.width = w;
+		data.height = h;
+		lcdCanvas.setLayoutData(data);
 	}
 
 	public static SkinRegion getHardKeyArea( int currentX, int currentY, short rotationId, int scale ) {
