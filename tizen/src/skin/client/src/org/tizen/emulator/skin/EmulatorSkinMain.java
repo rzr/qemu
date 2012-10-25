@@ -123,24 +123,31 @@ public class EmulatorSkinMain {
 
 			/* set emulator window config property */
 			String configPropFilePath = vmPath + File.separator + CONFIG_PROPERTIES_FILE_NAME;
-			Properties configProperties = loadProperties( configPropFilePath, false );
+			Properties configProperties = loadProperties(configPropFilePath, false);
 
-			// able to use log file after loading properties
-			initLog( argsMap, configProperties );
+			/* able to use log file after loading properties */
+			initLog(argsMap, configProperties);
 
-			EmulatorConfig.validateArgs( argsMap );
-			EmulatorConfig.validateSkinProperties( skinProperties );
-			EmulatorConfig.validateSkinConfigProperties( configProperties );
+			/* validation check */
+			EmulatorConfig.validateArgs(argsMap);
+			EmulatorConfig.validateSkinProperties(skinProperties);
+			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
+			/* emulator resolution */
 			int resolutionW = Integer.parseInt(
 					argsMap.get(ArgsConstants.RESOLUTION_WIDTH));
 			int resolutionH = Integer.parseInt(
 					argsMap.get(ArgsConstants.RESOLUTION_HEIGHT));
 
+			/* get skin path from startup argument */
 			String argSkinPath = (String) argsMap.get(ArgsConstants.SKIN_PATH);
 
+			/* determine skin mode */
+			SkinMode skinMode = SkinMode.getValue(argsMap.get(ArgsConstants.SKIN_MODE));
+			logger.info("skin mode is " + skinMode);
+
 			/* load dbi file */
-			EmulatorUI dbiContents = loadDbi(argSkinPath, resolutionW, resolutionH);
+			EmulatorUI dbiContents = loadDbi(argSkinPath, skinMode, resolutionW, resolutionH);
 			if ( null == dbiContents ) {
 				logger.severe( "Fail to load dbi file." );
 
@@ -162,13 +169,10 @@ public class EmulatorSkinMain {
 			/* load image resource */
 			ImageRegistry.getInstance().initialize(config);
 
+			/* load Always on Top value */
 			String onTopVal = config.getSkinProperty(
 					SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString());
 			boolean isOnTop = Boolean.parseBoolean(onTopVal);
-
-			/* determine skin mode */
-			SkinMode skinMode = SkinMode.getValue(argsMap.get(ArgsConstants.SKIN_MODE));
-			logger.info("skin mode is " + skinMode);
 
 			/* create skin */
 			EmulatorSkin skin;
@@ -341,10 +345,12 @@ public class EmulatorSkinMain {
 
 	}
 
-	private static EmulatorUI loadDbi(String argSkinPath, int resolutionW, int resolutionH) {
+	private static EmulatorUI loadDbi(String argSkinPath, SkinMode skinMode,
+			int resolutionW, int resolutionH) {
 		String skinPath =
-				ImageRegistry.getSkinPath(argSkinPath, resolutionW, resolutionH) +
+				ImageRegistry.getSkinPath(argSkinPath, skinMode, resolutionW, resolutionH) +
 				File.separator + DBI_FILE_NAME;
+		logger.info("load dbi file from " + skinPath);
 
 		FileInputStream fis = null;
 		EmulatorUI emulatorUI = null;

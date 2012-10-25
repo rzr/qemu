@@ -117,13 +117,22 @@ public class SkinUtil {
 		float convertedScale = convertScale(scale);
 
 		if (mode == SkinMode.GENERAL) {
-			lcdCanvas.setBounds(0, 0,
-					(int)(resolutionW * convertedScale),
-					(int)(resolutionH * convertedScale));
+			/* resoultion, that is lcd size in general skin mode */
+			if (RotationInfo.LANDSCAPE == RotationInfo.getValue(rotationId) ||
+					RotationInfo.REVERSE_LANDSCAPE == RotationInfo.getValue(rotationId)) {
+				lcdCanvas.setBounds(0, 0,
+						(int)(resolutionH * convertedScale),
+						(int)(resolutionW * convertedScale));
+			} else {
+				lcdCanvas.setBounds(0, 0,
+						(int)(resolutionW * convertedScale),
+						(int)(resolutionH * convertedScale));
+			}
+
 			return;
 		}
 
-		LcdType lcd = rotation.getLcd();
+		LcdType lcd = rotation.getLcd(); /* from dbi */
 		RegionType region = lcd.getRegion();
 
 		Integer left = region.getLeft();

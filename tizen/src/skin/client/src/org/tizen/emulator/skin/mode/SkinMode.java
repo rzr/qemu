@@ -34,7 +34,7 @@ package org.tizen.emulator.skin.mode;
 public enum SkinMode {
 	GENERAL("general"),
 	FULLSCREEN("fullscreen"), /* not used yet */
-	DEFAULT("default"),
+	STANDARD("standard"),
 	CUSTOM("custom"); /* not used yet */
 
 	private String value;
@@ -55,7 +55,7 @@ public enum SkinMode {
 			}
 		}
 
-		return SkinMode.DEFAULT;
+		return SkinMode.STANDARD;
 	}
 }
 

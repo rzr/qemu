@@ -2079,7 +2079,7 @@ public class EmulatorSkin {
 		final Menu menu = new Menu(shell, SWT.DROP_DOWN);
 
 		/* Control Panel menu */
-		/*final MenuItem panelItem = new MenuItem(menu, SWT.PUSH);
+		final MenuItem panelItem = new MenuItem(menu, SWT.PUSH);
 		panelItem.setText("&Control Panel");
 		//panelItem.setImage(imageRegistry.getIcon(IconName.XXX));
 		panelItem.addSelectionListener(new SelectionAdapter() {
@@ -2102,7 +2102,7 @@ public class EmulatorSkin {
 					controlPanel = null;
 				}
 			}
-		} );*/
+		} );
 
 		/* Screen shot menu */
 		final MenuItem screenshotItem = new MenuItem(menu, SWT.PUSH);
