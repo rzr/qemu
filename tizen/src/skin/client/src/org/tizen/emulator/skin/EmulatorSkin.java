@@ -1822,7 +1822,7 @@ public class EmulatorSkin {
 							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath, "-s", "emulator-"
 									+ portSdb, "shell" );
 				} else if ( SwtUtil.isWindowsPlatform() ) {
-					procSdb.command( "cmd.exe", "/c", "start", sdbPath, "-s", "emulator-" + portSdb, "shell" );
+					procSdb.command( "cmd.exe", "/c", "start", sdbPath, "sdb", "-s", "emulator-" + portSdb, "shell" );
 				}
 				logger.log( Level.INFO, procSdb.command().toString() );
 
