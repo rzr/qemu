@@ -105,7 +105,7 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 /**
- * 
+ *
  *
  */
 public class EmulatorSkin {
@@ -133,7 +133,7 @@ public class EmulatorSkin {
 	public static final String GTK_OS_CLASS = "org.eclipse.swt.internal.gtk.OS";
 	public static final String WIN32_OS_CLASS = "org.eclipse.swt.internal.win32.OS";
 	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
-	
+
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
 	protected EmulatorConfig config;
@@ -163,7 +163,7 @@ public class EmulatorSkin {
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
 	private boolean isScreenShotOpened;
-	private boolean isOnUsbKbd;
+	private boolean isOnKbd;
 
 	private ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
@@ -238,7 +238,7 @@ public class EmulatorSkin {
 	}
 
 	private void composeInternal( Canvas lcdCanvas, int x, int y, int lcdWidth, int lcdHeight, int scale,
-			short rotationId, boolean isOnUsbKbd ) {
+			short rotationId, boolean isOnKbd ) {
 
 		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
 
@@ -268,7 +268,7 @@ public class EmulatorSkin {
 
 		seteHoverColor();
 
-		this.isOnUsbKbd = isOnUsbKbd;
+		this.isOnKbd = isOnKbd;
 		setMenu();
 	}
 
@@ -294,7 +294,7 @@ public class EmulatorSkin {
 //
 //		sourceSkin.reopenSkin.composeInternal( sourceSkin.lcdCanvas, previousLocation.x, previousLocation.y,
 //				sourceSkin.currentLcdWidth, sourceSkin.currentLcdHeight, sourceSkin.currentScale,
-//				sourceSkin.currentRotationId, sourceSkin.isOnUsbKbd );
+//				sourceSkin.currentRotationId, sourceSkin.isOnKbd );
 //
 //		sourceSkin.reopenSkin.windowHandleId = sourceSkin.windowHandleId;
 //
@@ -1973,7 +1973,6 @@ public class EmulatorSkin {
 							break;
 						}
 					}
-					// /////////
 
 					SkinUtil.openMessage( shell, null, "Rotation is not ready.\nPlease, wait.", SWT.ICON_WARNING,
 							config );
@@ -2144,51 +2143,99 @@ public class EmulatorSkin {
 			}
 		} );
 
-		/* USB Keyboard menu */
-		final MenuItem usbKeyboardItem = new MenuItem( menu, SWT.CASCADE );
-		usbKeyboardItem.setText( "&USB Keyboard" );
-		usbKeyboardItem.setImage( imageRegistry.getIcon( IconName.USB_KEBOARD ) );
+		// USB Keyboard menu
+		final MenuItem usbKeyboardItem = new MenuItem(menu, SWT.CASCADE);
+		usbKeyboardItem.setText("&USB Keyboard");
+		usbKeyboardItem.setImage(imageRegistry.getIcon(IconName.USB_KEYBOARD));
 
-		Menu usbKeyBoardMenu = new Menu( shell, SWT.DROP_DOWN );
+		Menu usbKeyBoardMenu = new Menu(shell, SWT.DROP_DOWN);
 
-		final MenuItem usbOnItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
-		usbOnItem.setText( "On" );
-		usbOnItem.setSelection( isOnUsbKbd );
-		
-		final MenuItem usbOffItem = new MenuItem( usbKeyBoardMenu, SWT.RADIO );
-		usbOffItem.setText( "Off" );
-		usbOffItem.setSelection( !isOnUsbKbd );
+		final MenuItem usbOnItem = new MenuItem(usbKeyBoardMenu, SWT.RADIO);
+		usbOnItem.setText("On");
+		usbOnItem.setSelection( isOnKbd );
+
+		final MenuItem usbOffItem = new MenuItem(usbKeyBoardMenu, SWT.RADIO);
+		usbOffItem.setText("Off");
+		usbOffItem.setSelection(!isOnKbd);
 
 		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
 				if (!communicator.isSensorDaemonStarted()) {
 					SkinUtil.openMessage(shell, null,
 							"USB is not ready.\nPlease wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
-					usbOnItem.setSelection(isOnUsbKbd);
-					usbOffItem.setSelection(!isOnUsbKbd);
+					usbOnItem.setSelection(isOnKbd);
+					usbOffItem.setSelection(!isOnKbd);
 
 					return;
 				}
 
 				MenuItem item = (MenuItem) e.getSource();
 				if ( item.getSelection() ) {
-					boolean on = item.equals( usbOnItem );
-					isOnUsbKbd = on;
-					logger.info("USB keyboard " + isOnUsbKbd);
+					boolean on = item.equals(usbOnItem);
+					isOnKbd = on;
+					logger.info("USB keyboard " + isOnKbd);
 
 					communicator.sendToQEMU(
-							SendCommand.USB_KBD, new BooleanData(on, SendCommand.USB_KBD.toString()) );
+							SendCommand.USB_KBD, new BooleanData(on, SendCommand.USB_KBD.toString()));
 				}
 
 			}
 		};
 
-		usbOnItem.addSelectionListener( usbSelectionAdaptor );
-		usbOffItem.addSelectionListener( usbSelectionAdaptor );
+		usbOnItem.addSelectionListener(usbSelectionAdaptor);
+		usbOffItem.addSelectionListener(usbSelectionAdaptor);
 
-		usbKeyboardItem.setMenu( usbKeyBoardMenu );
+		usbKeyboardItem.setMenu(usbKeyBoardMenu);
+
+		/*
+		// VirtIO Keyboard Menu
+		final MenuItem hostKeyboardItem = new MenuItem(menu, SWT.CASCADE);
+		hostKeyboardItem.setText("&Host Keyboard");
+		hostKeyboardItem.setImage(imageRegistry.getIcon(IconName.HOST_KEYBOARD));
+
+		Menu hostKeyboardMenu = new Menu(shell, SWT.DROP_DOWN);
+
+		final MenuItem kbdOnItem = new MenuItem(hostKeyboardMenu, SWT.RADIO);
+		kbdOnItem.setText("On");
+		kbdOnItem.setSelection( isOnKbd );
+
+		final MenuItem kbdOffItem = new MenuItem(hostKeyboardMenu, SWT.RADIO);
+		kbdOffItem.setText("Off");
+		kbdOffItem.setSelection(!isOnKbd);
+
+		SelectionAdapter kbdSelectionAdaptor = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (!communicator.isSensorDaemonStarted()) {
+					SkinUtil.openMessage(shell, null,
+							"Host Keyboard is not ready.\nPlease wait until the emulator is completely boot up.",
+							SWT.ICON_WARNING, config);
+					kbdOnItem.setSelection(isOnKbd);
+					kbdOffItem.setSelection(!isOnKbd);
+
+					return;
+				}
+
+				MenuItem item = (MenuItem) e.getSource();
+				if (item.getSelection()) {
+					boolean on = item.equals(kbdOnItem);
+					isOnKbd = on;
+					logger.info("Host Keyboard " + isOnKbd);
+
+					communicator.sendToQEMU(
+							SendCommand.HOST_KBD, new BooleanData(on, SendCommand.HOST_KBD.toString()));
+				}
+
+			}
+		};
+
+		kbdOnItem.addSelectionListener(kbdSelectionAdaptor);
+		kbdOffItem.addSelectionListener(kbdSelectionAdaptor);
+
+		hostKeyboardItem.setMenu(hostKeyboardMenu);
+		*/
 
 		/* Diagnosis menu */
 		if (SwtUtil.isLinuxPlatform()) { //TODO: windows

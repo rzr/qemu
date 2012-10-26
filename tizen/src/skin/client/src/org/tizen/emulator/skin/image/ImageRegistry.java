@@ -78,7 +78,8 @@ public class ImageRegistry {
 		ADVANCED( "advanced.png" ),
 		CLOSE( "close.png" ),
 		SCREENSHOT( "screenshot.png" ),
-		USB_KEBOARD( "usb_keyboard.png" ),
+		USB_KEYBOARD( "usb_keyboard.png" ),
+		HOST_KEYBOARD( "host_keyboard.png" ),
 		DIAGNOSIS( "diagnosis.png" ),
 		ABOUT( "about.png" ),
 

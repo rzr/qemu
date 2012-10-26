@@ -232,6 +232,35 @@ static PCIDevice *qemu_pci_hot_add_storage(Monitor *mon,
     return dev;
 }
 
+#ifdef CONFIG_MARU
+static PCIDevice *qemu_pci_hot_add_keyboard(Monitor *mon,
+                                           const char *devaddr,
+                                           const char *opts)
+{
+    PCIDevice *dev;
+    PCIBus *bus;
+    int devfn;
+
+    bus = pci_get_bus_devfn(&devfn, devaddr);
+    if (!bus) {
+        monitor_printf(mon, "Invalid PCI device address %s\n", devaddr);
+        return NULL;
+    }
+
+    if (!((BusState*)bus)->allow_hotplug) {
+        monitor_printf(mon, "PCI bus doesn't support hotplug\n");
+        return NULL;
+    }
+
+    dev = pci_create(bus, devfn, "virtio-keyboard-pci");
+    if (qdev_init(&dev->qdev) < 0) {
+        dev = NULL;
+    }
+
+    return dev;
+}
+#endif /* CONFIG_MARU */
+
 void pci_device_hot_add(Monitor *mon, const QDict *qdict)
 {
     PCIDevice *dev = NULL;
@@ -255,6 +284,12 @@ void pci_device_hot_add(Monitor *mon, const QDict *qdict)
         dev = qemu_pci_hot_add_nic(mon, pci_addr, opts);
     } else if (strcmp(type, "storage") == 0) {
         dev = qemu_pci_hot_add_storage(mon, pci_addr, opts);
+#ifdef CONFIG_MARU
+    } else if (strcmp(type, "keyboard") == 0) {
+        printf("virtio-keyboard: pci_addr %s, type %s, opts %s\n",
+                pci_addr, type, opts);
+        dev = qemu_pci_hot_add_keyboard(mon, pci_addr, opts);
+#endif
     } else {
         monitor_printf(mon, "invalid type: %s\n", type);
     }

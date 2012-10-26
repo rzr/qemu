@@ -152,6 +152,8 @@ static void maru_virtio_touchscreen_handle(VirtIODevice *vdev, VirtQueue *vq)
     int sg_index = 0;
     ElementEntry *elem_entry = NULL;
 
+	TRACE("maru_virtio_touchscreen_handle\n");
+
     if (unlikely(virtio_queue_empty(ts->vq))) {
         TRACE("virtqueue is empty\n");
         return;

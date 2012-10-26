@@ -1,10 +1,12 @@
 /*
- * mainloop_evhandle.c
+ * Virtio Keyboard Device
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
- * DoHyung Hong <don.hong@samsung.com>
+ *  Kitae Kim <kt920.kim@samsung.com>
+ *  SeokYeon Hwang <syeon.hwang@samsung.com>
+ *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,35 +27,24 @@
  *
  */
 
-#ifndef MLOOP_EVENT_H_
-#define MLOOP_EVENT_H_
+#ifndef VIRTIO_KEYBOARD_H_
+#define VIRTIO_KEYBOARD_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void mloop_ev_init(void);
-void mloop_ev_stop(void);
+#include "hw.h"
+#include "virtio.h"
 
-void mloop_evcmd_usbkbd(int on);
-void mloop_evcmd_usbdisk(char *img);
-void mloop_evcmd_hostkbd(int on);
+VirtIODevice *virtio_keyboard_init(DeviceState *dev);
 
-int mloop_evcmd_get_usbkbd_status(void);
+void virtio_keyboard_exit(VirtIODevice *vdev);
 
-void mloop_evcmd_set_usbkbd(void *dev);
-void mloop_evcmd_set_usbdisk(void *dev);
-void mloop_evcmd_set_hostkbd(void *dev);
-
-void mloop_evcmd_raise_intr(void *irq);
-void mloop_evcmd_lower_intr(void *irq);
-
-void mloop_evcmd_hwkey(int event_type, int keycode);
-void mloop_evcmd_touch(void);
-void mloop_evcmd_keyboard(void *data);
+void virtio_keyboard_notify (void *opaque);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MLOOP_EVENT_H_ */
+#endif /* VIRTIO_KEYBOARD_H_ */

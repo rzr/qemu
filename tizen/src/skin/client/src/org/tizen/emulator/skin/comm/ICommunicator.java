@@ -207,6 +207,7 @@ public interface ICommunicator extends Runnable {
 		DETAIL_INFO( (short)17 ),
 		RAM_DUMP( (short)18 ),
 		GUEST_DUMP( (short)19 ),
+		HOST_KBD( (short)20 ),
 		
 		RESPONSE_HEART_BEAT( (short)900 ),
 		CLOSE( (short)998 ),

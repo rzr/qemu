@@ -104,6 +104,7 @@ enum {
     RECV_DETAIL_INFO = 17,
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
+    RECV_HOST_KBD = 20,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
@@ -809,19 +810,36 @@ static void* run_skin_server( void* args ) {
                     break;
                 }
                 case RECV_USB_KBD: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_USB_KBD ==\n" );
-                    TRACE( log_buf );
+                    char on = 0;
 
-                    if ( 0 >= length ) {
-                        INFO( "there is no data looking at 0 length." );
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_USB_KBD ==\n");
+                    TRACE(log_buf);
+
+                    if (length <= 0) {
+                        INFO("there is no data looking at 0 length.\n");
                         continue;
                     }
 
-                    char on = 0;
-                    memcpy( &on, recvbuf, sizeof( on ) );
-                    onoff_usb_kbd( on );
+                    memcpy(&on, recvbuf, sizeof(on));
+                    onoff_usb_kbd(on);
                     break;
                 }
+                case RECV_HOST_KBD: {
+                    char on = 0;
+
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_HOST_KBD ==\n");
+                    TRACE(log_buf);
+
+                    if (length <= 0) {
+                        INFO("there is no data looking at 0 length.\n");
+                        continue;
+                    }
+
+                    memcpy(&on, recvbuf, sizeof(on));
+					onoff_host_kbd(on);
+                    break;
+                }
+
                 case RECV_CLOSE: {
                     log_cnt += sprintf( log_buf + log_cnt, "RECV_CLOSE ==\n" );
                     TRACE( log_buf );

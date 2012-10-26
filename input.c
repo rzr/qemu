@@ -57,7 +57,7 @@ void qemu_remove_kbd_event_handler(void)
 }
 
 #ifdef CONFIG_MARU
-
+/* use ps2kbd device as a hardkey device. */
 void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
 {
     qemu_put_ps2kbd_event_opaque = opaque;
@@ -76,7 +76,6 @@ void ps2kbd_put_keycode(int keycode)
         qemu_put_ps2kbd_event(qemu_put_ps2kbd_event_opaque, keycode);
     }
 }
-
 #endif
 
 static void check_mode_change(void)

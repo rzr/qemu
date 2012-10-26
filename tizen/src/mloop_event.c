@@ -41,8 +41,11 @@
 #include "mloop_event.h"
 #include "console.h"
 #include "emul_state.h"
+#include "tizen/src/debug_ch.h"
+#include "monitor.h"
+#include "pci.h"
 
-#define error_report(x, ...)
+MULTI_DEBUG_CHANNEL(qemu, mloop_event);
 
 struct mloop_evsock {
     int sockno;
@@ -69,7 +72,9 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_INTR_DOWN  4
 #define MLOOP_EVTYPE_HWKEY      5
 #define MLOOP_EVTYPE_TOUCH      6
-
+#define MLOOP_EVTYPE_KEYBOARD   7
+#define MLOOP_EVTYPE_KBD_ADD    8
+#define MLOOP_EVTYPE_KBD_DEL    9
 
 static struct mloop_evsock mloop = {-1, 0, 0};
 
@@ -81,13 +86,13 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
     unsigned long nonblock = 1;
 
     if (ev == NULL) {
-        error_report("mloop_evsock: null point");
+        ERR("null pointer\n");
         return -1;
     }
 
     ev->sockno = socket(AF_INET, SOCK_DGRAM, 0);
-    if( ev->sockno == -1 ) {
-        error_report("mloop_evsock: socket() failed");
+    if ( ev->sockno == -1 ) {
+        ERR("socket() failed\n");
         return -1;
     }
 
@@ -108,7 +113,7 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
 
     ret = bind(ev->sockno, &sa, sa_size);
     if (ret) {
-        error_report("mloop_evsock: bind() failed");
+        ERR("bind() failed\n");
         goto mloop_evsock_init_cleanup;
     }
 
@@ -120,7 +125,7 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
 
     ret = connect(ev->sockno, (struct sockaddr *) &sa, sa_size);
     if (ret) {
-        error_report("mloop_evsock: connect() failed");
+        ERR("connect() failed\n");
         goto mloop_evsock_init_cleanup;
     }
 
@@ -162,12 +167,12 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
     int ret;
 
     if (ev == NULL || ev->sockno == -1) {
-        error_report("invalid mloop_evsock");
+        ERR("invalid mloop_evsock\n");
         return -1;
     }
 
     if (p == NULL || p->size <= 0) {
-        error_report("invalid mloop_evpack");
+        ERR("invalid mloop_evpack\n");
         return -1;
     }
 
@@ -184,30 +189,34 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
 
 static USBDevice *usbkbd = NULL;
 static USBDevice *usbdisk = NULL;
+static PCIDevice *hostkbd = NULL;
+
 static void mloop_evhandle_usb_add(char *name)
 {
     if (name == NULL) {
+        ERR("Packet data for usb device is NULL\n");
         return;
     }
 
     if (strcmp(name, "keyboard") == 0) {
         if (usbkbd == NULL) {
             usbkbd = usbdevice_create(name);
-        }
-        else if (usbkbd->attached == 0) {
+        } else if (usbkbd->attached == 0) {
             usb_device_attach(usbkbd);
         }
-    }
-    else if (strncmp(name, "disk:", 5) == 0) {
+    } else if (strncmp(name, "disk:", 5) == 0) {
         if (usbdisk == NULL) {
             usbdisk = usbdevice_create(name);
         }
-    }
+    } else {
+        WARN("There is no usb-device for %s.\n", name);
+     }
 }
 
 static void mloop_evhandle_usb_del(char *name)
 {
     if (name == NULL) {
+        ERR("Packet data for usb device is NULL\n");
         return;
     }
 
@@ -215,11 +224,12 @@ static void mloop_evhandle_usb_del(char *name)
         if (usbkbd && usbkbd->attached != 0) {
             usb_device_detach(usbkbd);
         }
-    }
-    else if (strncmp(name, "disk:", 5) == 0) {
+    } else if (strncmp(name, "disk:", 5) == 0) {
         if (usbdisk) {
             qdev_free(&usbdisk->qdev);
         }
+    } else {
+        WARN("There is no usb-device for %s.\n", name);
     }
 }
 
@@ -267,6 +277,77 @@ static void mloop_evhandle_touch(struct mloop_evpack* pack)
     maru_virtio_touchscreen_notify();
 }
 
+static void mloop_evhandle_keyboard(long data)
+{
+    virtio_keyboard_notify((void*)data);
+}
+
+static void mloop_evhandle_kbd_add(char *name)
+{
+    TRACE("mloop_evhandle_kbd_add\n");
+
+    if (name == NULL) {
+        ERR("packet data is NULL.\n");
+        return;
+    }
+
+    if (strcmp(name, "keyboard") == 0) {
+        QDict *qdict = qdict_new();
+
+        qdict_put(qdict, "pci_addr", qstring_from_str("auto"));
+        qdict_put(qdict, "type", qstring_from_str(name));
+
+        TRACE("hot_add keyboard device.\n");
+        pci_device_hot_add(cur_mon, qdict);
+
+        if (hostkbd) {
+            TRACE("virtio-keyboard device: domain %d, bus %d, slot %d, function %d\n",
+                    pci_find_domain(hostkbd->bus), pci_bus_num(hostkbd->bus),
+                    PCI_SLOT(hostkbd->devfn), PCI_FUNC(hostkbd->devfn));
+        } else {
+            ERR("failed to hot_add keyboard device.\n");
+        }
+
+        QDECREF(qdict);
+    } else {
+        WARN("There is no %s device.\n", name);
+    }
+}
+
+static void mloop_evhandle_kbd_del(char *name)
+{
+    TRACE("mloop_evhandle_kbd_del\n");
+
+    if (name == NULL) {
+        ERR("packet data is NULL.\n");
+        return;
+    }
+
+    if (strcmp(name, "keyboard") == 0) {
+        QDict *qdict = qdict_new();
+        int slot = 0;
+        char slotbuf[4] = {0,};
+
+        if (hostkbd) {
+            slot = PCI_SLOT(hostkbd->devfn);
+            snprintf(slotbuf, sizeof(slotbuf), "%x", slot);
+            TRACE("virtio-keyboard slot %s.\n", slotbuf);
+        } else {
+            ERR("failed to hot_remove keyboard because hostkbd is NULL.\n");
+            return;
+        }
+
+        qdict_put(qdict, "pci_addr", qstring_from_str(slotbuf));
+
+        TRACE("hot_remove keyboard.\n");
+        do_pci_device_hot_remove(cur_mon, qdict);
+
+        QDECREF(qdict);
+    } else {
+        WARN("There is no %s device.\n", name);
+    }
+}
+
 static void mloop_evcb_recv(struct mloop_evsock *ev)
 {
     struct mloop_evpack pack;
@@ -310,6 +391,15 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     case MLOOP_EVTYPE_TOUCH:
         mloop_evhandle_touch(&pack);
         break;
+    case MLOOP_EVTYPE_KEYBOARD:
+        mloop_evhandle_keyboard(ntohl(*(long*)&pack.data[0]));
+        break;
+    case MLOOP_EVTYPE_KBD_ADD:
+        mloop_evhandle_kbd_add(pack.data);
+        break;
+    case MLOOP_EVTYPE_KBD_DEL:
+        mloop_evhandle_kbd_del(pack.data);
+        break;
     default:
         break;
     }
@@ -337,6 +427,16 @@ void mloop_evcmd_usbkbd(int on)
     mloop_evsock_send(&mloop, &pack);
 }
 
+void mloop_evcmd_hostkbd(int on)
+{
+    struct mloop_evpack pack
+        = {htons(MLOOP_EVTYPE_KBD_ADD), htons(13), "keyboard"};
+    if (on == 0) {
+        pack.type = htons(MLOOP_EVTYPE_KBD_DEL);
+    }
+    mloop_evsock_send(&mloop, &pack);
+}
+
 void mloop_evcmd_usbdisk(char *img)
 {
     struct mloop_evpack pack;
@@ -349,8 +449,7 @@ void mloop_evcmd_usbdisk(char *img)
 
         pack.type = htons(MLOOP_EVTYPE_USB_ADD);
         pack.size = htons(5 + sprintf(pack.data, "disk:%s", img));
-    }
-    else {
+    } else {
         pack.type = htons(MLOOP_EVTYPE_USB_DEL);
         pack.size = htons(5 + sprintf(pack.data, "disk:"));
     }
@@ -371,6 +470,11 @@ void mloop_evcmd_set_usbkbd(void *dev)
 void mloop_evcmd_set_usbdisk(void *dev)
 {
     usbdisk = (USBDevice *)dev;
+}
+
+void mloop_evcmd_set_hostkbd(void *dev)
+{
+    hostkbd = (PCIDevice *)dev;
 }
 
 void mloop_evcmd_raise_intr(void *irq)
@@ -417,3 +521,13 @@ void mloop_evcmd_touch(void)
     mloop_evsock_send(&mloop, &pack);
 }
 
+void mloop_evcmd_keyboard(void *data)
+{
+    struct mloop_evpack pack;
+    memset(&pack, 0, sizeof(struct mloop_evpack));
+
+    pack.type = htons(MLOOP_EVTYPE_KEYBOARD);
+    pack.size = htons(8);
+    *(long*)&pack.data[0] = htonl((long)data);
+    mloop_evsock_send(&mloop, &pack);
+}

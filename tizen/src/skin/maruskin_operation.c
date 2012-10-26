@@ -189,9 +189,11 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 #endif
 
+#if 0
     if (!mloop_evcmd_get_usbkbd_status()) {
         return;
     }
+#endif
 
     scancode = javakeycode_to_scancode(event_type, keycode, state_mask, key_location);
     TRACE("javakeycode_to_scancode : %d\n", scancode);
@@ -202,8 +204,10 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 
     if (KEY_PRESSED == event_type) {
+		INFO("key pressed: %d\n", scancode);
         kbd_put_keycode(scancode);
     } else if (KEY_RELEASED == event_type) {
+		INFO("key released: %d\n", scancode);
         kbd_put_keycode(scancode | 0x80);
     }
 }
@@ -414,11 +418,16 @@ void open_shell( void ) {
     INFO("open shell\n");
 }
 
-void onoff_usb_kbd( int on )
+void onoff_usb_kbd(int on)
 {
-    INFO( "usb kbd on/off:%d\n", on );
-    //TODO
+    INFO("usb kbd on/off:%d\n", on);
     mloop_evcmd_usbkbd(on);
+}
+
+void onoff_host_kbd(int on)
+{
+    INFO("host kbd on/off: %d.\n", on);
+    mloop_evcmd_hostkbd(on);
 }
 
 #define MAX_PATH 256

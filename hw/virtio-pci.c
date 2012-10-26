@@ -31,6 +31,7 @@
 #include "range.h"
 #ifdef CONFIG_MARU
 #include "../tizen/src/hw/maru_device_ids.h"
+#include "../tizen/src/mloop_event.h"
 #endif
 
 /* from Linux's linux/virtio_pci.h */
@@ -287,10 +288,10 @@ static void virtio_ioport_write(void *opaque, uint32_t addr, uint32_t val)
 
     switch (addr) {
     case VIRTIO_PCI_GUEST_FEATURES:
-	/* Guest does not negotiate properly?  We have to assume nothing. */
-	if (val & (1 << VIRTIO_F_BAD_FEATURE)) {
+    /* Guest does not negotiate properly?  We have to assume nothing. */
+    if (val & (1 << VIRTIO_F_BAD_FEATURE)) {
             val = vdev->bad_features ? vdev->bad_features(vdev) : 0;
-	}
+    }
         virtio_set_features(vdev, val);
         break;
     case VIRTIO_PCI_QUEUE_PFN:
@@ -823,6 +824,31 @@ static int maru_virtio_touchscreen_exit_pci(PCIDevice *pci_dev)
 }
 #endif
 
+#ifdef CONFIG_MARU
+static int virtio_keyboard_init_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+    VirtIODevice *vdev;
+
+    mloop_evcmd_set_hostkbd(pci_dev);
+    vdev = virtio_keyboard_init(&pci_dev->qdev);
+    if (!vdev) {
+        return -1;
+    }
+    virtio_init_pci(proxy, vdev);
+    return 0;
+}
+
+static int virtio_keyboard_exit_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+
+    virtio_pci_stop_ioeventfd(proxy);
+    virtio_keyboard_exit(proxy->vdev);
+    return virtio_exit_pci(pci_dev);
+}
+#endif
+
 
 static PCIDeviceInfo virtio_info[] = {
     {
@@ -910,20 +936,20 @@ static PCIDeviceInfo virtio_info[] = {
         .qdev.reset = virtio_pci_reset,
     },{
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
-		.qdev.name = "virtio-gl-pci",
+        .qdev.name = "virtio-gl-pci",
         .qdev.alias = "virtio-gl",
-		.qdev.size = sizeof(VirtIOPCIProxy),
-		.init      = virtio_gl_init_pci,
-		.exit      = virtio_exit_pci,
+        .qdev.size = sizeof(VirtIOPCIProxy),
+        .init      = virtio_gl_init_pci,
+        .exit      = virtio_exit_pci,
         .vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET,
         .device_id = PCI_DEVICE_ID_VIRTIO_GL,
         .revision  = VIRTIO_PCI_ABI_VERSION,
         .class_id  = PCI_CLASS_OTHERS,
-		.qdev.props = (Property[]) {
-			DEFINE_PROP_END_OF_LIST(),
-		},
-		.qdev.reset = virtio_pci_reset,
-	},{
+        .qdev.props = (Property[]) {
+            DEFINE_PROP_END_OF_LIST(),
+        },
+        .qdev.reset = virtio_pci_reset,
+    },{
 #endif
 
 #ifdef CONFIG_MARU
@@ -943,6 +969,22 @@ static PCIDeviceInfo virtio_info[] = {
     },{
 #endif
 
+#ifdef CONFIG_MARU
+        .qdev.name = "virtio-keyboard-pci",
+        .qdev.alias = "virtio-keyboard",
+        .qdev.size = sizeof(VirtIOPCIProxy),
+        .init      = virtio_keyboard_init_pci,
+        .exit      = virtio_keyboard_exit_pci,
+        .vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET,
+        .device_id = PCI_DEVICE_ID_VIRTIO_KEYBOARD,
+        .revision  = VIRTIO_PCI_ABI_VERSION,
+        .class_id  = PCI_CLASS_OTHERS,
+        .qdev.props = (Property[]) {
+            DEFINE_PROP_END_OF_LIST(),
+        },
+        .qdev.reset = virtio_pci_reset,
+    },{
+#endif
         /* end of list */
     }
 };

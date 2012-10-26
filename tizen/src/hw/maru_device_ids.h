@@ -47,8 +47,9 @@
 #define PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS 0x1014
 #define PCI_DEVICE_ID_VIRTUAL_CAMERA     0x1018
 #define PCI_DEVICE_ID_VIRTUAL_CODEC      0x101C
-// Device ID 0x1000 through 0x103F inclusive is a virtio device
+/* Device ID 0x1000 through 0x103F inclusive is a virtio device */
 #define PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN 0x101D
+#define PCI_DEVICE_ID_VIRTIO_KEYBOARD	 0x1020
 
 /* Virtio */
 /*
@@ -77,7 +78,7 @@
 |         10           |   mac80211 wlan    |       -       |
 +----------------------+--------------------+---------------+
 */
-#define VIRTIO_ID_TOUCHSCREEN 11
-
+#define VIRTIO_ID_TOUCHSCREEN   11
+#define VIRTIO_ID_KEYBOARD      12
 
 #endif /* MARU_DEVICE_IDS_H_ */
