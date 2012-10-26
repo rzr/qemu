@@ -48,6 +48,7 @@ import org.tizen.emulator.skin.dbi.ImageListType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dbi.RotationsType;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinRotation;
 
@@ -136,12 +137,12 @@ public class ImageRegistry {
 
 		this.display = Display.getDefault();
 
-		int lcdWidth = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-		int lcdHeight = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-		this.argSkinPath = config.getArg( ArgsConstants.SKIN_PATH );
+		int resolutionW = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		int resolutionH = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+		this.argSkinPath = config.getArg(ArgsConstants.SKIN_PATH);
 
-		this.resolutionWidth = lcdWidth;
-		this.resolutionHeight = lcdHeight;
+		this.resolutionWidth = resolutionW;
+		this.resolutionHeight = resolutionH;
 		this.dbiContents = config.getDbiContents();
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();
@@ -150,17 +151,23 @@ public class ImageRegistry {
 
 	}
 
-	public static String getSkinPath( String argSkinPath, int lcdWidth, int lcdHeight ) {
-		String skinPath = ".." + File.separator + SKIN_FOLDER + File.separator +
-				IMAGE_FOLDER_PREFIX + lcdWidth + "x" + lcdHeight;
+	public static String getSkinPath(String argSkinPath, SkinMode skinMode,
+			int resolutionX, int resolutionY) {
+		/* When emulator has a invalid skin path,
+		 emulator uses default skin path instead of it */
+		String defaultSkinPath =
+				".." + File.separator + SKIN_FOLDER + File.separator +
+				((skinMode == SkinMode.GENERAL) ?
+					"emul-general" :
+					IMAGE_FOLDER_PREFIX + resolutionX + "x" + resolutionY);
 
-		if ( argSkinPath == null ) {
-			return skinPath;
+		if (argSkinPath == null) {
+			return defaultSkinPath;
 		}
 
-		File f = new File( argSkinPath );
-		if ( f.isDirectory() == false ) {
-			return skinPath;
+		File f = new File(argSkinPath);
+		if (f.isDirectory() == false) {
+			return defaultSkinPath;
 		}
 
 		return argSkinPath;
@@ -200,7 +207,8 @@ public class ImageRegistry {
 				return null;
 			}
 
-			String skinPath = getSkinPath( argSkinPath, resolutionWidth, resolutionHeight );
+			String skinPath = getSkinPath(argSkinPath, null, resolutionWidth, resolutionHeight);
+			logger.info("get image data of skin from " + skinPath);
 
 			RotationType targetRotation = SkinRotation.getRotation( id );
 

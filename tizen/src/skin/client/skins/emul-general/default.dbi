@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmulatorUI xmlns="http://www.tizen.org/emulator/skin/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dbi version="2.0"/>
+    <rotations>
+        <rotation name="Portrait">
+            <lcd id="0">
+            </lcd>
+            <keyMapList>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>101</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>103</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume up</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume down</keyName>
+                    </eventInfo>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Landscape">
+            <lcd id="0">
+            </lcd>
+            <keyMapList>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>101</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>103</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume up</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume down</keyName>
+                    </eventInfo>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Reverse Portrait">
+            <lcd id="0">
+            </lcd>
+            <keyMapList>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>101</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>103</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume up</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume down</keyName>
+                    </eventInfo>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Reverse Landscape">
+            <lcd id="0">
+            </lcd>
+            <keyMapList>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>101</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>103</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume up</keyName>
+                    </eventInfo>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume down</keyName>
+                    </eventInfo>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+    </rotations>
+    <colors>
+        <hoverColor B="255" G="255" R="255" />
+    </colors>
+</EmulatorUI>

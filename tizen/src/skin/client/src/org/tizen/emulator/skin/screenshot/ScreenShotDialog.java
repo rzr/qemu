@@ -95,16 +95,17 @@ public class ScreenShotDialog {
 
 	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
 
-	private PaletteData paletteData;
-	private Image image;
-	private Canvas imageCanvas;
+	protected PaletteData paletteData;
+	protected PaletteData paletteData2;
+	protected Image image;
+	protected Canvas imageCanvas;
 	private Shell shell;
 	private ScrolledComposite scrollComposite;
 	private Label label;
 
-	private SocketCommunicator communicator;
-	private EmulatorSkin emulatorSkin;
-	private EmulatorConfig config;
+	protected SocketCommunicator communicator;
+	protected EmulatorSkin emulatorSkin;
+	protected EmulatorConfig config;
 
 	private RotationInfo currentRotation;
 	private boolean reserveImage;
@@ -178,7 +179,8 @@ public class ScreenShotDialog {
 			}
 		} );
 
-		paletteData = new PaletteData( RED_MASK, GREEN_MASK, BLUE_MASK );
+		paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+		paletteData2 = new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF);
 
 		scrollComposite.setContent( imageCanvas );
 
@@ -270,32 +272,7 @@ public class ScreenShotDialog {
 		arrageImageLayout();
 	}
 
-	private void capture() throws ScreenShotException {
-
-		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
-		byte[] receivedData = communicator.getReceivedData( dataTranfer );
-
-		if ( null != receivedData ) {
-
-			if ( null != this.image ) {
-				this.image.dispose();
-			}
-
-			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-			ImageData imageData = new ImageData( width , height, COLOR_DEPTH, paletteData, 1, receivedData );
-			
-			RotationInfo rotation = getCurrentRotation();
-			imageData = rotateImageData( imageData, rotation );
-
-		 this.image = new Image( Display.getDefault(), imageData );
-		 
-		 imageCanvas.redraw();
-			
-		} else {
-			throw new ScreenShotException( "Fail to get image data." );
-		}
-
+	protected void capture() throws ScreenShotException {
 	}
 	
 	private double getScaleLevel() {
@@ -352,7 +329,7 @@ public class ScreenShotDialog {
 	}
 	
 
-	private ImageData rotateImageData( ImageData srcData, RotationInfo rotation ) {
+	protected ImageData rotateImageData( ImageData srcData, RotationInfo rotation ) {
 
 		int direction = SWT.NONE;
 
@@ -420,7 +397,7 @@ public class ScreenShotDialog {
 
 	}
 
-	private RotationInfo getCurrentRotation() {
+	protected RotationInfo getCurrentRotation() {
 		short currentRotationId = emulatorSkin.getCurrentRotationId();
 		RotationInfo rotationInfo = RotationInfo.getValue( currentRotationId );
 		return rotationInfo;

@@ -66,6 +66,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -87,12 +88,12 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.ColorsType;
+import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.dialog.DetailInfoDialog;
 import org.tizen.emulator.skin.dialog.RamdumpDialog;
-import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
@@ -103,6 +104,8 @@ import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
+import org.tizen.emulator.skin.window.ControlPanel;
+import org.tizen.emulator.skin.window.SkinWindow;
 
 /**
  *
@@ -137,8 +140,8 @@ public class EmulatorSkin {
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
 	protected EmulatorConfig config;
-	private Shell shell;
-	private ImageRegistry imageRegistry;
+	protected Shell shell;
+	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
 	private SkinMode skinMode;
 	private Image currentImage;
@@ -162,14 +165,14 @@ public class EmulatorSkin {
 	private boolean isShutdownRequested;
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
-	private boolean isScreenShotOpened;
 	private boolean isOnKbd;
 
-	private ScreenShotDialog screenShotDialog;
+	private SkinWindow controlPanel;
+	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
 
-	private SocketCommunicator communicator;
-	private long windowHandleId;
+	protected SocketCommunicator communicator;
+	protected long windowHandleId;
 
 	private Listener shellCloseListener;
 	private PaintListener shellPaintListener;
@@ -202,7 +205,7 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 		
 		int style = SWT.NO_TRIM;
-		if (skinMode == SkinMode.NONE) {
+		if (skinMode == SkinMode.GENERAL) {
 			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
 		}
 
@@ -214,52 +217,51 @@ public class EmulatorSkin {
 	}
 
 	public long compose() {
+		shell.setLayout(new FormLayout());
 
-		this.lcdCanvas = new Canvas( shell, SWT.EMBEDDED );
+		this.lcdCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
 
-		int x = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_X, EmulatorConfig.DEFAULT_WINDOW_X );
-		int y = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_Y, EmulatorConfig.DEFAULT_WINDOW_Y );
-		int lcdWidth = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-		int lcdHeight = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-		int scale = SkinUtil.getValidScale( config );
+		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
+				EmulatorConfig.DEFAULT_WINDOW_X);
+		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
+				EmulatorConfig.DEFAULT_WINDOW_Y);
+
+		int resolutionW = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		int resolutionH = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+		int scale = SkinUtil.getValidScale(config);
 //		int rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION,
 //				EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 		// has to be portrait mode at first booting time
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-		
-		composeInternal( lcdCanvas, x, y, lcdWidth, lcdHeight, scale, rotationId, false );
-		logger.info("lcdWidth : " + lcdWidth + ", lcdHeight : " + lcdHeight + ", scale : " + scale);
 
-		// sdl uses this handle id.
-		windowHandleId = getWindowHandleId();
+		composeInternal(lcdCanvas, x, y, resolutionW, resolutionH, scale, rotationId, false);
+		logger.info("resolution : " + resolutionW + "x" + resolutionH + ", scale : " + scale);
 
-		return windowHandleId;
-
+		return 0;
 	}
 
-	private void composeInternal( Canvas lcdCanvas, int x, int y, int lcdWidth, int lcdHeight, int scale,
-			short rotationId, boolean isOnKbd ) {
+	private void composeInternal(Canvas lcdCanvas,
+			int x, int y, int resolutionW, int resolutionH,
+			int scale, short rotationId, boolean isOnKbd) {
 
-		lcdCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
+		shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+		shell.setLocation(x, y);
+
+		String emulatorName = SkinUtil.makeEmulatorName(config);
+		shell.setText(emulatorName);
+
+		lcdCanvas.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 
 		imageRegistry = ImageRegistry.getInstance();
-
-		shell.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_BLACK ) );
-
-		shell.setLocation( x, y );
-
-		String emulatorName = SkinUtil.makeEmulatorName( config );
-		shell.setText( emulatorName );
-
-		if ( SwtUtil.isWindowsPlatform() ) {
-			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE_ICO ) );
+		if (SwtUtil.isWindowsPlatform()) {
+			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE_ICO));
 		} else {
-			shell.setImage( imageRegistry.getIcon( IconName.EMULATOR_TITLE ) );
+			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
 		}
 
-		arrangeSkin(lcdWidth, lcdHeight, scale, rotationId);
+		arrangeSkin(resolutionW, resolutionH, scale, rotationId);
 
-		if (skinMode != SkinMode.NONE && null == currentImage) {
+		if (skinMode != SkinMode.GENERAL && null == currentImage) {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
@@ -317,65 +319,6 @@ public class EmulatorSkin {
 //
 //	}
 
-	private long getWindowHandleId() {
-
-		long windowHandleId = 0;
-
-		/* org.eclipse.swt.widgets.Widget */
-		if (SwtUtil.isLinuxPlatform()) {
-
-			try {
-				Field field = lcdCanvas.getClass().getField("embeddedHandle");
-				windowHandleId = field.getLong(lcdCanvas);
-				logger.info("lcdCanvas.embeddedHandle:" + windowHandleId);
-			} catch (IllegalArgumentException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (IllegalAccessException e ) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (SecurityException e ) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (NoSuchFieldException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			}
-
-		} else if (SwtUtil.isWindowsPlatform()) {
-
-			try {
-				Field field = lcdCanvas.getClass().getField("handle");
-				windowHandleId = field.getLong(lcdCanvas);
-				logger.info("lcdCanvas.handle:" + windowHandleId);
-			} catch (IllegalArgumentException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (IllegalAccessException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (SecurityException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			} catch (NoSuchFieldException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-				shutdown();
-			}
-
-		} else if (SwtUtil.isMacPlatform()) {
-
-			// not supported
-			windowHandleId = 0;
-
-		} else {
-			logger.severe("Not Supported OS platform:" + SWT.getPlatform());
-			System.exit(-1);
-		}
-
-		return windowHandleId;
-
-	}
-
 	private void seteHoverColor() {
 
 		ColorsType colors = config.getDbiContents().getColors();
@@ -410,14 +353,14 @@ public class EmulatorSkin {
 		this.shell.open();
 
 		// logic only for reopen case ///////
-		if ( isScreenShotOpened && ( null != screenShotDialog ) ) {
-			try {
-				screenShotDialog.setReserveImage( false );
-				screenShotDialog.open();
-			} finally {
-				isScreenShotOpened = false;
-			}
-		}
+//		if ( isScreenShotOpened && ( null != screenShotDialog ) ) {
+//			try {
+//				screenShotDialog.setReserveImage( false );
+//				screenShotDialog.open();
+//			} finally {
+//				isScreenShotOpened = false;
+//			}
+//		}
 		// ///////////////////////////////////
 
 		while ( !shell.isDisposed() ) {
@@ -430,15 +373,15 @@ public class EmulatorSkin {
 
 	}
 
-	private void arrangeSkin( int lcdWidth, int lcdHeight, int scale, short rotationId ) {
+	private void arrangeSkin(int resolutionW, int resolutionH, int scale, short rotationId) {
 
-		this.currentLcdWidth = lcdWidth;
-		this.currentLcdHeight = lcdHeight;
+		this.currentLcdWidth = resolutionW;
+		this.currentLcdHeight = resolutionH;
 		this.currentScale = scale;
 		this.currentRotationId = rotationId;
 		this.currentAngle = SkinRotation.getAngle( rotationId );
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			Image tempImage = null;
 			Image tempKeyPressedImage = null;
 
@@ -465,8 +408,9 @@ public class EmulatorSkin {
 			SkinUtil.trimShell(shell, currentImage);
 		}
 
-		/* not using a layout */
-		SkinUtil.adjustLcdGeometry(lcdCanvas, scale, rotationId, skinMode);
+		/* arrange the lcd */
+		SkinUtil.adjustLcdGeometry(lcdCanvas, currentLcdWidth, currentLcdHeight,
+				scale, rotationId, skinMode);
 
 		/* set window size */
 		if (null != currentImage) {
@@ -477,6 +421,10 @@ public class EmulatorSkin {
 
 		shell.redraw();
 		shell.pack();
+	}
+
+	protected void skinFinalize() {
+		//TODO:
 	}
 
 	private void addShellListener( final Shell shell ) {
@@ -491,12 +439,22 @@ public class EmulatorSkin {
 					removeCanvasListeners();
 
 					if ( !isAboutToReopen ) {
-
-						if ( isScreenShotOpened && ( null != screenShotDialog ) ) {
+						/* close the screen shot window */
+						if (null != screenShotDialog) {
 							Shell scShell = screenShotDialog.getShell();
-							if ( !scShell.isDisposed() ) {
+							if (!scShell.isDisposed()) {
 								scShell.close();
 							}
+							screenShotDialog = null;
+						}
+
+						/* close the control panel window */
+						if (null != controlPanel) {
+							Shell cpShell = controlPanel.getShell();
+							if (!cpShell.isDisposed()) {
+								cpShell.close();
+							}
+							controlPanel = null;
 						}
 
 						// save config only for emulator close
@@ -519,6 +477,8 @@ public class EmulatorSkin {
 					if ( !isDefaultHoverColor ) {
 						hoverColor.dispose();
 					}
+
+					skinFinalize();
 
 				} else {
 
@@ -548,7 +508,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addPaintListener(shellPaintListener);
 		}
 
@@ -602,7 +562,7 @@ public class EmulatorSkin {
 
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addMouseTrackListener(shellMouseTrackListener);
 		}
 
@@ -668,7 +628,7 @@ public class EmulatorSkin {
 			} //end of mouseMove
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addMouseMoveListener(shellMouseMoveListener);
 		}
 
@@ -773,7 +733,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		if (skinMode != SkinMode.NONE) {
+		if (skinMode != SkinMode.GENERAL) {
 			shell.addMouseListener(shellMouseListener);
 		}
 
@@ -1773,10 +1733,18 @@ public class EmulatorSkin {
 			invokeOSMethod( m, shellHandle, hWndInsertAfter, location.x, location.y, 0, 0, noSize );
 		} else if( SwtUtil.isMacPlatform() ) {
 			//TODO:
-			logger.warning( "not supported yet" );
+			logger.warning("not supported yet");
+
+			SkinUtil.openMessage(shell, null,
+					"Sorry. This feature is not supported yet.",
+					SWT.ICON_WARNING, config);
 		}
 
 		return true;
+	}
+
+	protected void openScreenShotWindow() {
+		//TODO:
 	}
 
 	private void addMenuItems( final Shell shell, final Menu menu ) {
@@ -1816,14 +1784,18 @@ public class EmulatorSkin {
 
 				// readyToReopen( EmulatorSkin.this, isOnTop );
 
-				//internal/Library.java::arch()
+				/* internal/Library.java::arch() */
 				String osArch = System.getProperty("os.arch"); //$NON-NLS-1$
 				logger.info(osArch);
-				if (osArch.equals("amd64") || osArch.equals("IA64N") || osArch.equals("IA64W")) { //$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
+				if (osArch.equals("amd64") || osArch.equals("x86_64") ||
+						osArch.equals("IA64W") || osArch.equals("ia64")) {
+					//$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
 					logger.info("64bit architecture");
-					setTopMost64(isOnTop); //64bit
+
+					setTopMost64(isOnTop); /* 64bit */
 				} else {
 					logger.info("32bit architecture");
+
 					setTopMost32(isOnTop);
 				}
 			}
@@ -1893,8 +1865,11 @@ public class EmulatorSkin {
 				} else if (SwtUtil.isWindowsPlatform()) {
 					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
 							"-s", "emulator-" + portSdb, "shell");
+				} else if (SwtUtil.isMacPlatform()) {
+					procSdb.command("/usr/X11/bin/uxterm", "-T", "emulator-" + portSdb, "-e", sdbPath,"shell");
 				}
 				logger.log(Level.INFO, procSdb.command().toString());
+			
 
 				try {
 					procSdb.start(); // open sdb shell
@@ -2099,47 +2074,46 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	private Menu createAdvancedMenu( final Shell shell ) {
+	private Menu createAdvancedMenu(final Shell shell) {
 
-		final Menu menu = new Menu( shell, SWT.DROP_DOWN );
+		final Menu menu = new Menu(shell, SWT.DROP_DOWN);
 
-		/* Screen shot menu */
-		final MenuItem screenshotItem = new MenuItem( menu, SWT.PUSH );
-		screenshotItem.setText( "&Screen Shot" );
-		screenshotItem.setImage( imageRegistry.getIcon( IconName.SCREENSHOT ) );
-		screenshotItem.addSelectionListener( new SelectionAdapter() {
-
+		/* Control Panel menu */
+		final MenuItem panelItem = new MenuItem(menu, SWT.PUSH);
+		panelItem.setText("&Control Panel");
+		//panelItem.setImage(imageRegistry.getIcon(IconName.XXX));
+		panelItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("Control Panel Menu is selected");
 
-				if ( isScreenShotOpened ) {
+				if (controlPanel != null) {
+					//TODO: move a window focus to controlPanel
 					return;
 				}
 
+				RotationType rotation = SkinRotation.getRotation(currentRotationId);
+				List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
+
 				try {
-
-					isScreenShotOpened = true;
-
-					screenShotDialog = new ScreenShotDialog( shell, communicator, EmulatorSkin.this, config,
-							imageRegistry.getIcon(IconName.SCREENSHOT) );
-					screenShotDialog.open();
-
-				} catch ( ScreenShotException ex ) {
-
-					logger.log( Level.SEVERE, ex.getMessage(), ex );
-					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ICON_ERROR, config );
-
-				} catch ( Exception ex ) {
-
-					// defense exception handling.
-					logger.log( Level.SEVERE, ex.getMessage(), ex );
-					String errorMessage = "Internal Error.\n[" + ex.getMessage() + "]";
-					SkinUtil.openMessage( shell, null, errorMessage, SWT.ICON_ERROR, config );
-
+					controlPanel = new ControlPanel(shell, communicator, keyMapList);
+					controlPanel.open();
 				} finally {
-					isScreenShotOpened = false;
+					controlPanel = null;
 				}
+			}
+		} );
 
+		/* Screen shot menu */
+		final MenuItem screenshotItem = new MenuItem(menu, SWT.PUSH);
+		screenshotItem.setText("&Screen Shot");
+		screenshotItem.setImage(imageRegistry.getIcon(IconName.SCREENSHOT));
+		screenshotItem.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("ScreenShot Menu is selected");
+
+				openScreenShotWindow();
 			}
 		} );
 

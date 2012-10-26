@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.tizen.org/emulator/dbi"
-xmlns:dbi="http://www.tizen.org/emulator/dbi" elementFormDefault="qualified">
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.tizen.org/emulator/skin/dbi"
+xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified">
 
 	<element name="EmulatorUI" >
 		<complexType>
