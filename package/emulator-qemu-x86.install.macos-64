@@ -1,0 +1,63 @@
+#!/bin/sh
+
+TIZEN_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`
+SIZE=83886080
+SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
+COCOASUDOPATH="./cocoasudo" 
+SYSCTL_FILE=sysctl.conf
+if [ -z $TIZEN_SDK_INSTALL_PATH ]
+then
+   echo "There is no TIZEN_SDK_PATH ENV" >> /tmp/emulator.log
+#   exit 2;
+fi
+
+echo 'make sysctl.conf file'
+
+echo "kern.sysv.shmmax=83886080" >> $SYSCTL_FILE
+echo "kern.sysv.shmmin=1" >> $SYSCTL_FILE
+echo "kern.sysv.shmmni=128" >> $SYSCTL_FILE
+echo "kern.sysv.shmseg=32" >> $SYSCTL_FILE
+echo "kern.sysv.shmall=20480" >> $SYSCTL_FILE
+
+TIZEN_BIN_PATH=$TIZEN_SDK_INSTALLED_PATH/tools/emulator/bin
+#TIZEN_BIN_PATH=./
+TMP_FILE=setshmmax.sh
+NEW_SHMMAXSIZE=268435456
+if [ $SHMMAXSIZE -lt $SIZE ] 
+then
+	if [ -e /etc/$SYSCTL_FILE ]
+	then
+		echo "mv -f /etc/sysctl.conf /etc/sysctl.conf.old" >> $TMP_FILE
+		echo "cp -f ./$SYSCTL_FILE /etc/." >> $TMP_FILE
+		echo "sysctl -w kern.sysv.shmmax=$NEW_SHMMAXSIZE" >> $TMP_FILE
+		chmod +x $TMP_FILE
+
+		$TIZEN_BIN_PATH/cocoasudo "--prompt=Changing /etc/sysctl.conf file requires that you type your password.(The original file will be removed to sysctl.conf.old)" sh -x ./$TMP_FILE
+	else
+		echo "cp -f ./$SYSCTL_FILE /etc/." >> $TMP_FILE
+		echo "sysctl -w kern.sysv.shmmax=$NEW_SHMMAXSIZE" >> $TMP_FILE
+		chmod +x $TMP_FILE
+
+		$TIZEN_BIN_PATH/cocoasudo "--prompt=Make a new /etc/sysctl.conf file requires that you type your password." sh -x ./$TMP_FILE	
+	fi
+fi
+
+NEW_SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
+
+if [ -e $TMP_FILE ]
+then
+	rm -f $TMP_FILE
+fi
+
+if [ -e $SYSCTL_FILE ]
+then
+	rm -f $SYSCTL_FILE
+fi
+
+if [ ! $SHMMAXSIZE -eq $NEW_SHMMAXSIZE ]
+then
+		
+	echo 'need reboot'
+	exit 99
+fi
+
