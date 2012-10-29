@@ -179,6 +179,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "ui/qemu-spice.h"
 
 #ifdef CONFIG_MARU
+#include "tizen/src/maru_common.h"
 #include "tizen/src/maru_display.h"
 #include "tizen/src/option.h"
 #include "tizen/src/emul_state.h"
@@ -2283,6 +2284,13 @@ static int find_device_opt (QemuOpts *opts, void *opaque)
 }
 
 int use_qemu_display = 0; //0:use tizen qemu sdl, 1:use original qemu sdl
+
+
+#ifdef CONFIG_MARU
+// W/A for preserve larger continuous heap for RAM.
+void *preallocated_ptr = 0;
+#endif
+
 int main(int argc, char **argv, char **envp)
 {
     const char *gdbstub_dev = NULL;
@@ -3430,6 +3438,10 @@ fprintf(stdout, "kernel command : %s\n", kernel_cmdline);
     if (ram_size == 0) {
         ram_size = DEFAULT_RAM_SIZE * 1024 * 1024;
     }
+#ifdef CONFIG_MARU
+    // W/A for preserve larger continuous heap for RAM.
+    preallocated_ptr = qemu_vmalloc(ram_size);
+#endif
 
 #ifdef CONFIG_HAX
     hax_pre_init(ram_size);

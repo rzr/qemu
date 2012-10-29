@@ -43,4 +43,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// W/A for preserve larger continuous heap for RAM.
+extern void *preallocated_ptr;
+
 #endif /* __MARU_COMMON_H__ */
