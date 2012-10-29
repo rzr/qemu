@@ -189,6 +189,7 @@ public class EmulatorSkin {
 	private MenuDetectListener canvasMenuDetectListener;
 
 	private LinkedList<KeyEventData> pressedKeyEventList;
+	private int pressedHWKeyCode;
 
 	private EmulatorSkin reopenSkin;
 	
@@ -203,6 +204,9 @@ public class EmulatorSkin {
 		this.isDefaultHoverColor = true;
 		this.isOnTop = isOnTop;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
+
+		this.windowHandleId = 0;
+		this.pressedHWKeyCode = 0;
 		
 		int style = SWT.NO_TRIM;
 		if (skinMode == SkinMode.GENERAL) {
@@ -570,7 +574,7 @@ public class EmulatorSkin {
 			@Override
 			public void mouseMove( MouseEvent e ) {
 				if ( EmulatorSkin.this.isMousePressed ) {
-					if ( 0 == e.button ) { // left button
+					if (0 == e.button) { /* left button */
 
 						SkinRegion hardkeyRegion = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
 
@@ -635,11 +639,19 @@ public class EmulatorSkin {
 		shellMouseListener = new MouseListener() {
 			@Override
 			public void mouseUp( MouseEvent e ) {
-				if ( 1 == e.button ) { // left button
+				if (1 == e.button) { /* left button */
 					logger.info( "mouseUp in Skin" );
 					EmulatorSkin.this.pressedMouseX = 0;
 					EmulatorSkin.this.pressedMouseY = 0;
 					EmulatorSkin.this.isMousePressed = false;
+
+					if (pressedHWKeyCode != 0) {
+						/* send event */
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.RELEASED.value(), pressedHWKeyCode, 0, 0);
+						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						pressedHWKeyCode = 0;
+					}
 
 					int keyCode = SkinUtil.getHardKeyCode( e.x, e.y, currentRotationId, currentScale );
 
@@ -660,10 +672,6 @@ public class EmulatorSkin {
 							SkinUtil.trimShell(shell, currentImage,
 									region.x, region.y, region.width, region.height);
 						}
-
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), keyCode, 0, 0);
-						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
 
 				}
@@ -671,21 +679,27 @@ public class EmulatorSkin {
 
 			@Override
 			public void mouseDown( MouseEvent e ) {
-				if ( 1 == e.button ) { // left button
+				if (1 == e.button) { /* left button */
 					logger.info( "mouseDown in Skin" );
 					EmulatorSkin.this.pressedMouseX = e.x;
 					EmulatorSkin.this.pressedMouseY = e.y;
-
 					EmulatorSkin.this.isMousePressed = true;
 
 					final int keyCode = SkinUtil.getHardKeyCode(e.x, e.y, currentRotationId, currentScale);
 
-					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
+					if (SkinUtil.UNKNOWN_KEYCODE != keyCode) {
+						/* send event */
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.PRESSED.value(), keyCode, 0, 0);
+						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						pressedHWKeyCode = keyCode;
+
 						shell.setToolTipText(null);
 
 						/* draw the button region as the cropped keyPressed image area */
-						currentPressedRegion = SkinUtil.getHardKeyArea( e.x, e.y, currentRotationId, currentScale );
-						if (currentPressedRegion != null && currentPressedRegion.width != 0 && currentPressedRegion.height != 0) {
+						currentPressedRegion = SkinUtil.getHardKeyArea(e.x, e.y, currentRotationId, currentScale);
+						if (currentPressedRegion != null &&
+								currentPressedRegion.width != 0 && currentPressedRegion.height != 0) {
 							shell.getDisplay().syncExec(new Runnable() {
 								public void run() {
 									if ( null != currentKeyPressedImage ) {
@@ -721,15 +735,13 @@ public class EmulatorSkin {
 							});
 						}
 
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.PRESSED.value(), keyCode, 0, 0);
-						communicator.sendToQEMU( SendCommand.SEND_HARD_KEY_EVENT, keyEventData );
 					}
 				}
 			}
 
 			@Override
-			public void mouseDoubleClick( MouseEvent e ) {
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
 			}
 		};
 
