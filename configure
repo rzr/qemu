@@ -3691,6 +3691,8 @@ fi
 if test "$hax" = "yes" ; then
   if test "$mingw32" = "yes" ; then
     echo "CONFIG_HAX_BACKEND=y" >> $config_host_mak
+  elif test "$darwin" = "yes" ; then
+    echo "CONFIG_HAX_BACKEND=y" >> $config_host_mak
   else
     hax="no"
   fi

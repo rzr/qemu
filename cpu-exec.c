@@ -324,16 +324,21 @@ int cpu_exec(CPUArchState *env)
                             cpu_loop_exit(env);
                     } else if (interrupt_request & CPU_INTERRUPT_SIPI) {
                             do_cpu_sipi(x86_env_get_cpu(env));
+
                     } else if (env->hflags2 & HF2_GIF_MASK) {
                         if ((interrupt_request & CPU_INTERRUPT_SMI) &&
                             !(env->hflags & HF_SMM_MASK)) {
                             cpu_svm_check_intercept_param(env, SVM_EXIT_SMI,
                                                           0);
                             env->interrupt_request &= ~CPU_INTERRUPT_SMI;
+#ifdef CONFIG_HAX
+			    if (hax_enabled())
+			    	env->hax_vcpu->resync = 1;
+#endif
                             do_smm_enter(env);
                             next_tb = 0;
                         } else if ((interrupt_request & CPU_INTERRUPT_NMI) &&
-                                   !(env->hflags2 & HF2_NMI_MASK)) {
+                                  !(env->hflags2 & HF2_NMI_MASK)) {
                             env->interrupt_request &= ~CPU_INTERRUPT_NMI;
                             env->hflags2 |= HF2_NMI_MASK;
                             do_interrupt_x86_hardirq(env, EXCP02_NMI, 1);

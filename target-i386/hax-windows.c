@@ -110,7 +110,8 @@ int hax_set_phys_mem(MemoryRegionSection *section)
 
     info.pa_start = start_addr;
     info.size = size;
-    info.va = (uint64_t)memory_region_get_ram_ptr(mr);
+    info.va = (uint64_t)(memory_region_get_ram_ptr(mr) + 
+    		section->offset_within_region);
     info.flags = memory_region_is_rom(mr) ? 1 : 0;
 
     hDeviceVM = hax_global.vm->fd;

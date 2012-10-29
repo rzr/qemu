@@ -2,6 +2,10 @@
 # for TIZEN-maru board
 
 obj-y += maru_arm_soc.o
+
+ifndef  CONFIG_DARWIN
 obj-y += maru_arm_board.o
+endif
+
 obj-y += maru_arm_vpci.o
 obj-y += maru_arm_pmu.o

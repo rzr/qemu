@@ -54,15 +54,20 @@ static int hax_prepare_emulation(CPUArchState *env)
  */
 static int hax_stop_tbloop(CPUArchState *env)
 {
-    switch (env->hax_vcpu->emulation_state)
-    {
-        case HAX_EMULATE_STATE_MMIO:
-            return 1;
-            break;
-        case HAX_EMULATE_STATE_INITIAL:
+	switch (env->hax_vcpu->emulation_state)
+	{
+	case HAX_EMULATE_STATE_MMIO:
+		if (env->hax_vcpu->resync) {
+			hax_prepare_emulation(env);	
+			env->hax_vcpu->resync = 0;
+			return 0;
+		}
+		return 1;
+		break;
+	case HAX_EMULATE_STATE_INITIAL:
         case HAX_EMULATE_STATE_REAL:
-            if (!hax_vcpu_emulation_mode(env))
-                return 1;
+		if (!hax_vcpu_emulation_mode(env))
+			return 1;
             break;
         default:
             dprint("Invalid emulation state in hax_sto_tbloop state %x\n",
@@ -377,10 +382,25 @@ static void hax_log_stop(MemoryListener *listener,
 {
 }
 
+static void hax_begin(MemoryListener *listener)
+{
+}
+
+static void hax_commit(MemoryListener *listener)
+{
+}
+
+static void hax_region_nop(MemoryListener *listener,
+			MemoryRegionSection *section)
+{
+}
 
 static MemoryListener hax_memory_listener = {
+    .begin = hax_begin,
+    .commit = hax_commit,
     .region_add = hax_region_add,
     .region_del = hax_region_del,
+    .region_nop = hax_region_nop,
     .log_start = hax_log_start,
     .log_stop = hax_log_stop,
     .log_sync = hax_log_sync,
