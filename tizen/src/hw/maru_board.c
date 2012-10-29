@@ -63,6 +63,7 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 
+#include "maru_common.h"
 #include "guest_debug.h"
 
 #define MAX_IDE_BUS 2
@@ -149,6 +150,12 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
     /* allocate ram and load rom/bios */
     if (!xen_enabled()) {
+	// W/A for allocate larger continuous heap.
+        // see vl.c
+        if(preallocated_ptr != NULL) {
+            qemu_vfree(preallocated_ptr);
+        }
+	//
         pc_memory_init(system_memory,
                        kernel_filename, kernel_cmdline, initrd_filename,
                        below_4g_mem_size, above_4g_mem_size,
@@ -270,8 +277,8 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 #ifndef CONFIG_DARWIN
     // maru specialized device init...
     if (pci_enabled) {
-	//tizen_ac97_init(pci_bus);
-		codec_init(pci_bus);        
+        //tizen_ac97_init(pci_bus);
+        codec_init(pci_bus);        
     }
 #endif
 }
