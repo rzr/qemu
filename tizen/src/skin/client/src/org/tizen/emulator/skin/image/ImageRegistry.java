@@ -61,8 +61,8 @@ public class ImageRegistry {
 	
 	private Logger logger = SkinLogger.getSkinLogger( ImageRegistry.class ).getLogger();
 
-	public static final String SKIN_FOLDER = "skins";
-	public static final String IMAGE_FOLDER_PREFIX = "emul-";
+	public static final String SKINS_FOLDER = "skins";
+	public static final String GENERAL_FOLDER = "emul-general";
 	public static final String ICON_FOLDER = "icons";
 	
 	public enum ImageType {
@@ -151,15 +151,12 @@ public class ImageRegistry {
 
 	}
 
-	public static String getSkinPath(String argSkinPath, SkinMode skinMode,
+	public static String getSkinPath(String argSkinPath,
 			int resolutionX, int resolutionY) {
 		/* When emulator has a invalid skin path,
 		 emulator uses default skin path instead of it */
-		String defaultSkinPath =
-				".." + File.separator + SKIN_FOLDER + File.separator +
-				((skinMode == SkinMode.GENERAL) ?
-					"emul-general" :
-					IMAGE_FOLDER_PREFIX + resolutionX + "x" + resolutionY);
+		String defaultSkinPath = ".." + //TODO:
+				File.separator + SKINS_FOLDER + File.separator + GENERAL_FOLDER;
 
 		if (argSkinPath == null) {
 			return defaultSkinPath;
@@ -207,7 +204,7 @@ public class ImageRegistry {
 				return null;
 			}
 
-			String skinPath = getSkinPath(argSkinPath, null, resolutionWidth, resolutionHeight);
+			String skinPath = getSkinPath(argSkinPath, resolutionWidth, resolutionHeight);
 			logger.info("get image data of skin from " + skinPath);
 
 			RotationType targetRotation = SkinRotation.getRotation( id );

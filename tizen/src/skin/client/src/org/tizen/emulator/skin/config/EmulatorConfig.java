@@ -73,7 +73,12 @@ public class EmulatorConfig {
 		public static final String LOG_LEVEL = "log.level";
 		public static final String NET_BASE_PORT = "net.baseport";
 		public static final String SKIN_PATH = "skin.path";
-		public static final String SKIN_MODE = "skin.mode";
+	}
+
+	public interface SkinInfoConstants {
+		public static final String SKIN_NAME = "skin.name";
+		public static final String RESOLUTION_WIDTH = "resolution.width";
+		public static final String RESOLUTION_HEIGHT = "resolution.height";
 	}
 
 	public interface SkinPropertiesConstants {
