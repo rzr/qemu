@@ -1,4 +1,7 @@
 EMUL_DIR=../emulator
+DIBS_X86_DIR=../x86
+DIBS_ARM_DIR=../arm
+DIBS_COMMON_DIR=../common
 
 ifneq ($(wildcard ../../config-host.mak),)
 include ../../config-host.mak
@@ -77,7 +80,7 @@ ifndef CONFIG_DARWIN
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
 		cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/kvmvapic.bin $(EMUL_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
@@ -100,7 +103,7 @@ else
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
 		cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/kvmvapic.bin $(EMUL_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
@@ -125,8 +128,6 @@ endif
 ifdef CONFIG_LINUX
 	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
-else
-
 endif
 
 ifndef CONFIG_DARWIN
@@ -147,29 +148,30 @@ all_dibs: qemu skin_client_dibs
 skin_client_dibs:
 	ant -buildfile skin/client/build.xml -Dclasspath.dibs=$(ROOTDIR)/tools/emulator/bin make-jar-dibs
 install_dibs: all_dibs
-	mkdir -p $(EMUL_DIR)/bin
-	mkdir -p $(EMUL_DIR)/etc
-	mkdir -p $(EMUL_DIR)/data
-	mkdir -p $(EMUL_DIR)/data/bios
+	mkdir -p $(DIBS_COMMON_DIR)/bin
+	mkdir -p $(DIBS_COMMON_DIR)/etc
+	mkdir -p $(DIBS_X86_DIR)/bin
+	mkdir -p $(DIBS_X86_DIR)/data
+	mkdir -p $(DIBS_ARM_DIR)/bin
 ifndef CONFIG_DARWIN
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
 	i386-softmmu) \
-		mkdir -p $(EMUL_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
-		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
-		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
-		cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		mkdir -p $(DIBS_X86_DIR)/data/bios ;\
+		echo "Copying i386-softmmu/qemu-system-i386 to $(DIBS_X86__DIR)/bin/emulator-x86" ;\
+		cp ../../i386-softmmu/qemu-system-i386 $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
+		cp -dpr ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/kvmvapic.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/pxe-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
-		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
+		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
+		cp ../../arm-softmmu/qemu-system-arm $(DIBS_ARM_DIR)/bin/emulator-arm ;\
 		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
-		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
-		cp -dp -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
+		echo "Copying OpenGLES libraries to $(DIBS_ARM_DIR)/bin/" ;\
+		cp -dp -t $(DIBS_ARM_DIR)/bin/ $(GLESLIBS_LIST) ;\
 		fi ;\
 		;; \
 	esac; \
@@ -178,50 +180,48 @@ else
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
 	i386-softmmu) \
-		mkdir -p $(EMUL_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
-		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
-		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
-		cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		mkdir -p $(DIBS_X86_DIR)/data/bios ;\
+		echo "Copying i386-softmmu/qemu-system-i386 to $(DIBS_X86_DIR)/bin/emulator-x86" ;\
+		cp ../../i386-softmmu/qemu-system-i386 $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
+		cp -pPR ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/kvmvapic.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/pxe-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
-		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
+		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
+		cp ../../arm-softmmu/qemu-system-arm $(DIBS_ARM_DIR)/bin/emulator-arm ;\
 		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
-		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
-		cp -pP -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
+		echo "Copying OpenGLES libraries to $(DIBS_ARM_DIR)/bin/" ;\
+		cp -pP -t $(DIBS_ARM_DIR)/bin/ $(GLESLIBS_LIST) ;\
 		fi ;\
 		;; \
 	esac; \
 	done
 endif
 
-	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
+	cp skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
 ifdef CONFIG_WIN32
-	cp check-hax.exe $(EMUL_DIR)/bin
+	cp check-hax.exe $(DIBS_COMMON_DIR)/bin
 endif
 
 ifdef CONFIG_DARWIN
 	cp check-hax $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_LINUX
-	echo "Copying tizen-kvm to $(EMUL_DIR)/etc"
-	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
-	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
-else
-
+	echo "Copying tizen-kvm to $(DIBS_COMMON_DIR)/etc"
+	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_COMMON_DIR)/etc
+	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_COMMON_DIR)/etc
 endif
 
 ifndef CONFIG_DARWIN
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr skin/client/skins $(EMUL_DIR)
+	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
+	cp -dpr ../license $(DIBS_COMMON_DIR)
+	cp -dpr skin/client/skins $(DIBS_COMMON_DIR)
 else
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -pPR ../license $(EMUL_DIR)
-	cp -pPR skin/client/skins $(EMUL_DIR)
-	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
+	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
+	cp -pPR ../license $(DIBS_COMMON_DIR)
+	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
+	cp -pPR skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
 endif
