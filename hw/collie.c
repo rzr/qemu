@@ -4,6 +4,9 @@
  * Copyright (C) 2011 Dmitry Eremin-Solenikov
  *
  * This code is licensed under GNU GPL v2.
+ *
+ * Contributions after 2012-01-13 are licensed under the terms of the
+ * GNU GPL, version 2 or (at your option) any later version.
  */
 #include "hw.h"
 #include "sysbus.h"
@@ -51,7 +54,7 @@ static void collie_init(ram_addr_t ram_size,
     collie_binfo.kernel_cmdline = kernel_cmdline;
     collie_binfo.initrd_filename = initrd_filename;
     collie_binfo.board_id = 0x208;
-    arm_load_kernel(s->env, &collie_binfo);
+    arm_load_kernel(s->cpu, &collie_binfo);
 }
 
 static QEMUMachine collie_machine = {

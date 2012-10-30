@@ -3,6 +3,7 @@
 
 #include "qdev.h"
 #include "block.h"
+#include "hw/block-common.h"
 #include "sysemu.h"
 
 #define MAX_SCSI_DEVS	255
@@ -13,7 +14,6 @@ typedef struct SCSIBus SCSIBus;
 typedef struct SCSIBusInfo SCSIBusInfo;
 typedef struct SCSICommand SCSICommand;
 typedef struct SCSIDevice SCSIDevice;
-typedef struct SCSIDeviceInfo SCSIDeviceInfo;
 typedef struct SCSIRequest SCSIRequest;
 typedef struct SCSIReqOps SCSIReqOps;
 
@@ -47,8 +47,11 @@ struct SCSIRequest {
     uint32_t          tag;
     uint32_t          lun;
     uint32_t          status;
+    size_t            resid;
     SCSICommand       cmd;
     BlockDriverAIOCB  *aiocb;
+    QEMUSGList        *sg;
+    bool              dma_started;
     uint8_t sense[SCSI_SENSE_BUF_SIZE];
     uint32_t sense_len;
     bool enqueued;
@@ -58,6 +61,23 @@ struct SCSIRequest {
     QTAILQ_ENTRY(SCSIRequest) next;
 };
 
+#define TYPE_SCSI_DEVICE "scsi-device"
+#define SCSI_DEVICE(obj) \
+     OBJECT_CHECK(SCSIDevice, (obj), TYPE_SCSI_DEVICE)
+#define SCSI_DEVICE_CLASS(klass) \
+     OBJECT_CLASS_CHECK(SCSIDeviceClass, (klass), TYPE_SCSI_DEVICE)
+#define SCSI_DEVICE_GET_CLASS(obj) \
+     OBJECT_GET_CLASS(SCSIDeviceClass, (obj), TYPE_SCSI_DEVICE)
+
+typedef struct SCSIDeviceClass {
+    DeviceClass parent_class;
+    int (*init)(SCSIDevice *dev);
+    void (*destroy)(SCSIDevice *s);
+    SCSIRequest *(*alloc_req)(SCSIDevice *s, uint32_t tag, uint32_t lun,
+                              uint8_t *buf, void *hba_private);
+    void (*unit_attention_reported)(SCSIDevice *s);
+} SCSIDeviceClass;
+
 struct SCSIDevice
 {
     DeviceState qdev;
@@ -65,7 +85,6 @@ struct SCSIDevice
     QEMUBH *bh;
     uint32_t id;
     BlockConf conf;
-    SCSIDeviceInfo *info;
     SCSISense unit_attention;
     bool sense_is_ua;
     uint8_t sense[SCSI_SENSE_BUF_SIZE];
@@ -77,6 +96,16 @@ struct SCSIDevice
     int type;
     uint64_t max_lba;
 };
+
+extern const VMStateDescription vmstate_scsi_device;
+
+#define VMSTATE_SCSI_DEVICE(_field, _state) {                        \
+    .name       = (stringify(_field)),                               \
+    .size       = sizeof(SCSIDevice),                                \
+    .vmsd       = &vmstate_scsi_device,                              \
+    .flags      = VMS_STRUCT,                                        \
+    .offset     = vmstate_offset_value(_state, _field, SCSIDevice),  \
+}
 
 /* cdrom.c */
 int cdrom_read_toc(int nb_sectors, uint8_t *buf, int msf, int start_track);
@@ -91,25 +120,29 @@ struct SCSIReqOps {
     void (*write_data)(SCSIRequest *req);
     void (*cancel_io)(SCSIRequest *req);
     uint8_t *(*get_buf)(SCSIRequest *req);
-};
 
-typedef int (*scsi_qdev_initfn)(SCSIDevice *dev);
-struct SCSIDeviceInfo {
-    DeviceInfo qdev;
-    scsi_qdev_initfn init;
-    void (*destroy)(SCSIDevice *s);
-    SCSIRequest *(*alloc_req)(SCSIDevice *s, uint32_t tag, uint32_t lun,
-                              uint8_t *buf, void *hba_private);
-    void (*unit_attention_reported)(SCSIDevice *s);
+    void (*save_request)(QEMUFile *f, SCSIRequest *req);
+    void (*load_request)(QEMUFile *f, SCSIRequest *req);
 };
 
 struct SCSIBusInfo {
     int tcq;
     int max_channel, max_target, max_lun;
     void (*transfer_data)(SCSIRequest *req, uint32_t arg);
-    void (*complete)(SCSIRequest *req, uint32_t arg);
+    void (*complete)(SCSIRequest *req, uint32_t arg, size_t resid);
     void (*cancel)(SCSIRequest *req);
+    void (*hotplug)(SCSIBus *bus, SCSIDevice *dev);
+    void (*hot_unplug)(SCSIBus *bus, SCSIDevice *dev);
+    void (*change)(SCSIBus *bus, SCSIDevice *dev, SCSISense sense);
+    QEMUSGList *(*get_sg_list)(SCSIRequest *req);
+
+    void (*save_request)(QEMUFile *f, SCSIRequest *req);
+    void *(*load_request)(QEMUFile *f, SCSIRequest *req);
+    void (*free_request)(SCSIBus *bus, void *priv);
 };
+
+#define TYPE_SCSI_BUS "SCSI"
+#define SCSI_BUS(obj) OBJECT_CHECK(SCSIBus, (obj), TYPE_SCSI_BUS)
 
 struct SCSIBus {
     BusState qbus;
@@ -120,7 +153,6 @@ struct SCSIBus {
 };
 
 void scsi_bus_new(SCSIBus *bus, DeviceState *host, const SCSIBusInfo *info);
-void scsi_qdev_register(SCSIDeviceInfo *info);
 
 static inline SCSIBus *scsi_bus_from_device(SCSIDevice *d)
 {
@@ -151,6 +183,10 @@ extern const struct SCSISense sense_code_INVALID_OPCODE;
 extern const struct SCSISense sense_code_LBA_OUT_OF_RANGE;
 /* Illegal request, Invalid field in CDB */
 extern const struct SCSISense sense_code_INVALID_FIELD;
+/* Illegal request, Invalid field in parameter list */
+extern const struct SCSISense sense_code_INVALID_PARAM;
+/* Illegal request, Parameter list length error */
+extern const struct SCSISense sense_code_INVALID_PARAM_LEN;
 /* Illegal request, LUN not supported */
 extern const struct SCSISense sense_code_LUN_NOT_SUPPORTED;
 /* Illegal request, Saving parameters not supported */
@@ -165,6 +201,8 @@ extern const struct SCSISense sense_code_IO_ERROR;
 extern const struct SCSISense sense_code_I_T_NEXUS_LOSS;
 /* Command aborted, Logical Unit failure */
 extern const struct SCSISense sense_code_LUN_FAILURE;
+/* LUN not ready, Capacity data has changed */
+extern const struct SCSISense sense_code_CAPACITY_CHANGED;
 /* LUN not ready, Medium not present */
 extern const struct SCSISense sense_code_UNIT_ATTENTION_NO_MEDIUM;
 /* Unit attention, Power on, reset or bus device reset occurred */
@@ -175,6 +213,8 @@ extern const struct SCSISense sense_code_MEDIUM_CHANGED;
 extern const struct SCSISense sense_code_REPORTED_LUNS_CHANGED;
 /* Unit attention, Device internal reset */
 extern const struct SCSISense sense_code_DEVICE_INTERNAL_RESET;
+/* Data Protection, Write Protected */
+extern const struct SCSISense sense_code_WRITE_PROTECTED;
 
 #define SENSE_CODE(x) sense_code_ ## x
 
@@ -202,6 +242,8 @@ void scsi_req_abort(SCSIRequest *req, int status);
 void scsi_req_cancel(SCSIRequest *req);
 void scsi_req_retry(SCSIRequest *req);
 void scsi_device_purge_requests(SCSIDevice *sdev, SCSISense sense);
+void scsi_device_set_ua(SCSIDevice *sdev, SCSISense sense);
+void scsi_device_report_change(SCSIDevice *dev, SCSISense sense);
 int scsi_device_get_sense(SCSIDevice *dev, uint8_t *buf, int len, bool fixed);
 SCSIDevice *scsi_device_find(SCSIBus *bus, int channel, int target, int lun);
 

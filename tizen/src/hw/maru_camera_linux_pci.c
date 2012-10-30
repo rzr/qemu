@@ -483,7 +483,8 @@ error:
 
 void marucam_device_init(MaruCamState* state)
 {
-    qemu_thread_create(&state->thread_id, marucam_worker_thread, (void*)state);
+    qemu_thread_create(&state->thread_id, marucam_worker_thread, (void*)state,
+            QEMU_THREAD_JOINABLE);
 }
 
 void marucam_device_open(MaruCamState* state)

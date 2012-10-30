@@ -8,6 +8,16 @@ config-host.mak:
 	@exit 1
 endif
 
+export CONFIG_OPENGLES
+
+ifdef CONFIG_OPENGLES
+ifdef CONFIG_WIN32
+GLESLIBS_LIST:=$(wildcard ../../arm-softmmu/*.dll)
+else
+GLESLIBS_LIST:=$(wildcard ../../arm-softmmu/lib*)
+endif
+endif
+
 all: qemu skin_client
 qemu: build_info ffmpeg_install check_hax
 	cd ../../ && $(MAKE)
@@ -56,9 +66,55 @@ distclean: ffmpeg_distclean qemu_distclean
 install: all
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
-	mkdir -p $(EMUL_DIR)/data 
-	mkdir -p $(EMUL_DIR)/data/bios
-	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
+	mkdir -p $(EMUL_DIR)/data
+ifndef CONFIG_DARWIN
+	@for target in $(TARGET_DIRS); do \
+	case "$$target" in \
+	i386-softmmu) \
+		mkdir -p $(EMUL_DIR)/data/bios ;\
+		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
+		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
+		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
+		cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		;; \
+	arm-softmmu) \
+		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
+		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
+		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
+		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
+		cp -dp -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
+		fi ;\
+		;; \
+	esac; \
+	done
+else
+	@for target in $(TARGET_DIRS); do \
+	case "$$target" in \
+	i386-softmmu) \
+		mkdir -p $(EMUL_DIR)/data/bios ;\
+		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
+		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
+		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
+		cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		;; \
+	arm-softmmu) \
+		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
+		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
+		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
+		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
+		cp -pP -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
+		fi ;\
+		;; \
+	esac; \
+	done
+endif
+	
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
@@ -66,33 +122,24 @@ endif
 ifdef CONFIG_DARWIN
 	cp check-hax $(EMUL_DIR)/bin
 endif
-
-ifndef CONFIG_DARWIN
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
-	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
-	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
-	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
-	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
-	cp -dpr skin/client/skins $(EMUL_DIR)
-else
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -pPR ../license $(EMUL_DIR)
-	cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
-	cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
-	cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
-	cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
-	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
-	cp -pPR skin/client/skins $(EMUL_DIR)
-	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
-endif
-
 ifdef CONFIG_LINUX
 	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 else
 
+endif
+
+ifndef CONFIG_DARWIN
+	cp ../../qemu-img $(EMUL_DIR)/bin
+	cp -dpr ../license $(EMUL_DIR)
+	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
+	cp -dpr skin/client/skins $(EMUL_DIR)
+else
+	cp ../../qemu-img $(EMUL_DIR)/bin
+	cp -pPR ../license $(EMUL_DIR)
+	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
+	cp -pPR skin/client/skins $(EMUL_DIR)
+	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
 endif
 
 # for dibs system...
@@ -102,9 +149,56 @@ skin_client_dibs:
 install_dibs: all_dibs
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
-	mkdir -p $(EMUL_DIR)/data 
+	mkdir -p $(EMUL_DIR)/data
 	mkdir -p $(EMUL_DIR)/data/bios
-	cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86
+ifndef CONFIG_DARWIN
+	@for target in $(TARGET_DIRS); do \
+	case "$$target" in \
+	i386-softmmu) \
+		mkdir -p $(EMUL_DIR)/data/bios ;\
+		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
+		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
+		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
+		cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		;; \
+	arm-softmmu) \
+		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
+		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
+		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
+		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
+		cp -dp -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
+		fi ;\
+		;; \
+	esac; \
+	done
+else
+	@for target in $(TARGET_DIRS); do \
+	case "$$target" in \
+	i386-softmmu) \
+		mkdir -p $(EMUL_DIR)/data/bios ;\
+		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
+		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
+		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
+		cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		;; \
+	arm-softmmu) \
+		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
+		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
+		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
+		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
+		cp -pP -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
+		fi ;\
+		;; \
+	esac; \
+	done
+endif
+
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
 	cp check-hax.exe $(EMUL_DIR)/bin
@@ -113,29 +207,21 @@ endif
 ifdef CONFIG_DARWIN
 	cp check-hax $(EMUL_DIR)/bin
 endif
-
-ifndef CONFIG_DARWIN
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -dpr ../license $(EMUL_DIR)
-	cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
-	cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
-	cp -dpr ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
-	cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
-	cp -dpr skin/client/skins $(EMUL_DIR)
-else
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -pPR ../license $(EMUL_DIR)
-	cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios
-	cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios
-	cp -pPR ../../pc-bios/pxe-rtl8139.rom $(EMUL_DIR)/data/bios
-	cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios
-	cp -pPR skin/client/skins $(EMUL_DIR)
-	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
-endif
-
 ifdef CONFIG_LINUX
+	echo "Copying tizen-kvm to $(EMUL_DIR)/etc"
 	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 else
 
+endif
+
+ifndef CONFIG_DARWIN
+	cp ../../qemu-img $(EMUL_DIR)/bin
+	cp -dpr ../license $(EMUL_DIR)
+	cp -dpr skin/client/skins $(EMUL_DIR)
+else
+	cp ../../qemu-img $(EMUL_DIR)/bin
+	cp -pPR ../license $(EMUL_DIR)
+	cp -pPR skin/client/skins $(EMUL_DIR)
+	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
 endif

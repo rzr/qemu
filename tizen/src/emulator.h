@@ -50,5 +50,4 @@ void extract_skin_info(int skin_argc, char **skin_argv);
 void prepare_maru(void);
 void check_shdmem(void);
 void make_shdmem(void);
-
 #endif /* __EMULATOR_H__ */

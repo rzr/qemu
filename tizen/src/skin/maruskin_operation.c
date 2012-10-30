@@ -51,11 +51,11 @@
 #include "emul_state.h"
 #include "hw/maru_pm.h"
 #include "sysemu.h"
+#include "sysbus.h"
 
-// for ramdump
+#ifdef CONFIG_HAX
 #include "guest_debug.h"
 
-#ifdef CONFIG_WIN32
 #include "target-i386/hax-i386.h"
 #endif
 
@@ -433,7 +433,7 @@ void onoff_host_kbd(int on)
 #define MAX_PATH 256
 static void dump_ram( void )
 {
-#if defined(CONFIG_LINUX)
+#if defined(CONFIG_LINUX) && !defined(TARGET_ARM) /* FIXME: Handle ARM ram as list */
     MemoryRegion* rm = get_ram_memory();
     unsigned int size = rm->size.lo;
     char dump_fullpath[MAX_PATH];

@@ -18,7 +18,9 @@
  */
 #include "config.h"
 #include "cpu.h"
+#ifndef CONFIG_TCG_PASS_AREG0
 #include "dyngen-exec.h"
+#endif
 #include "disas.h"
 #include "tcg.h"
 
@@ -38,10 +40,10 @@
 
 //#define DEBUG_SIGNAL
 
-static void exception_action(CPUState *env1)
+static void exception_action(CPUArchState *env1)
 {
 #if defined(TARGET_I386)
-    raise_exception_err_env(env1, env1->exception_index, env1->error_code);
+    raise_exception_err(env1, env1->exception_index, env1->error_code);
 #else
     cpu_loop_exit(env1);
 #endif
@@ -50,7 +52,7 @@ static void exception_action(CPUState *env1)
 /* exit the current TB from a signal handler. The host registers are
    restored in a state compatible with the CPU emulator
  */
-void cpu_resume_from_signal(CPUState *env1, void *puc)
+void cpu_resume_from_signal(CPUArchState *env1, void *puc)
 {
 #ifdef __linux__
     struct ucontext *uc = puc;
@@ -58,9 +60,11 @@ void cpu_resume_from_signal(CPUState *env1, void *puc)
     struct sigcontext *uc = puc;
 #endif
 
+#ifndef CONFIG_TCG_PASS_AREG0
     env = env1;
 
     /* XXX: restore cpu registers saved in host registers */
+#endif
 
     if (puc) {
         /* XXX: use siglongjmp ? */
@@ -74,35 +78,39 @@ void cpu_resume_from_signal(CPUState *env1, void *puc)
         sigprocmask(SIG_SETMASK, &uc->sc_mask, NULL);
 #endif
     }
-    env->exception_index = -1;
-    longjmp(env->jmp_env, 1);
+    env1->exception_index = -1;
+    longjmp(env1->jmp_env, 1);
 }
 
 /* 'pc' is the host PC at which the exception was raised. 'address' is
    the effective address of the memory exception. 'is_write' is 1 if a
    write caused the exception and otherwise 0'. 'old_set' is the
    signal set which should be restored */
-static inline int handle_cpu_signal(unsigned long pc, unsigned long address,
+static inline int handle_cpu_signal(uintptr_t pc, unsigned long address,
                                     int is_write, sigset_t *old_set,
                                     void *puc)
 {
     TranslationBlock *tb;
     int ret;
 
+#ifndef CONFIG_TCG_PASS_AREG0
     if (cpu_single_env) {
         env = cpu_single_env; /* XXX: find a correct solution for multithread */
     }
+#endif
 #if defined(DEBUG_SIGNAL)
     qemu_printf("qemu: SIGSEGV pc=0x%08lx address=%08lx w=%d oldset=0x%08lx\n",
                 pc, address, is_write, *(unsigned long *)old_set);
 #endif
     /* XXX: locking issue */
-    if (is_write && page_unprotect(h2g(address), pc, puc)) {
+    if (is_write && h2g_valid(address)
+        && page_unprotect(h2g(address), pc, puc)) {
         return 1;
     }
 
     /* see if it is an MMU fault */
-    ret = cpu_handle_mmu_fault(env, address, is_write, MMU_USER_IDX);
+    ret = cpu_handle_mmu_fault(cpu_single_env, address, is_write,
+                               MMU_USER_IDX);
     if (ret < 0) {
         return 0; /* not an MMU fault */
     }
@@ -114,13 +122,13 @@ static inline int handle_cpu_signal(unsigned long pc, unsigned long address,
     if (tb) {
         /* the PC is inside the translated code. It means that we have
            a virtual CPU fault */
-        cpu_restore_state(tb, env, pc);
+        cpu_restore_state(tb, cpu_single_env, pc);
     }
 
     /* we restore the process signal mask as the sigreturn should
        do it (XXX: use sigsetjmp) */
     sigprocmask(SIG_SETMASK, old_set, NULL);
-    exception_action(env);
+    exception_action(cpu_single_env);
 
     /* never comes here */
     return 1;
@@ -587,7 +595,7 @@ int cpu_signal_handler(int host_signum, void *pinfo,
 int cpu_signal_handler(int host_signum, void *pinfo,
                        void *puc)
 {
-    struct siginfo *info = pinfo;
+    siginfo_t *info = pinfo;
     struct ucontext *uc = puc;
     unsigned long pc = uc->uc_mcontext.sc_iaoq[0];
     uint32_t insn = *(uint32_t *)pc;

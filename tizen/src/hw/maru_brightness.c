@@ -38,6 +38,9 @@
 
 
 #include "pc.h"
+#ifdef TARGET_ARM
+#include "console.h"
+#endif
 #include "pci.h"
 #include "maru_device_ids.h"
 #include "maru_brightness.h"
@@ -99,10 +102,16 @@ static void brightness_reg_write( void *opaque, target_phys_addr_t addr, uint64_
     case BRIGHTNESS_LEVEL:
         brightness_level = val;
         INFO("brightness_level : %lld\n", val);
+#ifdef TARGET_ARM
+        vga_hw_invalidate();
+#endif
         return;
     case BRIGHTNESS_OFF:
         INFO("brightness_off : %lld\n", val);
         brightness_off = val;
+#ifdef TARGET_ARM
+        vga_hw_invalidate();
+#endif
         return;
     default:
         ERR("wrong brightness register write - addr : %d\n", (int)addr);
@@ -135,20 +144,29 @@ int pci_get_brightness( void ) {
     return brightness_level;
 }
 
-int pci_maru_brightness_init( PCIBus *bus ) {
-    pci_create_simple( bus, -1, QEMU_DEV_NAME );
-    return 0;
+DeviceState *pci_maru_brightness_init(PCIBus *bus)
+{
+    return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
 }
 
-static PCIDeviceInfo brightness_info = {
-    .qdev.name  = QEMU_DEV_NAME,
-    .qdev.size  = sizeof(BrightnessState),
-    .no_hotplug = 1,
-    .init       = brightness_initfn,
+static void brightness_classinit(ObjectClass *klass, void *data)
+{
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->no_hotplug = 1;
+    k->init = brightness_initfn;
+}
+
+static TypeInfo brightness_info = {
+    .name = QEMU_DEV_NAME,
+    .parent = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(BrightnessState),
+    .class_init = brightness_classinit,
 };
 
-static void brightness_register( void ) {
-    pci_qdev_register( &brightness_info );
+static void brightness_register_types(void)
+{
+    type_register_static(&brightness_info);
 }
 
-device_init(brightness_register);
+type_init(brightness_register_types);

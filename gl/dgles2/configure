@@ -1,0 +1,212 @@
+#!/bin/sh
+# Copyright (C) 2010-2011  Nokia Corporation All Rights Reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+# BRIAN PAUL BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+# AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# The list of recognized options and types.
+# BEGIN
+CONFIG_PREFIX="path|/usr/local"
+CONFIG_STATIC="yesno|0"
+CONFIG_OSMESA="yesno|1"
+CONFIG_OSMESA_PREFIX="path|/usr/local"
+CONFIG_GLX="yesno|0"
+CONFIG_WGL="yesno|0"
+CONFIG_X11="yesno|0"
+CONFIG_COCOA="yesno|0"
+CONFIG_OFFSCREEN="yesno|1"
+CONFIG_DEBUG="yesno|0"
+CONFIG_ARCH="string|$(./config.guess)"
+# END
+BEGIN=$(grep "^# BEGIN$" -n $0 | cut -d: -f1)
+END=$(grep "^# END$" -n $0 | cut -d: -f1)
+
+# Make --enable-foo-bar into FOO_BAR if $1 = 1
+# or --bar-baz into BAR_BAZ if $1 = 0
+get_arg()
+{
+	cut -d- -f`expr 3 + $1`- | tr [:lower:]- [:upper:]_
+}
+
+# Make sure an argument is valid.
+check_arg()
+{
+	if [ -z $(head -n `expr $END - 1` $0 \
+		| tail -n +`expr $BEGIN + 1` \
+		| grep ^CONFIG_$(echo $1 | tr [:lower:] [:upper:])=) ];
+	then
+
+		echo "WARNING: Unknown argument $2!"
+	fi
+}
+
+reverse_relative_path()
+{
+	local S="$1"
+	local P="$2"
+	local SR="."
+
+	local S_="$S"
+	while [ "$S_" != "." ]; do
+		local PS="$(basename $S_)"
+		SR="$SR$PS/"
+		S_="$(dirname $S_)"
+	done
+
+	local O="."
+	while [ "$SR" != '.' ]; do
+		local PS="$(basename $SR)"
+		local PP="$(basename $P)"
+
+		case $PS in
+			"..")
+				O="$PP/$O"
+				;;
+			*)
+				O="../$O"
+				;;
+		esac
+
+		SR="$(dirname $SR)"
+		P="$(dirname $P)"
+	done
+
+	echo "$O"
+}
+
+# Alternate defaults for Darwin
+OS=$(uname -s | cut -d_ -f1)
+if [ "$OS" = "Darwin" ]; then
+    COCOA=1
+    OSMESA=0
+fi
+
+# Handle arguments.
+while [ $# -gt 0 ]
+do
+   case "$1" in
+        --enable-* | --with-*)
+			ARG=$(echo "$1" | get_arg 1)
+			check_arg $ARG "$1"
+			eval ARG_$ARG="1"
+			[ $DEBUG ] && eval echo $ARG=\$ARG_$ARG
+			;;
+		--disable-* | --without-*)
+			ARG=$(echo "$1" | get_arg 1)
+			check_arg $ARG "$1"
+			eval ARG_$ARG="0"
+			[ $DEBUG ] && eval echo $ARG=\$ARG_$ARG
+			;;
+		--)
+			shift
+			break
+			;;
+		--*)
+			ARG=$(echo "$1" | cut -d= -f1 | get_arg 0)
+			check_arg $ARG "$1"
+			VALUE="$(echo "$1" | cut -sd= -f2)"
+			eval ARG_$ARG=\"$VALUE\"
+			[ $DEBUG ] && eval echo $ARG=\$ARG_$ARG
+			;;
+		-*)
+		    echo >&2 \
+		    "usage: $0 [-v] [-f file] [file ...]"
+		    exit 1;;
+		*)
+			break;;	# terminate while loop
+    esac
+    shift
+done
+
+if [ -n "$ARCH" ]; then
+	A="$ARCH"
+elif [ -n "$ARG_ARCH" ]; then
+	A="$ARG_ARCH"
+else
+	A="$(./config.guess)"
+fi
+S="$(dirname $0)"
+O=$(reverse_relative_path "$S" "$PWD")
+
+CONFIG="config-host"
+# Clean before reconfiguring.
+if [ -f "$CONFIG.mak" ]; then
+	make clean ARCH="$A"
+fi
+
+echo '# GENERATED FILE, DO NOT EDIT!' > $CONFIG.mak
+cat > $CONFIG.h << __EOF__
+/* GENERATED FILE, DO NOT EDIT! */
+#ifndef CONFIG_ARCH_H_
+#define CONFIG_ARCH_H_
+
+__EOF__
+
+for LINE in $(head -n `expr $END - 1` $0 | tail -n +`expr $BEGIN + 1`);
+do
+	NAME=$(echo $LINE | cut -sd= -f1 | cut -sd_ -f2-)
+	eval REST=$(echo $LINE | cut -sd= -f2-)
+	TYPE=$(echo $REST | cut '-sd|' -f1)
+	DEFAULT=$(echo $REST | cut '-sd|' -f2)
+	eval ARG="\$ARG_$NAME"
+	eval ENV="\$$NAME"
+
+	if [ -n "$ARG" ]; then
+		COMMENT="argument"
+		VALUE="$ARG"
+	elif [ -n "$ENV" ]; then
+		COMMENT="environment"
+		VALUE="$ENV"
+	else
+		COMMENT="default"
+		VALUE="$DEFAULT"
+	fi
+
+	case $TYPE in
+		path|string)
+			VALUEC="\"$VALUE\""
+			;;
+		*)
+			VALUEC="$VALUE"
+			;;
+	esac
+
+	echo "export CONFIG_$NAME=$VALUE# $COMMENT" >> $CONFIG.mak
+	echo "#define CONFIG_$NAME $VALUEC /* $COMMENT */" >> $CONFIG.h
+done
+
+cat >> $CONFIG.h << __EOF__
+
+#endif /* CONFIG_ARCH_H_ */
+__EOF__
+
+cat >> $CONFIG.mak << __EOF__
+
+ifeq (\$(MAKELEVEL),0)
+	O = "$O"
+	S = "$S"
+endif
+__EOF__
+
+# Make sure Makefile points to right place.
+if [ -L Makefile ]; then
+	rm Makefile
+fi
+if [ ! -e Makefile ]; then
+	ln -s "`dirname $0`/Makefile" Makefile
+fi
+

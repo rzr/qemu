@@ -15,7 +15,6 @@
 #include "hw.h"
 #include "pci.h"
 #include "scsi.h"
-#include "block_int.h"
 #include "dma.h"
 
 //#define DEBUG_LSI
@@ -283,8 +282,6 @@ static inline int lsi_irq_on_rsl(LSIState *s)
 
 static void lsi_soft_reset(LSIState *s)
 {
-    lsi_request *p;
-
     DPRINTF("Reset\n");
     s->carry = 0;
 
@@ -351,15 +348,8 @@ static void lsi_soft_reset(LSIState *s)
     s->sbc = 0;
     s->csbc = 0;
     s->sbr = 0;
-    while (!QTAILQ_EMPTY(&s->queue)) {
-        p = QTAILQ_FIRST(&s->queue);
-        QTAILQ_REMOVE(&s->queue, p, next);
-        g_free(p);
-    }
-    if (s->current) {
-        g_free(s->current);
-        s->current = NULL;
-    }
+    assert(QTAILQ_EMPTY(&s->queue));
+    assert(!s->current);
 }
 
 static int lsi_dma_40bit(LSIState *s)
@@ -392,7 +382,7 @@ static inline uint32_t read_dword(LSIState *s, uint32_t addr)
 {
     uint32_t buf;
 
-    pci_dma_read(&s->dev, addr, (uint8_t *)&buf, 4);
+    pci_dma_read(&s->dev, addr, &buf, 4);
     return cpu_to_le32(buf);
 }
 
@@ -651,23 +641,24 @@ static lsi_request *lsi_find_by_tag(LSIState *s, uint32_t tag)
     return NULL;
 }
 
+static void lsi_request_free(LSIState *s, lsi_request *p)
+{
+    if (p == s->current) {
+        s->current = NULL;
+    } else {
+        QTAILQ_REMOVE(&s->queue, p, next);
+    }
+    g_free(p);
+}
+
 static void lsi_request_cancelled(SCSIRequest *req)
 {
     LSIState *s = DO_UPCAST(LSIState, dev.qdev, req->bus->qbus.parent);
     lsi_request *p = req->hba_private;
 
-    if (s->current && req == s->current->req) {
-        scsi_req_unref(req);
-        g_free(s->current);
-        s->current = NULL;
-        return;
-    }
-
-    if (p) {
-        QTAILQ_REMOVE(&s->queue, p, next);
-        scsi_req_unref(req);
-        g_free(p);
-    }
+    req->hba_private = NULL;
+    lsi_request_free(s, p);
+    scsi_req_unref(req);
 }
 
 /* Record that data is available for a queued command.  Returns zero if
@@ -699,7 +690,7 @@ static int lsi_queue_req(LSIState *s, SCSIRequest *req, uint32_t len)
 }
 
  /* Callback to indicate that the SCSI layer has completed a command.  */
-static void lsi_command_complete(SCSIRequest *req, uint32_t status)
+static void lsi_command_complete(SCSIRequest *req, uint32_t status, size_t resid)
 {
     LSIState *s = DO_UPCAST(LSIState, dev.qdev, req->bus->qbus.parent);
     int out;
@@ -715,10 +706,10 @@ static void lsi_command_complete(SCSIRequest *req, uint32_t status)
         lsi_set_phase(s, PHASE_ST);
     }
 
-    if (s->current && req == s->current->req) {
-        scsi_req_unref(s->current->req);
-        g_free(s->current);
-        s->current = NULL;
+    if (req->hba_private == s->current) {
+        req->hba_private = NULL;
+        lsi_request_free(s, s->current);
+        scsi_req_unref(req);
     }
     lsi_resume_script(s);
 }
@@ -729,7 +720,8 @@ static void lsi_transfer_data(SCSIRequest *req, uint32_t len)
     LSIState *s = DO_UPCAST(LSIState, dev.qdev, req->bus->qbus.parent);
     int out;
 
-    if (s->waiting == 1 || !s->current || req->hba_private != s->current ||
+    assert(req->hba_private);
+    if (s->waiting == 1 || req->hba_private != s->current ||
         (lsi_irq_on_rsl(s) && !(s->scntl1 & LSI_SCNTL1_CON))) {
         if (lsi_queue_req(s, req, len)) {
             return;
@@ -1079,7 +1071,7 @@ again:
 
             /* 32-bit Table indirect */
             offset = sxt24(addr);
-            pci_dma_read(&s->dev, s->dsa + offset, (uint8_t *)buf, 8);
+            pci_dma_read(&s->dev, s->dsa + offset, buf, 8);
             /* byte count is stored in bits 0:23 only */
             s->dbc = cpu_to_le32(buf[0]) & 0xffffff;
             s->rbc = s->dbc;
@@ -1678,10 +1670,11 @@ static void lsi_reg_writeb(LSIState *s, int offset, uint8_t val)
         }
         if (val & LSI_SCNTL1_RST) {
             if (!(s->sstat0 & LSI_SSTAT0_RST)) {
-                DeviceState *dev;
+                BusChild *kid;
 
-                QTAILQ_FOREACH(dev, &s->bus.qbus.children, sibling) {
-                    dev->info->reset(dev);
+                QTAILQ_FOREACH(kid, &s->bus.qbus.children, sibling) {
+                    DeviceState *dev = kid->child;
+                    device_reset(dev);
                 }
                 s->sstat0 |= LSI_SSTAT0_RST;
                 lsi_script_scsi_interrupt(s, LSI_SIST0_RST, 0);
@@ -1738,7 +1731,7 @@ static void lsi_reg_writeb(LSIState *s, int offset, uint8_t val)
             lsi_execute_script(s);
         }
         if (val & LSI_ISTAT0_SRST) {
-            lsi_soft_reset(s);
+            qdev_reset_all(&s->dev.qdev);
         }
         break;
     case 0x16: /* MBOX0 */
@@ -2071,15 +2064,13 @@ static const VMStateDescription vmstate_lsi_scsi = {
     }
 };
 
-static int lsi_scsi_uninit(PCIDevice *d)
+static void lsi_scsi_uninit(PCIDevice *d)
 {
     LSIState *s = DO_UPCAST(LSIState, dev, d);
 
     memory_region_destroy(&s->mmio_io);
     memory_region_destroy(&s->ram_io);
     memory_region_destroy(&s->io_io);
-
-    return 0;
 }
 
 static const struct SCSIBusInfo lsi_scsi_info = {
@@ -2120,23 +2111,31 @@ static int lsi_scsi_init(PCIDevice *dev)
     return 0;
 }
 
-static PCIDeviceInfo lsi_info = {
-    .qdev.name  = "lsi53c895a",
-    .qdev.alias = "lsi",
-    .qdev.size  = sizeof(LSIState),
-    .qdev.reset = lsi_scsi_reset,
-    .qdev.vmsd  = &vmstate_lsi_scsi,
-    .init       = lsi_scsi_init,
-    .exit       = lsi_scsi_uninit,
-    .vendor_id  = PCI_VENDOR_ID_LSI_LOGIC,
-    .device_id  = PCI_DEVICE_ID_LSI_53C895A,
-    .class_id   = PCI_CLASS_STORAGE_SCSI,
-    .subsystem_id = 0x1000,
-};
-
-static void lsi53c895a_register_devices(void)
+static void lsi_class_init(ObjectClass *klass, void *data)
 {
-    pci_qdev_register(&lsi_info);
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = lsi_scsi_init;
+    k->exit = lsi_scsi_uninit;
+    k->vendor_id = PCI_VENDOR_ID_LSI_LOGIC;
+    k->device_id = PCI_DEVICE_ID_LSI_53C895A;
+    k->class_id = PCI_CLASS_STORAGE_SCSI;
+    k->subsystem_id = 0x1000;
+    dc->reset = lsi_scsi_reset;
+    dc->vmsd = &vmstate_lsi_scsi;
 }
 
-device_init(lsi53c895a_register_devices);
+static TypeInfo lsi_info = {
+    .name          = "lsi53c895a",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(LSIState),
+    .class_init    = lsi_class_init,
+};
+
+static void lsi53c895a_register_types(void)
+{
+    type_register_static(&lsi_info);
+}
+
+type_init(lsi53c895a_register_types)

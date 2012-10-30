@@ -37,6 +37,10 @@
 #include <GL/glext.h>
 #include "GL/wglext.h"
 
+#ifdef MANGLE_OPENGL_SYMBOLS
+#include "gl_mangled.h"
+#endif
+
 /* In Windows, you must create a window *before* you can create a pbuffer or
  * get a context. So we create a hidden Window on startup (see glo_init/GloMain).
  *

@@ -40,10 +40,14 @@
 #include "debug_ch.h"
 //#include "SDL_opengl.h"
 
+#ifdef MANGLE_OPENGL_SYMBOLS
+#include "gl_mangled.h"
+#endif
+
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
 
-DisplaySurface* qemu_display_surface;
+DisplaySurface* qemu_display_surface = NULL;
 
 static SDL_Surface *surface_screen;
 static SDL_Surface *surface_qemu;
@@ -73,7 +77,6 @@ static int sdl_thread_initialized;
 
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
-
 
 void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
 {
@@ -149,8 +152,6 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
 
-    vga_hw_update();
-
     // surface may be NULL in init func.
     qemu_display_surface = ds->surface;
 
@@ -160,10 +161,10 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
             {
                 pthread_mutex_lock(&sdl_mutex);
 
-                SDL_Quit(); //The returned surface is freed by SDL_Quit and must not be freed by the caller
                 maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
 
                 pthread_mutex_unlock(&sdl_mutex);
+                vga_hw_invalidate();
                 break;
             }
 
@@ -171,6 +172,25 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
                 break;
         }
     }
+
+    vga_hw_update();
+
+#ifdef TARGET_ARM
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
+    /*
+    * It is necessary only for exynos4210 FIMD in connection with
+    * some WM (xfwm4, for example)
+    */
+
+    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
+#ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+#endif
 }
 
 //extern int capability_check_gl;
@@ -519,6 +539,8 @@ void maruskin_sdl_quit(void)
 #endif
 
     sdl_alteration = -1;
+
+    SDL_Quit();
 }
 
 

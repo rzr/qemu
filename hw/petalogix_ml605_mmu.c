@@ -32,35 +32,33 @@
 #include "sysemu.h"
 #include "devices.h"
 #include "boards.h"
-#include "device_tree.h"
 #include "xilinx.h"
-#include "loader.h"
-#include "elf.h"
 #include "blockdev.h"
 #include "pc.h"
 #include "exec-memory.h"
 
+#include "microblaze_boot.h"
 #include "microblaze_pic_cpu.h"
-#include "xilinx_axidma.h"
+
+#include "stream.h"
 
 #define LMB_BRAM_SIZE  (128 * 1024)
 #define FLASH_SIZE     (32 * 1024 * 1024)
 
-static struct
-{
-    uint32_t bootstrap_pc;
-    uint32_t cmdline;
-    uint32_t fdt;
-} boot_info;
+#define BINARY_DEVICE_TREE_FILE "petalogix-ml605.dtb"
 
-static void main_cpu_reset(void *opaque)
-{
-    CPUState *env = opaque;
+#define MEMORY_BASEADDR 0x50000000
+#define FLASH_BASEADDR 0x86000000
+#define INTC_BASEADDR 0x81800000
+#define TIMER_BASEADDR 0x83c00000
+#define UART16550_BASEADDR 0x83e00000
+#define AXIENET_BASEADDR 0x82780000
+#define AXIDMA_BASEADDR 0x84600000
 
-    cpu_reset(env);
-    env->regs[5] = boot_info.cmdline;
-    env->regs[7] = boot_info.fdt;
-    env->sregs[SR_PC] = boot_info.bootstrap_pc;
+static void machine_cpu_reset(MicroBlazeCPU *cpu)
+{
+    CPUMBState *env = &cpu->env;
+
     env->pvr.regs[10] = 0x0e000000; /* virtex 6 */
     /* setup pvr to match kernel setting */
     env->pvr.regs[5] |= PVR5_DCACHE_WRITEBACK_MASK;
@@ -71,70 +69,6 @@ static void main_cpu_reset(void *opaque)
     env->pvr.regs[5] = 0xc56be000;
 }
 
-#define BINARY_DEVICE_TREE_FILE "petalogix-ml605.dtb"
-static int petalogix_load_device_tree(target_phys_addr_t addr,
-                                      uint32_t ramsize,
-                                      target_phys_addr_t initrd_base,
-                                      target_phys_addr_t initrd_size,
-                                      const char *kernel_cmdline)
-{
-    char *path;
-    int fdt_size;
-#ifdef CONFIG_FDT
-    void *fdt;
-    int r;
-
-    /* Try the local "mb.dtb" override.  */
-    fdt = load_device_tree("mb.dtb", &fdt_size);
-    if (!fdt) {
-        path = qemu_find_file(QEMU_FILE_TYPE_BIOS, BINARY_DEVICE_TREE_FILE);
-        if (path) {
-            fdt = load_device_tree(path, &fdt_size);
-            g_free(path);
-        }
-        if (!fdt) {
-            return 0;
-        }
-    }
-
-    r = qemu_devtree_setprop_string(fdt, "/chosen", "bootargs", kernel_cmdline);
-    if (r < 0) {
-        fprintf(stderr, "couldn't set /chosen/bootargs\n");
-    }
-    cpu_physical_memory_write(addr, (void *)fdt, fdt_size);
-#else
-    /* We lack libfdt so we cannot manipulate the fdt. Just pass on the blob
-       to the kernel.  */
-    fdt_size = load_image_targphys("mb.dtb", addr, 0x10000);
-    if (fdt_size < 0) {
-        path = qemu_find_file(QEMU_FILE_TYPE_BIOS, BINARY_DEVICE_TREE_FILE);
-        if (path) {
-            fdt_size = load_image_targphys(path, addr, 0x10000);
-            g_free(path);
-        }
-    }
-
-    if (kernel_cmdline) {
-        fprintf(stderr,
-                "Warning: missing libfdt, cannot pass cmdline to kernel!\n");
-    }
-#endif
-    return fdt_size;
-}
-
-static uint64_t translate_kernel_address(void *opaque, uint64_t addr)
-{
-    return addr - 0x30000000LL;
-}
-
-#define MEMORY_BASEADDR 0x50000000
-#define FLASH_BASEADDR 0x86000000
-#define INTC_BASEADDR 0x81800000
-#define TIMER_BASEADDR 0x83c00000
-#define UART16550_BASEADDR 0x83e00000
-#define AXIENET_BASEADDR 0x82780000
-#define AXIDMA_BASEADDR 0x84600000
-
 static void
 petalogix_ml605_init(ram_addr_t ram_size,
                           const char *boot_device,
@@ -143,9 +77,9 @@ petalogix_ml605_init(ram_addr_t ram_size,
                           const char *initrd_filename, const char *cpu_model)
 {
     MemoryRegion *address_space_mem = get_system_memory();
-    DeviceState *dev;
-    CPUState *env;
-    int kernel_size;
+    DeviceState *dev, *dma, *eth0;
+    MicroBlazeCPU *cpu;
+    CPUMBState *env;
     DriveInfo *dinfo;
     int i;
     target_phys_addr_t ddr_base = MEMORY_BASEADDR;
@@ -157,16 +91,17 @@ petalogix_ml605_init(ram_addr_t ram_size,
     if (cpu_model == NULL) {
         cpu_model = "microblaze";
     }
-    env = cpu_init(cpu_model);
-
-    qemu_register_reset(main_cpu_reset, env);
+    cpu = cpu_mb_init(cpu_model);
+    env = &cpu->env;
 
     /* Attach emulated BRAM through the LMB.  */
-    memory_region_init_ram(phys_lmb_bram, NULL, "petalogix_ml605.lmb_bram",
+    memory_region_init_ram(phys_lmb_bram, "petalogix_ml605.lmb_bram",
                            LMB_BRAM_SIZE);
+    vmstate_register_ram_global(phys_lmb_bram);
     memory_region_add_subregion(address_space_mem, 0x00000000, phys_lmb_bram);
 
-    memory_region_init_ram(phys_ram, NULL, "petalogix_ml605.ram", ram_size);
+    memory_region_init_ram(phys_ram, "petalogix_ml605.ram", ram_size);
+    vmstate_register_ram_global(phys_ram);
     memory_region_add_subregion(address_space_mem, ddr_base, phys_ram);
 
     dinfo = drive_get(IF_PFLASH, 0, 0);
@@ -189,67 +124,24 @@ petalogix_ml605_init(ram_addr_t ram_size,
                    irq[5], 115200, serial_hds[0], DEVICE_LITTLE_ENDIAN);
 
     /* 2 timers at irq 2 @ 100 Mhz.  */
-    xilinx_timer_create(TIMER_BASEADDR, irq[2], 2, 100 * 1000000);
+    xilinx_timer_create(TIMER_BASEADDR, irq[2], 0, 100 * 1000000);
 
-    /* axi ethernet and dma initialization. TODO: Dynamically connect them.  */
-    {
-        static struct XilinxDMAConnection dmach;
+    /* axi ethernet and dma initialization. */
+    dma = qdev_create(NULL, "xlnx.axi-dma");
 
-        xilinx_axiethernet_create(&dmach, &nd_table[0], 0x82780000,
-                                  irq[3], 0x1000, 0x1000);
-        xilinx_axiethernetdma_create(&dmach, 0x84600000,
-                                     irq[1], irq[0], 100 * 1000000);
-    }
+    /* FIXME: attach to the sysbus instead */
+    object_property_add_child(container_get(qdev_get_machine(), "/unattached"),
+                                  "xilinx-dma", OBJECT(dma), NULL);
 
-    if (kernel_filename) {
-        uint64_t entry, low, high;
-        uint32_t base32;
-        int big_endian = 0;
+    eth0 = xilinx_axiethernet_create(&nd_table[0], STREAM_SLAVE(dma),
+                                     0x82780000, irq[3], 0x1000, 0x1000);
 
-#ifdef TARGET_WORDS_BIGENDIAN
-        big_endian = 1;
-#endif
+    xilinx_axiethernetdma_init(dma, STREAM_SLAVE(eth0),
+                               0x84600000, irq[1], irq[0], 100 * 1000000);
 
-        /* Boots a kernel elf binary.  */
-        kernel_size = load_elf(kernel_filename, NULL, NULL,
-                               &entry, &low, &high,
-                               big_endian, ELF_MACHINE, 0);
-        base32 = entry;
-        if (base32 == 0xc0000000) {
-            kernel_size = load_elf(kernel_filename, translate_kernel_address,
-                                   NULL, &entry, NULL, NULL,
-                                   big_endian, ELF_MACHINE, 0);
-        }
-        /* Always boot into physical ram.  */
-        boot_info.bootstrap_pc = ddr_base + (entry & 0x0fffffff);
+    microblaze_load_kernel(cpu, ddr_base, ram_size, BINARY_DEVICE_TREE_FILE,
+                                                            machine_cpu_reset);
 
-        /* If it wasn't an ELF image, try an u-boot image.  */
-        if (kernel_size < 0) {
-            target_phys_addr_t uentry, loadaddr;
-
-            kernel_size = load_uimage(kernel_filename, &uentry, &loadaddr, 0);
-            boot_info.bootstrap_pc = uentry;
-            high = (loadaddr + kernel_size + 3) & ~3;
-        }
-
-        /* Not an ELF image nor an u-boot image, try a RAW image.  */
-        if (kernel_size < 0) {
-            kernel_size = load_image_targphys(kernel_filename, ddr_base,
-                                              ram_size);
-            boot_info.bootstrap_pc = ddr_base;
-            high = (ddr_base + kernel_size + 3) & ~3;
-        }
-
-        boot_info.cmdline = high + 4096;
-        if (kernel_cmdline && strlen(kernel_cmdline)) {
-            pstrcpy_targphys("cmdline", boot_info.cmdline, 256, kernel_cmdline);
-        }
-        /* Provide a device-tree.  */
-        boot_info.fdt = boot_info.cmdline + 4096;
-        petalogix_load_device_tree(boot_info.fdt, ram_size,
-                                   0, 0,
-                                   kernel_cmdline);
-    }
 }
 
 static QEMUMachine petalogix_ml605_machine = {

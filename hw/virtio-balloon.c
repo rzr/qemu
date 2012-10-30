@@ -20,7 +20,9 @@
 #include "cpu.h"
 #include "balloon.h"
 #include "virtio-balloon.h"
+#include "virtio-transport.h"
 #include "kvm.h"
+#include "exec-memory.h"
 
 #if defined(__linux__)
 #include <sys/mman.h>
@@ -70,25 +72,29 @@ static void virtio_balloon_handle_output(VirtIODevice *vdev, VirtQueue *vq)
 {
     VirtIOBalloon *s = to_virtio_balloon(vdev);
     VirtQueueElement elem;
+    MemoryRegionSection section;
 
     while (virtqueue_pop(vq, &elem)) {
         size_t offset = 0;
         uint32_t pfn;
 
-        while (iov_to_buf(elem.out_sg, elem.out_num, &pfn, offset, 4) == 4) {
+        while (iov_to_buf(elem.out_sg, elem.out_num, offset, &pfn, 4) == 4) {
             ram_addr_t pa;
             ram_addr_t addr;
 
             pa = (ram_addr_t)ldl_p(&pfn) << VIRTIO_BALLOON_PFN_SHIFT;
             offset += 4;
 
-            addr = cpu_get_physical_page_desc(pa);
-            if ((addr & ~TARGET_PAGE_MASK) != IO_MEM_RAM)
+            /* FIXME: remove get_system_memory(), but how? */
+            section = memory_region_find(get_system_memory(), pa, 1);
+            if (!section.size || !memory_region_is_ram(section.mr))
                 continue;
 
-            /* Using qemu_get_ram_ptr is bending the rules a bit, but
+            /* Using memory_region_get_ram_ptr is bending the rules a bit, but
                should be OK because we only want a single page.  */
-            balloon_page(qemu_get_ram_ptr(addr), !!(vq == s->dvq));
+            addr = section.offset_within_region;
+            balloon_page(memory_region_get_ram_ptr(section.mr) + addr,
+                         !!(vq == s->dvq));
         }
 
         virtqueue_push(vq, &elem, offset);
@@ -113,7 +119,7 @@ static void virtio_balloon_receive_stats(VirtIODevice *vdev, VirtQueue *vq)
      */
     reset_stats(s);
 
-    while (iov_to_buf(elem->out_sg, elem->out_num, &stat, offset, sizeof(stat))
+    while (iov_to_buf(elem->out_sg, elem->out_num, offset, &stat, sizeof(stat))
            == sizeof(stat)) {
         uint16_t tag = tswap16(stat.tag);
         uint64_t val = tswap64(stat.val);
@@ -141,8 +147,13 @@ static void virtio_balloon_set_config(VirtIODevice *vdev,
 {
     VirtIOBalloon *dev = to_virtio_balloon(vdev);
     struct virtio_balloon_config config;
+    uint32_t oldactual = dev->actual;
     memcpy(&config, config_data, 8);
     dev->actual = le32_to_cpu(config.actual);
+    if (dev->actual != oldactual) {
+        qemu_balloon_changed(ram_size -
+                             (dev->actual << VIRTIO_BALLOON_PFN_SHIFT));
+    }
 }
 
 static uint32_t virtio_balloon_get_features(VirtIODevice *vdev, uint32_t f)
@@ -206,11 +217,15 @@ static void virtio_balloon_save(QEMUFile *f, void *opaque)
 static int virtio_balloon_load(QEMUFile *f, void *opaque, int version_id)
 {
     VirtIOBalloon *s = opaque;
+    int ret;
 
     if (version_id != 1)
         return -EINVAL;
 
-    virtio_load(&s->vdev, f);
+    ret = virtio_load(&s->vdev, f);
+    if (ret) {
+        return ret;
+    }
 
     s->num_pages = qemu_get_be32(f);
     s->actual = qemu_get_be32(f);
@@ -258,3 +273,44 @@ void virtio_balloon_exit(VirtIODevice *vdev)
     unregister_savevm(s->qdev, "virtio-balloon", s);
     virtio_cleanup(vdev);
 }
+
+/******************** VirtIOBaloon Device **********************/
+
+static int virtio_balloondev_init(DeviceState *dev)
+{
+    VirtIODevice *vdev;
+    VirtIOBaloonState *s = VIRTIO_BALLOON_FROM_QDEV(dev);
+    vdev = virtio_balloon_init(dev);
+    if (!vdev) {
+        return -1;
+    }
+
+    assert(s->trl != NULL);
+
+    return virtio_call_backend_init_cb(dev, s->trl, vdev);
+}
+
+static Property virtio_balloon_properties[] = {
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void virtio_balloon_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    dc->init = virtio_balloondev_init;
+    dc->props = virtio_balloon_properties;
+}
+
+static TypeInfo virtio_balloon_info = {
+    .name = "virtio-balloon",
+    .parent = TYPE_DEVICE,
+    .instance_size = sizeof(VirtIOBaloonState),
+    .class_init = virtio_balloon_class_init,
+};
+
+static void virtio_baloon_register_types(void)
+{
+    type_register_static(&virtio_balloon_info);
+}
+
+type_init(virtio_baloon_register_types)

@@ -1,0 +1,12 @@
+prefix=@INSTALL_DIR@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: glesv2
+Description: DGLES OpenGL ES 2.0 library
+Requires.private: egl
+Version: @GLESV2_VERSION@
+Libs: -L${libdir} -lGLESv2
+Cflags: -I${includedir} 
+

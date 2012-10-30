@@ -1,0 +1,11 @@
+prefix=/media/afaa385f-d818-4cfe-bec0-31ada40a8d36/mackross/eclipse_linux_cdt_space/qemu_exynos4_gles/gl/dgles2/../lib/Linux/x86_64
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: glesv1_cm
+Description: DGLES OpenGL ES 1.1 CM library
+Requires.private: egl
+Version: 1.4.1
+Libs: -L${libdir} -lGLES_CM
+Cflags: -I${includedir}

@@ -153,7 +153,7 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
 
     switch (p->pid) {
     case USB_TOKEN_IN:
-        if (p->devep == 1) {
+        if (p->ep->nr == 1) {
             pthread_mutex_lock(&event_mutex);
 
             if (s->changed == 0) {
@@ -288,28 +288,36 @@ static VMStateDescription vmsd = {
     }
 };
 
-static struct USBDeviceInfo touchscreen_info = {
-    .product_desc   = "Maru USB Touchscreen",
-    .qdev.name      = "usb-maru-touchscreen",
-    .qdev.desc      = "Maru USB Touchscreen",
-    .usbdevice_name = "maru-touchscreen",
-    .usb_desc       = &desc_touchscreen,
-    .qdev.size      = sizeof(USBTouchscreenState),
-    .qdev.vmsd      = &vmsd,
-    .init           = usb_touchscreen_initfn,
-    .handle_packet  = usb_generic_handle_packet,
-    .handle_reset   = usb_touchscreen_handle_reset,
-    .handle_control = usb_touchscreen_handle_control,
-    .handle_data    = usb_touchscreen_handle_data,
-    .handle_destroy = usb_touchscreen_handle_destroy,
+static void usb_touchscreen_class_initfn(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    USBDeviceClass *uc = USB_DEVICE_CLASS(klass);
+
+    uc->handle_reset   = usb_touchscreen_handle_reset;
+    uc->handle_control = usb_touchscreen_handle_control;
+    uc->handle_data    = usb_touchscreen_handle_data;
+    uc->handle_destroy = usb_touchscreen_handle_destroy;
+    uc->init           = usb_touchscreen_initfn;
+    uc->product_desc   = "Maru USB Touchscreen";
+    uc->usb_desc       = &desc_touchscreen;
+    dc->vmsd           = &vmsd;
+    dc->desc           = "Maru USB Touchscreen";
+}
+
+static TypeInfo touchscreen_info = {
+    .name          = "usb-maru-touchscreen",
+    .parent        = TYPE_USB_DEVICE,
+    .instance_size = sizeof(USBTouchscreenState),
+    .class_init    = usb_touchscreen_class_initfn,
 };
 
 /**
  * @brief : register a touchscreen device
  */
-static void usb_touchscreen_register_devices(void)
+static void usb_touchscreen_register_types(void)
 {
-    usb_qdev_register(&touchscreen_info);
+    type_register_static(&touchscreen_info);
+    usb_legacy_register("usb-maru-touchscreen", "maru-touchscreen", NULL);
 }
 
-device_init(usb_touchscreen_register_devices)
+type_init(usb_touchscreen_register_types)

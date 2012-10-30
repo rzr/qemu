@@ -23,13 +23,11 @@
 #define SIGNBIT (uint32_t)0x80000000
 #define SIGNBIT64 ((uint64_t)1 << 63)
 
-#if !defined(CONFIG_USER_ONLY)
 static void raise_exception(int tt)
 {
     env->exception_index = tt;
     cpu_loop_exit(env);
 }
-#endif
 
 uint32_t HELPER(neon_tbl)(uint32_t ireg, uint32_t def,
                           uint32_t rn, uint32_t maxindex)
@@ -71,16 +69,38 @@ uint32_t HELPER(neon_tbl)(uint32_t ireg, uint32_t def,
 #define SHIFT 3
 #include "softmmu_template.h"
 
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+/* Exteneded MMU helper funtions for qemu_ld/st optimization
+   Note that normal helper functions should be defined above
+   to avoid duplication of common functions, slow_ld/st and io_read/write.
+ */
+#define USE_EXTENDED_HELPER
+
+#define SHIFT 0
+#include "softmmu_template.h"
+
+#define SHIFT 1
+#include "softmmu_template.h"
+
+#define SHIFT 2
+#include "softmmu_template.h"
+
+#define SHIFT 3
+#include "softmmu_template.h"
+
+#undef USE_EXTENDED_HELPER
+#endif  /* CONFIG_QEMU_LDST_OPTIMIZATION && CONFIG_SOFTMMU */
+
 /* try to fill the TLB and return an exception if error. If retaddr is
    NULL, it means that the function was called in C code (i.e. not
    from generated code or from helper.c) */
 /* XXX: fix it to restore all registers */
-void tlb_fill(CPUState *env1, target_ulong addr, int is_write, int mmu_idx,
-              void *retaddr)
+void tlb_fill(CPUARMState *env1, target_ulong addr, int is_write, int mmu_idx,
+              uintptr_t retaddr)
 {
     TranslationBlock *tb;
-    CPUState *saved_env;
-    unsigned long pc;
+    CPUARMState *saved_env;
     int ret;
 
     saved_env = env;
@@ -89,12 +109,11 @@ void tlb_fill(CPUState *env1, target_ulong addr, int is_write, int mmu_idx,
     if (unlikely(ret)) {
         if (retaddr) {
             /* now we have a real cpu fault */
-            pc = (unsigned long)retaddr;
-            tb = tb_find_pc(pc);
+            tb = tb_find_pc(retaddr);
             if (tb) {
                 /* the PC is inside the translated code. It means that we have
                    a virtual CPU fault */
-                cpu_restore_state(tb, env, pc);
+                cpu_restore_state(tb, env, retaddr);
             }
         }
         raise_exception(env->exception_index);
@@ -103,7 +122,7 @@ void tlb_fill(CPUState *env1, target_ulong addr, int is_write, int mmu_idx,
 }
 #endif
 
-/* FIXME: Pass an axplicit pointer to QF to CPUState, and move saturating
+/* FIXME: Pass an explicit pointer to QF to CPUARMState, and move saturating
    instructions into helper.c  */
 uint32_t HELPER(add_setq)(uint32_t a, uint32_t b)
 {
@@ -287,6 +306,46 @@ void HELPER(set_user_reg)(uint32_t regno, uint32_t val)
     } else {
         env->regs[regno] = val;
     }
+}
+
+void HELPER(set_cp_reg)(CPUARMState *env, void *rip, uint32_t value)
+{
+    const ARMCPRegInfo *ri = rip;
+    int excp = ri->writefn(env, ri, value);
+    if (excp) {
+        raise_exception(excp);
+    }
+}
+
+uint32_t HELPER(get_cp_reg)(CPUARMState *env, void *rip)
+{
+    const ARMCPRegInfo *ri = rip;
+    uint64_t value;
+    int excp = ri->readfn(env, ri, &value);
+    if (excp) {
+        raise_exception(excp);
+    }
+    return value;
+}
+
+void HELPER(set_cp_reg64)(CPUARMState *env, void *rip, uint64_t value)
+{
+    const ARMCPRegInfo *ri = rip;
+    int excp = ri->writefn(env, ri, value);
+    if (excp) {
+        raise_exception(excp);
+    }
+}
+
+uint64_t HELPER(get_cp_reg64)(CPUARMState *env, void *rip)
+{
+    const ARMCPRegInfo *ri = rip;
+    uint64_t value;
+    int excp = ri->readfn(env, ri, &value);
+    if (excp) {
+        raise_exception(excp);
+    }
+    return value;
 }
 
 /* ??? Flag setting arithmetic is awkward because we need to do comparisons.

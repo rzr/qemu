@@ -12,13 +12,17 @@ QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
 endif
+ifndef CONFIG_DEBUG_EXEC
 CFLAGS += -g -O2
+else
+CFLAGS += -g -O0
+endif
 
 ifdef CONFIG_WIN32
 LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
@@ -35,11 +39,12 @@ ifndef CONFIG_DARWIN
 ###########################################################
 ## Build openGL
 # i386
-ifeq ($(TARGET_ARCH), i386)
+ifdef CONFIG_GL
 
 GL_CUR_PATH = $(SRC_PATH)/tizen/src/hw
 
-GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu -I$(SRC_PATH)/$(TARGET_DIRS) $(QEMU_CFLAGS) $(CFLAGS)
+GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu
+GL_CFLAGS += -I$(SRC_PATH)/i386-softmmu $(QEMU_CFLAGS) $(CFLAGS)
 
 parse_gl_h: parse_gl_h.c
 	$(CC) -g -o $@ $<
@@ -49,15 +54,33 @@ gl_func.h: parse_gl_h
 	./parse_gl_h 2>/dev/null
 opengl_func.h: gl_func.h
 helper_opengl.o: helper_opengl.c opengl_func.h server_stub.c opengl_process.h
-	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $< 
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $<
 gl_beginend.h: $(GL_CUR_PATH)/beginend_funcs.sh
 	$< > $@
 mesa_mipmap.o : mesa_mipmap.c
-	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $< 
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $<
 opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_process.h mesa_mipmap.o
-	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $< 
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $<
 
-endif #($(TARGET_ARCH), i386)
+endif #CONFIG_GL
+
+ifdef CONFIG_OPENGLES
+
+parse_gl_h: parse_gl_h.c
+	$(CC) -g -o $@ $<
+
+gl_mangled.h: parse_gl_h
+	./parse_gl_h mangle 2>/dev/null
+
+gl_mangled.c: gl_mangled.h
+	./parse_gl_h mangle 2>/dev/null
+
+gloffscreen_glx.o gloffscreen_wgl.o gloffscreen_xcomposite.o: gl_mangled.h
+maru_sdl.o gloffscreen_test.o gloffscreen_common.o: gl_mangled.h
+
+obj-y += gl_mangled.o
+
+endif #CONFIG_OPENGLES
 ###########################################################
 endif #!CONFIG_DARWIN
 
@@ -80,22 +103,16 @@ obj-y += mloop_event.o
 obj-y += debug_ch.o
 
 # maru hardware
-obj-i386-y += maru_board.o
-obj-i386-y += maru_overlay.o
-ifndef CONFIG_DARWIN
-obj-i386-y += maru_codec.o
-endif
-obj-i386-y += maru_pm.o
-obj-i386-y += maru_vga.o
-obj-i386-y += maru_brightness.o
-obj-i386-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
-obj-i386-y += maru_virtio_keyboard.o
+include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 
-# FIXME: camera disabled
+obj-y += maru_brightness.o
+obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
+obj-y += maru_virtio_keyboard.o
 ifndef CONFIG_DARWIN
-obj-i386-$(CONFIG_PCI) += maru_camera_common_pci.o
-obj-i386-$(CONFIG_LINUX) += maru_camera_linux_pci.o
-obj-i386-$(CONFIG_WIN32) += maru_camera_win32_pci.o
+obj-y += maru_codec.o
+obj-$(CONFIG_PCI) += maru_camera_common_pci.o
+obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
+obj-$(CONFIG_WIN32) += maru_camera_win32_pci.o
 endif
 
 ifdef CONFIG_LINUX # libs for maru camera on linux host
@@ -106,16 +123,18 @@ ifdef CONFIG_WIN32 # libs for maru camera on windows host
 LIBS += -lole32 -loleaut32 -luuid -lstrmiids
 endif
 
-
 # maru skin
-obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
+obj-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
 
 # guest server
-obj-i386-y += guest_server.o 
+obj-y += guest_server.o
 
 ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
-obj-i386-y += virtio-gl.o helper_opengl.o opengl_exec.o mesa_mipmap.o gloffscreen_common.o gloffscreen_xcomposite.o gloffscreen_wgl.o gloffscreen_test.o
+obj-$(CONFIG_GL) += virtio-gl.o 
+obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
+obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
+obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o
 ###########################################################
 endif

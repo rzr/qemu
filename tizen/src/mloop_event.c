@@ -44,6 +44,7 @@
 #include "tizen/src/debug_ch.h"
 #include "monitor.h"
 #include "pci.h"
+#include "sysemu.h"
 
 MULTI_DEBUG_CHANNEL(qemu, mloop_event);
 
@@ -282,6 +283,7 @@ static void mloop_evhandle_keyboard(long data)
     virtio_keyboard_notify((void*)data);
 }
 
+#ifdef TARGET_I386
 static void mloop_evhandle_kbd_add(char *name)
 {
     TRACE("mloop_evhandle_kbd_add\n");
@@ -347,6 +349,7 @@ static void mloop_evhandle_kbd_del(char *name)
         WARN("There is no %s device.\n", name);
     }
 }
+#endif
 
 static void mloop_evcb_recv(struct mloop_evsock *ev)
 {
@@ -394,12 +397,14 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     case MLOOP_EVTYPE_KEYBOARD:
         mloop_evhandle_keyboard(ntohl(*(long*)&pack.data[0]));
         break;
+#ifdef TARGET_I386
     case MLOOP_EVTYPE_KBD_ADD:
         mloop_evhandle_kbd_add(pack.data);
         break;
     case MLOOP_EVTYPE_KBD_DEL:
         mloop_evhandle_kbd_del(pack.data);
         break;
+#endif
     default:
         break;
     }

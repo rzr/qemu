@@ -34,11 +34,21 @@
 #include "qemu-common.h"
 
 i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
-                       qemu_irq sci_irq, qemu_irq cmos_s3, qemu_irq smi_irq,
-                       int kvm_enabled);
+                       qemu_irq sci_irq, qemu_irq smi_irq,
+                       int kvm_enabled, void *fw_cfg);
 
+#ifdef TARGET_ARM
+static int is_suspended_state( void )
+{
+    return 0;
+}
+static void resume( void )
+{
+    return;
+}
+#else
 void resume( void );
-
 int is_suspended_state( void );
+#endif
 
 #endif /* MARU_PM_H_ */

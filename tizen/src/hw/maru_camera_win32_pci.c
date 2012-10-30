@@ -1506,6 +1506,7 @@ static STDMETHODIMP SetFormat(uint32_t dwWidth, uint32_t dwHeight,
                     {
                         /* use minimum FPS(maximum frameinterval)
                            with non-VT system  */
+#ifdef CONFIG_HAX
                        if (!hax_enabled()) {
                             pvi->AvgTimePerFrame =
                                     (REFERENCE_TIME)scc.MaxFrameInterval;
@@ -1513,6 +1514,10 @@ static STDMETHODIMP SetFormat(uint32_t dwWidth, uint32_t dwHeight,
                             pvi->AvgTimePerFrame =
                                 (REFERENCE_TIME)MARUCAM_DEFAULT_FRAMEINTERVAL;
                         }
+#else
+                            pvi->AvgTimePerFrame =
+                                    (REFERENCE_TIME)scc.MaxFrameInterval;
+#endif
                         hr = pSConfig->lpVtbl->SetFormat(pSConfig, pmtConfig);
                         DeleteMediaType(pmtConfig);
                         break;

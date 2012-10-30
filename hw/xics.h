@@ -31,7 +31,14 @@
 
 struct icp_state;
 
-qemu_irq xics_find_qirq(struct icp_state *icp, int irq);
+enum xics_irq_type {
+    XICS_MSI,        /* Message-signalled (edge) interrupt */
+    XICS_LSI,        /* Level-signalled interrupt */
+};
+
+qemu_irq xics_get_qirq(struct icp_state *icp, int irq);
+void xics_set_irq_type(struct icp_state *icp, int irq,
+                       enum xics_irq_type type);
 
 struct icp_state *xics_system_init(int nr_irqs);
 

@@ -3,7 +3,7 @@
  * some code from KVM side
  */
 
-#include "target-i386/hax-i386.h"
+#include "hax-i386.h"
 
 #define HAX_EMUL_ONE    0x1
 #define HAX_EMUL_REAL   0x2
@@ -16,6 +16,8 @@
 #define HAX_EMULATE_STATE_INITIAL       0x4
 
 struct hax_state hax_global;
+int ret_hax_init = 0;
+static int hax_disabled = 1;
 
 int hax_support = -1;
 
@@ -25,13 +27,18 @@ int hax_enabled(void)
     return (!hax_disabled && hax_support);
 }
 
+void hax_disable(int disable)
+{
+	hax_disabled = disable;
+}
+
 /* Currently non-PG modes are emulated by QEMU */
-int hax_vcpu_emulation_mode(CPUState *env)
+int hax_vcpu_emulation_mode(CPUArchState *env)
 {
     return !(env->cr[0] & CR0_PG_MASK);
 }
 
-static int hax_prepare_emulation(CPUState *env)
+static int hax_prepare_emulation(CPUArchState *env)
 {
     /* Flush all emulation states */
     tlb_flush(env, 1);
@@ -45,17 +52,22 @@ static int hax_prepare_emulation(CPUState *env)
  * Check whether to break the translation block loop
  * break tbloop after one MMIO emulation, or after finish emulation mode
  */
-static int hax_stop_tbloop(CPUState *env)
+static int hax_stop_tbloop(CPUArchState *env)
 {
-    switch (env->hax_vcpu->emulation_state)
-    {
-        case HAX_EMULATE_STATE_MMIO:
-            return 1;
-            break;
-        case HAX_EMULATE_STATE_INITIAL:
+	switch (env->hax_vcpu->emulation_state)
+	{
+	case HAX_EMULATE_STATE_MMIO:
+		if (env->hax_vcpu->resync) {
+			hax_prepare_emulation(env);	
+			env->hax_vcpu->resync = 0;
+			return 0;
+		}
+		return 1;
+		break;
+	case HAX_EMULATE_STATE_INITIAL:
         case HAX_EMULATE_STATE_REAL:
-            if (!hax_vcpu_emulation_mode(env))
-                return 1;
+		if (!hax_vcpu_emulation_mode(env))
+			return 1;
             break;
         default:
             dprint("Invalid emulation state in hax_sto_tbloop state %x\n",
@@ -66,7 +78,7 @@ static int hax_stop_tbloop(CPUState *env)
     return 0;
 }
 
-int hax_stop_emulation(CPUState *env)
+int hax_stop_emulation(CPUArchState *env)
 {
     if (hax_stop_tbloop(env))
     {
@@ -82,7 +94,7 @@ int hax_stop_emulation(CPUState *env)
     return 0;
 }
 
-int hax_stop_translate(CPUState *env)
+int hax_stop_translate(CPUArchState *env)
 {
     struct hax_vcpu_state *vstate;
 
@@ -99,7 +111,7 @@ int valid_hax_tunnel_size(uint16_t size)
     return size >= sizeof(struct hax_tunnel);
 }
 
-hax_fd hax_vcpu_get_fd(CPUState *env)
+hax_fd hax_vcpu_get_fd(CPUArchState *env)
 {
     struct hax_vcpu_state *vcpu = env->hax_vcpu;
     if (!vcpu)
@@ -220,7 +232,7 @@ error:
     return -1;
 }
 
-int hax_vcpu_destroy(CPUState *env)
+int hax_vcpu_destroy(CPUArchState *env)
 {
     struct hax_vcpu_state *vcpu = env->hax_vcpu;
 
@@ -243,7 +255,7 @@ int hax_vcpu_destroy(CPUState *env)
     return 0;
 }
 
-int hax_init_vcpu(CPUState *env)
+int hax_init_vcpu(CPUArchState *env)
 {
     int ret;
 
@@ -317,73 +329,86 @@ int hax_vm_destroy(struct hax_vm *vm)
     return 0;
 }
 
-static void hax_client_set_memory(struct CPUPhysMemoryClient *client,
-                                  target_phys_addr_t start_addr,
-                                  ram_addr_t size, ram_addr_t phys_offset,
-                                  bool log_dirty)
+static void
+hax_region_add(MemoryListener *listener, MemoryRegionSection *section)
 {
-    hax_set_phys_mem(start_addr, size, phys_offset);
+	hax_set_phys_mem(section);
 }
+
+static void
+hax_region_del(MemoryListener *listener, MemoryRegionSection *section)
+{
+	hax_set_phys_mem(section);
+}
+
 
 /* currently we fake the dirty bitmap sync, always dirty */
-
-static int hax_client_sync_dirty_bitmap(struct CPUPhysMemoryClient *client,
-                                        target_phys_addr_t start_addr,
-                                        target_phys_addr_t end_addr)
+static void hax_log_sync(MemoryListener *listener, MemoryRegionSection *section)
 {
-    ram_addr_t size = end_addr - start_addr;
-    ram_addr_t ram_addr;
-    unsigned long page_number, addr, c;
-    unsigned int len = ((size /TARGET_PAGE_SIZE) + HOST_LONG_BITS - 1) /
+    MemoryRegion *mr = section->mr;
+    unsigned long c;
+    unsigned int len = ((section->size / TARGET_PAGE_SIZE) + HOST_LONG_BITS - 1) /
     			HOST_LONG_BITS;
     unsigned long bitmap[len];
-    unsigned long map;
     int i, j;
 
-
     for (i = 0; i < len; i++) {
-	map = bitmap[i] = 1;
-	c = leul_to_cpu(bitmap[i]);
-	do {
-	    j = ffsl(c) - 1;
-	    c &= ~(1ul << j);
-	    page_number = i * HOST_LONG_BITS + j;
-	    addr = page_number * TARGET_PAGE_SIZE;
-	    ram_addr = cpu_get_physical_page_desc(addr);
-	    cpu_physical_memory_set_dirty(ram_addr);
-	} while (c != 0);
+	    bitmap[i] = 1;
+	    c = leul_to_cpu(bitmap[i]);
+	    do {
+	        j = ffsl(c) - 1;
+	        c &= ~(1ul << j);
+            memory_region_set_dirty(mr, (i * HOST_LONG_BITS + j) *
+            		TARGET_PAGE_SIZE, TARGET_PAGE_SIZE);
+	    } while (c != 0);
     }
-
-    return 0;
 }
 
-static int hax_client_migration_log(struct CPUPhysMemoryClient *client,
-                                    int enable)
+static void hax_log_global_start(struct MemoryListener *listener)
 {
-    return 0;
 }
 
-static int hax_log_start(CPUPhysMemoryClient *client,
-                         target_phys_addr_t phys_addr, ram_addr_t size)
+static void hax_log_global_stop(struct MemoryListener *listener)
 {
-    return 0;
 }
 
-static int hax_log_stop(CPUPhysMemoryClient *client,
-                        target_phys_addr_t phys_addr, ram_addr_t size)
+static void hax_log_start(MemoryListener *listener,
+                           MemoryRegionSection *section)
 {
-    return 0;
 }
 
-static CPUPhysMemoryClient hax_cpu_phys_memory_client = {
-    .set_memory = hax_client_set_memory,
-    .sync_dirty_bitmap = hax_client_sync_dirty_bitmap,
-    .migration_log = hax_client_migration_log,
+static void hax_log_stop(MemoryListener *listener,
+                          MemoryRegionSection *section)
+{
+}
+
+static void hax_begin(MemoryListener *listener)
+{
+}
+
+static void hax_commit(MemoryListener *listener)
+{
+}
+
+static void hax_region_nop(MemoryListener *listener,
+			MemoryRegionSection *section)
+{
+}
+
+static MemoryListener hax_memory_listener = {
+    .begin = hax_begin,
+    .commit = hax_commit,
+    .region_add = hax_region_add,
+    .region_del = hax_region_del,
+    .region_nop = hax_region_nop,
     .log_start = hax_log_start,
     .log_stop = hax_log_stop,
+    .log_sync = hax_log_sync,
+    .log_global_start = hax_log_global_start,
+    .log_global_stop = hax_log_global_stop,
 };
 
-static void hax_handle_interrupt(CPUState *env, int mask)
+static void hax_handle_interrupt(CPUArchState *env, int mask)
 {
     env->interrupt_request |= mask;
 
@@ -406,7 +431,7 @@ int hax_pre_init(ram_addr_t ram_size)
 	return 0;
 }
 
-int hax_init(void)
+static int hax_init(void)
 {
     struct hax_state *hax = NULL;
     int ret;
@@ -449,7 +474,7 @@ int hax_init(void)
         goto error;
     }
 
-    cpu_register_phys_memory_client(&hax_cpu_phys_memory_client);
+    memory_listener_register(&hax_memory_listener, NULL);
 
     hax_support = 1;
 
@@ -463,7 +488,26 @@ error:
     return ret;
 }
 
-int hax_handle_io(CPUState *env, uint32_t df, uint16_t port, int direction,
+int hax_accel_init(void)
+{
+	if (hax_disabled) {
+		dprint("HAX is disabled and emulator runs in emulation mode.\n");
+		return 0;
+	}
+
+	ret_hax_init = hax_init();
+	if (ret_hax_init && (ret_hax_init != -ENOSPC)) {
+		dprint("No accelerator found.\n");
+	    return ret_hax_init;
+	} else {
+		dprint("HAX is %s and emulator runs in %s mode.\n",
+		!ret_hax_init ? "working" : "not working",
+		!ret_hax_init ? "fast virt" : "emulation");
+		return 0;
+	}
+}
+
+int hax_handle_io(CPUArchState *env, uint32_t df, uint16_t port, int direction,
   int size, int count, void *buffer)
 {
     uint8_t *ptr;
@@ -509,7 +553,7 @@ int hax_handle_io(CPUState *env, uint32_t df, uint16_t port, int direction,
     return 0;
 }
 
-static int hax_vcpu_interrupt(CPUState *env)
+static int hax_vcpu_interrupt(CPUArchState *env)
 {
     struct hax_vcpu_state *vcpu = env->hax_vcpu;
     struct hax_tunnel *ht = vcpu->tunnel;
@@ -541,7 +585,7 @@ static int hax_vcpu_interrupt(CPUState *env)
     return 0;
 }
 
-void hax_raise_event(CPUState *env)
+void hax_raise_event(CPUArchState *env)
 {
     struct hax_vcpu_state *vcpu = env->hax_vcpu;
 
@@ -560,7 +604,7 @@ void hax_raise_event(CPUState *env)
  * 5. An unknown VMX exit happens
  */
 extern void qemu_system_reset_request(void);
-static int hax_vcpu_hax_exec(CPUState *env)
+static int hax_vcpu_hax_exec(CPUArchState *env)
 {
     int ret = 0;
     struct hax_vcpu_state *vcpu = env->hax_vcpu;
@@ -669,27 +713,27 @@ static int hax_vcpu_hax_exec(CPUState *env)
 
 static void do_hax_cpu_synchronize_state(void *_env)
 {
-	CPUState *env = _env;
+	CPUArchState *env = _env;
 	if (!env->hax_vcpu_dirty) {
 		hax_vcpu_sync_state(env, 0);
 		env->hax_vcpu_dirty = 1;
 	}
 }
 
-void hax_cpu_synchronize_state(CPUState *env)
+void hax_cpu_synchronize_state(CPUArchState *env)
 {
 	if (!env->hax_vcpu_dirty) {
 		run_on_cpu(env, do_hax_cpu_synchronize_state, env);
 	}
 }
 
-void hax_cpu_synchronize_post_reset(CPUState *env)
+void hax_cpu_synchronize_post_reset(CPUArchState *env)
 {
 	hax_vcpu_sync_state(env, 1);
 	env->hax_vcpu_dirty = 0;
 }
 
-void hax_cpu_synchronize_post_init(CPUState *env)
+void hax_cpu_synchronize_post_init(CPUArchState *env)
 {
 	hax_vcpu_sync_state(env, 1);
 	env->hax_vcpu_dirty = 0;
@@ -698,7 +742,7 @@ void hax_cpu_synchronize_post_init(CPUState *env)
 /*
  * return 1 when need emulate, 0 when need exit loop
  */
-int hax_vcpu_exec(CPUState *env)
+int hax_vcpu_exec(CPUArchState *env)
 {
     int next = 0, ret = 0;
     struct hax_vcpu_state *vcpu;
@@ -795,7 +839,7 @@ static void hax_getput_reg(uint64_t *hax_reg, target_ulong *qemu_reg, int set)
 }
 
 /* The sregs has been synced with HAX kernel already before this call */
-static int hax_get_segments(CPUState *env, struct vcpu_state_t *sregs)
+static int hax_get_segments(CPUArchState *env, struct vcpu_state_t *sregs)
 {
     get_seg(&env->segs[R_CS], &sregs->_cs);
     get_seg(&env->segs[R_DS], &sregs->_ds);
@@ -813,7 +857,7 @@ static int hax_get_segments(CPUState *env, struct vcpu_state_t *sregs)
     return 0;
 }
 
-static int hax_set_segments(CPUState *env, struct vcpu_state_t *sregs)
+static int hax_set_segments(CPUArchState *env, struct vcpu_state_t *sregs)
 {
     if ((env->eflags & VM_MASK)) {
         set_v8086_seg(&sregs->_cs, &env->segs[R_CS]);
@@ -851,7 +895,7 @@ static int hax_set_segments(CPUState *env, struct vcpu_state_t *sregs)
  * After get the state from the kernel module, some
  * qemu emulator state need be updated also
  */
-static int hax_setup_qemu_emulator(CPUState *env)
+static int hax_setup_qemu_emulator(CPUArchState *env)
 {
 
 #define HFLAG_COPY_MASK ~( \
@@ -896,7 +940,7 @@ static int hax_setup_qemu_emulator(CPUState *env)
     return 0;
 }
 
-static int hax_sync_vcpu_register(CPUState *env, int set)
+static int hax_sync_vcpu_register(CPUArchState *env, int set)
 {
     struct vcpu_state_t regs;
     int ret;
@@ -958,7 +1002,7 @@ static void hax_msr_entry_set(struct vmx_msr *item,
     item->value = value;
 }
 
-static int hax_get_msrs(CPUState *env)
+static int hax_get_msrs(CPUArchState *env)
 {
     struct hax_msr_data md;
     struct vmx_msr *msrs = md.entries;
@@ -994,7 +1038,7 @@ static int hax_get_msrs(CPUState *env)
     return 0;
 }
 
-static int hax_set_msrs(CPUState *env)
+static int hax_set_msrs(CPUArchState *env)
 {
     struct hax_msr_data md;
     struct vmx_msr *msrs;
@@ -1013,7 +1057,7 @@ static int hax_set_msrs(CPUState *env)
 
 }
 
-static int hax_get_fpu(CPUState *env)
+static int hax_get_fpu(CPUArchState *env)
 {
     struct fx_layout fpu;
     int i, ret;
@@ -1036,7 +1080,7 @@ static int hax_get_fpu(CPUState *env)
     return 0;
 }
 
-static int hax_set_fpu(CPUState *env)
+static int hax_set_fpu(CPUArchState *env)
 {
     struct fx_layout fpu;
     int i;
@@ -1058,7 +1102,7 @@ static int hax_set_fpu(CPUState *env)
     return hax_sync_fpu(env, &fpu, 1);
 }
 
-int hax_arch_get_registers(CPUState *env)
+int hax_arch_get_registers(CPUArchState *env)
 {
     int ret;
 
@@ -1077,7 +1121,7 @@ int hax_arch_get_registers(CPUState *env)
     return 0;
 }
 
-static int hax_arch_set_registers(CPUState *env)
+static int hax_arch_set_registers(CPUArchState *env)
 {
     int ret;
     ret = hax_sync_vcpu_register(env, 1);
@@ -1103,7 +1147,7 @@ static int hax_arch_set_registers(CPUState *env)
     return 0;
 }
 
-void hax_vcpu_sync_state(CPUState *env, int modified)
+void hax_vcpu_sync_state(CPUArchState *env, int modified)
 {
     if (hax_enabled()) {
         if (modified)
@@ -1122,7 +1166,7 @@ int hax_sync_vcpus(void)
 {
     if (hax_enabled())
     {
-        CPUState *env;
+        CPUArchState *env;
 
         env = first_cpu;
         if (!env)
@@ -1144,7 +1188,7 @@ int hax_sync_vcpus(void)
 }
 void hax_reset_vcpu_state(void *opaque)
 {
-	CPUState *env = opaque;
+	CPUArchState *env = opaque;
     for (env = first_cpu; env != NULL; env = env->next_cpu)
        {
                dprint("*********ReSet hax_vcpu->emulation_state \n");

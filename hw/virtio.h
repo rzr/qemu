@@ -18,7 +18,6 @@
 #include "net.h"
 #include "qdev.h"
 #include "sysemu.h"
-#include "block.h"
 #include "event_notifier.h"
 #ifdef CONFIG_LINUX
 #include "9p.h"
@@ -179,7 +178,9 @@ void virtio_config_writew(VirtIODevice *vdev, uint32_t addr, uint32_t data);
 void virtio_config_writel(VirtIODevice *vdev, uint32_t addr, uint32_t data);
 void virtio_queue_set_addr(VirtIODevice *vdev, int n, target_phys_addr_t addr);
 target_phys_addr_t virtio_queue_get_addr(VirtIODevice *vdev, int n);
+void virtio_queue_set_num(VirtIODevice *vdev, int n, int num);
 int virtio_queue_get_num(VirtIODevice *vdev, int n);
+void virtio_queue_set_align(VirtIODevice *vdev, int n, int align);
 void virtio_queue_notify(VirtIODevice *vdev, int n);
 uint16_t virtio_queue_vector(VirtIODevice *vdev, int n);
 void virtio_queue_set_vector(VirtIODevice *vdev, int n, uint16_t vector);
@@ -192,23 +193,28 @@ void virtio_bind_device(VirtIODevice *vdev, const VirtIOBindings *binding,
                         void *opaque);
 
 /* Base devices.  */
-VirtIODevice *virtio_blk_init(DeviceState *dev, BlockConf *conf,
-                              char **serial);
+typedef struct VirtIOBlkConf VirtIOBlkConf;
+VirtIODevice *virtio_blk_init(DeviceState *dev, VirtIOBlkConf *blk);
 struct virtio_net_conf;
 VirtIODevice *virtio_net_init(DeviceState *dev, NICConf *conf,
                               struct virtio_net_conf *net);
 typedef struct virtio_serial_conf virtio_serial_conf;
 VirtIODevice *virtio_serial_init(DeviceState *dev, virtio_serial_conf *serial);
 VirtIODevice *virtio_balloon_init(DeviceState *dev);
+typedef struct VirtIOSCSIConf VirtIOSCSIConf;
+VirtIODevice *virtio_scsi_init(DeviceState *dev, VirtIOSCSIConf *conf);
 #ifdef CONFIG_LINUX
 VirtIODevice *virtio_9p_init(DeviceState *dev, V9fsConf *conf);
 #endif
-
+#ifdef CONFIG_GL_BACKEND
+VirtIODevice *virtio_gl_init(DeviceState *dev);
+#endif
 
 void virtio_net_exit(VirtIODevice *vdev);
 void virtio_blk_exit(VirtIODevice *vdev);
 void virtio_serial_exit(VirtIODevice *vdev);
 void virtio_balloon_exit(VirtIODevice *vdev);
+void virtio_scsi_exit(VirtIODevice *vdev);
 
 /* Maru devices */
 #ifdef CONFIG_MARU
@@ -234,8 +240,13 @@ target_phys_addr_t virtio_queue_get_ring_size(VirtIODevice *vdev, int n);
 uint16_t virtio_queue_get_last_avail_idx(VirtIODevice *vdev, int n);
 void virtio_queue_set_last_avail_idx(VirtIODevice *vdev, int n, uint16_t idx);
 VirtQueue *virtio_get_queue(VirtIODevice *vdev, int n);
+int virtio_queue_get_id(VirtQueue *vq);
 EventNotifier *virtio_queue_get_guest_notifier(VirtQueue *vq);
+void virtio_queue_set_guest_notifier_fd_handler(VirtQueue *vq, bool assign,
+                                                bool with_irqfd);
 EventNotifier *virtio_queue_get_host_notifier(VirtQueue *vq);
+void virtio_queue_set_host_notifier_fd_handler(VirtQueue *vq, bool assign,
+                                               bool set_handler);
 void virtio_queue_notify_vq(VirtQueue *vq);
 void virtio_irq(VirtQueue *vq);
 #endif

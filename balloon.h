@@ -24,7 +24,6 @@ int qemu_add_balloon_handler(QEMUBalloonEvent *event_func,
 			     QEMUBalloonStatus *stat_func, void *opaque);
 void qemu_remove_balloon_handler(void *opaque);
 
-int do_balloon(Monitor *mon, const QDict *params,
-               MonitorCompletion cb, void *opaque);
+void qemu_balloon_changed(int64_t actual);
 
 #endif

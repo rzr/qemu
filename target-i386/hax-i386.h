@@ -17,6 +17,7 @@ struct hax_vcpu_state
 {
     hax_fd fd;
     int vcpu_id;
+    int resync;
     int emulation_state;
     struct hax_tunnel *tunnel;
     unsigned char *iobuf;
@@ -43,18 +44,18 @@ struct hax_vm
 
 #ifdef NEED_CPU_H
 /* Functions exported to host specific mode */
-hax_fd hax_vcpu_get_fd(CPUState *env);
+hax_fd hax_vcpu_get_fd(CPUArchState *env);
 int valid_hax_tunnel_size(uint16_t size);
 
 /* Host specific functions */
 int hax_mod_version(struct hax_state *hax, struct hax_module_version *version);
-int hax_inject_interrupt(CPUState *env, int vector);
+int hax_inject_interrupt(CPUArchState *env, int vector);
 struct hax_vm *hax_vm_create(struct hax_state *hax);
 int hax_vcpu_run(struct hax_vcpu_state *vcpu);
 int hax_vcpu_create(int id);
-int hax_sync_vcpu_state(CPUState *env, struct vcpu_state_t *state, int set);
-int hax_sync_msr(CPUState *env, struct hax_msr_data *msrs, int set);
-int hax_sync_fpu(CPUState *env, struct fx_layout *fl, int set);
+int hax_sync_vcpu_state(CPUArchState *env, struct vcpu_state_t *state, int set);
+int hax_sync_msr(CPUArchState *env, struct hax_msr_data *msrs, int set);
+int hax_sync_fpu(CPUArchState *env, struct fx_layout *fl, int set);
 #endif
 
 int hax_vm_destroy(struct hax_vm *vm);

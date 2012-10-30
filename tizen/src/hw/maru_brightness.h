@@ -40,6 +40,6 @@ extern uint32_t brightness_off;
 extern uint8_t brightness_tbl[];
 
 int pci_get_brightness( void );
-int pci_maru_brightness_init( PCIBus *bus );
+DeviceState *pci_maru_brightness_init(PCIBus *bus);
 
 #endif /* MARU_BRIGHTNESS_H_ */

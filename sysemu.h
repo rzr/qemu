@@ -38,7 +38,18 @@ void vm_start(void);
 void vm_stop(RunState state);
 void vm_stop_force_state(RunState state);
 
+typedef enum WakeupReason {
+    QEMU_WAKEUP_REASON_OTHER = 0,
+    QEMU_WAKEUP_REASON_RTC,
+    QEMU_WAKEUP_REASON_PMTIMER,
+} WakeupReason;
+
 void qemu_system_reset_request(void);
+void qemu_system_suspend_request(void);
+void qemu_register_suspend_notifier(Notifier *notifier);
+void qemu_system_wakeup_request(WakeupReason reason);
+void qemu_system_wakeup_enable(WakeupReason reason, bool enabled);
+void qemu_register_wakeup_notifier(Notifier *notifier);
 void qemu_system_shutdown_request(void);
 void qemu_system_powerdown_request(void);
 void qemu_system_debug_request(void);
@@ -51,6 +62,7 @@ int qemu_powerdown_requested(void);
 void qemu_system_killed(int signal, pid_t pid);
 void qemu_kill_report(void);
 extern qemu_irq qemu_system_powerdown;
+void qemu_devices_reset(void);
 void qemu_system_reset(bool report);
 
 void qemu_add_exit_notifier(Notifier *notify);
@@ -65,12 +77,12 @@ void do_info_snapshots(Monitor *mon);
 
 void qemu_announce_self(void);
 
-bool qemu_savevm_state_blocked(Monitor *mon);
-int qemu_savevm_state_begin(Monitor *mon, QEMUFile *f, int blk_enable,
-                            int shared);
-int qemu_savevm_state_iterate(Monitor *mon, QEMUFile *f);
-int qemu_savevm_state_complete(Monitor *mon, QEMUFile *f);
-void qemu_savevm_state_cancel(Monitor *mon, QEMUFile *f);
+bool qemu_savevm_state_blocked(Error **errp);
+int qemu_savevm_state_begin(QEMUFile *f,
+                            const MigrationParams *params);
+int qemu_savevm_state_iterate(QEMUFile *f);
+int qemu_savevm_state_complete(QEMUFile *f);
+void qemu_savevm_state_cancel(QEMUFile *f);
 int qemu_loadvm_state(QEMUFile *f);
 
 /* SLIRP */
@@ -110,11 +122,9 @@ extern int vga_interface_type;
 extern int graphic_width;
 extern int graphic_height;
 extern int graphic_depth;
-extern uint8_t irq0override;
 extern DisplayType display_type;
 extern const char *keyboard_layout;
 extern int win2k_install_hack;
-extern int rtc_td_hack;
 extern int alt_grab;
 extern int ctrl_grab;
 extern int usb_enabled;
@@ -133,9 +143,10 @@ extern uint8_t qemu_extra_params_fw[2];
 extern QEMUClock *rtc_clock;
 
 #define MAX_NODES 64
+#define MAX_CPUMASK_BITS 255
 extern int nb_numa_nodes;
 extern uint64_t node_mem[MAX_NODES];
-extern uint64_t node_cpumask[MAX_NODES];
+extern unsigned long *node_cpumask[MAX_NODES];
 
 #define MAX_OPTION_ROMS 16
 typedef struct QEMUOptionRom {
@@ -151,12 +162,16 @@ extern unsigned int nb_prom_envs;
 
 /* pci-hotplug */
 void pci_device_hot_add(Monitor *mon, const QDict *qdict);
-void drive_hot_add(Monitor *mon, const QDict *qdict);
+int pci_drive_hot_add(Monitor *mon, const QDict *qdict,
+                      DriveInfo *dinfo, int type);
 void do_pci_device_hot_remove(Monitor *mon, const QDict *qdict);
+
+/* generic hotplug */
+void drive_hot_add(Monitor *mon, const QDict *qdict);
 
 /* pcie aer error injection */
 void pcie_aer_inject_error_print(Monitor *mon, const QObject *data);
-int do_pcie_aer_inejct_error(Monitor *mon,
+int do_pcie_aer_inject_error(Monitor *mon,
                              const QDict *qdict, QObject **ret_data);
 
 /* serial ports */

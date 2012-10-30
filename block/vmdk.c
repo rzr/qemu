@@ -35,6 +35,7 @@
 #define VMDK4_FLAG_RGD (1 << 1)
 #define VMDK4_FLAG_COMPRESS (1 << 16)
 #define VMDK4_FLAG_MARKER (1 << 17)
+#define VMDK4_GD_AT_END 0xffffffffffffffffULL
 
 typedef struct {
     uint32_t version;
@@ -57,8 +58,8 @@ typedef struct {
     int64_t desc_offset;
     int64_t desc_size;
     int32_t num_gtes_per_gte;
-    int64_t gd_offset;
     int64_t rgd_offset;
+    int64_t gd_offset;
     int64_t grain_offset;
     char filler[1];
     char check_bytes[4];
@@ -114,6 +115,13 @@ typedef struct VmdkGrainMarker {
     uint32_t size;
     uint8_t  data[0];
 } VmdkGrainMarker;
+
+enum {
+    MARKER_END_OF_STREAM    = 0,
+    MARKER_GRAIN_TABLE      = 1,
+    MARKER_GRAIN_DIRECTORY  = 2,
+    MARKER_FOOTER           = 3,
+};
 
 static int vmdk_probe(const uint8_t *buf, int buf_size, const char *filename)
 {
@@ -451,9 +459,57 @@ static int vmdk_open_vmdk4(BlockDriverState *bs,
     if (header.capacity == 0 && header.desc_offset) {
         return vmdk_open_desc_file(bs, flags, header.desc_offset << 9);
     }
+
+    if (le64_to_cpu(header.gd_offset) == VMDK4_GD_AT_END) {
+        /*
+         * The footer takes precedence over the header, so read it in. The
+         * footer starts at offset -1024 from the end: One sector for the
+         * footer, and another one for the end-of-stream marker.
+         */
+        struct {
+            struct {
+                uint64_t val;
+                uint32_t size;
+                uint32_t type;
+                uint8_t pad[512 - 16];
+            } QEMU_PACKED footer_marker;
+
+            uint32_t magic;
+            VMDK4Header header;
+            uint8_t pad[512 - 4 - sizeof(VMDK4Header)];
+
+            struct {
+                uint64_t val;
+                uint32_t size;
+                uint32_t type;
+                uint8_t pad[512 - 16];
+            } QEMU_PACKED eos_marker;
+        } QEMU_PACKED footer;
+
+        ret = bdrv_pread(file,
+            bs->file->total_sectors * 512 - 1536,
+            &footer, sizeof(footer));
+        if (ret < 0) {
+            return ret;
+        }
+
+        /* Some sanity checks for the footer */
+        if (be32_to_cpu(footer.magic) != VMDK4_MAGIC ||
+            le32_to_cpu(footer.footer_marker.size) != 0  ||
+            le32_to_cpu(footer.footer_marker.type) != MARKER_FOOTER ||
+            le64_to_cpu(footer.eos_marker.val) != 0  ||
+            le32_to_cpu(footer.eos_marker.size) != 0  ||
+            le32_to_cpu(footer.eos_marker.type) != MARKER_END_OF_STREAM)
+        {
+            return -EINVAL;
+        }
+
+        header = footer.header;
+    }
+
     l1_entry_sectors = le32_to_cpu(header.num_gtes_per_gte)
                         * le64_to_cpu(header.granularity);
-    if (l1_entry_sectors <= 0) {
+    if (l1_entry_sectors == 0) {
         return -EINVAL;
     }
     l1_size = (le64_to_cpu(header.capacity) + l1_entry_sectors - 1)
@@ -861,8 +917,8 @@ static VmdkExtent *find_extent(BDRVVmdkState *s,
     return NULL;
 }
 
-static int vmdk_is_allocated(BlockDriverState *bs, int64_t sector_num,
-                             int nb_sectors, int *pnum)
+static int coroutine_fn vmdk_co_is_allocated(BlockDriverState *bs,
+        int64_t sector_num, int nb_sectors, int *pnum)
 {
     BDRVVmdkState *s = bs->opaque;
     int64_t index_in_cluster, n, ret;
@@ -873,8 +929,10 @@ static int vmdk_is_allocated(BlockDriverState *bs, int64_t sector_num,
     if (!extent) {
         return 0;
     }
+    qemu_co_mutex_lock(&s->lock);
     ret = get_cluster_offset(bs, extent, NULL,
                             sector_num * 512, 0, &offset);
+    qemu_co_mutex_unlock(&s->lock);
     /* get_cluster_offset returning 0 means success */
     ret = !ret;
 
@@ -1159,10 +1217,9 @@ static int vmdk_create_extent(const char *filename, int64_t filesize,
     VMDK4Header header;
     uint32_t tmp, magic, grains, gd_size, gt_size, gt_count;
 
-    fd = open(
-        filename,
-        O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
-        0644);
+    fd = qemu_open(filename,
+                   O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
+                   0644);
     if (fd < 0) {
         return -errno;
     }
@@ -1257,7 +1314,7 @@ static int vmdk_create_extent(const char *filename, int64_t filesize,
 
     ret = 0;
  exit:
-    close(fd);
+    qemu_close(fd);
     return ret;
 }
 
@@ -1482,15 +1539,13 @@ static int vmdk_create(const char *filename, QEMUOptionParameter *options)
             (flags & BLOCK_FLAG_COMPAT6 ? 6 : 4),
             total_size / (int64_t)(63 * 16 * 512));
     if (split || flat) {
-        fd = open(
-                filename,
-                O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
-                0644);
+        fd = qemu_open(filename,
+                       O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
+                       0644);
     } else {
-        fd = open(
-                filename,
-                O_WRONLY | O_BINARY | O_LARGEFILE,
-                0644);
+        fd = qemu_open(filename,
+                       O_WRONLY | O_BINARY | O_LARGEFILE,
+                       0644);
     }
     if (fd < 0) {
         return -errno;
@@ -1507,7 +1562,7 @@ static int vmdk_create(const char *filename, QEMUOptionParameter *options)
     }
     ret = 0;
 exit:
-    close(fd);
+    qemu_close(fd);
     return ret;
 }
 
@@ -1523,10 +1578,10 @@ static void vmdk_close(BlockDriverState *bs)
 
 static coroutine_fn int vmdk_co_flush(BlockDriverState *bs)
 {
-    int i, ret, err;
     BDRVVmdkState *s = bs->opaque;
+    int i, err;
+    int ret = 0;
 
-    ret = bdrv_co_flush(bs->file);
     for (i = 0; i < s->num_extents; i++) {
         err = bdrv_co_flush(s->extents[i].file);
         if (err < 0) {
@@ -1596,7 +1651,7 @@ static BlockDriver bdrv_vmdk = {
     .bdrv_close     = vmdk_close,
     .bdrv_create    = vmdk_create,
     .bdrv_co_flush_to_disk  = vmdk_co_flush,
-    .bdrv_is_allocated      = vmdk_is_allocated,
+    .bdrv_co_is_allocated   = vmdk_co_is_allocated,
     .bdrv_get_allocated_file_size  = vmdk_get_allocated_file_size,
 
     .create_options = vmdk_create_options,

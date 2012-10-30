@@ -34,6 +34,7 @@
 #include "pc.h"
 #include "sysbus.h"
 #include "flash.h"
+#include "blockdev.h"
 #include "xtensa_bootparam.h"
 
 typedef struct LxBoardDesc {
@@ -136,7 +137,8 @@ static void lx60_net_init(MemoryRegion *address_space,
             sysbus_mmio_get_region(s, 1));
 
     ram = g_malloc(sizeof(*ram));
-    memory_region_init_ram(ram, NULL, "open_eth.ram", 16384);
+    memory_region_init_ram(ram, "open_eth.ram", 16384);
+    vmstate_register_ram_global(ram);
     memory_region_add_subregion(address_space, buffers, ram);
 }
 
@@ -145,9 +147,11 @@ static uint64_t translate_phys_addr(void *env, uint64_t addr)
     return cpu_get_phys_page_debug(env, addr);
 }
 
-static void lx60_reset(void *env)
+static void lx60_reset(void *opaque)
 {
-    cpu_reset(env);
+    XtensaCPU *cpu = opaque;
+
+    cpu_reset(CPU(cpu));
 }
 
 static void lx_init(const LxBoardDesc *board,
@@ -161,39 +165,43 @@ static void lx_init(const LxBoardDesc *board,
     int be = 0;
 #endif
     MemoryRegion *system_memory = get_system_memory();
-    CPUState *env = NULL;
+    XtensaCPU *cpu = NULL;
+    CPUXtensaState *env = NULL;
     MemoryRegion *ram, *rom, *system_io;
     DriveInfo *dinfo;
     pflash_t *flash = NULL;
     int n;
 
     if (!cpu_model) {
-        cpu_model = "dc232b";
+        cpu_model = XTENSA_DEFAULT_CPU_MODEL;
     }
 
     for (n = 0; n < smp_cpus; n++) {
-        env = cpu_init(cpu_model);
-        if (!env) {
+        cpu = cpu_xtensa_init(cpu_model);
+        if (cpu == NULL) {
             fprintf(stderr, "Unable to find CPU definition\n");
             exit(1);
         }
+        env = &cpu->env;
+
         env->sregs[PRID] = n;
-        qemu_register_reset(lx60_reset, env);
+        qemu_register_reset(lx60_reset, cpu);
         /* Need MMU initialized prior to ELF loading,
          * so that ELF gets loaded into virtual addresses
          */
-        cpu_reset(env);
+        cpu_reset(CPU(cpu));
     }
 
     ram = g_malloc(sizeof(*ram));
-    memory_region_init_ram(ram, NULL, "lx60.dram", ram_size);
+    memory_region_init_ram(ram, "lx60.dram", ram_size);
+    vmstate_register_ram_global(ram);
     memory_region_add_subregion(system_memory, 0, ram);
 
     system_io = g_malloc(sizeof(*system_io));
     memory_region_init(system_io, "lx60.io", 224 * 1024 * 1024);
     memory_region_add_subregion(system_memory, 0xf0000000, system_io);
     lx60_fpga_init(system_io, 0x0d020000);
-    if (nd_table[0].vlan) {
+    if (nd_table[0].used) {
         lx60_net_init(system_io, 0x0d030000, 0x0d030400, 0x0d800000,
                 xtensa_get_extint(env, 1), nd_table);
     }
@@ -221,7 +229,8 @@ static void lx_init(const LxBoardDesc *board,
     /* Use presence of kernel file name as 'boot from SRAM' switch. */
     if (kernel_filename) {
         rom = g_malloc(sizeof(*rom));
-        memory_region_init_ram(rom, NULL, "lx60.sram", board->sram_size);
+        memory_region_init_ram(rom, "lx60.sram", board->sram_size);
+        vmstate_register_ram_global(rom);
         memory_region_add_subregion(system_memory, 0xfe000000, rom);
 
         /* Put kernel bootparameters to the end of that SRAM */
@@ -291,14 +300,14 @@ static void xtensa_lx200_init(ram_addr_t ram_size,
 
 static QEMUMachine xtensa_lx60_machine = {
     .name = "lx60",
-    .desc = "lx60 EVB (dc232b)",
+    .desc = "lx60 EVB (" XTENSA_DEFAULT_CPU_MODEL ")",
     .init = xtensa_lx60_init,
     .max_cpus = 4,
 };
 
 static QEMUMachine xtensa_lx200_machine = {
     .name = "lx200",
-    .desc = "lx200 EVB (dc232b)",
+    .desc = "lx200 EVB (" XTENSA_DEFAULT_CPU_MODEL ")",
     .init = xtensa_lx200_init,
     .max_cpus = 4,
 };

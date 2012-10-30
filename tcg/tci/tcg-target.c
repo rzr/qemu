@@ -487,7 +487,7 @@ static void tci_out_label(TCGContext *s, TCGArg arg)
         assert(label->u.value);
     } else {
         tcg_out_reloc(s, s->code_ptr, sizeof(tcg_target_ulong), arg, 0);
-        tcg_out_i(s, 0);
+        s->code_ptr += sizeof(tcg_target_ulong);
     }
 }
 
@@ -798,6 +798,9 @@ static void tcg_out_op(TCGContext *s, TCGOpcode opc, const TCGArg *args,
     case INDEX_op_qemu_st8:
     case INDEX_op_qemu_st16:
     case INDEX_op_qemu_st32:
+#ifdef CONFIG_TCG_PASS_AREG0
+        tcg_out_r(s, TCG_AREG0);
+#endif
         tcg_out_r(s, *args++);
         tcg_out_r(s, *args++);
 #if TARGET_LONG_BITS > TCG_TARGET_REG_BITS
@@ -808,6 +811,9 @@ static void tcg_out_op(TCGContext *s, TCGOpcode opc, const TCGArg *args,
 #endif
         break;
     case INDEX_op_qemu_st64:
+#ifdef CONFIG_TCG_PASS_AREG0
+        tcg_out_r(s, TCG_AREG0);
+#endif
         tcg_out_r(s, *args++);
 #if TCG_TARGET_REG_BITS == 32
         tcg_out_r(s, *args++);
@@ -872,7 +878,7 @@ static void tcg_target_init(TCGContext *s)
 #if defined(CONFIG_DEBUG_TCG_INTERPRETER)
     const char *envval = getenv("DEBUG_TCG");
     if (envval) {
-        loglevel = strtol(envval, NULL, 0);
+        cpu_set_log(strtol(envval, NULL, 0));
     }
 #endif
 
@@ -891,7 +897,7 @@ static void tcg_target_init(TCGContext *s)
     tcg_regset_clear(s->reserved_regs);
     tcg_regset_set_reg(s->reserved_regs, TCG_REG_CALL_STACK);
     tcg_add_target_add_op_defs(tcg_target_op_defs);
-    tcg_set_frame(s, TCG_AREG0, offsetof(CPUState, temp_buf),
+    tcg_set_frame(s, TCG_AREG0, offsetof(CPUArchState, temp_buf),
                   CPU_TEMP_BUF_NLONGS * sizeof(long));
 }
 

@@ -11,12 +11,11 @@
 #define BLOCKDEV_H
 
 #include "block.h"
+#include "error.h"
 #include "qemu-queue.h"
 
 void blockdev_mark_auto_del(BlockDriverState *bs);
 void blockdev_auto_del(BlockDriverState *bs);
-
-#define BLOCK_SERIAL_STRLEN 20
 
 typedef enum {
     IF_DEFAULT = -1,            /* for use with drive_add() only */
@@ -34,8 +33,9 @@ struct DriveInfo {
     int unit;
     int auto_del;               /* see blockdev_mark_auto_del() */
     int media_cd;
+    int cyls, heads, secs, trans;
     QemuOpts *opts;
-    char serial[BLOCK_SERIAL_STRLEN + 1];
+    const char *serial;
     QTAILQ_ENTRY(DriveInfo) next;
     int refcount;
 };
@@ -57,13 +57,8 @@ DriveInfo *drive_init(QemuOpts *arg, int default_to_scsi);
 
 DriveInfo *add_init_drive(const char *opts);
 
+void qmp_change_blockdev(const char *device, const char *filename,
+                         bool has_format, const char *format, Error **errp);
 void do_commit(Monitor *mon, const QDict *qdict);
-int do_eject(Monitor *mon, const QDict *qdict, QObject **ret_data);
-int do_block_set_passwd(Monitor *mon, const QDict *qdict, QObject **ret_data);
-int do_change_block(Monitor *mon, const char *device,
-                    const char *filename, const char *fmt);
 int do_drive_del(Monitor *mon, const QDict *qdict, QObject **ret_data);
-int do_snapshot_blkdev(Monitor *mon, const QDict *qdict, QObject **ret_data);
-int do_block_resize(Monitor *mon, const QDict *qdict, QObject **ret_data);
-
 #endif

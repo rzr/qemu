@@ -66,8 +66,8 @@ static void help(void)
            "  'filename' is a disk image filename\n"
            "  'fmt' is the disk image format. It is guessed automatically in most cases\n"
            "  'cache' is the cache mode used to write the output disk image, the valid\n"
-           "    options are: 'none', 'writeback' (default), 'writethrough', 'directsync'\n"
-           "    and 'unsafe'\n"
+           "    options are: 'none', 'writeback' (default, except for convert), 'writethrough',\n"
+           "    'directsync' and 'unsafe' (default for convert)\n"
            "  'size' is the disk image size in bytes. Optional suffixes\n"
            "    'k' or 'K' (kilobyte, 1024), 'M' (megabyte, 1024k), 'G' (gigabyte, 1024M)\n"
            "    and T (terabyte, 1024G) are supported. 'b' is ignored.\n"
@@ -84,6 +84,12 @@ static void help(void)
            "  '-p' show progress of command (only certain commands)\n"
            "  '-S' indicates the consecutive number of bytes that must contain only zeros\n"
            "       for qemu-img to create a sparse image during conversion\n"
+           "\n"
+           "Parameters to check subcommand:\n"
+           "  '-r' tries to repair any inconsistencies that are found during the check.\n"
+           "       '-r leaks' repairs only cluster leaks, whereas '-r all' fixes all\n"
+           "       kinds of errors, with a higher risk of choosing the wrong fix or\n"
+           "       hiding corruption that has already occured.\n"
            "\n"
            "Parameters to snapshot subcommand:\n"
            "  'snapshot' is the name of the snapshot to create, apply or delete\n"
@@ -344,7 +350,7 @@ static int img_create(int argc, char **argv)
         img_size = (uint64_t)sval;
     }
 
-    if (options && !strcmp(options, "?")) {
+    if (options && is_help_option(options)) {
         ret = print_block_option_help(filename, fmt);
         goto out;
     }
@@ -372,10 +378,12 @@ static int img_check(int argc, char **argv)
     const char *filename, *fmt;
     BlockDriverState *bs;
     BdrvCheckResult result;
+    int fix = 0;
+    int flags = BDRV_O_FLAGS | BDRV_O_CHECK;
 
     fmt = NULL;
     for(;;) {
-        c = getopt(argc, argv, "f:h");
+        c = getopt(argc, argv, "f:hr:");
         if (c == -1) {
             break;
         }
@@ -387,6 +395,17 @@ static int img_check(int argc, char **argv)
         case 'f':
             fmt = optarg;
             break;
+        case 'r':
+            flags |= BDRV_O_RDWR;
+
+            if (!strcmp(optarg, "leaks")) {
+                fix = BDRV_FIX_LEAKS;
+            } else if (!strcmp(optarg, "all")) {
+                fix = BDRV_FIX_LEAKS | BDRV_FIX_ERRORS;
+            } else {
+                help();
+            }
+            break;
         }
     }
     if (optind >= argc) {
@@ -394,16 +413,26 @@ static int img_check(int argc, char **argv)
     }
     filename = argv[optind++];
 
-    bs = bdrv_new_open(filename, fmt, BDRV_O_FLAGS);
+    bs = bdrv_new_open(filename, fmt, flags);
     if (!bs) {
         return 1;
     }
-    ret = bdrv_check(bs, &result);
+    ret = bdrv_check(bs, &result, fix);
 
     if (ret == -ENOTSUP) {
         error_report("This image format does not support checks");
         bdrv_delete(bs);
         return 1;
+    }
+
+    if (result.corruptions_fixed || result.leaks_fixed) {
+        printf("The following inconsistencies were found and repaired:\n\n"
+               "    %d leaked clusters\n"
+               "    %d corruptions\n\n"
+               "Double checking the fixed image now...\n",
+               result.leaks_fixed,
+               result.corruptions_fixed);
+        ret = bdrv_check(bs, &result, 0);
     }
 
     if (!(result.corruptions || result.leaks || result.check_errors)) {
@@ -426,6 +455,13 @@ static int img_check(int argc, char **argv)
             printf("\n%d internal errors have occurred during the check.\n",
                 result.check_errors);
         }
+    }
+
+    if (result.bfi.total_clusters != 0 && result.bfi.allocated_clusters != 0) {
+        printf("%" PRId64 "/%" PRId64 "= %0.2f%% allocated, %0.2f%% fragmented\n",
+        result.bfi.allocated_clusters, result.bfi.total_clusters,
+        result.bfi.allocated_clusters * 100.0 / result.bfi.total_clusters,
+        result.bfi.fragmented_clusters * 100.0 / result.bfi.allocated_clusters);
     }
 
     bdrv_delete(bs);
@@ -515,40 +551,6 @@ static int img_commit(int argc, char **argv)
 }
 
 /*
- * Checks whether the sector is not a zero sector.
- *
- * Attention! The len must be a multiple of 4 * sizeof(long) due to
- * restriction of optimizations in this function.
- */
-static int is_not_zero(const uint8_t *sector, int len)
-{
-    /*
-     * Use long as the biggest available internal data type that fits into the
-     * CPU register and unroll the loop to smooth out the effect of memory
-     * latency.
-     */
-
-    int i;
-    long d0, d1, d2, d3;
-    const long * const data = (const long *) sector;
-
-    len /= sizeof(long);
-
-    for(i = 0; i < len; i += 4) {
-        d0 = data[i + 0];
-        d1 = data[i + 1];
-        d2 = data[i + 2];
-        d3 = data[i + 3];
-
-        if (d0 || d1 || d2 || d3) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-/*
  * Returns true iff the first sector pointed to by 'buf' contains at least
  * a non-NUL byte.
  *
@@ -557,20 +559,22 @@ static int is_not_zero(const uint8_t *sector, int len)
  */
 static int is_allocated_sectors(const uint8_t *buf, int n, int *pnum)
 {
-    int v, i;
+    bool is_zero;
+    int i;
 
     if (n <= 0) {
         *pnum = 0;
         return 0;
     }
-    v = is_not_zero(buf, 512);
+    is_zero = buffer_is_zero(buf, 512);
     for(i = 1; i < n; i++) {
         buf += 512;
-        if (v != is_not_zero(buf, 512))
+        if (is_zero != buffer_is_zero(buf, 512)) {
             break;
+        }
     }
     *pnum = i;
-    return v;
+    return !is_zero;
 }
 
 /*
@@ -737,7 +741,10 @@ static int img_convert(int argc, char **argv)
 
     out_filename = argv[argc - 1];
 
-    if (options && !strcmp(options, "?")) {
+    /* Initialize before goto out */
+    qemu_progress_init(progress, 2.0);
+
+    if (options && is_help_option(options)) {
         ret = print_block_option_help(out_filename, out_fmt);
         goto out;
     }
@@ -748,8 +755,7 @@ static int img_convert(int argc, char **argv)
         ret = -1;
         goto out;
     }
-        
-    qemu_progress_init(progress, 2.0);
+
     qemu_progress_print(0, 100);
 
     bs = g_malloc0(bs_n * sizeof(BlockDriverState *));
@@ -955,7 +961,7 @@ static int img_convert(int argc, char **argv)
             if (n < cluster_sectors) {
                 memset(buf + n * 512, 0, cluster_size - n * 512);
             }
-            if (is_not_zero(buf, cluster_size)) {
+            if (!buffer_is_zero(buf, cluster_size)) {
                 ret = bdrv_write_compressed(out_bs, sector_num, buf,
                                             cluster_sectors);
                 if (ret != 0) {
@@ -1101,7 +1107,7 @@ static int img_info(int argc, char **argv)
     int c;
     const char *filename, *fmt;
     BlockDriverState *bs;
-    char fmt_name[128], size_buf[128], dsize_buf[128];
+    char size_buf[128], dsize_buf[128];
     uint64_t total_sectors;
     int64_t allocated_size;
     char backing_filename[1024];
@@ -1133,7 +1139,6 @@ static int img_info(int argc, char **argv)
     if (!bs) {
         return 1;
     }
-    bdrv_get_format(bs, fmt_name, sizeof(fmt_name));
     bdrv_get_geometry(bs, &total_sectors);
     get_human_readable_size(size_buf, sizeof(size_buf), total_sectors * 512);
     allocated_size = bdrv_get_allocated_file_size(bs);
@@ -1147,7 +1152,7 @@ static int img_info(int argc, char **argv)
            "file format: %s\n"
            "virtual size: %s (%" PRId64 " bytes)\n"
            "disk size: %s\n",
-           filename, fmt_name, size_buf,
+           filename, bdrv_get_format_name(bs), size_buf,
            (total_sectors * 512),
            dsize_buf);
     if (bdrv_is_encrypted(bs)) {
@@ -1157,14 +1162,19 @@ static int img_info(int argc, char **argv)
         if (bdi.cluster_size != 0) {
             printf("cluster_size: %d\n", bdi.cluster_size);
         }
+        if (bdi.is_dirty) {
+            printf("cleanly shut down: no\n");
+        }
     }
     bdrv_get_backing_filename(bs, backing_filename, sizeof(backing_filename));
     if (backing_filename[0] != '\0') {
-        path_combine(backing_filename2, sizeof(backing_filename2),
-                     filename, backing_filename);
-        printf("backing file: %s (actual path: %s)\n",
-               backing_filename,
-               backing_filename2);
+        bdrv_get_full_backing_filename(bs, backing_filename2,
+                                       sizeof(backing_filename2));
+        printf("backing file: %s", backing_filename);
+        if (strcmp(backing_filename, backing_filename2) != 0) {
+            printf(" (actual path: %s)", backing_filename2);
+        }
+        putchar('\n');
     }
     dump_snapshots(bs);
     bdrv_delete(bs);
@@ -1557,14 +1567,19 @@ static int img_resize(int argc, char **argv)
     const char *filename, *fmt, *size;
     int64_t n, total_size;
     BlockDriverState *bs = NULL;
-    QEMUOptionParameter *param;
-    QEMUOptionParameter resize_options[] = {
-        {
-            .name = BLOCK_OPT_SIZE,
-            .type = OPT_SIZE,
-            .help = "Virtual disk size"
+    QemuOpts *param;
+    static QemuOptsList resize_options = {
+        .name = "resize_options",
+        .head = QTAILQ_HEAD_INITIALIZER(resize_options.head),
+        .desc = {
+            {
+                .name = BLOCK_OPT_SIZE,
+                .type = QEMU_OPT_SIZE,
+                .help = "Virtual disk size"
+            }, {
+                /* end of list */
+            }
         },
-        { NULL }
     };
 
     /* Remove size from argv manually so that negative numbers are not treated
@@ -1614,14 +1629,15 @@ static int img_resize(int argc, char **argv)
     }
 
     /* Parse size */
-    param = parse_option_parameters("", resize_options, NULL);
-    if (set_option_parameter(param, BLOCK_OPT_SIZE, size)) {
+    param = qemu_opts_create(&resize_options, NULL, 0, NULL);
+    if (qemu_opt_set(param, BLOCK_OPT_SIZE, size)) {
         /* Error message already printed when size parsing fails */
         ret = -1;
+        qemu_opts_del(param);
         goto out;
     }
-    n = get_option_parameter(param, BLOCK_OPT_SIZE)->value.n;
-    free_option_parameters(param);
+    n = qemu_opt_get_size(param, BLOCK_OPT_SIZE, 0);
+    qemu_opts_del(param);
 
     bs = bdrv_new_open(filename, fmt, BDRV_O_FLAGS | BDRV_O_RDWR);
     if (!bs) {
@@ -1646,7 +1662,7 @@ static int img_resize(int argc, char **argv)
         printf("Image resized.\n");
         break;
     case -ENOTSUP:
-        error_report("This image format does not support resize");
+        error_report("This image does not support resize");
         break;
     case -EACCES:
         error_report("Image is read-only");
@@ -1686,6 +1702,8 @@ int main(int argc, char **argv)
         help();
     cmdname = argv[1];
     argc--; argv++;
+
+    qemu_init_main_loop();
 
     /* find the command */
     for(cmd = img_cmds; cmd->name != NULL; cmd++) {

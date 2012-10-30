@@ -29,9 +29,7 @@
 
 #include "qemu-common.h"
 #include "qemu-queue.h"
-#ifdef CONFIG_VNC_THREAD
 #include "qemu-thread.h"
-#endif
 #include "console.h"
 #include "monitor.h"
 #include "audio/audio.h"
@@ -122,18 +120,31 @@ struct VncSurface
     DisplaySurface *ds;
 };
 
+typedef enum VncShareMode {
+    VNC_SHARE_MODE_CONNECTING = 1,
+    VNC_SHARE_MODE_SHARED,
+    VNC_SHARE_MODE_EXCLUSIVE,
+    VNC_SHARE_MODE_DISCONNECTED,
+} VncShareMode;
+
+typedef enum VncSharePolicy {
+    VNC_SHARE_POLICY_IGNORE = 1,
+    VNC_SHARE_POLICY_ALLOW_EXCLUSIVE,
+    VNC_SHARE_POLICY_FORCE_SHARED,
+} VncSharePolicy;
+
 struct VncDisplay
 {
     QTAILQ_HEAD(, VncState) clients;
+    int num_exclusive;
+    VncSharePolicy share_policy;
     QEMUTimer *timer;
     int timer_interval;
     int lsock;
     DisplayState *ds;
     kbd_layout_t *kbd_layout;
     int lock_key_sync;
-#ifdef CONFIG_VNC_THREAD
     QemuMutex mutex;
-#endif
 
     QEMUCursor *cursor;
     int cursor_msize;
@@ -201,7 +212,6 @@ typedef struct VncZywrle {
     int buf[VNC_ZRLE_TILE_WIDTH * VNC_ZRLE_TILE_HEIGHT];
 } VncZywrle;
 
-#ifdef CONFIG_VNC_THREAD
 struct VncRect
 {
     int x;
@@ -223,14 +233,6 @@ struct VncJob
     QLIST_HEAD(, VncRectEntry) rectangles;
     QTAILQ_ENTRY(VncJob) next;
 };
-#else
-struct VncJob
-{
-    VncState *vs;
-    int rectangles;
-    size_t saved_offset;
-};
-#endif
 
 struct VncState
 {
@@ -250,6 +252,7 @@ struct VncState
     int last_y;
     int client_width;
     int client_height;
+    VncShareMode share_mode;
 
     uint32_t vnc_encoding;
 
@@ -284,11 +287,9 @@ struct VncState
     QEMUPutLEDEntry *led;
 
     bool abort;
-#ifndef CONFIG_VNC_THREAD
-    VncJob job;
-#else
     QemuMutex output_mutex;
-#endif
+    QEMUBH *bh;
+    Buffer jobs_buffer;
 
     /* Encoding specific, if you add something here, don't forget to
      *  update vnc_async_encoding_start()

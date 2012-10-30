@@ -130,6 +130,7 @@ extern void release_dbg_temp_buffer( char *buffer, size_t size );
 #endif
 #define FIXME_ON(ch)          __IS_DEBUG_ON(_FIXME,&_dbch_##ch)
 
+#undef ERR
 #define ERR                   __DPRINTF(_ERR,_dbch___default)
 #define ERR_(ch)              __DPRINTF(_ERR,&_dbch_##ch)
 #define ERR_ON(ch)            __IS_DEBUG_ON(_ERR,&_dbch_##ch)

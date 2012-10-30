@@ -33,9 +33,7 @@
 #define __OPTION_H__
 
 #include <glib.h>
-#ifndef _WIN32
-#include <error.h>
-#endif
+
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>

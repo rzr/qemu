@@ -19,7 +19,9 @@
 #include "qemu-barrier.h"
 
 /* The alignment to use between consumer and producer parts of vring.
- * x86 pagesize again. */
+ * x86 pagesize again. This is the default, used by transports like PCI
+ * which don't provide a means for the guest to tell the host the alignment.
+ */
 #define VIRTIO_PCI_VRING_ALIGN         4096
 
 typedef struct VRingDesc
@@ -53,6 +55,7 @@ typedef struct VRingUsed
 typedef struct VRing
 {
     unsigned int num;
+    unsigned int align;
     target_phys_addr_t desc;
     target_phys_addr_t avail;
     target_phys_addr_t used;
@@ -90,7 +93,7 @@ static void virtqueue_init(VirtQueue *vq)
     vq->vring.avail = pa + vq->vring.num * sizeof(VRingDesc);
     vq->vring.used = vring_align(vq->vring.avail +
                                  offsetof(VRingAvail, ring[vq->vring.num]),
-                                 VIRTIO_PCI_VRING_ALIGN);
+                                 vq->vring.align);
 }
 
 static inline uint64_t vring_desc_addr(target_phys_addr_t desc_pa, int i)
@@ -209,6 +212,10 @@ void virtio_queue_set_notification(VirtQueue *vq, int enable)
     } else {
         vring_used_flags_set_bit(vq, VRING_USED_F_NO_NOTIFY);
     }
+    if (enable) {
+        /* Expose avail event/used flags before caller checks the avail idx. */
+        smp_mb();
+    }
 }
 
 int virtio_queue_ready(VirtQueue *vq)
@@ -282,6 +289,11 @@ static int virtqueue_num_heads(VirtQueue *vq, unsigned int idx)
         error_report("Guest moved used index from %u to %u",
                      idx, vring_avail_idx(vq));
         exit(1);
+    }
+    /* On success, callers read a descriptor at vq->last_avail_idx.
+     * Make sure descriptor read does not bypass avail index read. */
+    if (num_heads) {
+        smp_rmb();
     }
 
     return num_heads;
@@ -539,7 +551,7 @@ uint32_t virtio_config_readb(VirtIODevice *vdev, uint32_t addr)
     if (addr > (vdev->config_len - sizeof(val)))
         return (uint32_t)-1;
 
-    memcpy(&val, vdev->config + addr, sizeof(val));
+    val = ldub_p(vdev->config + addr);
     return val;
 }
 
@@ -552,7 +564,7 @@ uint32_t virtio_config_readw(VirtIODevice *vdev, uint32_t addr)
     if (addr > (vdev->config_len - sizeof(val)))
         return (uint32_t)-1;
 
-    memcpy(&val, vdev->config + addr, sizeof(val));
+    val = lduw_p(vdev->config + addr);
     return val;
 }
 
@@ -565,7 +577,7 @@ uint32_t virtio_config_readl(VirtIODevice *vdev, uint32_t addr)
     if (addr > (vdev->config_len - sizeof(val)))
         return (uint32_t)-1;
 
-    memcpy(&val, vdev->config + addr, sizeof(val));
+    val = ldl_p(vdev->config + addr);
     return val;
 }
 
@@ -576,7 +588,7 @@ void virtio_config_writeb(VirtIODevice *vdev, uint32_t addr, uint32_t data)
     if (addr > (vdev->config_len - sizeof(val)))
         return;
 
-    memcpy(vdev->config + addr, &val, sizeof(val));
+    stb_p(vdev->config + addr, val);
 
     if (vdev->set_config)
         vdev->set_config(vdev, vdev->config);
@@ -589,7 +601,7 @@ void virtio_config_writew(VirtIODevice *vdev, uint32_t addr, uint32_t data)
     if (addr > (vdev->config_len - sizeof(val)))
         return;
 
-    memcpy(vdev->config + addr, &val, sizeof(val));
+    stw_p(vdev->config + addr, val);
 
     if (vdev->set_config)
         vdev->set_config(vdev, vdev->config);
@@ -602,7 +614,7 @@ void virtio_config_writel(VirtIODevice *vdev, uint32_t addr, uint32_t data)
     if (addr > (vdev->config_len - sizeof(val)))
         return;
 
-    memcpy(vdev->config + addr, &val, sizeof(val));
+    stl_p(vdev->config + addr, val);
 
     if (vdev->set_config)
         vdev->set_config(vdev, vdev->config);
@@ -619,9 +631,28 @@ target_phys_addr_t virtio_queue_get_addr(VirtIODevice *vdev, int n)
     return vdev->vq[n].pa;
 }
 
+void virtio_queue_set_num(VirtIODevice *vdev, int n, int num)
+{
+    vdev->vq[n].vring.num = num;
+    virtqueue_init(&vdev->vq[n]);
+}
+
 int virtio_queue_get_num(VirtIODevice *vdev, int n)
 {
     return vdev->vq[n].vring.num;
+}
+
+int virtio_queue_get_id(VirtQueue *vq)
+{
+    VirtIODevice *vdev = vq->vdev;
+    assert(vq >= &vdev->vq[0] && vq < &vdev->vq[VIRTIO_PCI_QUEUE_MAX]);
+    return vq - &vdev->vq[0];
+}
+
+void virtio_queue_set_align(VirtIODevice *vdev, int n, int align)
+{
+    vdev->vq[n].vring.align = align;
+    virtqueue_init(&vdev->vq[n]);
 }
 
 void virtio_queue_notify_vq(VirtQueue *vq)
@@ -664,6 +695,7 @@ VirtQueue *virtio_add_queue(VirtIODevice *vdev, int queue_size,
         abort();
 
     vdev->vq[i].vring.num = queue_size;
+    vdev->vq[i].vring.align = VIRTIO_PCI_VRING_ALIGN;
     vdev->vq[i].handle_output = handle_output;
 
     return &vdev->vq[i];
@@ -693,6 +725,8 @@ static bool vring_notify(VirtIODevice *vdev, VirtQueue *vq)
 {
     uint16_t old, new;
     bool v;
+    /* We need to expose used array entries before checking used event. */
+    smp_mb();
     /* Always notify when queue is empty (when feature acknowledge) */
     if (((vdev->guest_features & (1 << VIRTIO_F_NOTIFY_ON_EMPTY)) &&
          !vq->inuse && vring_avail_idx(vq) == vq->last_avail_idx)) {
@@ -845,8 +879,7 @@ int virtio_load(VirtIODevice *vdev, QEMUFile *f)
 void virtio_cleanup(VirtIODevice *vdev)
 {
     qemu_del_vm_change_state_handler(vdev->vmstate);
-    if (vdev->config)
-        g_free(vdev->config);
+    g_free(vdev->config);
     g_free(vdev->vq);
     g_free(vdev);
 }
@@ -967,10 +1000,59 @@ VirtQueue *virtio_get_queue(VirtIODevice *vdev, int n)
     return vdev->vq + n;
 }
 
+static void virtio_queue_guest_notifier_read(EventNotifier *n)
+{
+    VirtQueue *vq = container_of(n, VirtQueue, guest_notifier);
+    if (event_notifier_test_and_clear(n)) {
+        virtio_irq(vq);
+    }
+}
+
+void virtio_queue_set_guest_notifier_fd_handler(VirtQueue *vq, bool assign,
+                                                bool with_irqfd)
+{
+    if (assign && !with_irqfd) {
+        event_notifier_set_handler(&vq->guest_notifier,
+                                   virtio_queue_guest_notifier_read);
+    } else {
+        event_notifier_set_handler(&vq->guest_notifier, NULL);
+    }
+    if (!assign) {
+        /* Test and clear notifier before closing it,
+         * in case poll callback didn't have time to run. */
+        virtio_queue_guest_notifier_read(&vq->guest_notifier);
+    }
+}
+
 EventNotifier *virtio_queue_get_guest_notifier(VirtQueue *vq)
 {
     return &vq->guest_notifier;
 }
+
+static void virtio_queue_host_notifier_read(EventNotifier *n)
+{
+    VirtQueue *vq = container_of(n, VirtQueue, host_notifier);
+    if (event_notifier_test_and_clear(n)) {
+        virtio_queue_notify_vq(vq);
+    }
+}
+
+void virtio_queue_set_host_notifier_fd_handler(VirtQueue *vq, bool assign,
+                                               bool set_handler)
+{
+    if (assign && set_handler) {
+        event_notifier_set_handler(&vq->host_notifier,
+                                   virtio_queue_host_notifier_read);
+    } else {
+        event_notifier_set_handler(&vq->host_notifier, NULL);
+    }
+    if (!assign) {
+        /* Test and clear notifier before after disabling event,
+         * in case poll callback didn't have time to run. */
+        virtio_queue_host_notifier_read(&vq->host_notifier);
+    }
+}
+
 EventNotifier *virtio_queue_get_host_notifier(VirtQueue *vq)
 {
     return &vq->host_notifier;

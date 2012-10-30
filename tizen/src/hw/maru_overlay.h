@@ -54,6 +54,6 @@ extern uint16_t overlay1_top;
 extern uint16_t overlay1_width;
 extern uint16_t overlay1_height;
 
-int pci_maru_overlay_init( PCIBus *bus );
+DeviceState *pci_maru_overlay_init( PCIBus *bus );
 
 #endif /* MARU_OVERLAY_H_ */

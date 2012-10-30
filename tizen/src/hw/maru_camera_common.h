@@ -107,5 +107,6 @@ void marucam_device_g_ctrl(MaruCamState *state);
 void marucam_device_enum_fsizes(MaruCamState *state);
 void marucam_device_enum_fintv(MaruCamState *state);
 
+int maru_camera_pci_init(PCIBus *bus);
 
 #endif  /* _MARU_CAMERA_COMMON_H_ */

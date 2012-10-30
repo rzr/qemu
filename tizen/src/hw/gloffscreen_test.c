@@ -39,6 +39,10 @@
 #include <sys/time.h>
 #endif
 
+#ifdef MANGLE_OPENGL_SYMBOLS
+#include "gl_mangled.h"
+#endif
+
 // ---------------------------------------------------
 //  Copied from glx.h as we need them in windows too
 /*
@@ -75,7 +79,7 @@ int gl_acceleration_capability_check (void) {
     unsigned char *dataout = (unsigned char *)malloc(4*TX*TY);
     unsigned char *p;
     int x,y;
-    unsigned int bufferAttributes[] = {
+    const int bufferAttributes[] = {
             GLX_RED_SIZE,      8,
             GLX_GREEN_SIZE,    8,
             GLX_BLUE_SIZE,     8,
@@ -84,6 +88,13 @@ int gl_acceleration_capability_check (void) {
             GLX_STENCIL_SIZE,  0,
             0,
         };
+
+#ifdef MANGLE_OPENGL_SYMBOLS
+    if (mgl_load_symbols("libGL.so.1")) {
+        return 1;
+    }
+#endif
+
     int bufferFlags = glo_flags_get_from_glx(bufferAttributes, 0);
     int bpp = glo_flags_get_bytes_per_pixel(bufferFlags);
     int glFormat, glType;
@@ -135,7 +146,7 @@ int gl_acceleration_capability_check (void) {
     printf("GL VERSION %s\n", glGetString(GL_VERSION));
     //printf("GLSL VERSION %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    if (strstr (glGetString(GL_RENDERER), "Software")) {
+    if (strstr((const char*)glGetString(GL_RENDERER), "Software")) {
         printf ("Host does not have GL hardware acceleration!\n");
         test_failure = 1;
         goto TEST_END;

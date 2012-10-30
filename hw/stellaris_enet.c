@@ -78,7 +78,7 @@ static void stellaris_enet_update(stellaris_enet_state *s)
 }
 
 /* TODO: Implement MAC address filtering.  */
-static ssize_t stellaris_enet_receive(VLANClientState *nc, const uint8_t *buf, size_t size)
+static ssize_t stellaris_enet_receive(NetClientState *nc, const uint8_t *buf, size_t size)
 {
     stellaris_enet_state *s = DO_UPCAST(NICState, nc, nc)->opaque;
     int n;
@@ -120,7 +120,7 @@ static ssize_t stellaris_enet_receive(VLANClientState *nc, const uint8_t *buf, s
     return size;
 }
 
-static int stellaris_enet_can_receive(VLANClientState *nc)
+static int stellaris_enet_can_receive(NetClientState *nc)
 {
     stellaris_enet_state *s = DO_UPCAST(NICState, nc, nc)->opaque;
 
@@ -381,7 +381,7 @@ static int stellaris_enet_load(QEMUFile *f, void *opaque, int version_id)
     return 0;
 }
 
-static void stellaris_enet_cleanup(VLANClientState *nc)
+static void stellaris_enet_cleanup(NetClientState *nc)
 {
     stellaris_enet_state *s = DO_UPCAST(NICState, nc, nc)->opaque;
 
@@ -393,7 +393,7 @@ static void stellaris_enet_cleanup(VLANClientState *nc)
 }
 
 static NetClientInfo net_stellaris_enet_info = {
-    .type = NET_CLIENT_TYPE_NIC,
+    .type = NET_CLIENT_OPTIONS_KIND_NIC,
     .size = sizeof(NICState),
     .can_receive = stellaris_enet_can_receive,
     .receive = stellaris_enet_receive,
@@ -406,12 +406,12 @@ static int stellaris_enet_init(SysBusDevice *dev)
 
     memory_region_init_io(&s->mmio, &stellaris_enet_ops, s, "stellaris_enet",
                           0x1000);
-    sysbus_init_mmio_region(dev, &s->mmio);
+    sysbus_init_mmio(dev, &s->mmio);
     sysbus_init_irq(dev, &s->irq);
     qemu_macaddr_default_if_unset(&s->conf.macaddr);
 
     s->nic = qemu_new_nic(&net_stellaris_enet_info, &s->conf,
-                          dev->qdev.info->name, dev->qdev.id, s);
+                          object_get_typename(OBJECT(dev)), dev->qdev.id, s);
     qemu_format_nic_info_str(&s->nic->nc, s->conf.macaddr.a);
 
     stellaris_enet_reset(s);
@@ -420,19 +420,30 @@ static int stellaris_enet_init(SysBusDevice *dev)
     return 0;
 }
 
-static SysBusDeviceInfo stellaris_enet_info = {
-    .init = stellaris_enet_init,
-    .qdev.name  = "stellaris_enet",
-    .qdev.size  = sizeof(stellaris_enet_state),
-    .qdev.props = (Property[]) {
-        DEFINE_NIC_PROPERTIES(stellaris_enet_state, conf),
-        DEFINE_PROP_END_OF_LIST(),
-    }
+static Property stellaris_enet_properties[] = {
+    DEFINE_NIC_PROPERTIES(stellaris_enet_state, conf),
+    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void stellaris_enet_register_devices(void)
+static void stellaris_enet_class_init(ObjectClass *klass, void *data)
 {
-    sysbus_register_withprop(&stellaris_enet_info);
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    SysBusDeviceClass *k = SYS_BUS_DEVICE_CLASS(klass);
+
+    k->init = stellaris_enet_init;
+    dc->props = stellaris_enet_properties;
 }
 
-device_init(stellaris_enet_register_devices)
+static TypeInfo stellaris_enet_info = {
+    .name          = "stellaris_enet",
+    .parent        = TYPE_SYS_BUS_DEVICE,
+    .instance_size = sizeof(stellaris_enet_state),
+    .class_init    = stellaris_enet_class_init,
+};
+
+static void stellaris_enet_register_types(void)
+{
+    type_register_static(&stellaris_enet_info);
+}
+
+type_init(stellaris_enet_register_types)

@@ -83,30 +83,30 @@ static void log_writeb(PCIXenPlatformState *s, char val)
 #define UNPLUG_ALL_NICS 2
 #define UNPLUG_AUX_IDE_DISKS 4
 
-static void unplug_nic(PCIBus *b, PCIDevice *d)
+static void unplug_nic(PCIBus *b, PCIDevice *d, void *o)
 {
     if (pci_get_word(d->config + PCI_CLASS_DEVICE) ==
             PCI_CLASS_NETWORK_ETHERNET) {
-        qdev_unplug(&(d->qdev));
+        qdev_free(&d->qdev);
     }
 }
 
 static void pci_unplug_nics(PCIBus *bus)
 {
-    pci_for_each_device(bus, 0, unplug_nic);
+    pci_for_each_device(bus, 0, unplug_nic, NULL);
 }
 
-static void unplug_disks(PCIBus *b, PCIDevice *d)
+static void unplug_disks(PCIBus *b, PCIDevice *d, void *o)
 {
     if (pci_get_word(d->config + PCI_CLASS_DEVICE) ==
             PCI_CLASS_STORAGE_IDE) {
-        qdev_unplug(&(d->qdev));
+        qdev_unplug(&(d->qdev), NULL);
     }
 }
 
 static void pci_unplug_disks(PCIBus *bus)
 {
-    pci_for_each_device(bus, 0, unplug_disks);
+    pci_for_each_device(bus, 0, unplug_disks, NULL);
 }
 
 static void platform_fixed_ioport_writew(void *opaque, uint32_t addr, uint32_t val)
@@ -120,7 +120,7 @@ static void platform_fixed_ioport_writew(void *opaque, uint32_t addr, uint32_t v
            devices, and bit 2 the non-primary-master IDE devices. */
         if (val & UNPLUG_ALL_IDE_DISKS) {
             DPRINTF("unplug disks\n");
-            qemu_aio_flush();
+            bdrv_drain_all();
             bdrv_flush_all();
             pci_unplug_disks(s->pci_dev.bus);
         }
@@ -372,25 +372,33 @@ static void platform_reset(DeviceState *dev)
     platform_fixed_ioport_reset(s);
 }
 
-static PCIDeviceInfo xen_platform_info = {
-    .init = xen_platform_initfn,
-    .qdev.name = "xen-platform",
-    .qdev.desc = "XEN platform pci device",
-    .qdev.size = sizeof(PCIXenPlatformState),
-    .qdev.vmsd = &vmstate_xen_platform,
-    .qdev.reset = platform_reset,
-
-    .vendor_id    =  PCI_VENDOR_ID_XEN,
-    .device_id    = PCI_DEVICE_ID_XEN_PLATFORM,
-    .class_id     = PCI_CLASS_OTHERS << 8 | 0x80,
-    .subsystem_vendor_id = PCI_VENDOR_ID_XEN,
-    .subsystem_id = PCI_DEVICE_ID_XEN_PLATFORM,
-    .revision = 1,
-};
-
-static void xen_platform_register(void)
+static void xen_platform_class_init(ObjectClass *klass, void *data)
 {
-    pci_qdev_register(&xen_platform_info);
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = xen_platform_initfn;
+    k->vendor_id = PCI_VENDOR_ID_XEN;
+    k->device_id = PCI_DEVICE_ID_XEN_PLATFORM;
+    k->class_id = PCI_CLASS_OTHERS << 8 | 0x80;
+    k->subsystem_vendor_id = PCI_VENDOR_ID_XEN;
+    k->subsystem_id = PCI_DEVICE_ID_XEN_PLATFORM;
+    k->revision = 1;
+    dc->desc = "XEN platform pci device";
+    dc->reset = platform_reset;
+    dc->vmsd = &vmstate_xen_platform;
 }
 
-device_init(xen_platform_register);
+static TypeInfo xen_platform_info = {
+    .name          = "xen-platform",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(PCIXenPlatformState),
+    .class_init    = xen_platform_class_init,
+};
+
+static void xen_platform_register_types(void)
+{
+    type_register_static(&xen_platform_info);
+}
+
+type_init(xen_platform_register_types)

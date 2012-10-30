@@ -9,7 +9,6 @@
  */
 #include "qemu-common.h"
 #include "qemu-aio.h"
-#include "block_int.h"
 #include "block/raw-posix-aio.h"
 
 #include <sys/eventfd.h>
@@ -64,8 +63,8 @@ static void qemu_laio_process_completion(struct qemu_laio_state *s,
         } else if (ret >= 0) {
             /* Short reads mean EOF, pad with zeros. */
             if (laiocb->is_read) {
-                qemu_iovec_memset_skip(laiocb->qiov, 0,
-                    laiocb->qiov->size - ret, ret);
+                qemu_iovec_memset(laiocb->qiov, ret, 0,
+                    laiocb->qiov->size - ret);
             } else {
                 ret = -EINVAL;
             }
@@ -166,8 +165,6 @@ BlockDriverAIOCB *laio_submit(BlockDriverState *bs, void *aio_ctx, int fd,
     off_t offset = sector_num * 512;
 
     laiocb = qemu_aio_get(&laio_pool, bs, cb, opaque);
-    if (!laiocb)
-        return NULL;
     laiocb->nbytes = nb_sectors * 512;
     laiocb->ctx = s;
     laiocb->ret = -EINPROGRESS;
@@ -217,7 +214,7 @@ void *laio_init(void)
         goto out_close_efd;
 
     qemu_aio_set_fd_handler(s->efd, qemu_laio_completion_cb, NULL,
-        qemu_laio_flush_cb, NULL, s);
+        qemu_laio_flush_cb, s);
 
     return s;
 

@@ -52,16 +52,18 @@ int hax_populate_ram(uint64_t va, uint32_t size)
     return 0;
 }
 
-int hax_set_phys_mem(target_phys_addr_t start_addr, ram_addr_t size, ram_addr_t phys_offset)
+int hax_set_phys_mem(MemoryRegionSection *section)
 {
-    struct hax_set_ram_info info, *pinfo = &info;
+    struct hax_set_ram_info info, *pinfo = &info;	
+    MemoryRegionSection *mr = section->mr;
+    target_phys_addr_t start_addr = section->offset_within_address_space;
+    ram_addr_t size = section->size;
     int ret;
-    ram_addr_t flags = phys_offset & ~TARGET_PAGE_MASK;
 
-    /* We only care for the  RAM and ROM */
-    if (flags >= IO_MEM_UNASSIGNED)
-        return 0;
-
+	/*We only care for the RAM and ROM*/
+    if(!memory_region_is_ram(mr))
+	return 0;
+	
     if ( (start_addr & ~TARGET_PAGE_MASK) || (size & ~TARGET_PAGE_MASK))
     {
         dprint("set_phys_mem %x %lx requires page aligned addr and size\n", start_addr, size);
@@ -71,8 +73,8 @@ int hax_set_phys_mem(target_phys_addr_t start_addr, ram_addr_t size, ram_addr_t 
 
     info.pa_start = start_addr;
     info.size = size;
-    info.va = (uint64_t)qemu_get_ram_ptr(phys_offset);
-    info.flags = (flags & IO_MEM_ROM) ? 1 : 0;
+    info.va = (uint64_t)(memory_region_get_ram_ptr(mr) + section->offset_within_region);
+    info.flags = memory_region_is_rom(mr) ? 1 : 0;
 
     ret = ioctl(hax_global.vm->fd, HAX_VM_IOCTL_SET_RAM, pinfo);
     if (ret < 0)
@@ -80,8 +82,12 @@ int hax_set_phys_mem(target_phys_addr_t start_addr, ram_addr_t size, ram_addr_t 
         dprint("has set phys mem failed\n");
         exit(1);
     }
+
     return ret;
+
 }
+
+
 
 int hax_capability(struct hax_state *hax, struct hax_capabilityinfo *cap)
 {
@@ -244,7 +250,7 @@ int hax_vcpu_run(struct hax_vcpu_state* vcpu)
     return ret;
 }
 
-int hax_sync_fpu(CPUState *env, struct fx_layout *fl, int set)
+int hax_sync_fpu(CPUArchState *env, struct fx_layout *fl, int set)
 {
     int ret, fd;
 
@@ -259,7 +265,7 @@ int hax_sync_fpu(CPUState *env, struct fx_layout *fl, int set)
     return ret;
 }
 
-int hax_sync_msr(CPUState *env, struct hax_msr_data *msrs, int set)
+int hax_sync_msr(CPUArchState *env, struct hax_msr_data *msrs, int set)
 {
     int ret, fd;
 
@@ -273,7 +279,7 @@ int hax_sync_msr(CPUState *env, struct hax_msr_data *msrs, int set)
     return ret;
 }
 
-int hax_sync_vcpu_state(CPUState *env, struct vcpu_state_t *state, int set)
+int hax_sync_vcpu_state(CPUArchState *env, struct vcpu_state_t *state, int set)
 {
     int ret, fd;
 
@@ -288,7 +294,7 @@ int hax_sync_vcpu_state(CPUState *env, struct vcpu_state_t *state, int set)
     return ret;
 }
 
-int hax_inject_interrupt(CPUState *env, int vector)
+int hax_inject_interrupt(CPUArchState *env, int vector)
 {
     int ret, fd;
 

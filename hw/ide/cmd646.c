@@ -65,7 +65,7 @@ static void cmd646_cmd_write(void *opaque, target_phys_addr_t addr,
     ide_cmd_write(cmd646bar->bus, addr + 2, data);
 }
 
-static MemoryRegionOps cmd646_cmd_ops = {
+static const MemoryRegionOps cmd646_cmd_ops = {
     .read = cmd646_cmd_read,
     .write = cmd646_cmd_write,
     .endianness = DEVICE_LITTLE_ENDIAN,
@@ -94,17 +94,17 @@ static void cmd646_data_write(void *opaque, target_phys_addr_t addr,
     CMD646BAR *cmd646bar = opaque;
 
     if (size == 1) {
-        return ide_ioport_write(cmd646bar->bus, addr, data);
+        ide_ioport_write(cmd646bar->bus, addr, data);
     } else if (addr == 0) {
         if (size == 2) {
-            return ide_data_writew(cmd646bar->bus, addr, data);
+            ide_data_writew(cmd646bar->bus, addr, data);
         } else {
-            return ide_data_writel(cmd646bar->bus, addr, data);
+            ide_data_writel(cmd646bar->bus, addr, data);
         }
     }
 }
 
-static MemoryRegionOps cmd646_data_ops = {
+static const MemoryRegionOps cmd646_data_ops = {
     .read = cmd646_data_read,
     .write = cmd646_data_write,
     .endianness = DEVICE_LITTLE_ENDIAN,
@@ -193,7 +193,7 @@ static void bmdma_write(void *opaque, target_phys_addr_t addr,
     }
 }
 
-static MemoryRegionOps cmd646_bmdma_ops = {
+static const MemoryRegionOps cmd646_bmdma_ops = {
     .read = bmdma_read,
     .write = bmdma_write,
 };
@@ -295,7 +295,7 @@ static int pci_cmd646_ide_initfn(PCIDevice *dev)
     return 0;
 }
 
-static int pci_cmd646_ide_exitfn(PCIDevice *dev)
+static void pci_cmd646_ide_exitfn(PCIDevice *dev)
 {
     PCIIDEState *d = DO_UPCAST(PCIIDEState, dev, dev);
     unsigned i;
@@ -309,8 +309,6 @@ static int pci_cmd646_ide_exitfn(PCIDevice *dev)
         memory_region_destroy(&d->cmd646_bar[i].data);
     }
     memory_region_destroy(&d->bmdma_bar);
-
-    return 0;
 }
 
 void pci_cmd646_ide_init(PCIBus *bus, DriveInfo **hd_table,
@@ -325,27 +323,35 @@ void pci_cmd646_ide_init(PCIBus *bus, DriveInfo **hd_table,
     pci_ide_create_devs(dev, hd_table);
 }
 
-static PCIDeviceInfo cmd646_ide_info[] = {
-    {
-        .qdev.name    = "cmd646-ide",
-        .qdev.size    = sizeof(PCIIDEState),
-        .init         = pci_cmd646_ide_initfn,
-        .exit         = pci_cmd646_ide_exitfn,
-        .vendor_id    = PCI_VENDOR_ID_CMD,
-        .device_id    = PCI_DEVICE_ID_CMD_646,
-        .revision     = 0x07, // IDE controller revision
-        .class_id     = PCI_CLASS_STORAGE_IDE,
-        .qdev.props   = (Property[]) {
-            DEFINE_PROP_UINT32("secondary", PCIIDEState, secondary, 0),
-            DEFINE_PROP_END_OF_LIST(),
-        },
-    },{
-        /* end of list */
-    }
+static Property cmd646_ide_properties[] = {
+    DEFINE_PROP_UINT32("secondary", PCIIDEState, secondary, 0),
+    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void cmd646_ide_register(void)
+static void cmd646_ide_class_init(ObjectClass *klass, void *data)
 {
-    pci_qdev_register_many(cmd646_ide_info);
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = pci_cmd646_ide_initfn;
+    k->exit = pci_cmd646_ide_exitfn;
+    k->vendor_id = PCI_VENDOR_ID_CMD;
+    k->device_id = PCI_DEVICE_ID_CMD_646;
+    k->revision = 0x07;
+    k->class_id = PCI_CLASS_STORAGE_IDE;
+    dc->props = cmd646_ide_properties;
 }
-device_init(cmd646_ide_register);
+
+static TypeInfo cmd646_ide_info = {
+    .name          = "cmd646-ide",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(PCIIDEState),
+    .class_init    = cmd646_ide_class_init,
+};
+
+static void cmd646_ide_register_types(void)
+{
+    type_register_static(&cmd646_ide_info);
+}
+
+type_init(cmd646_ide_register_types)

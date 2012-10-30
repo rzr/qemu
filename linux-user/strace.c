@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <errno.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/sem.h>
@@ -284,8 +283,13 @@ print_ipc(const struct syscallname *name,
 static void
 print_syscall_ret_addr(const struct syscallname *name, abi_long ret)
 {
-if( ret == -1 ) {
-        gemu_log(" = -1 errno=%d (%s)\n", errno, target_strerror(errno));
+    char *errstr = NULL;
+
+    if (ret < 0) {
+        errstr = target_strerror(-ret);
+    }
+    if (errstr) {
+        gemu_log(" = -1 errno=%d (%s)\n", (int)-ret, errstr);
     } else {
         gemu_log(" = 0x" TARGET_ABI_FMT_lx "\n", ret);
     }
@@ -367,10 +371,20 @@ UNUSED static struct flags open_flags[] = {
     FLAG_TARGET(O_NOCTTY),
     FLAG_TARGET(O_NOFOLLOW),
     FLAG_TARGET(O_NONBLOCK),      /* also O_NDELAY */
-    FLAG_TARGET(O_SYNC),
+    FLAG_TARGET(O_DSYNC),
+    FLAG_TARGET(__O_SYNC),
     FLAG_TARGET(O_TRUNC),
 #ifdef O_DIRECT
     FLAG_TARGET(O_DIRECT),
+#endif
+#ifdef O_NOATIME
+    FLAG_TARGET(O_NOATIME),
+#endif
+#ifdef O_CLOEXEC
+    FLAG_TARGET(O_CLOEXEC),
+#endif
+#ifdef O_PATH
+    FLAG_TARGET(O_PATH),
 #endif
     FLAG_END,
 };
@@ -1515,14 +1529,19 @@ void
 print_syscall_ret(int num, abi_long ret)
 {
     int i;
+    char *errstr = NULL;
 
     for(i=0;i<nsyscalls;i++)
         if( scnames[i].nr == num ) {
             if( scnames[i].result != NULL ) {
                 scnames[i].result(&scnames[i],ret);
             } else {
-                if( ret < 0 ) {
-                    gemu_log(" = -1 errno=" TARGET_ABI_FMT_ld " (%s)\n", -ret, target_strerror(-ret));
+                if (ret < 0) {
+                    errstr = target_strerror(-ret);
+                }
+                if (errstr) {
+                    gemu_log(" = -1 errno=" TARGET_ABI_FMT_ld " (%s)\n",
+                             -ret, errstr);
                 } else {
                     gemu_log(" = " TARGET_ABI_FMT_ld "\n", ret);
                 }

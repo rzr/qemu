@@ -1,5 +1,5 @@
 /*
- *  i386 emulator main execution loop
+ *  emulator main execution loop
  *
  *  Copyright (c) 2003-2005 Fabrice Bellard
  *
@@ -22,17 +22,18 @@
 #include "tcg.h"
 #include "hax.h"
 #include "qemu-barrier.h"
+#include "qtest.h"
 
 int tb_invalidated_flag;
 
 //#define CONFIG_DEBUG_EXEC
 
-bool qemu_cpu_has_work(CPUState *env)
+bool qemu_cpu_has_work(CPUArchState *env)
 {
     return cpu_has_work(env);
 }
 
-void cpu_loop_exit(CPUState *env)
+void cpu_loop_exit(CPUArchState *env)
 {
     env->current_tb = NULL;
     longjmp(env->jmp_env, 1);
@@ -42,7 +43,7 @@ void cpu_loop_exit(CPUState *env)
    restored in a state compatible with the CPU emulator
  */
 #if defined(CONFIG_SOFTMMU)
-void cpu_resume_from_signal(CPUState *env, void *puc)
+void cpu_resume_from_signal(CPUArchState *env, void *puc)
 {
     /* XXX: restore cpu registers saved in host registers */
 
@@ -53,10 +54,10 @@ void cpu_resume_from_signal(CPUState *env, void *puc)
 
 /* Execute the code without caching the generated code. An interpreter
    could be used if available. */
-static void cpu_exec_nocache(CPUState *env, int max_cycles,
+static void cpu_exec_nocache(CPUArchState *env, int max_cycles,
                              TranslationBlock *orig_tb)
 {
-    unsigned long next_tb;
+    tcg_target_ulong next_tb;
     TranslationBlock *tb;
 
     /* Should never happen.
@@ -80,7 +81,7 @@ static void cpu_exec_nocache(CPUState *env, int max_cycles,
     tb_free(tb);
 }
 
-static TranslationBlock *tb_find_slow(CPUState *env,
+static TranslationBlock *tb_find_slow(CPUArchState *env,
                                       target_ulong pc,
                                       target_ulong cs_base,
                                       uint64_t flags)
@@ -136,7 +137,7 @@ static TranslationBlock *tb_find_slow(CPUState *env,
     return tb;
 }
 
-static inline TranslationBlock *tb_find_fast(CPUState *env)
+static inline TranslationBlock *tb_find_fast(CPUArchState *env)
 {
     TranslationBlock *tb;
     target_ulong cs_base, pc;
@@ -156,15 +157,12 @@ static inline TranslationBlock *tb_find_fast(CPUState *env)
 
 static CPUDebugExcpHandler *debug_excp_handler;
 
-CPUDebugExcpHandler *cpu_set_debug_excp_handler(CPUDebugExcpHandler *handler)
+void cpu_set_debug_excp_handler(CPUDebugExcpHandler *handler)
 {
-    CPUDebugExcpHandler *old_handler = debug_excp_handler;
-
     debug_excp_handler = handler;
-    return old_handler;
 }
 
-static void cpu_handle_debug_exception(CPUState *env)
+static void cpu_handle_debug_exception(CPUArchState *env)
 {
     CPUWatchpoint *wp;
 
@@ -188,7 +186,7 @@ volatile sig_atomic_t exit_request;
  * because MMIO is emulated for only one instruction now and then back to
  * HAX kernel
  */
-int need_handle_intr_request(CPUState *env)
+int need_handle_intr_request(CPUArchState *env)
 {
 #ifdef CONFIG_HAX
     if (!hax_enabled() || hax_vcpu_emulation_mode(env))
@@ -200,12 +198,15 @@ int need_handle_intr_request(CPUState *env)
 }
 
 
-int cpu_exec(CPUState *env)
+int cpu_exec(CPUArchState *env)
 {
+#ifdef TARGET_PPC
+    CPUState *cpu = ENV_GET_CPU(env);
+#endif
     int ret, interrupt_request;
     TranslationBlock *tb;
     uint8_t *tc_ptr;
-    unsigned long next_tb;
+    tcg_target_ulong next_tb;
 
     if (env->halted) {
         if (!cpu_has_work(env)) {
@@ -240,6 +241,7 @@ int cpu_exec(CPUState *env)
 #elif defined(TARGET_LM32)
 #elif defined(TARGET_MICROBLAZE)
 #elif defined(TARGET_MIPS)
+#elif defined(TARGET_OPENRISC)
 #elif defined(TARGET_SH4)
 #elif defined(TARGET_CRIS)
 #elif defined(TARGET_S390X)
@@ -287,7 +289,7 @@ int cpu_exec(CPUState *env)
             next_tb = 0; /* force lookup of first TB */
             for(;;) {
                 interrupt_request = env->interrupt_request;
-		 if (unlikely(need_handle_intr_request(env))) {
+                if (unlikely(interrupt_request)) {
                     if (unlikely(env->singlestep_enabled & SSTEP_NOIRQ)) {
                         /* Mask out external interrupts for this step. */
                         interrupt_request &= ~CPU_INTERRUPT_SSTEP_MASK;
@@ -308,27 +310,40 @@ int cpu_exec(CPUState *env)
                     }
 #endif
 #if defined(TARGET_I386)
+#if !defined(CONFIG_USER_ONLY)
+                    if (interrupt_request & CPU_INTERRUPT_POLL) {
+                        env->interrupt_request &= ~CPU_INTERRUPT_POLL;
+                        apic_poll_irq(env->apic_state);
+                    }
+#endif
                     if (interrupt_request & CPU_INTERRUPT_INIT) {
-                            svm_check_intercept(env, SVM_EXIT_INIT);
-                            do_cpu_init(env);
+                            cpu_svm_check_intercept_param(env, SVM_EXIT_INIT,
+                                                          0);
+                            do_cpu_init(x86_env_get_cpu(env));
                             env->exception_index = EXCP_HALTED;
                             cpu_loop_exit(env);
                     } else if (interrupt_request & CPU_INTERRUPT_SIPI) {
-                            do_cpu_sipi(env);
+                            do_cpu_sipi(x86_env_get_cpu(env));
+
                     } else if (env->hflags2 & HF2_GIF_MASK) {
                         if ((interrupt_request & CPU_INTERRUPT_SMI) &&
                             !(env->hflags & HF_SMM_MASK)) {
-                            svm_check_intercept(env, SVM_EXIT_SMI);
+                            cpu_svm_check_intercept_param(env, SVM_EXIT_SMI,
+                                                          0);
                             env->interrupt_request &= ~CPU_INTERRUPT_SMI;
+#ifdef CONFIG_HAX
+			    if (hax_enabled())
+			    	env->hax_vcpu->resync = 1;
+#endif
                             do_smm_enter(env);
                             next_tb = 0;
                         } else if ((interrupt_request & CPU_INTERRUPT_NMI) &&
-                                   !(env->hflags2 & HF2_NMI_MASK)) {
+                                  !(env->hflags2 & HF2_NMI_MASK)) {
                             env->interrupt_request &= ~CPU_INTERRUPT_NMI;
                             env->hflags2 |= HF2_NMI_MASK;
                             do_interrupt_x86_hardirq(env, EXCP02_NMI, 1);
                             next_tb = 0;
-			} else if (interrupt_request & CPU_INTERRUPT_MCE) {
+                        } else if (interrupt_request & CPU_INTERRUPT_MCE) {
                             env->interrupt_request &= ~CPU_INTERRUPT_MCE;
                             do_interrupt_x86_hardirq(env, EXCP12_MCHK, 0);
                             next_tb = 0;
@@ -339,7 +354,8 @@ int cpu_exec(CPUState *env)
                                      (env->eflags & IF_MASK && 
                                       !(env->hflags & HF_INHIBIT_IRQ_MASK))))) {
                             int intno;
-                            svm_check_intercept(env, SVM_EXIT_INTR);
+                            cpu_svm_check_intercept_param(env, SVM_EXIT_INTR,
+                                                          0);
                             env->interrupt_request &= ~(CPU_INTERRUPT_HARD | CPU_INTERRUPT_VIRQ);
                             intno = cpu_get_pic_interrupt(env);
                             qemu_log_mask(CPU_LOG_TB_IN_ASM, "Servicing hardware INT=0x%02x\n", intno);
@@ -353,7 +369,8 @@ int cpu_exec(CPUState *env)
                                    !(env->hflags & HF_INHIBIT_IRQ_MASK)) {
                             int intno;
                             /* FIXME: this should respect TPR */
-                            svm_check_intercept(env, SVM_EXIT_VINTR);
+                            cpu_svm_check_intercept_param(env, SVM_EXIT_VINTR,
+                                                          0);
                             intno = ldl_phys(env->vm_vmcb + offsetof(struct vmcb, control.int_vector));
                             qemu_log_mask(CPU_LOG_TB_IN_ASM, "Servicing virtual hardware INT=0x%02x\n", intno);
                             do_interrupt_x86_hardirq(env, intno, 1);
@@ -363,11 +380,9 @@ int cpu_exec(CPUState *env)
                         }
                     }
 #elif defined(TARGET_PPC)
-#if 0
                     if ((interrupt_request & CPU_INTERRUPT_RESET)) {
-                        cpu_reset(env);
+                        cpu_reset(cpu);
                     }
-#endif
                     if (interrupt_request & CPU_INTERRUPT_HARD) {
                         ppc_hw_interrupt(env);
                         if (env->pending_interrupts == 0)
@@ -399,6 +414,23 @@ int cpu_exec(CPUState *env)
                         do_interrupt(env);
                         next_tb = 0;
                     }
+#elif defined(TARGET_OPENRISC)
+                    {
+                        int idx = -1;
+                        if ((interrupt_request & CPU_INTERRUPT_HARD)
+                            && (env->sr & SR_IEE)) {
+                            idx = EXCP_INT;
+                        }
+                        if ((interrupt_request & CPU_INTERRUPT_TIMER)
+                            && (env->sr & SR_TEE)) {
+                            idx = EXCP_TICK;
+                        }
+                        if (idx >= 0) {
+                            env->exception_index = idx;
+                            do_interrupt(env);
+                            next_tb = 0;
+                        }
+                    }
 #elif defined(TARGET_SPARC)
                     if (interrupt_request & CPU_INTERRUPT_HARD) {
                         if (cpu_interrupts_enabled(env) &&
@@ -414,7 +446,7 @@ int cpu_exec(CPUState *env)
                                 next_tb = 0;
                             }
                         }
-		    }
+                    }
 #elif defined(TARGET_ARM)
                     if (interrupt_request & CPU_INTERRUPT_FIQ
                         && !(env->uncached_cpsr & CPSR_F)) {
@@ -441,6 +473,7 @@ int cpu_exec(CPUState *env)
 #elif defined(TARGET_UNICORE32)
                     if (interrupt_request & CPU_INTERRUPT_HARD
                         && !(env->uncached_asr & ASR_I)) {
+                        env->exception_index = UC32_EXCP_INTR;
                         do_interrupt(env);
                         next_tb = 0;
                     }
@@ -453,7 +486,7 @@ int cpu_exec(CPUState *env)
                     {
                         int idx = -1;
                         /* ??? This hard-codes the OSF/1 interrupt levels.  */
-		        switch (env->pal_mode ? 7 : env->ps & PS_INT_MASK) {
+                        switch (env->pal_mode ? 7 : env->ps & PS_INT_MASK) {
                         case 0 ... 3:
                             if (interrupt_request & CPU_INTERRUPT_HARD) {
                                 idx = EXCP_DEV_INTERRUPT;
@@ -489,11 +522,18 @@ int cpu_exec(CPUState *env)
                         do_interrupt(env);
                         next_tb = 0;
                     }
-                    if (interrupt_request & CPU_INTERRUPT_NMI
-                        && (env->pregs[PR_CCS] & M_FLAG)) {
-                        env->exception_index = EXCP_NMI;
-                        do_interrupt(env);
-                        next_tb = 0;
+                    if (interrupt_request & CPU_INTERRUPT_NMI) {
+                        unsigned int m_flag_archval;
+                        if (env->pregs[PR_VR] < 32) {
+                            m_flag_archval = M_FLAG_V10;
+                        } else {
+                            m_flag_archval = M_FLAG_V32;
+                        }
+                        if ((env->pregs[PR_CCS] & m_flag_archval)) {
+                            env->exception_index = EXCP_NMI;
+                            do_interrupt(env);
+                            next_tb = 0;
+                        }
                     }
 #elif defined(TARGET_M68K)
                     if (interrupt_request & CPU_INTERRUPT_HARD
@@ -566,8 +606,8 @@ int cpu_exec(CPUState *env)
                     tb_invalidated_flag = 0;
                 }
 #ifdef CONFIG_DEBUG_EXEC
-                qemu_log_mask(CPU_LOG_EXEC, "Trace 0x%08lx [" TARGET_FMT_lx "] %s\n",
-                             (long)tb->tc_ptr, tb->pc,
+                qemu_log_mask(CPU_LOG_EXEC, "Trace %p [" TARGET_FMT_lx "] %s\n",
+                             tb->tc_ptr, tb->pc,
                              lookup_symbol(tb->pc));
 #endif
                 /* see if we can patch the calling TB. When the TB
@@ -586,12 +626,12 @@ int cpu_exec(CPUState *env)
                 barrier();
                 if (likely(!env->exit_request)) {
                     tc_ptr = tb->tc_ptr;
-                /* execute the generated code */
+                    /* execute the generated code */
                     next_tb = tcg_qemu_tb_exec(env, tc_ptr);
                     if ((next_tb & 3) == 2) {
                         /* Instruction counter expired.  */
                         int insns_left;
-                        tb = (TranslationBlock *)(long)(next_tb & ~3);
+                        tb = (TranslationBlock *)(next_tb & ~3);
                         /* Restore PC.  */
                         cpu_pc_from_tb(env, tb);
                         insns_left = env->icount_decr.u32;
@@ -650,6 +690,7 @@ int cpu_exec(CPUState *env)
               | env->cc_dest | (env->cc_x << 4);
 #elif defined(TARGET_MICROBLAZE)
 #elif defined(TARGET_MIPS)
+#elif defined(TARGET_OPENRISC)
 #elif defined(TARGET_SH4)
 #elif defined(TARGET_ALPHA)
 #elif defined(TARGET_CRIS)
