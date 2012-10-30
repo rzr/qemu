@@ -30,54 +30,54 @@ Package: emulator-qemu-x86
 OS: ubuntu-32
 Build-host-os: ubuntu-32
 Build-dependency: emulator-lib [ ubuntu-32 ]
-Install-dependency: emulator-qemu-common [ ubuntu-32 ], emulator-kernel-x86 [ ubuntu-32 ], vgabios [ ubuntu-32 ]
+Install-dependency: emulator-kernel-x86 [ ubuntu-32 ], vgabios [ ubuntu-32 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
 #OS: ubuntu-32
 #Build-host-os: ubuntu-32
 #Build-dependency: emulator-lib [ ubuntu-32 ]
-#Install-dependency: emulator-qemu-common [ ubuntu-32 ], emulator-kernel-arm [ ubuntu-32 ]
+#Install-dependency: emulator-kernel-arm [ ubuntu-32 ]
 #Description: Tizen ARM Emulator
 
 Package: emulator-qemu-x86
 OS: ubuntu-64
 Build-host-os: ubuntu-64
 Build-dependency: emulator-lib [ ubuntu-64 ]
-Install-dependency: emulator-qemu-common [ ubuntu-64 ], emulator-kernel-x86 [ ubuntu-64 ], vgabios [ ubuntu-64 ]
+Install-dependency: emulator-kernel-x86 [ ubuntu-64 ], vgabios [ ubuntu-64 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
 #OS: ubuntu-64
 #Build-host-os: ubuntu-64
 #Build-dependency: emulator-lib [ ubuntu-64 ]
-#Install-dependency: emulator-qemu-common [ ubuntu-64 ], emulator-kernel-arm [ ubuntu-64 ]
+#Install-dependency: emulator-kernel-arm [ ubuntu-64 ]
 #Description: Tizen ARM Emulator
 
 Package: emulator-qemu-x86
 OS: windows-32, windows-64
 Build-host-os: windows-32
 Build-dependency: SDL-1.2.14 [ windows-32 ], apache-ant-1.8.3-bin [ windows-32 ], gtk-bundle_2.16.6 [ windows-32 ], directx-dev [ windows-32 ], libcurl-4 [ windows-32 ], emulator-lib [ windows-32 ]
-Install-dependency: emulator-qemu-common [ windows-32 ], emulator-kernel-x86 [ windows-32 ], vgabios [ windows-32 ]
+Install-dependency: emulator-kernel-x86 [ windows-32 ], vgabios [ windows-32 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
 #OS: windows-32, windows-64
 #Build-host-os: windows-32
 #Build-dependency: SDL-1.2.14 [ windows-32 ], apache-ant-1.8.3-bin [ windows-32 ], gtk-bundle_2.16.6 [ windows-32 ], directx-dev [ windows-32 ], libcurl-4 [ windows-32 ], emulator-lib [ windows-32 ]
-#Install-dependency: emulator-qemu-common [ windows-32 ], emulator-kernel-arm [ windows-32 ]
+#Install-dependency: emulator-kernel-arm [ windows-32 ]
 #Description: Tizen ARM Emulator
 
 Package: emulator-qemu-x86
 OS: macos-64
 Build-host-os: macos-64
 Build-dependency: emulator-lib [ macos-64 ]
-Install-dependency: emulator-qemu-common [ macos-64 ], emulator-kernel-x86 [ macos-64 ], vgabios [ macos-64 ]
+Install-dependency: emulator-kernel-x86 [ macos-64 ], vgabios [ macos-64 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
 #OS: macos-64
 #Build-host-os: macos-64
 #Build-dependency: emulator-lib [ macos-64 ]
-#Install-dependency: emulator-qemu-common [ macos-64 ], emulator-kernel-arm [ macos-64 ]
+#Install-dependency: emulator-kernel-arm [ macos-64 ]
 #Description: Tizen ARM Emulator
