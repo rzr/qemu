@@ -1855,7 +1855,7 @@ void maru_vga_common_init(VGACommonState *s)
 
 #ifdef USE_SHM
     int mykey;
-    void *temp; 
+    void *temp;
     int shmid;
 
     shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
@@ -1864,7 +1864,7 @@ void maru_vga_common_init(VGACommonState *s)
         perror("maru_vga: ");
         exit(1);
     }
-    
+
     temp = shmat(shmid, (char*)0x0, 0);
     if (temp == (void *)-1) {
         ERR( "shmat failed\n");
@@ -1873,14 +1873,14 @@ void maru_vga_common_init(VGACommonState *s)
     }
     mykey = atoi(temp);
     shmdt(temp);
-    INFO("shared memory key: %d, ram_size : %d\n", mykey, vga_ram_size);
-    shmid = shmget((key_t)mykey, (size_t)vga_ram_size, 0666 | IPC_CREAT);
+    INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
+    shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
 	ERR( "shmget failed\n");
         perror("maru_vga: ");
         exit(1);
     }
-    
+
     shared_memory = shmat(shmid, (void*)0, 0);
     if (shared_memory == (void *)-1) {
         ERR( "shmat failed\n");
@@ -1888,7 +1888,7 @@ void maru_vga_common_init(VGACommonState *s)
         exit(1);
     }
 
-    memset(shared_memory, 0x00, (size_t)vga_ram_size); 
+    memset(shared_memory, 0x00, (size_t)s->vram_size);
     printf("Memory attached at %X\n", (int)shared_memory);
 #endif
 
