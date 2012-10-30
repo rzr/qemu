@@ -1,3 +1,7 @@
+* 1.3.67
+- Fix build error on macos.
+- vga_common_init function has been changed since QEMU 1.2.
+== Kitae Kim <kt920.kim@samsung.com> 2012-10-30
 * 1.3.66
 - Merge tizen_arm branch into develop branch.
 - Merge arm qemu source for emulator into x86 qemu source.
