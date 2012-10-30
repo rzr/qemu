@@ -7,7 +7,7 @@ clean()
 	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
-		./emulator_configure.sh
+		./emulator_configure.sh x86
 		make clean
 	fi
 	rm -rf $SRCDIR/*.zip
@@ -45,17 +45,17 @@ build()
 install()
 {
 	X86_BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
-	ARM_BIN_DIR=$SRCDIR/package/emulator-qemu-arm.package.${TARGET_OS}/data/tools
+#	ARM_BIN_DIR=$SRCDIR/package/emulator-qemu-arm.package.${TARGET_OS}/data/tools
 	COMMON_BIN_DIR=$SRCDIR/package/emulator-qemu-common.package.${TARGET_OS}/data/tools
 	mkdir -p $X86_BIN_DIR
-	mkdir -p $ARM_BIN_DIR
+#	mkdir -p $ARM_BIN_DIR
 	mkdir -p $COMMON_BIN_DIR
 
 	cd $SRCDIR/tizen
 	make install_dibs
 
 	mv x86 $X86_BIN_DIR/emulator
-	mv arm $ARM_BIN_DIR/emulator
+#	mv arm $ARM_BIN_DIR/emulator
 	mv common $COMMON_BIN_DIR/emulator
 }
 
