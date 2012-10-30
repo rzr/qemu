@@ -11,6 +11,9 @@ Linux)
 MINGW*)
     NUMCPU=`echo $NUMBER_OF_PROCESSORS`
     ;;
+Darwin)
+    NUMCPU=`sysctl hw.ncpu | awk '{print $2}'`
+    ;;
 esac
 
 echo "Number of CPUs $NUMCPU"
