@@ -207,7 +207,7 @@ ifdef CONFIG_WIN32
 endif
 
 ifdef CONFIG_DARWIN
-	cp check-hax $(EMUL_DIR)/bin
+	cp check-hax $(DIBS_COMMON_DIR)/bin
 endif
 ifdef CONFIG_LINUX
 	echo "Copying tizen-kvm to $(DIBS_COMMON_DIR)/etc"
