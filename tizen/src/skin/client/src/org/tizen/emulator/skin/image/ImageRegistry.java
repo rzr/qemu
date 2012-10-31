@@ -48,7 +48,6 @@ import org.tizen.emulator.skin.dbi.ImageListType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dbi.RotationsType;
 import org.tizen.emulator.skin.log.SkinLogger;
-import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinRotation;
 
@@ -151,8 +150,7 @@ public class ImageRegistry {
 
 	}
 
-	public static String getSkinPath(String argSkinPath,
-			int resolutionX, int resolutionY) {
+	public static String getSkinPath(String argSkinPath) {
 		/* When emulator has a invalid skin path,
 		 emulator uses default skin path instead of it */
 		String defaultSkinPath = ".." + //TODO:
@@ -204,7 +202,7 @@ public class ImageRegistry {
 				return null;
 			}
 
-			String skinPath = getSkinPath(argSkinPath, resolutionWidth, resolutionHeight);
+			String skinPath = getSkinPath(argSkinPath);
 			logger.info("get image data of skin from " + skinPath);
 
 			RotationType targetRotation = SkinRotation.getRotation( id );

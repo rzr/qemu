@@ -103,8 +103,8 @@ import org.tizen.emulator.skin.dialog.RamdumpDialog;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
+import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
-import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
@@ -148,7 +148,7 @@ public class EmulatorSkin {
 	protected Shell shell;
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
-	private SkinMode skinMode;
+	private SkinInformation skinInfo;
 	private Image currentImage;
 	private Image currentKeyPressedImage;
 	private Color hoverColor;
@@ -175,6 +175,8 @@ public class EmulatorSkin {
 	private SkinWindow controlPanel;
 	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
+	private Button foldingButton; //TODO:
+	private Decorations decoration; //TODO:
 
 	protected SocketCommunicator communicator;
 	protected long windowHandleId;
@@ -203,9 +205,9 @@ public class EmulatorSkin {
 	 * @param config : configuration of emulator skin
 	 * @param isOnTop : always on top flag
 	*/
-	protected EmulatorSkin(EmulatorConfig config, SkinMode mode, boolean isOnTop) {
+	protected EmulatorSkin(EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
 		this.config = config;
-		this.skinMode = mode;
+		this.skinInfo = skinInfo;
 		this.isDefaultHoverColor = true;
 		this.isOnTop = isOnTop;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
@@ -214,7 +216,7 @@ public class EmulatorSkin {
 		this.pressedHWKeyCode = 0;
 		
 		int style = SWT.NO_TRIM;
-		if (skinMode == SkinMode.GENERAL) {
+		if (skinInfo.isPhoneShape() == false) {
 			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
 		}
 
@@ -270,7 +272,7 @@ public class EmulatorSkin {
 
 		arrangeSkin(resolutionW, resolutionH, scale, rotationId);
 
-		if (skinMode != SkinMode.GENERAL && null == currentImage) {
+		if (skinInfo.isPhoneShape() && null == currentImage) {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
@@ -382,6 +384,11 @@ public class EmulatorSkin {
 
 	}
 
+	private void rearrangeSkin() {
+		logger.info("rearrange the skin (" + skinInfo.getSkinOption() + ")");
+		arrangeSkin(currentLcdWidth, currentLcdHeight, currentScale, currentRotationId);
+	}
+
 	private void arrangeSkin(int resolutionW, int resolutionH, int scale, short rotationId) {
 
 		this.currentLcdWidth = resolutionW;
@@ -390,78 +397,103 @@ public class EmulatorSkin {
 		this.currentRotationId = rotationId;
 		this.currentAngle = SkinRotation.getAngle( rotationId );
 
-		if (skinMode == SkinMode.GENERAL) {
+		if (skinInfo.isPhoneShape() == false) {
 			/* folding button */
-			Button foldingButton = new Button(shell, SWT.PUSH);
-			foldingButton.setText(">");
+			if (foldingButton == null) {
+				foldingButton = new Button(shell, SWT.PUSH);
+				foldingButton.setText(">");
 
-			FormData dataFoldingButton = new FormData();
-			dataFoldingButton.left = new FormAttachment(lcdCanvas, 0);
-			dataFoldingButton.top = new FormAttachment(0, 0);
-			foldingButton.setLayoutData(dataFoldingButton);
+				FormData dataFoldingButton = new FormData();
+				dataFoldingButton.left = new FormAttachment(lcdCanvas, 0);
+				dataFoldingButton.top = new FormAttachment(0, 0);
+				foldingButton.setLayoutData(dataFoldingButton);
 
-			foldingButton.addMouseListener(new MouseListener() {
-				@Override
-				public void mouseDown(MouseEvent e) {
-					/* do nothing */
-				}
+				foldingButton.addMouseListener(new MouseListener() {
+					@Override
+					public void mouseDown(MouseEvent e) {
+						/* do nothing */
+					}
 
-				@Override
-				public void mouseUp(MouseEvent e) {
-					//TODO:
-				}
+					@Override
+					public void mouseUp(MouseEvent e) {
+						if (skinInfo.getSkinOption() == 0) {
+							skinInfo.setSkinOption(1);
 
-				@Override
-				public void mouseDoubleClick(MouseEvent e) {
-					/* do nothing */
-				}
-			});
+							foldingButton.setText("<");
+						} else {
+							skinInfo.setSkinOption(0);
 
-			/* HW keys region */
-			Decorations decoration = new Decorations(shell, SWT.BORDER);
-			decoration.setLayout(new GridLayout(1, true));
-
-			RotationType rotation = SkinRotation.getRotation(currentRotationId);
-			List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-			// TODO: function
-			if (keyMapList != null && keyMapList.isEmpty() == false) {
-				for (KeyMapType keyEntry : keyMapList) {
-					Button hardKeyButton = new Button(decoration, SWT.FLAT);
-					hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-					hardKeyButton.setToolTipText(keyEntry.getTooltip());
-
-					hardKeyButton.setLayoutData(new GridData(SWT.FILL,	SWT.FILL, true, false));
-
-					final int keycode = keyEntry.getEventInfo().getKeyCode();
-					hardKeyButton.addMouseListener(new MouseListener() {
-						@Override
-						public void mouseDown(MouseEvent e) {
-							KeyEventData keyEventData = new KeyEventData(
-									KeyEventType.PRESSED.value(), keycode, 0, 0);
-							communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+							foldingButton.setText(">");
 						}
 
-						@Override
-						public void mouseUp(MouseEvent e) {
-							KeyEventData keyEventData = new KeyEventData(
-									KeyEventType.RELEASED.value(), keycode, 0, 0);
-							communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT,
-											keyEventData);
-						}
+						shell.getDisplay().syncExec(new Runnable() {
+							public void run() {
+								rearrangeSkin();
+							}
+						});
+					}
 
-						@Override
-						public void mouseDoubleClick(MouseEvent e) {
-							/* do nothing */
+					@Override
+					public void mouseDoubleClick(MouseEvent e) {
+						/* do nothing */
+					}
+				});
+			}
+
+			if (skinInfo.getSkinOption() == 0) {
+				/* HW keys region */
+				if (decoration == null) {
+					decoration = new Decorations(shell, SWT.BORDER);
+					decoration.setLayout(new GridLayout(1, true));
+
+					RotationType rotation = SkinRotation.getRotation(currentRotationId);
+					List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
+
+					// TODO: function
+					if (keyMapList != null && keyMapList.isEmpty() == false) {
+						for (KeyMapType keyEntry : keyMapList) {
+							Button hardKeyButton = new Button(decoration, SWT.FLAT);
+							hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
+							hardKeyButton.setToolTipText(keyEntry.getTooltip());
+
+							hardKeyButton.setLayoutData(new GridData(SWT.FILL,	SWT.FILL, true, false));
+
+							final int keycode = keyEntry.getEventInfo().getKeyCode();
+							hardKeyButton.addMouseListener(new MouseListener() {
+								@Override
+								public void mouseDown(MouseEvent e) {
+									KeyEventData keyEventData = new KeyEventData(
+											KeyEventType.PRESSED.value(), keycode, 0, 0);
+									communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+								}
+
+								@Override
+								public void mouseUp(MouseEvent e) {
+									KeyEventData keyEventData = new KeyEventData(
+											KeyEventType.RELEASED.value(), keycode, 0, 0);
+									communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+								}
+
+								@Override
+								public void mouseDoubleClick(MouseEvent e) {
+									/* do nothing */
+								}
+							});
 						}
-					});
+					}
+
+					FormData dataDecoration = new FormData();
+					dataDecoration.left = new FormAttachment(foldingButton, 0);
+					dataDecoration.top = new FormAttachment(0, 0);
+					decoration.setLayoutData(dataDecoration);
+				}
+			} else {
+				if (decoration != null) {
+					decoration.dispose();
+					decoration = null;
 				}
 			}
 
-			FormData dataDecoration = new FormData();
-			dataDecoration.left = new FormAttachment(foldingButton, 0);
-			dataDecoration.top = new FormAttachment(0, 0);
-			decoration.setLayoutData(dataDecoration);
 		} else {
 			Image tempImage = null;
 			Image tempKeyPressedImage = null;
@@ -491,7 +523,7 @@ public class EmulatorSkin {
 
 		/* arrange the lcd */
 		SkinUtil.adjustLcdGeometry(lcdCanvas, currentLcdWidth, currentLcdHeight,
-				scale, rotationId, skinMode);
+				scale, rotationId, skinInfo.isPhoneShape());
 
 		/* set window size */
 		if (null != currentImage) {
@@ -589,7 +621,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		if (skinMode != SkinMode.GENERAL) {
+		if (skinInfo.isPhoneShape()) {
 			shell.addPaintListener(shellPaintListener);
 		}
 
@@ -643,7 +675,7 @@ public class EmulatorSkin {
 
 		};
 
-		if (skinMode != SkinMode.GENERAL) {
+		if (skinInfo.isPhoneShape()) {
 			shell.addMouseTrackListener(shellMouseTrackListener);
 		}
 
@@ -709,7 +741,7 @@ public class EmulatorSkin {
 			} //end of mouseMove
 		};
 
-		if (skinMode != SkinMode.GENERAL) {
+		if (skinInfo.isPhoneShape()) {
 			shell.addMouseMoveListener(shellMouseMoveListener);
 		}
 
@@ -822,7 +854,7 @@ public class EmulatorSkin {
 			}
 		};
 
-		if (skinMode != SkinMode.GENERAL) {
+		if (skinInfo.isPhoneShape()) {
 			shell.addMouseListener(shellMouseListener);
 		}
 

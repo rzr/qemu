@@ -36,8 +36,8 @@ import org.eclipse.swt.SWT;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
+import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
-import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.screenshot.SdlScreenShotWindow;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -49,8 +49,8 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorSdlSkin(EmulatorConfig config, SkinMode mode, boolean isOnTop) {
-		super(config, mode, isOnTop);
+	public EmulatorSdlSkin(EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+		super(config, skinInfo, isOnTop);
 	}
 
 	public long compose() {

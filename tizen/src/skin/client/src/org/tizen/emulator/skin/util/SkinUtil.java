@@ -53,7 +53,6 @@ import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
-import org.tizen.emulator.skin.mode.SkinMode;
 
 
 /**
@@ -113,12 +112,12 @@ public class SkinUtil {
 
 	public static void adjustLcdGeometry(
 			Canvas lcdCanvas, int resolutionW, int resolutionH,
-			int scale, short rotationId, SkinMode mode) {
+			int scale, short rotationId, boolean isPhoneShape) {
 
 		float convertedScale = convertScale(scale);
 		int l = 0, t = 0, w = 0, h = 0;
 
-		if (mode == SkinMode.GENERAL) {
+		if (isPhoneShape == false) {
 			RotationInfo rotation = RotationInfo.getValue(rotationId);
 
 			/* resoultion, that is lcd size in general skin mode */

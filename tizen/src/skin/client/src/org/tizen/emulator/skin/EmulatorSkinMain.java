@@ -52,9 +52,9 @@ import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.ImageRegistry;
+import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
-import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.StringUtil;
@@ -116,19 +116,19 @@ public class EmulatorSkinMain {
 			Map<String, String> argsMap = parsArgs(args);
 
 			/* emulator resolution */
-			int resolutionW = Integer.parseInt(
+			/*int resolutionW = Integer.parseInt(
 					argsMap.get(ArgsConstants.RESOLUTION_WIDTH));
 			int resolutionH = Integer.parseInt(
-					argsMap.get(ArgsConstants.RESOLUTION_HEIGHT));
+					argsMap.get(ArgsConstants.RESOLUTION_HEIGHT));*/
 
 			/* get skin path from startup argument */
 			String skinPath = ImageRegistry.getSkinPath(
-					(String) argsMap.get(ArgsConstants.SKIN_PATH), resolutionW, resolutionH);
+					(String) argsMap.get(ArgsConstants.SKIN_PATH));
 
 			/* set skin information */
 			String skinInfoFilePath = skinPath + File.separator + SKIN_INFO_FILE_NAME;
-			Properties skinInfo = loadProperties(skinInfoFilePath, false);
-			if (null == skinInfo) {
+			Properties skinInfoProperties = loadProperties(skinInfoFilePath, false);
+			if (null == skinInfoProperties) {
 				logger.severe("Fail to load skin information file.");
 
 				Shell temp = new Shell(Display.getDefault());
@@ -142,14 +142,18 @@ public class EmulatorSkinMain {
 
 				System.exit(-1);
 			} else {
-				logger.info("skin info:" + skinInfo);
+				logger.info("skin info:" + skinInfoProperties); //TODO:
 			}
 
-			SkinMode skinMode = SkinMode.STANDARD;
-			if (skinInfo.getProperty(SkinInfoConstants.RESOLUTION_WIDTH).equalsIgnoreCase("all") ||
-					skinInfo.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT).equalsIgnoreCase("all")) {
-				skinMode = SkinMode.GENERAL;
+			boolean skinPhoneShape = true;
+			String skinInfoResolutionW = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
+			String skinInfoResolutionH = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
+			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
+					skinInfoResolutionH.equalsIgnoreCase("all")) {
+				skinPhoneShape = false;
 			}
+			SkinInformation skinInfo = new SkinInformation(
+					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME), skinPhoneShape);
 
 			/* set emulator window skin property */
 			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
@@ -202,9 +206,9 @@ public class EmulatorSkinMain {
 			/* create skin */
 			EmulatorSkin skin;
 			if (SwtUtil.isMacPlatform()) {
-				skin = new EmulatorShmSkin(config, skinMode, isOnTop);
+				skin = new EmulatorShmSkin(config, skinInfo, isOnTop);
 			} else { // linux & windows
-				skin = new EmulatorSdlSkin(config, skinMode, isOnTop);
+				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
 			}
 
 			long windowHandleId = skin.compose();
