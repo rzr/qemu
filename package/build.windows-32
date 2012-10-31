@@ -7,7 +7,7 @@ clean()
 	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
-		./emulator_configure.sh -e "$BUILD_CFLAGS $BUILD_LDFLAGS" x86
+		./emulator_configure.sh -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
 		make clean
 	fi
 	rm -rf $SRCDIR/*.zip
