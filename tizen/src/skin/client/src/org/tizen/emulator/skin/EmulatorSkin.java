@@ -1964,7 +1964,7 @@ public class EmulatorSkin {
 					procSdb.start(); // open sdb shell
 				} catch ( Exception ee ) {
 					logger.log( Level.SEVERE, ee.getMessage(), ee );
-					SkinUtil.openMessage( shell, null, "Fail to open Shell.", SWT.ICON_ERROR, config );
+					SkinUtil.openMessage( shell, null, "Fail to open Shell: \n" + ee.getMessage(), SWT.ICON_ERROR, config );
 				}
 
 				communicator.sendToQEMU( SendCommand.OPEN_SHELL, null );
