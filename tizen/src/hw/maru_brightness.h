@@ -33,13 +33,13 @@
 #include "qemu-common.h"
 
 #define BRIGHTNESS_MIN          (0)
-#define BRIGHTNESS_MAX          (24)
+#define BRIGHTNESS_MAX          (100)
 
 extern uint32_t brightness_level;
 extern uint32_t brightness_off;
 extern uint8_t brightness_tbl[];
 
-int pci_get_brightness( void );
+int pci_get_brightness(void);
 DeviceState *pci_maru_brightness_init(PCIBus *bus);
 
 #endif /* MARU_BRIGHTNESS_H_ */
