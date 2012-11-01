@@ -18,7 +18,7 @@ echo "kern.sysv.shmmni=128" >> $SYSCTL_FILE
 echo "kern.sysv.shmseg=32" >> $SYSCTL_FILE
 echo "kern.sysv.shmall=20480" >> $SYSCTL_FILE
 
-TIZEN_BIN_PATH=$TIZEN_SDK_INSTALLED_PATH/tools/emulator/bin
+TIZEN_BIN_PATH=$TIZEN_SDK_INSTALL_PATH/tools/emulator/bin
 #TIZEN_BIN_PATH=./
 TMP_FILE=setshmmax.sh
 NEW_SHMMAXSIZE=83886080
