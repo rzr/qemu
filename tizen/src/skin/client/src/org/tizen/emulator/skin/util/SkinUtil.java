@@ -110,12 +110,12 @@ public class SkinUtil {
 		return sdbPath;
 	}
 
-	public static void adjustLcdGeometry(
+	public static Rectangle adjustLcdGeometry(
 			Canvas lcdCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId, boolean isPhoneShape) {
 
 		float convertedScale = convertScale(scale);
-		int l = 0, t = 0, w = 0, h = 0;
+		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
 
 		if (isPhoneShape == false) {
 			RotationInfo rotation = RotationInfo.getValue(rotationId);
@@ -123,11 +123,11 @@ public class SkinUtil {
 			/* resoultion, that is lcd size in general skin mode */
 			if (RotationInfo.LANDSCAPE == rotation ||
 					RotationInfo.REVERSE_LANDSCAPE == rotation) {
-				w = (int)(resolutionH * convertedScale);
-				h = (int)(resolutionW * convertedScale);
+				lcdBounds.width = (int)(resolutionH * convertedScale);
+				lcdBounds.height = (int)(resolutionW * convertedScale);
 			} else {
-				w = (int)(resolutionW * convertedScale);
-				h = (int)(resolutionH * convertedScale);
+				lcdBounds.width = (int)(resolutionW * convertedScale);
+				lcdBounds.height = (int)(resolutionH * convertedScale);
 			}
 		} else {
 			RotationType rotation = SkinRotation.getRotation(rotationId);
@@ -140,18 +140,20 @@ public class SkinUtil {
 			Integer width = region.getWidth();
 			Integer height = region.getHeight();
 
-			l = (int) (left * convertedScale);
-			t = (int) (top * convertedScale);
-			w = (int) (width * convertedScale);
-			h = (int) (height * convertedScale);
+			lcdBounds.x = (int) (left * convertedScale);
+			lcdBounds.y = (int) (top * convertedScale);
+			lcdBounds.width = (int) (width * convertedScale);
+			lcdBounds.height = (int) (height * convertedScale);
 		}
 
 		FormData data = new FormData();
-		data.left = new FormAttachment(0, l);
-		data.top = new FormAttachment(0, t);
-		data.width = w;
-		data.height = h;
+		data.left = new FormAttachment(0, lcdBounds.x);
+		data.top = new FormAttachment(0, lcdBounds.y);
+		data.width = lcdBounds.width;
+		data.height = lcdBounds.height;
 		lcdCanvas.setLayoutData(data);
+
+		return lcdBounds;
 	}
 
 	public static SkinRegion getHardKeyArea( int currentX, int currentY, short rotationId, int scale ) {
