@@ -196,7 +196,6 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
 #endif
 
     scancode = javakeycode_to_scancode(event_type, keycode, state_mask, key_location);
-    TRACE("javakeycode_to_scancode : %d\n", scancode);
 
     if (scancode == -1) {
         INFO("cannot find scancode\n");
@@ -204,10 +203,10 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 
     if (KEY_PRESSED == event_type) {
-		INFO("key pressed: %d\n", scancode);
+		TRACE("key pressed: %d\n", scancode);
         kbd_put_keycode(scancode);
     } else if (KEY_RELEASED == event_type) {
-		INFO("key released: %d\n", scancode);
+		TRACE("key released: %d\n", scancode);
         kbd_put_keycode(scancode | 0x80);
     }
 }
