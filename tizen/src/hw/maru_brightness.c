@@ -1,9 +1,9 @@
-/* 
+/*
  * Maru brightness device for VGA
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * DoHyung Hong <don.hong@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * Hyunjun Son <hj79.son@samsung.com>
@@ -46,12 +46,12 @@
 #include "maru_brightness.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL( qemu, maru_brightness );
+MULTI_DEBUG_CHANNEL(qemu, maru_brightness);
 
 #define QEMU_DEV_NAME           "MARU_BRIGHTNESS"
 
-#define BRIGHTNESS_MEM_SIZE     (4 * 1024)		/* 4KB */
-#define BRIGHTNESS_REG_SIZE     256
+#define BRIGHTNESS_MEM_SIZE    (4 * 1024)    /* 4KB */
+#define BRIGHTNESS_REG_SIZE    256
 
 typedef struct BrightnessState {
     PCIDevice       dev;
@@ -64,17 +64,28 @@ enum {
     BRIGHTNESS_OFF = 0x04,
 };
 
-uint32_t brightness_level = 24;
-uint32_t brightness_off = 0;
+uint32_t brightness_level = BRIGHTNESS_MAX;
+uint32_t brightness_off;
 
-/* level : 1 ~ 23, interval : 6 or 7. */
-/* skip 24 level, set to default alpha */
-uint8_t brightness_tbl[] = {97, /* level 0 : reserved for dimming */
-/* level 1 ~ 11 */          110, 116, 122, 128, 134, 140, 146, 152, 158, 164, 170,
-/* level 12 ~ 23 */         176, 182, 188, 194, 200, 206, 213, 220, 227, 234, 241, 248};
+/* level : 1 ~ 100, interval : 1 or 2 */
+/* skip 100 level, set to default alpha */
+uint8_t brightness_tbl[] = {100, /* level 0 : for dimming */
+/* level 01 ~ 10 */         106, 108, 109, 111, 112, 114, 115, 117, 118, 120,
+/* level 11 ~ 20 */         121, 123, 124, 126, 127, 129, 130, 132, 133, 175,
+/* level 21 ~ 30 */         136, 138, 139, 141, 142, 144, 145, 147, 148, 150,
+/* level 31 ~ 40 */         151, 153, 154, 156, 157, 159, 160, 162, 163, 165,
+/* level 41 ~ 50 */         166, 168, 169, 171, 172, 174, 175, 177, 178, 180,
+/* level 51 ~ 60 */         181, 183, 184, 186, 187, 189, 190, 192, 193, 195,
+/* level 61 ~ 70 */         196, 198, 199, 201, 202, 204, 205, 207, 208, 210,
+/* level 71 ~ 80 */         211, 213, 214, 216, 217, 219, 220, 222, 223, 225,
+/* level 81 ~ 90 */         226, 228, 229, 231, 232, 234, 235, 237, 238, 240,
+/* level 91 ~ 99 */         241, 243, 244, 246, 247, 249, 250, 252, 253};
 
-static uint64_t brightness_reg_read( void *opaque, target_phys_addr_t addr, unsigned size ) {
-    switch ( addr & 0xFF ) {
+static uint64_t brightness_reg_read(void *opaque,
+                                    target_phys_addr_t addr,
+                                    unsigned size)
+{
+    switch (addr & 0xFF) {
     case BRIGHTNESS_LEVEL:
         INFO("brightness_reg_read: brightness_level = %d\n", brightness_level);
         return brightness_level;
@@ -89,22 +100,26 @@ static uint64_t brightness_reg_read( void *opaque, target_phys_addr_t addr, unsi
     return 0;
 }
 
-static void brightness_reg_write( void *opaque, target_phys_addr_t addr, uint64_t val, unsigned size ) {
-#if BRIGHTNESS_MIN > 0
-    if (val < BRIGHTNESS_MIN || val > BRIGHTNESS_MAX) {
-#else
-    if ( val > BRIGHTNESS_MAX ) {
-#endif
-        ERR("brightness_reg_write: Invalide brightness level.\n");
-    }
-
-    switch ( addr & 0xFF ) {
+static void brightness_reg_write(void *opaque,
+                                 target_phys_addr_t addr,
+                                 uint64_t val,
+                                 unsigned size)
+{
+    switch (addr & 0xFF) {
     case BRIGHTNESS_LEVEL:
-        brightness_level = val;
-        INFO("brightness_level : %lld\n", val);
-#ifdef TARGET_ARM
-        vga_hw_invalidate();
+#if BRIGHTNESS_MIN > 0
+        if (val < BRIGHTNESS_MIN || val > BRIGHTNESS_MAX) {
+#else
+        if (val > BRIGHTNESS_MAX) {
 #endif
+            ERR("brightness_reg_write: Invalide brightness level.\n");
+        } else {
+            brightness_level = val;
+            INFO("brightness_level : %lld\n", val);
+#ifdef TARGET_ARM
+            vga_hw_invalidate();
+#endif
+        }
         return;
     case BRIGHTNESS_OFF:
         INFO("brightness_off : %lld\n", val);
@@ -125,22 +140,25 @@ static const MemoryRegionOps brightness_mmio_ops = {
     .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
-static int brightness_initfn( PCIDevice *dev ) {
+static int brightness_initfn(PCIDevice *dev)
+{
     BrightnessState *s = DO_UPCAST(BrightnessState, dev, dev);
     uint8_t *pci_conf = s->dev.config;
 
-    pci_config_set_vendor_id( pci_conf, PCI_VENDOR_ID_TIZEN );
-    pci_config_set_device_id( pci_conf, PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS );
-    pci_config_set_class( pci_conf, PCI_CLASS_DISPLAY_OTHER );
+    pci_config_set_vendor_id(pci_conf, PCI_VENDOR_ID_TIZEN);
+    pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS);
+    pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    memory_region_init_io( &s->mmio_addr, &brightness_mmio_ops, s, "maru_brightness_mmio", BRIGHTNESS_REG_SIZE );
-    pci_register_bar( &s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr );
+    memory_region_init_io(&s->mmio_addr, &brightness_mmio_ops, s,
+                            "maru_brightness_mmio", BRIGHTNESS_REG_SIZE);
+    pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
 
     return 0;
 }
 
 /* external interface */
-int pci_get_brightness( void ) {
+int pci_get_brightness(void)
+{
     return brightness_level;
 }
 

@@ -1,8 +1,7 @@
-#!/bin/sh
+#!/bin/sh -e
 
 TIZEN_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`
-SIZE=83886080
-SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
+OLD_SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
 COCOASUDOPATH="./cocoasudo" 
 SYSCTL_FILE=sysctl.conf
 if [ -z $TIZEN_SDK_INSTALL_PATH ]
@@ -19,11 +18,11 @@ echo "kern.sysv.shmmni=128" >> $SYSCTL_FILE
 echo "kern.sysv.shmseg=32" >> $SYSCTL_FILE
 echo "kern.sysv.shmall=20480" >> $SYSCTL_FILE
 
-TIZEN_BIN_PATH=$TIZEN_SDK_INSTALLED_PATH/tools/emulator/bin
+TIZEN_BIN_PATH=$TIZEN_SDK_INSTALL_PATH/tools/emulator/bin
 #TIZEN_BIN_PATH=./
 TMP_FILE=setshmmax.sh
-NEW_SHMMAXSIZE=268435456
-if [ $SHMMAXSIZE -lt $SIZE ] 
+NEW_SHMMAXSIZE=83886080
+if [ $OLD_SHMMAXSIZE -lt $NEW_SHMMAXSIZE ] 
 then
 	if [ -e /etc/$SYSCTL_FILE ]
 	then
@@ -42,7 +41,7 @@ then
 	fi
 fi
 
-NEW_SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
+CURRENT_SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
 
 if [ -e $TMP_FILE ]
 then
@@ -54,7 +53,7 @@ then
 	rm -f $SYSCTL_FILE
 fi
 
-if [ ! $SHMMAXSIZE -eq $NEW_SHMMAXSIZE ]
+if [ ! $OLD_SHMMAXSIZE -eq $CURRENT_SHMMAXSIZE ]
 then
 		
 	echo 'need reboot'

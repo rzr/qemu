@@ -53,6 +53,7 @@ static const char *dev_name = "/dev/video0";
 static int v4l2_fd;
 static int convert_trial;
 static int ready_count;
+static void *grab_buf;
 
 static struct v4l2_format dst_fmt;
 
@@ -278,19 +279,20 @@ static int __v4l2_grab(MaruCamState *state)
     FD_ZERO(&fds);
     FD_SET(v4l2_fd, &fds);
 
-    tv.tv_sec = 0;
-    tv.tv_usec = 500000;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
 
     ret = select(v4l2_fd + 1, &fds, NULL, NULL, &tv);
     if (ret < 0) {
-        if (errno == EAGAIN || errno == EINTR)
+        if (errno == EAGAIN || errno == EINTR) {
+            ERR("select again: %s\n", strerror(errno));
             return 0;
+        }
         ERR("failed to select : %s\n", strerror(errno));
         __raise_err_intr(state);
         return -1;
-    }
-    if (!ret) {
-        WARN("Timed out\n");
+    } else if (!ret) {
+        ERR("select timed out\n");
         return 0;
     }
 
@@ -300,23 +302,15 @@ static int __v4l2_grab(MaruCamState *state)
         return -1;
     }
 
-    if (!is_streamon(state))
-        return -1;
-
-    qemu_mutex_lock(&state->thread_mutex);
-    if (state->req_frame == 0) {
-        qemu_mutex_unlock(&state->thread_mutex);
-        return 0;
-    }
-    buf = state->vaddr + state->buf_size * (state->req_frame -1);
-    qemu_mutex_unlock(&state->thread_mutex);
-
-    ret = v4l2_read(v4l2_fd, buf, state->buf_size);
+    ret = v4l2_read(v4l2_fd, grab_buf, state->buf_size);
     if (ret < 0) {
         switch (errno) {
         case EAGAIN:
-        case EIO:
         case EINTR:
+            ERR("v4l2_read met the error: %s\n", strerror(errno));
+            return 0;
+        case EIO:
+            ERR("v4l2_read met the EIO.\n");
             if (convert_trial-- == -1) {
                 ERR("Try count for v4l2_read is exceeded: %s\n",
                     strerror(errno));
@@ -332,12 +326,21 @@ static int __v4l2_grab(MaruCamState *state)
     }
 
     qemu_mutex_lock(&state->thread_mutex);
-    if (ready_count < MARUCAM_SKIPFRAMES) {
-        ++ready_count; /* skip a frame cause first some frame are distorted */
-        qemu_mutex_unlock(&state->thread_mutex);
-        return 0;
-    }
     if (state->streamon == _MC_THREAD_STREAMON) {
+        if (ready_count < MARUCAM_SKIPFRAMES) {
+            /* skip a frame cause first some frame are distorted */
+            ++ready_count;
+            TRACE("skip %d frame\n", ready_count);
+            qemu_mutex_unlock(&state->thread_mutex);
+            return 0;
+        }
+        if (state->req_frame == 0) {
+            TRACE("there is no request\n");
+            qemu_mutex_unlock(&state->thread_mutex);
+            return 0;
+        }
+        buf = state->vaddr + state->buf_size * (state->req_frame -1);
+        memcpy(buf, grab_buf, state->buf_size);
         state->req_frame = 0; /* clear request */
         state->isr |= 0x01;   /* set a flag of rasing a interrupt */
         qemu_bh_schedule(state->tx_bh);
@@ -363,13 +366,11 @@ wait_worker_thread:
     convert_trial = 10;
     ready_count = 0;
     qemu_mutex_lock(&state->thread_mutex);
-    state->buf_size = dst_fmt.fmt.pix.sizeimage;
     state->streamon = _MC_THREAD_STREAMON;
     qemu_mutex_unlock(&state->thread_mutex);
     INFO("Streaming on ......\n");
 
-    while (1)
-    {
+    while (1) {
         if (is_streamon(state)) {
             if (__v4l2_grab(state) < 0) {
                 INFO("...... Streaming off\n");
@@ -498,16 +499,37 @@ void marucam_device_open(MaruCamState* state)
         param->errCode = EINVAL;
         return;
     }
+    INFO("Opened\n");
 
     CLEAR(dst_fmt);
-    INFO("Opened\n");
+    dst_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    dst_fmt.fmt.pix.width = 640;
+    dst_fmt.fmt.pix.height = 480;
+    dst_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+    dst_fmt.fmt.pix.field = V4L2_FIELD_ANY;
+
+    if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
+        ERR("failed to set video format: format(0x%x), width:height(%d:%d), "
+          "errstr(%s)\n", dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.width,
+          dst_fmt.fmt.pix.height, strerror(errno));
+        param->errCode = errno;
+        return;
+    }
+    TRACE("set the default format: w:h(%dx%d), fmt(0x%x), size(%d), "
+         "color(%d), field(%d)\n",
+         dst_fmt.fmt.pix.width, dst_fmt.fmt.pix.height,
+         dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.sizeimage,
+         dst_fmt.fmt.pix.colorspace, dst_fmt.fmt.pix.field);
 }
 
 void marucam_device_start_preview(MaruCamState* state)
 {
     struct timespec req;
+    MaruCamParam *param = state->param;
+    param->top = 0;
     req.tv_sec = 0;
     req.tv_nsec = 10000000;
+
     INFO("Pixfmt(%c%c%c%C), W:H(%d:%d), buf size(%u)\n",
          (char)(dst_fmt.fmt.pix.pixelformat),
          (char)(dst_fmt.fmt.pix.pixelformat >> 8),
@@ -517,6 +539,17 @@ void marucam_device_start_preview(MaruCamState* state)
          dst_fmt.fmt.pix.height,
          dst_fmt.fmt.pix.sizeimage);
     INFO("Starting preview\n");
+
+    if (grab_buf) {
+        g_free(grab_buf);
+        grab_buf = NULL;
+    }
+    grab_buf = (void *)g_malloc0(dst_fmt.fmt.pix.sizeimage);
+    if (grab_buf == NULL) {
+        param->errCode = ENOMEM;
+        return;
+    }
+    state->buf_size = dst_fmt.fmt.pix.sizeimage;
     qemu_mutex_lock(&state->thread_mutex);
     qemu_cond_signal(&state->thread_cond);
     qemu_mutex_unlock(&state->thread_mutex);
@@ -535,13 +568,18 @@ void marucam_device_stop_preview(MaruCamState* state)
     if (is_streamon(state)) {
         qemu_mutex_lock(&state->thread_mutex);
         state->streamon = _MC_THREAD_STREAMOFF;
-        state->buf_size = 0;
         qemu_mutex_unlock(&state->thread_mutex);
 
         /* nanosleep until thread is paused  */
         while (!is_stream_paused(state))
             nanosleep(&req, NULL);
     }
+
+    if (grab_buf) {
+        g_free(grab_buf);
+        grab_buf = NULL;
+    }
+    state->buf_size = 0;
 
     INFO("Stopping preview\n");
 }
@@ -576,24 +614,26 @@ void marucam_device_g_param(MaruCamState* state)
 
 void marucam_device_s_fmt(MaruCamState* state)
 {
+    struct v4l2_format format;
     MaruCamParam *param = state->param;
 
     param->top = 0;
-    CLEAR(dst_fmt);
-    dst_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    dst_fmt.fmt.pix.width = param->stack[0];
-    dst_fmt.fmt.pix.height = param->stack[1];
-    dst_fmt.fmt.pix.pixelformat = param->stack[2];
-    dst_fmt.fmt.pix.field = param->stack[3];
+    CLEAR(format);
+    format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    format.fmt.pix.width = param->stack[0];
+    format.fmt.pix.height = param->stack[1];
+    format.fmt.pix.pixelformat = param->stack[2];
+    format.fmt.pix.field = V4L2_FIELD_ANY;
 
-    if (xioctl(v4l2_fd, VIDIOC_S_FMT, &dst_fmt) < 0) {
+    if (xioctl(v4l2_fd, VIDIOC_S_FMT, &format) < 0) {
         ERR("failed to set video format: format(0x%x), width:height(%d:%d), "
-          "errstr(%s)\n", dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.width,
-          dst_fmt.fmt.pix.height, strerror(errno));
+          "errstr(%s)\n", format.fmt.pix.pixelformat, format.fmt.pix.width,
+          format.fmt.pix.height, strerror(errno));
         param->errCode = errno;
         return;
     }
 
+    memcpy(&dst_fmt, &format, sizeof(format));
     param->stack[0] = dst_fmt.fmt.pix.width;
     param->stack[1] = dst_fmt.fmt.pix.height;
     param->stack[2] = dst_fmt.fmt.pix.field;
@@ -602,6 +642,11 @@ void marucam_device_s_fmt(MaruCamState* state)
     param->stack[5] = dst_fmt.fmt.pix.sizeimage;
     param->stack[6] = dst_fmt.fmt.pix.colorspace;
     param->stack[7] = dst_fmt.fmt.pix.priv;
+    TRACE("set the format: w:h(%dx%d), fmt(0x%x), size(%d), "
+         "color(%d), field(%d)\n",
+         dst_fmt.fmt.pix.width, dst_fmt.fmt.pix.height,
+         dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.sizeimage,
+         dst_fmt.fmt.pix.colorspace, dst_fmt.fmt.pix.field);
 }
 
 void marucam_device_g_fmt(MaruCamState* state)
@@ -625,7 +670,11 @@ void marucam_device_g_fmt(MaruCamState* state)
         param->stack[5] = format.fmt.pix.sizeimage;
         param->stack[6] = format.fmt.pix.colorspace;
         param->stack[7] = format.fmt.pix.priv;
-        memcpy(&dst_fmt, &format, sizeof(format));
+        TRACE("get the format: w:h(%dx%d), fmt(0x%x), size(%d), "
+             "color(%d), field(%d)\n",
+             format.fmt.pix.width, format.fmt.pix.height,
+             format.fmt.pix.pixelformat, format.fmt.pix.sizeimage,
+             format.fmt.pix.colorspace, format.fmt.pix.field);
     }
 }
 
@@ -640,7 +689,7 @@ void marucam_device_try_fmt(MaruCamState* state)
     format.fmt.pix.width = param->stack[0];
     format.fmt.pix.height = param->stack[1];
     format.fmt.pix.pixelformat = param->stack[2];
-    format.fmt.pix.field = param->stack[3];
+    format.fmt.pix.field = V4L2_FIELD_ANY;
 
     if (xioctl(v4l2_fd, VIDIOC_TRY_FMT, &format) < 0) {
         ERR("failed to check video format: format(0x%x), width:height(%d:%d),"
@@ -657,6 +706,11 @@ void marucam_device_try_fmt(MaruCamState* state)
     param->stack[5] = format.fmt.pix.sizeimage;
     param->stack[6] = format.fmt.pix.colorspace;
     param->stack[7] = format.fmt.pix.priv;
+    TRACE("check the format: w:h(%dx%d), fmt(0x%x), size(%d), "
+         "color(%d), field(%d)\n",
+         format.fmt.pix.width, format.fmt.pix.height,
+         format.fmt.pix.pixelformat, format.fmt.pix.sizeimage,
+         format.fmt.pix.colorspace, format.fmt.pix.field);
 }
 
 void marucam_device_enum_fmt(MaruCamState* state)
@@ -903,6 +957,6 @@ void marucam_device_close(MaruCamState* state)
     marucam_reset_controls();
 
     v4l2_close(v4l2_fd);
-    v4l2_fd = -1;
+    v4l2_fd = 0;
     INFO("Closed\n");
 }

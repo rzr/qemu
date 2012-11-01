@@ -47,13 +47,14 @@ import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.ConfigPropertiesConstants;
+import org.tizen.emulator.skin.config.EmulatorConfig.SkinInfoConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.ImageRegistry;
+import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
-import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.StringUtil;
@@ -64,7 +65,7 @@ import org.tizen.emulator.skin.util.SwtUtil;
  *
  */
 public class EmulatorSkinMain {
-
+	public static final String SKIN_INFO_FILE_NAME = "info.ini";
 	public static final String SKIN_PROPERTIES_FILE_NAME = ".skin.properties";
 	public static final String CONFIG_PROPERTIES_FILE_NAME = ".skinconfig.properties";
 	public static final String DBI_FILE_NAME = "default.dbi";
@@ -100,6 +101,7 @@ public class EmulatorSkinMain {
 
 		try {
 
+			/* get vm path from startup argument */
 			String vmPath = getVmPath( args );
 			if ( StringUtil.isEmpty( vmPath ) ) {
 				throw new IllegalArgumentException( ArgsConstants.VM_PATH + " in arguments is null." );
@@ -111,7 +113,47 @@ public class EmulatorSkinMain {
 			logger.info( "!!! Start Emualtor Skin !!!" );
 
 			/* startup arguments parsing */
-			Map<String, String> argsMap = parsArgs( args );
+			Map<String, String> argsMap = parsArgs(args);
+
+			/* emulator resolution */
+			/*int resolutionW = Integer.parseInt(
+					argsMap.get(ArgsConstants.RESOLUTION_WIDTH));
+			int resolutionH = Integer.parseInt(
+					argsMap.get(ArgsConstants.RESOLUTION_HEIGHT));*/
+
+			/* get skin path from startup argument */
+			String skinPath = ImageRegistry.getSkinPath(
+					(String) argsMap.get(ArgsConstants.SKIN_PATH));
+
+			/* set skin information */
+			String skinInfoFilePath = skinPath + File.separator + SKIN_INFO_FILE_NAME;
+			Properties skinInfoProperties = loadProperties(skinInfoFilePath, false);
+			if (null == skinInfoProperties) {
+				logger.severe("Fail to load skin information file.");
+
+				Shell temp = new Shell(Display.getDefault());
+				MessageBox messageBox = new MessageBox( temp, SWT.ICON_ERROR );
+				messageBox.setText("Emulator");
+				messageBox.setMessage("Fail to load \"" + SKIN_INFO_FILE_NAME + "\" file\n" +
+						"Check if the file is corrupted or missing from the following path.\n" +
+						skinPath);
+				messageBox.open();
+				temp.dispose();
+
+				System.exit(-1);
+			} else {
+				logger.info("skin info:" + skinInfoProperties); //TODO:
+			}
+
+			boolean skinPhoneShape = true;
+			String skinInfoResolutionW = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
+			String skinInfoResolutionH = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
+			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
+					skinInfoResolutionH.equalsIgnoreCase("all")) {
+				skinPhoneShape = false;
+			}
+			SkinInformation skinInfo = new SkinInformation(
+					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME), skinPhoneShape);
 
 			/* set emulator window skin property */
 			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
@@ -133,30 +175,17 @@ public class EmulatorSkinMain {
 			EmulatorConfig.validateSkinProperties(skinProperties);
 			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
-			/* emulator resolution */
-			int resolutionW = Integer.parseInt(
-					argsMap.get(ArgsConstants.RESOLUTION_WIDTH));
-			int resolutionH = Integer.parseInt(
-					argsMap.get(ArgsConstants.RESOLUTION_HEIGHT));
-
-			/* get skin path from startup argument */
-			String argSkinPath = (String) argsMap.get(ArgsConstants.SKIN_PATH);
-
-			/* determine skin mode */
-			SkinMode skinMode = SkinMode.getValue(argsMap.get(ArgsConstants.SKIN_MODE));
-			logger.info("skin mode is " + skinMode);
-
 			/* load dbi file */
-			EmulatorUI dbiContents = loadDbi(argSkinPath, skinMode, resolutionW, resolutionH);
+			EmulatorUI dbiContents = loadDbi(skinPath);
 			if ( null == dbiContents ) {
 				logger.severe( "Fail to load dbi file." );
 
-				Shell temp = new Shell( Display.getDefault());
+				Shell temp = new Shell(Display.getDefault());
 				MessageBox messageBox = new MessageBox( temp, SWT.ICON_ERROR );
 				messageBox.setText( "Emulator" );
 				messageBox.setMessage( "Fail to load \"" + DBI_FILE_NAME + "\" file\n" +
 						"Check if the file is corrupted or missing from the following path.\n" +
-						argSkinPath );
+						skinPath);
 				messageBox.open();
 				temp.dispose();
 
@@ -177,9 +206,9 @@ public class EmulatorSkinMain {
 			/* create skin */
 			EmulatorSkin skin;
 			if (SwtUtil.isMacPlatform()) {
-				skin = new EmulatorShmSkin(config, skinMode, isOnTop);
+				skin = new EmulatorShmSkin(config, skinInfo, isOnTop);
 			} else { // linux & windows
-				skin = new EmulatorSdlSkin(config, skinMode, isOnTop);
+				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
 			}
 
 			long windowHandleId = skin.compose();
@@ -345,19 +374,16 @@ public class EmulatorSkinMain {
 
 	}
 
-	private static EmulatorUI loadDbi(String argSkinPath, SkinMode skinMode,
-			int resolutionW, int resolutionH) {
-		String skinPath =
-				ImageRegistry.getSkinPath(argSkinPath, skinMode, resolutionW, resolutionH) +
-				File.separator + DBI_FILE_NAME;
-		logger.info("load dbi file from " + skinPath);
+	private static EmulatorUI loadDbi(String skinPath) {
+		String dbiPath = skinPath + File.separator + DBI_FILE_NAME;
+		logger.info("load dbi file from " + dbiPath);
 
 		FileInputStream fis = null;
 		EmulatorUI emulatorUI = null;
 
 		try {
 			
-			fis = new FileInputStream( skinPath );
+			fis = new FileInputStream(dbiPath);
 			logger.info( "============ dbi contents ============" );
 			byte[] bytes = IOUtil.getBytes( fis );
 			logger.info( new String( bytes, "UTF-8" ) );

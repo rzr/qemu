@@ -4,7 +4,7 @@ clean()
 {
 	prepare
 
-	cd $SRCDIR/tizen/
+	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
 		./emulator_configure.sh
@@ -30,7 +30,7 @@ prepare()
 build()
 {
 	cd $SRCDIR/tizen/
-#	./emulator_configure.sh
+#	./emulator_configure.sh arm
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
@@ -44,12 +44,19 @@ build()
 # install
 install()
 {
-	BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
-	mkdir -p $BIN_DIR
+	X86_BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
+	ARM_BIN_DIR=$SRCDIR/package/emulator-qemu-arm.package.${TARGET_OS}/data/tools
+	COMMON_BIN_DIR=$SRCDIR/package/emulator-qemu-common.package.${TARGET_OS}/data/tools
+	mkdir -p $X86_BIN_DIR
+	mkdir -p $ARM_BIN_DIR
+	mkdir -p $COMMON_BIN_DIR
 
 	cd $SRCDIR/tizen
 	make install_dibs
-	mv emulator $BIN_DIR
+
+	mv x86 $X86_BIN_DIR/emulator
+	mv arm $ARM_BIN_DIR/emulator
+	mv common $COMMON_BIN_DIR/emulator
 }
 
 [ "$1" = "clean" ] && clean

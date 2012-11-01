@@ -299,11 +299,13 @@ static int apic_init_common(SysBusDevice *dev)
 
     sysbus_init_mmio(dev, &s->io_memory);
 
+    #ifndef CONFIG_MARU
     /* Note: We need at least 1M to map the VAPIC option ROM */
     if (!vapic && s->vapic_control & VAPIC_ENABLE_MASK &&
         ram_size >= 1024 * 1024) {
         vapic = sysbus_create_simple("kvmvapic", -1, NULL);
     }
+    #endif
     s->vapic = vapic;
     if (apic_report_tpr_access && info->enable_tpr_reporting) {
         info->enable_tpr_reporting(s, true);

@@ -26,36 +26,35 @@
  *
  */
 
-package org.tizen.emulator.skin.mode;
+package org.tizen.emulator.skin.info;
 
-/**
- *
+/*
+ * 
  */
-public enum SkinMode {
-	GENERAL("general"),
-	FULLSCREEN("fullscreen"), /* not used yet */
-	STANDARD("standard"),
-	CUSTOM("custom"); /* not used yet */
+public class SkinInformation {
+	private String skinName;
+	private boolean skinPhoneShape;
+	private int skinOption;
 
-	private String value;
-
-	SkinMode(String value) {
-		this.value = value;
+	public SkinInformation(String skinName, boolean skinPhoneShape) {
+		this.skinName = skinName;
+		this.skinPhoneShape = skinPhoneShape;
+		this.skinOption = 0;
 	}
 
-	public String value() {
-		return this.value;
+	public String getSkinName() {
+		return skinName;
+	}
+
+	public boolean isPhoneShape() {
+		return skinPhoneShape;
 	}
 	
-	public static SkinMode getValue(String val) {
-		SkinMode[] values = SkinMode.values();
-		for (int i = 0; i < values.length; i++) {
-			if (values[i].value.equalsIgnoreCase(val) == true) {
-				return values[i];
-			}
-		}
+	public int getSkinOption() {
+		return skinOption;
+	}
 
-		return SkinMode.STANDARD;
+	public void setSkinOption(int option) {
+		this.skinOption = option;
 	}
 }
-

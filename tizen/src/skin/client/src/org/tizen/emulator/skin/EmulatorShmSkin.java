@@ -42,8 +42,8 @@ import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
+import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
-import org.tizen.emulator.skin.mode.SkinMode;
 import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
 import org.tizen.emulator.skin.util.SkinUtil;
 
@@ -131,8 +131,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorShmSkin(EmulatorConfig config, SkinMode mode, boolean isOnTop) {
-		super(config, mode, isOnTop);
+	public EmulatorShmSkin(EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+		super(config, skinInfo, isOnTop);
 
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 	}
