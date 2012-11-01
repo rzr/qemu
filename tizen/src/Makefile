@@ -80,7 +80,6 @@ ifndef CONFIG_DARWIN
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
 		cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/kvmvapic.bin $(EMUL_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
@@ -103,7 +102,6 @@ else
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
 		cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/kvmvapic.bin $(EMUL_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
@@ -163,7 +161,6 @@ ifndef CONFIG_DARWIN
 		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
 		cp -dpr ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/kvmvapic.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/pxe-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
@@ -186,7 +183,6 @@ else
 		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
 		cp -pPR ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/kvmvapic.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/pxe-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
