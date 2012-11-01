@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 TIZEN_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`
 OLD_SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
