@@ -66,6 +66,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
@@ -395,18 +396,18 @@ public class EmulatorSkin {
 		this.currentLcdHeight = resolutionH;
 		this.currentScale = scale;
 		this.currentRotationId = rotationId;
-		this.currentAngle = SkinRotation.getAngle( rotationId );
+		this.currentAngle = SkinRotation.getAngle(rotationId);
+
+		/* arrange the lcd */
+		Rectangle lcdBounds = SkinUtil.adjustLcdGeometry(
+				lcdCanvas, currentLcdWidth, currentLcdHeight, scale, rotationId,
+				skinInfo.isPhoneShape());
 
 		if (skinInfo.isPhoneShape() == false) {
 			/* folding button */
 			if (foldingButton == null) {
 				foldingButton = new Button(shell, SWT.PUSH);
 				foldingButton.setText(">");
-
-				FormData dataFoldingButton = new FormData();
-				dataFoldingButton.left = new FormAttachment(lcdCanvas, 0);
-				dataFoldingButton.top = new FormAttachment(0, 0);
-				foldingButton.setLayoutData(dataFoldingButton);
 
 				foldingButton.addMouseListener(new MouseListener() {
 					@Override
@@ -418,11 +419,9 @@ public class EmulatorSkin {
 					public void mouseUp(MouseEvent e) {
 						if (skinInfo.getSkinOption() == 0) {
 							skinInfo.setSkinOption(1);
-
 							foldingButton.setText("<");
 						} else {
 							skinInfo.setSkinOption(0);
-
 							foldingButton.setText(">");
 						}
 
@@ -438,7 +437,15 @@ public class EmulatorSkin {
 						/* do nothing */
 					}
 				});
+
+				shell.pack();
 			}
+
+			FormData dataFoldingButton = new FormData();
+			dataFoldingButton.left = new FormAttachment(lcdCanvas, 0);
+			dataFoldingButton.top = new FormAttachment(
+					0, (lcdBounds.height / 2) - (foldingButton.getSize().y / 2));
+			foldingButton.setLayoutData(dataFoldingButton);
 
 			if (skinInfo.getSkinOption() == 0) {
 				/* HW keys region */
@@ -520,10 +527,6 @@ public class EmulatorSkin {
 			/* custom window shape */
 			SkinUtil.trimShell(shell, currentImage);
 		}
-
-		/* arrange the lcd */
-		SkinUtil.adjustLcdGeometry(lcdCanvas, currentLcdWidth, currentLcdHeight,
-				scale, rotationId, skinInfo.isPhoneShape());
 
 		/* set window size */
 		if (null != currentImage) {
