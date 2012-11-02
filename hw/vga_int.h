@@ -31,11 +31,12 @@
 /* bochs VBE support */
 #define CONFIG_BOCHS_VBE
 
-#define VBE_DISPI_MAX_XRES              16000
 #if CONFIG_MARU
-#define VBE_DISPI_MAX_YRES              1600
+#define VBE_DISPI_MAX_XRES              2600
+#define VBE_DISPI_MAX_YRES              2600
 #else
-#define VBE_DISPI_MAX_YRES              12000
+#define VBE_DISPI_MAX_XRES              1600
+#define VBE_DISPI_MAX_YRES              1200
 #endif
 #define VBE_DISPI_MAX_BPP               32
 
