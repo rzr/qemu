@@ -33,6 +33,12 @@
 #include "../tizen/src/hw/maru_brightness.h"
 #include "arch_init.h"
 
+#include "xen.h"
+#ifdef CONFIG_XEN
+#  include <xen/hvm/hvm_info_table.h>
+#endif
+#include "maru_common.h"
+
 #undef DEBUG
 //#define DEBUG
 #ifdef DEBUG
@@ -70,8 +76,17 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
                         const char *cpu_model)
 {
     Exynos4210State *s;
-    DeviceState *dev, *i2c_dev;
+    DeviceState *dev;
     PCIBus *pci_bus;
+
+    /*
+     * W/A for allocate larger continuous heap. From maru_board.c
+     */
+    if (!xen_enabled()) {
+        if(preallocated_ptr != NULL) {
+            qemu_vfree(preallocated_ptr);
+        }
+    }
 
     if (ram_size < MARU_ARM_BOARD_RAMSIZE_MIN) {
     	ram_size = MARU_ARM_BOARD_RAMSIZE_DEFAULT;
