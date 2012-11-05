@@ -1894,6 +1894,8 @@ public class EmulatorSkin {
 		new MenuItem( menu, SWT.SEPARATOR );
 
 		/* Always on top menu */
+		if (!SwtUtil.isMacPlatform()) { /* temp */
+
 		final MenuItem onTopItem = new MenuItem( menu, SWT.CHECK );
 		onTopItem.setText( "&Always On Top" );
 		onTopItem.setSelection( isOnTop );
@@ -1924,6 +1926,8 @@ public class EmulatorSkin {
 				}
 			}
 		} );
+
+		}
 
 		/* Rotate menu */
 		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
