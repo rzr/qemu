@@ -26,7 +26,7 @@ LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
-# LIBS += -lavformat -lavcodec -lavutil -lm
+LIBS += -lavformat -lavcodec -lavutil -lm
 endif
 
 ifdef CONFIG_DEBUG_EXEC
@@ -108,8 +108,8 @@ include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 obj-y += maru_brightness.o
 obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 obj-y += maru_virtio_keyboard.o
-ifndef CONFIG_DARWIN
 obj-y += maru_codec.o
+ifndef CONFIG_DARWIN
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
 obj-$(CONFIG_WIN32) += maru_camera_win32_pci.o
