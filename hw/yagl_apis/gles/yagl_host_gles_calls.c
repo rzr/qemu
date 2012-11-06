@@ -853,6 +853,11 @@ bool yagl_host_glGenBuffers(GLsizei n,
 
     YAGL_GET_CTX(glGenBuffers);
 
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
     if (!yagl_mem_prepare(ts->mt1, buffers_, n * sizeof(*buffer_names))) {
         res = false;
         goto out;
@@ -899,6 +904,11 @@ bool yagl_host_glGenTextures(GLsizei n,
     GLuint *texture_names = NULL;
 
     YAGL_GET_CTX(glGenTextures);
+
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
 
     if (!yagl_mem_prepare(ts->mt1, textures_, n * sizeof(*texture_names))) {
         res = false;

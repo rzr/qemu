@@ -30,6 +30,7 @@ struct yagl_gles2_program
 
     yagl_object_init(&program->base, &yagl_gles2_program_destroy);
 
+    program->is_shader = false;
     program->driver_ps = driver_ps;
     program->global_name = global_name;
 

@@ -4,14 +4,21 @@
 #include "yagl_types.h"
 #include "yagl_object.h"
 
-#define YAGL_NS_PROGRAM 5
-
 struct yagl_gles2_driver_ps;
 struct yagl_gles2_shader;
 
 struct yagl_gles2_program
 {
+    /*
+     * These members must be exactly as in yagl_gles2_shader
+     * @{
+     */
     struct yagl_object base;
+
+    bool is_shader;
+    /*
+     * @}
+     */
 
     struct yagl_gles2_driver_ps *driver_ps;
 

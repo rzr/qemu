@@ -7,7 +7,7 @@
 #include "qemu-thread.h"
 #include "qemu-queue.h"
 
-#define YAGL_NUM_NAMESPACES 6
+#define YAGL_NUM_NAMESPACES 5
 
 struct yagl_sharegroup_reap_entry;
 
@@ -96,6 +96,15 @@ struct yagl_object *yagl_sharegroup_add_named(struct yagl_sharegroup *sg,
 void yagl_sharegroup_remove(struct yagl_sharegroup *sg,
                             int ns,
                             yagl_object_name local_name);
+
+/*
+ * Same as 'yagl_sharegroup_remove', but removes only if and object
+ * behind 'local_name' is 'obj'
+ */
+void yagl_sharegroup_remove_check(struct yagl_sharegroup *sg,
+                                  int ns,
+                                  yagl_object_name local_name,
+                                  struct yagl_object *obj);
 
 /*
  * Acquires an object by its local name. Be sure to release the object when
