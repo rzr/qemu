@@ -404,52 +404,52 @@ public class EmulatorSkin {
 				skinInfo.isPhoneShape());
 
 		if (skinInfo.isPhoneShape() == false) {
-			/* folding button */
-			if (foldingButton == null) {
-				foldingButton = new Button(shell, SWT.PUSH);
-				foldingButton.setText(">");
-
-				foldingButton.addMouseListener(new MouseListener() {
-					@Override
-					public void mouseDown(MouseEvent e) {
-						/* do nothing */
-					}
-
-					@Override
-					public void mouseUp(MouseEvent e) {
-						if (skinInfo.getSkinOption() == 0) {
-							skinInfo.setSkinOption(1);
-							foldingButton.setText("<");
-						} else {
-							skinInfo.setSkinOption(0);
-							foldingButton.setText(">");
-						}
-
-						shell.getDisplay().syncExec(new Runnable() {
-							public void run() {
-								rearrangeSkin();
-							}
-						});
-					}
-
-					@Override
-					public void mouseDoubleClick(MouseEvent e) {
-						/* do nothing */
-					}
-				});
-
-				shell.pack();
-			}
-
-			FormData dataFoldingButton = new FormData();
-			dataFoldingButton.left = new FormAttachment(lcdCanvas, 0);
-			dataFoldingButton.top = new FormAttachment(
-					0, (lcdBounds.height / 2) - (foldingButton.getSize().y / 2));
-			foldingButton.setLayoutData(dataFoldingButton);
-
-			if (skinInfo.getSkinOption() == 0) {
-				/* HW keys region */
-				if (decoration == null) {
+//			/* folding button */
+//			if (foldingButton == null) {
+//				foldingButton = new Button(shell, SWT.PUSH);
+//				foldingButton.setText(">");
+//
+//				foldingButton.addMouseListener(new MouseListener() {
+//					@Override
+//					public void mouseDown(MouseEvent e) {
+//						/* do nothing */
+//					}
+//
+//					@Override
+//					public void mouseUp(MouseEvent e) {
+//						if (skinInfo.getSkinOption() == 0) {
+//							skinInfo.setSkinOption(1);
+//							foldingButton.setText("<");
+//						} else {
+//							skinInfo.setSkinOption(0);
+//							foldingButton.setText(">");
+//						}
+//
+//						shell.getDisplay().syncExec(new Runnable() {
+//							public void run() {
+//								rearrangeSkin();
+//							}
+//						});
+//					}
+//
+//					@Override
+//					public void mouseDoubleClick(MouseEvent e) {
+//						/* do nothing */
+//					}
+//				});
+//
+//				shell.pack();
+//			}
+//
+//			FormData dataFoldingButton = new FormData();
+//			dataFoldingButton.left = new FormAttachment(lcdCanvas, 0);
+//			dataFoldingButton.top = new FormAttachment(
+//					0, (lcdBounds.height / 2) - (foldingButton.getSize().y / 2));
+//			foldingButton.setLayoutData(dataFoldingButton);
+//
+//			if (skinInfo.getSkinOption() == 0) {
+//				/* HW keys region */
+//				if (decoration == null) {
 					decoration = new Decorations(shell, SWT.BORDER);
 					decoration.setLayout(new GridLayout(1, true));
 
@@ -490,16 +490,16 @@ public class EmulatorSkin {
 					}
 
 					FormData dataDecoration = new FormData();
-					dataDecoration.left = new FormAttachment(foldingButton, 0);
+					dataDecoration.left = new FormAttachment(lcdCanvas, 0);
 					dataDecoration.top = new FormAttachment(0, 0);
 					decoration.setLayoutData(dataDecoration);
-				}
-			} else {
-				if (decoration != null) {
-					decoration.dispose();
-					decoration = null;
-				}
-			}
+//				}
+//			} else {
+//				if (decoration != null) {
+//					decoration.dispose();
+//					decoration = null;
+//				}
+//			}
 
 		} else {
 			Image tempImage = null;
