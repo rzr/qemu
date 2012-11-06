@@ -133,7 +133,14 @@ public class SkinUtil {
 			RotationType rotation = SkinRotation.getRotation(rotationId);
 
 			LcdType lcd = rotation.getLcd(); /* from dbi */
+			if (lcd == null) {
+				return null;
+			}
+
 			RegionType region = lcd.getRegion();
+			if (region == null) {
+				return null;
+			}
 
 			Integer left = region.getLeft();
 			Integer top = region.getTop();
@@ -145,13 +152,6 @@ public class SkinUtil {
 			lcdBounds.width = (int) (width * convertedScale);
 			lcdBounds.height = (int) (height * convertedScale);
 		}
-
-		FormData data = new FormData();
-		data.left = new FormAttachment(0, lcdBounds.x);
-		data.top = new FormAttachment(0, lcdBounds.y);
-		data.width = lcdBounds.width;
-		data.height = lcdBounds.height;
-		lcdCanvas.setLayoutData(data);
 
 		return lcdBounds;
 	}

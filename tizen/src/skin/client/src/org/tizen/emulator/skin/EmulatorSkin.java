@@ -402,6 +402,21 @@ public class EmulatorSkin {
 		Rectangle lcdBounds = SkinUtil.adjustLcdGeometry(
 				lcdCanvas, currentLcdWidth, currentLcdHeight, scale, rotationId,
 				skinInfo.isPhoneShape());
+		if (lcdBounds == null) {
+			logger.severe("Failed to lcd information for phone shape skin.");
+			SkinUtil.openMessage(shell, null,
+					"Failed to read lcd information for phone shape skin.\n" +
+					"Check the contents of skin dbi file.",
+					SWT.ICON_ERROR, config);
+			System.exit(-1);
+		}
+
+		FormData dataCanvas = new FormData();
+		dataCanvas.left = new FormAttachment(0, lcdBounds.x);
+		dataCanvas.top = new FormAttachment(0, lcdBounds.y);
+		dataCanvas.width = lcdBounds.width;
+		dataCanvas.height = lcdBounds.height;
+		lcdCanvas.setLayoutData(dataCanvas);
 
 		if (skinInfo.isPhoneShape() == false) {
 //			/* folding button */
