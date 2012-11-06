@@ -46,7 +46,13 @@ static struct
     { "GLchar", "%" PRIi8 },
     { "GLintptr", "%ld" },
     { "GLsizeiptr", "%ld" },
-    { "target_ulong", "0x%lX" }
+#if TARGET_LONG_SIZE == 4
+    { "target_ulong", "0x%X" }
+#elif TARGET_LONG_SIZE == 8
+    { "target_ulong", "0x%" PRIX64 }
+#else
+#error TARGET_LONG_SIZE undefined
+#endif
 };
 
 static yagl_log_level g_log_level = yagl_log_level_off;
