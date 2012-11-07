@@ -1587,24 +1587,110 @@ out:
 
 bool yagl_host_glGetUniformfv(GLuint program,
     GLint location,
-    target_ulong /* GLfloat* */ params)
+    target_ulong /* GLfloat* */ params_)
 {
-    /*
-     * Currently I don't see how to implement this nicely...
-     */
+    bool res = true;
+    struct yagl_gles2_program *program_obj = NULL;
+    GLenum type;
+    int count;
+    GLfloat params[100]; /* This fits all cases */
 
-    YAGL_UNIMPLEMENTED(glGetUniformfv);
+    YAGL_GET_CTX(glGetUniformfv);
+
+    program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
+        YAGL_NS_SHADER_PROGRAM, program);
+
+    if (!program_obj) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_program_get_uniform_type(program_obj,
+                                             location,
+                                             &type)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_get_uniform_type_count(type, &count)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_mem_prepare(gles2_api_ts->ts->mt1, params_, count * sizeof(params[0]))) {
+        res = false;
+        goto out;
+    }
+
+    yagl_gles2_program_get_uniform_float(program_obj, location, &params[0]);
+
+    if (params_) {
+        yagl_mem_put(gles2_api_ts->ts->mt1, &params[0]);
+    }
+
+out:
+    yagl_gles2_program_release(program_obj);
+
+    return res;
 }
 
 bool yagl_host_glGetUniformiv(GLuint program,
     GLint location,
-    target_ulong /* GLint* */ params)
+    target_ulong /* GLint* */ params_)
 {
-    /*
-     * Currently I don't see how to implement this nicely...
-     */
+    bool res = true;
+    struct yagl_gles2_program *program_obj = NULL;
+    GLenum type;
+    int count;
+    GLint params[100]; /* This fits all cases */
 
-    YAGL_UNIMPLEMENTED(glGetUniformiv);
+    YAGL_GET_CTX(glGetUniformiv);
+
+    program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
+        YAGL_NS_SHADER_PROGRAM, program);
+
+    if (!program_obj) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_program_get_uniform_type(program_obj,
+                                             location,
+                                             &type)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_get_uniform_type_count(type, &count)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_mem_prepare(gles2_api_ts->ts->mt1, params_, count * sizeof(params[0]))) {
+        res = false;
+        goto out;
+    }
+
+    yagl_gles2_program_get_uniform_int(program_obj, location, &params[0]);
+
+    if (params_) {
+        yagl_mem_put(gles2_api_ts->ts->mt1, &params[0]);
+    }
+
+out:
+    yagl_gles2_program_release(program_obj);
+
+    return res;
 }
 
 bool yagl_host_glGetUniformLocation(int* retval,

@@ -111,10 +111,10 @@ bool yagl_host_glGetShaderSource(GLuint shader,
     target_ulong /* GLchar* */ source_);
 bool yagl_host_glGetUniformfv(GLuint program,
     GLint location,
-    target_ulong /* GLfloat* */ params);
+    target_ulong /* GLfloat* */ params_);
 bool yagl_host_glGetUniformiv(GLuint program,
     GLint location,
-    target_ulong /* GLint* */ params);
+    target_ulong /* GLint* */ params_);
 bool yagl_host_glGetUniformLocation(int* retval,
     GLuint program,
     target_ulong /* const GLchar* */ name_);

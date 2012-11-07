@@ -81,6 +81,18 @@ void yagl_gles2_program_get_info_log(struct yagl_gles2_program *program,
 
 void yagl_gles2_program_validate(struct yagl_gles2_program *program);
 
+bool yagl_gles2_program_get_uniform_type(struct yagl_gles2_program *program,
+                                         GLint location,
+                                         GLenum *type);
+
+void yagl_gles2_program_get_uniform_float(struct yagl_gles2_program *program,
+                                          GLint location,
+                                          GLfloat *params);
+
+void yagl_gles2_program_get_uniform_int(struct yagl_gles2_program *program,
+                                        GLint location,
+                                        GLint *params);
+
 /*
  * Passing NULL won't hurt, this is for convenience.
  */

@@ -2,6 +2,9 @@
 #include "yagl_gles2_program.h"
 #include "yagl_gles2_shader.h"
 #include "yagl_gles2_driver.h"
+#include "yagl_log.h"
+#include "yagl_process.h"
+#include "yagl_thread.h"
 
 static void yagl_gles2_program_destroy(struct yagl_ref *ref)
 {
@@ -192,6 +195,96 @@ void yagl_gles2_program_validate(struct yagl_gles2_program *program)
 {
     program->driver_ps->ValidateProgram(program->driver_ps,
                                         program->global_name);
+}
+
+bool yagl_gles2_program_get_uniform_type(struct yagl_gles2_program *program,
+                                         GLint location,
+                                         GLenum *type)
+{
+    GLint link_status = GL_FALSE;
+    GLint i = 0, num_active_uniforms = 0;
+    GLint uniform_name_max_length = 0;
+    GLchar *uniform_name = NULL;
+    bool res = false;
+
+    YAGL_LOG_FUNC_SET(0, 0, yagl_gles2_program_get_uniform_type);
+
+    if (location < 0) {
+        return false;
+    }
+
+    program->driver_ps->GetProgramiv(program->driver_ps,
+                                     program->global_name,
+                                     GL_LINK_STATUS,
+                                     &link_status);
+
+    if (link_status == GL_FALSE) {
+        return false;
+    }
+
+    program->driver_ps->GetProgramiv(program->driver_ps,
+                                     program->global_name,
+                                     GL_ACTIVE_UNIFORMS,
+                                     &num_active_uniforms);
+
+    program->driver_ps->GetProgramiv(program->driver_ps,
+                                     program->global_name,
+                                     GL_ACTIVE_UNIFORM_MAX_LENGTH,
+                                     &uniform_name_max_length);
+
+    uniform_name = g_malloc(uniform_name_max_length + 1);
+
+    for (i = 0; i < num_active_uniforms; ++i) {
+        GLsizei length = 0;
+        GLint size = 0;
+        GLenum tmp_type = 0;
+
+        program->driver_ps->GetActiveUniform(program->driver_ps,
+                                             program->global_name,
+                                             i,
+                                             uniform_name_max_length,
+                                             &length,
+                                             &size,
+                                             &tmp_type,
+                                             uniform_name);
+
+        if (length == 0) {
+            YAGL_LOG_ERROR("Cannot get active uniform %d for program %d", i, program->global_name);
+            continue;
+        }
+
+        if (program->driver_ps->GetUniformLocation(program->driver_ps,
+                                                   program->global_name,
+                                                   uniform_name) == location) {
+            *type = tmp_type;
+            res = true;
+            break;
+        }
+    }
+
+    g_free(uniform_name);
+
+    return res;
+}
+
+void yagl_gles2_program_get_uniform_float(struct yagl_gles2_program *program,
+                                          GLint location,
+                                          GLfloat *params)
+{
+    program->driver_ps->GetUniformfv(program->driver_ps,
+                                     program->global_name,
+                                     location,
+                                     params);
+}
+
+void yagl_gles2_program_get_uniform_int(struct yagl_gles2_program *program,
+                                        GLint location,
+                                        GLint *params)
+{
+    program->driver_ps->GetUniformiv(program->driver_ps,
+                                     program->global_name,
+                                     location,
+                                     params);
 }
 
 void yagl_gles2_program_acquire(struct yagl_gles2_program *program)
