@@ -949,7 +949,8 @@ int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index)
 
     memcpy((uint8_t *)s->vaddr + offset, &avctx->bit_rate, sizeof(int));
     size = sizeof(int);
-    memcpy((uint8_t *)s->vaddr + offset + size, &avctx->sample_rate, sizeof(int));
+    memcpy((uint8_t *)s->vaddr + offset + size,
+			&avctx->sample_rate, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t *)s->vaddr + offset + size, &avctx->channels, sizeof(int));
     size += sizeof(int);
