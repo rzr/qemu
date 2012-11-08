@@ -1,3 +1,6 @@
+* 1.4.4
+- Apply qemu_ld/st optimization according to QEMU 1.2
+== Yeongkyoon Lee <yeongkyoon.lee@samsung.com> 2012-11-08
 * 1.4.3
 - Added libattr1-dev, libcap library
 - Added libattr1-dev, libcap library
