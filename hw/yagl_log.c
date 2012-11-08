@@ -261,13 +261,13 @@ void yagl_log_init(void)
                 {
                     if ((tmp - tmp_facilities - 1) > 0)
                     {
-                        g_log_facilities_no_match[num_no_match] = strndup(tmp_facilities + 1, tmp - tmp_facilities - 1);
+                        g_log_facilities_no_match[num_no_match] = g_strndup(tmp_facilities + 1, tmp - tmp_facilities - 1);
                         ++num_no_match;
                     }
                 }
                 else
                 {
-                    g_log_facilities_match[num_match] = strndup(tmp_facilities, tmp - tmp_facilities);
+                    g_log_facilities_match[num_match] = g_strndup(tmp_facilities, tmp - tmp_facilities);
                     ++num_match;
                 }
             }
@@ -281,13 +281,13 @@ void yagl_log_init(void)
             {
                 if ((strlen(tmp_facilities) - 1) > 0)
                 {
-                    g_log_facilities_no_match[num_no_match] = strdup(tmp_facilities + 1);
+                    g_log_facilities_no_match[num_no_match] = g_strdup(tmp_facilities + 1);
                     ++num_no_match;
                 }
             }
             else
             {
-                g_log_facilities_match[num_match] = strdup(tmp_facilities);
+                g_log_facilities_match[num_match] = g_strdup(tmp_facilities);
                 ++num_match;
             }
         }
@@ -321,7 +321,7 @@ void yagl_log_cleanup(void)
     {
         for (i = 0; g_log_facilities_no_match[i]; ++i)
         {
-            free(g_log_facilities_no_match[i]);
+            g_free(g_log_facilities_no_match[i]);
             g_log_facilities_no_match[i] = NULL;
         }
         g_free(g_log_facilities_no_match);
@@ -331,7 +331,7 @@ void yagl_log_cleanup(void)
     {
         for (i = 0; g_log_facilities_match[i]; ++i)
         {
-            free(g_log_facilities_match[i]);
+            g_free(g_log_facilities_match[i]);
             g_log_facilities_match[i] = NULL;
         }
         g_free(g_log_facilities_match);
