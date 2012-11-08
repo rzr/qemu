@@ -196,7 +196,6 @@ bsd="no"
 linux="no"
 solaris="no"
 profiler="no"
-ldst_optimization="no"
 cocoa="no"
 softmmu="yes"
 linux_user="no"
@@ -782,8 +781,6 @@ for opt do
   --enable-profiler) profiler="yes"
   ;;
   --disable-cocoa) cocoa="no"
-  ;;
-  --enable-ldst-optimization) ldst_optimization="yes"
   ;;
   --enable-cocoa)
       cocoa="yes" ;
@@ -3207,7 +3204,6 @@ echo "gprof enabled     $gprof"
 echo "sparse enabled    $sparse"
 echo "strip binaries    $strip_opt"
 echo "profiler          $profiler"
-echo "Fast TCG ld/st    $ldst_optimization"
 echo "static build      $static"
 echo "-Werror enabled   $werror"
 if test "$darwin" = "yes" ; then
@@ -3989,6 +3985,12 @@ upper() {
     echo "$@"| LC_ALL=C tr '[a-z]' '[A-Z]'
 }
 
+case "$cpu" in
+  i386|x86_64)
+    echo "CONFIG_QEMU_LDST_OPTIMIZATION=y" >> $config_target_mak
+  ;;
+esac
+
 echo "TARGET_SHORT_ALIGNMENT=$target_short_alignment" >> $config_target_mak
 echo "TARGET_INT_ALIGNMENT=$target_int_alignment" >> $config_target_mak
 echo "TARGET_LONG_ALIGNMENT=$target_long_alignment" >> $config_target_mak
@@ -4051,11 +4053,6 @@ if test "$hax" = "yes" ; then
     esac
   else
     echo "CONFIG_NO_HAX=y" >> $config_target_mak
-  fi
-fi
-if test "$ldst_optimization" = "yes" ; then
-  if test "$target_arch2" = "i386" -o "$target_arch2" = "x86_64"; then
-    echo "CONFIG_QEMU_LDST_OPTIMIZATION=y" >> $config_target_mak
   fi
 fi
 if test "$gl" = "yes" ; then
