@@ -158,8 +158,8 @@ public class EmulatorSkin {
 	protected int currentScale;
 	protected short currentRotationId;
 	protected int currentAngle;
-	protected int currentLcdWidth;
-	protected int currentLcdHeight;
+	protected int currentResolutionWidth;
+	protected int currentResolutionHeight;
 	protected SkinRegion currentHoverRegion;
 	protected SkinRegion currentPressedRegion;
 
@@ -238,23 +238,23 @@ public class EmulatorSkin {
 		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
 				EmulatorConfig.DEFAULT_WINDOW_Y);
 
-		int resolutionW = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
-		int resolutionH = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+		currentResolutionWidth = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		currentResolutionHeight = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
 		int scale = SkinUtil.getValidScale(config);
 //		int rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION,
 //				EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 		// has to be portrait mode at first booting time
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 
-		composeInternal(lcdCanvas, x, y, resolutionW, resolutionH, scale, rotationId, false);
-		logger.info("resolution : " + resolutionW + "x" + resolutionH + ", scale : " + scale);
+		composeInternal(lcdCanvas, x, y, scale, rotationId, false);
+		logger.info("resolution : " +
+				currentResolutionWidth + "x" + currentResolutionHeight + ", scale : " + scale);
 
 		return 0;
 	}
 
 	private void composeInternal(Canvas lcdCanvas,
-			int x, int y, int resolutionW, int resolutionH,
-			int scale, short rotationId, boolean isOnKbd) {
+			int x, int y, int scale, short rotationId, boolean isOnKbd) {
 
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
@@ -271,7 +271,7 @@ public class EmulatorSkin {
 			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
 		}
 
-		arrangeSkin(resolutionW, resolutionH, scale, rotationId);
+		arrangeSkin(scale, rotationId);
 
 		if (skinInfo.isPhoneShape() && null == currentImage) {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
@@ -387,20 +387,17 @@ public class EmulatorSkin {
 
 	private void rearrangeSkin() {
 		logger.info("rearrange the skin (" + skinInfo.getSkinOption() + ")");
-		arrangeSkin(currentLcdWidth, currentLcdHeight, currentScale, currentRotationId);
+		arrangeSkin(currentScale, currentRotationId);
 	}
 
-	private void arrangeSkin(int resolutionW, int resolutionH, int scale, short rotationId) {
-
-		this.currentLcdWidth = resolutionW;
-		this.currentLcdHeight = resolutionH;
+	private void arrangeSkin(int scale, short rotationId) {
 		this.currentScale = scale;
 		this.currentRotationId = rotationId;
 		this.currentAngle = SkinRotation.getAngle(rotationId);
 
 		/* arrange the lcd */
 		Rectangle lcdBounds = SkinUtil.adjustLcdGeometry(
-				lcdCanvas, currentLcdWidth, currentLcdHeight, scale, rotationId,
+				lcdCanvas, currentResolutionWidth, currentResolutionHeight, scale, rotationId,
 				skinInfo.isPhoneShape());
 		if (lcdBounds == null) {
 			logger.severe("Failed to lcd information for phone shape skin.");
@@ -410,6 +407,7 @@ public class EmulatorSkin {
 					SWT.ICON_ERROR, config);
 			System.exit(-1);
 		}
+		logger.info("lcd bounds : " + lcdBounds);
 
 		FormData dataCanvas = new FormData();
 		dataCanvas.left = new FormAttachment(0, lcdBounds.x);
@@ -984,8 +982,9 @@ public class EmulatorSkin {
 						EmulatorSkin.this.isDragStartedInLCD = false;
 					}
 
-					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
-							currentScale, currentAngle );
+					int[] geometry = SkinUtil.convertMouseGeometry(
+							e.x, e.y, currentResolutionWidth, currentResolutionHeight,
+							currentScale, currentAngle);
 
 					MouseEventData mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), eventType,
@@ -1004,8 +1003,9 @@ public class EmulatorSkin {
 			public void mouseUp( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
 
-					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
-							currentScale, currentAngle );
+					int[] geometry = SkinUtil.convertMouseGeometry(
+							e.x, e.y, currentResolutionWidth, currentResolutionHeight,
+							currentScale, currentAngle);
 					logger.info( "mouseUp in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 
 					MouseEventData mouseEventData = new MouseEventData(
@@ -1025,8 +1025,9 @@ public class EmulatorSkin {
 			public void mouseDown( MouseEvent e ) {
 				if ( 1 == e.button ) { // left button
 
-					int[] geometry = SkinUtil.convertMouseGeometry( e.x, e.y, currentLcdWidth, currentLcdHeight,
-							currentScale, currentAngle );
+					int[] geometry = SkinUtil.convertMouseGeometry(
+							e.x, e.y, currentResolutionWidth, currentResolutionHeight,
+							currentScale, currentAngle);
 					logger.info( "mouseDown in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 
 					MouseEventData mouseEventData = new MouseEventData(
@@ -1052,9 +1053,11 @@ public class EmulatorSkin {
 
 			@Override
 			public void mouseScrolled(MouseEvent e) {
-				int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y, currentLcdWidth, currentLcdHeight,
+				int[] geometry = SkinUtil.convertMouseGeometry(
+						e.x, e.y, currentResolutionWidth, currentResolutionHeight,
 						currentScale, currentAngle);
-				logger.info("mousewheel in LCD" + " x:" + geometry[0] + " y:" + geometry[1] + " value:" + e.count);
+				logger.info("mousewheel in LCD" +
+						" x:" + geometry[0] + " y:" + geometry[1] + " value:" + e.count);
 
 				int eventType;
 				if (e.count < 0) {
@@ -2101,7 +2104,7 @@ public class EmulatorSkin {
 
 				short rotationId = ( (Short) item.getData() );
 
-				arrangeSkin( currentLcdWidth, currentLcdHeight, currentScale, rotationId );
+				arrangeSkin(currentScale, rotationId);
 				LcdStateData lcdStateData = new LcdStateData( currentScale, rotationId );
 				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
 			}
@@ -2155,7 +2158,7 @@ public class EmulatorSkin {
 
 				int scale = ( (Scale) item.getData() ).value();
 
-				arrangeSkin( currentLcdWidth, currentLcdHeight, scale, currentRotationId );
+				arrangeSkin(scale, currentRotationId);
 				LcdStateData lcdStateData = new LcdStateData( scale, currentRotationId );
 				communicator.sendToQEMU( SendCommand.CHANGE_LCD_STATE, lcdStateData );
 

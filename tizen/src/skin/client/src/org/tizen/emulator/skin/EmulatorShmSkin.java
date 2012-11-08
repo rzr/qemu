@@ -144,10 +144,12 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public long compose() {
 		super.compose();
 
-		int result = shmget(currentLcdWidth * currentLcdHeight); //initialize shared memory
+		/* initialize shared memory */
+		int result = shmget(currentResolutionWidth * currentResolutionHeight);
 		//logger.info("shmget navtive function returned " + result);
 
-		pollThread = new PollFBThread(currentLcdWidth, currentLcdHeight); //update lcd thread
+		/* update lcd thread */
+		pollThread = new PollFBThread(currentResolutionWidth, currentResolutionHeight);
 
 		lcdCanvas.addPaintListener(new PaintListener() {
 			public void paintControl(PaintEvent e) {
