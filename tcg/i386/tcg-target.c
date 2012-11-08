@@ -984,8 +984,6 @@ static const void *qemu_st_helpers[4] = {
     helper_stq_mmu,
 };
 #else
-
-#ifndef CONFIG_QEMU_LDST_OPTIMIZATION
 /* legacy helper signature: __ld_mmu(target_ulong addr, int
    mmu_idx) */
 static void *qemu_ld_helpers[4] = {
@@ -1003,27 +1001,11 @@ static void *qemu_st_helpers[4] = {
     __stl_mmu,
     __stq_mmu,
 };
-#else
-/* extended legacy helper signature: __ext_ld_mmu(target_ulong addr, int
-   mmu_idx, uintptr raddr) */
-static void *qemu_ld_helpers[4] = {
-    __ext_ldb_mmu,
-    __ext_ldw_mmu,
-    __ext_ldl_mmu,
-    __ext_ldq_mmu,
-};
-
-/* extended legacy helper signature: __ext_st_mmu(target_ulong addr, uintxx_t val,
-   int mmu_idx) */
-static void *qemu_st_helpers[4] = {
-    __ext_stb_mmu,
-    __ext_stw_mmu,
-    __ext_stl_mmu,
-    __ext_stq_mmu,
-};
+#endif
 
 static void add_qemu_ldst_label(TCGContext *s,
-                                int opc_ext,
+                                int is_ld,
+                                int opc,
                                 int data_reg,
                                 int data_reg2,
                                 int addrlo_reg,
@@ -1031,8 +1013,6 @@ static void add_qemu_ldst_label(TCGContext *s,
                                 int mem_index,
                                 uint8_t *raddr,
                                 uint8_t **label_ptr);
-#endif  /* !CONFIG_QEMU_LDST_OPTIMIZATION */
-#endif
 
 /* Perform the TLB load and compare.
 
@@ -1092,36 +1072,19 @@ static inline void tcg_out_tlb_load(TCGContext *s, int addrlo_idx,
 
     tcg_out_mov(s, type, r0, addrlo);
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
     /* jne slow_path */
     tcg_out_opc(s, OPC_JCC_long + JCC_JNE, 0, 0, 0);
-    if (!label_ptr) {
-        tcg_abort();
-    }
     label_ptr[0] = s->code_ptr;
     s->code_ptr += 4;
-#else
-    /* jne label1 */
-    tcg_out8(s, OPC_JCC_short + JCC_JNE);
-    label_ptr[0] = s->code_ptr;
-    s->code_ptr++;
-#endif
 
     if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
         /* cmp 4(r1), addrhi */
         tcg_out_modrm_offset(s, OPC_CMP_GvEv, args[addrlo_idx+1], r1, 4);
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
         /* jne slow_path */
         tcg_out_opc(s, OPC_JCC_long + JCC_JNE, 0, 0, 0);
         label_ptr[1] = s->code_ptr;
         s->code_ptr += 4;
-#else
-        /* jne label1 */
-        tcg_out8(s, OPC_JCC_short + JCC_JNE);
-        label_ptr[1] = s->code_ptr;
-        s->code_ptr++;
-#endif
     }
 
     /* TLB Hit.  */
@@ -1219,14 +1182,7 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
     int addrlo_idx;
 #if defined(CONFIG_SOFTMMU)
     int mem_index, s_bits;
-#if !defined(CONFIG_QEMU_LDST_OPTIMIZATION)
-#if TCG_TARGET_REG_BITS == 64
-    int arg_idx;
-#else
-    int stack_adjust;
-#endif
-#endif  /* !defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
-    uint8_t *label_ptr[3];
+    uint8_t *label_ptr[2];
 #endif
 
     data_reg = args[0];
@@ -1247,9 +1203,9 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
     tcg_out_qemu_ld_direct(s, data_reg, data_reg2,
                            tcg_target_call_iarg_regs[0], 0, opc);
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
-    /* helper stub will be jumped back here */
+    /* Record the current context of a load into ldst label */
     add_qemu_ldst_label(s,
+                        1,
                         opc,
                         data_reg,
                         data_reg2,
@@ -1258,103 +1214,6 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
                         mem_index,
                         s->code_ptr,
                         label_ptr);
-#else
-    /* jmp label2 */
-    tcg_out8(s, OPC_JMP_short);
-    label_ptr[2] = s->code_ptr;
-    s->code_ptr++;
-
-    /* TLB Miss.  */
-
-    /* label1: */
-    *label_ptr[0] = s->code_ptr - label_ptr[0] - 1;
-    if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
-        *label_ptr[1] = s->code_ptr - label_ptr[1] - 1;
-    }
-
-    /* XXX: move that code at the end of the TB */
-#if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, mem_index);
-    stack_adjust = 4;
-    if (TARGET_LONG_BITS == 64) {
-        tcg_out_push(s, args[addrlo_idx + 1]);
-        stack_adjust += 4;
-    }
-    tcg_out_push(s, args[addrlo_idx]);
-    stack_adjust += 4;
-#ifdef CONFIG_TCG_PASS_AREG0
-    tcg_out_push(s, TCG_AREG0);
-    stack_adjust += 4;
-#endif
-#else
-    /* The first argument is already loaded with addrlo.  */
-    arg_idx = 1;
-    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx],
-                 mem_index);
-#ifdef CONFIG_TCG_PASS_AREG0
-    /* XXX/FIXME: suboptimal */
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
-                tcg_target_call_iarg_regs[2]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[2],
-                tcg_target_call_iarg_regs[1]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[1],
-                tcg_target_call_iarg_regs[0]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[0],
-                TCG_AREG0);
-#endif
-#endif
-
-    tcg_out_calli(s, (tcg_target_long)qemu_ld_helpers[s_bits]);
-
-#if TCG_TARGET_REG_BITS == 32
-    if (stack_adjust == (TCG_TARGET_REG_BITS / 8)) {
-        /* Pop and discard.  This is 2 bytes smaller than the add.  */
-        tcg_out_pop(s, TCG_REG_ECX);
-    } else if (stack_adjust != 0) {
-        tcg_out_addi(s, TCG_REG_CALL_STACK, stack_adjust);
-    }
-#endif
-
-    switch(opc) {
-    case 0 | 4:
-        tcg_out_ext8s(s, data_reg, TCG_REG_EAX, P_REXW);
-        break;
-    case 1 | 4:
-        tcg_out_ext16s(s, data_reg, TCG_REG_EAX, P_REXW);
-        break;
-    case 0:
-        tcg_out_ext8u(s, data_reg, TCG_REG_EAX);
-        break;
-    case 1:
-        tcg_out_ext16u(s, data_reg, TCG_REG_EAX);
-        break;
-    case 2:
-        tcg_out_mov(s, TCG_TYPE_I32, data_reg, TCG_REG_EAX);
-        break;
-#if TCG_TARGET_REG_BITS == 64
-    case 2 | 4:
-        tcg_out_ext32s(s, data_reg, TCG_REG_EAX);
-        break;
-#endif
-    case 3:
-        if (TCG_TARGET_REG_BITS == 64) {
-            tcg_out_mov(s, TCG_TYPE_I64, data_reg, TCG_REG_RAX);
-        } else if (data_reg == TCG_REG_EDX) {
-            /* xchg %edx, %eax */
-            tcg_out_opc(s, OPC_XCHG_ax_r32 + TCG_REG_EDX, 0, 0, 0);
-            tcg_out_mov(s, TCG_TYPE_I32, data_reg2, TCG_REG_EAX);
-        } else {
-            tcg_out_mov(s, TCG_TYPE_I32, data_reg, TCG_REG_EAX);
-            tcg_out_mov(s, TCG_TYPE_I32, data_reg2, TCG_REG_EDX);
-        }
-        break;
-    default:
-        tcg_abort();
-    }
-
-    /* label2: */
-    *label_ptr[2] = s->code_ptr - label_ptr[2] - 1;
-#endif  /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
 #else
     {
         int32_t offset = GUEST_BASE;
@@ -1448,10 +1307,7 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
     int addrlo_idx;
 #if defined(CONFIG_SOFTMMU)
     int mem_index, s_bits;
-#if !defined(CONFIG_QEMU_LDST_OPTIMIZATION)
-    int stack_adjust;
-#endif
-    uint8_t *label_ptr[3];
+    uint8_t *label_ptr[2];
 #endif
 
     data_reg = args[0];
@@ -1472,10 +1328,10 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
     tcg_out_qemu_st_direct(s, data_reg, data_reg2,
                            tcg_target_call_iarg_regs[0], 0, opc);
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
-    /* helper stub will be jumped back here */
+    /* Record the current context of a store into ldst label */
     add_qemu_ldst_label(s,
-                        opc | HL_ST_MASK,
+                        0,
+                        opc,
                         data_reg,
                         data_reg2,
                         args[addrlo_idx],
@@ -1483,70 +1339,6 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
                         mem_index,
                         s->code_ptr,
                         label_ptr);
-#else
-    /* jmp label2 */
-    tcg_out8(s, OPC_JMP_short);
-    label_ptr[2] = s->code_ptr;
-    s->code_ptr++;
-
-    /* TLB Miss.  */
-
-    /* label1: */
-    *label_ptr[0] = s->code_ptr - label_ptr[0] - 1;
-    if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
-        *label_ptr[1] = s->code_ptr - label_ptr[1] - 1;
-    }
-
-    /* XXX: move that code at the end of the TB */
-#if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, mem_index);
-    stack_adjust = 4;
-    if (opc == 3) {
-        tcg_out_push(s, data_reg2);
-        stack_adjust += 4;
-    }
-    tcg_out_push(s, data_reg);
-    stack_adjust += 4;
-    if (TARGET_LONG_BITS == 64) {
-        tcg_out_push(s, args[addrlo_idx + 1]);
-        stack_adjust += 4;
-    }
-    tcg_out_push(s, args[addrlo_idx]);
-    stack_adjust += 4;
-#ifdef CONFIG_TCG_PASS_AREG0
-    tcg_out_push(s, TCG_AREG0);
-    stack_adjust += 4;
-#endif
-#else
-    tcg_out_mov(s, (opc == 3 ? TCG_TYPE_I64 : TCG_TYPE_I32),
-                tcg_target_call_iarg_regs[1], data_reg);
-    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], mem_index);
-    stack_adjust = 0;
-#ifdef CONFIG_TCG_PASS_AREG0
-    /* XXX/FIXME: suboptimal */
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
-                tcg_target_call_iarg_regs[2]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[2],
-                tcg_target_call_iarg_regs[1]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[1],
-                tcg_target_call_iarg_regs[0]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[0],
-                TCG_AREG0);
-#endif
-#endif
-
-    tcg_out_calli(s, (tcg_target_long)qemu_st_helpers[s_bits]);
-
-    if (stack_adjust == (TCG_TARGET_REG_BITS / 8)) {
-        /* Pop and discard.  This is 2 bytes smaller than the add.  */
-        tcg_out_pop(s, TCG_REG_ECX);
-    } else if (stack_adjust != 0) {
-        tcg_out_addi(s, TCG_REG_CALL_STACK, stack_adjust);
-    }
-
-    /* label2: */
-    *label_ptr[2] = s->code_ptr - label_ptr[2] - 1;
-#endif  /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
 #else
     {
         int32_t offset = GUEST_BASE;
@@ -1574,15 +1366,14 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args,
 #endif
 }
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
-/* optimization to reduce jump overheads for qemu_ld/st IRs */
-
+#if defined(CONFIG_SOFTMMU)
 /*
- * qemu_ld/st code generator call add_qemu_ldst_label,
- * so that slow case(TLB miss or I/O rw) is handled at the end of TB
+ * Record the context of a call to the out of line helper code for the slow path
+ * for a load or store, so that we can later generate the correct helper code
  */
 static void add_qemu_ldst_label(TCGContext *s,
-                                int opc_ext,
+                                int is_ld,
+                                int opc,
                                 int data_reg,
                                 int data_reg2,
                                 int addrlo_reg,
@@ -1594,34 +1385,35 @@ static void add_qemu_ldst_label(TCGContext *s,
     int idx;
     TCGLabelQemuLdst *label;
 
-    if (s->nb_qemu_ldst_labels >= TCG_MAX_QEMU_LDST)
+    if (s->nb_qemu_ldst_labels >= TCG_MAX_QEMU_LDST) {
         tcg_abort();
+    }
 
     idx = s->nb_qemu_ldst_labels++;
     label = (TCGLabelQemuLdst *)&s->qemu_ldst_labels[idx];
-    label->opc_ext = opc_ext;
+    label->is_ld = is_ld;
+    label->opc = opc;
     label->datalo_reg = data_reg;
     label->datahi_reg = data_reg2;
     label->addrlo_reg = addrlo_reg;
     label->addrhi_reg = addrhi_reg;
     label->mem_index = mem_index;
     label->raddr = raddr;
-    if (!label_ptr) {
-        tcg_abort();
-    }
     label->label_ptr[0] = label_ptr[0];
-    label->label_ptr[1] = label_ptr[1];
+    if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
+        label->label_ptr[1] = label_ptr[1];
+    }
 }
 
-/* generates slow case of qemu_ld at the end of TB */
+/*
+ * Generate code for the slow path for a load at the end of block
+ */
 static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 {
     int s_bits;
-    int opc = label->opc_ext & HL_OPC_MASK;
+    int opc = label->opc;
     int mem_index = label->mem_index;
-#if TCG_TARGET_REG_BITS == 64
-    int arg_idx;
-#else
+#if TCG_TARGET_REG_BITS == 32
     int stack_adjust;
     int addrlo_reg = label->addrlo_reg;
     int addrhi_reg = label->addrhi_reg;
@@ -1639,18 +1431,14 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         *(uint32_t *)label_ptr[1] = (uint32_t)(s->code_ptr - label_ptr[1] - 4);
     }
 
-    /* extended helper signature: __ext_ld_mmu(target_ulong addr, int mmu_idx,
-       uintptr_t raddr) */
 #if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, (uintptr_t)(raddr - 1)); /* return address */
+    tcg_out_pushi(s, mem_index);
     stack_adjust = 4;
-    tcg_out_pushi(s, mem_index);        /* mmu index */
-    stack_adjust += 4;
     if (TARGET_LONG_BITS == 64) {
         tcg_out_push(s, addrhi_reg);
         stack_adjust += 4;
     }
-    tcg_out_push(s, addrlo_reg); /* guest addr */
+    tcg_out_push(s, addrlo_reg);
     stack_adjust += 4;
 #ifdef CONFIG_TCG_PASS_AREG0
     tcg_out_push(s, TCG_AREG0);
@@ -1658,11 +1446,8 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 #endif
 #else
     /* The first argument is already loaded with addrlo.  */
-    arg_idx = 1;
-    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
+    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[1],
                  mem_index);
-    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[arg_idx++],
-                 (uintptr_t)(raddr - 1));
 #ifdef CONFIG_TCG_PASS_AREG0
     /* XXX/FIXME: suboptimal */
     tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
@@ -1676,7 +1461,25 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 #endif
 #endif
 
+    /* Code generation of qemu_ld/st's slow path calling MMU helper
+
+       PRE_PROC ...
+       call MMU helper
+       jmp POST_PROC (2b) : short forward jump <- GETRA()
+       jmp next_code (5b) : dummy long backward jump which is never executed
+       POST_PROC ... : do post-processing <- GETRA() + 7
+       jmp next_code : jump to the code corresponding to next IR of qemu_ld/st
+    */
+
     tcg_out_calli(s, (tcg_target_long)qemu_ld_helpers[s_bits]);
+
+    /* Jump to post-processing code */
+    tcg_out8(s, OPC_JMP_short);
+    tcg_out8(s, 5);
+    /* Dummy backward jump having information of fast path'pc for MMU helpers */
+    tcg_out8(s, OPC_JMP_long);
+    *(int32_t *)s->code_ptr = (int32_t)(raddr - s->code_ptr - 4);
+    s->code_ptr += 4;
 
 #if TCG_TARGET_REG_BITS == 32
     if (stack_adjust == (TCG_TARGET_REG_BITS / 8)) {
@@ -1724,16 +1527,18 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         tcg_abort();
     }
 
-    /* jump back to original code */
-    tcg_out_jmp(s, (tcg_target_long) raddr);
+    /* Jump to the code corresponding to next IR of qemu_st */
+    tcg_out_jmp(s, (tcg_target_long)raddr);
 }
 
-/* generates slow case of qemu_st at the end of TB */
+/*
+ * Generate code for the slow path for a store at the end of block
+ */
 static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 {
     int s_bits;
     int stack_adjust;
-    int opc = label->opc_ext & HL_OPC_MASK;
+    int opc = label->opc;
     int mem_index = label->mem_index;
     int data_reg = label->datalo_reg;
 #if TCG_TARGET_REG_BITS == 32
@@ -1752,24 +1557,20 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         *(uint32_t *)label_ptr[1] = (uint32_t)(s->code_ptr - label_ptr[1] - 4);
     }
 
-    /* extended helper signature: __ext_st_mmu(target_ulong addr, uintxx_t val,
-       int mmu_idx, uintptr_t raddr) */
 #if TCG_TARGET_REG_BITS == 32
-    tcg_out_pushi(s, (uintptr_t)(raddr - 1)); /* return address */
+    tcg_out_pushi(s, mem_index);
     stack_adjust = 4;
-    tcg_out_pushi(s, mem_index); /* mmu index */
-    stack_adjust += 4;
     if (opc == 3) {
         tcg_out_push(s, data_reg2);
         stack_adjust += 4;
     }
-    tcg_out_push(s, data_reg);   /* guest data */
+    tcg_out_push(s, data_reg);
     stack_adjust += 4;
     if (TARGET_LONG_BITS == 64) {
         tcg_out_push(s, addrhi_reg);
         stack_adjust += 4;
     }
-    tcg_out_push(s, addrlo_reg); /* guest addr */
+    tcg_out_push(s, addrlo_reg);
     stack_adjust += 4;
 #ifdef CONFIG_TCG_PASS_AREG0
     tcg_out_push(s, TCG_AREG0);
@@ -1779,7 +1580,6 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     tcg_out_mov(s, (opc == 3 ? TCG_TYPE_I64 : TCG_TYPE_I32),
                 tcg_target_call_iarg_regs[1], data_reg);
     tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], mem_index);
-    tcg_out_movi(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3], (uintptr_t)(raddr - 1));
     stack_adjust = 0;
 #ifdef CONFIG_TCG_PASS_AREG0
     /* XXX/FIXME: suboptimal */
@@ -1794,7 +1594,25 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
 #endif
 #endif
 
+    /* Code generation of qemu_ld/st's slow path calling MMU helper
+
+       PRE_PROC ...
+       call MMU helper
+       jmp POST_PROC (2b) : short forward jump <- GETRA()
+       jmp next_code (5b) : dummy long backward jump which is never executed
+       POST_PROC ... : do post-processing <- GETRA() + 7
+       jmp next_code : jump to the code corresponding to next IR of qemu_ld/st
+    */
+
     tcg_out_calli(s, (tcg_target_long)qemu_st_helpers[s_bits]);
+
+    /* Jump to post-processing code */
+    tcg_out8(s, OPC_JMP_short);
+    tcg_out8(s, 5);
+    /* Dummy backward jump having information of fast path'pc for MMU helpers */
+    tcg_out8(s, OPC_JMP_long);
+    *(int32_t *)s->code_ptr = (int32_t)(raddr - s->code_ptr - 4);
+    s->code_ptr += 4;
 
     if (stack_adjust == (TCG_TARGET_REG_BITS / 8)) {
         /* Pop and discard.  This is 2 bytes smaller than the add.  */
@@ -1803,26 +1621,29 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
         tcg_out_addi(s, TCG_REG_CALL_STACK, stack_adjust);
     }
 
-    /* jump back to original code */
-    tcg_out_jmp(s, (tcg_target_long) raddr);
+    /* Jump to the code corresponding to next IR of qemu_st */
+    tcg_out_jmp(s, (tcg_target_long)raddr);
 }
 
-/* generates all of the slow cases of qemu_ld/st at the end of TB */
-void tcg_out_qemu_ldst_slow_path(TCGContext *s)
+/*
+ * Generate TB finalization at the end of block
+ */
+void tcg_out_tb_finalize(TCGContext *s)
 {
     int i;
     TCGLabelQemuLdst *label;
 
+    /* qemu_ld/st slow paths */
     for (i = 0; i < s->nb_qemu_ldst_labels; i++) {
         label = (TCGLabelQemuLdst *)&s->qemu_ldst_labels[i];
-        if (IS_QEMU_LD_LABEL(label)) {
+        if (label->is_ld) {
             tcg_out_qemu_ld_slow_path(s, label);
         } else {
             tcg_out_qemu_st_slow_path(s, label);
         }
     }
 }
-#endif  /* defined(CONFIG_QEMU_LDST_OPTIMIZATION) */
+#endif  /* CONFIG_SOFTMMU */
 
 static inline void tcg_out_op(TCGContext *s, TCGOpcode opc,
                               const TCGArg *args, const int *const_args)

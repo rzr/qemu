@@ -301,12 +301,12 @@ void tcg_func_start(TCGContext *s)
 
     gen_opc_ptr = gen_opc_buf;
     gen_opparam_ptr = gen_opparam_buf;
+
 #if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-    /* initialize qemu_ld/st labels which help to generate TLB miss case codes at the end of TB */
-    s->qemu_ldst_labels = tcg_malloc(sizeof(TCGLabelQemuLdst) * TCG_MAX_QEMU_LDST);
-    if (!s->qemu_ldst_labels) {
-        tcg_abort();
-    }
+    /* Initialize qemu_ld/st labels to assist code generation at the end of TB
+       for TLB miss cases at the end of TB */
+    s->qemu_ldst_labels = tcg_malloc(sizeof(TCGLabelQemuLdst) *
+                                     TCG_MAX_QEMU_LDST);
     s->nb_qemu_ldst_labels = 0;
 #endif
 }
@@ -2178,8 +2178,8 @@ static inline int tcg_gen_code_common(TCGContext *s, uint8_t *gen_code_buf,
     }
  the_end:
 #if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-    /* Generate MMU call helpers at the end of block (currently only for qemu_ld/st) */
-    tcg_out_qemu_ldst_slow_path(s);
+    /* Generate TB finalization at the end of block */
+    tcg_out_tb_finalize(s);
 #endif
     return -1;
 }

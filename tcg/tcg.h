@@ -188,27 +188,22 @@ typedef tcg_target_ulong TCGArg;
  */
 
 #if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-/* Macros and structures for qemu_ld/st IR code optimization:
-   It looks good for TCG_MAX_HELPER_LABELS to be half of OPC_BUF_SIZE in exec-all.h. */
-#define TCG_MAX_QEMU_LDST       320
-#define HL_LDST_SHIFT           4
-#define HL_LDST_MASK            (1 << HL_LDST_SHIFT)
-#define HL_ST_MASK              HL_LDST_MASK
-#define HL_OPC_MASK             (HL_LDST_MASK - 1)
-#define IS_QEMU_LD_LABEL(L)     (!((L)->opc_ext & HL_LDST_MASK))
-#define IS_QEMU_ST_LABEL(L)     ((L)->opc_ext & HL_LDST_MASK)
+/* Macros/structures for qemu_ld/st IR code optimization:
+   TCG_MAX_HELPER_LABELS is defined as same as OPC_BUF_SIZE in exec-all.h. */
+#define TCG_MAX_QEMU_LDST       640
 
 typedef struct TCGLabelQemuLdst {
-    int opc_ext;                /* | 27bit (reserved) | 1bit (ld/st flag) | 4bit (opc) | */
-    int addrlo_reg;             /* reg index for the low word of guest virtual address */
-    int addrhi_reg;             /* reg index for the high word of guest virtual address */
-    int datalo_reg;             /* reg index for the low word to be loaded or to be stored */
-    int datahi_reg;             /* reg index for the high word to be loaded or to be stored */
-    int mem_index;              /* soft MMU memory index */
-    uint8_t *raddr;             /* return address (located end of TB) */
+    int is_ld:1;            /* qemu_ld: 1, qemu_st: 0 */
+    int opc:4;
+    int addrlo_reg;         /* reg index for low word of guest virtual addr */
+    int addrhi_reg;         /* reg index for high word of guest virtual addr */
+    int datalo_reg;         /* reg index for low word to be loaded or stored */
+    int datahi_reg;         /* reg index for high word to be loaded or stored */
+    int mem_index;        /* soft MMU memory index */
+    uint8_t *raddr;         /* gen code addr of the next IR of qemu_ld/st IR */
     uint8_t *label_ptr[2];      /* label pointers to be updated */
 } TCGLabelQemuLdst;
-#endif  /* CONFIG_QEMU_LDST_OPTIMIZATION */
+#endif
 
 #ifdef CONFIG_DEBUG_TCG
 #define DEBUG_TCGV 1
@@ -617,9 +612,9 @@ extern uint8_t code_gen_prologue[];
     ((tcg_target_ulong (*)(void *, void *))code_gen_prologue)(env, tb_ptr)
 #endif
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-/* qemu_ld/st generation at the end of TB */
-void tcg_out_qemu_ldst_slow_path(TCGContext *s);
-#endif
-
 void tcg_register_jit(void *buf, size_t buf_size);
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+/* Generate TB finalization at the end of block */
+void tcg_out_tb_finalize(TCGContext *s);
+#endif
