@@ -24,7 +24,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef _WIN32
+#if (!defined _WIN32) && (!defined __APPLE__)
 #include "gloffscreen.h"
 
 #include <stdlib.h>

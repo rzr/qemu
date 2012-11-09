@@ -35,7 +35,7 @@ else
 GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
 endif
 
-ifndef CONFIG_DARWIN
+#ifndef CONFIG_DARWIN
 ###########################################################
 ## Build openGL
 # i386
@@ -82,7 +82,7 @@ obj-y += gl_mangled.o
 
 endif #CONFIG_OPENGLES
 ###########################################################
-endif #!CONFIG_DARWIN
+#endif #!CONFIG_DARWIN
 
 # maru loader
 obj-y += emulator.o emul_state.o option.o maru_err_table.o
@@ -129,12 +129,12 @@ obj-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keyma
 # guest server
 obj-y += guest_server.o
 
-ifndef CONFIG_DARWIN
+#ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
 obj-$(CONFIG_GL) += virtio-gl.o 
 obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
 obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
-obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o
+obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o gloffscreen_agl.o
 ###########################################################
-endif
+#endif

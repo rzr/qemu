@@ -65,6 +65,7 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
     char *argptr, *tmp;
     static void* args[50];
     int func_number;
+    char temp4mac[256];
 
     if(!args_len)
 	return 0;
@@ -136,7 +137,12 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
 					if (args_size == 0) {
 						*(int*)r_buffer = 0;
 						r_buffer += 4;
+#ifdef __APPLE__
+/*On MAC OS, GL call glGetProgramInfoLog and glGetShaderInfoLog will crash if ouput pointer is NULL*/
+						args[i] = temp4mac;
+#else
 						args[i] = NULL;
+#endif
 					} else if(*(int*)argptr) {
                         *(int*)r_buffer = args_size;
                         r_buffer+=4;

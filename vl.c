@@ -262,7 +262,7 @@ uint8_t qemu_extra_params_fw[2];
 
 //virtio-gl
 #define VIRTIOGL_DEV_NAME "virtio-gl-pci"
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
 extern int gl_acceleration_capability_check(void);
 int enable_gl = 0;
 int capability_check_gl = 0;
@@ -1978,7 +1978,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
     DeviceState *dev;
 
 #ifdef CONFIG_GL_BACKEND
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
 	// virtio-gl pci device
 	if (!enable_gl) {
 		// ignore virtio-gl-pci device, even if users set it in option.
@@ -3202,7 +3202,7 @@ int main(int argc, char **argv, char **envp)
                 break;
            case QEMU_OPTION_enable_gl:
 #ifdef CONFIG_GL_BACKEND
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
                 enable_gl = 1;
 #endif
 #else
@@ -3504,7 +3504,7 @@ int main(int argc, char **argv, char **envp)
     }
 
 #ifdef CONFIG_GL_BACKEND
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
     if (enable_gl) {
         capability_check_gl = gl_acceleration_capability_check();
 
