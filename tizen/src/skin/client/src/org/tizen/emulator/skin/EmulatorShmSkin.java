@@ -141,8 +141,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		pollThread.stopRequest();
 	}
 
-	public long compose() {
-		super.compose();
+	public long initLayout() {
+		super.initLayout();
 
 		/* initialize shared memory */
 		int result = shmget(

@@ -53,8 +53,8 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 		super(config, skinInfo, isOnTop);
 	}
 
-	public long compose() {
-		super.compose();
+	public long initLayout() {
+		super.initLayout();
 
 		// sdl uses this handle id.
 		windowHandleId = getWindowHandleId();

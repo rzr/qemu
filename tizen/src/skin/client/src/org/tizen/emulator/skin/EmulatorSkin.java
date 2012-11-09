@@ -62,16 +62,8 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Decorations;
@@ -95,7 +87,6 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.ColorsType;
-import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
@@ -103,8 +94,10 @@ import org.tizen.emulator.skin.dialog.DetailInfoDialog;
 import org.tizen.emulator.skin.dialog.RamdumpDialog;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
-import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.info.SkinInformation;
+import org.tizen.emulator.skin.layout.GeneralPurposeSkinComposer;
+import org.tizen.emulator.skin.layout.ISkinComposer;
+import org.tizen.emulator.skin.layout.PhoneShapeSkinComposer;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRegion;
@@ -149,9 +142,8 @@ public class EmulatorSkin {
 	protected Shell shell;
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
-	private SkinInformation skinInfo;
-	private Image currentImage;
-	private Image currentKeyPressedImage;
+	protected SkinInformation skinInfo;
+	protected ISkinComposer skinComposer;
 	private Color hoverColor;
 	private boolean isDefaultHoverColor;
 
@@ -172,8 +164,6 @@ public class EmulatorSkin {
 	private SkinWindow controlPanel;
 	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
-	private Button foldingButton; //TODO:
-	private Decorations decoration; //TODO:
 
 	protected SocketCommunicator communicator;
 	protected long windowHandleId;
@@ -216,7 +206,6 @@ public class EmulatorSkin {
 		if (skinInfo.isPhoneShape() == false) {
 			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
 		}
-
 		this.shell = new Shell(Display.getDefault(), style);
 
 		this.currentState = new EmulatorSkinState();
@@ -226,74 +215,33 @@ public class EmulatorSkin {
 		this.communicator = communicator;
 	}
 
-	public long compose() {
-		shell.setLayout(new FormLayout());
-
-		this.lcdCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
-
-		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
-				EmulatorConfig.DEFAULT_WINDOW_X);
-		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
-				EmulatorConfig.DEFAULT_WINDOW_Y);
-
-		currentState.setCurrentResolutionWidth(
-				config.getArgInt(ArgsConstants.RESOLUTION_WIDTH));
-		currentState.setCurrentResolutionHeight(
-				config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT));
-
-		int scale = SkinUtil.getValidScale(config);
-//		int rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION,
-//				EmulatorConfig.DEFAULT_WINDOW_ROTATION );
-		// has to be portrait mode at first booting time
-		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-
-		composeInternal(lcdCanvas, x, y, scale, rotationId, false);
-		logger.info("resolution : " + currentState.getCurrentResolution() +
-				", scale : " + scale);
-
-		return 0;
-	}
-
-	private void composeInternal(Canvas lcdCanvas,
-			int x, int y, int scale, short rotationId, boolean isOnKbd) {
-
-		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
-		shell.setLocation(x, y);
-
-		String emulatorName = SkinUtil.makeEmulatorName(config);
-		shell.setText(emulatorName);
-
-		lcdCanvas.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
-
+	public long initLayout() {
 		imageRegistry = ImageRegistry.getInstance();
-		if (SwtUtil.isWindowsPlatform()) {
-			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE_ICO));
+
+		if (skinInfo.isPhoneShape() == true) {
+			skinComposer = new PhoneShapeSkinComposer(config, shell,
+					currentState, imageRegistry);
 		} else {
-			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
+			skinComposer = new GeneralPurposeSkinComposer(config, shell,
+					currentState, imageRegistry, communicator);
 		}
-
-		arrangeSkin(scale, rotationId);
-
-		if (skinInfo.isPhoneShape() && null == currentImage) {
-			logger.severe("Failed to load initial skin image file. Kill this skin process.");
-			SkinUtil.openMessage(shell, null,
-					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
-			System.exit(-1);
-		}
+		lcdCanvas = skinComposer.compose();
 
 		seteHoverColor();
 
-		this.isOnKbd = isOnKbd;
+		addShellListener(shell);
+		addCanvasListener(shell, lcdCanvas);
+
+		this.isOnKbd = false;
 		setMenu();
+
+		return 0;
 	}
 
 	private void setMenu() {
 		contextMenu = new Menu(shell);
 
 		addMenuItems(shell, contextMenu);
-
-		addShellListener(shell);
-		addCanvasListener(shell, lcdCanvas);
 
 		shell.setMenu(contextMenu);
 	}
@@ -386,176 +334,6 @@ public class EmulatorSkin {
 
 	}
 
-//	private void rearrangeSkin() {
-//		logger.info("rearrange the skin (" + skinInfo.getSkinOption() + ")");
-//		arrangeSkin(currentScale, currentRotationId);
-//	}
-
-	private void arrangeSkin(int scale, short rotationId) {
-		currentState.setCurrentScale(scale);
-		currentState.setCurrentRotationId(rotationId);
-		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
-
-		/* arrange the lcd */
-		Rectangle lcdBounds = SkinUtil.adjustLcdGeometry(lcdCanvas,
-				currentState.getCurrentResolutionWidth(),
-				currentState.getCurrentResolutionHeight(), scale, rotationId,
-				skinInfo.isPhoneShape());
-
-		if (lcdBounds == null) {
-			logger.severe("Failed to lcd information for phone shape skin.");
-			SkinUtil.openMessage(shell, null,
-					"Failed to read lcd information for phone shape skin.\n" +
-					"Check the contents of skin dbi file.",
-					SWT.ICON_ERROR, config);
-			System.exit(-1);
-		}
-		logger.info("lcd bounds : " + lcdBounds);
-
-		FormData dataCanvas = new FormData();
-		dataCanvas.left = new FormAttachment(0, lcdBounds.x);
-		dataCanvas.top = new FormAttachment(0, lcdBounds.y);
-		dataCanvas.width = lcdBounds.width;
-		dataCanvas.height = lcdBounds.height;
-		lcdCanvas.setLayoutData(dataCanvas);
-
-		if (skinInfo.isPhoneShape() == false) {
-//			/* folding button */
-//			if (foldingButton == null) {
-//				foldingButton = new Button(shell, SWT.PUSH);
-//				foldingButton.setText(">");
-//
-//				foldingButton.addMouseListener(new MouseListener() {
-//					@Override
-//					public void mouseDown(MouseEvent e) {
-//						/* do nothing */
-//					}
-//
-//					@Override
-//					public void mouseUp(MouseEvent e) {
-//						if (skinInfo.getSkinOption() == 0) {
-//							skinInfo.setSkinOption(1);
-//							foldingButton.setText("<");
-//						} else {
-//							skinInfo.setSkinOption(0);
-//							foldingButton.setText(">");
-//						}
-//
-//						shell.getDisplay().syncExec(new Runnable() {
-//							public void run() {
-//								rearrangeSkin();
-//							}
-//						});
-//					}
-//
-//					@Override
-//					public void mouseDoubleClick(MouseEvent e) {
-//						/* do nothing */
-//					}
-//				});
-//
-//				shell.pack();
-//			}
-//
-//			FormData dataFoldingButton = new FormData();
-//			dataFoldingButton.left = new FormAttachment(lcdCanvas, 0);
-//			dataFoldingButton.top = new FormAttachment(
-//					0, (lcdBounds.height / 2) - (foldingButton.getSize().y / 2));
-//			foldingButton.setLayoutData(dataFoldingButton);
-//
-//			if (skinInfo.getSkinOption() == 0) {
-//				/* HW keys region */
-//				if (decoration == null) {
-					decoration = new Decorations(shell, SWT.BORDER);
-					decoration.setLayout(new GridLayout(1, true));
-
-					RotationType rotation =
-							SkinRotation.getRotation(currentState.getCurrentRotationId());
-					List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-					// TODO: function
-					if (keyMapList != null && keyMapList.isEmpty() == false) {
-						for (KeyMapType keyEntry : keyMapList) {
-							Button hardKeyButton = new Button(decoration, SWT.FLAT);
-							hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-							hardKeyButton.setToolTipText(keyEntry.getTooltip());
-
-							hardKeyButton.setLayoutData(new GridData(SWT.FILL,	SWT.FILL, true, false));
-
-							final int keycode = keyEntry.getEventInfo().getKeyCode();
-							hardKeyButton.addMouseListener(new MouseListener() {
-								@Override
-								public void mouseDown(MouseEvent e) {
-									KeyEventData keyEventData = new KeyEventData(
-											KeyEventType.PRESSED.value(), keycode, 0, 0);
-									communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-								}
-
-								@Override
-								public void mouseUp(MouseEvent e) {
-									KeyEventData keyEventData = new KeyEventData(
-											KeyEventType.RELEASED.value(), keycode, 0, 0);
-									communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-								}
-
-								@Override
-								public void mouseDoubleClick(MouseEvent e) {
-									/* do nothing */
-								}
-							});
-						}
-					}
-
-					FormData dataDecoration = new FormData();
-					dataDecoration.left = new FormAttachment(lcdCanvas, 0);
-					dataDecoration.top = new FormAttachment(0, 0);
-					decoration.setLayoutData(dataDecoration);
-//				}
-//			} else {
-//				if (decoration != null) {
-//					decoration.dispose();
-//					decoration = null;
-//				}
-//			}
-
-		} else {
-			Image tempImage = null;
-			Image tempKeyPressedImage = null;
-
-			if (null != currentImage) {
-				tempImage = currentImage;
-			}
-			if (null != currentKeyPressedImage) {
-				tempKeyPressedImage = currentKeyPressedImage;
-			}
-
-			currentImage = SkinUtil.createScaledImage(
-					imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN);
-			currentKeyPressedImage = SkinUtil.createScaledImage(
-					imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_PRESSED);
-
-			if (tempImage != null) {
-				tempImage.dispose();
-			}
-			if (tempKeyPressedImage != null) {
-				tempKeyPressedImage.dispose();
-			}
-
-			/* custom window shape */
-			SkinUtil.trimShell(shell, currentImage);
-		}
-
-		/* set window size */
-		if (null != currentImage) {
-			ImageData imageData = currentImage.getImageData();
-			shell.setMinimumSize(imageData.width, imageData.height);
-			shell.setSize(imageData.width, imageData.height);
-		}
-
-		shell.redraw();
-		shell.pack();
-	}
-
 	protected void skinFinalize() {
 		//TODO:
 	}
@@ -604,11 +382,11 @@ public class EmulatorSkin {
 						config.saveSkinProperties();
 					}
 
-					if ( null != currentImage ) {
-						currentImage.dispose();
+					if (currentState.getCurrentImage() != null) {
+						currentState.getCurrentImage().dispose();
 					}
-					if ( null != currentKeyPressedImage ) {
-						currentKeyPressedImage.dispose();
+					if (currentState.getCurrentKeyPressedImage() != null) {
+						currentState.getCurrentKeyPressedImage().dispose();
 					}
 
 					if ( !isDefaultHoverColor ) {
@@ -636,10 +414,9 @@ public class EmulatorSkin {
 
 			@Override
 			public void paintControl( final PaintEvent e ) {
-
 				// general shell does not support native transparency, so draw image with GC.
-				if ( null != currentImage ) {
-					e.gc.drawImage( currentImage, 0, 0 );
+				if (currentState.getCurrentImage() != null) {
+					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
 
 			}
@@ -808,7 +585,7 @@ public class EmulatorSkin {
 						SkinRegion region = SkinUtil.getHardKeyArea(e.x, e.y,
 								currentState.getCurrentRotationId(), currentState.getCurrentScale());
 						if (keyCode != 101) { // TODO: not necessary for home key
-							SkinUtil.trimShell(shell, currentImage,
+							SkinUtil.trimShell(shell, currentState.getCurrentImage(),
 									region.x, region.y, region.width, region.height);
 						}
 					}
@@ -844,12 +621,12 @@ public class EmulatorSkin {
 								currentPressedRegion.width != 0 && currentPressedRegion.height != 0) {
 							shell.getDisplay().syncExec(new Runnable() {
 								public void run() {
-									if ( null != currentKeyPressedImage ) {
+									if (currentState.getCurrentKeyPressedImage() != null) {
 										GC gc = new GC( shell );
 										if (gc != null) {
 
 											/* button */
-											gc.drawImage(currentKeyPressedImage,
+											gc.drawImage(currentState.getCurrentKeyPressedImage(),
 												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
 												currentPressedRegion.width - 1, currentPressedRegion.height - 1, //src
 												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
@@ -866,7 +643,7 @@ public class EmulatorSkin {
 											gc.dispose();
 
 											if (keyCode != 101) { // TODO: not necessary for home key
-												SkinUtil.trimShell(shell, currentKeyPressedImage,
+												SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
 														currentPressedRegion.x, currentPressedRegion.y,
 														currentPressedRegion.width, currentPressedRegion.height);
 											}
@@ -2106,7 +1883,7 @@ public class EmulatorSkin {
 
 				if ( !communicator.isSensorDaemonStarted() ) {
 
-					// reset selection.
+					/* roll back a selection */
 					item.setSelection( false );
 
 					for ( MenuItem m : rotationList ) {
@@ -2117,16 +1894,16 @@ public class EmulatorSkin {
 						}
 					}
 
-					SkinUtil.openMessage( shell, null, "Rotation is not ready.\nPlease, wait.", SWT.ICON_WARNING,
-							config );
-
+					SkinUtil.openMessage(shell, null,
+							"Rotation is not ready.\nPlease wait until the emulator is completely boot up.",
+							SWT.ICON_WARNING, config);
 					return;
-
 				}
 
-				short rotationId = ( (Short) item.getData() );
+				short rotationId = ((Short) item.getData());
 
-				arrangeSkin(currentState.getCurrentScale(), rotationId);
+				skinComposer.arrangeSkin(currentState.getCurrentScale(), rotationId);
+
 				LcdStateData lcdStateData =
 						new LcdStateData(currentState.getCurrentScale(), rotationId);
 				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
@@ -2179,9 +1956,10 @@ public class EmulatorSkin {
 					return;
 				}
 
-				int scale = ( (Scale) item.getData() ).value();
+				int scale = ((Scale) item.getData()).value();
 
-				arrangeSkin(scale, currentState.getCurrentRotationId());
+				skinComposer.arrangeSkin(scale, currentState.getCurrentRotationId());
+
 				LcdStateData lcdStateData =
 						new LcdStateData(scale, currentState.getCurrentRotationId());
 				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);

@@ -28,6 +28,7 @@
 
 package org.tizen.emulator.skin;
 
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 
@@ -36,7 +37,10 @@ public class EmulatorSkinState {
 	private int currentScale;
 	private short currentRotationId;
 	private int currentAngle;
-	
+
+	private Image currentImage;
+	private Image currentKeyPressedImage;
+
 	public EmulatorSkinState() {
 		this.currentResolution = new Point(480, 800);
 		this.currentScale = 50;
@@ -48,22 +52,27 @@ public class EmulatorSkinState {
 	public synchronized Point getCurrentResolution() {
 		return currentResolution;
 	}
+
 	public synchronized int getCurrentResolutionWidth() {
 		return currentResolution.x;
 	}
+
 	public synchronized int getCurrentResolutionHeight() {
 		return currentResolution.y;
 	}
+
 	public synchronized void setCurrentResolution(Point resolution) {
 		setCurrentResolutionWidth(resolution.x);
 		setCurrentResolutionHeight(resolution.y);
 	}
+
 	public synchronized void setCurrentResolutionWidth(int width) {
 		if (width < 0) {
 			width = 0;
 		}
 		this.currentResolution.x = width;
 	}
+
 	public synchronized void setCurrentResolutionHeight(int height) {
 		if (height < 0) {
 			height = 0;
@@ -75,6 +84,7 @@ public class EmulatorSkinState {
 	public synchronized int getCurrentScale() {
 		return currentScale;
 	}
+
 	public synchronized void setCurrentScale(int scale) {
 		this.currentScale = scale;
 	}
@@ -83,6 +93,7 @@ public class EmulatorSkinState {
 	public synchronized short getCurrentRotationId() {
 		return currentRotationId;
 	}
+
 	public synchronized void setCurrentRotationId(short rotationId) {
 		this.currentRotationId = rotationId;
 	}
@@ -91,7 +102,25 @@ public class EmulatorSkinState {
 	public synchronized int getCurrentAngle() {
 		return currentAngle;
 	}
+
 	public synchronized void setCurrentAngle(int angle) {
 		this.currentAngle = angle;
-	};
+	}
+
+	/* skin image */
+	public Image getCurrentImage() {
+		return currentImage;
+	}
+
+	public void setCurrentImage(Image image) {
+		this.currentImage = image;
+	}
+
+	public Image getCurrentKeyPressedImage() {
+		return currentKeyPressedImage;
+	}
+
+	public void setCurrentKeyPressedImag(Image keyPressedImage) {
+		this.currentKeyPressedImage = keyPressedImage;
+	}
 }

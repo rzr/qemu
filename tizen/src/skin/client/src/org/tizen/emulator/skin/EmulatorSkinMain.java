@@ -203,7 +203,7 @@ public class EmulatorSkinMain {
 					SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString());
 			boolean isOnTop = Boolean.parseBoolean(onTopVal);
 
-			/* create skin */
+			/* create a skin */
 			EmulatorSkin skin;
 			if (SwtUtil.isMacPlatform()) {
 				skin = new EmulatorShmSkin(config, skinInfo, isOnTop);
@@ -211,16 +211,18 @@ public class EmulatorSkinMain {
 				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
 			}
 
-			long windowHandleId = skin.compose();
+			/* create a qemu communicator */
+			int uid = config.getArgInt(ArgsConstants.UID);
+			communicator = new SocketCommunicator(config, uid, skin);
+			skin.setCommunicator(communicator);
 
-			int uid = config.getArgInt( ArgsConstants.UID );
-			communicator = new SocketCommunicator( config, uid, windowHandleId, skin );
-
-			skin.setCommunicator( communicator );
+			/* initialize a skin layout */
+			long windowHandleId = skin.initLayout();
+			communicator.setInitialData(windowHandleId);
 
 			Socket commSocket = communicator.getSocket();
 
-			if ( null != commSocket ) {
+			if (null != commSocket) {
 
 				Runtime.getRuntime().addShutdownHook( new EmulatorShutdownhook( communicator ) );
 
