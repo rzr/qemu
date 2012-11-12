@@ -473,7 +473,10 @@ void qbus_free(BusState *bus)
     if (bus->qom_allocated) {
         object_delete(OBJECT(bus));
     } else {
-        object_finalize(OBJECT(bus));
+// WA for avoid QOM bug related with qbus_create_inplace()
+//      object_finalize(OBJECT(bus));
+        object_unref(OBJECT(bus));
+//
         if (bus->glib_allocated) {
             g_free(bus);
         }
