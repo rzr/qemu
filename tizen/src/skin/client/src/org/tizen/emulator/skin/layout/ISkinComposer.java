@@ -28,11 +28,18 @@
 
 package org.tizen.emulator.skin.layout;
 
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 
 public interface ISkinComposer {
 	public abstract Canvas compose();
+
 	public abstract void composeInternal(Canvas lcdCanvas,
-					int x, int y, int scale, short rotationId, boolean isOnKbd);
+			int x, int y, int scale, short rotationId);
+
 	public abstract void arrangeSkin(int scale, short rotationId);
+
+	public abstract Rectangle adjustLcdGeometry(
+			Canvas lcdCanvas, int resolutionW, int resolutionH,
+			int scale, short rotationId);
 }

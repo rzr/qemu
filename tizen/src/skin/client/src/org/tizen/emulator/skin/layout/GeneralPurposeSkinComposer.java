@@ -46,6 +46,7 @@ import org.eclipse.swt.widgets.Decorations;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
@@ -101,7 +102,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		int scale = SkinUtil.getValidScale(config);
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 
-		composeInternal(lcdCanvas, x, y, scale, rotationId, false);
+		composeInternal(lcdCanvas, x, y, scale, rotationId);
 		logger.info("resolution : " + currentState.getCurrentResolution() +
 				", scale : " + scale);
 		
@@ -110,7 +111,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public void composeInternal(Canvas lcdCanvas,
-			int x, int y, int scale, short rotationId, boolean isOnKbd) {
+			int x, int y, int scale, short rotationId) {
 
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
@@ -136,10 +137,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
 		/* arrange the lcd */
-		Rectangle lcdBounds = SkinUtil.adjustLcdGeometry(lcdCanvas,
+		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
 				currentState.getCurrentResolutionWidth(),
-				currentState.getCurrentResolutionHeight(), scale, rotationId,
-				false);
+				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
 		if (lcdBounds == null) {
 			logger.severe("Failed to lcd information for phone shape skin.");
@@ -207,4 +207,25 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shell.pack();
 	}
 
+	@Override
+	public Rectangle adjustLcdGeometry(
+			Canvas lcdCanvas, int resolutionW, int resolutionH,
+			int scale, short rotationId) {
+		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
+
+		float convertedScale = SkinUtil.convertScale(scale);
+		RotationInfo rotation = RotationInfo.getValue(rotationId);
+
+		/* resoultion, that is lcd size in general skin mode */
+		if (RotationInfo.LANDSCAPE == rotation ||
+				RotationInfo.REVERSE_LANDSCAPE == rotation) {
+			lcdBounds.width = (int)(resolutionH * convertedScale);
+			lcdBounds.height = (int)(resolutionW * convertedScale);
+		} else {
+			lcdBounds.width = (int)(resolutionW * convertedScale);
+			lcdBounds.height = (int)(resolutionH * convertedScale);
+		}
+
+		return lcdBounds;
+	}
 }

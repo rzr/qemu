@@ -64,9 +64,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
-import org.eclipse.swt.widgets.Decorations;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
@@ -181,6 +179,7 @@ public class EmulatorSkin {
 	private MouseWheelListener canvasMouseWheelListener;
 	private KeyListener canvasKeyListener;
 	private MenuDetectListener canvasMenuDetectListener;
+	private FocusListener canvasFocusListener;
 
 	private LinkedList<KeyEventData> pressedKeyEventList;
 	private int pressedHWKeyCode;
@@ -425,35 +424,6 @@ public class EmulatorSkin {
 		if (skinInfo.isPhoneShape()) {
 			shell.addPaintListener(shellPaintListener);
 		}
-
-		FocusListener shellFocusListener = new FocusListener() {
-			@Override
-			public void focusGained(FocusEvent event) {
-				logger.info("gain focus");
-			}
-
-			public void focusLost(FocusEvent event) {
-				logger.info("lost focus");
-
-				/* key event compensation */
-				if (pressedKeyEventList.isEmpty() == false) {
-					for (KeyEventData data : pressedKeyEventList) {
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), data.keycode,
-								data.stateMask, data.keyLocation);
-						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
-
-						logger.info("auto release : keycode=" + keyEventData.keycode +
-								", stateMask=" + keyEventData.stateMask +
-								", keyLocation=" + keyEventData.keyLocation);
-					}
-				}
-
-				pressedKeyEventList.clear();
-			}
-		};
-
-		lcdCanvas.addFocusListener(shellFocusListener);
 
 		shellMouseTrackListener = new MouseTrackAdapter() {
 			@Override
@@ -707,8 +677,8 @@ public class EmulatorSkin {
 
 	}
 
-	private void addCanvasListener( final Shell shell, final Canvas canvas ) {
-
+	private void addCanvasListener(final Shell shell, final Canvas canvas) {
+		/* menu */
 		canvasMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
@@ -725,7 +695,37 @@ public class EmulatorSkin {
 		};
 
 		// remove 'input method' menu item ( avoid bug )
-		canvas.addMenuDetectListener( canvasMenuDetectListener );
+		canvas.addMenuDetectListener(canvasMenuDetectListener);
+
+		/* focus */
+		canvasFocusListener = new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent event) {
+				logger.info("gain focus");
+			}
+
+			public void focusLost(FocusEvent event) {
+				logger.info("lost focus");
+
+				/* key event compensation */
+				if (pressedKeyEventList.isEmpty() == false) {
+					for (KeyEventData data : pressedKeyEventList) {
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.RELEASED.value(), data.keycode,
+								data.stateMask, data.keyLocation);
+						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+
+						logger.info("auto release : keycode=" + keyEventData.keycode +
+								", stateMask=" + keyEventData.stateMask +
+								", keyLocation=" + keyEventData.keyLocation);
+					}
+				}
+
+				pressedKeyEventList.clear();
+			}
+		};
+
+		lcdCanvas.addFocusListener(canvasFocusListener);
 
 		/* mouse event */
 		/*canvasDragDetectListener = new DragDetectListener() {
@@ -1022,26 +1022,32 @@ public class EmulatorSkin {
 	}
 
 	private void removeCanvasListeners() {
-
 //		if ( null != canvasDragDetectListener ) {
 //			lcdCanvas.removeDragDetectListener( canvasDragDetectListener );
 //		}
-		if ( null != canvasMouseMoveListener ) {
-			lcdCanvas.removeMouseMoveListener( canvasMouseMoveListener );
-		}
-		if ( null != canvasMouseListener ) {
-			lcdCanvas.removeMouseListener( canvasMouseListener );
-		}
-		if ( null != canvasKeyListener ) {
-			lcdCanvas.removeKeyListener( canvasKeyListener );
-		}
-		if ( null != canvasMenuDetectListener ) {
-			lcdCanvas.removeMenuDetectListener( canvasMenuDetectListener );
-		}
-       if ( null != canvasMouseWheelListener ) {
-			lcdCanvas.removeMouseWheelListener( canvasMouseWheelListener );
+		if (null != canvasMouseMoveListener) {
+			lcdCanvas.removeMouseMoveListener(canvasMouseMoveListener);
 		}
 
+		if (null != canvasMouseListener) {
+			lcdCanvas.removeMouseListener(canvasMouseListener);
+		}
+
+		if (null != canvasKeyListener) {
+			lcdCanvas.removeKeyListener(canvasKeyListener);
+		}
+
+		if (null != canvasMenuDetectListener) {
+			lcdCanvas.removeMenuDetectListener(canvasMenuDetectListener);
+		}
+
+		if (null != canvasFocusListener) {
+			lcdCanvas.removeFocusListener(canvasFocusListener);
+		}
+
+		if (null != canvasMouseWheelListener) {
+			lcdCanvas.removeMouseWheelListener(canvasMouseWheelListener);
+		}
 	}
 
 	private Field getOSField( String field ) {

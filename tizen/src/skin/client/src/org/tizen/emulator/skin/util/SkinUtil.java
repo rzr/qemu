@@ -36,9 +36,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
@@ -48,7 +45,6 @@ import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
-import org.tizen.emulator.skin.dbi.LcdType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
@@ -108,52 +104,6 @@ public class SkinUtil {
 		}
 
 		return sdbPath;
-	}
-
-	public static Rectangle adjustLcdGeometry(
-			Canvas lcdCanvas, int resolutionW, int resolutionH,
-			int scale, short rotationId, boolean isPhoneShape) {
-
-		float convertedScale = convertScale(scale);
-		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
-
-		if (isPhoneShape == false) {
-			RotationInfo rotation = RotationInfo.getValue(rotationId);
-
-			/* resoultion, that is lcd size in general skin mode */
-			if (RotationInfo.LANDSCAPE == rotation ||
-					RotationInfo.REVERSE_LANDSCAPE == rotation) {
-				lcdBounds.width = (int)(resolutionH * convertedScale);
-				lcdBounds.height = (int)(resolutionW * convertedScale);
-			} else {
-				lcdBounds.width = (int)(resolutionW * convertedScale);
-				lcdBounds.height = (int)(resolutionH * convertedScale);
-			}
-		} else {
-			RotationType rotation = SkinRotation.getRotation(rotationId);
-
-			LcdType lcd = rotation.getLcd(); /* from dbi */
-			if (lcd == null) {
-				return null;
-			}
-
-			RegionType region = lcd.getRegion();
-			if (region == null) {
-				return null;
-			}
-
-			Integer left = region.getLeft();
-			Integer top = region.getTop();
-			Integer width = region.getWidth();
-			Integer height = region.getHeight();
-
-			lcdBounds.x = (int) (left * convertedScale);
-			lcdBounds.y = (int) (top * convertedScale);
-			lcdBounds.width = (int) (width * convertedScale);
-			lcdBounds.height = (int) (height * convertedScale);
-		}
-
-		return lcdBounds;
 	}
 
 	public static SkinRegion getHardKeyArea( int currentX, int currentY, short rotationId, int scale ) {
