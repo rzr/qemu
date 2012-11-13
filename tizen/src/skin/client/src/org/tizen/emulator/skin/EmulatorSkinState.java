@@ -28,9 +28,11 @@
 
 package org.tizen.emulator.skin;
 
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
+import org.tizen.emulator.skin.layout.HWKey;
 
 public class EmulatorSkinState {
 	private Point currentResolution;
@@ -40,6 +42,10 @@ public class EmulatorSkinState {
 
 	private Image currentImage;
 	private Image currentKeyPressedImage;
+	private Color hoverColor;
+
+	private HWKey currentPressedHWKey;
+	private HWKey currentHoveredHWKey;
 
 	public EmulatorSkinState() {
 		this.currentResolution = new Point(480, 800);
@@ -108,19 +114,46 @@ public class EmulatorSkinState {
 	}
 
 	/* skin image */
-	public Image getCurrentImage() {
+	public synchronized Image getCurrentImage() {
 		return currentImage;
 	}
 
-	public void setCurrentImage(Image image) {
+	public synchronized void setCurrentImage(Image image) {
 		this.currentImage = image;
 	}
 
-	public Image getCurrentKeyPressedImage() {
+	public synchronized Image getCurrentKeyPressedImage() {
 		return currentKeyPressedImage;
 	}
 
-	public void setCurrentKeyPressedImag(Image keyPressedImage) {
+	public synchronized void setCurrentKeyPressedImag(Image keyPressedImage) {
 		this.currentKeyPressedImage = keyPressedImage;
+	}
+
+	/* color of hover */
+	public synchronized Color getHoverColor() {
+		return hoverColor;
+	}
+
+	public synchronized void setHoverColor(Color color) {
+		this.hoverColor = color;
+	}
+
+	/* pressed HW key */
+	public synchronized HWKey getCurrentPressedHWKey() {
+		return currentPressedHWKey;
+	}
+
+	public synchronized void setCurrentPressedHWKey(HWKey hwKey) {
+		this.currentPressedHWKey = hwKey;
+	}
+
+	/* hovered HW key */
+	public synchronized HWKey getCurrentHoveredHWKey() {
+		return currentHoveredHWKey;
+	}
+
+	public synchronized void setCurrentHoveredHWKey(HWKey hwKey) {
+		this.currentHoveredHWKey = hwKey;
 	}
 }

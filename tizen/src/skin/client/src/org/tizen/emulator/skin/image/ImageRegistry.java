@@ -105,8 +105,6 @@ public class ImageRegistry {
 	}
 	
 	private Display display;
-	private int resolutionWidth;
-	private int resolutionHeight;
 	private EmulatorUI dbiContents;
 
 	private Map<String, Image> skinImageMap;
@@ -127,21 +125,15 @@ public class ImageRegistry {
 		return instance;
 	}
 
-	public void initialize( EmulatorConfig config ) {
-
-		if ( isInitialized ) {
+	public void initialize(EmulatorConfig config) {
+		if (isInitialized) {
 			return;
 		}
 		isInitialized = true;
 
 		this.display = Display.getDefault();
 
-		int resolutionW = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
-		int resolutionH = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
 		this.argSkinPath = config.getArg(ArgsConstants.SKIN_PATH);
-
-		this.resolutionWidth = resolutionW;
-		this.resolutionHeight = resolutionH;
 		this.dbiContents = config.getDbiContents();
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();

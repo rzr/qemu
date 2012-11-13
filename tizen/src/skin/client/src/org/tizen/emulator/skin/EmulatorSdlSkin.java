@@ -56,10 +56,8 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	public long initLayout() {
 		super.initLayout();
 
-		// sdl uses this handle id.
-		windowHandleId = getWindowHandleId();
-
-		return windowHandleId;
+		/* sdl uses this handle ID */
+		return getWindowHandleId();
 	}
 
 	private long getWindowHandleId() {

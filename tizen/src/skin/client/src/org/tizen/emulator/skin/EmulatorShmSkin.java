@@ -139,6 +139,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	protected void skinFinalize() {
 		pollThread.stopRequest();
+
+		super.skinFinalize();
 	}
 
 	public long initLayout() {

@@ -75,7 +75,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private SocketCommunicator communicator;
 
 	public GeneralPurposeSkinComposer(EmulatorConfig config, Shell shell,
-			EmulatorSkinState currentState, ImageRegistry imageRegistry, SocketCommunicator communicator) {
+			EmulatorSkinState currentState, ImageRegistry imageRegistry,
+			SocketCommunicator communicator) {
 		this.config = config;
 		this.shell = shell;
 		this.currentState = currentState;
@@ -227,5 +228,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		return lcdBounds;
+	}
+
+	@Override
+	public void composerFinalize() {
+		/* do nothing */
 	}
 }
