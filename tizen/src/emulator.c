@@ -66,6 +66,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include "tizen/src/ns_event.h"
 #endif
 
 #include "mloop_event.h"
@@ -91,6 +92,10 @@ static int skin_argc;
 static char **skin_argv;
 static int qemu_argc;
 static char **qemu_argv;
+
+#ifdef CONFIG_DARWIN
+int thread_running = 1; /* Check if we need exit main */
+#endif
 
 void maru_display_fini(void);
 
@@ -541,6 +546,80 @@ void prepare_maru(void)
 
 int qemu_main(int argc, char **argv, char **envp);
 
+#ifdef CONFIG_DARWIN
+int g_argc;
+
+void* main_thread(void* args);
+
+int main(int argc, char *argv[])
+{
+    char** args;
+    pthread_t main_thread_id;
+
+    g_argc = argc;
+    args = argv;
+
+    if (0 != pthread_create(&main_thread_id, NULL, main_thread, args)) {
+        INFO("Create main thread failed\n");
+        return -1;
+    }
+
+    ns_event_loop(&thread_running);
+    return 0;
+}
+
+void* main_thread(void* args)
+{
+    char** argv;
+    int argc = g_argc;
+
+    argv = (char**) args;
+    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
+    get_bin_dir(qemu_argv[0]);
+    socket_init();
+    extract_qemu_info(qemu_argc, qemu_argv);
+
+    INFO("Emulator start !!!\n");
+    atexit(maru_atexit);
+
+    extract_skin_info(skin_argc, skin_argv);
+
+    check_shdmem();
+    make_shdmem();
+    sdb_setup();
+
+    system_info();
+
+    INFO("Prepare running...\n");
+    /* Redirect stdout and stderr after debug_ch is initialized. */
+    redir_output();
+
+    int i;
+
+    fprintf(stdout, "qemu args : =========================================\n");
+    for (i = 0; i < qemu_argc; ++i) {
+        fprintf(stdout, "%s ", qemu_argv[i]);
+    }
+    fprintf(stdout, "\n");
+    fprintf(stdout, "=====================================================\n");
+
+    fprintf(stdout, "skin args : =========================================\n");
+    for (i = 0; i < skin_argc; ++i) {
+        fprintf(stdout, "%s ", skin_argv[i]);
+    }
+    fprintf(stdout, "\n");
+    fprintf(stdout, "=====================================================\n");
+
+    INFO("qemu main start!\n");
+    qemu_main(qemu_argc, qemu_argv, NULL);
+
+    exit_emulator();
+    thread_running = 0;
+    pthread_exit(NULL);
+
+    return 0;
+}
+#else
 int main(int argc, char *argv[])
 {
     parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
@@ -586,4 +665,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
+#endif

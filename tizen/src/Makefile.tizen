@@ -11,6 +11,7 @@ QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
+QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
 endif
 ifndef CONFIG_DEBUG_EXEC
 CFLAGS += -g -O2
@@ -99,6 +100,11 @@ obj-y += sdb.o
 # mloop event
 obj-y += mloop_event.o
 
+# NSRunLoop on Mac
+ifdef CONFIG_DARWIN
+obj-y += ns_event.o
+endif
+
 # debug channel
 obj-y += debug_ch.o
 
@@ -109,11 +115,12 @@ obj-y += maru_brightness.o
 obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 obj-y += maru_virtio_keyboard.o
 obj-y += maru_codec.o
-ifndef CONFIG_DARWIN
+
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
 obj-$(CONFIG_WIN32) += maru_camera_win32_pci.o
-endif
+obj-$(CONFIG_DARWIN) += maru_camera_darwin_converter.o
+obj-$(CONFIG_DARWIN) += maru_camera_darwin_pci.o
 
 ifdef CONFIG_LINUX # libs for maru camera on linux host
 LIBS += -lv4l2 -lv4lconvert
