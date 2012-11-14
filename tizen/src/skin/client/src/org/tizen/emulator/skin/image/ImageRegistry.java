@@ -71,30 +71,31 @@ public class ImageRegistry {
 	
 	public enum IconName {
 		
-		DETAIL_INFO( "detail_info.png" ),
-		ROTATE( "rotate.png" ),
-		SCALE( "scale.png" ),
-		SHELL( "shell.png" ),
-		ADVANCED( "advanced.png" ),
-		CLOSE( "close.png" ),
-		SCREENSHOT( "screenshot.png" ),
-		USB_KEYBOARD( "usb_keyboard.png" ),
-		HOST_KEYBOARD( "host_keyboard.png" ),
-		DIAGNOSIS( "diagnosis.png" ),
-		ABOUT( "about.png" ),
+		DETAIL_INFO("detail_info.png"),
+		ROTATE("rotate.png"),
+		SCALE("scale.png"),
+		SHELL("shell.png"),
+		ADVANCED("advanced.png"),
+		CLOSE("close.png"),
+		SCREENSHOT("screenshot.png"),
+		USB_KEYBOARD("usb_keyboard.png"),
+		HOST_KEYBOARD("host_keyboard.png"),
+		DIAGNOSIS("diagnosis.png"),
+		FORCE_CLOSE("force_close.png"),
+		ABOUT("about.png"),
 
-		COPY_SCREEN_SHOT( "copy_screenshot_dialog.png" ),
-		REFRESH_SCREEN_SHOT( "refresh_screenshot_dialog.png" ),
-		INCREASE_SCALE( "increase_scale.png" ),
-		DECREASE_SCALE( "decrease_scale.png" ),
-		SAVE_SCREEN_SHOT( "save_screenshot_dialog.png" ),
+		COPY_SCREEN_SHOT("copy_screenshot_dialog.png"),
+		REFRESH_SCREEN_SHOT("refresh_screenshot_dialog.png"),
+		INCREASE_SCALE("increase_scale.png"),
+		DECREASE_SCALE("decrease_scale.png"),
+		SAVE_SCREEN_SHOT("save_screenshot_dialog.png"),
 
-		EMULATOR_TITLE( "emulator_icon.png" ),
-		EMULATOR_TITLE_ICO( "emulator_icon.ico" );
+		EMULATOR_TITLE("emulator_icon.png"),
+		EMULATOR_TITLE_ICO("emulator_icon.ico");
 		
 		private String name;
 		
-		private IconName( String name ) {
+		private IconName(String name) {
 			this.name = name;
 		}
 		

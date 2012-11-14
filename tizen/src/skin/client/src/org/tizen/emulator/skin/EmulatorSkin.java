@@ -1915,44 +1915,51 @@ public class EmulatorSkin {
 			diagnosisItem.setMenu(diagnosisMenu);
 		}
 
-		/*
-		// Force close menu
-		final MenuItem forceCloseItem = new MenuItem(menu, SWT.PUSH);
-		forceCloseItem.setText("&Force Close");
-		//forceCloseItem.setImage(imageRegistry.getIcon(IconName.XXX));
-		forceCloseItem.addSelectionListener( new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				logger.info("Force close is selected");
-
-				//TODO : y or n popup
-				System.exit(-1);
-			}
-		});
-		*/
-
-		new MenuItem( menu, SWT.SEPARATOR );
+		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* About menu */
-		final MenuItem aboutItem = new MenuItem( menu, SWT.PUSH );
-		aboutItem.setText( "&About" );
-		aboutItem.setImage( imageRegistry.getIcon( IconName.ABOUT ) );
+		final MenuItem aboutItem = new MenuItem(menu, SWT.PUSH);
+		aboutItem.setText("&About");
+		aboutItem.setImage(imageRegistry.getIcon(IconName.ABOUT));
 
-		aboutItem.addSelectionListener( new SelectionAdapter() {
+		aboutItem.addSelectionListener(new SelectionAdapter() {
 			private boolean isOpen;
 
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				if ( !isOpen ) {
+			public void widgetSelected(SelectionEvent e) {
+				if (!isOpen) {
 					isOpen = true;
 
 					logger.info("Open the about dialog");
-					AboutDialog dialog = new AboutDialog( shell );
+					AboutDialog dialog = new AboutDialog(shell);
 					dialog.open();
 					isOpen = false;
 				}
 			}
 		} );
+
+		new MenuItem(menu, SWT.SEPARATOR);
+
+		/* Force close menu */
+		final MenuItem forceCloseItem = new MenuItem(menu, SWT.PUSH);
+		forceCloseItem.setText("&Force Close");
+		forceCloseItem.setImage(imageRegistry.getIcon(IconName.FORCE_CLOSE));
+		forceCloseItem.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("Force close is selected");
+
+				int answer = SkinUtil.openMessage(shell, null,
+						"If you force stop an emulator, it may cause some problems.\n" +
+						"Are you sure you want to contiue?",
+						SWT.ICON_QUESTION | SWT.OK | SWT.CANCEL, config);
+
+				if (answer == SWT.OK) {
+					logger.info("force close!!!");
+					System.exit(-1);
+				}
+			}
+		});
 
 		return menu;
 

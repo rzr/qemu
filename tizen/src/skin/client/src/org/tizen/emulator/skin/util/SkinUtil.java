@@ -283,20 +283,19 @@ public class SkinUtil {
 			return false;
 		}
 	}
-	
-	public static <T> void openMessage( Shell shell, String title, String message, int style, EmulatorConfig config ) {
-		
-		MessageBox messageBox = new MessageBox( shell, style );
-		
-		if( !StringUtil.isEmpty( title ) ) {
-			messageBox.setText( title );
-		}else {
-			messageBox.setText( makeEmulatorName( config ) );
+
+	public static <T> int openMessage(Shell shell,
+			String title, String message, int style, EmulatorConfig config) {
+		MessageBox messageBox = new MessageBox(shell, style);
+
+		if (!StringUtil.isEmpty(title)) {
+			messageBox.setText(title);
+		} else {
+			messageBox.setText(makeEmulatorName(config));
 		}
-		
-		messageBox.setMessage( StringUtil.nvl( message ) );
-		messageBox.open();
-		
+
+		messageBox.setMessage(StringUtil.nvl(message));
+		return messageBox.open();
 	}
 
 }
