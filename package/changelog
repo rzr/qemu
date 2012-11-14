@@ -1,3 +1,6 @@
+* 1.4.5
+- Enable Host Keyboard menu from advanced popup.  
+== Kitae Kim <kt920.kim@samsung.com> 2012-11-14
 * 1.4.4
 - Apply qemu_ld/st optimization according to QEMU 1.2
 == Yeongkyoon Lee <yeongkyoon.lee@samsung.com> 2012-11-08
