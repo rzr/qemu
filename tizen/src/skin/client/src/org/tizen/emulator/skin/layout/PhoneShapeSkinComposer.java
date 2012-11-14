@@ -34,16 +34,15 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
-import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.dbi.LcdType;
+import org.tizen.emulator.skin.dbi.RegionType;
+import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
@@ -91,7 +90,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		// has to be portrait mode at first booting time
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 
-		composeInternal(lcdCanvas, x, y, scale, rotationId, false);
+		composeInternal(lcdCanvas, x, y, scale, rotationId);
 		logger.info("resolution : " + currentState.getCurrentResolution() +
 				", scale : " + scale);
 		
@@ -100,7 +99,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 
 	@Override
 	public void composeInternal(Canvas lcdCanvas,
-			int x, int y, int scale, short rotationId, boolean isOnKbd) {
+			int x, int y, int scale, short rotationId) {
 
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
@@ -131,22 +130,6 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		currentState.setCurrentScale(scale);
 		currentState.setCurrentRotationId(rotationId);
 		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
-
-		/* arrange the lcd */
-		Rectangle lcdBounds = SkinUtil.adjustLcdGeometry(lcdCanvas,
-				currentState.getCurrentResolutionWidth(),
-				currentState.getCurrentResolutionHeight(), scale, rotationId,
-				true);
-
-		if (lcdBounds == null) {
-			logger.severe("Failed to lcd information for phone shape skin.");
-			SkinUtil.openMessage(shell, null,
-					"Failed to read lcd information for phone shape skin.\n" +
-					"Check the contents of skin dbi file.",
-					SWT.ICON_ERROR, config);
-			System.exit(-1);
-		}
-		logger.info("lcd bounds : " + lcdBounds);
 
 		/* arrange the skin image */
 		Image tempImage = null;
@@ -184,6 +167,53 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		shell.redraw();
 		shell.pack();
 
+		/* arrange the lcd */
+		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(), scale, rotationId);
+
+		if (lcdBounds == null) {
+			logger.severe("Failed to lcd information for phone shape skin.");
+			SkinUtil.openMessage(shell, null,
+					"Failed to read lcd information for phone shape skin.\n" +
+					"Check the contents of skin dbi file.",
+					SWT.ICON_ERROR, config);
+			System.exit(-1);
+		}
+		logger.info("lcd bounds : " + lcdBounds);
+
 		lcdCanvas.setBounds(lcdBounds);
+	}
+
+	@Override
+	public Rectangle adjustLcdGeometry(
+			Canvas lcdCanvas, int resolutionW, int resolutionH,
+			int scale, short rotationId) {
+		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
+
+		float convertedScale = SkinUtil.convertScale(scale);
+		RotationType rotation = SkinRotation.getRotation(rotationId);
+
+		LcdType lcd = rotation.getLcd(); /* from dbi */
+		if (lcd == null) {
+			return null;
+		}
+
+		RegionType region = lcd.getRegion();
+		if (region == null) {
+			return null;
+		}
+
+		Integer left = region.getLeft();
+		Integer top = region.getTop();
+		Integer width = region.getWidth();
+		Integer height = region.getHeight();
+
+		lcdBounds.x = (int) (left * convertedScale);
+		lcdBounds.y = (int) (top * convertedScale);
+		lcdBounds.width = (int) (width * convertedScale);
+		lcdBounds.height = (int) (height * convertedScale);
+
+		return lcdBounds;
 	}
 }
