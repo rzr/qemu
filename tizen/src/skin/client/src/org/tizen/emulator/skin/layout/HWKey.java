@@ -1,5 +1,5 @@
 /**
- * 
+ *
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -28,20 +28,42 @@
 
 package org.tizen.emulator.skin.layout;
 
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.Canvas;
+import org.tizen.emulator.skin.util.SkinRegion;
+import org.tizen.emulator.skin.util.SkinUtil;
 
-public interface ISkinComposer {
-	public abstract Canvas compose();
+public class HWKey {
+	private int keyCode;
+	private SkinRegion region;
+	private String tooltip;
 
-	public abstract void composeInternal(Canvas lcdCanvas,
-			int x, int y, int scale, short rotationId);
+	public HWKey() {
+		this.keyCode = SkinUtil.UNKNOWN_KEYCODE;
+	}
 
-	public abstract void arrangeSkin(int scale, short rotationId);
+	/* keycode */
+	public int getKeyCode() {
+		return keyCode;
+	}
 
-	public abstract Rectangle adjustLcdGeometry(
-			Canvas lcdCanvas, int resolutionW, int resolutionH,
-			int scale, short rotationId);
+	public void setKeyCode(int keyCode) {
+		this.keyCode = keyCode;
+	}
 
-	public abstract void composerFinalize();
+	/* region */
+	public SkinRegion getRegion() {
+		return region;
+	}
+
+	public void setRegion(SkinRegion region) {
+		this.region = region;
+	}
+
+	/* tooltip */
+	public String getTooltip() {
+		return tooltip;
+	}
+
+	public void setTooltip(String tooltip) {
+		this.tooltip = tooltip;
+	}
 }

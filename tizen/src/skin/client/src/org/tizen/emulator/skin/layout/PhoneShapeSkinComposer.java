@@ -31,12 +31,25 @@ package org.tizen.emulator.skin.layout;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.MouseTrackAdapter;
+import org.eclipse.swt.events.MouseTrackListener;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkinState;
+import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
+import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -59,15 +72,27 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 	private Shell shell;
 	private Canvas lcdCanvas;
 	private EmulatorSkinState currentState;
-
 	private ImageRegistry imageRegistry;
+	private SocketCommunicator communicator;
+
+	private PaintListener shellPaintListener;
+	private MouseTrackListener shellMouseTrackListener;
+	private MouseMoveListener shellMouseMoveListener;
+	private MouseListener shellMouseListener;
+
+	private boolean isGrabbedShell;
+	private Point grabPosition;
 
 	public PhoneShapeSkinComposer(EmulatorConfig config, Shell shell,
-			EmulatorSkinState currentState, ImageRegistry imageRegistry) {
+			EmulatorSkinState currentState, ImageRegistry imageRegistry,
+			SocketCommunicator communicator) {
 		this.config = config;
 		this.shell = shell;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
+		this.communicator = communicator;
+		this.isGrabbedShell= false;
+		this.grabPosition = new Point(0, 0);
 	}
 
 	@Override
@@ -93,7 +118,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		composeInternal(lcdCanvas, x, y, scale, rotationId);
 		logger.info("resolution : " + currentState.getCurrentResolution() +
 				", scale : " + scale);
-		
+
 		return lcdCanvas;
 	}
 
@@ -117,7 +142,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 
 		arrangeSkin(scale, rotationId);
 
-		if (/*skinInfo.isPhoneShape() &&*/ currentState.getCurrentImage() == null) {
+		if (currentState.getCurrentImage() == null) {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
@@ -215,5 +240,224 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		lcdBounds.height = (int) (height * convertedScale);
 
 		return lcdBounds;
+	}
+
+	public void addPhoneShapeListener(final Shell shell) {
+		shellPaintListener = new PaintListener() {
+			@Override
+			public void paintControl(final PaintEvent e) {
+				/* general shell does not support native transparency,
+				 * so draw image with GC. */
+				if (currentState.getCurrentImage() != null) {
+					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
+				}
+
+			}
+		};
+
+		shell.addPaintListener(shellPaintListener);
+
+		shellMouseTrackListener = new MouseTrackAdapter() {
+			@Override
+			public void mouseExit(MouseEvent e) {
+				/* shell does not receive event only with MouseMoveListener
+				 * in case that : hover hardkey -> mouse move into LCD area */
+				HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
+
+				if (hoveredHWKey != null) {
+					shell.redraw(hoveredHWKey.getRegion().x,
+							hoveredHWKey.getRegion().y,
+							hoveredHWKey.getRegion().width,
+							hoveredHWKey.getRegion().height, false);
+
+					currentState.setCurrentHoveredHWKey(null);
+					shell.setToolTipText(null);
+				}
+			}
+		};
+
+		shell.addMouseTrackListener(shellMouseTrackListener);
+
+		shellMouseMoveListener = new MouseMoveListener() {
+			@Override
+			public void mouseMove(MouseEvent e) {
+				if (isGrabbedShell == true && e.button == 0/* left button */ &&
+						currentState.getCurrentPressedHWKey() == null) {
+					/* move a window */
+					Point previousLocation = shell.getLocation();
+					int x = previousLocation.x + (e.x - grabPosition.x);
+					int y = previousLocation.y + (e.y - grabPosition.y);
+
+					shell.setLocation(x, y);
+					return;
+				}
+
+				final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
+						currentState.getCurrentRotationId(), currentState.getCurrentScale());
+				if (hwKey == null) {
+					/* remove hover */
+					HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
+
+					if (hoveredHWKey != null) {
+						shell.redraw(hoveredHWKey.getRegion().x,
+								hoveredHWKey.getRegion().y,
+								hoveredHWKey.getRegion().width,
+								hoveredHWKey.getRegion().height, false);
+
+						currentState.setCurrentHoveredHWKey(null);
+						shell.setToolTipText(null);
+					}
+
+					return;
+				}
+
+				/* register a tooltip */
+				if (currentState.getCurrentHoveredHWKey() == null &&
+						hwKey.getTooltip().isEmpty() == false) {
+					shell.setToolTipText(hwKey.getTooltip());
+				}
+
+				/* draw hover */
+				shell.getDisplay().syncExec(new Runnable() {
+					public void run() {
+						if (hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
+							GC gc = new GC(shell);
+							if (gc != null) {
+								gc.setLineWidth(1);
+								gc.setForeground(currentState.getHoverColor());
+								gc.drawRectangle(hwKey.getRegion().x, hwKey.getRegion().y,
+										hwKey.getRegion().width - 1, hwKey.getRegion().height - 1);
+
+								gc.dispose();
+
+								currentState.setCurrentHoveredHWKey(hwKey);
+							}
+						}
+					}
+				});
+
+			}
+		};
+
+		shell.addMouseMoveListener(shellMouseMoveListener);
+
+		shellMouseListener = new MouseListener() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 1) { /* left button */
+					logger.info("mouseUp in Skin");
+
+					isGrabbedShell = false;
+					grabPosition.x = grabPosition.y = 0;
+
+					HWKey pressedHWKey = currentState.getCurrentPressedHWKey();
+					if (pressedHWKey == null) {
+						return;
+					}
+
+					if (pressedHWKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
+						/* send event */
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
+						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+
+						currentState.setCurrentPressedHWKey(null);
+
+						/* roll back a keyPressed image region */
+						shell.redraw(pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
+								pressedHWKey.getRegion().width, pressedHWKey.getRegion().height, false);
+
+						if (pressedHWKey.getKeyCode() != 101) { // TODO: not necessary for home key
+							SkinUtil.trimShell(shell, currentState.getCurrentImage(),
+									pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
+									pressedHWKey.getRegion().width, pressedHWKey.getRegion().height);
+						}
+					}
+				}
+			}
+
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (1 == e.button) { /* left button */
+					logger.info("mouseDown in Skin");
+
+					isGrabbedShell = true;
+					grabPosition.x = e.x;
+					grabPosition.y = e.y;
+
+					final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
+							currentState.getCurrentRotationId(), currentState.getCurrentScale());
+					if (hwKey == null) {
+						return;
+					}
+
+					if (hwKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
+						/* send event */
+						KeyEventData keyEventData = new KeyEventData(
+								KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
+						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+
+						currentState.setCurrentPressedHWKey(hwKey);
+
+						shell.setToolTipText(null);
+
+						/* draw the HW key region as the cropped keyPressed image area */
+						if (hwKey.getRegion() != null &&
+								hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
+							shell.getDisplay().syncExec(new Runnable() {
+								public void run() {
+									if (currentState.getCurrentKeyPressedImage() != null) {
+										GC gc = new GC(shell);
+										if (gc != null) {
+											gc.drawImage(currentState.getCurrentKeyPressedImage(),
+													hwKey.getRegion().x, hwKey.getRegion().y,
+													hwKey.getRegion().width, hwKey.getRegion().height, //src
+													hwKey.getRegion().x, hwKey.getRegion().y,
+													hwKey.getRegion().width, hwKey.getRegion().height); //dst
+
+											gc.dispose();
+
+											if (hwKey.getKeyCode() != 101) { // TODO: not necessary for home key
+												SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
+														hwKey.getRegion().x, hwKey.getRegion().y,
+														hwKey.getRegion().width, hwKey.getRegion().height);
+											}
+
+										}
+									}
+								} /* end of run */
+							});
+						}
+
+					}
+				}
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+		};
+
+		shell.addMouseListener(shellMouseListener);
+	}
+
+	@Override
+	public void composerFinalize() {
+		if (null != shellPaintListener) {
+			shell.removePaintListener(shellPaintListener);
+		}
+
+		if (null != shellMouseTrackListener) {
+			shell.removeMouseTrackListener(shellMouseTrackListener);
+		}
+
+		if (null != shellMouseMoveListener) {
+			shell.removeMouseMoveListener(shellMouseMoveListener);
+		}
+
+		if (null != shellMouseListener) {
+			shell.removeMouseListener(shellMouseListener);
+		}
 	}
 }

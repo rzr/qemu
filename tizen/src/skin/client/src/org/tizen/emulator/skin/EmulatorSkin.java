@@ -53,15 +53,10 @@ import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
-import org.eclipse.swt.events.MouseTrackAdapter;
-import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.events.MouseWheelListener;
-import org.eclipse.swt.events.PaintEvent;
-import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Canvas;
@@ -98,7 +93,6 @@ import org.tizen.emulator.skin.layout.ISkinComposer;
 import org.tizen.emulator.skin.layout.PhoneShapeSkinComposer;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
-import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -142,35 +136,22 @@ public class EmulatorSkin {
 	protected Canvas lcdCanvas;
 	protected SkinInformation skinInfo;
 	protected ISkinComposer skinComposer;
-	private Color hoverColor;
-	private boolean isDefaultHoverColor;
 
 	protected EmulatorSkinState currentState;
-	protected SkinRegion currentHoverRegion;
-	protected SkinRegion currentPressedRegion;
 
-	private int pressedMouseX;
-	private int pressedMouseY;
-	private boolean isMousePressed;
 	private boolean isDragStartedInLCD;
-	private boolean isHoverState;
 	private boolean isShutdownRequested;
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
 	private boolean isOnKbd;
 
-	private SkinWindow controlPanel;
+	private SkinWindow controlPanel; //not used yet
 	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
 
 	protected SocketCommunicator communicator;
-	protected long windowHandleId;
 
 	private Listener shellCloseListener;
-	private PaintListener shellPaintListener;
-	private MouseTrackListener shellMouseTrackListener;
-	private MouseMoveListener shellMouseMoveListener;
-	private MouseListener shellMouseListener;
 	private MenuDetectListener shellMenuDetectListener;
 
 	//private DragDetectListener canvasDragDetectListener;
@@ -182,7 +163,6 @@ public class EmulatorSkin {
 	private FocusListener canvasFocusListener;
 
 	private LinkedList<KeyEventData> pressedKeyEventList;
-	private int pressedHWKeyCode;
 
 	private EmulatorSkin reopenSkin;
 	
@@ -194,13 +174,9 @@ public class EmulatorSkin {
 	protected EmulatorSkin(EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
 		this.config = config;
 		this.skinInfo = skinInfo;
-		this.isDefaultHoverColor = true;
 		this.isOnTop = isOnTop;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
-		this.windowHandleId = 0;
-		this.pressedHWKeyCode = 0;
-		
 		int style = SWT.NO_TRIM;
 		if (skinInfo.isPhoneShape() == false) {
 			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
@@ -217,20 +193,26 @@ public class EmulatorSkin {
 	public long initLayout() {
 		imageRegistry = ImageRegistry.getInstance();
 
-		if (skinInfo.isPhoneShape() == true) {
+		if (skinInfo.isPhoneShape() == true) { /* phone shape skin */
 			skinComposer = new PhoneShapeSkinComposer(config, shell,
-					currentState, imageRegistry);
-		} else {
+					currentState, imageRegistry, communicator);
+
+			((PhoneShapeSkinComposer) skinComposer).addPhoneShapeListener(shell);
+		} else { /* general purpose skin */
 			skinComposer = new GeneralPurposeSkinComposer(config, shell,
 					currentState, imageRegistry, communicator);
 		}
+
 		lcdCanvas = skinComposer.compose();
 
-		seteHoverColor();
+		/* load a hover color */
+		currentState.setHoverColor(loadHoverColor());
 
+		/* added event handlers */
 		addShellListener(shell);
 		addCanvasListener(shell, lcdCanvas);
 
+		/* attach a menu */
 		this.isOnKbd = false;
 		setMenu();
 
@@ -279,26 +261,25 @@ public class EmulatorSkin {
 //
 //	}
 
-	private void seteHoverColor() {
-
+	private Color loadHoverColor() {
 		ColorsType colors = config.getDbiContents().getColors();
-		if ( null != colors ) {
+
+		if (null != colors) {
 			RgbType hoverRgb = colors.getHoverColor();
-			if ( null != hoverRgb ) {
+			if (null != hoverRgb) {
 				Long r = hoverRgb.getR();
 				Long g = hoverRgb.getG();
 				Long b = hoverRgb.getB();
-				if ( null != r && null != g && null != b ) {
-					hoverColor = new Color( shell.getDisplay(), new RGB( r.intValue(), g.intValue(), b.intValue() ) );
-					isDefaultHoverColor = false;
+				if (null != r && null != g && null != b) {
+					Color hoverColor = new Color(shell.getDisplay(),
+							new RGB(r.intValue(), g.intValue(), b.intValue()));
+					return hoverColor;
 				}
 			}
 		}
 
-		if ( isDefaultHoverColor ) {
-			hoverColor = shell.getDisplay().getSystemColor( SWT.COLOR_WHITE );
-		}
-
+		/* white */
+		return (new Color(shell.getDisplay(), new RGB(255, 255, 255)));
 	}
 
 	public SkinReopenPolicy open() {
@@ -334,10 +315,10 @@ public class EmulatorSkin {
 	}
 
 	protected void skinFinalize() {
-		//TODO:
+		skinComposer.composerFinalize();
 	}
 
-	private void addShellListener( final Shell shell ) {
+	private void addShellListener(final Shell shell) {
 
 		shellCloseListener = new Listener() {
 			@Override
@@ -367,7 +348,7 @@ public class EmulatorSkin {
 							controlPanel = null;
 						}
 
-						// save config only for emulator close
+						/* save config only for emulator close */
 						config.setSkinProperty(
 								SkinPropertiesConstants.WINDOW_X, shell.getLocation().x);
 						config.setSkinProperty(
@@ -388,8 +369,8 @@ public class EmulatorSkin {
 						currentState.getCurrentKeyPressedImage().dispose();
 					}
 
-					if ( !isDefaultHoverColor ) {
-						hoverColor.dispose();
+					if (currentState.getHoverColor() != null) {
+						currentState.getHoverColor().dispose();
 					}
 
 					skinFinalize();
@@ -409,242 +390,12 @@ public class EmulatorSkin {
 
 		shell.addListener( SWT.Close, shellCloseListener );
 
-		shellPaintListener = new PaintListener() {
-
-			@Override
-			public void paintControl( final PaintEvent e ) {
-				// general shell does not support native transparency, so draw image with GC.
-				if (currentState.getCurrentImage() != null) {
-					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
-				}
-
-			}
-		};
-
-		if (skinInfo.isPhoneShape()) {
-			shell.addPaintListener(shellPaintListener);
-		}
-
-		shellMouseTrackListener = new MouseTrackAdapter() {
-			@Override
-			public void mouseExit( MouseEvent e ) {
-				// MouseMoveListener of shell does not receive event only with MouseMoveListener
-				// in case that : hover hardkey -> mouse move into LCD area
-				if ( isHoverState ) {
-					if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
-						shell.redraw();
-					} else {
-						shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
-								currentHoverRegion.height + 1, false );
-					}
-					shell.setToolTipText(null);
-
-					isHoverState = false;
-					currentHoverRegion.width = currentHoverRegion.height = 0;
-				}
-			}
-
-		};
-
-		if (skinInfo.isPhoneShape()) {
-			shell.addMouseTrackListener(shellMouseTrackListener);
-		}
-
-		shellMouseMoveListener = new MouseMoveListener() {
-			@Override
-			public void mouseMove( MouseEvent e ) {
-				if ( EmulatorSkin.this.isMousePressed ) {
-					if (0 == e.button) { /* left button */
-
-						SkinRegion hardkeyRegion = SkinUtil.getHardKeyArea(e.x, e.y,
-								currentState.getCurrentRotationId(), currentState.getCurrentScale());
-
-						if ( null == hardkeyRegion ) {
-							Point previouseLocation = shell.getLocation();
-							int x = previouseLocation.x + ( e.x - EmulatorSkin.this.pressedMouseX );
-							int y = previouseLocation.y + ( e.y - EmulatorSkin.this.pressedMouseY );
-
-							shell.setLocation( x, y );
-						}
-
-					}
-				} else {
-					SkinRegion region = SkinUtil.getHardKeyArea(e.x, e.y,
-							currentState.getCurrentRotationId(), currentState.getCurrentScale());
-
-					if ( null == region ) {
-						if ( isHoverState ) {
-							if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
-								shell.redraw();
-							} else {
-								shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
-										currentHoverRegion.height + 1, false );
-							}
-							shell.setToolTipText(null);
-
-							isHoverState = false;
-							currentHoverRegion.width = currentHoverRegion.height = 0;
-						}
-					} else {
-						if (isHoverState == false) {
-							shell.setToolTipText(SkinUtil.getHardKeyToolTip(e.x, e.y,
-									currentState.getCurrentRotationId(), currentState.getCurrentScale()));
-						}
-
-						isHoverState = true;
-						currentHoverRegion = region;
-
-						/* draw hover */
-						shell.getDisplay().syncExec(new Runnable() {
-							public void run() {
-								if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
-									GC gc = new GC(shell);
-									if (gc != null) {
-										gc.setLineWidth(1);
-										gc.setForeground(hoverColor);
-										gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y,
-												currentHoverRegion.width, currentHoverRegion.height);
-
-										gc.dispose();
-									}
-								}
-							}
-						});
-					}
-				}
-
-			} //end of mouseMove
-		};
-
-		if (skinInfo.isPhoneShape()) {
-			shell.addMouseMoveListener(shellMouseMoveListener);
-		}
-
-		shellMouseListener = new MouseListener() {
-			@Override
-			public void mouseUp( MouseEvent e ) {
-				if (1 == e.button) { /* left button */
-					logger.info( "mouseUp in Skin" );
-					EmulatorSkin.this.pressedMouseX = 0;
-					EmulatorSkin.this.pressedMouseY = 0;
-					EmulatorSkin.this.isMousePressed = false;
-
-					if (pressedHWKeyCode != 0) {
-						/* send event */
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), pressedHWKeyCode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-						pressedHWKeyCode = 0;
-					}
-
-					int keyCode = SkinUtil.getHardKeyCode(e.x, e.y,
-							currentState.getCurrentRotationId(), currentState.getCurrentScale());
-
-					if ( SkinUtil.UNKNOWN_KEYCODE != keyCode ) {
-						/* null check : prevent from mouse up without a hover
-						ex. doing always on top in hardkey area */
-						if ( null != currentHoverRegion ) {
-							if ( currentHoverRegion.width == 0 && currentHoverRegion.height == 0 ) {
-								shell.redraw();
-							} else {
-								shell.redraw( currentHoverRegion.x, currentHoverRegion.y, currentHoverRegion.width + 1,
-										currentHoverRegion.height + 1, false );
-							}
-						}
-
-						SkinRegion region = SkinUtil.getHardKeyArea(e.x, e.y,
-								currentState.getCurrentRotationId(), currentState.getCurrentScale());
-						if (keyCode != 101) { // TODO: not necessary for home key
-							SkinUtil.trimShell(shell, currentState.getCurrentImage(),
-									region.x, region.y, region.width, region.height);
-						}
-					}
-
-				}
-			}
-
-			@Override
-			public void mouseDown( MouseEvent e ) {
-				if (1 == e.button) { /* left button */
-					logger.info( "mouseDown in Skin" );
-					EmulatorSkin.this.pressedMouseX = e.x;
-					EmulatorSkin.this.pressedMouseY = e.y;
-					EmulatorSkin.this.isMousePressed = true;
-
-					final int keyCode = SkinUtil.getHardKeyCode(e.x, e.y,
-							currentState.getCurrentRotationId(), currentState.getCurrentScale());
-
-					if (SkinUtil.UNKNOWN_KEYCODE != keyCode) {
-						/* send event */
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.PRESSED.value(), keyCode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-						pressedHWKeyCode = keyCode;
-
-						shell.setToolTipText(null);
-
-						/* draw the button region as the cropped keyPressed image area */
-						currentPressedRegion = SkinUtil.getHardKeyArea(e.x, e.y,
-								currentState.getCurrentRotationId(), currentState.getCurrentScale());
-
-						if (currentPressedRegion != null &&
-								currentPressedRegion.width != 0 && currentPressedRegion.height != 0) {
-							shell.getDisplay().syncExec(new Runnable() {
-								public void run() {
-									if (currentState.getCurrentKeyPressedImage() != null) {
-										GC gc = new GC( shell );
-										if (gc != null) {
-
-											/* button */
-											gc.drawImage(currentState.getCurrentKeyPressedImage(),
-												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
-												currentPressedRegion.width - 1, currentPressedRegion.height - 1, //src
-												currentPressedRegion.x + 1, currentPressedRegion.y + 1,
-												currentPressedRegion.width - 1, currentPressedRegion.height - 1); //dst
-
-											/* hover */
-											if (currentHoverRegion.width != 0 && currentHoverRegion.height != 0) {
-												gc.setLineWidth(1);
-												gc.setForeground(hoverColor);
-												gc.drawRectangle(currentHoverRegion.x, currentHoverRegion.y,
-														currentHoverRegion.width, currentHoverRegion.height);
-											}
-
-											gc.dispose();
-
-											if (keyCode != 101) { // TODO: not necessary for home key
-												SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
-														currentPressedRegion.x, currentPressedRegion.y,
-														currentPressedRegion.width, currentPressedRegion.height);
-											}
-
-											currentPressedRegion = null;
-										}
-									}
-								}
-							});
-						}
-
-					}
-				}
-			}
-
-			@Override
-			public void mouseDoubleClick(MouseEvent e) {
-				/* do nothing */
-			}
-		};
-
-		if (skinInfo.isPhoneShape()) {
-			shell.addMouseListener(shellMouseListener);
-		}
-
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
 				Menu menu = EmulatorSkin.this.contextMenu;
 
-				if (menu != null && EmulatorSkin.this.isMousePressed == false) {
+				if (menu != null) {
 					shell.setMenu(menu);
 					menu.setVisible(true);
 					e.doit = false;
@@ -658,23 +409,13 @@ public class EmulatorSkin {
 	}
 
 	private void removeShellListeners() {
-
-		if ( null != shellCloseListener ) {
-			shell.removeListener( SWT.Close, shellCloseListener );
-		}
-		if ( null != shellPaintListener ) {
-			shell.removePaintListener( shellPaintListener );
-		}
-		if ( null != shellMouseTrackListener ) {
-			shell.removeMouseTrackListener( shellMouseTrackListener );
-		}
-		if ( null != shellMouseMoveListener ) {
-			shell.removeMouseMoveListener( shellMouseMoveListener );
-		}
-		if ( null != shellMouseListener ) {
-			shell.removeMouseListener( shellMouseListener );
+		if (null != shellCloseListener) {
+			shell.removeListener(SWT.Close, shellCloseListener);
 		}
 
+		if (null != shellMenuDetectListener) {
+			shell.removeMenuDetectListener(shellMenuDetectListener);
+		}
 	}
 
 	private void addCanvasListener(final Shell shell, final Canvas canvas) {

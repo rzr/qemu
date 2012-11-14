@@ -49,6 +49,7 @@ import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
+import org.tizen.emulator.skin.layout.HWKey;
 
 
 /**
@@ -106,83 +107,34 @@ public class SkinUtil {
 		return sdbPath;
 	}
 
-	public static SkinRegion getHardKeyArea( int currentX, int currentY, short rotationId, int scale ) {
-
-		float convertedScale = convertScale( scale );
-
-		RotationType rotation = SkinRotation.getRotation( rotationId );
-
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-		for ( KeyMapType keyMap : keyMapList ) {
-
-			RegionType region = keyMap.getRegion();
-
-			int scaledX = (int) ( region.getLeft() * convertedScale );
-			int scaledY = (int) ( region.getTop() * convertedScale );
-			int scaledWidth = (int) ( region.getWidth() * convertedScale );
-			int scaledHeight = (int) ( region.getHeight() * convertedScale );
-
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
-				return new SkinRegion( scaledX, scaledY, scaledWidth, scaledHeight );
-			}
-
-		}
-
-		return null;
-
-	}
-
-	public static int getHardKeyCode( int currentX, int currentY, short rotationId, int scale ) {
-
-		float convertedScale = convertScale( scale );
-
-		RotationType rotation = SkinRotation.getRotation( rotationId );
+	public static HWKey getHWKey(
+			int currentX, int currentY, short rotationId, int scale) {
+		float convertedScale = convertScale(scale);
+		RotationType rotation = SkinRotation.getRotation(rotationId);
 
 		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
 
-		for ( KeyMapType keyMap : keyMapList ) {
+		for (KeyMapType keyMap : keyMapList) {
 			RegionType region = keyMap.getRegion();
 
-			int scaledX = (int) ( region.getLeft() * convertedScale );
-			int scaledY = (int) ( region.getTop() * convertedScale );
-			int scaledWidth = (int) ( region.getWidth() * convertedScale );
-			int scaledHeight = (int) ( region.getHeight() * convertedScale );
+			int scaledX = (int) (region.getLeft() * convertedScale);
+			int scaledY = (int) (region.getTop() * convertedScale);
+			int scaledWidth = (int) (region.getWidth() * convertedScale);
+			int scaledHeight = (int) (region.getHeight() * convertedScale);
 
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
+			if (isInGeometry(currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight)) {
 				EventInfoType eventInfo = keyMap.getEventInfo();
-				return eventInfo.getKeyCode();
-			}
-		}
 
-		return UNKNOWN_KEYCODE;
+				HWKey hwKey = new HWKey();
+				hwKey.setKeyCode(eventInfo.getKeyCode());
+				hwKey.setRegion(new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight));
+				hwKey.setTooltip(keyMap.getTooltip());
 
-	}
-
-	//TODO: HardKey object
-	public static String getHardKeyToolTip( int currentX, int currentY, short rotationId, int scale ) {
-
-		float convertedScale = convertScale( scale );
-
-		RotationType rotation = SkinRotation.getRotation( rotationId );
-
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-		for ( KeyMapType keyMap : keyMapList ) {
-			RegionType region = keyMap.getRegion();
-
-			int scaledX = (int) ( region.getLeft() * convertedScale );
-			int scaledY = (int) ( region.getTop() * convertedScale );
-			int scaledWidth = (int) ( region.getWidth() * convertedScale );
-			int scaledHeight = (int) ( region.getHeight() * convertedScale );
-
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
-				return keyMap.getTooltip();
+				return hwKey;
 			}
 		}
 
 		return null;
-
 	}
 
 	public static boolean isInGeometry( int currentX, int currentY, int targetX, int targetY, int targetWidth,
