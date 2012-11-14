@@ -189,10 +189,12 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 #endif
 
+#if 0
     if (!mloop_evcmd_get_usbkbd_status()) {
         TRACE("ignore keyboard input because usb keyboard is dettached.\n");
         return;
     }
+#endif
 
     scancode = javakeycode_to_scancode(event_type, keycode, state_mask, key_location);
 

@@ -1812,6 +1812,7 @@ public class EmulatorSkin {
 			}
 		} );
 
+		/*
 		// USB Keyboard menu
 		final MenuItem usbKeyboardItem = new MenuItem(menu, SWT.CASCADE);
 		usbKeyboardItem.setText("&USB Keyboard");
@@ -1857,8 +1858,8 @@ public class EmulatorSkin {
 		usbOffItem.addSelectionListener(usbSelectionAdaptor);
 
 		usbKeyboardItem.setMenu(usbKeyBoardMenu);
+		*/
 
-		/*
 		// VirtIO Keyboard Menu
 		final MenuItem hostKeyboardItem = new MenuItem(menu, SWT.CASCADE);
 		hostKeyboardItem.setText("&Host Keyboard");
@@ -1904,7 +1905,6 @@ public class EmulatorSkin {
 		kbdOffItem.addSelectionListener(kbdSelectionAdaptor);
 
 		hostKeyboardItem.setMenu(hostKeyboardMenu);
-		*/
 
 		/* Diagnosis menu */
 		if (SwtUtil.isLinuxPlatform()) { //TODO: windows
