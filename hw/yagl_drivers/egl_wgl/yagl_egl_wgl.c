@@ -1,24 +1,1156 @@
 #include <windows.h>
-#include <GL/wglext.h>
 #include <wingdi.h>
+#include <GL/gl.h>
+#include <GL/wglext.h>
+#include <glib.h>
 #include "yagl_egl_driver.h"
 #include "yagl_dyn_lib.h"
 #include "yagl_log.h"
+#include "yagl_egl_native_config.h"
+#include "yagl_egl_surface_attribs.h"
+#include "yagl_process.h"
 #include "yagl_tls.h"
 #include "yagl_thread.h"
 
-struct yagl_egl_driver *yagl_egl_wgl_create(void)
+#define YAGL_EGL_WGL_WIN_CLASS                "YaGLwinClass"
+
+#define YAGL_EGL_WGL_ENTER(func, format, ...) \
+    YAGL_LOG_FUNC_ENTER((egl_wgl_ts ? egl_wgl_ts->ps->id : driver_ps->ps->id), \
+                        (egl_wgl_ts ? egl_wgl_ts->id : 0),                     \
+                        func, format,##__VA_ARGS__)
+
+/* Get a core WGL function address */
+#define YAGL_EGL_WGL_GET_PROC(proc_type, proc_name) \
+    do {                                                                      \
+        egl_wgl->proc_name =                                                  \
+            (proc_type)yagl_dyn_lib_get_sym(egl_driver->dyn_lib, #proc_name); \
+        if (!egl_wgl->proc_name) {                                            \
+            YAGL_LOG_ERROR("%s not found!", #proc_name);                      \
+            goto fail;                                                        \
+        }                                                                     \
+        YAGL_LOG_TRACE("Got %s address", #proc_name);                         \
+    } while (0)
+
+/* Get a mandatory WGL extension function pointer */
+#define YAGL_EGL_WGL_GET_EXT_PROC(ext_name, proc_name, proc_type) \
+    do {                                                                      \
+        if (!yagl_egl_wgl_search_ext(ext_str, #ext_name)) {                   \
+            YAGL_LOG_ERROR("%s extension not supported", #ext_name);          \
+            goto out;                                                         \
+        }                                                                     \
+        egl_wgl->proc_name = (proc_type)                                      \
+                        egl_wgl->wglGetProcAddress((LPCSTR)#proc_name);       \
+        if (!egl_wgl->proc_name) {                                            \
+            YAGL_LOG_ERROR("Mandatory function %s not found", #proc_name);    \
+            goto out;                                                         \
+        }                                                                     \
+        YAGL_LOG_TRACE("Got %s address", #proc_name);                         \
+    } while (0)
+
+static YAGL_DEFINE_TLS(struct yagl_thread_state *, egl_wgl_ts);
+
+typedef HGLRC (WINAPI *WGLCREATECONTEXTPROC)(HDC hdl);
+typedef BOOL (WINAPI *WGLDELETECONTEXTPROC)(HGLRC hdl);
+typedef PROC (WINAPI *WGLGETPROCADDRESSPROC)(LPCSTR sym);
+typedef BOOL (WINAPI *WGLMAKECURRENTPROC)(HDC dev_ctx, HGLRC rend_ctx);
+typedef BOOL (WINAPI *WGLSHARELISTSPROC)(HGLRC ctx1, HGLRC ctx2);
+
+typedef struct YaglEglWglDriverPS {
+    struct yagl_egl_driver_ps base;
+} YaglEglWglDriverPS;
+
+typedef struct YaglEglWglDpy {
+    HWND win;
+    GHashTable *dc_table;
+    HDC *dc_arr;
+    gint *cfgids;
+    unsigned cfgid_cnt;
+    unsigned max_cfgid;
+} YaglEglWglDpy;
+
+typedef struct YaglEglWglSG {
+    HGLRC shared_glc;
+    unsigned ref_cnt;
+} YaglEglWglSG;
+
+typedef struct YaglEglWglCtx {
+    HGLRC glc;
+    YaglEglWglSG *share_group;
+} YaglEglWglCtx;
+
+typedef struct YaglEglWglDriver {
+    struct yagl_egl_driver base;
+
+    WGLCREATECONTEXTPROC wglCreateContext;
+    WGLDELETECONTEXTPROC wglDeleteContext;
+    WGLGETPROCADDRESSPROC wglGetProcAddress;
+    WGLMAKECURRENTPROC wglMakeCurrent;
+    WGLSHARELISTSPROC wglShareLists;
+
+    /* WGL extensions */
+    PFNWGLGETEXTENSIONSSTRINGEXTPROC wglGetExtensionsStringEXT;
+    PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB;
+    PFNWGLGETPIXELFORMATATTRIBIVARBPROC wglGetPixelFormatAttribivARB;
+    PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
+    PFNWGLCREATEPBUFFERARBPROC wglCreatePbufferARB;
+    PFNWGLGETPBUFFERDCARBPROC wglGetPbufferDCARB;
+    PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB;
+    PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
+    PFNWGLMAKECONTEXTCURRENTARBPROC wglMakeContextCurrentARB;
+} YaglEglWglDriver;
+
+static inline HWND yagl_egl_wgl_dummy_win_create(void)
 {
+    return CreateWindow(YAGL_EGL_WGL_WIN_CLASS, "YaGLwin",
+        WS_DISABLED | WS_POPUP, 0, 0, 1, 1, NULL, NULL, 0, 0);
+}
+
+static inline bool yagl_egl_wgl_dc_set_def_pixfmt(HDC dc)
+{
+    INT pixfmt_idx;
+    PIXELFORMATDESCRIPTOR pixfmt = {
+        .nSize = sizeof(PIXELFORMATDESCRIPTOR),
+        .nVersion = 1,
+        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+        .iPixelType = PFD_TYPE_RGBA,
+        .cColorBits = 32,
+        .cDepthBits = 24,
+        .cStencilBits = 8,
+        .iLayerType = PFD_MAIN_PLANE,
+    };
+
+    pixfmt_idx = ChoosePixelFormat(dc, &pixfmt);
+
+    if (pixfmt_idx == 0) {
+        return false;
+    }
+
+    if (SetPixelFormat(dc, pixfmt_idx, &pixfmt) == FALSE) {
+        return false;
+    }
+
+    return true;
+}
+
+static void yagl_egl_wgl_thread_init(struct yagl_egl_driver_ps *driver_ps,
+                                     struct yagl_thread_state *ts)
+{
+    egl_wgl_ts = ts;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_thread_init, NULL);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static EGLNativeDisplayType
+yagl_egl_wgl_display_create(struct yagl_egl_driver_ps *driver_ps)
+{
+    YaglEglWglDpy *dpy;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_display_create, NULL);
+
+    dpy = g_try_new0(YaglEglWglDpy, 1);
+
+    if (!dpy) {
+        goto fail;
+    }
+
+    dpy->win = yagl_egl_wgl_dummy_win_create();
+
+    if (!dpy->win) {
+        g_free(dpy);
+        goto fail;
+    }
+
+    dpy->dc_table = g_hash_table_new(g_int_hash, g_int_equal);
+
+    YAGL_LOG_FUNC_EXIT("Display created: %p", dpy);
+
+    return (EGLNativeDisplayType)dpy;
+
+fail:
+    YAGL_LOG_FUNC_EXIT("Display creation failed");
+
     return NULL;
 }
 
+static gboolean yagl_egl_wgl_cfgdc_free(gpointer key,
+                                        gpointer value,
+                                        gpointer usrdata)
+{
+    HWND win = *((HWND *)usrdata);
+    HDC dc = *((HDC *)value);
+
+    ReleaseDC(win, dc);
+
+    return TRUE;
+}
+
+static void yagl_egl_wgl_display_destroy(struct yagl_egl_driver_ps *driver_ps,
+                                         EGLNativeDisplayType egl_dpy)
+{
+    YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_display_destroy, "%p", dpy);
+
+    g_hash_table_foreach_remove(dpy->dc_table,
+                                yagl_egl_wgl_cfgdc_free,
+                                &dpy->win);
+
+    g_hash_table_destroy(dpy->dc_table);
+
+    DestroyWindow(dpy->win);
+
+    g_free(dpy->cfgids);
+    g_free(dpy->dc_arr);
+    g_free(dpy);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static bool yagl_egl_wgl_config_fill(struct yagl_egl_driver_ps *driver_ps,
+                                     HDC dc,
+                                     struct yagl_egl_native_config *cfg,
+                                     int fmt_idx)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    PIXELFORMATDESCRIPTOR *pix_fmt = NULL;
+    bool filled = false;
+
+    enum {
+        YAGL_WGL_PIXEL_TYPE = 0,
+        YAGL_WGL_DRAW_TO_PBUFFER,
+        YAGL_WGL_DOUBLE_BUFFER,
+        YAGL_WGL_SUPPORT_OPENGL,
+        YAGL_WGL_ACCELERATION,
+        YAGL_WGL_NEED_PALETTE,
+        YAGL_WGL_TRANSPARENT,
+        YAGL_WGL_TRANSPARENT_RED_VALUE,
+        YAGL_WGL_TRANSPARENT_GREEN_VALUE,
+        YAGL_WGL_TRANSPARENT_BLUE_VALUE,
+        YAGL_WGL_COLOR_BITS,
+        YAGL_WGL_RED_BITS,
+        YAGL_WGL_GREEN_BITS,
+        YAGL_WGL_BLUE_BITS,
+        YAGL_WGL_ALPHA_BITS,
+        YAGL_WGL_DEPTH_BITS,
+        YAGL_WGL_STENCIL_BITS,
+        YAGL_WGL_MAX_PBUFFER_PIXELS,
+        YAGL_WGL_MAX_PBUFFER_WIDTH,
+        YAGL_WGL_MAX_PBUFFER_HEIGHT,
+        YAGL_WGL_NUMBER_OVERLAYS,
+        YAGL_WGL_NUMBER_UNDERLAYS,
+        YAGL_WGL_NUM_OF_QUERY_ATTRIBS,
+    };
+
+    const int query_list[YAGL_WGL_NUM_OF_QUERY_ATTRIBS] = {
+        [YAGL_WGL_PIXEL_TYPE] = WGL_PIXEL_TYPE_ARB,
+        [YAGL_WGL_DRAW_TO_PBUFFER] = WGL_DRAW_TO_PBUFFER_ARB,
+        [YAGL_WGL_DOUBLE_BUFFER] = WGL_DOUBLE_BUFFER_ARB,
+        [YAGL_WGL_SUPPORT_OPENGL] = WGL_SUPPORT_OPENGL_ARB,
+        [YAGL_WGL_ACCELERATION] = WGL_ACCELERATION_ARB,
+        [YAGL_WGL_NEED_PALETTE] = WGL_NEED_PALETTE_ARB,
+        [YAGL_WGL_TRANSPARENT] = WGL_TRANSPARENT_ARB,
+        [YAGL_WGL_TRANSPARENT_RED_VALUE] = WGL_TRANSPARENT_RED_VALUE_ARB,
+        [YAGL_WGL_TRANSPARENT_GREEN_VALUE] = WGL_TRANSPARENT_GREEN_VALUE_ARB,
+        [YAGL_WGL_TRANSPARENT_BLUE_VALUE] = WGL_TRANSPARENT_BLUE_VALUE_ARB,
+        [YAGL_WGL_COLOR_BITS] = WGL_COLOR_BITS_ARB,
+        [YAGL_WGL_RED_BITS] = WGL_RED_BITS_ARB,
+        [YAGL_WGL_GREEN_BITS] = WGL_GREEN_BITS_ARB,
+        [YAGL_WGL_BLUE_BITS] = WGL_BLUE_BITS_ARB,
+        [YAGL_WGL_ALPHA_BITS] = WGL_ALPHA_BITS_ARB,
+        [YAGL_WGL_DEPTH_BITS] = WGL_DEPTH_BITS_ARB,
+        [YAGL_WGL_STENCIL_BITS] = WGL_STENCIL_BITS_ARB,
+        [YAGL_WGL_MAX_PBUFFER_PIXELS] = WGL_MAX_PBUFFER_PIXELS_ARB,
+        [YAGL_WGL_MAX_PBUFFER_WIDTH] = WGL_MAX_PBUFFER_WIDTH_ARB,
+        [YAGL_WGL_MAX_PBUFFER_HEIGHT] = WGL_MAX_PBUFFER_HEIGHT_ARB,
+        [YAGL_WGL_NUMBER_OVERLAYS] = WGL_NUMBER_OVERLAYS_ARB,
+        [YAGL_WGL_NUMBER_UNDERLAYS] = WGL_NUMBER_UNDERLAYS_ARB,
+    };
+
+    int attr_vals[YAGL_WGL_NUM_OF_QUERY_ATTRIBS];
+
+    if (egl_wgl->wglGetPixelFormatAttribivARB(dc, fmt_idx, 0,
+                                              YAGL_WGL_NUM_OF_QUERY_ATTRIBS,
+                                              query_list, attr_vals) == FALSE) {
+        goto out;
+    }
+
+    if (attr_vals[YAGL_WGL_PIXEL_TYPE] != WGL_TYPE_RGBA_ARB ||
+        attr_vals[YAGL_WGL_DRAW_TO_PBUFFER] != TRUE ||
+        attr_vals[YAGL_WGL_DOUBLE_BUFFER] != TRUE ||
+        attr_vals[YAGL_WGL_SUPPORT_OPENGL] != TRUE ||
+        attr_vals[YAGL_WGL_ACCELERATION] != WGL_FULL_ACCELERATION_ARB ||
+        attr_vals[YAGL_WGL_NEED_PALETTE] != FALSE) {
+        goto out;
+    }
+
+    /* This structure is used as a config driver data to pass it to
+     * ChoosePixelFormat later */
+    pix_fmt = g_try_new0(PIXELFORMATDESCRIPTOR, 1);
+    if (!pix_fmt) {
+        goto out;
+    }
+
+    if (!DescribePixelFormat(dc, fmt_idx,
+                             sizeof(PIXELFORMATDESCRIPTOR),
+                             pix_fmt)) {
+        g_free(pix_fmt);
+        goto out;
+    }
+
+    yagl_egl_native_config_init(cfg);
+
+    if (attr_vals[YAGL_WGL_TRANSPARENT] == TRUE) {
+        cfg->transparent_type = EGL_TRANSPARENT_RGB;
+        cfg->trans_red_val = attr_vals[YAGL_WGL_TRANSPARENT_RED_VALUE];
+        cfg->trans_green_val = attr_vals[YAGL_WGL_TRANSPARENT_GREEN_VALUE];
+        cfg->trans_blue_val = attr_vals[YAGL_WGL_TRANSPARENT_BLUE_VALUE];
+    } else {
+        cfg->transparent_type = EGL_NONE;
+    }
+
+    cfg->config_id = fmt_idx;
+    cfg->buffer_size = attr_vals[YAGL_WGL_COLOR_BITS];
+    cfg->red_size = attr_vals[YAGL_WGL_RED_BITS];
+    cfg->green_size = attr_vals[YAGL_WGL_GREEN_BITS];
+    cfg->blue_size = attr_vals[YAGL_WGL_BLUE_BITS];
+    cfg->alpha_size = attr_vals[YAGL_WGL_ALPHA_BITS];
+    cfg->depth_size = attr_vals[YAGL_WGL_DEPTH_BITS];
+    cfg->stencil_size = attr_vals[YAGL_WGL_STENCIL_BITS];
+    cfg->max_pbuffer_width = attr_vals[YAGL_WGL_MAX_PBUFFER_WIDTH];
+    cfg->max_pbuffer_height = attr_vals[YAGL_WGL_MAX_PBUFFER_HEIGHT];
+    cfg->max_pbuffer_size = attr_vals[YAGL_WGL_MAX_PBUFFER_PIXELS];
+    cfg->native_visual_type = EGL_NONE;
+    cfg->native_visual_id = 0;
+    cfg->caveat = EGL_NONE;
+    cfg->frame_buffer_level = 0;
+    cfg->samples_per_pixel = 0;
+    cfg->max_swap_interval = 10;
+    cfg->min_swap_interval = 1;
+    cfg->driver_data = pix_fmt;
+
+    filled = true;
+
+out:
+    return filled;
+}
+
+static struct yagl_egl_native_config
+    *yagl_egl_wgl_config_enum(struct yagl_egl_driver_ps *driver_ps,
+                              EGLNativeDisplayType egl_dpy,
+                              int *num_configs)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
+    HDC dc;
+    struct yagl_egl_native_config *egl_configs = NULL;
+    UINT pixfmt_cnt = 0;
+    int pixfmt_cnt_max = 0, curr_fmt_idx, cfg_index = 0;
+    int *pixfmt_arr;
+    const int query_num_of_formats = WGL_NUMBER_PIXEL_FORMATS_ARB;
+    const int attrib_list[] = {
+        WGL_SUPPORT_OPENGL_ARB, TRUE,
+        WGL_DOUBLE_BUFFER_ARB, TRUE,
+        WGL_DRAW_TO_PBUFFER_ARB, TRUE,
+        WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+        WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+        0,
+    };
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_config_enum, "display %p", dpy);
+
+    *num_configs = 0;
+
+    dc = GetDC(dpy->win);
+    if (!dc) {
+        goto out;
+    }
+
+    /* Query number of pixel formats */
+    if (egl_wgl->wglGetPixelFormatAttribivARB(dc, 0, 0, 1,
+                                              &query_num_of_formats,
+                                              &pixfmt_cnt_max) == FALSE ||
+        !pixfmt_cnt_max) {
+        pixfmt_cnt_max = DescribePixelFormat(dc, 1, 0, NULL);
+    }
+
+    if (pixfmt_cnt_max == 0) {
+        YAGL_LOG_ERROR("No pixel formats found");
+        goto out;
+    }
+
+    pixfmt_arr = g_try_new0(int, pixfmt_cnt_max);
+    if (!pixfmt_arr) {
+        goto out;
+    }
+
+    if (egl_wgl->wglChoosePixelFormatARB(dc, attrib_list, NULL,
+                                         pixfmt_cnt_max,
+                                         pixfmt_arr,
+                                         &pixfmt_cnt) == FALSE) {
+        pixfmt_cnt = pixfmt_cnt_max;
+
+        for (curr_fmt_idx = 0; curr_fmt_idx < pixfmt_cnt; ++curr_fmt_idx) {
+            pixfmt_arr[curr_fmt_idx] = curr_fmt_idx + 1;
+        }
+    }
+
+    YAGL_LOG_DEBUG("got %d pixel formats", pixfmt_cnt);
+
+    egl_configs = g_try_new0(struct yagl_egl_native_config, pixfmt_cnt);
+    if (!egl_configs) {
+        g_free(pixfmt_arr);
+        goto out;
+    }
+
+    for (curr_fmt_idx = 0; curr_fmt_idx < pixfmt_cnt; ++curr_fmt_idx) {
+        if (yagl_egl_wgl_config_fill(driver_ps, dc,
+                                     &egl_configs[cfg_index],
+                                     pixfmt_arr[curr_fmt_idx])) {
+            YAGL_LOG_TRACE("Added config with pixfmt=%d",
+                pixfmt_arr[curr_fmt_idx]);
+            ++cfg_index;
+        }
+    }
+
+    if (cfg_index < pixfmt_cnt) {
+        egl_configs = g_renew(struct yagl_egl_native_config,
+        		              egl_configs,
+        		              cfg_index);
+    }
+
+    *num_configs = cfg_index;
+
+    dpy->cfgids = g_new0(gint, cfg_index);
+    dpy->dc_arr = g_new0(HDC, cfg_index);
+    dpy->max_cfgid = cfg_index - 1;
+
+    g_free(pixfmt_arr);
+
+out:
+    if (dc) {
+        ReleaseDC(dpy->win, dc);
+    }
+
+    YAGL_LOG_INFO("WGL returned %d configs, %d are usable",
+                   pixfmt_cnt, cfg_index);
+
+    YAGL_LOG_FUNC_EXIT("Enumerated %d configs", cfg_index);
+
+    return egl_configs;
+}
+
+static void yagl_egl_wgl_config_cleanup(struct yagl_egl_driver_ps *driver_ps,
+                                        EGLNativeDisplayType dpy,
+                                        struct yagl_egl_native_config *cfg)
+{
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_config_cleanup,
+                       "dpy = %p, cfg = %d",
+                       dpy, cfg->config_id);
+
+    g_free(cfg->driver_data);
+    cfg->driver_data = NULL;
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static HDC yagl_egl_wgl_dc_by_cfgid_get(YaglEglWglDpy *dpy,
+                                  const struct yagl_egl_native_config *cfg)
+{
+    HDC dc;
+    HDC *dc_p;
+
+    dc_p = g_hash_table_lookup(dpy->dc_table, &cfg->config_id);
+
+    if (dc_p) {
+        dc = *dc_p;
+        goto out;
+    }
+
+    assert(dpy->cfgid_cnt <= dpy->max_cfgid);
+
+    dc = GetDC(dpy->win);
+    if (!dc) {
+        goto out;
+    }
+
+    if (!SetPixelFormat(dc, cfg->config_id,
+                        (PIXELFORMATDESCRIPTOR *)cfg->driver_data)) {
+        ReleaseDC(dpy->win, dc);
+        dc = NULL;
+        goto out;
+    }
+
+    dpy->dc_arr[dpy->cfgid_cnt] = dc;
+    dpy->cfgids[dpy->cfgid_cnt] = cfg->config_id;
+
+    g_hash_table_insert(dpy->dc_table,
+                        &dpy->cfgids[dpy->cfgid_cnt],
+                        &dpy->dc_arr[dpy->cfgid_cnt]);
+
+    ++dpy->cfgid_cnt;
+
+out:
+    return dc;
+}
+
+static void yagl_egl_wgl_sharegrp_release(YaglEglWglDriver *egl_wgl,
+		                                  YaglEglWglSG *share_group)
+{
+	assert(share_group->ref_cnt > 0);
+
+	if (--share_group->ref_cnt == 0) {
+		egl_wgl->wglDeleteContext(share_group->shared_glc);
+		g_free(share_group);
+	}
+}
+
+static inline void yagl_egl_wgl_sharegrp_acquire(YaglEglWglSG *share_group)
+{
+	++share_group->ref_cnt;
+}
+
+static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver_ps *driver_ps,
+                                              EGLNativeDisplayType egl_dpy,
+                                              const struct yagl_egl_native_config *cfg,
+                                              yagl_client_api client_api,
+                                              EGLContext share_context)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
+    YaglEglWglCtx *egl_wgl_ctx;
+    HDC dc;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_context_create,
+                       "dpy = %p, api = %u, share_context = %p, cfgid=%d",
+                       dpy, client_api, share_context, cfg->config_id);
+
+    egl_wgl_ctx = g_try_new0(YaglEglWglCtx, 1);
+    if (!egl_wgl_ctx) {
+        goto fail;
+    }
+
+    dc = yagl_egl_wgl_dc_by_cfgid_get(dpy, cfg);
+    if (!dc) {
+        YAGL_LOG_ERROR("failed to get DC with cfgid=%d", cfg->config_id);
+        goto fail;
+    }
+
+    if (share_context != EGL_NO_CONTEXT) {
+        egl_wgl_ctx->share_group =
+            ((YaglEglWglCtx *)share_context)->share_group;
+    } else {
+        egl_wgl_ctx->share_group = g_try_new0(YaglEglWglSG, 1);
+
+        if (!egl_wgl_ctx->share_group) {
+            goto fail;
+        }
+
+        egl_wgl_ctx->share_group->shared_glc = egl_wgl->wglCreateContext(dc);
+        if (!egl_wgl_ctx->share_group->shared_glc) {
+            g_free(egl_wgl_ctx->share_group);
+            goto fail;
+        }
+    }
+
+    yagl_egl_wgl_sharegrp_acquire(egl_wgl_ctx->share_group);
+
+    egl_wgl_ctx->glc = egl_wgl->wglCreateContext(dc);
+    if (!egl_wgl_ctx->glc) {
+    	yagl_egl_wgl_sharegrp_release(egl_wgl, egl_wgl_ctx->share_group);
+        goto fail;
+    }
+
+    if(!egl_wgl->wglShareLists(egl_wgl_ctx->share_group->shared_glc,
+                               egl_wgl_ctx->glc)) {
+    	yagl_egl_wgl_sharegrp_release(egl_wgl, egl_wgl_ctx->share_group);
+        egl_wgl->wglDeleteContext(egl_wgl_ctx->glc);
+        goto fail;
+    }
+
+    YAGL_LOG_FUNC_EXIT("Context created: %p (HGLRC=%p, shared=%p refcnt=%u)",
+        egl_wgl_ctx, egl_wgl_ctx->glc, egl_wgl_ctx->share_group->shared_glc,
+        egl_wgl_ctx->share_group->ref_cnt);
+
+    return (EGLContext)egl_wgl_ctx;
+
+fail:
+    g_free(egl_wgl_ctx);
+
+    YAGL_LOG_ERROR_WIN();
+
+    YAGL_LOG_FUNC_EXIT("Failed to create new context");
+
+    return EGL_NO_CONTEXT;
+}
+
+static bool yagl_egl_wgl_make_current(struct yagl_egl_driver_ps *driver_ps,
+                                      EGLNativeDisplayType dc,
+                                      EGLSurface egl_draw_surf,
+                                      EGLSurface egl_read_surf,
+                                      EGLContext egl_glc)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    HDC draw_dc = NULL, read_dc = NULL;
+    HGLRC glc = NULL;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_make_current,
+                       "dpy = %p, draw = %p, read = %p, ctx = %p",
+                       dc,
+                       egl_draw_surf,
+                       egl_read_surf,
+                       egl_glc);
+
+    if (egl_glc != EGL_NO_CONTEXT) {
+        glc = ((YaglEglWglCtx *)egl_glc)->glc;
+    }
+
+    if (egl_draw_surf != EGL_NO_SURFACE) {
+        draw_dc = egl_wgl->wglGetPbufferDCARB((HPBUFFERARB)egl_draw_surf);
+
+        if (!draw_dc) {
+            goto fail;
+        }
+    }
+
+    if (egl_read_surf != EGL_NO_SURFACE) {
+        if (egl_read_surf == egl_draw_surf) {
+            read_dc = draw_dc;
+        } else {
+            read_dc = egl_wgl->wglGetPbufferDCARB((HPBUFFERARB)egl_read_surf);
+
+            if (!read_dc) {
+                goto fail;
+            }
+        }
+    }
+
+    if (egl_wgl->wglMakeContextCurrentARB(draw_dc, read_dc, glc) == FALSE) {
+        goto fail;
+    }
+
+    YAGL_LOG_FUNC_EXIT("context %p was made current", glc);
+
+    return true;
+
+fail:
+    YAGL_LOG_ERROR_WIN();
+
+    if (draw_dc) {
+        egl_wgl->wglReleasePbufferDCARB((HPBUFFERARB)egl_draw_surf, draw_dc);
+    }
+
+    if (read_dc && (egl_read_surf != egl_draw_surf)) {
+        egl_wgl->wglReleasePbufferDCARB((HPBUFFERARB)egl_read_surf, read_dc);
+    }
+
+    YAGL_LOG_FUNC_EXIT("Failed to make context %p current", glc);
+
+    return false;
+}
+
+static void yagl_egl_wgl_context_destroy(struct yagl_egl_driver_ps *driver_ps,
+                                         EGLNativeDisplayType egl_dpy,
+                                         EGLContext egl_glc)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglCtx *wgl_ctx = (YaglEglWglCtx *)egl_glc;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_context_destroy,
+                       "dpy = %p, ctx = %p, glc=%p",
+                       egl_dpy, wgl_ctx, wgl_ctx->glc);
+
+    yagl_egl_wgl_sharegrp_release(egl_wgl, wgl_ctx->share_group);
+
+    if (egl_wgl->wglDeleteContext(wgl_ctx->glc) == FALSE) {
+        YAGL_LOG_ERROR_WIN();
+    }
+
+    g_free(wgl_ctx);
+
+    YAGL_LOG_FUNC_EXIT("Context destroyed");
+}
+
+static EGLSurface yagl_egl_wgl_pbuffer_surface_create(struct yagl_egl_driver_ps *driver_ps,
+                                                      EGLNativeDisplayType egl_dpy,
+                                                      const struct yagl_egl_native_config *cfg,
+                                                      EGLint width,
+                                                      EGLint height,
+                                                      const struct yagl_egl_pbuffer_attribs *attribs)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    HDC dc = NULL;
+    YaglEglWglDpy * dpy = (YaglEglWglDpy *)egl_dpy;
+    HPBUFFERARB pbuffer;
+    int pbuff_attribs[] = {
+        WGL_PBUFFER_LARGEST_ARB, FALSE,
+        WGL_TEXTURE_TARGET_ARB, WGL_NO_TEXTURE_ARB,
+        WGL_TEXTURE_FORMAT_ARB, WGL_NO_TEXTURE_ARB,
+        0
+    };
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_pbuffer_surface_create,
+                       "dpy = %p, width = %d, height = %d, cfgid=%d",
+                       egl_dpy,
+                       width,
+                       height,
+                       cfg->config_id);
+
+    if (attribs->largest) {
+        pbuff_attribs[1] = TRUE;
+    }
+
+    if (attribs->tex_target == EGL_TEXTURE_2D) {
+        pbuff_attribs[3] = WGL_TEXTURE_2D_ARB;
+    }
+
+    switch (attribs->tex_format) {
+    case EGL_TEXTURE_RGB:
+        pbuff_attribs[5] = WGL_TEXTURE_RGB_ARB;
+        break;
+    case EGL_TEXTURE_RGBA:
+        pbuff_attribs[5] = WGL_TEXTURE_RGBA_ARB;
+        break;
+    }
+
+    dc = yagl_egl_wgl_dc_by_cfgid_get(dpy, cfg);
+    if (!dc) {
+        YAGL_LOG_ERROR("failed to get DC with cfgid=%d", cfg->config_id);
+        goto fail;
+    }
+
+    pbuffer = egl_wgl->wglCreatePbufferARB(dc, cfg->config_id,
+             width, height, pbuff_attribs);
+
+    if (!pbuffer) {
+        goto fail;
+    }
+
+    YAGL_LOG_FUNC_EXIT("Surface created: %p", pbuffer);
+
+    return (EGLSurface)pbuffer;
+
+fail:
+    YAGL_LOG_ERROR_WIN();
+
+    YAGL_LOG_FUNC_EXIT("Surface creation failed");
+
+    return EGL_NO_SURFACE;
+}
+
+static void yagl_egl_wgl_pbuffer_surface_destroy(struct yagl_egl_driver_ps *driver_ps,
+                                                 EGLNativeDisplayType egl_dpy,
+                                                 EGLSurface surf)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    HDC pbuf_dc = NULL;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_pbuffer_surface_destroy,
+                       "dpy = %p, sfc = %p",
+                       egl_dpy,
+                       surf);
+
+    pbuf_dc = egl_wgl->wglGetPbufferDCARB((HPBUFFERARB)surf);
+
+    if (!pbuf_dc ||
+        egl_wgl->wglReleasePbufferDCARB((HPBUFFERARB)surf, pbuf_dc) != 1) {
+        YAGL_LOG_ERROR_WIN();
+    }
+
+    if (egl_wgl->wglDestroyPbufferARB((HPBUFFERARB)surf) == FALSE) {
+        YAGL_LOG_ERROR_WIN();
+        YAGL_LOG_FUNC_EXIT("Failed to destroy surface");
+    } else {
+        YAGL_LOG_FUNC_EXIT("Surface destroyed");
+    }
+}
+
+static void yagl_egl_wgl_wait_native(struct yagl_egl_driver_ps *driver_ps)
+{
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_wait_native, NULL);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_egl_wgl_thread_fini(struct yagl_egl_driver_ps *driver_ps)
+{
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_thread_fini, NULL);
+
+    egl_wgl_ts = NULL;
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_egl_wgl_process_destroy(struct yagl_egl_driver_ps *driver_ps)
+{
+    YaglEglWglDriverPS *egl_glx_ps = (YaglEglWglDriverPS *)driver_ps;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_process_destroy, NULL);
+
+    yagl_egl_driver_ps_cleanup(&egl_glx_ps->base);
+
+    g_free(egl_glx_ps);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static struct yagl_egl_driver_ps
+    *yagl_egl_wgl_process_init(struct yagl_egl_driver *driver,
+                               struct yagl_process_state *ps)
+{
+    YaglEglWglDriverPS *egl_wgl_ps = g_new0(YaglEglWglDriverPS, 1);
+    struct yagl_egl_driver_ps *driver_ps = &egl_wgl_ps->base;
+
+    yagl_egl_driver_ps_init(driver_ps, driver, ps);
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_process_init, NULL);
+
+    driver_ps->thread_init = &yagl_egl_wgl_thread_init;
+    driver_ps->display_create = &yagl_egl_wgl_display_create;
+    driver_ps->display_destroy = &yagl_egl_wgl_display_destroy;
+    driver_ps->config_enum = &yagl_egl_wgl_config_enum;
+    driver_ps->config_cleanup = &yagl_egl_wgl_config_cleanup;
+    driver_ps->pbuffer_surface_create = &yagl_egl_wgl_pbuffer_surface_create;
+    driver_ps->pbuffer_surface_destroy = &yagl_egl_wgl_pbuffer_surface_destroy;
+    driver_ps->context_create = &yagl_egl_wgl_context_create;
+    driver_ps->context_destroy = &yagl_egl_wgl_context_destroy;
+    driver_ps->make_current = &yagl_egl_wgl_make_current;
+    driver_ps->wait_native = &yagl_egl_wgl_wait_native;
+    driver_ps->thread_fini = &yagl_egl_wgl_thread_fini;
+    driver_ps->destroy = &yagl_egl_wgl_process_destroy;
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+
+    return driver_ps;
+}
+
+static void yagl_egl_wgl_destroy(struct yagl_egl_driver *driver)
+{
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)driver;
+
+    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_destroy, NULL);
+
+    UnregisterClassA((LPCTSTR)YAGL_EGL_WGL_WIN_CLASS, NULL);
+
+    yagl_egl_driver_cleanup(driver);
+
+    g_free(egl_wgl);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+/*
+ * Check if extension string 'ext_string' contains extension name 'ext_name'.
+ * Needed because extension name could be a substring of a longer extension
+ * name.
+ */
+static bool yagl_egl_wgl_search_ext(const gchar *ext_string,
+                                    const gchar *ext_name)
+{
+    const size_t name_len = strlen(ext_name);
+    gchar *ext = g_strstr_len(ext_string, -1, ext_name);
+
+    while (ext) {
+        if (ext[name_len] == '\0' || ext[name_len] == ' ') {
+            break;
+        }
+
+        ext += name_len;
+        ext = g_strstr_len(ext, -1, ext_name);
+    }
+
+    return ext != NULL;
+}
+
+/*
+ *  A stub for YaGL window class window procedure callback
+ */
+static LRESULT CALLBACK yagl_egl_wgl_winproc(HWND win, UINT msg, WPARAM wparam,
+                                      LPARAM lparam)
+{
+    return DefWindowProcA(win, msg, wparam, lparam);
+}
+
+/*
+ * Initialize pointers to WGL extension functions.
+ * Pointers are acquired with wglGetProcAddress() function, which works only
+ * in a presence of a valid openGL context. Pointers returned by
+ * wglGetProcAddress() are themselves context-specific, but we assume that
+ * if two contexts refer to the same GPU, then the function pointers pulled
+ * from one context will work in another.
+ * Note that we only need current context to ACQUIRE function pointers,
+ * we don't need a context to use them.
+ */
+static bool yagl_egl_wgl_init_ext(YaglEglWglDriver *egl_wgl)
+{
+    HWND win;
+    HDC dc = NULL;
+    HGLRC glc = NULL;
+    const char *ext_str = NULL;
+    bool ext_initialized = false;
+
+    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_init_ext, NULL);
+
+    win = yagl_egl_wgl_dummy_win_create();
+    if (!win) {
+        goto out;
+    }
+
+    dc = GetDC(win);
+    if (!dc) {
+        goto out;
+    }
+
+    if (!yagl_egl_wgl_dc_set_def_pixfmt(dc)) {
+        goto out;
+    }
+
+    glc = egl_wgl->wglCreateContext(dc);
+    if (!glc) {
+        goto out;
+    }
+
+    if (!egl_wgl->wglMakeCurrent(dc, glc)) {
+        goto out;
+    }
+
+    /* WGL extensions couldn't be queried by glGetString(), we need to use
+     * wglGetExtensionsStringARB or wglGetExtensionsStringEXT for this, which
+     * themselves are extensions */
+    egl_wgl->wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)
+            egl_wgl->wglGetProcAddress((LPCSTR)"wglGetExtensionsStringARB");
+    egl_wgl->wglGetExtensionsStringEXT = (PFNWGLGETEXTENSIONSSTRINGEXTPROC)
+            egl_wgl->wglGetProcAddress((LPCSTR)"wglGetExtensionsStringEXT");
+
+    if (egl_wgl->wglGetExtensionsStringARB) {
+        ext_str = egl_wgl->wglGetExtensionsStringARB(dc);
+    } else if (egl_wgl->wglGetExtensionsStringEXT) {
+        ext_str = egl_wgl->wglGetExtensionsStringEXT();
+    }
+
+    if (!ext_str) {
+        YAGL_LOG_ERROR("Couldn't acquire WGL extensions string");
+        goto out;
+    }
+
+    YAGL_LOG_INFO("WGL extensions: %s", ext_str);
+
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pixel_format, wglGetPixelFormatAttribivARB, PFNWGLGETPIXELFORMATATTRIBIVARBPROC);
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, wglCreatePbufferARB, PFNWGLCREATEPBUFFERARBPROC);
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, wglGetPbufferDCARB, PFNWGLGETPBUFFERDCARBPROC);
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, wglReleasePbufferDCARB, PFNWGLRELEASEPBUFFERDCARBPROC);
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, wglDestroyPbufferARB, PFNWGLDESTROYPBUFFERARBPROC);
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pixel_format, wglChoosePixelFormatARB, PFNWGLCHOOSEPIXELFORMATARBPROC);
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_make_current_read, wglMakeContextCurrentARB, PFNWGLMAKECONTEXTCURRENTARBPROC);
+
+    ext_initialized = true;
+
+out:
+	if (glc) {
+	    if (egl_wgl->wglMakeCurrent(NULL, NULL) == FALSE) {
+	        YAGL_LOG_ERROR_WIN();
+	    }
+
+	    if (egl_wgl->wglDeleteContext(glc) == FALSE) {
+	        YAGL_LOG_ERROR_WIN();
+	    }
+	}
+
+	if (win) {
+	    if (dc) {
+	        ReleaseDC(win, dc);
+	    }
+	    DestroyWindow(win);
+	}
+
+    YAGL_LOG_FUNC_EXIT("Extensions initialized status: %u", ext_initialized);
+
+    return ext_initialized;
+}
+
+struct yagl_egl_driver *yagl_egl_wgl_create(void)
+{
+    YaglEglWglDriver *egl_wgl;
+    struct yagl_egl_driver *egl_driver;
+    WNDCLASSEXA yagl_win_class;
+
+    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_create, NULL);
+
+    egl_wgl = g_new0(YaglEglWglDriver, 1);
+
+    egl_driver = &egl_wgl->base;
+
+    yagl_egl_driver_init(egl_driver);
+
+    egl_driver->dyn_lib = yagl_dyn_lib_create();
+
+    if (!yagl_dyn_lib_load(egl_driver->dyn_lib, "opengl32")) {
+        YAGL_LOG_ERROR("Loading opengl32.dll failed with error: %s",
+                       yagl_dyn_lib_get_error(egl_driver->dyn_lib));
+        goto fail;
+    }
+
+    yagl_win_class.cbSize = sizeof(WNDCLASSEXA);
+    yagl_win_class.style = 0;
+    yagl_win_class.lpfnWndProc = &yagl_egl_wgl_winproc;
+    yagl_win_class.cbClsExtra = 0;
+    yagl_win_class.cbWndExtra = 0;
+    yagl_win_class.hInstance = NULL;
+    yagl_win_class.hIcon = NULL;
+    yagl_win_class.hCursor = NULL;
+    yagl_win_class.hbrBackground = NULL;
+    yagl_win_class.lpszMenuName =  NULL;
+    yagl_win_class.lpszClassName = YAGL_EGL_WGL_WIN_CLASS;
+    yagl_win_class.hIconSm = NULL;
+
+    if (!RegisterClassExA(&yagl_win_class)) {
+        goto fail;
+    }
+
+    YAGL_EGL_WGL_GET_PROC(WGLCREATECONTEXTPROC, wglCreateContext);
+    YAGL_EGL_WGL_GET_PROC(WGLDELETECONTEXTPROC, wglDeleteContext);
+    YAGL_EGL_WGL_GET_PROC(WGLGETPROCADDRESSPROC, wglGetProcAddress);
+    YAGL_EGL_WGL_GET_PROC(WGLMAKECURRENTPROC, wglMakeCurrent);
+    YAGL_EGL_WGL_GET_PROC(WGLSHARELISTSPROC, wglShareLists);
+
+    egl_driver->process_init = &yagl_egl_wgl_process_init;
+    egl_driver->destroy = &yagl_egl_wgl_destroy;
+
+    if (!yagl_egl_wgl_init_ext(egl_wgl)) {
+        goto fail;
+    }
+
+    YAGL_LOG_FUNC_EXIT("EGL_WGL driver created (%p)", egl_driver);
+
+    return egl_driver;
+
+fail:
+    yagl_egl_driver_cleanup(egl_driver);
+    g_free(egl_wgl);
+
+    YAGL_LOG_ERROR_WIN();
+
+    YAGL_LOG_FUNC_EXIT("EGL_WGL driver creation failed");
+
+    return NULL;
+}
+
+static void *yagl_egl_wgl_extaddr_get(struct yagl_dyn_lib *dyn_lib,
+                                      const char *sym)
+{
+    static WGLGETPROCADDRESSPROC wgl_get_procaddr_fn = NULL;
+    static WGLCREATECONTEXTPROC wgl_create_context_fn = NULL;
+    static WGLMAKECURRENTPROC wgl_make_current_fn = NULL;
+    static WGLDELETECONTEXTPROC wgl_delete_context_fn = NULL;
+    void *proc = NULL;
+    HWND win = NULL;
+    HDC dc = NULL;
+    HGLRC glc;
+
+    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_extaddr_get, "%s", sym);
+
+    if (!wgl_get_procaddr_fn) {
+        wgl_get_procaddr_fn = (WGLGETPROCADDRESSPROC)
+                yagl_dyn_lib_get_sym(dyn_lib, "wglGetProcAddress");
+    }
+
+    if (!wgl_create_context_fn) {
+        wgl_create_context_fn = (WGLCREATECONTEXTPROC)
+                yagl_dyn_lib_get_sym(dyn_lib, "wglCreateContext");
+    }
+
+    if (!wgl_make_current_fn) {
+        wgl_make_current_fn = (WGLMAKECURRENTPROC)
+                yagl_dyn_lib_get_sym(dyn_lib, "wglMakeCurrent");
+    }
+
+    if (!wgl_delete_context_fn) {
+        wgl_delete_context_fn = (WGLDELETECONTEXTPROC)
+                yagl_dyn_lib_get_sym(dyn_lib, "wglDeleteContext");
+    }
+
+    if (!wgl_get_procaddr_fn || !wgl_create_context_fn ||
+        !wgl_make_current_fn || !wgl_delete_context_fn) {
+        goto out;
+    }
+
+    /* To use wglGetProcAddress, create a temporary openGL context
+     * and make it current */
+
+    win = yagl_egl_wgl_dummy_win_create();
+    if (!win) {
+        goto out;
+    }
+
+    dc = GetDC(win);
+    if (!dc) {
+        goto out;
+    }
+
+    /* We need to set pixel format of dc before we can create GL context */
+    if (!yagl_egl_wgl_dc_set_def_pixfmt(dc)) {
+        goto out;
+    }
+
+    glc = wgl_create_context_fn(dc);
+    if (!glc) {
+        goto out;
+    }
+
+    if (wgl_make_current_fn(dc, glc) == FALSE) {
+        wgl_make_current_fn(NULL, NULL);
+        wgl_delete_context_fn(glc);
+        goto out;
+    }
+
+    proc = (void *)wgl_get_procaddr_fn((LPCSTR)sym);
+
+    if (wgl_make_current_fn(NULL, NULL) == FALSE) {
+        YAGL_LOG_ERROR_WIN();
+    }
+
+    if (wgl_delete_context_fn(glc) == FALSE) {
+        YAGL_LOG_ERROR_WIN();
+    }
+
+out:
+   if (!proc) {
+       YAGL_LOG_ERROR_WIN();
+   }
+
+    if (win) {
+        if (dc) {
+            ReleaseDC(win, dc);
+        }
+        DestroyWindow(win);
+    }
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+
+    return proc;
+}
+
+/* GetProcAddress only works for core OpenGL v.1.1 functions, while
+ * wglGetProcAddress will fail for <=v1.1 openGL functions, so we need them
+ * both */
 void *yagl_egl_wgl_procaddr_get(struct yagl_dyn_lib *dyn_lib,
                                        const char *sym)
 {
     void *proc = NULL;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_get_procaddr, NULL);
+    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_get_procaddr,
+    		"Retrieving %s address", sym);
 
-    YAGL_LOG_FUNC_EXIT("%p", proc);
+    proc = yagl_egl_wgl_extaddr_get(dyn_lib, sym);
+
+    if (!proc) {
+    	YAGL_LOG_TRACE("wglGetProcAddress failed for %s, trying GetProcAddress",
+    	    sym);
+        proc = yagl_dyn_lib_get_sym(dyn_lib, sym);
+    }
+
+    YAGL_LOG_FUNC_EXIT("%s address: %p", sym, proc);
+
     return proc;
 }
