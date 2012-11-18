@@ -35,7 +35,7 @@
 
 #define JAVA_MAX_COMMAND_LENGTH 1024
 
-#define JAR_SKINFILE_PATH "emulator-skin.jar"
+#define JAR_SKINFILE "emulator-skin.jar"
 #define JAVA_LIBRARY_PATH "-Djava.library.path"
 
 #ifndef CONFIG_DARWIN

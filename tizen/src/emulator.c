@@ -310,7 +310,6 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
 
 static void get_bin_dir(char *exec_argv)
 {
-
     if (!exec_argv) {
         return;
     }
@@ -336,9 +335,18 @@ static void get_bin_dir(char *exec_argv)
     }
 
     strncpy(bin_dir, data, strlen(data) - strlen(p));
+#ifdef _WIN32
+    strcat(bin_dir, "\\");
+#else
+    strcat(bin_dir, "/");
+#endif
 
     free(data);
 
+}
+
+char* get_bin_path(void) {
+    return bin_dir;
 }
 
 void set_image_and_log_path(char *qemu_argv)

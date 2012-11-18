@@ -289,16 +289,11 @@ static void debug_init(void)
 	strcat(debugchfile, "/DEBUGCH");
 #endif
 
-    if ( 0 == strlen( bin_dir ) ) {
-        strcpy( debugchfile, "DEBUGCH" );
+    if (0 == strlen(bin_dir)) {
+        strcpy(debugchfile, "DEBUGCH");
     } else {
-        strcat( debugchfile, bin_dir );
-#ifdef _WIN32
-        strcat( debugchfile, "\\" );
-#else
-        strcat( debugchfile, "/" );
-#endif
-        strcat( debugchfile, "DEBUGCH" );
+        strcat(debugchfile, bin_dir);
+        strcat(debugchfile, "DEBUGCH");
     }
 
 	fp= fopen(debugchfile, "r");
