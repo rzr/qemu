@@ -186,7 +186,6 @@ typedef struct {
 
 #define MAX_FBCONFIG 10
 
-#define MAX_PENDING_QSURFACE 8
 #define MAX_PENDING_DRAWABLE 8
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -311,7 +310,8 @@ typedef struct {
     ClientGLXDrawable pending_drawables[MAX_PENDING_DRAWABLE];
 
     /* Created Pixmap surfaces, will link to context in MakeCurrent */
-    QGloSurface *pending_qsurfaces[MAX_PENDING_QSURFACE];
+    QGloSurface **pending_qsurfaces;
+    int nb_qsurf;
 
     int nfbconfig;
     const GLXFBConfig *fbconfigs[MAX_FBCONFIG];
@@ -631,7 +631,7 @@ QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLX
         return qsurface;
 
     /* search the pending surfaces */
-    for ( i = 0; i < MAX_PENDING_QSURFACE; i++ )
+    for ( i = 0; i < process->nb_qsurf; i++ )
     {
         qsurface = process->pending_qsurfaces[i];
         if ( qsurface && qsurface->client_drawable == client_drawable )
@@ -696,33 +696,41 @@ static int link_drawable(ProcessState *process, ClientGLXDrawable drawable)
  * 1. Create one light-weight context just for surface creation.
  * 2. Store this qsurface, and link it with right context when MakeCurrent
  */
-static int keep_qsurface(ProcessState *process, QGloSurface *qsurface)
+static void keep_qsurface(ProcessState *process, QGloSurface *qsurface)
 {
     int i;
-    for ( i = 0; i < MAX_PENDING_QSURFACE; i++)
-    {
-        if ( process->pending_qsurfaces[i] == NULL )
-        {
-            process->pending_qsurfaces[i] = qsurface;
-            return 1;
-        }
-    }
-    return 0;
+    process->pending_qsurfaces =
+        g_realloc(process->pending_qsurfaces,
+                  (process->nb_qsurf + 1) * sizeof(QGloSurface*));
+
+    process->pending_qsurfaces[process->nb_qsurf] = qsurface;
+
+    process->nb_qsurf++;
 }
 
 static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawable client_drawable)
 {
     int i;
     QGloSurface *qsurface;
-    for ( i = 0; i < MAX_PENDING_QSURFACE; i++ )
+    for ( i = 0; i < process->nb_qsurf; i++ )
     {
         qsurface = process->pending_qsurfaces[i];
         if ( qsurface && qsurface->client_drawable == client_drawable )
         {
-	    /* Do not reset, as need it in another context */
-/*            process->pending_qsurfaces[i] = NULL;*/
+            /* XXX:Current limitation is that each surface is binded to one
+             * context, and not accessible from another context. It's hard for
+             * glEGLImageTargetTexture2DOES implementation, in which we need
+             * find a pixmap surface from another context that is not owner of
+             * this pixmap. So do not move this pending pixmap surface into
+             * current context. In future need decople of surface and context.
+             * */
+#if 0
+            memmove(&process->pending_qsurfaces[i],
+                    &process->pending_qsurfaces[i+1],
+                    (process->nb_qsurf - i - 1) * sizeof(QGloSurface*));
+#endif
+
             qsurface->ref = 1;
-/*            qsurface->surface->context = glstate->context;*/
             if ( glo_surface_update_context(qsurface->surface, glstate->context) )
                 unbind_qsurface(qsurface->glstate, qsurface);
             bind_qsurface(glstate, qsurface);
@@ -1949,12 +1957,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 /*                qsurface->ref = 1;*/
 
                 /* Keep this surface, will link it with context in MakeCurrent */
-                if (!keep_qsurface(process, qsurface))
-                {
-                    DEBUGF( "No space to store create pixmap surface. Need call MakeCurrent to free them.\n");
-                    ret.i = 0;
-                    break;
-                }
+                keep_qsurface(process, qsurface);
 
                 /* If this pixmap is linked as texture previously */
                 if (link_drawable(process, client_drawable))
