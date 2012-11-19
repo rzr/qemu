@@ -35,92 +35,14 @@
         <rotation name="Landscape">
             <lcd id="0">
             </lcd>
-            <keyMapList>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>101</keyCode>
-                        <keyName>Home</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>103</keyCode>
-                        <keyName>Power</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>115</keyCode>
-                        <keyName>Volume up</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>114</keyCode>
-                        <keyName>Volume down</keyName>
-                    </eventInfo>
-                </keyMap>
-            </keyMapList>
         </rotation>
         <rotation name="Reverse Portrait">
             <lcd id="0">
             </lcd>
-            <keyMapList>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>101</keyCode>
-                        <keyName>Home</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>103</keyCode>
-                        <keyName>Power</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>115</keyCode>
-                        <keyName>Volume up</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>114</keyCode>
-                        <keyName>Volume down</keyName>
-                    </eventInfo>
-                </keyMap>
-            </keyMapList>
         </rotation>
         <rotation name="Reverse Landscape">
             <lcd id="0">
             </lcd>
-            <keyMapList>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>101</keyCode>
-                        <keyName>Home</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>103</keyCode>
-                        <keyName>Power</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>115</keyCode>
-                        <keyName>Volume up</keyName>
-                    </eventInfo>
-                </keyMap>
-                <keyMap>
-                    <eventInfo>
-                        <keyCode>114</keyCode>
-                        <keyName>Volume down</keyName>
-                    </eventInfo>
-                </keyMap>
-            </keyMapList>
         </rotation>
     </rotations>
     <colors>

@@ -69,6 +69,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private EmulatorConfig config;
 	private Shell shell;
 	private Canvas lcdCanvas;
+	private Decorations decoration;
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
@@ -79,6 +80,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			SocketCommunicator communicator) {
 		this.config = config;
 		this.shell = shell;
+		this.decoration = null;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
 		this.communicator = communicator;
@@ -159,15 +161,20 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		dataCanvas.height = lcdBounds.height;
 		lcdCanvas.setLayoutData(dataCanvas);
 
-		Decorations decoration = new Decorations(shell, SWT.BORDER);
-		decoration.setLayout(new GridLayout(1, true));
+		if (decoration != null) {
+			decoration.dispose();
+			decoration = null;
+		}
 
-		RotationType rotation =
-				SkinRotation.getRotation(currentState.getCurrentRotationId());
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
+		shell.pack();
 
-		// TODO: function
+		List<KeyMapType> keyMapList =
+				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
+
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
+			decoration = new Decorations(shell, SWT.BORDER);
+			decoration.setLayout(new GridLayout(1, true));
+
 			for (KeyMapType keyEntry : keyMapList) {
 				Button hardKeyButton = new Button(decoration, SWT.FLAT);
 				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
@@ -197,13 +204,13 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					}
 				});
 			}
+
+			FormData dataDecoration = new FormData();
+			dataDecoration.left = new FormAttachment(lcdCanvas, 0);
+			dataDecoration.top = new FormAttachment(0, 0);
+			decoration.setLayoutData(dataDecoration);
 		}
 
-		FormData dataDecoration = new FormData();
-		dataDecoration.left = new FormAttachment(lcdCanvas, 0);
-		dataDecoration.top = new FormAttachment(0, 0);
-		decoration.setLayoutData(dataDecoration);
-		
 		shell.redraw();
 		shell.pack();
 	}

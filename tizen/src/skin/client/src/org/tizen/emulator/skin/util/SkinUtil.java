@@ -44,6 +44,7 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
+import org.tizen.emulator.skin.dbi.KeyMapListType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
@@ -107,12 +108,37 @@ public class SkinUtil {
 		return sdbPath;
 	}
 
+	public static List<KeyMapType> getHWKeyMapList(short rotationId) {
+		RotationType rotation = SkinRotation.getRotation(rotationId);
+		if (rotation == null) {
+			return null;
+		}
+
+		KeyMapListType list = rotation.getKeyMapList();
+		if (list == null) {
+			/* try to using a KeyMapList of portrait */
+			rotation = SkinRotation.getRotation(RotationInfo.PORTRAIT.id());
+			if (rotation == null) {
+				return null;
+			}
+
+			list = rotation.getKeyMapList();
+			if (list == null) {
+				return null;
+			}
+		}
+
+		return list.getKeyMap();
+	}
+
 	public static HWKey getHWKey(
 			int currentX, int currentY, short rotationId, int scale) {
 		float convertedScale = convertScale(scale);
-		RotationType rotation = SkinRotation.getRotation(rotationId);
 
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
+		List<KeyMapType> keyMapList = getHWKeyMapList(rotationId);
+		if (keyMapList == null) {
+			return null;
+		}
 
 		for (KeyMapType keyMap : keyMapList) {
 			RegionType region = keyMap.getRegion();
