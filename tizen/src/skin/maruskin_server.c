@@ -502,38 +502,39 @@ static void* run_skin_server( void* args ) {
 
             } else {
 
-                if ( 0 == read_cnt ) {
-                    ERR( "read_cnt is 0.\n" );
+                if (0 == read_cnt) {
+                    ERR("read_cnt is 0.\n");
                     break;
                 }
 
                 int log_cnt;
                 char log_buf[512];
-                memset( log_buf, 0, 512 );
+                memset(log_buf, 0, 512);
 
-                log_cnt = sprintf( log_buf, "== RECV read_cnt:%d ", read_cnt );
+                log_cnt = sprintf(log_buf, "== RECV read_cnt:%d ", read_cnt);
 
                 int uid = 0;
                 int req_id = 0;
                 short cmd = 0;
                 short length = 0;
 
-                char* p = recvbuf;
+                char* packet = recvbuf;
 
-                memcpy( &uid, p, sizeof( uid ) );
-                p += sizeof( uid );
-                memcpy( &req_id, p, sizeof( req_id ) );
-                p += sizeof( req_id );
-                memcpy( &cmd, p, sizeof( cmd ) );
-                p += sizeof( cmd );
-                memcpy( &length, p, sizeof( length ) );
+                memcpy(&uid, packet, sizeof(uid));
+                packet += sizeof(uid);
+                memcpy(&req_id, packet, sizeof(req_id));
+                packet += sizeof(req_id);
+                memcpy(&cmd, packet, sizeof(cmd));
+                packet += sizeof(cmd);
+                memcpy(&length, packet, sizeof(length));
 
-                uid = ntohl( uid );
-                req_id = ntohl( req_id );
-                cmd = ntohs( cmd );
-                length = ntohs( length );
+                uid = ntohl(uid);
+                req_id = ntohl(req_id);
+                cmd = ntohs(cmd);
+                length = ntohs(length);
 
-                log_cnt += sprintf( log_buf + log_cnt, "uid:%d, req_id:%d, cmd:%d, length:%d ", uid, req_id, cmd, length );
+                log_cnt += sprintf(log_buf + log_cnt,
+                    "uid:%d, req_id:%d, cmd:%d, length:%d ", uid, req_id, cmd, length);
 
                 if ( 0 < length ) {
 
@@ -892,152 +893,146 @@ cleanup:
     return NULL;
 }
 
-static int recv_n( int client_sock, char* read_buf, int recv_len ) {
-
+static int recv_n(int sockfd, char* read_buf, int recv_len)
+{
     int total_cnt = 0;
     int recv_cnt = 0;
 
-    while ( 1 ) {
+    while (1) {
+        recv_cnt = recv(sockfd,
+            (void*)(read_buf + recv_cnt), (recv_len - recv_cnt), 0);
 
-        recv_cnt = recv( client_sock, (void*) ( read_buf + recv_cnt ), ( recv_len - recv_cnt ), 0 );
-
-        if ( 0 > recv_cnt ) {
-
+        if (0 > recv_cnt) {
             return recv_cnt;
-
-        } else if ( 0 == recv_cnt ) {
-
-            if ( total_cnt == recv_len ) {
+        } else if (0 == recv_cnt) {
+            if (total_cnt == recv_len) {
                 return total_cnt;
             } else {
                 continue;
             }
-
         } else {
-
             total_cnt += recv_cnt;
 
-            if ( total_cnt == recv_len ) {
+            if (total_cnt == recv_len) {
                 return total_cnt;
             } else {
                 continue;
             }
-
         }
-
     }
 
     return 0;
-
 }
 
-static void make_header( int client_sock, short send_cmd, int data_length, char* sendbuf, int print_log ) {
+static void make_header(int sockfd,
+    short send_cmd, int data_length, char* sendbuf, int print_log)
+{
+    memset(sendbuf, 0, SEND_HEADER_SIZE);
 
-    memset( sendbuf, 0, SEND_HEADER_SIZE );
-
-    int request_id = ( MAX_REQ_ID == seq_req_id ) ? 0 : ++seq_req_id;
-    if( print_log ) {
-        TRACE( "== SEND skin request_id:%d, send_cmd:%d ==\n", request_id, send_cmd );
+    int request_id = (MAX_REQ_ID == seq_req_id) ? 0 : ++seq_req_id;
+    if (print_log) {
+        TRACE("== SEND skin request_id:%d, send_cmd:%d ==\n", request_id, send_cmd);
     }
-    request_id = htonl( request_id );
+    request_id = htonl(request_id);
 
     short cmd = send_cmd;
-    cmd = htons( cmd );
+    cmd = htons(cmd);
 
     int length = data_length;
-    length = htonl( length );
+    length = htonl(length);
 
     char* p = sendbuf;
-    memcpy( p, &request_id, sizeof( request_id ) );
-    p += sizeof( request_id );
-    memcpy( p, &cmd, sizeof( cmd ) );
-    p += sizeof( cmd );
-    memcpy( p, &length, sizeof( length ) );
-
+    memcpy(p, &request_id, sizeof(request_id));
+    p += sizeof(request_id);
+    memcpy(p, &cmd, sizeof(cmd));
+    p += sizeof(cmd);
+    memcpy(p, &length, sizeof(length));
 }
 
-static int send_n( int client_sock, unsigned char* data, int length, int big_data ) {
-
+static int send_n(int sockfd,
+    unsigned char* data, int length, int big_data)
+{
     int send_cnt = 0;
     int total_cnt = 0;
 
     int buf_size = big_data ? SEND_BIG_BUF_SIZE : SEND_BUF_SIZE;
 
-    // use malloc instead of general array definition to avoid seg fault in 'alloca' in MinGW env, only using big buf size.
-    char* databuf = (char*)g_malloc0( buf_size );
+    /* use malloc instead of general array definition
+    to avoid seg fault in 'alloca' in MinGW env, only using big buf size */
+    char* databuf = (char*)g_malloc0(buf_size);
 
-    INFO( "send_n start. length:%d\n", length );
+    INFO("send_n start. length:%d\n", length);
 
-    while ( 1 ) {
-
-        if ( total_cnt == length ) {
+    while (1) {
+        if (total_cnt == length) {
             break;
         }
 
-        if ( buf_size < ( length - total_cnt ) ) {
+        if (buf_size < (length - total_cnt)) {
             send_cnt = buf_size;
         } else {
-            send_cnt = ( length - total_cnt );
+            send_cnt = (length - total_cnt);
         }
 
-        memset( databuf, 0, send_cnt );
-        memcpy( databuf, (char*) ( data + total_cnt ), send_cnt );
+        memset(databuf, 0, send_cnt);
+        memcpy(databuf, (char*) (data + total_cnt), send_cnt);
 
-        send_cnt = send( client_sock, databuf, send_cnt, 0 );
+        send_cnt = send(sockfd, databuf, send_cnt, 0);
 
-        if ( 0 > send_cnt ) {
-            ERR( "send_n error. error code:%d\n", send_cnt );
+        if (0 > send_cnt) {
+            ERR("send_n error. error code:%d\n", send_cnt);
             return send_cnt;
         } else {
             total_cnt += send_cnt;
         }
-
     }
 
-    g_free( databuf );
+    g_free(databuf);
 
-    INFO( "send_n finished.\n" );
+    INFO("send_n finished.\n");
 
     return total_cnt;
-
 }
 
-static int send_skin_header_only( int client_sock, short send_cmd, int print_log ) {
+static int send_skin_header_only(int sockfd, short send_cmd, int print_log)
+{
+    char headerbuf[SEND_HEADER_SIZE] = { 0, };
 
-    char headerbuf[SEND_HEADER_SIZE];
-    make_header( client_sock, send_cmd, 0, headerbuf, print_log );
+    make_header(sockfd, send_cmd, 0, headerbuf, print_log);
 
-    int send_count = send( client_sock, headerbuf, SEND_HEADER_SIZE, 0 );
+    int send_count = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+
     return send_count;
-
 }
 
-static int send_skin_data( int client_sock, short send_cmd, unsigned char* data, int length, int big_data ) {
+static int send_skin_data(int sockfd,
+    short send_cmd, unsigned char* data, int length, int big_data)
+{
 
-    char headerbuf[SEND_HEADER_SIZE];
-    make_header( client_sock, send_cmd, length, headerbuf, 1 );
+    char headerbuf[SEND_HEADER_SIZE] = { 0, };
 
-    int header_cnt = send( client_sock, headerbuf, SEND_HEADER_SIZE, 0 );
+    make_header(sockfd, send_cmd, length, headerbuf, 1);
 
-    if ( 0 > header_cnt ) {
-        ERR( "send header for data is NULL.\n" );
+    int header_cnt = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+
+    if (0 > header_cnt) {
+        ERR("send header for data is NULL.\n");
         return header_cnt;
     }
 
-    if ( !data ) {
-        ERR( "send data is NULL.\n" );
+    if (!data) {
+        ERR("send data is NULL.\n");
         return -1;
     }
 
-    int send_cnt = send_n( client_sock, data, length, big_data );
-    INFO( "send_n result:%d\n", send_cnt );
+    int send_cnt = send_n(sockfd, data, length, big_data);
+    INFO("send_n result:%d\n", send_cnt);
 
     return send_cnt;
-
 }
 
-static void* do_heart_beat( void* args ) {
-
+static void* do_heart_beat(void* args)
+{
     is_started_heartbeat = 1;
 
     int send_fail_count = 0;
