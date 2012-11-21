@@ -57,8 +57,10 @@ these four paragraphs for those parts of this code that are retained.
 typedef uint8_t flag;
 typedef uint8_t uint8;
 typedef int8_t int8;
-#if !(defined(__APPLE__) && defined(_UINT16))
+#ifndef __APPLE__
+#ifndef _UINT16
 #define _UINT16
+#endif
 #endif
 typedef unsigned int uint32;
 typedef signed int int32;
