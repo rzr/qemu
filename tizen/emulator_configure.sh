@@ -279,7 +279,7 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
  --enable-maru \
  --enable-hax \
  --disable-vnc \
- --enable-cocoa \
+ --disable-cocoa \
  --enable-gl \
  --disable-sdl $1
 ;;
