@@ -1533,6 +1533,17 @@ bool yagl_host_glTexSubImage2D(GLenum target,
         }
     }
 
+    /*
+     * Nvidia Windows openGL drivers doesn't account for GL_UNPACK_ALIGNMENT
+     * parameter when glTexSubImage2D function is called with format GL_ALPHA.
+     * Work around this by manually setting line stride.
+     */
+    if (format == GL_ALPHA) {
+        ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                    GL_UNPACK_ROW_LENGTH,
+                                    stride);
+    }
+
     ctx->driver_ps->TexSubImage2D(ctx->driver_ps,
                                   target,
                                   level,
@@ -1543,6 +1554,12 @@ bool yagl_host_glTexSubImage2D(GLenum target,
                                   format,
                                   type,
                                   pixels);
+
+    if (format == GL_ALPHA) {
+        ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                    GL_UNPACK_ROW_LENGTH,
+                                    0);
+    }
 
 out:
     return res;
