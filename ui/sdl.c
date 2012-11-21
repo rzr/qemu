@@ -59,9 +59,6 @@ static uint8_t allocator;
 static SDL_PixelFormat host_format;
 static int scaling_active = 0;
 static Notifier mouse_mode_notifier;
-#ifdef CONFIG_OPENGLES
-static int caption_update_requested;
-#endif
 
 static void sdl_update(DisplayState *ds, int x, int y, int w, int h)
 {
@@ -419,16 +416,6 @@ static void sdl_update_caption(void)
             status = " - Press Ctrl-Alt to exit mouse grab";
     }
     
-#ifdef CONFIG_OPENGLES
-    char extended_status[128];
-    char *gles2_backend = getenv("DGLES2_BACKEND");
-    if (gles2_backend && !strncmp(gles2_backend, "osmesa", 6)) {
-        snprintf(extended_status, 128, " (softGL)%s", status);
-        status = extended_status;
-    }
-    caption_update_requested = 0;
-#endif
-
     if (qemu_name) {
         snprintf(win_title, sizeof(win_title), "QEMU (%s)%s", qemu_name, status);
         snprintf(icon_title, sizeof(icon_title), "QEMU (%s)", qemu_name);
@@ -439,13 +426,6 @@ static void sdl_update_caption(void)
 
     SDL_WM_SetCaption(win_title, icon_title);
 }
-
-#ifdef CONFIG_OPENGLES
-static void sdl_update_caption_request(void)
-{
-    caption_update_requested = 1;
-}
-#endif
 
 static void sdl_hide_cursor(void)
 {
@@ -873,11 +853,7 @@ static void sdl_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
 
-    if (last_vm_running != runstate_is_running()
-#ifdef CONFIG_OPENGLES
-        || caption_update_requested
-#endif
-    ) {
+    if (last_vm_running != runstate_is_running()) {
         last_vm_running = runstate_is_running();
         sdl_update_caption();
     }
@@ -1049,10 +1025,6 @@ void sdl_display_init(DisplayState *ds, int full_screen, int no_frame)
     dcl->dpy_refresh = sdl_refresh;
     dcl->dpy_setdata = sdl_setdata;
     dcl->dpy_fill = sdl_fill;
-#ifdef CONFIG_OPENGLES
-    dcl->dpy_updatecaption = sdl_update_caption_request;
-    caption_update_requested = 0;
-#endif
     ds->mouse_set = sdl_mouse_warp;
     ds->cursor_define = sdl_mouse_define;
     register_displaychangelistener(ds, dcl);

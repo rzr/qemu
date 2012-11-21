@@ -39,10 +39,6 @@
 #include <sys/time.h>
 #endif
 
-#ifdef MANGLE_OPENGL_SYMBOLS
-#include "gl_mangled.h"
-#endif
-
 // ---------------------------------------------------
 //  Copied from glx.h as we need them in windows too
 /*
@@ -88,12 +84,6 @@ int gl_acceleration_capability_check (void) {
             GLX_STENCIL_SIZE,  0,
             0,
         };
-
-#ifdef MANGLE_OPENGL_SYMBOLS
-    if (mgl_load_symbols("libGL.so.1")) {
-        return 1;
-    }
-#endif
 
     int bufferFlags = glo_flags_get_from_glx(bufferAttributes, 0);
     int bpp = glo_flags_get_bytes_per_pixel(bufferFlags);
