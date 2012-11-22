@@ -151,7 +151,7 @@ bool yagl_log_is_enabled_for_func_tracing(void);
     } while(0)
 
 #ifdef _WIN32
-#define YAGL_LOG_EVENT_WIN(log_level, pid, tid, facility, format, ...) \
+#define YAGL_LOG_EVENT_WIN(log_level, pid, tid, facility, format) \
     do \
     { \
         if ( yagl_log_is_enabled_for_level(yagl_log_level_##log_level) && \
@@ -160,7 +160,7 @@ bool yagl_log_is_enabled_for_func_tracing(void);
             LPVOID err_msg; \
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, \
                           NULL, GetLastError(), 0, (LPTSTR)&err_msg, 0 , NULL); \
-            yagl_log_event(yagl_log_level_##log_level, pid, tid, facility, __LINE__, format,##__VA_ARGS__); \
+            yagl_log_event(yagl_log_level_##log_level, pid, tid, facility, __LINE__, format"%s", err_msg); \
             LocalFree(err_msg); \
         } \
     } while(0)
@@ -240,7 +240,7 @@ bool yagl_log_is_enabled_for_func_tracing(void);
 #define YAGL_LOG_INFO(format, ...) YAGL_LOG_EVENT(info, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, format,##__VA_ARGS__)
 #define YAGL_LOG_WARN(format, ...) YAGL_LOG_EVENT(warn, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, format,##__VA_ARGS__)
 #define YAGL_LOG_ERROR(format, ...) YAGL_LOG_EVENT(error, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, format,##__VA_ARGS__)
-#define YAGL_LOG_ERROR_WIN()        YAGL_LOG_EVENT_WIN(error, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, "OS reports: ",)
+#define YAGL_LOG_ERROR_WIN()        YAGL_LOG_EVENT_WIN(error, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, "OS ERROR: ")
 #define YAGL_LOG_CRITICAL(format, ...) \
     yagl_log_event(yagl_log_level_error, 0, 0, __FUNCTION__, __LINE__, format,##__VA_ARGS__)
 
