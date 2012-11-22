@@ -1,3 +1,6 @@
+* 1.4.10
+- Set the display bounds before pack the shell
+== GiWoong Kim <giwoong.kim@samsung.com> 2012-11-22
 * 1.4.6
 - Fix EGL_BAD_ALLOC error when using pixmap surface repeatedly.
 == Sangjin Kim <sangjin3.kim@samsung.com> 2012-11-22
