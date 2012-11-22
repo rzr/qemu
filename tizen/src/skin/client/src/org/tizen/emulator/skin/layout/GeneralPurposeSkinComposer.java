@@ -211,8 +211,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			decoration.setLayoutData(dataDecoration);
 		}
 
-		shell.redraw();
 		shell.pack();
+		shell.redraw();
 	}
 
 	@Override

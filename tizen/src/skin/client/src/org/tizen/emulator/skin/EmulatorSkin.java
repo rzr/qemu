@@ -177,7 +177,7 @@ public class EmulatorSkin {
 		this.isOnTop = isOnTop;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
-		int style = SWT.NO_TRIM;
+		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
 		if (skinInfo.isPhoneShape() == false) {
 			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
 		}

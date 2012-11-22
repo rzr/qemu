@@ -156,6 +156,23 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		currentState.setCurrentRotationId(rotationId);
 		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
+		/* arrange the lcd */
+		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(), scale, rotationId);
+
+		if (lcdBounds == null) {
+			logger.severe("Failed to lcd information for phone shape skin.");
+			SkinUtil.openMessage(shell, null,
+					"Failed to read lcd information for phone shape skin.\n" +
+					"Check the contents of skin dbi file.",
+					SWT.ICON_ERROR, config);
+			System.exit(-1);
+		}
+		logger.info("lcd bounds : " + lcdBounds);
+
+		lcdCanvas.setBounds(lcdBounds);
+
 		/* arrange the skin image */
 		Image tempImage = null;
 		Image tempKeyPressedImage = null;
@@ -189,25 +206,8 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 			shell.setSize(imageData.width, imageData.height);
 		}
 
-		shell.redraw();
 		shell.pack();
-
-		/* arrange the lcd */
-		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
-				currentState.getCurrentResolutionWidth(),
-				currentState.getCurrentResolutionHeight(), scale, rotationId);
-
-		if (lcdBounds == null) {
-			logger.severe("Failed to lcd information for phone shape skin.");
-			SkinUtil.openMessage(shell, null,
-					"Failed to read lcd information for phone shape skin.\n" +
-					"Check the contents of skin dbi file.",
-					SWT.ICON_ERROR, config);
-			System.exit(-1);
-		}
-		logger.info("lcd bounds : " + lcdBounds);
-
-		lcdCanvas.setBounds(lcdBounds);
+		shell.redraw();
 	}
 
 	@Override
