@@ -31,11 +31,16 @@ package org.tizen.emulator.skin.window;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -46,31 +51,49 @@ import org.tizen.emulator.skin.dbi.KeyMapType;
 public class ControlPanel extends SkinWindow {
 	private SocketCommunicator communicator;
 	private List<KeyMapType> keyMapList;
+	private boolean isGrabbedShell;
+	private Point grabPosition;
 
 	public ControlPanel(Shell parent,
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent);
 
-		shell.setText("Control Panel");
+		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM);
+
 		this.keyMapList = keyMapList;
 		this.communicator = communicator;
+		this.grabPosition = new Point(0, 0);
 
 		createContents();
+		addControlPanelListener();
+
+		//shell.setSize(160, 100);
 	}
 
 	protected void createContents() {
-		shell.setLayout(new GridLayout(1, true));
+		GridLayout gridLayout = new GridLayout(1, true);
+		gridLayout.marginLeft = gridLayout.marginRight = 0;
+		gridLayout.marginTop = gridLayout.marginBottom = 0;
+		gridLayout.marginWidth = gridLayout.marginHeight = 0;
+		gridLayout.horizontalSpacing = gridLayout.verticalSpacing = 0;
+
+		shell.setLayout(gridLayout);
+
+		ScrolledComposite compositeScroll = new ScrolledComposite(shell, SWT.V_SCROLL);
+		compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+		Composite compositeBase = new Composite(compositeScroll, SWT.NONE);
+		compositeBase.setLayout(gridLayout);
 
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
 			for (KeyMapType keyEntry : keyMapList) {
-				Button hardKeyButton = new Button(shell, SWT.FLAT);
-				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-				hardKeyButton.setToolTipText(keyEntry.getTooltip());
-
-				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+				Button HWKeyButton = new Button(compositeBase, SWT.FLAT);
+				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
+				HWKeyButton.setToolTipText(keyEntry.getTooltip());
+				HWKeyButton.setSize(102, 28);
+				HWKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
 				final int keycode = keyEntry.getEventInfo().getKeyCode();
-				hardKeyButton.addMouseListener(new MouseListener() {
+				HWKeyButton.addMouseListener(new MouseListener() {
 					@Override
 					public void mouseDown(MouseEvent e) {
 						KeyEventData keyEventData = new KeyEventData(
@@ -93,5 +116,52 @@ public class ControlPanel extends SkinWindow {
 			}
 		}
 
+		compositeScroll.setContent(compositeBase);
+		compositeScroll.setExpandHorizontal(true);
+		compositeScroll.setExpandVertical(true);
+		compositeScroll.setMinSize(compositeBase.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+	}
+
+	private void addControlPanelListener() {
+		MouseMoveListener shellMouseMoveListener = new MouseMoveListener() {
+			@Override
+			public void mouseMove(MouseEvent e) {
+				if (isGrabbedShell == true && e.button == 0) {
+					/* move a window */
+					Point previousLocation = shell.getLocation();
+					int x = previousLocation.x + (e.x - grabPosition.x);
+					int y = previousLocation.y + (e.y - grabPosition.y);
+
+					shell.setLocation(x, y);
+					return;
+				}
+			}
+		};
+		shell.addMouseMoveListener(shellMouseMoveListener);
+
+		MouseListener shellMouseListener = new MouseListener() {
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (1 == e.button) { /* left button */
+					isGrabbedShell = true;
+					grabPosition.x = e.x;
+					grabPosition.y = e.y;
+				}
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 1) { /* left button */
+					isGrabbedShell = false;
+					grabPosition.x = grabPosition.y = 0;
+				}
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+		};
+		shell.addMouseListener(shellMouseListener);
 	}
 }

@@ -80,6 +80,7 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.ColorsType;
+import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
@@ -96,7 +97,7 @@ import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
-import org.tizen.emulator.skin.window.SkinWindow;
+import org.tizen.emulator.skin.window.ControlPanel;
 
 /**
  *
@@ -145,7 +146,7 @@ public class EmulatorSkin {
 	private boolean isOnTop;
 	private boolean isOnKbd;
 
-	private SkinWindow controlPanel; //not used yet
+	private ControlPanel controlPanel; //not used yet
 	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
 
@@ -1507,7 +1508,41 @@ public class EmulatorSkin {
 		Menu scaleMenu = createScaleMenu( menu.getShell() );
 		scaleItem.setMenu( scaleMenu );
 
-		new MenuItem( menu, SWT.SEPARATOR );
+		new MenuItem(menu, SWT.SEPARATOR);
+
+		/* HW Key Panel menu */
+		/*final MenuItem panelItem = new MenuItem(menu, SWT.PUSH);
+		panelItem.setText("&HW Key Panel");
+
+		panelItem.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("HW Key Panel Menu is selected");
+
+				if (controlPanel != null) {
+					//TODO: move a window focus to controlPanel
+					return;
+				}
+
+				List<KeyMapType> keyMapList =
+						SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
+
+				if (keyMapList == null) {
+					logger.info("keyMapList is null");
+					return;
+				} else if (keyMapList.isEmpty() == true) {
+					logger.info("keyMapList is empty");
+					return;
+				}
+
+				try {
+					controlPanel = new ControlPanel(shell, communicator, keyMapList);
+					controlPanel.open();
+				} finally {
+					controlPanel = null;
+				}
+			}
+		} );*/
 
 		/* Advanced menu */
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
@@ -1772,32 +1807,6 @@ public class EmulatorSkin {
 	private Menu createAdvancedMenu(final Shell shell) {
 
 		final Menu menu = new Menu(shell, SWT.DROP_DOWN);
-
-		/* Control Panel menu */
-		/*final MenuItem panelItem = new MenuItem(menu, SWT.PUSH);
-		panelItem.setText("&Control Panel");
-		//panelItem.setImage(imageRegistry.getIcon(IconName.XXX));
-		panelItem.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				logger.info("Control Panel Menu is selected");
-
-				if (controlPanel != null) {
-					//TODO: move a window focus to controlPanel
-					return;
-				}
-
-				RotationType rotation = SkinRotation.getRotation(currentRotationId);
-				List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-				try {
-					controlPanel = new ControlPanel(shell, communicator, keyMapList);
-					controlPanel.open();
-				} finally {
-					controlPanel = null;
-				}
-			}
-		} );*/
 
 		/* Screen shot menu */
 		final MenuItem screenshotItem = new MenuItem(menu, SWT.PUSH);
