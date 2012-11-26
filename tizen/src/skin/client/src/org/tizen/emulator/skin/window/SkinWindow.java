@@ -44,9 +44,6 @@ public class SkinWindow {
 	protected Shell parent;
 
 	public SkinWindow(Shell parent) {
-		this.shell = new Shell(Display.getDefault(),
-				SWT.CLOSE | SWT.TITLE | SWT.MIN | SWT.MAX);
-
 		this.parent = parent;
 	}
 
@@ -59,11 +56,7 @@ public class SkinWindow {
 			return;
 		}
 
-		shell.pack();
-
-		setShellSize();
 		setShellPosition();
-
 		shell.open();
 
 		while (!shell.isDisposed()) {
@@ -71,10 +64,6 @@ public class SkinWindow {
 				shell.getDisplay().sleep();
 			}
 		}
-	}
-
-	protected void setShellSize() {
-		//shell.setSize(100, 300);
 	}
 
 	protected void setShellPosition() {

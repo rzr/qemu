@@ -139,15 +139,23 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	protected void skinFinalize() {
 		pollThread.stopRequest();
+
+		super.skinFinalize();
 	}
 
-	public long compose() {
-		super.compose();
+	public long initLayout() {
+		super.initLayout();
 
-		int result = shmget(currentLcdWidth * currentLcdHeight); //initialize shared memory
+		/* initialize shared memory */
+		int result = shmget(
+				currentState.getCurrentResolutionWidth() *
+				currentState.getCurrentResolutionHeight());
 		//logger.info("shmget navtive function returned " + result);
 
-		pollThread = new PollFBThread(currentLcdWidth, currentLcdHeight); //update lcd thread
+		/* update lcd thread */
+		pollThread = new PollFBThread(
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight());
 
 		lcdCanvas.addPaintListener(new PaintListener() {
 			public void paintControl(PaintEvent e) {
@@ -158,7 +166,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 				int x = lcdCanvas.getSize().x;
 				int y = lcdCanvas.getSize().y;
-				if (currentAngle == 0) { //portrait
+				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.framebuffer,
 							0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
 							0, 0, x, y);
@@ -166,17 +174,17 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				}
 
 				Transform transform = new Transform(lcdCanvas.getDisplay());
-				transform.rotate(currentAngle);
+				transform.rotate(currentState.getCurrentAngle());
 
-				if (currentAngle == 90) { //reverse landscape
+				if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
 					int temp;
 					temp = x;
 					x = y;
 					y = temp;
 					transform.translate(0, y * -1);
-				} else if (currentAngle == 180) { //reverse portrait
+				} else if (currentState.getCurrentAngle() == 180) { /* reverse portrait */
 					transform.translate(x * -1, y * -1);
-				} else if (currentAngle == -90) { //landscape
+				} else if (currentState.getCurrentAngle() == -90) { /* landscape */
 					int temp;
 					temp = x;
 					x = y;

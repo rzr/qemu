@@ -1,10 +1,9 @@
-/*
- * communicate with java skin process
+/**
+ *
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * HyunJun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -27,34 +26,44 @@
  *
  */
 
+package org.tizen.emulator.skin.layout;
 
-#ifndef MARUSKIN_CLIENT_H_
-#define MARUSKIN_CLIENT_H_
+import org.tizen.emulator.skin.util.SkinRegion;
+import org.tizen.emulator.skin.util.SkinUtil;
 
-#include "../maru_common.h"
+public class HWKey {
+	private int keyCode;
+	private SkinRegion region;
+	private String tooltip;
 
-#define JAVA_MAX_COMMAND_LENGTH 1024
+	public HWKey() {
+		this.keyCode = SkinUtil.UNKNOWN_KEYCODE;
+	}
 
-#define JAR_SKINFILE "emulator-skin.jar"
-#define JAVA_LIBRARY_PATH "-Djava.library.path"
+	/* keycode */
+	public int getKeyCode() {
+		return keyCode;
+	}
 
-#ifndef CONFIG_DARWIN
-#define JAVA_EXEOPTION "-jar"
-#else
-#define JAVA_EXEOPTION "-XstartOnFirstThread -jar" // Must start the Java window on the first thread on Mac
-#endif
-#define JAVA_SIMPLEMODE_OPTION "simple.msg"
+	public void setKeyCode(int keyCode) {
+		this.keyCode = keyCode;
+	}
 
-#ifdef CONFIG_WIN32
-#define  MY_KEY_WOW64_64KEY 0x0100
-int is_wow64(void);
-int get_java_path(char**);
-static char* JAVA_EXEFILE_PATH = 0;
-#else
-#define JAVA_EXEFILE_PATH "java"
-#endif
+	/* region */
+	public SkinRegion getRegion() {
+		return region;
+	}
 
-int start_skin_client(int argc, char* argv[]);
-int start_simple_client(char* msg);
+	public void setRegion(SkinRegion region) {
+		this.region = region;
+	}
 
-#endif /* MARUSKIN_CLIENT_H_ */
+	/* tooltip */
+	public String getTooltip() {
+		return tooltip;
+	}
+
+	public void setTooltip(String tooltip) {
+		this.tooltip = tooltip;
+	}
+}

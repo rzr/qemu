@@ -66,27 +66,6 @@
 #define HELPER_PREFIX helper_
 #endif
 
-#ifndef CONFIG_TCG_PASS_AREG0
-#ifdef USE_EXTENDED_HELPER
-/* Exteneded helper funtions have one more argument of address
-   to which pc is returned after setting TLB entry */
-#ifndef CONFIG_QEMU_LDST_OPTIMIZATION
-#error You need CONFIG_QEMU_LDST_OPTIMIZATION!
-#endif
-#undef HELPER_PREFIX
-#define HELPER_PREFIX __ext_
-#define RET_PARAM , uintptr_t raddr
-#define RET_VAR raddr
-#define GET_RET_ADDR() RET_VAR
-#else
-#define RET_PARAM
-#define RET_VAR
-#define GET_RET_ADDR() GETPC()
-#endif  /* USE_EXTENDED_HELPER */
-#endif  /* !CONFIG_TCG_PASS_AREG0 */
-
-
-#ifndef USE_EXTENDED_HELPER
 static DATA_TYPE glue(glue(slow_ld, SUFFIX), MMUSUFFIX)(ENV_PARAM
                                                         target_ulong addr,
                                                         int mmu_idx,
@@ -122,7 +101,6 @@ static inline DATA_TYPE glue(io_read, SUFFIX)(ENV_PARAM
 #endif /* SHIFT > 2 */
     return res;
 }
-#endif  /* !USE_EXTENDED_HELPER */
 
 /* handle all cases except unaligned access which span two pages */
 DATA_TYPE
@@ -146,13 +124,13 @@ glue(glue(glue(HELPER_PREFIX, ld), SUFFIX), MMUSUFFIX)(ENV_PARAM
             /* IO access */
             if ((addr & (DATA_SIZE - 1)) != 0)
                 goto do_unaligned_access;
-            retaddr = GETPC();
+            retaddr = GETPC_EXT();
             ioaddr = env->iotlb[mmu_idx][index];
             res = glue(io_read, SUFFIX)(ENV_VAR ioaddr, addr, retaddr);
         } else if (((addr & ~TARGET_PAGE_MASK) + DATA_SIZE - 1) >= TARGET_PAGE_SIZE) {
             /* slow unaligned access (it spans two pages or IO) */
         do_unaligned_access:
-            retaddr = GETPC();
+            retaddr = GETPC_EXT();
 #ifdef ALIGNED_ONLY
             do_unaligned_access(ENV_VAR addr, READ_ACCESS_TYPE, mmu_idx, retaddr);
 #endif
@@ -163,7 +141,7 @@ glue(glue(glue(HELPER_PREFIX, ld), SUFFIX), MMUSUFFIX)(ENV_PARAM
             uintptr_t addend;
 #ifdef ALIGNED_ONLY
             if ((addr & (DATA_SIZE - 1)) != 0) {
-                retaddr = GETPC();
+                retaddr = GETPC_EXT();
                 do_unaligned_access(ENV_VAR addr, READ_ACCESS_TYPE, mmu_idx, retaddr);
             }
 #endif
@@ -173,7 +151,7 @@ glue(glue(glue(HELPER_PREFIX, ld), SUFFIX), MMUSUFFIX)(ENV_PARAM
         }
     } else {
         /* the page is not in the TLB : fill it */
-        retaddr = GETPC();
+        retaddr = GETPC_EXT();
 #ifdef ALIGNED_ONLY
         if ((addr & (DATA_SIZE - 1)) != 0)
             do_unaligned_access(ENV_VAR addr, READ_ACCESS_TYPE, mmu_idx, retaddr);
@@ -184,7 +162,6 @@ glue(glue(glue(HELPER_PREFIX, ld), SUFFIX), MMUSUFFIX)(ENV_PARAM
     return res;
 }
 
-#ifndef USE_EXTENDED_HELPER
 /* handle all unaligned cases */
 static DATA_TYPE
 glue(glue(slow_ld, SUFFIX), MMUSUFFIX)(ENV_PARAM
@@ -236,11 +213,9 @@ glue(glue(slow_ld, SUFFIX), MMUSUFFIX)(ENV_PARAM
     }
     return res;
 }
-#endif  /* !USE_EXTENDED_HELPER */
 
 #ifndef SOFTMMU_CODE_ACCESS
 
-#ifndef USE_EXTENDED_HELPER
 static void glue(glue(slow_st, SUFFIX), MMUSUFFIX)(ENV_PARAM
                                                    target_ulong addr,
                                                    DATA_TYPE val,
@@ -277,7 +252,6 @@ static inline void glue(io_write, SUFFIX)(ENV_PARAM
 #endif
 #endif /* SHIFT > 2 */
 }
-#endif  /* !USE_EXTENDED_HELPER */
 
 void glue(glue(glue(HELPER_PREFIX, st), SUFFIX), MMUSUFFIX)(ENV_PARAM
                                                             target_ulong addr,
@@ -297,12 +271,12 @@ void glue(glue(glue(HELPER_PREFIX, st), SUFFIX), MMUSUFFIX)(ENV_PARAM
             /* IO access */
             if ((addr & (DATA_SIZE - 1)) != 0)
                 goto do_unaligned_access;
-            retaddr = GETPC();
+            retaddr = GETPC_EXT();
             ioaddr = env->iotlb[mmu_idx][index];
             glue(io_write, SUFFIX)(ENV_VAR ioaddr, val, addr, retaddr);
         } else if (((addr & ~TARGET_PAGE_MASK) + DATA_SIZE - 1) >= TARGET_PAGE_SIZE) {
         do_unaligned_access:
-            retaddr = GETPC();
+            retaddr = GETPC_EXT();
 #ifdef ALIGNED_ONLY
             do_unaligned_access(ENV_VAR addr, 1, mmu_idx, retaddr);
 #endif
@@ -313,7 +287,7 @@ void glue(glue(glue(HELPER_PREFIX, st), SUFFIX), MMUSUFFIX)(ENV_PARAM
             uintptr_t addend;
 #ifdef ALIGNED_ONLY
             if ((addr & (DATA_SIZE - 1)) != 0) {
-                retaddr = GETPC();
+                retaddr = GETPC_EXT();
                 do_unaligned_access(ENV_VAR addr, 1, mmu_idx, retaddr);
             }
 #endif
@@ -323,7 +297,7 @@ void glue(glue(glue(HELPER_PREFIX, st), SUFFIX), MMUSUFFIX)(ENV_PARAM
         }
     } else {
         /* the page is not in the TLB : fill it */
-        retaddr = GETPC();
+        retaddr = GETPC_EXT();
 #ifdef ALIGNED_ONLY
         if ((addr & (DATA_SIZE - 1)) != 0)
             do_unaligned_access(ENV_VAR addr, 1, mmu_idx, retaddr);
@@ -333,7 +307,6 @@ void glue(glue(glue(HELPER_PREFIX, st), SUFFIX), MMUSUFFIX)(ENV_PARAM
     }
 }
 
-#ifndef USE_EXTENDED_HELPER
 /* handles all unaligned cases */
 static void glue(glue(slow_st, SUFFIX), MMUSUFFIX)(ENV_PARAM
                                                    target_ulong addr,
@@ -383,7 +356,6 @@ static void glue(glue(slow_st, SUFFIX), MMUSUFFIX)(ENV_PARAM
         goto redo;
     }
 }
-#endif  /* !USE_EXTENDED_HELPER */
 
 #endif /* !defined(SOFTMMU_CODE_ACCESS) */
 
@@ -398,6 +370,3 @@ static void glue(glue(slow_st, SUFFIX), MMUSUFFIX)(ENV_PARAM
 #undef ENV_VAR
 #undef CPU_PREFIX
 #undef HELPER_PREFIX
-#undef RET_PARAM
-#undef RET_VAR
-#undef GET_RET_ADDR

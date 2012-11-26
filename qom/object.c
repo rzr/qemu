@@ -605,6 +605,11 @@ void object_ref(Object *obj)
 
 void object_unref(Object *obj)
 {
+// WA for avoid QOM bug related with qbus_create_inplace()... see hw/qdev.c
+    if(obj->ref == 0) { // Object already finalized...
+         return;
+    }
+//
     g_assert(obj->ref > 0);
     obj->ref--;
 

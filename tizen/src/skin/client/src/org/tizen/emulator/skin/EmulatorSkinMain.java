@@ -203,7 +203,7 @@ public class EmulatorSkinMain {
 					SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString());
 			boolean isOnTop = Boolean.parseBoolean(onTopVal);
 
-			/* create skin */
+			/* create a skin */
 			EmulatorSkin skin;
 			if (SwtUtil.isMacPlatform()) {
 				skin = new EmulatorShmSkin(config, skinInfo, isOnTop);
@@ -211,20 +211,23 @@ public class EmulatorSkinMain {
 				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
 			}
 
-			long windowHandleId = skin.compose();
+			/* create a qemu communicator */
+			int uid = config.getArgInt(ArgsConstants.UID);
+			communicator = new SocketCommunicator(config, uid, skin);
+			skin.setCommunicator(communicator);
 
-			int uid = config.getArgInt( ArgsConstants.UID );
-			communicator = new SocketCommunicator( config, uid, windowHandleId, skin );
-
-			skin.setCommunicator( communicator );
+			/* initialize a skin layout */
+			long windowHandleId = skin.initLayout();
+			communicator.setInitialData(windowHandleId);
 
 			Socket commSocket = communicator.getSocket();
 
-			if ( null != commSocket ) {
+			if (null != commSocket) {
 
-				Runtime.getRuntime().addShutdownHook( new EmulatorShutdownhook( communicator ) );
+				Runtime.getRuntime().addShutdownHook(
+						new EmulatorShutdownhook(communicator));
 
-				Thread communicatorThread = new Thread( communicator );
+				Thread communicatorThread = new Thread(communicator);
 				communicatorThread.start();
 				
 //				SkinReopenPolicy reopenPolicy = skin.open();
@@ -252,23 +255,23 @@ public class EmulatorSkinMain {
 				skin.open();
 				
 			} else {
-				logger.severe( "CommSocket is null." );
+				logger.severe("CommSocket is null.");
 			}
 
-		} catch ( Throwable e ) {
+		} catch (Throwable e) {
 
-			if ( null != logger ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
-				logger.warning( "Shutdown skin process !!!" );
+			if (null != logger) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				logger.warning("Shutdown skin process !!!");
 			} else {
 				e.printStackTrace();
-				System.out.println( "Shutdown skin process !!!" );
+				System.out.println("Shutdown skin process !!!");
 			}
-			
-			if( null != communicator ) {
+
+			if(null != communicator) {
 				communicator.terminate();
 			}
-			
+
 		} finally {
 			ImageRegistry.getInstance().dispose();
 			Display.getDefault().close();
@@ -412,8 +415,7 @@ public class EmulatorSkinMain {
 
 			File file = new File( filePath );
 			
-			if( create ) {
-				
+			if (create) {
 				if ( !file.exists() ) {
 					if ( !file.createNewFile() ) {
 						logger.severe( "Fail to create new " + filePath + " property file." );
@@ -425,7 +427,7 @@ public class EmulatorSkinMain {
 				properties = new Properties();
 				properties.load( fis );
 				
-			}else {
+			} else {
 				
 				if ( file.exists() ) {
 

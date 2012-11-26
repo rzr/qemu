@@ -331,13 +331,10 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         pc_pci_device_init(pci_bus);
     }
 
-#ifndef CONFIG_DARWIN
     // maru specialized device init...
     if (pci_enabled) {
-        //tizen_ac97_init(pci_bus);
         codec_init(pci_bus);        
     }
-#endif
 #ifdef CONFIG_YAGL
     pci_create_simple(pci_bus, -1, "yagl");
 #endif

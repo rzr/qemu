@@ -293,6 +293,11 @@ static void mloop_evhandle_kbd_add(char *name)
         return;
     }
 
+    if (hostkbd) {
+        INFO("virtio-keyboard has already been added.\n");
+        return;
+    }
+
     if (strcmp(name, "keyboard") == 0) {
         QDict *qdict = qdict_new();
 
@@ -325,6 +330,12 @@ static void mloop_evhandle_kbd_del(char *name)
         return;
     }
 
+    if (!hostkbd) {
+        ERR("Failed to remove keyboard"
+            "because the keyboard device is not created.\n");
+        return;
+    }
+
     if (strcmp(name, "keyboard") == 0) {
         QDict *qdict = qdict_new();
         int slot = 0;
@@ -334,9 +345,6 @@ static void mloop_evhandle_kbd_del(char *name)
             slot = PCI_SLOT(hostkbd->devfn);
             snprintf(slotbuf, sizeof(slotbuf), "%x", slot);
             TRACE("virtio-keyboard slot %s.\n", slotbuf);
-        } else {
-            ERR("failed to hot_remove keyboard because hostkbd is NULL.\n");
-            return;
         }
 
         qdict_put(qdict, "pci_addr", qstring_from_str(slotbuf));

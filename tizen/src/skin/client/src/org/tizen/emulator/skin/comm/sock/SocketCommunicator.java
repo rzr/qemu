@@ -102,7 +102,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	private EmulatorConfig config;
 	private int uId;
-	private long windowHandleId;
+	private long initialData;
 	private EmulatorSkin skin;
 
 	private Socket socket;
@@ -121,11 +121,10 @@ public class SocketCommunicator implements ICommunicator {
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
 
-	public SocketCommunicator( EmulatorConfig config, int uId, long windowHandleId, EmulatorSkin skin ) {
+	public SocketCommunicator(EmulatorConfig config, int uId, EmulatorSkin skin) {
 
 		this.config = config;
 		this.uId = uId;
-		this.windowHandleId = windowHandleId;
 		this.skin = skin;
 
 		this.screenShotDataTransfer = new DataTranfer();
@@ -151,6 +150,10 @@ public class SocketCommunicator implements ICommunicator {
 			logger.log( Level.SEVERE, e.getMessage(), e );
 		}
 
+	}
+
+	public void setInitialData(long data) {
+		this.initialData = data;
 	}
 
 	@Override
@@ -218,7 +221,7 @@ public class SocketCommunicator implements ICommunicator {
 //					EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 			// has to be portrait mode at first booting time
 			short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-			StartData startData = new StartData( windowHandleId, width, height, scale, rotation );
+			StartData startData = new StartData(initialData, width, height, scale, rotation);
 			logger.info("StartData" + startData);
 
 			sendToQEMU( SendCommand.SEND_START, startData );

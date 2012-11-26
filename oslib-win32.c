@@ -122,14 +122,14 @@ void *qemu_oom_check(void *ptr)
             strcpy(JAVA_EXEFILE_PATH, "java");
         }
 #endif
-        int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
+        int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE) +
            strlen(JAVA_SIMPLEMODE_OPTION) + strlen(_msg) + 7;
         if (len > JAVA_MAX_COMMAND_LENGTH) {
             len = JAVA_MAX_COMMAND_LENGTH;
         }
 
         snprintf(cmd, len, "%s %s %s %s=\"%s\"",
-            JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, JAVA_SIMPLEMODE_OPTION, _msg);
+            JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, _msg);
         int ret = WinExec(cmd, SW_SHOW);
 #ifdef CONFIG_WIN32
 	    // for 64bit windows

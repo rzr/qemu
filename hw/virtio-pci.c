@@ -886,7 +886,7 @@ static void virtio_balloon_exit_pci(PCIDevice *pci_dev)
 }
 
 #ifdef CONFIG_GL_BACKEND
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU) 
 static int virtio_gl_init_pci(PCIDevice *pci_dev)
 {
     VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
@@ -943,6 +943,7 @@ static void virtio_keyboard_exit_pci(PCIDevice *pci_dev)
 {
     VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
 
+    mloop_evcmd_set_hostkbd(NULL);
     virtio_pci_stop_ioeventfd(proxy);
     virtio_keyboard_exit(proxy->vdev);
     virtio_exit_pci(pci_dev);
@@ -1136,7 +1137,7 @@ static TypeInfo virtio_scsi_info = {
     .class_init    = virtio_scsi_class_init,
 };
 
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
 #ifdef CONFIG_GL_BACKEND
 static void virtio_gl_class_init(ObjectClass *klass, void *data)
 {

@@ -271,8 +271,6 @@ void pci_device_hot_add(Monitor *mon, const QDict *qdict)
         dev = qemu_pci_hot_add_storage(mon, pci_addr, opts);
 #ifdef CONFIG_MARU
     } else if (strcmp(type, "keyboard") == 0) {
-        printf("virtio-keyboard: pci_addr %s, type %s, opts %s\n",
-                pci_addr, type, opts);
         dev = qemu_pci_hot_add_keyboard(mon, pci_addr, opts);
 #endif
     } else {

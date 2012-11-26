@@ -101,7 +101,11 @@ static void* run_skin_client(void* arg)
     }
 #endif
 
-    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
+    char* bin_dir = get_bin_path();
+    INFO("bin directory : %s\n", bin_dir);
+
+    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
+        strlen(bin_dir) + strlen(JAR_SKINFILE) +
         strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
         strlen(OPT_VM_PATH) + strlen(vm_path) + strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
         strlen(argv) + 42;
@@ -110,8 +114,9 @@ static void* run_skin_client(void* arg)
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf( cmd, len, "%s %s %s=. %s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s",
-        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, JAR_SKINFILE_PATH,
+    snprintf(cmd, len, "%s %s %s=. %s%s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s",
+        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH,
+        bin_dir, JAR_SKINFILE,
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
@@ -272,13 +277,19 @@ int start_simple_client(char* msg) {
     }
 #endif
 
-    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
+    char* bin_dir = get_bin_path();
+    INFO("bin directory : %s\n", bin_dir);
+
+    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
+        strlen(bin_dir) + strlen(JAR_SKINFILE) +
         strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 7;
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf(cmd, len, "%s %s %s %s=\"%s\"", JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, JAVA_SIMPLEMODE_OPTION, msg);
+    snprintf(cmd, len, "%s %s %s%s %s=\"%s\"",
+        JAVA_EXEFILE_PATH, JAVA_EXEOPTION,
+        bin_dir, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, msg);
     INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32

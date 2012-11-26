@@ -41,7 +41,7 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev);
 
 void virtio_keyboard_exit(VirtIODevice *vdev);
 
-void virtio_keyboard_notify (void *opaque);
+void virtio_keyboard_notify(void *opaque);
 
 #ifdef __cplusplus
 }

@@ -11,6 +11,7 @@ QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
+QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
 endif
 ifndef CONFIG_DEBUG_EXEC
 CFLAGS += -g -O2
@@ -26,7 +27,7 @@ LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
-# LIBS += -lavformat -lavcodec -lavutil -lm
+LIBS += -lavformat -lavcodec -lavutil -lm
 endif
 
 ifdef CONFIG_DEBUG_EXEC
@@ -35,7 +36,7 @@ else
 GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
 endif
 
-ifndef CONFIG_DARWIN
+#ifndef CONFIG_DARWIN
 ###########################################################
 ## Build openGL
 # i386
@@ -65,7 +66,7 @@ opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_p
 endif #CONFIG_GL
 
 ###########################################################
-endif #!CONFIG_DARWIN
+#endif #!CONFIG_DARWIN
 
 # maru loader
 obj-y += emulator.o emul_state.o option.o maru_err_table.o
@@ -82,6 +83,11 @@ obj-y += sdb.o
 # mloop event
 obj-y += mloop_event.o
 
+# NSRunLoop on Mac
+ifdef CONFIG_DARWIN
+obj-y += ns_event.o
+endif
+
 # debug channel
 obj-y += debug_ch.o
 
@@ -91,12 +97,13 @@ include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 obj-y += maru_brightness.o
 obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 obj-y += maru_virtio_keyboard.o
-ifndef CONFIG_DARWIN
 obj-y += maru_codec.o
+
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
 obj-$(CONFIG_WIN32) += maru_camera_win32_pci.o
-endif
+obj-$(CONFIG_DARWIN) += maru_camera_darwin_converter.o
+obj-$(CONFIG_DARWIN) += maru_camera_darwin_pci.o
 
 ifdef CONFIG_LINUX # libs for maru camera on linux host
 LIBS += -lv4l2 -lv4lconvert
@@ -112,12 +119,12 @@ obj-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keyma
 # guest server
 obj-y += guest_server.o
 
-ifndef CONFIG_DARWIN
+#ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
 obj-$(CONFIG_GL) += virtio-gl.o 
 obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
 obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
-obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o
+obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o gloffscreen_agl.o
 ###########################################################
-endif
+#endif

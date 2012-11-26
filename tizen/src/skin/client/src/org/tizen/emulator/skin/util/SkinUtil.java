@@ -36,9 +36,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
@@ -47,12 +44,13 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
+import org.tizen.emulator.skin.dbi.KeyMapListType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
-import org.tizen.emulator.skin.dbi.LcdType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
+import org.tizen.emulator.skin.layout.HWKey;
 
 
 /**
@@ -110,127 +108,59 @@ public class SkinUtil {
 		return sdbPath;
 	}
 
-	public static void adjustLcdGeometry(
-			Canvas lcdCanvas, int resolutionW, int resolutionH,
-			int scale, short rotationId, boolean isPhoneShape) {
+	public static List<KeyMapType> getHWKeyMapList(short rotationId) {
+		RotationType rotation = SkinRotation.getRotation(rotationId);
+		if (rotation == null) {
+			return null;
+		}
 
+		KeyMapListType list = rotation.getKeyMapList();
+		if (list == null) {
+			/* try to using a KeyMapList of portrait */
+			rotation = SkinRotation.getRotation(RotationInfo.PORTRAIT.id());
+			if (rotation == null) {
+				return null;
+			}
+
+			list = rotation.getKeyMapList();
+			if (list == null) {
+				return null;
+			}
+		}
+
+		return list.getKeyMap();
+	}
+
+	public static HWKey getHWKey(
+			int currentX, int currentY, short rotationId, int scale) {
 		float convertedScale = convertScale(scale);
-		int l = 0, t = 0, w = 0, h = 0;
 
-		if (isPhoneShape == false) {
-			RotationInfo rotation = RotationInfo.getValue(rotationId);
-
-			/* resoultion, that is lcd size in general skin mode */
-			if (RotationInfo.LANDSCAPE == rotation ||
-					RotationInfo.REVERSE_LANDSCAPE == rotation) {
-				w = (int)(resolutionH * convertedScale);
-				h = (int)(resolutionW * convertedScale);
-			} else {
-				w = (int)(resolutionW * convertedScale);
-				h = (int)(resolutionH * convertedScale);
-			}
-		} else {
-			RotationType rotation = SkinRotation.getRotation(rotationId);
-
-			LcdType lcd = rotation.getLcd(); /* from dbi */
-			RegionType region = lcd.getRegion();
-
-			Integer left = region.getLeft();
-			Integer top = region.getTop();
-			Integer width = region.getWidth();
-			Integer height = region.getHeight();
-
-			l = (int) (left * convertedScale);
-			t = (int) (top * convertedScale);
-			w = (int) (width * convertedScale);
-			h = (int) (height * convertedScale);
+		List<KeyMapType> keyMapList = getHWKeyMapList(rotationId);
+		if (keyMapList == null) {
+			return null;
 		}
 
-		FormData data = new FormData();
-		data.left = new FormAttachment(0, l);
-		data.top = new FormAttachment(0, t);
-		data.width = w;
-		data.height = h;
-		lcdCanvas.setLayoutData(data);
-	}
-
-	public static SkinRegion getHardKeyArea( int currentX, int currentY, short rotationId, int scale ) {
-
-		float convertedScale = convertScale( scale );
-
-		RotationType rotation = SkinRotation.getRotation( rotationId );
-
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-		for ( KeyMapType keyMap : keyMapList ) {
-
+		for (KeyMapType keyMap : keyMapList) {
 			RegionType region = keyMap.getRegion();
 
-			int scaledX = (int) ( region.getLeft() * convertedScale );
-			int scaledY = (int) ( region.getTop() * convertedScale );
-			int scaledWidth = (int) ( region.getWidth() * convertedScale );
-			int scaledHeight = (int) ( region.getHeight() * convertedScale );
+			int scaledX = (int) (region.getLeft() * convertedScale);
+			int scaledY = (int) (region.getTop() * convertedScale);
+			int scaledWidth = (int) (region.getWidth() * convertedScale);
+			int scaledHeight = (int) (region.getHeight() * convertedScale);
 
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
-				return new SkinRegion( scaledX, scaledY, scaledWidth, scaledHeight );
-			}
-
-		}
-
-		return null;
-
-	}
-
-	public static int getHardKeyCode( int currentX, int currentY, short rotationId, int scale ) {
-
-		float convertedScale = convertScale( scale );
-
-		RotationType rotation = SkinRotation.getRotation( rotationId );
-
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-		for ( KeyMapType keyMap : keyMapList ) {
-			RegionType region = keyMap.getRegion();
-
-			int scaledX = (int) ( region.getLeft() * convertedScale );
-			int scaledY = (int) ( region.getTop() * convertedScale );
-			int scaledWidth = (int) ( region.getWidth() * convertedScale );
-			int scaledHeight = (int) ( region.getHeight() * convertedScale );
-
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
+			if (isInGeometry(currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight)) {
 				EventInfoType eventInfo = keyMap.getEventInfo();
-				return eventInfo.getKeyCode();
-			}
-		}
 
-		return UNKNOWN_KEYCODE;
+				HWKey hwKey = new HWKey();
+				hwKey.setKeyCode(eventInfo.getKeyCode());
+				hwKey.setRegion(new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight));
+				hwKey.setTooltip(keyMap.getTooltip());
 
-	}
-
-	//TODO: HardKey object
-	public static String getHardKeyToolTip( int currentX, int currentY, short rotationId, int scale ) {
-
-		float convertedScale = convertScale( scale );
-
-		RotationType rotation = SkinRotation.getRotation( rotationId );
-
-		List<KeyMapType> keyMapList = rotation.getKeyMapList().getKeyMap();
-
-		for ( KeyMapType keyMap : keyMapList ) {
-			RegionType region = keyMap.getRegion();
-
-			int scaledX = (int) ( region.getLeft() * convertedScale );
-			int scaledY = (int) ( region.getTop() * convertedScale );
-			int scaledWidth = (int) ( region.getWidth() * convertedScale );
-			int scaledHeight = (int) ( region.getHeight() * convertedScale );
-
-			if ( isInGeometry( currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight ) ) {
-				return keyMap.getTooltip();
+				return hwKey;
 			}
 		}
 
 		return null;
-
 	}
 
 	public static boolean isInGeometry( int currentX, int currentY, int targetX, int targetY, int targetWidth,
@@ -379,20 +309,19 @@ public class SkinUtil {
 			return false;
 		}
 	}
-	
-	public static <T> void openMessage( Shell shell, String title, String message, int style, EmulatorConfig config ) {
-		
-		MessageBox messageBox = new MessageBox( shell, style );
-		
-		if( !StringUtil.isEmpty( title ) ) {
-			messageBox.setText( title );
-		}else {
-			messageBox.setText( makeEmulatorName( config ) );
+
+	public static <T> int openMessage(Shell shell,
+			String title, String message, int style, EmulatorConfig config) {
+		MessageBox messageBox = new MessageBox(shell, style);
+
+		if (!StringUtil.isEmpty(title)) {
+			messageBox.setText(title);
+		} else {
+			messageBox.setText(makeEmulatorName(config));
 		}
-		
-		messageBox.setMessage( StringUtil.nvl( message ) );
-		messageBox.open();
-		
+
+		messageBox.setMessage(StringUtil.nvl(message));
+		return messageBox.open();
 	}
 
 }
