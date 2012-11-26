@@ -43,7 +43,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Decorations;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -172,7 +171,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
 
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
-			compositeBase = new Decorations(shell, SWT.NONE);
+			compositeBase = new Composite(shell, SWT.NONE);
 			compositeBase.setLayout(new GridLayout(1, true));
 
 			for (KeyMapType keyEntry : keyMapList) {
@@ -180,7 +179,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
 				hardKeyButton.setToolTipText(keyEntry.getTooltip());
 
-				hardKeyButton.setLayoutData(new GridData(SWT.FILL,	SWT.FILL, true, false));
+				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
 				final int keycode = keyEntry.getEventInfo().getKeyCode();
 				hardKeyButton.addMouseListener(new MouseListener() {
@@ -205,10 +204,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				});
 			}
 
-			FormData dataDecoration = new FormData();
-			dataDecoration.left = new FormAttachment(lcdCanvas, 0);
-			dataDecoration.top = new FormAttachment(0, 0);
-			compositeBase.setLayoutData(dataDecoration);
+			FormData dataComposite = new FormData();
+			dataComposite.left = new FormAttachment(lcdCanvas, 0);
+			dataComposite.top = new FormAttachment(0, 0);
+			compositeBase.setLayoutData(dataComposite);
 		}
 
 		shell.pack();

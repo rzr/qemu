@@ -224,9 +224,10 @@ public class EmulatorSkinMain {
 
 			if (null != commSocket) {
 
-				Runtime.getRuntime().addShutdownHook( new EmulatorShutdownhook( communicator ) );
+				Runtime.getRuntime().addShutdownHook(
+						new EmulatorShutdownhook(communicator));
 
-				Thread communicatorThread = new Thread( communicator );
+				Thread communicatorThread = new Thread(communicator);
 				communicatorThread.start();
 				
 //				SkinReopenPolicy reopenPolicy = skin.open();
@@ -254,23 +255,23 @@ public class EmulatorSkinMain {
 				skin.open();
 				
 			} else {
-				logger.severe( "CommSocket is null." );
+				logger.severe("CommSocket is null.");
 			}
 
-		} catch ( Throwable e ) {
+		} catch (Throwable e) {
 
-			if ( null != logger ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
-				logger.warning( "Shutdown skin process !!!" );
+			if (null != logger) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				logger.warning("Shutdown skin process !!!");
 			} else {
 				e.printStackTrace();
-				System.out.println( "Shutdown skin process !!!" );
+				System.out.println("Shutdown skin process !!!");
 			}
-			
-			if( null != communicator ) {
+
+			if(null != communicator) {
 				communicator.terminate();
 			}
-			
+
 		} finally {
 			ImageRegistry.getInstance().dispose();
 			Display.getDefault().close();
@@ -414,8 +415,7 @@ public class EmulatorSkinMain {
 
 			File file = new File( filePath );
 			
-			if( create ) {
-				
+			if (create) {
 				if ( !file.exists() ) {
 					if ( !file.createNewFile() ) {
 						logger.severe( "Fail to create new " + filePath + " property file." );
@@ -427,7 +427,7 @@ public class EmulatorSkinMain {
 				properties = new Properties();
 				properties.load( fis );
 				
-			}else {
+			} else {
 				
 				if ( file.exists() ) {
 

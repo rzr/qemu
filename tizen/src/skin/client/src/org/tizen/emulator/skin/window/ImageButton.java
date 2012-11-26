@@ -117,14 +117,14 @@ public class ImageButton extends Canvas {
 			public void mouseUp(MouseEvent e) {
 				hit = false;
 				mouse = 1;
-			
+
 				if (e.x < 0 || e.y < 0 ||
 						e.x > getBounds().width || e.y > getBounds().height) {
 					mouse = 0;
 				}
-			
+
 				redraw();
-			
+
 				if (mouse == 1) {
 					notifyListeners(SWT.Selection, new Event());
 				}

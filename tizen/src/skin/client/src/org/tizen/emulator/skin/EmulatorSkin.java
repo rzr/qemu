@@ -187,7 +187,7 @@ public class EmulatorSkin {
 		this.currentState = new EmulatorSkinState();
 	}
 
-	public void setCommunicator( SocketCommunicator communicator ) {
+	public void setCommunicator(SocketCommunicator communicator) {
 		this.communicator = communicator;
 	}
 
