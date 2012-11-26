@@ -1436,77 +1436,75 @@ public class EmulatorSkin {
 		//TODO:
 	}
 
-	private void addMenuItems( final Shell shell, final Menu menu ) {
+	private void addMenuItems(final Shell shell, final Menu menu) {
 
 		/* Emulator detail info menu */
-		final MenuItem detailInfoItem = new MenuItem( menu, SWT.PUSH );
+		final MenuItem detailInfoItem = new MenuItem(menu, SWT.PUSH);
 
-		String emulatorName = SkinUtil.makeEmulatorName( config );
-		detailInfoItem.setText( emulatorName );
-		detailInfoItem.setImage( imageRegistry.getIcon( IconName.DETAIL_INFO ) );
-		detailInfoItem.addSelectionListener( new SelectionAdapter() {
+		String emulatorName = SkinUtil.makeEmulatorName(config);
+		detailInfoItem.setText(emulatorName);
+		detailInfoItem.setImage(imageRegistry.getIcon(IconName.DETAIL_INFO));
+		detailInfoItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "Open detail info" );
+			public void widgetSelected(SelectionEvent e) {
+				if (logger.isLoggable(Level.FINE)) {
+					logger.fine("Open detail info");
 				}
-				String emulatorName = SkinUtil.makeEmulatorName( config );
-				DetailInfoDialog detailInfoDialog = new DetailInfoDialog( shell, emulatorName, communicator, config );
+
+				String emulatorName = SkinUtil.makeEmulatorName(config);
+				DetailInfoDialog detailInfoDialog = new DetailInfoDialog(
+						shell, emulatorName, communicator, config);
 				detailInfoDialog.open();
 			}
 		} );
 
-		new MenuItem( menu, SWT.SEPARATOR );
+		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* Always on top menu */
-		if (!SwtUtil.isMacPlatform()) { /* temp */
+		if (!SwtUtil.isMacPlatform()) { /* not supported on mac */
+			final MenuItem onTopItem = new MenuItem(menu, SWT.CHECK);
+			onTopItem.setText("&Always On Top");
+			onTopItem.setSelection(isOnTop);
 
-		final MenuItem onTopItem = new MenuItem( menu, SWT.CHECK );
-		onTopItem.setText( "&Always On Top" );
-		onTopItem.setSelection( isOnTop );
+			onTopItem.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					final boolean isOnTop = onTopItem.getSelection();
 
-		onTopItem.addSelectionListener( new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
+					logger.info("Select Always On Top : " + isOnTop);
+					// readyToReopen( EmulatorSkin.this, isOnTop );
 
-				final boolean isOnTop = onTopItem.getSelection();
+					/* internal/Library.java::arch() */
+					String osArch = System.getProperty("os.arch"); //$NON-NLS-1$
+					logger.info(osArch);
+					if (osArch.equals("amd64") || osArch.equals("x86_64") ||
+							osArch.equals("IA64W") || osArch.equals("ia64")) {
+						//$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
+						logger.info("64bit architecture");
 
-				logger.info( "Select Always On Top : " + isOnTop );
+						setTopMost64(isOnTop); /* 64bit */
+					} else {
+						logger.info("32bit architecture");
 
-				// readyToReopen( EmulatorSkin.this, isOnTop );
-
-				/* internal/Library.java::arch() */
-				String osArch = System.getProperty("os.arch"); //$NON-NLS-1$
-				logger.info(osArch);
-				if (osArch.equals("amd64") || osArch.equals("x86_64") ||
-						osArch.equals("IA64W") || osArch.equals("ia64")) {
-					//$NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$
-					logger.info("64bit architecture");
-
-					setTopMost64(isOnTop); /* 64bit */
-				} else {
-					logger.info("32bit architecture");
-
-					setTopMost32(isOnTop);
+						setTopMost32(isOnTop);
+					}
 				}
-			}
-		} );
-
+			} );
 		}
 
 		/* Rotate menu */
-		final MenuItem rotateItem = new MenuItem( menu, SWT.CASCADE );
-		rotateItem.setText( "&Rotate" );
-		rotateItem.setImage( imageRegistry.getIcon( IconName.ROTATE ) );
-		Menu rotateMenu = createRotateMenu( menu.getShell() );
-		rotateItem.setMenu( rotateMenu );
+		final MenuItem rotateItem = new MenuItem(menu, SWT.CASCADE);
+		rotateItem.setText("&Rotate");
+		rotateItem.setImage(imageRegistry.getIcon(IconName.ROTATE));
+		Menu rotateMenu = createRotateMenu(menu.getShell());
+		rotateItem.setMenu(rotateMenu);
 
 		/* Scale menu */
-		final MenuItem scaleItem = new MenuItem( menu, SWT.CASCADE );
-		scaleItem.setText( "&Scale" );
-		scaleItem.setImage( imageRegistry.getIcon( IconName.SCALE ) );
-		Menu scaleMenu = createScaleMenu( menu.getShell() );
-		scaleItem.setMenu( scaleMenu );
+		final MenuItem scaleItem = new MenuItem(menu, SWT.CASCADE);
+		scaleItem.setText("&Scale");
+		scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
+		Menu scaleMenu = createScaleMenu(menu.getShell());
+		scaleItem.setMenu(scaleMenu);
 
 		new MenuItem(menu, SWT.SEPARATOR);
 

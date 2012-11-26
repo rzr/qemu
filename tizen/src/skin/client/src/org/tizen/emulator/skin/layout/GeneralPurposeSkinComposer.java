@@ -42,6 +42,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Decorations;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkinState;
@@ -54,7 +55,6 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.KeyMapType;
-import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -69,7 +69,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private EmulatorConfig config;
 	private Shell shell;
 	private Canvas lcdCanvas;
-	private Decorations decoration;
+	private Composite compositeBase;
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
@@ -80,7 +80,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			SocketCommunicator communicator) {
 		this.config = config;
 		this.shell = shell;
-		this.decoration = null;
+		this.compositeBase = null;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
 		this.communicator = communicator;
@@ -161,9 +161,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		dataCanvas.height = lcdBounds.height;
 		lcdCanvas.setLayoutData(dataCanvas);
 
-		if (decoration != null) {
-			decoration.dispose();
-			decoration = null;
+		if (compositeBase != null) {
+			compositeBase.dispose();
+			compositeBase = null;
 		}
 
 		shell.pack();
@@ -172,11 +172,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
 
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
-			decoration = new Decorations(shell, SWT.BORDER);
-			decoration.setLayout(new GridLayout(1, true));
+			compositeBase = new Decorations(shell, SWT.NONE);
+			compositeBase.setLayout(new GridLayout(1, true));
 
 			for (KeyMapType keyEntry : keyMapList) {
-				Button hardKeyButton = new Button(decoration, SWT.FLAT);
+				Button hardKeyButton = new Button(compositeBase, SWT.FLAT);
 				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
 				hardKeyButton.setToolTipText(keyEntry.getTooltip());
 
@@ -208,7 +208,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			FormData dataDecoration = new FormData();
 			dataDecoration.left = new FormAttachment(lcdCanvas, 0);
 			dataDecoration.top = new FormAttachment(0, 0);
-			decoration.setLayoutData(dataDecoration);
+			compositeBase.setLayoutData(dataDecoration);
 		}
 
 		shell.pack();

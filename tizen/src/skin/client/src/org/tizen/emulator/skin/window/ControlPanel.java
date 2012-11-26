@@ -67,7 +67,7 @@ public class ControlPanel extends SkinWindow {
 		createContents();
 		addControlPanelListener();
 
-		//shell.setSize(160, 100);
+		shell.setSize(160, 100);
 	}
 
 	protected void createContents() {
