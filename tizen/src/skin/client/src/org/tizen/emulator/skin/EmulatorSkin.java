@@ -132,6 +132,7 @@ public class EmulatorSkin {
 	private Logger logger = SkinLogger.getSkinLogger( EmulatorSkin.class ).getLogger();
 
 	protected EmulatorConfig config;
+	protected EmulatorFingers finger;
 	protected Shell shell;
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
@@ -172,7 +173,8 @@ public class EmulatorSkin {
 	 * @param config : configuration of emulator skin
 	 * @param isOnTop : always on top flag
 	*/
-	protected EmulatorSkin(EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+	protected EmulatorSkin(EmulatorSkinState state, EmulatorFingers finger, EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+		this.finger = finger;
 		this.config = config;
 		this.skinInfo = skinInfo;
 		this.isOnTop = isOnTop;
@@ -184,11 +186,12 @@ public class EmulatorSkin {
 		}
 		this.shell = new Shell(Display.getDefault(), style);
 
-		this.currentState = new EmulatorSkinState();
+		this.currentState = state;
 	}
 
 	public void setCommunicator(SocketCommunicator communicator) {
 		this.communicator = communicator;
+		this.finger.setCommunicator(this.communicator);
 	}
 
 	public long initLayout() {
@@ -495,7 +498,7 @@ public class EmulatorSkin {
 
 			@Override
 			public void mouseMove( MouseEvent e ) {
-				if ( true == EmulatorSkin.this.isDragStartedInLCD ) {
+				if ( true == EmulatorSkin.this.isDragStartedInLCD ) { //true = mouse down
 					int eventType = MouseEventType.DRAG.value();
 					Point canvasSize = canvas.getSize();
 
@@ -524,6 +527,22 @@ public class EmulatorSkin {
 							currentState.getCurrentResolutionHeight(),
 							currentState.getCurrentScale(), currentState.getCurrentAngle());
 
+					if(SwtUtil.isMacPlatform()) {
+						//eventType = MouseEventType.DRAG.value();
+						if(finger.getMultiTouchEnable() == 1) {
+							logger.info("maruFingerProcessing1");
+							finger.maruFingerProcessing1(eventType,
+									e.x, e.y, geometry[0], geometry[1]);
+							return;
+						}
+						else if(finger.getMultiTouchEnable() == 2) {
+							logger.info("maruFingerProcessing2");
+							finger.maruFingerProcessing2(eventType,
+									e.x, e.y, geometry[0], geometry[1]);
+							return;
+						}
+					}
+	
 					MouseEventData mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), eventType,
 							e.x, e.y, geometry[0], geometry[1], 0);
@@ -547,14 +566,30 @@ public class EmulatorSkin {
 							currentState.getCurrentScale(), currentState.getCurrentAngle());
 					logger.info( "mouseUp in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 
+					if ( true == EmulatorSkin.this.isDragStartedInLCD ) {
+						EmulatorSkin.this.isDragStartedInLCD = false;
+					}
+					
+					if(SwtUtil.isMacPlatform()) {
+						if(finger.getMultiTouchEnable() == 1) {
+							logger.info("maruFingerProcessing1");
+							finger.maruFingerProcessing1(MouseEventType.RELEASE.value(),
+									e.x, e.y, geometry[0], geometry[1]);
+							return;
+						}
+						else if(finger.getMultiTouchEnable() == 2) {
+							logger.info("maruFingerProcessing2");
+							finger.maruFingerProcessing2(MouseEventType.RELEASE.value(),
+									e.x, e.y, geometry[0], geometry[1]);
+							return;
+						}
+					}
+					
 					MouseEventData mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
-					if ( true == EmulatorSkin.this.isDragStartedInLCD ) {
-						EmulatorSkin.this.isDragStartedInLCD = false;
-					}
 				} else if (2 == e.button) { // wheel button
 					logger.info("wheelUp in LCD");
 				}
@@ -570,14 +605,30 @@ public class EmulatorSkin {
 							currentState.getCurrentScale(), currentState.getCurrentAngle());
 					logger.info( "mouseDown in LCD" + " x:" + geometry[0] + " y:" + geometry[1] );
 
+					if ( false == EmulatorSkin.this.isDragStartedInLCD ) {
+						EmulatorSkin.this.isDragStartedInLCD = true;
+					}
+					
+					if(SwtUtil.isMacPlatform()) {
+						if(finger.getMultiTouchEnable() == 1) {
+							logger.info("maruFingerProcessing1");
+							finger.maruFingerProcessing1(MouseEventType.PRESS.value(),
+									e.x, e.y, geometry[0], geometry[1]);
+							return;
+						}
+						else if(finger.getMultiTouchEnable() == 2) {
+							logger.info("maruFingerProcessing2");
+							finger.maruFingerProcessing2(MouseEventType.PRESS.value(),
+									e.x, e.y, geometry[0], geometry[1]);
+							return;
+						}
+					}
+		
 					MouseEventData mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
 					communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );
-					if ( false == EmulatorSkin.this.isDragStartedInLCD ) {
-						EmulatorSkin.this.isDragStartedInLCD = true;
-					}
 				}
 			}
 
@@ -657,6 +708,20 @@ public class EmulatorSkin {
 						disappearKeyLocation = 0;
 					}
 				}
+                else if(SwtUtil.isMacPlatform()) {
+                	//if(finger.getMaxTouchPoint() > 1) {
+						int tempStateMask = stateMask & ~SWT.BUTTON1;
+						if(tempStateMask == (SWT.SHIFT | SWT.ALT)) {
+							finger.setMultiTouchEnable(1);
+							logger.info("enable multi-touch = mode1");
+						}
+						else {
+							finger.setMultiTouchEnable(0);
+							finger.clearFingerSlot();
+							logger.info("disable multi-touch");
+						}
+              //  	}
+				}
 
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.RELEASED.value(), keyCode, stateMask, e.keyLocation);
@@ -704,6 +769,21 @@ public class EmulatorSkin {
 						}
 					}
 				} //end isWindowsPlatform
+                else if(SwtUtil.isMacPlatform()) {
+                //	if(finger.getMaxTouchPoint() > 1) {
+						int tempStateMask = stateMask & ~SWT.BUTTON1;
+						if((keyCode == SWT.SHIFT && (tempStateMask & SWT.ALT) != 0) || 
+								(keyCode == SWT.ALT && (tempStateMask & SWT.SHIFT) != 0))
+						{
+							finger.setMultiTouchEnable(2);
+							logger.info("enable multi-touch = mode2");
+						}
+						else if(keyCode == SWT.SHIFT || keyCode == SWT.ALT) {
+							finger.setMultiTouchEnable(1);
+							logger.info("enable multi-touch = mode1");
+						}
+                //	}
+				}
 
 				previous = e;
 

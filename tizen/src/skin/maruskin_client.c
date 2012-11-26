@@ -55,6 +55,7 @@ MULTI_DEBUG_CHANNEL(qemu, skin_client);
 #define OPT_UID "uid"
 #define OPT_VM_PATH "vm.path"
 #define OPT_NET_BASE_PORT "net.baseport"
+#define MAX_TOUCHPOINT "max.touchpoint"
 
 static int skin_argc;
 static char** skin_argv;
@@ -114,13 +115,14 @@ static void* run_skin_client(void* arg)
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf(cmd, len, "%s %s %s=. %s%s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s",
+    snprintf(cmd, len, "%s %s %s=. %s%s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=\"%d\" %s",
         JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH,
         bin_dir, JAR_SKINFILE,
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, tizen_base_port,
+        MAX_TOUCHPOINT, get_emul_max_touch_point(), 
         argv );
 
     INFO( "command for swt : %s\n", cmd );

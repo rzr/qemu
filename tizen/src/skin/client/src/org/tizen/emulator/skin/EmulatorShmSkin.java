@@ -71,11 +71,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private int[] array;
 		private ImageData imageData;
 		private Image framebuffer;
+		private EmulatorFingers finger;
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
 
-		public PollFBThread(int lcdWidth, int lcdHeight) {
+		public PollFBThread(EmulatorFingers finger, int lcdWidth, int lcdHeight) {
+			this.finger = finger;
 			this.display = Display.getDefault();
 			this.lcdWidth = lcdWidth;
 			this.lcdHeight = lcdHeight;
@@ -131,15 +133,18 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorShmSkin(EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
-		super(config, skinInfo, isOnTop);
-
+	public EmulatorShmSkin(EmulatorSkinState state, EmulatorFingers finger, EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+		super(state, finger, config, skinInfo, isOnTop);
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 	}
 
 	protected void skinFinalize() {
 		pollThread.stopRequest();
 
+		super.finger.setMultiTouchEnable(0);
+		super.finger.clearFingerSlot();
+		super.finger.cleanup_multiTouchState();
+	
 		super.skinFinalize();
 	}
 
@@ -153,7 +158,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		//logger.info("shmget navtive function returned " + result);
 
 		/* update lcd thread */
-		pollThread = new PollFBThread(
+		pollThread = new PollFBThread(finger,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight());
 
@@ -170,6 +175,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					e.gc.drawImage(pollThread.framebuffer,
 							0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
 							0, 0, x, y);
+					
+                    finger.drawImage(e, currentState.getCurrentAngle());
 					return;
 				}
 
@@ -196,12 +203,19 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				e.gc.drawImage(pollThread.framebuffer,
 						0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
 						0, 0, x, y);
-
+				finger.drawImage(e, currentState.getCurrentAngle());
 				transform.dispose();
 			}
 		});
 
-		pollThread.start();
+		if (finger.getMultiTouchEnable() == -1) {
+			finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
+					currentState.getCurrentResolutionHeight(), 
+					currentState.getCurrentScale(), 
+					currentState.getCurrentRotationId());
+		}
+        
+        pollThread.start();
 
 		return 0;
 	}

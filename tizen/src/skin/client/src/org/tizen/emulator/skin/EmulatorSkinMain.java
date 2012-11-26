@@ -69,7 +69,7 @@ public class EmulatorSkinMain {
 	public static final String SKIN_PROPERTIES_FILE_NAME = ".skin.properties";
 	public static final String CONFIG_PROPERTIES_FILE_NAME = ".skinconfig.properties";
 	public static final String DBI_FILE_NAME = "default.dbi";
-
+	EmulatorSkinState currentState;
 	private static Logger logger;
 
 	static {
@@ -125,6 +125,19 @@ public class EmulatorSkinMain {
 			String skinPath = ImageRegistry.getSkinPath(
 					(String) argsMap.get(ArgsConstants.SKIN_PATH));
 
+			
+			/* get maxtouchpoint from startup argument */
+			int maxtouchpoint;
+			if(argsMap.containsKey(ArgsConstants.MAX_TOUCHPOINT)) {
+				maxtouchpoint = Integer.parseInt(
+						argsMap.get(ArgsConstants.MAX_TOUCHPOINT));
+				logger.info("maxtouchpoint info:" + maxtouchpoint);
+			}
+			else {
+				maxtouchpoint = 1;
+				logger.info(ArgsConstants.MAX_TOUCHPOINT +
+						" does not exist set maxtouchpoint info to " + maxtouchpoint);
+			}
 			/* set skin information */
 			String skinInfoFilePath = skinPath + File.separator + SKIN_INFO_FILE_NAME;
 			Properties skinInfoProperties = loadProperties(skinInfoFilePath, false);
@@ -205,17 +218,19 @@ public class EmulatorSkinMain {
 
 			/* create a skin */
 			EmulatorSkin skin;
+			EmulatorSkinState currentState = new EmulatorSkinState();
+			currentState.setMaxTouchPoint(maxtouchpoint);
+			EmulatorFingers finger = new EmulatorFingers(currentState);
 			if (SwtUtil.isMacPlatform()) {
-				skin = new EmulatorShmSkin(config, skinInfo, isOnTop);
+				skin = new EmulatorShmSkin(currentState, finger, config, skinInfo, isOnTop);
 			} else { // linux & windows
-				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
+				skin = new EmulatorSdlSkin(currentState, finger, config, skinInfo, isOnTop);
 			}
-
 			/* create a qemu communicator */
 			int uid = config.getArgInt(ArgsConstants.UID);
 			communicator = new SocketCommunicator(config, uid, skin);
 			skin.setCommunicator(communicator);
-
+			finger.setEmulatorSkin(skin);
 			/* initialize a skin layout */
 			long windowHandleId = skin.initLayout();
 			communicator.setInitialData(windowHandleId);

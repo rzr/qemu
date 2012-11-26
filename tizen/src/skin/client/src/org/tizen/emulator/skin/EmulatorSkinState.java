@@ -39,6 +39,7 @@ public class EmulatorSkinState {
 	private int currentScale;
 	private short currentRotationId;
 	private int currentAngle;
+	private int maxtouchpoint;
 
 	private Image currentImage;
 	private Image currentKeyPressedImage;
@@ -155,5 +156,13 @@ public class EmulatorSkinState {
 
 	public synchronized void setCurrentHoveredHWKey(HWKey hwKey) {
 		this.currentHoveredHWKey = hwKey;
+	}
+	/* max touch point */
+	public synchronized void setMaxTouchPoint(int maxtouchpoint) {
+		this.maxtouchpoint = maxtouchpoint;
+	}
+	
+	public synchronized int getMaxTouchPoint() {
+		return this.maxtouchpoint;
 	}
 }
