@@ -21,13 +21,13 @@
                 <keyMap>
                     <eventInfo>
                         <keyCode>115</keyCode>
-                        <keyName>Volume up</keyName>
+                        <keyName>Volume +</keyName>
                     </eventInfo>
                 </keyMap>
                 <keyMap>
                     <eventInfo>
                         <keyCode>114</keyCode>
-                        <keyName>Volume down</keyName>
+                        <keyName>Volume -</keyName>
                     </eventInfo>
                 </keyMap>
             </keyMapList>

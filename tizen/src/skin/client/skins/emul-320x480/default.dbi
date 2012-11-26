@@ -33,7 +33,7 @@
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="362" top="140" width="15" height="70"/>
@@ -41,7 +41,7 @@
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
@@ -76,7 +76,7 @@
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="139" top="3" width="70" height="15"/>
@@ -84,7 +84,7 @@
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
@@ -119,7 +119,7 @@
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="3" top="412" width="15" height="70"/>
@@ -127,7 +127,7 @@
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
@@ -162,7 +162,7 @@
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="412" top="362" width="70" height="15"/>
@@ -170,7 +170,7 @@
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>

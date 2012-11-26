@@ -4,7 +4,7 @@
     <rotations>
         <rotation name="Portrait">
             <lcd id="0">
-                <region height="800" left="35" top="86" width="480"/>
+                <region left="35" top="86" width="480" height="800"/>
             </lcd>
             <imageList>
                 <mainImage>default_0.png</mainImage>
@@ -12,7 +12,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region height="74" left="238" top="887" width="74"/>
+                    <region left="238" top="887" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
@@ -20,7 +20,7 @@
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region height="74" left="541" top="819" width="20"/>
+                    <region left="541" top="819" width="20" height="74"/>
                     <eventInfo>
                         <keyCode>103</keyCode>
                         <keyName>POWER</keyName>
@@ -28,26 +28,26 @@
                     <tooltip>Power</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region height="74" left="541" top="81" width="20"/>
+                    <region left="541" top="81" width="20" height="74"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region height="74" left="541" top="167" width="20"/>
+                    <region left="541" top="167" width="20" height="74"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
         <rotation name="Landscape">
             <lcd id="0">
-                <region height="480" left="86" top="46" width="800"/>
+                <region left="86" top="46" width="800" height="480"/>
             </lcd>
             <imageList>
                 <mainImage>default_L90.png</mainImage>
@@ -55,7 +55,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region height="74" left="887" top="249" width="74"/>
+                    <region left="887" top="249" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>101</keyCode>
                         <keyName>HOME</keyName>
@@ -63,7 +63,7 @@
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region height="20" left="818" top="2" width="74"/>
+                    <region left="818" top="2" width="74" height="20"/>
                     <eventInfo>
                         <keyCode>103</keyCode>
                         <keyName>POWER</keyName>
@@ -71,20 +71,20 @@
                     <tooltip>Power</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region height="20" left="80" top="2" width="74"/>
+                    <region left="80" top="2" width="74" height="20"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region height="20" left="165" top="2" width="74"/>
+                    <region left="165" top="2" width="74" height="20"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
@@ -119,7 +119,7 @@
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="2" top="735" width="20" height="74"/>
@@ -127,7 +127,7 @@
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
@@ -162,7 +162,7 @@
                         <keyCode>115</keyCode>
                         <keyName>VOLUME_UP</keyName>
                     </eventInfo>
-                    <tooltip>Volume-up</tooltip>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="735" top="539" width="74" height="20"/>
@@ -170,7 +170,7 @@
                         <keyCode>114</keyCode>
                         <keyName>VOLUME_DOWN</keyName>
                     </eventInfo>
-                    <tooltip>Volume-down</tooltip>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>
