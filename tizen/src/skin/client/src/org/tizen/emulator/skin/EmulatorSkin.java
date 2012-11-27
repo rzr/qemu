@@ -145,6 +145,7 @@ public class EmulatorSkin {
 	private boolean isShutdownRequested;
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
+	private boolean isControlPanel;
 	private boolean isOnKbd;
 
 	private ControlPanel controlPanel; //not used yet
@@ -178,6 +179,7 @@ public class EmulatorSkin {
 		this.config = config;
 		this.skinInfo = skinInfo;
 		this.isOnTop = isOnTop;
+		this.isControlPanel = false;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
@@ -1588,39 +1590,47 @@ public class EmulatorSkin {
 
 		new MenuItem(menu, SWT.SEPARATOR);
 
-		/* HW Key Panel menu */
-		/*final MenuItem panelItem = new MenuItem(menu, SWT.PUSH);
-		panelItem.setText("&HW Key Panel");
+		/* HW Key Window menu */
+		final MenuItem panelItem = new MenuItem(menu, SWT.CHECK);
+		panelItem.setText("&HW Key Window");
+		panelItem.setSelection(isControlPanel);
 
 		panelItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				logger.info("HW Key Panel Menu is selected");
+				final boolean isControlPanel = panelItem.getSelection();
 
-				if (controlPanel != null) {
-					//TODO: move a window focus to controlPanel
-					return;
-				}
+				logger.info("Select HW Key Window : " + isControlPanel);
 
-				List<KeyMapType> keyMapList =
-						SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
+				if (isControlPanel == true) {
+					if (controlPanel != null) {
+						controlPanel.getShell().setVisible(true);
+						return;
+					}
 
-				if (keyMapList == null) {
-					logger.info("keyMapList is null");
-					return;
-				} else if (keyMapList.isEmpty() == true) {
-					logger.info("keyMapList is empty");
-					return;
-				}
+					/* create a HW key window */
+					List<KeyMapType> keyMapList =
+							SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
 
-				try {
-					controlPanel = new ControlPanel(shell, communicator, keyMapList);
-					controlPanel.open();
-				} finally {
-					controlPanel = null;
+					if (keyMapList == null) {
+						logger.info("keyMapList is null");
+						return;
+					} else if (keyMapList.isEmpty() == true) {
+						logger.info("keyMapList is empty");
+						return;
+					}
+
+					try {
+						controlPanel = new ControlPanel(shell, communicator, keyMapList);
+						controlPanel.open();
+					} finally {
+						controlPanel = null;
+					}
+				} else { /* isControlPanel == false */
+					controlPanel.getShell().setVisible(false);
 				}
 			}
-		} );*/
+		} );
 
 		/* Advanced menu */
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
