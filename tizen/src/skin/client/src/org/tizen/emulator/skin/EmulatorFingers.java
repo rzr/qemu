@@ -199,7 +199,7 @@ public class EmulatorFingers {
 	                finger.x = x;
 	                finger.y = y;
 	                if (finger.id != 0) {
-	                	logger.info(String.format("id %d finger multi-touch dragging = (%d, %d)", this.grabFingerID, x, y));
+	                	//logger.info(String.format("id %d finger multi-touch dragging = (%d, %d)", this.grabFingerID, x, y));
 	                	mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 								originX, originY, x, y, grabFingerID -1);
@@ -308,7 +308,7 @@ public class EmulatorFingers {
 	            						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 	            						originX, originY, finger.x, finger.y, i);
 	            				communicator.sendToQEMU( SendCommand.SEND_MOUSE_EVENT, mouseEventData );	
-	            				logger.info(String.format("id %d finger multi-touch dragging = (%d, %d)", i + 1, finger.x, finger.y));
+	            				//logger.info(String.format("id %d finger multi-touch dragging = (%d, %d)", i + 1, finger.x, finger.y));
 	                        }
 	                        try {
 								Thread.sleep(2);

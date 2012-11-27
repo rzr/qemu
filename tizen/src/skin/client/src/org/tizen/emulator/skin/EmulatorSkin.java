@@ -709,9 +709,9 @@ public class EmulatorSkin {
 					}
 				}
                 else if(SwtUtil.isMacPlatform()) {
-                	//if(finger.getMaxTouchPoint() > 1) {
-						int tempStateMask = stateMask & ~SWT.BUTTON1;
-						if(tempStateMask == (SWT.SHIFT | SWT.ALT)) {
+                	if(keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
+                		int tempStateMask = stateMask & ~SWT.BUTTON1;
+						if(tempStateMask == (SWT.SHIFT | SWT.COMMAND)) {
 							finger.setMultiTouchEnable(1);
 							logger.info("enable multi-touch = mode1");
 						}
@@ -720,7 +720,7 @@ public class EmulatorSkin {
 							finger.clearFingerSlot();
 							logger.info("disable multi-touch");
 						}
-              //  	}
+                	}
 				}
 
 				KeyEventData keyEventData = new KeyEventData(
@@ -772,13 +772,13 @@ public class EmulatorSkin {
                 else if(SwtUtil.isMacPlatform()) {
                 //	if(finger.getMaxTouchPoint() > 1) {
 						int tempStateMask = stateMask & ~SWT.BUTTON1;
-						if((keyCode == SWT.SHIFT && (tempStateMask & SWT.ALT) != 0) || 
-								(keyCode == SWT.ALT && (tempStateMask & SWT.SHIFT) != 0))
+						if((keyCode == SWT.SHIFT && (tempStateMask & SWT.COMMAND) != 0) || 
+								(keyCode == SWT.COMMAND && (tempStateMask & SWT.SHIFT) != 0))
 						{
 							finger.setMultiTouchEnable(2);
 							logger.info("enable multi-touch = mode2");
 						}
-						else if(keyCode == SWT.SHIFT || keyCode == SWT.ALT) {
+						else if(keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
 							finger.setMultiTouchEnable(1);
 							logger.info("enable multi-touch = mode1");
 						}
