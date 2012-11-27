@@ -28,32 +28,18 @@
 
 package org.tizen.emulator.skin.layout;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkinState;
-import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
-import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
-import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -68,7 +54,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private EmulatorConfig config;
 	private Shell shell;
 	private Canvas lcdCanvas;
-	private Composite compositeBase;
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
@@ -79,7 +64,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			SocketCommunicator communicator) {
 		this.config = config;
 		this.shell = shell;
-		this.compositeBase = null;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
 		this.communicator = communicator;
@@ -87,8 +71,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public Canvas compose() {
-		shell.setLayout(new FormLayout());
-
 		lcdCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
 
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
@@ -107,7 +89,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		composeInternal(lcdCanvas, x, y, scale, rotationId);
 		logger.info("resolution : " + currentState.getCurrentResolution() +
 				", scale : " + scale);
-		
+
 		return lcdCanvas;
 	}
 
@@ -153,62 +135,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 		logger.info("lcd bounds : " + lcdBounds);
 
-		FormData dataCanvas = new FormData();
-		dataCanvas.left = new FormAttachment(0, lcdBounds.x);
-		dataCanvas.top = new FormAttachment(0, lcdBounds.y);
-		dataCanvas.width = lcdBounds.width;
-		dataCanvas.height = lcdBounds.height;
-		lcdCanvas.setLayoutData(dataCanvas);
-
-		if (compositeBase != null) {
-			compositeBase.dispose();
-			compositeBase = null;
-		}
-
-		shell.pack();
-
-		List<KeyMapType> keyMapList =
-				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
-
-		if (keyMapList != null && keyMapList.isEmpty() == false) {
-			compositeBase = new Composite(shell, SWT.NONE);
-			compositeBase.setLayout(new GridLayout(1, true));
-
-			for (KeyMapType keyEntry : keyMapList) {
-				Button hardKeyButton = new Button(compositeBase, SWT.FLAT);
-				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-				hardKeyButton.setToolTipText(keyEntry.getTooltip());
-
-				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-
-				final int keycode = keyEntry.getEventInfo().getKeyCode();
-				hardKeyButton.addMouseListener(new MouseListener() {
-					@Override
-					public void mouseDown(MouseEvent e) {
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.PRESSED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-					}
-
-					@Override
-					public void mouseUp(MouseEvent e) {
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-					}
-
-					@Override
-					public void mouseDoubleClick(MouseEvent e) {
-						/* do nothing */
-					}
-				});
-			}
-
-			FormData dataComposite = new FormData();
-			dataComposite.left = new FormAttachment(lcdCanvas, 0);
-			dataComposite.top = new FormAttachment(0, 0);
-			compositeBase.setLayoutData(dataComposite);
-		}
+		lcdCanvas.setBounds(lcdBounds);
 
 		shell.pack();
 		shell.redraw();
@@ -235,6 +162,56 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		return lcdBounds;
 	}
+
+//	private void createHWKeyRegion() {
+//		if (compositeBase != null) {
+//			compositeBase.dispose();
+//			compositeBase = null;
+//		}
+//
+//		List<KeyMapType> keyMapList =
+//				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
+//
+//		if (keyMapList != null && keyMapList.isEmpty() == false) {
+//			compositeBase = new Composite(shell, SWT.NONE);
+//			compositeBase.setLayout(new GridLayout(1, true));
+//
+//			for (KeyMapType keyEntry : keyMapList) {
+//				Button hardKeyButton = new Button(compositeBase, SWT.FLAT);
+//				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
+//				hardKeyButton.setToolTipText(keyEntry.getTooltip());
+//
+//				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+//
+//				final int keycode = keyEntry.getEventInfo().getKeyCode();
+//				hardKeyButton.addMouseListener(new MouseListener() {
+//					@Override
+//					public void mouseDown(MouseEvent e) {
+//						KeyEventData keyEventData = new KeyEventData(
+//								KeyEventType.PRESSED.value(), keycode, 0, 0);
+//						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+//					}
+//
+//					@Override
+//					public void mouseUp(MouseEvent e) {
+//						KeyEventData keyEventData = new KeyEventData(
+//								KeyEventType.RELEASED.value(), keycode, 0, 0);
+//						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+//					}
+//
+//					@Override
+//					public void mouseDoubleClick(MouseEvent e) {
+//						/* do nothing */
+//					}
+//				});
+//			}
+//
+//			FormData dataComposite = new FormData();
+//			dataComposite.left = new FormAttachment(lcdCanvas, 0);
+//			dataComposite.top = new FormAttachment(0, 0);
+//			compositeBase.setLayoutData(dataComposite);
+//		}
+//	}
 
 	@Override
 	public void composerFinalize() {
