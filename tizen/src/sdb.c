@@ -30,8 +30,14 @@
 #include "nbd.h"
 #include "tizen/src/debug_ch.h"
 
-//DEFAULT_DEBUG_CHANNEL(qemu);
 MULTI_DEBUG_CHANNEL(qemu, sdb);
+
+#if defined(TARGET_I386)
+#define ARCH "x86"
+#else
+#define ARCH "arm"
+#endif
+
 
 /* QSOCKET_CALL is used to deal with the fact that EINTR happens pretty
  * easily in QEMU since we use SIGALRM to implement periodic timers
@@ -358,7 +364,12 @@ void notify_sdb_daemon_start(void) {
     }
 
     /* length is hex host:emulator:port: -> 0x13 = 20 */
+#if defined(CONFIG_DARWIN)
+    //TODO: not supported arch name on mac yet.
     sprintf(tmp, "00%2xhost:emulator:%d:%s", 20 + strlen(targetname), tizen_base_port + 1, targetname);
+#else
+    sprintf(tmp, "00%2xhost:emulator:%d:%s:%s", 23 + strlen(targetname), tizen_base_port + 1, targetname, ARCH);
+#endif
     INFO("message to send to SDB server: %s\n", tmp);
     if (socket_send(s, tmp, MAXPACKETLEN) < 0) {
         ERR( "message sending to SDB server error!\n");
