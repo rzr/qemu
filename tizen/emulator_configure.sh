@@ -3,7 +3,6 @@
 CONFIGURE_APPEND=""
 EMUL_TARGET_LIST=""
 VIRTIOGL_EN=""
-OPENGLES_EN=""
 YAGL_EN=""
 YAGL_STATS_EN=""
 
@@ -16,12 +15,8 @@ usage() {
     echo "options:"
     echo "-d, --debug"
     echo "    build debug configuration"
-    echo "-dgl, --debug-gles"
-    echo "    build with openGLES passthrough device debug messages enable"
     echo "-vgl|--virtio-gl"
     echo "    enable virtio GL support"
-    echo "-gles|--opengles"
-    echo "    enable openGLES passthrough device"
     echo "-yagl|--yagl-device"
     echo "    enable YaGL passthrough device"
     echo "-ys|--yagl-stats"
@@ -39,21 +34,6 @@ virtgl_enable() {
   ;;
   1|yes|enable)
     VIRTIOGL_EN="yes"
-  ;;
-  *)
-    usage
-    exit 1
-  ;;
-  esac
-}
-
-opengles_enable() {
-  case "$1" in
-  0|no|disable)
-    OPENGLES_EN="no"
-  ;;
-  1|yes|enable)
-    OPENGLES_EN="yes"
   ;;
   *)
     usage
@@ -101,16 +81,14 @@ set_target() {
   case "$1" in
   x86|i386|i486|i586|i686)
     EMUL_TARGET_LIST="i386-softmmu"
-    if [ -z "$VIRTIOGL_EN" ] ; then
+    if [ -z "$VIRTIOGL_EN" ] && [ -z "$YAGL_EN" ] ; then
       virtgl_enable yes
     fi
   ;;
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
-    if [ -z "$YAGL_EN" ] && [ -z "$OPENGLES_EN" ] ; then
-      if test "$targetos" = "Linux" ; then
-        yagl_enable yes
-      fi
+    if [ -z "$YAGL_EN" ] && [ -z "$VIRTIOGL_EN" ] ; then
+      yagl_enable yes
     fi
   ;;
   all)
@@ -118,10 +96,8 @@ set_target() {
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
-    if [ -z "$YAGL_EN" ] && [ -z "$OPENGLES_EN" ] ; then
-      if test "$targetos" = "Linux" ; then    
-        yagl_enable yes
-      fi
+    if [ -z "$YAGL_EN" ] ; then    
+      yagl_enable yes
     fi
   ;;
   esac
@@ -151,18 +127,12 @@ do
     -d|--debug)
         CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-debug"
     ;;
-    -dgl|--debug-gles)
-        CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-debug-gles"
-    ;;
     -e|--extra)
         shift
         CONFIGURE_APPEND="$CONFIGURE_APPEND $1"
     ;;
     -vgl|--virtio-gl)
         virtgl_enable 1
-    ;;
-    -gles|--opengles)
-        opengles_enable 1
     ;;
     -yagl|--yagl-device)
         yagl_enable 1
@@ -193,12 +163,6 @@ if test "$VIRTIOGL_EN" = "yes" ; then
   CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-gl"
 else
   CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-gl"
-fi
-
-if test "$OPENGLES_EN" = "yes" ; then
-  CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-opengles"
-else
-  CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-opengles"
 fi
 
 if test "$YAGL_EN" = "yes" ; then

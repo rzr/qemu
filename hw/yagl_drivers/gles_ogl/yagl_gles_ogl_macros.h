@@ -1,52 +1,54 @@
 #ifndef _QEMU_YAGL_GLES_OGL_MACROS_H
 #define _QEMU_YAGL_GLES_OGL_MACROS_H
 
+#include <GL/gl.h>
+
 /*
  * GLES OpenGL prototyping macros.
  * @{
  */
 
 #define YAGL_GLES_OGL_PROC0(func) \
-void (*func)(void);
+void (APIENTRY *func)(void);
 
 #define YAGL_GLES_OGL_PROC_RET0(ret_type, func) \
-ret_type (*func)(void);
+ret_type (APIENTRY *func)(void);
 
 #define YAGL_GLES_OGL_PROC1(func, arg0_type, arg0) \
-void (*func)(arg0_type arg0);
+void (APIENTRY *func)(arg0_type arg0);
 
 #define YAGL_GLES_OGL_PROC_RET1(ret_type, func, arg0_type, arg0) \
-ret_type (*func)(arg0_type arg0);
+ret_type (APIENTRY *func)(arg0_type arg0);
 
 #define YAGL_GLES_OGL_PROC2(func, arg0_type, arg1_type, arg0, arg1) \
-void (*func)(arg0_type arg0, arg1_type arg1);
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1);
 
 #define YAGL_GLES_OGL_PROC_RET2(ret_type, func, arg0_type, arg1_type, arg0, arg1) \
-ret_type (*func)(arg0_type arg0, arg1_type arg1);
+ret_type (APIENTRY *func)(arg0_type arg0, arg1_type arg1);
 
 #define YAGL_GLES_OGL_PROC3(func, arg0_type, arg1_type, arg2_type, arg0, arg1, arg2) \
-void (*func)(arg0_type arg0, arg1_type arg1, arg2_type arg2);
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2);
 
 #define YAGL_GLES_OGL_PROC4(func, arg0_type, arg1_type, arg2_type, arg3_type, arg0, arg1, arg2, arg3) \
-void (*func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3);
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3);
 
 #define YAGL_GLES_OGL_PROC5(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg0, arg1, arg2, arg3, arg4) \
-void (*func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, arg4_type arg4);
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, arg4_type arg4);
 
 #define YAGL_GLES_OGL_PROC6(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg0, arg1, arg2, arg3, arg4, arg5) \
-void (*func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
      arg4_type arg4, arg5_type arg5);
 
 #define YAGL_GLES_OGL_PROC7(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg0, arg1, arg2, arg3, arg4, arg5, arg6) \
-void (*func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
      arg4_type arg4, arg5_type arg5, arg6_type arg6);
 
 #define YAGL_GLES_OGL_PROC8(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg7_type, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
-void (*func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
      arg4_type arg4, arg5_type arg5, arg6_type arg6, arg7_type arg7);
 
 #define YAGL_GLES_OGL_PROC9(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg7_type, arg8_type, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) \
-void (*func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
+void (APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
      arg4_type arg4, arg5_type arg5, arg6_type arg6, arg7_type arg7, \
      arg8_type arg8);
 
@@ -161,16 +163,11 @@ static void driver_type##_##func(struct obj_type *driver_ps, arg0_type arg0, arg
 
 #define YAGL_GLES_OGL_GET_PROC(driver, func) \
     do { \
-        if (get_address) { \
-            *(void**)(&driver->func) = get_address((const GLubyte*)#func); \
-        } \
+        *(void**)(&driver->func) = yagl_dyn_lib_procaddr_get(dyn_lib, #func); \
         if (!driver->func) { \
-            *(void**)(&driver->func) = yagl_dyn_lib_get_sym(dyn_lib, #func); \
-            if (!driver->func) { \
-                YAGL_LOG_ERROR("Unable to get symbol: %s", \
-                               yagl_dyn_lib_get_error(dyn_lib)); \
-                goto fail; \
-            } \
+            YAGL_LOG_ERROR("Unable to get symbol: %s", \
+                           yagl_dyn_lib_get_error(dyn_lib)); \
+            goto fail; \
         } \
     } while (0)
 

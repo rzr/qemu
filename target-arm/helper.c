@@ -2447,15 +2447,7 @@ static int get_phys_addr_mpu(CPUARMState *env, uint32_t address,
  * @prot: set to the permissions for the page containing phys_ptr
  * @page_size: set to the size of the page containing phys_ptr
  */
-#ifdef CONFIG_BUILD_GLES
-int get_phys_addr(CPUARMState *env, uint32_t address,
-                                int access_type, int is_user,
-                                target_phys_addr_t *phys_ptr, int *prot,
-                                target_ulong *page_size);
-#else
-static inline
-#endif
-int get_phys_addr(CPUARMState *env, uint32_t address,
+static inline int get_phys_addr(CPUARMState *env, uint32_t address,
                                 int access_type, int is_user,
                                 target_phys_addr_t *phys_ptr, int *prot,
                                 target_ulong *page_size)

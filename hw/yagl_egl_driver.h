@@ -2,6 +2,7 @@
 #define _QEMU_YAGL_EGL_DRIVER_H
 
 #include "yagl_types.h"
+#include "yagl_dyn_lib.h"
 #include <EGL/egl.h>
 
 struct yagl_thread_state;
@@ -98,7 +99,31 @@ struct yagl_egl_driver
                                                struct yagl_process_state */*ps*/);
 
     void (*destroy)(struct yagl_egl_driver */*driver*/);
+
+    struct yagl_dyn_lib *dyn_lib;
 };
+
+#if defined(CONFIG_YAGL_EGL_GLX)
+
+struct yagl_egl_driver *yagl_egl_glx_create(void);
+
+static inline struct yagl_egl_driver *yagl_egl_create(void)
+{
+    return yagl_egl_glx_create();
+}
+
+#elif defined(CONFIG_YAGL_EGL_WGL)
+
+struct yagl_egl_driver *yagl_egl_wgl_create(void);
+
+static inline struct yagl_egl_driver *yagl_egl_create(void)
+{
+    return yagl_egl_wgl_create();
+}
+
+#else
+#error Unknown EGL backend
+#endif
 
 void yagl_egl_driver_init(struct yagl_egl_driver *driver);
 void yagl_egl_driver_cleanup(struct yagl_egl_driver *driver);

@@ -792,7 +792,8 @@ bool yagl_host_glDrawElements(GLenum mode,
                                  mode,
                                  count,
                                  type,
-                                 (ctx->ebo ? (GLvoid*)indices_ : indices));
+                                 (ctx->ebo ?
+                                 (GLvoid *)(uintptr_t)indices_ : indices));
 
     ctx->post_draw(ctx, mode);
 
@@ -852,6 +853,11 @@ bool yagl_host_glGenBuffers(GLsizei n,
 
     YAGL_GET_CTX(glGenBuffers);
 
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
     if (!yagl_mem_prepare(ts->mt1, buffers_, n * sizeof(*buffer_names))) {
         res = false;
         goto out;
@@ -898,6 +904,11 @@ bool yagl_host_glGenTextures(GLsizei n,
     GLuint *texture_names = NULL;
 
     YAGL_GET_CTX(glGenTextures);
+
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
 
     if (!yagl_mem_prepare(ts->mt1, textures_, n * sizeof(*texture_names))) {
         res = false;
@@ -1522,6 +1533,17 @@ bool yagl_host_glTexSubImage2D(GLenum target,
         }
     }
 
+    /*
+     * Nvidia Windows openGL drivers doesn't account for GL_UNPACK_ALIGNMENT
+     * parameter when glTexSubImage2D function is called with format GL_ALPHA.
+     * Work around this by manually setting line stride.
+     */
+    if (format == GL_ALPHA) {
+        ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                    GL_UNPACK_ROW_LENGTH,
+                                    stride);
+    }
+
     ctx->driver_ps->TexSubImage2D(ctx->driver_ps,
                                   target,
                                   level,
@@ -1532,6 +1554,12 @@ bool yagl_host_glTexSubImage2D(GLenum target,
                                   format,
                                   type,
                                   pixels);
+
+    if (format == GL_ALPHA) {
+        ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                    GL_UNPACK_ROW_LENGTH,
+                                    0);
+    }
 
 out:
     return res;

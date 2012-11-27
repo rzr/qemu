@@ -683,7 +683,7 @@ bool yagl_host_eglChooseConfig(EGLBoolean* retval,
 
     YAGL_LOG_DEBUG("chosen %d configs", num_config);
 
-    if (!yagl_mem_prepare(egl_api_ts->ts->mt1, configs_, num_config * sizeof(configs)) ||
+    if (!yagl_mem_prepare(egl_api_ts->ts->mt1, configs_, num_config * sizeof(*configs)) ||
         !yagl_mem_prepare_EGLint(egl_api_ts->ts->mt2, num_config_)) {
         res = false;
         goto out;

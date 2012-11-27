@@ -39,6 +39,7 @@ struct yagl_gles2_shader
 
     yagl_object_init(&shader->base, &yagl_gles2_shader_destroy);
 
+    shader->is_shader = true;
     shader->driver_ps = driver_ps;
     shader->global_name = global_name;
     shader->type = type;

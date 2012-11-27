@@ -33,7 +33,7 @@ static void yagl_gles2_array_apply(struct yagl_gles_array *array)
                                                   array->type,
                                                   array->normalized,
                                                   array->stride,
-                                                  (GLvoid*)array->offset);
+                                          (GLvoid*)(uintptr_t)array->offset);
 
         gles2_ctx->driver_ps->common->BindBuffer(gles2_ctx->driver_ps->common,
                                                  GL_ARRAY_BUFFER,
@@ -167,6 +167,9 @@ static bool yagl_gles2_context_get_integerv(struct yagl_gles_context *ctx,
     case GL_RENDERBUFFER_BINDING:
         params[0] = ctx->rbo_local_name;
         break;
+    case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+        params[0] = ctx->num_texture_units;
+        break;
     default:
         return false;
     }
@@ -184,6 +187,7 @@ static bool yagl_gles2_context_get_booleanv(struct yagl_gles_context *ctx,
     case GL_CURRENT_PROGRAM:
     case GL_FRAMEBUFFER_BINDING:
     case GL_RENDERBUFFER_BINDING:
+    case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
         if (!yagl_gles2_context_get_integerv(ctx, pname, &tmp)) {
             return false;
         }
@@ -206,6 +210,7 @@ static bool yagl_gles2_context_get_floatv(struct yagl_gles_context *ctx,
     case GL_CURRENT_PROGRAM:
     case GL_FRAMEBUFFER_BINDING:
     case GL_RENDERBUFFER_BINDING:
+    case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
         if (!yagl_gles2_context_get_integerv(ctx, pname, &tmp)) {
             return false;
         }
@@ -394,8 +399,15 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx,
                              &yagl_gles2_array_apply);
     }
 
-    gles_driver->GetIntegerv(gles_driver, GL_MAX_TEXTURE_IMAGE_UNITS,
+    gles_driver->GetIntegerv(gles_driver, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
                              &num_texture_units);
+
+    /*
+     * We limit this by 32 for conformance.
+     */
+    if (num_texture_units > 32) {
+        num_texture_units = 32;
+    }
 
     yagl_gles_context_prepare(&gles2_ctx->base, ts, arrays, num_arrays,
                               num_texture_units);

@@ -8,7 +8,6 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_tls.h"
-#include <GL/glx.h>
 
 static YAGL_DEFINE_TLS(struct yagl_thread_state*, gles2_ogl_ts);
 
@@ -20,8 +19,6 @@ struct yagl_gles2_ogl_ps
 struct yagl_gles2_ogl
 {
     struct yagl_gles2_driver base;
-
-    struct yagl_dyn_lib *dyn_lib;
 
     struct yagl_gles_ogl *gles_ogl;
 
@@ -305,8 +302,6 @@ static void yagl_gles2_ogl_destroy(struct yagl_gles2_driver *driver)
 
     yagl_gles_ogl_destroy(gles2_ogl->gles_ogl);
 
-    yagl_dyn_lib_destroy(gles2_ogl->dyn_lib);
-
     yagl_gles2_driver_cleanup(&gles2_ogl->base);
 
     g_free(gles2_ogl);
@@ -314,11 +309,9 @@ static void yagl_gles2_ogl_destroy(struct yagl_gles2_driver *driver)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-struct yagl_gles2_driver *yagl_gles2_ogl_create(void)
+struct yagl_gles2_driver *yagl_gles2_ogl_create(struct yagl_dyn_lib *dyn_lib)
 {
     struct yagl_gles2_ogl *gles2_ogl = NULL;
-    PFNGLXGETPROCADDRESSPROC get_address = NULL;
-    struct yagl_dyn_lib *dyn_lib = NULL;
     struct yagl_gles_ogl *gles_ogl = NULL;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_gles2_ogl_create, NULL);
@@ -327,28 +320,10 @@ struct yagl_gles2_driver *yagl_gles2_ogl_create(void)
 
     yagl_gles2_driver_init(&gles2_ogl->base);
 
-    dyn_lib = yagl_dyn_lib_create();
-
-    if (!dyn_lib) {
-        goto fail;
-    }
-
-    if (!yagl_dyn_lib_load(dyn_lib, "libGL.so.1")) {
-        YAGL_LOG_ERROR("Unable to load libGL.so.1: %s",
-                       yagl_dyn_lib_get_error(dyn_lib));
-        goto fail;
-    }
-
     gles_ogl = yagl_gles_ogl_create(dyn_lib);
 
     if (!gles_ogl) {
         goto fail;
-    }
-
-    get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
-
-    if (!get_address) {
-        get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
     }
 
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, glAttachShader);
@@ -421,7 +396,6 @@ struct yagl_gles2_driver *yagl_gles2_ogl_create(void)
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, glVertexAttrib4fv);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, glVertexAttribPointer);
 
-    gles2_ogl->dyn_lib = dyn_lib;
     gles2_ogl->gles_ogl = gles_ogl;
     gles2_ogl->base.process_init = &yagl_gles2_ogl_process_init;
     gles2_ogl->base.destroy = &yagl_gles2_ogl_destroy;
@@ -433,9 +407,6 @@ struct yagl_gles2_driver *yagl_gles2_ogl_create(void)
 fail:
     if (gles_ogl) {
         yagl_gles_ogl_destroy(gles_ogl);
-    }
-    if (dyn_lib) {
-        yagl_dyn_lib_destroy(dyn_lib);
     }
     yagl_gles2_driver_cleanup(&gles2_ogl->base);
     g_free(gles2_ogl);

@@ -158,6 +158,33 @@ void yagl_sharegroup_remove(struct yagl_sharegroup *sg,
     yagl_sharegroup_release_objects(&tmp);
 }
 
+void yagl_sharegroup_remove_check(struct yagl_sharegroup *sg,
+                                  int ns,
+                                  yagl_object_name local_name,
+                                  struct yagl_object *obj)
+{
+    struct yagl_object_list tmp;
+    struct yagl_object *actual_obj;
+
+    QLIST_INIT(&tmp);
+
+    qemu_mutex_lock(&sg->mutex);
+
+    yagl_sharegroup_reap_list_move(sg, &tmp);
+
+    actual_obj = yagl_namespace_acquire(&sg->namespaces[ns], local_name);
+
+    if (actual_obj == obj) {
+        yagl_namespace_remove(&sg->namespaces[ns], local_name);
+    }
+
+    yagl_object_release(actual_obj);
+
+    qemu_mutex_unlock(&sg->mutex);
+
+    yagl_sharegroup_release_objects(&tmp);
+}
+
 struct yagl_object *yagl_sharegroup_acquire_object(struct yagl_sharegroup *sg,
                                                    int ns,
                                                    yagl_object_name local_name)

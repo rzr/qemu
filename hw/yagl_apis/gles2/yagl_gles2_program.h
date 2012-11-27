@@ -4,14 +4,21 @@
 #include "yagl_types.h"
 #include "yagl_object.h"
 
-#define YAGL_NS_PROGRAM 5
-
 struct yagl_gles2_driver_ps;
 struct yagl_gles2_shader;
 
 struct yagl_gles2_program
 {
+    /*
+     * These members must be exactly as in yagl_gles2_shader
+     * @{
+     */
     struct yagl_object base;
+
+    bool is_shader;
+    /*
+     * @}
+     */
 
     struct yagl_gles2_driver_ps *driver_ps;
 
@@ -73,6 +80,18 @@ void yagl_gles2_program_get_info_log(struct yagl_gles2_program *program,
                                      GLchar *infolog);
 
 void yagl_gles2_program_validate(struct yagl_gles2_program *program);
+
+bool yagl_gles2_program_get_uniform_type(struct yagl_gles2_program *program,
+                                         GLint location,
+                                         GLenum *type);
+
+void yagl_gles2_program_get_uniform_float(struct yagl_gles2_program *program,
+                                          GLint location,
+                                          GLfloat *params);
+
+void yagl_gles2_program_get_uniform_int(struct yagl_gles2_program *program,
+                                        GLint location,
+                                        GLint *params);
 
 /*
  * Passing NULL won't hurt, this is for convenience.

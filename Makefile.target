@@ -182,6 +182,7 @@ $(call set-vpath, $(SRC_PATH)/hw/yagl_apis/egl: \
                   $(SRC_PATH)/hw/yagl_apis/gles1: \
                   $(SRC_PATH)/hw/yagl_apis/gles2: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_glx: \
+                  $(SRC_PATH)/hw/yagl_drivers/egl_wgl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles_ogl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles1_ogl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles2_ogl)
@@ -254,7 +255,13 @@ obj-y += yagl_gles2_program.o
 obj-y += yagl_gles2_validate.o
 obj-y += yagl_host_gles2_calls.o
 # EGL GLX driver
+ifdef CONFIG_YAGL_EGL_GLX
 obj-y += yagl_egl_glx.o
+endif
+# EGL WGL driver
+ifdef CONFIG_YAGL_EGL_WGL
+obj-y += yagl_egl_wgl.o
+endif
 # GLES OpenGL common driver
 obj-y += yagl_gles_ogl.o
 # GLESv1_CM OpenGL driver
@@ -263,37 +270,6 @@ obj-y += yagl_gles1_ogl.o
 obj-y += yagl_gles2_ogl.o
 
 endif
-
-ifdef CONFIG_BUILD_GLES
-
-gles2.o: gles2.c gles2.h
-gles2_egl.o: gles2_egl.c gles2.h
-gles2_es11.o: gles2_es11.c gles2.h
-gles2_es20.o: gles2_es20.c gles2.h
-gles2_kernel_calls.o: gles2_kernel_calls.c gles2.h gles2_calls.h
-gles2_egl_calls.o: gles2_egl_calls.c gles2.h gles2_calls.h
-gles2_es11_calls.o: gles2_es11_calls.c gles2.h gles2_calls.h
-gles2_es20_calls.o: gles2_es20_calls.c gles2.h gles2_calls.h
-obj-y += gles2.o gles2_egl.o gles2_es11.o gles2_es20.o
-obj-y += gles2_kernel_calls.o  gles2_egl_calls.o gles2_es11_calls.o
-obj-y += gles2_es20_calls.o
-
-ifdef QEMU_PROGW
-GLESLIBS_LINK_LIST:=$(wildcard $(CONFIG_GLES_LIBDIR)/*.dll)
-else
-GLESLIBS_LINK_LIST:=$(wildcard $(CONFIG_GLES_LIBDIR)/lib*)
-endif
-
-$(GLESLIBS_LINK_LIST):
-
-GLESLIBS_RUNTIME_LIST:=$(addprefix ./,$(notdir $(GLESLIBS_LINK_LIST)))
-
-$(GLESLIBS_RUNTIME_LIST): $(GLESLIBS_LINK_LIST)
-	@cp -dpu -t ./ $(GLESLIBS_LINK_LIST)
-
-$(QEMU_PROG): $(GLESLIBS_RUNTIME_LIST)
-
-endif # CONFIG_BUILD_GLES
 
 # This resolves all nested paths, so it must come last
 include $(SRC_PATH)/Makefile.objs
@@ -344,9 +320,6 @@ ifneq ($(PROGS),)
 	$(INSTALL) -m 755 $(PROGS) "$(DESTDIR)$(bindir)"
 ifneq ($(STRIP),)
 	$(STRIP) $(patsubst %,"$(DESTDIR)$(bindir)/%",$(PROGS))
-endif
-ifneq ($(GLESLIBS_RUNTIME_LIST),)
-	$(INSTALL) -m 644 $(GLESLIBS_RUNTIME_LIST) "$(DESTDIR)$(bindir)"
 endif
 endif
 ifdef CONFIG_TRACE_SYSTEMTAP

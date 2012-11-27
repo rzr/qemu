@@ -11,16 +11,6 @@ config-host.mak:
 	@exit 1
 endif
 
-export CONFIG_OPENGLES
-
-ifdef CONFIG_OPENGLES
-ifdef CONFIG_WIN32
-GLESLIBS_LIST:=$(wildcard ../../arm-softmmu/*.dll)
-else
-GLESLIBS_LIST:=$(wildcard ../../arm-softmmu/lib*)
-endif
-endif
-
 all: qemu skin_client
 qemu: build_info ffmpeg_install check_hax
 	cd ../../ && $(MAKE)
@@ -85,10 +75,6 @@ ifndef CONFIG_DARWIN
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
 		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
-		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
-		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
-		cp -dp -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
-		fi ;\
 		;; \
 	esac; \
 	done
@@ -107,10 +93,6 @@ else
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
 		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
-		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
-		echo "Copying OpenGLES libraries to $(EMUL_DIR)/bin/" ;\
-		cp -pP -t $(EMUL_DIR)/bin/ $(GLESLIBS_LIST) ;\
-		fi ;\
 		;; \
 	esac; \
 	done
@@ -166,10 +148,6 @@ ifndef CONFIG_DARWIN
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
 		cp ../../arm-softmmu/qemu-system-arm $(DIBS_ARM_DIR)/bin/emulator-arm ;\
-		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
-		echo "Copying OpenGLES libraries to $(DIBS_ARM_DIR)/bin/" ;\
-		cp -dp -t $(DIBS_ARM_DIR)/bin/ $(GLESLIBS_LIST) ;\
-		fi ;\
 		;; \
 	esac; \
 	done
@@ -188,10 +166,6 @@ else
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
 		cp ../../arm-softmmu/qemu-system-arm $(DIBS_ARM_DIR)/bin/emulator-arm ;\
-		if [ ! -z "$$CONFIG_OPENGLES" ] ; then \
-		echo "Copying OpenGLES libraries to $(DIBS_ARM_DIR)/bin/" ;\
-		cp -pP -t $(DIBS_ARM_DIR)/bin/ $(GLESLIBS_LIST) ;\
-		fi ;\
 		;; \
 	esac; \
 	done

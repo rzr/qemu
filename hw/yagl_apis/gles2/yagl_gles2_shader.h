@@ -4,13 +4,26 @@
 #include "yagl_types.h"
 #include "yagl_object.h"
 
-#define YAGL_NS_SHADER 4
+/*
+ * Programs and shaders share the same namespace,
+ * pretty clumsy!
+ */
+#define YAGL_NS_SHADER_PROGRAM 4
 
 struct yagl_gles2_driver_ps;
 
 struct yagl_gles2_shader
 {
+    /*
+     * These members must be exactly as in yagl_gles2_program
+     * @{
+     */
     struct yagl_object base;
+
+    bool is_shader;
+    /*
+     * @}
+     */
 
     struct yagl_gles2_driver_ps *driver_ps;
 

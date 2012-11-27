@@ -65,23 +65,6 @@ opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_p
 
 endif #CONFIG_GL
 
-ifdef CONFIG_OPENGLES
-
-parse_gl_h: parse_gl_h.c
-	$(CC) -g -o $@ $<
-
-gl_mangled.h: parse_gl_h
-	./parse_gl_h mangle 2>/dev/null
-
-gl_mangled.c: gl_mangled.h
-	./parse_gl_h mangle 2>/dev/null
-
-gloffscreen_glx.o gloffscreen_wgl.o gloffscreen_xcomposite.o: gl_mangled.h
-maru_sdl.o gloffscreen_test.o gloffscreen_common.o: gl_mangled.h
-
-obj-y += gl_mangled.o
-
-endif #CONFIG_OPENGLES
 ###########################################################
 #endif #!CONFIG_DARWIN
 

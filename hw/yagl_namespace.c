@@ -77,20 +77,25 @@ yagl_object_name yagl_namespace_add(struct yagl_namespace *ns,
     struct yagl_namespace_entry *item =
         g_malloc0(sizeof(struct yagl_namespace_entry));
 
-    if (!ns->next_local_name) {
-        /*
-         * 0 names are invalid.
-         */
-
-        ++ns->next_local_name;
-    }
-
-    item->local_name = ns->next_local_name++;
-    item->obj = obj;
-
     yagl_object_acquire(obj);
 
-    yagl_avl_assert_insert(ns->entries, item);
+    item->obj = obj;
+
+    do {
+        if (!ns->next_local_name) {
+            /*
+             * 0 names are invalid.
+             */
+
+            ++ns->next_local_name;
+        }
+
+        item->local_name = ns->next_local_name++;
+
+        /*
+         * Find a free local name.
+         */
+    } while (yagl_avl_insert(ns->entries, item));
 
     return item->local_name;
 }

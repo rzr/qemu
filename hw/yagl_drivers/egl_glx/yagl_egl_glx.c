@@ -1,4 +1,3 @@
-#include "yagl_egl_glx.h"
 #include "yagl_egl_driver.h"
 #include "yagl_dyn_lib.h"
 #include "yagl_log.h"
@@ -20,8 +19,8 @@
             (proc_type)egl_glx->glXGetProcAddress((const GLubyte*)#proc_name); \
         if (!egl_glx->proc_name) { \
             YAGL_LOG_ERROR("Unable to get symbol: %s", \
-                           yagl_dyn_lib_get_error(egl_glx->dyn_lib)); \
-            goto fail2; \
+                           yagl_dyn_lib_get_error(egl_driver->dyn_lib)); \
+            goto fail; \
         } \
     } while (0)
 
@@ -63,8 +62,6 @@ struct yagl_egl_glx_ps
 struct yagl_egl_glx
 {
     struct yagl_egl_driver base;
-
-    struct yagl_dyn_lib *dyn_lib;
 
     /* GLX 1.0 */
     GLXCREATECONTEXTPROC glXCreateContext;
@@ -549,8 +546,6 @@ static void yagl_egl_glx_destroy(struct yagl_egl_driver *driver)
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_glx_destroy, NULL);
 
-    yagl_dyn_lib_destroy(egl_glx->dyn_lib);
-
     yagl_egl_driver_cleanup(&egl_glx->base);
 
     g_free(egl_glx);
@@ -560,38 +555,41 @@ static void yagl_egl_glx_destroy(struct yagl_egl_driver *driver)
 
 struct yagl_egl_driver *yagl_egl_glx_create(void)
 {
+    struct yagl_egl_driver *egl_driver;
     struct yagl_egl_glx *egl_glx;
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_glx_create, NULL);
 
     egl_glx = g_malloc0(sizeof(*egl_glx));
 
-    yagl_egl_driver_init(&egl_glx->base);
+    egl_driver = &egl_glx->base;
 
-    egl_glx->dyn_lib = yagl_dyn_lib_create();
+    yagl_egl_driver_init(egl_driver);
 
-    if (!egl_glx->dyn_lib) {
-        goto fail1;
+    egl_driver->dyn_lib = yagl_dyn_lib_create();
+
+    if (!egl_driver->dyn_lib) {
+        goto fail;
     }
 
-    if (!yagl_dyn_lib_load(egl_glx->dyn_lib, "libGL.so.1")) {
+    if (!yagl_dyn_lib_load(egl_driver->dyn_lib, "libGL.so.1")) {
         YAGL_LOG_ERROR("Unable to load libGL.so.1: %s",
-                       yagl_dyn_lib_get_error(egl_glx->dyn_lib));
-        goto fail2;
+                       yagl_dyn_lib_get_error(egl_driver->dyn_lib));
+        goto fail;
     }
 
     egl_glx->glXGetProcAddress =
-        yagl_dyn_lib_get_sym(egl_glx->dyn_lib, "glXGetProcAddress");
+        yagl_dyn_lib_get_sym(egl_driver->dyn_lib, "glXGetProcAddress");
 
     if (!egl_glx->glXGetProcAddress) {
         egl_glx->glXGetProcAddress =
-            yagl_dyn_lib_get_sym(egl_glx->dyn_lib, "glXGetProcAddressARB");
+            yagl_dyn_lib_get_sym(egl_driver->dyn_lib, "glXGetProcAddressARB");
     }
 
     if (!egl_glx->glXGetProcAddress) {
         YAGL_LOG_ERROR("Unable to get symbol: %s",
-                       yagl_dyn_lib_get_error(egl_glx->dyn_lib));
-        goto fail2;
+                       yagl_dyn_lib_get_error(egl_driver->dyn_lib));
+        goto fail;
     }
 
     /* GLX 1.0 */
@@ -631,13 +629,34 @@ struct yagl_egl_driver *yagl_egl_glx_create(void)
 
     return &egl_glx->base;
 
-fail2:
-    yagl_dyn_lib_destroy(egl_glx->dyn_lib);
-fail1:
+fail:
     yagl_egl_driver_cleanup(&egl_glx->base);
     g_free(egl_glx);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 
     return NULL;
+}
+
+void *yagl_egl_glx_procaddr_get(struct yagl_dyn_lib *dyn_lib,
+                                const char *sym_name)
+{
+    static PFNGLXGETPROCADDRESSPROC get_address = NULL;
+    void *ret_func = NULL;
+
+    if (get_address) {
+        ret_func = (void *)get_address((const GLubyte *)sym_name);
+    } else {
+        get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
+
+        if (!get_address) {
+            get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
+        }
+    }
+
+    if (!ret_func) {
+        ret_func = yagl_dyn_lib_get_sym(dyn_lib, sym_name);
+    }
+
+    return ret_func;
 }

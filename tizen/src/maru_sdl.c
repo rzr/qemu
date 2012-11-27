@@ -40,10 +40,6 @@
 #include "debug_ch.h"
 //#include "SDL_opengl.h"
 
-#ifdef MANGLE_OPENGL_SYMBOLS
-#include "gl_mangled.h"
-#endif
-
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
 

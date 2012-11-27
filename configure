@@ -172,7 +172,6 @@ kvm="no"
 hax="no"
 gprof="no"
 debug_tcg="no"
-debug_gles="no"
 debug="no"
 strip_opt="yes"
 tcg_interpreter="no"
@@ -216,12 +215,9 @@ smartcard=""
 smartcard_nss=""
 usb_redir=""
 opengl=""
-opengles="no"
 efence="no"
 yagl="no"
 yagl_stats="no"
-glesincdir=""
-gleslibdir=""
 zlib="yes"
 guest_agent="yes"
 libiscsi=""
@@ -698,10 +694,6 @@ for opt do
       debug="yes"
       strip_opt="no"
   ;;
-  --enable-debug-gles) debug_gles="yes"
-  ;;
-  --disable-debug-gles) debug_gles="no"
-  ;;
   --enable-sparse) sparse="yes"
   ;;
   --disable-sparse) sparse="no"
@@ -860,10 +852,6 @@ for opt do
   ;;
   --enable-vhost-net) vhost_net="yes"
   ;;
-  --enable-opengles) opengles="yes"
-  ;;
-  --disable-opengles) opengles="no"
-  ;;
   --enable-efence) efence="yes"
   ;;
   --disable-efence) efence="no"
@@ -875,10 +863,6 @@ for opt do
   --enable-yagl-stats) yagl_stats="yes"
   ;;
   --disable-yagl-stats) yagl_stats="no"
-  ;;
-  --glesincdir=*) glesincdir="$optarg"
-  ;;
-  --gleslibdir=*) gleslibdir="$optarg"
   ;;
   --disable-opengl) opengl="no"
   ;;
@@ -1107,8 +1091,6 @@ echo "  --sysconfdir=PATH        install config in PATH$confsuffix"
 echo "  --with-confsuffix=SUFFIX suffix for QEMU data inside datadir and sysconfdir [$confsuffix]"
 echo "  --enable-debug-tcg       enable TCG debugging"
 echo "  --disable-debug-tcg      disable TCG debugging (default)"
-echo "  --enable-debug-gles      enable OpenGLES device debug messages"
-echo "  --disable-debug-gles     disable OpenGLES device debug messages (default)"
 echo "  --enable-debug           enable common debug build options"
 echo "  --enable-sparse          enable sparse checker"
 echo "  --disable-sparse         disable sparse checker (default)"
@@ -1207,17 +1189,12 @@ echo "  --enable-spice           enable spice"
 echo "  --enable-rbd             enable building the rados block device (rbd)"
 echo "  --disable-libiscsi       disable iscsi support"
 echo "  --enable-libiscsi        enable iscsi support"
-echo "  --enable-opengles        enable OpenGL ES 2.0 passthrough device compilation"
-echo "                           Available for targets: ARM"
-echo "  --disable-opengles       disable OpenGL ES 2.0 passthrough device compilation"
 echo "  --enable-efence          enable Electic Fence"
 echo "  --disable-efence         disable Electic Fence"
 echo "  --enable-yagl            enable YaGL device"
 echo "  --disable-yagl           disable YaGL device"
 echo "  --enable-yagl-stats      enable YaGL stats"
 echo "  --disable-yagl-stats     disable YaGL stats"
-echo "  --glesincdir=PATH        search for EGL and GLES headers in PATH"
-echo "  --gleslibdir=PATH        search for EGL and GLES libs in PATH"
 echo "  --disable-smartcard      disable smartcard support"
 echo "  --enable-smartcard       enable smartcard support"
 echo "  --disable-smartcard-nss  disable smartcard nss support"
@@ -3149,30 +3126,6 @@ if test "$cpu" = "ppc64" -a "$targetos" != "Darwin" ; then
   roms="$roms spapr-rtas"
 fi
 
-if test "$opengles" = "yes"; then
-  if [ -z $glesincdir ]; then
-    glesincdir=$source_path/gl/include
-  fi
-  if [ -z $gleslibdir ]; then
-    if test "$cpu" = "i386" ; then
-      gleslibdir=$source_path/gl/lib/$targetos/x86
-    else
-      gleslibdir=$source_path/gl/lib/$targetos/$cpu
-    fi
-  fi
-  if [ ! -d "$glesincdir" ]; then
-    echo "ERROR: OpenGLES include directory $glesincdir doesn't exist!"
-    opengles="no"
-  fi
-  if [ ! -d "$gleslibdir" ]; then
-    echo "ERROR: OpenGLES library directory $gleslibdir doesn't exist!"
-    opengles="no"
-  fi
-  if test "$opengles" = "no"; then
-    echo "  OpenGLES build disabled"
-  fi
-fi
-
 echo "Install prefix    $prefix"
 echo "BIOS directory    `eval echo $qemu_datadir`"
 echo "binary directory  `eval echo $bindir`"
@@ -3261,12 +3214,6 @@ echo "xfsctl support    $xfs"
 echo "nss used          $smartcard_nss"
 echo "usb net redir     $usb_redir"
 echo "OpenGL support    $opengl"
-echo "OpenGLES support  $opengles"
-if test "$opengles" = "yes"; then
-  echo "OpenGLES incdir   $glesincdir"
-  echo "OpenGLES libdir   $gleslibdir"
-  echo "OpenGLES debug    $debug_gles"
-fi
 echo "EFence support    $efence"
 echo "YaGL support      $yagl"
 echo "YaGL stats        $yagl_stats"
@@ -3550,19 +3497,20 @@ if test "$spice" = "yes" ; then
   echo "CONFIG_SPICE=y" >> $config_host_mak
 fi
 
-if test "$opengles" = "yes" ; then
-  echo "CONFIG_OPENGLES=y" >> $config_host_mak
-  if test "$debug_gles" = "yes" ; then
-    echo "CONFIG_DEBUG_GLES=y" >> $config_host_mak
-  fi
-fi
-
 if test "$efence" = "yes" ; then
   echo "CONFIG_EFENCE=y" >> $config_host_mak
 fi
 
 if test "$yagl" = "yes" ; then
   echo "CONFIG_YAGL=y" >> $config_host_mak
+  if test "$linux" = "yes" ; then
+    echo "CONFIG_YAGL_EGL_GLX=y" >> $config_host_mak
+  elif test "$mingw32" = "yes" ; then
+    echo "CONFIG_YAGL_EGL_WGL=y" >> $config_host_mak
+  else
+    echo "ERROR: YaGL is not available on $targetos"
+    exit 1
+  fi
 fi
 
 if test "$yagl_stats" = "yes" ; then
@@ -4153,28 +4101,6 @@ if test "$target_user_only" = "yes" ; then
     libdis_config_mak=libdis-user/config.mak
 else
     libdis_config_mak=libdis/config.mak
-fi
-
-if test "$target_arch2" = "arm" -a "$opengles" = "yes" ; then
-  echo "CONFIG_BUILD_GLES=y" >> $config_target_mak
-# When OpenGLES enabled, QEMU uses two libGL and libGLES with the same symbols
-# Explicitly load openGL symbols from host libGL library
-  cflags="-DMANGLE_OPENGL_SYMBOLS $cflags"
-  if test "$mingw32" = "yes" ; then
-    cflags="-mthreads $cflags"
-    ldflags="-mthreads $ldflags"
-  fi
-  includes="-I$glesincdir $includes"
-  ldflags="-L$gleslibdir $ldflags"
-  ldflags="-Wl,-rpath,'\$\$ORIGIN' $ldflags"
-  echo "LIBS+=-lEGL" >> $config_target_mak
-  echo "CONFIG_GLES_LIBDIR=$gleslibdir" >> $config_target_mak
-  if test "$mingw32" = "no" ; then
-    if test "$cocoa" = "no" ; then
-      echo "LIBS+=-lX11" >> $config_target_mak
-    fi
-    echo "LIBS+=-ldl" >> $config_target_mak
-  fi
 fi
 
 if test "$efence" = "yes" ; then

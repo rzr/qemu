@@ -219,18 +219,28 @@ bool yagl_host_glAttachShader(GLuint program,
     YAGL_GET_CTX(glAttachShader);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
         goto out;
     }
 
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (!shader_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -257,10 +267,15 @@ bool yagl_host_glBindAttribLocation(GLuint program,
     YAGL_GET_CTX(glBindAttribLocation);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -431,10 +446,15 @@ bool yagl_host_glCompileShader(GLuint shader)
     YAGL_GET_CTX(glCompileShader);
 
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (!shader_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -460,7 +480,7 @@ bool yagl_host_glCreateProgram(GLuint* retval)
         goto out;
     }
 
-    *retval = yagl_sharegroup_add(ctx->sg, YAGL_NS_PROGRAM, &program->base);
+    *retval = yagl_sharegroup_add(ctx->sg, YAGL_NS_SHADER_PROGRAM, &program->base);
 
 out:
     yagl_gles2_program_release(program);
@@ -484,7 +504,7 @@ bool yagl_host_glCreateShader(GLuint* retval,
         goto out;
     }
 
-    *retval = yagl_sharegroup_add(ctx->sg, YAGL_NS_SHADER, &shader->base);
+    *retval = yagl_sharegroup_add(ctx->sg, YAGL_NS_SHADER_PROGRAM, &shader->base);
 
 out:
     yagl_gles2_shader_release(shader);
@@ -534,13 +554,35 @@ out:
 
 bool yagl_host_glDeleteProgram(GLuint program)
 {
+    struct yagl_gles2_program *program_obj = NULL;
+
     YAGL_GET_CTX(glDeleteProgram);
+
+    if (program == 0) {
+        goto out;
+    }
+
+    program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
+        YAGL_NS_SHADER_PROGRAM, program);
+
+    if (!program_obj) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        goto out;
+    }
 
     yagl_gles2_context_unuse_program(ctx, program);
 
-    yagl_sharegroup_remove(ctx->sg,
-                           YAGL_NS_PROGRAM,
-                           program);
+    yagl_sharegroup_remove_check(ctx->sg,
+                                 YAGL_NS_SHADER_PROGRAM,
+                                 program,
+                                 &program_obj->base);
+
+out:
+    yagl_gles2_program_release(program_obj);
 
     return true;
 }
@@ -587,11 +629,33 @@ out:
 
 bool yagl_host_glDeleteShader(GLuint shader)
 {
+    struct yagl_gles2_shader *shader_obj = NULL;
+
     YAGL_GET_CTX(glDeleteShader);
 
-    yagl_sharegroup_remove(ctx->sg,
-                           YAGL_NS_SHADER,
-                           shader);
+    if (shader == 0) {
+        goto out;
+    }
+
+    shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
+        YAGL_NS_SHADER_PROGRAM, shader);
+
+    if (!shader_obj) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        goto out;
+    }
+
+    yagl_sharegroup_remove_check(ctx->sg,
+                                 YAGL_NS_SHADER_PROGRAM,
+                                 shader,
+                                 &shader_obj->base);
+
+out:
+    yagl_gles2_shader_release(shader_obj);
 
     return true;
 }
@@ -605,18 +669,28 @@ bool yagl_host_glDetachShader(GLuint program,
     YAGL_GET_CTX(glDetachShader);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
         goto out;
     }
 
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (!shader_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -781,6 +855,11 @@ bool yagl_host_glGenFramebuffers(GLsizei n,
 
     YAGL_GET_CTX(glGenFramebuffers);
 
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
     if (!yagl_mem_prepare(gles2_api_ts->ts->mt1, framebuffers_, n * sizeof(*framebuffer_names))) {
         res = false;
         goto out;
@@ -827,6 +906,11 @@ bool yagl_host_glGenRenderbuffers(GLsizei n,
     GLuint *renderbuffer_names = NULL;
 
     YAGL_GET_CTX(glGenRenderbuffers);
+
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
 
     if (!yagl_mem_prepare(gles2_api_ts->ts->mt1, renderbuffers_, n * sizeof(*renderbuffer_names))) {
         res = false;
@@ -883,10 +967,15 @@ bool yagl_host_glGetActiveAttrib(GLuint program,
     YAGL_GET_CTX(glGetActiveAttrib);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -953,10 +1042,15 @@ bool yagl_host_glGetActiveUniform(GLuint program,
     YAGL_GET_CTX(glGetActiveUniform);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1018,10 +1112,15 @@ bool yagl_host_glGetAttachedShaders(GLuint program,
     YAGL_GET_CTX(glGetAttachedShaders);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1082,10 +1181,15 @@ bool yagl_host_glGetAttribLocation(int* retval,
     *retval = 0;
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1164,10 +1268,15 @@ bool yagl_host_glGetProgramiv(GLuint program,
     }
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1203,10 +1312,15 @@ bool yagl_host_glGetProgramInfoLog(GLuint program,
     YAGL_GET_CTX(glGetProgramInfoLog);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1281,10 +1395,15 @@ bool yagl_host_glGetShaderiv(GLuint shader,
     }
 
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (!shader_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1320,10 +1439,15 @@ bool yagl_host_glGetShaderInfoLog(GLuint shader,
     YAGL_GET_CTX(glGetShaderInfoLog);
 
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (!shader_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1418,10 +1542,15 @@ bool yagl_host_glGetShaderSource(GLuint shader,
     YAGL_GET_CTX(glGetShaderSource);
 
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (!shader_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1458,24 +1587,110 @@ out:
 
 bool yagl_host_glGetUniformfv(GLuint program,
     GLint location,
-    target_ulong /* GLfloat* */ params)
+    target_ulong /* GLfloat* */ params_)
 {
-    /*
-     * Currently I don't see how to implement this nicely...
-     */
+    bool res = true;
+    struct yagl_gles2_program *program_obj = NULL;
+    GLenum type;
+    int count;
+    GLfloat params[100]; /* This fits all cases */
 
-    YAGL_UNIMPLEMENTED(glGetUniformfv);
+    YAGL_GET_CTX(glGetUniformfv);
+
+    program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
+        YAGL_NS_SHADER_PROGRAM, program);
+
+    if (!program_obj) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_program_get_uniform_type(program_obj,
+                                             location,
+                                             &type)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_get_uniform_type_count(type, &count)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_mem_prepare(gles2_api_ts->ts->mt1, params_, count * sizeof(params[0]))) {
+        res = false;
+        goto out;
+    }
+
+    yagl_gles2_program_get_uniform_float(program_obj, location, &params[0]);
+
+    if (params_) {
+        yagl_mem_put(gles2_api_ts->ts->mt1, &params[0]);
+    }
+
+out:
+    yagl_gles2_program_release(program_obj);
+
+    return res;
 }
 
 bool yagl_host_glGetUniformiv(GLuint program,
     GLint location,
-    target_ulong /* GLint* */ params)
+    target_ulong /* GLint* */ params_)
 {
-    /*
-     * Currently I don't see how to implement this nicely...
-     */
+    bool res = true;
+    struct yagl_gles2_program *program_obj = NULL;
+    GLenum type;
+    int count;
+    GLint params[100]; /* This fits all cases */
 
-    YAGL_UNIMPLEMENTED(glGetUniformiv);
+    YAGL_GET_CTX(glGetUniformiv);
+
+    program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
+        YAGL_NS_SHADER_PROGRAM, program);
+
+    if (!program_obj) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_program_get_uniform_type(program_obj,
+                                             location,
+                                             &type)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_gles2_get_uniform_type_count(type, &count)) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (!yagl_mem_prepare(gles2_api_ts->ts->mt1, params_, count * sizeof(params[0]))) {
+        res = false;
+        goto out;
+    }
+
+    yagl_gles2_program_get_uniform_int(program_obj, location, &params[0]);
+
+    if (params_) {
+        yagl_mem_put(gles2_api_ts->ts->mt1, &params[0]);
+    }
+
+out:
+    yagl_gles2_program_release(program_obj);
+
+    return res;
 }
 
 bool yagl_host_glGetUniformLocation(int* retval,
@@ -1491,10 +1706,15 @@ bool yagl_host_glGetUniformLocation(int* retval,
     *retval = 0;
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1670,10 +1890,10 @@ bool yagl_host_glIsProgram(GLboolean* retval,
     *retval = GL_FALSE;
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (program_obj) {
-        *retval = GL_TRUE;
+        *retval = program_obj->is_shader ? GL_FALSE : GL_TRUE;
     }
 
     yagl_gles2_program_release(program_obj);
@@ -1712,10 +1932,10 @@ bool yagl_host_glIsShader(GLboolean* retval,
     *retval = GL_FALSE;
 
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (shader_obj) {
-        *retval = GL_TRUE;
+        *retval = shader_obj->is_shader ? GL_TRUE : GL_FALSE;
     }
 
     yagl_gles2_shader_release(shader_obj);
@@ -1730,10 +1950,15 @@ bool yagl_host_glLinkProgram(GLuint program)
     YAGL_GET_CTX(glLinkProgram);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -1803,10 +2028,15 @@ bool yagl_host_glShaderSource(GLuint shader,
     }
 
     shader_obj = (struct yagl_gles2_shader*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_SHADER, shader);
+        YAGL_NS_SHADER_PROGRAM, shader);
 
     if (!shader_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!shader_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 
@@ -2293,10 +2523,15 @@ bool yagl_host_glUseProgram(GLuint program)
 
     if (program != 0) {
         program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-            YAGL_NS_PROGRAM, program);
+            YAGL_NS_SHADER_PROGRAM, program);
 
         if (!program_obj) {
             YAGL_SET_ERR(GL_INVALID_VALUE);
+            goto out;
+        }
+
+        if (program_obj->is_shader) {
+            YAGL_SET_ERR(GL_INVALID_OPERATION);
             goto out;
         }
     }
@@ -2319,10 +2554,15 @@ bool yagl_host_glValidateProgram(GLuint program)
     YAGL_GET_CTX(glValidateProgram);
 
     program_obj = (struct yagl_gles2_program*)yagl_sharegroup_acquire_object(ctx->sg,
-        YAGL_NS_PROGRAM, program);
+        YAGL_NS_SHADER_PROGRAM, program);
 
     if (!program_obj) {
         YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (program_obj->is_shader) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         goto out;
     }
 

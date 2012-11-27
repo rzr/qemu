@@ -265,6 +265,7 @@ uint8_t qemu_extra_params_fw[2];
 #if defined(CONFIG_MARU)
 extern int gl_acceleration_capability_check(void);
 int enable_gl = 0;
+int enable_yagl = 0;
 int capability_check_gl = 0;
 #endif
 #if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
@@ -309,9 +310,6 @@ uint32_t xen_domid;
 enum xen_mode xen_mode = XEN_EMULATE;
 static int tcg_tb_size;
 
-#ifdef CONFIG_OPENGLES
-int gles2_quality = 100;
-#endif
 static int default_serial = 1;
 static int default_parallel = 1;
 static int default_virtcon = 1;
@@ -3191,11 +3189,6 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_smbios:
                 do_smbios_option(optarg);
                 break;
-#ifdef CONFIG_OPENGLES
-            case QEMU_OPTION_gles2_quality:
-                gles2_quality = strtoul(optarg, NULL, 10);
-                break;
-#endif
             case QEMU_OPTION_enable_kvm:
                 olist = qemu_find_opts("machine");
                 qemu_opts_parse(olist, "accel=kvm", 0);
@@ -3207,6 +3200,14 @@ int main(int argc, char **argv, char **envp)
 #endif
 #else
                 fprintf(stderr, "Virtio GL support is disabled, ignoring -enable-gl\n");
+#endif
+                break;
+           case QEMU_OPTION_enable_yagl:
+#if defined(CONFIG_YAGL) && !defined(CONFIG_DARWIN)
+                enable_yagl = 1;
+#else
+                fprintf(stderr, "YaGL openGLES passthrough support is disabled,"
+                    " ignoring -enable-yagl\n");
 #endif
                 break;
             case QEMU_OPTION_machine:
@@ -3503,19 +3504,23 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
-#ifdef CONFIG_GL_BACKEND
 #if defined(CONFIG_MARU)
-    if (enable_gl) {
+    if (enable_gl && enable_yagl) {
+        fprintf (stderr, "Error: only one openGL passthrough device can be used at one time!\n");
+        exit(1);
+    }
+
+    if (enable_gl || enable_yagl) {
         capability_check_gl = gl_acceleration_capability_check();
 
         if (capability_check_gl != 0) {
-            enable_gl = 0;
+            enable_gl = enable_yagl = 0;
             fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
         }
         
 	// To check host gl driver capability and notify to guest.
 	gchar *tmp = tmp_cmdline;
-	tmp_cmdline = g_strdup_printf("%s gles=%d", tmp, enable_gl);
+	tmp_cmdline = g_strdup_printf("%s gles=%d yagl=%d", tmp, enable_gl, enable_yagl);
 	qemu_opts_set(qemu_find_opts("machine"), 0, "append", tmp_cmdline);
 	fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
 	g_free(tmp);
@@ -3530,7 +3535,6 @@ int main(int argc, char **argv, char **envp)
             }
         }
     }
-#endif
 #endif
 
     /* Open the logfile at this point, if necessary. We can't open the logfile

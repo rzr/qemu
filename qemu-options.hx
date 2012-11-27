@@ -1236,18 +1236,6 @@ STEXI
 @end table
 ETEXI
 
-#ifdef CONFIG_OPENGLES
-STEXI
-@table @option
-ETEXI
-DEF("gles2-quality", HAS_ARG, QEMU_OPTION_gles2_quality,
-    "-gles2-quality  set GLES 2.0 rendering quality [0 ... 100]\n",
-    QEMU_ARCH_ALL)
-STEXI
-@end table
-ETEXI
-#endif
-
 DEFHEADING(Network options:)
 STEXI
 @table @option
@@ -2440,6 +2428,15 @@ Enable OpenGL passthrough support. This option requires the support of a
 special libGL installed on the guest OS.
 ETEXI
 
+DEF("enable-yagl", 0, QEMU_OPTION_enable_yagl, \
+    "-enable-yagl   enable OpenGLES passthrough support\n", QEMU_ARCH_ALL)
+STEXI
+@item -enable-yagl
+@findex -enable-yagl
+Enable EGL and OpenGLES passthrough support. This option requires special
+libEGL, libGLES_CM and libGLESv2 to be installed on the guest OS. Corresponding
+EGL and openGLES calls on target system are translated to host openGL calls.
+ETEXI
 
 DEF("enable-hax", 0, QEMU_OPTION_enable_hax, \
     "-enable-hax     enable HAX virtualization support\n", QEMU_ARCH_I386)
