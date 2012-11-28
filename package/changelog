@@ -1,3 +1,6 @@
+* 1.4.12
+- Text dimming issue fix at windows with nvidia card.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2012-11-28
 * 1.4.11
 - Key window renewal
 == GiWoong Kim <giwoong.kim@samsung.com> 2012-11-26
