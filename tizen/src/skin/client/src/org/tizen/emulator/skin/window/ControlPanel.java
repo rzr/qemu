@@ -37,13 +37,16 @@ import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -56,13 +59,18 @@ public class ControlPanel extends SkinWindow {
 	private static final String PATCH_IMAGES_PATH = "images/key-window/";
 
 	private SkinPatches frameMaker;
-	private Image imageFrame;
+	private Image imageNormal; /* ImageButton image */
+	private Image imageHover; /* hovered ImageButton image */
+	private Image imagePushed; /* pushed ImageButton image */
+	private Image imageFrame; /* nine-patch image */
+	private Color colorFrame;
 	private SocketCommunicator communicator;
 	private List<KeyMapType> keyMapList;
 
 	private PaintListener shellPaintListener;
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
+	private Listener shellCloseListener;
 
 	private boolean isGrabbedShell;
 	private Point grabPosition;
@@ -71,43 +79,69 @@ public class ControlPanel extends SkinWindow {
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent);
 
-		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM);
-		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH); //TODO: freePatches
-		this.imageFrame = frameMaker.getPatchedImage(136, 140);
+		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM | SWT.RESIZE);
+		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
+
+		/* load image for ImageButton */
+		ClassLoader loader = this.getClass().getClassLoader();
+		imageNormal = new Image(Display.getDefault(),
+				loader.getResourceAsStream(PATCH_IMAGES_PATH + "keybutton_nml.png"));
+		imageHover = new Image(Display.getDefault(),
+						loader.getResourceAsStream(PATCH_IMAGES_PATH + "keybutton_hover.png"));
+		imagePushed = new Image(Display.getDefault(),
+						loader.getResourceAsStream(PATCH_IMAGES_PATH + "keybutton_pushed.png"));
+
+		/* calculate the key window size */
+		int width = imageNormal.getImageData().width;
+		int height = (imageNormal.getImageData().height * 4) + (4 * 3);
+
+		/* make a frame image */
+		this.imageFrame = frameMaker.getPatchedImage(width, height);
+		this.colorFrame = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 
 		this.keyMapList = keyMapList;
 		this.communicator = communicator;
 		this.grabPosition = new Point(0, 0);
 
 		createContents();
-		addControlPanelListener(); //TODO: remove
+		addControlPanelListener();
 
-		shell.setSize((frameMaker.getPatchWidth() * 2) + 136,
-				(frameMaker.getPatchHeight() * 2) + 140);
+		shell.setBackground(colorFrame);
+		shell.setSize(imageFrame.getImageData().width,
+				imageFrame.getImageData().height);
 	}
 
 	protected void createContents() {
-		GridLayout gridLayout = new GridLayout(1, true);
-		gridLayout.marginLeft = gridLayout.marginRight = frameMaker.getPatchWidth() + 6;
-		gridLayout.marginTop = frameMaker.getPatchHeight() + 20;
-		gridLayout.marginBottom = frameMaker.getPatchHeight() + 6;
-		gridLayout.marginWidth = gridLayout.marginHeight = 0;
-		gridLayout.horizontalSpacing = gridLayout.verticalSpacing = 0;
+		GridLayout shellGridLayout = new GridLayout(1, true);
+		shellGridLayout.marginLeft = shellGridLayout.marginRight = frameMaker.getPatchWidth();
+		shellGridLayout.marginTop = shellGridLayout.marginBottom = frameMaker.getPatchHeight();
+		shellGridLayout.marginWidth = shellGridLayout.marginHeight = 0;
+		shellGridLayout.horizontalSpacing = shellGridLayout.verticalSpacing = 0;
 
-		shell.setLayout(gridLayout);
+		shell.setLayout(shellGridLayout);
 
 		ScrolledComposite compositeScroll = new ScrolledComposite(shell, SWT.V_SCROLL);
 		compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 		Composite compositeBase = new Composite(compositeScroll, SWT.NONE);
-		compositeBase.setLayout(gridLayout);
+		//compositeBase.setBackground(colorFrame);
+
+		GridLayout compositeGridLayout = new GridLayout(1, false);
+		compositeGridLayout.marginLeft = compositeGridLayout.marginRight = 0;
+		compositeGridLayout.marginTop = compositeGridLayout.marginBottom = 0;
+		compositeGridLayout.marginWidth = compositeGridLayout.marginHeight = 0;
+		compositeGridLayout.horizontalSpacing = 0;
+		compositeGridLayout.verticalSpacing = 4;
+		compositeBase.setLayout(compositeGridLayout);
 
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
 			for (KeyMapType keyEntry : keyMapList) {
-				Button HWKeyButton = new Button(compositeBase, SWT.FLAT);
-				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-				HWKeyButton.setToolTipText(keyEntry.getTooltip());
-				HWKeyButton.setSize(102, 28);
-				HWKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+				ImageButton HWKeyButton = new ImageButton(compositeBase, SWT.NONE,
+						imageNormal, imageHover, imagePushed);
+				//HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
+				//HWKeyButton.setToolTipText(keyEntry.getTooltip());
+				HWKeyButton.setBackground(colorFrame);
+				HWKeyButton.setLayoutData(new GridData(imageNormal.getImageData().width,
+								imageNormal.getImageData().height));
 
 				final int keycode = keyEntry.getEventInfo().getKeyCode();
 				HWKeyButton.addMouseListener(new MouseListener() {
@@ -193,5 +227,28 @@ public class ControlPanel extends SkinWindow {
 		};
 
 		shell.addMouseListener(shellMouseListener);
+
+		shellCloseListener = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				logger.info("Key Window is closed");
+
+				if (null != shellPaintListener) {
+					shell.removePaintListener(shellPaintListener);
+				}
+
+				if (null != shellMouseMoveListener) {
+					shell.removeMouseMoveListener(shellMouseMoveListener);
+				}
+
+				if (null != shellMouseListener) {
+					shell.removeMouseListener(shellMouseListener);
+				}
+
+				frameMaker.freePatches();
+			}
+		};
+
+		shell.addListener(SWT.Close, shellCloseListener);
 	}
 }

@@ -37,6 +37,7 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
@@ -45,8 +46,17 @@ public class ImageButton extends Canvas {
 	private int mouse = 0;
 	private boolean hit = false;
 
-	public ImageButton(Composite parent, int style) {
+	/* 0 : normal, 1 : hover, 2 : pushed */
+	private Image imageButton[];
+
+	public ImageButton(Composite parent, int style,
+			Image imageNormal, Image imageHover, Image imagePushed) {
 		super(parent, style);
+
+		this.imageButton = new Image[3];
+		imageButton[0] = imageNormal;
+		imageButton[1] = imageHover;
+		imageButton[2] = imagePushed;
 
 		this.addPaintListener(new PaintListener() {
 			@Override
@@ -54,15 +64,27 @@ public class ImageButton extends Canvas {
 				switch (mouse) {
 				case 0:
 					/* default state */
-					e.gc.drawString("Normal", 5, 5);
+					if (imageButton[0] == null) {
+						e.gc.drawString("Normal", 1, 1);
+					} else {
+						e.gc.drawImage(imageButton[0], 0, 0);
+					}
 					break;
 				case 1:
 					/* mouse over */
-					e.gc.drawString("Mouse over", 5, 5);
+					if (imageButton[0] == null) {
+						e.gc.drawString("Mouse over", 1, 1);
+					} else {
+						e.gc.drawImage(imageButton[1], 1, 1);
+					}
 					break;
 				case 2:
 					/* mouse down */
-					e.gc.drawString("Hit", 5, 5);
+					if (imageButton[0] == null) {
+						e.gc.drawString("Hit", 1, 1);
+					} else {
+						e.gc.drawImage(imageButton[2], 1, 1);
+					}
 					break;
 				default:
 					break;

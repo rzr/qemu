@@ -30,15 +30,14 @@ package org.tizen.emulator.skin.window;
 
 import java.util.logging.Logger;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 public class SkinWindow {
-	private Logger logger = SkinLogger.getSkinLogger(
-					SkinWindow.class).getLogger();
+	protected Logger logger = SkinLogger.getSkinLogger(
+			SkinWindow.class).getLogger();
 
 	protected Shell shell;
 	protected Shell parent;
