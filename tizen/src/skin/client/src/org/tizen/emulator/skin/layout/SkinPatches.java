@@ -45,26 +45,26 @@ public class SkinPatches {
 
 	/* nine patches */
 	private Image imageLT; /* left-top */
-	private Image imageCT; /* center-top */
+	private Image imageT; /* middle-top */
 	private Image imageRT; /* right-top */
 
-	private Image imageLC;
-	private Image imageRC;
+	private Image imageL;
+	private Image imageR;
 
 	private Image imageLB; /* left-bottom */
-	private Image imageCB;
+	private Image imageB;
 	private Image imageRB;
 
 	// TODO: configurable
 	private static final String filenameLT = "LT.png";
-	private static final String filenameCT = "CT.png";
+	private static final String filenameT = "T.png";
 	private static final String filenameRT = "RT.png";
 
-	private static final String filenameLC = "LC.png";
-	private static final String filenameRC = "RC.png";
+	private static final String filenameL = "L.png";
+	private static final String filenameR = "R.png";
 
 	private static final String filenameLB = "LB.png";
-	private static final String filenameCB = "CB.png";
+	private static final String filenameB = "B.png";
 	private static final String filenameRB = "RB.png";
 
 	public SkinPatches(String path) {
@@ -72,7 +72,7 @@ public class SkinPatches {
 
 		loadPatches(pathImage);
 
-		// TODO:
+		// TODO: configurable
 		this.patchWidth = imageLT.getImageData().width;
 		this.patchHeight = imageLT.getImageData().height;
 		logger.info("patch size : " + patchWidth + "x" + patchHeight);
@@ -86,30 +86,31 @@ public class SkinPatches {
 		return patchHeight;
 	}
 
-	public Image getPatchedImage(int resolutionWidth, int resolutionHeight) {
+	public Image getPatchedImage(int centerPatchWidth, int centerPatchHeight) {
 		Image patchedImage = new Image(Display.getCurrent(),
-				(patchWidth * 2) + resolutionWidth,
-				(patchHeight * 2) + resolutionHeight);
+				(patchWidth * 2) + centerPatchWidth,
+				(patchHeight * 2) + centerPatchHeight);
 
+		// TODO: transparency
 		GC gc = new GC(patchedImage);
 
 		/* top side */
 		gc.drawImage(imageLT, 0, 0);
-		gc.drawImage(imageCT, 0, 0, 1, patchHeight,
-				patchWidth, 0, resolutionWidth, patchHeight);
-		gc.drawImage(imageRT, patchWidth + resolutionWidth, 0);
+		gc.drawImage(imageT, 0, 0, imageT.getImageData().width, imageT.getImageData().height,
+				patchWidth, 0, centerPatchWidth, patchHeight);
+		gc.drawImage(imageRT, patchWidth + centerPatchWidth, 0);
 
 		/* middle side */
-		gc.drawImage(imageLC, 0, 0, patchWidth, 1,
-				0, patchHeight, patchWidth, resolutionHeight);
-		gc.drawImage(imageRC, 0, 0, patchWidth, 1,
-				patchWidth + resolutionWidth, patchHeight, patchWidth, resolutionHeight);
+		gc.drawImage(imageL, 0, 0, imageL.getImageData().width, imageL.getImageData().height,
+				0, patchHeight, patchWidth, centerPatchHeight);
+		gc.drawImage(imageR, 0, 0, imageR.getImageData().width, imageR.getImageData().height,
+				patchWidth + centerPatchWidth, patchHeight, patchWidth, centerPatchHeight);
 
 		/* bottom side */
-		gc.drawImage(imageLB, 0, patchHeight + resolutionHeight);
-		gc.drawImage(imageCB, 0, 0, 1, patchHeight,
-				patchWidth, patchHeight + resolutionHeight, resolutionWidth, patchHeight);
-		gc.drawImage(imageRB, patchWidth + resolutionWidth, patchHeight + resolutionHeight);
+		gc.drawImage(imageLB, 0, patchHeight + centerPatchHeight);
+		gc.drawImage(imageB, 0, 0, imageB.getImageData().width, imageB.getImageData().height,
+				patchWidth, patchHeight + centerPatchHeight, centerPatchWidth, patchHeight);
+		gc.drawImage(imageRB, patchWidth + centerPatchWidth, patchHeight + centerPatchHeight);
 
 		gc.dispose();
 
@@ -122,34 +123,34 @@ public class SkinPatches {
 		imageLT = new Image(Display.getCurrent(),
 				loader.getResourceAsStream(path + filenameLT));
 		logger.info("left-top image is loaded from " + path + filenameLT);
-		imageCT = new Image(Display.getCurrent(),
-				loader.getResourceAsStream(path + filenameCT));
+		imageT = new Image(Display.getCurrent(),
+				loader.getResourceAsStream(path + filenameT));
 		imageRT = new Image(Display.getCurrent(),
 				loader.getResourceAsStream(path + filenameRT));
 
-		imageLC = new Image(Display.getCurrent(),
-				loader.getResourceAsStream(path + filenameLC));
-		imageRC = new Image(Display.getCurrent(),
-				loader.getResourceAsStream(path + filenameRC));
+		imageL = new Image(Display.getCurrent(),
+				loader.getResourceAsStream(path + filenameL));
+		imageR = new Image(Display.getCurrent(),
+				loader.getResourceAsStream(path + filenameR));
 
 		imageLB = new Image(Display.getCurrent(),
 				loader.getResourceAsStream(path + filenameLB));
-		imageCB = new Image(Display.getCurrent(),
-				loader.getResourceAsStream(path + filenameCB));
+		imageB = new Image(Display.getCurrent(),
+				loader.getResourceAsStream(path + filenameB));
 		imageRB = new Image(Display.getCurrent(),
 				loader.getResourceAsStream(path + filenameRB));
 	}
 
 	public void freePatches() {
 		imageLT.dispose();
-		imageCT.dispose();
+		imageT.dispose();
 		imageRT.dispose();
 
-		imageLC.dispose();
-		imageRC.dispose();
+		imageL.dispose();
+		imageR.dispose();
 
 		imageLB.dispose();
-		imageCB.dispose();
+		imageB.dispose();
 		imageRB.dispose();
 	}
 }
