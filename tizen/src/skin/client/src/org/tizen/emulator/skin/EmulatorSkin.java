@@ -183,9 +183,9 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
-		if (skinInfo.isPhoneShape() == false) {
-			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
-		}
+//		if (skinInfo.isPhoneShape() == false) {
+//			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
+//		}
 		this.shell = new Shell(Display.getDefault(), style);
 
 		this.currentState = state;
@@ -207,6 +207,8 @@ public class EmulatorSkin {
 		} else { /* general purpose skin */
 			skinComposer = new GeneralPurposeSkinComposer(config, shell,
 					currentState, imageRegistry, communicator);
+
+			((GeneralPurposeSkinComposer) skinComposer).addGeneralPurposeListener(shell);
 		}
 
 		lcdCanvas = skinComposer.compose();

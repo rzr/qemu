@@ -31,6 +31,14 @@ package org.tizen.emulator.skin.layout;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
@@ -57,7 +65,15 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
+	private SkinPatches frame;
 	private SocketCommunicator communicator;
+
+	private PaintListener shellPaintListener;
+	private MouseMoveListener shellMouseMoveListener;
+	private MouseListener shellMouseListener;
+
+	private boolean isGrabbedShell;
+	private Point grabPosition;
 
 	public GeneralPurposeSkinComposer(EmulatorConfig config, Shell shell,
 			EmulatorSkinState currentState, ImageRegistry imageRegistry,
@@ -66,7 +82,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		this.shell = shell;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
-		this.communicator = communicator;
+		this.communicator = communicator; //TODO: delete
+		this.isGrabbedShell= false;
+		this.grabPosition = new Point(0, 0);
+
+		this.frame = new SkinPatches("images/emul-window/");
 	}
 
 	@Override
@@ -137,6 +157,30 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		lcdCanvas.setBounds(lcdBounds);
 
+		/* arrange the skin image */
+		Image tempImage = null;
+
+		if (currentState.getCurrentImage() != null) {
+			tempImage = currentState.getCurrentImage();
+		}
+
+		currentState.setCurrentImage(
+				frame.getPatchedImage(lcdBounds.width, lcdBounds.height));
+
+		if (tempImage != null) {
+			tempImage.dispose();
+		}
+
+		/* custom window shape */
+		SkinUtil.trimShell(shell, currentState.getCurrentImage());
+
+		/* set window size */
+		if (currentState.getCurrentImage() != null) {
+			ImageData imageData = currentState.getCurrentImage().getImageData();
+			shell.setMinimumSize(imageData.width, imageData.height);
+			shell.setSize(imageData.width, imageData.height);
+		}
+
 		shell.pack();
 		shell.redraw();
 	}
@@ -145,7 +189,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	public Rectangle adjustLcdGeometry(
 			Canvas lcdCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId) {
-		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
+
+		Rectangle lcdBounds = new Rectangle(
+				frame.getPatchWidth(), frame.getPatchHeight(), 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationInfo rotation = RotationInfo.getValue(rotationId);
@@ -161,6 +207,70 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		return lcdBounds;
+	}
+
+	public void addGeneralPurposeListener(final Shell shell) {
+		shellPaintListener = new PaintListener() {
+			@Override
+			public void paintControl(final PaintEvent e) {
+				/* general shell does not support native transparency,
+				 * so draw image with GC. */
+				if (currentState.getCurrentImage() != null) {
+					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
+				}
+
+			}
+		};
+
+		shell.addPaintListener(shellPaintListener);
+
+		shellMouseMoveListener = new MouseMoveListener() {
+			@Override
+			public void mouseMove(MouseEvent e) {
+				if (isGrabbedShell == true && e.button == 0/* left button */ &&
+						currentState.getCurrentPressedHWKey() == null) {
+					/* move a window */
+					Point previousLocation = shell.getLocation();
+					int x = previousLocation.x + (e.x - grabPosition.x);
+					int y = previousLocation.y + (e.y - grabPosition.y);
+
+					shell.setLocation(x, y);
+					return;
+				}
+			}
+		};
+
+		shell.addMouseMoveListener(shellMouseMoveListener);
+
+		shellMouseListener = new MouseListener() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 1) { /* left button */
+					logger.info("mouseUp in Skin");
+
+					isGrabbedShell = false;
+					grabPosition.x = grabPosition.y = 0;
+				}
+			}
+
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (1 == e.button) { /* left button */
+					logger.info("mouseDown in Skin");
+
+					isGrabbedShell = true;
+					grabPosition.x = e.x;
+					grabPosition.y = e.y;
+				}
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+		};
+
+		shell.addMouseListener(shellMouseListener);
 	}
 
 //	private void createHWKeyRegion() {
@@ -215,6 +325,18 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public void composerFinalize() {
-		/* do nothing */
+		if (null != shellPaintListener) {
+			shell.removePaintListener(shellPaintListener);
+		}
+
+		if (null != shellMouseMoveListener) {
+			shell.removeMouseMoveListener(shellMouseMoveListener);
+		}
+
+		if (null != shellMouseListener) {
+			shell.removeMouseListener(shellMouseListener);
+		}
+
+		frame.freePatches();
 	}
 }
