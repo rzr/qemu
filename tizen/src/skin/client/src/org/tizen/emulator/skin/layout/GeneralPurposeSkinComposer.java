@@ -56,6 +56,8 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
+	private static final String PATCH_IMAGES_PATH = "images/emul-window/";
+
 	private Logger logger = SkinLogger.getSkinLogger(
 			GeneralPurposeSkinComposer.class).getLogger();
 
@@ -65,7 +67,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
-	private SkinPatches frame;
+	private SkinPatches frameMaker;
 	private SocketCommunicator communicator;
 
 	private PaintListener shellPaintListener;
@@ -86,7 +88,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		this.isGrabbedShell= false;
 		this.grabPosition = new Point(0, 0);
 
-		this.frame = new SkinPatches("images/emul-window/");
+		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 	}
 
 	@Override
@@ -165,7 +167,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		currentState.setCurrentImage(
-				frame.getPatchedImage(lcdBounds.width, lcdBounds.height));
+				frameMaker.getPatchedImage(lcdBounds.width, lcdBounds.height));
 
 		if (tempImage != null) {
 			tempImage.dispose();
@@ -191,7 +193,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			int scale, short rotationId) {
 
 		Rectangle lcdBounds = new Rectangle(
-				frame.getPatchWidth(), frame.getPatchHeight(), 0, 0);
+				frameMaker.getPatchWidth(), frameMaker.getPatchHeight(), 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationInfo rotation = RotationInfo.getValue(rotationId);
@@ -227,8 +229,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				if (isGrabbedShell == true && e.button == 0/* left button */ &&
-						currentState.getCurrentPressedHWKey() == null) {
+				if (isGrabbedShell == true && e.button == 0/* left button */) {
 					/* move a window */
 					Point previousLocation = shell.getLocation();
 					int x = previousLocation.x + (e.x - grabPosition.x);
@@ -337,6 +338,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			shell.removeMouseListener(shellMouseListener);
 		}
 
-		frame.freePatches();
+		frameMaker.freePatches();
 	}
 }

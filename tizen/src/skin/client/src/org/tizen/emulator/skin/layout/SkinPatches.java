@@ -39,6 +39,7 @@ public class SkinPatches {
 	private Logger logger =
 			SkinLogger.getSkinLogger(SkinPatches.class).getLogger();
 
+	private Display display;
 	private String pathImage;
 	private int patchWidth;
 	private int patchHeight;
@@ -68,6 +69,7 @@ public class SkinPatches {
 	private static final String filenameRB = "RB.png";
 
 	public SkinPatches(String path) {
+		this.display = Display.getCurrent();
 		this.pathImage = path;
 
 		loadPatches(pathImage);
@@ -87,7 +89,7 @@ public class SkinPatches {
 	}
 
 	public Image getPatchedImage(int centerPatchWidth, int centerPatchHeight) {
-		Image patchedImage = new Image(Display.getCurrent(),
+		Image patchedImage = new Image(display,
 				(patchWidth * 2) + centerPatchWidth,
 				(patchHeight * 2) + centerPatchHeight);
 
@@ -120,24 +122,24 @@ public class SkinPatches {
 	private void loadPatches(String path) {
 		ClassLoader loader = this.getClass().getClassLoader();
 
-		imageLT = new Image(Display.getCurrent(),
+		imageLT = new Image(display,
 				loader.getResourceAsStream(path + filenameLT));
 		logger.info("left-top image is loaded from " + path + filenameLT);
-		imageT = new Image(Display.getCurrent(),
+		imageT = new Image(display,
 				loader.getResourceAsStream(path + filenameT));
-		imageRT = new Image(Display.getCurrent(),
+		imageRT = new Image(display,
 				loader.getResourceAsStream(path + filenameRT));
 
-		imageL = new Image(Display.getCurrent(),
+		imageL = new Image(display,
 				loader.getResourceAsStream(path + filenameL));
-		imageR = new Image(Display.getCurrent(),
+		imageR = new Image(display,
 				loader.getResourceAsStream(path + filenameR));
 
-		imageLB = new Image(Display.getCurrent(),
+		imageLB = new Image(display,
 				loader.getResourceAsStream(path + filenameLB));
-		imageB = new Image(Display.getCurrent(),
+		imageB = new Image(display,
 				loader.getResourceAsStream(path + filenameB));
-		imageRB = new Image(Display.getCurrent(),
+		imageRB = new Image(display,
 				loader.getResourceAsStream(path + filenameRB));
 	}
 

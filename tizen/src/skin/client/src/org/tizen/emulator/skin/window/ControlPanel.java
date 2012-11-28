@@ -35,6 +35,9 @@ import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -47,10 +50,20 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.dbi.KeyMapType;
+import org.tizen.emulator.skin.layout.SkinPatches;
 
 public class ControlPanel extends SkinWindow {
+	private static final String PATCH_IMAGES_PATH = "images/key-window/";
+
+	private SkinPatches frameMaker;
+	private Image imageFrame;
 	private SocketCommunicator communicator;
 	private List<KeyMapType> keyMapList;
+
+	private PaintListener shellPaintListener;
+	private MouseMoveListener shellMouseMoveListener;
+	private MouseListener shellMouseListener;
+
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
@@ -59,21 +72,25 @@ public class ControlPanel extends SkinWindow {
 		super(parent);
 
 		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM);
+		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH); //TODO: freePatches
+		this.imageFrame = frameMaker.getPatchedImage(136, 140);
 
 		this.keyMapList = keyMapList;
 		this.communicator = communicator;
 		this.grabPosition = new Point(0, 0);
 
 		createContents();
-		addControlPanelListener();
+		addControlPanelListener(); //TODO: remove
 
-		shell.setSize(160, 100);
+		shell.setSize((frameMaker.getPatchWidth() * 2) + 136,
+				(frameMaker.getPatchHeight() * 2) + 140);
 	}
 
 	protected void createContents() {
 		GridLayout gridLayout = new GridLayout(1, true);
-		gridLayout.marginLeft = gridLayout.marginRight = 0;
-		gridLayout.marginTop = gridLayout.marginBottom = 0;
+		gridLayout.marginLeft = gridLayout.marginRight = frameMaker.getPatchWidth() + 6;
+		gridLayout.marginTop = frameMaker.getPatchHeight() + 20;
+		gridLayout.marginBottom = frameMaker.getPatchHeight() + 6;
 		gridLayout.marginWidth = gridLayout.marginHeight = 0;
 		gridLayout.horizontalSpacing = gridLayout.verticalSpacing = 0;
 
@@ -123,10 +140,21 @@ public class ControlPanel extends SkinWindow {
 	}
 
 	private void addControlPanelListener() {
-		MouseMoveListener shellMouseMoveListener = new MouseMoveListener() {
+		shellPaintListener = new PaintListener() {
+			@Override
+			public void paintControl(final PaintEvent e) {
+				if (imageFrame != null) {
+					e.gc.drawImage(imageFrame, 0, 0);
+				}
+			}
+		};
+
+		shell.addPaintListener(shellPaintListener);
+
+		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				if (isGrabbedShell == true && e.button == 0) {
+				if (isGrabbedShell == true && e.button == 0/* left button */) {
 					/* move a window */
 					Point previousLocation = shell.getLocation();
 					int x = previousLocation.x + (e.x - grabPosition.x);
@@ -137,9 +165,18 @@ public class ControlPanel extends SkinWindow {
 				}
 			}
 		};
+
 		shell.addMouseMoveListener(shellMouseMoveListener);
 
-		MouseListener shellMouseListener = new MouseListener() {
+		shellMouseListener = new MouseListener() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 1) { /* left button */
+					isGrabbedShell = false;
+					grabPosition.x = grabPosition.y = 0;
+				}
+			}
+
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (1 == e.button) { /* left button */
@@ -150,18 +187,11 @@ public class ControlPanel extends SkinWindow {
 			}
 
 			@Override
-			public void mouseUp(MouseEvent e) {
-				if (e.button == 1) { /* left button */
-					isGrabbedShell = false;
-					grabPosition.x = grabPosition.y = 0;
-				}
-			}
-
-			@Override
 			public void mouseDoubleClick(MouseEvent e) {
 				/* do nothing */
 			}
 		};
+
 		shell.addMouseListener(shellMouseListener);
 	}
 }

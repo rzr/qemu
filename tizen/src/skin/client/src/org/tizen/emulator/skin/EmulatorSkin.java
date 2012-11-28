@@ -1592,9 +1592,9 @@ public class EmulatorSkin {
 
 		new MenuItem(menu, SWT.SEPARATOR);
 
-		/* HW Key Window menu */
+		/* Key Window menu */
 		final MenuItem panelItem = new MenuItem(menu, SWT.CHECK);
-		panelItem.setText("&HW Key Window");
+		panelItem.setText("&Key Window");
 		panelItem.setSelection(isControlPanel);
 
 		panelItem.addSelectionListener(new SelectionAdapter() {
@@ -1602,7 +1602,7 @@ public class EmulatorSkin {
 			public void widgetSelected(SelectionEvent e) {
 				final boolean isControlPanel = panelItem.getSelection();
 
-				logger.info("Select HW Key Window : " + isControlPanel);
+				logger.info("Select Key Window : " + isControlPanel);
 
 				if (isControlPanel == true) {
 					if (controlPanel != null) {
@@ -1610,7 +1610,7 @@ public class EmulatorSkin {
 						return;
 					}
 
-					/* create a HW key window */
+					/* create a key window */
 					List<KeyMapType> keyMapList =
 							SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
 
