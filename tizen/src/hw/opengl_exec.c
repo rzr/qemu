@@ -3636,6 +3636,41 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
         break;
 #endif
 
+#ifdef _WIN32
+    /* workaround for bug T_SDK-128. If GL_UNPACK_ROW_LENGTH==0, GL driver
+     * should calculate it for glTexSubImage2D according to width parameter and
+     * GL_UNPACK_ALIGNMENT. But on windows, some vender's driver like nvidia,
+     * don't follow it. So we need do it for the driver, and probably remove
+     * this hack in future if driver get fixed.
+     */
+    case glTexSubImage2D_func:
+        {
+            int origin_row_length, alignment, width;
+
+            if (args[6] == GL_ALPHA) {
+                width = args[4];
+                glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+                glGetIntegerv(GL_UNPACK_ROW_LENGTH, &origin_row_length);
+
+                if (width%alignment != 0) {
+                    width = (width/alignment + 1) * alignment;
+                }
+
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+            }
+
+            glTexSubImage2D(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]),
+                        ARG_TO_INT(args[2]), ARG_TO_INT(args[3]),
+                        ARG_TO_INT(args[4]), ARG_TO_INT(args[5]),
+                        ARG_TO_UNSIGNED_INT(args[6]),
+                        ARG_TO_UNSIGNED_INT(args[7]), (const void*)(args[8]));
+
+            if (args[6] == GL_ALPHA)
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, origin_row_length);
+
+            break;
+        }
+#endif
     default:
         execute_func(func_number, (void**)args, &ret);
         break;
