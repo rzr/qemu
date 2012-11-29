@@ -121,7 +121,7 @@ static void* run_skin_client(void* arg)
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf(cmd, len, "%s %s %s=. %s%s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=\"%d\" %s",
+    snprintf(cmd, len, "%s %s %s=. %s%s %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=%d %s",
         JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH,
         bin_dir, JAR_SKINFILE,
         OPT_SVR_PORT, skin_server_port,
