@@ -69,8 +69,6 @@ void free_screenshot_info(QemuSurfaceInfo *);
 
 void open_shell(void);
 
-void onoff_usb_kbd(int on);
-
 void onoff_host_kbd(int on);
 
 void ram_dump(void);

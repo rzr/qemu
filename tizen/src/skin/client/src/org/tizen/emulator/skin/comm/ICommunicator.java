@@ -202,12 +202,11 @@ public interface ICommunicator extends Runnable {
 		SEND_HARD_KEY_EVENT( (short)12 ),
 		CHANGE_LCD_STATE( (short)13 ),
 		OPEN_SHELL( (short)14 ),
-		USB_KBD( (short)15 ),
+		HOST_KBD( (short)15 ),
 		SCREEN_SHOT( (short)16 ),
 		DETAIL_INFO( (short)17 ),
 		RAM_DUMP( (short)18 ),
 		GUEST_DUMP( (short)19 ),
-		HOST_KBD( (short)20 ),
 		
 		RESPONSE_HEART_BEAT( (short)900 ),
 		CLOSE( (short)998 ),

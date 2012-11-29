@@ -1899,54 +1899,6 @@ public class EmulatorSkin {
 			}
 		} );
 
-		/*
-		// USB Keyboard menu
-		final MenuItem usbKeyboardItem = new MenuItem(menu, SWT.CASCADE);
-		usbKeyboardItem.setText("&USB Keyboard");
-		usbKeyboardItem.setImage(imageRegistry.getIcon(IconName.USB_KEYBOARD));
-
-		Menu usbKeyBoardMenu = new Menu(shell, SWT.DROP_DOWN);
-
-		final MenuItem usbOnItem = new MenuItem(usbKeyBoardMenu, SWT.RADIO);
-		usbOnItem.setText("On");
-		usbOnItem.setSelection( isOnKbd );
-
-		final MenuItem usbOffItem = new MenuItem(usbKeyBoardMenu, SWT.RADIO);
-		usbOffItem.setText("Off");
-		usbOffItem.setSelection(!isOnKbd);
-
-		SelectionAdapter usbSelectionAdaptor = new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if (!communicator.isSensorDaemonStarted()) {
-					SkinUtil.openMessage(shell, null,
-							"USB is not ready.\nPlease wait until the emulator is completely boot up.",
-							SWT.ICON_WARNING, config);
-					usbOnItem.setSelection(isOnKbd);
-					usbOffItem.setSelection(!isOnKbd);
-
-					return;
-				}
-
-				MenuItem item = (MenuItem) e.getSource();
-				if ( item.getSelection() ) {
-					boolean on = item.equals(usbOnItem);
-					isOnKbd = on;
-					logger.info("USB keyboard " + isOnKbd);
-
-					communicator.sendToQEMU(
-							SendCommand.USB_KBD, new BooleanData(on, SendCommand.USB_KBD.toString()));
-				}
-
-			}
-		};
-
-		usbOnItem.addSelectionListener(usbSelectionAdaptor);
-		usbOffItem.addSelectionListener(usbSelectionAdaptor);
-
-		usbKeyboardItem.setMenu(usbKeyBoardMenu);
-		*/
-
 		// VirtIO Keyboard Menu
 		final MenuItem hostKeyboardItem = new MenuItem(menu, SWT.CASCADE);
 		hostKeyboardItem.setText("&Host Keyboard");

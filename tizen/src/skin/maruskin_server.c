@@ -99,12 +99,11 @@ enum {
     RECV_HARD_KEY_EVENT = 12,
     RECV_CHANGE_LCD_STATE = 13,
     RECV_OPEN_SHELL = 14,
-    RECV_USB_KBD = 15,
+    RECV_HOST_KBD = 15,
     RECV_SCREEN_SHOT = 16,
     RECV_DETAIL_INFO = 17,
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
-    RECV_HOST_KBD = 20,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
@@ -809,21 +808,6 @@ static void* run_skin_server( void* args ) {
                     TRACE( log_buf );
 
                     open_shell();
-                    break;
-                }
-                case RECV_USB_KBD: {
-                    char on = 0;
-
-                    log_cnt += sprintf(log_buf + log_cnt, "RECV_USB_KBD ==\n");
-                    TRACE(log_buf);
-
-                    if (length <= 0) {
-                        INFO("there is no data looking at 0 length.\n");
-                        continue;
-                    }
-
-                    memcpy(&on, recvbuf, sizeof(on));
-                    onoff_usb_kbd(on);
                     break;
                 }
                 case RECV_HOST_KBD: {

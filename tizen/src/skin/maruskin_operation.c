@@ -136,7 +136,7 @@ void do_mouse_event(int button_type, int event_type,
             ERR("undefined mouse event type passed:%d\n", event_type);
             break;
     }
-   
+
 #if 0
 #ifdef CONFIG_WIN32
     Sleep(1);
@@ -189,7 +189,7 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 #endif
 
-#if 0
+#if defined(TARGET_ARM)
     if (!mloop_evcmd_get_usbkbd_status()) {
         TRACE("ignore keyboard input because usb keyboard is dettached.\n");
         return;
@@ -418,16 +418,14 @@ void open_shell( void ) {
     INFO("open shell\n");
 }
 
-void onoff_usb_kbd(int on)
-{
-    INFO("usb kbd on/off:%d\n", on);
-    mloop_evcmd_usbkbd(on);
-}
-
 void onoff_host_kbd(int on)
 {
     INFO("host kbd on/off: %d.\n", on);
+#if defined(TARGET_ARM)
+    mloop_evcmd_usbkbd(on);
+#elif defined(TARGET_I386)
     mloop_evcmd_hostkbd(on);
+#endif
 }
 
 #define MAX_PATH 256
@@ -441,7 +439,7 @@ static void dump_ram( void )
 
     char* dump_path = g_path_get_dirname(get_logpath());
 
-    sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-", 
+    sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-",
         rm->ram_addr + size, "_RAM.dump");
     sprintf(dump_fullpath, "%s/%s", dump_path, dump_filename);
     free(dump_path);
