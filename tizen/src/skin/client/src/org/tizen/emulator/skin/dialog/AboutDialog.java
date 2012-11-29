@@ -196,7 +196,12 @@ public class AboutDialog extends SkinDialog {
 
 			@Override
 			public void widgetSelected(SelectionEvent arg0) {
-				Program.launch(URL_TIZEN_ORG);
+				try {
+					Program.launch(URL_TIZEN_ORG);
+				} catch (Throwable e) {
+					e.printStackTrace();
+					return;
+				}
 			}
 
 		});
