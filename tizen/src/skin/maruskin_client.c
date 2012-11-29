@@ -55,7 +55,7 @@ MULTI_DEBUG_CHANNEL(qemu, skin_client);
 #define OPT_UID "uid"
 #define OPT_VM_PATH "vm.path"
 #define OPT_NET_BASE_PORT "net.baseport"
-#define MAX_TOUCHPOINT "max.touchpoint"
+#define OPT_MAX_TOUCHPOINT "max.touchpoint"
 
 static int skin_argc;
 static char** skin_argv;
@@ -104,12 +104,18 @@ static void* run_skin_client(void* arg)
 
     char* bin_dir = get_bin_path();
     INFO("bin directory : %s\n", bin_dir);
-
+    int maxtouchpoint = get_emul_max_touch_point();
+    int len_maxtouchpoint;
+    if(maxtouchpoint > 9) {
+        len_maxtouchpoint = 2;
+    }else {
+        len_maxtouchpoint = 1;
+    }
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
         strlen(bin_dir) + strlen(JAR_SKINFILE) +
         strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
         strlen(OPT_VM_PATH) + strlen(vm_path) + strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
-        strlen(argv) + 42;
+        strlen(OPT_MAX_TOUCHPOINT) + len_maxtouchpoint + strlen(argv) + 43;
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         INFO("swt command length is too long! (%d)\n", len);
         len = JAVA_MAX_COMMAND_LENGTH;
@@ -122,7 +128,7 @@ static void* run_skin_client(void* arg)
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, tizen_base_port,
-        MAX_TOUCHPOINT, get_emul_max_touch_point(), 
+        OPT_MAX_TOUCHPOINT, maxtouchpoint, 
         argv );
 
     INFO( "command for swt : %s\n", cmd );
