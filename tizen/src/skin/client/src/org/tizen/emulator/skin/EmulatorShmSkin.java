@@ -176,11 +176,18 @@ public class EmulatorShmSkin extends EmulatorSkin {
 							0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
 							0, 0, x, y);
 					
+					if (finger.getMultiTouchEnable() == 1) {
+						finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
+								currentState.getCurrentResolutionHeight(), 
+								currentState.getCurrentScale(), 
+								currentState.getCurrentRotationId());
+					}
                     finger.drawImage(e, currentState.getCurrentAngle());
 					return;
 				}
 
 				Transform transform = new Transform(lcdCanvas.getDisplay());
+				Transform oldtransform = new Transform(lcdCanvas.getDisplay());
 				transform.rotate(currentState.getCurrentAngle());
 
 				if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
@@ -198,22 +205,29 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					y = temp;
 					transform.translate(x * -1, 0);
 				}
-
+				
+				//draw finger image
+				//for when rotate while use multi touch
+				if (finger.getMultiTouchEnable() == 1) {
+					finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
+							currentState.getCurrentResolutionHeight(), 
+							currentState.getCurrentScale(), 
+							currentState.getCurrentRotationId());
+				}	
+				//save current transform as "oldtransform" 
+				e.gc.getTransform(oldtransform);
+				//set to new transfrom
 				e.gc.setTransform(transform);
 				e.gc.drawImage(pollThread.framebuffer,
 						0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
 						0, 0, x, y);
-				finger.drawImage(e, currentState.getCurrentAngle());
+				//back to old transform
+				e.gc.setTransform(oldtransform);
+				
 				transform.dispose();
+				finger.drawImage(e, currentState.getCurrentAngle());
 			}
 		});
-
-		if (finger.getMultiTouchEnable() == -1) {
-			finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
-					currentState.getCurrentResolutionHeight(), 
-					currentState.getCurrentScale(), 
-					currentState.getCurrentRotationId());
-		}
         
         pollThread.start();
 

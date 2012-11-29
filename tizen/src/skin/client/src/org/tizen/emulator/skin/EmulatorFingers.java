@@ -180,6 +180,9 @@ public class EmulatorFingers {
 		for(int i=0; i < this.fingerCnt; i++) {
 			this.fingerSlot = this.getFingerPointFromSlot(i);	
 			e.gc.setAlpha(0x7E);
+		//	logger.info("OriginX: "+ this.fingerSlot.originX + ",OriginY: " + (this.fingerSlot.originY));
+		//	logger.info("x: "+ this.fingerSlot.x + ",y: " + (this.fingerSlot.y));
+			
 			e.gc.drawImage(this.fingerSlotimage, 
 					this.fingerSlot.originX - fingerPointSizeHalf - 2,
 					this.fingerSlot.originY - fingerPointSizeHalf - 2);
@@ -199,7 +202,7 @@ public class EmulatorFingers {
 	                finger.x = x;
 	                finger.y = y;
 	                if (finger.id != 0) {
-	                	//logger.info(String.format("id %d finger multi-touch dragging = (%d, %d)", this.grabFingerID, x, y));
+	                	logger.info(String.format("id %d finger multi-touch dragging = (%d, %d)", this.grabFingerID, x, y));
 	                	mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 								originX, originY, x, y, grabFingerID -1);
@@ -362,26 +365,35 @@ public class EmulatorFingers {
 	    
 		int pointX, pointY, rotatedPointX, rotatedPointY, flag;
 	    flag = 0;
-
+//	    logger.info("ScaledLcdWitdh:"+ScaledLcdWitdh+" ScaledLcdHeight:"+ScaledLcdHeight+ " scaleFactor:"+ scaleFactor+" rotationType:"+rotationType);
 	    rotatedPointX = pointX = (int)(finger.x * scaleFactor);
 	    rotatedPointY = pointY = (int)(finger.y * scaleFactor);
-
+//	    logger.info("rotatedPointX:"+rotatedPointX+" rotatedPointY:"+rotatedPointY);
 	    if (rotationType == RotationInfo.LANDSCAPE.id()) {
+	    	logger.info("LANDSCAPE");
 	        rotatedPointX = pointY;
 	        rotatedPointY = ScaledLcdWitdh - pointX;
 	    } else if (rotationType == RotationInfo.REVERSE_PORTRAIT.id()) {
+	    	logger.info("REVERSE_PORTRAIT");
 	        rotatedPointX = ScaledLcdWitdh - pointX;
 	        rotatedPointY = ScaledLcdHeight - pointY;
 	    } else if (rotationType == RotationInfo.REVERSE_LANDSCAPE.id()) {
+	    	logger.info("REVERSE_LANDSCAPE");
 	        rotatedPointX = ScaledLcdHeight - pointY;
 	        rotatedPointY = pointX;
+	    } else {
+	    	logger.info("PORTRAITE");
+	    	
 	    }
+	    	
 
 	    if (finger.originX != rotatedPointX) {
+	    	logger.info("finger.originX: " +finger.originX);
 	        finger.originX = rotatedPointX;
 	        flag = 1;
 	    }
 	    if (finger.originY != rotatedPointY) {
+	    	logger.info("finger.originY: " +finger.originY);
 	        finger.originY = rotatedPointY;
 	        flag = 1;
 	    }
@@ -401,7 +413,7 @@ public class EmulatorFingers {
 	    if (this.multiTouchEnable == 0) {                                            
 	        return 0;                                                                 
 	    }                                                                             
-	                                                                                  
+	    scaleFactor = scaleFactor/100;                                                                              
 	    lcdWidth *= scaleFactor;                                                        
 	    lcdHeight *= scaleFactor;                                                        
 	                                                                                  
