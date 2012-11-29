@@ -40,6 +40,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkinState;
@@ -174,7 +175,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* custom window shape */
-		SkinUtil.trimShell(shell, currentState.getCurrentImage());
+		trimPatchedShell(shell, currentState.getCurrentImage());
 
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {
@@ -209,6 +210,30 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		return lcdBounds;
+	}
+
+	public static void trimPatchedShell(Shell shell, Image image) {
+		if (null == image) {
+			return;
+		}
+		ImageData imageData = image.getImageData();
+
+		int width = imageData.width;
+		int height = imageData.height;
+
+		Region region = new Region();
+		region.add(new Rectangle(0, 0, width, height));
+
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				int colorPixel = imageData.getPixel(i, j);
+				if (colorPixel == 0xFF00FF /* magenta */) {
+					region.subtract(i, j, 1, 1);
+				}
+			}
+		}
+
+		shell.setRegion(region);
 	}
 
 	public void addGeneralPurposeListener(final Shell shell) {

@@ -30,6 +30,7 @@ package org.tizen.emulator.skin.layout;
 
 import java.util.logging.Logger;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
@@ -89,12 +90,16 @@ public class SkinPatches {
 	}
 
 	public Image getPatchedImage(int centerPatchWidth, int centerPatchHeight) {
-		Image patchedImage = new Image(display,
-				(patchWidth * 2) + centerPatchWidth,
-				(patchHeight * 2) + centerPatchHeight);
+		int patchedImageWidth = (patchWidth * 2) + centerPatchWidth;
+		int patchedImageHeight = (patchHeight * 2) + centerPatchHeight;
 
-		// TODO: transparency
+		Image patchedImage = new Image(display,
+				patchedImageWidth, patchedImageHeight);
+
+		// TODO: copy alphaData
 		GC gc = new GC(patchedImage);
+		gc.setBackground(display.getSystemColor(SWT.COLOR_MAGENTA));
+		gc.fillRectangle(0, 0, patchedImageWidth, patchedImageHeight);
 
 		/* top side */
 		gc.drawImage(imageLT, 0, 0);
@@ -105,6 +110,8 @@ public class SkinPatches {
 		/* middle side */
 		gc.drawImage(imageL, 0, 0, imageL.getImageData().width, imageL.getImageData().height,
 				0, patchHeight, patchWidth, centerPatchHeight);
+		gc.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
+		gc.fillRectangle(patchWidth, patchHeight, centerPatchWidth, centerPatchHeight); /* center */
 		gc.drawImage(imageR, 0, 0, imageR.getImageData().width, imageR.getImageData().height,
 				patchWidth + centerPatchWidth, patchHeight, patchWidth, centerPatchHeight);
 
