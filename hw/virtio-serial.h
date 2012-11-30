@@ -18,7 +18,6 @@
 #include "sysbus.h"
 #include "qdev.h"
 #include "virtio.h"
-#include "virtio-transport.h"
 
 /* == Interface shared between the guest kernel and qemu == */
 
@@ -174,15 +173,6 @@ struct VirtIOSerialPort {
     /* Do apps not want to receive data? */
     bool throttled;
 };
-
-typedef struct {
-    DeviceState qdev;
-    /* virtio-serial */
-    virtio_serial_conf serial;
-    VirtIOTransportLink *trl;
-} VirtIOSerState;
-
-#define VIRTIO_SERIAL_FROM_QDEV(dev) DO_UPCAST(VirtIOSerState, qdev, dev)
 
 /* Interface to the virtio-serial bus */
 
