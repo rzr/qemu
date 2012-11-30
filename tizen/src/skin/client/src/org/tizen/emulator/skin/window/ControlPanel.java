@@ -85,7 +85,7 @@ public class ControlPanel extends SkinWindow {
 		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM | SWT.RESIZE);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 
-		/* load image for ImageButton */
+		/* load image for HW key button */
 		ClassLoader loader = this.getClass().getClassLoader();
 		imageNormal = new Image(Display.getDefault(),
 				loader.getResourceAsStream(PATCH_IMAGES_PATH + "keybutton_nml.png"));

@@ -219,4 +219,9 @@ public class ImageButton extends Canvas {
 	public String getText() {
 		return text;
 	}
+
+	public Point getImageSize() {
+		return new Point(imageButton[0].getImageData().width,
+				imageButton[0].getImageData().height);
+	}
 }

@@ -117,6 +117,7 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 		return windowHandleId;
 	}
 
+	@Override
 	protected void openScreenShotWindow() {
 		if (screenShotDialog != null) {
 			return;

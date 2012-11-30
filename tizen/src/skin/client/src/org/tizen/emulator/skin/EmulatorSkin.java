@@ -148,9 +148,10 @@ public class EmulatorSkin {
 	private boolean isControlPanel;
 	private boolean isOnKbd;
 
-	private ControlPanel controlPanel; //not used yet
+	public ControlPanel controlPanel;
 	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
+	private MenuItem panelItem; /* key window */
 
 	protected SocketCommunicator communicator;
 
@@ -205,8 +206,8 @@ public class EmulatorSkin {
 
 			((PhoneShapeSkinComposer) skinComposer).addPhoneShapeListener(shell);
 		} else { /* general purpose skin */
-			skinComposer = new GeneralPurposeSkinComposer(config, shell,
-					currentState, imageRegistry, communicator);
+			skinComposer = new GeneralPurposeSkinComposer(config, this,
+					shell, currentState, imageRegistry);
 
 			((GeneralPurposeSkinComposer) skinComposer).addGeneralPurposeListener(shell);
 		}
@@ -1517,7 +1518,48 @@ public class EmulatorSkin {
 	}
 
 	protected void openScreenShotWindow() {
-		//TODO:
+		//TODO: abstract
+	}
+
+	/* toggle a key window */
+	public void setIsControlPanel(boolean value) {
+		isControlPanel = value;
+		panelItem.setSelection(isControlPanel);
+		logger.info("Select Key Window : " + isControlPanel);
+	}
+
+	public boolean getIsControlPanel() {
+		return isControlPanel;
+	}
+
+	public void openKeyWindow() {
+		if (controlPanel != null) {
+			controlPanel.getShell().setVisible(true);
+			return;
+		}
+
+		/* create a key window */
+		List<KeyMapType> keyMapList =
+				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
+
+		if (keyMapList == null) {
+			logger.info("keyMapList is null");
+			return;
+		} else if (keyMapList.isEmpty() == true) {
+			logger.info("keyMapList is empty");
+			return;
+		}
+
+		try {
+			controlPanel = new ControlPanel(shell, communicator, keyMapList);
+			controlPanel.open();
+		} finally {
+			controlPanel = null;
+		}
+	}
+
+	public void hideKeyWindow() {
+		controlPanel.getShell().setVisible(false);
 	}
 
 	private void addMenuItems(final Shell shell, final Menu menu) {
@@ -1593,7 +1635,7 @@ public class EmulatorSkin {
 		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* Key Window menu */
-		final MenuItem panelItem = new MenuItem(menu, SWT.CHECK);
+		panelItem = new MenuItem(menu, SWT.CHECK);
 		panelItem.setText("&Key Window");
 		panelItem.setSelection(isControlPanel);
 
@@ -1602,34 +1644,11 @@ public class EmulatorSkin {
 			public void widgetSelected(SelectionEvent e) {
 				final boolean isControlPanel = panelItem.getSelection();
 
-				logger.info("Select Key Window : " + isControlPanel);
-
+				setIsControlPanel(isControlPanel);
 				if (isControlPanel == true) {
-					if (controlPanel != null) {
-						controlPanel.getShell().setVisible(true);
-						return;
-					}
-
-					/* create a key window */
-					List<KeyMapType> keyMapList =
-							SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
-
-					if (keyMapList == null) {
-						logger.info("keyMapList is null");
-						return;
-					} else if (keyMapList.isEmpty() == true) {
-						logger.info("keyMapList is empty");
-						return;
-					}
-
-					try {
-						controlPanel = new ControlPanel(shell, communicator, keyMapList);
-						controlPanel.open();
-					} finally {
-						controlPanel = null;
-					}
-				} else { /* isControlPanel == false */
-					controlPanel.getShell().setVisible(false);
+					openKeyWindow();
+				} else {
+					hideKeyWindow();
 				}
 			}
 		} );

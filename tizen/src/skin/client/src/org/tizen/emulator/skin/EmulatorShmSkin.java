@@ -220,6 +220,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		return 0;
 	}
 
+	@Override
 	protected void openScreenShotWindow() {
 		if (screenShotDialog != null) {
 			return;

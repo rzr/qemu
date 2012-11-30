@@ -36,13 +36,16 @@ import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
@@ -55,6 +58,7 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
+import org.tizen.emulator.skin.window.ImageButton;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private static final String PATCH_IMAGES_PATH = "images/emul-window/";
@@ -63,13 +67,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			GeneralPurposeSkinComposer.class).getLogger();
 
 	private EmulatorConfig config;
+	private EmulatorSkin skin;
 	private Shell shell;
 	private Canvas lcdCanvas;
+	private ImageButton toggleButton;
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
 	private SkinPatches frameMaker;
-	private SocketCommunicator communicator;
 
 	private PaintListener shellPaintListener;
 	private MouseMoveListener shellMouseMoveListener;
@@ -78,14 +83,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public GeneralPurposeSkinComposer(EmulatorConfig config, Shell shell,
-			EmulatorSkinState currentState, ImageRegistry imageRegistry,
-			SocketCommunicator communicator) {
+	public GeneralPurposeSkinComposer(EmulatorConfig config, EmulatorSkin skin,
+			Shell shell, EmulatorSkinState currentState,
+			ImageRegistry imageRegistry) {
 		this.config = config;
+		this.skin = skin;
 		this.shell = shell;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
-		this.communicator = communicator; //TODO: delete
 		this.isGrabbedShell= false;
 		this.grabPosition = new Point(0, 0);
 
@@ -118,7 +123,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public void composeInternal(Canvas lcdCanvas,
-			int x, int y, int scale, short rotationId) {
+			final int x, final int y, int scale, short rotationId) {
 
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
@@ -133,6 +138,50 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		} else {
 			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
 		}
+
+		/* load image for toggle button of key window */
+		ClassLoader loader = this.getClass().getClassLoader();
+		Image imageNormal = new Image(shell.getDisplay(),
+				loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_nml.png"));
+		Image imageHover = new Image(shell.getDisplay(),
+						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_hover.png"));
+		Image imagePushed = new Image(shell.getDisplay(),
+						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_pushed.png"));
+
+		/* create a toggle button of key window */
+		toggleButton = new ImageButton(shell, SWT.DRAW_TRANSPARENT,
+				imageNormal, imageHover, imagePushed);
+		toggleButton.setBackground(
+				new Color(shell.getDisplay(), new RGB(0x1f, 0x1f, 0x1f)));
+
+		toggleButton.addMouseListener(new MouseListener() {
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (skin.getIsControlPanel() == true) {
+					skin.setIsControlPanel(false);
+					skin.hideKeyWindow();
+				} else {
+					skin.setIsControlPanel(true);
+					skin.openKeyWindow();
+
+					/* move a key window to right of the emulator window */
+					skin.controlPanel.getShell().setLocation(
+							shell.getLocation().x + shell.getSize().x,
+							shell.getLocation().y + (shell.getSize().y / 2) -
+							(skin.controlPanel.getShell().getSize().y / 2));
+				}
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				/* do nothing */
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+		});
 
 		arrangeSkin(scale, rotationId);
 	}
@@ -173,6 +222,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		if (tempImage != null) {
 			tempImage.dispose();
 		}
+
+		/* arrange the toggle button of key window */
+		toggleButton.setBounds(lcdBounds.x + lcdBounds.width,
+				lcdBounds.y + (lcdBounds.height / 2) - (toggleButton.getImageSize().y / 2),
+				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
 
 		/* custom window shape */
 		trimPatchedShell(shell, currentState.getCurrentImage());
