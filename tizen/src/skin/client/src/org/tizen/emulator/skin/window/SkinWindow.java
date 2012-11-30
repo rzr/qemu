@@ -30,6 +30,7 @@ package org.tizen.emulator.skin.window;
 
 import java.util.logging.Logger;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -41,9 +42,11 @@ public class SkinWindow {
 
 	protected Shell shell;
 	protected Shell parent;
+	private int shellPositionType;
 
-	public SkinWindow(Shell parent) {
+	public SkinWindow(Shell parent, int shellPositionType) {
 		this.parent = parent;
+		this.shellPositionType = shellPositionType;
 	}
 
 	public Shell getShell() {
@@ -66,18 +69,26 @@ public class SkinWindow {
 	}
 
 	protected void setShellPosition() {
-		Rectangle monitorBound = Display.getDefault().getBounds();
-		logger.info("host monitor display bound : " + monitorBound);
-		Rectangle emulatorBound = parent.getBounds();
-		logger.info("current Emulator window bound : " + emulatorBound);
-		Rectangle panelBound = shell.getBounds();
-		logger.info("current Panel shell bound : " + panelBound);
+		int x = 0, y = 0;
 
-		/* location correction */
-		int x = emulatorBound.x + emulatorBound.width;
-		int y = emulatorBound.y;
-		if ((x + panelBound.width) > (monitorBound.x + monitorBound.width)) {
-			x = emulatorBound.x - panelBound.width;
+		if (shellPositionType == (SWT.RIGHT | SWT.TOP)) {
+			Rectangle monitorBound = Display.getDefault().getBounds();
+			logger.info("host monitor display bound : " + monitorBound);
+			Rectangle emulatorBound = parent.getBounds();
+			logger.info("current Emulator window bound : " + emulatorBound);
+			Rectangle panelBound = shell.getBounds();
+			logger.info("current Panel shell bound : " + panelBound);
+
+			/* location correction */
+			x = emulatorBound.x + emulatorBound.width;
+			y = emulatorBound.y;
+			if ((x + panelBound.width) > (monitorBound.x + monitorBound.width)) {
+				x = emulatorBound.x - panelBound.width;
+			}
+		} else { /* SWT.RIGHT | SWT.CENTER */
+			x = parent.getBounds().x + parent.getBounds().width;
+			y = parent.getBounds().y + (parent.getBounds().height / 2) -
+					(shell.getSize().y / 2);
 		}
 
 		shell.setLocation(x, y);

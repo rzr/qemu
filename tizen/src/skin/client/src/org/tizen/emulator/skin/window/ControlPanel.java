@@ -80,7 +80,7 @@ public class ControlPanel extends SkinWindow {
 
 	public ControlPanel(Shell parent,
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
-		super(parent);
+		super(parent, SWT.RIGHT | SWT.CENTER);
 
 		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM | SWT.RESIZE);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
