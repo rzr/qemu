@@ -87,6 +87,7 @@ int gethostDNS(char *dns1, char *dns2)
     resolv = fopen("/etc/resolv.conf", "r");
     if (resolv <= 0) {
         ERR( "Cann't open \"/etc/resolv.conf.\"\n");
+        fclose(resolv);
         return 1;
     }
 
@@ -111,12 +112,11 @@ int gethostDNS(char *dns1, char *dns2)
     PIP_ADAPTER_ADDRESSES pAdapterAddr;
     PIP_ADAPTER_ADDRESSES pAddr;
     PIP_ADAPTER_DNS_SERVER_ADDRESS pDnsAddr;
-    unsigned long dwResult;
     unsigned long nBufferLength = sizeof(IP_ADAPTER_ADDRESSES);
     pAdapterAddr = (PIP_ADAPTER_ADDRESSES)malloc(nBufferLength);
     memset(pAdapterAddr, 0x00, nBufferLength);
 
-    while ((dwResult = GetAdaptersAddresses(AF_INET, 0, NULL, pAdapterAddr, &nBufferLength))
+    while (GetAdaptersAddresses(AF_INET, 0, NULL, pAdapterAddr, &nBufferLength)
             == ERROR_BUFFER_OVERFLOW) {
         free(pAdapterAddr);
         pAdapterAddr = (PIP_ADAPTER_ADDRESSES)malloc(nBufferLength);
@@ -309,53 +309,58 @@ static void remove_string(char *src, char *dst, const char *toremove)
 static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char buf[MAXLEN];
+    char buf_proxy[MAXLEN];
     FILE *output;
     memset(buf, 0, MAXLEN);
+    memset(buf_proxy, 0, MAXLEN);
 
     output = popen("gconftool-2 --get /system/http_proxy/host", "r");
     fscanf(output , "%s", buf);
-    sprintf(http_proxy, "%s", buf);
+    sprintf(buf_proxy, "%s", buf);
     pclose(output);
 
     output = popen("gconftool-2 --get /system/http_proxy/port", "r");
     fscanf(output , "%s", buf);
-    sprintf(http_proxy, "%s:%s", http_proxy, buf);
+    sprintf(http_proxy, "%s:%s", buf_proxy, buf);
     pclose(output);
     memset(buf, 0, MAXLEN);
+    memset(buf_proxy, 0, MAXLEN);
     INFO("http_proxy : %s\n", http_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
     fscanf(output , "%s", buf);
-    sprintf(https_proxy, "%s", buf);
+    sprintf(buf_proxy, "%s", buf);
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
     fscanf(output , "%s", buf);
-    sprintf(https_proxy, "%s:%s", https_proxy, buf);
+    sprintf(https_proxy, "%s:%s", buf_proxy, buf);
     pclose(output);
     memset(buf, 0, MAXLEN);
+    memset(buf_proxy, 0, MAXLEN);
     INFO("https_proxy : %s\n", https_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/ftp_host", "r");
     fscanf(output , "%s", buf);
-    sprintf(ftp_proxy, "%s", buf);
+    sprintf(buf_proxy, "%s", buf);
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
     fscanf(output , "%s", buf);
-    sprintf(ftp_proxy, "%s:%s", ftp_proxy, buf);
+    sprintf(ftp_proxy, "%s:%s", buf_proxy, buf);
     pclose(output);
     memset(buf, 0, MAXLEN);
+    memset(buf_proxy, 0, MAXLEN);
     INFO("ftp_proxy : %s\n", ftp_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/socks_host", "r");
     fscanf(output , "%s", buf);
-    sprintf(socks_proxy, "%s", buf);
+    sprintf(buf_proxy, "%s", buf);
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
     fscanf(output , "%s", buf);
-    sprintf(socks_proxy, "%s:%s", socks_proxy, buf);
+    sprintf(socks_proxy, "%s:%s", buf_proxy, buf);
     pclose(output);
     INFO("socks_proxy : %s\n", socks_proxy);
 }
@@ -557,10 +562,12 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
         RegCloseKey(hKey);
         return 0;
     }
+    
     if((char*)proxyserver != NULL) {
         INFO("proxy value: is %s\n", (char*)proxyserver);
+        real_proxy = malloc(MAXLEN);
+        
         for(p = strtok((char*)proxyserver, ";"); p; p = strtok(NULL, ";")){
-            real_proxy = malloc(MAXLEN);
             if(strstr(p, HTTP_PROTOCOL)) {
                 remove_string(p, real_proxy, HTTP_PROTOCOL);
                 strcpy(http_proxy, real_proxy);
@@ -585,6 +592,7 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
                 strcpy(socks_proxy, p);
             }
         }
+        free(real_proxy);
     }
     else {
         INFO("proxy is null\n");
