@@ -37,17 +37,28 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 
 public class ImageButton extends Canvas {
+	/* state */
 	private int mouse = 0;
 	private boolean hit = false;
 
-	/* 0 : normal, 1 : hover, 2 : pushed */
+	/* image - 0 : normal, 1 : hover, 2 : pushed */
 	private Image imageButton[];
+
+	private String text;
+	private int textPositionX;
+	private int textPositionY;
+	private static Color white;
+	private static Color gray;
 
 	public ImageButton(Composite parent, int style,
 			Image imageNormal, Image imageHover, Image imagePushed) {
@@ -58,33 +69,51 @@ public class ImageButton extends Canvas {
 		imageButton[1] = imageHover;
 		imageButton[2] = imagePushed;
 
+		this.text = null;
+		textPositionX = imageNormal.getImageData().width / 2;
+		textPositionY = imageNormal.getImageData().height / 2;
+		white = Display.getCurrent().getSystemColor(SWT.COLOR_WHITE);
+		gray = Display.getCurrent().getSystemColor(SWT.COLOR_GRAY);
+
 		this.addPaintListener(new PaintListener() {
 			@Override
 			public void paintControl(PaintEvent e) {
 				switch (mouse) {
-				case 0:
-					/* default state */
-					if (imageButton[0] == null) {
-						e.gc.drawString("Normal", 1, 1);
-					} else {
+				case 0: /* default state */
+					if (imageButton[0] != null) {
 						e.gc.drawImage(imageButton[0], 0, 0);
 					}
-					break;
-				case 1:
-					/* mouse over */
-					if (imageButton[0] == null) {
-						e.gc.drawString("Mouse over", 1, 1);
-					} else {
-						e.gc.drawImage(imageButton[1], 1, 1);
+
+					if (text != null) {
+						e.gc.setForeground(white);
+						e.gc.drawText(text,
+								textPositionX, textPositionY, true);
 					}
+
 					break;
-				case 2:
-					/* mouse down */
-					if (imageButton[0] == null) {
-						e.gc.drawString("Hit", 1, 1);
-					} else {
-						e.gc.drawImage(imageButton[2], 1, 1);
+				case 1: /* mouse over */
+					if (imageButton[1] != null) {
+						e.gc.drawImage(imageButton[1], 0, 0);
 					}
+
+					if (text != null) {
+						e.gc.setForeground(white);
+						e.gc.drawText(text,
+								textPositionX, textPositionY, true);
+					}
+
+					break;
+				case 2: /* mouse down */
+					if (imageButton[2] != null) {
+						e.gc.drawImage(imageButton[2], 0, 0);
+					}
+
+					if (text != null) {
+						e.gc.setForeground(gray);
+						e.gc.drawText(text,
+								textPositionX, textPositionY, true);
+					}
+
 					break;
 				default:
 					break;
@@ -164,4 +193,30 @@ public class ImageButton extends Canvas {
 		});
 	}
 
+	public void setText(String text) {
+		if (text == null || text.isEmpty()) {
+			return;
+		}
+
+		this.text = text;
+
+		GC gc = new GC(this);
+		Point textSize = gc.textExtent(text);
+
+		textPositionX -= textSize.x / 2;
+		if (textPositionX < 0) {
+			textPositionX = 0;
+		}
+
+		textPositionY -= textSize.y / 2;
+		if (textPositionY < 0) {
+			textPositionY = 0;
+		}
+
+		gc.dispose();
+	}
+
+	public String getText() {
+		return text;
+	}
 }

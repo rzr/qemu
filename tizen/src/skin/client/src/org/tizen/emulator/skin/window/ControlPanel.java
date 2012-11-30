@@ -141,7 +141,7 @@ public class ControlPanel extends SkinWindow {
 			for (KeyMapType keyEntry : keyMapList) {
 				ImageButton HWKeyButton = new ImageButton(compositeBase, SWT.NONE,
 						imageNormal, imageHover, imagePushed);
-				//HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
+				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
 				//HWKeyButton.setToolTipText(keyEntry.getTooltip());
 				HWKeyButton.setBackground(colorFrame);
 				HWKeyButton.setLayoutData(new GridData(imageNormal.getImageData().width,
@@ -272,6 +272,11 @@ public class ControlPanel extends SkinWindow {
 				if (null != shellMouseListener) {
 					shell.removeMouseListener(shellMouseListener);
 				}
+
+				imageNormal.dispose();
+				imageHover.dispose();
+				imagePushed.dispose();
+				colorFrame.dispose();
 
 				frameMaker.freePatches();
 			}
