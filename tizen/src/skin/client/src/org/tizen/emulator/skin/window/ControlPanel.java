@@ -39,8 +39,11 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -104,6 +107,7 @@ public class ControlPanel extends SkinWindow {
 		this.grabPosition = new Point(0, 0);
 
 		createContents();
+		trimPatchedShell(shell, imageFrame);
 		addControlPanelListener();
 
 		shell.setBackground(colorFrame);
@@ -171,6 +175,30 @@ public class ControlPanel extends SkinWindow {
 		compositeScroll.setExpandHorizontal(true);
 		compositeScroll.setExpandVertical(true);
 		compositeScroll.setMinSize(compositeBase.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+	}
+
+	public static void trimPatchedShell(Shell shell, Image image) {
+		if (null == image) {
+			return;
+		}
+		ImageData imageData = image.getImageData();
+
+		int width = imageData.width;
+		int height = imageData.height;
+
+		Region region = new Region();
+		region.add(new Rectangle(0, 0, width, height));
+
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				int colorPixel = imageData.getPixel(i, j);
+				if (colorPixel == 0xFF00FF /* magenta */) {
+					region.subtract(i, j, 1, 1);
+				}
+			}
+		}
+
+		shell.setRegion(region);
 	}
 
 	private void addControlPanelListener() {
