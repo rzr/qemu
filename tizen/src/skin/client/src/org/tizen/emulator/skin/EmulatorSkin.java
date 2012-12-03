@@ -149,6 +149,8 @@ public class EmulatorSkin {
 	private boolean isOnKbd;
 
 	public ControlPanel controlPanel;
+	public Color colorPairTag;
+	public Canvas pairTagCanvas;
 	protected ScreenShotDialog screenShotDialog;
 	private Menu contextMenu;
 	private MenuItem panelItem; /* key window */
@@ -319,7 +321,7 @@ public class EmulatorSkin {
 			}
 		}
 
-		return new SkinReopenPolicy( reopenSkin, isAboutToReopen );
+		return new SkinReopenPolicy(reopenSkin, isAboutToReopen);
 
 	}
 
@@ -331,14 +333,14 @@ public class EmulatorSkin {
 
 		shellCloseListener = new Listener() {
 			@Override
-			public void handleEvent( Event event ) {
+			public void handleEvent(Event event) {
 
-				if ( isShutdownRequested ) {
+				if (isShutdownRequested) {
 
 					removeShellListeners();
 					removeCanvasListeners();
 
-					if ( !isAboutToReopen ) {
+					if (!isAboutToReopen) {
 						/* close the screen shot window */
 						if (null != screenShotDialog) {
 							Shell scShell = screenShotDialog.getShell();
@@ -355,6 +357,7 @@ public class EmulatorSkin {
 								cpShell.close();
 							}
 							controlPanel = null;
+							colorPairTag.dispose();
 						}
 
 						/* save config only for emulator close */
@@ -1535,6 +1538,7 @@ public class EmulatorSkin {
 	public void openKeyWindow() {
 		if (controlPanel != null) {
 			controlPanel.getShell().setVisible(true);
+			pairTagCanvas.setVisible(true);
 			return;
 		}
 
@@ -1552,6 +1556,9 @@ public class EmulatorSkin {
 
 		try {
 			controlPanel = new ControlPanel(shell, communicator, keyMapList);
+			colorPairTag = controlPanel.getPairTagColor();
+			pairTagCanvas.setVisible(true);
+
 			controlPanel.open();
 		} finally {
 			controlPanel = null;
@@ -1560,6 +1567,7 @@ public class EmulatorSkin {
 
 	public void hideKeyWindow() {
 		controlPanel.getShell().setVisible(false);
+		pairTagCanvas.setVisible(false);
 	}
 
 	private void addMenuItems(final Shell shell, final Menu menu) {

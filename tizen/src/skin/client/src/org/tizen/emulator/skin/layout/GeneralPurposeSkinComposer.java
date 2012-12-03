@@ -48,7 +48,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -183,6 +182,23 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			}
 		});
 
+		/* make a pair tag circle */
+		skin.pairTagCanvas = new Canvas(shell, SWT.NONE);
+		skin.pairTagCanvas.setBackground(
+				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
+
+		skin.pairTagCanvas.addPaintListener(new PaintListener() {
+			@Override
+			public void paintControl(PaintEvent e) {
+				if (skin.colorPairTag != null) {
+					e.gc.setBackground(skin.colorPairTag);
+					e.gc.setAntialias(SWT.ON);
+					e.gc.fillOval(0, 0, 8, 8);
+				}
+			}
+		});
+		skin.pairTagCanvas.setVisible(false);
+
 		arrangeSkin(scale, rotationId);
 	}
 
@@ -227,6 +243,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		toggleButton.setBounds(lcdBounds.x + lcdBounds.width,
 				lcdBounds.y + (lcdBounds.height / 2) - (toggleButton.getImageSize().y / 2),
 				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
+
+		/* arrange the pair tag */
+		skin.pairTagCanvas.setBounds(26, 13, 8, 8);
 
 		/* custom window shape */
 		trimPatchedShell(shell, currentState.getCurrentImage());
@@ -415,6 +434,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		if (null != shellMouseListener) {
 			shell.removeMouseListener(shellMouseListener);
+		}
+
+		if (toggleButton != null) {
+			toggleButton.dispose();
+		}
+
+		if (skin.pairTagCanvas != null) {
+			skin.pairTagCanvas.dispose();
 		}
 
 		frameMaker.freePatches();

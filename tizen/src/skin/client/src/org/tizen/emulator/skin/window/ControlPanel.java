@@ -46,6 +46,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -60,6 +61,11 @@ import org.tizen.emulator.skin.layout.SkinPatches;
 
 public class ControlPanel extends SkinWindow {
 	private static final String PATCH_IMAGES_PATH = "images/key-window/";
+	private static final int SHELL_MARGIN_BOTTOM = 3;
+	private static final int PAIRTAG_CIRCLE_SIZE = 8;
+	private static final int PAIRTAG_MARGIN_BOTTOM = 6;
+	private static final int BUTTON_DEFAULT_CNT = 4;
+	private static final int BUTTON_VERTICAL_SPACING = 7;
 
 	private SkinPatches frameMaker;
 	private Image imageNormal; /* ImageButton image */
@@ -67,6 +73,7 @@ public class ControlPanel extends SkinWindow {
 	private Image imagePushed; /* pushed ImageButton image */
 	private Image imageFrame; /* nine-patch image */
 	private Color colorFrame;
+	private Color colorPairTag;
 	private SocketCommunicator communicator;
 	private List<KeyMapType> keyMapList;
 
@@ -85,6 +92,10 @@ public class ControlPanel extends SkinWindow {
 		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM | SWT.RESIZE);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 
+		this.keyMapList = keyMapList;
+		this.communicator = communicator;
+		this.grabPosition = new Point(0, 0);
+
 		/* load image for HW key button */
 		ClassLoader loader = this.getClass().getClassLoader();
 		imageNormal = new Image(Display.getDefault(),
@@ -96,15 +107,20 @@ public class ControlPanel extends SkinWindow {
 
 		/* calculate the key window size */
 		int width = imageNormal.getImageData().width;
-		int height = (imageNormal.getImageData().height * 4) + (4 * 3);
+		int height = (imageNormal.getImageData().height * BUTTON_DEFAULT_CNT) +
+				(BUTTON_VERTICAL_SPACING * (BUTTON_DEFAULT_CNT - 1)) +
+				(PAIRTAG_CIRCLE_SIZE + PAIRTAG_MARGIN_BOTTOM) +
+				SHELL_MARGIN_BOTTOM;
 
 		/* make a frame image */
 		this.imageFrame = frameMaker.getPatchedImage(width, height);
 		this.colorFrame = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 
-		this.keyMapList = keyMapList;
-		this.communicator = communicator;
-		this.grabPosition = new Point(0, 0);
+		/* generate a pair tag color of key window */
+		int red = (int) (Math.random() * 256);
+		int green = (int) (Math.random() * 256);
+		int blue = (int) (Math.random() * 256);
+		this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
 
 		createContents();
 		trimPatchedShell(shell, imageFrame);
@@ -116,7 +132,7 @@ public class ControlPanel extends SkinWindow {
 	}
 
 	protected void createContents() {
-		GridLayout shellGridLayout = new GridLayout(1, true);
+		GridLayout shellGridLayout = new GridLayout(1, false);
 		shellGridLayout.marginLeft = shellGridLayout.marginRight = frameMaker.getPatchWidth();
 		shellGridLayout.marginTop = shellGridLayout.marginBottom = frameMaker.getPatchHeight();
 		shellGridLayout.marginWidth = shellGridLayout.marginHeight = 0;
@@ -124,17 +140,34 @@ public class ControlPanel extends SkinWindow {
 
 		shell.setLayout(shellGridLayout);
 
+		/* make a pair tag circle */
+		Canvas pairTagCanvas = new Canvas(shell, SWT.NONE);
+		pairTagCanvas.setBackground(colorFrame);
+		pairTagCanvas.setLayoutData(new GridData(PAIRTAG_CIRCLE_SIZE,
+				PAIRTAG_CIRCLE_SIZE + PAIRTAG_MARGIN_BOTTOM));
+
+		pairTagCanvas.addPaintListener(new PaintListener() {
+			@Override
+			public void paintControl(PaintEvent e) {
+				e.gc.setBackground(colorPairTag);
+				e.gc.setAntialias(SWT.ON);
+				e.gc.fillOval(0, 0, PAIRTAG_CIRCLE_SIZE, PAIRTAG_CIRCLE_SIZE);
+			}
+		});
+
+		/* */
 		ScrolledComposite compositeScroll = new ScrolledComposite(shell, SWT.V_SCROLL);
 		compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+
 		Composite compositeBase = new Composite(compositeScroll, SWT.NONE);
-		//compositeBase.setBackground(colorFrame);
+		compositeBase.setBackground(colorFrame);
 
 		GridLayout compositeGridLayout = new GridLayout(1, false);
 		compositeGridLayout.marginLeft = compositeGridLayout.marginRight = 0;
 		compositeGridLayout.marginTop = compositeGridLayout.marginBottom = 0;
 		compositeGridLayout.marginWidth = compositeGridLayout.marginHeight = 0;
 		compositeGridLayout.horizontalSpacing = 0;
-		compositeGridLayout.verticalSpacing = 4;
+		compositeGridLayout.verticalSpacing = BUTTON_VERTICAL_SPACING;
 		compositeBase.setLayout(compositeGridLayout);
 
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
@@ -277,11 +310,16 @@ public class ControlPanel extends SkinWindow {
 				imageHover.dispose();
 				imagePushed.dispose();
 				colorFrame.dispose();
+				colorPairTag.dispose();
 
 				frameMaker.freePatches();
 			}
 		};
 
 		shell.addListener(SWT.Close, shellCloseListener);
+	}
+
+	public Color getPairTagColor() {
+		return colorPairTag;
 	}
 }

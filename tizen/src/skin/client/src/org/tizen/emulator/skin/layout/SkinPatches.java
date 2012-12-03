@@ -31,8 +31,10 @@ package org.tizen.emulator.skin.layout;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.log.SkinLogger;
 
@@ -110,7 +112,7 @@ public class SkinPatches {
 		/* middle side */
 		gc.drawImage(imageL, 0, 0, imageL.getImageData().width, imageL.getImageData().height,
 				0, patchHeight, patchWidth, centerPatchHeight);
-		gc.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
+		gc.setBackground(new Color(display, new RGB(38, 38, 38)));
 		gc.fillRectangle(patchWidth, patchHeight, centerPatchWidth, centerPatchHeight); /* center */
 		gc.drawImage(imageR, 0, 0, imageR.getImageData().width, imageR.getImageData().height,
 				patchWidth + centerPatchWidth, patchHeight, patchWidth, centerPatchHeight);
