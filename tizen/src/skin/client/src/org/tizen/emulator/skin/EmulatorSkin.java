@@ -891,6 +891,8 @@ public class EmulatorSkin {
 	public void openKeyWindow() {
 		if (controlPanel != null) {
 			controlPanel.getShell().setVisible(true);
+			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
+
 			pairTagCanvas.setVisible(true);
 			return;
 		}
@@ -909,10 +911,13 @@ public class EmulatorSkin {
 
 		try {
 			controlPanel = new ControlPanel(shell, communicator, keyMapList);
+			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
+
 			colorPairTag = controlPanel.getPairTagColor();
 			pairTagCanvas.setVisible(true);
 
 			controlPanel.open();
+			/* do not add at this line */
 		} finally {
 			controlPanel = null;
 		}
@@ -956,13 +961,17 @@ public class EmulatorSkin {
 			onTopItem.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					final boolean isOnTop = onTopItem.getSelection();
+					isOnTop = onTopItem.getSelection();
 
 					logger.info("Select Always On Top : " + isOnTop);
 					// readyToReopen(EmulatorSkin.this, isOnTop);
 
 					if (SkinUtil.setTopMost(shell, isOnTop) == false) {
 						logger.info("failed to Always On Top");
+					} else {
+						if (controlPanel != null) {
+							SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
+						}
 					}
 				}
 			} );

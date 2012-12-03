@@ -1011,18 +1011,22 @@ public class SkinUtil {
 	}
 
 	public static boolean setTopMost(Shell shell, boolean isOnTop) {
+		if (shell == null) {
+			return false;
+		}
+
 		/* internal/Library.java::arch() */
 		String osArch = System.getProperty("os.arch"); /* $NON-NLS-1$ */
-		logger.info(osArch);
+
 		if (osArch.equals("amd64") || osArch.equals("x86_64") ||
 				osArch.equals("IA64W") || osArch.equals("ia64")) {
 			/* $NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$ */
-			logger.info("64bit architecture");
+			logger.info("64bit architecture : " + osArch);
 
 			return setTopMost64(shell, isOnTop); /* 64bit */
 		}
 
-		logger.info("32bit architecture");
+		logger.info("32bit architecture : " + osArch);
 		return setTopMost32(shell, isOnTop); /* 32bit */
 	}
 }
