@@ -25,6 +25,7 @@
 #include "ps2.h"
 #include "console.h"
 #include "sysemu.h"
+#include "qemu-thread.h"
 
 /* debug PC keyboard */
 //#define DEBUG_KBD
@@ -131,6 +132,8 @@ static const unsigned char ps2_raw_keycode_set3[128] = {
  71,  79,  86,  94,   8,  16,  24,  32,  40,  48,  56,  64,  72,  80,  87, 111,
  19,  25,  57,  81,  83,  92,  95,  98,  99, 100, 101, 103, 104, 106, 109, 110
 };
+
+static QemuMutex mutex;
 
 void ps2_queue(void *opaque, int b)
 {
@@ -379,7 +382,9 @@ static void ps2_mouse_event(void *opaque,
         for(;;) {
             /* if not remote, send event. Multiple events are sent if
                too big deltas */
+            qemu_mutex_lock(&mutex);
             ps2_mouse_send_packet(s);
+            qemu_mutex_unlock(&mutex);
             if (s->mouse_dx == 0 && s->mouse_dy == 0 && s->mouse_dz == 0)
                 break;
         }
@@ -676,5 +681,7 @@ void *ps2_mouse_init(void (*update_irq)(void *, int), void *update_arg)
     vmstate_register(NULL, 0, &vmstate_ps2_mouse, s);
     qemu_add_mouse_event_handler(ps2_mouse_event, s, 0, "QEMU PS/2 Mouse");
     qemu_register_reset(ps2_mouse_reset, s);
+    qemu_mutex_init(&mutex);
+
     return s;
 }
