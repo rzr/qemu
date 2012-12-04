@@ -175,7 +175,7 @@ public class ControlPanel extends SkinWindow {
 				ImageButton HWKeyButton = new ImageButton(compositeBase, SWT.NONE,
 						imageNormal, imageHover, imagePushed);
 				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-				//HWKeyButton.setToolTipText(keyEntry.getTooltip());
+				HWKeyButton.setToolTipText(keyEntry.getTooltip());
 				HWKeyButton.setBackground(colorFrame);
 				HWKeyButton.setLayoutData(new GridData(imageNormal.getImageData().width,
 								imageNormal.getImageData().height));
