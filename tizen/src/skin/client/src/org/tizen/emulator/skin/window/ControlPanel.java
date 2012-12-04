@@ -269,6 +269,18 @@ public class ControlPanel extends SkinWindow {
 				if (e.button == 1) { /* left button */
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
+
+					Rectangle parentBounds = parent.getBounds();
+					Rectangle childBounds = shell.getBounds();
+
+					Rectangle attachBounds = new Rectangle(
+							parentBounds.x + parentBounds.width - 5,
+							parentBounds.y + (parentBounds.height / 2) - 2,
+							30, 4);
+
+					if (childBounds.intersects(attachBounds) == true) {
+						setShellPosition(SWT.RIGHT | SWT.CENTER);
+					}
 				}
 			}
 

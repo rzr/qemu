@@ -58,7 +58,8 @@ public class SkinWindow {
 			return;
 		}
 
-		setShellPosition();
+		setShellPosition(shellPositionType);
+
 		shell.open();
 
 		while (!shell.isDisposed()) {
@@ -68,27 +69,38 @@ public class SkinWindow {
 		}
 	}
 
-	protected void setShellPosition() {
-		int x = 0, y = 0;
+	protected void setShellPosition(int shellPositionType) {
+		int x = 0;
+		int y = 0;
+
+		Rectangle monitorBounds = Display.getDefault().getBounds();
+		logger.info("host monitor display bounds : " + monitorBounds);
+		Rectangle parentBounds = parent.getBounds();
+		logger.info("current parent shell bounds : " + parentBounds);
+		Rectangle childBounds = shell.getBounds();
+		logger.info("current child shell bounds : " + childBounds);
 
 		if (shellPositionType == (SWT.RIGHT | SWT.TOP)) {
-			Rectangle monitorBound = Display.getDefault().getBounds();
-			logger.info("host monitor display bound : " + monitorBound);
-			Rectangle emulatorBound = parent.getBounds();
-			logger.info("current Emulator window bound : " + emulatorBound);
-			Rectangle panelBound = shell.getBounds();
-			logger.info("current Panel shell bound : " + panelBound);
+			x = parentBounds.x + parentBounds.width;
+			y = parentBounds.y;
 
-			/* location correction */
-			x = emulatorBound.x + emulatorBound.width;
-			y = emulatorBound.y;
-			if ((x + panelBound.width) > (monitorBound.x + monitorBound.width)) {
-				x = emulatorBound.x - panelBound.width;
+			/* correction of location */
+			if ((x + childBounds.width) >
+					(monitorBounds.x + monitorBounds.width)) {
+				x = parentBounds.x - childBounds.width;
 			}
 		} else { /* SWT.RIGHT | SWT.CENTER */
-			x = parent.getBounds().x + parent.getBounds().width;
-			y = parent.getBounds().y + (parent.getBounds().height / 2) -
-					(shell.getSize().y / 2);
+			x = parentBounds.x + parentBounds.width;
+			y = parentBounds.y + (parentBounds.height / 2) -
+					(childBounds.height / 2);
+
+			/* correction of location */
+			int shift = (monitorBounds.x + monitorBounds.width) -
+					(x + childBounds.width);
+			if (shift < 0) {
+				x += shift;
+				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+			}
 		}
 
 		shell.setLocation(x, y);
