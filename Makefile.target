@@ -181,6 +181,7 @@ $(call set-vpath, $(SRC_PATH)/hw/yagl_apis/egl: \
                   $(SRC_PATH)/hw/yagl_apis/gles: \
                   $(SRC_PATH)/hw/yagl_apis/gles1: \
                   $(SRC_PATH)/hw/yagl_apis/gles2: \
+                  $(SRC_PATH)/hw/yagl_backends/egl_offscreen: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_glx: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_wgl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles_ogl: \
@@ -204,6 +205,10 @@ obj-y += yagl_api.o
 obj-y += yagl_vector.o
 obj-y += yagl_avl.o
 obj-y += yagl_range_list.o
+obj-y += yagl_egl_backend.o
+obj-y += yagl_eglb_display.o
+obj-y += yagl_eglb_context.o
+obj-y += yagl_eglb_surface.o
 obj-y += yagl_egl_driver.o
 obj-y += yagl_gles_driver.o
 obj-y += yagl_gles1_driver.o
@@ -254,6 +259,13 @@ obj-y += yagl_gles2_shader.o
 obj-y += yagl_gles2_program.o
 obj-y += yagl_gles2_validate.o
 obj-y += yagl_host_gles2_calls.o
+# EGL offscreen backend
+obj-y += yagl_egl_offscreen.o
+obj-y += yagl_egl_offscreen_ps.o
+obj-y += yagl_egl_offscreen_ts.o
+obj-y += yagl_egl_offscreen_display.o
+obj-y += yagl_egl_offscreen_context.o
+obj-y += yagl_egl_offscreen_surface.o
 # EGL GLX driver
 ifdef CONFIG_YAGL_EGL_GLX
 obj-y += yagl_egl_glx.o
