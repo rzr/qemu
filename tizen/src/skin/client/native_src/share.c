@@ -21,13 +21,13 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
     int keyval;
     shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
     if (shmid == -1) {
-	fprintf(stderr, "Share.c: shmget failed\n");
+	fprintf(stderr, "share.c: shmget failed\n");
         exit(1);
     }
     
     temp = shmat(shmid, (char*)0x0, 0);
     if (temp == (void *)-1) {
-        fprintf(stderr, "Share.c: shmat failed\n");
+        fprintf(stderr, "share.c: shmat failed\n");
         exit(1);
     }
     keyval = atoi(temp);
@@ -43,8 +43,6 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
     if (shared_memory == (void *)-1) {
         return 2;
     }
-
-    //printf("Memory attached at %X\n", (int)shared_memory);
 
     return 0;
 }
