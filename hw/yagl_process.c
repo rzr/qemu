@@ -26,7 +26,7 @@ struct yagl_process_state
         }
     }
 
-#ifdef TARGET_I386
+#ifdef CONFIG_KVM
     cpu_synchronize_state(cpu_single_env);
     memcpy(&ps->cr[0], &((CPUX86State*)cpu_single_env)->cr[0], sizeof(ps->cr));
 #endif

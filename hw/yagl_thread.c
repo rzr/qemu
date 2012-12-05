@@ -9,10 +9,10 @@
 #include "kvm.h"
 #include "hax.h"
 
-#ifdef TARGET_I386
+#ifdef CONFIG_KVM
 static __inline void yagl_cpu_synchronize_state(struct yagl_process_state *ps)
 {
-    if (kvm_enabled() || hax_enabled()) {
+    if (kvm_enabled()) {
         memcpy(&((CPUX86State*)cpu_single_env)->cr[0], &ps->cr[0], sizeof(ps->cr));
     }
 }

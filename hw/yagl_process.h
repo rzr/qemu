@@ -25,7 +25,7 @@ struct yagl_process_state
 
     QLIST_HEAD(, yagl_thread_state) threads;
 
-#ifdef TARGET_I386
+#ifdef CONFIG_KVM
     target_ulong cr[5];
 #endif
 };
