@@ -161,13 +161,13 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					skin.hideKeyWindow();
 				} else {
 					skin.setIsControlPanel(true);
-					skin.openKeyWindow();
+					skin.openKeyWindow(true);
 
 					/* move a key window to right of the emulator window */
-					skin.controlPanel.getShell().setLocation(
-							shell.getLocation().x + shell.getSize().x,
-							shell.getLocation().y + (shell.getSize().y / 2) -
-							(skin.controlPanel.getShell().getSize().y / 2));
+					if (skin.controlPanel != null) {
+						skin.controlPanel.setShellPosition(
+								SWT.RIGHT | SWT.CENTER, false);
+					}
 				}
 			}
 
@@ -319,6 +319,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
 
+				if (skin.controlPanel != null &&
+						skin.controlPanel.isAttach() == true) {
+					skin.controlPanel.setShellPosition(
+							SWT.RIGHT | SWT.CENTER, false);
+				}
 			}
 		};
 
@@ -334,7 +339,12 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					int y = previousLocation.y + (e.y - grabPosition.y);
 
 					shell.setLocation(x, y);
-					return;
+
+					if (skin.controlPanel != null &&
+							skin.controlPanel.isAttach() == true) {
+						skin.controlPanel.setShellPosition(
+								SWT.RIGHT | SWT.CENTER, false);
+					}
 				}
 			}
 		};
@@ -349,6 +359,12 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
+
+					if (skin.controlPanel != null &&
+							skin.controlPanel.isAttach() == true) {
+						skin.controlPanel.setShellPosition(
+								SWT.RIGHT | SWT.CENTER, true);
+					}
 				}
 			}
 

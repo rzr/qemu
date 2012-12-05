@@ -279,7 +279,10 @@ public class ControlPanel extends SkinWindow {
 							30, 4);
 
 					if (childBounds.intersects(attachBounds) == true) {
-						setShellPosition(SWT.RIGHT | SWT.CENTER);
+						setShellPosition(SWT.RIGHT | SWT.CENTER, true);
+						isAttach = true;
+					} else {
+						isAttach = false;
 					}
 				}
 			}

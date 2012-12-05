@@ -43,10 +43,12 @@ public class SkinWindow {
 	protected Shell shell;
 	protected Shell parent;
 	private int shellPositionType;
+	protected boolean isAttach;
 
 	public SkinWindow(Shell parent, int shellPositionType) {
 		this.parent = parent;
 		this.shellPositionType = shellPositionType;
+		this.isAttach = false;
 	}
 
 	public Shell getShell() {
@@ -58,7 +60,8 @@ public class SkinWindow {
 			return;
 		}
 
-		setShellPosition(shellPositionType);
+		setShellPosition(shellPositionType, true);
+		isAttach = true;
 
 		shell.open();
 
@@ -69,16 +72,19 @@ public class SkinWindow {
 		}
 	}
 
-	protected void setShellPosition(int shellPositionType) {
+	public void setShellPosition(int shellPositionType, boolean enableLogger) {
 		int x = 0;
 		int y = 0;
 
 		Rectangle monitorBounds = Display.getDefault().getBounds();
-		logger.info("host monitor display bounds : " + monitorBounds);
 		Rectangle parentBounds = parent.getBounds();
-		logger.info("current parent shell bounds : " + parentBounds);
 		Rectangle childBounds = shell.getBounds();
-		logger.info("current child shell bounds : " + childBounds);
+
+		if (enableLogger == true) {
+			logger.info("host monitor display bounds : " + monitorBounds);
+			logger.info("current parent shell bounds : " + parentBounds);
+			logger.info("current child shell bounds : " + childBounds);
+		}
 
 		if (shellPositionType == (SWT.RIGHT | SWT.TOP)) {
 			x = parentBounds.x + parentBounds.width;
@@ -104,5 +110,13 @@ public class SkinWindow {
 		}
 
 		shell.setLocation(x, y);
+	}
+
+	public void setAttach(boolean attach) {
+		isAttach = attach;
+	}
+
+	public boolean isAttach() {
+		return isAttach;
 	}
 }

@@ -182,6 +182,9 @@ public class EmulatorSkin {
 //			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
 //		}
 		this.shell = new Shell(Display.getDefault(), style);
+		if (isOnTop == true) {
+			SkinUtil.setTopMost(shell, true);
+		}
 
 		this.currentState = state;
 	}
@@ -888,10 +891,11 @@ public class EmulatorSkin {
 		return isControlPanel;
 	}
 
-	public void openKeyWindow() {
+	public void openKeyWindow(boolean attach) {
 		if (controlPanel != null) {
 			controlPanel.getShell().setVisible(true);
 			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
+			controlPanel.setAttach(attach);
 
 			pairTagCanvas.setVisible(true);
 			return;
@@ -1005,7 +1009,8 @@ public class EmulatorSkin {
 
 				setIsControlPanel(isControlPanel);
 				if (isControlPanel == true) {
-					openKeyWindow();
+					openKeyWindow((controlPanel == null) ?
+							true : controlPanel.isAttach());
 				} else {
 					hideKeyWindow();
 				}
