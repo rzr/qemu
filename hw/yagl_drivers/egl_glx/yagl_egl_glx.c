@@ -319,14 +319,12 @@ static struct yagl_egl_native_config
 
 static void yagl_egl_glx_config_cleanup(struct yagl_egl_driver_ps *driver_ps,
                                         EGLNativeDisplayType dpy,
-                                        struct yagl_egl_native_config *cfg)
+                                        const struct yagl_egl_native_config *cfg)
 {
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_config_cleanup,
                        "dpy = %p, cfg = %d",
                        dpy,
                        cfg->config_id);
-
-    cfg->driver_data = NULL;
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }

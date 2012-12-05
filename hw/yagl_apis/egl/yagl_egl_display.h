@@ -7,11 +7,12 @@
 #include "qemu-queue.h"
 #include <EGL/egl.h>
 
-struct yagl_egl_driver_ps;
+struct yagl_egl_backend_ps;
 struct yagl_egl_config;
 struct yagl_egl_native_config;
 struct yagl_egl_surface;
 struct yagl_egl_context;
+struct yagl_eglb_display;
 
 struct yagl_egl_display
 {
@@ -22,13 +23,13 @@ struct yagl_egl_display
 
     QLIST_ENTRY(yagl_egl_display) entry;
 
-    struct yagl_egl_driver_ps *driver_ps;
+    struct yagl_egl_backend_ps *backend_ps;
 
     target_ulong display_id;
 
     yagl_host_handle handle;
 
-    EGLNativeDisplayType native_dpy;
+    struct yagl_eglb_display *backend_dpy;
 
     /*
      * @}
@@ -46,7 +47,7 @@ struct yagl_egl_display
 };
 
 struct yagl_egl_display
-    *yagl_egl_display_create(struct yagl_egl_driver_ps *driver_ps,
+    *yagl_egl_display_create(struct yagl_egl_backend_ps *backend_ps,
                              target_ulong display_id);
 
 void yagl_egl_display_destroy(struct yagl_egl_display *dpy);

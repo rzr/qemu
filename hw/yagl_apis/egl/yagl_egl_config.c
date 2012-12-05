@@ -1,6 +1,7 @@
 #include "yagl_egl_config.h"
-#include "yagl_egl_driver.h"
+#include "yagl_egl_backend.h"
 #include "yagl_egl_display.h"
+#include "yagl_eglb_display.h"
 #include "yagl_resource.h"
 #include "yagl_process.h"
 
@@ -31,9 +32,8 @@ static void yagl_egl_config_destroy(struct yagl_ref *ref)
 {
     struct yagl_egl_config *cfg = (struct yagl_egl_config*)ref;
 
-    cfg->dpy->driver_ps->config_cleanup(cfg->dpy->driver_ps,
-                                        cfg->dpy->native_dpy,
-                                        &cfg->native);
+    cfg->dpy->backend_dpy->config_cleanup(cfg->dpy->backend_dpy,
+                                          &cfg->native);
 
     yagl_resource_cleanup(&cfg->res);
 
@@ -151,7 +151,7 @@ static struct yagl_egl_config
     cfg->native.native_renderable = EGL_TRUE;
 
     cfg->native.renderable_type =
-        yagl_egl_config_get_renderable_type(dpy->driver_ps->ps);
+        yagl_egl_config_get_renderable_type(dpy->backend_ps->ps);
 
     cfg->native.conformant =
         (((cfg->native.red_size + cfg->native.green_size + cfg->native.blue_size + cfg->native.alpha_size) > 0) &&
@@ -170,7 +170,7 @@ struct yagl_egl_config
     int num_native_configs, i;
     struct yagl_egl_config **configs;
 
-    native_configs = dpy->driver_ps->config_enum(dpy->driver_ps, dpy->native_dpy, &num_native_configs);
+    native_configs = dpy->backend_dpy->config_enum(dpy->backend_dpy, &num_native_configs);
 
     if (num_native_configs <= 0) {
         return NULL;
@@ -190,9 +190,8 @@ struct yagl_egl_config
             (native_configs[i].green_size != 8) ||
             (native_configs[i].blue_size != 8) ||
             (native_configs[i].alpha_size != 8)) {
-            dpy->driver_ps->config_cleanup(dpy->driver_ps,
-                                           dpy->native_dpy,
-                                           &native_configs[i]);
+            dpy->backend_dpy->config_cleanup(dpy->backend_dpy,
+                                             &native_configs[i]);
             continue;
         }
 

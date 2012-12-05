@@ -443,14 +443,13 @@ out:
 
 static void yagl_egl_wgl_config_cleanup(struct yagl_egl_driver_ps *driver_ps,
                                         EGLNativeDisplayType dpy,
-                                        struct yagl_egl_native_config *cfg)
+                                        const struct yagl_egl_native_config *cfg)
 {
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_config_cleanup,
                        "dpy = %p, cfg = %d",
                        dpy, cfg->config_id);
 
     g_free(cfg->driver_data);
-    cfg->driver_data = NULL;
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }

@@ -13,9 +13,9 @@ struct yagl_egl_api_ts
     struct yagl_thread_state *ts;
 
     /*
-     * From 'api_ps->driver_ps' for speed.
+     * From 'api_ps->backend_ps' for speed.
      */
-    struct yagl_egl_driver_ps *driver_ps;
+    struct yagl_egl_backend_ps *backend_ps;
 
     EGLint error;
 

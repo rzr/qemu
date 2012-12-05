@@ -31,7 +31,10 @@ struct yagl_egl_backend_ps
                          struct yagl_eglb_surface */*draw*/,
                          struct yagl_eglb_surface */*read*/);
 
-    bool (*release_current)(struct yagl_egl_backend_ps */*backend_ps*/);
+    bool (*release_current)(struct yagl_egl_backend_ps */*backend_ps*/,
+                            bool /*force*/);
+
+    void (*wait_native)(struct yagl_egl_backend_ps */*backend_ps*/);
 
     void (*thread_fini)(struct yagl_egl_backend_ps */*backend_ps*/);
 

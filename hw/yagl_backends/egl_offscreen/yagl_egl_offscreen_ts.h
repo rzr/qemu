@@ -4,12 +4,14 @@
 #include "yagl_types.h"
 
 struct yagl_egl_offscreen_display;
+struct yagl_egl_offscreen_context;
 
 struct yagl_egl_offscreen_ts
 {
     struct yagl_thread_state *ts;
 
     struct yagl_egl_offscreen_display *dpy;
+    struct yagl_egl_offscreen_context *ctx;
 };
 
 struct yagl_egl_offscreen_ts

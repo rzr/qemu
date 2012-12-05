@@ -13,12 +13,27 @@ struct yagl_eglb_surface
 
     EGLenum type;
 
+    bool invalid;
+
     union
     {
         struct yagl_egl_window_attribs window;
         struct yagl_egl_pixmap_attribs pixmap;
         struct yagl_egl_pbuffer_attribs pbuffer;
     } attribs;
+
+    void (*invalidate)(struct yagl_eglb_surface */*sfc*/);
+
+    void (*replace)(struct yagl_eglb_surface */*sfc*/,
+                    struct yagl_eglb_surface */*with*/);
+
+    bool (*query)(struct yagl_eglb_surface */*sfc*/,
+                  EGLint /*attribute*/,
+                  EGLint */*value*/);
+
+    bool (*swap_buffers)(struct yagl_eglb_surface */*sfc*/);
+
+    bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/);
 
     void (*destroy)(struct yagl_eglb_surface */*sfc*/);
 };

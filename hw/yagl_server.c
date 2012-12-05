@@ -9,6 +9,7 @@
 #include "yagl_apis/egl/yagl_egl_api.h"
 #include "yagl_apis/gles2/yagl_gles2_api.h"
 #include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
+#include "yagl_backends/egl_offscreen/yagl_egl_offscreen.h"
 #include <GL/gl.h>
 #include "yagl_gles2_driver.h"
 
@@ -34,6 +35,7 @@ struct yagl_server_state *yagl_server_state_create(void)
     struct yagl_server_state *ss =
         g_malloc0(sizeof(struct yagl_server_state));
     struct yagl_egl_driver *egl_driver;
+    struct yagl_egl_backend *egl_backend;
     struct yagl_gles2_driver *gles2_driver;
 
     QLIST_INIT(&ss->processes);
@@ -44,10 +46,17 @@ struct yagl_server_state *yagl_server_state_create(void)
         goto fail;
     }
 
-    ss->apis[yagl_api_id_egl - 1] = yagl_egl_api_create(egl_driver);
+    egl_backend = yagl_egl_offscreen_create(egl_driver);
+
+    if (!egl_backend) {
+        egl_driver->destroy(egl_driver);
+        goto fail;
+    }
+
+    ss->apis[yagl_api_id_egl - 1] = yagl_egl_api_create(egl_backend);
 
     if (!ss->apis[yagl_api_id_egl - 1]) {
-        egl_driver->destroy(egl_driver);
+        egl_backend->destroy(egl_backend);
 
         goto fail;
     }

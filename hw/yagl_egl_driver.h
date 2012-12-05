@@ -43,7 +43,7 @@ struct yagl_egl_driver_ps
 
     void (*config_cleanup)(struct yagl_egl_driver_ps */*driver_ps*/,
                            EGLNativeDisplayType /*dpy*/,
-                           struct yagl_egl_native_config */*cfg*/);
+                           const struct yagl_egl_native_config */*cfg*/);
 
     EGLSurface (*pbuffer_surface_create)(struct yagl_egl_driver_ps */*driver_ps*/,
                                          EGLNativeDisplayType /*dpy*/,

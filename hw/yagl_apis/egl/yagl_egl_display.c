@@ -1,5 +1,6 @@
 #include "yagl_egl_display.h"
-#include "yagl_egl_driver.h"
+#include "yagl_egl_backend.h"
+#include "yagl_eglb_display.h"
 #include "yagl_egl_config.h"
 #include "yagl_egl_surface.h"
 #include "yagl_egl_context.h"
@@ -8,24 +9,24 @@
 #include "yagl_handle_gen.h"
 
 struct yagl_egl_display
-    *yagl_egl_display_create(struct yagl_egl_driver_ps *driver_ps,
+    *yagl_egl_display_create(struct yagl_egl_backend_ps *backend_ps,
                              target_ulong display_id)
 {
-    EGLNativeDisplayType native_dpy;
+    struct yagl_eglb_display *backend_dpy;
     struct yagl_egl_display *dpy;
 
-    native_dpy = driver_ps->display_create(driver_ps);
+    backend_dpy = backend_ps->create_display(backend_ps);
 
-    if (!native_dpy) {
+    if (!backend_dpy) {
         return NULL;
     }
 
     dpy = g_malloc0(sizeof(*dpy));
 
-    dpy->driver_ps = driver_ps;
+    dpy->backend_ps = backend_ps;
     dpy->display_id = display_id;
     dpy->handle = yagl_handle_gen();
-    dpy->native_dpy = native_dpy;
+    dpy->backend_dpy = backend_dpy;
 
     qemu_mutex_init(&dpy->mutex);
 
@@ -48,7 +49,7 @@ void yagl_egl_display_destroy(struct yagl_egl_display *dpy)
 
     qemu_mutex_destroy(&dpy->mutex);
 
-    dpy->driver_ps->display_destroy(dpy->driver_ps, dpy->native_dpy);
+    dpy->backend_dpy->destroy(dpy->backend_dpy);
 
     g_free(dpy);
 }
@@ -58,7 +59,7 @@ void yagl_egl_display_initialize(struct yagl_egl_display *dpy)
     struct yagl_egl_config **cfgs;
     int i, num_configs = 0;
 
-    YAGL_LOG_FUNC_ENTER(dpy->driver_ps->ps->id, 0, yagl_egl_display_initialize, NULL);
+    YAGL_LOG_FUNC_ENTER(dpy->backend_ps->ps->id, 0, yagl_egl_display_initialize, NULL);
 
     qemu_mutex_lock(&dpy->mutex);
 
