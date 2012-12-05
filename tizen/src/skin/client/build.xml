@@ -87,7 +87,7 @@
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-shared" />
 			<arg line="-c" />
-			<arg line="Share.c" />
+			<arg line="share.c" />
 			<arg line="-o" />
 			<arg line="libshared.so" />
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
@@ -107,14 +107,14 @@
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-mmacosx-version-min=10.4" />
 			<arg line="-c" />
-			<arg line="Share.c" />
+			<arg line="share.c" />
 			<arg line="-o" />
-			<arg line="Share.o" />
+			<arg line="share.o" />
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
 		</exec>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-dynamiclib" />
-			<arg line="Share.o" />
+			<arg line="share.o" />
 			<arg line="-o" />
 			<arg line="libshared.dylib" />
 		</exec>
