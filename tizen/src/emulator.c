@@ -83,11 +83,6 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define LCD_WIDTH_PREFIX "width="
 #define LCD_HEIGHT_PREFIX "height="
 #define MIDBUF  128
-#if defined(TARGET_I386)
-#define ARCH "x86"
-#else
-#define ARCH "arm"
-#endif
 
 int tizen_base_port;
 char tizen_target_path[MAXLEN];
@@ -213,7 +208,7 @@ void make_shdmem(void)
         ERR("shmat failed\n");
         return;
     }
-    sprintf(shared_memory, "%s:%s", tizen_target_path, ARCH);
+    sprintf(shared_memory, "%s", tizen_target_path);
     INFO("shared memory key: %d value: %s\n",
         tizen_base_port, (char *)shared_memory);
 #elif defined(CONFIG_WIN32)
@@ -222,7 +217,7 @@ void make_shdmem(void)
     char *port_in_use;
     char *shared_memory;
 
-    shared_memory = g_strdup_printf("%s:%s", tizen_target_path, ARCH);
+    shared_memory = g_strdup_printf("%s", tizen_target_path);
     port_in_use =  g_strdup_printf("%d", tizen_base_port);
     hMapFile = CreateFileMapping(
                  INVALID_HANDLE_VALUE, /* use paging file */
