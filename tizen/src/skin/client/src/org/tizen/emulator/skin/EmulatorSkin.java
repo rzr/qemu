@@ -1008,6 +1008,7 @@ public class EmulatorSkin {
 		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* Key Window menu */
+		if (skinInfo.isPhoneShape() == false) { //TODO:
 		panelItem = new MenuItem(menu, SWT.CHECK);
 		panelItem.setText("&Key Window");
 		panelItem.setSelection(isControlPanel);
@@ -1032,6 +1033,7 @@ public class EmulatorSkin {
 				}
 			}
 		} );
+		}
 
 		/* Advanced menu */
 		final MenuItem advancedItem = new MenuItem( menu, SWT.CASCADE );
