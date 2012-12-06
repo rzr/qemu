@@ -50,10 +50,6 @@ static void yagl_egl_offscreen_surface_invalidate(struct yagl_eglb_surface *sfc)
     yagl_compiled_transfer_destroy(osfc->bimage_ct);
     osfc->bimage_ct = NULL;
 
-    osfc->width = 0;
-    osfc->height = 0;
-    osfc->bpp = 0;
-
     sfc->invalid = true;
 }
 
@@ -68,8 +64,12 @@ static void yagl_egl_offscreen_surface_replace(struct yagl_eglb_surface *sfc,
     yagl_egl_offscreen_surface_cleanup(osfc);
 
     osfc->bimage_ct = owith->bimage_ct;
+    osfc->width = owith->width;
+    osfc->height = owith->height;
+    osfc->bpp = owith->bpp;
     osfc->host_pixels = owith->host_pixels;
     osfc->native_sfc = owith->native_sfc;
+    osfc->native_sfc_attribs = owith->native_sfc_attribs;
 
     yagl_eglb_surface_cleanup(with);
 
@@ -102,7 +102,6 @@ static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sf
     struct yagl_egl_offscreen_surface *osfc =
         (struct yagl_egl_offscreen_surface*)sfc;
     struct yagl_egl_offscreen_context *octx = egl_offscreen_ts->ctx;
-    bool res = false;
 
     YAGL_LOG_FUNC_SET_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_surface_swap_buffers);
 
@@ -117,14 +116,11 @@ static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sf
         return false;
     }
 
-    if (osfc->bimage_ct) {
-        yagl_compiled_transfer_exec(osfc->bimage_ct, osfc->host_pixels);
-        res = true;
-    } else {
-        YAGL_LOG_ERROR("surface was destroyed, weird scenario!");
-    }
+    assert (osfc->bimage_ct);
 
-    return res;
+    yagl_compiled_transfer_exec(osfc->bimage_ct, osfc->host_pixels);
+
+    return true;
 }
 
 static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
@@ -132,7 +128,6 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
     struct yagl_egl_offscreen_surface *osfc =
         (struct yagl_egl_offscreen_surface*)sfc;
     struct yagl_egl_offscreen_context *octx = egl_offscreen_ts->ctx;
-    bool res = false;
 
     YAGL_LOG_FUNC_SET_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_surface_copy_buffers);
 
@@ -147,14 +142,11 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
         return false;
     }
 
-    if (osfc->bimage_ct) {
-        yagl_compiled_transfer_exec(osfc->bimage_ct, osfc->host_pixels);
-        res = true;
-    } else {
-        YAGL_LOG_ERROR("surface was destroyed, weird scenario!");
-    }
+    assert(osfc->bimage_ct);
 
-    return res;
+    yagl_compiled_transfer_exec(osfc->bimage_ct, osfc->host_pixels);
+
+    return true;
 }
 
 static void yagl_egl_offscreen_surface_destroy(struct yagl_eglb_surface *sfc)

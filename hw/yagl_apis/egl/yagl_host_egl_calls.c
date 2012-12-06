@@ -1493,13 +1493,21 @@ bool yagl_host_eglSwapBuffers(EGLBoolean* retval,
 
     yagl_egl_surface_lock(surface);
 
-    if (!surface->backend_sfc->swap_buffers(surface->backend_sfc)) {
+    if (surface->backend_sfc->invalid) {
         yagl_egl_surface_unlock(surface);
         YAGL_SET_ERR(EGL_BAD_SURFACE);
         goto out;
     }
 
+    if (!surface->backend_sfc->swap_buffers(surface->backend_sfc)) {
+        yagl_egl_surface_unlock(surface);
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
+        goto out;
+    }
+
     yagl_egl_surface_unlock(surface);
+
+    *retval = EGL_TRUE;
 
 out:
     yagl_egl_surface_release(surface);
@@ -1541,13 +1549,21 @@ bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
 
     yagl_egl_surface_lock(surface);
 
-    if (!surface->backend_sfc->copy_buffers(surface->backend_sfc)) {
+    if (surface->backend_sfc->invalid) {
         yagl_egl_surface_unlock(surface);
         YAGL_SET_ERR(EGL_BAD_SURFACE);
         goto out;
     }
 
+    if (!surface->backend_sfc->copy_buffers(surface->backend_sfc)) {
+        yagl_egl_surface_unlock(surface);
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
+        goto out;
+    }
+
     yagl_egl_surface_unlock(surface);
+
+    *retval = EGL_TRUE;
 
 out:
     yagl_egl_surface_release(surface);
@@ -1974,7 +1990,7 @@ bool yagl_host_eglResizeOffscreenSurfaceYAGL(EGLBoolean* retval,
                                               read_sfc)) {
         yagl_egl_surface_unlock(surface);
         YAGL_LOG_ERROR("make_current failed");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
         goto out;
     }
 
