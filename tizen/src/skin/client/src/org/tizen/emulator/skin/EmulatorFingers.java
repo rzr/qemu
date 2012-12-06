@@ -1,5 +1,5 @@
 /**
- * Emulator Skin Process
+ *
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *

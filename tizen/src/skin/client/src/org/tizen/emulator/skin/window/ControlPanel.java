@@ -58,6 +58,7 @@ import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.layout.SkinPatches;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class ControlPanel extends SkinWindow {
 	private static final String PATCH_IMAGES_PATH = "images/key-window/";
@@ -226,10 +227,21 @@ public class ControlPanel extends SkinWindow {
 		Region region = new Region();
 		region.add(new Rectangle(0, 0, width, height));
 
+		int r = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getRed();
+		int g = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getGreen();
+		int b = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getBlue();
+		int colorKey;
+
+		if (SwtUtil.isWindowsPlatform()) {
+			colorKey = r << 24 | g << 16 | b << 8;
+		} else {
+			colorKey = r << 16 | g << 8 | b;
+		}
+
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
 				int colorPixel = imageData.getPixel(i, j);
-				if (colorPixel == 0xFF00FF /* magenta */) {
+				if (colorPixel == colorKey /* magenta */) {
 					region.subtract(i, j, 1, 1);
 				}
 			}
