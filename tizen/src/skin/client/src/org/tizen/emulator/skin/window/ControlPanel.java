@@ -274,19 +274,38 @@ public class ControlPanel extends SkinWindow {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
+					/* Let me check whether the key window was landed
+					 * on docking area. */
 					Rectangle parentBounds = parent.getBounds();
 					Rectangle childBounds = shell.getBounds();
 
-					Rectangle attachBounds = new Rectangle(
-							parentBounds.x + parentBounds.width - 5,
-							parentBounds.y + (parentBounds.height / 2) - 2,
-							30, 4);
+					/* right-middle */
+					Rectangle attachBounds1 = new Rectangle(
+							(parentBounds.x + parentBounds.width) - 5,
+							(parentBounds.y + (parentBounds.height / 2)) - 10,
+							30, 20);
+					/* right-top */
+					Rectangle attachBounds2 = new Rectangle(
+							(parentBounds.x + parentBounds.width) - 5,
+							(parentBounds.y) - 40,
+							30, 80);
+					/* right-bottom */
+					Rectangle attachBounds3 = new Rectangle(
+							(parentBounds.x + parentBounds.width) - 5,
+							(parentBounds.y + parentBounds.height) - 40,
+							30, 80);
 
-					if (childBounds.intersects(attachBounds) == true) {
-						setShellPosition(SWT.RIGHT | SWT.CENTER, true);
-						isAttach = true;
+					if (childBounds.intersects(attachBounds1) == true) {
+						setShellPosition(SWT.RIGHT | SWT.CENTER, false, true);
+						isAttach = SWT.RIGHT | SWT.CENTER;
+					} else if (childBounds.intersects(attachBounds2) == true) {
+						setShellPosition(SWT.RIGHT | SWT.TOP, false, true);
+						isAttach = SWT.RIGHT | SWT.TOP;
+					} else if (childBounds.intersects(attachBounds3) == true) {
+						setShellPosition(SWT.RIGHT | SWT.BOTTOM, false, true);
+						isAttach = SWT.RIGHT | SWT.BOTTOM;
 					} else {
-						isAttach = false;
+						isAttach = SWT.NONE;
 					}
 				}
 			}

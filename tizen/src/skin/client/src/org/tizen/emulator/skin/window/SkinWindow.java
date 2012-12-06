@@ -43,12 +43,12 @@ public class SkinWindow {
 	protected Shell shell;
 	protected Shell parent;
 	private int shellPositionType;
-	protected boolean isAttach;
+	protected int isAttach;
 
 	public SkinWindow(Shell parent, int shellPositionType) {
 		this.parent = parent;
 		this.shellPositionType = shellPositionType;
-		this.isAttach = false;
+		this.isAttach = SWT.NONE;
 	}
 
 	public Shell getShell() {
@@ -60,8 +60,8 @@ public class SkinWindow {
 			return;
 		}
 
-		setShellPosition(shellPositionType, true);
-		isAttach = true;
+		setShellPosition(shellPositionType, true, true);
+		isAttach = SWT.RIGHT | SWT.CENTER;
 
 		shell.open();
 
@@ -72,7 +72,8 @@ public class SkinWindow {
 		}
 	}
 
-	public void setShellPosition(int shellPositionType, boolean enableLogger) {
+	public void setShellPosition(int shellPositionType,
+			boolean correction, boolean enableLogger) {
 		int x = 0;
 		int y = 0;
 
@@ -91,16 +92,29 @@ public class SkinWindow {
 			y = parentBounds.y;
 
 			/* correction of location */
-			if ((x + childBounds.width) >
-					(monitorBounds.x + monitorBounds.width)) {
-				x = parentBounds.x - childBounds.width;
-			}
+//			if ((x + childBounds.width) >
+//					(monitorBounds.x + monitorBounds.width)) {
+//				x = parentBounds.x - childBounds.width;
+//			}
+		} else if (shellPositionType == (SWT.RIGHT | SWT.BOTTOM)) {
+			x = parentBounds.x + parentBounds.width;
+			y = parentBounds.y + parentBounds.height - childBounds.height;
+
+			/* correction of location */
+//			int shift = (monitorBounds.x + monitorBounds.width) -
+//					(x + childBounds.width);
+//			if (shift < 0) {
+//				x += shift;
+//				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+//			}
 		} else { /* SWT.RIGHT | SWT.CENTER */
 			x = parentBounds.x + parentBounds.width;
 			y = parentBounds.y + (parentBounds.height / 2) -
 					(childBounds.height / 2);
+		}
 
-			/* correction of location */
+		/* correction of location */
+		if (correction == true) {
 			int shift = (monitorBounds.x + monitorBounds.width) -
 					(x + childBounds.width);
 			if (shift < 0) {
@@ -112,11 +126,11 @@ public class SkinWindow {
 		shell.setLocation(x, y);
 	}
 
-	public void setAttach(boolean attach) {
+	public void setAttach(int attach) {
 		isAttach = attach;
 	}
 
-	public boolean isAttach() {
+	public int isAttach() {
 		return isAttach;
 	}
 }

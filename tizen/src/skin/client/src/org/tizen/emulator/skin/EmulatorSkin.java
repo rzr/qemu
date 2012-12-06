@@ -900,7 +900,7 @@ public class EmulatorSkin {
 		return isControlPanel;
 	}
 
-	public void openKeyWindow(boolean attach) {
+	public void openKeyWindow(int attach) {
 		if (controlPanel != null) {
 			controlPanel.getShell().setVisible(true);
 			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
@@ -1020,9 +1020,10 @@ public class EmulatorSkin {
 				setIsControlPanel(isControlPanel);
 				if (isControlPanel == true) {
 					openKeyWindow((controlPanel == null) ?
-							true : controlPanel.isAttach());
+							SWT.NONE : controlPanel.isAttach());
 				} else { /* hide a key window */
-					if (controlPanel != null && controlPanel.isAttach()) {
+					if (controlPanel != null &&
+							controlPanel.isAttach() != SWT.NONE) {
 						pairTagCanvas.setVisible(false);
 						controlPanel.getShell().close();
 					} else {
