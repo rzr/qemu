@@ -157,8 +157,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (skin.getIsControlPanel() == true) {
+					skin.controlPanel.getShell().close();
 					skin.setIsControlPanel(false);
-					skin.hideKeyWindow();
+					skin.pairTagCanvas.setVisible(false);
 				} else {
 					skin.setIsControlPanel(true);
 					skin.openKeyWindow(true);
@@ -244,11 +245,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				lcdBounds.y + (lcdBounds.height / 2) - (toggleButton.getImageSize().y / 2),
 				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
 
-		/* arrange the pair tag */
-		skin.pairTagCanvas.setBounds(26, 13, 8, 8);
-
 		/* custom window shape */
 		trimPatchedShell(shell, currentState.getCurrentImage());
+
+		/* arrange the pair tag */
+		skin.pairTagCanvas.setBounds(26, 13, 8, 8);
 
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {

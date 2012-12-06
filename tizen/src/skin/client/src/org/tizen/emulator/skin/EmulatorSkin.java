@@ -186,6 +186,12 @@ public class EmulatorSkin {
 			SkinUtil.setTopMost(shell, true);
 		}
 
+		/* generate a pair tag color of key window */
+		int red = (int) (Math.random() * 256);
+		int green = (int) (Math.random() * 256);
+		int blue = (int) (Math.random() * 256);
+		this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
+
 		this.currentState = state;
 	}
 
@@ -352,7 +358,10 @@ public class EmulatorSkin {
 								cpShell.close();
 							}
 							controlPanel = null;
-							colorPairTag.dispose();
+
+							if (colorPairTag != null) {
+								colorPairTag.dispose();
+							}
 						}
 
 						/* save config only for emulator close */
@@ -914,10 +923,11 @@ public class EmulatorSkin {
 		}
 
 		try {
-			controlPanel = new ControlPanel(shell, communicator, keyMapList);
+			controlPanel = new ControlPanel(shell, colorPairTag,
+					communicator, keyMapList);
 			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
 
-			colorPairTag = controlPanel.getPairTagColor();
+			//colorPairTag = controlPanel.getPairTagColor();
 			pairTagCanvas.setVisible(true);
 
 			controlPanel.open();
@@ -1011,8 +1021,13 @@ public class EmulatorSkin {
 				if (isControlPanel == true) {
 					openKeyWindow((controlPanel == null) ?
 							true : controlPanel.isAttach());
-				} else {
-					hideKeyWindow();
+				} else { /* hide a key window */
+					if (controlPanel != null && controlPanel.isAttach()) {
+						pairTagCanvas.setVisible(false);
+						controlPanel.getShell().close();
+					} else {
+						hideKeyWindow();
+					}
 				}
 			}
 		} );

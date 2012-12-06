@@ -85,12 +85,13 @@ public class ControlPanel extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public ControlPanel(Shell parent,
+	public ControlPanel(Shell parent, Color colorPairTag,
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent, SWT.RIGHT | SWT.CENTER);
 
 		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM | SWT.RESIZE);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
+		this.colorPairTag = colorPairTag;
 
 		this.keyMapList = keyMapList;
 		this.communicator = communicator;
@@ -116,11 +117,12 @@ public class ControlPanel extends SkinWindow {
 		this.imageFrame = frameMaker.getPatchedImage(width, height);
 		this.colorFrame = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 
-		/* generate a pair tag color of key window */
-		int red = (int) (Math.random() * 256);
-		int green = (int) (Math.random() * 256);
-		int blue = (int) (Math.random() * 256);
-		this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
+//		/* generate a pair tag color of key window */
+//		int red = (int) (Math.random() * 256);
+//		int green = (int) (Math.random() * 256);
+//		int blue = (int) (Math.random() * 256);
+//		this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
+		this.colorPairTag = colorPairTag;
 
 		createContents();
 		trimPatchedShell(shell, imageFrame);
@@ -149,9 +151,11 @@ public class ControlPanel extends SkinWindow {
 		pairTagCanvas.addPaintListener(new PaintListener() {
 			@Override
 			public void paintControl(PaintEvent e) {
-				e.gc.setBackground(colorPairTag);
-				e.gc.setAntialias(SWT.ON);
-				e.gc.fillOval(0, 0, PAIRTAG_CIRCLE_SIZE, PAIRTAG_CIRCLE_SIZE);
+				if (colorPairTag != null) {
+					e.gc.setBackground(colorPairTag);
+					e.gc.setAntialias(SWT.ON);
+					e.gc.fillOval(0, 0, PAIRTAG_CIRCLE_SIZE, PAIRTAG_CIRCLE_SIZE);
+				}
 			}
 		});
 
@@ -325,7 +329,6 @@ public class ControlPanel extends SkinWindow {
 				imageHover.dispose();
 				imagePushed.dispose();
 				colorFrame.dispose();
-				colorPairTag.dispose();
 
 				frameMaker.freePatches();
 			}
