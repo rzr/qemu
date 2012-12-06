@@ -11,24 +11,28 @@
                         <keyCode>101</keyCode>
                         <keyName>Home</keyName>
                     </eventInfo>
+                    <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
                     <eventInfo>
                         <keyCode>103</keyCode>
                         <keyName>Power</keyName>
                     </eventInfo>
+                    <tooltip>Power</tooltip>
                 </keyMap>
                 <keyMap>
                     <eventInfo>
                         <keyCode>115</keyCode>
                         <keyName>Volume +</keyName>
                     </eventInfo>
+                    <tooltip>Volume +</tooltip>
                 </keyMap>
                 <keyMap>
                     <eventInfo>
                         <keyCode>114</keyCode>
                         <keyName>Volume -</keyName>
                     </eventInfo>
+                    <tooltip>Volume -</tooltip>
                 </keyMap>
             </keyMapList>
         </rotation>

@@ -37,14 +37,18 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 public class SkinWindow {
-	private Logger logger = SkinLogger.getSkinLogger(
-					SkinWindow.class).getLogger();
+	protected Logger logger = SkinLogger.getSkinLogger(
+			SkinWindow.class).getLogger();
 
 	protected Shell shell;
 	protected Shell parent;
+	private int shellPositionType;
+	protected int isAttach;
 
-	public SkinWindow(Shell parent) {
+	public SkinWindow(Shell parent, int shellPositionType) {
 		this.parent = parent;
+		this.shellPositionType = shellPositionType;
+		this.isAttach = SWT.NONE;
 	}
 
 	public Shell getShell() {
@@ -56,7 +60,9 @@ public class SkinWindow {
 			return;
 		}
 
-		setShellPosition();
+		setShellPosition(shellPositionType, true, true);
+		isAttach = SWT.RIGHT | SWT.CENTER;
+
 		shell.open();
 
 		while (!shell.isDisposed()) {
@@ -66,21 +72,65 @@ public class SkinWindow {
 		}
 	}
 
-	protected void setShellPosition() {
-		Rectangle monitorBound = Display.getDefault().getBounds();
-		logger.info("host monitor display bound : " + monitorBound);
-		Rectangle emulatorBound = parent.getBounds();
-		logger.info("current Emulator window bound : " + emulatorBound);
-		Rectangle panelBound = shell.getBounds();
-		logger.info("current Panel shell bound : " + panelBound);
+	public void setShellPosition(int shellPositionType,
+			boolean correction, boolean enableLogger) {
+		int x = 0;
+		int y = 0;
 
-		/* location correction */
-		int x = emulatorBound.x + emulatorBound.width;
-		int y = emulatorBound.y;
-		if ((x + panelBound.width) > (monitorBound.x + monitorBound.width)) {
-			x = emulatorBound.x - panelBound.width;
+		Rectangle monitorBounds = Display.getDefault().getBounds();
+		Rectangle parentBounds = parent.getBounds();
+		Rectangle childBounds = shell.getBounds();
+
+		if (enableLogger == true) {
+			logger.info("host monitor display bounds : " + monitorBounds);
+			logger.info("current parent shell bounds : " + parentBounds);
+			logger.info("current child shell bounds : " + childBounds);
+		}
+
+		if (shellPositionType == (SWT.RIGHT | SWT.TOP)) {
+			x = parentBounds.x + parentBounds.width;
+			y = parentBounds.y;
+
+			/* correction of location */
+//			if ((x + childBounds.width) >
+//					(monitorBounds.x + monitorBounds.width)) {
+//				x = parentBounds.x - childBounds.width;
+//			}
+		} else if (shellPositionType == (SWT.RIGHT | SWT.BOTTOM)) {
+			x = parentBounds.x + parentBounds.width;
+			y = parentBounds.y + parentBounds.height - childBounds.height;
+
+			/* correction of location */
+//			int shift = (monitorBounds.x + monitorBounds.width) -
+//					(x + childBounds.width);
+//			if (shift < 0) {
+//				x += shift;
+//				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+//			}
+		} else { /* SWT.RIGHT | SWT.CENTER */
+			x = parentBounds.x + parentBounds.width;
+			y = parentBounds.y + (parentBounds.height / 2) -
+					(childBounds.height / 2);
+		}
+
+		/* correction of location */
+		if (correction == true) {
+			int shift = (monitorBounds.x + monitorBounds.width) -
+					(x + childBounds.width);
+			if (shift < 0) {
+				x += shift;
+				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+			}
 		}
 
 		shell.setLocation(x, y);
+	}
+
+	public void setAttach(int attach) {
+		isAttach = attach;
+	}
+
+	public int isAttach() {
+		return isAttach;
 	}
 }

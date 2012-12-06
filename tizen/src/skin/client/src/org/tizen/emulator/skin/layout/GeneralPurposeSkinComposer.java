@@ -28,67 +28,76 @@
 
 package org.tizen.emulator.skin.layout;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
-import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
-import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
-import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
-import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
+import org.tizen.emulator.skin.window.ImageButton;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
+	private static final String PATCH_IMAGES_PATH = "images/emul-window/";
+
 	private Logger logger = SkinLogger.getSkinLogger(
 			GeneralPurposeSkinComposer.class).getLogger();
 
 	private EmulatorConfig config;
+	private EmulatorSkin skin;
 	private Shell shell;
 	private Canvas lcdCanvas;
-	private Composite compositeBase;
+	private ImageButton toggleButton;
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
-	private SocketCommunicator communicator;
+	private SkinPatches frameMaker;
 
-	public GeneralPurposeSkinComposer(EmulatorConfig config, Shell shell,
-			EmulatorSkinState currentState, ImageRegistry imageRegistry,
-			SocketCommunicator communicator) {
+	private PaintListener shellPaintListener;
+	private MouseMoveListener shellMouseMoveListener;
+	private MouseListener shellMouseListener;
+
+	private boolean isGrabbedShell;
+	private Point grabPosition;
+
+	public GeneralPurposeSkinComposer(EmulatorConfig config, EmulatorSkin skin,
+			Shell shell, EmulatorSkinState currentState,
+			ImageRegistry imageRegistry) {
 		this.config = config;
+		this.skin = skin;
 		this.shell = shell;
-		this.compositeBase = null;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
-		this.communicator = communicator;
+		this.isGrabbedShell= false;
+		this.grabPosition = new Point(0, 0);
+
+		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 	}
 
 	@Override
 	public Canvas compose() {
-		shell.setLayout(new FormLayout());
-
 		lcdCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
 
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
@@ -107,13 +116,13 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		composeInternal(lcdCanvas, x, y, scale, rotationId);
 		logger.info("resolution : " + currentState.getCurrentResolution() +
 				", scale : " + scale);
-		
+
 		return lcdCanvas;
 	}
 
 	@Override
 	public void composeInternal(Canvas lcdCanvas,
-			int x, int y, int scale, short rotationId) {
+			final int x, final int y, int scale, short rotationId) {
 
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
@@ -128,6 +137,68 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		} else {
 			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
 		}
+
+		/* load image for toggle button of key window */
+		ClassLoader loader = this.getClass().getClassLoader();
+		Image imageNormal = new Image(shell.getDisplay(),
+				loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_nml.png"));
+		Image imageHover = new Image(shell.getDisplay(),
+						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_hover.png"));
+		Image imagePushed = new Image(shell.getDisplay(),
+						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_pushed.png"));
+
+		/* create a toggle button of key window */
+		toggleButton = new ImageButton(shell, SWT.DRAW_TRANSPARENT,
+				imageNormal, imageHover, imagePushed);
+		toggleButton.setBackground(
+				new Color(shell.getDisplay(), new RGB(0x1f, 0x1f, 0x1f)));
+
+		toggleButton.addMouseListener(new MouseListener() {
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (skin.getIsControlPanel() == true) {
+					skin.controlPanel.getShell().close();
+					skin.setIsControlPanel(false);
+					skin.pairTagCanvas.setVisible(false);
+				} else {
+					skin.setIsControlPanel(true);
+					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER);
+
+					/* move a key window to right of the emulator window */
+					if (skin.controlPanel != null) {
+						skin.controlPanel.setShellPosition(
+								SWT.RIGHT | SWT.CENTER, true, false);
+					}
+				}
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				/* do nothing */
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+		});
+
+		/* make a pair tag circle */
+		skin.pairTagCanvas = new Canvas(shell, SWT.NONE);
+		skin.pairTagCanvas.setBackground(
+				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
+
+		skin.pairTagCanvas.addPaintListener(new PaintListener() {
+			@Override
+			public void paintControl(PaintEvent e) {
+				if (skin.colorPairTag != null) {
+					e.gc.setBackground(skin.colorPairTag);
+					e.gc.setAntialias(SWT.ON);
+					e.gc.fillOval(0, 0, 8, 8);
+				}
+			}
+		});
+		skin.pairTagCanvas.setVisible(false);
 
 		arrangeSkin(scale, rotationId);
 	}
@@ -153,61 +224,38 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 		logger.info("lcd bounds : " + lcdBounds);
 
-		FormData dataCanvas = new FormData();
-		dataCanvas.left = new FormAttachment(0, lcdBounds.x);
-		dataCanvas.top = new FormAttachment(0, lcdBounds.y);
-		dataCanvas.width = lcdBounds.width;
-		dataCanvas.height = lcdBounds.height;
-		lcdCanvas.setLayoutData(dataCanvas);
+		lcdCanvas.setBounds(lcdBounds);
 
-		if (compositeBase != null) {
-			compositeBase.dispose();
-			compositeBase = null;
+		/* arrange the skin image */
+		Image tempImage = null;
+
+		if (currentState.getCurrentImage() != null) {
+			tempImage = currentState.getCurrentImage();
 		}
 
-		shell.pack();
+		currentState.setCurrentImage(
+				frameMaker.getPatchedImage(lcdBounds.width, lcdBounds.height));
 
-		List<KeyMapType> keyMapList =
-				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
+		if (tempImage != null) {
+			tempImage.dispose();
+		}
 
-		if (keyMapList != null && keyMapList.isEmpty() == false) {
-			compositeBase = new Composite(shell, SWT.NONE);
-			compositeBase.setLayout(new GridLayout(1, true));
+		/* arrange the toggle button of key window */
+		toggleButton.setBounds(lcdBounds.x + lcdBounds.width,
+				lcdBounds.y + (lcdBounds.height / 2) - (toggleButton.getImageSize().y / 2),
+				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
 
-			for (KeyMapType keyEntry : keyMapList) {
-				Button hardKeyButton = new Button(compositeBase, SWT.FLAT);
-				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-				hardKeyButton.setToolTipText(keyEntry.getTooltip());
+		/* custom window shape */
+		trimPatchedShell(shell, currentState.getCurrentImage());
 
-				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		/* arrange the pair tag */
+		skin.pairTagCanvas.setBounds(26, 13, 8, 8);
 
-				final int keycode = keyEntry.getEventInfo().getKeyCode();
-				hardKeyButton.addMouseListener(new MouseListener() {
-					@Override
-					public void mouseDown(MouseEvent e) {
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.PRESSED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-					}
-
-					@Override
-					public void mouseUp(MouseEvent e) {
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-					}
-
-					@Override
-					public void mouseDoubleClick(MouseEvent e) {
-						/* do nothing */
-					}
-				});
-			}
-
-			FormData dataComposite = new FormData();
-			dataComposite.left = new FormAttachment(lcdCanvas, 0);
-			dataComposite.top = new FormAttachment(0, 0);
-			compositeBase.setLayoutData(dataComposite);
+		/* set window size */
+		if (currentState.getCurrentImage() != null) {
+			ImageData imageData = currentState.getCurrentImage().getImageData();
+			shell.setMinimumSize(imageData.width, imageData.height);
+			shell.setSize(imageData.width, imageData.height);
 		}
 
 		shell.pack();
@@ -218,7 +266,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	public Rectangle adjustLcdGeometry(
 			Canvas lcdCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId) {
-		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
+
+		Rectangle lcdBounds = new Rectangle(
+				frameMaker.getPatchWidth(), frameMaker.getPatchHeight(), 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationInfo rotation = RotationInfo.getValue(rotationId);
@@ -236,8 +286,181 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		return lcdBounds;
 	}
 
+	public static void trimPatchedShell(Shell shell, Image image) {
+		if (null == image) {
+			return;
+		}
+		ImageData imageData = image.getImageData();
+
+		int width = imageData.width;
+		int height = imageData.height;
+
+		Region region = new Region();
+		region.add(new Rectangle(0, 0, width, height));
+
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				int colorPixel = imageData.getPixel(i, j);
+				if (colorPixel == 0xFF00FF /* magenta */) {
+					region.subtract(i, j, 1, 1);
+				}
+			}
+		}
+
+		shell.setRegion(region);
+	}
+
+	public void addGeneralPurposeListener(final Shell shell) {
+		shellPaintListener = new PaintListener() {
+			@Override
+			public void paintControl(final PaintEvent e) {
+				/* general shell does not support native transparency,
+				 * so draw image with GC. */
+				if (currentState.getCurrentImage() != null) {
+					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
+				}
+
+				if (skin.controlPanel != null &&
+						skin.controlPanel.isAttach() != SWT.NONE) {
+					skin.controlPanel.setShellPosition(
+							skin.controlPanel.isAttach(), false, false);
+				}
+			}
+		};
+
+		shell.addPaintListener(shellPaintListener);
+
+		shellMouseMoveListener = new MouseMoveListener() {
+			@Override
+			public void mouseMove(MouseEvent e) {
+				if (isGrabbedShell == true && e.button == 0/* left button */) {
+					/* move a window */
+					Point previousLocation = shell.getLocation();
+					int x = previousLocation.x + (e.x - grabPosition.x);
+					int y = previousLocation.y + (e.y - grabPosition.y);
+
+					shell.setLocation(x, y);
+
+					if (skin.controlPanel != null &&
+							skin.controlPanel.isAttach() != SWT.NONE) {
+						skin.controlPanel.setShellPosition(
+								skin.controlPanel.isAttach(), false, false);
+					}
+				}
+			}
+		};
+
+		shell.addMouseMoveListener(shellMouseMoveListener);
+
+		shellMouseListener = new MouseListener() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 1) { /* left button */
+					logger.info("mouseUp in Skin");
+
+					isGrabbedShell = false;
+					grabPosition.x = grabPosition.y = 0;
+
+					if (skin.controlPanel != null &&
+							skin.controlPanel.isAttach() != SWT.NONE) {
+						skin.controlPanel.setShellPosition(
+								skin.controlPanel.isAttach(), false, true);
+					}
+				}
+			}
+
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (1 == e.button) { /* left button */
+					logger.info("mouseDown in Skin");
+
+					isGrabbedShell = true;
+					grabPosition.x = e.x;
+					grabPosition.y = e.y;
+				}
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+		};
+
+		shell.addMouseListener(shellMouseListener);
+	}
+
+//	private void createHWKeyRegion() {
+//		if (compositeBase != null) {
+//			compositeBase.dispose();
+//			compositeBase = null;
+//		}
+//
+//		List<KeyMapType> keyMapList =
+//				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
+//
+//		if (keyMapList != null && keyMapList.isEmpty() == false) {
+//			compositeBase = new Composite(shell, SWT.NONE);
+//			compositeBase.setLayout(new GridLayout(1, true));
+//
+//			for (KeyMapType keyEntry : keyMapList) {
+//				Button hardKeyButton = new Button(compositeBase, SWT.FLAT);
+//				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
+//				hardKeyButton.setToolTipText(keyEntry.getTooltip());
+//
+//				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+//
+//				final int keycode = keyEntry.getEventInfo().getKeyCode();
+//				hardKeyButton.addMouseListener(new MouseListener() {
+//					@Override
+//					public void mouseDown(MouseEvent e) {
+//						KeyEventData keyEventData = new KeyEventData(
+//								KeyEventType.PRESSED.value(), keycode, 0, 0);
+//						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+//					}
+//
+//					@Override
+//					public void mouseUp(MouseEvent e) {
+//						KeyEventData keyEventData = new KeyEventData(
+//								KeyEventType.RELEASED.value(), keycode, 0, 0);
+//						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+//					}
+//
+//					@Override
+//					public void mouseDoubleClick(MouseEvent e) {
+//						/* do nothing */
+//					}
+//				});
+//			}
+//
+//			FormData dataComposite = new FormData();
+//			dataComposite.left = new FormAttachment(lcdCanvas, 0);
+//			dataComposite.top = new FormAttachment(0, 0);
+//			compositeBase.setLayoutData(dataComposite);
+//		}
+//	}
+
 	@Override
 	public void composerFinalize() {
-		/* do nothing */
+		if (null != shellPaintListener) {
+			shell.removePaintListener(shellPaintListener);
+		}
+
+		if (null != shellMouseMoveListener) {
+			shell.removeMouseMoveListener(shellMouseMoveListener);
+		}
+
+		if (null != shellMouseListener) {
+			shell.removeMouseListener(shellMouseListener);
+		}
+
+		if (toggleButton != null) {
+			toggleButton.dispose();
+		}
+
+		if (skin.pairTagCanvas != null) {
+			skin.pairTagCanvas.dispose();
+		}
+
+		frameMaker.freePatches();
 	}
 }

@@ -30,10 +30,17 @@
 package org.tizen.emulator.skin.util;
 
 import java.io.File;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.MessageBox;
@@ -51,6 +58,7 @@ import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.layout.HWKey;
+import org.tizen.emulator.skin.log.SkinLogger;
 
 
 /**
@@ -59,11 +67,19 @@ import org.tizen.emulator.skin.layout.HWKey;
  */
 public class SkinUtil {
 
+	public static final String GTK_OS_CLASS = "org.eclipse.swt.internal.gtk.OS";
+	public static final String WIN32_OS_CLASS = "org.eclipse.swt.internal.win32.OS";
+	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
+
 	public static final int UNKNOWN_KEYCODE = -1;
 	public static final int SCALE_CONVERTER = 100;
 	public static final String EMULATOR_PREFIX = "emulator";
 
+	private static Logger logger =
+			SkinLogger.getSkinLogger(SkinUtil.class).getLogger();
+
 	private SkinUtil() {
+		/* do nothing */
 	}
 
 	public static String getVmName( EmulatorConfig config ) {
@@ -324,4 +340,691 @@ public class SkinUtil {
 		return messageBox.open();
 	}
 
+	/* for java reflection */
+	private static Field getOSField(String field) {
+		String className = "";
+
+		if (SwtUtil.isLinuxPlatform()) {
+			className = GTK_OS_CLASS;
+		} else if (SwtUtil.isWindowsPlatform()) {
+			className = WIN32_OS_CLASS;
+		} else if (SwtUtil.isMacPlatform()) {
+			className = COCOA_OS_CLASS;
+		}
+
+		Field f = null;
+		try {
+			f = Class.forName(className).getField(field);
+		} catch (ClassNotFoundException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (SecurityException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (NoSuchFieldException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		}
+
+		return f;
+	}
+
+	private static Method getOSMethod(String method, Class<?>... parameterTypes) {
+		String className = "";
+
+		if (SwtUtil.isLinuxPlatform()) {
+			className = GTK_OS_CLASS;
+		} else if (SwtUtil.isWindowsPlatform()) {
+			className = WIN32_OS_CLASS;
+		} else if (SwtUtil.isMacPlatform()) {
+			className = COCOA_OS_CLASS;
+		}
+
+		Method m = null;
+		try {
+			m = Class.forName(className).getMethod(method, parameterTypes);
+		} catch (ClassNotFoundException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (SecurityException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (NoSuchMethodException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		}
+
+		return m;
+	}
+
+	private static Method getOSMethod(String method) {
+		return getOSMethod(method, new Class<?>[] {});
+	}
+
+	private static Object invokeOSMethod(Method method, Object... args) {
+		if (null == method) {
+			return null;
+		}
+
+		try {
+			return method.invoke(null, args);
+		} catch (IllegalArgumentException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (IllegalAccessException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (InvocationTargetException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		}
+
+		return null;
+	}
+
+	private static Object invokeOSMethod(Method method) {
+		return invokeOSMethod(method, new Object[] {});
+	}
+
+	private static boolean setTopMost32(Shell shell, boolean isOnTop) {
+
+		if (SwtUtil.isLinuxPlatform()) {
+			/* reference :
+			http://wmctrl.sourcearchive.com/documentation/1.07/main_8c-source.html */
+
+			/* if (!OS.GDK_WINDOWING_X11()) {
+				logger.warning("There is no x11 system.");
+				return;
+			}
+
+			int eventData0 = isOnTop ? 1 : 0; // 'add' or 'remove'
+			int topHandle = 0;
+
+			Method m = null;
+			try {
+				m = Shell.class.getDeclaredMethod("topHandle", new Class<?>[] {});
+				m.setAccessible(true);
+				topHandle = (Integer) m.invoke( shell, new Object[] {});
+			} catch (SecurityException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (NoSuchMethodException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (IllegalArgumentException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (InvocationTargetException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			}
+
+			int xWindow = OS.gdk_x11_drawable_get_xid(
+					OS.GTK_WIDGET_WINDOW(topHandle));
+			int xDisplay = OS.GDK_DISPLAY();
+
+			byte[] messageBuffer = Converter.wcsToMbcs(null, "_NET_WM_STATE", true);
+			int xMessageAtomType = OS.XInternAtom(xDisplay, messageBuffer, false);
+
+			messageBuffer = Converter.wcsToMbcs(null, "_NET_WM_STATE_ABOVE", true);
+			int xMessageAtomAbove = OS.XInternAtom(xDisplay, messageBuffer, false);
+
+			XClientMessageEvent event = new XClientMessageEvent();
+			event.type = OS.ClientMessage;
+			event.window = xWindow;
+			event.message_type = xMessageAtomType;
+			event.format = 32;
+			event.data[0] = eventData0;
+			event.data[1] = xMessageAtomAbove;
+
+			int clientEvent = OS.g_malloc(XClientMessageEvent.sizeof);
+			OS.memmove(clientEvent, event, XClientMessageEvent.sizeof);
+			int rootWin = OS.XDefaultRootWindow(xDisplay);
+			// SubstructureRedirectMask : 1L<<20 | SubstructureNotifyMask : 1L<<19
+			OS.XSendEvent(xDisplay, rootWin, false,
+					(int) ( 1L << 20 | 1L << 19 ), clientEvent);
+			OS.g_free(clientEvent); */
+
+
+			Boolean gdkWindowingX11 =
+					(Boolean) invokeOSMethod(getOSMethod("GDK_WINDOWING_X11"));
+			if (null == gdkWindowingX11) {
+				logger.warning("GDK_WINDOWING_X11 returned null. There is no x11 system.");
+				return false;
+			}
+
+			int eventData0 = isOnTop ? 1 : 0; /* 'add' or 'remove' */
+			int topHandle = 0;
+
+			Method m = null;
+			try {
+				m = Shell.class.getDeclaredMethod("topHandle", new Class<?>[] {});
+
+				m.setAccessible(true);
+				topHandle = (Integer) m.invoke(shell, new Object[] {});
+			} catch (SecurityException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (NoSuchMethodException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalArgumentException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (InvocationTargetException ex ) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Integer gtkWidgetWindow = (Integer) invokeOSMethod(
+					getOSMethod("GTK_WIDGET_WINDOW", int.class), topHandle);
+			if (null == gtkWidgetWindow) {
+				logger.warning("GTK_WIDGET_WINDOW returned null");
+				return false;
+			}
+
+			Integer xWindow = (Integer) invokeOSMethod(
+					getOSMethod("gdk_x11_drawable_get_xid", int.class), gtkWidgetWindow);
+			if (null == xWindow) {
+				logger.warning("gdk_x11_drawable_get_xid returned null");
+				return false;
+			}
+
+			Integer xDisplay = (Integer) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
+			if (null == xDisplay) {
+				logger.warning("GDK_DISPLAY returned null");
+				return false;
+			}
+
+			Method xInternAtom = getOSMethod(
+					"XInternAtom", int.class, byte[].class, boolean.class);
+
+			Class<?> converterClass = null;
+			try {
+				converterClass = Class.forName("org.eclipse.swt.internal.Converter");
+			} catch (ClassNotFoundException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Method wcsToMbcs = null;
+			byte[] messageBufferState = null;
+			byte[] messageBufferAbove = null;
+
+			try {
+				wcsToMbcs = converterClass.getMethod(
+						"wcsToMbcs", String.class, String.class, boolean.class);
+			} catch (SecurityException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (NoSuchMethodException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			try {
+				messageBufferState =
+						(byte[]) wcsToMbcs.invoke(null, null, "_NET_WM_STATE", true);
+				messageBufferAbove =
+						(byte[]) wcsToMbcs.invoke(null, null, "_NET_WM_STATE_ABOVE", true);
+			} catch (IllegalArgumentException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (InvocationTargetException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Integer xMessageAtomType =
+					(Integer) invokeOSMethod(xInternAtom, xDisplay, messageBufferState, false);
+			if (null == xMessageAtomType) {
+				logger.warning("xMessageAtomType is null");
+				return false;
+			}
+
+			Integer xMessageAtomAbove =
+					(Integer) invokeOSMethod(xInternAtom, xDisplay, messageBufferAbove, false);
+			if (null == xMessageAtomAbove) {
+				logger.warning("xMessageAtomAbove is null");
+				return false;
+			}
+
+			Class<?> eventClazz = null;
+			Object event = null;
+			try {
+				eventClazz = Class.forName("org.eclipse.swt.internal.gtk.XClientMessageEvent");
+				event = eventClazz.newInstance();
+			} catch (InstantiationException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (ClassNotFoundException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			}
+
+			if (null == eventClazz || null == event) {
+				return false;
+			}
+
+			Integer malloc = null;
+			try {
+				Field type = eventClazz.getField("type");
+
+				Field clientMessageField = getOSField("ClientMessage");
+				if (null == clientMessageField) {
+					logger.warning("clientMessageField is null");
+					return false;
+				}
+				type.set(event, clientMessageField.get(null));
+
+				Field window = eventClazz.getField("window");
+				window.set(event, xWindow);
+				Field messageType = eventClazz.getField("message_type");
+				messageType.set(event, xMessageAtomType);
+				Field format = eventClazz.getField("format");
+				format.set(event, 32);
+
+				Object data = Array.newInstance(int.class, 5);
+				Array.setInt(data, 0, eventData0);
+				Array.setInt(data, 1, xMessageAtomAbove);
+				Array.setInt(data, 2, 0);
+				Array.setInt(data, 3, 0);
+				Array.setInt(data, 4, 0);
+
+				Field dataField = eventClazz.getField("data");
+				dataField.set(event, data);
+
+				Field sizeofField = eventClazz.getField("sizeof");
+				Integer sizeof = (Integer) sizeofField.get(null);
+
+				Method gMalloc = getOSMethod("g_malloc", int.class);
+				malloc = (Integer) invokeOSMethod(gMalloc, sizeof);
+
+				Method memmove =
+						getOSMethod("memmove", int.class, eventClazz, int.class);
+				invokeOSMethod(memmove, malloc, event, sizeof);
+
+			} catch (NoSuchFieldException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Method xDefaultRootWindow =
+					getOSMethod("XDefaultRootWindow", int.class);
+			Integer rootWin =
+					(Integer) invokeOSMethod(xDefaultRootWindow, xDisplay);
+
+			Method xSendEvent = getOSMethod("XSendEvent",
+					int.class, int.class, boolean.class, int.class, int.class);
+
+			/* SubstructureRedirectMask : 1L<<20 | SubstructureNotifyMask : 1L<<19 */
+			invokeOSMethod(xSendEvent, xDisplay, rootWin,
+					false, (int) (1L << 20 | 1L << 19), malloc);
+			invokeOSMethod(getOSMethod("g_free", int.class), malloc);
+
+		} else if (SwtUtil.isWindowsPlatform()) {
+			Point location = shell.getLocation();
+
+			/* int hWndInsertAfter = 0;
+			if (isOnTop) {
+				hWndInsertAfter = OS.HWND_TOPMOST;
+			} else {
+				hWndInsertAfter = OS.HWND_NOTOPMOST;
+			}
+			OS.SetWindowPos(shell.handle,
+					hWndInsertAfter, location.x, location.y, 0, 0, OS.SWP_NOSIZE); */
+
+			int hWndInsertAfter = 0;
+			int noSize = 0;
+
+			try {
+				if (isOnTop) {
+					Field topMost = getOSField("HWND_TOPMOST");
+					if (null == topMost) {
+						logger.warning("topMost is null");
+						return false;
+					}
+
+					hWndInsertAfter = topMost.getInt(null);
+				} else {
+					Field noTopMost = getOSField("HWND_NOTOPMOST");
+					if (null == noTopMost) {
+						logger.warning("HWND_NOTOPMOST is null");
+						return false;
+					}
+
+					hWndInsertAfter = noTopMost.getInt(null);
+				}
+
+				Field noSizeField = getOSField("SWP_NOSIZE");
+				if (null == noSizeField) {
+					logger.warning("SWP_NOSIZE is null");
+					return false;
+				}
+
+				noSize = noSizeField.getInt(null);
+
+			} catch (IllegalArgumentException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Method m = getOSMethod("SetWindowPos",
+					int.class, int.class, int.class,
+					int.class, int.class, int.class, int.class);
+
+			/* org.eclipse.swt.widgets.Shell */
+			int shellHandle = 0;
+			try {
+				Field field = shell.getClass().getField("handle");
+				shellHandle = field.getInt(shell);
+				logger.info("shell.handle:" + shellHandle);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			} catch (IllegalAccessException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			} catch (SecurityException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			}
+
+			invokeOSMethod(m, shellHandle, hWndInsertAfter,
+					location.x, location.y, 0, 0, noSize);
+		} else if (SwtUtil.isMacPlatform()) {
+			/* do nothing */
+			logger.warning("not supported yet");
+			return false;
+		}
+
+		return true;
+	}
+
+	private static boolean setTopMost64(Shell shell, boolean isOnTop) {
+
+		if (SwtUtil.isLinuxPlatform()) {
+			Boolean gdkWindowingX11 =
+					(Boolean) invokeOSMethod(getOSMethod("GDK_WINDOWING_X11"));
+			if (null == gdkWindowingX11) {
+				logger.warning("GDK_WINDOWING_X11 returned null. There is no x11 system.");
+				return false;
+			}
+
+			int eventData0 = isOnTop ? 1 : 0; /* 'add' or 'remove' */
+			long topHandle = 0;
+
+			Method m = null;
+			try {
+				m = Shell.class.getDeclaredMethod("topHandle", new Class<?>[] {});
+
+				m.setAccessible(true);
+				topHandle = (Long) m.invoke(shell, new Object[] {});
+			} catch (SecurityException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (NoSuchMethodException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalArgumentException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (InvocationTargetException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Long gtkWidgetWindow = (Long) invokeOSMethod(
+					getOSMethod("GTK_WIDGET_WINDOW", long.class), topHandle);
+			if (null == gtkWidgetWindow) {
+				logger.warning("GTK_WIDGET_WINDOW returned null");
+				return false;
+			}
+
+			Long xWindow = (Long) invokeOSMethod(
+					getOSMethod("gdk_x11_drawable_get_xid", long.class), gtkWidgetWindow);
+			if (null == xWindow) {
+				logger.warning("gdk_x11_drawable_get_xid returned null");
+				return false;
+			}
+
+			Long xDisplay = (Long) invokeOSMethod( getOSMethod("GDK_DISPLAY"));
+			if (null == xDisplay) {
+				logger.warning("GDK_DISPLAY returned null");
+				return false;
+			}
+
+			Method xInternAtom = getOSMethod(
+					"XInternAtom", long.class, byte[].class, boolean.class);
+
+			Class<?> converterClass = null;
+			try {
+				converterClass = Class.forName("org.eclipse.swt.internal.Converter");
+			} catch (ClassNotFoundException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Method wcsToMbcs = null;
+			byte[] messageBufferState = null;
+			byte[] messageBufferAbove = null;
+
+			try {
+				wcsToMbcs = converterClass.getMethod(
+						"wcsToMbcs", String.class, String.class, boolean.class);
+			} catch (SecurityException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (NoSuchMethodException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			try {
+				messageBufferState =
+						(byte[]) wcsToMbcs.invoke(null, null, "_NET_WM_STATE", true);
+				messageBufferAbove =
+						(byte[]) wcsToMbcs.invoke(null, null, "_NET_WM_STATE_ABOVE", true);
+			} catch (IllegalArgumentException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (InvocationTargetException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Long xMessageAtomType =
+					(Long) invokeOSMethod(xInternAtom, xDisplay, messageBufferState, false);
+			if (null == xMessageAtomType) {
+				logger.warning("xMessageAtomType is null");
+				return false;
+			}
+
+			Long xMessageAtomAbove =
+					(Long) invokeOSMethod(xInternAtom, xDisplay, messageBufferAbove, false);
+			if (null == xMessageAtomAbove) {
+				logger.warning("xMessageAtomAbove is null");
+				return false;
+			}
+
+			Class<?> eventClazz = null;
+			Object event = null;
+			try {
+				eventClazz = Class.forName("org.eclipse.swt.internal.gtk.XClientMessageEvent");
+				event = eventClazz.newInstance();
+			} catch (InstantiationException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			} catch (ClassNotFoundException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+			}
+
+			if (null == eventClazz || null == event) {
+				return false;
+			}
+
+			Long malloc = null;
+			try {
+				Field type = eventClazz.getField("type");
+
+				Field clientMessageField = getOSField("ClientMessage");
+				if (null == clientMessageField) {
+					logger.warning("clientMessageField is null");
+					return false;
+				}
+				type.set(event, clientMessageField.get(null));
+
+				Field window = eventClazz.getField("window");
+				window.set(event, xWindow);
+				Field messageType = eventClazz.getField("message_type");
+				messageType.set(event, xMessageAtomType);
+				Field format = eventClazz.getField("format");
+				format.set(event, 32);
+
+				Object data = Array.newInstance(long.class, 5);
+				Array.setLong(data, 0, eventData0);
+				Array.setLong(data, 1, xMessageAtomAbove);
+				Array.setLong(data, 2, 0);
+				Array.setLong(data, 3, 0);
+				Array.setLong(data, 4, 0);
+
+				Field dataField = eventClazz.getField("data");
+				dataField.set(event, data);
+
+				Field sizeofField = eventClazz.getField("sizeof");
+				Integer sizeof = (Integer) sizeofField.get(null);
+
+				Method gMalloc = getOSMethod("g_malloc", long.class);
+				malloc = (Long) invokeOSMethod(gMalloc, sizeof.longValue());
+
+				Method memmove =
+						getOSMethod("memmove", long.class, eventClazz, long.class);
+				invokeOSMethod(memmove, malloc, event, sizeof.longValue());
+
+			} catch (NoSuchFieldException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Method xDefaultRootWindow =
+					getOSMethod("XDefaultRootWindow", long.class);
+			Long rootWin =
+					(Long) invokeOSMethod(xDefaultRootWindow, xDisplay);
+
+			Method xSendEvent = getOSMethod("XSendEvent", long.class, long.class, boolean.class,
+					long.class, long.class);
+
+			/*  ubstructureRedirectMask : 1L<<20 | SubstructureNotifyMask : 1L<<19 */
+			invokeOSMethod(xSendEvent, xDisplay, rootWin,
+					false, (long) (1L << 20 | 1L << 19), malloc);
+			invokeOSMethod(getOSMethod("g_free", long.class), malloc);
+		} else if (SwtUtil.isWindowsPlatform()) {
+			Point location = shell.getLocation();
+
+			long hWndInsertAfter = 0;
+			int noSize = 0;
+
+			try {
+				if (isOnTop) {
+					Field topMost = getOSField("HWND_TOPMOST");
+					if (null == topMost) {
+						logger.warning("topMost is null");
+						return false;
+					}
+
+					hWndInsertAfter = topMost.getLong(null);
+				} else {
+					Field noTopMost = getOSField("HWND_NOTOPMOST");
+					if (null == noTopMost) {
+						logger.warning("noTopMost is null");
+						return false;
+					}
+
+					hWndInsertAfter = noTopMost.getLong(null);
+				}
+
+				Field noSizeField = getOSField("SWP_NOSIZE");
+				if (null == noSizeField) {
+					logger.warning("SWP_NOSIZE is null");
+					return false;
+				}
+
+				noSize = noSizeField.getInt(null);
+
+			} catch (IllegalArgumentException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			} catch (IllegalAccessException ex) {
+				logger.log(Level.SEVERE, ex.getMessage(), ex);
+				return false;
+			}
+
+			Method m = getOSMethod("SetWindowPos",
+					long.class, long.class, int.class,
+					int.class, int.class, int.class, int.class);
+
+			/* org.eclipse.swt.widgets.Shell */
+			long shellHandle = 0;
+			try {
+				Field field = shell.getClass().getField("handle");
+				shellHandle = field.getLong(shell);
+				logger.info("shell.handle:" + shellHandle);
+			} catch (IllegalArgumentException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			} catch (IllegalAccessException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			} catch (SecurityException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			} catch (NoSuchFieldException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
+				return false;
+			}
+
+			invokeOSMethod(m, shellHandle, hWndInsertAfter,
+					location.x, location.y, 0, 0, noSize);
+		} else if (SwtUtil.isMacPlatform()) {
+			/* do nothing */
+			logger.warning("not supported yet");
+			return false;
+		}
+
+		return true;
+	}
+
+	public static boolean setTopMost(Shell shell, boolean isOnTop) {
+		if (shell == null) {
+			return false;
+		}
+
+		/* internal/Library.java::arch() */
+		String osArch = System.getProperty("os.arch"); /* $NON-NLS-1$ */
+
+		if (osArch.equals("amd64") || osArch.equals("x86_64") ||
+				osArch.equals("IA64W") || osArch.equals("ia64")) {
+			/* $NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$ */
+			logger.info("64bit architecture : " + osArch);
+
+			return setTopMost64(shell, isOnTop); /* 64bit */
+		}
+
+		logger.info("32bit architecture : " + osArch);
+		return setTopMost32(shell, isOnTop); /* 32bit */
+	}
 }

@@ -178,53 +178,51 @@ public class ImageRegistry {
 
 	}
 
-	public ImageData getSkinImageData( Short id, ImageType imageType ) {
+	public ImageData getSkinImageData(Short id, ImageType imageType) {
 
-		Image image = skinImageMap.get( makeKey( id, imageType ) );
+		Image image = skinImageMap.get(makeKey(id, imageType));
 
-		if ( null != image ) {
-
+		if (null != image) {
 			return image.getImageData();
-
 		} else {
-
 			RotationsType rotations = dbiContents.getRotations();
 
-			if ( null == rotations ) {
-				logger.severe( "Fail to loading rotations element from dbi." );
+			if (null == rotations) {
+				logger.severe("Fail to loading rotations element from dbi.");
 				return null;
 			}
 
 			String skinPath = getSkinPath(argSkinPath);
 			logger.info("get image data of skin from " + skinPath);
 
-			RotationType targetRotation = SkinRotation.getRotation( id );
-
+			RotationType targetRotation = SkinRotation.getRotation(id);
 			List<RotationType> rotationList = rotations.getRotation();
 
-			for ( RotationType rotation : rotationList ) {
-
+			for (RotationType rotation : rotationList) {
 				ImageListType imageList = rotation.getImageList();
+				if (imageList == null) {
+					continue;
+				}
+
 				String mainImage = imageList.getMainImage();
 				String keyPressedImage = imageList.getKeyPressedImage();
 
-				if ( targetRotation.getName().value().equals( rotation.getName().value() ) ) {
+				if (targetRotation.getName().value().equals(rotation.getName().value())) {
+					String mainKey = makeKey(id, ImageType.IMG_TYPE_MAIN);
+					skinImageMap.put(mainKey,
+							new Image(display, skinPath + File.separator + mainImage));
 
-					String mainKey = makeKey( id, ImageType.IMG_TYPE_MAIN );
-					skinImageMap.put( mainKey, new Image( display, skinPath + File.separator + mainImage ) );
-
-					String pressedKey = makeKey( id, ImageType.IMG_TYPE_PRESSED );
-					skinImageMap.put( pressedKey, new Image( display, skinPath + File.separator + keyPressedImage ) );
+					String pressedKey = makeKey(id, ImageType.IMG_TYPE_PRESSED);
+					skinImageMap.put(pressedKey,
+							new Image(display, skinPath + File.separator + keyPressedImage));
 
 					break;
-
 				}
-
 			}
 
-			Image registeredImage = skinImageMap.get( makeKey( id, imageType ) );
+			Image registeredImage = skinImageMap.get(makeKey(id, imageType));
 
-			if ( null != registeredImage ) {
+			if (null != registeredImage) {
 				return registeredImage.getImageData();
 			} else {
 				return null;
