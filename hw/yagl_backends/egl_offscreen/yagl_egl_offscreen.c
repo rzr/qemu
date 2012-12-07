@@ -35,7 +35,7 @@ struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *drive
 
     YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_offscreen_create, NULL);
 
-    yagl_egl_backend_init(&egl_offscreen->base);
+    yagl_egl_backend_init(&egl_offscreen->base, yagl_render_type_offscreen);
 
     egl_offscreen->base.process_init = &yagl_egl_offscreen_process_init;
     egl_offscreen->base.destroy = &yagl_egl_offscreen_destroy;

@@ -268,7 +268,7 @@ struct yagl_api_ps
 
     egl_iface = g_malloc0(sizeof(*egl_iface));
 
-    yagl_egl_interface_init(egl_iface);
+    yagl_egl_interface_init(egl_iface, backend_ps->backend->render_type);
 
     egl_iface->get_ctx = &yagl_egl_get_ctx;
 

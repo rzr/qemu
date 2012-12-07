@@ -12,8 +12,10 @@ void yagl_egl_backend_ps_cleanup(struct yagl_egl_backend_ps *backend_ps)
 {
 }
 
-void yagl_egl_backend_init(struct yagl_egl_backend *backend)
+void yagl_egl_backend_init(struct yagl_egl_backend *backend,
+                           yagl_render_type render_type)
 {
+    backend->render_type = render_type;
 }
 
 void yagl_egl_backend_cleanup(struct yagl_egl_backend *backend)

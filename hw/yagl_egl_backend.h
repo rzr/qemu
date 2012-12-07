@@ -57,13 +57,16 @@ void yagl_egl_backend_ps_cleanup(struct yagl_egl_backend_ps *backend_ps);
 
 struct yagl_egl_backend
 {
+    yagl_render_type render_type;
+
     struct yagl_egl_backend_ps *(*process_init)(struct yagl_egl_backend */*backend*/,
                                                 struct yagl_process_state */*ps*/);
 
     void (*destroy)(struct yagl_egl_backend */*backend*/);
 };
 
-void yagl_egl_backend_init(struct yagl_egl_backend *backend);
+void yagl_egl_backend_init(struct yagl_egl_backend *backend,
+                           yagl_render_type render_type);
 void yagl_egl_backend_cleanup(struct yagl_egl_backend *backend);
 
 /*

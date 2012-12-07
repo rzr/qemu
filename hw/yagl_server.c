@@ -6,6 +6,7 @@
 #include "yagl_version.h"
 #include "yagl_log.h"
 #include "yagl_egl_driver.h"
+#include "yagl_egl_interface.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
 #include "yagl_apis/gles2/yagl_gles2_api.h"
 #include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
@@ -123,6 +124,7 @@ void yagl_server_reset(struct yagl_server_state *ss)
  *  (uint32_t) version
  * in_buff must be:
  *  (uint32_t) 1 - init ok, 0 - init error
+ *  (yagl_render_type), in case of init ok
  */
 bool yagl_server_dispatch_init(struct yagl_server_state *ss,
                                yagl_pid target_pid,
@@ -227,6 +229,7 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
         QLIST_INSERT_HEAD(&ss->processes, ps, entry);
 
         yagl_marshal_put_uint32(&in_buff, 1);
+        yagl_marshal_put_render_type(&in_buff, ps->egl_iface->render_type);
 
         YAGL_LOG_FUNC_EXIT(NULL);
 

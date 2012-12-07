@@ -118,5 +118,6 @@ static __inline void yagl_marshal_put_call_result(uint8_t** buff, yagl_call_resu
 #define yagl_marshal_get_tid(buff) yagl_marshal_get_uint32(buff)
 #define yagl_marshal_get_api_id(buff) yagl_marshal_get_uint32(buff)
 #define yagl_marshal_get_func_id(buff) yagl_marshal_get_uint32(buff)
+#define yagl_marshal_put_render_type(buff, value) yagl_marshal_put_uint32(buff, value)
 
 #endif

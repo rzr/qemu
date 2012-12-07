@@ -10,6 +10,15 @@ typedef uint32_t yagl_host_handle;
 typedef uint32_t yagl_object_name;
 
 /*
+ * YaGL supported render types.
+ */
+typedef enum
+{
+    yagl_render_type_offscreen = 1,
+    yagl_render_type_onscreen = 2,
+} yagl_render_type;
+
+/*
  * YaGL supported API ids.
  */
 typedef enum
