@@ -30,7 +30,7 @@ prepare()
 build()
 {
 	cd $SRCDIR/tizen/
-	./emulator_configure.sh arm
+	./emulator_configure.sh
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
