@@ -5,6 +5,8 @@
  *
  * Contact:
  * DoHyung Hong <don.hong@samsung.com>
+ * Kitae Kim <kt920.kim@samsung.com>
+ * GiWoong Kim <giwoong.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -76,6 +78,8 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_KEYBOARD   7
 #define MLOOP_EVTYPE_KBD_ADD    8
 #define MLOOP_EVTYPE_KBD_DEL    9
+#define MLOOP_EVTYPE_RAMDUMP    10
+
 
 static struct mloop_evsock mloop = {-1, 0, 0};
 
@@ -264,12 +268,13 @@ static void mloop_evhandle_hwkey(struct mloop_evpack* pack)
         if (kbd_mouse_is_absolute()) {
             ps2kbd_put_keycode(keycode & 0x7f);
         }
-    } else if ( KEY_RELEASED == event_type ) {
+    } else if (KEY_RELEASED == event_type) {
         if (kbd_mouse_is_absolute()) {
             ps2kbd_put_keycode(keycode | 0x80);
         }
     } else {
-        fprintf(stderr, "Unknown hardkey event type.[event_type:%d, keycode:%d]", event_type, keycode);
+        ERR("Unknown hardkey event type.[event_type:%d, keycode:%d]\n",
+            event_type, keycode);
     }
 }
 
@@ -359,6 +364,48 @@ static void mloop_evhandle_kbd_del(char *name)
 }
 #endif
 
+
+static void mloop_evhandle_ramdump(struct mloop_evpack* pack)
+{
+#define MAX_PATH 256
+    INFO("dumping...\n");
+
+#if defined(CONFIG_LINUX) && !defined(TARGET_ARM) /* FIXME: Handle ARM ram as list */
+    MemoryRegion* rm = get_ram_memory();
+    unsigned int size = rm->size.lo;
+    char dump_fullpath[MAX_PATH];
+    char dump_filename[MAX_PATH];
+
+    char* dump_path = g_path_get_dirname(get_logpath());
+
+    sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-",
+        rm->ram_addr + size, "_RAM.dump");
+    sprintf(dump_fullpath, "%s/%s", dump_path, dump_filename);
+    free(dump_path);
+
+    FILE *dump_file = fopen(dump_fullpath, "w+");
+    if(!dump_file) {
+        fprintf(stderr, "Dump file create failed [%s]\n", dump_fullpath);
+
+        return;
+    }
+
+    size_t written;
+    written = fwrite(qemu_get_ram_ptr(rm->ram_addr), sizeof(char), size, dump_file);
+    fprintf(stdout, "Dump file written [%08x][%d bytes]\n", rm->ram_addr, written);
+    if(written != size) {
+        fprintf(stderr, "Dump file size error [%d, %d, %d]\n", written, size, errno);
+    }
+
+    fprintf(stdout, "Dump file create success [%s, %d bytes]\n", dump_fullpath, size);
+
+    fclose(dump_file);
+#endif
+
+    /* notify to skin process */
+    notify_ramdump_completed();
+}
+
 static void mloop_evcb_recv(struct mloop_evsock *ev)
 {
     struct mloop_evpack pack;
@@ -372,11 +419,11 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     } while (ret == -1 && errno == EINTR);
 #endif // _WIN32
 
-    if (ret == -1 ) {
+    if (ret == -1) {
         return;
     }
 
-    if (ret == 0 ) {
+    if (ret == 0) {
         return;
     }
 
@@ -413,6 +460,9 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         mloop_evhandle_kbd_del(pack.data);
         break;
 #endif
+    case MLOOP_EVTYPE_RAMDUMP:
+        mloop_evhandle_ramdump(&pack);
+        break;
     default:
         break;
     }
@@ -430,6 +480,26 @@ void mloop_ev_stop(void)
 {
     qemu_set_fd_handler(mloop.sockno, NULL, NULL, NULL);
     mloop_evsock_remove(&mloop);
+}
+
+void mloop_evcmd_raise_intr(void *irq)
+{
+    struct mloop_evpack pack;
+    memset((void*)&pack, 0, sizeof(struct mloop_evpack));
+    pack.type = htons(MLOOP_EVTYPE_INTR_UP);
+    pack.size = htons(8);
+    *(long*)&pack.data[0] = htonl((long)irq);
+    mloop_evsock_send(&mloop, &pack);
+}
+
+void mloop_evcmd_lower_intr(void *irq)
+{
+    struct mloop_evpack pack;
+    memset((void*)&pack, 0, sizeof(struct mloop_evpack));
+    pack.type = htons(MLOOP_EVTYPE_INTR_DOWN);
+    pack.size = htons(8);
+    *(long*)&pack.data[0] = htonl((long)irq);
+    mloop_evsock_send(&mloop, &pack);
 }
 
 void mloop_evcmd_usbkbd(int on)
@@ -490,26 +560,6 @@ void mloop_evcmd_set_hostkbd(void *dev)
     hostkbd = (PCIDevice *)dev;
 }
 
-void mloop_evcmd_raise_intr(void *irq)
-{
-    struct mloop_evpack pack;
-    memset((void*)&pack, 0, sizeof(struct mloop_evpack));
-    pack.type = htons(MLOOP_EVTYPE_INTR_UP);
-    pack.size = htons(8);
-    *(long*)&pack.data[0] = htonl((long)irq);
-    mloop_evsock_send(&mloop, &pack);
-}
-
-void mloop_evcmd_lower_intr(void *irq)
-{
-    struct mloop_evpack pack;
-    memset((void*)&pack, 0, sizeof(struct mloop_evpack));
-    pack.type = htons(MLOOP_EVTYPE_INTR_DOWN);
-    pack.size = htons(8);
-    *(long*)&pack.data[0] = htonl((long)irq);
-    mloop_evsock_send(&mloop, &pack);
-}
-
 void mloop_evcmd_hwkey(int event_type, int keycode)
 {
     struct mloop_evpack pack;
@@ -544,3 +594,14 @@ void mloop_evcmd_keyboard(void *data)
     *(long*)&pack.data[0] = htonl((long)data);
     mloop_evsock_send(&mloop, &pack);
 }
+
+void mloop_evcmd_ramdump(void)
+{
+    struct mloop_evpack pack;
+    memset(&pack, 0, sizeof(struct mloop_evpack));
+
+    pack.type = htons(MLOOP_EVTYPE_RAMDUMP);
+    pack.size = htons(5);
+    mloop_evsock_send(&mloop, &pack);
+}
+

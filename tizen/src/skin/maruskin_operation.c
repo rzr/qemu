@@ -405,22 +405,27 @@ DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
     return detail_info;
 }
 
-void free_detail_info( DetailInfo* detail_info ) {
-    if ( detail_info ) {
-        if ( detail_info->data ) {
-            g_free( detail_info->data );
+void free_detail_info(DetailInfo* detail_info)
+{
+    if (detail_info) {
+        if (detail_info->data) {
+            g_free(detail_info->data);
         }
-        g_free( detail_info );
+
+        g_free(detail_info);
     }
 }
 
-void open_shell( void ) {
+void do_open_shell(void)
+{
     INFO("open shell\n");
+    /* do nothing */
 }
 
 void onoff_host_kbd(int on)
 {
     INFO("host kbd on/off: %d.\n", on);
+
 #if defined(TARGET_ARM)
     mloop_evcmd_usbkbd(on);
 #elif defined(TARGET_I386)
@@ -428,69 +433,34 @@ void onoff_host_kbd(int on)
 #endif
 }
 
-#define MAX_PATH 256
-static void dump_ram( void )
+void do_ram_dump(void)
 {
-#if defined(CONFIG_LINUX) && !defined(TARGET_ARM) /* FIXME: Handle ARM ram as list */
-    MemoryRegion* rm = get_ram_memory();
-    unsigned int size = rm->size.lo;
-    char dump_fullpath[MAX_PATH];
-    char dump_filename[MAX_PATH];
+    INFO("dump ram!\n");
 
-    char* dump_path = g_path_get_dirname(get_logpath());
-
-    sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-",
-        rm->ram_addr + size, "_RAM.dump");
-    sprintf(dump_fullpath, "%s/%s", dump_path, dump_filename);
-    free(dump_path);
-
-    FILE *dump_file = fopen(dump_fullpath, "w+");
-    if(!dump_file) {
-        fprintf(stderr, "Dump file create failed [%s]\n", dump_fullpath);
-
-        return;
-    }
-
-    size_t written;
-    written = fwrite(qemu_get_ram_ptr(rm->ram_addr), sizeof(char), size, dump_file);
-    fprintf(stdout, "Dump file written [%08x][%d bytes]\n", rm->ram_addr, written);
-    if(written != size) {
-        fprintf(stderr, "Dump file size error [%d, %d, %d]\n", written, size, errno);
-    }
-
-    fprintf(stdout, "Dump file create success [%s, %d bytes]\n", dump_fullpath, size);
-
-    fclose(dump_file);
-#endif
+    mloop_evcmd_ramdump();
 }
 
-void ram_dump(void) {
-    INFO("ram dump!\n");
-
-    dump_ram();
-
-    notify_ramdump_complete();
-}
-
-void guestmemory_dump(void) {
-    INFO("guest memory dump!\n");
+void do_guestmemory_dump(void)
+{
+    INFO("dump guest memory!\n");
 
     //TODO:
 }
 
-void request_close( void )
+void request_close(void)
 {
-    INFO( "request_close\n" );
+    INFO("request_close\n");
 
-    do_hardkey_event( KEY_PRESSED, HARD_KEY_POWER );
+    /* FIXME: convert to device emulatoion */
+    do_hardkey_event(KEY_PRESSED, HARD_KEY_POWER);
 
 #ifdef CONFIG_WIN32
-        Sleep( CLOSE_POWER_KEY_INTERVAL );
+        Sleep(CLOSE_POWER_KEY_INTERVAL);
 #else
-        usleep( CLOSE_POWER_KEY_INTERVAL * 1000 );
+        usleep(CLOSE_POWER_KEY_INTERVAL * 1000);
 #endif
 
-    do_hardkey_event( KEY_RELEASED, HARD_KEY_POWER );
+    do_hardkey_event(KEY_RELEASED, HARD_KEY_POWER);
 
 }
 

@@ -259,8 +259,9 @@ void notify_sensor_daemon_start( void ) {
     }
 }
 
-void notify_ramdump_complete(void) {
-    INFO("notify_ramdump_complete\n");
+void notify_ramdump_completed(void)
+{
+    INFO("ramdump completed!\n");
 
     if (client_sock) {
         if (0 > send_skin_header_only( client_sock, SEND_RAMDUMP_COMPLETE, 1)) {
@@ -270,16 +271,18 @@ void notify_ramdump_complete(void) {
 }
 
 
-int is_ready_skin_server( void ) {
+int is_ready_skin_server(void)
+{
     return ready_server;
 }
 
-int get_skin_server_port( void ) {
+int get_skin_server_port(void)
+{
     return svr_port;
 }
 
-static void parse_skinconfig_prop( void ) {
-
+static void parse_skinconfig_prop(void)
+{
     int target_path_len = strlen( tizen_target_path );
     char skin_config_path[target_path_len + 32];
 
@@ -782,14 +785,14 @@ static void* run_skin_server( void* args ) {
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_RAM_DUMP ==\n");
                     TRACE(log_buf);
 
-                    ram_dump();
+                    do_ram_dump();
                     break;
                 }
                 case RECV_GUESTMEMORY_DUMP: {
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_GUESTMEMORY_DUMP ==\n");
                     TRACE(log_buf);
 
-                    guestmemory_dump();
+                    do_guestmemory_dump();
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
@@ -804,10 +807,10 @@ static void* run_skin_server( void* args ) {
                     break;
                 }
                 case RECV_OPEN_SHELL: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_OPEN_SHELL ==\n" );
-                    TRACE( log_buf );
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_OPEN_SHELL ==\n");
+                    TRACE(log_buf);
 
-                    open_shell();
+                    do_open_shell();
                     break;
                 }
                 case RECV_HOST_KBD: {
@@ -822,13 +825,13 @@ static void* run_skin_server( void* args ) {
                     }
 
                     memcpy(&on, recvbuf, sizeof(on));
-					onoff_host_kbd(on);
+                    onoff_host_kbd(on);
                     break;
                 }
 
                 case RECV_CLOSE: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_CLOSE ==\n" );
-                    TRACE( log_buf );
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_CLOSE ==\n");
+                    TRACE(log_buf);
 
                     request_close();
                     break;

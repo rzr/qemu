@@ -5,6 +5,8 @@
  *
  * Contact:
  * DoHyung Hong <don.hong@samsung.com>
+ * Kitae Kim <kt920.kim@samsung.com>
+ * GiWoong Kim <giwoong.kim@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -51,6 +53,7 @@ void mloop_evcmd_lower_intr(void *irq);
 void mloop_evcmd_hwkey(int event_type, int keycode);
 void mloop_evcmd_touch(void);
 void mloop_evcmd_keyboard(void *data);
+void mloop_evcmd_ramdump(void);
 
 #ifdef __cplusplus
 }
