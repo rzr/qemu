@@ -8,7 +8,7 @@ clean()
 	if test -e "Makefile"
 	then
 		./emulator_configure.sh
-		make clean
+		make distclean
 	fi
 	rm -rf $SRCDIR/*.zip
 	rm -rf $SRCDIR/*.tar.gz
@@ -30,7 +30,7 @@ prepare()
 build()
 {
 	cd $SRCDIR/tizen/
-#	./emulator_configure.sh
+	./emulator_configure.sh
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
