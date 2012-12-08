@@ -68,7 +68,12 @@ MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 #define TIMEOUT_FOR_SHUTDOWN 10 // seconds
 
 static int requested_shutdown_qemu_gracefully = 0;
-static int guest_x, guest_y = 0;
+
+/* touch values */
+static int guest_x, guest_y;
+static int pressing_x = -1, pressing_y = -1;
+static int pressing_origin_x = -1, pressing_origin_y = -1;
+
 
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
@@ -109,8 +114,11 @@ void do_mouse_event(int button_type, int event_type,
     switch(event_type) {
         case MOUSE_DOWN:
         case MOUSE_DRAG:
-            guest_x = x;
-            guest_y = y;
+            pressing_x = guest_x = x;
+            pressing_y = guest_y = y;
+            pressing_origin_x = origin_x;
+            pressing_origin_y = origin_y;
+
             kbd_mouse_event(x, y, z, 1);
             TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
             event_type, origin_x, origin_y, x, y, z);
@@ -118,6 +126,9 @@ void do_mouse_event(int button_type, int event_type,
         case MOUSE_UP:
             guest_x = x;
             guest_y = y;
+            pressing_x = pressing_y = -1;
+            pressing_origin_x = pressing_origin_y = -1;
+
             kbd_mouse_event(x, y, z, 0);
             TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
             event_type, origin_x, origin_y, x, y, z);
@@ -128,6 +139,7 @@ void do_mouse_event(int button_type, int event_type,
             y -= guest_y;
             guest_x += x;
             guest_y += y;
+
             kbd_mouse_event(x, y, -z, event_type);
             TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
             event_type, origin_x, origin_y, x, y, z);
@@ -165,6 +177,18 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
         {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 2;
+
+                /* add a finger before start the multi-touch processing
+                if already exist the pressed touch in display */
+                if (pressing_x != -1 && pressing_y != -1 &&
+                    pressing_origin_x != -1 && pressing_origin_y != -1) {
+                    add_finger_point(
+                        pressing_origin_x, pressing_origin_y,
+                        pressing_x, pressing_y);
+                    pressing_x = pressing_y = -1;
+                    pressing_origin_x = pressing_origin_y = -1;
+                }
+
                 INFO("enable multi-touch = mode2\n");
             }
         }
@@ -173,6 +197,18 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
         {
             if (KEY_PRESSED == event_type) {
                 get_emul_multi_touch_state()->multitouch_enable = 1;
+
+                /* add a finger before start the multi-touch processing
+                if already exist the pressed touch in display */
+                if (pressing_x != -1 && pressing_y != -1 &&
+                    pressing_origin_x != -1 && pressing_origin_y != -1) {
+                    add_finger_point(
+                        pressing_origin_x, pressing_origin_y,
+                        pressing_x, pressing_y);
+                    pressing_x = pressing_y = -1;
+                    pressing_origin_x = pressing_origin_y = -1;
+                }
+
                 INFO("enable multi-touch = mode1\n");
             } else if (KEY_RELEASED == event_type) {
                 if (state_mask_temp == (JAVA_KEYCODE_BIT_CTRL | JAVA_KEYCODE_BIT_SHIFT)) {
