@@ -7,6 +7,7 @@
 struct yagl_gles_driver_ps;
 struct yagl_gles_array;
 struct yagl_gles_buffer;
+struct yagl_gles_texture;
 struct yagl_gles_framebuffer;
 struct yagl_gles_texture_unit;
 
@@ -170,6 +171,7 @@ struct yagl_gles_texture_target_state
 
 void yagl_gles_context_bind_texture(struct yagl_gles_context *ctx,
                                     yagl_gles_texture_target texture_target,
+                                    struct yagl_gles_texture *texture,
                                     yagl_object_name texture_local_name);
 
 void yagl_gles_context_unbind_texture(struct yagl_gles_context *ctx,

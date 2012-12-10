@@ -3,6 +3,8 @@
 
 #include "yagl_api.h"
 
+struct yagl_client_image;
+
 bool yagl_host_glActiveTexture(GLenum texture);
 bool yagl_host_glBindBuffer(GLenum target,
     GLuint buffer);
@@ -167,16 +169,18 @@ bool yagl_host_glViewport(GLint x,
     GLint y,
     GLsizei width,
     GLsizei height);
+bool yagl_host_glEGLImageTargetTexture2DOES(GLenum target,
+    yagl_host_handle image_);
 bool yagl_host_glGetExtensionStringYAGL(GLuint* retval, target_ulong /* GLchar* */ str_);
-bool yagl_host_glEGLImageTargetTexture2DYAGL(GLenum target,
-    uint32_t width,
-    uint32_t height,
-    uint32_t bpp,
-    target_ulong /* const void* */ pixels_);
 bool yagl_host_glGetVertexAttribRangeYAGL(GLsizei count,
     GLenum type,
     target_ulong /* const GLvoid* */ indices_,
     target_ulong /* GLint* */ range_first_,
     target_ulong /* GLsizei* */ range_count_);
+bool yagl_host_glEGLUpdateOffscreenImageYAGL(struct yagl_client_image *image,
+    uint32_t width,
+    uint32_t height,
+    uint32_t bpp,
+    target_ulong /* const void* */ pixels_);
 
 #endif

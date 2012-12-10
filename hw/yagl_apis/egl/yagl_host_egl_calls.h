@@ -92,6 +92,15 @@ bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
     yagl_host_handle dpy_,
     yagl_host_handle surface_,
     EGLNativePixmapType target);
+bool yagl_host_eglCreateImageKHR(yagl_host_handle* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle ctx,
+    EGLenum target,
+    yagl_host_handle buffer_,
+    target_ulong /* const EGLint* */ attrib_list_);
+bool yagl_host_eglDestroyImageKHR(EGLBoolean* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle image_);
 bool yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle* retval,
     yagl_host_handle dpy_,
     yagl_host_handle config_,
@@ -123,5 +132,11 @@ bool yagl_host_eglResizeOffscreenSurfaceYAGL(EGLBoolean* retval,
     uint32_t height,
     uint32_t bpp,
     target_ulong /* void* */ pixels_);
+bool yagl_host_eglUpdateOffscreenImageYAGL(yagl_host_handle dpy_,
+    yagl_host_handle image_,
+    uint32_t width,
+    uint32_t height,
+    uint32_t bpp,
+    target_ulong /* const void* */ pixels);
 
 #endif

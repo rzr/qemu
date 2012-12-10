@@ -207,10 +207,6 @@ struct yagl_egl_offscreen_surface
         return NULL;
     }
 
-    /*
-     * 'pixels' are locked in target's memory, no page fault possible.
-     */
-
     bimage_ct = yagl_compiled_transfer_create(egl_offscreen_ts->ts,
                                               pixels,
                                               (width * height * bpp),

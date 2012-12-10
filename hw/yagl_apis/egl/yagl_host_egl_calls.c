@@ -5,14 +5,16 @@
 #include "yagl_egl_api.h"
 #include "yagl_egl_display.h"
 #include "yagl_egl_backend.h"
-#include "yagl_eglb_display.h"
-#include "yagl_eglb_context.h"
-#include "yagl_eglb_surface.h"
 #include "yagl_egl_interface.h"
 #include "yagl_egl_config.h"
 #include "yagl_egl_surface.h"
 #include "yagl_egl_context.h"
+#include "yagl_egl_image.h"
 #include "yagl_egl_validate.h"
+#include "yagl_eglb_display.h"
+#include "yagl_eglb_context.h"
+#include "yagl_eglb_surface.h"
+#include "yagl_eglb_image.h"
 #include "yagl_log.h"
 #include "yagl_tls.h"
 #include "yagl_mem_egl.h"
@@ -20,7 +22,9 @@
 #include "yagl_process.h"
 #include "yagl_client_interface.h"
 #include "yagl_client_context.h"
+#include "yagl_client_image.h"
 #include "yagl_sharegroup.h"
+#include <EGL/eglext.h>
 
 #define YAGL_EGL_VERSION_MAJOR 1
 #define YAGL_EGL_VERSION_MINOR 4
@@ -107,6 +111,22 @@ static __inline bool yagl_validate_context(struct yagl_egl_display *dpy,
     return true;
 }
 
+static __inline bool yagl_validate_image(struct yagl_egl_display *dpy,
+                                         yagl_host_handle image_,
+                                         struct yagl_egl_image **image)
+{
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, yagl_validate_image);
+
+    *image = yagl_egl_display_acquire_image(dpy, image_);
+
+    if (!*image) {
+        YAGL_SET_ERR(EGL_BAD_PARAMETER);
+        return false;
+    }
+
+    return true;
+}
+
 static bool yagl_get_client_api(const EGLint *attrib_list, yagl_client_api *client_api)
 {
     int i = 0;
@@ -153,6 +173,24 @@ static struct yagl_client_context *yagl_egl_get_ctx(struct yagl_egl_interface *i
     } else {
         return NULL;
     }
+}
+
+static struct yagl_client_image *yagl_egl_get_image(struct yagl_egl_interface *iface,
+                                                    yagl_host_handle image)
+{
+    if (egl_api_ts->context) {
+        struct yagl_egl_image *egl_image =
+            yagl_egl_display_acquire_image(egl_api_ts->context->dpy, image);
+        if (egl_image) {
+            struct yagl_client_image *client_image =
+                egl_image->backend_image->glegl_image;
+            yagl_client_image_acquire(client_image);
+            yagl_egl_image_release(egl_image);
+            return client_image;
+        }
+    }
+
+    return NULL;
 }
 
 static bool yagl_egl_release_current_context(struct yagl_egl_display *dpy)
@@ -271,6 +309,7 @@ struct yagl_api_ps
     yagl_egl_interface_init(egl_iface, backend_ps->backend->render_type);
 
     egl_iface->get_ctx = &yagl_egl_get_ctx;
+    egl_iface->get_image = &yagl_egl_get_image;
 
     /*
      * Finally, create API ps.
@@ -1571,6 +1610,110 @@ out:
     return true;
 }
 
+bool yagl_host_eglCreateImageKHR(yagl_host_handle* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle ctx,
+    EGLenum target,
+    yagl_host_handle buffer_,
+    target_ulong /* const EGLint* */ attrib_list_)
+{
+    bool res = true;
+    EGLint *attrib_list = NULL;
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_image *image = NULL;
+    int i = 0;
+
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglCreateImageKHR);
+
+    *retval = 0;
+
+    if (ctx) {
+        YAGL_SET_ERR(EGL_BAD_PARAMETER);
+        goto out;
+    }
+
+    if (target != EGL_NATIVE_PIXMAP_KHR) {
+        YAGL_SET_ERR(EGL_BAD_PARAMETER);
+        goto out;
+    }
+
+    if (attrib_list_) {
+        attrib_list = yagl_mem_get_attrib_list(egl_api_ts->ts,
+                                               attrib_list_);
+
+        if (!attrib_list) {
+            res = false;
+            goto out;
+        }
+    }
+
+    if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
+        while (attrib_list[i] != EGL_NONE) {
+            switch (attrib_list[i]) {
+            case EGL_IMAGE_PRESERVED_KHR:
+                break;
+            default:
+                YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+                goto out;
+            }
+
+            i += 2;
+        }
+    }
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    image = yagl_egl_image_create(dpy);
+
+    if (!image) {
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
+        goto out;
+    }
+
+    yagl_egl_display_add_image(dpy, image);
+    yagl_egl_image_release(image);
+
+    *retval = image->res.handle;
+
+out:
+    g_free(attrib_list);
+
+    return res;
+}
+
+bool yagl_host_eglDestroyImageKHR(EGLBoolean* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle image_)
+{
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_image *image = NULL;
+
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglDestroyImageKHR);
+
+    *retval = EGL_FALSE;
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_image(dpy, image_, &image)) {
+        goto out;
+    }
+
+    if (yagl_egl_display_remove_image(dpy, image->res.handle)) {
+        *retval = EGL_TRUE;
+    } else {
+        YAGL_SET_ERR(EGL_BAD_PARAMETER);
+    }
+
+out:
+    yagl_egl_image_release(image);
+
+    return true;
+}
+
 bool yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle* retval,
     yagl_host_handle dpy_,
     yagl_host_handle config_,
@@ -2009,4 +2152,43 @@ out:
     yagl_egl_surface_release(surface);
 
     return true;
+}
+
+bool yagl_host_eglUpdateOffscreenImageYAGL(yagl_host_handle dpy_,
+    yagl_host_handle image_,
+    uint32_t width,
+    uint32_t height,
+    uint32_t bpp,
+    target_ulong /* const void* */ pixels)
+{
+    bool res = true;
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_image *image = NULL;
+
+    YAGL_LOG_FUNC_SET_TS(egl_api_ts->ts, eglUpdateOffscreenImageYAGL);
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_image(dpy, image_, &image)) {
+        goto out;
+    }
+
+    if (!image->backend_image->update_offscreen) {
+        YAGL_LOG_CRITICAL("Offscreen images not supported");
+        YAGL_SET_ERR(EGL_BAD_PARAMETER);
+        goto out;
+    }
+
+    res = image->backend_image->update_offscreen(image->backend_image,
+                                                 width,
+                                                 height,
+                                                 bpp,
+                                                 pixels);
+
+out:
+    yagl_egl_image_release(image);
+
+    return res;
 }

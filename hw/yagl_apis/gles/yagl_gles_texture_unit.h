@@ -4,9 +4,11 @@
 #include "yagl_gles_types.h"
 
 struct yagl_gles_context;
+struct yagl_gles_texture;
 
 struct yagl_gles_texture_target_state
 {
+    struct yagl_gles_texture *texture;
     yagl_object_name texture_local_name;
 
     /*

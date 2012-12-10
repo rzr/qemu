@@ -1,0 +1,86 @@
+#include "yagl_egl_offscreen_image.h"
+#include "yagl_egl_offscreen_display.h"
+#include "yagl_egl_offscreen_context.h"
+#include "yagl_egl_offscreen_ps.h"
+#include "yagl_egl_offscreen_ts.h"
+#include "yagl_client_context.h"
+#include "yagl_client_image.h"
+#include "yagl_log.h"
+#include "yagl_tls.h"
+#include "yagl_process.h"
+#include "yagl_thread.h"
+
+YAGL_DECLARE_TLS(struct yagl_egl_offscreen_ts*, egl_offscreen_ts);
+
+static bool yagl_egl_offscreen_image_update(struct yagl_eglb_image *image,
+                                            uint32_t width,
+                                            uint32_t height,
+                                            uint32_t bpp,
+                                            target_ulong pixels)
+{
+    struct yagl_egl_offscreen_image *oimage =
+        (struct yagl_egl_offscreen_image*)image;
+    struct yagl_eglb_context *ctx =
+        (egl_offscreen_ts->ctx ? &egl_offscreen_ts->ctx->base : NULL);
+    bool res;
+
+    if (!ctx) {
+        return true;
+    }
+
+    qemu_mutex_lock(&oimage->update_mtx);
+
+    if (!image->glegl_image) {
+        image->glegl_image = ctx->client_ctx->create_image(ctx->client_ctx);
+        if (!image->glegl_image) {
+            qemu_mutex_unlock(&oimage->update_mtx);
+            return true;
+        }
+    }
+
+    res = image->glegl_image->update(image->glegl_image, width, height, bpp, pixels);
+
+    qemu_mutex_unlock(&oimage->update_mtx);
+
+    return res;
+}
+
+static void yagl_egl_offscreen_image_destroy(struct yagl_eglb_image *image)
+{
+    struct yagl_egl_offscreen_image *oimage =
+        (struct yagl_egl_offscreen_image*)image;
+
+    YAGL_LOG_FUNC_ENTER(image->dpy->backend_ps->ps->id, 0,
+                        yagl_egl_offscreen_image_destroy,
+                        NULL);
+
+    qemu_mutex_destroy(&oimage->update_mtx);
+
+    yagl_eglb_image_cleanup(image);
+
+    g_free(oimage);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+struct yagl_egl_offscreen_image
+    *yagl_egl_offscreen_image_create(struct yagl_egl_offscreen_display *dpy)
+{
+    struct yagl_egl_offscreen_image *image;
+
+    YAGL_LOG_FUNC_ENTER_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_image_create,
+                           "dpy = %p", dpy);
+
+    image = g_malloc0(sizeof(*image));
+
+    yagl_eglb_image_init(&image->base, &dpy->base);
+
+    qemu_mutex_init(&image->update_mtx);
+
+    image->base.update_offscreen = &yagl_egl_offscreen_image_update;
+    image->base.destroy = &yagl_egl_offscreen_image_destroy;
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+
+    return image;
+}

@@ -2316,7 +2316,22 @@ static bool yagl_func_glViewport(struct yagl_thread_state *ts,
 }
 
 /*
- * glGetExtensionStringYAGL dispatcher. id = 142
+ * glEGLImageTargetTexture2DOES dispatcher. id = 142
+ */
+static bool yagl_func_glEGLImageTargetTexture2DOES(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    GLenum target = yagl_marshal_get_GLenum(out_buff);
+    yagl_host_handle image = yagl_marshal_get_host_handle(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, glEGLImageTargetTexture2DOES, GLenum, yagl_host_handle, target, image);
+    bool res = yagl_host_glEGLImageTargetTexture2DOES(target, image);
+    YAGL_LOG_FUNC_EXIT(NULL);
+    return res;
+}
+
+/*
+ * glGetExtensionStringYAGL dispatcher. id = 143
  */
 static bool yagl_func_glGetExtensionStringYAGL(struct yagl_thread_state *ts,
     uint8_t **out_buff,
@@ -2333,24 +2348,6 @@ static bool yagl_func_glGetExtensionStringYAGL(struct yagl_thread_state *ts,
     YAGL_LOG_FUNC_EXIT_SPLIT(GLuint, retval);
     yagl_marshal_put_GLuint(&in_buff, retval);
     return true;
-}
-
-/*
- * glEGLImageTargetTexture2DYAGL dispatcher. id = 143
- */
-static bool yagl_func_glEGLImageTargetTexture2DYAGL(struct yagl_thread_state *ts,
-    uint8_t **out_buff,
-    uint8_t *in_buff)
-{
-    GLenum target = yagl_marshal_get_GLenum(out_buff);
-    uint32_t width = yagl_marshal_get_uint32_t(out_buff);
-    uint32_t height = yagl_marshal_get_uint32_t(out_buff);
-    uint32_t bpp = yagl_marshal_get_uint32_t(out_buff);
-    target_ulong pixels = yagl_marshal_get_ptr(out_buff);
-    YAGL_LOG_FUNC_ENTER_SPLIT5(ts->ps->id, ts->id, glEGLImageTargetTexture2DYAGL, GLenum, uint32_t, uint32_t, uint32_t, target_ulong, target, width, height, bpp, pixels);
-    bool res = yagl_host_glEGLImageTargetTexture2DYAGL(target, width, height, bpp, pixels);
-    YAGL_LOG_FUNC_EXIT(NULL);
-    return res;
 }
 
 /*
@@ -2515,7 +2512,7 @@ yagl_api_func yagl_gles2_api_funcs[] = {
     &yagl_func_glVertexAttrib4fv,
     &yagl_func_glVertexAttribPointer,
     &yagl_func_glViewport,
+    &yagl_func_glEGLImageTargetTexture2DOES,
     &yagl_func_glGetExtensionStringYAGL,
-    &yagl_func_glEGLImageTargetTexture2DYAGL,
     &yagl_func_glGetVertexAttribRangeYAGL
 };

@@ -3,6 +3,7 @@
 #include "yagl_apis/gles/yagl_gles_framebuffer.h"
 #include "yagl_apis/gles/yagl_gles_renderbuffer.h"
 #include "yagl_apis/gles/yagl_gles_texture.h"
+#include "yagl_apis/gles/yagl_gles_image.h"
 #include "yagl_gles2_calls.h"
 #include "yagl_gles2_api.h"
 #include "yagl_gles2_driver.h"
@@ -97,6 +98,19 @@ static struct yagl_client_context
     return &ctx->base.base;
 }
 
+static struct yagl_client_image
+    *yagl_host_gles2_create_image(struct yagl_client_interface *iface,
+                                  yagl_object_name tex_global_name,
+                                  struct yagl_ref *tex_data)
+{
+    struct yagl_gles_image *image =
+        yagl_gles_image_create_from_texture(gles2_api_ts->driver_ps->common,
+                                            tex_global_name,
+                                            tex_data);
+
+    return image ? &image->base : NULL;
+}
+
 static yagl_api_func yagl_host_gles2_get_func(struct yagl_api_ps *api_ps,
                                               uint32_t func_id)
 {
@@ -188,6 +202,7 @@ struct yagl_api_ps
     yagl_client_interface_init(client_iface);
 
     client_iface->create_ctx = &yagl_host_gles2_create_ctx;
+    client_iface->create_image = &yagl_host_gles2_create_image;
 
     /*
      * Finally, create API ps.

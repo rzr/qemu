@@ -6,6 +6,8 @@
 #include "yagl_gles_framebuffer.h"
 #include "yagl_gles_texture_unit.h"
 #include "yagl_gles_validate.h"
+#include "yagl_gles_image.h"
+#include "yagl_gles_texture.h"
 #include "yagl_log.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
@@ -161,12 +163,22 @@ out:
     return ret;
 }
 
+static struct yagl_client_image
+    *yagl_gles_context_create_image(struct yagl_client_context *ctx)
+{
+    struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
+    struct yagl_gles_image *image = yagl_gles_image_create(gles_ctx->driver_ps);
+
+    return image ? &image->base : NULL;
+}
+
 void yagl_gles_context_init(struct yagl_gles_context *ctx,
                             struct yagl_gles_driver_ps *driver_ps)
 {
     ctx->base.flush = &yagl_gles_context_flush;
     ctx->base.finish = &yagl_gles_context_finish;
     ctx->base.read_pixels = &yagl_gles_context_read_pixels;
+    ctx->base.create_image = &yagl_gles_context_create_image;
 
     ctx->driver_ps = driver_ps;
 
@@ -406,11 +418,15 @@ struct yagl_gles_texture_target_state
 
 void yagl_gles_context_bind_texture(struct yagl_gles_context *ctx,
                                     yagl_gles_texture_target texture_target,
+                                    struct yagl_gles_texture *texture,
                                     yagl_object_name texture_local_name)
 {
     struct yagl_gles_texture_target_state *texture_target_state =
         yagl_gles_context_get_active_texture_target_state(ctx, texture_target);
 
+    yagl_gles_texture_acquire(texture);
+    yagl_gles_texture_release(texture_target_state->texture);
+    texture_target_state->texture = texture;
     texture_target_state->texture_local_name = texture_local_name;
 }
 
@@ -423,6 +439,8 @@ void yagl_gles_context_unbind_texture(struct yagl_gles_context *ctx,
 
     for (i = 0; i < YAGL_NUM_GLES_TEXTURE_TARGETS; ++i) {
         if (texture_unit->target_states[i].texture_local_name == texture_local_name) {
+            yagl_gles_texture_release(texture_unit->target_states[i].texture);
+            texture_unit->target_states[i].texture = NULL;
             texture_unit->target_states[i].texture_local_name = 0;
         }
     }

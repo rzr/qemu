@@ -7,6 +7,7 @@
 #define YAGL_NS_TEXTURE 1
 
 struct yagl_gles_driver_ps;
+struct yagl_gles_image;
 
 struct yagl_gles_texture
 {
@@ -14,11 +15,16 @@ struct yagl_gles_texture
 
     struct yagl_gles_driver_ps *driver_ps;
 
-    yagl_object_name global_name;
-
     QemuMutex mutex;
 
+    yagl_object_name global_name;
+
     GLenum target;
+
+    /*
+     * Non-NULL if it's an EGLImage target.
+     */
+    struct yagl_gles_image *image;
 };
 
 struct yagl_gles_texture
@@ -38,5 +44,10 @@ bool yagl_gles_texture_bind(struct yagl_gles_texture *texture,
                             GLenum target);
 
 GLenum yagl_gles_texture_get_target(struct yagl_gles_texture *texture);
+
+void yagl_gles_texture_set_image(struct yagl_gles_texture *texture,
+                                  struct yagl_gles_image *image);
+
+void yagl_gles_texture_unset_image(struct yagl_gles_texture *texture);
 
 #endif

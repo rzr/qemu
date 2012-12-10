@@ -5,6 +5,7 @@
 
 struct yagl_thread_state;
 struct yagl_sharegroup;
+struct yagl_client_image;
 
 struct yagl_client_context
 {
@@ -34,6 +35,9 @@ struct yagl_client_context
                         uint32_t /*height*/,
                         uint32_t /*bpp*/,
                         void */*pixels*/);
+
+    struct yagl_client_image
+        *(*create_image)(struct yagl_client_context */*ctx*/);
 
     /*
      * 'deactivate' is called whenever this context resigns

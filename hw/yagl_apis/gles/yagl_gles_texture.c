@@ -1,12 +1,19 @@
 #include <GL/gl.h>
 #include "yagl_gles_texture.h"
+#include "yagl_gles_image.h"
 #include "yagl_gles_driver.h"
 
 static void yagl_gles_texture_destroy(struct yagl_ref *ref)
 {
     struct yagl_gles_texture *texture = (struct yagl_gles_texture*)ref;
 
-    if (!texture->base.nodelete) {
+    /*
+     * TODO: Add to reap list once we'll move it
+     * to gles driver.
+     */
+    yagl_gles_image_release(texture->image);
+
+    if (!texture->base.nodelete && !texture->image) {
         texture->driver_ps->DeleteTextures(texture->driver_ps, 1, &texture->global_name);
     }
 
@@ -84,4 +91,56 @@ GLenum yagl_gles_texture_get_target(struct yagl_gles_texture *texture)
     qemu_mutex_unlock(&texture->mutex);
 
     return target;
+}
+
+void yagl_gles_texture_set_image(struct yagl_gles_texture *texture,
+                                 struct yagl_gles_image *image)
+{
+    assert(texture->target);
+    assert(image);
+
+    qemu_mutex_lock(&texture->mutex);
+
+    if (texture->image == image) {
+        qemu_mutex_unlock(&texture->mutex);
+        return;
+    }
+
+    yagl_gles_image_acquire(image);
+    yagl_gles_image_release(texture->image);
+
+    if (!texture->image) {
+        texture->driver_ps->DeleteTextures(texture->driver_ps, 1, &texture->global_name);
+    }
+
+    texture->global_name = image->tex_global_name;
+    texture->image = image;
+
+    texture->driver_ps->BindTexture(texture->driver_ps,
+                                    texture->target,
+                                    texture->global_name);
+
+    qemu_mutex_unlock(&texture->mutex);
+}
+
+void yagl_gles_texture_unset_image(struct yagl_gles_texture *texture)
+{
+    qemu_mutex_lock(&texture->mutex);
+
+    if (texture->image) {
+        GLuint global_name = 0;
+
+        yagl_gles_image_release(texture->image);
+        texture->image = NULL;
+
+        texture->driver_ps->GenTextures(texture->driver_ps, 1, &global_name);
+
+        texture->global_name = global_name;
+
+        texture->driver_ps->BindTexture(texture->driver_ps,
+                                        texture->target,
+                                        texture->global_name);
+    }
+
+    qemu_mutex_unlock(&texture->mutex);
 }

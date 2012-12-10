@@ -1,6 +1,7 @@
 #include "yagl_egl_offscreen_display.h"
 #include "yagl_egl_offscreen_context.h"
 #include "yagl_egl_offscreen_surface.h"
+#include "yagl_egl_offscreen_image.h"
 #include "yagl_egl_offscreen_ps.h"
 #include "yagl_egl_offscreen_ts.h"
 #include "yagl_egl_native_config.h"
@@ -97,6 +98,17 @@ static struct yagl_eglb_surface
     return sfc ? &sfc->base : NULL;
 }
 
+static struct yagl_eglb_image
+    *yagl_egl_offscreen_display_create_image(struct yagl_eglb_display *dpy)
+{
+    struct yagl_egl_offscreen_display *egl_offscreen_dpy =
+        (struct yagl_egl_offscreen_display*)dpy;
+    struct yagl_egl_offscreen_image *image =
+        yagl_egl_offscreen_image_create(egl_offscreen_dpy);
+
+    return image ? &image->base : NULL;
+}
+
 static void yagl_egl_offscreen_display_destroy(struct yagl_eglb_display *dpy)
 {
     struct yagl_egl_offscreen_display *egl_offscreen_dpy =
@@ -141,6 +153,7 @@ struct yagl_egl_offscreen_display
     dpy->base.config_cleanup = &yagl_egl_offscreen_display_config_cleanup;
     dpy->base.create_context = &yagl_egl_offscreen_display_create_context;
     dpy->base.create_offscreen_surface = &yagl_egl_offscreen_display_create_surface;
+    dpy->base.create_image = &yagl_egl_offscreen_display_create_image;
     dpy->base.destroy = &yagl_egl_offscreen_display_destroy;
 
     dpy->native_dpy = native_dpy;

@@ -525,7 +525,52 @@ static bool yagl_func_eglCopyBuffers(struct yagl_thread_state *ts,
 }
 
 /*
- * eglCreateWindowSurfaceOffscreenYAGL dispatcher. id = 25
+ * eglCreateImageKHR dispatcher. id = 25
+ */
+static bool yagl_func_eglCreateImageKHR(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
+    yagl_host_handle ctx = yagl_marshal_get_host_handle(out_buff);
+    EGLenum target = yagl_marshal_get_EGLenum(out_buff);
+    yagl_host_handle buffer = yagl_marshal_get_host_handle(out_buff);
+    target_ulong attrib_list = yagl_marshal_get_ptr(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT5(ts->ps->id, ts->id, eglCreateImageKHR, yagl_host_handle, yagl_host_handle, EGLenum, yagl_host_handle, target_ulong, dpy, ctx, target, buffer, attrib_list);
+    yagl_host_handle retval;
+    bool res = yagl_host_eglCreateImageKHR(&retval, dpy, ctx, target, buffer, attrib_list);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, retval);
+    yagl_marshal_put_host_handle(&in_buff, retval);
+    return true;
+}
+
+/*
+ * eglDestroyImageKHR dispatcher. id = 26
+ */
+static bool yagl_func_eglDestroyImageKHR(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
+    yagl_host_handle image = yagl_marshal_get_host_handle(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT2(ts->ps->id, ts->id, eglDestroyImageKHR, yagl_host_handle, yagl_host_handle, dpy, image);
+    EGLBoolean retval;
+    bool res = yagl_host_eglDestroyImageKHR(&retval, dpy, image);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, retval);
+    yagl_marshal_put_EGLBoolean(&in_buff, retval);
+    return true;
+}
+
+/*
+ * eglCreateWindowSurfaceOffscreenYAGL dispatcher. id = 27
  */
 static bool yagl_func_eglCreateWindowSurfaceOffscreenYAGL(struct yagl_thread_state *ts,
     uint8_t **out_buff,
@@ -551,7 +596,7 @@ static bool yagl_func_eglCreateWindowSurfaceOffscreenYAGL(struct yagl_thread_sta
 }
 
 /*
- * eglCreatePbufferSurfaceOffscreenYAGL dispatcher. id = 26
+ * eglCreatePbufferSurfaceOffscreenYAGL dispatcher. id = 28
  */
 static bool yagl_func_eglCreatePbufferSurfaceOffscreenYAGL(struct yagl_thread_state *ts,
     uint8_t **out_buff,
@@ -577,7 +622,7 @@ static bool yagl_func_eglCreatePbufferSurfaceOffscreenYAGL(struct yagl_thread_st
 }
 
 /*
- * eglCreatePixmapSurfaceOffscreenYAGL dispatcher. id = 27
+ * eglCreatePixmapSurfaceOffscreenYAGL dispatcher. id = 29
  */
 static bool yagl_func_eglCreatePixmapSurfaceOffscreenYAGL(struct yagl_thread_state *ts,
     uint8_t **out_buff,
@@ -603,7 +648,7 @@ static bool yagl_func_eglCreatePixmapSurfaceOffscreenYAGL(struct yagl_thread_sta
 }
 
 /*
- * eglResizeOffscreenSurfaceYAGL dispatcher. id = 28
+ * eglResizeOffscreenSurfaceYAGL dispatcher. id = 30
  */
 static bool yagl_func_eglResizeOffscreenSurfaceYAGL(struct yagl_thread_state *ts,
     uint8_t **out_buff,
@@ -627,7 +672,26 @@ static bool yagl_func_eglResizeOffscreenSurfaceYAGL(struct yagl_thread_state *ts
     return true;
 }
 
-const uint32_t yagl_egl_api_num_funcs = 28;
+/*
+ * eglUpdateOffscreenImageYAGL dispatcher. id = 31
+ */
+static bool yagl_func_eglUpdateOffscreenImageYAGL(struct yagl_thread_state *ts,
+    uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
+    yagl_host_handle image = yagl_marshal_get_host_handle(out_buff);
+    uint32_t width = yagl_marshal_get_uint32_t(out_buff);
+    uint32_t height = yagl_marshal_get_uint32_t(out_buff);
+    uint32_t bpp = yagl_marshal_get_uint32_t(out_buff);
+    target_ulong pixels = yagl_marshal_get_ptr(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT6(ts->ps->id, ts->id, eglUpdateOffscreenImageYAGL, yagl_host_handle, yagl_host_handle, uint32_t, uint32_t, uint32_t, target_ulong, dpy, image, width, height, bpp, pixels);
+    bool res = yagl_host_eglUpdateOffscreenImageYAGL(dpy, image, width, height, bpp, pixels);
+    YAGL_LOG_FUNC_EXIT(NULL);
+    return res;
+}
+
+const uint32_t yagl_egl_api_num_funcs = 31;
 
 yagl_api_func yagl_egl_api_funcs[] = {
     &yagl_func_eglGetError,
@@ -654,8 +718,11 @@ yagl_api_func yagl_egl_api_funcs[] = {
     &yagl_func_eglWaitNative,
     &yagl_func_eglSwapBuffers,
     &yagl_func_eglCopyBuffers,
+    &yagl_func_eglCreateImageKHR,
+    &yagl_func_eglDestroyImageKHR,
     &yagl_func_eglCreateWindowSurfaceOffscreenYAGL,
     &yagl_func_eglCreatePbufferSurfaceOffscreenYAGL,
     &yagl_func_eglCreatePixmapSurfaceOffscreenYAGL,
-    &yagl_func_eglResizeOffscreenSurfaceYAGL
+    &yagl_func_eglResizeOffscreenSurfaceYAGL,
+    &yagl_func_eglUpdateOffscreenImageYAGL
 };

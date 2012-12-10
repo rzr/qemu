@@ -8,6 +8,7 @@
 #include "yagl_gles_texture_unit.h"
 #include "yagl_gles_buffer.h"
 #include "yagl_gles_validate.h"
+#include "yagl_gles_image.h"
 #include "yagl_tls.h"
 #include "yagl_log.h"
 #include "yagl_mem_gl.h"
@@ -231,7 +232,7 @@ bool yagl_host_glBindTexture(GLenum target,
         ctx->driver_ps->BindTexture(ctx->driver_ps, target, 0);
     }
 
-    yagl_gles_context_bind_texture(ctx, texture_target, texture);
+    yagl_gles_context_bind_texture(ctx, texture_target, texture_obj, texture);
 
 out:
     yagl_gles_texture_release(texture_obj);
@@ -426,6 +427,19 @@ bool yagl_host_glCompressedTexImage2D(GLenum target,
                           data)) {
             res = false;
             goto out;
+        }
+    }
+
+    if (target == GL_TEXTURE_2D) {
+        struct yagl_gles_texture_target_state *tex_target_state =
+            yagl_gles_context_get_active_texture_target_state(ctx,
+                                                              yagl_gles_texture_target_2d);
+        if (tex_target_state->texture) {
+            /*
+             * This operation should orphan EGLImage according
+             * to OES_EGL_image specs.
+             */
+            yagl_gles_texture_unset_image(tex_target_state->texture);
         }
     }
 
@@ -1406,6 +1420,19 @@ bool yagl_host_glTexImage2D(GLenum target,
         }
     }
 
+    if (target == GL_TEXTURE_2D) {
+        struct yagl_gles_texture_target_state *tex_target_state =
+            yagl_gles_context_get_active_texture_target_state(ctx,
+                                                              yagl_gles_texture_target_2d);
+        if (tex_target_state->texture) {
+            /*
+             * This operation should orphan EGLImage according
+             * to OES_EGL_image specs.
+             */
+            yagl_gles_texture_unset_image(tex_target_state->texture);
+        }
+    }
+
     ctx->driver_ps->TexImage2D(ctx->driver_ps,
                                target,
                                level,
@@ -1577,6 +1604,43 @@ bool yagl_host_glViewport(GLint x,
     return true;
 }
 
+bool yagl_host_glEGLImageTargetTexture2DOES(GLenum target,
+    yagl_host_handle image_)
+{
+    struct yagl_gles_image *image = NULL;
+    struct yagl_gles_texture_target_state *tex_target_state;
+
+    YAGL_GET_CTX(glEGLImageTargetTexture2DOES);
+
+    if (target != GL_TEXTURE_2D) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    image = (struct yagl_gles_image*)ts->ps->egl_iface->get_image(ts->ps->egl_iface, image_);
+
+    if (!image) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    tex_target_state =
+        yagl_gles_context_get_active_texture_target_state(ctx,
+                                                          yagl_gles_texture_target_2d);
+
+    if (!tex_target_state->texture) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    yagl_gles_texture_set_image(tex_target_state->texture, image);
+
+out:
+    yagl_gles_image_release(image);
+
+    return true;
+}
+
 bool yagl_host_glGetExtensionStringYAGL(GLuint* retval, target_ulong /* GLchar* */ str_)
 {
     bool res = true;
@@ -1603,69 +1667,6 @@ bool yagl_host_glGetExtensionStringYAGL(GLuint* retval, target_ulong /* GLchar* 
 out:
     g_free(str);
 
-    return res;
-}
-
-bool yagl_host_glEGLImageTargetTexture2DYAGL(GLenum target,
-    uint32_t width,
-    uint32_t height,
-    uint32_t bpp,
-    target_ulong /* const void* */ pixels_)
-{
-    bool res = true;
-    void *pixels = NULL;
-    GLenum format = 0;
-    GLsizei unpack_alignment = 0;
-
-    YAGL_GET_CTX(glEGLImageTargetTexture2DYAGL);
-
-    if (pixels_ && (width > 0) && (height > 0) && (bpp > 0)) {
-        pixels = yagl_gles_context_malloc(ctx, width * height * bpp);
-        if (!yagl_mem_get(ts,
-                          pixels_,
-                          width * height * bpp,
-                          pixels)) {
-            res = false;
-            goto out;
-        }
-    }
-
-    switch (bpp) {
-    case 3:
-        format = GL_RGB;
-        break;
-    case 4:
-        format = GL_BGRA;
-        break;
-    default:
-        YAGL_SET_ERR(GL_INVALID_VALUE);
-        goto out;
-    }
-
-    ctx->driver_ps->GetIntegerv(ctx->driver_ps,
-                                GL_UNPACK_ALIGNMENT,
-                                &unpack_alignment);
-
-    ctx->driver_ps->PixelStorei(ctx->driver_ps,
-                                GL_UNPACK_ALIGNMENT,
-                                1);
-
-    ctx->driver_ps->TexImage2D(ctx->driver_ps,
-                               target,
-                               0,
-                               GL_RGB,
-                               width,
-                               height,
-                               0,
-                               format,
-                               GL_UNSIGNED_BYTE,
-                               pixels);
-
-    ctx->driver_ps->PixelStorei(ctx->driver_ps,
-                                GL_UNPACK_ALIGNMENT,
-                                unpack_alignment);
-
-out:
     return res;
 }
 
@@ -1745,6 +1746,83 @@ bool yagl_host_glGetVertexAttribRangeYAGL(GLsizei count,
     if (range_count_) {
         yagl_mem_put_GLsizei(ts->mt2, (GLsizei)(last_idx + 1 - first_idx));
     }
+
+out:
+    return res;
+}
+
+bool yagl_host_glEGLUpdateOffscreenImageYAGL(struct yagl_client_image *image,
+    uint32_t width,
+    uint32_t height,
+    uint32_t bpp,
+    target_ulong /* const void* */ pixels_)
+{
+    struct yagl_gles_image *gles_image = (struct yagl_gles_image*)image;
+    bool res = true;
+    void *pixels = NULL;
+    GLenum format = 0;
+    GLuint cur_tex = 0;
+    GLsizei unpack_alignment = 0;
+
+    YAGL_GET_CTX(glEGLUpdateOffscreenImageYAGL);
+
+    if (pixels_ && (width > 0) && (height > 0) && (bpp > 0)) {
+        pixels = yagl_gles_context_malloc(ctx, width * height * bpp);
+        if (!yagl_mem_get(ctx->ts,
+                          pixels_,
+                          width * height * bpp,
+                          pixels)) {
+            res = false;
+            goto out;
+        }
+    }
+
+    switch (bpp) {
+    case 3:
+        format = GL_RGB;
+        break;
+    case 4:
+        format = GL_BGRA;
+        break;
+    default:
+        YAGL_LOG_ERROR("bad bpp - %u", bpp);
+        goto out;
+    }
+
+    ctx->driver_ps->GetIntegerv(ctx->driver_ps,
+                                GL_TEXTURE_BINDING_2D,
+                                (GLint*)&cur_tex);
+
+    ctx->driver_ps->GetIntegerv(ctx->driver_ps,
+                                GL_UNPACK_ALIGNMENT,
+                                &unpack_alignment);
+
+    ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                GL_UNPACK_ALIGNMENT,
+                                1);
+
+    ctx->driver_ps->BindTexture(ctx->driver_ps,
+                                GL_TEXTURE_2D,
+                                gles_image->tex_global_name);
+
+    ctx->driver_ps->TexImage2D(ctx->driver_ps,
+                               GL_TEXTURE_2D,
+                               0,
+                               GL_RGB,
+                               width,
+                               height,
+                               0,
+                               format,
+                               GL_UNSIGNED_BYTE,
+                               pixels);
+
+    ctx->driver_ps->PixelStorei(ctx->driver_ps,
+                                GL_UNPACK_ALIGNMENT,
+                                unpack_alignment);
+
+    ctx->driver_ps->BindTexture(ctx->driver_ps,
+                                GL_TEXTURE_2D,
+                                cur_tex);
 
 out:
     return res;

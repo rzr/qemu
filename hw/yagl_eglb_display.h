@@ -7,6 +7,7 @@
 struct yagl_egl_backend_ps;
 struct yagl_eglb_context;
 struct yagl_eglb_surface;
+struct yagl_eglb_image;
 struct yagl_egl_native_config;
 struct yagl_egl_window_attribs;
 struct yagl_egl_pixmap_attribs;
@@ -28,6 +29,9 @@ struct yagl_eglb_display
                                                 struct yagl_client_context */*client_ctx*/,
                                                 struct yagl_eglb_context */*share_context*/);
 
+    /*
+     * 'pixels' are locked in target's memory, no page fault possible.
+     */
     struct yagl_eglb_surface *(*create_offscreen_surface)(struct yagl_eglb_display */*dpy*/,
                                                           const struct yagl_egl_native_config */*cfg*/,
                                                           EGLenum /*type*/,
@@ -50,6 +54,8 @@ struct yagl_eglb_display
     struct yagl_eglb_surface *(*create_onscreen_pbuffer_surface)(struct yagl_eglb_display */*dpy*/,
                                                                  const struct yagl_egl_native_config */*cfg*/,
                                                                  const struct yagl_egl_pbuffer_attribs */*attribs*/);
+
+    struct yagl_eglb_image *(*create_image)(struct yagl_eglb_display */*dpy*/);
 
     void (*destroy)(struct yagl_eglb_display */*dpy*/);
 };
