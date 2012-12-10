@@ -201,6 +201,15 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		skin.pairTagCanvas.setVisible(false);
 
 		arrangeSkin(scale, rotationId);
+
+		/* open the key window */
+		shell.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				skin.setIsControlPanel(true);
+				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER);
+			}
+		});
 	}
 
 	@Override
