@@ -248,9 +248,10 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 }
 
-void do_hardkey_event( int event_type, int keycode )
+void do_hardkey_event(int event_type, int keycode)
 {
-    INFO( "do_hardkey_event event_type:%d, keycode:%d\n", event_type, keycode );
+    INFO("do_hardkey_event event_type:%d, keycode:%d\n",
+        event_type, keycode);
 
     if ( is_suspended_state() ) {
         if ( KEY_PRESSED == event_type ) {
@@ -272,19 +273,21 @@ void do_hardkey_event( int event_type, int keycode )
     mloop_evcmd_hwkey(event_type, keycode);
 }
 
-void do_scale_event( double scale_factor )
+void do_scale_event(double scale_factor)
 {
     INFO("do_scale_event scale_factor:%lf\n", scale_factor);
 
     set_emul_win_scale(scale_factor);
 
+#if 0
     //TODO: thread safe
     //qemu refresh
-    //vga_hw_invalidate();
-    //vga_hw_update();
+    vga_hw_invalidate();
+    vga_hw_update();
+#endif
 }
 
-void do_rotation_event( int rotation_type)
+void do_rotation_event(int rotation_type)
 {
 
     INFO( "do_rotation_event rotation_type:%d\n", rotation_type);
@@ -315,8 +318,8 @@ void do_rotation_event( int rotation_type)
 
 }
 
-QemuSurfaceInfo* get_screenshot_info( void ) {
-
+QemuSurfaceInfo* get_screenshot_info(void)
+{
     DisplaySurface* qemu_display_surface = get_qemu_display_surface();
 
     if ( !qemu_display_surface ) {
@@ -353,17 +356,19 @@ QemuSurfaceInfo* get_screenshot_info( void ) {
 
 }
 
-void free_screenshot_info( QemuSurfaceInfo* info ) {
-    if( info ) {
-        if( info->pixel_data ) {
-            g_free( info->pixel_data );
+void free_screenshot_info(QemuSurfaceInfo* info)
+{
+    if (info) {
+        if(info->pixel_data) {
+            g_free(info->pixel_data);
         }
-        g_free( info );
+
+        g_free(info);
     }
 }
 
-DetailInfo* get_detail_info( int qemu_argc, char** qemu_argv ) {
-
+DetailInfo* get_detail_info(int qemu_argc, char** qemu_argv)
+{
     DetailInfo* detail_info = g_malloc0( sizeof(DetailInfo) );
     if ( !detail_info ) {
         ERR( "Fail to malloc for DetailInfo.\n" );

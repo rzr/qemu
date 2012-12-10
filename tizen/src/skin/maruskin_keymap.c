@@ -88,20 +88,23 @@ int javakeycode_to_scancode(
             kbd_put_keycode(58);
             kbd_put_keycode(58 | 0x80);
             set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1);
-            INFO("qemu CapsLock state was synchronized with host key value (%d)\n", get_emul_caps_lock_state());
+            INFO("qemu CapsLock state was synchronized with host key value (%d)\n",
+                get_emul_caps_lock_state());
         }
         if (num_lock != -1 && get_emul_num_lock_state() != num_lock) {
             kbd_put_keycode(69);
             kbd_put_keycode(69 | 0x80);
             set_emul_num_lock_state(get_emul_num_lock_state() ^ 1);
-            INFO("qemu NumLock state was synchronized with host key value (%d)\n", get_emul_num_lock_state());
+            INFO("qemu NumLock state was synchronized with host key value (%d)\n",
+                get_emul_num_lock_state());
         }
     }
 
-
-/*#ifdef _WIN32
+#if 0
+#ifdef _WIN32
     return MapVirtualKey(vk, MAPVK_VK_TO_VSC);
-#endif*/
+#endif
+#endif
 
     if (vk == 0) { //meta keys
         TRACE("meta key\n");

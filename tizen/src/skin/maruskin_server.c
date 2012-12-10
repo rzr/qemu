@@ -371,52 +371,63 @@ static void parse_skinconfig_prop(void)
 
 }
 
-static void parse_skin_args( void ) {
-
+static void parse_skin_args(void)
+{
     int i;
-    for ( i = 0; i < skin_argc; i++ ) {
+
+    for (i = 0; i < skin_argc; i++) {
 
         char* arg = NULL;
-        arg = strdup( skin_argv[i] );
+        arg = strdup(skin_argv[i]);
 
-        if ( arg ) {
+        if (arg) {
 
-            char* key = strtok( arg, "=" );
-            char* value = strtok( NULL, "=" );
+            char* key = strtok(arg, "=");
+            char* value = strtok(NULL, "=");
 
-            INFO( "skin params key:%s, value:%s\n", key, value );
+            INFO("skin params key:%s, value:%s\n", key, value);
 
-            if( 0 == strcmp( TEST_HB_IGNORE, key ) ) {
-                if( 0 == strcmp( "true", value ) ) {
+            if (0 == strcmp(TEST_HB_IGNORE, key)) {
+                if (0 == strcmp("true", value)) {
                     ignore_heartbeat = 1;
-                }else if( 0 == strcmp( "false", value ) ) {
+                } else if (0 == strcmp("false", value)) {
                     ignore_heartbeat = 0;
                 }
             }
 
-            free( arg );
+            free(arg);
 
         } else {
-            ERR( "fail to strdup." );
+            ERR("fail to strdup.");
         }
 
     }
 
 }
 
-static void* run_skin_server( void* args ) {
+static void print_fail_log(void)
+{
+    ERR("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    ERR("! Fail to initialize for skin server operation. Shutdown QEMU !\n");
+    ERR("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+}
 
+static void* run_skin_server(void* args)
+{
     struct sockaddr server_addr, client_addr;
     socklen_t server_len, client_len;
-    int shutdown_qmu = 0;
+    int shutdown_qemu = 0;
 
     INFO("run skin server\n");
 
-    if ( 0 > ( server_sock = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP ) ) ) {
-        ERR( "create listen socket error\n" );
-        perror( "create listen socket error : " );
-        shutdown_qmu = 1;
-        goto cleanup;
+    if (0 > (server_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))) {
+        ERR("create listen socket error\n");
+        perror("create listen socket error : ");
+
+        print_fail_log();
+        shutdown_qemu_gracefully();
+
+        return NULL;
     }
 
     memset( &server_addr, '\0', sizeof( server_addr ) );
@@ -426,36 +437,60 @@ static void* run_skin_server( void* args ) {
 
     server_len = sizeof( server_addr );
 
-    if ( 0 != bind( server_sock, &server_addr, server_len ) ) {
-        ERR( "skin server bind error\n" );
-        perror( "skin server bind error : " );
-        shutdown_qmu = 1;
-        goto cleanup;
+    if (0 != bind(server_sock, &server_addr, server_len)) {
+        ERR("skin server bind error\n");
+        perror("skin server bind error : ");
+
+        if (server_sock) {
+#ifdef CONFIG_WIN32
+            closesocket(server_sock);
+#else
+            close(server_sock);
+#endif
+            server_sock = 0;
+        }
+
+        print_fail_log();
+        shutdown_qemu_gracefully();
+
+        return NULL;
     }
 
     memset( &server_addr, '\0', sizeof( server_addr ) );
     getsockname( server_sock, (struct sockaddr *) &server_addr, &server_len );
     svr_port = ntohs( ( (struct sockaddr_in *) &server_addr )->sin_port );
 
-    INFO( "success to bind port[127.0.0.1:%d/tcp] for skin_server in host \n", svr_port );
+    INFO("success to bind port[127.0.0.1:%d/tcp] for skin_server in host \n", svr_port);
 
-    if ( 0 > listen( server_sock, 4 ) ) {
-        ERR( "skin_server listen error\n" );
-        perror( "skin_server listen error : " );
-        shutdown_qmu = 1;
-        goto cleanup;
+    if (0 > listen( server_sock, 4)) {
+        ERR("skin_server listen error\n");
+        perror("skin_server listen error : ");
+
+        if (server_sock) {
+#ifdef CONFIG_WIN32
+            closesocket(server_sock);
+#else
+            close(server_sock);
+#endif
+            server_sock = 0;
+        }
+
+        print_fail_log();
+        shutdown_qemu_gracefully();
+
+        return NULL;
     }
 
-    client_len = sizeof( client_addr );
+    client_len = sizeof(client_addr);
 
     char recvbuf[RECV_BUF_SIZE];
 
-    INFO( "skin server start...port:%d\n", svr_port );
+    INFO("skin server start...port:%d\n", svr_port);
 
-    while ( 1 ) {
+    while (1) {
 
-        if ( stop_server ) {
-            INFO( "close server socket normally.\n" );
+        if (stop_server) {
+            INFO("close server socket normally.\n");
             break;
         }
 
@@ -464,7 +499,7 @@ static void* run_skin_server( void* args ) {
         if( !is_started_heartbeat ) {
             if ( !start_heart_beat() ) {
                 ERR( "Fail to start heartbeat thread.\n" );
-                shutdown_qmu = 1;
+                shutdown_qemu = 1;
                 break;
             }
         }
@@ -796,13 +831,15 @@ static void* run_skin_server( void* args ) {
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n" );
-//                    TRACE( log_buf );
-                    TRACE( "recv HB req_id:%d\n", req_id );
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n");
+#if 0
+                    TRACE(log_buf);
+#endif
+                    TRACE("recv HB req_id:%d\n", req_id);
 
-                    pthread_mutex_lock( &mutex_recv_heartbeat_count );
+                    pthread_mutex_lock(&mutex_recv_heartbeat_count);
                     recv_heartbeat_count = 0;
-                    pthread_mutex_unlock( &mutex_recv_heartbeat_count );
+                    pthread_mutex_unlock(&mutex_recv_heartbeat_count);
 
                     break;
                 }
@@ -860,20 +897,18 @@ static void* run_skin_server( void* args ) {
 
     stop_heart_beat();
 
-cleanup:
-    if ( server_sock ) {
+    /* clean up */
+    if (server_sock) {
 #ifdef CONFIG_WIN32
-        closesocket( server_sock );
+        closesocket(server_sock);
 #else
-        close( server_sock );
+        close(server_sock);
 #endif
         server_sock = 0;
     }
 
-    if( shutdown_qmu ) {
-        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
-        ERR( "!!! Fail to initialize for skin server operation. Shutdown QEMU !!!\n" );
-        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+    if (shutdown_qemu) {
+        print_fail_log();
         shutdown_qemu_gracefully();
     }
 
