@@ -62,7 +62,7 @@ void yagl_gles_array_init(struct yagl_gles_array *array,
 void yagl_gles_array_cleanup(struct yagl_gles_array *array)
 {
     if (array->vbo) {
-        yagl_sharegroup_reap_object(array->ctx->base.sg, &array->vbo->base);
+        yagl_gles_buffer_release(array->vbo);
         array->vbo = NULL;
         array->vbo_local_name = 0;
         array->offset = 0;
@@ -184,8 +184,7 @@ bool yagl_gles_array_transfer(struct yagl_gles_array *array,
          * TODO: fix for GL_FIXED case.
          */
 
-        if (!yagl_mem_get(array->ctx->ts,
-                          array->target_data + (first * array->stride),
+        if (!yagl_mem_get(array->target_data + (first * array->stride),
                           (count * array->stride),
                           array->host_data + (first * array->stride))) {
             return false;

@@ -1,5 +1,7 @@
 #include "yagl_stats.h"
 #include "yagl_log.h"
+#include "yagl_process.h"
+#include "yagl_thread.h"
 #include "qemu-thread.h"
 
 #ifdef CONFIG_YAGL_STATS
@@ -67,7 +69,7 @@ void yagl_stats_batch(uint32_t num_calls, uint32_t bytes_unused)
 
 void yagl_stats_dump(void)
 {
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_stats_dump, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_stats_dump, NULL);
 
     qemu_mutex_lock(&g_stats_mutex);
 

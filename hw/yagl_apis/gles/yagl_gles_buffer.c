@@ -14,11 +14,11 @@ static void yagl_gles_buffer_transfer_default(struct yagl_gles_buffer *buffer,
                                               int size)
 {
     if ((start == 0) && (size == buffer->size)) {
-        buffer->driver_ps->BufferData(buffer->driver_ps, target, size,
-                                      buffer->data, buffer->usage);
+        buffer->driver->BufferData(target, size,
+                                   buffer->data, buffer->usage);
     } else {
-        buffer->driver_ps->BufferSubData(buffer->driver_ps, target, start,
-                                         size, buffer->data + start);
+        buffer->driver->BufferSubData(target, start,
+                                      size, buffer->data + start);
     }
 }
 
@@ -32,11 +32,11 @@ static void yagl_gles_buffer_transfer_fixed(struct yagl_gles_buffer *buffer,
      */
 
     if ((start == 0) && (size == buffer->size)) {
-        buffer->driver_ps->BufferData(buffer->driver_ps, target, size,
-                                      buffer->data, buffer->usage);
+        buffer->driver->BufferData(target, size,
+                                   buffer->data, buffer->usage);
     } else {
-        buffer->driver_ps->BufferSubData(buffer->driver_ps, target, start,
-                                         size, buffer->data + start);
+        buffer->driver->BufferSubData(target, start,
+                                      size, buffer->data + start);
     }
 }
 
@@ -62,8 +62,8 @@ static void yagl_gles_buffer_transfer_internal(struct yagl_gles_buffer *buffer,
              * Buffer clear.
              */
             assert(start == 0);
-            buffer->driver_ps->BufferData(buffer->driver_ps, target, 0,
-                                          NULL, buffer->usage);
+            buffer->driver->BufferData(target, 0,
+                                       NULL, buffer->usage);
             yagl_range_list_clear(range_list);
             return;
         } else if ((start == 0) && (size == buffer->size)) {
@@ -94,10 +94,10 @@ static void yagl_gles_buffer_destroy(struct yagl_ref *ref)
 {
     struct yagl_gles_buffer *buffer = (struct yagl_gles_buffer*)ref;
 
-    if (!buffer->base.nodelete) {
-        buffer->driver_ps->DeleteBuffers(buffer->driver_ps, 1, &buffer->default_part.global_name);
-        buffer->driver_ps->DeleteBuffers(buffer->driver_ps, 1, &buffer->fixed_part.global_name);
-    }
+    yagl_ensure_ctx();
+    buffer->driver->DeleteBuffers(1, &buffer->default_part.global_name);
+    buffer->driver->DeleteBuffers(1, &buffer->fixed_part.global_name);
+    yagl_unensure_ctx();
 
     yagl_range_list_cleanup(&buffer->default_part.range_list);
     yagl_range_list_cleanup(&buffer->fixed_part.range_list);
@@ -112,7 +112,7 @@ static void yagl_gles_buffer_destroy(struct yagl_ref *ref)
 }
 
 struct yagl_gles_buffer
-    *yagl_gles_buffer_create(struct yagl_gles_driver_ps *driver_ps)
+    *yagl_gles_buffer_create(struct yagl_gles_driver *driver)
 {
     struct yagl_gles_buffer *buffer;
 
@@ -120,14 +120,14 @@ struct yagl_gles_buffer
 
     yagl_object_init(&buffer->base, &yagl_gles_buffer_destroy);
 
-    buffer->driver_ps = driver_ps;
+    buffer->driver = driver;
 
     qemu_mutex_init(&buffer->mutex);
 
-    driver_ps->GenBuffers(driver_ps, 1, &buffer->default_part.global_name);
+    driver->GenBuffers(1, &buffer->default_part.global_name);
     yagl_range_list_init(&buffer->default_part.range_list);
 
-    driver_ps->GenBuffers(driver_ps, 1, &buffer->fixed_part.global_name);
+    driver->GenBuffers(1, &buffer->fixed_part.global_name);
     yagl_range_list_init(&buffer->fixed_part.range_list);
 
     return buffer;
@@ -274,9 +274,8 @@ bool yagl_gles_buffer_bind(struct yagl_gles_buffer *buffer,
         return false;
     }
 
-    buffer->driver_ps->GetIntegerv(buffer->driver_ps,
-                                   binding,
-                                   (GLint*)&tmp);
+    buffer->driver->GetIntegerv(binding,
+                                (GLint*)&tmp);
 
     if (old_buffer_name) {
         *old_buffer_name = tmp;
@@ -284,15 +283,13 @@ bool yagl_gles_buffer_bind(struct yagl_gles_buffer *buffer,
 
     if (type == GL_FIXED) {
         if (tmp != buffer->fixed_part.global_name) {
-            buffer->driver_ps->BindBuffer(buffer->driver_ps,
-                                          target,
-                                          buffer->fixed_part.global_name);
+            buffer->driver->BindBuffer(target,
+                                       buffer->fixed_part.global_name);
         }
     } else {
         if (tmp != buffer->default_part.global_name) {
-            buffer->driver_ps->BindBuffer(buffer->driver_ps,
-                                          target,
-                                          buffer->default_part.global_name);
+            buffer->driver->BindBuffer(target,
+                                       buffer->default_part.global_name);
         }
     }
 
@@ -325,7 +322,7 @@ bool yagl_gles_buffer_transfer(struct yagl_gles_buffer *buffer,
 
     qemu_mutex_unlock(&buffer->mutex);
 
-    buffer->driver_ps->BindBuffer(buffer->driver_ps, target, old_buffer_name);
+    buffer->driver->BindBuffer(target, old_buffer_name);
 
     return true;
 }

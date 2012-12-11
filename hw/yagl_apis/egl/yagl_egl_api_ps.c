@@ -3,15 +3,16 @@
 #include "yagl_egl_backend.h"
 #include "yagl_egl_interface.h"
 #include "yagl_process.h"
+#include "yagl_thread.h"
 
 void yagl_egl_api_ps_init(struct yagl_egl_api_ps *egl_api_ps,
-                          struct yagl_egl_backend_ps *backend_ps,
+                          struct yagl_egl_backend *backend,
                           struct yagl_egl_interface *egl_iface)
 {
-    egl_api_ps->backend_ps = backend_ps;
+    egl_api_ps->backend = backend;
     egl_api_ps->egl_iface = egl_iface;
 
-    yagl_process_register_egl_interface(egl_api_ps->base.ps, egl_api_ps->egl_iface);
+    yagl_process_register_egl_interface(cur_ts->ps, egl_api_ps->egl_iface);
 
     qemu_mutex_init(&egl_api_ps->mutex);
 
@@ -36,14 +37,7 @@ void yagl_egl_api_ps_cleanup(struct yagl_egl_api_ps *egl_api_ps)
 
     qemu_mutex_destroy(&egl_api_ps->mutex);
 
-    yagl_process_unregister_egl_interface(egl_api_ps->base.ps);
-
-    yagl_egl_interface_cleanup(egl_api_ps->egl_iface);
-    g_free(egl_api_ps->egl_iface);
-    egl_api_ps->egl_iface = NULL;
-
-    egl_api_ps->backend_ps->destroy(egl_api_ps->backend_ps);
-    egl_api_ps->backend_ps = NULL;
+    yagl_process_unregister_egl_interface(cur_ts->ps);
 }
 
 struct yagl_egl_display *yagl_egl_api_ps_display_get(struct yagl_egl_api_ps *egl_api_ps,
@@ -81,7 +75,7 @@ struct yagl_egl_display *yagl_egl_api_ps_display_add(struct yagl_egl_api_ps *egl
         }
     }
 
-    dpy = yagl_egl_display_create(egl_api_ps->backend_ps, display_id);
+    dpy = yagl_egl_display_create(egl_api_ps->backend, display_id);
 
     if (!dpy) {
         qemu_mutex_unlock(&egl_api_ps->mutex);

@@ -13,8 +13,10 @@ static void yagl_gles_texture_destroy(struct yagl_ref *ref)
      */
     yagl_gles_image_release(texture->image);
 
-    if (!texture->base.nodelete && !texture->image) {
-        texture->driver_ps->DeleteTextures(texture->driver_ps, 1, &texture->global_name);
+    if (!texture->image) {
+        yagl_ensure_ctx();
+        texture->driver->DeleteTextures(1, &texture->global_name);
+        yagl_unensure_ctx();
     }
 
     qemu_mutex_destroy(&texture->mutex);
@@ -25,18 +27,18 @@ static void yagl_gles_texture_destroy(struct yagl_ref *ref)
 }
 
 struct yagl_gles_texture
-    *yagl_gles_texture_create(struct yagl_gles_driver_ps *driver_ps)
+    *yagl_gles_texture_create(struct yagl_gles_driver *driver)
 {
     GLuint global_name = 0;
     struct yagl_gles_texture *texture;
 
-    driver_ps->GenTextures(driver_ps, 1, &global_name);
+    driver->GenTextures(1, &global_name);
 
     texture = g_malloc0(sizeof(*texture));
 
     yagl_object_init(&texture->base, &yagl_gles_texture_destroy);
 
-    texture->driver_ps = driver_ps;
+    texture->driver = driver;
     texture->global_name = global_name;
     texture->target = 0;
 
@@ -69,9 +71,8 @@ bool yagl_gles_texture_bind(struct yagl_gles_texture *texture,
         return false;
     }
 
-    texture->driver_ps->BindTexture(texture->driver_ps,
-                                    target,
-                                    texture->global_name);
+    texture->driver->BindTexture(target,
+                                 texture->global_name);
 
     texture->target = target;
 
@@ -110,15 +111,14 @@ void yagl_gles_texture_set_image(struct yagl_gles_texture *texture,
     yagl_gles_image_release(texture->image);
 
     if (!texture->image) {
-        texture->driver_ps->DeleteTextures(texture->driver_ps, 1, &texture->global_name);
+        texture->driver->DeleteTextures(1, &texture->global_name);
     }
 
     texture->global_name = image->tex_global_name;
     texture->image = image;
 
-    texture->driver_ps->BindTexture(texture->driver_ps,
-                                    texture->target,
-                                    texture->global_name);
+    texture->driver->BindTexture(texture->target,
+                                 texture->global_name);
 
     qemu_mutex_unlock(&texture->mutex);
 }
@@ -133,13 +133,12 @@ void yagl_gles_texture_unset_image(struct yagl_gles_texture *texture)
         yagl_gles_image_release(texture->image);
         texture->image = NULL;
 
-        texture->driver_ps->GenTextures(texture->driver_ps, 1, &global_name);
+        texture->driver->GenTextures(1, &global_name);
 
         texture->global_name = global_name;
 
-        texture->driver_ps->BindTexture(texture->driver_ps,
-                                        texture->target,
-                                        texture->global_name);
+        texture->driver->BindTexture(texture->target,
+                                     texture->global_name);
     }
 
     qemu_mutex_unlock(&texture->mutex);

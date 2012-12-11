@@ -4,18 +4,17 @@
 #include "yagl_api.h"
 #include <EGL/egl.h>
 
+struct yagl_egl_backend;
 struct yagl_egl_context;
 
 struct yagl_egl_api_ts
 {
     struct yagl_egl_api_ps *api_ps;
 
-    struct yagl_thread_state *ts;
-
     /*
-     * From 'api_ps->backend_ps' for speed.
+     * From 'api_ps->backend' for speed.
      */
-    struct yagl_egl_backend_ps *backend_ps;
+    struct yagl_egl_backend *backend;
 
     EGLint error;
 
@@ -29,8 +28,7 @@ struct yagl_egl_api_ts
 };
 
 void yagl_egl_api_ts_init(struct yagl_egl_api_ts *egl_api_ts,
-                          struct yagl_egl_api_ps *api_ps,
-                          struct yagl_thread_state *ts);
+                          struct yagl_egl_api_ps *api_ps);
 
 void yagl_egl_api_ts_cleanup(struct yagl_egl_api_ts *egl_api_ts);
 

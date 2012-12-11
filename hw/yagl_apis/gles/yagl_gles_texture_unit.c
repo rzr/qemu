@@ -17,11 +17,8 @@ void yagl_gles_texture_unit_cleanup(struct yagl_gles_texture_unit *texture_unit)
     int i;
 
     for (i = 0; i < YAGL_NUM_GLES_TEXTURE_TARGETS; ++i) {
-        if (texture_unit->target_states[i].texture) {
-            yagl_sharegroup_reap_object(texture_unit->ctx->base.sg,
-                                        &texture_unit->target_states[i].texture->base);
-            texture_unit->target_states[i].texture = NULL;
-        }
+        yagl_gles_texture_release(texture_unit->target_states[i].texture);
+        texture_unit->target_states[i].texture = NULL;
         texture_unit->target_states[i].texture_local_name = 0;
     }
 }

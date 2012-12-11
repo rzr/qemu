@@ -94,16 +94,13 @@ bool yagl_log_is_enabled_for_func_tracing(void);
         } \
     } while(0)
 
-#define YAGL_LOG_FUNC_SET(pid, tid, func) \
+#define YAGL_LOG_FUNC_SET(func) \
     const char* _yagl_log_current_func = #func; \
-    yagl_pid _yagl_log_current_pid = pid; \
-    yagl_tid _yagl_log_current_tid = tid
+    yagl_pid _yagl_log_current_pid = (cur_ts ? cur_ts->ps->id : 0); \
+    yagl_tid _yagl_log_current_tid = (cur_ts ? cur_ts->id : 0)
 
-#define YAGL_LOG_FUNC_SET_TS(ts, func) \
-    YAGL_LOG_FUNC_SET((ts)->ps->id, (ts)->id, func)
-
-#define YAGL_LOG_FUNC_ENTER(pid, tid, func, format, ...) \
-    YAGL_LOG_FUNC_SET(pid, tid, func); \
+#define YAGL_LOG_FUNC_ENTER(func, format, ...) \
+    YAGL_LOG_FUNC_SET(func); \
     do \
     { \
         if ( yagl_log_is_enabled_for_func_tracing() && \
@@ -113,14 +110,8 @@ bool yagl_log_is_enabled_for_func_tracing(void);
         } \
     } while(0)
 
-#define YAGL_LOG_FUNC_ENTER_NPT(func, format, ...) \
-    YAGL_LOG_FUNC_ENTER(0, 0, func, format,##__VA_ARGS__)
-
-#define YAGL_LOG_FUNC_ENTER_TS(ts, func, format, ...) \
-    YAGL_LOG_FUNC_ENTER((ts)->ps->id, (ts)->id, func, format,##__VA_ARGS__)
-
-#define YAGL_LOG_FUNC_ENTER_SPLIT(pid, tid, func, num_args, ...) \
-    YAGL_LOG_FUNC_SET(pid, tid, func); \
+#define YAGL_LOG_FUNC_ENTER_SPLIT(func, num_args, ...) \
+    YAGL_LOG_FUNC_SET(func); \
     do \
     { \
         if ( yagl_log_is_enabled_for_func_tracing() && \
@@ -167,71 +158,68 @@ bool yagl_log_is_enabled_for_func_tracing(void);
 #endif
 #else
 #define YAGL_LOG_EVENT(log_level, pid, tid, facility, format, ...)
-#define YAGL_LOG_FUNC_SET(pid, tid, func)
-#define YAGL_LOG_FUNC_SET_TS(ts, func)
-#define YAGL_LOG_FUNC_ENTER(pid, tid, func, format, ...)
-#define YAGL_LOG_FUNC_ENTER_NPT(func, format, ...)
-#define YAGL_LOG_FUNC_ENTER_TS(ts, func, format, ...)
-#define YAGL_LOG_FUNC_ENTER_SPLIT(pid, tid, func, num_args, ...)
+#define YAGL_LOG_FUNC_SET(func)
+#define YAGL_LOG_FUNC_ENTER(func, format, ...)
+#define YAGL_LOG_FUNC_ENTER_SPLIT(func, num_args, ...)
 #define YAGL_LOG_FUNC_EXIT(format, ...)
 #define YAGL_LOG_FUNC_EXIT_SPLIT(ret_type, ret)
 #define YAGL_LOG_EVENT_WIN()
 #endif
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT0(pid, tid, func) YAGL_LOG_FUNC_ENTER_SPLIT(pid, tid, func, 0)
+#define YAGL_LOG_FUNC_ENTER_SPLIT0(func) YAGL_LOG_FUNC_ENTER_SPLIT(func, 0)
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT1(pid, tid, func, arg0_type, arg0) \
-    YAGL_LOG_FUNC_ENTER_SPLIT(pid, tid, func, 1, #arg0_type, #arg0, arg0)
+#define YAGL_LOG_FUNC_ENTER_SPLIT1(func, arg0_type, arg0) \
+    YAGL_LOG_FUNC_ENTER_SPLIT(func, 1, #arg0_type, #arg0, arg0)
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT2(pid, tid, func, arg0_type, arg1_type, arg0, arg1) \
-    YAGL_LOG_FUNC_ENTER_SPLIT(pid, tid, func, 2, #arg0_type, #arg0, #arg1_type, #arg1, arg0, arg1)
+#define YAGL_LOG_FUNC_ENTER_SPLIT2(func, arg0_type, arg1_type, arg0, arg1) \
+    YAGL_LOG_FUNC_ENTER_SPLIT(func, 2, #arg0_type, #arg0, #arg1_type, #arg1, arg0, arg1)
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT3( pid, tid, func, \
+#define YAGL_LOG_FUNC_ENTER_SPLIT3( func, \
                                     arg0_type, arg1_type, arg2_type, \
                                     arg0, arg1, arg2 ) \
-    YAGL_LOG_FUNC_ENTER_SPLIT( pid, tid, func, 3, \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 3, \
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, \
                                arg0, arg1, arg2 )
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT4( pid, tid, func, \
+#define YAGL_LOG_FUNC_ENTER_SPLIT4( func, \
                                     arg0_type, arg1_type, arg2_type, arg3_type, \
                                     arg0, arg1, arg2, arg3 ) \
-    YAGL_LOG_FUNC_ENTER_SPLIT( pid, tid, func, 4, \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 4, \
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, \
                                arg0, arg1, arg2, arg3 )
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT5( pid, tid, func, \
+#define YAGL_LOG_FUNC_ENTER_SPLIT5( func, \
                                     arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, \
                                     arg0, arg1, arg2, arg3, arg4 ) \
-    YAGL_LOG_FUNC_ENTER_SPLIT( pid, tid, func, 5, \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 5, \
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, #arg4_type, #arg4, \
                                arg0, arg1, arg2, arg3, arg4 )
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT6( pid, tid, func, \
+#define YAGL_LOG_FUNC_ENTER_SPLIT6( func, \
                                     arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, \
                                     arg0, arg1, arg2, arg3, arg4, arg5 ) \
-    YAGL_LOG_FUNC_ENTER_SPLIT( pid, tid, func, 6, \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 6, \
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, #arg4_type, #arg4, #arg5_type, #arg5, \
                                arg0, arg1, arg2, arg3, arg4, arg5 )
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT7( pid, tid, func, \
+#define YAGL_LOG_FUNC_ENTER_SPLIT7( func, \
                                     arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, \
                                     arg0, arg1, arg2, arg3, arg4, arg5, arg6 ) \
-    YAGL_LOG_FUNC_ENTER_SPLIT( pid, tid, func, 7, \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 7, \
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, #arg4_type, #arg4, #arg5_type, #arg5, #arg6_type, #arg6, \
                                arg0, arg1, arg2, arg3, arg4, arg5, arg6 )
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT8( pid, tid, func, \
+#define YAGL_LOG_FUNC_ENTER_SPLIT8( func, \
                                     arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg7_type, \
                                     arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 ) \
-    YAGL_LOG_FUNC_ENTER_SPLIT( pid, tid, func, 8, \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 8, \
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, #arg4_type, #arg4, #arg5_type, #arg5, #arg6_type, #arg6, #arg7_type, #arg7, \
                                arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 )
 
-#define YAGL_LOG_FUNC_ENTER_SPLIT9( pid, tid, func, \
+#define YAGL_LOG_FUNC_ENTER_SPLIT9( func, \
                                     arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg7_type, arg8_type, \
                                     arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 ) \
-    YAGL_LOG_FUNC_ENTER_SPLIT( pid, tid, func, 9, \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 9, \
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, #arg4_type, #arg4, #arg5_type, #arg5, #arg6_type, #arg6, #arg7_type, #arg7, #arg8_type, #arg8, \
                                arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 )
 

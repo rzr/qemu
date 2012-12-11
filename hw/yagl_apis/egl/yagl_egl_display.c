@@ -6,17 +6,18 @@
 #include "yagl_egl_context.h"
 #include "yagl_egl_image.h"
 #include "yagl_process.h"
+#include "yagl_thread.h"
 #include "yagl_log.h"
 #include "yagl_handle_gen.h"
 
 struct yagl_egl_display
-    *yagl_egl_display_create(struct yagl_egl_backend_ps *backend_ps,
+    *yagl_egl_display_create(struct yagl_egl_backend *backend,
                              target_ulong display_id)
 {
     struct yagl_eglb_display *backend_dpy;
     struct yagl_egl_display *dpy;
 
-    backend_dpy = backend_ps->create_display(backend_ps);
+    backend_dpy = backend->create_display(backend);
 
     if (!backend_dpy) {
         return NULL;
@@ -24,7 +25,7 @@ struct yagl_egl_display
 
     dpy = g_malloc0(sizeof(*dpy));
 
-    dpy->backend_ps = backend_ps;
+    dpy->backend = backend;
     dpy->display_id = display_id;
     dpy->handle = yagl_handle_gen();
     dpy->backend_dpy = backend_dpy;
@@ -62,7 +63,7 @@ void yagl_egl_display_initialize(struct yagl_egl_display *dpy)
     struct yagl_egl_config **cfgs;
     int i, num_configs = 0;
 
-    YAGL_LOG_FUNC_ENTER(dpy->backend_ps->ps->id, 0, yagl_egl_display_initialize, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_display_initialize, NULL);
 
     qemu_mutex_lock(&dpy->mutex);
 

@@ -4,15 +4,13 @@
 #include "yagl_process.h"
 #include "yagl_vector.h"
 
-bool yagl_mem_get_uint8(struct yagl_thread_state *ts, target_ulong va, uint8_t* value)
+bool yagl_mem_get_uint8(target_ulong va, uint8_t* value)
 {
     int ret;
 
-    assert(ts->current_env);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_get_uint8, "va = 0x%X", (uint32_t)va);
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_get_uint8, "va = 0x%X", (uint32_t)va);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, value, sizeof(*value), 0);
+    ret = cpu_memory_rw_debug(cur_ts->current_env, va, value, sizeof(*value), 0);
 
     if (ret == -1) {
         YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
@@ -25,15 +23,13 @@ bool yagl_mem_get_uint8(struct yagl_thread_state *ts, target_ulong va, uint8_t* 
     return ret != -1;
 }
 
-bool yagl_mem_get_uint16(struct yagl_thread_state *ts, target_ulong va, uint16_t* value)
+bool yagl_mem_get_uint16(target_ulong va, uint16_t* value)
 {
     int ret;
 
-    assert(ts->current_env);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_get_uint16, "va = 0x%X", (uint32_t)va);
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_get_uint16, "va = 0x%X", (uint32_t)va);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
+    ret = cpu_memory_rw_debug(cur_ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
 
     if (ret == -1) {
         YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
@@ -46,15 +42,13 @@ bool yagl_mem_get_uint16(struct yagl_thread_state *ts, target_ulong va, uint16_t
     return ret != -1;
 }
 
-bool yagl_mem_get_uint32(struct yagl_thread_state *ts, target_ulong va, uint32_t* value)
+bool yagl_mem_get_uint32(target_ulong va, uint32_t* value)
 {
     int ret;
 
-    assert(ts->current_env);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_get_uint32, "va = 0x%X", (uint32_t)va);
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_get_uint32, "va = 0x%X", (uint32_t)va);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
+    ret = cpu_memory_rw_debug(cur_ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
 
     if (ret == -1) {
         YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
@@ -67,15 +61,13 @@ bool yagl_mem_get_uint32(struct yagl_thread_state *ts, target_ulong va, uint32_t
     return ret != -1;
 }
 
-bool yagl_mem_get_float(struct yagl_thread_state *ts, target_ulong va, float* value)
+bool yagl_mem_get_float(target_ulong va, float* value)
 {
     int ret;
 
-    assert(ts->current_env);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_get_float, "va = 0x%X", (uint32_t)va);
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_get_float, "va = 0x%X", (uint32_t)va);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
+    ret = cpu_memory_rw_debug(cur_ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
 
     if (ret == -1) {
         YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
@@ -88,15 +80,13 @@ bool yagl_mem_get_float(struct yagl_thread_state *ts, target_ulong va, float* va
     return ret != -1;
 }
 
-bool yagl_mem_get(struct yagl_thread_state *ts, target_ulong va, uint32_t len, void* data)
+bool yagl_mem_get(target_ulong va, uint32_t len, void* data)
 {
     int ret;
 
-    assert(ts->current_env);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_get, "va = 0x%X, len = %u", (uint32_t)va, len);
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_get, "va = 0x%X, len = %u", (uint32_t)va, len);
-
-    ret = cpu_memory_rw_debug(ts->current_env, va, data, len, 0);
+    ret = cpu_memory_rw_debug(cur_ts->current_env, va, data, len, 0);
 
     if (ret == -1) {
         YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va, len);
@@ -107,8 +97,7 @@ bool yagl_mem_get(struct yagl_thread_state *ts, target_ulong va, uint32_t len, v
     return ret != -1;
 }
 
-bool yagl_mem_get_array(struct yagl_thread_state *ts,
-                        target_ulong va,
+bool yagl_mem_get_array(target_ulong va,
                         target_ulong el_size,
                         yagl_mem_array_cb cb,
                         void *user_data)
@@ -117,18 +106,17 @@ bool yagl_mem_get_array(struct yagl_thread_state *ts,
     target_ulong rem = 0;
     bool res = true;
 
-    assert(ts->current_env);
     assert(el_size <= sizeof(buff));
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_get_array, "va = 0x%X, el_size = %u",
-                           (uint32_t)va, (uint32_t)el_size);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_get_array, "va = 0x%X, el_size = %u",
+                        (uint32_t)va, (uint32_t)el_size);
 
     while (true) {
         target_ulong i;
         target_ulong len = TARGET_PAGE_SIZE - (va & (TARGET_PAGE_SIZE - 1));
         len = MIN(len, (sizeof(buff) - rem));
 
-        if (cpu_memory_rw_debug(ts->current_env,
+        if (cpu_memory_rw_debug(cur_ts->current_env,
                                 va,
                                 &buff[rem],
                                 len,
@@ -180,13 +168,13 @@ static bool yagl_mem_get_string_cb(const void *el, void *user_data)
     return (*c != 0);
 }
 
-char *yagl_mem_get_string(struct yagl_thread_state *ts, target_ulong va)
+char *yagl_mem_get_string(target_ulong va)
 {
     struct yagl_vector v;
 
     yagl_vector_init(&v, sizeof(char), 0);
 
-    if (yagl_mem_get_array(ts, va, sizeof(char),
+    if (yagl_mem_get_array(va, sizeof(char),
                            &yagl_mem_get_string_cb,
                            &v)) {
         return yagl_vector_detach(&v);

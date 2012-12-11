@@ -6,7 +6,7 @@
 #include "qemu-queue.h"
 
 struct yagl_egl_interface;
-struct yagl_egl_backend_ps;
+struct yagl_egl_backend;
 struct yagl_egl_display;
 
 struct yagl_egl_api_ps
@@ -18,7 +18,7 @@ struct yagl_egl_api_ps
 
     struct yagl_api_ps base;
 
-    struct yagl_egl_backend_ps *backend_ps;
+    struct yagl_egl_backend *backend;
 
     struct yagl_egl_interface *egl_iface;
 
@@ -31,11 +31,8 @@ struct yagl_egl_api_ps
     QLIST_HEAD(, yagl_egl_display) displays;
 };
 
-/*
- * Takes ownership of 'backend_ps' and 'egl_iface'.
- */
 void yagl_egl_api_ps_init(struct yagl_egl_api_ps *egl_api_ps,
-                          struct yagl_egl_backend_ps *backend_ps,
+                          struct yagl_egl_backend *backend,
                           struct yagl_egl_interface *egl_iface);
 
 /*

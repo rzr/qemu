@@ -30,7 +30,13 @@ static struct yagl_thread_state
     return NULL;
 }
 
-struct yagl_server_state *yagl_server_state_create(void)
+#if defined(CONFIG_YAGL_EGL_GLX)
+    struct yagl_server_state *yagl_server_state_create(Display *x_display)
+#elif defined(CONFIG_YAGL_EGL_WGL)
+    struct yagl_server_state *yagl_server_state_create(void)
+#else
+#error Unknown EGL driver
+#endif
 {
     int i;
     struct yagl_server_state *ss =
@@ -41,7 +47,13 @@ struct yagl_server_state *yagl_server_state_create(void)
 
     QLIST_INIT(&ss->processes);
 
-    egl_driver = yagl_egl_create();
+#if defined(CONFIG_YAGL_EGL_GLX)
+    egl_driver = yagl_egl_driver_create(x_display);
+#elif defined(CONFIG_YAGL_EGL_WGL)
+    egl_driver = yagl_egl_driver_create();
+#else
+#error Unknown EGL driver
+#endif
 
     if (!egl_driver) {
         goto fail;
@@ -136,7 +148,7 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
     struct yagl_process_state *ps = NULL;
     struct yagl_thread_state *ts = NULL;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_server_dispatch_init, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_init, NULL);
 
     if (version != YAGL_VERSION) {
         YAGL_LOG_CRITICAL(
@@ -245,10 +257,7 @@ void yagl_server_dispatch(struct yagl_server_state *ss,
 {
     struct yagl_thread_state *ts;
 
-    YAGL_LOG_FUNC_ENTER(target_pid,
-                        target_tid,
-                        yagl_server_dispatch,
-                        NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch, NULL);
 
     ts = yagl_server_find_thread(ss, target_pid, target_tid);
 
@@ -273,10 +282,7 @@ void yagl_server_dispatch_exit(struct yagl_server_state *ss,
         yagl_server_find_thread(ss, target_pid, target_tid);
     struct yagl_process_state *ps = NULL;
 
-    YAGL_LOG_FUNC_ENTER(target_pid,
-                        target_tid,
-                        yagl_server_dispatch_exit,
-                        NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_exit, NULL);
 
     if (!ts) {
         YAGL_LOG_CRITICAL(

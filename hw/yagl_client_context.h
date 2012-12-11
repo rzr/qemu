@@ -3,7 +3,6 @@
 
 #include "yagl_types.h"
 
-struct yagl_thread_state;
 struct yagl_sharegroup;
 struct yagl_client_image;
 
@@ -20,8 +19,7 @@ struct yagl_client_context
      * influence the current context only, this is the place where
      * you can actually do host GL calls.
      */
-    void (*activate)(struct yagl_client_context */*ctx*/,
-                     struct yagl_thread_state */*ts*/);
+    void (*activate)(struct yagl_client_context */*ctx*/);
 
     void (*flush)(struct yagl_client_context */*ctx*/);
 

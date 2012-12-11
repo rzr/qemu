@@ -4,7 +4,7 @@
 #include "yagl_types.h"
 #include <EGL/egl.h>
 
-struct yagl_egl_backend_ps;
+struct yagl_egl_backend;
 struct yagl_eglb_context;
 struct yagl_eglb_surface;
 struct yagl_eglb_image;
@@ -16,7 +16,7 @@ struct yagl_client_context;
 
 struct yagl_eglb_display
 {
-    struct yagl_egl_backend_ps *backend_ps;
+    struct yagl_egl_backend *backend;
 
     struct yagl_egl_native_config *(*config_enum)(struct yagl_eglb_display */*dpy*/,
                                                   int */*num_configs*/);
@@ -61,7 +61,7 @@ struct yagl_eglb_display
 };
 
 void yagl_eglb_display_init(struct yagl_eglb_display *dpy,
-                            struct yagl_egl_backend_ps *backend_ps);
+                            struct yagl_egl_backend *backend);
 void yagl_eglb_display_cleanup(struct yagl_eglb_display *dpy);
 
 #endif

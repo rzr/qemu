@@ -3,6 +3,8 @@
 #include "yagl_handle_gen.h"
 #include "yagl_marshal.h"
 #include "yagl_stats.h"
+#include "yagl_process.h"
+#include "yagl_thread.h"
 #include "cpu-all.h"
 #include "hw.h"
 #include "pci.h"
@@ -28,6 +30,12 @@ struct yagl_user
 typedef struct YaGLState
 {
     PCIDevice dev;
+#if defined(CONFIG_YAGL_EGL_GLX)
+    Display *x_display;
+#elif defined(CONFIG_YAGL_EGL_WGL)
+#else
+#error Unknown EGL driver
+#endif
     MemoryRegion iomem;
     struct yagl_server_state *ss;
     struct yagl_user users[YAGL_MAX_USERS];
@@ -49,10 +57,10 @@ static void yagl_device_operate(YaGLState *s,
     target_phys_addr_t buff_len = YAGL_MARSHAL_SIZE;
     uint8_t *buff = NULL, *tmp = NULL;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_operate,
-                            "user_index = %d, buff_ptr = 0x%X",
-                            user_index,
-                            (uint32_t)buff_pa);
+    YAGL_LOG_FUNC_ENTER(yagl_device_operate,
+                        "user_index = %d, buff_ptr = 0x%X",
+                        user_index,
+                        (uint32_t)buff_pa);
 
     if (buff_pa && s->users[user_index].buff) {
         YAGL_LOG_CRITICAL("user %d is already activated", user_index);
@@ -141,7 +149,7 @@ out:
 
 static void yagl_device_trigger(YaGLState *s, int user_index)
 {
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_trigger, "%d", user_index);
+    YAGL_LOG_FUNC_ENTER(yagl_device_trigger, "%d", user_index);
 
     if (!s->users[user_index].buff) {
         YAGL_LOG_CRITICAL("user %d not activated", user_index);
@@ -206,7 +214,7 @@ static int yagl_device_init(PCIDevice *dev)
 
     yagl_log_init();
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_init, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_device_init, NULL);
 
     memory_region_init_io(&s->iomem,
                           &yagl_device_ops,
@@ -218,8 +226,18 @@ static int yagl_device_init(PCIDevice *dev)
 
     yagl_stats_init();
 
+#if defined(CONFIG_YAGL_EGL_GLX)
+    if (s->x_display) {
+        s->ss = yagl_server_state_create(s->x_display);
+    } else {
+        YAGL_LOG_CRITICAL("x_display is NULL");
+        s->ss = NULL;
+    }
+#elif defined(CONFIG_YAGL_EGL_WGL)
     s->ss = yagl_server_state_create();
-
+#else
+#error Unknown EGL driver
+#endif
     if (!s->ss) {
         yagl_stats_cleanup();
 
@@ -246,7 +264,7 @@ static void yagl_device_reset(DeviceState *d)
     YaGLState *s = container_of(d, YaGLState, dev.qdev);
     int i;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_reset, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_device_reset, NULL);
 
     yagl_server_reset(s->ss);
 
@@ -263,7 +281,7 @@ static void yagl_device_exit(PCIDevice *dev)
 {
     YaGLState *s = DO_UPCAST(YaGLState, dev, dev);
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_exit, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_device_exit, NULL);
 
     memory_region_destroy(&s->iomem);
 
@@ -281,6 +299,20 @@ static void yagl_device_exit(PCIDevice *dev)
     yagl_log_cleanup();
 }
 
+static Property yagl_properties[] = {
+#if defined(CONFIG_YAGL_EGL_GLX)
+    {
+        .name   = "x_display",
+        .info   = &qdev_prop_ptr,
+        .offset = offsetof(YaGLState, x_display),
+    },
+#elif defined(CONFIG_YAGL_EGL_WGL)
+#else
+#error Unknown EGL driver
+#endif
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void yagl_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -292,6 +324,7 @@ static void yagl_class_init(ObjectClass *klass, void *data)
     k->device_id = PCI_DEVICE_ID_YAGL;
     k->class_id = PCI_CLASS_OTHERS;
     dc->reset = yagl_device_reset;
+    dc->props = yagl_properties;
     dc->desc = "YaGL device";
 }
 

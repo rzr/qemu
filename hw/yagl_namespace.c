@@ -34,17 +34,6 @@ static void yagl_namespace_entry_destroy_func(void *avl_item, void *avl_param)
     g_free(item);
 }
 
-static void yagl_namespace_entry_destroy_nodelete_func(void *avl_item, void *avl_param)
-{
-    struct yagl_namespace_entry *item = avl_item;
-
-    yagl_object_set_nodelete(item->obj);
-
-    yagl_object_release(item->obj);
-
-    g_free(item);
-}
-
 void yagl_namespace_init(struct yagl_namespace *ns)
 {
     ns->entries = yagl_avl_create(&yagl_namespace_entry_comparison_func,
@@ -56,17 +45,7 @@ void yagl_namespace_init(struct yagl_namespace *ns)
 
 void yagl_namespace_cleanup(struct yagl_namespace *ns)
 {
-    /*
-     * We're cleaning up the namespace, this means that
-     * the last context which used this namespace has been
-     * destroyed. This means that all of the objects will be
-     * automatically deleted by host GL implementation and we don't
-     * have to do it. More than that, we MUSTN'T. The context destruction
-     * might have been triggered while another context is current, that means
-     * that if we delete object now, we'll actually delete some other
-     * objects from another context with same name!
-     */
-    yagl_avl_destroy(ns->entries, &yagl_namespace_entry_destroy_nodelete_func);
+    yagl_avl_destroy(ns->entries, &yagl_namespace_entry_destroy_func);
     ns->entries = NULL;
     ns->next_local_name = 0;
 }

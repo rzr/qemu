@@ -4,22 +4,24 @@
 #include "yagl_types.h"
 #include "yagl_client_image.h"
 
-struct yagl_gles_driver_ps;
+struct yagl_gles_driver;
 
 struct yagl_gles_image
 {
     struct yagl_client_image base;
 
-    struct yagl_gles_driver_ps *driver_ps;
+    struct yagl_gles_driver *driver;
 
     yagl_object_name tex_global_name;
+
+    bool is_owner;
 };
 
 struct yagl_gles_image
-    *yagl_gles_image_create(struct yagl_gles_driver_ps *driver_ps);
+    *yagl_gles_image_create(struct yagl_gles_driver *driver);
 
 struct yagl_gles_image
-    *yagl_gles_image_create_from_texture(struct yagl_gles_driver_ps *driver_ps,
+    *yagl_gles_image_create_from_texture(struct yagl_gles_driver *driver,
                                          yagl_object_name tex_global_name,
                                          struct yagl_ref *tex_data);
 

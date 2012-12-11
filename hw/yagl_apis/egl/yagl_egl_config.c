@@ -4,9 +4,11 @@
 #include "yagl_eglb_display.h"
 #include "yagl_resource.h"
 #include "yagl_process.h"
+#include "yagl_thread.h"
 
-static EGLint yagl_egl_config_get_renderable_type(struct yagl_process_state *ps)
+static EGLint yagl_egl_config_get_renderable_type(void)
 {
+    struct yagl_process_state *ps = cur_ts->ps;
     EGLint renderable_type = 0;
 
     if (ps->client_ifaces[yagl_client_api_ogl]) {
@@ -151,7 +153,7 @@ static struct yagl_egl_config
     cfg->native.native_renderable = EGL_TRUE;
 
     cfg->native.renderable_type =
-        yagl_egl_config_get_renderable_type(dpy->backend_ps->ps);
+        yagl_egl_config_get_renderable_type();
 
     cfg->native.conformant =
         (((cfg->native.red_size + cfg->native.green_size + cfg->native.blue_size + cfg->native.alpha_size) > 0) &&

@@ -14,6 +14,10 @@ struct yagl_egl_interface
 
     struct yagl_client_image *(*get_image)(struct yagl_egl_interface */*iface*/,
                                            yagl_host_handle /*image*/);
+
+    void (*ensure_ctx)(struct yagl_egl_interface */*iface*/);
+
+    void (*unensure_ctx)(struct yagl_egl_interface */*iface*/);
 };
 
 void yagl_egl_interface_init(struct yagl_egl_interface *iface,

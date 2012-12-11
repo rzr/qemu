@@ -4,7 +4,7 @@
 #include "yagl_eglb_display.h"
 #include "yagl_egl_driver.h"
 
-struct yagl_egl_offscreen_ps;
+struct yagl_egl_offscreen;
 
 struct yagl_egl_offscreen_display
 {
@@ -14,6 +14,6 @@ struct yagl_egl_offscreen_display
 };
 
 struct yagl_egl_offscreen_display
-    *yagl_egl_offscreen_display_create(struct yagl_egl_offscreen_ps *egl_offscreen_ps);
+    *yagl_egl_offscreen_display_create(struct yagl_egl_offscreen *egl_offscreen);
 
 #endif

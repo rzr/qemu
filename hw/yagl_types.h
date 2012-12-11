@@ -43,10 +43,7 @@ typedef enum
 
 #define YAGL_NUM_CLIENT_APIS 4
 
-struct yagl_thread_state;
-
-typedef bool (*yagl_api_func)(struct yagl_thread_state */*ts*/,
-                              uint8_t **/*out_buff*/,
+typedef bool (*yagl_api_func)(uint8_t **/*out_buff*/,
                               uint8_t */*in_buff*/);
 
 #endif

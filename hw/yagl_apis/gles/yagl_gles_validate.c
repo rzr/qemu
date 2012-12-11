@@ -1,6 +1,5 @@
 #include <GL/gl.h>
 #include "yagl_gles_validate.h"
-#include "yagl_apis/gles2/yagl_gles2_validate.h"
 
 bool yagl_gles_is_buffer_target_valid(GLenum target)
 {

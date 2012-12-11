@@ -5,9 +5,7 @@
 #include <GLES2/gl2.h>
 #include "yagl_apis/gles/yagl_host_gles_calls.h"
 
-struct yagl_api_ps
-    *yagl_host_gles2_process_init(struct yagl_api *api,
-                                  struct yagl_process_state *ps);
+struct yagl_api_ps *yagl_host_gles2_process_init(struct yagl_api *api);
 
 bool yagl_host_glAttachShader(GLuint program,
     GLuint shader);

@@ -2,8 +2,8 @@
 #include "yagl_egl_offscreen_context.h"
 #include "yagl_egl_offscreen_surface.h"
 #include "yagl_egl_offscreen_image.h"
-#include "yagl_egl_offscreen_ps.h"
 #include "yagl_egl_offscreen_ts.h"
+#include "yagl_egl_offscreen.h"
 #include "yagl_egl_native_config.h"
 #include "yagl_log.h"
 #include "yagl_tls.h"
@@ -18,17 +18,17 @@ static struct yagl_egl_native_config
 {
     struct yagl_egl_offscreen_display *egl_offscreen_dpy =
         (struct yagl_egl_offscreen_display*)dpy;
-    struct yagl_egl_offscreen_ps *egl_offscreen_ps =
-        (struct yagl_egl_offscreen_ps*)dpy->backend_ps;
+    struct yagl_egl_offscreen *egl_offscreen =
+        (struct yagl_egl_offscreen*)dpy->backend;
     struct yagl_egl_native_config *native_configs;
 
-    YAGL_LOG_FUNC_ENTER_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_display_config_enum,
-                           "dpy = %p", dpy);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_display_config_enum,
+                        "dpy = %p", dpy);
 
     native_configs =
-        egl_offscreen_ps->driver_ps->config_enum(egl_offscreen_ps->driver_ps,
-                                                 egl_offscreen_dpy->native_dpy,
-                                                 num_configs);
+        egl_offscreen->driver->config_enum(egl_offscreen->driver,
+                                           egl_offscreen_dpy->native_dpy,
+                                           num_configs);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -40,18 +40,17 @@ static void yagl_egl_offscreen_display_config_cleanup(struct yagl_eglb_display *
 {
     struct yagl_egl_offscreen_display *egl_offscreen_dpy =
         (struct yagl_egl_offscreen_display*)dpy;
-    struct yagl_egl_offscreen_ps *egl_offscreen_ps =
-        (struct yagl_egl_offscreen_ps*)dpy->backend_ps;
+    struct yagl_egl_offscreen *egl_offscreen =
+        (struct yagl_egl_offscreen*)dpy->backend;
 
-    YAGL_LOG_FUNC_ENTER(dpy->backend_ps->ps->id, 0,
-                        yagl_egl_offscreen_display_config_cleanup,
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_display_config_cleanup,
                         "dpy = %p, cfg = %d",
                         dpy,
                         cfg->config_id);
 
-    egl_offscreen_ps->driver_ps->config_cleanup(egl_offscreen_ps->driver_ps,
-                                                egl_offscreen_dpy->native_dpy,
-                                                cfg);
+    egl_offscreen->driver->config_cleanup(egl_offscreen->driver,
+                                          egl_offscreen_dpy->native_dpy,
+                                          cfg);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
@@ -113,15 +112,14 @@ static void yagl_egl_offscreen_display_destroy(struct yagl_eglb_display *dpy)
 {
     struct yagl_egl_offscreen_display *egl_offscreen_dpy =
         (struct yagl_egl_offscreen_display*)dpy;
-    struct yagl_egl_offscreen_ps *egl_offscreen_ps =
-        (struct yagl_egl_offscreen_ps*)dpy->backend_ps;
+    struct yagl_egl_offscreen *egl_offscreen =
+        (struct yagl_egl_offscreen*)dpy->backend;
 
-    YAGL_LOG_FUNC_ENTER(dpy->backend_ps->ps->id, 0,
-                        yagl_egl_offscreen_display_destroy,
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_display_destroy,
                         "dpy = %p", dpy);
 
-    egl_offscreen_ps->driver_ps->display_destroy(egl_offscreen_ps->driver_ps,
-                                                 egl_offscreen_dpy->native_dpy);
+    egl_offscreen->driver->display_close(egl_offscreen->driver,
+                                         egl_offscreen_dpy->native_dpy);
 
     yagl_eglb_display_cleanup(dpy);
 
@@ -131,14 +129,14 @@ static void yagl_egl_offscreen_display_destroy(struct yagl_eglb_display *dpy)
 }
 
 struct yagl_egl_offscreen_display
-    *yagl_egl_offscreen_display_create(struct yagl_egl_offscreen_ps *egl_offscreen_ps)
+    *yagl_egl_offscreen_display_create(struct yagl_egl_offscreen *egl_offscreen)
 {
     struct yagl_egl_offscreen_display *dpy;
     EGLNativeDisplayType native_dpy;
 
-    YAGL_LOG_FUNC_ENTER_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_display_create, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_display_create, NULL);
 
-    native_dpy = egl_offscreen_ps->driver_ps->display_create(egl_offscreen_ps->driver_ps);
+    native_dpy = egl_offscreen->driver->display_open(egl_offscreen->driver);
 
     if (!native_dpy) {
         YAGL_LOG_FUNC_EXIT(NULL);
@@ -147,7 +145,7 @@ struct yagl_egl_offscreen_display
 
     dpy = g_malloc0(sizeof(*dpy));
 
-    yagl_eglb_display_init(&dpy->base, &egl_offscreen_ps->base);
+    yagl_eglb_display_init(&dpy->base, &egl_offscreen->base);
 
     dpy->base.config_enum = &yagl_egl_offscreen_display_config_enum;
     dpy->base.config_cleanup = &yagl_egl_offscreen_display_config_cleanup;

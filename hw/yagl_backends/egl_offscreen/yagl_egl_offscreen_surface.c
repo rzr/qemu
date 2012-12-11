@@ -1,8 +1,8 @@
 #include "yagl_egl_offscreen_surface.h"
 #include "yagl_egl_offscreen_display.h"
 #include "yagl_egl_offscreen_context.h"
-#include "yagl_egl_offscreen_ps.h"
 #include "yagl_egl_offscreen_ts.h"
+#include "yagl_egl_offscreen.h"
 #include "yagl_egl_native_config.h"
 #include "yagl_tls.h"
 #include "yagl_log.h"
@@ -17,19 +17,17 @@ static void yagl_egl_offscreen_surface_cleanup(struct yagl_egl_offscreen_surface
 {
     struct yagl_egl_offscreen_display *dpy =
         (struct yagl_egl_offscreen_display*)sfc->base.dpy;
-    struct yagl_egl_offscreen_ps *egl_offscreen_ps =
-        (struct yagl_egl_offscreen_ps*)sfc->base.dpy->backend_ps;
+    struct yagl_egl_offscreen *egl_offscreen =
+        (struct yagl_egl_offscreen*)sfc->base.dpy->backend;
 
-    YAGL_LOG_FUNC_ENTER(sfc->base.dpy->backend_ps->ps->id, 0,
-                        yagl_egl_offscreen_surface_cleanup,
-                        NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_surface_cleanup, NULL);
 
     g_free(sfc->host_pixels);
     sfc->host_pixels = NULL;
 
-    egl_offscreen_ps->driver_ps->pbuffer_surface_destroy(egl_offscreen_ps->driver_ps,
-                                                         dpy->native_dpy,
-                                                         sfc->native_sfc);
+    egl_offscreen->driver->pbuffer_surface_destroy(egl_offscreen->driver,
+                                                   dpy->native_dpy,
+                                                   sfc->native_sfc);
     sfc->native_sfc = EGL_NO_SURFACE;
 
     if (sfc->bimage_ct) {
@@ -103,7 +101,7 @@ static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sf
         (struct yagl_egl_offscreen_surface*)sfc;
     struct yagl_egl_offscreen_context *octx = egl_offscreen_ts->ctx;
 
-    YAGL_LOG_FUNC_SET_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_surface_swap_buffers);
+    YAGL_LOG_FUNC_SET(yagl_egl_offscreen_surface_swap_buffers);
 
     assert(octx);
 
@@ -129,7 +127,7 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
         (struct yagl_egl_offscreen_surface*)sfc;
     struct yagl_egl_offscreen_context *octx = egl_offscreen_ts->ctx;
 
-    YAGL_LOG_FUNC_SET_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_surface_copy_buffers);
+    YAGL_LOG_FUNC_SET(yagl_egl_offscreen_surface_copy_buffers);
 
     assert(octx);
 
@@ -154,9 +152,7 @@ static void yagl_egl_offscreen_surface_destroy(struct yagl_eglb_surface *sfc)
     struct yagl_egl_offscreen_surface *egl_offscreen_sfc =
         (struct yagl_egl_offscreen_surface*)sfc;
 
-    YAGL_LOG_FUNC_ENTER(sfc->dpy->backend_ps->ps->id, 0,
-                        yagl_egl_offscreen_surface_destroy,
-                        NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_surface_destroy, NULL);
 
     yagl_egl_offscreen_surface_cleanup(egl_offscreen_sfc);
 
@@ -177,21 +173,21 @@ struct yagl_egl_offscreen_surface
                                        uint32_t bpp,
                                        target_ulong pixels)
 {
-    struct yagl_egl_offscreen_ps *egl_offscreen_ps =
-        (struct yagl_egl_offscreen_ps*)dpy->base.backend_ps;
+    struct yagl_egl_offscreen *egl_offscreen =
+        (struct yagl_egl_offscreen*)dpy->base.backend;
     struct yagl_egl_offscreen_surface *sfc;
     struct yagl_egl_pbuffer_attribs pbuffer_attribs;
     EGLSurface native_sfc;
     struct yagl_compiled_transfer *bimage_ct;
 
-    YAGL_LOG_FUNC_ENTER_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_surface_create,
-                           "dpy = %p, cfg = %d, type = %u, width = %u, height = %u, bpp = %u",
-                           dpy,
-                           cfg->config_id,
-                           type,
-                           width,
-                           height,
-                           bpp);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_surface_create,
+                        "dpy = %p, cfg = %d, type = %u, width = %u, height = %u, bpp = %u",
+                        dpy,
+                        cfg->config_id,
+                        type,
+                        width,
+                        height,
+                        bpp);
 
     switch (type) {
     case EGL_PBUFFER_BIT:
@@ -207,8 +203,7 @@ struct yagl_egl_offscreen_surface
         return NULL;
     }
 
-    bimage_ct = yagl_compiled_transfer_create(egl_offscreen_ts->ts,
-                                              pixels,
+    bimage_ct = yagl_compiled_transfer_create(pixels,
                                               (width * height * bpp),
                                               true);
 
@@ -217,12 +212,12 @@ struct yagl_egl_offscreen_surface
         return NULL;
     }
 
-    native_sfc = egl_offscreen_ps->driver_ps->pbuffer_surface_create(egl_offscreen_ps->driver_ps,
-                                                                     dpy->native_dpy,
-                                                                     cfg,
-                                                                     width,
-                                                                     height,
-                                                                     &pbuffer_attribs);
+    native_sfc = egl_offscreen->driver->pbuffer_surface_create(egl_offscreen->driver,
+                                                               dpy->native_dpy,
+                                                               cfg,
+                                                               width,
+                                                               height,
+                                                               &pbuffer_attribs);
 
     if (!native_sfc) {
         yagl_compiled_transfer_destroy(bimage_ct);

@@ -24,7 +24,7 @@
 
 #define YAGL_NS_BUFFER 0
 
-struct yagl_gles_driver_ps;
+struct yagl_gles_driver;
 
 struct yagl_gles_buffer_part
 {
@@ -37,7 +37,7 @@ struct yagl_gles_buffer
 {
     struct yagl_object base;
 
-    struct yagl_gles_driver_ps *driver_ps;
+    struct yagl_gles_driver *driver;
 
     QemuMutex mutex;
 
@@ -52,7 +52,7 @@ struct yagl_gles_buffer
 };
 
 struct yagl_gles_buffer
-    *yagl_gles_buffer_create(struct yagl_gles_driver_ps *driver_ps);
+    *yagl_gles_buffer_create(struct yagl_gles_driver *driver);
 
 /*
  * Passing NULL won't hurt, this is for convenience.

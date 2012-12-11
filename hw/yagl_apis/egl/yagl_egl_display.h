@@ -7,7 +7,7 @@
 #include "qemu-queue.h"
 #include <EGL/egl.h>
 
-struct yagl_egl_backend_ps;
+struct yagl_egl_backend;
 struct yagl_egl_config;
 struct yagl_egl_native_config;
 struct yagl_egl_surface;
@@ -24,7 +24,7 @@ struct yagl_egl_display
 
     QLIST_ENTRY(yagl_egl_display) entry;
 
-    struct yagl_egl_backend_ps *backend_ps;
+    struct yagl_egl_backend *backend;
 
     target_ulong display_id;
 
@@ -50,7 +50,7 @@ struct yagl_egl_display
 };
 
 struct yagl_egl_display
-    *yagl_egl_display_create(struct yagl_egl_backend_ps *backend_ps,
+    *yagl_egl_display_create(struct yagl_egl_backend *backend,
                              target_ulong display_id);
 
 void yagl_egl_display_destroy(struct yagl_egl_display *dpy);

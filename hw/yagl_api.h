@@ -3,9 +3,6 @@
 
 #include "yagl_types.h"
 
-struct yagl_thread_state;
-struct yagl_process_state;
-
 /*
  * YaGL API per-process state.
  * @{
@@ -15,10 +12,7 @@ struct yagl_api_ps
 {
     struct yagl_api *api;
 
-    struct yagl_process_state *ps;
-
-    void (*thread_init)(struct yagl_api_ps */*api_ps*/,
-                        struct yagl_thread_state */*ts*/);
+    void (*thread_init)(struct yagl_api_ps */*api_ps*/);
 
     yagl_api_func (*get_func)(struct yagl_api_ps */*api_ps*/,
                               uint32_t /*func_id*/);
@@ -31,8 +25,7 @@ struct yagl_api_ps
 };
 
 void yagl_api_ps_init(struct yagl_api_ps *api_ps,
-                      struct yagl_api *api,
-                      struct yagl_process_state *ps);
+                      struct yagl_api *api);
 void yagl_api_ps_cleanup(struct yagl_api_ps *api_ps);
 
 /*
@@ -46,8 +39,7 @@ void yagl_api_ps_cleanup(struct yagl_api_ps *api_ps);
 
 struct yagl_api
 {
-    struct yagl_api_ps *(*process_init)(struct yagl_api */*api*/,
-                                        struct yagl_process_state */*ps*/);
+    struct yagl_api_ps *(*process_init)(struct yagl_api */*api*/);
 
     void (*destroy)(struct yagl_api */*api*/);
 };

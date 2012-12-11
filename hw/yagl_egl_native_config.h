@@ -4,8 +4,6 @@
 #include "yagl_types.h"
 #include <EGL/egl.h>
 
-struct yagl_process_state;
-
 struct yagl_egl_native_config
 {
     /*

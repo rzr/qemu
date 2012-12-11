@@ -38,7 +38,9 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 #include "maru_common.h"
-extern int enable_yagl;
+#if defined(CONFIG_YAGL_EGL_GLX)
+#include <X11/Xlib.h>
+#endif
 
 #undef DEBUG
 //#define DEBUG
@@ -131,8 +133,15 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
     codec_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
 #ifdef CONFIG_YAGL
-    if (enable_yagl) {
-        pci_create_simple(pci_bus, -1, "yagl");
+    {
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
+#if defined(CONFIG_YAGL_EGL_GLX)
+        qdev_prop_set_ptr(&pci_dev->qdev, "x_display", XOpenDisplay(0));
+#elif defined(CONFIG_YAGL_EGL_WGL)
+#else
+#error Unknown EGL driver
+#endif
+        qdev_init_nofail(&pci_dev->qdev);
     }
 #endif
 

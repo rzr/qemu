@@ -1,7 +1,6 @@
 #include "yagl_egl_offscreen_image.h"
 #include "yagl_egl_offscreen_display.h"
 #include "yagl_egl_offscreen_context.h"
-#include "yagl_egl_offscreen_ps.h"
 #include "yagl_egl_offscreen_ts.h"
 #include "yagl_client_context.h"
 #include "yagl_client_image.h"
@@ -50,9 +49,7 @@ static void yagl_egl_offscreen_image_destroy(struct yagl_eglb_image *image)
     struct yagl_egl_offscreen_image *oimage =
         (struct yagl_egl_offscreen_image*)image;
 
-    YAGL_LOG_FUNC_ENTER(image->dpy->backend_ps->ps->id, 0,
-                        yagl_egl_offscreen_image_destroy,
-                        NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_image_destroy, NULL);
 
     qemu_mutex_destroy(&oimage->update_mtx);
 
@@ -68,8 +65,8 @@ struct yagl_egl_offscreen_image
 {
     struct yagl_egl_offscreen_image *image;
 
-    YAGL_LOG_FUNC_ENTER_TS(egl_offscreen_ts->ts, yagl_egl_offscreen_image_create,
-                           "dpy = %p", dpy);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_image_create,
+                        "dpy = %p", dpy);
 
     image = g_malloc0(sizeof(*image));
 

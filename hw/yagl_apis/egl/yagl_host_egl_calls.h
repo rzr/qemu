@@ -4,9 +4,7 @@
 #include "yagl_api.h"
 #include <EGL/egl.h>
 
-struct yagl_api_ps
-    *yagl_host_egl_process_init(struct yagl_api *api,
-                                struct yagl_process_state *ps);
+struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api);
 
 bool yagl_host_eglGetError(EGLint* retval);
 bool yagl_host_eglGetDisplay(yagl_host_handle* retval,

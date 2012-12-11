@@ -6,12 +6,10 @@
 #include "yagl_client_context.h"
 
 void yagl_egl_api_ts_init(struct yagl_egl_api_ts *egl_api_ts,
-                          struct yagl_egl_api_ps *api_ps,
-                          struct yagl_thread_state *ts)
+                          struct yagl_egl_api_ps *api_ps)
 {
     egl_api_ts->api_ps = api_ps;
-    egl_api_ts->ts = ts;
-    egl_api_ts->backend_ps = api_ps->backend_ps;
+    egl_api_ts->backend = api_ps->backend;
     egl_api_ts->context = NULL;
 
     yagl_egl_api_ts_reset(egl_api_ts);
@@ -30,7 +28,7 @@ void yagl_egl_api_ts_cleanup(struct yagl_egl_api_ts *egl_api_ts)
         /*
          * Force release current.
          */
-        egl_api_ts->backend_ps->release_current(egl_api_ts->backend_ps, true);
+        egl_api_ts->backend->release_current(egl_api_ts->backend, true);
 
         yagl_egl_context_update_surfaces(egl_api_ts->context, NULL, NULL);
     }

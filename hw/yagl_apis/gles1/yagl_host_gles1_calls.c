@@ -1,8 +1,6 @@
 #include "yagl_host_gles1_calls.h"
 #include "yagl_tls.h"
 
-YAGL_DEFINE_TLS(struct yagl_gles1_api_ts*, gles1_api_ts);
-
 bool yagl_host_glAlphaFunc(GLenum func,
     GLclampf ref)
 {

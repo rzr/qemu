@@ -265,7 +265,6 @@ obj-y += yagl_gles2_validate.o
 obj-y += yagl_host_gles2_calls.o
 # EGL offscreen backend
 obj-y += yagl_egl_offscreen.o
-obj-y += yagl_egl_offscreen_ps.o
 obj-y += yagl_egl_offscreen_ts.o
 obj-y += yagl_egl_offscreen_display.o
 obj-y += yagl_egl_offscreen_context.o
