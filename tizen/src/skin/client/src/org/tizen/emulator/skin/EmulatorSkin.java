@@ -94,6 +94,7 @@ import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 import org.tizen.emulator.skin.window.ControlPanel;
+import org.tizen.emulator.skin.window.CustomProgressBar;
 
 /**
  *
@@ -146,6 +147,7 @@ public class EmulatorSkin {
 	public ControlPanel controlPanel;
 	public Color colorPairTag;
 	public Canvas pairTagCanvas;
+	public CustomProgressBar bootingProgress;
 	protected ScreenShotDialog screenShotDialog;
 
 	protected SocketCommunicator communicator;
@@ -204,8 +206,8 @@ public class EmulatorSkin {
 		imageRegistry = ImageRegistry.getInstance();
 
 		if (skinInfo.isPhoneShape() == true) { /* phone shape skin */
-			skinComposer = new PhoneShapeSkinComposer(config, shell,
-					currentState, imageRegistry, communicator);
+			skinComposer = new PhoneShapeSkinComposer(config, this,
+					shell, currentState, imageRegistry, communicator);
 
 			((PhoneShapeSkinComposer) skinComposer).addPhoneShapeListener(shell);
 		} else { /* general purpose skin */

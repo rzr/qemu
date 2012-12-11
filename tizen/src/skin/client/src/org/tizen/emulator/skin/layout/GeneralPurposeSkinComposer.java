@@ -57,6 +57,7 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
+import org.tizen.emulator.skin.window.CustomProgressBar;
 import org.tizen.emulator.skin.window.ImageButton;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
@@ -200,6 +201,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		});
 		skin.pairTagCanvas.setVisible(false);
 
+		/* create a progress bar for booting status */
+		skin.bootingProgress = new CustomProgressBar(shell, SWT.NONE);
+		skin.bootingProgress.setBackground(
+				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
+
 		arrangeSkin(scale, rotationId);
 
 		/* open the key window */
@@ -218,7 +224,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		currentState.setCurrentRotationId(rotationId);
 		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
-		/* arrange the lcd */
+		/* arrange the display */
 		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
@@ -253,6 +259,15 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		toggleButton.setBounds(lcdBounds.x + lcdBounds.width,
 				lcdBounds.y + (lcdBounds.height / 2) - (toggleButton.getImageSize().y / 2),
 				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
+
+		/* arrange the progress bar */
+		if (skin.bootingProgress != null) {
+			skin.bootingProgress.setBounds(lcdBounds.x,
+					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
+
+			skin.bootingProgress.dispose(); //TODO
+			skin.bootingProgress = null;
+		}
 
 		/* custom window shape */
 		trimPatchedShell(shell, currentState.getCurrentImage());

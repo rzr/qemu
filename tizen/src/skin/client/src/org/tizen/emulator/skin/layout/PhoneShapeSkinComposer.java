@@ -38,13 +38,16 @@ import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -63,12 +66,14 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
+import org.tizen.emulator.skin.window.CustomProgressBar;
 
 public class PhoneShapeSkinComposer implements ISkinComposer {
 	private Logger logger = SkinLogger.getSkinLogger(
 			PhoneShapeSkinComposer.class).getLogger();
 
 	private EmulatorConfig config;
+	private EmulatorSkin skin;
 	private Shell shell;
 	private Canvas lcdCanvas;
 	private EmulatorSkinState currentState;
@@ -83,10 +88,11 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public PhoneShapeSkinComposer(EmulatorConfig config, Shell shell,
-			EmulatorSkinState currentState, ImageRegistry imageRegistry,
-			SocketCommunicator communicator) {
+	public PhoneShapeSkinComposer(EmulatorConfig config, EmulatorSkin skin,
+			Shell shell, EmulatorSkinState currentState,
+			ImageRegistry imageRegistry, SocketCommunicator communicator) {
 		this.config = config;
+		this.skin = skin;
 		this.shell = shell;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
@@ -140,6 +146,11 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
 		}
 
+		/* create a progress bar for booting status */
+		skin.bootingProgress = new CustomProgressBar(shell, SWT.NONE);
+		skin.bootingProgress.setBackground(
+				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
+
 		arrangeSkin(scale, rotationId);
 
 		if (currentState.getCurrentImage() == null) {
@@ -156,7 +167,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		currentState.setCurrentRotationId(rotationId);
 		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
-		/* arrange the lcd */
+		/* arrange the display */
 		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
@@ -194,6 +205,15 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		}
 		if (tempKeyPressedImage != null) {
 			tempKeyPressedImage.dispose();
+		}
+
+		/* arrange the progress bar */
+		if (skin.bootingProgress != null) {
+			skin.bootingProgress.setBounds(lcdBounds.x,
+					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
+
+			skin.bootingProgress.dispose(); //TODO:
+			skin.bootingProgress = null;
 		}
 
 		/* custom window shape */
