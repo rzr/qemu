@@ -37,7 +37,6 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.tizen.emulator.skin.dialog.DetailInfoDialog;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 public class CustomProgressBar extends Canvas {
@@ -45,12 +44,13 @@ public class CustomProgressBar extends Canvas {
 			SkinLogger.getSkinLogger(CustomProgressBar.class).getLogger();
 
 	private Composite parent;
-	private int selection = 0;
+	private int selection;
 
 	public CustomProgressBar(final Composite parent, int style) {
 		super(parent, style);
 
 		this.parent = parent;
+		this.selection = 1;
 
 		this.addPaintListener(new PaintListener() {
 			@Override
@@ -61,6 +61,17 @@ public class CustomProgressBar extends Canvas {
 				Rectangle bounds = getBounds();
 				int width = (bounds.width * selection) / 100; 
 				e.gc.fillRectangle(0, 0, width, bounds.height);
+
+				if (selection == 0) {
+					logger.info("progress : complete!");
+
+					parent.getDisplay().asyncExec(new Runnable() {
+						@Override
+						public void run() {
+							dispose();
+						}
+					});
+				}
 			}
 		});
 	}
@@ -79,6 +90,10 @@ public class CustomProgressBar extends Canvas {
 			@Override
 			public void run() {
 				redraw();
+
+				if (selection == 100) {
+					selection = 0;
+				}
 			}
 		});
 	}

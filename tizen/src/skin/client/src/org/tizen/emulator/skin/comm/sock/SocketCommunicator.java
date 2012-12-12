@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -328,9 +329,18 @@ public class SocketCommunicator implements ICommunicator {
 						/* draw progress bar */
 						if (skin.bootingProgress != null) {
 							skin.bootingProgress.setSelection(value);
+
+							if (value == 100 | value == 0) {
+								/* this means progressbar will be
+								dispose soon */
+								if (skin.bootingProgress != null) {
+									skin.bootingProgress = null;
+								}
+							}
 						}
 					}
-					//TODO: resetDataTransfer(progressDataTransfer)
+
+					resetDataTransfer(progressDataTransfer);
 
 					break;
 				}
