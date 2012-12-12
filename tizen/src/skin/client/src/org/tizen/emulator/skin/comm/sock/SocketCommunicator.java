@@ -116,6 +116,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
+	private DataTranfer progressDataTransfer;
 	
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
@@ -134,7 +135,11 @@ public class SocketCommunicator implements ICommunicator {
 		this.detailInfoTransfer.sleep = DETAIL_INFO_WAIT_INTERVAL;
 		this.detailInfoTransfer.maxWaitTime = DETAIL_INFO_WAIT_LIMIT;
 
-		this.heartbeatCount = new AtomicInteger( 0 );
+		this.progressDataTransfer = new DataTranfer();
+		this.progressDataTransfer.sleep = DETAIL_INFO_WAIT_INTERVAL;
+		this.progressDataTransfer.maxWaitTime = DETAIL_INFO_WAIT_LIMIT;
+
+		this.heartbeatCount = new AtomicInteger(0);
 		this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
 
 		try {
@@ -303,6 +308,30 @@ public class SocketCommunicator implements ICommunicator {
 				case RAMDUMP_COMPLETE: {
 					logger.info("received RAMDUMP_COMPLETE from QEMU.");
 					setRamdumpFlag(false);
+					break;
+				}
+				case BOOTING_PROGRESS: {
+					logger.info("received BOOTING_PROGRESS from QEMU.");
+					receiveData(progressDataTransfer, length);
+
+					byte[] receivedData = getReceivedData(progressDataTransfer);
+					if (null != receivedData) {
+						String strValue = new String(receivedData, 0, length - 1);
+
+						int value = 0;
+						try {
+							value = Integer.parseInt(strValue);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+						/* draw progress bar */
+						if (skin.bootingProgress != null) {
+							skin.bootingProgress.setSelection(value);
+						}
+					}
+					//TODO: resetDataTransfer(progressDataTransfer)
+
 					break;
 				}
 				case SENSOR_DAEMON_START: {

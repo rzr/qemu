@@ -485,7 +485,7 @@ void do_guestmemory_dump(void)
 {
     INFO("dump guest memory!\n");
 
-    //TODO:
+    /* TODO: */
 }
 
 void request_close(void)

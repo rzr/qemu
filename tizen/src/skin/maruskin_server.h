@@ -32,8 +32,10 @@
 
 int start_skin_server(int argc, char** argv, int qemu_argc, char** qemu_argv);
 void shutdown_skin_server(void);
+
 void notify_sensor_daemon_start(void);
 void notify_ramdump_complete(void);
+void notify_booting_progress(int progress_value);
 int is_ready_skin_server(void);
 int get_skin_server_port(void);
 

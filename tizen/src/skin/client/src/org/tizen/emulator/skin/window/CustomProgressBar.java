@@ -28,6 +28,8 @@
 
 package org.tizen.emulator.skin.window;
 
+import java.util.logging.Logger;
+
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
@@ -35,12 +37,20 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.tizen.emulator.skin.dialog.DetailInfoDialog;
+import org.tizen.emulator.skin.log.SkinLogger;
 
 public class CustomProgressBar extends Canvas {
+	private Logger logger =
+			SkinLogger.getSkinLogger(CustomProgressBar.class).getLogger();
+
+	private Composite parent;
 	private int selection = 0;
 
 	public CustomProgressBar(final Composite parent, int style) {
 		super(parent, style);
+
+		this.parent = parent;
 
 		this.addPaintListener(new PaintListener() {
 			@Override
@@ -63,7 +73,14 @@ public class CustomProgressBar extends Canvas {
 		}
 
 		selection = value;
-		redraw();
+		logger.info("progress : " + selection);
+
+		parent.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				redraw();
+			}
+		});
 	}
 
 	public int getSelection() {

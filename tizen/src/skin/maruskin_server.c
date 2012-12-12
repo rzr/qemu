@@ -58,10 +58,16 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
+#define socket_error() WSAGetLastError()
+
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+
+#define socket_error() errno
+
 #endif
 
 #include "debug_ch.h"
@@ -93,6 +99,9 @@ MULTI_DEBUG_CHANNEL(qemu, skin_server);
 #define SKIN_CONFIG_PROP ".skinconfig.properties"
 
 enum {
+    /* This values must match the Java definitions
+        in Skin process */
+
     RECV_START = 1,
     RECV_MOUSE_EVENT = 10,
     RECV_KEY_EVENT = 11,
@@ -110,10 +119,14 @@ enum {
 };
 
 enum {
+    /* This values must match the Java definitions
+    in Skin process */
+
     SEND_HEART_BEAT = 1,
     SEND_SCREEN_SHOT = 2,
     SEND_DETAIL_INFO = 3,
     SEND_RAMDUMP_COMPLETE = 4,
+    SEND_BOOTING_PROGRESS = 5,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
@@ -249,12 +262,16 @@ void shutdown_skin_server( void ) {
 
 }
 
-void notify_sensor_daemon_start( void ) {
-    INFO( "notify_sensor_daemon_start\n" );
+void notify_sensor_daemon_start(void)
+{
+    INFO("notify_sensor_daemon_start\n");
+
     is_sensord_initialized = 1;
-    if ( client_sock ) {
-        if ( 0 > send_skin_header_only( client_sock, SEND_SENSOR_DAEMON_START, 1 ) ) {
-            ERR( "fail to send SEND_SENSOR_DAEMON_START to skin.\n" );
+    if (client_sock) {
+        if (0 > send_skin_header_only(
+            client_sock, SEND_SENSOR_DAEMON_START, 1)) {
+
+            ERR("fail to send SEND_SENSOR_DAEMON_START to skin.\n");
         }
     }
 }
@@ -264,12 +281,49 @@ void notify_ramdump_completed(void)
     INFO("ramdump completed!\n");
 
     if (client_sock) {
-        if (0 > send_skin_header_only( client_sock, SEND_RAMDUMP_COMPLETE, 1)) {
+        if (0 > send_skin_header_only(
+            client_sock, SEND_RAMDUMP_COMPLETE, 1)) {
+
             ERR("fail to send SEND_RAMDUMP_COMPLETE to skin.\n");
         }
     }
 }
 
+void notify_booting_progress(int progress_value)
+{
+#define PROGRESS_DATA_LENGTH 4
+
+    char progress_data[PROGRESS_DATA_LENGTH] = { 0, };
+    int len = 1;
+
+    INFO("notify_booting_progress\n");
+
+    /* percentage */
+    if (progress_value < 0) {
+        progress_value = 0;
+        len = 1;
+    } else if (progress_value < 10) {
+        len = 1;
+    } else if (progress_value < 100) {
+        len = 2;
+    } else if (progress_value = 100) {
+        len = 3;
+    } else if (progress_value > 100) {
+        progress_value = 100;
+        len = 3;
+    }
+
+    snprintf(progress_data, len + 1, "%d", progress_value);
+    INFO("booting...%s\%\n", progress_data);
+
+    if (client_sock) {
+        if (0 > send_skin_data(client_sock,
+            SEND_BOOTING_PROGRESS, progress_data, len + 1, 1)) {
+
+            ERR("fail to send SEND_BOOTING_PROGRESS to skin.\n");
+        }
+    }
+}
 
 int is_ready_skin_server(void)
 {
@@ -507,8 +561,9 @@ static void* run_skin_server(void* args)
         INFO( "start accepting socket...\n" );
 
         if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr *) &client_addr, &client_len ) ) ) {
-            ERR( "skin_servier accept error\n" );
-            perror( "skin_servier accept error : " );
+            ERR("skin_server accept error\n");
+            perror("skin_server accept error : ");
+
             continue;
         }
 
@@ -526,15 +581,16 @@ static void* run_skin_server(void* args)
 
             int read_cnt = recv_n( client_sock, recvbuf, RECV_HEADER_SIZE );
 
-            if ( 0 > read_cnt ) {
-
-                if( is_force_close_client ) {
+            if (0 > read_cnt) {
+                if (is_force_close_client) {
                     INFO( "force close client socket.\n" );
                     is_force_close_client = 0;
-                }else {
-                    ERR( "skin_server read error:%d\n", read_cnt );
-                    perror( "skin_server read error : " );
+                } else {
+                    ERR("skin_server read error (%d): %d\n",
+                        socket_error(), read_cnt);
+                    perror("skin_server read error : ");
                 }
+
                 break;
 
             } else {
