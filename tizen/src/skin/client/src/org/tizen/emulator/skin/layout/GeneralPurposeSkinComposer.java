@@ -158,7 +158,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (skin.getIsControlPanel() == true) {
-					skin.controlPanel.getShell().close();
+					if (skin.controlPanel != null) {
+						skin.controlPanel.getShell().close();
+					}
+
 					skin.setIsControlPanel(false);
 					skin.pairTagCanvas.setVisible(false);
 				} else {

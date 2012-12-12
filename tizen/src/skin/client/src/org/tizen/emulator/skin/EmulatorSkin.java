@@ -925,7 +925,7 @@ public class EmulatorSkin {
 		}
 
 		try {
-			controlPanel = new ControlPanel(shell, colorPairTag,
+			controlPanel = new ControlPanel(this, shell, colorPairTag,
 					communicator, keyMapList);
 			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
 

@@ -52,6 +52,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
@@ -68,6 +69,7 @@ public class ControlPanel extends SkinWindow {
 	private static final int BUTTON_DEFAULT_CNT = 4;
 	private static final int BUTTON_VERTICAL_SPACING = 7;
 
+	private EmulatorSkin skin;
 	private SkinPatches frameMaker;
 	private Image imageNormal; /* ImageButton image */
 	private Image imageHover; /* hovered ImageButton image */
@@ -86,10 +88,11 @@ public class ControlPanel extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public ControlPanel(Shell parent, Color colorPairTag,
+	public ControlPanel(EmulatorSkin skin, Shell parent, Color colorPairTag,
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent, SWT.RIGHT | SWT.CENTER);
 
+		this.skin = skin;
 		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM | SWT.RESIZE);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 		this.colorPairTag = colorPairTag;
@@ -97,6 +100,9 @@ public class ControlPanel extends SkinWindow {
 		this.keyMapList = keyMapList;
 		this.communicator = communicator;
 		this.grabPosition = new Point(0, 0);
+
+		shell.setText(parent.getText());
+		shell.setImage(parent.getImage());
 
 		/* load image for HW key button */
 		ClassLoader loader = this.getClass().getClassLoader();
@@ -343,6 +349,12 @@ public class ControlPanel extends SkinWindow {
 			@Override
 			public void handleEvent(Event event) {
 				logger.info("Key Window is closed");
+
+				if (skin.pairTagCanvas != null) {
+					skin.pairTagCanvas.setVisible(false);
+				}
+				skin.setIsControlPanel(false);
+				skin.controlPanel = null;
 
 				if (null != shellPaintListener) {
 					shell.removePaintListener(shellPaintListener);
