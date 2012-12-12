@@ -38,6 +38,7 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 #include "maru_common.h"
+extern int enable_yagl;
 
 #undef DEBUG
 //#define DEBUG
@@ -130,7 +131,9 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
     codec_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
 #ifdef CONFIG_YAGL
-    pci_create_simple(pci_bus, -1, "yagl");
+    if (enable_yagl) {
+        pci_create_simple(pci_bus, -1, "yagl");
+    }
 #endif
 
     audio_init(NULL, pci_bus);
