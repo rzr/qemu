@@ -948,6 +948,28 @@ static void virtio_keyboard_exit_pci(PCIDevice *pci_dev)
     virtio_keyboard_exit(proxy->vdev);
     virtio_exit_pci(pci_dev);
 }
+
+static int virtio_esm_init_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+    VirtIODevice *vdev;
+
+    vdev = virtio_esm_init(&pci_dev->qdev);
+    if (!vdev) {
+        return -1;
+    }
+    virtio_init_pci(proxy, vdev);
+    return 0;
+}
+
+static void virtio_esm_exit_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+
+    virtio_pci_stop_ioeventfd(proxy);
+    virtio_esm_exit(proxy->vdev);
+    virtio_exit_pci(pci_dev);
+}
 #endif
 
 static Property virtio_blk_properties[] = {
@@ -1184,8 +1206,7 @@ static TypeInfo maru_virtio_touchscreen_info = {
     .class_init    = maru_virtio_touchscreen_class_init,
 };
 
-static void virtio_keyboard_class_init(ObjectClass *klass, void *data)
-{
+static void virtio_keyboard_class_init(ObjectClass *klass, void *data) {
     DeviceClass *dc = DEVICE_CLASS(klass);
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
@@ -1204,6 +1225,26 @@ static TypeInfo virtio_keyboard_info = {
     .instance_size = sizeof(VirtIOPCIProxy),
     .class_init    = virtio_keyboard_class_init,
 };
+
+static void virtio_esm_class_init(ObjectClass *klass, void *data) {
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_esm_init_pci;
+    k->exit = virtio_esm_exit_pci;
+    k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    k->device_id = PCI_DEVICE_ID_VIRTIO_ESM;
+    k->revision = VIRTIO_PCI_ABI_VERSION;
+    k->class_id = PCI_CLASS_OTHERS;
+    dc->reset = virtio_pci_reset;
+}
+
+static TypeInfo virtio_esm_info = {
+    .name          = "virtio-esm-pci",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOPCIProxy),
+    .class_init    = virtio_esm_class_init,
+};
 #endif /* CONFIG_MARU */
 
 static void virtio_pci_register_types(void)
@@ -1219,6 +1260,7 @@ static void virtio_pci_register_types(void)
 #ifdef CONFIG_MARU
     type_register_static(&maru_virtio_touchscreen_info);
     type_register_static(&virtio_keyboard_info);
+    type_register_static(&virtio_esm_info);
 #endif
 }
 

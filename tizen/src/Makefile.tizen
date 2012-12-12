@@ -98,6 +98,7 @@ obj-y += maru_brightness.o
 obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 obj-y += maru_virtio_keyboard.o
 obj-y += maru_codec.o
+obj-y += maru_virtio_esm.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
