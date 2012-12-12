@@ -297,21 +297,23 @@ public class ControlPanel extends SkinWindow {
 					Rectangle parentBounds = parent.getBounds();
 					Rectangle childBounds = shell.getBounds();
 
+					int heightOneThird = parentBounds.height / 3;
+
 					/* right-middle */
 					Rectangle attachBounds1 = new Rectangle(
 							(parentBounds.x + parentBounds.width) - 5,
-							(parentBounds.y + (parentBounds.height / 2)) - 10,
-							30, 20);
+							parentBounds.y + heightOneThird,
+							30, heightOneThird);
 					/* right-top */
 					Rectangle attachBounds2 = new Rectangle(
 							(parentBounds.x + parentBounds.width) - 5,
-							(parentBounds.y) - 40,
-							30, 80);
+							parentBounds.y,
+							30, heightOneThird);
 					/* right-bottom */
 					Rectangle attachBounds3 = new Rectangle(
 							(parentBounds.x + parentBounds.width) - 5,
-							(parentBounds.y + parentBounds.height) - 40,
-							30, 80);
+							parentBounds.y + (heightOneThird * 2),
+							30, heightOneThird);
 
 					if (childBounds.intersects(attachBounds1) == true) {
 						setShellPosition(SWT.RIGHT | SWT.CENTER, false, true);
