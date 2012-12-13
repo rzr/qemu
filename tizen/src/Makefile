@@ -104,6 +104,7 @@ ifdef CONFIG_WIN32
 endif
 ifdef CONFIG_DARWIN
 	cp check-hax $(EMUL_DIR)/bin
+	cp sdbscript $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_LINUX
 	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc

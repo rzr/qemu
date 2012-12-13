@@ -1086,7 +1086,8 @@ public class EmulatorSkin {
 					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
 							"-s", "emulator-" + portSdb, "shell");
 				} else if (SwtUtil.isMacPlatform()) {
-					procSdb.command("/usr/X11/bin/uxterm", "-T", "emulator-" + portSdb, "-e", sdbPath,"shell");
+					procSdb.command("./sdbscript", "emulator-" + portSdb);
+					//procSdb.command("/usr/X11/bin/uxterm", "-T", "emulator-" + portSdb, "-e", sdbPath,"shell");
 				}
 				logger.log(Level.INFO, procSdb.command().toString());
 			

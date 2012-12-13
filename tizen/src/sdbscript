@@ -1,0 +1,8 @@
+#!/bin/sh
+TITLE=$1
+osascript > /dev/null << END
+tell application "Terminal"
+do script "`pwd`/../../sdb -s $TITLE shell"
+set custom title of first window to "$TITLE"
+end tell
+END
