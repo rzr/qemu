@@ -4,7 +4,7 @@ clean()
 {
 	prepare
 
-	cd $SRCDIR/tizen/
+	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
 		./emulator_configure.sh x86
@@ -34,9 +34,20 @@ build()
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
-		echo "build success"
+		echo "x86 build success"
 	else
-		echo "build failure"
+		echo "x86 build failure"
+		exit 1
+	fi
+
+	./emulator_configure.sh arm
+	make all_dibs
+
+	if [ $? -eq 0 ]
+	then
+		echo "arm build success"
+	else
+		echo "arm build failure"
 		exit 1
 	fi
 }
