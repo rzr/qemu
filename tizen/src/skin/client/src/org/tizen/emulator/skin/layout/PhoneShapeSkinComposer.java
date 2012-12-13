@@ -211,10 +211,6 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		if (skin.bootingProgress != null) {
 			skin.bootingProgress.setBounds(lcdBounds.x,
 					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
-
-			//TODO : delete this line
-			skin.bootingProgress.setSelection(0); /* dispose */
-			skin.bootingProgress = null;
 		}
 
 		/* custom window shape */

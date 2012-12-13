@@ -50,7 +50,7 @@ public class CustomProgressBar extends Canvas {
 		super(parent, style);
 
 		this.parent = parent;
-		this.selection = 1;
+		this.selection = 0;
 
 		this.addPaintListener(new PaintListener() {
 			@Override
@@ -62,7 +62,7 @@ public class CustomProgressBar extends Canvas {
 				int width = (bounds.width * selection) / 100; 
 				e.gc.fillRectangle(0, 0, width, bounds.height);
 
-				if (selection == 0) {
+				if (selection == -1) {
 					logger.info("progress : complete!");
 
 					parent.getDisplay().asyncExec(new Runnable() {
@@ -74,9 +74,24 @@ public class CustomProgressBar extends Canvas {
 				}
 			}
 		});
+
+		/* default is hidden */
+		parent.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				setVisible(false);
+			}
+		});
 	}
 
 	public void setSelection(int value) {
+		parent.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				setVisible(true);
+			}
+		});
+
 		if (value < 0) {
 			value = 0;
 		} else if (value > 100) {
@@ -92,7 +107,7 @@ public class CustomProgressBar extends Canvas {
 				redraw();
 
 				if (selection == 100) {
-					selection = 0;
+					selection = -1;
 				}
 			}
 		});
