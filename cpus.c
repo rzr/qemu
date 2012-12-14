@@ -859,6 +859,13 @@ static void qemu_cpu_kick_thread(CPUArchState *env)
         fprintf(stderr, "qemu:%s: %s", __func__, strerror(err));
         exit(1);
     }
+/* The cpu thread cannot catch it reliably when shutdown the guest on Mac.
+ * We can double check it and resend it
+ */
+#ifdef CONFIG_DARWIN
+    if (!exit_request)
+        cpu_signal(0);
+#endif
 #else /* _WIN32 */
     if (!qemu_cpu_is_self(env)) {
         SuspendThread(cpu->hThread);
