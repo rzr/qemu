@@ -76,6 +76,7 @@ struct MaruCamState {
     QemuCond            thread_cond;
     QEMUBH              *tx_bh;
 
+    bool                destroying;
     void                *vaddr;     /* vram ptr */
     uint32_t            isr;
     uint32_t            streamon;
@@ -86,11 +87,12 @@ struct MaruCamState {
     MemoryRegion        mmio;
 };
 
-/* ----------------------------------------------------------------------------- */
-/* Fucntion prototype                                                            */
-/* ----------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
+/* Fucntion prototype                                                        */
+/* ------------------------------------------------------------------------- */
 int marucam_device_check(int log_flag);
 void marucam_device_init(MaruCamState *state);
+void marucam_device_exit(MaruCamState *state);
 void marucam_device_open(MaruCamState *state);
 void marucam_device_close(MaruCamState *state);
 void marucam_device_start_preview(MaruCamState *state);

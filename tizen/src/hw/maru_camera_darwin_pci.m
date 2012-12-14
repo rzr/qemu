@@ -472,26 +472,31 @@ static void *marucam_worker_thread(void *thread_param)
 {
   //MaruCamState *state = (MaruCamState*)thread_param;
 
-  wait_worker_thread:
-    qemu_mutex_lock(&g_state->thread_mutex);
-    // Wait on the condition
-    qemu_cond_wait(&g_state->thread_cond, &g_state->thread_mutex);
-    qemu_mutex_unlock(&g_state->thread_mutex);
+    while (1) {
+        qemu_mutex_lock(&g_state->thread_mutex);
+        // Wait on the condition
+        qemu_cond_wait(&g_state->thread_cond, &g_state->thread_mutex);
+        qemu_mutex_unlock(&g_state->thread_mutex);
 
-    /* Loop: capture frame -> convert format -> render to screen */
-    while (1)
-    {
-        if (g_state->streamon) {
-            if (marucam_device_read_frame() < 0) {
-                INFO("Streaming is off ...\n");
-                goto wait_worker_thread;
-            }
-        } else {
-            INFO("Streaming is off ...\n");
-            goto wait_worker_thread;
+        if (g_state->destroying) {
+            break;
         }
-        //camera_sleep(50);
+
+        /* Loop: capture frame -> convert format -> render to screen */
+        while (1) {
+            if (g_state->streamon) {
+                if (marucam_device_read_frame() < 0) {
+                   INFO("Streaming is off ...\n");
+                   break;
+                }
+            } else {
+                INFO("Streaming is off ...\n");
+                break;
+            }
+            //camera_sleep(50);
+        }
     }
+
     return NULL;
 }
 
@@ -509,7 +514,17 @@ int marucam_device_check(int log_flag)
 void marucam_device_init(MaruCamState* state)
 {
     g_state = state;
+    g_state->destroying = false;
     qemu_thread_create(&state->thread_id, marucam_worker_thread, (void*)g_state, QEMU_THREAD_JOINABLE);
+}
+
+void marucam_device_exit(MaruCamState *state)
+{
+    state->destroying = true;
+    qemu_mutex_lock(&state->thread_mutex);
+    qemu_cond_signal(&state->thread_cond);
+    qemu_mutex_unlock(&state->thread_mutex);
+    qemu_thread_join(&state->thread_id);
 }
 
 /* MARUCAM_CMD_OPEN */
@@ -739,6 +754,9 @@ void marucam_device_enum_fmt(MaruCamState* state)
             break;
         case V4L2_PIX_FMT_YVU420:
             memcpy(&param->stack[3], "YV12", 32);
+            break;
+        default:
+            param->errCode = EINVAL;
             break;
     }
 }

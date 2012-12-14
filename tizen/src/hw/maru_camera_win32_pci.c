@@ -116,8 +116,12 @@ static STDMETHODIMP HWCGrabCallback_Grab(IGrabCallback *iface,
     HWCGrabCallback *This = impl_from_IGrabCallback(iface);
 
     if (This->m_pCallback) {
-        This->m_pCallback(dwSize, pBuffer);
-        return S_OK;
+        HRESULT hr = This->m_pCallback(dwSize, pBuffer);
+        if (FAILED(hr)) {
+            return E_FAIL;
+        } else {
+            return S_OK;
+        }
     }
 
     return E_FAIL;
@@ -1198,11 +1202,17 @@ static long value_convert_to_guest(long min, long max, long value)
 static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
 {
     void *tmp_buf;
-    uint32_t width, height, fmt;
+    uint32_t width, height, fmt, imgsize;
 
     width = supported_dst_frames[cur_frame_idx].width;
     height = supported_dst_frames[cur_frame_idx].height;
     fmt = supported_dst_pixfmts[cur_fmt_idx].fmt;
+    imgsize = get_sizeimage(fmt, width, height);
+
+    if (imgsize > (uint32_t)dwSize) {
+        ERR("Image size is mismatched\n");
+        return E_FAIL;
+    }
 
     switch (g_dwSrcFmt) {
     case V4L2_PIX_FMT_YUYV:
@@ -1216,6 +1226,9 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
         case V4L2_PIX_FMT_YUYV:
             memcpy(grab_buf, (void *)pBuffer, (size_t)dwSize);
             break;
+        default:
+            ERR("Invalid pixel format\n");
+            return E_FAIL;
         }
         break;
     case V4L2_PIX_FMT_RGB24:
@@ -1229,6 +1242,9 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
         case V4L2_PIX_FMT_YUYV:
             rgb24_to_yuyv(pBuffer, grab_buf, width, height);
             break;
+        default:
+            ERR("Invalid pixel format\n");
+            return E_FAIL;
         }
         break;
     case V4L2_PIX_FMT_YUV420:
@@ -1242,8 +1258,14 @@ static STDMETHODIMP marucam_device_callbackfn(ULONG dwSize, BYTE *pBuffer)
         case V4L2_PIX_FMT_YUYV:
             yuv420_to_yuyv(pBuffer, grab_buf, width, height);
             break;
+        default:
+            ERR("Invalid pixel format\n");
+            return E_FAIL;
         }
         break;
+    default:
+        ERR("Invalid pixel format\n");
+        return E_FAIL;
     }
 
     qemu_mutex_lock(&g_state->thread_mutex);
@@ -1724,7 +1746,10 @@ int marucam_device_check(int log_flag)
     hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) {
         fprintf(stdout, "[Webcam] failed to CoInitailizeEx\n");
-        goto leave_check;
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     hr = CoCreateInstance(&CLSID_FilterGraph, NULL,
@@ -1733,7 +1758,11 @@ int marucam_device_check(int log_flag)
                           (void **)&pGB);
     if (FAILED(hr)) {
         fprintf(stdout, "[Webcam] Failed to create GraphBuilder, 0x%x\n", hr);
-        goto leave_check;
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     hr = CoCreateInstance(&CLSID_CaptureGraphBuilder2, NULL,
@@ -1743,13 +1772,24 @@ int marucam_device_check(int log_flag)
     if (FAILED(hr)) {
         fprintf(stdout,
         "[Webcam] Failed to create CaptureGraphBuilder2, 0x%x\n", hr);
-        goto leave_check;
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     hr = pCGB->lpVtbl->SetFiltergraph(pCGB, pGB);
     if (FAILED(hr)) {
         fprintf(stdout, "[Webcam] Failed to SetFiltergraph, 0x%x\n", hr);
-        goto leave_check;
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     hr = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL,
@@ -1759,26 +1799,54 @@ int marucam_device_check(int log_flag)
     if (FAILED(hr)) {
         fprintf(stdout,
             "[Webcam] failed to create instance of CLSID_SystemDeviceEnum\n");
-        goto leave_check;
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum,
                                   &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
     if (FAILED(hr)) {
         fprintf(stdout, "[Webcam] failed to create class enumerator\n");
-        goto leave_check;
+        SAFE_RELEASE(pCreateDevEnum);
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     if (!pEnumMK) {
         fprintf(stdout, "[Webcam] class enumerator is NULL!!\n");
-        goto leave_check;
+        SAFE_RELEASE(pCreateDevEnum);
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
     pEnumMK->lpVtbl->Reset(pEnumMK);
 
     hr = pEnumMK->lpVtbl->Next(pEnumMK, 1, &pMoniKer, NULL);
     if (FAILED(hr) || (hr == S_FALSE)) {
         fprintf(stdout, "[Webcam] enum moniker returns a invalid value.\n");
-        goto leave_check;
+        SAFE_RELEASE(pEnumMK);
+        SAFE_RELEASE(pCreateDevEnum);
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     IPropertyBag *pBag = NULL;
@@ -1787,7 +1855,15 @@ int marucam_device_check(int log_flag)
                                          (void **)&pBag);
     if (FAILED(hr)) {
         fprintf(stdout, "[Webcam] failed to bind to storage.\n");
-        goto leave_check;
+        SAFE_RELEASE(pEnumMK);
+        SAFE_RELEASE(pCreateDevEnum);
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     } else {
         VARIANT var;
         var.vt = VT_BSTR;
@@ -1798,7 +1874,15 @@ int marucam_device_check(int log_flag)
                 SysFreeString(var.bstrVal);
                 SAFE_RELEASE(pBag);
                 SAFE_RELEASE(pMoniKer);
-                goto leave_check;
+                SAFE_RELEASE(pEnumMK);
+                SAFE_RELEASE(pCreateDevEnum);
+                SAFE_RELEASE(pCGB);
+                SAFE_RELEASE(pGB);
+                CoUninitialize();
+                gettimeofday(&t2, NULL);
+                fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                                t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+                return ret;
             }
             device_name = __wchar_to_char(var.bstrVal);
             fprintf(stdout, "[Webcam] Device name : %s\n", device_name);
@@ -1809,7 +1893,18 @@ int marucam_device_check(int log_flag)
             if (FAILED(hr)) {
                 fprintf(stdout,
                    "[Webcam] Counldn't bind moniker to filter object!!\n");
-                goto leave_check;
+                SysFreeString(var.bstrVal);
+                SAFE_RELEASE(pBag);
+                SAFE_RELEASE(pMoniKer);
+                SAFE_RELEASE(pEnumMK);
+                SAFE_RELEASE(pCreateDevEnum);
+                SAFE_RELEASE(pCGB);
+                SAFE_RELEASE(pGB);
+                CoUninitialize();
+                gettimeofday(&t2, NULL);
+                fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                                t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+                return ret;
             } else {
                 pSrcFilter->lpVtbl->AddRef(pSrcFilter);
             }
@@ -1823,7 +1918,16 @@ int marucam_device_check(int log_flag)
     if (hr != S_OK && hr != S_FALSE) {
         fprintf(stdout,
                 "[Webcam] Counldn't add Video Capture filter to our graph!\n");
-        goto leave_check;
+        SAFE_RELEASE(pSrcFilter);
+        SAFE_RELEASE(pEnumMK);
+        SAFE_RELEASE(pCreateDevEnum);
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     hr = pCGB->lpVtbl->FindInterface(pCGB, &PIN_CATEGORY_CAPTURE, 0,
@@ -1831,13 +1935,32 @@ int marucam_device_check(int log_flag)
                                        (void **)&pSConfig);
     if (FAILED(hr)) {
         fprintf(stdout, "[Webcam] failed to FindInterface method\n");
-        goto leave_check;
+        SAFE_RELEASE(pSrcFilter);
+        SAFE_RELEASE(pEnumMK);
+        SAFE_RELEASE(pCreateDevEnum);
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     hr = pSConfig->lpVtbl->GetNumberOfCapabilities(pSConfig, &iCount, &iSize);
     if (FAILED(hr)) {
         fprintf(stdout, "[Webcam] failed to GetNumberOfCapabilities method\n");
-        goto leave_check;
+        SAFE_RELEASE(pSConfig);
+        SAFE_RELEASE(pSrcFilter);
+        SAFE_RELEASE(pEnumMK);
+        SAFE_RELEASE(pCreateDevEnum);
+        SAFE_RELEASE(pCGB);
+        SAFE_RELEASE(pGB);
+        CoUninitialize();
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
 
     if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS)) {
@@ -1878,7 +2001,6 @@ int marucam_device_check(int log_flag)
         fprintf(stdout, "[Webcam] Failed to remove source filer. 0x%x\n", hr);
     }
 
-leave_check:
     SAFE_RELEASE(pSConfig);
     SAFE_RELEASE(pSrcFilter);
     SAFE_RELEASE(pCGB);
@@ -1897,6 +2019,10 @@ leave_check:
 void marucam_device_init(MaruCamState *state)
 {
     g_state = state;
+}
+
+void marucam_device_exit(MaruCamState *state)
+{
 }
 
 /* MARUCAM_CMD_OPEN */
@@ -1918,25 +2044,49 @@ void marucam_device_open(MaruCamState *state)
     hr = GraphBuilder_Init();
     if (FAILED(hr)) {
         ERR("GraphBuilder_Init\n");
-        goto error_failed;
+        DisconnectPins();
+        RemoveFilters();
+        CloseInterfaces();
+        CoUninitialize();
+        param->errCode = EINVAL;
+        ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
+        return;
     }
 
     hr = BindSourceFilter();
     if (FAILED(hr)) {
         ERR("BindSourceFilter\n");
-        goto error_failed;
+        DisconnectPins();
+        RemoveFilters();
+        CloseInterfaces();
+        CoUninitialize();
+        param->errCode = EINVAL;
+        ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
+        return;
     }
 
     hr = BindTargetFilter();
     if (FAILED(hr)) {
         ERR("BindTargetFilter\n");
-        goto error_failed;
+        DisconnectPins();
+        RemoveFilters();
+        CloseInterfaces();
+        CoUninitialize();
+        param->errCode = EINVAL;
+        ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
+        return;
     }
 
     hr = ConnectFilters();
     if (FAILED(hr)) {
         ERR("ConnectFilters\n");
-        goto error_failed;
+        DisconnectPins();
+        RemoveFilters();
+        CloseInterfaces();
+        CoUninitialize();
+        param->errCode = EINVAL;
+        ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
+        return;
     }
 
     cur_frame_idx = 0;
@@ -1948,19 +2098,17 @@ void marucam_device_open(MaruCamState *state)
     hr = SetFormat(dwWidth, dwHeight, dwDstFmt, &g_dwSrcFmt);
     if (hr != S_OK) {
         ERR("failed to Set default values\n");
-        goto error_failed;
+        DisconnectPins();
+        RemoveFilters();
+        CloseInterfaces();
+        CoUninitialize();
+        param->errCode = EINVAL;
+        ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
+        return;
     }
 
     INFO("Opened\n");
     return;
-
-error_failed:
-    DisconnectPins();
-    RemoveFilters();
-    CloseInterfaces();
-    CoUninitialize();
-    param->errCode = EINVAL;
-    ERR("camera device open failed!!!, [HRESULT : 0x%x]\n", hr);
 }
 
 /* MARUCAM_CMD_CLOSE */
@@ -2234,6 +2382,10 @@ void marucam_device_enum_fmt(MaruCamState *state)
     case V4L2_PIX_FMT_YVU420:
         memcpy(&param->stack[3], "YV12", 32);
         break;
+    default:
+        ERR("Invalid pixel format\n");
+        param->errCode = EINVAL;
+        break;
     }
 }
 
@@ -2274,6 +2426,7 @@ void marucam_device_qctrl(MaruCamState *state)
         i = 3;
         break;
     default:
+        ERR("Invalid control ID\n");
         param->errCode = EINVAL;
         return;
     }
@@ -2499,7 +2652,6 @@ void rgb24_to_yuv420(const unsigned char *src, unsigned char *dest,
     /* Y */
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            /* RGB2Y(src[0], src[1], src[2], *dest++); */
             RGB2Y(src[2], src[1], src[0], *dest++);
             src += 3;
         }
@@ -2526,9 +2678,6 @@ void rgb24_to_yuv420(const unsigned char *src, unsigned char *dest,
                     src[bytesperline + 4]) / 4;
             avg_src[2] = (src[2] + src[5] + src[bytesperline + 2] +
                     src[bytesperline + 5]) / 4;
-            /*
-            RGB2UV(avg_src[0], avg_src[1], avg_src[2], *udest++, *vdest++);
-            */
             RGB2UV(avg_src[2], avg_src[1], avg_src[0], *udest++, *vdest++);
             src += 6;
         }

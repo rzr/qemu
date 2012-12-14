@@ -48,13 +48,14 @@ MULTI_DEBUG_CHANNEL(tizen, camera_pci);
 
 #define MARU_PCI_CAMERA_DEVICE_NAME     "maru_camera_pci"
 
-#define MARUCAM_MEM_SIZE        (4 * 1024 * 1024)   // 4MB
-#define MARUCAM_REG_SIZE        (256)               // 64 * 4
+#define MARUCAM_MEM_SIZE    (4 * 1024 * 1024)   /* 4MB */
+#define MARUCAM_REG_SIZE    (256)               /* 64 * 4Byte */
 
 /*
  *  I/O functions
  */
-static inline uint32_t marucam_mmio_read(void *opaque, target_phys_addr_t offset)
+static inline uint32_t
+marucam_mmio_read(void *opaque, target_phys_addr_t offset)
 {
     uint32_t ret = 0;
     MaruCamState *state = (MaruCamState*)opaque;
@@ -91,13 +92,15 @@ static inline uint32_t marucam_mmio_read(void *opaque, target_phys_addr_t offset
         state->param->errCode = 0;
         break;
     default:
-        WARN("Not supported command!!\n");
+        ERR("Not supported command: 0x%x\n", offset);
+        ret = EINVAL;
         break;
     }
     return ret;
 }
 
-static inline void marucam_mmio_write(void *opaque, target_phys_addr_t offset, uint32_t value)
+static inline void
+marucam_mmio_write(void *opaque, target_phys_addr_t offset, uint32_t value)
 {
     MaruCamState *state = (MaruCamState*)opaque;
     
@@ -160,7 +163,7 @@ static inline void marucam_mmio_write(void *opaque, target_phys_addr_t offset, u
         qemu_mutex_unlock(&state->thread_mutex);
         break;
     default:
-        WARN("Not supported command!!\n");
+        ERR("Not supported command: 0x%x\n", offset);
         break;
     }
 }
@@ -230,11 +233,12 @@ static int marucam_initfn(PCIDevice *dev)
 /*
  *  Termination function
  */
-static int marucam_exitfn(PCIDevice *obj)
+static void marucam_exitfn(PCIDevice *pci_dev)
 {
     MaruCamState *s =
-        OBJECT_CHECK(MaruCamState, obj, MARU_PCI_CAMERA_DEVICE_NAME);
+        OBJECT_CHECK(MaruCamState, pci_dev, MARU_PCI_CAMERA_DEVICE_NAME);
 
+    marucam_device_exit(s);
     g_free(s->param);
     qemu_cond_destroy(&s->thread_cond);
     qemu_mutex_destroy(&s->thread_mutex);
@@ -244,7 +248,6 @@ static int marucam_exitfn(PCIDevice *obj)
 
 
     INFO("[%s] camera device was released.\n", __func__);
-    return 0;
 }
 
 int maru_camera_pci_init(PCIBus *bus)

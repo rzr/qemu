@@ -504,30 +504,36 @@ static void *marucam_worker_thread(void *thread_param)
 {
     MaruCamState *state = (MaruCamState *)thread_param;
 
-wait_worker_thread:
-    qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = _MC_THREAD_PAUSED;
-    qemu_cond_wait(&state->thread_cond, &state->thread_mutex);
-    qemu_mutex_unlock(&state->thread_mutex);
-
-    convert_trial = 10;
-    ready_count = 0;
-    qemu_mutex_lock(&state->thread_mutex);
-    state->streamon = _MC_THREAD_STREAMON;
-    qemu_mutex_unlock(&state->thread_mutex);
-    INFO("Streaming on ......\n");
-
     while (1) {
-        if (is_streamon(state)) {
-            if (__v4l2_streaming(state) < 0) {
+        qemu_mutex_lock(&state->thread_mutex);
+        state->streamon = _MC_THREAD_PAUSED;
+        qemu_cond_wait(&state->thread_cond, &state->thread_mutex);
+        qemu_mutex_unlock(&state->thread_mutex);
+
+        if (state->destroying) {
+            break;
+        }
+
+        convert_trial = 10;
+        ready_count = 0;
+        qemu_mutex_lock(&state->thread_mutex);
+        state->streamon = _MC_THREAD_STREAMON;
+        qemu_mutex_unlock(&state->thread_mutex);
+        INFO("Streaming on ......\n");
+
+        while (1) {
+            if (is_streamon(state)) {
+                if (__v4l2_streaming(state) < 0) {
+                    INFO("...... Streaming off\n");
+                    break;
+                }
+            } else {
                 INFO("...... Streaming off\n");
-                goto wait_worker_thread;
+                break;
             }
-        } else {
-            INFO("...... Streaming off\n");
-            goto wait_worker_thread;
         }
     }
+
     return NULL;
 }
 
@@ -555,16 +561,27 @@ int marucam_device_check(int log_flag)
     tmp_fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
     if (tmp_fd < 0) {
         fprintf(stdout, "[Webcam] Camera device open failed: %s\n", dev_name);
-        goto error;
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+                t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
     if (ioctl(tmp_fd, VIDIOC_QUERYCAP, &cap) < 0) {
         fprintf(stdout, "[Webcam] Could not qeury video capabilities\n");
-        goto error;
+        close(tmp_fd);
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+                t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
             !(cap.capabilities & V4L2_CAP_STREAMING)) {
         fprintf(stdout, "[Webcam] Not supported video driver\n");
-        goto error;
+        close(tmp_fd);
+        gettimeofday(&t2, NULL);
+        fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+                t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+        return ret;
     }
     ret = 1;
 
@@ -578,7 +595,11 @@ int marucam_device_check(int log_flag)
         format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
         if (yioctl(tmp_fd, VIDIOC_ENUM_FMT, &format) < 0) {
-            goto error;
+            close(tmp_fd);
+            gettimeofday(&t2, NULL);
+            fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+                    t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+            return ret;
         }
 
         do {
@@ -593,7 +614,11 @@ int marucam_device_check(int log_flag)
                              (char)(format.pixelformat >> 24));
 
             if (yioctl(tmp_fd, VIDIOC_ENUM_FRAMESIZES, &size) < 0) {
-                goto error;
+                close(tmp_fd);
+                gettimeofday(&t2, NULL);
+                fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+                        t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
+                return ret;
             }
 
             if (size.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
@@ -621,7 +646,7 @@ int marucam_device_check(int log_flag)
             format.index++;
         } while (yioctl(tmp_fd, VIDIOC_ENUM_FMT, &format) >= 0);
     }
-error:
+
     close(tmp_fd);
     gettimeofday(&t2, NULL);
     fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
@@ -631,8 +656,18 @@ error:
 
 void marucam_device_init(MaruCamState *state)
 {
+    state->destroying = false;
     qemu_thread_create(&state->thread_id, marucam_worker_thread, (void *)state,
             QEMU_THREAD_JOINABLE);
+}
+
+void marucam_device_exit(MaruCamState *state)
+{
+    state->destroying = true;
+    qemu_mutex_lock(&state->thread_mutex);
+    qemu_cond_signal(&state->thread_cond);
+    qemu_mutex_unlock(&state->thread_mutex);
+    qemu_thread_join(&state->thread_id);
 }
 
 void marucam_device_open(MaruCamState *state)
@@ -906,6 +941,10 @@ void marucam_device_enum_fmt(MaruCamState *state)
     case V4L2_PIX_FMT_YVU420:
         memcpy(&param->stack[3], "YV12", 32);
         break;
+    default:
+        ERR("Invalid fixel format\n");
+        param->errCode = EINVAL;
+        break;
     }
 }
 
@@ -942,6 +981,7 @@ void marucam_device_qctrl(MaruCamState *state)
         i = 3;
         break;
     default:
+        ERR("Invalid control ID\n");
         param->errCode = EINVAL;
         return;
     }

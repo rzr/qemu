@@ -40,6 +40,12 @@ FWD_DECL(IFilterGraph);
 #define MAX_PIN_NAME     128
 #define MAX_FILTER_NAME  128
 
+#define DECLARE_INTERFACE2(i) \
+   _COM_interface i { CONST_VTABLE struct i##Vtbl *lpVtbl; }; \
+   typedef CONST_VTABLE struct i##Vtbl i##Vtbl; \
+   CONST_VTABLE struct i##Vtbl
+#define DECLARE_INTERFACE2_(i,b) DECLARE_INTERFACE2(i)
+
 typedef LONGLONG REFERENCE_TIME;
 typedef long OAFilterState;
 typedef DWORD_PTR HSEMAPHORE;
@@ -308,10 +314,7 @@ DECLARE_INTERFACE_(IMediaFilter, IPersist)
 };
 #undef INTERFACE
 #define INTERFACE IBaseFilter
-//DECLARE_INTERFACE_(IBaseFilter, IMediaFilter)
-_COM_interface IBaseFilter { CONST_VTABLE struct IBaseFilterVtbl *lpVtbl; };
-typedef CONST_VTABLE struct IBaseFilterVtbl IBaseFilterVtbl;
-CONST_VTABLE struct IBaseFilterVtbl
+DECLARE_INTERFACE2_(IBaseFilter, IMediaFilter)
 {
     STDMETHOD(QueryInterface)(THIS_ REFIID,PVOID*) PURE;
     STDMETHOD_(ULONG,AddRef)(THIS) PURE;
@@ -331,10 +334,7 @@ CONST_VTABLE struct IBaseFilterVtbl
 };
 #undef INTERFACE
 #define INTERFACE IFilterGraph
-//DECLARE_INTERFACE_(IFilterGraph ,IUnknown)
-_COM_interface IFilterGraph { CONST_VTABLE struct IFilterGraphVtbl *lpVtbl; };
-typedef CONST_VTABLE struct IFilterGraphVtbl IFilterGraphVtbl;
-CONST_VTABLE struct IFilterGraphVtbl
+DECLARE_INTERFACE2_(IFilterGraph, IUnknown)
 {
     STDMETHOD(QueryInterface)(THIS_ REFIID,PVOID*) PURE;
     STDMETHOD_(ULONG,AddRef)(THIS) PURE;
