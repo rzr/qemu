@@ -59,15 +59,15 @@ build()
 		exit 1
 	fi
 
-	./emulator_configure.sh arm -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
-	make all_dibs
-	if [ $? -eq 0 ]
-	then
-		echo "arm build success"
-	else
-		echo "arm build failure"
-		exit 1
-	fi
+#	./emulator_configure.sh arm -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
+#	make all_dibs
+#	if [ $? -eq 0 ]
+#	then
+#		echo "arm build success"
+#	else
+#		echo "arm build failure"
+#		exit 1
+#	fi
 
 }
 

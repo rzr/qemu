@@ -40,16 +40,16 @@ build()
 		exit 1
 	fi
 
-	./emulator_configure.sh arm
-	make all_dibs
+#	./emulator_configure.sh arm
+#	make all_dibs
 
-	if [ $? -eq 0 ]
-	then
-		echo "arm build success"
-	else
-		echo "arm build failure"
-		exit 1
-	fi
+#	if [ $? -eq 0 ]
+#	then
+#		echo "arm build success"
+#	else
+#		echo "arm build failure"
+#		exit 1
+#	fi
 }
 
 # install
