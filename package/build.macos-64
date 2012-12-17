@@ -30,15 +30,28 @@ prepare()
 build()
 {
 	cd $SRCDIR/tizen/
-	./emulator_configure.sh
+	./emulator_configure.sh x86
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
-		echo "build success"
+		echo "x86 build success"
 	else
-		echo "build failure"
+		echo "x86 build failure"
 		exit 1
 	fi
+	make install_dibs
+	make clean
+
+	./emulator_configure.sh arm
+	make all_dibs
+	if [ $? -eq 0 ]
+	then
+		echo "arm build success"
+	else
+		echo "arm build failure"
+		exit 1
+	fi
+	make install_dibs
 }
 
 # install
@@ -52,7 +65,6 @@ install()
 	mkdir -p $COMMON_BIN_DIR
 
 	cd $SRCDIR/tizen
-	make install_dibs
 
 	mv x86 $X86_BIN_DIR/emulator
 	mv arm $ARM_BIN_DIR/emulator
