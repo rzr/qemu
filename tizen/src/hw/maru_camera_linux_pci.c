@@ -760,6 +760,7 @@ void marucam_device_start_preview(MaruCamState *state)
 void marucam_device_stop_preview(MaruCamState *state)
 {
     struct timespec req;
+    struct v4l2_requestbuffers reqbuf;
     MaruCamParam *param = state->param;
     param->top = 0;
     req.tv_sec = 0;
@@ -784,6 +785,14 @@ void marucam_device_stop_preview(MaruCamState *state)
         n_framebuffer = 0;
     }
     state->buf_size = 0;
+
+    reqbuf.count = 0;
+    reqbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    reqbuf.memory = V4L2_MEMORY_MMAP;
+    if (xioctl(v4l2_fd, VIDIOC_REQBUFS, &reqbuf) < 0) {
+        ERR("Failed to ioctl() with VIDIOC_REQBUF in stop_preview: %s\n",
+            strerror(errno));
+    }
     INFO("Stopping preview\n");
 }
 
