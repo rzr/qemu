@@ -1159,25 +1159,25 @@ public class EmulatorSkin {
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
 
 				MenuItem item = (MenuItem) e.getSource();
 
 				boolean selection = item.getSelection();
 
-				if ( !selection ) {
+				if (!selection) {
 					return;
 				}
 
-				if ( !communicator.isSensorDaemonStarted() ) {
+				if (!communicator.isSensorDaemonStarted()) {
 
 					/* roll back a selection */
-					item.setSelection( false );
+					item.setSelection(false);
 
-					for ( MenuItem m : rotationList ) {
+					for (MenuItem m : rotationList) {
 						short rotationId = (Short) m.getData();
 						if (currentState.getCurrentRotationId() == rotationId) {
-							m.setSelection( true );
+							m.setSelection(true);
 							break;
 						}
 					}
@@ -1190,7 +1190,19 @@ public class EmulatorSkin {
 
 				short rotationId = ((Short) item.getData());
 
+				Point location = new Point(100, 100);
+				if (skinInfo.isPhoneShape()) { /* TODO: */
+					location = shell.getLocation();
+					shell.setVisible(false);
+				}
+
 				skinComposer.arrangeSkin(currentState.getCurrentScale(), rotationId);
+
+				if (skinInfo.isPhoneShape()) { /* TODO: */
+					shell.setVisible(true);
+					shell.setLocation(location);
+					SkinUtil.setTopMost(shell, isOnTop);
+				}
 
 				LcdStateData lcdStateData =
 						new LcdStateData(currentState.getCurrentScale(), rotationId);
@@ -1205,7 +1217,7 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	private Menu createScaleMenu(Shell shell) {
+	private Menu createScaleMenu(final Shell shell) {
 
 		Menu menu = new Menu(shell, SWT.DROP_DOWN);
 
@@ -1234,19 +1246,31 @@ public class EmulatorSkin {
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
 
 				MenuItem item = (MenuItem) e.getSource();
 
 				boolean selection = item.getSelection();
 
-				if ( !selection ) {
+				if (!selection) {
 					return;
 				}
 
 				int scale = ((Scale) item.getData()).value();
 
+				Point location = new Point(100, 100);
+				if (skinInfo.isPhoneShape()) { /* TODO: */
+					location = shell.getLocation();
+					shell.setVisible(false);
+				}
+
 				skinComposer.arrangeSkin(scale, currentState.getCurrentRotationId());
+
+				if (skinInfo.isPhoneShape()) { /* TODO: */
+					shell.setVisible(true);
+					shell.setLocation(location);
+					SkinUtil.setTopMost(shell, isOnTop);
+				}
 
 				LcdStateData lcdStateData =
 						new LcdStateData(scale, currentState.getCurrentRotationId());
@@ -1255,19 +1279,17 @@ public class EmulatorSkin {
 			}
 		};
 		
-		for ( MenuItem menuItem : scaleList ) {
+		for (MenuItem menuItem : scaleList) {
 
-			int scale = ( (Scale) menuItem.getData() ).value();
+			int scale = ((Scale) menuItem.getData()).value();
 			if (currentState.getCurrentScale() == scale) {
-				menuItem.setSelection( true );
+				menuItem.setSelection(true);
 			}
 
-			menuItem.addSelectionListener( selectionAdapter );
-
+			menuItem.addSelectionListener(selectionAdapter);
 		}
 
 		return menu;
-
 	}
 
 	private Menu createDiagnosisMenu(Shell shell) {
