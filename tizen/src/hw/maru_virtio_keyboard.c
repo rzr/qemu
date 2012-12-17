@@ -92,7 +92,6 @@ void virtio_keyboard_notify(void *opaque)
         return;
     }
 
-    // TODO : need to lock??
     qemu_mutex_lock(&vkbd->event_mutex);
     written_cnt = vkbd->kbdqueue.wptr;
     TRACE("[Enter] virtqueue notifier. %d\n", written_cnt);
@@ -165,6 +164,15 @@ static void virtio_keyboard_event(void *opaque, int keycode)
     if (keycode < 0xe0) {
         if (vkbd->extension_key) {
             switch (keycode & 0x7f) {
+            case 28:    // KP_Enter
+                kbdevt.code = 96;
+                break;
+            case 29:    // Right Ctrl
+                kbdevt.code = 97;
+                break;
+            case 56:    // Right Alt
+                kbdevt.code = 100;
+                break;
             case 71:    // Home
                 kbdevt.code = 102;
                 break;
@@ -247,7 +255,6 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
 
     memset(&vkbd->kbdqueue, 0x00, sizeof(vkbd->kbdqueue));
     vkbd->extension_key = 0;
-//    vkbd->attached = 1;
     qemu_mutex_init(&vkbd->event_mutex);
 
 
@@ -266,6 +273,5 @@ void virtio_keyboard_exit(VirtIODevice *vdev)
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
     INFO("destroy device\n");
 
-//    vkbd->attached = 0;
     virtio_cleanup(vdev);
 }
