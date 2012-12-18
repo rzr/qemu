@@ -99,7 +99,7 @@ void wake_codec_worker_thread(SVCodecState *s)
 void *codec_worker_thread(void *opaque)
 {
     SVCodecState *s = (SVCodecState *)opaque;
-    QemuThread  thread;
+    QemuThread thread;
     AVCodecContext *avctx;
 
     TRACE("Enter, %s\n", __func__);
@@ -110,7 +110,9 @@ void *codec_worker_thread(void *opaque)
         qemu_cond_wait(&s->codec_thread.cond, &s->thread_mutex);
 
         qemu_thread_get_self(&thread);
+#ifdef CONFIG_LINUX
         TRACE("wake up a worker thread. :%x\n", thread.thread);
+#endif
         avctx = s->codec_ctx[s->codec_param.ctx_index].avctx;
         if (avctx) {
             if (avctx->codec->decode) {
@@ -1303,11 +1305,9 @@ void codec_write(void *opaque, target_phys_addr_t addr,
     case CODEC_CMD_SET_DEVICE_MEM:
         qemu_mutex_lock(&s->thread_mutex);
         s->device_mem_avail = value;
-        printf("set device_mem: %d\n", value);
         qemu_mutex_unlock(&s->thread_mutex);
         break;
 	case CODEC_CMD_SET_MMAP_OFFSET:
-        printf("set mem index: %d\n", value);
 		s->codec_param.mem_index = value;
 		break;
     default:
@@ -1370,7 +1370,7 @@ static int codec_initfn(PCIDevice *dev)
     return 0;
 }
 
-static int codec_exitfn(PCIDevice *dev)
+static void codec_exitfn(PCIDevice *dev)
 {
     SVCodecState *s = DO_UPCAST(SVCodecState, dev, dev);
     INFO("[%s] device exit\n", __func__);
@@ -1379,7 +1379,6 @@ static int codec_exitfn(PCIDevice *dev)
 
     memory_region_destroy(&s->vram);
     memory_region_destroy(&s->mmio);
-    return 0;
 }
 
 int codec_init(PCIBus *bus)

@@ -151,6 +151,7 @@ int codec_operate(uint32_t api_index, uint32_t ctx_index,
 void qemu_parser_init(SVCodecState *s, int ctx_index);
 void qemu_codec_close(SVCodecState *s, uint32_t value);
 void qemu_get_codec_ver(SVCodecState *s);
+void qemu_reset_codec_info(SVCodecState *s, uint32_t value);
 
 /*
  *  FFMPEG Functions
