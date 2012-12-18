@@ -222,6 +222,8 @@ VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev);
 void maru_virtio_touchscreen_exit(VirtIODevice *vdev);
 VirtIODevice *virtio_esm_init(DeviceState *dev);
 void virtio_esm_exit(VirtIODevice *vdev);
+VirtIODevice *virtio_keyboard_init(DeviceState *dev);
+void virtio_keyboard_exit(VirtIODevice *vdev);
 #endif
 
 
