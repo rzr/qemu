@@ -88,10 +88,10 @@ int tizen_base_port;
 char tizen_target_path[MAXLEN];
 char logpath[MAXLEN];
 
-static int skin_argc;
-static char **skin_argv;
-static int qemu_argc;
-static char **qemu_argv;
+static int _skin_argc;
+static char **_skin_argv;
+static int _qemu_argc;
+static char **_qemu_argv;
 
 #ifdef CONFIG_DARWIN
 int thread_running = 1; /* Check if we need exit main */
@@ -544,7 +544,7 @@ void prepare_maru(void)
 
     INFO("call construct_main_window\n");
 
-    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv);
+    construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
 
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server(guest_server_port);
@@ -582,15 +582,15 @@ void* main_thread(void* args)
     int argc = g_argc;
 
     argv = (char**) args;
-    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
-    get_bin_dir(qemu_argv[0]);
+    parse_options(argc, argv, &_skin_argc, &_skin_argv, &_qemu_argc, &_qemu_argv);
+    get_bin_dir(_qemu_argv[0]);
     socket_init();
-    extract_qemu_info(qemu_argc, qemu_argv);
+    extract_qemu_info(_qemu_argc, _qemu_argv);
 
     INFO("Emulator start !!!\n");
     atexit(maru_atexit);
 
-    extract_skin_info(skin_argc, skin_argv);
+    extract_skin_info(_skin_argc, _skin_argv);
 
     check_shdmem();
     make_shdmem();
@@ -605,21 +605,21 @@ void* main_thread(void* args)
     int i;
 
     fprintf(stdout, "qemu args : =========================================\n");
-    for (i = 0; i < qemu_argc; ++i) {
-        fprintf(stdout, "%s ", qemu_argv[i]);
+    for (i = 0; i < _qemu_argc; ++i) {
+        fprintf(stdout, "%s ", _qemu_argv[i]);
     }
     fprintf(stdout, "\n");
     fprintf(stdout, "=====================================================\n");
 
     fprintf(stdout, "skin args : =========================================\n");
-    for (i = 0; i < skin_argc; ++i) {
-        fprintf(stdout, "%s ", skin_argv[i]);
+    for (i = 0; i < _skin_argc; ++i) {
+        fprintf(stdout, "%s ", _skin_argv[i]);
     }
     fprintf(stdout, "\n");
     fprintf(stdout, "=====================================================\n");
 
     INFO("qemu main start!\n");
-    qemu_main(qemu_argc, qemu_argv, NULL);
+    qemu_main(_qemu_argc, _qemu_argv, NULL);
 
     exit_emulator();
     thread_running = 0;
@@ -630,15 +630,15 @@ void* main_thread(void* args)
 #else
 int main(int argc, char *argv[])
 {
-    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
-    get_bin_dir(qemu_argv[0]);
+    parse_options(argc, argv, &_skin_argc, &_skin_argv, &_qemu_argc, &_qemu_argv);
+    get_bin_dir(_qemu_argv[0]);
     socket_init();
-    extract_qemu_info(qemu_argc, qemu_argv);
+    extract_qemu_info(_qemu_argc, _qemu_argv);
 
     INFO("Emulator start !!!\n");
     atexit(maru_atexit);
 
-    extract_skin_info(skin_argc, skin_argv);
+    extract_skin_info(_skin_argc, _skin_argv);
 
     check_shdmem();
     make_shdmem();
@@ -653,21 +653,21 @@ int main(int argc, char *argv[])
     int i;
 
     fprintf(stdout, "qemu args : =========================================\n");
-    for (i = 0; i < qemu_argc; ++i) {
-        fprintf(stdout, "%s ", qemu_argv[i]);
+    for (i = 0; i < _qemu_argc; ++i) {
+        fprintf(stdout, "%s ", _qemu_argv[i]);
     }
     fprintf(stdout, "\n");
     fprintf(stdout, "=====================================================\n");
 
     fprintf(stdout, "skin args : =========================================\n");
-    for (i = 0; i < skin_argc; ++i) {
-        fprintf(stdout, "%s ", skin_argv[i]);
+    for (i = 0; i < _skin_argc; ++i) {
+        fprintf(stdout, "%s ", _skin_argv[i]);
     }
     fprintf(stdout, "\n");
     fprintf(stdout, "=====================================================\n");
 
     INFO("qemu main start!\n");
-    qemu_main(qemu_argc, qemu_argv, NULL);
+    qemu_main(_qemu_argc, _qemu_argv, NULL);
 
     exit_emulator();
 

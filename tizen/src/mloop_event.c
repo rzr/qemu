@@ -119,7 +119,14 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
     ret = bind(ev->sockno, &sa, sa_size);
     if (ret) {
         ERR("bind() failed\n");
-        goto mloop_evsock_init_cleanup;
+#ifdef _WIN32
+        closesocket(ev->sockno);
+#else
+        close(ev->sockno);
+#endif
+        ev->sockno = -1;
+        ev->status = 0;
+        return ret;
     }
 
     if (ev->portno == 0) {
@@ -131,21 +138,18 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
     ret = connect(ev->sockno, (struct sockaddr *) &sa, sa_size);
     if (ret) {
         ERR("connect() failed\n");
-        goto mloop_evsock_init_cleanup;
+#ifdef _WIN32
+        closesocket(ev->sockno);
+#else
+        close(ev->sockno);
+#endif
+        ev->sockno = -1;
+        ev->status = 0;
+        return ret;
     }
 
     ev->status = MLOOP_EVSOCK_CONNECTED;
     return 0;
-
-mloop_evsock_init_cleanup:
-#ifdef _WIN32
-    closesocket(ev->sockno);
-#else
-    close(ev->sockno);
-#endif
-    ev->sockno = -1;
-    ev->status = 0;
-    return ret;
 }
 
 static void mloop_evsock_remove(struct mloop_evsock *ev)
@@ -505,8 +509,9 @@ void mloop_evcmd_lower_intr(void *irq)
 void mloop_evcmd_usbkbd(int on)
 {
     struct mloop_evpack pack = { htons(MLOOP_EVTYPE_USB_ADD), htons(13), "keyboard" };
-    if (on == 0)
+    if (on == 0) {
         pack.type = htons(MLOOP_EVTYPE_USB_DEL);
+    }
     mloop_evsock_send(&mloop, &pack);
 }
 
@@ -527,6 +532,8 @@ void mloop_evcmd_usbdisk(char *img)
     if (img) {
         if (strlen(img) > PACKET_LEN-5) {
             // Need log
+            ERR("The length of disk image path is greater than "
+                "lenth of maximum packet.\n");
             return;
         }
 
@@ -569,7 +576,6 @@ void mloop_evcmd_hwkey(int event_type, int keycode)
 
     memcpy(pack.data, &event_type, sizeof(int));
     memcpy(pack.data + sizeof(int), &keycode, sizeof(int));
-    //pack.data = htons(pack.data);
 
     mloop_evsock_send(&mloop, &pack);
 }

@@ -127,9 +127,19 @@ static void* run_guest_server(void* args)
     port = svr_port;
 
     if ((server_sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
-        ERR( "create listen socket error\n" );
-        perror( "create listen socket error\n" );
-        goto cleanup;
+        ERR("create listen socket error\n");
+        perror("create listen socket error\n");
+#ifdef _WIN32
+        if (server_sock) {
+            closesocket(server_sock);
+        }
+#else
+        if (server_sock) {
+            close(server_sock);
+        }
+#endif
+        server_sock = 0;
+        return NULL;
     }
 
     memset(&server_addr, '\0', sizeof(server_addr));
@@ -143,7 +153,17 @@ static void* run_guest_server(void* args)
     if ( 0 > bind( server_sock, (struct sockaddr*) &server_addr, sizeof( server_addr ) ) ) {
         ERR( "guest server bind error: " );
         perror( "bind" );
-        goto cleanup;
+#ifdef _WIN32
+        if (server_sock) {
+            closesocket(server_sock);
+        }
+#else
+        if (server_sock) {
+            close(server_sock);
+        }
+#endif
+        server_sock = 0;
+        return NULL;
     } else {
         INFO( "success to bind port[127.0.0.1:%d/udp] for guest_server in host \n", port );
     }
@@ -231,8 +251,9 @@ static void* run_guest_server(void* args)
         }
     }
 
+#if 0
 cleanup:
-
+#endif
 #ifdef _WIN32
     if (server_sock) {
         closesocket(server_sock);
@@ -242,9 +263,7 @@ cleanup:
         close(server_sock);
     }
 #endif
-
     server_sock = 0;
-
     return NULL;
 }
 

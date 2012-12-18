@@ -64,7 +64,6 @@ CFDictionaryRef proxySettings;
 #define SOCKS_PROTOCOL "socks="
 #define DIRECT "DIRECT"
 #define PROXY "PROXY"
-//DEFAULT_DEBUG_CHANNEL(tizen);
 MULTI_DEBUG_CHANNEL(tizen, option);
 #if defined(CONFIG_WIN32)
 BYTE *url;
@@ -231,7 +230,6 @@ static void getmacproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, ch
         sprintf(http_proxy, "%s:%d", hostname, port);
 
         free(hostname);
-        //CFRelease(proxySettings);
     } else {
         INFO("http proxy is null\n");
     }
@@ -248,7 +246,6 @@ static void getmacproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, ch
         sprintf(https_proxy, "%s:%d", hostname, port);
 
         free(hostname);
-        //CFRelease(proxySettings);
     } else {
         INFO("https proxy is null\n");
     }
@@ -265,7 +262,6 @@ static void getmacproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, ch
         sprintf(ftp_proxy, "%s:%d", hostname, port);
 
         free(hostname);
-        //CFRelease(proxySettings);
     } else {
         INFO("ftp proxy is null\n");
     }
@@ -451,7 +447,6 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
 
     output = popen("gconftool-2 --get /system/proxy/mode", "r");
     fscanf(output, "%s", buf);
-    // strcpy(url, buf);
     pclose(output);
 
     //priority : auto > manual > none       
