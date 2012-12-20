@@ -48,6 +48,8 @@ static uint64_t tizen_vpci_io_read(void *opaque, target_phys_addr_t addr,
         return cpu_inw(addr);
     case 4:
         return cpu_inl(addr);
+    default:
+        break;
     }
     assert(0);
 }
