@@ -251,7 +251,11 @@ obj-y += yagl_gles_texture_unit.o
 obj-y += yagl_gles_validate.o
 obj-y += yagl_host_gles_calls.o
 # GLESv1_CM api
+obj-y += yagl_gles1_api.o
+obj-y += yagl_gles1_api_ps.o
+obj-y += yagl_gles1_api_ts.o
 obj-y += yagl_gles1_calls.o
+obj-y += yagl_gles1_context.o
 obj-y += yagl_host_gles1_calls.o
 # GLESv2 api
 obj-y += yagl_gles2_api.o

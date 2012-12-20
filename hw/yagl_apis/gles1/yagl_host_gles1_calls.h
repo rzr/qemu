@@ -5,6 +5,8 @@
 #include <GLES/gl.h>
 #include "yagl_apis/gles/yagl_host_gles_calls.h"
 
+struct yagl_api_ps *yagl_host_gles1_process_init(struct yagl_api *api);
+
 bool yagl_host_glAlphaFunc(GLenum func,
     GLclampf ref);
 bool yagl_host_glClipPlanef(GLenum plane,
@@ -71,6 +73,9 @@ bool yagl_host_glPointParameterf(GLenum pname,
 bool yagl_host_glPointParameterfv(GLenum pname,
     target_ulong /* const GLfloat* */ params);
 bool yagl_host_glPointSize(GLfloat size);
+bool yagl_host_glPointSizePointerOES(GLenum type,
+    GLsizei stride,
+    target_ulong /* const GLvoid* */ pointer);
 bool yagl_host_glRotatef(GLfloat angle,
     GLfloat x,
     GLfloat y,

@@ -8,10 +8,13 @@
 #include "yagl_egl_driver.h"
 #include "yagl_egl_interface.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
+#include "yagl_apis/gles1/yagl_gles1_api.h"
+#include "yagl_drivers/gles1_ogl/yagl_gles1_ogl.h"
 #include "yagl_apis/gles2/yagl_gles2_api.h"
 #include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
 #include "yagl_backends/egl_offscreen/yagl_egl_offscreen.h"
 #include <GL/gl.h>
+#include "yagl_gles1_driver.h"
 #include "yagl_gles2_driver.h"
 
 static struct yagl_thread_state
@@ -43,6 +46,7 @@ static struct yagl_thread_state
         g_malloc0(sizeof(struct yagl_server_state));
     struct yagl_egl_driver *egl_driver;
     struct yagl_egl_backend *egl_backend;
+    struct yagl_gles1_driver *gles1_driver;
     struct yagl_gles2_driver *gles2_driver;
 
     QLIST_INIT(&ss->processes);
@@ -70,6 +74,20 @@ static struct yagl_thread_state
 
     if (!ss->apis[yagl_api_id_egl - 1]) {
         egl_backend->destroy(egl_backend);
+
+        goto fail;
+    }
+
+    gles1_driver = yagl_gles1_ogl_create(egl_driver->dyn_lib);
+
+    if (!gles1_driver) {
+        goto fail;
+    }
+
+    ss->apis[yagl_api_id_gles1 - 1] = yagl_gles1_api_create(gles1_driver);
+
+    if (!ss->apis[yagl_api_id_gles1 - 1]) {
+        gles1_driver->destroy(gles1_driver);
 
         goto fail;
     }
