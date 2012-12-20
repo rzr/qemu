@@ -522,6 +522,17 @@ bool yagl_host_glCopyTexImage2D(GLenum target,
 {
     YAGL_GET_CTX(glCopyTexImage2D);
 
+    if (ctx->base.client_api == yagl_client_api_gles1 &&
+        target != GL_TEXTURE_2D) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        return true;
+    }
+
+    if (border != 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        return true;
+    }
+
     ctx->driver->CopyTexImage2D(target,
                                 level,
                                 internalformat,
@@ -544,6 +555,12 @@ bool yagl_host_glCopyTexSubImage2D(GLenum target,
     GLsizei height)
 {
     YAGL_GET_CTX(glCopyTexSubImage2D);
+
+    if (ctx->base.client_api == yagl_client_api_gles1 &&
+        target != GL_TEXTURE_2D) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        return true;
+    }
 
     ctx->driver->CopyTexSubImage2D(target,
                                    level,
