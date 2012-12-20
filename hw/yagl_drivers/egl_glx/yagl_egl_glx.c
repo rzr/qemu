@@ -465,7 +465,7 @@ static void yagl_egl_glx_destroy(struct yagl_egl_driver *driver)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-struct yagl_egl_driver *yagl_egl_driver_create(Display *x_display)
+struct yagl_egl_driver *yagl_egl_glx_driver_create(Display *x_display)
 {
     struct yagl_egl_driver *egl_driver;
     struct yagl_egl_glx *egl_glx;

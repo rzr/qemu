@@ -15,9 +15,7 @@
 #define YAGL_EGL_WGL_WIN_CLASS                "YaGLwinClass"
 
 #define YAGL_EGL_WGL_ENTER(func, format, ...) \
-    YAGL_LOG_FUNC_ENTER((egl_wgl_ts ? egl_wgl_ts->ps->id : driver_ps->ps->id), \
-                        (egl_wgl_ts ? egl_wgl_ts->id : 0),                     \
-                        func, format,##__VA_ARGS__)
+    YAGL_LOG_FUNC_ENTER(func, format,##__VA_ARGS__)
 
 /* Get a core WGL function address */
 #define YAGL_EGL_WGL_GET_PROC(proc_type, proc_name) \
@@ -47,17 +45,11 @@
         YAGL_LOG_TRACE("Got %s address", #proc_name);                         \
     } while (0)
 
-static YAGL_DEFINE_TLS(struct yagl_thread_state *, egl_wgl_ts);
-
 typedef HGLRC (WINAPI *WGLCREATECONTEXTPROC)(HDC hdl);
 typedef BOOL (WINAPI *WGLDELETECONTEXTPROC)(HGLRC hdl);
 typedef PROC (WINAPI *WGLGETPROCADDRESSPROC)(LPCSTR sym);
 typedef BOOL (WINAPI *WGLMAKECURRENTPROC)(HDC dev_ctx, HGLRC rend_ctx);
 typedef BOOL (WINAPI *WGLSHARELISTSPROC)(HGLRC ctx1, HGLRC ctx2);
-
-typedef struct YaglEglWglDriverPS {
-    struct yagl_egl_driver_ps base;
-} YaglEglWglDriverPS;
 
 typedef struct YaglEglWglDpy {
     HWND win;
@@ -132,22 +124,12 @@ static inline bool yagl_egl_wgl_dc_set_def_pixfmt(HDC dc)
     return true;
 }
 
-static void yagl_egl_wgl_thread_init(struct yagl_egl_driver_ps *driver_ps,
-                                     struct yagl_thread_state *ts)
-{
-    egl_wgl_ts = ts;
-
-    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_thread_init, NULL);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
 static EGLNativeDisplayType
-yagl_egl_wgl_display_create(struct yagl_egl_driver_ps *driver_ps)
+yagl_egl_wgl_display_open(struct yagl_egl_driver *driver)
 {
     YaglEglWglDpy *dpy;
 
-    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_display_create, NULL);
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_display_open, NULL);
 
     dpy = g_try_new0(YaglEglWglDpy, 1);
 
@@ -186,12 +168,12 @@ static gboolean yagl_egl_wgl_cfgdc_free(gpointer key,
     return TRUE;
 }
 
-static void yagl_egl_wgl_display_destroy(struct yagl_egl_driver_ps *driver_ps,
-                                         EGLNativeDisplayType egl_dpy)
+static void yagl_egl_wgl_display_close(struct yagl_egl_driver *driver,
+                                       EGLNativeDisplayType egl_dpy)
 {
     YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
 
-    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_display_destroy, "%p", dpy);
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_display_close, "%p", dpy);
 
     g_hash_table_foreach_remove(dpy->dc_table,
                                 yagl_egl_wgl_cfgdc_free,
@@ -208,12 +190,11 @@ static void yagl_egl_wgl_display_destroy(struct yagl_egl_driver_ps *driver_ps,
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static bool yagl_egl_wgl_config_fill(struct yagl_egl_driver_ps *driver_ps,
+static bool yagl_egl_wgl_config_fill(YaglEglWglDriver *egl_wgl,
                                      HDC dc,
                                      struct yagl_egl_native_config *cfg,
                                      int fmt_idx)
 {
-    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
     PIXELFORMATDESCRIPTOR *pix_fmt = NULL;
     bool filled = false;
 
@@ -273,7 +254,8 @@ static bool yagl_egl_wgl_config_fill(struct yagl_egl_driver_ps *driver_ps,
     if (egl_wgl->wglGetPixelFormatAttribivARB(dc, fmt_idx, 0,
                                               YAGL_WGL_NUM_OF_QUERY_ATTRIBS,
                                               query_list, attr_vals) == FALSE) {
-        goto out;
+        GetLastError(); /* Clear last error */
+    	goto out;
     }
 
     if (attr_vals[YAGL_WGL_PIXEL_TYPE] != WGL_TYPE_RGBA_ARB ||
@@ -295,6 +277,7 @@ static bool yagl_egl_wgl_config_fill(struct yagl_egl_driver_ps *driver_ps,
     if (!DescribePixelFormat(dc, fmt_idx,
                              sizeof(PIXELFORMATDESCRIPTOR),
                              pix_fmt)) {
+        GetLastError(); /* Clear last error */
         g_free(pix_fmt);
         goto out;
     }
@@ -337,11 +320,11 @@ out:
 }
 
 static struct yagl_egl_native_config
-    *yagl_egl_wgl_config_enum(struct yagl_egl_driver_ps *driver_ps,
+    *yagl_egl_wgl_config_enum(struct yagl_egl_driver *driver,
                               EGLNativeDisplayType egl_dpy,
                               int *num_configs)
 {
-    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
     HDC dc;
     struct yagl_egl_native_config *egl_configs = NULL;
@@ -372,10 +355,12 @@ static struct yagl_egl_native_config
                                               &query_num_of_formats,
                                               &pixfmt_cnt_max) == FALSE ||
         !pixfmt_cnt_max) {
+    	YAGL_LOG_ERROR_WIN();
         pixfmt_cnt_max = DescribePixelFormat(dc, 1, 0, NULL);
     }
 
     if (pixfmt_cnt_max == 0) {
+    	YAGL_LOG_ERROR_WIN();
         YAGL_LOG_ERROR("No pixel formats found");
         goto out;
     }
@@ -389,6 +374,8 @@ static struct yagl_egl_native_config
                                          pixfmt_cnt_max,
                                          pixfmt_arr,
                                          &pixfmt_cnt) == FALSE) {
+    	YAGL_LOG_ERROR_WIN();
+
         pixfmt_cnt = pixfmt_cnt_max;
 
         for (curr_fmt_idx = 0; curr_fmt_idx < pixfmt_cnt; ++curr_fmt_idx) {
@@ -405,7 +392,7 @@ static struct yagl_egl_native_config
     }
 
     for (curr_fmt_idx = 0; curr_fmt_idx < pixfmt_cnt; ++curr_fmt_idx) {
-        if (yagl_egl_wgl_config_fill(driver_ps, dc,
+        if (yagl_egl_wgl_config_fill(egl_wgl, dc,
                                      &egl_configs[cfg_index],
                                      pixfmt_arr[curr_fmt_idx])) {
             YAGL_LOG_TRACE("Added config with pixfmt=%d",
@@ -441,7 +428,7 @@ out:
     return egl_configs;
 }
 
-static void yagl_egl_wgl_config_cleanup(struct yagl_egl_driver_ps *driver_ps,
+static void yagl_egl_wgl_config_cleanup(struct yagl_egl_driver *driver,
                                         EGLNativeDisplayType dpy,
                                         const struct yagl_egl_native_config *cfg)
 {
@@ -454,8 +441,8 @@ static void yagl_egl_wgl_config_cleanup(struct yagl_egl_driver_ps *driver_ps,
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static HDC yagl_egl_wgl_dc_by_cfgid_get(YaglEglWglDpy *dpy,
-                                  const struct yagl_egl_native_config *cfg)
+static HDC yagl_egl_wgl_get_dc_by_cfgid(YaglEglWglDpy *dpy,
+                                        const struct yagl_egl_native_config *cfg)
 {
     HDC dc;
     HDC *dc_p;
@@ -510,13 +497,13 @@ static inline void yagl_egl_wgl_sharegrp_acquire(YaglEglWglSG *share_group)
 	++share_group->ref_cnt;
 }
 
-static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver_ps *driver_ps,
+static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType egl_dpy,
                                               const struct yagl_egl_native_config *cfg,
                                               yagl_client_api client_api,
                                               EGLContext share_context)
 {
-    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
     YaglEglWglCtx *egl_wgl_ctx;
     HDC dc;
@@ -530,7 +517,7 @@ static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver_ps *driver_
         goto fail;
     }
 
-    dc = yagl_egl_wgl_dc_by_cfgid_get(dpy, cfg);
+    dc = yagl_egl_wgl_get_dc_by_cfgid(dpy, cfg);
     if (!dc) {
         YAGL_LOG_ERROR("failed to get DC with cfgid=%d", cfg->config_id);
         goto fail;
@@ -584,13 +571,13 @@ fail:
     return EGL_NO_CONTEXT;
 }
 
-static bool yagl_egl_wgl_make_current(struct yagl_egl_driver_ps *driver_ps,
+static bool yagl_egl_wgl_make_current(struct yagl_egl_driver *driver,
                                       EGLNativeDisplayType dc,
                                       EGLSurface egl_draw_surf,
                                       EGLSurface egl_read_surf,
                                       EGLContext egl_glc)
 {
-    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     HDC draw_dc = NULL, read_dc = NULL;
     HGLRC glc = NULL;
 
@@ -649,11 +636,11 @@ fail:
     return false;
 }
 
-static void yagl_egl_wgl_context_destroy(struct yagl_egl_driver_ps *driver_ps,
+static void yagl_egl_wgl_context_destroy(struct yagl_egl_driver *driver,
                                          EGLNativeDisplayType egl_dpy,
                                          EGLContext egl_glc)
 {
-    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     YaglEglWglCtx *wgl_ctx = (YaglEglWglCtx *)egl_glc;
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_context_destroy,
@@ -671,14 +658,14 @@ static void yagl_egl_wgl_context_destroy(struct yagl_egl_driver_ps *driver_ps,
     YAGL_LOG_FUNC_EXIT("Context destroyed");
 }
 
-static EGLSurface yagl_egl_wgl_pbuffer_surface_create(struct yagl_egl_driver_ps *driver_ps,
+static EGLSurface yagl_egl_wgl_pbuffer_surface_create(struct yagl_egl_driver *driver,
                                                       EGLNativeDisplayType egl_dpy,
                                                       const struct yagl_egl_native_config *cfg,
                                                       EGLint width,
                                                       EGLint height,
                                                       const struct yagl_egl_pbuffer_attribs *attribs)
 {
-    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     HDC dc = NULL;
     YaglEglWglDpy * dpy = (YaglEglWglDpy *)egl_dpy;
     HPBUFFERARB pbuffer;
@@ -713,7 +700,7 @@ static EGLSurface yagl_egl_wgl_pbuffer_surface_create(struct yagl_egl_driver_ps 
         break;
     }
 
-    dc = yagl_egl_wgl_dc_by_cfgid_get(dpy, cfg);
+    dc = yagl_egl_wgl_get_dc_by_cfgid(dpy, cfg);
     if (!dc) {
         YAGL_LOG_ERROR("failed to get DC with cfgid=%d", cfg->config_id);
         goto fail;
@@ -738,11 +725,11 @@ fail:
     return EGL_NO_SURFACE;
 }
 
-static void yagl_egl_wgl_pbuffer_surface_destroy(struct yagl_egl_driver_ps *driver_ps,
+static void yagl_egl_wgl_pbuffer_surface_destroy(struct yagl_egl_driver *driver,
                                                  EGLNativeDisplayType egl_dpy,
                                                  EGLSurface surf)
 {
-    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver_ps->driver);
+    YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     HDC pbuf_dc = NULL;
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_pbuffer_surface_destroy,
@@ -765,70 +752,18 @@ static void yagl_egl_wgl_pbuffer_surface_destroy(struct yagl_egl_driver_ps *driv
     }
 }
 
-static void yagl_egl_wgl_wait_native(struct yagl_egl_driver_ps *driver_ps)
+static void yagl_egl_wgl_wait_native(struct yagl_egl_driver *driver)
 {
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_wait_native, NULL);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static void yagl_egl_wgl_thread_fini(struct yagl_egl_driver_ps *driver_ps)
-{
-    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_thread_fini, NULL);
-
-    egl_wgl_ts = NULL;
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-static void yagl_egl_wgl_process_destroy(struct yagl_egl_driver_ps *driver_ps)
-{
-    YaglEglWglDriverPS *egl_glx_ps = (YaglEglWglDriverPS *)driver_ps;
-
-    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_process_destroy, NULL);
-
-    yagl_egl_driver_ps_cleanup(&egl_glx_ps->base);
-
-    g_free(egl_glx_ps);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-static struct yagl_egl_driver_ps
-    *yagl_egl_wgl_process_init(struct yagl_egl_driver *driver,
-                               struct yagl_process_state *ps)
-{
-    YaglEglWglDriverPS *egl_wgl_ps = g_new0(YaglEglWglDriverPS, 1);
-    struct yagl_egl_driver_ps *driver_ps = &egl_wgl_ps->base;
-
-    yagl_egl_driver_ps_init(driver_ps, driver, ps);
-
-    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_process_init, NULL);
-
-    driver_ps->thread_init = &yagl_egl_wgl_thread_init;
-    driver_ps->display_create = &yagl_egl_wgl_display_create;
-    driver_ps->display_destroy = &yagl_egl_wgl_display_destroy;
-    driver_ps->config_enum = &yagl_egl_wgl_config_enum;
-    driver_ps->config_cleanup = &yagl_egl_wgl_config_cleanup;
-    driver_ps->pbuffer_surface_create = &yagl_egl_wgl_pbuffer_surface_create;
-    driver_ps->pbuffer_surface_destroy = &yagl_egl_wgl_pbuffer_surface_destroy;
-    driver_ps->context_create = &yagl_egl_wgl_context_create;
-    driver_ps->context_destroy = &yagl_egl_wgl_context_destroy;
-    driver_ps->make_current = &yagl_egl_wgl_make_current;
-    driver_ps->wait_native = &yagl_egl_wgl_wait_native;
-    driver_ps->thread_fini = &yagl_egl_wgl_thread_fini;
-    driver_ps->destroy = &yagl_egl_wgl_process_destroy;
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-
-    return driver_ps;
-}
-
 static void yagl_egl_wgl_destroy(struct yagl_egl_driver *driver)
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)driver;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_destroy, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_wgl_destroy, NULL);
 
     UnregisterClassA((LPCTSTR)YAGL_EGL_WGL_WIN_CLASS, NULL);
 
@@ -889,7 +824,7 @@ static bool yagl_egl_wgl_init_ext(YaglEglWglDriver *egl_wgl)
     const char *ext_str = NULL;
     bool ext_initialized = false;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_init_ext, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_wgl_init_ext, NULL);
 
     win = yagl_egl_wgl_dummy_win_create();
     if (!win) {
@@ -968,13 +903,13 @@ out:
     return ext_initialized;
 }
 
-struct yagl_egl_driver *yagl_egl_wgl_create(void)
+struct yagl_egl_driver *yagl_egl_wgl_driver_create(void)
 {
     YaglEglWglDriver *egl_wgl;
     struct yagl_egl_driver *egl_driver;
     WNDCLASSEXA yagl_win_class;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_create, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_wgl_create, NULL);
 
     egl_wgl = g_new0(YaglEglWglDriver, 1);
 
@@ -1013,14 +948,23 @@ struct yagl_egl_driver *yagl_egl_wgl_create(void)
     YAGL_EGL_WGL_GET_PROC(WGLMAKECURRENTPROC, wglMakeCurrent);
     YAGL_EGL_WGL_GET_PROC(WGLSHARELISTSPROC, wglShareLists);
 
-    egl_driver->process_init = &yagl_egl_wgl_process_init;
+    egl_driver->display_open = &yagl_egl_wgl_display_open;
+    egl_driver->display_close = &yagl_egl_wgl_display_close;
+    egl_driver->config_enum = &yagl_egl_wgl_config_enum;
+    egl_driver->config_cleanup = &yagl_egl_wgl_config_cleanup;
+    egl_driver->pbuffer_surface_create = &yagl_egl_wgl_pbuffer_surface_create;
+    egl_driver->pbuffer_surface_destroy = &yagl_egl_wgl_pbuffer_surface_destroy;
+    egl_driver->context_create = &yagl_egl_wgl_context_create;
+    egl_driver->context_destroy = &yagl_egl_wgl_context_destroy;
+    egl_driver->make_current = &yagl_egl_wgl_make_current;
+    egl_driver->wait_native = &yagl_egl_wgl_wait_native;
     egl_driver->destroy = &yagl_egl_wgl_destroy;
 
     if (!yagl_egl_wgl_init_ext(egl_wgl)) {
         goto fail;
     }
 
-    YAGL_LOG_FUNC_EXIT("EGL_WGL driver created (%p)", egl_driver);
+    YAGL_LOG_FUNC_EXIT("EGL WGL driver created (%p)", egl_driver);
 
     return egl_driver;
 
@@ -1047,7 +991,7 @@ static void *yagl_egl_wgl_extaddr_get(struct yagl_dyn_lib *dyn_lib,
     HDC dc = NULL;
     HGLRC glc;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_extaddr_get, "%s", sym);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_wgl_extaddr_get, "%s", sym);
 
     if (!wgl_get_procaddr_fn) {
         wgl_get_procaddr_fn = (WGLGETPROCADDRESSPROC)
@@ -1134,11 +1078,11 @@ out:
  * wglGetProcAddress will fail for <=v1.1 openGL functions, so we need them
  * both */
 void *yagl_egl_wgl_procaddr_get(struct yagl_dyn_lib *dyn_lib,
-                                       const char *sym)
+                                const char *sym)
 {
     void *proc = NULL;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_wgl_get_procaddr,
+    YAGL_LOG_FUNC_ENTER(yagl_egl_wgl_get_procaddr,
     		"Retrieving %s address", sym);
 
     proc = yagl_egl_wgl_extaddr_get(dyn_lib, sym);

@@ -48,9 +48,9 @@ static struct yagl_thread_state
     QLIST_INIT(&ss->processes);
 
 #if defined(CONFIG_YAGL_EGL_GLX)
-    egl_driver = yagl_egl_driver_create(x_display);
+    egl_driver = yagl_egl_glx_driver_create(x_display);
 #elif defined(CONFIG_YAGL_EGL_WGL)
-    egl_driver = yagl_egl_driver_create();
+    egl_driver = yagl_egl_wgl_driver_create();
 #else
 #error Unknown EGL driver
 #endif
