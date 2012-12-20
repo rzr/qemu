@@ -196,6 +196,8 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
                     return false;
                 } else {
                     yagl_marshal_put_uint32(&in_buff, 1);
+                    yagl_marshal_put_render_type(&in_buff,
+                                                 ps->egl_iface->render_type);
 
                     YAGL_LOG_FUNC_EXIT(NULL);
 
