@@ -21,5 +21,8 @@
 #define yagl_mem_prepare_GLboolean(mt, va) yagl_mem_prepare_uint8((mt), (va))
 #define yagl_mem_put_GLboolean(mt, value) yagl_mem_put_uint8((mt), (value))
 #define yagl_mem_get_GLboolean(va, value) yagl_mem_get_uint8((va), (value))
+#define yagl_mem_prepare_GLfixed(mt, va) yagl_mem_prepare_int32((mt), (va))
+#define yagl_mem_put_GLfixed(mt, value) yagl_mem_put_int32((mt), (value))
+#define yagl_mem_get_GLfixed(va, value) yagl_mem_get_int32((va), (value))
 
 #endif
