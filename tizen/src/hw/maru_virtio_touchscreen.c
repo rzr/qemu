@@ -63,7 +63,7 @@ static unsigned int event_queue_cnt; /* events_queue */
  * VirtQueueElement queue
  */
 typedef struct ElementEntry {
-    unsigned int index;
+    unsigned int el_index;
     unsigned int sg_index;
     VirtQueueElement elem;
 
@@ -175,7 +175,7 @@ static void maru_virtio_touchscreen_handle(VirtIODevice *vdev, VirtQueue *vq)
 
         pthread_mutex_lock(&elem_mutex);
 
-        elem_entry->index = ++elem_queue_cnt;
+        elem_entry->el_index = ++elem_queue_cnt;
         elem_entry->sg_index = (unsigned int)virt_sg_index;
 
         /* save VirtQueueElement */
