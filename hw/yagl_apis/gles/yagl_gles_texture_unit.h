@@ -13,7 +13,7 @@ struct yagl_gles_texture_target_state
 
     /*
      * For GLESv1 only. In GLESv2 2D texture and cubemap textures cannot be
-     * enabled/disabled.
+     * enabled/disabled. Currently not used.
      */
     bool enabled;
 };

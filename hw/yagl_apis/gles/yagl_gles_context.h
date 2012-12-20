@@ -160,6 +160,9 @@ struct yagl_gles_texture_target_state
     *yagl_gles_context_get_active_texture_target_state(struct yagl_gles_context *ctx,
                                                        yagl_gles_texture_target texture_target);
 
+void yagl_gles_context_active_texture_set_enabled(struct yagl_gles_context *ctx,
+               yagl_gles_texture_target texture_target, bool enabled);
+
 void yagl_gles_context_bind_texture(struct yagl_gles_context *ctx,
                                     yagl_gles_texture_target texture_target,
                                     struct yagl_gles_texture *texture,

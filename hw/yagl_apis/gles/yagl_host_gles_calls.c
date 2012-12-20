@@ -683,9 +683,14 @@ bool yagl_host_glDepthRangef(GLclampf zNear,
 
 bool yagl_host_glDisable(GLenum cap)
 {
-    YAGL_GET_CTX(glEnable);
+    YAGL_GET_CTX(glDisable);
 
     ctx->driver->Disable(cap);
+
+    if (cap == GL_TEXTURE_2D) {
+        yagl_gles_context_active_texture_set_enabled(ctx,
+            yagl_gles_texture_target_2d, false);
+    }
 
     return true;
 }
@@ -828,6 +833,11 @@ bool yagl_host_glEnable(GLenum cap)
     YAGL_GET_CTX(glEnable);
 
     ctx->driver->Enable(cap);
+
+    if (cap == GL_TEXTURE_2D) {
+        yagl_gles_context_active_texture_set_enabled(ctx,
+            yagl_gles_texture_target_2d, true);
+    }
 
     return true;
 }
