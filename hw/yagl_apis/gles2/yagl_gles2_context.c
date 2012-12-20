@@ -302,7 +302,7 @@ static GLchar *yagl_gles2_context_get_extensions(struct yagl_gles_context *ctx)
     return str;
 }
 
-static void yagl_gles2_context_pre_draw(struct yagl_gles_context *ctx, GLenum mode)
+static inline void yagl_gles2_context_pre_draw(struct yagl_gles_context *ctx, GLenum mode)
 {
     /*
      * Enable texture generation for GL_POINTS and gl_PointSize shader variable.
@@ -316,12 +316,37 @@ static void yagl_gles2_context_pre_draw(struct yagl_gles_context *ctx, GLenum mo
     }
 }
 
-static void yagl_gles2_context_post_draw(struct yagl_gles_context *ctx, GLenum mode)
+static inline void yagl_gles2_context_post_draw(struct yagl_gles_context *ctx, GLenum mode)
 {
     if (mode == GL_POINTS) {
         ctx->driver->Disable(GL_VERTEX_PROGRAM_POINT_SIZE);
         ctx->driver->Disable(GL_POINT_SPRITE);
     }
+}
+
+static void yagl_gles2_context_draw_arrays(struct yagl_gles_context *ctx,
+                                           GLenum mode,
+                                           GLint first,
+                                           GLsizei count)
+{
+    yagl_gles2_context_pre_draw(ctx, mode);
+
+    ctx->driver->DrawArrays(mode, first, count);
+
+    yagl_gles2_context_post_draw(ctx, mode);
+}
+
+static void yagl_gles2_context_draw_elements(struct yagl_gles_context *ctx,
+                                             GLenum mode,
+                                             GLsizei count,
+                                             GLenum type,
+                                             const GLvoid *indices)
+{
+    yagl_gles2_context_pre_draw(ctx, mode);
+
+    ctx->driver->DrawElements(mode, count, type, indices);
+
+    yagl_gles2_context_post_draw(ctx, mode);
 }
 
 static void yagl_gles2_context_destroy(struct yagl_client_context *ctx)
@@ -463,8 +488,8 @@ struct yagl_gles2_context
     gles2_ctx->base.get_integerv = &yagl_gles2_context_get_integerv;
     gles2_ctx->base.get_floatv = &yagl_gles2_context_get_floatv;
     gles2_ctx->base.get_extensions = &yagl_gles2_context_get_extensions;
-    gles2_ctx->base.pre_draw = &yagl_gles2_context_pre_draw;
-    gles2_ctx->base.post_draw = &yagl_gles2_context_post_draw;
+    gles2_ctx->base.draw_arrays = &yagl_gles2_context_draw_arrays;
+    gles2_ctx->base.draw_elements = &yagl_gles2_context_draw_elements;
 
     gles2_ctx->driver = driver;
     gles2_ctx->prepared = false;

@@ -35,9 +35,16 @@ struct yagl_gles_context
 
     GLchar *(*get_extensions)(struct yagl_gles_context */*ctx*/);
 
-    void (*pre_draw)(struct yagl_gles_context */*ctx*/, GLenum mode);
+    void (*draw_arrays)(struct yagl_gles_context *ctx,
+                        GLenum mode,
+                        GLint first,
+                        GLsizei count);
 
-    void (*post_draw)(struct yagl_gles_context */*ctx*/, GLenum mode);
+    void (*draw_elements)(struct yagl_gles_context *ctx,
+                          GLenum mode,
+                          GLsizei count,
+                          GLenum type,
+                          const GLvoid *indices);
 
     /*
      * Pixel Buffer Object (PBO) for quick access to current surface pixels.

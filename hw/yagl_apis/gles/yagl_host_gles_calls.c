@@ -673,11 +673,7 @@ bool yagl_host_glDrawArrays(GLenum mode,
         return false;
     }
 
-    ctx->pre_draw(ctx, mode);
-
-    ctx->driver->DrawArrays(mode, first, count);
-
-    ctx->post_draw(ctx, mode);
+    ctx->draw_arrays(ctx, mode, first, count);
 
     return true;
 }
@@ -772,15 +768,11 @@ bool yagl_host_glDrawElements(GLenum mode,
         goto out;
     }
 
-    ctx->pre_draw(ctx, mode);
-
-    ctx->driver->DrawElements(mode,
-                              count,
-                              type,
-                              (ctx->ebo ?
-                              (GLvoid *)(uintptr_t)indices_ : indices));
-
-    ctx->post_draw(ctx, mode);
+    ctx->draw_elements(ctx,
+                       mode,
+                       count,
+                       type,
+                       (ctx->ebo ? (GLvoid *)(uintptr_t)indices_ : indices));
 
 out:
     if (ebo_bound) {
