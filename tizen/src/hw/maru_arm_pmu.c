@@ -446,7 +446,7 @@ static void exynos4210_pmu_write(void *opaque, target_phys_addr_t offset,
             return;
         }
     default:
-        break;
+        return;
     }
 }
 
