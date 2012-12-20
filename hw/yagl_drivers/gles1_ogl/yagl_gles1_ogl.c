@@ -35,6 +35,8 @@ struct yagl_gles1_driver *yagl_gles1_ogl_create(struct yagl_dyn_lib *dyn_lib)
 
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, AlphaFunc, glAlphaFunc);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, Color4f, glColor4f);
+    YAGL_GLES_OGL_GET_PROC(gles1_ogl, DepthRangef, glDepthRangef);
+    YAGL_GLES_OGL_GET_PROC(gles1_ogl, Frustum, glFrustum);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, Fogf, glFogf);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, Fogfv, glFogfv);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, GetLightfv, glGetLightfv);
@@ -50,6 +52,7 @@ struct yagl_gles1_driver *yagl_gles1_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, MultMatrixf, glMultMatrixf);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, MultiTexCoord4f, glMultiTexCoord4f);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, Normal3f, glNormal3f);
+    YAGL_GLES_OGL_GET_PROC(gles1_ogl, Ortho, glOrtho);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, PointParameterf, glPointParameterf);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, PointParameterfv, glPointParameterfv);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, PointSize, glPointSize);
@@ -59,15 +62,17 @@ struct yagl_gles1_driver *yagl_gles1_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, TexEnvfv, glTexEnvfv);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, Translatef, glTranslatef);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, ClientActiveTexture, glClientActiveTexture);
+    YAGL_GLES_OGL_GET_PROC(gles1_ogl, ClipPlane, glClipPlane);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, Color4ub, glColor4ub);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, ColorPointer, glColorPointer);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, DisableClientState, glDisableClientState);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, EnableClientState, glEnableClientState);
+    YAGL_GLES_OGL_GET_PROC(gles1_ogl, GetClipPlane, glGetClipPlane);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, GetPointerv, glGetPointerv);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, GetTexEnviv, glGetTexEnviv);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, LoadIdentity, glLoadIdentity);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, LogicOp, glLogicOp);
-    YAGL_GLES_OGL_GET_PROC(gles1_ogl, MatrixMode, MatrixMode);
+    YAGL_GLES_OGL_GET_PROC(gles1_ogl, MatrixMode, glMatrixMode);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, NormalPointer, glNormalPointer);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, PopMatrix, glPopMatrix);
     YAGL_GLES_OGL_GET_PROC(gles1_ogl, PushMatrix, glPushMatrix);
