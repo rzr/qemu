@@ -8,6 +8,8 @@
 #include "yagl_gles_buffer.h"
 #include "yagl_gles_validate.h"
 #include "yagl_gles_image.h"
+#include "yagl_gles_framebuffer.h"
+#include "yagl_gles_renderbuffer.h"
 #include "yagl_tls.h"
 #include "yagl_log.h"
 #include "yagl_mem_gl.h"
@@ -229,6 +231,40 @@ bool yagl_host_glBlendFunc(GLenum sfactor,
     YAGL_GET_CTX(glBlendFunc);
 
     ctx->driver->BlendFunc(sfactor, dfactor);
+
+    return true;
+}
+
+bool yagl_host_glBlendEquation(GLenum mode)
+{
+    YAGL_GET_CTX(glBlendEquation);
+
+    ctx->driver->BlendEquation(mode);
+
+    return true;
+}
+
+bool yagl_host_glBlendFuncSeparate(GLenum srcRGB,
+    GLenum dstRGB,
+    GLenum srcAlpha,
+    GLenum dstAlpha)
+{
+    YAGL_GET_CTX(glBlendFuncSeparate);
+
+    ctx->driver->BlendFuncSeparate(srcRGB,
+                                   dstRGB,
+                                   srcAlpha,
+                                   dstAlpha);
+
+    return true;
+}
+
+bool yagl_host_glBlendEquationSeparate(GLenum modeRGB,
+    GLenum modeAlpha)
+{
+    YAGL_GET_CTX(glBlendEquationSeparate);
+
+    ctx->driver->BlendEquationSeparate(modeRGB, modeAlpha);
 
     return true;
 }
@@ -1769,4 +1805,502 @@ bool yagl_host_glEGLUpdateOffscreenImageYAGL(struct yagl_client_image *image,
 
 out:
     return res;
+}
+
+bool yagl_host_glIsRenderbuffer(GLboolean* retval,
+    GLuint renderbuffer)
+{
+    struct yagl_gles_renderbuffer *renderbuffer_obj = NULL;
+
+    YAGL_GET_CTX_RET(glIsRenderbuffer, GL_FALSE);
+
+    *retval = GL_FALSE;
+
+    renderbuffer_obj = (struct yagl_gles_renderbuffer*)yagl_sharegroup_acquire_object(ctx->base.sg,
+        YAGL_NS_RENDERBUFFER, renderbuffer);
+
+    if (renderbuffer_obj && yagl_gles_renderbuffer_was_bound(renderbuffer_obj)) {
+        *retval = GL_TRUE;
+    }
+
+    yagl_gles_renderbuffer_release(renderbuffer_obj);
+
+    return true;
+}
+
+bool yagl_host_glBindRenderbuffer(GLenum target,
+    GLuint renderbuffer)
+{
+    struct yagl_gles_renderbuffer *renderbuffer_obj = NULL;
+
+    YAGL_GET_CTX(glBindRenderbuffer);
+
+    if (renderbuffer != 0) {
+        renderbuffer_obj = (struct yagl_gles_renderbuffer*)yagl_sharegroup_acquire_object(ctx->base.sg,
+            YAGL_NS_RENDERBUFFER, renderbuffer);
+
+        if (!renderbuffer_obj) {
+            renderbuffer_obj = yagl_gles_renderbuffer_create(ctx->driver);
+
+            if (!renderbuffer_obj) {
+                goto out;
+            }
+
+            renderbuffer_obj = (struct yagl_gles_renderbuffer*)yagl_sharegroup_add_named(ctx->base.sg,
+               YAGL_NS_RENDERBUFFER, renderbuffer, &renderbuffer_obj->base);
+        }
+    }
+
+    if (!yagl_gles_context_bind_renderbuffer(ctx, target, renderbuffer)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    ctx->driver->BindRenderbuffer(target,
+                                  (renderbuffer_obj ?
+                                  renderbuffer_obj->global_name : 0));
+
+    if (renderbuffer_obj) {
+        yagl_gles_renderbuffer_set_bound(renderbuffer_obj);
+    }
+
+out:
+    yagl_gles_renderbuffer_release(renderbuffer_obj);
+
+    return true;
+}
+
+bool yagl_host_glDeleteRenderbuffers(GLsizei n,
+    target_ulong /* const GLuint* */ renderbuffers_)
+{
+    bool res = true;
+    GLuint *renderbuffer_names = NULL;
+    GLsizei i;
+
+    YAGL_GET_CTX(glDeleteRenderbuffers);
+
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    renderbuffer_names = yagl_gles_context_malloc0(ctx, n * sizeof(*renderbuffer_names));
+
+    if (renderbuffers_) {
+        if (!yagl_mem_get(renderbuffers_,
+                          n * sizeof(*renderbuffer_names),
+                          renderbuffer_names)) {
+            res = false;
+            goto out;
+        }
+    }
+
+    if (renderbuffer_names) {
+        for (i = 0; i < n; ++i) {
+            yagl_gles_context_unbind_renderbuffer(ctx, renderbuffer_names[i]);
+
+            yagl_sharegroup_remove(ctx->base.sg,
+                                   YAGL_NS_RENDERBUFFER,
+                                   renderbuffer_names[i]);
+        }
+    }
+
+out:
+    return res;
+}
+
+bool yagl_host_glGenRenderbuffers(GLsizei n,
+    target_ulong /* GLuint* */ renderbuffers_)
+{
+    bool res = true;
+    struct yagl_gles_renderbuffer **renderbuffers = NULL;
+    GLsizei i;
+    GLuint *renderbuffer_names = NULL;
+
+    YAGL_GET_CTX(glGenRenderbuffers);
+
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!yagl_mem_prepare(cur_ts->mt1, renderbuffers_, n * sizeof(*renderbuffer_names))) {
+        res = false;
+        goto out;
+    }
+
+    renderbuffers = g_malloc0(n * sizeof(*renderbuffers));
+
+    for (i = 0; i < n; ++i) {
+        renderbuffers[i] = yagl_gles_renderbuffer_create(ctx->driver);
+
+        if (!renderbuffers[i]) {
+            goto out;
+        }
+    }
+
+    renderbuffer_names = g_malloc(n * sizeof(*renderbuffer_names));
+
+    for (i = 0; i < n; ++i) {
+        renderbuffer_names[i] = yagl_sharegroup_add(ctx->base.sg,
+                                                    YAGL_NS_RENDERBUFFER,
+                                                    &renderbuffers[i]->base);
+    }
+
+    if (renderbuffers_) {
+        yagl_mem_put(cur_ts->mt1, renderbuffer_names);
+    }
+
+out:
+    g_free(renderbuffer_names);
+    for (i = 0; i < n; ++i) {
+        yagl_gles_renderbuffer_release(renderbuffers[i]);
+    }
+    g_free(renderbuffers);
+
+    return res;
+}
+
+bool yagl_host_glRenderbufferStorage(GLenum target,
+    GLenum internalformat,
+    GLsizei width,
+    GLsizei height)
+{
+    YAGL_GET_CTX(glRenderbufferStorage);
+
+    ctx->driver->RenderbufferStorage(target,
+                                     internalformat,
+                                     width,
+                                     height);
+
+    return true;
+}
+
+bool yagl_host_glGetRenderbufferParameteriv(GLenum target,
+    GLenum pname,
+    target_ulong /* GLint* */ params_)
+{
+    GLint params[10];
+
+    YAGL_GET_CTX(glGetRenderbufferParameteriv);
+
+    if (!yagl_mem_prepare_GLint(cur_ts->mt1, params_)) {
+        return false;
+    }
+
+    ctx->driver->GetRenderbufferParameteriv(target,
+                                            pname,
+                                            params);
+
+    if (params_) {
+        yagl_mem_put_GLint(cur_ts->mt1, params[0]);
+    }
+
+    return true;
+}
+
+bool yagl_host_glIsFramebuffer(GLboolean* retval,
+    GLuint framebuffer)
+{
+    struct yagl_gles_framebuffer *framebuffer_obj = NULL;
+
+    YAGL_GET_CTX_RET(glIsFramebuffer, GL_FALSE);
+
+    *retval = GL_FALSE;
+
+    framebuffer_obj = (struct yagl_gles_framebuffer*)yagl_sharegroup_acquire_object(ctx->base.sg,
+        YAGL_NS_FRAMEBUFFER, framebuffer);
+
+    if (framebuffer_obj && yagl_gles_framebuffer_was_bound(framebuffer_obj)) {
+        *retval = GL_TRUE;
+    }
+
+    yagl_gles_framebuffer_release(framebuffer_obj);
+
+    return true;
+}
+
+bool yagl_host_glBindFramebuffer(GLenum target,
+    GLuint framebuffer)
+{
+    struct yagl_gles_framebuffer *framebuffer_obj = NULL;
+
+    YAGL_GET_CTX(glBindFramebuffer);
+
+    if (framebuffer != 0) {
+        framebuffer_obj = (struct yagl_gles_framebuffer*)yagl_sharegroup_acquire_object(ctx->base.sg,
+            YAGL_NS_FRAMEBUFFER, framebuffer);
+
+        if (!framebuffer_obj) {
+            framebuffer_obj = yagl_gles_framebuffer_create(ctx->driver);
+
+            if (!framebuffer_obj) {
+                goto out;
+            }
+
+            framebuffer_obj = (struct yagl_gles_framebuffer*)yagl_sharegroup_add_named(ctx->base.sg,
+               YAGL_NS_FRAMEBUFFER, framebuffer, &framebuffer_obj->base);
+        }
+    }
+
+    if (!yagl_gles_context_bind_framebuffer(ctx, target, framebuffer_obj, framebuffer)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    ctx->driver->BindFramebuffer(target,
+                                 (framebuffer_obj ?
+                                 framebuffer_obj->global_name : 0));
+
+    if (framebuffer_obj) {
+        yagl_gles_framebuffer_set_bound(framebuffer_obj);
+    }
+
+out:
+    yagl_gles_framebuffer_release(framebuffer_obj);
+
+    return true;
+}
+
+
+bool yagl_host_glDeleteFramebuffers(GLsizei n,
+    target_ulong /* const GLuint* */ framebuffers_)
+{
+    bool res = true;
+    GLuint *framebuffer_names = NULL;
+    GLsizei i;
+
+    YAGL_GET_CTX(glDeleteFramebuffers);
+
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    framebuffer_names = yagl_gles_context_malloc0(ctx, n * sizeof(*framebuffer_names));
+
+    if (framebuffers_) {
+        if (!yagl_mem_get(framebuffers_,
+                          n * sizeof(*framebuffer_names),
+                          framebuffer_names)) {
+            res = false;
+            goto out;
+        }
+    }
+
+    if (framebuffer_names) {
+        for (i = 0; i < n; ++i) {
+            yagl_gles_context_unbind_framebuffer(ctx, framebuffer_names[i]);
+
+            yagl_sharegroup_remove(ctx->base.sg,
+                                   YAGL_NS_FRAMEBUFFER,
+                                   framebuffer_names[i]);
+        }
+    }
+
+out:
+    return res;
+}
+
+bool yagl_host_glGenFramebuffers(GLsizei n,
+    target_ulong /* GLuint* */ framebuffers_)
+{
+    bool res = true;
+    struct yagl_gles_framebuffer **framebuffers = NULL;
+    GLsizei i;
+    GLuint *framebuffer_names = NULL;
+
+    YAGL_GET_CTX(glGenFramebuffers);
+
+    if (n < 0) {
+        YAGL_SET_ERR(GL_INVALID_VALUE);
+        goto out;
+    }
+
+    if (!yagl_mem_prepare(cur_ts->mt1, framebuffers_, n * sizeof(*framebuffer_names))) {
+        res = false;
+        goto out;
+    }
+
+    framebuffers = g_malloc0(n * sizeof(*framebuffers));
+
+    for (i = 0; i < n; ++i) {
+        framebuffers[i] = yagl_gles_framebuffer_create(ctx->driver);
+
+        if (!framebuffers[i]) {
+            goto out;
+        }
+    }
+
+    framebuffer_names = g_malloc(n * sizeof(*framebuffer_names));
+
+    for (i = 0; i < n; ++i) {
+        framebuffer_names[i] = yagl_sharegroup_add(ctx->base.sg,
+                                                   YAGL_NS_FRAMEBUFFER,
+                                                   &framebuffers[i]->base);
+    }
+
+    if (framebuffers_) {
+        yagl_mem_put(cur_ts->mt1, framebuffer_names);
+    }
+
+out:
+    g_free(framebuffer_names);
+    for (i = 0; i < n; ++i) {
+        yagl_gles_framebuffer_release(framebuffers[i]);
+    }
+    g_free(framebuffers);
+
+    return res;
+}
+
+bool yagl_host_glCheckFramebufferStatus(GLenum* retval,
+    GLenum target)
+{
+    YAGL_GET_CTX_RET(glCheckFramebufferStatus, 0);
+
+    *retval = ctx->driver->CheckFramebufferStatus(target);
+
+    return true;
+}
+
+bool yagl_host_glFramebufferTexture2D(GLenum target,
+    GLenum attachment,
+    GLenum textarget,
+    GLuint texture,
+    GLint level)
+{
+    struct yagl_gles_framebuffer *framebuffer_obj = NULL;
+    struct yagl_gles_texture *texture_obj = NULL;
+
+    YAGL_GET_CTX(glFramebufferTexture2D);
+
+    framebuffer_obj = yagl_gles_context_acquire_binded_framebuffer(ctx, target);
+
+    if (!framebuffer_obj) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (texture) {
+        texture_obj = (struct yagl_gles_texture*)yagl_sharegroup_acquire_object(ctx->base.sg,
+            YAGL_NS_TEXTURE, texture);
+
+        if (!texture_obj) {
+            YAGL_SET_ERR(GL_INVALID_OPERATION);
+            goto out;
+        }
+    }
+
+    if (!yagl_gles_framebuffer_texture2d(framebuffer_obj,
+                                         target,
+                                         attachment,
+                                         textarget,
+                                         level,
+                                         texture_obj,
+                                         texture)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+out:
+    yagl_gles_texture_release(texture_obj);
+    yagl_gles_framebuffer_release(framebuffer_obj);
+
+    return true;
+}
+
+bool yagl_host_glFramebufferRenderbuffer(GLenum target,
+    GLenum attachment,
+    GLenum renderbuffertarget,
+    GLuint renderbuffer)
+{
+    struct yagl_gles_framebuffer *framebuffer_obj = NULL;
+    struct yagl_gles_renderbuffer *renderbuffer_obj = NULL;
+
+    YAGL_GET_CTX(glFramebufferRenderbuffer);
+
+    framebuffer_obj = yagl_gles_context_acquire_binded_framebuffer(ctx, target);
+
+    if (!framebuffer_obj) {
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
+        goto out;
+    }
+
+    if (renderbuffer) {
+        renderbuffer_obj = (struct yagl_gles_renderbuffer*)yagl_sharegroup_acquire_object(ctx->base.sg,
+            YAGL_NS_RENDERBUFFER, renderbuffer);
+
+        if (!renderbuffer_obj) {
+            YAGL_SET_ERR(GL_INVALID_OPERATION);
+            goto out;
+        }
+    }
+
+    if (!yagl_gles_framebuffer_renderbuffer(framebuffer_obj,
+                                            target,
+                                            attachment,
+                                            renderbuffertarget,
+                                            renderbuffer_obj,
+                                            renderbuffer)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+out:
+    yagl_gles_renderbuffer_release(renderbuffer_obj);
+    yagl_gles_framebuffer_release(framebuffer_obj);
+
+    return true;
+}
+
+
+bool yagl_host_glGetFramebufferAttachmentParameteriv(GLenum target,
+    GLenum attachment,
+    GLenum pname,
+    target_ulong /* GLint* */ params_)
+{
+    bool res = true;
+    struct yagl_gles_framebuffer *framebuffer_obj = NULL;
+    GLint param = 0;
+
+    YAGL_GET_CTX(glGetFramebufferAttachmentParameteriv);
+
+    if (!yagl_mem_prepare_GLint(cur_ts->mt1, params_)) {
+        res = false;
+        goto out;
+    }
+
+    framebuffer_obj = yagl_gles_context_acquire_binded_framebuffer(ctx, target);
+
+    if (!framebuffer_obj) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    if (!yagl_gles_framebuffer_get_attachment_parameter(framebuffer_obj,
+                                                        attachment,
+                                                        pname,
+                                                        &param)) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        goto out;
+    }
+
+    if (params_) {
+        yagl_mem_put_GLint(cur_ts->mt1, param);
+    }
+
+out:
+    yagl_gles_framebuffer_release(framebuffer_obj);
+
+    return res;
+}
+
+bool yagl_host_glGenerateMipmap(GLenum target)
+{
+    YAGL_GET_CTX(glGenerateMipmap);
+
+    ctx->driver->GenerateMipmap(target);
+
+    return true;
 }

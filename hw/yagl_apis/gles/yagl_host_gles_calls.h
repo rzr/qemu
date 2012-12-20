@@ -10,8 +10,15 @@ bool yagl_host_glBindBuffer(GLenum target,
     GLuint buffer);
 bool yagl_host_glBindTexture(GLenum target,
     GLuint texture);
+bool yagl_host_glBlendEquation(GLenum mode);
+bool yagl_host_glBlendEquationSeparate(GLenum modeRGB,
+    GLenum modeAlpha);
 bool yagl_host_glBlendFunc(GLenum sfactor,
     GLenum dfactor);
+bool yagl_host_glBlendFuncSeparate(GLenum srcRGB,
+    GLenum dstRGB,
+    GLenum srcAlpha,
+    GLenum dstAlpha);
 bool yagl_host_glBufferData(GLenum target,
     GLsizeiptr size,
     target_ulong /* const GLvoid* */ data_,
@@ -182,5 +189,44 @@ bool yagl_host_glEGLUpdateOffscreenImageYAGL(struct yagl_client_image *image,
     uint32_t height,
     uint32_t bpp,
     target_ulong /* const void* */ pixels_);
+bool yagl_host_glIsRenderbuffer(GLboolean* retval,
+    GLuint renderbuffer);
+bool yagl_host_glBindRenderbuffer(GLenum target,
+    GLuint renderbuffer);
+bool yagl_host_glDeleteRenderbuffers(GLsizei n,
+    target_ulong /* const GLuint* */ renderbuffers_);
+bool yagl_host_glGenRenderbuffers(GLsizei n,
+    target_ulong /* GLuint* */ renderbuffers_);
+bool yagl_host_glRenderbufferStorage(GLenum target,
+    GLenum internalformat,
+    GLsizei width,
+    GLsizei height);
+bool yagl_host_glGetRenderbufferParameteriv(GLenum target,
+    GLenum pname,
+    target_ulong /* GLint* */ params_);
+bool yagl_host_glIsFramebuffer(GLboolean* retval,
+    GLuint framebuffer);
+bool yagl_host_glBindFramebuffer(GLenum target,
+    GLuint framebuffer);
+bool yagl_host_glDeleteFramebuffers(GLsizei n,
+    target_ulong /* const GLuint* */ framebuffers_);
+bool yagl_host_glGenFramebuffers(GLsizei n,
+    target_ulong /* GLuint* */ framebuffers_);
+bool yagl_host_glCheckFramebufferStatus(GLenum* retval,
+    GLenum target);
+bool yagl_host_glFramebufferTexture2D(GLenum target,
+    GLenum attachment,
+    GLenum textarget,
+    GLuint texture,
+    GLint level);
+bool yagl_host_glFramebufferRenderbuffer(GLenum target,
+    GLenum attachment,
+    GLenum renderbuffertarget,
+    GLuint renderbuffer);
+bool yagl_host_glGetFramebufferAttachmentParameteriv(GLenum target,
+    GLenum attachment,
+    GLenum pname,
+    target_ulong /* GLint* */ params_);
+bool yagl_host_glGenerateMipmap(GLenum target);
 
 #endif

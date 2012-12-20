@@ -17,7 +17,10 @@ bool yagl_gles_ogl_init(struct yagl_gles_driver *driver,
     YAGL_GLES_OGL_GET_PROC(driver, ActiveTexture, glActiveTexture);
     YAGL_GLES_OGL_GET_PROC(driver, BindBuffer, glBindBuffer);
     YAGL_GLES_OGL_GET_PROC(driver, BindTexture, glBindTexture);
+    YAGL_GLES_OGL_GET_PROC(driver, BlendEquation, glBlendEquation);
+    YAGL_GLES_OGL_GET_PROC(driver, BlendEquationSeparate, glBlendEquationSeparate);
     YAGL_GLES_OGL_GET_PROC(driver, BlendFunc, glBlendFunc);
+    YAGL_GLES_OGL_GET_PROC(driver, BlendFuncSeparate, glBlendFuncSeparate);
     YAGL_GLES_OGL_GET_PROC(driver, BufferData, glBufferData);
     YAGL_GLES_OGL_GET_PROC(driver, BufferSubData, glBufferSubData);
     YAGL_GLES_OGL_GET_PROC(driver, Clear, glClear);

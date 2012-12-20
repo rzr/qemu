@@ -36,9 +36,6 @@ struct yagl_gles2_driver *yagl_gles2_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, AttachShader, glAttachShader);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, BindAttribLocation, glBindAttribLocation);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, BlendColor, glBlendColor);
-    YAGL_GLES_OGL_GET_PROC(gles2_ogl, BlendEquation, glBlendEquation);
-    YAGL_GLES_OGL_GET_PROC(gles2_ogl, BlendEquationSeparate, glBlendEquationSeparate);
-    YAGL_GLES_OGL_GET_PROC(gles2_ogl, BlendFuncSeparate, glBlendFuncSeparate);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, CompileShader, glCompileShader);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, CreateProgram, glCreateProgram);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, CreateShader, glCreateShader);
