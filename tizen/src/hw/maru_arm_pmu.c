@@ -445,6 +445,8 @@ static void exynos4210_pmu_write(void *opaque, target_phys_addr_t offset,
             qemu_system_reset_request();
             return;
         }
+    default:
+        return;
     }
 }
 

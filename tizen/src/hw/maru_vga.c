@@ -1695,8 +1695,9 @@ static void vga_update_text(void *opaque, console_ch_t *chardata)
         dst = chardata;
 
         if (full_update) {
-            for (i = 0; i < size; src ++, dst ++, i ++)
+            for (i = 0; i < size; src ++, dst ++, i ++) {
                 console_write_ch(dst, VMEM2CHTYPE(le32_to_cpu(*src)));
+            }
 
             dpy_update(s->ds, 0, 0, width, height);
         } else {
@@ -1751,14 +1752,16 @@ static void vga_update_text(void *opaque, console_ch_t *chardata)
     s->ds->surface->height = height;
     dpy_resize(s->ds);
 
-    for (dst = chardata, i = 0; i < s->last_width * height; i ++)
+    for (dst = chardata, i = 0; i < s->last_width * height; i ++) {
         console_write_ch(dst ++, ' ');
+    }
 
     size = strlen(msg_buffer);
     width = (s->last_width - size) / 2;
     dst = chardata + s->last_width + width;
-    for (i = 0; i < size; i ++)
+    for (i = 0; i < size; i ++) {
         console_write_ch(dst ++, 0x00200100 | msg_buffer[i]);
+    }
 
     dpy_update(s->ds, 0, 0, s->last_width, height);
 }
@@ -1849,6 +1852,8 @@ void maru_vga_common_init(VGACommonState *s)
     case VGA_RETRACE_PRECISE:
         s->retrace = vga_precise_retrace;
         s->update_retrace_info = vga_precise_update_retrace_info;
+        break;
+    default:
         break;
     }
     vga_dirty_log_start(s);
