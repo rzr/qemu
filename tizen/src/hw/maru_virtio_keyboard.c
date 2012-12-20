@@ -76,7 +76,7 @@ static void virtio_keyboard_handle(VirtIODevice *vdev, VirtQueue *vq)
     do {
         index = virtqueue_pop(vq, &elem);
         TRACE("virtqueue pop. index: %d\n", index);
-    } while(index < VIRTIO_KBD_QUEUE_SIZE);
+    } while (index < VIRTIO_KBD_QUEUE_SIZE);
 }
 
 void virtio_keyboard_notify(void *opaque)
@@ -116,12 +116,13 @@ void virtio_keyboard_notify(void *opaque)
         kbdevt = &vkbd->kbdqueue.kbdevent[index];
 
         /* Copy keyboard data into guest side. */
-        TRACE("copy: keycode %d, type %d, index %d\n", kbdevt->code, kbdevt->type, index);
+        TRACE("copy: keycode %d, type %d, index %d\n",
+            kbdevt->code, kbdevt->type, index);
         memcpy(elem.in_sg[index].iov_base, kbdevt, sizeof(EmulKbdEvent));
         memset(kbdevt, 0x00, sizeof(EmulKbdEvent));
 
         qemu_mutex_lock(&vkbd->event_mutex);
-        if(vkbd->kbdqueue.wptr > 0) {
+        if (vkbd->kbdqueue.wptr > 0) {
             vkbd->kbdqueue.wptr--;
         }
         qemu_mutex_unlock(&vkbd->event_mutex);
@@ -164,43 +165,43 @@ static void virtio_keyboard_event(void *opaque, int keycode)
     if (keycode < 0xe0) {
         if (vkbd->extension_key) {
             switch (keycode & 0x7f) {
-            case 28:    // KP_Enter
+            case 28:    /* KP_Enter */
                 kbdevt.code = 96;
                 break;
-            case 29:    // Right Ctrl
+            case 29:    /* Right Ctrl */
                 kbdevt.code = 97;
                 break;
-            case 56:    // Right Alt
+            case 56:    /* Right Alt */
                 kbdevt.code = 100;
                 break;
-            case 71:    // Home
+            case 71:    /* Home */
                 kbdevt.code = 102;
                 break;
-            case 72:    // Up
+            case 72:    /* Up */
                 kbdevt.code = 103;
                 break;
-            case 73:    // Page Up
+            case 73:    /* Page Up */
                 kbdevt.code = 104;
                 break;
-            case 75:    // Left
+            case 75:    /* Left */
                 kbdevt.code = 105;
                 break;
-            case 77:    // Right
+            case 77:    /* Right */
                 kbdevt.code = 106;
                 break;
-            case 79:    // End
+            case 79:    /* End */
                 kbdevt.code = 107;
                 break;
-            case 80:    // Down
+            case 80:    /* Down */
                 kbdevt.code = 108;
                 break;
-            case 81:    // Page Down
+            case 81:    /* Page Down */
                 kbdevt.code = 109;
                 break;
-            case 82:    // Insert
+            case 82:    /* Insert */
                 kbdevt.code = 110;
                 break;
-            case 83:    // Delete
+            case 83:    /* Delete */
                 kbdevt.code = 111;
                 break;
             default:
