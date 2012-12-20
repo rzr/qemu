@@ -718,9 +718,13 @@ bool yagl_host_glDrawElements(GLenum mode,
         }
         yagl_gles_buffer_bind(ctx->ebo,
                               type,
+                              false,
                               GL_ELEMENT_ARRAY_BUFFER,
                               &old_buffer_name);
-        yagl_gles_buffer_transfer(ctx->ebo, type, GL_ELEMENT_ARRAY_BUFFER);
+        yagl_gles_buffer_transfer(ctx->ebo,
+                                  type,
+                                  GL_ELEMENT_ARRAY_BUFFER,
+                                  false);
         ebo_bound = true;
     } else {
         if (!yagl_gles_get_index_size(type, &index_size)) {

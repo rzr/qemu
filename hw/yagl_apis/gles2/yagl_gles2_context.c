@@ -24,6 +24,7 @@ static void yagl_gles2_array_apply(struct yagl_gles_array *array)
 
         yagl_gles_buffer_bind(array->vbo,
                               array->type,
+                              false,
                               GL_ARRAY_BUFFER,
                               &old_buffer_name);
 
