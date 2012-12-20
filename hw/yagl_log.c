@@ -23,7 +23,7 @@ static struct
 } g_datatype_to_format[] =
 {
     { "EGLboolean", "%u" },
-    { "EGLenum", "%u" },
+    { "EGLenum", "0x%x" },
     { "EGLint", "%d" },
     { "EGLConfig", "%p" },
     { "EGLContext", "%p" },
@@ -33,7 +33,7 @@ static struct
     { "yagl_host_handle", "%u" },
     { "uint32_t", "%u" },
     { "int", "%d" },
-    { "GLenum", "%u" },
+    { "GLenum", "0x%x" },
     { "GLuint", "%u" },
     { "GLbitfield", "%u" },
     { "GLclampf", "%f" },
