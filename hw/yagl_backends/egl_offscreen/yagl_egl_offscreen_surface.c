@@ -121,7 +121,8 @@ static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sf
     return true;
 }
 
-static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
+static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc,
+                                                    yagl_winsys_id target)
 {
     struct yagl_egl_offscreen_surface *osfc =
         (struct yagl_egl_offscreen_surface*)sfc;

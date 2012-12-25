@@ -100,6 +100,10 @@ static void yagl_host_gles1_thread_init(struct yagl_api_ps *api_ps)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
+static void yagl_host_gles1_pre_batch(struct yagl_api_ps *api_ps)
+{
+}
+
 static void yagl_host_gles1_thread_fini(struct yagl_api_ps *api_ps)
 {
     YAGL_LOG_FUNC_ENTER(yagl_host_gles1_thread_fini, NULL);
@@ -177,6 +181,7 @@ struct yagl_api_ps *yagl_host_gles1_process_init(struct yagl_api *api)
     yagl_api_ps_init(&gles1_api_ps->base, api);
 
     gles1_api_ps->base.thread_init = &yagl_host_gles1_thread_init;
+    gles1_api_ps->base.pre_batch = &yagl_host_gles1_pre_batch;
     gles1_api_ps->base.get_func = &yagl_host_gles1_get_func;
     gles1_api_ps->base.thread_fini = &yagl_host_gles1_thread_fini;
     gles1_api_ps->base.fini = &yagl_host_gles1_process_fini;

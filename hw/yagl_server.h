@@ -3,10 +3,12 @@
 
 #include "yagl_types.h"
 #include "qemu-queue.h"
-#include <EGL/egl.h>
 
 struct yagl_api;
 struct yagl_process_state;
+struct yagl_egl_backend;
+struct yagl_gles1_driver;
+struct yagl_gles2_driver;
 
 struct yagl_server_state
 {
@@ -20,13 +22,15 @@ struct yagl_server_state
  * server state which is a part of YaGL device.
  * @{
  */
-#if defined(CONFIG_YAGL_EGL_GLX)
-    struct yagl_server_state *yagl_server_state_create(Display *x_display);
-#elif defined(CONFIG_YAGL_EGL_WGL)
-    struct yagl_server_state *yagl_server_state_create(void);
-#else
-#error Unknown EGL driver
-#endif
+
+/*
+ * 'egl_backend' and 'gles2_driver' will be owned by returned server state
+ * or destroyed in case of error.
+ */
+struct yagl_server_state
+    *yagl_server_state_create(struct yagl_egl_backend *egl_backend,
+                              struct yagl_gles1_driver *gles1_driver,
+                              struct yagl_gles2_driver *gles2_driver);
 
 void yagl_server_state_destroy(struct yagl_server_state *ss);
 /*

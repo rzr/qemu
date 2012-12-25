@@ -44,18 +44,21 @@ struct yagl_eglb_display
     struct yagl_eglb_surface *(*create_onscreen_window_surface)(struct yagl_eglb_display */*dpy*/,
                                                                 const struct yagl_egl_native_config */*cfg*/,
                                                                 const struct yagl_egl_window_attribs */*attribs*/,
-                                                                uint32_t /*id*/);
+                                                                yagl_winsys_id /*id*/);
 
     struct yagl_eglb_surface *(*create_onscreen_pixmap_surface)(struct yagl_eglb_display */*dpy*/,
                                                                 const struct yagl_egl_native_config */*cfg*/,
                                                                 const struct yagl_egl_pixmap_attribs */*attribs*/,
-                                                                uint32_t /*id*/);
+                                                                yagl_winsys_id /*id*/);
 
     struct yagl_eglb_surface *(*create_onscreen_pbuffer_surface)(struct yagl_eglb_display */*dpy*/,
                                                                  const struct yagl_egl_native_config */*cfg*/,
-                                                                 const struct yagl_egl_pbuffer_attribs */*attribs*/);
+                                                                 const struct yagl_egl_pbuffer_attribs */*attribs*/,
+                                                                 uint32_t /*width*/,
+                                                                 uint32_t /*height*/);
 
-    struct yagl_eglb_image *(*create_image)(struct yagl_eglb_display */*dpy*/);
+    struct yagl_eglb_image *(*create_image)(struct yagl_eglb_display */*dpy*/,
+                                            yagl_winsys_id /*buffer*/);
 
     void (*destroy)(struct yagl_eglb_display */*dpy*/);
 };

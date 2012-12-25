@@ -1,6 +1,5 @@
 #include "yagl_egl_offscreen_context.h"
 #include "yagl_egl_offscreen_display.h"
-#include "yagl_egl_offscreen_ts.h"
 #include "yagl_egl_offscreen.h"
 #include "yagl_egl_native_config.h"
 #include "yagl_client_context.h"
@@ -8,8 +7,6 @@
 #include "yagl_tls.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
-
-YAGL_DECLARE_TLS(struct yagl_egl_offscreen_ts*, egl_offscreen_ts);
 
 static void yagl_egl_offscreen_context_destroy(struct yagl_eglb_context *ctx)
 {

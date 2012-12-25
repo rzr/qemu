@@ -487,8 +487,8 @@ static bool yagl_func_eglCopyBuffers(uint8_t **out_buff,
 {
     yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
     yagl_host_handle surface = yagl_marshal_get_host_handle(out_buff);
-    EGLNativePixmapType target = yagl_marshal_get_EGLNativePixmapType(out_buff);
-    YAGL_LOG_FUNC_ENTER_SPLIT3(eglCopyBuffers, yagl_host_handle, yagl_host_handle, EGLNativePixmapType, dpy, surface, target);
+    yagl_winsys_id target = yagl_marshal_get_yagl_winsys_id(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT3(eglCopyBuffers, yagl_host_handle, yagl_host_handle, yagl_winsys_id, dpy, surface, target);
     EGLBoolean retval;
     bool res = yagl_host_eglCopyBuffers(&retval, dpy, surface, target);
     if (!res) {
@@ -509,9 +509,9 @@ static bool yagl_func_eglCreateImageKHR(uint8_t **out_buff,
     yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
     yagl_host_handle ctx = yagl_marshal_get_host_handle(out_buff);
     EGLenum target = yagl_marshal_get_EGLenum(out_buff);
-    yagl_host_handle buffer = yagl_marshal_get_host_handle(out_buff);
+    yagl_winsys_id buffer = yagl_marshal_get_yagl_winsys_id(out_buff);
     target_ulong attrib_list = yagl_marshal_get_ptr(out_buff);
-    YAGL_LOG_FUNC_ENTER_SPLIT5(eglCreateImageKHR, yagl_host_handle, yagl_host_handle, EGLenum, yagl_host_handle, target_ulong, dpy, ctx, target, buffer, attrib_list);
+    YAGL_LOG_FUNC_ENTER_SPLIT5(eglCreateImageKHR, yagl_host_handle, yagl_host_handle, EGLenum, yagl_winsys_id, target_ulong, dpy, ctx, target, buffer, attrib_list);
     yagl_host_handle retval;
     bool res = yagl_host_eglCreateImageKHR(&retval, dpy, ctx, target, buffer, attrib_list);
     if (!res) {
@@ -660,7 +660,72 @@ static bool yagl_func_eglUpdateOffscreenImageYAGL(uint8_t **out_buff,
     return res;
 }
 
-const uint32_t yagl_egl_api_num_funcs = 31;
+/*
+ * eglCreateWindowSurfaceOnscreenYAGL dispatcher. id = 32
+ */
+static bool yagl_func_eglCreateWindowSurfaceOnscreenYAGL(uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
+    yagl_host_handle config = yagl_marshal_get_host_handle(out_buff);
+    yagl_winsys_id win = yagl_marshal_get_yagl_winsys_id(out_buff);
+    target_ulong attrib_list = yagl_marshal_get_ptr(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT4(eglCreateWindowSurfaceOnscreenYAGL, yagl_host_handle, yagl_host_handle, yagl_winsys_id, target_ulong, dpy, config, win, attrib_list);
+    yagl_host_handle retval;
+    bool res = yagl_host_eglCreateWindowSurfaceOnscreenYAGL(&retval, dpy, config, win, attrib_list);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, retval);
+    yagl_marshal_put_host_handle(&in_buff, retval);
+    return true;
+}
+
+/*
+ * eglCreatePbufferSurfaceOnscreenYAGL dispatcher. id = 33
+ */
+static bool yagl_func_eglCreatePbufferSurfaceOnscreenYAGL(uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
+    yagl_host_handle config = yagl_marshal_get_host_handle(out_buff);
+    target_ulong attrib_list = yagl_marshal_get_ptr(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT3(eglCreatePbufferSurfaceOnscreenYAGL, yagl_host_handle, yagl_host_handle, target_ulong, dpy, config, attrib_list);
+    yagl_host_handle retval;
+    bool res = yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(&retval, dpy, config, attrib_list);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, retval);
+    yagl_marshal_put_host_handle(&in_buff, retval);
+    return true;
+}
+
+/*
+ * eglCreatePixmapSurfaceOnscreenYAGL dispatcher. id = 34
+ */
+static bool yagl_func_eglCreatePixmapSurfaceOnscreenYAGL(uint8_t **out_buff,
+    uint8_t *in_buff)
+{
+    yagl_host_handle dpy = yagl_marshal_get_host_handle(out_buff);
+    yagl_host_handle config = yagl_marshal_get_host_handle(out_buff);
+    yagl_winsys_id pixmap = yagl_marshal_get_yagl_winsys_id(out_buff);
+    target_ulong attrib_list = yagl_marshal_get_ptr(out_buff);
+    YAGL_LOG_FUNC_ENTER_SPLIT4(eglCreatePixmapSurfaceOnscreenYAGL, yagl_host_handle, yagl_host_handle, yagl_winsys_id, target_ulong, dpy, config, pixmap, attrib_list);
+    yagl_host_handle retval;
+    bool res = yagl_host_eglCreatePixmapSurfaceOnscreenYAGL(&retval, dpy, config, pixmap, attrib_list);
+    if (!res) {
+        YAGL_LOG_FUNC_EXIT(NULL);
+        return false;
+    }
+    YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, retval);
+    yagl_marshal_put_host_handle(&in_buff, retval);
+    return true;
+}
+
+const uint32_t yagl_egl_api_num_funcs = 34;
 
 yagl_api_func yagl_egl_api_funcs[] = {
     &yagl_func_eglGetError,
@@ -693,5 +758,8 @@ yagl_api_func yagl_egl_api_funcs[] = {
     &yagl_func_eglCreatePbufferSurfaceOffscreenYAGL,
     &yagl_func_eglCreatePixmapSurfaceOffscreenYAGL,
     &yagl_func_eglResizeOffscreenSurfaceYAGL,
-    &yagl_func_eglUpdateOffscreenImageYAGL
+    &yagl_func_eglUpdateOffscreenImageYAGL,
+    &yagl_func_eglCreateWindowSurfaceOnscreenYAGL,
+    &yagl_func_eglCreatePbufferSurfaceOnscreenYAGL,
+    &yagl_func_eglCreatePixmapSurfaceOnscreenYAGL
 };

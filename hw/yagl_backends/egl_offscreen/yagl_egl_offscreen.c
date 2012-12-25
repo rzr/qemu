@@ -11,13 +11,15 @@ YAGL_DEFINE_TLS(struct yagl_egl_offscreen_ts*, egl_offscreen_ts);
 
 static void yagl_egl_offscreen_thread_init(struct yagl_egl_backend *backend)
 {
-    struct yagl_egl_offscreen *egl_offscreen = (struct yagl_egl_offscreen*)backend;
-
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_thread_init, NULL);
 
-    egl_offscreen_ts = yagl_egl_offscreen_ts_create(egl_offscreen->driver);
+    egl_offscreen_ts = yagl_egl_offscreen_ts_create();
 
     YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_egl_offscreen_pre_batch(struct yagl_egl_backend *backend)
+{
 }
 
 static struct yagl_eglb_display *yagl_egl_offscreen_create_display(struct yagl_egl_backend *backend)
@@ -222,6 +224,7 @@ struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *drive
     }
 
     egl_offscreen->base.thread_init = &yagl_egl_offscreen_thread_init;
+    egl_offscreen->base.pre_batch = &yagl_egl_offscreen_pre_batch;
     egl_offscreen->base.create_display = &yagl_egl_offscreen_create_display;
     egl_offscreen->base.make_current = &yagl_egl_offscreen_make_current;
     egl_offscreen->base.release_current = &yagl_egl_offscreen_release_current;

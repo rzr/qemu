@@ -17,6 +17,7 @@ struct yagl_egl_offscreen_image
 };
 
 struct yagl_egl_offscreen_image
-    *yagl_egl_offscreen_image_create(struct yagl_egl_offscreen_display *dpy);
+    *yagl_egl_offscreen_image_create(struct yagl_egl_offscreen_display *dpy,
+                                     yagl_winsys_id buffer);
 
 #endif

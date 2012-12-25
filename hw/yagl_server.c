@@ -5,14 +5,11 @@
 #include "yagl_marshal.h"
 #include "yagl_version.h"
 #include "yagl_log.h"
-#include "yagl_egl_driver.h"
+#include "yagl_egl_backend.h"
 #include "yagl_egl_interface.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
 #include "yagl_apis/gles1/yagl_gles1_api.h"
-#include "yagl_drivers/gles1_ogl/yagl_gles1_ogl.h"
 #include "yagl_apis/gles2/yagl_gles2_api.h"
-#include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
-#include "yagl_backends/egl_offscreen/yagl_egl_offscreen.h"
 #include <GL/gl.h>
 #include "yagl_gles1_driver.h"
 #include "yagl_gles2_driver.h"
@@ -33,54 +30,24 @@ static struct yagl_thread_state
     return NULL;
 }
 
-#if defined(CONFIG_YAGL_EGL_GLX)
-    struct yagl_server_state *yagl_server_state_create(Display *x_display)
-#elif defined(CONFIG_YAGL_EGL_WGL)
-    struct yagl_server_state *yagl_server_state_create(void)
-#else
-#error Unknown EGL driver
-#endif
+struct yagl_server_state
+    *yagl_server_state_create(struct yagl_egl_backend *egl_backend,
+                              struct yagl_gles1_driver *gles1_driver,
+                              struct yagl_gles2_driver *gles2_driver)
 {
     int i;
     struct yagl_server_state *ss =
         g_malloc0(sizeof(struct yagl_server_state));
-    struct yagl_egl_driver *egl_driver;
-    struct yagl_egl_backend *egl_backend;
-    struct yagl_gles1_driver *gles1_driver;
-    struct yagl_gles2_driver *gles2_driver;
 
     QLIST_INIT(&ss->processes);
-
-#if defined(CONFIG_YAGL_EGL_GLX)
-    egl_driver = yagl_egl_glx_driver_create(x_display);
-#elif defined(CONFIG_YAGL_EGL_WGL)
-    egl_driver = yagl_egl_wgl_driver_create();
-#else
-#error Unknown EGL driver
-#endif
-
-    if (!egl_driver) {
-        goto fail;
-    }
-
-    egl_backend = yagl_egl_offscreen_create(egl_driver);
-
-    if (!egl_backend) {
-        egl_driver->destroy(egl_driver);
-        goto fail;
-    }
 
     ss->apis[yagl_api_id_egl - 1] = yagl_egl_api_create(egl_backend);
 
     if (!ss->apis[yagl_api_id_egl - 1]) {
         egl_backend->destroy(egl_backend);
+        gles1_driver->destroy(gles1_driver);
+        gles2_driver->destroy(gles2_driver);
 
-        goto fail;
-    }
-
-    gles1_driver = yagl_gles1_ogl_create(egl_driver->dyn_lib);
-
-    if (!gles1_driver) {
         goto fail;
     }
 
@@ -88,13 +55,8 @@ static struct yagl_thread_state
 
     if (!ss->apis[yagl_api_id_gles1 - 1]) {
         gles1_driver->destroy(gles1_driver);
+        gles2_driver->destroy(gles2_driver);
 
-        goto fail;
-    }
-
-    gles2_driver = yagl_gles2_ogl_create(egl_driver->dyn_lib);
-
-    if (!gles2_driver) {
         goto fail;
     }
 

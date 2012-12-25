@@ -61,7 +61,8 @@ static void yagl_egl_offscreen_image_destroy(struct yagl_eglb_image *image)
 }
 
 struct yagl_egl_offscreen_image
-    *yagl_egl_offscreen_image_create(struct yagl_egl_offscreen_display *dpy)
+    *yagl_egl_offscreen_image_create(struct yagl_egl_offscreen_display *dpy,
+                                     yagl_winsys_id buffer)
 {
     struct yagl_egl_offscreen_image *image;
 
@@ -70,7 +71,7 @@ struct yagl_egl_offscreen_image
 
     image = g_malloc0(sizeof(*image));
 
-    yagl_eglb_image_init(&image->base, &dpy->base);
+    yagl_eglb_image_init(&image->base, buffer, &dpy->base);
 
     qemu_mutex_init(&image->update_mtx);
 

@@ -64,7 +64,8 @@ struct yagl_eglb_surface
     /*
      * Only called for valid surfaces.
      */
-    bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/);
+    bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/,
+                         yagl_winsys_id /*target*/);
 
     void (*destroy)(struct yagl_eglb_surface */*sfc*/);
 

@@ -18,6 +18,8 @@ struct yagl_egl_backend
 
     void (*thread_init)(struct yagl_egl_backend */*backend*/);
 
+    void (*pre_batch)(struct yagl_egl_backend */*backend*/);
+
     struct yagl_eglb_display *(*create_display)(struct yagl_egl_backend */*backend*/);
 
     bool (*make_current)(struct yagl_egl_backend */*backend*/,

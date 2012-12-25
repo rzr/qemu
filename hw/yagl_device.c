@@ -5,9 +5,20 @@
 #include "yagl_stats.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
+#include "yagl_egl_driver.h"
+#include "yagl_drivers/gles1_ogl/yagl_gles1_ogl.h"
+#include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
+#include "yagl_drivers/gles1_onscreen/yagl_gles1_onscreen.h"
+#include "yagl_drivers/gles2_onscreen/yagl_gles2_onscreen.h"
+#include "yagl_backends/egl_offscreen/yagl_egl_offscreen.h"
+#include "yagl_backends/egl_onscreen/yagl_egl_onscreen.h"
 #include "cpu-all.h"
 #include "hw.h"
 #include "pci.h"
+#include <GL/gl.h>
+#include "winsys.h"
+#include "yagl_gles1_driver.h"
+#include "yagl_gles2_driver.h"
 
 #define PCI_VENDOR_ID_YAGL 0x19B1
 #define PCI_DEVICE_ID_YAGL 0x1010
@@ -30,12 +41,10 @@ struct yagl_user
 typedef struct YaGLState
 {
     PCIDevice dev;
-#if defined(CONFIG_YAGL_EGL_GLX)
+#if defined(__linux__)
     Display *x_display;
-#elif defined(CONFIG_YAGL_EGL_WGL)
-#else
-#error Unknown EGL driver
 #endif
+    struct winsys_interface *wsi;
     MemoryRegion iomem;
     struct yagl_server_state *ss;
     struct yagl_user users[YAGL_MAX_USERS];
@@ -211,6 +220,10 @@ static const MemoryRegionOps yagl_device_ops =
 static int yagl_device_init(PCIDevice *dev)
 {
     YaGLState *s = DO_UPCAST(YaGLState, dev, dev);
+    struct yagl_egl_driver *egl_driver = NULL;
+    struct yagl_egl_backend *egl_backend = NULL;
+    struct yagl_gles1_driver *gles1_driver = NULL;
+    struct yagl_gles2_driver *gles2_driver = NULL;
 
     yagl_log_init();
 
@@ -226,28 +239,58 @@ static int yagl_device_init(PCIDevice *dev)
 
     yagl_stats_init();
 
-#if defined(CONFIG_YAGL_EGL_GLX)
-    if (s->x_display) {
-        s->ss = yagl_server_state_create(s->x_display);
-    } else {
-        YAGL_LOG_CRITICAL("x_display is NULL");
-        s->ss = NULL;
-    }
-#elif defined(CONFIG_YAGL_EGL_WGL)
-    s->ss = yagl_server_state_create();
+#if defined(__linux__)
+    egl_driver = yagl_egl_driver_create(s->x_display);
 #else
-#error Unknown EGL driver
+    egl_driver = yagl_egl_driver_create();
 #endif
+
+    if (!egl_driver) {
+        goto fail;
+    }
+
+    gles1_driver = yagl_gles1_ogl_create(egl_driver->dyn_lib);
+
+    if (!gles1_driver) {
+        goto fail;
+    }
+
+    gles2_driver = yagl_gles2_ogl_create(egl_driver->dyn_lib);
+
+    if (!gles2_driver) {
+        goto fail;
+    }
+
+    if (s->wsi) {
+        egl_backend = yagl_egl_onscreen_create(s->wsi,
+                                               egl_driver,
+                                               &gles2_driver->base);
+        gles1_driver = yagl_gles1_onscreen_create(gles1_driver);
+        gles2_driver = yagl_gles2_onscreen_create(gles2_driver);
+    } else {
+        egl_backend = yagl_egl_offscreen_create(egl_driver);
+    }
+
+    if (!egl_backend) {
+        goto fail;
+    }
+
+    /*
+     * Now owned by EGL backend.
+     */
+    egl_driver = NULL;
+
+    s->ss = yagl_server_state_create(egl_backend, gles1_driver, gles2_driver);
+
+    /*
+     * Owned/destroyed by server state.
+     */
+    egl_backend = NULL;
+    gles1_driver = NULL;
+    gles2_driver = NULL;
+
     if (!s->ss) {
-        yagl_stats_cleanup();
-
-        yagl_handle_gen_cleanup();
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        yagl_log_cleanup();
-
-        return -1;
+        goto fail;
     }
 
     s->in_buff = g_malloc(YAGL_MARSHAL_MAX_RESPONSE);
@@ -257,6 +300,33 @@ static int yagl_device_init(PCIDevice *dev)
     YAGL_LOG_FUNC_EXIT(NULL);
 
     return 0;
+
+fail:
+    if (egl_backend) {
+        egl_backend->destroy(egl_backend);
+    }
+
+    if (gles1_driver) {
+        gles1_driver->destroy(gles1_driver);
+    }
+
+    if (gles2_driver) {
+        gles2_driver->destroy(gles2_driver);
+    }
+
+    if (egl_driver) {
+        egl_driver->destroy(egl_driver);
+    }
+
+    yagl_stats_cleanup();
+
+    yagl_handle_gen_cleanup();
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+
+    yagl_log_cleanup();
+
+    return -1;
 }
 
 static void yagl_device_reset(DeviceState *d)
@@ -300,16 +370,18 @@ static void yagl_device_exit(PCIDevice *dev)
 }
 
 static Property yagl_properties[] = {
-#if defined(CONFIG_YAGL_EGL_GLX)
+#if defined(__linux__)
     {
         .name   = "x_display",
         .info   = &qdev_prop_ptr,
         .offset = offsetof(YaGLState, x_display),
     },
-#elif defined(CONFIG_YAGL_EGL_WGL)
-#else
-#error Unknown EGL driver
 #endif
+    {
+        .name   = "winsys_gl_interface",
+        .info   = &qdev_prop_ptr,
+        .offset = offsetof(YaGLState, wsi),
+    },
     DEFINE_PROP_END_OF_LIST(),
 };
 

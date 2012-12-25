@@ -16,7 +16,8 @@ struct yagl_egl_image
     struct yagl_eglb_image *backend_image;
 };
 
-struct yagl_egl_image *yagl_egl_image_create(struct yagl_egl_display *dpy);
+struct yagl_egl_image *yagl_egl_image_create(struct yagl_egl_display *dpy,
+                                             yagl_winsys_id buffer);
 
 /*
  * Helper functions that simply acquire/release yagl_egl_image::res

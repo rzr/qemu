@@ -8,6 +8,8 @@ struct yagl_client_image;
 
 struct yagl_eglb_image
 {
+    yagl_winsys_id buffer;
+
     struct yagl_eglb_display *dpy;
 
     /*
@@ -28,6 +30,7 @@ struct yagl_eglb_image
 };
 
 void yagl_eglb_image_init(struct yagl_eglb_image *image,
+                          yagl_winsys_id buffer,
                           struct yagl_eglb_display *dpy);
 void yagl_eglb_image_cleanup(struct yagl_eglb_image *image);
 

@@ -14,12 +14,13 @@ static void yagl_egl_image_destroy(struct yagl_ref *ref)
     g_free(image);
 }
 
-struct yagl_egl_image *yagl_egl_image_create(struct yagl_egl_display *dpy)
+struct yagl_egl_image *yagl_egl_image_create(struct yagl_egl_display *dpy,
+                                             yagl_winsys_id buffer)
 {
     struct yagl_eglb_image *backend_image;
     struct yagl_egl_image *image;
 
-    backend_image = dpy->backend_dpy->create_image(dpy->backend_dpy);
+    backend_image = dpy->backend_dpy->create_image(dpy->backend_dpy, buffer);
 
     if (!backend_image) {
         return NULL;

@@ -76,6 +76,12 @@ static void *yagl_thread_func(void* arg)
 
         YAGL_LOG_TRACE("batch started");
 
+        for (i = 0; i < YAGL_NUM_APIS; ++i) {
+            if (ts->ps->api_states[i]) {
+                ts->ps->api_states[i]->pre_batch(ts->ps->api_states[i]);
+            }
+        }
+
         /*
          * current_buff is:
          *  (yagl_api_id) api_id

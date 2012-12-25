@@ -2,15 +2,12 @@
 #include "yagl_egl_offscreen_context.h"
 #include "yagl_egl_offscreen_surface.h"
 #include "yagl_egl_offscreen_image.h"
-#include "yagl_egl_offscreen_ts.h"
 #include "yagl_egl_offscreen.h"
 #include "yagl_egl_native_config.h"
 #include "yagl_log.h"
 #include "yagl_tls.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
-
-YAGL_DECLARE_TLS(struct yagl_egl_offscreen_ts*, egl_offscreen_ts);
 
 static struct yagl_egl_native_config
     *yagl_egl_offscreen_display_config_enum(struct yagl_eglb_display *dpy,
@@ -98,12 +95,13 @@ static struct yagl_eglb_surface
 }
 
 static struct yagl_eglb_image
-    *yagl_egl_offscreen_display_create_image(struct yagl_eglb_display *dpy)
+    *yagl_egl_offscreen_display_create_image(struct yagl_eglb_display *dpy,
+                                             yagl_winsys_id buffer)
 {
     struct yagl_egl_offscreen_display *egl_offscreen_dpy =
         (struct yagl_egl_offscreen_display*)dpy;
     struct yagl_egl_offscreen_image *image =
-        yagl_egl_offscreen_image_create(egl_offscreen_dpy);
+        yagl_egl_offscreen_image_create(egl_offscreen_dpy, buffer);
 
     return image ? &image->base : NULL;
 }

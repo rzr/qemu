@@ -903,7 +903,7 @@ out:
     return ext_initialized;
 }
 
-struct yagl_egl_driver *yagl_egl_wgl_driver_create(void)
+struct yagl_egl_driver *yagl_egl_driver_create(void)
 {
     YaglEglWglDriver *egl_wgl;
     struct yagl_egl_driver *egl_driver;

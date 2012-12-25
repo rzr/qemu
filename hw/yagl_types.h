@@ -8,6 +8,7 @@ typedef uint32_t yagl_tid;
 typedef uint32_t yagl_func_id;
 typedef uint32_t yagl_host_handle;
 typedef uint32_t yagl_object_name;
+typedef uint32_t yagl_winsys_id;
 
 /*
  * YaGL supported render types.

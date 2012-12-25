@@ -7,10 +7,6 @@ static void yagl_gles_texture_destroy(struct yagl_ref *ref)
 {
     struct yagl_gles_texture *texture = (struct yagl_gles_texture*)ref;
 
-    /*
-     * TODO: Add to reap list once we'll move it
-     * to gles driver.
-     */
     yagl_gles_image_release(texture->image);
 
     if (!texture->image) {

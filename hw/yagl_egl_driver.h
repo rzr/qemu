@@ -80,9 +80,9 @@ struct yagl_egl_driver
 };
 
 #if defined(CONFIG_YAGL_EGL_GLX)
-struct yagl_egl_driver *yagl_egl_glx_driver_create(Display *x_display);
+struct yagl_egl_driver *yagl_egl_driver_create(Display *x_display);
 #elif defined(CONFIG_YAGL_EGL_WGL)
-struct yagl_egl_driver *yagl_egl_wgl_driver_create(void);
+struct yagl_egl_driver *yagl_egl_driver_create(void);
 #else
 #error Unknown EGL driver
 #endif
