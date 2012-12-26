@@ -310,6 +310,21 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
 
 static void get_bin_dir(char *exec_argv)
 {
+    char *p = NULL;
+
+#ifdef CONFIG_WIN32
+    TCHAR szEXEPath[1024] = { 0, };
+    GetModuleFileName(NULL, szEXEPath, 1024);
+
+    p = strrchr(szEXEPath, '\\');
+    // TODO : null
+
+    strncpy(bin_dir, szEXEPath, strlen(szEXEPath) - strlen(p));
+
+    strcat(bin_dir, "\\");
+    return;
+#endif
+
     if (!exec_argv) {
         return;
     }
@@ -320,29 +335,16 @@ static void get_bin_dir(char *exec_argv)
         return;
     }
 
-    char *p = NULL;
-#ifdef _WIN32
-    p = strrchr(data, '\\');
-    if (!p) {
-        p = strrchr(data, '/');
-    }
-#else
     p = strrchr(data, '/');
-#endif
     if (!p) {
         free(data);
         return;
     }
 
     strncpy(bin_dir, data, strlen(data) - strlen(p));
-#ifdef _WIN32
-    strcat(bin_dir, "\\");
-#else
+
     strcat(bin_dir, "/");
-#endif
-
     free(data);
-
 }
 
 char* get_bin_path(void) {
