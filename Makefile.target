@@ -286,11 +286,11 @@ obj-y += yagl_egl_onscreen_context.o
 obj-y += yagl_egl_onscreen_surface.o
 obj-y += yagl_egl_onscreen_image.o
 # EGL GLX driver
-ifdef CONFIG_YAGL_EGL_GLX
+ifdef CONFIG_LINUX
 obj-y += yagl_egl_glx.o
 endif
 # EGL WGL driver
-ifdef CONFIG_YAGL_EGL_WGL
+ifdef CONFIG_WIN32
 obj-y += yagl_egl_wgl.o
 endif
 # GLES OpenGL common driver

@@ -60,16 +60,6 @@ typedef struct YaglEglWglDpy {
     unsigned max_cfgid;
 } YaglEglWglDpy;
 
-typedef struct YaglEglWglSG {
-    HGLRC shared_glc;
-    unsigned ref_cnt;
-} YaglEglWglSG;
-
-typedef struct YaglEglWglCtx {
-    HGLRC glc;
-    YaglEglWglSG *share_group;
-} YaglEglWglCtx;
-
 typedef struct YaglEglWglDriver {
     struct yagl_egl_driver base;
 
@@ -481,22 +471,6 @@ out:
     return dc;
 }
 
-static void yagl_egl_wgl_sharegrp_release(YaglEglWglDriver *egl_wgl,
-		                                  YaglEglWglSG *share_group)
-{
-	assert(share_group->ref_cnt > 0);
-
-	if (--share_group->ref_cnt == 0) {
-		egl_wgl->wglDeleteContext(share_group->shared_glc);
-		g_free(share_group);
-	}
-}
-
-static inline void yagl_egl_wgl_sharegrp_acquire(YaglEglWglSG *share_group)
-{
-	++share_group->ref_cnt;
-}
-
 static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType egl_dpy,
                                               const struct yagl_egl_native_config *cfg,
@@ -505,17 +479,12 @@ static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
-    YaglEglWglCtx *egl_wgl_ctx;
+    HGLRC egl_wgl_ctx;
     HDC dc;
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_context_create,
                        "dpy = %p, api = %u, share_context = %p, cfgid=%d",
                        dpy, client_api, share_context, cfg->config_id);
-
-    egl_wgl_ctx = g_try_new0(YaglEglWglCtx, 1);
-    if (!egl_wgl_ctx) {
-        goto fail;
-    }
 
     dc = yagl_egl_wgl_get_dc_by_cfgid(dpy, cfg);
     if (!dc) {
@@ -523,47 +492,24 @@ static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
         goto fail;
     }
 
+    egl_wgl_ctx = egl_wgl->wglCreateContext(dc);
+    if (!egl_wgl_ctx) {
+        goto fail;
+    }
+
     if (share_context != EGL_NO_CONTEXT) {
-        egl_wgl_ctx->share_group =
-            ((YaglEglWglCtx *)share_context)->share_group;
-    } else {
-        egl_wgl_ctx->share_group = g_try_new0(YaglEglWglSG, 1);
-
-        if (!egl_wgl_ctx->share_group) {
-            goto fail;
-        }
-
-        egl_wgl_ctx->share_group->shared_glc = egl_wgl->wglCreateContext(dc);
-        if (!egl_wgl_ctx->share_group->shared_glc) {
-            g_free(egl_wgl_ctx->share_group);
+        if(!egl_wgl->wglShareLists((HGLRC)share_context,
+                                   egl_wgl_ctx)) {
+            egl_wgl->wglDeleteContext(egl_wgl_ctx);
             goto fail;
         }
     }
 
-    yagl_egl_wgl_sharegrp_acquire(egl_wgl_ctx->share_group);
-
-    egl_wgl_ctx->glc = egl_wgl->wglCreateContext(dc);
-    if (!egl_wgl_ctx->glc) {
-    	yagl_egl_wgl_sharegrp_release(egl_wgl, egl_wgl_ctx->share_group);
-        goto fail;
-    }
-
-    if(!egl_wgl->wglShareLists(egl_wgl_ctx->share_group->shared_glc,
-                               egl_wgl_ctx->glc)) {
-    	yagl_egl_wgl_sharegrp_release(egl_wgl, egl_wgl_ctx->share_group);
-        egl_wgl->wglDeleteContext(egl_wgl_ctx->glc);
-        goto fail;
-    }
-
-    YAGL_LOG_FUNC_EXIT("Context created: %p (HGLRC=%p, shared=%p refcnt=%u)",
-        egl_wgl_ctx, egl_wgl_ctx->glc, egl_wgl_ctx->share_group->shared_glc,
-        egl_wgl_ctx->share_group->ref_cnt);
+    YAGL_LOG_FUNC_EXIT("Context created: %p", egl_wgl_ctx);
 
     return (EGLContext)egl_wgl_ctx;
 
 fail:
-    g_free(egl_wgl_ctx);
-
     YAGL_LOG_ERROR_WIN();
 
     YAGL_LOG_FUNC_EXIT("Failed to create new context");
@@ -589,7 +535,7 @@ static bool yagl_egl_wgl_make_current(struct yagl_egl_driver *driver,
                        egl_glc);
 
     if (egl_glc != EGL_NO_CONTEXT) {
-        glc = ((YaglEglWglCtx *)egl_glc)->glc;
+        glc = (HGLRC)egl_glc;
     }
 
     if (egl_draw_surf != EGL_NO_SURFACE) {
@@ -641,19 +587,14 @@ static void yagl_egl_wgl_context_destroy(struct yagl_egl_driver *driver,
                                          EGLContext egl_glc)
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
-    YaglEglWglCtx *wgl_ctx = (YaglEglWglCtx *)egl_glc;
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_context_destroy,
-                       "dpy = %p, ctx = %p, glc=%p",
-                       egl_dpy, wgl_ctx, wgl_ctx->glc);
+                       "dpy = %p, ctx = %p",
+                       egl_dpy, egl_glc);
 
-    yagl_egl_wgl_sharegrp_release(egl_wgl, wgl_ctx->share_group);
-
-    if (egl_wgl->wglDeleteContext(wgl_ctx->glc) == FALSE) {
+    if (egl_wgl->wglDeleteContext((HGLRC)egl_glc) == FALSE) {
         YAGL_LOG_ERROR_WIN();
     }
-
-    g_free(wgl_ctx);
 
     YAGL_LOG_FUNC_EXIT("Context destroyed");
 }
@@ -1077,8 +1018,8 @@ out:
 /* GetProcAddress only works for core OpenGL v.1.1 functions, while
  * wglGetProcAddress will fail for <=v1.1 openGL functions, so we need them
  * both */
-void *yagl_egl_wgl_procaddr_get(struct yagl_dyn_lib *dyn_lib,
-                                const char *sym)
+void *yagl_dyn_lib_get_ogl_procaddr(struct yagl_dyn_lib *dyn_lib,
+                                    const char *sym)
 {
     void *proc = NULL;
 

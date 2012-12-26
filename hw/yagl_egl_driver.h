@@ -79,9 +79,9 @@ struct yagl_egl_driver
     struct yagl_dyn_lib *dyn_lib;
 };
 
-#if defined(CONFIG_YAGL_EGL_GLX)
+#if defined(__linux__)
 struct yagl_egl_driver *yagl_egl_driver_create(Display *x_display);
-#elif defined(CONFIG_YAGL_EGL_WGL)
+#elif defined(_WIN32)
 struct yagl_egl_driver *yagl_egl_driver_create(void);
 #else
 #error Unknown EGL driver

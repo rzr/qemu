@@ -59,7 +59,7 @@ struct yagl_egl_onscreen_context
         dpy->native_dpy,
         cfg,
         client_ctx->client_api,
-        (share_context ? share_context->native_ctx : egl_onscreen->global_ctx));
+        egl_onscreen->global_ctx);
 
     if (!native_ctx) {
         YAGL_LOG_FUNC_EXIT(NULL);

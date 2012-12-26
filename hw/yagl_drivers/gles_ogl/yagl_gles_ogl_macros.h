@@ -10,7 +10,7 @@
 
 #define YAGL_GLES_OGL_GET_PROC(driver, func, sym) \
     do { \
-        *(void**)(&driver->func) = yagl_dyn_lib_procaddr_get(dyn_lib, #sym); \
+        *(void**)(&driver->func) = yagl_dyn_lib_get_ogl_procaddr(dyn_lib, #sym); \
         if (!driver->func) { \
             YAGL_LOG_ERROR("Unable to get symbol: %s", \
                            yagl_dyn_lib_get_error(dyn_lib)); \

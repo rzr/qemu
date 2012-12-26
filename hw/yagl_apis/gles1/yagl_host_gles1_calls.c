@@ -286,7 +286,7 @@ bool yagl_host_glClipPlanef(GLenum plane,
     target_ulong /* const GLfloat* */ equation_)
 {
     GLfloat equationf[4];
-    GLdouble equationd[4];
+    yagl_GLdouble equationd[4];
     unsigned i;
 
     YAGL_GET_CTX(glClipPlanef);
@@ -301,7 +301,7 @@ bool yagl_host_glClipPlanef(GLenum plane,
     }
 
     for (i = 0; i < 4; ++i) {
-        equationd[i] = (GLdouble)equationf[i];
+        equationd[i] = (yagl_GLdouble)equationf[i];
     }
 
     ctx->driver->ClipPlane(plane, equationd);
@@ -386,7 +386,7 @@ bool yagl_host_glFrustumf(GLfloat left,
 bool yagl_host_glGetClipPlanef(GLenum plane,
     target_ulong /* GLfloat* */ eqn)
 {
-    GLdouble equationd[4];
+    yagl_GLdouble equationd[4];
     GLfloat equationf[4];
     unsigned i;
 
@@ -853,7 +853,7 @@ bool yagl_host_glClipPlanex(GLenum plane,
     target_ulong /* const GLfixed* */ equation_)
 {
     GLfixed equationx[4];
-    GLdouble equationd[4];
+    yagl_GLdouble equationd[4];
     unsigned i;
 
     YAGL_GET_CTX(glClipPlanex);
@@ -1090,7 +1090,7 @@ bool yagl_host_glFrustumx(GLfixed left,
 bool yagl_host_glGetClipPlanex(GLenum plane,
     target_ulong /* GLfixed* */ eqn)
 {
-    GLdouble equationd[4];
+    yagl_GLdouble equationd[4];
     GLfixed equationx[4];
     unsigned i;
 

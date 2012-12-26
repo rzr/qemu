@@ -6,9 +6,7 @@
 
 /* We need this because we can't include <GL/gl.h> (which has GLdouble
  * definition) and <GLES/gl.h> (which has GLfixed definition) simultaniously */
-#ifndef GLdouble
-typedef double GLdouble;
-#endif
+typedef double yagl_GLdouble;
 
 /*
  * YaGL GLES1 driver.
@@ -24,7 +22,7 @@ struct yagl_gles1_driver
     YAGL_GLES_DRIVER_FUNC2(DepthRangef, GLclampf, GLclampf, zNear, zFar)
     YAGL_GLES_DRIVER_FUNC2(Fogf, GLenum, GLfloat, pname, param)
     YAGL_GLES_DRIVER_FUNC2(Fogfv, GLenum, const GLfloat*, pname, params)
-    YAGL_GLES_DRIVER_FUNC6(Frustum, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, left, right, bottom, top, znear, zfar)
+    YAGL_GLES_DRIVER_FUNC6(Frustum, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, left, right, bottom, top, znear, zfar)
     YAGL_GLES_DRIVER_FUNC3(GetLightfv, GLenum, GLenum, GLfloat*, light, pname, params)
     YAGL_GLES_DRIVER_FUNC3(GetMaterialfv, GLenum, GLenum, GLfloat*, face, pname, params)
     YAGL_GLES_DRIVER_FUNC3(GetTexEnvfv, GLenum, GLenum, GLfloat*, env, pname, params)
@@ -38,7 +36,7 @@ struct yagl_gles1_driver
     YAGL_GLES_DRIVER_FUNC1(MultMatrixf, const GLfloat*, m)
     YAGL_GLES_DRIVER_FUNC5(MultiTexCoord4f, GLenum, GLfloat, GLfloat, GLfloat, GLfloat, target, s, t, r, q)
     YAGL_GLES_DRIVER_FUNC3(Normal3f, GLfloat, GLfloat, GLfloat, nx, ny, nz)
-    YAGL_GLES_DRIVER_FUNC6(Ortho, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, left, right, bottom, top, znear, zfar)
+    YAGL_GLES_DRIVER_FUNC6(Ortho, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, yagl_GLdouble, left, right, bottom, top, znear, zfar)
     YAGL_GLES_DRIVER_FUNC2(PointParameterf, GLenum, GLfloat, pname, param)
     YAGL_GLES_DRIVER_FUNC2(PointParameterfv, GLenum, const GLfloat*, pname, params)
     YAGL_GLES_DRIVER_FUNC1(PointSize, GLfloat, size)
@@ -48,12 +46,12 @@ struct yagl_gles1_driver
     YAGL_GLES_DRIVER_FUNC3(TexEnvfv, GLenum, GLenum, const GLfloat*, target, pname, params)
     YAGL_GLES_DRIVER_FUNC3(Translatef, GLfloat, GLfloat, GLfloat, x, y, z)
     YAGL_GLES_DRIVER_FUNC1(ClientActiveTexture, GLenum, texture)
-    YAGL_GLES_DRIVER_FUNC2(ClipPlane, GLenum, const GLdouble *, plane, equation)
+    YAGL_GLES_DRIVER_FUNC2(ClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
     YAGL_GLES_DRIVER_FUNC4(Color4ub, GLubyte, GLubyte, GLubyte, GLubyte, red, green, blue, alpha)
     YAGL_GLES_DRIVER_FUNC4(ColorPointer, GLint, GLenum, GLsizei, const GLvoid*, size, type, stride, pointer)
     YAGL_GLES_DRIVER_FUNC1(DisableClientState, GLenum, array)
     YAGL_GLES_DRIVER_FUNC1(EnableClientState, GLenum, array)
-    YAGL_GLES_DRIVER_FUNC2(GetClipPlane, GLenum, const GLdouble *, plane, equation)
+    YAGL_GLES_DRIVER_FUNC2(GetClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
     YAGL_GLES_DRIVER_FUNC2(GetPointerv, GLenum, GLvoid**, pname, params)
     YAGL_GLES_DRIVER_FUNC3(GetTexEnviv, GLenum, GLenum, GLint*, env, pname, params)
     YAGL_GLES_DRIVER_FUNC0(LoadIdentity)
