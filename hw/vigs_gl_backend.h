@@ -90,6 +90,7 @@ struct vigs_gl_backend
     GLsync (GLAPIENTRY *FenceSync)(GLenum condition, GLbitfield flags);
     void (GLAPIENTRY *DeleteSync)(GLsync sync);
     void (GLAPIENTRY *WaitSync)(GLsync sync, GLbitfield flags, GLuint64 timeout);
+    GLenum (GLAPIENTRY *ClientWaitSync)(GLsync sync, GLbitfield flags, GLuint64 timeout);
 
     /*
      * @}

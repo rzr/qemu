@@ -300,6 +300,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC_OPTIONAL(FenceSync, glFenceSync);
     VIGS_GL_GET_PROC_OPTIONAL(DeleteSync, glDeleteSync);
     VIGS_GL_GET_PROC_OPTIONAL(WaitSync, glWaitSync);
+    VIGS_GL_GET_PROC_OPTIONAL(ClientWaitSync, glClientWaitSync);
 
     gl_backend_glx->dpy = x_display;
 

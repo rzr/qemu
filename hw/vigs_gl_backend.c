@@ -223,7 +223,11 @@ static void vigs_gl_surface_wait_fence_2d(struct vigs_gl_surface *gl_sfc)
     }
 
     if (gl_sfc->fence_2d) {
-        gl_backend->WaitSync(gl_sfc->fence_2d, 0, GL_TIMEOUT_IGNORED);
+        /*
+         * Using glClientWaitSync instead of glWaitSync because of
+         * nVidia bug on windows.
+         */
+        gl_backend->ClientWaitSync(gl_sfc->fence_2d, 0, GL_TIMEOUT_IGNORED);
         gl_backend->DeleteSync(gl_sfc->fence_2d);
         gl_sfc->fence_2d = 0;
     }
@@ -255,7 +259,11 @@ static void vigs_gl_surface_wait_fence_3d(struct vigs_gl_surface *gl_sfc)
     }
 
     if (gl_sfc->fence_3d) {
-        gl_backend->WaitSync(gl_sfc->fence_3d, 0, GL_TIMEOUT_IGNORED);
+        /*
+         * Using glClientWaitSync instead of glWaitSync because of
+         * nVidia bug on windows.
+         */
+        gl_backend->ClientWaitSync(gl_sfc->fence_3d, 0, GL_TIMEOUT_IGNORED);
         gl_backend->DeleteSync(gl_sfc->fence_3d);
         gl_sfc->fence_3d = 0;
     }
@@ -1064,7 +1072,8 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     gl_backend->has_arb_sync = (strstr(extensions, "GL_ARB_sync ") != NULL) &&
                                gl_backend->FenceSync &&
                                gl_backend->DeleteSync &&
-                               gl_backend->WaitSync;
+                               gl_backend->WaitSync &&
+                               gl_backend->ClientWaitSync;
     if (gl_backend->has_arb_sync) {
         VIGS_LOG_INFO("ARB_sync supported");
     } else {
