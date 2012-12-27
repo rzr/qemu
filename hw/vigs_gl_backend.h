@@ -5,6 +5,7 @@
 #include "vigs_backend.h"
 #include "vigs_vector.h"
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include "winsys_gl.h"
 
 struct vigs_gl_backend
@@ -17,6 +18,11 @@ struct vigs_gl_backend
 
     bool (*make_current)(struct vigs_gl_backend */*gl_backend*/,
                          bool /*enable*/);
+
+    /*
+     * Mandatory GL functions and extensions.
+     * @{
+     */
 
     void (GLAPIENTRY *GenTextures)(GLsizei n, GLuint *textures);
     void (GLAPIENTRY *DeleteTextures)(GLsizei n, const GLuint *textures);
@@ -73,6 +79,23 @@ struct vigs_gl_backend
     void (GLAPIENTRY *BlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 
     /*
+     * @}
+     */
+
+    /*
+     * Optional GL extensions.
+     * @{
+     */
+
+    GLsync (GLAPIENTRY *FenceSync)(GLenum condition, GLbitfield flags);
+    void (GLAPIENTRY *DeleteSync)(GLsync sync);
+    void (GLAPIENTRY *WaitSync)(GLsync sync, GLbitfield flags, GLuint64 timeout);
+
+    /*
+     * @}
+     */
+
+    /*
      * General purpose vectors.
      * @{
      */
@@ -83,6 +106,8 @@ struct vigs_gl_backend
     /*
      * @}
      */
+
+    bool has_arb_sync;
 };
 
 bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend);

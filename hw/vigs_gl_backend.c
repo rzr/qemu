@@ -84,6 +84,22 @@ struct vigs_gl_surface
      * Allocated on first access.
      */
     GLuint tmp_tex;
+
+    /*
+     * Fence that gets inserted into GL stream
+     * that comes from windowing system.
+     *
+     * 0 if no GL commands are pending.
+     */
+    GLsync fence_2d;
+
+    /*
+     * Fence that gets inserted into GL stream
+     * that comes from 3D renderer.
+     *
+     * 0 if no GL commands are pending.
+     */
+    GLsync fence_3d;
 };
 
 static __inline struct vigs_winsys_gl_surface
@@ -181,6 +197,70 @@ static void vigs_gl_surface_setup_framebuffer(struct vigs_gl_surface *gl_sfc)
     gl_backend->Disable(GL_BLEND);
 }
 
+static void vigs_gl_surface_set_fence_2d(struct vigs_gl_surface *gl_sfc)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
+
+    if (!gl_backend->has_arb_sync) {
+        gl_backend->Finish();
+        return;
+    }
+
+    if (gl_sfc->fence_2d) {
+        gl_backend->DeleteSync(gl_sfc->fence_2d);
+    }
+
+    gl_sfc->fence_2d = gl_backend->FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl_backend->Flush();
+}
+
+static void vigs_gl_surface_wait_fence_2d(struct vigs_gl_surface *gl_sfc)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
+
+    if (!gl_backend->has_arb_sync) {
+        return;
+    }
+
+    if (gl_sfc->fence_2d) {
+        gl_backend->WaitSync(gl_sfc->fence_2d, 0, GL_TIMEOUT_IGNORED);
+        gl_backend->DeleteSync(gl_sfc->fence_2d);
+        gl_sfc->fence_2d = 0;
+    }
+}
+
+static void vigs_gl_surface_set_fence_3d(struct vigs_gl_surface *gl_sfc)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
+
+    if (!gl_backend->has_arb_sync) {
+        gl_backend->Finish();
+        return;
+    }
+
+    if (gl_sfc->fence_3d) {
+        gl_backend->DeleteSync(gl_sfc->fence_3d);
+    }
+
+    gl_sfc->fence_3d = gl_backend->FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl_backend->Flush();
+}
+
+static void vigs_gl_surface_wait_fence_3d(struct vigs_gl_surface *gl_sfc)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
+
+    if (!gl_backend->has_arb_sync) {
+        return;
+    }
+
+    if (gl_sfc->fence_3d) {
+        gl_backend->WaitSync(gl_sfc->fence_3d, 0, GL_TIMEOUT_IGNORED);
+        gl_backend->DeleteSync(gl_sfc->fence_3d);
+        gl_sfc->fence_3d = 0;
+    }
+}
+
 /*
  * @}
  */
@@ -259,6 +339,8 @@ static void vigs_winsys_gl_surface_swap_buffers(struct winsys_gl_surface *sfc)
         return;
     }
 
+    vigs_gl_surface_wait_fence_2d(vigs_sfc->parent);
+
     vigs_sfc->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
 
     vigs_sfc->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
@@ -276,7 +358,7 @@ static void vigs_winsys_gl_surface_swap_buffers(struct winsys_gl_surface *sfc)
     vigs_sfc->backend->BindFramebuffer(GL_FRAMEBUFFER,
                                        cur_fb);
 
-    vigs_sfc->backend->Finish();
+    vigs_gl_surface_set_fence_3d(vigs_sfc->parent);
 
     vigs_sfc->parent->base.is_dirty = true;
 }
@@ -300,6 +382,8 @@ static void vigs_winsys_gl_surface_copy_buffers(uint32_t width,
         return;
     }
 
+    vigs_gl_surface_wait_fence_2d(vigs_target->parent);
+
     vigs_target->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
 
     vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
@@ -317,7 +401,7 @@ static void vigs_winsys_gl_surface_copy_buffers(uint32_t width,
     vigs_target->backend->BindFramebuffer(GL_FRAMEBUFFER,
                                           cur_fb);
 
-    vigs_target->backend->Finish();
+    vigs_gl_surface_set_fence_3d(vigs_target->parent);
 
     vigs_target->parent->base.is_dirty = true;
 }
@@ -420,6 +504,8 @@ static void vigs_gl_surface_update(struct vigs_surface *sfc,
         goto out;
     }
 
+    vigs_gl_surface_wait_fence_3d(gl_sfc);
+
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
     vigs_gl_surface_setup_framebuffer(gl_sfc);
@@ -436,7 +522,7 @@ static void vigs_gl_surface_update(struct vigs_surface *sfc,
                            ws_sfc->tex_type,
                            data);
 
-    gl_backend->Finish();
+    vigs_gl_surface_set_fence_2d(gl_sfc);
 
     sfc->is_dirty = false;
 
@@ -491,6 +577,8 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
     if (!vigs_gl_surface_create_framebuffer(gl_sfc)) {
         goto out;
     }
+
+    vigs_gl_surface_wait_fence_3d(gl_sfc);
 
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
@@ -548,6 +636,9 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
 
     src_w = gl_src->base.width;
     src_h = gl_src->base.height;
+
+    vigs_gl_surface_wait_fence_3d(gl_src);
+    vigs_gl_surface_wait_fence_3d(gl_dst);
 
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_dst->fb);
 
@@ -683,7 +774,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     gl_backend->DisableClientState(GL_TEXTURE_COORD_ARRAY);
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
-    gl_backend->Finish();
+    vigs_gl_surface_set_fence_2d(gl_dst);
 
     gl_dst->base.is_dirty = true;
 
@@ -715,6 +806,8 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
     if (!vigs_gl_surface_create_framebuffer(gl_sfc)) {
         goto out;
     }
+
+    vigs_gl_surface_wait_fence_3d(gl_sfc);
 
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
@@ -758,7 +851,7 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
 
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
-    gl_backend->Finish();
+    vigs_gl_surface_set_fence_2d(gl_sfc);
 
     gl_sfc->base.is_dirty = true;
 
@@ -794,6 +887,8 @@ static void vigs_gl_surface_put_image(struct vigs_surface *sfc,
         goto out;
     }
 
+    vigs_gl_surface_wait_fence_3d(gl_sfc);
+
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
     vigs_gl_surface_setup_framebuffer(gl_sfc);
@@ -810,7 +905,7 @@ static void vigs_gl_surface_put_image(struct vigs_surface *sfc,
                            ws_sfc->tex_type,
                            src);
 
-    gl_backend->Finish();
+    vigs_gl_surface_set_fence_2d(gl_sfc);
 
     gl_sfc->base.is_dirty = true;
 
@@ -834,6 +929,15 @@ static void vigs_gl_surface_destroy(struct vigs_surface *sfc)
         }
         if (gl_sfc->tmp_tex) {
             gl_backend->DeleteTextures(1, &gl_sfc->tmp_tex);
+        }
+
+        if (gl_backend->has_arb_sync) {
+            if (gl_sfc->fence_2d) {
+                gl_backend->DeleteSync(gl_sfc->fence_2d);
+            }
+            if (gl_sfc->fence_3d) {
+                gl_backend->DeleteSync(gl_sfc->fence_3d);
+            }
         }
 
         gl_backend->make_current(gl_backend, false);
@@ -951,6 +1055,20 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         (strstr(extensions, "GL_ARB_texture_non_power_of_two ") == NULL)) {
         VIGS_LOG_CRITICAL("non power of 2 textures not supported");
         goto fail;
+    }
+
+    /*
+     * ARB_sync is not mandatory, but if present gives additional
+     * performance.
+     */
+    gl_backend->has_arb_sync = (strstr(extensions, "GL_ARB_sync ") != NULL) &&
+                               gl_backend->FenceSync &&
+                               gl_backend->DeleteSync &&
+                               gl_backend->WaitSync;
+    if (gl_backend->has_arb_sync) {
+        VIGS_LOG_INFO("ARB_sync supported");
+    } else {
+        VIGS_LOG_WARN("ARB_sync not supported!");
     }
 
     gl_backend->base.create_surface = &vigs_gl_backend_create_surface;

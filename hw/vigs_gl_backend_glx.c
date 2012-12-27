@@ -29,6 +29,14 @@
         } \
     } while (0)
 
+#define VIGS_GL_GET_PROC_OPTIONAL(func, proc_name) \
+    do { \
+        *(void**)(&gl_backend_glx->base.func) = gl_backend_glx->glXGetProcAddress((const GLubyte*)#proc_name); \
+        if (!gl_backend_glx->base.func) { \
+            *(void**)(&gl_backend_glx->base.func) = dlsym(gl_backend_glx->handle, #proc_name); \
+        } \
+    } while (0)
+
 /* GLX 1.0 */
 typedef void (*PFNGLXDESTROYCONTEXTPROC)(Display *dpy, GLXContext ctx);
 typedef GLXContext (*PFNGLXGETCURRENTCONTEXTPROC)(void);
@@ -289,6 +297,9 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(BlendFunc, glBlendFunc);
     VIGS_GL_GET_PROC(CopyTexImage2D, glCopyTexImage2D);
     VIGS_GL_GET_PROC(BlitFramebuffer, glBlitFramebufferEXT);
+    VIGS_GL_GET_PROC_OPTIONAL(FenceSync, glFenceSync);
+    VIGS_GL_GET_PROC_OPTIONAL(DeleteSync, glDeleteSync);
+    VIGS_GL_GET_PROC_OPTIONAL(WaitSync, glWaitSync);
 
     gl_backend_glx->dpy = x_display;
 

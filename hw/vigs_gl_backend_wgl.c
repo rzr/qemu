@@ -43,6 +43,14 @@
         } \
     } while (0)
 
+#define VIGS_GL_GET_PROC_OPTIONAL(func, proc_name) \
+    do { \
+        *(void**)(&gl_backend_wgl->base.func) = gl_backend_wgl->wglGetProcAddress((LPCSTR)#proc_name); \
+        if (!gl_backend_wgl->base.func) { \
+            *(void**)(&gl_backend_wgl->base.func) = GetProcAddress(gl_backend_wgl->handle, #proc_name); \
+        } \
+    } while (0)
+
 typedef HGLRC (WINAPI *PFNWGLCREATECONTEXTPROC)(HDC hdl);
 typedef BOOL (WINAPI *PFNWGLDELETECONTEXTPROC)(HGLRC hdl);
 typedef PROC (WINAPI *PFNWGLGETPROCADDRESSPROC)(LPCSTR sym);
@@ -401,6 +409,9 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(BlendFunc, glBlendFunc);
     VIGS_GL_GET_PROC(CopyTexImage2D, glCopyTexImage2D);
     VIGS_GL_GET_PROC(BlitFramebuffer, glBlitFramebufferEXT);
+    VIGS_GL_GET_PROC_OPTIONAL(FenceSync, glFenceSync);
+    VIGS_GL_GET_PROC_OPTIONAL(DeleteSync, glDeleteSync);
+    VIGS_GL_GET_PROC_OPTIONAL(WaitSync, glWaitSync);
 
     gl_backend_wgl->wglMakeCurrent(NULL, NULL);
     gl_backend_wgl->wglDeleteContext(tmp_ctx);
