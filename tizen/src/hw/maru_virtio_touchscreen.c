@@ -50,7 +50,7 @@ typedef struct TouchEventEntry {
 } TouchEventEntry;
 
 /* the maximum number of touch event that can be put into a queue */
-#define MAX_TOUCH_EVENT_CNT 64
+#define MAX_TOUCH_EVENT_CNT 256
 
 static TouchEventEntry _events_buf[MAX_TOUCH_EVENT_CNT];
 static QTAILQ_HEAD(, TouchEventEntry) events_queue =
