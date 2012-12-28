@@ -1066,19 +1066,38 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     }
 
     /*
+     * Currently we shouldn't do this. Consider this scenario:
+     * 1. Host OpenGL has a large GL commands buffer
+     * 2. Target renders a lot of frames continuously
+     * 3. QEMU makes a glReadPixels call 50 times per second (to update its display)
+     * Thus, we might have a situation where target will queue up thousands
+     * of frames and glReadPixels will take really long until all of these
+     * frames are rendered which is foolish, since we only need the last one.
+     * We might have really large FPS, but true performance will degrade.
+     * The right way to implement all of this is via vsync, which is a todo.
+     * TODO: Implement vsync.
+     * @{
+     */
+
+    /*
      * ARB_sync is not mandatory, but if present gives additional
      * performance.
      */
-    gl_backend->has_arb_sync = (strstr(extensions, "GL_ARB_sync ") != NULL) &&
-                               gl_backend->FenceSync &&
-                               gl_backend->DeleteSync &&
-                               gl_backend->WaitSync &&
-                               gl_backend->ClientWaitSync;
+    /*gl_backend->has_arb_sync = (strstr(extensions, "GL_ARB_sync ") != NULL) &&
+                                 gl_backend->FenceSync &&
+                                 gl_backend->DeleteSync &&
+                                 gl_backend->WaitSync &&
+                                 gl_backend->ClientWaitSync;
     if (gl_backend->has_arb_sync) {
         VIGS_LOG_INFO("ARB_sync supported");
     } else {
         VIGS_LOG_WARN("ARB_sync not supported!");
-    }
+    }*/
+    gl_backend->has_arb_sync = false;
+
+    /*
+     * @}
+     */
 
     gl_backend->base.create_surface = &vigs_gl_backend_create_surface;
 
