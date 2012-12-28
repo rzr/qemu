@@ -1,3 +1,6 @@
+* 1.4.38
+- fix gl capability check fail on windows intel graphics machine.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2012-12-28
 * 1.4.37
 - Fixed a memory leak while decoding video.
 == Kitae Kim <kt920.kim@samsung.com> 2012-12-28

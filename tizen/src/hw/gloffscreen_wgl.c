@@ -37,6 +37,12 @@
 #include <GL/glext.h>
 #include "GL/wglext.h"
 
+#define MAX_ATTRIBS 12 /*Max attributes of pixel format we need*/
+
+#ifdef MANGLE_OPENGL_SYMBOLS
+#include "gl_mangled.h"
+#endif
+
 /* In Windows, you must create a window *before* you can create a pbuffer or
  * get a context. So we create a hidden Window on startup (see glo_init/GloMain).
  *
@@ -53,6 +59,7 @@ struct GloMain {
 };
 struct GloMain glo;
 int glo_inited = 0;
+int Render_texture_support = 0;
 
 struct _GloContext {
     int                   formatFlags;
@@ -84,6 +91,7 @@ PFNWGLCREATEPBUFFERARBPROC wglCreatePbufferARB;
 PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
 PFNWGLBINDTEXIMAGEARBPROC wglBindTexImageARB;
 PFNWGLRELEASETEXIMAGEARBPROC wglReleaseTexImageARB;
+PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB;
 
 /* ------------------------------------------------------------------------ */
 
@@ -107,8 +115,6 @@ int glo_sanity_test (void) {
     PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB;
     PFNWGLCREATEPBUFFERARBPROC wglCreatePbufferARB;
     PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
-	PFNWGLBINDTEXIMAGEARBPROC wglBindTexImageARB;
-	PFNWGLRELEASETEXIMAGEARBPROC wglReleaseTexImageARB;
 
     wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
     wglGetPbufferDCARB = (PFNWGLGETPBUFFERDCARBPROC)wglGetProcAddress("wglGetPbufferDCARB");
@@ -136,6 +142,7 @@ int glo_sanity_test (void) {
 int glo_init(void) {
     WNDCLASSEX wcx;
     PIXELFORMATDESCRIPTOR pfd;
+	char *ext_str;
 
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
@@ -207,16 +214,42 @@ int glo_init(void) {
     wglDestroyPbufferARB = (PFNWGLDESTROYPBUFFERARBPROC)wglGetProcAddress("wglDestroyPbufferARB");
     wglBindTexImageARB = (PFNWGLBINDTEXIMAGEARBPROC)wglGetProcAddress("wglBindTexImageARB");
     wglReleaseTexImageARB = (PFNWGLRELEASETEXIMAGEARBPROC)wglGetProcAddress("wglReleaseTexImageARB");
+	wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress("wglGetExtensionsStringARB");
 
     if (!wglChoosePixelFormatARB ||
         !wglGetPbufferDCARB ||
         !wglReleasePbufferDCARB ||
         !wglCreatePbufferARB ||
-        !wglDestroyPbufferARB) {
+        !wglDestroyPbufferARB ||
+		!wglGetExtensionsStringARB ) {
         printf( "Unable to load the required WGL extensions\n" );
         //exit( EXIT_FAILURE );
 		return 1;
     }
+
+	if(wglGetExtensionsStringARB)
+	{
+		ext_str = wglGetExtensionsStringARB(wglGetCurrentDC());
+		if(ext_str == NULL)
+		{
+			fprintf(stderr, "Failed tp get extensions string!\n");
+			Render_texture_support = 0;
+		}
+		else
+		{
+			if(strstr(ext_str, "WGL_ARB_render_texture") != NULL)
+			{
+				fprintf(stdout, "WGL_ARB_render_texture supported!\n");
+				Render_texture_support = 1;
+			}
+			else
+			{
+				fprintf(stderr, "WGL_ARB_render_texture not supported!\n");
+				Render_texture_support = 0;
+			}
+		}
+	}
+
 
     if ( !wglBindTexImageARB ||
          !wglReleaseTexImageARB )
@@ -687,25 +720,68 @@ void glo_surface_updatecontents(GloSurface *surface) {
 GloContext *__glo_context_create(int formatFlags) {
     GloContext *context;
     // pixel format attributes
-    int          pf_attri[] = {
-        WGL_SUPPORT_OPENGL_ARB, TRUE,      
-        WGL_DRAW_TO_PBUFFER_ARB, TRUE,     
-        WGL_RED_BITS_ARB, 8,             
-        WGL_GREEN_BITS_ARB, 8,            
-        WGL_BLUE_BITS_ARB, 8,            
-        WGL_ALPHA_BITS_ARB, 8,
-        WGL_DEPTH_BITS_ARB, 0,
-        WGL_STENCIL_BITS_ARB, 0,
-        WGL_DOUBLE_BUFFER_ARB, FALSE,      
-        /* Need following 2 to suport surface as texture */
-        WGL_DRAW_TO_PBUFFER_ARB, TRUE,
-        WGL_BIND_TO_TEXTURE_RGBA_ARB, TRUE,
-        0                                
-    };
+	int			 pf_attri[2*MAX_ATTRIBS];
     float        pf_attrf[] = {0, 0};
     unsigned int numReturned = 0;
     int          pb_attr[] = { 0 };
     int          rgbaBits[4];
+	int		 	 index = 0;
+
+	/*Initlized array because it needs to be terminated by 0*/
+	for(index = 0; index < 2*MAX_ATTRIBS; index ++)
+		pf_attri[index] = 0;
+
+	index = 0;
+	pf_attri[2*index] = WGL_SUPPORT_OPENGL_ARB;
+	pf_attri[2*index +1 ] = TRUE;
+	index ++;
+
+	pf_attri[2*index] = WGL_DRAW_TO_PBUFFER_ARB;
+	pf_attri[2*index +1 ] = TRUE;
+	index ++;
+
+	pf_attri[2*index] = WGL_RED_BITS_ARB;
+	pf_attri[2*index +1 ] = 8;
+	index ++;
+
+	pf_attri[2*index] = WGL_GREEN_BITS_ARB;
+	pf_attri[2*index +1 ] = 8;
+	index ++;
+
+	pf_attri[2*index] = WGL_BLUE_BITS_ARB;
+	pf_attri[2*index +1 ] = 8;
+	index ++;
+
+	pf_attri[2*index] = WGL_ALPHA_BITS_ARB;
+	pf_attri[2*index +1 ] = 8;
+	index ++;
+
+	pf_attri[2*index] = WGL_DEPTH_BITS_ARB;
+	pf_attri[2*index +1 ] = 0;
+	index ++;
+
+	pf_attri[2*index] = WGL_STENCIL_BITS_ARB;
+	pf_attri[2*index +1 ] = 0;
+	index ++;
+
+	pf_attri[2*index] = WGL_DOUBLE_BUFFER_ARB;
+	pf_attri[2*index +1 ] = FALSE;
+	index ++;
+
+	if(Render_texture_support)
+	{
+		fprintf(stdout, "Render to texture supported, add attributes in array!\n");
+		pf_attri[2*index] = WGL_DRAW_TO_PBUFFER_ARB;
+		pf_attri[2*index +1 ] = TRUE;
+		index ++;
+
+		pf_attri[2*index] = WGL_BIND_TO_TEXTURE_RGBA_ARB;
+		pf_attri[2*index +1 ] = TRUE;
+
+	} else {
+		fprintf(stderr, "Render to Texture not supported, disable attributes in array!\n");
+	}
+	
 
 
     if (!glo_inited)
@@ -901,6 +977,12 @@ void glo_surface_as_texture(GloSurface *surface)
     fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d,glFormat=0x%x,glType=0x%x.\n", surface->width, surface->height, glFormat, glType);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->image->data);
 #else
+	if(!Render_texture_support)
+	{
+		//fprintf(stderr, "Render to texture not supported on this machine, just return!\n");
+		return ;
+	}
+
     if (!wglBindTexImageARB)
     {
         fprintf (stderr, "wglBindTexImageEXT not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
@@ -916,6 +998,9 @@ void glo_surface_as_texture(GloSurface *surface)
 }
 void glo_surface_release_texture(GloSurface *surface)
 {
+    if(!Render_texture_support)
+		return ;
+
     if (!wglReleaseTexImageARB)
     {
         fprintf (stderr, "wglReleaseTexImageARB not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
