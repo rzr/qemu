@@ -124,6 +124,22 @@ else
 	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
 endif
 
+ifdef CONFIG_DARWIN
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(EMUL_DIR)/bin/emulator-x86 
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(EMUL_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(EMUL_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(EMUL_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(EMUL_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libncurses.5.dylib libncurses.5.dylib $(EMUL_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(EMUL_DIR)/bin/emulator-x86
+endif
+
 # for dibs system...
 all_dibs: qemu skin_client_dibs
 skin_client_dibs:
@@ -196,4 +212,20 @@ else
 	cp -pPR ../license $(DIBS_COMMON_DIR)
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
 	cp -pPR skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
+endif
+
+ifdef CONFIG_DARWIN
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/emulator-x86 
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(DIBS_COMMON_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(DIBS_COMMON_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libncurses.5.dylib libncurses.5.dylib $(DIBS_COMMON_DIR)/bin/emulator-x86
+	install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(DIBS_COMMON_DIR)/bin/emulator-x86
 endif
