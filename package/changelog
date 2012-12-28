@@ -1,3 +1,6 @@
+* 1.4.35
+- sync up the focus between main window and key window
+== GiWoong Kim <giwoong.kim@samsung.com> 2012-12-28
 * 1.4.33
 - fix getting proxy
 == Munkyu Im <munkyu.im@samsung.com> 2012-12-27
