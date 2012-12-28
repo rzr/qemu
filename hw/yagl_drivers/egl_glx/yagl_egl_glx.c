@@ -565,5 +565,22 @@ fail:
 void *yagl_dyn_lib_get_ogl_procaddr(struct yagl_dyn_lib *dyn_lib,
                                     const char *sym_name)
 {
-    return yagl_dyn_lib_get_sym(dyn_lib, sym_name);
+    PFNGLXGETPROCADDRESSPROC get_proc_addr;
+    void *res = NULL;
+
+    get_proc_addr = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
+
+    if (!get_proc_addr) {
+        get_proc_addr = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
+    }
+
+    if (get_proc_addr) {
+        res = get_proc_addr((const GLubyte*)sym_name);
+    }
+
+    if (!res) {
+        res = yagl_dyn_lib_get_sym(dyn_lib, sym_name);
+    }
+
+    return res;
 }

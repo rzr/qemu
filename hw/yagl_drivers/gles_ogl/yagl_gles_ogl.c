@@ -92,6 +92,7 @@ bool yagl_gles_ogl_init(struct yagl_gles_driver *driver,
     YAGL_GLES_OGL_GET_PROC(driver, GetString, glGetString);
     YAGL_GLES_OGL_GET_PROC(driver, GetFramebufferAttachmentParameteriv, glGetFramebufferAttachmentParameterivEXT);
     YAGL_GLES_OGL_GET_PROC(driver, GetRenderbufferParameteriv, glGetRenderbufferParameterivEXT);
+    YAGL_GLES_OGL_GET_PROC(driver, BlitFramebuffer, glBlitFramebufferEXT);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 

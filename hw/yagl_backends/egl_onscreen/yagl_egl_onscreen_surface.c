@@ -1,12 +1,16 @@
 #include <GL/gl.h>
 #include "yagl_egl_onscreen_surface.h"
+#include "yagl_egl_onscreen_context.h"
 #include "yagl_egl_onscreen_display.h"
+#include "yagl_egl_onscreen_ts.h"
 #include "yagl_egl_onscreen.h"
 #include "yagl_log.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_gles_driver.h"
 #include "winsys_gl.h"
+
+YAGL_DECLARE_TLS(struct yagl_egl_onscreen_ts*, egl_onscreen_ts);
 
 static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc)
 {
@@ -38,8 +42,19 @@ static bool yagl_egl_onscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
+    struct yagl_egl_onscreen *egl_onscreen =
+        (struct yagl_egl_onscreen*)sfc->dpy->backend;
+    GLuint cur_fb = 0;
+
+    egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+                                           (GLint*)&cur_fb);
+
+    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+                                               egl_onscreen_ts->ctx->fb);
 
     osfc->ws_sfc->swap_buffers(osfc->ws_sfc);
+
+    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER, cur_fb);
 
     return true;
 }
@@ -53,6 +68,7 @@ static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc
         (struct yagl_egl_onscreen*)sfc->dpy->backend;
     struct winsys_resource *ws_res = NULL;
     struct winsys_gl_surface *ws_sfc = NULL;
+    GLuint cur_fb = 0;
     bool res = false;
 
     ws_res = egl_onscreen->wsi->acquire_resource(egl_onscreen->wsi, target);
@@ -71,9 +87,17 @@ static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc
         goto out;
     }
 
+    egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+                                           (GLint*)&cur_fb);
+
+    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+                                               egl_onscreen_ts->ctx->fb);
+
     ws_sfc->copy_buffers(yagl_egl_onscreen_surface_width(osfc),
                          yagl_egl_onscreen_surface_height(osfc),
                          ws_sfc);
+
+    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER, cur_fb);
 
     res = true;
 

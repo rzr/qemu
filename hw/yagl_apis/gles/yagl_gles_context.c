@@ -36,6 +36,7 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
 {
     struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
     bool ret = false;
+    yagl_object_name current_fb = 0;
     yagl_object_name current_pbo = 0;
     uint32_t rp_line_size = width * bpp;
     uint32_t rp_size = rp_line_size * height;
@@ -46,6 +47,11 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_context_read_pixels,
                         "%ux%ux%u", width, height, bpp);
+
+    gles_ctx->driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+                                  (GLint*)&current_fb);
+
+    gles_ctx->driver->BindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if (!gles_ctx->rp_pbo) {
         /*
@@ -148,6 +154,8 @@ out:
         gles_ctx->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
                                      current_pbo);
     }
+
+    gles_ctx->driver->BindFramebuffer(GL_FRAMEBUFFER, current_fb);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 
