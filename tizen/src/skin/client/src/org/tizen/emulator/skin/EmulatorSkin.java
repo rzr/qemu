@@ -464,6 +464,15 @@ public class EmulatorSkin {
 			@Override
 			public void focusGained(FocusEvent event) {
 				logger.info("gain focus");
+
+				/* temp : control the key window focus */
+				if (isOnTop == false && isControlPanel == true) {
+					if (controlPanel != null &&
+							controlPanel.isAttach() != SWT.NONE) {
+						SkinUtil.setTopMost(controlPanel.getShell(), true);
+						SkinUtil.setTopMost(controlPanel.getShell(), false);
+					}
+				}
 			}
 
 			public void focusLost(FocusEvent event) {
