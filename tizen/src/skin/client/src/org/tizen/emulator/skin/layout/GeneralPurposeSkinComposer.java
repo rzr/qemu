@@ -149,7 +149,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_pushed.png"));
 
 		/* create a toggle button of key window */
-		toggleButton = new ImageButton(shell, SWT.DRAW_TRANSPARENT,
+		toggleButton = new ImageButton(shell, SWT.DRAW_TRANSPARENT | SWT.NO_FOCUS,
 				imageNormal, imageHover, imagePushed);
 		toggleButton.setBackground(
 				new Color(shell.getDisplay(), new RGB(0x1f, 0x1f, 0x1f)));
