@@ -401,7 +401,7 @@ static void qemu_init_pix_fmt_info(void)
     pix_fmt_info[PIX_FMT_YUV411P].y_chroma_shift = 0;
 }
 
-static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
+static int qemu_avpicture_fill(AVPicture *picture, uint8_t **ptr,
                                 int pix_fmt, int width, int height)
 {
     int size, w2, h2, size2;
@@ -425,16 +425,15 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         h2 = DIV_ROUND_UP_X(height, pinfo->y_chroma_shift);
         size2 = stride2 * h2;
         fsize = size + 2 * size2;
-
         TRACE("stride: %d, stride2: %d, size: %d, size2: %d, fsize: %d\n",
             stride, stride2, size, size2, fsize);
 
-        ptr = av_mallocz(fsize);
+        *ptr = av_mallocz(fsize);
         if (!ptr) {
             ERR("failed to allocate memory.\n");
             return -1;
         }
-        picture->data[0] = ptr;
+        picture->data[0] = *ptr;
         picture->data[1] = picture->data[0] + size;
         picture->data[2] = picture->data[1] + size2;
         picture->data[3] = NULL;
@@ -1052,6 +1051,7 @@ int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index)
 
     TRACE("before free input buffer and output buffer!\n");
     if (samples) {
+        TRACE("release allocated audio buffer.\n");
         av_free(samples);
         samples = NULL;
     }
@@ -1098,7 +1098,7 @@ void qemu_av_picture_copy(SVCodecState *s, int ctx_index)
 
     offset = s->codec_param.mmap_offset;
 
-    numBytes = qemu_avpicture_fill(&dst, buffer, avctx->pix_fmt,
+    numBytes = qemu_avpicture_fill(&dst, &buffer, avctx->pix_fmt,
                                   avctx->width, avctx->height);
     TRACE("after avpicture_fill: %d\n", numBytes);
     if (numBytes < 0) {
@@ -1112,6 +1112,7 @@ void qemu_av_picture_copy(SVCodecState *s, int ctx_index)
     TRACE("after copy image buffer from host to guest.\n");
 
     if (buffer) {
+        TRACE("release allocated picture.\n");
         av_free(buffer);
     }
 
