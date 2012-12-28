@@ -469,8 +469,12 @@ public class EmulatorSkin {
 				if (isOnTop == false && isControlPanel == true) {
 					if (controlPanel != null &&
 							controlPanel.isAttach() != SWT.NONE) {
-						SkinUtil.setTopMost(controlPanel.getShell(), true);
-						SkinUtil.setTopMost(controlPanel.getShell(), false);
+						if (!SwtUtil.isMacPlatform()) {
+							SkinUtil.setTopMost(controlPanel.getShell(), true);
+							SkinUtil.setTopMost(controlPanel.getShell(), false);
+							SkinUtil.setTopMost(shell, true);
+							SkinUtil.setTopMost(shell, false);
+						}
 					}
 				}
 			}
