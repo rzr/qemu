@@ -828,7 +828,7 @@ bool yagl_host_glClearDepthx(GLclampx depth)
 {
     YAGL_GET_CTX(glClearDepthx);
 
-    ctx->driver->base.ClearDepthf(yagl_fixed_to_float(depth));
+    ctx->driver->base.ClearDepth(yagl_fixed_to_double(depth));
 
     return true;
 }
@@ -959,8 +959,8 @@ bool yagl_host_glDepthRangex(GLclampx zNear,
 {
     YAGL_GET_CTX(glDepthRangex);
 
-    ctx->driver->base.DepthRangef(yagl_fixed_to_float(zNear),
-                                  yagl_fixed_to_float(zFar));
+    ctx->driver->base.DepthRange(yagl_fixed_to_double(zNear),
+                                 yagl_fixed_to_double(zFar));
 
     return true;
 }

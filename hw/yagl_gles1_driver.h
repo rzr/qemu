@@ -4,10 +4,6 @@
 #include "yagl_types.h"
 #include "yagl_gles_driver.h"
 
-/* We need this because we can't include <GL/gl.h> (which has GLdouble
- * definition) and <GLES/gl.h> (which has GLfixed definition) simultaniously */
-typedef double yagl_GLdouble;
-
 /*
  * YaGL GLES1 driver.
  * @{

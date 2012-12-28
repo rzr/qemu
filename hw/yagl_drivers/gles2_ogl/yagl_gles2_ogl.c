@@ -63,8 +63,6 @@ struct yagl_gles2_driver *yagl_gles2_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, IsProgram, glIsProgram);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, IsShader, glIsShader);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, LinkProgram, glLinkProgram);
-    YAGL_GLES_OGL_GET_PROC(gles2_ogl, ReleaseShaderCompiler, glReleaseShaderCompiler);
-    YAGL_GLES_OGL_GET_PROC(gles2_ogl, ShaderBinary, glShaderBinary);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, ShaderSource, glShaderSource);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, StencilFuncSeparate, glStencilFuncSeparate);
     YAGL_GLES_OGL_GET_PROC(gles2_ogl, StencilMaskSeparate, glStencilMaskSeparate);

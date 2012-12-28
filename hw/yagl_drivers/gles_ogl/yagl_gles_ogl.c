@@ -25,7 +25,7 @@ bool yagl_gles_ogl_init(struct yagl_gles_driver *driver,
     YAGL_GLES_OGL_GET_PROC(driver, BufferSubData, glBufferSubData);
     YAGL_GLES_OGL_GET_PROC(driver, Clear, glClear);
     YAGL_GLES_OGL_GET_PROC(driver, ClearColor, glClearColor);
-    YAGL_GLES_OGL_GET_PROC(driver, ClearDepthf, glClearDepthf);
+    YAGL_GLES_OGL_GET_PROC(driver, ClearDepth, glClearDepth);
     YAGL_GLES_OGL_GET_PROC(driver, ClearStencil, glClearStencil);
     YAGL_GLES_OGL_GET_PROC(driver, ColorMask, glColorMask);
     YAGL_GLES_OGL_GET_PROC(driver, CompressedTexImage2D, glCompressedTexImage2D);
@@ -37,7 +37,7 @@ bool yagl_gles_ogl_init(struct yagl_gles_driver *driver,
     YAGL_GLES_OGL_GET_PROC(driver, DeleteTextures, glDeleteTextures);
     YAGL_GLES_OGL_GET_PROC(driver, DepthFunc, glDepthFunc);
     YAGL_GLES_OGL_GET_PROC(driver, DepthMask, glDepthMask);
-    YAGL_GLES_OGL_GET_PROC(driver, DepthRangef, glDepthRangef);
+    YAGL_GLES_OGL_GET_PROC(driver, DepthRange, glDepthRange);
     YAGL_GLES_OGL_GET_PROC(driver, Disable, glDisable);
     YAGL_GLES_OGL_GET_PROC(driver, DrawArrays, glDrawArrays);
     YAGL_GLES_OGL_GET_PROC(driver, DrawElements, glDrawElements);

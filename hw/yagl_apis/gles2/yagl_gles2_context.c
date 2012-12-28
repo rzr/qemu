@@ -431,8 +431,10 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx)
     gles2_ctx->shader_strip_precision =
         !yagl_gles2_shader_precision_supported(gles2_ctx->driver);
 
-    gles_driver->GetIntegerv(GL_NUM_SHADER_BINARY_FORMATS,
-                             &gles2_ctx->num_shader_binary_formats);
+    /*
+     * We don't support it for now...
+     */
+    gles2_ctx->num_shader_binary_formats = 0;
 
     extensions = (const char*)gles_driver->GetString(GL_EXTENSIONS);
 

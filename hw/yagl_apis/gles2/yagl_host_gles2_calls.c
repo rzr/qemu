@@ -1455,7 +1455,9 @@ bool yagl_host_glReleaseShaderCompiler(void)
 {
     YAGL_GET_CTX(glReleaseShaderCompiler);
 
-    ctx->driver->ReleaseShaderCompiler();
+    /*
+     * No-op.
+     */
 
     return true;
 }

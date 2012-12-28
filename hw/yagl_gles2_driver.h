@@ -43,8 +43,6 @@ struct yagl_gles2_driver
     YAGL_GLES_DRIVER_FUNC_RET1(GLboolean, IsProgram, GLuint, program)
     YAGL_GLES_DRIVER_FUNC_RET1(GLboolean, IsShader, GLuint, shader)
     YAGL_GLES_DRIVER_FUNC1(LinkProgram, GLuint, program)
-    YAGL_GLES_DRIVER_FUNC0(ReleaseShaderCompiler)
-    YAGL_GLES_DRIVER_FUNC5(ShaderBinary, GLsizei, const GLuint*, GLenum, const GLvoid*, GLsizei, n, shaders, binaryformat, binary, length)
     YAGL_GLES_DRIVER_FUNC4(ShaderSource, GLuint, GLsizei, const GLchar**, const GLint*, shader, count, string, length)
     YAGL_GLES_DRIVER_FUNC4(StencilFuncSeparate, GLenum, GLenum, GLint, GLuint, face, func, ref, mask)
     YAGL_GLES_DRIVER_FUNC2(StencilMaskSeparate, GLenum, GLuint, face, mask)

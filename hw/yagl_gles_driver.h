@@ -53,6 +53,10 @@ void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, 
      arg4_type arg4, arg5_type arg5, arg6_type arg6, arg7_type arg7, \
      arg8_type arg8);
 
+/* We need this because we can't include <GL/gl.h> (which has GLdouble
+ * definition) and <GLES/gl.h> (which has GLfixed definition) simultaneously */
+typedef double yagl_GLdouble;
+
 /*
  * YaGL GLES driver per-process state.
  * @{
@@ -71,7 +75,7 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC4(BufferSubData, GLenum, GLintptr, GLsizeiptr, const GLvoid*, target, offset, size, data)
     YAGL_GLES_DRIVER_FUNC1(Clear, GLbitfield, mask)
     YAGL_GLES_DRIVER_FUNC4(ClearColor, GLclampf, GLclampf, GLclampf, GLclampf, red, green, blue, alpha)
-    YAGL_GLES_DRIVER_FUNC1(ClearDepthf, GLclampf, depth)
+    YAGL_GLES_DRIVER_FUNC1(ClearDepth, yagl_GLdouble, depth)
     YAGL_GLES_DRIVER_FUNC1(ClearStencil, GLint, s)
     YAGL_GLES_DRIVER_FUNC4(ColorMask, GLboolean, GLboolean, GLboolean, GLboolean, red, green, blue, alpha)
     YAGL_GLES_DRIVER_FUNC8(CompressedTexImage2D, GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid*, target, level, internalformat, width, height, border, imageSize, data)
@@ -83,7 +87,7 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC2(DeleteTextures, GLsizei, const GLuint*, n, textures)
     YAGL_GLES_DRIVER_FUNC1(DepthFunc, GLenum, func)
     YAGL_GLES_DRIVER_FUNC1(DepthMask, GLboolean, flag)
-    YAGL_GLES_DRIVER_FUNC2(DepthRangef, GLclampf, GLclampf, zNear, zFar)
+    YAGL_GLES_DRIVER_FUNC2(DepthRange, yagl_GLdouble, yagl_GLdouble, zNear, zFar)
     YAGL_GLES_DRIVER_FUNC1(Disable, GLenum, cap)
     YAGL_GLES_DRIVER_FUNC3(DrawArrays, GLenum, GLint, GLsizei, mode, first, count)
     YAGL_GLES_DRIVER_FUNC4(DrawElements, GLenum, GLsizei, GLenum, const GLvoid*, mode, count, type, indices)

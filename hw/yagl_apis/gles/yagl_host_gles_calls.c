@@ -396,7 +396,7 @@ bool yagl_host_glClearDepthf(GLclampf depth)
 {
     YAGL_GET_CTX(glClearDepthf);
 
-    ctx->driver->ClearDepthf(depth);
+    ctx->driver->ClearDepth(depth);
 
     return true;
 }
@@ -693,7 +693,7 @@ bool yagl_host_glDepthRangef(GLclampf zNear,
 {
     YAGL_GET_CTX(glDepthRangef);
 
-    ctx->driver->DepthRangef(zNear, zFar);
+    ctx->driver->DepthRange(zNear, zFar);
 
     return true;
 }
