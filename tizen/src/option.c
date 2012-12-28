@@ -304,14 +304,13 @@ static void remove_string(char *src, char *dst, const char *toremove)
 static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char buf[MAXLEN];
-    char *buf_port;
+    char *buf_port = NULL;
     char buf_proxy[MAXLEN];
     char* buf_proxy_bak;
     char *proxy;
     FILE *output;
     memset(buf, 0, MAXLEN);
     memset(buf_proxy, 0, MAXLEN);
-    memset(buf, 0, MAXLEN);
 
     output = popen("gconftool-2 --get /system/http_proxy/host", "r");
     fscanf(output , "%s", buf);
