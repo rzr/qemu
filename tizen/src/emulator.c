@@ -245,7 +245,7 @@ void make_shdmem(void)
     /* TODO: */
     int shmid;
     char *shared_memory;
-    
+
     shmid = shmget((key_t)SHMKEY, MAXLEN, 0666|IPC_CREAT);
     if (shmid == -1) {
         ERR("shmget failed\n");
@@ -286,7 +286,13 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
                         char ***skin_argv, int *qemu_argc, char ***qemu_argv)
 {
     int i = 0;
-    int j = 0; //skin args index
+    int skin_args_index = 0;
+
+    if (argc <= 1) {
+        fprintf(stderr, "Arguments are not enough to launch Emulator. "
+                "Please try to use Emulator Manager.\n");
+        exit(1);
+    }
 
     /* classification */
     for (i = 1; i < argc; ++i) {
@@ -296,14 +302,14 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
         }
     }
 
-    for (j = i; j < argc; ++j) {
-        if (strstr(argv[j], QEMU_ARGS_PREFIX)) {
-            *skin_argc = j - i - 1;
+    for (skin_args_index = i; skin_args_index < argc; ++skin_args_index) {
+        if (strstr(argv[skin_args_index], QEMU_ARGS_PREFIX)) {
+            *skin_argc = skin_args_index - i - 1;
 
-            *qemu_argc = argc - j - i + 1;
-            *qemu_argv = &(argv[j]);
+            *qemu_argc = argc - skin_args_index - i + 1;
+            *qemu_argv = &(argv[skin_args_index]);
 
-            argv[j] = argv[0];
+            argv[skin_args_index] = argv[0];
         }
     }
 }
@@ -347,7 +353,8 @@ static void get_bin_dir(char *exec_argv)
     free(data);
 }
 
-char* get_bin_path(void) {
+char *get_bin_path(void)
+{
     return bin_dir;
 }
 
@@ -504,7 +511,7 @@ static void system_info(void)
 
 #elif defined(CONFIG_LINUX)
     /* depends on building */
-    INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
+    INFO("* QEMU build machine linux kernel version : (%d, %d, %d)\n",
             LINUX_VERSION_CODE >> 16,
             (LINUX_VERSION_CODE >> 8) & 0xff,
             LINUX_VERSION_CODE & 0xff);
@@ -606,19 +613,17 @@ void* main_thread(void* args)
 
     int i;
 
-    fprintf(stdout, "qemu args : =========================================\n");
+    fprintf(stdout, "qemu args: =========================================\n");
     for (i = 0; i < _qemu_argc; ++i) {
         fprintf(stdout, "%s ", _qemu_argv[i]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "=====================================================\n");
+    fprintf(stdout, "\nqemu args: =========================================\n");
 
-    fprintf(stdout, "skin args : =========================================\n");
+    fprintf(stdout, "skin args: =========================================\n");
     for (i = 0; i < _skin_argc; ++i) {
         fprintf(stdout, "%s ", _skin_argv[i]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "=====================================================\n");
+    fprintf(stdout, "\nskin args: =========================================\n");
 
     INFO("qemu main start!\n");
     qemu_main(_qemu_argc, _qemu_argv, NULL);
@@ -632,7 +637,8 @@ void* main_thread(void* args)
 #else
 int main(int argc, char *argv[])
 {
-    parse_options(argc, argv, &_skin_argc, &_skin_argv, &_qemu_argc, &_qemu_argv);
+    parse_options(argc, argv, &_skin_argc,
+                &_skin_argv, &_qemu_argc, &_qemu_argv);
     get_bin_dir(_qemu_argv[0]);
     socket_init();
     extract_qemu_info(_qemu_argc, _qemu_argv);
@@ -654,19 +660,17 @@ int main(int argc, char *argv[])
 
     int i;
 
-    fprintf(stdout, "qemu args : =========================================\n");
+    fprintf(stdout, "qemu args: =========================================\n");
     for (i = 0; i < _qemu_argc; ++i) {
         fprintf(stdout, "%s ", _qemu_argv[i]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "=====================================================\n");
+    fprintf(stdout, "\nqemu args: =========================================\n");
 
-    fprintf(stdout, "skin args : =========================================\n");
+    fprintf(stdout, "skin args: =========================================\n");
     for (i = 0; i < _skin_argc; ++i) {
         fprintf(stdout, "%s ", _skin_argv[i]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "=====================================================\n");
+    fprintf(stdout, "\nskin args: =========================================\n");
 
     INFO("qemu main start!\n");
     qemu_main(_qemu_argc, _qemu_argv, NULL);

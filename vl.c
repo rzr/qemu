@@ -2751,7 +2751,11 @@ int main(int argc, char **argv, char **envp)
                 	dns1, dns2);
                 qemu_opts_set(qemu_find_opts("machine"), 0, "append",
                         tmp_cmdline);
-                fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
+#if 0
+                fprintf(stdout, "kernel command: =========================================\n");
+				fprintf(stdout, "%s\n", tmp_cmdline);
+                fprintf(stdout, "kernel command: =========================================\n");
+#endif
 #else
                 qemu_opts_set(qemu_find_opts("machine"), 0, "append", optarg);
 #endif
@@ -3522,7 +3526,9 @@ int main(int argc, char **argv, char **envp)
 	gchar *tmp = tmp_cmdline;
 	tmp_cmdline = g_strdup_printf("%s gles=%d yagl=%d", tmp, enable_gl, enable_yagl);
 	qemu_opts_set(qemu_find_opts("machine"), 0, "append", tmp_cmdline);
-	fprintf(stdout, "kernel command : %s\n", tmp_cmdline);
+	fprintf(stdout, "kernel command: =========================================\n");
+	fprintf(stdout, "%s\n", tmp_cmdline);
+	fprintf(stdout, "kernel command: =========================================\n");
 	g_free(tmp);
 
         if (enable_gl) {
