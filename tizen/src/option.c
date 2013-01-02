@@ -65,6 +65,7 @@ CFDictionaryRef proxySettings;
 #define SOCKS_PROTOCOL "socks="
 #define DIRECT "DIRECT"
 #define PROXY "PROXY"
+#define MAXPORTLEN 6
 MULTI_DEBUG_CHANNEL(tizen, option);
 #if defined(CONFIG_WIN32)
 BYTE *url;
@@ -304,30 +305,31 @@ static void remove_string(char *src, char *dst, const char *toremove)
 static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char buf[MAXLEN];
-    char *buf_port = NULL;
+    char buf_port[MAXPORTLEN];
     char buf_proxy[MAXLEN];
     char* buf_proxy_bak;
     char *proxy;
     FILE *output;
+    
     memset(buf, 0, MAXLEN);
     memset(buf_proxy, 0, MAXLEN);
+    memset(buf_port, 0, MAXPORTLEN);
 
     output = popen("gconftool-2 --get /system/http_proxy/host", "r");
     fscanf(output , "%s", buf);
     snprintf(buf_proxy, MAXLEN, "%s", buf);
     pclose(output);
-    buf[0] = '\0';
   
     output = popen("gconftool-2 --get /system/http_proxy/port", "r");
     fscanf(output , "%s", buf_port);
     //for abnormal case: if can't find the key of http port, get from environment value.
-    if(buf_port == 0) {
+    if(strlen((char*)buf_port) == 0) {
         buf_proxy_bak = getenv("http_proxy");
         if(strlen(buf_proxy_bak) != 0) {
             proxy = malloc(MAXLEN);
             remove_string(buf_proxy_bak, proxy, HTTP_PREFIX);
             strncpy(http_proxy, proxy, strlen(proxy)-1);
-            INFO("http_proxy : %s\n", http_proxy);
+            INFO("http_proxy from env: %s\n", http_proxy);
             free(proxy);
         }
     }
@@ -336,7 +338,7 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
         pclose(output);
         memset(buf, 0, MAXLEN);
         memset(buf_proxy, 0, MAXLEN);
-        INFO("http_proxy : %s\n", http_proxy);
+        INFO("http_proxy: %s\n", http_proxy);
     }
 
     output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
@@ -472,7 +474,7 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
         return 0;
     }
     else if (strcmp(buf, "manual") == 0){
-        INFO("MENUAL PROXY MODE\n");
+        INFO("MANUAL PROXY MODE\n");
         getlinuxproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
     }
     else if (strcmp(buf, "none") == 0){
