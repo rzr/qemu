@@ -402,7 +402,8 @@ static void qemu_init_pix_fmt_info(void)
 }
 
 static int qemu_avpicture_fill(AVPicture *picture, uint8_t **ptr,
-                                int pix_fmt, int width, int height)
+                                int pix_fmt, int width,
+                                int height, bool encode)
 {
     int size, w2, h2, size2;
     int stride, stride2;
@@ -427,11 +428,12 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t **ptr,
         fsize = size + 2 * size2;
         TRACE("stride: %d, stride2: %d, size: %d, size2: %d, fsize: %d\n",
             stride, stride2, size, size2, fsize);
-
-        *ptr = av_mallocz(fsize);
-        if (!ptr) {
-            ERR("failed to allocate memory.\n");
-            return -1;
+        if (!encode) {
+            *ptr = av_mallocz(fsize);
+            if (!ptr) {
+                ERR("failed to allocate memory.\n");
+                return -1;
+            }
         }
         picture->data[0] = *ptr;
         picture->data[1] = picture->data[0] + size;
@@ -924,8 +926,8 @@ int qemu_avcodec_encode_video(SVCodecState *s, int ctx_index)
                             avctx->width, avctx->height);
 #endif
 
-        ret = qemu_avpicture_fill((AVPicture *)pict, inputBuf, avctx->pix_fmt,
-                            avctx->width, avctx->height);
+        ret = qemu_avpicture_fill((AVPicture *)pict, &inputBuf, avctx->pix_fmt,
+                            avctx->width, avctx->height, true);
 
         if (ret < 0) {
             ERR("after avpicture_fill, ret:%d\n", ret);
@@ -1099,7 +1101,7 @@ void qemu_av_picture_copy(SVCodecState *s, int ctx_index)
     offset = s->codec_param.mmap_offset;
 
     numBytes = qemu_avpicture_fill(&dst, &buffer, avctx->pix_fmt,
-                                  avctx->width, avctx->height);
+                                  avctx->width, avctx->height, false);
     TRACE("after avpicture_fill: %d\n", numBytes);
     if (numBytes < 0) {
         ERR("picture size:%d is wrong.\n", numBytes);
