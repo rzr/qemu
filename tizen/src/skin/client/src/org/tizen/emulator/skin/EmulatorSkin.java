@@ -465,16 +465,10 @@ public class EmulatorSkin {
 			public void focusGained(FocusEvent event) {
 				logger.info("gain focus");
 
-				/* temp : control the key window focus */
 				if (isOnTop == false && isControlPanel == true) {
 					if (controlPanel != null &&
 							controlPanel.isAttach() != SWT.NONE) {
-						if (!SwtUtil.isMacPlatform()) {
-							SkinUtil.setTopMost(controlPanel.getShell(), true);
-							SkinUtil.setTopMost(controlPanel.getShell(), false);
-							SkinUtil.setTopMost(shell, true);
-							SkinUtil.setTopMost(shell, false);
-						}
+						controlPanel.getShell().moveAbove(shell);
 					}
 				}
 			}
