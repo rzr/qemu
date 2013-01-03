@@ -316,16 +316,13 @@ public class ControlPanel extends SkinWindow {
 							30, heightOneThird);
 
 					if (childBounds.intersects(attachBounds1) == true) {
-						setShellPosition(SWT.RIGHT | SWT.CENTER, false, true);
-						isAttach = SWT.RIGHT | SWT.CENTER;
+						dock(SWT.RIGHT | SWT.CENTER, false, true);
 					} else if (childBounds.intersects(attachBounds2) == true) {
-						setShellPosition(SWT.RIGHT | SWT.TOP, false, true);
-						isAttach = SWT.RIGHT | SWT.TOP;
+						dock(SWT.RIGHT | SWT.TOP, false, true);
 					} else if (childBounds.intersects(attachBounds3) == true) {
-						setShellPosition(SWT.RIGHT | SWT.BOTTOM, false, true);
-						isAttach = SWT.RIGHT | SWT.BOTTOM;
+						dock(SWT.RIGHT | SWT.BOTTOM, false, true);
 					} else {
-						isAttach = SWT.NONE;
+						dock(SWT.NONE, false, true);
 					}
 				}
 			}
@@ -356,7 +353,7 @@ public class ControlPanel extends SkinWindow {
 					skin.pairTagCanvas.setVisible(false);
 				}
 				skin.setIsControlPanel(false);
-				skin.controlPanel = null;
+				skin.keyWindow = null;
 
 				if (null != shellPaintListener) {
 					shell.removePaintListener(shellPaintListener);

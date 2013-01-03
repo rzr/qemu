@@ -144,7 +144,7 @@ public class EmulatorSkin {
 
 	private Menu contextMenu;
 	private MenuItem panelItem; /* key window menu */
-	public ControlPanel controlPanel;
+	public ControlPanel keyWindow;
 	public Color colorPairTag;
 	public Canvas pairTagCanvas;
 	public CustomProgressBar bootingProgress;
@@ -355,13 +355,13 @@ public class EmulatorSkin {
 							screenShotDialog = null;
 						}
 
-						/* close the control panel window */
-						if (null != controlPanel) {
-							Shell cpShell = controlPanel.getShell();
-							if (!cpShell.isDisposed()) {
-								cpShell.close();
+						/* close the Key Window */
+						if (null != keyWindow) {
+							Shell keyWindowShell = keyWindow.getShell();
+							if (!keyWindowShell.isDisposed()) {
+								keyWindowShell.close();
 							}
-							controlPanel = null;
+							keyWindow = null;
 
 							if (colorPairTag != null) {
 								colorPairTag.dispose();
@@ -466,9 +466,9 @@ public class EmulatorSkin {
 				logger.info("gain focus");
 
 				if (isOnTop == false && isControlPanel == true) {
-					if (controlPanel != null &&
-							controlPanel.isAttach() != SWT.NONE) {
-						controlPanel.getShell().moveAbove(shell);
+					if (keyWindow != null &&
+							keyWindow.getDockPosition() != SWT.NONE) {
+						keyWindow.getShell().moveAbove(shell);
 					}
 				}
 			}
@@ -919,11 +919,10 @@ public class EmulatorSkin {
 		return isControlPanel;
 	}
 
-	public void openKeyWindow(int attach) {
-		if (controlPanel != null) {
-			controlPanel.getShell().setVisible(true);
-			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
-			controlPanel.setAttach(attach);
+	public void openKeyWindow(int dockValue) {
+		if (keyWindow != null) {
+			keyWindow.getShell().setVisible(true);
+			SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
 			pairTagCanvas.setVisible(true);
 			return;
@@ -942,22 +941,22 @@ public class EmulatorSkin {
 		}
 
 		try {
-			controlPanel = new ControlPanel(this, shell, colorPairTag,
+			keyWindow = new ControlPanel(this, shell, colorPairTag,
 					communicator, keyMapList);
-			SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
+			SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
-			//colorPairTag = controlPanel.getPairTagColor();
+			//colorPairTag = keyWindow.getPairTagColor();
 			pairTagCanvas.setVisible(true);
 
-			controlPanel.open();
+			keyWindow.open(dockValue);
 			/* do not add at this line */
 		} finally {
-			controlPanel = null;
+			keyWindow = null;
 		}
 	}
 
 	public void hideKeyWindow() {
-		controlPanel.getShell().setVisible(false);
+		keyWindow.getShell().setVisible(false);
 		pairTagCanvas.setVisible(false);
 	}
 
@@ -1002,8 +1001,8 @@ public class EmulatorSkin {
 					if (SkinUtil.setTopMost(shell, isOnTop) == false) {
 						logger.info("failed to Always On Top");
 					} else {
-						if (controlPanel != null) {
-							SkinUtil.setTopMost(controlPanel.getShell(), isOnTop);
+						if (keyWindow != null) {
+							SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 						}
 					}
 				}
@@ -1039,13 +1038,14 @@ public class EmulatorSkin {
 
 				setIsControlPanel(isControlPanel);
 				if (isControlPanel == true) {
-					openKeyWindow((controlPanel == null) ?
-							SWT.NONE : controlPanel.isAttach());
+					openKeyWindow((keyWindow == null) ?
+							SWT.RIGHT | SWT.CENTER : keyWindow.getDockPosition());
 				} else { /* hide a key window */
-					if (controlPanel != null &&
-							controlPanel.isAttach() != SWT.NONE) {
+					if (keyWindow != null &&
+							keyWindow.getDockPosition() != SWT.NONE) {
+						/* Close the Key Window if it is docked to Main Window */
 						pairTagCanvas.setVisible(false);
-						controlPanel.getShell().close();
+						keyWindow.getShell().close();
 					} else {
 						hideKeyWindow();
 					}

@@ -158,8 +158,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (skin.getIsControlPanel() == true) {
-					if (skin.controlPanel != null) {
-						skin.controlPanel.getShell().close();
+					if (skin.keyWindow != null) {
+						skin.keyWindow.getShell().close();
 					}
 
 					skin.setIsControlPanel(false);
@@ -169,8 +169,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER);
 
 					/* move a key window to right of the emulator window */
-					if (skin.controlPanel != null) {
-						skin.controlPanel.setShellPosition(
+					if (skin.keyWindow != null) {
+						skin.keyWindow.dock(
 								SWT.RIGHT | SWT.CENTER, true, false);
 					}
 				}
@@ -355,10 +355,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
 
-				if (skin.controlPanel != null &&
-						skin.controlPanel.isAttach() != SWT.NONE) {
-					skin.controlPanel.setShellPosition(
-							skin.controlPanel.isAttach(), false, false);
+				if (skin.keyWindow != null &&
+						skin.keyWindow.getDockPosition() != SWT.NONE) {
+					skin.keyWindow.dock(
+							skin.keyWindow.getDockPosition(), false, false);
 				}
 			}
 		};
@@ -376,10 +376,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 					shell.setLocation(x, y);
 
-					if (skin.controlPanel != null &&
-							skin.controlPanel.isAttach() != SWT.NONE) {
-						skin.controlPanel.setShellPosition(
-								skin.controlPanel.isAttach(), false, false);
+					if (skin.keyWindow != null &&
+							skin.keyWindow.getDockPosition() != SWT.NONE) {
+						skin.keyWindow.dock(
+								skin.keyWindow.getDockPosition(), false, false);
 					}
 				}
 			}
@@ -396,10 +396,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
-					if (skin.controlPanel != null &&
-							skin.controlPanel.isAttach() != SWT.NONE) {
-						skin.controlPanel.setShellPosition(
-								skin.controlPanel.isAttach(), false, true);
+					if (skin.keyWindow != null &&
+							skin.keyWindow.getDockPosition() != SWT.NONE) {
+						skin.keyWindow.dock(
+								skin.keyWindow.getDockPosition(), false, true);
 					}
 				}
 			}

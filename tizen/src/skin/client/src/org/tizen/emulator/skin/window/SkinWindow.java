@@ -42,26 +42,23 @@ public class SkinWindow {
 
 	protected Shell shell;
 	protected Shell parent;
-	private int shellPositionType;
-	protected int isAttach;
+	private int dockPosition;
 
-	public SkinWindow(Shell parent, int shellPositionType) {
+	public SkinWindow(Shell parent, int dockPosition) {
 		this.parent = parent;
-		this.shellPositionType = shellPositionType;
-		this.isAttach = SWT.NONE;
+		this.dockPosition = dockPosition;
 	}
 
 	public Shell getShell() {
 		return shell;
 	}
 
-	public void open() {
+	public void open(int dockValue) {
 		if (shell.isDisposed()) {
 			return;
 		}
 
-		setShellPosition(shellPositionType, true, true);
-		isAttach = SWT.RIGHT | SWT.CENTER;
+		dock(dockValue, true, true);
 
 		shell.open();
 
@@ -72,7 +69,7 @@ public class SkinWindow {
 		}
 	}
 
-	public void setShellPosition(int shellPositionType,
+	public void dock(int dockValue,
 			boolean correction, boolean enableLogger) {
 		int x = 0;
 		int y = 0;
@@ -87,26 +84,33 @@ public class SkinWindow {
 			logger.info("current child shell bounds : " + childBounds);
 		}
 
-		if (shellPositionType == (SWT.RIGHT | SWT.TOP)) {
+		dockPosition = dockValue;
+
+		if (dockPosition == SWT.NONE){
+			logger.info("undock");
+			/* do nothing */
+
+			return;
+		} else if (dockPosition == (SWT.RIGHT | SWT.TOP)) {
 			x = parentBounds.x + parentBounds.width;
 			y = parentBounds.y;
 
 			/* correction of location */
-//			if ((x + childBounds.width) >
-//					(monitorBounds.x + monitorBounds.width)) {
-//				x = parentBounds.x - childBounds.width;
-//			}
-		} else if (shellPositionType == (SWT.RIGHT | SWT.BOTTOM)) {
+			/*if ((x + childBounds.width) >
+					(monitorBounds.x + monitorBounds.width)) {
+				x = parentBounds.x - childBounds.width;
+			}*/
+		} else if (dockPosition == (SWT.RIGHT | SWT.BOTTOM)) {
 			x = parentBounds.x + parentBounds.width;
 			y = parentBounds.y + parentBounds.height - childBounds.height;
 
 			/* correction of location */
-//			int shift = (monitorBounds.x + monitorBounds.width) -
-//					(x + childBounds.width);
-//			if (shift < 0) {
-//				x += shift;
-//				parent.setLocation(parentBounds.x + shift, parentBounds.y);
-//			}
+			/*int shift = (monitorBounds.x + monitorBounds.width) -
+					(x + childBounds.width);
+			if (shift < 0) {
+				x += shift;
+				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+			}*/
 		} else { /* SWT.RIGHT | SWT.CENTER */
 			x = parentBounds.x + parentBounds.width;
 			y = parentBounds.y + (parentBounds.height / 2) -
@@ -126,11 +130,7 @@ public class SkinWindow {
 		shell.setLocation(x, y);
 	}
 
-	public void setAttach(int attach) {
-		isAttach = attach;
-	}
-
-	public int isAttach() {
-		return isAttach;
+	public int getDockPosition() {
+		return dockPosition;
 	}
 }
