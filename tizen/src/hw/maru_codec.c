@@ -401,7 +401,7 @@ static void qemu_init_pix_fmt_info(void)
     pix_fmt_info[PIX_FMT_YUV411P].y_chroma_shift = 0;
 }
 
-static int qemu_avpicture_fill(AVPicture *picture, uint8_t **ptr,
+static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
                                 int pix_fmt, int width,
                                 int height, bool encode)
 {
@@ -428,14 +428,18 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t **ptr,
         fsize = size + 2 * size2;
         TRACE("stride: %d, stride2: %d, size: %d, size2: %d, fsize: %d\n",
             stride, stride2, size, size2, fsize);
-        if (!encode) {
-            *ptr = av_mallocz(fsize);
+        if (!encode && !ptr) {
+            TRACE("allocate a buffer for a decoded picture.\n");
+            ptr = av_mallocz(fsize);
             if (!ptr) {
                 ERR("failed to allocate memory.\n");
                 return -1;
             }
+        } else {
+            TRACE("calculate encoded picture.\n");
         }
-        picture->data[0] = *ptr;
+
+        picture->data[0] = ptr;
         picture->data[1] = picture->data[0] + size;
         picture->data[2] = picture->data[1] + size2;
         picture->data[3] = NULL;
@@ -921,12 +925,8 @@ int qemu_avcodec_encode_video(SVCodecState *s, int ctx_index)
             ERR("[%s] failed to get input buffer\n", __func__);
             return ret;
         }
-#if 0
-        ret = avpicture_fill((AVPicture *)pict, inputBuf, avctx->pix_fmt,
-                            avctx->width, avctx->height);
-#endif
 
-        ret = qemu_avpicture_fill((AVPicture *)pict, &inputBuf, avctx->pix_fmt,
+        ret = qemu_avpicture_fill((AVPicture *)pict, inputBuf, avctx->pix_fmt,
                             avctx->width, avctx->height, true);
 
         if (ret < 0) {
@@ -1100,7 +1100,7 @@ void qemu_av_picture_copy(SVCodecState *s, int ctx_index)
 
     offset = s->codec_param.mmap_offset;
 
-    numBytes = qemu_avpicture_fill(&dst, &buffer, avctx->pix_fmt,
+    numBytes = qemu_avpicture_fill(&dst, NULL, avctx->pix_fmt,
                                   avctx->width, avctx->height, false);
     TRACE("after avpicture_fill: %d\n", numBytes);
     if (numBytes < 0) {
@@ -1110,11 +1110,12 @@ void qemu_av_picture_copy(SVCodecState *s, int ctx_index)
     }
 
     av_picture_copy(&dst, src, avctx->pix_fmt, avctx->width, avctx->height);
-    memcpy((uint8_t *)s->vaddr + offset, dst.data[0], numBytes);
+    buffer = dst.data[0];
+    memcpy((uint8_t *)s->vaddr + offset, buffer, numBytes);
     TRACE("after copy image buffer from host to guest.\n");
 
     if (buffer) {
-        TRACE("release allocated picture.\n");
+        TRACE("release allocated video frame.\n");
         av_free(buffer);
     }
 
