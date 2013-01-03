@@ -164,6 +164,11 @@ public class EmulatorSkin {
 
 	private LinkedList<KeyEventData> pressedKeyEventList;
 
+	/* touch values */
+	private static int pressingX = -1, pressingY = -1;
+	private static int pressingOriginX = -1, pressingOriginY = -1;
+
+
 	private EmulatorSkin reopenSkin;
 	
 	/**
@@ -596,6 +601,8 @@ public class EmulatorSkin {
 					}
 
 					if (SwtUtil.isMacPlatform()) {
+						pressingX = pressingY = -1;
+						pressingOriginX = pressingOriginY = -1;
 						if (finger.getMultiTouchEnable() == 1) {
 							logger.info("maruFingerProcessing1");
 							finger.maruFingerProcessing1(MouseEventType.RELEASE.value(),
@@ -636,6 +643,11 @@ public class EmulatorSkin {
 					}
 
 					if (SwtUtil.isMacPlatform()) {
+						pressingX = geometry[0];
+						pressingY = geometry[1];
+						pressingOriginX = e.x;
+						pressingOriginY = e.y;
+	
 						if (finger.getMultiTouchEnable() == 1) {
 							logger.info("maruFingerProcessing1");
 							finger.maruFingerProcessing1(MouseEventType.PRESS.value(),
@@ -807,10 +819,30 @@ public class EmulatorSkin {
 								(keyCode == SWT.COMMAND && (tempStateMask & SWT.SHIFT) != 0))
 						{
 							finger.setMultiTouchEnable(2);
+							/* add a finger before start the multi-touch processing
+							                if already exist the pressed touch in display */
+			                if (pressingX != -1 && pressingY != -1 &&
+			                		pressingOriginX != -1 && pressingOriginY != -1) {
+					              	finger.addFingerPoint(
+					                        pressingOriginX, pressingOriginY,
+					                        pressingX, pressingY);
+					                pressingX = pressingY = -1;
+					                pressingOriginX = pressingOriginY = -1;
+					        }
 							logger.info("enable multi-touch = mode2");
 						}
 						else if (keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
 							finger.setMultiTouchEnable(1);
+							/* add a finger before start the multi-touch processing
+							 * if already exist the pressed touch in display */
+							if (pressingX != -1 && pressingY != -1 &&
+									pressingOriginX != -1 && pressingOriginY != -1) {
+			                    	finger.addFingerPoint(
+			                    			pressingOriginX, pressingOriginY,			                       
+			                    			pressingX, pressingY);
+			                    	pressingX = pressingY = -1;
+			                    	pressingOriginX = pressingOriginY = -1;
+			                }
 							logger.info("enable multi-touch = mode1");
 						}
                 //	}

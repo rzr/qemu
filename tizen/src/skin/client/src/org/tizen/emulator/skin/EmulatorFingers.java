@@ -186,7 +186,7 @@ public class EmulatorFingers {
 		return this.multiTouchEnable;
 	}
 	
-	private int addFingerPoint(int originX, int originY, int x, int y) {
+	protected int addFingerPoint(int originX, int originY, int x, int y) {
 		if (this.fingerCnt == this.fingerCntMax) {
 			logger.info("support multi-touch up to " + this.fingerCntMax +" fingers");
 			return -1;
