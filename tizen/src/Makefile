@@ -125,23 +125,23 @@ else
 endif
 
 ifdef CONFIG_DARWIN
-	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img 
-	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(EMUL_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(EMUL_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(EMUL_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(EMUL_DIR)/bin/qemu-img
 
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
 	i386-softmmu) \
-		install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libncurses.5.dylib libncurses.5.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \
@@ -224,23 +224,23 @@ else
 endif
 
 ifdef CONFIG_DARWIN
-	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img 
-	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
-	install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
 	i386-softmmu) \
-		install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib libgthread-2.0.0.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib libglib-2.0.0.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libintl.8.dylib libintl.8.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib libgcc_s.1.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libz.1.dylib libz.1.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libncurses.5.dylib libncurses.5.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change /opt/local/lib/libcurl.4.dylib libcurl.4.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \
