@@ -5,10 +5,10 @@
  *
  * Contact: 
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * HyunJun Son
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

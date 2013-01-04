@@ -5,10 +5,7 @@
  *
  * Contact:
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
- * DongKyun Yun <dk77.yun@samsung.com>
- * DoHyung Hong <don.hong@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * Hyunjun Son <hj79.son@samsung.com>
  * SangJin Kim <sangjin3.kim@samsung.com>
  * KiTae Kim <kt920.kim@samsung.com>
  * JinHyung Jo <jinhyung.jo@samsung.com>
@@ -16,6 +13,9 @@
  * MunKyu Im <munkyu.im@samsung.com>
  * JiHye Kim <jihye1128.kim@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com> 
+ * DongKyun Yun
+ * DoHyung Hong
+ * Hyunjun Son
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

@@ -6,8 +6,8 @@
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
  *  SeokYeon Hwang <syeon.hwang@samsung.com>
- *  DongKyun Yun <dk77.yun@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ *  DongKyun Yun
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

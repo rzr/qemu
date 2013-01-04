@@ -4,9 +4,9 @@
  * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * DoHyung Hong <don.hong@samsung.com>
  * Kitae Kim <kt920.kim@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
+ * DoHyung Hong
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

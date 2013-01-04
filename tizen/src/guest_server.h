@@ -5,9 +5,9 @@
  *
  * Contact:
  * JiHye Kim <jihye1128.kim@samsung.com>
- * Hyunjun Son <hj79.son@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * Hyunjun Son
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
