@@ -224,7 +224,7 @@ else
 endif
 
 ifdef CONFIG_DARWIN
-	libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img 
 	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
