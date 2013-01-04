@@ -54,6 +54,8 @@ public class ImageButton extends Canvas {
 	/* image - 0 : normal, 1 : hover, 2 : pushed */
 	private Image imageButton[];
 
+	private int width;
+	private int height;
 	private String text;
 	private int textPositionX;
 	private int textPositionY;
@@ -69,9 +71,12 @@ public class ImageButton extends Canvas {
 		imageButton[1] = imageHover;
 		imageButton[2] = imagePushed;
 
+		this.width = imageNormal.getImageData().width;
+		this.height = imageNormal.getImageData().height;
+
 		this.text = null;
-		textPositionX = imageNormal.getImageData().width / 2;
-		textPositionY = imageNormal.getImageData().height / 2;
+		textPositionX = width / 2;
+		textPositionY = height / 2;
 		white = Display.getCurrent().getSystemColor(SWT.COLOR_WHITE);
 		gray = Display.getCurrent().getSystemColor(SWT.COLOR_GRAY);
 
@@ -193,15 +198,31 @@ public class ImageButton extends Canvas {
 		});
 	}
 
-	public void setText(String text) {
-		if (text == null || text.isEmpty()) {
+	public void setText(String textValue) {
+		/* checking whether the text value is appropriate */
+		if (textValue == null || textValue.isEmpty()) {
 			return;
 		}
 
-		this.text = text;
-
 		GC gc = new GC(this);
-		Point textSize = gc.textExtent(text);
+		Point textSize = gc.textExtent(textValue);
+		Point originalSize = textSize;
+
+		while (textSize.x >= (width - 10)) {
+			textValue = textValue.substring(0, textValue.length() - 1);
+			textSize = gc.textExtent(textValue);
+		}
+
+		if (originalSize.x != textSize.x) {
+			textValue = textValue.substring(0, textValue.length() - 1);
+			textValue += "..";
+			textSize = gc.textExtent(textValue);
+		}
+
+		gc.dispose();
+
+		/* set text */
+		text = textValue;
 
 		textPositionX -= textSize.x / 2;
 		if (textPositionX < 0) {
@@ -212,8 +233,6 @@ public class ImageButton extends Canvas {
 		if (textPositionY < 0) {
 			textPositionY = 0;
 		}
-
-		gc.dispose();
 	}
 
 	public String getText() {
