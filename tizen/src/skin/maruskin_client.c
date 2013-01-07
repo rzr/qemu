@@ -100,9 +100,14 @@ static void* run_skin_client(void* arg)
     } else {
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
-#endif
-
     char* bin_dir = get_bin_path();
+    int bin_len = strlen(bin_dir);
+    char bin_dir_win[bin_len];
+    strcpy(bin_dir_win, bin_dir);
+    bin_dir_win[strlen(bin_dir_win) -1] = '\0';
+#else
+    char* bin_dir = get_bin_path();
+#endif
     INFO("bin directory : %s\n", bin_dir);
     int maxtouchpoint = get_emul_max_touch_point();
     int len_maxtouchpoint;
@@ -111,6 +116,28 @@ static void* run_skin_client(void* arg)
     }else {
         len_maxtouchpoint = 1;
     }
+
+#ifdef CONFIG_WIN32
+    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen((char*)bin_dir_win) +
+        strlen(bin_dir) + strlen(JAR_SKINFILE) +
+        strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
+        strlen(OPT_VM_PATH) + strlen(vm_path) + strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
+        strlen(OPT_MAX_TOUCHPOINT) + len_maxtouchpoint + strlen(argv) + 46;
+    if (len > JAVA_MAX_COMMAND_LENGTH) {
+        INFO("swt command length is too long! (%d)\n", len);
+        len = JAVA_MAX_COMMAND_LENGTH;
+    }
+
+    snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=%d %s",
+        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH,
+        bin_dir_win, bin_dir, JAR_SKINFILE,
+        OPT_SVR_PORT, skin_server_port,
+        OPT_UID, uid,
+        OPT_VM_PATH, vm_path,
+        OPT_NET_BASE_PORT, tizen_base_port,
+        OPT_MAX_TOUCHPOINT, maxtouchpoint, 
+        argv );
+#else
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
         strlen(bin_dir) + strlen(JAR_SKINFILE) + strlen(bin_dir) +
         strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
@@ -130,6 +157,7 @@ static void* run_skin_client(void* arg)
         OPT_NET_BASE_PORT, tizen_base_port,
         OPT_MAX_TOUCHPOINT, maxtouchpoint, 
         argv );
+#endif
 
     INFO( "command for swt : %s\n", cmd );
 
