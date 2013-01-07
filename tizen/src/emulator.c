@@ -314,43 +314,60 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
     }
 }
 
-static void get_bin_dir(char *exec_argv)
+static char *set_bin_dir(char *exec_argv)
 {
-    char *p = NULL;
+    char link_path[1024] = { 0, };
+    char *file_name = NULL;
 
-#ifdef CONFIG_WIN32
-    TCHAR szEXEPath[1024] = { 0, };
-    GetModuleFileName(NULL, szEXEPath, 1024);
+#if defined(CONFIG_WIN32)
+    if (!GetModuleFileName(NULL, link_path, 1024)) {
+        return NULL;
+    }
 
-    p = strrchr(szEXEPath, '\\');
-    // TODO : null
-
-    strncpy(bin_dir, szEXEPath, strlen(szEXEPath) - strlen(p));
+    file_name = strrchr(link_path, '\\');
+    strncpy(bin_dir, link_path, strlen(link_path) - strlen(file_name));
 
     strcat(bin_dir, "\\");
-    return;
-#endif
 
+#elif defined(CONFIG_LINUX)
+    ssize_t len = readlink("/proc/self/exe", link_path, sizeof(link_path) - 1);
+
+    if (len < 0 || len > sizeof(link_path)) {
+        perror("get_bin_dir error : ");
+        return NULL;
+    }
+
+    link_path[len] = '\0';
+
+    file_name = strrchr(link_path, '/');
+    strncpy(bin_dir, link_path, strlen(link_path) - strlen(file_name));
+
+    strcat(bin_dir, "/");
+
+#else
     if (!exec_argv) {
-        return;
+        return NULL;
     }
 
     char *data = strdup(exec_argv);
     if (!data) {
         fprintf(stderr, "Fail to strdup for paring a binary directory.\n");
-        return;
+        return NULL;
     }
 
-    p = strrchr(data, '/');
-    if (!p) {
+    file_name = strrchr(data, '/');
+    if (!file_name) {
         free(data);
-        return;
+        return NULL;
     }
 
-    strncpy(bin_dir, data, strlen(data) - strlen(p));
+    strncpy(bin_dir, data, strlen(data) - strlen(file_name));
 
     strcat(bin_dir, "/");
     free(data);
+#endif
+
+    return bin_dir;
 }
 
 char *get_bin_path(void)
@@ -592,7 +609,7 @@ void* main_thread(void* args)
 
     argv = (char**) args;
     parse_options(argc, argv, &_skin_argc, &_skin_argv, &_qemu_argc, &_qemu_argv);
-    get_bin_dir(_qemu_argv[0]);
+    set_bin_dir(_qemu_argv[0]);
     socket_init();
     extract_qemu_info(_qemu_argc, _qemu_argv);
 
@@ -639,7 +656,7 @@ int main(int argc, char *argv[])
 {
     parse_options(argc, argv, &_skin_argc,
                 &_skin_argv, &_qemu_argc, &_qemu_argv);
-    get_bin_dir(_qemu_argv[0]);
+    set_bin_dir(_qemu_argv[0]);
     socket_init();
     extract_qemu_info(_qemu_argc, _qemu_argv);
 

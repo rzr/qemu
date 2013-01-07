@@ -97,7 +97,7 @@ char *get_log_path(void);
 (void)0 : (void)dbg_printf
 */
 
-extern char bin_dir[256];
+extern char bin_dir[1024];
 
 extern unsigned char _dbg_get_channel_flags( struct _debug_channel *channel );
 extern int _dbg_set_channel_flags( struct _debug_channel *channel,

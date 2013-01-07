@@ -44,7 +44,7 @@
 #include "debug_ch.h"
 
 // DEBUGCH file is located in binary directory.
-char bin_dir[256] = {0,};
+char bin_dir[1024] = {0,};
 
 static char logpath[512] = {0,};
 static char debugchfile[512] = {0, };
