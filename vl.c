@@ -268,7 +268,7 @@ int enable_gl = 0;
 int enable_yagl = 0;
 int capability_check_gl = 0;
 #endif
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
 #define WEBCAM_INFO_IGNORE 0x00
 #define WEBCAM_INFO_WRITE 0x04
 extern int marucam_device_check(int log_flag);
@@ -1987,7 +1987,7 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 	}
 #endif
 #endif
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
     if (!is_webcam_enabled) {
         const char *driver = qemu_opt_get(opts, "driver");
         if (driver && (strcmp (driver, MARUCAM_DEV_NAME) == 0)) {
@@ -3695,7 +3695,7 @@ int main(int argc, char **argv, char **envp)
         kernel_cmdline = "";
     }
 
-#if defined(CONFIG_MARU) && (!defined(CONFIG_DARWIN))
+#if defined(CONFIG_MARU)
     is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
     if (!is_webcam_enabled) {
         fprintf (stderr, "[Webcam] <WARNING> Webcam support was disabled "
