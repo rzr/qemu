@@ -49,7 +49,8 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorSdlSkin(EmulatorSkinState state, EmulatorFingers finger, EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+	public EmulatorSdlSkin(EmulatorSkinState state, EmulatorFingers finger,
+			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
 		super(state, finger, config, skinInfo, isOnTop);
 	}
 

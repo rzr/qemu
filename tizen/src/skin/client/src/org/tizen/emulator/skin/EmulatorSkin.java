@@ -70,11 +70,13 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
-import org.tizen.emulator.skin.comm.sock.data.LcdStateData;
+import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.custom.CustomProgressBar;
+import org.tizen.emulator.skin.custom.KeyWindow;
 import org.tizen.emulator.skin.dbi.ColorsType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RgbType;
@@ -93,8 +95,6 @@ import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
-import org.tizen.emulator.skin.window.ControlPanel;
-import org.tizen.emulator.skin.window.CustomProgressBar;
 
 /**
  *
@@ -143,8 +143,8 @@ public class EmulatorSkin {
 	private boolean isOnKbd;
 
 	private Menu contextMenu;
-	private MenuItem panelItem; /* key window menu */
-	public ControlPanel keyWindow;
+	private MenuItem keyWindowItem; /* key window menu */
+	public KeyWindow keyWindow;
 	public Color colorPairTag;
 	public Canvas pairTagCanvas;
 	public CustomProgressBar bootingProgress;
@@ -943,7 +943,7 @@ public class EmulatorSkin {
 	/* toggle a key window */
 	public void setIsControlPanel(boolean value) {
 		isControlPanel = value;
-		panelItem.setSelection(isControlPanel);
+		keyWindowItem.setSelection(isControlPanel);
 		logger.info("Select Key Window : " + isControlPanel);
 	}
 
@@ -973,7 +973,7 @@ public class EmulatorSkin {
 		}
 
 		try {
-			keyWindow = new ControlPanel(this, shell, colorPairTag,
+			keyWindow = new KeyWindow(this, shell, colorPairTag,
 					communicator, keyMapList);
 			SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
@@ -1059,14 +1059,14 @@ public class EmulatorSkin {
 
 		/* Key Window menu */
 		if (skinInfo.isPhoneShape() == false) { //TODO:
-		panelItem = new MenuItem(menu, SWT.CHECK);
-		panelItem.setText("&Key Window");
-		panelItem.setSelection(isControlPanel);
+		keyWindowItem = new MenuItem(menu, SWT.CHECK);
+		keyWindowItem.setText("&Key Window");
+		keyWindowItem.setSelection(isControlPanel);
 
-		panelItem.addSelectionListener(new SelectionAdapter() {
+		keyWindowItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				final boolean isControlPanel = panelItem.getSelection();
+				final boolean isControlPanel = keyWindowItem.getSelection();
 
 				setIsControlPanel(isControlPanel);
 				if (isControlPanel == true) {
@@ -1243,8 +1243,8 @@ public class EmulatorSkin {
 					SkinUtil.setTopMost(shell, isOnTop);
 				}
 
-				LcdStateData lcdStateData =
-						new LcdStateData(currentState.getCurrentScale(), rotationId);
+				DisplayStateData lcdStateData =
+						new DisplayStateData(currentState.getCurrentScale(), rotationId);
 				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
 			}
 		};
@@ -1311,8 +1311,8 @@ public class EmulatorSkin {
 					SkinUtil.setTopMost(shell, isOnTop);
 				}
 
-				LcdStateData lcdStateData =
-						new LcdStateData(scale, currentState.getCurrentRotationId());
+				DisplayStateData lcdStateData =
+						new DisplayStateData(scale, currentState.getCurrentRotationId());
 				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
 
 			}

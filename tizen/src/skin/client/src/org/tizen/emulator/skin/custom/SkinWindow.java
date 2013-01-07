@@ -26,7 +26,7 @@
  *
  */
 
-package org.tizen.emulator.skin.window;
+package org.tizen.emulator.skin.custom;
 
 import java.util.logging.Logger;
 

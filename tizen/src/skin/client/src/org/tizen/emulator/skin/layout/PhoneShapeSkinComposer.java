@@ -56,6 +56,7 @@ import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.dbi.LcdType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
@@ -66,7 +67,6 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
-import org.tizen.emulator.skin.window.CustomProgressBar;
 
 public class PhoneShapeSkinComposer implements ISkinComposer {
 	private Logger logger = SkinLogger.getSkinLogger(

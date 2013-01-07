@@ -51,14 +51,14 @@ import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.custom.CustomButton;
+import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
-import org.tizen.emulator.skin.window.CustomProgressBar;
-import org.tizen.emulator.skin.window.ImageButton;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private static final String PATCH_IMAGES_PATH = "images/emul-window/";
@@ -70,7 +70,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private EmulatorSkin skin;
 	private Shell shell;
 	private Canvas lcdCanvas;
-	private ImageButton toggleButton;
+	private CustomButton toggleButton;
 	private EmulatorSkinState currentState;
 
 	private ImageRegistry imageRegistry;
@@ -149,7 +149,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_pushed.png"));
 
 		/* create a toggle button of key window */
-		toggleButton = new ImageButton(shell, SWT.DRAW_TRANSPARENT | SWT.NO_FOCUS,
+		toggleButton = new CustomButton(shell, SWT.DRAW_TRANSPARENT | SWT.NO_FOCUS,
 				imageNormal, imageHover, imagePushed);
 		toggleButton.setBackground(
 				new Color(shell.getDisplay(), new RGB(0x1f, 0x1f, 0x1f)));

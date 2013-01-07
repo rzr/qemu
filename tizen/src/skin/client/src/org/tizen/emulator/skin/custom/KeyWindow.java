@@ -26,7 +26,7 @@
  *
  */
 
-package org.tizen.emulator.skin.window;
+package org.tizen.emulator.skin.custom;
 
 import java.util.List;
 
@@ -61,7 +61,7 @@ import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.SwtUtil;
 
-public class ControlPanel extends SkinWindow {
+public class KeyWindow extends SkinWindow {
 	private static final String PATCH_IMAGES_PATH = "images/key-window/";
 	private static final int SHELL_MARGIN_BOTTOM = 3;
 	private static final int PAIRTAG_CIRCLE_SIZE = 8;
@@ -88,7 +88,7 @@ public class ControlPanel extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public ControlPanel(EmulatorSkin skin, Shell parent, Color colorPairTag,
+	public KeyWindow(EmulatorSkin skin, Shell parent, Color colorPairTag,
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent, SWT.RIGHT | SWT.CENTER);
 
@@ -133,7 +133,7 @@ public class ControlPanel extends SkinWindow {
 
 		createContents();
 		trimPatchedShell(shell, imageFrame);
-		addControlPanelListener();
+		addKeyWindowListener();
 
 		shell.setBackground(colorFrame);
 		shell.setSize(imageFrame.getImageData().width,
@@ -183,7 +183,7 @@ public class ControlPanel extends SkinWindow {
 
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
 			for (KeyMapType keyEntry : keyMapList) {
-				ImageButton HWKeyButton = new ImageButton(compositeBase, SWT.NONE,
+				CustomButton HWKeyButton = new CustomButton(compositeBase, SWT.NONE,
 						imageNormal, imageHover, imagePushed);
 				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
 				HWKeyButton.setToolTipText(keyEntry.getTooltip());
@@ -256,7 +256,7 @@ public class ControlPanel extends SkinWindow {
 		shell.setRegion(region);
 	}
 
-	private void addControlPanelListener() {
+	private void addKeyWindowListener() {
 		shellPaintListener = new PaintListener() {
 			@Override
 			public void paintControl(final PaintEvent e) {

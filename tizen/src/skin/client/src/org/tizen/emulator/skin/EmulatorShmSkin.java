@@ -87,7 +87,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 			this.runnable = new Runnable() {
 				public void run() {
-					// logger.info("update lcd framebuffer");
+					// logger.info("update display framebuffer");
 					if(lcdCanvas.isDisposed() == false) {
 						lcdCanvas.redraw();
 					}
@@ -133,7 +133,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorShmSkin(EmulatorSkinState state, EmulatorFingers finger, EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+	public EmulatorShmSkin(EmulatorSkinState state, EmulatorFingers finger,
+			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
 		super(state, finger, config, skinInfo, isOnTop);
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 	}

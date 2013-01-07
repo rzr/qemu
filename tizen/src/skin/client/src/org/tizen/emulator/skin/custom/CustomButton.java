@@ -26,7 +26,7 @@
  *
  */
 
-package org.tizen.emulator.skin.window;
+package org.tizen.emulator.skin.custom;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
@@ -46,7 +46,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 
-public class ImageButton extends Canvas {
+public class CustomButton extends Canvas {
 	/* state */
 	private int mouse = 0;
 	private boolean hit = false;
@@ -62,7 +62,7 @@ public class ImageButton extends Canvas {
 	private static Color white;
 	private static Color gray;
 
-	public ImageButton(Composite parent, int style,
+	public CustomButton(Composite parent, int style,
 			Image imageNormal, Image imageHover, Image imagePushed) {
 		super(parent, style);
 

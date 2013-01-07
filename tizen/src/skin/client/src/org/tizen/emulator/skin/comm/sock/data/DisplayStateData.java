@@ -35,12 +35,12 @@ import java.io.IOException;
  * 
  *
  */
-public class LcdStateData extends AbstractSendData {
+public class DisplayStateData extends AbstractSendData {
 	
 	int scale;
 	short rotation;
 	
-	public LcdStateData(int scale, short rotation) {
+	public DisplayStateData(int scale, short rotation) {
 		this.scale = scale;
 		this.rotation = rotation;
 	}
@@ -54,7 +54,7 @@ public class LcdStateData extends AbstractSendData {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("LcdStateData [scale=");
+		builder.append("DisplayStateData [scale=");
 		builder.append(scale);
 		builder.append(", rotation=");
 		builder.append(rotation);
