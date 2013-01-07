@@ -55,7 +55,8 @@ import org.tizen.emulator.skin.util.StringUtil;
  */
 public class EmulatorConfig {
 
-	private static Logger logger = SkinLogger.getSkinLogger( EmulatorConfig.class ).getLogger();
+	private static Logger logger =
+			SkinLogger.getSkinLogger(EmulatorConfig.class).getLogger();
 
 	public static final int DEFAULT_WINDOW_SCALE = Scale.SCALE_50.value();
 	public static final short DEFAULT_WINDOW_ROTATION = RotationInfo.PORTRAIT.id();
@@ -372,7 +373,7 @@ public class EmulatorConfig {
 		properties.put( key, Integer.toString( value ) );
 	}
 
-	// skin properties //
+	/* skin properties */
 
 	public String getSkinProperty( String key ) {
 		return getProperty( skinProperties, key );
@@ -406,7 +407,7 @@ public class EmulatorConfig {
 		setProperty( skinProperties, key, value );
 	}
 
-	// config properties //
+	/* config properties */
 
 	public String getConfigProperty( String key ) {
 		return getProperty( configProperties, key );

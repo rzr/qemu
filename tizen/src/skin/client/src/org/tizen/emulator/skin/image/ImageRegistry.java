@@ -57,8 +57,8 @@ import org.tizen.emulator.skin.util.SkinRotation;
  *
  */
 public class ImageRegistry {
-	
-	private Logger logger = SkinLogger.getSkinLogger( ImageRegistry.class ).getLogger();
+	private static Logger logger =
+			SkinLogger.getSkinLogger(ImageRegistry.class).getLogger();
 
 	public static final String SKINS_FOLDER = "skins";
 	public static final String GENERAL_FOLDER = "emul-general";
@@ -117,12 +117,14 @@ public class ImageRegistry {
 	private static boolean isInitialized;
 
 	private ImageRegistry() {
+		/* do nothing */
 	}
 
 	public static ImageRegistry getInstance() {
-		if ( null == instance ) {
+		if (null == instance) {
 			instance = new ImageRegistry();
 		}
+
 		return instance;
 	}
 
@@ -139,41 +141,47 @@ public class ImageRegistry {
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();
 
-		init( this.argSkinPath );
+		init(this.argSkinPath);
 
 	}
 
 	public static String getSkinPath(String argSkinPath) {
-		/* When emulator has a invalid skin path,
+		/* When emulator receive a invalid skin path,
 		 emulator uses default skin path instead of it */
 		String defaultSkinPath = ".." + //TODO:
 				File.separator + SKINS_FOLDER + File.separator + GENERAL_FOLDER;
 
 		if (argSkinPath == null) {
+			logger.info("Emulator uses default skin path (" + defaultSkinPath +
+					") instead of invalid skin path (null).");
+
 			return defaultSkinPath;
 		}
 
 		File f = new File(argSkinPath);
 		if (f.isDirectory() == false) {
+			logger.info("Emulator uses default skin path (" + defaultSkinPath +
+					") instead of invalid skin path (" + argSkinPath + ").");
+
 			return defaultSkinPath;
 		}
 
 		return argSkinPath;
 	}
 
-	private void init( String argSkinPath ) {
+	private void init(String argSkinPath) {
 
 		RotationsType rotations = dbiContents.getRotations();
 
-		if ( null == rotations ) {
-			logger.severe( "Fail to loading rotations element from dbi." );
+		if (null == rotations) {
+			logger.severe("Fail to loading rotations element from dbi.");
 			return;
 		}
 
 		List<RotationType> rotationList = rotations.getRotation();
 
-		for ( RotationType rotation : rotationList ) {
-			SkinRotation.put( rotation );
+		for (RotationType rotation : rotationList) {
+			SkinRotation.put(rotation);
 		}
 
 	}
@@ -231,7 +239,7 @@ public class ImageRegistry {
 		}
 	}
 
-	private String makeKey( Short id, ImageType imageType ) {
+	private String makeKey(Short id, ImageType imageType) {
 		return id + ":" + imageType.ordinal();
 	}
 

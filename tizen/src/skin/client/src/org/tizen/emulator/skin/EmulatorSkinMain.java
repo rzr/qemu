@@ -82,7 +82,7 @@ public class EmulatorSkinMain {
 	/**
 	 * @param args
 	 */
-	public static void main( String[] args ) {
+	public static void main(String[] args) {
 
 		String simpleMsg = getSimpleMsg(args);
 		if (simpleMsg != null) {
@@ -102,15 +102,16 @@ public class EmulatorSkinMain {
 		try {
 
 			/* get vm path from startup argument */
-			String vmPath = getVmPath( args );
-			if ( StringUtil.isEmpty( vmPath ) ) {
-				throw new IllegalArgumentException( ArgsConstants.VM_PATH + " in arguments is null." );
+			String vmPath = getVmPath(args);
+			if (StringUtil.isEmpty(vmPath)) {
+				throw new IllegalArgumentException(
+						ArgsConstants.VM_PATH + " in arguments is null.");
 			}
 
-			SkinLogger.init( SkinLogLevel.DEBUG, vmPath );
+			SkinLogger.init(SkinLogLevel.DEBUG, vmPath);
 
-			logger = SkinLogger.getSkinLogger( EmulatorSkinMain.class ).getLogger();
-			logger.info( "!!! Start Emualtor Skin !!!" );
+			logger = SkinLogger.getSkinLogger(EmulatorSkinMain.class).getLogger();
+			logger.info("!!! Start Emualtor Skin !!!");
 
 			/* startup arguments parsing */
 			Map<String, String> argsMap = parsArgs(args);
@@ -125,7 +126,6 @@ public class EmulatorSkinMain {
 			String skinPath = ImageRegistry.getSkinPath(
 					(String) argsMap.get(ArgsConstants.SKIN_PATH));
 
-			
 			/* get maxtouchpoint from startup argument */
 			int maxtouchpoint;
 			if(argsMap.containsKey(ArgsConstants.MAX_TOUCHPOINT)) {
@@ -138,6 +138,7 @@ public class EmulatorSkinMain {
 				logger.info(ArgsConstants.MAX_TOUCHPOINT +
 						" does not exist set maxtouchpoint info to " + maxtouchpoint);
 			}
+
 			/* set skin information */
 			String skinInfoFilePath = skinPath + File.separator + SKIN_INFO_FILE_NAME;
 			Properties skinInfoProperties = loadProperties(skinInfoFilePath, false);
@@ -190,23 +191,23 @@ public class EmulatorSkinMain {
 
 			/* load dbi file */
 			EmulatorUI dbiContents = loadDbi(skinPath);
-			if ( null == dbiContents ) {
-				logger.severe( "Fail to load dbi file." );
+			if (null == dbiContents) {
+				logger.severe("Fail to load dbi file.");
 
 				Shell temp = new Shell(Display.getDefault());
-				MessageBox messageBox = new MessageBox( temp, SWT.ICON_ERROR );
-				messageBox.setText( "Emulator" );
-				messageBox.setMessage( "Fail to load \"" + DBI_FILE_NAME + "\" file\n" +
+				MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
+				messageBox.setText("Emulator");
+				messageBox.setMessage("Fail to load \"" + DBI_FILE_NAME + "\" file\n" +
 						"Check if the file is corrupted or missing from the following path.\n" +
 						skinPath);
 				messageBox.open();
 				temp.dispose();
 
-				System.exit( -1 );
+				System.exit(-1);
 			}
 
-			EmulatorConfig config = new EmulatorConfig( argsMap, dbiContents, skinProperties, skinPropFilePath,
-					configProperties );
+			EmulatorConfig config = new EmulatorConfig(argsMap,
+					dbiContents, skinProperties, skinPropFilePath, configProperties);
 
 			/* load image resource */
 			ImageRegistry.getInstance().initialize(config);
