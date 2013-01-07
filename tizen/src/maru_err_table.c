@@ -49,7 +49,7 @@ Check if the file is corrupted or missing.\n\n",
     /* 3 */ "Failed to load a bios file the following path.\
 Check if the file is corrupted or missing.\n\n",
     /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
-    /* 5 */ "Skin client cannot connected to Skin server. The time of internal heartbeat has expired.",
+    /* 5 */ "Skin client could not connect to Skin server. The time of internal heartbeat has expired.",
     /* add here.. */
     ""
 };

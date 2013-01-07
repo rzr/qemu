@@ -39,17 +39,18 @@ import org.tizen.emulator.skin.log.SkinLogger;
  *
  */
 public class EmulatorShutdownhook extends Thread {
+	private Logger logger =
+			SkinLogger.getSkinLogger(EmulatorShutdownhook.class).getLogger();
 
-	private Logger logger = SkinLogger.getSkinLogger( EmulatorShutdownhook.class ).getLogger();
 	private ICommunicator communicator;
-	
-	public EmulatorShutdownhook( ICommunicator communicator ) {
+
+	public EmulatorShutdownhook(ICommunicator communicator) {
 		this.communicator = communicator;
 	}
 
 	@Override
 	public void run() {
-		logger.info( " EmulatorShutdownhook run by a signal." );
+		logger.info("EmulatorShutdownhook run by a signal.");
 		communicator.terminate();
 	}
 	

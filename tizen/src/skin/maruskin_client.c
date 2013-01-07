@@ -65,12 +65,12 @@ static void* run_skin_client(void* arg)
     char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
     char argv[JAVA_MAX_COMMAND_LENGTH] = { 0, };
 
-	INFO("run skin client\n");
+    INFO("run skin client\n");
     int i;
     for (i = 0; i < skin_argc; ++i) {
         strncat(argv, skin_argv[i], strlen(skin_argv[i]));
         strncat(argv, " ", 1);
-        INFO( "[skin args %d] %s\n", i, skin_argv[i] );
+        INFO("[skin args %d] %s\n", i, skin_argv[i]);
     }
 
     int skin_server_port = get_skin_server_port();
@@ -91,12 +91,12 @@ static void* run_skin_client(void* arg)
 #ifdef CONFIG_WIN32
     // find java path in 64bit windows
     JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
-	memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
+    memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
     if (is_wow64()) {
         INFO("This process is running under WOW64.\n");
         if (!get_java_path(&JAVA_EXEFILE_PATH)) {
              strcpy(JAVA_EXEFILE_PATH, "java");
-	    }
+        }
     } else {
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
@@ -159,7 +159,7 @@ static void* run_skin_client(void* arg)
         argv );
 #endif
 
-    INFO( "command for swt : %s\n", cmd );
+    INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32
     // for 64bit windows
@@ -197,7 +197,8 @@ static void* run_skin_client(void* arg)
             INFO("the child thread state was signaled!\n");
             break;
         case WAIT_TIMEOUT:
-            INFO("time-out interval elapsed, and the child thread's state is nonsignaled.\n");
+            INFO("time-out interval elapsed,\
+                and the child thread's state is nonsignaled.\n");
             break;
         case WAIT_FAILED:
             ERR("WaitForSingleObject() failed, error %u\n", GetLastError());
@@ -253,29 +254,29 @@ int start_skin_client(int argc, char* argv[])
     int count = 0;
     int skin_server_ready = 0;
 
-    while( 1 ) {
+    while(1) {
 
-        if( 100 * SKIN_SERVER_READY_TIME < count ) {
+        if (100 * SKIN_SERVER_READY_TIME < count) {
             break;
         }
 
-        if ( is_ready_skin_server() ) {
+        if (is_ready_skin_server()) {
             skin_server_ready = 1;
             break;
         } else {
             count++;
-            INFO( "sleep for ready. count:%d\n", count );
+            INFO("sleep for ready. count:%d\n", count);
 #ifdef CONFIG_WIN32
-        Sleep( SKIN_SERVER_SLEEP_TIME );
+        Sleep(SKIN_SERVER_SLEEP_TIME);
 #else
-        usleep( 1000 * SKIN_SERVER_SLEEP_TIME );
+        usleep(1000 * SKIN_SERVER_SLEEP_TIME);
 #endif
         }
 
     }
 
-    if ( !skin_server_ready ) {
-        ERR( "skin_server is not ready.\n" );
+    if (!skin_server_ready) {
+        ERR("skin_server is not ready.\n");
         return -1;
     }
 
@@ -292,8 +293,8 @@ int start_skin_client(int argc, char* argv[])
     return 1;
 }
 
-
-int start_simple_client(char* msg) {
+int start_simple_client(char* msg)
+{
     int ret = 0;
     char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
 
@@ -302,12 +303,12 @@ int start_simple_client(char* msg) {
 #ifdef CONFIG_WIN32
     // find java path in 64bit windows
     JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
-	memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
+    memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
     if (is_wow64()) {
         INFO("This process is running under WOW64.\n");
         if (!get_java_path(&JAVA_EXEFILE_PATH)) {
              strcpy(JAVA_EXEFILE_PATH, "java");
-	    }
+        }
     } else {
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
@@ -363,7 +364,7 @@ int is_wow64(void)
         if (!fnIsWow64Process(GetCurrentProcess(),&result))
         {
             //handle error
-			INFO("Can not find 'IsWow64Process'\n");
+            INFO("Can not find 'IsWow64Process'\n");
         }
     }
     return result;
@@ -371,40 +372,40 @@ int is_wow64(void)
 
 int get_java_path(char** java_path)
 {
-	HKEY hKeyNew;
-	HKEY hKey;
-	//char strJavaRuntimePath[JAVA_MAX_COMMAND_LENGTH] = {0};
-	char strChoosenName[JAVA_MAX_COMMAND_LENGTH] = {0};
-	char strSubKeyName[JAVA_MAX_COMMAND_LENGTH] = {0};
-	char strJavaHome[JAVA_MAX_COMMAND_LENGTH] = {0};
-	int index;
-	DWORD dwSubKeyNameMax = JAVA_MAX_COMMAND_LENGTH;
-	DWORD dwBufLen = JAVA_MAX_COMMAND_LENGTH;
+    HKEY hKeyNew;
+    HKEY hKey;
+    //char strJavaRuntimePath[JAVA_MAX_COMMAND_LENGTH] = {0};
+    char strChoosenName[JAVA_MAX_COMMAND_LENGTH] = {0};
+    char strSubKeyName[JAVA_MAX_COMMAND_LENGTH] = {0};
+    char strJavaHome[JAVA_MAX_COMMAND_LENGTH] = {0};
+    int index;
+    DWORD dwSubKeyNameMax = JAVA_MAX_COMMAND_LENGTH;
+    DWORD dwBufLen = JAVA_MAX_COMMAND_LENGTH;
 
     RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SOFTWARE\\JavaSoft\\Java Runtime Environment", 0,
                                      KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | MY_KEY_WOW64_64KEY, &hKey);
     RegEnumKeyEx(hKey, 0, (LPSTR)strSubKeyName, &dwSubKeyNameMax, NULL, NULL, NULL, NULL);
     strcpy(strChoosenName, strSubKeyName);
 
-  	index = 1;
-  	while (ERROR_SUCCESS == RegEnumKeyEx(hKey, index, (LPSTR)strSubKeyName, &dwSubKeyNameMax,
-			NULL, NULL, NULL, NULL)) {
+    index = 1;
+    while (ERROR_SUCCESS == RegEnumKeyEx(hKey, index, (LPSTR)strSubKeyName, &dwSubKeyNameMax,
+            NULL, NULL, NULL, NULL)) {
         if (strcmp(strChoosenName, strSubKeyName) < 0) {
             strcpy(strChoosenName, strSubKeyName);
         }
         index++;
-  	}
+    }
 
-  	RegOpenKeyEx(hKey, strChoosenName, 0, KEY_QUERY_VALUE | MY_KEY_WOW64_64KEY, &hKeyNew);
-  	RegQueryValueEx(hKeyNew, "JavaHome", NULL, NULL, (LPBYTE)strJavaHome, &dwBufLen);
-  	RegCloseKey(hKey);
-	if (strJavaHome[0] != '\0') {
+    RegOpenKeyEx(hKey, strChoosenName, 0, KEY_QUERY_VALUE | MY_KEY_WOW64_64KEY, &hKeyNew);
+    RegQueryValueEx(hKeyNew, "JavaHome", NULL, NULL, (LPBYTE)strJavaHome, &dwBufLen);
+    RegCloseKey(hKey);
+    if (strJavaHome[0] != '\0') {
         sprintf(*java_path, "\"%s\\bin\\java\"", strJavaHome);
         //strcpy(*java_path, strJavaHome);
         //strcat(*java_path, "\\bin\\java");
     } else {
-		return 0;
-	}
+        return 0;
+    }
     return 1;
 }
 #endif

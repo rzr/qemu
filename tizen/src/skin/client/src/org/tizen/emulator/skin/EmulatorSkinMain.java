@@ -227,11 +227,13 @@ public class EmulatorSkinMain {
 			} else { // linux & windows
 				skin = new EmulatorSdlSkin(currentState, finger, config, skinInfo, isOnTop);
 			}
+
 			/* create a qemu communicator */
 			int uid = config.getArgInt(ArgsConstants.UID);
 			communicator = new SocketCommunicator(config, uid, skin);
 			skin.setCommunicator(communicator);
 			finger.setEmulatorSkin(skin);
+
 			/* initialize a skin layout */
 			long windowHandleId = skin.initLayout();
 			communicator.setInitialData(windowHandleId);
@@ -243,9 +245,10 @@ public class EmulatorSkinMain {
 				Runtime.getRuntime().addShutdownHook(
 						new EmulatorShutdownhook(communicator));
 
-				Thread communicatorThread = new Thread(communicator);
+				Thread communicatorThread =
+						new Thread(communicator, "communicator");
 				communicatorThread.start();
-				
+
 //				SkinReopenPolicy reopenPolicy = skin.open();
 //				
 //				while( true ) {
@@ -284,7 +287,7 @@ public class EmulatorSkinMain {
 				System.out.println("Shutdown skin process !!!");
 			}
 
-			if(null != communicator) {
+			if (null != communicator) {
 				communicator.terminate();
 			}
 
@@ -296,43 +299,44 @@ public class EmulatorSkinMain {
 
 	}
 
-	private static void initLog( Map<String, String> argsMap, Properties properties ) {
+	private static void initLog(Map<String, String> argsMap, Properties properties) {
 
-		String argLogLevel = argsMap.get( ArgsConstants.LOG_LEVEL );
+		String argLogLevel = argsMap.get(ArgsConstants.LOG_LEVEL);
 		String configPropertyLogLevel = null;
 		
-		if( null != properties ) {
-			configPropertyLogLevel = (String) properties.get( ConfigPropertiesConstants.LOG_LEVEL );
+		if (null != properties) {
+			configPropertyLogLevel =
+					(String) properties.get(ConfigPropertiesConstants.LOG_LEVEL);
 		}
 
-		// default log level is debug.
+		/* default log level is debug. */
 		
 		String logLevel = "";
-		
-		if( !StringUtil.isEmpty( argLogLevel ) ) {
+
+		if (!StringUtil.isEmpty(argLogLevel)) {
 			logLevel = argLogLevel;
-		}else if( !StringUtil.isEmpty( configPropertyLogLevel ) ) {
+		} else if (!StringUtil.isEmpty(configPropertyLogLevel)) {
 			logLevel = configPropertyLogLevel;
-		}else {
+		} else {
 			logLevel = EmulatorConfig.DEFAULT_LOG_LEVEL.value();
 		}
-		
+
 		SkinLogLevel skinLogLevel = EmulatorConfig.DEFAULT_LOG_LEVEL;
-		
+
 		SkinLogLevel[] values = SkinLogLevel.values();
-		
-		for ( SkinLogLevel level : values ) {
-			if ( level.value().equalsIgnoreCase( logLevel ) ) {
+
+		for (SkinLogLevel level : values) {
+			if (level.value().equalsIgnoreCase(logLevel)) {
 				skinLogLevel = level;
 				break;
 			}
 		}
 
-		SkinLogger.setLevel( skinLogLevel.level() );
+		SkinLogger.setLevel(skinLogLevel.level());
 		
 	}
 
-	private static String getSimpleMsg( String[] args ) {
+	private static String getSimpleMsg(String[] args) {
 
 		for ( int i = 0; i < args.length; i++ ) {
 			final String simple = "simple.msg";

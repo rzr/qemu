@@ -155,21 +155,28 @@ static char** skin_argv = NULL;
 static int qmu_argc = 0;
 static char** qmu_argv = NULL;
 
-static void parse_skin_args( void );
-static void parse_skinconfig_prop( void );
-static void* run_skin_server( void* args );
-static int recv_n( int client_sock, char* read_buf, int recv_len );
-static void make_header( int client_sock, short send_cmd, int data_length, char* sendbuf, int print_log );
-static int send_skin_header_only( int client_sock, short send_cmd, int print_log );
-static int send_skin_data( int client_sock, short send_cmd, unsigned char* data, int length, int big_data );
-static int send_n( int client_sock, unsigned char* data, int length, int big_data );
+static void parse_skin_args(void);
+static void parse_skinconfig_prop(void);
+static void* run_skin_server(void* args);
 
-static void* do_heart_beat( void* args );
-static int start_heart_beat( void );
-static void stop_heart_beat( void );
+static int recv_n(int client_sock, char* read_buf, int recv_len);
+static int send_n(int client_sock, unsigned char* data, int length, int big_data);
 
-int start_skin_server( int argc, char** argv, int qemu_argc, char** qemu_argv ) {
+static void make_header(int client_sock,
+    short send_cmd, int data_length, char* sendbuf, int print_log);
+static int send_skin_header_only(int client_sock,
+    short send_cmd, int print_log);
+static int send_skin_data(int client_sock,
+    short send_cmd, unsigned char* data, int length, int big_data);
 
+
+static void* do_heart_beat(void* args);
+static int start_heart_beat(void);
+static void stop_heart_beat(void);
+
+int start_skin_server(int argc, char** argv,
+    int qemu_argc, char** qemu_argv)
+{
     skin_argc = argc;
     skin_argv = argv;
 
@@ -178,7 +185,7 @@ int start_skin_server( int argc, char** argv, int qemu_argc, char** qemu_argv ) 
     // arguments have higher priority than '.skinconfig.properties'
     parse_skin_args();
 
-    INFO( "ignore_heartbeat:%d\n", ignore_heartbeat );
+    INFO("ignore_heartbeat:%d\n", ignore_heartbeat);
 
     qmu_argc = qemu_argc;
     qmu_argv = qemu_argv;
@@ -192,44 +199,44 @@ int start_skin_server( int argc, char** argv, int qemu_argc, char** qemu_argv ) 
 
 }
 
-void shutdown_skin_server( void ) {
-
-    INFO( "shutdown_skin_server\n" );
+void shutdown_skin_server(void)
+{
+    INFO("shutdown_skin_server\n");
 
     int close_server_socket = 0;
     int success_send = 0;
 
-    if ( client_sock ) {
-        INFO( "send shutdown to skin.\n" );
-        if ( 0 > send_skin_header_only( client_sock, SEND_SHUTDOWN, 1 ) ) {
-            ERR( "fail to send SEND_SHUTDOWN to skin.\n" );
+    if (client_sock) {
+        INFO("send shutdown to skin.\n");
+        if (0 > send_skin_header_only(client_sock, SEND_SHUTDOWN, 1)) {
+            ERR("fail to send SEND_SHUTDOWN to skin.\n");
             close_server_socket = 1;
         } else {
             success_send = 1;
-            // skin sent RECV_RESPONSE_SHUTDOWN.
+            /* skin sent RECV_RESPONSE_SHUTDOWN */
         }
     }
 
-    if ( success_send ) {
+    if (success_send) {
 
         int count = 0;
         int max_sleep_count = 10;
 
-        while ( 1 ) {
+        while (1) {
 
-            if ( max_sleep_count < count ) {
+            if (max_sleep_count < count) {
                 close_server_socket = 1;
                 break;
             }
 
-            if ( stop_server ) {
-                INFO( "skin client sent normal shutdown response.\n" );
+            if (stop_server) {
+                INFO("skin client sent normal shutdown response.\n");
                 break;
             } else {
 #ifdef CONFIG_WIN32
-                Sleep( 1 ); // 1ms
+                Sleep(1); // 1ms
 #else
-                usleep( 1000 ); // 1ms
+                usleep(1000); // 1ms
 #endif
                 count++;
             }
@@ -239,22 +246,22 @@ void shutdown_skin_server( void ) {
     stop_server = 1;
     is_force_close_client = 1;
 
-    if ( client_sock ) {
+    if (client_sock) {
 #ifdef CONFIG_WIN32
-        closesocket( client_sock );
+        closesocket(client_sock);
 #else
-        close( client_sock );
+        close(client_sock);
 #endif
         client_sock = 0;
     }
 
-    if ( close_server_socket ) {
-        INFO( "skin client did not send normal shutdown response.\n" );
-        if ( server_sock ) {
+    if (close_server_socket) {
+        INFO("skin client did not send normal shutdown response.\n");
+        if (server_sock) {
 #ifdef CONFIG_WIN32
-            closesocket( server_sock );
+            closesocket(server_sock);
 #else
-            close( server_sock );
+            close(server_sock);
 #endif
             server_sock = 0;
         }
