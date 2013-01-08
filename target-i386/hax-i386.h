@@ -1,3 +1,14 @@
+/*
+ * QEMU HAXM support
+ *
+ * Copyright (c) 2011 Intel Corporation
+ *  Written by:
+ *  Jiang Yunhong<yunhong.jiang@intel.com>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2 or later.
+ *
+ */
+
 #ifndef _HAX_I386_H
 #define _HAX_I386_H
 

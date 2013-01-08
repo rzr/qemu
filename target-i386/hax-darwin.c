@@ -1,3 +1,14 @@
+/*
+ * QEMU HAXM support
+ *
+ * Copyright (c) 2011 Intel Corporation
+ *  Written by:
+ *  Jiang Yunhong<yunhong.jiang@intel.com>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2 or later.
+ *
+ */
+
 /* HAX module interface - darwin version */
 #include <sys/types.h>
 #include <sys/stat.h>

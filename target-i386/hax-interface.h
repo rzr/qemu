@@ -1,3 +1,16 @@
+/*
+ * QEMU HAXM support
+ *
+ * Copyright (c) 2011 Intel Corporation
+ *  Written by:
+ *  Jiang Yunhong<yunhong.jiang@intel.com>
+ *  Xin Xiaohui<xiaohui.xin@intel.com>
+ *  Zhang Xiantao<xiantao.zhang@intel.com>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2 or later.
+ *
+ */
+
 /* Interface with HAX kernel module */
 
 #ifndef _HAX_INTERFACE_H
