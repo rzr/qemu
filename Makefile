@@ -156,6 +156,7 @@ tools-obj-y = $(oslib-obj-y) $(trace-obj-y) qemu-tool.o qemu-timer.o \
 	qemu-timer-common.o main-loop.o notify.o \
 	iohandler.o cutils.o iov.o async.o
 tools-obj-$(CONFIG_POSIX) += compatfd.o
+tools-obj-$(CONFIG_HAX_BACKEND) += hax-stub.o
 
 qemu-img$(EXESUF): qemu-img.o $(tools-obj-y) $(block-obj-y)
 qemu-nbd$(EXESUF): qemu-nbd.o $(tools-obj-y) $(block-obj-y)

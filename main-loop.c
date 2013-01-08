@@ -42,6 +42,9 @@ void qemu_notify_event(void)
     if (io_thread_fd == -1) {
         return;
     }
+
+    qemu_notify_hax_event();
+
     do {
         ret = write(io_thread_fd, &val, sizeof(val));
     } while (ret < 0 && errno == EINTR);
@@ -181,16 +184,14 @@ static int qemu_event_init(void)
     return 0;
 }
 
-extern void qemu_notify_hax_event(void);
-
 void qemu_notify_event(void)
 {
     if (!qemu_event_handle) {
         return;
     }
-#ifdef CONFIG_HAX
+
     qemu_notify_hax_event();
-#endif
+
     if (!SetEvent(qemu_event_handle)) {
         fprintf(stderr, "qemu_notify_event: SetEvent failed: %ld\n",
                 GetLastError());

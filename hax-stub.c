@@ -35,7 +35,7 @@ void hax_disable(int disable)
    return;
 }
 
-int hax_pre_init(ram_addr_t ram_size)
+int hax_pre_init(uint64_t ram_size)
 {
    return 0;
 }

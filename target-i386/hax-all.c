@@ -438,7 +438,7 @@ static void hax_handle_interrupt(CPUArchState *env, int mask)
     }
 }
 
-int hax_pre_init(ram_addr_t ram_size)
+int hax_pre_init(uint64_t ram_size)
 {
 	struct hax_state *hax = NULL;
 
