@@ -304,23 +304,20 @@ static void remove_string(char *src, char *dst, const char *toremove)
 #if defined (CONFIG_LINUX)    
 static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
-    char buf[MAXLEN];
-    char buf_port[MAXPORTLEN];
-    char buf_proxy[MAXLEN];
+    char buf[MAXLEN] = {0,};
+    char buf_port[MAXPORTLEN] = {0,};
+    char buf_proxy[MAXLEN] = {0,};
     char* buf_proxy_bak;
     char *proxy;
     FILE *output;
-    
-    memset(buf, 0, MAXLEN);
-    memset(buf_proxy, 0, MAXLEN);
-    memset(buf_port, 0, MAXPORTLEN);
+    int MAXPROXYLEN = MAXLEN + MAXPORTLEN;
 
     output = popen("gconftool-2 --get /system/http_proxy/host", "r");
     fscanf(output , "%s", buf);
     snprintf(buf_proxy, MAXLEN, "%s", buf);
     pclose(output);
-  
-    output = popen("gconftool-2 --get /system/http_proxy/port", "r");
+    
+    output = popen("gconftool-2 --get /system/http_proxy/port1", "r");
     fscanf(output , "%s", buf_port);
     //for abnormal case: if can't find the key of http port, get from environment value.
     if(strlen((char*)buf_port) == 0) {
@@ -334,12 +331,12 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
         }
     }
     else {
-        snprintf(http_proxy, MAXLEN, "%s:%s", buf_proxy, buf_port);
+        snprintf(http_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf_port);
         pclose(output);
-        memset(buf, 0, MAXLEN);
         memset(buf_proxy, 0, MAXLEN);
         INFO("http_proxy: %s\n", http_proxy);
     }
+    memset(buf, 0, MAXLEN);
 
     output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
     fscanf(output , "%s", buf);
@@ -348,7 +345,7 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
 
     output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
     fscanf(output , "%s", buf);
-    snprintf(https_proxy, MAXLEN, "%s:%s", buf_proxy, buf);
+    snprintf(https_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     pclose(output);
     memset(buf, 0, MAXLEN);
     memset(buf_proxy, 0, MAXLEN);
@@ -361,7 +358,7 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
 
     output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
     fscanf(output , "%s", buf);
-    snprintf(ftp_proxy, MAXLEN, "%s:%s", buf_proxy, buf);
+    snprintf(ftp_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     pclose(output);
     memset(buf, 0, MAXLEN);
     memset(buf_proxy, 0, MAXLEN);
@@ -374,7 +371,7 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
 
     output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
     fscanf(output , "%s", buf);
-    snprintf(socks_proxy, MAXLEN, "%s:%s", buf_proxy, buf);
+    snprintf(socks_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     pclose(output);
     INFO("socks_proxy : %s\n", socks_proxy);
 }
@@ -577,7 +574,7 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
     }
     
     if((char*)proxyserver != NULL) {
-        INFO("proxy value: is %s\n", (char*)proxyserver);
+        INFO("proxy value: %s\n", (char*)proxyserver);
         real_proxy = malloc(MAXLEN);
         
         for(p = strtok((char*)proxyserver, ";"); p; p = strtok(NULL, ";")){
@@ -620,8 +617,8 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
         ret = getautoproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy); 
         if(strlen(http_proxy) == 0 && ret < 0) {
             INFO("MANUAL PROXY MODE\n");
-	    getmacproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy); 
-	}
+	        getmacproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy); 
+	    }
     }
 #endif
     return 0;
