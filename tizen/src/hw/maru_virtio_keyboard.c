@@ -274,5 +274,7 @@ void virtio_keyboard_exit(VirtIODevice *vdev)
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
     INFO("destroy device\n");
 
+    qemu_mutex_destroy(&vkbd->event_mutex);
+
     virtio_cleanup(vdev);
 }

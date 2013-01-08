@@ -225,6 +225,13 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 #endif
 
+#if defined(TARGET_I386)
+    if (!mloop_evcmd_get_hostkbd_status()) {
+        TRACE("ignore keyboard input because usb keyboard is dettached.\n");
+        return;
+    }
+#endif
+
 #if defined(TARGET_ARM)
     if (!mloop_evcmd_get_usbkbd_status()) {
         TRACE("ignore keyboard input because usb keyboard is dettached.\n");

@@ -562,6 +562,11 @@ void mloop_evcmd_set_usbdisk(void *dev)
     usbdisk = (USBDevice *)dev;
 }
 
+int mloop_evcmd_get_hostkbd_status(void)
+{
+    return hostkbd ? 1 : 0;
+}
+
 void mloop_evcmd_set_hostkbd(void *dev)
 {
     hostkbd = (PCIDevice *)dev;
