@@ -6,16 +6,6 @@
 #include "vigs_ref.h"
 #include "winsys_gl.h"
 
-#define VIGS_GL_CHECK(x, backend, fail) \
-    x; \
-    { \
-        GLenum err = (backend)->GetError(); \
-        if (err != GL_NO_ERROR) { \
-            VIGS_LOG_ERROR(#x " error: %i (0x%.8x)", err, err); \
-            goto fail; \
-        } \
-    }
-
 struct vigs_gl_surface;
 
 struct vigs_winsys_gl_surface
@@ -147,7 +137,11 @@ static bool vigs_winsys_gl_surface_create_texture(struct vigs_winsys_gl_surface 
         return true;
     }
 
-    VIGS_GL_CHECK(ws_sfc->backend->GenTextures(1, tex), ws_sfc->backend, fail);
+    ws_sfc->backend->GenTextures(1, tex);
+
+    if (!*tex) {
+        goto fail;
+    }
 
     ws_sfc->backend->GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&cur_tex);
     ws_sfc->backend->BindTexture(GL_TEXTURE_2D, *tex);
@@ -175,7 +169,11 @@ static bool vigs_gl_surface_create_framebuffer(struct vigs_gl_surface *gl_sfc)
         return true;
     }
 
-    VIGS_GL_CHECK(gl_backend->GenFramebuffers(1, &gl_sfc->fb), gl_backend, fail);
+    gl_backend->GenFramebuffers(1, &gl_sfc->fb);
+
+    if (!gl_sfc->fb) {
+        goto fail;
+    }
 
     return true;
 

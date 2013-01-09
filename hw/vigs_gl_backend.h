@@ -58,7 +58,6 @@ struct vigs_gl_backend
     void (GLAPIENTRY *RenderbufferStorage)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
     void (GLAPIENTRY *FramebufferRenderbuffer)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
     void (GLAPIENTRY *FramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-    GLenum (GLAPIENTRY *GetError)(void);
     void (GLAPIENTRY *GetIntegerv)(GLenum pname, GLint *params);
     const GLubyte *(GLAPIENTRY *GetString)(GLenum name);
     void (GLAPIENTRY *LoadIdentity)(void);

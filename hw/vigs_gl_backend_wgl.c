@@ -390,7 +390,6 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(RenderbufferStorage, glRenderbufferStorageEXT);
     VIGS_GL_GET_PROC(FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
     VIGS_GL_GET_PROC(FramebufferTexture2D, glFramebufferTexture2DEXT);
-    VIGS_GL_GET_PROC(GetError, glGetError);
     VIGS_GL_GET_PROC(GetIntegerv, glGetIntegerv);
     VIGS_GL_GET_PROC(GetString, glGetString);
     VIGS_GL_GET_PROC(LoadIdentity, glLoadIdentity);
