@@ -118,7 +118,7 @@ public class SocketCommunicator implements ICommunicator {
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
 	private DataTranfer progressDataTransfer;
-	
+
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
 
@@ -137,8 +137,8 @@ public class SocketCommunicator implements ICommunicator {
 		this.detailInfoTransfer.maxWaitTime = DETAIL_INFO_WAIT_LIMIT;
 
 		this.progressDataTransfer = new DataTranfer();
-		this.progressDataTransfer.sleep = DETAIL_INFO_WAIT_INTERVAL;
-		this.progressDataTransfer.maxWaitTime = DETAIL_INFO_WAIT_LIMIT;
+		this.progressDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
+		this.progressDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
 
 		this.heartbeatCount = new AtomicInteger(0);
 		this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -166,7 +166,7 @@ public class SocketCommunicator implements ICommunicator {
 
 		sendQueue = new LinkedList<SkinSendData>();
 
-		sendThread = new Thread() {
+		sendThread = new Thread("sendThread") {
 
 			List<SkinSendData> list = new ArrayList<SkinSendData>();
 
@@ -226,6 +226,7 @@ public class SocketCommunicator implements ICommunicator {
 //					EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 			// has to be portrait mode at first booting time
 			short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
+
 			StartData startData = new StartData(initialData, width, height, scale, rotation);
 			logger.info("StartData" + startData);
 
@@ -313,6 +314,8 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case BOOTING_PROGRESS: {
 					logger.info("received BOOTING_PROGRESS from QEMU.");
+
+					resetDataTransfer(progressDataTransfer);
 					receiveData(progressDataTransfer, length);
 
 					byte[] receivedData = getReceivedData(progressDataTransfer);
@@ -339,8 +342,6 @@ public class SocketCommunicator implements ICommunicator {
 							}
 						}
 					}
-
-					resetDataTransfer(progressDataTransfer);
 
 					break;
 				}
@@ -372,28 +373,27 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	private void receiveData( DataTranfer dataTransfer, int length ) throws IOException {
-		
-		synchronized ( dataTransfer ) {
-			
-			if ( null != dataTransfer.timer ) {
+	private void receiveData(
+			DataTranfer dataTransfer, int length) throws IOException {
+		synchronized (dataTransfer) {
+
+			if (null != dataTransfer.timer) {
 				dataTransfer.timer.cancel();
 			}
-			
-			byte[] data = readData( dis, length );
-			
-			if( null != data ) {
-				logger.info( "finished receiving data from QEMU." );
+
+			byte[] data = readData(dis, length);
+
+			if (null != data) {
+				logger.info("finished receiving data from QEMU.");
 			} else {
-				logger.severe( "Fail to receiving data from QEMU." );
+				logger.severe("Fail to receiving data from QEMU.");
 			}
-			
+
 			dataTransfer.isTransferState = false;
 			dataTransfer.timer = null;
 			
-			dataTransfer.setData( data );
+			dataTransfer.setData(data);
 			dataTransfer.notifyAll();
-			
 		}
 
 	}
@@ -434,7 +434,8 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	public synchronized DataTranfer sendToQEMU( SendCommand command, ISendData data, boolean useDataTransfer ) {
+	public synchronized DataTranfer sendToQEMU(
+			SendCommand command, ISendData data, boolean useDataTransfer) {
 
 		DataTranfer dataTranfer = null;
 		
@@ -477,7 +478,7 @@ public class SocketCommunicator implements ICommunicator {
 					}
 				}
 			};
-			timer.schedule( timerTask, dataTransfer.maxWaitTime );
+			timer.schedule(timerTask, dataTransfer.maxWaitTime + 1000);
 
 			return dataTransfer;
 
