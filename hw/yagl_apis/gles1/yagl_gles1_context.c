@@ -223,6 +223,16 @@ static void yagl_gles1_context_prepare(YaglGles1Context *gles1_ctx)
 
     gles_driver->GetIntegerv(GL_MAX_CLIP_PLANES, &gles1_ctx->max_clip_planes);
 
+    if (gles1_ctx->max_clip_planes < 6) {
+        YAGL_LOG_WARN("host GL_MAX_CLIP_PLANES=%d is less then required 6",
+            gles1_ctx->max_clip_planes);
+    } else {
+        /* According to OpenGLES 1.1 docs on khrnos website we only need
+         * to support 6 planes. This will protect us from bogus
+         * GL_MAX_CLIP_PLANES value reported by some drivers */
+        gles1_ctx->max_clip_planes = 6;
+    }
+
     gles_driver->GetIntegerv(GL_MAX_LIGHTS, &gles1_ctx->max_lights);
 
     extns = (const gchar *)gles_driver->GetString(GL_EXTENSIONS);
