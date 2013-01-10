@@ -1,6 +1,6 @@
-* 1.4.4
+* 1.4.44
 - fix proxy error handling
-== Munkyu Im <munkyu.im@samsung.com> 2013-01-09
+== Munkyu Im <munkyu.im@samsung.com> 2013-01-10
 * 1.4.43
 - Fixed a problem about closing skin module.
 == Kitae Kim <kt920.kim@samsung.com> 2013-01-10
