@@ -28,7 +28,8 @@
 
 #include "maru_device_ids.h"
 #include "maru_virtio_esm.h"
-#include "tizen/src/debug_ch.h"
+#include "skin/maruskin_server.h"
+#include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-esm);
 

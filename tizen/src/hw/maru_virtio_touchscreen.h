@@ -51,6 +51,9 @@ typedef struct EmulTouchEvent {
     uint8_t state;
 } EmulTouchEvent;
 
+VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev);
+void maru_virtio_touchscreen_exit(VirtIODevice *vdev);
+
 
 void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state);
 void maru_virtio_touchscreen_notify(void);
