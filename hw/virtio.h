@@ -218,12 +218,9 @@ void virtio_scsi_exit(VirtIODevice *vdev);
 
 /* Maru devices */
 #ifdef CONFIG_MARU
-VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev);
-void maru_virtio_touchscreen_exit(VirtIODevice *vdev);
-VirtIODevice *virtio_esm_init(DeviceState *dev);
-void virtio_esm_exit(VirtIODevice *vdev);
-VirtIODevice *virtio_keyboard_init(DeviceState *dev);
-void virtio_keyboard_exit(VirtIODevice *vdev);
+#include "tizen/src/hw/maru_virtio_touchscreen.h"
+#include "tizen/src/hw/maru_virtio_keyboard.h"
+#include "tizen/src/hw/maru_virtio_esm.h"
 #endif
 
 

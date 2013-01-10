@@ -48,6 +48,11 @@
 #include "pci.h"
 #include "sysemu.h"
 
+#include "guest_debug.h"
+#include "skin/maruskin_server.h"
+#include "hw/maru_virtio_touchscreen.h"
+#include "hw/maru_virtio_keyboard.h"
+
 MULTI_DEBUG_CHANNEL(qemu, mloop_event);
 
 struct mloop_evsock {
@@ -186,7 +191,7 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
     }
 
     do {
-        ret = send(ev->sockno, p, ntohs(p->size), 0);
+        ret = send(ev->sockno, p, p->size, 0);
 #ifdef _WIN32
     } while (ret == -1 && (WSAGetLastError() == WSAEWOULDBLOCK));
 #else
@@ -431,9 +436,6 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         return;
     }
 
-    pack.type = ntohs(pack.type);
-    pack.size = ntohs(pack.size);
-
     switch (pack.type) {
     case MLOOP_EVTYPE_USB_ADD:
         mloop_evhandle_usb_add(pack.data);
@@ -442,10 +444,10 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         mloop_evhandle_usb_del(pack.data);
         break;
     case MLOOP_EVTYPE_INTR_UP:
-        mloop_evhandle_intr_up(ntohl(*(long*)&pack.data[0]));
+        mloop_evhandle_intr_up(*(long*)&pack.data[0]);
         break;
     case MLOOP_EVTYPE_INTR_DOWN:
-        mloop_evhandle_intr_down(ntohl(*(long*)&pack.data[0]));
+        mloop_evhandle_intr_down(*(long*)&pack.data[0]);
         break;
     case MLOOP_EVTYPE_HWKEY:
         mloop_evhandle_hwkey(&pack);
@@ -454,7 +456,7 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         mloop_evhandle_touch(&pack);
         break;
     case MLOOP_EVTYPE_KEYBOARD:
-        mloop_evhandle_keyboard(ntohl(*(long*)&pack.data[0]));
+        mloop_evhandle_keyboard(*(uint64_t*)&pack.data[0]);
         break;
 #ifdef TARGET_I386
     case MLOOP_EVTYPE_KBD_ADD:
@@ -490,9 +492,9 @@ void mloop_evcmd_raise_intr(void *irq)
 {
     struct mloop_evpack pack;
     memset((void*)&pack, 0, sizeof(struct mloop_evpack));
-    pack.type = htons(MLOOP_EVTYPE_INTR_UP);
-    pack.size = htons(8);
-    *(long*)&pack.data[0] = htonl((long)irq);
+    pack.type = MLOOP_EVTYPE_INTR_UP;
+    pack.size = 8;
+    *(long*)&pack.data[0] = (long)irq;
     mloop_evsock_send(&mloop, &pack);
 }
 
@@ -500,17 +502,17 @@ void mloop_evcmd_lower_intr(void *irq)
 {
     struct mloop_evpack pack;
     memset((void*)&pack, 0, sizeof(struct mloop_evpack));
-    pack.type = htons(MLOOP_EVTYPE_INTR_DOWN);
-    pack.size = htons(8);
-    *(long*)&pack.data[0] = htonl((long)irq);
+    pack.type = MLOOP_EVTYPE_INTR_DOWN;
+    pack.size = 8;
+    *(long*)&pack.data[0] = (long)irq;
     mloop_evsock_send(&mloop, &pack);
 }
 
 void mloop_evcmd_usbkbd(int on)
 {
-    struct mloop_evpack pack = { htons(MLOOP_EVTYPE_USB_ADD), htons(13), "keyboard" };
+    struct mloop_evpack pack = { MLOOP_EVTYPE_USB_ADD, 13, "keyboard" };
     if (on == 0) {
-        pack.type = htons(MLOOP_EVTYPE_USB_DEL);
+        pack.type = MLOOP_EVTYPE_USB_DEL;
     }
     mloop_evsock_send(&mloop, &pack);
 }
@@ -518,9 +520,9 @@ void mloop_evcmd_usbkbd(int on)
 void mloop_evcmd_hostkbd(int on)
 {
     struct mloop_evpack pack
-        = {htons(MLOOP_EVTYPE_KBD_ADD), htons(13), "keyboard"};
+        = {MLOOP_EVTYPE_KBD_ADD, 13, "keyboard"};
     if (on == 0) {
-        pack.type = htons(MLOOP_EVTYPE_KBD_DEL);
+        pack.type = MLOOP_EVTYPE_KBD_DEL;
     }
     mloop_evsock_send(&mloop, &pack);
 }
@@ -537,11 +539,11 @@ void mloop_evcmd_usbdisk(char *img)
             return;
         }
 
-        pack.type = htons(MLOOP_EVTYPE_USB_ADD);
-        pack.size = htons(5 + sprintf(pack.data, "disk:%s", img));
+        pack.type = MLOOP_EVTYPE_USB_ADD;
+        pack.size = 5 + sprintf(pack.data, "disk:%s", img);
     } else {
-        pack.type = htons(MLOOP_EVTYPE_USB_DEL);
-        pack.size = htons(5 + sprintf(pack.data, "disk:"));
+        pack.type = MLOOP_EVTYPE_USB_DEL;
+        pack.size = 5 + sprintf(pack.data, "disk:");
     }
 
     mloop_evsock_send(&mloop, &pack);
@@ -576,8 +578,8 @@ void mloop_evcmd_hwkey(int event_type, int keycode)
 {
     struct mloop_evpack pack;
 
-    pack.type = htons(MLOOP_EVTYPE_HWKEY);
-    pack.size = htons(5 + 8); //TODO: ?
+    pack.type = MLOOP_EVTYPE_HWKEY;
+    pack.size = 5 + 8; //TODO: ?
 
     memcpy(pack.data, &event_type, sizeof(int));
     memcpy(pack.data + sizeof(int), &keycode, sizeof(int));
@@ -590,8 +592,8 @@ void mloop_evcmd_touch(void)
     struct mloop_evpack pack;
     memset(&pack, 0, sizeof(struct mloop_evpack));
 
-    pack.type = htons(MLOOP_EVTYPE_TOUCH);
-    pack.size = htons(5);
+    pack.type = MLOOP_EVTYPE_TOUCH;
+    pack.size = 5;
     mloop_evsock_send(&mloop, &pack);
 }
 
@@ -600,9 +602,9 @@ void mloop_evcmd_keyboard(void *data)
     struct mloop_evpack pack;
     memset(&pack, 0, sizeof(struct mloop_evpack));
 
-    pack.type = htons(MLOOP_EVTYPE_KEYBOARD);
-    pack.size = htons(8);
-    *(long*)&pack.data[0] = htonl((long)data);
+    pack.type = MLOOP_EVTYPE_KEYBOARD;
+    pack.size = 4 + 8;
+    *((VirtIOKeyboard **)pack.data) = (VirtIOKeyboard *)data;
     mloop_evsock_send(&mloop, &pack);
 }
 
@@ -611,8 +613,8 @@ void mloop_evcmd_ramdump(void)
     struct mloop_evpack pack;
     memset(&pack, 0, sizeof(struct mloop_evpack));
 
-    pack.type = htons(MLOOP_EVTYPE_RAMDUMP);
-    pack.size = htons(5);
+    pack.type = MLOOP_EVTYPE_RAMDUMP;
+    pack.size = 5;
     mloop_evsock_send(&mloop, &pack);
 }
 

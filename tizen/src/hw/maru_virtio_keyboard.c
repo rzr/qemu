@@ -27,37 +27,12 @@
  *
  */
 
-#include "console.h"
 #include "mloop_event.h"
 #include "maru_device_ids.h"
 #include "maru_virtio_keyboard.h"
 #include "tizen/src/debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-kbd);
-
-#define VIRTIO_KBD_DEVICE_NAME "virtio-keyboard"
-#define VIRTIO_KBD_QUEUE_SIZE  10
-
-typedef struct EmulKbdEvent {
-    uint16_t code;
-    uint16_t type;
-} EmulKbdEvent;
-
-typedef struct VirtIOKbdQueue {
-    EmulKbdEvent kbdevent[VIRTIO_KBD_QUEUE_SIZE];
-    int index;
-    int rptr, wptr;
-} VirtIOKbdQueue;
-
-typedef struct VirtIOKeyboard {
-    VirtIODevice    vdev;
-    VirtQueue       *vq;
-    DeviceState     *qdev;
-    uint16_t        extension_key;
-
-    VirtIOKbdQueue  kbdqueue;
-    QemuMutex       event_mutex;
-} VirtIOKeyboard;
 
 VirtQueueElement elem;
 

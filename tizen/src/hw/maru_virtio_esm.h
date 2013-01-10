@@ -27,14 +27,13 @@
  */
 
 #ifndef MARU_VIRTIO_ESM_H_
-#define MARU_VIRTIO_ESM_H__
+#define MARU_VIRTIO_ESM_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "hw.h"
-#include "virtio.h"
+#include "hw/virtio.h"
 
 VirtIODevice *virtio_esm_init(DeviceState *dev);
 

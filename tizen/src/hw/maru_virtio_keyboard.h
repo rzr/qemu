@@ -34,8 +34,32 @@
 extern "C" {
 #endif
 
-#include "hw.h"
-#include "virtio.h"
+#include "qemu-thread.h"
+#include "hw/virtio.h"
+
+#define VIRTIO_KBD_DEVICE_NAME "virtio-keyboard"
+#define VIRTIO_KBD_QUEUE_SIZE  10
+
+typedef struct EmulKbdEvent {
+    uint16_t code;
+    uint16_t type;
+} EmulKbdEvent;
+
+typedef struct VirtIOKbdQueue {
+    EmulKbdEvent kbdevent[VIRTIO_KBD_QUEUE_SIZE];
+    int index;
+    int rptr, wptr;
+} VirtIOKbdQueue;
+
+typedef struct VirtIOKeyboard {
+    VirtIODevice    vdev;
+    VirtQueue       *vq;
+    DeviceState     *qdev;
+    uint16_t        extension_key;
+
+    VirtIOKbdQueue  kbdqueue;
+    QemuMutex       event_mutex;
+} VirtIOKeyboard;
 
 VirtIODevice *virtio_keyboard_init(DeviceState *dev);
 
