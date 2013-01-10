@@ -192,7 +192,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         fprintf(stderr, "Cannot open X display\n");
         exit(1);
     }
-#elif defined(_WIN32)
+#else
     void *display = NULL;
 #endif
     struct winsys_interface *vigs_wsi = NULL;

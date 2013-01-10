@@ -92,7 +92,7 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
         fprintf(stderr, "Cannot open X display\n");
         exit(1);
     }
-#elif defined(_WIN32)
+#else
     void *display = NULL;
 #endif
     struct winsys_interface *vigs_wsi = NULL;
