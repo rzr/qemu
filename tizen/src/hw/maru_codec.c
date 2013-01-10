@@ -663,12 +663,9 @@ int qemu_avcodec_close(SVCodecState *s, int ctx_index)
 /* AVCodecContext* avcodec_alloc_context (void) */
 int qemu_avcodec_alloc_context(SVCodecState *s)
 {
-    off_t offset;
     int index;
 
     TRACE("[%s] Enter\n", __func__);
-
-    offset = s->codec_param.mmap_offset;
 
     for (index = 0; index < CODEC_CONTEXT_MAX; index++) {
         if (s->codec_ctx[index].avctx_use == false) {
@@ -1376,12 +1373,11 @@ uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
 void codec_write(void *opaque, target_phys_addr_t addr,
                 uint64_t value, unsigned size)
 {
-    int ret = -1;
     SVCodecState *s = (SVCodecState *)opaque;
 
     switch (addr) {
     case CODEC_CMD_API_INDEX:
-        ret = codec_operate(value, s->codec_param.ctx_index, s);
+        codec_operate(value, s->codec_param.ctx_index, s);
         break;
     case CODEC_CMD_CONTEXT_INDEX:
         s->codec_param.ctx_index = value;
