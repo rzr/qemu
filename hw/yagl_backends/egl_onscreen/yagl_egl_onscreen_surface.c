@@ -95,7 +95,8 @@ static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc
 
     ws_sfc->copy_buffers(yagl_egl_onscreen_surface_width(osfc),
                          yagl_egl_onscreen_surface_height(osfc),
-                         ws_sfc);
+                         ws_sfc,
+                         (ws_sfc == osfc->ws_sfc));
 
     egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER, cur_fb);
 
@@ -454,11 +455,6 @@ void yagl_egl_onscreen_surface_setup(struct yagl_egl_onscreen_surface *sfc)
                                                    (GLint*)&cur_tex);
 
             egl_onscreen->gles_driver->BindTexture(GL_TEXTURE_2D, sfc->pbuffer_tex);
-
-            egl_onscreen->gles_driver->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            egl_onscreen->gles_driver->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            egl_onscreen->gles_driver->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            egl_onscreen->gles_driver->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
             /*
              * TODO: Use pbuffer attribs to setup texture format

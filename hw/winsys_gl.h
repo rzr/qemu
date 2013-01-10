@@ -14,7 +14,8 @@ struct winsys_gl_surface
 
     void (*copy_buffers)(uint32_t /*width*/,
                          uint32_t /*height*/,
-                         struct winsys_gl_surface */*target*/);
+                         struct winsys_gl_surface */*target*/,
+                         bool /*is_loop*/);
 };
 
 struct winsys_gl_info

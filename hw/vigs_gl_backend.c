@@ -145,10 +145,6 @@ static bool vigs_winsys_gl_surface_create_texture(struct vigs_winsys_gl_surface 
 
     ws_sfc->backend->GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&cur_tex);
     ws_sfc->backend->BindTexture(GL_TEXTURE_2D, *tex);
-    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     ws_sfc->backend->TexImage2D(GL_TEXTURE_2D, 0, ws_sfc->tex_internalformat,
                                 ws_sfc->base.base.width, ws_sfc->base.base.height, 0,
                                 ws_sfc->tex_format, ws_sfc->tex_type,
@@ -371,7 +367,8 @@ static void vigs_winsys_gl_surface_swap_buffers(struct winsys_gl_surface *sfc)
 
 static void vigs_winsys_gl_surface_copy_buffers(uint32_t width,
                                                 uint32_t height,
-                                                struct winsys_gl_surface *target)
+                                                struct winsys_gl_surface *target,
+                                                bool is_loop)
 {
     struct vigs_winsys_gl_surface *vigs_target = (struct vigs_winsys_gl_surface*)target;
     GLuint cur_fb = 0;
@@ -390,22 +387,60 @@ static void vigs_winsys_gl_surface_copy_buffers(uint32_t width,
 
     vigs_gl_surface_wait_fence_2d(vigs_target->parent);
 
-    vigs_target->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
+    if (is_loop) {
+        /*
+         * Feedback loop is possible, need an intermediate texture to
+         * blit.
+         */
 
-    vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
-                                          cur_fb);
-    vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
-                                          vigs_target->parent->fb);
-    vigs_target->backend->FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                               GL_TEXTURE_2D, vigs_target->front_tex, 0);
+        if (!vigs_winsys_gl_surface_create_texture(vigs_target, &vigs_target->parent->tmp_tex)) {
+            return;
+        }
 
-    vigs_target->backend->BlitFramebuffer(0, 0, width, height,
-                                          0, height, width, 0,
-                                          GL_COLOR_BUFFER_BIT,
-                                          GL_LINEAR);
+        vigs_target->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
 
-    vigs_target->backend->BindFramebuffer(GL_FRAMEBUFFER,
-                                          cur_fb);
+        vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
+                                              cur_fb);
+        vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                                              vigs_target->parent->fb);
+        vigs_target->backend->FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                   GL_TEXTURE_2D, vigs_target->parent->tmp_tex, 0);
+
+        vigs_target->backend->BlitFramebuffer(0, 0, width, height,
+                                              0, height, width, 0,
+                                              GL_COLOR_BUFFER_BIT,
+                                              GL_LINEAR);
+
+        vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                                              cur_fb);
+        vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
+                                              vigs_target->parent->fb);
+
+        vigs_target->backend->BlitFramebuffer(0, 0, width, height,
+                                              0, 0, width, height,
+                                              GL_COLOR_BUFFER_BIT,
+                                              GL_LINEAR);
+
+        vigs_target->backend->BindFramebuffer(GL_FRAMEBUFFER,
+                                              cur_fb);
+    } else {
+        vigs_target->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
+
+        vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
+                                              cur_fb);
+        vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                                              vigs_target->parent->fb);
+        vigs_target->backend->FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                   GL_TEXTURE_2D, vigs_target->front_tex, 0);
+
+        vigs_target->backend->BlitFramebuffer(0, 0, width, height,
+                                              0, height, width, 0,
+                                              GL_COLOR_BUFFER_BIT,
+                                              GL_LINEAR);
+
+        vigs_target->backend->BindFramebuffer(GL_FRAMEBUFFER,
+                                              cur_fb);
+    }
 
     vigs_gl_surface_set_fence_3d(vigs_target->parent);
 
@@ -1092,6 +1127,20 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         VIGS_LOG_WARN("ARB_sync not supported!");
     }*/
     gl_backend->has_arb_sync = false;
+
+    /*
+     * @}
+     */
+
+    /*
+     * Default texture parameters.
+     * @{
+     */
+
+    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     /*
      * @}
