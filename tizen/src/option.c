@@ -307,7 +307,7 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     char buf[MAXLEN] = {0,};
     char buf_port[MAXPORTLEN] = {0,};
     char buf_proxy[MAXLEN] = {0,};
-    char* buf_proxy_bak;
+    char *buf_proxy_bak;
     char *proxy;
     FILE *output;
     int MAXPROXYLEN = MAXLEN + MAXPORTLEN;
@@ -317,18 +317,24 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     snprintf(buf_proxy, MAXLEN, "%s", buf);
     pclose(output);
     
-    output = popen("gconftool-2 --get /system/http_proxy/port1", "r");
+    output = popen("gconftool-2 --get /system/http_proxy/port", "r");
     fscanf(output , "%s", buf_port);
     //for abnormal case: if can't find the key of http port, get from environment value.
     if(strlen((char*)buf_port) == 0) {
         buf_proxy_bak = getenv("http_proxy");
-        if(strlen(buf_proxy_bak) != 0) {
+        INFO("http_proxy from env: %s\n", buf_proxy_bak);
+        if(buf_proxy_bak != NULL) {
             proxy = malloc(MAXLEN);
             remove_string(buf_proxy_bak, proxy, HTTP_PREFIX);
             strncpy(http_proxy, proxy, strlen(proxy)-1);
-            INFO("http_proxy from env: %s\n", http_proxy);
+            INFO("final http_proxy value: %s\n", http_proxy);
             free(proxy);
         }
+        else {
+            INFO("http_proxy is not set on env.\n");
+            return;
+        }
+
     }
     else {
         snprintf(http_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf_port);
@@ -336,6 +342,7 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
         memset(buf_proxy, 0, MAXLEN);
         INFO("http_proxy: %s\n", http_proxy);
     }
+    
     memset(buf, 0, MAXLEN);
 
     output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
