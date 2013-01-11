@@ -654,7 +654,8 @@ public class ScreenShotDialog {
 				loader.save( fos, SWT.IMAGE_BMP );
 			} else {
 
-				SkinUtil.openMessage( shell, null, "Use the specified image formats. ( PNG / JPG / JPEG / BMP )",
+				SkinUtil.openMessage( shell, null,
+						"Use the specified image formats. ( PNG / JPG / JPEG / BMP )",
 						SWT.ICON_WARNING, config );
 				String path = fileDialog.open();
 				saveFile( path, fileDialog );
@@ -689,7 +690,7 @@ public class ScreenShotDialog {
 
 		shell.open();
 
-		while ( !shell.isDisposed() ) {
+		/* while ( !shell.isDisposed() ) {
 			if ( !shell.getDisplay().readAndDispatch() ) {
 				if ( reserveImage ) {
 					break;
@@ -697,7 +698,7 @@ public class ScreenShotDialog {
 					shell.getDisplay().sleep();
 				}
 			}
-		}
+		} */
 
 	}
 
