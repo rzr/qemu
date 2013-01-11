@@ -41,6 +41,9 @@ struct winsys_resource
     void (*remove_callback)(struct winsys_resource */*res*/,
                             void */*cookie*/);
 
+    uint32_t (*get_width)(struct winsys_resource */*res*/);
+    uint32_t (*get_height)(struct winsys_resource */*res*/);
+
     struct winsys_surface *(*acquire_surface)(struct winsys_resource */*res*/);
 };
 

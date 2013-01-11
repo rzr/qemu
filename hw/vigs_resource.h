@@ -22,7 +22,9 @@ struct vigs_resource
                           vigsp_resource_type type);
 
 void vigs_resource_assign(struct vigs_resource *res,
-                          struct vigs_surface *sfc);
+                          struct vigs_surface *sfc,
+                          uint32_t width,
+                          uint32_t height);
 
 void vigs_resource_destroy(struct vigs_resource *res);
 

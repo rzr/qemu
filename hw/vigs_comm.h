@@ -57,7 +57,9 @@ struct vigs_comm_ops
     bool (*assign_resource)(void */*user_data*/,
                             vigsp_resource_id /*res_id*/,
                             vigsp_resource_type /*res_type*/,
-                            vigsp_surface_id /*sfc_id*/);
+                            vigsp_surface_id /*sfc_id*/,
+                            uint32_t /*width*/,
+                            uint32_t /*height*/);
 
     bool (*destroy_resource)(void */*user_data*/,
                              vigsp_resource_id /*res_id*/);

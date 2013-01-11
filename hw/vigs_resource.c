@@ -26,6 +26,10 @@ struct vigs_winsys_resource
 
     struct winsys_surface *ws_sfc;
 
+    uint32_t width;
+
+    uint32_t height;
+
     QLIST_HEAD(, vigs_winsys_resource_cb) callbacks;
 };
 
@@ -64,6 +68,18 @@ static void vigs_winsys_resource_remove_callback(struct winsys_resource *res,
     struct vigs_winsys_resource_cb *vigs_cb = cookie;
     QLIST_REMOVE(vigs_cb, entry);
     g_free(vigs_cb);
+}
+
+static uint32_t vigs_winsys_resource_get_width(struct winsys_resource *res)
+{
+    struct vigs_winsys_resource *vigs_res = (struct vigs_winsys_resource*)res;
+    return vigs_res->width;
+}
+
+static uint32_t vigs_winsys_resource_get_height(struct winsys_resource *res)
+{
+    struct vigs_winsys_resource *vigs_res = (struct vigs_winsys_resource*)res;
+    return vigs_res->height;
 }
 
 static struct winsys_surface
@@ -113,6 +129,8 @@ static struct vigs_winsys_resource
     ws_res->base.release = &vigs_winsys_resource_release;
     ws_res->base.add_callback = &vigs_winsys_resource_add_callback;
     ws_res->base.remove_callback = &vigs_winsys_resource_remove_callback;
+    ws_res->base.get_width = &vigs_winsys_resource_get_width;
+    ws_res->base.get_height = &vigs_winsys_resource_get_height;
     ws_res->base.acquire_surface = &vigs_winsys_resource_acquire_surface;
 
     vigs_ref_init(&ws_res->ref, &vigs_winsys_resource_destroy);
@@ -123,7 +141,9 @@ static struct vigs_winsys_resource
 }
 
 static void vigs_winsys_resource_assign(struct vigs_winsys_resource *ws_res,
-                                        struct winsys_surface *ws_sfc)
+                                        struct winsys_surface *ws_sfc,
+                                        uint32_t width,
+                                        uint32_t height)
 {
     struct vigs_winsys_resource_cb *vigs_cb;
 
@@ -140,6 +160,8 @@ static void vigs_winsys_resource_assign(struct vigs_winsys_resource *ws_res,
     }
 
     ws_res->ws_sfc = ws_sfc;
+    ws_res->width = width;
+    ws_res->height = height;
 
     QLIST_FOREACH(vigs_cb, &ws_res->callbacks, entry) {
         vigs_cb->cb(&ws_res->base, vigs_cb->user_data);
@@ -183,7 +205,9 @@ struct vigs_resource
 }
 
 void vigs_resource_assign(struct vigs_resource *res,
-                          struct vigs_surface *sfc)
+                          struct vigs_surface *sfc,
+                          uint32_t width,
+                          uint32_t height)
 {
     assert(sfc);
 
@@ -202,11 +226,15 @@ void vigs_resource_assign(struct vigs_resource *res,
 
     res->sfc = sfc;
     vigs_winsys_resource_assign((struct vigs_winsys_resource*)res->ws_res,
-                                sfc->ws_sfc);
+                                sfc->ws_sfc,
+                                width,
+                                height);
 }
 
 void vigs_resource_destroy(struct vigs_resource *res)
 {
+    struct vigs_winsys_resource *ws_res;
+
     if (res->sfc) {
         if (!g_hash_table_remove(res->sfc->resource_ids, GUINT_TO_POINTER(res->id))) {
             VIGS_LOG_CRITICAL("no resource id for 0x%X", res->id);
@@ -214,9 +242,13 @@ void vigs_resource_destroy(struct vigs_resource *res)
         }
     }
 
+    ws_res = (struct vigs_winsys_resource*)res->ws_res;
+
     res->sfc = NULL;
-    vigs_winsys_resource_assign((struct vigs_winsys_resource*)res->ws_res,
-                                NULL);
+    vigs_winsys_resource_assign(ws_res,
+                                NULL,
+                                ws_res->width,
+                                ws_res->height);
 
     res->ws_res->release(res->ws_res);
     res->ws_res = NULL;

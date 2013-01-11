@@ -453,7 +453,9 @@ static bool vigs_server_dispatch_get_image(void *user_data,
 static bool vigs_server_dispatch_assign_resource(void *user_data,
                                                  vigsp_resource_id res_id,
                                                  vigsp_resource_type res_type,
-                                                 vigsp_surface_id sfc_id)
+                                                 vigsp_surface_id sfc_id,
+                                                 uint32_t width,
+                                                 uint32_t height)
 {
     struct vigs_server *server = user_data;
     struct vigs_resource *res;
@@ -505,7 +507,7 @@ static bool vigs_server_dispatch_assign_resource(void *user_data,
         VIGS_LOG_TRACE("num_resources = %u", g_hash_table_size(server->resources));
     }
 
-    vigs_resource_assign(res, sfc);
+    vigs_resource_assign(res, sfc, width, height);
 
     return true;
 }

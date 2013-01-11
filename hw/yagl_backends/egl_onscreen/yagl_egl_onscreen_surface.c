@@ -542,7 +542,7 @@ uint32_t yagl_egl_onscreen_surface_width(struct yagl_egl_onscreen_surface *sfc)
         return sfc->pbuffer_width;
     case EGL_PIXMAP_BIT:
     case EGL_WINDOW_BIT:
-        return sfc->ws_sfc->base.width;
+        return sfc->ws_res->get_width(sfc->ws_res);
     default:
         assert(false);
         return 0;
@@ -556,7 +556,7 @@ uint32_t yagl_egl_onscreen_surface_height(struct yagl_egl_onscreen_surface *sfc)
         return sfc->pbuffer_height;
     case EGL_PIXMAP_BIT:
     case EGL_WINDOW_BIT:
-        return sfc->ws_sfc->base.height;
+        return sfc->ws_res->get_height(sfc->ws_res);
     default:
         assert(false);
         return 0;

@@ -230,15 +230,19 @@ static vigsp_status vigs_comm_dispatch_assign_resource(struct vigs_comm *comm,
         break;
     }
 
-    VIGS_LOG_TRACE("res_id = 0x%X, res_type = %d, sfc_id = %u",
+    VIGS_LOG_TRACE("res_id = 0x%X, res_type = %d, sfc_id = %u, width = %u, height = %u",
                    request->res_id,
                    request->res_type,
-                   request->sfc_id);
+                   request->sfc_id,
+                   request->width,
+                   request->height);
 
     if (comm->comm_ops->assign_resource(comm->user_data,
                                         request->res_id,
                                         request->res_type,
-                                        request->sfc_id)) {
+                                        request->sfc_id,
+                                        request->width,
+                                        request->height)) {
         return vigsp_status_success;
     } else {
         return vigsp_status_exec_error;
