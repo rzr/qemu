@@ -83,6 +83,7 @@ int gethostDNS(char *dns1, char *dns2)
 #ifndef _WIN32
     FILE *resolv;
     char buf[255];
+    int ret;
     memset(buf, 0, sizeof(char)*255);
 
     resolv = fopen("/etc/resolv.conf", "r");
@@ -95,7 +96,7 @@ int gethostDNS(char *dns1, char *dns2)
     while(fscanf(resolv , "%s", buf) != EOF) {
         if(strcmp(buf, "nameserver") == 0)
         {
-            fscanf(resolv , "%s", dns1);
+            ret = fscanf(resolv , "%s", dns1);
             break;
         }
     }
@@ -103,7 +104,7 @@ int gethostDNS(char *dns1, char *dns2)
     while(fscanf(resolv , "%s", buf) != EOF) {
         if(strcmp(buf, "nameserver") == 0)
         {
-            fscanf(resolv , "%s", dns2);
+            ret = fscanf(resolv , "%s", dns2);
             break;
         }
     }
@@ -310,17 +311,19 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     char *buf_proxy_bak;
     char *proxy;
     FILE *output;
+    int result;
     int MAXPROXYLEN = MAXLEN + MAXPORTLEN;
 
     output = popen("gconftool-2 --get /system/http_proxy/host", "r");
-    fscanf(output , "%s", buf);
+
+    result = fscanf(output, "%s", buf); 
     snprintf(buf_proxy, MAXLEN, "%s", buf);
     pclose(output);
     
     output = popen("gconftool-2 --get /system/http_proxy/port", "r");
-    fscanf(output , "%s", buf_port);
+    result = fscanf(output , "%s", buf_port); 
     //for abnormal case: if can't find the key of http port, get from environment value.
-    if(strlen((char*)buf_port) == 0) {
+    if(result < 0) {
         buf_proxy_bak = getenv("http_proxy");
         INFO("http_proxy from env: %s\n", buf_proxy_bak);
         if(buf_proxy_bak != NULL) {
@@ -342,16 +345,16 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
         memset(buf_proxy, 0, MAXLEN);
         INFO("http_proxy: %s\n", http_proxy);
     }
-    
+
     memset(buf, 0, MAXLEN);
 
     output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
-    fscanf(output , "%s", buf);
+    result = fscanf(output , "%s", buf);
     snprintf(buf_proxy, MAXLEN, "%s", buf);
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
-    fscanf(output , "%s", buf);
+    result = fscanf(output , "%s", buf);
     snprintf(https_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     pclose(output);
     memset(buf, 0, MAXLEN);
@@ -359,12 +362,12 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     INFO("https_proxy : %s\n", https_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/ftp_host", "r");
-    fscanf(output , "%s", buf);
+    result = fscanf(output , "%s", buf);
     snprintf(buf_proxy, MAXLEN, "%s", buf);
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
-    fscanf(output , "%s", buf);
+    result = fscanf(output , "%s", buf);
     snprintf(ftp_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     pclose(output);
     memset(buf, 0, MAXLEN);
@@ -372,12 +375,12 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     INFO("ftp_proxy : %s\n", ftp_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/socks_host", "r");
-    fscanf(output , "%s", buf);
+    result = fscanf(output , "%s", buf);
     snprintf(buf_proxy, MAXLEN, "%s", buf);
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
-    fscanf(output , "%s", buf);
+    result = fscanf(output , "%s", buf);
     snprintf(socks_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     pclose(output);
     INFO("socks_proxy : %s\n", socks_proxy);
@@ -391,13 +394,13 @@ static int getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, ch
     char line[MAXLEN];
     FILE *fp_pacfile;
     char *p = NULL;
-
+    int val;
 #if defined(CONFIG_LINUX)
     FILE *output;
     char buf[MAXLEN];
 
     output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
-    fscanf(output, "%s", buf);
+    val = fscanf(output, "%s", buf);
     pclose(output);
     INFO("pac address: %s\n", buf);
     download_url(buf);
@@ -466,9 +469,10 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
 #if defined(CONFIG_LINUX) 
     char buf[MAXLEN];
     FILE *output;
+    int fscanf_result;
 
     output = popen("gconftool-2 --get /system/proxy/mode", "r");
-    fscanf(output, "%s", buf);
+    fscanf_result = fscanf(output, "%s", buf);
     pclose(output);
 
     //priority : auto > manual > none       
