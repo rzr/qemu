@@ -42,6 +42,8 @@ typedef struct YaglGles1Context
 
     int max_lights;
 
+    int max_tex_size;
+
 } YaglGles1Context;
 
 YaglGles1Context *yagl_gles1_context_create(struct yagl_sharegroup *sg,

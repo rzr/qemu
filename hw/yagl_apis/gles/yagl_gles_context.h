@@ -46,6 +46,16 @@ struct yagl_gles_context
                           GLenum type,
                           const GLvoid *indices);
 
+    GLenum (*compressed_tex_image)(struct yagl_gles_context *ctx,
+                                   GLenum target,
+                                   GLint level,
+                                   GLenum internalformat,
+                                   GLsizei width,
+                                   GLsizei height,
+                                   GLint border,
+                                   GLsizei imageSize,
+                                   const GLvoid *data);
+
     /*
      * Pixel Buffer Object (PBO) for quick access to current surface pixels.
      * 'read_pixels' will automatically detect surface size changes and

@@ -235,6 +235,8 @@ static void yagl_gles1_context_prepare(YaglGles1Context *gles1_ctx)
 
     gles_driver->GetIntegerv(GL_MAX_LIGHTS, &gles1_ctx->max_lights);
 
+    gles_driver->GetIntegerv(GL_MAX_TEXTURE_SIZE, &gles1_ctx->max_tex_size);
+
     extns = (const gchar *)gles_driver->GetString(GL_EXTENSIONS);
 
     gles1_ctx->framebuffer_object =
@@ -547,6 +549,9 @@ static bool yagl_gles1_context_get_integerv(struct yagl_gles_context *ctx,
     case GL_MAX_LIGHTS:
         params[0] = gles1_ctx->max_lights;
         break;
+    case GL_MAX_TEXTURE_SIZE:
+        params[0] = gles1_ctx->max_tex_size;
+        break;
     case GL_VERTEX_ARRAY:
     case GL_NORMAL_ARRAY:
     case GL_COLOR_ARRAY:
@@ -660,7 +665,8 @@ static GLchar *yagl_gles1_context_get_extensions(struct yagl_gles_context *ctx)
         "GL_OES_blend_func_separate GL_OES_element_index_uint "
         "GL_OES_texture_mirrored_repeat "
         "GL_EXT_texture_format_BGRA8888 GL_OES_point_sprite "
-        "GL_OES_point_size_array GL_OES_stencil_wrap ";
+        "GL_OES_point_size_array GL_OES_stencil_wrap "
+        "GL_OES_compressed_paletted_texture ";
     const GLchar *framebuffer_object_ext =
         "GL_OES_framebuffer_object GL_OES_depth24 GL_OES_depth32 "
         "GL_OES_rgb8_rgba8 GL_OES_stencil1 GL_OES_stencil4 "
@@ -871,6 +877,294 @@ static void yagl_gles1_context_draw_elements(struct yagl_gles_context *ctx,
     }
 }
 
+typedef struct YaglGles1PalFmtDesc {
+    GLenum uncomp_format;
+    GLenum pixel_type;
+    unsigned pixel_size;
+    unsigned bits_per_index;
+} YaglGles1PalFmtDesc;
+
+static inline int yagl_log2(int val)
+{
+   int ret = 0;
+
+   if (val > 0) {
+       while (val >>= 1) {
+           ret++;
+       }
+   }
+
+   return ret;
+}
+
+static inline bool yagl_gles1_tex_dims_valid(GLsizei width,
+                                             GLsizei height,
+                                             int max_size)
+{
+    if (width < 0 || height < 0 || width > max_size || height > max_size ||
+        (width & (width - 1)) || (height & (height - 1))) {
+        return false;
+    }
+
+    return true;
+}
+
+static void yagl_gles1_cpal_format_get_descr(GLenum format,
+                                             YaglGles1PalFmtDesc *desc)
+{
+    assert(format >= GL_PALETTE4_RGB8_OES && format <= GL_PALETTE8_RGB5_A1_OES);
+
+    switch (format) {
+    case GL_PALETTE4_RGB8_OES:
+        desc->uncomp_format = GL_RGB;
+        desc->bits_per_index = 4;
+        desc->pixel_type = GL_UNSIGNED_BYTE;
+        desc->pixel_size = 3;
+        break;
+    case GL_PALETTE4_RGBA8_OES:
+        desc->uncomp_format = GL_RGBA;
+        desc->bits_per_index = 4;
+        desc->pixel_type = GL_UNSIGNED_BYTE;
+        desc->pixel_size = 4;
+        break;
+    case GL_PALETTE4_R5_G6_B5_OES:
+        desc->uncomp_format = GL_RGB;
+        desc->bits_per_index = 4;
+        desc->pixel_type = GL_UNSIGNED_SHORT_5_6_5;
+        desc->pixel_size = 2;
+        break;
+    case GL_PALETTE4_RGBA4_OES:
+        desc->uncomp_format = GL_RGBA;
+        desc->bits_per_index = 4;
+        desc->pixel_type = GL_UNSIGNED_SHORT_4_4_4_4;
+        desc->pixel_size = 2;
+        break;
+    case GL_PALETTE4_RGB5_A1_OES:
+        desc->uncomp_format = GL_RGBA;
+        desc->bits_per_index = 4;
+        desc->pixel_type = GL_UNSIGNED_SHORT_5_5_5_1;
+        desc->pixel_size = 2;
+        break;
+    case GL_PALETTE8_RGB8_OES:
+        desc->uncomp_format = GL_RGB;
+        desc->bits_per_index = 8;
+        desc->pixel_type = GL_UNSIGNED_BYTE;
+        desc->pixel_size = 3;
+        break;
+    case GL_PALETTE8_RGBA8_OES:
+        desc->uncomp_format = GL_RGBA;
+        desc->bits_per_index = 8;
+        desc->pixel_type = GL_UNSIGNED_BYTE;
+        desc->pixel_size = 4;
+        break;
+    case GL_PALETTE8_R5_G6_B5_OES:
+        desc->uncomp_format = GL_RGB;
+        desc->bits_per_index = 8;
+        desc->pixel_type = GL_UNSIGNED_SHORT_5_6_5;
+        desc->pixel_size = 2;
+        break;
+    case GL_PALETTE8_RGBA4_OES:
+        desc->uncomp_format = GL_RGBA;
+        desc->bits_per_index = 8;
+        desc->pixel_type = GL_UNSIGNED_SHORT_4_4_4_4;
+        desc->pixel_size = 2;
+        break;
+    case GL_PALETTE8_RGB5_A1_OES:
+        desc->uncomp_format = GL_RGBA;
+        desc->bits_per_index = 8;
+        desc->pixel_type = GL_UNSIGNED_SHORT_5_5_5_1;
+        desc->pixel_size = 2;
+        break;
+    }
+}
+
+static GLsizei yagl_gles1_cpal_tex_size(YaglGles1PalFmtDesc *fmt_desc,
+                                        unsigned width,
+                                        unsigned height,
+                                        unsigned max_level)
+{
+    GLsizei size;
+
+    /* Palette table size */
+    size = (1 << fmt_desc->bits_per_index) * fmt_desc->pixel_size;
+
+    /* Texture palette indices array size for each miplevel */
+    do {
+        if (fmt_desc->bits_per_index == 4) {
+            size += (width * height + 1) / 2;
+        } else {
+            size += width * height;
+        }
+
+        width >>= 1;
+        if (width == 0) {
+            width = 1;
+        }
+
+        height >>= 1;
+        if (height == 0) {
+            height = 1;
+        }
+    } while (max_level--);
+
+    return size;
+}
+
+static void yagl_gles1_cpal_tex_uncomp_and_apply(struct yagl_gles_context *ctx,
+                                                 YaglGles1PalFmtDesc *fmt_desc,
+                                                 unsigned max_level,
+                                                 unsigned width,
+                                                 unsigned height,
+                                                 const GLvoid *data)
+{
+    uint8_t *tex_img_data = NULL;
+    uint8_t *img;
+    const uint8_t *indices;
+    unsigned cur_level, i;
+    unsigned num_of_texels = width * height;
+    GLint saved_alignment;
+
+    if (!data) {
+        for (cur_level = 0; cur_level <= max_level; ++cur_level) {
+            ctx->driver->TexImage2D(GL_TEXTURE_2D,
+                                    cur_level,
+                                    fmt_desc->uncomp_format,
+                                    width, height,
+                                    0,
+                                    fmt_desc->uncomp_format,
+                                    fmt_desc->pixel_type,
+                                    NULL);
+            width >>= 1;
+            height >>= 1;
+
+            if (width == 0) {
+                width = 1;
+            }
+
+            if (height == 0) {
+                height = 1;
+            }
+        }
+
+        return;
+    }
+
+    /* Jump over palette data to first image data */
+    indices = data + (1 << fmt_desc->bits_per_index) * fmt_desc->pixel_size;
+
+    /* 0 level image is the largest */
+    tex_img_data = g_malloc(num_of_texels * fmt_desc->pixel_size);
+
+    /* We will pass tightly packed data to glTexImage2D */
+    ctx->driver->GetIntegerv(GL_UNPACK_ALIGNMENT, &saved_alignment);
+
+    if (saved_alignment != 1) {
+        ctx->driver->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    }
+
+    for (cur_level = 0; cur_level <= max_level; ++cur_level) {
+        img = tex_img_data;
+
+        if (fmt_desc->bits_per_index == 4) {
+            unsigned cur_idx;
+
+            for (i = 0; i < num_of_texels; ++i) {
+                if ((i % 2) == 0) {
+                    cur_idx = indices[i / 2] >> 4;
+                } else {
+                    cur_idx = indices[i / 2] & 0xf;
+                }
+
+                memcpy(img,
+                       data + cur_idx * fmt_desc->pixel_size,
+                       fmt_desc->pixel_size);
+
+                img += fmt_desc->pixel_size;
+            }
+
+            indices += (num_of_texels + 1) / 2;
+        } else {
+            for (i = 0; i < num_of_texels; ++i) {
+                memcpy(img,
+                       data + indices[i] * fmt_desc->pixel_size,
+                       fmt_desc->pixel_size);
+                img += fmt_desc->pixel_size;
+            }
+
+            indices += num_of_texels;
+        }
+
+        ctx->driver->TexImage2D(GL_TEXTURE_2D,
+                                cur_level,
+                                fmt_desc->uncomp_format,
+                                width, height,
+                                0,
+                                fmt_desc->uncomp_format,
+                                fmt_desc->pixel_type,
+                                tex_img_data);
+
+        width >>= 1;
+        if (width == 0) {
+            width = 1;
+        }
+
+        height >>= 1;
+        if (height == 0) {
+            height = 1;
+        }
+
+        num_of_texels = width * height;
+    }
+
+    g_free(tex_img_data);
+
+    if (saved_alignment != 1) {
+        ctx->driver->PixelStorei(GL_UNPACK_ALIGNMENT, saved_alignment);
+    }
+}
+
+static GLenum yagl_gles1_compressed_tex_image(struct yagl_gles_context *ctx,
+                                              GLenum target,
+                                              GLint level,
+                                              GLenum internalformat,
+                                              GLsizei width,
+                                              GLsizei height,
+                                              GLint border,
+                                              GLsizei imageSize,
+                                              const GLvoid *data)
+{
+    const int max_tex_size = ((YaglGles1Context *)ctx)->max_tex_size;
+    YaglGles1PalFmtDesc fmt_desc;
+
+    if (target != GL_TEXTURE_2D) {
+        return GL_INVALID_ENUM;
+    }
+
+    switch (internalformat) {
+    case GL_PALETTE4_RGB8_OES ... GL_PALETTE8_RGB5_A1_OES:
+        yagl_gles1_cpal_format_get_descr(internalformat, &fmt_desc);
+
+        if ((level > 0) || (-level > yagl_log2(max_tex_size)) ||
+            !yagl_gles1_tex_dims_valid(width, height, max_tex_size) ||
+            border != 0 || (imageSize !=
+                yagl_gles1_cpal_tex_size(&fmt_desc, width, height, -level))) {
+            return GL_INVALID_VALUE;
+        }
+
+        yagl_gles1_cpal_tex_uncomp_and_apply(ctx,
+                                             &fmt_desc,
+                                             -level,
+                                             width,
+                                             height,
+                                             data);
+        break;
+    default:
+        return GL_INVALID_ENUM;
+    }
+
+    return GL_NO_ERROR;
+}
+
 YaglGles1Context *yagl_gles1_context_create(struct yagl_sharegroup *sg,
                                             struct yagl_gles1_driver *driver)
 {
@@ -898,6 +1192,7 @@ YaglGles1Context *yagl_gles1_context_create(struct yagl_sharegroup *sg,
     gles1_ctx->base.get_extensions = &yagl_gles1_context_get_extensions;
     gles1_ctx->base.draw_arrays = &yagl_gles1_context_draw_arrays;
     gles1_ctx->base.draw_elements = &yagl_gles1_context_draw_elements;
+    gles1_ctx->base.compressed_tex_image = &yagl_gles1_compressed_tex_image;
 
     gles1_ctx->driver = driver;
     gles1_ctx->prepared = false;

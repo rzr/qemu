@@ -433,6 +433,7 @@ bool yagl_host_glCompressedTexImage2D(GLenum target,
 {
     bool res = true;
     GLvoid *data = NULL;
+    GLenum err_code;
 
     YAGL_GET_CTX(glCompressedTexImage2D);
 
@@ -459,14 +460,19 @@ bool yagl_host_glCompressedTexImage2D(GLenum target,
         }
     }
 
-    ctx->driver->CompressedTexImage2D(target,
-                                      level,
-                                      internalformat,
-                                      width,
-                                      height,
-                                      border,
-                                      imageSize,
-                                      data);
+    err_code = ctx->compressed_tex_image(ctx,
+                                         target,
+                                         level,
+                                         internalformat,
+                                         width,
+                                         height,
+                                         border,
+                                         imageSize,
+                                         data);
+
+    if (err_code != GL_NO_ERROR) {
+        YAGL_SET_ERR(err_code);
+    }
 
 out:
     return res;
@@ -486,6 +492,12 @@ bool yagl_host_glCompressedTexSubImage2D(GLenum target,
     GLvoid *data = NULL;
 
     YAGL_GET_CTX(glCompressedTexSubImage2D);
+
+    if (ctx->base.client_api == yagl_client_api_gles1) {
+        /* No formats are supported by this call in GLES1 API */
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        return true;
+    }
 
     if (data_ && (imageSize > 0)) {
         data = yagl_gles_context_malloc(ctx, imageSize);

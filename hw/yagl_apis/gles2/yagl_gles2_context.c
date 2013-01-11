@@ -467,6 +467,28 @@ static void yagl_gles2_context_deactivate(struct yagl_client_context *ctx)
     yagl_gles_context_deactivate(&gles2_ctx->base);
 }
 
+static GLenum yagl_gles2_compressed_tex_image(struct yagl_gles_context *ctx,
+                                              GLenum target,
+                                              GLint level,
+                                              GLenum internalformat,
+                                              GLsizei width,
+                                              GLsizei height,
+                                              GLint border,
+                                              GLsizei imageSize,
+                                              const GLvoid *data)
+{
+    ctx->driver->CompressedTexImage2D(target,
+                                      level,
+                                      internalformat,
+                                      width,
+                                      height,
+                                      border,
+                                      imageSize,
+                                      data);
+
+    return GL_NO_ERROR;
+}
+
 struct yagl_gles2_context
     *yagl_gles2_context_create(struct yagl_sharegroup *sg,
                                struct yagl_gles2_driver *driver)
@@ -493,6 +515,7 @@ struct yagl_gles2_context
     gles2_ctx->base.get_extensions = &yagl_gles2_context_get_extensions;
     gles2_ctx->base.draw_arrays = &yagl_gles2_context_draw_arrays;
     gles2_ctx->base.draw_elements = &yagl_gles2_context_draw_elements;
+    gles2_ctx->base.compressed_tex_image = &yagl_gles2_compressed_tex_image;
 
     gles2_ctx->driver = driver;
     gles2_ctx->prepared = false;
