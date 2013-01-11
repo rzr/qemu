@@ -1,3 +1,6 @@
+* 1.4.48
+- switch the z-order between main window and key window
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-01-11
 * 1.4.45
 - Fixed a problem about emulator boot on Mac.
 == Kitae Kim <kt920.kim@samsung.com> 2013-01-11
