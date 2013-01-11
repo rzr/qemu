@@ -139,7 +139,7 @@ public class EmulatorSkin {
 	private boolean isShutdownRequested;
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
-	private boolean isControlPanel;
+	private boolean isKeyWindow;
 	private boolean isOnKbd;
 
 	private Menu contextMenu;
@@ -182,7 +182,7 @@ public class EmulatorSkin {
 		this.config = config;
 		this.skinInfo = skinInfo;
 		this.isOnTop = isOnTop;
-		this.isControlPanel = false;
+		this.isKeyWindow = false;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
@@ -361,16 +361,11 @@ public class EmulatorSkin {
 						}
 
 						/* close the Key Window */
-						if (null != keyWindow) {
-							Shell keyWindowShell = keyWindow.getShell();
-							if (!keyWindowShell.isDisposed()) {
-								keyWindowShell.close();
-							}
-							keyWindow = null;
+						closeKeyWindow();
 
-							if (colorPairTag != null) {
-								colorPairTag.dispose();
-							}
+						/* dispose the color tag */
+						if (colorPairTag != null) {
+							colorPairTag.dispose();
 						}
 
 						/* save config only for emulator close */
@@ -470,7 +465,7 @@ public class EmulatorSkin {
 			public void focusGained(FocusEvent event) {
 				logger.info("gain focus");
 
-				if (isOnTop == false && isControlPanel == true) {
+				if (isOnTop == false && isKeyWindow == true) {
 					if (keyWindow != null &&
 							keyWindow.getDockPosition() != SWT.NONE) {
 						keyWindow.getShell().moveAbove(shell);
@@ -479,6 +474,7 @@ public class EmulatorSkin {
 				}
 			}
 
+			@Override
 			public void focusLost(FocusEvent event) {
 				logger.info("lost focus");
 
@@ -941,23 +937,19 @@ public class EmulatorSkin {
 		//TODO: abstract
 	}
 
-	/* toggle a key window */
-	public void setIsControlPanel(boolean value) {
-		isControlPanel = value;
-		keyWindowItem.setSelection(isControlPanel);
-		logger.info("Select Key Window : " + isControlPanel);
-	}
-
-	public boolean getIsControlPanel() {
-		return isControlPanel;
+	public boolean isSelectKeyWindow() {
+		return keyWindowItem.getSelection();
 	}
 
 	public void openKeyWindow(int dockValue) {
 		if (keyWindow != null) {
+			/* show the key window */
+			keyWindowItem.setSelection(isKeyWindow = true);
+			pairTagCanvas.setVisible(true);
+
 			keyWindow.getShell().setVisible(true);
 			SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
-			pairTagCanvas.setVisible(true);
 			return;
 		}
 
@@ -966,9 +958,11 @@ public class EmulatorSkin {
 				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
 
 		if (keyMapList == null) {
+			keyWindowItem.setSelection(isKeyWindow = false);
 			logger.info("keyMapList is null");
 			return;
 		} else if (keyMapList.isEmpty() == true) {
+			keyWindowItem.setSelection(isKeyWindow = false);
 			logger.info("keyMapList is empty");
 			return;
 		}
@@ -976,6 +970,8 @@ public class EmulatorSkin {
 		try {
 			keyWindow = new KeyWindow(this, shell, colorPairTag,
 					communicator, keyMapList);
+
+			keyWindowItem.setSelection(isKeyWindow = true);
 			SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
 			//colorPairTag = keyWindow.getPairTagColor();
@@ -989,8 +985,22 @@ public class EmulatorSkin {
 	}
 
 	public void hideKeyWindow() {
-		keyWindow.getShell().setVisible(false);
+		keyWindowItem.setSelection(isKeyWindow = false);
 		pairTagCanvas.setVisible(false);
+
+		if (keyWindow != null) {
+			keyWindow.getShell().setVisible(false);
+		}
+	}
+
+	public void closeKeyWindow() {
+		keyWindowItem.setSelection(isKeyWindow = false);
+		pairTagCanvas.setVisible(false);
+
+		if (keyWindow != null) {
+			keyWindow.getShell().close();
+			keyWindow = null;
+		}
 	}
 
 	private void addMenuItems(final Shell shell, final Menu menu) {
@@ -1062,23 +1072,21 @@ public class EmulatorSkin {
 		if (skinInfo.isPhoneShape() == false) { //TODO:
 		keyWindowItem = new MenuItem(menu, SWT.CHECK);
 		keyWindowItem.setText("&Key Window");
-		keyWindowItem.setSelection(isControlPanel);
+		keyWindowItem.setSelection(isKeyWindow);
 
 		keyWindowItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				final boolean isControlPanel = keyWindowItem.getSelection();
+				final boolean selectKeyWindow = keyWindowItem.getSelection();
 
-				setIsControlPanel(isControlPanel);
-				if (isControlPanel == true) {
+				if (selectKeyWindow == true) {
 					openKeyWindow((keyWindow == null) ?
 							SWT.RIGHT | SWT.CENTER : keyWindow.getDockPosition());
 				} else { /* hide a key window */
 					if (keyWindow != null &&
 							keyWindow.getDockPosition() != SWT.NONE) {
-						/* Close the Key Window if it is docked to Main Window */
-						pairTagCanvas.setVisible(false);
-						keyWindow.getShell().close();
+						/* close the Key Window if it is docked to Main Window */
+						closeKeyWindow();
 					} else {
 						hideKeyWindow();
 					}

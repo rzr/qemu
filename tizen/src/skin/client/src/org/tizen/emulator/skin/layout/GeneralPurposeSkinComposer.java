@@ -157,22 +157,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		toggleButton.addMouseListener(new MouseListener() {
 			@Override
 			public void mouseDown(MouseEvent e) {
-				if (skin.getIsControlPanel() == true) {
-					if (skin.keyWindow != null) {
-						skin.keyWindow.getShell().close();
-					}
-
-					skin.setIsControlPanel(false);
-					skin.pairTagCanvas.setVisible(false);
+				if (skin.isSelectKeyWindow() == true) {
+					skin.closeKeyWindow();
 				} else {
-					skin.setIsControlPanel(true);
 					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER);
-
-					/* move a key window to right of the emulator window */
-					if (skin.keyWindow != null) {
-						skin.keyWindow.dock(
-								SWT.RIGHT | SWT.CENTER, true, false);
-					}
 				}
 			}
 
@@ -215,7 +203,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				skin.setIsControlPanel(true);
 				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER);
 			}
 		});
