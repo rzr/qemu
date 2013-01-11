@@ -55,18 +55,18 @@ then
 	if [ -e /etc/$SYSCTL_FILE ]
 	then
             remove_tmp_file;
+            makesysctl;
             echo "mv -f /etc/sysctl.conf /etc/sysctl.conf.old" >> $TMP_FILE
 		    echo "cp -f $TMP_DIR/$SYSCTL_FILE /etc/." >> $TMP_FILE
 		    echo "sysctl -w kern.sysv.shmmax=$NEW_SHMMAXSIZE" >> $TMP_FILE
 		    chmod +x $TMP_FILE
-            makesysctl;
 		    $TIZEN_BIN_PATH/cocoasudo "--prompt=Changing /etc/sysctl.conf file requires that you type your password.(The original file will be removed to sysctl.conf.old)" sh -x $TMP_FILE
 	else
             remove_tmp_file;
+            makesysctl;
 		    echo "cp -f $TMP_DIR/$SYSCTL_FILE /etc/." >> $TMP_FILE
 		    echo "sysctl -w kern.sysv.shmmax=$NEW_SHMMAXSIZE" >> $TMP_FILE
 		    chmod +x $TMP_FILE
-            makesysctl;
 		    $TIZEN_BIN_PATH/cocoasudo "--prompt=Make a new /etc/sysctl.conf file requires that you type your password." sh -x $TMP_FILE	
 	fi
 fi
