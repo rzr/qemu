@@ -580,81 +580,9 @@ void prepare_maru(void)
 
 int qemu_main(int argc, char **argv, char **envp);
 
-#ifdef CONFIG_DARWIN
-int g_argc;
-
-void* main_thread(void* args);
-
-int main(int argc, char *argv[])
+static int emulator_main(int argc, char *argv[])
 {
-    char** args;
-    pthread_t main_thread_id;
-
-    g_argc = argc;
-    args = argv;
-
-    if (0 != pthread_create(&main_thread_id, NULL, main_thread, args)) {
-        INFO("Create main thread failed\n");
-        return -1;
-    }
-
-    ns_event_loop(&thread_running);
-    return 0;
-}
-
-void* main_thread(void* args)
-{
-    char** argv;
-    int argc = g_argc;
-
-    argv = (char**) args;
-    parse_options(argc, argv, &_skin_argc, &_skin_argv, &_qemu_argc, &_qemu_argv);
-    set_bin_dir(_qemu_argv[0]);
-    socket_init();
-    extract_qemu_info(_qemu_argc, _qemu_argv);
-
-    INFO("Emulator start !!!\n");
-    atexit(maru_atexit);
-
-    extract_skin_info(_skin_argc, _skin_argv);
-
-    check_shdmem();
-    make_shdmem();
-    sdb_setup();
-
-    system_info();
-
-    INFO("Prepare running...\n");
-    /* Redirect stdout and stderr after debug_ch is initialized. */
-    redir_output();
-
-    int i;
-
-    fprintf(stdout, "qemu args: =========================================\n");
-    for (i = 0; i < _qemu_argc; ++i) {
-        fprintf(stdout, "%s ", _qemu_argv[i]);
-    }
-    fprintf(stdout, "\nqemu args: =========================================\n");
-
-    fprintf(stdout, "skin args: =========================================\n");
-    for (i = 0; i < _skin_argc; ++i) {
-        fprintf(stdout, "%s ", _skin_argv[i]);
-    }
-    fprintf(stdout, "\nskin args: =========================================\n");
-
-    INFO("qemu main start!\n");
-    qemu_main(_qemu_argc, _qemu_argv, NULL);
-
-    exit_emulator();
-    thread_running = 0;
-    pthread_exit(NULL);
-
-    return 0;
-}
-#else
-int main(int argc, char *argv[])
-{
-    parse_options(argc, argv, &_skin_argc,
+    parse_options(argc, argv, &_skin_argc, 
                 &_skin_argv, &_qemu_argc, &_qemu_argv);
     set_bin_dir(_qemu_argv[0]);
     socket_init();
@@ -696,4 +624,43 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+#ifndef CONFIG_DARWIN
+int main(int argc, char *argv[])
+{
+    return emulator_main(argc, argv);
+}
+#else
+int g_argc;
+
+void* main_thread(void* args)
+{
+    char** argv;
+    int argc = g_argc;
+    argv = (char**) args;
+
+    emulator_main(argc, argv);
+
+    thread_running = 0;
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[])
+{
+    char** args;
+    pthread_t main_thread_id;
+
+    g_argc = argc;
+    args = argv;
+
+    if (0 != pthread_create(&main_thread_id, NULL, main_thread, args)) {
+        INFO("Create main thread failed\n");
+        return -1;
+    }
+
+    ns_event_loop(&thread_running);
+
+    return 0;
+}
 #endif
+
