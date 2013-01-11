@@ -98,6 +98,8 @@ MULTI_DEBUG_CHANNEL(qemu, skin_server);
 #define TEST_HB_IGNORE "test.hb.ignore"
 #define SKIN_CONFIG_PROP ".skinconfig.properties"
 
+extern char tizen_target_path[];
+
 enum {
     /* This values must match the Java definitions
         in Skin process */

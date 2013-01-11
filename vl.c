@@ -181,6 +181,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "ui/qemu-spice.h"
 
 #ifdef CONFIG_MARU
+#include "tizen/src/emulator.h"
 #include "tizen/src/maru_common.h"
 #include "tizen/src/maru_display.h"
 #include "tizen/src/option.h"
@@ -3535,7 +3536,7 @@ int main(int argc, char **argv, char **envp)
             device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
             qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
             if (devp.found == 0) {
-                if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, "driver")) {
+                if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, 1)) {
                     exit(1);
                 }
             }
@@ -3702,9 +3703,9 @@ int main(int argc, char **argv, char **envp)
                          "due to the fail of webcam capability check!\n");
     }
 
-    gchar *tmp_cam_kcmd = kernel_cmdline;
+    gchar const *tmp_cam_kcmd = kernel_cmdline;
     kernel_cmdline = g_strdup_printf("%s enable_cam=%d", tmp_cam_kcmd, is_webcam_enabled);
-    g_free(tmp_cam_kcmd);
+//    g_free(tmp_cam_kcmd);
 
     if (is_webcam_enabled) {
         device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
@@ -3878,8 +3879,9 @@ int main(int argc, char **argv, char **envp)
 
     current_machine = machine;
 
-    if (hax_enabled())
+    if (hax_enabled()) {
         hax_sync_vcpus();
+    }
 
     /* init USB devices */
     if (usb_enabled) {

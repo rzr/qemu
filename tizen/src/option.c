@@ -83,12 +83,11 @@ int gethostDNS(char *dns1, char *dns2)
 #ifndef _WIN32
     FILE *resolv;
     char buf[255];
-    int ret;
     memset(buf, 0, sizeof(char)*255);
 
     resolv = fopen("/etc/resolv.conf", "r");
     if (resolv <= 0) {
-        ERR( "Cann't open \"/etc/resolv.conf.\"\n");
+        ERR( "Can't open \"/etc/resolv.conf.\"\n");
         fclose(resolv);
         return 1;
     }
@@ -96,7 +95,9 @@ int gethostDNS(char *dns1, char *dns2)
     while(fscanf(resolv , "%s", buf) != EOF) {
         if(strcmp(buf, "nameserver") == 0)
         {
-            ret = fscanf(resolv , "%s", dns1);
+            if(fscanf(resolv , "%s", dns1) <= 0) {
+                // do nothing...
+            }
             break;
         }
     }
@@ -104,7 +105,9 @@ int gethostDNS(char *dns1, char *dns2)
     while(fscanf(resolv , "%s", buf) != EOF) {
         if(strcmp(buf, "nameserver") == 0)
         {
-            ret = fscanf(resolv , "%s", dns2);
+            if(fscanf(resolv , "%s", dns2) <= 0) {
+                // do nothing...
+            }
             break;
         }
     }
@@ -311,19 +314,17 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     char *buf_proxy_bak;
     char *proxy;
     FILE *output;
-    int result;
     int MAXPROXYLEN = MAXLEN + MAXPORTLEN;
 
     output = popen("gconftool-2 --get /system/http_proxy/host", "r");
-
-    result = fscanf(output, "%s", buf); 
-    snprintf(buf_proxy, MAXLEN, "%s", buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
     pclose(output);
     
     output = popen("gconftool-2 --get /system/http_proxy/port", "r");
-    result = fscanf(output , "%s", buf_port); 
-    //for abnormal case: if can't find the key of http port, get from environment value.
-    if(result < 0) {
+    if(fscanf(output, "%s", buf_port) <= 0) {
+        //for abnormal case: if can't find the key of http port, get from environment value.
         buf_proxy_bak = getenv("http_proxy");
         INFO("http_proxy from env: %s\n", buf_proxy_bak);
         if(buf_proxy_bak != NULL) {
@@ -335,53 +336,60 @@ static void getlinuxproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
         }
         else {
             INFO("http_proxy is not set on env.\n");
+            pclose(output);
             return;
         }
 
     }
     else {
         snprintf(http_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf_port);
-        pclose(output);
         memset(buf_proxy, 0, MAXLEN);
         INFO("http_proxy: %s\n", http_proxy);
     }
+    pclose(output);
 
     memset(buf, 0, MAXLEN);
 
     output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
-    result = fscanf(output , "%s", buf);
-    snprintf(buf_proxy, MAXLEN, "%s", buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
-    result = fscanf(output , "%s", buf);
-    snprintf(https_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(https_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    }
     pclose(output);
     memset(buf, 0, MAXLEN);
     memset(buf_proxy, 0, MAXLEN);
     INFO("https_proxy : %s\n", https_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/ftp_host", "r");
-    result = fscanf(output , "%s", buf);
-    snprintf(buf_proxy, MAXLEN, "%s", buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
-    result = fscanf(output , "%s", buf);
-    snprintf(ftp_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(ftp_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    }
     pclose(output);
     memset(buf, 0, MAXLEN);
     memset(buf_proxy, 0, MAXLEN);
     INFO("ftp_proxy : %s\n", ftp_proxy);
 
     output = popen("gconftool-2 --get /system/proxy/socks_host", "r");
-    result = fscanf(output , "%s", buf);
-    snprintf(buf_proxy, MAXLEN, "%s", buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
     pclose(output);
 
     output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
-    result = fscanf(output , "%s", buf);
-    snprintf(socks_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(socks_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    }
     pclose(output);
     INFO("socks_proxy : %s\n", socks_proxy);
 }
@@ -394,16 +402,16 @@ static int getautoproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, ch
     char line[MAXLEN];
     FILE *fp_pacfile;
     char *p = NULL;
-    int val;
 #if defined(CONFIG_LINUX)
     FILE *output;
     char buf[MAXLEN];
 
     output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
-    val = fscanf(output, "%s", buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        INFO("pac address: %s\n", buf);
+        download_url(buf);
+    }
     pclose(output);
-    INFO("pac address: %s\n", buf);
-    download_url(buf);
 #elif defined(CONFIG_WIN32)    
     INFO("pac address: %s\n", (char*)url);
     download_url((char*)url);
@@ -469,26 +477,23 @@ int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *soc
 #if defined(CONFIG_LINUX) 
     char buf[MAXLEN];
     FILE *output;
-    int fscanf_result;
 
     output = popen("gconftool-2 --get /system/proxy/mode", "r");
-    fscanf_result = fscanf(output, "%s", buf);
+    if(fscanf(output, "%s", buf) > 0) {
+        //priority : auto > manual > none       
+        if (strcmp(buf, "auto") == 0) {
+            INFO("AUTO PROXY MODE\n");
+            getautoproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+        }
+        else if (strcmp(buf, "manual") == 0) {
+            INFO("MANUAL PROXY MODE\n");
+            getlinuxproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+        }
+        else if (strcmp(buf, "none") == 0) {
+            INFO("DIRECT PROXY MODE\n");
+        }
+    }
     pclose(output);
-
-    //priority : auto > manual > none       
-    if (strcmp(buf, "auto") == 0){
-        INFO("AUTO PROXY MODE\n");
-        getautoproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-        return 0;
-    }
-    else if (strcmp(buf, "manual") == 0){
-        INFO("MANUAL PROXY MODE\n");
-        getlinuxproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-    }
-    else if (strcmp(buf, "none") == 0){
-        INFO("DIRECT PROXY MODE\n");
-        return 0;
-    }
 
 #elif defined(CONFIG_WIN32)
     HKEY hKey;

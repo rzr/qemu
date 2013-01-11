@@ -49,7 +49,7 @@ enum {
 };
 
 
-void maru_register_exit_msg(int maru_exit_status, char *additional_msg);
+void maru_register_exit_msg(int maru_exit_status, char const *const additional_msg);
 void maru_atexit(void);
 char *maru_convert_path(char *msg, const char *path);
 void maru_dump_backtrace(void *ptr, int depth);

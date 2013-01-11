@@ -40,10 +40,9 @@
 #define MAXLEN  512
 #define MAXPACKETLEN 60
 #define SHMKEY	26099
-extern char tizen_target_path[MAXLEN];
 
 void exit_emulator(void);
-char* get_bin_path(void);
+char *get_bin_path(void);
 void set_image_and_log_path(char *qemu_argv);
 void redir_output(void);
 void extract_qemu_info(int qemu_argc, char **qemu_argv);

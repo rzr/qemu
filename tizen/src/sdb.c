@@ -33,6 +33,8 @@
 //DEFAULT_DEBUG_CHANNEL(qemu);
 MULTI_DEBUG_CHANNEL(qemu, sdb);
 
+extern char tizen_target_path[];
+
 /* QSOCKET_CALL is used to deal with the fact that EINTR happens pretty
  * easily in QEMU since we use SIGALRM to implement periodic timers
  */

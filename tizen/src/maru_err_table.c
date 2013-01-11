@@ -38,6 +38,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <execinfo.h>
 #endif
 
 /* This table must match the enum definition */
@@ -58,7 +60,7 @@ Check if the file is corrupted or missing.\n\n",
 static int maru_exit_status = MARU_EXIT_NORMAL;
 static char maru_exit_msg[JAVA_MAX_COMMAND_LENGTH] = { 0, };
 
-void maru_register_exit_msg(int maru_exit_index, char *additional_msg)
+void maru_register_exit_msg(int maru_exit_index, char const *const additional_msg)
 {
     int len = 0;
 
@@ -95,11 +97,11 @@ void maru_register_exit_msg(int maru_exit_index, char *additional_msg)
     } else if (additional_msg != NULL) {
         len = strlen(additional_msg);
         if (len >= JAVA_MAX_COMMAND_LENGTH) {
-            additional_msg[JAVA_MAX_COMMAND_LENGTH - 1] = '\0';
             len = JAVA_MAX_COMMAND_LENGTH - 1;
         }
 
-        pstrcpy(maru_exit_msg, strlen(additional_msg) + 1, additional_msg);
+        pstrcpy(maru_exit_msg, len + 1, additional_msg);
+        maru_exit_msg[len] = '\0';
     }
 
     fprintf(stdout, "The error message is registered = %d : %s\n",
