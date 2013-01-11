@@ -315,9 +315,7 @@ void notify_booting_progress(int progress_value)
         len = 1;
     } else if (progress_value < 100) {
         len = 2;
-    } else if (progress_value = 100) {
-        len = 3;
-    } else if (progress_value > 100) {
+    } else {
         progress_value = 100;
         len = 3;
     }
@@ -327,7 +325,7 @@ void notify_booting_progress(int progress_value)
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,
-            SEND_BOOTING_PROGRESS, progress_data, len + 1, 1)) {
+            SEND_BOOTING_PROGRESS, (unsigned char *)progress_data, len + 1, 1)) {
 
             ERR("fail to send SEND_BOOTING_PROGRESS to skin.\n");
         }

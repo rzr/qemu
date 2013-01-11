@@ -27,7 +27,6 @@
  *
  */
 
-
 #include "maruskin_keymap.h"
 #include "emul_state.h"
 #include "console.h"
@@ -35,7 +34,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_keymap);
 
-
+#ifdef KEYMAP_DEBUG
 static void trace_binary(int decimal)
 {
     if (decimal != 0) {
@@ -44,6 +43,7 @@ static void trace_binary(int decimal)
         fflush(stdout);
     }
 }
+#endif
 
 int javakeycode_to_scancode(
     int event_type, int java_keycode, int state_mask, int key_location)
@@ -51,7 +51,7 @@ int javakeycode_to_scancode(
     bool character = true;
     int vk = 0;
 
-#if 0
+#ifdef KEYMAP_DEBUG
     /* print key information */
     TRACE("keycode = %d(", java_keycode);
     trace_binary(java_keycode);
@@ -226,7 +226,6 @@ int javakeycode_to_scancode(
                 case JAVA_KEY_KEYPAD_CR : /* KP_ENTER */
                     kbd_put_keycode(224);
                     return 28;
- 
                 case JAVA_KEY_SCROLL_LOCK :
                     return 70;
                 case JAVA_KEY_PAUSE :

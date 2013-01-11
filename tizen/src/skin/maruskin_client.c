@@ -39,6 +39,8 @@
 #include "emulator.h"
 #include "sdb.h"
 #include "debug_ch.h"
+#include "emul_state.h"
+#include "maruskin_operation.h"
 
 #ifdef CONFIG_WIN32
 #include "maru_err_table.h"
@@ -137,7 +139,7 @@ static void* run_skin_client(void* arg)
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, tizen_base_port,
-        OPT_MAX_TOUCHPOINT, maxtouchpoint, 
+        OPT_MAX_TOUCHPOINT, maxtouchpoint,
         argv );
 #else
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
@@ -157,7 +159,7 @@ static void* run_skin_client(void* arg)
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, tizen_base_port,
-        OPT_MAX_TOUCHPOINT, maxtouchpoint, 
+        OPT_MAX_TOUCHPOINT, maxtouchpoint,
         argv );
 #endif
 

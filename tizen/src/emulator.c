@@ -316,7 +316,9 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
 
 static char *set_bin_dir(char *exec_argv)
 {
+#ifndef CONFIG_DARWIN
     char link_path[1024] = { 0, };
+#endif
     char *file_name = NULL;
 
 #if defined(CONFIG_WIN32)
@@ -582,7 +584,7 @@ int qemu_main(int argc, char **argv, char **envp);
 
 static int emulator_main(int argc, char *argv[])
 {
-    parse_options(argc, argv, &_skin_argc, 
+    parse_options(argc, argv, &_skin_argc,
                 &_skin_argv, &_qemu_argc, &_qemu_argv);
     set_bin_dir(_qemu_argv[0]);
     socket_init();
@@ -633,7 +635,7 @@ int main(int argc, char *argv[])
 #else
 int g_argc;
 
-void* main_thread(void* args)
+static void* main_thread(void* args)
 {
     char** argv;
     int argc = g_argc;
