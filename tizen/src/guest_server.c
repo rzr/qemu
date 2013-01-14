@@ -81,7 +81,7 @@ pthread_t start_guest_server(int server_port)
 }
 
 /* get_emulator_vms_sdcard_path = "/home/{USER}/tizen-sdk-data/emulator-vms/sdcard" */
-char* get_emulator_vms_sdcard_path(void)
+static char* get_emulator_vms_sdcard_path(void)
 {
     char *emulator_vms_sdcard_path = NULL;
 

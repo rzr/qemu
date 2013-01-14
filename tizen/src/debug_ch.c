@@ -434,6 +434,7 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 		const char *format, ... )
 {
 	int ret = 0;
+        int ret_write = 0;
 	char buf[2048];
 	va_list valist;
 	int open_flags;
@@ -459,7 +460,10 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
         fprintf(stderr, "Can't open logfile: %s\n", logpath);
     	exit(1);
     }
-    qemu_write_full(fd, buf, ret);
+    ret_write = qemu_write_full(fd, buf, ret);
+    if (ret_write != ret) {
+        // TODO: error handling...
+    }
     close(fd);
 
 	return ret;
