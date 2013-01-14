@@ -476,7 +476,10 @@ public class EmulatorSkin {
 				if (isOnTop == false && isKeyWindow == true) {
 					if (keyWindow != null) {
 						keyWindow.getShell().moveAbove(shell);
-						shell.moveAbove(keyWindow.getShell());
+
+						if (keyWindow.getDockPosition() != SWT.NONE) {
+							shell.moveAbove(keyWindow.getShell());
+						}
 					}
 				}
 			}

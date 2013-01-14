@@ -295,6 +295,11 @@ public class KeyWindow extends SkinWindow {
 			@Override
 			public void mouseMove(MouseEvent e) {
 				if (isGrabbedShell == true && e.button == 0/* left button */) {
+					if (getDockPosition() != SWT.NONE) {
+						dock(SWT.NONE, false, false);
+						shell.moveAbove(parent);
+					}
+
 					/* move a window */
 					Point previousLocation = shell.getLocation();
 					int x = previousLocation.x + (e.x - grabPosition.x);
