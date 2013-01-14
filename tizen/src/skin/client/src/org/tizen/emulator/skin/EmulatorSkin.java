@@ -145,6 +145,7 @@ public class EmulatorSkin {
 	private Menu contextMenu;
 	private MenuItem keyWindowItem; /* key window menu */
 	public KeyWindow keyWindow;
+	public int recentlyDocked;
 	public Color colorPairTag;
 	public Canvas pairTagCanvas;
 	public CustomProgressBar bootingProgress;
@@ -188,6 +189,7 @@ public class EmulatorSkin {
 
 		this.isOnTop = isOnTop;
 		this.isKeyWindow = false;
+		this.recentlyDocked = SWT.NONE;
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
 //		if (skinInfo.isPhoneShape() == false) {
@@ -1093,7 +1095,8 @@ public class EmulatorSkin {
 
 				if (selectKeyWindow == true) {
 					if (keyWindow == null) {
-						openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+						openKeyWindow(recentlyDocked, false);
+						recentlyDocked = SWT.NONE;
 					} else {
 						openKeyWindow(keyWindow.getDockPosition(), false);
 					}
@@ -1101,6 +1104,7 @@ public class EmulatorSkin {
 					if (keyWindow != null &&
 							keyWindow.getDockPosition() != SWT.NONE) {
 						/* close the Key Window if it is docked to Main Window */
+						recentlyDocked = keyWindow.getDockPosition();
 						closeKeyWindow();
 					} else {
 						hideKeyWindow();

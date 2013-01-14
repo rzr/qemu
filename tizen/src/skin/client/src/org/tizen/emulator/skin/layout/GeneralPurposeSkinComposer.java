@@ -159,6 +159,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			public void mouseDown(MouseEvent e) {
 				if (skin.isSelectKeyWindow() == true) {
 					skin.closeKeyWindow();
+					skin.recentlyDocked = SWT.RIGHT | SWT.CENTER;
 				} else {
 					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, true);
 				}
