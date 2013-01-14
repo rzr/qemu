@@ -61,12 +61,6 @@ public class SkinWindow {
 		dock(dockValue, true, true);
 
 		shell.open();
-
-		while (!shell.isDisposed()) {
-			if (!shell.getDisplay().readAndDispatch()) {
-				shell.getDisplay().sleep();
-			}
-		}
 	}
 
 	public void dock(int dockValue,

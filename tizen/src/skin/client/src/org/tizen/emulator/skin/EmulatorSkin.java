@@ -181,9 +181,13 @@ public class EmulatorSkin {
 		this.finger = finger;
 		this.config = config;
 		this.skinInfo = skinInfo;
+
+		this.screenShotDialog = null;
+		this.keyWindow = null;
+		this.pressedKeyEventList = new LinkedList<KeyEventData>();
+
 		this.isOnTop = isOnTop;
 		this.isKeyWindow = false;
-		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
 //		if (skinInfo.isPhoneShape() == false) {
@@ -941,16 +945,21 @@ public class EmulatorSkin {
 		return keyWindowItem.getSelection();
 	}
 
-	public void openKeyWindow(int dockValue) {
+	public void openKeyWindow(int dockValue, boolean recreate) {
 		if (keyWindow != null) {
-			/* show the key window */
-			keyWindowItem.setSelection(isKeyWindow = true);
-			pairTagCanvas.setVisible(true);
+			if (recreate == false) {
+				/* show the key window */
+				keyWindowItem.setSelection(isKeyWindow = true);
+				pairTagCanvas.setVisible(true);
 
-			keyWindow.getShell().setVisible(true);
-			SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
+				keyWindow.getShell().setVisible(true);
+				SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
-			return;
+				return;
+			} else {
+				logger.info("recreate a keywindow");
+				closeKeyWindow();
+			}
 		}
 
 		/* create a key window */
@@ -967,21 +976,15 @@ public class EmulatorSkin {
 			return;
 		}
 
-		try {
-			keyWindow = new KeyWindow(this, shell, colorPairTag,
-					communicator, keyMapList);
+		keyWindow = new KeyWindow(this, shell, colorPairTag,
+				communicator, keyMapList);
 
-			keyWindowItem.setSelection(isKeyWindow = true);
-			SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
+		keyWindowItem.setSelection(isKeyWindow = true);
+		SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
-			//colorPairTag = keyWindow.getPairTagColor();
-			pairTagCanvas.setVisible(true);
+		pairTagCanvas.setVisible(true);
 
-			keyWindow.open(dockValue);
-			/* do not add at this line */
-		} finally {
-			keyWindow = null;
-		}
+		keyWindow.open(dockValue);
 	}
 
 	public void hideKeyWindow() {
@@ -1080,8 +1083,11 @@ public class EmulatorSkin {
 				final boolean selectKeyWindow = keyWindowItem.getSelection();
 
 				if (selectKeyWindow == true) {
-					openKeyWindow((keyWindow == null) ?
-							SWT.RIGHT | SWT.CENTER : keyWindow.getDockPosition());
+					if (keyWindow == null) {
+						openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+					} else {
+						openKeyWindow(keyWindow.getDockPosition(), false);
+					}
 				} else { /* hide a key window */
 					if (keyWindow != null &&
 							keyWindow.getDockPosition() != SWT.NONE) {

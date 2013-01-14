@@ -160,7 +160,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (skin.isSelectKeyWindow() == true) {
 					skin.closeKeyWindow();
 				} else {
-					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER);
+					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, true);
 				}
 			}
 
@@ -203,7 +203,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER);
+				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
 			}
 		});
 	}
