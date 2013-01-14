@@ -1024,7 +1024,11 @@ bool yagl_host_glFogx(GLenum pname,
         pname != GL_FOG_START && pname != GL_FOG_END) {
         YAGL_SET_ERR(GL_INVALID_ENUM);
     } else {
-        ctx->driver->Fogf(pname, yagl_fixed_to_float(param));
+        if (pname == GL_FOG_MODE) {
+            ctx->driver->Fogf(pname, (GLfloat)param);
+        } else {
+            ctx->driver->Fogf(pname, yagl_fixed_to_float(param));
+        }
     }
 
     return true;
@@ -1054,8 +1058,12 @@ bool yagl_host_glFogxv(GLenum pname,
         return false;
     }
 
-    for (i = 0; i < count; ++i) {
-        paramsf[i] = yagl_fixed_to_float(paramsx[i]);
+    if (pname == GL_FOG_MODE) {
+        paramsf[0] = (GLfloat)paramsx[0];
+    } else {
+        for (i = 0; i < count; ++i) {
+            paramsf[i] = yagl_fixed_to_float(paramsx[i]);
+        }
     }
 
     ctx->driver->Fogfv(pname, paramsf);
@@ -1325,7 +1333,7 @@ bool yagl_host_glGetTexEnvxv(GLenum target,
     target_ulong /* GLfixed* */ params_)
 {
     GLint paramsi[YAGL_TEX_ENV_PARAM_MAX_LEN];
-    unsigned count = 1, i;
+    unsigned count = 1;
 
     YAGL_GET_CTX(glGetTexEnvfv);
 
@@ -1344,8 +1352,12 @@ bool yagl_host_glGetTexEnvxv(GLenum target,
 
     ctx->driver->GetTexEnviv(target, pname, paramsi);
 
-    for (i = 0; i < count; ++i) {
-        paramsi[i] = yagl_int_to_fixed(paramsi[i]);
+    if (pname == GL_TEXTURE_ENV_COLOR) {
+        unsigned i;
+
+        for (i = 0; i < count; ++i) {
+            paramsi[i] = yagl_int_to_fixed(paramsi[i]);
+        }
     }
 
     yagl_mem_put(cur_ts->mt1, paramsi);
@@ -1373,7 +1385,7 @@ bool yagl_host_glGetTexParameterxv(GLenum target,
     ctx->driver->base.GetTexParameterfv(target, pname, &paramf);
 
     if (params_) {
-        yagl_mem_put_GLfixed(cur_ts->mt1, yagl_float_to_fixed(paramf));
+        yagl_mem_put_GLfixed(cur_ts->mt1, (GLfixed)paramf);
     }
 
     return true;
@@ -1387,7 +1399,7 @@ bool yagl_host_glLightModelx(GLenum pname,
     if (pname != GL_LIGHT_MODEL_TWO_SIDE) {
         YAGL_SET_ERR(GL_INVALID_ENUM);
     } else {
-        ctx->driver->LightModelf(pname, yagl_fixed_to_float(param));
+        ctx->driver->LightModelf(pname, (GLfloat)param);
     }
 
     return true;
@@ -1397,26 +1409,33 @@ bool yagl_host_glLightModelxv(GLenum pname,
     target_ulong /* const GLfixed* */ params_)
 {
     GLfloat paramsf[YAGL_LIGHT_MODEL_PARAM_MAX_LEN];
-    GLfixed paramsx[YAGL_LIGHT_MODEL_PARAM_MAX_LEN];
-    unsigned count = 1, i;
 
     YAGL_GET_CTX(glLightModelxv);
 
-    if (pname != GL_LIGHT_MODEL_TWO_SIDE && pname != GL_LIGHT_MODEL_AMBIENT) {
+    if (pname == GL_LIGHT_MODEL_TWO_SIDE) {
+        GLfixed paramx;
+
+        if (!yagl_mem_get_GLfixed(params_, &paramx)) {
+            return false;
+        }
+
+        paramsf[0] = (GLfloat)paramx;
+    } else if (pname == GL_LIGHT_MODEL_AMBIENT) {
+        GLfixed paramsx[YAGL_LIGHT_MODEL_PARAM_MAX_LEN];
+        unsigned i;
+
+        if (!yagl_mem_get(params_,
+                          YAGL_LIGHT_MODEL_PARAM_MAX_LEN * sizeof(GLfixed),
+                          &paramsx[0])) {
+            return false;
+        }
+
+        for (i = 0; i < YAGL_LIGHT_MODEL_PARAM_MAX_LEN; ++i) {
+            paramsf[i] = yagl_fixed_to_float(paramsx[i]);
+        }
+    } else {
         YAGL_SET_ERR(GL_INVALID_ENUM);
         return true;
-    }
-
-    if (pname == GL_LIGHT_MODEL_AMBIENT) {
-        count = 4;
-    }
-
-    if (!yagl_mem_get(params_, count * sizeof(GLfixed), &paramsx[0])) {
-        return false;
-    }
-
-    for (i = 0; i < count; ++i) {
-        paramsf[i] = yagl_fixed_to_float(paramsx[i]);
     }
 
     ctx->driver->LightModelfv(pname, paramsf);
@@ -1966,6 +1985,11 @@ bool yagl_host_glTexEnvi(GLenum target,
 {
     YAGL_GET_CTX(glTexEnvi);
 
+    if (target != GL_TEXTURE_ENV && target != GL_POINT_SPRITE_OES) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        return true;
+    }
+
     ctx->driver->TexEnvi(target, pname, param);
 
     return true;
@@ -1975,11 +1999,14 @@ bool yagl_host_glTexEnvx(GLenum target,
     GLenum pname,
     GLfixed param)
 {
-    GLfloat paramf = yagl_fixed_to_float(param);
-
     YAGL_GET_CTX(glTexEnvx);
 
-    ctx->driver->TexEnvf(target, pname, paramf);
+    if (target != GL_TEXTURE_ENV && target != GL_POINT_SPRITE_OES) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        return true;
+    }
+
+    ctx->driver->TexEnvf(target, pname, (GLfloat)param);
 
     return true;
 }
@@ -1992,6 +2019,11 @@ bool yagl_host_glTexEnviv(GLenum target,
     unsigned count = 1;
 
     YAGL_GET_CTX(glTexEnviv);
+
+    if (target != GL_TEXTURE_ENV && target != GL_POINT_SPRITE_OES) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        return true;
+    }
 
     if (pname == GL_TEXTURE_ENV_COLOR) {
         count = YAGL_TEX_ENV_PARAM_MAX_LEN;
@@ -2010,22 +2042,36 @@ bool yagl_host_glTexEnvxv(GLenum target,
     GLenum pname,
     target_ulong /* const GLfixed* */ params_)
 {
-    GLfixed paramsx[YAGL_TEX_ENV_PARAM_MAX_LEN];
     GLfloat paramsf[YAGL_TEX_ENV_PARAM_MAX_LEN];
-    unsigned count = 1, i;
 
     YAGL_GET_CTX(glTexEnvxv);
 
+    if (target != GL_TEXTURE_ENV && target != GL_POINT_SPRITE_OES) {
+        YAGL_SET_ERR(GL_INVALID_ENUM);
+        return true;
+    }
+
     if (pname == GL_TEXTURE_ENV_COLOR) {
-        count = YAGL_TEX_ENV_PARAM_MAX_LEN;
-    }
+        GLfixed paramsx[YAGL_TEX_ENV_PARAM_MAX_LEN];
+        unsigned i;
 
-    if (!yagl_mem_get(params_, count * sizeof(GLfixed), &paramsx[0])) {
-        return false;
-    }
+        if (!yagl_mem_get(params_,
+                          YAGL_TEX_ENV_PARAM_MAX_LEN * sizeof(GLfixed),
+                          &paramsx[0])) {
+            return false;
+        }
 
-    for (i = 0; i < count; ++i) {
-        paramsf[i] = yagl_fixed_to_float(paramsx[i]);
+        for (i = 0; i < YAGL_TEX_ENV_PARAM_MAX_LEN; ++i) {
+            paramsf[i] = yagl_fixed_to_float(paramsx[i]);
+        }
+    } else {
+        GLfixed paramx;
+
+        if (!yagl_mem_get_GLfixed(params_, &paramx)) {
+            return false;
+        }
+
+        paramsf[0] = (GLfloat)paramx;
     }
 
     ctx->driver->TexEnvfv(target, pname, paramsf);
@@ -2037,8 +2083,6 @@ bool yagl_host_glTexParameterx(GLenum target,
     GLenum pname,
     GLfixed param)
 {
-    GLfloat paramf;
-
     YAGL_GET_CTX(glTexParameterx);
 
     if (target != GL_TEXTURE_2D) {
@@ -2046,9 +2090,7 @@ bool yagl_host_glTexParameterx(GLenum target,
         return true;
     }
 
-    paramf = yagl_fixed_to_float(param);
-
-    ctx->driver->base.TexParameterf(target, pname, paramf);
+    ctx->driver->base.TexParameterf(target, pname, (GLfloat)param);
 
     return true;
 }
@@ -2057,7 +2099,6 @@ bool yagl_host_glTexParameterxv(GLenum target,
     GLenum pname,
     target_ulong /* const GLfixed* */ params_)
 {
-    GLfixed paramx;
     GLfloat paramf;
 
     YAGL_GET_CTX(glTexParameterxv);
@@ -2068,14 +2109,16 @@ bool yagl_host_glTexParameterxv(GLenum target,
     }
 
     if (params_) {
+        GLfixed paramx;
+
         if (!yagl_mem_get_GLfixed(params_, &paramx)) {
             return false;
         }
+
+        paramf = (GLfloat)paramx;
     }
 
-    paramf = yagl_fixed_to_float(paramx);
-
-    ctx->driver->base.TexParameterfv(target, pname, (params_ ? &paramf : NULL));
+    ctx->driver->base.TexParameterfv(target, pname, params_ ? &paramf : NULL);
 
     return true;
 }
