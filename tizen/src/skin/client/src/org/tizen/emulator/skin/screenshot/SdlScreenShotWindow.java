@@ -57,7 +57,7 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 			EmulatorConfig config, Image icon) throws ScreenShotException {
 		super(parent, communicator, emulatorSkin, config, icon);
 	}
-	
+
 	protected void capture() throws ScreenShotException {
 		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
 		byte[] receivedData = communicator.getReceivedData( dataTranfer );

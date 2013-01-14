@@ -1121,8 +1121,8 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (!communicator.isSensorDaemonStarted()) {
-					SkinUtil.openMessage(shell, null,
-							"SDB is not ready.\nPlease wait until the emulator is completely boot up.",
+					SkinUtil.openMessage(shell, null, "SDB is not ready.\n" +
+							"Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
 					return;
 				}

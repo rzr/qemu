@@ -132,17 +132,17 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 
 		} catch (ScreenShotException ex) {
 			screenShotDialog = null;
-
 			logger.log(Level.SEVERE, ex.getMessage(), ex);
+
 			SkinUtil.openMessage(shell, null,
 					"Fail to create a screen shot.", SWT.ICON_ERROR, config);
 		} catch (Exception ex) {
 			screenShotDialog = null;
-
-			/* defense exception handling */
 			logger.log(Level.SEVERE, ex.getMessage(), ex);
-			String errorMessage = "Internal Error.\n[" + ex.getMessage() + "]";
-			SkinUtil.openMessage(shell, null, errorMessage, SWT.ICON_ERROR, config);
+
+			SkinUtil.openMessage(shell, null, "ScreenShot is not ready.\n" +
+					"Please wait until the emulator is completely boot up.",
+					SWT.ICON_WARNING, config);
 		}
 	}
 
