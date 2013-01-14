@@ -367,7 +367,9 @@ public class EmulatorSkin {
 						}
 
 						/* close the Key Window */
-						closeKeyWindow();
+						if (skinInfo.isPhoneShape() == false) {
+							closeKeyWindow();
+						}
 
 						/* dispose the color tag */
 						if (colorPairTag != null) {

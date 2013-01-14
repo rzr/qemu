@@ -173,7 +173,12 @@ public class KeyWindow extends SkinWindow {
 			public void focusGained(FocusEvent event) {
 				logger.info("gain focus");
 
-				skin.setFocus();
+				shell.getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						skin.setFocus();
+					}
+				});
 			}
 
 			@Override
