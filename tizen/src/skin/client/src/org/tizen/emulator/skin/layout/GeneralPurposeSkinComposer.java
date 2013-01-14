@@ -176,7 +176,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		});
 
 		/* make a pair tag circle */
-		skin.pairTagCanvas = new Canvas(shell, SWT.NONE);
+		skin.pairTagCanvas = new Canvas(shell, SWT.NO_FOCUS);
 		skin.pairTagCanvas.setBackground(
 				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
 

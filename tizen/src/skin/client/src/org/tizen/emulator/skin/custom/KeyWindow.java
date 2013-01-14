@@ -32,6 +32,8 @@ import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -166,6 +168,21 @@ public class KeyWindow extends SkinWindow {
 			}
 		});
 
+		pairTagCanvas.addFocusListener(new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent event) {
+				logger.info("gain focus");
+
+				skin.setFocus();
+			}
+
+			@Override
+			public void focusLost(FocusEvent event) {
+				logger.info("lost focus");
+			}
+		});
+		pairTagCanvas.setFocus();
+
 		/* */
 		ScrolledComposite compositeScroll = new ScrolledComposite(shell, SWT.V_SCROLL);
 		compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
@@ -181,10 +198,11 @@ public class KeyWindow extends SkinWindow {
 		compositeGridLayout.verticalSpacing = BUTTON_VERTICAL_SPACING;
 		compositeBase.setLayout(compositeGridLayout);
 
+		/* attach HW keys */
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
 			for (KeyMapType keyEntry : keyMapList) {
-				CustomButton HWKeyButton = new CustomButton(compositeBase, SWT.NONE,
-						imageNormal, imageHover, imagePushed);
+				CustomButton HWKeyButton = new CustomButton(compositeBase,
+						SWT.NO_FOCUS, imageNormal, imageHover, imagePushed);
 				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
 				HWKeyButton.setToolTipText(keyEntry.getTooltip());
 				HWKeyButton.setBackground(colorFrame);

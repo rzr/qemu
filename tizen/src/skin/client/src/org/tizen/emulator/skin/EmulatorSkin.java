@@ -236,6 +236,8 @@ public class EmulatorSkin {
 		addShellListener(shell);
 		addCanvasListener(shell, lcdCanvas);
 
+		setFocus();
+
 		/* attach a menu */
 		this.isOnKbd = false;
 		setMenu();
@@ -470,8 +472,7 @@ public class EmulatorSkin {
 				logger.info("gain focus");
 
 				if (isOnTop == false && isKeyWindow == true) {
-					if (keyWindow != null &&
-							keyWindow.getDockPosition() != SWT.NONE) {
+					if (keyWindow != null) {
 						keyWindow.getShell().moveAbove(shell);
 						shell.moveAbove(keyWindow.getShell());
 					}
@@ -936,6 +937,9 @@ public class EmulatorSkin {
 		}
 	}
 
+	public void setFocus() {
+		lcdCanvas.setFocus();
+	}
 
 	protected void openScreenShotWindow() {
 		//TODO: abstract
