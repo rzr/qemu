@@ -1255,21 +1255,27 @@ public class EmulatorSkin {
 					return;
 				}
 
-				short rotationId = ((Short) item.getData());
+				final short rotationId = ((Short) item.getData());
 
-				Point location = new Point(100, 100);
-				if (skinInfo.isPhoneShape()) { /* TODO: */
-					location = shell.getLocation();
-					shell.setVisible(false);
-				}
+				shell.getDisplay().syncExec(new Runnable() {
+					@Override
+					public void run() {
+						Point location = new Point(100, 100);
 
-				skinComposer.arrangeSkin(currentState.getCurrentScale(), rotationId);
+						if (skinInfo.isPhoneShape()) { /* TODO: */
+							location = shell.getLocation();
+							shell.setVisible(false);
+						}
 
-				if (skinInfo.isPhoneShape()) { /* TODO: */
-					shell.setVisible(true);
-					shell.setLocation(location);
-					SkinUtil.setTopMost(shell, isOnTop);
-				}
+						skinComposer.arrangeSkin(currentState.getCurrentScale(), rotationId);
+
+						if (skinInfo.isPhoneShape()) { /* TODO: */
+							shell.setVisible(true);
+							shell.setLocation(location);
+							SkinUtil.setTopMost(shell, isOnTop);
+						}
+					}
+				});
 
 				DisplayStateData lcdStateData =
 						new DisplayStateData(currentState.getCurrentScale(), rotationId);
@@ -1323,21 +1329,27 @@ public class EmulatorSkin {
 					return;
 				}
 
-				int scale = ((Scale) item.getData()).value();
+				final int scale = ((Scale) item.getData()).value();
 
-				Point location = new Point(100, 100);
-				if (skinInfo.isPhoneShape()) { /* TODO: */
-					location = shell.getLocation();
-					shell.setVisible(false);
-				}
+				shell.getDisplay().syncExec(new Runnable() {
+					@Override
+					public void run() {
+						Point location = new Point(100, 100);
 
-				skinComposer.arrangeSkin(scale, currentState.getCurrentRotationId());
+						if (skinInfo.isPhoneShape()) { /* TODO: */
+							location = shell.getLocation();
+							shell.setVisible(false);
+						}
 
-				if (skinInfo.isPhoneShape()) { /* TODO: */
-					shell.setVisible(true);
-					shell.setLocation(location);
-					SkinUtil.setTopMost(shell, isOnTop);
-				}
+						skinComposer.arrangeSkin(scale, currentState.getCurrentRotationId());
+
+						if (skinInfo.isPhoneShape()) { /* TODO: */
+							shell.setVisible(true);
+							shell.setLocation(location);
+							SkinUtil.setTopMost(shell, isOnTop);
+						}
+					}
+				});
 
 				DisplayStateData lcdStateData =
 						new DisplayStateData(scale, currentState.getCurrentRotationId());
