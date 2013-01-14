@@ -238,6 +238,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	@Override
 	protected void openScreenShotWindow() {
 		if (screenShotDialog != null) {
+			logger.info("screenshot window was already opened");
 			return;
 		}
 

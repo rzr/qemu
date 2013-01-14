@@ -117,16 +117,17 @@ public class ScreenShotDialog {
 	 * @brief constructor
 	 * @param Image icon : screenshot window icon resource
 	*/
-	public ScreenShotDialog( Shell parent, SocketCommunicator communicator, EmulatorSkin emulatorSkin,
-			EmulatorConfig config, Image icon ) throws ScreenShotException {
+	public ScreenShotDialog(Shell parent,
+			SocketCommunicator communicator, final EmulatorSkin emulatorSkin,
+			EmulatorConfig config, Image icon) throws ScreenShotException {
 
 		this.communicator = communicator;
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
 		scaleLevel = 100d;
 
-		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX );
-		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
+		shell = new Shell(Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX);
+		shell.setText("Screen Shot - " + SkinUtil.makeEmulatorName(config));
 		if (icon != null) {
 			shell.setImage(icon);
 		}
@@ -139,6 +140,8 @@ public class ScreenShotDialog {
 						image.dispose();
 					}
 				}
+
+				emulatorSkin.screenShotDialog = null;
 			}
 		} );
 
@@ -279,12 +282,12 @@ public class ScreenShotDialog {
 		return scaleLevel;
 	}
 
-	private void DownScaleLevel() {
+	private void downScaleLevel() {
 		scaleLevel /= 2;
 		logger.info("down scaling level : " + scaleLevel);
 	}
 	
-	private void UpScaleLevel() {
+	private void upScaleLevel() {
 		scaleLevel *= 2;
 		logger.info("up scaling level : " + scaleLevel);
 	}
@@ -549,17 +552,18 @@ public class ScreenShotDialog {
 				double level = getScaleLevel();
 				Point dialogSize = shell.getSize();	
 				
-				UpScaleLevel();
+				upScaleLevel();
+
 				imageCanvas.redraw();
 				scaledImageLayout();
 				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
 						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
 				label.update();
 				
-				if(level >= 400d) {
+				if (level >= 400d) {
 					IncreaseScaleItem.setEnabled(false);
 					DecreaseScaleItem.setEnabled(true);
-				}else {
+				} else {
 					IncreaseScaleItem.setEnabled(true);
 					DecreaseScaleItem.setEnabled(true);	
 				}
@@ -581,17 +585,18 @@ public class ScreenShotDialog {
 				double level = getScaleLevel();
 				Point dialogSize = shell.getSize();
 				
-				DownScaleLevel();
+				downScaleLevel();
+
 				imageCanvas.redraw();
 				scaledImageLayout();
 				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
 						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
 				label.update();
 			
-				if(level <= 25) {
+				if (level <= 25) {
 					DecreaseScaleItem.setEnabled(false);
 					IncreaseScaleItem.setEnabled(true);
-				}else {
+				} else {
 					DecreaseScaleItem.setEnabled(true);
 					IncreaseScaleItem.setEnabled(true);
 				}
@@ -692,7 +697,7 @@ public class ScreenShotDialog {
 
 		shell.open();
 
-		while ( !shell.isDisposed() ) {
+		/* while ( !shell.isDisposed() ) {
 			if ( !shell.getDisplay().readAndDispatch() ) {
 				if ( reserveImage ) {
 					break;
@@ -700,7 +705,7 @@ public class ScreenShotDialog {
 					shell.getDisplay().sleep();
 				}
 			}
-		}
+		} */
 
 	}
 

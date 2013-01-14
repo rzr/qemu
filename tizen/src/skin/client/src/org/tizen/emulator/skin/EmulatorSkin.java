@@ -148,7 +148,7 @@ public class EmulatorSkin {
 	public Color colorPairTag;
 	public Canvas pairTagCanvas;
 	public CustomProgressBar bootingProgress;
-	protected ScreenShotDialog screenShotDialog;
+	public ScreenShotDialog screenShotDialog;
 
 	protected SocketCommunicator communicator;
 	private Listener shellCloseListener;

@@ -121,6 +121,7 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	@Override
 	protected void openScreenShotWindow() {
 		if (screenShotDialog != null) {
+			logger.info("screenshot window was already opened");
 			return;
 		}
 
@@ -130,18 +131,18 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 			screenShotDialog.open();
 
 		} catch (ScreenShotException ex) {
+			screenShotDialog = null;
+
 			logger.log(Level.SEVERE, ex.getMessage(), ex);
 			SkinUtil.openMessage(shell, null,
 					"Fail to create a screen shot.", SWT.ICON_ERROR, config);
-
 		} catch (Exception ex) {
-			// defense exception handling.
+			screenShotDialog = null;
+
+			/* defense exception handling */
 			logger.log(Level.SEVERE, ex.getMessage(), ex);
 			String errorMessage = "Internal Error.\n[" + ex.getMessage() + "]";
 			SkinUtil.openMessage(shell, null, errorMessage, SWT.ICON_ERROR, config);
-
-		} finally {
-			screenShotDialog = null;
 		}
 	}
 
