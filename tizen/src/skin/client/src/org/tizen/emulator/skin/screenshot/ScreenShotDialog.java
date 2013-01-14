@@ -91,7 +91,8 @@ public class ScreenShotDialog {
 	public static final int CANVAS_MARGIN = 30;
 	public static final int TOOLITEM_COOLTIME = 200;
 
-	private Logger logger = SkinLogger.getSkinLogger( ScreenShotDialog.class ).getLogger();
+	private Logger logger =
+			SkinLogger.getSkinLogger(ScreenShotDialog.class).getLogger();
 
 	protected PaletteData paletteData;
 	protected PaletteData paletteData2;
@@ -123,6 +124,7 @@ public class ScreenShotDialog {
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
 		scaleLevel = 100d;
+
 		shell = new Shell( Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX );
 		shell.setText( "Screen Shot - " + SkinUtil.makeEmulatorName( config ) );
 		if (icon != null) {
@@ -690,7 +692,7 @@ public class ScreenShotDialog {
 
 		shell.open();
 
-		/* while ( !shell.isDisposed() ) {
+		while ( !shell.isDisposed() ) {
 			if ( !shell.getDisplay().readAndDispatch() ) {
 				if ( reserveImage ) {
 					break;
@@ -698,7 +700,7 @@ public class ScreenShotDialog {
 					shell.getDisplay().sleep();
 				}
 			}
-		} */
+		}
 
 	}
 
