@@ -332,6 +332,7 @@ static bool yagl_gles1_context_get_param_count(struct yagl_gles_context *ctx,
     case GL_FOG_MODE:
     case GL_FOG_START:
     case GL_FRONT_FACE:
+    case GL_GENERATE_MIPMAP_HINT:
     case GL_GREEN_BITS:
     case GL_IMPLEMENTATION_COLOR_READ_FORMAT_OES:
     case GL_IMPLEMENTATION_COLOR_READ_TYPE_OES:
