@@ -442,7 +442,6 @@ void extract_qemu_info(int qemu_argc, char **qemu_argv)
         }
     }
 
-    tizen_base_port = get_sdb_base_port();
 }
 
 void extract_skin_info(int skin_argc, char **skin_argv)
@@ -569,6 +568,13 @@ static void system_info(void)
 void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
+    check_shdmem();
+    tizen_base_port = get_sdb_base_port();
+    make_shdmem();
+
+    INFO("set up SDB\n");
+    sdb_setup();
+
 
     INFO("call construct_main_window\n");
 
@@ -587,17 +593,12 @@ static int emulator_main(int argc, char *argv[])
     parse_options(argc, argv, &_skin_argc,
                 &_skin_argv, &_qemu_argc, &_qemu_argv);
     set_bin_dir(_qemu_argv[0]);
-    socket_init();
     extract_qemu_info(_qemu_argc, _qemu_argv);
 
     INFO("Emulator start !!!\n");
     atexit(maru_atexit);
 
     extract_skin_info(_skin_argc, _skin_argv);
-
-    check_shdmem();
-    make_shdmem();
-    sdb_setup();
 
     system_info();
 
