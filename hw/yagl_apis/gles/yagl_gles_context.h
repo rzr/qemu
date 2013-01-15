@@ -33,6 +33,10 @@ struct yagl_gles_context
                        GLenum /*pname*/,
                        GLfloat */*params*/);
 
+    bool (*is_enabled)(struct yagl_gles_context */*ctx*/,
+                       GLboolean* retval/*retval*/,
+                       GLenum /*cap*/);
+
     GLchar *(*get_extensions)(struct yagl_gles_context */*ctx*/);
 
     void (*draw_arrays)(struct yagl_gles_context *ctx,

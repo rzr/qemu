@@ -221,6 +221,13 @@ static bool yagl_gles2_context_get_floatv(struct yagl_gles_context *ctx,
     return true;
 }
 
+static bool yagl_gles2_context_is_enabled(struct yagl_gles_context *ctx,
+                                          GLboolean* retval,
+                                          GLenum cap)
+{
+    return false;
+}
+
 static GLchar *yagl_gles2_context_get_extensions(struct yagl_gles_context *ctx)
 {
     struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)ctx;
@@ -516,6 +523,7 @@ struct yagl_gles2_context
     gles2_ctx->base.draw_arrays = &yagl_gles2_context_draw_arrays;
     gles2_ctx->base.draw_elements = &yagl_gles2_context_draw_elements;
     gles2_ctx->base.compressed_tex_image = &yagl_gles2_compressed_tex_image;
+    gles2_ctx->base.is_enabled = &yagl_gles2_context_is_enabled;
 
     gles2_ctx->driver = driver;
     gles2_ctx->prepared = false;

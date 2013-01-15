@@ -1255,7 +1255,9 @@ bool yagl_host_glIsEnabled(GLboolean* retval, GLenum cap)
 {
     YAGL_GET_CTX_RET(glIsEnabled, GL_FALSE);
 
-    *retval = ctx->driver->IsEnabled(cap);
+    if (!ctx->is_enabled(ctx, retval, cap)) {
+        *retval = ctx->driver->IsEnabled(cap);
+    }
 
     return true;
 }

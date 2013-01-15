@@ -670,6 +670,18 @@ static bool yagl_gles1_context_get_floatv(struct yagl_gles_context *ctx,
     return false;
 }
 
+static bool yagl_gles1_context_is_enabled(struct yagl_gles_context *ctx,
+                                          GLboolean* retval,
+                                          GLenum cap)
+{
+    if (cap == GL_POINT_SIZE_ARRAY_OES) {
+        *retval = ctx->arrays[YAGL_GLES1_ARRAY_POINTSIZE].enabled;
+        return true;
+    }
+
+    return false;
+}
+
 static GLchar *yagl_gles1_context_get_extensions(struct yagl_gles_context *ctx)
 {
     YaglGles1Context *gles1_ctx = (YaglGles1Context *)ctx;
@@ -1207,6 +1219,7 @@ YaglGles1Context *yagl_gles1_context_create(struct yagl_sharegroup *sg,
     gles1_ctx->base.draw_arrays = &yagl_gles1_context_draw_arrays;
     gles1_ctx->base.draw_elements = &yagl_gles1_context_draw_elements;
     gles1_ctx->base.compressed_tex_image = &yagl_gles1_compressed_tex_image;
+    gles1_ctx->base.is_enabled = &yagl_gles1_context_is_enabled;
 
     gles1_ctx->driver = driver;
     gles1_ctx->prepared = false;
