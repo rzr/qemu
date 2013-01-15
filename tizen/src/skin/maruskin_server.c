@@ -325,7 +325,7 @@ void notify_booting_progress(int progress_value)
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,
-            SEND_BOOTING_PROGRESS, (unsigned char *)progress_data, len + 1, 1)) {
+            SEND_BOOTING_PROGRESS, (unsigned char *)progress_data, len + 1, 0)) {
 
             ERR("fail to send SEND_BOOTING_PROGRESS to skin.\n");
         }
@@ -1040,13 +1040,18 @@ static int send_n(int sockfd,
     int send_cnt = 0;
     int total_cnt = 0;
 
-    int buf_size = big_data ? SEND_BIG_BUF_SIZE : SEND_BUF_SIZE;
+    int buf_size = (big_data != 0) ?
+        SEND_BIG_BUF_SIZE : SEND_BUF_SIZE;
 
     /* use malloc instead of general array definition
     to avoid seg fault in 'alloca' in MinGW env, only using big buf size */
     char* databuf = (char*)g_malloc0(buf_size);
 
-    INFO("send_n start. length:%d\n", length);
+    if (big_data != 0) {
+        INFO("big_data send_n start. length:%d\n", length);
+    } else {
+        INFO("send_n start. length:%d\n", length);
+    }
 
     while (1) {
         if (total_cnt == length) {
@@ -1247,9 +1252,9 @@ static void* do_heart_beat(void* args)
             server_sock = 0;
         }
 
-        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
-        ERR( "!!! Fail to operate with heartbeat from skin client. Shutdown QEMU !!!\n" );
-        ERR( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
+        ERR("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        ERR("!!! Fail to operate with heartbeat from skin client. Shutdown QEMU !!!\n");
+        ERR("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
         maru_register_exit_msg(MARU_EXIT_HB_TIME_EXPIRED, NULL);
         shutdown_qemu_gracefully();
@@ -1260,28 +1265,30 @@ static void* do_heart_beat(void* args)
 
 }
 
-static int start_heart_beat( void ) {
-
-    if( is_started_heartbeat ) {
+static int start_heart_beat(void)
+{
+    if (is_started_heartbeat) {
         return 1;
     }
 
-    if( ignore_heartbeat ) {
+    if (ignore_heartbeat) {
         return 1;
-    }else {
-        if ( 0 != pthread_create( &thread_id_heartbeat, NULL, do_heart_beat, NULL ) ) {
-            ERR( "[HB] fail to create heartbean pthread.\n" );
+    } else {
+        if (0 != pthread_create(&thread_id_heartbeat, NULL, do_heart_beat, NULL)) {
+            ERR("[HB] fail to create heartbean pthread.\n");
             return 0;
         } else {
             return 1;
         }
     }
-
 }
 
-static void stop_heart_beat( void ) {
-    pthread_mutex_lock( &mutex_heartbeat );
+static void stop_heart_beat(void)
+{
+    pthread_mutex_lock(&mutex_heartbeat);
+
     stop_heartbeat = 1;
-    pthread_cond_signal( &cond_heartbeat );
-    pthread_mutex_unlock( &mutex_heartbeat );
+    pthread_cond_signal(&cond_heartbeat);
+
+    pthread_mutex_unlock(&mutex_heartbeat);
 }
