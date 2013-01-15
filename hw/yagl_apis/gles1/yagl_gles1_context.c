@@ -10,6 +10,8 @@
 #include "yagl_gles1_driver.h"
 
 #define YAGL_GLES1_NUM_COMP_TEX_FORMATS    10
+#define YAGL_TARGET_INT_MAX                \
+    ((1ll << ((sizeof(target_int) * 8) - 1)) - 1)
 
 static void yagl_gles1_vertex_array_apply(struct yagl_gles_array *array)
 {
@@ -597,6 +599,17 @@ static bool yagl_gles1_context_get_integerv(struct yagl_gles_context *ctx,
     case GL_COMPRESSED_TEXTURE_FORMATS:
         yagl_gles1_compressed_texture_formats_fill(params);
         break;
+    case GL_ALPHA_TEST_REF:
+    {
+        /* According to spec, GL_ALPHA_TEST_REF must be scaled to
+         * -INT_MAX..+INT_MAX range, but driver might not do it, we do
+         * it manually here */
+        GLfloat tmp;
+
+        ctx->driver->GetFloatv(GL_ALPHA_TEST_REF, &tmp);
+        params[0] = (GLint)(tmp * (GLfloat)YAGL_TARGET_INT_MAX) - 1;
+        break;
+    }
     default:
         return false;
     }
