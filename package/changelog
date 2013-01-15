@@ -1,3 +1,6 @@
+* 1.4.54
+- Fix compilation warnings
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-01-15
 * 1.4.52
 - control the focus in general skin
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-01-14
