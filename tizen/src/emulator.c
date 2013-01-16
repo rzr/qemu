@@ -86,6 +86,7 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 
 int tizen_base_port;
 char tizen_target_path[MAXLEN];
+char tizen_target_img_path[MAXLEN];
 char logpath[MAXLEN];
 
 static int _skin_argc;
@@ -136,7 +137,7 @@ void check_shdmem(void)
                 INFO("count of process that use shared memory : %d\n",
                     shm_info.shm_nattch);
                 if ((shm_info.shm_nattch > 0) &&
-                    strcmp(tizen_target_path, (char *)shm_addr) == 0) {
+                    strcmp(tizen_target_img_path, (char *)shm_addr) == 0) {
                     if (check_port_bind_listen(port + 1) > 0) {
                         shmdt(shm_addr);
                         continue;
@@ -171,7 +172,7 @@ void check_shdmem(void)
                 CloseHandle(hMapFile);
             }
 
-            if (strcmp(pBuf, tizen_target_path) == 0) {
+            if (strcmp(pBuf, tizen_target_img_path) == 0) {
                 maru_register_exit_msg(MARU_EXIT_UNKNOWN,
                     "Can not execute this VM.\n"
                     "The same name is running now.");
@@ -209,7 +210,7 @@ void make_shdmem(void)
         ERR("shmat failed\n");
         return;
     }
-    sprintf(shared_memory, "%s", tizen_target_path);
+    sprintf(shared_memory, "%s", tizen_target_img_path);
     INFO("shared memory key: %d value: %s\n",
         tizen_base_port, (char *)shared_memory);
 #elif defined(CONFIG_WIN32)
@@ -218,7 +219,7 @@ void make_shdmem(void)
     char *port_in_use;
     char *shared_memory;
 
-    shared_memory = g_strdup_printf("%s", tizen_target_path);
+    shared_memory = g_strdup_printf("%s", tizen_target_img_path);
     port_in_use =  g_strdup_printf("%d", tizen_base_port);
     hMapFile = CreateFileMapping(
                  INVALID_HANDLE_VALUE, /* use paging file */
@@ -399,7 +400,8 @@ void set_image_and_log_path(char *qemu_argv)
     } else {
         strcpy(tizen_target_path, g_path_get_dirname(path));
     }
-
+    strcpy(tizen_target_img_path, path);
+    free(path);
     strcpy(logpath, tizen_target_path);
     strcat(logpath, LOGS_SUFFIX);
 #ifdef CONFIG_WIN32
