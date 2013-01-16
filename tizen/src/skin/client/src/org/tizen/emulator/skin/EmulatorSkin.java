@@ -1395,7 +1395,7 @@ public class EmulatorSkin {
 			}
 		});
 
-		final MenuItem guestdumpItem = new MenuItem(menu, SWT.PUSH);
+		/* final MenuItem guestdumpItem = new MenuItem(menu, SWT.PUSH);
 		guestdumpItem.setText("&Guest Memory Dump");
 
 		guestdumpItem.addSelectionListener(new SelectionAdapter() {
@@ -1406,7 +1406,7 @@ public class EmulatorSkin {
 				communicator.setRamdumpFlag(true);
 				communicator.sendToQEMU(SendCommand.GUEST_DUMP, null);
 			}
-		});
+		}); */
 
 		return menu;
 	}
