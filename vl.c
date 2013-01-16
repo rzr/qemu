@@ -185,6 +185,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "tizen/src/maru_common.h"
 #include "tizen/src/maru_display.h"
 #include "tizen/src/option.h"
+#include "tizen/src/sdb.h"
 #include "tizen/src/emul_state.h"
 #include "tizen/src/skin/maruskin_operation.h"
 #include "tizen/src/maru_err_table.h"
@@ -199,7 +200,6 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 #define MARUCAM_DEV_NAME "maru_camera_pci"
-extern int tizen_base_port;
 int skin_disabled = 0;
 #endif
 
@@ -2745,6 +2745,14 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_MARU
                 gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
                 gethostDNS(dns1, dns2);
+                
+                check_shdmem();
+                socket_init();
+                tizen_base_port = get_sdb_base_port();
+                make_shdmem();
+
+                sdb_setup();
+
                 tmp_cmdline = g_strdup_printf("%s sdb_port=%d,"
                 	" http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s" 
 	                " dns1=%s dns2=%s", optarg, tizen_base_port, 
@@ -3642,7 +3650,6 @@ int main(int argc, char **argv, char **envp)
             add_device_config(DEV_VIRTCON, "vc:80Cx24C");
     }
 
-    socket_init();
 
     if (qemu_opts_foreach(qemu_find_opts("chardev"), chardev_init_func, NULL, 1) != 0)
         exit(1);

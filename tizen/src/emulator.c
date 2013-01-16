@@ -568,13 +568,6 @@ static void system_info(void)
 void prepare_maru(void)
 {
     INFO("Prepare maru specified feature\n");
-    check_shdmem();
-    tizen_base_port = get_sdb_base_port();
-    make_shdmem();
-
-    INFO("set up SDB\n");
-    sdb_setup();
-
 
     INFO("call construct_main_window\n");
 
