@@ -1,3 +1,6 @@
+* 1.4.59
+- removed setFocus on mac
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-01-16
 * 1.4.57
 - modify init process
 == Munkyu Im <munkyu.im@samsung.com> 2013-01-16
