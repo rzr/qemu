@@ -46,6 +46,7 @@
 
 MULTI_DEBUG_CHANNEL(tizen, display);
 
+MaruScreenshot* maru_screenshot = NULL;
 
 //TODO: interface
 void maru_display_init(DisplayState *ds)
@@ -69,12 +70,16 @@ void maru_display_init(DisplayState *ds)
 #endif
 
     register_displaychangelistener(ds, dcl);
+
+    maru_screenshot = g_malloc0(sizeof(MaruScreenshot));
+    maru_screenshot->pixel_data = NULL;
+    maru_screenshot->request_screenshot = 0;
 }
 
 void maru_display_fini(void)
 {
     INFO("fini qemu display\n");
-
+    g_free(maru_screenshot);
 #ifndef USE_SHM
     maruskin_sdl_quit();
 #else
@@ -94,6 +99,16 @@ void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, b
 DisplaySurface* get_qemu_display_surface(void) {
 #ifndef USE_SHM
     return maruskin_sdl_get_display();
+#else
+    //TODO:
+#endif
+
+    return NULL;
+}
+
+MaruScreenshot* get_maru_screenshot(void) {
+#ifndef USE_SHM
+    return maru_screenshot;
 #else
     //TODO:
 #endif
