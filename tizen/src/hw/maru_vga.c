@@ -1241,12 +1241,10 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
 
 #ifdef MARU_VGA // create new sufrace by malloc in MARU VGA
 
-#ifdef USE_SHM
-            s->ds->surface = qemu_create_displaysurface_from(disp_width, height, depth,
-                    disp_width * 4, (uint8_t*)shared_memory);
-#else
+            /* s->ds->surface = qemu_create_displaysurface_from(disp_width, height, depth,
+                    disp_width * 4, (uint8_t*)shared_memory); */
             s->ds->surface = qemu_create_displaysurface(s->ds, disp_width, height);
-#endif //USE_SHM
+
 
 #else //MARU_VGA
             s->ds->surface = qemu_create_displaysurface_from(disp_width, height, depth,
@@ -1268,15 +1266,12 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         s->last_line_offset = s->line_offset;
         s->last_depth = depth;
         full_update = 1;
-#ifndef USE_SHM
     } else if (is_buffer_shared(s->ds->surface) &&
                (full_update || s->ds->surface->data != s->vram_ptr + (s->start_addr * 4))) {
         s->ds->surface->data = s->vram_ptr + (s->start_addr * 4);
         dpy_setdata(s->ds);
     }
-#else
-    }
-#endif
+
     s->rgb_to_pixel =
         rgb_to_pixel_dup_table[get_depth_index(s->ds)];
 
@@ -1329,12 +1324,9 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     }
     maru_vga_draw_line = maru_vga_draw_line_table[v * NB_DEPTHS + get_depth_index(s->ds)];
 
-#ifndef USE_SHM
-    if (!is_buffer_shared(s->ds->surface) && s->cursor_invalidate)
-#else
-    if (s->cursor_invalidate)
-#endif
+    if (!is_buffer_shared(s->ds->surface) && s->cursor_invalidate) {
         s->cursor_invalidate(s);
+    }
 
     line_offset = s->line_offset;
 #if 0
@@ -1380,15 +1372,12 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 page_min = page0;
             if (page1 > page_max)
                 page_max = page1;
-#ifndef USE_SHM
+
             if (!(is_buffer_shared(s->ds->surface))) {
-#endif
                 maru_vga_draw_line(s, d, s->vram_ptr + addr, width);
                 if (s->cursor_draw_line)
                     s->cursor_draw_line(s, d, y);
-#ifndef USE_SHM
             }
-#endif
 
 #ifdef MARU_VGA
 
@@ -1514,6 +1503,11 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         }
     }
     pthread_mutex_unlock(&mutex_screenshot);
+
+#ifdef USE_SHM
+    memcpy(shared_memory, s->ds->surface->data,
+        s->ds->surface->linesize * s->ds->surface->height);
+#endif
 
     if (y_start >= 0) {
         /* flush to display */
@@ -1896,12 +1890,13 @@ void maru_vga_common_init(VGACommonState *s)
         perror("maru_vga: ");
         exit(1);
     }
+
     mykey = atoi(temp);
     shmdt(temp);
     INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
     shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
-	ERR( "shmget failed\n");
+    ERR("shmget failed\n");
         perror("maru_vga: ");
         exit(1);
     }
