@@ -74,7 +74,6 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_server);
 
-
 #define MAX_REQ_ID 0x7fffffff
 #define RECV_BUF_SIZE 32
 #define RECV_HEADER_SIZE 12
@@ -132,6 +131,9 @@ enum {
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
+
+pthread_mutex_t mutex_screenshot = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_screenshot = PTHREAD_COND_INITIALIZER;
 
 static int seq_req_id = 0;
 
@@ -244,6 +246,9 @@ void shutdown_skin_server(void)
             }
         }
     }
+
+    pthread_cond_destroy(&cond_screenshot);
+    pthread_mutex_destroy(&mutex_screenshot);
 
     stop_server = 1;
     is_force_close_client = 1;

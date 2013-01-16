@@ -50,8 +50,10 @@
 #include "maru_vga_int.h"
 #include "maru_brightness.h"
 #include "maru_overlay.h"
+#include "maru_display.h"
 #include "emul_state.h"
 #include "debug_ch.h"
+#include <pthread.h>
 
 #ifdef USE_SHM
 #include "emulator.h"
@@ -66,6 +68,8 @@ void *shared_memory = (void*)0;
 
 MULTI_DEBUG_CHANNEL(qemu, maru_vga);
 
+extern pthread_mutex_t mutex_screenshot;
+extern pthread_cond_t cond_screenshot;
 
 //#define DEBUG_VGA
 //#define DEBUG_VGA_MEM
@@ -1495,6 +1499,22 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             addr1 = 0;
         d += linesize;
     }
+
+    /* for screenshot */
+    pthread_mutex_lock(&mutex_screenshot);
+    MaruScreenshot* maru_screenshot = get_maru_screenshot();
+    if ( !maru_screenshot ) {
+        ERR( "maru screenshot is NULL.\n" );
+    } else {
+        if (maru_screenshot->request_screenshot == 1) {
+            memcpy(maru_screenshot->pixel_data, s->ds->surface->data, 
+                s->ds->surface->linesize * s->ds->surface->height);
+            maru_screenshot->request_screenshot = 0;
+            pthread_cond_signal(&cond_screenshot);
+        }
+    }
+    pthread_mutex_unlock(&mutex_screenshot);
+
     if (y_start >= 0) {
         /* flush to display */
         dpy_update(s->ds, 0, y_start,

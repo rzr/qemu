@@ -61,7 +61,6 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
-
 #define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
 #define CLOSE_POWER_KEY_INTERVAL 1200 // milli-seconds
 #define DATA_DELIMITER "#" // in detail info data
@@ -74,6 +73,8 @@ static int guest_x, guest_y;
 static int pressing_x = -1, pressing_y = -1;
 static int pressing_origin_x = -1, pressing_origin_y = -1;
 
+extern pthread_mutex_t mutex_screenshot;
+extern pthread_cond_t cond_screenshot;
 
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
@@ -356,11 +357,20 @@ QemuSurfaceInfo* get_screenshot_info(void)
         return NULL;
     }
 
-    memcpy( info->pixel_data, qemu_display_surface->data, length );
+    pthread_mutex_lock(&mutex_screenshot);
+    MaruScreenshot* maru_screenshot = get_maru_screenshot();
+    if ( !maru_screenshot ) {
+        ERR( "maru screenshot is NULL.\n" );
+        return NULL;
+    }
+    maru_screenshot->pixel_data = info->pixel_data;
+    maru_screenshot->request_screenshot = 1;
+    pthread_cond_wait(&cond_screenshot, &mutex_screenshot);
+    pthread_mutex_unlock(&mutex_screenshot);
+
     info->pixel_data_length = length;
 
     return info;
-
 }
 
 void free_screenshot_info(QemuSurfaceInfo* info)
