@@ -60,6 +60,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include "maru_err_table.h"
 #endif
 
 #ifdef USE_SHM
@@ -1896,9 +1897,11 @@ void maru_vga_common_init(VGACommonState *s)
     INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
     shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
-    ERR("shmget failed\n");
+	    ERR( "shmget failed\n");
         perror("maru_vga: ");
-        exit(1);
+        maru_register_exit_msg(MARU_EXIT_UNKNOWN, (char*)"Cannot launch this VM.\n"
+                        "Shared memory is not enough.");
+        exit(0);
     }
 
     shared_memory = shmat(shmid, (void*)0, 0);
