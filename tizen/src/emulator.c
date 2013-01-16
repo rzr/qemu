@@ -143,8 +143,8 @@ void check_shdmem(void)
                     }
                     shmdt(shm_addr);
                     maru_register_exit_msg(MARU_EXIT_UNKNOWN,
-                                        (char *)"Can not execute this VM.\n \
-                                        The same name is running now.");
+                                        "Can not execute this VM.\n"
+                                        "The same name is running now.");
                     exit(0);
                 } else {
                     shmdt(shm_addr);
@@ -173,7 +173,8 @@ void check_shdmem(void)
 
             if (strcmp(pBuf, tizen_target_path) == 0) {
                 maru_register_exit_msg(MARU_EXIT_UNKNOWN,
-                    "Can not execute this VM.\nThe same name is running now.");
+                    "Can not execute this VM.\n"
+                    "The same name is running now.");
                 UnmapViewOfFile(pBuf);
                 CloseHandle(hMapFile);
                 free(base_port);

@@ -104,6 +104,7 @@ static void* run_skin_client(void* arg)
     } else {
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
+
     char* bin_dir = get_bin_path();
     int bin_len = strlen(bin_dir);
     char bin_dir_win[bin_len];
@@ -121,9 +122,12 @@ static void* run_skin_client(void* arg)
         len_maxtouchpoint = 1;
     }
 
+    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
 #ifdef CONFIG_WIN32
-    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen((char*)bin_dir_win) +
-        strlen(bin_dir) + strlen(JAR_SKINFILE) +
+            strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+#else
+            strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+#endif
         strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
         strlen(OPT_VM_PATH) + strlen(vm_path) + strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
         strlen(OPT_MAX_TOUCHPOINT) + len_maxtouchpoint + strlen(argv) + 46;
@@ -134,34 +138,17 @@ static void* run_skin_client(void* arg)
 
     snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=%d %s",
         JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH,
+#ifdef CONFIG_WIN32
         bin_dir_win, bin_dir, JAR_SKINFILE,
-        OPT_SVR_PORT, skin_server_port,
-        OPT_UID, uid,
-        OPT_VM_PATH, vm_path,
-        OPT_NET_BASE_PORT, tizen_base_port,
-        OPT_MAX_TOUCHPOINT, maxtouchpoint,
-        argv );
 #else
-    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
-        strlen(bin_dir) + strlen(JAR_SKINFILE) + strlen(bin_dir) +
-        strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
-        strlen(OPT_VM_PATH) + strlen(vm_path) + strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
-        strlen(OPT_MAX_TOUCHPOINT) + len_maxtouchpoint + strlen(argv) + 46;
-    if (len > JAVA_MAX_COMMAND_LENGTH) {
-        INFO("swt command length is too long! (%d)\n", len);
-        len = JAVA_MAX_COMMAND_LENGTH;
-    }
-
-    snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=%d %s",
-        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir,
-        bin_dir, JAR_SKINFILE,
+        bin_dir, bin_dir, JAR_SKINFILE,
+#endif
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, tizen_base_port,
         OPT_MAX_TOUCHPOINT, maxtouchpoint,
         argv );
-#endif
 
     INFO("command for swt : %s\n", cmd);
 
@@ -316,21 +303,34 @@ int start_simple_client(char* msg)
     } else {
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
-#endif
-
     char* bin_dir = get_bin_path();
+    int bin_dir_len = strlen(bin_dir);
+    char bin_dir_win[bin_dir_len];
+    strcpy(bin_dir_win, bin_dir);
+    bin_dir_win[strlen(bin_dir_win) -1] = '\0';
+#else
+    char* bin_dir = get_bin_path();
+#endif
     INFO("bin directory : %s\n", bin_dir);
 
-    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
-        strlen(bin_dir) + strlen(JAR_SKINFILE) +
-        strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 7;
+
+    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAVA_LIBRARY_PATH) +
+#ifdef CONFIG_WIN32
+            strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+#else
+            strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+#endif
+            strlen(bin_dir) + strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 11;
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         len = JAVA_MAX_COMMAND_LENGTH;
     }
-
-    snprintf(cmd, len, "%s %s %s%s %s=\"%s\"",
-        JAVA_EXEFILE_PATH, JAVA_EXEOPTION,
-        bin_dir, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, msg);
+    snprintf(cmd, len, "%s %s %s=\"%s\" %s%s %s=\"%s\"",
+#ifdef CONFIG_WIN32
+    JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir_win,
+#else
+    JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir,
+#endif
+    bin_dir, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, msg);
     INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32
