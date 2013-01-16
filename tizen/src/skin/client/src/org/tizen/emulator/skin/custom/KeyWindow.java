@@ -173,12 +173,14 @@ public class KeyWindow extends SkinWindow {
 			public void focusGained(FocusEvent event) {
 				logger.info("gain focus");
 
+				if (SwtUtil.isMacPlatform() != false) { //TODO:
 				shell.getDisplay().asyncExec(new Runnable() {
 					@Override
 					public void run() {
 						skin.setFocus();
 					}
 				});
+				}
 			}
 
 			@Override
