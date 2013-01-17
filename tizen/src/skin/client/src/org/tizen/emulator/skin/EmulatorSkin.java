@@ -433,20 +433,31 @@ public class EmulatorSkin {
 			}
 
 			@Override
-			public void shellDeactivated(ShellEvent arg0) {
+			public void shellDeactivated(ShellEvent event) {
 				//logger.info("deactivate");
 
 				/* do nothing */
 			}
 
 			@Override
-			public void shellDeiconified(ShellEvent arg0) {
+			public void shellIconified(ShellEvent event) {
 				/* do nothing */
 			}
 
 			@Override
-			public void shellIconified(ShellEvent arg0) {
-				/* do nothing */
+			public void shellDeiconified(ShellEvent event) {
+				logger.info("deiconified");
+
+				shell.getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						if (isKeyWindow == true && keyWindow != null) {
+							if (keyWindow.getShell().getMinimized() == true) {
+								keyWindow.getShell().setMinimized(false);
+							}
+						}
+					}
+				});
 			}
 		};
 
