@@ -107,12 +107,6 @@ DisplaySurface* get_qemu_display_surface(void) {
 }
 
 MaruScreenshot* get_maru_screenshot(void) {
-#ifndef USE_SHM
     return maru_screenshot;
-#else
-    //TODO:
-#endif
-
-    return NULL;
 }
 
