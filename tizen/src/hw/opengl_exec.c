@@ -944,6 +944,14 @@ static void do_glClientActiveTextureARB(int texture)
 static void destroy_gl_state(GLState *state)
 {
     int i;
+
+    /* XXX:Current limitation is that each surface is binded to one
+     * context, thus not support sharing surface between contexts. If guest
+     * does this, deleting surface in one context make trouble to other
+     * context. Leave the work until the uninitialization. Need clean the code
+     * and decouple the context and surface in future.
+     */
+#if 0
     QGloSurface *qsurface, *tmp;
 
     QTAILQ_FOREACH_SAFE(qsurface, &state->qsurfaces, next, tmp) {
@@ -951,6 +959,7 @@ static void destroy_gl_state(GLState *state)
         QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
         g_free(qsurface);
     }
+#endif
         
     if (state->context)
       glo_context_destroy(state->context);
