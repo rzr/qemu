@@ -1332,10 +1332,11 @@ bool yagl_host_glGetTexEnvxv(GLenum target,
     GLenum pname,
     target_ulong /* GLfixed* */ params_)
 {
-    GLint paramsi[YAGL_TEX_ENV_PARAM_MAX_LEN];
+    GLfloat paramsf[YAGL_TEX_ENV_PARAM_MAX_LEN];
+    GLfixed paramsx[YAGL_TEX_ENV_PARAM_MAX_LEN];
     unsigned count = 1;
 
-    YAGL_GET_CTX(glGetTexEnvfv);
+    YAGL_GET_CTX(glGetTexEnvxv);
 
     if (target != GL_TEXTURE_ENV && target != GL_POINT_SPRITE_OES) {
         YAGL_SET_ERR(GL_INVALID_ENUM);
@@ -1350,17 +1351,20 @@ bool yagl_host_glGetTexEnvxv(GLenum target,
         return false;
     }
 
-    ctx->driver->GetTexEnviv(target, pname, paramsi);
+    ctx->driver->GetTexEnvfv(target, pname, paramsf);
 
-    if (pname == GL_TEXTURE_ENV_COLOR) {
+    if (pname == GL_TEXTURE_ENV_COLOR || pname == GL_RGB_SCALE ||
+        pname == GL_ALPHA_SCALE) {
         unsigned i;
 
         for (i = 0; i < count; ++i) {
-            paramsi[i] = yagl_int_to_fixed(paramsi[i]);
+            paramsx[i] = yagl_float_to_fixed(paramsf[i]);
         }
+    } else {
+        paramsx[0] = (GLfixed)paramsf[0];
     }
 
-    yagl_mem_put(cur_ts->mt1, paramsi);
+    yagl_mem_put(cur_ts->mt1, paramsx);
 
     return true;
 }
@@ -1999,6 +2003,8 @@ bool yagl_host_glTexEnvx(GLenum target,
     GLenum pname,
     GLfixed param)
 {
+    GLfloat paramf;
+
     YAGL_GET_CTX(glTexEnvx);
 
     if (target != GL_TEXTURE_ENV && target != GL_POINT_SPRITE_OES) {
@@ -2006,7 +2012,13 @@ bool yagl_host_glTexEnvx(GLenum target,
         return true;
     }
 
-    ctx->driver->TexEnvf(target, pname, (GLfloat)param);
+    if (pname == GL_RGB_SCALE || pname == GL_ALPHA_SCALE) {
+        paramf = yagl_fixed_to_float(param);
+    } else {
+        paramf = (GLfloat)param;
+    }
+
+    ctx->driver->TexEnvf(target, pname, paramf);
 
     return true;
 }
@@ -2071,7 +2083,11 @@ bool yagl_host_glTexEnvxv(GLenum target,
             return false;
         }
 
-        paramsf[0] = (GLfloat)paramx;
+        if (pname == GL_RGB_SCALE || pname == GL_ALPHA_SCALE) {
+            paramsf[0] = yagl_fixed_to_float(paramx);
+        } else {
+            paramsf[0] = (GLfloat)paramx;
+        }
     }
 
     ctx->driver->TexEnvfv(target, pname, paramsf);
