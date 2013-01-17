@@ -495,7 +495,7 @@ bool yagl_host_glCompressedTexSubImage2D(GLenum target,
 
     if (ctx->base.client_api == yagl_client_api_gles1) {
         /* No formats are supported by this call in GLES1 API */
-        YAGL_SET_ERR(GL_INVALID_ENUM);
+        YAGL_SET_ERR(GL_INVALID_OPERATION);
         return true;
     }
 
