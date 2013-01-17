@@ -1,7 +1,7 @@
 /*
  * Virtio Keyboard Device
  *
- * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
