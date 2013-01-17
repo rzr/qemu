@@ -32,13 +32,13 @@ import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
-import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
@@ -59,6 +59,7 @@ import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
+import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -82,10 +83,10 @@ public class KeyWindow extends SkinWindow {
 	private SocketCommunicator communicator;
 	private List<KeyMapType> keyMapList;
 
+	private ShellListener shellListener;
 	private PaintListener shellPaintListener;
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
-	private Listener shellCloseListener;
 
 	private boolean isGrabbedShell;
 	private Point grabPosition;
@@ -167,28 +168,6 @@ public class KeyWindow extends SkinWindow {
 				}
 			}
 		});
-
-		pairTagCanvas.addFocusListener(new FocusListener() {
-			@Override
-			public void focusGained(FocusEvent event) {
-				logger.info("gain focus");
-
-				if (SwtUtil.isMacPlatform() == false) { //TODO:
-				shell.getDisplay().asyncExec(new Runnable() {
-					@Override
-					public void run() {
-						skin.setFocus();
-					}
-				});
-				}
-			}
-
-			@Override
-			public void focusLost(FocusEvent event) {
-				logger.info("lost focus");
-			}
-		});
-		pairTagCanvas.setFocus();
 
 		/* */
 		ScrolledComposite compositeScroll = new ScrolledComposite(shell, SWT.V_SCROLL);
@@ -293,6 +272,76 @@ public class KeyWindow extends SkinWindow {
 
 		shell.addPaintListener(shellPaintListener);
 
+		shellListener = new ShellListener() {
+			@Override
+			public void shellClosed(ShellEvent event) {
+				logger.info("Key Window is closed");
+
+				if (skin.pairTagCanvas != null) {
+					skin.pairTagCanvas.setVisible(false);
+				}
+				skin.keyWindow = null;
+
+				if (null != shellPaintListener) {
+					shell.removePaintListener(shellPaintListener);
+				}
+
+				if (null != shellListener) {
+					shell.removeShellListener(shellListener);
+				}
+
+				if (null != shellMouseMoveListener) {
+					shell.removeMouseMoveListener(shellMouseMoveListener);
+				}
+
+				if (null != shellMouseListener) {
+					shell.removeMouseListener(shellMouseListener);
+				}
+
+				imageNormal.dispose();
+				imageHover.dispose();
+				imagePushed.dispose();
+				colorFrame.dispose();
+
+				frameMaker.freePatches();
+			}
+
+			@Override
+			public void shellActivated(ShellEvent event) {
+				logger.info("activate");
+
+				if (SwtUtil.isMacPlatform() == true) {
+					parent.moveAbove(shell);
+				} else {
+					shell.getDisplay().asyncExec(new Runnable() {
+						@Override
+						public void run() {
+							parent.setActive();
+						}
+					});
+				}
+			}
+
+			@Override
+			public void shellDeactivated(ShellEvent arg0) {
+				logger.info("deactivate");
+
+				/* do nothing */
+			}
+
+			@Override
+			public void shellDeiconified(ShellEvent arg0) {
+				/* do nothing */
+			}
+
+			@Override
+			public void shellIconified(ShellEvent arg0) {
+				/* do nothing */
+			}
+		};
+
+		shell.addShellListener(shellListener);
+
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
@@ -373,39 +422,6 @@ public class KeyWindow extends SkinWindow {
 		};
 
 		shell.addMouseListener(shellMouseListener);
-
-		shellCloseListener = new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				logger.info("Key Window is closed");
-
-				if (skin.pairTagCanvas != null) {
-					skin.pairTagCanvas.setVisible(false);
-				}
-				skin.keyWindow = null;
-
-				if (null != shellPaintListener) {
-					shell.removePaintListener(shellPaintListener);
-				}
-
-				if (null != shellMouseMoveListener) {
-					shell.removeMouseMoveListener(shellMouseMoveListener);
-				}
-
-				if (null != shellMouseListener) {
-					shell.removeMouseListener(shellMouseListener);
-				}
-
-				imageNormal.dispose();
-				imageHover.dispose();
-				imagePushed.dispose();
-				colorFrame.dispose();
-
-				frameMaker.freePatches();
-			}
-		};
-
-		shell.addListener(SWT.Close, shellCloseListener);
 	}
 
 	public Color getPairTagColor() {

@@ -52,13 +52,13 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
@@ -69,8 +69,8 @@ import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
-import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
+import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
@@ -152,7 +152,7 @@ public class EmulatorSkin {
 	public ScreenShotDialog screenShotDialog;
 
 	protected SocketCommunicator communicator;
-	private Listener shellCloseListener;
+	private ShellListener shellListener;
 	private MenuDetectListener shellMenuDetectListener;
 
 	//private DragDetectListener canvasDragDetectListener;
@@ -235,7 +235,7 @@ public class EmulatorSkin {
 		currentState.setHoverColor(loadHoverColor());
 
 		/* added event handlers */
-		addShellListener(shell);
+		addMainWindowListener(shell);
 		addCanvasListener(shell, lcdCanvas);
 
 		setFocus();
@@ -348,11 +348,12 @@ public class EmulatorSkin {
 		skinComposer.composerFinalize();
 	}
 
-	private void addShellListener(final Shell shell) {
+	private void addMainWindowListener(final Shell shell) {
 
-		shellCloseListener = new Listener() {
+		shellListener = new ShellListener() {
 			@Override
-			public void handleEvent(Event event) {
+			public void shellClosed(ShellEvent event) {
+				logger.info("Main Window is closed");
 
 				if (isShutdownRequested) {
 					removeShellListeners();
@@ -414,12 +415,44 @@ public class EmulatorSkin {
 						communicator.sendToQEMU(SendCommand.CLOSE, null);
 					}
 				}
+			}
 
+			@Override
+			public void shellActivated(ShellEvent event) {
+				logger.info("activate");
+
+				if (isOnTop == false && isKeyWindow == true) {
+					if (keyWindow != null) {
+						keyWindow.getShell().moveAbove(shell);
+
+						if (keyWindow.getDockPosition() != SWT.NONE) {
+							shell.moveAbove(keyWindow.getShell());
+						}
+					}
+				}
+			}
+
+			@Override
+			public void shellDeactivated(ShellEvent arg0) {
+				//logger.info("deactivate");
+
+				/* do nothing */
+			}
+
+			@Override
+			public void shellDeiconified(ShellEvent arg0) {
+				/* do nothing */
+			}
+
+			@Override
+			public void shellIconified(ShellEvent arg0) {
+				/* do nothing */
 			}
 		};
 
-		shell.addListener(SWT.Close, shellCloseListener);
+		shell.addShellListener(shellListener);
 
+		/* menu */
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
@@ -440,8 +473,8 @@ public class EmulatorSkin {
 	}
 
 	private void removeShellListeners() {
-		if (null != shellCloseListener) {
-			shell.removeListener(SWT.Close, shellCloseListener);
+		if (null != shellListener) {
+			shell.removeShellListener(shellListener);
 		}
 
 		if (null != shellMenuDetectListener) {
@@ -473,17 +506,9 @@ public class EmulatorSkin {
 		canvasFocusListener = new FocusListener() {
 			@Override
 			public void focusGained(FocusEvent event) {
-				logger.info("gain focus");
+				//logger.info("gain focus");
 
-				if (isOnTop == false && isKeyWindow == true) {
-					if (keyWindow != null) {
-						keyWindow.getShell().moveAbove(shell);
-
-						if (keyWindow.getDockPosition() != SWT.NONE) {
-							shell.moveAbove(keyWindow.getShell());
-						}
-					}
-				}
+				/* do nothing */
 			}
 
 			@Override
