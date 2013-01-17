@@ -30,9 +30,6 @@
 #include "maru_arm.h"
 #include "i2c.h"
 #include "exec-memory.h"
-#ifdef CONFIG_BUILD_GLES
-#include "gles2.h"
-#endif
 
 #include "loader.h"
 #include "exynos4210_i2s.h"
@@ -411,11 +408,6 @@ Exynos4210State *maru_arm_soc_init(MemoryRegion *system_mem,
                 s->irq_table[exynos4210_get_irq(11, 2)],
                 NULL);
     }
-
-    /*** GPU openGLES passthrough device ***/
-#ifdef CONFIG_BUILD_GLES
-    gles2_init(first_cpu);
-#endif
 
     /* I2S0 */
     s->i2s_bus[0] = exynos4210_i2s_bus_new("exynos4210.i2s",
