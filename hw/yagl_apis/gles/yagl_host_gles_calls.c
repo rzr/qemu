@@ -46,51 +46,89 @@
     YAGL_LOG_WARN("NOT IMPLEMENTED!!!"); \
     return true
 
-static __inline bool yagl_get_stride(struct yagl_gles_driver *driver,
-                                     GLuint alignment_type,
-                                     GLsizei width,
-                                     GLenum format,
-                                     GLenum type,
-                                     GLsizei *stride)
+static GLint yagl_get_stride(struct yagl_gles_context *ctx,
+                             GLuint alignment_type,
+                             GLsizei width,
+                             GLenum format,
+                             GLenum type,
+                             GLsizei *stride)
 {
-    bool per_byte;
+    unsigned num_components;
     GLsizei bpp;
     GLsizei alignment = 0;
 
-    switch (type) {
-    case GL_UNSIGNED_BYTE:
-        per_byte = true;
-        break;
-    case GL_UNSIGNED_SHORT_5_6_5:
-    case GL_UNSIGNED_SHORT_4_4_4_4:
-    case GL_UNSIGNED_SHORT_5_5_5_1:
-        per_byte = false;
-        break;
-    default:
-        return false;
-    }
-
     switch (format) {
     case GL_ALPHA:
-        bpp = 1;
+        num_components = 1;
         break;
     case GL_RGB:
-        bpp = (per_byte ? 3 : 2);
+        num_components = 3;
         break;
     case GL_RGBA:
-        bpp = (per_byte ? 4 : 2);
+        num_components = 4;
         break;
     case GL_LUMINANCE:
-        bpp = 1;
+        num_components = 1;
         break;
     case GL_LUMINANCE_ALPHA:
-        bpp = 2;
+        num_components = 2;
+        break;
+    case GL_DEPTH_STENCIL_EXT:
+        if (!ctx->pack_depth_stencil) {
+            return GL_INVALID_ENUM;
+        }
+        num_components = 1;
+        break;
+    case GL_DEPTH_COMPONENT:
+        if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
+            return GL_INVALID_OPERATION;
+        }
+        num_components = 1;
         break;
     default:
-        return false;
+        return GL_INVALID_ENUM;
     }
 
-    driver->GetIntegerv(alignment_type, &alignment);
+    switch (type) {
+    case GL_UNSIGNED_BYTE:
+        bpp = num_components;
+        break;
+    case GL_UNSIGNED_SHORT_5_6_5:
+        if (format != GL_RGB) {
+            return GL_INVALID_OPERATION;
+        }
+        bpp = 2;
+        break;
+    case GL_UNSIGNED_SHORT_4_4_4_4:
+    case GL_UNSIGNED_SHORT_5_5_5_1:
+        if (format != GL_RGBA) {
+            return GL_INVALID_OPERATION;
+        }
+        bpp = 2;
+        break;
+    case GL_UNSIGNED_INT_24_8_EXT:
+        if (!ctx->pack_depth_stencil) {
+            return GL_INVALID_ENUM;
+        }
+        bpp = num_components * 4;
+        break;
+    case GL_UNSIGNED_SHORT:
+        if (format != GL_DEPTH_COMPONENT) {
+            return GL_INVALID_OPERATION;
+        }
+        bpp = num_components * 2;
+        break;
+    case GL_UNSIGNED_INT:
+        if (format != GL_DEPTH_COMPONENT) {
+            return GL_INVALID_OPERATION;
+        }
+        bpp = num_components * 4;
+        break;
+    default:
+        return GL_INVALID_ENUM;
+    }
+
+    ctx->driver->GetIntegerv(alignment_type, &alignment);
 
     if (!alignment) {
         alignment = 1;
@@ -98,7 +136,7 @@ static __inline bool yagl_get_stride(struct yagl_gles_driver *driver,
 
     *stride = ((width * bpp) + alignment - 1) & ~(alignment - 1);
 
-    return true;
+    return GL_NO_ERROR;
 }
 
 static bool yagl_get_integer(struct yagl_gles_context *ctx,
@@ -1327,13 +1365,15 @@ bool yagl_host_glReadPixels(GLint x,
     YAGL_GET_CTX(glReadPixels);
 
     if (pixels_ && (width > 0) && (height > 0)) {
-        if (!yagl_get_stride(ctx->driver,
-                             GL_PACK_ALIGNMENT,
-                             width,
-                             format,
-                             type,
-                             &stride)) {
-            YAGL_SET_ERR(GL_INVALID_VALUE);
+        GLint err = yagl_get_stride(ctx,
+                                    GL_PACK_ALIGNMENT,
+                                    width,
+                                    format,
+                                    type,
+                                    &stride);
+
+        if (err != GL_NO_ERROR) {
+            YAGL_SET_ERR(err);
             goto out;
         }
         if (!yagl_mem_prepare(cur_ts->mt1, pixels_, stride * height)) {
@@ -1438,13 +1478,15 @@ bool yagl_host_glTexImage2D(GLenum target,
     YAGL_GET_CTX(glTexImage2D);
 
     if (pixels_ && (width > 0) && (height > 0)) {
-        if (!yagl_get_stride(ctx->driver,
-                             GL_UNPACK_ALIGNMENT,
-                             width,
-                             format,
-                             type,
-                             &stride)) {
-            YAGL_SET_ERR(GL_INVALID_VALUE);
+        GLint err = yagl_get_stride(ctx,
+                                    GL_UNPACK_ALIGNMENT,
+                                    width,
+                                    format,
+                                    type,
+                                    &stride);
+
+        if (err != GL_NO_ERROR) {
+            YAGL_SET_ERR(err);
             goto out;
         }
         pixels = yagl_gles_context_malloc(ctx, stride * height);
@@ -1574,13 +1616,15 @@ bool yagl_host_glTexSubImage2D(GLenum target,
     YAGL_GET_CTX(glTexSubImage2D);
 
     if (pixels_ && (width > 0) && (height > 0)) {
-        if (!yagl_get_stride(ctx->driver,
-                             GL_UNPACK_ALIGNMENT,
-                             width,
-                             format,
-                             type,
-                             &stride)) {
-            YAGL_SET_ERR(GL_INVALID_VALUE);
+        GLint err = yagl_get_stride(ctx,
+                                    GL_UNPACK_ALIGNMENT,
+                                    width,
+                                    format,
+                                    type,
+                                    &stride);
+
+        if (err != GL_NO_ERROR) {
+            YAGL_SET_ERR(err);
             goto out;
         }
         pixels = yagl_gles_context_malloc(ctx, stride * height);

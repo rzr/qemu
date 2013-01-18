@@ -692,7 +692,8 @@ static GLchar *yagl_gles1_context_get_extensions(struct yagl_gles_context *ctx)
         "GL_OES_texture_mirrored_repeat "
         "GL_EXT_texture_format_BGRA8888 GL_OES_point_sprite "
         "GL_OES_point_size_array GL_OES_stencil_wrap "
-        "GL_OES_compressed_paletted_texture ";
+        "GL_OES_compressed_paletted_texture "
+        "GL_OES_depth_texture ";
     const GLchar *framebuffer_object_ext =
         "GL_OES_framebuffer_object GL_OES_depth24 GL_OES_depth32 "
         "GL_OES_rgb8_rgba8 GL_OES_stencil1 GL_OES_stencil4 "
