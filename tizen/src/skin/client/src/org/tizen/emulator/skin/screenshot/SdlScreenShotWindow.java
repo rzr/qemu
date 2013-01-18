@@ -59,28 +59,29 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 	}
 
 	protected void capture() throws ScreenShotException {
-		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.SCREEN_SHOT, null, true );
-		byte[] receivedData = communicator.getReceivedData( dataTranfer );
+		DataTranfer dataTranfer = communicator.sendToQEMU(
+				SendCommand.SCREEN_SHOT, null, true);
+		byte[] receivedData = communicator.getReceivedData(dataTranfer);
 
-		if ( null != receivedData ) {
+		if (null != receivedData) {
+			int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+			int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+			ImageData imageData = new ImageData(
+					width, height, COLOR_DEPTH, paletteData, 1, receivedData);
 
-			if ( null != this.image ) {
-				this.image.dispose();
+			RotationInfo rotation = getCurrentRotation();
+			imageData = rotateImageData(imageData, rotation);
+			
+			Image tempImage = image;
+			image = new Image(Display.getDefault(), imageData);
+
+			if (tempImage != null) {
+				tempImage.dispose();
 			}
 
-			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-			ImageData imageData = new ImageData( width , height, COLOR_DEPTH, paletteData, 1, receivedData );
-			
-			RotationInfo rotation = getCurrentRotation();
-			imageData = rotateImageData( imageData, rotation );
-
-		 this.image = new Image( Display.getDefault(), imageData );
-		 
-		 imageCanvas.redraw();
-			
+			imageCanvas.redraw();
 		} else {
-			throw new ScreenShotException( "Fail to get image data." );
+			throw new ScreenShotException("Fail to get image data.");
 		}
 	}
 }

@@ -238,9 +238,9 @@ void shutdown_skin_server(void)
                 break;
             } else {
 #ifdef CONFIG_WIN32
-                Sleep(1); // 1ms
+                Sleep(1); /* 1ms */
 #else
-                usleep(1000); // 1ms
+                usleep(1000);
 #endif
                 count++;
             }
@@ -334,6 +334,12 @@ void notify_booting_progress(int progress_value)
 
             ERR("fail to send SEND_BOOTING_PROGRESS to skin.\n");
         }
+
+#ifdef CONFIG_WIN32
+        Sleep(1); /* 1ms */
+#else
+        usleep(1000);
+#endif
     }
 }
 

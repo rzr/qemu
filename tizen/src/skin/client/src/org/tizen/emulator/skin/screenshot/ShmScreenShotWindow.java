@@ -67,10 +67,13 @@ public class ShmScreenShotWindow extends ScreenShotDialog {
 		RotationInfo rotation = getCurrentRotation();
 		imageData = rotateImageData(imageData, rotation);
 
-		if (image != null) {
-			image.dispose();
-		}
+		Image tempImage = image;
 		image = new Image(Display.getDefault(), imageData);
+
+		if (tempImage != null) {
+			tempImage.dispose();
+		}
+
 		imageCanvas.redraw();
 	}
 }

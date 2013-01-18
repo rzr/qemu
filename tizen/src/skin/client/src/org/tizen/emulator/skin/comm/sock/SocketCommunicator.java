@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;

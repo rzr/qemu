@@ -110,8 +110,8 @@ public class ScreenShotDialog {
 	private boolean reserveImage;
 	private ToolItem refreshItem;
 	private ToolItem copyItem;
-	private ToolItem IncreaseScaleItem;
-	private ToolItem DecreaseScaleItem;
+	private ToolItem increaseScaleItem;
+	private ToolItem decreaseScaleItem;
 	private double scaleLevel;
 	/**
 	 * @brief constructor
@@ -531,9 +531,10 @@ public class ScreenShotDialog {
 
 				try {
 					clickShutter();
-				} catch ( ScreenShotException ex ) {
-					logger.log( Level.SEVERE, "Fail to create a screen shot.", ex );
-					SkinUtil.openMessage( shell, null, "Fail to create a screen shot.", SWT.ERROR, config );
+				} catch (ScreenShotException ex) {
+					logger.log(Level.SEVERE, "Fail to create a screen shot.", ex);
+					SkinUtil.openMessage(shell, null,
+							"Fail to create a screen shot.", SWT.ERROR, config);
 				}
 
 				/* restoration */
@@ -544,12 +545,13 @@ public class ScreenShotDialog {
 
 		} );
 
-		IncreaseScaleItem = new ToolItem( toolBar, SWT.FLAT );
-		IncreaseScaleItem.setImage( ImageRegistry.getInstance().getIcon( IconName.INCREASE_SCALE ) );
-		IncreaseScaleItem.setToolTipText( "Increase view size" );
-		IncreaseScaleItem.addSelectionListener( new SelectionAdapter() {
+		increaseScaleItem = new ToolItem(toolBar, SWT.FLAT);
+		increaseScaleItem.setImage(ImageRegistry.getInstance().getIcon(IconName.INCREASE_SCALE));
+		increaseScaleItem.setToolTipText("Increase view size");
+
+		increaseScaleItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
 				double level = getScaleLevel();
 				Point dialogSize = shell.getSize();	
 				
@@ -562,11 +564,11 @@ public class ScreenShotDialog {
 				label.update();
 				
 				if (level >= 400d) {
-					IncreaseScaleItem.setEnabled(false);
-					DecreaseScaleItem.setEnabled(true);
+					increaseScaleItem.setEnabled(false);
+					decreaseScaleItem.setEnabled(true);
 				} else {
-					IncreaseScaleItem.setEnabled(true);
-					DecreaseScaleItem.setEnabled(true);	
+					increaseScaleItem.setEnabled(true);
+					decreaseScaleItem.setEnabled(true);
 				}
 				
 				/* restoration */
@@ -577,12 +579,13 @@ public class ScreenShotDialog {
 
 		} );
 
-		DecreaseScaleItem = new ToolItem( toolBar, SWT.FLAT );
-		DecreaseScaleItem.setImage( ImageRegistry.getInstance().getIcon( IconName.DECREASE_SCALE ) );
-		DecreaseScaleItem.setToolTipText( "Decrease view size" );
-		DecreaseScaleItem.addSelectionListener( new SelectionAdapter() {
+		decreaseScaleItem = new ToolItem(toolBar, SWT.FLAT);
+		decreaseScaleItem.setImage(ImageRegistry.getInstance().getIcon(IconName.DECREASE_SCALE));
+		decreaseScaleItem.setToolTipText("Decrease view size");
+
+		decreaseScaleItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
 				double level = getScaleLevel();
 				Point dialogSize = shell.getSize();
 				
@@ -595,11 +598,11 @@ public class ScreenShotDialog {
 				label.update();
 			
 				if (level <= 25) {
-					DecreaseScaleItem.setEnabled(false);
-					IncreaseScaleItem.setEnabled(true);
+					decreaseScaleItem.setEnabled(false);
+					increaseScaleItem.setEnabled(true);
 				} else {
-					DecreaseScaleItem.setEnabled(true);
-					IncreaseScaleItem.setEnabled(true);
+					decreaseScaleItem.setEnabled(true);
+					increaseScaleItem.setEnabled(true);
 				}
 					
 				/* restoration */
