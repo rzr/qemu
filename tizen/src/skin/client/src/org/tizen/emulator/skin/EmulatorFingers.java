@@ -399,20 +399,16 @@ public class EmulatorFingers {
 	    rotatedPointY = pointY = (int)(finger.y * scaleFactor);
 //	    logger.info("rotatedPointX:"+rotatedPointX+" rotatedPointY:"+rotatedPointY);
 	    if (rotationType == RotationInfo.LANDSCAPE.id()) {
-	    	logger.info("LANDSCAPE");
 	        rotatedPointX = pointY;
 	        rotatedPointY = ScaledLcdWitdh - pointX;
 	    } else if (rotationType == RotationInfo.REVERSE_PORTRAIT.id()) {
-	    	logger.info("REVERSE_PORTRAIT");
 	        rotatedPointX = ScaledLcdWitdh - pointX;
 	        rotatedPointY = ScaledLcdHeight - pointY;
 	    } else if (rotationType == RotationInfo.REVERSE_LANDSCAPE.id()) {
-	    	logger.info("REVERSE_LANDSCAPE");
 	        rotatedPointX = ScaledLcdHeight - pointY;
 	        rotatedPointY = pointX;
 	    } else {
-	    	logger.info("PORTRAITE");
-	    	
+	      //PORTRAIT: do nothing	
 	    }
 	    	
 

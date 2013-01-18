@@ -604,13 +604,11 @@ public class EmulatorSkin {
 					if (SwtUtil.isMacPlatform()) {
 						//eventType = MouseEventType.DRAG.value();
 						if (finger.getMultiTouchEnable() == 1) {
-							logger.info("maruFingerProcessing1");
 							finger.maruFingerProcessing1(eventType,
 									e.x, e.y, geometry[0], geometry[1]);
 							return;
 						}
 						else if (finger.getMultiTouchEnable() == 2) {
-							logger.info("maruFingerProcessing2");
 							finger.maruFingerProcessing2(eventType,
 									e.x, e.y, geometry[0], geometry[1]);
 							return;
