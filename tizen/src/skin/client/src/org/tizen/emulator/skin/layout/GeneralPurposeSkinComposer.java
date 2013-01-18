@@ -230,6 +230,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 		logger.info("lcd bounds : " + lcdBounds);
 
+		currentState.setDisplayBounds(lcdBounds);
 		lcdCanvas.setBounds(lcdBounds);
 
 		/* arrange the skin image */

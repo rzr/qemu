@@ -31,6 +31,7 @@ package org.tizen.emulator.skin;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.layout.HWKey;
 
@@ -39,7 +40,10 @@ public class EmulatorSkinState {
 	private int currentScale;
 	private short currentRotationId;
 	private int currentAngle;
-	private int maxtouchpoint;
+	private int maxTouchPoint;
+
+	private Rectangle displayBounds;
+	private boolean updateDisplayBounds;
 
 	private Image currentImage;
 	private Image currentKeyPressedImage;
@@ -53,6 +57,10 @@ public class EmulatorSkinState {
 		this.currentScale = 50;
 		this.currentRotationId = RotationInfo.PORTRAIT.id();
 		this.currentAngle = 0;
+		this.maxTouchPoint = 0;
+
+		this.displayBounds = null;
+		this.updateDisplayBounds = false;
 	}
 
 	/* resolution */
@@ -114,6 +122,27 @@ public class EmulatorSkinState {
 		this.currentAngle = angle;
 	}
 
+	/* display bounds */
+	public synchronized Rectangle getDisplayBounds() {
+		if (displayBounds == null) {
+			return new Rectangle(0, 0, 10, 10);
+		}
+
+		return displayBounds;
+	}
+
+	public synchronized void setDisplayBounds(Rectangle bounds) {
+		this.displayBounds = bounds;
+	}
+
+	public synchronized boolean isUpdateDisplayBounds() {
+		return updateDisplayBounds;
+	}
+
+	public synchronized void setUpdateDisplayBounds(boolean needUpdate) {
+		this.updateDisplayBounds = needUpdate;
+	}
+
 	/* skin image */
 	public synchronized Image getCurrentImage() {
 		return currentImage;
@@ -157,12 +186,13 @@ public class EmulatorSkinState {
 	public synchronized void setCurrentHoveredHWKey(HWKey hwKey) {
 		this.currentHoveredHWKey = hwKey;
 	}
+
 	/* max touch point */
-	public synchronized void setMaxTouchPoint(int maxtouchpoint) {
-		this.maxtouchpoint = maxtouchpoint;
+	public synchronized void setMaxTouchPoint(int maxTouchPoint) {
+		this.maxTouchPoint = maxTouchPoint;
 	}
-	
+
 	public synchronized int getMaxTouchPoint() {
-		return this.maxtouchpoint;
+		return maxTouchPoint;
 	}
 }

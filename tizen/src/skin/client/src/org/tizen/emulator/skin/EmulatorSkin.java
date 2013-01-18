@@ -1296,20 +1296,20 @@ public class EmulatorSkin {
 				shell.getDisplay().syncExec(new Runnable() {
 					@Override
 					public void run() {
-						Point location = new Point(100, 100);
-
-						if (skinInfo.isPhoneShape()) { /* TODO: */
-							location = shell.getLocation();
-							shell.setVisible(false);
-						}
+//						Point location = new Point(100, 100);
+//
+//						if (skinInfo.isPhoneShape()) { /* TODO: */
+//							location = shell.getLocation();
+//							shell.setVisible(false);
+//						}
 
 						skinComposer.arrangeSkin(currentState.getCurrentScale(), rotationId);
 
-						if (skinInfo.isPhoneShape()) { /* TODO: */
-							shell.setVisible(true);
-							shell.setLocation(location);
-							SkinUtil.setTopMost(shell, isOnTop);
-						}
+//						if (skinInfo.isPhoneShape()) { /* TODO: */
+//							shell.setVisible(true);
+//							shell.setLocation(location);
+//							SkinUtil.setTopMost(shell, isOnTop);
+//						}
 					}
 				});
 
@@ -1370,20 +1370,20 @@ public class EmulatorSkin {
 				shell.getDisplay().syncExec(new Runnable() {
 					@Override
 					public void run() {
-						Point location = new Point(100, 100);
-
-						if (skinInfo.isPhoneShape()) { /* TODO: */
-							location = shell.getLocation();
-							shell.setVisible(false);
-						}
+//						Point location = new Point(100, 100);
+//
+//						if (skinInfo.isPhoneShape()) { /* TODO: */
+//							location = shell.getLocation();
+//							shell.setVisible(false);
+//						}
 
 						skinComposer.arrangeSkin(scale, currentState.getCurrentRotationId());
 
-						if (skinInfo.isPhoneShape()) { /* TODO: */
-							shell.setVisible(true);
-							shell.setLocation(location);
-							SkinUtil.setTopMost(shell, isOnTop);
-						}
+//						if (skinInfo.isPhoneShape()) { /* TODO: */
+//							shell.setVisible(true);
+//							shell.setLocation(location);
+//							SkinUtil.setTopMost(shell, isOnTop);
+//						}
 					}
 				});
 

@@ -182,7 +182,9 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		}
 		logger.info("lcd bounds : " + lcdBounds);
 
-		lcdCanvas.setBounds(lcdBounds);
+		currentState.setDisplayBounds(lcdBounds);
+		currentState.setUpdateDisplayBounds(true);
+		//lcdCanvas.setBounds(lcdBounds);
 
 		/* arrange the skin image */
 		Image tempImage = null;
@@ -263,6 +265,11 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		shellPaintListener = new PaintListener() {
 			@Override
 			public void paintControl(final PaintEvent e) {
+				if (currentState.isUpdateDisplayBounds() == true) {
+					currentState.setUpdateDisplayBounds(false);
+					lcdCanvas.setBounds(currentState.getDisplayBounds());
+				}
+
 				/* general shell does not support native transparency,
 				 * so draw image with GC. */
 				if (currentState.getCurrentImage() != null) {
