@@ -183,7 +183,7 @@ bool yagl_gles_framebuffer_get_attachment_parameter(struct yagl_gles_framebuffer
         break;
     case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
     case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
-        fb->driver->GetFramebufferAttachmentParameteriv(fb->global_name,
+        fb->driver->GetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER,
                                                         attachment,
                                                         pname,
                                                         value);
