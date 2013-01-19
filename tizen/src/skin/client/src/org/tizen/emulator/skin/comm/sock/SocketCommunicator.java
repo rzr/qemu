@@ -41,9 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,18 +83,19 @@ public class SocketCommunicator implements ICommunicator {
 	}
 
 	public static final int HEART_BEAT_INTERVAL = 1; //second
-	public static final int HEART_BEAT_EXPIRE = 10;
-	
+	public static final int HEART_BEAT_EXPIRE = 15;
+
 	public final static int SCREENSHOT_WAIT_INTERVAL = 3; // milli-seconds
 	public final static int SCREENSHOT_WAIT_LIMIT = 3000; // milli-seconds
 	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; // milli-seconds
 	public final static int DETAIL_INFO_WAIT_LIMIT = 3000; // milli-seconds
-	
+
 	public final static int MAX_SEND_QUEUE_SIZE = 100000;
-	
+
 	private static int reqId;
-	
-	private Logger logger = SkinLogger.getSkinLogger( SocketCommunicator.class ).getLogger();
+
+	private Logger logger =
+			SkinLogger.getSkinLogger(SocketCommunicator.class).getLogger();
 
 	private EmulatorConfig config;
 	private int uId;
@@ -112,7 +110,8 @@ public class SocketCommunicator implements ICommunicator {
 	private boolean isTerminated;
 	private boolean isSensorDaemonStarted;
 	private boolean isRamdump;
-	private ScheduledExecutorService heartbeatExecutor;
+	private TimerTask heartbeatExecutor;
+	private Timer heartbeatTimer;
 
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
@@ -140,7 +139,8 @@ public class SocketCommunicator implements ICommunicator {
 		this.progressDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
 
 		this.heartbeatCount = new AtomicInteger(0);
-		this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
+		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
+		this.heartbeatTimer = new Timer();
 
 		try {
 
@@ -239,25 +239,22 @@ public class SocketCommunicator implements ICommunicator {
 
 		boolean ignoreHeartbeat = config.getArgBoolean( ArgsConstants.TEST_HEART_BEAT_IGNORE );
 
-		if ( ignoreHeartbeat ) {
-			logger.info( "Ignore Skin heartbeat." );
+		if (ignoreHeartbeat) {
+			logger.info("Ignore Skin heartbeat.");
 		} else {
-
-			heartbeatExecutor.scheduleAtFixedRate( new Runnable() {
-
+			heartbeatExecutor = new TimerTask() {
 				@Override
 				public void run() {
-
 					increaseHeartbeatCount();
 
-					if ( isHeartbeatExpired() ) {
+					if (isHeartbeatExpired()) {
+						logger.info("heartbeat was expired");
 						terminate();
 					}
-
 				}
+			};
 
-			}, 0, HEART_BEAT_INTERVAL, TimeUnit.SECONDS );
-
+			heartbeatTimer.schedule(heartbeatExecutor, 1, HEART_BEAT_INTERVAL * 1000);
 		}
 
 		while ( true ) {
@@ -554,12 +551,12 @@ public class SocketCommunicator implements ICommunicator {
 
 	public byte[] getReceivedData( DataTranfer dataTranfer ) {
 
-		if( null == dataTranfer ) {
+		if (null == dataTranfer) {
 			return null;
 		}
-		
-		synchronized ( dataTranfer ) {
-			
+
+		synchronized (dataTranfer) {
+
 			int count = 0;
 			byte[] receivedData = null;
 			long sleep = dataTranfer.sleep;
@@ -612,8 +609,9 @@ public class SocketCommunicator implements ICommunicator {
 
 	private void increaseHeartbeatCount() {
 		int count = heartbeatCount.incrementAndGet();
-		if ( logger.isLoggable( Level.FINE ) ) {
-			logger.fine( "HB count : " + count );
+
+		if (logger.isLoggable(Level.FINE)) {
+			logger.info("HB count : " + count);
 		}
 	}
 
@@ -622,30 +620,33 @@ public class SocketCommunicator implements ICommunicator {
 	}
 
 	private void resetHeartbeatCount() {
-		heartbeatCount.set( 0 );
+		heartbeatCount.set(0);
+
+		if (logger.isLoggable(Level.FINE)) {
+			logger.info("HB count reset");
+		}
 	}
 
 	@Override
 	public void terminate() {
-		
 		isTerminated = true;
-		
-		if ( null != heartbeatExecutor ) {
-			heartbeatExecutor.shutdownNow();
-		}
-		
-		if( null != sendQueue ) {
-			synchronized ( sendQueue ) {
+		logger.info("terminated");
+
+		if (null != sendQueue) {
+			synchronized (sendQueue) {
 				sendQueue.notifyAll();
 			}
 		}
-		
-		IOUtil.closeSocket( socket );
-		
-		synchronized ( this ) {
+
+		if (null != heartbeatTimer) {
+			heartbeatTimer.cancel();
+		}
+
+		IOUtil.closeSocket(socket);
+
+		synchronized (this) {
 			skin.shutdown();
 		}
-		
 	}
 
 	public void resetSkin( EmulatorSkin skin ) {
@@ -661,7 +662,7 @@ class SkinSendData {
 	private SendCommand command;
 	private ISendData data;
 
-	public SkinSendData( SendCommand command, ISendData data ) {
+	public SkinSendData(SendCommand command, ISendData data) {
 		this.command = command;
 		this.data = data;
 	}

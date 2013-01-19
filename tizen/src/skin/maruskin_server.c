@@ -150,8 +150,6 @@ static int is_started_heartbeat = 0;
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
 static pthread_t thread_id_heartbeat;
-static pthread_mutex_t mutex_heartbeat = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t cond_heartbeat = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
 
 static int skin_argc = 0;
@@ -1141,30 +1139,28 @@ static void* do_heart_beat(void* args)
     int need_restart_skin_client = 0;
     int shutdown = 0;
 
-    int booting_handicap_cnt = 0;
-
-    struct timeval current;
-    struct timespec ts_heartbeat;
+    unsigned int booting_handicap_cnt = 0;
+    unsigned int hb_interval = HEART_BEAT_INTERVAL * 1000;
 
     while ( 1 ) {
-        gettimeofday( &current, NULL );
-
         if (booting_handicap_cnt < 5) {
             booting_handicap_cnt++;
-            ts_heartbeat.tv_sec = current.tv_sec +
-                (HEART_BEAT_INTERVAL * 10);
+
+#ifdef CONFIG_WIN32
+            Sleep(hb_interval * 10); /* 10sec */
+#else
+            usleep(hb_interval * 1000 * 10);
+#endif
         } else {
-            ts_heartbeat.tv_sec = current.tv_sec + HEART_BEAT_INTERVAL;
+#ifdef CONFIG_WIN32
+            Sleep(hb_interval); /* 1sec */
+#else
+            usleep(hb_interval * 1000);
+#endif
         }
 
-        ts_heartbeat.tv_nsec = current.tv_usec * 1000;
-
-        pthread_mutex_lock( &mutex_heartbeat );
-        pthread_cond_timedwait( &cond_heartbeat, &mutex_heartbeat, &ts_heartbeat );
-        pthread_mutex_unlock( &mutex_heartbeat );
-
-        if ( stop_heartbeat ) {
-            INFO( "[HB] stop heart beat.\n" );
+        if (stop_heartbeat) {
+            INFO("[HB] stop heart beat.\n");
             break;
         }
 
@@ -1176,7 +1172,7 @@ static void* do_heart_beat(void* args)
                 send_fail_count = 0;
             }
         } else {
-            // fail to get socket in accepting or client is not yet accepted.
+            /* fail to get socket in accepting or client is not yet accepted */
             send_fail_count++;
             TRACE( "[HB] client socket is NULL yet.\n" );
         }
@@ -1296,10 +1292,5 @@ static int start_heart_beat(void)
 
 static void stop_heart_beat(void)
 {
-    pthread_mutex_lock(&mutex_heartbeat);
-
     stop_heartbeat = 1;
-    pthread_cond_signal(&cond_heartbeat);
-
-    pthread_mutex_unlock(&mutex_heartbeat);
 }
