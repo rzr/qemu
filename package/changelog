@@ -1,3 +1,6 @@
+* 1.4.67
+- substitute schedule function for scheduleAtFixedRate
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-01-19
 * 1.4.65
 - Fix emulator crash when using EffectsApp.
 == Sangjin Kim <sangjin3.kim@samsung.com> 2013-01-17
