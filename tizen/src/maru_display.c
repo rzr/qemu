@@ -29,16 +29,10 @@
 
 
 #include "maru_common.h"
-
-#ifdef CONFIG_DARWIN
-//shared memory
-#define USE_SHM
-#endif
-
 #include "maru_display.h"
 #include "debug_ch.h"
 
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
 #include "maru_sdl.h"
 #else
 #include "maru_shm.h"
@@ -57,7 +51,7 @@ void maru_display_init(DisplayState *ds)
     DisplayChangeListener *dcl;
 
     dcl = g_malloc0(sizeof(DisplayChangeListener));
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
     /* sdl library */
     dcl->dpy_update = qemu_ds_sdl_update;
     dcl->dpy_resize = qemu_ds_sdl_resize;
@@ -80,7 +74,7 @@ void maru_display_fini(void)
 {
     INFO("fini qemu display\n");
     g_free(maru_screenshot);
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
     maruskin_sdl_quit();
 #else
     //TODO:
@@ -89,7 +83,7 @@ void maru_display_fini(void)
 
 void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
 {
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
     maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
 #else
     maruskin_shm_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
@@ -97,7 +91,7 @@ void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, b
 }
 
 DisplaySurface* get_qemu_display_surface(void) {
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
     return maruskin_sdl_get_display();
 #else
     //TODO:

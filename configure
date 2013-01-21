@@ -227,6 +227,7 @@ gl="yes"
 
 # for TIZEN-maru 
 maru="no"
+shm="no"
 #
 
 # parse CC options first
@@ -901,6 +902,8 @@ for opt do
 # for TIZEN-maru
   --enable-maru) maru="yes"
   ;;
+  --enable-shm) shm="yes"
+  ;;
 #
   *) echo "ERROR: unknown option $opt"; show_help="yes"
   ;;
@@ -1211,7 +1214,7 @@ echo ""
 # for TIZEN-maru
 echo "TIZEN-maru options:"
 echo "  --enable-maru            enable maru board"
-echo ""
+echo "  --enable-shm             enable shared memory for framebuffer"
 echo "NOTE: The object files are built at the place where configure is launched"
 exit 1
 fi
@@ -3224,6 +3227,7 @@ echo "coroutine backend $coroutine_backend"
 
 # for TIZEN-maru
 echo "TIZEN-maru support $maru"
+echo "TIZEN-maru shared framebuffer support $shm"
 #
 
 if test "$sdl_too_old" = "yes"; then
@@ -3599,6 +3603,9 @@ esac
 # for TIZEN-maru
 if test "$maru" = "yes" ; then
   echo "CONFIG_MARU=y" >> $config_host_mak
+fi
+if test "$shm" = "yes" ; then
+  echo "CONFIG_USE_SHM=y" >> $config_host_mak
 fi
 if test "$gl" = "yes" ; then
   echo "CONFIG_GL_BACKEND=y" >> $config_host_mak

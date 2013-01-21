@@ -30,11 +30,6 @@
 
 #include "maru_common.h"
 
-#ifdef CONFIG_DARWIN
-//shared memory
-#define USE_SHM
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -50,7 +45,7 @@
 #include "emulator.h"
 #include "maru_err_table.h"
 
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
 #include "maru_sdl.h"
 #endif
 
@@ -852,7 +847,7 @@ static void* run_skin_server(void* args)
                         do_rotation_event( rotation_type );
                     }
 
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
                     maruskin_sdl_resize(); // send sdl event
 #endif
                     break;

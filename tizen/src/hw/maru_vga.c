@@ -31,11 +31,6 @@
 
 #include "maru_common.h"
 
-#ifdef CONFIG_DARWIN
-//shared memory
-#define USE_SHM
-#endif
-
 #include "hw.h"
 #include "vga.h"
 #include "console.h"
@@ -55,7 +50,7 @@
 #include "debug_ch.h"
 #include <pthread.h>
 
-#ifdef USE_SHM
+#ifdef CONFIG_USE_SHM
 #include "emulator.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -63,7 +58,7 @@
 #include "maru_err_table.h"
 #endif
 
-#ifdef USE_SHM
+#ifdef CONFIG_USE_SHM
 void *shared_memory = (void*)0;
 #endif
 
@@ -1505,7 +1500,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     }
     pthread_mutex_unlock(&mutex_screenshot);
 
-#ifdef USE_SHM
+#ifdef CONFIG_USE_SHM
     memcpy(shared_memory, s->ds->surface->data,
         s->ds->surface->linesize * s->ds->surface->height);
 #endif
@@ -1873,7 +1868,7 @@ void maru_vga_common_init(VGACommonState *s)
     }
     vga_dirty_log_start(s);
 
-#ifdef USE_SHM
+#ifdef CONFIG_USE_SHM
     int mykey;
     void *temp;
     int shmid;

@@ -30,11 +30,6 @@
 
 #include "maru_common.h"
 
-#ifdef CONFIG_DARWIN
-//shared memory
-#define USE_SHM
-#endif
-
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -100,7 +95,7 @@ void do_mouse_event(int button_type, int event_type,
     TRACE("mouse_event button:%d, type:%d, host:(%d, %d), x:%d, y:%d, z:%d\n",
         button_type, event_type, origin_x, origin_y, x, y, z);
 
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
     /* multi-touch */
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
         maru_finger_processing_1(event_type, origin_x, origin_y, x, y);
@@ -166,7 +161,7 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     TRACE("key_event event_type:%d, keycode:%d, state_mask:%d, key_location:%d\n",
         event_type, keycode, state_mask, key_location);
 
-#ifndef USE_SHM
+#ifndef CONFIG_USE_SHM
     //is multi-touch mode ?
     if (get_emul_max_touch_point() > 1) {
         int state_mask_temp = state_mask & ~JAVA_KEYCODE_NO_FOCUS;

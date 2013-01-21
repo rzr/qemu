@@ -241,6 +241,7 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
  --enable-mixemu \
  --audio-card-list=ac97 \
  --enable-maru \
+ --enable-shm \
  --enable-hax \
  --disable-vnc \
  --disable-cocoa \
