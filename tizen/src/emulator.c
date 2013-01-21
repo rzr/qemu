@@ -553,13 +553,23 @@ static void system_info(void)
             sys_info.freeram * (unsigned long long)sys_info.mem_unit / DIV);
     }
 
+    /* get linux distribution version and name */
+    INFO("* Linux distribution and version infomation :\n");
+    char lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c >> ";
+    strcat(lsb_release_cmd, logpath);
+    if(system(lsb_release_cmd) < 0) {
+        INFO("system function command '%s' \
+            returns error !", lsb_release_cmd);
+    }
+
     /* pci device description */
     INFO("* Pci devices :\n");
-    char lscmd[MAXLEN] = "lspci >> ";
-    strcat(lscmd, logpath);
-    int i = system(lscmd);
-    INFO("system function command : %s, \
-        system function returned value : %d\n", lscmd, i);
+    char lspci_cmd[MAXLEN] = "lspci >> ";
+    strcat(lspci_cmd, logpath);
+    if(system(lspci_cmd) < 0) {
+        INFO("system function command '%s' \
+            returns error !", lspci_cmd);
+    }
 
 #elif defined(CONFIG_DARWIN)
     /* TODO: */
