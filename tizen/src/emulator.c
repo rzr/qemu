@@ -63,6 +63,8 @@
 #endif
 
 #if defined(CONFIG_DARWIN)
+#include <sys/param.h>
+#include <sys/sysctl.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -504,6 +506,8 @@ static void system_info(void)
 #endif
 
 #if defined(CONFIG_WIN32)
+    INFO("* Windows\n");
+
     /* Retrieves information about the current os */
     OSVERSIONINFO osvi;
     ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
@@ -531,6 +535,8 @@ static void system_info(void)
             memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
 
 #elif defined(CONFIG_LINUX)
+    INFO("* Linux\n");
+
     /* depends on building */
     INFO("* QEMU build machine linux kernel version : (%d, %d, %d)\n",
             LINUX_VERSION_CODE >> 16,
@@ -553,8 +559,8 @@ static void system_info(void)
             sys_info.freeram * (unsigned long long)sys_info.mem_unit / DIV);
     }
 
-    /* get linux distribution version and name */
-    INFO("* Linux distribution and version infomation :\n");
+    /* get linux distribution */
+    INFO("* Linux distribution infomation :\n");
     char lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c >> ";
     strcat(lsb_release_cmd, logpath);
     if(system(lsb_release_cmd) < 0) {
@@ -563,7 +569,7 @@ static void system_info(void)
     }
 
     /* pci device description */
-    INFO("* Pci devices :\n");
+    INFO("* PCI devices :\n");
     char lspci_cmd[MAXLEN] = "lspci >> ";
     strcat(lspci_cmd, logpath);
     if(system(lspci_cmd) < 0) {
@@ -572,7 +578,55 @@ static void system_info(void)
     }
 
 #elif defined(CONFIG_DARWIN)
-    /* TODO: */
+    INFO("* Mac\n");
+
+    /* uname */
+    INFO("* Host machine uname :\n");
+    char uname_cmd[MAXLEN] = "uname -a >> ";
+    strcat(uname_cmd, logpath);
+    if(system(uname_cmd) < 0) {
+        INFO("system function command '%s' \
+            returns error !", uname_cmd);
+    }
+
+    /* hw information */
+    int mib[2];
+    size_t len;
+    char *sys_info;
+    int sys_num = 0;
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_MODEL;
+    sysctl(mib, 2, NULL, &len, NULL, 0);
+    sys_info = malloc(len * sizeof(char));
+    if (sysctl(mib, 2, sys_info, &len, NULL, 0) >= 0) {
+        INFO("* Machine model : %s\n", sys_info);
+    }
+    free(sys_info);
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_MACHINE;
+    sysctl(mib, 2, NULL, &len, NULL, 0);
+    sys_info = malloc(len * sizeof(char));
+    if (sysctl(mib, 2, sys_info, &len, NULL, 0) >= 0) {
+        INFO("* Machine class : %s\n", sys_info);
+    }
+    free(sys_info);
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_NCPU;
+    len = sizeof(sys_num);
+    if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
+        INFO("* Number of processors : %d\n", sys_num);
+    }
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_PHYSMEM;
+    len = sizeof(sys_num);
+    if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
+        INFO("* Total memory : %llu bytes\n", sys_num);
+    }
+
 #endif
 
     INFO("\n");
