@@ -308,7 +308,7 @@ void notify_booting_progress(int progress_value)
     char progress_data[PROGRESS_DATA_LENGTH] = { 0, };
     int len = 1;
 
-    INFO("notify_booting_progress\n");
+    TRACE("notify_booting_progress\n");
 
     /* percentage */
     if (progress_value < 0) {
@@ -324,7 +324,7 @@ void notify_booting_progress(int progress_value)
     }
 
     snprintf(progress_data, len + 1, "%d", progress_value);
-    INFO("booting...%s\%\n", progress_data);
+    TRACE("booting...%s\%\n", progress_data);
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,
@@ -1057,9 +1057,9 @@ static int send_n(int sockfd,
     char* databuf = (char*)g_malloc0(buf_size);
 
     if (big_data != 0) {
-        INFO("big_data send_n start. length:%d\n", length);
+        TRACE("big_data send_n start. length:%d\n", length);
     } else {
-        INFO("send_n start. length:%d\n", length);
+        TRACE("send_n start. length:%d\n", length);
     }
 
     while (1) {
@@ -1088,7 +1088,7 @@ static int send_n(int sockfd,
 
     g_free(databuf);
 
-    INFO("send_n finished.\n");
+    TRACE("send_n finished.\n");
 
     return total_cnt;
 }
@@ -1125,7 +1125,7 @@ static int send_skin_data(int sockfd,
     }
 
     int send_cnt = send_n(sockfd, data, length, big_data);
-    INFO("send_n result:%d\n", send_cnt);
+    TRACE("send_n result:%d\n", send_cnt);
 
     return send_cnt;
 }
