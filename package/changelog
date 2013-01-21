@@ -1,3 +1,6 @@
+* 1.4.68
+- package version up
+== Munkyu Im <munkyu.im@samsung.com> 2013-01-21
 * 1.4.67
 - substitute schedule function for scheduleAtFixedRate
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-01-19
