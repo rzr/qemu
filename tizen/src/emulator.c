@@ -669,12 +669,13 @@ static void prepare_basic_features(void)
 {
     char http_proxy[MIDBUF] ={0}, https_proxy[MIDBUF] = {0,},
         ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},
-        dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
+        dns[MIDBUF] = {0};
 
     tizen_base_port = get_sdb_base_port();
 
     gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-    gethostDNS(dns1, dns2);   
+    // using "DNS" provided by default QEMU
+    g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
     check_shdmem();
     socket_init();
@@ -686,7 +687,7 @@ static void prepare_basic_features(void)
             " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
             " dns1=%s", tizen_base_port,
             http_proxy, https_proxy, ftp_proxy, socks_proxy,
-            dns1, dns2);
+            dns);
 
     g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
 
