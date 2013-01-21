@@ -31,8 +31,8 @@
  */
 
 /**
- * @file emulator.h
- * @brief - header of file these are config structures and defines in emulator
+ * @file maru_common.h
+ * @brief - header file that covers maru common features
  */
 
 #ifndef __MARU_COMMON_H__
@@ -42,6 +42,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <glib.h>
 
 // W/A for preserve larger continuous heap for RAM.
 extern void *preallocated_ptr;

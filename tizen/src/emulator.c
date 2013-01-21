@@ -49,8 +49,8 @@
 #include "qemu_socket.h"
 #include "build_info.h"
 #include "maru_err_table.h"
-#include <glib.h>
 #include <glib/gstdio.h>
+#include "qemu-config.h"
 
 #if defined(CONFIG_WIN32)
 #include <windows.h>
@@ -72,6 +72,8 @@
 #endif
 
 #include "mloop_event.h"
+#include "hw/maru_camera_common.h"
+#include "hw/gloffscreen_test.h"
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
@@ -84,12 +86,21 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define LOGFILE             "emulator.log"
 #define LCD_WIDTH_PREFIX "width="
 #define LCD_HEIGHT_PREFIX "height="
+
 #define MIDBUF  128
 
 int tizen_base_port;
 char tizen_target_path[MAXLEN];
 char tizen_target_img_path[MAXLEN];
 char logpath[MAXLEN];
+
+int enable_gl = 0;
+int enable_yagl = 0;
+
+int is_webcam_enabled;
+
+#define LEN_MARU_KERNEL_CMDLINE 512
+gchar maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
 
 static int _skin_argc;
 static char **_skin_argv;
@@ -260,7 +271,7 @@ void make_shdmem(void)
         ERR("shmat failed\n");
         return;
     }
-    sprintf(shared_memory, "%d", get_sdb_base_port() + 2);
+    sprintf(shared_memory, "%d", tizen_base_port + 2);
     INFO("shared memory key: %d, value: %s\n", SHMKEY, (char *)shared_memory);
     shmdt(shared_memory);
 #endif
@@ -402,8 +413,10 @@ void set_image_and_log_path(char *qemu_argv)
     } else {
         strcpy(tizen_target_path, g_path_get_dirname(path));
     }
+
     strcpy(tizen_target_img_path, path);
     free(path);
+
     strcpy(logpath, tizen_target_path);
     strcat(logpath, LOGS_SUFFIX);
 #ifdef CONFIG_WIN32
@@ -559,7 +572,7 @@ static void system_info(void)
             sys_info.freeram * (unsigned long long)sys_info.mem_unit / DIV);
     }
 
-    /* get linux distribution */
+    /* get linux distribution information */
     INFO("* Linux distribution infomation :\n");
     char lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c >> ";
     strcat(lsb_release_cmd, logpath);
@@ -630,6 +643,166 @@ static void system_info(void)
 #endif
 
     INFO("\n");
+}
+
+typedef struct {
+    const char *device_name;
+    int found;
+} device_opt_finding_t;
+
+static int find_device_opt (QemuOpts *opts, void *opaque)
+{
+    device_opt_finding_t *devp = (device_opt_finding_t *) opaque;
+    if (devp->found == 1) {
+        return 0;
+    }
+
+    const char *str = qemu_opt_get (opts, "driver");
+    if (strcmp (str, devp->device_name) == 0) {
+        devp->found = 1;
+    }
+    return 0;
+}
+
+#define DEFAULT_QEMU_DNS_IP "10.0.2.3"
+static void prepare_basic_features(void)
+{
+    char http_proxy[MIDBUF] ={0}, https_proxy[MIDBUF] = {0,},
+        ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},
+        dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
+
+    tizen_base_port = get_sdb_base_port();
+
+    gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+    gethostDNS(dns1, dns2);   
+
+    check_shdmem();
+    socket_init();
+    make_shdmem();
+
+    sdb_setup();
+
+    gchar * const tmp_str = g_strdup_printf(" sdb_port=%d,"
+            " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
+            " dns1=%s", tizen_base_port,
+            http_proxy, https_proxy, ftp_proxy, socks_proxy,
+            dns1, dns2);
+
+    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+
+    g_free(tmp_str);
+}
+
+#define VIRTIOGL_DEV_NAME "virtio-gl-pci"
+#ifdef CONFIG_GL_BACKEND
+static void prepare_opengl_acceleration(void)
+{
+    int capability_check_gl = 0;
+
+    if (enable_gl && enable_yagl) {
+        ERR("Error: only one openGL passthrough device can be used at one time!\n");
+        exit(1);
+    }
+
+
+    if (enable_gl || enable_yagl) {
+        capability_check_gl = gl_acceleration_capability_check();
+
+        if (capability_check_gl != 0) {
+            enable_gl = enable_yagl = 0;
+            WARN("Warn: GL acceleration was disabled due to the fail of GL check!\n");
+        }
+    }
+    if (enable_gl) {
+        device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
+        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+        if (devp.found == 0) {
+            if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, 1)) {
+                exit(1);
+            }
+        }
+    }
+
+    gchar * const tmp_str = g_strdup_printf(" gles=%d yagl=%d", enable_gl, enable_yagl);
+
+    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+
+    g_free(tmp_str);
+}
+#endif
+
+#define MARUCAM_DEV_NAME "maru_camera_pci"
+#define WEBCAM_INFO_IGNORE 0x00
+#define WEBCAM_INFO_WRITE 0x04
+static void prepare_host_webcam(void)
+{
+    is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
+
+    if (!is_webcam_enabled) {
+        INFO("[Webcam] <WARNING> Webcam support was disabled "
+                         "due to the fail of webcam capability check!\n");
+    }
+    else {
+        device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
+        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+        if (devp.found == 0) {
+            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, 1)) {
+                INFO("Failed to initialize the marucam device.\n");
+                exit(1);
+            }
+        }
+        INFO("[Webcam] Webcam support was enabled.\n");
+    }
+
+    gchar * const tmp_str = g_strdup_printf(" enable_cam=%d", is_webcam_enabled);
+
+    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+
+    g_free(tmp_str);
+}
+
+const gchar * prepare_maru_devices(const gchar *kernel_cmdline)
+{
+    INFO("Prepare maru specified kernel command line\n");
+
+    g_strlcpy(maru_kernel_cmdline, kernel_cmdline, LEN_MARU_KERNEL_CMDLINE);
+
+    // Prepare basic features
+    prepare_basic_features();
+
+    // Prepare GL acceleration
+#ifdef CONFIG_GL_BACKEND
+    prepare_opengl_acceleration();
+#endif
+
+    // Prepare host webcam
+    prepare_host_webcam();
+
+    INFO("kernel command : %s\n", maru_kernel_cmdline);
+
+    return maru_kernel_cmdline;
+}
+
+int maru_device_check(QemuOpts *opts)
+{
+#if defined(CONFIG_GL_BACKEND)
+    // virtio-gl pci device
+    if (!enable_gl) {
+        // ignore virtio-gl-pci device, even if users set it in option.
+        const char *driver = qemu_opt_get(opts, "driver");
+        if (driver && (strcmp (driver, VIRTIOGL_DEV_NAME) == 0)) {
+            return -1;
+        }
+    }
+#endif
+    if (!is_webcam_enabled) {
+        const char *driver = qemu_opt_get(opts, "driver");
+        if (driver && (strcmp (driver, MARUCAM_DEV_NAME) == 0)) {
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 void prepare_maru(void)

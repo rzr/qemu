@@ -199,8 +199,10 @@ int qemu_main(int argc, char **argv, char **envp);
 #define MAX_VIRTIO_CONSOLES 1
 
 #ifdef CONFIG_MARU
-#define MARUCAM_DEV_NAME "maru_camera_pci"
 int skin_disabled = 0;
+//virtio-gl
+extern int enable_gl;
+extern int enable_yagl;
 #endif
 
 static const char *data_dir;
@@ -260,21 +262,6 @@ int boot_menu;
 uint8_t *boot_splash_filedata;
 int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
-
-//virtio-gl
-#define VIRTIOGL_DEV_NAME "virtio-gl-pci"
-#if defined(CONFIG_MARU)
-extern int gl_acceleration_capability_check(void);
-int enable_gl = 0;
-int enable_yagl = 0;
-int capability_check_gl = 0;
-#endif
-#if defined(CONFIG_MARU)
-#define WEBCAM_INFO_IGNORE 0x00
-#define WEBCAM_INFO_WRITE 0x04
-extern int marucam_device_check(int log_flag);
-int is_webcam_enabled = 0;
-#endif
 
 
 typedef struct FWBootEntry FWBootEntry;
@@ -1976,24 +1963,9 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
-#ifdef CONFIG_GL_BACKEND
-#if defined(CONFIG_MARU)
-	// virtio-gl pci device
-	if (!enable_gl) {
-		// ignore virtio-gl-pci device, even if users set it in option.
-		const char *driver = qemu_opt_get(opts, "driver");
-		if (driver && (strcmp (driver, VIRTIOGL_DEV_NAME) == 0)) {
-			return 0;
-		}
-	}
-#endif
-#endif
-#if defined(CONFIG_MARU)
-    if (!is_webcam_enabled) {
-        const char *driver = qemu_opt_get(opts, "driver");
-        if (driver && (strcmp (driver, MARUCAM_DEV_NAME) == 0)) {
-            return 0;
-        }
+#ifdef CONFIG_MARU
+    if(maru_device_check(opts) == -1) {
+        return 0;
     }
 #endif
 	
@@ -2434,34 +2406,13 @@ static void free_and_trace(gpointer mem)
     free(mem);
 }
 
-// virtio-gl pci device lookup
-typedef struct {
-    const char *device_name;
-    int found;
-} device_opt_finding_t;
-
-static int find_device_opt (QemuOpts *opts, void *opaque)
-{
-    device_opt_finding_t *devp = (device_opt_finding_t *) opaque;
-    if (devp->found == 1) {
-        return 0;
-    }
-
-    const char *str = qemu_opt_get (opts, "driver");
-    if (strcmp (str, devp->device_name) == 0) {
-        devp->found = 1;
-    }
-    return 0;
-}
-
-int use_qemu_display = 0; //0:use tizen qemu sdl, 1:use original qemu sdl
-
 int qemu_init_main_loop(void)
 {
     return main_loop_init();
 }
 
 #ifdef CONFIG_MARU
+int use_qemu_display = 0; //0:use tizen qemu sdl, 1:use original qemu sdl
 // W/A for preserve larger continuous heap for RAM.
 void *preallocated_ptr = 0;
 #endif
@@ -2473,7 +2424,6 @@ int main(int argc, char **argv, char **envp)
     const char *icount_option = NULL;
     const char *initrd_filename;
     const char *kernel_filename, *kernel_cmdline;
-    char* tmp_cmdline = NULL;
     char boot_devices[33] = "cad"; /* default to HD->floppy->CD-ROM */
     DisplayState *ds;
     DisplayChangeListener *dcl;
@@ -2502,13 +2452,6 @@ int main(int argc, char **argv, char **envp)
     };
     const char *trace_events = NULL;
     const char *trace_file = NULL;
-
-#ifdef CONFIG_MARU
-    #define MIDBUF  128
-    char http_proxy[MIDBUF] ={0},https_proxy[MIDBUF] = {0,},
-	ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},	
-     dns1[MIDBUF] = {0}, dns2[MIDBUF] = {0};
-#endif
 
     atexit(qemu_run_exit_notifiers);
     error_set_progname(argv[0]);
@@ -2742,32 +2685,7 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_set(qemu_find_opts("machine"), 0, "initrd", optarg);
                 break;
             case QEMU_OPTION_append:
-#ifdef CONFIG_MARU
-                gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-                gethostDNS(dns1, dns2);
-                
-                check_shdmem();
-                socket_init();
-                tizen_base_port = get_sdb_base_port();
-                make_shdmem();
-
-                sdb_setup();
-
-                tmp_cmdline = g_strdup_printf("%s sdb_port=%d,"
-                	" http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s" 
-	                " dns1=%s dns2=%s", optarg, tizen_base_port, 
-        	        http_proxy, https_proxy, ftp_proxy, socks_proxy,
-                	dns1, dns2);
-                qemu_opts_set(qemu_find_opts("machine"), 0, "append",
-                        tmp_cmdline);
-#if 0
-                fprintf(stdout, "kernel command: =========================================\n");
-				fprintf(stdout, "%s\n", tmp_cmdline);
-                fprintf(stdout, "kernel command: =========================================\n");
-#endif
-#else
                 qemu_opts_set(qemu_find_opts("machine"), 0, "append", optarg);
-#endif
                 break;
             case QEMU_OPTION_dtb:
                 qemu_opts_set(qemu_find_opts("machine"), 0, "dtb", optarg);
@@ -3517,41 +3435,6 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
-#if defined(CONFIG_MARU)
-    if (enable_gl && enable_yagl) {
-        fprintf (stderr, "Error: only one openGL passthrough device can be used at one time!\n");
-        exit(1);
-    }
-
-    if (enable_gl || enable_yagl) {
-        capability_check_gl = gl_acceleration_capability_check();
-
-        if (capability_check_gl != 0) {
-            enable_gl = enable_yagl = 0;
-            fprintf (stderr, "Warn: GL acceleration was disabled due to the fail of GL check!\n");
-        }
-        
-	// To check host gl driver capability and notify to guest.
-	gchar *tmp = tmp_cmdline;
-	tmp_cmdline = g_strdup_printf("%s gles=%d yagl=%d", tmp, enable_gl, enable_yagl);
-	qemu_opts_set(qemu_find_opts("machine"), 0, "append", tmp_cmdline);
-	fprintf(stdout, "kernel command: =========================================\n");
-	fprintf(stdout, "%s\n", tmp_cmdline);
-	fprintf(stdout, "kernel command: =========================================\n");
-	g_free(tmp);
-
-        if (enable_gl) {
-            device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
-            qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
-            if (devp.found == 0) {
-                if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, 1)) {
-                    exit(1);
-                }
-            }
-        }
-    }
-#endif
-
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the
      * other one may be encountered later on the command line, changing the
@@ -3703,30 +3586,6 @@ int main(int argc, char **argv, char **envp)
         kernel_cmdline = "";
     }
 
-#if defined(CONFIG_MARU)
-    is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
-    if (!is_webcam_enabled) {
-        fprintf (stderr, "[Webcam] <WARNING> Webcam support was disabled "
-                         "due to the fail of webcam capability check!\n");
-    }
-
-    gchar const *tmp_cam_kcmd = kernel_cmdline;
-    kernel_cmdline = g_strdup_printf("%s enable_cam=%d", tmp_cam_kcmd, is_webcam_enabled);
-//    g_free(tmp_cam_kcmd);
-
-    if (is_webcam_enabled) {
-        device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
-        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
-        if (devp.found == 0) {
-            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, 1)) {
-                fprintf(stderr, "Failed to initialize the marucam device.\n");
-                exit(1);
-            }
-        }
-        fprintf(stdout, "[Webcam] Webcam support was enabled.\n");
-    }
-#endif
-
     linux_boot = (kernel_filename != NULL);
 
     if (!linux_boot && *kernel_cmdline != '\0') {
@@ -3874,11 +3733,13 @@ int main(int argc, char **argv, char **envp)
 
     qdev_machine_init();
 
+#ifdef CONFIG_MARU
+    // return variable points different address from input variable.
+    kernel_cmdline = prepare_maru_devices(kernel_cmdline);
+#endif
+
     machine->init(ram_size, boot_devices,
                   kernel_filename, kernel_cmdline, initrd_filename, cpu_model);
-#ifdef CONFIG_MARU
-    g_free((gchar *)tmp_cmdline);
-#endif
 
     cpu_synchronize_all_post_init();
 

@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "gloffscreen.h"
+#include "gloffscreen_test.h"
 
 #include <stdlib.h>
 #include <stdio.h>

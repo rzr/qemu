@@ -31,11 +31,13 @@
 
 /**
  * @file emulator.h
- * @brief - header of file these are config struecture and defines in emulator
+ * @brief - header file for emulator.c
  */
 
 #ifndef __EMULATOR_H__
 #define __EMULATOR_H__
+
+#include "maru_common.h"
 
 #define MAXLEN  512
 #define MAXPACKETLEN 60
@@ -50,4 +52,8 @@ void extract_skin_info(int skin_argc, char **skin_argv);
 void prepare_maru(void);
 void check_shdmem(void);
 void make_shdmem(void);
+
+const gchar * prepare_maru_devices(const gchar * kernel_cmdline);
+// FIXME: Necessary declaration of functions but produces error difficult to solve now
+//int maru_device_check(QemuOpts *opts);
 #endif /* __EMULATOR_H__ */
