@@ -43,11 +43,12 @@
 #include "mloop_event.h"
 #include "console.h"
 #include "emul_state.h"
-#include "tizen/src/debug_ch.h"
+#include "debug_ch.h"
 #include "monitor.h"
 #include "pci.h"
 #include "sysemu.h"
 
+#include "emulator.h"
 #include "guest_debug.h"
 #include "skin/maruskin_server.h"
 #include "hw/maru_virtio_touchscreen.h"

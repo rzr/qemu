@@ -88,6 +88,10 @@ enum JAVA_KEYCODE {
 #define KEY_MAX 0777
 
 #define KEY_F0 0410
+
+#ifdef KEY_F
+#undef KEY_F
+#endif
 #define KEY_F(n) (KEY_F0 + (n))
 
 #define KEY_DOWN 0402

@@ -36,6 +36,7 @@
 #include "maruskin_operation.h"
 #include "hw/maru_brightness.h"
 #include "maru_display.h"
+#include "emulator.h"
 #include "debug_ch.h"
 #include "sdb.h"
 #include "nbd.h"
@@ -420,7 +421,7 @@ DetailInfo* get_detail_info(int qemu_argc, char** qemu_argv)
 
     /* collect log path information */
 #define LOGPATH_TEXT "log_path="
-    char* log_path = get_log_path();
+    const char* log_path = get_log_path();
     int log_path_len = strlen(LOGPATH_TEXT) + strlen(log_path) + delimiter_len;
     total_len += (log_path_len + 1);
 
