@@ -1,4 +1,4 @@
-/*
+/* 
  * Emulator
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
@@ -29,29 +29,17 @@
  *
  */
 
-/**
- * @file emulator.h
- * @brief - header file for emulator.c
- */
-
-#ifndef __EMULATOR_H__
-#define __EMULATOR_H__
+#ifndef __OSUTIL_H__
+#define __OSUTIL_H__
 
 #include "maru_common.h"
 
-#define MAXLEN  512
-#define MAXPACKETLEN 60
-#define SHMKEY	26099
+void check_vm_lock_os(void);
+void make_vm_lock_os(void);
 
-extern gchar bin_path[];
-extern gchar log_path[];
+void set_bin_path_os(gchar *);
 
-void exit_emulator(void);
-char *get_bin_path(void);
-void prepare_maru(void);
+void print_system_info_os(void);
 
-const gchar * get_log_path(void);
-const gchar * prepare_maru_devices(const gchar * kernel_cmdline);
-// FIXME: Necessary declaration of functions but produces error difficult to solve now
-//int maru_device_check(QemuOpts *opts);
-#endif /* __EMULATOR_H__ */
+#endif // __OS_UTIL_H__
+

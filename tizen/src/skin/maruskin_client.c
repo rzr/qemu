@@ -60,6 +60,7 @@ MULTI_DEBUG_CHANNEL(qemu, skin_client);
 #define OPT_MAX_TOUCHPOINT "max.touchpoint"
 
 extern char tizen_target_path[];
+extern int tizen_base_port;
 
 static int skin_argc;
 static char** skin_argv;

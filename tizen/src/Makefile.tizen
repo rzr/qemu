@@ -71,6 +71,17 @@ endif #CONFIG_GL
 # maru loader
 obj-y += emulator.o emul_state.o option.o maru_err_table.o
 
+# osutil
+ifdef CONFIG_LINUX
+obj-y += osutil-linux.o
+endif
+ifdef CONFIG_WIN32
+obj-y += osutil-win32.o
+endif
+ifdef CONFIG_DARWIN
+obj-y += osutil-darwin.o
+endif
+
 # maru display
 obj-y += maru_display.o maru_shm.o
 ifndef CONFIG_DARWIN

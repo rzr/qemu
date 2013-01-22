@@ -38,11 +38,20 @@
 #ifndef __MARU_COMMON_H__
 #define __MARU_COMMON_H__
 
-#include "config-host.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
+
 #include <glib.h>
+#include <glib/gstdio.h>
+#include <glib/gprintf.h>
+
+#include "config-host.h"
+
+#ifndef PATH_MAX
+#define PATH_MAX    256
+#endif
 
 // W/A for preserve larger continuous heap for RAM.
 extern void *preallocated_ptr;

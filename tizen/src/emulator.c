@@ -32,48 +32,38 @@
 
 
 #include "maru_common.h"
-#include <stdlib.h>
-#ifdef CONFIG_SDL
-#include <SDL.h>
-#endif
 #include "emulator.h"
+#include "osutil.h"
 #include "guest_debug.h"
 #include "sdb.h"
 #include "string.h"
 #include "skin/maruskin_server.h"
 #include "skin/maruskin_client.h"
 #include "guest_server.h"
-#include "debug_ch.h"
 #include "option.h"
 #include "emul_state.h"
 #include "qemu_socket.h"
 #include "build_info.h"
 #include "maru_err_table.h"
-#include <glib/gstdio.h>
+#include "maru_display.h"
 #include "qemu-config.h"
+#include "mloop_event.h"
+#include "hw/maru_camera_common.h"
+#include "hw/gloffscreen_test.h"
+#include "debug_ch.h"
+
+#include <stdlib.h>
+#ifdef CONFIG_SDL
+#include <SDL.h>
+#endif
 
 #if defined(CONFIG_WIN32)
 #include <windows.h>
 #elif defined(CONFIG_LINUX)
-#include <linux/version.h>
-#include <sys/utsname.h>
-#include <sys/sysinfo.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#endif
-
-#if defined(CONFIG_DARWIN)
-#include <sys/param.h>
+#elif defined(CONFIG_DARWIN)
 #include <sys/sysctl.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include "tizen/src/ns_event.h"
+#include "ns_event.h"
 #endif
-
-#include "mloop_event.h"
-#include "hw/maru_camera_common.h"
-#include "hw/gloffscreen_test.h"
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
@@ -89,10 +79,12 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 
 #define MIDBUF  128
 
+gchar bin_path[PATH_MAX] = { 0, };
+gchar log_path[PATH_MAX] = { 0, };
+
 int tizen_base_port;
-char tizen_target_path[MAXLEN];
-char tizen_target_img_path[MAXLEN];
-char logpath[MAXLEN];
+char tizen_target_path[PATH_MAX];
+char tizen_target_img_path[PATH_MAX];
 
 int enable_gl = 0;
 int enable_yagl = 0;
@@ -111,11 +103,9 @@ static char **_qemu_argv;
 int thread_running = 1; /* Check if we need exit main */
 #endif
 
-void maru_display_fini(void);
-
-char *get_logpath(void)
+const gchar *get_log_path(void)
 {
-    return logpath;
+    return log_path;
 }
 
 void exit_emulator(void)
@@ -125,157 +115,6 @@ void exit_emulator(void)
     shutdown_guest_server();
 
     maru_display_fini();
-}
-
-void check_shdmem(void)
-{
-#if defined(CONFIG_LINUX)
-    int shm_id;
-    void *shm_addr;
-    u_int port;
-    int val;
-    struct shmid_ds shm_info;
-
-    for (port = 26100; port < 26200; port += 10) {
-        shm_id = shmget((key_t)port, 0, 0);
-        if (shm_id != -1) {
-            shm_addr = shmat(shm_id, (void *)0, 0);
-            if ((void *)-1 == shm_addr) {
-                ERR("error occured at shmat()\n");
-                break;
-            }
-
-            val = shmctl(shm_id, IPC_STAT, &shm_info);
-            if (val != -1) {
-                INFO("count of process that use shared memory : %d\n",
-                    shm_info.shm_nattch);
-                if ((shm_info.shm_nattch > 0) &&
-                    strcmp(tizen_target_img_path, (char *)shm_addr) == 0) {
-                    if (check_port_bind_listen(port + 1) > 0) {
-                        shmdt(shm_addr);
-                        continue;
-                    }
-                    shmdt(shm_addr);
-                    maru_register_exit_msg(MARU_EXIT_UNKNOWN,
-                                        "Can not execute this VM.\n"
-                                        "The same name is running now.");
-                    exit(0);
-                } else {
-                    shmdt(shm_addr);
-                }
-            }
-        }
-    }
-
-#elif defined(CONFIG_WIN32)
-    u_int port;
-    char *base_port = NULL;
-    char *pBuf;
-    HANDLE hMapFile;
-    for (port = 26100; port < 26200; port += 10) {
-        base_port = g_strdup_printf("%d", port);
-        hMapFile = OpenFileMapping(FILE_MAP_READ, TRUE, base_port);
-        if (hMapFile == NULL) {
-            INFO("port %s is not used.\n", base_port);
-            continue;
-        } else {
-             pBuf = (char *)MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 50);
-            if (pBuf == NULL) {
-                ERR("Could not map view of file (%d).\n", GetLastError());
-                CloseHandle(hMapFile);
-            }
-
-            if (strcmp(pBuf, tizen_target_img_path) == 0) {
-                maru_register_exit_msg(MARU_EXIT_UNKNOWN,
-                    "Can not execute this VM.\n"
-                    "The same name is running now.");
-                UnmapViewOfFile(pBuf);
-                CloseHandle(hMapFile);
-                free(base_port);
-                exit(0);
-            } else {
-                UnmapViewOfFile(pBuf);
-            }
-        }
-
-        CloseHandle(hMapFile);
-        free(base_port);
-    }
-#elif defined(CONFIG_DARWIN)
-    /* TODO: */
-#endif
-}
-
-void make_shdmem(void)
-{
-#if defined(CONFIG_LINUX)
-    int shmid;
-    char *shared_memory;
-
-    shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
-    if (shmid == -1) {
-        ERR("shmget failed\n");
-        return;
-    }
-
-    shared_memory = shmat(shmid, (char *)0x00, 0);
-    if (shared_memory == (void *)-1) {
-        ERR("shmat failed\n");
-        return;
-    }
-    sprintf(shared_memory, "%s", tizen_target_img_path);
-    INFO("shared memory key: %d value: %s\n",
-        tizen_base_port, (char *)shared_memory);
-#elif defined(CONFIG_WIN32)
-    HANDLE hMapFile;
-    char *pBuf;
-    char *port_in_use;
-    char *shared_memory;
-
-    shared_memory = g_strdup_printf("%s", tizen_target_img_path);
-    port_in_use =  g_strdup_printf("%d", tizen_base_port);
-    hMapFile = CreateFileMapping(
-                 INVALID_HANDLE_VALUE, /* use paging file */
-                 NULL,                 /* default security */
-                 PAGE_READWRITE,       /* read/write access */
-                 0,                /* maximum object size (high-order DWORD) */
-                 50,               /* maximum object size (low-order DWORD) */
-                 port_in_use);         /* name of mapping object */
-    if (hMapFile == NULL) {
-        ERR("Could not create file mapping object (%d).\n", GetLastError());
-        return;
-    }
-    pBuf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 50);
-
-    if (pBuf == NULL) {
-        ERR("Could not map view of file (%d).\n", GetLastError());
-        CloseHandle(hMapFile);
-        return;
-    }
-
-    CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
-    free(port_in_use);
-    free(shared_memory);
-#elif defined(CONFIG_DARWIN)
-    /* TODO: */
-    int shmid;
-    char *shared_memory;
-
-    shmid = shmget((key_t)SHMKEY, MAXLEN, 0666|IPC_CREAT);
-    if (shmid == -1) {
-        ERR("shmget failed\n");
-        return;
-    }
-    shared_memory = shmat(shmid, (char *)0x00, 0);
-    if (shared_memory == (void *)-1) {
-        ERR("shmat failed\n");
-        return;
-    }
-    sprintf(shared_memory, "%d", tizen_base_port + 2);
-    INFO("shared memory key: %d, value: %s\n", SHMKEY, (char *)shared_memory);
-    shmdt(shared_memory);
-#endif
-    return;
 }
 
 static void construct_main_window(int skin_argc, char *skin_argv[],
@@ -329,77 +168,34 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
     }
 }
 
-static char *set_bin_dir(char *exec_argv)
+static void set_bin_path(gchar * exec_argv)
 {
-#ifndef CONFIG_DARWIN
-    char link_path[1024] = { 0, };
-#endif
-    char *file_name = NULL;
-
-#if defined(CONFIG_WIN32)
-    if (!GetModuleFileName(NULL, link_path, 1024)) {
-        return NULL;
-    }
-
-    file_name = strrchr(link_path, '\\');
-    strncpy(bin_dir, link_path, strlen(link_path) - strlen(file_name));
-
-    strcat(bin_dir, "\\");
-
-#elif defined(CONFIG_LINUX)
-    ssize_t len = readlink("/proc/self/exe", link_path, sizeof(link_path) - 1);
-
-    if (len < 0 || len > sizeof(link_path)) {
-        perror("get_bin_dir error : ");
-        return NULL;
-    }
-
-    link_path[len] = '\0';
-
-    file_name = strrchr(link_path, '/');
-    strncpy(bin_dir, link_path, strlen(link_path) - strlen(file_name));
-
-    strcat(bin_dir, "/");
-
-#else
-    if (!exec_argv) {
-        return NULL;
-    }
-
-    char *data = strdup(exec_argv);
-    if (!data) {
-        fprintf(stderr, "Fail to strdup for paring a binary directory.\n");
-        return NULL;
-    }
-
-    file_name = strrchr(data, '/');
-    if (!file_name) {
-        free(data);
-        return NULL;
-    }
-
-    strncpy(bin_dir, data, strlen(data) - strlen(file_name));
-
-    strcat(bin_dir, "/");
-    free(data);
-#endif
-
-    return bin_dir;
+    set_bin_path_os(exec_argv);
 }
 
-char *get_bin_path(void)
+gchar * get_bin_path(void)
 {
-    return bin_dir;
+    return bin_path;
 }
 
-void set_image_and_log_path(char *qemu_argv)
+static void check_vm_lock(void)
+{
+    check_vm_lock_os();
+}
+
+static void make_vm_lock(void)
+{
+    make_vm_lock_os();
+}
+
+static void set_image_and_log_path(char *qemu_argv)
 {
     int i, j = 0;
     int name_len = 0;
     int prefix_len = 0;
     int suffix_len = 0;
     int max = 0;
-    char *path = malloc(MAXLEN);
+    char *path = malloc(PATH_MAX);
     name_len = strlen(qemu_argv);
     prefix_len = strlen(IMAGE_PATH_PREFIX);
     suffix_len = strlen(IMAGE_PATH_SUFFIX);
@@ -417,31 +213,30 @@ void set_image_and_log_path(char *qemu_argv)
     strcpy(tizen_target_img_path, path);
     free(path);
 
-    strcpy(logpath, tizen_target_path);
-    strcat(logpath, LOGS_SUFFIX);
+    strcpy(log_path, tizen_target_path);
+    strcat(log_path, LOGS_SUFFIX);
 #ifdef CONFIG_WIN32
-    if (access(g_win32_locale_filename_from_utf8(logpath), R_OK) != 0) {
-        g_mkdir(g_win32_locale_filename_from_utf8(logpath), 0755);
+    if (access(g_win32_locale_filename_from_utf8(log_path), R_OK) != 0) {
+        g_mkdir(g_win32_locale_filename_from_utf8(log_path), 0755);
     }
 #else
-    if (access(logpath, R_OK) != 0) {
-        g_mkdir(logpath, 0755);
+    if (access(log_path, R_OK) != 0) {
+        g_mkdir(log_path, 0755);
     }
 #endif
-    strcat(logpath, LOGFILE);
-    set_log_path(logpath);
+    strcat(log_path, LOGFILE);
 }
 
-void redir_output(void)
+static void redir_output(void)
 {
     FILE *fp;
 
-    fp = freopen(logpath, "a+", stdout);
+    fp = freopen(log_path, "a+", stdout);
     if (fp == NULL) {
         fprintf(stderr, "log file open error\n");
     }
 
-    fp = freopen(logpath, "a+", stderr);
+    fp = freopen(log_path, "a+", stderr);
     if (fp == NULL) {
         fprintf(stderr, "log file open error\n");
     }
@@ -449,7 +244,7 @@ void redir_output(void)
     setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 }
 
-void extract_qemu_info(int qemu_argc, char **qemu_argv)
+static void extract_qemu_info(int qemu_argc, char **qemu_argv)
 {
     int i = 0;
 
@@ -462,7 +257,7 @@ void extract_qemu_info(int qemu_argc, char **qemu_argv)
 
 }
 
-void extract_skin_info(int skin_argc, char **skin_argv)
+static void extract_skin_info(int skin_argc, char **skin_argv)
 {
     int i = 0;
     int w = 0, h = 0;
@@ -488,7 +283,7 @@ void extract_skin_info(int skin_argc, char **skin_argv)
 }
 
 
-static void system_info(void)
+static void print_system_info(void)
 {
 #define DIV 1024
 
@@ -518,85 +313,13 @@ static void system_info(void)
         SDL_Linked_Version()->patch);
 #endif
 
-#if defined(CONFIG_WIN32)
-    INFO("* Windows\n");
-
-    /* Retrieves information about the current os */
-    OSVERSIONINFO osvi;
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-
-    if (GetVersionEx(&osvi)) {
-        INFO("* MajorVersion : %d, MinorVersion : %d, BuildNumber : %d, \
-            PlatformId : %d, CSDVersion : %s\n", osvi.dwMajorVersion,
-            osvi.dwMinorVersion, osvi.dwBuildNumber,
-            osvi.dwPlatformId, osvi.szCSDVersion);
-    }
-
-    /* Retrieves information about the current system */
-    SYSTEM_INFO sysi;
-    ZeroMemory(&sysi, sizeof(SYSTEM_INFO));
-
-    GetSystemInfo(&sysi);
-    INFO("* Processor type : %d, Number of processors : %d\n",
-            sysi.dwProcessorType, sysi.dwNumberOfProcessors);
-
-    MEMORYSTATUSEX memInfo;
-    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-    GlobalMemoryStatusEx(&memInfo);
-    INFO("* Total Ram : %llu kB, Free: %lld kB\n",
-            memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
-
-#elif defined(CONFIG_LINUX)
-    INFO("* Linux\n");
-
-    /* depends on building */
-    INFO("* QEMU build machine linux kernel version : (%d, %d, %d)\n",
-            LINUX_VERSION_CODE >> 16,
-            (LINUX_VERSION_CODE >> 8) & 0xff,
-            LINUX_VERSION_CODE & 0xff);
-
-     /* depends on launching */
-    struct utsname host_uname_buf;
-    if (uname(&host_uname_buf) == 0) {
-        INFO("* Host machine uname : %s %s %s %s %s\n",
-            host_uname_buf.sysname, host_uname_buf.nodename,
-            host_uname_buf.release, host_uname_buf.version,
-            host_uname_buf.machine);
-    }
-
-    struct sysinfo sys_info;
-    if (sysinfo(&sys_info) == 0) {
-        INFO("* Total Ram : %llu kB, Free: %llu kB\n",
-            sys_info.totalram * (unsigned long long)sys_info.mem_unit / DIV,
-            sys_info.freeram * (unsigned long long)sys_info.mem_unit / DIV);
-    }
-
-    /* get linux distribution information */
-    INFO("* Linux distribution infomation :\n");
-    char lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c >> ";
-    strcat(lsb_release_cmd, logpath);
-    if(system(lsb_release_cmd) < 0) {
-        INFO("system function command '%s' \
-            returns error !", lsb_release_cmd);
-    }
-
-    /* pci device description */
-    INFO("* PCI devices :\n");
-    char lspci_cmd[MAXLEN] = "lspci >> ";
-    strcat(lspci_cmd, logpath);
-    if(system(lspci_cmd) < 0) {
-        INFO("system function command '%s' \
-            returns error !", lspci_cmd);
-    }
-
-#elif defined(CONFIG_DARWIN)
+#if defined(CONFIG_DARWIN)
     INFO("* Mac\n");
 
     /* uname */
     INFO("* Host machine uname :\n");
     char uname_cmd[MAXLEN] = "uname -a >> ";
-    strcat(uname_cmd, logpath);
+    strcat(uname_cmd, log_path);
     if(system(uname_cmd) < 0) {
         INFO("system function command '%s' \
             returns error !", uname_cmd);
@@ -639,7 +362,8 @@ static void system_info(void)
     if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
         INFO("* Total memory : %llu bytes\n", sys_num);
     }
-
+#else
+    print_system_info_os();
 #endif
 
     INFO("\n");
@@ -677,9 +401,9 @@ static void prepare_basic_features(void)
     // using "DNS" provided by default QEMU
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
-    check_shdmem();
+    check_vm_lock();
     socket_init();
-    make_shdmem();
+    make_vm_lock();
 
     sdb_setup();
 
@@ -826,7 +550,7 @@ static int emulator_main(int argc, char *argv[])
 {
     parse_options(argc, argv, &_skin_argc,
                 &_skin_argv, &_qemu_argc, &_qemu_argv);
-    set_bin_dir(_qemu_argv[0]);
+    set_bin_path(_qemu_argv[0]);
     extract_qemu_info(_qemu_argc, _qemu_argv);
 
     INFO("Emulator start !!!\n");
@@ -834,7 +558,7 @@ static int emulator_main(int argc, char *argv[])
 
     extract_skin_info(_skin_argc, _skin_argv);
 
-    system_info();
+    print_system_info();
 
     INFO("Prepare running...\n");
     /* Redirect stdout and stderr after debug_ch is initialized. */

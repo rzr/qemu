@@ -71,6 +71,8 @@ static int pressing_origin_x = -1, pressing_origin_y = -1;
 extern pthread_mutex_t mutex_screenshot;
 extern pthread_cond_t cond_screenshot;
 
+extern int tizen_base_port;
+
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
 

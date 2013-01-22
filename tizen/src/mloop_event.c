@@ -385,7 +385,7 @@ static void mloop_evhandle_ramdump(struct mloop_evpack* pack)
     char dump_fullpath[MAX_PATH];
     char dump_filename[MAX_PATH];
 
-    char* dump_path = g_path_get_dirname(get_logpath());
+    char* dump_path = g_path_get_dirname(get_log_path());
 
     sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-",
         rm->ram_addr + size, "_RAM.dump");
