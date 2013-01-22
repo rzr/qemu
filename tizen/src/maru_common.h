@@ -49,7 +49,9 @@
 
 #include "config-host.h"
 
-#ifndef PATH_MAX
+#if defined(MAX_PATH)
+#define PATH_MAX    MAX_PATH
+#elif !defined(PATH_MAX)
 #define PATH_MAX    256
 #endif
 

@@ -57,7 +57,7 @@
 #include <SDL.h>
 #endif
 
-#ifndef CONFIG_WIN32
+#ifdef CONFIG_DARWIN
 #include "ns_event.h"
 #endif
 
@@ -162,6 +162,11 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
             argv[skin_args_index] = argv[0];
         }
     }
+}
+
+static void get_host_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+{
+    get_host_proxy_os(http_proxy, https_proxy, ftp_proxy, socks_proxy);
 }
 
 static void set_bin_path(gchar * exec_argv)
@@ -339,7 +344,12 @@ static void prepare_basic_features(void)
 
     tizen_base_port = get_sdb_base_port();
 
+    // TODO: Codes about Getting host proxy migration is processing...
+#if defined(CONFIG_LINUX)
+    get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+#else
     gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+#endif
     // using "DNS" provided by default QEMU
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 

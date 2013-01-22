@@ -41,6 +41,16 @@
 #include "maru_err_table.h"
 #include "sdb.h"
 
+#if 0
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#endif
+
 #include <string.h>
 #include <unistd.h>
 #include <sys/shm.h>
@@ -178,4 +188,173 @@ void print_system_info_os(void)
         INFO("system function command '%s' \
             returns error !", lspci_cmd);
     }
+}
+
+static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+{
+    char type[MAXLEN];
+    char proxy[MAXLEN];
+    char line[MAXLEN];
+    FILE *fp_pacfile;
+    char *p = NULL;
+    FILE *output;
+    char buf[MAXLEN];
+
+    output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        INFO("pac address: %s\n", buf);
+        download_url(buf);
+    }
+    pclose(output);
+    fp_pacfile = fopen(pac_tempfile, "r");
+    if(fp_pacfile != NULL) {
+        while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
+            if( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
+                INFO("line found %s", line);
+                sscanf(line, "%*[^\"]\"%s %s", type, proxy);
+            }
+        }
+
+        if(g_str_has_prefix(type, DIRECT)) {
+            INFO("auto proxy is set to direct mode\n");
+            fclose(fp_pacfile);
+        }
+        else if(g_str_has_prefix(type, PROXY)) {
+            INFO("auto proxy is set to proxy mode\n");
+            INFO("type: %s, proxy: %s\n", type, proxy);
+            p = strtok(proxy, "\";");
+            if(p != NULL) {
+                INFO("auto proxy to set: %s\n",p);
+                strcpy(http_proxy, p);
+                strcpy(https_proxy, p);
+                strcpy(ftp_proxy, p);
+                strcpy(socks_proxy, p);
+            }
+            fclose(fp_pacfile);
+        }
+        else
+        {
+            ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
+            fclose(fp_pacfile);
+        }
+    } 
+    else {
+        ERR("fail to get pacfile fp\n");
+	return -1;
+    }
+
+    remove(pac_tempfile);
+    return 0;
+}
+
+static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+{
+    char buf[MAXLEN] = {0,};
+    char buf_port[MAXPORTLEN] = {0,};
+    char buf_proxy[MAXLEN] = {0,};
+    char *buf_proxy_bak;
+    char *proxy;
+    FILE *output;
+    int MAXPROXYLEN = MAXLEN + MAXPORTLEN;
+
+    output = popen("gconftool-2 --get /system/http_proxy/host", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
+    pclose(output);
+    
+    output = popen("gconftool-2 --get /system/http_proxy/port", "r");
+    if(fscanf(output, "%s", buf_port) <= 0) {
+        //for abnormal case: if can't find the key of http port, get from environment value.
+        buf_proxy_bak = getenv("http_proxy");
+        INFO("http_proxy from env: %s\n", buf_proxy_bak);
+        if(buf_proxy_bak != NULL) {
+            proxy = malloc(MAXLEN);
+            remove_string(buf_proxy_bak, proxy, HTTP_PREFIX);
+            strncpy(http_proxy, proxy, strlen(proxy)-1);
+            INFO("final http_proxy value: %s\n", http_proxy);
+            free(proxy);
+        }
+        else {
+            INFO("http_proxy is not set on env.\n");
+            pclose(output);
+            return;
+        }
+
+    }
+    else {
+        snprintf(http_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf_port);
+        memset(buf_proxy, 0, MAXLEN);
+        INFO("http_proxy: %s\n", http_proxy);
+    }
+    pclose(output);
+
+    memset(buf, 0, MAXLEN);
+
+    output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
+    pclose(output);
+
+    output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(https_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    }
+    pclose(output);
+    memset(buf, 0, MAXLEN);
+    memset(buf_proxy, 0, MAXLEN);
+    INFO("https_proxy : %s\n", https_proxy);
+
+    output = popen("gconftool-2 --get /system/proxy/ftp_host", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
+    pclose(output);
+
+    output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(ftp_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    }
+    pclose(output);
+    memset(buf, 0, MAXLEN);
+    memset(buf_proxy, 0, MAXLEN);
+    INFO("ftp_proxy : %s\n", ftp_proxy);
+
+    output = popen("gconftool-2 --get /system/proxy/socks_host", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(buf_proxy, MAXLEN, "%s", buf);
+    }
+    pclose(output);
+
+    output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        snprintf(socks_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
+    }
+    pclose(output);
+    INFO("socks_proxy : %s\n", socks_proxy);
+}
+
+
+void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
+{
+    char buf[MAXLEN];
+    FILE *output;
+
+    output = popen("gconftool-2 --get /system/proxy/mode", "r");
+    if(fscanf(output, "%s", buf) > 0) {
+        //priority : auto > manual > none       
+        if (strcmp(buf, "auto") == 0) {
+            INFO("AUTO PROXY MODE\n");
+            get_auto_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+        }
+        else if (strcmp(buf, "manual") == 0) {
+            INFO("MANUAL PROXY MODE\n");
+            get_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+        }
+        else if (strcmp(buf, "none") == 0) {
+            INFO("DIRECT PROXY MODE\n");
+        }
+    }
+    pclose(output);
 }
