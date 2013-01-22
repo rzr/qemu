@@ -38,6 +38,8 @@
 #define __EMULATOR_H__
 
 #include "maru_common.h"
+#include "qlist.h"
+#include "qemu-option.h"
 
 #define MAXLEN  512
 #define MAXPACKETLEN 60
@@ -52,6 +54,5 @@ void prepare_maru(void);
 
 const gchar * get_log_path(void);
 const gchar * prepare_maru_devices(const gchar * kernel_cmdline);
-// FIXME: Necessary declaration of functions but produces error difficult to solve now
-//int maru_device_check(QemuOpts *opts);
+int maru_device_check(QemuOpts *opts);
 #endif /* __EMULATOR_H__ */
