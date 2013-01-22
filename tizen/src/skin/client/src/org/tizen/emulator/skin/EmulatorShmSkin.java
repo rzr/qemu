@@ -71,13 +71,11 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private int[] array;
 		private ImageData imageData;
 		private Image framebuffer;
-		private EmulatorFingers finger;
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
 
 		public PollFBThread(EmulatorFingers finger, int lcdWidth, int lcdHeight) {
-			this.finger = finger;
 			this.display = Display.getDefault();
 			this.lcdWidth = lcdWidth;
 			this.lcdHeight = lcdHeight;
@@ -101,14 +99,15 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			while (!stopRequest) {
 				synchronized (this) {
 					try {
-						this.wait(30); //30ms
-					} catch (InterruptedException ex) {
+						this.wait(30); /* 30ms */
+					} catch (InterruptedException e) {
+						e.printStackTrace();
 						break;
 					}
 				}
 
-				int result = getPixels(array); //from shared memory
-				//logger.info("getPixels navtive function returned " + result);
+				int result = getPixels(array); /* from shared memory */
+				//logger.info("getPixels native function returned " + result);
 
 				for (int i = 0; i < lcdHeight; i++) {
 					imageData.setPixels(0, i, lcdWidth, array, i * lcdWidth);
@@ -117,12 +116,17 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				Image temp = framebuffer;
 				framebuffer = new Image(display, imageData);
 				temp.dispose();
+
 				if(display.isDisposed() == false) {
-					display.asyncExec(runnable); //redraw canvas
+					/* redraw canvas */
+					display.asyncExec(runnable);
 				}
 			}
 
-			//logger.info("PollFBThread is stopped");
+			logger.info("PollFBThread is stopped");
+
+			int result = shmdt();
+			logger.info("shmdt native function returned " + result);
 		}
 
 		public void stopRequest() {
@@ -156,7 +160,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		int result = shmget(
 				currentState.getCurrentResolutionWidth() *
 				currentState.getCurrentResolutionHeight());
-		//logger.info("shmget navtive function returned " + result);
+		logger.info("shmget native function returned " + result);
 
 		/* update lcd thread */
 		pollThread = new PollFBThread(finger,
@@ -229,8 +233,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				finger.drawImage(e, currentState.getCurrentAngle());
 			}
 		});
-        
-        pollThread.start();
+
+		pollThread.start();
 
 		return 0;
 	}

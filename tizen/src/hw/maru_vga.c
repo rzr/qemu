@@ -59,8 +59,10 @@
 #endif
 
 #ifdef CONFIG_USE_SHM
-void *shared_memory = (void*)0;
+void *shared_memory = (void*) 0;
+int shmid;
 #endif
+
 
 MULTI_DEBUG_CHANNEL(qemu, maru_vga);
 
@@ -1488,13 +1490,15 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     /* for screenshot */
     pthread_mutex_lock(&mutex_screenshot);
     MaruScreenshot* maru_screenshot = get_maru_screenshot();
-    if ( !maru_screenshot ) {
-        ERR( "maru screenshot is NULL.\n" );
+
+    if (!maru_screenshot) {
+        ERR("maru screenshot is NULL.\n");
     } else {
         if (maru_screenshot->request_screenshot == 1) {
             memcpy(maru_screenshot->pixel_data, s->ds->surface->data, 
                 s->ds->surface->linesize * s->ds->surface->height);
             maru_screenshot->request_screenshot = 0;
+
             pthread_cond_signal(&cond_screenshot);
         }
     }
@@ -1871,18 +1875,17 @@ void maru_vga_common_init(VGACommonState *s)
 #ifdef CONFIG_USE_SHM
     int mykey;
     void *temp;
-    int shmid;
 
     shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
     if (shmid == -1) {
-        ERR( "shmget failed\n");
+        ERR("shmget failed\n");
         perror("maru_vga: ");
         exit(1);
     }
 
     temp = shmat(shmid, (char*)0x0, 0);
     if (temp == (void *)-1) {
-        ERR( "shmat failed\n");
+        ERR("shmat failed\n");
         perror("maru_vga: ");
         exit(1);
     }
@@ -1890,9 +1893,10 @@ void maru_vga_common_init(VGACommonState *s)
     mykey = atoi(temp);
     shmdt(temp);
     INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
+
     shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
-	    ERR( "shmget failed\n");
+        ERR("shmget failed\n");
         perror("maru_vga: ");
         maru_register_exit_msg(MARU_EXIT_UNKNOWN, (char*)"Cannot launch this VM.\n"
                         "Shared memory is not enough.");
@@ -1901,7 +1905,7 @@ void maru_vga_common_init(VGACommonState *s)
 
     shared_memory = shmat(shmid, (void*)0, 0);
     if (shared_memory == (void *)-1) {
-        ERR( "shmat failed\n");
+        ERR("shmat failed\n");
         perror("maru_vga: ");
         exit(1);
     }
@@ -1912,6 +1916,20 @@ void maru_vga_common_init(VGACommonState *s)
 
 }
 
+#ifdef CONFIG_USE_SHM
+void maru_vga_common_fini(void)
+{
+    if (shmdt(shared_memory) == -1) {
+        ERR("shmdt failed\n");
+        perror("maru_vga: ");
+    }
+
+    if (shmctl(shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("maru_vga: ");
+    }
+}
+#endif
 
 static const MemoryRegionPortio vga_portio_list[] = {
     { 0x04,  2, 1, .read = vga_ioport_read, .write = vga_ioport_write }, /* 3b4 */

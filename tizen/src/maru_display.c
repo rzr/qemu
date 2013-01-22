@@ -73,11 +73,13 @@ void maru_display_init(DisplayState *ds)
 void maru_display_fini(void)
 {
     INFO("fini qemu display\n");
+
     g_free(maru_screenshot);
+
 #ifndef CONFIG_USE_SHM
     maruskin_sdl_quit();
 #else
-    //TODO:
+    maru_vga_common_fini();
 #endif
 }
 
