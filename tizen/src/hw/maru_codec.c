@@ -417,6 +417,19 @@ static void qemu_init_pix_fmt_info(void)
     pix_fmt_info[PIX_FMT_RGB555].y_chroma_shift = 0;
 }
 
+static uint8_t *qemu_malloc_avpicture (int picture_size)
+{
+    uint8_t *ptr = NULL;
+
+    ptr = av_mallocz(picture_size);
+    if (!ptr) {
+        ERR("failed to allocate memory.\n");
+        return NULL;
+    }
+
+    return ptr;
+}
+
 static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
                                 int pix_fmt, int width,
                                 int height, bool encode)
@@ -444,6 +457,9 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         fsize = size + 2 * size2;
         TRACE("stride: %d, stride2: %d, size: %d, size2: %d, fsize: %d\n",
             stride, stride2, size, size2, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
         picture->data[0] = ptr;
         picture->data[1] = picture->data[0] + size;
         picture->data[2] = picture->data[1] + size2;
@@ -458,7 +474,11 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
         stride = ROUND_UP_4 (width * 3);
-        size = stride * height;
+        fsize = stride * height;
+        TRACE("stride: %d, size: %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -467,12 +487,14 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->linesize[1] = 0;
         picture->linesize[2] = 0;
         picture->linesize[3] = 0;
-        TRACE("stride: %d, size: %d\n", stride, size);
-        fsize = size;
         break;
     case PIX_FMT_RGB32:
         stride = width * 4;
-        size = stride * height;
+        fsize = stride * height;
+        TRACE("stride: %d, size: %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -481,12 +503,15 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->linesize[1] = 0;
         picture->linesize[2] = 0;
         picture->linesize[3] = 0;
-        fsize = size;
         break;
     case PIX_FMT_RGB555:
     case PIX_FMT_RGB565:
         stride = ROUND_UP_4 (width * 2);
-        size = stride * height;
+        fsize = stride * height;
+        TRACE("stride: %d, size: %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -495,7 +520,6 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->linesize[1] = 0;
         picture->linesize[2] = 0;
         picture->linesize[3] = 0;
-        fsize = size;
         break;
     default:
         picture->data[0] = NULL;
@@ -504,19 +528,7 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->data[3] = NULL;
         fsize = -1;
         ERR("pixel format: %d was wrong.\n", pix_fmt);
-    }
-
-    if (fsize > 0) {
-        if (!encode && !ptr) {
-            TRACE("allocate a buffer for a decoded picture.\n");
-            ptr = av_mallocz(fsize);
-            if (!ptr) {
-                ERR("failed to allocate memory.\n");
-                return -1;
-            }
-        } else {
-            TRACE("calculate encoded picture.\n");
-        }
+        break;
     }
 
     return fsize;
