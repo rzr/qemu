@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -34,10 +34,10 @@
 #include "emul_state.h"
 #include "debug_ch.h"
 
-#if defined( __linux__)
-#include <X11/XKBlib.h>
-#elif defined(_WIN32)
+#if defined(CONFIG_WIN32)
 #include <windows.h>
+#else
+#include <X11/XKBlib.h>
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, emul_state);
@@ -164,8 +164,13 @@ MultiTouchState *get_emul_multi_touch_state(void)
 int get_host_lock_key_state(int key)
 {
     /* support only capslock, numlock */
-
-#if defined(CONFIG_LINUX)
+#if defined(CONFIG_WIN32)
+    if (key == HOST_CAPSLOCK_KEY) {
+        return (GetKeyState(VK_CAPITAL) & 1) != 0;
+    } else if (key == HOST_NUMLOCK_KEY) {
+        return (GetKeyState(VK_NUMLOCK) & 1) != 0;
+    }
+#else
     unsigned state = 0;
     Display *display = XOpenDisplay((char*)0);
     if (display) {
@@ -178,23 +183,9 @@ int get_host_lock_key_state(int key)
     } else if (key == HOST_NUMLOCK_KEY) {
         return (state & 0x02) != 0;
     }
-
-    return -1;
-
-#elif defined(CONFIG_WIN32)
-    if (key == HOST_CAPSLOCK_KEY) {
-        return (GetKeyState(VK_CAPITAL) & 1) != 0;
-    } else if (key == HOST_NUMLOCK_KEY) {
-        return (GetKeyState(VK_NUMLOCK) & 1) != 0;
-    }
-
-    return -1;
-
-#elif defined(CONFIG_DARWIN)
-    //TODO:
 #endif
 
-    return 0;
+    return -1;
 }
 
 /* manage CapsLock key state for usb keyboard input */
