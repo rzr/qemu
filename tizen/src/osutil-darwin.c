@@ -42,6 +42,7 @@
 
 #include <string.h>
 #include <sys/shm.h>
+#include <sys/sysctl.h>
 
 MULTI_DEBUG_CHANNEL(qemu, osutil);
 
@@ -96,4 +97,57 @@ void set_bin_path_os(gchar * exec_argv)
 
     g_strlcat(bin_path, "/", PATH_MAX);
     free(data);
+}
+
+
+void print_system_info_os(void)
+{
+  INFO("* Mac\n");
+
+    /* uname */
+    INFO("* Host machine uname :\n");
+    char uname_cmd[MAXLEN] = "uname -a >> ";
+    strcat(uname_cmd, log_path);
+    if(system(uname_cmd) < 0) {
+        INFO("system function command '%s' \
+            returns error !", uname_cmd);
+    }
+
+    /* hw information */
+    int mib[2];
+    size_t len;
+    char *sys_info;
+    int sys_num = 0;
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_MODEL;
+    sysctl(mib, 2, NULL, &len, NULL, 0);
+    sys_info = malloc(len * sizeof(char));
+    if (sysctl(mib, 2, sys_info, &len, NULL, 0) >= 0) {
+        INFO("* Machine model : %s\n", sys_info);
+    }
+    free(sys_info);
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_MACHINE;
+    sysctl(mib, 2, NULL, &len, NULL, 0);
+    sys_info = malloc(len * sizeof(char));
+    if (sysctl(mib, 2, sys_info, &len, NULL, 0) >= 0) {
+        INFO("* Machine class : %s\n", sys_info);
+    }
+    free(sys_info);
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_NCPU;
+    len = sizeof(sys_num);
+    if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
+        INFO("* Number of processors : %d\n", sys_num);
+    }
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_PHYSMEM;
+    len = sizeof(sys_num);
+    if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
+        INFO("* Total memory : %llu bytes\n", sys_num);
+    }
 }
