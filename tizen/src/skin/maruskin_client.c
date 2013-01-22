@@ -49,7 +49,6 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_client);
 
-
 #define SKIN_SERVER_READY_TIME 3 // second
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
@@ -64,6 +63,10 @@ extern int tizen_base_port;
 
 static int skin_argc;
 static char** skin_argv;
+
+#ifdef CONFIG_WIN32
+static char* JAVA_EXEFILE_PATH = NULL;
+#endif
 
 static void* run_skin_client(void* arg)
 {
@@ -156,7 +159,7 @@ static void* run_skin_client(void* arg)
 #ifdef CONFIG_WIN32
     // for 64bit windows
     free(JAVA_EXEFILE_PATH);
-    JAVA_EXEFILE_PATH=0;
+    JAVA_EXEFILE_PATH = NULL;
 
     //WinExec( cmd, SW_SHOW );
     {

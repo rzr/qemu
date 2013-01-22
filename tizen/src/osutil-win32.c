@@ -143,8 +143,8 @@ void print_system_info_os(void)
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 
     if (GetVersionEx(&osvi)) {
-        INFO("* MajorVersion : %d, MinorVersion : %d, BuildNumber : %d, \
-            PlatformId : %d, CSDVersion : %s\n", osvi.dwMajorVersion,
+        INFO("* MajorVersion : %d, MinorVersion : %d, BuildNumber : %d, "
+            "PlatformId : %d, CSDVersion : %s\n", osvi.dwMajorVersion,
             osvi.dwMinorVersion, osvi.dwBuildNumber,
             osvi.dwPlatformId, osvi.szCSDVersion);
     }
@@ -161,5 +161,5 @@ void print_system_info_os(void)
     memInfo.dwLength = sizeof(MEMORYSTATUSEX);
     GlobalMemoryStatusEx(&memInfo);
     INFO("* Total Ram : %llu kB, Free: %lld kB\n",
-            memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
+            memInfo.ullTotalPhys / 1024, memInfo.ullAvailPhys / 1024);
 }

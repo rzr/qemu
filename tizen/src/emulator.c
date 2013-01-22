@@ -57,10 +57,7 @@
 #include <SDL.h>
 #endif
 
-#if defined(CONFIG_WIN32)
-#include <windows.h>
-#elif defined(CONFIG_LINUX)
-#elif defined(CONFIG_DARWIN)
+#ifndef CONFIG_WIN32
 #include "ns_event.h"
 #endif
 
