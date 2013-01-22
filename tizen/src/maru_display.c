@@ -36,7 +36,12 @@
 #include "maru_sdl.h"
 #else
 #include "maru_shm.h"
+
+#if defined(TARGET_I386)
+extern void maru_vga_common_fini(void);
 #endif
+#endif
+
 
 MULTI_DEBUG_CHANNEL(tizen, display);
 
@@ -79,7 +84,9 @@ void maru_display_fini(void)
 #ifndef CONFIG_USE_SHM
     maruskin_sdl_quit();
 #else
+#if defined(TARGET_I386)
     maru_vga_common_fini();
+#endif
 #endif
 }
 
