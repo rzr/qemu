@@ -3125,10 +3125,8 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
            case QEMU_OPTION_enable_gl:
-#ifdef CONFIG_GL_BACKEND
-#if defined(CONFIG_MARU)
+#if defined(CONFIG_MARU) && defined(CONFIG_GL_BACKEND)
                 enable_gl = 1;
-#endif
 #else
                 fprintf(stderr, "Virtio GL support is disabled, ignoring -enable-gl\n");
 #endif
