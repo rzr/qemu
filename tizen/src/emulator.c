@@ -345,7 +345,7 @@ static void prepare_basic_features(void)
     tizen_base_port = get_sdb_base_port();
 
     // TODO: Codes about Getting host proxy migration is processing...
-#if defined(CONFIG_LINUX)
+#if !defined(CONFIG_WIN32)
     get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
 #else
     gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
