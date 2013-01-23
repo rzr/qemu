@@ -124,7 +124,7 @@ public class ScreenShotDialog {
 		this.communicator = communicator;
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
-		scaleLevel = 100d;
+		this.scaleLevel = 100d;
 
 		shell = new Shell(Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX);
 		shell.setText("Screen Shot - " + SkinUtil.makeEmulatorName(config));
@@ -283,6 +283,10 @@ public class ScreenShotDialog {
 		return scaleLevel;
 	}
 
+	private void setScaleLevel(double level) {
+		scaleLevel = level;
+	}
+	
 	private void downScaleLevel() {
 		scaleLevel /= 2;
 		logger.info("down scaling level : " + scaleLevel);
@@ -516,13 +520,18 @@ public class ScreenShotDialog {
 			public void widgetSelected( SelectionEvent e ) {
 
 				refreshItem.setEnabled(false);
+				/* set as 100% view */
+				setScaleLevel(100d);
+				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
+						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
+				label.update();
 				shell.getDisplay().asyncExec(new Runnable() {
 					public void run() {
 						try {
 							Thread.sleep(TOOLITEM_COOLTIME);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
-						}
+						}						
 						refreshItem.setEnabled(true);
 					}
 				});
