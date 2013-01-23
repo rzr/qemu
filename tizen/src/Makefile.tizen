@@ -12,7 +12,7 @@ QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
 QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
-QEMU_CFLAGS += -L/usr/X11/lib
+QEMU_CFLAGS += -I/usr/X11/include -L/usr/X11/lib
 endif
 ifndef CONFIG_DEBUG_EXEC
 CFLAGS += -g -O2
