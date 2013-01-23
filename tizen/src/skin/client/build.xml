@@ -85,14 +85,19 @@
 			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
-			<arg line="-shared" />
 			<arg line="-c" />
+			<arg line="-fPIC" />
 			<arg line="share.c" />
 			<arg line="-o" />
-			<arg line="libshared.so" />
+			<arg line="shared.o" />
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}/linux" />
-			<arg line="-fPIC" />
+		</exec>
+		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="shared.o" />
+			<arg line="-shared" />
+			<arg line="-o" />
+			<arg line="libshared.so" />
 		</exec>
 		<delete>
 			<fileset dir="native_src" includes="**/*.h" />
