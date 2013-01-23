@@ -89,7 +89,7 @@ typedef struct _SVCodecState {
     SVCodecContext      codec_ctx[CODEC_CONTEXT_MAX];
     SVCodecParam        codec_param;
 	SVCodecThreadPool	codec_thread;
-	uint8_t				codec_offset[AUDIO_CODEC_MEM_OFFSET_MAX];
+	uint8_t				audio_codec_offset[AUDIO_CODEC_MEM_OFFSET_MAX];
 	uint8_t				device_mem_avail;
 	uint8_t				isrunning;
 } SVCodecState;
