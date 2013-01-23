@@ -60,16 +60,16 @@ public class SkinPatches {
 	private Image imageRB;
 
 	// TODO: configurable
-	private static final String filenameLT = "LT.png";
-	private static final String filenameT = "T.png";
-	private static final String filenameRT = "RT.png";
+	private static final String SKIN_PATCH_IMG_LT = "LT.png";
+	private static final String SKIN_PATCH_IMG_T = "T.png";
+	private static final String SKIN_PATCH_IMG_RT = "RT.png";
 
-	private static final String filenameL = "L.png";
-	private static final String filenameR = "R.png";
+	private static final String SKIN_PATCH_IMG_L = "L.png";
+	private static final String SKIN_PATCH_IMG_R = "R.png";
 
-	private static final String filenameLB = "LB.png";
-	private static final String filenameB = "B.png";
-	private static final String filenameRB = "RB.png";
+	private static final String SKIN_PATCH_IMG_LB = "LB.png";
+	private static final String SKIN_PATCH_IMG_B = "B.png";
+	private static final String SKIN_PATCH_IMG_RB = "RB.png";
 
 	public SkinPatches(String path) {
 		this.display = Display.getCurrent();
@@ -132,24 +132,25 @@ public class SkinPatches {
 		ClassLoader loader = this.getClass().getClassLoader();
 
 		imageLT = new Image(display,
-				loader.getResourceAsStream(path + filenameLT));
-		logger.info("left-top image is loaded from " + path + filenameLT);
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_LT));
+		logger.info("left-top image is loaded from " +
+				path + SKIN_PATCH_IMG_LT);
 		imageT = new Image(display,
-				loader.getResourceAsStream(path + filenameT));
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_T));
 		imageRT = new Image(display,
-				loader.getResourceAsStream(path + filenameRT));
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_RT));
 
 		imageL = new Image(display,
-				loader.getResourceAsStream(path + filenameL));
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_L));
 		imageR = new Image(display,
-				loader.getResourceAsStream(path + filenameR));
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_R));
 
 		imageLB = new Image(display,
-				loader.getResourceAsStream(path + filenameLB));
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_LB));
 		imageB = new Image(display,
-				loader.getResourceAsStream(path + filenameB));
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_B));
 		imageRB = new Image(display,
-				loader.getResourceAsStream(path + filenameRB));
+				loader.getResourceAsStream(path + SKIN_PATCH_IMG_RB));
 	}
 
 	public void freePatches() {

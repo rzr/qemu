@@ -62,6 +62,14 @@ import org.tizen.emulator.skin.util.SwtUtil;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private static final String PATCH_IMAGES_PATH = "images/emul-window/";
+	private static final String TOGGLE_BUTTON_NORMAL_IMG = "arrow_nml.png";
+	private static final String TOGGLE_BUTTON_HOVER_IMG = "arrow_hover.png";
+	private static final String TOGGLE_BUTTON_PUSHED_IMG = "arrow_pushed.png";
+
+	private static final int PAIR_TAG_POSITION_X = 26;
+	private static final int PAIR_TAG_POSITION_Y = 13;
+	private static final int PAIR_TAG_POSITION_WIDTH = 8;
+	private static final int PAIR_TAG_POSITION_HEIGHT = 8;
 
 	private Logger logger = SkinLogger.getSkinLogger(
 			GeneralPurposeSkinComposer.class).getLogger();
@@ -69,7 +77,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private EmulatorConfig config;
 	private EmulatorSkin skin;
 	private Shell shell;
-	private Canvas lcdCanvas;
+	private Canvas displayCanvas;
+	private Color backgroundColor;
 	private CustomButton toggleButton;
 	private EmulatorSkinState currentState;
 
@@ -95,11 +104,12 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		this.grabPosition = new Point(0, 0);
 
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
+		this.backgroundColor = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 	}
 
 	@Override
 	public Canvas compose() {
-		lcdCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
+		displayCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
 
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
 				EmulatorConfig.DEFAULT_WINDOW_X);
@@ -114,15 +124,15 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		int scale = SkinUtil.getValidScale(config);
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 
-		composeInternal(lcdCanvas, x, y, scale, rotationId);
+		composeInternal(displayCanvas, x, y, scale, rotationId);
 		logger.info("resolution : " + currentState.getCurrentResolution() +
 				", scale : " + scale);
 
-		return lcdCanvas;
+		return displayCanvas;
 	}
 
 	@Override
-	public void composeInternal(Canvas lcdCanvas,
+	public void composeInternal(Canvas displayCanvas,
 			final int x, final int y, int scale, short rotationId) {
 
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
@@ -131,7 +141,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		String emulatorName = SkinUtil.makeEmulatorName(config);
 		shell.setText(emulatorName);
 
-		lcdCanvas.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+		displayCanvas.setBackground(
+				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 
 		if (SwtUtil.isWindowsPlatform()) {
 			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE_ICO));
@@ -142,17 +153,16 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		/* load image for toggle button of key window */
 		ClassLoader loader = this.getClass().getClassLoader();
 		Image imageNormal = new Image(shell.getDisplay(),
-				loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_nml.png"));
+				loader.getResourceAsStream(PATCH_IMAGES_PATH + TOGGLE_BUTTON_NORMAL_IMG));
 		Image imageHover = new Image(shell.getDisplay(),
-						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_hover.png"));
+				loader.getResourceAsStream(PATCH_IMAGES_PATH + TOGGLE_BUTTON_HOVER_IMG));
 		Image imagePushed = new Image(shell.getDisplay(),
-						loader.getResourceAsStream(PATCH_IMAGES_PATH + "arrow_pushed.png"));
+				loader.getResourceAsStream(PATCH_IMAGES_PATH + TOGGLE_BUTTON_PUSHED_IMG));
 
 		/* create a toggle button of key window */
 		toggleButton = new CustomButton(shell, SWT.DRAW_TRANSPARENT | SWT.NO_FOCUS,
 				imageNormal, imageHover, imagePushed);
-		toggleButton.setBackground(
-				new Color(shell.getDisplay(), new RGB(0x1f, 0x1f, 0x1f)));
+		toggleButton.setBackground(backgroundColor);
 
 		toggleButton.addMouseListener(new MouseListener() {
 			@Override
@@ -178,8 +188,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		/* make a pair tag circle */
 		skin.pairTagCanvas = new Canvas(shell, SWT.NO_FOCUS);
-		skin.pairTagCanvas.setBackground(
-				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
+		skin.pairTagCanvas.setBackground(backgroundColor);
 
 		skin.pairTagCanvas.addPaintListener(new PaintListener() {
 			@Override
@@ -187,7 +196,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (skin.colorPairTag != null) {
 					e.gc.setBackground(skin.colorPairTag);
 					e.gc.setAntialias(SWT.ON);
-					e.gc.fillOval(0, 0, 8, 8);
+					e.gc.fillOval(
+							0, 0, PAIR_TAG_POSITION_WIDTH, PAIR_TAG_POSITION_HEIGHT);
 				}
 			}
 		});
@@ -195,8 +205,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		/* create a progress bar for booting status */
 		skin.bootingProgress = new CustomProgressBar(shell, SWT.NONE);
-		skin.bootingProgress.setBackground(
-				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
+		skin.bootingProgress.setBackground(backgroundColor);
 
 		arrangeSkin(scale, rotationId);
 
@@ -216,11 +225,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
 		/* arrange the display */
-		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
+		Rectangle displayBounds = adjustLcdGeometry(displayCanvas,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
-		if (lcdBounds == null) {
+		if (displayBounds == null) {
 			logger.severe("Failed to lcd information for phone shape skin.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to read lcd information for phone shape skin.\n" +
@@ -228,10 +237,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					SWT.ICON_ERROR, config);
 			System.exit(-1);
 		}
-		logger.info("lcd bounds : " + lcdBounds);
+		logger.info("display bounds : " + displayBounds);
 
-		currentState.setDisplayBounds(lcdBounds);
-		lcdCanvas.setBounds(lcdBounds);
+		currentState.setDisplayBounds(displayBounds);
+		displayCanvas.setBounds(displayBounds);
 
 		/* arrange the skin image */
 		Image tempImage = null;
@@ -241,28 +250,30 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		currentState.setCurrentImage(
-				frameMaker.getPatchedImage(lcdBounds.width, lcdBounds.height));
+				frameMaker.getPatchedImage(displayBounds.width, displayBounds.height));
 
 		if (tempImage != null) {
 			tempImage.dispose();
 		}
 
 		/* arrange the toggle button of key window */
-		toggleButton.setBounds(lcdBounds.x + lcdBounds.width,
-				lcdBounds.y + (lcdBounds.height / 2) - (toggleButton.getImageSize().y / 2),
+		toggleButton.setBounds(displayBounds.x + displayBounds.width,
+				displayBounds.y + (displayBounds.height / 2) - (toggleButton.getImageSize().y / 2),
 				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
 
 		/* arrange the progress bar */
 		if (skin.bootingProgress != null) {
-			skin.bootingProgress.setBounds(lcdBounds.x,
-					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
+			skin.bootingProgress.setBounds(displayBounds.x,
+					displayBounds.y + displayBounds.height + 1, displayBounds.width, 2);
 		}
 
 		/* custom window shape */
 		trimPatchedShell(shell, currentState.getCurrentImage());
 
 		/* arrange the pair tag */
-		skin.pairTagCanvas.setBounds(26, 13, 8, 8);
+		skin.pairTagCanvas.setBounds(
+				PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
+				PAIR_TAG_POSITION_WIDTH, PAIR_TAG_POSITION_HEIGHT);
 
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {
@@ -277,7 +288,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public Rectangle adjustLcdGeometry(
-			Canvas lcdCanvas, int resolutionW, int resolutionH,
+			Canvas displayCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId) {
 
 		Rectangle lcdBounds = new Rectangle(
@@ -314,7 +325,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		int r = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getRed();
 		int g = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getGreen();
 		int b = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getBlue();
-		int colorKey;
+		int colorKey = 0;
 
 		if (SwtUtil.isWindowsPlatform()) {
 			colorKey = r << 24 | g << 16 | b << 8;
@@ -457,7 +468,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 //			}
 //
 //			FormData dataComposite = new FormData();
-//			dataComposite.left = new FormAttachment(lcdCanvas, 0);
+//			dataComposite.left = new FormAttachment(displayCanvas, 0);
 //			dataComposite.top = new FormAttachment(0, 0);
 //			compositeBase.setLayoutData(dataComposite);
 //		}
@@ -483,6 +494,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		if (skin.pairTagCanvas != null) {
 			skin.pairTagCanvas.dispose();
+		}
+
+		if (backgroundColor != null) {
+			backgroundColor.dispose();
 		}
 
 		frameMaker.freePatches();
