@@ -40,7 +40,6 @@
 #include "skin/maruskin_server.h"
 #include "skin/maruskin_client.h"
 #include "guest_server.h"
-#include "option.h"
 #include "emul_state.h"
 #include "qemu_socket.h"
 #include "build_info.h"
@@ -345,12 +344,7 @@ static void prepare_basic_features(void)
 
     tizen_base_port = get_sdb_base_port();
 
-    // TODO: Codes about Getting host proxy migration is processing...
-#if !defined(CONFIG_WIN32)
     get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-#else
-    gethostproxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-#endif
     // using "DNS" provided by default QEMU
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 

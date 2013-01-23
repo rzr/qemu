@@ -34,11 +34,16 @@
   @brief    Collection of utilities for darwin
  */
 
+#include "maru_common.h"
 #include "osutil.h"
 #include "emulator.h"
 #include "debug_ch.h"
 #include "maru_err_table.h"
 #include "sdb.h"
+
+#ifndef CONFIG_DARWIN
+#error
+#endif
 
 #include <string.h>
 #include <sys/shm.h>

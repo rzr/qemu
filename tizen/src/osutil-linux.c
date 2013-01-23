@@ -41,14 +41,8 @@
 #include "maru_err_table.h"
 #include "sdb.h"
 
-#if 0
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <net/if.h>
+#ifndef CONFIG_LINUX
+#error
 #endif
 
 #include <string.h>
