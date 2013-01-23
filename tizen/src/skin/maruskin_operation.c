@@ -357,13 +357,14 @@ QemuSurfaceInfo* get_screenshot_info(void)
 
     pthread_mutex_lock(&mutex_screenshot);
     MaruScreenshot* maru_screenshot = get_maru_screenshot();
-    if ( !maru_screenshot ) {
-        ERR( "maru screenshot is NULL.\n" );
-        return NULL;
+    if ( !maru_screenshot || maru_screenshot->isReady != 1) {
+        ERR( "maru screenshot is NULL or not ready.\n" );
+        memset(info->pixel_data, 0x00, length);
+    } else {
+        maru_screenshot->pixel_data = info->pixel_data;
+        maru_screenshot->request_screenshot = 1;
+        pthread_cond_wait(&cond_screenshot, &mutex_screenshot);
     }
-    maru_screenshot->pixel_data = info->pixel_data;
-    maru_screenshot->request_screenshot = 1;
-    pthread_cond_wait(&cond_screenshot, &mutex_screenshot);
     pthread_mutex_unlock(&mutex_screenshot);
 
     info->pixel_data_length = length;

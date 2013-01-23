@@ -36,6 +36,7 @@
 typedef struct MaruScreenshot {
     unsigned char *pixel_data;
     int request_screenshot;
+    int isReady;
 } MaruScreenshot;
 
 void maru_display_init(DisplayState *ds);

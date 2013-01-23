@@ -73,6 +73,7 @@ void maru_display_init(DisplayState *ds)
     maru_screenshot = g_malloc0(sizeof(MaruScreenshot));
     maru_screenshot->pixel_data = NULL;
     maru_screenshot->request_screenshot = 0;
+    maru_screenshot->isReady = 0;
 }
 
 void maru_display_fini(void)
