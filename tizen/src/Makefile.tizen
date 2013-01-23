@@ -70,7 +70,7 @@ endif #CONFIG_GL
 #endif #!CONFIG_DARWIN
 
 # maru loader
-obj-y += emulator.o emul_state.o option.o maru_err_table.o
+obj-y += emulator.o emul_state.o maru_err_table.o
 
 # osutil
 obj-y += osutil.o

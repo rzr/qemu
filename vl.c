@@ -181,14 +181,12 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "ui/qemu-spice.h"
 
 #ifdef CONFIG_MARU
-#include "tizen/src/emulator.h"
 #include "tizen/src/maru_common.h"
-#include "tizen/src/maru_display.h"
-#include "tizen/src/option.h"
-#include "tizen/src/sdb.h"
-#include "tizen/src/emul_state.h"
-#include "tizen/src/skin/maruskin_operation.h"
+#include "tizen/src/emulator.h"
 #include "tizen/src/maru_err_table.h"
+#include "tizen/src/emul_state.h"
+#include "tizen/src/maru_display.h"
+#include "tizen/src/skin/maruskin_operation.h"
 #endif
 
 //#define DEBUG_NET
