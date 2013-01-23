@@ -130,6 +130,7 @@ public class EmulatorSkin {
 	protected Shell shell;
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
+	private int displayCanvasStyle;
 	protected SkinInformation skinInfo;
 	protected ISkinComposer skinComposer;
 
@@ -178,7 +179,8 @@ public class EmulatorSkin {
 	 * @param isOnTop : always on top flag
 	*/
 	protected EmulatorSkin(EmulatorSkinState state, EmulatorFingers finger,
-			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+			EmulatorConfig config, SkinInformation skinInfo,
+			int displayCanvasStyle, boolean isOnTop) {
 		this.finger = finger;
 		this.config = config;
 		this.skinInfo = skinInfo;
@@ -199,6 +201,8 @@ public class EmulatorSkin {
 		if (isOnTop == true) {
 			SkinUtil.setTopMost(shell, true);
 		}
+
+		this.displayCanvasStyle = displayCanvasStyle;
 
 		/* generate a pair tag color of key window */
 		int red = (int) (Math.random() * 256);
@@ -229,7 +233,7 @@ public class EmulatorSkin {
 			((GeneralPurposeSkinComposer) skinComposer).addGeneralPurposeListener(shell);
 		}
 
-		lcdCanvas = skinComposer.compose();
+		lcdCanvas = skinComposer.compose(displayCanvasStyle);
 
 		/* load a hover color */
 		currentState.setHoverColor(loadHoverColor());

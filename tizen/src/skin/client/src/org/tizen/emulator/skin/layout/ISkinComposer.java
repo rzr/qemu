@@ -32,7 +32,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 
 public interface ISkinComposer {
-	public abstract Canvas compose();
+	public abstract Canvas compose(int style);
 
 	public abstract void composeInternal(Canvas lcdCanvas,
 			int x, int y, int scale, short rotationId);

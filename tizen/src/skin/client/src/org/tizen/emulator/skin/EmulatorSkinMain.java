@@ -69,12 +69,19 @@ public class EmulatorSkinMain {
 	public static final String SKIN_PROPERTIES_FILE_NAME = ".skin.properties";
 	public static final String CONFIG_PROPERTIES_FILE_NAME = ".skinconfig.properties";
 	public static final String DBI_FILE_NAME = "default.dbi";
-	EmulatorSkinState currentState;
+
 	private static Logger logger;
 
+	public EmulatorSkinState currentState;
+	private static int useSharedMemory = 0;
+
 	static {
+		if (SwtUtil.isMacPlatform() == true) {
+			useSharedMemory = 1;
+		}
+
 		/* shared memory */
-		if (SwtUtil.isMacPlatform()) {
+		if (useSharedMemory == 1) {
 		    System.loadLibrary("shared");
 		}
 	 }
@@ -222,7 +229,8 @@ public class EmulatorSkinMain {
 			EmulatorSkinState currentState = new EmulatorSkinState();
 			currentState.setMaxTouchPoint(maxtouchpoint);
 			EmulatorFingers finger = new EmulatorFingers(currentState);
-			if (SwtUtil.isMacPlatform()) {
+
+			if (useSharedMemory == 1) {
 				skin = new EmulatorShmSkin(currentState, finger, config, skinInfo, isOnTop);
 			} else { // linux & windows
 				skin = new EmulatorSdlSkin(currentState, finger, config, skinInfo, isOnTop);

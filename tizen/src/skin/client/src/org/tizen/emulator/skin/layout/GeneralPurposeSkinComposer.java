@@ -108,8 +108,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	}
 
 	@Override
-	public Canvas compose() {
-		displayCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
+	public Canvas compose(int style) {
+		displayCanvas = new Canvas(shell, style);
 
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
 				EmulatorConfig.DEFAULT_WINDOW_X);

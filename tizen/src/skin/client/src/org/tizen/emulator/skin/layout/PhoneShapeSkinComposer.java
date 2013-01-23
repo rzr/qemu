@@ -102,8 +102,8 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 	}
 
 	@Override
-	public Canvas compose() {
-		lcdCanvas = new Canvas(shell, SWT.EMBEDDED); //TODO:
+	public Canvas compose(int style) {
+		lcdCanvas = new Canvas(shell, style);
 
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
 				EmulatorConfig.DEFAULT_WINDOW_X);

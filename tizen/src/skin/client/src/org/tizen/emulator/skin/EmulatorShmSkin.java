@@ -139,7 +139,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	 */
 	public EmulatorShmSkin(EmulatorSkinState state, EmulatorFingers finger,
 			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
-		super(state, finger, config, skinInfo, isOnTop);
+		super(state, finger, config, skinInfo, SWT.NONE, isOnTop);
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 	}
 
