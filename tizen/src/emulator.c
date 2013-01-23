@@ -66,7 +66,8 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define QEMU_ARGS_PREFIX "--qemu-args"
 #define SKIN_ARGS_PREFIX "--skin-args"
 #define IMAGE_PATH_PREFIX   "file="
-#define IMAGE_PATH_SUFFIX   ",if=virtio"
+//#define IMAGE_PATH_SUFFIX   ",if=virtio"
+#define IMAGE_PATH_SUFFIX   ",if=virtio,index=1"
 #define SDB_PORT_PREFIX     "sdb_port="
 #define LOGS_SUFFIX         "/logs/"
 #define LOGFILE             "emulator.log"
@@ -515,7 +516,7 @@ static int emulator_main(int argc, char *argv[])
     INFO("Prepare running...\n");
     /* Redirect stdout and stderr after debug_ch is initialized. */
     redir_output();
-
+    INFO("tizen_target_img_path: %s\n", tizen_target_img_path);
     int i;
 
     fprintf(stdout, "qemu args: =========================================\n");
