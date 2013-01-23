@@ -1,9 +1,9 @@
-/* 
+/*
  * Emulator
  *
  * Copyright (C) 2012, 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -90,16 +90,23 @@ void make_vm_lock_os(void)
     shmid = shmget((key_t)SHMKEY, MAXLEN, 0666|IPC_CREAT);
     if (shmid == -1) {
         ERR("shmget failed\n");
+        perror("osutil-darwin: ");
         return;
     }
+
     shared_memory = shmat(shmid, (char *)0x00, 0);
     if (shared_memory == (void *)-1) {
         ERR("shmat failed\n");
+        perror("osutil-darwin: ");
         return;
     }
     sprintf(shared_memory, "%d", tizen_base_port + 2);
     INFO("shared memory key: %d, value: %s\n", SHMKEY, (char *)shared_memory);
-    shmdt(shared_memory);
+    
+    if (shmdt(shared_memory) == -1) {
+        ERR("shmdt failed\n");
+        perror("osutil-darwin: ");
+    }
 }
 
 void set_bin_path_os(gchar * exec_argv)
@@ -229,7 +236,7 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
             ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
             fclose(fp_pacfile);
         }
-    } 
+    }
     else {
         ERR("fail to get pacfile fp\n");
 	return -1;
@@ -250,7 +257,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     proxySettings = SCDynamicStoreCopyProxies(NULL);
 
     isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPEnable);
-    if (cfnumber_to_int(isEnable)) {        
+    if (cfnumber_to_int(isEnable)) {
         // Get proxy hostname
         proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPProxy);
         hostname = cfstring_to_cstring(proxyHostname);
@@ -264,9 +271,9 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     } else {
         INFO("http proxy is null\n");
     }
-    
+
     isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPSEnable);
-    if (cfnumber_to_int(isEnable)) {        
+    if (cfnumber_to_int(isEnable)) {
         // Get proxy hostname
         proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPSProxy);
         hostname = cfstring_to_cstring(proxyHostname);
@@ -280,9 +287,9 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     } else {
         INFO("https proxy is null\n");
     }
-    
+
     isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesFTPEnable);
-    if (cfnumber_to_int(isEnable)) {        
+    if (cfnumber_to_int(isEnable)) {
         // Get proxy hostname
         proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesFTPProxy);
         hostname = cfstring_to_cstring(proxyHostname);
@@ -296,9 +303,9 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     } else {
         INFO("ftp proxy is null\n");
     }
-    
+
     isEnable  = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesSOCKSEnable);
-    if (cfnumber_to_int(isEnable)) {        
+    if (cfnumber_to_int(isEnable)) {
         // Get proxy hostname
         proxyHostname = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesSOCKSProxy);
         hostname = cfstring_to_cstring(proxyHostname);
@@ -321,10 +328,10 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
     proxySettings = SCDynamicStoreCopyProxies(NULL);
     if(proxySettings) {
         INFO("AUTO PROXY MODE\n");
-        ret = get_auto_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy); 
+        ret = get_auto_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
         if(strlen(http_proxy) == 0 && ret < 0) {
             INFO("MANUAL PROXY MODE\n");
-	        get_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy); 
+	        get_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
 	    }
     }
 }

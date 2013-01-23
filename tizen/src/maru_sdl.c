@@ -38,6 +38,7 @@
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "debug_ch.h"
+#include <sys/shm.h>
 //#include "SDL_opengl.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -56,6 +57,8 @@ static int current_screen_height;
 
 static int sdl_initialized;
 static int sdl_alteration;
+extern int g_shmid;
+extern char *g_shared_memory;
 
 #if 0
 static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
@@ -537,6 +540,13 @@ void maruskin_sdl_quit(void)
     sdl_alteration = -1;
 
     SDL_Quit();
+
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+            ERR("shmctl failed\n");
+            perror("maru_sdl.c: ");
+    }
+
+
 }
 
 

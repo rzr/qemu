@@ -61,6 +61,7 @@
 #ifdef CONFIG_USE_SHM
 void *shared_memory = (void*) 0;
 int shmid;
+int shmid_tmp;
 #endif
 
 
@@ -1873,14 +1874,14 @@ void maru_vga_common_init(VGACommonState *s)
     int mykey;
     void *temp;
 
-    shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
-    if (shmid == -1) {
+    shmid_tmp = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
+    if (shmid_tmp == -1) {
         ERR("shmget failed\n");
         perror("maru_vga: ");
         exit(1);
     }
 
-    temp = shmat(shmid, (char*)0x0, 0);
+    temp = shmat(shmid_tmp, (char*)0x0, 0);
     if (temp == (void *)-1) {
         ERR("shmat failed\n");
         perror("maru_vga: ");
@@ -1889,6 +1890,7 @@ void maru_vga_common_init(VGACommonState *s)
 
     mykey = atoi(temp);
     shmdt(temp);
+    
     INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
 
     shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
@@ -1923,6 +1925,11 @@ void maru_vga_common_fini(void)
 
     if (shmctl(shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
+        perror("maru_vga: ");
+    }
+    
+    if (shmctl(shmid_tmp, IPC_RMID, 0) == -1) {
+        ERR("temp shmctl failed\n");
         perror("maru_vga: ");
     }
 }

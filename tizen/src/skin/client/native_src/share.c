@@ -49,7 +49,7 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
     int keyval;
     shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
     if (shmid == -1) {
-	fprintf(stderr, "share.c: shmget failed\n");
+	    fprintf(stderr, "share.c: shmget failed\n");
         exit(1);
     }
     
@@ -59,16 +59,19 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
         exit(1);
     }
     keyval = atoi(temp);
+    fprintf(stdout, "share.c: shared memory key = %d\n", keyval);
     shmdt(temp);
 
     shmid = shmget((key_t)keyval, (size_t)vga_ram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
+        fprintf(stderr, "share.c: shmget failed\n");
         return 1;
     }
 
     /* We now make the shared memory accessible to the program. */
     shared_memory = shmat(shmid, (void *)0, 0);
     if (shared_memory == (void *)-1) {
+        fprintf(stderr, "share.c: shmat failed\n");
         return 2;
     }
 
@@ -80,9 +83,16 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
 {
     /* Lastly, the shared memory is detached */
     if (shmdt(shared_memory) == -1) {
+        fprintf(stderr, "share.c: shmdt failed\n");
+        perror("share.c: ");
         return 1;
     }
-
+/*    
+    if (shmctl(shmid, IPC_RMID, 0) == -1) {
+        fprintf(stderr, "share.c: shmctl failed\n");
+        perror("share.c: ");
+    }
+*/
     return 0;
 }
 
@@ -92,6 +102,7 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
     int i = 0;
     int len = (*env)->GetArrayLength(env, array);
     if (len <= 0) {
+        fprintf(stderr, "share.c: get length failed\n");
         return -1;
     }
 

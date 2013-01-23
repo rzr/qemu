@@ -57,6 +57,8 @@ MULTI_DEBUG_CHANNEL(emulator, osutil);
 
 extern char tizen_target_img_path[];
 extern int tizen_base_port;
+int g_shmid;
+char *g_shared_memory;
 
 void check_vm_lock_os(void)
 {
@@ -100,23 +102,21 @@ void check_vm_lock_os(void)
 
 void make_vm_lock_os(void)
 {
-    int shmid;
-    char *shared_memory;
 
-    shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
-    if (shmid == -1) {
+    g_shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
+    if (g_shmid == -1) {
         ERR("shmget failed\n");
         return;
     }
 
-    shared_memory = shmat(shmid, (char *)0x00, 0);
-    if (shared_memory == (void *)-1) {
+    g_shared_memory = shmat(g_shmid, (char *)0x00, 0);
+    if (g_shared_memory == (void *)-1) {
         ERR("shmat failed\n");
         return;
     }
-    g_sprintf(shared_memory, "%s", tizen_target_img_path);
+    g_sprintf(g_shared_memory, "%s", tizen_target_img_path);
     INFO("shared memory key: %d value: %s\n",
-        tizen_base_port, (char *)shared_memory);
+        tizen_base_port, (char *)g_shared_memory);
 }
 
 void set_bin_path_os(gchar * exec_argv)
