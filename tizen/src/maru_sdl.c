@@ -38,7 +38,9 @@
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "debug_ch.h"
+#if defined(CONFIG_LINUX)
 #include <sys/shm.h>
+#endif
 //#include "SDL_opengl.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -541,12 +543,12 @@ void maruskin_sdl_quit(void)
 
     SDL_Quit();
 
+#if defined(CONFIG_LINUX)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
             ERR("shmctl failed\n");
             perror("maru_sdl.c: ");
     }
-
-
+#endif
 }
 
 
