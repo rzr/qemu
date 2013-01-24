@@ -105,6 +105,7 @@ static MaruCamState *g_state = NULL;
 static uint32_t ready_count = 0;
 static uint32_t cur_fmt_idx = 0;
 static uint32_t cur_frame_idx = 0;
+static void *grab_buf;
 
 /***********************************
  * Mac camera helper functions
@@ -191,10 +192,8 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
 
 @interface MaruCameraDriver : NSObject {
     QTCaptureSession               *mCaptureSession;
-    //QTCaptureMovieFileOutput       *mCaptureMovieFileOutput;
-    QTCaptureVideoPreviewOutput    *mCaptureVideoPreviewOutput;
     QTCaptureDeviceInput           *mCaptureVideoDeviceInput;
-    QTCaptureDeviceInput           *mCaptureAudioDeviceInput;
+    QTCaptureVideoPreviewOutput    *mCaptureVideoPreviewOutput;
 
     CVImageBufferRef      mCurrentImageBuffer;
     CVImageBufferRef imageBuffer;
@@ -204,6 +203,7 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
 
 - (MaruCameraDriver*)init;
 - (int)startCapture:(int)width:(int)height;
+- (int)stopCapture;
 - (int)readFrame:(void*)video_buf;
 - (int)setCaptureFormat:(int)width:(int)height:(int)pix_format;
 - (int)getCaptureFormat:(int)width:(int)height:(int)pix_format;
@@ -290,48 +290,50 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
     if ([mCaptureSession isRunning]) {
         while(!mCaptureIsStarted) {
             // Wait Until Capture is started
-            [[NSRunLoop currentRunLoop] runUntilDate: [NSDate dateWithTimeIntervalSinceNow: 1]];
+            [[NSRunLoop currentRunLoop] runUntilDate: [NSDate dateWithTimeIntervalSinceNow: 0.5]];
         }
-        INFO("Capture session started!\n");
         ret = 0;
     }
     return ret;
 }
 
+- (int)stopCapture
+{
+    if ([mCaptureSession isRunning]) {
+        [mCaptureSession stopRunning];
+    }
+}
+
 - (int)readFrame:(void*)video_buf
 {
-    int ret = -1;
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
     @synchronized (self) {
         if (mCurrentImageBuffer != nil) {
+            CVPixelBufferLockBaseAddress(mCurrentImageBuffer, 0);
             const uint32_t pixel_format = corevideo_to_fourcc(CVPixelBufferGetPixelFormatType(mCurrentImageBuffer));
             const int frame_width = CVPixelBufferGetWidth(mCurrentImageBuffer);
             const int frame_height = CVPixelBufferGetHeight(mCurrentImageBuffer);
             const size_t frame_size =CVPixelBufferGetBytesPerRow(mCurrentImageBuffer) * frame_height;
-            INFO("buffer(%p), pixel_format(%d,%.4s), frame_width(%d), frame_height(%d0, frame_size(%d)\n",
-                 mCurrentImageBuffer, (int)pixel_format, (const char*)&pixel_format, frame_width, frame_height, (int)frame_size);
-
-            //convert frame to v4l2 format
-            CVPixelBufferLockBaseAddress(mCurrentImageBuffer, 0);
             const void* frame_pixels = CVPixelBufferGetBaseAddress(mCurrentImageBuffer);
-            if (frame_pixels != nil && video_buf != nil) {
-                convert_frame(pixel_format, frame_width, frame_height,
-                              frame_size, (void*)frame_pixels, video_buf);
-            } else {
-                INFO("Unable to obtain framebuffer");
-                return -1;
-            }
+
+            /*
+              INFO("buffer(%p), pixel_format(%d,%.4s), frame_width(%d), frame_height(%d), frame_size(%d)\n",
+              mCurrentImageBuffer, (int)pixel_format, (const char*)&pixel_format,
+              frame_width, frame_height, (int)frame_size);
+            */
+
+            // convert frame to v4l2 format
+            convert_frame(pixel_format, frame_width, frame_height,
+                          frame_size, (void*)frame_pixels, video_buf);
             CVPixelBufferUnlockBaseAddress(mCurrentImageBuffer, 0);
+            [pool release];
             return 0;
-        } else {
-            //INFO("%s, First frame not captured ?\n", __FUNCTION__);
-            return 1;
         }
     }
 
     [pool release];
-    return ret;
+    return -1;
 }
 
 - (int)setCaptureFormat:(int)width:(int)height:(int)pix_format
@@ -385,7 +387,6 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
 {
 	[mCaptureSession release];
 	[mCaptureVideoDeviceInput release];
-    [mCaptureAudioDeviceInput release];
     [mCaptureVideoPreviewOutput release];
     [super dealloc];
 }
@@ -421,60 +422,62 @@ struct MaruCameraDevice {
 /* Golbal representation of the Maru camera */
 MaruCameraDevice *mcd = NULL;
 
+static void __raise_err_intr()
+{
+    qemu_mutex_lock(&g_state->thread_mutex);
+    if (g_state->streamon) {
+        g_state->req_frame = 0; /* clear request */
+        g_state->isr = 0x08;   /* set a error flag of rasing a interrupt */
+        qemu_bh_schedule(g_state->tx_bh);
+    }
+    qemu_mutex_unlock(&g_state->thread_mutex);
+}
+
 static int marucam_device_read_frame()
 {
     int ret;
     void* tmp_buf;
 
-    if (g_state->streamon == 0) {
-        INFO("%s, %d, Streaming is off, exiting ...\n", __FUNCTION__, __LINE__);
-        return -1;
-    }
-
-    qemu_mutex_lock(&g_state->thread_mutex);
-    if (g_state->req_frame == 0) {
-        qemu_mutex_unlock(&g_state->thread_mutex);
-        camera_sleep(30);
-        //INFO("%s, %d, req_frame = 0, next loop\n", __FUNCTION__, __LINE__);
-        return 0;
-    }
-    tmp_buf = g_state->vaddr + g_state->buf_size * (g_state->req_frame - 1);
-    qemu_mutex_unlock(&g_state->thread_mutex);
-
-    ret =  [mcd->driver readFrame: tmp_buf];
-    //INFO("%s, %d, ret:%d\n", __FUNCTION__, __LINE__, ret);
-    if (ret == -1) {
-        //INFO("%s, Capture error\n", __FUNCTION__);
-        return -1;
-    }
-    if(ret == 0) {
-        //INFO("%s, Capture a frame\n", __FUNCTION__);
-    }
-    if(ret == 1) {
-        //INFO("%s, Capture first frame missed\n", __FUNCTION__);
-    }
-
     qemu_mutex_lock(&g_state->thread_mutex);
     if (g_state->streamon) {
+        if (ready_count < MARUCAM_SKIPFRAMES) {
+            /* skip a frame cause first some frame are distorted */
+            ++ready_count;
+            INFO("Skip %d frame\n", ready_count);
+            qemu_mutex_unlock(&g_state->thread_mutex);
+            return 0;
+        }
+
+        if (g_state->req_frame == 0) {
+            //INFO("There is no request\n");
+            qemu_mutex_unlock(&g_state->thread_mutex);
+            return 0;
+        }
+
+        // Grab the camera frame into temp buffer
+        ret =  [mcd->driver readFrame: grab_buf];
+        if (ret < 0) {
+            INFO("%s, Capture error\n", __FUNCTION__);
+            qemu_mutex_unlock(&g_state->thread_mutex);
+            __raise_err_intr();
+            return -1;
+        }
+
+        tmp_buf = g_state->vaddr + g_state->buf_size * (g_state->req_frame - 1);
+        memcpy(tmp_buf, grab_buf, g_state->buf_size);
         g_state->req_frame = 0; // clear request
         g_state->isr |= 0x01;   // set a flag of rasing a interrupt
         qemu_bh_schedule(g_state->tx_bh);
-        ret = 1;
-    } else {
-        ret = -1;
     }
     qemu_mutex_unlock(&g_state->thread_mutex);
-    return ret;
+    return 0;
 }
 
 /* Worker thread to grab frames to the preview window */
 static void *marucam_worker_thread(void *thread_param)
 {
-  //MaruCamState *state = (MaruCamState*)thread_param;
-
     while (1) {
         qemu_mutex_lock(&g_state->thread_mutex);
-        // Wait on the condition
         qemu_cond_wait(&g_state->thread_cond, &g_state->thread_mutex);
         qemu_mutex_unlock(&g_state->thread_mutex);
 
@@ -482,18 +485,20 @@ static void *marucam_worker_thread(void *thread_param)
             break;
         }
 
+        //convert_trial = 10;
+        ready_count = 0;
+
         /* Loop: capture frame -> convert format -> render to screen */
         while (1) {
             if (g_state->streamon) {
                 if (marucam_device_read_frame() < 0) {
-                   INFO("Streaming is off ...\n");
-                   break;
+                    INFO("Streaming is off ...\n");
+                    break;
                 }
             } else {
                 INFO("Streaming is off ...\n");
                 break;
             }
-            //camera_sleep(50);
         }
     }
 
@@ -534,14 +539,12 @@ void marucam_device_open(MaruCamState* state)
     param->top = 0;
 
     mcd = (MaruCameraDevice*)malloc(sizeof(MaruCameraDevice));
-    if (mcd != NULL) {
-        memset(mcd, 0, sizeof(MaruCameraDevice));
-    } else {
+    if (mcd == NULL) {
         ERR("%s: MaruCameraDevice allocate failed\n", __FUNCTION__);
+        return;
     }
-    //qemu_mutex_lock(&state->thread_mutex);
+    memset(mcd, 0, sizeof(MaruCameraDevice));
     mcd->driver = [[MaruCameraDriver alloc] init];
-    //qemu_mutex_unlock(&state->thread_mutex);
     if (mcd->driver == nil) {
         INFO("Camera device open failed\n");
         return;
@@ -571,22 +574,32 @@ void marucam_device_start_preview(MaruCamState* state)
     MaruCamParam *param = state->param;
     param->top = 0;
 
-    ready_count = 0;
+    //ready_count = 0;
     width = supported_dst_frames[cur_frame_idx].width;
     height = supported_dst_frames[cur_frame_idx].height;
     pixfmt = supported_dst_pixfmts[cur_fmt_idx].fmt;
     state->buf_size = get_sizeimage(pixfmt, width, height);
 
-    INFO("Pixfmt(%c%c%c%c), W:H(%d:%d), buf size(%u), frame idx(%d), fmt idx(%d)\n",
-         (char)(pixfmt), (char)(pixfmt >> 8),
-         (char)(pixfmt >> 16), (char)(pixfmt >> 24),
-         width, height, state->buf_size,
-         cur_frame_idx, cur_fmt_idx);
+    /*INFO("Pixfmt(%c%c%c%c), W:H(%d:%d), buf size(%u), frame idx(%d), fmt idx(%d)\n",
+      (char)(pixfmt), (char)(pixfmt >> 8),
+      (char)(pixfmt >> 16), (char)(pixfmt >> 24),
+      width, height, state->buf_size,
+      cur_frame_idx, cur_fmt_idx);
+    */
 
-    if (mcd->driver != nil) {
-        [mcd->driver startCapture: width: height];
-    } else {
+    if (mcd->driver == nil) {
         ERR("%s: Start capture failed: vaild device", __FUNCTION__);
+        return;
+    }
+    [mcd->driver startCapture: width: height];
+
+    if (grab_buf) {
+        g_free(grab_buf);
+        grab_buf = NULL;
+    }
+    grab_buf = (void *)malloc(state->buf_size);
+    if (grab_buf == NULL) {
+        param->errCode = ENOMEM;
         return;
     }
 
@@ -606,9 +619,19 @@ void marucam_device_stop_preview(MaruCamState* state)
     param->top = 0;
 
     INFO("Stopping preview ...\n");
+    if (mcd->driver != nil) {
+        [mcd->driver stopCapture];
+    }
+
     qemu_mutex_lock(&state->thread_mutex);
     state->streamon = 0;
     qemu_mutex_unlock(&state->thread_mutex);
+
+    if (grab_buf) {
+        g_free(grab_buf);
+        grab_buf = NULL;
+    }
+    state->buf_size = 0;
 }
 
 /* MARUCAM_CMD_S_PARAM */
@@ -724,7 +747,7 @@ void marucam_device_g_fmt(MaruCamState* state)
 
 void marucam_device_try_fmt(MaruCamState* state)
 {
-    INFO("Try device frame format, use default setting ...\n");
+    //INFO("Try device frame format, use default setting ...\n");
 }
 
 /* Get specific pixelformat description */
@@ -775,29 +798,29 @@ void marucam_device_qctrl(MaruCamState* state)
     id = param->stack[0];
 
     switch (id) {
-    case V4L2_CID_BRIGHTNESS:
-        INFO("V4L2_CID_BRIGHTNESS\n");
-        memcpy((void*)name, (void*)"brightness", 32);
-        i = 0;
-        break;
-    case V4L2_CID_CONTRAST:
-        INFO("V4L2_CID_CONTRAST\n");
-        memcpy((void*)name, (void*)"contrast", 32);
-        i = 1;
-        break;
-    case V4L2_CID_SATURATION:
-        INFO("V4L2_CID_SATURATION\n");
-        memcpy((void*)name, (void*)"saturation", 32);
-        i = 2;
-        break;
-    case V4L2_CID_SHARPNESS:
-        INFO("V4L2_CID_SHARPNESS\n");
-        memcpy((void*)name, (void*)"sharpness", 32);
-        i = 3;
-        break;
-    default:
-        param->errCode = EINVAL;
-        return;
+        case V4L2_CID_BRIGHTNESS:
+            INFO("V4L2_CID_BRIGHTNESS\n");
+            memcpy((void*)name, (void*)"brightness", 32);
+            i = 0;
+            break;
+        case V4L2_CID_CONTRAST:
+            INFO("V4L2_CID_CONTRAST\n");
+            memcpy((void*)name, (void*)"contrast", 32);
+            i = 1;
+            break;
+        case V4L2_CID_SATURATION:
+            INFO("V4L2_CID_SATURATION\n");
+            memcpy((void*)name, (void*)"saturation", 32);
+            i = 2;
+            break;
+        case V4L2_CID_SHARPNESS:
+            INFO("V4L2_CID_SHARPNESS\n");
+            memcpy((void*)name, (void*)"sharpness", 32);
+            i = 3;
+            break;
+        default:
+            param->errCode = EINVAL;
+            return;
     }
 
     param->stack[0] = id;
