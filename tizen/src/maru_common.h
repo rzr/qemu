@@ -49,10 +49,12 @@
 
 #include "config-host.h"
 
+#if !defined(PATH_MAX)
 #if defined(MAX_PATH)
 #define PATH_MAX    MAX_PATH
-#elif !defined(PATH_MAX)
+#else
 #define PATH_MAX    256
+#endif
 #endif
 
 // W/A for preserve larger continuous heap for RAM.
