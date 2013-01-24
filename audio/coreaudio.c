@@ -35,6 +35,9 @@
 
 #ifdef CONFIG_MARU
 #include "../tizen/src/debug_ch.h"
+MULTI_DEBUG_CHANNEL(qemu, coreaudio);
+#else
+#define TRACE   printf
 #endif
 
 struct {
@@ -208,7 +211,7 @@ coreaudio_voice_ctl (coreaudioVoice*  core, int cmd)
     switch (cmd) {
     case VOICE_ENABLE:
         /* start playback */
-        printf("%s: %s started\n", __FUNCTION__, core->isInput ? "input" : "output");
+        TRACE("%s: %s started\n", __FUNCTION__, core->isInput ? "input" : "output");
         if (!coreaudio_voice_isPlaying(core)) {
             status = AudioDeviceStart(core->deviceID, core->ioproc);
             if (status != kAudioHardwareNoError) {
@@ -219,7 +222,7 @@ coreaudio_voice_ctl (coreaudioVoice*  core, int cmd)
 
     case VOICE_DISABLE:
         /* stop playback */
-        printf("%s: %s stopped\n", __FUNCTION__, core->isInput ? "input" : "output");
+        TRACE("%s: %s stopped\n", __FUNCTION__, core->isInput ? "input" : "output");
         if (!conf.isAtexit) {
             if (coreaudio_voice_isPlaying(core)) {
                 status = AudioDeviceStop(core->deviceID, core->ioproc);
@@ -270,7 +273,7 @@ coreaudio_voice_init (coreaudioVoice*    core,
     OSStatus  status;
     UInt32    propertySize;
     int       err;
-    int       bits = 8;
+//    int       bits = 8;
     AudioValueRange frameRange;
     const char*  typ = input ? "input" : "playback";
 
@@ -284,7 +287,7 @@ coreaudio_voice_init (coreaudioVoice*    core,
     }
 
     if (as->fmt == AUD_FMT_S16 || as->fmt == AUD_FMT_U16) {
-        bits = 16;
+//        bits = 16;
     }
 
     // TODO: audio_pcm_init_info (&hw->info, as);
@@ -349,7 +352,7 @@ coreaudio_voice_init (coreaudioVoice*    core,
     if (status != kAudioHardwareNoError) {
         coreaudio_logerr2 (status, typ,
                            "Could not set device buffer frame size %ld\n",
-                           core->bufferFrameSize);
+                           (long)core->bufferFrameSize);
         return -1;
     }
 
@@ -573,7 +576,7 @@ typedef struct coreaudioVoiceIn {
 #define  CORE_IN(hw)  ((coreaudioVoiceIn *) (hw))->core
 
 
-static int coreaudio_run_in (HWVoiceIn *hw, int live)
+static int coreaudio_run_in (HWVoiceIn *hw)
 {
     int decr;
 
@@ -582,7 +585,7 @@ static int coreaudio_run_in (HWVoiceIn *hw, int live)
     if (coreaudio_lock (core, "coreaudio_run_in")) {
         return 0;
     }
-    printf("%s: core.decr=%d core.pos=%d\n", __FUNCTION__, core->decr, core->pos);
+    TRACE("%s: core.decr=%d core.pos=%d\n", __FUNCTION__, core->decr, core->pos);
     decr        = core->decr;
     core->decr -= decr;
     hw->wpos    = core->pos;
@@ -624,7 +627,7 @@ static OSStatus audioInDeviceIOProc(
     frameCount = core->bufferFrameSize;
     avail      = hw->samples - hw->total_samples_captured - core->decr;
 
-    printf("%s: enter avail=%d core.decr=%d core.pos=%d hw.samples=%d hw.total_samples_captured=%d frameCount=%d\n",
+    TRACE("%s: enter avail=%d core.decr=%d core.pos=%d hw.samples=%d hw.total_samples_captured=%d frameCount=%d\n",
       __FUNCTION__, avail, core->decr, core->pos, hw->samples, hw->total_samples_captured, (int)frameCount);
 
     /* if there are not enough samples, set signal and return */
@@ -657,7 +660,7 @@ static OSStatus audioInDeviceIOProc(
     core->decr += frameCount;
     core->pos   = wpos;
 
-    printf("exit: core.decr=%d core.pos=%d\n", core->decr, core->pos);
+    TRACE("exit: core.decr=%d core.pos=%d\n", core->decr, core->pos);
     coreaudio_unlock (core, "audioDeviceIOProc");
     return 0;
 }
@@ -666,7 +669,7 @@ static int
 coreaudio_read (SWVoiceIn *sw, void *buf, int len)
 {
     int  result = audio_pcm_sw_read (sw, buf, len);
-    printf("%s: audio_pcm_sw_read(%d) returned %d\n", __FUNCTION__, len, result);
+    TRACE("%s: audio_pcm_sw_read(%d) returned %d\n", __FUNCTION__, len, result);
     return result;
 }
 
