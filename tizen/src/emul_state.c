@@ -34,10 +34,10 @@
 #include "emul_state.h"
 #include "debug_ch.h"
 
-#if defined(CONFIG_WIN32)
-#include <windows.h>
-#else
+#if defined(CONFIG_LINUX)
 #include <X11/XKBlib.h>
+#elif defined (CONFIG_WIN32)
+#include <windows.h>
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, emul_state);
@@ -164,13 +164,7 @@ MultiTouchState *get_emul_multi_touch_state(void)
 int get_host_lock_key_state(int key)
 {
     /* support only capslock, numlock */
-#if defined(CONFIG_WIN32)
-    if (key == HOST_CAPSLOCK_KEY) {
-        return (GetKeyState(VK_CAPITAL) & 1) != 0;
-    } else if (key == HOST_NUMLOCK_KEY) {
-        return (GetKeyState(VK_NUMLOCK) & 1) != 0;
-    }
-#else
+#if defined(CONFIG_LINUX)
     unsigned state = 0;
     Display *display = XOpenDisplay((char*)0);
     if (display) {
@@ -183,6 +177,15 @@ int get_host_lock_key_state(int key)
     } else if (key == HOST_NUMLOCK_KEY) {
         return (state & 0x02) != 0;
     }
+
+#elif defined(CONFIG_WIN32)
+    if (key == HOST_CAPSLOCK_KEY) {
+        return (GetKeyState(VK_CAPITAL) & 1) != 0;
+    } else if (key == HOST_NUMLOCK_KEY) {
+        return (GetKeyState(VK_NUMLOCK) & 1) != 0;
+    }
+#elif defined(CONFIG_DARWIN)
+    return get_host_lock_key_state_darwin(key);
 #endif
 
     return -1;
@@ -209,5 +212,3 @@ int get_emul_num_lock_state(void)
 {
     return  _emul_state.qemu_num_lock;
 }
-
-

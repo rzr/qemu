@@ -12,7 +12,7 @@ QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
 QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
-QEMU_CFLAGS += -I/usr/X11/include -L/usr/X11/lib
+QEMU_CFLAGS += -framework AppKit
 endif
 ifndef CONFIG_DEBUG_EXEC
 CFLAGS += -g -O2
@@ -28,7 +28,7 @@ LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
-LIBS += -lavformat -lavcodec -lavutil -lm -lX11
+LIBS += -lavformat -lavcodec -lavutil -lm
 endif
 
 ifdef CONFIG_DEBUG_EXEC
@@ -118,6 +118,7 @@ obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
 obj-$(CONFIG_WIN32) += maru_camera_win32_pci.o
 obj-$(CONFIG_DARWIN) += maru_camera_darwin_converter.o
 obj-$(CONFIG_DARWIN) += maru_camera_darwin_pci.o
+obj-$(CONFIG_DARWIN) += emul_state_darwin.o
 
 ifdef CONFIG_LINUX # libs for maru camera on linux host
 LIBS += -lv4l2 -lv4lconvert

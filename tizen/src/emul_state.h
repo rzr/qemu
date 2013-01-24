@@ -116,6 +116,7 @@ int get_emulator_condition(void);
 short get_emul_rotation(void);
 MultiTouchState *get_emul_multi_touch_state(void);
 int get_host_lock_key_state(int key);
+int get_host_lock_key_state_darwin(int key);
 int get_emul_caps_lock_state(void);
 int get_emul_num_lock_state(void);
 
