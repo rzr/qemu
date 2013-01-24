@@ -1,3 +1,6 @@
+* 1.4.72
+- Changed host keyboard status routine on OS X.
+== Kitae Kim <kt920.kim@samsung.com> 2013-01-24
 * 1.4.71
 - modified screenshot operation when vga is not ready
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-01-23
