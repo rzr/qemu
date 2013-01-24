@@ -75,7 +75,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private volatile boolean stopRequest;
 		private Runnable runnable;
 
-		public PollFBThread(EmulatorFingers finger, int lcdWidth, int lcdHeight) {
+		public PollFBThread(int lcdWidth, int lcdHeight) {
 			this.display = Display.getDefault();
 			this.lcdWidth = lcdWidth;
 			this.lcdHeight = lcdHeight;
@@ -117,7 +117,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				framebuffer = new Image(display, imageData);
 				temp.dispose();
 
-				if(display.isDisposed() == false) {
+				if (display.isDisposed() == false) {
 					/* redraw canvas */
 					display.asyncExec(runnable);
 				}
@@ -163,7 +163,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		logger.info("shmget native function returned " + result);
 
 		/* update lcd thread */
-		pollThread = new PollFBThread(finger,
+		pollThread = new PollFBThread(
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight());
 
