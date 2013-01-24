@@ -32,6 +32,12 @@
 #define AUDIO_CAP "coreaudio"
 #include "audio_int.h"
 
+#ifdef CONFIG_MARU
+// FIXME: W/A for avoid guest block waiting for audio in
+// TODO: Implements audio in using CoreAudio
+#include "qemu-timer.h"
+#endif
+
 struct {
     int buffer_frames;
     int nbuffers;
@@ -53,6 +59,13 @@ typedef struct coreaudioVoiceOut {
     int decr;
     int rpos;
 } coreaudioVoiceOut;
+
+#ifdef CONFIG_MARU
+typedef struct NoVoiceIn {
+    HWVoiceIn hw;
+    int64_t old_ticks;
+} NoVoiceIn;
+#endif
 
 static void coreaudio_logstatus (OSStatus status)
 {
@@ -526,12 +539,80 @@ static struct audio_option coreaudio_options[] = {
     { /* End of list */ }
 };
 
+#ifdef CONFIG_MARU
+static int no_init_in (HWVoiceIn *hw, struct audsettings *as)
+{
+    audio_pcm_init_info (&hw->info, as);
+    hw->samples = 1024;
+    return 0;
+}
+
+static void no_fini_in (HWVoiceIn *hw)
+{
+    (void) hw;
+}
+
+static int no_run_in (HWVoiceIn *hw)
+{
+    NoVoiceIn *no = (NoVoiceIn *) hw;
+    int live = audio_pcm_hw_get_live_in (hw);
+    int dead = hw->samples - live;
+    int samples = 0;
+
+    if (dead) {
+        int64_t now = qemu_get_clock_ns (vm_clock);
+        int64_t ticks = now - no->old_ticks;
+        int64_t bytes =
+            muldiv64 (ticks, hw->info.bytes_per_second, get_ticks_per_sec ());
+
+        no->old_ticks = now;
+        bytes = audio_MIN (bytes, INT_MAX);
+        samples = bytes >> hw->info.shift;
+        samples = audio_MIN (samples, dead);
+    }
+    return samples;
+}
+
+static int no_read (SWVoiceIn *sw, void *buf, int size)
+{
+    /* use custom code here instead of audio_pcm_sw_read() to avoid
+     * useless resampling/mixing */
+    int samples = size >> sw->info.shift;
+    int total = sw->hw->total_samples_captured - sw->total_hw_samples_acquired;
+    int to_clear = audio_MIN (samples, total);
+    sw->total_hw_samples_acquired += total;
+    audio_pcm_info_clear_buf (&sw->info, buf, to_clear);
+    return to_clear << sw->info.shift;
+}
+
+static int no_ctl_in (HWVoiceIn *hw, int cmd, ...)
+{
+    (void) hw;
+    (void) cmd;
+    return 0;
+}
+#endif
+
 static struct audio_pcm_ops coreaudio_pcm_ops = {
+#ifndef CONFIG_MARU
     .init_out = coreaudio_init_out,
     .fini_out = coreaudio_fini_out,
     .run_out  = coreaudio_run_out,
     .write    = coreaudio_write,
     .ctl_out  = coreaudio_ctl_out
+#else
+    .init_out = coreaudio_init_out,
+    .fini_out = coreaudio_fini_out,
+    .run_out  = coreaudio_run_out,
+    .write    = coreaudio_write,
+    .ctl_out  = coreaudio_ctl_out,
+
+    .init_in  = no_init_in,
+    .fini_in  = no_fini_in,
+    .run_in   = no_run_in,
+    .read     = no_read,
+    .ctl_in   = no_ctl_in
+#endif
 };
 
 struct audio_driver coreaudio_audio_driver = {
@@ -543,7 +624,15 @@ struct audio_driver coreaudio_audio_driver = {
     .pcm_ops        = &coreaudio_pcm_ops,
     .can_be_default = 1,
     .max_voices_out = 1,
+#ifdef CONFIG_MARU
+    .max_voices_in  = 1,
+#else
     .max_voices_in  = 0,
+#endif
     .voice_size_out = sizeof (coreaudioVoiceOut),
+#ifdef CONFIG_MARU
+    .voice_size_in  = sizeof (NoVoiceIn)
+#else
     .voice_size_in  = 0
+#endif
 };
