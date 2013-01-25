@@ -40,6 +40,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 public class CustomProgressBar extends Canvas {
+	public static final RGB PROGRESS_COLOR = new RGB(0, 173, 239);
+
 	private Logger logger =
 			SkinLogger.getSkinLogger(CustomProgressBar.class).getLogger();
 
@@ -56,7 +58,7 @@ public class CustomProgressBar extends Canvas {
 			@Override
 			public void paintControl(PaintEvent e) {
 				e.gc.setBackground(
-						new Color(parent.getDisplay(), new RGB(0, 173, 239)));
+						new Color(parent.getDisplay(), PROGRESS_COLOR));
 
 				Rectangle bounds = getBounds();
 				int width = (bounds.width * selection) / 100; 

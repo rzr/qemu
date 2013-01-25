@@ -61,8 +61,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public native int shmdt();
 	public native int getPixels(int[] array);
 
-	PaletteData paletteData;
-	public PollFBThread pollThread;
+	private PaletteData paletteData;
+	private PollFBThread pollThread;
 
 	class PollFBThread extends Thread {
 		private Display display;

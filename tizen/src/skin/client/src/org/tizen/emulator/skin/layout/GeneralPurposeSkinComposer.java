@@ -111,10 +111,12 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	public Canvas compose(int style) {
 		displayCanvas = new Canvas(shell, style);
 
+		int vmIndex = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
+
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
-				EmulatorConfig.DEFAULT_WINDOW_X);
+				EmulatorConfig.DEFAULT_WINDOW_X + vmIndex);
 		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
-				EmulatorConfig.DEFAULT_WINDOW_Y);
+				EmulatorConfig.DEFAULT_WINDOW_Y + vmIndex);
 
 		currentState.setCurrentResolutionWidth(
 				config.getArgInt(ArgsConstants.RESOLUTION_WIDTH));
