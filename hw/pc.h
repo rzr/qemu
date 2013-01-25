@@ -189,11 +189,6 @@ static inline DeviceState *isa_vga_init(ISABus *bus)
     return &dev->qdev;
 }
 
-#ifdef CONFIG_MARU
-DeviceState *pci_maru_vga_init(PCIBus *bus);
-#endif
-
-
 int isa_vga_mm_init(target_phys_addr_t vram_base,
                     target_phys_addr_t ctrl_base, int it_shift,
                     MemoryRegion *address_space);

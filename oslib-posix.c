@@ -101,7 +101,9 @@ void *qemu_oom_check(void *ptr)
 
         snprintf(cmd, len, "%s %s %s %s=\"%s\"",
             JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, _msg);
-        int ret = system(cmd);
+        if(system(cmd) == -1) {
+            // TODO: Handle error... 
+        }
 #endif
 
         abort();

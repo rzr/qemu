@@ -9,4 +9,8 @@ DeviceState *pci_vga_init(PCIBus *bus);
 /* cirrus_vga.c */
 DeviceState *pci_cirrus_vga_init(PCIBus *bus);
 
+#ifdef CONFIG_MARU
+DeviceState *pci_maru_vga_init(PCIBus *bus);
+#endif
+
 #endif

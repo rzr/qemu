@@ -139,7 +139,7 @@ SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
 
     unsigned int *in = NULL;
     unsigned int *out = NULL;
-    unsigned int *row = NULL;
+//    unsigned int *row = NULL;
 
     switch(angle) {
         case 90:
@@ -168,7 +168,7 @@ SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
 
             for (i = 0; i < dst_height; i++, out += dst_width) {
                 row_index = (i * sy) >> SHIFT;
-                row	= in + (row_index * rz_src->w);
+//                row	= in + (row_index * rz_src->w);
 
                 for (j = 0; j < dst_width; j++) {
                     col_index = (sx * j) >> SHIFT;
@@ -182,7 +182,7 @@ SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
         case 90: /* landscape */
             for (i = 0; i < dst_height; i++) {
                 row_index  = (i * sy) >> SHIFT;
-                row = in + (row_index * rz_src->w);
+//                row = in + (row_index * rz_src->w);
                 
                 out = ((unsigned int *) rz_dst->pixels) + i;
 
@@ -200,7 +200,7 @@ SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
 
             for (i = 0; i < dst_height; i++, out += dst_width) {
                 row_index = ((dst_height - i - 1) * sy) >> SHIFT;
-                row = in + (row_index * rz_src->w);
+//                row = in + (row_index * rz_src->w);
 
                 for (j = 0; j < dst_width; j++) {
                     col_index = (sx * j) >> SHIFT;
@@ -214,7 +214,7 @@ SDL_Surface *maru_rotozoom(SDL_Surface *rz_src, SDL_Surface *rz_dst, int angle)
         case 270: /* reverse landscape */
             for (i = 0; i < dst_height; i++) {
                 row_index = ((dst_height - i - 1) * sy) >> SHIFT;
-                row = in + (row_index * rz_src->w);
+//                row = in + (row_index * rz_src->w);
 
                 out = ((unsigned int *) rz_dst->pixels) + i;
 
