@@ -1598,12 +1598,6 @@ static void vga_invalidate_display(void *opaque)
     s->last_height = -1;
 }
 
-static void vga_reset(void *opaque)
-{
-    VGACommonState *s =  opaque;
-    vga_common_reset(s);
-}
-
 #define TEXTMODE_X(x)   ((x) % width)
 #define TEXTMODE_Y(x)   ((x) / width)
 #define VMEM2CHTYPE(v)  ((v & 0xff0007ff) | \
@@ -1779,6 +1773,13 @@ static void vga_update_text(void *opaque, console_ch_t *chardata)
 }
 
 
+#if 0
+static void vga_reset(void *opaque)
+{
+    VGACommonState *s =  opaque;
+    vga_common_reset(s);
+}
+
 static uint64_t vga_mem_read(void *opaque, target_phys_addr_t addr,
                              unsigned size)
 {
@@ -1803,6 +1804,7 @@ static int vga_common_post_load(void *opaque, int version_id)
     s->graphic_mode = -1;
     return 0;
 }
+#endif
 
 void maru_vga_common_init(VGACommonState *s)
 {
@@ -1959,6 +1961,7 @@ static const MemoryRegionPortio vbe_portio_list[] = {
 /********************************************************/
 /* vga screen dump */
 
+#if 0
 static int maru_ppm_save(const char *filename, struct DisplaySurface *ds)
 {
     FILE *f;
@@ -2002,6 +2005,7 @@ static int maru_ppm_save(const char *filename, struct DisplaySurface *ds)
     fclose(f);
     return 0;
 }
+#endif
 
 /* save the vga display in a PPM image even if no display is
    available */

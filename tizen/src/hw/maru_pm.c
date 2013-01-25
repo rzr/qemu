@@ -39,6 +39,7 @@
 #include "range.h"
 #include "ioport.h"
 #include "debug_ch.h"
+#include "fw_cfg.h"
 
 
 //#define DEBUG
@@ -125,7 +126,7 @@ static void pm_tmr_timer(ACPIREGS *ar)
     pm_update_sci(s);
 }
 
-void maru_pm1_cnt_write(ACPIREGS *ar, uint16_t val)
+static void maru_pm1_cnt_write(ACPIREGS *ar, uint16_t val)
 {
     ar->pm1.cnt.cnt = val & ~(ACPI_BITMASK_SLEEP_ENABLE);
 
