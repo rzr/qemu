@@ -122,6 +122,33 @@ public class EmulatorSkin {
 
 	}
 
+	public enum SkinBasicColor {
+		BLUE(0, 174, 239),
+		YELLOW(246, 226, 0),
+		LIME(0, 246, 12),
+		VIOLET(168, 43, 255),
+		ORANGE(246, 110, 0),
+		MAGENTA(245, 48, 233),
+		PURPLE(94, 73, 255),
+		GREEN(179, 246, 0),
+		RED(245, 48, 48),
+		CYON(29, 223, 221);
+
+		private int channelRed;
+		private int channelGreen;
+		private int channelBlue;
+
+		SkinBasicColor(int r, int g, int b) {
+			channelRed = r;
+			channelGreen = g;
+			channelBlue = b;
+		}
+
+		public RGB color() {
+			return new RGB(channelRed, channelGreen, channelBlue);
+		}
+	}
+
 	private static Logger logger =
 			SkinLogger.getSkinLogger(EmulatorSkin.class).getLogger();
 
@@ -205,10 +232,19 @@ public class EmulatorSkin {
 		this.displayCanvasStyle = displayCanvasStyle;
 
 		/* generate a pair tag color of key window */
-		int red = (int) (Math.random() * 256);
-		int green = (int) (Math.random() * 256);
-		int blue = (int) (Math.random() * 256);
-		this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
+		int portNumber = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
+
+		if (portNumber >= 26200) {
+			int red = (int) (Math.random() * 256);
+			int green = (int) (Math.random() * 256);
+			int blue = (int) (Math.random() * 256);
+			this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
+		} else {
+			int vmIndex = (portNumber % 100) / 10;
+
+			SkinBasicColor colors[] = SkinBasicColor.values();
+			this.colorPairTag = new Color(shell.getDisplay(), colors[vmIndex].color());
+		}
 
 		this.currentState = state;
 	}
