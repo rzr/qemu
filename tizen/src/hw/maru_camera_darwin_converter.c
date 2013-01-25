@@ -18,64 +18,68 @@
 
 #include "qemu-common.h"
 #include "maru_camera_darwin.h"
+#include "tizen/src/debug_ch.h"
 
-static void UYVYToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int width, int height);
-static void YVU420ToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int width, int height);
-static void YUYVToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int width, int height);
+MULTI_DEBUG_CHANNEL(tizen, camera_darwin);
+
+static void UYVYToYUV420(unsigned char *bufsrc, unsigned char *bufdest,
+                         int width, int height);
+static void YVU420ToYUV420(unsigned char *bufsrc, unsigned char *bufdest,
+                           int width, int height);
+static void YUYVToYUV420(unsigned char *bufsrc, unsigned char *bufdest,
+                         int width, int height);
 
 /* Convert pixel format to YUV420 */
 void convert_frame(uint32_t pixel_format, int frame_width, int frame_height,
-                   size_t frame_size, void* frame_pixels, void* video_buf)
+                   size_t frame_size, void *frame_pixels, void *video_buf)
 {
     switch (pixel_format) {
-        case V4L2_PIX_FMT_YUV420:
-            memcpy(video_buf, (void*)frame_pixels, (size_t)frame_size);
-            break;
-        case V4L2_PIX_FMT_YVU420:
-            YVU420ToYUV420(frame_pixels, video_buf, frame_width, frame_height);
-            break;
-        case V4L2_PIX_FMT_YUYV:
-            YUYVToYUV420(frame_pixels, video_buf, frame_width, frame_height);
-            break;
-        case V4L2_PIX_FMT_UYVY: // Mac default format
-            UYVYToYUV420(frame_pixels, video_buf, frame_width, frame_height);
-            break;
-        default:
-            printf("Cannot convert the pixel format (%.4s)...\n", (const char*)&pixel_format);
-            break;
+    case V4L2_PIX_FMT_YUV420:
+        memcpy(video_buf, (void *)frame_pixels, (size_t)frame_size);
+        break;
+    case V4L2_PIX_FMT_YVU420:
+        YVU420ToYUV420(frame_pixels, video_buf, frame_width, frame_height);
+        break;
+    case V4L2_PIX_FMT_YUYV:
+        YUYVToYUV420(frame_pixels, video_buf, frame_width, frame_height);
+        break;
+    case V4L2_PIX_FMT_UYVY: /* Mac default format */
+        UYVYToYUV420(frame_pixels, video_buf, frame_width, frame_height);
+        break;
+    default:
+        ERR("Cannot convert the pixel format (%.4s)...\n",
+               (const char *)&pixel_format);
+        break;
     }
 }
 
-static void UYVYToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int width, int height)
+static void UYVYToYUV420(unsigned char *bufsrc, unsigned char *bufdest,
+                         int width, int height)
 {
     int i, j;
 
     /* Source */
     unsigned char *ptrsrcy1, *ptrsrcy2;
     unsigned char *ptrsrcy3, *ptrsrcy4;
-    unsigned char *ptrsrccb1, *ptrsrccb2;
-    unsigned char *ptrsrccb3, *ptrsrccb4;
-    unsigned char *ptrsrccr1, *ptrsrccr2;
-    unsigned char *ptrsrccr3, *ptrsrccr4;
+    unsigned char *ptrsrccb1;
+    unsigned char *ptrsrccb3;
+    unsigned char *ptrsrccr1;
+    unsigned char *ptrsrccr3;
     int srcystride, srcccstride;
 
     ptrsrcy1  = bufsrc + 1;
-    ptrsrcy2  = bufsrc + (width<<1) + 1;
-    ptrsrcy3  = bufsrc + (width<<1)*2 + 1;
-    ptrsrcy4  = bufsrc + (width<<1)*3 + 1;
+    ptrsrcy2  = bufsrc + (width << 1) + 1;
+    ptrsrcy3  = bufsrc + (width << 1) * 2 + 1;
+    ptrsrcy4  = bufsrc + (width << 1) * 3 + 1;
 
     ptrsrccb1 = bufsrc;
-    ptrsrccb2 = bufsrc + (width<<1);
-    ptrsrccb3 = bufsrc + (width<<1)*2;
-    ptrsrccb4 = bufsrc + (width<<1)*3;
+    ptrsrccb3 = bufsrc + (width << 1) * 2;
 
     ptrsrccr1 = bufsrc + 2;
-    ptrsrccr2 = bufsrc + (width<<1) + 2;
-    ptrsrccr3 = bufsrc + (width<<1)*2 + 2;
-    ptrsrccr4 = bufsrc + (width<<1)*3 + 2;
+    ptrsrccr3 = bufsrc + (width << 1) * 2 + 2;
 
-    srcystride  = (width<<1)*3;
-    srcccstride = (width<<1)*3;
+    srcystride  = (width << 1) * 3;
+    srcccstride = (width << 1) * 3;
 
     /* Destination */
     unsigned char *ptrdesty1, *ptrdesty2;
@@ -86,22 +90,21 @@ static void UYVYToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int widt
 
     ptrdesty1 = bufdest;
     ptrdesty2 = bufdest + width;
-    ptrdesty3 = bufdest + width*2;
-    ptrdesty4 = bufdest + width*3;
+    ptrdesty3 = bufdest + width * 2;
+    ptrdesty4 = bufdest + width * 3;
 
-    ptrdestcb1 = bufdest + width*height;
-    ptrdestcb2 = bufdest + width*height + (width>>1);
+    ptrdestcb1 = bufdest + width * height;
+    ptrdestcb2 = bufdest + width * height + (width >> 1);
 
-    ptrdestcr1 = bufdest + width*height + ((width*height) >> 2);
-    ptrdestcr2 = bufdest + width*height + ((width*height) >> 2) + (width>>1);
+    ptrdestcr1 = bufdest + width * height + ((width*height) >> 2);
+    ptrdestcr2 = bufdest + width * height + ((width*height) >> 2)
+                 + (width >> 1);
 
     destystride  = (width)*3;
     destccstride = (width>>1);
 
-    for(j=0; j<(height/4); j++)
-    {
-        for(i=0;i<(width/2);i++)
-        {
+    for (j = 0; j < (height / 4); j++) {
+        for (i = 0; i < (width / 2); i++) {
             (*ptrdesty1++) = (*ptrsrcy1);
             (*ptrdesty2++) = (*ptrsrcy2);
             (*ptrdesty3++) = (*ptrsrcy3);
@@ -162,7 +165,8 @@ static void UYVYToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int widt
     }
 }
 
-static void YVU420ToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int width, int height)
+static void YVU420ToYUV420(unsigned char *bufsrc, unsigned char *bufdest,
+                           int width, int height)
 {
     int i, j;
 
@@ -196,22 +200,21 @@ static void YVU420ToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int wi
 
     ptrdesty1 = bufdest;
     ptrdesty2 = bufdest + width;
-    ptrdesty3 = bufdest + width*2;
-    ptrdesty4 = bufdest + width*3;
+    ptrdesty3 = bufdest + width * 2;
+    ptrdesty4 = bufdest + width * 3;
 
-    ptrdestcb1 = bufdest + width*height;
-    ptrdestcb2 = bufdest + width*height + (width>>1);
+    ptrdestcb1 = bufdest + width * height;
+    ptrdestcb2 = bufdest + width * height + (width >> 1);
 
-    ptrdestcr1 = bufdest + width*height + ((width*height) >> 2);
-    ptrdestcr2 = bufdest + width*height + ((width*height) >> 2) + (width>>1);
+    ptrdestcr1 = bufdest + width * height + ((width*height) >> 2);
+    ptrdestcr2 = bufdest + width * height + ((width*height) >> 2)
+                 + (width >> 1);
 
     destystride  = (width)*3;
     destccstride = (width>>1);
 
-    for(j=0; j<(height/4); j++)
-    {
-        for(i=0;i<(width/2);i++)
-        {
+    for (j = 0; j < (height / 4); j++) {
+        for (i = 0; i < (width / 2); i++) {
 
             (*ptrdesty1++) = (*ptrsrcy1++);
             (*ptrdesty2++) = (*ptrsrcy2++);
@@ -257,36 +260,33 @@ static void YVU420ToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int wi
 
 }
 
-static void YUYVToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int width, int height)
+static void YUYVToYUV420(unsigned char *bufsrc, unsigned char *bufdest,
+                         int width, int height)
 {
     int i, j;
 
     /* Source*/
     unsigned char *ptrsrcy1, *ptrsrcy2;
     unsigned char *ptrsrcy3, *ptrsrcy4;
-    unsigned char *ptrsrccb1, *ptrsrccb2;
-    unsigned char *ptrsrccb3, *ptrsrccb4;
-    unsigned char *ptrsrccr1, *ptrsrccr2;
-    unsigned char *ptrsrccr3, *ptrsrccr4;
+    unsigned char *ptrsrccb1;
+    unsigned char *ptrsrccb3;
+    unsigned char *ptrsrccr1;
+    unsigned char *ptrsrccr3;
     int srcystride, srcccstride;
 
     ptrsrcy1  = bufsrc ;
-    ptrsrcy2  = bufsrc + (width<<1) ;
-    ptrsrcy3  = bufsrc + (width<<1)*2 ;
-    ptrsrcy4  = bufsrc + (width<<1)*3 ;
+    ptrsrcy2  = bufsrc + (width << 1);
+    ptrsrcy3  = bufsrc + (width << 1) * 2;
+    ptrsrcy4  = bufsrc + (width << 1) * 3;
 
     ptrsrccb1 = bufsrc + 1;
-    ptrsrccb2 = bufsrc + (width<<1) + 1;
-    ptrsrccb3 = bufsrc + (width<<1)*2 + 1;
-    ptrsrccb4 = bufsrc + (width<<1)*3 + 1;
+    ptrsrccb3 = bufsrc + (width << 1) * 2 + 1;
 
     ptrsrccr1 = bufsrc + 3;
-    ptrsrccr2 = bufsrc + (width<<1) + 3;
-    ptrsrccr3 = bufsrc + (width<<1)*2 + 3;
-    ptrsrccr4 = bufsrc + (width<<1)*3 + 3;
+    ptrsrccr3 = bufsrc + (width << 1) * 2 + 3;
 
-    srcystride  = (width<<1)*3;
-    srcccstride = (width<<1)*3;
+    srcystride  = (width << 1) * 3;
+    srcccstride = (width << 1) * 3;
 
     /* Destination */
     unsigned char *ptrdesty1, *ptrdesty2;
@@ -297,22 +297,21 @@ static void YUYVToYUV420(unsigned char *bufsrc, unsigned char *bufdest, int widt
 
     ptrdesty1 = bufdest;
     ptrdesty2 = bufdest + width;
-    ptrdesty3 = bufdest + width*2;
-    ptrdesty4 = bufdest + width*3;
+    ptrdesty3 = bufdest + width * 2;
+    ptrdesty4 = bufdest + width * 3;
 
-    ptrdestcb1 = bufdest + width*height;
-    ptrdestcb2 = bufdest + width*height + (width>>1);
+    ptrdestcb1 = bufdest + width * height;
+    ptrdestcb2 = bufdest + width * height + (width >> 1);
 
-    ptrdestcr1 = bufdest + width*height + ((width*height) >> 2);
-    ptrdestcr2 = bufdest + width*height + ((width*height) >> 2) + (width>>1);
+    ptrdestcr1 = bufdest + width * height + ((width * height) >> 2);
+    ptrdestcr2 = bufdest + width * height + ((width * height) >> 2)
+                 + (width >> 1);
 
-    destystride  = (width)*3;
-    destccstride = (width>>1);
+    destystride  = width * 3;
+    destccstride = (width >> 1);
 
-    for(j=0; j<(height/4); j++)
-    {
-        for(i=0;i<(width/2);i++)
-        {
+    for (j = 0; j < (height / 4); j++) {
+        for (i = 0; i < (width / 2); i++) {
             (*ptrdesty1++) = (*ptrsrcy1);
             (*ptrdesty2++) = (*ptrsrcy2);
             (*ptrdesty3++) = (*ptrsrcy3);
