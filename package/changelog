@@ -1,3 +1,6 @@
+* 1.4.75
+- prepare 10 colors for Pair Tag
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-01-25
 * 1.4.72
 - Changed host keyboard status routine on OS X.
 == Kitae Kim <kt920.kim@samsung.com> 2013-01-24
