@@ -90,7 +90,13 @@ public class EmulatorSkinMain {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
+		
+		if(SwtUtil.isMacPlatform()) {
+			//TODO: event handling of about dialog 
+			System.setProperty("apple.laf.useScreenMenuBar", "true");
+			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Emulator"); 
+		}
+		
 		String simpleMsg = getSimpleMsg(args);
 		if (simpleMsg != null) {
 			/* just show one message box. that's all. */
