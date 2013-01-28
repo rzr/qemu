@@ -177,7 +177,7 @@ GloContext *__glo_context_create(int formatFlags)
             default: fprintf(stderr, "got unsupported stencil %d", s); break;
          }
      }
-    GloContext *context = (GloContext *)malloc(sizeof(*context));
+    GloContext *context = (GloContext *)g_malloc(sizeof(*context));
     memset(context, 0, sizeof(*context));
     context->formatFlags = formatFlags;
     context->pixelFormat = pf;
@@ -188,48 +188,53 @@ GloContext *__glo_context_create(int formatFlags)
  
 GloContext *glo_context_create(int formatFlags, GloContext *shareLists) 
 { 
-	GloContext *context = __glo_context_create(formatFlags);
-	if(!context)
-		return NULL;
+        GloContext *context = __glo_context_create(formatFlags);
+        if(!context)
+                return NULL;
 
-    	context->context = aglCreateContext(context->pixelFormat, shareLists ? shareLists->context : NULL); 
-   	if (context->context == NULL) 
-	{ 
-        fprintf(stderr, "aglCreateContext failed: %s", aglErrorString(aglGetError())); 
-    	} 
+        context->context = aglCreateContext(context->pixelFormat, shareLists ? shareLists->context : NULL); 
+        if (context->context == NULL) 
+        { 
+                fprintf(stderr, "aglCreateContext failed: %s", aglErrorString(aglGetError())); 
+        } 
+        else
+        {
+                if(context->pixelFormat != NULL)
+                {
+                        aglDestroyPixelFormat(context->pixelFormat);
+                        context->pixelFormat = NULL;    
+                }
+        }
 
-    	TRACE("context=%p", context); 
-    	return context; 
+        TRACE("context=%p", context); 
+        return context; 
 } 
-  
+
 /* Destroy a previously created OpenGL context */ 
 void glo_context_destroy(GloContext *context) 
 { 
      TRACE("context=%p", context); 
      if (context) 
      { 
-         aglDestroyContext(context->context); 
-         aglDestroyPixelFormat(context->pixelFormat); 
-         context->context = NULL; 
-         context->pixelFormat = NULL; 
-         free(context); 
+             aglDestroyContext(context->context);
+             if(context->pixelFormat != NULL)
+             { 
+                     aglDestroyPixelFormat(context->pixelFormat);
+                     context->pixelFormat = NULL; 
+             }
+             context->context = NULL;  
+             g_free(context); 
      } 
  }
 
-int glo_surface_update_context(GloSurface *surface, GloContext *context)
+void glo_surface_update_context(GloSurface *surface, GloContext *context, int free_flags)
 {
-
-    int prev_context_valid = 0;
-
     if ( surface->context )
     {
-        prev_context_valid = (surface->context->context != 0);
-        if ( !prev_context_valid ) /* light-weight context */
-            g_free(surface->context);
+            if (free_flags) /* light-weight context */
+                    g_free(surface->context);
     }
     surface->context = context;
-
-    return prev_context_valid;
 }
 
  
@@ -241,7 +246,7 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context)
      GloSurface *surface = NULL; 
      if (context) 
      { 
-         surface = (GloSurface *)malloc(sizeof(*surface)); 
+         surface = (GloSurface *)g_malloc(sizeof(*surface)); 
          memset(surface, 0, sizeof(*surface)); 
          surface->width = width; 
          surface->height = height; 
@@ -264,7 +269,7 @@ void glo_surface_destroy(GloSurface *surface)
     { 
        aglDestroyPBuffer(surface->pbuffer); 
        surface->pbuffer = NULL; 
-       free(surface); 
+       g_free(surface); 
     } 
 } 
  

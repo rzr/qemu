@@ -208,12 +208,18 @@ enum {
     SURFACE_PBUFFER,
 };
 
+enum {
+        SURFACE_PENDING,    /* Created with light-weight context */
+        SURFACE_ACTIVE,     /* Ready after MakeCurrent */
+};
+
 typedef struct QGloSurface {
     GLState *glstate;
     GloSurface *surface;
     ClientGLXDrawable *client_drawable;
     int type; /* window, pixmap or pbuffer */
     int ready;
+    int status;
     int ref;
     QTAILQ_ENTRY(QGloSurface) next;
 } QGloSurface;
@@ -653,6 +659,7 @@ static int set_current_qsurface(GLState *state,
     QTAILQ_FOREACH(qsurface, &state->qsurfaces, next) {
         if(qsurface->client_drawable == client_drawable) {
             state->current_qsurface = qsurface;
+            qsurface->glstate = state;
             return 1;
         }
     }
@@ -731,8 +738,18 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
 #endif
 
             qsurface->ref = 1;
-            if ( glo_surface_update_context(qsurface->surface, glstate->context) )
-                unbind_qsurface(qsurface->glstate, qsurface);
+            if(qsurface->status == SURFACE_PENDING)
+            {
+                    glo_surface_update_context(qsurface->surface, glstate->context, 1);
+                    qsurface->status = SURFACE_ACTIVE;
+            }
+            else
+            {
+                    unbind_qsurface(qsurface->glstate, qsurface);
+                    glo_surface_update_context(qsurface->surface, glstate->context, 0);
+
+            }
+
             bind_qsurface(glstate, qsurface);
             return 1;
         }
@@ -1962,7 +1979,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 DEBUGF( "glXCreatePixmap: %dX%d.\n", width, height);
                 qsurface->surface = glo_surface_create(width, height, context);
                 qsurface->client_drawable = client_drawable;
-		qsurface->type = SURFACE_PIXMAP;
+                qsurface->type = SURFACE_PIXMAP;
+                qsurface->status = SURFACE_PENDING;
                 /*                qsurface->ref = 1;*/
 
                 /* Keep this surface, will link it with context in MakeCurrent */
@@ -2987,6 +3005,17 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 glColorPointer(4, GL_UNSIGNED_BYTE, stride,
                                ptr + 6 * sizeof(float));
             glDrawArrays(mode, 0, count);
+
+#ifdef __APPLE__  //only for mac
+            {
+                    int prev_fbo;
+                    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+                    if ( prev_fbo != 0 )
+                            glFlush();
+            }
+#endif
+
+
             break;
         }
 
@@ -3457,6 +3486,16 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
     case _glDrawElements_buffer_func:
         {
             glDrawElements(args[0], args[1], args[2], (void *) args[3]);
+
+#ifdef __APPLE__  //only for mac
+            {
+                    int prev_fbo;
+                    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+                    if ( prev_fbo != 0 )
+                            glFlush();
+            }
+#endif
+
             break;
         }
 #ifndef _WIN32
@@ -3473,8 +3512,37 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                         (int, int *, int, void **, int));
             ptr_func_glMultiDrawElements(args[0], (int *) args[1], args[2],
                                          (void **) args[3], args[4]);
+#ifdef __APPLE__  //only for mac
+            {
+                    int prev_fbo;
+                    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+                    if ( prev_fbo != 0 )
+                            glFlush();
+            }
+#endif
+
             break;
         }
+#ifdef __APPLE__  // only for mac
+    case glDrawArrays_func:
+        {
+                int prev_fbo;
+                glDrawArrays(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]), ARG_TO_INT(args[2]));
+                glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+                if ( prev_fbo != 0 )
+                        glFlush();
+                break;
+        }
+    case glDrawElements_func:
+        {
+                int prev_fbo;
+                glDrawElements(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]), ARG_TO_UNSIGNED_INT(args[2]), (const void*)(args[3]));
+                glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+                if ( prev_fbo != 0 )
+                        glFlush();
+                break;
+        }
+#endif
 
     case _glGetError_fake_func:
         {
