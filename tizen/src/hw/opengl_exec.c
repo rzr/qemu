@@ -1376,6 +1376,32 @@ shadersrc_gles_to_gl(GLsizei count, const char** string, char **s, const GLint* 
 	return 0;
 }
 
+#ifdef __APPLE__
+/* XXX:This is work around fix Mac host GL driver's bug that cause webapp
+ * screen crash. When one context use textures from other sharing context, some
+ * textures are not initialized or shared successfully. So use glGetTexImage to
+ * read texture back right after glTexSubImage2D, thus guarantee a
+ * synchronization.
+ */
+static void mac_dump_texture()
+{
+    int w, h;
+    unsigned char *buf;
+
+    /* only handle target=GL_TEXTURE_2D, level=0, format=GL_RGBA, type=GL_UNSIGNED_BYTE */
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+
+    if ( w == 0 && h == 0 )
+        return;
+
+    buf = g_malloc( (w*4) * h); /* XXX:need allignment? */
+
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+
+    g_free(buf);
+}
+#endif
 
 int do_function_call(ProcessState *process, int func_number, unsigned long *args, char *ret_string)
 {
@@ -3748,6 +3774,29 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             break;
         }
 #endif
+
+#ifdef __APPLE__
+    case glTexSubImage2D_func:
+    {
+
+      glTexSubImage2D(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]),
+                  ARG_TO_INT(args[2]), ARG_TO_INT(args[3]),
+                  ARG_TO_INT(args[4]), ARG_TO_INT(args[5]),
+                  ARG_TO_UNSIGNED_INT(args[6]), ARG_TO_UNSIGNED_INT(args[7]),
+                  (const void*)(args[8]));
+
+      if ( ARG_TO_UNSIGNED_INT(args[0]) == GL_TEXTURE_2D &&
+              ARG_TO_INT(args[1]) == 0 &&
+              ARG_TO_UNSIGNED_INT(args[6]) == GL_RGBA &&
+              ARG_TO_UNSIGNED_INT(args[7]) == GL_UNSIGNED_BYTE )
+          mac_dump_texture();
+      else
+          fprintf(stderr, "!!! Probable screen crash, no work around as glTexSubImage2d parameters do not match!\n");
+
+      break;
+    }
+#endif
+
     default:
         execute_func(func_number, (void**)args, &ret);
         break;
