@@ -317,5 +317,8 @@ void maru_virtio_touchscreen_exit(VirtIODevice *vdev)
     }
 
     virtio_cleanup(vdev);
+
+    pthread_mutex_destroy(&event_mutex);
+    pthread_mutex_destroy(&elem_mutex);
 }
 

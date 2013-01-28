@@ -41,7 +41,7 @@
 #if defined(CONFIG_LINUX)
 #include <sys/shm.h>
 #endif
-//#include "SDL_opengl.h"
+/* #include "SDL_opengl.h" */
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
@@ -454,7 +454,7 @@ static void qemu_update(void)
                         SDL_BlitSurface((SDL_Surface *)mts->finger_point_surface, NULL, surface_screen, &rect);
                     }
                 }
-            } //end  of draw multi-touch
+            } /* end of draw multi-touch */
         }
 
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
@@ -478,7 +478,8 @@ static void* run_qemu_update(void* arg)
 }
 #endif
 
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+void maruskin_sdl_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height, bool is_resize)
 {
     gchar SDL_windowhack[32];
     SDL_SysWMinfo info;
@@ -543,10 +544,15 @@ void maruskin_sdl_quit(void)
 
     SDL_Quit();
 
+#ifdef SDL_THREAD
+    pthread_cond_destroy(&sdl_cond);
+#endif
+    pthread_mutex_destroy(&sdl_mutex);
+
 #if defined(CONFIG_LINUX)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
-            ERR("shmctl failed\n");
-            perror("maru_sdl.c: ");
+        ERR("shmctl failed\n");
+        perror("maru_sdl.c: ");
     }
 #endif
 }
@@ -560,7 +566,8 @@ void maruskin_sdl_resize(void)
     memset(&ev, 0, sizeof(ev));
     ev.resize.type = SDL_VIDEORESIZE;
 
-    //This function is thread safe, and can be called from other threads safely.
+    /* This function is thread safe,
+    and can be called from other threads safely. */
     SDL_PushEvent(&ev);
 }
 
