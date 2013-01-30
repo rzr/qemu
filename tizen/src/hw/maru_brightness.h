@@ -1,9 +1,10 @@
 /*
  * Maru brightness device for VGA
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
+ * Jinhyung Jo <jinhyung.jo@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * Hyunjun Son
@@ -20,7 +21,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA.
  *
  * Contributors:
  * - S-Core Co., Ltd
@@ -39,7 +41,6 @@ extern uint32_t brightness_level;
 extern uint32_t brightness_off;
 extern uint8_t brightness_tbl[];
 
-int pci_get_brightness(void);
 DeviceState *pci_maru_brightness_init(PCIBus *bus);
 
 #endif /* MARU_BRIGHTNESS_H_ */

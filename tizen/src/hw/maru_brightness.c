@@ -1,17 +1,10 @@
 /*
  * Maru brightness device for VGA
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * SeokYeon Hwang <syeon.hwang@samsung.com>
- * SangJin Kim <sangjin3.kim@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
- * KiTae Kim <kt920.kim@samsung.com>
  * JinHyung Jo <jinhyung.jo@samsung.com>
- * SungMin Ha <sungmin82.ha@samsung.com>
- * JiHye Kim <jihye1128.kim@samsung.com>
- * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * DongKyun Yun
  * DoHyung Hong
@@ -29,7 +22,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA.
  *
  * Contributors:
  * - S-Core Co., Ltd
@@ -157,11 +151,6 @@ static int brightness_initfn(PCIDevice *dev)
 }
 
 /* external interface */
-int pci_get_brightness(void)
-{
-    return brightness_level;
-}
-
 DeviceState *pci_maru_brightness_init(PCIBus *bus)
 {
     return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
