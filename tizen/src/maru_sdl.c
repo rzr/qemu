@@ -412,7 +412,8 @@ static void qemu_update(void)
 #endif
             if (current_scale_factor < 0.5)
             {
-                /* process by sdl_gfx */
+                /* image processing via sdl_gfx for rich interpolating */
+
                 // workaround
                 // set color key 'magenta'
                 surface_qemu->format->colorkey = 0xFF00FF;
@@ -425,16 +426,28 @@ static void qemu_update(void)
 
                 SDL_FreeSurface(temp_surface);
             }
-            else if (current_scale_factor != 1.0 || current_screen_degree != 0.0)
+            else if (current_scale_factor < 1.0)
             {
-                //image processing
+                /* image processing with simple algorithm for uniformly interpolation */
                 processing_screen = maru_rotozoom(
-                    surface_qemu, processing_screen, (int)current_screen_degree);
+                    surface_qemu, processing_screen,
+                    (int)current_screen_degree, TRUE);
+
                 SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
             }
-            else //as-is
+            else /* current_scale_factor == 1.0 */
             {
-                SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
+                if (current_screen_degree != 0.0) {
+                    /* image processing */
+                    processing_screen = maru_rotozoom(
+                        surface_qemu, processing_screen,
+                        (int)current_screen_degree, FALSE);
+
+                    SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
+                } else {
+                    /* as-is */
+                    SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
+                }
             }
 
             /* draw multi-touch finger points */
