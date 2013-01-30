@@ -1,4 +1,13 @@
 /*
+ * Implementation of color conversion for MARU Virtual Camera device on MacOS.
+ *
+ * Copyright (c) 2011 - 2013 Samsung Electronics Co., Ltd All Rights Reserved
+ *
+ * Contact:
+ * Jun Tian <jun.j.tian@intel.com>
+ * JinHyung Jo <jinhyung.jo@samsung.com>
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -12,7 +21,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
+ * MA  02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
  *
  */
 
