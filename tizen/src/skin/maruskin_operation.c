@@ -55,6 +55,12 @@
 #include "target-i386/hax-i386.h"
 #endif
 
+#if defined(CONFIG_USE_SHM)
+#include <sys/shm.h>
+int g_shmid;
+extern int port_shmid;
+#endif
+
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
 #define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
@@ -73,7 +79,6 @@ extern pthread_mutex_t mutex_screenshot;
 extern pthread_cond_t cond_screenshot;
 
 extern int tizen_base_port;
-
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
 
@@ -555,6 +560,18 @@ static void* run_timed_shutdown_thread( void* args ) {
     }
 
     INFO( "Shutdown qemu !!!\n" );
+#if defined(CONFIG_USE_SHM)
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("maru_sdl.c: ");
+    }
+    
+    if (shmctl(port_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("maru_sdl.c: ");
+    }
+#endif
+
     qemu_system_shutdown_request();
 
     return NULL;

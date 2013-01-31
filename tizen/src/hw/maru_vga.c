@@ -60,8 +60,8 @@
 
 #ifdef CONFIG_USE_SHM
 void *shared_memory = (void*) 0;
-int shmid;
-int shmid_tmp;
+int skin_shmid;
+int port_shmid;
 #endif
 
 
@@ -1876,14 +1876,14 @@ void maru_vga_common_init(VGACommonState *s)
     int mykey;
     void *temp;
 
-    shmid_tmp = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
-    if (shmid_tmp == -1) {
+    port_shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
+    if (port_shmid == -1) {
         ERR("shmget failed\n");
         perror("maru_vga: ");
         exit(1);
     }
 
-    temp = shmat(shmid_tmp, (char*)0x0, 0);
+    temp = shmat(port_shmid, (char*)0x0, 0);
     if (temp == (void *)-1) {
         ERR("shmat failed\n");
         perror("maru_vga: ");
@@ -1895,8 +1895,8 @@ void maru_vga_common_init(VGACommonState *s)
     
     INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
 
-    shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
-    if (shmid == -1) {
+    skin_shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
+    if (skin_shmid == -1) {
         ERR("shmget failed\n");
         perror("maru_vga: ");
         maru_register_exit_msg(MARU_EXIT_UNKNOWN, (char*)"Cannot launch this VM.\n"
@@ -1904,7 +1904,7 @@ void maru_vga_common_init(VGACommonState *s)
         exit(0);
     }
 
-    shared_memory = shmat(shmid, (void*)0, 0);
+    shared_memory = shmat(skin_shmid, (void*)0, 0);
     if (shared_memory == (void *)-1) {
         ERR("shmat failed\n");
         perror("maru_vga: ");
@@ -1925,12 +1925,12 @@ void maru_vga_common_fini(void)
         perror("maru_vga: ");
     }
 
-    if (shmctl(shmid, IPC_RMID, 0) == -1) {
+    if (shmctl(skin_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
         perror("maru_vga: ");
     }
     
-    if (shmctl(shmid_tmp, IPC_RMID, 0) == -1) {
+    if (shmctl(port_shmid, IPC_RMID, 0) == -1) {
         ERR("temp shmctl failed\n");
         perror("maru_vga: ");
     }
