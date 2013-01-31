@@ -563,12 +563,12 @@ static void* run_timed_shutdown_thread( void* args ) {
 #if defined(CONFIG_USE_SHM)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
-        perror("maru_sdl.c: ");
+        perror("maruskin_operation.c:g_shmid: ");
     }
     
     if (shmctl(port_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
-        perror("maru_sdl.c: ");
+        perror("maruskin_operation.c:port_shmid: ");
     }
 #endif
 
