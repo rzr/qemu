@@ -33,12 +33,14 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Dialog;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.util.StringUtil;
 
@@ -56,42 +58,42 @@ public abstract class SkinDialog extends Dialog {
 	private String title;
 	private int style;
 	
-	public SkinDialog( Shell parent, String title, int style ) {
-		super( parent, style );
+	public SkinDialog(Shell parent, String title, int style) {
+		super(parent, style);
 		this.parent = parent;
 		this.title = title;
 		this.style = style;
 	}
 
 	protected void createComposite() {
-		Composite parent = new Composite( shell, SWT.NONE );
-		parent.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
-		GridLayout gridLayout = new GridLayout( 1, true );
+		Composite parent = new Composite(shell, SWT.NONE);
+		parent.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		GridLayout gridLayout = new GridLayout(1, true);
 		gridLayout.marginWidth = 20;
-		parent.setLayout( gridLayout );
+		parent.setLayout(gridLayout);
 
-		Composite composite = new Composite( parent, SWT.NONE );
-		composite.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
-		composite.setLayout( new FillLayout( SWT.VERTICAL ) );
+		Composite composite = new Composite(parent, SWT.NONE);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		composite.setLayout(new FillLayout(SWT.VERTICAL));
 
 		Composite area = createArea(composite);
 		if (null == area) {
 			return;
 		}
 
-		buttonComposite = new Composite( parent, SWT.NONE );
-		buttonComposite.setLayoutData( new GridData( SWT.FILL, SWT.CENTER, true, false ) );
-		buttonComposite.setLayout( new FillLayout( SWT.HORIZONTAL ) );
+		buttonComposite = new Composite(parent, SWT.NONE);
+		buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		buttonComposite.setLayout(new FillLayout(SWT.HORIZONTAL));
 
-		createButtons( buttonComposite );
+		createButtons(buttonComposite);
 	}
 
 	public void open() {
-		shell = new Shell( parent, style );
-		shell.setText( title );
-		shell.setImage( parent.getImage() );
+		shell = new Shell(parent, style);
+		shell.setText(title);
+		shell.setImage(parent.getImage());
 
-		shell.setLayout( new GridLayout( 1, true ) );
+		shell.setLayout(new GridLayout(1, true));
 
 		createComposite();
 		
@@ -104,15 +106,32 @@ public abstract class SkinDialog extends Dialog {
 					this.parent.getLocation().x + (this.parent.getSize().x / 2),
 					this.parent.getLocation().y + (this.parent.getSize().y / 2));
 
-			shell.setLocation(
-					central.x - (shell.getSize().x / 2),
-					central.y - (shell.getSize().y / 2));
+			int width = shell.getSize().x;
+			int height = shell.getSize().y;
+			int x = central.x - (width / 2);
+			int y = central.y - (height / 2);
+
+			Rectangle monitorBounds = Display.getDefault().getBounds();
+
+			if (x < monitorBounds.x) {
+				x = monitorBounds.x;
+			} else if ((x + width) > (monitorBounds.x + monitorBounds.width)) {
+				x = (monitorBounds.x + monitorBounds.width) - width;
+			}
+
+			if (y < monitorBounds.y) {
+				y = monitorBounds.y;
+			} else if ((y + width) > (monitorBounds.y + monitorBounds.height)) {
+				y = (monitorBounds.y + monitorBounds.height) - height;
+			}
+
+			shell.setLocation(x, y);
 		}
 
 		shell.open();
 
-		while ( !shell.isDisposed() ) {
-			if ( !shell.getDisplay().readAndDispatch() ) {
+		while (!shell.isDisposed()) {
+			if (!shell.getDisplay().readAndDispatch()) {
 				shell.getDisplay().sleep();
 			}
 		}
@@ -126,46 +145,46 @@ public abstract class SkinDialog extends Dialog {
 	protected void setShellSize() {
 	}
 	
-	protected abstract Composite createArea( Composite parent );
+	protected abstract Composite createArea(Composite parent);
 
-	protected void createButtons( Composite parent ) {
-		if ( null == parent ) {
-			throw new IllegalArgumentException( "Buttons parent is null" );
+	protected void createButtons(Composite parent) {
+		if (null == parent) {
+			throw new IllegalArgumentException("Buttons parent is null");
 		}
 	}
 
-	protected Button createButton( Composite parent, String text ) {
+	protected Button createButton(Composite parent, String text) {
 
-		if ( null == parent ) {
-			throw new IllegalArgumentException( "Button parent is null" );
+		if (null == parent) {
+			throw new IllegalArgumentException("Button parent is null");
 		}
 
-		Composite composite = new Composite( parent, SWT.NONE );
-		GridLayout gridLayout = new GridLayout( 1, true );
-		composite.setLayout( gridLayout );
+		Composite composite = new Composite(parent, SWT.NONE);
+		GridLayout gridLayout = new GridLayout(1, true);
+		composite.setLayout(gridLayout);
 
-		Button button = new Button( composite, SWT.PUSH );
+		Button button = new Button(composite, SWT.PUSH);
 		GridData gd = new GridData();
 		gd.grabExcessHorizontalSpace = true;
 		gd.horizontalAlignment = SWT.FILL;
 
-		button.setLayoutData( gd );
-		button.setText( StringUtil.nvl( text ) );
-		return button;
+		button.setLayoutData(gd);
+		button.setText(StringUtil.nvl(text));
 
+		return button;
 	}
 
-	protected Button createOKButton( Composite parent, boolean setFocus ) {
+	protected Button createOKButton(Composite parent, boolean setFocus) {
 
-		Button okButton = createButton( parent, OK );
-		okButton.addSelectionListener( new SelectionAdapter() {
+		Button okButton = createButton(parent, OK);
+		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
+			public void widgetSelected(SelectionEvent e) {
 				SkinDialog.this.shell.close();
 			}
 		} );
 
-		if ( setFocus ) {
+		if (setFocus) {
 			okButton.setFocus();
 		}
 
