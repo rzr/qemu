@@ -11,18 +11,6 @@
 */
 
 
-#ifdef _WIN32
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else /* !_WIN32 */
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#endif /* !_WIN32 */
-
 #include "emulator.h"
 #include "net/slirp.h"
 #include "qemu_socket.h"
@@ -30,129 +18,14 @@
 #include "nbd.h"
 #include "tizen/src/debug_ch.h"
 
-//DEFAULT_DEBUG_CHANNEL(qemu);
 MULTI_DEBUG_CHANNEL(qemu, sdb);
 
 extern char tizen_target_path[];
 extern int tizen_base_port;
 
-/* QSOCKET_CALL is used to deal with the fact that EINTR happens pretty
- * easily in QEMU since we use SIGALRM to implement periodic timers
- */
-
-#ifdef _WIN32
-#  define  QSOCKET_CALL(_ret,_cmd)   \
-	do { _ret = (_cmd); } while ( _ret < 0 && WSAGetLastError() == WSAEINTR )
-#else
-#  define  QSOCKET_CALL(_ret,_cmd)   \
-	do { \
-		errno = 0; \
-		do { _ret = (_cmd); } while ( _ret < 0 && errno == EINTR ); \
-	} while (0);
-#endif
-
 #ifdef _WIN32
 
-#include <errno.h>
-
-static int  winsock_error;
-
-#define  WINSOCK_ERRORS_LIST \
-	EE(WSA_INVALID_HANDLE,EINVAL,"invalid handle") \
-EE(WSA_NOT_ENOUGH_MEMORY,ENOMEM,"not enough memory") \
-EE(WSA_INVALID_PARAMETER,EINVAL,"invalid parameter") \
-EE(WSAEINTR,EINTR,"interrupted function call") \
-EE(WSAEALREADY,EALREADY,"operation already in progress") \
-EE(WSAEBADF,EBADF,"bad file descriptor") \
-EE(WSAEACCES,EACCES,"permission denied") \
-EE(WSAEFAULT,EFAULT,"bad address") \
-EE(WSAEINVAL,EINVAL,"invalid argument") \
-EE(WSAEMFILE,EMFILE,"too many opened files") \
-EE(WSAEWOULDBLOCK,EWOULDBLOCK,"resource temporarily unavailable") \
-EE(WSAEINPROGRESS,EINPROGRESS,"operation now in progress") \
-EE(WSAEALREADY,EAGAIN,"operation already in progress") \
-EE(WSAENOTSOCK,EBADF,"socket operation not on socket") \
-EE(WSAEDESTADDRREQ,EDESTADDRREQ,"destination address required") \
-EE(WSAEMSGSIZE,EMSGSIZE,"message too long") \
-EE(WSAEPROTOTYPE,EPROTOTYPE,"wrong protocol type for socket") \
-EE(WSAENOPROTOOPT,ENOPROTOOPT,"bad protocol option") \
-EE(WSAEADDRINUSE,EADDRINUSE,"address already in use") \
-EE(WSAEADDRNOTAVAIL,EADDRNOTAVAIL,"cannot assign requested address") \
-EE(WSAENETDOWN,ENETDOWN,"network is down") \
-EE(WSAENETUNREACH,ENETUNREACH,"network unreachable") \
-EE(WSAENETRESET,ENETRESET,"network dropped connection on reset") \
-EE(WSAECONNABORTED,ECONNABORTED,"software caused connection abort") \
-EE(WSAECONNRESET,ECONNRESET,"connection reset by peer") \
-EE(WSAENOBUFS,ENOBUFS,"no buffer space available") \
-EE(WSAEISCONN,EISCONN,"socket is already connected") \
-EE(WSAENOTCONN,ENOTCONN,"socket is not connected") \
-EE(WSAESHUTDOWN,ESHUTDOWN,"cannot send after socket shutdown") \
-EE(WSAETOOMANYREFS,ETOOMANYREFS,"too many references") \
-EE(WSAETIMEDOUT,ETIMEDOUT,"connection timed out") \
-EE(WSAECONNREFUSED,ECONNREFUSED,"connection refused") \
-EE(WSAELOOP,ELOOP,"cannot translate name") \
-EE(WSAENAMETOOLONG,ENAMETOOLONG,"name too long") \
-EE(WSAEHOSTDOWN,EHOSTDOWN,"host is down") \
-EE(WSAEHOSTUNREACH,EHOSTUNREACH,"no route to host") \
-
-typedef struct {
-	int          winsock;
-	int          unix;
-	const char*  string;
-} WinsockError;
-
-static const WinsockError  _winsock_errors[] = {
-#define  EE(w,u,s)   { w, u, s },
-	WINSOCK_ERRORS_LIST
-#undef   EE
-	{ -1, -1, NULL }
-};
-
-/* this function reads the latest winsock error code and updates
- * errno to a matching value. It also returns the new value of
- * errno.
- */
-static int _fix_errno( void )
-{
-	const WinsockError*  werr = _winsock_errors;
-	int                  unix = EINVAL;  /* generic error code */
-
-	winsock_error = WSAGetLastError();
-
-	for ( ; werr->string != NULL; werr++ ) {
-		if (werr->winsock == winsock_error) {
-			unix = werr->unix;
-			break;
-		}
-	}
-	errno = unix;
-	return -1;
-}
-
-#else
-static int _fix_errno( void )
-{
-	return -1;
-}
-
-#endif
-
-#define  SOCKET_CALL(cmd)  \
-	int  ret; \
-QSOCKET_CALL(ret, (cmd)); \
-if (ret < 0) \
-return _fix_errno(); \
-return ret; \
-
-int socket_send(int  fd, const void*  buf, int  buflen)
-{
-	SOCKET_CALL(send(fd, buf, buflen, 0))
-}
-
-#ifdef _WIN32
-
-	static void
-socket_close_handler( void*  _fd )
+static void socket_close_handler( void*  _fd )
 {
 	int   fd = (int)_fd;
 	int   ret;
@@ -170,8 +43,7 @@ socket_close_handler( void*  _fd )
 	closesocket( fd );
 }
 
-	void
-socket_close( int  fd )
+void socket_close( int  fd )
 {
 	int  old_errno = errno;
 
@@ -186,8 +58,7 @@ socket_close( int  fd )
 
 #include <unistd.h>
 
-	void
-socket_close( int  fd )
+void socket_close( int  fd )
 {
 	int  old_errno = errno;
 
@@ -342,9 +213,9 @@ int sdb_loopback_client(int port, int type)
 }
 
 void notify_sdb_daemon_start(void) {
-    
+
     int s;
-    /* 
+    /*
      * send a simple message to the SDB host server to tell it we just started.
      * it should be listening on port 26099.
      */
@@ -363,12 +234,14 @@ void notify_sdb_daemon_start(void) {
     /* length is hex host:emulator:port: -> 0x13 = 20 */
     sprintf(tmp, "00%2xhost:emulator:%d:%s", 20 + strlen(targetname), tizen_base_port + 1, targetname);
     INFO("message to send to SDB server: %s\n", tmp);
-    if (socket_send(s, tmp, MAXPACKETLEN) < 0) {
+    if (send(s, tmp, MAXPACKETLEN,0) < 0) {
         ERR( "message sending to SDB server error!\n");
+        perror("sdb.c: ");
     }
 
-    if (s >= 0)
+    if (s >= 0){
         socket_close(s);
-   
+    }
+
     free(targetname);
 }

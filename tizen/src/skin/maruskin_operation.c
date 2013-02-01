@@ -565,7 +565,7 @@ static void* run_timed_shutdown_thread( void* args ) {
         ERR("shmctl failed\n");
         perror("maruskin_operation.c:g_shmid: ");
     }
-    
+
     if (shmctl(port_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
         perror("maruskin_operation.c:port_shmid: ");
@@ -588,9 +588,15 @@ static void send_to_emuld( const char* request_type, int request_size, const cha
         return;
     }
 
-    socket_send( s, (char*)request_type, request_size );
-    socket_send( s, &buf_size, 4 );
-    socket_send( s, (char*)send_buf, buf_size );
+    if(send( s, (char*)request_type, request_size, 0 ) < 0) {
+        ERR("failed to send to emuld\n");
+    }
+    if(send( s, &buf_size, 4, 0 ) < 0) {
+        ERR("failed to send to emuld\n");
+    }
+    send( s, (char*)send_buf, buf_size, 0 ) {
+        ERR("failed to send to emuld\n");
+    }
 
     INFO( "send to emuld [req_type:%s, send_data:%s, send_size:%d] 127.0.0.1:%d/tcp \n",
         request_type, send_buf, buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX );
