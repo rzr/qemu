@@ -3529,6 +3529,9 @@ int main(int argc, char **argv, char **envp)
             add_device_config(DEV_VIRTCON, "vc:80Cx24C");
     }
 
+#ifndef CONFIG_MARU
+    socket_init();
+#endif
 
     if (qemu_opts_foreach(qemu_find_opts("chardev"), chardev_init_func, NULL, 1) != 0)
         exit(1);
