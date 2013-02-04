@@ -1,3 +1,6 @@
+* 1.4.83
+- update version
+== Munkyu Im <munkyu.im@samsung.com> 2013-02-04
 * 1.4.81
 - call setSize after pack the shell
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-02-04
