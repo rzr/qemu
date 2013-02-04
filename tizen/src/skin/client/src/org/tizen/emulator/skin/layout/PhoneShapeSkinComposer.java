@@ -215,17 +215,23 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
 		}
 
-		/* custom window shape */
-		SkinUtil.trimShell(shell, currentState.getCurrentImage());
-
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
 			shell.setMinimumSize(imageData.width, imageData.height);
-			shell.setSize(imageData.width, imageData.height);
 		}
 
 		shell.pack();
+
+		/* set window size */
+		if (currentState.getCurrentImage() != null) {
+			ImageData imageData = currentState.getCurrentImage().getImageData();
+			shell.setSize(imageData.width, imageData.height);
+		}
+
+		/* custom window shape */
+		SkinUtil.trimShell(shell, currentState.getCurrentImage());
+
 		shell.redraw();
 	}
 

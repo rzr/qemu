@@ -269,9 +269,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					displayBounds.y + displayBounds.height + 1, displayBounds.width, 2);
 		}
 
-		/* custom window shape */
-		trimPatchedShell(shell, currentState.getCurrentImage());
-
 		/* arrange the pair tag */
 		skin.pairTagCanvas.setBounds(
 				PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
@@ -281,10 +278,18 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
 			shell.setMinimumSize(imageData.width, imageData.height);
-			shell.setSize(imageData.width, imageData.height);
 		}
 
 		shell.pack();
+
+		if (currentState.getCurrentImage() != null) {
+			ImageData imageData = currentState.getCurrentImage().getImageData();
+			shell.setSize(imageData.width, imageData.height);
+		}
+
+		/* custom window shape */
+		trimPatchedShell(shell, currentState.getCurrentImage());
+
 		shell.redraw();
 	}
 
