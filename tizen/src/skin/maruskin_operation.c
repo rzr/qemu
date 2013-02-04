@@ -594,7 +594,7 @@ static void send_to_emuld( const char* request_type, int request_size, const cha
     if(send( s, &buf_size, 4, 0 ) < 0) {
         ERR("failed to send to emuld\n");
     }
-    send( s, (char*)send_buf, buf_size, 0 ) {
+    if(send( s, (char*)send_buf, buf_size, 0 ) < 0) {
         ERR("failed to send to emuld\n");
     }
 
