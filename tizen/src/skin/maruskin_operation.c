@@ -55,7 +55,7 @@
 #include "target-i386/hax-i386.h"
 #endif
 
-#if defined(CONFIG_USE_SHM)
+#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
 #include <sys/shm.h>
 int g_shmid;
 extern int port_shmid;
@@ -560,7 +560,7 @@ static void* run_timed_shutdown_thread( void* args ) {
     }
 
     INFO( "Shutdown qemu !!!\n" );
-#if defined(CONFIG_USE_SHM)
+#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
         perror("maruskin_operation.c:g_shmid: ");
