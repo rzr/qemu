@@ -464,6 +464,7 @@ static int __v4l2_streaming(MaruCamState *state)
     fd_set fds;
     struct timeval tv;
     int ret;
+    static uint32_t timeout_n;
 
     FD_ZERO(&fds);
     FD_SET(v4l2_fd, &fds);
@@ -481,7 +482,12 @@ static int __v4l2_streaming(MaruCamState *state)
         __raise_err_intr(state);
         return -1;
     } else if (!ret) {
-        ERR("Select timed out\n");
+        timeout_n++;
+        ERR("Select timed out: count(%u)\n", timeout_n);
+        if (timeout_n >= 5) {
+            __raise_err_intr(state);
+            return -1;
+        }
         return 0;
     }
 
@@ -497,6 +503,12 @@ static int __v4l2_streaming(MaruCamState *state)
         __raise_err_intr(state);
         return -1;
     }
+
+    /* clear the skip count for select time-out */
+    if (timeout_n > 0) {
+        timeout_n = 0;
+    }
+
     return 0;
 }
 
