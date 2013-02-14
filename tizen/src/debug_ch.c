@@ -33,12 +33,30 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#include "debug_ch.h"
-#include "fileio.h"
 
-extern STARTUP_OPTION startup_option;
-static char logfile[256] = { 0, };
-static char debugchfile[256] = {0, };
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <errno.h>
+#endif
+
+#include "emulator.h"
+#include "debug_ch.h"
+
+// DEBUGCH file is located in binary directory.
+char bin_dir[256] = {0,};
+
+static char logpath[512] = {0,};
+static char debugchfile[512] = {0, };
+#ifdef _WIN32
+static HANDLE handle;
+#endif
+
+void set_log_path(char *path)
+{
+    strcpy(logpath, path);
+}
+
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
 	int ret;
@@ -72,6 +90,7 @@ unsigned char _dbg_get_channel_flags( struct _debug_channel *channel )
 		debug_init();
 
 	if(nb_debug_options){
+        		
 		struct _debug_channel *opt;
 
 		/* first check for multi channel */
@@ -257,8 +276,23 @@ static void debug_init(void)
 		return;  /* already initialized */
 
 	nb_debug_options = 0;
+
+#if 0
 	strcpy(debugchfile, get_etc_path());
 	strcat(debugchfile, "/DEBUGCH");
+#endif
+
+    if ( 0 == strlen( bin_dir ) ) {
+        strcpy( debugchfile, "DEBUGCH" );
+    } else {
+        strcat( debugchfile, bin_dir );
+#ifdef _WIN32
+        strcat( debugchfile, "\\" );
+#else
+        strcat( debugchfile, "/" );
+#endif
+        strcat( debugchfile, "DEBUGCH" );
+    }
 
 	fp= fopen(debugchfile, "r");
 	if( fp == NULL){
@@ -288,12 +322,19 @@ static void debug_init(void)
 	if( tmp != NULL ){
 		free(tmp);
 	}
-
-	strcpy(logfile, get_virtual_target_log_path(startup_option.vtm));
-	strcat(logfile, EMUL_LOGFILE);
-
-	if(access(logfile, F_OK | R_OK) == 0)
-		remove(logfile);
+	
+#ifdef _WIN32
+	handle = CreateFile(logpath, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL,
+                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+		if (handle == INVALID_HANDLE_VALUE) {
+			fprintf(stderr, "logfile can't open: %s\n", GetLastError());
+			exit(1);
+		}
+#else
+	if(access(logpath, F_OK | R_OK) == 0) {
+		remove(logpath);
+	}
+#endif
 }
 
 /* allocate some tmp string space */
@@ -337,7 +378,7 @@ static int dbg_vprintf( const char *format, va_list args )
 	sprintf(txt, "%s", tmp);
 
 	// unlock
-	if ((fp = fopen(logfile, "a+")) == NULL) {
+	if ((fp = fopen(logpath, "a+")) == NULL) {
 		fprintf(stdout, "Emulator can't open.\n"
 				"Please check if "
 				"this binary file is running on the right path.\n");
@@ -399,7 +440,6 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	int ret = 0;
 	char buf[2048];
 	va_list valist;
-	FILE *fp;
 	
 	if (!(_dbg_get_channel_flags( channel ) & (1 << cls)))
 		return -1;
@@ -414,18 +454,26 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
  	va_start(valist, format);
 	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
-
-	if ((fp = fopen(logfile, "a+")) == NULL) {
-		fprintf(stdout, "Emulator can't open.\n"
-				"Please check if "
-				"this binary file is running on the right path.\n");
+#ifdef _WIN32
+	DWORD dwWritten;
+	handle = CreateFile(logpath, FILE_APPEND_DATA, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL,
+                        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if (handle == INVALID_HANDLE_VALUE) {
+			fprintf(stderr, "logfile can't open: %s\n", GetLastError());
+		exit(1);
+	}
+	
+	WriteFile(handle, buf, strlen(buf), &dwWritten, 0);
+	CloseHandle(handle);
+#else
+	FILE *fp;
+	if ((fp = fopen(logpath, "a+")) == NULL) {
+		fprintf(stderr, "logfile can't open: %s\n", strerror(errno));
 		exit(1);
 	}
 	fprintf(fp,"%s", buf);
-//	fputs(buf, fp);
 	fclose(fp);
-//	ret = fprintf(logfile, "%s\n", buf);
-//	fflush(stderr);
+#endif
 
 	return ret;
 }

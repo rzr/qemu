@@ -778,28 +778,38 @@ int64_t helper_cvttsd2sq(XMMReg *s)
 
 void helper_rsqrtps(XMMReg *d, XMMReg *s)
 {
-    d->XMM_S(0) = approx_rsqrt(s->XMM_S(0));
-    d->XMM_S(1) = approx_rsqrt(s->XMM_S(1));
-    d->XMM_S(2) = approx_rsqrt(s->XMM_S(2));
-    d->XMM_S(3) = approx_rsqrt(s->XMM_S(3));
+    d->XMM_S(0) = float32_div(float32_one,
+                              float32_sqrt(s->XMM_S(0), &env->sse_status),
+                              &env->sse_status);
+    d->XMM_S(1) = float32_div(float32_one,
+                              float32_sqrt(s->XMM_S(1), &env->sse_status),
+                              &env->sse_status);
+    d->XMM_S(2) = float32_div(float32_one,
+                              float32_sqrt(s->XMM_S(2), &env->sse_status),
+                              &env->sse_status);
+    d->XMM_S(3) = float32_div(float32_one,
+                              float32_sqrt(s->XMM_S(3), &env->sse_status),
+                              &env->sse_status);
 }
 
 void helper_rsqrtss(XMMReg *d, XMMReg *s)
 {
-    d->XMM_S(0) = approx_rsqrt(s->XMM_S(0));
+    d->XMM_S(0) = float32_div(float32_one,
+                              float32_sqrt(s->XMM_S(0), &env->sse_status),
+                              &env->sse_status);
 }
 
 void helper_rcpps(XMMReg *d, XMMReg *s)
 {
-    d->XMM_S(0) = approx_rcp(s->XMM_S(0));
-    d->XMM_S(1) = approx_rcp(s->XMM_S(1));
-    d->XMM_S(2) = approx_rcp(s->XMM_S(2));
-    d->XMM_S(3) = approx_rcp(s->XMM_S(3));
+    d->XMM_S(0) = float32_div(float32_one, s->XMM_S(0), &env->sse_status);
+    d->XMM_S(1) = float32_div(float32_one, s->XMM_S(1), &env->sse_status);
+    d->XMM_S(2) = float32_div(float32_one, s->XMM_S(2), &env->sse_status);
+    d->XMM_S(3) = float32_div(float32_one, s->XMM_S(3), &env->sse_status);
 }
 
 void helper_rcpss(XMMReg *d, XMMReg *s)
 {
-    d->XMM_S(0) = approx_rcp(s->XMM_S(0));
+    d->XMM_S(0) = float32_div(float32_one, s->XMM_S(0), &env->sse_status);
 }
 
 static inline uint64_t helper_extrq(uint64_t src, int shift, int len)
@@ -849,51 +859,51 @@ void helper_insertq_i(XMMReg *d, int index, int length)
 void helper_haddps(XMMReg *d, XMMReg *s)
 {
     XMMReg r;
-    r.XMM_S(0) = d->XMM_S(0) + d->XMM_S(1);
-    r.XMM_S(1) = d->XMM_S(2) + d->XMM_S(3);
-    r.XMM_S(2) = s->XMM_S(0) + s->XMM_S(1);
-    r.XMM_S(3) = s->XMM_S(2) + s->XMM_S(3);
+    r.XMM_S(0) = float32_add(d->XMM_S(0), d->XMM_S(1), &env->sse_status);
+    r.XMM_S(1) = float32_add(d->XMM_S(2), d->XMM_S(3), &env->sse_status);
+    r.XMM_S(2) = float32_add(s->XMM_S(0), s->XMM_S(1), &env->sse_status);
+    r.XMM_S(3) = float32_add(s->XMM_S(2), s->XMM_S(3), &env->sse_status);
     *d = r;
 }
 
 void helper_haddpd(XMMReg *d, XMMReg *s)
 {
     XMMReg r;
-    r.XMM_D(0) = d->XMM_D(0) + d->XMM_D(1);
-    r.XMM_D(1) = s->XMM_D(0) + s->XMM_D(1);
+    r.XMM_D(0) = float64_add(d->XMM_D(0), d->XMM_D(1), &env->sse_status);
+    r.XMM_D(1) = float64_add(s->XMM_D(0), s->XMM_D(1), &env->sse_status);
     *d = r;
 }
 
 void helper_hsubps(XMMReg *d, XMMReg *s)
 {
     XMMReg r;
-    r.XMM_S(0) = d->XMM_S(0) - d->XMM_S(1);
-    r.XMM_S(1) = d->XMM_S(2) - d->XMM_S(3);
-    r.XMM_S(2) = s->XMM_S(0) - s->XMM_S(1);
-    r.XMM_S(3) = s->XMM_S(2) - s->XMM_S(3);
+    r.XMM_S(0) = float32_sub(d->XMM_S(0), d->XMM_S(1), &env->sse_status);
+    r.XMM_S(1) = float32_sub(d->XMM_S(2), d->XMM_S(3), &env->sse_status);
+    r.XMM_S(2) = float32_sub(s->XMM_S(0), s->XMM_S(1), &env->sse_status);
+    r.XMM_S(3) = float32_sub(s->XMM_S(2), s->XMM_S(3), &env->sse_status);
     *d = r;
 }
 
 void helper_hsubpd(XMMReg *d, XMMReg *s)
 {
     XMMReg r;
-    r.XMM_D(0) = d->XMM_D(0) - d->XMM_D(1);
-    r.XMM_D(1) = s->XMM_D(0) - s->XMM_D(1);
+    r.XMM_D(0) = float64_sub(d->XMM_D(0), d->XMM_D(1), &env->sse_status);
+    r.XMM_D(1) = float64_sub(s->XMM_D(0), s->XMM_D(1), &env->sse_status);
     *d = r;
 }
 
 void helper_addsubps(XMMReg *d, XMMReg *s)
 {
-    d->XMM_S(0) = d->XMM_S(0) - s->XMM_S(0);
-    d->XMM_S(1) = d->XMM_S(1) + s->XMM_S(1);
-    d->XMM_S(2) = d->XMM_S(2) - s->XMM_S(2);
-    d->XMM_S(3) = d->XMM_S(3) + s->XMM_S(3);
+    d->XMM_S(0) = float32_sub(d->XMM_S(0), s->XMM_S(0), &env->sse_status);
+    d->XMM_S(1) = float32_add(d->XMM_S(1), s->XMM_S(1), &env->sse_status);
+    d->XMM_S(2) = float32_sub(d->XMM_S(2), s->XMM_S(2), &env->sse_status);
+    d->XMM_S(3) = float32_add(d->XMM_S(3), s->XMM_S(3), &env->sse_status);
 }
 
 void helper_addsubpd(XMMReg *d, XMMReg *s)
 {
-    d->XMM_D(0) = d->XMM_D(0) - s->XMM_D(0);
-    d->XMM_D(1) = d->XMM_D(1) + s->XMM_D(1);
+    d->XMM_D(0) = float64_sub(d->XMM_D(0), s->XMM_D(0), &env->sse_status);
+    d->XMM_D(1) = float64_add(d->XMM_D(1), s->XMM_D(1), &env->sse_status);
 }
 
 /* XXX: unordered */
@@ -921,14 +931,14 @@ void helper_ ## name ## sd (Reg *d, Reg *s)\
     d->XMM_Q(0) = F(64, d->XMM_D(0), s->XMM_D(0));\
 }
 
-#define FPU_CMPEQ(size, a, b) float ## size ## _eq(a, b, &env->sse_status) ? -1 : 0
+#define FPU_CMPEQ(size, a, b) float ## size ## _eq_quiet(a, b, &env->sse_status) ? -1 : 0
 #define FPU_CMPLT(size, a, b) float ## size ## _lt(a, b, &env->sse_status) ? -1 : 0
 #define FPU_CMPLE(size, a, b) float ## size ## _le(a, b, &env->sse_status) ? -1 : 0
-#define FPU_CMPUNORD(size, a, b) float ## size ## _unordered(a, b, &env->sse_status) ? - 1 : 0
-#define FPU_CMPNEQ(size, a, b) float ## size ## _eq(a, b, &env->sse_status) ? 0 : -1
+#define FPU_CMPUNORD(size, a, b) float ## size ## _unordered_quiet(a, b, &env->sse_status) ? - 1 : 0
+#define FPU_CMPNEQ(size, a, b) float ## size ## _eq_quiet(a, b, &env->sse_status) ? 0 : -1
 #define FPU_CMPNLT(size, a, b) float ## size ## _lt(a, b, &env->sse_status) ? 0 : -1
 #define FPU_CMPNLE(size, a, b) float ## size ## _le(a, b, &env->sse_status) ? 0 : -1
-#define FPU_CMPORD(size, a, b) float ## size ## _unordered(a, b, &env->sse_status) ? 0 : -1
+#define FPU_CMPORD(size, a, b) float ## size ## _unordered_quiet(a, b, &env->sse_status) ? 0 : -1
 
 SSE_HELPER_CMP(cmpeq, FPU_CMPEQ)
 SSE_HELPER_CMP(cmplt, FPU_CMPLT)
@@ -1216,8 +1226,8 @@ void helper_pfadd(MMXReg *d, MMXReg *s)
 
 void helper_pfcmpeq(MMXReg *d, MMXReg *s)
 {
-    d->MMX_L(0) = float32_eq(d->MMX_S(0), s->MMX_S(0), &env->mmx_status) ? -1 : 0;
-    d->MMX_L(1) = float32_eq(d->MMX_S(1), s->MMX_S(1), &env->mmx_status) ? -1 : 0;
+    d->MMX_L(0) = float32_eq_quiet(d->MMX_S(0), s->MMX_S(0), &env->mmx_status) ? -1 : 0;
+    d->MMX_L(1) = float32_eq_quiet(d->MMX_S(1), s->MMX_S(1), &env->mmx_status) ? -1 : 0;
 }
 
 void helper_pfcmpge(MMXReg *d, MMXReg *s)
@@ -1272,14 +1282,16 @@ void helper_pfpnacc(MMXReg *d, MMXReg *s)
 
 void helper_pfrcp(MMXReg *d, MMXReg *s)
 {
-    d->MMX_S(0) = approx_rcp(s->MMX_S(0));
+    d->MMX_S(0) = float32_div(float32_one, s->MMX_S(0), &env->mmx_status);
     d->MMX_S(1) = d->MMX_S(0);
 }
 
 void helper_pfrsqrt(MMXReg *d, MMXReg *s)
 {
     d->MMX_L(1) = s->MMX_L(0) & 0x7fffffff;
-    d->MMX_S(1) = approx_rsqrt(d->MMX_S(1));
+    d->MMX_S(1) = float32_div(float32_one,
+                              float32_sqrt(d->MMX_S(1), &env->mmx_status),
+                              &env->mmx_status);
     d->MMX_L(1) |= s->MMX_L(0) & 0x80000000;
     d->MMX_L(0) = d->MMX_L(1);
 }
@@ -1984,11 +1996,13 @@ void glue(helper_pcmpestrm, SUFFIX) (Reg *d, Reg *s, uint32_t ctrl)
 
     if ((ctrl >> 6) & 1) {
         if (ctrl & 1)
-            for (i = 0; i <= 8; i--, res >>= 1)
+            for (i = 0; i < 8; i++, res >>= 1) {
                 d->W(i) = (res & 1) ? ~0 : 0;
+            }
         else
-            for (i = 0; i <= 16; i--, res >>= 1)
+            for (i = 0; i < 16; i++, res >>= 1) {
                 d->B(i) = (res & 1) ? ~0 : 0;
+            }
     } else {
         d->Q(1) = 0;
         d->Q(0) = res;
@@ -2016,11 +2030,13 @@ void glue(helper_pcmpistrm, SUFFIX) (Reg *d, Reg *s, uint32_t ctrl)
 
     if ((ctrl >> 6) & 1) {
         if (ctrl & 1)
-            for (i = 0; i <= 8; i--, res >>= 1)
+            for (i = 0; i < 8; i++, res >>= 1) {
                 d->W(i) = (res & 1) ? ~0 : 0;
+            }
         else
-            for (i = 0; i <= 16; i--, res >>= 1)
+            for (i = 0; i < 16; i++, res >>= 1) {
                 d->B(i) = (res & 1) ? ~0 : 0;
+            }
     } else {
         d->Q(1) = 0;
         d->Q(0) = res;

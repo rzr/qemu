@@ -6,8 +6,7 @@
  *
  * Contact:
  *  GiWoong Kim <giwoong.kim@samsung.com>
- *  Hyunjun Son <hj79.son@samsung.com>
- *  DongKyun Yun <dk77.yun@samsung.com>
+ *  HyunJun Son <hj79.son@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,113 +28,52 @@
  *
  */
 
-#include "hw.h"
-#include "console.h"
-#include "usb.h"
-#include "usb-desc.h"
+
+#include "maru_touchscreen.h"
+#include "debug_ch.h"
+
+MULTI_DEBUG_CHANNEL(qemu, touchscreen);
 
 
-typedef struct USBTouchscreenState {
-    USBDevice dev;
-    QEMUPutMouseEntry *eh_entry;
+#define MAX_TOUCH_EVENT_CNT  128
 
-    int32_t dx, dy, dz, buttons_state;
-    int8_t mouse_grabbed;
-    int8_t changed;
-} USBTouchscreenState;
+static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* This structure must match the kernel definitions */
-typedef struct USBEmulTouchscreenPacket {
-    uint16_t x, y, z;
-    uint8_t state;
-} USBEmulTouchscreenPacket;
+static QTAILQ_HEAD(, TouchEventEntry) events_queue =
+    QTAILQ_HEAD_INITIALIZER(events_queue);
 
-
-#define EMUL_TOUCHSCREEN_PACKET_LEN 7
-#define TOUCHSCREEN_RESOLUTION_X 5040
-#define TOUCHSCREEN_RESOLUTION_Y 3780
-
-enum {
-    STR_MANUFACTURER = 1,
-    STR_PRODUCT,
-    STR_SERIALNUMBER,
-};
-
-static const USBDescStrings desc_strings = {
-    [STR_MANUFACTURER]     = "QEMU " QEMU_VERSION,
-    [STR_PRODUCT]          = "Maru Virtual Touchscreen",
-    [STR_SERIALNUMBER]     = "1",
-};
-
-static const USBDescIface desc_iface_touchscreen = {
-    .bInterfaceNumber              = 0,
-    .bNumEndpoints                 = 1,
-    .bInterfaceClass               = USB_CLASS_HID,
-    .bInterfaceSubClass            = 0x01, /* boot */
-    .bInterfaceProtocol            = 0x02,
-    .ndesc                         = 1,
-    .descs = (USBDescOther[]) {
-        {
-            /* HID descriptor */
-            .data = (uint8_t[]) {
-                0x09,          /*  u8  bLength */
-                0x21,          /*  u8  bDescriptorType */
-                0x01, 0x10,    /*  u16 HID_class */
-                0x00,          /*  u8  country_code */
-                0x01,          /*  u8  num_descriptors */
-                0x22,          /*  u8  type: Report */
-                0x6e, 0,       /*  u16 len */
-            },
-        },
-    },
-    .eps = (USBDescEndpoint[]) {
-        {
-            .bEndpointAddress      = USB_DIR_IN | 0x01,
-            .bmAttributes          = USB_ENDPOINT_XFER_INT,
-            .wMaxPacketSize        = 8,
-            .bInterval             = 0x0a,
-        },
-    },
-};
-
-static const USBDescDevice desc_device_touchscreen = {
-    .bcdUSB                        = 0x0110,
-    .bMaxPacketSize0               = EMUL_TOUCHSCREEN_PACKET_LEN + 1,
-    .bNumConfigurations            = 1,
-    .confs = (USBDescConfig[]) {
-        {
-            .bNumInterfaces        = 1,
-            .bConfigurationValue   = 1,
-            .bmAttributes          = 0x80,
-            .bMaxPower             = 40,
-            .ifs = &desc_iface_touchscreen,
-        },
-    },
-};
-
-static const USBDesc desc_touchscreen = {
-    .id = {
-        .idVendor          = 0x056a,
-        .idProduct         = 0x0000,
-        .bcdDevice         = 0x0010,
-        .iManufacturer     = STR_MANUFACTURER,
-        .iProduct          = STR_PRODUCT,
-        .iSerialNumber     = STR_SERIALNUMBER,
-    },
-    .full = &desc_device_touchscreen,
-    .str = desc_strings,
-};
+static unsigned int event_cnt = 0;
+static unsigned int _processed_buf_cnt = 0;
+static TouchEventEntry _event_buf[MAX_TOUCH_EVENT_CNT];
 
 static void usb_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state)
 {
+    TouchEventEntry *te;
     USBTouchscreenState *s = opaque;
 
-    /* scale to resolution */
-    s->dx = (x * TOUCHSCREEN_RESOLUTION_X / 0x7FFF);
-    s->dy = (y * TOUCHSCREEN_RESOLUTION_Y / 0x7FFF);
-    s->dz = z;
-    s->buttons_state = buttons_state;
+    pthread_mutex_lock(&event_mutex);
+    if (event_cnt >= MAX_TOUCH_EVENT_CNT) {
+        pthread_mutex_unlock(&event_mutex);
+        INFO("full touch event queue, lose event\n", event_cnt);
+        return;
+    }
+
+    //using prepared memory
+    te = &(_event_buf[_processed_buf_cnt % MAX_TOUCH_EVENT_CNT]);
+    _processed_buf_cnt++;
+
+    /* mouse event is copied into the packet */
+    te->index = ++event_cnt;
+    te->queue_packet.x = x; //(x * TOUCHSCREEN_RESOLUTION_X / 0x7FFF);
+    te->queue_packet.y = y; //(y * TOUCHSCREEN_RESOLUTION_Y / 0x7FFF);
+    te->queue_packet.z = z;
+    te->queue_packet.state = buttons_state;
+
+    QTAILQ_INSERT_TAIL(&events_queue, te, node);
     s->changed = 1;
+    pthread_mutex_unlock(&event_mutex);
+
+    TRACE("touch event (%d) : x=%d, y=%d, z=%d, state=%d\n", te->index, x, y, z, buttons_state);
 }
 
 static int usb_touchscreen_poll(USBTouchscreenState *s, uint8_t *buf, int len)
@@ -177,32 +115,68 @@ static void usb_touchscreen_handle_reset(USBDevice *dev)
 {
     USBTouchscreenState *s = (USBTouchscreenState *) dev;
 
+    pthread_mutex_lock(&event_mutex);
+
     s->dx = 0;
     s->dy = 0;
     s->dz = 0;
     s->buttons_state = 0;
+
+    event_cnt = 0;
+    _processed_buf_cnt = 0;
+
+    pthread_mutex_unlock(&event_mutex);
 }
 
-static int usb_touchscreen_handle_control(USBDevice *dev,
+static int usb_touchscreen_handle_control(USBDevice *dev, USBPacket *p,
     int request, int value, int index, int length, uint8_t *data)
 {
-    return usb_desc_handle_control(dev, request, value, index, length, data);
+    return usb_desc_handle_control(dev, p, request, value, index, length, data);
 }
 
 static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
 {
     USBTouchscreenState *s = (USBTouchscreenState *) dev;
+    uint8_t buf[p->iov.size];
     int ret = 0;
 
     switch (p->pid) {
     case USB_TOKEN_IN:
         if (p->devep == 1) {
+            pthread_mutex_lock(&event_mutex);
+
             if (s->changed == 0) {
+                pthread_mutex_unlock(&event_mutex);
                 return USB_RET_NAK;
             }
 
-            s->changed = 0;
-            ret = usb_touchscreen_poll(s, p->data, p->len);
+            if (event_cnt != 0) {
+                if (!QTAILQ_EMPTY(&events_queue)) {
+                    TouchEventEntry *te = QTAILQ_FIRST(&events_queue);
+
+                    s->dx = te->queue_packet.x;
+                    s->dy = te->queue_packet.y;
+                    s->dz = te->queue_packet.z;
+                    s->buttons_state = te->queue_packet.state;
+
+                    QTAILQ_REMOVE(&events_queue, te, node);
+                    event_cnt--;
+                    TRACE("processed touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
+                        te->index, s->dx, s->dy, s->dz, s->buttons_state);
+
+                    if (QTAILQ_EMPTY(&events_queue)) {
+                        s->changed = 0;
+                        TRACE("processed all touch events (%d)\n", event_cnt);
+                    }
+                }
+            } else {
+                s->changed = 0;
+            }
+
+            pthread_mutex_unlock(&event_mutex);
+
+            ret = usb_touchscreen_poll(s, buf, p->iov.size);
+            usb_packet_copy(p, buf, ret);
             break;
         }
         /* Fall through */
@@ -228,7 +202,11 @@ static int usb_touchscreen_initfn(USBDevice *dev)
 {
     USBTouchscreenState *s = DO_UPCAST(USBTouchscreenState, dev, dev);
     usb_desc_init(dev);
+
+    pthread_mutex_lock(&event_mutex);
     s->changed = 1;
+    pthread_mutex_unlock(&event_mutex);
+
     return 0;
 }
 
@@ -248,7 +226,10 @@ static int touchscreen_post_load(void *opaque, int version_id)
 {
     USBTouchscreenState *s = (USBTouchscreenState *)opaque;
 
+    pthread_mutex_lock(&event_mutex);
     s->changed = 1;
+    pthread_mutex_unlock(&event_mutex);
+
     if (s->mouse_grabbed == 1) {
         s->eh_entry = qemu_add_mouse_event_handler(usb_touchscreen_event, s, 1, "QEMU Virtual touchscreen");
         qemu_activate_mouse_event_handler(s->eh_entry);

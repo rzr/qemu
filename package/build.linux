@@ -5,6 +5,7 @@ clean()
 	cd $SRCDIR/tizen/
 	if test -e "Makefile"
 	then
+		./qemu_configure.sh
 		make clean
 	fi
 	rm -rf $SRCDIR/*.zip
@@ -15,8 +16,7 @@ clean()
 build() 
 {
 	cd $SRCDIR/tizen/
-	autoconf
-	./configure
+	./qemu_configure.sh
 	make
 }
 
@@ -29,8 +29,8 @@ install()
     cd $SRCDIR/tizen
     make install
 	mv Emulator $BIN_DIR
-	cp $SRCDIR/package/emulator.install.linux $BIN_DIR/../
-	cp $SRCDIR/package/emulator.remove.linux $BIN_DIR/../
+#	cp $SRCDIR/package/emulator.install.linux $BIN_DIR/../
+#	cp $SRCDIR/package/emulator.remove.linux $BIN_DIR/../
 }
 
 [ "$1" = "clean" ] && clean

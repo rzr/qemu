@@ -1,0 +1,102 @@
+# Makefile.tizen
+# for TIZEN-maru board
+
+
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin)
+
+QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/ffmpeg/include
+QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/ffmpeg/lib
+QEMU_CFLAGS += $(SDL_CFLAGS)
+QEMU_CFLAGS += $(GLIB_CFLAGS)
+CFLAGS += -g -O2
+
+ifdef CONFIG_WIN32
+LIBS += -lavformat -lavcodec -lavutil -lm
+else
+LIBS += -lavformat -lavcodec -lavutil -lm -lGL
+endif
+
+ifdef CONFIG_DEBUG_EXEC
+GL_CFLAGS := -Wall -g -O0 -fno-strict-aliasing
+else
+GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
+endif
+
+ifndef CONFIG_WIN32
+###########################################################
+## Build openGL
+# i386
+ifeq ($(TARGET_ARCH), i386)
+
+GL_CUR_PATH = $(SRC_PATH)/tizen/src/hw
+
+GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu -I$(SRC_PATH)/$(TARGET_DIRS) $(QEMU_CFLAGS) $(CFLAGS)
+
+parse_gl_h: parse_gl_h.c
+	$(CC) -g -o $@ $<
+server_stub.c: parse_gl_h
+	./parse_gl_h 2>/dev/null
+gl_func.h: parse_gl_h
+	./parse_gl_h 2>/dev/null
+opengl_func.h: gl_func.h
+helper_opengl.o: helper_opengl.c opengl_func.h server_stub.c opengl_process.h
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $< 
+gl_beginend.h: $(GL_CUR_PATH)/beginend_funcs.sh
+	$< > $@
+mesa_mipmap.o : mesa_mipmap.c
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $< 
+opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_process.h mesa_mipmap.o
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $< 
+
+endif #($(TARGET_ARCH), i386)
+###########################################################
+endif #CONFIG_WIN32
+	
+# maru loader
+obj-y += emulator.o emul_state.o option.o
+
+# maru display
+obj-y += maru_sdl.o sdl_rotate.o maru_finger.o
+
+# sdb
+obj-y += sdb.o
+
+# mloop event
+obj-y += mloop_event.o
+
+# debug channel
+obj-y += debug_ch.o
+
+# maru hardware
+obj-i386-y += maru_board.o
+obj-i386-y += maru_overlay.o
+obj-i386-y += maru_codec.o
+obj-i386-y += maru_pm.o
+obj-i386-y += maru_vga.o
+obj-i386-y += maru_brightness.o
+obj-i386-y += maru_touchscreen.o
+obj-i386-$(CONFIG_PCI) += maru_camera_common_pci.o
+obj-i386-$(CONFIG_LINUX) += maru_camera_linux_pci.o
+obj-i386-$(CONFIG_WIN32) += maru_camera_win32_pci.o
+ifdef CONFIG_LINUX # libs for maru camera on linux host
+LIBS += -lv4l2 -lv4lconvert
+endif
+
+ifdef CONFIG_WIN32 # libs for maru camera on windows host
+LIBS += -lole32 -loleaut32 -luuid -lstrmiids
+endif
+
+
+# maru skin
+obj-i386-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
+
+# guest server
+obj-i386-y += guest_server.o 
+
+ifndef CONFIG_WIN32
+###########################################################
+## opengl library for i386
+obj-i386-y += virtio-gl.o helper_opengl.o opengl_exec.o mesa_mipmap.o gloffscreen_common.o gloffscreen_xcomposite.o gloffscreen_wgl.o gloffscreen_test.o
+###########################################################
+endif

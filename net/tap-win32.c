@@ -480,7 +480,7 @@ static int tap_win32_write(tap_win32_overlapped_t *overlapped,
         }
     }
 
-    return 0;
+    return write_size;
 }
 
 static DWORD WINAPI tap_win32_thread_entry(LPVOID param)
@@ -591,7 +591,6 @@ static int tap_win32_open(tap_win32_overlapped_t **phandle,
               USERMODEDEVICEDIR,
               device_guid,
               TAPSUFFIX);
-
     handle = CreateFile (
         device_path,
         GENERIC_READ | GENERIC_WRITE,
@@ -600,7 +599,6 @@ static int tap_win32_open(tap_win32_overlapped_t **phandle,
         OPEN_EXISTING,
         FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
         0 );
-
     if (handle == INVALID_HANDLE_VALUE) {
         return -1;
     }
