@@ -1,0 +1,270 @@
+/**
+ * Emulator Skin Process
+ *
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ *
+ * Contact:
+ * GiWoong Kim <giwoong.kim@samsung.com>
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
+ *
+ */
+
+package org.tizen.emulator.skin;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Transform;
+import org.eclipse.swt.widgets.Display;
+import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.exception.ScreenShotException;
+import org.tizen.emulator.skin.image.ImageRegistry.IconName;
+import org.tizen.emulator.skin.info.SkinInformation;
+import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
+import org.tizen.emulator.skin.util.SkinUtil;
+
+public class EmulatorShmSkin extends EmulatorSkin {
+	private Logger logger = SkinLogger.getSkinLogger(
+			EmulatorShmSkin.class).getLogger();
+
+	public static final int RED_MASK = 0x00FF0000;
+	public static final int GREEN_MASK = 0x0000FF00;
+	public static final int BLUE_MASK = 0x000000FF;
+	public static final int COLOR_DEPTH = 32;
+
+	/* define JNI functions */
+	public native int shmget(int size);
+	public native int shmdt();
+	public native int getPixels(int[] array);
+
+	private PaletteData paletteData;
+	private PollFBThread pollThread;
+
+	class PollFBThread extends Thread {
+		private Display display;
+		private int lcdWidth;
+		private int lcdHeight;
+		private int[] array;
+		private ImageData imageData;
+		private Image framebuffer;
+
+		private volatile boolean stopRequest;
+		private Runnable runnable;
+
+		public PollFBThread(int lcdWidth, int lcdHeight) {
+			this.display = Display.getDefault();
+			this.lcdWidth = lcdWidth;
+			this.lcdHeight = lcdHeight;
+			this.array = new int[lcdWidth * lcdHeight];
+			this.imageData = new ImageData(lcdWidth, lcdHeight, COLOR_DEPTH, paletteData);
+			this.framebuffer = new Image(Display.getDefault(), imageData);
+
+			this.runnable = new Runnable() {
+				public void run() {
+					// logger.info("update display framebuffer");
+					if(lcdCanvas.isDisposed() == false) {
+						lcdCanvas.redraw();
+					}
+				}
+			};
+		}
+
+		public void run() {
+			stopRequest = false;
+
+			while (!stopRequest) {
+				synchronized (this) {
+					try {
+						this.wait(30); /* 30ms */
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+						break;
+					}
+				}
+
+				int result = getPixels(array); /* from shared memory */
+				//logger.info("getPixels native function returned " + result);
+
+				for (int i = 0; i < lcdHeight; i++) {
+					imageData.setPixels(0, i, lcdWidth, array, i * lcdWidth);
+				}
+
+				Image temp = framebuffer;
+				framebuffer = new Image(display, imageData);
+				temp.dispose();
+
+				if (display.isDisposed() == false) {
+					/* redraw canvas */
+					display.asyncExec(runnable);
+				}
+			}
+
+			logger.info("PollFBThread is stopped");
+
+			int result = shmdt();
+			logger.info("shmdt native function returned " + result);
+		}
+
+		public void stopRequest() {
+			stopRequest = true;
+		}
+	}
+
+	/**
+	 *  Constructor
+	 */
+	public EmulatorShmSkin(EmulatorSkinState state, EmulatorFingers finger,
+			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
+		super(state, finger, config, skinInfo, SWT.NONE, isOnTop);
+		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+	}
+
+	protected void skinFinalize() {
+		pollThread.stopRequest();
+
+		super.finger.setMultiTouchEnable(0);
+		super.finger.clearFingerSlot();
+		super.finger.cleanup_multiTouchState();
+	
+		super.skinFinalize();
+	}
+
+	public long initLayout() {
+		super.initLayout();
+
+		/* initialize shared memory */
+		int result = shmget(
+				currentState.getCurrentResolutionWidth() *
+				currentState.getCurrentResolutionHeight());
+		logger.info("shmget native function returned " + result);
+
+		/* update lcd thread */
+		pollThread = new PollFBThread(
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight());
+
+		lcdCanvas.addPaintListener(new PaintListener() {
+			public void paintControl(PaintEvent e) {
+				/* e.gc.setAdvanced(true);
+				if (!e.gc.getAdvanced()) {
+					logger.info("Advanced graphics not supported");
+				} */
+
+				int x = lcdCanvas.getSize().x;
+				int y = lcdCanvas.getSize().y;
+				if (currentState.getCurrentAngle() == 0) { /* portrait */
+					e.gc.drawImage(pollThread.framebuffer,
+							0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
+							0, 0, x, y);
+					
+					if (finger.getMultiTouchEnable() == 1) {
+						finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
+								currentState.getCurrentResolutionHeight(), 
+								currentState.getCurrentScale(), 
+								currentState.getCurrentRotationId());
+					}
+                    finger.drawImage(e, currentState.getCurrentAngle());
+					return;
+				}
+
+				Transform transform = new Transform(lcdCanvas.getDisplay());
+				Transform oldtransform = new Transform(lcdCanvas.getDisplay());
+				transform.rotate(currentState.getCurrentAngle());
+
+				if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
+					int temp;
+					temp = x;
+					x = y;
+					y = temp;
+					transform.translate(0, y * -1);
+				} else if (currentState.getCurrentAngle() == 180) { /* reverse portrait */
+					transform.translate(x * -1, y * -1);
+				} else if (currentState.getCurrentAngle() == -90) { /* landscape */
+					int temp;
+					temp = x;
+					x = y;
+					y = temp;
+					transform.translate(x * -1, 0);
+				}
+				
+				//draw finger image
+				//for when rotate while use multi touch
+				if (finger.getMultiTouchEnable() == 1) {
+					finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
+							currentState.getCurrentResolutionHeight(), 
+							currentState.getCurrentScale(), 
+							currentState.getCurrentRotationId());
+				}	
+				//save current transform as "oldtransform" 
+				e.gc.getTransform(oldtransform);
+				//set to new transfrom
+				e.gc.setTransform(transform);
+				e.gc.drawImage(pollThread.framebuffer,
+						0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
+						0, 0, x, y);
+				//back to old transform
+				e.gc.setTransform(oldtransform);
+				
+				transform.dispose();
+				finger.drawImage(e, currentState.getCurrentAngle());
+			}
+		});
+
+		pollThread.start();
+
+		return 0;
+	}
+
+	@Override
+	protected void openScreenShotWindow() {
+		if (screenShotDialog != null) {
+			logger.info("screenshot window was already opened");
+			return;
+		}
+
+		try {
+			screenShotDialog = new ShmScreenShotWindow(shell, communicator, this, config,
+					imageRegistry.getIcon(IconName.SCREENSHOT));
+			screenShotDialog.open();
+
+		} catch (ScreenShotException ex) {
+			screenShotDialog = null;
+			logger.log(Level.SEVERE, ex.getMessage(), ex);
+
+			SkinUtil.openMessage(shell, null,
+					"Fail to create a screen shot.", SWT.ICON_ERROR, config);
+
+		} catch (Exception ex) {
+			screenShotDialog = null;
+			logger.log(Level.SEVERE, ex.getMessage(), ex);
+
+			SkinUtil.openMessage(shell, null, "ScreenShot is not ready.\n" +
+					"Please wait until the emulator is completely boot up.",
+					SWT.ICON_WARNING, config);
+		}
+	}
+}

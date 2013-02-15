@@ -14,7 +14,9 @@
 #ifndef _QEMU_VIRTIO_NET_H
 #define _QEMU_VIRTIO_NET_H
 
+#include "sysbus.h"
 #include "virtio.h"
+#include "virtio-transport.h"
 #include "net.h"
 #include "pci.h"
 
@@ -72,13 +74,14 @@ struct virtio_net_config
     uint8_t mac[ETH_ALEN];
     /* See VIRTIO_NET_F_STATUS and VIRTIO_NET_S_* above */
     uint16_t status;
-} __attribute__((packed));
+} QEMU_PACKED;
 
 /* This is the first element of the scatter-gather list.  If you don't
  * specify GSO or CSUM features, you can simply ignore the header. */
 struct virtio_net_hdr
 {
 #define VIRTIO_NET_HDR_F_NEEDS_CSUM     1       // Use csum_start, csum_offset
+#define VIRTIO_NET_HDR_F_DATA_VALID	2	// Csum is valid
     uint8_t flags;
 #define VIRTIO_NET_HDR_GSO_NONE         0       // Not a GSO frame
 #define VIRTIO_NET_HDR_GSO_TCPV4        1       // GSO frame, IPv4 TCP (TSO)
@@ -186,4 +189,18 @@ struct virtio_net_ctrl_mac {
         DEFINE_PROP_BIT("ctrl_rx", _state, _field, VIRTIO_NET_F_CTRL_RX, true), \
         DEFINE_PROP_BIT("ctrl_vlan", _state, _field, VIRTIO_NET_F_CTRL_VLAN, true), \
         DEFINE_PROP_BIT("ctrl_rx_extra", _state, _field, VIRTIO_NET_F_CTRL_RX_EXTRA, true)
+
+typedef struct {
+    DeviceState qdev;
+    /* virtio-net */
+    NICConf nic;
+    virtio_net_conf net;
+
+    uint32_t host_features;
+
+    VirtIOTransportLink *trl;
+} VirtIONetState;
+
+#define VIRTIO_NET_FROM_QDEV(dev) DO_UPCAST(VirtIONetState, qdev, dev)
+
 #endif

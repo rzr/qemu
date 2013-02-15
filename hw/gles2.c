@@ -9,20 +9,40 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "exec-memory.h"
 #include "gles2.h"
 #include <pthread.h>
+//FIXME: Move this to a better place
+#ifdef __APPLE__
+#ifndef __unix__
+#define __unix__
+#endif
+#endif
 
+extern void gles1_loadHGL(void);
+extern void gles2_loadHGL(void);
+
+#ifdef _WIN32
+#include <windows.h>
+void* dlopen(char const*name, unsigned flags)
+{
+    return LoadLibrary(name);
+}
+
+void* dlsym(void* handle, char const* proc)
+{
+    return GetProcAddress(handle,proc);
+}
+int dlclose(void* handle)
+{
+    return !FreeLibrary(handle);
+}
+#endif
 // From target-arm/helper.c.
-extern int get_phys_addr(CPUState *env, uint32_t address,
+extern int get_phys_addr(CPUArchState *env, uint32_t address,
                          int access_type, int is_user,
                          uint32_t *phys_ptr, int *prot,
                          target_ulong *page_size);
-
-
-// List of calls to used by the kernel module (page 0).
-static gles2_Call const gles2_kcalls[];
-// List of calls used by clients (page 1->15).
-static gles2_Call const gles2_calls[];
 
 // Translate a target virtual address to physical address.
 static target_ulong gles2_pa(gles2_State *s, target_ulong va,
@@ -45,9 +65,9 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
     tfr->nsections = 0;
     tfr->sections = 0;
 
-#if (GLES2_DEBUG == 1)
+#ifdef CONFIG_DEBUG_GLES
     target_ulong first_page = TARGET_PAGE(va);
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
     target_ulong last_page = TARGET_PAGE(va + len - 1);
     target_ulong start_addr = va;
@@ -59,13 +79,23 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
     while (len) {
         target_ulong start_page = TARGET_PAGE(start_addr);
         target_ulong start_pa = gles2_pa(s, start_page, 0);
+        if (!start_pa)
+        {
+            return 0;
+        }
+#ifdef CONFIG_DEBUG_GLES
         target_ulong end_pa = start_pa;
+#endif // CONFIG_DEBUG_GLES == 1
 
         // Solve length of continuous section.
         target_ulong end_page = start_page;
         while(end_page < last_page) {
             target_ulong next_page = end_page + TARGET_PAGE_SIZE;
             target_ulong next_pa = gles2_pa(s, next_page, 0);
+            if (!next_pa)
+            {
+                return 0;
+            }
 
             // If the target pages are not linearly spaced, stop..
             if((next_pa < start_pa) ||
@@ -74,13 +104,15 @@ int gles2_transfer_compile(gles2_CompiledTransfer* tfr, gles2_State *s,
             }
 
             end_page = next_page;
+#ifdef CONFIG_DEBUG_GLES
             end_pa = next_pa;
+#endif // CONFIG_DEBUG_GLES == 1
         }
 
         unsigned id = tfr->nsections++;
 
         GLES2_PRINT("\tContinuous from 0x%x to 0x%x (0x%x to 0x%x) #%d.\n",
-                    start_page, end_page, start_pa, end_pa, id);
+            start_page, end_page, start_pa, end_pa, id);
         tfr->sections = realloc(tfr->sections,
             tfr->nsections*sizeof(*(tfr->sections)));
 
@@ -134,7 +166,8 @@ void gles2_transfer_exec(gles2_CompiledTransfer* tfr, gles2_State *s,
 
 void gles2_transfer_free(gles2_CompiledTransfer* tfr)
 {
-    free(tfr->sections);
+    if(tfr->sections)
+        free(tfr->sections);
     tfr->sections = 0;
     tfr->nsections = 0;
 }
@@ -142,9 +175,9 @@ void gles2_transfer_free(gles2_CompiledTransfer* tfr)
 int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
     void* data, int access_type)
 {
-#if (GLES2_DEBUG == 1)
+#ifdef CONFIG_DEBUG_GLES
     target_ulong first_page = TARGET_PAGE(va);
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
     target_ulong last_page = TARGET_PAGE(va + len - 1);
     target_ulong start_addr = va;
@@ -156,13 +189,23 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
     while (len) {
         target_ulong start_page = TARGET_PAGE(start_addr);
         target_ulong start_pa = gles2_pa(s, start_page, access_type);
+        if (!start_pa)
+        {
+            return 0;
+        }
+#ifdef CONFIG_DEBUG_GLES
         target_ulong end_pa = start_pa;
+#endif // CONFIG_DEBUG_GLES == 1
 
         // Solve length of continuous section.
         target_ulong end_page = start_page;
         while(end_page < last_page) {
             target_ulong next_page = end_page + TARGET_PAGE_SIZE;
             target_ulong next_pa = gles2_pa(s, next_page, access_type);
+            if (!next_pa)
+            {
+                return 0;
+            }
 
             // If the target pages are not linearly spaced, stop..
             if ((next_pa < start_pa) ||
@@ -171,7 +214,9 @@ int gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
             }
 
             end_page = next_page;
+#ifdef CONFIG_DEBUG_GLES
             end_pa = next_pa;
+#endif // CONFIG_DEBUG_GLES == 1
         }
 
         GLES2_PRINT("\tContinuous from 0x%x to 0x%x (0x%x to 0x%x).\n",
@@ -238,7 +283,7 @@ uint8_t gles2_get_byte(gles2_State *s, target_ulong va)
 
     byte = ldub_phys(pa);
 
-    //GLES2_PRINT("DEBUG: Read 0x%x from 0x%x(0x%x)\n", byte, va, pa);
+    GLES2_PRINT("DEBUG: Read 0x%x from 0x%x(0x%x)\n", byte, va, pa);
 
     return byte;
 }
@@ -270,7 +315,7 @@ uint16_t gles2_get_word(gles2_State *s, target_ulong va)
 
     word = lduw_phys(pa);
 
-    //GLES2_PRINT("DEBUG: Read 0x%x from 0x%x(0x%x)\n", word, va, pa);
+    GLES2_PRINT("DEBUG: Read 0x%x from 0x%x(0x%x)\n", word, va, pa);
 
     return word;
 }
@@ -288,7 +333,7 @@ uint32_t gles2_get_dword(gles2_State *s, target_ulong va)
 
     dword = ldl_phys(pa);
 
-    //GLES2_PRINT("DEBUG: Read 0x%x from 0x%x(0x%x)\n", dword, va, pa);
+    GLES2_PRINT("DEBUG: Read 0x%x from 0x%x(0x%x)\n", dword, va, pa);
 
     return dword;
 }
@@ -319,9 +364,9 @@ float gles2_get_float(gles2_State *s, target_ulong va)
     }
 
     cpu_physical_memory_read(pa, (unsigned char*)&flt, 4);
-    //flt = ldfl_p(pa);
+    //  flt = ldfl_p(pa);
 
-    //GLES2_PRINT("DEBUG: Read %f from 0x%x(0x%x)\n", flt, va, pa);
+    GLES2_PRINT("DEBUG: Read %f from 0x%x(0x%x)\n", flt, va, pa);
 
     return flt;
 }
@@ -338,7 +383,7 @@ void gles2_put_float(gles2_State *s, target_ulong va, float flt)
 
     GLES2_PRINT("DEBUG: Written %f to 0x%x(0x%x)\n", flt, va, pa);
     cpu_physical_memory_write(pa, (unsigned char*)&flt, 4);
-    //stfl_p(pa, flt);
+    //  stfl_p(pa, flt);
 }
 
 uint32_t gles2_handle_create(gles2_State *s, void* data)
@@ -388,12 +433,13 @@ uint32_t gles2_handle_find(gles2_State *s, void* data)
 
 void* gles2_handle_get(gles2_State *s, uint32_t i)
 {
-#if(GLES2_DEBUG == 1)
-    if (i && (i & ~GLES2_HANDLE_MASK) != GLES2_HANDLE_BASE) {
+#ifdef CONFIG_DEBUG_GLES
+    if(i && (i & ~GLES2_HANDLE_MASK) != GLES2_HANDLE_BASE)
+    {
         GLES2_PRINT("ERROR: Invalid handle %x!\n", i);
         exit(1);
     }
-#endif // GLES2_DEBUG == 1
+#endif // CONFIG_DEBUG_GLES == 1
 
     void* data = i ? s->handles[i & GLES2_HANDLE_MASK] : NULL;
 
@@ -414,71 +460,11 @@ void* gles2_handle_free(gles2_State *s, uint32_t i)
     return data;
 }
 
-// Virtual register area write operation handler.
-static void gles2_write(void *opaque, target_phys_addr_t addr, uint32_t value)
-{
-    gles2_State *s = (gles2_State*)opaque;
-
-    target_ulong page = addr/(4*TARGET_PAGE_SIZE);
-    target_ulong callnr = ((addr) & (4*TARGET_PAGE_SIZE - 1))/0x04;
-
-    GLES2_PRINT("Page %d (0x%x) write (call nr. %d (0x%x)), addr = 0x%x, value = 0x%x.\n", page, page, callnr, callnr, (int32_t)addr, value);
-
-    if (page) {
-        gles2_Call const *call = gles2_calls + callnr;
-
-        if (page > 1) {
-            gles2_Client* client;
-
-            // Client API calls without active context should be ignored.
-            if ((page - 2 > GLES2_NCLIENTS) ||
-                !(client = s->clients[page - 2])) {
-                return;
-            }
-
-            // Make sure nothing is running.
-            GLES2_PRINT("Syncing with worker...\n");
-            pthread_mutex_lock(&client->mutex_wait);
-            while (client->state != gles2_ClientState_ready) {
-                pthread_cond_wait(&client->cond_state, &client->mutex_wait);
-            }
-            pthread_mutex_lock(&client->mutex_run);
-            pthread_mutex_lock(&client->mutex_xcode);
-            client->call = call;
-            client->state = gles2_ClientState_pending;
-            client->phase_xcode = 0;
-            GLES2_PRINT("Requesting call %s...\n", call->name);
-            pthread_cond_signal(&client->cond_start);
-            pthread_mutex_unlock(&client->mutex_wait);
-
-            GLES2_PRINT("Releasing worker for decoding...\n");
-            pthread_mutex_unlock(&client->mutex_run);
-            do {
-                pthread_cond_wait(&client->cond_xcode, &client->mutex_xcode);
-            } while (client->phase_xcode < 1);
-
-            pthread_mutex_unlock(&client->mutex_xcode);
-            GLES2_PRINT("Decoding finished.\n");
-        } else {
-            gles2_decode_t d = 0;
-            GLES2_PRINT("Calling clientless function %s...\n", call->name);
-            call->callback(s, &d, 0);
-        }
-    } else {
-        gles2_Call const *call = gles2_kcalls + callnr;
-        gles2_decode_t d = 0;
-
-        GLES2_PRINT("Calling kernel function %s...\n", call->name);
-
-        call->callback(s, &d, 0);
-    }
-}
-
 // Virtual register area read operation handler.
-static uint32_t gles2_read(void *opaque, target_phys_addr_t addr)
+uint64_t gles2_read(void *opaque, target_phys_addr_t addr, unsigned size)
 {
     gles2_State *s = (gles2_State*)opaque;
-
+    s->env = cpu_single_env;
     target_ulong page = addr/(4*TARGET_PAGE_SIZE);
 
     if (page) {
@@ -510,33 +496,70 @@ static uint32_t gles2_read(void *opaque, target_phys_addr_t addr)
     return 0;
 }
 
-static CPUReadMemoryFunc *gles2_readfn[] = {
-    gles2_read,
-    gles2_read,
-    gles2_read,
+//from gles2_xx.c
+extern void gles2_egl_write(void *opaque, target_phys_addr_t addr,
+        uint64_t value, unsigned size);
+extern void gles2_es11_write(void *opaque, target_phys_addr_t addr,
+        uint64_t value, unsigned size);
+extern void gles2_es20_write(void *opaque, target_phys_addr_t addr,
+        uint64_t value, unsigned size);
+
+static const MemoryRegionOps gles_egl_mmio_ops = {
+    .read = gles2_read,
+    .write = gles2_egl_write,
+    .endianness = DEVICE_NATIVE_ENDIAN,
+};
+static const MemoryRegionOps gles_es11_mmio_ops = {
+    .read = gles2_read,
+    .write = gles2_es11_write,
+    .endianness = DEVICE_NATIVE_ENDIAN,
+};
+static const MemoryRegionOps gles_es20_mmio_ops = {
+    .read = gles2_read,
+    .write = gles2_es20_write,
+    .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
-static CPUWriteMemoryFunc *gles2_writefn[] = {
-    gles2_write,
-    gles2_write,
-    gles2_write,
-};
-
-// Initializes a new gles2 device.
-void *gles2_init(CPUState *env)
+// Initializes a new gles device.
+void *gles2_init(CPUArchState *env)
 {
-    gles2_State *s = qemu_malloc(sizeof(*s));
+    MemoryRegion *system_mem = get_system_memory();
+
+    setenv("DGLES2_FRONTEND", "offscreen", 1);
+#ifdef _WIN32
+    setenv("DGLES2_BACKEND", "wgl", 0);
+#else
+    setenv("DGLES2_BACKEND", "glx", 0);
+#endif
+    setenv("DGLES2_NO_ALPHA", "1", 1);
+
+    gles2_State *s = g_malloc0(sizeof(*s));
     unsigned i;
 
     s->env = env;
+    s->abi = gles2_abi_arm_hardfp;
     s->quality = gles2_quality;
+    pthread_mutex_init(&s->m, NULL);
 
     GLES2_PRINT("GLES2 quality: %d\n", s->quality);
 
-    cpu_register_physical_memory(GLES2_HWBASE,
-        GLES2_HWSIZE,
-        cpu_register_io_memory(gles2_readfn,
-            gles2_writefn, s, DEVICE_NATIVE_ENDIAN));
+    //register EGL
+    GLES2_PRINT("Mapping EGL Block to : %x\n", GLES2_EGL_HWBASE);
+    memory_region_init_io(&s->io_egl, &gles_egl_mmio_ops, s,
+            "gles2.egl", GLES2_BLOCKSIZE);
+    memory_region_add_subregion(system_mem, GLES2_EGL_HWBASE, &s->io_egl);
+
+    //register ES11
+    GLES2_PRINT("Mapping ES11 Block to : %x\n", GLES2_ES11_HWBASE);
+    memory_region_init_io(&s->io_es11, &gles_es11_mmio_ops, s,
+            "gles2.es11", GLES2_BLOCKSIZE);
+    memory_region_add_subregion(system_mem, GLES2_ES11_HWBASE, &s->io_es11);
+
+    //register ES20
+    GLES2_PRINT("Mapping ES20 Block to : %x\n", GLES2_ES20_HWBASE);
+    memory_region_init_io(&s->io_es20, &gles_es20_mmio_ops, s,
+            "gles2.es20", GLES2_BLOCKSIZE);
+    memory_region_add_subregion(system_mem, GLES2_ES20_HWBASE, &s->io_es20);
 
     for (i = 0; i < GLES2_NCLIENTS; ++i) {
         s->clients[i] = NULL;
@@ -547,208 +570,86 @@ void *gles2_init(CPUState *env)
     }
 
     GLES2_PRINT("Registered IO memory!\n");
+
+    gles1_loadHGL();
+    gles2_loadHGL();
+
     return s;
 }
 
-/******************************************************************************
- *
- * Kernel interface functions.
- *
- *****************************************************************************/
-
-static void* gles2_client_worker(void *opaque)
+gles2_ebo* gles2_ebo_find(unsigned int name, gles2_ebo* list)
 {
-    gles2_Client *client = opaque;
-    int run = 1;
+    if(!name) return 0;
+    gles2_ebo* curr = list->next;
 
-    GLES2_PRINT("WORKER(%d): Starting!\n", client->nr);
-
-    pthread_mutex_lock(&client->mutex_xcode);
-    do
+    while(curr)
     {
-        gles2_decode_t d = 0;
-        GLES2_PRINT("WORKER(%d): Waiting for call...\n", client->nr);
-        pthread_mutex_lock(&client->mutex_wait);
-
-        client->state = gles2_ClientState_ready;
-        pthread_cond_signal(&client->cond_state);
-        client->phase_xcode = 4;
-        pthread_cond_signal(&client->cond_xcode);
-        pthread_mutex_unlock(&client->mutex_xcode);
-        while (client->state != gles2_ClientState_pending) {
-            pthread_cond_wait(&client->cond_start, &client->mutex_wait);
+        if(curr->name == name)
+        {
+            GLES2_PRINT("ebo %d was found in the list\n",name);
+            return curr;
         }
-
-        GLES2_PRINT("WORKER(%d): Got call, waiting permission to run...\n", client->nr);
-
-        pthread_mutex_lock(&client->mutex_run);
-        GLES2_PRINT("WORKER(%d): Running!\n", client->nr);
-        client->state = gles2_ClientState_running;
-        pthread_mutex_unlock(&client->mutex_wait);
-
-        if (client->call) {
-            GLES2_PRINT("WORKER(%d): Calling function %s (%p)...\n",
-                        client->nr, client->call->name, client->call);
-            client->call->callback(client->s, &d, client);
-
-            GLES2_PRINT("\tWORKER(%d): Done.\n", client->nr);
-            client->state = gles2_ClientState_done;
-        } else {
-            GLES2_PRINT("WORKER(%d): Exit requested!\n", client->nr);
-            run = 0;
-            client->state = gles2_ClientState_exit;
-            pthread_cond_signal(&client->cond_state);
-        }
-        pthread_mutex_unlock(&client->mutex_run);
-    } while (run);
-
-    GLES2_PRINT("WORKER(%d): Exiting!\n", client->nr);
-    return opaque;
+        curr = curr->next;
+    }
+    GLES2_PRINT("ebo %d was NOT found in the list\n",name);
+    return NULL;
 }
 
-// Called by kernel module when a new client connects.
-static void gles2_init_cb(gles2_State *s, gles2_decode_t *d, gles2_Client *c)
+gles2_ebo* gles2_ebo_add(unsigned int name, gles2_ebo* list)
 {
-    unsigned i;
-    gles2_Client *client;
-    pthread_attr_t attr;
+    gles2_ebo* ebo = malloc(sizeof(gles2_ebo));
+    memset(ebo, 0, sizeof(*ebo));
+    ebo->name = name;
+    ebo->data = NULL;
+    ebo->next = NULL;
+    gles2_ebo* curr = list;
+    while(curr->next)
+    {
+        curr = curr->next;
+    }
+    curr->next = ebo;
+    GLES2_PRINT("ebo %d was added to list\n", name);
+    return ebo;
+}
 
-    for (i = 0; i < GLES2_NCLIENTS; ++i) {
-        if (!s->clients[i]) {
-            break;
+int gles2_ebo_remove(unsigned int name, gles2_ebo* list)
+{
+    if(!name) return 0;
+    gles2_ebo* prev, *curr;
+    prev = list;
+    curr = prev->next;
+    while(curr)
+    {
+        if(curr->name == name)
+        {
+            prev->next = curr->next;
+            if(curr->data)
+                free(curr->data);
+            free(curr);
+            GLES2_PRINT("ebo %d was deleted from list\n", name);
+            return 1;
         }
+        prev = curr;
+        curr = curr->next;
     }
-
-    if (i == GLES2_NCLIENTS) {
-        GLES2_PRINT("ERROR: No free slots!\n");
-        gles2_ret_dword(s, 0);
-        return;
-    }
-
-    GLES2_PRINT("Initialization!\n");
-
-    client = malloc(sizeof(*client));
-    client->s = s;
-    client->nr = i + 1;
-    pthread_mutex_init(&client->mutex_wait, NULL);
-    pthread_mutex_init(&client->mutex_run, NULL);
-    pthread_mutex_init(&client->mutex_xcode, NULL);
-    pthread_cond_init(&client->cond_start, NULL);
-    pthread_cond_init(&client->cond_state, NULL);
-    pthread_cond_init(&client->cond_xcode, NULL);
-    pthread_cond_init(&client->cond_return, NULL);
-    client->state = gles2_ClientState_init;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-    pthread_mutex_lock(&client->mutex_wait);
-
-    GLES2_PRINT("Creating worker...\n");
-    pthread_create(&client->thread, &attr, gles2_client_worker, client);
-
-    do {
-        pthread_cond_wait(&client->cond_state, &client->mutex_wait);
-    } while(client->state != gles2_ClientState_ready);
-    pthread_mutex_unlock(&client->mutex_wait);
-
-    GLES2_PRINT("Worker initialized\n");
-
-    s->clients[i] = client;
-    gles2_ret_dword(s, client->nr);
+    GLES2_PRINT("ebo %d was NOT found in list\n", name);
+    return 0;
 }
 
-// Called by kernel module when an existing client disconnects.
-static void gles2_exit_cb(gles2_State *s, gles2_decode_t *d, gles2_Client *c)
+int gles2_ebo_free(gles2_ebo* list)
 {
-    uint32_t nr = gles2_arg_dword(s, d);
-    gles2_Client *client;
+    gles2_ebo * curr, * next;
+    curr = list->next;
 
-    GLES2_PRINT("Exit called for client %d!\n", nr);
-
-    if ((nr > GLES2_NCLIENTS + 1) ||
-        (nr == 0)) {
-        GLES2_PRINT("Client number out of range!\n");
-        return;
-    }  else {
-        client = s->clients[nr - 1];
+    while(curr)
+    {
+        next = curr->next;
+        GLES2_PRINT("ebo %d was deleted from list\n", curr->name);
+        if(curr->data)
+            free(curr->data);
+        free(curr);
+        curr = next;
     }
-
-    if (!client) {
-        GLES2_PRINT("Can't exit NULL client!\n");
-        return;
-    }
-
-    GLES2_PRINT("\tRequesting worker to exit.\n");
-
-    // Make sure nothing is running.
-    GLES2_PRINT("Syncing with worker...\n");
-    pthread_mutex_lock(&client->mutex_wait);
-    while (client->state != gles2_ClientState_ready) {
-        pthread_cond_wait(&client->cond_state, &client->mutex_wait);
-    }
-    pthread_mutex_lock(&client->mutex_run);
-    client->call = NULL;
-    client->state = gles2_ClientState_pending;
-    GLES2_PRINT("Requesting exit...\n");
-    pthread_cond_signal(&client->cond_start);
-    pthread_mutex_unlock(&client->mutex_wait);
-
-    GLES2_PRINT("Waiting worker to exit...\n");
-    do {
-        pthread_cond_wait(&client->cond_state, &client->mutex_run);
-    } while (client->state != gles2_ClientState_exit);
-    pthread_mutex_unlock(&client->mutex_run);
-
-    GLES2_PRINT("\tJoining...\n");
-    pthread_join(client->thread, NULL);
-    pthread_mutex_destroy(&client->mutex_wait);
-    pthread_mutex_destroy(&client->mutex_run);
-    pthread_cond_destroy(&client->cond_start);
-    pthread_cond_destroy(&client->cond_state);
-
-    free(client);
-    s->clients[nr - 1] = NULL;
-
-    GLES2_PRINT("\tDone!\n");
+    free(list);
+    return 1;
 }
-
-/******************************************************************************
- *
- * Call tables
- *
- *****************************************************************************/
-
-/* Make a weak stub for every dummy function. */
-#define CALL_DUMMY(func) \
-    void gles2_##func##_cb(gles2_State *s, gles2_decode_t *d, struct gles2_Client *c); \
-    void gles2_##func##_cb(gles2_State *s, gles2_decode_t *d, struct gles2_Client *c) \
-    { \
-        GLES2_BARRIER_ARG_NORET; \
-        fprintf(stderr, "GLES2: DUMMY " #func "\n"); \
-    }
-
-#define CALL_ENTRY(func) \
-    void gles2_##func##_cb(gles2_State *s, gles2_decode_t *d, struct gles2_Client *c);
-
-#include "gles2_calls.h"
-
-#undef CALL_ENTRY
-#undef CALL_DUMMY
-
-#define CALL_ENTRY(func) { #func, gles2_##func##_cb },
-#define CALL_DUMMY(func) { #func, gles2_##func##_cb },
-
-static gles2_Call const gles2_kcalls[] =
-{
-    CALL_ENTRY(init)
-    CALL_ENTRY(exit)
-};
-
-static gles2_Call const gles2_calls[] =
-{
-    { "<<none>>", 0 },
-#include "gles2_calls.h"
-};
-
-#undef CALL_ENTRY
-

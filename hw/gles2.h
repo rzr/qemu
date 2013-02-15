@@ -13,12 +13,31 @@
 #define GLES2_H__
 
 #include "qemu-common.h"
+#include "memory.h"
 #include "cpu.h"
 #include <pthread.h>
+#define MESA_EGL_NO_X11_HEADERS
+#include "EGL/egl.h"
+#include "EGL/eglext.h"
+#ifdef _WIN32
+#   define RTLD_LAZY  0x01
+#   define RTLD_LOCAL 0x02
+    extern void* dlopen(char const* name, unsigned flags);
+    extern void* dlsym(void* handle, char const* proc);
+    extern int dlclose(void* handle);
+#else
+#   include <dlfcn.h>
+#endif
 
-#define GLES2_HWBASE 0x6f000000
+
+
+#define GLES2_HWBASE 0xcf000000
 #define GLES2_HWSIZE 0x00100000
-#define GLES2_NCLIENTS (GLES2_HWSIZE/TARGET_PAGE_SIZE - 2)
+#define GLES2_BLOCKSIZE GLES2_HWSIZE/4
+#define GLES2_EGL_HWBASE GLES2_HWBASE
+#define GLES2_ES11_HWBASE (GLES2_EGL_HWBASE + GLES2_BLOCKSIZE)
+#define GLES2_ES20_HWBASE (GLES2_ES11_HWBASE + GLES2_BLOCKSIZE)
+#define GLES2_NCLIENTS (GLES2_BLOCKSIZE/TARGET_PAGE_SIZE - 2)
 #define GLES2_NHANDLES GLES2_NCLIENTS * 16
 // Address base for host to guest pointer handles.
 #define GLES2_HANDLE_BASE 0xCAFE0000
@@ -53,21 +72,66 @@
 // Return the page offset part of address.
 #define TARGET_OFFSET(addr) ((addr) & (TARGET_PAGE_SIZE - 1))
 
-//#define GLES2_DEBUG 1
-#define GLES2_DEBUG 0
-#if(GLES2_DEBUG == 1)
+#ifdef CONFIG_DEBUG_GLES
+#   define GLES2_DEBUG_ARGS 1
+#   define GLES2_TRACING 1
 #   define GLES2_PRINT(format, args...) \
-        fprintf(stderr, "GLES2: " format, ##args)
+        fprintf(stderr, "QEMU GLES: " format, ##args)
 #else
+#   define GLES2_DEBUG_ARGS 0
 #   define GLES2_PRINT(format, args...) (void)0
-#endif // GLES_DEBUG != 1
+#   define GLES2_TRACING 0
+#endif // CONFIG_DEBUG_GLES != 1
 
-struct gles2_Array;
+#if(GLES2_TRACING == 1)
+#   define GLES2_TRACE(format, args...) \
+        fprintf(stderr, "QEMU: " format, ##args)
+#else
+#   define GLES2_TRACE(format, args...) (void)0
+#endif // GLES2_TRACING
+
+/* function name */
+#define FNAME(func, api, sufix) \
+    gles2_##api##_##func##_cb##sufix
+
+#define FARGS \
+    (gles2_State *s, gles2_decode_t *d, struct gles2_Client *c)
+
+#define CARGS \
+    (s, d, c)
+
+/* define function prototypes */
+#define PROTO(func, api) \
+    void FNAME(func, api,)FARGS
+
+#define CALL(func, api) \
+    FNAME(func, api,)CARGS;
+
+/* Make a weak stub for every dummy function. */
+#define DUMMY(func, api) \
+    PROTO(func, api); \
+    PROTO(func, api) \
+    { \
+        GLES2_BARRIER_ARG_NORET; \
+        GLES2_PRINT("DUMMY " #func "\n"); \
+    }
+
+/* call without client checking */
+#define ENTRY(func, api) \
+    PROTO(func, api);
+
+// Host to guest vertex array copy.
+struct  gles2_Array;
 typedef struct gles2_Array gles2_Array;
+
 struct gles2_Call;
 typedef struct gles2_Call gles2_Call;
+
 struct gles2_State;
 typedef struct gles2_State gles2_State;
+
+struct gles2_CompiledTransfer;
+typedef struct gles2_CompiledTransfer gles2_CompiledTransfer;
 
 typedef enum gles2_ClientState
 {
@@ -79,13 +143,47 @@ typedef enum gles2_ClientState
     gles2_ClientState_exit
 } gles2_ClientState;
 
-// A connected GLES2 client.
+//used to keep track of min/max values of EBOs
+//see gles2_TransferArrays min/max args
+typedef struct gles2_ebo_s
+{
+    int name;
+    unsigned char b_min;
+    unsigned char b_max;
+    unsigned short s_min;
+    unsigned short s_max;
+    void* data;
+    unsigned long size;
+    struct gles2_ebo_s* next;
+} gles2_ebo;
+
+gles2_ebo* gles2_ebo_find(unsigned int name, gles2_ebo* list);
+gles2_ebo* gles2_ebo_add(unsigned int name, gles2_ebo* list);
+int gles2_ebo_remove(unsigned int name, gles2_ebo* list);
+int gles2_ebo_free(gles2_ebo* list);
+//the GLES2 context wrapper
+typedef struct gles2_Context
+{
+    EGLenum client_type;
+    int client_version;
+    gles2_Array *arrays;        // Host side vertex pointer arrays.
+    int narrays;                // Number of arrays (the maximum too).
+    EGLContext hctx;
+    gles2_ebo* ebo_list;        //linked list of element array buffer objects
+} gles2_Context;
+
+/**
+* Client state.
+* Each gles2_Client is linked to one worker thread (check %gles2_client_worker)
+* in the host system and one guest thread in the guest system.
+*/
 typedef struct gles2_Client
 {
     gles2_State *s;     // Link to the device state the client was connected to.
     target_ulong nr;    // The client ID from kernel.
 
     gles2_Call const *call;     // Next/current call to perform.
+    gles2_Call const *prev_call;// Previous call executed.
     pthread_t thread;           // The worker thread.
     pthread_cond_t cond_start;  // To wake worker for a call.
     pthread_cond_t cond_state;  // Worker signals when state changes.
@@ -99,26 +197,69 @@ typedef struct gles2_Client
                                  // 2: exec done 3: encode done
     pthread_cond_t cond_xcode;   // --''--
     pthread_cond_t cond_return;  // --''--
-
-    gles2_Array *arrays;        // Host side vertex pointer arrays.
-    int narrays;                // Number of arrays (the maximum too).
+    gles2_Context * context[1]; /**< current contexts. There can be more than one current context.*/
+    EGLenum rendering_api; /**< EGL current rendering API.*/
 } gles2_Client;
+
+
+
+typedef enum gles2_abi_t {
+    gles2_abi_unknown = 0,
+    gles2_abi_arm_softfp,
+    gles2_abi_arm_hardfp,
+    gles2_abi_last
+} gles2_abi_t;
+
+// Holder for compiled transfer holder.
+struct gles2_CompiledTransfer
+{
+    unsigned nsections;   // Number of physical memory sections in the transfer.
+    struct
+    {
+        char* base;       // Base address of the section.
+        target_ulong len; // Length of the section.
+    } *sections;          // Sections of the transfer.
+};
+
+typedef struct gles2_Surface
+{
+    uint32_t ddrawp;    // Pointer to the offscreen drawable in guest memory.
+    DEGLDrawable ddraw; // Offscreen drawable, read from guest memory.
+    EGLSurface surf;    // Pointer to the EGL surface.
+    uint32_t pixelsp;   // Pointer to pixels in guest memory.
+    int pixmap;         // True if surface is pixmap.
+    gles2_CompiledTransfer tfr; // Framebuffer transfer.
+    int valid;          // If the surface is valid.
+    int id; // DEBUG!
+} gles2_Surface;
+
+
 
 // The GLES2 device state holder.
 struct gles2_State
 {
-    CPUState *env;                         // The CPU the device is attached to.
+    CPUArchState *env;                     // The CPU the device is attached to.
+    gles2_abi_t abi;                       // ABI used to pass values.
     gles2_Client *clients[GLES2_NCLIENTS]; // Array of clients.
     void *handles[GLES2_NHANDLES];         // Handles passed from host to guest.
     int quality;                           // Rendering quality.
+    MemoryRegion io_egl;
+    MemoryRegion io_es11;
+    MemoryRegion io_es20;
+    pthread_mutex_t m;
 };
+
+#ifdef CONFIG_DEBUG_GLES
+unsigned int gles20_glGetError(void);
+#endif
 
 typedef unsigned int gles2_decode_t; // Function call decoding state.
 typedef uint32_t gles2_target_arg_t; // Target unit argument type.
+
+
 // Callback for register area access.
 typedef void gles2_Callback(gles2_State *s, gles2_decode_t *d,
     gles2_Client *c);
-
 // Information holder for guest->host call.
 struct gles2_Call
 {
@@ -129,9 +270,13 @@ struct gles2_Call
 };
 
 // Create and initialize a GLES2 device and attach to CPU.
-extern void *gles2_init(CPUState *env);
+void *gles2_init(CPUArchState *env);
 // Rendering quality option.
 extern int gles2_quality;
+
+uint64_t gles2_read(void *opaque, target_phys_addr_t addr, unsigned size);
+
+void gles2_write(void *opaque, target_phys_addr_t addr, uint32_t value, const gles2_Call * array_addr);
 
 /******************************************************************************
  *
@@ -139,30 +284,22 @@ extern int gles2_quality;
  *
  *****************************************************************************/
 
-// Holder for compiled transfer holder.
-typedef struct gles2_CompiledTransfer
-{
-    unsigned nsections;   // Number of physical memory sections in the transfer.
-    struct
-    {
-        char* base;       // Base address of the section.
-        target_ulong len; // Length of the section.
-    } *sections;          // Sections of the transfer.
-} gles2_CompiledTransfer;
+
+
 
 // Pre-compile a transfer to or from virtual guest address.
 // NOTE: An assumption is made that the mapping is equal for read and write, for
 //       complicated transfers, use gles2_transfer or Fix It!
-extern int  gles2_transfer_compile(gles2_CompiledTransfer *tfr, gles2_State *s,
+ int  gles2_transfer_compile(gles2_CompiledTransfer *tfr, gles2_State *s,
     target_ulong va, target_ulong len);
 // Execute a pre-compiled transfer.
-extern void gles2_transfer_exec(gles2_CompiledTransfer *tfr, gles2_State *s,
+ void gles2_transfer_exec(gles2_CompiledTransfer *tfr, gles2_State *s,
     void* data, int access_type);
 // Free a pre-compiled transfer.
-extern void gles2_transfer_free(gles2_CompiledTransfer *tfr);
+ void gles2_transfer_free(gles2_CompiledTransfer *tfr);
 // Perform a non-compiled transfer between guest and host.
 // access_type, read = 0, write = 1, execute = 2
-extern int  gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
+ int  gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
     void* data, int access_type);
 
 /******************************************************************************
@@ -172,22 +309,24 @@ extern int  gles2_transfer(gles2_State *s, target_ulong va, target_ulong len,
  *****************************************************************************/
 
 // Read an 8-bit byte from target system memory.
-extern uint8_t  gles2_get_byte(gles2_State *s, target_ulong va);
+ uint8_t  gles2_get_byte(gles2_State *s, target_ulong va);
 // Write an 8-bit byte to target system memory.
-extern void     gles2_put_byte(gles2_State *s, target_ulong va, uint8_t byte);
+ void     gles2_put_byte(gles2_State *s, target_ulong va, uint8_t byte);
 // Read a 16-bit word from target system memory.
-extern uint16_t gles2_get_word(gles2_State *s, target_ulong va);
+ uint16_t gles2_get_word(gles2_State *s, target_ulong va);
 // Write a 16-bit word to target system memory.
-extern void     gles2_put_word(gles2_State *s, target_ulong va, uint16_t word);
+ void     gles2_put_word(gles2_State *s, target_ulong va, uint16_t word);
 // Read a 32-bit double word from target system memory.
-extern uint32_t gles2_get_dword(gles2_State *s, target_ulong va);
+ uint32_t gles2_get_dword(gles2_State *s, target_ulong va);
 // Write a 32-bit double word to target system memory.
-extern void     gles2_put_dword(gles2_State *s, target_ulong va,
+ void     gles2_put_dword(gles2_State *s, target_ulong va,
     uint32_t dword);
+#define gles2_get_sdword (int32_t)gles2_get_dword
+#define gles2_put_sdword gles2_put_dword
 // Read a 32-bit float from target system memory.
-extern float    gles2_get_float(gles2_State *s, target_ulong va);
+ float    gles2_get_float(gles2_State *s, target_ulong va);
 // Write a 32-bit float to target system memory.
-extern void     gles2_put_float(gles2_State *s, target_ulong va, float flt);
+ void     gles2_put_float(gles2_State *s, target_ulong va, float flt);
 
 #define gles2_put_handle(s, va, handle) gles2_put_dword(s, va, handle)
 #define gles2_get_handle(s, va) gles2_get_dword(s, va)
@@ -199,23 +338,31 @@ extern void     gles2_put_float(gles2_State *s, target_ulong va, float flt);
  *****************************************************************************/
 
 // Create a handle from host side pointer to be passed to guest.
-extern uint32_t gles2_handle_create(gles2_State *s, void* data);
+ uint32_t gles2_handle_create(gles2_State *s, void* data);
 // Find if there is previously created handle for pointer.
-extern uint32_t gles2_handle_find(gles2_State *s, void* data);
+ uint32_t gles2_handle_find(gles2_State *s, void* data);
 // Get the host pointer by guest handle.
-extern void* gles2_handle_get(gles2_State *s, uint32_t i);
+ void* gles2_handle_get(gles2_State *s, uint32_t i);
 // Release a handle for reuse.
-extern void* gles2_handle_free(gles2_State *s, uint32_t i);
+ void* gles2_handle_free(gles2_State *s, uint32_t i);
 
 // Get the smallest function argument according to target CPU ABI.
 static inline gles2_target_arg_t gles2_arg_raw(gles2_State *s, unsigned i);
 static inline gles2_target_arg_t gles2_arg_raw(gles2_State *s, unsigned i)
 {
-    if (i < 4) {
-        return s->env->regs[i];
+    unsigned j = i >> 8;
+    i = i & 0xff;
+    if (s->abi == gles2_abi_arm_hardfp) {
+        if (i < 4) {
+            return s->env->regs[i];
+        }
+        j = (j < 16) ? 0 : (j - 16);
+    } else {
+        if (i + j < 4) {
+            return s->env->regs[i + j];
+        }
     }
-
-    return gles2_get_dword(s, s->env->regs[13] + 2*0x04 + (i - 4)*0x04);
+    return gles2_get_dword(s, s->env->regs[13] + 2*0x04 + ((j + i - 4)*0x04));
 }
 
 /******************************************************************************
@@ -224,7 +371,6 @@ static inline gles2_target_arg_t gles2_arg_raw(gles2_State *s, unsigned i)
  *
  *****************************************************************************/
 
-#define GLES2_DEBUG_ARGS 1
 static inline uint8_t gles2_arg_byte(gles2_State *s, gles2_decode_t *d);
 static inline uint8_t gles2_arg_byte(gles2_State *s, gles2_decode_t *d)
 {
@@ -255,6 +401,9 @@ static inline uint32_t gles2_arg_dword(gles2_State *s, gles2_decode_t *d)
     return dword;
 }
 
+#define gles2_arg_sdword (int32_t)gles2_arg_dword
+
+/* causes warning on possibly undefined *d 
 static inline uint64_t gles2_arg_qword(gles2_State *s, gles2_decode_t *d);
 static inline uint64_t gles2_arg_qword(gles2_State *s, gles2_decode_t *d)
 {
@@ -265,6 +414,7 @@ static inline uint64_t gles2_arg_qword(gles2_State *s, gles2_decode_t *d)
 #endif
     return qword;
 }
+*/
 
 static inline uint32_t gles2_arg_handle(gles2_State *s, gles2_decode_t *d);
 static inline uint32_t gles2_arg_handle(gles2_State *s, gles2_decode_t *d)
@@ -277,17 +427,40 @@ static inline uint32_t gles2_arg_handle(gles2_State *s, gles2_decode_t *d)
     return handle;
 }
 
-// This needs to be its own special function, because we must preserve the byteorder.
+/* This needs to be its own special function, because we must preserve
+the byteorder. */
 static inline float gles2_arg_float(gles2_State *s, gles2_decode_t *d);
 static inline float gles2_arg_float(gles2_State *s, gles2_decode_t *d)
 {
-    unsigned i = (*d)++;
+    unsigned i = *d, j;
+    float value;
+    j = i >> 8;
+    i = i & 0xff;
+    *d += 1 << 8;
 
-    if (i < 4) {
-        return *((float*)&s->env->regs[i]);
+    if (s->abi == gles2_abi_arm_hardfp) {
+        if (j < 16) {
+            value = ((float*)(((CPUARMState *)s->env)->vfp.regs))[j];
+        } else {
+            j += ((i < 4) ? 0 : (i - 4)) - 16;
+            value = gles2_get_float(s, s->env->regs[13] + 2*0x04 + j*0x04);
+        }
+    } else if (s->abi == gles2_abi_arm_softfp) {
+        if (i + j < 4) {
+            value = *((float*)&s->env->regs[i + j]);
+        } else {
+            j = i + j - 4;
+            value = gles2_get_float(s, s->env->regs[13] + 2*0x04 + j*0x04);
+        }
+    } else {
+        GLES2_PRINT("no abi defined, cannot get float!");
+        value=0;
     }
+#if (GLES2_DEBUG_ARGS == 1)
+    GLES2_PRINT("float arg(%d) = %5.2f\n", j, value);
+#endif
+    return value;
 
-    return gles2_get_float(s, s->env->regs[13] + 2*0x04 + (i - 4)*0x04);
 }
 
 /******************************************************************************
@@ -323,6 +496,8 @@ static inline void gles2_ret_dword(gles2_State *s, uint32_t dword)
 #endif
 }
 
+#define gles2_ret_sdword gles2_ret_dword
+
 static inline void gles2_ret_qword(gles2_State *s, uint64_t qword);
 static inline void gles2_ret_qword(gles2_State *s, uint64_t qword)
 {
@@ -346,12 +521,14 @@ static inline void gles2_ret_handle(gles2_State *s, uint32_t handle)
 static inline void gles2_ret_float(gles2_State *s, float flt);
 static inline void gles2_ret_float(gles2_State *s, float flt)
 {
-    s->env->regs[0] = *(uint32_t*)&flt;
-
+    if (s->abi == gles2_abi_arm_hardfp) {
+        ((CPUARMState *)s->env)->vfp.regs[0] = *(uint32_t*)&flt;
+    } else {
+        s->env->regs[0] = *(uint32_t*)&flt;
+    }
 #if (GLES2_DEBUG_ARGS == 1)
     GLES2_PRINT("float ret = %f\n", flt);
 #endif
 }
 
 #endif // GLES2_H__
-
