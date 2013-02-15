@@ -1,3 +1,6 @@
+* 1.4.90
+- added bottom half instead of mloop
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-02-15
 * 1.4.83
 - update version
 == Munkyu Im <munkyu.im@samsung.com> 2013-02-04
