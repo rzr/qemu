@@ -1,7 +1,7 @@
 /*
  * Maru Virtual Virtio Touchscreen emulation
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 -2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  GiWoong Kim <giwoong.kim@samsung.com>
@@ -41,6 +41,7 @@ typedef struct TouchscreenState
     VirtQueue *vq;
     bool waitBuf;
 
+    QEMUBH *bh;
     DeviceState *qdev;
     QEMUPutMouseEntry *eh_entry;
 } TouchscreenState;
