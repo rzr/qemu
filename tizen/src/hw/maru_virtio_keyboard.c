@@ -5,6 +5,7 @@
  *
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
+ *  GiWoong Kim <giwoong.kim@samsung.com>
  *  SeokYeon Hwang <syeon.hwang@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -27,10 +28,10 @@
  *
  */
 
-#include "mloop_event.h"
 #include "maru_device_ids.h"
 #include "maru_virtio_keyboard.h"
 #include "tizen/src/debug_ch.h"
+
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-kbd);
 
@@ -207,7 +208,8 @@ static void virtio_keyboard_event(void *opaque, int keycode)
     qemu_mutex_unlock(&vkbd->event_mutex);
 
     TRACE("[Leave] input_event handler. cnt:%d\n", vkbd->kbdqueue.wptr);
-    mloop_evcmd_keyboard(vkbd);
+
+    qemu_bh_schedule(vkbd->bh);
 }
 
 static uint32_t virtio_keyboard_get_features(VirtIODevice *vdev,
@@ -215,6 +217,11 @@ static uint32_t virtio_keyboard_get_features(VirtIODevice *vdev,
 {
     TRACE("virtio_keyboard_get_features.\n");
     return 0;
+}
+
+static void virtio_keyboard_bh(void *opaque)
+{
+    virtio_keyboard_notify(opaque);
 }
 
 VirtIODevice *virtio_keyboard_init(DeviceState *dev)
@@ -238,6 +245,9 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
     vkbd->vq = virtio_add_queue(&vkbd->vdev, 64, virtio_keyboard_handle);
     vkbd->qdev = dev;
 
+    /* bottom half */
+    vkbd->bh = qemu_bh_new(virtio_keyboard_bh, vkbd);
+
     /* register keyboard handler */
     qemu_add_kbd_event_handler(virtio_keyboard_event, vkbd);
 
@@ -248,6 +258,12 @@ void virtio_keyboard_exit(VirtIODevice *vdev)
 {
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
     INFO("destroy device\n");
+
+    qemu_remove_kbd_event_handler();
+
+    if (vkbd->bh) {
+        qemu_bh_delete(vkbd->bh);
+    }
 
     qemu_mutex_destroy(&vkbd->event_mutex);
 
