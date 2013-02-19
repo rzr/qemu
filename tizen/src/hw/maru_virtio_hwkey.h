@@ -1,7 +1,7 @@
 /*
- * Maru Virtio Touchscreen Device
+ * Maru Virtio HW Key Device
  *
- * Copyright (c) 2011 - 2013 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  GiWoong Kim <giwoong.kim@samsung.com>
@@ -27,36 +27,34 @@
  */
 
 
-#ifndef MARU_TOUCHSCREEN_H_
-#define MARU_TOUCHSCREEN_H_
+#ifndef MARU_HWKEY_H_
+#define MARU_HWKEY_H_
 
 #include "console.h"
 #include "hw/virtio.h"
 
-typedef struct TouchscreenState
+typedef struct VirtIOHwKey
 {
     VirtIODevice vdev;
     /* simply a queue into which buffers are posted
     by the guest for consumption by the host */
     VirtQueue *vq;
-    bool waitBuf;
 
     QEMUBH *bh;
     DeviceState *qdev;
-    QEMUPutMouseEntry *eh_entry;
-} TouchscreenState;
+} VirtIOHwKey;
 
 /* This structure must match the kernel definitions */
-typedef struct EmulTouchEvent {
-    uint16_t x, y, z;
-    uint8_t state;
-} EmulTouchEvent;
-
-VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev);
-void maru_virtio_touchscreen_exit(VirtIODevice *vdev);
+typedef struct EmulHwKeyEvent {
+    uint8_t event_type;
+    uint32_t keycode;
+} EmulHwKeyEvent;
 
 
-void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state);
-void maru_virtio_touchscreen_notify(void);
+VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev);
+void maru_virtio_hwkey_exit(VirtIODevice *vdev);
 
-#endif /* MARU_TOUCHSCREEN_H_ */
+void maru_hwkey_event(int event_type, int keycode);
+void maru_virtio_hwkey_notify(void);
+
+#endif /* MARU_HWKEY_H_ */
