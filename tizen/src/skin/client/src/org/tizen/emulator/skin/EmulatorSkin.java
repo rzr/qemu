@@ -384,6 +384,10 @@ public class EmulatorSkin {
 
 	}
 
+	public ImageRegistry getImageRegistry() {
+		return imageRegistry;
+	}
+
 	protected void skinFinalize() {
 		skinComposer.composerFinalize();
 	}

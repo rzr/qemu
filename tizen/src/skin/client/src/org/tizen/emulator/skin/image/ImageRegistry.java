@@ -63,14 +63,15 @@ public class ImageRegistry {
 	public static final String SKINS_FOLDER = "skins";
 	public static final String GENERAL_FOLDER = "emul-general";
 	public static final String ICON_FOLDER = "icons";
-	
+	public static final String IMAGES_FOLDER = "images";
+	public static final String KEYWINDOW_FOLDER = "key-window";
+
 	public enum ImageType {
 		IMG_TYPE_MAIN,
 		IMG_TYPE_PRESSED
 	}
-	
+
 	public enum IconName {
-		
 		DETAIL_INFO("detail_info.png"),
 		ROTATE("rotate.png"),
 		SCALE("scale.png"),
@@ -104,12 +105,29 @@ public class ImageRegistry {
 		}
 		
 	}
-	
+
+	public enum KeyWindowImageName {
+		KEYBUTTON_NORMAL("keybutton_nml.png"),
+		KEYBUTTON_HOVER("keybutton_hover.png"),
+		KEYBUTTON_PUSHED("keybutton_pushed.png");
+
+		private String name;
+
+		private KeyWindowImageName(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return this.name;
+		}
+	}
+
 	private Display display;
 	private EmulatorUI dbiContents;
 
 	private Map<String, Image> skinImageMap;
 	private Map<String, Image> iconMap;
+	private Map<String, Image> keyWindowImageMap;
 
 	private String argSkinPath;
 
@@ -140,6 +158,7 @@ public class ImageRegistry {
 		this.dbiContents = config.getDbiContents();
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();
+		this.keyWindowImageMap = new HashMap<String, Image>();
 
 		init(this.argSkinPath);
 
@@ -243,13 +262,12 @@ public class ImageRegistry {
 		return id + ":" + imageType.ordinal();
 	}
 
-	public Image getIcon( IconName name ) {
+	public Image getIcon(IconName name) {
 
-		if ( 0 != iconMap.size() ) {
+		if (0 != iconMap.size()) {
+			Image image = iconMap.get(name.getName());
 
-			Image image = iconMap.get( name.getName() );
 			return image;
-
 		} else {
 
 			// load all of the icons at once.
@@ -257,7 +275,7 @@ public class ImageRegistry {
 			ClassLoader classLoader = this.getClass().getClassLoader();
 			IconName[] values = IconName.values();
 
-			for ( IconName iconName : values ) {
+			for (IconName iconName : values) {
 
 				String icoNname = iconName.getName();
 
@@ -265,53 +283,93 @@ public class ImageRegistry {
 
 				InputStream is = null;
 				try {
-					is = classLoader.getResourceAsStream( iconPath );
-					if ( null != is ) {
-						logger.fine( "load icon:" + iconPath );
-						iconMap.put( icoNname, new Image( display, is ) );
+					is = classLoader.getResourceAsStream(iconPath);
+					if (null != is) {
+						logger.fine("load icon:" + iconPath);
+						iconMap.put(icoNname, new Image(display, is));
 					} else {
-						logger.severe( "missing icon:" + iconPath );
+						logger.severe("missing icon:" + iconPath);
 					}
 				} finally {
-					IOUtil.close( is );
+					IOUtil.close(is);
 				}
 
 			}
 
-			return iconMap.get( name.getName() );
-
+			return iconMap.get(name.getName());
 		}
+	}
 
+	public Image getKeyWindowImageData(KeyWindowImageName name) {
+		if (0 != keyWindowImageMap.size()) {
+			Image image = keyWindowImageMap.get(name.getName());
+
+			return image;
+		} else {
+			ClassLoader classLoader = this.getClass().getClassLoader();
+			KeyWindowImageName[] values = KeyWindowImageName.values();
+
+			for (KeyWindowImageName value : values) {
+
+				String imageName = value.getName();
+
+				String imagePath = IMAGES_FOLDER + File.separator +
+						KEYWINDOW_FOLDER + File.separator + imageName;
+
+				InputStream is = null;
+				try {
+					is = classLoader.getResourceAsStream(imagePath);
+					if (null != is) {
+						logger.fine("load keywindow images:" + imagePath);
+						keyWindowImageMap.put(imageName, new Image(display, is));
+					} else {
+						logger.severe("missing image:" + imagePath);
+					}
+				} finally {
+					IOUtil.close(is);
+				}
+
+			}
+
+			return keyWindowImageMap.get(name.getName());
+		}
 	}
 
 	public void dispose() {
-
-		if ( null != skinImageMap ) {
-
+		/* skin image */
+		if (null != skinImageMap) {
 			Collection<Image> images = skinImageMap.values();
 
 			Iterator<Image> imageIterator = images.iterator();
 
-			while ( imageIterator.hasNext() ) {
+			while (imageIterator.hasNext()) {
 				Image image = imageIterator.next();
 				image.dispose();
 			}
-
 		}
 
-		if ( null != iconMap ) {
-
+		/* icon */
+		if (null != iconMap) {
 			Collection<Image> icons = iconMap.values();
 
 			Iterator<Image> iconIterator = icons.iterator();
 
-			while ( iconIterator.hasNext() ) {
+			while (iconIterator.hasNext()) {
 				Image image = iconIterator.next();
 				image.dispose();
 			}
-
 		}
 
+		/* key window image */
+		if (null != keyWindowImageMap) {
+			Collection<Image> images = keyWindowImageMap.values();
+
+			Iterator<Image> imagesIterator = images.iterator();
+
+			while (imagesIterator.hasNext()) {
+				Image image = imagesIterator.next();
+				image.dispose();
+			}
+		}
 	}
-	
 }

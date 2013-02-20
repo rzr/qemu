@@ -58,6 +58,7 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.dbi.KeyMapType;
+import org.tizen.emulator.skin.image.ImageRegistry.KeyWindowImageName;
 import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -105,13 +106,12 @@ public class KeyWindow extends SkinWindow {
 		shell.setImage(parent.getImage());
 
 		/* load image for HW key button */
-		ClassLoader loader = this.getClass().getClassLoader();
-		imageNormal = new Image(Display.getDefault(),
-				loader.getResourceAsStream(PATCH_IMAGES_PATH + "keybutton_nml.png"));
-		imageHover = new Image(Display.getDefault(),
-						loader.getResourceAsStream(PATCH_IMAGES_PATH + "keybutton_hover.png"));
-		imagePushed = new Image(Display.getDefault(),
-						loader.getResourceAsStream(PATCH_IMAGES_PATH + "keybutton_pushed.png"));
+		imageNormal = skin.getImageRegistry().getKeyWindowImageData(
+				KeyWindowImageName.KEYBUTTON_NORMAL);
+		imageHover = skin.getImageRegistry().getKeyWindowImageData(
+				KeyWindowImageName.KEYBUTTON_HOVER);
+		imagePushed = skin.getImageRegistry().getKeyWindowImageData(
+				KeyWindowImageName.KEYBUTTON_PUSHED);
 
 		/* calculate the key window size */
 		int width = imageNormal.getImageData().width;
@@ -295,9 +295,6 @@ public class KeyWindow extends SkinWindow {
 					shell.removeMouseListener(shellMouseListener);
 				}
 
-				imageNormal.dispose();
-				imageHover.dispose();
-				imagePushed.dispose();
 				colorFrame.dispose();
 
 				frameMaker.freePatches();
