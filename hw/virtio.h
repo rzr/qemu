@@ -221,6 +221,7 @@ void virtio_scsi_exit(VirtIODevice *vdev);
 #include "tizen/src/hw/maru_virtio_touchscreen.h"
 #include "tizen/src/hw/maru_virtio_keyboard.h"
 #include "tizen/src/hw/maru_virtio_esm.h"
+#include "tizen/src/hw/maru_virtio_hwkey.h"
 #endif
 
 
