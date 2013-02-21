@@ -78,6 +78,7 @@ public class EmulatorConfig {
 	}
 
 	public interface SkinInfoConstants {
+		public static final String SDK_VERSION_NAME = "sdk.version-name";
 		public static final String SKIN_NAME = "skin.name";
 		public static final String RESOLUTION_WIDTH = "resolution.width";
 		public static final String RESOLUTION_HEIGHT = "resolution.height";

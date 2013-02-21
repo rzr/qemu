@@ -292,7 +292,7 @@ static void print_system_info(void)
     struct tm *tm_time;
     struct timeval tval;
 
-    INFO("* SDK Version : %s\n", build_version);
+    INFO("* Board name : %s\n", build_version);
     INFO("* Package %s\n", pkginfo_version);
     INFO("* Package %s\n", pkginfo_maintainer);
     INFO("* Git Head : %s\n", pkginfo_githead);

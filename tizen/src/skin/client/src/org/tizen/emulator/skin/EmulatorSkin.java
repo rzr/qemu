@@ -1577,7 +1577,7 @@ public class EmulatorSkin {
 					isOpen = true;
 
 					logger.info("Open the about dialog");
-					AboutDialog dialog = new AboutDialog(shell);
+					AboutDialog dialog = new AboutDialog(shell, config);
 					dialog.open();
 					isOpen = false;
 				}
