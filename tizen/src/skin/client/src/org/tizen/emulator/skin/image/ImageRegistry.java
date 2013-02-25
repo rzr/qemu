@@ -313,8 +313,8 @@ public class ImageRegistry {
 
 				String imageName = value.getName();
 
-				String imagePath = IMAGES_FOLDER + File.separator +
-						KEYWINDOW_FOLDER + File.separator + imageName;
+				String imagePath = IMAGES_FOLDER + "/" +
+						KEYWINDOW_FOLDER + "/" + imageName;
 
 				InputStream is = null;
 				try {
