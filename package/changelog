@@ -1,3 +1,6 @@
+* 1.5.04
+- modified path separator
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-02-25
 * 1.5.00
 - added virtio hwkey device
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-02-21
