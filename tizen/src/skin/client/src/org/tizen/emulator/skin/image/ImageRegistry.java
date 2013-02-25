@@ -109,7 +109,16 @@ public class ImageRegistry {
 	public enum KeyWindowImageName {
 		KEYBUTTON_NORMAL("keybutton_nml.png"),
 		KEYBUTTON_HOVER("keybutton_hover.png"),
-		KEYBUTTON_PUSHED("keybutton_pushed.png");
+		KEYBUTTON_PUSHED("keybutton_pushed.png"),
+
+		SCROLL_UPBUTTON_NORMAL("scroll_button_up_nml.png"),
+		SCROLL_UPBUTTON_HOVER("scroll_button_up_hover.png"),
+		SCROLL_UPBUTTON_PUSHED("scroll_button_up_pushed.png"),
+		SCROLL_DOWNBUTTON_NORMAL("scroll_button_down_nml.png"),
+		SCROLL_DOWNBUTTON_HOVER("scroll_button_down_hover.png"),
+		SCROLL_DOWNBUTTON_PUSHED("scroll_button_down_pushed.png"),
+		SCROLL_THUMB("scroll_thumb.png"),
+		SCROLL_SHAFT("scroll_back.png");
 
 		private String name;
 

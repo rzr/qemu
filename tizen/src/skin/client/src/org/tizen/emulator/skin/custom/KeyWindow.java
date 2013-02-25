@@ -69,13 +69,22 @@ public class KeyWindow extends SkinWindow {
 	private static final int PAIRTAG_MARGIN_BOTTOM = 6;
 	private static final int BUTTON_DEFAULT_CNT = 4;
 	private static final int BUTTON_VERTICAL_SPACING = 7;
+	private static final int SCROLLBAR_HORIZONTAL_SPACING = 4;
+	private static final int SCROLLBAR_SIZE_WIDTH = 14;
 
 	private EmulatorSkin skin;
 	private SkinPatches frameMaker;
+
+	private int widthBase;
+	private int heightBase;
+	private int widthScrollbar;
+	private int cntHiddenButton;
+
 	private Image imageNormal; /* ImageButton image */
 	private Image imageHover; /* hovered ImageButton image */
 	private Image imagePushed; /* pushed ImageButton image */
 	private Image imageFrame; /* nine-patch image */
+
 	private Color colorFrame;
 	private Color colorPairTag;
 	private SocketCommunicator communicator;
@@ -98,7 +107,7 @@ public class KeyWindow extends SkinWindow {
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 		this.colorPairTag = colorPairTag;
 
-		this.keyMapList = keyMapList;
+		this.keyMapList = keyMapList; //TODO: null
 		this.communicator = communicator;
 		this.grabPosition = new Point(0, 0);
 
@@ -114,25 +123,27 @@ public class KeyWindow extends SkinWindow {
 				KeyWindowImageName.KEYBUTTON_PUSHED);
 
 		/* calculate the key window size */
-		int width = imageNormal.getImageData().width;
-		int height = (imageNormal.getImageData().height * BUTTON_DEFAULT_CNT) +
-				(BUTTON_VERTICAL_SPACING * (BUTTON_DEFAULT_CNT - 1)) +
-				(PAIRTAG_CIRCLE_SIZE + PAIRTAG_MARGIN_BOTTOM) +
-				SHELL_MARGIN_BOTTOM;
+		widthBase = imageNormal.getImageData().width;
+		heightBase = (imageNormal.getImageData().height * BUTTON_DEFAULT_CNT) +
+				(BUTTON_VERTICAL_SPACING * (BUTTON_DEFAULT_CNT - 1));
+
+		widthScrollbar = SCROLLBAR_SIZE_WIDTH + SCROLLBAR_HORIZONTAL_SPACING;
+		int heightHeaderPart = (PAIRTAG_CIRCLE_SIZE + PAIRTAG_MARGIN_BOTTOM);
+		int heightTailPart = SHELL_MARGIN_BOTTOM;
 
 		/* make a frame image */
-		this.imageFrame = frameMaker.getPatchedImage(width, height);
+		this.cntHiddenButton = 0; //keyMapList.size() - BUTTON_DEFAULT_CNT;
+
+		this.imageFrame = frameMaker.getPatchedImage(
+				widthBase + ((cntHiddenButton > 0) ? widthScrollbar : 0),
+				heightBase + heightHeaderPart + heightTailPart);
 		this.colorFrame = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 
-//		/* generate a pair tag color of key window */
-//		int red = (int) (Math.random() * 256);
-//		int green = (int) (Math.random() * 256);
-//		int blue = (int) (Math.random() * 256);
-//		this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
 		this.colorPairTag = colorPairTag;
 
 		createContents();
 		trimPatchedShell(shell, imageFrame);
+
 		addKeyWindowListener();
 
 		shell.setBackground(colorFrame);
@@ -143,7 +154,8 @@ public class KeyWindow extends SkinWindow {
 	protected void createContents() {
 		GridLayout shellGridLayout = new GridLayout(1, false);
 		shellGridLayout.marginLeft = shellGridLayout.marginRight = frameMaker.getPatchWidth();
-		shellGridLayout.marginTop = shellGridLayout.marginBottom = frameMaker.getPatchHeight();
+		shellGridLayout.marginTop = frameMaker.getPatchHeight();
+		shellGridLayout.marginBottom = frameMaker.getPatchHeight() + SHELL_MARGIN_BOTTOM;
 		shellGridLayout.marginWidth = shellGridLayout.marginHeight = 0;
 		shellGridLayout.horizontalSpacing = shellGridLayout.verticalSpacing = 0;
 
@@ -166,12 +178,65 @@ public class KeyWindow extends SkinWindow {
 			}
 		});
 
-		/* */
-		ScrolledComposite compositeScroll = new ScrolledComposite(shell, SWT.V_SCROLL);
-		compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+		/* make a region of HW keys */
+		if (cntHiddenButton > 0) {
+			/* added custom scrollbar */
 
-		Composite compositeBase = new Composite(compositeScroll, SWT.NONE);
-		compositeBase.setBackground(colorFrame);
+			Image imagesScrollArrowUp[] = new Image[3];
+			Image imagesScrollArrowDown[] = new Image[3];
+
+			imagesScrollArrowUp[0] = skin.getImageRegistry().getKeyWindowImageData(
+					KeyWindowImageName.SCROLL_UPBUTTON_NORMAL);
+			imagesScrollArrowUp[1] = skin.getImageRegistry().getKeyWindowImageData(
+					KeyWindowImageName.SCROLL_UPBUTTON_HOVER);
+			imagesScrollArrowUp[2] = skin.getImageRegistry().getKeyWindowImageData(
+					KeyWindowImageName.SCROLL_UPBUTTON_PUSHED);
+
+			imagesScrollArrowDown[0] = skin.getImageRegistry().getKeyWindowImageData(
+					KeyWindowImageName.SCROLL_DOWNBUTTON_NORMAL);
+			imagesScrollArrowDown[1] = skin.getImageRegistry().getKeyWindowImageData(
+					KeyWindowImageName.SCROLL_DOWNBUTTON_HOVER);
+			imagesScrollArrowDown[2] = skin.getImageRegistry().getKeyWindowImageData(
+					KeyWindowImageName.SCROLL_DOWNBUTTON_PUSHED);
+
+			CustomScrolledComposite compositeScroll =
+					new CustomScrolledComposite(shell, SWT.NONE,
+							imagesScrollArrowUp, imagesScrollArrowDown,
+							skin.getImageRegistry().getKeyWindowImageData(
+									KeyWindowImageName.SCROLL_THUMB),
+							skin.getImageRegistry().getKeyWindowImageData(
+									KeyWindowImageName.SCROLL_SHAFT));
+			compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+
+			Composite compositeBase = new Composite(compositeScroll, SWT.NONE);
+
+			createHwKeys(compositeBase);
+
+			Point sizeContent = compositeBase.computeSize(
+					widthBase + widthScrollbar, heightBase);
+			compositeScroll.setContent(compositeBase, sizeContent);
+			compositeScroll.setExpandHorizontal(true);
+			compositeScroll.setExpandVertical(true);
+
+			sizeContent.y += (imageNormal.getImageData().height * cntHiddenButton) +
+					(BUTTON_VERTICAL_SPACING * cntHiddenButton);
+			compositeScroll.setMinSize(sizeContent);
+		} else {
+			ScrolledComposite compositeScroll = new ScrolledComposite(shell, SWT.V_SCROLL);
+			compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+
+			Composite compositeBase = new Composite(compositeScroll, SWT.NONE);
+			createHwKeys(compositeBase);
+
+			compositeScroll.setContent(compositeBase);
+			compositeScroll.setExpandHorizontal(true);
+			compositeScroll.setExpandVertical(true);
+			compositeScroll.setMinSize(compositeBase.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+		}
+	}
+
+	protected void createHwKeys(Composite composite) {
+		composite.setBackground(colorFrame);
 
 		GridLayout compositeGridLayout = new GridLayout(1, false);
 		compositeGridLayout.marginLeft = compositeGridLayout.marginRight = 0;
@@ -179,12 +244,12 @@ public class KeyWindow extends SkinWindow {
 		compositeGridLayout.marginWidth = compositeGridLayout.marginHeight = 0;
 		compositeGridLayout.horizontalSpacing = 0;
 		compositeGridLayout.verticalSpacing = BUTTON_VERTICAL_SPACING;
-		compositeBase.setLayout(compositeGridLayout);
+		composite.setLayout(compositeGridLayout);
 
 		/* attach HW keys */
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
 			for (KeyMapType keyEntry : keyMapList) {
-				CustomButton HWKeyButton = new CustomButton(compositeBase,
+				CustomButton HWKeyButton = new CustomButton(composite,
 						SWT.NO_FOCUS, imageNormal, imageHover, imagePushed);
 				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
 				HWKeyButton.setToolTipText(keyEntry.getTooltip());
@@ -215,11 +280,6 @@ public class KeyWindow extends SkinWindow {
 				});
 			}
 		}
-
-		compositeScroll.setContent(compositeBase);
-		compositeScroll.setExpandHorizontal(true);
-		compositeScroll.setExpandVertical(true);
-		compositeScroll.setMinSize(compositeBase.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 	}
 
 	public static void trimPatchedShell(Shell shell, Image image) {
