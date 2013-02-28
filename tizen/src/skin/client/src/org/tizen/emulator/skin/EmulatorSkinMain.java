@@ -238,6 +238,8 @@ public class EmulatorSkinMain {
 				strVersion = reader.readLine();
 
 				reader.close();
+			} else {
+				logger.info("cannot find version file" + versionFilePath);
 			}
 
 			logger.info("SDK version : " + strVersion);

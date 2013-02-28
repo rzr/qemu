@@ -73,9 +73,10 @@ public class SocketCommunicator implements ICommunicator {
 		private Timer timer;
 		
 		private DataTranfer() {
+			/* do nothing */
 		}
 
-		private void setData( byte[] data ) {
+		private void setData(byte[] data) {
 			this.receivedData = data;
 			isTransferState = false;
 		}
@@ -120,6 +121,9 @@ public class SocketCommunicator implements ICommunicator {
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
 
+	private ByteArrayOutputStream bao;
+	private DataOutputStream dataOutputStream;
+
 	public SocketCommunicator(EmulatorConfig config, int uId, EmulatorSkin skin) {
 
 		this.config = config;
@@ -154,6 +158,8 @@ public class SocketCommunicator implements ICommunicator {
 			logger.log( Level.SEVERE, e.getMessage(), e );
 		}
 
+		this.bao = new ByteArrayOutputStream();
+		this.dataOutputStream = new DataOutputStream(bao);
 	}
 
 	public void setInitialData(long data) {
@@ -483,68 +489,66 @@ public class SocketCommunicator implements ICommunicator {
 	}
 	
 	@Override
-	public void sendToQEMU( SendCommand command, ISendData data ) {
-
-		synchronized ( sendQueue ) {
-			if ( MAX_SEND_QUEUE_SIZE < sendQueue.size() ) {
-				logger.warning( "Send queue size exceeded max value, do not push data into send queue." );
+	public void sendToQEMU(SendCommand command, ISendData data) {
+		synchronized(sendQueue) {
+			if (MAX_SEND_QUEUE_SIZE < sendQueue.size()) {
+				logger.warning(
+						"Send queue size exceeded max value, do not push data into send queue.");
 			} else {
-				sendQueue.add( new SkinSendData( command, data ) );
+				sendQueue.add(new SkinSendData(command, data));
 				sendQueue.notifyAll();
 			}
 		}
-
 	}
 	
-	private void sendToQEMUInternal( SkinSendData sendData ) {
-
+	private void sendToQEMUInternal(SkinSendData sendData) {
 		try {
 
-			if( null == sendData ) {
+			if (null == sendData) {
 				return;
 			}
 			
 			SendCommand command = sendData.getCommand();
 			ISendData data = sendData.getSendData();
-			
-			reqId = ( Integer.MAX_VALUE == reqId ) ? 0 : ++reqId;
-			
-			ByteArrayOutputStream bao = new ByteArrayOutputStream();
-			DataOutputStream dataOutputStream = new DataOutputStream( bao );
 
-			dataOutputStream.writeInt( uId );
-			dataOutputStream.writeInt( reqId );
-			dataOutputStream.writeShort( command.value() );
+			reqId = (Integer.MAX_VALUE == reqId) ? 0 : ++reqId;
+
+			dataOutputStream.writeInt(uId);
+			dataOutputStream.writeInt(reqId);
+			dataOutputStream.writeShort(command.value());
 
 			short length = 0;
-			if ( null == data ) {
+			if (null == data) {
 				length = 0;
-				dataOutputStream.writeShort( length );
+				dataOutputStream.writeShort(length);
 			} else {
 				byte[] byteData = data.serialize();
 				length = (short) byteData.length;
-				dataOutputStream.writeShort( length );
-				dataOutputStream.write( byteData );
+				dataOutputStream.writeShort(length);
+				dataOutputStream.write(byteData);
 			}
 
 			dataOutputStream.flush();
 
-			dos.write( bao.toByteArray() );
+			dos.write(bao.toByteArray());
 			dos.flush();
 
-			if ( logger.isLoggable( Level.FINE ) ) {
-				logger.fine( "[Socket] write - uid:" + uId + ", reqId:" + reqId + ", command:" + command.value()
-						+ " - " + command.toString() + ", length:" + length );
+			bao.reset();
+
+			if (logger.isLoggable(Level.FINE)) {
+				logger.fine("[Socket] write - uid:" + uId +
+						", reqId:" + reqId + ", command:" + command.value()
+						+ " - " + command.toString() + ", length:" + length);
 			}
 
-			if ( 0 < length ) {
-				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "[Socket] data  - " + data.toString() );
+			if (0 < length) {
+				if (logger.isLoggable(Level.FINE)) {
+					logger.fine("[Socket] data  - " + data.toString());
 				}
 			}
 
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
 
 	}
@@ -643,6 +647,13 @@ public class SocketCommunicator implements ICommunicator {
 		}
 
 		IOUtil.closeSocket(socket);
+
+		try {
+			bao.close();
+			dataOutputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		synchronized (this) {
 			skin.shutdown();
