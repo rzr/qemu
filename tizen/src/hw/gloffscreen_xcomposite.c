@@ -122,7 +122,7 @@ int glo_init(void) {
     glo_inited = 1; // safe because we are single threaded. Otherwise we cause
                     // recursion on the next call.
     // set the X error handler.
-    XErrorHandler old_handler = XSetErrorHandler (x_errhandler);
+    XSetErrorHandler (x_errhandler);
     glo_test_readback_methods();
 	return 0;
 }
@@ -277,9 +277,6 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
     XSetWindowAttributes attr = { 0 };
     unsigned long mask;
     XVisualInfo *vis;
-    int pixmapAttribs[] = { GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
-                        GLX_TEXTURE_FORMAT_EXT, GLX_TEXTURE_FORMAT_RGB_EXT,
-                                        None };
 
     if (!context)
       return 0;
@@ -391,7 +388,6 @@ int glo_surface_makecurrent(GloSurface *surface) {
 }
 
 void glo_surface_updatecontents(GloSurface *surface) {
-    XImage *img;
     if (!surface)
         return;
 
@@ -402,7 +398,7 @@ void glo_surface_updatecontents(GloSurface *surface) {
             XShmGetImage (glo.dpy, surface->pixmap, surface->image, 0, 0, AllPlanes);
         }
         else {
-            img = XGetImage(glo.dpy, surface->pixmap, 0, 0, surface->width, surface->height, AllPlanes, ZPixmap);
+            XGetImage(glo.dpy, surface->pixmap, 0, 0, surface->width, surface->height, AllPlanes, ZPixmap);
         }
     }
 
@@ -526,7 +522,7 @@ static int glo_can_readback(void) {
 
     unsigned char *datain = (unsigned char *)g_malloc(4*TX*TY);
     unsigned char *datain_flip = (unsigned char *)g_malloc(4*TX*TY); // flipped input data (for GL)
-    unsigned char *dataout = (unsigned char *)g_malloc(4*TX*TY);
+    unsigned char *dataout;
     unsigned char *p;
     int x,y;
 
@@ -560,11 +556,17 @@ static int glo_can_readback(void) {
     }
 
     context = glo_context_create(bufferFlags, 0);
-	if (context == NULL)
+	if (context == NULL) {
+		g_free(datain);
+		g_free(datain_flip);
 		return 1;
+	}
     surface = glo_surface_create(TX, TY, context);
-	if (surface == NULL)
+	if (surface == NULL) {
+		g_free(datain);
+		g_free(datain_flip);
 		return 1;
+	}
 
     glo_surface_makecurrent(surface);
 
@@ -579,6 +581,7 @@ static int glo_can_readback(void) {
     glDrawPixels(TX,TY,glFormat, glType, datain_flip);
     glFlush();
 
+	dataout = (unsigned char *)g_malloc(4*TX*TY);
     memset(dataout, 0, bpp*TX*TY);
 
     glo_surface_getcontents(surface, TX*4, bpp*8, dataout);
@@ -586,8 +589,16 @@ static int glo_can_readback(void) {
     glo_surface_destroy(surface);
     glo_context_destroy(context);
 
-    if (memcmp(datain, dataout, bpp*TX*TY)==0)
+    if (memcmp(datain, dataout, bpp*TX*TY)==0) {
+		g_free(datain);
+		g_free(datain_flip);
+		g_free(dataout);
         return 1;
+	}
+
+	g_free(datain);
+	g_free(datain_flip);
+	g_free(dataout);
 
     return 0;
 }
