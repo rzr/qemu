@@ -609,7 +609,8 @@ static void bind_qsurface(GLState *state,
 {
     qsurface->glstate = state;
 
-    QTAILQ_INSERT_HEAD(&state->qsurfaces, qsurface, next);
+	if ( qsurface->type == SURFACE_WINDOW )
+		QTAILQ_INSERT_HEAD(&state->qsurfaces, qsurface, next);
 
     state->current_qsurface = qsurface;
 }
@@ -620,7 +621,8 @@ static void unbind_qsurface(GLState *state,
 {
     qsurface->glstate = NULL;
 
-    QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
+	if ( qsurface->type == SURFACE_WINDOW )
+		QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
 
 	if ( state->current_qsurface == qsurface )
 		state->current_qsurface = NULL;
@@ -962,13 +964,6 @@ static void destroy_gl_state(GLState *state)
 {
     int i;
 
-    /* XXX:Current limitation is that each surface is binded to one
-     * context, thus not support sharing surface between contexts. If guest
-     * does this, deleting surface in one context make trouble to other
-     * context. Leave the work until the uninitialization. Need clean the code
-     * and decouple the context and surface in future.
-     */
-#if 0
     QGloSurface *qsurface, *tmp;
 
     QTAILQ_FOREACH_SAFE(qsurface, &state->qsurfaces, next, tmp) {
@@ -976,7 +971,6 @@ static void destroy_gl_state(GLState *state)
         QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
         g_free(qsurface);
     }
-#endif
         
     if (state->context)
       glo_context_destroy(state->context);
@@ -1125,9 +1119,11 @@ GLState *_create_context(ProcessState *process, int fake_ctxt, int fake_shareLis
 GLState *get_glstate_for_fake_ctxt(ProcessState *process, int fake_ctxt)
 {
     int i;
-    for (i = 0; i < process->nb_states; i++)
+    for (i = 0; i < process->nb_states; i++) {
         if (process->glstates[i]->fake_ctxt == fake_ctxt)
             return process->glstates[i];
+	}
+
     return 0;
 }
 
@@ -1144,9 +1140,12 @@ void gl_disconnect(ProcessState *process)
     if (process->cmdbuf)
         g_free(process->cmdbuf);
 
-    for (i = 0; &processes[i] != process; i ++);
-        memmove(&processes[i], &processes[i + 1],
-                (MAX_HANDLED_PROCESS - 1 - i) * sizeof(ProcessState));
+    for (i = 0; &processes[i] != process; i ++) {
+		; // do nothing
+	}
+
+	memmove(&processes[i], &processes[i + 1],
+			(MAX_HANDLED_PROCESS - 1 - i) * sizeof(ProcessState));
 }
 
 static const int beginend_allowed[GL_N_CALLS] = {
@@ -1171,7 +1170,7 @@ ProcessStruct *vmgl_get_process(pid_t pid)
      * process->current_state contains info on which of the guests contexts is
      * current.
      */
-    for (i = 0; i < MAX_HANDLED_PROCESS; i ++)
+    for (i = 0; i < MAX_HANDLED_PROCESS; i ++) {
         if (processes[i].p.process_id == pid) {
             process = &processes[i];
             break;
@@ -1183,6 +1182,7 @@ ProcessStruct *vmgl_get_process(pid_t pid)
             process->current_state = &process->default_state;
             break;
         }
+	}
 
     if (process == NULL) {
         DEBUGF( "Too many processes !\n");
@@ -1244,7 +1244,10 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
     }
 
    	start = s;
-    for (; *n && *s && !strchr(delim, *s); s++, (*n)--);
+    for (; *n && *s && !strchr(delim, *s); s++, (*n)--) {
+		; // do nothing
+	}
+
 	if (*n > 0) 
 		s++, (*n)--;
 
@@ -1303,7 +1306,10 @@ static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
         if (!strncmp(p, "lowp", 4) || !strncmp(p, "mediump", 7) || !strncmp(p, "highp", 5)) {
             continue;
         } else if (!strncmp(p, "precision", 9)) {
-            while ((p = opengl_strtok(0, &length, &saveptr, p)) && !strchr(p, ';'));
+            while ((p = opengl_strtok(0, &length, &saveptr, p)) && !strchr(p, ';')) {
+				// do nothing
+				;
+			}
         } else {
             if (!strncmp(p, "gl_MaxVertexUniformVectors", 26)) {
                 p = "(gl_MaxVertexUniformComponents / 4)";
@@ -1330,15 +1336,23 @@ static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
     patched[*patched_len] = 0;
     /* check that we don't leave dummy preprocessor lines */
     for (sp = patched; *sp;) {
-        for (; *sp == ' ' || *sp == '\t'; sp++);
+        for (; *sp == ' ' || *sp == '\t'; sp++) {
+			; // do nothing
+		}
         if (!strncmp(sp, "#define", 7)) {
-            for (p = sp + 7; *p == ' ' || *p == '\t'; p++);
+            for (p = sp + 7; *p == ' ' || *p == '\t'; p++) {
+				; // do nothing
+			}
             if (*p == '\n' || *p == '\r' || *p == '/') {
                 memset(sp, 0x20, 7);
             }
         }
-        for (; *sp && *sp != '\n' && *sp != '\r'; sp++);
-        for (; *sp == '\n' || *sp == '\r'; sp++);
+        for (; *sp && *sp != '\n' && *sp != '\r'; sp++) {
+			; // do nothing
+		}
+        for (; *sp == '\n' || *sp == '\r'; sp++) {
+			; // do nothing
+		}
     }
     return patched;
 }
@@ -1360,8 +1374,9 @@ shadersrc_gles_to_gl(GLsizei count, const char** string, char **s, const GLint* 
 		if(string[i]) {
 			s[i] = do_eglShaderPatch(string[i], len, &l[i]);
 			if(!s[i]) {
-				while(i)
+				while(i) {
 					free(s[--i]);
+				}
 
 				free(l);
 				free(s);
@@ -1709,6 +1724,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                                                               glstate->context);
                        qsurface->client_drawable = client_drawable;
                        qsurface->ref = 1;
+					   qsurface->type = SURFACE_WINDOW;
+					   qsurface->status = SURFACE_ACTIVE;
 
                        bind_qsurface(glstate, qsurface);
 //                       DEBUGF( " --Client drawable not found, create new surface: %16x %16lx\n", (unsigned int)qsurface, (unsigned long int)client_drawable);
@@ -2478,8 +2495,10 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
 			ptr_func_glShaderSource(args[0], args[1], tab_prog_new, tab_length_new);
 
-			for (i = 0; i < args[1]; i++)
+			for (i = 0; i < args[1]; i++) {
 				free(tab_prog_new[i]);
+			}
+
 			free(tab_prog_new);
 			free(tab_length_new);
 

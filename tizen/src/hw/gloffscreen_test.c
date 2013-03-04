@@ -69,13 +69,15 @@
 #define TX (32)
 #define TY (32)
 
+#define CHECK_SUCCESS	0
+#define CHECK_FAIL		1
 int gl_acceleration_capability_check (void) {
-    int test_failure = 0;
+    //int test_failure = 0;
     GloContext *context;
     GloSurface *surface;
-    unsigned char *datain = (unsigned char *)malloc(4*TX*TY);
-    unsigned char *datain_flip = (unsigned char *)malloc(4*TX*TY); // flipped input data (for GL)
-    unsigned char *dataout = (unsigned char *)malloc(4*TX*TY);
+    unsigned char *datain;
+    unsigned char *datain_flip;
+    unsigned char *dataout;
     unsigned char *p;
     int x,y;
     const int bufferAttributes[] = {
@@ -96,9 +98,13 @@ int gl_acceleration_capability_check (void) {
         // test failed.
         return 1;
     }
-*/
-    memset(datain_flip, 0, TX*TY*4);
+*/ 
+	datain = (unsigned char *)malloc(4*TX*TY);
+	datain_flip = (unsigned char *)malloc(4*TX*TY);
+
     memset(datain, 0, TX*TY*4);
+    memset(datain_flip, 0, TX*TY*4);
+
     p = datain;
     for (y=0;y<TY;y++) {
       for (x=0;x<TX;x++) {
@@ -114,23 +120,26 @@ int gl_acceleration_capability_check (void) {
 
     if (glo_init() != 0) {
         printf ("Host does not have GL hardware acceleration!(glo_init() failed)\n");
-        test_failure = 1;
-        goto TEST_END;
+		free (datain);
+		free (datain_flip);
+		return CHECK_FAIL;
     }
 
     // new surface
     context = glo_context_create(bufferFlags, 0);
 	if (context == NULL) {
         printf ("Host does not have GL hardware acceleration!(context_create() failed)\n");
-        test_failure = 1;
-        goto TEST_END;
+		free (datain);
+		free (datain_flip);
+		return CHECK_FAIL;
     }
 
     surface = glo_surface_create(TX, TY, context);
 	if (surface == NULL) {
         printf ("Host does not have GL hardware acceleration!(surface_create() failed)\n");
-        test_failure = 1;
-        goto TEST_END;
+		free (datain);
+		free (datain_flip);
+		return CHECK_FAIL;
     }
 
     glo_surface_makecurrent(surface);
@@ -140,9 +149,10 @@ int gl_acceleration_capability_check (void) {
     //printf("GLSL VERSION %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     if (strstr((const char*)glGetString(GL_RENDERER), "Software")) {
-        printf ("Host does not have GL hardware acceleration!\n");
-        test_failure = 1;
-        goto TEST_END;
+        printf ("Host does not have GL hardware acceleration!(No host gl driver)\n");
+		free (datain);
+		free (datain_flip);
+		return CHECK_FAIL;
     }
 
     // fill with stuff (in correctly ordered way)
@@ -157,7 +167,8 @@ int gl_acceleration_capability_check (void) {
     printf("glFormat: 0x%08X glType: 0x%08X\n", glFormat, glType);
     glDrawPixels(TX,TY,glFormat, glType, datain_flip);
     glFlush();
-
+	
+	dataout = (unsigned char *)malloc(4*TX*TY);
     memset(dataout, 0, bpp*TX*TY);
 
     glo_surface_getcontents(surface, TX*bpp, bpp*8, dataout);
@@ -167,13 +178,18 @@ int gl_acceleration_capability_check (void) {
     glo_context_destroy(context);
     // compare
     if (memcmp(datain, dataout, bpp*TX*TY)!=0) {
-      test_failure = 1;
+        printf ("Host does not have GL hardware acceleration!(datain != dataout)\n");
+		free (datain);
+		free (datain_flip);
+		free (dataout);
+		return CHECK_FAIL;
     }
-TEST_END:
+
     //glo_kill();
     //printf ("Testing %s\n", (test_failure ? "FAILED" : "PASSED"));
     free (datain);
     free (datain_flip);
     free (dataout);
-    return test_failure;
+
+	return CHECK_SUCCESS;
 }

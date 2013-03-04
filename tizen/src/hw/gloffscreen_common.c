@@ -304,6 +304,8 @@ int glo_flags_get_from_glx(const int *fbConfig, int assumeBooleans) {
             case GLX_ACCUM_BLUE_SIZE:
             case GLX_ACCUM_ALPHA_SIZE:
                 break;
+			default:
+				break;
         }
 
         // go to next
@@ -473,6 +475,8 @@ int glo_get_glx_from_flags(int formatFlags, int glxEnum) {
         case GLX_MAX_PBUFFER_HEIGHT:
         case GLX_MAX_PBUFFER_PIXELS:
             return 0;
+		default:
+			return 0;
     }
     return 0;
 }
