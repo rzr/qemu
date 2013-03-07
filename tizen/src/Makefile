@@ -27,6 +27,7 @@ endif
 ifdef CONFIG_DARWIN
 	$(CC) -mmacosx-version-min=10.4 -o check-hax check_hax.c	
 endif
+
 skin_client:
 	ant -buildfile skin/client/build.xml make-jar
 
@@ -100,13 +101,16 @@ endif
 	
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
+	cp ../../i386-softmmu/check-gl.exe $(EMUL_DIR)/bin/
 	cp check-hax.exe $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_DARWIN
+	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin/
 	cp check-hax $(EMUL_DIR)/bin
 	cp sdbscript $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_LINUX
+	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin/
 	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 endif

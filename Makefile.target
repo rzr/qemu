@@ -62,7 +62,7 @@ else
 stap:
 endif
 
-all: $(PROGS) stap
+all: $(PROGS) stap check-gl
 
 # Dummy command so that make thinks it has done something
 	@true
@@ -297,6 +297,30 @@ else
 $(QEMU_PROG): $(all-obj-y)
 	$(call LINK,$^)
 endif
+
+CHECK_GL_OBJS = check_gl.o gloffscreen_test.o gloffscreen_common.o 
+CHECK_GL_LDFLAGS =
+CHECK_GL_TARGET =
+ifdef CONFIG_LINUX
+CHECK_GL_OBJS += gloffscreen_xcomposite.o
+CHECK_GL_LDFLAGS += -lGL -lXcomposite -lXext -lglib-2.0
+CHECK_GL_TARGET = check-gl
+endif
+ifdef CONFIG_WIN32
+CHECK_GL_OBJS += gloffscreen_wgl.o
+CHECK_GL_LDFLAGS += -fstack-protector `pkg-config --libs glib-2.0` -lopengl32 -lglu32 -lgdi32
+CHECK_GL_TARGET = check-gl.exe
+endif
+ifdef CONFIG_DARWIN
+CHECK_GL_OBJS += gloffscreen_agl.o
+CHECK_GL_LDFLAGS += -mmacosx-version-min=10.4 `pkg-config --cflags --libs glib-2.0` -framework GLUT -framework OpenGL -framework AGL
+CHECK_GL_TARGET = check-gl
+endif
+
+check-gl: check_gl.o
+	gcc -o $(CHECK_GL_TARGET) $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS)
+check_gl.o: check_gl.c
+	gcc -c ../tizen/src/check_gl.c
 
 gdbstub-xml.c: $(TARGET_XML_FILES) $(SRC_PATH)/scripts/feature_to_c.sh
 	$(call quiet-command,rm -f $@ && $(SHELL) $(SRC_PATH)/scripts/feature_to_c.sh $@ $(TARGET_XML_FILES),"  GEN   $(TARGET_DIR)$@")
