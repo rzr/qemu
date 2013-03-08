@@ -14,6 +14,14 @@ echo "/etc/init.d/tizen-kvm start" >> $TMP_FILE
 echo "update-rc.d tizen-kvm defaults" >> $TMP_FILE
 
 chmod +x $TMP_FILE
-gksudo ./$TMP_FILE
+
+GKSUDO=`which gksudo`
+if [ "$GKSUDO" = "" ]
+then
+	echo "there is no gksudo."
+	sudo ./$TMP_FILE
+else
+	gksudo ./$TMP_FILE
+fi
 
 rm $TMP_FILE

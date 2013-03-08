@@ -13,6 +13,14 @@ echo "rm -f /etc/init.d/tizen-kvm" >> $TMP_FILE
 echo "rm -f /lib/udev/rules.d/45-tizen-kvm.rules" >> $TMP_FILE
 
 chmod +x $TMP_FILE
-gksudo ./$TMP_FILE
+
+GKSUDO=`which gksudo`
+if [ "$GKSUDO" = "" ]
+then
+	echo "there is no gksudo."
+	sudo ./$TMP_FILE
+else
+	gksudo ./$TMP_FILE
+fi
 
 rm $TMP_FILE
