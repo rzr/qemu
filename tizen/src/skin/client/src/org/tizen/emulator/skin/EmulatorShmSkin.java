@@ -84,6 +84,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.framebuffer = new Image(Display.getDefault(), imageData);
 
 			this.runnable = new Runnable() {
+				@Override
 				public void run() {
 					// logger.info("update display framebuffer");
 					if(lcdCanvas.isDisposed() == false) {
@@ -93,6 +94,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			};
 		}
 
+		@Override
 		public void run() {
 			stopRequest = false;
 
