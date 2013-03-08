@@ -103,7 +103,8 @@ public class KeyWindow extends SkinWindow {
 		super(parent, SWT.RIGHT | SWT.CENTER);
 
 		this.skin = skin;
-		this.shell = new Shell(Display.getDefault(), SWT.NO_TRIM | SWT.RESIZE);
+		this.shell = new Shell(Display.getDefault(),
+				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 		this.colorPairTag = colorPairTag;
 
