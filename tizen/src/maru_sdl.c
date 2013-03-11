@@ -37,6 +37,7 @@
 #include "maru_sdl_rotozoom.h"
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
+#include "hw/maru_brightness.h"
 #include "debug_ch.h"
 #if defined(CONFIG_LINUX)
 #include <sys/shm.h>
@@ -61,6 +62,8 @@ static int sdl_initialized;
 static int sdl_alteration;
 extern int g_shmid;
 extern char *g_shared_memory;
+
+static int sdl_skip_update;
 
 #if 0
 static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
@@ -166,6 +169,7 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
 
                 pthread_mutex_unlock(&sdl_mutex);
                 vga_hw_invalidate();
+                sdl_skip_update = 0;
                 break;
             }
 
@@ -174,7 +178,21 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
         }
     }
 
+    /* If the LCD is turned off,
+       the screen does not update until the LCD is turned on */
+    if (sdl_skip_update && brightness_off) {
+        return;
+    }
+
+    /* Usually, continuously updated.
+       When the LCD is turned off,
+       once updates the screen for a black screen. */
     vga_hw_update();
+    if (brightness_off) {
+        sdl_skip_update = 1;
+    } else {
+        sdl_skip_update = 0;
+    }
 
 #ifdef TARGET_ARM
 #ifdef SDL_THREAD
