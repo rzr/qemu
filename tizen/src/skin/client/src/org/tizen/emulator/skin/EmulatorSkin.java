@@ -176,7 +176,7 @@ public class EmulatorSkin {
 	private MenuItem keyWindowItem; /* key window menu */
 	public KeyWindow keyWindow;
 	public int recentlyDocked;
-	public ColorTag pairTagCanvas;
+	public ColorTag pairTag;
 	public CustomProgressBar bootingProgress;
 	public ScreenShotDialog screenShotDialog;
 
@@ -1046,7 +1046,7 @@ public class EmulatorSkin {
 			if (recreate == false) {
 				/* show the key window */
 				keyWindowItem.setSelection(isKeyWindow = true);
-				pairTagCanvas.setVisible(true);
+				pairTag.setVisible(true);
 
 				keyWindow.getShell().setVisible(true);
 				SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
@@ -1077,14 +1077,14 @@ public class EmulatorSkin {
 		keyWindowItem.setSelection(isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
-		pairTagCanvas.setVisible(true);
+		pairTag.setVisible(true);
 
 		keyWindow.open(dockValue);
 	}
 
 	public void hideKeyWindow() {
 		keyWindowItem.setSelection(isKeyWindow = false);
-		pairTagCanvas.setVisible(false);
+		pairTag.setVisible(false);
 
 		if (keyWindow != null) {
 			keyWindow.getShell().setVisible(false);
@@ -1093,7 +1093,7 @@ public class EmulatorSkin {
 
 	public void closeKeyWindow() {
 		keyWindowItem.setSelection(isKeyWindow = false);
-		pairTagCanvas.setVisible(false);
+		pairTag.setVisible(false);
 
 		if (keyWindow != null) {
 			keyWindow.getShell().close();

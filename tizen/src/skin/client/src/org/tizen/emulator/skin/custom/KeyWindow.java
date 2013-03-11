@@ -319,8 +319,8 @@ public class KeyWindow extends SkinWindow {
 			public void shellClosed(ShellEvent event) {
 				logger.info("Key Window is closed");
 
-				if (skin.pairTagCanvas != null) {
-					skin.pairTagCanvas.setVisible(false);
+				if (skin.pairTag != null) {
+					skin.pairTag.setVisible(false);
 				}
 				skin.keyWindow = null;
 

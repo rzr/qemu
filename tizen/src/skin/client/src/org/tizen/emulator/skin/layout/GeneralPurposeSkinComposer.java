@@ -190,9 +190,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		});
 
 		/* make a pair tag circle */
-		skin.pairTagCanvas =
+		skin.pairTag =
 				new ColorTag(shell, SWT.NO_FOCUS, skin.getColorVM());
-		skin.pairTagCanvas.setVisible(false);
+		skin.pairTag.setVisible(false);
 
 		/* create a progress bar for booting status */
 		skin.bootingProgress = new CustomProgressBar(shell, SWT.NONE);
@@ -258,11 +258,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					displayBounds.y + displayBounds.height + 1, displayBounds.width, 2);
 		}
 
-		/* arrange the pair tag */
-		skin.pairTagCanvas.setBounds(
-				PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
-				skin.pairTagCanvas.getWidth(), skin.pairTagCanvas.getHeight());
-
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
@@ -274,6 +269,29 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
 			shell.setSize(imageData.width, imageData.height);
+		}
+
+		/* arrange the pair tag */
+		int rotationType = currentState.getCurrentRotationId();
+		if (rotationType == RotationInfo.PORTRAIT.id()) {
+			skin.pairTag.setBounds(
+					PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
+		} else if (rotationType == RotationInfo.LANDSCAPE.id()) {
+			skin.pairTag.setBounds(
+					PAIR_TAG_POSITION_Y,
+					shell.getSize().y - PAIR_TAG_POSITION_X - skin.pairTag.getHeight(),
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
+		} else if (rotationType == RotationInfo.REVERSE_PORTRAIT.id()) {
+			skin.pairTag.setBounds(
+					shell.getSize().x - PAIR_TAG_POSITION_X - skin.pairTag.getWidth(),
+					shell.getSize().y - PAIR_TAG_POSITION_Y - skin.pairTag.getHeight(),
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
+		} else if (rotationType == RotationInfo.REVERSE_LANDSCAPE.id()) {
+			skin.pairTag.setBounds(
+					shell.getSize().x - PAIR_TAG_POSITION_Y - skin.pairTag.getWidth(),
+					PAIR_TAG_POSITION_X,
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
 		}
 
 		/* custom window shape */
@@ -488,8 +506,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			toggleButton.dispose();
 		}
 
-		if (skin.pairTagCanvas != null) {
-			skin.pairTagCanvas.dispose();
+		if (skin.pairTag != null) {
+			skin.pairTag.dispose();
 		}
 
 		if (backgroundColor != null) {
