@@ -360,6 +360,13 @@ QemuSurfaceInfo* get_screenshot_info(void)
         return NULL;
     }
 
+    /* If the LCD is turned off, return empty buffer.
+       Because the empty buffer is seen as a black. */
+    if (brightness_off) {
+        info->pixel_data_length = length;
+        return info;
+    }
+
     pthread_mutex_lock(&mutex_screenshot);
     MaruScreenshot* maru_screenshot = get_maru_screenshot();
     if ( !maru_screenshot || maru_screenshot->isReady != 1) {
