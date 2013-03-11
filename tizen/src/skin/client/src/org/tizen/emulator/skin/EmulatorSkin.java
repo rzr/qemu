@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -75,6 +75,7 @@ import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.custom.KeyWindow;
 import org.tizen.emulator.skin.dbi.ColorsType;
@@ -171,11 +172,11 @@ public class EmulatorSkin {
 	private boolean isOnKbd;
 
 	private Menu contextMenu;
+	public Color colorVM;
 	private MenuItem keyWindowItem; /* key window menu */
 	public KeyWindow keyWindow;
 	public int recentlyDocked;
-	public Color colorPairTag;
-	public Canvas pairTagCanvas;
+	public ColorTag pairTagCanvas;
 	public CustomProgressBar bootingProgress;
 	public ScreenShotDialog screenShotDialog;
 
@@ -232,19 +233,7 @@ public class EmulatorSkin {
 		this.displayCanvasStyle = displayCanvasStyle;
 
 		/* generate a pair tag color of key window */
-		int portNumber = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
-
-		if (portNumber >= 26200) {
-			int red = (int) (Math.random() * 256);
-			int green = (int) (Math.random() * 256);
-			int blue = (int) (Math.random() * 256);
-			this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
-		} else {
-			int vmIndex = (portNumber % 100) / 10;
-
-			SkinBasicColor colors[] = SkinBasicColor.values();
-			this.colorPairTag = new Color(shell.getDisplay(), colors[vmIndex].color());
-		}
+		setColorVM();
 
 		this.currentState = state;
 	}
@@ -252,6 +241,22 @@ public class EmulatorSkin {
 	public void setCommunicator(SocketCommunicator communicator) {
 		this.communicator = communicator;
 		this.finger.setCommunicator(this.communicator);
+	}
+
+	private void setColorVM() {
+		int portNumber = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
+
+		if (portNumber >= 26200) {
+			int red = (int) (Math.random() * 256);
+			int green = (int) (Math.random() * 256);
+			int blue = (int) (Math.random() * 256);
+			this.colorVM = new Color(shell.getDisplay(), new RGB(red, green, blue));
+		} else {
+			int vmIndex = (portNumber % 100) / 10;
+
+			SkinBasicColor colors[] = SkinBasicColor.values();
+			this.colorVM = new Color(shell.getDisplay(), colors[vmIndex].color());
+		}
 	}
 
 	public long initLayout() {
@@ -352,8 +357,15 @@ public class EmulatorSkin {
 		return (new Color(shell.getDisplay(), new RGB(255, 255, 255)));
 	}
 
-	public SkinReopenPolicy open() {
+	public Color getColorVM() {
+		return colorVM;
+	}
 
+	public ImageRegistry getImageRegistry() {
+		return imageRegistry;
+	}
+
+	public SkinReopenPolicy open() {
 		if (null == this.communicator) {
 			logger.severe("communicator is null.");
 			return null;
@@ -381,11 +393,6 @@ public class EmulatorSkin {
 		}
 
 		return new SkinReopenPolicy(reopenSkin, isAboutToReopen);
-
-	}
-
-	public ImageRegistry getImageRegistry() {
-		return imageRegistry;
 	}
 
 	protected void skinFinalize() {
@@ -418,9 +425,9 @@ public class EmulatorSkin {
 							closeKeyWindow();
 						}
 
-						/* dispose the color tag */
-						if (colorPairTag != null) {
-							colorPairTag.dispose();
+						/* dispose the color */
+						if (colorVM != null) {
+							colorVM.dispose();
 						}
 
 						/* save config only for emulator close */
@@ -1065,8 +1072,7 @@ public class EmulatorSkin {
 			return;
 		}
 
-		keyWindow = new KeyWindow(this, shell, colorPairTag,
-				communicator, keyMapList);
+		keyWindow = new KeyWindow(this, shell, communicator, keyMapList);
 
 		keyWindowItem.setSelection(isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);

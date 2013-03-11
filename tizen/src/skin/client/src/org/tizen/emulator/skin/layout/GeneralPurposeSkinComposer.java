@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -51,6 +51,7 @@ import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomButton;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.image.ImageRegistry;
@@ -68,8 +69,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	private static final int PAIR_TAG_POSITION_X = 26;
 	private static final int PAIR_TAG_POSITION_Y = 13;
-	private static final int PAIR_TAG_POSITION_WIDTH = 8;
-	private static final int PAIR_TAG_POSITION_HEIGHT = 8;
 
 	private Logger logger = SkinLogger.getSkinLogger(
 			GeneralPurposeSkinComposer.class).getLogger();
@@ -109,6 +108,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public Canvas compose(int style) {
+		shell.setBackground(backgroundColor);
+
 		displayCanvas = new Canvas(shell, style);
 
 		int vmIndex = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
@@ -189,20 +190,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		});
 
 		/* make a pair tag circle */
-		skin.pairTagCanvas = new Canvas(shell, SWT.NO_FOCUS);
-		skin.pairTagCanvas.setBackground(backgroundColor);
-
-		skin.pairTagCanvas.addPaintListener(new PaintListener() {
-			@Override
-			public void paintControl(PaintEvent e) {
-				if (skin.colorPairTag != null) {
-					e.gc.setBackground(skin.colorPairTag);
-					e.gc.setAntialias(SWT.ON);
-					e.gc.fillOval(
-							0, 0, PAIR_TAG_POSITION_WIDTH, PAIR_TAG_POSITION_HEIGHT);
-				}
-			}
-		});
+		skin.pairTagCanvas =
+				new ColorTag(shell, SWT.NO_FOCUS, skin.getColorVM());
 		skin.pairTagCanvas.setVisible(false);
 
 		/* create a progress bar for booting status */
@@ -272,7 +261,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		/* arrange the pair tag */
 		skin.pairTagCanvas.setBounds(
 				PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
-				PAIR_TAG_POSITION_WIDTH, PAIR_TAG_POSITION_HEIGHT);
+				skin.pairTagCanvas.getWidth(), skin.pairTagCanvas.getHeight());
 
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {

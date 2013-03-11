@@ -1,7 +1,7 @@
 /**
  *
  *
- * Copyright ( C ) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -48,7 +48,6 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -86,7 +85,6 @@ public class KeyWindow extends SkinWindow {
 	private Image imageFrame; /* nine-patch image */
 
 	private Color colorFrame;
-	private Color colorPairTag;
 	private SocketCommunicator communicator;
 	private List<KeyMapType> keyMapList;
 
@@ -98,7 +96,7 @@ public class KeyWindow extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public KeyWindow(EmulatorSkin skin, Shell parent, Color colorPairTag,
+	public KeyWindow(EmulatorSkin skin, Shell parent,
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent, SWT.RIGHT | SWT.CENTER);
 
@@ -106,7 +104,6 @@ public class KeyWindow extends SkinWindow {
 		this.shell = new Shell(Display.getDefault(),
 				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
-		this.colorPairTag = colorPairTag;
 
 		this.keyMapList = keyMapList; //TODO: null
 		this.communicator = communicator;
@@ -140,14 +137,13 @@ public class KeyWindow extends SkinWindow {
 				heightBase + heightHeaderPart + heightTailPart);
 		this.colorFrame = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 
-		this.colorPairTag = colorPairTag;
+		shell.setBackground(colorFrame);
 
 		createContents();
 		trimPatchedShell(shell, imageFrame);
 
 		addKeyWindowListener();
 
-		shell.setBackground(colorFrame);
 		shell.setSize(imageFrame.getImageData().width,
 				imageFrame.getImageData().height);
 	}
@@ -163,21 +159,9 @@ public class KeyWindow extends SkinWindow {
 		shell.setLayout(shellGridLayout);
 
 		/* make a pair tag circle */
-		Canvas pairTagCanvas = new Canvas(shell, SWT.NONE);
-		pairTagCanvas.setBackground(colorFrame);
+		ColorTag pairTagCanvas = new ColorTag(shell, SWT.NONE, skin.getColorVM());
 		pairTagCanvas.setLayoutData(new GridData(PAIRTAG_CIRCLE_SIZE,
 				PAIRTAG_CIRCLE_SIZE + PAIRTAG_MARGIN_BOTTOM));
-
-		pairTagCanvas.addPaintListener(new PaintListener() {
-			@Override
-			public void paintControl(PaintEvent e) {
-				if (colorPairTag != null) {
-					e.gc.setBackground(colorPairTag);
-					e.gc.setAntialias(SWT.ON);
-					e.gc.fillOval(0, 0, PAIRTAG_CIRCLE_SIZE, PAIRTAG_CIRCLE_SIZE);
-				}
-			}
-		});
 
 		/* make a region of HW keys */
 		if (cntHiddenButton > 0) {
@@ -486,9 +470,5 @@ public class KeyWindow extends SkinWindow {
 		};
 
 		shell.addMouseListener(shellMouseListener);
-	}
-
-	public Color getPairTagColor() {
-		return colorPairTag;
 	}
 }
