@@ -142,7 +142,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shell.setLocation(x, y);
 
 		String emulatorName = SkinUtil.makeEmulatorName(config);
-		shell.setText(emulatorName);
+		shell.setText("Emulator - " + emulatorName);
 
 		displayCanvas.setBackground(
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
