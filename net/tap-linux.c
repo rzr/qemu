@@ -73,7 +73,11 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr, int vnet_hdr_required
         pstrcpy(ifr.ifr_name, IFNAMSIZ, "tap%d");
     ret = ioctl(fd, TUNSETIFF, (void *) &ifr);
     if (ret != 0) {
-        error_report("could not configure %s (%s): %m", PATH_NET_TUN, ifr.ifr_name);
+        if (ifname[0] != '\0') {
+            error_report("could not configure %s (%s): %m", PATH_NET_TUN, ifr.ifr_name);
+        } else {
+            error_report("could not configure %s: %m", PATH_NET_TUN);
+        }
         close(fd);
         return -1;
     }
@@ -94,16 +98,19 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr, int vnet_hdr_required
  */
 #define TAP_DEFAULT_SNDBUF 0
 
-int tap_set_sndbuf(int fd, QemuOpts *opts)
+int tap_set_sndbuf(int fd, const NetdevTapOptions *tap)
 {
     int sndbuf;
 
-    sndbuf = qemu_opt_get_size(opts, "sndbuf", TAP_DEFAULT_SNDBUF);
+    sndbuf = !tap->has_sndbuf       ? TAP_DEFAULT_SNDBUF :
+             tap->sndbuf > INT_MAX  ? INT_MAX :
+             tap->sndbuf;
+
     if (!sndbuf) {
         sndbuf = INT_MAX;
     }
 
-    if (ioctl(fd, TUNSETSNDBUF, &sndbuf) == -1 && qemu_opt_get(opts, "sndbuf")) {
+    if (ioctl(fd, TUNSETSNDBUF, &sndbuf) == -1 && tap->has_sndbuf) {
         error_report("TUNSETSNDBUF ioctl failed: %s", strerror(errno));
         return -1;
     }

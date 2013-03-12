@@ -4,6 +4,8 @@
 #include "qemu-char.h"
 #include "qdict.h"
 #include "notify.h"
+#include "monitor.h"
+#include "trace.h"
 
 /* keyboard/mouse support */
 
@@ -43,8 +45,6 @@ typedef struct QEMUPutLEDEntry {
 
 void qemu_add_kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
 void qemu_remove_kbd_event_handler(void);
-void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
-void qemu_remove_ps2kbd_event_handler(void);
 QEMUPutMouseEntry *qemu_add_mouse_event_handler(QEMUPutMouseEvent *func,
                                                 void *opaque, int absolute,
                                                 const char *name);
@@ -55,7 +55,11 @@ QEMUPutLEDEntry *qemu_add_led_event_handler(QEMUPutLEDEvent *func, void *opaque)
 void qemu_remove_led_event_handler(QEMUPutLEDEntry *entry);
 
 void kbd_put_keycode(int keycode);
+#ifdef CONFIG_MARU
+void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
+void qemu_remove_ps2kbd_event_handler(void);
 void ps2kbd_put_keycode(int keycode);
+#endif
 void kbd_put_ledstate(int ledstate);
 void kbd_mouse_event(int dx, int dy, int dz, int buttons_state);
 
@@ -75,8 +79,6 @@ struct MouseTransformInfo {
     int a[7];
 };
 
-void do_info_mice_print(Monitor *mon, const QObject *data);
-void do_info_mice(Monitor *mon, QObject **ret_data);
 void do_mouse_set(Monitor *mon, const QDict *qdict);
 
 /* keysym is a unicode code except for special keys (see QEMU_KEY_xxx
@@ -110,7 +112,7 @@ void kbd_put_keysym(int keysym);
 #define QEMU_ALLOCATED_FLAG     0x02
 #define QEMU_REALPIXELS_FLAG    0x04
 
-struct QEMU_PixelFormat {
+struct PixelFormat {
     uint8_t bits_per_pixel;
     uint8_t bytes_per_pixel;
     uint8_t depth; /* color depth in bits */
@@ -127,7 +129,7 @@ struct DisplaySurface {
     int linesize;        /* bytes per line */
     uint8_t *data;
 
-    struct QEMU_PixelFormat pf;
+    struct PixelFormat pf;
 };
 
 /* cursor data format is 32bit RGBA */
@@ -164,6 +166,9 @@ struct DisplayChangeListener {
     void (*dpy_fill)(struct DisplayState *s, int x, int y,
                      int w, int h, uint32_t c);
     void (*dpy_text_cursor)(struct DisplayState *s, int x, int y);
+#ifdef CONFIG_OPENGLES
+    void (*dpy_updatecaption)(void);
+#endif
 
     struct DisplayChangeListener *next;
 };
@@ -192,6 +197,8 @@ void register_displaystate(DisplayState *ds);
 DisplayState *get_displaystate(void);
 DisplaySurface* qemu_create_displaysurface_from(int width, int height, int bpp,
                                                 int linesize, uint8_t *data);
+void qemu_alloc_display(DisplaySurface *surface, int width, int height,
+                        int linesize, PixelFormat pf, int newflags);
 PixelFormat qemu_different_endianness_pixelformat(int bpp);
 PixelFormat qemu_default_pixelformat(int bpp);
 
@@ -204,11 +211,13 @@ static inline DisplaySurface* qemu_create_displaysurface(DisplayState *ds, int w
 
 static inline DisplaySurface* qemu_resize_displaysurface(DisplayState *ds, int width, int height)
 {
+    trace_displaysurface_resize(ds, ds->surface, width, height);
     return ds->allocator->resize_displaysurface(ds->surface, width, height);
 }
 
 static inline void qemu_free_displaysurface(DisplayState *ds)
 {
+    trace_displaysurface_free(ds, ds->surface);
     ds->allocator->free_displaysurface(ds->surface);
 }
 
@@ -240,6 +249,20 @@ static inline void dpy_update(DisplayState *s, int x, int y, int w, int h)
         dcl = dcl->next;
     }
 }
+
+#ifdef CONFIG_OPENGLES
+static inline void dpy_updatecaption(DisplayState *s)
+{
+    struct DisplayChangeListener *dcl = s->listeners;
+    while (dcl != NULL) {
+        if(dcl->dpy_updatecaption != NULL)
+        {
+            dcl->dpy_updatecaption();
+        }
+        dcl = dcl->next;
+    }
+}
+#endif
 
 static inline void dpy_resize(DisplayState *s)
 {
@@ -327,7 +350,12 @@ static inline int ds_get_bytes_per_pixel(DisplayState *ds)
     return ds->surface->pf.bytes_per_pixel;
 }
 
+#ifdef CONFIG_CURSES
+#include <curses.h>
+typedef chtype console_ch_t;
+#else
 typedef unsigned long console_ch_t;
+#endif
 static inline void console_write_ch(console_ch_t *dest, uint32_t ch)
 {
     if (!(ch & 0xff))
@@ -337,7 +365,7 @@ static inline void console_write_ch(console_ch_t *dest, uint32_t ch)
 
 typedef void (*vga_hw_update_ptr)(void *);
 typedef void (*vga_hw_invalidate_ptr)(void *);
-typedef void (*vga_hw_screen_dump_ptr)(void *, const char *);
+typedef void (*vga_hw_screen_dump_ptr)(void *, const char *, bool cswitch);
 typedef void (*vga_hw_text_update_ptr)(void *, console_ch_t *);
 
 DisplayState *graphic_console_init(vga_hw_update_ptr update,
@@ -363,9 +391,6 @@ void qemu_console_copy(DisplayState *ds, int src_x, int src_y,
 
 /* sdl.c */
 void sdl_display_init(DisplayState *ds, int full_screen, int no_frame);
-void sdl_display_set_rotation(int rot);
-void sdl_display_set_window_size(int w, int h);
-void sdl_display_force_refresh(void);
 
 /* cocoa.m */
 void cocoa_display_init(DisplayState *ds, int full_screen);
@@ -374,12 +399,22 @@ void cocoa_display_init(DisplayState *ds, int full_screen);
 void vnc_display_init(DisplayState *ds);
 void vnc_display_close(DisplayState *ds);
 int vnc_display_open(DisplayState *ds, const char *display);
-int vnc_display_password(DisplayState *ds, const char *password);
+void vnc_display_add_client(DisplayState *ds, int csock, int skipauth);
 int vnc_display_disable_login(DisplayState *ds);
-int vnc_display_pw_expire(DisplayState *ds, time_t expires);
-void do_info_vnc_print(Monitor *mon, const QObject *data);
-void do_info_vnc(Monitor *mon, QObject **ret_data);
 char *vnc_display_local_addr(DisplayState *ds);
+#ifdef CONFIG_VNC
+int vnc_display_password(DisplayState *ds, const char *password);
+int vnc_display_pw_expire(DisplayState *ds, time_t expires);
+#else
+static inline int vnc_display_password(DisplayState *ds, const char *password)
+{
+    return -ENODEV;
+}
+static inline int vnc_display_pw_expire(DisplayState *ds, time_t expires)
+{
+    return -ENODEV;
+};
+#endif
 
 /* curses.c */
 void curses_display_init(DisplayState *ds, int full_screen);

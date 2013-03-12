@@ -2,277 +2,121 @@
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 or
  * (at your option) any later version of the License.
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef GLES2_CALLS_H__
+#define GLES2_CALLS_H__
 
-/*egl*/
-CALL_ENTRY(eglGetError)
-CALL_ENTRY(eglGetDisplay)
-CALL_ENTRY(eglInitialize)
-CALL_ENTRY(eglTerminate)
-CALL_DUMMY(eglQueryString)
-CALL_ENTRY(eglGetConfigs)
-CALL_ENTRY(eglChooseConfig)
-CALL_ENTRY(eglGetConfigAttrib)
-CALL_ENTRY(eglCreateWindowSurface)
-CALL_DUMMY(eglCreatePbufferSurface)
-CALL_ENTRY(eglCreatePixmapSurface)
-CALL_ENTRY(eglDestroySurface)
-CALL_DUMMY(eglQuerySurface)
-CALL_ENTRY(eglBindAPI)
-CALL_DUMMY(eglQueryAPI)
-CALL_DUMMY(eglWaitClient)
-CALL_DUMMY(eglReleaseThread)
-CALL_DUMMY(eglCreatePbufferFromClientBuffer)
-CALL_DUMMY(eglSurfaceAttrib)
-CALL_ENTRY(eglBindTexImage)
-CALL_ENTRY(eglReleaseTexImage)
-CALL_DUMMY(eglSwapInterval)
-CALL_ENTRY(eglCreateContext)
-CALL_ENTRY(eglDestroyContext)
-CALL_ENTRY(eglMakeCurrent)
-CALL_DUMMY(eglGetCurrentContext)
-CALL_DUMMY(eglGetCurrentSurface)
-CALL_DUMMY(eglGetCurrentDisplay)
-CALL_DUMMY(eglQueryContext)
-CALL_DUMMY(eglWaitGL)
-CALL_DUMMY(eglWaitNative)
-CALL_ENTRY(eglSwapBuffers)
-CALL_DUMMY(eglCopyBuffers)
-CALL_DUMMY(eglGetProcAddress)
+// Automatically create the prototype and function definition.
 
-/* gles v2*/
-CALL_ENTRY(glActiveTexture)
-CALL_ENTRY(glAttachShader)
-CALL_ENTRY(glBindAttribLocation)
-CALL_ENTRY(glBindBuffer)
-CALL_ENTRY(glBindFramebuffer)
-CALL_ENTRY(glBindRenderbuffer)
-CALL_ENTRY(glBindTexture)
-CALL_ENTRY(glBlendColor)
-CALL_ENTRY(glBlendEquation)
-CALL_ENTRY(glBlendEquationSeparate)
-CALL_ENTRY(glBlendFunc)
-CALL_ENTRY(glBlendFuncSeparate)
-CALL_DUMMY(glBufferData)
-CALL_DUMMY(glBufferSubData)
-CALL_ENTRY(glCheckFramebufferStatus)
-CALL_ENTRY(glClear)
-CALL_ENTRY(glClearColor)
-CALL_ENTRY(glClearDepthf)
-CALL_ENTRY(glClearStencil)
-CALL_ENTRY(glColorMask)
-CALL_ENTRY(glCompileShader)
-CALL_ENTRY(glCompressedTexImage2D)
-CALL_ENTRY(glCompressedTexSubImage2D)
-CALL_ENTRY(glCopyTexImage2D)
-CALL_ENTRY(glCopyTexSubImage2D)
-CALL_ENTRY(glCreateProgram)
-CALL_ENTRY(glCreateShader)
-CALL_ENTRY(glCullFace)
-CALL_DUMMY(glDeleteBuffers)
-CALL_ENTRY(glDeleteFramebuffers)
-CALL_ENTRY(glDeleteProgram)
-CALL_ENTRY(glDeleteRenderbuffers)
-CALL_ENTRY(glDeleteShader)
-CALL_ENTRY(glDeleteTextures)
-CALL_ENTRY(glDepthFunc)
-CALL_ENTRY(glDepthMask)
-CALL_ENTRY(glDepthRangef)
-CALL_ENTRY(glDetachShader)
-CALL_ENTRY(glDisable)
-CALL_ENTRY(glDisableVertexAttribArray)
-CALL_ENTRY(glDrawArrays)
-CALL_ENTRY(glDrawElements)
-CALL_ENTRY(glEnable)
-CALL_ENTRY(glEnableVertexAttribArray)
-CALL_ENTRY(glFinish)
-CALL_ENTRY(glFlush)
-CALL_ENTRY(glFramebufferRenderbuffer)
-CALL_ENTRY(glFramebufferTexture2D)
-CALL_ENTRY(glFrontFace)
-CALL_DUMMY(glGenBuffers)
-CALL_ENTRY(glGenerateMipmap)
-CALL_ENTRY(glGenFramebuffers)
-CALL_ENTRY(glGenRenderbuffers)
-CALL_ENTRY(glGenTextures)
-CALL_ENTRY(glGetActiveAttrib)
-CALL_ENTRY(glGetActiveUniform)
-CALL_ENTRY(glGetAttachedShaders)
-CALL_ENTRY(glGetAttribLocation)
-CALL_ENTRY(glGetBooleanv)
-CALL_DUMMY(glGetBufferParameteriv)
-CALL_ENTRY(glGetError)
-CALL_ENTRY(glGetFloatv)
-CALL_DUMMY(glGetFramebufferAttachmentParameteriv)
-CALL_ENTRY(glGetIntegerv)
-CALL_ENTRY(glGetProgramiv)
-CALL_ENTRY(glGetProgramInfoLog)
-CALL_DUMMY(glGetRenderbufferParameteriv)
-CALL_ENTRY(glGetShaderiv)
-CALL_ENTRY(glGetShaderInfoLog)
-CALL_ENTRY(glGetShaderPrecisionFormat)
-CALL_ENTRY(glGetShaderSource)
-CALL_DUMMY(glGetString)
-CALL_ENTRY(glGetTexParameterfv)
-CALL_ENTRY(glGetTexParameteriv)
-CALL_ENTRY(glGetUniformfv)
-CALL_ENTRY(glGetUniformiv)
-CALL_ENTRY(glGetUniformLocation)
-CALL_ENTRY(glGetVertexAttribfv)
-CALL_ENTRY(glGetVertexAttribiv)
-CALL_ENTRY(glGetVertexAttribPointerv)
-CALL_ENTRY(glHint)
-CALL_DUMMY(glIsBuffer)
-CALL_ENTRY(glIsEnabled)
-CALL_DUMMY(glIsFramebuffer)
-CALL_ENTRY(glIsProgram)
-CALL_DUMMY(glIsRenderbuffer)
-CALL_ENTRY(glIsShader)
-CALL_ENTRY(glIsTexture)
-CALL_ENTRY(glLineWidth)
-CALL_ENTRY(glLinkProgram)
-CALL_ENTRY(glPixelStorei)
-CALL_ENTRY(glPolygonOffset)
-CALL_ENTRY(glReadPixels)
-CALL_ENTRY(glReleaseShaderCompiler)
-CALL_ENTRY(glRenderbufferStorage)
-CALL_ENTRY(glSampleCoverage)
-CALL_ENTRY(glScissor)
-CALL_DUMMY(glShaderBinary)
-CALL_ENTRY(glShaderSource)
-CALL_ENTRY(glStencilFunc)
-CALL_ENTRY(glStencilFuncSeparate)
-CALL_ENTRY(glStencilMask)
-CALL_ENTRY(glStencilMaskSeparate)
-CALL_ENTRY(glStencilOp)
-CALL_ENTRY(glStencilOpSeparate)
-CALL_ENTRY(glTexImage2D)
-CALL_ENTRY(glTexParameterf)
-CALL_ENTRY(glTexParameterfv)
-CALL_ENTRY(glTexParameteri)
-CALL_ENTRY(glTexParameteriv)
-CALL_ENTRY(glTexSubImage2D)
-CALL_ENTRY(glUniform1f)
-CALL_ENTRY(glUniform1fv)
-CALL_ENTRY(glUniform1i)
-CALL_ENTRY(glUniform1iv)
-CALL_ENTRY(glUniform2f)
-CALL_ENTRY(glUniform2fv)
-CALL_ENTRY(glUniform2i)
-CALL_ENTRY(glUniform2iv)
-CALL_ENTRY(glUniform3f)
-CALL_ENTRY(glUniform3fv)
-CALL_ENTRY(glUniform3i)
-CALL_ENTRY(glUniform3iv)
-CALL_ENTRY(glUniform4f)
-CALL_ENTRY(glUniform4fv)
-CALL_ENTRY(glUniform4i)
-CALL_ENTRY(glUniform4iv)
-CALL_ENTRY(glUniformMatrix2fv)
-CALL_ENTRY(glUniformMatrix3fv)
-CALL_ENTRY(glUniformMatrix4fv)
-CALL_ENTRY(glUseProgram)
-CALL_ENTRY(glValidateProgram)
-CALL_ENTRY(glVertexAttrib1f)
-CALL_ENTRY(glVertexAttrib1fv)
-CALL_ENTRY(glVertexAttrib2f)
-CALL_ENTRY(glVertexAttrib2fv)
-CALL_ENTRY(glVertexAttrib3f)
-CALL_ENTRY(glVertexAttrib3fv)
-CALL_ENTRY(glVertexAttrib4f)
-CALL_ENTRY(glVertexAttrib4fv)
-CALL_ENTRY(glVertexAttribPointer)
-CALL_ENTRY(glViewport)
+#include "gles2.h"
+#define CB(FUNC, API) \
+        PROTO(FUNC, API); \
+        PROTO(FUNC, API)
 
-/* gles v1 without gles v2*/
-CALL_ENTRY(glAlphaFunc)
-CALL_ENTRY(glClipPlanef)
-CALL_ENTRY(glColor4f)
-CALL_ENTRY(glFogf)
-CALL_ENTRY(glFogfv)
-CALL_ENTRY(glFrustumf)
-CALL_ENTRY(glGetClipPlanef)
-CALL_ENTRY(glGetLightfv)
-CALL_ENTRY(glGetMaterialfv)
-CALL_ENTRY(glGetTexEnvfv)
-CALL_ENTRY(glLightModelf)
-CALL_ENTRY(glLightModelfv)
-CALL_ENTRY(glLightf)
-CALL_ENTRY(glLightfv)
-CALL_ENTRY(glLoadMatrixf)
-CALL_ENTRY(glMaterialf)
-CALL_ENTRY(glMaterialfv)
-CALL_ENTRY(glMultMatrixf)
-CALL_ENTRY(glMultiTexCoord4f)
-CALL_ENTRY(glNormal3f)
-CALL_ENTRY(glOrthof)
-CALL_ENTRY(glPointParameterf)
-CALL_ENTRY(glPointParameterfv)
-CALL_ENTRY(glPointSize)
-CALL_ENTRY(glRotatef)
-CALL_ENTRY(glScalef)
-CALL_ENTRY(glTexEnvf)
-CALL_ENTRY(glTexEnvfv)
-CALL_ENTRY(glTranslatef)
-CALL_ENTRY(glAlphaFuncx)
-CALL_ENTRY(glClearColorx)
-CALL_ENTRY(glClearDepthx)
-CALL_ENTRY(glClientActiveTexture)
-CALL_ENTRY(glClipPlanex)
-CALL_ENTRY(glColor4ub)
-CALL_ENTRY(glColor4x)
-CALL_ENTRY(glColorPointer)
-CALL_ENTRY(glDepthRangex)
-CALL_ENTRY(glDisableClientState)
-CALL_ENTRY(glEnableClientState)
-CALL_ENTRY(glFogx)
-CALL_ENTRY(glFogxv)
-CALL_ENTRY(glFrustumx)
-CALL_ENTRY(glGetClipPlanex)
-CALL_ENTRY(glGetFixedv)
-CALL_ENTRY(glGetLightxv)
-CALL_ENTRY(glGetMaterialxv)
-CALL_ENTRY(glGetPointerv)
-CALL_ENTRY(glGetTexEnviv)
-CALL_ENTRY(glGetTexEnvxv)
-CALL_ENTRY(glGetTexParameterxv)
-CALL_ENTRY(glLightModelx)
-CALL_ENTRY(glLightModelxv)
-CALL_ENTRY(glLightx)
-CALL_ENTRY(glLightxv)
-CALL_ENTRY(glLineWidthx)
-CALL_ENTRY(glLoadIdentity)
-CALL_ENTRY(glLoadMatrixx)
-CALL_ENTRY(glLogicOp)
-CALL_ENTRY(glMaterialx)
-CALL_ENTRY(glMaterialxv)
-CALL_ENTRY(glMatrixMode)
-CALL_ENTRY(glMultMatrixx)
-CALL_ENTRY(glMultiTexCoord4x)
-CALL_ENTRY(glNormal3x)
-CALL_ENTRY(glNormalPointer)
-CALL_ENTRY(glOrthox)
-CALL_ENTRY(glPointParameterx)
-CALL_ENTRY(glPointParameterxv)
-CALL_ENTRY(glPointSizex)
-CALL_ENTRY(glPolygonOffsetx)
-CALL_ENTRY(glPopMatrix)
-CALL_ENTRY(glPushMatrix)
-CALL_ENTRY(glRotatex)
-CALL_ENTRY(glSampleCoveragex)
-CALL_ENTRY(glScalex)
-CALL_ENTRY(glShadeModel)
-CALL_ENTRY(glTexCoordPointer)
-CALL_ENTRY(glTexEnvi)
-CALL_ENTRY(glTexEnvx)
-CALL_ENTRY(glTexEnviv)
-CALL_ENTRY(glTexEnvxv)
-CALL_ENTRY(glTexParameterx)
-CALL_ENTRY(glTexParameterxv)
-CALL_ENTRY(glTranslatex)
-CALL_ENTRY(glVertexPointer)
+// Sizes of primitive types in the ABI.
+#define GLES2_HTYPE_byte uint8_t
+#define GLES2_HTYPE_word uint16_t
+#define GLES2_HTYPE_dword uint32_t
+#define GLES2_HTYPE_sdword int32_t
+#define GLES2_HTYPE_float float
+#define GLES2_HTYPE_handle uint32_t
+
+// Defines shorthands for handling types.
+#define GLES2_TYPE(TYPE, SIZE) \
+    typedef GLES2_HTYPE_##SIZE TYPE; \
+    static inline void gles2_ret_##TYPE(gles2_State *s, TYPE value); \
+    static inline void gles2_put_##TYPE(gles2_State *s, target_ulong va, TYPE value); \
+    static inline TYPE gles2_get_##TYPE(gles2_State *s, target_ulong va); \
+    static inline TYPE gles2_arg_##TYPE(gles2_State *s, gles2_decode_t *d); \
+
+// Bunch of expansions of previous macro to ease things up.
+GLES2_TYPE(Tptr, dword)
+GLES2_TYPE(TEGLBoolean, dword)
+GLES2_TYPE(TEGLenum, dword)
+GLES2_TYPE(TEGLint, dword)
+GLES2_TYPE(TEGLDisplay, handle)
+GLES2_TYPE(TEGLConfig, handle)
+GLES2_TYPE(TEGLContext, handle)
+GLES2_TYPE(TEGLSurface, handle)
+
+GLES2_TYPE(TGLclampf, float)
+GLES2_TYPE(TGLbitfield, dword)
+GLES2_TYPE(TGLboolean, byte)
+GLES2_TYPE(TGLint, sdword)
+GLES2_TYPE(TGLuint, dword)
+GLES2_TYPE(TGLushort, word)
+GLES2_TYPE(TGLubyte, byte)
+GLES2_TYPE(TGLenum, dword)
+GLES2_TYPE(TGLsizei, sdword)
+GLES2_TYPE(TGLfloat, float)
+GLES2_TYPE(TGLfixed, dword)
+GLES2_TYPE(TGLclampx, dword)
+
+// Just one more macro for even less typing.
+#define GLES2_ARG(TYPE, NAME) \
+    TYPE NAME = gles2_arg_##TYPE(s, d)
+
+// Host to guest vertex array copy.
+struct gles2_Array
+{
+    TGLuint indx;          // Parameter of the call.
+    TGLint size;           // --''--
+    TGLenum type;          // --''--
+    TGLboolean normalized; // --''--
+    TGLsizei stride;       // --''--
+    TGLsizei real_stride;  // --''--
+    Tptr tptr;             // Pointer in the guest memory.
+    void* ptr;             // Pointer in the host memory.
+    intptr_t delta;        // Delta from 0 to first index in host memory.
+    TGLint buffer;          // Buffer data
+
+    void (*apply) (struct gles2_Array *va);
+    TGLboolean enabled;    // State.
+};
+
+// Defines shorthands for handling types.
+#define GLES2_TYPE_DEF(TYPE, SIZE) \
+    static inline void gles2_ret_##TYPE(gles2_State *s, TYPE value) \
+    { gles2_ret_##SIZE(s, value); } \
+    static inline void gles2_put_##TYPE(gles2_State *s, target_ulong va, TYPE value) \
+    { gles2_put_##SIZE(s, va, value); } \
+    static inline TYPE gles2_get_##TYPE(gles2_State *s, target_ulong va) \
+    { return (TYPE)gles2_get_##SIZE(s, va); } \
+    static inline TYPE gles2_arg_##TYPE(gles2_State *s, gles2_decode_t *d) \
+    { return (TYPE)gles2_arg_##SIZE(s, d); }
+
+// Bunch of expansions of previous macro to ease things up.
+GLES2_TYPE_DEF(Tptr, dword)
+GLES2_TYPE_DEF(TEGLBoolean, dword)
+GLES2_TYPE_DEF(TEGLenum, dword)
+GLES2_TYPE_DEF(TEGLint, dword)
+GLES2_TYPE_DEF(TEGLDisplay, handle)
+GLES2_TYPE_DEF(TEGLConfig, handle)
+GLES2_TYPE_DEF(TEGLContext, handle)
+GLES2_TYPE_DEF(TEGLSurface, handle)
+
+GLES2_TYPE_DEF(TGLclampf, float)
+GLES2_TYPE_DEF(TGLbitfield, dword)
+GLES2_TYPE_DEF(TGLboolean, byte)
+GLES2_TYPE_DEF(TGLint, sdword)
+GLES2_TYPE_DEF(TGLuint, dword)
+GLES2_TYPE_DEF(TGLushort, word)
+GLES2_TYPE_DEF(TGLubyte, byte)
+GLES2_TYPE_DEF(TGLenum, dword)
+GLES2_TYPE_DEF(TGLsizei, sdword)
+GLES2_TYPE_DEF(TGLfloat, float)
+GLES2_TYPE_DEF(TGLfixed, dword)
+GLES2_TYPE_DEF(TGLclampx, dword)
+
+#define GL_BYTE                           0x1400
+#define GL_UNSIGNED_BYTE                  0x1401
+#define GL_SHORT                          0x1402
+#define GL_UNSIGNED_SHORT                 0x1403
+#define GL_FLOAT                          0x1406
+#define GL_FIXED                          0x140C
+
+#endif // GLES2_CALLS_H__

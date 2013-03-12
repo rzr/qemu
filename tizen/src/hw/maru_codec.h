@@ -1,12 +1,11 @@
 /*
  * Virtual Codec device
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
  *  SeokYeon Hwang <syeon.hwang@samsung.com>
- *  DongKyun Yun <dk77.yun@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +20,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
  *
  * Contributors:
  * - S-Core Co., Ltd
@@ -29,64 +29,94 @@
  */
 
 #include <stdio.h>
-#include <pthread.h>
 #include <sys/types.h>
 #include "hw.h"
 #include "kvm.h"
 #include "pci.h"
 #include "pci_ids.h"
+#include "qemu-thread.h"
 #include "tizen/src/debug_ch.h"
+#include "maru_device_ids.h"
 
 #include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
 
-// #define CODEC_HOST
+#define CODEC_CONTEXT_MAX			1024
+#define VIDEO_CODEC_MEM_OFFSET_MAX	16
+#define AUDIO_CODEC_MEM_OFFSET_MAX	64
+
+#define CODEC_MAX_THREAD	10
 
 /*
  *  Codec Device Structures
  */
-
 typedef struct _SVCodecParam {
-    uint32_t        func_num;
-    uint32_t        in_args[20];
-    uint32_t        ret_args;
+    uint32_t        api_index;
+    uint32_t        ctx_index;
+    uint32_t        file_index;
+    uint32_t        mem_index;
+    uint32_t        mmap_offset;
 } SVCodecParam;
 
+typedef struct _SVCodecContext {
+    AVCodecContext          *avctx;
+    AVFrame                 *frame;
+    AVCodecParserContext    *parser_ctx;
+    uint8_t                 *parser_buf;
+    uint8_t                 parser_use;
+    uint8_t                 avctx_use;
+    uint32_t                file_index;
+	uint32_t				mem_index;
+} SVCodecContext;
+
+typedef struct _SVCodecThreadPool {
+	QemuThread			*wrk_thread;
+	QemuMutex			mutex;
+	QemuCond			cond;
+	uint32_t			state;
+	uint8_t				isrunning;
+} SVCodecThreadPool;
 
 typedef struct _SVCodecState {
     PCIDevice           dev;
-    SVCodecParam        codecParam;
 
-    int                 mmioIndex;
+    uint8_t             *vaddr;
+    MemoryRegion        vram;
+    MemoryRegion        mmio;
 
-    uint8_t*            vaddr;
-    ram_addr_t          vram_offset;
+    QEMUBH              *tx_bh;
+    QemuMutex           thread_mutex;
 
-    uint32_t            mem_addr;
-    uint32_t            mmio_addr;
-
-    int                 index;
+    SVCodecContext      codec_ctx[CODEC_CONTEXT_MAX];
+    SVCodecParam        codec_param;
+	SVCodecThreadPool	codec_thread;
+	uint8_t				audio_codec_offset[AUDIO_CODEC_MEM_OFFSET_MAX];
+	uint8_t				device_mem_avail;
+	uint8_t				isrunning;
 } SVCodecState;
 
-enum {
-    FUNC_NUM            = 0x00,
-    IN_ARGS             = 0x04,
-    RET_STR             = 0x08,
+enum codec_io_cmd {
+    CODEC_CMD_API_INDEX         = 0x00,
+    CODEC_CMD_CONTEXT_INDEX     = 0x04,
+	CODEC_CMD_FILE_INDEX		= 0x08,
+    CODEC_CMD_DEVICE_MEM_OFFSET	= 0x0c,
+    CODEC_CMD_GET_THREAD_STATE	= 0x10,
+    CODEC_CMD_GET_VERSION       = 0x14,
+    CODEC_CMD_GET_DEVICE_MEM    = 0x18,
+    CODEC_CMD_SET_DEVICE_MEM	= 0x1C,
+    CODEC_CMD_GET_MMAP_OFFSET	= 0x20,
+    CODEC_CMD_SET_MMAP_OFFSET	= 0x24,
+    CODEC_CMD_RESET_CODEC_INFO  = 0x28,
 };
 
 enum {
     EMUL_AV_REGISTER_ALL = 1,
     EMUL_AVCODEC_OPEN,
     EMUL_AVCODEC_CLOSE,
-    EMUL_AVCODEC_ALLOC_CONTEXT,
-    EMUL_AVCODEC_ALLOC_FRAME,
-    EMUL_AV_FREE_CONTEXT,
-    EMUL_AV_FREE_FRAME,
-    EMUL_AV_FREE_PALCTRL,
-    EMUL_AV_FREE_EXTRADATA,
     EMUL_AVCODEC_FLUSH_BUFFERS,
     EMUL_AVCODEC_DECODE_VIDEO,
     EMUL_AVCODEC_ENCODE_VIDEO,
+    EMUL_AVCODEC_DECODE_AUDIO,
+    EMUL_AVCODEC_ENCODE_AUDIO,
     EMUL_AV_PICTURE_COPY,
     EMUL_AV_PARSER_INIT,
     EMUL_AV_PARSER_PARSE,
@@ -95,52 +125,50 @@ enum {
 
 
 /*
- *  Codec Device APIs
+ *  Codec Thread Functions
  */
-int pci_codec_init (PCIBus *bus);
-static int codec_operate(uint32_t value, SVCodecState *opaque);
+void codec_thread_init(SVCodecState *s);
+void codec_thread_exit(SVCodecState *s);
+void *codec_worker_thread(void *opaque);
+void wake_codec_worker_thread(SVCodecState *s);
+int decode_codec(SVCodecState *s);
+int encode_codec(SVCodecState *s);
 
 /*
- *  FFMPEG APIs
+ *  Codec Device Functions
  */
+int codec_init(PCIBus *bus);
+uint64_t codec_read(void *opaque, target_phys_addr_t addr,
+                    unsigned size);
+void codec_write(void *opaque, target_phys_addr_t addr,
+                uint64_t value, unsigned size);
+int codec_operate(uint32_t api_index, uint32_t ctx_index,
+                SVCodecState *state);
 
-void qemu_parser_init (void);
+/*
+ *  Codec Helper Functions
+ */
+void qemu_parser_init(SVCodecState *s, int ctx_index);
+void qemu_codec_close(SVCodecState *s, uint32_t value);
+void qemu_get_codec_ver(SVCodecState *s);
+void qemu_reset_codec_info(SVCodecState *s, uint32_t value);
 
-void qemu_restore_context (AVCodecContext *dst, AVCodecContext *src);
-
-void qemu_av_register_all (void);
-
-int qemu_avcodec_open (SVCodecState *s);
-
-int qemu_avcodec_close (SVCodecState *s);
-
-void qemu_avcodec_alloc_context (void);
-
-void qemu_avcodec_alloc_frame (void);
-
-void qemu_av_free_context (void);
-
-void qemu_av_free_picture (void);
-
-void qemu_av_free_palctrl (void);
-
-void qemu_av_free_extradata (void);
-
-void qemu_avcodec_flush_buffers (void);
-
-int qemu_avcodec_decode_video (SVCodecState *s);
-
-int qemu_avcodec_encode_video (SVCodecState *s);
-
-void qemu_av_picture_copy (SVCodecState *s);
-
-void qemu_av_parser_init (SVCodecState *s);
-
-int qemu_av_parser_parse (SVCodecState *s);
-
-void qemu_av_parser_close (void);
-
-int qemu_avcodec_get_buffer (AVCodecContext *context, AVFrame *picture);
-
-void qemu_avcodec_release_buffer (AVCodecContext *context, AVFrame *picture);
-
+/*
+ *  FFMPEG Functions
+ */
+void qemu_av_register_all(void);
+int qemu_avcodec_open(SVCodecState *s);
+int qemu_avcodec_close(SVCodecState *s, int ctx_index);
+int qemu_avcodec_alloc_context(SVCodecState *s);
+void qemu_avcodec_flush_buffers(SVCodecState *s, int ctx_index);
+int qemu_avcodec_decode_video(SVCodecState *s, int ctx_index);
+int qemu_avcodec_encode_video(SVCodecState *s, int ctx_index);
+int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index);
+int qemu_avcodec_encode_audio(SVCodecState *s, int ctx_index);
+void qemu_av_picture_copy(SVCodecState *s, int ctx_index);
+void qemu_av_parser_init(SVCodecState *s, int ctx_index);
+int qemu_av_parser_parse(SVCodecState *s, int ctx_index);
+void qemu_av_parser_close(SVCodecState *s, int ctx_index);
+int qemu_avcodec_get_buffer(AVCodecContext *context, AVFrame *picture);
+void qemu_avcodec_release_buffer(AVCodecContext *context, AVFrame *picture);
+void qemu_av_free(SVCodecState *s, int ctx_index);

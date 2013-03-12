@@ -1,7 +1,29 @@
 #!/bin/sh
+# Build both x86 and ARM emulators by default
 
-#Build-Depends: bison, flex, autoconf, gcc, libglu1-mesa-dev, libsdl1.2-dev, libgtk2.0-dev, libsdl-image1.2-dev, libsdl-gfx1.2-dev, debhelper, libxml2-dev, libasound2-dev
+UNAME=`uname`
+CONFIGURE_SCRIPT="./emulator_configure.sh"
 
-autoconf
-./configure
-make
+case "$UNAME" in
+Linux)
+    NUMCPU=`grep -c 'cpu cores' /proc/cpuinfo`
+    ;;
+MINGW*)
+    NUMCPU=`echo $NUMBER_OF_PROCESSORS`
+    ;;
+Darwin)
+    NUMCPU=`sysctl hw.ncpu | awk '{print $2}'`
+    ;;
+esac
+
+echo "Number of CPUs $NUMCPU"
+
+if [ "x$NUMCPU" != "x" ] ; then
+    NUMCPU=$(( NUMCPU + 1 ))
+else
+    NUMCPU=1
+fi
+
+
+$CONFIGURE_SCRIPT $* && make -j$NUMCPU && make install
+

@@ -1,0 +1,85 @@
+#!/bin/sh -e
+
+TIZEN_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`
+OLD_SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
+COCOASUDOPATH="./cocoasudo"
+SYSCTL_FILE=sysctl.conf
+TMP_DIR=~/tmp
+TIZEN_BIN_PATH=$TIZEN_SDK_INSTALL_PATH/tools/emulator/bin
+#TIZEN_BIN_PATH=./
+TMP_FILE=$TMP_DIR/setshmmax.sh
+NEW_SHMMAXSIZE=83886080
+
+if [ -z $TIZEN_SDK_INSTALL_PATH ]
+then
+   echo "There is no TIZEN_SDK_PATH ENV" >> /tmp/emulator.log
+#   exit 2;
+fi
+
+function remove_tmp_file {
+    if [ -e $TMP_FILE ]
+    then
+            echo 'delete ~/tmp/setshmmax.sh'
+	        rm -f $TMP_FILE
+    fi
+}
+
+function remove_sysctl_file { 
+    if [ -e $TMP_DIR/$SYSCTL_FILE ]
+    then
+        echo 'delete ~/tmp/sysctl.conf'
+	    rm -f $TMP_DIR/$SYSCTL_FILE
+    fi
+}
+
+function makesysctl {
+    echo 'make new sysctl.conf file to change'
+
+    if [ ! -d $TMP_DIR ]
+    then
+            mkdir $TMP_DIR
+    fi
+
+    remove_sysctl_file;
+
+    echo "kern.sysv.shmmax=83886080" >> $TMP_DIR/$SYSCTL_FILE
+    echo "kern.sysv.shmmin=1" >> $TMP_DIR/$SYSCTL_FILE
+    echo "kern.sysv.shmmni=128" >> $TMP_DIR/$SYSCTL_FILE
+    echo "kern.sysv.shmseg=32" >> $TMP_DIR/$SYSCTL_FILE
+    echo "kern.sysv.shmall=20480" >> $TMP_DIR/$SYSCTL_FILE
+
+}
+
+if [ $OLD_SHMMAXSIZE -lt $NEW_SHMMAXSIZE ] 
+then
+	if [ -e /etc/$SYSCTL_FILE ]
+	then
+            remove_tmp_file;
+            makesysctl;
+            echo "mv -f /etc/sysctl.conf /etc/sysctl.conf.old" >> $TMP_FILE
+		    echo "cp -f $TMP_DIR/$SYSCTL_FILE /etc/." >> $TMP_FILE
+		    echo "sysctl -w kern.sysv.shmmax=$NEW_SHMMAXSIZE" >> $TMP_FILE
+		    chmod +x $TMP_FILE
+		    $TIZEN_BIN_PATH/cocoasudo "--prompt=Changing /etc/sysctl.conf file requires that you type your password.(The original file will be removed to sysctl.conf.old)" sh -x $TMP_FILE
+	else
+            remove_tmp_file;
+            makesysctl;
+		    echo "cp -f $TMP_DIR/$SYSCTL_FILE /etc/." >> $TMP_FILE
+		    echo "sysctl -w kern.sysv.shmmax=$NEW_SHMMAXSIZE" >> $TMP_FILE
+		    chmod +x $TMP_FILE
+		    $TIZEN_BIN_PATH/cocoasudo "--prompt=Make a new /etc/sysctl.conf file requires that you type your password." sh -x $TMP_FILE	
+	fi
+fi
+
+remove_tmp_file;
+remove_sysctl_file;
+
+CURRENT_SHMMAXSIZE=`sysctl -n kern.sysv.shmmax`
+
+if [ ! $OLD_SHMMAXSIZE -eq $CURRENT_SHMMAXSIZE ]
+then
+		
+	echo 'need reboot'
+	exit 99
+fi
+

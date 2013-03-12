@@ -43,7 +43,7 @@ ETEXI
         .params     = "",
         .help       = "quit the emulator",
         .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_quit,
+        .mhandler.cmd = hmp_quit,
     },
 
 STEXI
@@ -57,8 +57,7 @@ ETEXI
         .args_type  = "device:B,size:o",
         .params     = "device size",
         .help       = "resize a block image",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_block_resize,
+        .mhandler.cmd = hmp_block_resize,
     },
 
 STEXI
@@ -70,14 +69,54 @@ but should be used with extreme caution.  Note that this command only
 resizes image files, it can not resize block devices like LVM volumes.
 ETEXI
 
+    {
+        .name       = "block_stream",
+        .args_type  = "device:B,speed:o?,base:s?",
+        .params     = "device [speed [base]]",
+        .help       = "copy data from a backing file into a block device",
+        .mhandler.cmd = hmp_block_stream,
+    },
+
+STEXI
+@item block_stream
+@findex block_stream
+Copy data from a backing file into a block device.
+ETEXI
+
+    {
+        .name       = "block_job_set_speed",
+        .args_type  = "device:B,speed:o",
+        .params     = "device speed",
+        .help       = "set maximum speed for a background block operation",
+        .mhandler.cmd = hmp_block_job_set_speed,
+    },
+
+STEXI
+@item block_job_set_speed
+@findex block_job_set_speed
+Set maximum speed for a background block operation.
+ETEXI
+
+    {
+        .name       = "block_job_cancel",
+        .args_type  = "device:B",
+        .params     = "device",
+        .help       = "stop an active background block operation",
+        .mhandler.cmd = hmp_block_job_cancel,
+    },
+
+STEXI
+@item block_job_cancel
+@findex block_job_cancel
+Stop an active block streaming operation.
+ETEXI
 
     {
         .name       = "eject",
         .args_type  = "force:-f,device:B",
         .params     = "[-f] device",
         .help       = "eject a removable medium (use -f to force it)",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_eject,
+        .mhandler.cmd = hmp_eject,
     },
 
 STEXI
@@ -109,8 +148,7 @@ ETEXI
         .args_type  = "device:B,target:F,arg:s?",
         .params     = "device filename [format]",
         .help       = "change a removable medium, optional format",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_change,
+        .mhandler.cmd = hmp_change,
     },
 
 STEXI
@@ -180,13 +218,12 @@ STEXI
 Output logs to @var{filename}.
 ETEXI
 
-#ifdef CONFIG_SIMPLE_TRACE
     {
         .name       = "trace-event",
         .args_type  = "name:s,option:b",
         .params     = "name on|off",
         .help       = "changes status of a specific trace event",
-        .mhandler.cmd = do_change_trace_event_state,
+        .mhandler.cmd = do_trace_event_set_state,
     },
 
 STEXI
@@ -195,6 +232,7 @@ STEXI
 changes status of a trace event
 ETEXI
 
+#if defined(CONFIG_TRACE_SIMPLE)
     {
         .name       = "trace-file",
         .args_type  = "op:s?,arg:F?",
@@ -290,8 +328,7 @@ ETEXI
         .args_type  = "",
         .params     = "",
         .help       = "stop emulation",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_stop,
+        .mhandler.cmd = hmp_stop,
     },
 
 STEXI
@@ -305,14 +342,27 @@ ETEXI
         .args_type  = "",
         .params     = "",
         .help       = "resume emulation",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_cont,
+        .mhandler.cmd = hmp_cont,
     },
 
 STEXI
 @item c or cont
 @findex cont
 Resume emulation.
+ETEXI
+
+    {
+        .name       = "system_wakeup",
+        .args_type  = "",
+        .params     = "",
+        .help       = "wakeup guest from suspend",
+        .mhandler.cmd = hmp_system_wakeup,
+    },
+
+STEXI
+@item system_wakeup
+@findex system_wakeup
+Wakeup guest from suspend.
 ETEXI
 
     {
@@ -478,8 +528,7 @@ ETEXI
         .args_type  = "",
         .params     = "",
         .help       = "reset the system",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_system_reset,
+        .mhandler.cmd = hmp_system_reset,
     },
 
 STEXI
@@ -494,8 +543,7 @@ ETEXI
         .args_type  = "",
         .params     = "",
         .help       = "send system power down event",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_system_powerdown,
+        .mhandler.cmd = hmp_system_powerdown,
     },
 
 STEXI
@@ -574,8 +622,7 @@ ETEXI
         .args_type  = "id:s",
         .params     = "device",
         .help       = "remove device",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_device_del,
+        .mhandler.cmd = hmp_device_del,
     },
 
 STEXI
@@ -590,8 +637,7 @@ ETEXI
         .args_type  = "index:i",
         .params     = "index",
         .help       = "set the default CPU",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_cpu_set,
+        .mhandler.cmd = hmp_cpu,
     },
 
 STEXI
@@ -693,8 +739,7 @@ ETEXI
         .args_type  = "val:l,size:i,filename:s",
         .params     = "addr size file",
         .help       = "save to disk virtual memory dump starting at 'addr' of size 'size'",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_memory_save,
+        .mhandler.cmd = hmp_memsave,
     },
 
 STEXI
@@ -708,8 +753,7 @@ ETEXI
         .args_type  = "val:l,size:i,filename:s",
         .params     = "addr size file",
         .help       = "save to disk physical memory dump starting at 'addr' of size 'size'",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_physical_memory_save,
+        .mhandler.cmd = hmp_pmemsave,
     },
 
 STEXI
@@ -740,10 +784,10 @@ ETEXI
 #if defined(TARGET_I386)
     {
         .name       = "nmi",
-        .args_type  = "cpu_index:i",
-        .params     = "cpu",
-        .help       = "inject an NMI on the given CPU",
-        .mhandler.cmd = do_inject_nmi,
+        .args_type  = "",
+        .params     = "",
+        .help       = "inject an NMI on all guest's CPUs",
+        .mhandler.cmd = hmp_inject_nmi,
     },
 #endif
 STEXI
@@ -761,8 +805,7 @@ ETEXI
 		      " full copy of disk\n\t\t\t -i for migration without "
 		      "shared storage with incremental copy of disk "
 		      "(base image shared between src and destination)",
-        .user_print = monitor_user_noop,	
-	.mhandler.cmd_new = do_migrate,
+        .mhandler.cmd = hmp_migrate,
     },
 
 
@@ -779,14 +822,33 @@ ETEXI
         .args_type  = "",
         .params     = "",
         .help       = "cancel the current VM migration",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_migrate_cancel,
+        .mhandler.cmd = hmp_migrate_cancel,
     },
 
 STEXI
 @item migrate_cancel
 @findex migrate_cancel
 Cancel the current VM migration.
+
+ETEXI
+
+    {
+        .name       = "migrate_set_cache_size",
+        .args_type  = "value:o",
+        .params     = "value",
+        .help       = "set cache size (in bytes) for XBZRLE migrations,"
+                      "the cache size will be rounded down to the nearest "
+                      "power of 2.\n"
+                      "The cache size affects the number of cache misses."
+                      "In case of a high cache miss ratio you need to increase"
+                      " the cache size",
+        .mhandler.cmd = hmp_migrate_set_cache_size,
+    },
+
+STEXI
+@item migrate_set_cache_size @var{value}
+@findex migrate_set_cache_size
+Set cache size to @var{value} (in bytes) for xbzrle migrations.
 ETEXI
 
     {
@@ -795,8 +857,7 @@ ETEXI
         .params     = "value",
         .help       = "set maximum speed (in bytes) for migrations. "
 	"Defaults to MB if no size suffix is specified, ie. B/K/M/G/T",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_migrate_set_speed,
+        .mhandler.cmd = hmp_migrate_set_speed,
     },
 
 STEXI
@@ -810,8 +871,7 @@ ETEXI
         .args_type  = "value:T",
         .params     = "value",
         .help       = "set maximum tolerated downtime (in seconds) for migrations",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_migrate_set_downtime,
+        .mhandler.cmd = hmp_migrate_set_downtime,
     },
 
 STEXI
@@ -821,16 +881,27 @@ Set maximum tolerated downtime (in seconds) for migration.
 ETEXI
 
     {
-        .name       = "snapshot_blkdev",
-        .args_type  = "device:B,snapshot_file:s?,format:s?",
-        .params     = "device [new-image-file] [format]",
-        .help       = "initiates a live snapshot\n\t\t\t"
-                      "of device. If a new image file is specified, the\n\t\t\t"
-                      "new image file will become the new root image.\n\t\t\t"
-                      "If format is specified, the snapshot file will\n\t\t\t"
-                      "be created in that format. Otherwise the\n\t\t\t"
-                      "snapshot will be internal! (currently unsupported)",
-        .mhandler.cmd_new = do_snapshot_blkdev,
+        .name       = "migrate_set_capability",
+        .args_type  = "capability:s,state:b",
+        .params     = "capability state",
+        .help       = "Enable/Disable the usage of a capability for migration",
+        .mhandler.cmd = hmp_migrate_set_capability,
+    },
+
+STEXI
+@item migrate_set_capability @var{capability} @var{state}
+@findex migrate_set_capability
+Enable/Disable the usage of a capability @var{capability} for migration.
+ETEXI
+
+    {
+        .name       = "client_migrate_info",
+        .args_type  = "protocol:s,hostname:s,port:i?,tls-port:i?,cert-subject:s?",
+        .params     = "protocol hostname port tls-port cert-subject",
+        .help       = "send migration info to spice/vnc client",
+        .user_print = monitor_user_noop,
+        .mhandler.cmd_async = client_migrate_info,
+        .flags      = MONITOR_CMD_ASYNC,
     },
 
 STEXI
@@ -841,13 +912,48 @@ server will ask the spice/vnc client to automatically reconnect using the
 new parameters (if specified) once the vm migration finished successfully.
 ETEXI
 
+#if defined(CONFIG_HAVE_CORE_DUMP)
     {
-        .name       = "client_migrate_info",
-        .args_type  = "protocol:s,hostname:s,port:i?,tls-port:i?,cert-subject:s?",
-        .params     = "protocol hostname port tls-port cert-subject",
-        .help       = "send migration info to spice/vnc client",
+        .name       = "dump-guest-memory",
+        .args_type  = "paging:-p,protocol:s,begin:i?,length:i?",
+        .params     = "[-p] protocol [begin] [length]",
+        .help       = "dump guest memory to file"
+                      "\n\t\t\t begin(optional): the starting physical address"
+                      "\n\t\t\t length(optional): the memory size, in bytes",
         .user_print = monitor_user_noop,
-        .mhandler.cmd_new = client_migrate_info,
+        .mhandler.cmd = hmp_dump_guest_memory,
+    },
+
+
+STEXI
+@item dump-guest-memory [-p] @var{protocol} @var{begin} @var{length}
+@findex dump-guest-memory
+Dump guest memory to @var{protocol}. The file can be processed with crash or
+gdb.
+  protocol: destination file(started with "file:") or destination file
+            descriptor (started with "fd:")
+    paging: do paging to get guest's memory mapping
+     begin: the starting physical address. It's optional, and should be
+            specified with length together.
+    length: the memory size, in bytes. It's optional, and should be specified
+            with begin together.
+ETEXI
+#endif
+
+    {
+        .name       = "snapshot_blkdev",
+        .args_type  = "reuse:-n,device:B,snapshot-file:s?,format:s?",
+        .params     = "[-n] device [new-image-file] [format]",
+        .help       = "initiates a live snapshot\n\t\t\t"
+                      "of device. If a new image file is specified, the\n\t\t\t"
+                      "new image file will become the new root image.\n\t\t\t"
+                      "If format is specified, the snapshot file will\n\t\t\t"
+                      "be created in that format. Otherwise the\n\t\t\t"
+                      "snapshot will be internal! (currently unsupported).\n\t\t\t"
+                      "The default format is qcow2.  The -n flag requests QEMU\n\t\t\t"
+                      "to reuse the image found in new-image-file, instead of\n\t\t\t"
+                      "recreating it from scratch.",
+        .mhandler.cmd = hmp_snapshot_blkdev,
     },
 
 STEXI
@@ -856,19 +962,18 @@ STEXI
 Snapshot device, using snapshot file as target if provided
 ETEXI
 
-#if defined(TARGET_I386)
     {
         .name       = "drive_add",
         .args_type  = "pci_addr:s,opts:s",
         .params     = "[[<domain>:]<bus>:]<slot>\n"
                       "[file=file][,if=type][,bus=n]\n"
-                      "[,unit=m][,media=d][index=i]\n"
+                      "[,unit=m][,media=d][,index=i]\n"
                       "[,cyls=c,heads=h,secs=s[,trans=t]]\n"
-                      "[snapshot=on|off][,cache=on|off]",
+                      "[,snapshot=on|off][,cache=on|off]\n"
+                      "[,readonly=on|off][,copy-on-read=on|off]",
         .help       = "add drive to PCI storage controller",
         .mhandler.cmd = drive_hot_add,
     },
-#endif
 
 STEXI
 @item drive_add
@@ -924,7 +1029,7 @@ ETEXI
                       "<tlb header> = 32bit x 4\n\t\t\t"
                       "<tlb header prefix> = 32bit x 4",
         .user_print  = pcie_aer_inject_error_print,
-        .mhandler.cmd_new = do_pcie_aer_inejct_error,
+        .mhandler.cmd_new = do_pcie_aer_inject_error,
     },
 
 STEXI
@@ -966,8 +1071,7 @@ ETEXI
         .args_type  = "netdev:O",
         .params     = "[user|tap|socket],id=str[,prop=value][,...]",
         .help       = "add host network device",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_netdev_add,
+        .mhandler.cmd = hmp_netdev_add,
     },
 
 STEXI
@@ -981,8 +1085,7 @@ ETEXI
         .args_type  = "id:s",
         .params     = "id",
         .help       = "remove host network device",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_netdev_del,
+        .mhandler.cmd = hmp_netdev_del,
     },
 
 STEXI
@@ -1027,9 +1130,7 @@ ETEXI
         .args_type  = "value:M",
         .params     = "target",
         .help       = "request VM to change its memory allocation (in MB)",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_async = do_balloon,
-        .flags      = MONITOR_CMD_ASYNC,
+        .mhandler.cmd = hmp_balloon,
     },
 
 STEXI
@@ -1043,8 +1144,7 @@ ETEXI
         .args_type  = "name:s,up:b",
         .params     = "name on|off",
         .help       = "change the link status of a network adapter",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_set_link,
+        .mhandler.cmd = hmp_set_link,
     },
 
 STEXI
@@ -1170,8 +1270,7 @@ ETEXI
         .args_type  = "fdname:s",
         .params     = "getfd name",
         .help       = "receive a file descriptor via SCM rights and assign it a name",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_getfd,
+        .mhandler.cmd = hmp_getfd,
     },
 
 STEXI
@@ -1187,8 +1286,7 @@ ETEXI
         .args_type  = "fdname:s",
         .params     = "closefd name",
         .help       = "close a file descriptor previously passed via SCM rights",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_closefd,
+        .mhandler.cmd = hmp_closefd,
     },
 
 STEXI
@@ -1204,8 +1302,21 @@ ETEXI
         .args_type  = "device:B,password:s",
         .params     = "block_passwd device password",
         .help       = "set the password of encrypted block devices",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = do_block_set_passwd,
+        .mhandler.cmd = hmp_block_passwd,
+    },
+
+STEXI
+@item block_set_io_throttle @var{device} @var{bps} @var{bps_rd} @var{bps_wr} @var{iops} @var{iops_rd} @var{iops_wr}
+@findex block_set_io_throttle
+Change I/O throttle limits for a block drive to @var{bps} @var{bps_rd} @var{bps_wr} @var{iops} @var{iops_rd} @var{iops_wr}
+ETEXI
+
+    {
+        .name       = "block_set_io_throttle",
+        .args_type  = "device:B,bps:l,bps_rd:l,bps_wr:l,iops:l,iops_rd:l,iops_wr:l",
+        .params     = "device bps bps_rd bps_wr iops iops_rd iops_wr",
+        .help       = "change I/O throttle limits for a block drive",
+        .mhandler.cmd = hmp_block_set_io_throttle,
     },
 
 STEXI
@@ -1219,8 +1330,7 @@ ETEXI
         .args_type  = "protocol:s,password:s,connected:s?",
         .params     = "protocol password action-if-connected",
         .help       = "set spice/vnc password",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = set_password,
+        .mhandler.cmd = hmp_set_password,
     },
 
 STEXI
@@ -1240,8 +1350,7 @@ ETEXI
         .args_type  = "protocol:s,time:s",
         .params     = "protocol time",
         .help       = "set spice/vnc password expire-time",
-        .user_print = monitor_user_noop,
-        .mhandler.cmd_new = expire_password,
+        .mhandler.cmd = hmp_expire_password,
     },
 
 STEXI
@@ -1305,13 +1414,11 @@ show i8259 (PIC) state
 @item info pci
 show emulated PCI device info
 @item info tlb
-show virtual to physical memory mappings (i386, SH4 and SPARC only)
+show virtual to physical memory mappings (i386, SH4, SPARC, PPC, and Xtensa only)
 @item info mem
 show the active virtual memory mappings (i386 only)
 @item info jit
 show dynamic compiler info
-@item info kvm
-show KVM information
 @item info numa
 show NUMA information
 @item info kvm
@@ -1344,6 +1451,10 @@ show CPU statistics
 show user network stack connection states
 @item info migrate
 show migration status
+@item info migrate_capabilities
+show current migration capabilities
+@item info migrate_cache_size
+show current migration XBZRLE cache size
 @item info balloon
 show balloon information
 @item info qtree
@@ -1355,14 +1466,17 @@ show roms
 @end table
 ETEXI
 
-#ifdef CONFIG_SIMPLE_TRACE
+#ifdef CONFIG_TRACE_SIMPLE
 STEXI
 @item info trace
 show contents of trace buffer
+ETEXI
+#endif
+
+STEXI
 @item info trace-events
 show available trace events and their state
 ETEXI
-#endif
 
 STEXI
 @end table

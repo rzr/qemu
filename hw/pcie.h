@@ -40,7 +40,7 @@ typedef enum {
      *
      * Not all the bits of slot control register match with the ones of
      * slot status. Not some bits of slot status register is used to
-     * show status, not to report event occurence.
+     * show status, not to report event occurrence.
      * So such bits must be masked out when checking the software
      * notification condition.
      */
@@ -128,5 +128,16 @@ void pcie_add_capability(PCIDevice *dev,
                          uint16_t offset, uint16_t size);
 
 void pcie_ari_init(PCIDevice *dev, uint16_t offset, uint16_t nextfn);
+
+extern const VMStateDescription vmstate_pcie_device;
+
+#define VMSTATE_PCIE_DEVICE(_field, _state) {                        \
+    .name       = (stringify(_field)),                               \
+    .version_id = 2,                                                 \
+    .size       = sizeof(PCIDevice),                                 \
+    .vmsd       = &vmstate_pcie_device,                              \
+    .flags      = VMS_STRUCT,                                        \
+    .offset     = vmstate_offset_value(_state, _field, PCIDevice),   \
+}
 
 #endif /* QEMU_PCIE_H */

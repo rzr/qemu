@@ -5,7 +5,7 @@ License: AFLv2, LGPLv2.0
 Packages: libxdgmime
 
 License: Apache License v2.0
-Packages: alarm-server, appsvc-tool, bluetooth-frwk-agent, bluetooth-frwk-test, bluetooth-share, capi-appfw-app-manager, capi-appfw-application, capi-base-common-dev, capi-content-media-content, capi-location-geocoder, capi-location-manager, capi-media-audio-io, capi-media-camera, capi-media-image-util, capi-media-player, capi-media-radio, capi-media-recorder, capi-media-sound-manager, capi-media-tone-player, capi-media-wav-player, capi-messaging-email, capi-messaging-mms, capi-messaging-sms, capi-network-bluetooth, capi-network-connection, capi-network-nfc, capi-social-calendar, capi-social-call-log, capi-social-contacts, capi-system-device, capi-system-haptic, capi-system-info, capi-system-power, capi-system-runtime-info, capi-system-sensor, capi-telephony-call, capi-telephony-network-info, capi-telephony-sim, capi-ui-efl-util, capi-uix-feedback, capi-uix-tts, org.tizen.bluetooth, org.tizen.bluetooth-headers, org.tizen.bluetooth-share-ui, org.tizen.bt-appsvc, org.tizen.bt-syspopup, org.tizen.idle-lock, org.tizen.voicerecorder, contacts-service-bin, default-fonts-fc-sdk, default-fonts-sdk, dlogutil-bin, drm-service-0, efl-theme-tizen, efl-theme-tizen-black, efl-theme-tizen-black-hd, efl-theme-tizen-hd, gps-manager, ise-engine-default, libail-0, libalarm-0, libapp-checker-0, libapp-checker-server-0, libappcore-common-0, libappcore-efl-0, libappsvc-0, libaul-1, libaul-1-executable, libbluetooth-engine-0, libbluetooth-frwk-0, libbundle-0, libcamsrcjpegenc, libcamsrcjpegenc-sw-libjpeg, libcert-svc-0, libconnectivity-device-interface-0, libcontacts-service, libdevman-0, libdlog-0, libdownload-agent-0, libheynoti-0, libmedia-service, libmedia-thumbnail, libmedia-utils, libmm-common, libmm-fileinfo, libmm-imgp-gstcs, libmm-log, libmm-player, libmm-radio, libmm-session-0, libmm-sound-0, libmm-sound-tool, libmm-ta, libmm-utility, libopencore-amrnb, libopencore-amrwb, libprivilege-control-0, librua-0, libsecurity-server-client-0, libslp-calendar-0, libslp-db-util-0, libslp-location, libslp-sensor-0, libslp-setting-0, libslp-sysman, libslp-tapi-0, libslp-utilx-0, libss-client-0, libstt, libsvi-0, libsys-assert-0, libtts, libug-setting-bluetooth-efl, libug-setting-manage-applications-efl-0, libui-gadget-0, libui-idlecapture-0, libuw-imap-toolkit-0, libvconf-0, location-geoclue-gpsd, location-geoclue-nominatim, location-gps-manager, media-data-sdk, media-server, media-thumbnail-server, mm-fileinfo-tools, mmfw-sysconf-cleansdk-target, mmfw-sysconf-simulator, nitz, opengl-es, opengl-es-virtual-drv, security-server, sonet0, ss-server, starter, svi-data-sdk, telephony-server, wrt, wrt-plugins-common, wrt-plugins-tizen, wrt-plugins-wac, wrt-test, openssh-client, openssh-server
+Packages: alarm-server, appsvc-tool, bluetooth-frwk-agent, bluetooth-frwk-test, bluetooth-share, boot-animation, capi-appfw-app-manager, capi-appfw-application, capi-base-common-dev, capi-content-media-content, capi-location-geocoder, capi-location-manager, capi-media-audio-io, capi-media-camera, capi-media-image-util, capi-media-player, capi-media-radio, capi-media-recorder, capi-media-sound-manager, capi-media-tone-player, capi-media-wav-player, capi-messaging-email, capi-messaging-mms, capi-messaging-sms, capi-network-bluetooth, capi-network-connection, capi-network-nfc, capi-social-calendar, capi-social-call-log, capi-social-contacts, capi-system-device, capi-system-haptic, capi-system-info, capi-system-power, capi-system-runtime-info, capi-system-sensor, capi-telephony-call, capi-telephony-network-info, capi-telephony-sim, capi-ui-efl-util, capi-uix-feedback, capi-uix-tts, cbhm, org.tizen.alert-3g-syspopup, org.tizen.app-selector, org.tizen.bluetooth, org.tizen.bluetooth-headers, org.tizen.bluetooth-share-ui, org.tizen.browser, org.tizen.bt-appsvc, org.tizen.bt-syspopup, org.tizen.calculator, org.tizen.calendar-viewer, org.tizen.call, org.tizen.ciss, org.tizen.clock, org.tizen.contacts, org.tizen.contacts-viewer, org.tizen.download-provider, org.tizen.efl-calendar, org.tizen.gallery, org.tizen.idle-lock, org.tizen.image-viewer, org.tizen.indicator, org.tizen.lowbat-syspopup, org.tizen.lowmem-syspopup, org.tizen.memo, org.tizen.menu-screen, org.tizen.music-player, org.tizen.phone, org.tizen.phone-lock, org.tizen.poweroff-syspopup, org.tizen.pwlock, org.tizen.quickpanel, org.tizen.setting, org.tizen.smartsearch, org.tizen.taskmgr, org.tizen.usb-syspopup, org.tizen.video-player, org.tizen.voicerecorder, org.tizen.volume, org.tizen.wifi-qs, contacts-service-bin, default-fonts-fc-sdk, default-fonts-sdk, dlogutil-bin, drm-service-0, efl-theme-tizen, efl-theme-tizen-black, efl-theme-tizen-black-hd, efl-theme-tizen-hd, gps-manager, ise-default, ise-engine-default, libail-0, libalarm-0, libapp-checker-0, libapp-checker-server-0, libappcore-common-0, libappcore-efl-0, libappsvc-0, libaudiosessionmgr-0, libaul-1, libaul-1-executable, libavsystem-0, libbluetooth-engine-0, libbluetooth-frwk-0, libbundle-0, libcamsrcjpegenc, libcamsrcjpegenc-sw-libjpeg, libcert-svc-0, libconnectivity-device-interface-0, libcontacts-service, libdevman-0, libdlog-0, libdownload-agent-0, libelm-webview, libheynoti-0, libmedia-service, libmedia-thumbnail, libmedia-utils, libmm-camcorder, libmm-common, libmm-fileinfo, libmm-imgp-gstcs, libmm-log, libmm-player, libmm-radio, libmm-session-0, libmm-sound-0, libmm-sound-tool, libmm-ta, libmm-utility, libnetwork-0, libnfc-common-lib-0, libnfc-manager-0, libopencore-amrnb, libopencore-amrwb, libpkgmgr-client-0, libpkgmgr-installer, libprivilege-control-0, librua-0, libsecurity-server-client-0, libsf-common-0, libslp-alarm-0, libslp-calendar-0, libslp-db-util-0, libslp-location, libslp-memo, libslp-mms-plugin, libslp-msg-service-0, libslp-pm-0, libslp-sensor-0, libslp-setting-0, libslp-shortcut-0, libslp-sms-plugin, libslp-sysman, libslp-tapi-0, libslp-utilx-0, libsppc-0, libss-client-0, libstt, libsvi-0, libsys-assert-0, libtts, libug-calendar-efl, libug-calendar-picker-efl, libug-contacts-efl, libug-gallery-efl-0, libug-image-viewer-efl, libug-memo-efl, libug-myfile-efl, libug-phone-efl, libug-setting-bluetooth-efl, libug-setting-call-efl, libug-setting-gallery-efl, libug-setting-location-efl, libug-setting-manage-applications-efl-0, libug-setting-theme-efl, libug-worldclock-efl, libui-gadget-0, libui-idlecapture-0, libuw-imap-toolkit-0, libvconf-0, location-geoclue-gpsd, location-geoclue-nominatim, location-gps-manager, media-data-sdk, media-server, media-thumbnail-server, menu-daemon, mm-fileinfo-tools, mmfw-sysconf-cleansdk-target, mmfw-sysconf-simulator, msg-service-tools, myaccount-0, rpm-installer, nitz, opengl-es, opengl-es-virtual-drv, pkgmgr-server, sdbd, security-server, sensor-framework, sonet0, spp-client-bin, spp-client-tool, ss-server, starter, svi-data-sdk, syspopup-0, syspopup-caller-0, system-server-bin, telephony-server, usb-setting-app, wifi-efl-ug, wrt, wrt-plugins-common, wrt-plugins-tizen, wrt-plugins-wac, wrt-test, openssh-client, openssh-server
 
 Licence: BSD
 Packages: libuuid1
@@ -41,7 +41,7 @@ License: perl License
 Packages: libperl5.10, perl, perl-base, perl-debug, perl-doc, perl-modules, perl-suid
 
 License: GPLv2
-Packages: apt, bash, default-files-slp, login, mtd-utils, passwd, alsa-utils, base-files, base-passwd, bluez, busybox, busybox-symlinks-adduser, busybox-symlinks-adjtimex, busybox-symlinks-binutils, busybox-symlinks-bridge-utils, busybox-symlinks-bsdmainutils, busybox-symlinks-busybox, busybox-symlinks-bzip2, busybox-symlinks-console-tools, busybox-symlinks-cpio, busybox-symlinks-cron, busybox-symlinks-daemontools, busybox-symlinks-dc, busybox-symlinks-dnsutils, busybox-symlinks-dosfstools, busybox-symlinks-ed, busybox-symlinks-eject, busybox-symlinks-fbset, busybox-symlinks-fdflush, busybox-symlinks-hdparm, busybox-symlinks-ifupdown, busybox-symlinks-initscripts, busybox-symlinks-ipcalc, busybox-symlinks-iproute, busybox-symlinks-ipsvd, busybox-symlinks-iputils-arping, busybox-symlinks-iputils-ping, busybox-symlinks-klogd, busybox-symlinks-loadlin, busybox-symlinks-lrzsz, busybox-symlinks-lzma, busybox-symlinks-lzop, busybox-symlinks-module-init-tools, busybox-symlinks-mtd-utils, busybox-symlinks-net-tools, busybox-symlinks-openbsd-inetd, busybox-symlinks-passwd, busybox-symlinks-patch, busybox-symlinks-ppp, busybox-symlinks-procps, busybox-symlinks-psmisc, busybox-symlinks-rdate, busybox-symlinks-realpath, busybox-symlinks-rpm, busybox-symlinks-runit, busybox-symlinks-sharutils, busybox-symlinks-ssmtp, busybox-symlinks-sysklogd, busybox-symlinks-telnetd, busybox-symlinks-tftp, busybox-symlinks-time, busybox-symlinks-tofrodos, busybox-symlinks-udhcpc, busybox-symlinks-udhcpd, busybox-symlinks-unzip, busybox-symlinks-vlan, busybox-symlinks-vlock, busybox-symlinks-watchdog, busybox-symlinks-wget, busybox-symlinks-xterm, busybox-symlinks-zcip, connman, e2fsck-static, execstack, gnupg, gpgv, ifupdown, initscripts, insserv, iptables, lib64readline5, libbluetooth3, libc-bin, libc-dev-bin, libc6, libc6-i686, libc6-prof, libelfg0, libfuse-dev, libgstreamer-plugins-base0.10-0, libgudev-1.0-0, liblzo2-2, libpci3, libreadline5, libudev0, linux-base, linux-headers-2.6.36-trunk-all, linux-headers-2.6.36-trunk-all-armel, linux-headers-2.6.36-trunk-common, linux-headers-2.6.36-trunk-u1, linux-image-2.6.36-trunk-u1, linux-kbuild-2.6.36, linux-source-2.6.36, locales, lsb-base, ltrace, mawk, module-init-tools, netbase, obexd, oprofile, pciutils, pkg-config, prelink, procps, psmisc, ragel, readline-common, rlfe, locales-init, shared-mime-info, simulator-opengl-dev, smackutils, system-plugin-slp, sysv-rc, sysvinit, sysvinit-utils, u-boot, u-boot-tools, udev, usbutils, valgrind, tzdata-slp, fakeroot
+Packages: apt, bash, default-files-slp, login, mtd-utils, passwd, alsa-utils, base-files, base-passwd, bluez, busybox, busybox-symlinks-adduser, busybox-symlinks-adjtimex, busybox-symlinks-binutils, busybox-symlinks-bridge-utils, busybox-symlinks-bsdmainutils, busybox-symlinks-busybox, busybox-symlinks-bzip2, busybox-symlinks-console-tools, busybox-symlinks-cpio, busybox-symlinks-cron, busybox-symlinks-daemontools, busybox-symlinks-dc, busybox-symlinks-dnsutils, busybox-symlinks-dosfstools, busybox-symlinks-ed, busybox-symlinks-eject, busybox-symlinks-fbset, busybox-symlinks-fdflush, busybox-symlinks-hdparm, busybox-symlinks-ifupdown, busybox-symlinks-initscripts, busybox-symlinks-ipcalc, busybox-symlinks-iproute, busybox-symlinks-ipsvd, busybox-symlinks-iputils-arping, busybox-symlinks-iputils-ping, busybox-symlinks-klogd, busybox-symlinks-loadlin, busybox-symlinks-lrzsz, busybox-symlinks-lzma, busybox-symlinks-lzop, busybox-symlinks-module-init-tools, busybox-symlinks-mtd-utils, busybox-symlinks-net-tools, busybox-symlinks-openbsd-inetd, busybox-symlinks-passwd, busybox-symlinks-patch, busybox-symlinks-ppp, busybox-symlinks-procps, busybox-symlinks-psmisc, busybox-symlinks-rdate, busybox-symlinks-realpath, busybox-symlinks-rpm, busybox-symlinks-runit, busybox-symlinks-sharutils, busybox-symlinks-ssmtp, busybox-symlinks-sysklogd, busybox-symlinks-telnetd, busybox-symlinks-tftp, busybox-symlinks-time, busybox-symlinks-tofrodos, busybox-symlinks-udhcpc, busybox-symlinks-udhcpd, busybox-symlinks-unzip, busybox-symlinks-vlan, busybox-symlinks-vlock, busybox-symlinks-watchdog, busybox-symlinks-wget, busybox-symlinks-xterm, busybox-symlinks-zcip, connman, e2fsck-static, execstack, gnupg, gpgv, ifupdown, initscripts, insserv, iptables, lib64readline5, libbluetooth3, libc-bin, libc-dev-bin, libc6, libc6-i686, libc6-prof, libelfg0, libfuse-dev, libgstreamer-plugins-base0.10-0, libgudev-1.0-0, liblzo2-2, libpci3, libreadline5, libudev0, linux-base, linux-headers-2.6.36-trunk-all, linux-headers-2.6.36-trunk-all-armel, linux-headers-2.6.36-trunk-common, linux-headers-2.6.36-trunk-u1, linux-image-2.6.36-trunk-u1, linux-kbuild-2.6.36, linux-source-2.6.36, locales, lsb-base, ltrace, mawk, module-init-tools, netbase, obexd, oprofile, pciutils, pkg-config, prelink, procps, psmisc, ragel, rpm, readline-common, rlfe, locales-init, shared-mime-info, simulator-opengl, simulator-opengl-dev, smackutils, system-plugin-slp, sysv-rc, sysvinit, sysvinit-utils, u-boot, u-boot-tools, udev, usbutils, valgrind, tzdata-slp, fakeroot
 
 License: GPLv2, LGPLv2.1
 Packages: attr, acl, libacl1, libattr1
@@ -56,10 +56,10 @@ License: GPLv3, LGPLv3
 Packages: libgmp10, libgmpxx4ldbl
 
 License: LGPLv2.0
-Packages: gconf-dbus-utils, geoclue, geoclue-gpsd, geoclue-nominatim, glib-networking, gstreamer-tools, gstreamer0.10-plugins-base, gstreamer0.10-plugins-base-apps, gstreamer0.10-plugins-ugly, gstreamer0.10-tools, gstreamer0.10-x, libfreealut, libfribidi0, libgconf-dbus, libgeoclue, libglib2.0-0, libglib2.0-0-refdbg, libglib2.0-bin, libglib2.0-data, libglib2.0-dev, libglib2.0-doc, libgstreamer0.10-0, libopenal-soft, libpango1.0, libpango1.0-common, libsoup2.4
+Packages: gconf-dbus-utils, geoclue, geoclue-gpsd, geoclue-nominatim, glib-networking, gstreamer-tools, gstreamer0.10-plugins-base, gstreamer0.10-plugins-base-apps, gstreamer0.10-plugins-ugly, gstreamer0.10-tools, gstreamer0.10-x, libfreealut, libfribidi0, libgconf-dbus, libgeoclue, libglib2.0-0, libglib2.0-0-refdbg, libglib2.0-bin, libglib2.0-data, libglib2.0-dev, libglib2.0-doc, libgstreamer0.10-0, libopenal-soft, libpango1.0, libpango1.0-common, libsoup2.4, rpm-libs
 
 License: LGPLv2.1
-Packages: alsa-scenario-scn-data-0, alsa-scenario-scn-data-0-base, alsa-scenario-scn-data-0-mc1n2, check, dialog, elm-misc, gstreamer0.10-alsa, gstreamer0.10-ffmpeg, gstreamer0.10-plugins-bad, gstreamer0.10-plugins-ext, gstreamer0.10-plugins-good, libaccounts-svc-0, libascenario-0, libasound2, libavcodec, libavformat, libavutil, libc6-dev, libeina, libeina-doc, libethumb, libethumb-bin, libexif12, libgcrypt11, libgnutls26, libgpg-error0, libisf-bin, libjson-glib, libmpc2, libnotification-0, libopenobex1, libpulse0, libsmack-0, libsndfile1, libsocial-service-0, libswscale, libusb-0.1-4, libwbxml2-0, libwbxml2-utils, location-geoclue-pdr, location-geoclue-xps, pulseaudio, pulseaudio-module-bluetooth, pulseaudio-utils, sndfile-programs, sqlfs-bin, libelm, libelm-bin
+Packages: alsa-scenario-scn-data-0, alsa-scenario-scn-data-0-base, alsa-scenario-scn-data-0-mc1n2, check, dialog, elm-misc, gstreamer0.10-alsa, gstreamer0.10-ffmpeg, gstreamer0.10-plugins-bad, gstreamer0.10-plugins-ext, gstreamer0.10-plugins-good, libaccounts-svc-0, libascenario-0, libasound2, libavcodec, libavformat, libavutil, libc6-dev, libeina, libeina-doc, libethumb, libethumb-bin, libexif12, libgcrypt11, libgnutls26, libgpg-error0, libisf-bin, libjson-glib, libmpc2, libnotification-0, libopenobex1, libpulse0, libsmack-0, libsndfile1, libsocial-service-0, libswscale, libug-picker-efl, libusb-0.1-4, libwbxml2-0, libwbxml2-utils, location-geoclue-pdr, location-geoclue-xps, pulseaudio, pulseaudio-module-bluetooth, pulseaudio-utils, sndfile-programs, sqlfs-bin, libelm, libelm-bin
 
 License: LGPLv2.1, Mozilla Public License 1.1
 Packages: libcairo2
@@ -74,13 +74,16 @@ License: MIT/X Consortium License
 Packages: libexpat1, expat
 
 License: MIT License
-Packages: fontconfig, fontconfig-config, giflib-tools, iniparser, libcurl, libcurl3, libdmx1, libdri2, libdrm-slp1, libdrm2, libfontconfig1, libfontenc1, libgif4, libharfbuzz, libice6, libkms1, liblua5.1-0, liboauth, libpciaccess0, libpixman-1-0, libpthread-stubs0, libsm6, libungif-bin, libungif4g, libx11-6, libx11-data, libx11-xcb1, libxau6, libxaw7, libxcb-atom1, libxcb-aux0, libxcb-composite0, libxcb-damage0, libxcb-dpms0, libxcb-dri2-0, libxcb-event1, libxcb-glx0, libxcb-icccm1, libxcb-image0, libxcb-keysyms1, libxcb-property1, libxcb-randr0, libxcb-record0, libxcb-render-util0, libxcb-render0, libxcb-reply1, libxcb-res0, libxcb-screensaver0, libxcb-shape0, libxcb-shm0, libxcb-sync0, libxcb-xevie0, libxcb-xf86dri0, libxcb-xfixes0, libxcb-xinerama0, libxcb-xprint0, libxcb-xtest0, libxcb-xv0, libxcb-xvmc0, libxcb1, libxcomposite1, libxcursor1, libxdamage1, libxdmcp6, libxext6, libxfixes3, libxfont1, libxft2, libxgesture0, libxi6, libxinerama1, libxkbfile1, libxml2, libxml2-0, libxml2-doc, libxml2-utils, libxmlsec1, libxmlsec1-openssl, libxmu-headers, libxmu6, libxmuu1, libxpm4, libxrandr2, libxrender1, libxres1, libxslt1.1, libxt6, libxtrap6, libxtst6, libxv1, libxxf86dga1, libxxf86misc1, libxxf86vm1, lua5.1, lua5.1-doc, python-xcbgen, x11-apps, x11-common, x11-utils, x11-xkb-utils, x11-xserver-utils, x11proto-bigreqs-dev, x11proto-composite-dev, x11proto-core-dev, x11proto-damage-dev, x11proto-dmx-dev, x11proto-dri2-dev, x11proto-fixes-dev, x11proto-fontcache-dev, x11proto-fonts-dev, x11proto-gesture-dev, x11proto-input-dev, x11proto-kb-dev, x11proto-randr-dev, x11proto-record-dev, x11proto-render-dev, x11proto-resource-dev, x11proto-scrnsaver-dev, x11proto-trap-dev, x11proto-video-dev, x11proto-xcmisc-dev, x11proto-xext-dev, x11proto-xf86bigfont-dev, x11proto-xf86dga-dev, x11proto-xf86dri-dev, x11proto-xf86misc-dev, x11proto-xf86vidmode-dev, x11proto-xinerama-dev, xbitmaps, xcb-proto, xfonts-utils, xinit, xinput, xkb-data, xkb-data-i18n, xpmutils, xrestop, xserver-common, xserver-xorg-core, xserver-xorg-input-evdev, xserver-xorg-input-evdev-multitouch, xserver-xorg-input-gesture, xserver-xorg-misc-emulfb, xserver-xorg-tools, xserver-xorg-video-emulfb, xtrans-dev, xutils-dev
+Packages: fontconfig, fontconfig-config, giflib-tools, libcurl, libcurl3, libdmx1, libdri2, libdrm-slp1, libdrm2, libfontconfig1, libfontenc1, libgif4, libharfbuzz, libice6, libkms1, liblua5.1-0, liboauth, libpciaccess0, libpixman-1-0, libpthread-stubs0, libsm6, libungif-bin, libungif4g, libx11-6, libx11-data, libx11-xcb1, libxau6, libxaw7, libxcb-atom1, libxcb-aux0, libxcb-composite0, libxcb-damage0, libxcb-dpms0, libxcb-dri2-0, libxcb-event1, libxcb-glx0, libxcb-icccm1, libxcb-image0, libxcb-keysyms1, libxcb-property1, libxcb-randr0, libxcb-record0, libxcb-render-util0, libxcb-render0, libxcb-reply1, libxcb-res0, libxcb-screensaver0, libxcb-shape0, libxcb-shm0, libxcb-sync0, libxcb-xevie0, libxcb-xf86dri0, libxcb-xfixes0, libxcb-xinerama0, libxcb-xprint0, libxcb-xtest0, libxcb-xv0, libxcb-xvmc0, libxcb1, libxcomposite1, libxcursor1, libxdamage1, libxdmcp6, libxext6, libxfixes3, libxfont1, libxft2, libxgesture0, libxi6, libxinerama1, libxkbfile1, libxml2, libxml2-0, libxml2-doc, libxml2-utils, libxmlsec1, libxmlsec1-openssl, libxmu-headers, libxmu6, libxmuu1, libxpm4, libxrandr2, libxrender1, libxres1, libxslt1.1, libxt6, libxtrap6, libxtst6, libxv1, libxxf86dga1, libxxf86misc1, libxxf86vm1, lua5.1, lua5.1-doc, python-xcbgen, x11-apps, x11-common, x11-utils, x11-xkb-utils, x11-xserver-utils, x11proto-bigreqs-dev, x11proto-composite-dev, x11proto-core-dev, x11proto-damage-dev, x11proto-dmx-dev, x11proto-dri2-dev, x11proto-fixes-dev, x11proto-fontcache-dev, x11proto-fonts-dev, x11proto-gesture-dev, x11proto-input-dev, x11proto-kb-dev, x11proto-randr-dev, x11proto-record-dev, x11proto-render-dev, x11proto-resource-dev, x11proto-scrnsaver-dev, x11proto-trap-dev, x11proto-video-dev, x11proto-xcmisc-dev, x11proto-xext-dev, x11proto-xf86bigfont-dev, x11proto-xf86dga-dev, x11proto-xf86dri-dev, x11proto-xf86misc-dev, x11proto-xf86vidmode-dev, x11proto-xinerama-dev, xbitmaps, xcb-proto, xfonts-utils, xinit, xinput, xkb-data, xkb-data-i18n, xpmutils, xrestop, xserver-common, xserver-xorg-core, xserver-xorg-input-evdev, xserver-xorg-input-evdev-multitouch, xserver-xorg-input-gesture, xserver-xorg-misc-emulfb, xserver-xorg-tools, xserver-xorg-video-emulfb, xtrans-dev, xutils-dev
 
 License: ISC(Internet Software Consortium)
 Packages: rfkill
 
 License: MIT, ISC(Internet Software Consortium)
 Packages: libc-ares2
+
+License: BSD, LGPLv2.1, Mozilla, MIT
+Packages: libwebkit-engine
 
 License: OpenSSL License
 Packages: libssl-dev, libssl1.0.0, openssl
@@ -97,8 +100,8 @@ Packages: libfreetype6
 License: bzip2
 Packages: libbz2-1.0, bzip2
 
-License: Samsung Proprietary
-Packages: org.tizen.sat-ui, geoclue-pdr, geoclue-xps, libslp-lbs-plugin-csr, boot-network-init
+License: Flora license
+Packages: org.tizen.sat-ui, geoclue-pdr, geoclue-xps, libeas-common, libslp-telplugin-0, libslp-lbs-plugin-csr, boot-network-init
 
 License: Apachev2.0, MIT, CPOL
 Packages: wrt-commons
@@ -111,6 +114,9 @@ Packages: ncurses-bin, ncurses-term, ncurse license, libncurses5
 
 License: GCC 4.5 License
 Packages: libstdc++6
+
+License: No license
+Packages: ca-certificates
 
 
 ============================================================================================
@@ -3969,22 +3975,82 @@ freely, subject to the following restrictions:
    distribution.
 
 ============================================================================================
-Samsung Proprietary
+Flora license
 
-Copyright (c) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+Version 1.0, May, 2012
 
-PROPRIETARY/CONFIDENTIAL
+http://www.tizenopensource.org/license
 
-This software is the confidential and proprietary information of
-SAMSUNG ELECTRONICS ("Confidential Information"). You agree and acknowledge
-that this software is owned by Samsung and you shall not disclose
-such Confidential Information and shall use it only in accordance with the
-terms of the license agreement you entered into with SAMSUNG ELECTRONICS.
-SAMSUNG make no representations or warranties about the suitability
-of the software, either express or implied, including but not limited
-to the implied warranties of merchantability, fitness for a particular purpose,
-or non-infringement. SAMSUNG shall not be liable for any damages suffered
-by licensee arising out of or releated to this software.
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+"License" shall mean the terms and conditions for use, reproduction, and distribution as defined by Sections 1 through 9 of this document.
+
+"Licensor" shall mean the copyright owner or entity authorized by the copyright owner that is granting the License.
+
+"Legal Entity" shall mean the union of the acting entity and all other entities that control, are controlled by, or are under common control with that entity. For the purposes of this definition, "control" means (i) the power, direct or indirect, to cause the direction or management of such entity, whether by contract or otherwise, or (ii) ownership of fifty percent (50%) or more of the outstanding shares, or (iii) beneficial ownership of such entity.
+
+"You" (or "Your") shall mean an individual or Legal Entity exercising permissions granted by this License.
+
+"Source" form shall mean the preferred form for making modifications, including but not limited to software source code, documentation source, and configuration files.
+
+"Object" form shall mean any form resulting from mechanical transformation or translation of a Source form, including but not limited to compiled object code, generated documentation, and conversions to other media types.
+
+"Work" shall mean the work of authorship, whether in Source or Object form, made available under the License, as indicated by a copyright notice that is included in or attached to the work (an example is provided in the Appendix below).
+
+"Derivative Works" shall mean any work, whether in Source or Object form, that is based on (or derived from) the Work and for which the editorial revisions, annotations, elaborations, or other modifications represent, as a whole, an original work of authorship. For the purposes of this License, Derivative Works shall not include works that remain separable from, or merely link (or bind by name) to the interfaces of, the Work and Derivative Works thereof.
+
+"Contribution" shall mean any work of authorship, including the original version of the Work and any modifications or additions to that Work or Derivative Works thereof, that is intentionally submitted to Licensor for inclusion in the Work by the copyright owner or by an individual or Legal Entity authorized to submit on behalf of the copyright owner. For the purposes of this definition, "submitted" means any form of electronic, verbal, or written communication sent to the Licensor or its representatives, including but not limited to communication on electronic mailing lists, source code control systems, and issue tracking systems that are managed by, or on behalf of, the Licensor for the purpose of discussing and improving the Work, but excluding communication that is conspicuously marked or otherwise designated in writing by the copyright owner as "Not a Contribution."
+
+"Contributor" shall mean Licensor and any individual or Legal Entity on behalf of whom a Contribution has been received by Licensor and subsequently incorporated within the Work.
+
+"Tizen Certified Platform" shall mean a software platform that complies with the standards set forth in the Compatibility Definition Document and passes the Compatibility Test Suite as defined from time to time by the Tizen Technical Steering Group and certified by the Tizen Association or its designated agent.
+
+2. Grant of Copyright License. Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare Derivative Works of, publicly display, publicly perform, sublicense, and distribute the Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable (except as stated in this section) patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Work solely as incorporated into a Tizen Certified Platform, where such license applies only to those patent claims licensable by such Contributor that are necessarily infringed by their Contribution(s) alone or by combination of their Contribution(s) with the Work solely as incorporated into a Tizen Certified Platform to which such Contribution(s) was submitted. If You institute patent litigation against any entity (including a cross-claim or counterclaim in a lawsuit) alleging that the Work or a Contribution incorporated within the Work constitutes direct or contributory patent infringement, then any patent licenses granted to You under this License for that Work shall terminate as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the Work or Derivative Works thereof pursuant to the copyright license above, in any medium, with or without modifications, and in Source or Object form, provided that You meet the following conditions:
+
+  1. You must give any other recipients of the Work or Derivative Works a copy of this License; and
+
+  2. You must cause any modified files to carry prominent notices stating that You changed the files; and
+
+  3. You must retain, in the Source form of any Derivative Works that You distribute, all copyright, patent, trademark, and attribution notices from the Source form of the Work, excluding those notices that do not pertain to any part of the Derivative Works; and
+
+  4. If the Work includes a "NOTICE" text file as part of its distribution, then any Derivative Works that You distribute must include a readable copy of the attribution notices contained within such NOTICE file, excluding those notices that do not pertain to any part of the Derivative Works, in at least one of the following places: within a NOTICE text file distributed as part of the Derivative Works; within the Source form or documentation, if provided along with the Derivative Works; or, within a display generated by the Derivative Works, if and wherever such third-party notices normally appear. The contents of the NOTICE file are for informational purposes only and do not modify the License. You may add Your own attribution notices within Derivative Works that You distribute, alongside or as an addendum to the NOTICE text from the Work, provided that such additional attribution notices cannot be construed as modifying the License. You may add Your own copyright statement to Your modifications and may provide additional or different license terms and conditions for use, reproduction, or distribution of Your modifications, or for any such Derivative Works as a whole, provided Your use, reproduction, and distribution of the Work otherwise complies with the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise, any Contribution intentionally submitted for inclusion in the Work by You to the Licensor shall be under the terms and conditions of this License, without any additional terms or conditions. Notwithstanding the above, nothing herein shall supersede or modify the terms of any separate license agreement you may have executed with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade names, trademarks, service marks, or product names of the Licensor, except as required for reasonable and customary use in describing the origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or agreed to in writing, Licensor provides the Work (and each Contributor provides its Contributions) on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE. You are solely responsible for determining the appropriateness of using or redistributing the Work and assume any risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall any Contributor be liable to You for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this License or out of the use or inability to use the Work (including but not limited to damages for loss of goodwill, work stoppage, computer failure or malfunction, or any and all other commercial damages or losses), even if such Contributor has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing the Work or Derivative Works thereof, You may choose to offer, and charge a fee for, acceptance of support, warranty, indemnity, or other liability obligations and/or rights consistent with this License. However, in accepting such obligations, You may act only on Your own behalf and on Your sole responsibility, not on behalf of any other Contributor, and only if You agree to indemnify, defend, and hold each Contributor harmless for any liability incurred by, or claims asserted against, such Contributor by reason of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Flora License to your work
+
+To apply the Flora License to your work, attach the following boilerplate notice, with the fields enclosed by brackets "[]" replaced with your own identifying information. (Don't include the brackets!) The text should be enclosed in the appropriate comment syntax for the file format. We also recommend that a file or class name and description of purpose be included on the same "printed page" as the copyright notice for easier identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Flora License, Version 1.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.tizenopensource.org/license
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
 
 ============================================================================================
 libjpeg License
