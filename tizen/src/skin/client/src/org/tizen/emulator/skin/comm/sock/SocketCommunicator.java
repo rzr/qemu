@@ -117,6 +117,7 @@ public class SocketCommunicator implements ICommunicator {
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
 	private DataTranfer progressDataTransfer;
+	private DataTranfer brightnessDataTransfer;
 
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
@@ -141,6 +142,10 @@ public class SocketCommunicator implements ICommunicator {
 		this.progressDataTransfer = new DataTranfer();
 		this.progressDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
 		this.progressDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+
+		this.brightnessDataTransfer = new DataTranfer();
+		this.brightnessDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
+		this.brightnessDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
 
 		this.heartbeatCount = new AtomicInteger(0);
 		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -263,9 +268,8 @@ public class SocketCommunicator implements ICommunicator {
 			heartbeatTimer.schedule(heartbeatExecutor, 1, HEART_BEAT_INTERVAL * 1000);
 		}
 
-		while ( true ) {
-
-			if ( isTerminated ) {
+		while (true) {
+			if (isTerminated) {
 				break;
 			}
 
@@ -275,16 +279,17 @@ public class SocketCommunicator implements ICommunicator {
 				short cmd = dis.readShort();
 				int length = dis.readInt();
 
-				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "[Socket] read - reqId:" + reqId + ", command:" + cmd + ", dataLength:" + length );
+				if (logger.isLoggable(Level.FINE)) {
+					logger.fine("[Socket] read - reqId:" + reqId +
+							", command:" + cmd + ", dataLength:" + length);
 				}
 
 				ReceiveCommand command = null;
 
 				try {
-					command = ReceiveCommand.getValue( cmd );
-				} catch ( IllegalArgumentException e ) {
-					logger.severe( "unknown command:" + cmd );
+					command = ReceiveCommand.getValue(cmd);
+				} catch (IllegalArgumentException e) {
+					logger.severe("unknown command:" + cmd);
 					continue;
 				}
 
@@ -315,7 +320,7 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				case BOOTING_PROGRESS: {
-					logger.info("received BOOTING_PROGRESS from QEMU.");
+					//logger.info("received BOOTING_PROGRESS from QEMU.");
 
 					resetDataTransfer(progressDataTransfer);
 					receiveData(progressDataTransfer, length);
@@ -337,7 +342,7 @@ public class SocketCommunicator implements ICommunicator {
 
 							if (value == 100 | value == 0) {
 								/* this means progressbar will be
-								dispose soon */
+								disposed soon */
 								if (skin.bootingProgress != null) {
 									skin.bootingProgress = null;
 								}
@@ -347,27 +352,53 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
+				case BRIGHTNESS_VALUE: {
+					//logger.info("received BRIGHTNESS_VALUE from QEMU.");
+
+					resetDataTransfer(brightnessDataTransfer);
+					receiveData(brightnessDataTransfer, length);
+
+					byte[] receivedData = getReceivedData(brightnessDataTransfer);
+					if (null != receivedData) {
+						String strValue = new String(receivedData, 0, length - 1);
+
+						int value = 1;
+						try {
+							value = Integer.parseInt(strValue);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+						if (value == 0) {
+							logger.info("display off");
+						} else {
+							logger.info("display on");
+						}
+					}
+
+					break;
+				}
 				case SENSOR_DAEMON_START: {
-					logger.info( "received SENSOR_DAEMON_START from QEMU." );
-					synchronized ( this ) {
+					logger.info("received SENSOR_DAEMON_START from QEMU.");
+					synchronized (this) {
 						isSensorDaemonStarted = true;
 					}
 					break;
 				}
 				case SHUTDOWN: {
-					logger.info( "received RESPONSE_SHUTDOWN from QEMU." );
-					sendToQEMU( SendCommand.RESPONSE_SHUTDOWN, null );
+					logger.info("received RESPONSE_SHUTDOWN from QEMU.");
+					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null);
 					terminate();
 					break;
 				}
 				default: {
-					logger.severe( "Unknown command from QEMU. command:" + cmd );
+					logger.severe("Unknown command from QEMU. command:" + cmd);
 					break;
 				}
 				}
 
-			} catch ( IOException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				break;
 			}
 

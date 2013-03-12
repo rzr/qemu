@@ -123,6 +123,7 @@ enum {
     SEND_DETAIL_INFO = 3,
     SEND_RAMDUMP_COMPLETE = 4,
     SEND_BOOTING_PROGRESS = 5,
+    SEND_BRIGHTNESS_VALUE = 6,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
@@ -336,6 +337,27 @@ void notify_booting_progress(int progress_value)
 #else
         usleep(1000);
 #endif
+    }
+}
+
+void notify_brightness(bool on)
+{
+    char brightness_data[2] = { 0, };
+    int brightness_value = 1;
+
+    if (on == FALSE) {
+        brightness_value = 0;
+    }
+
+    snprintf(brightness_data, 2, "%d", brightness_value);
+    TRACE("brightness value = %s\n", brightness_data);
+
+    if (client_sock) {
+        if (0 > send_skin_data(client_sock,
+            SEND_BRIGHTNESS_VALUE, (unsigned char *)brightness_data, 2, 0)) {
+
+            ERR("fail to send SEND_BRIGHTNESS_VALUE to skin.\n");
+        }
     }
 }
 

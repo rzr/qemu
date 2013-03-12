@@ -1,7 +1,7 @@
 /*
  * operation for emulator skin
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -63,10 +63,11 @@ extern int port_shmid;
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
-#define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
-#define CLOSE_POWER_KEY_INTERVAL 1200 // milli-seconds
-#define DATA_DELIMITER "#" // in detail info data
-#define TIMEOUT_FOR_SHUTDOWN 10 // seconds
+
+#define RESUME_KEY_SEND_INTERVAL 500 /* milli-seconds */
+#define CLOSE_POWER_KEY_INTERVAL 1200 /* milli-seconds */
+#define DATA_DELIMITER "#" /* in detail info data */
+#define TIMEOUT_FOR_SHUTDOWN 10 /* seconds */
 
 static int requested_shutdown_qemu_gracefully = 0;
 
@@ -82,7 +83,8 @@ extern int tizen_base_port;
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
 
-void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type)
+void start_display(uint64 handle_id,
+    int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type)
 {
     INFO("start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%f, rotation_type:%d\n",
         (long)handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type);

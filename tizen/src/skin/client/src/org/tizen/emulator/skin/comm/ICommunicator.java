@@ -263,6 +263,7 @@ public interface ICommunicator extends Runnable {
 		DETAIL_INFO_DATA((short) 3),
 		RAMDUMP_COMPLETE((short) 4),
 		BOOTING_PROGRESS((short) 5),
+		BRIGHTNESS_VALUE((short) 6),
 		SENSOR_DAEMON_START((short) 800),
 		SHUTDOWN((short) 999);
 
