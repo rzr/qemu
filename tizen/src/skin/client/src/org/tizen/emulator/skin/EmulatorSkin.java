@@ -1034,7 +1034,23 @@ public class EmulatorSkin {
 	}
 
 	protected void openScreenShotWindow() {
-		//TODO: abstract
+		/* abstract */
+	}
+
+	public void dispalyBrightness(boolean on) {
+		if (on == true) {
+			displayOn();
+		} else {
+			displayOff();
+		}
+	}
+
+	protected void displayOn() {
+		/* abstract */
+	}
+
+	protected void displayOff() {
+		/* abstract */
 	}
 
 	public boolean isSelectKeyWindow() {

@@ -370,9 +370,9 @@ public class SocketCommunicator implements ICommunicator {
 						}
 
 						if (value == 0) {
-							logger.info("display off");
+							skin.dispalyBrightness(false);
 						} else {
-							logger.info("display on");
+							skin.dispalyBrightness(true);
 						}
 					}
 

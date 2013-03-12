@@ -119,6 +119,18 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	}
 
 	@Override
+	public void displayOn() {
+		logger.info("display on");
+		/* do nothing */
+	}
+
+	@Override
+	public void displayOff() {
+		logger.info("display off");
+		/* do nothing */
+	}
+
+	@Override
 	protected void openScreenShotWindow() {
 		if (screenShotDialog != null) {
 			logger.info("screenshot window was already opened");
