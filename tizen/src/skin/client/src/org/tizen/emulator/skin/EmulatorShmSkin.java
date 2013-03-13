@@ -187,7 +187,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				currentState.getCurrentResolutionHeight());
 
 		lcdCanvas.addPaintListener(new PaintListener() {
-			public void paintControl(PaintEvent e) {
+			public void paintControl(PaintEvent e) { //TODO: optimize
 				/* e.gc.setAdvanced(true);
 				if (!e.gc.getAdvanced()) {
 					logger.info("Advanced graphics not supported");
