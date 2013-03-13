@@ -509,6 +509,10 @@ public class EmulatorSkin {
 						}
 					}
 				});
+
+				DisplayStateData lcdStateData = new DisplayStateData(
+						currentState.getCurrentScale(), currentState.getCurrentRotationId());
+				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
 			}
 		};
 
