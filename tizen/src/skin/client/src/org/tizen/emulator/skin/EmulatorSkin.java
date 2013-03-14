@@ -492,23 +492,34 @@ public class EmulatorSkin {
 
 			@Override
 			public void shellIconified(ShellEvent event) {
-				/* do nothing */
+				logger.info("iconified");
+
+				/* synchronization of minimization */
+				shell.getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						if (isKeyWindow == true && keyWindow != null) {
+							if (keyWindow.getShell().getMinimized() == false) {
+								keyWindow.getShell().setVisible(false);
+								/* the tool style window is exposed
+								when even it was minimized */
+								keyWindow.getShell().setMinimized(true);
+							}
+						}
+					}
+				});
 			}
 
 			@Override
 			public void shellDeiconified(ShellEvent event) {
 				logger.info("deiconified");
 
-				shell.getDisplay().asyncExec(new Runnable() {
-					@Override
-					public void run() {
-						if (isKeyWindow == true && keyWindow != null) {
-							if (keyWindow.getShell().getMinimized() == true) {
-								keyWindow.getShell().setMinimized(false);
-							}
-						}
+				if (isKeyWindow == true && keyWindow != null) {
+					if (keyWindow.getShell().getMinimized() == true) {
+						keyWindow.getShell().setMinimized(false);
+						keyWindow.getShell().setVisible(true);
 					}
-				});
+				}
 
 				DisplayStateData lcdStateData = new DisplayStateData(
 						currentState.getCurrentScale(), currentState.getCurrentRotationId());
