@@ -1,3 +1,6 @@
+* 1.5.10
+- moved kvm script files from qemu-common to qemu-x86 package. 
+== Kitae Kim <kt920.kim@samsung.com> 2013-03-15
 * 1.5.9
 - update a display when window is de-iconified
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-03-13
