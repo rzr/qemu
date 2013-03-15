@@ -129,7 +129,7 @@ else
 endif
 
 ifdef CONFIG_DARWIN
-	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(EMUL_DIR)/bin/qemu-img
@@ -162,6 +162,7 @@ install_dibs: all_dibs
 	mkdir -p $(DIBS_COMMON_DIR)/etc
 	mkdir -p $(DIBS_X86_DIR)/bin
 	mkdir -p $(DIBS_X86_DIR)/data
+	mkdir -p $(DIBS_X86_DIR)/etc
 	mkdir -p $(DIBS_ARM_DIR)/bin
 ifndef CONFIG_DARWIN
 	@for target in $(TARGET_DIRS); do \
@@ -211,9 +212,9 @@ ifdef CONFIG_DARWIN
 	cp sdbscript $(DIBS_COMMON_DIR)/bin
 endif
 ifdef CONFIG_LINUX
-	echo "Copying tizen-kvm to $(DIBS_COMMON_DIR)/etc"
-	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_COMMON_DIR)/etc
-	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_COMMON_DIR)/etc
+	echo "Copying tizen-kvm to $(DIBS_X86_DIR)/etc"
+	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_X86_DIR)/etc
+	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_X86_DIR)/etc
 endif
 
 ifndef CONFIG_DARWIN
