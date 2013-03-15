@@ -65,6 +65,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
@@ -1337,6 +1338,33 @@ public class EmulatorSkin {
 
 			rotationList.add( menuItem );
 
+		}
+
+		/* temp : swap rotation menu names */
+		if (currentState.getCurrentResolutionWidth() >
+				currentState.getCurrentResolutionHeight())
+		{
+			for (MenuItem m : rotationList) {
+				short rotationId = (Short) m.getData();
+
+				if (rotationId == RotationInfo.PORTRAIT.id()) {
+					String landscape = SkinRotation.getRotation(
+							RotationInfo.LANDSCAPE.id()).getName().value();
+					m.setText(landscape);
+				} else if (rotationId == RotationInfo.LANDSCAPE.id()) {
+					String portrait = SkinRotation.getRotation(
+							RotationInfo.PORTRAIT.id()).getName().value();
+					m.setText(portrait);
+				} else if (rotationId == RotationInfo.REVERSE_PORTRAIT.id()) {
+					String landscapeReverse = SkinRotation.getRotation(
+							RotationInfo.REVERSE_LANDSCAPE.id()).getName().value();
+					m.setText(landscapeReverse);
+				} else if (rotationId == RotationInfo.REVERSE_LANDSCAPE.id()) {
+					String portraitReverse = SkinRotation.getRotation(
+							RotationInfo.REVERSE_PORTRAIT.id()).getName().value();
+					m.setText(portraitReverse);
+				}
+			}
 		}
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
