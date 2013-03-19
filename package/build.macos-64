@@ -7,7 +7,7 @@ clean()
 	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
-		./emulator_configure.sh
+		./emulator_configure.sh x86
 		make distclean
 	fi
 	rm -rf $SRCDIR/*.zip
@@ -40,18 +40,18 @@ build()
 		exit 1
 	fi
 	make install_dibs
-	make clean
+#	make clean
 
-	./emulator_configure.sh arm
-	make all_dibs
-	if [ $? -eq 0 ]
-	then
-		echo "arm build success"
-	else
-		echo "arm build failure"
-		exit 1
-	fi
-	make install_dibs
+#	./emulator_configure.sh arm
+#	make all_dibs
+#	if [ $? -eq 0 ]
+#	then
+#		echo "arm build success"
+#	else
+#		echo "arm build failure"
+#		exit 1
+#	fi
+#	make install_dibs
 }
 
 # install
