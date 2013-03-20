@@ -14,7 +14,7 @@
                 <keyMap>
                     <region left="390" top="1401" width="84" height="84"/>
                     <eventInfo>
-                        <keyCode>101</keyCode>
+                        <keyCode>139</keyCode>
                         <keyName>HOME</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
@@ -22,7 +22,7 @@
                 <keyMap>
                     <region left="841" top="1309" width="24" height="96"/>
                     <eventInfo>
-                        <keyCode>103</keyCode>
+                        <keyCode>116</keyCode>
                         <keyName>POWER</keyName>
                     </eventInfo>
                     <tooltip>Power</tooltip>

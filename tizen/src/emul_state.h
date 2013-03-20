@@ -39,8 +39,8 @@
 
 /* keep it consistent with emulator-skin definition */
 enum {
-    HARD_KEY_HOME = 101,
-    HARD_KEY_POWER = 103,
+    HARD_KEY_HOME = 139,
+    HARD_KEY_POWER = 116,
     HARD_KEY_VOL_UP = 115,
     HARD_KEY_VOL_DOWN = 114,
 };

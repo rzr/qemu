@@ -1,3 +1,6 @@
+* 1.5.12
+- modified virtio hwkey device and improved hwkey mapping 
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-03-20
 * 1.5.10
 - moved kvm script files from qemu-common to qemu-x86 package. 
 == Kitae Kim <kt920.kim@samsung.com> 2013-03-15

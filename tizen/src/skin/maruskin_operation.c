@@ -283,7 +283,7 @@ void do_hardkey_event(int event_type, int keycode)
         }
     }
 
-    mloop_evcmd_hwkey(event_type, keycode);
+    maru_hwkey_event(event_type, keycode);
 }
 
 void do_scale_event(double scale_factor)
