@@ -148,7 +148,7 @@ static void maru_virtio_hwkey_handle(VirtIODevice *vdev, VirtQueue *vq)
 
         /* save VirtQueueElement */
         QTAILQ_INSERT_TAIL(&elem_queue, elem_entry, node);
-        /* call maru_virtio_touchscreen_notify */
+        /* call maru_virtio_hwkey_notify */
         qemu_bh_schedule(vhk->bh);
 
         pthread_mutex_unlock(&elem_mutex);
