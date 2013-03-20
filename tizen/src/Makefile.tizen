@@ -104,6 +104,9 @@ endif
 # debug channel
 obj-y += debug_ch.o
 
+# carrier
+obj-y += carrier.o qmp_handler.o
+
 # maru hardware
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 

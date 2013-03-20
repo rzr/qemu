@@ -2514,3 +2514,33 @@ EQMP
         .args_type  = "",
         .mhandler.cmd_new = qmp_marshal_input_query_target,
     },
+
+SQMP
+Eric 2013.3.7
+EQMP
+
+SQMP
+query-accel
+-------------
+
+Show acceleration sensor information.
+
+Example:
+
+-> { "execute": "query-accel" }
+<- {
+      "return":{
+		 "Xaxis":1,
+		 "Yaxis":2, 
+		 "Zaxis":3
+      }
+   }
+
+EQMP
+
+    {
+        .name       = "query-accel",
+        .args_type  = "",
+        .mhandler.cmd_new = qmp_marshal_input_query_accel,
+    },
+

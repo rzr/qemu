@@ -114,7 +114,6 @@ int inet_listen_opts(QemuOpts *opts, int port_offset, Error **errp)
     char uaddr[INET6_ADDRSTRLEN+1];
     char uport[33];
     int slisten, rc, to, port_min, port_max, p;
-
     memset(&ai,0, sizeof(ai));
     ai.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
     ai.ai_family = PF_UNSPEC;
@@ -549,7 +548,7 @@ int unix_listen_opts(QemuOpts *opts)
         fprintf(stderr, "bind(unix:%s): %s\n", un.sun_path, strerror(errno));
         goto err;
     }
-    if (listen(sock, 1) < 0) {
+    if (listen(sock, 5) < 0) {
         fprintf(stderr, "listen(unix:%s): %s\n", un.sun_path, strerror(errno));
         goto err;
     }

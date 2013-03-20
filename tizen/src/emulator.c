@@ -50,6 +50,7 @@
 #include "hw/maru_camera_common.h"
 #include "hw/gloffscreen_test.h"
 #include "debug_ch.h"
+#include "carrier.h"
 
 #include <stdlib.h>
 #ifdef CONFIG_SDL
@@ -109,6 +110,7 @@ void exit_emulator(void)
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
+	stop_carrier();
 
     maru_display_fini();
 }
@@ -487,6 +489,7 @@ void prepare_maru(void)
 
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server(guest_server_port);
+	start_carrier(guest_server_port+1);
 
     mloop_ev_init();
 }

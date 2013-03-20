@@ -19,16 +19,17 @@
 
 typedef struct JSONMessageParser
 {
-    void (*emit)(struct JSONMessageParser *parser, QList *tokens);
+    void (*emit)(struct JSONMessageParser *parser, QList *tokens, void *);
     JSONLexer lexer;
     int brace_count;
     int bracket_count;
     QList *tokens;
     uint64_t token_size;
+	void *opaque;
 } JSONMessageParser;
 
 void json_message_parser_init(JSONMessageParser *parser,
-                              void (*func)(JSONMessageParser *, QList *));
+                              void (*func)(JSONMessageParser *, QList *, void *), void *opaque);
 
 int json_message_parser_feed(JSONMessageParser *parser,
                              const char *buffer, size_t size);

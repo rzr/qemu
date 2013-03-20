@@ -84,7 +84,7 @@ out_emit:
     /* send current list of tokens to parser and reset tokenizer */
     parser->brace_count = 0;
     parser->bracket_count = 0;
-    parser->emit(parser, parser->tokens);
+    parser->emit(parser, parser->tokens, parser->opaque);
     if (parser->tokens) {
         QDECREF(parser->tokens);
     }
@@ -93,13 +93,14 @@ out_emit:
 }
 
 void json_message_parser_init(JSONMessageParser *parser,
-                              void (*func)(JSONMessageParser *, QList *))
+                              void (*func)(JSONMessageParser *, QList *, void *), void *opaque)
 {
     parser->emit = func;
     parser->brace_count = 0;
     parser->bracket_count = 0;
     parser->tokens = qlist_new();
     parser->token_size = 0;
+	parser->opaque = opaque;
 
     json_lexer_init(&parser->lexer, json_message_process_token);
 }

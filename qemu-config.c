@@ -643,6 +643,27 @@ QemuOptsList qemu_boot_opts = {
     },
 };
 
+static QemuOptsList qemu_carrier_opts = {
+    .name = "carrier",
+    .head = QTAILQ_HEAD_INITIALIZER(qemu_carrier_opts.head),
+    .desc = {
+        {
+            .name = "host",
+            .type = QEMU_OPT_STRING,
+        },{
+            .name = "port",
+       		.type = QEMU_OPT_STRING,
+        },{
+            .name = "ipv4",
+            .type = QEMU_OPT_BOOL,
+        },{
+            .name = "ipv6",
+            .type = QEMU_OPT_BOOL,
+        },
+        { /* end of list */ }
+    },
+};
+
 static QemuOptsList *vm_config_groups[32] = {
     &qemu_drive_opts,
     &qemu_chardev_opts,
@@ -659,6 +680,7 @@ static QemuOptsList *vm_config_groups[32] = {
     &qemu_boot_opts,
     &qemu_iscsi_opts,
     &qemu_sandbox_opts,
+    &qemu_carrier_opts,
     NULL,
 };
 
