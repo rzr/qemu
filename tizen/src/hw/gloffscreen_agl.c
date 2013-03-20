@@ -334,8 +334,9 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height)
 } 
  
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
 {
+#if 0
 	//Not QUit sure about this function;
 	int glFormat, glType;
 	glo_surface_updatecontents(surface);
@@ -345,8 +346,11 @@ void glo_surface_as_texture(GloSurface *surface)
     /* glTexImage2D use different RGB order than the contexts in the pixmap surface */
 /*    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->image->data);*/
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->pbuffer);
+#else
+	if (aglTexImagePBuffer(ctxt->context, surface->pbuffer, GL_BACK) == GL_FALSE)
+		fprintf(stderr, "aglTexImagePBuffer failed: %s", aglErrorString(aglGetError())); 
 
-	
+#endif
 }
 
 void glo_surface_release_texture(GloSurface *surface)
