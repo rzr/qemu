@@ -204,14 +204,17 @@ endif
 
 	cp skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
 ifdef CONFIG_WIN32
+	cp ../../i386-softmmu/check-gl.exe $(EMUL_DIR)/bin/
 	cp check-hax.exe $(DIBS_COMMON_DIR)/bin
 endif
 
 ifdef CONFIG_DARWIN
+	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin/
 	cp check-hax $(DIBS_COMMON_DIR)/bin
 	cp sdbscript $(DIBS_COMMON_DIR)/bin
 endif
 ifdef CONFIG_LINUX
+	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin/
 	echo "Copying tizen-kvm to $(DIBS_X86_DIR)/etc"
 	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_X86_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_X86_DIR)/etc

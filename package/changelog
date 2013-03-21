@@ -1,4 +1,7 @@
 * 1.5.13
+- Generate check-gl binary to use at an emulator-manager.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-03-21
+* 1.5.13
 - Enable pbuffer surface.
 == Sangjin Kim <sangjin3.kim@samsung.com> 2013-03-20
 * 1.5.12
