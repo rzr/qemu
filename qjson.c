@@ -28,7 +28,7 @@ typedef struct JSONParsingState
     QObject *result;
 } JSONParsingState;
 
-static void parse_json(JSONMessageParser *parser, QList *tokens, void *opaque)
+static void parse_json(JSONMessageParser *parser, QList *tokens)
 {
     JSONParsingState *s = container_of(parser, JSONParsingState, parser);
     s->result = json_parser_parse(tokens, s->ap);
@@ -40,7 +40,7 @@ QObject *qobject_from_jsonv(const char *string, va_list *ap)
 
     state.ap = ap;
 
-    json_message_parser_init(&state.parser, parse_json, NULL);
+    json_message_parser_init(&state.parser, parse_json);
     json_message_parser_feed(&state.parser, string, strlen(string));
     json_message_parser_flush(&state.parser);
     json_message_parser_destroy(&state.parser);

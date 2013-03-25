@@ -498,7 +498,7 @@ static void process_command(GAState *s, QDict *req)
 }
 
 /* handle requests/control events coming in over the channel */
-static void process_event(JSONMessageParser *parser, QList *tokens, void *opaque)
+static void process_event(JSONMessageParser *parser, QList *tokens)
 {
     GAState *s = container_of(parser, GAState, parser);
     QObject *obj;
@@ -861,7 +861,7 @@ int main(int argc, char **argv)
     s->command_state = ga_command_state_new();
     ga_command_state_init(s, s->command_state);
     ga_command_state_init_all(s->command_state);
-    json_message_parser_init(&s->parser, process_event, NULL);
+    json_message_parser_init(&s->parser, process_event);
     ga_state = s;
 #ifndef _WIN32
     if (!register_signal_handlers()) {

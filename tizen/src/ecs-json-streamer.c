@@ -16,12 +16,12 @@
 #include "qdict.h"
 #include "qemu-common.h"
 #include "json-lexer.h"
-#include "json-streamer.h"
+#include "ecs-json-streamer.h"
 
 #define MAX_TOKEN_SIZE (64ULL << 20)
 #define MAX_NESTING (1ULL << 10)
 
-static void json_message_process_token(JSONLexer *lexer, QString *token, JSONTokenType type, int x, int y)
+static void ecs_json_message_process_token(JSONLexer *lexer, QString *token, JSONTokenType type, int x, int y)
 {
     JSONMessageParser *parser = container_of(lexer, JSONMessageParser, lexer);
     QDict *dict;
@@ -84,7 +84,7 @@ out_emit:
     /* send current list of tokens to parser and reset tokenizer */
     parser->brace_count = 0;
     parser->bracket_count = 0;
-    parser->emit(parser, parser->tokens);
+    parser->emit(parser, parser->tokens, parser->opaque);
     if (parser->tokens) {
         QDECREF(parser->tokens);
     }
@@ -92,30 +92,31 @@ out_emit:
     parser->token_size = 0;
 }
 
-void json_message_parser_init(JSONMessageParser *parser,
-                              void (*func)(JSONMessageParser *, QList *))
+void ecs_json_message_parser_init(JSONMessageParser *parser,
+                              void (*func)(JSONMessageParser *, QList *, void *), void *opaque)
 {
     parser->emit = func;
     parser->brace_count = 0;
     parser->bracket_count = 0;
     parser->tokens = qlist_new();
     parser->token_size = 0;
+	parser->opaque = opaque;
 
-    json_lexer_init(&parser->lexer, json_message_process_token);
+    json_lexer_init(&parser->lexer, ecs_json_message_process_token);
 }
 
-int json_message_parser_feed(JSONMessageParser *parser,
+int ecs_json_message_parser_feed(JSONMessageParser *parser,
                              const char *buffer, size_t size)
 {
     return json_lexer_feed(&parser->lexer, buffer, size);
 }
 
-int json_message_parser_flush(JSONMessageParser *parser)
+int ecs_json_message_parser_flush(JSONMessageParser *parser)
 {
     return json_lexer_flush(&parser->lexer);
 }
 
-void json_message_parser_destroy(JSONMessageParser *parser)
+void ecs_json_message_parser_destroy(JSONMessageParser *parser)
 {
     json_lexer_destroy(&parser->lexer);
     QDECREF(parser->tokens);

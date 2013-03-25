@@ -17,14 +17,13 @@
 #include "main-loop.h"
 #include "ui/qemu-spice.h"
 #include "qemu-char.h"
-
+#include "sdb.h"
 #include "qjson.h"
-#include "json-streamer.h"
+#include "ecs-json-streamer.h"
 #include "json-parser.h"
-#include "monitor.h"
 #include "qmp-commands.h"
 
-#include "carrier.h"
+#include "ecs.h"
 
 #define OUT_BUF_SIZE	1024
 #define READ_BUF_LEN 	4096
@@ -47,23 +46,24 @@ struct Monitor {
     QLIST_ENTRY(Monitor) entry;
 };
 
-#define MAX_CLIENT	10
 #define MAX_EVENTS	1000
-typedef struct CarrierState {
+typedef struct ECS_State {
 	int listen_fd;
 	int epoll_fd;
 	struct epoll_event events[MAX_EVENTS];
 	int is_unix;
+	int ecs_running;
 	Monitor *mon;
-} CarrierState;
+} ECS_State;
 
-typedef struct CarrierClientInfo {
+typedef struct ECS_Client {
 	int client_fd;
-	const char* target;
-	CarrierState *cs;
+	int client_id;
+	const char* type;
+	ECS_State *cs;
 	JSONMessageParser parser;
-    QTAILQ_ENTRY(CarrierClientInfo) next;
-} CarrierClientInfo;
+    QTAILQ_ENTRY(ECS_Client) next;
+} ECS_Client;
 
 typedef struct mon_cmd_t {
     const char *name;
@@ -81,56 +81,103 @@ typedef struct mon_cmd_t {
     int flags;
 } mon_cmd_t;
 
-static QTAILQ_HEAD(CarrierClientInfoHead, CarrierClientInfo) clients =
+static QTAILQ_HEAD(ECS_ClientHead, ECS_Client) clients =
     QTAILQ_HEAD_INITIALIZER(clients);
 
-static int carrier_write(int fd, const uint8_t *buf, int len);
+static ECS_State *current_ecs;
+
+static inline void start_logging(void)
+{
+#ifndef _WIN32
+	char* home;
+	char path [256];
+	int fd = open("/dev/null", O_RDONLY);
+	dup2(fd, 0);
+
+	home = getenv(LOG_HOME);
+	sprintf(path, "%s%s", home, LOG_PATH);
+	fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0640);
+	if(fd < 0) {
+		fd = open("/dev/null", O_WRONLY);
+	}
+	dup2(fd, 1);
+	dup2(fd, 2);
+#endif
+}
+
+static int ecs_write(int fd, const uint8_t *buf, int len);
+
+void send_to_client(int fd, const char *str)
+{
+    char c;
+	uint8_t outbuf[OUT_BUF_SIZE];
+	int outbuf_index = 0;
+
+    for(;;) {
+        c = *str++;
+		if (outbuf_index >= OUT_BUF_SIZE -1) {
+			LOG("string is too long: overflow buffer.");
+			return;
+		}
+        if (c == '\n') {
+            outbuf[outbuf_index++] = '\r';
+		}
+        outbuf[outbuf_index++] = c;
+		if (c == '\0') {
+			break;
+		}
+    }
+	ecs_write(fd, outbuf, outbuf_index);
+}
 
 #define QMP_ACCEPT_UNKNOWNS 1
-static void carrier_flush(CarrierClientInfo *clii)
+static void ecs_monitor_flush(ECS_Client *clii, Monitor *mon)
 {
-    if (clii && clii->cs && clii->cs->mon && clii->cs->mon->outbuf_index != 0) {
-        carrier_write(clii->client_fd, clii->cs->mon->outbuf, clii->cs->mon->outbuf_index);
-        clii->cs->mon->outbuf_index = 0;
+    if (clii && clii->cs && mon && mon->outbuf_index != 0) {
+        ecs_write(clii->client_fd, mon->outbuf, mon->outbuf_index);
+        mon->outbuf_index = 0;
     }
 }
 
-/* flush at every end of line or if the buffer is full */
-static void carrier_puts(CarrierClientInfo *clii, const char *str)
+static void ecs_monitor_puts(ECS_Client *clii, Monitor *mon, const char *str)
 {
     char c;
+
+	if (!clii || !mon) {
+		return;
+	}
 
     for(;;) {
         c = *str++;
         if (c == '\0')
             break;
         if (c == '\n')
-            clii->cs->mon->outbuf[clii->cs->mon->outbuf_index++] = '\r';
-        clii->cs->mon->outbuf[clii->cs->mon->outbuf_index++] = c;
-        if (clii->cs->mon->outbuf_index >= (sizeof(clii->cs->mon->outbuf) - 1)
+            mon->outbuf[mon->outbuf_index++] = '\r';
+        mon->outbuf[mon->outbuf_index++] = c;
+        if (mon->outbuf_index >= (sizeof(mon->outbuf) - 1)
             || c == '\n')
-            carrier_flush(clii);
+            ecs_monitor_flush(clii, mon);
     }
 }
 
-void carrier_vprintf(const char *target, const char *fmt, va_list ap)
+void ecs_vprintf(const char *type, const char *fmt, va_list ap)
 {
     char buf[READ_BUF_LEN];
-	CarrierClientInfo *clii;
+	ECS_Client *clii;
 
     QTAILQ_FOREACH(clii, &clients, next) {
-        if (!strcmp(target, TARGET_ALL) || !strcmp(clii->target, target)) {
+        if (!strcmp(type, TYPE_ALL) || !strcmp(clii->type, type)) {
 			vsnprintf(buf, sizeof(buf), fmt, ap);
-			carrier_puts(clii, buf);
+			ecs_monitor_puts(clii, clii->cs->mon, buf);
 		}
     }
 }
 
-void carrier_printf(const char* target, const char *fmt, ...)
+void ecs_printf(const char* type, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    carrier_vprintf(target, fmt, ap);
+    ecs_vprintf(type, fmt, ap);
     va_end(ap);
 }
 
@@ -155,7 +202,7 @@ static QDict *build_qmp_error_dict(const QError *err)
     return qobject_to_qdict(obj);
 }
 
-static void monitor_json_emitter(CarrierClientInfo *clii, const QObject *data)
+static void ecs_json_emitter(ECS_Client *clii, const QObject *data)
 {
     QString *json;
 
@@ -164,12 +211,12 @@ static void monitor_json_emitter(CarrierClientInfo *clii, const QObject *data)
     assert(json != NULL);
 
     qstring_append_chr(json, '\n');
-    carrier_puts(clii, qstring_get_str(json));
+    ecs_monitor_puts(clii, clii->cs->mon, qstring_get_str(json));
 
     QDECREF(json);
 }
 
-static void monitor_protocol_emitter(CarrierClientInfo *clii, QObject *data)
+static void ecs_protocol_emitter(ECS_Client *clii, QObject *data)
 {
     QDict *qmp;
 
@@ -192,23 +239,23 @@ static void monitor_protocol_emitter(CarrierClientInfo *clii, QObject *data)
         clii->cs->mon->error = NULL;
     }
 
-    monitor_json_emitter(clii, QOBJECT(qmp));
+    ecs_json_emitter(clii, QOBJECT(qmp));
     QDECREF(qmp);
 }
 
 
 static void qmp_monitor_complete(void *opaque, QObject *ret_data)
 {
-    monitor_protocol_emitter(opaque, ret_data);
+    ecs_protocol_emitter(opaque, ret_data);
 }
 
-static int qmp_async_cmd_handler(CarrierClientInfo *clii, const mon_cmd_t *cmd,
+static int qmp_async_cmd_handler(ECS_Client *clii, const mon_cmd_t *cmd,
                                  const QDict *params)
 {
     return cmd->mhandler.cmd_async(clii->cs->mon, params, qmp_monitor_complete, clii);
 }
 
-static void qmp_call_cmd(CarrierClientInfo *clii, const mon_cmd_t *cmd,
+static void qmp_call_cmd(ECS_Client *clii, const mon_cmd_t *cmd,
                          const QDict *params)
 {
     int ret;
@@ -216,7 +263,7 @@ static void qmp_call_cmd(CarrierClientInfo *clii, const mon_cmd_t *cmd,
 
     ret = cmd->mhandler.cmd_new(clii->cs->mon, params, &data);
     handler_audit(clii->cs->mon, cmd, ret);
-    monitor_protocol_emitter(clii, data);
+    ecs_protocol_emitter(clii, data);
     qobject_decref(data);
 }
 
@@ -503,7 +550,7 @@ static const mon_cmd_t *qmp_find_cmd(const char *cmdname)
     return search_dispatch_table(qmp_cmds, cmdname);
 }
 
-static void handle_qmp_command(CarrierClientInfo *clii, QObject *obj)
+static void handle_qmp_command(ECS_Client *clii, QObject *obj)
 {
     int err;
     const mon_cmd_t *cmd;
@@ -550,7 +597,7 @@ static void handle_qmp_command(CarrierClientInfo *clii, QObject *obj)
     goto out;
 
 err_out:
-    monitor_protocol_emitter(clii, NULL);
+    ecs_protocol_emitter(clii, NULL);
 out:
     QDECREF(input);
     QDECREF(args);
@@ -602,14 +649,14 @@ static QObject* get_data_object(QObject *input_obj)
     return NULL;
 }
 
-static void handle_carrier_command(JSONMessageParser *parser, QList *tokens, void *opaque)
+static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *opaque)
 {
 	const char *target_name;
 	const char *data_value;
 	int def_target = 0;
 	int def_data = 0;
     QObject *obj;
-	CarrierClientInfo *clii = opaque;
+	ECS_Client *clii = opaque;
 
 	if (NULL == clii) {
 		LOG("ClientInfo is null.");
@@ -619,7 +666,7 @@ static void handle_carrier_command(JSONMessageParser *parser, QList *tokens, voi
     obj = json_parser_parse(tokens, NULL);
     if (!obj) {
         qerror_report(QERR_JSON_PARSING);
-    	monitor_protocol_emitter(clii, NULL);
+    	ecs_protocol_emitter(clii, NULL);
 		return;
     }
 
@@ -643,13 +690,13 @@ static void handle_carrier_command(JSONMessageParser *parser, QList *tokens, voi
 	
 	target_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TARGET);
 		
-	if (!strcmp(target_name, TARGET_QMP)) {
+	if (!strcmp(target_name, TYPE_QMP)) {
 		handle_qmp_command(clii, get_data_object(obj));
 	} else {
 		data_value = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-		if (!strcmp(target_name, TARGET_SELF)) {
-			clii->target = data_value;
-    		monitor_protocol_emitter(clii, NULL);
+		if (!strcmp(target_name, TYPE_SELF)) {
+			clii->type = data_value;
+    		ecs_protocol_emitter(clii, NULL);
 		}
 	}
 }
@@ -663,6 +710,10 @@ static Monitor *monitor_create(void)
     //monitor_protocol_event_init();
 
     mon = g_malloc0(sizeof(*mon));
+	if (NULL == mon) {
+		LOG("monitor allocation failed.");
+		return NULL;
+	}
 	memset(mon, 0, sizeof(*mon));
 
 	return mon;
@@ -674,27 +725,47 @@ static int device_initialize(void)
 	return 1;
 }
 
-static void carrier_close(CarrierState *cs)
+static void ecs_client_close(ECS_Client* clii)
 {
-	if (cs->listen_fd >= 0) {
+	if (0 <= clii->client_fd) {
+		closesocket(clii->client_fd);
+	}
+	QTAILQ_REMOVE(&clients, clii, next);
+	if (NULL != clii) {
+		g_free(clii);
+	}
+}
+
+static void ecs_close(ECS_State *cs)
+{
+	ECS_Client *clii;
+
+	if (0 <= cs->listen_fd) {
 		closesocket(cs->listen_fd);
 	}
 
-	if (cs->mon != NULL) {
+	if (NULL != cs->mon) {
 		g_free(cs->mon);
 	}
+
+    QTAILQ_FOREACH(clii, &clients, next) {
+		ecs_client_close(clii);
+	}
+    
 	//TODO: device close
 
-	g_free(cs);
+	if (NULL != cs) {
+		g_free(cs);
+	}
 }
 
-static int carrier_write(int fd, const uint8_t *buf, int len)
+static int ecs_write(int fd, const uint8_t *buf, int len)
 {
 	return send_all(fd, buf, len);
 }
 
 #ifndef _WIN32
-static ssize_t carrier_recv(int fd, char *buf, size_t len)
+static ssize_t ecs_recv(int fd, char *buf, size_t len)
 {
 	struct msghdr msg = { NULL, };
     struct iovec iov[1];
@@ -719,13 +790,13 @@ static ssize_t carrier_recv(int fd, char *buf, size_t len)
 }
 
 #else
-static ssize_t carrier_recv(int fd, char *buf, size_t len)
+static ssize_t ecs_recv(int fd, char *buf, size_t len)
 {
     return qemu_recv(fd, buf, len, 0);
 }
 #endif
 
-static void carrier_read (CarrierClientInfo *clii)
+static void ecs_read (ECS_Client *clii)
 {
 	uint8_t buf[READ_BUF_LEN];
 	int len, size;
@@ -736,25 +807,15 @@ static void carrier_read (CarrierClientInfo *clii)
 		return;
 	}
 
-	size = carrier_recv(clii->client_fd, (void *)buf, len);
+	size = ecs_recv(clii->client_fd, (void *)buf, len);
 	if (0 == size) {
-        closesocket(clii->client_fd);
-		QTAILQ_REMOVE(&clients, clii, next);
-		g_free(clii);
+		ecs_client_close(clii);
 	} else if (0 < size) {
-	    json_message_parser_feed(&clii->parser, (const char *) buf, size);
+	    ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
 	}
 }
 
-static QObject *get_carrier_greeting(void)
-{
-    QObject *ver = NULL;
-
-    qmp_marshal_input_query_version(NULL, NULL, &ver);
-    return qobject_from_jsonf("{'Carrier':{'version': %p,'capabilities': [true]}}",ver);
-}
-
-static void epoll_cli_add(CarrierState *cs, int fd)
+static void epoll_cli_add(ECS_State *cs, int fd)
 {
 	struct epoll_event events;
 
@@ -768,9 +829,9 @@ static void epoll_cli_add(CarrierState *cs, int fd)
 	}
 }
 
-static CarrierClientInfo *carrier_find_client(int fd)
+static ECS_Client *ecs_find_client(int fd)
 {
-	CarrierClientInfo *clii;
+	ECS_Client *clii;
 
     QTAILQ_FOREACH(clii, &clients, next) {
         if (clii->client_fd == fd)
@@ -779,26 +840,36 @@ static CarrierClientInfo *carrier_find_client(int fd)
 	return NULL;
 }
 
-static int carrier_add_client(CarrierState *cs, int fd) 
+static int ecs_add_client(ECS_State *cs, int fd) 
 {
-	QObject *data;
-	CarrierClientInfo *clii = g_malloc0(sizeof(CarrierClientInfo));
+	const char* welcome;
+
+	ECS_Client *clii = g_malloc0(sizeof(ECS_Client));
+	if (NULL == clii) {
+		LOG("ECS_Client allocation failed.");
+		return -1;
+	}
+    
+	socket_set_nonblock(fd);
 
 	clii->client_fd = fd;
 	clii->cs = cs;
-    json_message_parser_init(&clii->parser, handle_carrier_command, clii);
+    ecs_json_message_parser_init(&clii->parser, handle_ecs_command, clii);
 	epoll_cli_add(cs, fd);
 
 	QTAILQ_INSERT_TAIL(&clients, clii, next);
 
-	data = get_carrier_greeting();
-	monitor_json_emitter(clii, data);
-    qobject_decref(data);
+	LOG("Add an ecs client. fd: %d", fd);
+
+	
+	welcome = WELCOME_MESSAGE;
+
+	send_to_client(fd, welcome);
 
 	return 0;
 }
 
-static void carrier_accept(CarrierState *cs)
+static void ecs_accept(ECS_State *cs)
 {
     struct sockaddr_in saddr;
 #ifndef _WIN32
@@ -826,12 +897,12 @@ static void carrier_accept(CarrierState *cs)
             break;
         }
     }
-	if (0 > carrier_add_client(cs, fd)) {
+	if (0 > ecs_add_client(cs, fd)) {
 		LOG("failed to add client.");
 	}
 }
 
-static void epoll_init(CarrierState *cs) 
+static void epoll_init(ECS_State *cs) 
 {
 	struct epoll_event events;
 
@@ -851,7 +922,7 @@ static void epoll_init(CarrierState *cs)
 	}
 }
 
-static int socket_initialize(CarrierState *cs, QemuOpts *opts)
+static int socket_initialize(ECS_State *cs, QemuOpts *opts)
 {
 	int fd = -1;
 
@@ -868,52 +939,82 @@ static int socket_initialize(CarrierState *cs, QemuOpts *opts)
 	return 0;
 }
 
-static void carrier_loop(CarrierState *cs)
+static int ecs_loop(ECS_State *cs)
 {
 	int i,nfds;
 
-	nfds = epoll_wait(cs->epoll_fd,cs->events,MAX_EVENTS,-1);
-	if (nfds == 0){
-		return;
+	nfds = epoll_wait(cs->epoll_fd,cs->events,MAX_EVENTS,0);
+	if (0 == nfds){
+		return 0;
 	}
 
-	if (nfds < 0) {
-		LOG("epoll wait error.");
-		return;
+	if (0 > nfds) {
+		LOG("epoll wait error:%d.", nfds);
+		return -1;
 	} 
 
 	for( i = 0 ; i < nfds ; i++ )
 	{
 		if (cs->events[i].data.fd == cs->listen_fd) {
-			carrier_accept(cs);
+			ecs_accept(cs);
 			continue;
 		}
-		carrier_read(carrier_find_client(cs->events[i].data.fd));
+		ecs_read(ecs_find_client(cs->events[i].data.fd));
 	}
+
+	return 0;
 }
 
-static void* carrier_initialize(void* args) 
+static int check_port(void)
 {
-	char port[8];
+	int port = HOST_LISTEN_PORT;
+	int try = EMULATOR_SERVER_NUM;
+
+	for (;try > 0; try--) {
+		if (0 <= check_port_bind_listen(port)) {
+			LOG("Listening port is %d", port);
+			return port;
+		}
+		port++;
+	}
+	return -1;
+}
+
+static void* ecs_initialize(void* args) 
+{
 	int ret = 1;
-	CarrierState *cs = NULL;
+	ECS_State *cs = NULL;
 	QemuOpts *opts = NULL;
 	Error *local_err = NULL;
 	Monitor* mon = NULL;
+	int port;
+	char host_port[16];
 
-	opts = qemu_opts_create(qemu_find_opts("carrier"), "carrier", 1, &local_err);
+	start_logging();
+	LOG("ecs starts initializing.");
+
+	opts = qemu_opts_create(qemu_find_opts("ecs"), "ECS", 1, &local_err);
     if (error_is_set(&local_err)) {
         qerror_report_err(local_err);
         error_free(local_err);
         return NULL;
     }
 
-	sprintf(port, "%d", (int)args);
+	port = check_port();
+	if (port < 0) {
+		LOG("None of port is available.");
+		return NULL;
+	}
+	sprintf(host_port, "%d", port);
+    
+	qemu_opt_set(opts, "host", HOST_LISTEN_ADDR);
+    qemu_opt_set(opts, "port", host_port);
 
-    qemu_opt_set(opts, "host", HOST_LISTEN_ADDR);
-    qemu_opt_set(opts, "port", port);
-
-	cs = g_malloc0(sizeof(CarrierState));
+	cs = g_malloc0(sizeof(ECS_State));
+	if (NULL == cs) {
+		LOG("ECS_State allocation failed.");
+		return NULL;
+	}
 
 	ret = socket_initialize(cs, opts);
 	if (0 > ret) {
@@ -924,36 +1025,48 @@ static void* carrier_initialize(void* args)
 	mon = monitor_create();
 	if (NULL == mon) {
 		LOG("monitor initialization failed.");
-		carrier_close(cs);
+		ecs_close(cs);
 		return NULL;
 	}
 
 	cs->mon = mon;
-
 	ret = device_initialize();
 	if (0 > ret) {
 		LOG("device initialization failed.");
-		carrier_close(cs);
+		ecs_close(cs);
 		return NULL;
 	}
 
-	while(1) {
-		carrier_loop(cs);
+	current_ecs = cs;
+	cs->ecs_running = 1;
+
+	while(cs->ecs_running) {
+		ret = ecs_loop(cs);
+		if (0 > ret) {
+			ecs_close(cs);
+			break;
+		}
 	}
 
 	return (void*)ret;
 }
 
-int stop_carrier(void)
+int stop_ecs(void)
 {
+	LOG("ecs is closing.");
+	if (NULL != current_ecs) {
+		current_ecs->ecs_running = 0;
+		ecs_close(current_ecs);
+	}
+
 	return 0;
 }
 
-int start_carrier(int server_port)
+int start_ecs(void)
 {
 	pthread_t thread_id;
 
-	if (0 != pthread_create(&thread_id, NULL, carrier_initialize, (void*)server_port)) {
+	if (0 != pthread_create(&thread_id, NULL, ecs_initialize, NULL)) {
 		LOG("pthread creation failed.");
 		return -1;
 	}

@@ -643,9 +643,10 @@ QemuOptsList qemu_boot_opts = {
     },
 };
 
-static QemuOptsList qemu_carrier_opts = {
-    .name = "carrier",
-    .head = QTAILQ_HEAD_INITIALIZER(qemu_carrier_opts.head),
+#ifdef CONFIG_MARU
+static QemuOptsList qemu_ecs_opts = {
+    .name = "ecs",
+    .head = QTAILQ_HEAD_INITIALIZER(qemu_ecs_opts.head),
     .desc = {
         {
             .name = "host",
@@ -663,6 +664,7 @@ static QemuOptsList qemu_carrier_opts = {
         { /* end of list */ }
     },
 };
+#endif
 
 static QemuOptsList *vm_config_groups[32] = {
     &qemu_drive_opts,
@@ -680,7 +682,9 @@ static QemuOptsList *vm_config_groups[32] = {
     &qemu_boot_opts,
     &qemu_iscsi_opts,
     &qemu_sandbox_opts,
-    &qemu_carrier_opts,
+#ifdef CONFIG_MARU
+    &qemu_ecs_opts,
+#endif
     NULL,
 };
 
