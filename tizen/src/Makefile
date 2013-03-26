@@ -136,8 +136,8 @@ ifdef CONFIG_DARWIN
 	install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(EMUL_DIR)/bin/check-gl
-        install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(EMUL_DIR)/bin/check-gl
-        install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(EMUL_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(EMUL_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(EMUL_DIR)/bin/check-gl
 
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
@@ -242,8 +242,8 @@ ifdef CONFIG_DARWIN
 	install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/check-gl
-        install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(DIBS_COMMON_DIR)/bin/check-gl
-        install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(DIBS_COMMON_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/check-gl
 
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
