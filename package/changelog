@@ -1,3 +1,6 @@
+* 1.5.16
+- modified Makefile to library load on mac from check-gl
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-03-26
 * 1.5.15
 - Fix dibs build error.
 == Sangjin Kim <sangjin3.kim@samsung.com> 2013-03-21
