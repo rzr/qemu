@@ -28,6 +28,8 @@
 #define OUT_BUF_SIZE	1024
 #define READ_BUF_LEN 	4096
 
+#define DEBUG
+
 typedef struct mon_fd_t mon_fd_t;
 struct mon_fd_t {
     char *name;
@@ -133,7 +135,7 @@ void send_to_client(int fd, const char *str)
 #define QMP_ACCEPT_UNKNOWNS 1
 static void ecs_monitor_flush(ECS_Client *clii, Monitor *mon)
 {
-    if (clii && clii->cs && mon && mon->outbuf_index != 0) {
+    if (clii && mon && mon->outbuf_index != 0) {
         ecs_write(clii->client_fd, mon->outbuf, mon->outbuf_index);
         mon->outbuf_index = 0;
     }
@@ -147,13 +149,16 @@ static void ecs_monitor_puts(ECS_Client *clii, Monitor *mon, const char *str)
 		return;
 	}
 
+	LOG("ecs_monitor_puts: %s", str);
     for(;;) {
         c = *str++;
         if (c == '\0')
             break;
+#ifndef _WIN32
         if (c == '\n')
             mon->outbuf[mon->outbuf_index++] = '\r';
-        mon->outbuf[mon->outbuf_index++] = c;
+#endif
+		mon->outbuf[mon->outbuf_index++] = c;
         if (mon->outbuf_index >= (sizeof(mon->outbuf) - 1)
             || c == '\n')
             ecs_monitor_flush(clii, mon);
@@ -220,6 +225,7 @@ static void ecs_protocol_emitter(ECS_Client *clii, QObject *data)
 {
     QDict *qmp;
 
+	LOG("ecs_protocol_emitter called.");
     trace_monitor_protocol_emitter(clii->cs->mon);
 
     if (!monitor_has_error(clii->cs->mon)) {
@@ -566,6 +572,7 @@ static void handle_qmp_command(ECS_Client *clii, QObject *obj)
 
     cmd_name = qdict_get_str(input, "execute");
 
+	LOG("execute exists.");
     cmd = qmp_find_cmd(cmd_name);
     if (!cmd) {
         qerror_report(QERR_COMMAND_NOT_FOUND, cmd_name);
@@ -585,12 +592,14 @@ static void handle_qmp_command(ECS_Client *clii, QObject *obj)
         goto err_out;
     }
 
+	LOG("argument exists.");
     if (handler_is_async(cmd)) {
         err = qmp_async_cmd_handler(clii, cmd, args);
         if (err) {
             goto err_out;
         }
     } else {
+		LOG("qmp_call_cmd called client fd: %d", clii->client_fd);
         qmp_call_cmd(clii, cmd, args);
     }
 
@@ -602,6 +611,25 @@ out:
     QDECREF(input);
     QDECREF(args);
 
+}
+
+static void print_all_json(QObject *input_obj)
+{ 
+	const QDictEntry *ent;
+    QDict *input_dict;
+
+    if (qobject_type(input_obj) != QTYPE_QDICT) {
+        qerror_report(QERR_QMP_BAD_INPUT_OBJECT, "object");
+        return;
+    }
+
+    input_dict = qobject_to_qdict(input_obj);
+
+    for (ent = qdict_first(input_dict); ent; ent = qdict_next(input_dict, ent)){
+        const char *arg_name = qdict_entry_key(ent);
+        const char *value_name = qdict_get_str(qobject_to_qdict(input_obj), arg_name);
+    	LOG("received command: %s, value: %s", arg_name, value_name);
+	}
 }
 
 static int check_key(QObject *input_obj, const char *key)
@@ -662,7 +690,11 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		LOG("ClientInfo is null.");
 		return;
 	}
-	
+
+#ifdef DEBUG
+	LOG("Handle ecs command.");
+#endif
+
     obj = json_parser_parse(tokens, NULL);
     if (!obj) {
         qerror_report(QERR_JSON_PARSING);
@@ -670,11 +702,21 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		return;
     }
 
+#ifdef DEBUG
+	print_all_json(obj);
+#endif
+
 	def_target = check_key(obj, COMMANDS_TARGET);
+#ifdef DEBUG
+	LOG("check_key(COMMAND_TARGET): %d", def_target);
+#endif
 	if (0 > def_target) {
 		LOG("def_target failed.");
 		return;
 	} else if (0 == def_target) {
+#ifdef DEBUG
+		LOG("call handle_qmp_command");
+#endif
 		handle_qmp_command(clii, obj);
 		return;
 	}
@@ -691,6 +733,7 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 	target_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TARGET);
 		
 	if (!strcmp(target_name, TYPE_QMP)) {
+		LOG("call handle_qmp_command");
 		handle_qmp_command(clii, get_data_object(obj));
 	} else {
 		data_value = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
@@ -728,6 +771,7 @@ static int device_initialize(void)
 static void ecs_client_close(ECS_Client* clii)
 {
 	if (0 <= clii->client_fd) {
+		LOG("ecs client closed with fd: %d", clii->client_fd);
 		closesocket(clii->client_fd);
 	}
 	QTAILQ_REMOVE(&clients, clii, next);
@@ -739,6 +783,7 @@ static void ecs_client_close(ECS_Client* clii)
 static void ecs_close(ECS_State *cs)
 {
 	ECS_Client *clii;
+	LOG("### Good bye! ECS ###");
 
 	if (0 <= cs->listen_fd) {
 		closesocket(cs->listen_fd);
@@ -761,6 +806,7 @@ static void ecs_close(ECS_State *cs)
 
 static int ecs_write(int fd, const uint8_t *buf, int len)
 {
+	LOG("write buflen : %d, buf : %s", len, buf);
 	return send_all(fd, buf, len);
 }
 
@@ -811,6 +857,7 @@ static void ecs_read (ECS_Client *clii)
 	if (0 == size) {
 		ecs_client_close(clii);
 	} else if (0 < size) {
+		LOG("read data: %s, size: %d", buf, size);
 	    ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
 	}
 }
