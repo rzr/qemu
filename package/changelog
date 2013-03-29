@@ -1,3 +1,6 @@
+* 1.5.18
+- modified skin's dbi file for key code of phone shape
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-03-29
 * 1.5.17
 - modified elem index and mutex lock in virtio-kbd
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-03-29
