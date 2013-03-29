@@ -991,7 +991,7 @@ public class EmulatorSkin {
 	private synchronized boolean addPressedKey(KeyEventData pressData) {
 		for (KeyEventData data : pressedKeyEventList) {
 			if (data.keycode == pressData.keycode &&
-					data.stateMask == pressData.stateMask &&
+					//data.stateMask == pressData.stateMask &&
 					data.keyLocation == pressData.keyLocation) {
 				return false;
 			}
@@ -1005,7 +1005,7 @@ public class EmulatorSkin {
 
 		for (KeyEventData data : pressedKeyEventList) {
 			if (data.keycode == releaseData.keycode &&
-					data.stateMask == releaseData.stateMask &&
+					//data.stateMask == releaseData.stateMask &&
 					data.keyLocation == releaseData.keyLocation) {
 				pressedKeyEventList.remove(data);
 
