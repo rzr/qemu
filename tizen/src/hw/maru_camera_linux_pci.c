@@ -47,6 +47,7 @@ MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
 #define MARUCAM_DEFAULT_BUFFER_COUNT    4
+#define MARUCAM_DUMMYFRAME_COUNT    2
 
 #define MARUCAM_CTRL_VALUE_MAX      20
 #define MARUCAM_CTRL_VALUE_MIN      1
@@ -71,8 +72,32 @@ static const char *dev_name = "/dev/video0";
 static int v4l2_fd;
 static int convert_trial;
 static int ready_count;
+static int timeout_n;
 
 static struct v4l2_format dst_fmt;
+
+static void make_yu12_black(unsigned char *dest, uint32_t width, uint32_t height)
+{
+    uint32_t x, y;
+    unsigned char *udest, *vdest;
+
+    /* Y */
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            *dest++ = 16;
+        }
+    }
+
+    /* U + V */
+    udest = dest;
+    vdest = dest + width * height / 4;
+
+    for (y = 0; y < height / 2; y++) {
+        for (x = 0; x < width / 2; x++) {
+            *udest++ = *vdest++ = 128;
+        }
+    }
+}
 
 static int yioctl(int fd, int req, void *arg)
 {
@@ -384,12 +409,27 @@ static int is_stream_paused(MaruCamState *state)
     return (st == _MC_THREAD_PAUSED);
 }
 
+/* sends a frame, YU12/black color  */
+static void __raise_empty_intr(MaruCamState *state)
+{
+    void *buf = NULL;
+    qemu_mutex_lock(&state->thread_mutex);
+    if (state->streamon == _MC_THREAD_STREAMON && state->req_frame) {
+        buf = state->vaddr + state->buf_size * (state->req_frame - 1);
+        make_yu12_black(buf, dst_fmt.fmt.pix.width, dst_fmt.fmt.pix.height);
+        state->req_frame = 0; /* clear request */
+        state->isr = 0x01;   /* set a flag of raising a interrupt */
+        qemu_bh_schedule(state->tx_bh);
+    }
+    qemu_mutex_unlock(&state->thread_mutex);
+}
+
 static void __raise_err_intr(MaruCamState *state)
 {
     qemu_mutex_lock(&state->thread_mutex);
     if (state->streamon == _MC_THREAD_STREAMON) {
         state->req_frame = 0; /* clear request */
-        state->isr = 0x08;   /* set a error flag of rasing a interrupt */
+        state->isr = 0x08;   /* set a error flag of raising a interrupt */
         qemu_bh_schedule(state->tx_bh);
     }
     qemu_mutex_unlock(&state->thread_mutex);
@@ -464,7 +504,6 @@ static int __v4l2_streaming(MaruCamState *state)
     fd_set fds;
     struct timeval tv;
     int ret;
-    static uint32_t timeout_n;
 
     FD_ZERO(&fds);
     FD_SET(v4l2_fd, &fds);
@@ -484,7 +523,20 @@ static int __v4l2_streaming(MaruCamState *state)
     } else if (!ret) {
         timeout_n++;
         ERR("Select timed out: count(%u)\n", timeout_n);
+        if (ready_count == 0) {
+            if (timeout_n <= MARUCAM_DUMMYFRAME_COUNT) {
+                ERR("Sends dummy data to initialize the camera\n");
+                __raise_empty_intr(state);
+                return 0;
+            } else {
+                ERR("Webcam is busy, failed to a read frame."
+                    " Raises an error\n");
+                __raise_err_intr(state);
+                return -1;
+            }
+        }
         if (timeout_n >= 5) {
+            ERR("Webcam is busy, failed to a read frame. Raises an error\n");
             __raise_err_intr(state);
             return -1;
         }
@@ -529,6 +581,7 @@ static void *marucam_worker_thread(void *thread_param)
 
         convert_trial = 10;
         ready_count = 0;
+        timeout_n = 0;
         qemu_mutex_lock(&state->thread_mutex);
         state->streamon = _MC_THREAD_STREAMON;
         qemu_mutex_unlock(&state->thread_mutex);
