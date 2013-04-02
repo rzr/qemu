@@ -58,7 +58,6 @@
 #if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
 #include <sys/shm.h>
 int g_shmid;
-extern int port_shmid;
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
@@ -80,11 +79,15 @@ extern pthread_mutex_t mutex_screenshot;
 extern pthread_cond_t cond_screenshot;
 
 extern int tizen_base_port;
+
 static void* run_timed_shutdown_thread(void* args);
-static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
+static void send_to_emuld(const char* request_type,
+    int request_size, const char* send_buf, int buf_size);
+
 
 void start_display(uint64 handle_id,
-    int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type)
+    int lcd_size_width, int lcd_size_height,
+    double scale_factor, short rotation_type)
 {
     INFO("start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%f, rotation_type:%d\n",
         (long)handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type);
@@ -358,7 +361,7 @@ QemuSurfaceInfo* get_screenshot_info(void)
     info->pixel_data = (unsigned char*) g_malloc0( length );
     if ( !info->pixel_data ) {
         g_free( info );
-        ERR( "Fail to malloc for pixel data.\n");
+        ERR("Fail to malloc for pixel data.\n");
         return NULL;
     }
 
@@ -371,8 +374,8 @@ QemuSurfaceInfo* get_screenshot_info(void)
 
     pthread_mutex_lock(&mutex_screenshot);
     MaruScreenshot* maru_screenshot = get_maru_screenshot();
-    if ( !maru_screenshot || maru_screenshot->isReady != 1) {
-        ERR( "maru screenshot is NULL or not ready.\n" );
+    if (!maru_screenshot || maru_screenshot->isReady != 1) {
+        ERR("maru screenshot is NULL or not ready.\n");
         memset(info->pixel_data, 0x00, length);
     } else {
         maru_screenshot->pixel_data = info->pixel_data;
@@ -490,6 +493,7 @@ void free_detail_info(DetailInfo* detail_info)
 void do_open_shell(void)
 {
     INFO("open shell\n");
+
     /* do nothing */
 }
 
@@ -535,49 +539,48 @@ void request_close(void)
 
 }
 
-void shutdown_qemu_gracefully( void ) {
-
+void shutdown_qemu_gracefully(void)
+{
     requested_shutdown_qemu_gracefully = 1;
 
     pthread_t thread_id;
-    if( 0 > pthread_create( &thread_id, NULL, run_timed_shutdown_thread, NULL ) ) {
-        ERR( "!!! Fail to create run_timed_shutdown_thread. shutdown qemu right now !!!\n"  );
+    if (0 > pthread_create(
+        &thread_id, NULL, run_timed_shutdown_thread, NULL)) {
+
+        ERR("!!! Fail to create run_timed_shutdown_thread. shutdown qemu right now !!!\n");
         qemu_system_shutdown_request();
     }
 
 }
 
-int is_requested_shutdown_qemu_gracefully( void ) {
+int is_requested_shutdown_qemu_gracefully(void)
+{
     return requested_shutdown_qemu_gracefully;
 }
 
-static void* run_timed_shutdown_thread( void* args ) {
+static void* run_timed_shutdown_thread(void* args)
+{
+    send_to_emuld("system\n\n\n\n", 10, "shutdown", 8);
 
-    send_to_emuld( "system\n\n\n\n", 10, "shutdown", 8 );
-
-    int sleep_interval_time = 1000; // milli-seconds
+    int sleep_interval_time = 1000; /* milli-seconds */
 
     int i;
-    for ( i = 0; i < TIMEOUT_FOR_SHUTDOWN; i++ ) {
+    for (i = 0; i < TIMEOUT_FOR_SHUTDOWN; i++) {
 #ifdef CONFIG_WIN32
-        Sleep( sleep_interval_time );
+        Sleep(sleep_interval_time);
 #else
-        usleep( sleep_interval_time * 1000 );
+        usleep(sleep_interval_time * 1000);
 #endif
-        // do not use logger to help user see log in console
-        fprintf( stdout, "Wait for shutdown qemu...%d\n", ( i + 1 ) );
+        /* do not use logger to help user see log in console */
+        fprintf(stdout, "Wait for shutdown qemu...%d\n", (i + 1));
     }
 
-    INFO( "Shutdown qemu !!!\n" );
+    INFO("Shutdown qemu !!!\n");
+
 #if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
         perror("maruskin_operation.c:g_shmid: ");
-    }
-
-    if (shmctl(port_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
-        perror("maruskin_operation.c:port_shmid: ");
     }
 #endif
 
@@ -587,8 +590,9 @@ static void* run_timed_shutdown_thread( void* args ) {
 
 }
 
-static void send_to_emuld( const char* request_type, int request_size, const char* send_buf, int buf_size ) {
-
+static void send_to_emuld(const char* request_type,
+    int request_size, const char* send_buf, int buf_size)
+{
     int s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
 
     if ( s < 0 ) {

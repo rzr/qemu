@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -40,6 +40,7 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -57,7 +58,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public static final int COLOR_DEPTH = 32;
 
 	/* define JNI functions */
-	public native int shmget(int size);
+	public native int shmget(int shmkey, int size);
 	public native int shmdt();
 	public native int getPixels(int[] array);
 
@@ -175,8 +176,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public long initLayout() {
 		super.initLayout();
 
+		/* base + 1 = sdb port */
+		/* base + 2 = shared memory key */
+		int shmkey = config.getArgInt(ArgsConstants.NET_BASE_PORT) + 2;
+		logger.info("shmkey = " + shmkey);
+
 		/* initialize shared memory */
-		int result = shmget(
+		int result = shmget(shmkey,
 				currentState.getCurrentResolutionWidth() *
 				currentState.getCurrentResolutionHeight());
 		logger.info("shmget native function returned " + result);

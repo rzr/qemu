@@ -103,14 +103,16 @@ public class EmulatorConfig {
 	private Properties configProperties;
 	private String skinPropertiesFilePath;
 
-	public EmulatorConfig( Map<String, String> args, EmulatorUI dbiContents, Properties skinProperties,
-			String skinPropertiesFilePath, Properties configProperties ) {
+	public EmulatorConfig(Map<String, String> args,
+			EmulatorUI dbiContents, Properties skinProperties,
+			String skinPropertiesFilePath, Properties configProperties) {
 		this.args = args;
 		this.dbiContents = dbiContents;
 		this.skinProperties = skinProperties;
 		this.skinPropertiesFilePath = skinPropertiesFilePath;
 		this.configProperties = configProperties;
-		if ( null == configProperties ) {
+
+		if (null == configProperties) {
 			this.configProperties = new Properties();
 		}
 	}
