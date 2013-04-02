@@ -191,13 +191,6 @@ static inline int monitor_has_error(const Monitor *mon)
     return mon->error != NULL;
 }
 
-static void handler_audit(Monitor *mon, const mon_cmd_t *cmd, int ret)
-{
-    if (ret && !monitor_has_error(mon)) {
-        qerror_report(QERR_UNDEFINED_ERROR);
-    }
-}
-
 static QDict *build_qmp_error_dict(const QError *err)
 {
     QObject *obj = qobject_from_jsonf("{ 'error': { 'class': %s, 'desc': %p } }",
@@ -207,23 +200,25 @@ static QDict *build_qmp_error_dict(const QError *err)
     return qobject_to_qdict(obj);
 }
 
-static void ecs_json_emitter(ECS_Client *clii, const QObject *data)
+static void ecs_json_emitter(ECS_Client *clii, const char* type, const QObject *data)
 {
     QString *json;
+	char type_full_string [OUT_BUF_SIZE];
 
     json = qobject_to_json(data);
 
     assert(json != NULL);
 
-    qstring_append_chr(json, '\n');
-    ecs_monitor_puts(clii, clii->cs->mon, qstring_get_str(json));
+	qstring_append_chr(json, '\n');
+  	ecs_monitor_puts(clii, clii->cs->mon, qstring_get_str(json));
 
     QDECREF(json);
 }
 
-static void ecs_protocol_emitter(ECS_Client *clii, QObject *data)
+static void ecs_protocol_emitter(ECS_Client *clii, const char* type, QObject *data)
 {
     QDict *qmp;
+	QObject *obj;
 
 	LOG("ecs_protocol_emitter called.");
     trace_monitor_protocol_emitter(clii->cs->mon);
@@ -238,6 +233,10 @@ static void ecs_protocol_emitter(ECS_Client *clii, QObject *data)
             /* return an empty QDict by default */
             qdict_put(qmp, "return", qdict_new());
         }
+
+    	obj = qobject_from_jsonf("%s", type);
+        qdict_put_obj(qmp, "type", obj);
+
     } else {
         /* error response */
         qmp = build_qmp_error_dict(clii->cs->mon->error);
@@ -245,31 +244,33 @@ static void ecs_protocol_emitter(ECS_Client *clii, QObject *data)
         clii->cs->mon->error = NULL;
     }
 
-    ecs_json_emitter(clii, QOBJECT(qmp));
+    ecs_json_emitter(clii, type, QOBJECT(qmp));
     QDECREF(qmp);
 }
 
 
 static void qmp_monitor_complete(void *opaque, QObject *ret_data)
 {
-    ecs_protocol_emitter(opaque, ret_data);
+ //   ecs_protocol_emitter(opaque, ret_data);
 }
 
-static int qmp_async_cmd_handler(ECS_Client *clii, const mon_cmd_t *cmd,
-                                 const QDict *params)
+static int qmp_async_cmd_handler(ECS_Client *clii, 
+								const mon_cmd_t *cmd, const QDict *params)
 {
     return cmd->mhandler.cmd_async(clii->cs->mon, params, qmp_monitor_complete, clii);
 }
 
-static void qmp_call_cmd(ECS_Client *clii, const mon_cmd_t *cmd,
-                         const QDict *params)
+static void qmp_call_cmd(ECS_Client *clii, Monitor *mon, const char* type, 
+								const mon_cmd_t *cmd, const QDict *params)
 {
     int ret;
     QObject *data = NULL;
 
-    ret = cmd->mhandler.cmd_new(clii->cs->mon, params, &data);
-    handler_audit(clii->cs->mon, cmd, ret);
-    ecs_protocol_emitter(clii, data);
+    ret = cmd->mhandler.cmd_new(mon, params, &data);
+    if (ret && !monitor_has_error(mon)) {
+        qerror_report(QERR_UNDEFINED_ERROR);
+    }
+    ecs_protocol_emitter(clii, type, data);
     qobject_decref(data);
 }
 
@@ -556,7 +557,7 @@ static const mon_cmd_t *qmp_find_cmd(const char *cmdname)
     return search_dispatch_table(qmp_cmds, cmdname);
 }
 
-static void handle_qmp_command(ECS_Client *clii, QObject *obj)
+static void handle_qmp_command(ECS_Client *clii, const char* type_name, QObject *obj)
 {
     int err;
     const mon_cmd_t *cmd;
@@ -600,13 +601,13 @@ static void handle_qmp_command(ECS_Client *clii, QObject *obj)
         }
     } else {
 		LOG("qmp_call_cmd called client fd: %d", clii->client_fd);
-        qmp_call_cmd(clii, cmd, args);
+        qmp_call_cmd(clii, clii->cs->mon, type_name, cmd, args);
     }
 
     goto out;
 
 err_out:
-    ecs_protocol_emitter(clii, NULL);
+    ecs_protocol_emitter(clii, type_name, NULL);
 out:
     QDECREF(input);
     QDECREF(args);
@@ -679,8 +680,7 @@ static QObject* get_data_object(QObject *input_obj)
 
 static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *opaque)
 {
-	const char *target_name;
-	const char *data_value;
+	const char *type_name;
 	int def_target = 0;
 	int def_data = 0;
     QObject *obj;
@@ -698,17 +698,17 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
     obj = json_parser_parse(tokens, NULL);
     if (!obj) {
         qerror_report(QERR_JSON_PARSING);
-    	ecs_protocol_emitter(clii, NULL);
+    	ecs_protocol_emitter(clii, NULL, NULL);
 		return;
     }
 
 #ifdef DEBUG
-	print_all_json(obj);
+	//print_all_json(obj);
 #endif
 
-	def_target = check_key(obj, COMMANDS_TARGET);
+	def_target = check_key(obj, COMMANDS_TYPE);
 #ifdef DEBUG
-	LOG("check_key(COMMAND_TARGET): %d", def_target);
+	LOG("check_key(COMMAND_TYPE): %d", def_target);
 #endif
 	if (0 > def_target) {
 		LOG("def_target failed.");
@@ -717,7 +717,7 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 #ifdef DEBUG
 		LOG("call handle_qmp_command");
 #endif
-		handle_qmp_command(clii, obj);
+		handle_qmp_command(clii, NULL, obj);
 		return;
 	}
 
@@ -730,18 +730,9 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		return;
 	}
 	
-	target_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TARGET);
+	type_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TYPE);
 		
-	if (!strcmp(target_name, TYPE_QMP)) {
-		LOG("call handle_qmp_command");
-		handle_qmp_command(clii, get_data_object(obj));
-	} else {
-		data_value = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-		if (!strcmp(target_name, TYPE_SELF)) {
-			clii->type = data_value;
-    		ecs_protocol_emitter(clii, NULL);
-		}
-	}
+	handle_qmp_command(clii, type_name, get_data_object(obj));
 }
 
 static Monitor *monitor_create(void)

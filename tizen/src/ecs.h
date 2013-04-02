@@ -24,7 +24,7 @@
 #define EMULATOR_SERVER_NUM		3
 #define WELCOME_MESSAGE			"### Welcome to ECS service. ###\n"
 
-#define COMMANDS_TARGET			"target"
+#define COMMANDS_TYPE			"type"
 #define COMMANDS_DATA			"data"
 
 #define TYPE_ALL				"all"
