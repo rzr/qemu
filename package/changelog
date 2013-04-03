@@ -1,3 +1,6 @@
+* 1.5.23
+- no need to get the shmkey from another shm
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-04-03
 * 1.5.18
 - modified skin's dbi file for key code of phone shape
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-03-29
