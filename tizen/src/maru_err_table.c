@@ -51,7 +51,8 @@ Check if the file is corrupted or missing.\n\n",
     /* 3 */ "Failed to load a bios file the following path.\
 Check if the file is corrupted or missing.\n\n",
     /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
-    /* 5 */ "Skin client could not connect to Skin server. The time of internal heartbeat has expired.",
+    /* 5 */ "Emulator has stopped working.\n\
+A problem caused the program to stop working correctly.",
     /* add here.. */
     ""
 };
@@ -76,6 +77,11 @@ void maru_register_exit_msg(int maru_exit_index, char const *const additional_ms
     maru_exit_status = maru_exit_index;
 
     if (maru_exit_status != MARU_EXIT_UNKNOWN) {
+        if (maru_exit_status == MARU_EXIT_HB_TIME_EXPIRED) {
+            fprintf(stderr, "Skin client could not connect to Skin server.\
+The time of internal heartbeat has expired.\n");
+        }
+
         if (additional_msg != NULL) {
             len = strlen(_maru_string_table[maru_exit_status])
                     + strlen(additional_msg) + 1;
@@ -94,7 +100,7 @@ void maru_register_exit_msg(int maru_exit_index, char const *const additional_ms
             snprintf(maru_exit_msg, len,
                     "%s", _maru_string_table[maru_exit_status]);
         }
-    } else if (additional_msg != NULL) {
+    } else if (additional_msg != NULL) { /* MARU_EXIT_UNKNOWN */
         len = strlen(additional_msg);
         if (len >= JAVA_MAX_COMMAND_LENGTH) {
             len = JAVA_MAX_COMMAND_LENGTH - 1;
