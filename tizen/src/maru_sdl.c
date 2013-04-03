@@ -37,8 +37,12 @@
 #include "maru_sdl_rotozoom.h"
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
+#include "hw/maru_brightness.h"
 #include "debug_ch.h"
-//#include "SDL_opengl.h"
+#if defined(CONFIG_LINUX)
+#include <sys/shm.h>
+#endif
+/* #include "SDL_opengl.h" */
 
 #ifdef MANGLE_OPENGL_SYMBOLS
 #include "gl_mangled.h"
@@ -60,6 +64,10 @@ static int current_screen_height;
 
 static int sdl_initialized;
 static int sdl_alteration;
+extern int g_shmid;
+extern char *g_shared_memory;
+
+static int sdl_skip_update;
 
 #if 0
 static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
@@ -165,6 +173,7 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
 
                 pthread_mutex_unlock(&sdl_mutex);
                 vga_hw_invalidate();
+                sdl_skip_update = 0;
                 break;
             }
 
@@ -173,7 +182,21 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
         }
     }
 
+    /* If the LCD is turned off,
+       the screen does not update until the LCD is turned on */
+    if (sdl_skip_update && brightness_off) {
+        return;
+    }
+
+    /* Usually, continuously updated.
+       When the LCD is turned off,
+       once updates the screen for a black screen. */
     vga_hw_update();
+    if (brightness_off) {
+        sdl_skip_update = 1;
+    } else {
+        sdl_skip_update = 0;
+    }
 
 #ifdef TARGET_ARM
 #ifdef SDL_THREAD
@@ -466,7 +489,7 @@ static void qemu_update(void)
                         SDL_BlitSurface((SDL_Surface *)mts->finger_point_surface, NULL, surface_screen, &rect);
                     }
                 }
-            } //end  of draw multi-touch
+            } /* end of draw multi-touch */
         }
 
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
@@ -490,7 +513,8 @@ static void* run_qemu_update(void* arg)
 }
 #endif
 
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+void maruskin_sdl_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height, bool is_resize)
 {
     gchar SDL_windowhack[32];
     SDL_SysWMinfo info;
@@ -554,6 +578,18 @@ void maruskin_sdl_quit(void)
     sdl_alteration = -1;
 
     SDL_Quit();
+
+#ifdef SDL_THREAD
+    pthread_cond_destroy(&sdl_cond);
+#endif
+    pthread_mutex_destroy(&sdl_mutex);
+
+#if defined(CONFIG_LINUX)
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("maru_sdl.c: ");
+    }
+#endif
 }
 
 
@@ -565,7 +601,8 @@ void maruskin_sdl_resize(void)
     memset(&ev, 0, sizeof(ev));
     ev.resize.type = SDL_VIDEORESIZE;
 
-    //This function is thread safe, and can be called from other threads safely.
+    /* This function is thread safe,
+    and can be called from other threads safely. */
     SDL_PushEvent(&ev);
 }
 

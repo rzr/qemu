@@ -78,6 +78,7 @@ public class EmulatorConfig {
 	}
 
 	public interface SkinInfoConstants {
+		public static final String SDK_VERSION_NAME = "sdk.version-name";
 		public static final String SKIN_NAME = "skin.name";
 		public static final String RESOLUTION_WIDTH = "resolution.width";
 		public static final String RESOLUTION_HEIGHT = "resolution.height";
@@ -102,14 +103,16 @@ public class EmulatorConfig {
 	private Properties configProperties;
 	private String skinPropertiesFilePath;
 
-	public EmulatorConfig( Map<String, String> args, EmulatorUI dbiContents, Properties skinProperties,
-			String skinPropertiesFilePath, Properties configProperties ) {
+	public EmulatorConfig(Map<String, String> args,
+			EmulatorUI dbiContents, Properties skinProperties,
+			String skinPropertiesFilePath, Properties configProperties) {
 		this.args = args;
 		this.dbiContents = dbiContents;
 		this.skinProperties = skinProperties;
 		this.skinPropertiesFilePath = skinPropertiesFilePath;
 		this.configProperties = configProperties;
-		if ( null == configProperties ) {
+
+		if (null == configProperties) {
 			this.configProperties = new Properties();
 		}
 	}

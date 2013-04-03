@@ -73,9 +73,10 @@ public class SocketCommunicator implements ICommunicator {
 		private Timer timer;
 		
 		private DataTranfer() {
+			/* do nothing */
 		}
 
-		private void setData( byte[] data ) {
+		private void setData(byte[] data) {
 			this.receivedData = data;
 			isTransferState = false;
 		}
@@ -116,9 +117,13 @@ public class SocketCommunicator implements ICommunicator {
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
 	private DataTranfer progressDataTransfer;
+	private DataTranfer brightnessDataTransfer;
 
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
+
+	private ByteArrayOutputStream bao;
+	private DataOutputStream dataOutputStream;
 
 	public SocketCommunicator(EmulatorConfig config, int uId, EmulatorSkin skin) {
 
@@ -138,6 +143,10 @@ public class SocketCommunicator implements ICommunicator {
 		this.progressDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
 		this.progressDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
 
+		this.brightnessDataTransfer = new DataTranfer();
+		this.brightnessDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
+		this.brightnessDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+
 		this.heartbeatCount = new AtomicInteger(0);
 		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
 		this.heartbeatTimer = new Timer();
@@ -154,6 +163,8 @@ public class SocketCommunicator implements ICommunicator {
 			logger.log( Level.SEVERE, e.getMessage(), e );
 		}
 
+		this.bao = new ByteArrayOutputStream();
+		this.dataOutputStream = new DataOutputStream(bao);
 	}
 
 	public void setInitialData(long data) {
@@ -257,9 +268,8 @@ public class SocketCommunicator implements ICommunicator {
 			heartbeatTimer.schedule(heartbeatExecutor, 1, HEART_BEAT_INTERVAL * 1000);
 		}
 
-		while ( true ) {
-
-			if ( isTerminated ) {
+		while (true) {
+			if (isTerminated) {
 				break;
 			}
 
@@ -269,16 +279,17 @@ public class SocketCommunicator implements ICommunicator {
 				short cmd = dis.readShort();
 				int length = dis.readInt();
 
-				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "[Socket] read - reqId:" + reqId + ", command:" + cmd + ", dataLength:" + length );
+				if (logger.isLoggable(Level.FINE)) {
+					logger.fine("[Socket] read - reqId:" + reqId +
+							", command:" + cmd + ", dataLength:" + length);
 				}
 
 				ReceiveCommand command = null;
 
 				try {
-					command = ReceiveCommand.getValue( cmd );
-				} catch ( IllegalArgumentException e ) {
-					logger.severe( "unknown command:" + cmd );
+					command = ReceiveCommand.getValue(cmd);
+				} catch (IllegalArgumentException e) {
+					logger.severe("unknown command:" + cmd);
 					continue;
 				}
 
@@ -309,7 +320,7 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				case BOOTING_PROGRESS: {
-					logger.info("received BOOTING_PROGRESS from QEMU.");
+					//logger.info("received BOOTING_PROGRESS from QEMU.");
 
 					resetDataTransfer(progressDataTransfer);
 					receiveData(progressDataTransfer, length);
@@ -331,7 +342,7 @@ public class SocketCommunicator implements ICommunicator {
 
 							if (value == 100 | value == 0) {
 								/* this means progressbar will be
-								dispose soon */
+								disposed soon */
 								if (skin.bootingProgress != null) {
 									skin.bootingProgress = null;
 								}
@@ -341,27 +352,53 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
+				case BRIGHTNESS_VALUE: {
+					//logger.info("received BRIGHTNESS_VALUE from QEMU.");
+
+					resetDataTransfer(brightnessDataTransfer);
+					receiveData(brightnessDataTransfer, length);
+
+					byte[] receivedData = getReceivedData(brightnessDataTransfer);
+					if (null != receivedData) {
+						String strValue = new String(receivedData, 0, length - 1);
+
+						int value = 1;
+						try {
+							value = Integer.parseInt(strValue);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+						if (value == 0) {
+							skin.dispalyBrightness(false);
+						} else {
+							skin.dispalyBrightness(true);
+						}
+					}
+
+					break;
+				}
 				case SENSOR_DAEMON_START: {
-					logger.info( "received SENSOR_DAEMON_START from QEMU." );
-					synchronized ( this ) {
+					logger.info("received SENSOR_DAEMON_START from QEMU.");
+					synchronized (this) {
 						isSensorDaemonStarted = true;
 					}
 					break;
 				}
 				case SHUTDOWN: {
-					logger.info( "received RESPONSE_SHUTDOWN from QEMU." );
-					sendToQEMU( SendCommand.RESPONSE_SHUTDOWN, null );
+					logger.info("received RESPONSE_SHUTDOWN from QEMU.");
+					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null);
 					terminate();
 					break;
 				}
 				default: {
-					logger.severe( "Unknown command from QEMU. command:" + cmd );
+					logger.severe("Unknown command from QEMU. command:" + cmd);
 					break;
 				}
 				}
 
-			} catch ( IOException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				break;
 			}
 
@@ -483,68 +520,66 @@ public class SocketCommunicator implements ICommunicator {
 	}
 	
 	@Override
-	public void sendToQEMU( SendCommand command, ISendData data ) {
-
-		synchronized ( sendQueue ) {
-			if ( MAX_SEND_QUEUE_SIZE < sendQueue.size() ) {
-				logger.warning( "Send queue size exceeded max value, do not push data into send queue." );
+	public void sendToQEMU(SendCommand command, ISendData data) {
+		synchronized(sendQueue) {
+			if (MAX_SEND_QUEUE_SIZE < sendQueue.size()) {
+				logger.warning(
+						"Send queue size exceeded max value, do not push data into send queue.");
 			} else {
-				sendQueue.add( new SkinSendData( command, data ) );
+				sendQueue.add(new SkinSendData(command, data));
 				sendQueue.notifyAll();
 			}
 		}
-
 	}
 	
-	private void sendToQEMUInternal( SkinSendData sendData ) {
-
+	private void sendToQEMUInternal(SkinSendData sendData) {
 		try {
 
-			if( null == sendData ) {
+			if (null == sendData) {
 				return;
 			}
 			
 			SendCommand command = sendData.getCommand();
 			ISendData data = sendData.getSendData();
-			
-			reqId = ( Integer.MAX_VALUE == reqId ) ? 0 : ++reqId;
-			
-			ByteArrayOutputStream bao = new ByteArrayOutputStream();
-			DataOutputStream dataOutputStream = new DataOutputStream( bao );
 
-			dataOutputStream.writeInt( uId );
-			dataOutputStream.writeInt( reqId );
-			dataOutputStream.writeShort( command.value() );
+			reqId = (Integer.MAX_VALUE == reqId) ? 0 : ++reqId;
+
+			dataOutputStream.writeInt(uId);
+			dataOutputStream.writeInt(reqId);
+			dataOutputStream.writeShort(command.value());
 
 			short length = 0;
-			if ( null == data ) {
+			if (null == data) {
 				length = 0;
-				dataOutputStream.writeShort( length );
+				dataOutputStream.writeShort(length);
 			} else {
 				byte[] byteData = data.serialize();
 				length = (short) byteData.length;
-				dataOutputStream.writeShort( length );
-				dataOutputStream.write( byteData );
+				dataOutputStream.writeShort(length);
+				dataOutputStream.write(byteData);
 			}
 
 			dataOutputStream.flush();
 
-			dos.write( bao.toByteArray() );
+			dos.write(bao.toByteArray());
 			dos.flush();
 
-			if ( logger.isLoggable( Level.FINE ) ) {
-				logger.fine( "[Socket] write - uid:" + uId + ", reqId:" + reqId + ", command:" + command.value()
-						+ " - " + command.toString() + ", length:" + length );
+			bao.reset();
+
+			if (logger.isLoggable(Level.FINE)) {
+				logger.fine("[Socket] write - uid:" + uId +
+						", reqId:" + reqId + ", command:" + command.value()
+						+ " - " + command.toString() + ", length:" + length);
 			}
 
-			if ( 0 < length ) {
-				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "[Socket] data  - " + data.toString() );
+			if (0 < length) {
+				if (logger.isLoggable(Level.FINE)) {
+					logger.fine("[Socket] data  - " + data.toString());
 				}
 			}
 
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
 
 	}
@@ -643,6 +678,13 @@ public class SocketCommunicator implements ICommunicator {
 		}
 
 		IOUtil.closeSocket(socket);
+
+		try {
+			bao.close();
+			dataOutputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		synchronized (this) {
 			skin.shutdown();

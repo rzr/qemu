@@ -29,8 +29,10 @@
 
 package org.tizen.emulator.skin;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
@@ -57,6 +59,7 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
+import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -173,8 +176,11 @@ public class EmulatorSkinMain {
 			}
 
 			boolean skinPhoneShape = true;
-			String skinInfoResolutionW = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
-			String skinInfoResolutionH = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
+			String skinInfoResolutionW =
+					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
+			String skinInfoResolutionH =
+					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
+
 			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
 					skinInfoResolutionH.equalsIgnoreCase("all")) {
 				skinPhoneShape = false;
@@ -184,10 +190,10 @@ public class EmulatorSkinMain {
 
 			/* set emulator window skin property */
 			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
-			Properties skinProperties = loadProperties( skinPropFilePath, true );
-			if ( null == skinProperties ) {
-				logger.severe( "Fail to load skin properties file." );
-				System.exit( -1 );
+			Properties skinProperties = loadProperties(skinPropFilePath, true);
+			if (null == skinProperties) {
+				logger.severe("Fail to load skin properties file.");
+				System.exit(-1);
 			}
 
 			/* set emulator window config property */
@@ -219,8 +225,29 @@ public class EmulatorSkinMain {
 				System.exit(-1);
 			}
 
+			/* collect configurations */
 			EmulatorConfig config = new EmulatorConfig(argsMap,
 					dbiContents, skinProperties, skinPropFilePath, configProperties);
+
+			/* load SDK version */
+			String strVersion = "Undefined";
+			String versionFilePath = SkinUtil.getSdkVersionFilePath();
+
+			File file = new File(versionFilePath);
+			if (file.exists() && file.isFile()) {
+				BufferedReader reader = new BufferedReader(
+						new FileReader(versionFilePath));
+
+				strVersion = reader.readLine();
+
+				reader.close();
+			} else {
+				logger.info("cannot find version file" + versionFilePath);
+			}
+
+			logger.info("SDK version : " + strVersion);
+			config.setSkinProperty(
+					EmulatorConfig.SkinInfoConstants.SDK_VERSION_NAME, strVersion);
 
 			/* load image resource */
 			ImageRegistry.getInstance().initialize(config);

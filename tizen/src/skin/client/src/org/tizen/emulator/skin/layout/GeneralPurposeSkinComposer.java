@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -51,6 +51,7 @@ import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomButton;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.image.ImageRegistry;
@@ -68,8 +69,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	private static final int PAIR_TAG_POSITION_X = 26;
 	private static final int PAIR_TAG_POSITION_Y = 13;
-	private static final int PAIR_TAG_POSITION_WIDTH = 8;
-	private static final int PAIR_TAG_POSITION_HEIGHT = 8;
 
 	private Logger logger = SkinLogger.getSkinLogger(
 			GeneralPurposeSkinComposer.class).getLogger();
@@ -109,6 +108,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public Canvas compose(int style) {
+		shell.setBackground(backgroundColor);
+
 		displayCanvas = new Canvas(shell, style);
 
 		int vmIndex = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
@@ -141,7 +142,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shell.setLocation(x, y);
 
 		String emulatorName = SkinUtil.makeEmulatorName(config);
-		shell.setText(emulatorName);
+		shell.setText("Emulator - " + emulatorName);
 
 		displayCanvas.setBackground(
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
@@ -189,21 +190,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		});
 
 		/* make a pair tag circle */
-		skin.pairTagCanvas = new Canvas(shell, SWT.NO_FOCUS);
-		skin.pairTagCanvas.setBackground(backgroundColor);
-
-		skin.pairTagCanvas.addPaintListener(new PaintListener() {
-			@Override
-			public void paintControl(PaintEvent e) {
-				if (skin.colorPairTag != null) {
-					e.gc.setBackground(skin.colorPairTag);
-					e.gc.setAntialias(SWT.ON);
-					e.gc.fillOval(
-							0, 0, PAIR_TAG_POSITION_WIDTH, PAIR_TAG_POSITION_HEIGHT);
-				}
-			}
-		});
-		skin.pairTagCanvas.setVisible(false);
+		skin.pairTag =
+				new ColorTag(shell, SWT.NO_FOCUS, skin.getColorVM());
+		skin.pairTag.setVisible(false);
 
 		/* create a progress bar for booting status */
 		skin.bootingProgress = new CustomProgressBar(shell, SWT.NONE);
@@ -269,11 +258,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					displayBounds.y + displayBounds.height + 1, displayBounds.width, 2);
 		}
 
-		/* arrange the pair tag */
-		skin.pairTagCanvas.setBounds(
-				PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
-				PAIR_TAG_POSITION_WIDTH, PAIR_TAG_POSITION_HEIGHT);
-
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
@@ -285,6 +269,29 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
 			shell.setSize(imageData.width, imageData.height);
+		}
+
+		/* arrange the pair tag */
+		int rotationType = currentState.getCurrentRotationId();
+		if (rotationType == RotationInfo.PORTRAIT.id()) {
+			skin.pairTag.setBounds(
+					PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
+		} else if (rotationType == RotationInfo.LANDSCAPE.id()) {
+			skin.pairTag.setBounds(
+					PAIR_TAG_POSITION_Y,
+					shell.getSize().y - PAIR_TAG_POSITION_X - skin.pairTag.getHeight(),
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
+		} else if (rotationType == RotationInfo.REVERSE_PORTRAIT.id()) {
+			skin.pairTag.setBounds(
+					shell.getSize().x - PAIR_TAG_POSITION_X - skin.pairTag.getWidth(),
+					shell.getSize().y - PAIR_TAG_POSITION_Y - skin.pairTag.getHeight(),
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
+		} else if (rotationType == RotationInfo.REVERSE_LANDSCAPE.id()) {
+			skin.pairTag.setBounds(
+					shell.getSize().x - PAIR_TAG_POSITION_Y - skin.pairTag.getWidth(),
+					PAIR_TAG_POSITION_X,
+					skin.pairTag.getWidth(), skin.pairTag.getHeight());
 		}
 
 		/* custom window shape */
@@ -499,8 +506,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			toggleButton.dispose();
 		}
 
-		if (skin.pairTagCanvas != null) {
-			skin.pairTagCanvas.dispose();
+		if (skin.pairTag != null) {
+			skin.pairTag.dispose();
 		}
 
 		if (backgroundColor != null) {

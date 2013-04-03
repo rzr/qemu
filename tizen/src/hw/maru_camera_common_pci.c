@@ -1,7 +1,7 @@
 /*
  * Common implementation of MARU Virtual Camera device by PCI bus.
  *
- * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  * JinHyung Jo <jinhyung.jo@samsung.com>
@@ -19,7 +19,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA.
  *
  * Contributors:
  * - S-Core Co., Ltd
@@ -58,7 +59,7 @@ static inline uint32_t
 marucam_mmio_read(void *opaque, target_phys_addr_t offset)
 {
     uint32_t ret = 0;
-    MaruCamState *state = (MaruCamState*)opaque;
+    MaruCamState *state = (MaruCamState *)opaque;
 
     switch (offset & 0xFF) {
     case MARUCAM_CMD_ISR:
@@ -102,9 +103,9 @@ marucam_mmio_read(void *opaque, target_phys_addr_t offset)
 static inline void
 marucam_mmio_write(void *opaque, target_phys_addr_t offset, uint32_t value)
 {
-    MaruCamState *state = (MaruCamState*)opaque;
-    
-    switch(offset & 0xFF) {
+    MaruCamState *state = (MaruCamState *)opaque;
+
+    switch (offset & 0xFF) {
     case MARUCAM_CMD_OPEN:
         marucam_device_open(state);
         break;
@@ -212,13 +213,17 @@ static int marucam_initfn(PCIDevice *dev)
     s->vaddr = memory_region_get_ram_ptr(&s->vram);
     memset(s->vaddr, 0, MARUCAM_MEM_SIZE);
 
-    memory_region_init_io (&s->mmio, &maru_camera_mmio_ops, s,
-            "maru-camera-mmio", MARUCAM_REG_SIZE);
+    memory_region_init_io(&s->mmio,
+                          &maru_camera_mmio_ops,
+                          s,
+                          "maru-camera-mmio",
+                          MARUCAM_REG_SIZE);
+
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->vram);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio);
 
     /* for worker thread */
-    s->param = (MaruCamParam*)g_malloc0(sizeof(MaruCamParam));
+    s->param = (MaruCamParam *)g_malloc0(sizeof(MaruCamParam));
     qemu_cond_init(&s->thread_cond);
     qemu_mutex_init(&s->thread_mutex);
 

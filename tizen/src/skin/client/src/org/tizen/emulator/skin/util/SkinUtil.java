@@ -124,6 +124,10 @@ public class SkinUtil {
 		return sdbPath;
 	}
 
+	public static String getSdkVersionFilePath() {
+		return ".." + File.separator + "etc" + File.separator + "version";
+	}
+
 	public static List<KeyMapType> getHWKeyMapList(short rotationId) {
 		RotationType rotation = SkinRotation.getRotation(rotationId);
 		if (rotation == null) {

@@ -1,7 +1,7 @@
 /*
  * operation for emulator skin
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,6 +36,7 @@
 #include "maruskin_operation.h"
 #include "hw/maru_brightness.h"
 #include "maru_display.h"
+#include "emulator.h"
 #include "debug_ch.h"
 #include "sdb.h"
 #include "nbd.h"
@@ -54,12 +55,18 @@
 #include "target-i386/hax-i386.h"
 #endif
 
+#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
+#include <sys/shm.h>
+int g_shmid;
+#endif
+
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
 
-#define RESUME_KEY_SEND_INTERVAL 500 // milli-seconds
-#define CLOSE_POWER_KEY_INTERVAL 1200 // milli-seconds
-#define DATA_DELIMITER "#" // in detail info data
-#define TIMEOUT_FOR_SHUTDOWN 10 // seconds
+
+#define RESUME_KEY_SEND_INTERVAL 500 /* milli-seconds */
+#define CLOSE_POWER_KEY_INTERVAL 1200 /* milli-seconds */
+#define DATA_DELIMITER "#" /* in detail info data */
+#define TIMEOUT_FOR_SHUTDOWN 10 /* seconds */
 
 static int requested_shutdown_qemu_gracefully = 0;
 
@@ -71,10 +78,16 @@ static int pressing_origin_x = -1, pressing_origin_y = -1;
 extern pthread_mutex_t mutex_screenshot;
 extern pthread_cond_t cond_screenshot;
 
-static void* run_timed_shutdown_thread(void* args);
-static void send_to_emuld(const char* request_type, int request_size, const char* send_buf, int buf_size);
+extern int tizen_base_port;
 
-void start_display(uint64 handle_id, int lcd_size_width, int lcd_size_height, double scale_factor, short rotation_type)
+static void* run_timed_shutdown_thread(void* args);
+static void send_to_emuld(const char* request_type,
+    int request_size, const char* send_buf, int buf_size);
+
+
+void start_display(uint64 handle_id,
+    int lcd_size_width, int lcd_size_height,
+    double scale_factor, short rotation_type)
 {
     INFO("start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%f, rotation_type:%d\n",
         (long)handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type);
@@ -273,7 +286,7 @@ void do_hardkey_event(int event_type, int keycode)
         }
     }
 
-    mloop_evcmd_hwkey(event_type, keycode);
+    maru_hwkey_event(event_type, keycode);
 }
 
 void do_scale_event(double scale_factor)
@@ -348,14 +361,21 @@ QemuSurfaceInfo* get_screenshot_info(void)
     info->pixel_data = (unsigned char*) g_malloc0( length );
     if ( !info->pixel_data ) {
         g_free( info );
-        ERR( "Fail to malloc for pixel data.\n");
+        ERR("Fail to malloc for pixel data.\n");
         return NULL;
+    }
+
+    /* If the LCD is turned off, return empty buffer.
+       Because the empty buffer is seen as a black. */
+    if (brightness_off) {
+        info->pixel_data_length = length;
+        return info;
     }
 
     pthread_mutex_lock(&mutex_screenshot);
     MaruScreenshot* maru_screenshot = get_maru_screenshot();
-    if ( !maru_screenshot || maru_screenshot->isReady != 1) {
-        ERR( "maru screenshot is NULL or not ready.\n" );
+    if (!maru_screenshot || maru_screenshot->isReady != 1) {
+        ERR("maru screenshot is NULL or not ready.\n");
         memset(info->pixel_data, 0x00, length);
     } else {
         maru_screenshot->pixel_data = info->pixel_data;
@@ -419,7 +439,7 @@ DetailInfo* get_detail_info(int qemu_argc, char** qemu_argv)
 
     /* collect log path information */
 #define LOGPATH_TEXT "log_path="
-    char* log_path = get_log_path();
+    const char* log_path = get_log_path();
     int log_path_len = strlen(LOGPATH_TEXT) + strlen(log_path) + delimiter_len;
     total_len += (log_path_len + 1);
 
@@ -473,6 +493,7 @@ void free_detail_info(DetailInfo* detail_info)
 void do_open_shell(void)
 {
     INFO("open shell\n");
+
     /* do nothing */
 }
 
@@ -518,48 +539,60 @@ void request_close(void)
 
 }
 
-void shutdown_qemu_gracefully( void ) {
-
+void shutdown_qemu_gracefully(void)
+{
     requested_shutdown_qemu_gracefully = 1;
 
     pthread_t thread_id;
-    if( 0 > pthread_create( &thread_id, NULL, run_timed_shutdown_thread, NULL ) ) {
-        ERR( "!!! Fail to create run_timed_shutdown_thread. shutdown qemu right now !!!\n"  );
+    if (0 > pthread_create(
+        &thread_id, NULL, run_timed_shutdown_thread, NULL)) {
+
+        ERR("!!! Fail to create run_timed_shutdown_thread. shutdown qemu right now !!!\n");
         qemu_system_shutdown_request();
     }
 
 }
 
-int is_requested_shutdown_qemu_gracefully( void ) {
+int is_requested_shutdown_qemu_gracefully(void)
+{
     return requested_shutdown_qemu_gracefully;
 }
 
-static void* run_timed_shutdown_thread( void* args ) {
+static void* run_timed_shutdown_thread(void* args)
+{
+    send_to_emuld("system\n\n\n\n", 10, "shutdown", 8);
 
-    send_to_emuld( "system\n\n\n\n", 10, "shutdown", 8 );
-
-    int sleep_interval_time = 1000; // milli-seconds
+    int sleep_interval_time = 1000; /* milli-seconds */
 
     int i;
-    for ( i = 0; i < TIMEOUT_FOR_SHUTDOWN; i++ ) {
+    for (i = 0; i < TIMEOUT_FOR_SHUTDOWN; i++) {
 #ifdef CONFIG_WIN32
-        Sleep( sleep_interval_time );
+        Sleep(sleep_interval_time);
 #else
-        usleep( sleep_interval_time * 1000 );
+        usleep(sleep_interval_time * 1000);
 #endif
-        // do not use logger to help user see log in console
-        fprintf( stdout, "Wait for shutdown qemu...%d\n", ( i + 1 ) );
+        /* do not use logger to help user see log in console */
+        fprintf(stdout, "Wait for shutdown qemu...%d\n", (i + 1));
     }
 
-    INFO( "Shutdown qemu !!!\n" );
+    INFO("Shutdown qemu !!!\n");
+
+#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("maruskin_operation.c:g_shmid: ");
+    }
+#endif
+
     qemu_system_shutdown_request();
 
     return NULL;
 
 }
 
-static void send_to_emuld( const char* request_type, int request_size, const char* send_buf, int buf_size ) {
-
+static void send_to_emuld(const char* request_type,
+    int request_size, const char* send_buf, int buf_size)
+{
     int s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
 
     if ( s < 0 ) {
@@ -568,9 +601,15 @@ static void send_to_emuld( const char* request_type, int request_size, const cha
         return;
     }
 
-    socket_send( s, (char*)request_type, request_size );
-    socket_send( s, &buf_size, 4 );
-    socket_send( s, (char*)send_buf, buf_size );
+    if(send( s, (char*)request_type, request_size, 0 ) < 0) {
+        ERR("failed to send to emuld\n");
+    }
+    if(send( s, &buf_size, 4, 0 ) < 0) {
+        ERR("failed to send to emuld\n");
+    }
+    if(send( s, (char*)send_buf, buf_size, 0 ) < 0) {
+        ERR("failed to send to emuld\n");
+    }
 
     INFO( "send to emuld [req_type:%s, send_data:%s, send_size:%d] 127.0.0.1:%d/tcp \n",
         request_type, send_buf, buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX );

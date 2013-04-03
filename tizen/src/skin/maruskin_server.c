@@ -123,12 +123,10 @@ enum {
     SEND_DETAIL_INFO = 3,
     SEND_RAMDUMP_COMPLETE = 4,
     SEND_BOOTING_PROGRESS = 5,
+    SEND_BRIGHTNESS_VALUE = 6,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SHUTDOWN = 999,
 };
-
-pthread_mutex_t mutex_screenshot = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond_screenshot = PTHREAD_COND_INITIALIZER;
 
 static int seq_req_id = 0;
 
@@ -145,7 +143,11 @@ static int is_started_heartbeat = 0;
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
 static pthread_t thread_id_heartbeat;
+
+static pthread_mutex_t mutex_send_data = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_screenshot = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_screenshot = PTHREAD_COND_INITIALIZER;
 
 static int skin_argc = 0;
 static char** skin_argv = NULL;
@@ -267,6 +269,8 @@ void shutdown_skin_server(void)
         }
     }
 
+    pthread_mutex_destroy(&mutex_send_data);
+    pthread_mutex_destroy(&mutex_recv_heartbeat_count);
 }
 
 void notify_sensor_daemon_start(void)
@@ -333,6 +337,27 @@ void notify_booting_progress(int progress_value)
 #else
         usleep(1000);
 #endif
+    }
+}
+
+void notify_brightness(bool on)
+{
+    char brightness_data[2] = { 0, };
+    int brightness_value = 1;
+
+    if (on == FALSE) {
+        brightness_value = 0;
+    }
+
+    snprintf(brightness_data, 2, "%d", brightness_value);
+    TRACE("brightness value = %s\n", brightness_data);
+
+    if (client_sock) {
+        if (0 > send_skin_data(client_sock,
+            SEND_BRIGHTNESS_VALUE, (unsigned char *)brightness_data, 2, 0)) {
+
+            ERR("fail to send SEND_BRIGHTNESS_VALUE to skin.\n");
+        }
     }
 }
 
@@ -1094,7 +1119,12 @@ static int send_skin_header_only(int sockfd, short send_cmd, int print_log)
 
     make_header(sockfd, send_cmd, 0, headerbuf, print_log);
 
+    /* send */
+    pthread_mutex_lock(&mutex_send_data);
+
     int send_count = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+
+    pthread_mutex_unlock(&mutex_send_data);
 
     return send_count;
 }
@@ -1105,21 +1135,28 @@ static int send_skin_data(int sockfd,
 
     char headerbuf[SEND_HEADER_SIZE] = { 0, };
 
-    make_header(sockfd, send_cmd, length, headerbuf, 1);
-
-    int header_cnt = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
-
-    if (0 > header_cnt) {
-        ERR("send header for data is NULL.\n");
-        return header_cnt;
-    }
-
-    if (!data) {
+    if (data == NULL) {
         ERR("send data is NULL.\n");
         return -1;
     }
 
+    make_header(sockfd, send_cmd, length, headerbuf, 1);
+
+    /* send */
+    pthread_mutex_lock(&mutex_send_data);
+
+    int header_cnt = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+    if (0 > header_cnt) {
+        ERR("send header for data is NULL.\n");
+        pthread_mutex_unlock(&mutex_send_data);
+
+        return header_cnt;
+    }
+
     int send_cnt = send_n(sockfd, data, length, big_data);
+
+    pthread_mutex_unlock(&mutex_send_data);
+
     TRACE("send_n result:%d\n", send_cnt);
 
     return send_cnt;

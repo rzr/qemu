@@ -1,17 +1,10 @@
-/* 
+/*
  * Maru overlay device for VGA
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
- * SeokYeon Hwang <syeon.hwang@samsung.com>
- * SangJin Kim <sangjin3.kim@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
- * KiTae Kim <kt920.kim@samsung.com>
+ * Contact:
  * JinHyung Jo <jinhyung.jo@samsung.com>
- * SungMin Ha <sungmin82.ha@samsung.com>
- * JiHye Kim <jihye1128.kim@samsung.com>
- * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * DongKyun Yun
  * DoHyung Hong
@@ -29,12 +22,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA.
  *
  * Contributors:
  * - S-Core Co., Ltd
  *
  */
+
 #include "pc.h"
 #include "pci.h"
 #include "maru_device_ids.h"
@@ -43,20 +38,20 @@
 
 MULTI_DEBUG_CHANNEL(qemu, maru_overlay);
 
-#define QEMU_DEV_NAME           "MARU_OVERLAY"
+#define QEMU_DEV_NAME       "MARU_OVERLAY"
 
-#define OVERLAY_MEM_SIZE	(8192 * 1024)	// 4MB(overlay0) + 4MB(overlay1)
-#define OVERLAY_REG_SIZE	256
-#define OVERLAY1_REG_OFFSET	(OVERLAY_REG_SIZE / 2)
+#define OVERLAY_MEM_SIZE    (8192 * 1024)   /* 4MB(overlay0) + 4MB(overlay1) */
+#define OVERLAY_REG_SIZE    256
+#define OVERLAY1_REG_OFFSET (OVERLAY_REG_SIZE / 2)
 
 
 enum {
-	OVERLAY_POWER    = 0x00,
-	OVERLAY_POSITION = 0x04,	// left top position
-	OVERLAY_SIZE     = 0x08,	// width and height
+    OVERLAY_POWER    = 0x00,
+    OVERLAY_POSITION = 0x04,    /* left top position */
+    OVERLAY_SIZE     = 0x08,    /* width and height */
 };
 
-uint8_t* overlay_ptr;
+uint8_t *overlay_ptr;
 
 uint8_t overlay0_power;
 uint16_t overlay0_left;
@@ -75,11 +70,12 @@ typedef struct OverlayState {
 
     MemoryRegion    mem_addr;
     MemoryRegion    mmio_addr;
-
 } OverlayState;
 
 
-static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned size)
+static uint64_t overlay_reg_read(void *opaque,
+                                 target_phys_addr_t addr,
+                                 unsigned size)
 {
     switch (addr) {
     case OVERLAY_POWER:
@@ -118,7 +114,10 @@ static uint64_t overlay_reg_read(void *opaque, target_phys_addr_t addr, unsigned
     return 0;
 }
 
-static void overlay_reg_write(void *opaque, target_phys_addr_t addr, uint64_t val, unsigned size)
+static void overlay_reg_write(void *opaque,
+                              target_phys_addr_t addr,
+                              uint64_t val,
+                              unsigned size)
 {
     switch (addr) {
     case OVERLAY_POWER:
@@ -190,7 +189,10 @@ static int overlay_initfn(PCIDevice *dev)
     memory_region_init_ram(&s->mem_addr, "maru_overlay.ram", OVERLAY_MEM_SIZE);
     overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
-    memory_region_init_io (&s->mmio_addr, &overlay_mmio_ops, s, "maru_overlay_mmio", OVERLAY_REG_SIZE);
+    memory_region_init_io(&s->mmio_addr, &overlay_mmio_ops,
+                          s,
+                          "maru_overlay_mmio",
+                          OVERLAY_REG_SIZE);
 
     /* setup memory space */
     /* memory #0 device memory (overlay surface) */

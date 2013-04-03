@@ -29,19 +29,34 @@
  *
  */
 
-#ifndef __OPTION_H__
-#define __OPTION_H__
+#ifndef __OSUTIL_H__
+#define __OSUTIL_H__
 
-#include <glib.h>
+#include "maru_common.h"
 
-#include <sys/types.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#define HTTP_PROTOCOL "http="
+#define HTTP_PREFIX "http://"
+#define HTTPS_PROTOCOL "https="
+#define FTP_PROTOCOL "ftp="
+#define SOCKS_PROTOCOL "socks="
+#define DIRECT "DIRECT"
+#define PROXY "PROXY"
+#define MAXPORTLEN 6
 
-int gethostDNS(char *dns1, char *dns2);
-int gethostproxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy);
-#endif
+extern const char *pac_tempfile; 
+
+void check_vm_lock_os(void);
+void make_vm_lock_os(void);
+
+void set_bin_path_os(gchar *);
+
+void print_system_info_os(void);
+
+void get_host_proxy_os(char *, char *, char *, char *);
+
+inline void download_url(char *);
+inline size_t write_data(void *, size_t, size_t, FILE *);
+inline void remove_string(char *, char *, const char *);
+
+#endif // __OS_UTIL_H__
 

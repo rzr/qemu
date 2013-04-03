@@ -1,7 +1,7 @@
 /*
  * Maru Virtio Touchscreen Device
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  GiWoong Kim <giwoong.kim@samsung.com>
@@ -31,7 +31,6 @@
 #include "console.h"
 #include "maru_virtio_touchscreen.h"
 #include "maru_device_ids.h"
-#include "mloop_event.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, touchscreen);
@@ -92,7 +91,7 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
     if (unlikely(event_queue_cnt >= MAX_TOUCH_EVENT_CNT)) {
         INFO("full touch event queue, lose event\n", event_queue_cnt);
 
-        mloop_evcmd_touch();
+        qemu_bh_schedule(ts->bh);
         return;
     }
 
@@ -114,7 +113,7 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
     pthread_mutex_unlock(&event_mutex);
 
     /* call maru_virtio_touchscreen_notify */
-    mloop_evcmd_touch();
+    qemu_bh_schedule(ts->bh);
 
     TRACE("touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
         entry->index, entry->touch.x, entry->touch.y, entry->touch.z, entry->touch.state);
@@ -183,7 +182,9 @@ static void maru_virtio_touchscreen_handle(VirtIODevice *vdev, VirtQueue *vq)
 
         if (ts->waitBuf == true) {
             ts->waitBuf = false;
-            mloop_evcmd_touch(); // call maru_virtio_touchscreen_notify
+
+            /* call maru_virtio_touchscreen_notify */
+            qemu_bh_schedule(ts->bh);
         }
 
         pthread_mutex_unlock(&elem_mutex);
@@ -274,6 +275,13 @@ static uint32_t virtio_touchscreen_get_features(
     return request_features;
 }
 
+static void maru_touchscreen_bh(void *opaque)
+{
+    //TouchscreenState *ts = (TouchscreenState *)opaque;
+
+    maru_virtio_touchscreen_notify();
+}
+
 VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
 {
     INFO("initialize the touchscreen device\n");
@@ -297,6 +305,9 @@ VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
 
     ts->waitBuf = false;
 
+    /* bottom halves */
+    ts->bh = qemu_bh_new(maru_touchscreen_bh, ts);
+
 #if 1
     /* register a event handler */
     ts->eh_entry = qemu_add_mouse_event_handler(
@@ -316,6 +327,13 @@ void maru_virtio_touchscreen_exit(VirtIODevice *vdev)
         qemu_remove_mouse_event_handler(ts->eh_entry);
     }
 
+    if (ts->bh) {
+        qemu_bh_delete(ts->bh);
+    }
+
     virtio_cleanup(vdev);
+
+    pthread_mutex_destroy(&event_mutex);
+    pthread_mutex_destroy(&elem_mutex);
 }
 

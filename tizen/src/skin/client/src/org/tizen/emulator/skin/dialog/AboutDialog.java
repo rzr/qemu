@@ -52,6 +52,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.StringUtil;
@@ -67,12 +68,17 @@ public class AboutDialog extends SkinDialog {
 
 	public static final String URL_TIZEN_ORG = "https://developer.tizen.org";
 
+	private Logger logger =
+			SkinLogger.getSkinLogger(AboutDialog.class).getLogger();
+
 	private Image aboutImage;
+	private EmulatorConfig config;
 
-	private Logger logger = SkinLogger.getSkinLogger(AboutDialog.class).getLogger();
 
-	public AboutDialog(Shell parent) {
+	public AboutDialog(Shell parent, EmulatorConfig config) {
 		super(parent, "About Tizen Emulator", SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+
+		this.config = config;
 	}
 
 	private GridLayout getNopaddedGridLayout(int numColumns, boolean makeColumnEqualWidth) {
@@ -160,10 +166,13 @@ public class AboutDialog extends SkinDialog {
 
 		/* SDK version */
 		Text versionText = new Text(compositeRight, SWT.NONE);
-		String version = getValue(properties, PROP_KEY_VERSION);
+		/*String version = getValue(properties, PROP_KEY_VERSION);
 		if (version.isEmpty()) {
 			version = "Not identified";
-		}
+		}*/
+		String version = config.getSkinProperty(
+				EmulatorConfig.SkinInfoConstants.SDK_VERSION_NAME);
+
 		versionText.setText("Version : " + version);
 		versionText.setEditable(false);
 		versionText.setBackground(white);

@@ -14,16 +14,16 @@
                 <keyMap>
                     <region left="310" top="1139" width="84" height="84"/>
                     <eventInfo>
-                        <keyCode>101</keyCode>
-                        <keyName>HOME</keyName>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="690" top="1055" width="24" height="88"/>
                     <eventInfo>
-                        <keyCode>103</keyCode>
-                        <keyName>POWER</keyName>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
                     </eventInfo>
                     <tooltip>Power</tooltip>
                 </keyMap>
@@ -31,7 +31,7 @@
                     <region left="690" top="101" width="24" height="88"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
-                        <keyName>VOLUME_UP</keyName>
+                        <keyName>Volume +</keyName>
                     </eventInfo>
                     <tooltip>Volume +</tooltip>
                 </keyMap>
@@ -39,7 +39,7 @@
                     <region left="690" top="194" width="24" height="88"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
-                        <keyName>VOLUME_DOWN</keyName>
+                        <keyName>Volume -</keyName>
                     </eventInfo>
                     <tooltip>Volume -</tooltip>
                 </keyMap>
@@ -57,16 +57,16 @@
                 <keyMap>
                     <region left="1138" top="321" width="84" height="84"/>
                     <eventInfo>
-                        <keyCode>101</keyCode>
-                        <keyName>HOME</keyName>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="1054" top="1" width="88" height="24"/>
                     <eventInfo>
-                        <keyCode>103</keyCode>
-                        <keyName>POWER</keyName>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
                     </eventInfo>
                     <tooltip>Power</tooltip>
                 </keyMap>
@@ -74,7 +74,7 @@
                     <region left="99" top="1" width="88" height="24"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
-                        <keyName>VOLUME_UP</keyName>
+                        <keyName>Volume +</keyName>
                     </eventInfo>
                     <tooltip>Volume +</tooltip>
                 </keyMap>
@@ -82,7 +82,7 @@
                     <region left="194" top="1" width="88" height="24"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
-                        <keyName>VOLUME_DOWN</keyName>
+                        <keyName>Volume -</keyName>
                     </eventInfo>
                     <tooltip>Volume -</tooltip>
                 </keyMap>
@@ -100,16 +100,16 @@
                 <keyMap>
                     <region left="320" top="24" width="84" height="84"/>
                     <eventInfo>
-                        <keyCode>101</keyCode>
-                        <keyName>HOME</keyName>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="1" top="106" width="24" height="88"/>
                     <eventInfo>
-                        <keyCode>103</keyCode>
-                        <keyName>POWER</keyName>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
                     </eventInfo>
                     <tooltip>Power</tooltip>
                 </keyMap>
@@ -117,7 +117,7 @@
                     <region left="1" top="1059" width="24" height="88"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
-                        <keyName>VOLUME_UP</keyName>
+                        <keyName>Volume +</keyName>
                     </eventInfo>
                     <tooltip>Volume +</tooltip>
                 </keyMap>
@@ -125,7 +125,7 @@
                     <region left="1" top="964" width="24" height="88"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
-                        <keyName>VOLUME_DOWN</keyName>
+                        <keyName>Volume -</keyName>
                     </eventInfo>
                     <tooltip>Volume -</tooltip>
                 </keyMap>
@@ -143,16 +143,16 @@
                 <keyMap>
                     <region left="23" top="310" width="84" height="84"/>
                     <eventInfo>
-                        <keyCode>101</keyCode>
-                        <keyName>HOME</keyName>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
                     <region left="105" top="690" width="88" height="24"/>
                     <eventInfo>
-                        <keyCode>103</keyCode>
-                        <keyName>POWER</keyName>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
                     </eventInfo>
                     <tooltip>Power</tooltip>
                 </keyMap>
@@ -160,7 +160,7 @@
                     <region left="1058" top="690" width="88" height="24"/>
                     <eventInfo>
                         <keyCode>115</keyCode>
-                        <keyName>VOLUME_UP</keyName>
+                        <keyName>Volume +</keyName>
                     </eventInfo>
                     <tooltip>Volume +</tooltip>
                 </keyMap>
@@ -168,7 +168,7 @@
                     <region left="965" top="690" width="88" height="24"/>
                     <eventInfo>
                         <keyCode>114</keyCode>
-                        <keyName>VOLUME_DOWN</keyName>
+                        <keyName>Volume -</keyName>
                     </eventInfo>
                     <tooltip>Volume -</tooltip>
                 </keyMap>

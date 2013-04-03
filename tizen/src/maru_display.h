@@ -28,8 +28,8 @@
  */
 
 
-#ifndef MARU_DISPLAY_H_
-#define MARU_DISPLAY_H_
+#ifndef __MARU_DISPLAY_H__
+#define __MARU_DISPLAY_H__
 
 #include "console.h"
 
@@ -45,4 +45,4 @@ void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, b
 DisplaySurface* get_qemu_display_surface(void);
 MaruScreenshot* get_maru_screenshot(void);
 
-#endif /* MARU_DISPLAY_H_ */
+#endif /* __MARU_DISPLAY_H__ */

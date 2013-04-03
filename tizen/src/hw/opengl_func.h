@@ -428,9 +428,9 @@ static const int glXBindTexImageATI_signature[] =
     { TYPE_NONE, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
 static const int glXReleaseTexImageATI_signature[] =
     { TYPE_NONE, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
-static const int glXBindTexImageARB_signature[] =
+static const int glXBindTexImageARB_fake_signature[] =
     { TYPE_INT, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
-static const int glXReleaseTexImageARB_signature[] =
+static const int glXReleaseTexImageARB_fake_signature[] =
     { TYPE_INT, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
 
 static const int glEGLImageTargetTexture2DOES_fake_signature[] =

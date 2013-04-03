@@ -5,6 +5,7 @@
  *
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
+ *  GiWoong Kim <giwoong.kim@samsung.com>
  *  SeokYeon Hwang <syeon.hwang@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
@@ -59,6 +60,7 @@ typedef struct VirtIOKeyboard {
 
     VirtIOKbdQueue  kbdqueue;
     QemuMutex       event_mutex;
+    QEMUBH          *bh;
 } VirtIOKeyboard;
 
 VirtIODevice *virtio_keyboard_init(DeviceState *dev);

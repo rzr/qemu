@@ -1,17 +1,10 @@
 /*
  * Maru brightness device for VGA
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * SeokYeon Hwang <syeon.hwang@samsung.com>
- * SangJin Kim <sangjin3.kim@samsung.com>
- * MunKyu Im <munkyu.im@samsung.com>
- * KiTae Kim <kt920.kim@samsung.com>
  * JinHyung Jo <jinhyung.jo@samsung.com>
- * SungMin Ha <sungmin82.ha@samsung.com>
- * JiHye Kim <jihye1128.kim@samsung.com>
- * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * DongKyun Yun
  * DoHyung Hong
@@ -29,7 +22,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA.
  *
  * Contributors:
  * - S-Core Co., Ltd
@@ -44,6 +38,7 @@
 #include "pci.h"
 #include "maru_device_ids.h"
 #include "maru_brightness.h"
+#include "skin/maruskin_server.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maru_brightness);
@@ -80,6 +75,8 @@ uint8_t brightness_tbl[] = {100, /* level 0 : for dimming */
 /* level 71 ~ 80 */         211, 213, 214, 216, 217, 219, 220, 222, 223, 225,
 /* level 81 ~ 90 */         226, 228, 229, 231, 232, 234, 235, 237, 238, 240,
 /* level 91 ~ 99 */         241, 243, 244, 246, 247, 249, 250, 252, 253};
+
+QEMUBH *bh;
 
 static uint64_t brightness_reg_read(void *opaque,
                                     target_phys_addr_t addr,
@@ -123,10 +120,19 @@ static void brightness_reg_write(void *opaque,
         return;
     case BRIGHTNESS_OFF:
         INFO("brightness_off : %lld\n", val);
+        if (brightness_off == val) {
+            return;
+        }
+
         brightness_off = val;
+
 #ifdef TARGET_ARM
         vga_hw_invalidate();
 #endif
+
+        /* notify to skin process */
+        qemu_bh_schedule(bh);
+
         return;
     default:
         ERR("wrong brightness register write - addr : %d\n", (int)addr);
@@ -139,6 +145,22 @@ static const MemoryRegionOps brightness_mmio_ops = {
     .write = brightness_reg_write,
     .endianness = DEVICE_LITTLE_ENDIAN,
 };
+
+static void brightness_exitfn(PCIDevice *dev)
+{
+    if (bh) {
+        qemu_bh_delete(bh);
+    }
+}
+
+static void maru_brightness_bh(void *opaque)
+{
+    if (brightness_off == 0) {
+        notify_brightness(TRUE);
+    } else {
+        notify_brightness(FALSE);
+    }
+}
 
 static int brightness_initfn(PCIDevice *dev)
 {
@@ -153,15 +175,12 @@ static int brightness_initfn(PCIDevice *dev)
                             "maru_brightness_mmio", BRIGHTNESS_REG_SIZE);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
 
+    bh = qemu_bh_new(maru_brightness_bh, s);
+
     return 0;
 }
 
 /* external interface */
-int pci_get_brightness(void)
-{
-    return brightness_level;
-}
-
 DeviceState *pci_maru_brightness_init(PCIBus *bus)
 {
     return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
@@ -173,6 +192,7 @@ static void brightness_classinit(ObjectClass *klass, void *data)
 
     k->no_hotplug = 1;
     k->init = brightness_initfn;
+    k->exit = brightness_exitfn;
 }
 
 static TypeInfo brightness_info = {

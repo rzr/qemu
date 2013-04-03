@@ -970,6 +970,29 @@ static void virtio_esm_exit_pci(PCIDevice *pci_dev)
     virtio_esm_exit(proxy->vdev);
     virtio_exit_pci(pci_dev);
 }
+
+static int virtio_hwkey_init_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+    VirtIODevice *vdev;
+
+    vdev = maru_virtio_hwkey_init(&pci_dev->qdev);
+    if (!vdev) {
+        return -1;
+    }
+    virtio_init_pci(proxy, vdev);
+    return 0;
+}
+
+static void virtio_hwkey_exit_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+
+    virtio_pci_stop_ioeventfd(proxy);
+    maru_virtio_hwkey_exit(proxy->vdev);
+    virtio_exit_pci(pci_dev);
+}
+
 #endif
 
 static Property virtio_blk_properties[] = {
@@ -1245,6 +1268,28 @@ static TypeInfo virtio_esm_info = {
     .instance_size = sizeof(VirtIOPCIProxy),
     .class_init    = virtio_esm_class_init,
 };
+
+static void virtio_hwkey_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_hwkey_init_pci;
+    k->exit = virtio_hwkey_exit_pci;
+    k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    k->device_id = PCI_DEVICE_ID_VIRTIO_HWKEY;
+    k->revision = VIRTIO_PCI_ABI_VERSION;
+    k->class_id = PCI_CLASS_OTHERS;
+    dc->reset = virtio_pci_reset;
+}
+
+static TypeInfo virtio_hwkey_info = {
+    .name          = "virtio-hwkey-pci",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOPCIProxy),
+    .class_init    = virtio_hwkey_class_init,
+};
+
 #endif /* CONFIG_MARU */
 
 static void virtio_pci_register_types(void)
@@ -1261,6 +1306,7 @@ static void virtio_pci_register_types(void)
     type_register_static(&maru_virtio_touchscreen_info);
     type_register_static(&virtio_keyboard_info);
     type_register_static(&virtio_esm_info);
+    type_register_static(&virtio_hwkey_info);
 #endif
 }
 

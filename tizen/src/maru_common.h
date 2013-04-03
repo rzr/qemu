@@ -31,17 +31,31 @@
  */
 
 /**
- * @file emulator.h
- * @brief - header of file these are config structures and defines in emulator
+ * @file maru_common.h
+ * @brief - header file that covers maru common features
  */
 
 #ifndef __MARU_COMMON_H__
 #define __MARU_COMMON_H__
 
-#include "config-host.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
+
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <glib/gprintf.h>
+
+#include "config-host.h"
+
+#if !defined(PATH_MAX)
+#if defined(MAX_PATH)
+#define PATH_MAX    MAX_PATH
+#else
+#define PATH_MAX    256
+#endif
+#endif
 
 // W/A for preserve larger continuous heap for RAM.
 extern void *preallocated_ptr;

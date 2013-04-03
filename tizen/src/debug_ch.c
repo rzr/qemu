@@ -43,24 +43,10 @@
 #include "emulator.h"
 #include "debug_ch.h"
 
-// DEBUGCH file is located in binary directory.
-char bin_dir[1024] = {0,};
-
-static char logpath[512] = {0,};
 static char debugchfile[512] = {0, };
 #ifdef _WIN32
 static HANDLE handle;
 #endif
-
-void set_log_path(char *path)
-{
-    strcpy(logpath, path);
-}
-
-char *get_log_path(void)
-{
-    return logpath;
-}
 
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
@@ -289,10 +275,10 @@ static void debug_init(void)
 	strcat(debugchfile, "/DEBUGCH");
 #endif
 
-    if (0 == strlen(bin_dir)) {
+    if (0 == strlen(bin_path)) {
         strcpy(debugchfile, "DEBUGCH");
     } else {
-        strcat(debugchfile, bin_dir);
+        strcat(debugchfile, bin_path);
         strcat(debugchfile, "DEBUGCH");
     }
 
@@ -326,9 +312,9 @@ static void debug_init(void)
 	}
 	
 	open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
-	fd = qemu_open(logpath, open_flags, 0666);
+	fd = qemu_open(log_path, open_flags, 0666);
     if(fd < 0) {
-        fprintf(stderr, "Can't open logfile: %s\n", logpath);
+        fprintf(stderr, "Can't open logfile: %s\n", log_path);
     	exit(1);
     }
     close(fd);
@@ -375,7 +361,7 @@ static int dbg_vprintf( const char *format, va_list args )
 	sprintf(txt, "%s", tmp);
 
 	// unlock
-	if ((fp = fopen(logpath, "a+")) == NULL) {
+	if ((fp = fopen(log_path, "a+")) == NULL) {
 		fprintf(stdout, "Emulator can't open.\n"
 				"Please check if "
 				"this binary file is running on the right path.\n");
@@ -455,9 +441,9 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	va_end(valist);
    
     open_flags = O_RDWR | O_APPEND | O_BINARY ;
-	fd = qemu_open(logpath, open_flags, 0666);
+	fd = qemu_open(log_path, open_flags, 0666);
 	if(fd < 0) {
-        fprintf(stderr, "Can't open logfile: %s\n", logpath);
+        fprintf(stderr, "Can't open logfile: %s\n", log_path);
     	exit(1);
     }
     ret_write = qemu_write_full(fd, buf, ret);

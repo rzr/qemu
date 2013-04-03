@@ -1,7 +1,7 @@
 /**
+ * Transmit the framebuffer from shared memory by JNI
  *
- *
- * Copyright ( C ) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,39 +36,29 @@
 #include "org_tizen_emulator_skin_EmulatorShmSkin.h"
 
 #define MAXLEN 512
-#define SHMKEY 26099
 
 void *shared_memory = (void *)0;
 int shmid;
 
 
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
-  (JNIEnv *env, jobject obj, jint vga_ram_size)
+    (JNIEnv *env, jobject obj, jint shmkey, jint vga_ram_size)
 {
-    void *temp;
-    int keyval;
-    shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
-    if (shmid == -1) {
-	fprintf(stderr, "share.c: shmget failed\n");
-        exit(1);
-    }
-    
-    temp = shmat(shmid, (char*)0x0, 0);
-    if (temp == (void *)-1) {
-        fprintf(stderr, "share.c: shmat failed\n");
-        exit(1);
-    }
-    keyval = atoi(temp);
-    shmdt(temp);
+    fprintf(stdout, "share.c: shared memory key = %d\n", shmkey);
+    fflush(stdout);
 
-    shmid = shmget((key_t)keyval, (size_t)vga_ram_size, 0666 | IPC_CREAT);
+    shmid = shmget((key_t)shmkey, (size_t)vga_ram_size, 0666 | IPC_CREAT);
     if (shmid == -1) {
+        fprintf(stderr, "share.c: shmget failed\n");
+        fflush(stderr);
         return 1;
     }
 
-    /* We now make the shared memory accessible to the program. */
+    /* We now make the shared memory accessible to the program */
     shared_memory = shmat(shmid, (void *)0, 0);
     if (shared_memory == (void *)-1) {
+        fprintf(stderr, "share.c: shmat failed\n");
+        fflush(stderr);
         return 2;
     }
 
@@ -76,29 +66,42 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
 }
 
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
-  (JNIEnv *env, jobject obj)
+    (JNIEnv *env, jobject obj)
 {
     /* Lastly, the shared memory is detached */
     if (shmdt(shared_memory) == -1) {
+        fprintf(stderr, "share.c: shmdt failed\n");
+        fflush(stderr);
+        perror("share.c: ");
         return 1;
     }
+
+    /*
+    if (shmctl(shmid, IPC_RMID, 0) == -1) {
+        fprintf(stderr, "share.c: shmctl failed\n");
+        fflush(stderr);
+        perror("share.c: ");
+    }
+    */
 
     return 0;
 }
 
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
-  (JNIEnv *env, jobject obj, jintArray array)
+    (JNIEnv *env, jobject obj, jintArray array)
 {
     int i = 0;
     int len = (*env)->GetArrayLength(env, array);
     if (len <= 0) {
+        fprintf(stderr, "share.c: get length failed\n");
+        fflush(stderr);
         return -1;
     }
 
     int *framebuffer = (int *)shared_memory;
 
     jint value = 0xFFFFFFFF;
-    for(i = 0; i < len; i++) {
+    for (i = 0; i < len; i++) {
         value = framebuffer[i];
         (*env)->SetIntArrayRegion(env, array, i, 1, &value); 
     }

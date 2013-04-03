@@ -49,7 +49,6 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_client);
 
-
 #define SKIN_SERVER_READY_TIME 3 // second
 #define SKIN_SERVER_SLEEP_TIME 10 // milli second
 
@@ -63,6 +62,10 @@ extern char tizen_target_path[];
 
 static int skin_argc;
 static char** skin_argv;
+
+#ifdef CONFIG_WIN32
+static char* JAVA_EXEFILE_PATH = NULL;
+#endif
 
 static void* run_skin_client(void* arg)
 {
@@ -90,7 +93,7 @@ static void* run_skin_client(void* arg)
     char buf_tizen_base_port[16];
     sprintf(buf_skin_server_port, "%d", skin_server_port);
     sprintf(buf_uid, "%d", uid);
-    sprintf(buf_tizen_base_port, "%d", tizen_base_port);
+    sprintf(buf_tizen_base_port, "%d", get_emul_vm_base_port());
 
 #ifdef CONFIG_WIN32
     // find java path in 64bit windows
@@ -114,11 +117,12 @@ static void* run_skin_client(void* arg)
     char* bin_dir = get_bin_path();
 #endif
     INFO("bin directory : %s\n", bin_dir);
+
     int maxtouchpoint = get_emul_max_touch_point();
     int len_maxtouchpoint;
-    if(maxtouchpoint > 9) {
+    if (maxtouchpoint > 9) {
         len_maxtouchpoint = 2;
-    }else {
+    } else {
         len_maxtouchpoint = 1;
     }
 
@@ -146,16 +150,16 @@ static void* run_skin_client(void* arg)
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
-        OPT_NET_BASE_PORT, tizen_base_port,
+        OPT_NET_BASE_PORT, get_emul_vm_base_port(),
         OPT_MAX_TOUCHPOINT, maxtouchpoint,
-        argv );
+        argv);
 
     INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32
     // for 64bit windows
     free(JAVA_EXEFILE_PATH);
-    JAVA_EXEFILE_PATH=0;
+    JAVA_EXEFILE_PATH = NULL;
 
     //WinExec( cmd, SW_SHOW );
     {
@@ -257,10 +261,11 @@ int start_skin_client(int argc, char* argv[])
         } else {
             count++;
             INFO("sleep for ready. count:%d\n", count);
+
 #ifdef CONFIG_WIN32
-        Sleep(SKIN_SERVER_SLEEP_TIME);
+            Sleep(SKIN_SERVER_SLEEP_TIME);
 #else
-        usleep(1000 * SKIN_SERVER_SLEEP_TIME);
+            usleep(1000 * SKIN_SERVER_SLEEP_TIME);
 #endif
         }
 

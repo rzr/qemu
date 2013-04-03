@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -65,6 +65,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
@@ -75,6 +76,7 @@ import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
+import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.custom.KeyWindow;
 import org.tizen.emulator.skin.dbi.ColorsType;
@@ -122,6 +124,33 @@ public class EmulatorSkin {
 
 	}
 
+	public enum SkinBasicColor {
+		BLUE(0, 174, 239),
+		YELLOW(246, 226, 0),
+		LIME(0, 246, 12),
+		VIOLET(168, 43, 255),
+		ORANGE(246, 110, 0),
+		MAGENTA(245, 48, 233),
+		PURPLE(94, 73, 255),
+		GREEN(179, 246, 0),
+		RED(245, 48, 48),
+		CYON(29, 223, 221);
+
+		private int channelRed;
+		private int channelGreen;
+		private int channelBlue;
+
+		SkinBasicColor(int r, int g, int b) {
+			channelRed = r;
+			channelGreen = g;
+			channelBlue = b;
+		}
+
+		public RGB color() {
+			return new RGB(channelRed, channelGreen, channelBlue);
+		}
+	}
+
 	private static Logger logger =
 			SkinLogger.getSkinLogger(EmulatorSkin.class).getLogger();
 
@@ -144,11 +173,11 @@ public class EmulatorSkin {
 	private boolean isOnKbd;
 
 	private Menu contextMenu;
+	public Color colorVM;
 	private MenuItem keyWindowItem; /* key window menu */
 	public KeyWindow keyWindow;
 	public int recentlyDocked;
-	public Color colorPairTag;
-	public Canvas pairTagCanvas;
+	public ColorTag pairTag;
 	public CustomProgressBar bootingProgress;
 	public ScreenShotDialog screenShotDialog;
 
@@ -205,10 +234,7 @@ public class EmulatorSkin {
 		this.displayCanvasStyle = displayCanvasStyle;
 
 		/* generate a pair tag color of key window */
-		int red = (int) (Math.random() * 256);
-		int green = (int) (Math.random() * 256);
-		int blue = (int) (Math.random() * 256);
-		this.colorPairTag = new Color(shell.getDisplay(), new RGB(red, green, blue));
+		setColorVM();
 
 		this.currentState = state;
 	}
@@ -216,6 +242,22 @@ public class EmulatorSkin {
 	public void setCommunicator(SocketCommunicator communicator) {
 		this.communicator = communicator;
 		this.finger.setCommunicator(this.communicator);
+	}
+
+	private void setColorVM() {
+		int portNumber = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
+
+		if (portNumber >= 26200) {
+			int red = (int) (Math.random() * 256);
+			int green = (int) (Math.random() * 256);
+			int blue = (int) (Math.random() * 256);
+			this.colorVM = new Color(shell.getDisplay(), new RGB(red, green, blue));
+		} else {
+			int vmIndex = (portNumber % 100) / 10;
+
+			SkinBasicColor colors[] = SkinBasicColor.values();
+			this.colorVM = new Color(shell.getDisplay(), colors[vmIndex].color());
+		}
 	}
 
 	public long initLayout() {
@@ -316,8 +358,15 @@ public class EmulatorSkin {
 		return (new Color(shell.getDisplay(), new RGB(255, 255, 255)));
 	}
 
-	public SkinReopenPolicy open() {
+	public Color getColorVM() {
+		return colorVM;
+	}
 
+	public ImageRegistry getImageRegistry() {
+		return imageRegistry;
+	}
+
+	public SkinReopenPolicy open() {
 		if (null == this.communicator) {
 			logger.severe("communicator is null.");
 			return null;
@@ -345,7 +394,6 @@ public class EmulatorSkin {
 		}
 
 		return new SkinReopenPolicy(reopenSkin, isAboutToReopen);
-
 	}
 
 	protected void skinFinalize() {
@@ -378,9 +426,9 @@ public class EmulatorSkin {
 							closeKeyWindow();
 						}
 
-						/* dispose the color tag */
-						if (colorPairTag != null) {
-							colorPairTag.dispose();
+						/* dispose the color */
+						if (colorVM != null) {
+							colorVM.dispose();
 						}
 
 						/* save config only for emulator close */
@@ -445,23 +493,38 @@ public class EmulatorSkin {
 
 			@Override
 			public void shellIconified(ShellEvent event) {
-				/* do nothing */
+				logger.info("iconified");
+
+				/* synchronization of minimization */
+				shell.getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						if (isKeyWindow == true && keyWindow != null) {
+							if (keyWindow.getShell().getMinimized() == false) {
+								keyWindow.getShell().setVisible(false);
+								/* the tool style window is exposed
+								when even it was minimized */
+								keyWindow.getShell().setMinimized(true);
+							}
+						}
+					}
+				});
 			}
 
 			@Override
 			public void shellDeiconified(ShellEvent event) {
 				logger.info("deiconified");
 
-				shell.getDisplay().asyncExec(new Runnable() {
-					@Override
-					public void run() {
-						if (isKeyWindow == true && keyWindow != null) {
-							if (keyWindow.getShell().getMinimized() == true) {
-								keyWindow.getShell().setMinimized(false);
-							}
-						}
+				if (isKeyWindow == true && keyWindow != null) {
+					if (keyWindow.getShell().getMinimized() == true) {
+						keyWindow.getShell().setMinimized(false);
+						keyWindow.getShell().setVisible(true);
 					}
-				});
+				}
+
+				DisplayStateData lcdStateData = new DisplayStateData(
+						currentState.getCurrentScale(), currentState.getCurrentRotationId());
+				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
 			}
 		};
 
@@ -928,7 +991,7 @@ public class EmulatorSkin {
 	private synchronized boolean addPressedKey(KeyEventData pressData) {
 		for (KeyEventData data : pressedKeyEventList) {
 			if (data.keycode == pressData.keycode &&
-					data.stateMask == pressData.stateMask &&
+					//data.stateMask == pressData.stateMask &&
 					data.keyLocation == pressData.keyLocation) {
 				return false;
 			}
@@ -942,7 +1005,7 @@ public class EmulatorSkin {
 
 		for (KeyEventData data : pressedKeyEventList) {
 			if (data.keycode == releaseData.keycode &&
-					data.stateMask == releaseData.stateMask &&
+					//data.stateMask == releaseData.stateMask &&
 					data.keyLocation == releaseData.keyLocation) {
 				pressedKeyEventList.remove(data);
 
@@ -987,7 +1050,23 @@ public class EmulatorSkin {
 	}
 
 	protected void openScreenShotWindow() {
-		//TODO: abstract
+		/* abstract */
+	}
+
+	public void dispalyBrightness(boolean on) {
+		if (on == true) {
+			displayOn();
+		} else {
+			displayOff();
+		}
+	}
+
+	protected void displayOn() {
+		/* abstract */
+	}
+
+	protected void displayOff() {
+		/* abstract */
 	}
 
 	public boolean isSelectKeyWindow() {
@@ -999,7 +1078,7 @@ public class EmulatorSkin {
 			if (recreate == false) {
 				/* show the key window */
 				keyWindowItem.setSelection(isKeyWindow = true);
-				pairTagCanvas.setVisible(true);
+				pairTag.setVisible(true);
 
 				keyWindow.getShell().setVisible(true);
 				SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
@@ -1025,20 +1104,19 @@ public class EmulatorSkin {
 			return;
 		}
 
-		keyWindow = new KeyWindow(this, shell, colorPairTag,
-				communicator, keyMapList);
+		keyWindow = new KeyWindow(this, shell, communicator, keyMapList);
 
 		keyWindowItem.setSelection(isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
-		pairTagCanvas.setVisible(true);
+		pairTag.setVisible(true);
 
 		keyWindow.open(dockValue);
 	}
 
 	public void hideKeyWindow() {
 		keyWindowItem.setSelection(isKeyWindow = false);
-		pairTagCanvas.setVisible(false);
+		pairTag.setVisible(false);
 
 		if (keyWindow != null) {
 			keyWindow.getShell().setVisible(false);
@@ -1047,7 +1125,7 @@ public class EmulatorSkin {
 
 	public void closeKeyWindow() {
 		keyWindowItem.setSelection(isKeyWindow = false);
-		pairTagCanvas.setVisible(false);
+		pairTag.setVisible(false);
 
 		if (keyWindow != null) {
 			keyWindow.getShell().close();
@@ -1260,6 +1338,33 @@ public class EmulatorSkin {
 
 			rotationList.add( menuItem );
 
+		}
+
+		/* temp : swap rotation menu names */
+		if (currentState.getCurrentResolutionWidth() >
+				currentState.getCurrentResolutionHeight())
+		{
+			for (MenuItem m : rotationList) {
+				short rotationId = (Short) m.getData();
+
+				if (rotationId == RotationInfo.PORTRAIT.id()) {
+					String landscape = SkinRotation.getRotation(
+							RotationInfo.LANDSCAPE.id()).getName().value();
+					m.setText(landscape);
+				} else if (rotationId == RotationInfo.LANDSCAPE.id()) {
+					String portrait = SkinRotation.getRotation(
+							RotationInfo.PORTRAIT.id()).getName().value();
+					m.setText(portrait);
+				} else if (rotationId == RotationInfo.REVERSE_PORTRAIT.id()) {
+					String landscapeReverse = SkinRotation.getRotation(
+							RotationInfo.REVERSE_LANDSCAPE.id()).getName().value();
+					m.setText(landscapeReverse);
+				} else if (rotationId == RotationInfo.REVERSE_LANDSCAPE.id()) {
+					String portraitReverse = SkinRotation.getRotation(
+							RotationInfo.REVERSE_PORTRAIT.id()).getName().value();
+					m.setText(portraitReverse);
+				}
+			}
 		}
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
@@ -1537,7 +1642,7 @@ public class EmulatorSkin {
 					isOpen = true;
 
 					logger.info("Open the about dialog");
-					AboutDialog dialog = new AboutDialog(shell);
+					AboutDialog dialog = new AboutDialog(shell, config);
 					dialog.open();
 					isOpen = false;
 				}

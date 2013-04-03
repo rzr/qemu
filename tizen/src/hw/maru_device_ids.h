@@ -1,7 +1,7 @@
 /*
  * Maru Device IDs
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
@@ -49,8 +49,9 @@
 #define PCI_DEVICE_ID_VIRTUAL_CODEC      0x101C
 /* Device ID 0x1000 through 0x103F inclusive is a virtio device */
 #define PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN 0x101D
-#define PCI_DEVICE_ID_VIRTIO_KEYBOARD	 0x1020
+#define PCI_DEVICE_ID_VIRTIO_KEYBOARD    0x1020
 #define PCI_DEVICE_ID_VIRTIO_ESM         0x1024
+#define PCI_DEVICE_ID_VIRTIO_HWKEY       0x1028
 
 /* Virtio */
 /*
@@ -82,5 +83,6 @@
 #define VIRTIO_ID_TOUCHSCREEN   11
 #define VIRTIO_ID_KEYBOARD      12
 #define VIRTIO_ID_ESM           13
+#define VIRTIO_ID_HWKEY         14
 
 #endif /* MARU_DEVICE_IDS_H_ */

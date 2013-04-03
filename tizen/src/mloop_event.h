@@ -42,6 +42,7 @@ void mloop_evcmd_usbdisk(char *img);
 void mloop_evcmd_hostkbd(int on);
 
 int mloop_evcmd_get_usbkbd_status(void);
+int mloop_evcmd_get_hostkbd_status(void);
 
 void mloop_evcmd_set_usbkbd(void *dev);
 void mloop_evcmd_set_usbdisk(void *dev);

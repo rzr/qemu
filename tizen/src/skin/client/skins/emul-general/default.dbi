@@ -8,14 +8,14 @@
             <keyMapList>
                 <keyMap>
                     <eventInfo>
-                        <keyCode>101</keyCode>
+                        <keyCode>139</keyCode>
                         <keyName>Home</keyName>
                     </eventInfo>
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
                     <eventInfo>
-                        <keyCode>103</keyCode>
+                        <keyCode>116</keyCode>
                         <keyName>Power</keyName>
                     </eventInfo>
                     <tooltip>Power</tooltip>

@@ -49,7 +49,6 @@
 #define  MY_KEY_WOW64_64KEY 0x0100
 int is_wow64(void);
 int get_java_path(char**);
-static char* JAVA_EXEFILE_PATH = 0;
 #else
 #define JAVA_EXEFILE_PATH "java"
 #endif

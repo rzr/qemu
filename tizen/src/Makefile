@@ -37,6 +37,7 @@ endif
 ifdef CONFIG_DARWIN
 	$(CC) -mmacosx-version-min=10.4 -o check-hax check_hax.c	
 endif
+
 skin_client:
 	ant -buildfile skin/client/build.xml make-jar
 
@@ -118,13 +119,16 @@ endif
 	
 	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 ifdef CONFIG_WIN32
+	cp ../../i386-softmmu/check-gl.exe $(EMUL_DIR)/bin
 	cp check-hax.exe $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_DARWIN
+	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin
 	cp check-hax $(EMUL_DIR)/bin
 	cp sdbscript $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_LINUX
+	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin
 	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 endif
@@ -143,12 +147,15 @@ else
 endif
 
 ifdef CONFIG_DARWIN
-	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(EMUL_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(EMUL_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(EMUL_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(EMUL_DIR)/bin/check-gl
 
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
@@ -178,6 +185,7 @@ install_dibs: all_dibs
 	mkdir -p $(DIBS_COMMON_DIR)/etc
 	mkdir -p $(DIBS_X86_DIR)/bin
 	mkdir -p $(DIBS_X86_DIR)/data
+	mkdir -p $(DIBS_X86_DIR)/etc
 	mkdir -p $(DIBS_ARM_DIR)/bin
 ifndef CONFIG_DARWIN
 	@for target in $(TARGET_DIRS); do \
@@ -227,17 +235,20 @@ endif
 
 	cp skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
 ifdef CONFIG_WIN32
+	cp ../../i386-softmmu/check-gl.exe $(DIBS_COMMON_DIR)/bin
 	cp check-hax.exe $(DIBS_COMMON_DIR)/bin
 endif
 
 ifdef CONFIG_DARWIN
+	cp ../../i386-softmmu/check-gl $(DIBS_COMMON_DIR)/bin
 	cp check-hax $(DIBS_COMMON_DIR)/bin
 	cp sdbscript $(DIBS_COMMON_DIR)/bin
 endif
 ifdef CONFIG_LINUX
-	echo "Copying tizen-kvm to $(DIBS_COMMON_DIR)/etc"
-	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_COMMON_DIR)/etc
-	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_COMMON_DIR)/etc
+	cp ../../i386-softmmu/check-gl $(DIBS_COMMON_DIR)/bin
+	echo "Copying tizen-kvm to $(DIBS_X86_DIR)/etc"
+	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_X86_DIR)/etc
+	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_X86_DIR)/etc
 endif
 
 ifndef CONFIG_DARWIN
@@ -258,6 +269,9 @@ ifdef CONFIG_DARWIN
 	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
+	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(DIBS_COMMON_DIR)/bin/check-gl
+	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/check-gl
 
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \

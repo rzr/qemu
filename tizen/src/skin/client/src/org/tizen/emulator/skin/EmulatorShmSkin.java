@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -40,6 +40,7 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -57,7 +58,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public static final int COLOR_DEPTH = 32;
 
 	/* define JNI functions */
-	public native int shmget(int size);
+	public native int shmget(int shmkey, int size);
 	public native int shmdt();
 	public native int getPixels(int[] array);
 
@@ -74,6 +75,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
+		private int intervalWait;
 
 		public PollFBThread(int lcdWidth, int lcdHeight) {
 			this.display = Display.getDefault();
@@ -83,23 +85,37 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.imageData = new ImageData(lcdWidth, lcdHeight, COLOR_DEPTH, paletteData);
 			this.framebuffer = new Image(Display.getDefault(), imageData);
 
+			setWaitIntervalTime(30);
+
 			this.runnable = new Runnable() {
+				@Override
 				public void run() {
 					// logger.info("update display framebuffer");
-					if(lcdCanvas.isDisposed() == false) {
+					if (lcdCanvas.isDisposed() == false) {
 						lcdCanvas.redraw();
 					}
 				}
 			};
 		}
 
+		public synchronized void setWaitIntervalTime(int ms) {
+			intervalWait = ms;
+		}
+
+		public synchronized int getWaitIntervalTime() {
+			return intervalWait;
+		}
+
+		@Override
 		public void run() {
 			stopRequest = false;
 
+			Image temp;
+
 			while (!stopRequest) {
-				synchronized (this) {
+				synchronized(this) {
 					try {
-						this.wait(30); /* 30ms */
+						this.wait(intervalWait); /* ms */
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 						break;
@@ -113,7 +129,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					imageData.setPixels(0, i, lcdWidth, array, i * lcdWidth);
 				}
 
-				Image temp = framebuffer;
+				temp = framebuffer;
 				framebuffer = new Image(display, imageData);
 				temp.dispose();
 
@@ -131,6 +147,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		public void stopRequest() {
 			stopRequest = true;
+
+			synchronized(pollThread) {
+				pollThread.notify();
+			}
 		}
 	}
 
@@ -149,15 +169,20 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		super.finger.setMultiTouchEnable(0);
 		super.finger.clearFingerSlot();
 		super.finger.cleanup_multiTouchState();
-	
+
 		super.skinFinalize();
 	}
 
 	public long initLayout() {
 		super.initLayout();
 
+		/* base + 1 = sdb port */
+		/* base + 2 = shared memory key */
+		int shmkey = config.getArgInt(ArgsConstants.NET_BASE_PORT) + 2;
+		logger.info("shmkey = " + shmkey);
+
 		/* initialize shared memory */
-		int result = shmget(
+		int result = shmget(shmkey,
 				currentState.getCurrentResolutionWidth() *
 				currentState.getCurrentResolutionHeight());
 		logger.info("shmget native function returned " + result);
@@ -168,7 +193,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				currentState.getCurrentResolutionHeight());
 
 		lcdCanvas.addPaintListener(new PaintListener() {
-			public void paintControl(PaintEvent e) {
+			public void paintControl(PaintEvent e) { //TODO: optimize
 				/* e.gc.setAdvanced(true);
 				if (!e.gc.getAdvanced()) {
 					logger.info("Advanced graphics not supported");
@@ -176,18 +201,27 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 				int x = lcdCanvas.getSize().x;
 				int y = lcdCanvas.getSize().y;
+
+				if (pollThread.getWaitIntervalTime() == 0) {
+					logger.info("draw black screen");
+
+					e.gc.drawRectangle(-1, -1, x + 1, y + 1);
+					return;
+				}
+
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.framebuffer,
 							0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
 							0, 0, x, y);
-					
+
 					if (finger.getMultiTouchEnable() == 1) {
 						finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
 								currentState.getCurrentResolutionHeight(), 
 								currentState.getCurrentScale(), 
 								currentState.getCurrentRotationId());
 					}
-                    finger.drawImage(e, currentState.getCurrentAngle());
+
+					finger.drawImage(e, currentState.getCurrentAngle());
 					return;
 				}
 
@@ -210,15 +244,14 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					y = temp;
 					transform.translate(x * -1, 0);
 				}
-				
-				//draw finger image
-				//for when rotate while use multi touch
+
+				/* draw finger image for when rotate while use multitouch */
 				if (finger.getMultiTouchEnable() == 1) {
 					finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
 							currentState.getCurrentResolutionHeight(), 
 							currentState.getCurrentScale(), 
 							currentState.getCurrentRotationId());
-				}	
+				}
 				//save current transform as "oldtransform" 
 				e.gc.getTransform(oldtransform);
 				//set to new transfrom
@@ -228,7 +261,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 						0, 0, x, y);
 				//back to old transform
 				e.gc.setTransform(oldtransform);
-				
+
 				transform.dispose();
 				finger.drawImage(e, currentState.getCurrentAngle());
 			}
@@ -237,6 +270,35 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		pollThread.start();
 
 		return 0;
+	}
+
+	@Override
+	public void displayOn() {
+		logger.info("display on");
+
+		if (pollThread.isAlive()) {
+			pollThread.setWaitIntervalTime(30);
+
+			synchronized(pollThread) {
+				pollThread.notify();
+			}
+		}
+	}
+
+	@Override
+	public void displayOff() {
+		logger.info("display off");
+
+		if (pollThread.isAlive()) {
+			pollThread.setWaitIntervalTime(0);
+
+			shell.getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					lcdCanvas.redraw();
+				}
+			});
+		}
 	}
 
 	@Override

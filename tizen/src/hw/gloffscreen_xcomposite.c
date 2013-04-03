@@ -479,7 +479,7 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
 }
 
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
 {
 #if 0
     void (*ptr_func_glXBindTexImageEXT) (Display *dpy, GLXDrawable draw, int buffer, int *attrib_list);

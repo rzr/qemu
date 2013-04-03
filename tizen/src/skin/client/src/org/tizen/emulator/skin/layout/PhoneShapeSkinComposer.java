@@ -136,7 +136,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		shell.setLocation(x, y);
 
 		String emulatorName = SkinUtil.makeEmulatorName(config);
-		shell.setText(emulatorName);
+		shell.setText("Emulator - " + emulatorName);
 
 		lcdCanvas.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 

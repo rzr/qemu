@@ -39,8 +39,8 @@
 
 /* keep it consistent with emulator-skin definition */
 enum {
-    HARD_KEY_HOME = 101,
-    HARD_KEY_POWER = 103,
+    HARD_KEY_HOME = 139,
+    HARD_KEY_POWER = 116,
     HARD_KEY_VOL_UP = 115,
     HARD_KEY_VOL_DOWN = 114,
 };
@@ -80,7 +80,8 @@ typedef  struct EmulatorConfigInfo {
     int lcd_size_h;
     int sdl_bpp;
     int max_touch_point;
-    //TODO:
+    int vm_base_port;
+    /* add here */
 } EmulatorConfigInfo;
 
 typedef struct EmulatorConfigState {
@@ -90,7 +91,7 @@ typedef struct EmulatorConfigState {
     MultiTouchState qemu_mts;
     int qemu_caps_lock;
     int qemu_num_lock;
-    //TODO:
+    /* add here */
 } EmulatorConfigState;
 
 
@@ -100,6 +101,8 @@ void set_emul_lcd_size(int width, int height);
 void set_emul_win_scale(double scale);
 void set_emul_sdl_bpp(int bpp);
 void set_emul_max_touch_point(int cnt);
+void set_emul_vm_base_port(int port);
+
 void set_emulator_condition(int state);
 void set_emul_rotation(short rotation_type);
 void set_emul_caps_lock_state(int state);
@@ -112,6 +115,8 @@ int get_emul_lcd_height(void);
 double get_emul_win_scale(void);
 int get_emul_sdl_bpp(void);
 int get_emul_max_touch_point(void);
+int get_emul_vm_base_port(void);
+
 int get_emulator_condition(void);
 short get_emul_rotation(void);
 MultiTouchState *get_emul_multi_touch_state(void);

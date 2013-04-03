@@ -87,7 +87,19 @@ endif #CONFIG_OPENGLES
 #endif #!CONFIG_DARWIN
 
 # maru loader
-obj-y += emulator.o emul_state.o option.o maru_err_table.o
+obj-y += emulator.o emul_state.o maru_err_table.o
+
+# osutil
+obj-y += osutil.o
+ifdef CONFIG_LINUX
+obj-y += osutil-linux.o
+endif
+ifdef CONFIG_WIN32
+obj-y += osutil-win32.o
+endif
+ifdef CONFIG_DARWIN
+obj-y += osutil-darwin.o
+endif
 
 # maru display
 obj-y += maru_display.o maru_shm.o
@@ -117,6 +129,7 @@ obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 obj-y += maru_virtio_keyboard.o
 obj-y += maru_codec.o
 obj-y += maru_virtio_esm.o
+obj-y += maru_virtio_hwkey.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
