@@ -440,7 +440,7 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
    
-    open_flags = O_RDWR | O_APPEND | O_BINARY ;
+    open_flags = O_RDWR | O_APPEND | O_BINARY | O_CREAT ;
 	fd = qemu_open(log_path, open_flags, 0666);
 	if(fd < 0) {
         fprintf(stderr, "Can't open logfile: %s\n", log_path);
