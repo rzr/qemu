@@ -135,11 +135,11 @@ public class EmulatorSkinState {
 		this.displayBounds = bounds;
 	}
 
-	public synchronized boolean isUpdateDisplayBounds() {
+	public synchronized boolean isNeedToUpdateDisplay() {
 		return updateDisplayBounds;
 	}
 
-	public synchronized void setUpdateDisplayBounds(boolean needUpdate) {
+	public synchronized void setNeedToUpdateDisplay(boolean needUpdate) {
 		this.updateDisplayBounds = needUpdate;
 	}
 

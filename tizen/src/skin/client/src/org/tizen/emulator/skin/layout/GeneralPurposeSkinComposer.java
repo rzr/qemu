@@ -48,6 +48,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -297,6 +299,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		/* custom window shape */
 		trimPatchedShell(shell, currentState.getCurrentImage());
 
+		currentState.setNeedToUpdateDisplay(true);
 		shell.redraw();
 	}
 
@@ -363,6 +366,16 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shellPaintListener = new PaintListener() {
 			@Override
 			public void paintControl(final PaintEvent e) {
+				if (currentState.isNeedToUpdateDisplay() == true) {
+					currentState.setNeedToUpdateDisplay(false);
+
+					/* Let's do one more update for sdl display surface
+					while skipping of framebuffer drawing */
+					DisplayStateData lcdStateData = new DisplayStateData(
+							currentState.getCurrentScale(), currentState.getCurrentRotationId());
+					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+				}
+
 				/* general shell does not support native transparency,
 				 * so draw image with GC. */
 				if (currentState.getCurrentImage() != null) {

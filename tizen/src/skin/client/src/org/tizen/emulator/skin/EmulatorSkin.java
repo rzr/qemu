@@ -181,7 +181,7 @@ public class EmulatorSkin {
 	public CustomProgressBar bootingProgress;
 	public ScreenShotDialog screenShotDialog;
 
-	protected SocketCommunicator communicator;
+	public SocketCommunicator communicator;
 	private ShellListener shellListener;
 	private MenuDetectListener shellMenuDetectListener;
 
