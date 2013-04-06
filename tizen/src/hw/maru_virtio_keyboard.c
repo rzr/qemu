@@ -84,6 +84,14 @@ void virtio_keyboard_notify(void *opaque)
     while ((written_cnt--)) {
         kbdevt = &vkbd->kbdqueue.kbdevent[vkbd->kbdqueue.rptr];
 
+        while (((EmulKbdEvent*)(elem.in_sg[index].iov_base))->code != 0) {
+            if (++index == VIRTIO_KBD_QUEUE_SIZE) {
+                index--;
+                TRACE("virtio queue is full.\n");
+                break;
+            }
+        }
+
         /* Copy keyboard data into guest side. */
         TRACE("copy: keycode %d, type %d, elem_index %d\n",
             kbdevt->code, kbdevt->type, index);
@@ -98,6 +106,7 @@ void virtio_keyboard_notify(void *opaque)
         vkbd->kbdqueue.rptr++;
         if (vkbd->kbdqueue.rptr == VIRTIO_KBD_QUEUE_SIZE) {
             vkbd->kbdqueue.rptr = 0;
+            TRACE("kbdqueue is full.\n");
         }
     }
     qemu_mutex_unlock(&vkbd->event_mutex);
@@ -235,7 +244,7 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
 
 
     vkbd->vdev.get_features = virtio_keyboard_get_features;
-    vkbd->vq = virtio_add_queue(&vkbd->vdev, 64, virtio_keyboard_handle);
+    vkbd->vq = virtio_add_queue(&vkbd->vdev, 128, virtio_keyboard_handle);
     vkbd->qdev = dev;
 
     /* bottom half */
@@ -243,7 +252,7 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
 
     /* register keyboard handler */
     qemu_add_kbd_event_handler(virtio_keyboard_event, vkbd);
-
+ 
     return &vkbd->vdev;
 }
 

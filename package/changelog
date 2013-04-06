@@ -1,3 +1,6 @@
+* 1.5.24
+- increased virtio keyboard queue and fixed overwrite bug
+== SungMin Ha <sungmin82.ha@samsung.com> 2013-04-06
 * 1.5.23
 - no need to get the shmkey from another shm
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-04-03
