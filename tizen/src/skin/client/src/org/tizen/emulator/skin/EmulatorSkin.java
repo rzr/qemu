@@ -843,7 +843,7 @@ public class EmulatorSkin {
 				if (SwtUtil.isWindowsPlatform() && disappearEvent) {
 					disappearEvent = false;
 					if (isMetaKey(e) && e.character != '\0') {
-						logger.info("send previous release : keycode=" + disappearKeycode +
+						logger.info("send disappear release : keycode=" + disappearKeycode +
 								", stateMask=" + disappearStateMask +
 								", keyLocation=" + disappearKeyLocation);
 
@@ -901,6 +901,17 @@ public class EmulatorSkin {
 								disappearStateMask = stateMask;
 								disappearKeyLocation = e.keyLocation;
 							} else {
+								/* three or more keys were pressed
+								at the same time */
+								if (disappearEvent == true) {
+									logger.info("replace the disappearEvent : " +
+											disappearKeycode + "->" + keyCode);
+
+									disappearKeycode = keyCode;
+									disappearStateMask = stateMask;
+									disappearKeyLocation = e.keyLocation;
+								}
+
 								int previousKeyCode = previous.keyCode;
 								int previousStateMask = previous.stateMask;
 
