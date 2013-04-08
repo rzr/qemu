@@ -25,7 +25,7 @@
 
 #include "ecs.h"
 
-#define OUT_BUF_SIZE	1024
+#define OUT_BUF_SIZE	4096
 #define READ_BUF_LEN 	4096
 
 #define DEBUG
@@ -111,6 +111,19 @@ static inline void start_logging(void)
 
 static int ecs_write(int fd, const uint8_t *buf, int len);
 
+static void ecs_client_close(ECS_Client* clii)
+{
+	if (0 <= clii->client_fd) {
+		LOG("ecs client closed with fd: %d", clii->client_fd);
+		closesocket(clii->client_fd);
+		clii->client_fd = -1;
+	}
+	QTAILQ_REMOVE(&clients, clii, next);
+	if (NULL != clii) {
+		g_free(clii);
+	}
+}
+
 void send_to_client(int fd, const char *str)
 {
     char c;
@@ -137,9 +150,14 @@ void send_to_client(int fd, const char *str)
 #define QMP_ACCEPT_UNKNOWNS 1
 static void ecs_monitor_flush(ECS_Client *clii, Monitor *mon)
 {
+	int ret;
+
     if (clii && 0 < clii->client_fd && mon && mon->outbuf_index != 0) {
-        ecs_write(clii->client_fd, mon->outbuf, mon->outbuf_index);
+        ret = ecs_write(clii->client_fd, mon->outbuf, mon->outbuf_index);
         mon->outbuf_index = 0;
+		if (ret < -1) {
+			ecs_client_close(clii);
+		}
     }
 }
 
@@ -232,7 +250,11 @@ static void ecs_protocol_emitter(ECS_Client *clii, const char* type, QObject *da
             qdict_put(qmp, "return", qdict_new());
         }
 
-    	obj = qobject_from_jsonf("%s", type);
+		if (type == NULL) {
+			obj = qobject_from_jsonf("%s", "unknown");
+		} else {
+    		obj = qobject_from_jsonf("%s", type);
+		}
         qdict_put_obj(qmp, "type", obj);
 
     } else {
@@ -734,19 +756,6 @@ static int device_initialize(void)
 {
 	// currently nothing to do with it.
 	return 1;
-}
-
-static void ecs_client_close(ECS_Client* clii)
-{
-	if (0 <= clii->client_fd) {
-		LOG("ecs client closed with fd: %d", clii->client_fd);
-		closesocket(clii->client_fd);
-		clii->client_fd = -1;
-	}
-	QTAILQ_REMOVE(&clients, clii, next);
-	if (NULL != clii) {
-		g_free(clii);
-	}
 }
 
 static void ecs_close(ECS_State *cs)
