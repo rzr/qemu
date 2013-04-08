@@ -40,6 +40,10 @@
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xcomposite.h>
 
+#ifdef MANGLE_OPENGL_SYMBOLS
+#include "gl_mangled.h"
+#endif
+
 void *g_malloc(size_t size);
 void *g_realloc(void *ptr, size_t size);
 void g_free(void *ptr);
@@ -264,7 +268,7 @@ void glo_surface_update_context(GloSurface *surface, GloContext *context, int fr
 
      if ( surface->context )
     {
-            if ( free_flags ) /* light-weight context */
+		if (free_flags) /* light-weight context */
             g_free(surface->context);
     }
     surface->context = context;
@@ -475,7 +479,7 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
 }
 
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
 {
 #if 0
     void (*ptr_func_glXBindTexImageEXT) (Display *dpy, GLXDrawable draw, int buffer, int *attrib_list);

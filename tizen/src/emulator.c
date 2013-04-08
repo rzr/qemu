@@ -347,20 +347,20 @@ static void prepare_basic_features(void)
     tizen_base_port = get_sdb_base_port();
 
     get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-    // using "DNS" provided by default QEMU
+    /* using "DNS" provided by default QEMU */
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
     check_vm_lock();
     socket_init();
     make_vm_lock();
 
-    sdb_setup();
+    sdb_setup(); /* determine the base port for emulator */
+    set_emul_vm_base_port(tizen_base_port);
 
     gchar * const tmp_str = g_strdup_printf(" sdb_port=%d,"
-            " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
-            " dns1=%s", tizen_base_port,
-            http_proxy, https_proxy, ftp_proxy, socks_proxy,
-            dns);
+        " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
+        " dns1=%s", get_emul_vm_base_port(),
+        http_proxy, https_proxy, ftp_proxy, socks_proxy, dns);
 
     g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
 

@@ -60,6 +60,10 @@ MAGIC_MACRO(glXGetDriverConfig),
 MAGIC_MACRO(glXSwapIntervalSGI),
 MAGIC_MACRO(glXCreatePixmap),
 MAGIC_MACRO(glXDestroyPixmap),
+MAGIC_MACRO(glXBindTexImageARB_fake),
+MAGIC_MACRO(glXReleaseTexImageARB_fake),
+MAGIC_MACRO(glXCreatePbuffer),
+MAGIC_MACRO(glXDestroyPbuffer),
 
 MAGIC_MACRO(glGetString),
 

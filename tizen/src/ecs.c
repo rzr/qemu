@@ -55,12 +55,14 @@ typedef struct ECS_State {
 	struct epoll_event events[MAX_EVENTS];
 	int is_unix;
 	int ecs_running;
+	QEMUTimer *alive_timer;
 	Monitor *mon;
 } ECS_State;
 
 typedef struct ECS_Client {
 	int client_fd;
 	int client_id;
+	int keep_alive;
 	const char* type;
 	ECS_State *cs;
 	JSONMessageParser parser;
@@ -135,7 +137,7 @@ void send_to_client(int fd, const char *str)
 #define QMP_ACCEPT_UNKNOWNS 1
 static void ecs_monitor_flush(ECS_Client *clii, Monitor *mon)
 {
-    if (clii && mon && mon->outbuf_index != 0) {
+    if (clii && 0 < clii->client_fd && mon && mon->outbuf_index != 0) {
         ecs_write(clii->client_fd, mon->outbuf, mon->outbuf_index);
         mon->outbuf_index = 0;
     }
@@ -149,7 +151,6 @@ static void ecs_monitor_puts(ECS_Client *clii, Monitor *mon, const char *str)
 		return;
 	}
 
-	LOG("ecs_monitor_puts: %s", str);
     for(;;) {
         c = *str++;
         if (c == '\0')
@@ -171,10 +172,8 @@ void ecs_vprintf(const char *type, const char *fmt, va_list ap)
 	ECS_Client *clii;
 
     QTAILQ_FOREACH(clii, &clients, next) {
-        if (!strcmp(type, TYPE_ALL) || !strcmp(clii->type, type)) {
-			vsnprintf(buf, sizeof(buf), fmt, ap);
-			ecs_monitor_puts(clii, clii->cs->mon, buf);
-		}
+		vsnprintf(buf, sizeof(buf), fmt, ap);
+		ecs_monitor_puts(clii, clii->cs->mon, buf);
     }
 }
 
@@ -200,10 +199,9 @@ static QDict *build_qmp_error_dict(const QError *err)
     return qobject_to_qdict(obj);
 }
 
-static void ecs_json_emitter(ECS_Client *clii, const char* type, const QObject *data)
+static void ecs_json_emitter(ECS_Client *clii, const QObject *data)
 {
     QString *json;
-	char type_full_string [OUT_BUF_SIZE];
 
     json = qobject_to_json(data);
 
@@ -244,7 +242,7 @@ static void ecs_protocol_emitter(ECS_Client *clii, const char* type, QObject *da
         clii->cs->mon->error = NULL;
     }
 
-    ecs_json_emitter(clii, type, QOBJECT(qmp));
+    ecs_json_emitter(clii, QOBJECT(qmp));
     QDECREF(qmp);
 }
 
@@ -614,25 +612,6 @@ out:
 
 }
 
-static void print_all_json(QObject *input_obj)
-{ 
-	const QDictEntry *ent;
-    QDict *input_dict;
-
-    if (qobject_type(input_obj) != QTYPE_QDICT) {
-        qerror_report(QERR_QMP_BAD_INPUT_OBJECT, "object");
-        return;
-    }
-
-    input_dict = qobject_to_qdict(input_obj);
-
-    for (ent = qdict_first(input_dict); ent; ent = qdict_next(input_dict, ent)){
-        const char *arg_name = qdict_entry_key(ent);
-        const char *value_name = qdict_get_str(qobject_to_qdict(input_obj), arg_name);
-    	LOG("received command: %s, value: %s", arg_name, value_name);
-	}
-}
-
 static int check_key(QObject *input_obj, const char *key)
 {
     const QDictEntry *ent;
@@ -702,10 +681,6 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		return;
     }
 
-#ifdef DEBUG
-	//print_all_json(obj);
-#endif
-
 	def_target = check_key(obj, COMMANDS_TYPE);
 #ifdef DEBUG
 	LOG("check_key(COMMAND_TYPE): %d", def_target);
@@ -721,6 +696,14 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		return;
 	}
 
+	type_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TYPE);
+
+	if (!strcmp(type_name, TYPE_DATA_SELF)) {
+		LOG("set client fd %d keep alive 0", clii->client_fd);
+		clii->keep_alive = 0;
+		return;
+	}
+
 	def_data = check_key(obj, COMMANDS_DATA);
 	if (0 > def_data) {
 		LOG("json format error: data.");
@@ -730,18 +713,12 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		return;
 	}
 	
-	type_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TYPE);
-		
 	handle_qmp_command(clii, type_name, get_data_object(obj));
 }
 
 static Monitor *monitor_create(void)
 {
     Monitor *mon;
-
-	// TODO: event related work
-	//key_timer = qemu_new_timer_ns(vm_clock, release_keys, NULL);
-    //monitor_protocol_event_init();
 
     mon = g_malloc0(sizeof(*mon));
 	if (NULL == mon) {
@@ -764,6 +741,7 @@ static void ecs_client_close(ECS_Client* clii)
 	if (0 <= clii->client_fd) {
 		LOG("ecs client closed with fd: %d", clii->client_fd);
 		closesocket(clii->client_fd);
+		clii->client_fd = -1;
 	}
 	QTAILQ_REMOVE(&clients, clii, next);
 	if (NULL != clii) {
@@ -784,6 +762,11 @@ static void ecs_close(ECS_State *cs)
 		g_free(cs->mon);
 	}
 
+	if (NULL != cs->alive_timer) {
+		qemu_del_timer(cs->alive_timer);
+		cs->alive_timer = NULL;
+	}
+
     QTAILQ_FOREACH(clii, &clients, next) {
 		ecs_client_close(clii);
 	}
@@ -798,6 +781,10 @@ static void ecs_close(ECS_State *cs)
 static int ecs_write(int fd, const uint8_t *buf, int len)
 {
 	LOG("write buflen : %d, buf : %s", len, buf);
+	if (fd < 0) {
+		return -1;
+	}
+
 	return send_all(fd, buf, len);
 }
 
@@ -835,21 +822,21 @@ static ssize_t ecs_recv(int fd, char *buf, size_t len)
 
 static void ecs_read (ECS_Client *clii)
 {
-	uint8_t buf[READ_BUF_LEN];
+	uint8_t buf[READ_BUF_LEN]; 
 	int len, size;
 	len = sizeof(buf);
 
-	if (!clii) {
+	if (!clii || 0 > clii->client_fd) {
 		LOG ("read client info is NULL.");
 		return;
 	}
 
-	size = ecs_recv(clii->client_fd, (void *)buf, len);
+	size = ecs_recv(clii->client_fd, (char*)buf, len);
 	if (0 == size) {
 		ecs_client_close(clii);
 	} else if (0 < size) {
-		LOG("read data: %s, size: %d", buf, size);
-	    ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
+		LOG("read data: %s, len: %d, size: %d", buf, len, size);
+		ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
 	}
 }
 
@@ -960,6 +947,33 @@ static void epoll_init(ECS_State *cs)
 	}
 }
 
+static void alive_checker(void *opaque)
+{
+	ECS_State *cs = opaque;
+	ECS_Client *clii;
+    QObject *obj;
+
+    obj = qobject_from_jsonf("{\"type\":\"self\"}");
+
+	if (NULL != current_ecs && !current_ecs->ecs_running) {
+		return;
+	}
+
+    QTAILQ_FOREACH(clii, &clients, next) {
+		if (1 == clii->keep_alive) {
+			LOG("get client fd %d - keep alive fail", clii->client_fd);
+			ecs_client_close(clii);
+			continue;
+		}
+		LOG("set client fd %d - keep alive 1", clii->client_fd);
+		clii->keep_alive = 1;
+    	ecs_json_emitter(clii, obj);
+	}
+	
+	qemu_mod_timer(cs->alive_timer, qemu_get_clock_ns(vm_clock) + 
+									get_ticks_per_sec() * TIMER_ALIVE_S);
+}
+
 static int socket_initialize(ECS_State *cs, QemuOpts *opts)
 {
 	int fd = -1;
@@ -973,6 +987,11 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts)
 
 	cs->listen_fd = fd;
 	epoll_init(cs);
+
+	cs->alive_timer = qemu_new_timer_ns(vm_clock, alive_checker, cs);
+
+	qemu_mod_timer(cs->alive_timer, qemu_get_clock_ns(vm_clock) + 
+									get_ticks_per_sec() * TIMER_ALIVE_S);
 
 	return 0;
 }

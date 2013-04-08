@@ -659,6 +659,9 @@ static const char *STANDARD_GL_FUNCTIONS ={
 "glXGetVisualFromFBConfig\0"
 "glXIsDirect\0"
 "glXCreatePixmap\0"
+"glXDestroyPixmap\0"
+"glXCreatePbuffer\n"
+"glXDestroyPbuffer\n"
 "\0"
 };
 
@@ -879,7 +882,7 @@ void glo_surface_update_context(GloSurface *surface, GloContext *context, int fr
 
     if ( surface->context )
     {
-            if ( free_flags) /* light-weight context */
+		if ( free_flags ) /* light-weight context */
             g_free(surface->context);
     }
     surface->context = context;
@@ -964,7 +967,7 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
 }
 
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
 {
 #if 0
     int glFormat, glType;

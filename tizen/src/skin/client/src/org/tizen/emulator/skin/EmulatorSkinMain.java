@@ -176,8 +176,11 @@ public class EmulatorSkinMain {
 			}
 
 			boolean skinPhoneShape = true;
-			String skinInfoResolutionW = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
-			String skinInfoResolutionH = skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
+			String skinInfoResolutionW =
+					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
+			String skinInfoResolutionH =
+					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
+
 			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
 					skinInfoResolutionH.equalsIgnoreCase("all")) {
 				skinPhoneShape = false;

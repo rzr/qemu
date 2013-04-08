@@ -188,51 +188,52 @@ GloContext *__glo_context_create(int formatFlags)
  
 GloContext *glo_context_create(int formatFlags, GloContext *shareLists) 
 { 
-        GloContext *context = __glo_context_create(formatFlags);
-        if(!context)
-                return NULL;
+	GloContext *context = __glo_context_create(formatFlags);
+	if(!context)
+		return NULL;
 
-        context->context = aglCreateContext(context->pixelFormat, shareLists ? shareLists->context : NULL); 
-        if (context->context == NULL) 
-        { 
-                fprintf(stderr, "aglCreateContext failed: %s", aglErrorString(aglGetError())); 
-        } 
-        else
-        {
-                if(context->pixelFormat != NULL)
-                {
-                        aglDestroyPixelFormat(context->pixelFormat);
-                        context->pixelFormat = NULL;    
-                }
-        }
+	context->context = aglCreateContext(context->pixelFormat, shareLists ? shareLists->context : NULL); 
+	if (context->context == NULL) 
+	{ 
+		fprintf(stderr, "aglCreateContext failed: %s", aglErrorString(aglGetError())); 
+	} 
 
-        TRACE("context=%p", context); 
-        return context; 
+	else
+	{
+		if(context->pixelFormat != NULL)
+		{
+			aglDestroyPixelFormat(context->pixelFormat);
+			context->pixelFormat = NULL;	
+		}
+	}
+
+	TRACE("context=%p", context); 
+	return context; 
 } 
-
+  
 /* Destroy a previously created OpenGL context */ 
 void glo_context_destroy(GloContext *context) 
 { 
-     TRACE("context=%p", context); 
-     if (context) 
-     { 
-             aglDestroyContext(context->context);
-             if(context->pixelFormat != NULL)
-             { 
-                     aglDestroyPixelFormat(context->pixelFormat);
-                     context->pixelFormat = NULL; 
-             }
-             context->context = NULL;  
-             g_free(context); 
-     } 
- }
+	TRACE("context=%p", context); 
+	if (context) 
+	{ 
+		aglDestroyContext(context->context);
+		if(context->pixelFormat != NULL)
+		{ 
+			aglDestroyPixelFormat(context->pixelFormat);
+			context->pixelFormat = NULL; 
+		}
+		context->context = NULL;  
+		g_free(context); 
+	} 
+}
 
 void glo_surface_update_context(GloSurface *surface, GloContext *context, int free_flags)
 {
     if ( surface->context )
     {
-            if (free_flags) /* light-weight context */
-                    g_free(surface->context);
+		if ( free_flags) /* light-weight context */
+            g_free(surface->context);
     }
     surface->context = context;
 }
@@ -334,8 +335,9 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height)
 } 
  
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
 {
+#if 0
 	//Not QUit sure about this function;
 	int glFormat, glType;
 	glo_surface_updatecontents(surface);
@@ -345,8 +347,11 @@ void glo_surface_as_texture(GloSurface *surface)
     /* glTexImage2D use different RGB order than the contexts in the pixmap surface */
 /*    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->image->data);*/
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->pbuffer);
+#else
+	if (aglTexImagePBuffer(ctxt->context, surface->pbuffer, GL_BACK) == GL_FALSE)
+		fprintf(stderr, "aglTexImagePBuffer failed: %s", aglErrorString(aglGetError())); 
 
-	
+#endif
 }
 
 void glo_surface_release_texture(GloSurface *surface)

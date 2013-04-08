@@ -12,6 +12,7 @@
  * SungMin Ha <sungmin82.ha@samsung.com>
  * JiHye Kim <jihye1128.kim@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
+ * DaiYoung Kim <daiyoung777.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * DongKyun Yun
  * DoHyung Hong
@@ -52,6 +53,7 @@
 #define PCI_DEVICE_ID_VIRTIO_KEYBOARD    0x1020
 #define PCI_DEVICE_ID_VIRTIO_ESM         0x1024
 #define PCI_DEVICE_ID_VIRTIO_HWKEY       0x1028
+#define PCI_DEVICE_ID_VIRTIO_EVDI        0x1028
 
 /* Virtio */
 /*
@@ -84,5 +86,6 @@
 #define VIRTIO_ID_KEYBOARD      12
 #define VIRTIO_ID_ESM           13
 #define VIRTIO_ID_HWKEY         14
+#define VIRTIO_ID_EVDI          15
 
 #endif /* MARU_DEVICE_IDS_H_ */

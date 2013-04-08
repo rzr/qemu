@@ -27,11 +27,8 @@
 #define COMMANDS_TYPE			"type"
 #define COMMANDS_DATA			"data"
 
-#define TYPE_ALL				"all"
-#define TYPE_ECP				"ecp"
-#define TYPE_SELF				"self"
-#define TYPE_QMP				"qmp"
-#define TYPE_VIRTUAL			"virtual"
+#define TIMER_ALIVE_S			60	
+#define TYPE_DATA_SELF			"self"
 
 int start_ecs(void);
 int stop_ecs(void);

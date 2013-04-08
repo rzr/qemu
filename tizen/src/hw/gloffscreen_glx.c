@@ -39,6 +39,10 @@
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
 
+#ifdef MANGLE_OPENGL_SYMBOLS
+#include "gl_mangled.h"
+#endif
+
 struct GloMain {
   Display *dpy;
   int use_ximage;

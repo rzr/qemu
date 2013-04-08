@@ -57,17 +57,6 @@ int get_emul_skin_enable(void)
     return _emul_info.skin_enable;
 }
 
-/* current emulator condition */
-int get_emulator_condition(void)
-{
-    return _emul_state.emulator_condition;
-}
-
-void set_emulator_condition(int state)
-{
-    _emul_state.emulator_condition = state;
-}
-
 /* lcd screen size */
 void set_emul_lcd_size(int width, int height)
 {
@@ -118,6 +107,28 @@ int get_emul_max_touch_point(void)
         set_emul_max_touch_point(1);
     }
     return _emul_info.max_touch_point;
+}
+
+/* base port for emualtor vm */
+void set_emul_vm_base_port(int port)
+{
+    _emul_info.vm_base_port = port;
+}
+
+int get_emul_vm_base_port(void)
+{
+    return _emul_info.vm_base_port;
+}
+
+/* current emulator condition */
+int get_emulator_condition(void)
+{
+    return _emul_state.emulator_condition;
+}
+
+void set_emulator_condition(int state)
+{
+    _emul_state.emulator_condition = state;
 }
 
 /* emulator window scale */
@@ -191,7 +202,7 @@ int get_host_lock_key_state(int key)
     return -1;
 }
 
-/* manage CapsLock key state for usb keyboard input */
+/* manage CapsLock key state for host keyboard input */
 void set_emul_caps_lock_state(int state)
 {
     _emul_state.qemu_caps_lock = state;
@@ -199,10 +210,10 @@ void set_emul_caps_lock_state(int state)
 
 int get_emul_caps_lock_state(void)
 {
-    return  _emul_state.qemu_caps_lock;
+    return _emul_state.qemu_caps_lock;
 }
 
-/* manage NumLock key state for usb keyboard input */
+/* manage NumLock key state for host keyboard input */
 void set_emul_num_lock_state(int state)
 {
     _emul_state.qemu_num_lock = state;
@@ -210,5 +221,6 @@ void set_emul_num_lock_state(int state)
 
 int get_emul_num_lock_state(void)
 {
-    return  _emul_state.qemu_num_lock;
+    return _emul_state.qemu_num_lock;
 }
+

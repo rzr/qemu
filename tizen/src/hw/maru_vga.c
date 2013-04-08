@@ -2,7 +2,7 @@
  * Maru vga device
  * Based on qemu/hw/vga.c
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -56,12 +56,12 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include "maru_err_table.h"
+#include "emul_state.h"
 #endif
 
 #ifdef CONFIG_USE_SHM
 void *shared_memory = (void*) 0;
 int skin_shmid;
-int port_shmid;
 #endif
 
 
@@ -1873,34 +1873,19 @@ void maru_vga_common_init(VGACommonState *s)
     vga_dirty_log_start(s);
 
 #ifdef CONFIG_USE_SHM
-    int mykey;
-    void *temp;
+    /* base + 1 = sdb port */
+    /* base + 2 = shared memory key */
+    int mykey = get_emul_vm_base_port() + 2;
 
-    port_shmid = shmget((key_t)SHMKEY, (size_t)MAXLEN, 0666 | IPC_CREAT);
-    if (port_shmid == -1) {
-        ERR("shmget failed\n");
-        perror("maru_vga: ");
-        exit(1);
-    }
-
-    temp = shmat(port_shmid, (char*)0x0, 0);
-    if (temp == (void *)-1) {
-        ERR("shmat failed\n");
-        perror("maru_vga: ");
-        exit(1);
-    }
-
-    mykey = atoi(temp);
-    shmdt(temp);
-    
     INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
 
     skin_shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
     if (skin_shmid == -1) {
         ERR("shmget failed\n");
         perror("maru_vga: ");
-        maru_register_exit_msg(MARU_EXIT_UNKNOWN, (char*)"Cannot launch this VM.\n"
-                        "Shared memory is not enough.");
+        maru_register_exit_msg(MARU_EXIT_UNKNOWN,
+            (char*) "Cannot launch this VM.\n"
+            "Shared memory is not enough.");
         exit(0);
     }
 
@@ -1927,11 +1912,6 @@ void maru_vga_common_fini(void)
 
     if (shmctl(skin_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
-        perror("maru_vga: ");
-    }
-    
-    if (shmctl(port_shmid, IPC_RMID, 0) == -1) {
-        ERR("temp shmctl failed\n");
         perror("maru_vga: ");
     }
 }

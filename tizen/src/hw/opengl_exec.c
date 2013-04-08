@@ -209,8 +209,8 @@ enum {
 };
 
 enum {
-        SURFACE_PENDING,    /* Created with light-weight context */
-        SURFACE_ACTIVE,     /* Ready after MakeCurrent */
+	SURFACE_PENDING,    /* Created with light-weight context */
+	SURFACE_ACTIVE,     /* Ready after MakeCurrent */
 };
 
 typedef struct QGloSurface {
@@ -219,7 +219,7 @@ typedef struct QGloSurface {
     ClientGLXDrawable *client_drawable;
     int type; /* window, pixmap or pbuffer */
     int ready;
-    int status;
+	int status;
     int ref;
     QTAILQ_ENTRY(QGloSurface) next;
 } QGloSurface;
@@ -628,17 +628,12 @@ static void unbind_qsurface(GLState *state,
 		state->current_qsurface = NULL;
 }
 
-/* Find the qsurface with required drawable in active & pending qsurfaces */
+/* Find the qsurface with required drawable in all pixmap/pbuffer surfaces */
 QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLXDrawable client_drawable)
 {
-    /* search for surfaces in current conetxt */
     int i;
-    QGloSurface *qsurface = get_qsurface_from_client_drawable(process->current_state, client_drawable);
+    QGloSurface *qsurface;
 
-    if (qsurface)
-        return qsurface;
-
-    /* search the pending surfaces */
     for ( i = 0; i < process->nb_qsurf; i++ )
     {
         qsurface = process->pending_qsurfaces[i];
@@ -661,7 +656,7 @@ static int set_current_qsurface(GLState *state,
     QTAILQ_FOREACH(qsurface, &state->qsurfaces, next) {
         if(qsurface->client_drawable == client_drawable) {
             state->current_qsurface = qsurface;
-            qsurface->glstate = state;
+			qsurface->glstate = state;
             return 1;
         }
     }
@@ -700,14 +695,13 @@ static int link_drawable(ProcessState *process, ClientGLXDrawable drawable)
     return 0;
 }
 
-/* Need to create pixmap surface when guest do so, as guest may use it before
- * MakeCurrent. As no context available at this point, we do the follwoing:
+/* Need to create pixmap/pbuffer surface when guest do so, as guest may use it
+ * before MakeCurrent. As no context available at this point, do the following:
  * 1. Create one light-weight context just for surface creation.
  * 2. Store this qsurface, and link it with right context when MakeCurrent
  */
 static void keep_qsurface(ProcessState *process, QGloSurface *qsurface)
 {
-    int i;
     process->pending_qsurfaces =
         g_realloc(process->pending_qsurfaces,
                   (process->nb_qsurf + 1) * sizeof(QGloSurface*));
@@ -740,17 +734,17 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
 #endif
 
             qsurface->ref = 1;
-            if(qsurface->status == SURFACE_PENDING)
-            {
-                    glo_surface_update_context(qsurface->surface, glstate->context, 1);
-                    qsurface->status = SURFACE_ACTIVE;
-            }
-            else
-            {
-                    unbind_qsurface(qsurface->glstate, qsurface);
-                    glo_surface_update_context(qsurface->surface, glstate->context, 0);
+			if(qsurface->status == SURFACE_PENDING)
+			{
+				glo_surface_update_context(qsurface->surface, glstate->context, 1);
+				qsurface->status = SURFACE_ACTIVE;
+			}
+			else
+			{
+				unbind_qsurface(qsurface->glstate, qsurface);
+				glo_surface_update_context(qsurface->surface, glstate->context, 0);
 
-            }
+			}
 
             bind_qsurface(glstate, qsurface);
             return 1;
@@ -760,8 +754,9 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
     return 0;
 }
 
-/* Pixmap can be used as texture via glEGLImageTargetTexture2DOES, so need keep
- * the mapping between them to add proper action when bind the texture again
+/* Pixmap and Pbuffer can be used as texture via glEGLImageTargetTexture2DOES
+ * and glXBindTexImage, so need keep the mapping between them to add proper
+ * action when bind the texture again
  */
 static void del_pixmap_texture_mapping(GLState *state,
         unsigned int texture)
@@ -771,6 +766,23 @@ static void del_pixmap_texture_mapping(GLState *state,
     {
         if ( state->pixmapTextures[i].used &&
              state->pixmapTextures[i].texture == texture )
+        {
+            state->pixmapTextures[i].used = 0;
+            state->pixmapTextures[i].texture = 0;
+            state->pixmapTextures[i].drawable = 0;
+            return;
+        }
+    }
+}
+
+static void remove_pixmap_texture_mapping(GLState *state,
+        ClientGLXDrawable drawable)
+{
+    int i;
+    for ( i = 0; i < MAX_PIXMAP_TEXTURE; i++ )
+    {
+        if ( state->pixmapTextures[i].used &&
+             state->pixmapTextures[i].drawable == drawable )
         {
             state->pixmapTextures[i].used = 0;
             state->pixmapTextures[i].texture = 0;
@@ -796,8 +808,7 @@ static int add_pixmap_texture_mapping(GLState *state,
         }
     }
 
-    if ( i >= MAX_PIXMAP_TEXTURE )
-        return 0;
+    return 0;
 }
 
 static ClientGLXDrawable find_pixmap_texture(GLState *state,
@@ -1400,21 +1411,21 @@ shadersrc_gles_to_gl(GLsizei count, const char** string, char **s, const GLint* 
  */
 static void mac_dump_texture()
 {
-    int w, h;
-    unsigned char *buf;
+	int w, h;
+	unsigned char *buf;
 
-    /* only handle target=GL_TEXTURE_2D, level=0, format=GL_RGBA, type=GL_UNSIGNED_BYTE */
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+	/* only handle target=GL_TEXTURE_2D, level=0, format=GL_RGBA, type=GL_UNSIGNED_BYTE */
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
 
-    if ( w == 0 && h == 0 )
-        return;
+	if ( w == 0 && h == 0 )
+		return;
 
-    buf = g_malloc( (w*4) * h); /* XXX:need allignment? */
+	buf = g_malloc( (w*4) * h); /* XXX:need allignment? */
 
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 
-    g_free(buf);
+	g_free(buf);
 }
 #endif
 
@@ -1759,7 +1770,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
                     ret.i = glo_surface_makecurrent(glstate->current_qsurface->surface);
 /*                    if (reset_texture)*/
-/*                        glo_surface_as_texture(old_glstate->current_qsurface->surface);*/
+/*                        glo_surface_as_texture(process->current_state->context, old_glstate->current_qsurface->surface);*/
                 }
             }
             break;
@@ -2022,16 +2033,18 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 DEBUGF( "glXCreatePixmap: %dX%d.\n", width, height);
                 qsurface->surface = glo_surface_create(width, height, context);
                 qsurface->client_drawable = client_drawable;
-                qsurface->type = SURFACE_PIXMAP;
-                qsurface->status = SURFACE_PENDING;
+				qsurface->type = SURFACE_PIXMAP;
+				qsurface->status = SURFACE_PENDING;
                 /*                qsurface->ref = 1;*/
 
                 /* Keep this surface, will link it with context in MakeCurrent */
                 keep_qsurface(process, qsurface);
 
                 /* If this pixmap is linked as texture previously */
-                if (link_drawable(process, client_drawable))
-                        glo_surface_as_texture(qsurface->surface);
+				if (link_drawable(process, client_drawable))
+					glo_surface_as_texture(process->current_state->context,
+							qsurface->surface);
+
 
                 ret.i = client_drawable;
 
@@ -2040,6 +2053,17 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
         }
     case glXDestroyPixmap_func:
         {
+            /* glXPixmap same as input Pixmap */
+            ClientGLXDrawable client_drawable = to_drawable(args[1]);
+            QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
+            if ( qsurface &&
+                 qsurface != process->current_state->current_qsurface &&
+                 qsurface->glstate == NULL &&
+                 qsurface->type == SURFACE_PIXMAP )
+            {
+                glo_surface_destroy(qsurface->surface);
+                g_free(qsurface);
+            }
             break;
         }
     case glEGLImageTargetTexture2DOES_fake_func:
@@ -2063,10 +2087,93 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 }
             }
             else
-                glo_surface_as_texture(qsurface->surface);
+				glo_surface_as_texture(process->current_state->context, qsurface->surface);
 
+			break;
+		}
+	case glXBindTexImageARB_fake_func:
+		{
+			ClientGLXDrawable client_drawable = to_drawable(args[1]);
+			QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
+			ret.i = 0;
+
+
+			if ( qsurface )
+			{
+				add_pixmap_texture_mapping(process->current_state,
+						process->current_state->bindTexture2D,
+						client_drawable);
+				glo_surface_as_texture(process->current_state->context, qsurface->surface);
+				ret.i = 1;
+			}
+			else
+				DEBUGF( "Not found pbuffer surface for BindTexImage!\n");
+
+			break;
+		}
+	case glXReleaseTexImageARB_fake_func:
+		{
+			ClientGLXDrawable client_drawable = to_drawable(args[1]);
+			QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
+
+			if ( qsurface )
+			{
+				remove_pixmap_texture_mapping(process->current_state,
+						client_drawable);
+				glo_surface_release_texture(qsurface->surface);
+			}
+
+			break;
+		}
+	case glXCreatePbuffer_func:
+		{
+			int client_fbconfig = args[1];
+
+			ret.i = 0;
+			const GLXFBConfig *fbconfig = get_fbconfig(process, client_fbconfig);
+
+			if (fbconfig) {
+
+				/* Create a light-weight context just for creating surface */
+				GloContext *context = __glo_context_create(fbconfig->formatFlags);
+
+				QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+
+				/* get the width and height */
+				int width, height;
+				glo_geometry_get_from_glx((int*)args[2], &width, &height);
+
+				DEBUGF( "glXCreatePbuffer: %dX%d.\n", width, height);
+				qsurface->surface = glo_surface_create(width, height, context);
+				/* Use GloSurface handler as no input client_drawable, and
+				 * keep only low 32bit of handler on x86_64 host.  */
+				qsurface->client_drawable = (int)qsurface->surface;
+				qsurface->type = SURFACE_PBUFFER;
+				qsurface->status = SURFACE_PENDING;
+				/*                qsurface->ref = 1;*/
+
+				/* Keep this surface, will link it with context in MakeCurrent */
+				keep_qsurface(process, qsurface);
+
+				ret.i = qsurface->client_drawable;
+
+			}
+			break;
+		}
+	case glXDestroyPbuffer_func:
+		{
+            ClientGLXDrawable client_drawable = to_drawable(args[1]);
+            QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
+            if ( qsurface &&
+                 qsurface != process->current_state->current_qsurface &&
+                 qsurface->glstate == NULL &&
+                 qsurface->type == SURFACE_PBUFFER )
+            {
+                glo_surface_destroy(qsurface->surface);
+                g_free(qsurface);
+            }
             break;
-        }
+		}
 
 /* Begin of texture stuff */
     case glBindTexture_func:
@@ -2102,7 +2209,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
                     if ( qsurface )
                     {
-                        glo_surface_as_texture(qsurface->surface);
+                        glo_surface_as_texture(process->current_state->context, qsurface->surface);
                         fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);
                     }
                 }
@@ -3052,14 +3159,13 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             glDrawArrays(mode, 0, count);
 
 #ifdef __APPLE__  //only for mac
-            {
-                    int prev_fbo;
-                    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
-                    if ( prev_fbo != 0 )
-                            glFlush();
-            }
+			{
+				int prev_fbo;
+				glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+				if ( prev_fbo != 0 )
+					glFlush();
+			}
 #endif
-
 
             break;
         }
@@ -3533,12 +3639,12 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             glDrawElements(args[0], args[1], args[2], (void *) args[3]);
 
 #ifdef __APPLE__  //only for mac
-            {
-                    int prev_fbo;
-                    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
-                    if ( prev_fbo != 0 )
-                            glFlush();
-            }
+			{
+				int prev_fbo;
+				glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+				if ( prev_fbo != 0 )
+					glFlush();
+			}
 #endif
 
             break;
@@ -3556,37 +3662,37 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             GET_EXT_PTR(void, glMultiDrawElements,
                         (int, int *, int, void **, int));
             ptr_func_glMultiDrawElements(args[0], (int *) args[1], args[2],
-                                         (void **) args[3], args[4]);
+                                       (void **) args[3], args[4]);
 #ifdef __APPLE__  //only for mac
-            {
-                    int prev_fbo;
-                    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
-                    if ( prev_fbo != 0 )
-                            glFlush();
-            }
+			{
+				int prev_fbo;
+				glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+				if ( prev_fbo != 0 )
+					glFlush();
+			}
 #endif
 
-            break;
-        }
+			break;
+		}
 #ifdef __APPLE__  // only for mac
-    case glDrawArrays_func:
-        {
-                int prev_fbo;
-                glDrawArrays(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]), ARG_TO_INT(args[2]));
-                glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
-                if ( prev_fbo != 0 )
-                        glFlush();
-                break;
-        }
-    case glDrawElements_func:
-        {
-                int prev_fbo;
-                glDrawElements(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]), ARG_TO_UNSIGNED_INT(args[2]), (const void*)(args[3]));
-                glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
-                if ( prev_fbo != 0 )
-                        glFlush();
-                break;
-        }
+	case glDrawArrays_func:
+		{
+			int prev_fbo;
+			glDrawArrays(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]), ARG_TO_INT(args[2]));
+			glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+			if ( prev_fbo != 0 )
+				glFlush();
+			break;
+		}
+	case glDrawElements_func:
+		{
+			int prev_fbo;
+			glDrawElements(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]), ARG_TO_UNSIGNED_INT(args[2]), (const void*)(args[3]));
+			glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prev_fbo);
+			if ( prev_fbo != 0 )
+				glFlush();
+			break;
+		}
 #endif
 
     case _glGetError_fake_func:
@@ -3759,61 +3865,61 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 #endif
 
 #ifdef _WIN32
-    /* workaround for bug T_SDK-128. If GL_UNPACK_ROW_LENGTH==0, GL driver
-     * should calculate it for glTexSubImage2D according to width parameter and
-     * GL_UNPACK_ALIGNMENT. But on windows, some vender's driver like nvidia,
-     * don't follow it. So we need do it for the driver, and probably remove
-     * this hack in future if driver get fixed.
-     */
-    case glTexSubImage2D_func:
-        {
-            int origin_row_length, alignment, width;
+	/* workaround for bug T_SDK-128. If GL_UNPACK_ROW_LENGTH==0, GL driver
+	 * should calculate it for glTexSubImage2D according to width parameter and
+	 * GL_UNPACK_ALIGNMENT. But on windows, some vender's driver like nvidia,
+	 * don't follow it. So we need do it for the driver, and probably remove
+	 * this hack in future if driver get fixed.
+	 */
+	case glTexSubImage2D_func:
+		{
+			int origin_row_length, alignment, width;
 
-            if (args[6] == GL_ALPHA) {
-                width = args[4];
-                glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-                glGetIntegerv(GL_UNPACK_ROW_LENGTH, &origin_row_length);
+			if (args[6] == GL_ALPHA) {
+				width = args[4];
+				glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+				glGetIntegerv(GL_UNPACK_ROW_LENGTH, &origin_row_length);
 
-                if (width%alignment != 0) {
-                    width = (width/alignment + 1) * alignment;
-                }
+				if (width%alignment != 0) {
+					width = (width/alignment + 1) * alignment;
+				}
 
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-            }
+				glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+			}
 
-            glTexSubImage2D(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]),
-                        ARG_TO_INT(args[2]), ARG_TO_INT(args[3]),
-                        ARG_TO_INT(args[4]), ARG_TO_INT(args[5]),
-                        ARG_TO_UNSIGNED_INT(args[6]),
-                        ARG_TO_UNSIGNED_INT(args[7]), (const void*)(args[8]));
+			glTexSubImage2D(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]),
+						ARG_TO_INT(args[2]), ARG_TO_INT(args[3]),
+						ARG_TO_INT(args[4]), ARG_TO_INT(args[5]),
+						ARG_TO_UNSIGNED_INT(args[6]),
+						ARG_TO_UNSIGNED_INT(args[7]), (const void*)(args[8]));
 
-            if (args[6] == GL_ALPHA)
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, origin_row_length);
+			if (args[6] == GL_ALPHA)
+				glPixelStorei(GL_UNPACK_ROW_LENGTH, origin_row_length);
 
-            break;
-        }
+			break;
+		}
 #endif
 
 #ifdef __APPLE__
-    case glTexSubImage2D_func:
-    {
+	case glTexSubImage2D_func:
+		{
 
-      glTexSubImage2D(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]),
-                  ARG_TO_INT(args[2]), ARG_TO_INT(args[3]),
-                  ARG_TO_INT(args[4]), ARG_TO_INT(args[5]),
-                  ARG_TO_UNSIGNED_INT(args[6]), ARG_TO_UNSIGNED_INT(args[7]),
-                  (const void*)(args[8]));
+			glTexSubImage2D(ARG_TO_UNSIGNED_INT(args[0]), ARG_TO_INT(args[1]),
+					ARG_TO_INT(args[2]), ARG_TO_INT(args[3]),
+					ARG_TO_INT(args[4]), ARG_TO_INT(args[5]),
+					ARG_TO_UNSIGNED_INT(args[6]), ARG_TO_UNSIGNED_INT(args[7]),
+					(const void*)(args[8]));
 
-      if ( ARG_TO_UNSIGNED_INT(args[0]) == GL_TEXTURE_2D &&
-              ARG_TO_INT(args[1]) == 0 &&
-              ARG_TO_UNSIGNED_INT(args[6]) == GL_RGBA &&
-              ARG_TO_UNSIGNED_INT(args[7]) == GL_UNSIGNED_BYTE )
-          mac_dump_texture();
-      else
-          fprintf(stderr, "!!! Probable screen crash, no work around as glTexSubImage2d parameters do not match!\n");
+			if ( ARG_TO_UNSIGNED_INT(args[0]) == GL_TEXTURE_2D &&
+					ARG_TO_INT(args[1]) == 0 &&
+					ARG_TO_UNSIGNED_INT(args[6]) == GL_RGBA &&
+					ARG_TO_UNSIGNED_INT(args[7]) == GL_UNSIGNED_BYTE )
+				mac_dump_texture();
+			else
+				fprintf(stderr, "!!! Probable screen crash, no work around as glTexSubImage2d parameters do not match!\n");
 
-      break;
-    }
+			break;
+		}
 #endif
 
     default:
