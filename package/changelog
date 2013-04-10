@@ -1,3 +1,6 @@
+* 1.5.25
+- Do not exit if log directory is deleted on runtime.
+== Seokyeon Hwang <syeon.hwang@samsung.com> 2013-04-10
 * 1.5.24
 - increased virtio keyboard queue and fixed overwrite bug
 == SungMin Ha <sungmin82.ha@samsung.com> 2013-04-06
