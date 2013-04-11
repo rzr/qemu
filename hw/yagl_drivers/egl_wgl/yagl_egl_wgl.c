@@ -51,17 +51,19 @@ typedef PROC (WINAPI *WGLGETPROCADDRESSPROC)(LPCSTR sym);
 typedef BOOL (WINAPI *WGLMAKECURRENTPROC)(HDC dev_ctx, HGLRC rend_ctx);
 typedef BOOL (WINAPI *WGLSHARELISTSPROC)(HGLRC ctx1, HGLRC ctx2);
 
-typedef struct YaglEglWglDpy {
+typedef struct YaglEglWglDC {
     HWND win;
+    HDC dc;
+} YaglEglWglDC;
+
+typedef struct YaglEglWglDpy {
     GHashTable *dc_table;
-    HDC *dc_arr;
-    gint *cfgids;
-    unsigned cfgid_cnt;
-    unsigned max_cfgid;
 } YaglEglWglDpy;
 
 typedef struct YaglEglWglDriver {
     struct yagl_egl_driver base;
+
+    HWND win;
 
     WGLCREATECONTEXTPROC wglCreateContext;
     WGLDELETECONTEXTPROC wglDeleteContext;
@@ -114,6 +116,16 @@ static inline bool yagl_egl_wgl_dc_set_def_pixfmt(HDC dc)
     return true;
 }
 
+static void yagl_egl_wgl_cfgdc_free(gpointer data)
+{
+    YaglEglWglDC *dc = data;
+
+    ReleaseDC(dc->win, dc->dc);
+    DestroyWindow(dc->win);
+
+    g_free(dc);
+}
+
 static EGLNativeDisplayType
 yagl_egl_wgl_display_open(struct yagl_egl_driver *driver)
 {
@@ -127,14 +139,9 @@ yagl_egl_wgl_display_open(struct yagl_egl_driver *driver)
         goto fail;
     }
 
-    dpy->win = yagl_egl_wgl_dummy_win_create();
-
-    if (!dpy->win) {
-        g_free(dpy);
-        goto fail;
-    }
-
-    dpy->dc_table = g_hash_table_new(g_int_hash, g_int_equal);
+    dpy->dc_table = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+                                          NULL,
+                                          &yagl_egl_wgl_cfgdc_free);
 
     YAGL_LOG_FUNC_EXIT("Display created: %p", dpy);
 
@@ -146,18 +153,6 @@ fail:
     return NULL;
 }
 
-static gboolean yagl_egl_wgl_cfgdc_free(gpointer key,
-                                        gpointer value,
-                                        gpointer usrdata)
-{
-    HWND win = *((HWND *)usrdata);
-    HDC dc = *((HDC *)value);
-
-    ReleaseDC(win, dc);
-
-    return TRUE;
-}
-
 static void yagl_egl_wgl_display_close(struct yagl_egl_driver *driver,
                                        EGLNativeDisplayType egl_dpy)
 {
@@ -165,16 +160,8 @@ static void yagl_egl_wgl_display_close(struct yagl_egl_driver *driver,
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_display_close, "%p", dpy);
 
-    g_hash_table_foreach_remove(dpy->dc_table,
-                                yagl_egl_wgl_cfgdc_free,
-                                &dpy->win);
-
     g_hash_table_destroy(dpy->dc_table);
 
-    DestroyWindow(dpy->win);
-
-    g_free(dpy->cfgids);
-    g_free(dpy->dc_arr);
     g_free(dpy);
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -335,7 +322,7 @@ static struct yagl_egl_native_config
 
     *num_configs = 0;
 
-    dc = GetDC(dpy->win);
+    dc = GetDC(egl_wgl->win);
     if (!dc) {
         goto out;
     }
@@ -399,15 +386,11 @@ static struct yagl_egl_native_config
 
     *num_configs = cfg_index;
 
-    dpy->cfgids = g_new0(gint, cfg_index);
-    dpy->dc_arr = g_new0(HDC, cfg_index);
-    dpy->max_cfgid = cfg_index - 1;
-
     g_free(pixfmt_arr);
 
 out:
     if (dc) {
-        ReleaseDC(dpy->win, dc);
+        ReleaseDC(egl_wgl->win, dc);
     }
 
     YAGL_LOG_INFO("WGL returned %d configs, %d are usable",
@@ -434,41 +417,50 @@ static void yagl_egl_wgl_config_cleanup(struct yagl_egl_driver *driver,
 static HDC yagl_egl_wgl_get_dc_by_cfgid(YaglEglWglDpy *dpy,
                                         const struct yagl_egl_native_config *cfg)
 {
-    HDC dc;
-    HDC *dc_p;
+    YaglEglWglDC *dc = NULL;
 
-    dc_p = g_hash_table_lookup(dpy->dc_table, &cfg->config_id);
+    dc = g_hash_table_lookup(dpy->dc_table, GINT_TO_POINTER(cfg->config_id));
 
-    if (dc_p) {
-        dc = *dc_p;
-        goto out;
+    if (dc) {
+        return dc->dc;
     }
 
-    assert(dpy->cfgid_cnt <= dpy->max_cfgid);
+    dc = g_malloc0(sizeof(*dc));
 
-    dc = GetDC(dpy->win);
-    if (!dc) {
-        goto out;
+    dc->win = yagl_egl_wgl_dummy_win_create();
+
+    if (!dc->win) {
+        goto fail;
     }
 
-    if (!SetPixelFormat(dc, cfg->config_id,
+    dc->dc = GetDC(dc->win);
+    if (!dc->dc) {
+        goto fail;
+    }
+
+    if (!SetPixelFormat(dc->dc, cfg->config_id,
                         (PIXELFORMATDESCRIPTOR *)cfg->driver_data)) {
-        ReleaseDC(dpy->win, dc);
-        dc = NULL;
-        goto out;
+        goto fail;
     }
-
-    dpy->dc_arr[dpy->cfgid_cnt] = dc;
-    dpy->cfgids[dpy->cfgid_cnt] = cfg->config_id;
 
     g_hash_table_insert(dpy->dc_table,
-                        &dpy->cfgids[dpy->cfgid_cnt],
-                        &dpy->dc_arr[dpy->cfgid_cnt]);
+                        GINT_TO_POINTER(cfg->config_id),
+                        dc);
 
-    ++dpy->cfgid_cnt;
+    return dc->dc;
 
-out:
-    return dc;
+fail:
+    if (dc) {
+        if (dc->dc) {
+            ReleaseDC(dc->win, dc->dc);
+        }
+        if (dc->win) {
+            DestroyWindow(dc->win);
+        }
+        g_free(dc);
+    }
+
+    return NULL;
 }
 
 static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
@@ -706,6 +698,8 @@ static void yagl_egl_wgl_destroy(struct yagl_egl_driver *driver)
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_wgl_destroy, NULL);
 
+    DestroyWindow(egl_wgl->win);
+
     UnregisterClassA((LPCTSTR)YAGL_EGL_WGL_WIN_CLASS, NULL);
 
     yagl_egl_driver_cleanup(driver);
@@ -844,7 +838,7 @@ out:
     return ext_initialized;
 }
 
-struct yagl_egl_driver *yagl_egl_driver_create(void)
+struct yagl_egl_driver *yagl_egl_driver_create(void *display)
 {
     YaglEglWglDriver *egl_wgl;
     struct yagl_egl_driver *egl_driver;
@@ -880,6 +874,12 @@ struct yagl_egl_driver *yagl_egl_driver_create(void)
     yagl_win_class.hIconSm = NULL;
 
     if (!RegisterClassExA(&yagl_win_class)) {
+        goto fail;
+    }
+
+    egl_wgl->win = yagl_egl_wgl_dummy_win_create();
+
+    if (!egl_wgl->win) {
         goto fail;
     }
 

@@ -66,12 +66,15 @@
 #include "maru_common.h"
 #include "guest_debug.h"
 #include "maru_pm.h"
-#if defined(CONFIG_YAGL_EGL_GLX)
+#if defined(__linux__)
 #include <X11/Xlib.h>
 #endif
+#include "vigs_device.h"
+#include "../tizen/src/hw/maru_brightness.h"
 extern int enable_yagl;
-
-extern int enable_yagl;
+extern const char *yagl_backend;
+extern int enable_vigs;
+extern const char *vigs_backend;
 
 int codec_init(PCIBus *bus);
 
@@ -183,6 +186,16 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     MemoryRegion *pci_memory;
     MemoryRegion *rom_memory;
     void *fw_cfg = NULL;
+#if defined(__linux__)
+    Display *display = XOpenDisplay(0);
+    if (!display) {
+        fprintf(stderr, "Cannot open X display\n");
+        exit(1);
+    }
+#elif defined(_WIN32)
+    void *display = NULL;
+#endif
+    struct winsys_interface *vigs_wsi = NULL;
 
     pc_cpus_init(cpu_model);
 
@@ -341,18 +354,25 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     if (pci_enabled) {
         codec_init(pci_bus);        
     }
-#ifdef CONFIG_YAGL
+
+    if (enable_vigs) {
+        pci_maru_brightness_init(pci_bus);
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
+        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        qdev_init_nofail(&pci_dev->qdev);
+        vigs_wsi = DO_UPCAST(VIGSDevice, pci_dev, pci_dev)->wsi;
+    }
+
     if (enable_yagl) {
         PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
-#if defined(CONFIG_YAGL_EGL_GLX)
-        qdev_prop_set_ptr(&pci_dev->qdev, "x_display", XOpenDisplay(0));
-#elif defined(CONFIG_YAGL_EGL_WGL)
-#else
-#error Unknown EGL driver
-#endif
+        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        if (vigs_wsi &&
+            (strcmp(yagl_backend, "vigs") == 0) &&
+            (strcmp(vigs_backend, "gl") == 0)) {
+            qdev_prop_set_ptr(&pci_dev->qdev, "winsys_gl_interface", vigs_wsi);
+        }
         qdev_init_nofail(&pci_dev->qdev);
     }
-#endif
 }
 
 static void maru_x86_board_init(ram_addr_t ram_size,

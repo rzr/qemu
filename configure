@@ -218,6 +218,7 @@ opengl=""
 efence="no"
 yagl="no"
 yagl_stats="no"
+vigs="no"
 zlib="yes"
 guest_agent="yes"
 libiscsi=""
@@ -865,6 +866,10 @@ for opt do
   ;;
   --disable-yagl-stats) yagl_stats="no"
   ;;
+  --enable-vigs) vigs="yes"
+  ;;
+  --disable-vigs) vigs="no"
+  ;;
   --disable-opengl) opengl="no"
   ;;
   --enable-opengl) opengl="yes"
@@ -1198,6 +1203,8 @@ echo "  --enable-yagl            enable YaGL device"
 echo "  --disable-yagl           disable YaGL device"
 echo "  --enable-yagl-stats      enable YaGL stats"
 echo "  --disable-yagl-stats     disable YaGL stats"
+echo "  --enable-vigs            enable VIGS device"
+echo "  --disable-vigs           disable VIGS device"
 echo "  --disable-smartcard      disable smartcard support"
 echo "  --enable-smartcard       enable smartcard support"
 echo "  --disable-smartcard-nss  disable smartcard nss support"
@@ -3220,6 +3227,7 @@ echo "OpenGL support    $opengl"
 echo "EFence support    $efence"
 echo "YaGL support      $yagl"
 echo "YaGL stats        $yagl_stats"
+echo "VIGS support      $vigs"
 echo "libiscsi support  $libiscsi"
 echo "build guest agent $guest_agent"
 echo "seccomp support   $seccomp"
@@ -3519,6 +3527,10 @@ fi
 
 if test "$yagl_stats" = "yes" ; then
   echo "CONFIG_YAGL_STATS=y" >> $config_host_mak
+fi
+
+if test "$vigs" = "yes" ; then
+  echo "CONFIG_VIGS=y" >> $config_host_mak
 fi
 
 if test "$smartcard" = "yes" ; then
@@ -4117,6 +4129,10 @@ fi
 
 if test "$yagl" = "yes" ; then
   echo "CONFIG_BUILD_YAGL=y" >> $config_target_mak
+fi
+
+if test "$vigs" = "yes" ; then
+  echo "CONFIG_BUILD_VIGS=y" >> $config_target_mak
 fi
 
 for i in $ARCH $TARGET_BASE_ARCH ; do

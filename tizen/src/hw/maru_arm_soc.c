@@ -36,6 +36,7 @@
 
 #include "loader.h"
 #include "exynos4210_i2s.h"
+extern int enable_vigs;
 
 #define EXYNOS4210_CHIPID_ADDR         0x10000000
 
@@ -402,12 +403,14 @@ Exynos4210State *maru_arm_soc_init(MemoryRegion *system_mem,
                            EXYNOS4210_UART3_FIFO_SIZE, 3, NULL,
                   s->irq_table[exynos4210_get_irq(EXYNOS4210_UART_INT_GRP, 3)]);
 
-    /*** Display controller (FIMD) ***/
-    sysbus_create_varargs("exynos4210.fimd", EXYNOS4210_FIMD0_BASE_ADDR,
-            s->irq_table[exynos4210_get_irq(11, 0)],
-            s->irq_table[exynos4210_get_irq(11, 1)],
-            s->irq_table[exynos4210_get_irq(11, 2)],
-            NULL);
+    if (!enable_vigs) {
+        /*** Display controller (FIMD) ***/
+        sysbus_create_varargs("exynos4210.fimd", EXYNOS4210_FIMD0_BASE_ADDR,
+                s->irq_table[exynos4210_get_irq(11, 0)],
+                s->irq_table[exynos4210_get_irq(11, 1)],
+                s->irq_table[exynos4210_get_irq(11, 2)],
+                NULL);
+    }
 
     /*** GPU openGLES passthrough device ***/
 #ifdef CONFIG_BUILD_GLES

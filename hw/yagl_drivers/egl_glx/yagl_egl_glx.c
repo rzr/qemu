@@ -465,10 +465,11 @@ static void yagl_egl_glx_destroy(struct yagl_egl_driver *driver)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-struct yagl_egl_driver *yagl_egl_driver_create(Display *x_display)
+struct yagl_egl_driver *yagl_egl_driver_create(void *display)
 {
     struct yagl_egl_driver *egl_driver;
     struct yagl_egl_glx *egl_glx;
+    Display *x_display = display;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_glx_create, NULL);
 

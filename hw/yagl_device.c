@@ -41,9 +41,7 @@ struct yagl_user
 typedef struct YaGLState
 {
     PCIDevice dev;
-#if defined(__linux__)
-    Display *x_display;
-#endif
+    void *display;
     struct winsys_interface *wsi;
     MemoryRegion iomem;
     struct yagl_server_state *ss;
@@ -239,11 +237,7 @@ static int yagl_device_init(PCIDevice *dev)
 
     yagl_stats_init();
 
-#if defined(__linux__)
-    egl_driver = yagl_egl_driver_create(s->x_display);
-#else
-    egl_driver = yagl_egl_driver_create();
-#endif
+    egl_driver = yagl_egl_driver_create(s->display);
 
     if (!egl_driver) {
         goto fail;
@@ -370,13 +364,11 @@ static void yagl_device_exit(PCIDevice *dev)
 }
 
 static Property yagl_properties[] = {
-#if defined(__linux__)
     {
-        .name   = "x_display",
+        .name   = "display",
         .info   = &qdev_prop_ptr,
-        .offset = offsetof(YaGLState, x_display),
+        .offset = offsetof(YaGLState, display),
     },
-#endif
     {
         .name   = "winsys_gl_interface",
         .info   = &qdev_prop_ptr,

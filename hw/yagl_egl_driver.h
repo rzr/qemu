@@ -79,13 +79,10 @@ struct yagl_egl_driver
     struct yagl_dyn_lib *dyn_lib;
 };
 
-#if defined(__linux__)
-struct yagl_egl_driver *yagl_egl_driver_create(Display *x_display);
-#elif defined(_WIN32)
-struct yagl_egl_driver *yagl_egl_driver_create(void);
-#else
-#error Unknown EGL driver
-#endif
+/*
+ * 'display' is Display* on linux and HWND on windows.
+ */
+struct yagl_egl_driver *yagl_egl_driver_create(void *display);
 
 void yagl_egl_driver_init(struct yagl_egl_driver *driver);
 void yagl_egl_driver_cleanup(struct yagl_egl_driver *driver);

@@ -201,6 +201,9 @@ int skin_disabled = 0;
 //virtio-gl
 extern int enable_gl;
 extern int enable_yagl;
+const char *yagl_backend = NULL;
+int enable_vigs = 0;
+const char *vigs_backend = NULL;
 #endif
 
 static const char *data_dir;
@@ -260,7 +263,6 @@ int boot_menu;
 uint8_t *boot_splash_filedata;
 int boot_splash_filedata_size;
 uint8_t qemu_extra_params_fw[2];
-
 
 typedef struct FWBootEntry FWBootEntry;
 
@@ -3137,6 +3139,30 @@ int main(int argc, char **argv, char **envp)
                     " ignoring -enable-yagl\n");
 #endif
                 break;
+           case QEMU_OPTION_yagl_backend:
+#if defined(CONFIG_YAGL) && !defined(CONFIG_DARWIN)
+                yagl_backend = optarg;
+#else
+                fprintf(stderr, "YaGL openGLES passthrough support is disabled,"
+                    " ignoring -yagl-backend\n");
+#endif
+                break;
+           case QEMU_OPTION_enable_vigs:
+#if defined(CONFIG_VIGS) && !defined(CONFIG_DARWIN)
+                enable_vigs = 1;
+#else
+                fprintf(stderr, "VIGS support is disabled,"
+                    " ignoring -enable-vigs\n");
+#endif
+                break;
+           case QEMU_OPTION_vigs_backend:
+#if defined(CONFIG_VIGS) && !defined(CONFIG_DARWIN)
+                vigs_backend = optarg;
+#else
+                fprintf(stderr, "VIGS support is disabled,"
+                    " ignoring -vigs-backend\n");
+#endif
+                break;
             case QEMU_OPTION_machine:
                 olist = qemu_find_opts("machine");
                 opts = qemu_opts_parse(olist, optarg, 1);
@@ -3431,6 +3457,45 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
+#if defined(CONFIG_MARU)
+    if (enable_gl && enable_yagl) {
+        fprintf (stderr, "Error: only one openGL passthrough device can be used at one time!\n");
+        exit(1);
+    }
+
+    if (enable_vigs) {
+        if (!vigs_backend) {
+            vigs_backend = "gl";
+        }
+
+        if (strcmp(vigs_backend, "gl") != 0) {
+            fprintf (stderr, "Error: Bad VIGS backend - %s!\n", vigs_backend);
+            exit(1);
+        }
+    }
+
+    if (enable_yagl) {
+        if (!yagl_backend) {
+            yagl_backend = "offscreen";
+        }
+
+        if (strcmp(yagl_backend, "offscreen") != 0) {
+            if (strcmp(yagl_backend, "vigs") == 0) {
+                if (!enable_vigs) {
+                    fprintf (stderr, "Error: Bad YaGL backend - %s, VIGS not enabled!\n", yagl_backend);
+                    exit(1);
+                }
+                if (strcmp(vigs_backend, "gl") != 0) {
+                    fprintf (stderr, "Error: Bad YaGL backend - %s, VIGS is not configured with gl backend!\n", yagl_backend);
+                    exit(1);
+                }
+            } else {
+                fprintf (stderr, "Error: Bad YaGL backend - %s!\n", yagl_backend);
+                exit(1);
+            }
+        }
+    }
+#endif
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the
      * other one may be encountered later on the command line, changing the

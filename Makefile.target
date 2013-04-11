@@ -308,6 +308,34 @@ obj-y += yagl_gles2_onscreen.o
 
 endif
 
+ifdef CONFIG_BUILD_VIGS
+
+# VIGS
+QEMU_CFLAGS += -I$(SRC_PATH)/hw/vigs_inc
+
+obj-y += vigs_log.o
+obj-y += vigs_device.o
+obj-y += vigs_comm.o
+obj-y += vigs_server.o
+obj-y += vigs_backend.o
+obj-y += vigs_surface.o
+obj-y += vigs_resource.o
+obj-y += vigs_utils.o
+obj-y += vigs_id_gen.o
+obj-y += vigs_vector.o
+obj-y += vigs_ref.o
+obj-y += vigs_gl_backend.o
+# GL GLX backend
+ifdef CONFIG_LINUX
+obj-y += vigs_gl_backend_glx.o
+endif
+# GL WGL backend
+ifdef CONFIG_WIN32
+obj-y += vigs_gl_backend_wgl.o
+endif
+
+endif
+
 # This resolves all nested paths, so it must come last
 include $(SRC_PATH)/Makefile.objs
 
