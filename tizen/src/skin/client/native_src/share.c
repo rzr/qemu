@@ -98,13 +98,7 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
         return -1;
     }
 
-    int *framebuffer = (int *)shared_memory;
-
-    jint value = 0xFFFFFFFF;
-    for (i = 0; i < len; i++) {
-        value = framebuffer[i];
-        (*env)->SetIntArrayRegion(env, array, i, 1, &value); 
-    }
+    (*env)->SetIntArrayRegion(env, array, 0, len, shared_memory);
 
     return len;
 }
