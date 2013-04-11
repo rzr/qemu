@@ -2183,6 +2183,12 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             unsigned int client_texture = args[1];
             unsigned int server_texture;
 
+			if(((int)client_texture) < 0)
+			{
+				fprintf(stderr, "glBindTexture got invalid texture ID, do nothing!\n");
+				break;
+			}
+
             if (client_texture == 0) {
                 glBindTexture(target, 0);
             } else {

@@ -65,7 +65,9 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
     char *argptr, *tmp;
     static void* args[50];
     int func_number;
+#ifdef __APPLE__
     char temp4mac[256];
+#endif
 
     if(!args_len)
 	return 0;

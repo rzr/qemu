@@ -81,13 +81,13 @@ set_target() {
   case "$1" in
   x86|i386|i486|i586|i686)
     EMUL_TARGET_LIST="i386-softmmu"
-    if [ -z "$VIRTIOGL_EN" ] && [ -z "$YAGL_EN" ] ; then
+    if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
   ;;
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
-    if [ -z "$YAGL_EN" ] && [ -z "$VIRTIOGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
+    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
       yagl_enable yes
     fi
   ;;

@@ -207,7 +207,7 @@ endif
 
 	cp skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
 ifdef CONFIG_WIN32
-	cp ../../i386-softmmu/check-gl.exe $(DIBS_COMMONL_DIR)/bin
+	cp ../../i386-softmmu/check-gl.exe $(DIBS_COMMON_DIR)/bin
 	cp check-hax.exe $(DIBS_COMMON_DIR)/bin
 endif
 

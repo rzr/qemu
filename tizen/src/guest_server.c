@@ -251,9 +251,6 @@ static void* run_guest_server(void* args)
         }
     }
 
-#if 0
-cleanup:
-#endif
 #ifdef _WIN32
     if (server_sock) {
         closesocket(server_sock);

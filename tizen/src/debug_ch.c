@@ -50,10 +50,10 @@ static HANDLE handle;
 
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
-	int ret;
+	int ret_val;
 	__asm__ __volatile__( "lock; xaddl %0,(%1)"
-			: "=r" (ret) : "r" (dest), "0" (incr) : "memory" );
-	return ret;
+			: "=r" (ret_val) : "r" (dest), "0" (incr) : "memory" );
+	return ret_val;
 }
 
 static const char * const debug_classes[] = {"fixme", "err", "warn", "trace", "info"};

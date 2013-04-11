@@ -79,7 +79,9 @@ static void virtio_gl_handle(VirtIODevice *vdev, VirtQueue *vq)
 
 		if(!elem.out_num) {
 			fprintf(stderr, "Bad packet\n");
-			goto done;
+			virtqueue_push(vq, &elem, ret);
+			virtio_notify(vdev, vq);
+			return;
 		}
 
 		process = vmgl_get_process(hdr->pid);
@@ -178,7 +180,7 @@ static void virtio_gl_handle(VirtIODevice *vdev, VirtQueue *vq)
 					gl_disconnect(process);
 			}
 		}
-done:
+
 		virtqueue_push(vq, &elem, ret);
 
 		virtio_notify(vdev, vq);
