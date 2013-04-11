@@ -1,3 +1,6 @@
+* 1.5.26
+- Add glFinish() after AGL function aglTexImagePBuffer() cause of pbuffer bug on MAC os.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-11
 * 1.5.25
 - Do not exit if log directory is deleted on runtime.
 == Seokyeon Hwang <syeon.hwang@samsung.com> 2013-04-10
