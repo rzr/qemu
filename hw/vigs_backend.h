@@ -27,5 +27,6 @@ void vigs_backend_init(struct vigs_backend *backend,
 void vigs_backend_cleanup(struct vigs_backend *backend);
 
 struct vigs_backend *vigs_gl_backend_create(void *display);
+struct vigs_backend *vigs_sw_backend_create(void);
 
 #endif

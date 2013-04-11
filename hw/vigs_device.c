@@ -69,6 +69,8 @@ typedef struct VIGSState
 
 #define TYPE_VIGS_DEVICE "vigs"
 
+extern const char *vigs_backend;
+
 static void vigs_hw_update(void *opaque)
 {
     VIGSState *s = opaque;
@@ -227,7 +229,11 @@ static int vigs_device_init(PCIDevice *dev)
     pci_register_bar(&s->dev.pci_dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->ram_bar);
     pci_register_bar(&s->dev.pci_dev, 2, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->io_bar);
 
-    backend = vigs_gl_backend_create(s->display);
+    if (!strcmp(vigs_backend, "gl")) {
+        backend = vigs_gl_backend_create(s->display);
+    } else if (!strcmp(vigs_backend, "sw")) {
+        backend = vigs_sw_backend_create();
+    }
 
     if (!backend) {
         goto fail;

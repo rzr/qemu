@@ -203,7 +203,7 @@ extern int enable_gl;
 extern int enable_yagl;
 const char *yagl_backend = NULL;
 int enable_vigs = 0;
-const char *vigs_backend = NULL;
+char *vigs_backend = NULL;
 #endif
 
 static const char *data_dir;
@@ -3157,7 +3157,7 @@ int main(int argc, char **argv, char **envp)
                 break;
            case QEMU_OPTION_vigs_backend:
 #if defined(CONFIG_VIGS) && !defined(CONFIG_DARWIN)
-                vigs_backend = optarg;
+                vigs_backend = g_strdup(optarg);
 #else
                 fprintf(stderr, "VIGS support is disabled,"
                     " ignoring -vigs-backend\n");
@@ -3465,10 +3465,10 @@ int main(int argc, char **argv, char **envp)
 
     if (enable_vigs) {
         if (!vigs_backend) {
-            vigs_backend = "gl";
+            vigs_backend = g_strdup("gl");
         }
 
-        if (strcmp(vigs_backend, "gl") != 0) {
+        if (strcmp(vigs_backend, "gl") != 0 && strcmp(vigs_backend, "sw") != 0) {
             fprintf (stderr, "Error: Bad VIGS backend - %s!\n", vigs_backend);
             exit(1);
         }
