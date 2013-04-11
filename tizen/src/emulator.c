@@ -1,7 +1,7 @@
 /*
  * Emulator
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
@@ -95,6 +95,11 @@ static char **_skin_argv;
 static int _qemu_argc;
 static char **_qemu_argv;
 
+#if defined(CONFIG_LINUX)
+#include <sys/shm.h>
+extern int g_shmid;
+#endif
+
 #ifdef CONFIG_DARWIN
 int thread_running = 1; /* Check if we need exit main */
 #endif
@@ -109,6 +114,14 @@ void exit_emulator(void)
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
+
+#if defined(CONFIG_LINUX)
+    /* clean up the vm lock memory by munkyu */
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("emulator.c: ");
+    }
+#endif
 
     maru_display_fini();
 }

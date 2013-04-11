@@ -35,6 +35,7 @@
 #include <pthread.h>
 #include "maruskin_operation.h"
 #include "hw/maru_brightness.h"
+#include "hw/maru_virtio_hwkey.h"
 #include "maru_display.h"
 #include "emulator.h"
 #include "debug_ch.h"
@@ -53,11 +54,6 @@
 #include "guest_debug.h"
 
 #include "target-i386/hax-i386.h"
-#endif
-
-#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
-#include <sys/shm.h>
-int g_shmid;
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
@@ -576,13 +572,6 @@ static void* run_timed_shutdown_thread(void* args)
     }
 
     INFO("Shutdown qemu !!!\n");
-
-#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
-    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
-        perror("maruskin_operation.c:g_shmid: ");
-    }
-#endif
 
     qemu_system_shutdown_request();
 

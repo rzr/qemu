@@ -1,7 +1,7 @@
 /*
  * SDL_WINDOWID hack
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -39,9 +39,6 @@
 #include "hw/maru_pm.h"
 #include "hw/maru_brightness.h"
 #include "debug_ch.h"
-#if defined(CONFIG_LINUX)
-#include <sys/shm.h>
-#endif
 /* #include "SDL_opengl.h" */
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -60,8 +57,6 @@ static int current_screen_height;
 
 static int sdl_initialized;
 static int sdl_alteration;
-extern int g_shmid;
-extern char *g_shared_memory;
 
 static int sdl_skip_update;
 
@@ -579,13 +574,6 @@ void maruskin_sdl_quit(void)
     pthread_cond_destroy(&sdl_cond);
 #endif
     pthread_mutex_destroy(&sdl_mutex);
-
-#if defined(CONFIG_LINUX)
-    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
-        perror("maru_sdl.c: ");
-    }
-#endif
 }
 
 

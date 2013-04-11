@@ -85,6 +85,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.imageData = new ImageData(lcdWidth, lcdHeight, COLOR_DEPTH, paletteData);
 			this.framebuffer = new Image(Display.getDefault(), imageData);
 
+			setDaemon(true);
 			setWaitIntervalTime(30);
 
 			this.runnable = new Runnable() {
