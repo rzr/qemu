@@ -387,10 +387,19 @@ public class SocketCommunicator implements ICommunicator {
 					}
 					break;
 				}
+				case DRAW_FRAME: {
+					logger.info("received DRAW_FRAME from QEMU.");
+
+					//TODO:
+
+					break;
+				}
 				case SHUTDOWN: {
 					logger.info("received RESPONSE_SHUTDOWN from QEMU.");
+
 					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null, false);
 					terminate();
+
 					break;
 				}
 				default: {

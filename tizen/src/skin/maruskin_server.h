@@ -1,7 +1,7 @@
 /*
  * socket server for emulator skin
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -35,6 +35,7 @@
 int start_skin_server(int argc, char** argv, int qemu_argc, char** qemu_argv);
 void shutdown_skin_server(void);
 
+void notify_draw_frame(void);
 void notify_sensor_daemon_start(void);
 void notify_ramdump_completed(void);
 void notify_booting_progress(int progress_value);
