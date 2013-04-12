@@ -923,15 +923,15 @@ static void* run_skin_server(void* args)
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
+                    pthread_mutex_lock(&mutex_recv_heartbeat_count);
+                    recv_heartbeat_count = 0;
+                    pthread_mutex_unlock(&mutex_recv_heartbeat_count);
+
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n");
 #if 0
                     TRACE(log_buf);
 #endif
                     TRACE("recv HB req_id:%d\n", req_id);
-
-                    pthread_mutex_lock(&mutex_recv_heartbeat_count);
-                    recv_heartbeat_count = 0;
-                    pthread_mutex_unlock(&mutex_recv_heartbeat_count);
 
                     break;
                 }

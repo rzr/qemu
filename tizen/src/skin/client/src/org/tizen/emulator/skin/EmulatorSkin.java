@@ -464,7 +464,7 @@ public class EmulatorSkin {
 					event.doit = false;
 
 					if (null != communicator) {
-						communicator.sendToQEMU(SendCommand.CLOSE, null);
+						communicator.sendToQEMU(SendCommand.CLOSE, null, false);
 					}
 				}
 			}
@@ -524,7 +524,8 @@ public class EmulatorSkin {
 
 				DisplayStateData lcdStateData = new DisplayStateData(
 						currentState.getCurrentScale(), currentState.getCurrentRotationId());
-				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+				communicator.sendToQEMU(
+						SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 			}
 		};
 
@@ -599,7 +600,8 @@ public class EmulatorSkin {
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), data.keycode,
 								data.stateMask, data.keyLocation);
-						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 						logger.info("auto release : keycode=" + keyEventData.keycode +
 								", stateMask=" + keyEventData.stateMask +
@@ -686,7 +688,8 @@ public class EmulatorSkin {
 							MouseButtonType.LEFT.value(), eventType,
 							e.x, e.y, geometry[0], geometry[1], 0);
 
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 				}
 			}
 		};
@@ -731,7 +734,8 @@ public class EmulatorSkin {
 							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 				} else if (2 == e.button) { /* wheel button */
 					logger.info("wheelUp in display");
 				}
@@ -776,7 +780,8 @@ public class EmulatorSkin {
 							MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 				}
 			}
 
@@ -810,7 +815,8 @@ public class EmulatorSkin {
 						MouseButtonType.WHEEL.value(), eventType,
 						e.x, e.y, geometry[0], geometry[1], e.count);
 
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		};
 
@@ -850,7 +856,8 @@ public class EmulatorSkin {
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(),
 								disappearKeycode, disappearStateMask, disappearKeyLocation);
-						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 						removePressedKey(keyEventData);
 
@@ -877,7 +884,8 @@ public class EmulatorSkin {
 
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.RELEASED.value(), keyCode, stateMask, e.keyLocation);
-				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 				removePressedKey(keyEventData);
 			}
@@ -925,7 +933,8 @@ public class EmulatorSkin {
 
 								KeyEventData keyEventData = new KeyEventData(KeyEventType.RELEASED.value(),
 										previousKeyCode, previousStateMask, previous.keyLocation);
-								communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+								communicator.sendToQEMU(
+										SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 								removePressedKey(keyEventData);
 							}
@@ -980,7 +989,8 @@ public class EmulatorSkin {
 
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.PRESSED.value(), keyCode, stateMask, e.keyLocation);
-				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 				addPressedKey(keyEventData);
 			}
@@ -1304,7 +1314,8 @@ public class EmulatorSkin {
 							ee.getMessage(), SWT.ICON_ERROR, config);
 				}
 
-				communicator.sendToQEMU(SendCommand.OPEN_SHELL, null);
+				communicator.sendToQEMU(
+						SendCommand.OPEN_SHELL, null, false);
 			}
 		} );
 
@@ -1319,7 +1330,8 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				logger.info("Close Menu is selected");
-				communicator.sendToQEMU(SendCommand.CLOSE, null);
+				communicator.sendToQEMU(
+						SendCommand.CLOSE, null, false);
 			}
 		} );
 
@@ -1433,7 +1445,8 @@ public class EmulatorSkin {
 
 				DisplayStateData lcdStateData =
 						new DisplayStateData(currentState.getCurrentScale(), rotationId);
-				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+				communicator.sendToQEMU(
+						SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 			}
 		};
 
@@ -1507,7 +1520,8 @@ public class EmulatorSkin {
 
 				DisplayStateData lcdStateData =
 						new DisplayStateData(scale, currentState.getCurrentRotationId());
-				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+				communicator.sendToQEMU(
+						SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 
 			}
 		};
@@ -1537,7 +1551,8 @@ public class EmulatorSkin {
 				logger.info("Ram dump menu is selected");
 
 				communicator.setRamdumpFlag(true);
-				communicator.sendToQEMU(SendCommand.RAM_DUMP, null);
+				communicator.sendToQEMU(
+						SendCommand.RAM_DUMP, null, false);
 
 				RamdumpDialog ramdumpDialog;
 				try {
@@ -1616,8 +1631,8 @@ public class EmulatorSkin {
 					isOnKbd = on;
 					logger.info("Host Keyboard " + isOnKbd);
 
-					communicator.sendToQEMU(
-							SendCommand.HOST_KBD, new BooleanData(on, SendCommand.HOST_KBD.toString()));
+					communicator.sendToQEMU(SendCommand.HOST_KBD,
+							new BooleanData(on, SendCommand.HOST_KBD.toString()), false);
 				}
 
 			}

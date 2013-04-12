@@ -279,7 +279,8 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 					while skipping of framebuffer drawing */
 					DisplayStateData lcdStateData = new DisplayStateData(
 							currentState.getCurrentScale(), currentState.getCurrentRotationId());
-					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+					skin.communicator.sendToQEMU(
+							SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 				}
 
 				/* general shell does not support native transparency,
@@ -395,7 +396,8 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 						/* send event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 
 						currentState.setCurrentPressedHWKey(null);
 
@@ -431,7 +433,8 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 						/* send event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 
 						currentState.setCurrentPressedHWKey(hwKey);
 
@@ -447,9 +450,9 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 										if (gc != null) {
 											gc.drawImage(currentState.getCurrentKeyPressedImage(),
 													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height, //src
+													hwKey.getRegion().width, hwKey.getRegion().height, /* src */
 													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height); //dst
+													hwKey.getRegion().width, hwKey.getRegion().height); /* dst */
 
 											gc.dispose();
 

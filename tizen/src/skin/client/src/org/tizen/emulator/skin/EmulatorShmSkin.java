@@ -69,9 +69,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private Display display;
 		private int widthFB;
 		private int heightFB;
+		private int sizeFramebuffer;
 		private int[] arrayFramebuffer;
-		private ImageData imageData;
-		private Image framebuffer;
+		private ImageData dataFramebuffer;
+		private Image imageFramebuffer;
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
@@ -81,9 +82,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.display = Display.getDefault();
 			this.widthFB = widthFB;
 			this.heightFB = heightFB;
-			this.arrayFramebuffer = new int[widthFB * heightFB];
-			this.imageData = new ImageData(widthFB, heightFB, COLOR_DEPTH, paletteData);
-			this.framebuffer = new Image(Display.getDefault(), imageData);
+			this.sizeFramebuffer = widthFB * heightFB;
+			this.arrayFramebuffer = new int[sizeFramebuffer];
+
+			this.dataFramebuffer =
+					new ImageData(widthFB, heightFB, COLOR_DEPTH, paletteData);
+			this.imageFramebuffer =
+					new Image(Display.getDefault(), dataFramebuffer);
 
 			setDaemon(true);
 			setWaitIntervalTime(30);
@@ -112,7 +117,6 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			stopRequest = false;
 
 			Image temp;
-			int sizeFramebuffer = widthFB * heightFB;
 
 			while (!stopRequest) {
 				synchronized(this) {
@@ -127,10 +131,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				int result = getPixels(arrayFramebuffer); /* from shared memory */
 				//logger.info("getPixels native function returned " + result);
 
-				imageData.setPixels(0, 0, sizeFramebuffer, arrayFramebuffer, 0);
+				dataFramebuffer.setPixels(0, 0, sizeFramebuffer, arrayFramebuffer, 0);
 
-				temp = framebuffer;
-				framebuffer = new Image(display, imageData);
+				temp = imageFramebuffer;
+				imageFramebuffer = new Image(display, dataFramebuffer);
 				temp.dispose();
 
 				if (display.isDisposed() == false) {
@@ -210,7 +214,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				}
 
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
-					e.gc.drawImage(pollThread.framebuffer,
+					e.gc.drawImage(pollThread.imageFramebuffer,
 							0, 0, pollThread.widthFB, pollThread.heightFB,
 							0, 0, x, y);
 
@@ -256,7 +260,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				e.gc.getTransform(oldtransform);
 				/* set to new transfrom */
 				e.gc.setTransform(transform);
-				e.gc.drawImage(pollThread.framebuffer,
+				e.gc.drawImage(pollThread.imageFramebuffer,
 						0, 0, pollThread.widthFB, pollThread.heightFB,
 						0, 0, x, y);
 				/* back to old transform */

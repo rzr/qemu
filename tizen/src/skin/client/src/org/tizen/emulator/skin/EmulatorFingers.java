@@ -251,7 +251,8 @@ public class EmulatorFingers {
 						mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 								originX, originY, x, y, grabFingerID - 1);
-						communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 					} 
 				}
 
@@ -267,7 +268,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, 0);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 			else if ((finger = getFingerPointSearch(x, y)) != null)
 			{ /* check the position of previous touch event */
@@ -282,7 +284,8 @@ public class EmulatorFingers {
 	        		mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 							originX, originY, finger.x, finger.y, this.fingerCntMax - 1);
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 
 					finger.originX = originX;
 					finger.originY = originY;
@@ -293,7 +296,8 @@ public class EmulatorFingers {
 						mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 								originX, originY, x, y, this.fingerCntMax - 1);
-						communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 					}
 				}
 			}
@@ -303,7 +307,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, this.fingerCnt - 1);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		} else if (touchType == MouseEventType.RELEASE.value()) { /* released */
 			logger.info("mouse up for multi touch");
@@ -360,7 +365,8 @@ public class EmulatorFingers {
 								mouseEventData = new MouseEventData(
 										MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 										originX, originY, finger.x, finger.y, i);
-								communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+								communicator.sendToQEMU(
+										SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 
 								/* logger.info(String.format(
 										"id %d finger multi-touch dragging = (%d, %d)",
@@ -388,7 +394,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, 0);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 			else if ((finger = this.getFingerPointSearch(x, y)) != null)
 			{ /* check the position of previous touch event */
@@ -406,7 +413,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, this.fingerCnt - 1);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		} else if (touchType == MouseEventType.RELEASE.value()) { /* released */
 			logger.info("mouse up for multi touch");
@@ -506,7 +514,8 @@ public class EmulatorFingers {
 				MouseEventData mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 						0, 0, finger.x, finger.y, finger.id - 1);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 
 			finger.id = 0;

@@ -248,14 +248,16 @@ public class KeyWindow extends SkinWindow {
 					public void mouseDown(MouseEvent e) {
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 					}
 
 					@Override
 					public void mouseUp(MouseEvent e) {
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 					}
 
 					@Override

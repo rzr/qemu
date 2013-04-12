@@ -373,7 +373,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					while skipping of framebuffer drawing */
 					DisplayStateData lcdStateData = new DisplayStateData(
 							currentState.getCurrentScale(), currentState.getCurrentRotationId());
-					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+					skin.communicator.sendToQEMU(
+							SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 				}
 
 				/* general shell does not support native transparency,

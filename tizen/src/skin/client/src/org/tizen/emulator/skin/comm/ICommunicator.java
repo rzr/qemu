@@ -297,8 +297,7 @@ public interface ICommunicator extends Runnable {
 		}
 	}
 
-	public void sendToQEMU( SendCommand command, ISendData data );
-	
+	public void sendToQEMU(SendCommand command, ISendData data, boolean urgent);
+
 	public void terminate();
-	
 }
