@@ -102,11 +102,20 @@ set_target() {
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
+    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      yagl_enable yes
+    fi
+    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      vigs_enable yes
+    fi
   ;;
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
     if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
       yagl_enable yes
+    fi
+    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      vigs_enable yes
     fi
   ;;
   all)
@@ -116,6 +125,9 @@ set_target() {
     fi
     if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
       yagl_enable yes
+    fi
+    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      vigs_enable yes
     fi
   ;;
   esac
