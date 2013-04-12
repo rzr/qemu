@@ -55,7 +55,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public static final int RED_MASK = 0x00FF0000;
 	public static final int GREEN_MASK = 0x0000FF00;
 	public static final int BLUE_MASK = 0x000000FF;
-	public static final int COLOR_DEPTH = 32;
+	public static final int COLOR_DEPTH = 24; /* no need to Alpha channel */
 
 	/* define JNI functions */
 	public native int shmget(int shmkey, int size);
@@ -67,9 +67,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	class PollFBThread extends Thread {
 		private Display display;
-		private int lcdWidth;
-		private int lcdHeight;
-		private int[] array;
+		private int widthFB;
+		private int heightFB;
+		private int[] arrayFramebuffer;
 		private ImageData imageData;
 		private Image framebuffer;
 
@@ -77,12 +77,12 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private Runnable runnable;
 		private int intervalWait;
 
-		public PollFBThread(int lcdWidth, int lcdHeight) {
+		public PollFBThread(int widthFB, int heightFB) {
 			this.display = Display.getDefault();
-			this.lcdWidth = lcdWidth;
-			this.lcdHeight = lcdHeight;
-			this.array = new int[lcdWidth * lcdHeight];
-			this.imageData = new ImageData(lcdWidth, lcdHeight, COLOR_DEPTH, paletteData);
+			this.widthFB = widthFB;
+			this.heightFB = heightFB;
+			this.arrayFramebuffer = new int[widthFB * heightFB];
+			this.imageData = new ImageData(widthFB, heightFB, COLOR_DEPTH, paletteData);
 			this.framebuffer = new Image(Display.getDefault(), imageData);
 
 			setDaemon(true);
@@ -112,6 +112,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			stopRequest = false;
 
 			Image temp;
+			int sizeFramebuffer = widthFB * heightFB;
 
 			while (!stopRequest) {
 				synchronized(this) {
@@ -123,12 +124,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					}
 				}
 
-				int result = getPixels(array); /* from shared memory */
+				int result = getPixels(arrayFramebuffer); /* from shared memory */
 				//logger.info("getPixels native function returned " + result);
 
-				for (int i = 0; i < lcdHeight; i++) {
-					imageData.setPixels(0, i, lcdWidth, array, i * lcdWidth);
-				}
+				imageData.setPixels(0, 0, sizeFramebuffer, arrayFramebuffer, 0);
 
 				temp = framebuffer;
 				framebuffer = new Image(display, imageData);
@@ -212,7 +211,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.framebuffer,
-							0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
+							0, 0, pollThread.widthFB, pollThread.heightFB,
 							0, 0, x, y);
 
 					if (finger.getMultiTouchEnable() == 1) {
@@ -253,14 +252,14 @@ public class EmulatorShmSkin extends EmulatorSkin {
 							currentState.getCurrentScale(), 
 							currentState.getCurrentRotationId());
 				}
-				//save current transform as "oldtransform" 
+				/* save current transform as "oldtransform" */
 				e.gc.getTransform(oldtransform);
-				//set to new transfrom
+				/* set to new transfrom */
 				e.gc.setTransform(transform);
 				e.gc.drawImage(pollThread.framebuffer,
-						0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
+						0, 0, pollThread.widthFB, pollThread.heightFB,
 						0, 0, x, y);
-				//back to old transform
+				/* back to old transform */
 				e.gc.setTransform(oldtransform);
 
 				transform.dispose();

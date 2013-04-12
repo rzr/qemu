@@ -90,7 +90,6 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
     (JNIEnv *env, jobject obj, jintArray array)
 {
-    int i = 0;
     int len = (*env)->GetArrayLength(env, array);
     if (len <= 0) {
         fprintf(stderr, "share.c: get length failed\n");
