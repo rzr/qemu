@@ -161,7 +161,11 @@ extern const char *prom_envs[MAX_PROM_ENVS];
 extern unsigned int nb_prom_envs;
 
 /* pci-hotplug */
+#ifdef CONFIG_MARU
+PCIDevice *pci_device_hot_add(Monitor *mon, const QDict *qdict);
+#else
 void pci_device_hot_add(Monitor *mon, const QDict *qdict);
+#endif
 int pci_drive_hot_add(Monitor *mon, const QDict *qdict,
                       DriveInfo *dinfo, int type);
 void do_pci_device_hot_remove(Monitor *mon, const QDict *qdict);

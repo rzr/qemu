@@ -246,7 +246,11 @@ static PCIDevice *qemu_pci_hot_add_keyboard(Monitor *mon,
 }
 #endif /* CONFIG_MARU */
 
+#ifdef CONFIG_MARU
+PCIDevice *pci_device_hot_add(Monitor *mon, const QDict *qdict)
+#else
 void pci_device_hot_add(Monitor *mon, const QDict *qdict)
+#endif
 {
     PCIDevice *dev = NULL;
     const char *pci_addr = qdict_get_str(qdict, "pci_addr");
@@ -284,6 +288,9 @@ void pci_device_hot_add(Monitor *mon, const QDict *qdict)
                        PCI_FUNC(dev->devfn));
     } else
         monitor_printf(mon, "failed to add %s\n", opts);
+#ifdef CONFIG_MARU
+    return dev;
+#endif
 }
 #endif
 
