@@ -56,6 +56,8 @@ void mloop_evcmd_touch(void);
 void mloop_evcmd_keyboard(void *data);
 void mloop_evcmd_ramdump(void);
 
+void mloop_evcmd_sdcard(char* img);
+
 #ifdef __cplusplus
 }
 #endif
