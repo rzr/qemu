@@ -51,23 +51,6 @@ typedef struct {
     VirtIOIRQFD *vector_irqfd;
 } VirtIOPCIProxy;
 
-typedef struct {
-    PCIDevice pci_dev;
-    VirtIODevice *vdev;
-    MemoryRegion bar;
-
-    uint32_t flags;
-    uint32_t class_code;
-    uint32_t nvectors;
-    uint32_t host_features;
-
-    VirtIOTransportLink *trl;
-
-    bool ioeventfd_disabled;
-    bool ioeventfd_started;
-    VirtIOIRQFD *vector_irqfd;
-} VirtIOPCI;
-
 void virtio_init_pci(VirtIOPCIProxy *proxy, VirtIODevice *vdev);
 void virtio_pci_reset(DeviceState *d);
 void virtio_pci_reset_(DeviceState *d);
