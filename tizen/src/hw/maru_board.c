@@ -67,6 +67,8 @@
 #include "guest_debug.h"
 #include "maru_pm.h"
 
+extern int enable_yagl;
+
 int codec_init(PCIBus *bus);
 
 
@@ -336,7 +338,9 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         codec_init(pci_bus);        
     }
 #ifdef CONFIG_YAGL
-    pci_create_simple(pci_bus, -1, "yagl");
+    if (enable_yagl) {
+        pci_create_simple(pci_bus, -1, "yagl");
+    }
 #endif
 }
 
