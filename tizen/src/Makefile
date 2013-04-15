@@ -125,7 +125,15 @@ else
 	cp -pPR ../license $(EMUL_DIR)
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -pPR skin/client/skins $(EMUL_DIR)
+endif
+
+ifdef CONFIG_USE_SHM
+ifdef CONFIG_DARWIN
 	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
+endif
+ifdef CONFIG_LINUX
+	cp -dpr skin/client/native_src/libshared.so $(EMUL_DIR)/bin
+endif
 endif
 
 ifdef CONFIG_DARWIN
@@ -231,7 +239,15 @@ else
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
 	cp -pPR ../license $(DIBS_COMMON_DIR)
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
+endif
+
+ifdef CONFIG_USE_SHM
+ifdef CONFIG_DARWIN
 	cp -pPR skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
+endif
+ifdef CONFIG_LINUX
+	cp -dpr skin/client/native_src/libshared.so $(DIBS_COMMON_DIR)/bin
+endif
 endif
 
 ifdef CONFIG_DARWIN
