@@ -682,6 +682,7 @@ static QObject* get_data_object(QObject *input_obj)
 static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *opaque)
 {
 	const char *type_name;
+	const char *data;
 	int def_target = 0;
 	int def_data = 0;
     QObject *obj;
@@ -735,6 +736,12 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		return;
 	}
 	
+	if (!strcmp(type_name, "Battery")) {
+		data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
+		LOG("print data: %s", data);
+		return;
+	}
+
 	handle_qmp_command(clii, type_name, get_data_object(obj));
 }
 
