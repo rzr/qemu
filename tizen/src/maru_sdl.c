@@ -32,6 +32,7 @@
 #include <math.h>
 #include "console.h"
 #include "maru_sdl.h"
+#include "maru_display.h"
 #include "emul_state.h"
 #include "SDL_gfx/SDL_rotozoom.h"
 #include "maru_sdl_rotozoom.h"
@@ -74,6 +75,9 @@ static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized;
 #endif
 
+extern pthread_mutex_t mutex_screenshot;
+extern pthread_cond_t cond_screenshot;
+
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
 
@@ -89,6 +93,24 @@ void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
 #else
     qemu_update();
 #endif
+
+    /* for screenshot */
+    pthread_mutex_lock(&mutex_screenshot);
+
+    MaruScreenshot* maru_screenshot = get_maru_screenshot();
+    if (maru_screenshot) {
+        maru_screenshot->isReady = 1;
+
+        if (maru_screenshot->request_screenshot == 1) {
+            memcpy(maru_screenshot->pixel_data, ds->surface->data,
+                ds->surface->linesize * ds->surface->height);
+            maru_screenshot->request_screenshot = 0;
+
+            pthread_cond_signal(&cond_screenshot);
+        }
+    }
+
+    pthread_mutex_unlock(&mutex_screenshot);
 }
 
 void qemu_ds_sdl_resize(DisplayState *ds)

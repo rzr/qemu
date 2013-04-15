@@ -188,7 +188,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		/* initialize shared memory */
 		int result = shmget(shmkey,
 				currentState.getCurrentResolutionWidth() *
-				currentState.getCurrentResolutionHeight());
+				currentState.getCurrentResolutionHeight() * 4);
 		logger.info("shmget native function returned " + result);
 
 		/* update lcd thread */

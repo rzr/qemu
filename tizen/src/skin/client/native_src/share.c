@@ -44,7 +44,7 @@ int shmid;
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
     (JNIEnv *env, jobject obj, jint shmkey, jint vga_ram_size)
 {
-    fprintf(stdout, "share.c: shared memory key = %d\n", shmkey);
+    fprintf(stdout, "share.c: shared memory key = %d, size=%d\n", shmkey, vga_ram_size);
     fflush(stdout);
 
     shmid = shmget((key_t)shmkey, (size_t)vga_ram_size, 0666 | IPC_CREAT);
