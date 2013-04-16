@@ -1,3 +1,21 @@
+* 1.5.28
+- Fix pBuffer issue for xcomposite.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-16
+* 1.5.27
+- Change the FB configs limitaion from 10 to 32 for each process.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-12
+* 1.5.26
+- Add glFinish() after AGL function aglTexImagePBuffer() cause of pbuffer bug on MAC os.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-11
+* 1.5.25
+- Do not exit if log directory is deleted on runtime.
+== Seokyeon Hwang <syeon.hwang@samsung.com> 2013-04-10
+* 1.5.24
+- Verify the passed texture ID in glBindTexture_func. If ID is invalid, do nothing.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-09
+* 1.5.23
+- increased virtio keyboard queue and fixed overwrite bug
+== SungMin Ha <sungmin82.ha@samsung.com> 2013-04-06
 * 1.5.22
 - no need to get the shmkey from another shm
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-04-02

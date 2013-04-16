@@ -39,7 +39,7 @@ extern "C" {
 #include "hw/virtio.h"
 
 #define VIRTIO_KBD_DEVICE_NAME "virtio-keyboard"
-#define VIRTIO_KBD_QUEUE_SIZE  10
+#define VIRTIO_KBD_QUEUE_SIZE  100
 
 typedef struct EmulKbdEvent {
     uint16_t code;

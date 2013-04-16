@@ -52,6 +52,7 @@ import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
+import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
@@ -183,8 +184,6 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		logger.info("lcd bounds : " + lcdBounds);
 
 		currentState.setDisplayBounds(lcdBounds);
-		currentState.setUpdateDisplayBounds(true);
-		//lcdCanvas.setBounds(lcdBounds);
 
 		/* arrange the skin image */
 		Image tempImage = null;
@@ -232,6 +231,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		/* custom window shape */
 		SkinUtil.trimShell(shell, currentState.getCurrentImage());
 
+		currentState.setNeedToUpdateDisplay(true);
 		shell.redraw();
 	}
 
@@ -271,9 +271,15 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		shellPaintListener = new PaintListener() {
 			@Override
 			public void paintControl(final PaintEvent e) {
-				if (currentState.isUpdateDisplayBounds() == true) {
-					currentState.setUpdateDisplayBounds(false);
+				if (currentState.isNeedToUpdateDisplay() == true) {
+					currentState.setNeedToUpdateDisplay(false);
 					lcdCanvas.setBounds(currentState.getDisplayBounds());
+
+					/* Let's do one more update for sdl display surface
+					while skipping of framebuffer drawing */
+					DisplayStateData lcdStateData = new DisplayStateData(
+							currentState.getCurrentScale(), currentState.getCurrentRotationId());
+					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
 				}
 
 				/* general shell does not support native transparency,

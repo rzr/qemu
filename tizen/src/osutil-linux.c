@@ -102,21 +102,28 @@ void check_vm_lock_os(void)
 
 void make_vm_lock_os(void)
 {
-
     g_shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
     if (g_shmid == -1) {
         ERR("shmget failed\n");
+        perror("osutil-linux: ");
         return;
     }
 
     g_shared_memory = shmat(g_shmid, (char *)0x00, 0);
     if (g_shared_memory == (void *)-1) {
         ERR("shmat failed\n");
+        perror("osutil-linux: ");
         return;
     }
+
     g_sprintf(g_shared_memory, "%s", tizen_target_img_path);
     INFO("shared memory key: %d value: %s\n",
         tizen_base_port, (char *)g_shared_memory);
+
+    if (shmdt(g_shared_memory) == -1) {
+        ERR("shmdt failed\n");
+        perror("osutil-linux: ");
+    }
 }
 
 void set_bin_path_os(gchar * exec_argv)

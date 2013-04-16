@@ -184,7 +184,7 @@ typedef struct {
 #define MAX_HANDLED_PROCESS 100
 #define MAX_ASSOC_SIZE 100
 
-#define MAX_FBCONFIG 10
+#define MAX_FBCONFIG 32
 
 #define MAX_PENDING_DRAWABLE 8
 
@@ -1832,7 +1832,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
     case glXChooseFBConfig_func:
         {
-            if (process->nfbconfig == MAX_FBCONFIG) {
+            if (process->nfbconfig >= MAX_FBCONFIG) {
+				fprintf(stderr, "[%s]:%d Request FB configs error, excceed the MAX FBCONFIG of one process, return NULL!\n", __FUNCTION__, __LINE__);
                 *(int *) args[3] = 0;
                 ret.i = 0;
             } else {
@@ -2182,6 +2183,12 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             int target = args[0];
             unsigned int client_texture = args[1];
             unsigned int server_texture;
+
+			if(((int)client_texture) < 0)
+			{
+				fprintf(stderr, "glBindTexture got invalid texture ID, do nothing!\n");
+				break;
+			}
 
             if (client_texture == 0) {
                 glBindTexture(target, 0);

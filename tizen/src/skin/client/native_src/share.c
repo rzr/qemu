@@ -90,7 +90,6 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
     (JNIEnv *env, jobject obj, jintArray array)
 {
-    int i = 0;
     int len = (*env)->GetArrayLength(env, array);
     if (len <= 0) {
         fprintf(stderr, "share.c: get length failed\n");
@@ -98,13 +97,7 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
         return -1;
     }
 
-    int *framebuffer = (int *)shared_memory;
-
-    jint value = 0xFFFFFFFF;
-    for (i = 0; i < len; i++) {
-        value = framebuffer[i];
-        (*env)->SetIntArrayRegion(env, array, i, 1, &value); 
-    }
+    (*env)->SetIntArrayRegion(env, array, 0, len, shared_memory);
 
     return len;
 }
