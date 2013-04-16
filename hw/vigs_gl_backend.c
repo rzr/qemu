@@ -145,6 +145,15 @@ static bool vigs_winsys_gl_surface_create_texture(struct vigs_winsys_gl_surface 
 
     ws_sfc->backend->GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&cur_tex);
     ws_sfc->backend->BindTexture(GL_TEXTURE_2D, *tex);
+
+    /*
+     * Workaround for problem in "Mesa DRI Intel(R) Ivybridge Desktop x86/MMX/SSE2, version 9.0.3":
+     * These lines used to be in 'vigs_gl_backend_init', but it turned out that they must
+     * be called after 'glBindTexture'.
+     */
+    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
     ws_sfc->backend->TexImage2D(GL_TEXTURE_2D, 0, ws_sfc->tex_internalformat,
                                 ws_sfc->base.base.width, ws_sfc->base.base.height, 0,
                                 ws_sfc->tex_format, ws_sfc->tex_type,
@@ -1127,20 +1136,6 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         VIGS_LOG_WARN("ARB_sync not supported!");
     }*/
     gl_backend->has_arb_sync = false;
-
-    /*
-     * @}
-     */
-
-    /*
-     * Default texture parameters.
-     * @{
-     */
-
-    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    gl_backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     /*
      * @}
