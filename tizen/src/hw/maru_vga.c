@@ -1488,23 +1488,32 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         d += linesize;
     }
 
+//TODO: maru_shm
+#ifdef CONFIG_USE_SHM
+    /* for display updating */
+    memcpy(shared_memory, s->ds->surface->data,
+        s->ds->surface->linesize * s->ds->surface->height);
+#endif
+
+//TODO: maru_sdl
+#ifndef CONFIG_USE_SHM
     /* for screenshot */
     pthread_mutex_lock(&mutex_screenshot);
+
     MaruScreenshot* maru_screenshot = get_maru_screenshot();
     if (maru_screenshot) {
         maru_screenshot->isReady = 1;
+
         if (maru_screenshot->request_screenshot == 1) {
             memcpy(maru_screenshot->pixel_data, s->ds->surface->data, 
                 s->ds->surface->linesize * s->ds->surface->height);
             maru_screenshot->request_screenshot = 0;
+
             pthread_cond_signal(&cond_screenshot);
         }
     }
-    pthread_mutex_unlock(&mutex_screenshot);
 
-#ifdef CONFIG_USE_SHM
-    memcpy(shared_memory, s->ds->surface->data,
-        s->ds->surface->linesize * s->ds->surface->height);
+    pthread_mutex_unlock(&mutex_screenshot);
 #endif
 
     if (y_start >= 0) {
