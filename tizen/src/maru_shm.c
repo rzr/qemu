@@ -29,6 +29,7 @@
 
 
 #include "maru_shm.h"
+#include "hw/maru_brightness.h"
 #include "emul_state.h"
 #include "debug_ch.h"
 
@@ -40,8 +41,10 @@
 MULTI_DEBUG_CHANNEL(tizen, maru_shm);
 
 
-void *shared_memory = (void*) 0;
-int skin_shmid;
+static void *shared_memory = (void*) 0;
+static int skin_shmid;
+
+static int shm_skip_update;
 
 void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h)
 {
@@ -53,12 +56,29 @@ void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h)
 
 void qemu_ds_shm_resize(DisplayState *ds)
 {
-    //TODO:
+    TRACE("qemu_ds_shm_resize\n");
+
+    shm_skip_update = 0;
 }
 
 void qemu_ds_shm_refresh(DisplayState *ds)
 {
+    /* If the display is turned off,
+    the screen does not update until the it is turned on */
+    if (shm_skip_update && brightness_off) {
+        return;
+    }
+
     vga_hw_update();
+
+    /* Usually, continuously updated.
+    But when the display is turned off,
+    just once updates the surface for a black screen. */
+    if (brightness_off) {
+        shm_skip_update = 1;
+    } else {
+        shm_skip_update = 0;
+    }
 }
 
 void maruskin_shm_init(uint64 swt_handle,
