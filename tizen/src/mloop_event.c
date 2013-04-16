@@ -431,7 +431,7 @@ static void mloop_evhandle_sdcard_detach(char *name)
 
     slot = PCI_SLOT(virtio_sdcard->devfn);
     snprintf(slotbuf, sizeof(slotbuf), "%x", slot);
-    INFO("virtio-sdcard slot [%d].\n", slotbuf);
+    INFO("virtio-sdcard slot [%d].\n", slot);
     qdict_put(qdict, "pci_addr", qstring_from_str(slotbuf));
 
     do_pci_device_hot_remove(cur_mon, qdict);
