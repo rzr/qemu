@@ -660,8 +660,8 @@ static const char *STANDARD_GL_FUNCTIONS ={
 "glXIsDirect\0"
 "glXCreatePixmap\0"
 "glXDestroyPixmap\0"
-"glXCreatePbuffer\n"
-"glXDestroyPbuffer\n"
+"glXCreatePbuffer\0"
+"glXDestroyPbuffer\0"
 "\0"
 };
 
