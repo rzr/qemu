@@ -388,9 +388,9 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				case DRAW_FRAME: {
-					logger.info("received DRAW_FRAME from QEMU.");
+					//logger.info("received DRAW_FRAME from QEMU.");
 
-					//TODO:
+					skin.updateDisplay();
 
 					break;
 				}

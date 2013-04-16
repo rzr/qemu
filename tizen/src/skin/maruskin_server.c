@@ -146,8 +146,12 @@ static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
 static pthread_t thread_id_heartbeat;
 
+/* 0: not drawing, 1: drawing */
+int draw_display_state = 0;
+
 static pthread_mutex_t mutex_send_data = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_draw_display = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_screenshot = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_screenshot = PTHREAD_COND_INITIALIZER;
 
@@ -273,6 +277,7 @@ void shutdown_skin_server(void)
 
     pthread_mutex_destroy(&mutex_send_data);
     pthread_mutex_destroy(&mutex_recv_heartbeat_count);
+    pthread_mutex_destroy(&mutex_draw_display);
 }
 
 void notify_draw_frame(void)
@@ -977,7 +982,9 @@ static void* run_skin_server(void* args)
                     break;
                 }
                 case RECV_RESPONSE_DRAW_FRAME: {
-                    //TODO:
+                    pthread_mutex_lock(&mutex_draw_display);
+                    draw_display_state = 0; /* framebuffer has been drawn */
+                    pthread_mutex_unlock(&mutex_draw_display);
 
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_DRAW_FRAME ==\n");
 #if 0

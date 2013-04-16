@@ -39,6 +39,7 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
@@ -73,6 +74,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private int[] arrayFramebuffer;
 		private ImageData dataFramebuffer;
 		private Image imageFramebuffer;
+		private Image imageTemp;
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
@@ -91,7 +93,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					new Image(Display.getDefault(), dataFramebuffer);
 
 			setDaemon(true);
-			setWaitIntervalTime(30);
+			setWaitIntervalTime(0);
 
 			this.runnable = new Runnable() {
 				@Override
@@ -116,8 +118,6 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		public void run() {
 			stopRequest = false;
 
-			Image temp;
-
 			while (!stopRequest) {
 				synchronized(this) {
 					try {
@@ -128,14 +128,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					}
 				}
 
-				int result = getPixels(arrayFramebuffer); /* from shared memory */
-				//logger.info("getPixels native function returned " + result);
-
-				dataFramebuffer.setPixels(0, 0, sizeFramebuffer, arrayFramebuffer, 0);
-
-				temp = imageFramebuffer;
-				imageFramebuffer = new Image(display, dataFramebuffer);
-				temp.dispose();
+				if (stopRequest == true) {
+					break;
+				}
 
 				if (display.isDisposed() == false) {
 					/* redraw canvas */
@@ -147,6 +142,21 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 			int result = shmdt();
 			logger.info("shmdt native function returned " + result);
+		}
+
+		public void getPixelsFromSharedMemory() {
+			int result = getPixels(arrayFramebuffer);
+			//logger.info("getPixels native function returned " + result);
+
+			communicator.sendToQEMU(
+					SendCommand.RESPONSE_DRAW_FRAMEBUFFER, null, true);
+
+			dataFramebuffer.setPixels(0, 0,
+					sizeFramebuffer, arrayFramebuffer, 0);
+
+			imageTemp = imageFramebuffer;
+			imageFramebuffer = new Image(display, dataFramebuffer);
+			imageTemp.dispose();
 		}
 
 		public void stopRequest() {
@@ -206,12 +216,12 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				int x = lcdCanvas.getSize().x;
 				int y = lcdCanvas.getSize().y;
 
-				if (pollThread.getWaitIntervalTime() == 0) {
+				/* if (pollThread.getWaitIntervalTime() == 0) {
 					logger.info("draw black screen");
 
 					e.gc.drawRectangle(-1, -1, x + 1, y + 1);
 					return;
-				}
+				}*/
 
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.imageFramebuffer,
@@ -277,32 +287,41 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	}
 
 	@Override
+	public void updateDisplay() {
+		pollThread.getPixelsFromSharedMemory();
+
+		synchronized(pollThread) {
+			pollThread.notify();
+		}
+	}
+
+	@Override
 	public void displayOn() {
 		logger.info("display on");
 
-		if (pollThread.isAlive()) {
-			pollThread.setWaitIntervalTime(30);
-
-			synchronized(pollThread) {
-				pollThread.notify();
-			}
-		}
+//		if (pollThread.isAlive()) {
+//			pollThread.setWaitIntervalTime(30);
+//
+//			synchronized(pollThread) {
+//				pollThread.notify();
+//			}
+//		}
 	}
 
 	@Override
 	public void displayOff() {
 		logger.info("display off");
 
-		if (pollThread.isAlive()) {
-			pollThread.setWaitIntervalTime(0);
-
-			shell.getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					lcdCanvas.redraw();
-				}
-			});
-		}
+//		if (pollThread.isAlive()) {
+//			pollThread.setWaitIntervalTime(0);
+//
+//			shell.getDisplay().asyncExec(new Runnable() {
+//				@Override
+//				public void run() {
+//					lcdCanvas.redraw();
+//				}
+//			});
+//		}
 	}
 
 	@Override

@@ -1070,6 +1070,10 @@ public class EmulatorSkin {
 		lcdCanvas.setFocus();
 	}
 
+	public void updateDisplay() {
+		/* abstract */
+	}
+
 	protected void openScreenShotWindow() {
 		/* abstract */
 	}

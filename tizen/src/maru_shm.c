@@ -29,8 +29,9 @@
 
 
 #include "maru_shm.h"
-#include "hw/maru_brightness.h"
 #include "emul_state.h"
+#include "hw/maru_brightness.h"
+#include "skin/maruskin_server.h"
 #include "debug_ch.h"
 
 #include <sys/types.h>
@@ -45,12 +46,43 @@ static void *shared_memory = (void*) 0;
 static int skin_shmid;
 
 static int shm_skip_update;
+extern pthread_mutex_t mutex_draw_display;
+extern int draw_display_state;
+
+//#define INFO_FRAME_DROP_RATE
+#ifdef INFO_FRAME_DROP_RATE
+static unsigned int draw_frame;
+static unsigned int drop_frame;
+#endif
 
 void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h)
 {
     if (shared_memory != NULL) {
-        memcpy(shared_memory, ds->surface->data,
-            ds->surface->linesize * ds->surface->height);
+        pthread_mutex_lock(&mutex_draw_display);
+
+        if (draw_display_state == 0) {
+            draw_display_state = 1;
+            pthread_mutex_unlock(&mutex_draw_display);
+
+            memcpy(shared_memory, ds->surface->data,
+                ds->surface->linesize * ds->surface->height);
+
+#ifdef INFO_FRAME_DROP_RATE
+            draw_frame++;
+#endif
+
+            notify_draw_frame();
+        } else {
+#ifdef INFO_FRAME_DROP_RATE
+            drop_frame++;
+#endif
+
+            pthread_mutex_unlock(&mutex_draw_display);
+        }
+
+#ifdef INFO_FRAME_DROP_RATE
+        INFO("! frame drop rate = (%d/%d)\n", drop_frame, draw_frame + drop_frame);
+#endif
     }
 }
 
