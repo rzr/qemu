@@ -36,6 +36,7 @@ int stop_ecs(void);
 void ecs_vprintf(const char *type, const char *fmt, va_list ap);
 void ecs_printf(const char *type, const char *fmt, ...) GCC_FMT_ATTR(2, 3);
 
+bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char *str);
 
 #endif /* __ECS_H__ */

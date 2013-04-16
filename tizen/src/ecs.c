@@ -24,6 +24,7 @@
 #include "qmp-commands.h"
 
 #include "ecs.h"
+#include "hw/maru_virtio_evdi.h"
 
 #define OUT_BUF_SIZE	4096
 #define READ_BUF_LEN 	4096
@@ -122,6 +123,19 @@ static void ecs_client_close(ECS_Client* clii)
 	if (NULL != clii) {
 		g_free(clii);
 	}
+}
+
+
+bool send_to_all_client(const char* data, const int len)
+{
+	ECS_Client *clii;
+
+	QTAILQ_FOREACH(clii, &clients, next)
+	{
+		send_to_client(clii->client_fd, data);
+	}
+
+	return true;
 }
 
 void send_to_client(int fd, const char *str)
@@ -736,11 +750,33 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		return;
 	}
 	
+
+	// send to evdi
+	data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
+	LOG("print data: %s, %d", data, strlen(data));
+
+	int datalen = strlen(data);
+	send_to_evdi(route_ij, data, datalen);
+
+	/*
 	if (!strcmp(type_name, "Battery")) {
 		data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-		LOG("print data: %s", data);
+		LOG("print data: %s, %d", data, strlen(data));
+
+		int datalen = strlen(data);
+		send_to_evdi(route_ij, data, datalen);
 		return;
 	}
+
+	if (!strcmp(type_name, "Telephony")) {
+		data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
+		LOG("print data: %s, %d", data, strlen(data));
+
+		int datalen = strlen(data);
+		send_to_evdi(route_ij, data, datalen);
+		return;
+	}
+	*/
 
 	handle_qmp_command(clii, type_name, get_data_object(obj));
 }
