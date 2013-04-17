@@ -50,13 +50,13 @@ import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class EmulatorShmSkin extends EmulatorSkin {
-	private Logger logger = SkinLogger.getSkinLogger(
-			EmulatorShmSkin.class).getLogger();
-
 	public static final int RED_MASK = 0x00FF0000;
 	public static final int GREEN_MASK = 0x0000FF00;
 	public static final int BLUE_MASK = 0x000000FF;
 	public static final int COLOR_DEPTH = 24; /* no need to Alpha channel */
+
+	private Logger logger = SkinLogger.getSkinLogger(
+			EmulatorShmSkin.class).getLogger();
 
 	/* define JNI functions */
 	public native int shmget(int shmkey, int size);
@@ -332,7 +332,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		}
 
 		try {
-			screenShotDialog = new ShmScreenShotWindow(shell, communicator, this, config,
+			screenShotDialog = new ShmScreenShotWindow(shell, this, config,
 					imageRegistry.getIcon(IconName.SCREENSHOT));
 			screenShotDialog.open();
 

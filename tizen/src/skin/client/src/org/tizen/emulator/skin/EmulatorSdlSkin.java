@@ -138,7 +138,7 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 		}
 
 		try {
-			screenShotDialog = new SdlScreenShotWindow(shell, communicator, this, config,
+			screenShotDialog = new SdlScreenShotWindow(shell, this, config,
 					imageRegistry.getIcon(IconName.SCREENSHOT));
 			screenShotDialog.open();
 
