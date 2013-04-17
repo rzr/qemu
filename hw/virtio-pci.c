@@ -931,7 +931,6 @@ static int virtio_keyboard_init_pci(PCIDevice *pci_dev)
     VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
     VirtIODevice *vdev;
 
-    mloop_evcmd_set_hostkbd(pci_dev);
     vdev = virtio_keyboard_init(&pci_dev->qdev);
     if (!vdev) {
         return -1;
@@ -944,7 +943,6 @@ static void virtio_keyboard_exit_pci(PCIDevice *pci_dev)
 {
     VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
 
-    mloop_evcmd_set_hostkbd(NULL);
     virtio_pci_stop_ioeventfd(proxy);
     virtio_keyboard_exit(proxy->vdev);
     virtio_exit_pci(pci_dev);

@@ -206,8 +206,8 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
 
 static USBDevice *usbkbd = NULL;
 static USBDevice *usbdisk = NULL;
-static PCIDevice *hostkbd = NULL;
 #ifdef TARGET_I386
+static PCIDevice *hostkbd = NULL;
 static PCIDevice *virtio_sdcard = NULL;
 #endif
 
@@ -314,7 +314,7 @@ static void mloop_evhandle_kbd_add(char *name)
     }
 
     if (hostkbd) {
-        INFO("virtio-keyboard has already been added.\n");
+        INFO("virtio-keyboard has been already added.\n");
         return;
     }
 
@@ -325,7 +325,7 @@ static void mloop_evhandle_kbd_add(char *name)
         qdict_put(qdict, "type", qstring_from_str(name));
 
         TRACE("hot_add keyboard device.\n");
-        pci_device_hot_add(cur_mon, qdict);
+        hostkbd = pci_device_hot_add(cur_mon, qdict);
 
         if (hostkbd) {
             TRACE("virtio-keyboard device: domain %d, bus %d, slot %d, function %d\n",
@@ -351,8 +351,8 @@ static void mloop_evhandle_kbd_del(char *name)
     }
 
     if (!hostkbd) {
-        ERR("Failed to remove keyboard"
-            "because the keyboard device is not created.\n");
+        ERR("Failed to remove a keyboard device "
+            "because the device has not been created yet.\n");
         return;
     }
 
@@ -371,6 +371,8 @@ static void mloop_evhandle_kbd_del(char *name)
 
         TRACE("hot_remove keyboard.\n");
         do_pci_device_hot_remove(cur_mon, qdict);
+
+        hostkbd = NULL;
 
         QDECREF(qdict);
     } else {
@@ -398,7 +400,7 @@ static void mloop_evhandle_sdcard_attach(char *name)
 
     qdict_put(qdict, "pci_addr", qstring_from_str("auto"));
     qdict_put(qdict, "type", qstring_from_str("storage"));
-    snprintf(opts, sizeof(opts), "file=%s,if=virtio", name); 
+    snprintf(opts, sizeof(opts), "file=%s,if=virtio", name);
     qdict_put(qdict, "opts", qstring_from_str(opts));
 
     virtio_sdcard = pci_device_hot_add(cur_mon, qdict);
@@ -668,11 +670,6 @@ void mloop_evcmd_set_usbdisk(void *dev)
 int mloop_evcmd_get_hostkbd_status(void)
 {
     return hostkbd ? 1 : 0;
-}
-
-void mloop_evcmd_set_hostkbd(void *dev)
-{
-    hostkbd = (PCIDevice *)dev;
 }
 
 void mloop_evcmd_hwkey(int event_type, int keycode)

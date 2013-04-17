@@ -46,7 +46,6 @@ int mloop_evcmd_get_hostkbd_status(void);
 
 void mloop_evcmd_set_usbkbd(void *dev);
 void mloop_evcmd_set_usbdisk(void *dev);
-void mloop_evcmd_set_hostkbd(void *dev);
 
 void mloop_evcmd_raise_intr(void *irq);
 void mloop_evcmd_lower_intr(void *irq);
