@@ -1,7 +1,7 @@
 /*
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * JiHye Kim <jihye1128.kim@samsung.com>
@@ -102,6 +102,7 @@ static char* get_emulator_vms_sdcard_path(void)
     HKEY hKey;
     char strLocalAppDataPath[1024] = { 0 };
     DWORD dwBufLen = 1024;
+
     RegOpenKeyEx(HKEY_CURRENT_USER,
         "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
         0, KEY_QUERY_VALUE, &hKey);
@@ -205,6 +206,7 @@ static void* run_guest_server(void* args)
             parse_val(readbuf, 0x0a, command);
 
             TRACE("----------------------------------------\n");
+
             if (strcmp(command, "3\n" ) == 0) {
                 TRACE("command:%s\n", command);
                 notify_sdb_daemon_start();
@@ -212,14 +214,12 @@ static void* run_guest_server(void* args)
             } 
             else if (strcmp(command, "4\n") == 0) {
                 /* sdcard mount/umount msg recv from emuld */
-                INFO("command:%s\n", command);
+                TRACE("command:%s\n", command);
+
                 char token[] = "\n";
                 char* ret = NULL;
                 ret = strtok(readbuf, token);
-                INFO("%s\n", ret);
-
                 ret = strtok(NULL, token);
-                INFO("%s\n", ret);
 
                 if (atoi(ret) == 0) {
                     /* umount sdcard */
@@ -265,6 +265,7 @@ static void* run_guest_server(void* args)
     }
 #endif
     server_sock = 0;
+
     return NULL;
 }
 
