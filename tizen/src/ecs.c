@@ -22,9 +22,11 @@
 #include "ecs-json-streamer.h"
 #include "json-parser.h"
 #include "qmp-commands.h"
-
+#include "qint.h"
 #include "ecs.h"
 #include "hw/maru_virtio_evdi.h"
+#include <stdbool.h>
+#include <pthread.h>
 
 #define OUT_BUF_SIZE	4096
 #define READ_BUF_LEN 	4096
@@ -91,6 +93,8 @@ static QTAILQ_HEAD(ECS_ClientHead, ECS_Client) clients =
 
 static ECS_State *current_ecs;
 
+static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
+
 static inline void start_logging(void)
 {
 #ifndef _WIN32
@@ -114,6 +118,8 @@ static int ecs_write(int fd, const uint8_t *buf, int len);
 
 static void ecs_client_close(ECS_Client* clii)
 {
+	pthread_mutex_lock(&mutex_clilist);
+
 	if (0 <= clii->client_fd) {
 		LOG("ecs client closed with fd: %d", clii->client_fd);
 		closesocket(clii->client_fd);
@@ -123,17 +129,22 @@ static void ecs_client_close(ECS_Client* clii)
 	if (NULL != clii) {
 		g_free(clii);
 	}
+
+	pthread_mutex_unlock(&mutex_clilist);
 }
 
 
 bool send_to_all_client(const char* data, const int len)
 {
+	pthread_mutex_lock(&mutex_clilist);
+
 	ECS_Client *clii;
 
 	QTAILQ_FOREACH(clii, &clients, next)
 	{
 		send_to_client(clii->client_fd, data);
 	}
+	pthread_mutex_unlock(&mutex_clilist);
 
 	return true;
 }
@@ -693,10 +704,134 @@ static QObject* get_data_object(QObject *input_obj)
     return NULL;
 }
 
+
+void read_val_short(const char* data, unsigned short* ret_val)
+{
+	memcpy(ret_val, data, sizeof(unsigned short));
+}
+
+void read_val_char(const char* data, unsigned char* ret_val)
+{
+	memcpy(ret_val, data, sizeof(unsigned char));
+}
+
+void read_val_str(const char* data, char* ret_val, int len)
+{
+	memcpy(ret_val, data, len);
+}
+
+bool ntf_to_injector(const char* data, const int len)
+{
+	type_length length = 0;
+	type_action group = 0;
+	type_group action = 0;
+
+
+	const int catsize = 10;
+	char cat[catsize + 1];
+	memset(cat, 0, catsize + 1);
+
+	read_val_str(data, cat, catsize);
+	read_val_short(data + catsize, &length);
+	read_val_char(data + catsize + 2, &group);
+	read_val_char(data + catsize +  2 + 1, &action);
+
+	LOG("<< header cat = %s, length = %d, action=%d, group=%d",
+			cat, length, action, group);
+
+	const char* ijdata = (data + catsize +  2 + 1 + 1);
+
+	QDict* obj_header = qdict_new();
+
+	qdict_put(obj_header, "cat",  qstring_from_str(cat));
+	qdict_put(obj_header, "length",  qint_from_int((int64_t)length));
+	qdict_put(obj_header, "group",  qint_from_int((int64_t)group));
+	qdict_put(obj_header, "action",  qint_from_int((int64_t)action));
+
+	QDict* obj = qdict_new();
+	qobject_incref(QOBJECT(obj_header));
+	qdict_put(obj, "header", obj_header);
+	qdict_put(obj, "data", qstring_from_str(ijdata));
+
+
+    QString *json;
+    json =  qobject_to_json(QOBJECT(obj));
+
+    assert(json != NULL);
+
+    qstring_append_chr(json, '\n');
+    const char* snddata = qstring_get_str(json);
+
+    LOG("<< json str = %s", snddata);
+
+	send_to_all_client(snddata, strlen(snddata));
+
+	QDECREF(json);
+
+	QDECREF(obj_header);
+	QDECREF(obj);
+
+	return true;
+}
+
+bool ntf_to_control(const char* data, const int len)
+{
+	return true;
+}
+
+bool ntf_to_monitor(const char* data, const int len)
+{
+	return true;
+}
+
+static bool injector_command_proc(ECS_Client *clii, QObject *obj)
+{
+	QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
+
+	char cmd[10];
+	memset(cmd, 0, 10);
+	strcpy(cmd, qdict_get_str(header, "cat"));
+	type_length length = (type_length) qdict_get_int(header, "length");
+	type_group action = (type_group) (qdict_get_int(header, "action") & 0xff);
+	type_action group = (type_action) (qdict_get_int(header, "group") & 0xff);
+
+	// get data
+	const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
+	LOG(">> print len = %d, data\" %s\"", strlen(data), data);
+	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d",
+			cmd, length, action, group);
+
+	int datalen = strlen(data);
+	int sndlen = datalen + 14;
+	char* sndbuf = (char*) malloc(sndlen + 1);
+	if (!sndbuf)
+		return false;
+
+	memset(sndbuf, 0, sndlen + 1);
+
+	// set data
+	memcpy(sndbuf, cmd, 10);
+	memcpy(sndbuf + 10, &length, 2);
+	memcpy(sndbuf + 12, &group, 1);
+	memcpy(sndbuf + 13, &action, 1);
+
+	memcpy(sndbuf + 14, data, datalen);
+
+	send_to_evdi(route_ij, sndbuf, sndlen);
+
+	free(sndbuf);
+
+	return true;
+}
+
+static bool control_command_proc(ECS_Client *clii, QObject *obj)
+{
+	return true;
+}
+
 static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *opaque)
 {
 	const char *type_name;
-	const char *data;
 	int def_target = 0;
 	int def_data = 0;
     QObject *obj;
@@ -751,34 +886,15 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 	}
 	
 
-	// send to evdi
-	data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-	LOG("print data: %s, %d", data, strlen(data));
-
-	int datalen = strlen(data);
-	send_to_evdi(route_ij, data, datalen);
-
-	/*
-	if (!strcmp(type_name, "Battery")) {
-		data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-		LOG("print data: %s, %d", data, strlen(data));
-
-		int datalen = strlen(data);
-		send_to_evdi(route_ij, data, datalen);
-		return;
+	if (!strcmp(type_name, COMMAND_TYPE_INJECTOR)) {
+		injector_command_proc(clii, obj);
 	}
-
-	if (!strcmp(type_name, "Telephony")) {
-		data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-		LOG("print data: %s, %d", data, strlen(data));
-
-		int datalen = strlen(data);
-		send_to_evdi(route_ij, data, datalen);
-		return;
+	else if (!strcmp(type_name, COMMAND_TYPE_CONTROL)) {
+		control_command_proc(clii, obj);
 	}
-	*/
-
-	handle_qmp_command(clii, type_name, get_data_object(obj));
+	else if (!strcmp(type_name, COMMAND_TYPE_MONITOR)) {
+		handle_qmp_command(clii, type_name, get_data_object(obj));
+	}
 }
 
 static Monitor *monitor_create(void)
@@ -819,10 +935,13 @@ static void ecs_close(ECS_State *cs)
 		cs->alive_timer = NULL;
 	}
 
+	pthread_mutex_lock(&mutex_clilist);
+
     QTAILQ_FOREACH(clii, &clients, next) {
 		ecs_client_close(clii);
 	}
-    
+    pthread_mutex_unlock(&mutex_clilist);
+
 	//TODO: device close
 
 	if (NULL != cs) {
@@ -877,17 +996,19 @@ static void ecs_read (ECS_Client *clii)
 	uint8_t buf[READ_BUF_LEN]; 
 	int len, size;
 	len = sizeof(buf);
+	memset(buf, 0, READ_BUF_LEN);
 
 	if (!clii || 0 > clii->client_fd) {
 		LOG ("read client info is NULL.");
 		return;
 	}
 
+
 	size = ecs_recv(clii->client_fd, (char*)buf, len);
 	if (0 == size) {
 		ecs_client_close(clii);
 	} else if (0 < size) {
-		LOG("read data: %s, len: %d, size: %d", buf, len, size);
+		LOG("read data: %s, len: %d, size: %d\n", buf, len, size);
 		ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
 	}
 }
@@ -934,6 +1055,8 @@ static int ecs_add_client(ECS_State *cs, int fd)
     ecs_json_message_parser_init(&clii->parser, handle_ecs_command, clii);
 	epoll_cli_add(cs, fd);
 
+	pthread_mutex_lock(&mutex_clilist);
+
 	QTAILQ_INSERT_TAIL(&clients, clii, next);
 
 	LOG("Add an ecs client. fd: %d", fd);
@@ -942,6 +1065,8 @@ static int ecs_add_client(ECS_State *cs, int fd)
 	welcome = WELCOME_MESSAGE;
 
 	send_to_client(fd, welcome);
+
+	pthread_mutex_unlock(&mutex_clilist);
 
 	return 0;
 }
@@ -1167,6 +1292,8 @@ int stop_ecs(void)
 		current_ecs->ecs_running = 0;
 		ecs_close(current_ecs);
 	}
+
+	pthread_mutex_destroy(&mutex_clilist);
 
 	return 0;
 }

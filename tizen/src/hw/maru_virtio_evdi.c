@@ -306,7 +306,7 @@ static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 
 		INFO("<< recv from guest len = %d, msg = %s \n", _msg.use, _msg.buf);
 
-		send_to_all_client(_msg.buf, _msg.use);
+		ntf_to_injector(_msg.buf, _msg.use);
     }
 
 	virtqueue_push(vq, &elem, sizeof(VirtIO_EVDI));
