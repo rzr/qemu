@@ -362,7 +362,7 @@ static void vigs_winsys_gl_surface_swap_buffers(struct winsys_gl_surface *sfc)
                                             GL_TEXTURE_2D, vigs_sfc->front_tex, 0);
 
     vigs_sfc->backend->BlitFramebuffer(0, 0, sfc->base.width, sfc->base.height,
-                                       0, sfc->base.height, sfc->base.width, 0,
+                                       0, 0, sfc->base.width, sfc->base.height,
                                        GL_COLOR_BUFFER_BIT,
                                        GL_LINEAR);
 
@@ -386,23 +386,18 @@ static void vigs_winsys_gl_surface_copy_buffers(uint32_t width,
         return;
     }
 
-    if (!vigs_gl_surface_create_framebuffer(vigs_target->parent)) {
-        return;
-    }
-
-    if (!vigs_winsys_gl_surface_create_texture(vigs_target, &vigs_target->front_tex)) {
-        return;
-    }
-
     vigs_gl_surface_wait_fence_2d(vigs_target->parent);
 
     if (is_loop) {
         /*
-         * Feedback loop is possible, need an intermediate texture to
-         * blit.
+         * Feedback loop is possible, no-op.
          */
+    } else {
+        if (!vigs_gl_surface_create_framebuffer(vigs_target->parent)) {
+            return;
+        }
 
-        if (!vigs_winsys_gl_surface_create_texture(vigs_target, &vigs_target->parent->tmp_tex)) {
+        if (!vigs_winsys_gl_surface_create_texture(vigs_target, &vigs_target->front_tex)) {
             return;
         }
 
@@ -413,37 +408,10 @@ static void vigs_winsys_gl_surface_copy_buffers(uint32_t width,
         vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
                                               vigs_target->parent->fb);
         vigs_target->backend->FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                                   GL_TEXTURE_2D, vigs_target->parent->tmp_tex, 0);
-
-        vigs_target->backend->BlitFramebuffer(0, 0, width, height,
-                                              0, height, width, 0,
-                                              GL_COLOR_BUFFER_BIT,
-                                              GL_LINEAR);
-
-        vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
-                                              cur_fb);
-        vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
-                                              vigs_target->parent->fb);
-
-        vigs_target->backend->BlitFramebuffer(0, 0, width, height,
-                                              0, 0, width, height,
-                                              GL_COLOR_BUFFER_BIT,
-                                              GL_LINEAR);
-
-        vigs_target->backend->BindFramebuffer(GL_FRAMEBUFFER,
-                                              cur_fb);
-    } else {
-        vigs_target->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
-
-        vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
-                                              cur_fb);
-        vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
-                                              vigs_target->parent->fb);
-        vigs_target->backend->FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                    GL_TEXTURE_2D, vigs_target->front_tex, 0);
 
         vigs_target->backend->BlitFramebuffer(0, 0, width, height,
-                                              0, height, width, 0,
+                                              0, 0, width, height,
                                               GL_COLOR_BUFFER_BIT,
                                               GL_LINEAR);
 
@@ -565,7 +533,8 @@ static void vigs_gl_surface_update(struct vigs_surface *sfc,
     gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                      GL_TEXTURE_2D, ws_sfc->front_tex, 0);
 
-    gl_backend->RasterPos2f(0.0f, 0.0f);
+    gl_backend->PixelZoom(1.0f, -1.0f);
+    gl_backend->RasterPos2f(0.0f, gl_sfc->base.height);
     gl_backend->DrawPixels(gl_sfc->base.width,
                            gl_sfc->base.height,
                            ws_sfc->tex_format,
@@ -603,6 +572,9 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
     struct vigs_gl_surface *gl_sfc = (struct vigs_gl_surface*)sfc;
     struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
+    GLfloat sfc_w, sfc_h;
+    GLfloat *vert_coords;
+    GLfloat *tex_coords;
 
     VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
                    x, y, width, height);
@@ -624,16 +596,68 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
         goto out;
     }
 
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &gl_sfc->tmp_tex)) {
+        goto out;
+    }
+
     if (!vigs_gl_surface_create_framebuffer(gl_sfc)) {
         goto out;
     }
 
     vigs_gl_surface_wait_fence_3d(gl_sfc);
 
+    vigs_vector_resize(&gl_backend->v1, 0);
+    vigs_vector_resize(&gl_backend->v2, 0);
+
+    sfc_w = gl_sfc->base.width;
+    sfc_h = gl_sfc->base.height;
+
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
+    vigs_gl_surface_setup_framebuffer(gl_sfc);
+
+    gl_backend->Enable(GL_TEXTURE_2D);
+
     gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, ws_sfc->front_tex, 0);
+                                     GL_TEXTURE_2D, gl_sfc->tmp_tex, 0);
+
+    vert_coords = vigs_vector_append(&gl_backend->v1,
+                                     (8 * sizeof(GLfloat)));
+    tex_coords = vigs_vector_append(&gl_backend->v2,
+                                    (8 * sizeof(GLfloat)));
+
+    vert_coords[0] = 0;
+    vert_coords[1] = sfc_h;
+    vert_coords[2] = sfc_w;
+    vert_coords[3] = sfc_h;
+    vert_coords[4] = sfc_w;
+    vert_coords[5] = 0;
+    vert_coords[6] = 0;
+    vert_coords[7] = 0;
+
+    tex_coords[0] = 0;
+    tex_coords[1] = 0;
+    tex_coords[2] = 1;
+    tex_coords[3] = 0;
+    tex_coords[4] = 1;
+    tex_coords[5] = 1;
+    tex_coords[6] = 0;
+    tex_coords[7] = 1;
+
+    gl_backend->EnableClientState(GL_VERTEX_ARRAY);
+    gl_backend->EnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->front_tex);
+
+    gl_backend->Color4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    gl_backend->VertexPointer(2, GL_FLOAT, 0, vigs_vector_data(&gl_backend->v1));
+    gl_backend->TexCoordPointer(2, GL_FLOAT, 0, vigs_vector_data(&gl_backend->v2));
+
+    gl_backend->DrawArrays(GL_QUADS, 0, 4);
+
+    gl_backend->DisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
     gl_backend->PixelStorei(GL_PACK_ALIGNMENT, ws_sfc->tex_bpp);
     gl_backend->ReadPixels(x, y, width, height,
@@ -658,6 +682,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     struct vigs_winsys_gl_surface *ws_src = get_ws_sfc(gl_src);
     uint32_t total_entries = num_entries, i;
     GLfloat src_w, src_h;
+    GLfloat dst_h;
     GLfloat *vert_coords;
     GLfloat *tex_coords;
 
@@ -686,6 +711,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
 
     src_w = gl_src->base.width;
     src_h = gl_src->base.height;
+    dst_h = gl_dst->base.height;
 
     vigs_gl_surface_wait_fence_3d(gl_src);
     vigs_gl_surface_wait_fence_3d(gl_dst);
@@ -708,8 +734,6 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
         gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                          GL_TEXTURE_2D, gl_dst->tmp_tex, 0);
 
-        gl_backend->Clear(GL_COLOR_BUFFER_BIT);
-
         ++total_entries;
 
         vert_coords = vigs_vector_append(&gl_backend->v1,
@@ -718,22 +742,22 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
                                         (8 * sizeof(GLfloat)));
 
         vert_coords[0] = 0;
-        vert_coords[1] = 0;
+        vert_coords[1] = src_h;
         vert_coords[2] = src_w;
-        vert_coords[3] = 0;
+        vert_coords[3] = src_h;
         vert_coords[4] = src_w;
-        vert_coords[5] = src_h;
+        vert_coords[5] = 0;
         vert_coords[6] = 0;
-        vert_coords[7] = src_h;
+        vert_coords[7] = 0;
 
         tex_coords[0] = 0;
-        tex_coords[1] = 0;
+        tex_coords[1] = 1;
         tex_coords[2] = 1;
-        tex_coords[3] = 0;
+        tex_coords[3] = 1;
         tex_coords[4] = 1;
-        tex_coords[5] = 1;
+        tex_coords[5] = 0;
         tex_coords[6] = 0;
-        tex_coords[7] = 1;
+        tex_coords[7] = 0;
     } else {
         /*
          * No feedback loop possible, render to 'front_tex'.
@@ -751,22 +775,22 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
                                         (8 * sizeof(GLfloat)));
 
         vert_coords[0] = entries[i].to.x;
-        vert_coords[1] = entries[i].to.y;
+        vert_coords[1] = dst_h - entries[i].to.y;
         vert_coords[2] = entries[i].to.x + entries[i].size.w;
-        vert_coords[3] = entries[i].to.y;
+        vert_coords[3] = dst_h - entries[i].to.y;
         vert_coords[4] = entries[i].to.x + entries[i].size.w;
-        vert_coords[5] = (entries[i].to.y + entries[i].size.h);
+        vert_coords[5] = dst_h - (entries[i].to.y + entries[i].size.h);
         vert_coords[6] = entries[i].to.x;
-        vert_coords[7] = (entries[i].to.y + entries[i].size.h);
+        vert_coords[7] = dst_h - (entries[i].to.y + entries[i].size.h);
 
         tex_coords[0] = (GLfloat)entries[i].from.x / src_w;
-        tex_coords[1] = (GLfloat)(entries[i].from.y) / src_h;
+        tex_coords[1] = (GLfloat)(src_h - entries[i].from.y) / src_h;
         tex_coords[2] = (GLfloat)(entries[i].from.x + entries[i].size.w) / src_w;
-        tex_coords[3] = (GLfloat)(entries[i].from.y) / src_h;
+        tex_coords[3] = (GLfloat)(src_h - entries[i].from.y) / src_h;
         tex_coords[4] = (GLfloat)(entries[i].from.x + entries[i].size.w) / src_w;
-        tex_coords[5] = (GLfloat)(entries[i].from.y + entries[i].size.h) / src_h;
+        tex_coords[5] = (GLfloat)(src_h - (entries[i].from.y + entries[i].size.h)) / src_h;
         tex_coords[6] = (GLfloat)entries[i].from.x / src_w;
-        tex_coords[7] = (GLfloat)(entries[i].from.y + entries[i].size.h) / src_h;
+        tex_coords[7] = (GLfloat)(src_h - (entries[i].from.y + entries[i].size.h)) / src_h;
     }
 
     gl_backend->EnableClientState(GL_VERTEX_ARRAY);
@@ -791,22 +815,22 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
                                         (8 * sizeof(GLfloat)));
 
         vert_coords[0] = 0;
-        vert_coords[1] = 0;
+        vert_coords[1] = src_h;
         vert_coords[2] = src_w;
-        vert_coords[3] = 0;
+        vert_coords[3] = src_h;
         vert_coords[4] = src_w;
-        vert_coords[5] = src_h;
+        vert_coords[5] = 0;
         vert_coords[6] = 0;
-        vert_coords[7] = src_h;
+        vert_coords[7] = 0;
 
         tex_coords[0] = 0;
-        tex_coords[1] = 0;
+        tex_coords[1] = 1;
         tex_coords[2] = 1;
-        tex_coords[3] = 0;
+        tex_coords[3] = 1;
         tex_coords[4] = 1;
-        tex_coords[5] = 1;
+        tex_coords[5] = 0;
         tex_coords[6] = 0;
-        tex_coords[7] = 1;
+        tex_coords[7] = 0;
 
         gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                          GL_TEXTURE_2D, ws_dst->front_tex, 0);
@@ -844,6 +868,7 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
     struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
     uint32_t i;
     GLubyte red, green, blue, alpha;
+    GLfloat sfc_h;
 
     if (!gl_backend->make_current(gl_backend, true)) {
         return;
@@ -856,6 +881,8 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
     if (!vigs_gl_surface_create_framebuffer(gl_sfc)) {
         goto out;
     }
+
+    sfc_h = gl_sfc->base.height;
 
     vigs_gl_surface_wait_fence_3d(gl_sfc);
 
@@ -875,13 +902,13 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
                                                   (8 * sizeof(GLfloat)));
 
         vert_coords[0] = entries[i].pos.x;
-        vert_coords[1] = entries[i].pos.y;
+        vert_coords[1] = sfc_h - entries[i].pos.y;
         vert_coords[2] = entries[i].pos.x + entries[i].size.w;
-        vert_coords[3] = entries[i].pos.y;
+        vert_coords[3] = sfc_h - entries[i].pos.y;
         vert_coords[4] = entries[i].pos.x + entries[i].size.w;
-        vert_coords[5] = entries[i].pos.y + entries[i].size.h;
+        vert_coords[5] = sfc_h - (entries[i].pos.y + entries[i].size.h);
         vert_coords[6] = entries[i].pos.x;
-        vert_coords[7] = entries[i].pos.y + entries[i].size.h;
+        vert_coords[7] = sfc_h - (entries[i].pos.y + entries[i].size.h);
     }
 
     gl_backend->EnableClientState(GL_VERTEX_ARRAY);
@@ -948,7 +975,8 @@ static void vigs_gl_surface_put_image(struct vigs_surface *sfc,
     gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                      GL_TEXTURE_2D, ws_sfc->front_tex, 0);
 
-    gl_backend->RasterPos2f(rect->pos.x, rect->pos.y);
+    gl_backend->PixelZoom(1.0f, -1.0f);
+    gl_backend->RasterPos2f(rect->pos.x, gl_sfc->base.height - rect->pos.y);
     gl_backend->DrawPixels(rect->size.w,
                            rect->size.h,
                            ws_sfc->tex_format,
