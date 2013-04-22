@@ -1,3 +1,6 @@
+* 1.5.31
+- rollback 'optimize a framebuffer copying'
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-04-18
 * 1.5.28
 - Fix pBuffer issue for xcomposite.
 == Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-16

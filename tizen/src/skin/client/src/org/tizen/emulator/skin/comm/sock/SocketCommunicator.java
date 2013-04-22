@@ -645,7 +645,7 @@ public class SocketCommunicator implements ICommunicator {
 	private void increaseHeartbeatCount() {
 		int count = heartbeatCount.incrementAndGet();
 
-		if (logger.isLoggable(Level.FINE)) {
+		if (count > 1) {
 			logger.info("HB count : " + count);
 		}
 	}

@@ -369,11 +369,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
 
-					/* Let's do one more update for sdl display surface
-					while skipping of framebuffer drawing */
-					DisplayStateData lcdStateData = new DisplayStateData(
-							currentState.getCurrentScale(), currentState.getCurrentRotationId());
-					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+					if (skin.communicator.isSensorDaemonStarted() == true) {
+						/* Let's do one more update for sdl display surface
+						while skipping of framebuffer drawing */
+						DisplayStateData lcdStateData = new DisplayStateData(
+								currentState.getCurrentScale(), currentState.getCurrentRotationId());
+						skin.communicator.sendToQEMU(
+								SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
+					}
 				}
 
 				/* general shell does not support native transparency,
