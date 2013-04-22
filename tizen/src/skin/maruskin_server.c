@@ -1250,8 +1250,8 @@ static void* do_heart_beat(void* args)
 
         pthread_mutex_lock( &mutex_recv_heartbeat_count );
         recv_heartbeat_count++;
-        if ( 1 < recv_heartbeat_count ) {
-            TRACE( "[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count );
+        if (1 < recv_heartbeat_count) {
+            INFO("[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count);
         }
         pthread_mutex_unlock( &mutex_recv_heartbeat_count );
 
