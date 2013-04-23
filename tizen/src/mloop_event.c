@@ -428,8 +428,12 @@ static void mloop_evhandle_sdcard_detach(void)
 
     QDECREF(qdict);
 }
-#endif
 
+int mloop_evcmd_get_hostkbd_status(void)
+{
+    return hostkbd ? 1 : 0;
+}
+#endif
 
 static void mloop_evhandle_ramdump(struct mloop_evpack* pack)
 {
@@ -649,11 +653,6 @@ void mloop_evcmd_set_usbkbd(void *dev)
 void mloop_evcmd_set_usbdisk(void *dev)
 {
     usbdisk = (USBDevice *)dev;
-}
-
-int mloop_evcmd_get_hostkbd_status(void)
-{
-    return hostkbd ? 1 : 0;
 }
 
 void mloop_evcmd_hwkey(int event_type, int keycode)
