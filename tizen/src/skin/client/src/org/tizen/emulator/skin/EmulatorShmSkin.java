@@ -92,6 +92,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.imageFramebuffer =
 					new Image(Display.getDefault(), dataFramebuffer);
 
+			setName("PollFBThread");
 			setDaemon(true);
 			setWaitIntervalTime(0);
 

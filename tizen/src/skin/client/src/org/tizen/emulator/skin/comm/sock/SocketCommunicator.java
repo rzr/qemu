@@ -222,12 +222,11 @@ public class SocketCommunicator implements ICommunicator {
 			}
 		};
 
-		sendThread.start();
-
 		try {
+			dis = new DataInputStream(socket.getInputStream());
+			dos = new DataOutputStream(socket.getOutputStream());
 
-			dis = new DataInputStream( socket.getInputStream() );
-			dos = new DataOutputStream( socket.getOutputStream() );
+			sendThread.start();
 
 			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
 			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
