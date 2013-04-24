@@ -53,7 +53,7 @@
 #define PCI_DEVICE_ID_VIRTIO_KEYBOARD    0x1020
 #define PCI_DEVICE_ID_VIRTIO_ESM         0x1024
 #define PCI_DEVICE_ID_VIRTIO_HWKEY       0x1028
-#define PCI_DEVICE_ID_VIRTIO_EVDI        0x1028
+#define PCI_DEVICE_ID_VIRTIO_EVDI        0x102C
 
 /* Virtio */
 /*

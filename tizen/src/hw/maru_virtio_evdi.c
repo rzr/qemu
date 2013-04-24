@@ -93,36 +93,6 @@ static QTAILQ_HEAD(EvdiMsgHead , EvdiBuf) evdi_in_queue =
 static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t send_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/*
-bool queue_evdi_buf(VirtIO_EVDI* evdi)
-{
-	int sg_idx;
-	EvdiBuf* ebuf = malloc(sizeof(EvdiBuf));
-
-	while (sg_idx = virtqueue_pop(evdi->rvq, &ebuf->elem))
-
-	 INFO(">> QueueEvdiBuf : sg_idx = %d\n", sg_idx);
-
-
-	pthread_mutex_lock(&recv_buf_mutex);
-
-	QTAILQ_INSERT_TAIL(&evdi_in_queue, ebuf, next);
-	qemu_bh_schedule(evdi->bh);
-
-	pthread_mutex_unlock(&recv_buf_mutex);
-}
-*/
-/*
-void reset_msg_info(msg_info* info)
-{
-	info->route = route_ij;
-	info->use = 0;
-	info->count = 0;
-	info->index = 0;
-
-}
-*/
-
 bool send_to_evdi(const uint32_t route, char* data, const uint32_t len)
 {
 	int size;
@@ -160,12 +130,11 @@ bool send_to_evdi(const uint32_t route, char* data, const uint32_t len)
 }
 
 
-//static int g_cnt = 0;
+static int g_cnt = 0;
 
 static void flush_evdi_recv_queue(void)
 {
 	int index;
-	TRACE("nothing to do.\n");
 
     if (unlikely(!virtio_queue_ready(vio_evdi->rvq))) {
         INFO("virtio queue is not ready\n");
@@ -190,16 +159,16 @@ static void flush_evdi_recv_queue(void)
 		 index = virtqueue_pop(vio_evdi->rvq, &elem);
 		 if (index == 0)
 		 {
-			 ERR("unexpected empty queue");
+			 //ERR("unexpected empty queue");
 			 break;
 		 }
 
-		 INFO(">> virtqueue_pop. index: %d, out_num : %d, in_num : %d\n", index, elem.out_num, elem.in_num);
+		 //INFO(">> virtqueue_pop. index: %d, out_num : %d, in_num : %d\n", index, elem.out_num, elem.in_num);
 
 		 memcpy(elem.in_sg[0].iov_base, &msginfo->info, sizeof(struct msg_info));
 
-		 INFO(">> send to guest use = %d, msg = %s, iov_len = %d \n",
-		 				msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
+		 //INFO(">> send to guest count = %d, use = %d, msg = %s, iov_len = %d \n",
+				 ++g_cnt, msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
 
 		 virtqueue_push(vio_evdi->rvq, &elem, sizeof(msg_info));
 		 virtio_notify(&vio_evdi->vdev, vio_evdi->rvq);
@@ -216,66 +185,8 @@ static void flush_evdi_recv_queue(void)
 
 static void virtio_evdi_recv(VirtIODevice *vdev, VirtQueue *vq)
 {
-      INFO(">> evdirecv : virtio_evdi_recv\n");
-
-    if (!QTAILQ_EMPTY(&evdi_recv_msg_queue))
-    	return;
-
-    flush_evdi_recv_queue();
-
-    INFO("enf of virtio_evdi_recv\n");
+	flush_evdi_recv_queue();
 }
-
-/*
-static void virtio_evdi_recv(VirtIODevice *vdev, VirtQueue *vq)
-{
-    int index = 0;
-
-    struct msg_info _msg;
-
-    INFO(">> evdirecv : virtio_evdi_recv\n");
-
-	if (unlikely(virtio_queue_empty(vio_evdi->rvq))) {
-		INFO(">> evdirecv : virtqueue is empty\n");
-		return;
-	}
-
-    VirtQueueElement elem;
-
-    while ((index = virtqueue_pop(vq, &elem))) {
-
-    	INFO(">> evdirecv : virtqueue_pop. index: %d\n", index);
-    	INFO(">> evdirecv : element out_num : %d, in_num : %d\n", elem.out_num, elem.in_num);
-
-    	if (index == 0) {
-    		INFO("evdirecv : virtqueue break\n");
-			break;
-		}
-
-    	INFO(">> evdirecv : received use = %d, iov_len = %d\n", _msg.use, elem.in_sg[0].iov_len);
-
-    	memcpy(&_msg, elem.in_sg[0].iov_base,  elem.in_sg[0].iov_len);
-
-
-    	if (g_cnt < 10)
-    	{
-			memset(&_msg, 0x00, sizeof(_msg));
-			sprintf(_msg.buf, "test_%d\n", g_cnt++);
-			memcpy(elem.in_sg[0].iov_base, &_msg, sizeof(struct msg_info));
-
-			INFO(">> evdirecv : send to guest msg use = %d, msg = %s, iov_len = %d \n",
-					_msg.use, _msg.buf, elem.in_sg[0].iov_len);
-
-
-			virtqueue_push(vq, &elem, sizeof(VirtIO_EVDI));
-			virtio_notify(&vio_evdi->vdev, vq);
-    	}
-	}
-
-    INFO("enf of virtio_evdi_recv\n");
-}
-
-*/
 
 static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 {
@@ -292,19 +203,19 @@ static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 
     while ((index = virtqueue_pop(vq, &elem))) {
 
-		INFO("<< virtqueue pop. index: %d, out_num : %d, in_num : %d\n", index,  elem.out_num, elem.in_num);
+		//INFO("<< virtqueue pop. index: %d, out_num : %d, in_num : %d\n", index,  elem.out_num, elem.in_num);
 
 		if (index == 0) {
 			INFO("<< virtqueue break\n");
 			break;
 		}
 
-		INFO("<< use=%d, iov_len = %d\n", _msg.use, elem.out_sg[0].iov_len);
+		//INFO("<< use=%d, iov_len = %d\n", _msg.use, elem.out_sg[0].iov_len);
 
 		memset(&_msg, 0x00, sizeof(_msg));
 		memcpy(&_msg, elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
 
-		INFO("<< recv from guest len = %d, msg = %s \n", _msg.use, _msg.buf);
+		//INFO("<< recv from guest len = %d, msg = %s \n", _msg.use, _msg.buf);
 
 		ntf_to_injector(_msg.buf, _msg.use);
     }
@@ -312,44 +223,6 @@ static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 	virtqueue_push(vq, &elem, sizeof(VirtIO_EVDI));
 	virtio_notify(&vio_evdi->vdev, vq);
 }
-
-/*
-static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
-{
-	VirtIO_EVDI *vevdi = (VirtIO_EVDI *)vdev;
-    int index = 0;
-    struct msg_info _msg;
-
-    INFO("<< evdisend : virtio_evdi_send \n");
-    if (virtio_queue_empty(vevdi->svq)) {
-        INFO("<< evdisend : virtqueue is empty.\n");
-        return;
-    }
-
-    VirtQueueElement elem;
-
-    while ((index = virtqueue_pop(vq, &elem))) {
-
-		INFO("<< evdisend : virtqueue pop. index: %d\n", index);
-		INFO("<< evdisend : element out_num : %d, in_num : %d\n", elem.out_num, elem.in_num);
-
-		if (index == 0) {
-			INFO("<< evdisend : virtqueue break\n");
-			break;
-		}
-
-		INFO("<< evdisend : use=%d, iov_len = %d\n", _msg.use, elem.out_sg[0].iov_len);
-
-		memset(&_msg, 0x00, sizeof(_msg));
-		memcpy(&_msg, elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
-
-		INFO("<< evdisend : recv from guest len = %d, msg = %s \n", _msg.use, _msg.buf);
-    }
-
-	virtqueue_push(vq, &elem, sizeof(VirtIO_EVDI));
-	virtio_notify(&vio_evdi->vdev, vq);
-}
-*/
 
 static uint32_t virtio_evdi_get_features(VirtIODevice *vdev,
                                             uint32_t request_feature)

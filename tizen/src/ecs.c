@@ -720,11 +720,19 @@ void read_val_str(const char* data, char* ret_val, int len)
 	memcpy(ret_val, data, len);
 }
 
+void make_header(QDict* obj, type_length length, type_group group, type_action action)
+{
+	qdict_put(obj, "length",  qint_from_int((int64_t)length));
+	qdict_put(obj, "group",  qint_from_int((int64_t)group));
+	qdict_put(obj, "action",  qint_from_int((int64_t)action));
+}
+
+
 bool ntf_to_injector(const char* data, const int len)
 {
 	type_length length = 0;
-	type_action group = 0;
-	type_group action = 0;
+	type_group group = 0;
+	type_action action = 0;
 
 
 	const int catsize = 10;
@@ -742,20 +750,25 @@ bool ntf_to_injector(const char* data, const int len)
 	const char* ijdata = (data + catsize +  2 + 1 + 1);
 
 	QDict* obj_header = qdict_new();
+	make_header(obj_header, length, group, action);
 
-	qdict_put(obj_header, "cat",  qstring_from_str(cat));
-	qdict_put(obj_header, "length",  qint_from_int((int64_t)length));
-	qdict_put(obj_header, "group",  qint_from_int((int64_t)group));
-	qdict_put(obj_header, "action",  qint_from_int((int64_t)action));
-
-	QDict* obj = qdict_new();
+	QDict* objData = qdict_new();
 	qobject_incref(QOBJECT(obj_header));
-	qdict_put(obj, "header", obj_header);
-	qdict_put(obj, "data", qstring_from_str(ijdata));
 
+	qdict_put(objData, "cat",  qstring_from_str(cat));
+	qdict_put(objData, "header", obj_header);
+	qdict_put(objData, "ijdata", qstring_from_str(ijdata));
+
+
+	QDict* objMsg = qdict_new();
+	qobject_incref(QOBJECT(objData));
+
+	qdict_put(objMsg, "type", qstring_from_str("injector"));
+	qdict_put(objMsg, "result", qstring_from_str("success"));
+	qdict_put(objMsg, "data", objData);
 
     QString *json;
-    json =  qobject_to_json(QOBJECT(obj));
+    json =  qobject_to_json(QOBJECT(objMsg));
 
     assert(json != NULL);
 
@@ -769,7 +782,8 @@ bool ntf_to_injector(const char* data, const int len)
 	QDECREF(json);
 
 	QDECREF(obj_header);
-	QDECREF(obj);
+	QDECREF(objData);
+	QDECREF(objMsg);
 
 	return true;
 }
@@ -784,6 +798,8 @@ bool ntf_to_monitor(const char* data, const int len)
 	return true;
 }
 
+static int ijcount = 0;
+
 static bool injector_command_proc(ECS_Client *clii, QObject *obj)
 {
 	QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
@@ -797,6 +813,7 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj)
 
 	// get data
 	const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
+	LOG(">> count= %d", ++ijcount);
 	LOG(">> print len = %d, data\" %s\"", strlen(data), data);
 	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d",
 			cmd, length, action, group);

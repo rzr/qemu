@@ -55,6 +55,8 @@ bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char *str);
 
 
+void make_header(QDict* obj, type_length length, type_group group, type_action action);
+
 void read_val_short(const char* data, unsigned short* ret_val);
 void read_val_char(const char* data, unsigned char* ret_val);
 void read_val_str(const char* data, char* ret_val, int len);
