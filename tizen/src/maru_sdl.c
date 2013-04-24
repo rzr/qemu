@@ -577,9 +577,9 @@ void maruskin_sdl_init(uint64 swt_handle,
 
 void maruskin_sdl_quit(void)
 {
+    INFO("maru sdl quit\n");
+
     /* remove multi-touch finger points */
-    get_emul_multi_touch_state()->multitouch_enable = 0;
-    clear_finger_slot();
     cleanup_multi_touch_state();
 
 #if 0

@@ -131,7 +131,7 @@ void maruskin_shm_init(uint64 swt_handle,
     /* base + 2 = shared memory key */
     int mykey = get_emul_vm_base_port() + 2;
 
-    INFO("shared memory key: %d, vga ram_size : %d\n", mykey, shm_size);
+    INFO("shared memory key: %d, size: %d bytes\n", mykey, shm_size);
 
     /* make a shared framebuffer */
     skin_shmid = shmget((key_t)mykey, (size_t)shm_size, 0666 | IPC_CREAT);
@@ -141,31 +141,38 @@ void maruskin_shm_init(uint64 swt_handle,
 
         maru_register_exit_msg(MARU_EXIT_UNKNOWN,
             (char*) "Cannot launch this VM.\n"
-            "Shared memory is not enough.");
-        exit(0);
+            "Failed to get identifier of the shared memory segment.");
+        exit(1);
     }
 
     shared_memory = shmat(skin_shmid, (void*)0, 0);
     if (shared_memory == (void *)-1) {
         ERR("shmat failed\n");
         perror("maru_vga: ");
+
+        maru_register_exit_msg(MARU_EXIT_UNKNOWN,
+            (char*) "Cannot launch this VM.\n"
+            "Failed to attach the shared memory segment.");
         exit(1);
     }
 
     /* default screen */
     memset(shared_memory, 0x00, (size_t)shm_size);
-    printf("Memory attached at %X\n", (int)shared_memory);
+    printf("Memory attached at 0x%X\n", (int)shared_memory);
 }
 
 void maruskin_shm_quit(void)
 {
+    INFO("maru shm quit\n");
+
     if (shmdt(shared_memory) == -1) {
         ERR("shmdt failed\n");
         perror("maru_vga: ");
     }
+    shared_memory = NULL;
 
     if (shmctl(skin_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
+        INFO("segment was already removed\n");
         perror("maru_vga: ");
     }
 }

@@ -116,7 +116,7 @@ void set_bin_path_os(gchar * exec_argv)
 
 void print_system_info_os(void)
 {
-  INFO("* Mac\n");
+    INFO("* Mac\n");
 
     /* uname */
     INFO("* Host machine uname :\n");
@@ -163,6 +163,17 @@ void print_system_info_os(void)
     len = sizeof(sys_num);
     if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
         INFO("* Total memory : %llu bytes\n", sys_num);
+    }
+
+    /* java version */
+    INFO("* Java version :\n");
+    char lspci_cmd[MAXLEN] = "java -version 2>> ";
+    strcat(lspci_cmd, log_path);
+
+    fflush(stdout);
+    if(system(lspci_cmd) < 0) {
+        INFO("system function command '%s' \
+            returns error !", lspci_cmd);
     }
 }
 

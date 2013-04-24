@@ -42,12 +42,13 @@ int shmid;
 
 
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
-    (JNIEnv *env, jobject obj, jint shmkey, jint vga_ram_size)
+    (JNIEnv *env, jobject obj, jint shmkey, jint size)
 {
-    fprintf(stdout, "share.c: shared memory key = %d, size=%d\n", shmkey, vga_ram_size);
+    fprintf(stdout, "share.c: shared memory key=%d, size=%d bytes\n",
+        shmkey, size);
     fflush(stdout);
 
-    shmid = shmget((key_t)shmkey, (size_t)vga_ram_size, 0666 | IPC_CREAT);
+    shmid = shmget((key_t)shmkey, (size_t)size, 0666 | IPC_CREAT);
     if (shmid == -1) {
         fprintf(stderr, "share.c: shmget failed\n");
         fflush(stderr);
@@ -62,12 +63,18 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
         return 2;
     }
 
+    fprintf(stdout, "Memory attached at 0x%X\n", (int)shared_memory);
+    fflush(stdout);
+
     return 0;
 }
 
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
     (JNIEnv *env, jobject obj)
 {
+    fprintf(stdout, "share.c: clean up the shared memory\n");
+    fflush(stdout);
+
     /* Lastly, the shared memory is detached */
     if (shmdt(shared_memory) == -1) {
         fprintf(stderr, "share.c: shmdt failed\n");
@@ -75,12 +82,14 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
         perror("share.c: ");
         return 1;
     }
+    shared_memory = NULL;
 
     /*
     if (shmctl(shmid, IPC_RMID, 0) == -1) {
-        fprintf(stderr, "share.c: shmctl failed\n");
-        fflush(stderr);
+        fprintf(stdout, "share.c: segment was already removed\n");
+        fflush(stdout);
         perror("share.c: ");
+        return 2;
     }
     */
 
@@ -97,7 +106,9 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_getPixels
         return -1;
     }
 
-    (*env)->SetIntArrayRegion(env, array, 0, len, shared_memory);
+    if (shared_memory != NULL) {
+        (*env)->SetIntArrayRegion(env, array, 0, len, shared_memory);
+    }
 
     return len;
 }

@@ -326,6 +326,7 @@ static void print_system_info(void)
         SDL_Linked_Version()->minor,
         SDL_Linked_Version()->patch);
 #endif
+
     print_system_info_os();
 }
 

@@ -397,6 +397,8 @@ public class EmulatorSkin {
 	}
 
 	protected void skinFinalize() {
+		logger.info("skinFinalize");
+
 		skinComposer.composerFinalize();
 	}
 
@@ -1708,6 +1710,7 @@ public class EmulatorSkin {
 	}
 
 	public void shutdown() {
+		logger.info("shutdown the skin process");
 
 		isShutdownRequested = true;
 

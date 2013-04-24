@@ -202,6 +202,22 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				currentState.getCurrentResolutionHeight() * 4);
 		logger.info("shmget native function returned " + result);
 
+		if (result == 1) {
+			logger.severe("Failed to get identifier of the shared memory segment.");
+			SkinUtil.openMessage(shell, null,
+					"Cannot launch this VM.\n" +
+					"Failed to get identifier of the shared memory segment.",
+					SWT.ICON_ERROR, config);
+			System.exit(-1);
+		} else if (result == 2) {
+			logger.severe("Failed to attach the shared memory segment.");
+			SkinUtil.openMessage(shell, null,
+					"Cannot launch this VM.\n" +
+					"Failed to attach the shared memory segment.",
+					SWT.ICON_ERROR, config);
+			System.exit(-1);
+		}
+
 		/* update lcd thread */
 		pollThread = new PollFBThread(
 				currentState.getCurrentResolutionWidth(),

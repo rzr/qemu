@@ -99,7 +99,7 @@ public class EmulatorSkinMain {
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
 			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Emulator"); 
 		}
-		
+
 		String simpleMsg = getSimpleMsg(args);
 		if (simpleMsg != null) {
 			/* just show one message box. that's all. */
@@ -128,6 +128,15 @@ public class EmulatorSkinMain {
 
 			logger = SkinLogger.getSkinLogger(EmulatorSkinMain.class).getLogger();
 			logger.info("!!! Start Emualtor Skin !!!");
+
+			logger.info("java.version: " + System.getProperty("java.version"));
+			logger.info("java vendor: " + System.getProperty("java.vendor"));
+			logger.info("vm version: " + System.getProperty("java.vm.version"));
+			logger.info("vm vendor: " + System.getProperty("java.vm.vendor"));
+			logger.info("vm name: " + System.getProperty("java.vm.name"));
+			logger.info("os name: " + System.getProperty("os.name"));
+			logger.info("os arch: " + System.getProperty("os.arch"));
+			logger.info("os version: " + System.getProperty("os.version"));
 
 			/* startup arguments parsing */
 			Map<String, String> argsMap = parsArgs(args);

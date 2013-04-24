@@ -152,9 +152,9 @@ void print_system_info_os(void)
 
     /* depends on building */
     INFO("* QEMU build machine linux kernel version : (%d, %d, %d)\n",
-            LINUX_VERSION_CODE >> 16,
-            (LINUX_VERSION_CODE >> 8) & 0xff,
-            LINUX_VERSION_CODE & 0xff);
+        LINUX_VERSION_CODE >> 16,
+        (LINUX_VERSION_CODE >> 8) & 0xff,
+        LINUX_VERSION_CODE & 0xff);
 
      /* depends on launching */
     struct utsname host_uname_buf;
@@ -185,6 +185,8 @@ void print_system_info_os(void)
     INFO("* PCI devices :\n");
     char lspci_cmd[MAXLEN] = "lspci >> ";
     strcat(lspci_cmd, log_path);
+
+    fflush(stdout);
     if(system(lspci_cmd) < 0) {
         INFO("system function command '%s' \
             returns error !", lspci_cmd);
