@@ -10,7 +10,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or ( at your option ) any later version.
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -63,7 +63,8 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
         return 2;
     }
 
-    fprintf(stdout, "Memory attached at 0x%X\n", (int)shared_memory);
+    fprintf(stdout, "share.c: memory attached at 0x%X\n",
+        (int)shared_memory);
     fflush(stdout);
 
     return 0;
@@ -72,6 +73,16 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
 JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
     (JNIEnv *env, jobject obj)
 {
+    struct shmid_ds shm_info;
+
+    if (shmctl(shmid, IPC_STAT, &shm_info) == -1) {
+        fprintf(stderr, "share.c: shmctl failed\n");
+        fflush(stderr);
+        perror("share.c: ");
+
+        shm_info.shm_nattch = -1;
+    }
+
     fprintf(stdout, "share.c: clean up the shared memory\n");
     fflush(stdout);
 
@@ -84,14 +95,19 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmdt
     }
     shared_memory = NULL;
 
-    /*
-    if (shmctl(shmid, IPC_RMID, 0) == -1) {
-        fprintf(stdout, "share.c: segment was already removed\n");
+    if (shm_info.shm_nattch == 1) {
+        /* remove */
+        if (shmctl(shmid, IPC_RMID, 0) == -1) {
+            fprintf(stdout, "share.c: segment was already removed\n");
+            fflush(stdout);
+            perror("share.c: ");
+            return 2;
+        }
+    } else if (shm_info.shm_nattch != -1) {
+        fprintf(stdout, "share.c: number of current attaches = %d\n",
+            (int)shm_info.shm_nattch);
         fflush(stdout);
-        perror("share.c: ");
-        return 2;
     }
-    */
 
     return 0;
 }

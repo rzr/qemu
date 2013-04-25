@@ -1700,6 +1700,11 @@ public class EmulatorSkin {
 
 				if (answer == SWT.OK) {
 					logger.info("force close!!!");
+
+					if (communicator != null) {
+						communicator.terminate();
+					}
+
 					System.exit(-1);
 				}
 			}

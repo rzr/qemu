@@ -158,22 +158,38 @@ void maruskin_shm_init(uint64 swt_handle,
 
     /* default screen */
     memset(shared_memory, 0x00, (size_t)shm_size);
-    printf("Memory attached at 0x%X\n", (int)shared_memory);
+    INFO("Memory attached at 0x%X\n", (int)shared_memory);
 }
 
 void maruskin_shm_quit(void)
 {
+    struct shmid_ds shm_info;
+
     INFO("maru shm quit\n");
+
+    if (shmctl(skin_shmid, IPC_STAT, &shm_info) == -1) {
+        ERR("shmctl failed\n");
+        shm_info.shm_nattch = -1;
+    }
 
     if (shmdt(shared_memory) == -1) {
         ERR("shmdt failed\n");
         perror("maru_vga: ");
+        return;
     }
     shared_memory = NULL;
 
-    if (shmctl(skin_shmid, IPC_RMID, 0) == -1) {
-        INFO("segment was already removed\n");
-        perror("maru_vga: ");
+    if (shm_info.shm_nattch == 1) {
+        /* remove */
+        if (shmctl(skin_shmid, IPC_RMID, 0) == -1) {
+            INFO("segment was already removed\n");
+            perror("maru_vga: ");
+        } else {
+            INFO("shared memory was removed\n");
+        }
+    } else if (shm_info.shm_nattch != -1) {
+        INFO("number of current attaches = %d\n",
+            (int)shm_info.shm_nattch);
     }
 }
 

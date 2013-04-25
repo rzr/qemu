@@ -207,16 +207,16 @@ public class SocketCommunicator implements ICommunicator {
 
 					}
 
+					if (isTerminated) {
+						list.clear();
+						break;
+					}
+
 					for ( SkinSendData data : list ) {
 						sendToQEMUInternal( data );
 					}
 
 					list.clear();
-
-					if ( isTerminated ) {
-						break;
-					}
-
 				}
 
 			}
@@ -406,7 +406,6 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				}
-
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				break;
@@ -414,6 +413,7 @@ public class SocketCommunicator implements ICommunicator {
 
 		}
 
+		logger.info("communicatorThread is stopped");
 	}
 
 	private void receiveData(
@@ -674,8 +674,14 @@ public class SocketCommunicator implements ICommunicator {
 
 	@Override
 	public void terminate() {
-		isTerminated = true;
+		if (isTerminated == true) {
+			logger.info("has been terminated");
+			return;
+		}
+
 		logger.info("terminated");
+
+		isTerminated = true;
 
 		if (null != sendQueue) {
 			synchronized (sendQueue) {
@@ -685,6 +691,7 @@ public class SocketCommunicator implements ICommunicator {
 
 		if (null != heartbeatTimer) {
 			heartbeatTimer.cancel();
+			heartbeatTimer = null;
 		}
 
 		IOUtil.closeSocket(socket);
