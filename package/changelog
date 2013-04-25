@@ -1,3 +1,6 @@
+* 1.5.33
+- Remove a shared memory if not using it anymore
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-04-25
 * 1.5.32
 - Fix the slideshow problem of gallery app.
 == Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-23
