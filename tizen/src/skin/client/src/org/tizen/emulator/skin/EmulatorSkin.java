@@ -1705,7 +1705,12 @@ public class EmulatorSkin {
 						communicator.terminate();
 					}
 
-					System.exit(-1);
+					shell.getDisplay().asyncExec(new Runnable() {
+						@Override
+						public void run() {
+							System.exit(-1);
+						}
+					});
 				}
 			}
 		});

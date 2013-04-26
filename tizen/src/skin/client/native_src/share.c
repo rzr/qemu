@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <errno.h>
 #include "org_tizen_emulator_skin_EmulatorShmSkin.h"
 
 #define MAXLEN 512
@@ -52,7 +53,32 @@ JNIEXPORT jint JNICALL Java_org_tizen_emulator_skin_EmulatorShmSkin_shmget
     if (shmid == -1) {
         fprintf(stderr, "share.c: shmget failed\n");
         fflush(stderr);
-        return 1;
+
+        if (errno == EINVAL) {
+            /* get identifiedr of unavailable segment */
+            shmid = shmget((key_t)shmkey, (size_t)1, 0666 | IPC_CREAT);
+            if (shmid == -1) {
+                perror("share.c: ");
+                return 1;
+            }
+
+            /* a segment with given key existed, but size is greater than
+            the size of that segment */
+            if (shmctl(shmid, IPC_RMID, 0) == -1) {
+                perror("share.c: ");
+                return 1;
+            }
+
+            /* try to shmget one more time */
+            shmid = shmget((key_t)shmkey, (size_t)size, 0666 | IPC_CREAT);
+            if (shmid == -1) {
+                perror("share.c: ");
+                return 1;
+            } else {
+                fprintf(stdout, "share.c: new segment was to be created!\n");
+                fflush(stdout);
+            }
+        }
     }
 
     /* We now make the shared memory accessible to the program */
