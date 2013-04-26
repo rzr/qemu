@@ -58,8 +58,7 @@ struct vigs_server
     GHashTable *surfaces;
 
     struct vigs_surface *root_sfc;
-
-    GHashTable *resources;
+    uint8_t *root_sfc_data;
 
     /*
      * General purpose vectors.

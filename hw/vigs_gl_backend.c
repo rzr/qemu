@@ -1,6 +1,5 @@
 #include "vigs_gl_backend.h"
 #include "vigs_surface.h"
-#include "vigs_id_gen.h"
 #include "vigs_log.h"
 #include "vigs_utils.h"
 #include "vigs_ref.h"
@@ -74,22 +73,6 @@ struct vigs_gl_surface
      * Allocated on first access.
      */
     GLuint tmp_tex;
-
-    /*
-     * Fence that gets inserted into GL stream
-     * that comes from windowing system.
-     *
-     * 0 if no GL commands are pending.
-     */
-    GLsync fence_2d;
-
-    /*
-     * Fence that gets inserted into GL stream
-     * that comes from 3D renderer.
-     *
-     * 0 if no GL commands are pending.
-     */
-    GLsync fence_3d;
 };
 
 static __inline struct vigs_winsys_gl_surface
@@ -190,86 +173,17 @@ static void vigs_gl_surface_setup_framebuffer(struct vigs_gl_surface *gl_sfc)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
 
-    gl_backend->Viewport(0, 0, gl_sfc->base.width, gl_sfc->base.height);
+    gl_backend->Viewport(0, 0,
+                         gl_sfc->base.ws_sfc->width, gl_sfc->base.ws_sfc->height);
     gl_backend->MatrixMode(GL_PROJECTION);
     gl_backend->LoadIdentity();
-    gl_backend->Ortho(0.0, gl_sfc->base.width, 0.0, gl_sfc->base.height, -1.0, 1.0);
+    gl_backend->Ortho(0.0, gl_sfc->base.ws_sfc->width,
+                      0.0, gl_sfc->base.ws_sfc->height,
+                      -1.0, 1.0);
     gl_backend->MatrixMode(GL_MODELVIEW);
     gl_backend->LoadIdentity();
     gl_backend->Disable(GL_DEPTH_TEST);
     gl_backend->Disable(GL_BLEND);
-}
-
-static void vigs_gl_surface_set_fence_2d(struct vigs_gl_surface *gl_sfc)
-{
-    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
-
-    if (!gl_backend->has_arb_sync) {
-        gl_backend->Finish();
-        return;
-    }
-
-    if (gl_sfc->fence_2d) {
-        gl_backend->DeleteSync(gl_sfc->fence_2d);
-    }
-
-    gl_sfc->fence_2d = gl_backend->FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    gl_backend->Flush();
-}
-
-static void vigs_gl_surface_wait_fence_2d(struct vigs_gl_surface *gl_sfc)
-{
-    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
-
-    if (!gl_backend->has_arb_sync) {
-        return;
-    }
-
-    if (gl_sfc->fence_2d) {
-        /*
-         * Using glClientWaitSync instead of glWaitSync because of
-         * nVidia bug on windows.
-         */
-        gl_backend->ClientWaitSync(gl_sfc->fence_2d, 0, GL_TIMEOUT_IGNORED);
-        gl_backend->DeleteSync(gl_sfc->fence_2d);
-        gl_sfc->fence_2d = 0;
-    }
-}
-
-static void vigs_gl_surface_set_fence_3d(struct vigs_gl_surface *gl_sfc)
-{
-    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
-
-    if (!gl_backend->has_arb_sync) {
-        gl_backend->Finish();
-        return;
-    }
-
-    if (gl_sfc->fence_3d) {
-        gl_backend->DeleteSync(gl_sfc->fence_3d);
-    }
-
-    gl_sfc->fence_3d = gl_backend->FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    gl_backend->Flush();
-}
-
-static void vigs_gl_surface_wait_fence_3d(struct vigs_gl_surface *gl_sfc)
-{
-    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
-
-    if (!gl_backend->has_arb_sync) {
-        return;
-    }
-
-    if (gl_sfc->fence_3d) {
-        /*
-         * Using glClientWaitSync instead of glWaitSync because of
-         * nVidia bug on windows.
-         */
-        gl_backend->ClientWaitSync(gl_sfc->fence_3d, 0, GL_TIMEOUT_IGNORED);
-        gl_backend->DeleteSync(gl_sfc->fence_3d);
-        gl_sfc->fence_3d = 0;
-    }
 }
 
 /*
@@ -333,97 +247,6 @@ static GLuint vigs_winsys_gl_surface_get_back_texture(struct winsys_gl_surface *
     return vigs_sfc->back_tex;
 }
 
-static void vigs_winsys_gl_surface_swap_buffers(struct winsys_gl_surface *sfc)
-{
-    struct vigs_winsys_gl_surface *vigs_sfc = (struct vigs_winsys_gl_surface*)sfc;
-    GLuint cur_fb = 0;
-
-    if (!vigs_sfc->parent) {
-        return;
-    }
-
-    if (!vigs_gl_surface_create_framebuffer(vigs_sfc->parent)) {
-        return;
-    }
-
-    if (!vigs_winsys_gl_surface_create_texture(vigs_sfc, &vigs_sfc->front_tex)) {
-        return;
-    }
-
-    vigs_gl_surface_wait_fence_2d(vigs_sfc->parent);
-
-    vigs_sfc->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
-
-    vigs_sfc->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
-                                       cur_fb);
-    vigs_sfc->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
-                                       vigs_sfc->parent->fb);
-    vigs_sfc->backend->FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                            GL_TEXTURE_2D, vigs_sfc->front_tex, 0);
-
-    vigs_sfc->backend->BlitFramebuffer(0, 0, sfc->base.width, sfc->base.height,
-                                       0, 0, sfc->base.width, sfc->base.height,
-                                       GL_COLOR_BUFFER_BIT,
-                                       GL_LINEAR);
-
-    vigs_sfc->backend->BindFramebuffer(GL_FRAMEBUFFER,
-                                       cur_fb);
-
-    vigs_gl_surface_set_fence_3d(vigs_sfc->parent);
-
-    vigs_sfc->parent->base.is_dirty = true;
-}
-
-static void vigs_winsys_gl_surface_copy_buffers(uint32_t width,
-                                                uint32_t height,
-                                                struct winsys_gl_surface *target,
-                                                bool is_loop)
-{
-    struct vigs_winsys_gl_surface *vigs_target = (struct vigs_winsys_gl_surface*)target;
-    GLuint cur_fb = 0;
-
-    if (!vigs_target->parent) {
-        return;
-    }
-
-    vigs_gl_surface_wait_fence_2d(vigs_target->parent);
-
-    if (is_loop) {
-        /*
-         * Feedback loop is possible, no-op.
-         */
-    } else {
-        if (!vigs_gl_surface_create_framebuffer(vigs_target->parent)) {
-            return;
-        }
-
-        if (!vigs_winsys_gl_surface_create_texture(vigs_target, &vigs_target->front_tex)) {
-            return;
-        }
-
-        vigs_target->backend->GetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cur_fb);
-
-        vigs_target->backend->BindFramebuffer(GL_READ_FRAMEBUFFER,
-                                              cur_fb);
-        vigs_target->backend->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
-                                              vigs_target->parent->fb);
-        vigs_target->backend->FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                                   GL_TEXTURE_2D, vigs_target->front_tex, 0);
-
-        vigs_target->backend->BlitFramebuffer(0, 0, width, height,
-                                              0, 0, width, height,
-                                              GL_COLOR_BUFFER_BIT,
-                                              GL_LINEAR);
-
-        vigs_target->backend->BindFramebuffer(GL_FRAMEBUFFER,
-                                              cur_fb);
-    }
-
-    vigs_gl_surface_set_fence_3d(vigs_target->parent);
-
-    vigs_target->parent->base.is_dirty = true;
-}
-
 static void vigs_winsys_gl_surface_destroy(struct vigs_ref *ref)
 {
     struct vigs_winsys_gl_surface *vigs_sfc =
@@ -469,8 +292,6 @@ static struct vigs_winsys_gl_surface
     ws_sfc->base.base.release = &vigs_winsys_gl_surface_release;
     ws_sfc->base.get_front_texture = &vigs_winsys_gl_surface_get_front_texture;
     ws_sfc->base.get_back_texture = &vigs_winsys_gl_surface_get_back_texture;
-    ws_sfc->base.swap_buffers = &vigs_winsys_gl_surface_swap_buffers;
-    ws_sfc->base.copy_buffers = &vigs_winsys_gl_surface_copy_buffers;
     ws_sfc->tex_internalformat = tex_internalformat;
     ws_sfc->tex_format = tex_format;
     ws_sfc->tex_type = tex_type;
@@ -497,76 +318,11 @@ static void vigs_winsys_gl_surface_orphan(struct vigs_winsys_gl_surface *sfc)
  * @{
  */
 
-static void vigs_gl_surface_update(struct vigs_surface *sfc,
-                                   vigsp_offset vram_offset,
-                                   uint8_t *data)
-{
-    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
-    struct vigs_gl_surface *gl_sfc = (struct vigs_gl_surface*)sfc;
-    struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
-
-    assert(data != NULL);
-
-    if (!gl_backend->make_current(gl_backend, true)) {
-        return;
-    }
-
-    sfc->vram_offset = vram_offset;
-    sfc->data = data;
-
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->front_tex)) {
-        goto out;
-    }
-
-    if (!vigs_gl_surface_create_framebuffer(gl_sfc)) {
-        goto out;
-    }
-
-    vigs_gl_surface_wait_fence_3d(gl_sfc);
-
-    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
-
-    vigs_gl_surface_setup_framebuffer(gl_sfc);
-
-    gl_backend->Disable(GL_TEXTURE_2D);
-
-    gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, ws_sfc->front_tex, 0);
-
-    gl_backend->PixelZoom(1.0f, -1.0f);
-    gl_backend->RasterPos2f(0.0f, gl_sfc->base.height);
-    gl_backend->DrawPixels(gl_sfc->base.width,
-                           gl_sfc->base.height,
-                           ws_sfc->tex_format,
-                           ws_sfc->tex_type,
-                           data);
-
-    vigs_gl_surface_set_fence_2d(gl_sfc);
-
-    sfc->is_dirty = false;
-
-    VIGS_LOG_TRACE("updated");
-
-out:
-    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    gl_backend->make_current(gl_backend, false);
-}
-
-static void vigs_gl_surface_set_data(struct vigs_surface *sfc,
-                                     vigsp_offset vram_offset,
-                                     uint8_t *data)
-{
-    sfc->vram_offset = vram_offset;
-    sfc->data = data;
-}
-
 static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
                                         uint32_t x,
                                         uint32_t y,
                                         uint32_t width,
                                         uint32_t height,
-                                        uint32_t stride,
                                         uint8_t *pixels)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
@@ -578,11 +334,6 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
 
     VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
                    x, y, width, height);
-
-    if ((width * ws_sfc->tex_bpp) != stride) {
-        VIGS_LOG_ERROR("Custom strides not supported yet");
-        return;
-    }
 
     if (!gl_backend->make_current(gl_backend, true)) {
         return;
@@ -604,13 +355,11 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
         goto out;
     }
 
-    vigs_gl_surface_wait_fence_3d(gl_sfc);
-
     vigs_vector_resize(&gl_backend->v1, 0);
     vigs_vector_resize(&gl_backend->v2, 0);
 
-    sfc_w = gl_sfc->base.width;
-    sfc_h = gl_sfc->base.height;
+    sfc_w = ws_sfc->base.base.width;
+    sfc_h = ws_sfc->base.base.height;
 
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
@@ -670,6 +419,59 @@ out:
     gl_backend->make_current(gl_backend, false);
 }
 
+static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
+                                        uint32_t x,
+                                        uint32_t y,
+                                        uint32_t width,
+                                        uint32_t height,
+                                        uint8_t *pixels)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
+    struct vigs_gl_surface *gl_sfc = (struct vigs_gl_surface*)sfc;
+    struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
+
+    VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
+                   x, y, width, height);
+
+    if (!gl_backend->make_current(gl_backend, true)) {
+        return;
+    }
+
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->front_tex)) {
+        goto out;
+    }
+
+    if (!vigs_gl_surface_create_framebuffer(gl_sfc)) {
+        goto out;
+    }
+
+    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
+
+    vigs_gl_surface_setup_framebuffer(gl_sfc);
+
+    gl_backend->Disable(GL_TEXTURE_2D);
+
+    gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                     GL_TEXTURE_2D, ws_sfc->front_tex, 0);
+
+    gl_backend->PixelZoom(1.0f, -1.0f);
+    gl_backend->RasterPos2f(x, ws_sfc->base.base.height - y);
+    gl_backend->DrawPixels(width,
+                           height,
+                           ws_sfc->tex_format,
+                           ws_sfc->tex_type,
+                           pixels);
+
+    gl_backend->Finish();
+
+    gl_sfc->base.is_dirty = true;
+
+out:
+    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    gl_backend->make_current(gl_backend, false);
+}
+
 static void vigs_gl_surface_copy(struct vigs_surface *dst,
                                  struct vigs_surface *src,
                                  const struct vigsp_copy *entries,
@@ -709,12 +511,9 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     vigs_vector_resize(&gl_backend->v1, 0);
     vigs_vector_resize(&gl_backend->v2, 0);
 
-    src_w = gl_src->base.width;
-    src_h = gl_src->base.height;
-    dst_h = gl_dst->base.height;
-
-    vigs_gl_surface_wait_fence_3d(gl_src);
-    vigs_gl_surface_wait_fence_3d(gl_dst);
+    src_w = ws_src->base.base.width;
+    src_h = ws_src->base.base.height;
+    dst_h = ws_dst->base.base.height;
 
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_dst->fb);
 
@@ -848,7 +647,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     gl_backend->DisableClientState(GL_TEXTURE_COORD_ARRAY);
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
-    vigs_gl_surface_set_fence_2d(gl_dst);
+    gl_backend->Finish();
 
     gl_dst->base.is_dirty = true;
 
@@ -882,9 +681,7 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
         goto out;
     }
 
-    sfc_h = gl_sfc->base.height;
-
-    vigs_gl_surface_wait_fence_3d(gl_sfc);
+    sfc_h = ws_sfc->base.base.height;
 
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
@@ -928,62 +725,7 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
 
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
-    vigs_gl_surface_set_fence_2d(gl_sfc);
-
-    gl_sfc->base.is_dirty = true;
-
-out:
-    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    gl_backend->make_current(gl_backend, false);
-}
-
-static void vigs_gl_surface_put_image(struct vigs_surface *sfc,
-                                      const void *src,
-                                      uint32_t src_stride,
-                                      const struct vigsp_rect *rect)
-{
-    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
-    struct vigs_gl_surface *gl_sfc = (struct vigs_gl_surface*)sfc;
-    struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
-
-    if (!gl_backend->make_current(gl_backend, true)) {
-        return;
-    }
-
-    if ((rect->size.w * ws_sfc->tex_bpp) != src_stride) {
-        VIGS_LOG_ERROR("Custom strides not supported yet");
-        goto out;
-    }
-
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->front_tex)) {
-        goto out;
-    }
-
-    if (!vigs_gl_surface_create_framebuffer(gl_sfc)) {
-        goto out;
-    }
-
-    vigs_gl_surface_wait_fence_3d(gl_sfc);
-
-    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
-
-    vigs_gl_surface_setup_framebuffer(gl_sfc);
-
-    gl_backend->Disable(GL_TEXTURE_2D);
-
-    gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, ws_sfc->front_tex, 0);
-
-    gl_backend->PixelZoom(1.0f, -1.0f);
-    gl_backend->RasterPos2f(rect->pos.x, gl_sfc->base.height - rect->pos.y);
-    gl_backend->DrawPixels(rect->size.w,
-                           rect->size.h,
-                           ws_sfc->tex_format,
-                           ws_sfc->tex_type,
-                           src);
-
-    vigs_gl_surface_set_fence_2d(gl_sfc);
+    gl_backend->Finish();
 
     gl_sfc->base.is_dirty = true;
 
@@ -1009,15 +751,6 @@ static void vigs_gl_surface_destroy(struct vigs_surface *sfc)
             gl_backend->DeleteTextures(1, &gl_sfc->tmp_tex);
         }
 
-        if (gl_backend->has_arb_sync) {
-            if (gl_sfc->fence_2d) {
-                gl_backend->DeleteSync(gl_sfc->fence_2d);
-            }
-            if (gl_sfc->fence_3d) {
-                gl_backend->DeleteSync(gl_sfc->fence_3d);
-            }
-        }
-
         gl_backend->make_current(gl_backend, false);
     }
 
@@ -1035,8 +768,7 @@ static struct vigs_surface *vigs_gl_backend_create_surface(struct vigs_backend *
                                                            uint32_t height,
                                                            uint32_t stride,
                                                            vigsp_surface_format format,
-                                                           vigsp_offset vram_offset,
-                                                           uint8_t *data)
+                                                           vigsp_surface_id id)
 {
     struct vigs_gl_surface *gl_sfc = NULL;
     struct vigs_winsys_gl_surface *ws_sfc = NULL;
@@ -1078,20 +810,16 @@ static struct vigs_surface *vigs_gl_backend_create_surface(struct vigs_backend *
     vigs_surface_init(&gl_sfc->base,
                       &ws_sfc->base.base,
                       backend,
-                      vigs_id_gen(),
                       stride,
                       format,
-                      vram_offset,
-                      data);
+                      id);
 
     ws_sfc->base.base.release(&ws_sfc->base.base);
 
-    gl_sfc->base.update = &vigs_gl_surface_update;
-    gl_sfc->base.set_data = &vigs_gl_surface_set_data;
     gl_sfc->base.read_pixels = &vigs_gl_surface_read_pixels;
+    gl_sfc->base.draw_pixels = &vigs_gl_surface_draw_pixels;
     gl_sfc->base.copy = &vigs_gl_surface_copy;
     gl_sfc->base.solid_fill = &vigs_gl_surface_solid_fill;
-    gl_sfc->base.put_image = &vigs_gl_surface_put_image;
     gl_sfc->base.destroy = &vigs_gl_surface_destroy;
 
     return &gl_sfc->base;
@@ -1149,10 +877,6 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
      * @{
      */
 
-    /*
-     * ARB_sync is not mandatory, but if present gives additional
-     * performance.
-     */
     /*gl_backend->has_arb_sync = (strstr(extensions, "GL_ARB_sync ") != NULL) &&
                                  gl_backend->FenceSync &&
                                  gl_backend->DeleteSync &&
@@ -1163,7 +887,6 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     } else {
         VIGS_LOG_WARN("ARB_sync not supported!");
     }*/
-    gl_backend->has_arb_sync = false;
 
     /*
      * @}

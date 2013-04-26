@@ -1,48 +1,14 @@
 #include "vigs_device.h"
 #include "vigs_log.h"
 #include "vigs_server.h"
-#include "vigs_id_gen.h"
 #include "vigs_backend.h"
 #include "hw.h"
 #include "console.h"
-#include "kvm.h"
-#include "hax.h"
 
 #define PCI_VENDOR_ID_VIGS 0x19B2
 #define PCI_DEVICE_ID_VIGS 0x1011
 
-#define VIGS_REG_RAM_OFFSET 0
-#define VIGS_REG_CR0        8
-#define VIGS_REG_CR1        16
-#define VIGS_REG_CR2        24
-#define VIGS_REG_CR3        32
-#define VIGS_REG_CR4        40
-#define VIGS_REGS_SIZE      64
-
-#define VIGS_IO_SIZE 0x4000
-
-#define VIGS_MAX_USERS (VIGS_IO_SIZE / VIGS_REGS_SIZE)
-
-struct vigs_user
-{
-    /*
-     * For x86 only.
-     */
-    target_ulong cr[5];
-};
-
-#ifdef CONFIG_KVM
-static __inline void vigs_cpu_synchronize_state(struct vigs_user *user)
-{
-    if (kvm_enabled()) {
-        memcpy(&((CPUX86State*)cpu_single_env)->cr[0], &user->cr[0], sizeof(user->cr));
-    }
-}
-#else
-static __inline void vigs_cpu_synchronize_state(struct vigs_user *user)
-{
-}
-#endif
+#define VIGS_IO_SIZE 0x1000
 
 typedef struct VIGSState
 {
@@ -59,7 +25,6 @@ typedef struct VIGSState
     MemoryRegion io_bar;
 
     struct vigs_server *server;
-    struct vigs_user users[VIGS_MAX_USERS];
 
     /*
      * Our display.
@@ -132,49 +97,8 @@ static void vigs_io_write(void *opaque, target_phys_addr_t offset,
                           uint64_t value, unsigned size)
 {
     VIGSState *s = opaque;
-    int user_index = (offset / VIGS_REGS_SIZE);
-    offset -= user_index * VIGS_REGS_SIZE;
 
-    assert(user_index < VIGS_MAX_USERS);
-
-    if (user_index >= VIGS_MAX_USERS) {
-        VIGS_LOG_CRITICAL("bad user index = %d", user_index);
-        return;
-    }
-
-    switch (offset) {
-    case VIGS_REG_RAM_OFFSET:
-        /*
-         * 'vigs_cpu_synchronize_state' is required here in order to be able to
-         * access target's virtual memory directly on KVM.
-         */
-        vigs_cpu_synchronize_state(&s->users[user_index]);
-        vigs_server_dispatch(s->server, value);
-        break;
-    case VIGS_REG_CR0:
-        s->users[user_index].cr[0] = value;
-        VIGS_LOG_TRACE("user %d, CR0 = 0x%X", user_index, (uint32_t)s->users[user_index].cr[0]);
-        break;
-    case VIGS_REG_CR1:
-        s->users[user_index].cr[1] = value;
-        VIGS_LOG_TRACE("user %d, CR1 = 0x%X", user_index, (uint32_t)s->users[user_index].cr[1]);
-        break;
-    case VIGS_REG_CR2:
-        s->users[user_index].cr[2] = value;
-        VIGS_LOG_TRACE("user %d, CR2 = 0x%X", user_index, (uint32_t)s->users[user_index].cr[2]);
-        break;
-    case VIGS_REG_CR3:
-        s->users[user_index].cr[3] = value;
-        VIGS_LOG_TRACE("user %d, CR3 = 0x%X", user_index, (uint32_t)s->users[user_index].cr[3]);
-        break;
-    case VIGS_REG_CR4:
-        s->users[user_index].cr[4] = value;
-        VIGS_LOG_TRACE("user %d, CR4 = 0x%X", user_index, (uint32_t)s->users[user_index].cr[4]);
-        break;
-    default:
-        VIGS_LOG_CRITICAL("user %d, bad offset = %d", user_index, offset);
-        break;
-    }
+    vigs_server_dispatch(s->server, value);
 }
 
 static const MemoryRegionOps vigs_io_ops =
@@ -223,8 +147,6 @@ static int vigs_device_init(PCIDevice *dev)
                           TYPE_VIGS_DEVICE ".io",
                           VIGS_IO_SIZE);
 
-    vigs_id_gen_init();
-
     pci_register_bar(&s->dev.pci_dev, 0, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->vram_bar);
     pci_register_bar(&s->dev.pci_dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->ram_bar);
     pci_register_bar(&s->dev.pci_dev, 2, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->io_bar);
@@ -232,7 +154,10 @@ static int vigs_device_init(PCIDevice *dev)
     if (!strcmp(vigs_backend, "gl")) {
         backend = vigs_gl_backend_create(s->display);
     } else if (!strcmp(vigs_backend, "sw")) {
-        backend = vigs_sw_backend_create();
+        /*
+         * TODO: uncomment.
+         */
+        //backend = vigs_sw_backend_create();
     }
 
     if (!backend) {
@@ -277,8 +202,6 @@ fail:
     memory_region_destroy(&s->ram_bar);
     memory_region_destroy(&s->vram_bar);
 
-    vigs_id_gen_cleanup();
-
     vigs_log_cleanup();
 
     return -1;
@@ -289,8 +212,6 @@ static void vigs_device_reset(DeviceState *d)
     VIGSState *s = container_of(d, VIGSState, dev.pci_dev.qdev);
 
     vigs_server_reset(s->server);
-
-    vigs_id_gen_reset();
 
     VIGS_LOG_INFO("VIGS reset");
 }
@@ -304,8 +225,6 @@ static void vigs_device_exit(PCIDevice *dev)
     memory_region_destroy(&s->io_bar);
     memory_region_destroy(&s->ram_bar);
     memory_region_destroy(&s->vram_bar);
-
-    vigs_id_gen_cleanup();
 
     VIGS_LOG_INFO("VIGS deinitialized");
 

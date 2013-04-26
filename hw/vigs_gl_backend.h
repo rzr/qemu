@@ -82,20 +82,6 @@ struct vigs_gl_backend
      */
 
     /*
-     * Optional GL extensions.
-     * @{
-     */
-
-    GLsync (GLAPIENTRY *FenceSync)(GLenum condition, GLbitfield flags);
-    void (GLAPIENTRY *DeleteSync)(GLsync sync);
-    void (GLAPIENTRY *WaitSync)(GLsync sync, GLbitfield flags, GLuint64 timeout);
-    GLenum (GLAPIENTRY *ClientWaitSync)(GLsync sync, GLbitfield flags, GLuint64 timeout);
-
-    /*
-     * @}
-     */
-
-    /*
      * General purpose vectors.
      * @{
      */
@@ -106,8 +92,6 @@ struct vigs_gl_backend
     /*
      * @}
      */
-
-    bool has_arb_sync;
 };
 
 bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend);

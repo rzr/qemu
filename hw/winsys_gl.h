@@ -9,13 +9,6 @@ struct winsys_gl_surface
 
     GLuint (*get_front_texture)(struct winsys_gl_surface */*sfc*/);
     GLuint (*get_back_texture)(struct winsys_gl_surface */*sfc*/);
-
-    void (*swap_buffers)(struct winsys_gl_surface */*sfc*/);
-
-    void (*copy_buffers)(uint32_t /*width*/,
-                         uint32_t /*height*/,
-                         struct winsys_gl_surface */*target*/,
-                         bool /*is_loop*/);
 };
 
 struct winsys_gl_info

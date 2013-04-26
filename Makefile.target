@@ -279,12 +279,12 @@ obj-y += yagl_egl_offscreen_context.o
 obj-y += yagl_egl_offscreen_surface.o
 obj-y += yagl_egl_offscreen_image.o
 # EGL onscreen backend
-obj-y += yagl_egl_onscreen.o
-obj-y += yagl_egl_onscreen_ts.o
-obj-y += yagl_egl_onscreen_display.o
-obj-y += yagl_egl_onscreen_context.o
-obj-y += yagl_egl_onscreen_surface.o
-obj-y += yagl_egl_onscreen_image.o
+#obj-y += yagl_egl_onscreen.o
+#obj-y += yagl_egl_onscreen_ts.o
+#obj-y += yagl_egl_onscreen_display.o
+#obj-y += yagl_egl_onscreen_context.o
+#obj-y += yagl_egl_onscreen_surface.o
+#obj-y += yagl_egl_onscreen_image.o
 # EGL GLX driver
 ifdef CONFIG_LINUX
 obj-y += yagl_egl_glx.o
@@ -300,11 +300,11 @@ obj-y += yagl_gles1_ogl.o
 # GLESv2 OpenGL driver
 obj-y += yagl_gles2_ogl.o
 # GLES onscreen common driver
-obj-y += yagl_gles_onscreen.o
+#obj-y += yagl_gles_onscreen.o
 # GLESv1_CM onscreen driver
-obj-y += yagl_gles1_onscreen.o
+#obj-y += yagl_gles1_onscreen.o
 # GLESv2 onscreen driver
-obj-y += yagl_gles2_onscreen.o
+#obj-y += yagl_gles2_onscreen.o
 
 endif
 
@@ -319,13 +319,11 @@ obj-y += vigs_comm.o
 obj-y += vigs_server.o
 obj-y += vigs_backend.o
 obj-y += vigs_surface.o
-obj-y += vigs_resource.o
 obj-y += vigs_utils.o
-obj-y += vigs_id_gen.o
 obj-y += vigs_vector.o
 obj-y += vigs_ref.o
 obj-y += vigs_gl_backend.o
-obj-y += vigs_sw_backend.o
+#obj-y += vigs_sw_backend.o
 # GL GLX backend
 ifdef CONFIG_LINUX
 obj-y += vigs_gl_backend_glx.o

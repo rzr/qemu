@@ -15,8 +15,7 @@ struct vigs_backend
                                            uint32_t /*height*/,
                                            uint32_t /*stride*/,
                                            vigsp_surface_format /*format*/,
-                                           vigsp_offset /*vram_offset*/,
-                                           uint8_t */*data*/);
+                                           vigsp_surface_id /*id*/);
 
     void (*destroy)(struct vigs_backend */*backend*/);
 };
