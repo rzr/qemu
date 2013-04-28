@@ -364,6 +364,10 @@ void glo_surface_destroy(GloSurface *surface) {
 
     if(surface->pixmap)
         XFreePixmap( glo.dpy, surface->pixmap);
+
+    if(surface->glxPixmap)
+	glXDestroyPixmap( glo.dpy, surface->glxPixmap);
+
     XDestroyWindow( glo.dpy, surface->window);
     if(surface->image)
         glo_surface_free_xshm_image(surface);
