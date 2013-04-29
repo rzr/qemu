@@ -98,9 +98,14 @@ static void vigs_comm_dispatch_set_root_surface(struct vigs_comm *comm,
 static void vigs_comm_dispatch_update_vram(struct vigs_comm *comm,
                                            struct vigsp_cmd_update_vram_request *request)
 {
-    VIGS_LOG_TRACE("sfc = %u(off = %u)",
-                   request->sfc_id,
-                   request->offset);
+    if (request->sfc_id == 0) {
+        VIGS_LOG_TRACE("skipped");
+        return;
+    } else {
+        VIGS_LOG_TRACE("sfc = %u(off = %u)",
+                       request->sfc_id,
+                       request->offset);
+    }
 
     comm->comm_ops->update_vram(comm->user_data,
                                 request->sfc_id,
@@ -111,9 +116,14 @@ static void vigs_comm_dispatch_update_vram(struct vigs_comm *comm,
 static void vigs_comm_dispatch_update_gpu(struct vigs_comm *comm,
                                           struct vigsp_cmd_update_gpu_request *request)
 {
-    VIGS_LOG_TRACE("sfc = %u(off = %u)",
-                   request->sfc_id,
-                   request->offset);
+    if (request->sfc_id == 0) {
+        VIGS_LOG_TRACE("skipped");
+        return;
+    } else {
+        VIGS_LOG_TRACE("sfc = %u(off = %u)",
+                       request->sfc_id,
+                       request->offset);
+    }
 
     comm->comm_ops->update_gpu(comm->user_data,
                                request->sfc_id,
@@ -179,7 +189,7 @@ static const struct vigs_dispatch_entry vigs_dispatch_table[] =
                         vigs_comm_dispatch_set_root_surface, true, false),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_update_vram,
                         vigs_comm_dispatch_update_vram, true, false),
-    VIGS_DISPATCH_ENTRY(vigsp_cmd_update_vram,
+    VIGS_DISPATCH_ENTRY(vigsp_cmd_update_gpu,
                         vigs_comm_dispatch_update_gpu, true, false),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_copy,
                         vigs_comm_dispatch_copy, true, false),
@@ -243,7 +253,7 @@ void vigs_comm_dispatch(struct vigs_comm *comm,
                             dispatch_entry->func;
                         status = func(comm, request_header + 1, response_header + 1);
                     } else if (dispatch_entry->has_request) {
-                        vigsp_status (*func)(struct vigs_comm*, void*) =
+                        void (*func)(struct vigs_comm*, void*) =
                             dispatch_entry->func;
                         func(comm, request_header + 1);
                     } else if (dispatch_entry->has_response) {
@@ -251,7 +261,7 @@ void vigs_comm_dispatch(struct vigs_comm *comm,
                             dispatch_entry->func;
                         status = func(comm, response_header + 1);
                     } else {
-                        vigsp_status (*func)(struct vigs_comm*) =
+                        void (*func)(struct vigs_comm*) =
                             dispatch_entry->func;
                         func(comm);
                     }
