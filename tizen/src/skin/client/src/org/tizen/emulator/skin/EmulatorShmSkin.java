@@ -39,6 +39,8 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
@@ -55,8 +57,27 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public static final int BLUE_MASK = 0x000000FF;
 	public static final int COLOR_DEPTH = 24; /* no need to Alpha channel */
 
-	private Logger logger = SkinLogger.getSkinLogger(
+	private static Logger logger = SkinLogger.getSkinLogger(
 			EmulatorShmSkin.class).getLogger();
+
+	static {
+		/* load JNI library file */
+		try {
+			System.loadLibrary("shared");
+		} catch (UnsatisfiedLinkError e) {
+			logger.info("Failed to load a JNI library file.\n" + e);
+
+			Shell temp = new Shell(Display.getDefault());
+			MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
+			messageBox.setText("Emulator");
+			messageBox.setMessage(
+					"Failed to load a JNI library file.\n\n" + e);
+			messageBox.open();
+			temp.dispose();
+
+			System.exit(-1);
+		}
+	}
 
 	/* define JNI functions */
 	public native int shmget(int shmkey, int size);

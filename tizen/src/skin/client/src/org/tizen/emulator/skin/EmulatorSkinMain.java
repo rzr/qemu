@@ -1,7 +1,7 @@
 /**
- * 
+ * Emulator Skin Main
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -82,12 +82,7 @@ public class EmulatorSkinMain {
 		if (SwtUtil.isMacPlatform() == true) {
 			useSharedMemory = 1;
 		}
-
-		/* shared memory */
-		if (useSharedMemory == 1) {
-		    System.loadLibrary("shared");
-		}
-	 }
+	}
 
 	/**
 	 * @param args
