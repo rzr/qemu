@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -185,6 +185,9 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		logger.info("lcd bounds : " + lcdBounds);
 
 		currentState.setDisplayBounds(lcdBounds);
+		if (SwtUtil.isMacPlatform() == true) {
+			lcdCanvas.setBounds(currentState.getDisplayBounds());
+		}
 
 		/* arrange the skin image */
 		Image tempImage = null;
@@ -274,7 +277,9 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 			public void paintControl(final PaintEvent e) {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
-					lcdCanvas.setBounds(currentState.getDisplayBounds());
+					if (SwtUtil.isMacPlatform() == false) {
+						lcdCanvas.setBounds(currentState.getDisplayBounds());
+					}
 
 					if (skin.communicator.isSensorDaemonStarted() == true) {
 						/* Let's do one more update for sdl display surface
