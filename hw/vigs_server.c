@@ -196,8 +196,7 @@ static void vigs_server_dispatch_set_root_surface(void *user_data,
 
 static void vigs_server_dispatch_update_vram(void *user_data,
                                              vigsp_surface_id sfc_id,
-                                             vigsp_offset offset,
-                                             const struct vigsp_rect *rect)
+                                             vigsp_offset offset)
 {
     struct vigs_server *server = user_data;
     struct vigs_surface *vigs_sfc;
@@ -215,17 +214,18 @@ static void vigs_server_dispatch_update_vram(void *user_data,
     }
 
     vigs_sfc->read_pixels(vigs_sfc,
-                          rect->pos.x,
-                          rect->pos.y,
-                          rect->size.w,
-                          rect->size.h,
+                          0,
+                          0,
+                          vigs_sfc->ws_sfc->width,
+                          vigs_sfc->ws_sfc->height,
                           server->vram_ptr + offset);
+
+    vigs_sfc->is_dirty = false;
 }
 
 static void vigs_server_dispatch_update_gpu(void *user_data,
                                             vigsp_surface_id sfc_id,
-                                            vigsp_offset offset,
-                                            const struct vigsp_rect *rect)
+                                            vigsp_offset offset)
 {
     struct vigs_server *server = user_data;
     struct vigs_surface *vigs_sfc;
@@ -243,11 +243,13 @@ static void vigs_server_dispatch_update_gpu(void *user_data,
     }
 
     vigs_sfc->draw_pixels(vigs_sfc,
-                          rect->pos.x,
-                          rect->pos.y,
-                          rect->size.w,
-                          rect->size.h,
+                          0,
+                          0,
+                          vigs_sfc->ws_sfc->width,
+                          vigs_sfc->ws_sfc->height,
                           server->vram_ptr + offset);
+
+    vigs_sfc->is_dirty = true;
 }
 
 static void vigs_server_dispatch_copy(void *user_data,
@@ -284,6 +286,8 @@ static void vigs_server_dispatch_copy(void *user_data,
     }
 
     dst->copy(dst, src, entries, num_entries);
+
+    dst->is_dirty = true;
 }
 
 static void vigs_server_dispatch_solid_fill(void *user_data,
@@ -308,6 +312,8 @@ static void vigs_server_dispatch_solid_fill(void *user_data,
     }
 
     sfc->solid_fill(sfc, color, entries, num_entries);
+
+    sfc->is_dirty = true;
 }
 
 static void vigs_server_dispatch_batch_end(void *user_data)

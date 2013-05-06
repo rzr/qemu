@@ -340,7 +340,8 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
     }
 
     if (!ws_sfc->front_tex) {
-        VIGS_LOG_WARN("drawing garbage ???");
+        VIGS_LOG_TRACE("skipping blank read");
+        goto out;
     }
 
     if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->front_tex)) {
@@ -463,8 +464,6 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
                            pixels);
 
     gl_backend->Finish();
-
-    gl_sfc->base.is_dirty = true;
 
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -649,8 +648,6 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
 
     gl_backend->Finish();
 
-    gl_dst->base.is_dirty = true;
-
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -726,8 +723,6 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
     gl_backend->Finish();
-
-    gl_sfc->base.is_dirty = true;
 
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);

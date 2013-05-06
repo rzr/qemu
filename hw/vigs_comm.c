@@ -109,8 +109,7 @@ static void vigs_comm_dispatch_update_vram(struct vigs_comm *comm,
 
     comm->comm_ops->update_vram(comm->user_data,
                                 request->sfc_id,
-                                request->offset,
-                                &request->rect);
+                                request->offset);
 }
 
 static void vigs_comm_dispatch_update_gpu(struct vigs_comm *comm,
@@ -127,8 +126,7 @@ static void vigs_comm_dispatch_update_gpu(struct vigs_comm *comm,
 
     comm->comm_ops->update_gpu(comm->user_data,
                                request->sfc_id,
-                               request->offset,
-                               &request->rect);
+                               request->offset);
 }
 
 static void vigs_comm_dispatch_copy(struct vigs_comm *comm,
@@ -228,6 +226,8 @@ void vigs_comm_dispatch(struct vigs_comm *comm,
     vigsp_u32 i;
     vigsp_status status = vigsp_status_success;
 
+    VIGS_LOG_TRACE("batch_start");
+
     comm->comm_ops->batch_start(comm->user_data);
 
     for (i = 0; i < batch_header->num_requests; ++i) {
@@ -275,6 +275,8 @@ void vigs_comm_dispatch(struct vigs_comm *comm,
     response_header = (struct vigsp_cmd_response_header*)request_header;
 
     response_header->status = status;
+
+    VIGS_LOG_TRACE("batch_end");
 
     comm->comm_ops->batch_end(comm->user_data);
 }
