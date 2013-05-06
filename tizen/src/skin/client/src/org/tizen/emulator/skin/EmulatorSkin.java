@@ -1200,6 +1200,8 @@ public class EmulatorSkin {
 
 					if (SkinUtil.setTopMost(shell, isOnTop) == false) {
 						logger.info("failed to Always On Top");
+
+						onTopItem.setSelection(isOnTop = false);
 					} else {
 						if (keyWindow != null) {
 							SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
