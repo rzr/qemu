@@ -1418,34 +1418,16 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 }
 
             }
-
-            if ( brightness_off ) {
-
-                dst_sub = s->ds->surface->data + addr;
-                dst = (uint32_t*) ( s->ds->surface->data + addr );
-
-                for ( i = 0; i < disp_width; i++, dst_sub += 4, dst++ ) {
-                    *dst = 0xFF000000; // black
+            if (brightness_level < BRIGHTNESS_MAX) {
+                alpha = brightness_tbl[brightness_level];
+                    dst_sub = ds_get_data(s->ds) + addr;
+                    dst = (uint32_t *)(ds_get_data(s->ds) + addr);
+                    for (i = 0; i < disp_width; i++, dst_sub += 4, dst++) {
+                        *dst = ((alpha * dst_sub[0])>> 8)
+                                | ((alpha * dst_sub[1]) & 0xFF00)
+                                | (((alpha * dst_sub[2]) & 0xFF00) << 8);
                 }
-
-            } else  {
-
-                if ( brightness_level < BRIGHTNESS_MAX ) {
-
-                    alpha = brightness_tbl[brightness_level];
-
-                    dst_sub = s->ds->surface->data + addr;
-                    dst = (uint32_t*) ( s->ds->surface->data + addr );
-
-                    for ( i = 0; i < disp_width; i++, dst_sub += 4, dst++ ) {
-                        *dst = ( ( alpha * dst_sub[0] ) >> 8 )
-                                | ( ( alpha * dst_sub[1] ) & 0xFF00 )
-                                | ( ( ( alpha * dst_sub[2] ) & 0xFF00 ) << 8 );
-                    }
-                }
-
             }
-
 #endif /* MARU_VGA */
 
         } else {
@@ -1537,6 +1519,11 @@ static void vga_update_display(void *opaque)
             s->graphic_mode = graphic_mode;
             s->cursor_blink_time = qemu_get_clock_ms(vm_clock);
             full_update = 1;
+        }
+        if (brightness_off) {
+            full_update = 1;
+            vga_draw_blank(s, full_update);
+            return;
         }
         switch(graphic_mode) {
         case GMODE_TEXT:
