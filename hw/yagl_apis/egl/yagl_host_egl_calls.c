@@ -834,7 +834,7 @@ bool yagl_host_eglDestroySurface(EGLBoolean* retval,
         goto out;
     }
 
-    surface->backend_sfc->invalidate(surface->backend_sfc);
+    surface->backend_sfc->reset(surface->backend_sfc);
 
     *retval = EGL_TRUE;
 

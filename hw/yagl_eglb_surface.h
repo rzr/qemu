@@ -26,33 +26,25 @@ struct yagl_eglb_surface
      * it can be current to some thread, but its resources
      * can be released here.
      */
-    void (*invalidate)(struct yagl_eglb_surface */*sfc*/);
+    void (*reset)(struct yagl_eglb_surface */*sfc*/);
 
     /*
      * Replaces 'sfc' with 'with', destroying 'with' afterwards.
      * 'sfc' and 'with' must be of same type, but can have
      * different formats.
-     *
-     * Only called for valid surfaces.
      */
     void (*replace)(struct yagl_eglb_surface */*sfc*/,
                     struct yagl_eglb_surface */*with*/);
 
     /*
-     * Can be called for invalid surfaces.
+     * Can be called for surfaces that were reset.
      */
     bool (*query)(struct yagl_eglb_surface */*sfc*/,
                   EGLint /*attribute*/,
                   EGLint */*value*/);
 
-    /*
-     * Only called for valid surfaces.
-     */
     bool (*swap_buffers)(struct yagl_eglb_surface */*sfc*/);
 
-    /*
-     * Only called for valid surfaces.
-     */
     bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/,
                          yagl_winsys_id /*target*/);
 
