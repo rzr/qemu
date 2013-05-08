@@ -4,15 +4,12 @@
 #include "yagl_types.h"
 #include "yagl_ref.h"
 #include "yagl_namespace.h"
-#include "qemu-thread.h"
 
 #define YAGL_NUM_NAMESPACES 5
 
 struct yagl_sharegroup
 {
     struct yagl_ref ref;
-
-    QemuMutex mutex;
 
     struct yagl_namespace namespaces[YAGL_NUM_NAMESPACES];
 };

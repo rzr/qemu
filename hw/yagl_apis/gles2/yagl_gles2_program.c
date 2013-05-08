@@ -14,8 +14,6 @@ static void yagl_gles2_program_destroy(struct yagl_ref *ref)
     program->driver->DeleteProgram(program->global_name);
     yagl_unensure_ctx();
 
-    qemu_mutex_destroy(&program->mutex);
-
     yagl_object_cleanup(&program->base);
 
     g_free(program);
@@ -37,8 +35,6 @@ struct yagl_gles2_program
     program->driver = driver;
     program->global_name = global_name;
 
-    qemu_mutex_init(&program->mutex);
-
     return program;
 }
 
@@ -46,32 +42,25 @@ bool yagl_gles2_program_attach_shader(struct yagl_gles2_program *program,
                                       struct yagl_gles2_shader *shader,
                                       yagl_object_name shader_local_name)
 {
-    qemu_mutex_lock(&program->mutex);
-
     switch (shader->type) {
     case GL_VERTEX_SHADER:
         if (program->vertex_shader_local_name) {
-            qemu_mutex_unlock(&program->mutex);
             return false;
         }
         program->vertex_shader_local_name = shader_local_name;
         break;
     case GL_FRAGMENT_SHADER:
         if (program->fragment_shader_local_name) {
-            qemu_mutex_unlock(&program->mutex);
             return false;
         }
         program->fragment_shader_local_name = shader_local_name;
         break;
     default:
-        qemu_mutex_unlock(&program->mutex);
         return false;
     }
 
     program->driver->AttachShader(program->global_name,
                                   shader->global_name);
-
-    qemu_mutex_unlock(&program->mutex);
 
     return true;
 }
@@ -80,21 +69,16 @@ bool yagl_gles2_program_detach_shader(struct yagl_gles2_program *program,
                                       struct yagl_gles2_shader *shader,
                                       yagl_object_name shader_local_name)
 {
-    qemu_mutex_lock(&program->mutex);
-
     if (program->vertex_shader_local_name == shader_local_name) {
         program->vertex_shader_local_name = 0;
     } else if (program->fragment_shader_local_name == shader_local_name) {
         program->fragment_shader_local_name = 0;
     } else {
-        qemu_mutex_unlock(&program->mutex);
         return false;
     }
 
     program->driver->DetachShader(program->global_name,
                                   shader->global_name);
-
-    qemu_mutex_unlock(&program->mutex);
 
     return true;
 }

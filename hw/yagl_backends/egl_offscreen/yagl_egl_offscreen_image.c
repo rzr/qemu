@@ -17,31 +17,21 @@ static bool yagl_egl_offscreen_image_update(struct yagl_eglb_image *image,
                                             uint32_t bpp,
                                             target_ulong pixels)
 {
-    struct yagl_egl_offscreen_image *oimage =
-        (struct yagl_egl_offscreen_image*)image;
     struct yagl_eglb_context *ctx =
         (egl_offscreen_ts->ctx ? &egl_offscreen_ts->ctx->base : NULL);
-    bool res;
 
     if (!ctx) {
         return true;
     }
 
-    qemu_mutex_lock(&oimage->update_mtx);
-
     if (!image->glegl_image) {
         image->glegl_image = ctx->client_ctx->create_image(ctx->client_ctx);
         if (!image->glegl_image) {
-            qemu_mutex_unlock(&oimage->update_mtx);
             return true;
         }
     }
 
-    res = image->glegl_image->update(image->glegl_image, width, height, bpp, pixels);
-
-    qemu_mutex_unlock(&oimage->update_mtx);
-
-    return res;
+    return image->glegl_image->update(image->glegl_image, width, height, bpp, pixels);
 }
 
 static void yagl_egl_offscreen_image_destroy(struct yagl_eglb_image *image)
@@ -50,8 +40,6 @@ static void yagl_egl_offscreen_image_destroy(struct yagl_eglb_image *image)
         (struct yagl_egl_offscreen_image*)image;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_image_destroy, NULL);
-
-    qemu_mutex_destroy(&oimage->update_mtx);
 
     yagl_eglb_image_cleanup(image);
 
@@ -72,8 +60,6 @@ struct yagl_egl_offscreen_image
     image = g_malloc0(sizeof(*image));
 
     yagl_eglb_image_init(&image->base, buffer, &dpy->base);
-
-    qemu_mutex_init(&image->update_mtx);
 
     image->base.update_offscreen = &yagl_egl_offscreen_image_update;
     image->base.destroy = &yagl_egl_offscreen_image_destroy;

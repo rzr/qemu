@@ -2,7 +2,6 @@
 #define _QEMU_VIGS_REF_H
 
 #include "vigs_types.h"
-#include "qemu-thread.h"
 
 struct vigs_ref;
 
@@ -12,8 +11,7 @@ struct vigs_ref
 {
     vigs_ref_destroy_func destroy;
 
-    QemuMutex mutex;
-    volatile uint32_t count;
+    uint32_t count;
 };
 
 /*

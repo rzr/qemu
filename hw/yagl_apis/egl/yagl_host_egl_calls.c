@@ -834,18 +834,7 @@ bool yagl_host_eglDestroySurface(EGLBoolean* retval,
         goto out;
     }
 
-    yagl_egl_surface_lock(surface);
-
-    if (surface->backend_sfc->invalid) {
-        yagl_egl_surface_unlock(surface);
-        YAGL_LOG_CRITICAL("we're the one who invalidate the surface, but it's already invalid!");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
     surface->backend_sfc->invalidate(surface->backend_sfc);
-
-    yagl_egl_surface_unlock(surface);
 
     *retval = EGL_TRUE;
 
@@ -947,15 +936,12 @@ bool yagl_host_eglQuerySurface(EGLBoolean* retval,
         value = EGL_MULTISAMPLE_RESOLVE_DEFAULT;
         break;
     default:
-        yagl_egl_surface_lock(surface);
         if (!surface->backend_sfc->query(surface->backend_sfc,
                                          attribute,
                                          &value)) {
-            yagl_egl_surface_unlock(surface);
             YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
             goto out;
         }
-        yagl_egl_surface_unlock(surface);
     }
 
     if (!yagl_mem_prepare_EGLint(cur_ts->mt1, value_)) {
@@ -1551,21 +1537,10 @@ bool yagl_host_eglSwapBuffers(EGLBoolean* retval,
         goto out;
     }
 
-    yagl_egl_surface_lock(surface);
-
-    if (surface->backend_sfc->invalid) {
-        yagl_egl_surface_unlock(surface);
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
     if (!surface->backend_sfc->swap_buffers(surface->backend_sfc)) {
-        yagl_egl_surface_unlock(surface);
         YAGL_SET_ERR(EGL_BAD_ALLOC);
         goto out;
     }
-
-    yagl_egl_surface_unlock(surface);
 
     *retval = EGL_TRUE;
 
@@ -1607,21 +1582,10 @@ bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
         goto out;
     }
 
-    yagl_egl_surface_lock(surface);
-
-    if (surface->backend_sfc->invalid) {
-        yagl_egl_surface_unlock(surface);
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
     if (!surface->backend_sfc->copy_buffers(surface->backend_sfc, target)) {
-        yagl_egl_surface_unlock(surface);
         YAGL_SET_ERR(EGL_BAD_NATIVE_PIXMAP);
         goto out;
     }
-
-    yagl_egl_surface_unlock(surface);
 
     *retval = EGL_TRUE;
 
@@ -2134,21 +2098,11 @@ bool yagl_host_eglResizeOffscreenSurfaceYAGL(EGLBoolean* retval,
         }
     }
 
-    yagl_egl_surface_lock(surface);
-
-    if (surface->backend_sfc->invalid) {
-        yagl_egl_surface_unlock(surface);
-        YAGL_LOG_ERROR("surface was destroyed, weird scenario!");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
     if (!egl_api_ts->backend->make_current(egl_api_ts->backend,
                                            dpy->backend_dpy,
                                            egl_api_ts->context->backend_ctx,
                                            draw_sfc,
                                            read_sfc)) {
-        yagl_egl_surface_unlock(surface);
         YAGL_LOG_ERROR("make_current failed");
         YAGL_SET_ERR(EGL_BAD_ALLOC);
         goto out;
@@ -2157,8 +2111,6 @@ bool yagl_host_eglResizeOffscreenSurfaceYAGL(EGLBoolean* retval,
     surface->backend_sfc->replace(surface->backend_sfc, backend_sfc);
 
     backend_sfc = NULL;
-
-    yagl_egl_surface_unlock(surface);
 
     *retval = EGL_TRUE;
 

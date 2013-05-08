@@ -2,7 +2,6 @@
 #define _QEMU_YAGL_REF_H
 
 #include "yagl_types.h"
-#include "qemu-thread.h"
 
 struct yagl_ref;
 
@@ -12,8 +11,7 @@ struct yagl_ref
 {
     yagl_ref_destroy_func destroy;
 
-    QemuMutex mutex;
-    volatile uint32_t count;
+    uint32_t count;
 };
 
 /*

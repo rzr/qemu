@@ -1,5 +1,4 @@
 #include "yagl_log.h"
-#include "qemu-thread.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -60,7 +59,6 @@ static yagl_log_level g_log_level = yagl_log_level_off;
 static char** g_log_facilities_match = NULL;
 static char** g_log_facilities_no_match = NULL;
 static bool g_log_func_trace = false;
-static QemuMutex g_log_mutex;
 
 static const char* yagl_log_datatype_to_format(const char* type)
 {
@@ -197,8 +195,6 @@ void yagl_log_init(void)
     int level = level_str ? atoi(level_str) : yagl_log_level_off;
     char* facilities;
     char* func_trace;
-
-    qemu_mutex_init(&g_log_mutex);
 
     if (level < 0)
     {
@@ -339,7 +335,6 @@ void yagl_log_cleanup(void)
         g_log_facilities_match = NULL;
     }
     g_log_func_trace = 0;
-    qemu_mutex_destroy(&g_log_mutex);
 }
 
 void yagl_log_event(yagl_log_level log_level,
@@ -350,8 +345,6 @@ void yagl_log_event(yagl_log_level log_level,
                     const char* format, ...)
 {
     va_list args;
-
-    qemu_mutex_lock(&g_log_mutex);
 
     yagl_log_print_current_time();
     fprintf(stderr,
@@ -369,8 +362,6 @@ void yagl_log_event(yagl_log_level log_level,
         va_end(args);
     }
     fprintf(stderr, "\n");
-
-    qemu_mutex_unlock(&g_log_mutex);
 }
 
 void yagl_log_func_enter(yagl_pid process_id,
@@ -380,8 +371,6 @@ void yagl_log_func_enter(yagl_pid process_id,
                          const char* format, ...)
 {
     va_list args;
-
-    qemu_mutex_lock(&g_log_mutex);
 
     yagl_log_print_current_time();
     fprintf(stderr,
@@ -397,8 +386,6 @@ void yagl_log_func_enter(yagl_pid process_id,
         va_end(args);
     }
     fprintf(stderr, "):%d\n", line);
-
-    qemu_mutex_unlock(&g_log_mutex);
 }
 
 void yagl_log_func_exit(yagl_pid process_id,
@@ -408,8 +395,6 @@ void yagl_log_func_exit(yagl_pid process_id,
                         const char* format, ...)
 {
     va_list args;
-
-    qemu_mutex_lock(&g_log_mutex);
 
     yagl_log_print_current_time();
     fprintf(stderr,
@@ -427,8 +412,6 @@ void yagl_log_func_exit(yagl_pid process_id,
         va_end(args);
     }
     fprintf(stderr, "\n");
-
-    qemu_mutex_unlock(&g_log_mutex);
 }
 
 void yagl_log_func_enter_split(yagl_pid process_id,
@@ -439,8 +422,6 @@ void yagl_log_func_enter_split(yagl_pid process_id,
 {
     char format[1025] = { '\0' };
     va_list args;
-
-    qemu_mutex_lock(&g_log_mutex);
 
     yagl_log_print_current_time();
     fprintf(stderr,
@@ -495,8 +476,6 @@ void yagl_log_func_enter_split(yagl_pid process_id,
     }
 
     fprintf(stderr, "):%d\n", line);
-
-    qemu_mutex_unlock(&g_log_mutex);
 }
 
 void yagl_log_func_exit_split(yagl_pid process_id,
@@ -506,8 +485,6 @@ void yagl_log_func_exit_split(yagl_pid process_id,
                               const char* datatype, ...)
 {
     va_list args;
-
-    qemu_mutex_lock(&g_log_mutex);
 
     yagl_log_print_current_time();
     fprintf(stderr,
@@ -531,8 +508,6 @@ void yagl_log_func_exit_split(yagl_pid process_id,
     }
 
     fprintf(stderr, "\n");
-
-    qemu_mutex_unlock(&g_log_mutex);
 }
 
 bool yagl_log_is_enabled_for_level(yagl_log_level log_level)

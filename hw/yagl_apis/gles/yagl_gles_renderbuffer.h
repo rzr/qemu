@@ -16,8 +16,6 @@ struct yagl_gles_renderbuffer
 
     yagl_object_name global_name;
 
-    QemuMutex mutex;
-
     bool was_bound;
 };
 

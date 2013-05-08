@@ -13,8 +13,6 @@ static void yagl_gles_framebuffer_destroy(struct yagl_ref *ref)
     fb->driver->DeleteFramebuffers(1, &fb->global_name);
     yagl_unensure_ctx();
 
-    qemu_mutex_destroy(&fb->mutex);
-
     yagl_object_cleanup(&fb->base);
 
     g_free(fb);
@@ -35,8 +33,6 @@ struct yagl_gles_framebuffer
 
     fb->driver = driver;
     fb->global_name = global_name;
-
-    qemu_mutex_init(&fb->mutex);
 
     for (i = 0; i < YAGL_NUM_GLES_FRAMEBUFFER_ATTACHMENTS; ++i) {
         fb->attachment_states[i].type = GL_NONE;
@@ -77,8 +73,6 @@ bool yagl_gles_framebuffer_renderbuffer(struct yagl_gles_framebuffer *fb,
         return false;
     }
 
-    qemu_mutex_lock(&fb->mutex);
-
     if (rb) {
         fb->attachment_states[framebuffer_attachment].type = GL_RENDERBUFFER;
         fb->attachment_states[framebuffer_attachment].local_name = rb_local_name;
@@ -102,8 +96,6 @@ bool yagl_gles_framebuffer_renderbuffer(struct yagl_gles_framebuffer *fb,
                                             renderbuffer_target,
                                             (rb ? rb->global_name : 0));
     }
-
-    qemu_mutex_unlock(&fb->mutex);
 
     return true;
 }
@@ -137,8 +129,6 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
         return false;
     }
 
-    qemu_mutex_lock(&fb->mutex);
-
     if (texture) {
         fb->attachment_states[framebuffer_attachment].type = GL_TEXTURE;
         fb->attachment_states[framebuffer_attachment].local_name = texture_local_name;
@@ -155,8 +145,6 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
                                          level);
     }
 
-    qemu_mutex_unlock(&fb->mutex);
-
     return true;
 }
 
@@ -171,8 +159,6 @@ bool yagl_gles_framebuffer_get_attachment_parameter(struct yagl_gles_framebuffer
                                                    &framebuffer_attachment)) {
         return false;
     }
-
-    qemu_mutex_lock(&fb->mutex);
 
     switch (pname) {
     case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
@@ -189,33 +175,18 @@ bool yagl_gles_framebuffer_get_attachment_parameter(struct yagl_gles_framebuffer
                                                         value);
         break;
     default:
-        qemu_mutex_unlock(&fb->mutex);
         return false;
     }
-
-    qemu_mutex_unlock(&fb->mutex);
 
     return true;
 }
 
 void yagl_gles_framebuffer_set_bound(struct yagl_gles_framebuffer *fb)
 {
-    qemu_mutex_lock(&fb->mutex);
-
     fb->was_bound = true;
-
-    qemu_mutex_unlock(&fb->mutex);
 }
 
 bool yagl_gles_framebuffer_was_bound(struct yagl_gles_framebuffer *fb)
 {
-    bool ret = false;
-
-    qemu_mutex_lock(&fb->mutex);
-
-    ret = fb->was_bound;
-
-    qemu_mutex_unlock(&fb->mutex);
-
-    return ret;
+    return fb->was_bound;
 }

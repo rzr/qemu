@@ -14,7 +14,6 @@ YAGL_DECLARE_TLS(struct yagl_egl_onscreen_ts*, egl_onscreen_ts);
 
 static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc)
 {
-    sfc->invalid = true;
 }
 
 static bool yagl_egl_onscreen_surface_query(struct yagl_eglb_surface *sfc,

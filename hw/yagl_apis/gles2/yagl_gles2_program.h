@@ -24,8 +24,6 @@ struct yagl_gles2_program
 
     yagl_object_name global_name;
 
-    QemuMutex mutex;
-
     yagl_object_name vertex_shader_local_name;
 
     yagl_object_name fragment_shader_local_name;

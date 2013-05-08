@@ -145,8 +145,6 @@ static void yagl_gles_buffer_destroy(struct yagl_ref *ref)
     yagl_range_list_cleanup(&buffer->fixed_part.range_list);
     yagl_range_list_cleanup(&buffer->byte_part.range_list);
 
-    qemu_mutex_destroy(&buffer->mutex);
-
     g_free(buffer->data);
 
     yagl_object_cleanup(&buffer->base);
@@ -164,8 +162,6 @@ struct yagl_gles_buffer
     yagl_object_init(&buffer->base, &yagl_gles_buffer_destroy);
 
     buffer->driver = driver;
-
-    qemu_mutex_init(&buffer->mutex);
 
     driver->GenBuffers(1, &buffer->default_part.global_name);
     yagl_range_list_init(&buffer->default_part.range_list);
@@ -198,8 +194,6 @@ void yagl_gles_buffer_set_data(struct yagl_gles_buffer *buffer,
                                void *data,
                                GLenum usage)
 {
-    qemu_mutex_lock(&buffer->mutex);
-
     if (size > 0) {
         if (size > buffer->size) {
             g_free(buffer->data);
@@ -224,8 +218,6 @@ void yagl_gles_buffer_set_data(struct yagl_gles_buffer *buffer,
     yagl_range_list_add(&buffer->default_part.range_list, 0, buffer->size);
     yagl_range_list_add(&buffer->fixed_part.range_list, 0, buffer->size);
     yagl_range_list_add(&buffer->byte_part.range_list, 0, buffer->size);
-
-    qemu_mutex_unlock(&buffer->mutex);
 }
 
 bool yagl_gles_buffer_update_data(struct yagl_gles_buffer *buffer,
@@ -233,15 +225,11 @@ bool yagl_gles_buffer_update_data(struct yagl_gles_buffer *buffer,
                                   GLint size,
                                   void *data)
 {
-    qemu_mutex_lock(&buffer->mutex);
-
     if ((offset < 0) || (size < 0) || ((offset + size) > buffer->size)) {
-        qemu_mutex_unlock(&buffer->mutex);
         return false;
     }
 
     if (size == 0) {
-        qemu_mutex_unlock(&buffer->mutex);
         return true;
     }
 
@@ -250,8 +238,6 @@ bool yagl_gles_buffer_update_data(struct yagl_gles_buffer *buffer,
     yagl_range_list_add(&buffer->default_part.range_list, offset, size);
     yagl_range_list_add(&buffer->fixed_part.range_list, offset, size);
     yagl_range_list_add(&buffer->byte_part.range_list, offset, size);
-
-    qemu_mutex_unlock(&buffer->mutex);
 
     return true;
 }
@@ -273,10 +259,7 @@ bool yagl_gles_buffer_get_minmax_index(struct yagl_gles_buffer *buffer,
         return false;
     }
 
-    qemu_mutex_lock(&buffer->mutex);
-
     if ((offset < 0) || (count <= 0) || ((offset + (count * index_size)) > buffer->size)) {
-        qemu_mutex_unlock(&buffer->mutex);
         return false;
     }
 
@@ -305,8 +288,6 @@ bool yagl_gles_buffer_get_minmax_index(struct yagl_gles_buffer *buffer,
             *max_idx = idx;
         }
     }
-
-    qemu_mutex_unlock(&buffer->mutex);
 
     return true;
 }
@@ -360,8 +341,6 @@ bool yagl_gles_buffer_transfer(struct yagl_gles_buffer *buffer,
         return false;
     }
 
-    qemu_mutex_lock(&buffer->mutex);
-
     if (need_convert) {
         switch (type) {
         case GL_BYTE:
@@ -384,8 +363,6 @@ bool yagl_gles_buffer_transfer(struct yagl_gles_buffer *buffer,
                                            &yagl_gles_buffer_transfer_default);
     }
 
-    qemu_mutex_unlock(&buffer->mutex);
-
     buffer->driver->BindBuffer(target, old_buffer_name);
 
     return true;
@@ -395,8 +372,6 @@ bool yagl_gles_buffer_get_parameter(struct yagl_gles_buffer *buffer,
                                     GLenum pname,
                                     GLint *param)
 {
-    qemu_mutex_lock(&buffer->mutex);
-
     switch (pname) {
     case GL_BUFFER_SIZE:
         *param = buffer->size;
@@ -405,33 +380,18 @@ bool yagl_gles_buffer_get_parameter(struct yagl_gles_buffer *buffer,
         *param = buffer->usage;
         break;
     default:
-        qemu_mutex_unlock(&buffer->mutex);
         return false;
     }
-
-    qemu_mutex_unlock(&buffer->mutex);
 
     return true;
 }
 
 void yagl_gles_buffer_set_bound(struct yagl_gles_buffer *buffer)
 {
-    qemu_mutex_lock(&buffer->mutex);
-
     buffer->was_bound = true;
-
-    qemu_mutex_unlock(&buffer->mutex);
 }
 
 bool yagl_gles_buffer_was_bound(struct yagl_gles_buffer *buffer)
 {
-    bool ret = false;
-
-    qemu_mutex_lock(&buffer->mutex);
-
-    ret = buffer->was_bound;
-
-    qemu_mutex_unlock(&buffer->mutex);
-
-    return ret;
+    return buffer->was_bound;
 }

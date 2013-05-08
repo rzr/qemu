@@ -9,8 +9,6 @@ static void yagl_egl_surface_destroy(struct yagl_ref *ref)
 
     sfc->backend_sfc->destroy(sfc->backend_sfc);
 
-    qemu_mutex_destroy(&sfc->backend_sfc_mtx);
-
     yagl_egl_config_release(sfc->cfg);
 
     yagl_resource_cleanup(&sfc->res);
@@ -30,20 +28,9 @@ struct yagl_egl_surface
     sfc->dpy = dpy;
     yagl_egl_config_acquire(cfg);
     sfc->cfg = cfg;
-    qemu_mutex_init(&sfc->backend_sfc_mtx);
     sfc->backend_sfc = backend_sfc;
 
     return sfc;
-}
-
-void yagl_egl_surface_lock(struct yagl_egl_surface *sfc)
-{
-    qemu_mutex_lock(&sfc->backend_sfc_mtx);
-}
-
-void yagl_egl_surface_unlock(struct yagl_egl_surface *sfc)
-{
-    qemu_mutex_unlock(&sfc->backend_sfc_mtx);
 }
 
 void yagl_egl_surface_acquire(struct yagl_egl_surface *sfc)

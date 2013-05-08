@@ -3,7 +3,6 @@
 
 #include "yagl_types.h"
 #include "yagl_resource_list.h"
-#include "qemu-thread.h"
 #include "qemu-queue.h"
 #include <EGL/egl.h>
 
@@ -17,11 +16,6 @@ struct yagl_eglb_display;
 
 struct yagl_egl_display
 {
-    /*
-     * Don't need to lock these.
-     * @{
-     */
-
     QLIST_ENTRY(yagl_egl_display) entry;
 
     struct yagl_egl_backend *backend;
@@ -31,12 +25,6 @@ struct yagl_egl_display
     yagl_host_handle handle;
 
     struct yagl_eglb_display *backend_dpy;
-
-    /*
-     * @}
-     */
-
-    QemuMutex mutex;
 
     bool initialized;
 

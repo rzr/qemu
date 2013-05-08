@@ -15,8 +15,6 @@ struct yagl_gles_texture
 
     struct yagl_gles_driver *driver;
 
-    QemuMutex mutex;
-
     yagl_object_name global_name;
 
     GLenum target;

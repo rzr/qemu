@@ -13,8 +13,6 @@ struct yagl_eglb_surface
 
     EGLenum type;
 
-    bool invalid;
-
     union
     {
         struct yagl_egl_window_attribs window;
@@ -23,19 +21,10 @@ struct yagl_eglb_surface
     } attribs;
 
     /*
-     * The following function are guaranteed to
-     * be serialized.
-     * @{
-     */
-
-    /*
      * Indicates that user has called eglDestroySurface on this
      * surface. Surface cannot be destroyed immediately, since
      * it can be current to some thread, but its resources
-     * can be released here. Implementation must set 'invalid'
-     * to true if the surface should be considered invalid. If
-     * a surface is invalid then calls to eglSwapBuffers,
-     * eglCopyBuffers, etc will fail automatically.
+     * can be released here.
      */
     void (*invalidate)(struct yagl_eglb_surface */*sfc*/);
 
@@ -68,10 +57,6 @@ struct yagl_eglb_surface
                          yagl_winsys_id /*target*/);
 
     void (*destroy)(struct yagl_eglb_surface */*sfc*/);
-
-    /*
-     * @}
-     */
 };
 
 void yagl_eglb_surface_init(struct yagl_eglb_surface *sfc,

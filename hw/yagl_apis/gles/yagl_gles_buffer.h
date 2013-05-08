@@ -4,7 +4,6 @@
 #include "yagl_types.h"
 #include "yagl_object.h"
 #include "yagl_range_list.h"
-#include "qemu-thread.h"
 
  /*
   * VBO implementation is somewhat tricky because
@@ -38,8 +37,6 @@ struct yagl_gles_buffer
     struct yagl_object base;
 
     struct yagl_gles_driver *driver;
-
-    QemuMutex mutex;
 
     struct yagl_gles_buffer_part default_part;
     struct yagl_gles_buffer_part fixed_part;

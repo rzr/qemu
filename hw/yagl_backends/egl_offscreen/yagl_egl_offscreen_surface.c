@@ -47,8 +47,6 @@ static void yagl_egl_offscreen_surface_invalidate(struct yagl_eglb_surface *sfc)
 
     yagl_compiled_transfer_destroy(osfc->bimage_ct);
     osfc->bimage_ct = NULL;
-
-    sfc->invalid = true;
 }
 
 static void yagl_egl_offscreen_surface_replace(struct yagl_eglb_surface *sfc,

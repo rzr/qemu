@@ -14,8 +14,6 @@ void yagl_egl_api_ps_init(struct yagl_egl_api_ps *egl_api_ps,
 
     yagl_process_register_egl_interface(cur_ts->ps, egl_api_ps->egl_iface);
 
-    qemu_mutex_init(&egl_api_ps->mutex);
-
     QLIST_INIT(&egl_api_ps->displays);
 }
 
@@ -35,8 +33,6 @@ void yagl_egl_api_ps_cleanup(struct yagl_egl_api_ps *egl_api_ps)
 {
     assert(QLIST_EMPTY(&egl_api_ps->displays));
 
-    qemu_mutex_destroy(&egl_api_ps->mutex);
-
     yagl_process_unregister_egl_interface(cur_ts->ps);
 }
 
@@ -45,17 +41,11 @@ struct yagl_egl_display *yagl_egl_api_ps_display_get(struct yagl_egl_api_ps *egl
 {
     struct yagl_egl_display *dpy;
 
-    qemu_mutex_lock(&egl_api_ps->mutex);
-
     QLIST_FOREACH(dpy, &egl_api_ps->displays, entry) {
         if (dpy->handle == handle) {
-            qemu_mutex_unlock(&egl_api_ps->mutex);
-
             return dpy;
         }
     }
-
-    qemu_mutex_unlock(&egl_api_ps->mutex);
 
     return NULL;
 }
@@ -65,12 +55,8 @@ struct yagl_egl_display *yagl_egl_api_ps_display_add(struct yagl_egl_api_ps *egl
 {
     struct yagl_egl_display *dpy;
 
-    qemu_mutex_lock(&egl_api_ps->mutex);
-
     QLIST_FOREACH(dpy, &egl_api_ps->displays, entry) {
         if (dpy->display_id == display_id) {
-            qemu_mutex_unlock(&egl_api_ps->mutex);
-
             return dpy;
         }
     }
@@ -78,14 +64,10 @@ struct yagl_egl_display *yagl_egl_api_ps_display_add(struct yagl_egl_api_ps *egl
     dpy = yagl_egl_display_create(egl_api_ps->backend, display_id);
 
     if (!dpy) {
-        qemu_mutex_unlock(&egl_api_ps->mutex);
-
         return NULL;
     }
 
     QLIST_INSERT_HEAD(&egl_api_ps->displays, dpy, entry);
-
-    qemu_mutex_unlock(&egl_api_ps->mutex);
 
     return dpy;
 }

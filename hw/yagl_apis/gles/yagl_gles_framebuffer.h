@@ -25,8 +25,6 @@ struct yagl_gles_framebuffer
 
     yagl_object_name global_name;
 
-    QemuMutex mutex;
-
     struct yagl_gles_framebuffer_attachment_state attachment_states[YAGL_NUM_GLES_FRAMEBUFFER_ATTACHMENTS];
 
     bool was_bound;
