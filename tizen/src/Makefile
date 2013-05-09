@@ -135,12 +135,10 @@ endif
 
 ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -dpr ../license $(EMUL_DIR)
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -dpr skin/client/skins $(EMUL_DIR)
 else
 	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -pPR ../license $(EMUL_DIR)
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -pPR skin/client/skins $(EMUL_DIR)
 	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
@@ -253,11 +251,9 @@ endif
 
 ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
-	cp -dpr ../license $(DIBS_COMMON_DIR)
 	cp -dpr skin/client/skins $(DIBS_COMMON_DIR)
 else
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
-	cp -pPR ../license $(DIBS_COMMON_DIR)
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
 	cp -pPR skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
 endif
