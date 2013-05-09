@@ -172,6 +172,7 @@ static int maru_sdl_poll_event(SDL_Event *ev)
 void qemu_ds_sdl_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
+    static uint32_t sdl_skip_count = 0;
 
     // surface may be NULL in init func.
     qemu_display_surface = ds->surface;
@@ -185,8 +186,8 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
                 maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
 
                 pthread_mutex_unlock(&sdl_mutex);
-                vga_hw_invalidate();
                 sdl_skip_update = 0;
+                sdl_skip_count = 0;
                 break;
             }
 
@@ -203,11 +204,16 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
 
     /* Usually, continuously updated.
        When the LCD is turned off,
-       once updates the screen for a black screen. */
+       ten more updates the screen for a black screen. */
     vga_hw_update();
     if (brightness_off) {
-        sdl_skip_update = 1;
+        if (++sdl_skip_count > 10) {
+            sdl_skip_update = 1;
+        } else {
+            sdl_skip_update = 0;
+        }
     } else {
+        sdl_skip_count = 0;
         sdl_skip_update = 0;
     }
 

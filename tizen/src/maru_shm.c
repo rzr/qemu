@@ -46,6 +46,7 @@ static void *shared_memory = (void*) 0;
 static int skin_shmid;
 
 static int shm_skip_update;
+static int shm_skip_count;
 extern pthread_mutex_t mutex_draw_display;
 extern int draw_display_state;
 
@@ -91,6 +92,7 @@ void qemu_ds_shm_resize(DisplayState *ds)
     TRACE("qemu_ds_shm_resize\n");
 
     shm_skip_update = 0;
+    shm_skip_count = 0;
 }
 
 void qemu_ds_shm_refresh(DisplayState *ds)
@@ -105,10 +107,15 @@ void qemu_ds_shm_refresh(DisplayState *ds)
 
     /* Usually, continuously updated.
     But when the display is turned off,
-    just once updates the surface for a black screen. */
+    ten more updates the surface for a black screen. */
     if (brightness_off) {
-        shm_skip_update = 1;
+        if (++shm_skip_count > 10) {
+            shm_skip_update = 1;
+        } else {
+            shm_skip_update = 0;
+        }
     } else {
+        shm_skip_count = 0;
         shm_skip_update = 0;
     }
 }
