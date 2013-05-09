@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -250,6 +250,7 @@ public class AboutDialog extends SkinDialog {
 		FillLayout fillLayout = new FillLayout(SWT.HORIZONTAL);
 		composite.setLayout(fillLayout);
 
+		/*
 		Button licenseButton = createButton(composite, "License");
 
 		licenseButton.addSelectionListener(new SelectionAdapter() {
@@ -265,6 +266,7 @@ public class AboutDialog extends SkinDialog {
 				}
 			}
 		});
+		*/
 
 		createOKButton(composite, true);
 	}
