@@ -117,12 +117,10 @@ enum codec_io_cmd {
     CODEC_CMD_CONTEXT_INDEX         = 0x2C,
     CODEC_CMD_FILE_INDEX            = 0x30,
     CODEC_CMD_DEVICE_MEM_OFFSET     = 0x34,
-    CODEC_CMD_DEVICE_MEM_TYPE       = 0x38,
-    CODEC_CMD_GET_THREAD_STATE      = 0x3C,
-    CODEC_CMD_GET_SHARED_QUEUE      = 0x40,
-    CODEC_CMD_GET_FIXED_QUEUE       = 0x44,
-    CODEC_CMD_POP_WRITE_QUEUE       = 0x48,
-    CODEC_CMD_RESET_CODEC_CONTEXT   = 0x4C,
+    CODEC_CMD_GET_THREAD_STATE      = 0x38,
+    CODEC_CMD_GET_SHARED_QUEUE      = 0x3C,
+    CODEC_CMD_POP_WRITE_QUEUE       = 0x40,
+    CODEC_CMD_RESET_CODEC_CONTEXT   = 0x44,
     CODEC_CMD_GET_VERSION           = 0x50,
     CODEC_CMD_GET_CONTEXT_INDEX     = 0x54,
 };
@@ -154,16 +152,8 @@ enum media_type {
 
 enum thread_state {
     CODEC_TASK_INIT = 0,
-    CODEC_SHARED_TASK_FIN = 0x1f,
-    CODEC_FIXED_TASK_FIN = 0x2f,
+    CODEC_TASK_FIN = 0x1f,
 };
-
-enum codec_mem_type {
-    CODEC_UNKNOWN_DEVICE_MEM = -1,
-    CODEC_FIXED_DEVICE_MEM,
-    CODEC_SHARED_DEVICE_MEM,
-};
-
 
 /*
  *  Codec Thread Functions
