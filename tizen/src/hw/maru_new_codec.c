@@ -915,7 +915,7 @@ static void new_avcodec_decode_audio_to(AVCodecContext *avctx, int len,
     size += sizeof(len);
     memcpy(mem_buf + size, &frame_size_ptr, sizeof(frame_size_ptr));
     size += sizeof(frame_size_ptr);
-#if 0
+#if 1
     if (len > 0) {
         memcpy(mem_buf + size, samples, outbuf_size);
     }
@@ -1460,7 +1460,7 @@ int new_avcodec_decode_audio(NewCodecState *s, CodecParam *ioparam)
 
     frame_size_ptr = AVCODEC_MAX_AUDIO_FRAME_SIZE;
     outbuf_size = frame_size_ptr;
-#if 0
+#if 1
     samples = av_mallocz(frame_size_ptr);
     if (!samples) {
         ERR("[%d] failed to allocate memory\n", __LINE__);
@@ -1468,8 +1468,10 @@ int new_avcodec_decode_audio(NewCodecState *s, CodecParam *ioparam)
     }
 #endif
 
+#if 0
     size = sizeof(avctx->channel_layout) + sizeof(len) + sizeof(frame_size_ptr);
     samples = (int16_t *)((uint8_t *)s->vaddr + ioparam->mem_offset + size);
+#endif
     len = avcodec_decode_audio3(avctx, samples, &frame_size_ptr, &avpkt);
 
     TRACE("decoding audio! len %d. channel_layout %ld, frame_size %d\n",
