@@ -86,9 +86,6 @@ static QTAILQ_HEAD(codec_wq, DeviceMemEntry) codec_wq =
 static QTAILQ_HEAD(codec_pop_wq, DeviceMemEntry) codec_pop_wq =
    QTAILQ_HEAD_INITIALIZER(codec_pop_wq);
 
-static QTAILQ_HEAD(codec_irq_queue, CodecParamStg) codec_irq_queue =
-   QTAILQ_HEAD_INITIALIZER(codec_irq_queue);
-
 static QTAILQ_HEAD(codec_ctx_queue, CodecParamStg) codec_ctx_queue =
    QTAILQ_HEAD_INITIALIZER(codec_ctx_queue);
 
@@ -600,7 +597,7 @@ static int new_avcodec_picture_get_size(AVPicture *picture, uint8_t *ptr,
         fsize = size + 2 * size2;
         TRACE("stride: %d, stride2: %d, size: %d, size2: %d, fsize: %d\n",
             stride, stride2, size, size2, fsize);
-#if 0
+#if 1
         if (!encode && !ptr) {
             TRACE("allocate a buffer for a decoded picture.\n");
             ptr = av_mallocz(fsize);
@@ -612,10 +609,6 @@ static int new_avcodec_picture_get_size(AVPicture *picture, uint8_t *ptr,
             TRACE("calculate encoded picture.\n");
         }
 #endif
-        if (!ptr) {
-            ERR("[%d] ptr is NULL.\n", __LINE__);
-            return -1;
-        }
         picture->data[0] = ptr;
         picture->data[1] = picture->data[0] + size;
         picture->data[2] = picture->data[1] + size2;
@@ -1294,7 +1287,7 @@ void new_avcodec_picture_copy (NewCodecState *s, CodecParam *ioparam)
     AVCodecContext *avctx;
     AVPicture *src;
     AVPicture dst;
-    uint8_t *buffer;
+    uint8_t *out_buffer;
     int pict_size, ctx_index = 0;
 
     TRACE("enter: %s\n", __func__);
@@ -1315,9 +1308,11 @@ void new_avcodec_picture_copy (NewCodecState *s, CodecParam *ioparam)
                             avctx->width, avctx->height, false);
 #endif
 
-    buffer = s->vaddr + ioparam->mem_offset;
+//    out_buffer = s->vaddr + ioparam->mem_offset;
+//    TRACE("device memory offset: %d\n", ioparam->mem_offset);
+
     pict_size =
-        new_avcodec_picture_get_size(&dst, buffer, avctx->pix_fmt,
+        new_avcodec_picture_get_size(&dst, NULL, avctx->pix_fmt,
                             avctx->width, avctx->height, false);
 
     TRACE("decoded image size, pix_fmt: %d width: %d, height: %d, pict_size: %d\n",
@@ -1333,6 +1328,7 @@ void new_avcodec_picture_copy (NewCodecState *s, CodecParam *ioparam)
 
     {
         DeviceMemEntry *elem = NULL;
+        uint8_t *tempbuf = NULL;
         int tempbuf_size = 0;
 
         TRACE("push data into codec_wq\n");
@@ -1346,7 +1342,25 @@ void new_avcodec_picture_copy (NewCodecState *s, CodecParam *ioparam)
         tempbuf_size = pict_size;
         TRACE("[%s] tempbuf size: %d\n", __func__, tempbuf_size);
 
-        elem->buf = buffer;
+#if 1
+        tempbuf = g_malloc0(tempbuf_size);
+        if (!tempbuf) {
+            ERR("[%d] failed to allocate memory. size: %d\n",
+                    __LINE__, tempbuf_size);
+            g_free(elem);
+            return;
+        }
+
+        out_buffer = dst.data[0];
+        memcpy(tempbuf, out_buffer, tempbuf_size);
+
+        if (out_buffer) {
+            av_free (out_buffer);
+        }
+
+        elem->buf = tempbuf;
+#endif
+//        elem->buf = buffer;
         elem->buf_size = tempbuf_size;
         elem->buf_id = ioparam->file_index;
         TRACE("push codec_wq, buf_size: %d\n", tempbuf_size);
@@ -2034,10 +2048,7 @@ static void new_codec_tx_bh(void *opaque)
 
     TRACE("Enter, %s\n", __func__);
 
-    if (!QTAILQ_EMPTY(&codec_irq_queue)) {
-        TRACE("raise irq for fixed task.\n");
-        qemu_irq_raise(s->dev.irq[0]);
-    } else if (!QTAILQ_EMPTY(&codec_wq)) {
+    if (!QTAILQ_EMPTY(&codec_wq)) {
         TRACE("raise irq for shared task.\n");
         qemu_irq_raise(s->dev.irq[0]);
     }
