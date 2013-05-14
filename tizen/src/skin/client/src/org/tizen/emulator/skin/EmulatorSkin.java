@@ -569,6 +569,7 @@ public class EmulatorSkin {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
 				Menu menu = EmulatorSkin.this.contextMenu;
+				keyReleaseEvent();
 
 				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
 					lcdCanvas.setMenu(menu);
@@ -595,23 +596,7 @@ public class EmulatorSkin {
 			@Override
 			public void focusLost(FocusEvent event) {
 				logger.info("lost focus");
-
-				/* key event compensation */
-				if (pressedKeyEventList.isEmpty() == false) {
-					for (KeyEventData data : pressedKeyEventList) {
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), data.keycode,
-								data.stateMask, data.keyLocation);
-						communicator.sendToQEMU(
-								SendCommand.SEND_KEY_EVENT, keyEventData, false);
-
-						logger.info("auto release : keycode=" + keyEventData.keycode +
-								", stateMask=" + keyEventData.stateMask +
-								", keyLocation=" + keyEventData.keyLocation);
-					}
-				}
-
-				pressedKeyEventList.clear();
+				keyReleaseEvent();
 			}
 		};
 
@@ -1743,4 +1728,22 @@ public class EmulatorSkin {
 		return currentState.getCurrentRotationId();
 	}
 
+	public void keyReleaseEvent() {
+		/* key event compensation */
+		if (pressedKeyEventList.isEmpty() == false) {
+			for (KeyEventData data : pressedKeyEventList) {
+				KeyEventData keyEventData = new KeyEventData(
+						KeyEventType.RELEASED.value(), data.keycode,
+						data.stateMask, data.keyLocation);
+				communicator.sendToQEMU(
+						SendCommand.SEND_KEY_EVENT, keyEventData, false);
+
+				logger.info("auto release : keycode=" + keyEventData.keycode +
+						", stateMask=" + keyEventData.stateMask +
+						", keyLocation=" + keyEventData.keyLocation);
+			}
+		}
+
+		pressedKeyEventList.clear();
+	}
 }

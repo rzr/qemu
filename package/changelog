@@ -1,3 +1,6 @@
+* 1.5.38
+- modified process of using virtio keyboard queue and added key release event when context menu is activated
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-05-14
 * 1.5.37
 - call setBounds of display in arrangeSkin on only mac
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-05-06
