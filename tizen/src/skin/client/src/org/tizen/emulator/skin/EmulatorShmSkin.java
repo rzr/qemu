@@ -129,9 +129,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 				imageData.setPixels(0, 0, sizeFramebuffer, arrayFramebuffer, 0);
 
-				temp = framebuffer;
-				framebuffer = new Image(display, imageData);
-				temp.dispose();
+				display.syncExec(new Runnable() {
+					@Override
+					public void run() {
+						framebuffer.dispose();
+						framebuffer = new Image(display, imageData);
+					}
+				});
 
 				if (display.isDisposed() == false) {
 					/* redraw canvas */
