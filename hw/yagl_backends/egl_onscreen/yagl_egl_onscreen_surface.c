@@ -179,6 +179,7 @@ struct yagl_egl_onscreen_surface
     sfc->ws_sfc = ws_sfc;
 
     sfc->base.reset = &yagl_egl_onscreen_surface_reset;
+    sfc->base.invalidate = &yagl_egl_onscreen_surface_invalidate;
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
@@ -244,6 +245,7 @@ struct yagl_egl_onscreen_surface
     sfc->ws_sfc = ws_sfc;
 
     sfc->base.reset = &yagl_egl_onscreen_surface_reset;
+    sfc->base.invalidate = &yagl_egl_onscreen_surface_invalidate;
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
