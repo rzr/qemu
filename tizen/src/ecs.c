@@ -161,9 +161,11 @@ void send_to_client(int fd, const char *str)
 			LOG("string is too long: overflow buffer.");
 			return;
 		}
+#ifndef _WIN32
         if (c == '\n') {
             outbuf[outbuf_index++] = '\r';
 		}
+#endif
         outbuf[outbuf_index++] = c;
 		if (c == '\0') {
 			break;
