@@ -51,7 +51,8 @@ MULTI_DEBUG_CHANNEL(qemu, new_codec);
 /*  Needs 16M to support 1920x1080 video resolution.
  *  Output size for encoding has to be greater than (width * height * 6)
  */
-#define NEW_CODEC_MEM_SIZE     (16 * 1024 * 1024)
+//#define NEW_CODEC_MEM_SIZE     (16 * 1024 * 1024)
+#define NEW_CODEC_MEM_SIZE     (32 * 1024 * 1024)
 #define NEW_CODEC_REG_SIZE     (256)
 
 #define GEN_MASK(x) ((1 << (x)) - 1)
@@ -67,9 +68,14 @@ typedef struct DeviceMemEntry {
     uint8_t *buf;
     uint32_t buf_id;
     uint32_t buf_size;
+    uint32_t ctx_id;
 
     QTAILQ_ENTRY(DeviceMemEntry) node;
 } DeviceMemEntry;
+
+//
+static DeviceMemEntry *entry[CODEC_CONTEXT_MAX];
+//
 
 typedef struct CodecParamStg {
     uint32_t value;
@@ -218,6 +224,7 @@ static void new_codec_wakeup_thread(NewCodecState *s, int api_index)
         elem->buf = readbuf;
         elem->buf_size = readbuf_size;
         elem->buf_id = ioparam->file_index;
+        elem->ctx_id = ctx_index;
 
         qemu_mutex_lock(&s->codec_job_queue_mutex);
         QTAILQ_INSERT_TAIL(&codec_rq, elem, node);
@@ -812,7 +819,7 @@ static int new_codec_get_context_index(NewCodecState *s)
 
     TRACE("[%s] Enter\n", __func__);
 
-    for (index = 0; index < CODEC_CONTEXT_MAX; index++) {
+    for (index = 1; index < CODEC_CONTEXT_MAX; index++) {
         if (s->codec_ctx[index].avctx_use == false) {
             TRACE("succeeded to get %d of context.\n", index);
             s->codec_ctx[index].avctx_use = true;
@@ -1095,6 +1102,9 @@ int new_avcodec_init(NewCodecState *s, CodecParam *ioparam)
         elem->buf = tempbuf;
         elem->buf_size = tempbuf_size;
         elem->buf_id = file_index;
+//
+        elem->ctx_id = ctx_index;
+//
         TRACE("push codec_wq, buf_size: %d\n", tempbuf_size);
 
         TRACE("[%d] allocate memory. %p, %p\n", __LINE__,
@@ -1268,6 +1278,9 @@ int new_avcodec_decode_video(NewCodecState *s, CodecParam *ioparam)
         elem->buf = tempbuf;
         elem->buf_size = tempbuf_size;
         elem->buf_id = file_index;
+//
+        elem->ctx_id = ctx_index;
+//
 
         TRACE("[%d] allocate memory. %p, %p\n", __LINE__,
             elem, elem->buf);
@@ -1363,6 +1376,9 @@ void new_avcodec_picture_copy (NewCodecState *s, CodecParam *ioparam)
 //        elem->buf = buffer;
         elem->buf_size = tempbuf_size;
         elem->buf_id = ioparam->file_index;
+//
+        elem->ctx_id = ctx_index;
+//
         TRACE("push codec_wq, buf_size: %d\n", tempbuf_size);
 
         qemu_mutex_lock(&s->codec_job_queue_mutex);
@@ -1900,6 +1916,7 @@ void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index)
     uint32_t mem_offset = 0;
     CodecParam *ioparam = NULL;
 
+#if 0
     elem = QTAILQ_FIRST(&codec_pop_wq);
     if (!elem) {
         TRACE("codec_pop_wq is empty.\n");
@@ -1910,9 +1927,9 @@ void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index)
         ERR("cannot copy data to guest\n");
         return;
     }
-
-    {
+#endif
         int ctx_idx;
+    {
 
         for (ctx_idx = 0; ctx_idx < CODEC_CONTEXT_MAX; ctx_idx++) {
             if (s->codec_ctx[ctx_idx].ioparam.file_index == file_index) {
@@ -1922,10 +1939,16 @@ void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index)
         }
 
         TRACE("context index: %d\n", ctx_idx);
+
+        if(ctx_idx > 1) {
+            ERR("[caramis] %d : 0x%x", ctx_idx,s->ioparam.mem_offset);
+        }
     }
 
+    elem = entry[ctx_idx];
+
     if (ioparam) {
-        mem_offset = ioparam->mem_offset;
+        mem_offset = s->ioparam.mem_offset;
         TRACE("pop data from codec_pop_wq. size %d, mem_offset: %x\n",
                 elem->buf_size, elem->buf_id, mem_offset);
         memcpy(s->vaddr + mem_offset, elem->buf, elem->buf_size);
@@ -1934,7 +1957,7 @@ void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index)
     }
 
     qemu_mutex_lock(&s->codec_job_queue_mutex);
-    QTAILQ_REMOVE(&codec_pop_wq, elem, node);
+//    QTAILQ_REMOVE(&codec_pop_wq, elem, node);
     qemu_mutex_unlock(&s->codec_job_queue_mutex);
 
     TRACE("element buffer: %p %p\n", elem->buf, elem->buf_id);
@@ -1948,6 +1971,8 @@ void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index)
         g_free(elem);
     }
 }
+
+
 
 /*
  *  Codec Device APIs
@@ -1974,10 +1999,12 @@ static uint64_t new_codec_read(void *opaque, target_phys_addr_t addr, unsigned s
         DeviceMemEntry *head = NULL;
         head = QTAILQ_FIRST(&codec_wq);
         if (head) {
-            ret = head->buf_id;
+           // ret = head->buf_id;
+            ret = head->ctx_id;
             qemu_mutex_lock(&s->wrk_thread.mutex);
             QTAILQ_REMOVE(&codec_wq, head, node);
-            QTAILQ_INSERT_TAIL(&codec_pop_wq, head, node);
+            entry[ret] = head;
+//            QTAILQ_INSERT_TAIL(&codec_pop_wq, head, node);
             qemu_mutex_unlock(&s->wrk_thread.mutex);
         } else {
             ret = 0;
