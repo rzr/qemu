@@ -35,20 +35,12 @@ struct vigs_winsys_gl_surface
      */
 
     /*
-     * Texture that represent this surface's front buffer.
+     * Texture that represent this surface.
      * Used as color attachment in 'fb'.
      *
      * Allocated on first access.
      */
-    GLuint front_tex;
-
-    /*
-     * Texture that represents this surface's back buffer, only used by
-     * winsys_gl clients. Switched with 'front_tex' on 'swap_buffers'.
-     *
-     * Allocated on first access.
-     */
-    GLuint back_tex;
+    GLuint tex;
 };
 
 struct vigs_gl_surface
@@ -207,44 +199,24 @@ static void vigs_winsys_gl_surface_release(struct winsys_surface *sfc)
     vigs_ref_release(&vigs_sfc->ref);
 }
 
-static GLuint vigs_winsys_gl_surface_get_front_texture(struct winsys_gl_surface *sfc)
+static GLuint vigs_winsys_gl_surface_get_texture(struct winsys_gl_surface *sfc)
 {
     struct vigs_winsys_gl_surface *vigs_sfc = (struct vigs_winsys_gl_surface*)sfc;
     bool has_current = vigs_sfc->backend->has_current(vigs_sfc->backend);
 
-    if (!vigs_sfc->front_tex &&
+    if (!vigs_sfc->tex &&
         (has_current ||
         vigs_sfc->backend->make_current(vigs_sfc->backend, true))) {
 
         vigs_winsys_gl_surface_create_texture(vigs_sfc,
-                                              &vigs_sfc->front_tex);
+                                              &vigs_sfc->tex);
 
         if (!has_current) {
             vigs_sfc->backend->make_current(vigs_sfc->backend, false);
         }
     }
 
-    return vigs_sfc->front_tex;
-}
-
-static GLuint vigs_winsys_gl_surface_get_back_texture(struct winsys_gl_surface *sfc)
-{
-    struct vigs_winsys_gl_surface *vigs_sfc = (struct vigs_winsys_gl_surface*)sfc;
-    bool has_current = vigs_sfc->backend->has_current(vigs_sfc->backend);
-
-    if (!vigs_sfc->back_tex &&
-        (has_current ||
-        vigs_sfc->backend->make_current(vigs_sfc->backend, true))) {
-
-        vigs_winsys_gl_surface_create_texture(vigs_sfc,
-                                              &vigs_sfc->back_tex);
-
-        if (!has_current) {
-            vigs_sfc->backend->make_current(vigs_sfc->backend, false);
-        }
-    }
-
-    return vigs_sfc->back_tex;
+    return vigs_sfc->tex;
 }
 
 static void vigs_winsys_gl_surface_destroy(struct vigs_ref *ref)
@@ -255,11 +227,8 @@ static void vigs_winsys_gl_surface_destroy(struct vigs_ref *ref)
 
     if (has_current ||
         vigs_sfc->backend->make_current(vigs_sfc->backend, true)) {
-        if (vigs_sfc->front_tex) {
-            vigs_sfc->backend->DeleteTextures(1, &vigs_sfc->front_tex);
-        }
-        if (vigs_sfc->back_tex) {
-            vigs_sfc->backend->DeleteTextures(1, &vigs_sfc->back_tex);
+        if (vigs_sfc->tex) {
+            vigs_sfc->backend->DeleteTextures(1, &vigs_sfc->tex);
         }
 
         if (!has_current) {
@@ -290,8 +259,7 @@ static struct vigs_winsys_gl_surface
     ws_sfc->base.base.height = height;
     ws_sfc->base.base.acquire = &vigs_winsys_gl_surface_acquire;
     ws_sfc->base.base.release = &vigs_winsys_gl_surface_release;
-    ws_sfc->base.get_front_texture = &vigs_winsys_gl_surface_get_front_texture;
-    ws_sfc->base.get_back_texture = &vigs_winsys_gl_surface_get_back_texture;
+    ws_sfc->base.get_texture = &vigs_winsys_gl_surface_get_texture;
     ws_sfc->tex_internalformat = tex_internalformat;
     ws_sfc->tex_format = tex_format;
     ws_sfc->tex_type = tex_type;
@@ -339,12 +307,12 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
         return;
     }
 
-    if (!ws_sfc->front_tex) {
+    if (!ws_sfc->tex) {
         VIGS_LOG_TRACE("skipping blank read");
         goto out;
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->front_tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
         goto out;
     }
 
@@ -397,7 +365,7 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
     gl_backend->EnableClientState(GL_VERTEX_ARRAY);
     gl_backend->EnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-    gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->front_tex);
+    gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
 
     gl_backend->Color4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -438,7 +406,7 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
         return;
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->front_tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
         goto out;
     }
 
@@ -453,7 +421,7 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
     gl_backend->Disable(GL_TEXTURE_2D);
 
     gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, ws_sfc->front_tex, 0);
+                                     GL_TEXTURE_2D, ws_sfc->tex, 0);
 
     gl_backend->PixelZoom(1.0f, -1.0f);
     gl_backend->RasterPos2f(x, ws_sfc->base.base.height - y);
@@ -491,15 +459,15 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
         return;
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_dst, &ws_dst->front_tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_dst, &ws_dst->tex)) {
         goto out;
     }
 
-    if (!ws_src->front_tex) {
+    if (!ws_src->tex) {
         VIGS_LOG_WARN("copying garbage ???");
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_src, &ws_src->front_tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_src, &ws_src->tex)) {
         goto out;
     }
 
@@ -562,7 +530,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
          */
 
         gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                         GL_TEXTURE_2D, ws_dst->front_tex, 0);
+                                         GL_TEXTURE_2D, ws_dst->tex, 0);
 
     }
 
@@ -594,7 +562,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     gl_backend->EnableClientState(GL_VERTEX_ARRAY);
     gl_backend->EnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-    gl_backend->BindTexture(GL_TEXTURE_2D, ws_src->front_tex);
+    gl_backend->BindTexture(GL_TEXTURE_2D, ws_src->tex);
 
     gl_backend->Color4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -631,7 +599,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
         tex_coords[7] = 0;
 
         gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                         GL_TEXTURE_2D, ws_dst->front_tex, 0);
+                                         GL_TEXTURE_2D, ws_dst->tex, 0);
 
         gl_backend->BindTexture(GL_TEXTURE_2D, gl_dst->tmp_tex);
 
@@ -670,7 +638,7 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
         return;
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->front_tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
         goto out;
     }
 
@@ -687,7 +655,7 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
     gl_backend->Disable(GL_TEXTURE_2D);
 
     gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, ws_sfc->front_tex, 0);
+                                     GL_TEXTURE_2D, ws_sfc->tex, 0);
 
     vigs_vector_resize(&gl_backend->v1, 0);
 

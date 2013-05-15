@@ -45,19 +45,6 @@ static void yagl_egl_onscreen_thread_init(struct yagl_egl_backend *backend)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static void yagl_egl_onscreen_pre_batch(struct yagl_egl_backend *backend)
-{
-    struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
-
-    if (!egl_onscreen_ts->dpy) {
-        return;
-    }
-
-    if (egl_onscreen_ts->sfc_draw->needs_update) {
-        yagl_egl_onscreen_setup_framebuffer_zero(egl_onscreen);
-    }
-}
-
 static struct yagl_eglb_display *yagl_egl_onscreen_create_display(struct yagl_egl_backend *backend)
 {
     struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
@@ -296,7 +283,6 @@ struct yagl_egl_backend *yagl_egl_onscreen_create(struct winsys_interface *wsi,
     }
 
     egl_onscreen->base.thread_init = &yagl_egl_onscreen_thread_init;
-    egl_onscreen->base.pre_batch = &yagl_egl_onscreen_pre_batch;
     egl_onscreen->base.create_display = &yagl_egl_onscreen_create_display;
     egl_onscreen->base.make_current = &yagl_egl_onscreen_make_current;
     egl_onscreen->base.release_current = &yagl_egl_onscreen_release_current;

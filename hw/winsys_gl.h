@@ -7,8 +7,7 @@ struct winsys_gl_surface
 {
     struct winsys_surface base;
 
-    GLuint (*get_front_texture)(struct winsys_gl_surface */*sfc*/);
-    GLuint (*get_back_texture)(struct winsys_gl_surface */*sfc*/);
+    GLuint (*get_texture)(struct winsys_gl_surface */*sfc*/);
 };
 
 struct winsys_gl_info

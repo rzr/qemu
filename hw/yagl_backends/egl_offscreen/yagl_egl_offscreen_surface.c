@@ -49,6 +49,11 @@ static void yagl_egl_offscreen_surface_reset(struct yagl_eglb_surface *sfc)
     osfc->bimage_ct = NULL;
 }
 
+static void yagl_egl_offscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
+                                                  yagl_winsys_id id)
+{
+}
+
 static void yagl_egl_offscreen_surface_replace(struct yagl_eglb_surface *sfc,
                                                struct yagl_eglb_surface *with)
 {
@@ -119,8 +124,7 @@ static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sf
     return true;
 }
 
-static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc,
-                                                    yagl_winsys_id target)
+static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_offscreen_surface *osfc =
         (struct yagl_egl_offscreen_surface*)sfc;
@@ -237,6 +241,7 @@ struct yagl_egl_offscreen_surface
     memcpy(&sfc->native_sfc_attribs, &pbuffer_attribs, sizeof(pbuffer_attribs));
 
     sfc->base.reset = &yagl_egl_offscreen_surface_reset;
+    sfc->base.invalidate = &yagl_egl_offscreen_surface_invalidate;
     sfc->base.replace = &yagl_egl_offscreen_surface_replace;
     sfc->base.query = &yagl_egl_offscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_offscreen_surface_swap_buffers;

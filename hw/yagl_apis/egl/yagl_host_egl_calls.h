@@ -88,8 +88,7 @@ bool yagl_host_eglSwapBuffers(EGLBoolean* retval,
     yagl_host_handle surface_);
 bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
     yagl_host_handle dpy_,
-    yagl_host_handle surface_,
-    yagl_winsys_id target);
+    yagl_host_handle surface_);
 bool yagl_host_eglCreateImageKHR(yagl_host_handle* retval,
     yagl_host_handle dpy_,
     yagl_host_handle ctx,
@@ -144,11 +143,15 @@ bool yagl_host_eglCreateWindowSurfaceOnscreenYAGL(yagl_host_handle* retval,
 bool yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(yagl_host_handle* retval,
     yagl_host_handle dpy_,
     yagl_host_handle config_,
+    yagl_winsys_id buffer,
     target_ulong /* const EGLint* */ attrib_list_);
 bool yagl_host_eglCreatePixmapSurfaceOnscreenYAGL(yagl_host_handle* retval,
     yagl_host_handle dpy_,
     yagl_host_handle config_,
     yagl_winsys_id pixmap,
     target_ulong /* const EGLint* */ attrib_list_);
+bool yagl_host_eglInvalidateOnscreenSurfaceYAGL(yagl_host_handle dpy_,
+    yagl_host_handle surface_,
+    yagl_winsys_id buffer);
 
 #endif

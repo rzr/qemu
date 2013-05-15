@@ -109,10 +109,6 @@ static struct yagl_client_image
     return image ? &image->base : NULL;
 }
 
-static void yagl_host_gles2_pre_batch(struct yagl_api_ps *api_ps)
-{
-}
-
 static yagl_api_func yagl_host_gles2_get_func(struct yagl_api_ps *api_ps,
                                               uint32_t func_id)
 {
@@ -198,7 +194,6 @@ struct yagl_api_ps *yagl_host_gles2_process_init(struct yagl_api *api)
     yagl_api_ps_init(&gles2_api_ps->base, api);
 
     gles2_api_ps->base.thread_init = &yagl_host_gles2_thread_init;
-    gles2_api_ps->base.pre_batch = &yagl_host_gles2_pre_batch;
     gles2_api_ps->base.get_func = &yagl_host_gles2_get_func;
     gles2_api_ps->base.thread_fini = &yagl_host_gles2_thread_fini;
     gles2_api_ps->base.fini = &yagl_host_gles2_process_fini;

@@ -29,6 +29,13 @@ struct yagl_eglb_surface
     void (*reset)(struct yagl_eglb_surface */*sfc*/);
 
     /*
+     * Surface has been invalidated on target, update it
+     * from 'id'.
+     */
+    void (*invalidate)(struct yagl_eglb_surface */*sfc*/,
+                       yagl_winsys_id /*id*/);
+
+    /*
      * Replaces 'sfc' with 'with', destroying 'with' afterwards.
      * 'sfc' and 'with' must be of same type, but can have
      * different formats.
@@ -45,8 +52,7 @@ struct yagl_eglb_surface
 
     bool (*swap_buffers)(struct yagl_eglb_surface */*sfc*/);
 
-    bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/,
-                         yagl_winsys_id /*target*/);
+    bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/);
 
     void (*destroy)(struct yagl_eglb_surface */*sfc*/);
 };

@@ -236,13 +236,6 @@ static bool yagl_egl_release_current_context(struct yagl_egl_display *dpy)
     return true;
 }
 
-static void yagl_host_egl_pre_batch(struct yagl_api_ps *api_ps)
-{
-    struct yagl_egl_api_ps *egl_api_ps = (struct yagl_egl_api_ps*)api_ps;
-
-    egl_api_ps->backend->pre_batch(egl_api_ps->backend);
-}
-
 static yagl_api_func yagl_host_egl_get_func(struct yagl_api_ps *api_ps,
                                             uint32_t func_id)
 {
@@ -342,7 +335,6 @@ struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api)
     yagl_api_ps_init(&egl_api_ps->base, api);
 
     egl_api_ps->base.thread_init = &yagl_host_egl_thread_init;
-    egl_api_ps->base.pre_batch = &yagl_host_egl_pre_batch;
     egl_api_ps->base.get_func = &yagl_host_egl_get_func;
     egl_api_ps->base.thread_fini = &yagl_host_egl_thread_fini;
     egl_api_ps->base.fini = &yagl_host_egl_process_fini;
@@ -1552,8 +1544,7 @@ out:
 
 bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
     yagl_host_handle dpy_,
-    yagl_host_handle surface_,
-    yagl_winsys_id target)
+    yagl_host_handle surface_)
 {
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_surface *surface = NULL;
@@ -1582,7 +1573,7 @@ bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
         goto out;
     }
 
-    if (!surface->backend_sfc->copy_buffers(surface->backend_sfc, target)) {
+    if (!surface->backend_sfc->copy_buffers(surface->backend_sfc)) {
         YAGL_SET_ERR(EGL_BAD_NATIVE_PIXMAP);
         goto out;
     }
@@ -2261,14 +2252,13 @@ out:
 bool yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(yagl_host_handle* retval,
     yagl_host_handle dpy_,
     yagl_host_handle config_,
+    yagl_winsys_id buffer,
     target_ulong /* const EGLint* */ attrib_list_)
 {
     bool res = true;
     EGLint *attrib_list = NULL;
     struct yagl_eglb_surface *backend_sfc = NULL;
     struct yagl_egl_pbuffer_attribs attribs;
-    uint32_t width = 0;
-    uint32_t height = 0;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_config *config = NULL;
     struct yagl_egl_surface *surface = NULL;
@@ -2322,10 +2312,7 @@ bool yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(yagl_host_handle* retval,
                 }
                 break;
             case EGL_HEIGHT:
-                height = attrib_list[i + 1];
-                break;
             case EGL_WIDTH:
-                width = attrib_list[i + 1];
                 break;
             default:
                 YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
@@ -2353,8 +2340,7 @@ bool yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(yagl_host_handle* retval,
     backend_sfc = dpy->backend_dpy->create_onscreen_pbuffer_surface(dpy->backend_dpy,
                                                                     &config->native,
                                                                     &attribs,
-                                                                    width,
-                                                                    height);
+                                                                    buffer);
 
     if (!backend_sfc) {
         YAGL_SET_ERR(EGL_BAD_ALLOC);
@@ -2472,4 +2458,27 @@ out:
     g_free(attrib_list);
 
     return res;
+}
+
+bool yagl_host_eglInvalidateOnscreenSurfaceYAGL(yagl_host_handle dpy_,
+    yagl_host_handle surface_,
+    yagl_winsys_id buffer)
+{
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_surface *surface = NULL;
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+        goto out;
+    }
+
+    surface->backend_sfc->invalidate(surface->backend_sfc, buffer);
+
+out:
+    yagl_egl_surface_release(surface);
+
+    return true;
 }

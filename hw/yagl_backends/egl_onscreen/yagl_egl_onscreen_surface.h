@@ -7,7 +7,6 @@
 struct yagl_egl_onscreen_display;
 struct yagl_egl_native_config;
 
-struct winsys_resource;
 struct winsys_gl_surface;
 
 struct yagl_egl_onscreen_surface
@@ -21,39 +20,15 @@ struct yagl_egl_onscreen_surface
     EGLSurface dummy_native_sfc;
 
     /*
-     * winsys resource in case if this is a window or pixmap surface.
-     */
-    struct winsys_resource *ws_res;
-
-    /*
-     * winsys surface in case if this is a window or pixmap surface.
+     * winsys surface.
      */
     struct winsys_gl_surface *ws_sfc;
 
     /*
-     * Callback cookie from ws_res::add_callback.
-     */
-    void *cookie;
-
-    /*
-     * pbuffer texture in case if this is a pbuffer surface. Allocated
-     * when this surface is made current for the first time.
-     */
-    GLuint pbuffer_tex;
-    uint32_t pbuffer_width;
-    uint32_t pbuffer_height;
-
-    /*
-     * Depth and stencil renderbuffer for 'ws_sfc'/'pbuffer_tex'. Allocated
+     * Depth and stencil renderbuffer for 'ws_sfc'. Allocated
      * when this surface is made current for the first time.
      */
     GLuint rb;
-
-    /*
-     * This surface has been changed on target and
-     * needs update on host.
-     */
-    bool needs_update;
 };
 
 struct yagl_egl_onscreen_surface
@@ -72,8 +47,7 @@ struct yagl_egl_onscreen_surface
     *yagl_egl_onscreen_surface_create_pbuffer(struct yagl_egl_onscreen_display *dpy,
                                              const struct yagl_egl_native_config *cfg,
                                              const struct yagl_egl_pbuffer_attribs *attribs,
-                                             uint32_t width,
-                                             uint32_t height);
+                                             yagl_winsys_id id);
 
 void yagl_egl_onscreen_surface_setup(struct yagl_egl_onscreen_surface *sfc);
 

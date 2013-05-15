@@ -48,7 +48,6 @@ struct yagl_egl_onscreen_image
 {
     struct yagl_egl_onscreen *egl_onscreen =
         (struct yagl_egl_onscreen*)dpy->base.backend;
-    struct winsys_resource *ws_res = NULL;
     struct winsys_gl_surface *ws_sfc = NULL;
     struct yagl_client_interface *client_iface = NULL;
     struct yagl_egl_onscreen_image_data *image_data = NULL;
@@ -65,17 +64,7 @@ struct yagl_egl_onscreen_image
         goto out;
     }
 
-    ws_res = egl_onscreen->wsi->acquire_resource(egl_onscreen->wsi, buffer);
-
-    if (!ws_res) {
-        goto out;
-    }
-
-    if (ws_res->type != winsys_res_type_pixmap) {
-        goto out;
-    }
-
-    ws_sfc = (struct winsys_gl_surface*)ws_res->acquire_surface(ws_res);
+    ws_sfc = (struct winsys_gl_surface*)egl_onscreen->wsi->acquire_surface(egl_onscreen->wsi, buffer);
 
     if (!ws_sfc) {
         goto out;
@@ -86,7 +75,7 @@ struct yagl_egl_onscreen_image
     yagl_ref_init(&image_data->ref, &yagl_egl_onscreen_image_data_destroy);
 
     glegl_image = client_iface->create_image(client_iface,
-                                             ws_sfc->get_front_texture(ws_sfc),
+                                             ws_sfc->get_texture(ws_sfc),
                                              &image_data->ref);
 
     if (!glegl_image) {
@@ -108,10 +97,6 @@ struct yagl_egl_onscreen_image
 out:
     if (ws_sfc) {
         ws_sfc->base.release(&ws_sfc->base);
-    }
-
-    if (ws_res) {
-        ws_res->release(ws_res);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);

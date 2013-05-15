@@ -14,8 +14,6 @@ struct yagl_api_ps
 
     void (*thread_init)(struct yagl_api_ps */*api_ps*/);
 
-    void (*pre_batch)(struct yagl_api_ps */*api_ps*/);
-
     yagl_api_func (*get_func)(struct yagl_api_ps */*api_ps*/,
                               uint32_t /*func_id*/);
 

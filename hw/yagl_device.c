@@ -256,15 +256,11 @@ static int yagl_device_init(PCIDevice *dev)
     }
 
     if (s->wsi) {
-        /*
-         * TODO: uncomment.
-         */
-        /*
         egl_backend = yagl_egl_onscreen_create(s->wsi,
                                                egl_driver,
                                                &gles2_driver->base);
         gles1_driver = yagl_gles1_onscreen_create(gles1_driver);
-        gles2_driver = yagl_gles2_onscreen_create(gles2_driver);*/
+        gles2_driver = yagl_gles2_onscreen_create(gles2_driver);
     } else {
         egl_backend = yagl_egl_offscreen_create(egl_driver);
     }

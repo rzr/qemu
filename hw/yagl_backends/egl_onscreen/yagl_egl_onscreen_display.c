@@ -108,8 +108,7 @@ static struct yagl_eglb_surface
     *yagl_egl_onscreen_display_create_pbuffer_surface(struct yagl_eglb_display *dpy,
                                                       const struct yagl_egl_native_config *cfg,
                                                       const struct yagl_egl_pbuffer_attribs *attribs,
-                                                      uint32_t width,
-                                                      uint32_t height)
+                                                      yagl_winsys_id id)
 {
     struct yagl_egl_onscreen_display *egl_onscreen_dpy =
         (struct yagl_egl_onscreen_display*)dpy;
@@ -117,8 +116,7 @@ static struct yagl_eglb_surface
         yagl_egl_onscreen_surface_create_pbuffer(egl_onscreen_dpy,
                                                  cfg,
                                                  attribs,
-                                                 width,
-                                                 height);
+                                                 id);
 
     return sfc ? &sfc->base : NULL;
 }
