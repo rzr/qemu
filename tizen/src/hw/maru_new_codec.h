@@ -53,7 +53,6 @@ typedef struct CodecParam {
     int32_t     ctx_index;
     int32_t     file_index;
     uint32_t    mem_offset;
-    uint8_t     mem_type;
 } CodecParam;
 
 struct video_data {
@@ -118,16 +117,17 @@ enum codec_io_cmd {
     CODEC_CMD_FILE_INDEX            = 0x30,
     CODEC_CMD_DEVICE_MEM_OFFSET     = 0x34,
     CODEC_CMD_GET_THREAD_STATE      = 0x38,
-    CODEC_CMD_GET_SHARED_QUEUE      = 0x3C,
+    CODEC_CMD_GET_QUEUE             = 0x3C,
     CODEC_CMD_POP_WRITE_QUEUE       = 0x40,
-    CODEC_CMD_RESET_CODEC_CONTEXT   = 0x44,
+    CODEC_CMD_RESET_AVCONTEXT       = 0x44,
     CODEC_CMD_GET_VERSION           = 0x50,
-    CODEC_CMD_GET_CONTEXT_INDEX     = 0x54,
+    CODEC_CMD_GET_ELEMENT           = 0x54,
+    CODEC_CMD_GET_CONTEXT_INDEX     = 0x58,
 };
 
 enum codec_api_type {
-    CODEC_QUERY_LIST = 1,
-    CODEC_INIT,
+//    CODEC_QUERY_LIST = 1,
+    CODEC_INIT = 0,
     CODEC_DECODE_VIDEO,
     CODEC_ENCODE_VIDEO,
     CODEC_DECODE_AUDIO,
@@ -185,20 +185,21 @@ int codec_operate(uint32_t api_index, uint32_t ctx_index,
  *  Codec Helper Functions
  */
 void new_codec_reset_parser_info(NewCodecState *s, int32_t ctx_index);
-void new_codec_reset_codec_context(NewCodecState *s, int32_t value);
+void new_codec_reset_avcontext(NewCodecState *s, int32_t value);
 
 /*
  *  FFMPEG Functions
  */
 int new_avcodec_query_list(NewCodecState *s);
 int new_avcodec_alloc_context(NewCodecState *s, int index);
+
 int new_avcodec_init(NewCodecState *s, CodecParam *ioparam);
-void new_avcodec_deinit(NewCodecState *s, CodecParam *ioparam);
+int new_avcodec_deinit(NewCodecState *s, CodecParam *ioparam);
 int new_avcodec_decode_video(NewCodecState *s, CodecParam *ioparam);
 int new_avcodec_encode_video(NewCodecState *s, CodecParam *ioparam);
 int new_avcodec_decode_audio(NewCodecState *s, CodecParam *ioparam);
 int new_avcodec_encode_audio(NewCodecState *s, CodecParam *ioparam);
-void new_avcodec_picture_copy (NewCodecState *s, CodecParam *ioparam);
+int new_avcodec_picture_copy(NewCodecState *s, CodecParam *ioparam);
 
 AVCodecParserContext *new_avcodec_parser_init(AVCodecContext *avctx);
 int new_avcodec_parser_parse (AVCodecParserContext *pctx, AVCodecContext *avctx,
