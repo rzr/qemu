@@ -30,7 +30,7 @@ static struct
     { "EGLSurface", "%p" },
     { "EGLClientBuffer", "%p" },
     { "yagl_host_handle", "%u" },
-    { "yagl_winsys_id", "0x%X" },
+    { "yagl_winsys_id", "%u" },
     { "uint32_t", "%u" },
     { "int", "%d" },
     { "GLenum", "0x%x" },

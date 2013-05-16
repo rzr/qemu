@@ -30,7 +30,7 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
     ws_sfc = (struct winsys_gl_surface*)egl_onscreen->wsi->acquire_surface(egl_onscreen->wsi, id);
 
     if (!ws_sfc) {
-        YAGL_LOG_WARN("winsys surface 0x%X not found", id);
+        YAGL_LOG_WARN("winsys surface %u not found", id);
         YAGL_LOG_FUNC_EXIT(NULL);
         return;
     }
@@ -41,7 +41,7 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
         return;
     }
 
-    YAGL_LOG_DEBUG("winsys surface changed to 0x%X", id);
+    YAGL_LOG_DEBUG("winsys surface changed to %u", id);
 
     if (osfc->rb) {
         egl_onscreen->gles_driver->DeleteRenderbuffers(1, &osfc->rb);
@@ -147,7 +147,7 @@ struct yagl_egl_onscreen_surface
     struct yagl_egl_pbuffer_attribs pbuffer_attribs;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_surface_create_window,
-                        "dpy = %p, cfg = %d, id = 0x%X",
+                        "dpy = %p, cfg = %d, id = %u",
                         dpy,
                         cfg->config_id,
                         id);
@@ -213,7 +213,7 @@ struct yagl_egl_onscreen_surface
     struct yagl_egl_pbuffer_attribs pbuffer_attribs;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_surface_create_pixmap,
-                        "dpy = %p, cfg = %d, id = 0x%X",
+                        "dpy = %p, cfg = %d, id = %u",
                         dpy,
                         cfg->config_id,
                         id);
@@ -279,7 +279,7 @@ struct yagl_egl_onscreen_surface
     struct yagl_egl_pbuffer_attribs pbuffer_attribs;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_surface_create_pbuffer,
-                        "dpy = %p, cfg = %d, id = 0x%X",
+                        "dpy = %p, cfg = %d, id = %u",
                         dpy,
                         cfg->config_id,
                         id);

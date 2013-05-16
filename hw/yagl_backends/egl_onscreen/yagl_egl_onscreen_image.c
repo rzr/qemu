@@ -55,7 +55,7 @@ struct yagl_egl_onscreen_image
     struct yagl_egl_onscreen_image *image = NULL;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_image_create,
-                        "dpy = %p, buffer = 0x%X", dpy, buffer);
+                        "dpy = %p, buffer = %u", dpy, buffer);
 
     client_iface = cur_ts->ps->client_ifaces[yagl_client_api_gles2];
 
