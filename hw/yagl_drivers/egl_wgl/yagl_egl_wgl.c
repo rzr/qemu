@@ -685,13 +685,6 @@ static void yagl_egl_wgl_pbuffer_surface_destroy(struct yagl_egl_driver *driver,
     }
 }
 
-static void yagl_egl_wgl_wait_native(struct yagl_egl_driver *driver)
-{
-    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_wait_native, NULL);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
 static void yagl_egl_wgl_destroy(struct yagl_egl_driver *driver)
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)driver;
@@ -898,7 +891,6 @@ struct yagl_egl_driver *yagl_egl_driver_create(void *display)
     egl_driver->context_create = &yagl_egl_wgl_context_create;
     egl_driver->context_destroy = &yagl_egl_wgl_context_destroy;
     egl_driver->make_current = &yagl_egl_wgl_make_current;
-    egl_driver->wait_native = &yagl_egl_wgl_wait_native;
     egl_driver->destroy = &yagl_egl_wgl_destroy;
 
     if (!yagl_egl_wgl_init_ext(egl_wgl)) {

@@ -29,8 +29,6 @@ struct yagl_egl_backend
     bool (*release_current)(struct yagl_egl_backend */*backend*/,
                             bool /*force*/);
 
-    void (*wait_native)(struct yagl_egl_backend */*backend*/);
-
     void (*thread_fini)(struct yagl_egl_backend */*backend*/);
 
     /*

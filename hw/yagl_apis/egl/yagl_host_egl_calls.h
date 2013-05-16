@@ -80,9 +80,6 @@ bool yagl_host_eglQueryContext(EGLBoolean* retval,
     yagl_host_handle ctx_,
     EGLint attribute,
     target_ulong /* EGLint* */ value_);
-bool yagl_host_eglWaitGL(EGLBoolean* retval);
-bool yagl_host_eglWaitNative(EGLBoolean* retval,
-    EGLint engine);
 bool yagl_host_eglSwapBuffers(EGLBoolean* retval,
     yagl_host_handle dpy_,
     yagl_host_handle surface_);

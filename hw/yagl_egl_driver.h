@@ -72,8 +72,6 @@ struct yagl_egl_driver
                          EGLSurface /*read*/,
                          EGLContext /*ctx*/);
 
-    void (*wait_native)(struct yagl_egl_driver */*driver*/);
-
     void (*destroy)(struct yagl_egl_driver */*driver*/);
 
     struct yagl_dyn_lib *dyn_lib;

@@ -437,17 +437,6 @@ static bool yagl_egl_glx_make_current(struct yagl_egl_driver *driver,
     return ret;
 }
 
-static void yagl_egl_glx_wait_native(struct yagl_egl_driver *driver)
-{
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
-
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_wait_native, NULL);
-
-    egl_glx->glXWaitX();
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
 /*
  * @}
  */
@@ -546,7 +535,6 @@ struct yagl_egl_driver *yagl_egl_driver_create(void *display)
     egl_glx->base.context_create = &yagl_egl_glx_context_create;
     egl_glx->base.context_destroy = &yagl_egl_glx_context_destroy;
     egl_glx->base.make_current = &yagl_egl_glx_make_current;
-    egl_glx->base.wait_native = &yagl_egl_glx_wait_native;
     egl_glx->base.destroy = &yagl_egl_glx_destroy;
 
     YAGL_LOG_FUNC_EXIT(NULL);

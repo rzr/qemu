@@ -87,17 +87,6 @@ static bool yagl_egl_offscreen_release_current(struct yagl_egl_backend *backend,
     return res || force;
 }
 
-static void yagl_egl_offscreen_wait_native(struct yagl_egl_backend *backend)
-{
-    struct yagl_egl_offscreen *egl_offscreen = (struct yagl_egl_offscreen*)backend;
-
-    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_wait_native, NULL);
-
-    egl_offscreen->driver->wait_native(egl_offscreen->driver);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
 static void yagl_egl_offscreen_thread_fini(struct yagl_egl_backend *backend)
 {
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_thread_fini, NULL);
@@ -223,7 +212,6 @@ struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *drive
     egl_offscreen->base.create_display = &yagl_egl_offscreen_create_display;
     egl_offscreen->base.make_current = &yagl_egl_offscreen_make_current;
     egl_offscreen->base.release_current = &yagl_egl_offscreen_release_current;
-    egl_offscreen->base.wait_native = &yagl_egl_offscreen_wait_native;
     egl_offscreen->base.thread_fini = &yagl_egl_offscreen_thread_fini;
     egl_offscreen->base.ensure_current = &yagl_egl_offscreen_ensure_current;
     egl_offscreen->base.unensure_current = &yagl_egl_offscreen_unensure_current;

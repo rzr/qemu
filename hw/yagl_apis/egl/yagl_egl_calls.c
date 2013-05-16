@@ -423,44 +423,7 @@ static bool yagl_func_eglQueryContext(uint8_t **out_buff,
 }
 
 /*
- * eglWaitGL dispatcher. id = 21
- */
-static bool yagl_func_eglWaitGL(uint8_t **out_buff,
-    uint8_t *in_buff)
-{
-    YAGL_LOG_FUNC_ENTER_SPLIT0(eglWaitGL);
-    EGLBoolean retval;
-    bool res = yagl_host_eglWaitGL(&retval);
-    if (!res) {
-        YAGL_LOG_FUNC_EXIT(NULL);
-        return false;
-    }
-    YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, retval);
-    yagl_marshal_put_EGLBoolean(&in_buff, retval);
-    return true;
-}
-
-/*
- * eglWaitNative dispatcher. id = 22
- */
-static bool yagl_func_eglWaitNative(uint8_t **out_buff,
-    uint8_t *in_buff)
-{
-    EGLint engine = yagl_marshal_get_EGLint(out_buff);
-    YAGL_LOG_FUNC_ENTER_SPLIT1(eglWaitNative, EGLint, engine);
-    EGLBoolean retval;
-    bool res = yagl_host_eglWaitNative(&retval, engine);
-    if (!res) {
-        YAGL_LOG_FUNC_EXIT(NULL);
-        return false;
-    }
-    YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, retval);
-    yagl_marshal_put_EGLBoolean(&in_buff, retval);
-    return true;
-}
-
-/*
- * eglSwapBuffers dispatcher. id = 23
+ * eglSwapBuffers dispatcher. id = 21
  */
 static bool yagl_func_eglSwapBuffers(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -480,7 +443,7 @@ static bool yagl_func_eglSwapBuffers(uint8_t **out_buff,
 }
 
 /*
- * eglCopyBuffers dispatcher. id = 24
+ * eglCopyBuffers dispatcher. id = 22
  */
 static bool yagl_func_eglCopyBuffers(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -500,7 +463,7 @@ static bool yagl_func_eglCopyBuffers(uint8_t **out_buff,
 }
 
 /*
- * eglCreateImageKHR dispatcher. id = 25
+ * eglCreateImageKHR dispatcher. id = 23
  */
 static bool yagl_func_eglCreateImageKHR(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -523,7 +486,7 @@ static bool yagl_func_eglCreateImageKHR(uint8_t **out_buff,
 }
 
 /*
- * eglDestroyImageKHR dispatcher. id = 26
+ * eglDestroyImageKHR dispatcher. id = 24
  */
 static bool yagl_func_eglDestroyImageKHR(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -543,7 +506,7 @@ static bool yagl_func_eglDestroyImageKHR(uint8_t **out_buff,
 }
 
 /*
- * eglCreateWindowSurfaceOffscreenYAGL dispatcher. id = 27
+ * eglCreateWindowSurfaceOffscreenYAGL dispatcher. id = 25
  */
 static bool yagl_func_eglCreateWindowSurfaceOffscreenYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -568,7 +531,7 @@ static bool yagl_func_eglCreateWindowSurfaceOffscreenYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglCreatePbufferSurfaceOffscreenYAGL dispatcher. id = 28
+ * eglCreatePbufferSurfaceOffscreenYAGL dispatcher. id = 26
  */
 static bool yagl_func_eglCreatePbufferSurfaceOffscreenYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -593,7 +556,7 @@ static bool yagl_func_eglCreatePbufferSurfaceOffscreenYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglCreatePixmapSurfaceOffscreenYAGL dispatcher. id = 29
+ * eglCreatePixmapSurfaceOffscreenYAGL dispatcher. id = 27
  */
 static bool yagl_func_eglCreatePixmapSurfaceOffscreenYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -618,7 +581,7 @@ static bool yagl_func_eglCreatePixmapSurfaceOffscreenYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglResizeOffscreenSurfaceYAGL dispatcher. id = 30
+ * eglResizeOffscreenSurfaceYAGL dispatcher. id = 28
  */
 static bool yagl_func_eglResizeOffscreenSurfaceYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -642,7 +605,7 @@ static bool yagl_func_eglResizeOffscreenSurfaceYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglUpdateOffscreenImageYAGL dispatcher. id = 31
+ * eglUpdateOffscreenImageYAGL dispatcher. id = 29
  */
 static bool yagl_func_eglUpdateOffscreenImageYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -660,7 +623,7 @@ static bool yagl_func_eglUpdateOffscreenImageYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglCreateWindowSurfaceOnscreenYAGL dispatcher. id = 32
+ * eglCreateWindowSurfaceOnscreenYAGL dispatcher. id = 30
  */
 static bool yagl_func_eglCreateWindowSurfaceOnscreenYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -682,7 +645,7 @@ static bool yagl_func_eglCreateWindowSurfaceOnscreenYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglCreatePbufferSurfaceOnscreenYAGL dispatcher. id = 33
+ * eglCreatePbufferSurfaceOnscreenYAGL dispatcher. id = 31
  */
 static bool yagl_func_eglCreatePbufferSurfaceOnscreenYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -704,7 +667,7 @@ static bool yagl_func_eglCreatePbufferSurfaceOnscreenYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglCreatePixmapSurfaceOnscreenYAGL dispatcher. id = 34
+ * eglCreatePixmapSurfaceOnscreenYAGL dispatcher. id = 32
  */
 static bool yagl_func_eglCreatePixmapSurfaceOnscreenYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -726,7 +689,7 @@ static bool yagl_func_eglCreatePixmapSurfaceOnscreenYAGL(uint8_t **out_buff,
 }
 
 /*
- * eglInvalidateOnscreenSurfaceYAGL dispatcher. id = 35
+ * eglInvalidateOnscreenSurfaceYAGL dispatcher. id = 33
  */
 static bool yagl_func_eglInvalidateOnscreenSurfaceYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -740,7 +703,7 @@ static bool yagl_func_eglInvalidateOnscreenSurfaceYAGL(uint8_t **out_buff,
     return res;
 }
 
-const uint32_t yagl_egl_api_num_funcs = 35;
+const uint32_t yagl_egl_api_num_funcs = 33;
 
 yagl_api_func yagl_egl_api_funcs[] = {
     &yagl_func_eglGetError,
@@ -763,8 +726,6 @@ yagl_api_func yagl_egl_api_funcs[] = {
     &yagl_func_eglDestroyContext,
     &yagl_func_eglMakeCurrent,
     &yagl_func_eglQueryContext,
-    &yagl_func_eglWaitGL,
-    &yagl_func_eglWaitNative,
     &yagl_func_eglSwapBuffers,
     &yagl_func_eglCopyBuffers,
     &yagl_func_eglCreateImageKHR,

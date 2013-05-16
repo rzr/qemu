@@ -146,17 +146,6 @@ static bool yagl_egl_onscreen_release_current(struct yagl_egl_backend *backend, 
     return res || force;
 }
 
-static void yagl_egl_onscreen_wait_native(struct yagl_egl_backend *backend)
-{
-    struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
-
-    YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_wait_native, NULL);
-
-    egl_onscreen->egl_driver->wait_native(egl_onscreen->egl_driver);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
 static void yagl_egl_onscreen_thread_fini(struct yagl_egl_backend *backend)
 {
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_thread_fini, NULL);
@@ -286,7 +275,6 @@ struct yagl_egl_backend *yagl_egl_onscreen_create(struct winsys_interface *wsi,
     egl_onscreen->base.create_display = &yagl_egl_onscreen_create_display;
     egl_onscreen->base.make_current = &yagl_egl_onscreen_make_current;
     egl_onscreen->base.release_current = &yagl_egl_onscreen_release_current;
-    egl_onscreen->base.wait_native = &yagl_egl_onscreen_wait_native;
     egl_onscreen->base.thread_fini = &yagl_egl_onscreen_thread_fini;
     egl_onscreen->base.ensure_current = &yagl_egl_onscreen_ensure_current;
     egl_onscreen->base.unensure_current = &yagl_egl_onscreen_unensure_current;

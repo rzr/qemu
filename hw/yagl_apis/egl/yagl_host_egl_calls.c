@@ -1445,59 +1445,6 @@ out:
     return res;
 }
 
-bool yagl_host_eglWaitGL(EGLBoolean* retval)
-{
-    EGLBoolean tmp;
-    EGLenum api = egl_api_ts->api;
-
-    if (!yagl_host_eglBindAPI(&tmp, EGL_OPENGL_ES_API)) {
-        return false;
-    }
-
-    if (!yagl_host_eglWaitClient(retval)) {
-        return false;
-    }
-
-    return yagl_host_eglBindAPI(&tmp, api);
-}
-
-bool yagl_host_eglWaitNative(EGLBoolean* retval,
-    EGLint engine)
-{
-    struct yagl_egl_surface *sfc = NULL;
-
-    YAGL_LOG_FUNC_SET(eglWaitNative);
-
-    *retval = EGL_FALSE;
-
-    if (!egl_api_ts->context) {
-        *retval = EGL_TRUE;
-        goto out;
-    }
-
-    if (!egl_api_ts->context->draw) {
-        YAGL_SET_ERR(EGL_BAD_CURRENT_SURFACE);
-        goto out;
-    }
-
-    sfc = yagl_egl_display_acquire_surface(egl_api_ts->context->dpy,
-                                           egl_api_ts->context->draw->res.handle);
-
-    if (!sfc || (sfc != egl_api_ts->context->draw)) {
-        YAGL_SET_ERR(EGL_BAD_CURRENT_SURFACE);
-        goto out;
-    }
-
-    egl_api_ts->backend->wait_native(egl_api_ts->backend);
-
-    *retval = EGL_TRUE;
-
-out:
-    yagl_egl_surface_release(sfc);
-
-    return true;
-}
-
 bool yagl_host_eglSwapBuffers(EGLBoolean* retval,
     yagl_host_handle dpy_,
     yagl_host_handle surface_)
