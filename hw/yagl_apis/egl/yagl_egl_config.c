@@ -197,6 +197,25 @@ struct yagl_egl_config
             continue;
         }
 
+        /*
+         * A bugfix for Tizen's WebKit. When it chooses a config it
+         * doesn't always pass EGL_DEPTH_SIZE, thus, if host GPU has at least
+         * one config without a depth buffer it gets chosen (EGL_DEPTH_SIZE is
+         * 0 by default and has an AtLeast,Smaller sorting rule). But WebKit
+         * WANTS THE DEPTH BUFFER! If someone wants to have a depth buffer
+         * a value greater than zero must be passed with EGL_DEPTH_SIZE,
+         * read the manual goddamit!
+         *
+         * P.S: We just drop all configs with depth_size == 0 and
+         * also with stencil_size == 0, just in case.
+         */
+        if ((native_configs[i].depth_size == 0) ||
+            (native_configs[i].stencil_size == 0)) {
+            dpy->backend_dpy->config_cleanup(dpy->backend_dpy,
+                                             &native_configs[i]);
+            continue;
+        }
+
         configs[*num_configs] = yagl_egl_config_create(dpy, &native_configs[i]);
 
         ++*num_configs;

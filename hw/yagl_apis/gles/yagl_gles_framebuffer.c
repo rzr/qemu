@@ -81,21 +81,10 @@ bool yagl_gles_framebuffer_renderbuffer(struct yagl_gles_framebuffer *fb,
         fb->attachment_states[framebuffer_attachment].local_name = 0;
     }
 
-    /*
-     * Standalone stencil attachments are not supported on modern
-     * desktop graphics cards, so we just drop it here. Currently this
-     * doesn't do us any harm, but apps in target system that use
-     * framebuffers with stencil buffers might not be displayed correctly.
-     * If this ever happens we'll have to work around here by create some
-     * dummy texture with both color and stencil buffers and copying stencil
-     * data from that texture to texture/renderbuffer being attached here.
-     */
-    if (attachment != GL_STENCIL_ATTACHMENT) {
-        fb->driver->FramebufferRenderbuffer(target,
-                                            attachment,
-                                            renderbuffer_target,
-                                            (rb ? rb->global_name : 0));
-    }
+    fb->driver->FramebufferRenderbuffer(target,
+                                        attachment,
+                                        renderbuffer_target,
+                                        (rb ? rb->global_name : 0));
 
     return true;
 }
@@ -137,13 +126,11 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
         fb->attachment_states[framebuffer_attachment].local_name = 0;
     }
 
-    if (attachment != GL_STENCIL_ATTACHMENT) {
-        fb->driver->FramebufferTexture2D(target,
-                                         attachment,
-                                         textarget,
-                                         (texture ? texture->global_name : 0),
-                                         level);
-    }
+    fb->driver->FramebufferTexture2D(target,
+                                     attachment,
+                                     textarget,
+                                     (texture ? texture->global_name : 0),
+                                     level);
 
     return true;
 }
