@@ -46,6 +46,21 @@
     YAGL_LOG_WARN("NOT IMPLEMENTED!!!"); \
     return true
 
+/*
+ * We can't include GLES2/gl2ext.h here
+ */
+#define GL_HALF_FLOAT_OES 0x8D61
+
+static GLenum yagl_get_actual_type(GLenum type)
+{
+    switch (type) {
+    case GL_HALF_FLOAT_OES:
+        return GL_HALF_FLOAT;
+    default:
+        return type;
+    }
+}
+
 static GLint yagl_get_stride(struct yagl_gles_context *ctx,
                              GLuint alignment_type,
                              GLsizei width,
@@ -77,10 +92,13 @@ static GLint yagl_get_stride(struct yagl_gles_context *ctx,
         if (!ctx->pack_depth_stencil) {
             return GL_INVALID_ENUM;
         }
+        if ((type == GL_FLOAT) || (type == GL_HALF_FLOAT_OES)) {
+            return GL_INVALID_OPERATION;
+        }
         num_components = 1;
         break;
     case GL_DEPTH_COMPONENT:
-        if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
+        if ((type != GL_UNSIGNED_SHORT) && (type != GL_UNSIGNED_INT)) {
             return GL_INVALID_OPERATION;
         }
         num_components = 1;
@@ -123,6 +141,12 @@ static GLint yagl_get_stride(struct yagl_gles_context *ctx,
             return GL_INVALID_OPERATION;
         }
         bpp = num_components * 4;
+        break;
+    case GL_FLOAT:
+        bpp = num_components * 4;
+        break;
+    case GL_HALF_FLOAT_OES:
+        bpp = num_components * 2;
         break;
     default:
         return GL_INVALID_ENUM;
@@ -1361,6 +1385,7 @@ bool yagl_host_glReadPixels(GLint x,
     yagl_object_name current_pbo = 0;
     GLvoid *pixels = NULL;
     GLsizei stride = 0;
+    GLenum actual_type = yagl_get_actual_type(type);
 
     YAGL_GET_CTX(glReadPixels);
 
@@ -1393,7 +1418,7 @@ bool yagl_host_glReadPixels(GLint x,
                                 width,
                                 height,
                                 format,
-                                type,
+                                actual_type,
                                 pixels);
 
         if (current_pbo != 0) {
@@ -1474,6 +1499,7 @@ bool yagl_host_glTexImage2D(GLenum target,
     bool res = true;
     GLvoid *pixels = NULL;
     GLsizei stride = 0;
+    GLenum actual_type = yagl_get_actual_type(type);
 
     YAGL_GET_CTX(glTexImage2D);
 
@@ -1518,7 +1544,7 @@ bool yagl_host_glTexImage2D(GLenum target,
                             height,
                             border,
                             format,
-                            type,
+                            actual_type,
                             pixels);
 
 out:
@@ -1612,6 +1638,7 @@ bool yagl_host_glTexSubImage2D(GLenum target,
     bool res = true;
     GLvoid *pixels = NULL;
     GLsizei stride = 0;
+    GLenum actual_type = yagl_get_actual_type(type);
 
     YAGL_GET_CTX(glTexSubImage2D);
 
@@ -1653,7 +1680,7 @@ bool yagl_host_glTexSubImage2D(GLenum target,
                                width,
                                height,
                                format,
-                               type,
+                               actual_type,
                                pixels);
 
     if (format == GL_ALPHA) {
