@@ -303,7 +303,9 @@ CHECK_GL_LDFLAGS =
 CHECK_GL_TARGET =
 ifdef CONFIG_LINUX
 CHECK_GL_OBJS += gloffscreen_xcomposite.o
-CHECK_GL_LDFLAGS += -lGL -lXcomposite -lXext -lglib-2.0
+#CHECK_GL_LDFLAGS += -lGL -lXcomposite -lXext -lglib-2.0
+# Fix linking error on Ubuntu 13.04
+CHECK_GL_LDFLAGS += -lGL -lXcomposite -lX11 -lXext -lglib-2.0
 CHECK_GL_TARGET = check-gl
 endif
 ifdef CONFIG_WIN32
