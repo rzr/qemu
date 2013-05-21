@@ -223,9 +223,8 @@ static void* run_guest_server(void* args)
 
                 if (atoi(ret) == 0) {
                     /* umount sdcard */
-                    mloop_evcmd_usbdisk(NULL);
-                    // prepare virtio sdcard...
-                    //mloop_evcmd_sdcard(NULL);
+                    //mloop_evcmd_usbdisk(NULL);
+                    mloop_evcmd_sdcard(NULL);
                 } else if (atoi(ret) == 1) {
                     /* mount sdcard */
                     char sdcard_path[256];
@@ -239,9 +238,8 @@ static void* run_guest_server(void* args)
                     strcat(sdcard_path, ret);
                     INFO("%s\n", sdcard_path);
 
-                    mloop_evcmd_usbdisk(sdcard_path);
-                    // prepare virtio sdcard...
-                    //mloop_evcmd_sdcard(sdcard_path);
+                    //mloop_evcmd_usbdisk(sdcard_path);
+                    mloop_evcmd_sdcard(sdcard_path);
 
                     free(vms_path);
                 } else {
