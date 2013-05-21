@@ -1,3 +1,6 @@
+* 1.5.41
+- erase unused variable in virtio-keyboard
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-05-21
 * 1.5.38
 - modified process of using virtio keyboard queue and added key release event when context menu is activated
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-05-14
