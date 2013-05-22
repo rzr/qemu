@@ -483,12 +483,16 @@ public class EmulatorSkin {
 			public void shellActivated(ShellEvent event) {
 				logger.info("activate");
 
-				if (isOnTop == false && isKeyWindow == true) {
-					if (keyWindow != null) {
+				if (keyWindow != null && isKeyWindow == true) {
+					if (isOnTop == false) {
 						keyWindow.getShell().moveAbove(shell);
 
 						if (keyWindow.getDockPosition() != SWT.NONE) {
 							shell.moveAbove(keyWindow.getShell());
+						}
+					} else {
+						if (keyWindow.getDockPosition() == SWT.NONE) {
+							keyWindow.getShell().moveAbove(shell);
 						}
 					}
 				}
