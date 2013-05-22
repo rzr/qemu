@@ -38,8 +38,7 @@ struct yagl_gles2_shader
 
 void yagl_gles2_shader_source(struct yagl_gles2_shader *shader,
                               GLchar **strings,
-                              int count,
-                              bool strip_precision);
+                              int count);
 
 void yagl_gles2_shader_compile(struct yagl_gles2_shader *shader);
 

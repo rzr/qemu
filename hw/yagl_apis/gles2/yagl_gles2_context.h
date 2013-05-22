@@ -20,12 +20,6 @@ struct yagl_gles2_context
      */
     struct yagl_sharegroup *sg;
 
-    /*
-     * Strip 'precision' keyword from shaders because
-     * host implementation doesn't support them.
-     */
-    bool shader_strip_precision;
-
     int num_shader_binary_formats;
 
     bool texture_half_float;

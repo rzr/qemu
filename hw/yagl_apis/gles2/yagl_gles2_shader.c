@@ -194,33 +194,44 @@ static char *yagl_gles2_shader_patch(const char *source,
 
 void yagl_gles2_shader_source(struct yagl_gles2_shader *shader,
                               GLchar **strings,
-                              int count,
-                              bool strip_precision)
+                              int count)
 {
     GLchar **processed_strings = NULL;
     GLint *lengths = NULL;
     int i;
 
-    if (strip_precision) {
-        processed_strings = g_malloc0(count * sizeof(*processed_strings));
-    }
+    processed_strings = g_malloc0(count * sizeof(*processed_strings));
 
     lengths = g_malloc0(count * sizeof(*lengths));
 
     for (i = 0; i < count; ++i) {
-        if (strip_precision) {
-            processed_strings[i] = yagl_gles2_shader_patch(strings[i],
-                                                           strlen(strings[i]),
-                                                           &lengths[i]);
-
-        } else {
-            lengths[i] = strlen(strings[i]);
+        processed_strings[i] = yagl_gles2_shader_patch(strings[i],
+                                                       strlen(strings[i]),
+                                                       &lengths[i]);
+        if (i == 0) {
+            /*
+             * On some GPUs (like Ivybridge Desktop) it's necessary to add
+             * "#version" directive as the first line of the shader, otherwise
+             * some of the features might not be available to the shader.
+             *
+             * For example, on Ivybridge Desktop, if we don't add the "#version"
+             * line to the fragment shader then "gl_PointCoord"
+             * won't be available.
+             */
+            if (strstr(processed_strings[i], "#version") == NULL) {
+                char *tmp = g_malloc(strlen(processed_strings[i]) + sizeof("#version 120\n\n"));
+                strcpy(tmp, "#version 120\n\n");
+                strcat(tmp, processed_strings[i]);
+                g_free(processed_strings[i]);
+                processed_strings[i] = tmp;
+                lengths[i] = strlen(tmp);
+            }
         }
     }
 
     shader->driver->ShaderSource(shader->global_name,
                                  count,
-                                 (const GLchar**)(strip_precision ? processed_strings : strings),
+                                 (const GLchar**)processed_strings,
                                  lengths);
 
     g_free(lengths);

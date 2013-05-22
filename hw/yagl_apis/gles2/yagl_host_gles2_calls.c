@@ -1545,8 +1545,7 @@ bool yagl_host_glShaderSource(GLuint shader,
 
     yagl_gles2_shader_source(shader_obj,
                              strings,
-                             count,
-                             ctx->shader_strip_precision);
+                             count);
 
 out:
     if (strings) {

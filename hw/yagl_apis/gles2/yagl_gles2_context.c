@@ -373,33 +373,6 @@ static void yagl_gles2_context_destroy(struct yagl_client_context *ctx)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static const char* g_shader_precision_test =
-    "varying lowp vec4 c;\n"
-    "void main(void) { gl_FragColor=c; }\n";
-
-static bool yagl_gles2_shader_precision_supported(struct yagl_gles2_driver *driver)
-{
-    GLuint shader = driver->CreateShader(GL_FRAGMENT_SHADER);
-    GLint status = GL_FALSE;
-
-    YAGL_LOG_FUNC_ENTER(yagl_gles2_shader_precision_supported, NULL);
-
-    driver->ShaderSource(shader, 1, &g_shader_precision_test, 0);
-    driver->CompileShader(shader);
-    driver->GetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    driver->DeleteShader(shader);
-
-    if (status == GL_FALSE) {
-        YAGL_LOG_WARN("Host OpenGL implementation doesn't understand precision keyword");
-    } else {
-        YAGL_LOG_DEBUG("Host OpenGL implementation understands precision keyword");
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-
-    return (status != GL_FALSE);
-}
-
 static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx)
 {
     struct yagl_gles_driver *gles_driver = &gles2_ctx->driver->base;
@@ -434,9 +407,6 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx)
 
     yagl_gles_context_prepare(&gles2_ctx->base, arrays, num_arrays,
                               num_texture_units);
-
-    gles2_ctx->shader_strip_precision =
-        !yagl_gles2_shader_precision_supported(gles2_ctx->driver);
 
     /*
      * We don't support it for now...
@@ -528,7 +498,6 @@ struct yagl_gles2_context
     gles2_ctx->driver = driver;
     gles2_ctx->prepared = false;
     gles2_ctx->sg = sg;
-    gles2_ctx->shader_strip_precision = true;
 
     gles2_ctx->num_shader_binary_formats = 0;
 
