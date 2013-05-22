@@ -204,10 +204,17 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		arrangeSkin(scale, rotationId);
 
 		/* open the key window */
+		final int dockValue = config.getSkinPropertyInt(
+				SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				if (dockValue == 0 || dockValue == SWT.NONE) {
+					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				} else {
+					skin.openKeyWindow(dockValue, false);
+				}
 			}
 		});
 	}

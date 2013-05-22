@@ -423,16 +423,6 @@ public class EmulatorSkin {
 							screenShotDialog = null;
 						}
 
-						/* close the Key Window */
-						if (skinInfo.isPhoneShape() == false) {
-							closeKeyWindow();
-						}
-
-						/* dispose the color */
-						if (colorVM != null) {
-							colorVM.dispose();
-						}
-
 						/* save config only for emulator close */
 						config.setSkinProperty(
 								SkinPropertiesConstants.WINDOW_X, shell.getLocation().x);
@@ -444,7 +434,25 @@ public class EmulatorSkin {
 								SkinPropertiesConstants.WINDOW_ROTATION, currentState.getCurrentRotationId());
 						config.setSkinProperty(
 								SkinPropertiesConstants.WINDOW_ONTOP, Boolean.toString(isOnTop));
+
+						int dockValue = 0;
+						if (keyWindow != null && keyWindow.getShell().isVisible()) {
+							dockValue = keyWindow.getDockPosition();
+						}
+						config.setSkinProperty(
+								SkinPropertiesConstants.KEYWINDOW_POSITION, dockValue);
+
 						config.saveSkinProperties();
+
+						/* close the Key Window */
+						if (skinInfo.isPhoneShape() == false) {
+							closeKeyWindow();
+						}
+
+						/* dispose the color */
+						if (colorVM != null) {
+							colorVM.dispose();
+						}
 					}
 
 					if (currentState.getCurrentImage() != null) {
