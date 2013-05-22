@@ -105,7 +105,19 @@ public class SkinWindow {
 				x += shift;
 				parent.setLocation(parentBounds.x + shift, parentBounds.y);
 			}*/
-		} else { /* SWT.RIGHT | SWT.CENTER */
+		}
+		else if (dockPosition == (SWT.LEFT | SWT.CENTER)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y + (parentBounds.height / 2) -
+					(childBounds.height / 2);
+		} else if (dockPosition == (SWT.LEFT | SWT.TOP)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y;
+		} else if (dockPosition == (SWT.LEFT | SWT.BOTTOM)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y + parentBounds.height - childBounds.height;
+		}
+		else { /* SWT.RIGHT | SWT.CENTER */
 			x = parentBounds.x + parentBounds.width;
 			y = parentBounds.y + (parentBounds.height / 2) -
 					(childBounds.height / 2);
