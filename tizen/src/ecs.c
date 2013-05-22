@@ -4,10 +4,6 @@
 #include "console.h"
 #include "migration.h"
 
-#ifndef _WIN32
-#include <sys/epoll.h>
-#endif
-
 #include "qemu-common.h"
 #include "qemu_socket.h"
 #include "qemu-queue.h"
@@ -19,7 +15,7 @@
 #include "qemu-char.h"
 #include "sdb.h"
 #include "qjson.h"
-#include "ecs-json-streamer.h"
+
 #include "json-parser.h"
 #include "qmp-commands.h"
 #include "qint.h"
@@ -28,8 +24,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#define OUT_BUF_SIZE	4096
-#define READ_BUF_LEN 	4096
+
 
 #define DEBUG
 
@@ -39,38 +34,6 @@ struct mon_fd_t {
     int fd;
     QLIST_ENTRY(mon_fd_t) next;
 };
-
-struct Monitor {
-    int suspend_cnt;
-    uint8_t outbuf[OUT_BUF_SIZE];
-    int outbuf_index;
-    CPUArchState *mon_cpu;
-    void *password_opaque;
-    QError *error;
-    QLIST_HEAD(,mon_fd_t) fds;
-    QLIST_ENTRY(Monitor) entry;
-};
-
-#define MAX_EVENTS	1000
-typedef struct ECS_State {
-	int listen_fd;
-	int epoll_fd;
-	struct epoll_event events[MAX_EVENTS];
-	int is_unix;
-	int ecs_running;
-	QEMUTimer *alive_timer;
-	Monitor *mon;
-} ECS_State;
-
-typedef struct ECS_Client {
-	int client_fd;
-	int client_id;
-	int keep_alive;
-	const char* type;
-	ECS_State *cs;
-	JSONMessageParser parser;
-    QTAILQ_ENTRY(ECS_Client) next;
-} ECS_Client;
 
 typedef struct mon_cmd_t {
     const char *name;
@@ -808,8 +771,9 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj)
 	memset(cmd, 0, 10);
 	strcpy(cmd, qdict_get_str(header, "cat"));
 	type_length length = (type_length) qdict_get_int(header, "length");
-	type_group action = (type_group) (qdict_get_int(header, "action") & 0xff);
-	type_action group = (type_action) (qdict_get_int(header, "group") & 0xff);
+	type_group  group = (type_action) (qdict_get_int(header, "group") & 0xff);
+	type_action action = (type_group) (qdict_get_int(header, "action") & 0xff);
+
 
 	// get data
 	const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
@@ -843,6 +807,20 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj)
 
 static bool control_command_proc(ECS_Client *clii, QObject *obj)
 {
+	int64_t control_type = qdict_get_int(qobject_to_qdict(obj), "control_type");
+
+	QDict* data = qdict_get_qdict(qobject_to_qdict(obj), "data");
+
+	if (control_type == CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ)
+	{
+		control_host_keyboard_onoff_req(clii, data);
+	}
+	else if (control_type == CONTROL_COMMAND_SCREENSHOT_REQ)
+	{
+
+	}
+	//LOG(">> control : feature = %s, action=%d, data=%s", feature, action, data);
+
 	return true;
 }
 
@@ -887,12 +865,7 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 
 	type_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TYPE);
 
-	if (!strcmp(type_name, TYPE_DATA_SELF)) {
-		LOG("set client fd %d keep alive 0", clii->client_fd);
-		clii->keep_alive = 0;
-		return;
-	}
-
+	/*
 	def_data = check_key(obj, COMMANDS_DATA);
 	if (0 > def_data) {
 		LOG("json format error: data.");
@@ -901,9 +874,14 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 		LOG("data key is not found.");
 		return;
 	}
+	*/
 	
-
-	if (!strcmp(type_name, COMMAND_TYPE_INJECTOR)) {
+	if (!strcmp(type_name, TYPE_DATA_SELF)) {
+		LOG("set client fd %d keep alive 0", clii->client_fd);
+		clii->keep_alive = 0;
+		return;
+	}
+	else if (!strcmp(type_name, COMMAND_TYPE_INJECTOR)) {
 		injector_command_proc(clii, obj);
 	}
 	else if (!strcmp(type_name, COMMAND_TYPE_CONTROL)) {
@@ -911,6 +889,13 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *o
 	}
 	else if (!strcmp(type_name, COMMAND_TYPE_MONITOR)) {
 		handle_qmp_command(clii, type_name, get_data_object(obj));
+	}
+	else if (!strcmp(type_name, ECS_MSG_STARTINFO_REQ)){
+		ecs_startinfo_req(clii);
+	}
+	else
+	{
+		LOG("handler not found");
 	}
 }
 

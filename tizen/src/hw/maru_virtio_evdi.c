@@ -168,7 +168,7 @@ static void flush_evdi_recv_queue(void)
 		 memcpy(elem.in_sg[0].iov_base, &msginfo->info, sizeof(struct msg_info));
 
 		 //INFO(">> send to guest count = %d, use = %d, msg = %s, iov_len = %d \n",
-				 ++g_cnt, msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
+				// ++g_cnt, msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
 
 		 virtqueue_push(vio_evdi->rvq, &elem, sizeof(msg_info));
 		 virtio_notify(&vio_evdi->vdev, vio_evdi->rvq);

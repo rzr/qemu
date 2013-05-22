@@ -1,7 +1,12 @@
 #ifndef __ECS_H__
 #define __ECS_H__
 
+#ifndef _WIN32
+#include <sys/epoll.h>
+#endif
+
 #include "qemu-common.h"
+#include "ecs-json-streamer.h"
 
 #define ECS_DEBUG	1
 
@@ -32,6 +37,10 @@
 #define COMMAND_TYPE_CONTROL	"control"
 #define COMMAND_TYPE_MONITOR	"monitor"
 
+#define ECS_MSG_STARTINFO_REQ "startinfo_req"
+#define ECS_MSG_STARTINFO_ANS "startinfo_ans"
+
+
 #define TIMER_ALIVE_S			60	
 #define TYPE_DATA_SELF			"self"
 
@@ -39,6 +48,42 @@
 typedef unsigned short	type_length;
 typedef unsigned char	type_group;
 typedef unsigned char	type_action;
+
+#define OUT_BUF_SIZE	4096
+#define READ_BUF_LEN 	4096
+
+
+struct Monitor {
+    int suspend_cnt;
+    uint8_t outbuf[OUT_BUF_SIZE];
+    int outbuf_index;
+    CPUArchState *mon_cpu;
+    void *password_opaque;
+    QError *error;
+    QLIST_HEAD(,mon_fd_t) fds;
+    QLIST_ENTRY(Monitor) entry;
+};
+
+#define MAX_EVENTS	1000
+typedef struct ECS_State {
+	int listen_fd;
+	int epoll_fd;
+	struct epoll_event events[MAX_EVENTS];
+	int is_unix;
+	int ecs_running;
+	QEMUTimer *alive_timer;
+	Monitor *mon;
+} ECS_State;
+
+typedef struct ECS_Client {
+	int client_fd;
+	int client_id;
+	int keep_alive;
+	const char* type;
+	ECS_State *cs;
+	JSONMessageParser parser;
+    QTAILQ_ENTRY(ECS_Client) next;
+} ECS_Client;
 
 
 int start_ecs(void);
@@ -60,5 +105,16 @@ void make_header(QDict* obj, type_length length, type_group group, type_action a
 void read_val_short(const char* data, unsigned short* ret_val);
 void read_val_char(const char* data, unsigned char* ret_val);
 void read_val_str(const char* data, char* ret_val, int len);
+
+
+
+enum{
+	CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ = 1,
+	CONTROL_COMMAND_SCREENSHOT_REQ = 2
+};
+
+// messages
+void ecs_startinfo_req(ECS_Client *clii);
+void control_host_keyboard_onoff_req(ECS_Client *clii, QDict* data);
 
 #endif /* __ECS_H__ */
