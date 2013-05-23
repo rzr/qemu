@@ -125,9 +125,17 @@ public class SkinWindow {
 
 		/* correction of location */
 		if (correction == true) {
+			/* for right side */
 			int shift = (monitorBounds.x + monitorBounds.width) -
 					(x + childBounds.width);
 			if (shift < 0) {
+				x += shift;
+				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+			}
+
+			/* for left side */
+			if (x < 0) {
+				shift = x * (-1);
 				x += shift;
 				parent.setLocation(parentBounds.x + shift, parentBounds.y);
 			}
