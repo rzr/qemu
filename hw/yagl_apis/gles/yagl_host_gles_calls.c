@@ -1899,6 +1899,9 @@ bool yagl_host_glEGLUpdateOffscreenImageYAGL(struct yagl_client_image *image,
     ctx->driver->BindTexture(GL_TEXTURE_2D,
                              gles_image->tex_global_name);
 
+    ctx->driver->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    ctx->driver->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
     ctx->driver->TexImage2D(GL_TEXTURE_2D,
                             0,
                             GL_RGB,
