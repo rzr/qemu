@@ -389,18 +389,14 @@ out:
 }
 
 static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
-                                        uint32_t x,
-                                        uint32_t y,
-                                        uint32_t width,
-                                        uint32_t height,
-                                        uint8_t *pixels)
+                                        uint8_t *pixels,
+                                        const struct vigsp_rect *entries,
+                                        uint32_t num_entries)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
     struct vigs_gl_surface *gl_sfc = (struct vigs_gl_surface*)sfc;
     struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
-
-    VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
-                   x, y, width, height);
+    uint32_t i;
 
     if (!gl_backend->make_current(gl_backend, true)) {
         return;
@@ -424,12 +420,26 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
                                      GL_TEXTURE_2D, ws_sfc->tex, 0);
 
     gl_backend->PixelZoom(1.0f, -1.0f);
-    gl_backend->RasterPos2f(x, ws_sfc->base.base.height - y);
-    gl_backend->DrawPixels(width,
-                           height,
-                           ws_sfc->tex_format,
-                           ws_sfc->tex_type,
-                           pixels);
+    gl_backend->PixelStorei(GL_UNPACK_ALIGNMENT, ws_sfc->tex_bpp);
+    gl_backend->PixelStorei(GL_UNPACK_ROW_LENGTH, ws_sfc->base.base.width);
+
+    for (i = 0; i < num_entries; ++i) {
+        uint32_t x = entries[i].pos.x;
+        uint32_t y = entries[i].pos.y;
+        uint32_t width = entries[i].size.w;
+        uint32_t height = entries[i].size.h;
+        VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
+                       x, y,
+                       width, height);
+        gl_backend->PixelStorei(GL_UNPACK_SKIP_PIXELS, x);
+        gl_backend->PixelStorei(GL_UNPACK_SKIP_ROWS, y);
+        gl_backend->RasterPos2f(x, ws_sfc->base.base.height - y);
+        gl_backend->DrawPixels(width,
+                               height,
+                               ws_sfc->tex_format,
+                               ws_sfc->tex_type,
+                               pixels);
+    }
 
     gl_backend->Finish();
 

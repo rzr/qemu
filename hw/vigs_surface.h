@@ -26,11 +26,9 @@ struct vigs_surface
                         uint8_t */*pixels*/);
 
     void (*draw_pixels)(struct vigs_surface */*sfc*/,
-                        uint32_t /*x*/,
-                        uint32_t /*y*/,
-                        uint32_t /*width*/,
-                        uint32_t /*height*/,
-                        uint8_t */*pixels*/);
+                        uint8_t */*pixels*/,
+                        const struct vigsp_rect */*entries*/,
+                        uint32_t /*num_entries*/);
 
     void (*copy)(struct vigs_surface */*dst*/,
                  struct vigs_surface */*src*/,

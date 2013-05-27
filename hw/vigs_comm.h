@@ -33,7 +33,9 @@ struct vigs_comm_ops
 
     void (*update_gpu)(void */*user_data*/,
                        vigsp_surface_id /*sfc_id*/,
-                       vigsp_offset /*offset*/);
+                       vigsp_offset /*offset*/,
+                       const struct vigsp_rect */*entries*/,
+                       uint32_t /*num_entries*/);
 
     void (*copy)(void */*user_data*/,
                  vigsp_surface_id /*src_id*/,

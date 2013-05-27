@@ -225,7 +225,9 @@ static void vigs_server_dispatch_update_vram(void *user_data,
 
 static void vigs_server_dispatch_update_gpu(void *user_data,
                                             vigsp_surface_id sfc_id,
-                                            vigsp_offset offset)
+                                            vigsp_offset offset,
+                                            const struct vigsp_rect *entries,
+                                            uint32_t num_entries)
 {
     struct vigs_server *server = user_data;
     struct vigs_surface *vigs_sfc;
@@ -243,11 +245,9 @@ static void vigs_server_dispatch_update_gpu(void *user_data,
     }
 
     vigs_sfc->draw_pixels(vigs_sfc,
-                          0,
-                          0,
-                          vigs_sfc->ws_sfc->width,
-                          vigs_sfc->ws_sfc->height,
-                          server->vram_ptr + offset);
+                          server->vram_ptr + offset,
+                          entries,
+                          num_entries);
 
     vigs_sfc->is_dirty = true;
 }

@@ -126,7 +126,9 @@ static void vigs_comm_dispatch_update_gpu(struct vigs_comm *comm,
 
     comm->comm_ops->update_gpu(comm->user_data,
                                request->sfc_id,
-                               request->offset);
+                               request->offset,
+                               &request->entries[0],
+                               request->num_entries);
 }
 
 static void vigs_comm_dispatch_copy(struct vigs_comm *comm,
