@@ -22,9 +22,12 @@
 #ifndef _WIN32
 #define LOG_HOME				"HOME"
 #define LOG_PATH 				"/tizen-sdk-data/emulator-vms/vms/ecs.log"
+#else
+#define LOG_HOME				"LOCALAPPDATA"
+#define LOG_PATH 				"\\tizen-sdk-data\\emulator-vms\\vms\\ecs.log"
 #endif
 
-#define HOST_LISTEN_ADDR		"localhost"
+#define HOST_LISTEN_ADDR		"127.0.0.1"
 #define HOST_LISTEN_PORT		27000
 #define EMULATOR_SERVER_NUM		3
 #define WELCOME_MESSAGE			"### Welcome to ECS service. ###\n"
@@ -67,8 +70,12 @@ struct Monitor {
 #define MAX_EVENTS	1000
 typedef struct ECS_State {
 	int listen_fd;
+#ifndef _WIN32
 	int epoll_fd;
 	struct epoll_event events[MAX_EVENTS];
+#else
+	fd_set reads;
+#endif
 	int is_unix;
 	int ecs_running;
 	QEMUTimer *alive_timer;
