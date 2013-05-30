@@ -433,7 +433,7 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
                        width, height);
         gl_backend->PixelStorei(GL_UNPACK_SKIP_PIXELS, x);
         gl_backend->PixelStorei(GL_UNPACK_SKIP_ROWS, y);
-        gl_backend->RasterPos2f(x, ws_sfc->base.base.height - y);
+        gl_backend->RasterPos2f(x, ws_sfc->base.base.height - y - 1);
         gl_backend->DrawPixels(width,
                                height,
                                ws_sfc->tex_format,
