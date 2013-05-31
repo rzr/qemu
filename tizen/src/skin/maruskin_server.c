@@ -1,7 +1,7 @@
 /*
  * socket server for emulator skin
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -110,6 +110,7 @@ enum {
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
     RECV_RESPONSE_HEART_BEAT = 900,
+    RECV_RESPONSE_DRAW_FRAME = 901,
     RECV_CLOSE = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
 };
@@ -125,6 +126,7 @@ enum {
     SEND_BOOTING_PROGRESS = 5,
     SEND_BRIGHTNESS_VALUE = 6,
     SEND_SENSOR_DAEMON_START = 800,
+    SEND_DRAW_FRAME = 900,
     SEND_SHUTDOWN = 999,
 };
 
@@ -144,8 +146,12 @@ static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
 static pthread_t thread_id_heartbeat;
 
+/* 0: not drawing, 1: drawing */
+int draw_display_state = 0;
+
 static pthread_mutex_t mutex_send_data = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_draw_display = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_screenshot = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_screenshot = PTHREAD_COND_INITIALIZER;
 
@@ -181,7 +187,7 @@ int start_skin_server(int argc, char** argv,
 
     parse_skinconfig_prop();
 
-    // arguments have higher priority than '.skinconfig.properties'
+    /* arguments have higher priority than '.skinconfig.properties' */
     parse_skin_args();
 
     INFO("ignore_heartbeat:%d\n", ignore_heartbeat);
@@ -191,8 +197,8 @@ int start_skin_server(int argc, char** argv,
 
     QemuThread qemu_thread;
 
-    qemu_thread_create( &qemu_thread, run_skin_server, NULL,
-            QEMU_THREAD_JOINABLE);
+    qemu_thread_create(&qemu_thread, run_skin_server,
+        NULL, QEMU_THREAD_JOINABLE);
 
     return 1;
 
@@ -271,6 +277,24 @@ void shutdown_skin_server(void)
 
     pthread_mutex_destroy(&mutex_send_data);
     pthread_mutex_destroy(&mutex_recv_heartbeat_count);
+    pthread_mutex_destroy(&mutex_draw_display);
+}
+
+void notify_draw_frame(void)
+{
+#if 0
+    INFO("notify_draw_frame\n");
+#endif
+
+    if (client_sock) {
+        if (0 > send_skin_header_only(
+            client_sock, SEND_DRAW_FRAME, 1)) {
+
+            ERR("fail to send SEND_DRAW_FRAME to skin.\n");
+        }
+    } else {
+        INFO("skin client socket is not connected yet\n");
+    }
 }
 
 void notify_sensor_daemon_start(void)
@@ -923,15 +947,15 @@ static void* run_skin_server(void* args)
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
+                    pthread_mutex_lock(&mutex_recv_heartbeat_count);
+                    recv_heartbeat_count = 0;
+                    pthread_mutex_unlock(&mutex_recv_heartbeat_count);
+
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n");
 #if 0
                     TRACE(log_buf);
 #endif
                     TRACE("recv HB req_id:%d\n", req_id);
-
-                    pthread_mutex_lock(&mutex_recv_heartbeat_count);
-                    recv_heartbeat_count = 0;
-                    pthread_mutex_unlock(&mutex_recv_heartbeat_count);
 
                     break;
                 }
@@ -957,7 +981,17 @@ static void* run_skin_server(void* args)
                     onoff_host_kbd(on);
                     break;
                 }
+                case RECV_RESPONSE_DRAW_FRAME: {
+                    pthread_mutex_lock(&mutex_draw_display);
+                    draw_display_state = 0; /* framebuffer has been drawn */
+                    pthread_mutex_unlock(&mutex_draw_display);
 
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_DRAW_FRAME ==\n");
+#if 0
+                    TRACE(log_buf);
+#endif
+                    break;
+                }
                 case RECV_CLOSE: {
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_CLOSE ==\n");
                     TRACE(log_buf);
@@ -1216,8 +1250,8 @@ static void* do_heart_beat(void* args)
 
         pthread_mutex_lock( &mutex_recv_heartbeat_count );
         recv_heartbeat_count++;
-        if ( 1 < recv_heartbeat_count ) {
-            TRACE( "[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count );
+        if (1 < recv_heartbeat_count) {
+            INFO("[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count);
         }
         pthread_mutex_unlock( &mutex_recv_heartbeat_count );
 

@@ -85,13 +85,12 @@ void maru_display_fini(void)
 #ifndef CONFIG_USE_SHM
     maruskin_sdl_quit();
 #else
-#if defined(TARGET_I386)
-    maru_vga_common_fini();
-#endif
+    maruskin_shm_quit();
 #endif
 }
 
-void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+void maruskin_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height, bool is_resize)
 {
 #ifndef CONFIG_USE_SHM
     maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);

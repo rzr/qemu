@@ -85,8 +85,10 @@ obj-y += osutil-darwin.o
 endif
 
 # maru display
-obj-y += maru_display.o maru_shm.o
-ifndef CONFIG_DARWIN
+obj-y += maru_display.o
+ifdef CONFIG_USE_SHM
+obj-y += maru_shm.o
+else
 obj-y += maru_sdl.o SDL_rotozoom.o maru_finger.o
 endif
 

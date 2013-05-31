@@ -42,7 +42,6 @@ static void virtio_keyboard_handle(VirtIODevice *vdev, VirtQueue *vq)
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
     int index = 0;
 
-    TRACE("virtqueue handler.\n");
     if (virtio_queue_empty(vkbd->vq)) {
         INFO("virtqueue is empty.\n");
         return;
@@ -51,7 +50,7 @@ static void virtio_keyboard_handle(VirtIODevice *vdev, VirtQueue *vq)
     /* Get a queue buffer which is written by guest side. */
     do {
         index = virtqueue_pop(vq, &elem);
-        TRACE("virtqueue pop. index: %d\n", index);
+        TRACE("virtqueue pop.\n");
     } while (index < VIRTIO_KBD_QUEUE_SIZE);
 }
 
@@ -59,7 +58,6 @@ void virtio_keyboard_notify(void *opaque)
 {
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)opaque;
     EmulKbdEvent *kbdevt;
-    int index = 0;
     int written_cnt = 0;
 
     if (!vkbd) {
@@ -67,7 +65,7 @@ void virtio_keyboard_notify(void *opaque)
         return;
     }
 
-    TRACE("[Enter] virtqueue notifier. %d\n", written_cnt);
+    TRACE("[Enter] virtqueue notifier.\n");
 
     if (!virtio_queue_ready(vkbd->vq)) {
         INFO("virtqueue is not ready.\n");
@@ -83,19 +81,14 @@ void virtio_keyboard_notify(void *opaque)
 
     while ((written_cnt--)) {
         kbdevt = &vkbd->kbdqueue.kbdevent[vkbd->kbdqueue.rptr];
-
-        while (((EmulKbdEvent*)(elem.in_sg[index].iov_base))->code != 0) {
-            if (++index == VIRTIO_KBD_QUEUE_SIZE) {
-                index--;
-                TRACE("virtio queue is full.\n");
-                break;
-            }
-        }
+	if (((EmulKbdEvent*)(elem.in_sg[vkbd->kbdqueue.rptr].iov_base))->code != 0) {
+	    TRACE("FIXME: virtio queue is full.\n");
+	}
 
         /* Copy keyboard data into guest side. */
         TRACE("copy: keycode %d, type %d, elem_index %d\n",
-            kbdevt->code, kbdevt->type, index);
-        memcpy(elem.in_sg[index++].iov_base, kbdevt, sizeof(EmulKbdEvent));
+            kbdevt->code, kbdevt->type, vkbd->kbdqueue.rptr);
+        memcpy(elem.in_sg[vkbd->kbdqueue.rptr].iov_base, kbdevt, sizeof(EmulKbdEvent));
         memset(kbdevt, 0x00, sizeof(EmulKbdEvent));
 
         if (vkbd->kbdqueue.wptr > 0) {
@@ -106,7 +99,6 @@ void virtio_keyboard_notify(void *opaque)
         vkbd->kbdqueue.rptr++;
         if (vkbd->kbdqueue.rptr == VIRTIO_KBD_QUEUE_SIZE) {
             vkbd->kbdqueue.rptr = 0;
-            TRACE("kbdqueue is full.\n");
         }
     }
     qemu_mutex_unlock(&vkbd->event_mutex);

@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -136,6 +136,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
 
+		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
 		shell.setText("Emulator - " + emulatorName);
 
@@ -184,6 +185,9 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		logger.info("lcd bounds : " + lcdBounds);
 
 		currentState.setDisplayBounds(lcdBounds);
+		if (SwtUtil.isMacPlatform() == true) {
+			lcdCanvas.setBounds(currentState.getDisplayBounds());
+		}
 
 		/* arrange the skin image */
 		Image tempImage = null;
@@ -273,13 +277,18 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 			public void paintControl(final PaintEvent e) {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
-					lcdCanvas.setBounds(currentState.getDisplayBounds());
+					if (SwtUtil.isMacPlatform() == false) {
+						lcdCanvas.setBounds(currentState.getDisplayBounds());
+					}
 
-					/* Let's do one more update for sdl display surface
-					while skipping of framebuffer drawing */
-					DisplayStateData lcdStateData = new DisplayStateData(
-							currentState.getCurrentScale(), currentState.getCurrentRotationId());
-					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+					if (skin.communicator.isSensorDaemonStarted() == true) {
+						/* Let's do one more update for sdl display surface
+						while skipping of framebuffer drawing */
+						DisplayStateData lcdStateData = new DisplayStateData(
+								currentState.getCurrentScale(), currentState.getCurrentRotationId());
+						skin.communicator.sendToQEMU(
+								SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
+					}
 				}
 
 				/* general shell does not support native transparency,
@@ -395,7 +404,8 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 						/* send event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 
 						currentState.setCurrentPressedHWKey(null);
 
@@ -431,7 +441,8 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 						/* send event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 
 						currentState.setCurrentPressedHWKey(hwKey);
 
@@ -447,9 +458,9 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 										if (gc != null) {
 											gc.drawImage(currentState.getCurrentKeyPressedImage(),
 													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height, //src
+													hwKey.getRegion().width, hwKey.getRegion().height, /* src */
 													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height); //dst
+													hwKey.getRegion().width, hwKey.getRegion().height); /* dst */
 
 											gc.dispose();
 

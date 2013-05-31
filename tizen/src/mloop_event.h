@@ -46,7 +46,6 @@ int mloop_evcmd_get_hostkbd_status(void);
 
 void mloop_evcmd_set_usbkbd(void *dev);
 void mloop_evcmd_set_usbdisk(void *dev);
-void mloop_evcmd_set_hostkbd(void *dev);
 
 void mloop_evcmd_raise_intr(void *irq);
 void mloop_evcmd_lower_intr(void *irq);
@@ -55,6 +54,8 @@ void mloop_evcmd_hwkey(int event_type, int keycode);
 void mloop_evcmd_touch(void);
 void mloop_evcmd_keyboard(void *data);
 void mloop_evcmd_ramdump(void);
+
+void mloop_evcmd_sdcard(char* img);
 
 #ifdef __cplusplus
 }

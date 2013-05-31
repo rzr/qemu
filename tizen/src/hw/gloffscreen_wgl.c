@@ -660,8 +660,8 @@ static const char *STANDARD_GL_FUNCTIONS ={
 "glXIsDirect\0"
 "glXCreatePixmap\0"
 "glXDestroyPixmap\0"
-"glXCreatePbuffer\n"
-"glXDestroyPbuffer\n"
+"glXCreatePbuffer\0"
+"glXDestroyPbuffer\0"
 "\0"
 };
 
@@ -857,14 +857,6 @@ GloContext *glo_context_create(int formatFlags, GloContext *shareLists) {
 void glo_context_destroy(GloContext *context) {
     if (!context) return;
 
-    wglMakeCurrent( NULL, NULL );
-    if( context->hPBuffer != NULL ) {
-        wglReleasePbufferDCARB( context->hPBuffer, context->hDC );
-        wglDestroyPbufferARB( context->hPBuffer );
-    }
-    if( context->hDC != NULL ) {
-        ReleaseDC( glo.hWnd, context->hDC );
-    }
     if (context->hContext) {
         wglDeleteContext(context->hContext);
     }
@@ -927,7 +919,6 @@ GloSurface *glo_surface_create(int width, int height, GloContext *context) {
 void glo_surface_destroy(GloSurface *surface) {
     if (!surface) return;
 
-    wglMakeCurrent( NULL, NULL );
     if( surface->hPBuffer != NULL ) {
         wglReleasePbufferDCARB( surface->hPBuffer, surface->hDC );
         wglDestroyPbufferARB( surface->hPBuffer );

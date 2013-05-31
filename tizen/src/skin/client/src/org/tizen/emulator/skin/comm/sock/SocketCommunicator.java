@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -83,13 +83,13 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	public static final int HEART_BEAT_INTERVAL = 1; //second
+	public static final int HEART_BEAT_INTERVAL = 1; /* seconds */
 	public static final int HEART_BEAT_EXPIRE = 15;
 
-	public final static int SCREENSHOT_WAIT_INTERVAL = 3; // milli-seconds
-	public final static int SCREENSHOT_WAIT_LIMIT = 3000; // milli-seconds
-	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; // milli-seconds
-	public final static int DETAIL_INFO_WAIT_LIMIT = 3000; // milli-seconds
+	public final static int SCREENSHOT_WAIT_INTERVAL = 3; /* milli-seconds */
+	public final static int SCREENSHOT_WAIT_LIMIT = 3000; /* milli-seconds */
+	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; /* milli-seconds */
+	public final static int DETAIL_INFO_WAIT_LIMIT = 3000; /* milli-seconds */
 
 	public final static int MAX_SEND_QUEUE_SIZE = 100000;
 
@@ -207,27 +207,26 @@ public class SocketCommunicator implements ICommunicator {
 
 					}
 
+					if (isTerminated) {
+						list.clear();
+						break;
+					}
+
 					for ( SkinSendData data : list ) {
 						sendToQEMUInternal( data );
 					}
 
 					list.clear();
-
-					if ( isTerminated ) {
-						break;
-					}
-
 				}
 
 			}
 		};
 
-		sendThread.start();
-
 		try {
+			dis = new DataInputStream(socket.getInputStream());
+			dos = new DataOutputStream(socket.getOutputStream());
 
-			dis = new DataInputStream( socket.getInputStream() );
-			dos = new DataOutputStream( socket.getOutputStream() );
+			sendThread.start();
 
 			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
 			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
@@ -240,7 +239,7 @@ public class SocketCommunicator implements ICommunicator {
 			StartData startData = new StartData(initialData, width, height, scale, rotation);
 			logger.info("StartData" + startData);
 
-			sendToQEMU( SendCommand.SEND_START, startData );
+			sendToQEMU(SendCommand.SEND_START, startData, false);
 
 		} catch ( IOException e ) {
 			logger.log( Level.SEVERE, e.getMessage(), e );
@@ -296,10 +295,12 @@ public class SocketCommunicator implements ICommunicator {
 				switch ( command ) {
 				case HEART_BEAT: {
 					resetHeartbeatCount();
-					if ( logger.isLoggable( Level.FINE ) ) {
-						logger.fine( "received HEAR_BEAT from QEMU." );
+
+					if (logger.isLoggable(Level.FINE)) {
+						logger.fine("received HEAR_BEAT from QEMU.");
 					}
-					sendToQEMU( SendCommand.RESPONSE_HEART_BEAT, null );
+
+					sendToQEMU(SendCommand.RESPONSE_HEART_BEAT, null, true);
 					break;
 				}
 				case SCREEN_SHOT_DATA: {
@@ -385,10 +386,19 @@ public class SocketCommunicator implements ICommunicator {
 					}
 					break;
 				}
+				case DRAW_FRAME: {
+					//logger.info("received DRAW_FRAME from QEMU.");
+
+					skin.updateDisplay();
+
+					break;
+				}
 				case SHUTDOWN: {
 					logger.info("received RESPONSE_SHUTDOWN from QEMU.");
-					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null);
+
+					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null, false);
 					terminate();
+
 					break;
 				}
 				default: {
@@ -396,7 +406,6 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				}
-
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				break;
@@ -404,6 +413,7 @@ public class SocketCommunicator implements ICommunicator {
 
 		}
 
+		logger.info("communicatorThread is stopped");
 	}
 
 	private void receiveData(
@@ -467,32 +477,10 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	public synchronized DataTranfer sendToQEMU(
-			SendCommand command, ISendData data, boolean useDataTransfer) {
-
-		DataTranfer dataTranfer = null;
-		
-		if ( useDataTransfer ) {
-
-			if ( SendCommand.SCREEN_SHOT.equals( command ) ) {
-				dataTranfer = resetDataTransfer( screenShotDataTransfer );
-			} else if ( SendCommand.DETAIL_INFO.equals( command ) ) {
-				dataTranfer = resetDataTransfer( detailInfoTransfer );
-			}
-		}
-
-		sendToQEMU( command, data );
-		
-		return dataTranfer;
-
-	}
-	
-	private DataTranfer resetDataTransfer( final DataTranfer dataTransfer ) {
-		
-		synchronized ( dataTransfer ) {
-			
-			if ( dataTransfer.isTransferState ) {
-				logger.severe( "Already transter state for getting data." );
+	private DataTranfer resetDataTransfer(final DataTranfer dataTransfer) {
+		synchronized(dataTransfer) {
+			if (dataTransfer.isTransferState) {
+				logger.severe("Already transter state for getting data.");
 				return null;
 			}
 
@@ -504,7 +492,7 @@ public class SocketCommunicator implements ICommunicator {
 			TimerTask timerTask = new TimerTask() {
 				@Override
 				public void run() {
-					synchronized ( dataTransfer ) {
+					synchronized(dataTransfer) {
 						dataTransfer.isTransferState = false;
 						dataTransfer.timer = null;
 						dataTransfer.receivedData = null;
@@ -518,15 +506,37 @@ public class SocketCommunicator implements ICommunicator {
 		}
 
 	}
-	
+
+	public synchronized DataTranfer sendDataToQEMU(
+			SendCommand command, ISendData data, boolean useDataTransfer) {
+		DataTranfer dataTranfer = null;
+
+		if (useDataTransfer) {
+			if (SendCommand.SCREEN_SHOT.equals(command)) {
+				dataTranfer = resetDataTransfer(screenShotDataTransfer);
+			} else if (SendCommand.DETAIL_INFO.equals(command)) {
+				dataTranfer = resetDataTransfer(detailInfoTransfer);
+			}
+		}
+
+		sendToQEMU(command, data, false);
+
+		return dataTranfer;
+	}
+
 	@Override
-	public void sendToQEMU(SendCommand command, ISendData data) {
+	public void sendToQEMU(SendCommand command, ISendData data, boolean urgent) {
 		synchronized(sendQueue) {
 			if (MAX_SEND_QUEUE_SIZE < sendQueue.size()) {
 				logger.warning(
 						"Send queue size exceeded max value, do not push data into send queue.");
 			} else {
-				sendQueue.add(new SkinSendData(command, data));
+				if (urgent == true) {
+					sendQueue.addFirst(new SkinSendData(command, data));
+				} else {
+					sendQueue.add(new SkinSendData(command, data));
+				}
+
 				sendQueue.notifyAll();
 			}
 		}
@@ -645,7 +655,7 @@ public class SocketCommunicator implements ICommunicator {
 	private void increaseHeartbeatCount() {
 		int count = heartbeatCount.incrementAndGet();
 
-		if (logger.isLoggable(Level.FINE)) {
+		if (count > 1) {
 			logger.info("HB count : " + count);
 		}
 	}
@@ -664,8 +674,14 @@ public class SocketCommunicator implements ICommunicator {
 
 	@Override
 	public void terminate() {
-		isTerminated = true;
+		if (isTerminated == true) {
+			logger.info("has been terminated");
+			return;
+		}
+
 		logger.info("terminated");
+
+		isTerminated = true;
 
 		if (null != sendQueue) {
 			synchronized (sendQueue) {
@@ -675,6 +691,7 @@ public class SocketCommunicator implements ICommunicator {
 
 		if (null != heartbeatTimer) {
 			heartbeatTimer.cancel();
+			heartbeatTimer = null;
 		}
 
 		IOUtil.closeSocket(socket);

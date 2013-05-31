@@ -43,7 +43,7 @@
 
 #define MAXLEN  512
 #define MAXPACKETLEN 60
-#define SHMKEY	26099
+//#define SHMKEY 26099
 
 extern gchar bin_path[];
 extern gchar log_path[];
@@ -55,4 +55,5 @@ void prepare_maru(void);
 const gchar * get_log_path(void);
 const gchar * prepare_maru_devices(const gchar * kernel_cmdline);
 int maru_device_check(QemuOpts *opts);
+
 #endif /* __EMULATOR_H__ */

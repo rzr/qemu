@@ -397,6 +397,8 @@ public class EmulatorSkin {
 	}
 
 	protected void skinFinalize() {
+		logger.info("skinFinalize");
+
 		skinComposer.composerFinalize();
 	}
 
@@ -421,16 +423,6 @@ public class EmulatorSkin {
 							screenShotDialog = null;
 						}
 
-						/* close the Key Window */
-						if (skinInfo.isPhoneShape() == false) {
-							closeKeyWindow();
-						}
-
-						/* dispose the color */
-						if (colorVM != null) {
-							colorVM.dispose();
-						}
-
 						/* save config only for emulator close */
 						config.setSkinProperty(
 								SkinPropertiesConstants.WINDOW_X, shell.getLocation().x);
@@ -442,7 +434,25 @@ public class EmulatorSkin {
 								SkinPropertiesConstants.WINDOW_ROTATION, currentState.getCurrentRotationId());
 						config.setSkinProperty(
 								SkinPropertiesConstants.WINDOW_ONTOP, Boolean.toString(isOnTop));
+
+						int dockValue = 0;
+						if (keyWindow != null && keyWindow.getShell().isVisible()) {
+							dockValue = keyWindow.getDockPosition();
+						}
+						config.setSkinProperty(
+								SkinPropertiesConstants.KEYWINDOW_POSITION, dockValue);
+
 						config.saveSkinProperties();
+
+						/* close the Key Window */
+						if (skinInfo.isPhoneShape() == false) {
+							closeKeyWindow();
+						}
+
+						/* dispose the color */
+						if (colorVM != null) {
+							colorVM.dispose();
+						}
 					}
 
 					if (currentState.getCurrentImage() != null) {
@@ -464,7 +474,7 @@ public class EmulatorSkin {
 					event.doit = false;
 
 					if (null != communicator) {
-						communicator.sendToQEMU(SendCommand.CLOSE, null);
+						communicator.sendToQEMU(SendCommand.CLOSE, null, false);
 					}
 				}
 			}
@@ -473,12 +483,16 @@ public class EmulatorSkin {
 			public void shellActivated(ShellEvent event) {
 				logger.info("activate");
 
-				if (isOnTop == false && isKeyWindow == true) {
-					if (keyWindow != null) {
+				if (keyWindow != null && isKeyWindow == true) {
+					if (isOnTop == false) {
 						keyWindow.getShell().moveAbove(shell);
 
 						if (keyWindow.getDockPosition() != SWT.NONE) {
 							shell.moveAbove(keyWindow.getShell());
+						}
+					} else {
+						if (keyWindow.getDockPosition() == SWT.NONE) {
+							keyWindow.getShell().moveAbove(shell);
 						}
 					}
 				}
@@ -524,7 +538,8 @@ public class EmulatorSkin {
 
 				DisplayStateData lcdStateData = new DisplayStateData(
 						currentState.getCurrentScale(), currentState.getCurrentRotationId());
-				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+				communicator.sendToQEMU(
+						SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 			}
 		};
 
@@ -566,6 +581,7 @@ public class EmulatorSkin {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
 				Menu menu = EmulatorSkin.this.contextMenu;
+				keyReleaseEvent();
 
 				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
 					lcdCanvas.setMenu(menu);
@@ -592,22 +608,7 @@ public class EmulatorSkin {
 			@Override
 			public void focusLost(FocusEvent event) {
 				logger.info("lost focus");
-
-				/* key event compensation */
-				if (pressedKeyEventList.isEmpty() == false) {
-					for (KeyEventData data : pressedKeyEventList) {
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(), data.keycode,
-								data.stateMask, data.keyLocation);
-						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
-
-						logger.info("auto release : keycode=" + keyEventData.keycode +
-								", stateMask=" + keyEventData.stateMask +
-								", keyLocation=" + keyEventData.keyLocation);
-					}
-				}
-
-				pressedKeyEventList.clear();
+				keyReleaseEvent();
 			}
 		};
 
@@ -686,7 +687,8 @@ public class EmulatorSkin {
 							MouseButtonType.LEFT.value(), eventType,
 							e.x, e.y, geometry[0], geometry[1], 0);
 
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 				}
 			}
 		};
@@ -731,7 +733,8 @@ public class EmulatorSkin {
 							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 				} else if (2 == e.button) { /* wheel button */
 					logger.info("wheelUp in display");
 				}
@@ -776,7 +779,8 @@ public class EmulatorSkin {
 							MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 							e.x, e.y, geometry[0], geometry[1], 0);
 
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 				}
 			}
 
@@ -810,7 +814,8 @@ public class EmulatorSkin {
 						MouseButtonType.WHEEL.value(), eventType,
 						e.x, e.y, geometry[0], geometry[1], e.count);
 
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		};
 
@@ -850,7 +855,8 @@ public class EmulatorSkin {
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(),
 								disappearKeycode, disappearStateMask, disappearKeyLocation);
-						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 						removePressedKey(keyEventData);
 
@@ -877,7 +883,8 @@ public class EmulatorSkin {
 
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.RELEASED.value(), keyCode, stateMask, e.keyLocation);
-				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 				removePressedKey(keyEventData);
 			}
@@ -925,7 +932,8 @@ public class EmulatorSkin {
 
 								KeyEventData keyEventData = new KeyEventData(KeyEventType.RELEASED.value(),
 										previousKeyCode, previousStateMask, previous.keyLocation);
-								communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+								communicator.sendToQEMU(
+										SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 								removePressedKey(keyEventData);
 							}
@@ -980,7 +988,8 @@ public class EmulatorSkin {
 
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.PRESSED.value(), keyCode, stateMask, e.keyLocation);
-				communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT, keyEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
 				addPressedKey(keyEventData);
 			}
@@ -1058,6 +1067,10 @@ public class EmulatorSkin {
 
 	public void setFocus() {
 		lcdCanvas.setFocus();
+	}
+
+	public void updateDisplay() {
+		/* abstract */
 	}
 
 	protected void openScreenShotWindow() {
@@ -1184,6 +1197,8 @@ public class EmulatorSkin {
 
 					if (SkinUtil.setTopMost(shell, isOnTop) == false) {
 						logger.info("failed to Always On Top");
+
+						onTopItem.setSelection(isOnTop = false);
 					} else {
 						if (keyWindow != null) {
 							SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
@@ -1304,7 +1319,8 @@ public class EmulatorSkin {
 							ee.getMessage(), SWT.ICON_ERROR, config);
 				}
 
-				communicator.sendToQEMU(SendCommand.OPEN_SHELL, null);
+				communicator.sendToQEMU(
+						SendCommand.OPEN_SHELL, null, false);
 			}
 		} );
 
@@ -1319,7 +1335,8 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				logger.info("Close Menu is selected");
-				communicator.sendToQEMU(SendCommand.CLOSE, null);
+				communicator.sendToQEMU(
+						SendCommand.CLOSE, null, false);
 			}
 		} );
 
@@ -1433,7 +1450,8 @@ public class EmulatorSkin {
 
 				DisplayStateData lcdStateData =
 						new DisplayStateData(currentState.getCurrentScale(), rotationId);
-				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+				communicator.sendToQEMU(
+						SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 			}
 		};
 
@@ -1507,7 +1525,8 @@ public class EmulatorSkin {
 
 				DisplayStateData lcdStateData =
 						new DisplayStateData(scale, currentState.getCurrentRotationId());
-				communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+				communicator.sendToQEMU(
+						SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
 
 			}
 		};
@@ -1537,7 +1556,8 @@ public class EmulatorSkin {
 				logger.info("Ram dump menu is selected");
 
 				communicator.setRamdumpFlag(true);
-				communicator.sendToQEMU(SendCommand.RAM_DUMP, null);
+				communicator.sendToQEMU(
+						SendCommand.RAM_DUMP, null, false);
 
 				RamdumpDialog ramdumpDialog;
 				try {
@@ -1616,8 +1636,8 @@ public class EmulatorSkin {
 					isOnKbd = on;
 					logger.info("Host Keyboard " + isOnKbd);
 
-					communicator.sendToQEMU(
-							SendCommand.HOST_KBD, new BooleanData(on, SendCommand.HOST_KBD.toString()));
+					communicator.sendToQEMU(SendCommand.HOST_KBD,
+							new BooleanData(on, SendCommand.HOST_KBD.toString()), false);
 				}
 
 			}
@@ -1679,7 +1699,17 @@ public class EmulatorSkin {
 
 				if (answer == SWT.OK) {
 					logger.info("force close!!!");
-					System.exit(-1);
+
+					if (communicator != null) {
+						communicator.terminate();
+					}
+
+					shell.getDisplay().asyncExec(new Runnable() {
+						@Override
+						public void run() {
+							System.exit(-1);
+						}
+					});
 				}
 			}
 		});
@@ -1689,6 +1719,7 @@ public class EmulatorSkin {
 	}
 
 	public void shutdown() {
+		logger.info("shutdown the skin process");
 
 		isShutdownRequested = true;
 
@@ -1709,4 +1740,22 @@ public class EmulatorSkin {
 		return currentState.getCurrentRotationId();
 	}
 
+	public void keyReleaseEvent() {
+		/* key event compensation */
+		if (pressedKeyEventList.isEmpty() == false) {
+			for (KeyEventData data : pressedKeyEventList) {
+				KeyEventData keyEventData = new KeyEventData(
+						KeyEventType.RELEASED.value(), data.keycode,
+						data.stateMask, data.keyLocation);
+				communicator.sendToQEMU(
+						SendCommand.SEND_KEY_EVENT, keyEventData, false);
+
+				logger.info("auto release : keycode=" + keyEventData.keycode +
+						", stateMask=" + keyEventData.stateMask +
+						", keyLocation=" + keyEventData.keyLocation);
+			}
+		}
+
+		pressedKeyEventList.clear();
+	}
 }

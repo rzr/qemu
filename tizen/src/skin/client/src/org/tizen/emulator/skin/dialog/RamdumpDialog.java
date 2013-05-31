@@ -1,3 +1,31 @@
+/**
+ *
+ *
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ *
+ * Contact:
+ * GiWoong Kim <giwoong.kim@samsung.com>
+ * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
+ *
+ */
+
 package org.tizen.emulator.skin.dialog;
 
 import java.io.IOException;
@@ -9,6 +37,7 @@ import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -23,9 +52,11 @@ import org.tizen.emulator.skin.util.SkinUtil;
 
 public class RamdumpDialog extends SkinDialog {
 	private SocketCommunicator communicator;
+	private Composite compositeBase;
 	private ImageData[] frames;
 
-	private Logger logger = SkinLogger.getSkinLogger(RamdumpDialog.class).getLogger();
+	private Logger logger =
+			SkinLogger.getSkinLogger(RamdumpDialog.class).getLogger();
 
 	public RamdumpDialog(Shell parent,
 			SocketCommunicator communicator, EmulatorConfig config) throws IOException {
@@ -49,7 +80,7 @@ public class RamdumpDialog extends SkinDialog {
 			@Override
 			public void handleEvent(Event event) {
 				if (communicator.getRamdumpFlag() == true) {
-					// do nothing
+					/* do nothing */
 					logger.info("do nothing");
 
 					event.doit = false;
@@ -61,9 +92,8 @@ public class RamdumpDialog extends SkinDialog {
 	}
 
 	private Composite createContents(Composite parent) throws IOException {
-		Composite composite = new Composite(parent, SWT.NONE);
-
-		composite.setLayout(new GridLayout(2, false));
+		compositeBase = new Composite(parent, SWT.NONE);
+		compositeBase.setLayout(new GridLayout(2, false));
 
 		final Display display = Display.getDefault();
 
@@ -71,19 +101,20 @@ public class RamdumpDialog extends SkinDialog {
 		ImageLoader loader = new ImageLoader();
 
 		try {
-			frames = loader.load(classLoader.getResourceAsStream("images/process.gif"));
+			frames = loader.load(
+					classLoader.getResourceAsStream("images/process.gif"));
 		} catch (Exception e) {
 			// TODO: register a indicator file
 			frames = null;
 		}
 
-		final Label label = new Label(composite, SWT.NONE);
+		final Label labelImage = new Label(compositeBase, SWT.NONE);
 		if (frames != null) {
-			label.setImage(new Image(display, frames[0]));
+			labelImage.setImage(new Image(display, frames[0]));
 		}
 
-		Label waitMsg = new Label(composite, SWT.NONE);
-		waitMsg.setText("   Please wait...");
+		Label waitMsg = new Label(compositeBase, SWT.NONE);
+		waitMsg.setText("     Please wait...");
 
 		Thread animation = new Thread() {
 			int currentFrame = 0;
@@ -114,14 +145,15 @@ public class RamdumpDialog extends SkinDialog {
 							@Override
 							public void run() {
 								try {
-									Image newImage = new Image(display, frames[currentFrame]);
-									label.getImage().dispose();
-									label.setImage(newImage);
+									Image newImage =
+											new Image(display, frames[currentFrame]);
+									labelImage.getImage().dispose();
+									labelImage.setImage(newImage);
 								} catch (SWTException e) {
 									isDisposed = true;
 								}
 							}
-						}); //end of asyncExec
+						}); /* end of asyncExec */
 					}
 
 					if (communicator.getRamdumpFlag() == false) {
@@ -134,8 +166,8 @@ public class RamdumpDialog extends SkinDialog {
 					public void run() {
 						logger.info("close the Ramdump dialog");
 
-						if (label.getImage() != null) {
-							label.getImage().dispose();
+						if (labelImage.getImage() != null) {
+							labelImage.getImage().dispose();
 						}
 						shell.setCursor(null);
 						RamdumpDialog.this.shell.close();
@@ -147,11 +179,20 @@ public class RamdumpDialog extends SkinDialog {
 		shell.setCursor(display.getSystemCursor(SWT.CURSOR_WAIT));
 		animation.start();
 
-		return composite;
+		return compositeBase;
 	}
 
 	@Override
 	protected void setShellSize() {
-		shell.setSize(240, 110);
+		shell.setSize(280, 150);
+
+		/* align */
+		Rectangle boundsClient = shell.getClientArea();
+		Rectangle boundsBase = compositeBase.getBounds();
+
+		compositeBase.setBounds(
+				(boundsClient.x + (boundsClient.width / 2)) - (boundsBase.width / 2),
+				(boundsClient.y + (boundsClient.height / 2)) - (boundsBase.height / 2),
+				boundsBase.width, boundsBase.height);
 	}
 }

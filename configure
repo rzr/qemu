@@ -540,6 +540,8 @@ Haiku)
   if [ "$cpu" = "i386" -o "$cpu" = "x86_64" ] ; then
     audio_possible_drivers="$audio_possible_drivers fmod"
   fi
+# fix linking error on Ubuntu 13.04
+  libs_qga="-lrt $libs_qga"
 ;;
 esac
 
@@ -2732,7 +2734,10 @@ fi
 cat > $TMPC <<EOF
 #include <signal.h>
 #include <time.h>
+/* Fix linking error on Ubuntu 13.04
 int main(void) { return clock_gettime(CLOCK_REALTIME, NULL); }
+*/
+int main(void) { return timer_gettime(CLOCK_REALTIME, NULL); }
 EOF
 
 if compile_prog "" "" ; then

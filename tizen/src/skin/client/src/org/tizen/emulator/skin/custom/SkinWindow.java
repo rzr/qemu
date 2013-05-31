@@ -105,7 +105,19 @@ public class SkinWindow {
 				x += shift;
 				parent.setLocation(parentBounds.x + shift, parentBounds.y);
 			}*/
-		} else { /* SWT.RIGHT | SWT.CENTER */
+		}
+		else if (dockPosition == (SWT.LEFT | SWT.CENTER)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y + (parentBounds.height / 2) -
+					(childBounds.height / 2);
+		} else if (dockPosition == (SWT.LEFT | SWT.TOP)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y;
+		} else if (dockPosition == (SWT.LEFT | SWT.BOTTOM)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y + parentBounds.height - childBounds.height;
+		}
+		else { /* SWT.RIGHT | SWT.CENTER */
 			x = parentBounds.x + parentBounds.width;
 			y = parentBounds.y + (parentBounds.height / 2) -
 					(childBounds.height / 2);
@@ -113,9 +125,17 @@ public class SkinWindow {
 
 		/* correction of location */
 		if (correction == true) {
+			/* for right side */
 			int shift = (monitorBounds.x + monitorBounds.width) -
 					(x + childBounds.width);
 			if (shift < 0) {
+				x += shift;
+				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+			}
+
+			/* for left side */
+			if (x < 0) {
+				shift = x * (-1);
 				x += shift;
 				parent.setLocation(parentBounds.x + shift, parentBounds.y);
 			}

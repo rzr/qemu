@@ -84,29 +84,7 @@ void check_vm_lock_os(void)
 
 void make_vm_lock_os(void)
 {
-    int shmid;
-    char *shared_memory;
-
-    shmid = shmget((key_t)SHMKEY, MAXLEN, 0666|IPC_CREAT);
-    if (shmid == -1) {
-        ERR("shmget failed\n");
-        perror("osutil-darwin: ");
-        return;
-    }
-
-    shared_memory = shmat(shmid, (char *)0x00, 0);
-    if (shared_memory == (void *)-1) {
-        ERR("shmat failed\n");
-        perror("osutil-darwin: ");
-        return;
-    }
-    sprintf(shared_memory, "%d", tizen_base_port + 2);
-    INFO("shared memory key: %d, value: %s\n", SHMKEY, (char *)shared_memory);
-    
-    if (shmdt(shared_memory) == -1) {
-        ERR("shmdt failed\n");
-        perror("osutil-darwin: ");
-    }
+    /* TODO: */
 }
 
 void set_bin_path_os(gchar * exec_argv)
@@ -138,7 +116,7 @@ void set_bin_path_os(gchar * exec_argv)
 
 void print_system_info_os(void)
 {
-  INFO("* Mac\n");
+    INFO("* Mac\n");
 
     /* uname */
     INFO("* Host machine uname :\n");
@@ -185,6 +163,17 @@ void print_system_info_os(void)
     len = sizeof(sys_num);
     if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
         INFO("* Total memory : %llu bytes\n", sys_num);
+    }
+
+    /* java version */
+    INFO("* Java version :\n");
+    char lspci_cmd[MAXLEN] = "java -version 2>> ";
+    strcat(lspci_cmd, log_path);
+
+    fflush(stdout);
+    if(system(lspci_cmd) < 0) {
+        INFO("system function command '%s' \
+            returns error !", lspci_cmd);
     }
 }
 

@@ -12,7 +12,7 @@ config-host.mak:
 endif
 
 all: qemu skin_client
-qemu: build_info ffmpeg_install check_hax
+qemu: build_info ffmpeg_install check_hax check_cam
 	cd ../../ && $(MAKE)
 qemu_clean:
 	cd ../../ && $(MAKE) clean
@@ -26,6 +26,18 @@ ifdef CONFIG_WIN32
 endif
 ifdef CONFIG_DARWIN
 	$(CC) -mmacosx-version-min=10.4 -o check-hax check_hax.c	
+endif
+
+check_cam:
+	@echo "build check cam"
+ifdef CONFIG_WIN32
+	$(CC) -o check-cam.exe check_cam.c -lole32 -loleaut32 -luuid -lstrmiids
+endif
+ifdef CONFIG_LINUX
+	$(CC) -o check-cam check_cam.c -lv4l2 -lv4lconvert
+endif
+ifdef CONFIG_DARWIN
+	$(CC) -o check-cam check_cam.c
 endif
 
 skin_client:
@@ -50,10 +62,13 @@ ffmpeg_distclean:
 
 clean: ffmpeg_clean qemu_clean
 ifdef CONFIG_WIN32
-	rm -f check-hax.exe
+	rm -f check-hax.exe check-cam.exe
 endif
 ifdef CONFIG_DARWIN
-	rm -f check-hax
+	rm -f check-hax check-cam
+endif
+ifdef CONFIG_LINUX
+	rm -f check-cam
 endif
 distclean: ffmpeg_distclean qemu_distclean
 
@@ -103,29 +118,38 @@ endif
 ifdef CONFIG_WIN32
 	cp ../../i386-softmmu/check-gl.exe $(EMUL_DIR)/bin
 	cp check-hax.exe $(EMUL_DIR)/bin
+	cp check-cam.exe $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_DARWIN
 	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin
 	cp check-hax $(EMUL_DIR)/bin
+	cp check-cam $(EMUL_DIR)/bin
 	cp sdbscript $(EMUL_DIR)/bin
 endif
 ifdef CONFIG_LINUX
 	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin
+	cp check-cam $(EMUL_DIR)/bin
 	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
 endif
 
 ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -dpr ../license $(EMUL_DIR)
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -dpr skin/client/skins $(EMUL_DIR)
 else
 	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp -pPR ../license $(EMUL_DIR)
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -pPR skin/client/skins $(EMUL_DIR)
+endif
+
+ifdef CONFIG_USE_SHM
+ifdef CONFIG_DARWIN
 	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
+endif
+ifdef CONFIG_LINUX
+	cp -dpr skin/client/native_src/libshared.so $(EMUL_DIR)/bin
+endif
 endif
 
 ifdef CONFIG_DARWIN
@@ -209,15 +233,18 @@ endif
 ifdef CONFIG_WIN32
 	cp ../../i386-softmmu/check-gl.exe $(DIBS_COMMON_DIR)/bin
 	cp check-hax.exe $(DIBS_COMMON_DIR)/bin
+	cp check-cam.exe $(DIBS_COMMON_DIR)/bin
 endif
 
 ifdef CONFIG_DARWIN
 	cp ../../i386-softmmu/check-gl $(DIBS_COMMON_DIR)/bin
 	cp check-hax $(DIBS_COMMON_DIR)/bin
+	cp check-cam $(DIBS_COMMON_DIR)/bin
 	cp sdbscript $(DIBS_COMMON_DIR)/bin
 endif
 ifdef CONFIG_LINUX
 	cp ../../i386-softmmu/check-gl $(DIBS_COMMON_DIR)/bin
+	cp check-cam $(DIBS_COMMON_DIR)/bin
 	echo "Copying tizen-kvm to $(DIBS_X86_DIR)/etc"
 	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_X86_DIR)/etc
 	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_X86_DIR)/etc
@@ -225,13 +252,19 @@ endif
 
 ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
-	cp -dpr ../license $(DIBS_COMMON_DIR)
 	cp -dpr skin/client/skins $(DIBS_COMMON_DIR)
 else
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
-	cp -pPR ../license $(DIBS_COMMON_DIR)
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
+endif
+
+ifdef CONFIG_USE_SHM
+ifdef CONFIG_DARWIN
 	cp -pPR skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
+endif
+ifdef CONFIG_LINUX
+	cp -dpr skin/client/native_src/libshared.so $(DIBS_COMMON_DIR)/bin
+endif
 endif
 
 ifdef CONFIG_DARWIN

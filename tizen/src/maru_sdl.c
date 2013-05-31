@@ -1,7 +1,7 @@
 /*
  * SDL_WINDOWID hack
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -32,6 +32,7 @@
 #include <math.h>
 #include "console.h"
 #include "maru_sdl.h"
+#include "maru_display.h"
 #include "emul_state.h"
 #include "SDL_gfx/SDL_rotozoom.h"
 #include "maru_sdl_rotozoom.h"
@@ -39,9 +40,6 @@
 #include "hw/maru_pm.h"
 #include "hw/maru_brightness.h"
 #include "debug_ch.h"
-#if defined(CONFIG_LINUX)
-#include <sys/shm.h>
-#endif
 /* #include "SDL_opengl.h" */
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
@@ -60,8 +58,6 @@ static int current_screen_height;
 
 static int sdl_initialized;
 static int sdl_alteration;
-extern int g_shmid;
-extern char *g_shared_memory;
 
 static int sdl_skip_update;
 
@@ -79,6 +75,9 @@ static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized;
 #endif
 
+extern pthread_mutex_t mutex_screenshot;
+extern pthread_cond_t cond_screenshot;
+
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
 
@@ -94,6 +93,24 @@ void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
 #else
     qemu_update();
 #endif
+
+    /* for screenshot */
+    pthread_mutex_lock(&mutex_screenshot);
+
+    MaruScreenshot* maru_screenshot = get_maru_screenshot();
+    if (maru_screenshot) {
+        maru_screenshot->isReady = 1;
+
+        if (maru_screenshot->request_screenshot == 1) {
+            memcpy(maru_screenshot->pixel_data, ds->surface->data,
+                ds->surface->linesize * ds->surface->height);
+            maru_screenshot->request_screenshot = 0;
+
+            pthread_cond_signal(&cond_screenshot);
+        }
+    }
+
+    pthread_mutex_unlock(&mutex_screenshot);
 }
 
 void qemu_ds_sdl_resize(DisplayState *ds)
@@ -155,6 +172,7 @@ static int maru_sdl_poll_event(SDL_Event *ev)
 void qemu_ds_sdl_refresh(DisplayState *ds)
 {
     SDL_Event ev1, *ev = &ev1;
+    static uint32_t sdl_skip_count = 0;
 
     // surface may be NULL in init func.
     qemu_display_surface = ds->surface;
@@ -168,8 +186,8 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
                 maruskin_sdl_init(0, get_emul_lcd_width(), get_emul_lcd_height(), true);
 
                 pthread_mutex_unlock(&sdl_mutex);
-                vga_hw_invalidate();
                 sdl_skip_update = 0;
+                sdl_skip_count = 0;
                 break;
             }
 
@@ -186,11 +204,16 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
 
     /* Usually, continuously updated.
        When the LCD is turned off,
-       once updates the screen for a black screen. */
+       ten more updates the screen for a black screen. */
     vga_hw_update();
     if (brightness_off) {
-        sdl_skip_update = 1;
+        if (++sdl_skip_count > 10) {
+            sdl_skip_update = 1;
+        } else {
+            sdl_skip_update = 0;
+        }
     } else {
+        sdl_skip_count = 0;
         sdl_skip_update = 0;
     }
 
@@ -560,9 +583,9 @@ void maruskin_sdl_init(uint64 swt_handle,
 
 void maruskin_sdl_quit(void)
 {
+    INFO("maru sdl quit\n");
+
     /* remove multi-touch finger points */
-    get_emul_multi_touch_state()->multitouch_enable = 0;
-    clear_finger_slot();
     cleanup_multi_touch_state();
 
 #if 0
@@ -579,13 +602,6 @@ void maruskin_sdl_quit(void)
     pthread_cond_destroy(&sdl_cond);
 #endif
     pthread_mutex_destroy(&sdl_mutex);
-
-#if defined(CONFIG_LINUX)
-    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
-        perror("maru_sdl.c: ");
-    }
-#endif
 }
 
 

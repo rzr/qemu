@@ -2645,73 +2645,71 @@ void rgb24_to_yuv420(const unsigned char *src, unsigned char *dest,
                      uint32_t width, uint32_t height, uint32_t yvu)
 {
     uint32_t x, y;
-    unsigned char *udest, *vdest;
-    uint32_t bytesperline = width * 3;
+    uint32_t halfWidth;
+    uint8_t *yplane, *uplane, *vplane;
+    uint8_t *yline, *uline, *vline;
+    const uint8_t *rgbIndex;
 
-    /* Y */
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            RGB2Y(src[2], src[1], src[0], *dest++);
-            src += 3;
-        }
-        src += bytesperline - 3 * width;
-    }
-    src -= height * bytesperline;
+    halfWidth = width >> 1;
+    yplane = dest;
 
-    /* U + V */
     if (yvu) {
-        vdest = dest;
-        udest = dest + width * height / 4;
+        vplane = dest + width * height;
+        uplane = vplane + ((width * height) >> 2);
     } else {
-        udest = dest;
-        vdest = dest + width * height / 4;
+        uplane = dest + width * height;
+        vplane = uplane + ((width * height) >> 2);
     }
 
-    for (y = 0; y < height / 2; y++) {
-        for (x = 0; x < width / 2; x++) {
-            uint32_t avg_src[3];
+    for (y = 0; y < height; y++) {
+        yline = yplane + (y * width);
+        uline = uplane + ((y >> 1) * halfWidth);
+        vline = vplane + ((y >> 1) * halfWidth);
 
-            avg_src[0] = (src[0] + src[3] + src[bytesperline] +
-                    src[bytesperline + 3]) / 4;
-            avg_src[1] = (src[1] + src[4] + src[bytesperline + 1] +
-                    src[bytesperline + 4]) / 4;
-            avg_src[2] = (src[2] + src[5] + src[bytesperline + 2] +
-                    src[bytesperline + 5]) / 4;
-            RGB2UV(avg_src[2], avg_src[1], avg_src[0], *udest++, *vdest++);
-            src += 6;
+        rgbIndex = src + (width * (height - 1 - y) * 3);
+        for (x = 0; x < (int)width; x+=2) {
+            RGB2Y(rgbIndex[2], rgbIndex[1], rgbIndex[0], *yline++);
+            rgbIndex += 3;
+            RGB2Y(rgbIndex[2], rgbIndex[1], rgbIndex[0], *yline++);
+            RGB2UV(rgbIndex[2], rgbIndex[1], rgbIndex[0], *uline++, *vline++);
+            rgbIndex += 3;
         }
-        src += 2 * bytesperline - 3 * width;
     }
 }
 
 void rgb24_to_yuyv(unsigned char *src, unsigned char *dest,
                    uint32_t width, uint32_t height)
 {
-    uint32_t i = 0;
+    uint32_t i, j;
+    uint8_t *ptr;
 
-    for (i = 0; i < (width * height * 3); i = i + 6) {
-        /* y */
-        *dest++ = CLIP(0.299 * (src[i + 2] - 128) +
-                    0.587 * (src[i + 1] - 128) +
-                    0.114 * (src[i] - 128) + 128);
-        /* u */
-        *dest++ = CLIP(((-0.147 * (src[i + 2] - 128) -
-                    0.289 * (src[i + 1] - 128) +
-                    0.436 * (src[i] - 128) + 128) +
-                    (-0.147 * (src[i + 5] - 128) -
-                    0.289 * (src[i + 4] - 128) +
-                    0.436 * (src[i + 3] - 128) + 128)) / 2);
-        /* y1 */
-        *dest++ = CLIP(0.299 * (src[i + 5] - 128) +
-                    0.587 * (src[i + 4] - 128) +
-                    0.114 * (src[i + 3] - 128) + 128);
-        /* v */
-        *dest++ = CLIP(((0.615 * (src[i + 2] - 128) -
-                    0.515 * (src[i + 1] - 128) -
-                    0.100 * (src[i] - 128) + 128) +
-                    (0.615 * (src[i + 5] - 128) -
-                    0.515 * (src[i + 4] - 128) -
-                    0.100 * (src[i + 3] - 128) + 128)) / 2);
+    for (i = 0; i < height; i++) {
+        ptr = src + (width * (height - 1 - i) * 3);
+        for (j = 0; j < width; j += 2) {
+            /* y */
+            *dest++ = CLIP(0.299 * (ptr[2] - 128) +
+                           0.587 * (ptr[1] - 128) +
+                           0.114 * (ptr[0] - 128) + 128);
+            /* u */
+            *dest++ = CLIP(((-0.147 * (ptr[2] - 128) -
+                           0.289 * (ptr[1] - 128) +
+                           0.436 * (ptr[0] - 128) + 128) +
+                           (-0.147 * (ptr[5] - 128) -
+                           0.289 * (ptr[4] - 128) +
+                           0.436 * (ptr[3] - 128) + 128)) / 2);
+            /* y1 */
+            *dest++ = CLIP(0.299 * (ptr[5] - 128) +
+                           0.587 * (ptr[4] - 128) +
+                           0.114 * (ptr[3] - 128) + 128);
+            /* v */
+            *dest++ = CLIP(((0.615 * (ptr[2] - 128) -
+                           0.515 * (ptr[1] - 128) -
+                           0.100 * (ptr[0] - 128) + 128) +
+                           (0.615 * (ptr[5] - 128) -
+                           0.515 * (ptr[4] - 128) -
+                           0.100 * (ptr[3] - 128) + 128)) / 2);
+            ptr += 6;
+        }
     }
 }
 

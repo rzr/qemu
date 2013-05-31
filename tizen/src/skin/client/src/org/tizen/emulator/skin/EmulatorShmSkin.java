@@ -39,6 +39,9 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
@@ -49,13 +52,32 @@ import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class EmulatorShmSkin extends EmulatorSkin {
-	private Logger logger = SkinLogger.getSkinLogger(
-			EmulatorShmSkin.class).getLogger();
-
 	public static final int RED_MASK = 0x00FF0000;
 	public static final int GREEN_MASK = 0x0000FF00;
 	public static final int BLUE_MASK = 0x000000FF;
-	public static final int COLOR_DEPTH = 32;
+	public static final int COLOR_DEPTH = 24; /* no need to Alpha channel */
+
+	private static Logger logger = SkinLogger.getSkinLogger(
+			EmulatorShmSkin.class).getLogger();
+
+	static {
+		/* load JNI library file */
+		try {
+			System.loadLibrary("shared");
+		} catch (UnsatisfiedLinkError e) {
+			logger.info("Failed to load a JNI library file.\n" + e);
+
+			Shell temp = new Shell(Display.getDefault());
+			MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
+			messageBox.setText("Emulator");
+			messageBox.setMessage(
+					"Failed to load a JNI library file.\n\n" + e);
+			messageBox.open();
+			temp.dispose();
+
+			System.exit(-1);
+		}
+	}
 
 	/* define JNI functions */
 	public native int shmget(int shmkey, int size);
@@ -67,25 +89,33 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	class PollFBThread extends Thread {
 		private Display display;
-		private int lcdWidth;
-		private int lcdHeight;
-		private int[] array;
-		private ImageData imageData;
-		private Image framebuffer;
+		private int widthFB;
+		private int heightFB;
+		private int sizeFramebuffer;
+		private int[] arrayFramebuffer;
+		private ImageData dataFramebuffer;
+		private Image imageFramebuffer;
+		private Image imageTemp;
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
 		private int intervalWait;
 
-		public PollFBThread(int lcdWidth, int lcdHeight) {
+		public PollFBThread(int widthFB, int heightFB) {
 			this.display = Display.getDefault();
-			this.lcdWidth = lcdWidth;
-			this.lcdHeight = lcdHeight;
-			this.array = new int[lcdWidth * lcdHeight];
-			this.imageData = new ImageData(lcdWidth, lcdHeight, COLOR_DEPTH, paletteData);
-			this.framebuffer = new Image(Display.getDefault(), imageData);
+			this.widthFB = widthFB;
+			this.heightFB = heightFB;
+			this.sizeFramebuffer = widthFB * heightFB;
+			this.arrayFramebuffer = new int[sizeFramebuffer];
 
-			setWaitIntervalTime(30);
+			this.dataFramebuffer =
+					new ImageData(widthFB, heightFB, COLOR_DEPTH, paletteData);
+			this.imageFramebuffer =
+					new Image(Display.getDefault(), dataFramebuffer);
+
+			setName("PollFBThread");
+			setDaemon(true);
+			setWaitIntervalTime(0);
 
 			this.runnable = new Runnable() {
 				@Override
@@ -110,8 +140,6 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		public void run() {
 			stopRequest = false;
 
-			Image temp;
-
 			while (!stopRequest) {
 				synchronized(this) {
 					try {
@@ -122,16 +150,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					}
 				}
 
-				int result = getPixels(array); /* from shared memory */
-				//logger.info("getPixels native function returned " + result);
-
-				for (int i = 0; i < lcdHeight; i++) {
-					imageData.setPixels(0, i, lcdWidth, array, i * lcdWidth);
+				if (stopRequest == true) {
+					break;
 				}
-
-				temp = framebuffer;
-				framebuffer = new Image(display, imageData);
-				temp.dispose();
 
 				if (display.isDisposed() == false) {
 					/* redraw canvas */
@@ -143,6 +164,21 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 			int result = shmdt();
 			logger.info("shmdt native function returned " + result);
+		}
+
+		public void getPixelsFromSharedMemory() {
+			int result = getPixels(arrayFramebuffer);
+			//logger.info("getPixels native function returned " + result);
+
+			communicator.sendToQEMU(
+					SendCommand.RESPONSE_DRAW_FRAMEBUFFER, null, true);
+
+			dataFramebuffer.setPixels(0, 0,
+					sizeFramebuffer, arrayFramebuffer, 0);
+
+			imageTemp = imageFramebuffer;
+			imageFramebuffer = new Image(display, dataFramebuffer);
+			imageTemp.dispose();
 		}
 
 		public void stopRequest() {
@@ -184,8 +220,24 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		/* initialize shared memory */
 		int result = shmget(shmkey,
 				currentState.getCurrentResolutionWidth() *
-				currentState.getCurrentResolutionHeight());
+				currentState.getCurrentResolutionHeight() * 4);
 		logger.info("shmget native function returned " + result);
+
+		if (result == 1) {
+			logger.severe("Failed to get identifier of the shared memory segment.");
+			SkinUtil.openMessage(shell, null,
+					"Cannot launch this VM.\n" +
+					"Failed to get identifier of the shared memory segment.",
+					SWT.ICON_ERROR, config);
+			System.exit(-1);
+		} else if (result == 2) {
+			logger.severe("Failed to attach the shared memory segment.");
+			SkinUtil.openMessage(shell, null,
+					"Cannot launch this VM.\n" +
+					"Failed to attach the shared memory segment.",
+					SWT.ICON_ERROR, config);
+			System.exit(-1);
+		}
 
 		/* update lcd thread */
 		pollThread = new PollFBThread(
@@ -202,16 +254,16 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				int x = lcdCanvas.getSize().x;
 				int y = lcdCanvas.getSize().y;
 
-				if (pollThread.getWaitIntervalTime() == 0) {
+				/* if (pollThread.getWaitIntervalTime() == 0) {
 					logger.info("draw black screen");
 
 					e.gc.drawRectangle(-1, -1, x + 1, y + 1);
 					return;
-				}
+				}*/
 
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
-					e.gc.drawImage(pollThread.framebuffer,
-							0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
+					e.gc.drawImage(pollThread.imageFramebuffer,
+							0, 0, pollThread.widthFB, pollThread.heightFB,
 							0, 0, x, y);
 
 					if (finger.getMultiTouchEnable() == 1) {
@@ -252,14 +304,14 @@ public class EmulatorShmSkin extends EmulatorSkin {
 							currentState.getCurrentScale(), 
 							currentState.getCurrentRotationId());
 				}
-				//save current transform as "oldtransform" 
+				/* save current transform as "oldtransform" */
 				e.gc.getTransform(oldtransform);
-				//set to new transfrom
+				/* set to new transfrom */
 				e.gc.setTransform(transform);
-				e.gc.drawImage(pollThread.framebuffer,
-						0, 0, pollThread.lcdWidth, pollThread.lcdHeight,
+				e.gc.drawImage(pollThread.imageFramebuffer,
+						0, 0, pollThread.widthFB, pollThread.heightFB,
 						0, 0, x, y);
-				//back to old transform
+				/* back to old transform */
 				e.gc.setTransform(oldtransform);
 
 				transform.dispose();
@@ -273,32 +325,41 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	}
 
 	@Override
+	public void updateDisplay() {
+		pollThread.getPixelsFromSharedMemory();
+
+		synchronized(pollThread) {
+			pollThread.notify();
+		}
+	}
+
+	@Override
 	public void displayOn() {
 		logger.info("display on");
 
-		if (pollThread.isAlive()) {
-			pollThread.setWaitIntervalTime(30);
-
-			synchronized(pollThread) {
-				pollThread.notify();
-			}
-		}
+//		if (pollThread.isAlive()) {
+//			pollThread.setWaitIntervalTime(30);
+//
+//			synchronized(pollThread) {
+//				pollThread.notify();
+//			}
+//		}
 	}
 
 	@Override
 	public void displayOff() {
 		logger.info("display off");
 
-		if (pollThread.isAlive()) {
-			pollThread.setWaitIntervalTime(0);
-
-			shell.getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					lcdCanvas.redraw();
-				}
-			});
-		}
+//		if (pollThread.isAlive()) {
+//			pollThread.setWaitIntervalTime(0);
+//
+//			shell.getDisplay().asyncExec(new Runnable() {
+//				@Override
+//				public void run() {
+//					lcdCanvas.redraw();
+//				}
+//			});
+//		}
 	}
 
 	@Override
@@ -309,7 +370,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		}
 
 		try {
-			screenShotDialog = new ShmScreenShotWindow(shell, communicator, this, config,
+			screenShotDialog = new ShmScreenShotWindow(shell, this, config,
 					imageRegistry.getIcon(IconName.SCREENSHOT));
 			screenShotDialog.open();
 

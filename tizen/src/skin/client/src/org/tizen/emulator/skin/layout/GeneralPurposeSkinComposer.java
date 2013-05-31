@@ -143,6 +143,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
 
+		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
 		shell.setText("Emulator - " + emulatorName);
 
@@ -203,10 +204,17 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		arrangeSkin(scale, rotationId);
 
 		/* open the key window */
+		final int dockValue = config.getSkinPropertyInt(
+				SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				if (dockValue == 0 || dockValue == SWT.NONE) {
+					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				} else {
+					skin.openKeyWindow(dockValue, false);
+				}
 			}
 		});
 	}
@@ -250,8 +258,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* arrange the toggle button of key window */
-		toggleButton.setBounds(displayBounds.x + displayBounds.width,
-				displayBounds.y + (displayBounds.height / 2) - (toggleButton.getImageSize().y / 2),
+		toggleButton.setBounds(displayBounds.x + displayBounds.width + 4,
+				displayBounds.y + ((displayBounds.height - toggleButton.getImageSize().y) / 2),
 				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
 
 		/* arrange the progress bar */
@@ -369,11 +377,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
 
-					/* Let's do one more update for sdl display surface
-					while skipping of framebuffer drawing */
-					DisplayStateData lcdStateData = new DisplayStateData(
-							currentState.getCurrentScale(), currentState.getCurrentRotationId());
-					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+					if (skin.communicator.isSensorDaemonStarted() == true) {
+						/* Let's do one more update for sdl display surface
+						while skipping of framebuffer drawing */
+						DisplayStateData lcdStateData = new DisplayStateData(
+								currentState.getCurrentScale(), currentState.getCurrentRotationId());
+						skin.communicator.sendToQEMU(
+								SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
+					}
 				}
 
 				/* general shell does not support native transparency,

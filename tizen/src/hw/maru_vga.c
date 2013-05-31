@@ -5,6 +5,7 @@
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
+ * JinHyung Jo <jinhyung.jo@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * HyunJun Son
@@ -45,30 +46,12 @@
 #include "maru_vga_int.h"
 #include "maru_brightness.h"
 #include "maru_overlay.h"
-#include "maru_display.h"
 #include "emul_state.h"
 #include "debug_ch.h"
 #include <pthread.h>
 
-#ifdef CONFIG_USE_SHM
-#include "emulator.h"
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include "maru_err_table.h"
-#include "emul_state.h"
-#endif
-
-#ifdef CONFIG_USE_SHM
-void *shared_memory = (void*) 0;
-int skin_shmid;
-#endif
-
-
 MULTI_DEBUG_CHANNEL(qemu, maru_vga);
 
-extern pthread_mutex_t mutex_screenshot;
-extern pthread_cond_t cond_screenshot;
 
 //#define DEBUG_VGA
 //#define DEBUG_VGA_MEM
@@ -1435,34 +1418,16 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 }
 
             }
-
-            if ( brightness_off ) {
-
-                dst_sub = s->ds->surface->data + addr;
-                dst = (uint32_t*) ( s->ds->surface->data + addr );
-
-                for ( i = 0; i < disp_width; i++, dst_sub += 4, dst++ ) {
-                    *dst = 0xFF000000; // black
+            if (brightness_level < BRIGHTNESS_MAX) {
+                alpha = brightness_tbl[brightness_level];
+                    dst_sub = ds_get_data(s->ds) + addr;
+                    dst = (uint32_t *)(ds_get_data(s->ds) + addr);
+                    for (i = 0; i < disp_width; i++, dst_sub += 4, dst++) {
+                        *dst = ((alpha * dst_sub[0])>> 8)
+                                | ((alpha * dst_sub[1]) & 0xFF00)
+                                | (((alpha * dst_sub[2]) & 0xFF00) << 8);
                 }
-
-            } else  {
-
-                if ( brightness_level < BRIGHTNESS_MAX ) {
-
-                    alpha = brightness_tbl[brightness_level];
-
-                    dst_sub = s->ds->surface->data + addr;
-                    dst = (uint32_t*) ( s->ds->surface->data + addr );
-
-                    for ( i = 0; i < disp_width; i++, dst_sub += 4, dst++ ) {
-                        *dst = ( ( alpha * dst_sub[0] ) >> 8 )
-                                | ( ( alpha * dst_sub[1] ) & 0xFF00 )
-                                | ( ( ( alpha * dst_sub[2] ) & 0xFF00 ) << 8 );
-                    }
-                }
-
             }
-
 #endif /* MARU_VGA */
 
         } else {
@@ -1487,25 +1452,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
             addr1 = 0;
         d += linesize;
     }
-
-    /* for screenshot */
-    pthread_mutex_lock(&mutex_screenshot);
-    MaruScreenshot* maru_screenshot = get_maru_screenshot();
-    if (maru_screenshot) {
-        maru_screenshot->isReady = 1;
-        if (maru_screenshot->request_screenshot == 1) {
-            memcpy(maru_screenshot->pixel_data, s->ds->surface->data, 
-                s->ds->surface->linesize * s->ds->surface->height);
-            maru_screenshot->request_screenshot = 0;
-            pthread_cond_signal(&cond_screenshot);
-        }
-    }
-    pthread_mutex_unlock(&mutex_screenshot);
-
-#ifdef CONFIG_USE_SHM
-    memcpy(shared_memory, s->ds->surface->data,
-        s->ds->surface->linesize * s->ds->surface->height);
-#endif
 
     if (y_start >= 0) {
         /* flush to display */
@@ -1573,6 +1519,11 @@ static void vga_update_display(void *opaque)
             s->graphic_mode = graphic_mode;
             s->cursor_blink_time = qemu_get_clock_ms(vm_clock);
             full_update = 1;
+        }
+        if (brightness_off) {
+            full_update = 1;
+            vga_draw_blank(s, full_update);
+            return;
         }
         switch(graphic_mode) {
         case GMODE_TEXT:
@@ -1871,51 +1822,12 @@ void maru_vga_common_init(VGACommonState *s)
         break;
     }
     vga_dirty_log_start(s);
-
-#ifdef CONFIG_USE_SHM
-    /* base + 1 = sdb port */
-    /* base + 2 = shared memory key */
-    int mykey = get_emul_vm_base_port() + 2;
-
-    INFO("shared memory key: %d, vga ram_size : %d\n", mykey, s->vram_size);
-
-    skin_shmid = shmget((key_t)mykey, (size_t)s->vram_size, 0666 | IPC_CREAT);
-    if (skin_shmid == -1) {
-        ERR("shmget failed\n");
-        perror("maru_vga: ");
-        maru_register_exit_msg(MARU_EXIT_UNKNOWN,
-            (char*) "Cannot launch this VM.\n"
-            "Shared memory is not enough.");
-        exit(0);
-    }
-
-    shared_memory = shmat(skin_shmid, (void*)0, 0);
-    if (shared_memory == (void *)-1) {
-        ERR("shmat failed\n");
-        perror("maru_vga: ");
-        exit(1);
-    }
-
-    memset(shared_memory, 0x00, (size_t)s->vram_size);
-    printf("Memory attached at %X\n", (int)shared_memory);
-#endif
-
 }
 
-#ifdef CONFIG_USE_SHM
 void maru_vga_common_fini(void)
 {
-    if (shmdt(shared_memory) == -1) {
-        ERR("shmdt failed\n");
-        perror("maru_vga: ");
-    }
-
-    if (shmctl(skin_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
-        perror("maru_vga: ");
-    }
+    /* do nothing */
 }
-#endif
 
 static const MemoryRegionPortio vga_portio_list[] = {
     { 0x04,  2, 1, .read = vga_ioport_read, .write = vga_ioport_write }, /* 3b4 */
