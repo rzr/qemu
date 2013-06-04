@@ -1,3 +1,6 @@
+* 1.5.46
+- added 3btn skins
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-04
 * 1.5.41
 - erase unused variable in virtio-keyboard
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-05-21
