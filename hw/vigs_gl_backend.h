@@ -70,7 +70,7 @@ struct vigs_gl_backend
     void (GLAPIENTRY *VertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
     void (GLAPIENTRY *DrawArrays)(GLenum mode, GLint first, GLsizei count);
     void (GLAPIENTRY *Color4ub)(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
-    void (GLAPIENTRY *RasterPos2f)(GLfloat x, GLfloat y);
+    void (GLAPIENTRY *WindowPos2f)(GLfloat x, GLfloat y);
     void (GLAPIENTRY *PixelZoom)(GLfloat xfactor, GLfloat yfactor);
     void (GLAPIENTRY *DrawPixels)(GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data);
     void (GLAPIENTRY *BlendFunc)(GLenum sfactor, GLenum dfactor);

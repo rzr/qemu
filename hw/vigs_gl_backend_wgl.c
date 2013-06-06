@@ -402,7 +402,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(VertexPointer, glVertexPointer);
     VIGS_GL_GET_PROC(DrawArrays, glDrawArrays);
     VIGS_GL_GET_PROC(Color4ub, glColor4ub);
-    VIGS_GL_GET_PROC(RasterPos2f, glRasterPos2f);
+    VIGS_GL_GET_PROC(WindowPos2f, glWindowPos2f);
     VIGS_GL_GET_PROC(PixelZoom, glPixelZoom);
     VIGS_GL_GET_PROC(DrawPixels, glDrawPixels);
     VIGS_GL_GET_PROC(BlendFunc, glBlendFunc);
