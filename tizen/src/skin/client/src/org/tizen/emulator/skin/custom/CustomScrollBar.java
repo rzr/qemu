@@ -10,7 +10,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or ( at your option ) any later version.
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -35,22 +35,39 @@ import java.util.logging.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 
+class CustomScrollBarThumbData {
+	public boolean isGrabbed;
+	public int yGrabPosition;
+	public int yGrabSelection;
+
+	public Rectangle boundsThumb;
+
+	CustomScrollBarThumbData() {
+		boundsThumb = new Rectangle(0, 0, 0, 0);
+	}
+}
+
+class CustomScrollBarShaftData {
+	public int widthShaft;
+	public int heightShaft;
+}
+
 public class CustomScrollBar {
 	static final int SCROLL_INCREMENT_AMOUNT = 10;
+	static final int SCROLL_PAGE_INCREMENT_AMOUNT = 144;
 
 	private Logger logger = SkinLogger.getSkinLogger(
 			CustomScrollBar.class).getLogger();
@@ -61,6 +78,7 @@ public class CustomScrollBar {
 
 	private int heightScrollBar;
 	private int amountIncrement;
+	private int amountPageIncrement;
 
 	private Image[] imagesArrowUp;
 	private Image[] imagesArrowDown;
@@ -70,7 +88,8 @@ public class CustomScrollBar {
 	private CustomButton buttonArrowUp;
 	private CustomButton buttonArrowDown;
 	private Canvas canvasShaft;
-	private CustomButton buttonThumb;
+	private CustomScrollBarThumbData dataThumb;
+	private CustomScrollBarShaftData dataShaft;
 
 	private int valueSelection;
 	private Timer timerScroller;
@@ -93,12 +112,15 @@ public class CustomScrollBar {
 
 		this.heightScrollBar = heightScrollBar;
 		this.amountIncrement = SCROLL_INCREMENT_AMOUNT;
+		this.amountPageIncrement = SCROLL_PAGE_INCREMENT_AMOUNT;
 
 		this.imagesArrowUp = imagesArrowUp;
 		this.imagesArrowDown = imagesArrowDown;
 		this.imageThumb = imageThumb;
 		this.imageShaft = imageShaft;
 
+		this.dataThumb = new CustomScrollBarThumbData();
+		this.dataShaft = new CustomScrollBarShaftData();
 		//this.timerScroller = new Timer();
 
 		createContents();
@@ -120,9 +142,10 @@ public class CustomScrollBar {
 		/* shaft */
 		canvasShaft = new Canvas(composite, SWT.NONE);
 
-		final int widthShaft = width;
-		final int heightShaft = heightScrollBar - (height * 2);
-		canvasShaft.setLayoutData(new RowData(widthShaft, heightShaft));
+		dataShaft.widthShaft = width;
+		dataShaft.heightShaft = heightScrollBar - (height * 2);
+		canvasShaft.setLayoutData(new RowData(
+				dataShaft.widthShaft, dataShaft.heightShaft));
 
 		canvasShaft.addPaintListener(new PaintListener() {
 			@Override
@@ -131,22 +154,27 @@ public class CustomScrollBar {
 					e.gc.drawImage(imageShaft, 0, 0,
 							imageShaft.getImageData().width,
 							imageShaft.getImageData().height,
-							0, 0, widthShaft, heightShaft);
+							0, 0, dataShaft.widthShaft, dataShaft.heightShaft);
 
 					/* draw a thumb */
-					e.gc.setBackground(new Color(Display.getDefault(), new RGB(80, 80, 80)));
-
 					int heightScrollGap = compositeScroll.getMinHeight() - heightScrollBar;
 
 					float tempHeightThumb = (compositeScroll.getMinHeight() - heightScrollGap) *
-							heightShaft / compositeScroll.getMinHeight();
-					int heightThumb = Math.max(1, (int)tempHeightThumb);
+							dataShaft.heightShaft / compositeScroll.getMinHeight();
+					dataThumb.boundsThumb.height = Math.max(1, (int)tempHeightThumb);
 
-					int xThumb = 2;
-					int yThumb = getSelection() * (heightShaft - heightThumb) / heightScrollGap;
+					dataThumb.boundsThumb.x = 2;
+					dataThumb.boundsThumb.y = getSelection() *
+							(dataShaft.heightShaft - dataThumb.boundsThumb.height) /
+							heightScrollGap;
+					dataThumb.boundsThumb.width = dataShaft.widthShaft -
+							(dataThumb.boundsThumb.x * 2);
 
-					e.gc.fillRectangle(xThumb, yThumb,
-							widthShaft - (xThumb * 2), heightThumb);
+					e.gc.drawImage(imageThumb, 0, 0,
+							imageThumb.getImageData().width,
+							imageThumb.getImageData().height,
+							dataThumb.boundsThumb.x, dataThumb.boundsThumb.y,
+							dataThumb.boundsThumb.width, dataThumb.boundsThumb.height);
 				}
 			}
 		});
@@ -177,25 +205,27 @@ public class CustomScrollBar {
 		}
 	}
 
-	private void scrollUp(int amount) {
-		int amountRemaining = getSelection();
+	private void updateScrollbar() {
+		compositeScroll.vScroll();
+		canvasShaft.redraw();
+	}
 
-		if (amountRemaining > 0) {
-			setSelection(getSelection() - Math.min(amount, amountRemaining));
-			compositeScroll.vScroll();
-			canvasShaft.redraw();
+	private void scrollUp(int amount) {
+		if (amount == 0) {
+			return;
 		}
+
+		setSelection(getSelection() - amount);
+		updateScrollbar();
 	}
 
 	private void scrollDown(int amount) {
-		int minHeightContents = compositeScroll.getMinHeight();
-		int amountRemaining = (minHeightContents - heightScrollBar) - getSelection();
-
-		if (amountRemaining > 0) {
-			setSelection(getSelection() + Math.min(amount, amountRemaining));
-			compositeScroll.vScroll();
-			canvasShaft.redraw();
+		if (amount == 0) {
+			return;
 		}
+
+		setSelection(getSelection() + amount);
+		updateScrollbar();
 	}
 
 	protected void addScrollBarListener() {
@@ -252,6 +282,56 @@ public class CustomScrollBar {
 				}
 			}
 		});
+
+		canvasShaft.addMouseMoveListener(new MouseMoveListener() {
+			@Override
+			public void mouseMove(MouseEvent e) {
+				if (dataThumb.isGrabbed == true) {
+					int yDragged = e.y - dataThumb.yGrabPosition;
+
+					float yDraggedScale = yDragged *
+							(compositeScroll.getMinHeight() - heightScrollBar) /
+							(dataShaft.heightShaft - dataThumb.boundsThumb.height);
+
+					setSelection(dataThumb.yGrabSelection + (int)yDraggedScale);
+					updateScrollbar();
+				}
+			}
+		});
+
+		canvasShaft.addMouseListener(new MouseListener() {
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+
+			@Override
+			public void mouseDown(MouseEvent e) {
+				Rectangle rectThumb = new Rectangle(
+						0, dataThumb.boundsThumb.y,
+						dataThumb.boundsThumb.width + 2, dataThumb.boundsThumb.height);
+
+				if (rectThumb.contains(e.x, e.y) == true) {
+					dataThumb.isGrabbed = true;
+					dataThumb.yGrabPosition = e.y;
+					dataThumb.yGrabSelection = getSelection();
+				} else {
+					if (e.y < dataThumb.boundsThumb.y) {
+						scrollUp(amountPageIncrement);
+					} else {
+						scrollDown(amountPageIncrement);
+					}
+				}
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (dataThumb.isGrabbed == true) {
+					dataThumb.isGrabbed = false;
+					dataThumb.yGrabSelection = dataThumb.yGrabPosition = 0;
+				}
+			}
+		});
 	}
 
 	public int getSelection() {
@@ -260,5 +340,12 @@ public class CustomScrollBar {
 
 	public void setSelection(int selection) {
 		valueSelection = selection;
+
+		if (valueSelection < 0) {
+			valueSelection = 0;
+		} else {
+			int maxScroll = compositeScroll.getMinHeight() - heightScrollBar;
+			valueSelection = Math.min(selection, maxScroll);
+		}
 	}
 }
