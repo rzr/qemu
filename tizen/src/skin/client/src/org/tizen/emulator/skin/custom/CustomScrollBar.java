@@ -38,11 +38,14 @@ import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 
@@ -129,6 +132,21 @@ public class CustomScrollBar {
 							imageShaft.getImageData().width,
 							imageShaft.getImageData().height,
 							0, 0, widthShaft, heightShaft);
+
+					/* draw a thumb */
+					e.gc.setBackground(new Color(Display.getDefault(), new RGB(80, 80, 80)));
+
+					int heightScrollGap = compositeScroll.getMinHeight() - heightScrollBar;
+
+					float tempHeightThumb = (compositeScroll.getMinHeight() - heightScrollGap) *
+							heightShaft / compositeScroll.getMinHeight();
+					int heightThumb = Math.max(1, (int)tempHeightThumb);
+
+					int xThumb = 2;
+					int yThumb = getSelection() * (heightShaft - heightThumb) / heightScrollGap;
+
+					e.gc.fillRectangle(xThumb, yThumb,
+							widthShaft - (xThumb * 2), heightThumb);
 				}
 			}
 		});
@@ -165,18 +183,18 @@ public class CustomScrollBar {
 		if (amountRemaining > 0) {
 			setSelection(getSelection() - Math.min(amount, amountRemaining));
 			compositeScroll.vScroll();
+			canvasShaft.redraw();
 		}
 	}
 
 	private void scrollDown(int amount) {
-		int minHeightContents =
-				((CustomScrolledComposite) parent.getParent()).getMinHeight();
-
+		int minHeightContents = compositeScroll.getMinHeight();
 		int amountRemaining = (minHeightContents - heightScrollBar) - getSelection();
 
 		if (amountRemaining > 0) {
 			setSelection(getSelection() + Math.min(amount, amountRemaining));
 			compositeScroll.vScroll();
+			canvasShaft.redraw();
 		}
 	}
 
