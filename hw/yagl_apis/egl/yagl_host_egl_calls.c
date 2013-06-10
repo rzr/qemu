@@ -528,6 +528,7 @@ bool yagl_host_eglChooseConfig(EGLBoolean* retval,
     dummy.trans_green_val = EGL_DONT_CARE;
     dummy.trans_blue_val = EGL_DONT_CARE;
     dummy.transparent_type = EGL_NONE;
+    dummy.match_format_khr = EGL_DONT_CARE;
 
     if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
         bool has_config_id = false;
@@ -687,6 +688,9 @@ bool yagl_host_eglChooseConfig(EGLBoolean* retval,
             case EGL_TRANSPARENT_BLUE_VALUE:
                 dummy.trans_blue_val = attrib_list[i + 1];
                 break;
+            case EGL_MATCH_FORMAT_KHR:
+                dummy.match_format_khr = attrib_list[i + 1];
+                break;
             default:
                 YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                 goto out;
@@ -825,8 +829,6 @@ bool yagl_host_eglDestroySurface(EGLBoolean* retval,
         YAGL_SET_ERR(EGL_BAD_SURFACE);
         goto out;
     }
-
-    surface->backend_sfc->reset(surface->backend_sfc);
 
     *retval = EGL_TRUE;
 
@@ -1464,18 +1466,6 @@ bool yagl_host_eglSwapBuffers(EGLBoolean* retval,
         goto out;
     }
 
-    if (!egl_api_ts->context) {
-        YAGL_LOG_ERROR("No current context");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
-    if (!yagl_egl_context_uses_surface(egl_api_ts->context, surface)) {
-        YAGL_LOG_ERROR("Surface not attached to current context");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
     if (!surface->backend_sfc->swap_buffers(surface->backend_sfc)) {
         YAGL_SET_ERR(EGL_BAD_ALLOC);
         goto out;
@@ -1505,18 +1495,6 @@ bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
     }
 
     if (!yagl_validate_surface(dpy, surface_, &surface)) {
-        goto out;
-    }
-
-    if (!egl_api_ts->context) {
-        YAGL_LOG_ERROR("No current context");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
-    if (!yagl_egl_context_uses_surface(egl_api_ts->context, surface)) {
-        YAGL_LOG_ERROR("Surface not attached to current context");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
         goto out;
     }
 
@@ -1985,18 +1963,6 @@ bool yagl_host_eglResizeOffscreenSurfaceYAGL(EGLBoolean* retval,
     }
 
     if (!yagl_validate_surface(dpy, surface_, &surface)) {
-        goto out;
-    }
-
-    if (!egl_api_ts->context) {
-        YAGL_LOG_ERROR("No current context");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
-    if (!yagl_egl_context_uses_surface(egl_api_ts->context, surface)) {
-        YAGL_LOG_ERROR("Surface not attached to current context");
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
         goto out;
     }
 

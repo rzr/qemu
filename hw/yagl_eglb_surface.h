@@ -21,14 +21,6 @@ struct yagl_eglb_surface
     } attribs;
 
     /*
-     * Indicates that user has called eglDestroySurface on this
-     * surface. Surface cannot be destroyed immediately, since
-     * it can be current to some thread, but its resources
-     * can be released here.
-     */
-    void (*reset)(struct yagl_eglb_surface */*sfc*/);
-
-    /*
      * Surface has been invalidated on target, update it
      * from 'id'.
      */

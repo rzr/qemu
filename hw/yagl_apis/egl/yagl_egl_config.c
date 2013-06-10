@@ -5,6 +5,7 @@
 #include "yagl_resource.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
+#include <EGL/eglext.h>
 
 static EGLint yagl_egl_config_get_renderable_type(void)
 {
@@ -148,7 +149,9 @@ static struct yagl_egl_config
     cfg->native.surface_type = EGL_PBUFFER_BIT |
                                EGL_PIXMAP_BIT |
                                EGL_WINDOW_BIT |
-                               EGL_SWAP_BEHAVIOR_PRESERVED_BIT;
+                               EGL_SWAP_BEHAVIOR_PRESERVED_BIT |
+                               EGL_LOCK_SURFACE_BIT_KHR |
+                               EGL_OPTIMAL_FORMAT_BIT_KHR;
 
     cfg->native.native_renderable = EGL_TRUE;
 
@@ -296,6 +299,16 @@ bool yagl_egl_config_is_chosen_by(const struct yagl_egl_config *cfg,
         return false;
     }
 
+    /*
+     * EGL_MATCH_FORMAT_KHR.
+     */
+
+    if ((dummy->match_format_khr != EGL_DONT_CARE) &&
+        (dummy->match_format_khr != EGL_FORMAT_RGBA_8888_EXACT_KHR) &&
+        (dummy->match_format_khr != EGL_FORMAT_RGBA_8888_KHR)) {
+        return false;
+    }
+
     return true;
 }
 bool yagl_egl_config_get_attrib(const struct yagl_egl_config *cfg,
@@ -392,6 +405,9 @@ bool yagl_egl_config_get_attrib(const struct yagl_egl_config *cfg,
         break;
     case EGL_COLOR_BUFFER_TYPE:
         *value = EGL_RGB_BUFFER;
+        break;
+    case EGL_MATCH_FORMAT_KHR:
+        *value = EGL_FORMAT_RGBA_8888_EXACT_KHR;
         break;
     default:
         return false;

@@ -44,6 +44,7 @@ struct yagl_egl_native_config
     EGLint renderable_type;
     EGLenum conformant;
     EGLint sample_buffers_num;
+    EGLint match_format_khr;
 };
 
 /*

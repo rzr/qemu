@@ -38,9 +38,6 @@ void yagl_egl_context_update_surfaces(struct yagl_egl_context *ctx,
                                       struct yagl_egl_surface *draw,
                                       struct yagl_egl_surface *read);
 
-bool yagl_egl_context_uses_surface(struct yagl_egl_context *ctx,
-                                   struct yagl_egl_surface *sfc);
-
 /*
  * Helper functions that simply acquire/release yagl_egl_context::res
  * @{

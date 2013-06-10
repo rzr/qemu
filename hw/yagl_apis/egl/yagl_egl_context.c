@@ -77,12 +77,6 @@ void yagl_egl_context_update_surfaces(struct yagl_egl_context *ctx,
     yagl_egl_surface_release(tmp_read);
 }
 
-bool yagl_egl_context_uses_surface(struct yagl_egl_context *ctx,
-                                   struct yagl_egl_surface *sfc)
-{
-    return sfc && ((ctx->read == sfc) || (ctx->draw == sfc));
-}
-
 void yagl_egl_context_acquire(struct yagl_egl_context *ctx)
 {
     if (ctx) {

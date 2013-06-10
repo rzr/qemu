@@ -12,10 +12,6 @@
 
 YAGL_DECLARE_TLS(struct yagl_egl_onscreen_ts*, egl_onscreen_ts);
 
-static void yagl_egl_onscreen_surface_reset(struct yagl_eglb_surface *sfc)
-{
-}
-
 static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
                                                  yagl_winsys_id id)
 {
@@ -178,7 +174,6 @@ struct yagl_egl_onscreen_surface
     sfc->dummy_native_sfc = dummy_native_sfc;
     sfc->ws_sfc = ws_sfc;
 
-    sfc->base.reset = &yagl_egl_onscreen_surface_reset;
     sfc->base.invalidate = &yagl_egl_onscreen_surface_invalidate;
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
@@ -244,7 +239,6 @@ struct yagl_egl_onscreen_surface
     sfc->dummy_native_sfc = dummy_native_sfc;
     sfc->ws_sfc = ws_sfc;
 
-    sfc->base.reset = &yagl_egl_onscreen_surface_reset;
     sfc->base.invalidate = &yagl_egl_onscreen_surface_invalidate;
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
@@ -310,7 +304,6 @@ struct yagl_egl_onscreen_surface
     sfc->dummy_native_sfc = dummy_native_sfc;
     sfc->ws_sfc = ws_sfc;
 
-    sfc->base.reset = &yagl_egl_onscreen_surface_reset;
     sfc->base.invalidate = &yagl_egl_onscreen_surface_invalidate;
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
