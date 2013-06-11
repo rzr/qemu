@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Image;
@@ -46,7 +47,7 @@ import org.tizen.emulator.skin.log.SkinLogger;
 
 
 public class CustomScrollBar {
-	static final int SCROLL_SHIFT_LENGTH = 10;
+	static final int SCROLL_INCREMENT_AMOUNT = 10;
 
 	private Logger logger = SkinLogger.getSkinLogger(
 			CustomScrollBar.class).getLogger();
@@ -56,7 +57,7 @@ public class CustomScrollBar {
 	CustomScrolledComposite compositeScroll;
 
 	private int heightScrollBar;
-	private int maxShift;
+	private int amountIncrement;
 
 	private Image[] imagesArrowUp;
 	private Image[] imagesArrowDown;
@@ -88,7 +89,7 @@ public class CustomScrollBar {
 		composite.setLayout(rowLayout);
 
 		this.heightScrollBar = heightScrollBar;
-		this.maxShift = SCROLL_SHIFT_LENGTH;
+		this.amountIncrement = SCROLL_INCREMENT_AMOUNT;
 
 		this.imagesArrowUp = imagesArrowUp;
 		this.imagesArrowDown = imagesArrowDown;
@@ -158,16 +159,32 @@ public class CustomScrollBar {
 		}
 	}
 
+	private void scrollUp(int amount) {
+		int amountRemaining = getSelection();
+
+		if (amountRemaining > 0) {
+			setSelection(getSelection() - Math.min(amount, amountRemaining));
+			compositeScroll.vScroll();
+		}
+	}
+
+	private void scrollDown(int amount) {
+		int minHeightContents =
+				((CustomScrolledComposite) parent.getParent()).getMinHeight();
+
+		int amountRemaining = (minHeightContents - heightScrollBar) - getSelection();
+
+		if (amountRemaining > 0) {
+			setSelection(getSelection() + Math.min(amount, amountRemaining));
+			compositeScroll.vScroll();
+		}
+	}
+
 	protected void addScrollBarListener() {
 		buttonArrowUp.addMouseListener(new MouseListener() {
 			@Override
 			public void mouseDown(MouseEvent e) {
-				int shift = getSelection();
-
-				if (shift > 0) {
-					setSelection(getSelection() - Math.min(maxShift, shift));
-					((CustomScrolledComposite) parent.getParent()).vScroll();
-				}
+				scrollUp(amountIncrement);
 			}
 
 			@Override
@@ -184,21 +201,13 @@ public class CustomScrollBar {
 		buttonArrowDown.addMouseListener(new MouseListener() {
 			@Override
 			public void mouseDown(MouseEvent e) {
-				int minHeightContents =
-						((CustomScrolledComposite) parent.getParent()).getMinHeight();
-
-				int shift = (minHeightContents - heightScrollBar) - getSelection();
-
-				if (shift > 0) {
-					setSelection(getSelection() + Math.min(maxShift, shift));
-					((CustomScrolledComposite) parent.getParent()).vScroll();
-				}
+				scrollDown(amountIncrement);
 			}
 
 			@Override
 			public void mouseUp(MouseEvent e) {
-				timerScroller.cancel();
-				timerScroller = new Timer();
+				//timerScroller.cancel();
+				//timerScroller = new Timer();
 			}
 
 			@Override
@@ -214,6 +223,17 @@ public class CustomScrollBar {
 //					timerScroller.schedule(new ScrollerTask(), 1, 100);
 //			}
 //		});
+
+		compositeScroll.addMouseWheelListener(new MouseWheelListener() {
+			@Override
+			public void mouseScrolled(MouseEvent e) {
+				if (e.count > 0) {
+					scrollUp(amountIncrement);
+				} else {
+					scrollDown(amountIncrement);
+				}
+			}
+		});
 	}
 
 	public int getSelection() {
