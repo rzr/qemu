@@ -335,7 +335,7 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height)
 } 
  
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface, int surface_type)
 {
 #if 0
 	//Not QUit sure about this function;
