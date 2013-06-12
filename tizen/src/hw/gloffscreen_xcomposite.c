@@ -83,7 +83,7 @@ struct _GloSurface {
 };
 
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride,
-                                    int bpp, int width, int height, void *data);
+                                    int bpp, int width, int height, void *data, int noflip);
 static void glo_test_readback_methods(void);
 
 /* ------------------------------------------------------------------------ */
@@ -477,7 +477,7 @@ void glo_surface_getcontents(GloSurface *surface, int stride, int bpp, void *dat
     // Compatible / fallback method.
     glo_surface_getcontents_readpixels(surface->context->formatFlags,
                                        stride, bpp, surface->width,
-                                       surface->height, data);
+                                       surface->height, data, 0);
 }
 
 /* Return the width and height of the given surface */
