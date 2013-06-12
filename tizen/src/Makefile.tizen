@@ -1,14 +1,14 @@
-# Makefile.tizen
 # for TIZEN-maru board
-
-
-$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/distrib/mongo-bson:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
 
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/mongo-bson
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
+QEMU_CFLAGS += -DMONGO_COMPILATION
+
 ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
 QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
@@ -107,6 +107,7 @@ obj-y += debug_ch.o
 # ecs
 obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o
 
+
 # maru hardware
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 
@@ -125,9 +126,14 @@ obj-$(CONFIG_DARWIN) += maru_camera_darwin_converter.o
 obj-$(CONFIG_DARWIN) += maru_camera_darwin_pci.o
 obj-$(CONFIG_DARWIN) += emul_state_darwin.o
 
+GIO_LIBS = -lgio-2.0 -lgobject-2.0 -lglib-2.0
+
 ifdef CONFIG_LINUX # libs for maru camera on linux host
-LIBS += -lv4l2 -lv4lconvert
+LIBS += -lv4l2 -lv4lconvert 
 endif
+
+# for bson
+LIBS += $(GIO_LIBS)
 
 ifdef CONFIG_WIN32 # libs for maru camera on windows host
 LIBS += -lole32 -loleaut32 -luuid -lstrmiids
@@ -148,3 +154,7 @@ obj-$(CONFIG_NO_GL) += virtio-gl-stub.o
 obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o gloffscreen_agl.o
 ###########################################################
 #endif
+
+#mongo-bson
+obj-y += mongo-bson-stream.o mongo-bson.o mongo-object-id.o
+obj-y += u8-check.o
