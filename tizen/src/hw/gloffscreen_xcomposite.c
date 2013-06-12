@@ -510,7 +510,7 @@ void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface, int surface_t
     glo_surface_updatecontents(surface);
     /*XXX: changet the fixed target: GL_TEXTURE_2D*/
 	glo_flags_get_readpixel_type(surface->context->formatFlags, &glFormat, &glType);
-    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d, glFormat=0x%x, glType=0x%x.\n", surface->width, surface->height, glFormat, glType);
+/*    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d, glFormat=0x%x, glType=0x%x.\n", surface->width, surface->height, glFormat, glType);*/
     /* glTexImage2D use different RGB order than the contexts in the pixmap surface */
 /*    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->image->data);*/
 

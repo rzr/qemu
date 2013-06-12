@@ -2222,7 +2222,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                     if ( qsurface )
                     {
                         glo_surface_as_texture(process->current_state->context, qsurface->surface, qsurface->type);
-                        fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);
+                        /*fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);*/
                     }
                 }
 
