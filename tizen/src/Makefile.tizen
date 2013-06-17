@@ -89,7 +89,7 @@ obj-y += maru_display.o
 ifdef CONFIG_USE_SHM
 obj-y += maru_shm.o
 else
-obj-y += maru_sdl.o SDL_rotozoom.o maru_finger.o
+obj-y += maru_sdl.o maru_finger.o
 endif
 
 # sdb
