@@ -40,7 +40,7 @@
 #include "emulator.h"
 #include "debug_ch.h"
 #include "sdb.h"
-#include "nbd.h"
+#include "qemu_socket.h"
 #include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
@@ -582,10 +582,14 @@ static void* run_timed_shutdown_thread(void* args)
 static void send_to_emuld(const char* request_type,
     int request_size, const char* send_buf, int buf_size)
 {
-    int s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
+    char addr[128];
+    int s = 0;
+
+    snprintf(addr, 128, ":%u", (uint16_t) (tizen_base_port + SDB_TCP_EMULD_INDEX));
+    s = inet_connect(addr, true, NULL, NULL);
 
     if ( s < 0 ) {
-        ERR( "can't create socket to talk to the sdb forwarding session \n" );
+        ERR( "can't create socket to emulator daemon in guest\n" );
         ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , tizen_base_port + SDB_TCP_EMULD_INDEX , errno, strerror(errno) );
         return;
     }
