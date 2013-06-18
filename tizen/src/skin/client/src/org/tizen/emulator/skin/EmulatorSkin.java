@@ -57,6 +57,7 @@ import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
@@ -1445,6 +1446,12 @@ public class EmulatorSkin {
 //							shell.setLocation(location);
 //							SkinUtil.setTopMost(shell, isOnTop);
 //						}
+
+						/* location correction */
+						Rectangle emulatorBound = shell.getBounds();
+						shell.setLocation(
+								Math.max(emulatorBound.x, 0),
+								Math.max(emulatorBound.y, 0));
 					}
 				});
 
@@ -1468,28 +1475,27 @@ public class EmulatorSkin {
 
 		final List<MenuItem> scaleList = new ArrayList<MenuItem>();
 
-		final MenuItem scaleOneItem = new MenuItem( menu, SWT.RADIO );
-		scaleOneItem.setText( "1x" );
-		scaleOneItem.setData( Scale.SCALE_100 );
-		scaleList.add( scaleOneItem );
+		final MenuItem scaleOneItem = new MenuItem(menu, SWT.RADIO);
+		scaleOneItem.setText("1x");
+		scaleOneItem.setData(Scale.SCALE_100);
+		scaleList.add(scaleOneItem);
 
-		final MenuItem scaleThreeQtrItem = new MenuItem( menu, SWT.RADIO );
-		scaleThreeQtrItem.setText( "3/4x" );
-		scaleThreeQtrItem.setData( Scale.SCALE_75 );
+		final MenuItem scaleThreeQtrItem = new MenuItem(menu, SWT.RADIO);
+		scaleThreeQtrItem.setText("3/4x");
+		scaleThreeQtrItem.setData(Scale.SCALE_75);
 		scaleList.add( scaleThreeQtrItem );
 
-		final MenuItem scalehalfItem = new MenuItem( menu, SWT.RADIO );
-		scalehalfItem.setText( "1/2x" );
-		scalehalfItem.setData( Scale.SCALE_50 );
-		scaleList.add( scalehalfItem );
+		final MenuItem scalehalfItem = new MenuItem(menu, SWT.RADIO);
+		scalehalfItem.setText("1/2x");
+		scalehalfItem.setData(Scale.SCALE_50);
+		scaleList.add(scalehalfItem);
 
-		final MenuItem scaleOneQtrItem = new MenuItem( menu, SWT.RADIO );
-		scaleOneQtrItem.setText( "1/4x" );
-		scaleOneQtrItem.setData( Scale.SCALE_25 );
-		scaleList.add( scaleOneQtrItem );
+		final MenuItem scaleOneQtrItem = new MenuItem(menu, SWT.RADIO);
+		scaleOneQtrItem.setText("1/4x");
+		scaleOneQtrItem.setData(Scale.SCALE_25);
+		scaleList.add(scaleOneQtrItem);
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
-
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 
@@ -1520,6 +1526,12 @@ public class EmulatorSkin {
 //							shell.setLocation(location);
 //							SkinUtil.setTopMost(shell, isOnTop);
 //						}
+
+						/* location correction */
+						Rectangle emulatorBound = shell.getBounds();
+						shell.setLocation(
+								Math.max(emulatorBound.x, 0),
+								Math.max(emulatorBound.y, 0));
 					}
 				});
 
