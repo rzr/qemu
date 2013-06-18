@@ -1448,10 +1448,11 @@ public class EmulatorSkin {
 //						}
 
 						/* location correction */
-						Rectangle emulatorBound = shell.getBounds();
+						Rectangle monitorBounds = Display.getDefault().getBounds();
+						Rectangle emulatorBounds = shell.getBounds();
 						shell.setLocation(
-								Math.max(emulatorBound.x, 0),
-								Math.max(emulatorBound.y, 0));
+								Math.max(emulatorBounds.x, monitorBounds.x),
+								Math.max(emulatorBounds.y, monitorBounds.y));
 					}
 				});
 
@@ -1528,10 +1529,11 @@ public class EmulatorSkin {
 //						}
 
 						/* location correction */
-						Rectangle emulatorBound = shell.getBounds();
+						Rectangle monitorBounds = Display.getDefault().getBounds();
+						Rectangle emulatorBounds = shell.getBounds();
 						shell.setLocation(
-								Math.max(emulatorBound.x, 0),
-								Math.max(emulatorBound.y, 0));
+								Math.max(emulatorBounds.x, monitorBounds.x),
+								Math.max(emulatorBounds.y, monitorBounds.y));
 					}
 				});
 

@@ -1,7 +1,7 @@
 /**
+ * child window of skin
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -10,7 +10,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or ( at your option ) any later version.
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -134,8 +134,8 @@ public class SkinWindow {
 			}
 
 			/* for left side */
-			if (x < 0) {
-				shift = x * (-1);
+			shift = monitorBounds.x - x;
+			if (shift > 0) {
 				x += shift;
 				parent.setLocation(parentBounds.x + shift, parentBounds.y);
 			}
