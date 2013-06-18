@@ -139,6 +139,10 @@ obj-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keyma
 # guest server
 obj-y += guest_server.o
 
+# base64
+obj-y += base64.o
+
+
 #ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386

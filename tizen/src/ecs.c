@@ -22,6 +22,7 @@
 #include "hw/maru_virtio_evdi.h"
 #include <stdbool.h>
 #include <pthread.h>
+#include "base64.h"
 
 #define DEBUG
 
@@ -762,26 +763,52 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
 	LOG(">> print len = %d, data\" %s\"", strlen(data), data);
 	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
 			action, group);
-
+    
 	int datalen = strlen(data);
 	int sndlen = datalen + 14;
 	char* sndbuf = (char*) malloc(sndlen + 1);
-	if (!sndbuf)
+	if (!sndbuf) {
 		return false;
+    }
 
 	memset(sndbuf, 0, sndlen + 1);
 
-	// set data
-	memcpy(sndbuf, cmd, 10);
-	memcpy(sndbuf + 10, &length, 2);
-	memcpy(sndbuf + 12, &group, 1);
-	memcpy(sndbuf + 13, &action, 1);
+    if(!strcmp(cmd, "telephony")) {
+        unsigned char *decoded_data = (unsigned char*)malloc(datalen + 1);
+      	
+        if (!decoded_data) {
+		    return false;
+        }
+        
+        int len_b64 = base64_decode(data, decoded_data, datalen);
+        length = (type_length)len_b64; 
+	    sndlen = length + 14;
+        memcpy(sndbuf, cmd, 10);
+        memcpy(sndbuf + 10, &length, 2);
+        memcpy(sndbuf + 12, &group, 1);
+        memcpy(sndbuf + 13, &action, 1);
+        memcpy(sndbuf + 14, decoded_data, length);
 
-	memcpy(sndbuf + 14, data, datalen);
+        send_to_evdi(route_ij, sndbuf, sndlen);
 
-	send_to_evdi(route_ij, sndbuf, sndlen);
+        free(sndbuf);
+    
+        if(decoded_data != NULL) {
+            free(decoded_data);
+        }
 
-	free(sndbuf);
+    } else {
+        // set data
+        memcpy(sndbuf, cmd, 10);
+        memcpy(sndbuf + 10, &length, 2);
+        memcpy(sndbuf + 12, &group, 1);
+        memcpy(sndbuf + 13, &action, 1);
+        memcpy(sndbuf + 14, data, datalen);
+
+        send_to_evdi(route_ij, sndbuf, sndlen);
+
+        free(sndbuf);
+    }
 
 	return true;
 }
