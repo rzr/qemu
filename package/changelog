@@ -1,3 +1,6 @@
+* 1.5.52
+- position correction for emulator window
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-19
 * 1.5.50
 - modified keycode for 480x800-3btn
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-06-14
