@@ -694,11 +694,17 @@ bool ntf_to_injector(const char* data, const int len) {
 	read_val_char(data + catsize + 2, &group);
 	read_val_char(data + catsize + 2 + 1, &action);
 
-	LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
+   
+    const char* ijdata = (data + catsize + 2 + 1 + 1);
+
+    char *encoded_ijdata = NULL;
+     LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
 			action, group);
-
-	const char* ijdata = (data + catsize + 2 + 1 + 1);
-
+   
+    if(!strcmp(cat, "telephony")) {
+        base64_encode(ijdata, length, &encoded_ijdata);
+    }
+   
 	QDict* obj_header = qdict_new();
 	make_header(obj_header, length, group, action);
 
@@ -707,7 +713,11 @@ bool ntf_to_injector(const char* data, const int len) {
 
 	qdict_put(objData, "cat", qstring_from_str(cat));
 	qdict_put(objData, "header", obj_header);
-	qdict_put(objData, "ijdata", qstring_from_str(ijdata));
+    if(!strcmp(cat, "telephony")) { 
+        qdict_put(objData, "ijdata", qstring_from_str(encoded_ijdata));
+    } else {
+        qdict_put(objData, "ijdata", qstring_from_str(ijdata));
+    }
 
 	QDict* objMsg = qdict_new();
 	qobject_incref(QOBJECT(objData));
