@@ -1,7 +1,7 @@
 /**
- * 
+ * image resources management
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -61,7 +61,7 @@ public class ImageRegistry {
 			SkinLogger.getSkinLogger(ImageRegistry.class).getLogger();
 
 	public static final String SKINS_FOLDER = "skins";
-	public static final String GENERAL_FOLDER = "emul-general";
+	public static final String GENERAL_FOLDER = "emul-general-3btn";
 	public static final String ICON_FOLDER = "icons";
 	public static final String IMAGES_FOLDER = "images";
 	public static final String KEYWINDOW_FOLDER = "key-window";
