@@ -33,6 +33,8 @@ import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DragDetectEvent;
+import org.eclipse.swt.events.DragDetectListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -45,6 +47,9 @@ import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 
@@ -93,8 +98,34 @@ public class CustomScrollBar {
 
 	private int valueSelection;
 	private Timer timerScroller;
-	private TimerTask scroller;
 
+	class ScrollerTask extends TimerTask {
+		static final int SCROLLER_PERIOD_TIME = 60;
+
+		private boolean isScrollDown;
+
+		ScrollerTask(boolean isDown) {
+			this.isScrollDown = isDown;
+		}
+
+		@Override
+		public void run() {
+			Display.getDefault().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (isScrollDown == true) {
+						scrollDown(amountIncrement * 2);
+					} else {
+						scrollUp(amountIncrement * 2);
+					}
+				}
+			});
+		}
+	}
+
+	/**
+	 *  Constructor
+	 */
 	CustomScrollBar(Composite parent, int style, int heightScrollBar,
 			Image[] imagesArrowUp, Image[] imagesArrowDown,
 			Image imageThumb, Image imageShaft) {
@@ -121,8 +152,8 @@ public class CustomScrollBar {
 
 		this.dataThumb = new CustomScrollBarThumbData();
 		this.dataShaft = new CustomScrollBarShaftData();
-		//this.timerScroller = new Timer();
 
+		this.timerScroller = new Timer();
 		createContents();
 
 		addScrollBarListener();
@@ -187,24 +218,6 @@ public class CustomScrollBar {
 		buttonArrowDown.setLayoutData(new RowData(width, height));
 	}
 
-	class ScrollerTask extends TimerTask {
-		@Override
-		public void run() {
-			int vSelection = getSelection();
-			if (vSelection <= (173 - heightScrollBar - 1)) {
-				setSelection(getSelection() + 1);
-				logger.info("" + getSelection());
-
-//				Display.getCurrent().asyncExec(new Runnable() {
-//					@Override
-//					public void run() {
-				//compositeScroll.vScroll();
-//					}
-//				});
-			}
-		}
-	}
-
 	private void updateScrollbar() {
 		compositeScroll.vScroll();
 		canvasShaft.redraw();
@@ -237,12 +250,27 @@ public class CustomScrollBar {
 
 			@Override
 			public void mouseUp(MouseEvent e) {
-				/* do nothing */
+				if (timerScroller != null) {
+					timerScroller.cancel();
+					timerScroller = new Timer();
+				}
 			}
 
 			@Override
 			public void mouseDoubleClick(MouseEvent e) {
 				/* do nothing */
+			}
+		});
+
+		buttonArrowUp.addDragDetectListener(new DragDetectListener() {
+			@Override
+			public void dragDetected(DragDetectEvent e) {
+				logger.info("ArrowUp dragDetected : " + e.button);
+
+				if (timerScroller != null) {
+					timerScroller.schedule(new ScrollerTask(false),
+							1, ScrollerTask.SCROLLER_PERIOD_TIME);
+				}
 			}
 		});
 
@@ -254,8 +282,10 @@ public class CustomScrollBar {
 
 			@Override
 			public void mouseUp(MouseEvent e) {
-				//timerScroller.cancel();
-				//timerScroller = new Timer();
+				if (timerScroller != null) {
+					timerScroller.cancel();
+					timerScroller = new Timer();
+				}
 			}
 
 			@Override
@@ -264,13 +294,17 @@ public class CustomScrollBar {
 			}
 		});
 
-//		buttonArrowDown.addDragDetectListener(new DragDetectListener() {
-//			@Override
-//			public void dragDetected( DragDetectEvent e ) {
-//					logger.info( "dragDetected:" + e.button );
-//					timerScroller.schedule(new ScrollerTask(), 1, 100);
-//			}
-//		});
+		buttonArrowDown.addDragDetectListener(new DragDetectListener() {
+			@Override
+			public void dragDetected(DragDetectEvent e) {
+				logger.info("ArrowDown dragDetected : " + e.button);
+
+				if (timerScroller != null) {
+					timerScroller.schedule(new ScrollerTask(true),
+							1, ScrollerTask.SCROLLER_PERIOD_TIME);
+				}
+			}
+		});
 
 		compositeScroll.addMouseWheelListener(new MouseWheelListener() {
 			@Override
