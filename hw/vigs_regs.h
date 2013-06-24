@@ -1,0 +1,11 @@
+#ifndef _QEMU_VIGS_REGS_H
+#define _QEMU_VIGS_REGS_H
+
+#define VIGS_REG_EXEC 0
+#define VIGS_REG_INT 8
+
+#define VIGS_REG_INT_MASK 3
+#define VIGS_REG_INT_VBLANK_ENABLE 1
+#define VIGS_REG_INT_VBLANK_PENDING 2
+
+#endif

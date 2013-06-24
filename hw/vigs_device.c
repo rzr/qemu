@@ -2,6 +2,7 @@
 #include "vigs_log.h"
 #include "vigs_server.h"
 #include "vigs_backend.h"
+#include "vigs_regs.h"
 #include "hw.h"
 #include "console.h"
 
@@ -30,11 +31,27 @@ typedef struct VIGSState
      * Our display.
      */
     DisplayState *ds;
+
+    uint32_t reg_int;
 } VIGSState;
 
 #define TYPE_VIGS_DEVICE "vigs"
 
 extern const char *vigs_backend;
+
+static void vigs_update_irq(VIGSState *s)
+{
+    if ((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) == 0) {
+        qemu_irq_lower(s->dev.pci_dev.irq[0]);
+        return;
+    }
+
+    if (s->reg_int & VIGS_REG_INT_VBLANK_PENDING) {
+        qemu_irq_raise(s->dev.pci_dev.irq[0]);
+    } else {
+        qemu_irq_lower(s->dev.pci_dev.irq[0]);
+    }
+}
 
 static void vigs_hw_update(void *opaque)
 {
@@ -47,6 +64,11 @@ static void vigs_hw_update(void *opaque)
     vigs_server_update_display(s->server);
 
     dpy_update(s->ds, 0, 0, ds_get_width(s->ds), ds_get_height(s->ds));
+
+    if (s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) {
+        s->reg_int |= VIGS_REG_INT_VBLANK_PENDING;
+        vigs_update_irq(s);
+    }
 }
 
 static void vigs_hw_invalidate(void *opaque)
@@ -90,6 +112,16 @@ static uint8_t *vigs_dpy_get_data(void *user_data)
 static uint64_t vigs_io_read(void *opaque, target_phys_addr_t offset,
                              unsigned size)
 {
+    VIGSState *s = opaque;
+
+    switch (offset) {
+    case VIGS_REG_INT:
+        return s->reg_int;
+    default:
+        VIGS_LOG_CRITICAL("Bad register 0x%X read", (uint32_t)offset);
+        break;
+    }
+
     return 0;
 }
 
@@ -98,7 +130,35 @@ static void vigs_io_write(void *opaque, target_phys_addr_t offset,
 {
     VIGSState *s = opaque;
 
-    vigs_server_dispatch(s->server, value);
+    switch (offset) {
+    case VIGS_REG_EXEC:
+        vigs_server_dispatch(s->server, value);
+        break;
+    case VIGS_REG_INT:
+        if (((s->reg_int & VIGS_REG_INT_VBLANK_PENDING) == 0) &&
+            (value & VIGS_REG_INT_VBLANK_PENDING)) {
+            VIGS_LOG_CRITICAL("Attempt to set VBLANK_PENDING");
+            value &= ~VIGS_REG_INT_VBLANK_PENDING;
+        }
+
+        if (((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) == 0) &&
+            (value & VIGS_REG_INT_VBLANK_ENABLE)) {
+            VIGS_LOG_DEBUG("VBLANK On");
+        } else if (((value & VIGS_REG_INT_VBLANK_ENABLE) == 0) &&
+                   (s->reg_int & VIGS_REG_INT_VBLANK_ENABLE)) {
+            VIGS_LOG_DEBUG("VBLANK Off");
+        }
+
+        s->reg_int = value & VIGS_REG_INT_MASK;
+        if ((value & VIGS_REG_INT_VBLANK_ENABLE) == 0) {
+            s->reg_int &= ~VIGS_REG_INT_VBLANK_PENDING;
+        }
+        vigs_update_irq(s);
+        break;
+    default:
+        VIGS_LOG_CRITICAL("Bad register 0x%X write", (uint32_t)offset);
+        break;
+    }
 }
 
 static const MemoryRegionOps vigs_io_ops =
@@ -132,6 +192,8 @@ static int vigs_device_init(PCIDevice *dev)
         VIGS_LOG_WARN("\"ram_size\" is too small, defaulting to 1mb");
         s->ram_size = 1 * 1024 * 1024;
     }
+
+    pci_config_set_interrupt_pin(dev->config, 1);
 
     memory_region_init_ram(&s->vram_bar,
                            TYPE_VIGS_DEVICE ".vram",
@@ -212,6 +274,8 @@ static void vigs_device_reset(DeviceState *d)
     VIGSState *s = container_of(d, VIGSState, dev.pci_dev.qdev);
 
     vigs_server_reset(s->server);
+
+    s->reg_int = 0;
 
     VIGS_LOG_INFO("VIGS reset");
 }
