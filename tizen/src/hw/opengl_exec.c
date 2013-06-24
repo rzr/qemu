@@ -2044,7 +2044,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 /* If this pixmap is linked as texture previously */
 				if (link_drawable(process, client_drawable))
 					glo_surface_as_texture(process->current_state->context,
-							qsurface->surface);
+							qsurface->surface, qsurface->type);
 
 
                 ret.i = client_drawable;
@@ -2088,7 +2088,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 }
             }
             else
-				glo_surface_as_texture(process->current_state->context, qsurface->surface);
+				glo_surface_as_texture(process->current_state->context, qsurface->surface, qsurface->type);
 
 			break;
 		}
@@ -2104,7 +2104,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 				add_pixmap_texture_mapping(process->current_state,
 						process->current_state->bindTexture2D,
 						client_drawable);
-				glo_surface_as_texture(process->current_state->context, qsurface->surface);
+				glo_surface_as_texture(process->current_state->context, qsurface->surface, qsurface->type);
 				ret.i = 1;
 			}
 			else
@@ -2216,8 +2216,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
                     if ( qsurface )
                     {
-                        glo_surface_as_texture(process->current_state->context, qsurface->surface);
-                        fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);
+                        glo_surface_as_texture(process->current_state->context, qsurface->surface, qsurface->type);
+                        /*fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);*/
                     }
                 }
 

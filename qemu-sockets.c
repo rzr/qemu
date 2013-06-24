@@ -242,6 +242,14 @@ int inet_connect_opts(QemuOpts *opts, bool *in_progress, Error **errp)
     if (qemu_opt_get_bool(opts, "ipv6", 0))
         ai.ai_family = PF_INET6;
 
+#ifdef CONFIG_MARU
+    // for lookup loopback interface...
+    if (addr[0] == '\0') {
+        ai.ai_flags = 0;
+        addr = NULL;
+    }
+#endif
+
     /* lookup */
     if (0 != (rc = getaddrinfo(addr, port, &ai, &res))) {
         fprintf(stderr,"getaddrinfo(%s,%s): %s\n", addr, port,

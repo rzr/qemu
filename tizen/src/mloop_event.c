@@ -85,6 +85,8 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_KBD_ADD    8
 #define MLOOP_EVTYPE_KBD_DEL    9
 #define MLOOP_EVTYPE_RAMDUMP    10
+#define MLOOP_EVTYPE_SDCARD_ATTACH  11
+#define MLOOP_EVTYPE_SDCARD_DETACH  12
 
 
 static struct mloop_evsock mloop = {-1, 0, 0};
@@ -205,6 +207,9 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
 static USBDevice *usbkbd = NULL;
 static USBDevice *usbdisk = NULL;
 static PCIDevice *hostkbd = NULL;
+#ifdef TARGET_I386
+static PCIDevice *virtio_sdcard = NULL;
+#endif
 
 static void mloop_evhandle_usb_add(char *name)
 {
@@ -372,6 +377,71 @@ static void mloop_evhandle_kbd_del(char *name)
         WARN("There is no %s device.\n", name);
     }
 }
+
+static void mloop_evhandle_sdcard_attach(char *name)
+{
+    char opts[PATH_MAX];
+
+    INFO("mloop_evhandle_sdcard_attach\n");
+
+    if (name == NULL) {
+        ERR("Packet data is NULL.\n");
+        return;
+    }
+
+    if (virtio_sdcard) {
+        ERR("sdcard is already attached.\n");
+        return;
+    }
+
+    QDict *qdict = qdict_new();
+
+    qdict_put(qdict, "pci_addr", qstring_from_str("auto"));
+    qdict_put(qdict, "type", qstring_from_str("storage"));
+    snprintf(opts, sizeof(opts), "file=%s,if=virtio", name);
+    qdict_put(qdict, "opts", qstring_from_str(opts));
+
+    virtio_sdcard = pci_device_hot_add(cur_mon, qdict);
+
+    INFO("hot add virtio storage device with [%s]\n", opts);
+    INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",
+            pci_find_domain(virtio_sdcard->bus), pci_bus_num(virtio_sdcard->bus),
+            PCI_SLOT(virtio_sdcard->devfn), PCI_FUNC(virtio_sdcard->devfn));
+
+    QDECREF(qdict);
+}
+
+static void mloop_evhandle_sdcard_detach(char *name)
+{
+    INFO("mloop_evhandle_sdcard_detach\n");
+
+    if (name == NULL) {
+        ERR("packet data is NULL.\n");
+        return;
+    }
+
+    if (!virtio_sdcard) {
+        ERR("sdcard is not attached yet.\n");
+        return;
+    }
+
+    QDict *qdict = qdict_new();
+    int slot = 0;
+    char slotbuf[4] = {0,};
+
+    slot = PCI_SLOT(virtio_sdcard->devfn);
+    snprintf(slotbuf, sizeof(slotbuf), "%x", slot);
+    INFO("virtio-sdcard slot [%d].\n", slot);
+    qdict_put(qdict, "pci_addr", qstring_from_str(slotbuf));
+
+    do_pci_device_hot_remove(cur_mon, qdict);
+
+    virtio_sdcard = NULL;
+
+    INFO("hot remove virtio storage device.\n");
+
+    QDECREF(qdict);
+}
 #endif
 
 
@@ -470,6 +540,14 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     case MLOOP_EVTYPE_RAMDUMP:
         mloop_evhandle_ramdump(&pack);
         break;
+#ifdef TARGET_I386
+    case MLOOP_EVTYPE_SDCARD_ATTACH:
+        mloop_evhandle_sdcard_attach(pack.data);
+        break;
+    case MLOOP_EVTYPE_SDCARD_DETACH:
+        mloop_evhandle_sdcard_detach(pack.data);
+        break;
+#endif
     default:
         break;
     }
@@ -545,6 +623,28 @@ void mloop_evcmd_usbdisk(char *img)
     } else {
         pack.type = MLOOP_EVTYPE_USB_DEL;
         pack.size = 5 + sprintf(pack.data, "disk:");
+    }
+
+    mloop_evsock_send(&mloop, &pack);
+}
+
+void mloop_evcmd_sdcard(char *img)
+{
+    struct mloop_evpack pack;
+
+    if (img) {
+        if (strlen(img) > PACKET_LEN-5) {
+            // Need log
+            ERR("The length of disk image path is greater than "
+                "lenth of maximum packet.\n");
+            return;
+        }
+
+        pack.type = MLOOP_EVTYPE_SDCARD_ATTACH;
+        pack.size = 5 + sprintf(pack.data, "%s", img);
+    } else {
+        pack.type = MLOOP_EVTYPE_SDCARD_DETACH;
+        pack.size = 5;
     }
 
     mloop_evsock_send(&mloop, &pack);

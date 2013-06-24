@@ -4,6 +4,7 @@
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
+ * Jinhyung Jo <jinhyung.jo@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
@@ -30,11 +31,14 @@
 
 #include <pthread.h>
 #include <math.h>
+#include <pixman.h>
 #include "console.h"
 #include "maru_sdl.h"
 #include "emul_state.h"
+/*
 #include "SDL_gfx/SDL_rotozoom.h"
 #include "maru_sdl_rotozoom.h"
+*/
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "hw/maru_brightness.h"
@@ -52,7 +56,8 @@ DisplaySurface* qemu_display_surface = NULL;
 
 static SDL_Surface *surface_screen;
 static SDL_Surface *surface_qemu;
-static SDL_Surface *processing_screen;
+static SDL_Surface *scaled_screen;
+static SDL_Surface *rotated_screen;
 
 static double current_scale_factor = 1.0;
 static double current_screen_degree;
@@ -80,6 +85,102 @@ static int sdl_thread_initialized;
 
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
+
+/* Image processing functions using the pixman library */
+static SDL_Surface *maru_do_pixman_scale(SDL_Surface *rz_src,
+                                         SDL_Surface *rz_dst,
+                                         int angle)
+{
+    pixman_image_t *src = NULL;
+    pixman_image_t *dst = NULL;
+    double sx = 0;
+    double sy = 0;
+    pixman_transform_t matrix;
+    struct pixman_f_transform matrix_f;
+
+    SDL_LockSurface(rz_src);
+    SDL_LockSurface(rz_dst);
+
+    src = pixman_image_create_bits(PIXMAN_a8r8g8b8,
+        rz_src->w, rz_src->h, rz_src->pixels, rz_src->w * 4);
+    dst = pixman_image_create_bits(PIXMAN_a8r8g8b8,
+        rz_dst->w, rz_dst->h, rz_dst->pixels, rz_dst->w * 4);
+
+    sx = (double)rz_src->w / (double)rz_dst->w;
+    sy = (double)rz_src->h / (double)rz_dst->h;
+    pixman_f_transform_init_identity(&matrix_f);
+    pixman_f_transform_scale(&matrix_f, NULL, sx, sy);
+    pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
+    pixman_image_set_transform(src, &matrix);
+    pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
+    pixman_image_composite(PIXMAN_OP_SRC, src, NULL, dst,
+                           0, 0, 0, 0, 0, 0,
+                           rz_dst->w, rz_dst->h);
+
+    pixman_image_unref(src);
+    pixman_image_unref(dst);
+
+    SDL_UnlockSurface(rz_src);
+    SDL_UnlockSurface(rz_dst);
+
+    return rz_dst;
+}
+
+static SDL_Surface *maru_do_pixman_rotate(SDL_Surface *rz_src,
+                                          SDL_Surface *rz_dst,
+                                          int angle)
+{
+    pixman_image_t *src = NULL;
+    pixman_image_t *dst = NULL;
+    pixman_transform_t matrix;
+    struct pixman_f_transform matrix_f;
+
+    SDL_LockSurface(rz_src);
+    SDL_LockSurface(rz_dst);
+
+    src = pixman_image_create_bits(PIXMAN_a8r8g8b8,
+        rz_src->w, rz_src->h, rz_src->pixels, rz_src->w * 4);
+    dst = pixman_image_create_bits(PIXMAN_a8r8g8b8,
+        rz_dst->w, rz_dst->h, rz_dst->pixels, rz_dst->w * 4);
+
+    pixman_f_transform_init_identity(&matrix_f);
+    switch(angle) {
+        case 0:
+            pixman_f_transform_rotate(&matrix_f, NULL, 1.0, 0.0);
+            pixman_f_transform_translate(&matrix_f, NULL, 0.0, 0.0);
+            break;
+        case 90:
+            pixman_f_transform_rotate(&matrix_f, NULL, 0.0, 1.0);
+            pixman_f_transform_translate(&matrix_f, NULL, (double)rz_dst->h, 0.0);
+            break;
+        case 180:
+            pixman_f_transform_rotate(&matrix_f, NULL, -1.0, 0.0);
+            pixman_f_transform_translate(&matrix_f, NULL,
+                                         (double)rz_dst->w, (double)rz_dst->h);
+            break;
+        case 270:
+            pixman_f_transform_rotate(&matrix_f, NULL, 0.0, -1.0);
+            pixman_f_transform_translate(&matrix_f, NULL, 0.0, (double)rz_dst->w);
+            break;
+        default:
+            fprintf(stdout, "not supported angle factor (angle=%d)\n", angle);
+            break;
+    }
+    pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
+    pixman_image_set_transform(src, &matrix);
+    pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
+    pixman_image_composite(PIXMAN_OP_SRC, src, NULL, dst,
+                           0, 0, 0, 0, 0, 0,
+                           rz_dst->w, rz_dst->h);
+
+    pixman_image_unref(src);
+    pixman_image_unref(dst);
+
+    SDL_UnlockSurface(rz_src);
+    SDL_UnlockSurface(rz_dst);
+
+    return rz_dst;
+}
 
 void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
 {
@@ -221,14 +322,16 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
 //extern int capability_check_gl;
 static void _sdl_init(void)
 {
-    int w, h, temp;
+    int w, h, rwidth, rheight, temp;
 
     INFO("Set up a video mode with the specified width, height and bits-per-pixel\n");
 
     //get current setting information and calculate screen size
+    rwidth = get_emul_lcd_width();
+    rheight = get_emul_lcd_height();
     current_scale_factor = get_emul_win_scale();
-    w = current_screen_width = get_emul_lcd_width() * current_scale_factor;
-    h = current_screen_height = get_emul_lcd_height() * current_scale_factor;
+    w = current_screen_width = rwidth * current_scale_factor;
+    h = current_screen_height = rheight * current_scale_factor;
 
     short rotaton_type = get_emul_rotation();
     if (rotaton_type == ROTATION_PORTRAIT) {
@@ -238,6 +341,9 @@ static void _sdl_init(void)
         temp = w;
         w = h;
         h = temp;
+        temp = rwidth;
+        rwidth = rheight;
+        rheight = temp;
     } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
         current_screen_degree = 180.0;
     } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
@@ -245,6 +351,9 @@ static void _sdl_init(void)
         temp = w;
         w = h;
         h = temp;
+        temp = rwidth;
+        rwidth = rheight;
+        rheight = temp;
     }
 
 #if 0
@@ -274,8 +383,14 @@ static void _sdl_init(void)
 #endif
 
     /* create buffer for image processing */
-    SDL_FreeSurface(processing_screen);
-    processing_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, get_emul_sdl_bpp(),
+    SDL_FreeSurface(scaled_screen);
+    scaled_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        w, h, get_emul_sdl_bpp(),
+        surface_qemu->format->Rmask, surface_qemu->format->Gmask,
+        surface_qemu->format->Bmask, surface_qemu->format->Amask);
+    SDL_FreeSurface(rotated_screen);
+    rotated_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        rwidth, rheight, get_emul_sdl_bpp(),
         surface_qemu->format->Rmask, surface_qemu->format->Gmask,
         surface_qemu->format->Bmask, surface_qemu->format->Amask);
 
@@ -365,7 +480,8 @@ static void qemu_update(void)
         sdl_alteration = 0;
         _sdl_init();
     } else if (sdl_alteration == -1) {
-        SDL_FreeSurface(processing_screen);
+        SDL_FreeSurface(scaled_screen);
+        SDL_FreeSurface(rotated_screen);
         SDL_FreeSurface(surface_qemu);
         surface_qemu = NULL;
         SDL_Quit();
@@ -434,40 +550,23 @@ static void qemu_update(void)
         else
         { //sdl surface
 #endif
-            if (current_scale_factor < 0.5)
+            if (current_scale_factor != 1.0)
             {
-                /* image processing via sdl_gfx for rich interpolating */
-
-                // workaround
-                // set color key 'magenta'
-                surface_qemu->format->colorkey = 0xFF00FF;
-
-                SDL_Surface *temp_surface = NULL;
-
-                temp_surface = rotozoomSurface(
-                    surface_qemu, current_screen_degree, current_scale_factor, 1);
-                SDL_BlitSurface(temp_surface, NULL, surface_screen, NULL);
-
-                SDL_FreeSurface(temp_surface);
-            }
-            else if (current_scale_factor < 1.0)
-            {
-                /* image processing with simple algorithm for uniformly interpolation */
-                processing_screen = maru_rotozoom(
-                    surface_qemu, processing_screen,
-                    (int)current_screen_degree, TRUE);
-
-                SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
+                rotated_screen = maru_do_pixman_rotate(
+                    surface_qemu, rotated_screen,
+                    (int)current_screen_degree);
+                scaled_screen = maru_do_pixman_scale(
+                    rotated_screen, scaled_screen,
+                    (int)current_screen_degree);
+                SDL_BlitSurface(scaled_screen, NULL, surface_screen, NULL);
             }
             else /* current_scale_factor == 1.0 */
             {
                 if (current_screen_degree != 0.0) {
-                    /* image processing */
-                    processing_screen = maru_rotozoom(
-                        surface_qemu, processing_screen,
-                        (int)current_screen_degree, FALSE);
-
-                    SDL_BlitSurface(processing_screen, NULL, surface_screen, NULL);
+                    rotated_screen = maru_do_pixman_rotate(
+                        surface_qemu, rotated_screen,
+                        (int)current_screen_degree);
+                    SDL_BlitSurface(rotated_screen, NULL, surface_screen, NULL);
                 } else {
                     /* as-is */
                     SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);

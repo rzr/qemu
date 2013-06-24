@@ -44,6 +44,12 @@
 #include "gl_mangled.h"
 #endif
 
+enum{
+    SURFACE_WINDOW,
+    SURFACE_PIXMAP,
+    SURFACE_PBUFFER,
+};
+
 void *g_malloc(size_t size);
 void *g_realloc(void *ptr, size_t size);
 void g_free(void *ptr);
@@ -77,7 +83,7 @@ struct _GloSurface {
 };
 
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride,
-                                    int bpp, int width, int height, void *data);
+                                    int bpp, int width, int height, void *data, int noflip);
 static void glo_test_readback_methods(void);
 
 /* ------------------------------------------------------------------------ */
@@ -471,7 +477,7 @@ void glo_surface_getcontents(GloSurface *surface, int stride, int bpp, void *dat
     // Compatible / fallback method.
     glo_surface_getcontents_readpixels(surface->context->formatFlags,
                                        stride, bpp, surface->width,
-                                       surface->height, data);
+                                       surface->height, data, 0);
 }
 
 /* Return the width and height of the given surface */
@@ -483,7 +489,7 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
 }
 
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface, int surface_type)
 {
 #if 0
     void (*ptr_func_glXBindTexImageEXT) (Display *dpy, GLXDrawable draw, int buffer, int *attrib_list);
@@ -504,10 +510,12 @@ void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
     glo_surface_updatecontents(surface);
     /*XXX: changet the fixed target: GL_TEXTURE_2D*/
 	glo_flags_get_readpixel_type(surface->context->formatFlags, &glFormat, &glType);
-    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d, glFormat=0x%x, glType=0x%x.\n", surface->width, surface->height, glFormat, glType);
+/*    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d, glFormat=0x%x, glType=0x%x.\n", surface->width, surface->height, glFormat, glType);*/
     /* glTexImage2D use different RGB order than the contexts in the pixmap surface */
 /*    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->image->data);*/
 
+   if(surface_type == SURFACE_PBUFFER)
+   {
     if ((glFormat == GL_RGBA || glFormat == GL_BGRA) && glType == GL_UNSIGNED_BYTE) {
         GLubyte *b = (GLubyte *)surface->image->data;
         int stride = surface->width * 4;
@@ -524,6 +532,8 @@ void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
         }
         g_free(tmp);
     }
+   }
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->image->data);
 #endif
 }

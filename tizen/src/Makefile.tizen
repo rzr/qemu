@@ -104,7 +104,7 @@ endif
 # maru display
 obj-y += maru_display.o maru_shm.o
 ifndef CONFIG_DARWIN
-obj-y += maru_sdl.o SDL_rotozoom.o maru_finger.o
+obj-y += maru_sdl.o maru_finger.o
 endif
 
 # sdb

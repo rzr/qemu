@@ -58,7 +58,6 @@ void virtio_keyboard_notify(void *opaque)
 {
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)opaque;
     EmulKbdEvent *kbdevt;
-    int index = 0;
     int written_cnt = 0;
 
     if (!vkbd) {

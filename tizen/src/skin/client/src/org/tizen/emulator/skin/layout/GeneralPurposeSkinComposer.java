@@ -203,10 +203,17 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		arrangeSkin(scale, rotationId);
 
 		/* open the key window */
+		final int dockValue = config.getSkinPropertyInt(
+				SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				if (dockValue == 0 || dockValue == SWT.NONE) {
+					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				} else {
+					skin.openKeyWindow(dockValue, false);
+				}
 			}
 		});
 	}
@@ -250,8 +257,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* arrange the toggle button of key window */
-		toggleButton.setBounds(displayBounds.x + displayBounds.width,
-				displayBounds.y + (displayBounds.height / 2) - (toggleButton.getImageSize().y / 2),
+		toggleButton.setBounds(displayBounds.x + displayBounds.width + 4,
+				displayBounds.y + ((displayBounds.height - toggleButton.getImageSize().y) / 2),
 				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
 
 		/* arrange the progress bar */

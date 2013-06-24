@@ -86,7 +86,7 @@ extern void glo_surface_update_context(GloSurface *surface, GloContext *context,
 /* Link the pixmap/pbuffer associated with surface as texture.
  * ctxt is the target context for the texture operation
  */
-extern void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface);
+extern void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface, int surface_type);
 
 /* Create a surface with given width and height, */
 extern GloSurface *glo_surface_create(int width, int height, GloContext *context);
