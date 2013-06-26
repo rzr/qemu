@@ -582,7 +582,7 @@ public class EmulatorSkin {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
 				Menu menu = EmulatorSkin.this.contextMenu;
-				keyReleaseEvent();
+				keyForceRelease(true);
 
 				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
 					lcdCanvas.setMenu(menu);
@@ -609,7 +609,7 @@ public class EmulatorSkin {
 			@Override
 			public void focusLost(FocusEvent event) {
 				logger.info("lost focus");
-				keyReleaseEvent();
+				keyForceRelease(false);
 			}
 		};
 
@@ -848,7 +848,7 @@ public class EmulatorSkin {
 				/* generate a disappeared key event in Windows */
 				if (SwtUtil.isWindowsPlatform() && disappearEvent) {
 					disappearEvent = false;
-					if (isMetaKey(e) && e.character != '\0') {
+					if (isMetaKey(e.keyCode) && e.character != '\0') {
 						logger.info("send disappear release : keycode=" + disappearKeycode +
 								", stateMask=" + disappearStateMask +
 								", keyLocation=" + disappearKeyLocation);
@@ -903,7 +903,7 @@ public class EmulatorSkin {
 					if (null != previous) {
 						if (previous.keyCode != e.keyCode) {
 
-							if (isMetaKey(previous)) {
+							if (isMetaKey(previous.keyCode)) {
 								disappearEvent = true;
 								disappearKeycode = keyCode;
 								disappearStateMask = stateMask;
@@ -1000,12 +1000,14 @@ public class EmulatorSkin {
 		canvas.addKeyListener(canvasKeyListener);
 	}
 
-	private boolean isMetaKey(KeyEvent event) {
-		if (SWT.CTRL == event.keyCode ||
-				SWT.ALT == event.keyCode ||
-				SWT.SHIFT == event.keyCode) {
+	private boolean isMetaKey(int keyCode) {
+		if (SWT.CTRL == keyCode ||
+				SWT.ALT == keyCode ||
+				SWT.SHIFT == keyCode ||
+				SWT.COMMAND == keyCode) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -1754,10 +1756,17 @@ public class EmulatorSkin {
 		return currentState.getCurrentRotationId();
 	}
 
-	public void keyReleaseEvent() {
+	public void keyForceRelease(boolean isMetaFilter) {
 		/* key event compensation */
 		if (pressedKeyEventList.isEmpty() == false) {
 			for (KeyEventData data : pressedKeyEventList) {
+				if (isMetaFilter == true) {
+					if (isMetaKey(data.keycode) == true) {
+						/* keep multi-touching */
+						continue;
+					}
+				}
+
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.RELEASED.value(), data.keycode,
 						data.stateMask, data.keyLocation);
