@@ -37,7 +37,9 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
         return;
     }
 
-    if (osfc->rb) {
+    if (((osfc->ws_sfc->base.width != ws_sfc->base.width) ||
+         (osfc->ws_sfc->base.height != ws_sfc->base.height)) &&
+         osfc->rb) {
         egl_onscreen->gles_driver->DeleteRenderbuffers(1, &osfc->rb);
         osfc->rb = 0;
     }
