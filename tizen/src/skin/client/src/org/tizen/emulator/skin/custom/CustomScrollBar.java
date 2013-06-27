@@ -48,8 +48,6 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 
@@ -172,6 +170,7 @@ public class CustomScrollBar {
 
 		/* shaft */
 		canvasShaft = new Canvas(composite, SWT.NONE);
+		canvasShaft.setBackground(parent.getBackground());
 
 		dataShaft.widthShaft = width;
 		dataShaft.heightShaft = heightScrollBar - (height * 2);
