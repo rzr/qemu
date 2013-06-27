@@ -37,8 +37,6 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
         return;
     }
 
-    YAGL_LOG_DEBUG("winsys surface changed to %u", id);
-
     if (osfc->rb) {
         egl_onscreen->gles_driver->DeleteRenderbuffers(1, &osfc->rb);
         osfc->rb = 0;
