@@ -266,7 +266,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 							0, 0, pollThread.widthFB, pollThread.heightFB,
 							0, 0, x, y);
 
-					if (finger.getMultiTouchEnable() == 1) {
+					if (finger.getMultiTouchEnable() == 1 ||
+							finger.getMultiTouchEnable() == 2) {
 						finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
 								currentState.getCurrentResolutionHeight(), 
 								currentState.getCurrentScale(), 

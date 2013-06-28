@@ -431,7 +431,8 @@ static void _sdl_init(void)
 #endif
 
     /* rearrange multi-touch finger points */
-    if (get_emul_multi_touch_state()->multitouch_enable == 1) {
+    if (get_emul_multi_touch_state()->multitouch_enable == 1 ||
+            get_emul_multi_touch_state()->multitouch_enable == 2) {
         rearrange_finger_points(get_emul_lcd_width(), get_emul_lcd_height(),
             current_scale_factor, rotaton_type);
     }

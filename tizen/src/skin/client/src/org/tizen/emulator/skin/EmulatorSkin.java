@@ -57,6 +57,7 @@ import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
@@ -581,7 +582,7 @@ public class EmulatorSkin {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
 				Menu menu = EmulatorSkin.this.contextMenu;
-				keyReleaseEvent();
+				keyForceRelease(true);
 
 				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
 					lcdCanvas.setMenu(menu);
@@ -608,7 +609,7 @@ public class EmulatorSkin {
 			@Override
 			public void focusLost(FocusEvent event) {
 				logger.info("lost focus");
-				keyReleaseEvent();
+				keyForceRelease(false);
 			}
 		};
 
@@ -847,7 +848,7 @@ public class EmulatorSkin {
 				/* generate a disappeared key event in Windows */
 				if (SwtUtil.isWindowsPlatform() && disappearEvent) {
 					disappearEvent = false;
-					if (isMetaKey(e) && e.character != '\0') {
+					if (isMetaKey(e.keyCode) && e.character != '\0') {
 						logger.info("send disappear release : keycode=" + disappearKeycode +
 								", stateMask=" + disappearStateMask +
 								", keyLocation=" + disappearKeyLocation);
@@ -902,7 +903,7 @@ public class EmulatorSkin {
 					if (null != previous) {
 						if (previous.keyCode != e.keyCode) {
 
-							if (isMetaKey(previous)) {
+							if (isMetaKey(previous.keyCode)) {
 								disappearEvent = true;
 								disappearKeycode = keyCode;
 								disappearStateMask = stateMask;
@@ -999,12 +1000,14 @@ public class EmulatorSkin {
 		canvas.addKeyListener(canvasKeyListener);
 	}
 
-	private boolean isMetaKey(KeyEvent event) {
-		if (SWT.CTRL == event.keyCode ||
-				SWT.ALT == event.keyCode ||
-				SWT.SHIFT == event.keyCode) {
+	private boolean isMetaKey(int keyCode) {
+		if (SWT.CTRL == keyCode ||
+				SWT.ALT == keyCode ||
+				SWT.SHIFT == keyCode ||
+				SWT.COMMAND == keyCode) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -1445,6 +1448,13 @@ public class EmulatorSkin {
 //							shell.setLocation(location);
 //							SkinUtil.setTopMost(shell, isOnTop);
 //						}
+
+						/* location correction */
+						Rectangle monitorBounds = Display.getDefault().getBounds();
+						Rectangle emulatorBounds = shell.getBounds();
+						shell.setLocation(
+								Math.max(emulatorBounds.x, monitorBounds.x),
+								Math.max(emulatorBounds.y, monitorBounds.y));
 					}
 				});
 
@@ -1468,28 +1478,27 @@ public class EmulatorSkin {
 
 		final List<MenuItem> scaleList = new ArrayList<MenuItem>();
 
-		final MenuItem scaleOneItem = new MenuItem( menu, SWT.RADIO );
-		scaleOneItem.setText( "1x" );
-		scaleOneItem.setData( Scale.SCALE_100 );
-		scaleList.add( scaleOneItem );
+		final MenuItem scaleOneItem = new MenuItem(menu, SWT.RADIO);
+		scaleOneItem.setText("1x");
+		scaleOneItem.setData(Scale.SCALE_100);
+		scaleList.add(scaleOneItem);
 
-		final MenuItem scaleThreeQtrItem = new MenuItem( menu, SWT.RADIO );
-		scaleThreeQtrItem.setText( "3/4x" );
-		scaleThreeQtrItem.setData( Scale.SCALE_75 );
+		final MenuItem scaleThreeQtrItem = new MenuItem(menu, SWT.RADIO);
+		scaleThreeQtrItem.setText("3/4x");
+		scaleThreeQtrItem.setData(Scale.SCALE_75);
 		scaleList.add( scaleThreeQtrItem );
 
-		final MenuItem scalehalfItem = new MenuItem( menu, SWT.RADIO );
-		scalehalfItem.setText( "1/2x" );
-		scalehalfItem.setData( Scale.SCALE_50 );
-		scaleList.add( scalehalfItem );
+		final MenuItem scalehalfItem = new MenuItem(menu, SWT.RADIO);
+		scalehalfItem.setText("1/2x");
+		scalehalfItem.setData(Scale.SCALE_50);
+		scaleList.add(scalehalfItem);
 
-		final MenuItem scaleOneQtrItem = new MenuItem( menu, SWT.RADIO );
-		scaleOneQtrItem.setText( "1/4x" );
-		scaleOneQtrItem.setData( Scale.SCALE_25 );
-		scaleList.add( scaleOneQtrItem );
+		final MenuItem scaleOneQtrItem = new MenuItem(menu, SWT.RADIO);
+		scaleOneQtrItem.setText("1/4x");
+		scaleOneQtrItem.setData(Scale.SCALE_25);
+		scaleList.add(scaleOneQtrItem);
 
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
-
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 
@@ -1520,6 +1529,13 @@ public class EmulatorSkin {
 //							shell.setLocation(location);
 //							SkinUtil.setTopMost(shell, isOnTop);
 //						}
+
+						/* location correction */
+						Rectangle monitorBounds = Display.getDefault().getBounds();
+						Rectangle emulatorBounds = shell.getBounds();
+						shell.setLocation(
+								Math.max(emulatorBounds.x, monitorBounds.x),
+								Math.max(emulatorBounds.y, monitorBounds.y));
 					}
 				});
 
@@ -1740,10 +1756,17 @@ public class EmulatorSkin {
 		return currentState.getCurrentRotationId();
 	}
 
-	public void keyReleaseEvent() {
+	public void keyForceRelease(boolean isMetaFilter) {
 		/* key event compensation */
 		if (pressedKeyEventList.isEmpty() == false) {
 			for (KeyEventData data : pressedKeyEventList) {
+				if (isMetaFilter == true) {
+					if (isMetaKey(data.keycode) == true) {
+						/* keep multi-touching */
+						continue;
+					}
+				}
+
 				KeyEventData keyEventData = new KeyEventData(
 						KeyEventType.RELEASED.value(), data.keycode,
 						data.stateMask, data.keyLocation);
