@@ -199,8 +199,8 @@ static bool yagl_egl_glx_config_fill(struct yagl_egl_driver *driver,
     cfg->max_pbuffer_width = max_pbuffer_width;
     cfg->max_pbuffer_height = max_pbuffer_height;
     cfg->max_pbuffer_size = max_pbuffer_size;
-    cfg->max_swap_interval = 10;
-    cfg->min_swap_interval = 1;
+    cfg->max_swap_interval = 1000;
+    cfg->min_swap_interval = 0;
     cfg->native_visual_id = native_visual_id;
     cfg->native_visual_type = native_visual_type;
     cfg->samples_per_pixel = samples_per_pixel;

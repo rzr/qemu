@@ -286,8 +286,8 @@ static bool yagl_egl_wgl_config_fill(YaglEglWglDriver *egl_wgl,
     cfg->caveat = EGL_NONE;
     cfg->frame_buffer_level = 0;
     cfg->samples_per_pixel = 0;
-    cfg->max_swap_interval = 10;
-    cfg->min_swap_interval = 1;
+    cfg->max_swap_interval = 1000;
+    cfg->min_swap_interval = 0;
     cfg->driver_data = pix_fmt;
 
     filled = true;
