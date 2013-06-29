@@ -151,7 +151,7 @@ public class CustomScrollBar {
 		this.dataThumb = new CustomScrollBarThumbData();
 		this.dataShaft = new CustomScrollBarShaftData();
 
-		this.timerScroller = new Timer();
+		this.timerScroller = null;
 		createContents();
 
 		addScrollBarListener();
@@ -251,7 +251,7 @@ public class CustomScrollBar {
 			public void mouseUp(MouseEvent e) {
 				if (timerScroller != null) {
 					timerScroller.cancel();
-					timerScroller = new Timer();
+					timerScroller = null;
 				}
 			}
 
@@ -267,9 +267,12 @@ public class CustomScrollBar {
 				logger.info("ArrowUp dragDetected : " + e.button);
 
 				if (timerScroller != null) {
-					timerScroller.schedule(new ScrollerTask(false),
-							1, ScrollerTask.SCROLLER_PERIOD_TIME);
+					timerScroller.cancel();
 				}
+
+				timerScroller = new Timer();
+				timerScroller.schedule(new ScrollerTask(false),
+						1, ScrollerTask.SCROLLER_PERIOD_TIME);
 			}
 		});
 
@@ -283,7 +286,7 @@ public class CustomScrollBar {
 			public void mouseUp(MouseEvent e) {
 				if (timerScroller != null) {
 					timerScroller.cancel();
-					timerScroller = new Timer();
+					timerScroller = null;
 				}
 			}
 
@@ -299,9 +302,12 @@ public class CustomScrollBar {
 				logger.info("ArrowDown dragDetected : " + e.button);
 
 				if (timerScroller != null) {
-					timerScroller.schedule(new ScrollerTask(true),
-							1, ScrollerTask.SCROLLER_PERIOD_TIME);
+					timerScroller.cancel();
 				}
+
+				timerScroller = new Timer();
+				timerScroller.schedule(new ScrollerTask(true),
+						1, ScrollerTask.SCROLLER_PERIOD_TIME);
 			}
 		});
 
