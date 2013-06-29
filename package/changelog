@@ -1,3 +1,6 @@
+* 1.5.59
+- remove notifying to sdb server
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-29
 * 1.5.56
 - apply a custom scrollbar to KeyWindow
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-06-24
