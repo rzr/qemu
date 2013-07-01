@@ -462,7 +462,8 @@ void vigs_server_update_display(struct vigs_server *server)
         case vigsp_surface_bgra8888:
 #ifdef CONFIG_MARU
             if (brightness_level < BRIGHTNESS_MAX) {
-                uint32_t level = brightness_tbl[brightness_level];
+                uint32_t level =
+                    brightness_off ? 0 : brightness_tbl[brightness_level];
                 for (j = 0; j < root_sfc->ws_sfc->width; ++j) {
                     *dst++ = ((uint32_t)(*src++) * level) >> 8;
                     *dst++ = ((uint32_t)(*src++) * level) >> 8;
