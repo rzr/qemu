@@ -1252,12 +1252,7 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args,
                      label_ptr, offsetof(CPUTLBEntry, addr_read));
 
     /* TLB Hit.  */
-<<<<<<< HEAD
-    tcg_out_qemu_ld_direct(s, data_reg, data_reg2,
-                           tcg_target_call_iarg_regs[0], 0, opc);
-=======
     tcg_out_qemu_ld_direct(s, data_reg, data_reg2, TCG_REG_L1, 0, 0, opc);
->>>>>>> test1.5
 
     /* Record the current context of a load into ldst label */
     add_qemu_ldst_label(s,
@@ -1462,86 +1457,6 @@ static void add_qemu_ldst_label(TCGContext *s,
     }
 }
 
-<<<<<<< HEAD
-    /* Record the current context of a store into ldst label */
-    add_qemu_ldst_label(s,
-                        0,
-                        opc,
-                        data_reg,
-                        data_reg2,
-                        args[addrlo_idx],
-                        args[addrlo_idx + 1],
-                        mem_index,
-                        s->code_ptr,
-                        label_ptr);
-#else
-    {
-        int32_t offset = GUEST_BASE;
-        int base = args[addrlo_idx];
-
-        if (TCG_TARGET_REG_BITS == 64) {
-            /* ??? We assume all operations have left us with register
-               contents that are zero extended.  So far this appears to
-               be true.  If we want to enforce this, we can either do
-               an explicit zero-extension here, or (if GUEST_BASE == 0)
-               use the ADDR32 prefix.  For now, do nothing.  */
-
-            if (offset != GUEST_BASE) {
-                tcg_out_movi(s, TCG_TYPE_I64,
-                             tcg_target_call_iarg_regs[0], GUEST_BASE);
-                tgen_arithr(s, ARITH_ADD + P_REXW,
-                            tcg_target_call_iarg_regs[0], base);
-                base = tcg_target_call_iarg_regs[0];
-                offset = 0;
-            }
-        }
-
-        tcg_out_qemu_st_direct(s, data_reg, data_reg2, base, offset, opc);
-    }
-#endif
-}
-
-#if defined(CONFIG_SOFTMMU)
-/*
- * Record the context of a call to the out of line helper code for the slow path
- * for a load or store, so that we can later generate the correct helper code
- */
-static void add_qemu_ldst_label(TCGContext *s,
-                                int is_ld,
-                                int opc,
-                                int data_reg,
-                                int data_reg2,
-                                int addrlo_reg,
-                                int addrhi_reg,
-                                int mem_index,
-                                uint8_t *raddr,
-                                uint8_t **label_ptr)
-{
-    int idx;
-    TCGLabelQemuLdst *label;
-
-    if (s->nb_qemu_ldst_labels >= TCG_MAX_QEMU_LDST) {
-        tcg_abort();
-    }
-
-    idx = s->nb_qemu_ldst_labels++;
-    label = (TCGLabelQemuLdst *)&s->qemu_ldst_labels[idx];
-    label->is_ld = is_ld;
-    label->opc = opc;
-    label->datalo_reg = data_reg;
-    label->datahi_reg = data_reg2;
-    label->addrlo_reg = addrlo_reg;
-    label->addrhi_reg = addrhi_reg;
-    label->mem_index = mem_index;
-    label->raddr = raddr;
-    label->label_ptr[0] = label_ptr[0];
-    if (TARGET_LONG_BITS > TCG_TARGET_REG_BITS) {
-        label->label_ptr[1] = label_ptr[1];
-    }
-}
-
-=======
->>>>>>> test1.5
 /*
  * Generate code for the slow path for a load at the end of block
  */
@@ -1577,34 +1492,12 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     }
     tcg_out_push(s, addrlo_reg);
     stack_adjust += 4;
-<<<<<<< HEAD
-#ifdef CONFIG_TCG_PASS_AREG0
-    tcg_out_push(s, TCG_AREG0);
-    stack_adjust += 4;
-#endif
-#else
-    /* The first argument is already loaded with addrlo.  */
-    tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[1],
-                 mem_index);
-#ifdef CONFIG_TCG_PASS_AREG0
-    /* XXX/FIXME: suboptimal */
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[3],
-                tcg_target_call_iarg_regs[2]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[2],
-                tcg_target_call_iarg_regs[1]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[1],
-                tcg_target_call_iarg_regs[0]);
-    tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[0],
-                TCG_AREG0);
-#endif
-=======
     tcg_out_push(s, TCG_AREG0);
     stack_adjust += 4;
 #else
     tcg_out_mov(s, TCG_TYPE_I64, tcg_target_call_iarg_regs[0], TCG_AREG0);
     /* The second argument is already loaded with addrlo.  */
     tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], mem_index);
->>>>>>> test1.5
 #endif
 
     /* Code generation of qemu_ld/st's slow path calling MMU helper
@@ -1676,7 +1569,6 @@ static void tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     /* Jump to the code corresponding to next IR of qemu_st */
     tcg_out_jmp(s, (tcg_target_long)raddr);
 }
-<<<<<<< HEAD
 
 /*
  * Generate code for the slow path for a store at the end of block
@@ -1696,27 +1588,6 @@ static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
     uint8_t *raddr = label->raddr;
     uint8_t **label_ptr = &label->label_ptr[0];
 
-=======
-
-/*
- * Generate code for the slow path for a store at the end of block
- */
-static void tcg_out_qemu_st_slow_path(TCGContext *s, TCGLabelQemuLdst *label)
-{
-    int s_bits;
-    int stack_adjust;
-    int opc = label->opc;
-    int mem_index = label->mem_index;
-    int data_reg = label->datalo_reg;
-#if TCG_TARGET_REG_BITS == 32
-    int data_reg2 = label->datahi_reg;
-    int addrlo_reg = label->addrlo_reg;
-    int addrhi_reg = label->addrhi_reg;
-#endif
-    uint8_t *raddr = label->raddr;
-    uint8_t **label_ptr = &label->label_ptr[0];
-
->>>>>>> test1.5
     s_bits = opc & 3;
 
     /* resolve label address */

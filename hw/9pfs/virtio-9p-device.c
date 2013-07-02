@@ -103,8 +103,8 @@ static int virtio_9p_device_init(VirtIODevice *vdev)
 
     if (s->ops->init(&s->ctx) < 0) {
         fprintf(stderr, "Virtio-9p Failed to initialize fs-driver with id:%s"
-<<<<<<< HEAD
-                " and export path:%s\n", conf->fsdev_id, s->ctx.fs_root);
+                " and export path:%s\n", s->fsconf.fsdev_id, s->ctx.fs_root);
+
 #ifdef CONFIG_MARU
         const char _msg[] = "Failed to find the file sharing path. Check if the path is correct or not.\n\n";
         char* err_msg = NULL;
@@ -114,11 +114,8 @@ static int virtio_9p_device_init(VirtIODevice *vdev)
             g_free(err_msg);
         }
 #endif
-        exit(1);
-=======
-                " and export path:%s\n", s->fsconf.fsdev_id, s->ctx.fs_root);
+
         return -1;
->>>>>>> test1.5
     }
     if (v9fs_init_worker_threads() < 0) {
         fprintf(stderr, "worker thread initialization failed\n");

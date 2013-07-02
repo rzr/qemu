@@ -68,19 +68,15 @@ static BOOL WINAPI qemu_ctrl_handler(DWORD type)
     return TRUE;
 }
 
-<<<<<<< HEAD
 #ifdef CONFIG_MARU
 void os_setup_early_signal_handling(void)
 {
     SetConsoleCtrlHandler(qemu_ctrl_handler, TRUE);
 }
 #else
-void os_setup_early_signal_handling(void)
-=======
 static TIMECAPS mm_tc;
 
 static void os_undo_timer_resolution(void)
->>>>>>> test1.5
 {
     timeEndPeriod(mm_tc.wPeriodMin);
 }

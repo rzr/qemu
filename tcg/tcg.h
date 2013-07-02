@@ -208,15 +208,9 @@ typedef struct TCGLabelQemuLdst {
     int addrhi_reg;         /* reg index for high word of guest virtual addr */
     int datalo_reg;         /* reg index for low word to be loaded or stored */
     int datahi_reg;         /* reg index for high word to be loaded or stored */
-<<<<<<< HEAD
-    int mem_index;        /* soft MMU memory index */
-    uint8_t *raddr;         /* gen code addr of the next IR of qemu_ld/st IR */
-    uint8_t *label_ptr[2];      /* label pointers to be updated */
-=======
     int mem_index;          /* soft MMU memory index */
     uint8_t *raddr;         /* gen code addr of the next IR of qemu_ld/st IR */
     uint8_t *label_ptr[2];  /* label pointers to be updated */
->>>>>>> test1.5
 } TCGLabelQemuLdst;
 #endif
 
@@ -288,16 +282,6 @@ typedef int TCGv_i64;
 #define TCGV_IS_UNUSED_I64(x) (GET_TCGV_I64(x) == -1)
 
 /* call flags */
-<<<<<<< HEAD
-/* A pure function only reads its arguments and TCG global variables
-   and cannot raise exceptions. Hence a call to a pure function can be
-   safely suppressed if the return value is not used. */
-#define TCG_CALL_PURE           0x0010
-/* A const function only reads its arguments and does not use TCG
-   global variables. Hence a call to such a function does not
-   save TCG global variables back to their canonical location. */
-#define TCG_CALL_CONST          0x0020
-=======
 /* Helper does not read globals (either directly or through an exception). It
    implies TCG_CALL_NO_WRITE_GLOBALS. */
 #define TCG_CALL_NO_READ_GLOBALS    0x0010
@@ -312,7 +296,6 @@ typedef int TCGv_i64;
 #define TCG_CALL_NO_SE          TCG_CALL_NO_SIDE_EFFECTS
 #define TCG_CALL_NO_RWG_SE      (TCG_CALL_NO_RWG | TCG_CALL_NO_SE)
 #define TCG_CALL_NO_WG_SE       (TCG_CALL_NO_WG | TCG_CALL_NO_SE)
->>>>>>> test1.5
 
 /* used to align parameters */
 #define TCG_CALL_DUMMY_TCGV     MAKE_TCGV_I32(-1)
@@ -433,14 +416,10 @@ struct TCGContext {
     /* liveness analysis */
     uint16_t *op_dead_args; /* for each operation, each bit tells if the
                                corresponding argument is dead */
-<<<<<<< HEAD
-
-=======
     uint8_t *op_sync_args;  /* for each operation, each bit tells if the
                                corresponding output argument needs to be
                                sync to memory. */
     
->>>>>>> test1.5
     /* tells in which temporary a given register is. It does not take
        into account fixed registers */
     int reg_to_temp[TCG_TARGET_NB_REGS];

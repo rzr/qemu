@@ -280,16 +280,12 @@ static int parse_block_error_action(const char *buf, bool is_read)
     }
 }
 
-<<<<<<< HEAD
 #ifdef CONFIG_MARU
 extern int start_simple_client(char* msg);
 extern char* maru_convert_path(char* msg, const char *path);
 #endif
 
-static bool do_check_io_limits(BlockIOLimit *io_limits)
-=======
 static bool do_check_io_limits(BlockIOLimit *io_limits, Error **errp)
->>>>>>> test1.5
 {
     bool bps_flag;
     bool iops_flag;
@@ -708,10 +704,6 @@ DriveInfo *drive_init(QemuOpts *all_opts, BlockInterfaceType block_default_type)
     bs_opts = NULL;
 
     if (ret < 0) {
-<<<<<<< HEAD
-        error_report("could not open disk image %s: %s",
-                     file, strerror(-ret));
-
 #ifdef CONFIG_MARU
         const char _msg[] = "Failed to load disk file from the following path. Check if the file is corrupted or missing.\n\n";
 	    char* err_msg = NULL;
@@ -722,7 +714,6 @@ DriveInfo *drive_init(QemuOpts *all_opts, BlockInterfaceType block_default_type)
         }
 #endif
 
-=======
         if (ret == -EMEDIUMTYPE) {
             error_report("could not open disk image %s: not in %s format",
                          file ?: dinfo->id, drv->format_name);
@@ -730,7 +721,6 @@ DriveInfo *drive_init(QemuOpts *all_opts, BlockInterfaceType block_default_type)
             error_report("could not open disk image %s: %s",
                          file ?: dinfo->id, strerror(-ret));
         }
->>>>>>> test1.5
         goto err;
     }
 

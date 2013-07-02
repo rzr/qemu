@@ -299,17 +299,12 @@ void tcg_func_start(TCGContext *s)
     s->nb_labels = 0;
     s->current_frame_offset = s->frame_start;
 
-<<<<<<< HEAD
-    gen_opc_ptr = gen_opc_buf;
-    gen_opparam_ptr = gen_opparam_buf;
-=======
 #ifdef CONFIG_DEBUG_TCG
     s->goto_tb_issue_mask = 0;
 #endif
 
     s->gen_opc_ptr = s->gen_opc_buf;
     s->gen_opparam_ptr = s->gen_opparam_buf;
->>>>>>> test1.5
 
 #if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
     /* Initialize qemu_ld/st labels to assist code generation at the end of TB
