@@ -304,6 +304,14 @@ void do_rotation_event(int rotation_type)
 
     INFO( "do_rotation_event rotation_type:%d\n", rotation_type);
 
+    set_emul_rotation( rotation_type );
+}
+
+void send_rotation_event(int rotation_type)
+{
+
+    INFO( "send_rotation_event rotation_type:%d\n", rotation_type);
+
     char send_buf[32] = { 0 };
 
     switch ( rotation_type ) {
@@ -325,9 +333,6 @@ void do_rotation_event(int rotation_type)
     }
 
     send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
-
-    set_emul_rotation( rotation_type );
-
 }
 
 QemuSurfaceInfo* get_screenshot_info(void)
