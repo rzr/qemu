@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 #include <windows.h>
+#include <mmsystem.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -30,7 +31,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include "config-host.h"
-#include "sysemu.h"
+#include "sysemu/sysemu.h"
 #include "qemu-options.h"
 
 /***********************************************************/
@@ -67,6 +68,7 @@ static BOOL WINAPI qemu_ctrl_handler(DWORD type)
     return TRUE;
 }
 
+<<<<<<< HEAD
 #ifdef CONFIG_MARU
 void os_setup_early_signal_handling(void)
 {
@@ -74,26 +76,21 @@ void os_setup_early_signal_handling(void)
 }
 #else
 void os_setup_early_signal_handling(void)
+=======
+static TIMECAPS mm_tc;
+
+static void os_undo_timer_resolution(void)
+>>>>>>> test1.5
 {
-    /* Note: cpu_interrupt() is currently not SMP safe, so we force
-       QEMU to run on a single CPU */
-    HANDLE h;
-    DWORD_PTR mask, smask;
-    int i;
+    timeEndPeriod(mm_tc.wPeriodMin);
+}
 
+void os_setup_early_signal_handling(void)
+{
     SetConsoleCtrlHandler(qemu_ctrl_handler, TRUE);
-
-    h = GetCurrentProcess();
-    if (GetProcessAffinityMask(h, &mask, &smask)) {
-        for(i = 0; i < 32; i++) {
-            if (mask & (1 << i))
-                break;
-        }
-        if (i != 32) {
-            mask = 1 << i;
-            SetProcessAffinityMask(h, mask);
-        }
-    }
+    timeGetDevCaps(&mm_tc, sizeof(mm_tc));
+    timeBeginPeriod(mm_tc.wPeriodMin);
+    atexit(os_undo_timer_resolution);
 }
 #endif  /* CONFIG_MARU */
 
