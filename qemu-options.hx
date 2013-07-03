@@ -3076,7 +3076,6 @@ the @var{simple} tracing backend.
 @end table
 ETEXI
 
-<<<<<<< HEAD
 DEF("max-touch-point", HAS_ARG, QEMU_OPTION_max_touch_point, \
     "-max-touch-point [count]\n"
     "                define maximum number of touch point\n",
@@ -3096,18 +3095,9 @@ STEXI
 @findex -disable-skin
 ETEXI
 
-DEF("qtest", HAS_ARG, QEMU_OPTION_qtest,
-    "-qtest CHR      specify tracing options\n",
-    QEMU_ARCH_ALL)
-
-DEF("qtest-log", HAS_ARG, QEMU_OPTION_qtest_log,
-    "-qtest-log LOG  specify tracing options\n",
-    QEMU_ARCH_ALL)
-=======
 HXCOMM Internal use
 DEF("qtest", HAS_ARG, QEMU_OPTION_qtest, "", QEMU_ARCH_ALL)
 DEF("qtest-log", HAS_ARG, QEMU_OPTION_qtest_log, "", QEMU_ARCH_ALL)
->>>>>>> test1.5
 
 #ifdef __linux__
 DEF("enable-fips", 0, QEMU_OPTION_enablefips,
