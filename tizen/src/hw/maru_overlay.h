@@ -34,6 +34,10 @@
 #define MARU_OVERLAY_H_
 
 #include "qemu-common.h"
+#include <pixman.h>
+
+extern pixman_image_t *overlay0_image;
+extern pixman_image_t *overlay1_image;
 
 extern uint8_t *overlay_ptr;
 extern uint8_t overlay0_power;
