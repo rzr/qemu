@@ -1,3 +1,8 @@
+* 1.5.63
+- Modified to use the pixman library when display.
+- Added sdbd_start protocol
+- Reduce the spend-time when the display rotate/scale.(for SDL method)
+== Jinhyung Jo <jinhyung.jo@samsung.com> 2013-07-03
 * 1.5.61
 - cancel a scrollbar timer
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-07-01
