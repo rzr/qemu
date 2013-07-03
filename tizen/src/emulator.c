@@ -309,6 +309,7 @@ static void print_system_info(void)
     INFO("* Package %s\n", pkginfo_version);
     INFO("* Package %s\n", pkginfo_maintainer);
     INFO("* Git Head : %s\n", pkginfo_githead);
+    INFO("* %s\n", latest_gittag);
     INFO("* User name : %s\n", g_get_real_name());
     INFO("* Host name : %s\n", g_get_host_name());
 
