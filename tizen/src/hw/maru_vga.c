@@ -1171,7 +1171,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
     uint8_t *d;
     uint32_t v, addr1, addr;
     maru_vga_draw_line_func *maru_vga_draw_line;
-    static pixman_image_t *surface = NULL;
 
     full_update |= update_basic_params(s);
 
@@ -1228,10 +1227,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                     disp_width * 4, (uint8_t*)shared_memory); */
             s->ds->surface = qemu_create_displaysurface(s->ds, disp_width, height);
 
-            surface = pixman_image_create_bits(PIXMAN_a8r8g8b8,
-                                           disp_width, height,
-                                           (uint32_t *)ds_get_data(s->ds),
-                                           disp_width * 4);
 
 #else //MARU_VGA
             s->ds->surface = qemu_create_displaysurface_from(disp_width, height, depth,
@@ -1365,6 +1360,76 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
                 if (s->cursor_draw_line)
                     s->cursor_draw_line(s, d, y);
             }
+
+#ifdef MARU_VGA
+
+            int i;
+            uint8_t *fb_sub;
+            uint8_t *over_sub;
+            uint8_t *dst_sub;
+            uint8_t alpha, c_alpha;
+            uint32_t *dst;
+            uint16_t overlay_bottom;
+
+            if ( overlay0_power ) {
+
+                overlay_bottom = overlay0_top + overlay0_height;
+
+                if ( overlay0_top <= y && y < overlay_bottom ) {
+
+                    fb_sub = s->vram_ptr + addr + overlay0_left * 4;
+                    over_sub = overlay_ptr + ( y - overlay0_top ) * overlay0_width * 4;
+                    dst = (uint32_t*) ( s->ds->surface->data + addr + overlay0_left * 4 );
+
+                    for ( i = 0; i < overlay0_width; i++, fb_sub += 4, over_sub += 4, dst++ ) {
+
+                        alpha = fb_sub[3];
+                        c_alpha = 0xff - alpha;
+
+                        *dst = ( ( c_alpha * over_sub[0] + alpha * fb_sub[0] ) >> 8 )
+                            | ( ( c_alpha * over_sub[1] + alpha * fb_sub[1] ) & 0xFF00 )
+                            | ( ( ( c_alpha * over_sub[2] + alpha * fb_sub[2] ) & 0xFF00 ) << 8 );
+                    }
+
+                }
+
+            }
+
+            if ( overlay1_power ) {
+
+                overlay_bottom = overlay1_top + overlay1_height;
+
+                if ( overlay1_top <= y && y < overlay_bottom ) {
+
+                    fb_sub = s->vram_ptr + addr + overlay1_left * 4;
+                    over_sub = overlay_ptr + ( y - overlay1_top ) * overlay1_width * 4 + 0x00400000;
+                    dst = (uint32_t*) ( s->ds->surface->data + addr + overlay1_left * 4 );
+
+                    for ( i = 0; i < overlay1_width; i++, fb_sub += 4, over_sub += 4, dst++ ) {
+
+                        alpha = fb_sub[3];
+                        c_alpha = 0xff - alpha;
+
+                        *dst = ( ( c_alpha * over_sub[0] + alpha * fb_sub[0] ) >> 8 )
+                            | ( ( c_alpha * over_sub[1] + alpha * fb_sub[1] ) & 0xFF00 )
+                            | ( ( ( c_alpha * over_sub[2] + alpha * fb_sub[2] ) & 0xFF00 ) << 8 );
+                    }
+
+                }
+
+            }
+            if (brightness_level < BRIGHTNESS_MAX) {
+                alpha = brightness_tbl[brightness_level];
+                    dst_sub = ds_get_data(s->ds) + addr;
+                    dst = (uint32_t *)(ds_get_data(s->ds) + addr);
+                    for (i = 0; i < disp_width; i++, dst_sub += 4, dst++) {
+                        *dst = ((alpha * dst_sub[0])>> 8)
+                                | ((alpha * dst_sub[1]) & 0xFF00)
+                                | (((alpha * dst_sub[2]) & 0xFF00) << 8);
+                }
+            }
+#endif /* MARU_VGA */
+
         } else {
             if (y_start >= 0) {
                 /* flush to display */
@@ -1388,29 +1453,6 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         d += linesize;
     }
 
-#ifdef MARU_VGA
-    /* overlay0 */
-    if (overlay0_power) {
-        pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay0_image, NULL, surface,
-                               0, 0, 0, 0, overlay0_left, overlay0_top,
-                               overlay0_width, overlay0_height);
-    }
-    /* overlay1 */
-    if (overlay1_power) {
-        pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay1_image, NULL, surface,
-                               0, 0, 0, 0, overlay1_left, overlay1_top,
-                               overlay1_width, overlay1_height);
-    }
-    /* apply the brightness level */
-    if (brightness_level < BRIGHTNESS_MAX) {
-        pixman_image_composite(PIXMAN_OP_OVER,
-                               brightness_image, NULL, surface,
-                               0, 0, 0, 0, 0, 0,
-                               disp_width, height);
-    }
-#endif
     if (y_start >= 0) {
         /* flush to display */
         dpy_update(s->ds, 0, y_start,
