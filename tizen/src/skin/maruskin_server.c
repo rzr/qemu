@@ -126,6 +126,7 @@ enum {
     SEND_BOOTING_PROGRESS = 5,
     SEND_BRIGHTNESS_VALUE = 6,
     SEND_SENSOR_DAEMON_START = 800,
+    SEND_SDB_DAEMON_START = 801,
     SEND_DRAW_FRAME = 900,
     SEND_SHUTDOWN = 999,
 };
@@ -137,6 +138,7 @@ static int server_sock = 0;
 static int client_sock = 0;
 static int stop_server = 0;
 static int is_sensord_initialized = 0;
+static int is_sdbd_initialized = 0;
 static int ready_server = 0;
 static int ignore_heartbeat = 0;
 static int is_force_close_client = 0;
@@ -294,6 +296,20 @@ void notify_draw_frame(void)
         }
     } else {
         INFO("skin client socket is not connected yet\n");
+    }
+}
+
+void notify_sdb_daemon_start(void)
+{
+    INFO("notify_sensor_daemon_start\n");
+
+    is_sdbd_initialized = 1;
+    if (client_sock) {
+        if (0 > send_skin_header_only(
+            client_sock, SEND_SDB_DAEMON_START, 1)) {
+
+            ERR("fail to send SEND_SDB_DAEMON_START to skin.\n");
+        }
     }
 }
 

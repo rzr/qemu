@@ -110,6 +110,7 @@ public class SocketCommunicator implements ICommunicator {
 	private AtomicInteger heartbeatCount;
 	private boolean isTerminated;
 	private boolean isSensorDaemonStarted;
+	private boolean isSdbDaemonStarted;
 	private boolean isRamdump;
 	private TimerTask heartbeatExecutor;
 	private Timer heartbeatTimer;
@@ -228,26 +229,28 @@ public class SocketCommunicator implements ICommunicator {
 
 			sendThread.start();
 
-			int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-			int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-			int scale = SkinUtil.getValidScale( config );
+			int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+			int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+			int scale = SkinUtil.getValidScale(config);
 //			short rotation = config.getSkinPropertyShort( SkinPropertiesConstants.WINDOW_ROTATION,
 //					EmulatorConfig.DEFAULT_WINDOW_ROTATION );
 			// has to be portrait mode at first booting time
 			short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 
-			StartData startData = new StartData(initialData, width, height, scale, rotation);
+			StartData startData =
+					new StartData(initialData, width, height, scale, rotation);
 			logger.info("StartData" + startData);
 
 			sendToQEMU(SendCommand.SEND_START, startData, false);
 
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 			terminate();
 			return;
 		}
 
-		boolean ignoreHeartbeat = config.getArgBoolean( ArgsConstants.TEST_HEART_BEAT_IGNORE );
+		boolean ignoreHeartbeat =
+				config.getArgBoolean(ArgsConstants.TEST_HEART_BEAT_IGNORE);
 
 		if (ignoreHeartbeat) {
 			logger.info("Ignore Skin heartbeat.");
@@ -381,8 +384,17 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case SENSOR_DAEMON_START: {
 					logger.info("received SENSOR_DAEMON_START from QEMU.");
+
 					synchronized (this) {
 						isSensorDaemonStarted = true;
+					}
+					break;
+				}
+				case SDB_DAEMON_START: {
+					logger.info("received SDB_DAEMON_START from QEMU.");
+
+					synchronized (this) {
+						isSdbDaemonStarted = true;
 					}
 					break;
 				}
@@ -642,6 +654,10 @@ public class SocketCommunicator implements ICommunicator {
 
 	public synchronized boolean isSensorDaemonStarted() {
 		return isSensorDaemonStarted;
+	}
+
+	public synchronized boolean isSdbDaemonStarted() {
+		return isSdbDaemonStarted;
 	}
 
 	public synchronized void setRamdumpFlag(boolean flag) {
