@@ -229,35 +229,29 @@ rbd=""
 smartcard_nss=""
 libusb=""
 usb_redir=""
-<<<<<<< HEAD
 opengl=""
 efence="no"
 yagl="no"
 yagl_stats="no"
-=======
 glx=""
->>>>>>> test1.5
 zlib="yes"
 guest_agent="yes"
 want_tools="yes"
 libiscsi=""
 coroutine=""
 seccomp=""
-<<<<<<< HEAD
 gl="yes"
 
 # for TIZEN-maru 
 maru="no"
 shm="no"
 #
-=======
 glusterfs=""
 virtio_blk_data_plane=""
 gtk=""
 gtkabi="2.0"
 tpm="no"
 libssh2=""
->>>>>>> test1.5
 
 # parse CC options first
 for opt do
@@ -563,12 +557,9 @@ Haiku)
   if [ "$cpu" = "i386" -o "$cpu" = "x86_64" ] ; then
     audio_possible_drivers="$audio_possible_drivers fmod"
   fi
-<<<<<<< HEAD
 # fix linking error on Ubuntu 13.04
   libs_qga="-lrt $libs_qga"
-=======
   QEMU_INCLUDES="-I\$(SRC_PATH)/linux-headers $QEMU_INCLUDES"
->>>>>>> test1.5
 ;;
 esac
 
@@ -902,7 +893,6 @@ for opt do
   ;;
   --enable-vhost-net) vhost_net="yes"
   ;;
-<<<<<<< HEAD
   --enable-efence) efence="yes"
   ;;
   --disable-efence) efence="no"
@@ -915,14 +905,15 @@ for opt do
   ;;
   --disable-yagl-stats) yagl_stats="no"
   ;;
+  --enable-opengl) opengl="yes"
+  ;;
   --disable-opengl) opengl="no"
-=======
+  ;;
   --disable-vhost-scsi) vhost_scsi="no"
   ;;
   --enable-vhost-scsi) vhost_scsi="yes"
   ;;
   --disable-glx) glx="no"
->>>>>>> test1.5
   ;;
   --enable-glx) glx="yes"
   ;;
@@ -960,14 +951,12 @@ for opt do
   ;;
   --disable-seccomp) seccomp="no"
   ;;
-<<<<<<< HEAD
 # for TIZEN-maru
   --enable-maru) maru="yes"
   ;;
   --enable-shm) shm="yes"
   ;;
 #
-=======
   --disable-glusterfs) glusterfs="no"
   ;;
   --enable-glusterfs) glusterfs="yes"
@@ -988,7 +977,6 @@ for opt do
   ;;
   --enable-libssh2) libssh2="yes"
   ;;
->>>>>>> test1.5
   *) echo "ERROR: unknown option $opt"; show_help="yes"
   ;;
   esac
@@ -1242,7 +1230,6 @@ echo "  --enable-spice           enable spice"
 echo "  --enable-rbd             enable building the rados block device (rbd)"
 echo "  --disable-libiscsi       disable iscsi support"
 echo "  --enable-libiscsi        enable iscsi support"
-<<<<<<< HEAD
 echo "  --enable-efence          enable Electic Fence"
 echo "  --disable-efence         disable Electic Fence"
 echo "  --enable-yagl            enable YaGL device"
@@ -1251,8 +1238,6 @@ echo "  --enable-yagl-stats      enable YaGL stats"
 echo "  --disable-yagl-stats     disable YaGL stats"
 echo "  --disable-smartcard      disable smartcard support"
 echo "  --enable-smartcard       enable smartcard support"
-=======
->>>>>>> test1.5
 echo "  --disable-smartcard-nss  disable smartcard nss support"
 echo "  --enable-smartcard-nss   enable smartcard nss support"
 echo "  --disable-libusb         disable libusb (for usb passthrough)"
@@ -3674,14 +3659,11 @@ echo "xfsctl support    $xfs"
 echo "nss used          $smartcard_nss"
 echo "libusb            $libusb"
 echo "usb net redir     $usb_redir"
-<<<<<<< HEAD
 echo "OpenGL support    $opengl"
 echo "EFence support    $efence"
 echo "YaGL support      $yagl"
 echo "YaGL stats        $yagl_stats"
-=======
 echo "GLX support       $glx"
->>>>>>> test1.5
 echo "libiscsi support  $libiscsi"
 echo "build guest agent $guest_agent"
 echo "seccomp support   $seccomp"
@@ -3996,7 +3978,6 @@ if test "$spice" = "yes" ; then
   echo "CONFIG_SPICE=y" >> $config_host_mak
 fi
 
-<<<<<<< HEAD
 if test "$efence" = "yes" ; then
   echo "CONFIG_EFENCE=y" >> $config_host_mak
 fi
@@ -4021,8 +4002,6 @@ if test "$smartcard" = "yes" ; then
   echo "CONFIG_SMARTCARD=y" >> $config_host_mak
 fi
 
-=======
->>>>>>> test1.5
 if test "$smartcard_nss" = "yes" ; then
   echo "CONFIG_SMARTCARD_NSS=y" >> $config_host_mak
   echo "libcacard_libs=$libcacard_libs" >> $config_host_mak
@@ -4133,7 +4112,6 @@ libusb)
 ;;
 esac
 
-<<<<<<< HEAD
 # for TIZEN-maru
 if test "$maru" = "yes" ; then
   echo "CONFIG_MARU=y" >> $config_host_mak
@@ -4144,7 +4122,6 @@ fi
 if test "$gl" = "yes" ; then
   echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
 fi
-=======
 # TPM passthrough support?
 if test "$tpm" = "yes"; then
   echo 'CONFIG_TPM=$(CONFIG_SOFTMMU)' >> $config_host_mak
@@ -4153,7 +4130,6 @@ if test "$tpm" = "yes"; then
   fi
 fi
 
->>>>>>> test1.5
 # use default implementation for tracing backend-specific routines
 trace_default=yes
 echo "TRACE_BACKEND=$trace_backend" >> $config_host_mak
@@ -4464,7 +4440,6 @@ upper() {
     echo "$@"| LC_ALL=C tr '[a-z]' '[A-Z]'
 }
 
-<<<<<<< HEAD
 case "$cpu" in
   i386|x86_64)
     echo "CONFIG_QEMU_LDST_OPTIMIZATION=y" >> $config_target_mak
@@ -4475,8 +4450,6 @@ echo "TARGET_SHORT_ALIGNMENT=$target_short_alignment" >> $config_target_mak
 echo "TARGET_INT_ALIGNMENT=$target_int_alignment" >> $config_target_mak
 echo "TARGET_LONG_ALIGNMENT=$target_long_alignment" >> $config_target_mak
 echo "TARGET_LLONG_ALIGNMENT=$target_llong_alignment" >> $config_target_mak
-=======
->>>>>>> test1.5
 echo "TARGET_ARCH=$TARGET_ARCH" >> $config_target_mak
 target_arch_name="`upper $TARGET_ARCH`"
 echo "TARGET_$target_arch_name=y" >> $config_target_mak
@@ -4519,7 +4492,6 @@ case "$target_arch2" in
   i386|x86_64)
     echo "CONFIG_HAVE_GET_MEMORY_MAPPING=y" >> $config_target_mak
 esac
-<<<<<<< HEAD
 if test "$hax" = "yes" ; then
   if test "$target_softmmu" = "yes" ; then
     case "$target_arch2" in
@@ -4554,8 +4526,6 @@ fi
 if test "$target_arch2" = "ppc64" -a "$fdt" = "yes"; then
   echo "CONFIG_PSERIES=y" >> $config_target_mak
 fi
-=======
->>>>>>> test1.5
 if test "$target_bigendian" = "yes" ; then
   echo "TARGET_WORDS_BIGENDIAN=y" >> $config_target_mak
 fi
@@ -4600,7 +4570,6 @@ fi
 cflags=""
 ldflags=""
 
-<<<<<<< HEAD
 if test "$tcg_interpreter" = "yes"; then
   includes="-I\$(SRC_PATH)/tcg/tci $includes"
 elif test "$ARCH" = "sparc64" ; then
@@ -4633,8 +4602,6 @@ if test "$yagl" = "yes" ; then
   echo "CONFIG_BUILD_YAGL=y" >> $config_target_mak
 fi
 
-=======
->>>>>>> test1.5
 for i in $ARCH $TARGET_BASE_ARCH ; do
   case "$i" in
   alpha)
@@ -4719,7 +4686,6 @@ alpha)
 ;;
 esac
 
-<<<<<<< HEAD
 if test "$target_softmmu" = "yes" ; then
   case "$TARGET_BASE_ARCH" in
   arm)
@@ -4734,8 +4700,6 @@ if test "$target_softmmu" = "yes" ; then
   esac
 fi
 
-=======
->>>>>>> test1.5
 if test "$gprof" = "yes" ; then
   echo "TARGET_GPROF=yes" >> $config_target_mak
   if test "$target_linux_user" = "yes" ; then
