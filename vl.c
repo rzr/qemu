@@ -152,20 +152,12 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "sysemu/tpm.h"
 #include "sysemu/dma.h"
 #include "audio/audio.h"
-<<<<<<< HEAD
-#include "migration.h"
-#include "kvm.h"
-#include "hax.h"
-#include "qjson.h"
-#include "qemu-option.h"
-#include "qemu-config.h"
-=======
 #include "migration/migration.h"
 #include "sysemu/kvm.h"
+#include "hax.h"
 #include "qapi/qmp/qjson.h"
 #include "qemu/option.h"
 #include "qemu/config-file.h"
->>>>>>> test1.5
 #include "qemu-options.h"
 #include "qmp-commands.h"
 #include "qemu/main-loop.h"
@@ -207,7 +199,6 @@ int qemu_main(int argc, char **argv, char **envp);
 #define MAX_VIRTIO_CONSOLES 1
 #define MAX_SCLP_CONSOLES 1
 
-<<<<<<< HEAD
 #ifdef CONFIG_MARU
 int skin_disabled = 0;
 //virtio-gl
@@ -215,11 +206,8 @@ extern int enable_gl;
 extern int enable_yagl;
 #endif
 
-static const char *data_dir;
-=======
 static const char *data_dir[16];
 static int data_dir_idx;
->>>>>>> test1.5
 const char *bios_name = NULL;
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
 DisplayType display_type = DT_DEFAULT;
@@ -306,15 +294,11 @@ static NotifierList exit_notifiers =
 static NotifierList machine_init_done_notifiers =
     NOTIFIER_LIST_INITIALIZER(machine_init_done_notifiers);
 
-<<<<<<< HEAD
-static int tcg_allowed = 1;
-int kvm_allowed = 0;
-int xen_allowed = 0;
-int hax_allowed = 0;
-=======
 static bool tcg_allowed = true;
 bool xen_allowed;
->>>>>>> test1.5
+// FIXME: ??
+int hax_allowed = 0;
+//
 uint32_t xen_domid;
 enum xen_mode xen_mode = XEN_EMULATE;
 static int tcg_tb_size;
@@ -2077,11 +2061,7 @@ static void main_loop(void)
     hax_sync_vcpus();
 
     do {
-<<<<<<< HEAD
-        nonblocking = !(kvm_enabled()|| hax_enabled()) && last_io > 0;
-=======
-        nonblocking = !kvm_enabled() && !xen_enabled() && last_io > 0;
->>>>>>> test1.5
+        nonblocking = !kvm_enabled() && !xen_enabled() && !hax_enabled() && last_io > 0;
 #ifdef CONFIG_PROFILER
         ti = profile_getclock();
 #endif
@@ -2183,20 +2163,16 @@ static void select_vgahw (const char *p)
     } else if (strstart(p, "xenfb", &opts)) {
         vga_interface_type = VGA_XENFB;
     } else if (strstart(p, "qxl", &opts)) {
-<<<<<<< HEAD
-        vga_interface_type = VGA_QXL;
-#ifdef CONFIG_MARU
-    } else if (strstart(p, "maru", &opts)) {
-        vga_interface_type = VGA_MARU;
-#endif
-=======
         if (qxl_vga_available()) {
             vga_interface_type = VGA_QXL;
         } else {
             fprintf(stderr, "Error: QXL VGA not available\n");
             exit(0);
         }
->>>>>>> test1.5
+#ifdef CONFIG_MARU
+    } else if (strstart(p, "maru", &opts)) {
+        vga_interface_type = VGA_MARU;
+#endif
     } else if (!strstart(p, "none", &opts)) {
     invalid_vga:
         fprintf(stderr, "Unknown vga type: %s\n", p);
@@ -2774,16 +2750,12 @@ static int configure_accelerator(void)
     }
 
     if (!accel_initialised) {
-<<<<<<< HEAD
-        fprintf(stderr, "No accelerator found!\n");
-#ifdef CONFIG_MARU
-        maru_register_exit_msg(MARU_EXIT_UNKNOWN, "No accelerator found.");
-#endif
-=======
         if (!init_failed) {
             fprintf(stderr, "No accelerator found!\n");
         }
->>>>>>> test1.5
+#ifdef CONFIG_MARU
+        maru_register_exit_msg(MARU_EXIT_UNKNOWN, "No accelerator found.");
+#endif
         exit(1);
     }
 
@@ -3967,7 +3939,6 @@ int main(int argc, char **argv, char **envp)
                     exit(1);
                 }
                 break;
-<<<<<<< HEAD
             case QEMU_OPTION_enable_hax:
 #ifdef CONFIG_HAX_BACKEND
                 olist = qemu_find_opts("machine");
@@ -3991,7 +3962,6 @@ int main(int argc, char **argv, char **envp)
                 skin_disabled = 1;
                 break;
 #endif
-=======
             case QEMU_OPTION_add_fd:
 #ifndef _WIN32
                 opts = qemu_opts_parse(qemu_find_opts("add-fd"), optarg, 0);
@@ -4017,7 +3987,6 @@ int main(int argc, char **argv, char **envp)
                 }
                 configure_realtime(opts);
                 break;
->>>>>>> test1.5
             default:
                 os_parse_cmd_args(popt->index, optarg);
             }
@@ -4445,15 +4414,10 @@ int main(int argc, char **argv, char **envp)
 
     qdev_machine_init();
 
-<<<<<<< HEAD
 #ifdef CONFIG_MARU
-    // return variable points different address from input variable.
+    // Returned variable points different address from input variable.
     kernel_cmdline = prepare_maru_devices(kernel_cmdline);
 #endif
-
-    machine->init(ram_size, boot_devices,
-                  kernel_filename, kernel_cmdline, initrd_filename, cpu_model);
-=======
     QEMUMachineInitArgs args = { .ram_size = ram_size,
                                  .boot_device = (boot_devices[0] == '\0') ?
                                                 machine->boot_order :
@@ -4464,8 +4428,8 @@ int main(int argc, char **argv, char **envp)
                                  .cpu_model = cpu_model };
     machine->init(&args);
 
+    // TODO: Check about it...
     audio_init();
->>>>>>> test1.5
 
     cpu_synchronize_all_post_init();
 

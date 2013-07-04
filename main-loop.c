@@ -30,78 +30,7 @@
 
 #ifndef _WIN32
 
-<<<<<<< HEAD
-#include "compatfd.h"
-
-static int io_thread_fd = -1;
-
-void qemu_notify_event(void)
-{
-    /* Write 8 bytes to be compatible with eventfd.  */
-    static const uint64_t val = 1;
-    ssize_t ret;
-
-    if (io_thread_fd == -1) {
-        return;
-    }
-
-    qemu_notify_hax_event();
-
-    do {
-        ret = write(io_thread_fd, &val, sizeof(val));
-    } while (ret < 0 && errno == EINTR);
-
-    /* EAGAIN is fine, a read must be pending.  */
-    if (ret < 0 && errno != EAGAIN) {
-        fprintf(stderr, "qemu_notify_event: write() failed: %s\n",
-                strerror(errno));
-        exit(1);
-    }
-}
-
-static void qemu_event_read(void *opaque)
-{
-    int fd = (intptr_t)opaque;
-    ssize_t len;
-    char buffer[512];
-
-    /* Drain the notify pipe.  For eventfd, only 8 bytes will be read.  */
-    do {
-        len = read(fd, buffer, sizeof(buffer));
-    } while ((len == -1 && errno == EINTR) || len == sizeof(buffer));
-}
-
-static int qemu_event_init(void)
-{
-    int err;
-    int fds[2];
-
-    err = qemu_eventfd(fds);
-    if (err == -1) {
-        return -errno;
-    }
-    err = fcntl_setfl(fds[0], O_NONBLOCK);
-    if (err < 0) {
-        goto fail;
-    }
-    err = fcntl_setfl(fds[1], O_NONBLOCK);
-    if (err < 0) {
-        goto fail;
-    }
-    qemu_set_fd_handler2(fds[0], NULL, qemu_event_read, NULL,
-                         (void *)(intptr_t)fds[0]);
-
-    io_thread_fd = fds[1];
-    return 0;
-
-fail:
-    close(fds[0]);
-    close(fds[1]);
-    return err;
-}
-=======
 #include "qemu/compatfd.h"
->>>>>>> test1.5
 
 /* If we have signalfd, we mask out the signals we want to handle and then
  * use signalfd to listen for them.  We rely on whatever the current signal
@@ -190,18 +119,10 @@ void qemu_notify_event(void)
     if (!qemu_aio_context) {
         return;
     }
-<<<<<<< HEAD
-
+    // TODO: Mark HAX related code...
     qemu_notify_hax_event();
-
-    if (!SetEvent(qemu_event_handle)) {
-        fprintf(stderr, "qemu_notify_event: SetEvent failed: %ld\n",
-                GetLastError());
-        exit(1);
-    }
-=======
+    //
     aio_notify(qemu_aio_context);
->>>>>>> test1.5
 }
 
 static GArray *gpollfds;
