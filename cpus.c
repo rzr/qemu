@@ -25,20 +25,12 @@
 /* Needed early for CONFIG_BSD etc. */
 #include "config-host.h"
 
-<<<<<<< HEAD
-#include "monitor.h"
-#include "sysemu.h"
-#include "gdbstub.h"
-#include "dma.h"
-#include "kvm.h"
-#include "hax.h"
-=======
 #include "monitor/monitor.h"
 #include "sysemu/sysemu.h"
 #include "exec/gdbstub.h"
 #include "sysemu/dma.h"
 #include "sysemu/kvm.h"
->>>>>>> test1.5
+#include "hax.h"
 #include "qmp-commands.h"
 
 #include "qemu/thread.h"
@@ -81,13 +73,8 @@ static bool cpu_thread_is_idle(CPUArchState *env)
     if (cpu->stopped || !runstate_is_running()) {
         return true;
     }
-<<<<<<< HEAD
-    if (!env->halted || qemu_cpu_has_work(env) ||
-        kvm_async_interrupts_enabled() || hax_enabled()) {
-=======
     if (!cpu->halted || qemu_cpu_has_work(cpu) ||
-        kvm_async_interrupts_enabled()) {
->>>>>>> test1.5
+        kvm_async_interrupts_enabled() || hax_enabled()) {
         return false;
     }
     return true;
@@ -1037,16 +1024,10 @@ void resume_all_vcpus(void)
 
 static void qemu_tcg_init_vcpu(CPUState *cpu)
 {
-<<<<<<< HEAD
-    CPUArchState *env = _env;
-    CPUState *cpu = ENV_GET_CPU(env);
-
 #ifdef	CONFIG_HAX
 	if (hax_enabled())
-		hax_init_vcpu(env);
+		hax_init_vcpu(cpu->env_ptr);
 #endif
-=======
->>>>>>> test1.5
     /* share a single thread for all cpus with TCG */
     if (!tcg_cpu_thread) {
         cpu->thread = g_malloc0(sizeof(QemuThread));

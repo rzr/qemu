@@ -20,14 +20,9 @@
 #include "cpu.h"
 #include "disas/disas.h"
 #include "tcg.h"
-<<<<<<< HEAD
 #include "hax.h"
-#include "qemu-barrier.h"
-#include "qtest.h"
-=======
 #include "qemu/atomic.h"
 #include "sysemu/qtest.h"
->>>>>>> test1.5
 
 bool qemu_cpu_has_work(CPUState *cpu)
 {
@@ -205,14 +200,15 @@ volatile sig_atomic_t exit_request;
  * because MMIO is emulated for only one instruction now and then back to
  * HAX kernel
  */
-int need_handle_intr_request(CPUArchState *env)
+static int need_handle_intr_request(CPUState *cpu)
 {
 #ifdef CONFIG_HAX
+    CPUArchState *env = cpu->env_ptr;
     if (!hax_enabled() || hax_vcpu_emulation_mode(env))
-        return env->interrupt_request;
+        return cpu->interrupt_request;
     return 0;
 #else
-    return env->interrupt_request;
+    return cpu->interrupt_request;
 #endif
 }
 
@@ -318,11 +314,7 @@ int cpu_exec(CPUArchState *env)
 
             next_tb = 0; /* force lookup of first TB */
             for(;;) {
-<<<<<<< HEAD
-                interrupt_request = need_handle_intr_request(env);
-=======
-                interrupt_request = cpu->interrupt_request;
->>>>>>> test1.5
+                interrupt_request = need_handle_intr_request(cpu);
                 if (unlikely(interrupt_request)) {
                     if (unlikely(env->singlestep_enabled & SSTEP_NOIRQ)) {
                         /* Mask out external interrupts for this step. */
@@ -364,25 +356,16 @@ int cpu_exec(CPUArchState *env)
                             !(env->hflags & HF_SMM_MASK)) {
                             cpu_svm_check_intercept_param(env, SVM_EXIT_SMI,
                                                           0);
-<<<<<<< HEAD
-                            env->interrupt_request &= ~CPU_INTERRUPT_SMI;
-#ifdef CONFIG_HAX
-			    if (hax_enabled())
-			    	env->hax_vcpu->resync = 1;
-#endif
-                            do_smm_enter(env);
-                            next_tb = 0;
-                        } else if ((interrupt_request & CPU_INTERRUPT_NMI) &&
-                                  !(env->hflags2 & HF2_NMI_MASK)) {
-                            env->interrupt_request &= ~CPU_INTERRUPT_NMI;
-=======
                             cpu->interrupt_request &= ~CPU_INTERRUPT_SMI;
+#ifdef CONFIG_HAX
+                            if (hax_enabled())
+                                env->hax_vcpu->resync = 1;
+#endif
                             do_smm_enter(env);
                             next_tb = 0;
                         } else if ((interrupt_request & CPU_INTERRUPT_NMI) &&
                                    !(env->hflags2 & HF2_NMI_MASK)) {
                             cpu->interrupt_request &= ~CPU_INTERRUPT_NMI;
->>>>>>> test1.5
                             env->hflags2 |= HF2_NMI_MASK;
                             do_interrupt_x86_hardirq(env, EXCP02_NMI, 1);
                             next_tb = 0;
@@ -713,16 +696,11 @@ int cpu_exec(CPUArchState *env)
                         break;
                     }
                 }
-<<<<<<< HEAD
-                env->current_tb = NULL;
+                cpu->current_tb = NULL;
 #ifdef CONFIG_HAX
                 if (hax_enabled() && hax_stop_emulation(env))
                     cpu_loop_exit(env);
 #endif
-
-=======
-                cpu->current_tb = NULL;
->>>>>>> test1.5
                 /* reset soft MMU for next block (it can currently
                    only be set by a memory fault) */
             } /* for(;;) */

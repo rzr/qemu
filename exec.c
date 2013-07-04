@@ -29,24 +29,15 @@
 #include "tcg.h"
 #include "hw/hw.h"
 #include "hw/qdev.h"
-<<<<<<< HEAD
-#include "osdep.h"
-#include "kvm.h"
-#include "hax.h"
-#include "hw/xen.h"
-#include "qemu-timer.h"
-#include "memory.h"
-#include "exec-memory.h"
-=======
 #include "qemu/osdep.h"
 #include "sysemu/kvm.h"
+#include "hax.h"
 #include "hw/xen/xen.h"
 #include "qemu/timer.h"
 #include "qemu/config-file.h"
 #include "exec/memory.h"
 #include "sysemu/dma.h"
 #include "exec/address-spaces.h"
->>>>>>> test1.5
 #if defined(CONFIG_USER_ONLY)
 #include <qemu.h>
 #else /* !CONFIG_USER_ONLY */
@@ -1103,28 +1094,22 @@ ram_addr_t qemu_ram_alloc_from_ptr(ram_addr_t size, void *host,
                 /* some s390/kvm configurations have special constraints */
                 new_block->host = kvm_ram_alloc(size);
             } else {
-<<<<<<< HEAD
-                new_block->host = qemu_vmalloc(size);
-#ifdef CONFIG_HAX
-		/*
-		 * In Hax, the qemu allocate the virtual address, and HAX kernel
-		 * populate the memory with physical memory. Currently we have no
-		 * paging, so user should make sure enough free memory in advance
-		 */
-		if (hax_enabled())
-		{
-			int ret;
-			ret = hax_populate_ram((uint64_t)new_block->host, size);
-			if (ret < 0)
-			{
-				fprintf(stderr, "Hax failed to populate ram\n");
-				exit(-1);
-			}
-		}
-#endif
-=======
                 new_block->host = qemu_anon_ram_alloc(size);
->>>>>>> test1.5
+#ifdef CONFIG_HAX
+                /*
+                 * In Hax, the qemu allocate the virtual address, and HAX kernel
+                 * populate the memory with physical memory. Currently we have no
+                 * paging, so user should make sure enough free memory in advance
+                 */
+                if (hax_enabled()) {
+                    int ret;
+                    ret = hax_populate_ram((uint64_t)new_block->host, size);
+                    if (ret < 0) {
+                        fprintf(stderr, "Hax failed to populate ram\n");
+                        exit(-1);
+                    }
+                }
+#endif
             }
             memory_try_enable_merging(new_block->host, size);
         }
