@@ -184,21 +184,9 @@ libqemuutil.a: $(util-obj-y)
 
 qemu-img.o: qemu-img-cmds.h
 
-<<<<<<< HEAD
-tools-obj-y = $(oslib-obj-y) $(trace-obj-y) qemu-tool.o qemu-timer.o \
-	qemu-timer-common.o main-loop.o notify.o \
-	iohandler.o cutils.o iov.o async.o
-tools-obj-$(CONFIG_POSIX) += compatfd.o
-tools-obj-$(CONFIG_HAX_BACKEND) += hax-stub.o
-
-qemu-img$(EXESUF): qemu-img.o $(tools-obj-y) $(block-obj-y)
-qemu-nbd$(EXESUF): qemu-nbd.o $(tools-obj-y) $(block-obj-y)
-qemu-io$(EXESUF): qemu-io.o cmd.o $(tools-obj-y) $(block-obj-y)
-=======
 qemu-img$(EXESUF): qemu-img.o $(block-obj-y) libqemuutil.a libqemustub.a
 qemu-nbd$(EXESUF): qemu-nbd.o $(block-obj-y) libqemuutil.a libqemustub.a
 qemu-io$(EXESUF): qemu-io.o cmd.o $(block-obj-y) libqemuutil.a libqemustub.a
->>>>>>> test1.5
 
 qemu-bridge-helper$(EXESUF): qemu-bridge-helper.o
 
