@@ -3,8 +3,10 @@
 
 #include "yagl_types.h"
 
+struct yagl_ref;
 struct yagl_sharegroup;
 struct yagl_client_image;
+struct yagl_client_tex_image;
 
 struct yagl_client_context
 {
@@ -36,6 +38,11 @@ struct yagl_client_context
 
     struct yagl_client_image
         *(*create_image)(struct yagl_client_context */*ctx*/);
+
+    struct yagl_client_tex_image
+        *(*create_tex_image)(struct yagl_client_context */*ctx*/,
+                             yagl_object_name /*tex_global_name*/,
+                             struct yagl_ref */*tex_data*/);
 
     /*
      * 'deactivate' is called whenever this context resigns

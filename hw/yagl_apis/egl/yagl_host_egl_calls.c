@@ -529,6 +529,8 @@ bool yagl_host_eglChooseConfig(EGLBoolean* retval,
     dummy.trans_blue_val = EGL_DONT_CARE;
     dummy.transparent_type = EGL_NONE;
     dummy.match_format_khr = EGL_DONT_CARE;
+    dummy.bind_to_texture_rgb = EGL_DONT_CARE;
+    dummy.bind_to_texture_rgba = EGL_DONT_CARE;
 
     if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
         bool has_config_id = false;
@@ -540,8 +542,12 @@ bool yagl_host_eglChooseConfig(EGLBoolean* retval,
             case EGL_MAX_PBUFFER_HEIGHT:
             case EGL_MAX_PBUFFER_PIXELS:
             case EGL_NATIVE_VISUAL_ID:
+                break;
             case EGL_BIND_TO_TEXTURE_RGB:
+                dummy.bind_to_texture_rgb = attrib_list[i + 1];
+                break;
             case EGL_BIND_TO_TEXTURE_RGBA:
+                dummy.bind_to_texture_rgba = attrib_list[i + 1];
                 break;
             case EGL_SURFACE_TYPE:
                 dummy.surface_type = attrib_list[i + 1];
@@ -1071,19 +1077,115 @@ out:
 }
 
 bool yagl_host_eglBindTexImage(EGLBoolean* retval,
-    yagl_host_handle dpy,
-    yagl_host_handle surface,
+    yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLint buffer)
 {
-    YAGL_UNIMPLEMENTED(eglBindTexImage, EGL_FALSE);
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_surface *surface = NULL;
+
+    YAGL_LOG_FUNC_SET(eglBindTexImage);
+
+    if (!egl_api_ts->context) {
+        YAGL_LOG_WARN("No context");
+        *retval = EGL_TRUE;
+        goto out;
+    }
+
+    *retval = EGL_FALSE;
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+        goto out;
+    }
+
+    if (buffer != EGL_BACK_BUFFER) {
+        YAGL_SET_ERR(EGL_BAD_PARAMETER);
+        goto out;
+    }
+
+    if (surface->backend_sfc->type != EGL_PBUFFER_BIT) {
+        YAGL_SET_ERR(EGL_BAD_SURFACE);
+        goto out;
+    }
+
+    if (surface->backend_sfc->attribs.pbuffer.tex_format == EGL_NO_TEXTURE) {
+        YAGL_SET_ERR(EGL_BAD_MATCH);
+        goto out;
+    }
+
+    if (surface->backend_sfc->attribs.pbuffer.tex_target == EGL_NO_TEXTURE) {
+        YAGL_SET_ERR(EGL_BAD_MATCH);
+        goto out;
+    }
+
+    if (!surface->backend_sfc->bind_tex_image(surface->backend_sfc)) {
+        YAGL_SET_ERR(EGL_BAD_ACCESS);
+        goto out;
+    }
+
+    *retval = EGL_TRUE;
+
+out:
+    yagl_egl_surface_release(surface);
+
+    return true;
 }
 
 bool yagl_host_eglReleaseTexImage(EGLBoolean* retval,
-    yagl_host_handle dpy,
-    yagl_host_handle surface,
+    yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLint buffer)
 {
-    YAGL_UNIMPLEMENTED(eglReleaseTexImage, EGL_FALSE);
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_egl_surface *surface = NULL;
+
+    YAGL_LOG_FUNC_SET(eglReleaseTexImage);
+
+    *retval = EGL_FALSE;
+
+    if (!yagl_validate_display(dpy_, &dpy)) {
+        goto out;
+    }
+
+    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+        goto out;
+    }
+
+    if (buffer != EGL_BACK_BUFFER) {
+        YAGL_SET_ERR(EGL_BAD_PARAMETER);
+        goto out;
+    }
+
+    if (surface->backend_sfc->type != EGL_PBUFFER_BIT) {
+        YAGL_SET_ERR(EGL_BAD_SURFACE);
+        goto out;
+    }
+
+    if (surface->backend_sfc->attribs.pbuffer.tex_format == EGL_NO_TEXTURE) {
+        YAGL_SET_ERR(EGL_BAD_MATCH);
+        goto out;
+    }
+
+    if (surface->backend_sfc->attribs.pbuffer.tex_target == EGL_NO_TEXTURE) {
+        YAGL_SET_ERR(EGL_BAD_MATCH);
+        goto out;
+    }
+
+    if (!surface->backend_sfc->release_tex_image(surface->backend_sfc)) {
+        YAGL_SET_ERR(EGL_BAD_ACCESS);
+        goto out;
+    }
+
+    *retval = EGL_TRUE;
+
+out:
+    yagl_egl_surface_release(surface);
+
+    return true;
 }
 
 bool yagl_host_eglCreateContext(yagl_host_handle* retval,

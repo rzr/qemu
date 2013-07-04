@@ -55,12 +55,12 @@ bool yagl_host_eglSurfaceAttrib(EGLBoolean* retval,
     EGLint attribute,
     EGLint value);
 bool yagl_host_eglBindTexImage(EGLBoolean* retval,
-    yagl_host_handle dpy,
-    yagl_host_handle surface,
+    yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLint buffer);
 bool yagl_host_eglReleaseTexImage(EGLBoolean* retval,
-    yagl_host_handle dpy,
-    yagl_host_handle surface,
+    yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLint buffer);
 bool yagl_host_eglCreateContext(yagl_host_handle* retval,
     yagl_host_handle dpy_,

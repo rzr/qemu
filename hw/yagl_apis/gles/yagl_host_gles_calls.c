@@ -519,6 +519,12 @@ bool yagl_host_glCompressedTexImage2D(GLenum target,
              * to OES_EGL_image specs.
              */
             yagl_gles_texture_unset_image(tex_target_state->texture);
+
+            /*
+             * This operation should release TexImage according
+             * to eglBindTexImage spec.
+             */
+            yagl_gles_texture_release_tex_image(tex_target_state->texture);
         }
     }
 
@@ -1534,6 +1540,12 @@ bool yagl_host_glTexImage2D(GLenum target,
              * to OES_EGL_image specs.
              */
             yagl_gles_texture_unset_image(tex_target_state->texture);
+
+            /*
+             * This operation should release TexImage according
+             * to eglBindTexImage spec.
+             */
+            yagl_gles_texture_release_tex_image(tex_target_state->texture);
         }
     }
 

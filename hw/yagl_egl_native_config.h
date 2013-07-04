@@ -45,6 +45,8 @@ struct yagl_egl_native_config
     EGLenum conformant;
     EGLint sample_buffers_num;
     EGLint match_format_khr;
+    EGLBoolean bind_to_texture_rgb;
+    EGLBoolean bind_to_texture_rgba;
 };
 
 /*

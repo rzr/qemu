@@ -73,19 +73,18 @@ struct yagl_egl_onscreen_image
     image_data = g_malloc0(sizeof(*image_data));
 
     yagl_ref_init(&image_data->ref, &yagl_egl_onscreen_image_data_destroy);
+    ws_sfc->base.acquire(&ws_sfc->base);
+    image_data->ws_sfc = ws_sfc;
 
     glegl_image = client_iface->create_image(client_iface,
                                              ws_sfc->get_texture(ws_sfc),
                                              &image_data->ref);
 
+    yagl_ref_release(&image_data->ref);
+
     if (!glegl_image) {
-        yagl_ref_cleanup(&image_data->ref);
-        g_free(image_data);
         goto out;
     }
-
-    ws_sfc->base.acquire(&ws_sfc->base);
-    image_data->ws_sfc = ws_sfc;
 
     image = g_malloc0(sizeof(*image));
 

@@ -164,6 +164,9 @@ static struct yagl_egl_config
 
     cfg->native.sample_buffers_num = (cfg->native.samples_per_pixel > 0) ? 1 : 0;
 
+    cfg->native.bind_to_texture_rgb = EGL_TRUE;
+    cfg->native.bind_to_texture_rgba = EGL_TRUE;
+
     return cfg;
 }
 
@@ -279,6 +282,8 @@ bool yagl_egl_config_is_chosen_by(const struct yagl_egl_config *cfg,
     YAGL_CHECK_ATTRIB_CAST(caveat, !=);
     YAGL_CHECK_ATTRIB_CAST(native_renderable, !=);
     YAGL_CHECK_ATTRIB_CAST(transparent_type, !=);
+    YAGL_CHECK_ATTRIB_CAST(bind_to_texture_rgb, !=);
+    YAGL_CHECK_ATTRIB_CAST(bind_to_texture_rgba, !=);
 
     /*
      * Mask.
@@ -332,10 +337,10 @@ bool yagl_egl_config_get_attrib(const struct yagl_egl_config *cfg,
         *value = cfg->native.alpha_size;
         break;
     case EGL_BIND_TO_TEXTURE_RGB:
-        *value = EGL_FALSE;
+        *value = cfg->native.bind_to_texture_rgb;
         break;
     case EGL_BIND_TO_TEXTURE_RGBA:
-        *value = EGL_FALSE;
+        *value = cfg->native.bind_to_texture_rgba;
         break;
     case EGL_CONFIG_CAVEAT:
         *value = cfg->native.caveat;

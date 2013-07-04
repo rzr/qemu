@@ -139,6 +139,24 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
     return true;
 }
 
+static bool yagl_egl_offscreen_surface_bind_tex_image(struct yagl_eglb_surface *sfc)
+{
+    YAGL_LOG_FUNC_SET(eglBindTexImage);
+
+    YAGL_LOG_WARN("Not supported!");
+
+    return false;
+}
+
+static bool yagl_egl_offscreen_surface_release_tex_image(struct yagl_eglb_surface *sfc)
+{
+    YAGL_LOG_FUNC_SET(eglReleaseTexImage);
+
+    YAGL_LOG_WARN("Not supported!");
+
+    return false;
+}
+
 static void yagl_egl_offscreen_surface_destroy(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_offscreen_surface *egl_offscreen_sfc =
@@ -234,6 +252,8 @@ struct yagl_egl_offscreen_surface
     sfc->base.query = &yagl_egl_offscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_offscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_offscreen_surface_copy_buffers;
+    sfc->base.bind_tex_image = &yagl_egl_offscreen_surface_bind_tex_image;
+    sfc->base.release_tex_image = &yagl_egl_offscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_offscreen_surface_destroy;
 
     YAGL_LOG_FUNC_EXIT(NULL);

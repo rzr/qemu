@@ -7,6 +7,7 @@
 #include "yagl_gles_texture_unit.h"
 #include "yagl_gles_validate.h"
 #include "yagl_gles_image.h"
+#include "yagl_gles_tex_image.h"
 #include "yagl_gles_texture.h"
 #include "yagl_log.h"
 #include "yagl_process.h"
@@ -171,6 +172,28 @@ static struct yagl_client_image
     return image ? &image->base : NULL;
 }
 
+static struct yagl_client_tex_image
+    *yagl_gles_context_create_tex_image(struct yagl_client_context *ctx,
+                                        yagl_object_name tex_global_name,
+                                        struct yagl_ref *tex_data)
+{
+    struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
+    struct yagl_gles_texture_target_state *texture_target_state =
+        yagl_gles_context_get_active_texture_target_state(gles_ctx,
+                                                          yagl_gles_texture_target_2d);
+
+    if (!texture_target_state->texture) {
+        return NULL;
+    }
+
+    yagl_gles_tex_image_create(tex_global_name,
+                               tex_data,
+                               texture_target_state->texture);
+
+    return texture_target_state->texture->tex_image ?
+           &texture_target_state->texture->tex_image->base : NULL;
+}
+
 void yagl_gles_context_init(struct yagl_gles_context *ctx,
                             struct yagl_gles_driver *driver)
 {
@@ -178,6 +201,7 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
     ctx->base.finish = &yagl_gles_context_finish;
     ctx->base.read_pixels = &yagl_gles_context_read_pixels;
     ctx->base.create_image = &yagl_gles_context_create_image;
+    ctx->base.create_tex_image = &yagl_gles_context_create_tex_image;
 
     ctx->driver = driver;
 

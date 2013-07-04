@@ -6,6 +6,7 @@
 
 struct yagl_egl_onscreen_display;
 struct yagl_egl_native_config;
+struct yagl_client_tex_image;
 
 struct winsys_gl_surface;
 
@@ -29,6 +30,11 @@ struct yagl_egl_onscreen_surface
      * when this surface is made current for the first time.
      */
     GLuint rb;
+
+    /*
+     * eglBindTexImage result.
+     */
+    struct yagl_client_tex_image *tex_image;
 };
 
 struct yagl_egl_onscreen_surface
