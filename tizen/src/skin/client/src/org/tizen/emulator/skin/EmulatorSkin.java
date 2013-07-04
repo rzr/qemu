@@ -774,35 +774,15 @@ public class EmulatorSkin {
 						communicator.sendToQEMU(
 								SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
-						removePressedKey(keyEventData);
+						removePressedKeyFromList(keyEventData);
 
 						disappearKeycode = 0;
 						disappearStateMask = 0;
 						disappearKeyLocation = 0;
 					}
 				}
-				else if (SwtUtil.isMacPlatform()) {
-					/* check multi-touch */
-					if (keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
-						int tempStateMask = stateMask & ~SWT.BUTTON1;
-						if (tempStateMask == (SWT.SHIFT | SWT.COMMAND)) {
-							finger.setMultiTouchEnable(1);
-							logger.info("enable multi-touch = mode1");
-						}
-						else {
-							finger.setMultiTouchEnable(0);
-							finger.clearFingerSlot();
-							logger.info("disable multi-touch");
-						}
-			                }
-		                }
 
-				KeyEventData keyEventData = new KeyEventData(
-						KeyEventType.RELEASED.value(), keyCode, stateMask, e.keyLocation);
-				communicator.sendToQEMU(
-						SendCommand.SEND_KEY_EVENT, keyEventData, false);
-
-				removePressedKey(keyEventData);
+				keyReleasedDelivery(keyCode, stateMask, e.keyLocation);
 			}
 
 			@Override
@@ -851,49 +831,12 @@ public class EmulatorSkin {
 								communicator.sendToQEMU(
 										SendCommand.SEND_KEY_EVENT, keyEventData, false);
 
-								removePressedKey(keyEventData);
+								removePressedKeyFromList(keyEventData);
 							}
 
 						}
 					}
-				} //end isWindowsPlatform
-				else if (SwtUtil.isMacPlatform()) {
-                //	if(finger.getMaxTouchPoint() > 1) {
-						int tempStateMask = stateMask & ~SWT.BUTTON1;
-						if ((keyCode == SWT.SHIFT && (tempStateMask & SWT.COMMAND) != 0) || 
-								(keyCode == SWT.COMMAND && (tempStateMask & SWT.SHIFT) != 0))
-						{
-							finger.setMultiTouchEnable(2);
-							/* add a finger before start the multi-touch processing
-							                if already exist the pressed touch in display */
-			                if (pressingX != -1 && pressingY != -1 &&
-			                		pressingOriginX != -1 && pressingOriginY != -1) {
-					              	finger.addFingerPoint(
-					                        pressingOriginX, pressingOriginY,
-					                        pressingX, pressingY);
-					                pressingX = pressingY = -1;
-					                pressingOriginX = pressingOriginY = -1;
-					        }
-							logger.info("enable multi-touch = mode2");
-						}
-						else if (keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
-							finger.setMultiTouchEnable(1);
-							/* add a finger before start the multi-touch processing
-							 * if already exist the pressed touch in display */
-							if (pressingX != -1 && pressingY != -1 &&
-									pressingOriginX != -1 && pressingOriginY != -1) {
-			                    	finger.addFingerPoint(
-			                    			pressingOriginX, pressingOriginY,			                       
-			                    			pressingX, pressingY);
-			                    	pressingX = pressingY = -1;
-			                    	pressingOriginX = pressingOriginY = -1;
-			                }
-							logger.info("enable multi-touch = mode1");
-						}
-                //	}
-				}
-
-				previous = e;
+				} /* end isWindowsPlatform */
 
 				if (logger.isLoggable(Level.INFO)) {
 					logger.info("'" + e.character + "':" +
@@ -902,12 +845,9 @@ public class EmulatorSkin {
 					logger.fine(e.toString());
 				}
 
-				KeyEventData keyEventData = new KeyEventData(
-						KeyEventType.PRESSED.value(), keyCode, stateMask, e.keyLocation);
-				communicator.sendToQEMU(
-						SendCommand.SEND_KEY_EVENT, keyEventData, false);
+				keyPressedDelivery(keyCode, stateMask, e.keyLocation);
 
-				addPressedKey(keyEventData);
+				previous = e;
 			}
 
 		};
@@ -962,6 +902,24 @@ public class EmulatorSkin {
 				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 	}
 
+	protected void keyReleasedDelivery(int keyCode, int stateMask, int keyLocation) {
+		KeyEventData keyEventData = new KeyEventData(
+				KeyEventType.RELEASED.value(), keyCode, stateMask, keyLocation);
+		communicator.sendToQEMU(
+				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+
+		removePressedKeyFromList(keyEventData);
+	}
+
+	protected void keyPressedDelivery(int keyCode, int stateMask, int keyLocation) {
+		KeyEventData keyEventData = new KeyEventData(
+				KeyEventType.PRESSED.value(), keyCode, stateMask, keyLocation);
+		communicator.sendToQEMU(
+				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+
+		addPressedKeyToList(keyEventData);
+	}
+
 	private boolean isMetaKey(int keyCode) {
 		if (SWT.CTRL == keyCode ||
 				SWT.ALT == keyCode ||
@@ -973,7 +931,7 @@ public class EmulatorSkin {
 		return false;
 	}
 
-	private synchronized boolean addPressedKey(KeyEventData pressData) {
+	protected synchronized boolean addPressedKeyToList(KeyEventData pressData) {
 		for (KeyEventData data : pressedKeyEventList) {
 			if (data.keycode == pressData.keycode &&
 					//data.stateMask == pressData.stateMask &&
@@ -986,7 +944,7 @@ public class EmulatorSkin {
 		return true;
 	}
 
-	private synchronized boolean removePressedKey(KeyEventData releaseData) {
+	protected synchronized boolean removePressedKeyFromList(KeyEventData releaseData) {
 
 		for (KeyEventData data : pressedKeyEventList) {
 			if (data.keycode == releaseData.keycode &&
@@ -1002,9 +960,6 @@ public class EmulatorSkin {
 	}
 
 	private void removeCanvasListeners() {
-//		if ( null != canvasDragDetectListener ) {
-//			lcdCanvas.removeDragDetectListener( canvasDragDetectListener );
-//		}
 		if (null != canvasMouseMoveListener) {
 			lcdCanvas.removeMouseMoveListener(canvasMouseMoveListener);
 		}

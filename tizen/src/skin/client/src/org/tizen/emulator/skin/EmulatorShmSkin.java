@@ -42,9 +42,11 @@ import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
@@ -368,6 +370,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 //		}
 	}
 
+	/* mouse event */
 	@Override
 	protected void mouseMoveDelivery(MouseEvent e, int eventType) {
 		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
@@ -458,6 +461,81 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		communicator.sendToQEMU(
 				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+	}
+
+	/* keyboard event */
+	@Override
+	protected void keyReleasedDelivery(int keyCode, int stateMask, int keyLocation) {
+		/* check multi-touch */
+		if (keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
+			int tempStateMask = stateMask & ~SWT.BUTTON1;
+
+			if (tempStateMask == (SWT.SHIFT | SWT.COMMAND)) {
+				finger.setMultiTouchEnable(1);
+
+				logger.info("enable multi-touch = mode1");
+			} else {
+				finger.setMultiTouchEnable(0);
+				finger.clearFingerSlot();
+
+				logger.info("disable multi-touch");
+			}
+		}
+
+		KeyEventData keyEventData = new KeyEventData(
+				KeyEventType.RELEASED.value(), keyCode, stateMask, keyLocation);
+		communicator.sendToQEMU(
+				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+
+		removePressedKeyFromList(keyEventData);
+	}
+
+	@Override
+	protected void keyPressedDelivery(int keyCode, int stateMask, int keyLocation) {
+		/* TODO: (finger.getMaxTouchPoint() > 1) */
+
+		int tempStateMask = stateMask & ~SWT.BUTTON1;
+
+		if ((keyCode == SWT.SHIFT && (tempStateMask & SWT.COMMAND) != 0) ||
+				(keyCode == SWT.COMMAND && (tempStateMask & SWT.SHIFT) != 0))
+		{
+			finger.setMultiTouchEnable(2);
+
+			/* add a finger before start the multi-touch processing
+			if already exist the pressed touch in display */
+			if (pressingX != -1 && pressingY != -1 &&
+					pressingOriginX != -1 && pressingOriginY != -1) {
+				finger.addFingerPoint(
+						pressingOriginX, pressingOriginY,
+						pressingX, pressingY);
+				pressingX = pressingY = -1;
+				pressingOriginX = pressingOriginY = -1;
+			}
+
+			logger.info("enable multi-touch = mode2");
+		} else if (keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
+			finger.setMultiTouchEnable(1);
+
+			/* add a finger before start the multi-touch processing
+			if already exist the pressed touch in display */
+			if (pressingX != -1 && pressingY != -1 &&
+					pressingOriginX != -1 && pressingOriginY != -1) {
+				finger.addFingerPoint(
+						pressingOriginX, pressingOriginY,
+						pressingX, pressingY);
+				pressingX = pressingY = -1;
+				pressingOriginX = pressingOriginY = -1;
+			}
+
+			logger.info("enable multi-touch = mode1");
+		}
+
+		KeyEventData keyEventData = new KeyEventData(
+				KeyEventType.PRESSED.value(), keyCode, stateMask, keyLocation);
+		communicator.sendToQEMU(
+				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+
+		addPressedKeyToList(keyEventData);
 	}
 
 	@Override
