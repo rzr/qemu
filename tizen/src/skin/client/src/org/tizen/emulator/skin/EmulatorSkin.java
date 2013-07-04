@@ -166,7 +166,7 @@ public class EmulatorSkin {
 
 	protected EmulatorSkinState currentState;
 
-	private boolean isDragStartedInLCD;
+	private boolean isDisplayDragging;
 	private boolean isShutdownRequested;
 	private boolean isAboutToReopen;
 	private boolean isOnTop;
@@ -197,8 +197,8 @@ public class EmulatorSkin {
 	private LinkedList<KeyEventData> pressedKeyEventList;
 
 	/* touch values */
-	private static int pressingX = -1, pressingY = -1;
-	private static int pressingOriginX = -1, pressingOriginY = -1;
+	protected static int pressingX = -1, pressingY = -1;
+	protected static int pressingOriginX = -1, pressingOriginY = -1;
 
 
 	private EmulatorSkin reopenSkin;
@@ -584,7 +584,7 @@ public class EmulatorSkin {
 				Menu menu = EmulatorSkin.this.contextMenu;
 				keyForceRelease(true);
 
-				if (menu != null && EmulatorSkin.this.isDragStartedInLCD == false) {
+				if (menu != null && isDisplayDragging == false) {
 					lcdCanvas.setMenu(menu);
 					menu.setVisible(true);
 					e.doit = false;
@@ -638,58 +638,33 @@ public class EmulatorSkin {
 		canvas.addDragDetectListener(canvasDragDetectListener);*/
 
 		canvasMouseMoveListener = new MouseMoveListener() {
-
 			@Override
-			public void mouseMove( MouseEvent e ) {
-				if ( true == EmulatorSkin.this.isDragStartedInLCD ) { //true = mouse down
+			public void mouseMove(MouseEvent e) {
+				if (true == isDisplayDragging) {
 					int eventType = MouseEventType.DRAG.value();
 					Point canvasSize = canvas.getSize();
 
-					if ( e.x < 0 ) {
+					if (e.x < 0) {
 						e.x = 0;
 						eventType = MouseEventType.RELEASE.value();
-						EmulatorSkin.this.isDragStartedInLCD = false;
-					} else if ( e.x >= canvasSize.x ) {
+						isDisplayDragging = false;
+					} else if (e.x >= canvasSize.x) {
 						e.x = canvasSize.x - 1;
 						eventType = MouseEventType.RELEASE.value();
-						EmulatorSkin.this.isDragStartedInLCD = false;
+						isDisplayDragging = false;
 					}
 
-					if ( e.y < 0 ) {
+					if (e.y < 0) {
 						e.y = 0;
 						eventType = MouseEventType.RELEASE.value();
-						EmulatorSkin.this.isDragStartedInLCD = false;
-					} else if ( e.y >= canvasSize.y ) {
+						isDisplayDragging = false;
+					} else if (e.y >= canvasSize.y) {
 						e.y = canvasSize.y - 1;
 						eventType = MouseEventType.RELEASE.value();
-						EmulatorSkin.this.isDragStartedInLCD = false;
+						isDisplayDragging = false;
 					}
 
-					int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
-							currentState.getCurrentResolutionWidth(),
-							currentState.getCurrentResolutionHeight(),
-							currentState.getCurrentScale(), currentState.getCurrentAngle());
-
-					if (SwtUtil.isMacPlatform()) {
-						//eventType = MouseEventType.DRAG.value();
-						if (finger.getMultiTouchEnable() == 1) {
-							finger.maruFingerProcessing1(eventType,
-									e.x, e.y, geometry[0], geometry[1]);
-							return;
-						}
-						else if (finger.getMultiTouchEnable() == 2) {
-							finger.maruFingerProcessing2(eventType,
-									e.x, e.y, geometry[0], geometry[1]);
-							return;
-						}
-					}
-	
-					MouseEventData mouseEventData = new MouseEventData(
-							MouseButtonType.LEFT.value(), eventType,
-							e.x, e.y, geometry[0], geometry[1], 0);
-
-					communicator.sendToQEMU(
-							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+					mouseMoveDelivery(e, eventType);
 				}
 			}
 		};
@@ -697,91 +672,31 @@ public class EmulatorSkin {
 		canvas.addMouseMoveListener(canvasMouseMoveListener);
 
 		canvasMouseListener = new MouseListener() {
-
 			@Override
 			public void mouseUp(MouseEvent e) {
-				if (1 == e.button) { /* left button */
-
-					int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
-							currentState.getCurrentResolutionWidth(),
-							currentState.getCurrentResolutionHeight(),
-							currentState.getCurrentScale(), currentState.getCurrentAngle());
-					logger.info("mouseUp in display" +
-							" x:" + geometry[0] + " y:" + geometry[1]);
-
-					if (true == EmulatorSkin.this.isDragStartedInLCD) {
-						EmulatorSkin.this.isDragStartedInLCD = false;
+				if (1 == e.button) /* left button */
+				{
+					if (true == isDisplayDragging) {
+						isDisplayDragging = false;
 					}
 
-					if (SwtUtil.isMacPlatform()) {
-						pressingX = pressingY = -1;
-						pressingOriginX = pressingOriginY = -1;
-						if (finger.getMultiTouchEnable() == 1) {
-							logger.info("maruFingerProcessing1");
-							finger.maruFingerProcessing1(MouseEventType.RELEASE.value(),
-									e.x, e.y, geometry[0], geometry[1]);
-							return;
-						}
-						else if (finger.getMultiTouchEnable() == 2) {
-							logger.info("maruFingerProcessing2");
-							finger.maruFingerProcessing2(MouseEventType.RELEASE.value(),
-									e.x, e.y, geometry[0], geometry[1]);
-							return;
-						}
-					}
-					
-					MouseEventData mouseEventData = new MouseEventData(
-							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
-							e.x, e.y, geometry[0], geometry[1], 0);
-
-					communicator.sendToQEMU(
-							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
-				} else if (2 == e.button) { /* wheel button */
+					mouseUpDelivery(e);
+				}
+				else if (2 == e.button) /* wheel button */
+				{
 					logger.info("wheelUp in display");
 				}
 			}
 
 			@Override
 			public void mouseDown(MouseEvent e) {
-				if (1 == e.button) { /* left button */
-
-					int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
-							currentState.getCurrentResolutionWidth(),
-							currentState.getCurrentResolutionHeight(),
-							currentState.getCurrentScale(), currentState.getCurrentAngle());
-					logger.info("mouseDown in display" +
-							" x:" + geometry[0] + " y:" + geometry[1]);
-
-					if (false == EmulatorSkin.this.isDragStartedInLCD) {
-						EmulatorSkin.this.isDragStartedInLCD = true;
+				if (1 == e.button) /* left button */
+				{
+					if (false == isDisplayDragging) {
+						isDisplayDragging = true;
 					}
 
-					if (SwtUtil.isMacPlatform()) {
-						pressingX = geometry[0];
-						pressingY = geometry[1];
-						pressingOriginX = e.x;
-						pressingOriginY = e.y;
-	
-						if (finger.getMultiTouchEnable() == 1) {
-							logger.info("maruFingerProcessing1");
-							finger.maruFingerProcessing1(MouseEventType.PRESS.value(),
-									e.x, e.y, geometry[0], geometry[1]);
-							return;
-						}
-						else if (finger.getMultiTouchEnable() == 2) {
-							logger.info("maruFingerProcessing2");
-							finger.maruFingerProcessing2(MouseEventType.PRESS.value(),
-									e.x, e.y, geometry[0], geometry[1]);
-							return;
-						}
-					}
-		
-					MouseEventData mouseEventData = new MouseEventData(
-							MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
-							e.x, e.y, geometry[0], geometry[1], 0);
-
-					communicator.sendToQEMU(
-							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+					mouseDownDelivery(e);
 				}
 			}
 
@@ -998,6 +913,53 @@ public class EmulatorSkin {
 		};
 
 		canvas.addKeyListener(canvasKeyListener);
+	}
+
+	/* for display */
+	protected void mouseMoveDelivery(MouseEvent e, int eventType) {
+		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(),
+				currentState.getCurrentScale(), currentState.getCurrentAngle());
+
+		MouseEventData mouseEventData = new MouseEventData(
+				MouseButtonType.LEFT.value(), eventType,
+				e.x, e.y, geometry[0], geometry[1], 0);
+
+		communicator.sendToQEMU(
+				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+	}
+
+	protected void mouseUpDelivery(MouseEvent e) {
+		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(),
+				currentState.getCurrentScale(), currentState.getCurrentAngle());
+		logger.info("mouseUp in display" +
+				" x:" + geometry[0] + " y:" + geometry[1]);
+
+		MouseEventData mouseEventData = new MouseEventData(
+				MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
+				e.x, e.y, geometry[0], geometry[1], 0);
+
+		communicator.sendToQEMU(
+				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+	}
+
+	protected void mouseDownDelivery(MouseEvent e) {
+		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(),
+				currentState.getCurrentScale(), currentState.getCurrentAngle());
+		logger.info("mouseDown in display" +
+				" x:" + geometry[0] + " y:" + geometry[1]);
+
+		MouseEventData mouseEventData = new MouseEventData(
+				MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
+				e.x, e.y, geometry[0], geometry[1], 0);
+
+		communicator.sendToQEMU(
+				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 	}
 
 	private boolean isMetaKey(int keyCode) {

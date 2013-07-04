@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Image;
@@ -41,7 +42,10 @@ import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
+import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
@@ -50,6 +54,7 @@ import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
 import org.tizen.emulator.skin.util.SkinUtil;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class EmulatorShmSkin extends EmulatorSkin {
 	public static final int RED_MASK = 0x00FF0000;
@@ -361,6 +366,98 @@ public class EmulatorShmSkin extends EmulatorSkin {
 //				}
 //			});
 //		}
+	}
+
+	@Override
+	protected void mouseMoveDelivery(MouseEvent e, int eventType) {
+		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(),
+				currentState.getCurrentScale(), currentState.getCurrentAngle());
+
+		//eventType = MouseEventType.DRAG.value();
+		if (finger.getMultiTouchEnable() == 1) {
+			finger.maruFingerProcessing1(eventType,
+					e.x, e.y, geometry[0], geometry[1]);
+			return;
+		} else if (finger.getMultiTouchEnable() == 2) {
+			finger.maruFingerProcessing2(eventType,
+					e.x, e.y, geometry[0], geometry[1]);
+			return;
+		}
+
+		MouseEventData mouseEventData = new MouseEventData(
+				MouseButtonType.LEFT.value(), eventType,
+				e.x, e.y, geometry[0], geometry[1], 0);
+
+		communicator.sendToQEMU(
+				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+	}
+
+	@Override
+	protected void mouseUpDelivery(MouseEvent e) {
+		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(),
+				currentState.getCurrentScale(), currentState.getCurrentAngle());
+		logger.info("mouseUp in display" +
+				" x:" + geometry[0] + " y:" + geometry[1]);
+
+		pressingX = pressingY = -1;
+		pressingOriginX = pressingOriginY = -1;
+
+		if (finger.getMultiTouchEnable() == 1) {
+			logger.info("maruFingerProcessing 1");
+			finger.maruFingerProcessing1(MouseEventType.RELEASE.value(),
+					e.x, e.y, geometry[0], geometry[1]);
+			return;
+		} else if (finger.getMultiTouchEnable() == 2) {
+			logger.info("maruFingerProcessing 2");
+			finger.maruFingerProcessing2(MouseEventType.RELEASE.value(),
+					e.x, e.y, geometry[0], geometry[1]);
+			return;
+		}
+
+		MouseEventData mouseEventData = new MouseEventData(
+				MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
+				e.x, e.y, geometry[0], geometry[1], 0);
+
+		communicator.sendToQEMU(
+				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+	}
+
+	@Override
+	protected void mouseDownDelivery(MouseEvent e) {
+		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
+				currentState.getCurrentResolutionWidth(),
+				currentState.getCurrentResolutionHeight(),
+				currentState.getCurrentScale(), currentState.getCurrentAngle());
+		logger.info("mouseDown in display" +
+				" x:" + geometry[0] + " y:" + geometry[1]);
+
+		pressingX = geometry[0];
+		pressingY = geometry[1];
+		pressingOriginX = e.x;
+		pressingOriginY = e.y;
+
+		if (finger.getMultiTouchEnable() == 1) {
+			logger.info("maruFingerProcessing 1");
+			finger.maruFingerProcessing1(MouseEventType.PRESS.value(),
+					e.x, e.y, geometry[0], geometry[1]);
+			return;
+		} else if (finger.getMultiTouchEnable() == 2) {
+			logger.info("maruFingerProcessing 2");
+			finger.maruFingerProcessing2(MouseEventType.PRESS.value(),
+					e.x, e.y, geometry[0], geometry[1]);
+			return;
+		}
+
+		MouseEventData mouseEventData = new MouseEventData(
+				MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
+				e.x, e.y, geometry[0], geometry[1], 0);
+
+		communicator.sendToQEMU(
+				SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 	}
 
 	@Override
