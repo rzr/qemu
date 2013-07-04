@@ -1932,36 +1932,6 @@ static CharDriverState *qemu_chr_open_win_con(void)
     return qemu_chr_open_win_file(GetStdHandle(STD_OUTPUT_HANDLE));
 }
 
-<<<<<<< HEAD
-static CharDriverState *qemu_chr_open_win_file_out(QemuOpts *opts)
-{
-    const char *file_out = qemu_opt_get(opts, "path");
-    HANDLE fd_out;
-
-#ifndef CONFIG_MARU
-    fd_out = CreateFile(file_out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-                        OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-#else
-	int open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
-
-	int ret = qemu_open(file_out, open_flags, 0644);
-	if (ret < 0) {
-		error_report("qemu_chr_open_win_file_out failed(%d) \n", ret);
-		return -errno;
-	}
-	fd_out = (HANDLE)_get_osfhandle(ret);
-
-#endif
-
-    if (fd_out == INVALID_HANDLE_VALUE) {
-        return NULL;
-    }
-
-    return qemu_chr_open_win_file(fd_out);
-}
-
-=======
->>>>>>> test1.5
 static int win_stdio_write(CharDriverState *chr, const uint8_t *buf, int len)
 {
     HANDLE  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -3550,12 +3520,25 @@ static CharDriverState *qmp_chardev_open_file(ChardevFile *file, Error **errp)
         return NULL;
     }
 
+#ifndef CONFIG_MARU
     out = CreateFile(file->out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
                      OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
+	int open_flags, ret;
+
+	open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
+	ret = qemu_open(file_out, open_flags, 0644);
+	if (ret < 0) {
+		error_report("qemu_chr_open_win_file_out failed(%d) \n", ret);
+		return -errno;
+	}
+	out = (HANDLE)_get_osfhandle(ret);
+#endif
     if (out == INVALID_HANDLE_VALUE) {
         error_setg(errp, "open %s failed", file->out);
         return NULL;
     }
+
     return qemu_chr_open_win_file(out);
 }
 

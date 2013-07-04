@@ -246,22 +246,6 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
 
     s->type = FTYPE_FILE;
 
-<<<<<<< HEAD
-#ifndef CONFIG_MARU
-    if (flags & BDRV_O_RDWR) {
-        access_flags = GENERIC_READ | GENERIC_WRITE;
-    } else {
-        access_flags = GENERIC_READ;
-    }
-
-    overlapped = FILE_ATTRIBUTE_NORMAL;
-    if (flags & BDRV_O_NOCACHE)
-        overlapped |= FILE_FLAG_NO_BUFFERING;
-    if (!(flags & BDRV_O_CACHE_WB))
-        overlapped |= FILE_FLAG_WRITE_THROUGH;
-    s->hfile = CreateFile(filename,
-                          access_flags,
-=======
     opts = qemu_opts_create_nofail(&raw_runtime_opts);
     qemu_opts_absorb_qdict(opts, options, &local_err);
     if (error_is_set(&local_err)) {
@@ -273,6 +257,7 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
 
     filename = qemu_opt_get(opts, "filename");
 
+#ifndef CONFIG_MARU
     raw_parse_flags(flags, &access_flags, &overlapped);
 
     if ((flags & BDRV_O_NATIVE_AIO) && aio == NULL) {
@@ -284,7 +269,6 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
     }
 
     s->hfile = CreateFile(filename, access_flags,
->>>>>>> test1.5
                           FILE_SHARE_READ, NULL,
                           OPEN_EXISTING, overlapped, NULL);
 	if (s->hfile == INVALID_HANDLE_VALUE) {
@@ -297,12 +281,11 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
         }
         goto fail;
     }
-
-<<<<<<< HEAD
 #else
 #include <errno.h>
-	int open_flags = O_BINARY;
-	open_flags &= ~O_ACCMODE;
+	int open_flags, ret;
+
+	open_flags = O_BINARY & ~O_ACCMODE;
 	if (flags & BDRV_O_RDWR) {
 		open_flags |= O_RDWR;
 	} else {
@@ -320,16 +303,22 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
 	}
 	*/
 
-	int ret = qemu_open(filename, open_flags, 0644);
+	if ((flags & BDRV_O_NATIVE_AIO) && aio == NULL) {
+		aio = win32_aio_init();
+		if (aio == NULL) {
+			ret = -EINVAL;
+			goto fail;
+		}
+	}
+
+	ret = qemu_open(filename, open_flags, 0644);
 	if (ret < 0) {
 		error_report("raw_open failed(%d) \n", ret);
 		return -errno;
 	}
 	s->hfile = (HANDLE)_get_osfhandle(ret);
-
 #endif
-       return 0;
-=======
+
     if (flags & BDRV_O_NATIVE_AIO) {
         ret = win32_aio_attach(aio, s->hfile);
         if (ret < 0) {
@@ -343,7 +332,6 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
 fail:
     qemu_opts_del(opts);
     return ret;
->>>>>>> test1.5
 }
 
 static BlockDriverAIOCB *raw_aio_readv(BlockDriverState *bs,
@@ -603,30 +591,12 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags)
     }
     s->type = find_device_type(bs, filename);
 
-<<<<<<< HEAD
 #ifndef CONFIG_MARU
-	if (flags & BDRV_O_RDWR) {
-        access_flags = GENERIC_READ | GENERIC_WRITE;
-    } else {
-        access_flags = GENERIC_READ;
-    }
-    create_flags = OPEN_EXISTING;
-
-    overlapped = FILE_ATTRIBUTE_NORMAL;
-    if (flags & BDRV_O_NOCACHE)
-        overlapped |= FILE_FLAG_NO_BUFFERING;
-    if (!(flags & BDRV_O_CACHE_WB))
-        overlapped |= FILE_FLAG_WRITE_THROUGH;
-
-    s->hfile = CreateFile(filename,
-                          access_flags,
-=======
     raw_parse_flags(flags, &access_flags, &overlapped);
 
     create_flags = OPEN_EXISTING;
 
     s->hfile = CreateFile(filename, access_flags,
->>>>>>> test1.5
                           FILE_SHARE_READ, NULL,
                           create_flags, overlapped, NULL);
 	if (s->hfile == INVALID_HANDLE_VALUE) {
@@ -636,7 +606,6 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags)
             return -EACCES;
         return -1;
     }
-
 #else
 	/*
     s->hfile = CreateFile(g_win32_locale_filename_from_utf8(filename),
@@ -671,9 +640,8 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags)
 		return -errno;
 	}
 	s->hfile = (HANDLE)_get_osfhandle(ret);
-
 #endif
-       return 0;
+    return 0;
 }
 
 static int hdev_has_zero_init(BlockDriverState *bs)
