@@ -205,6 +205,10 @@ static void* run_guest_server(void* args)
             parse_val(readbuf, 0x0a, command);
 
             TRACE("----------------------------------------\n");
+            if (strcmp(command, "2\n" ) == 0) {
+                TRACE("command:%s\n", command);
+                notify_sdb_daemon_start();
+            } 
             if (strcmp(command, "3\n" ) == 0) {
                 TRACE("command:%s\n", command);
                 notify_sensor_daemon_start();
