@@ -216,10 +216,7 @@ static int vigs_device_init(PCIDevice *dev)
     if (!strcmp(vigs_backend, "gl")) {
         backend = vigs_gl_backend_create(s->display);
     } else if (!strcmp(vigs_backend, "sw")) {
-        /*
-         * TODO: uncomment.
-         */
-        //backend = vigs_sw_backend_create();
+        backend = vigs_sw_backend_create();
     }
 
     if (!backend) {

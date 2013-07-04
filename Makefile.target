@@ -325,7 +325,7 @@ obj-y += vigs_utils.o
 obj-y += vigs_vector.o
 obj-y += vigs_ref.o
 obj-y += vigs_gl_backend.o
-#obj-y += vigs_sw_backend.o
+obj-y += vigs_sw_backend.o
 # GL GLX backend
 ifdef CONFIG_LINUX
 obj-y += vigs_gl_backend_glx.o
