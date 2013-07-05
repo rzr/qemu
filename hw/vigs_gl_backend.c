@@ -281,6 +281,15 @@ static void vigs_winsys_gl_surface_orphan(struct vigs_winsys_gl_surface *sfc)
  * @}
  */
 
+static void vigs_gl_backend_batch_start(struct vigs_backend *backend)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)backend;
+
+    if (!gl_backend->make_current(gl_backend, true)) {
+        VIGS_LOG_CRITICAL("make_current failed");
+    }
+}
+
 /*
  * vigs_gl_surface.
  * @{
@@ -302,10 +311,6 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
 
     VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
                    x, y, width, height);
-
-    if (!gl_backend->make_current(gl_backend, true)) {
-        return;
-    }
 
     if (!ws_sfc->tex) {
         VIGS_LOG_TRACE("skipping blank read");
@@ -384,8 +389,6 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
 
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    gl_backend->make_current(gl_backend, false);
 }
 
 static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
@@ -397,10 +400,6 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
     struct vigs_gl_surface *gl_sfc = (struct vigs_gl_surface*)sfc;
     struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
     uint32_t i;
-
-    if (!gl_backend->make_current(gl_backend, true)) {
-        return;
-    }
 
     if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
         goto out;
@@ -441,12 +440,8 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
                                pixels);
     }
 
-    gl_backend->Finish();
-
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    gl_backend->make_current(gl_backend, false);
 }
 
 static void vigs_gl_surface_copy(struct vigs_surface *dst,
@@ -464,10 +459,6 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     GLfloat dst_h;
     GLfloat *vert_coords;
     GLfloat *tex_coords;
-
-    if (!gl_backend->make_current(gl_backend, true)) {
-        return;
-    }
 
     if (!vigs_winsys_gl_surface_create_texture(ws_dst, &ws_dst->tex)) {
         goto out;
@@ -624,12 +615,8 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     gl_backend->DisableClientState(GL_TEXTURE_COORD_ARRAY);
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
-    gl_backend->Finish();
-
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    gl_backend->make_current(gl_backend, false);
 }
 
 static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
@@ -643,10 +630,6 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
     uint32_t i;
     GLubyte red, green, blue, alpha;
     GLfloat sfc_h;
-
-    if (!gl_backend->make_current(gl_backend, true)) {
-        return;
-    }
 
     if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
         goto out;
@@ -700,12 +683,8 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
 
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
-    gl_backend->Finish();
-
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    gl_backend->make_current(gl_backend, false);
 }
 
 static void vigs_gl_surface_destroy(struct vigs_surface *sfc)
@@ -716,15 +695,11 @@ static void vigs_gl_surface_destroy(struct vigs_surface *sfc)
 
     vigs_winsys_gl_surface_orphan(ws_sfc);
 
-    if (gl_backend->make_current(gl_backend, true)) {
-        if (gl_sfc->fb) {
-            gl_backend->DeleteFramebuffers(1, &gl_sfc->fb);
-        }
-        if (gl_sfc->tmp_tex) {
-            gl_backend->DeleteTextures(1, &gl_sfc->tmp_tex);
-        }
-
-        gl_backend->make_current(gl_backend, false);
+    if (gl_sfc->fb) {
+        gl_backend->DeleteFramebuffers(1, &gl_sfc->fb);
+    }
+    if (gl_sfc->tmp_tex) {
+        gl_backend->DeleteTextures(1, &gl_sfc->tmp_tex);
     }
 
     vigs_surface_cleanup(&gl_sfc->base);
@@ -811,6 +786,14 @@ fail:
     return NULL;
 }
 
+static void vigs_gl_backend_batch_end(struct vigs_backend *backend)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)backend;
+
+    gl_backend->Finish();
+    gl_backend->make_current(gl_backend, false);
+}
+
 bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
 {
     const char *extensions;
@@ -865,7 +848,9 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
      * @}
      */
 
+    gl_backend->base.batch_start = &vigs_gl_backend_batch_start;
     gl_backend->base.create_surface = &vigs_gl_backend_create_surface;
+    gl_backend->base.batch_end = &vigs_gl_backend_batch_end;
 
     gl_backend->make_current(gl_backend, false);
 

@@ -47,8 +47,26 @@ static struct winsys_surface
     return res->ws_sfc;
 }
 
+static void vigs_server_end_batch(struct vigs_server *server)
+{
+    if (server->in_batch) {
+        server->backend->batch_end(server->backend);
+
+        server->in_batch = false;
+    }
+}
+
 static void vigs_server_dispatch_batch_start(void *user_data)
 {
+    struct vigs_server *server = user_data;
+
+    server->in_batch = false;
+
+    if (server->initialized) {
+        server->backend->batch_start(server->backend);
+
+        server->in_batch = true;
+    }
 }
 
 static bool vigs_server_dispatch_init(void *user_data)
@@ -95,6 +113,8 @@ static void vigs_server_dispatch_exit(void *user_data)
         VIGS_LOG_ERROR("not initialized");
         return;
     }
+
+    vigs_server_end_batch(server);
 
     vigs_server_reset(server);
 }
@@ -318,6 +338,9 @@ static void vigs_server_dispatch_solid_fill(void *user_data,
 
 static void vigs_server_dispatch_batch_end(void *user_data)
 {
+    struct vigs_server *server = user_data;
+
+    vigs_server_end_batch(server);
 }
 
 static struct vigs_comm_ops vigs_server_dispatch_ops =
@@ -393,6 +416,8 @@ void vigs_server_reset(struct vigs_server *server)
     GHashTableIter iter;
     gpointer key, value;
 
+    server->backend->batch_start(server->backend);
+
     g_hash_table_iter_init(&iter, server->surfaces);
     while (g_hash_table_iter_next(&iter, &key, &value)) {
         struct vigs_surface *sfc = value;
@@ -401,6 +426,8 @@ void vigs_server_reset(struct vigs_server *server)
 
         g_hash_table_iter_remove(&iter);
     }
+
+    server->backend->batch_end(server->backend);
 
     server->root_sfc = NULL;
     server->root_sfc_data = NULL;
@@ -428,12 +455,14 @@ void vigs_server_update_display(struct vigs_server *server)
     }
 
     if (root_sfc->is_dirty) {
+        server->backend->batch_start(server->backend);
         root_sfc->read_pixels(root_sfc,
                               0,
                               0,
                               root_sfc->ws_sfc->width,
                               root_sfc->ws_sfc->height,
                               sfc_data);
+        server->backend->batch_end(server->backend);
         root_sfc->is_dirty = false;
     }
 

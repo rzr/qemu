@@ -60,6 +60,8 @@ struct vigs_server
     struct vigs_surface *root_sfc;
     uint8_t *root_sfc_data;
 
+    bool in_batch;
+
     /*
      * General purpose vectors.
      * @{

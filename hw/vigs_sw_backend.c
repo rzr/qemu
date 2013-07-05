@@ -68,6 +68,10 @@ static struct vigs_winsys_sw_surface
  * @}
  */
 
+static void vigs_sw_backend_batch_start(struct vigs_backend *backend)
+{
+}
+
 /*
  * vigs_sw_surface.
  * @{
@@ -296,6 +300,10 @@ static struct vigs_surface *vigs_sw_backend_create_surface(struct vigs_backend *
     return &sw_sfc->base;
 }
 
+static void vigs_sw_backend_batch_end(struct vigs_backend *backend)
+{
+}
+
 static void vigs_sw_backend_destroy(struct vigs_backend *backend)
 {
     vigs_backend_cleanup(backend);
@@ -310,7 +318,9 @@ struct vigs_backend *vigs_sw_backend_create(void)
 
     vigs_backend_init(backend, NULL);
 
+    backend->batch_start = &vigs_sw_backend_batch_start;
     backend->create_surface = &vigs_sw_backend_create_surface;
+    backend->batch_end = &vigs_sw_backend_batch_end;
     backend->destroy = &vigs_sw_backend_destroy;
 
     return backend;

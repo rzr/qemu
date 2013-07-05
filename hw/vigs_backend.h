@@ -10,12 +10,16 @@ struct vigs_backend
 {
     struct winsys_info *ws_info;
 
+    void (*batch_start)(struct vigs_backend */*backend*/);
+
     struct vigs_surface *(*create_surface)(struct vigs_backend */*backend*/,
                                            uint32_t /*width*/,
                                            uint32_t /*height*/,
                                            uint32_t /*stride*/,
                                            vigsp_surface_format /*format*/,
                                            vigsp_surface_id /*id*/);
+
+    void (*batch_end)(struct vigs_backend */*backend*/);
 
     void (*destroy)(struct vigs_backend */*backend*/);
 };
