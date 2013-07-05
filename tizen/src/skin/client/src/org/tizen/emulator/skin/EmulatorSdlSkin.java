@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -49,9 +49,9 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorSdlSkin(EmulatorSkinState state, EmulatorFingers finger,
+	public EmulatorSdlSkin(EmulatorSkinState state,
 			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
-		super(state, finger, config, skinInfo, SWT.EMBEDDED, isOnTop);
+		super(state, config, skinInfo, SWT.EMBEDDED, isOnTop);
 	}
 
 	public long initLayout() {

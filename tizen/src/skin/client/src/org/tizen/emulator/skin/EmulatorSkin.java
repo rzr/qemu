@@ -156,7 +156,6 @@ public class EmulatorSkin {
 			SkinLogger.getSkinLogger(EmulatorSkin.class).getLogger();
 
 	protected EmulatorConfig config;
-	protected EmulatorFingers finger;
 	protected Shell shell;
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
@@ -208,10 +207,9 @@ public class EmulatorSkin {
 	 * @param config : configuration of emulator skin
 	 * @param isOnTop : always on top flag
 	*/
-	protected EmulatorSkin(EmulatorSkinState state, EmulatorFingers finger,
+	protected EmulatorSkin(EmulatorSkinState state,
 			EmulatorConfig config, SkinInformation skinInfo,
 			int displayCanvasStyle, boolean isOnTop) {
-		this.finger = finger;
 		this.config = config;
 		this.skinInfo = skinInfo;
 
@@ -242,7 +240,6 @@ public class EmulatorSkin {
 
 	public void setCommunicator(SocketCommunicator communicator) {
 		this.communicator = communicator;
-		this.finger.setCommunicator(this.communicator);
 	}
 
 	private void setColorVM() {

@@ -67,6 +67,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	private static Logger logger = SkinLogger.getSkinLogger(
 			EmulatorShmSkin.class).getLogger();
 
+	private EmulatorFingers finger;
+	private int multiTouchKey;
+	private int multiTouchKeySub;
+
 	static {
 		/* load JNI library file */
 		try {
@@ -200,24 +204,33 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorShmSkin(EmulatorSkinState state, EmulatorFingers finger,
+	public EmulatorShmSkin(EmulatorSkinState state,
 			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
-		super(state, finger, config, skinInfo, SWT.NONE, isOnTop);
+		super(state, config, skinInfo, SWT.NONE, isOnTop);
+
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 	}
 
 	protected void skinFinalize() {
 		pollThread.stopRequest();
 
-		super.finger.setMultiTouchEnable(0);
-		super.finger.clearFingerSlot();
-		super.finger.cleanup_multiTouchState();
+		finger.setMultiTouchEnable(0);
+		finger.clearFingerSlot();
+		finger.cleanup_multiTouchState();
 
 		super.skinFinalize();
 	}
 
 	public long initLayout() {
 		super.initLayout();
+
+		finger = new EmulatorFingers(currentState, communicator);
+		if (SwtUtil.isMacPlatform() == true) {
+			multiTouchKey = SWT.COMMAND;
+		} else {
+			multiTouchKey = SWT.CTRL;
+		}
+		multiTouchKeySub = SWT.SHIFT;
 
 		/* base + 1 = sdb port */
 		/* base + 2 = shared memory key */
@@ -467,10 +480,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	@Override
 	protected void keyReleasedDelivery(int keyCode, int stateMask, int keyLocation) {
 		/* check multi-touch */
-		if (keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
+		if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
 			int tempStateMask = stateMask & ~SWT.BUTTON1;
 
-			if (tempStateMask == (SWT.SHIFT | SWT.COMMAND)) {
+			if (tempStateMask == (multiTouchKeySub | multiTouchKey)) {
 				finger.setMultiTouchEnable(1);
 
 				logger.info("enable multi-touch = mode1");
@@ -496,8 +509,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		int tempStateMask = stateMask & ~SWT.BUTTON1;
 
-		if ((keyCode == SWT.SHIFT && (tempStateMask & SWT.COMMAND) != 0) ||
-				(keyCode == SWT.COMMAND && (tempStateMask & SWT.SHIFT) != 0))
+		if ((keyCode == multiTouchKeySub && (tempStateMask & multiTouchKey) != 0) ||
+				(keyCode == multiTouchKey && (tempStateMask & multiTouchKeySub) != 0))
 		{
 			finger.setMultiTouchEnable(2);
 
@@ -513,7 +526,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			}
 
 			logger.info("enable multi-touch = mode2");
-		} else if (keyCode == SWT.SHIFT || keyCode == SWT.COMMAND) {
+		} else if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
 			finger.setMultiTouchEnable(1);
 
 			/* add a finger before start the multi-touch processing
