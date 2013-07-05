@@ -325,9 +325,16 @@ typedef struct {
     QGloSurface **pending_qsurfaces;
     int nb_qsurf;
 
-    int nfbconfig;
+    /* Number of FB configs sets allocated on behalf of this process */
+	int nfbconfig;
+	
+	/* Array of FB configs sets */
     const GLXFBConfig *fbconfigs[MAX_FBCONFIG];
+	
+	/* Number of FB configs per set */
     int fbconfigs_max[MAX_FBCONFIG];
+	
+	/* Total number of FB configs allocated on behalf of this process */
     int nfbconfig_total;
 
     int primitive;
@@ -873,14 +880,20 @@ static int get_server_list(ProcessState *process, unsigned int client_list)
 const GLXFBConfig *get_fbconfig(ProcessState *process, int client_fbconfig)
 {
     int i;
+	
+	/* The client_fbconfig returned to upper layers is 1 + the index of the
+	 * fb config in the set that contains it, + the number of fb configs
+	 * store in previously allocated sets. */
     int nbtotal = 0;
 
-    for (i = 0; i < process->nfbconfig; i++) {
-        assert(client_fbconfig >= 1 + nbtotal);
+    /* For each set */
+	for (i = 0; i < process->nfbconfig; i++) {
+		/* If the fb config is stored within this set, return it */
         if (client_fbconfig <= nbtotal + process->fbconfigs_max[i]) {
             return &process->fbconfigs[i][client_fbconfig - 1 - nbtotal];
         }
-        nbtotal += process->fbconfigs_max[i];
+        /* Otherwise proceed to next set */
+		nbtotal += process->fbconfigs_max[i];
     }
     return 0;
 }
@@ -1435,6 +1448,51 @@ static void mac_dump_texture()
 }
 #endif
 
+int record_fbconfig_set (ProcessState *process, const GLXFBConfig* fbconfigs, int nconfigs)
+{
+	int i;
+	int id;
+	int previous_entries = 0;
+
+	if (!fbconfigs)
+			return 0;
+		
+	/* Check if we already have a similar set in our tables */
+	for (i=0; i<process->nfbconfig; i++)
+	{
+		if (process->fbconfigs_max[i] == nconfigs &&
+				!memcmp(fbconfigs, process->fbconfigs[i], sizeof(GLXFBConfig) * nconfigs))
+		{
+			/* No need to store this set as it's identical to another one */
+			// XFree(fbconfigs);
+			
+			/* Return the identifier of the previously allocated set matching the query */
+			id = previous_entries + 1;
+			return id;
+		}
+		else
+			previous_entries += process->fbconfigs_max[i];		
+	}
+
+	/* Check if we have room for a new set */
+	if (process->nfbconfig >= MAX_FBCONFIG)
+	{
+		fprintf(stderr, "[%s]:%d Too many FB configs allocated for this process\n", __FUNCTION__, __LINE__);
+		// XFree(fbconfigs);
+		return 0;
+	}
+	
+	/* Store new set - this block should be released using XFree on process exit */
+	process->fbconfigs[process->nfbconfig] = fbconfigs;
+	process->fbconfigs_max[process->nfbconfig] = nconfigs;
+	process->nfbconfig++;
+	process->nfbconfig_total += nconfigs;
+	
+	id = previous_entries + 1;
+	return id;
+}	
+	
+
 int do_function_call(ProcessState *process, int func_number, unsigned long *args, char *ret_string)
 {
     union gl_ret_type ret;
@@ -1838,47 +1896,31 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
     case glXChooseFBConfig_func:
         {
-            if (process->nfbconfig >= MAX_FBCONFIG) {
-				fprintf(stderr, "[%s]:%d Request FB configs error, excceed the MAX FBCONFIG of one process, return NULL!\n", __FUNCTION__, __LINE__);
-                *(int *) args[3] = 0;
-                ret.i = 0;
-            } else {
-                const GLXFBConfig *fbconfigs =
-                    glXChooseFBConfigFunc(args[1], (int *) args[2], (int *) args[3]);
-                if (fbconfigs) {
-                    process->fbconfigs[process->nfbconfig] = fbconfigs;
-                    process->fbconfigs_max[process->nfbconfig] =
-                        *(int *) args[3];
-                    process->nfbconfig++;
-                    ret.i = 1 + process->nfbconfig_total;
-                    process->nfbconfig_total +=
-                        process->fbconfigs_max[process->nfbconfig];
-                } else {
-                    ret.i = 0;
-                }
-            }
-            break;
-        }
+			/* Retrieve array of FB configs matching our contraints */
+			const GLXFBConfig *fbconfigs = glXChooseFBConfigFunc(args[1], (int *) args[2], (int *) args[3]);
+			
+			/* Record this in our tables and return a client-side identifier for the first entry in the array */
+			ret.i = record_fbconfig_set(process, fbconfigs, *(int *) args[3]);
+			
+			/* Zero indicates failure */
+			if (ret.i == 0)
+				*(int *) args[3] = 0;
+				
+			break;
+		}
+			
     case glXGetFBConfigs_func:
         {
-            if (process->nfbconfig == MAX_FBCONFIG) {
-                *(int *) args[2] = 0;
-                ret.i = 0;
-            } else {
-                const GLXFBConfig *fbconfigs =
-                    glXGetFBConfigsFunc(args[1], (int *) args[2]);
-                if (fbconfigs) {
-                    process->fbconfigs[process->nfbconfig] = fbconfigs;
-                    process->fbconfigs_max[process->nfbconfig] =
-                        *(int *) args[2];
-                    process->nfbconfig++;
-                    ret.i = 1 + process->nfbconfig_total;
-                    process->nfbconfig_total +=
-                        process->fbconfigs_max[process->nfbconfig];
-                } else {
-                    ret.i = 0;
-                }
-            }
+			/* Retrieve array of available FB configs */
+			const GLXFBConfig *fbconfigs = glXGetFBConfigsFunc(args[1], (int *) args[2]);
+			
+			/* Record this in our tables and return a client-side identifier for the first entry in the array */
+			ret.i = record_fbconfig_set(process, fbconfigs, *(int *) args[2]);
+			
+			/* Zero indicates failure */
+			if (ret.i == 0)
+				*(int *) args[2] = 0;
+				
             break;
         }
     case glXGetFBConfigAttrib_func:
