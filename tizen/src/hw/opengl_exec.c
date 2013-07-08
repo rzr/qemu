@@ -2105,6 +2105,10 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             /* glXPixmap same as input Pixmap */
             ClientGLXDrawable client_drawable = to_drawable(args[1]);
             QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
+            if (qsurface->glstate != NULL) {
+                unbind_qsurface(qsurface->glstate, qsurface);
+            }
+
             if ( qsurface &&
                  qsurface != process->current_state->current_qsurface &&
                  qsurface->glstate == NULL &&
