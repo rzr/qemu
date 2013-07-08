@@ -191,7 +191,11 @@ static void vga_class_init(ObjectClass *klass, void *data)
 
     k->no_hotplug = 1;
     k->init = pci_std_vga_initfn;
+#ifdef CONFIG_MARU
+    k->romfile = "vgabios-maruvga.bin";
+#else
     k->romfile = "vgabios-stdvga.bin";
+#endif
     k->vendor_id = PCI_VENDOR_ID_QEMU;
     k->device_id = PCI_DEVICE_ID_QEMU_VGA;
     k->class_id = PCI_CLASS_DISPLAY_VGA;
@@ -200,7 +204,11 @@ static void vga_class_init(ObjectClass *klass, void *data)
 }
 
 static const TypeInfo vga_info = {
+#ifdef CONFIG_MARU
+    .name          = "MARU_VGA",
+#else
     .name          = "VGA",
+#endif
     .parent        = TYPE_PCI_DEVICE,
     .instance_size = sizeof(PCIVGAState),
     .class_init    = vga_class_init,

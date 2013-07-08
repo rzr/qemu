@@ -56,6 +56,11 @@
 #include "hw/cpu/icc_bus.h"
 #include "hw/boards.h"
 
+#ifdef CONFIG_MARU
+#include "../../tizen/src/hw/maru_overlay.h"
+#include "../../tizen/src/hw/maru_brightness.h"
+#include "../../tizen/src/maru_err_table.h"
+#endif
 /* debug PC/ISA interrupts */
 //#define DEBUG_IRQ
 
@@ -698,6 +703,16 @@ static void load_linux(void *fw_cfg,
         MIN(ARRAY_SIZE(header), kernel_size)) {
         fprintf(stderr, "qemu: could not load kernel '%s': %s\n",
                 kernel_filename, strerror(errno));
+
+#ifdef CONFIG_MARU
+        char *error_msg = NULL;
+
+        error_msg = maru_convert_path(error_msg, kernel_filename);
+        maru_register_exit_msg(MARU_EXIT_KERNEL_FILE_EXCEPTION, error_msg);
+        if (error_msg) {
+            g_free(error_msg);
+        }
+#endif
         exit(1);
     }
 
@@ -1091,6 +1106,12 @@ DeviceState *pc_vga_init(ISABus *isa_bus, PCIBus *pci_bus)
     if (pci_bus) {
         PCIDevice *pcidev = pci_vga_init(pci_bus);
         dev = pcidev ? &pcidev->qdev : NULL;
+#ifdef CONFIG_MARU
+        if (maru_vga_enabled) {
+            pci_maru_overlay_init(pci_bus);
+            pci_maru_brightness_init(pci_bus);
+        }
+#endif
     } else if (isa_bus) {
         ISADevice *isadev = isa_vga_init(isa_bus);
         dev = isadev ? &isadev->qdev : NULL;

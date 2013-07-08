@@ -34,6 +34,7 @@ void audio_init(void);
 int tcg_available(void);
 int kvm_available(void);
 int xen_available(void);
+int hax_available(void);
 
 CpuDefinitionInfoList *arch_query_cpu_definitions(Error **errp);
 

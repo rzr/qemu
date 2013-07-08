@@ -326,6 +326,14 @@ static struct addrinfo *inet_parse_connect_opts(QemuOpts *opts, Error **errp)
         ai.ai_family = PF_INET6;
     }
 
+#ifdef CONFIG_MARU
+    // for lookup loopback interface...
+    if (addr[0] == '\0') {
+        ai.ai_flags = 0;
+        addr = NULL;
+    }
+#endif
+
     /* lookup */
     rc = getaddrinfo(addr, port, &ai, &res);
     if (rc != 0) {

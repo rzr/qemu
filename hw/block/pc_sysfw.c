@@ -34,6 +34,10 @@
 #include "hw/block/flash.h"
 #include "sysemu/kvm.h"
 
+#ifdef CONFIG_MARU
+#include "../../tizen/src/maru_err_table.h"
+#endif
+
 #define BIOS_FILENAME "bios.bin"
 
 typedef struct PcSysFwDevice {
@@ -139,6 +143,10 @@ static void pc_system_flash_init(MemoryRegion *rom_memory,
     pc_isa_bios_init(rom_memory, flash_mem, size);
 }
 
+#ifdef CONFIG_MARU
+extern char* qemu_get_data_dir(void);
+#endif
+
 static void old_pc_system_rom_init(MemoryRegion *rom_memory)
 {
     char *filename;
@@ -168,6 +176,28 @@ static void old_pc_system_rom_init(MemoryRegion *rom_memory)
     if (ret != 0) {
     bios_error:
         fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
+#ifdef CONFIG_MARU
+        char *error_msg = NULL;
+        const char *path = qemu_get_data_dir();
+        char *bios_path = NULL;
+        int bios_len = 0;
+
+        bios_len = strlen(path) + strlen("/") + strlen(bios_name) + 1;
+        bios_path = g_malloc(bios_len * sizeof(char));
+        if (!bios_path) {
+            fprintf(stderr, "qemu: failed to allocate memory\n");
+        }
+        snprintf(bios_path, bios_len, "%s/%s", path, bios_name);
+        error_msg = maru_convert_path(error_msg, bios_path);
+        maru_register_exit_msg(MARU_EXIT_BIOS_FILE_EXCEPTION, error_msg);
+
+        if (bios_path) {
+            g_free(bios_path);
+        }
+        if (error_msg) {
+            g_free(error_msg);
+        }
+#endif
         exit(1);
     }
     if (filename) {

@@ -26,6 +26,11 @@
 #include "ui/console.h"
 #include "sysemu/sysemu.h"
 
+#ifdef CONFIG_MARU
+/* to guarantee safe serialization of input event by Munkyu Im */
+#include "qemu/thread.h"
+static QemuMutex mutex;
+#endif
 /* debug PC keyboard */
 //#define DEBUG_KBD
 
@@ -379,7 +384,14 @@ static void ps2_mouse_event(void *opaque,
         for(;;) {
             /* if not remote, send event. Multiple events are sent if
                too big deltas */
+#ifdef CONFIG_MARU
+/* to guarantee safe serialization of input event by Munkyu Im */
+            qemu_mutex_lock(&mutex);
             ps2_mouse_send_packet(s);
+            qemu_mutex_unlock(&mutex);
+#else
+            ps2_mouse_send_packet(s);
+#endif
             if (s->mouse_dx == 0 && s->mouse_dy == 0 && s->mouse_dz == 0)
                 break;
         }
@@ -658,7 +670,11 @@ void *ps2_kbd_init(void (*update_irq)(void *, int), void *update_arg)
     s->common.update_arg = update_arg;
     s->scancode_set = 2;
     vmstate_register(NULL, 0, &vmstate_ps2_keyboard, s);
+#ifdef CONFIG_MARU
+    qemu_add_ps2kbd_event_handler(ps2_put_keycode, s);
+#else
     qemu_add_kbd_event_handler(ps2_put_keycode, s);
+#endif
     qemu_register_reset(ps2_kbd_reset, s);
     return s;
 }
@@ -672,5 +688,9 @@ void *ps2_mouse_init(void (*update_irq)(void *, int), void *update_arg)
     vmstate_register(NULL, 0, &vmstate_ps2_mouse, s);
     qemu_add_mouse_event_handler(ps2_mouse_event, s, 0, "QEMU PS/2 Mouse");
     qemu_register_reset(ps2_mouse_reset, s);
+#ifdef CONFIG_MARU
+    /* to guarantee safe serialization of input event by Munkyu Im */
+    qemu_mutex_init(&mutex);
+#endif
     return s;
 }

@@ -2134,6 +2134,13 @@ static bool qxl_vga_available(void)
     return object_class_by_name("qxl-vga");
 }
 
+#ifdef CONFIG_MARU
+static bool maru_vga_available(void)
+{
+    return object_class_by_name("MARU_VGA");
+}
+#endif
+
 static void select_vgahw (const char *p)
 {
     const char *opts;
@@ -2171,7 +2178,12 @@ static void select_vgahw (const char *p)
         }
 #ifdef CONFIG_MARU
     } else if (strstart(p, "maru", &opts)) {
-        vga_interface_type = VGA_MARU;
+        if (maru_vga_available()) {
+            vga_interface_type = VGA_MARU;
+        } else {
+            fprintf(stderr, "Error: MARU VGA not available\n");
+            exit(0);
+        }
 #endif
     } else if (!strstart(p, "none", &opts)) {
     invalid_vga:

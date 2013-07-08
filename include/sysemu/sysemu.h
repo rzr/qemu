@@ -92,6 +92,9 @@ typedef enum DisplayType
     DT_SDL,
     DT_GTK,
     DT_NOGRAPHIC,
+#ifdef CONFIG_MARU
+    DT_MARU,
+#endif
     DT_NONE,
 } DisplayType;
 
@@ -99,11 +102,17 @@ extern int autostart;
 
 typedef enum {
     VGA_NONE, VGA_STD, VGA_CIRRUS, VGA_VMWARE, VGA_XENFB, VGA_QXL,
+#ifdef CONFIG_MARU
+    VGA_MARU,
+#endif
 } VGAInterfaceType;
 
 extern int vga_interface_type;
 #define xenfb_enabled (vga_interface_type == VGA_XENFB)
 #define qxl_enabled (vga_interface_type == VGA_QXL)
+#ifdef CONFIG_MARU
+#define maru_vga_enabled (vga_interface_type == VGA_MARU)
+#endif
 
 extern int graphic_width;
 extern int graphic_height;
@@ -146,6 +155,9 @@ extern const char *prom_envs[MAX_PROM_ENVS];
 extern unsigned int nb_prom_envs;
 
 /* pci-hotplug */
+#ifdef CONFIG_MARU
+PCIDevice *pci_device_hot_add(Monitor *mon, const QDict *qdict);
+#endif
 void pci_device_hot_add(Monitor *mon, const QDict *qdict);
 int pci_drive_hot_add(Monitor *mon, const QDict *qdict, DriveInfo *dinfo);
 void do_pci_device_hot_remove(Monitor *mon, const QDict *qdict);

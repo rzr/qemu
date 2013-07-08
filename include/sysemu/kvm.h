@@ -250,6 +250,9 @@ int kvm_check_extension(KVMState *s, unsigned int extension);
 uint32_t kvm_arch_get_supported_cpuid(KVMState *env, uint32_t function,
                                       uint32_t index, int reg);
 void kvm_cpu_synchronize_state(CPUArchState *env);
+#ifdef CONFIG_HAX
+void hax_cpu_synchronize_state(CPUArchState *env);
+#endif
 
 /* generic hooks - to be moved/refactored once there are more users */
 
@@ -258,6 +261,9 @@ static inline void cpu_synchronize_state(CPUArchState *env)
     if (kvm_enabled()) {
         kvm_cpu_synchronize_state(env);
     }
+#ifdef CONFIG_HAX
+    hax_cpu_synchronize_state(env);
+#endif
 }
 
 #if !defined(CONFIG_USER_ONLY)
@@ -269,12 +275,20 @@ int kvm_physical_memory_addr_from_host(KVMState *s, void *ram_addr,
 
 void kvm_cpu_synchronize_post_reset(CPUState *cpu);
 void kvm_cpu_synchronize_post_init(CPUState *cpu);
+#ifdef CONFIG_HAX
+void hax_cpu_synchronize_post_reset(CPUArchState *env);
+void hax_cpu_synchronize_post_init(CPUArchState *env);
+#endif
 
 static inline void cpu_synchronize_post_reset(CPUState *cpu)
 {
     if (kvm_enabled()) {
         kvm_cpu_synchronize_post_reset(cpu);
     }
+#ifdef CONFIG_HAX
+    CPUArchState *env = cpu->env_ptr;
+    hax_cpu_synchronize_post_reset(env);
+#endif
 }
 
 static inline void cpu_synchronize_post_init(CPUState *cpu)
@@ -282,6 +296,10 @@ static inline void cpu_synchronize_post_init(CPUState *cpu)
     if (kvm_enabled()) {
         kvm_cpu_synchronize_post_init(cpu);
     }
+#ifdef CONFIG_HAX
+    CPUArchState *env = cpu->env_ptr;
+    hax_cpu_synchronize_post_init(env);
+#endif
 }
 
 int kvm_irqchip_add_msi_route(KVMState *s, MSIMessage msg);
