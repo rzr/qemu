@@ -88,12 +88,12 @@ import org.tizen.emulator.skin.dialog.AboutDialog;
 import org.tizen.emulator.skin.dialog.DetailInfoDialog;
 import org.tizen.emulator.skin.dialog.RamdumpDialog;
 import org.tizen.emulator.skin.image.ImageRegistry;
-import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.layout.GeneralPurposeSkinComposer;
 import org.tizen.emulator.skin.layout.ISkinComposer;
 import org.tizen.emulator.skin.layout.PhoneShapeSkinComposer;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
@@ -160,7 +160,7 @@ public class EmulatorSkin {
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
 	private int displayCanvasStyle;
-	protected SkinInformation skinInfo;
+	public SkinInformation skinInfo;
 	protected ISkinComposer skinComposer;
 
 	protected EmulatorSkinState currentState;
@@ -168,13 +168,12 @@ public class EmulatorSkin {
 	private boolean isDisplayDragging;
 	private boolean isShutdownRequested;
 	private boolean isAboutToReopen;
-	private boolean isOnTop;
-	private boolean isKeyWindow;
-	private boolean isOnKbd;
+	public boolean isOnTop;
+	public boolean isKeyWindow;
+	public boolean isOnKbd;
+	private PopupMenu popupMenu;
 
-	private Menu contextMenu;
 	public Color colorVM;
-	private MenuItem keyWindowItem; /* key window menu */
 	public KeyWindow keyWindow;
 	public int recentlyDocked;
 	public ColorTag pairTag;
@@ -222,10 +221,8 @@ public class EmulatorSkin {
 		this.recentlyDocked = SWT.NONE;
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
-//		if (skinInfo.isPhoneShape() == false) {
-//			style = SWT.TITLE | SWT.CLOSE | SWT.MIN | SWT.BORDER;
-//		}
 		this.shell = new Shell(Display.getDefault(), style);
+
 		if (isOnTop == true) {
 			SkinUtil.setTopMost(shell, true);
 		}
@@ -285,18 +282,10 @@ public class EmulatorSkin {
 		setFocus();
 
 		/* attach a menu */
-		this.isOnKbd = false;
-		setMenu();
+		isOnKbd = false;
+		popupMenu = new PopupMenu(config, this, shell, imageRegistry);
 
 		return 0;
-	}
-
-	private void setMenu() {
-		contextMenu = new Menu(shell);
-
-		addMenuItems(shell, contextMenu);
-
-		shell.setMenu(contextMenu);
 	}
 
 //	private void readyToReopen( EmulatorSkin sourceSkin, boolean isOnTop ) {
@@ -547,7 +536,7 @@ public class EmulatorSkin {
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
-				Menu menu = EmulatorSkin.this.contextMenu;
+				Menu menu = popupMenu.getMenu();
 
 				if (menu != null) {
 					shell.setMenu(menu);
@@ -578,7 +567,7 @@ public class EmulatorSkin {
 		canvasMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
-				Menu menu = EmulatorSkin.this.contextMenu;
+				Menu menu = popupMenu.getMenu();
 				keyForceRelease(true);
 
 				if (menu != null && isDisplayDragging == false) {
@@ -1011,14 +1000,14 @@ public class EmulatorSkin {
 	}
 
 	public boolean isSelectKeyWindow() {
-		return keyWindowItem.getSelection();
+		return popupMenu.keyWindowItem.getSelection();
 	}
 
 	public void openKeyWindow(int dockValue, boolean recreate) {
 		if (keyWindow != null) {
 			if (recreate == false) {
 				/* show the key window */
-				keyWindowItem.setSelection(isKeyWindow = true);
+				popupMenu.keyWindowItem.setSelection(isKeyWindow = true);
 				pairTag.setVisible(true);
 
 				keyWindow.getShell().setVisible(true);
@@ -1036,18 +1025,18 @@ public class EmulatorSkin {
 				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
 
 		if (keyMapList == null) {
-			keyWindowItem.setSelection(isKeyWindow = false);
+			popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
 			logger.info("keyMapList is null");
 			return;
 		} else if (keyMapList.isEmpty() == true) {
-			keyWindowItem.setSelection(isKeyWindow = false);
+			popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
 			logger.info("keyMapList is empty");
 			return;
 		}
 
 		keyWindow = new KeyWindow(this, shell, communicator, keyMapList);
 
-		keyWindowItem.setSelection(isKeyWindow = true);
+		popupMenu.keyWindowItem.setSelection(isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
 		pairTag.setVisible(true);
@@ -1056,7 +1045,7 @@ public class EmulatorSkin {
 	}
 
 	public void hideKeyWindow() {
-		keyWindowItem.setSelection(isKeyWindow = false);
+		popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
 		pairTag.setVisible(false);
 
 		if (keyWindow != null) {
@@ -1065,7 +1054,7 @@ public class EmulatorSkin {
 	}
 
 	public void closeKeyWindow() {
-		keyWindowItem.setSelection(isKeyWindow = false);
+		popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
 		pairTag.setVisible(false);
 
 		if (keyWindow != null) {
@@ -1074,15 +1063,9 @@ public class EmulatorSkin {
 		}
 	}
 
-	private void addMenuItems(final Shell shell, final Menu menu) {
-
-		/* Emulator detail info menu */
-		final MenuItem detailInfoItem = new MenuItem(menu, SWT.PUSH);
-
-		String emulatorName = SkinUtil.makeEmulatorName(config);
-		detailInfoItem.setText(emulatorName);
-		detailInfoItem.setImage(imageRegistry.getIcon(IconName.DETAIL_INFO));
-		detailInfoItem.addSelectionListener(new SelectionAdapter() {
+	/* for popup menu */
+	public SelectionAdapter createDetailInfoMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (logger.isLoggable(Level.FINE)) {
@@ -1094,174 +1077,37 @@ public class EmulatorSkin {
 						shell, emulatorName, communicator, config);
 				detailInfoDialog.open();
 			}
-		} );
+		};
 
-		new MenuItem(menu, SWT.SEPARATOR);
-
-		/* Always on top menu */
-		if (!SwtUtil.isMacPlatform()) { /* not supported on mac */
-			final MenuItem onTopItem = new MenuItem(menu, SWT.CHECK);
-			onTopItem.setText("&Always On Top");
-			onTopItem.setSelection(isOnTop);
-
-			onTopItem.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					isOnTop = onTopItem.getSelection();
-
-					logger.info("Select Always On Top : " + isOnTop);
-					// readyToReopen(EmulatorSkin.this, isOnTop);
-
-					if (SkinUtil.setTopMost(shell, isOnTop) == false) {
-						logger.info("failed to Always On Top");
-
-						onTopItem.setSelection(isOnTop = false);
-					} else {
-						if (keyWindow != null) {
-							SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
-						}
-					}
-				}
-			} );
-		}
-
-		/* Rotate menu */
-		final MenuItem rotateItem = new MenuItem(menu, SWT.CASCADE);
-		rotateItem.setText("&Rotate");
-		rotateItem.setImage(imageRegistry.getIcon(IconName.ROTATE));
-		Menu rotateMenu = createRotateMenu(menu.getShell());
-		rotateItem.setMenu(rotateMenu);
-
-		/* Scale menu */
-		final MenuItem scaleItem = new MenuItem(menu, SWT.CASCADE);
-		scaleItem.setText("&Scale");
-		scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
-		Menu scaleMenu = createScaleMenu(menu.getShell());
-		scaleItem.setMenu(scaleMenu);
-
-		new MenuItem(menu, SWT.SEPARATOR);
-
-		/* Key Window menu */
-		if (skinInfo.isPhoneShape() == false) { //TODO:
-		keyWindowItem = new MenuItem(menu, SWT.CHECK);
-		keyWindowItem.setText("&Key Window");
-		keyWindowItem.setSelection(isKeyWindow);
-
-		keyWindowItem.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				final boolean selectKeyWindow = keyWindowItem.getSelection();
-
-				if (selectKeyWindow == true) {
-					if (keyWindow == null) {
-						openKeyWindow(recentlyDocked, false);
-						recentlyDocked = SWT.NONE;
-					} else {
-						openKeyWindow(keyWindow.getDockPosition(), false);
-					}
-				} else { /* hide a key window */
-					if (keyWindow != null &&
-							keyWindow.getDockPosition() != SWT.NONE) {
-						/* close the Key Window if it is docked to Main Window */
-						recentlyDocked = keyWindow.getDockPosition();
-						closeKeyWindow();
-					} else {
-						hideKeyWindow();
-					}
-				}
-			}
-		} );
-		}
-
-		/* Advanced menu */
-		final MenuItem advancedItem = new MenuItem(menu, SWT.CASCADE);
-		advancedItem.setText("Ad&vanced");
-		advancedItem.setImage(imageRegistry.getIcon(IconName.ADVANCED));
-		Menu advancedMenu = createAdvancedMenu(menu.getShell());
-		advancedItem.setMenu(advancedMenu);
-
-		/* Shell menu */
-		final MenuItem shellItem = new MenuItem(menu, SWT.PUSH);
-		shellItem.setText("S&hell");
-		shellItem.setImage(imageRegistry.getIcon(IconName.SHELL));
-
-		shellItem.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if (!communicator.isSdbDaemonStarted()) {
-					SkinUtil.openMessage(shell, null, "SDB is not ready.\n" +
-							"Please wait until the emulator is completely boot up.",
-							SWT.ICON_WARNING, config);
-					return;
-				}
-
-				String sdbPath = SkinUtil.getSdbPath();
-
-				File sdbFile = new File(sdbPath);
-				if (!sdbFile.exists()) {
-					logger.log(Level.INFO, "SDB file is not exist : " + sdbFile.getAbsolutePath());
-					try {
-						SkinUtil.openMessage(shell, null,
-								"SDB file is not exist in the following path.\n" + sdbFile.getCanonicalPath()
-								, SWT.ICON_ERROR, config);
-					} catch (IOException ee) {
-						logger.log(Level.SEVERE, ee.getMessage(), ee);
-					}
-					return;
-				}
-
-				int portSdb = config.getArgInt(ArgsConstants.NET_BASE_PORT);
-
-				ProcessBuilder procSdb = new ProcessBuilder();
-
-				if (SwtUtil.isLinuxPlatform()) {
-					procSdb.command("/usr/bin/gnome-terminal", "--disable-factory",
-							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath,
-							"-s", "emulator-" + portSdb, "shell");
-				} else if (SwtUtil.isWindowsPlatform()) {
-					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
-							"-s", "emulator-" + portSdb, "shell");
-				} else if (SwtUtil.isMacPlatform()) {
-					procSdb.command("./sdbscript", "emulator-" + portSdb);
-					//procSdb.command("/usr/X11/bin/uxterm", "-T", "emulator-" + portSdb, "-e", sdbPath,"shell");
-				}
-
-				logger.log(Level.INFO, procSdb.command().toString());
-
-				try {
-					procSdb.start(); /* open the sdb shell */
-				} catch (Exception ee) {
-					logger.log(Level.SEVERE, ee.getMessage(), ee);
-					SkinUtil.openMessage(shell, null, "Fail to open Shell: \n" +
-							ee.getMessage(), SWT.ICON_ERROR, config);
-				}
-
-				communicator.sendToQEMU(
-						SendCommand.OPEN_SHELL, null, false);
-			}
-		} );
-
-		new MenuItem(menu, SWT.SEPARATOR);
-
-		/* Close menu */
-		MenuItem closeItem = new MenuItem(menu, SWT.PUSH);
-		closeItem.setText("&Close");
-		closeItem.setImage(imageRegistry.getIcon(IconName.CLOSE));
-
-		closeItem.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				logger.info("Close Menu is selected");
-				communicator.sendToQEMU(
-						SendCommand.CLOSE, null, false);
-			}
-		} );
-
+		return listener;
 	}
 
-	private Menu createRotateMenu(final Shell shell) {
+	public SelectionAdapter createTopMostMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				isOnTop = popupMenu.onTopItem.getSelection();
 
-		Menu menu = new Menu( shell, SWT.DROP_DOWN );
+				logger.info("Select Always On Top : " + isOnTop);
+				// readyToReopen(EmulatorSkin.this, isOnTop);
+
+				if (SkinUtil.setTopMost(shell, isOnTop) == false) {
+					logger.info("failed to Always On Top");
+
+					popupMenu.onTopItem.setSelection(isOnTop = false);
+				} else {
+					if (keyWindow != null) {
+						SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
+					}
+				}
+			}
+		};
+
+		return listener;
+	}
+
+	public Menu createRotateMenu() {
+		Menu menu = new Menu(shell, SWT.DROP_DOWN);
 
 		final List<MenuItem> rotationList = new ArrayList<MenuItem>();
 
@@ -1386,8 +1232,7 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	private Menu createScaleMenu(final Shell shell) {
-
+	public Menu createScaleMenu() {
 		Menu menu = new Menu(shell, SWT.DROP_DOWN);
 
 		final List<MenuItem> scaleList = new ArrayList<MenuItem>();
@@ -1474,7 +1319,37 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	private Menu createDiagnosisMenu(Shell shell) {
+	public SelectionAdapter createKeyWindowMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				final boolean selectKeyWindow =
+						popupMenu.keyWindowItem.getSelection();
+
+				if (selectKeyWindow == true) {
+					if (keyWindow == null) {
+						openKeyWindow(recentlyDocked, false);
+						recentlyDocked = SWT.NONE;
+					} else {
+						openKeyWindow(keyWindow.getDockPosition(), false);
+					}
+				} else { /* hide a key window */
+					if (keyWindow != null &&
+							keyWindow.getDockPosition() != SWT.NONE) {
+						/* close the Key Window if it is docked to Main Window */
+						recentlyDocked = keyWindow.getDockPosition();
+						closeKeyWindow();
+					} else {
+						hideKeyWindow();
+					}
+				}
+			}
+		};
+
+		return listener;
+	};
+
+	public Menu createDiagnosisMenu() {
 		Menu menu = new Menu(shell, SWT.DROP_DOWN);
 
 		final MenuItem ramdumpItem = new MenuItem(menu, SWT.PUSH);
@@ -1515,109 +1390,65 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	private Menu createAdvancedMenu(final Shell shell) {
-
-		final Menu menu = new Menu(shell, SWT.DROP_DOWN);
-
-		/* Screen shot menu */
-		final MenuItem screenshotItem = new MenuItem(menu, SWT.PUSH);
-		screenshotItem.setText("&Screen Shot");
-		screenshotItem.setImage(imageRegistry.getIcon(IconName.SCREENSHOT));
-		screenshotItem.addSelectionListener(new SelectionAdapter() {
+	public SelectionAdapter createScreenshotMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				logger.info("ScreenShot Menu is selected");
 
 				openScreenShotWindow();
 			}
-		} );
+		};
 
-		/* VirtIO Keyboard Menu */
-		final MenuItem hostKeyboardItem = new MenuItem(menu, SWT.CASCADE);
-		hostKeyboardItem.setText("&Host Keyboard");
-		hostKeyboardItem.setImage(imageRegistry.getIcon(IconName.HOST_KEYBOARD));
+		return listener;
+	}
 
-		Menu hostKeyboardMenu = new Menu(shell, SWT.DROP_DOWN);
-
-		final MenuItem kbdOnItem = new MenuItem(hostKeyboardMenu, SWT.RADIO);
-		kbdOnItem.setText("On");
-		kbdOnItem.setSelection( isOnKbd );
-
-		final MenuItem kbdOffItem = new MenuItem(hostKeyboardMenu, SWT.RADIO);
-		kbdOffItem.setText("Off");
-		kbdOffItem.setSelection(!isOnKbd);
-
-		SelectionAdapter kbdSelectionAdaptor = new SelectionAdapter() {
+	public SelectionAdapter createHostKeyboardMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (!communicator.isSensorDaemonStarted()) {
 					SkinUtil.openMessage(shell, null,
-							"Host Keyboard is not ready.\nPlease wait until the emulator is completely boot up.",
+							"Host Keyboard is not ready.\n" +
+							"Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
-					kbdOnItem.setSelection(isOnKbd);
-					kbdOffItem.setSelection(!isOnKbd);
+					popupMenu.kbdOnItem.setSelection(isOnKbd);
+					popupMenu.kbdOffItem.setSelection(!isOnKbd);
 
 					return;
 				}
 
 				MenuItem item = (MenuItem) e.getSource();
 				if (item.getSelection()) {
-					boolean on = item.equals(kbdOnItem);
+					boolean on = item.equals(popupMenu.kbdOnItem);
 					isOnKbd = on;
 					logger.info("Host Keyboard " + isOnKbd);
 
 					communicator.sendToQEMU(SendCommand.HOST_KBD,
 							new BooleanData(on, SendCommand.HOST_KBD.toString()), false);
 				}
-
 			}
 		};
 
-		kbdOnItem.addSelectionListener(kbdSelectionAdaptor);
-		kbdOffItem.addSelectionListener(kbdSelectionAdaptor);
+		return listener;
+	}
 
-		hostKeyboardItem.setMenu(hostKeyboardMenu);
-
-		/* Diagnosis menu */
-		if (SwtUtil.isLinuxPlatform()) { //TODO: windows
-			final MenuItem diagnosisItem = new MenuItem(menu, SWT.CASCADE);
-			diagnosisItem.setText("&Diagnosis");
-			diagnosisItem.setImage(imageRegistry.getIcon(IconName.DIAGNOSIS));
-			Menu diagnosisMenu = createDiagnosisMenu(menu.getShell());
-			diagnosisItem.setMenu(diagnosisMenu);
-		}
-
-		new MenuItem(menu, SWT.SEPARATOR);
-
-		/* About menu */
-		final MenuItem aboutItem = new MenuItem(menu, SWT.PUSH);
-		aboutItem.setText("&About");
-		aboutItem.setImage(imageRegistry.getIcon(IconName.ABOUT));
-
-		aboutItem.addSelectionListener(new SelectionAdapter() {
-			private boolean isOpen;
-
+	public SelectionAdapter createAboutMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (!isOpen) {
-					isOpen = true;
+				logger.info("Open the about dialog");
 
-					logger.info("Open the about dialog");
-					AboutDialog dialog = new AboutDialog(shell, config);
-					dialog.open();
-					isOpen = false;
-				}
+				AboutDialog dialog = new AboutDialog(shell, config);
+				dialog.open();
 			}
-		} );
+		};
 
-		new MenuItem(menu, SWT.SEPARATOR);
+		return listener;
+	}
 
-		/* Force close menu */
-		final MenuItem forceCloseItem = new MenuItem(menu, SWT.PUSH);
-		forceCloseItem.setText("&Force Close");
-		forceCloseItem.setImage(imageRegistry.getIcon(IconName.FORCE_CLOSE));
-
-		forceCloseItem.addSelectionListener(new SelectionAdapter() {
+	public SelectionAdapter createForceCloseMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				logger.info("Force close is selected");
@@ -1642,10 +1473,85 @@ public class EmulatorSkin {
 					});
 				}
 			}
-		});
+		};
 
-		return menu;
+		return listener;
+	}
 
+	public SelectionAdapter createShellMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (!communicator.isSdbDaemonStarted()) {
+					SkinUtil.openMessage(shell, null, "SDB is not ready.\n" +
+							"Please wait until the emulator is completely boot up.",
+							SWT.ICON_WARNING, config);
+					return;
+				}
+
+				String sdbPath = SkinUtil.getSdbPath();
+
+				File sdbFile = new File(sdbPath);
+				if (!sdbFile.exists()) {
+					logger.log(Level.INFO, "SDB file is not exist : " + sdbFile.getAbsolutePath());
+					try {
+						SkinUtil.openMessage(shell, null,
+								"SDB file is not exist in the following path.\n" +
+								sdbFile.getCanonicalPath(),
+								SWT.ICON_ERROR, config);
+					} catch (IOException ee) {
+						logger.log(Level.SEVERE, ee.getMessage(), ee);
+					}
+					return;
+				}
+
+				int portSdb = config.getArgInt(ArgsConstants.NET_BASE_PORT);
+
+				ProcessBuilder procSdb = new ProcessBuilder();
+
+				if (SwtUtil.isLinuxPlatform()) {
+					procSdb.command("/usr/bin/gnome-terminal", "--disable-factory",
+							"--title=" + SkinUtil.makeEmulatorName( config ), "-x", sdbPath,
+							"-s", "emulator-" + portSdb, "shell");
+				} else if (SwtUtil.isWindowsPlatform()) {
+					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
+							"-s", "emulator-" + portSdb, "shell");
+				} else if (SwtUtil.isMacPlatform()) {
+					procSdb.command("./sdbscript", "emulator-" + portSdb);
+					/* procSdb.command(
+					"/usr/X11/bin/uxterm", "-T", "emulator-" + portSdb, "-e", sdbPath,"shell"); */
+				}
+
+				logger.log(Level.INFO, procSdb.command().toString());
+
+				try {
+					procSdb.start(); /* open the sdb shell */
+				} catch (Exception ee) {
+					logger.log(Level.SEVERE, ee.getMessage(), ee);
+					SkinUtil.openMessage(shell, null, "Fail to open Shell: \n" +
+							ee.getMessage(), SWT.ICON_ERROR, config);
+				}
+
+				communicator.sendToQEMU(
+						SendCommand.OPEN_SHELL, null, false);
+			}
+		};
+
+		return listener;
+	}
+
+	public SelectionAdapter createCloseMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				logger.info("Close Menu is selected");
+
+				communicator.sendToQEMU(
+						SendCommand.CLOSE, null, false);
+			}
+		};
+
+		return listener;
 	}
 
 	public void shutdown() {
