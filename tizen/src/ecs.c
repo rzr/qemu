@@ -20,6 +20,7 @@
 #include "qint.h"
 #include "ecs.h"
 #include "hw/maru_virtio_evdi.h"
+#include "hw/maru_virtio_sensor.h"
 #include <stdbool.h>
 #include <pthread.h>
 #include "base64.h"
@@ -808,6 +809,7 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
         }
 
     } else {
+
         // set data
         memcpy(sndbuf, cmd, 10);
         memcpy(sndbuf + 10, &length, 2);
@@ -834,6 +836,44 @@ static bool control_command_proc(ECS_Client *clii, QObject *obj) {
 
 	}
 	//LOG(">> control : feature = %s, action=%d, data=%s", feature, action, data);
+
+	return true;
+}
+
+static bool device_command_proc(ECS_Client *clii, QObject *obj) {
+	QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
+
+	char cmd[10];
+	memset(cmd, 0, 10);
+	strcpy(cmd, qdict_get_str(header, "cat"));
+	type_length length = (type_length) qdict_get_int(header, "length");
+	type_group group = (type_action) (qdict_get_int(header, "group") & 0xff);
+	type_action action = (type_group) (qdict_get_int(header, "action") & 0xff);
+
+	// get data
+	const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
+	LOG(">> count= %d", ++ijcount);
+	LOG(">> print len = %d, data\" %s\"", strlen(data), data);
+	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
+			action, group);
+ 
+	if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
+		if (group == MSG_GROUP_STATUS) {
+			if (action ==MSG_ACTION_ACCEL) {
+				get_sensor_accel();
+			} else if (action == MSG_ACTION_GYRO) {
+				get_sensor_gyro();
+			} else if (action == MSG_ACTION_MAG) {
+				get_sensor_mag();
+			} else if (action == MSG_ACTION_LIGHT) {
+				get_sensor_light();
+			} else if (action == MSG_ACTION_PROXI) {
+				get_sensor_proxi();
+			}
+		} else {
+			set_sensor_data(length, data);
+		}
+	}
 
 	return true;
 }
@@ -900,6 +940,8 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens,
 		control_command_proc(clii, obj);
 	} else if (!strcmp(type_name, COMMAND_TYPE_MONITOR)) {
 		handle_qmp_command(clii, type_name, get_data_object(obj));
+	} else if (!strcmp(type_name, COMMAND_TYPE_DEVICE)) {
+		device_command_proc(clii, obj);
 	} else if (!strcmp(type_name, ECS_MSG_STARTINFO_REQ)) {
 		ecs_startinfo_req(clii);
 	} else {

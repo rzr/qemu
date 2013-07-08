@@ -105,7 +105,7 @@ endif
 obj-y += debug_ch.o
 
 # ecs
-obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o
+obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o ecs_sensor.o
 
 # maru hardware
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
@@ -117,6 +117,7 @@ obj-y += maru_codec.o
 obj-y += maru_virtio_esm.o
 obj-y += maru_virtio_hwkey.o
 obj-y += maru_virtio_evdi.o
+obj-y += maru_virtio_sensor.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
