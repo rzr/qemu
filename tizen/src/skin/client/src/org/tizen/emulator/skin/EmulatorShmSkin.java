@@ -71,6 +71,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	private int multiTouchKey;
 	private int multiTouchKeySub;
 
+	/* touch values */
+	protected static int pressingX = -1, pressingY = -1;
+	protected static int pressingOriginX = -1, pressingOriginY = -1;
+
 	static {
 		/* load JNI library file */
 		try {

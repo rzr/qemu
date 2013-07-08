@@ -76,7 +76,7 @@ public class PopupMenu {
 		this.skin = skin;
 		this.shell = shell;
 		this.imageRegistry = imageRegistry;
-		
+
 		createMenu();
 	}
 

@@ -191,16 +191,10 @@ public class EmulatorSkin {
 	private KeyListener canvasKeyListener;
 	private MenuDetectListener canvasMenuDetectListener;
 	private FocusListener canvasFocusListener;
-
 	private LinkedList<KeyEventData> pressedKeyEventList;
 
-	/* touch values */
-	protected static int pressingX = -1, pressingY = -1;
-	protected static int pressingOriginX = -1, pressingOriginY = -1;
-
-
 	private EmulatorSkin reopenSkin;
-	
+
 	/**
 	 * @brief constructor
 	 * @param config : configuration of emulator skin

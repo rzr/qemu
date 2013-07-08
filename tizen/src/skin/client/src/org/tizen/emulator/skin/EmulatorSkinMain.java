@@ -134,7 +134,7 @@ public class EmulatorSkinMain {
 			logger.info("os version: " + System.getProperty("os.version"));
 
 			/* startup arguments parsing */
-			Map<String, String> argsMap = parsArgs(args);
+			Map<String, String> argsMap = parseArgs(args);
 
 			/* emulator resolution */
 			/*int resolutionW = Integer.parseInt(
@@ -413,32 +413,29 @@ public class EmulatorSkinMain {
 
 	}
 	
-	private static Map<String, String> parsArgs( String[] args ) {
-
+	private static Map<String, String> parseArgs(String[] args) {
 		Map<String, String> map = new HashMap<String, String>();
 
-		for ( int i = 0; i < args.length; i++ ) {
+		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
-			logger.info( "arg[" + i + "] " + arg );
-			String[] split = arg.split( "=" );
+			logger.info("arg[" + i + "] " + arg);
 
-			if ( 1 < split.length ) {
-
+			String[] split = arg.split("=");
+			if (1 < split.length) {
 				String argKey = split[0].trim();
 				String argValue = split[1].trim();
-				map.put( argKey, argValue );
 
+				map.put(argKey, argValue);
 			} else {
-				logger.info( "sinlge argv:" + arg );
+				logger.info("sinlge argv:" + arg);
 			}
 		}
 
-		logger.info( "================= argsMap =====================" );
-		logger.info( map.toString() );
-		logger.info( "===============================================" );
+		logger.info("================= argsMap =====================");
+		logger.info(map.toString());
+		logger.info("===============================================");
 
 		return map;
-
 	}
 
 	private static EmulatorUI loadDbi(String skinPath) {
