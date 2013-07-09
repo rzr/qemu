@@ -1540,7 +1540,7 @@ static void virtio_gl_pci_instance_init(Object *obj)
 
 static TypeInfo virtio_gl_pci_info = {
     .name          = TYPE_VIRTIO_GL_PCI,
-    .parent        = TYPE_PCI_DEVICE,
+    .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOPCIProxy),
     .instance_init = sizeof(VirtIOGL),
     .class_init    = virtio_gl_pci_class_init,
@@ -1584,7 +1584,7 @@ static void virtio_touchscreen_pci_instance_init(Object *obj)
 
 static TypeInfo virtio_touchscreen_pci_info = {
     .name          = TYPE_VIRTIO_TOUCHSCREEN_PCI,
-    .parent        = TYPE_PCI_DEVICE,
+    .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOTouchscreenPCI),
 	.instance_init = virtio_touchscreen_pci_instance_init,
     .class_init    = virtio_touchscreen_pci_class_init,
@@ -1626,7 +1626,7 @@ static void virtio_keyboard_pci_instance_init(Object *obj)
 
 static TypeInfo virtio_keyboard_pci_info = {
     .name          = TYPE_VIRTIO_KEYBOARD_PCI,
-    .parent        = TYPE_PCI_DEVICE,
+    .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOKeyboardPCI),
 	.instance_init = virtio_keyboard_pci_instance_init,
     .class_init    = virtio_keyboard_pci_class_init,
@@ -1668,7 +1668,7 @@ static void virtio_esm_pci_instance_init(Object *obj)
 
 static TypeInfo virtio_esm_pci_info = {
     .name          = TYPE_VIRTIO_ESM_PCI,
-    .parent        = TYPE_PCI_DEVICE,
+    .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOESMPCI),
 	.instance_init = virtio_esm_pci_instance_init,
     .class_init    = virtio_esm_pci_class_init,
@@ -1710,7 +1710,7 @@ static void virtio_hwkey_pci_instance_init(Object *obj)
 
 static TypeInfo virtio_hwkey_pci_info = {
     .name          = TYPE_VIRTIO_HWKEY_PCI,
-    .parent        = TYPE_PCI_DEVICE,
+    .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOHWKeyPCI),
 	.instance_init = virtio_hwkey_pci_instance_init,
     .class_init    = virtio_hwkey_pci_class_init,
@@ -1752,7 +1752,7 @@ static void virtio_evdi_pci_instance_init(Object *obj)
 
 static TypeInfo virtio_evdi_pci_info = {
     .name          = TYPE_VIRTIO_EVDI_PCI,
-    .parent        = TYPE_PCI_DEVICE,
+    .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOEVDIPCI),
 	.instance_init = virtio_evdi_pci_instance_init,
     .class_init    = virtio_evdi_pci_class_init,
