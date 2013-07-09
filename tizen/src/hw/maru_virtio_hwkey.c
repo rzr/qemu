@@ -28,7 +28,6 @@
 
 
 #include <pthread.h>
-#include "console.h"
 #include "emul_state.h"
 #include "maru_virtio_hwkey.h"
 #include "maru_device_ids.h"
@@ -43,7 +42,7 @@ MULTI_DEBUG_CHANNEL(qemu, hwkey);
  */
 typedef struct HwKeyEventEntry {
     unsigned int index;
-    EmulHwKeyEvent hwkey;
+    EmulHWKeyEvent hwkey;
 
     QTAILQ_ENTRY(HwKeyEventEntry) node;
 } HwKeyEventEntry;
@@ -76,7 +75,7 @@ static QTAILQ_HEAD(, ElementEntry) elem_queue =
 static unsigned int elem_ringbuf_cnt; /* _elem_buf */
 static unsigned int elem_queue_cnt; /* elem_queue */
 
-VirtIOHwKey *vhk;
+VirtIOHWKey *vhk;
 
 /* lock for between communication thread and IO thread */
 static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -191,9 +190,9 @@ void maru_virtio_hwkey_notify(void)
             vbuf = element->in_sg[elem_entry->sg_index - 1].iov_base;
 
             /* copy event into virtio buffer */
-            memcpy(vbuf, &(event_entry->hwkey), sizeof(EmulHwKeyEvent));
+            memcpy(vbuf, &(event_entry->hwkey), sizeof(EmulHWKeyEvent));
 
-            virtqueue_push(vhk->vq, element, sizeof(EmulHwKeyEvent));
+            virtqueue_push(vhk->vq, element, sizeof(EmulHWKeyEvent));
             virtio_notify(&vhk->vdev, vhk->vq);
         }
 
@@ -223,15 +222,16 @@ VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev)
 {
     INFO("initialize the hwkey device\n");
 
-    vhk = (VirtIOHwKey *)virtio_common_init(DEVICE_NAME,
-        VIRTIO_ID_HWKEY, 0 /*config_size*/, sizeof(VirtIOHwKey));
+    vhk = g_malloc0(sizeof(VirtIOHWKey));
+    virtio_init(&vhk->vdev, TYPE_VIRTIO_HWKEY, VIRTIO_ID_HWKEY, 0);
 
-    if (vhk == NULL) {
+    if (&vhk->vdev == NULL) {
         ERR("failed to initialize the hwkey device\n");
         return NULL;
     }
 
-    vhk->vdev.get_features = virtio_hwkey_get_features;
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&vhk->vdev);
+    vdc->get_features = virtio_hwkey_get_features;
     vhk->vq = virtio_add_queue(&vhk->vdev, 64, maru_virtio_hwkey_handle);
 
     vhk->qdev = dev;
@@ -248,7 +248,7 @@ VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev)
 
 void maru_virtio_hwkey_exit(VirtIODevice *vdev)
 {
-    VirtIOHwKey *vhk = (VirtIOHwKey *)vdev;
+    VirtIOHWKey *vhk = (VirtIOHWKey *)vdev;
 
     INFO("exit the hwkey device\n");
 
