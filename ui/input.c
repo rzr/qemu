@@ -64,11 +64,6 @@ static QTAILQ_HEAD(, QEMUPutMouseEntry) mouse_handlers =
     QTAILQ_HEAD_INITIALIZER(mouse_handlers);
 static NotifierList mouse_mode_notifiers =
     NOTIFIER_LIST_INITIALIZER(mouse_mode_notifiers);
-#ifdef CONFIG_MARU
-// FIXME: merge
-static QTAILQ_HEAD(, QEMUPutKbdEntry) ps2kbd_handlers =
-    QTAILQ_HEAD_INITIALIZER(ps2kbd_handlers);
-#endif
 
 static const int key_defs[] = {
     [Q_KEY_CODE_SHIFT] = 0x2a,
@@ -335,26 +330,6 @@ void qemu_remove_kbd_event_handler(QEMUPutKbdEntry *entry)
     QTAILQ_REMOVE(&kbd_handlers, entry, next);
 }
 
-#ifdef CONFIG_MARU
-// FIXME: merge
-/* use ps2kbd device as a hardkey device. */
-QEMUPutKbdEntry *qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
-{
-    QEMUPutKbdEntry *entry;
-
-    entry = g_malloc0(sizeof(QEMUPutKbdEntry));
-    entry->put_kbd = func;
-    entry->opaque = opaque;
-    QTAILQ_INSERT_HEAD(&ps2kbd_handlers, entry, next);
-    return entry;
-}
-
-void qemu_remove_ps2kbd_event_handler(QEMUPutKbdEntry *entry)
-{
-    QTAILQ_REMOVE(&ps2kbd_handlers, entry, next);
-}
-#endif
-
 static void check_mode_change(void)
 {
     static int current_is_absolute, current_has_absolute;
@@ -445,17 +420,6 @@ void kbd_put_keycode(int keycode)
         entry->put_kbd(entry->opaque, keycode);
     }
 }
-#ifdef CONFIG_MARU
-// FIXME: merge
-void ps2kbd_put_keycode(int keycode)
-{
-    QEMUPutKbdEntry *entry = QTAILQ_FIRST(&ps2kbd_handlers);
-
-    if (entry) {
-        entry->put_kbd(entry->opaque, keycode);
-    }
-}
-#endif
 
 void kbd_put_ledstate(int ledstate)
 {
@@ -483,7 +447,7 @@ void kbd_mouse_event(int dx, int dy, int dz, int buttons_state)
     QTAILQ_FOREACH(entry, &mouse_handlers, node) {
         /* if mouse event is wheelup ,wheeldown or move
               then go to ps2 mouse event(index == 0) */
-        if((buttons_state > 3  && entry->index == 0)) {
+        if (buttons_state > 3  && entry->index == 0) {
             //INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
             buttons_state = 0;
             mouse_event = entry->qemu_put_mouse_event;
@@ -492,7 +456,7 @@ void kbd_mouse_event(int dx, int dy, int dz, int buttons_state)
         }
     }
     /* other events(mouse up, down and drag), go to touch screen */
-    if(!entry) {
+    if (!entry) {
         entry = QTAILQ_FIRST(&mouse_handlers);
         mouse_event = entry->qemu_put_mouse_event;
         mouse_event_opaque = entry->qemu_put_mouse_event_opaque;
