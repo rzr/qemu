@@ -30,8 +30,8 @@
  *
  */
 
-#include "pc.h"
-#include "pci.h"
+#include "hw/i386/pc.h"
+#include "hw/pci/pci.h"
 #include "maru_device_ids.h"
 #include "maru_overlay.h"
 #include "debug_ch.h"
@@ -74,7 +74,7 @@ typedef struct OverlayState {
 
 
 static uint64_t overlay_reg_read(void *opaque,
-                                 target_phys_addr_t addr,
+                                 hwaddr addr,
                                  unsigned size)
 {
     switch (addr) {
@@ -115,7 +115,7 @@ static uint64_t overlay_reg_read(void *opaque,
 }
 
 static void overlay_reg_write(void *opaque,
-                              target_phys_addr_t addr,
+                              hwaddr addr,
                               uint64_t val,
                               unsigned size)
 {

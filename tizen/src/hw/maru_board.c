@@ -178,7 +178,8 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     MemoryRegion *rom_memory;
     void *fw_cfg = NULL;
 
-    pc_cpus_init(cpu_model);
+// FIXME: merge
+//    pc_cpus_init(cpu_model);
 
     if (kvmclock_enabled) {
         kvmclock_create();
@@ -233,7 +234,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
                               below_4g_mem_size,
                               0x100000000ULL - below_4g_mem_size,
                               0x100000000ULL + above_4g_mem_size,
-                              (sizeof(target_phys_addr_t) == 4
+                              (sizeof(hwaddr) == 4
                                ? 0
                                : ((uint64_t)1 << 62)),
                               pci_memory, ram_memory);

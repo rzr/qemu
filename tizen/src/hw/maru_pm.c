@@ -29,17 +29,17 @@
  */
 
 #include "maru_pm.h"
-#include "hw.h"
-#include "pc.h"
-#include "apm.h"
-#include "pm_smbus.h"
-#include "pci.h"
-#include "acpi.h"
-#include "sysemu.h"
-#include "range.h"
-#include "ioport.h"
+#include "hw/hw.h"
+#include "hw/i386/pc.h"
+#include "hw/isa/apm.h"
+#include "hw/i2c/pm_smbus.h"
+#include "hw/pci/pci.h"
+#include "hw/acpi/acpi.h"
+#include "sysemu/sysemu.h"
+#include "qemu/range.h"
+#include "exec/ioport.h"
 #include "debug_ch.h"
-#include "fw_cfg.h"
+#include "hw/nvram/fw_cfg.h"
 
 
 //#define DEBUG
