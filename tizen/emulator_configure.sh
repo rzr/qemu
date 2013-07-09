@@ -92,13 +92,14 @@ set_target() {
     fi
   ;;
   all)
-    EMUL_TARGET_LIST="i386-softmmu,arm-softmmu"
+#    EMUL_TARGET_LIST="i386-softmmu,arm-softmmu"
+    EMUL_TARGET_LIST="i386-softmmu"
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
-    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then    
-      yagl_enable yes
-    fi
+#    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then    
+#      yagl_enable yes
+#    fi
   ;;
   esac
 }

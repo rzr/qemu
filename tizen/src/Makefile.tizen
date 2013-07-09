@@ -113,9 +113,9 @@ obj-y += maru_brightness.o
 obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
 obj-y += maru_virtio_keyboard.o
 obj-y += maru_codec.o
-obj-y += maru_virtio_esm.o
 obj-y += maru_virtio_hwkey.o
-obj-y += maru_virtio_evdi.o
+obj-y += maru_virtio_esm.o
+#obj-y += maru_virtio_evdi.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
@@ -141,8 +141,8 @@ obj-y += guest_server.o
 #ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
-obj-$(CONFIG_GL) += virtio-gl.o 
-obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
+#obj-$(CONFIG_GL) += virtio-gl.o 
+#obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
 obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
 obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o gloffscreen_agl.o
 ###########################################################
