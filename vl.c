@@ -4240,7 +4240,7 @@ int main(int argc, char **argv, char **envp)
     }
 #ifdef CONFIG_MARU
     // W/A for preserve larger continuous heap for RAM.
-    preallocated_ptr = qemu_vmalloc(ram_size);
+    preallocated_ptr = g_malloc0(ram_size);
 #endif
 
     hax_pre_init(ram_size);

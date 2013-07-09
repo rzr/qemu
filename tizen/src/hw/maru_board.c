@@ -53,12 +53,15 @@
 #include "hw/kvm/clock.h"
 #include "sysemu/sysemu.h"
 #include "hw/sysbus.h"
+#include "hw/cpu/icc_bus.h"
 #include "sysemu/arch_init.h"
 #include "sysemu/blockdev.h"
 #include "hw/i2c/smbus.h"
 #include "hw/xen/xen.h"
 #include "exec/memory.h"
-//#include "exec-memory.h"
+#include "exec/address-spaces.h"
+#include "hw/acpi/acpi.h"
+#include "cpu.h"
 #ifdef CONFIG_XEN
 #  include <xen/hvm/hvm_info_table.h>
 #endif
@@ -67,78 +70,15 @@
 #include "guest_debug.h"
 #include "maru_pm.h"
 
-int codec_init(PCIBus *bus);
-
-
 #define MAX_IDE_BUS 2
+
+int codec_init(PCIBus *bus);
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
 static const int ide_iobase2[MAX_IDE_BUS] = { 0x3f6, 0x376 };
 static const int ide_irq[MAX_IDE_BUS] = { 14, 15 };
 
-static void kvm_piix3_setup_irq_routing(bool pci_enabled)
-{
-#ifdef CONFIG_KVM
-    KVMState *s = kvm_state;
-    int i;
-
-    if (kvm_check_extension(s, KVM_CAP_IRQ_ROUTING)) {
-        for (i = 0; i < 8; ++i) {
-            if (i == 2) {
-                continue;
-            }
-            kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_PIC_MASTER, i);
-        }
-        for (i = 8; i < 16; ++i) {
-            kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_PIC_SLAVE, i - 8);
-        }
-        if (pci_enabled) {
-            for (i = 0; i < 24; ++i) {
-                if (i == 0) {
-                    kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_IOAPIC, 2);
-                } else if (i != 2) {
-                    kvm_irqchip_add_irq_route(s, i, KVM_IRQCHIP_IOAPIC, i);
-                }
-            }
-        }
-    }
-#endif /* CONFIG_KVM */
-}
-
-static void kvm_piix3_gsi_handler(void *opaque, int n, int level)
-{
-    GSIState *s = opaque;
-
-    if (n < ISA_NUM_IRQS) {
-        /* Kernel will forward to both PIC and IOAPIC */
-        qemu_set_irq(s->i8259_irq[n], level);
-    } else {
-        qemu_set_irq(s->ioapic_irq[n], level);
-    }
-}
-
-static void ioapic_init(GSIState *gsi_state)
-{
-    DeviceState *dev;
-    SysBusDevice *d;
-    unsigned int i;
-
-    if (kvm_irqchip_in_kernel()) {
-        dev = qdev_create(NULL, "kvm-ioapic");
-    } else {
-        dev = qdev_create(NULL, "ioapic");
-    }
-    /* FIXME: this should be under the piix3.  */
-    object_property_add_child(object_resolve_path("i440fx", NULL),
-                              "ioapic", OBJECT(dev), NULL);
-    qdev_init_nofail(dev);
-    d = sysbus_from_qdev(dev);
-    sysbus_mmio_map(d, 0, 0xfec00000);
-
-    for (i = 0; i < IOAPIC_NUM_PINS; i++) {
-        gsi_state->ioapic_irq[i] = qdev_get_gpio_in(dev, i);
-    }
-}
+static bool has_pvpanic = true;
 
 MemoryRegion *global_ram_memory;
 
@@ -176,18 +116,23 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     MemoryRegion *ram_memory;
     MemoryRegion *pci_memory;
     MemoryRegion *rom_memory;
+    DeviceState *icc_bridge;
     void *fw_cfg = NULL;
 
-// FIXME: merge
-//    pc_cpus_init(cpu_model);
+    icc_bridge = qdev_create(NULL, TYPE_ICC_BRIDGE);
+    object_property_add_child(qdev_get_machine(), "icc-bridge",
+                              OBJECT(icc_bridge), NULL);
+
+    pc_cpus_init(cpu_model, icc_bridge);
+    pc_acpi_init("acpi-dsdt.aml");
 
     if (kvmclock_enabled) {
         kvmclock_create();
     }
 
-    if (ram_size >= 0xe0000000 ) {
-        above_4g_mem_size = ram_size - 0xe0000000;
-        below_4g_mem_size = 0xe0000000;
+    if (ram_size >= QEMU_BELOW_4G_RAM_END ) {
+        above_4g_mem_size = ram_size - QEMU_BELOW_4G_RAM_END;
+        below_4g_mem_size = QEMU_BELOW_4G_RAM_END;
     } else {
         above_4g_mem_size = 0;
         below_4g_mem_size = ram_size;
@@ -207,13 +152,13 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 	// W/A for allocate larger continuous heap.
         // see vl.c
         if(preallocated_ptr != NULL) {
-            qemu_vfree(preallocated_ptr);
+            g_free(preallocated_ptr);
         }
 	//
         fw_cfg = pc_memory_init(system_memory,
                        kernel_filename, kernel_cmdline, initrd_filename,
                        below_4g_mem_size, above_4g_mem_size,
-                       pci_enabled ? rom_memory : system_memory, &ram_memory);
+                       rom_memory, &ram_memory);
     }
 
     // for ramdump...
@@ -221,8 +166,8 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
     gsi_state = g_malloc0(sizeof(*gsi_state));
     if (kvm_irqchip_in_kernel()) {
-        kvm_piix3_setup_irq_routing(pci_enabled);
-        gsi = qemu_allocate_irqs(kvm_piix3_gsi_handler, gsi_state,
+        kvm_pc_setup_irq_routing(pci_enabled);
+        gsi = qemu_allocate_irqs(kvm_pc_gsi_handler, gsi_state,
                                  GSI_NUM_PINS);
     } else {
         gsi = qemu_allocate_irqs(gsi_handler, gsi_state, GSI_NUM_PINS);
@@ -259,9 +204,9 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         gsi_state->i8259_irq[i] = i8259[i];
     }
     if (pci_enabled) {
-        ioapic_init(gsi_state);
+        ioapic_init_gsi(gsi_state, "i440fx");
     }
-
+    qdev_init_nofail(icc_bridge);
 
     pc_register_ferr_irq(gsi[13]);
 
@@ -269,17 +214,11 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     if (xen_enabled()) {
         pci_create_simple(pci_bus, -1, "xen-platform");
     }
+
     /* init basic PC hardware */
     pc_basic_device_init(isa_bus, gsi, &rtc_state, &floppy, xen_enabled());
 
-    for(i = 0; i < nb_nics; i++) {
-        NICInfo *nd = &nd_table[i];
-
-        if (!pci_enabled || (nd->model && strcmp(nd->model, "ne2k_isa") == 0))
-            pc_init_ne2k_isa(isa_bus, nd);
-        else
-            pci_nic_init_nofail(nd, "e1000", NULL);
-    }
+    pc_nic_init(isa_bus, pci_bus);
 
     ide_drive_get(hd, MAX_IDE_BUS);
     if (pci_enabled) {
@@ -301,11 +240,6 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         }
     }
 
-// commented out by caramis... for use 'tizen-ac97'...
-// reopen for qemu 1.0 merging...
-// FIXME: merge
-//    audio_init(isa_bus, pci_enabled ? pci_bus : NULL);
-
     pc_cmos_init(below_4g_mem_size, above_4g_mem_size, boot_device,
                  floppy, idebus[0], idebus[1], rtc_state);
 
@@ -313,21 +247,22 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         pci_create_simple(pci_bus, piix3_devfn + 2, "piix3-usb-uhci");
     }
 
-// FIXME: merge
-//    if (pci_enabled && acpi_enabled) {
-    if (pci_enabled) {
+    pc_cmos_init(below_4g_mem_size, above_4g_mem_size, boot_device,
+                 floppy, idebus[0], idebus[1], rtc_state);
+
+    if (pci_enabled && usb_enabled(false)) {
+        pci_create_simple(pci_bus, piix3_devfn + 2, "piix3-usb-uhci");
+    }
+
+    if (pci_enabled && acpi_enabled) {
         i2c_bus *smbus;
 
-        smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt, first_cpu, 1);
+        smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt,
+                                     x86_env_get_cpu(first_cpu), 1);
         /* TODO: Populate SPD eeprom data.  */
-#if defined(__x86_64__)
         smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
-                              gsi[9], *smi_irq, kvm_enabled(), fw_cfg);
- 
-#else
-        smbus = maru_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
-                              gsi[9], *smi_irq, kvm_enabled(), fw_cfg);
-#endif
+                              gsi[9], *smi_irq,
+                              kvm_enabled(), fw_cfg);
         smbus_eeprom_init(smbus, 8, NULL, 0);
     }
 
@@ -335,22 +270,24 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         pc_pci_device_init(pci_bus);
     }
 
+    if (has_pvpanic) {
+        pvpanic_init(isa_bus);
+    }
+
     // maru specialized device init...
     if (pci_enabled) {
         codec_init(pci_bus);        
     }
-#ifdef CONFIG_YAGL
-    pci_create_simple(pci_bus, -1, "yagl");
-#endif
 }
 
-static void maru_x86_board_init(ram_addr_t ram_size,
-                        const char *boot_device,
-                        const char *kernel_filename,
-                        const char *kernel_cmdline,
-                        const char *initrd_filename,
-                        const char *cpu_model)
+static void maru_x86_board_init(QEMUMachineInitArgs *args)
 {
+    ram_addr_t ram_size = args->ram_size;
+    const char *cpu_model = args->cpu_model;
+    const char *kernel_filename = args->kernel_filename;
+    const char *kernel_cmdline = args->kernel_cmdline;
+    const char *initrd_filename = args->initrd_filename;
+    const char *boot_device = args->boot_device;
     maru_x86_machine_init(get_system_memory(),
              get_system_io(),
              ram_size, boot_device,
@@ -360,9 +297,12 @@ static void maru_x86_board_init(ram_addr_t ram_size,
 
 static QEMUMachine maru_x86_machine = {
     .name = "maru-x86-machine",
-    .desc = "maru board(x86)",
+    .alias = "maru-x86-machine",
+    .desc = "Maru Board (x86)",
     .init = maru_x86_board_init,
+    .hot_add_cpu = pc_hot_add_cpu,
     .max_cpus = 255,
+    DEFAULT_MACHINE_OPTIONS,
 };
 
 static void maru_machine_init(void)
