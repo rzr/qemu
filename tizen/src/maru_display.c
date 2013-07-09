@@ -56,22 +56,7 @@ void maru_display_init(DisplayState *ds)
     DisplayChangeListener *dcl;
 
     dcl = g_malloc0(sizeof(DisplayChangeListener));
-// FIXME: merge
-#if 0
-#ifndef CONFIG_USE_SHM
-    /* sdl library */
-    dcl->dpy_update = qemu_ds_sdl_update;
-    dcl->dpy_resize = qemu_ds_sdl_resize;
-    dcl->dpy_refresh = qemu_ds_sdl_refresh;
-#else
-    /* shared memroy */
-    dcl->dpy_update = qemu_ds_shm_update;
-    dcl->dpy_resize = qemu_ds_shm_resize;
-    dcl->dpy_refresh = qemu_ds_shm_refresh;
-#endif
-#endif
-
-//    register_displaychangelistener(ds, dcl);
+    dcl->ops = &maru_dcl_ops;
     register_displaychangelistener(dcl);
 
     maru_screenshot = g_malloc0(sizeof(MaruScreenshot));
