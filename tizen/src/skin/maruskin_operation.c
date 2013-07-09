@@ -27,12 +27,15 @@
  *
  */
 
-
-#include "maru_common.h"
-
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
+
+#include "qemu/sockets.h"
+#include "sysemu/sysemu.h"
+#include "hw/sysbus.h"
+
+#include "maru_common.h"
 #include "maruskin_operation.h"
 #include "hw/maru_brightness.h"
 #include "hw/maru_virtio_hwkey.h"
@@ -40,15 +43,12 @@
 #include "emulator.h"
 #include "debug_ch.h"
 #include "sdb.h"
-#include "qemu_socket.h"
 #include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
 #include "maruskin_server.h"
 #include "emul_state.h"
 #include "hw/maru_pm.h"
-#include "sysemu.h"
-#include "sysbus.h"
 
 #ifdef CONFIG_HAX
 #include "guest_debug.h"
