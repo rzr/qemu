@@ -31,7 +31,7 @@
 #ifndef __MARU_DISPLAY_H__
 #define __MARU_DISPLAY_H__
 
-#include "console.h"
+#include "ui/console.h"
 
 typedef struct MaruScreenshot {
     unsigned char *pixel_data;

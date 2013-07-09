@@ -4491,7 +4491,7 @@ int main(int argc, char **argv, char **envp)
         }
 #else
         sdl_display_init(ds, full_screen, no_frame);
-endif
+#endif
         break;
 #elif defined(CONFIG_COCOA)
     case DT_SDL:

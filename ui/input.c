@@ -65,6 +65,7 @@ static QTAILQ_HEAD(, QEMUPutMouseEntry) mouse_handlers =
 static NotifierList mouse_mode_notifiers =
     NOTIFIER_LIST_INITIALIZER(mouse_mode_notifiers);
 #ifdef CONFIG_MARU
+// FIXME: merge
 static QTAILQ_HEAD(, QEMUPutKbdEntry) ps2kbd_handlers =
     QTAILQ_HEAD_INITIALIZER(ps2kbd_handlers);
 #endif
@@ -335,6 +336,7 @@ void qemu_remove_kbd_event_handler(QEMUPutKbdEntry *entry)
 }
 
 #ifdef CONFIG_MARU
+// FIXME: merge
 /* use ps2kbd device as a hardkey device. */
 QEMUPutKbdEntry *qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
 {
@@ -444,7 +446,8 @@ void kbd_put_keycode(int keycode)
     }
 }
 #ifdef CONFIG_MARU
-void kbd_put_keycode(int keycode)
+// FIXME: merge
+void ps2kbd_put_keycode(int keycode)
 {
     QEMUPutKbdEntry *entry = QTAILQ_FIRST(&ps2kbd_handlers);
 
@@ -482,7 +485,7 @@ void kbd_mouse_event(int dx, int dy, int dz, int buttons_state)
               then go to ps2 mouse event(index == 0) */
         if((buttons_state > 3  && entry->index == 0)) {
             //INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
-            buttons_state = 0;~
+            buttons_state = 0;
             mouse_event = entry->qemu_put_mouse_event;
             mouse_event_opaque = entry->qemu_put_mouse_event_opaque;
             break;

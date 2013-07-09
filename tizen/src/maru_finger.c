@@ -34,7 +34,7 @@
 #include "maru_finger.h"
 #include "emul_state.h"
 #include "debug_ch.h"
-#include "console.h"
+#include "ui/console.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maru_finger);
 

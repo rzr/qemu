@@ -32,7 +32,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <pixman.h>
-#include "console.h"
+#include "ui/console.h"
 #include "maru_sdl.h"
 #include "maru_display.h"
 #include "emul_state.h"
@@ -203,9 +203,12 @@ void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h)
         maru_screenshot->isReady = 1;
 
         if (maru_screenshot->request_screenshot == 1) {
+// FIXME: merge
+#if 0
             memcpy(maru_screenshot->pixel_data, ds->surface->data,
                 ds->surface->linesize * ds->surface->height);
             maru_screenshot->request_screenshot = 0;
+#endif
 
             pthread_cond_signal(&cond_screenshot);
         }
@@ -234,6 +237,8 @@ void qemu_ds_sdl_resize(DisplayState *ds)
 
     /* create surface_qemu */
     if (w == get_emul_lcd_width() && h == get_emul_lcd_height()) {
+// FIXME: merge
+#if 0
         surface_qemu = SDL_CreateRGBSurfaceFrom(ds_get_data(ds), w, h,
             ds_get_bits_per_pixel(ds),
             ds_get_linesize(ds),
@@ -241,6 +246,7 @@ void qemu_ds_sdl_resize(DisplayState *ds)
             ds->surface->pf.gmask,
             ds->surface->pf.bmask,
             ds->surface->pf.amask);
+#endif
     } else {
         INFO("create blank screen = (%d, %d)\n", get_emul_lcd_width(), get_emul_lcd_height());
         surface_qemu = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h,
@@ -276,7 +282,8 @@ void qemu_ds_sdl_refresh(DisplayState *ds)
     static uint32_t sdl_skip_count = 0;
 
     // surface may be NULL in init func.
-    qemu_display_surface = ds->surface;
+// FIXME: merge
+//    qemu_display_surface = ds->surface;
 
     while (maru_sdl_poll_event(ev)) {
         switch (ev->type) {

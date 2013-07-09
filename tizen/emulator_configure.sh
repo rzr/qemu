@@ -195,11 +195,11 @@ exec ./configure \
  $CONFIGURE_APPEND \
  --disable-werror \
  --audio-drv-list=alsa \
- --audio-card-list=ac97 \
  --enable-maru \
  --disable-vnc \
  --disable-pie $1
- # --enable-ldst-optimization \
+ #--audio-card-list=ac97 \
+ #--enable-ldst-optimization \
 ;;
 MINGW*)
 cd distrib/libav

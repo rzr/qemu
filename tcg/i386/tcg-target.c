@@ -1032,17 +1032,6 @@ static void add_qemu_ldst_label(TCGContext *s,
                                 uint8_t *raddr,
                                 uint8_t **label_ptr);
 
-static void add_qemu_ldst_label(TCGContext *s,
-                                int is_ld,
-                                int opc,
-                                int data_reg,
-                                int data_reg2,
-                                int addrlo_reg,
-                                int addrhi_reg,
-                                int mem_index,
-                                uint8_t *raddr,
-                                uint8_t **label_ptr);
-
 /* Perform the TLB load and compare.
 
    Inputs:

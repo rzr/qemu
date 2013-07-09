@@ -38,7 +38,7 @@
 #ifndef __GUEST_DEBUG_H__
 #define __GUEST_DEBUG_H__
 
-#include "memory.h"
+#include "exec/memory.h"
 
 char *get_logpath(void);
 MemoryRegion *get_ram_memory(void);

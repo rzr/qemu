@@ -35,8 +35,8 @@
 extern "C" {
 #endif
 
-#include "qemu-thread.h"
-#include "hw/virtio.h"
+#include "qemu/thread.h"
+#include "hw/virtio/virtio.h"
 
 #define VIRTIO_KBD_DEVICE_NAME "virtio-keyboard"
 #define VIRTIO_KBD_QUEUE_SIZE  100

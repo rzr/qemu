@@ -157,8 +157,9 @@ extern unsigned int nb_prom_envs;
 /* pci-hotplug */
 #ifdef CONFIG_MARU
 PCIDevice *pci_device_hot_add(Monitor *mon, const QDict *qdict);
-#endif
+#else
 void pci_device_hot_add(Monitor *mon, const QDict *qdict);
+#endif
 int pci_drive_hot_add(Monitor *mon, const QDict *qdict, DriveInfo *dinfo);
 void do_pci_device_hot_remove(Monitor *mon, const QDict *qdict);
 

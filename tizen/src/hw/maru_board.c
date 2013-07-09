@@ -40,25 +40,25 @@
 
 #include <glib.h>
 
-#include "hw.h"
-#include "pc.h"
-#include "apic.h"
-#include "pci.h"
-#include "pci_ids.h"
-#include "usb.h"
-#include "net.h"
-#include "boards.h"
-#include "ide.h"
-#include "kvm.h"
-#include "kvm/clock.h"
-#include "sysemu.h"
-#include "sysbus.h"
-#include "arch_init.h"
-#include "blockdev.h"
-#include "smbus.h"
-#include "xen.h"
-#include "memory.h"
-#include "exec-memory.h"
+#include "hw/hw.h"
+#include "hw/i386/pc.h"
+#include "hw/i386/apic.h"
+#include "hw/pci/pci.h"
+#include "hw/pci/pci_ids.h"
+#include "hw/usb.h"
+#include "net/net.h"
+#include "hw/boards.h"
+#include "hw/ide.h"
+#include "sysemu/kvm.h"
+#include "hw/kvm/clock.h"
+#include "sysemu/sysemu.h"
+#include "hw/sysbus.h"
+#include "sysemu/arch_init.h"
+#include "sysemu/blockdev.h"
+#include "hw/i2c/smbus.h"
+#include "hw/xen/xen.h"
+#include "exec/memory.h"
+//#include "exec-memory.h"
 #ifdef CONFIG_XEN
 #  include <xen/hvm/hvm_info_table.h>
 #endif
@@ -302,7 +302,8 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
 // commented out by caramis... for use 'tizen-ac97'...
 // reopen for qemu 1.0 merging...
-    audio_init(isa_bus, pci_enabled ? pci_bus : NULL);
+// FIXME: merge
+//    audio_init(isa_bus, pci_enabled ? pci_bus : NULL);
 
     pc_cmos_init(below_4g_mem_size, above_4g_mem_size, boot_device,
                  floppy, idebus[0], idebus[1], rtc_state);
@@ -311,7 +312,9 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         pci_create_simple(pci_bus, piix3_devfn + 2, "piix3-usb-uhci");
     }
 
-    if (pci_enabled && acpi_enabled) {
+// FIXME: merge
+//    if (pci_enabled && acpi_enabled) {
+    if (pci_enabled) {
         i2c_bus *smbus;
 
         smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt, first_cpu, 1);

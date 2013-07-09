@@ -38,8 +38,8 @@
 #define __EMULATOR_H__
 
 #include "maru_common.h"
-#include "qlist.h"
-#include "qemu-option.h"
+#include "qapi/qmp/qlist.h"
+#include "qemu/option.h"
 
 #define MAXLEN  512
 #define MAXPACKETLEN 60

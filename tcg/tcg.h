@@ -487,13 +487,6 @@ struct TCGContext {
     TCGLabelQemuLdst *qemu_ldst_labels;
     int nb_qemu_ldst_labels;
 #endif
-
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-    /* labels info for qemu_ld/st IRs
-       The labels help to generate TLB miss case codes at the end of TB */
-    TCGLabelQemuLdst *qemu_ldst_labels;
-    int nb_qemu_ldst_labels;
-#endif
 };
 
 extern TCGContext tcg_ctx;

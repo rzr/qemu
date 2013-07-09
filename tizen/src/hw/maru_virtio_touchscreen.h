@@ -30,8 +30,8 @@
 #ifndef MARU_TOUCHSCREEN_H_
 #define MARU_TOUCHSCREEN_H_
 
-#include "console.h"
-#include "hw/virtio.h"
+#include "ui/console.h"
+#include "hw/virtio/virtio.h"
 
 typedef struct TouchscreenState
 {

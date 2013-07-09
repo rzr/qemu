@@ -36,17 +36,17 @@
 #include <sys/ioctl.h>
 #endif
 
-#include "qobject.h"
+//#include "qobject.h"
 #include "qemu-common.h"
 #include "hw/usb.h"
 #include "hw/irq.h"
 #include "mloop_event.h"
-#include "console.h"
+#include "ui/console.h"
 #include "emul_state.h"
 #include "debug_ch.h"
-#include "monitor.h"
-#include "pci.h"
-#include "sysemu.h"
+#include "monitor/monitor.h"
+#include "hw/pci/pci.h"
+#include "sysemu/sysemu.h"
 
 #include "emulator.h"
 #include "guest_debug.h"

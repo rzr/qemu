@@ -12,7 +12,8 @@ config-host.mak:
 endif
 
 all: qemu skin_client
-qemu: build_info ffmpeg_install check_hax check_cam
+#qemu: build_info ffmpeg_install check_hax check_cam
+qemu: build_info
 	cd ../../ && $(MAKE)
 qemu_clean:
 	cd ../../ && $(MAKE) clean

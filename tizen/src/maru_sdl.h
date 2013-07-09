@@ -31,7 +31,7 @@
 #ifndef MARU_SDL_H_
 #define MARU_SDL_H_
 
-#include "console.h"
+#include "ui/console.h"
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include "qemu-common.h"
