@@ -651,7 +651,7 @@ static void virtio_pci_vq_vector_mask(VirtIOPCIProxy *proxy,
 
     /* If guest supports masking, keep irqfd but mask it.
      * Otherwise, clean it up now.
-     */ 
+     */
     if (k->guest_notifier_mask) {
         k->guest_notifier_mask(proxy->vdev, queue_no, true);
     } else {
@@ -1500,6 +1500,265 @@ static const TypeInfo virtio_rng_pci_info = {
     .class_init    = virtio_rng_pci_class_init,
 };
 
+#ifdef CONFIG_MARU
+#if 0
+#ifdef CONFIG_GL_BACKEND
+/* virtio-gl-pci */
+
+static int virtio_gl_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOGLPCI *dev = VIRTIO_GL_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static void virtio_gl_pci_class_init(ObjectClass *klass, void *data)
+{
+//    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_gl_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_GL;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_gl_pci_instance_init(Object *obj)
+{
+    VirtIOGLPCI *dev = VIRTIO_GL_PCI(obj);
+    object_initialize(OBJECT(&dev->vdev), TYPE_VIRTIO_GL);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_gl_pci_info = {
+    .name          = TYPE_VIRTIO_GL_PCI,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOPCIProxy),
+    .instance_init = sizeof(VirtIOGL),
+    .class_init    = virtio_gl_pci_class_init,
+};
+#endif
+#endif
+
+/* virtio-touchscreen-pci */
+
+static int virtio_touchscreen_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOTouchscreenPCI *dev = VIRTIO_TOUCHSCREEN_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static void virtio_touchscreen_pci_class_init(ObjectClass *klass, void *data)
+{
+//    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_touchscreen_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_touchscreen_pci_instance_init(Object *obj)
+{
+    VirtIOTouchscreenPCI *dev = VIRTIO_TOUCHSCREEN_PCI(obj);
+    object_initialize(OBJECT(&dev->vdev), TYPE_VIRTIO_TOUCHSCREEN);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_touchscreen_pci_info = {
+    .name          = TYPE_VIRTIO_TOUCHSCREEN_PCI,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOTouchscreenPCI),
+	.instance_init = virtio_touchscreen_pci_instance_init,
+    .class_init    = virtio_touchscreen_pci_class_init,
+};
+
+/* virtio-keyboard-pci */
+
+static int virtio_keyboard_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOKeyboardPCI *dev = VIRTIO_KEYBOARD_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static void virtio_keyboard_pci_class_init(ObjectClass *klass, void *data)
+{
+//    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_keyboard_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_KEYBOARD;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_keyboard_pci_instance_init(Object *obj)
+{
+    VirtIOKeyboardPCI *dev = VIRTIO_KEYBOARD_PCI(obj);
+    object_initialize(OBJECT(&dev->vdev), TYPE_VIRTIO_KEYBOARD);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_keyboard_pci_info = {
+    .name          = TYPE_VIRTIO_KEYBOARD_PCI,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOKeyboardPCI),
+	.instance_init = virtio_keyboard_pci_instance_init,
+    .class_init    = virtio_keyboard_pci_class_init,
+};
+
+/* virtio-esm-pci */
+
+static int virtio_esm_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOESMPCI *dev = VIRTIO_ESM_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static void virtio_esm_pci_class_init(ObjectClass *klass, void *data)
+{
+//    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_esm_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_ESM;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_esm_pci_instance_init(Object *obj)
+{
+    VirtIOESMPCI *dev = VIRTIO_ESM_PCI(obj);
+    object_initialize(OBJECT(&dev->vdev), TYPE_VIRTIO_ESM);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_esm_pci_info = {
+    .name          = TYPE_VIRTIO_ESM_PCI,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOESMPCI),
+	.instance_init = virtio_esm_pci_instance_init,
+    .class_init    = virtio_esm_pci_class_init,
+};
+
+/* virtio-hwkey-pci */
+
+static int virtio_hwkey_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOHWKeyPCI *dev = VIRTIO_HWKEY_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static void virtio_hwkey_pci_class_init(ObjectClass *klass, void *data)
+{
+//    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_hwkey_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_HWKEY;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_hwkey_pci_instance_init(Object *obj)
+{
+    VirtIOHWKeyPCI *dev = VIRTIO_HWKEY_PCI(obj);
+    object_initialize(OBJECT(&dev->vdev), TYPE_VIRTIO_HWKEY);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_hwkey_pci_info = {
+    .name          = TYPE_VIRTIO_HWKEY_PCI,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOHWKeyPCI),
+	.instance_init = virtio_hwkey_pci_instance_init,
+    .class_init    = virtio_hwkey_pci_class_init,
+};
+
+/* virtio-evdi-pci */
+
+static int virtio_evdi_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOEVDIPCI *dev = VIRTIO_EVDI_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static void virtio_evdi_pci_class_init(ObjectClass *klass, void *data)
+{
+//    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_evdi_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_EVDI;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_evdi_pci_instance_init(Object *obj)
+{
+    VirtIOEVDIPCI *dev = VIRTIO_EVDI_PCI(obj);
+    object_initialize(OBJECT(&dev->vdev), TYPE_VIRTIO_EVDI);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_evdi_pci_info = {
+    .name          = TYPE_VIRTIO_EVDI_PCI,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOEVDIPCI),
+	.instance_init = virtio_evdi_pci_instance_init,
+    .class_init    = virtio_evdi_pci_class_init,
+};
+#endif
+
 /* virtio-pci-bus */
 
 static void virtio_pci_bus_new(VirtioBusState *bus, VirtIOPCIProxy *dev)
@@ -1554,6 +1813,18 @@ static void virtio_pci_register_types(void)
     type_register_static(&virtio_net_pci_info);
 #ifdef CONFIG_VHOST_SCSI
     type_register_static(&vhost_scsi_pci_info);
+#endif
+#ifdef CONFIG_MARU
+#if 0
+#ifdef CONFIG_GL_BACKEND
+    type_register_static(&virtio_gl_pci_info);
+#endif
+#endif
+    type_register_static(&virtio_evdi_pci_info);
+    type_register_static(&virtio_esm_pci_info);
+    type_register_static(&virtio_hwkey_pci_info);
+    type_register_static(&virtio_keyboard_pci_info);
+    type_register_static(&virtio_touchscreen_pci_info);
 #endif
 }
 

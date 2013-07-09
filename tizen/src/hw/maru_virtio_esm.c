@@ -39,18 +39,20 @@ struct progress_info {
 	uint16_t percentage;
 };
 
+#if 0
 typedef struct VirtIOEmulatorStatusMedium {
     VirtIODevice    vdev;
     VirtQueue       *vq;
     DeviceState     *qdev;
-} VirtIO_ESM;
+} VirtIOESM;
+#endif
 
 static VirtQueueElement elem;
 struct progress_info progress;
 
 static void virtio_esm_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
-    VirtIO_ESM *vesm = (VirtIO_ESM *)vdev;
+    VirtIOESM *vesm = (VirtIOESM *)vdev;
     int index = 0;
 
     TRACE("virtqueue handler.\n");
@@ -95,11 +97,11 @@ static uint32_t virtio_esm_get_features(VirtIODevice *vdev,
 
 VirtIODevice *virtio_esm_init(DeviceState *dev)
 {
-    VirtIO_ESM *vesm;
+    VirtIOESM *vesm;
     INFO("initialize virtio-esm device\n");
 
-    vesm = (VirtIO_ESM *)virtio_common_init("virtio-esm",
-            VIRTIO_ID_ESM, 0, sizeof(VirtIO_ESM));
+    vesm = (VirtIOESM *)virtio_common_init("virtio-esm",
+            VIRTIO_ID_ESM, 0, sizeof(VirtIOESM));
     if (vesm == NULL) {
         ERR("failed to initialize device\n");
         return NULL;
