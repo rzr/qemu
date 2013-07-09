@@ -59,6 +59,21 @@ extern char tizen_target_img_path[];
 extern int tizen_base_port;
 int g_shmid;
 char *g_shared_memory;
+int gproxytool = GCONFTOOL;
+
+/* Getting proxy commands */
+static const char* gproxycmds[][2] = {
+	{ "gconftool-2 -g /system/proxy/mode" , "gsettings get org.gnome.system.proxy mode" },
+	{ "gconftool-2 -g /system/proxy/autoconfig_url", "gsettings get org.gnome.system.proxy autoconfig-url" },
+	{ "gconftool-2 -g /system/http_proxy/host", "gsettings get org.gnome.system.proxy.http host" },
+	{ "gconftool-2 -g /system/http_proxy/port", "gsettings get org.gnome.system.proxy.http port"},
+	{ "gconftool-2 -g /system/proxy/secure_host", "gsettings get org.gnome.system.proxy.https host" },
+	{ "gconftool-2 -g /system/proxy/secure_port", "gsettings get org.gnome.system.proxy.https port" },
+	{ "gconftool-2 -g /system/proxy/ftp_host", "gsettings get org.gnome.system.proxy.ftp host" },
+	{ "gconftool-2 -g /system/proxy/ftp_port", "gsettings get org.gnome.system.proxy.ftp port" },
+	{ "gconftool-2 -g /system/proxy/socks_host", "gsettings get org.gnome.system.proxy.socks host" },
+	{ "gconftool-2 -g /system/proxy/socks_port", "gsettings get org.gnome.system.proxy.socks port" },
+};
 
 void check_vm_lock_os(void)
 {
@@ -191,6 +206,18 @@ void print_system_info_os(void)
     }
 }
 
+static void process_string(char *buf)
+{
+    char tmp_buf[MAXLEN];
+
+    /* remove single quotes of strings gotten by gsettings */
+    if (gproxytool == GSETTINGS) {
+        remove_string(buf, tmp_buf, "\'");
+        memset(buf, 0, MAXLEN);
+        strncpy(buf, tmp_buf, strlen(tmp_buf)-1);
+    }
+}
+
 static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     char type[MAXLEN];
@@ -201,8 +228,9 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     FILE *output;
     char buf[MAXLEN];
 
-    output = popen("gconftool-2 --get /system/proxy/autoconfig_url", "r");
+    output = popen(gproxycmds[GNOME_PROXY_AUTOCONFIG_URL][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
+        process_string(buf);
         INFO("pac address: %s\n", buf);
         download_url(buf);
     }
@@ -258,13 +286,14 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     FILE *output;
     int MAXPROXYLEN = MAXLEN + MAXPORTLEN;
 
-    output = popen("gconftool-2 --get /system/http_proxy/host", "r");
+    output = popen(gproxycmds[GNOME_PROXY_HTTP_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
+        process_string(buf);
         snprintf(buf_proxy, MAXLEN, "%s", buf);
     }
     pclose(output);
     
-    output = popen("gconftool-2 --get /system/http_proxy/port", "r");
+    output = popen(gproxycmds[GNOME_PROXY_HTTP_PORT][gproxytool], "r");
     if(fscanf(output, "%s", buf_port) <= 0) {
         //for abnormal case: if can't find the key of http port, get from environment value.
         buf_proxy_bak = getenv("http_proxy");
@@ -292,13 +321,14 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
 
     memset(buf, 0, MAXLEN);
 
-    output = popen("gconftool-2 --get /system/proxy/secure_host", "r");
+    output = popen(gproxycmds[GNOME_PROXY_HTTPS_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
+        process_string(buf);
         snprintf(buf_proxy, MAXLEN, "%s", buf);
     }
     pclose(output);
 
-    output = popen("gconftool-2 --get /system/proxy/secure_port", "r");
+    output = popen(gproxycmds[GNOME_PROXY_HTTPS_PORT][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
         snprintf(https_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     }
@@ -307,13 +337,14 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     memset(buf_proxy, 0, MAXLEN);
     INFO("https_proxy : %s\n", https_proxy);
 
-    output = popen("gconftool-2 --get /system/proxy/ftp_host", "r");
+    output = popen(gproxycmds[GNOME_PROXY_FTP_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
+        process_string(buf);
         snprintf(buf_proxy, MAXLEN, "%s", buf);
     }
     pclose(output);
 
-    output = popen("gconftool-2 --get /system/proxy/ftp_port", "r");
+    output = popen(gproxycmds[GNOME_PROXY_FTP_PORT][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
         snprintf(ftp_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     }
@@ -322,13 +353,14 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     memset(buf_proxy, 0, MAXLEN);
     INFO("ftp_proxy : %s\n", ftp_proxy);
 
-    output = popen("gconftool-2 --get /system/proxy/socks_host", "r");
+    output = popen(gproxycmds[GNOME_PROXY_SOCKS_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
+        process_string(buf);
         snprintf(buf_proxy, MAXLEN, "%s", buf);
     }
     pclose(output);
 
-    output = popen("gconftool-2 --get /system/proxy/socks_port", "r");
+    output = popen(gproxycmds[GNOME_PROXY_SOCKS_PORT][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
         snprintf(socks_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     }
@@ -341,9 +373,19 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
 {
     char buf[MAXLEN];
     FILE *output;
+    int ret;
 
-    output = popen("gconftool-2 --get /system/proxy/mode", "r");
-    if(fscanf(output, "%s", buf) > 0) {
+    output = popen(gproxycmds[GNOME_PROXY_MODE][gproxytool], "r");
+    ret = fscanf(output, "%s", buf);
+    if (ret <= 0) {
+        pclose(output);
+        INFO("Try to use gsettings to get proxy\n");
+        gproxytool = GSETTINGS;
+        output = popen(gproxycmds[GNOME_PROXY_MODE][gproxytool], "r");
+        ret = fscanf(output, "%s", buf);
+    }
+    if (ret > 0) {
+        process_string(buf);
         //priority : auto > manual > none       
         if (strcmp(buf, "auto") == 0) {
             INFO("AUTO PROXY MODE\n");
