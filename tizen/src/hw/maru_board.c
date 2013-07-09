@@ -243,13 +243,6 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     pc_cmos_init(below_4g_mem_size, above_4g_mem_size, boot_device,
                  floppy, idebus[0], idebus[1], rtc_state);
 
-    if (pci_enabled && usb_enabled) {
-        pci_create_simple(pci_bus, piix3_devfn + 2, "piix3-usb-uhci");
-    }
-
-    pc_cmos_init(below_4g_mem_size, above_4g_mem_size, boot_device,
-                 floppy, idebus[0], idebus[1], rtc_state);
-
     if (pci_enabled && usb_enabled(false)) {
         pci_create_simple(pci_bus, piix3_devfn + 2, "piix3-usb-uhci");
     }
