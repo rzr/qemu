@@ -34,10 +34,6 @@ MULTI_DEBUG_CHANNEL(tizen, input);
 
 static QEMUPutKBDEvent *qemu_put_kbd_event;
 static void *qemu_put_kbd_event_opaque;
-#ifdef CONFIG_MARU
-static QEMUPutKBDEvent *qemu_put_ps2kbd_event;
-static void *qemu_put_ps2kbd_event_opaque;
-#endif
 static QTAILQ_HEAD(, QEMUPutLEDEntry) led_handlers = QTAILQ_HEAD_INITIALIZER(led_handlers);
 static QTAILQ_HEAD(, QEMUPutMouseEntry) mouse_handlers =
     QTAILQ_HEAD_INITIALIZER(mouse_handlers);
@@ -55,28 +51,6 @@ void qemu_remove_kbd_event_handler(void)
     qemu_put_kbd_event_opaque = NULL;
     qemu_put_kbd_event = NULL;
 }
-
-#ifdef CONFIG_MARU
-/* use ps2kbd device as a hardkey device. */
-void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque)
-{
-    qemu_put_ps2kbd_event_opaque = opaque;
-    qemu_put_ps2kbd_event = func;
-}
-
-void qemu_remove_ps2kbd_event_handler(void)
-{
-    qemu_put_ps2kbd_event_opaque = NULL;
-    qemu_put_ps2kbd_event = NULL;
-}
-
-void ps2kbd_put_keycode(int keycode)
-{
-    if (qemu_put_ps2kbd_event) {
-        qemu_put_ps2kbd_event(qemu_put_ps2kbd_event_opaque, keycode);
-    }
-}
-#endif
 
 static void check_mode_change(void)
 {
@@ -193,7 +167,7 @@ void kbd_mouse_event(int dx, int dy, int dz, int buttons_state)
     QTAILQ_FOREACH(entry, &mouse_handlers, node) {
         /* if mouse event is wheelup ,wheeldown or move
            then go to ps2 mouse event(index == 0) */
-        if((buttons_state > 3  && entry->index == 0)) {
+        if (buttons_state > 3  && entry->index == 0) {
             //INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
             buttons_state = 0; 
             mouse_event = entry->qemu_put_mouse_event;
@@ -202,7 +176,7 @@ void kbd_mouse_event(int dx, int dy, int dz, int buttons_state)
         }
     }
     /* other events(mouse up, down and drag), go to touch screen */
-    if(!entry) {
+    if (!entry) {
         entry = QTAILQ_FIRST(&mouse_handlers);
         mouse_event = entry->qemu_put_mouse_event;
         mouse_event_opaque = entry->qemu_put_mouse_event_opaque;

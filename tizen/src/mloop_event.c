@@ -1,7 +1,7 @@
 /*
  * mainloop_evhandle.c
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * Kitae Kim <kt920.kim@samsung.com>
@@ -79,7 +79,6 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_USB_DEL    2
 #define MLOOP_EVTYPE_INTR_UP    3
 #define MLOOP_EVTYPE_INTR_DOWN  4
-#define MLOOP_EVTYPE_HWKEY      5
 #define MLOOP_EVTYPE_TOUCH      6
 #define MLOOP_EVTYPE_KEYBOARD   7
 #define MLOOP_EVTYPE_KBD_ADD    8
@@ -269,28 +268,6 @@ static void mloop_evhandle_intr_down(long data)
     }
 
     qemu_irq_lower((qemu_irq)data);
-}
-
-static void mloop_evhandle_hwkey(struct mloop_evpack* pack)
-{
-    int event_type = 0;
-    int keycode = 0;
-
-    memcpy(&event_type, pack->data, sizeof(int));
-    memcpy(&keycode, pack->data + sizeof(int), sizeof(int));
-
-    if (KEY_PRESSED == event_type) {
-        if (kbd_mouse_is_absolute()) {
-            ps2kbd_put_keycode(keycode & 0x7f);
-        }
-    } else if (KEY_RELEASED == event_type) {
-        if (kbd_mouse_is_absolute()) {
-            ps2kbd_put_keycode(keycode | 0x80);
-        }
-    } else {
-        ERR("Unknown hardkey event type.[event_type:%d, keycode:%d]\n",
-            event_type, keycode);
-    }
 }
 
 static void mloop_evhandle_touch(struct mloop_evpack* pack)
@@ -510,9 +487,6 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     case MLOOP_EVTYPE_INTR_DOWN:
         mloop_evhandle_intr_down(*(long*)&pack.data[0]);
         break;
-    case MLOOP_EVTYPE_HWKEY:
-        mloop_evhandle_hwkey(&pack);
-        break;
     case MLOOP_EVTYPE_TOUCH:
         mloop_evhandle_touch(&pack);
         break;
@@ -653,19 +627,6 @@ void mloop_evcmd_set_usbkbd(void *dev)
 void mloop_evcmd_set_usbdisk(void *dev)
 {
     usbdisk = (USBDevice *)dev;
-}
-
-void mloop_evcmd_hwkey(int event_type, int keycode)
-{
-    struct mloop_evpack pack;
-
-    pack.type = MLOOP_EVTYPE_HWKEY;
-    pack.size = 5 + 8; //TODO: ?
-
-    memcpy(pack.data, &event_type, sizeof(int));
-    memcpy(pack.data + sizeof(int), &keycode, sizeof(int));
-
-    mloop_evsock_send(&mloop, &pack);
 }
 
 void mloop_evcmd_touch(void)

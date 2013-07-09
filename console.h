@@ -55,11 +55,6 @@ QEMUPutLEDEntry *qemu_add_led_event_handler(QEMUPutLEDEvent *func, void *opaque)
 void qemu_remove_led_event_handler(QEMUPutLEDEntry *entry);
 
 void kbd_put_keycode(int keycode);
-#ifdef CONFIG_MARU
-void qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func, void *opaque);
-void qemu_remove_ps2kbd_event_handler(void);
-void ps2kbd_put_keycode(int keycode);
-#endif
 void kbd_put_ledstate(int ledstate);
 void kbd_mouse_event(int dx, int dy, int dz, int buttons_state);
 
