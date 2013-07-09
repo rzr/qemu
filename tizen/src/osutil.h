@@ -43,6 +43,19 @@
 #define PROXY "PROXY"
 #define MAXPORTLEN 6
 
+#define GNOME_PROXY_MODE 0
+#define GNOME_PROXY_AUTOCONFIG_URL 1
+#define GNOME_PROXY_HTTP_HOST 2
+#define GNOME_PROXY_HTTP_PORT 3
+#define GNOME_PROXY_HTTPS_HOST 4
+#define GNOME_PROXY_HTTPS_PORT 5
+#define GNOME_PROXY_FTP_HOST 6
+#define GNOME_PROXY_FTP_PORT 7
+#define GNOME_PROXY_SOCKS_HOST 8
+#define GNOME_PROXY_SOCKS_PORT 9
+#define GCONFTOOL 0
+#define GSETTINGS 1
+
 extern const char *pac_tempfile; 
 
 void check_vm_lock_os(void);
