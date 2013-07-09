@@ -30,7 +30,7 @@
 #ifndef MARU_HWKEY_H_
 #define MARU_HWKEY_H_
 
-#include "console.h"
+#include "ui/console.h"
 #include "hw/virtio.h"
 
 typedef struct VirtIOHwKey

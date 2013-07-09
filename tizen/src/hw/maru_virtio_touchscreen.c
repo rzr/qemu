@@ -28,7 +28,7 @@
 
 
 #include <pthread.h>
-#include "console.h"
+#include "ui/console.h"
 #include "maru_virtio_touchscreen.h"
 #include "maru_device_ids.h"
 #include "emul_state.h"

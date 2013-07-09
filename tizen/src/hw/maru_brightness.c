@@ -31,11 +31,11 @@
  */
 
 
-#include "pc.h"
+#include "hw/i386/pc.h"
 #ifdef TARGET_ARM
 #include "console.h"
 #endif
-#include "pci.h"
+#include "hw/pci/pci.h"
 #include "maru_device_ids.h"
 #include "maru_brightness.h"
 #include "skin/maruskin_server.h"
@@ -79,7 +79,7 @@ uint8_t brightness_tbl[] = {100, /* level 0 : for dimming */
 QEMUBH *bh;
 
 static uint64_t brightness_reg_read(void *opaque,
-                                    target_phys_addr_t addr,
+                                    hwaddr addr,
                                     unsigned size)
 {
     switch (addr & 0xFF) {
@@ -98,7 +98,7 @@ static uint64_t brightness_reg_read(void *opaque,
 }
 
 static void brightness_reg_write(void *opaque,
-                                 target_phys_addr_t addr,
+                                 hwaddr addr,
                                  uint64_t val,
                                  unsigned size)
 {

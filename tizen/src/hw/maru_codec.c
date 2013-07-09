@@ -31,7 +31,6 @@
 
 #include "maru_codec.h"
 #include "qemu-common.h"
-#include "qemu-thread.h"
 
 #define MARU_CODEC_DEV_NAME     "codec"
 #define MARU_CODEC_VERSION      14
@@ -1405,7 +1404,7 @@ static uint32_t qemu_get_mmap_offset(SVCodecState *s)
 /*
  *  Codec Device APIs
  */
-uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
+uint64_t codec_read(void *opaque, hwaddr addr, unsigned size)
 {
     SVCodecState *s = (SVCodecState *)opaque;
     uint64_t ret = 0;
@@ -1442,7 +1441,7 @@ uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
     return ret;
 }
 
-void codec_write(void *opaque, target_phys_addr_t addr,
+void codec_write(void *opaque, hwaddr addr,
                 uint64_t value, unsigned size)
 {
     SVCodecState *s = (SVCodecState *)opaque;
