@@ -1,7 +1,7 @@
 /*
  * mainloop_evhandle.c
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * Kitae Kim <kt920.kim@samsung.com>
@@ -50,7 +50,6 @@ void mloop_evcmd_set_usbdisk(void *dev);
 void mloop_evcmd_raise_intr(void *irq);
 void mloop_evcmd_lower_intr(void *irq);
 
-void mloop_evcmd_hwkey(int event_type, int keycode);
 void mloop_evcmd_touch(void);
 void mloop_evcmd_keyboard(void *data);
 void mloop_evcmd_ramdump(void);
