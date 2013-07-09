@@ -78,7 +78,7 @@ static unsigned int elem_ringbuf_cnt; /* _elem_buf */
 static unsigned int elem_queue_cnt; /* elem_queue */
 
 
-TouchscreenState *ts;
+VirtIOTouchscreen *ts;
 
 /* lock for between communication thread and IO thread */
 static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -304,17 +304,18 @@ VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
 {
     INFO("initialize the touchscreen device\n");
 
-    ts = (TouchscreenState *)virtio_common_init(DEVICE_NAME,
-        VIRTIO_ID_TOUCHSCREEN, 4, sizeof(TouchscreenState));
+    ts = (VirtIOTouchscreen *)virtio_common_init(DEVICE_NAME,
+        VIRTIO_ID_TOUCHSCREEN, 4, sizeof(VirtIOTouchscreen));
 
     if (ts == NULL) {
         ERR("failed to initialize the touchscreen device\n");
         return NULL;
     }
 
-    ts->vdev.get_config = virtio_touchscreen_get_config;
-    ts->vdev.set_config = virtio_touchscreen_set_config;
-    ts->vdev.get_features = virtio_touchscreen_get_features;
+    //TODO:
+    //ts->vdev.get_config = virtio_touchscreen_get_config;
+    //ts->vdev.set_config = virtio_touchscreen_set_config;
+    //ts->vdev.get_features = virtio_touchscreen_get_features;
 
     ts->vq = virtio_add_queue(&ts->vdev, 64, maru_virtio_touchscreen_handle);
     ts->qdev = dev;

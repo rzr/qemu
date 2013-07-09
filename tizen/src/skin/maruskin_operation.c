@@ -337,12 +337,14 @@ void send_rotation_event(int rotation_type)
 
 QemuSurfaceInfo* get_screenshot_info(void)
 {
+#if 0
     DisplaySurface* qemu_display_surface = get_qemu_display_surface();
 
     if ( !qemu_display_surface ) {
         ERR( "qemu surface is NULL.\n" );
         return NULL;
     }
+#endif
 
     QemuSurfaceInfo* info = (QemuSurfaceInfo*) g_malloc0( sizeof(QemuSurfaceInfo) );
     if ( !info ) {
@@ -350,7 +352,7 @@ QemuSurfaceInfo* get_screenshot_info(void)
         return NULL;
     }
 
-    int length = qemu_display_surface->linesize * qemu_display_surface->height;
+    int length = get_emul_lcd_width() * get_emul_lcd_height() * 4;
     INFO( "screenshot data length:%d\n", length );
 
     if ( 0 >= length ) {
@@ -591,7 +593,8 @@ static void send_to_emuld(const char* request_type,
     int s = 0;
 
     snprintf(addr, 128, ":%u", (uint16_t) (tizen_base_port + SDB_TCP_EMULD_INDEX));
-    s = inet_connect(addr, true, NULL, NULL);
+    //TODO: Error handling
+    s = inet_connect(addr, NULL);
 
     if ( s < 0 ) {
         ERR( "can't create socket to emulator daemon in guest\n" );
