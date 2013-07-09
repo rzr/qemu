@@ -24,8 +24,9 @@
  * THE SOFTWARE.
  */
 
+#if 0
 #include "hw.h"
-#include "virtio.h"
+#include "maru_device_ids.h"
 
 typedef target_phys_addr_t arg_t;
 #include "opengl_process.h"
@@ -34,6 +35,8 @@ typedef target_phys_addr_t arg_t;
 
 #include "tizen/src/debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, virtio-gl);
+
+#define TYPE_VIRTIO_GL	"virtio-gl"
 
 int decode_call_int(ProcessStruct *p, char *in_args, int args_len, char *r_buffer);
 
@@ -63,6 +66,9 @@ struct d_hdr
 #else
 #define SIZE_IN_HEADER 4
 #endif
+
+#endif
+#include "virtio-gl.h"
 
 static void virtio_gl_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
@@ -214,14 +220,18 @@ VirtIODevice *virtio_gl_init(DeviceState *dev)
 {
 	VirtIOGL *s;
 
-	s = (VirtIOGL *)virtio_common_init("virtio-gl", VIRTIO_ID_GL,
-			0, sizeof(VirtIOGL));
-	if (!s)
+	s = g_malloc0(sizeof(VirtIOGL));
+	virtio_init(&s->vdev, TYPE_VIRTIO_GL, VIRTIO_ID_GL, 0);
+	if (&s->vdev == NULL) {
+		ERR("Failed to initialize virtio gl device.\n");
 		return NULL;
+	}
 
-	s->vdev.get_features = virtio_gl_get_features;
+	VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&s->vdev);
+	vdc->get_features = virtio_gl_get_features;
+
 	s->vq = virtio_add_queue(&s->vdev, 128, virtio_gl_handle);
-	register_savevm(dev, "virtio-gl", -1, 1, virtio_gl_save, virtio_gl_load, s);
+	register_savevm(dev, TYPE_VIRTIO_GL, -1, 1, virtio_gl_save, virtio_gl_load, s);
 
 	return &s->vdev;
 }

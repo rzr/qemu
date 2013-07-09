@@ -1501,8 +1501,6 @@ static const TypeInfo virtio_rng_pci_info = {
 };
 
 #ifdef CONFIG_MARU
-#if 0
-#ifdef CONFIG_GL_BACKEND
 /* virtio-gl-pci */
 
 static int virtio_gl_pci_init(VirtIOPCIProxy *vpci_dev)
@@ -1520,7 +1518,6 @@ static int virtio_gl_pci_init(VirtIOPCIProxy *vpci_dev)
 
 static void virtio_gl_pci_class_init(ObjectClass *klass, void *data)
 {
-//    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
     PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
 
@@ -1542,11 +1539,9 @@ static TypeInfo virtio_gl_pci_info = {
     .name          = TYPE_VIRTIO_GL_PCI,
     .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOPCIProxy),
-    .instance_init = sizeof(VirtIOGL),
+    .instance_init = virtio_gl_pci_instance_init,
     .class_init    = virtio_gl_pci_class_init,
 };
-#endif
-#endif
 
 /* virtio-touchscreen-pci */
 
@@ -1815,16 +1810,12 @@ static void virtio_pci_register_types(void)
     type_register_static(&vhost_scsi_pci_info);
 #endif
 #ifdef CONFIG_MARU
-#if 0
-#ifdef CONFIG_GL_BACKEND
-    type_register_static(&virtio_gl_pci_info);
-#endif
-#endif
     type_register_static(&virtio_evdi_pci_info);
     type_register_static(&virtio_esm_pci_info);
     type_register_static(&virtio_hwkey_pci_info);
     type_register_static(&virtio_keyboard_pci_info);
     type_register_static(&virtio_touchscreen_pci_info);
+    type_register_static(&virtio_gl_pci_info);
 #endif
 }
 

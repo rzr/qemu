@@ -42,6 +42,7 @@
 #include "../tizen/src/hw/maru_virtio_hwkey.h"
 #include "../tizen/src/hw/maru_virtio_keyboard.h"
 #include "../tizen/src/hw/maru_virtio_touchscreen.h"
+#include "../tizen/src/hw/virtio-gl.h"
 #endif
 
 typedef struct VirtIOPCIProxy VirtIOPCIProxy;
@@ -54,9 +55,7 @@ typedef struct VHostSCSIPCI VHostSCSIPCI;
 typedef struct VirtIORngPCI VirtIORngPCI;
 
 #ifdef CONFIG_MARU
-#ifdef CONFIG_GL_BACKEND
-// typedef struct VirtIOGLPCI VirtIOGLPCI;
-#endif
+typedef struct VirtIOGLPCI VirtIOGLPCI;
 typedef struct VirtIOTouchscreenPCI VirtIOTouchscreenPCI;
 typedef struct VirtIOEVDIPCI VirtIOEVDIPCI;
 typedef struct VirtIOESMPCI VirtIOESMPCI;
@@ -225,9 +224,7 @@ struct VirtIORngPCI {
 };
 
 #ifdef CONFIG_MARU
-#ifdef CONFIG_GL_BACKEND
 
-#if 0
 /*
  * virtio-gl-pci: This extends VirtioPCIProxy.
  */
@@ -239,8 +236,6 @@ struct VirtIOGLPCI {
     VirtIOPCIProxy parent_obj;
     VirtIOGL vdev;
 };
-#endif
-#endif
 
 /*
  * virtio-touchscreen-pci: This extends VirtioPCIProxy.
