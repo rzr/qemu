@@ -36,6 +36,7 @@ extern "C" {
 #endif
 
 #include "qemu/thread.h"
+#include "ui/console.h"
 #include "hw/virtio/virtio.h"
 
 #define TYPE_VIRTIO_KEYBOARD "virtio-keyboard-device"
@@ -61,6 +62,7 @@ typedef struct VirtIOKeyboard {
     VirtIOKbdQueue  kbdqueue;
     QemuMutex       event_mutex;
     QEMUBH          *bh;
+    QEMUPutKbdEntry *eh_entry;
 } VirtIOKeyboard;
 
 VirtIODevice *virtio_keyboard_init(DeviceState *dev);

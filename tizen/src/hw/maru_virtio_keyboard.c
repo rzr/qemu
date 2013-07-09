@@ -223,9 +223,10 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
     VirtIOKeyboard *vkbd;
     INFO("initialize virtio-keyboard device\n");
 
-    vkbd = (VirtIOKeyboard *)virtio_common_init(VIRTIO_KBD_DEVICE_NAME,
-            VIRTIO_ID_KEYBOARD, 0, sizeof(VirtIOKeyboard));
-    if (vkbd == NULL) {
+    vkbd = g_malloc0(sizeof(VirtIOKeyboard));
+    virtio_init(&vkbd->vdev, TYPE_VIRTIO_KEYBOARD, VIRTIO_ID_KEYBOARD, 0);
+
+    if (&vkbd->vdev == NULL) {
         ERR("failed to initialize device\n");
         return NULL;
     }
@@ -234,8 +235,8 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
     vkbd->extension_key = 0;
     qemu_mutex_init(&vkbd->event_mutex);
 
-
-    vkbd->vdev.get_features = virtio_keyboard_get_features;
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&vkbd->vdev);
+    vdc->get_features = virtio_keyboard_get_features;
     vkbd->vq = virtio_add_queue(&vkbd->vdev, 128, virtio_keyboard_handle);
     vkbd->qdev = dev;
 
@@ -243,7 +244,7 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
     vkbd->bh = qemu_bh_new(virtio_keyboard_bh, vkbd);
 
     /* register keyboard handler */
-    qemu_add_kbd_event_handler(virtio_keyboard_event, vkbd);
+    vkbd->eh_entry = qemu_add_kbd_event_handler(virtio_keyboard_event, vkbd);
  
     return &vkbd->vdev;
 }
@@ -253,7 +254,7 @@ void virtio_keyboard_exit(VirtIODevice *vdev)
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
     INFO("destroy device\n");
 
-    qemu_remove_kbd_event_handler();
+    qemu_remove_kbd_event_handler(vkbd->eh_entry);
 
     if (vkbd->bh) {
         qemu_bh_delete(vkbd->bh);
