@@ -549,6 +549,56 @@ static inline void render_surface(QGloSurface *qsurface, int bpp, int stride, ch
     glo_surface_getcontents(qsurface->surface, stride, bpp, buffer);
 }
 
+static void qsurface_pixmap_ref(QGloSurface *qsurface)
+{
+    if (!qsurface) {
+        DEBUGF( "%s %p\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    if (qsurface->type != SURFACE_PIXMAP) {
+        DEBUGF( "%s %p is not a pixmap\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    qsurface->ref++;
+    DEBUGF("%s %p references increased to %d\n", __FUNCTION__, qsurface, qsurface->ref);
+}
+
+static void qsurface_pixmap_unref(QGloSurface *qsurface)
+{
+    if (!qsurface) {
+        DEBUGF( "%s %p\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    if (qsurface->type != SURFACE_PIXMAP) {
+        DEBUGF( "%s %p is not a pixmap\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    qsurface->ref--;
+    DEBUGF("%s %p references decreased to %d\n", __FUNCTION__, qsurface, qsurface->ref);
+
+    if (qsurface->ref == 0)
+    {
+        glo_surface_destroy(qsurface->surface);
+        g_free(qsurface);
+        DEBUGF( "%s freed: %p\n", __FUNCTION__, qsurface);
+    }
+}
+
+static void state_set_current_surface(GLState *state, QGloSurface *qsurface)
+{
+    if (state->current_qsurface != NULL)
+        qsurface_pixmap_unref(state->current_qsurface);
+
+    if (qsurface != NULL)
+        qsurface_pixmap_ref(qsurface);
+
+    state->current_qsurface = qsurface;
+}
+
 // This must always be called only on surfaces belonging to the current context
 static inline void resize_surface(ProcessState *process, QGloSurface *qsurface,
                                   int w, int h) {
@@ -625,7 +675,7 @@ static void bind_qsurface(GLState *state,
 	if ( qsurface->type == SURFACE_WINDOW )
 		QTAILQ_INSERT_HEAD(&state->qsurfaces, qsurface, next);
 
-    state->current_qsurface = qsurface;
+    state_set_current_surface(state, qsurface);
 }
 
 /* Unbind a qsurface from a context (GLState) */
@@ -637,8 +687,8 @@ static void unbind_qsurface(GLState *state,
 	if ( qsurface->type == SURFACE_WINDOW )
 		QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
 
-	if ( state->current_qsurface == qsurface )
-		state->current_qsurface = NULL;
+    if ( state->current_qsurface == qsurface )
+           state_set_current_surface(state, NULL);
 }
 
 /* Find the qsurface with required drawable in all pixmap/pbuffer surfaces */
@@ -668,13 +718,13 @@ static int set_current_qsurface(GLState *state,
 
     QTAILQ_FOREACH(qsurface, &state->qsurfaces, next) {
         if(qsurface->client_drawable == client_drawable) {
-            state->current_qsurface = qsurface;
-			qsurface->glstate = state;
+            state_set_current_surface(state, qsurface);
+            qsurface->glstate = state;
             return 1;
         }
     }
 
-    state->current_qsurface = NULL;
+    state_set_current_surface(state, NULL);
 
     return 0;
 }
@@ -746,7 +796,10 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
                     (process->nb_qsurf - i - 1) * sizeof(QGloSurface*));
 #endif
 
-            qsurface->ref = 1;
+            if (qsurface->type != SURFACE_PIXMAP) {
+                DEBUGF("%s Forcing non pixmap qsurface->ref to 1 (type %d, ref %d)\n", __FUNCTION__, qsurface->type, qsurface->ref);
+                qsurface->ref = 1;
+            }
 			if(qsurface->status == SURFACE_PENDING)
 			{
 				glo_surface_update_context(qsurface->surface, glstate->context, 1);
@@ -1780,8 +1833,12 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
             if (client_drawable == 0 && fake_ctxt == 0) {
                 /* Release context */
-                if(process->current_state->current_qsurface)
-                    process->current_state->current_qsurface->ref--;
+                if(process->current_state->current_qsurface) {
+                    if(process->current_state->current_qsurface->type != SURFACE_PIXMAP)
+                        process->current_state->current_qsurface->ref--;
+                    else
+                        state_set_current_surface(process->current_state, NULL);
+                }
                 process->current_state = &process->default_state;
 
 //                DEBUGF( " --release\n");
@@ -2084,7 +2141,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 qsurface->client_drawable = client_drawable;
 				qsurface->type = SURFACE_PIXMAP;
 				qsurface->status = SURFACE_PENDING;
-                /*                qsurface->ref = 1;*/
+                qsurface_pixmap_ref(qsurface);
 
                 /* Keep this surface, will link it with context in MakeCurrent */
                 keep_qsurface(process, qsurface);
@@ -2105,18 +2162,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             /* glXPixmap same as input Pixmap */
             ClientGLXDrawable client_drawable = to_drawable(args[1]);
             QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
-            if (qsurface->glstate != NULL) {
-                unbind_qsurface(qsurface->glstate, qsurface);
-            }
-
-            if ( qsurface &&
-                 qsurface != process->current_state->current_qsurface &&
-                 qsurface->glstate == NULL &&
-                 qsurface->type == SURFACE_PIXMAP )
-            {
-                glo_surface_destroy(qsurface->surface);
-                g_free(qsurface);
-            }
+            qsurface_pixmap_unref(qsurface);
             break;
         }
     case glEGLImageTargetTexture2DOES_fake_func:
