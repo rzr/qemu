@@ -301,7 +301,7 @@ static void mloop_evhandle_kbd_add(char *name)
     qdict_put(qdict, "pci_addr", qstring_from_str("auto"));
     qdict_put(qdict, "type", qstring_from_str(name));
 
-    hostkbd = pci_device_hot_add(cur_mon, qdict);
+    hostkbd = do_pci_device_hot_add(cur_mon, qdict);
     if (hostkbd) {
         INFO("hot_add keyboard device.\n");
         TRACE("virtio-keyboard device: domain %d, bus %d, slot %d, function %d\n",
@@ -366,7 +366,7 @@ static void mloop_evhandle_sdcard_attach(char *name)
     snprintf(opts, sizeof(opts), "file=%s,if=virtio", name);
     qdict_put(qdict, "opts", qstring_from_str(opts));
 
-    virtio_sdcard = pci_device_hot_add(cur_mon, qdict);
+    virtio_sdcard = do_pci_device_hot_add(cur_mon, qdict);
     if (virtio_sdcard) {
         INFO("hot add virtio storage device with [%s]\n", opts);
         INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",

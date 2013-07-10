@@ -252,7 +252,12 @@ static PCIDevice *qemu_pci_hot_add_keyboard(Monitor *mon,
 #endif /* CONFIG_MARU */
 
 #ifdef CONFIG_MARU
-PCIDevice *pci_device_hot_add(Monitor *mon, const QDict *qdict)
+void pci_device_hot_add(Monitor *mon, const QDict *qdict)
+{
+    do_pci_device_hot_add(mon, qdict);
+}
+
+PCIDevice *do_pci_device_hot_add(Monitor *mon, const QDict *qdict)
 #else
 void pci_device_hot_add(Monitor *mon, const QDict *qdict)
 #endif
