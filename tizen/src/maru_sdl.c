@@ -99,7 +99,7 @@ static void maru_do_pixman_sdl(pixman_image_t *dst_image)
                                overlay1_width, overlay1_height);
     }
     /* apply the brightness level */
-    if (brightness_level < BRIGHTNESS_MAX) {
+    if (brightness_off || (brightness_level < BRIGHTNESS_MAX)) {
         pixman_image_composite(PIXMAN_OP_OVER,
                                brightness_image, NULL, dst_image,
                                0, 0, 0, 0, 0, 0,
@@ -324,6 +324,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
                         true);
 
                 pthread_mutex_unlock(&sdl_mutex);
+                graphic_hw_invalidate(NULL);
                 sdl_skip_update = 0;
                 sdl_skip_count = 0;
                 break;
@@ -344,14 +345,14 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
        When the LCD is turned off,
        ten more updates the screen for a black screen. */
     if (brightness_off) {
-        dpy_gfx_update(dcl->con, 0, 0, 0, 0);
+        qemu_ds_sdl_update(NULL, 0, 0, 0, 0);
         if (++sdl_skip_count > 10) {
             sdl_skip_update = 1;
         } else {
             sdl_skip_update = 0;
         }
     } else {
-        graphic_hw_update(dcl->con);
+        graphic_hw_update(NULL);
         sdl_skip_count = 0;
         sdl_skip_update = 0;
     }

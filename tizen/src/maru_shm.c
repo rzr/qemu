@@ -74,7 +74,7 @@ static void maru_do_pixman_shm(void)
                                overlay1_width, overlay1_height);
     }
     /* apply the brightness level */
-    if (brightness_level < BRIGHTNESS_MAX) {
+    if (brightness_off || (brightness_level < BRIGHTNESS_MAX)) {
         pixman_image_composite(PIXMAN_OP_OVER,
                                brightness_image, NULL, shm_surface->image,
                                0, 0, 0, 0, 0, 0,
@@ -146,14 +146,14 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
     But when the display is turned off,
     ten more updates the surface for a black screen. */
     if (brightness_off) {
-        dpy_gfx_update(dcl->con, 0, 0, 0, 0);
+        qemu_ds_shm_update(NULL, 0, 0, 0, 0);
         if (++shm_skip_count > 10) {
             shm_skip_update = 1;
         } else {
             shm_skip_update = 0;
         }
     } else {
-        graphic_hw_update(dcl->con);
+        graphic_hw_update(NULL);
         shm_skip_count = 0;
         shm_skip_update = 0;
     }
