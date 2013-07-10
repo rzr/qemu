@@ -33,19 +33,9 @@
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-esm);
 
-#define VIRTIO_ESM_DEVICE_NAME "virtio-guest-status-medium"
-
 struct progress_info {
     uint16_t percentage;
 };
-
-#if 0
-typedef struct VirtIOEmulatorStatusMedium {
-    VirtIODevice    vdev;
-    VirtQueue       *vq;
-    DeviceState     *qdev;
-} VirtIOESM;
-#endif
 
 static VirtQueueElement elem;
 struct progress_info progress;
