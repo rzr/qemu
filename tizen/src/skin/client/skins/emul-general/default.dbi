@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EmulatorUI xmlns="http://www.tizen.org/emulator/skin/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <dbi version="2.0"/>
+    <dbi_version>2.2</dbi_version>
     <rotations>
         <rotation name="Portrait">
-            <lcd id="0">
-            </lcd>
+            <display id="0">
+            </display>
             <keyMapList>
                 <keyMap>
                     <eventInfo>
@@ -37,16 +37,16 @@
             </keyMapList>
         </rotation>
         <rotation name="Landscape">
-            <lcd id="0">
-            </lcd>
+            <display id="0">
+            </display>
         </rotation>
         <rotation name="Reverse Portrait">
-            <lcd id="0">
-            </lcd>
+            <display id="0">
+            </display>
         </rotation>
         <rotation name="Reverse Landscape">
-            <lcd id="0">
-            </lcd>
+            <display id="0">
+            </display>
         </rotation>
     </rotations>
     <colors>

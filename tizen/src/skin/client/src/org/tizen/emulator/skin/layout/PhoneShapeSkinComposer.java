@@ -52,13 +52,12 @@ import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
-import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
-import org.tizen.emulator.skin.dbi.LcdType;
+import org.tizen.emulator.skin.dbi.DisplayType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry;
@@ -248,7 +247,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationType rotation = SkinRotation.getRotation(rotationId);
 
-		LcdType lcd = rotation.getLcd(); /* from dbi */
+		DisplayType lcd = rotation.getDisplay(); /* from dbi */
 		if (lcd == null) {
 			return null;
 		}
