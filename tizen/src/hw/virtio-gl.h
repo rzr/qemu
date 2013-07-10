@@ -18,6 +18,8 @@ extern "C" {
 MULTI_DEBUG_CHANNEL(qemu, virtio-gl);
 
 #define TYPE_VIRTIO_GL	"virtio-gl"
+#define VIRTIO_GL(obj) \
+        OBJECT_CHECK(VirtIOGL, (obj), TYPE_VIRTIO_GL)
 
 typedef hwaddr arg_t;
 int decode_call_int(ProcessStruct *p, char *in_args, int args_len, char *r_buffer);

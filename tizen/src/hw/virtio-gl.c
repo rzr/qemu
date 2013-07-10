@@ -216,23 +216,57 @@ static int virtio_gl_load(QEMUFile *f, void *opaque, int version_id)
 	return 0;
 }
 
-VirtIODevice *virtio_gl_init(DeviceState *dev)
+static int virtio_gl_device_init(VirtIODevice *vdev)
 {
-	VirtIOGL *s;
+	VirtIOGL *s = VIRTIO_GL(vdev);
+	DeviceState *qdev = DEVICE(vdev);
 
-	s = g_malloc0(sizeof(VirtIOGL));
-	virtio_init(&s->vdev, TYPE_VIRTIO_GL, VIRTIO_ID_GL, 0);
-	if (&s->vdev == NULL) {
+	virtio_init(vdev, TYPE_VIRTIO_GL, VIRTIO_ID_GL, 0);
+	if (vdev == NULL) {
 		ERR("Failed to initialize virtio gl device.\n");
-		return NULL;
+		return -1;
 	}
 
 	VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&s->vdev);
 	vdc->get_features = virtio_gl_get_features;
 
 	s->vq = virtio_add_queue(&s->vdev, 128, virtio_gl_handle);
-	register_savevm(dev, TYPE_VIRTIO_GL, -1, 1, virtio_gl_save, virtio_gl_load, s);
+	register_savevm(qdev, TYPE_VIRTIO_GL, -1, 1, virtio_gl_save, virtio_gl_load, s);
 
-	return &s->vdev;
+	return 0;
 }
+
+static int virtio_gl_device_exit(DeviceState *qdev)
+{
+    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
+
+    INFO("destroy virtio-gl device\n");
+
+    virtio_cleanup(vdev);
+
+    return 0;
+}
+
+static void virtio_gl_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_gl_device_exit;
+    vdc->init = virtio_gl_device_init;
+    vdc->get_features = virtio_gl_get_features;
+}
+
+static const TypeInfo virtio_gl_info = {
+    .name = TYPE_VIRTIO_GL,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOGL),
+    .class_init = virtio_gl_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_gl_info);
+}
+
+type_init(virtio_register_types)
 
