@@ -218,27 +218,26 @@ static void virtio_keyboard_bh(void *opaque)
     virtio_keyboard_notify(opaque);
 }
 
-VirtIODevice *virtio_keyboard_init(DeviceState *dev)
+static int virtio_keyboard_device_init(VirtIODevice *vdev)
 {
     VirtIOKeyboard *vkbd;
+    DeviceState *qdev = DEVICE(vdev);
+    vkbd = VIRTIO_KEYBOARD(vdev);
+
     INFO("initialize virtio-keyboard device\n");
+    virtio_init(vdev, TYPE_VIRTIO_KEYBOARD, VIRTIO_ID_KEYBOARD, 0);
 
-    vkbd = g_malloc0(sizeof(VirtIOKeyboard));
-    virtio_init(&vkbd->vdev, TYPE_VIRTIO_KEYBOARD, VIRTIO_ID_KEYBOARD, 0);
-
-    if (&vkbd->vdev == NULL) {
+    if (vdev == NULL) {
         ERR("failed to initialize device\n");
-        return NULL;
+        return -1;
     }
 
     memset(&vkbd->kbdqueue, 0x00, sizeof(vkbd->kbdqueue));
     vkbd->extension_key = 0;
     qemu_mutex_init(&vkbd->event_mutex);
 
-    VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&vkbd->vdev);
-    vdc->get_features = virtio_keyboard_get_features;
-    vkbd->vq = virtio_add_queue(&vkbd->vdev, 128, virtio_keyboard_handle);
-    vkbd->qdev = dev;
+    vkbd->vq = virtio_add_queue(vdev, 128, virtio_keyboard_handle);
+    vkbd->qdev = qdev;
 
     /* bottom half */
     vkbd->bh = qemu_bh_new(virtio_keyboard_bh, vkbd);
@@ -246,12 +245,14 @@ VirtIODevice *virtio_keyboard_init(DeviceState *dev)
     /* register keyboard handler */
     vkbd->eh_entry = qemu_add_kbd_event_handler(virtio_keyboard_event, vkbd);
  
-    return &vkbd->vdev;
+    return 0;
 }
 
-void virtio_keyboard_exit(VirtIODevice *vdev)
+static int virtio_keyboard_device_exit(DeviceState *qdev)
 {
+    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
+
     INFO("destroy device\n");
 
     qemu_remove_kbd_event_handler(vkbd->eh_entry);
@@ -263,4 +264,30 @@ void virtio_keyboard_exit(VirtIODevice *vdev)
     qemu_mutex_destroy(&vkbd->event_mutex);
 
     virtio_cleanup(vdev);
+
+    return 0;
 }
+
+static void virtio_keyboard_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_keyboard_device_exit;
+    vdc->init = virtio_keyboard_device_init;
+    vdc->get_features = virtio_keyboard_get_features;
+}
+
+static const TypeInfo virtio_keyboard_info = {
+    .name = TYPE_VIRTIO_KEYBOARD,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOKeyboard),
+    .class_init = virtio_keyboard_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_keyboard_info);
+}
+
+type_init(virtio_register_types)
+

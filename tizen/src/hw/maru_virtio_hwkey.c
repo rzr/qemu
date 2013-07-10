@@ -218,23 +218,22 @@ static void maru_hwkey_bh(void *opaque)
     maru_virtio_hwkey_notify();
 }
 
-VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev)
+static int virtio_hwkey_device_init(VirtIODevice *vdev)
 {
     INFO("initialize the hwkey device\n");
+    DeviceState *qdev = DEVICE(vdev);
+    vhk = VIRTIO_HWKEY(vdev);
 
-    vhk = g_malloc0(sizeof(VirtIOHWKey));
-    virtio_init(&vhk->vdev, TYPE_VIRTIO_HWKEY, VIRTIO_ID_HWKEY, 0);
+    virtio_init(vdev, TYPE_VIRTIO_HWKEY, VIRTIO_ID_HWKEY, 0);
 
-    if (&vhk->vdev == NULL) {
+    if (vdev == NULL) {
         ERR("failed to initialize the hwkey device\n");
-        return NULL;
+        return -1;
     }
 
-    VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&vhk->vdev);
-    vdc->get_features = virtio_hwkey_get_features;
-    vhk->vq = virtio_add_queue(&vhk->vdev, 64, maru_virtio_hwkey_handle);
+    vhk->vq = virtio_add_queue(vdev, 64, maru_virtio_hwkey_handle);
 
-    vhk->qdev = dev;
+    vhk->qdev = qdev;
 
     /* reset the counters */
     event_queue_cnt = event_ringbuf_cnt = 0;
@@ -243,12 +242,12 @@ VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev)
     /* bottom-half */
     vhk->bh = qemu_bh_new(maru_hwkey_bh, vhk);
 
-    return &(vhk->vdev);
+    return 0;
 }
 
-void maru_virtio_hwkey_exit(VirtIODevice *vdev)
+static int virtio_hwkey_device_exit(DeviceState *qdev)
 {
-    VirtIOHWKey *vhk = (VirtIOHWKey *)vdev;
+    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
 
     INFO("exit the hwkey device\n");
 
@@ -259,5 +258,30 @@ void maru_virtio_hwkey_exit(VirtIODevice *vdev)
     virtio_cleanup(vdev);
 
     pthread_mutex_destroy(&event_mutex);
+
+    return 0;
 }
+
+static void virtio_hwkey_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_hwkey_device_exit;
+    vdc->init = virtio_hwkey_device_init;
+    vdc->get_features = virtio_hwkey_get_features;
+}
+
+static const TypeInfo virtio_hwkey_info = {
+    .name = TYPE_VIRTIO_HWKEY,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOHWKey),
+    .class_init = virtio_hwkey_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_hwkey_info);
+}
+
+type_init(virtio_register_types)
 
