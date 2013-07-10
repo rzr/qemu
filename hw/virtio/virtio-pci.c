@@ -1538,7 +1538,7 @@ static void virtio_gl_pci_instance_init(Object *obj)
 static TypeInfo virtio_gl_pci_info = {
     .name          = TYPE_VIRTIO_GL_PCI,
     .parent        = TYPE_VIRTIO_PCI,
-    .instance_size = sizeof(VirtIOPCIProxy),
+    .instance_size = sizeof(VirtIOGLPCI),
     .instance_init = virtio_gl_pci_instance_init,
     .class_init    = virtio_gl_pci_class_init,
 };
