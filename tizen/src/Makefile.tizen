@@ -110,7 +110,8 @@ obj-y += debug_ch.o
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 
 obj-y += maru_brightness.o
-obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
+obj-y += maru_virtio_touchscreen.o
+#obj-y += maru_usb_touchscreen.o
 obj-y += maru_virtio_keyboard.o
 obj-y += maru_codec.o
 obj-y += maru_virtio_hwkey.o
