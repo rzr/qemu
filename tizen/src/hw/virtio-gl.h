@@ -7,8 +7,9 @@ extern "C" {
 
 #include "hw/hw.h"
 #include "maru_device_ids.h"
+#include "hw/virtio/virtio.h"
+#include "exec/hwaddr.h"
 
-//typedef target_phys_addr_t arg_t;
 #include "opengl_process.h"
 #include "opengl_exec.h"
 #include <sys/time.h>
@@ -18,6 +19,7 @@ MULTI_DEBUG_CHANNEL(qemu, virtio-gl);
 
 #define TYPE_VIRTIO_GL	"virtio-gl"
 
+typedef hwaddr arg_t;
 int decode_call_int(ProcessStruct *p, char *in_args, int args_len, char *r_buffer);
 
 /* Uncomment to enable debugging - WARNING!!! changes ABI! */
