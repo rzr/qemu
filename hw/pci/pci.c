@@ -1626,7 +1626,7 @@ PCIDevice *pci_vga_init(PCIBus *bus)
         return pci_create_simple(bus, -1, "VGA");
     case VGA_VMWARE:
         return pci_create_simple(bus, -1, "vmware-svga");
-#ifdef CONFIG_VGA
+#ifdef CONFIG_MARU
     case VGA_MARU:
         return pci_create_simple(bus, -1, "MARU_VGA");
 #endif
