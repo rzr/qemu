@@ -30,6 +30,9 @@
 #include "ui/pixel_ops.h"
 #include "qemu/timer.h"
 #include "hw/loader.h"
+#ifdef CONFIG_MARU
+#include "tizen/src/hw/maru_vga_int.h"
+#endif
 
 #define PCI_VGA_IOPORT_OFFSET 0x400
 #define PCI_VGA_IOPORT_SIZE   (0x3e0 - 0x3c0)
@@ -147,7 +150,11 @@ static int pci_std_vga_initfn(PCIDevice *dev)
     VGACommonState *s = &d->vga;
 
     /* vga + console init */
+#ifdef CONFIG_MARU
+    maru_vga_common_init(s);
+#else
     vga_common_init(s);
+#endif
     vga_init(s, pci_address_space(dev), pci_address_space_io(dev), true);
 
     s->con = graphic_console_init(DEVICE(dev), s->hw_ops, s);

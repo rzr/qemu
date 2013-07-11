@@ -131,11 +131,6 @@ static void brightness_reg_write(void *opaque,
             return;
         }
         brightness_off = val;
-        if (brightness_image) {
-            pixman_image_unref(brightness_image);
-        }
-        level_color.alpha = 0xFF << 8;
-        brightness_image = pixman_image_create_solid_fill(&level_color);
 
 #ifdef TARGET_ARM
         graphic_hw_invalidate(NULL);

@@ -74,7 +74,7 @@ static void maru_do_pixman_shm(void)
                                overlay1_width, overlay1_height);
     }
     /* apply the brightness level */
-    if (brightness_off || (brightness_level < BRIGHTNESS_MAX)) {
+    if (brightness_level < BRIGHTNESS_MAX) {
         pixman_image_composite(PIXMAN_OP_OVER,
                                brightness_image, NULL, shm_surface->image,
                                0, 0, 0, 0, 0, 0,
@@ -92,18 +92,11 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
         if (draw_display_state == 0) {
             draw_display_state = 1;
             pthread_mutex_unlock(&mutex_draw_display);
-            if (brightness_off) {
-                memset(shared_memory,
-                       0x00,
-                       surface_stride(shm_surface) *
-                       surface_height(shm_surface));
-            } else {
-                maru_do_pixman_shm();
-                memcpy(shared_memory,
-                       surface_data(shm_surface),
-                       surface_stride(shm_surface) *
-                       surface_height(shm_surface));
-            }
+            maru_do_pixman_shm();
+            memcpy(shared_memory,
+                   surface_data(shm_surface),
+                   surface_stride(shm_surface) *
+                   surface_height(shm_surface));
 #ifdef INFO_FRAME_DROP_RATE
             draw_frame++;
 #endif
@@ -142,18 +135,18 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
         return;
     }
 
+    graphic_hw_update(NULL);
+
     /* Usually, continuously updated.
     But when the display is turned off,
     ten more updates the surface for a black screen. */
     if (brightness_off) {
-        qemu_ds_shm_update(NULL, 0, 0, 0, 0);
         if (++shm_skip_count > 10) {
             shm_skip_update = 1;
         } else {
             shm_skip_update = 0;
         }
     } else {
-        graphic_hw_update(NULL);
         shm_skip_count = 0;
         shm_skip_update = 0;
     }
