@@ -92,14 +92,17 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 	</complexType>
 
 	<complexType name="popupMenuType">
-		<sequence>
-			<element name="rotationItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"></element>
+		<all>
+			<element name="topmostItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"></element>
+			<element name="rotateItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"></element>
+			<element name="scaleItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"></element>
 			<element name="keywindowItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"></element>
-		</sequence>
+			<element name="shellItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"></element>
+		</all>
 	</complexType>
 
 	<complexType name="menuItemType">
-		<attribute name="itemName" type="string" default="&amp;Rotate" use="optional"></attribute>
+		<attribute name="itemName" type="string" default="" use="optional"></attribute>
 		<attribute name="visible" type="boolean" default="true" use="optional"></attribute>
 	</complexType>
 </schema>

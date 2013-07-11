@@ -1361,13 +1361,8 @@ public class EmulatorSkin {
 		return listener;
 	};
 
-	public Menu createDiagnosisMenu() {
-		Menu menu = new Menu(shell, SWT.DROP_DOWN);
-
-		final MenuItem ramdumpItem = new MenuItem(menu, SWT.PUSH);
-		ramdumpItem.setText("&Ram Dump");
-
-		ramdumpItem.addSelectionListener(new SelectionAdapter() {
+	public SelectionAdapter createRamdumpMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				logger.info("Ram dump menu is selected");
@@ -1378,28 +1373,15 @@ public class EmulatorSkin {
 
 				RamdumpDialog ramdumpDialog;
 				try {
-					ramdumpDialog = new RamdumpDialog(EmulatorSkin.this.shell, communicator, config);
+					ramdumpDialog = new RamdumpDialog(shell, communicator, config);
 					ramdumpDialog.open();
 				} catch (IOException ee) {
 					logger.log( Level.SEVERE, ee.getMessage(), ee);
 				}
 			}
-		});
+		};
 
-		/* final MenuItem guestdumpItem = new MenuItem(menu, SWT.PUSH);
-		guestdumpItem.setText("&Guest Memory Dump");
-
-		guestdumpItem.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				logger.info("Guest memory dump menu is selected");
-
-				communicator.setRamdumpFlag(true);
-				communicator.sendToQEMU(SendCommand.GUEST_DUMP, null);
-			}
-		}); */
-
-		return menu;
+		return listener;
 	}
 
 	public SelectionAdapter createScreenshotMenu() {
