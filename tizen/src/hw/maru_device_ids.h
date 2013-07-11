@@ -83,11 +83,12 @@
 |         10           |   mac80211 wlan    |       -       |
 +----------------------+--------------------+---------------+
 */
-#define VIRTIO_ID_TOUCHSCREEN   11
-#define VIRTIO_ID_KEYBOARD      12
-#define VIRTIO_ID_ESM           13
-#define VIRTIO_ID_HWKEY         14
-#define VIRTIO_ID_EVDI          15
-#define VIRTIO_ID_GL			16
+
+#define VIRTIO_ID_TOUCHSCREEN   31
+#define VIRTIO_ID_KEYBOARD      32
+#define VIRTIO_ID_ESM           33
+#define VIRTIO_ID_HWKEY         34
+#define VIRTIO_ID_EVDI          35
+#define VIRTIO_ID_GL			36
 
 #endif /* MARU_DEVICE_IDS_H_ */

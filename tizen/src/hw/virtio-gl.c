@@ -219,7 +219,7 @@ static int virtio_gl_load(QEMUFile *f, void *opaque, int version_id)
 static int virtio_gl_device_init(VirtIODevice *vdev)
 {
 	VirtIOGL *s = VIRTIO_GL(vdev);
-	DeviceState *qdev = DEVICE(vdev);
+	//DeviceState *qdev = DEVICE(vdev);
 
 	virtio_init(vdev, TYPE_VIRTIO_GL, VIRTIO_ID_GL, 0);
 	if (vdev == NULL) {
@@ -227,11 +227,14 @@ static int virtio_gl_device_init(VirtIODevice *vdev)
 		return -1;
 	}
 
+	/*
 	VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&s->vdev);
 	vdc->get_features = virtio_gl_get_features;
 
 	s->vq = virtio_add_queue(&s->vdev, 128, virtio_gl_handle);
 	register_savevm(qdev, TYPE_VIRTIO_GL, -1, 1, virtio_gl_save, virtio_gl_load, s);
+	*/
+	s->vq = virtio_add_queue(vdev, 128, virtio_gl_handle);
 
 	return 0;
 }
