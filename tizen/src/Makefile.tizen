@@ -118,6 +118,7 @@ obj-y += maru_virtio_esm.o
 obj-y += maru_virtio_hwkey.o
 obj-y += maru_virtio_evdi.o
 obj-y += maru_virtio_sensor.o
+obj-y += maru_virtio_nfc.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o

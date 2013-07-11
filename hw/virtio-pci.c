@@ -1038,6 +1038,29 @@ static void virtio_sensor_exit_pci(PCIDevice *pci_dev)
     virtio_exit_pci(pci_dev);
 }
 
+static int virtio_nfc_init_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+    VirtIODevice *vdev;
+
+    vdev = virtio_nfc_init(&pci_dev->qdev);
+    if (!vdev) {
+        return -1;
+    }
+    virtio_init_pci(proxy, vdev);
+    return 0;
+}
+
+static void virtio_nfc_exit_pci(PCIDevice *pci_dev)
+{
+    VirtIOPCIProxy *proxy = DO_UPCAST(VirtIOPCIProxy, pci_dev, pci_dev);
+
+    virtio_pci_stop_ioeventfd(proxy);
+    virtio_evdi_exit(proxy->vdev);
+    virtio_exit_pci(pci_dev);
+}
+
+
 #endif
 
 static Property virtio_blk_properties[] = {
@@ -1369,12 +1392,32 @@ static void virtio_sensor_class_init(ObjectClass *klass, void *data) {
 	dc->desc = "Emulator Sensor Virtual Device";
 }
 
+static void virtio_nfc_class_init(ObjectClass *klass, void *data) {
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_nfc_init_pci;
+    k->exit = virtio_nfc_exit_pci;
+    k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    k->device_id = PCI_DEVICE_ID_VIRTIO_NFC;
+    k->revision = VIRTIO_PCI_ABI_VERSION;
+    k->class_id = PCI_CLASS_OTHERS;
+    dc->reset = virtio_pci_reset;
+}
+
 
 static TypeInfo virtio_sensor_info = {
     .name          = "virtio-sensor-pci",
     .parent        = TYPE_PCI_DEVICE,
     .instance_size = sizeof(VirtIOPCIProxy),
     .class_init    = virtio_sensor_class_init,
+};
+
+static TypeInfo virtio_nfc_info = {
+    .name          = "virtio-nfc-pci",
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(VirtIOPCIProxy),
+    .class_init    = virtio_nfc_class_init,
 };
 
 #endif /* CONFIG_MARU */
@@ -1396,6 +1439,7 @@ static void virtio_pci_register_types(void)
     type_register_static(&virtio_hwkey_info);
     type_register_static(&virtio_evdi_info);
     type_register_static(&virtio_sensor_info);
+    type_register_static(&virtio_nfc_info);
 #endif
 }
 

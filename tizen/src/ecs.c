@@ -21,6 +21,7 @@
 #include "ecs.h"
 #include "hw/maru_virtio_evdi.h"
 #include "hw/maru_virtio_sensor.h"
+#include "hw/maru_virtio_nfc.h"
 #include <stdbool.h>
 #include <pthread.h>
 #include "base64.h"
@@ -873,7 +874,15 @@ static bool device_command_proc(ECS_Client *clii, QObject *obj) {
 		} else {
 			set_sensor_data(length, data);
 		}
-	}
+	}else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
+        if (group == MSG_GROUP_STATUS) {
+		    send_to_nfc(request_get, data, length);	
+		} else {
+		    send_to_nfc(request_set, data, length);	
+
+		}
+    }
+
 
 	return true;
 }

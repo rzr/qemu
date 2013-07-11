@@ -45,6 +45,7 @@
 #define ECS_MSG_STARTINFO_ANS 	"startinfo_ans"
 
 #define MSG_TYPE_SENSOR			"sensor"
+#define MSG_TYPE_NFC			"nfc"
 
 #define MSG_GROUP_STATUS		15
 
