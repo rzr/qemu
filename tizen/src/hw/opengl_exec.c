@@ -670,6 +670,7 @@ static inline ClientGLXDrawable to_drawable(arg_t arg)
 static void bind_qsurface(GLState *state,
                           QGloSurface *qsurface)
 {
+    DEBUGF("%s qsurface %p qsurface->glstate %p new state %p\n", __FUNCTION__, qsurface, qsurface->glstate, state);
     qsurface->glstate = state;
 
 	if ( qsurface->type == SURFACE_WINDOW )
@@ -682,6 +683,12 @@ static void bind_qsurface(GLState *state,
 static void unbind_qsurface(GLState *state,
                           QGloSurface *qsurface)
 {
+    if (!state || !qsurface) {
+        DEBUGF("%s invalid parameter, state %p, qsurface %p\n", __FUNCTION__, state, qsurface);
+        return;
+    }
+
+    DEBUGF("%s qsurface %p qsurface->glstate %p old state %p\n", __FUNCTION__, qsurface, qsurface->glstate, state);
     qsurface->glstate = NULL;
 
 	if ( qsurface->type == SURFACE_WINDOW )
@@ -1048,6 +1055,8 @@ static void destroy_gl_state(GLState *state)
     int i;
 
     QGloSurface *qsurface, *tmp;
+
+    DEBUGF("%s state %p\n", __FUNCTION__, state);
 
     QTAILQ_FOREACH_SAFE(qsurface, &state->qsurfaces, next, tmp) {
         glo_surface_destroy(qsurface->surface);
@@ -1707,6 +1716,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 int fake_ctxt = process->next_available_context_number;
                 ret.i = fake_ctxt;
 
+                DEBUGF( "fake_ctxt = %d\n", fake_ctxt);
+
                 GLState *state = _create_context(process, fake_ctxt, fake_shareList);
                 state->context = glo_context_create(fbconfig->formatFlags,
                                                     shareListState?shareListState->context:0); // FIXME GW get from fbconfig
@@ -1761,7 +1772,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                                 process->glstates[i]->ref--;
                                 if (process->glstates[i]->ref == 0) {
                                     DEBUGF(
-                                            "destroy_gl_state fake_ctxt = %d\n",
+                                            "destroy_gl_state fake_sharelist fake_ctxt = %d\n",
                                             process->glstates[i]->
                                             fake_ctxt);
                                     destroy_gl_state(process->
@@ -1829,7 +1840,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             int fake_ctxt = (int) args[2];
             GLState *glstate = NULL;
 
-//            DEBUGF( "Makecurrent: fake_ctx=%d client_drawable=%08x\n", fake_ctxt, client_drawable);
+            DEBUGF( "Makecurrent: fake_ctx=%d client_drawable=%08x\n", fake_ctxt, client_drawable);
 
             if (client_drawable == 0 && fake_ctxt == 0) {
                 /* Release context */
@@ -1837,11 +1848,11 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                     if(process->current_state->current_qsurface->type != SURFACE_PIXMAP)
                         process->current_state->current_qsurface->ref--;
                     else
-                        state_set_current_surface(process->current_state, NULL);
+                        unbind_qsurface(process->current_state, process->current_state->current_qsurface);
                 }
                 process->current_state = &process->default_state;
 
-//                DEBUGF( " --release\n");
+                DEBUGF( " --release\n");
                 glo_surface_makecurrent(0);
             } else { /* Lookup GLState struct for this context */
                 glstate = get_glstate_for_fake_ctxt(process, fake_ctxt);
@@ -1860,11 +1871,11 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 					   qsurface->status = SURFACE_ACTIVE;
 
                        bind_qsurface(glstate, qsurface);
-//                       DEBUGF( " --Client drawable not found, create new surface: %16x %16lx\n", (unsigned int)qsurface, (unsigned long int)client_drawable);
+                       DEBUGF( " --Client drawable not found, create new surface: %16x %16lx\n", (unsigned int)qsurface, (unsigned long int)client_drawable);
 
                     }
                     else {
-//                       DEBUGF( " --Client drawable found, using surface: %16x %16lx\n", (unsigned int)glstate->current_qsurface, (unsigned long int)client_drawable);
+                       DEBUGF( " --Client drawable found, using surface: %16x %16lx\n", (unsigned int)glstate->current_qsurface, (unsigned long int)client_drawable);
                     }
 #if 0
                     /*Test old surface contents */
