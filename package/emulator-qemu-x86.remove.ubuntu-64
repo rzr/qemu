@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash -ex
 
 TIZEN_SDK_INSTALL_PATH=`echo $INSTALLED_PATH`
 if [ -z $TIZEN_SDK_INSTALL_PATH ]
