@@ -5,8 +5,9 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 	<element name="EmulatorUI" >
 		<complexType>
 			<all>
-				<element name = "rotations" type="dbi:rotationsType" minOccurs="1" maxOccurs="1"></element>
-				<element name = "colors" type="dbi:colorsType" minOccurs="0" maxOccurs="1"></element>
+				<element name="dbi_version" type="float" minOccurs="1" maxOccurs="1"></element>
+				<element name="rotations" type="dbi:rotationsType" minOccurs="1" maxOccurs="1"></element>
+				<element name="hover" type="dbi:hoverType" minOccurs="0" maxOccurs="1"></element>
 			</all>
 		</complexType>
 	</element>
@@ -19,7 +20,7 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 
 	<complexType name="rotationType">
 		<sequence>
-			<element name="lcd" type="dbi:lcdType" minOccurs="1" maxOccurs="1"></element>
+			<element name="display" type="dbi:displayType" minOccurs="1" maxOccurs="1"></element>
 			<element name="imageList" type="dbi:imageListType" minOccurs="1" maxOccurs="1" ></element>
 			<element name="keyMapList" type="dbi:keyMapListType" minOccurs="1" maxOccurs="1" ></element>
 		</sequence>
@@ -42,7 +43,7 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 		</all>
 	</complexType>
 
-	<complexType name="lcdType">
+	<complexType name="displayType">
 		<all>
 			<element name="region" type="dbi:regionType" minOccurs="1" maxOccurs="1"></element>
 		</all>
@@ -77,9 +78,9 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 		<attribute name="height" type="int" ></attribute>
 	</complexType>
 
-	<complexType name="colorsType">
+	<complexType name="hoverType">
 		<all>
-			<element name="hoverColor" type="dbi:rgbType" minOccurs="0" maxOccurs="1"></element>
+			<element name="color" type="dbi:rgbType" minOccurs="0" maxOccurs="1"></element>
 		</all>
 	</complexType>
 

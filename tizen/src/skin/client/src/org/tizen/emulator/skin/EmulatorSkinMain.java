@@ -215,6 +215,7 @@ public class EmulatorSkinMain {
 
 				System.exit(-1);
 			}
+			logger.info("dbi version : " + dbiContents.getDbiVersion());
 
 			/* collect configurations */
 			EmulatorConfig config = new EmulatorConfig(argsMap,

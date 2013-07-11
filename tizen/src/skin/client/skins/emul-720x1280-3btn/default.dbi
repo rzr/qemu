@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EmulatorUI xmlns="http://www.tizen.org/emulator/skin/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <dbi version="2.0"/>
+    <dbi_version>2.2</dbi_version>
     <rotations>
         <rotation name="Portrait">
-            <lcd id="0">
+            <display id="0">
                 <region left="67" top="116" width="720" height="1280"/>
-            </lcd>
+            </display>
             <imageList>
                 <mainImage>default_0.png</mainImage>
                 <keyPressedImage>default_0_p.png</keyPressedImage>
@@ -62,9 +62,9 @@
             </keyMapList>
         </rotation>
         <rotation name="Landscape">
-            <lcd id="0">
+            <display id="0">
                 <region left="116" top="78" width="1280" height="720"/>
-            </lcd>
+            </display>
             <imageList>
                 <mainImage>default_L90.png</mainImage>
                 <keyPressedImage>default_L90_p.png</keyPressedImage>
@@ -121,9 +121,9 @@
             </keyMapList>
         </rotation>
         <rotation name="Reverse Portrait">
-            <lcd id="0">
+            <display id="0">
                 <region left="78" top="117" width="720" height="1280"/>
-            </lcd>
+            </display>
             <imageList>
                 <mainImage>default_180.png</mainImage>
                 <keyPressedImage>default_180_p.png</keyPressedImage>
@@ -180,9 +180,9 @@
             </keyMapList>
         </rotation>
         <rotation name="Reverse Landscape">
-            <lcd id="0">
+            <display id="0">
                 <region left="117" top="67" width="1280" height="720"/>
-            </lcd>
+            </display>
             <imageList>
                 <mainImage>default_R90.png</mainImage>
                 <keyPressedImage>default_R90_p.png</keyPressedImage>
@@ -239,7 +239,7 @@
             </keyMapList>
         </rotation>
     </rotations>
-    <colors>
-        <hoverColor B="255" G="255" R="255" />
-    </colors>
+    <hover>
+        <color B="255" G="255" R="255" />
+    </hover>
 </EmulatorUI>

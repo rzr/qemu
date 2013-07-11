@@ -80,7 +80,7 @@ import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.custom.KeyWindow;
-import org.tizen.emulator.skin.dbi.ColorsType;
+import org.tizen.emulator.skin.dbi.HoverType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
@@ -317,10 +317,10 @@ public class EmulatorSkin {
 //	}
 
 	private Color loadHoverColor() {
-		ColorsType colors = config.getDbiContents().getColors();
+		HoverType hover = config.getDbiContents().getHover();
 
-		if (null != colors) {
-			RgbType hoverRgb = colors.getHoverColor();
+		if (null != hover) {
+			RgbType hoverRgb = hover.getColor();
 			if (null != hoverRgb) {
 				Long r = hoverRgb.getR();
 				Long g = hoverRgb.getG();
