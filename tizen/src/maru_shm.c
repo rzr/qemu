@@ -42,8 +42,8 @@
 
 MULTI_DEBUG_CHANNEL(tizen, maru_shm);
 
-static DisplaySurface *shm_surface;
-static void *shared_memory = (void*) 0;
+static DisplaySurface *dpy_surface;
+static void *shared_memory = (void *) 0;
 static int skin_shmid;
 
 static int shm_skip_update;
@@ -57,29 +57,30 @@ static unsigned int draw_frame;
 static unsigned int drop_frame;
 #endif
 
-static void maru_do_pixman_shm(void)
+/* Image processing functions using the pixman library */
+static void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
 {
     /* overlay0 */
     if (overlay0_power) {
         pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay0_image, NULL, shm_surface->image,
+                               overlay0_image, NULL, dst_image,
                                0, 0, 0, 0, overlay0_left, overlay0_top,
                                overlay0_width, overlay0_height);
     }
     /* overlay1 */
     if (overlay1_power) {
         pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay1_image, NULL, shm_surface->image,
+                               overlay1_image, NULL, dst_image,
                                0, 0, 0, 0, overlay1_left, overlay1_top,
                                overlay1_width, overlay1_height);
     }
     /* apply the brightness level */
     if (brightness_level < BRIGHTNESS_MAX) {
         pixman_image_composite(PIXMAN_OP_OVER,
-                               brightness_image, NULL, shm_surface->image,
+                               brightness_image, NULL, dst_image,
                                0, 0, 0, 0, 0, 0,
-                               surface_width(shm_surface),
-                               surface_height(shm_surface));
+                               pixman_image_get_width(dst_image),
+                               pixman_image_get_height(dst_image));
     }
 }
 
@@ -92,11 +93,11 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
         if (draw_display_state == 0) {
             draw_display_state = 1;
             pthread_mutex_unlock(&mutex_draw_display);
-            maru_do_pixman_shm();
+            maru_do_pixman_dpy_surface(dpy_surface->image);
             memcpy(shared_memory,
-                   surface_data(shm_surface),
-                   surface_stride(shm_surface) *
-                   surface_height(shm_surface));
+                   surface_data(dpy_surface),
+                   surface_stride(dpy_surface) *
+                   surface_height(dpy_surface));
 #ifdef INFO_FRAME_DROP_RATE
             draw_frame++;
 #endif
@@ -120,7 +121,7 @@ static void qemu_ds_shm_switch(DisplayChangeListener *dcl,
     TRACE("qemu_ds_shm_switch\n");
 
     if (new_surface) {
-        shm_surface = new_surface;
+        dpy_surface = new_surface;
     }
 
     shm_skip_update = 0;
