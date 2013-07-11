@@ -44,7 +44,7 @@
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
-DisplaySurface *qemu_display_surface = NULL;
+static DisplaySurface *dpy_surface;
 
 static SDL_Surface *surface_screen;
 static SDL_Surface *surface_qemu;
@@ -75,14 +75,11 @@ static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized;
 #endif
 
-extern pthread_mutex_t mutex_screenshot;
-extern pthread_cond_t cond_screenshot;
-
 #define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
 #define SDL_BPP 32
 
 /* Image processing functions using the pixman library */
-static void maru_do_pixman_sdl(pixman_image_t *dst_image)
+static void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
 {
     /* overlay0 */
     if (overlay0_power) {
@@ -218,26 +215,6 @@ static void qemu_ds_sdl_update(DisplayChangeListener *dcl,
 #else
     qemu_update();
 #endif
-
-    /* for screenshot */
-    pthread_mutex_lock(&mutex_screenshot);
-
-    MaruScreenshot* maru_screenshot = get_maru_screenshot();
-    if (maru_screenshot) {
-        maru_screenshot->isReady = 1;
-
-        if (maru_screenshot->request_screenshot == 1) {
-            memcpy(maru_screenshot->pixel_data,
-                   surface_data(qemu_display_surface),
-                   surface_stride(qemu_display_surface) *
-                   surface_height(qemu_display_surface));
-            maru_screenshot->request_screenshot = 0;
-
-            pthread_cond_signal(&cond_screenshot);
-        }
-    }
-
-    pthread_mutex_unlock(&mutex_screenshot);
 }
 
 static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
@@ -250,7 +227,7 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
         return;
     }
 
-    qemu_display_surface = new_surface;
+    dpy_surface = new_surface;
     w = surface_width(new_surface);
     h = surface_height(new_surface);
 
@@ -270,19 +247,19 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
         INFO("create SDL screen = (%d, %d)\n",
              get_emul_lcd_width(), get_emul_lcd_height());
         surface_qemu = SDL_CreateRGBSurfaceFrom(
-            surface_data(qemu_display_surface),
+            surface_data(dpy_surface),
             w, h,
-            surface_bits_per_pixel(qemu_display_surface),
-            surface_stride(qemu_display_surface),
-            qemu_display_surface->pf.rmask,
-            qemu_display_surface->pf.gmask,
-            qemu_display_surface->pf.bmask,
-            qemu_display_surface->pf.amask);
+            surface_bits_per_pixel(dpy_surface),
+            surface_stride(dpy_surface),
+            dpy_surface->pf.rmask,
+            dpy_surface->pf.gmask,
+            dpy_surface->pf.bmask,
+            dpy_surface->pf.amask);
     } else {
         INFO("create blank screen = (%d, %d)\n",
              get_emul_lcd_width(), get_emul_lcd_height());
         surface_qemu = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h,
-            surface_bits_per_pixel(qemu_display_surface), 0, 0, 0, 0);
+            surface_bits_per_pixel(dpy_surface), 0, 0, 0, 0);
     }
 
 #ifdef SDL_THREAD
@@ -617,7 +594,8 @@ static void qemu_update(void)
         else
         { //sdl surface
 #endif
-            maru_do_pixman_sdl(qemu_display_surface->image);
+            maru_do_pixman_dpy_surface(dpy_surface->image);
+            set_maru_screenshot(dpy_surface);
             if (current_scale_factor != 1.0) {
                 rotated_screen = maru_do_pixman_rotate(
                     surface_qemu, rotated_screen,
@@ -767,8 +745,3 @@ void maruskin_sdl_resize(void)
     and can be called from other threads safely. */
     SDL_PushEvent(&ev);
 }
-
-DisplaySurface *maruskin_sdl_get_display(void) {
-    return qemu_display_surface;
-}
-

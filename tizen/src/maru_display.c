@@ -88,17 +88,8 @@ void maruskin_init(uint64 swt_handle,
 #endif
 }
 
-DisplaySurface* get_qemu_display_surface(void) {
-#ifndef CONFIG_USE_SHM
-    return maruskin_sdl_get_display();
-#else
-    //TODO:
-#endif
-
-    return NULL;
-}
-
-MaruScreenshot* get_maru_screenshot(void) {
+MaruScreenshot *get_maru_screenshot(void)
+{
     return maru_screenshot;
 }
-
+/* set_maru_screenshot() implemented in maruskin_operation.c */

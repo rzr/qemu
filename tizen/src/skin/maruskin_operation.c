@@ -335,35 +335,47 @@ void send_rotation_event(int rotation_type)
     send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
 }
 
-QemuSurfaceInfo* get_screenshot_info(void)
+void set_maru_screenshot(DisplaySurface *surface)
 {
-#if 0
-    DisplaySurface* qemu_display_surface = get_qemu_display_surface();
+    pthread_mutex_lock(&mutex_screenshot);
 
-    if ( !qemu_display_surface ) {
-        ERR( "qemu surface is NULL.\n" );
-        return NULL;
+    MaruScreenshot *maru_screenshot = get_maru_screenshot();
+    if (maru_screenshot) {
+        maru_screenshot->isReady = 1;
+        if (maru_screenshot->request_screenshot == 1) {
+            memcpy(maru_screenshot->pixel_data,
+                   surface_data(surface),
+                   surface_stride(surface) *
+                   surface_height(surface));
+            maru_screenshot->request_screenshot = 0;
+
+            pthread_cond_signal(&cond_screenshot);
+        }
     }
-#endif
+    pthread_mutex_unlock(&mutex_screenshot);
+}
 
-    QemuSurfaceInfo* info = (QemuSurfaceInfo*) g_malloc0( sizeof(QemuSurfaceInfo) );
-    if ( !info ) {
-        ERR( "Fail to malloc for QemuSurfaceInfo.\n");
+QemuSurfaceInfo *get_screenshot_info(void)
+{
+    QemuSurfaceInfo *info =
+            (QemuSurfaceInfo *)g_malloc0(sizeof(QemuSurfaceInfo));
+    if (!info) {
+        ERR("Fail to malloc for QemuSurfaceInfo.\n");
         return NULL;
     }
 
     int length = get_emul_lcd_width() * get_emul_lcd_height() * 4;
-    INFO( "screenshot data length:%d\n", length );
+    INFO("screenshot data length:%d\n", length);
 
-    if ( 0 >= length ) {
-        g_free( info );
-        ERR( "screenshot data ( 0 >=length ). length:%d\n", length );
+    if (0 >= length) {
+        g_free(info);
+        ERR("screenshot data ( 0 >=length ). length:%d\n", length);
         return NULL;
     }
 
-    info->pixel_data = (unsigned char*) g_malloc0( length );
-    if ( !info->pixel_data ) {
-        g_free( info );
+    info->pixel_data = (unsigned char *)g_malloc0(length);
+    if (!info->pixel_data) {
+        g_free(info);
         ERR("Fail to malloc for pixel data.\n");
         return NULL;
     }
@@ -392,7 +404,7 @@ QemuSurfaceInfo* get_screenshot_info(void)
     return info;
 }
 
-void free_screenshot_info(QemuSurfaceInfo* info)
+void free_screenshot_info(QemuSurfaceInfo *info)
 {
     if (info) {
         if(info->pixel_data) {
