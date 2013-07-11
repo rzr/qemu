@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -33,12 +33,12 @@ package org.tizen.emulator.skin.info;
  */
 public class SkinInformation {
 	private String skinName;
-	private boolean skinPhoneShape;
+	private boolean isGeneralSkin;
 	private int skinOption;
 
-	public SkinInformation(String skinName, boolean skinPhoneShape) {
+	public SkinInformation(String skinName, boolean isGeneralSkin) {
 		this.skinName = skinName;
-		this.skinPhoneShape = skinPhoneShape;
+		this.isGeneralSkin = isGeneralSkin;
 		this.skinOption = 0;
 	}
 
@@ -46,8 +46,8 @@ public class SkinInformation {
 		return skinName;
 	}
 
-	public boolean isPhoneShape() {
-		return skinPhoneShape;
+	public boolean isGeneralPurposeSkin() {
+		return isGeneralSkin;
 	}
 	
 	public int getSkinOption() {

@@ -48,8 +48,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
-import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -231,9 +229,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
 		if (displayBounds == null) {
-			logger.severe("Failed to lcd information for phone shape skin.");
+			logger.severe("Failed to read display information for skin.");
 			SkinUtil.openMessage(shell, null,
-					"Failed to read lcd information for phone shape skin.\n" +
+					"Failed to read display information for skin.\n" +
 					"Check the contents of skin dbi file.",
 					SWT.ICON_ERROR, config);
 			System.exit(-1);
