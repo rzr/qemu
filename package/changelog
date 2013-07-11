@@ -1,3 +1,6 @@
+* 1.5.68
+- changed sh to bash in the install and remove script.
+== Kitae Kim <kt920.kim@samsung.com> 2013-07-11
 * 1.5.67
 - Modified messages in the install and remove script files.
 == Kitae Kim <kt920.kim@samsung.com> 2013-07-11
