@@ -993,16 +993,29 @@ public class EmulatorSkin {
 		/* abstract */
 	}
 
-	public boolean isSelectKeyWindow() {
-		return popupMenu.keyWindowItem.getSelection();
+	public boolean isSelectKeyWindowMenu() {
+		if (popupMenu.keyWindowItem != null) {
+			return popupMenu.keyWindowItem.getSelection();
+		}
+
+		return false;
+	}
+
+	public void selectKeyWindowMenu(boolean on) {
+		if (popupMenu.keyWindowItem != null) {
+			popupMenu.keyWindowItem.setSelection(on);
+		}
 	}
 
 	public void openKeyWindow(int dockValue, boolean recreate) {
 		if (keyWindow != null) {
 			if (recreate == false) {
 				/* show the key window */
-				popupMenu.keyWindowItem.setSelection(isKeyWindow = true);
-				pairTag.setVisible(true);
+				selectKeyWindowMenu(isKeyWindow = true);
+
+				if (pairTag != null) {
+					pairTag.setVisible(true);
+				}
 
 				keyWindow.getShell().setVisible(true);
 				SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
@@ -1019,28 +1032,33 @@ public class EmulatorSkin {
 				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
 
 		if (keyMapList == null) {
-			popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
+			selectKeyWindowMenu(isKeyWindow = false);
 			logger.info("keyMapList is null");
 			return;
 		} else if (keyMapList.isEmpty() == true) {
-			popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
+			selectKeyWindowMenu(isKeyWindow = false);
 			logger.info("keyMapList is empty");
 			return;
 		}
 
 		keyWindow = new KeyWindow(this, shell, communicator, keyMapList);
 
-		popupMenu.keyWindowItem.setSelection(isKeyWindow = true);
+		selectKeyWindowMenu(isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
 
-		pairTag.setVisible(true);
+		if (pairTag != null) {
+			pairTag.setVisible(true);
+		}
 
 		keyWindow.open(dockValue);
 	}
 
 	public void hideKeyWindow() {
-		popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
-		pairTag.setVisible(false);
+		selectKeyWindowMenu(isKeyWindow = false);
+
+		if (pairTag != null) {
+			pairTag.setVisible(false);
+		}
 
 		if (keyWindow != null) {
 			keyWindow.getShell().setVisible(false);
@@ -1048,8 +1066,11 @@ public class EmulatorSkin {
 	}
 
 	public void closeKeyWindow() {
-		popupMenu.keyWindowItem.setSelection(isKeyWindow = false);
-		pairTag.setVisible(false);
+		selectKeyWindowMenu(isKeyWindow = false);
+
+		if (pairTag != null) {
+			pairTag.setVisible(false);
+		}
 
 		if (keyWindow != null) {
 			keyWindow.getShell().close();
@@ -1317,10 +1338,7 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				final boolean selectKeyWindow =
-						popupMenu.keyWindowItem.getSelection();
-
-				if (selectKeyWindow == true) {
+				if (isSelectKeyWindowMenu() == true) {
 					if (keyWindow == null) {
 						openKeyWindow(recentlyDocked, false);
 						recentlyDocked = SWT.NONE;

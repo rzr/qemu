@@ -37,6 +37,8 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.dbi.MenuItemType;
+import org.tizen.emulator.skin.dbi.PopupMenuType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -90,6 +92,9 @@ public class PopupMenu {
 	}
 
 	private void addMenuItems(final Menu menu) {
+		PopupMenuType itemProperties = config.getDbiContents().getPopupMenu();
+		String menuName = "";
+
 		/* Emulator detail info menu */
 		detailInfoItem = new MenuItem(menu, SWT.PUSH);
 		String emulatorName = SkinUtil.makeEmulatorName(config);
@@ -112,12 +117,21 @@ public class PopupMenu {
 		}
 
 		/* Rotate menu */
-		rotateItem = new MenuItem(menu, SWT.CASCADE);
-		rotateItem.setText("&Rotate");
-		rotateItem.setImage(imageRegistry.getIcon(IconName.ROTATE));
+		MenuItemType rotationItem = (itemProperties != null) ?
+				itemProperties.getRotationItem() : null;
 
-		Menu rotateMenu = skin.createRotateMenu();
-		rotateItem.setMenu(rotateMenu);
+		menuName = (rotationItem != null) ?
+				rotationItem.getItemName() : "&Rotate";
+
+		if (rotationItem == null ||
+				(rotationItem != null && rotationItem.isVisible() == true)) {
+			rotateItem = new MenuItem(menu, SWT.CASCADE);
+			rotateItem.setText(menuName);
+			rotateItem.setImage(imageRegistry.getIcon(IconName.ROTATE));
+
+			Menu rotateMenu = skin.createRotateMenu();
+			rotateItem.setMenu(rotateMenu);
+		}
 
 		/* Scale menu */
 		scaleItem = new MenuItem(menu, SWT.CASCADE);
@@ -130,7 +144,14 @@ public class PopupMenu {
 		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* Key Window menu */
-		if (skin.skinInfo.isPhoneShape() == false) { //TODO:
+		MenuItemType keywindowItem = (itemProperties != null) ?
+				itemProperties.getKeywindowItem() : null;
+
+		menuName = (keywindowItem != null) ?
+				keywindowItem.getItemName() : "&Key Window";
+
+		if (keywindowItem == null ||
+				(keywindowItem != null && keywindowItem.isVisible() == true)) {
 			keyWindowItem = new MenuItem(menu, SWT.CHECK);
 			keyWindowItem.setText("&Key Window");
 			keyWindowItem.setSelection(skin.isKeyWindow);
@@ -144,7 +165,7 @@ public class PopupMenu {
 		advancedItem.setText("Ad&vanced");
 		advancedItem.setImage(imageRegistry.getIcon(IconName.ADVANCED));
 
-		Menu advancedMenu = new Menu(shell, SWT.DROP_DOWN);
+		Menu advancedMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
 		{
 			/* Screen shot menu */
 			screenshotItem = new MenuItem(advancedMenu, SWT.PUSH);
