@@ -16,7 +16,9 @@ chmod +x $TMP_FILE
 
 if [ "$TSUDO" != "" ] # since installer v2.27
 then
-	$TSUDO ./$TMP_FILE -m "It is required to disable kvm module."
+	TSUDO_MSG="Enter your password to remove /etc/init.d/tizen-kvm."
+	TMP_PATH="`pwd`/${TMP_FILE}"
+	$TSUDO -m "${TSUDO_MSG}" sh $TMP_PATH
 else
 	GKSUDO=`which gksudo`
 	if [ "$GKSUDO" = "" ]

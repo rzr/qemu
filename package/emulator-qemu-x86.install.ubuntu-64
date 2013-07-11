@@ -17,7 +17,9 @@ chmod +x $TMP_FILE
 
 if [ "$TSUDO" != "" ] # since installer v2.27
 then
-	$TSUDO ./$TMP_FILE -m "It is required to enable kvm module."
+	TSUDO_MSG="Enter your password to enable kvm module if your machine supports hardware virtualization."
+	TMP_PATH="`pwd`/${TMP_FILE}"
+	$TSUDO -m "${TSUDO_MSG}" sh $TMP_PATH
 else
 	GKSUDO=`which gksudo`
 	if [ "$GKSUDO" = "" ]
