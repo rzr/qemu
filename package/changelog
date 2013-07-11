@@ -1,3 +1,6 @@
+* 1.5.66
+- Modified install script to use TSUDO on Linux.
+== Kitae Kim <kt920.kim@samsung.com> 2013-07-11
 * 1.5.61
 - cancel a scrollbar timer
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-07-01
