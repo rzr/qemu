@@ -39,23 +39,20 @@ package org.tizen.emulator.skin.dbi;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 
 
 /**
- * <p>Java class for displayType complex type.
+ * <p>Java class for menuItemType complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="displayType">
+ * &lt;complexType name="menuItemType">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;all>
- *         &lt;element name="region" type="{http://www.tizen.org/emulator/skin/dbi}regionType"/>
- *       &lt;/all>
- *       &lt;attribute name="id" use="required" type="{http://www.w3.org/2001/XMLSchema}int" />
+ *       &lt;attribute name="itemName" type="{http://www.w3.org/2001/XMLSchema}string" default="&amp;Rotate" />
+ *       &lt;attribute name="visible" type="{http://www.w3.org/2001/XMLSchema}boolean" default="true" />
  *     &lt;/restriction>
  *   &lt;/complexContent>
  * &lt;/complexType>
@@ -64,54 +61,68 @@ import javax.xml.bind.annotation.XmlType;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "displayType", propOrder = {
+@XmlType(name = "menuItemType")
+public class MenuItemType {
 
-})
-public class DisplayType {
-
-    @XmlElement(required = true)
-    protected RegionType region;
-    @XmlAttribute(name = "id", required = true)
-    protected int id;
+    @XmlAttribute(name = "itemName")
+    protected String itemName;
+    @XmlAttribute(name = "visible")
+    protected Boolean visible;
 
     /**
-     * Gets the value of the region property.
+     * Gets the value of the itemName property.
      * 
      * @return
      *     possible object is
-     *     {@link RegionType }
+     *     {@link String }
      *     
      */
-    public RegionType getRegion() {
-        return region;
+    public String getItemName() {
+        if (itemName == null) {
+            return "&Rotate";
+        } else {
+            return itemName;
+        }
     }
 
     /**
-     * Sets the value of the region property.
+     * Sets the value of the itemName property.
      * 
      * @param value
      *     allowed object is
-     *     {@link RegionType }
+     *     {@link String }
      *     
      */
-    public void setRegion(RegionType value) {
-        this.region = value;
+    public void setItemName(String value) {
+        this.itemName = value;
     }
 
     /**
-     * Gets the value of the id property.
+     * Gets the value of the visible property.
      * 
+     * @return
+     *     possible object is
+     *     {@link Boolean }
+     *     
      */
-    public int getId() {
-        return id;
+    public boolean isVisible() {
+        if (visible == null) {
+            return true;
+        } else {
+            return visible;
+        }
     }
 
     /**
-     * Sets the value of the id property.
+     * Sets the value of the visible property.
      * 
+     * @param value
+     *     allowed object is
+     *     {@link Boolean }
+     *     
      */
-    public void setId(int value) {
-        this.id = value;
+    public void setVisible(Boolean value) {
+        this.visible = value;
     }
 
 }

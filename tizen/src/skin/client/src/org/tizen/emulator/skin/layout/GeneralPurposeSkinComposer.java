@@ -173,7 +173,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		toggleButton.addMouseListener(new MouseListener() {
 			@Override
 			public void mouseDown(MouseEvent e) {
-				if (skin.isSelectKeyWindow() == true) {
+				if (skin.isKeyWindow == true) {
 					skin.closeKeyWindow();
 					skin.recentlyDocked = SWT.RIGHT | SWT.CENTER;
 				} else {

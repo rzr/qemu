@@ -242,4 +242,7 @@
     <hover>
         <color B="255" G="255" R="255" />
     </hover>
+    <popupMenu>
+        <keywindowItem visible="false" />
+    </popupMenu>
 </EmulatorUI>

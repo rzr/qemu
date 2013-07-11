@@ -38,24 +38,22 @@ package org.tizen.emulator.skin.dbi;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 
 
 /**
- * <p>Java class for displayType complex type.
+ * <p>Java class for popupMenuType complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="displayType">
+ * &lt;complexType name="popupMenuType">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;all>
- *         &lt;element name="region" type="{http://www.tizen.org/emulator/skin/dbi}regionType"/>
- *       &lt;/all>
- *       &lt;attribute name="id" use="required" type="{http://www.w3.org/2001/XMLSchema}int" />
+ *       &lt;sequence>
+ *         &lt;element name="rotationItem" type="{http://www.tizen.org/emulator/skin/dbi}menuItemType" minOccurs="0"/>
+ *         &lt;element name="keywindowItem" type="{http://www.tizen.org/emulator/skin/dbi}menuItemType" minOccurs="0"/>
+ *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
  * &lt;/complexType>
@@ -64,54 +62,61 @@ import javax.xml.bind.annotation.XmlType;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "displayType", propOrder = {
-
+@XmlType(name = "popupMenuType", propOrder = {
+    "rotationItem",
+    "keywindowItem"
 })
-public class DisplayType {
+public class PopupMenuType {
 
-    @XmlElement(required = true)
-    protected RegionType region;
-    @XmlAttribute(name = "id", required = true)
-    protected int id;
+    protected MenuItemType rotationItem;
+    protected MenuItemType keywindowItem;
 
     /**
-     * Gets the value of the region property.
+     * Gets the value of the rotationItem property.
      * 
      * @return
      *     possible object is
-     *     {@link RegionType }
+     *     {@link MenuItemType }
      *     
      */
-    public RegionType getRegion() {
-        return region;
+    public MenuItemType getRotationItem() {
+        return rotationItem;
     }
 
     /**
-     * Sets the value of the region property.
+     * Sets the value of the rotationItem property.
      * 
      * @param value
      *     allowed object is
-     *     {@link RegionType }
+     *     {@link MenuItemType }
      *     
      */
-    public void setRegion(RegionType value) {
-        this.region = value;
+    public void setRotationItem(MenuItemType value) {
+        this.rotationItem = value;
     }
 
     /**
-     * Gets the value of the id property.
+     * Gets the value of the keywindowItem property.
      * 
+     * @return
+     *     possible object is
+     *     {@link MenuItemType }
+     *     
      */
-    public int getId() {
-        return id;
+    public MenuItemType getKeywindowItem() {
+        return keywindowItem;
     }
 
     /**
-     * Sets the value of the id property.
+     * Sets the value of the keywindowItem property.
      * 
+     * @param value
+     *     allowed object is
+     *     {@link MenuItemType }
+     *     
      */
-    public void setId(int value) {
-        this.id = value;
+    public void setKeywindowItem(MenuItemType value) {
+        this.keywindowItem = value;
     }
 
 }
