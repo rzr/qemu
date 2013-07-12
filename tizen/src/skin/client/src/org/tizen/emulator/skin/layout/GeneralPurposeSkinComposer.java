@@ -391,10 +391,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
 
-				if (skin.keyWindow != null &&
-						skin.keyWindow.getDockPosition() != SWT.NONE) {
-					skin.keyWindow.dock(
-							skin.keyWindow.getDockPosition(), false, false);
+				if (skin.keyWindow != null) {
+					skin.keyWindow.redock(false, false);
 				}
 			}
 		};
@@ -412,10 +410,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 					shell.setLocation(x, y);
 
-					if (skin.keyWindow != null &&
-							skin.keyWindow.getDockPosition() != SWT.NONE) {
-						skin.keyWindow.dock(
-								skin.keyWindow.getDockPosition(), false, false);
+					if (skin.keyWindow != null) {
+						skin.keyWindow.redock(false, false);
 					}
 				}
 			}
@@ -432,10 +428,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
-					if (skin.keyWindow != null &&
-							skin.keyWindow.getDockPosition() != SWT.NONE) {
-						skin.keyWindow.dock(
-								skin.keyWindow.getDockPosition(), false, true);
+					if (skin.keyWindow != null) {
+						skin.keyWindow.redock(false, true);
 					}
 				}
 			}

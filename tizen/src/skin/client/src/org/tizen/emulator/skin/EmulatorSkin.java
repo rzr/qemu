@@ -652,6 +652,10 @@ public class EmulatorSkin {
 		canvasMouseListener = new MouseListener() {
 			@Override
 			public void mouseUp(MouseEvent e) {
+				if (keyWindow != null) {
+					keyWindow.redock(false, false);
+				}
+
 				if (1 == e.button) /* left button */
 				{
 					if (true == isDisplayDragging) {
@@ -1338,8 +1342,13 @@ public class EmulatorSkin {
 			public void widgetSelected(SelectionEvent e) {
 				if (isSelectKeyWindowMenu() == true) {
 					if (keyWindow == null) {
-						openKeyWindow(recentlyDocked, false);
-						recentlyDocked = SWT.NONE;
+						if (recentlyDocked != SWT.NONE) {
+							openKeyWindow(recentlyDocked, false);
+							recentlyDocked = SWT.NONE;
+						} else {
+							/* opening for first time */
+							openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+						}
 					} else {
 						openKeyWindow(keyWindow.getDockPosition(), false);
 					}

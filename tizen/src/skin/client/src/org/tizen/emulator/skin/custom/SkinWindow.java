@@ -144,6 +144,10 @@ public class SkinWindow {
 		shell.setLocation(x, y);
 	}
 
+	public void redock(boolean correction, boolean enableLogger) {
+		dock(getDockPosition(), correction, enableLogger);
+	}
+
 	public int getDockPosition() {
 		return dockPosition;
 	}
