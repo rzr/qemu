@@ -214,6 +214,7 @@ echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 exec ./configure \
+ --cc=gcc \
  $CONFIGURE_APPEND \
  --audio-drv-list=winwave \
  --enable-hax \
