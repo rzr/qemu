@@ -66,4 +66,10 @@
     <hover>
         <color B="255" G="255" R="255" />
     </hover>
+    <popupMenu>
+        <topmostItem visible="true" />
+        <rotateItem visible="true" />
+        <keywindowItem visible="true" />
+        <shellItem visible="true" />
+    </popupMenu>
 </EmulatorUI>
