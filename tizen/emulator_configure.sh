@@ -199,7 +199,6 @@ exec ./configure \
  --enable-maru \
  --disable-vnc \
  --disable-pie $1
- #--audio-card-list=ac97 \
  #--enable-ldst-optimization \
 ;;
 MINGW*)
@@ -217,7 +216,6 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
 exec ./configure \
  $CONFIGURE_APPEND \
  --audio-drv-list=winwave \
- --audio-card-list=ac97 \
  --enable-hax \
  --enable-maru \
  --disable-vnc $1
@@ -240,7 +238,6 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
  --extra-cflags=-mmacosx-version-min=10.4 \
  --audio-drv-list=coreaudio \
  --enable-mixemu \
- --audio-card-list=ac97 \
  --enable-maru \
  --enable-shm \
  --enable-hax \
