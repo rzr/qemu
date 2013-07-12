@@ -18,7 +18,7 @@
  *
  */
 
-#include "hax.h"
+#include "sysemu/hax.h"
 
 int hax_sync_vcpus(void)
 {
@@ -43,9 +43,4 @@ int hax_pre_init(uint64_t ram_size)
 int hax_enabled(void)
 {
    return 0;
-}
-
-void qemu_notify_hax_event(void)
-{
-   return;
 }

@@ -33,10 +33,10 @@ int hax_sync_vcpus(void);
 
 #ifdef CONFIG_HAX
 //#include "cpu.h"
-#include "kvm.h"
+//#include "kvm.h"
 #include "hw/hw.h"
-#include "bitops.h"
-#include "memory.h"
+#include "qemu/bitops.h"
+#include "exec/memory.h"
 
 int hax_init_vcpu(CPUArchState *env);
 int hax_vcpu_exec(CPUArchState *env);
@@ -52,7 +52,7 @@ int hax_stop_translate(CPUArchState *env);
 int hax_arch_get_registers(CPUArchState *env);
 int hax_vcpu_destroy(CPUArchState *env);
 void hax_raise_event(CPUArchState *env);
-int need_handle_intr_request(CPUArchState *env);
+//int need_handle_intr_request(CPUState *env);
 int hax_handle_io(CPUArchState *env, uint32_t df, uint16_t port, int direction,
 		 int size, int count, void *buffer);
 void hax_reset_vcpu_state(void *opaque);

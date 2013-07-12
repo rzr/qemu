@@ -20,9 +20,9 @@
 #include "cpu.h"
 #include "disas/disas.h"
 #include "tcg.h"
-#include "hax.h"
 #include "qemu/atomic.h"
 #include "sysemu/qtest.h"
+#include "sysemu/hax.h"
 
 bool qemu_cpu_has_work(CPUState *cpu)
 {

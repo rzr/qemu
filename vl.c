@@ -154,7 +154,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "audio/audio.h"
 #include "migration/migration.h"
 #include "sysemu/kvm.h"
-#include "hax.h"
+#include "sysemu/hax.h"
 #include "qapi/qmp/qjson.h"
 #include "qemu/option.h"
 #include "qemu/config-file.h"

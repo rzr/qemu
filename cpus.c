@@ -30,7 +30,7 @@
 #include "exec/gdbstub.h"
 #include "sysemu/dma.h"
 #include "sysemu/kvm.h"
-#include "hax.h"
+#include "sysemu/hax.h"
 #include "qmp-commands.h"
 
 #include "qemu/thread.h"
@@ -1357,16 +1357,3 @@ void qmp_inject_nmi(Error **errp)
     error_set(errp, QERR_UNSUPPORTED);
 #endif
 }
-
-#ifdef CONFIG_HAX
-void qemu_notify_hax_event(void)
-{
-   CPUArchState *env = NULL;
-
-   if (hax_enabled()) {
-       for (env = first_cpu; env != NULL; env = env->next_cpu) {
-           hax_raise_event(env);
-       }
-   }
-}
-#endif

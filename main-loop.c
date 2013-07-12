@@ -28,6 +28,8 @@
 #include "qemu/main-loop.h"
 #include "block/aio.h"
 
+#include "sysemu/hax.h"
+
 #ifndef _WIN32
 
 #include "qemu/compatfd.h"
@@ -114,14 +116,27 @@ AioContext *qemu_get_aio_context(void)
     return qemu_aio_context;
 }
 
+#ifdef CONFIG_HAX
+static void qemu_notify_hax_event(void)
+{
+   CPUArchState *env = NULL;
+
+   if (hax_enabled()) {
+       for (env = first_cpu; env != NULL; env = env->next_cpu) {
+           hax_raise_event(env);
+       }
+   }
+}
+#endif
+
 void qemu_notify_event(void)
 {
     if (!qemu_aio_context) {
         return;
     }
-    // TODO: Mark HAX related code...
+#ifdef CONFIG_HAX
     qemu_notify_hax_event();
-    //
+#endif
     aio_notify(qemu_aio_context);
 }
 

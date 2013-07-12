@@ -101,16 +101,6 @@ AioContext *qemu_get_aio_context(void);
  */
 void qemu_notify_event(void);
 
-// TODO: Mark HAX related code...
-#ifdef CONFIG_HAX_BACKEND
-void qemu_notify_hax_event(void);
-#else
-static inline void qemu_notify_hax_event(void)
-{
-}
-#endif
-//
-
 #ifdef _WIN32
 /* return TRUE if no sleep should be done afterwards */
 typedef int PollingFunc(void *opaque);
