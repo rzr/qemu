@@ -283,7 +283,7 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
     }
 #else
 #include <errno.h>
-	int open_flags, ret;
+	int open_flags;
 
 	open_flags = O_BINARY & ~O_ACCMODE;
 	if (flags & BDRV_O_RDWR) {

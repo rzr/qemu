@@ -34,7 +34,6 @@
 
 #ifdef CONFIG_MARU
 #include "../../tizen/src/skin/maruskin_client.h"
-#endif
 
 typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 LPFN_ISWOW64PROCESS fnIsWow64Process;

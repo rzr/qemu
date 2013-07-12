@@ -3527,7 +3527,7 @@ static CharDriverState *qmp_chardev_open_file(ChardevFile *file, Error **errp)
 	int open_flags, ret;
 
 	open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
-	ret = qemu_open(file_out, open_flags, 0644);
+	ret = qemu_open(file->out, open_flags, 0644);
 	if (ret < 0) {
 		error_report("qemu_chr_open_win_file_out failed(%d) \n", ret);
 		return -errno;
