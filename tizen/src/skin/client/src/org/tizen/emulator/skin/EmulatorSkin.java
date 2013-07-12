@@ -252,7 +252,7 @@ public class EmulatorSkin {
 	public long initLayout() {
 		imageRegistry = ImageRegistry.getInstance();
 
-		if (skinInfo.isPhoneShape() == true) { /* phone shape skin */
+		if (skinInfo.isGeneralPurposeSkin() == false) {
 			skinComposer = new PhoneShapeSkinComposer(config, this,
 					shell, currentState, imageRegistry, communicator);
 
@@ -426,9 +426,7 @@ public class EmulatorSkin {
 						config.saveSkinProperties();
 
 						/* close the Key Window */
-						if (skinInfo.isPhoneShape() == false) {
-							closeKeyWindow();
-						}
+						closeKeyWindow();
 
 						/* dispose the color */
 						if (colorVM != null) {

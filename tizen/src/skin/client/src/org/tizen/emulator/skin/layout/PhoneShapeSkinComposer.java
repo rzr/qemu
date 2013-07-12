@@ -174,9 +174,9 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
 		if (lcdBounds == null) {
-			logger.severe("Failed to lcd information for phone shape skin.");
+			logger.severe("Failed to read display information for skin.");
 			SkinUtil.openMessage(shell, null,
-					"Failed to read lcd information for phone shape skin.\n" +
+					"Failed to read display information for skin.\n" +
 					"Check the contents of skin dbi file.",
 					SWT.ICON_ERROR, config);
 			System.exit(-1);

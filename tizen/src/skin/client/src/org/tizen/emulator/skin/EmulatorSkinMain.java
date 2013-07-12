@@ -166,18 +166,18 @@ public class EmulatorSkinMain {
 				logger.info("skin info:" + skinInfoProperties); //TODO:
 			}
 
-			boolean skinPhoneShape = true;
 			String skinInfoResolutionW =
 					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
 			String skinInfoResolutionH =
 					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
 
+			boolean isGeneralSkin = false;
 			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
 					skinInfoResolutionH.equalsIgnoreCase("all")) {
-				skinPhoneShape = false;
+				isGeneralSkin = true;
 			}
 			SkinInformation skinInfo = new SkinInformation(
-					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME), skinPhoneShape);
+					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME), isGeneralSkin);
 
 			/* set emulator window skin property */
 			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
