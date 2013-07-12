@@ -31,6 +31,9 @@
 #include "qemu/iov.h"
 #include <windows.h>
 #include <winioctl.h>
+#ifdef CONFIG_MARU
+#include <errno.h>
+#endif
 
 #define FTYPE_FILE 0
 #define FTYPE_CD     1
@@ -243,6 +246,9 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
     Error *local_err = NULL;
     const char *filename;
     int ret;
+#ifdef CONFIG_MARU
+    int open_flags;
+#endif
 
     s->type = FTYPE_FILE;
 
@@ -282,41 +288,38 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags)
         goto fail;
     }
 #else
-#include <errno.h>
-	int open_flags;
+    open_flags = O_BINARY & ~O_ACCMODE;
+    if (flags & BDRV_O_RDWR) {
+        open_flags |= O_RDWR;
+    } else {
+        open_flags |= O_RDONLY;
+    }
 
-	open_flags = O_BINARY & ~O_ACCMODE;
-	if (flags & BDRV_O_RDWR) {
-		open_flags |= O_RDWR;
-	} else {
-		open_flags |= O_RDONLY;
-	}
-
-	/* Use O_DSYNC for write-through caching, no flags for write-back caching,
+    /* Use O_DSYNC for write-through caching, no flags for write-back caching,
      * and O_DIRECT for no caching. */
-	/*
-	if ((flags & BDRV_O_NOCACHE)) {
-		open_flags |= O_DIRECT;
-	}
-    if (!(flags & BDRV_O_CACHE_WB)) {
-        open_flags |= O_DSYNC;
-	}
-	*/
+    /*
+       if ((flags & BDRV_O_NOCACHE)) {
+       open_flags |= O_DIRECT;
+       }
+       if (!(flags & BDRV_O_CACHE_WB)) {
+       open_flags |= O_DSYNC;
+       }
+     */
 
-	if ((flags & BDRV_O_NATIVE_AIO) && aio == NULL) {
-		aio = win32_aio_init();
-		if (aio == NULL) {
-			ret = -EINVAL;
-			goto fail;
-		}
-	}
+    if ((flags & BDRV_O_NATIVE_AIO) && aio == NULL) {
+        aio = win32_aio_init();
+        if (aio == NULL) {
+            ret = -EINVAL;
+            goto fail;
+        }
+    }
 
-	ret = qemu_open(filename, open_flags, 0644);
-	if (ret < 0) {
-		error_report("raw_open failed(%d) \n", ret);
-		return -errno;
-	}
-	s->hfile = (HANDLE)_get_osfhandle(ret);
+    ret = qemu_open(filename, open_flags, 0644);
+    if (ret < 0) {
+        error_report("raw_open failed(%d) \n", ret);
+        return -errno;
+    }
+    s->hfile = (HANDLE)_get_osfhandle(ret);
 #endif
 
     if (flags & BDRV_O_NATIVE_AIO) {
@@ -575,6 +578,9 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags)
     DWORD overlapped;
     char device_name[64];
     const char *filename = qdict_get_str(options, "filename");
+#ifdef CONFIG_MARU
+    int open_flags, ret;
+#endif
 
     if (strstart(filename, "/dev/cdrom", NULL)) {
         if (find_cdrom(device_name, sizeof(device_name)) < 0)
@@ -613,33 +619,30 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags)
                           FILE_SHARE_READ, NULL,
                           create_flags, overlapped, NULL);
 	*/
-#include <errno.h>
+    open_flags = (O_BINARY & ~O_ACCMODE);
+    if (flags & BDRV_O_RDWR) {
+        open_flags |= O_RDWR;
+    } else {
+        open_flags |= O_RDONLY;
+    }
 
-	int open_flags = O_BINARY;
-	open_flags &= ~O_ACCMODE;
-	if (flags & BDRV_O_RDWR) {
-		open_flags |= O_RDWR;
-	} else {
-		open_flags |= O_RDONLY;
-	}
-
-	/* Use O_DSYNC for write-through caching, no flags for write-back caching,
+    /* Use O_DSYNC for write-through caching, no flags for write-back caching,
      * and O_DIRECT for no caching. */
-	/*
-	if ((flags & BDRV_O_NOCACHE)) {
-		open_flags |= O_DIRECT;
-	}
-    if (!(flags & BDRV_O_CACHE_WB)) {
-        open_flags |= O_DSYNC;
-	}
-	*/
+    /*
+       if ((flags & BDRV_O_NOCACHE)) {
+       open_flags |= O_DIRECT;
+       }
+       if (!(flags & BDRV_O_CACHE_WB)) {
+       open_flags |= O_DSYNC;
+       }
+     */
 
-	int ret = qemu_open(filename, open_flags, 0644);
-	if (ret < 0) {
-		error_report("raw_open failed(%d) \n", ret);
-		return -errno;
-	}
-	s->hfile = (HANDLE)_get_osfhandle(ret);
+    ret = qemu_open(filename, open_flags, 0644);
+    if (ret < 0) {
+        error_report("raw_open failed(%d) \n", ret);
+        return -errno;
+    }
+    s->hfile = (HANDLE)_get_osfhandle(ret);
 #endif
     return 0;
 }
