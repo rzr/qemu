@@ -70,7 +70,7 @@ endif
 ifdef CONFIG_LINUX
 	rm -f check-cam
 endif
-distclean: ffmpeg_distclean qemu_distclean
+distclean: clean ffmpeg_distclean qemu_distclean
 
 install: all
 	mkdir -p $(EMUL_DIR)/bin
