@@ -2356,22 +2356,6 @@ else
 fi
 
 ##########################################
-# pixman support probe
-
-if test "$shm" = no; then
-    if $pkg_config pixman-1 > /dev/null 2>&1; then
-        pixman_cflags=`$pkg_config --cflags pixman-1 2>/dev/null`
-        pixman_libs=`$pkg_config --libs pixman-1 2>/dev/null`
-        QEMU_CFLAGS="$pixman_cflags $QEMU_CFLAGS"
-        LIBS="$pixman_libs $LIBS"
-    else
-        echo "Error: pixman-1 check failed"
-        echo "Make sure to have the pixman-1 libs and headers installed"
-        exit 1
-    fi
-fi
-
-##########################################
 # libcap probe
 
 if test "$cap" != "no" ; then
