@@ -1,5 +1,5 @@
 /**
- * 
+ * Profile-Specific Skin Layout
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -68,9 +68,9 @@ import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
-public class PhoneShapeSkinComposer implements ISkinComposer {
+public class ProfileSpecificSkinComposer implements ISkinComposer {
 	private Logger logger = SkinLogger.getSkinLogger(
-			PhoneShapeSkinComposer.class).getLogger();
+			ProfileSpecificSkinComposer.class).getLogger();
 
 	private EmulatorConfig config;
 	private EmulatorSkin skin;
@@ -88,7 +88,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public PhoneShapeSkinComposer(EmulatorConfig config, EmulatorSkin skin,
+	public ProfileSpecificSkinComposer(EmulatorConfig config, EmulatorSkin skin,
 			Shell shell, EmulatorSkinState currentState,
 			ImageRegistry imageRegistry, SocketCommunicator communicator) {
 		this.config = config;
@@ -270,7 +270,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 		return lcdBounds;
 	}
 
-	public void addPhoneShapeListener(final Shell shell) {
+	public void addProfileSpecificListener(final Shell shell) {
 		shellPaintListener = new PaintListener() {
 			@Override
 			public void paintControl(final PaintEvent e) {

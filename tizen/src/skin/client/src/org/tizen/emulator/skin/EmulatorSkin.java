@@ -91,7 +91,7 @@ import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.layout.GeneralPurposeSkinComposer;
 import org.tizen.emulator.skin.layout.ISkinComposer;
-import org.tizen.emulator.skin.layout.PhoneShapeSkinComposer;
+import org.tizen.emulator.skin.layout.ProfileSpecificSkinComposer;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
@@ -253,10 +253,10 @@ public class EmulatorSkin {
 		imageRegistry = ImageRegistry.getInstance();
 
 		if (skinInfo.isGeneralPurposeSkin() == false) {
-			skinComposer = new PhoneShapeSkinComposer(config, this,
+			skinComposer = new ProfileSpecificSkinComposer(config, this,
 					shell, currentState, imageRegistry, communicator);
 
-			((PhoneShapeSkinComposer) skinComposer).addPhoneShapeListener(shell);
+			((ProfileSpecificSkinComposer) skinComposer).addProfileSpecificListener(shell);
 		} else { /* general purpose skin */
 			skinComposer = new GeneralPurposeSkinComposer(config, this,
 					shell, currentState, imageRegistry);
@@ -1211,20 +1211,7 @@ public class EmulatorSkin {
 				shell.getDisplay().syncExec(new Runnable() {
 					@Override
 					public void run() {
-//						Point location = new Point(100, 100);
-//
-//						if (skinInfo.isPhoneShape()) { /* TODO: */
-//							location = shell.getLocation();
-//							shell.setVisible(false);
-//						}
-
 						skinComposer.arrangeSkin(currentState.getCurrentScale(), rotationId);
-
-//						if (skinInfo.isPhoneShape()) { /* TODO: */
-//							shell.setVisible(true);
-//							shell.setLocation(location);
-//							SkinUtil.setTopMost(shell, isOnTop);
-//						}
 
 						/* location correction */
 						Rectangle monitorBounds = Display.getDefault().getBounds();
@@ -1291,20 +1278,7 @@ public class EmulatorSkin {
 				shell.getDisplay().syncExec(new Runnable() {
 					@Override
 					public void run() {
-//						Point location = new Point(100, 100);
-//
-//						if (skinInfo.isPhoneShape()) { /* TODO: */
-//							location = shell.getLocation();
-//							shell.setVisible(false);
-//						}
-
 						skinComposer.arrangeSkin(scale, currentState.getCurrentRotationId());
-
-//						if (skinInfo.isPhoneShape()) { /* TODO: */
-//							shell.setVisible(true);
-//							shell.setLocation(location);
-//							SkinUtil.setTopMost(shell, isOnTop);
-//						}
 
 						/* location correction */
 						Rectangle monitorBounds = Display.getDefault().getBounds();

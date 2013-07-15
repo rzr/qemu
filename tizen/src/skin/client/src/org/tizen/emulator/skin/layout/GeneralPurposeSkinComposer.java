@@ -1,5 +1,5 @@
 /**
- * 
+ * General-Purpose Skin Layout
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
