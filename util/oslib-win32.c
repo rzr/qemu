@@ -38,7 +38,7 @@
 typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 LPFN_ISWOW64PROCESS fnIsWow64Process;
 
-int is_wow64_temp(void)
+static int is_wow64_temp(void)
 {
     int result = 0;
 
@@ -59,7 +59,7 @@ int is_wow64_temp(void)
     return result;
 }
 
-int get_java_path_temp(char** java_path)
+static int get_java_path_temp(char** java_path)
 {
     HKEY hKeyNew;
     HKEY hKey;
@@ -130,6 +130,10 @@ void *qemu_oom_check(void *ptr)
             JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE,
             JAVA_SIMPLEMODE_OPTION, _msg);
         int ret = WinExec(cmd, SW_SHOW);
+
+        if (ret < 32) {
+            // TODO: error handling...
+        }
 
         /* for 64bit windows */
         free(JAVA_EXEFILE_PATH);
