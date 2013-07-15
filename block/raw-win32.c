@@ -204,6 +204,7 @@ static int set_sparse(int fd)
 				 NULL, 0, NULL, 0, &returned, NULL);
 }
 
+#ifndef CONFIG_MARU
 static void raw_parse_flags(int flags, int *access_flags, DWORD *overlapped)
 {
     assert(access_flags != NULL);
@@ -223,6 +224,7 @@ static void raw_parse_flags(int flags, int *access_flags, DWORD *overlapped)
         *overlapped |= FILE_FLAG_NO_BUFFERING;
     }
 }
+#endif
 
 static QemuOptsList raw_runtime_opts = {
     .name = "raw",
@@ -240,13 +242,14 @@ static QemuOptsList raw_runtime_opts = {
 static int raw_open(BlockDriverState *bs, QDict *options, int flags)
 {
     BDRVRawState *s = bs->opaque;
-    int access_flags;
-    DWORD overlapped;
     QemuOpts *opts;
     Error *local_err = NULL;
     const char *filename;
     int ret;
-#ifdef CONFIG_MARU
+#ifndef CONFIG_MARU
+    DWORD overlapped;
+    int access_flags;
+#else
     int open_flags;
 #endif
 
@@ -574,11 +577,12 @@ static int hdev_probe_device(const char *filename)
 static int hdev_open(BlockDriverState *bs, QDict *options, int flags)
 {
     BDRVRawState *s = bs->opaque;
-    int access_flags, create_flags;
-    DWORD overlapped;
     char device_name[64];
     const char *filename = qdict_get_str(options, "filename");
-#ifdef CONFIG_MARU
+#ifndef CONFIG_MARU
+    int access_flags, create_flags;
+    DWORD overlapped;
+#else
     int open_flags, ret;
 #endif
 
