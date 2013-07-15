@@ -1262,7 +1262,7 @@ public class EmulatorSkin {
 		final MenuItem scaleThreeQtrItem = new MenuItem(menu, SWT.RADIO);
 		scaleThreeQtrItem.setText("3/4x");
 		scaleThreeQtrItem.setData(Scale.SCALE_75);
-		scaleList.add( scaleThreeQtrItem );
+		scaleList.add(scaleThreeQtrItem);
 
 		final MenuItem scalehalfItem = new MenuItem(menu, SWT.RADIO);
 		scalehalfItem.setText("1/2x");

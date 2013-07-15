@@ -333,6 +333,11 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 					int y = previousLocation.y + (e.y - grabPosition.y);
 
 					shell.setLocation(x, y);
+
+					if (skin.keyWindow != null) {
+						skin.keyWindow.redock(false, false);
+					}
+
 					return;
 				}
 
@@ -394,6 +399,11 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
+					if (skin.keyWindow != null) {
+						skin.keyWindow.redock(false, true);
+					}
+
+					/* HW key handling */
 					HWKey pressedHWKey = currentState.getCurrentPressedHWKey();
 					if (pressedHWKey == null) {
 						return;
@@ -430,6 +440,7 @@ public class PhoneShapeSkinComposer implements ISkinComposer {
 					grabPosition.x = e.x;
 					grabPosition.y = e.y;
 
+					/* HW key handling */
 					final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 							currentState.getCurrentRotationId(), currentState.getCurrentScale());
 					if (hwKey == null) {

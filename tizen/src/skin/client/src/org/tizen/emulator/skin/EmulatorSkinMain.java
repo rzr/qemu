@@ -153,7 +153,7 @@ public class EmulatorSkinMain {
 				logger.severe("Fail to load skin information file.");
 
 				Shell temp = new Shell(Display.getDefault());
-				MessageBox messageBox = new MessageBox( temp, SWT.ICON_ERROR );
+				MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
 				messageBox.setText("Emulator");
 				messageBox.setMessage("Fail to load \"" + SKIN_INFO_FILE_NAME + "\" file\n" +
 						"Check if the file is corrupted or missing from the following path.\n" +
@@ -200,7 +200,7 @@ public class EmulatorSkinMain {
 			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
 			/* load dbi file */
-			EmulatorUI dbiContents = loadDbi(skinPath);
+			EmulatorUI dbiContents = loadXMLForSkin(skinPath);
 			if (null == dbiContents) {
 				logger.severe("Fail to load dbi file.");
 
@@ -439,7 +439,7 @@ public class EmulatorSkinMain {
 		return map;
 	}
 
-	private static EmulatorUI loadDbi(String skinPath) {
+	private static EmulatorUI loadXMLForSkin(String skinPath) {
 		String dbiPath = skinPath + File.separator + DBI_FILE_NAME;
 		logger.info("load dbi file from " + dbiPath);
 
@@ -447,25 +447,22 @@ public class EmulatorSkinMain {
 		EmulatorUI emulatorUI = null;
 
 		try {
-			
 			fis = new FileInputStream(dbiPath);
-			logger.info( "============ dbi contents ============" );
-			byte[] bytes = IOUtil.getBytes( fis );
-			logger.info( new String( bytes, "UTF-8" ) );
-			logger.info( "=======================================" );
-			
-			emulatorUI = JaxbUtil.unmarshal( bytes, EmulatorUI.class );
-			
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
-		} catch ( JaxbException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
+			logger.info("============ dbi contents ============");
+			byte[] bytes = IOUtil.getBytes(fis);
+			logger.info(new String(bytes, "UTF-8"));
+			logger.info("=======================================");
+
+			emulatorUI = JaxbUtil.unmarshal(bytes, EmulatorUI.class);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (JaxbException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 		} finally {
-			IOUtil.close( fis );
+			IOUtil.close(fis);
 		}
 
 		return emulatorUI;
-
 	}
 
 	private static Properties loadProperties( String filePath, boolean create ) {
