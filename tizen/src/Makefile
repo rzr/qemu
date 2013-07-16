@@ -88,7 +88,8 @@ ifndef CONFIG_DARWIN
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
 		cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/efi-virtio.rom $(EMUL_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/acpi-dsdt.aml $(EMUL_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
@@ -106,7 +107,8 @@ else
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
 		cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/pxe-virtio.rom $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/efi-virtio.rom $(EMUL_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/acpi-dsdt.aml $(EMUL_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
@@ -203,7 +205,8 @@ ifndef CONFIG_DARWIN
 		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
 		cp -dpr ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -dpr ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/pxe-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/efi-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
+		cp -dpr ../../pc-bios/acpi-dsdt.aml $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
@@ -221,7 +224,8 @@ else
 		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
 		cp -pPR ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -pPR ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/pxe-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/efi-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
+		cp -pPR ../../pc-bios/acpi-dsdt.aml $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
 		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
