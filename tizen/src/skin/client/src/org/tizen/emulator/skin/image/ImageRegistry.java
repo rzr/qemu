@@ -42,7 +42,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.dbi.ImageListType;
 import org.tizen.emulator.skin.dbi.RotationType;
@@ -57,14 +56,13 @@ import org.tizen.emulator.skin.util.SkinRotation;
  *
  */
 public class ImageRegistry {
-	private static Logger logger =
-			SkinLogger.getSkinLogger(ImageRegistry.class).getLogger();
-
-	public static final String SKINS_FOLDER = "skins";
 	public static final String GENERAL_FOLDER = "emul-general-3btn";
 	public static final String ICON_FOLDER = "icons";
 	public static final String IMAGES_FOLDER = "images";
 	public static final String KEYWINDOW_FOLDER = "key-window";
+
+	private static Logger logger =
+			SkinLogger.getSkinLogger(ImageRegistry.class).getLogger();
 
 	public enum ImageType {
 		IMG_TYPE_MAIN,
@@ -138,7 +136,7 @@ public class ImageRegistry {
 	private Map<String, Image> iconMap;
 	private Map<String, Image> keyWindowImageMap;
 
-	private String argSkinPath;
+	private String skinPath;
 
 	private static ImageRegistry instance;
 	private static boolean isInitialized;
@@ -155,7 +153,7 @@ public class ImageRegistry {
 		return instance;
 	}
 
-	public void initialize(EmulatorConfig config) {
+	public void initialize(EmulatorConfig config, String skinPath) {
 		if (isInitialized) {
 			return;
 		}
@@ -163,38 +161,13 @@ public class ImageRegistry {
 
 		this.display = Display.getDefault();
 
-		this.argSkinPath = config.getArg(ArgsConstants.SKIN_PATH);
+		this.skinPath = skinPath;
 		this.dbiContents = config.getDbiContents();
 		this.skinImageMap = new HashMap<String, Image>();
 		this.iconMap = new HashMap<String, Image>();
 		this.keyWindowImageMap = new HashMap<String, Image>();
 
-		init(this.argSkinPath);
-
-	}
-
-	public static String getSkinPath(String argSkinPath) {
-		/* When emulator receive a invalid skin path,
-		 emulator uses default skin path instead of it */
-		String defaultSkinPath = ".." + //TODO:
-				File.separator + SKINS_FOLDER + File.separator + GENERAL_FOLDER;
-
-		if (argSkinPath == null) {
-			logger.info("Emulator uses default skin path (" + defaultSkinPath +
-					") instead of invalid skin path (null).");
-
-			return defaultSkinPath;
-		}
-
-		File f = new File(argSkinPath);
-		if (f.isDirectory() == false) {
-			logger.info("Emulator uses default skin path (" + defaultSkinPath +
-					") instead of invalid skin path (" + argSkinPath + ").");
-
-			return defaultSkinPath;
-		}
-
-		return argSkinPath;
+		init(this.skinPath);
 	}
 
 	private void init(String argSkinPath) {
@@ -228,7 +201,6 @@ public class ImageRegistry {
 				return null;
 			}
 
-			String skinPath = getSkinPath(argSkinPath);
 			logger.info("get image data of skin from " + skinPath);
 
 			RotationType targetRotation = SkinRotation.getRotation(id);

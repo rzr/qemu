@@ -33,17 +33,23 @@ package org.tizen.emulator.skin.info;
  */
 public class SkinInformation {
 	private String skinName;
+	private String skinPath;
 	private boolean isGeneralSkin;
 	private int skinOption;
 
-	public SkinInformation(String skinName, boolean isGeneralSkin) {
+	public SkinInformation(String skinName, String skinPath, boolean isGeneralSkin) {
 		this.skinName = skinName;
+		this.skinPath = skinPath;
 		this.isGeneralSkin = isGeneralSkin;
 		this.skinOption = 0;
 	}
 
 	public String getSkinName() {
 		return skinName;
+	}
+
+	public String getSkinPath() {
+		return skinPath;
 	}
 
 	public boolean isGeneralPurposeSkin() {
