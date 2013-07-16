@@ -7,11 +7,17 @@ then
    exit 2;
 fi
 
+if [ -e /etc/os-release ]; then
+	OS_NAME=`cat /etc/os-release | grep ID | head -n 1 | awk -F= '{print $2}'`
+fi
+
 TMP_FILE=init_tizen-kvm.sh
 echo "cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/tizen-kvm /etc/init.d/" >> $TMP_FILE
 echo "cp ${TIZEN_SDK_INSTALL_PATH}/tools/emulator/etc/45-tizen-kvm.rules /lib/udev/rules.d/" >> $TMP_FILE
 echo "/etc/init.d/tizen-kvm start" >> $TMP_FILE
-echo "update-rc.d tizen-kvm defaults" >> $TMP_FILE
+if [ "ubuntu" = "${OS_NAME}" ] ; then
+	echo "update-rc.d tizen-kvm defaults" >> $TMP_FILE
+fi
 
 chmod +x $TMP_FILE
 
