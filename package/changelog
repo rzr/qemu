@@ -1,3 +1,6 @@
+* 1.5.69
+- support multiple linux distro when installing and removing this package.
+== Kitae Kim <kt920.kim@samsung.com> 2013-07-16
 * 1.5.68
 - changed sh to bash in the install and remove script.
 == Kitae Kim <kt920.kim@samsung.com> 2013-07-11
