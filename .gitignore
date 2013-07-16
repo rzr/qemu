@@ -120,4 +120,6 @@ tizen/src/check-cam
 fsdev/virtfs-proxy-helper
 .cproject
 .project
+tizen/src/check-hax
+tizen/src/check-cam
 
