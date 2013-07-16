@@ -36,13 +36,10 @@
 #include <signal.h>
 
 #include "qemu-common.h"
-#include "cpu-common.h"
-
-#include "pci.h"
-#include "pci_ids.h"
-#include "maru_device_ids.h"
+#include "exec/cpu-common.h"
 
 #include "maru_camera_common.h"
+#include "maru_device_ids.h"
 #include "tizen/src/debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, camera_pci);
@@ -56,7 +53,7 @@ MULTI_DEBUG_CHANNEL(tizen, camera_pci);
  *  I/O functions
  */
 static inline uint32_t
-marucam_mmio_read(void *opaque, target_phys_addr_t offset)
+marucam_mmio_read(void *opaque, hwaddr offset)
 {
     uint32_t ret = 0;
     MaruCamState *state = (MaruCamState *)opaque;
@@ -101,7 +98,7 @@ marucam_mmio_read(void *opaque, target_phys_addr_t offset)
 }
 
 static inline void
-marucam_mmio_write(void *opaque, target_phys_addr_t offset, uint32_t value)
+marucam_mmio_write(void *opaque, hwaddr offset, uint32_t value)
 {
     MaruCamState *state = (MaruCamState *)opaque;
 

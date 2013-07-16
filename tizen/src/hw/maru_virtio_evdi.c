@@ -46,17 +46,18 @@ struct msg_info {
 	uint32_t use;
 };
 
-typedef struct VirtIO_EVDI{
+#if 0
+typedef struct VirtIOEVDI{
     VirtIODevice    vdev;
     VirtQueue       *rvq;
     VirtQueue		*svq;
     DeviceState     *qdev;
 
     QEMUBH *bh;
-} VirtIO_EVDI;
+} VirtIOEVDI;
+#endif
 
-
-VirtIO_EVDI* vio_evdi;
+VirtIOEVDI* vio_evdi;
 
 static int g_cnt = 0;
 
@@ -100,7 +101,7 @@ static void virtio_evdi_recv(VirtIODevice *vdev, VirtQueue *vq)
 					_msg.use, _msg.buf, elem.in_sg[0].iov_len);
 
 
-			virtqueue_push(vq, &elem, sizeof(VirtIO_EVDI));
+			virtqueue_push(vq, &elem, sizeof(VirtIOEVDI));
 			virtio_notify(&vio_evdi->vdev, vq);
     	}
 	}
@@ -111,7 +112,7 @@ static void virtio_evdi_recv(VirtIODevice *vdev, VirtQueue *vq)
 
 static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 {
-	VirtIO_EVDI *vevdi = (VirtIO_EVDI *)vdev;
+	VirtIOEVDI *vevdi = (VirtIOEVDI *)vdev;
     int index = 0;
     struct msg_info _msg;
 
@@ -141,7 +142,7 @@ static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 		INFO("<< evdisend : recv from guest len = %d, msg = %s \n", _msg.use, _msg.buf);
     }
 
-	virtqueue_push(vq, &elem, sizeof(VirtIO_EVDI));
+	virtqueue_push(vq, &elem, sizeof(VirtIOEVDI));
 	virtio_notify(&vio_evdi->vdev, vq);
 }
 
@@ -166,8 +167,8 @@ VirtIODevice *virtio_evdi_init(DeviceState *dev)
 {
     INFO("initialize evdi device\n");
 
-    vio_evdi = (VirtIO_EVDI *)virtio_common_init(VIRTIO_EVDI_DEVICE_NAME,
-            VIRTIO_ID_EVDI, 0, sizeof(VirtIO_EVDI));
+    vio_evdi = (VirtIOEVDI *)virtio_common_init(VIRTIO_EVDI_DEVICE_NAME,
+            VIRTIO_ID_EVDI, 0, sizeof(VirtIOEVDI));
     if (vio_evdi == NULL) {
         ERR("failed to initialize evdi device\n");
         return NULL;

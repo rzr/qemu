@@ -134,10 +134,10 @@ static void usb_touchscreen_handle_reset(USBDevice *dev)
     pthread_mutex_unlock(&event_mutex);
 }
 
-static int usb_touchscreen_handle_control(USBDevice *dev, USBPacket *p,
+static void usb_touchscreen_handle_control(USBDevice *dev, USBPacket *p,
     int request, int value, int index, int length, uint8_t *data)
 {
-    return usb_desc_handle_control(dev, p, request, value, index, length, data);
+    usb_desc_handle_control(dev, p, request, value, index, length, data);
 }
 
 /**
@@ -145,11 +145,11 @@ static int usb_touchscreen_handle_control(USBDevice *dev, USBPacket *p,
  * @param dev : state of device
  * @param p : usb packet
  */
-static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
+static void usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
 {
     USBTouchscreenState *s = (USBTouchscreenState *) dev;
     uint8_t buf[p->iov.size];
-    int ret = 0;
+    int len = 0;
 
     switch (p->pid) {
     case USB_TOKEN_IN:
@@ -158,7 +158,7 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
 
             if (s->changed == 0) {
                 pthread_mutex_unlock(&event_mutex);
-                return USB_RET_NAK;
+                TRACE("USB_RET_NAK\n");
             }
 
             if (event_cnt != 0) {
@@ -187,17 +187,16 @@ static int usb_touchscreen_handle_data(USBDevice *dev, USBPacket *p)
             pthread_mutex_unlock(&event_mutex);
 
             memset(buf, 0, sizeof(buf));
-            ret = usb_touchscreen_poll(s, buf, p->iov.size); //write event to packet
-            usb_packet_copy(p, buf, ret);
+            len = usb_touchscreen_poll(s, buf, p->iov.size); //write event to packet
+            usb_packet_copy(p, buf, len);
             break;
         }
         /* Fall through */
     case USB_TOKEN_OUT:
     default:
-        ret = USB_RET_STALL;
+        TRACE("USB_RET_STALL\n");
         break;
     }
-    return ret;
 }
 
 static void usb_touchscreen_handle_destroy(USBDevice *dev)

@@ -54,9 +54,9 @@ void print_system_info_os(void);
 
 void get_host_proxy_os(char *, char *, char *, char *);
 
-inline void download_url(char *);
-inline size_t write_data(void *, size_t, size_t, FILE *);
-inline void remove_string(char *, char *, const char *);
+void download_url(char *);
+size_t write_data(void *, size_t, size_t, FILE *);
+void remove_string(char *, char *, const char *);
 
 #endif // __OS_UTIL_H__
 

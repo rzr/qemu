@@ -22,7 +22,7 @@ static char* qemu_strdup(const char *str)
 {
 	char *ptr;
 	size_t len = strlen(str);
-	ptr = qemu_vmalloc(len + 1);
+	ptr = g_malloc(len + 1);
 	memcpy(ptr, str, len+1);
 	return ptr;
 }
@@ -67,7 +67,7 @@ int hax_set_phys_mem(MemoryRegionSection *section)
 {
     struct hax_set_ram_info info, *pinfo = &info;	
     MemoryRegionSection *mr = section->mr;
-    target_phys_addr_t start_addr = section->offset_within_address_space;
+    hwaddr start_addr = section->offset_within_address_space;
     ram_addr_t size = section->size;
     int ret;
 

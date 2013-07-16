@@ -28,21 +28,22 @@
  */
 
 
-#include "maru_shm.h"
-#include "emul_state.h"
-#include "hw/maru_brightness.h"
-#include "skin/maruskin_server.h"
-#include "debug_ch.h"
-
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+
+#include "maru_shm.h"
+#include "emul_state.h"
+#include "hw/maru_brightness.h"
+#include "hw/maru_overlay.h"
+#include "skin/maruskin_server.h"
+#include "debug_ch.h"
 #include "maru_err_table.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_shm);
 
-
-static void *shared_memory = (void*) 0;
+static DisplaySurface *dpy_surface;
+static void *shared_memory = (void *) 0;
 static int skin_shmid;
 
 static int shm_skip_update;
@@ -56,7 +57,35 @@ static unsigned int draw_frame;
 static unsigned int drop_frame;
 #endif
 
-void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h)
+/* Image processing functions using the pixman library */
+static void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
+{
+    /* overlay0 */
+    if (overlay0_power) {
+        pixman_image_composite(PIXMAN_OP_OVER,
+                               overlay0_image, NULL, dst_image,
+                               0, 0, 0, 0, overlay0_left, overlay0_top,
+                               overlay0_width, overlay0_height);
+    }
+    /* overlay1 */
+    if (overlay1_power) {
+        pixman_image_composite(PIXMAN_OP_OVER,
+                               overlay1_image, NULL, dst_image,
+                               0, 0, 0, 0, overlay1_left, overlay1_top,
+                               overlay1_width, overlay1_height);
+    }
+    /* apply the brightness level */
+    if (brightness_level < BRIGHTNESS_MAX) {
+        pixman_image_composite(PIXMAN_OP_OVER,
+                               brightness_image, NULL, dst_image,
+                               0, 0, 0, 0, 0, 0,
+                               pixman_image_get_width(dst_image),
+                               pixman_image_get_height(dst_image));
+    }
+}
+
+static void qemu_ds_shm_update(DisplayChangeListener *dcl,
+                               int x, int y, int w, int h)
 {
     if (shared_memory != NULL) {
         pthread_mutex_lock(&mutex_draw_display);
@@ -64,38 +93,42 @@ void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h)
         if (draw_display_state == 0) {
             draw_display_state = 1;
             pthread_mutex_unlock(&mutex_draw_display);
-
-            memcpy(shared_memory, ds->surface->data,
-                ds->surface->linesize * ds->surface->height);
-
+            maru_do_pixman_dpy_surface(dpy_surface->image);
+            memcpy(shared_memory,
+                   surface_data(dpy_surface),
+                   surface_stride(dpy_surface) *
+                   surface_height(dpy_surface));
 #ifdef INFO_FRAME_DROP_RATE
             draw_frame++;
 #endif
-
             notify_draw_frame();
         } else {
 #ifdef INFO_FRAME_DROP_RATE
             drop_frame++;
 #endif
-
             pthread_mutex_unlock(&mutex_draw_display);
         }
-
 #ifdef INFO_FRAME_DROP_RATE
-        INFO("! frame drop rate = (%d/%d)\n", drop_frame, draw_frame + drop_frame);
+        INFO("! frame drop rate = (%d/%d)\n",
+             drop_frame, draw_frame + drop_frame);
 #endif
     }
 }
 
-void qemu_ds_shm_resize(DisplayState *ds)
+static void qemu_ds_shm_switch(DisplayChangeListener *dcl,
+                        struct DisplaySurface *new_surface)
 {
-    TRACE("qemu_ds_shm_resize\n");
+    TRACE("qemu_ds_shm_switch\n");
+
+    if (new_surface) {
+        dpy_surface = new_surface;
+    }
 
     shm_skip_update = 0;
     shm_skip_count = 0;
 }
 
-void qemu_ds_shm_refresh(DisplayState *ds)
+static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
 {
     /* If the display is turned off,
     the screen does not update until the it is turned on */
@@ -103,7 +136,7 @@ void qemu_ds_shm_refresh(DisplayState *ds)
         return;
     }
 
-    vga_hw_update();
+    graphic_hw_update(NULL);
 
     /* Usually, continuously updated.
     But when the display is turned off,
@@ -119,6 +152,13 @@ void qemu_ds_shm_refresh(DisplayState *ds)
         shm_skip_update = 0;
     }
 }
+
+DisplayChangeListenerOps maru_dcl_ops = {
+    .dpy_name          = "maru_shm",
+    .dpy_refresh       = qemu_ds_shm_refresh,
+    .dpy_gfx_update    = qemu_ds_shm_update,
+    .dpy_gfx_switch    = qemu_ds_shm_switch,
+};
 
 void maruskin_shm_init(uint64 swt_handle,
     int lcd_size_width, int lcd_size_height, bool is_resize)

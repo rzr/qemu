@@ -30,7 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "osdep.h"
+#include "qemu/osdep.h"
 #include "opengl_func.h"
 #include "opengl_process.h"
 #include "opengl_exec.h"

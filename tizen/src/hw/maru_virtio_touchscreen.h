@@ -30,11 +30,14 @@
 #ifndef MARU_TOUCHSCREEN_H_
 #define MARU_TOUCHSCREEN_H_
 
-#include "console.h"
-#include "hw/virtio.h"
+#include "ui/console.h"
+#include "hw/virtio/virtio.h"
 
-typedef struct TouchscreenState
-{
+#define TYPE_VIRTIO_TOUCHSCREEN "virtio-touschreen-device"
+#define VIRTIO_TOUCHSCREEN(obj) \
+        OBJECT_CHECK(VirtIOTouchscreen, (obj), TYPE_VIRTIO_TOUCHSCREEN)
+
+typedef struct VirtIOTouchscreen {
     VirtIODevice vdev;
     /* simply a queue into which buffers are posted
     by the guest for consumption by the host */
@@ -44,7 +47,7 @@ typedef struct TouchscreenState
     QEMUBH *bh;
     DeviceState *qdev;
     QEMUPutMouseEntry *eh_entry;
-} TouchscreenState;
+} VirtIOTouchscreen;
 
 /* This structure must match the kernel definitions */
 typedef struct EmulTouchEvent {

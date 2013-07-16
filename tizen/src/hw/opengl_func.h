@@ -29,6 +29,7 @@
 
 #include "mesa_gl.h"
 #include "mesa_glext.h"
+#include "exec/hwaddr.h"
 
 #ifdef TARGET_X86_64
 #define TARGET_LONG_BITS 64
@@ -41,11 +42,12 @@
 //#define NEED_CPU_H
 //#include "exec.h"  // For arg_t typedef
 //#undef NEED_CPU_H
-#include "targphys.h"
+//#include "targphys.h"
 
 /* Argument list are internally of a type that can hold a target pointer
  * or a host pointer.  */
-typedef target_phys_addr_t arg_t;
+//typedef target_phys_addr_t arg_t;
+typedef hwaddr arg_t;
 
 enum {
     TYPE_NONE,

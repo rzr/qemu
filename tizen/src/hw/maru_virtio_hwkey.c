@@ -28,7 +28,6 @@
 
 
 #include <pthread.h>
-#include "console.h"
 #include "emul_state.h"
 #include "maru_virtio_hwkey.h"
 #include "maru_device_ids.h"
@@ -43,7 +42,7 @@ MULTI_DEBUG_CHANNEL(qemu, hwkey);
  */
 typedef struct HwKeyEventEntry {
     unsigned int index;
-    EmulHwKeyEvent hwkey;
+    EmulHWKeyEvent hwkey;
 
     QTAILQ_ENTRY(HwKeyEventEntry) node;
 } HwKeyEventEntry;
@@ -76,7 +75,7 @@ static QTAILQ_HEAD(, ElementEntry) elem_queue =
 static unsigned int elem_ringbuf_cnt; /* _elem_buf */
 static unsigned int elem_queue_cnt; /* elem_queue */
 
-VirtIOHwKey *vhk;
+VirtIOHWKey *vhk;
 
 /* lock for between communication thread and IO thread */
 static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -191,9 +190,9 @@ void maru_virtio_hwkey_notify(void)
             vbuf = element->in_sg[elem_entry->sg_index - 1].iov_base;
 
             /* copy event into virtio buffer */
-            memcpy(vbuf, &(event_entry->hwkey), sizeof(EmulHwKeyEvent));
+            memcpy(vbuf, &(event_entry->hwkey), sizeof(EmulHWKeyEvent));
 
-            virtqueue_push(vhk->vq, element, sizeof(EmulHwKeyEvent));
+            virtqueue_push(vhk->vq, element, sizeof(EmulHWKeyEvent));
             virtio_notify(&vhk->vdev, vhk->vq);
         }
 
@@ -219,22 +218,22 @@ static void maru_hwkey_bh(void *opaque)
     maru_virtio_hwkey_notify();
 }
 
-VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev)
+static int virtio_hwkey_device_init(VirtIODevice *vdev)
 {
     INFO("initialize the hwkey device\n");
+    DeviceState *qdev = DEVICE(vdev);
+    vhk = VIRTIO_HWKEY(vdev);
 
-    vhk = (VirtIOHwKey *)virtio_common_init(DEVICE_NAME,
-        VIRTIO_ID_HWKEY, 0 /*config_size*/, sizeof(VirtIOHwKey));
+    virtio_init(vdev, TYPE_VIRTIO_HWKEY, VIRTIO_ID_HWKEY, 0);
 
-    if (vhk == NULL) {
+    if (vdev == NULL) {
         ERR("failed to initialize the hwkey device\n");
-        return NULL;
+        return -1;
     }
 
-    vhk->vdev.get_features = virtio_hwkey_get_features;
-    vhk->vq = virtio_add_queue(&vhk->vdev, 64, maru_virtio_hwkey_handle);
+    vhk->vq = virtio_add_queue(vdev, 64, maru_virtio_hwkey_handle);
 
-    vhk->qdev = dev;
+    vhk->qdev = qdev;
 
     /* reset the counters */
     event_queue_cnt = event_ringbuf_cnt = 0;
@@ -243,12 +242,12 @@ VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev)
     /* bottom-half */
     vhk->bh = qemu_bh_new(maru_hwkey_bh, vhk);
 
-    return &(vhk->vdev);
+    return 0;
 }
 
-void maru_virtio_hwkey_exit(VirtIODevice *vdev)
+static int virtio_hwkey_device_exit(DeviceState *qdev)
 {
-    VirtIOHwKey *vhk = (VirtIOHwKey *)vdev;
+    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
 
     INFO("exit the hwkey device\n");
 
@@ -259,5 +258,30 @@ void maru_virtio_hwkey_exit(VirtIODevice *vdev)
     virtio_cleanup(vdev);
 
     pthread_mutex_destroy(&event_mutex);
+
+    return 0;
 }
+
+static void virtio_hwkey_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_hwkey_device_exit;
+    vdc->init = virtio_hwkey_device_init;
+    vdc->get_features = virtio_hwkey_get_features;
+}
+
+static const TypeInfo virtio_hwkey_info = {
+    .name = TYPE_VIRTIO_HWKEY,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOHWKey),
+    .class_init = virtio_hwkey_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_hwkey_info);
+}
+
+type_init(virtio_register_types)
 

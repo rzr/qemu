@@ -31,12 +31,9 @@
 #ifndef MARU_SHM_H_
 #define MARU_SHM_H_
 
-#include "console.h"
+#include "ui/console.h"
 
-
-void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h);
-void qemu_ds_shm_resize(DisplayState *ds);
-void qemu_ds_shm_refresh(DisplayState *ds);
+extern DisplayChangeListenerOps maru_dcl_ops;
 
 void maruskin_shm_init(uint64 swt_handle,
     int lcd_size_width, int lcd_size_height, bool is_resize);

@@ -28,9 +28,8 @@
  */
 
 #include "qemu-common.h"
+#include "sysemu/kvm.h"
 #include "maru_camera_common.h"
-#include "pci.h"
-#include "kvm.h"
 #include "tizen/src/debug_ch.h"
 
 #include <linux/videodev2.h>

@@ -56,7 +56,7 @@ MULTI_DEBUG_CHANNEL(qemu, opengl);
 #define GLX_GLXEXT_PROTOTYPES
 #include <mesa_gl.h>
 
-#include "qemu-queue.h"
+//#include "qemu-queue.h"
 #include "opengl_func.h"
 #include "mesa_mipmap.h"
 #include "opengl_process.h"

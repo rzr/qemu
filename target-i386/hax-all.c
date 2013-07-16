@@ -279,15 +279,16 @@ int hax_vcpu_destroy(CPUArchState *env)
 int hax_init_vcpu(CPUArchState *env)
 {
     int ret;
+    CPUState *cpu = ENV_GET_CPU(env);
 
-    ret = hax_vcpu_create(env->cpu_index);
+    ret = hax_vcpu_create(cpu->cpu_index);
     if (ret < 0)
     {
         dprint("Failed to create HAX vcpu\n");
         exit(-1);
     }
 
-    env->hax_vcpu = hax_global.vm->vcpus[env->cpu_index];
+    env->hax_vcpu = hax_global.vm->vcpus[cpu->cpu_index];
     env->hax_vcpu->emulation_state = HAX_EMULATE_STATE_INITIAL;
     env->hax_vcpu_dirty = 1;
     qemu_register_reset(hax_reset_vcpu_state, env);
@@ -431,7 +432,8 @@ static MemoryListener hax_memory_listener = {
 
 static void hax_handle_interrupt(CPUArchState *env, int mask)
 {
-    env->interrupt_request |= mask;
+    CPUState *cpu = ENV_GET_CPU(env);
+    cpu->interrupt_request |= mask;
 
     if (!qemu_cpu_is_self(env)) {
         qemu_cpu_kick(env);
@@ -578,17 +580,18 @@ static int hax_vcpu_interrupt(CPUArchState *env)
 {
     struct hax_vcpu_state *vcpu = env->hax_vcpu;
     struct hax_tunnel *ht = vcpu->tunnel;
+    CPUState *cpu = ENV_GET_CPU(env);
 
     /*
      * Try to inject an interrupt if the guest can accept it
      * Unlike KVM, HAX kernel check for the eflags, instead of qemu
      */
     if (ht->ready_for_interrupt_injection &&
-      (env->interrupt_request & CPU_INTERRUPT_HARD))
+      (cpu->interrupt_request & CPU_INTERRUPT_HARD))
     {
         int irq;
 
-        env->interrupt_request &= ~CPU_INTERRUPT_HARD;
+        cpu->interrupt_request &= ~CPU_INTERRUPT_HARD;
         irq = cpu_get_pic_interrupt(env);
         if (irq >= 0) {
             hax_inject_interrupt(env, irq);
@@ -599,7 +602,7 @@ static int hax_vcpu_interrupt(CPUArchState *env)
      * interrupt, request an interrupt window exit.  This will
      * cause a return to userspace as soon as the guest is ready to
      * receive interrupts. */
-    if ((env->interrupt_request & CPU_INTERRUPT_HARD))
+    if ((cpu->interrupt_request & CPU_INTERRUPT_HARD))
         ht->request_interrupt_window = 1;
     else
         ht->request_interrupt_window = 0;
@@ -630,6 +633,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
     int ret = 0;
     struct hax_vcpu_state *vcpu = env->hax_vcpu;
     struct hax_tunnel *ht = vcpu->tunnel;
+    CPUState *cpu = ENV_GET_CPU(env);
 
     if (hax_vcpu_emulation_mode(env))
     {
@@ -644,7 +648,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
         int hax_ret;
 
 	
-        if (env->exit_request) {
+        if (cpu->exit_request) {
             ret = HAX_EMUL_EXITLOOP ;
             break;
         }
@@ -702,11 +706,11 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
                 ret = HAX_EMUL_EXITLOOP;
                 break;
             case HAX_EXIT_HLT:
-                if (!(env->interrupt_request & CPU_INTERRUPT_HARD) &&
-                  !(env->interrupt_request & CPU_INTERRUPT_NMI)) {
+                if (!(cpu->interrupt_request & CPU_INTERRUPT_HARD) &&
+                  !(cpu->interrupt_request & CPU_INTERRUPT_NMI)) {
                     /* hlt instruction with interrupt disabled is shutdown */
                     env->eflags |= IF_MASK;
-                    env->halted = 1;
+                    cpu->halted = 1;
                     env->exception_index = EXCP_HLT;
                     ret = HAX_EMUL_HLT;
                 }
@@ -725,8 +729,8 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
         }
     }while (!ret);
 
-    if (env->exit_request) {
-        env->exit_request = 0;
+    if (cpu->exit_request) {
+        cpu->exit_request = 0;
         env->exception_index = EXCP_INTERRUPT;
     }
     return ret;

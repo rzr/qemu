@@ -13,9 +13,9 @@
 
 #include "emulator.h"
 #include "net/slirp.h"
-#include "qemu_socket.h"
+#include "qemu/sockets.h"
 #include "sdb.h"
-#include "nbd.h"
+#include "include/block/nbd.h"
 #include "tizen/src/debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, sdb);

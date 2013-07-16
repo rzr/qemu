@@ -33,24 +33,16 @@
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-esm);
 
-#define VIRTIO_ESM_DEVICE_NAME "virtio-guest-status-medium"
-
 struct progress_info {
-	uint16_t percentage;
+    uint16_t percentage;
 };
-
-typedef struct VirtIOEmulatorStatusMedium {
-    VirtIODevice    vdev;
-    VirtQueue       *vq;
-    DeviceState     *qdev;
-} VirtIO_ESM;
 
 static VirtQueueElement elem;
 struct progress_info progress;
 
 static void virtio_esm_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
-    VirtIO_ESM *vesm = (VirtIO_ESM *)vdev;
+    VirtIOESM *vesm = VIRTIO_ESM(vdev);
     int index = 0;
 
     TRACE("virtqueue handler.\n");
@@ -86,36 +78,60 @@ static void virtio_esm_handle(VirtIODevice *vdev, VirtQueue *vq)
     virtio_notify(&vesm->vdev, vesm->vq);
 }
 
-static uint32_t virtio_esm_get_features(VirtIODevice *vdev,
-                                            uint32_t request_feature)
+static void virtio_esm_reset(VirtIODevice *vdev)
+{
+    TRACE("virtio_esm_reset.\n");
+}
+
+static uint32_t virtio_esm_get_features(VirtIODevice *vdev, uint32_t feature)
 {
     TRACE("virtio_esm_get_features.\n");
+    return feature;
+}
+
+static int virtio_esm_device_init(VirtIODevice *vdev)
+{
+//    DeviceState *qdev = DEVICE(vdev);
+    VirtIOESM *vesm = VIRTIO_ESM(vdev);
+
+    INFO("initialize virtio-esm device\n");
+    virtio_init(vdev, "virtio-esm", VIRTIO_ID_ESM, 0);
+
+    vesm->vq = virtio_add_queue(vdev, 1, virtio_esm_handle);
+
     return 0;
 }
 
-VirtIODevice *virtio_esm_init(DeviceState *dev)
+static int virtio_esm_device_exit(DeviceState *dev)
 {
-    VirtIO_ESM *vesm;
-    INFO("initialize virtio-esm device\n");
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
 
-    vesm = (VirtIO_ESM *)virtio_common_init("virtio-esm",
-            VIRTIO_ID_ESM, 0, sizeof(VirtIO_ESM));
-    if (vesm == NULL) {
-        ERR("failed to initialize device\n");
-        return NULL;
-    }
-
-    vesm->vdev.get_features = virtio_esm_get_features;
-    vesm->vq = virtio_add_queue(&vesm->vdev, 1, virtio_esm_handle);
-    vesm->qdev = dev;
-
-    return &vesm->vdev;
-}
-
-void virtio_esm_exit(VirtIODevice *vdev)
-{
     INFO("destroy device\n");
-
     virtio_cleanup(vdev);
+
+    return 0;
 }
 
+static void virtio_esm_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_esm_device_exit;
+    vdc->init = virtio_esm_device_init;
+    vdc->get_features = virtio_esm_get_features;
+    vdc->reset = virtio_esm_reset;
+}
+
+static const TypeInfo virtio_device_info = {
+    .name = TYPE_VIRTIO_ESM,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOESM),
+    .class_init = virtio_esm_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_device_info);
+}
+
+type_init(virtio_register_types)

@@ -12,7 +12,20 @@
 extern "C" {
 #endif
 
-#include "hw/virtio.h"
+#include "hw/virtio/virtio.h"
+
+#define TYPE_VIRTIO_EVDI "virtio-evdi-device"
+#define VIRTIO_EVDI(obj) \
+        OBJECT_CHECK(VirtIOEVDI, (obj), TYPE_VIRTIO_EVDI)
+
+typedef struct VirtIOEVDI {
+    VirtIODevice    vdev;
+    VirtQueue       *rvq;
+    VirtQueue		*svq;
+    DeviceState     *qdev;
+
+    QEMUBH *bh;
+} VirtIOEVDI;
 
 VirtIODevice *virtio_evdi_init(DeviceState *dev);
 

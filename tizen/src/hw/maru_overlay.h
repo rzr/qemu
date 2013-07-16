@@ -34,6 +34,7 @@
 #define MARU_OVERLAY_H_
 
 #include "qemu-common.h"
+#include "ui/qemu-pixman.h"
 
 extern uint8_t *overlay_ptr;
 extern uint8_t overlay0_power;
@@ -47,6 +48,9 @@ extern uint16_t overlay1_left;
 extern uint16_t overlay1_top;
 extern uint16_t overlay1_width;
 extern uint16_t overlay1_height;
+
+extern pixman_image_t *overlay0_image;
+extern pixman_image_t *overlay1_image;
 
 DeviceState *pci_maru_overlay_init(PCIBus *bus);
 

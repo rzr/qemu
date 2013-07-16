@@ -29,18 +29,20 @@
  */
 
 #include "maru_pm.h"
-#include "hw.h"
-#include "pc.h"
-#include "apm.h"
-#include "pm_smbus.h"
-#include "pci.h"
-#include "acpi.h"
-#include "sysemu.h"
-#include "range.h"
-#include "ioport.h"
-#include "debug_ch.h"
-#include "fw_cfg.h"
 
+#include "hw/hw.h"
+#include "hw/i386/pc.h"
+#include "hw/isa/apm.h"
+#include "hw/i2c/pm_smbus.h"
+#include "hw/pci/pci.h"
+#include "hw/acpi/acpi.h"
+#include "sysemu/sysemu.h"
+#include "qemu/range.h"
+#include "exec/ioport.h"
+#include "hw/nvram/fw_cfg.h"
+#include "exec/address-spaces.h"
+
+#include "debug_ch.h"
 
 //#define DEBUG
 
@@ -53,25 +55,39 @@
 /* define debug channel */
 MULTI_DEBUG_CHANNEL(qemu, maru_pm);
 
-#define ACPI_DBG_IO_ADDR  0xb044
-
 #define GPE_BASE 0xafe0
 #define GPE_LEN 4
+
+#define PCI_HOTPLUG_ADDR 0xae00
+#define PCI_HOTPLUG_SIZE 0x000f
 #define PCI_UP_BASE 0xae00
 #define PCI_DOWN_BASE 0xae04
 #define PCI_EJ_BASE 0xae08
 #define PCI_RMV_BASE 0xae0c
 
+#define PIIX4_PROC_BASE 0xaf00
+#define PIIX4_PROC_LEN 32
+
 #define PIIX4_PCI_HOTPLUG_STATUS 2
+#define PIIX4_CPU_HOTPLUG_STATUS 4
 
 struct pci_status {
     uint32_t up; /* deprecated, maintained for migration compatibility */
     uint32_t down;
 };
 
+typedef struct CPUStatus {
+    uint8_t sts[PIIX4_PROC_LEN];
+} CPUStatus;
+
+
 typedef struct PIIX4PMState {
     PCIDevice dev;
-    IORange ioport;
+
+    MemoryRegion io;
+    MemoryRegion io_gpe;
+    MemoryRegion io_pci;
+    MemoryRegion io_cpu;
     ACPIREGS ar;
 
     APMState apm;
@@ -83,6 +99,7 @@ typedef struct PIIX4PMState {
     qemu_irq smi_irq;
     int kvm_enabled;
     Notifier machine_ready;
+    Notifier powerdown_notifier;
 
     /* for pci hotplug */
     struct pci_status pci0_status;
@@ -92,12 +109,15 @@ typedef struct PIIX4PMState {
     uint8_t disable_s3;
     uint8_t disable_s4;
     uint8_t s4_val;
+
+    CPUStatus gpe_cpu;
+    Notifier cpu_added_notifier;
 } PIIX4PMState;
 
 static int is_suspended;
 
-static void piix4_acpi_system_hot_add_init(PCIBus *bus, PIIX4PMState *s);
-
+static void piix4_acpi_system_hot_add_init(MemoryRegion *parent,
+                                           PCIBus *bus, PIIX4PMState *s);
 #define ACPI_ENABLE 0xf1
 #define ACPI_DISABLE 0xf0
 
@@ -111,8 +131,8 @@ static void pm_update_sci(PIIX4PMState *s)
                    ACPI_BITMASK_POWER_BUTTON_ENABLE |
                    ACPI_BITMASK_GLOBAL_LOCK_ENABLE |
                    ACPI_BITMASK_TIMER_ENABLE)) != 0) ||
-        (((s->ar.gpe.sts[0] & s->ar.gpe.en[0])
-          & PIIX4_PCI_HOTPLUG_STATUS) != 0);
+        (((s->ar.gpe.sts[0] & s->ar.gpe.en[0]) &
+          (PIIX4_PCI_HOTPLUG_STATUS | PIIX4_CPU_HOTPLUG_STATUS)) != 0);
 
     qemu_set_irq(s->irq, sci_level);
     /* schedule a timer interruption if needed */
@@ -126,6 +146,8 @@ static void pm_tmr_timer(ACPIREGS *ar)
     pm_update_sci(s);
 }
 
+#if defined(CONFIG_MARU)
+// original source in hw/acpi/core.c
 static void maru_pm1_cnt_write(ACPIREGS *ar, uint16_t val)
 {
     ar->pm1.cnt.cnt = val & ~(ACPI_BITMASK_SLEEP_ENABLE);
@@ -146,75 +168,35 @@ static void maru_pm1_cnt_write(ACPIREGS *ar, uint16_t val)
 #endif// end : changed suspend operation for emulator
             break;
         default:
+	    if (sus_typ == ar->pm1.cnt.s4_val) { /* S4 request */
+                //monitor_protocol_event(QEVENT_SUSPEND_DISK, NULL);
+                qemu_system_shutdown_request();
+            }
             break;
         }
     }
 }
 
-static void pm_ioport_write(IORange *ioport, uint64_t addr, unsigned width,
-                            uint64_t val)
+static uint64_t acpi_pm_cnt_read(void *opaque, hwaddr addr, unsigned width)
 {
-    PIIX4PMState *s = container_of(ioport, PIIX4PMState, ioport);
-
-    if (width != 2) {
-        PIIX4_DPRINTF("PM write port=0x%04x width=%d val=0x%08x\n",
-                      (unsigned)addr, width, (unsigned)val);
-    }
-
-    switch(addr) {
-    case 0x00:
-        acpi_pm1_evt_write_sts(&s->ar, val);
-        pm_update_sci(s);
-        break;
-    case 0x02:
-        acpi_pm1_evt_write_en(&s->ar, val);
-        pm_update_sci(s);
-        break;
-    case 0x04:
-#if 0
-        acpi_pm1_cnt_write(&s->ar, val);
-#else
-        maru_pm1_cnt_write(&s->ar, val);
-#endif
-        break;
-    default:
-        break;
-    }
-    PIIX4_DPRINTF("PM writew port=0x%04x val=0x%04x\n", (unsigned int)addr,
-                  (unsigned int)val);
+    ACPIREGS *ar = opaque;
+    return ar->pm1.cnt.cnt;
 }
 
-static void pm_ioport_read(IORange *ioport, uint64_t addr, unsigned width,
-                            uint64_t *data)
+static void acpi_pm_cnt_write(void *opaque, hwaddr addr, uint64_t val,
+                              unsigned width)
 {
-    PIIX4PMState *s = container_of(ioport, PIIX4PMState, ioport);
-    uint32_t val;
-
-    switch(addr) {
-    case 0x00:
-        val = acpi_pm1_evt_get_sts(&s->ar);
-        break;
-    case 0x02:
-        val = s->ar.pm1.evt.en;
-        break;
-    case 0x04:
-        val = s->ar.pm1.cnt.cnt;
-        break;
-    case 0x08:
-        val = acpi_pm_tmr_get(&s->ar);
-        break;
-    default:
-        val = 0;
-        break;
-    }
-    PIIX4_DPRINTF("PM readw port=0x%04x val=0x%04x\n", (unsigned int)addr, val);
-    *data = val;
+    maru_pm1_cnt_write(opaque, val);
 }
 
-static const IORangeOps pm_iorange_ops = {
-    .read = pm_ioport_read,
-    .write = pm_ioport_write,
+static const MemoryRegionOps maru_pm_cnt_ops = {
+    .read = acpi_pm_cnt_read,
+    .write = acpi_pm_cnt_write,
+    .valid.min_access_size = 2,
+    .valid.max_access_size = 2,
+    .endianness = DEVICE_LITTLE_ENDIAN,
 };
+#endif
 
 static void apm_ctrl_changed(uint32_t val, void *arg)
 {
@@ -230,32 +212,42 @@ static void apm_ctrl_changed(uint32_t val, void *arg)
     }
 }
 
-static void acpi_dbg_writel(void *opaque, uint32_t addr, uint32_t val)
-{
-    PIIX4_DPRINTF("ACPI: DBG: 0x%08x\n", val);
-}
-
 static void pm_io_space_update(PIIX4PMState *s)
 {
     uint32_t pm_io_base;
 
-    if (s->dev.config[0x80] & 1) {
-        pm_io_base = le32_to_cpu(*(uint32_t *)(s->dev.config + 0x40));
-        pm_io_base &= 0xffc0;
+    pm_io_base = le32_to_cpu(*(uint32_t *)(s->dev.config + 0x40));
+    pm_io_base &= 0xffc0;
 
-        /* XXX: need to improve memory and ioport allocation */
-        PIIX4_DPRINTF("PM: mapping to 0x%x\n", pm_io_base);
-        iorange_init(&s->ioport, &pm_iorange_ops, pm_io_base, 64);
-        ioport_register(&s->ioport);
-    }
+    memory_region_transaction_begin();
+    memory_region_set_enabled(&s->io, s->dev.config[0x80] & 1);
+    memory_region_set_address(&s->io, pm_io_base);
+    memory_region_transaction_commit();
+}
+
+static void smbus_io_space_update(PIIX4PMState *s)
+{
+    s->smb_io_base = le32_to_cpu(*(uint32_t *)(s->dev.config + 0x90));
+    s->smb_io_base &= 0xffc0;
+
+    memory_region_transaction_begin();
+    memory_region_set_enabled(&s->smb.io, s->dev.config[0xd2] & 1);
+    memory_region_set_address(&s->smb.io, s->smb_io_base);
+    memory_region_transaction_commit();
 }
 
 static void pm_write_config(PCIDevice *d,
                             uint32_t address, uint32_t val, int len)
 {
     pci_default_write_config(d, address, val, len);
-    if (range_covers_byte(address, len, 0x80))
+    if (range_covers_byte(address, len, 0x80) ||
+        ranges_overlap(address, len, 0x40, 4)) {
         pm_io_space_update((PIIX4PMState *)d);
+    }
+    if (range_covers_byte(address, len, 0xd2) ||
+        ranges_overlap(address, len, 0x90, 4)) {
+        smbus_io_space_update((PIIX4PMState *)d);
+    }
 }
 
 static void vmstate_pci_status_pre_save(void *opaque)
@@ -281,10 +273,9 @@ static int vmstate_acpi_post_load(void *opaque, int version_id)
  {                                                                   \
      .name       = (stringify(_field)),                              \
      .version_id = 0,                                                \
-     .num        = GPE_LEN,                                          \
      .info       = &vmstate_info_uint16,                             \
      .size       = sizeof(uint16_t),                                 \
-     .flags      = VMS_ARRAY | VMS_POINTER,                          \
+     .flags      = VMS_SINGLE | VMS_POINTER,                          \
      .offset     = vmstate_offset_pointer(_state, _field, uint8_t),  \
  }
 
@@ -313,11 +304,54 @@ static const VMStateDescription vmstate_pci_status = {
     }
 };
 
+static int acpi_load_old(QEMUFile *f, void *opaque, int version_id)
+{
+    PIIX4PMState *s = opaque;
+    int ret, i;
+    uint16_t temp;
+
+    ret = pci_device_load(&s->dev, f);
+    if (ret < 0) {
+        return ret;
+    }
+    qemu_get_be16s(f, &s->ar.pm1.evt.sts);
+    qemu_get_be16s(f, &s->ar.pm1.evt.en);
+    qemu_get_be16s(f, &s->ar.pm1.cnt.cnt);
+
+    ret = vmstate_load_state(f, &vmstate_apm, &s->apm, 1);
+    if (ret) {
+        return ret;
+    }
+
+    qemu_get_timer(f, s->ar.tmr.timer);
+    qemu_get_sbe64s(f, &s->ar.tmr.overflow_time);
+
+    qemu_get_be16s(f, (uint16_t *)s->ar.gpe.sts);
+    for (i = 0; i < 3; i++) {
+        qemu_get_be16s(f, &temp);
+    }
+
+    qemu_get_be16s(f, (uint16_t *)s->ar.gpe.en);
+    for (i = 0; i < 3; i++) {
+        qemu_get_be16s(f, &temp);
+    }
+
+    ret = vmstate_load_state(f, &vmstate_pci_status, &s->pci0_status, 1);
+    return ret;
+}
+
+/* qemu-kvm 1.2 uses version 3 but advertised as 2
+ * To support incoming qemu-kvm 1.2 migration, change version_id
+ * and minimum_version_id to 2 below (which breaks migration from
+ * qemu 1.2).
+ *
+ */
 static const VMStateDescription vmstate_acpi = {
     .name = "piix4_pm",
-    .version_id = 2,
-    .minimum_version_id = 1,
+    .version_id = 3,
+    .minimum_version_id = 3,
     .minimum_version_id_old = 1,
+    .load_state_old = acpi_load_old,
     .post_load = vmstate_acpi_post_load,
     .fields      = (VMStateField []) {
         VMSTATE_PCI_DEVICE(dev, PIIX4PMState),
@@ -409,9 +443,9 @@ static void piix4_reset(void *opaque)
     piix4_update_hotplug(s);
 }
 
-static void piix4_powerdown(void *opaque, int irq, int power_failing)
+static void piix4_pm_powerdown_req(Notifier *n, void *opaque)
 {
-    PIIX4PMState *s = opaque;
+    PIIX4PMState *s = container_of(n, PIIX4PMState, powerdown_notifier);
 
     assert(s != NULL);
     acpi_pm1_evt_power_down(&s->ar);
@@ -442,9 +476,9 @@ static int piix4_pm_initfn(PCIDevice *dev)
     pci_conf[0x3d] = 0x01; // interrupt pin 1
 
     /* APM */
-    apm_init(&s->apm, apm_ctrl_changed, s);
+    apm_init(dev, &s->apm, apm_ctrl_changed, s);
 
-    register_ioport_write(ACPI_DBG_IO_ADDR, 4, 4, acpi_dbg_writel, s);
+    //register_ioport_write(ACPI_DBG_IO_ADDR, 4, 4, acpi_dbg_writel, s);
 
     if (s->kvm_enabled) {
         /* Mark SMM as already inited to prevent SMM from running.  KVM does not
@@ -457,19 +491,32 @@ static int piix4_pm_initfn(PCIDevice *dev)
     pci_conf[0x90] = s->smb_io_base | 1;
     pci_conf[0x91] = s->smb_io_base >> 8;
     pci_conf[0xd2] = 0x09;
-    register_ioport_write(s->smb_io_base, 64, 1, smb_ioport_writeb, &s->smb);
-    register_ioport_read(s->smb_io_base, 64, 1, smb_ioport_readb, &s->smb);
+    pm_smbus_init(&s->dev.qdev, &s->smb);
+    memory_region_set_enabled(&s->smb.io, pci_conf[0xd2] & 1);
+    memory_region_add_subregion(pci_address_space_io(dev),
+                                s->smb_io_base, &s->smb.io);
 
-    acpi_pm_tmr_init(&s->ar, pm_tmr_timer);
+    memory_region_init(&s->io, "maru-pm", 64);
+    memory_region_set_enabled(&s->io, false);
+    memory_region_add_subregion(pci_address_space_io(dev),
+                                0, &s->io);
+
+    acpi_pm_tmr_init(&s->ar, pm_tmr_timer, &s->io);
+    acpi_pm1_evt_init(&s->ar, pm_tmr_timer, &s->io);
+    acpi_pm1_cnt_init(&s->ar, &s->io, s->s4_val);
+#if defined(CONFIG_MARU)
+    memory_region_init_io(&s->ar.pm1.cnt.io, &maru_pm_cnt_ops, &s->ar, "acpi-cnt", 2);
+#endif
     acpi_gpe_init(&s->ar, GPE_LEN);
 
-    qemu_system_powerdown = *qemu_allocate_irqs(piix4_powerdown, s, 1);
+    s->powerdown_notifier.notify = piix4_pm_powerdown_req;
+    qemu_register_powerdown_notifier(&s->powerdown_notifier);
 
-    pm_smbus_init(&s->dev.qdev, &s->smb);
     s->machine_ready.notify = piix4_pm_machine_ready;
     qemu_add_machine_init_done_notifier(&s->machine_ready);
     qemu_register_reset(piix4_reset, s);
-    piix4_acpi_system_hot_add_init(dev->bus, s);
+
+    piix4_acpi_system_hot_add_init(pci_address_space_io(dev), dev->bus, s);
 
     return 0;
 }
@@ -486,7 +533,6 @@ i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
 
     s = DO_UPCAST(PIIX4PMState, dev, dev);
     s->irq = sci_irq;
-    acpi_pm1_cnt_init(&s->ar);
     s->smi_irq = smi_irq;
     s->kvm_enabled = kvm_enabled;
 
@@ -543,7 +589,7 @@ static void piix4_pm_register_types(void)
 
 type_init(piix4_pm_register_types)
 
-static uint32_t gpe_readb(void *opaque, uint32_t addr)
+static uint64_t gpe_readb(void *opaque, hwaddr addr, unsigned width)
 {
     PIIX4PMState *s = opaque;
     uint32_t val = acpi_gpe_ioport_readb(&s->ar, addr);
@@ -552,7 +598,8 @@ static uint32_t gpe_readb(void *opaque, uint32_t addr)
     return val;
 }
 
-static void gpe_writeb(void *opaque, uint32_t addr, uint32_t val)
+static void gpe_writeb(void *opaque, hwaddr addr, uint64_t val,
+		unsigned width)
 {
     PIIX4PMState *s = opaque;
 
@@ -562,68 +609,160 @@ static void gpe_writeb(void *opaque, uint32_t addr, uint32_t val)
     PIIX4_DPRINTF("gpe write %x <== %d\n", addr, val);
 }
 
-static uint32_t pci_up_read(void *opaque, uint32_t addr)
+static const MemoryRegionOps piix4_gpe_ops = {
+    .read = gpe_readb,
+    .write = gpe_writeb,
+    .valid.min_access_size = 1,
+    .valid.max_access_size = 4,
+    .impl.min_access_size = 1,
+    .impl.max_access_size = 1,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+};
+
+static uint64_t pci_read(void *opaque, hwaddr addr, unsigned int size)
 {
     PIIX4PMState *s = opaque;
-    uint32_t val;
+    uint32_t val = 0;
 
-    /* Manufacture an "up" value to cause a device check on any hotplug
-     * slot with a device.  Extra device checks are harmless. */
-    val = s->pci0_slot_device_present & s->pci0_hotplug_enable;
+    switch (addr) {
+    case PCI_UP_BASE - PCI_HOTPLUG_ADDR:
+        /* Manufacture an "up" value to cause a device check on any hotplug
+         * slot with a device.  Extra device checks are harmless. */
+        val = s->pci0_slot_device_present & s->pci0_hotplug_enable;
+        PIIX4_DPRINTF("pci_up_read %x\n", val);
+        break;
+    case PCI_DOWN_BASE - PCI_HOTPLUG_ADDR:
+        val = s->pci0_status.down;
+        PIIX4_DPRINTF("pci_down_read %x\n", val);
+        break;
+    case PCI_EJ_BASE - PCI_HOTPLUG_ADDR:
+        /* No feature defined yet */
+        PIIX4_DPRINTF("pci_features_read %x\n", val);
+        break;
+    case PCI_RMV_BASE - PCI_HOTPLUG_ADDR:
+        val = s->pci0_hotplug_enable;
+        break;
+    default:
+        break;
+    }
 
-    PIIX4_DPRINTF("pci_up_read %x\n", val);
     return val;
 }
 
-static uint32_t pci_down_read(void *opaque, uint32_t addr)
+static void pci_write(void *opaque, hwaddr addr, uint64_t data,
+                      unsigned int size)
+{
+    switch (addr) {
+    case PCI_EJ_BASE - PCI_HOTPLUG_ADDR:
+        acpi_piix_eject_slot(opaque, (uint32_t)data);
+        PIIX4_DPRINTF("pciej write %" HWADDR_PRIx " <== % " PRIu64 "\n",
+                      addr, data);
+        break;
+    default:
+        break;
+    }
+}
+
+static const MemoryRegionOps piix4_pci_ops = {
+    .read = pci_read,
+    .write = pci_write,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid = {
+        .min_access_size = 4,
+        .max_access_size = 4,
+    },
+};
+
+static uint64_t cpu_status_read(void *opaque, hwaddr addr, unsigned int size)
 {
     PIIX4PMState *s = opaque;
-    uint32_t val = s->pci0_status.down;
+    CPUStatus *cpus = &s->gpe_cpu;
+    uint64_t val = cpus->sts[addr];
 
-    PIIX4_DPRINTF("pci_down_read %x\n", val);
     return val;
 }
 
-static uint32_t pci_features_read(void *opaque, uint32_t addr)
+static void cpu_status_write(void *opaque, hwaddr addr, uint64_t data,
+                             unsigned int size)
 {
-    /* No feature defined yet */
-    PIIX4_DPRINTF("pci_features_read %x\n", 0);
-    return 0;
+    /* TODO: implement VCPU removal on guest signal that CPU can be removed */
 }
 
-static void pciej_write(void *opaque, uint32_t addr, uint32_t val)
-{
-    acpi_piix_eject_slot(opaque, val);
+static const MemoryRegionOps cpu_hotplug_ops = {
+    .read = cpu_status_read,
+    .write = cpu_status_write,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid = {
+        .min_access_size = 1,
+        .max_access_size = 1,
+    },
+};
 
-    PIIX4_DPRINTF("pciej write %x <== %d\n", addr, val);
+typedef enum {
+    PLUG,
+    UNPLUG,
+} HotplugEventType;
+
+static void piix4_cpu_hotplug_req(PIIX4PMState *s, CPUState *cpu,
+                                  HotplugEventType action)
+{
+    CPUStatus *g = &s->gpe_cpu;
+    ACPIGPE *gpe = &s->ar.gpe;
+    CPUClass *k = CPU_GET_CLASS(cpu);
+    int64_t cpu_id;
+
+    assert(s != NULL);
+
+    *gpe->sts = *gpe->sts | PIIX4_CPU_HOTPLUG_STATUS;
+    cpu_id = k->get_arch_id(CPU(cpu));
+    if (action == PLUG) {
+        g->sts[cpu_id / 8] |= (1 << (cpu_id % 8));
+    } else {
+        g->sts[cpu_id / 8] &= ~(1 << (cpu_id % 8));
+    }
+    pm_update_sci(s);
 }
 
-static uint32_t pcirmv_read(void *opaque, uint32_t addr)
+static void piix4_cpu_added_req(Notifier *n, void *opaque)
 {
-    PIIX4PMState *s = opaque;
+    PIIX4PMState *s = container_of(n, PIIX4PMState, cpu_added_notifier);
 
-    return s->pci0_hotplug_enable;
+    piix4_cpu_hotplug_req(s, CPU(opaque), PLUG);
+}
+
+static void piix4_init_cpu_status(CPUState *cpu, void *data)
+{
+    CPUStatus *g = (CPUStatus *)data;
+    CPUClass *k = CPU_GET_CLASS(cpu);
+    int64_t id = k->get_arch_id(cpu);
+
+    g_assert((id / 8) < PIIX4_PROC_LEN);
+    g->sts[id / 8] |= (1 << (id % 8));
 }
 
 static int piix4_device_hotplug(DeviceState *qdev, PCIDevice *dev,
                                 PCIHotplugState state);
 
-static void piix4_acpi_system_hot_add_init(PCIBus *bus, PIIX4PMState *s)
+static void piix4_acpi_system_hot_add_init(MemoryRegion *parent,
+                                           PCIBus *bus, PIIX4PMState *s)
 {
 
-    register_ioport_write(GPE_BASE, GPE_LEN, 1, gpe_writeb, s);
-    register_ioport_read(GPE_BASE, GPE_LEN, 1,  gpe_readb, s);
-    acpi_gpe_blk(&s->ar, GPE_BASE);
+    memory_region_init_io(&s->io_gpe, &piix4_gpe_ops, s, "apci-gpe0",
+                          GPE_LEN);
+    memory_region_add_subregion(parent, GPE_BASE, &s->io_gpe);
 
-    register_ioport_read(PCI_UP_BASE, 4, 4, pci_up_read, s);
-    register_ioport_read(PCI_DOWN_BASE, 4, 4, pci_down_read, s);
-
-    register_ioport_write(PCI_EJ_BASE, 4, 4, pciej_write, s);
-    register_ioport_read(PCI_EJ_BASE, 4, 4,  pci_features_read, s);
-
-    register_ioport_read(PCI_RMV_BASE, 4, 4,  pcirmv_read, s);
-
+    memory_region_init_io(&s->io_pci, &piix4_pci_ops, s, "apci-pci-hotplug",
+                          PCI_HOTPLUG_SIZE);
+    memory_region_add_subregion(parent, PCI_HOTPLUG_ADDR,
+                                &s->io_pci);
     pci_bus_hotplug(bus, piix4_device_hotplug, &s->dev.qdev);
+
+    qemu_for_each_cpu(piix4_init_cpu_status, &s->gpe_cpu);
+    memory_region_init_io(&s->io_cpu, &cpu_hotplug_ops, s, "apci-cpu-hotplug",
+                          PIIX4_PROC_LEN);
+    memory_region_add_subregion(parent, PIIX4_PROC_BASE, &s->io_cpu);
+    s->cpu_added_notifier.notify = piix4_cpu_added_req;
+    qemu_register_cpu_added_notifier(&s->cpu_added_notifier);
 }
 
 static void enable_device(PIIX4PMState *s, int slot)

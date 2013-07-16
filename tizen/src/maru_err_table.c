@@ -48,7 +48,7 @@ static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
     /* 1 */ "Failed to allocate memory in qemu.",
     /* 2 */ "Failed to load a kernel file the following path.\
 Check if the file is corrupted or missing.\n\n",
-    /* 3 */ "Failed to load a bios file the following path.\
+    /* 3 */ "Failed to load a bios file in bios path that mentioned on document.\
 Check if the file is corrupted or missing.\n\n",
     /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
     /* 5 */ "Emulator has stopped working.\n\

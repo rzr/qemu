@@ -39,7 +39,7 @@
 #include <pthread.h>
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
-#include "qemu-thread.h"
+#include "qemu/thread.h"
 #include "emul_state.h"
 #include "maruskin_client.h"
 #include "emulator.h"
