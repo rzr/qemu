@@ -73,11 +73,6 @@ typedef struct MsgInfo
 static QTAILQ_HEAD(MsgInfoRecvHead , MsgInfo) evdi_recv_msg_queue =
     QTAILQ_HEAD_INITIALIZER(evdi_recv_msg_queue);
 
-
-static QTAILQ_HEAD(MsgInfoSendHead , MsgInfo) evdi_send_msg_queue =
-    QTAILQ_HEAD_INITIALIZER(evdi_send_msg_queue);
-
-
 //
 
 typedef struct EvdiBuf {
@@ -91,7 +86,6 @@ static QTAILQ_HEAD(EvdiMsgHead , EvdiBuf) evdi_in_queue =
 
 
 static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t send_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool send_to_evdi(const uint32_t route, char* data, const uint32_t len)
 {
@@ -130,8 +124,6 @@ bool send_to_evdi(const uint32_t route, char* data, const uint32_t len)
 }
 
 
-static int g_cnt = 0;
-
 static void flush_evdi_recv_queue(void)
 {
 	int index;
@@ -165,6 +157,7 @@ static void flush_evdi_recv_queue(void)
 
 		 //INFO(">> virtqueue_pop. index: %d, out_num : %d, in_num : %d\n", index, elem.out_num, elem.in_num);
 
+		 memset(elem.in_sg[0].iov_base, 0, elem.in_sg[0].iov_len);
 		 memcpy(elem.in_sg[0].iov_base, &msginfo->info, sizeof(struct msg_info));
 
 		 //INFO(">> send to guest count = %d, use = %d, msg = %s, iov_len = %d \n",

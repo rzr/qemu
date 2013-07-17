@@ -99,6 +99,8 @@ int stop_ecs(void);
 void ecs_vprintf(const char *type, const char *fmt, va_list ap);
 void ecs_printf(const char *type, const char *fmt, ...) GCC_FMT_ATTR(2, 3);
 
+
+bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);
 bool ntf_to_injector(const char* data, const int len);
 bool ntf_to_control(const char* data, const int len);
 bool ntf_to_monitor(const char* data, const int len);

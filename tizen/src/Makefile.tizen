@@ -2,11 +2,13 @@
 # for TIZEN-maru board
 
 
-$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/tizen/src/genmsg:$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
 
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src/genmsg
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
+QEMU_CFLAGS += -L$(HOME)/install/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
@@ -24,7 +26,7 @@ ifdef CONFIG_WIN32
 LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext -lprotobuf-c
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
@@ -106,6 +108,10 @@ obj-y += debug_ch.o
 
 # ecs
 obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o
+
+# ecs msg
+obj-y += ecs.pb-c.o
+
 
 # maru hardware
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)

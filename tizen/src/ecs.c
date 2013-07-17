@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include "base64.h"
+#include "genmsg/ecs.pb-c.h"
 
 #define DEBUG
 
@@ -48,7 +49,7 @@ typedef struct mon_cmd_t {
 				MonitorCompletion *cb, void *opaque);
 	} mhandler;
 	int flags;
-} mon_cmd_t;
+}
 
 static QTAILQ_HEAD(ECS_ClientHead, ECS_Client)
 clients = QTAILQ_HEAD_INITIALIZER(clients);
@@ -747,6 +748,96 @@ bool ntf_to_injector(const char* data, const int len) {
 	return true;
 }
 
+bool ntf_to_injector2(const char* data, const int len) 
+{
+	type_length length = 0;
+	type_group group = 0;
+	type_action action = 0;
+
+	const int catsize = 10;
+	char cat[catsize + 1];
+	memset(cat, 0, catsize + 1);
+
+	read_val_str(data, cat, catsize);
+	read_val_short(data + catsize, &length);
+	read_val_char(data + catsize + 2, &group);
+	read_val_char(data + catsize + 2 + 1, &action);
+
+   
+    const char* ijdata = (data + catsize + 2 + 1 + 1);
+
+    char *encoded_ijdata = NULL;
+    LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
+			action, group);
+   
+    if(!strcmp(cat, "telephony")) {
+        base64_encode(ijdata, length, &encoded_ijdata);
+    }
+  
+
+	ECS__Master master = ECS__MASTER__INIT;
+	ECS__Injector ij = ECS__INJECTOR_INIT;
+
+	strncpy(ij.category, cat, 10);
+	ij.length = length;
+	ij.group = group;
+	ij.action = action;
+
+	memcpy(ij.data, ijdata, length);
+
+	master.injector = &ij;
+
+	int len_pack = ecs__master__get_packed_size(&master);
+	void* buf = malloc(len_pack);
+	ecs__master__pack(&master, buf);	
+	
+	send_to_all_client(buf, len_pack);
+
+	free(buf); 
+	
+// 
+	QDict* obj_header = qdict_new();
+	make_header(obj_header, length, group, action);
+
+	QDict* objData = qdict_new();
+	qobject_incref(QOBJECT(obj_header));
+
+	qdict_put(objData, "cat", qstring_from_str(cat));
+	qdict_put(objData, "header", obj_header);
+    if(!strcmp(cat, "telephony")) { 
+        qdict_put(objData, "ijdata", qstring_from_str(encoded_ijdata));
+    } else {
+        qdict_put(objData, "ijdata", qstring_from_str(ijdata));
+    }
+
+	QDict* objMsg = qdict_new();
+	qobject_incref(QOBJECT(objData));
+
+	qdict_put(objMsg, "type", qstring_from_str("injector"));
+	qdict_put(objMsg, "result", qstring_from_str("success"));
+	qdict_put(objMsg, "data", objData);
+
+	QString *json;
+	json = qobject_to_json(QOBJECT(objMsg));
+
+	assert(json != NULL);
+
+	qstring_append_chr(json, '\n');
+	const char* snddata = qstring_get_str(json);
+
+	LOG("<< json str = %s", snddata);
+
+	send_to_all_client(snddata, strlen(snddata));
+
+	QDECREF(json);
+
+	QDECREF(obj_header);
+	QDECREF(objData);
+	QDECREF(objMsg);
+
+	return true;
+}
+
 bool ntf_to_control(const char* data, const int len) {
 	return true;
 }
@@ -756,6 +847,69 @@ bool ntf_to_monitor(const char* data, const int len) {
 }
 
 static int ijcount = 0;
+
+static bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg)
+{
+
+	return true;
+}
+
+static bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
+{
+	char cmd[10];
+	memset(cmd, 0, 10);
+	strcpy(cmd, injector->category);
+	type_length length = (type_length) injector->length;
+	type_group group = (type_group) (injector->group & 0xff);
+	type_action action = (type_action) (injector->action & 0xff);
+
+	const char* data = injector->data.data;
+	LOG(">> count= %d", ++ijcount);
+	LOG(">> print len = %d, data\" %s\"", strlen(data), data);
+	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
+			action, group);
+    
+	//int datalen = strlen(data);
+	int datalen = injector->data.len;
+	int sndlen = datalen + 14;
+	char* sndbuf = (char*) malloc(sndlen + 1);
+	if (!sndbuf) {
+		return false;
+    }
+
+	memset(sndbuf, 0, sndlen + 1);
+
+	// set data
+	memcpy(sndbuf, cmd, 10);
+	memcpy(sndbuf + 10, &length, 2);
+	memcpy(sndbuf + 12, &group, 1);
+	memcpy(sndbuf + 13, &action, 1);
+	memcpy(sndbuf + 14, data, datalen);
+
+	send_to_evdi(route_ij, sndbuf, sndlen);
+
+   	free(sndbuf);
+
+	return true;
+}
+
+static bool msgproc_control_req(ECS_Client *ccli, ECS__ControlReq* msg)
+{
+
+	return true;
+}
+
+static bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
+{
+
+	return true;
+}
+
+static bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg)
+{
+
+	return true;
+}
 
 static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
 	QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
@@ -1013,7 +1167,10 @@ static void ecs_read(ECS_Client *clii) {
 		ecs_client_close(clii);
 	} else if (0 < size) {
 		LOG("read data: %s, len: %d, size: %d\n", buf, len, size);
-		ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
+	
+		handle_protobuf_msg(clii, buf, size);
+	
+		//ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
 	}
 }
 
@@ -1144,7 +1301,7 @@ static void alive_checker(void *opaque) {
 	{
 		if (1 == clii->keep_alive) {
 			LOG("get client fd %d - keep alive fail", clii->client_fd);
-			ecs_client_close(clii);
+			//ecs_client_close(clii);
 			continue;
 		}
 		LOG("set client fd %d - keep alive 1", clii->client_fd);
@@ -1345,3 +1502,52 @@ int start_ecs(void) {
 	}
 	return 0;
 }
+
+bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
+{
+	ECS__Master* master = ecs__master__unpack(NULL, len, data);
+	if (!master)
+		return false;
+
+	if (master->type == ECS__MASTER__TYPE__START_REQ)
+	{
+		ECS__StartReq* msg = master->start_req;
+		if (!msg)
+			goto fail;
+		msgproc_start_req(cli, msg);
+	}
+	if (master->type == ECS__MASTER__TYPE__INJECTOR_REQ)
+	{
+		ECS__InjectorReq* msg = master->injector_req;
+		if (!msg)
+			goto fail;
+		msgproc_injector_req(cli, msg);
+	}
+	else if (master->type == ECS__MASTER__TYPE__CONTROL_REQ)
+	{
+		ECS__Control* msg = master->control_req
+		if (!msg)
+			goto fail;
+		msgproc_control_req(cli, msg);
+	}
+	else if (master->type == ECS__MASTER__TYPE__MONITOR_REQ)
+	{
+		ECS__Monitor* msg = master->monitor_req
+		if (!msg)
+			goto fail;
+		msgproc_monitor_req(cli, msg);
+	}
+	else if (master->type == ECS__MASTER__TYPE__SCREEN_DUMP_REQ)
+	{
+		ECS__ScreenDumpReq* msg = master->screen_dump_req
+		if (!msg)
+			goto fail;
+		msgproc_screen_dump_req(cli, msg);
+	}
+	ecs__master__free_unpacked(master, NULL);
+	return true;
+fail:
+	ecs__master__free_unpacked(master, NULL);
+	return false;
+} 
+
