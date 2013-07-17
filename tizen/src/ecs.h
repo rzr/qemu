@@ -39,14 +39,34 @@
 #define COMMAND_TYPE_INJECTOR	"injector"
 #define COMMAND_TYPE_CONTROL	"control"
 #define COMMAND_TYPE_MONITOR	"monitor"
+#define COMMAND_TYPE_DEVICE		"device"
 
-#define ECS_MSG_STARTINFO_REQ "startinfo_req"
-#define ECS_MSG_STARTINFO_ANS "startinfo_ans"
+#define ECS_MSG_STARTINFO_REQ 	"startinfo_req"
+#define ECS_MSG_STARTINFO_ANS 	"startinfo_ans"
 
+#define MSG_TYPE_SENSOR			"sensor"
+#define MSG_TYPE_NFC			"nfc"
+
+#define MSG_GROUP_STATUS		15
+
+#define MSG_ACTION_ACCEL		110
+#define MSG_ACTION_GYRO			111
+#define MSG_ACTION_MAG			112
+#define MSG_ACTION_LIGHT		113
+#define MSG_ACTION_PROXI		114
 
 #define TIMER_ALIVE_S			60	
 #define TYPE_DATA_SELF			"self"
 
+enum sensor_level {
+	level_accel = 1,
+	level_proxi = 2,
+	level_light = 3,
+	level_gyro = 4,
+	level_geo = 5,
+	level_tilt = 12,
+	level_magnetic = 13
+};
 
 typedef unsigned short	type_length;
 typedef unsigned char	type_group;
@@ -125,5 +145,7 @@ enum{
 // messages
 void ecs_startinfo_req(ECS_Client *clii);
 void control_host_keyboard_onoff_req(ECS_Client *clii, QDict* data);
+
+void set_sensor_data(int length, const char* data);
 
 #endif /* __ECS_H__ */
