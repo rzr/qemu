@@ -252,6 +252,11 @@ public class EmulatorSkin {
 	public long initLayout() {
 		imageRegistry = ImageRegistry.getInstance();
 
+		/* attach a menu */
+		isOnKbd = false;
+		popupMenu = new PopupMenu(config, this, shell, imageRegistry);
+
+		/* build a skin layout */
 		if (skinInfo.isGeneralPurposeSkin() == false) {
 			skinComposer = new ProfileSpecificSkinComposer(config, this,
 					shell, currentState, imageRegistry, communicator);
@@ -274,10 +279,6 @@ public class EmulatorSkin {
 		addCanvasListener(shell, lcdCanvas);
 
 		setFocus();
-
-		/* attach a menu */
-		isOnKbd = false;
-		popupMenu = new PopupMenu(config, this, shell, imageRegistry);
 
 		return 0;
 	}
@@ -345,6 +346,10 @@ public class EmulatorSkin {
 
 	public ImageRegistry getImageRegistry() {
 		return imageRegistry;
+	}
+
+	public PopupMenu getPopupMenu() {
+		return popupMenu;
 	}
 
 	public SkinReopenPolicy open() {
@@ -528,7 +533,7 @@ public class EmulatorSkin {
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
-				Menu menu = popupMenu.getMenu();
+				Menu menu = popupMenu.getMenuRoot();
 
 				if (menu != null) {
 					shell.setMenu(menu);
@@ -559,7 +564,7 @@ public class EmulatorSkin {
 		canvasMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
-				Menu menu = popupMenu.getMenu();
+				Menu menu = popupMenu.getMenuRoot();
 				keyForceRelease(true);
 
 				if (menu != null && isDisplayDragging == false) {
