@@ -33,33 +33,30 @@
 #include "qemu/sockets.h"
 
 #ifdef CONFIG_MARU
-#include "../../tizen/src/skin/maruskin_client.h"
-
 typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 LPFN_ISWOW64PROCESS fnIsWow64Process;
 
-static int is_wow64_temp(void)
+int is_wow64(void)
 {
     int result = 0;
 
     /* IsWow64Process is not available on all supported versions of Windows.
-       Use GetModuleHandle to get a handle to the DLL that contains
-       the function and GetProcAddress to get a pointer to the function
-       if available. */
+       Use GetModuleHandle to get a handle to the DLL that contains the function
+       and GetProcAddress to get a pointer to the function if available. */
 
-    fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(
-        GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+    fnIsWow64Process = (LPFN_ISWOW64PROCESS) GetProcAddress(
+        GetModuleHandle(TEXT("kernel32")),"IsWow64Process");
 
     if (NULL != fnIsWow64Process) {
         if (!fnIsWow64Process(GetCurrentProcess(),&result)) {
-            /* handle error */
-            /* INFO("Can not find 'IsWow64Process'\n"); */
+            // handle error
+            fprintf(stderr, "Cannot find 'IsWow64Process'\n");
         }
     }
     return result;
 }
 
-static int get_java_path_temp(char** java_path)
+bool get_java_path(char** java_path)
 {
     HKEY hKeyNew;
     HKEY hKey;
@@ -71,55 +68,69 @@ static int get_java_path_temp(char** java_path)
     DWORD dwSubKeyNameMax = JAVA_MAX_COMMAND_LENGTH;
     DWORD dwBufLen = JAVA_MAX_COMMAND_LENGTH;
 
-    RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SOFTWARE\\JavaSoft\\Java Runtime Environment", 0,
-                 KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | MY_KEY_WOW64_64KEY, &hKey);
+    RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\JavaSoft\\Java Runtime Environment",
+                0,
+                KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | MY_KEY_WOW64_64KEY,
+                &hKey);
     RegEnumKeyEx(hKey, 0, (LPSTR)strSubKeyName, &dwSubKeyNameMax,
-                 NULL, NULL, NULL, NULL);
+                NULL, NULL, NULL, NULL);
     strcpy(strChoosenName, strSubKeyName);
 
     index = 1;
-    while (ERROR_SUCCESS == RegEnumKeyEx(hKey, index,
-                                         (LPSTR)strSubKeyName, &dwSubKeyNameMax,
-                                         NULL, NULL, NULL, NULL)) {
+    while (ERROR_SUCCESS ==
+            RegEnumKeyEx(hKey, index, (LPSTR)strSubKeyName, &dwSubKeyNameMax,
+            NULL, NULL, NULL, NULL)) {
         if (strcmp(strChoosenName, strSubKeyName) < 0) {
             strcpy(strChoosenName, strSubKeyName);
         }
         index++;
     }
 
-    RegOpenKeyEx(hKey, strChoosenName, 0, KEY_QUERY_VALUE | MY_KEY_WOW64_64KEY,
-                 &hKeyNew);
-    RegQueryValueEx(hKeyNew, "JavaHome", NULL, NULL, (LPBYTE)strJavaHome, &dwBufLen);
+    RegOpenKeyEx(hKey, strChoosenName, 0,
+                KEY_QUERY_VALUE | MY_KEY_WOW64_64KEY, &hKeyNew);
+    RegQueryValueEx(hKeyNew, "JavaHome", NULL,
+                    NULL, (LPBYTE)strJavaHome, &dwBufLen);
     RegCloseKey(hKey);
-
     if (strJavaHome[0] != '\0') {
         sprintf(*java_path, "\"%s\\bin\\java\"", strJavaHome);
         //strcpy(*java_path, strJavaHome);
         //strcat(*java_path, "\\bin\\java");
     } else {
-        return 0;
+        return false;
     }
-    return 1;
+
+    return true;
 }
 #endif
 
 void *qemu_oom_check(void *ptr)
 {
+#ifdef CONFIG_MARU
+    const char _msg[] = "Failed to allocate memory in qemu.";
+    char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
+    char *JAVA_EXEFILE_PATH = NULL;
+    int len, ret;
+#endif
+
     if (ptr == NULL) {
         fprintf(stderr, "Failed to allocate memory: %lu\n", GetLastError());
 #ifdef CONFIG_MARU
-        char _msg[] = "Failed to allocate memory in qemu.";
-        char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
-        char *JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
+        JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
+        if (!JAVA_EXEFILE_PATH) {
+            // TODO: print error message.
+            return ptr;
+        }
+
         memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
-        if (is_wow64_temp()) {
-            if (!get_java_path_temp(&JAVA_EXEFILE_PATH)) {
+        if (is_wow64()) {
+            if (!get_java_path(&JAVA_EXEFILE_PATH)) {
                 strcpy(JAVA_EXEFILE_PATH, "java");
             }
         } else {
             strcpy(JAVA_EXEFILE_PATH, "java");
         }
-        int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
+        len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
                   strlen(JAR_SKINFILE) + strlen(JAVA_SIMPLEMODE_OPTION) +
                   strlen(_msg) + 7;
         if (len > JAVA_MAX_COMMAND_LENGTH) {
@@ -129,8 +140,7 @@ void *qemu_oom_check(void *ptr)
         snprintf(cmd, len, "%s %s %s %s=\"%s\"",
             JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE,
             JAVA_SIMPLEMODE_OPTION, _msg);
-        int ret = WinExec(cmd, SW_SHOW);
-
+        ret = WinExec(cmd, SW_SHOW);
         if (ret < 32) {
             // TODO: error handling...
         }

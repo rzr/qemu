@@ -42,7 +42,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
-
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <glib/gprintf.h>
@@ -56,6 +55,25 @@
 #define PATH_MAX    256
 #endif
 #endif
+
+#define JAVA_MAX_COMMAND_LENGTH 1024
+
+#define JAR_SKINFILE "emulator-skin.jar"
+#define JAVA_LIBRARY_PATH "-Djava.library.path"
+
+#ifndef CONFIG_DARWIN
+#define JAVA_EXEOPTION "-jar"
+#else
+#define JAVA_EXEOPTION "-XstartOnFirstThread -jar" // Must start the Java window on the first thread on Mac
+#endif
+#define JAVA_SIMPLEMODE_OPTION "simple.msg"
+
+#ifdef CONFIG_WIN32
+#define MY_KEY_WOW64_64KEY 0x0100
+#else
+#define JAVA_EXEFILE_PATH "java"
+#endif
+
 
 // W/A for preserve larger continuous heap for RAM.
 extern void *preallocated_ptr;

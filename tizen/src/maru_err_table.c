@@ -28,15 +28,16 @@
  *
  */
 
-
 #include "qemu-common.h"
+#include "maru_common.h"
 #include "maru_err_table.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
 #include <windows.h>
 #else
 #include <execinfo.h>

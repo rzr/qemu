@@ -477,4 +477,11 @@ size_t buffer_find_nonzero_offset(const void *buf, size_t len);
  */
 int parse_debug_env(const char *name, int max, int initial);
 
+#if defined(CONFIG_MARU) && defined(CONFIG_WIN32)
+#include "../tizen/src/maru_common.h"
+
+int is_wow64(void);
+bool get_java_path(char **java_path);
+#endif
+
 #endif
