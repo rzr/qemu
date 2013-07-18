@@ -2685,6 +2685,30 @@ libEGL, libGLES_CM and libGLESv2 to be installed on the guest OS. Corresponding
 EGL and openGLES calls on target system are translated to host openGL calls.
 ETEXI
 
+DEF("yagl-backend", HAS_ARG, QEMU_OPTION_yagl_backend,
+    "-yagl-backend offscreen|vigs        Select YaGL backend, default is offscreen\n", QEMU_ARCH_ALL)
+STEXI
+@item -yagl-backend @var{backend}
+@findex -yagl-backend
+Use @var{backend} as YaGL backend.
+ETEXI
+
+DEF("enable-vigs", 0, QEMU_OPTION_enable_vigs, \
+    "-enable-vigs   enable VIGS support\n", QEMU_ARCH_ALL)
+STEXI
+@item -enable-vigs
+@findex -enable-vigs
+Enables VIGS support.
+ETEXI
+
+DEF("vigs-backend", HAS_ARG, QEMU_OPTION_vigs_backend,
+    "-vigs-backend gl        Select VIGS backend, default is gl\n", QEMU_ARCH_ALL)
+STEXI
+@item -vigs-backend @var{backend}
+@findex -vigs-backend
+Use @var{backend} as VIGS backend.
+ETEXI
+
 DEF("enable-hax", 0, QEMU_OPTION_enable_hax, \
     "-enable-hax     enable HAX virtualization support\n", QEMU_ARCH_I386)
 STEXI

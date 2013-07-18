@@ -1,11 +1,15 @@
 #include "yagl_egl_config.h"
-#include "yagl_egl_driver.h"
+#include "yagl_egl_backend.h"
 #include "yagl_egl_display.h"
+#include "yagl_eglb_display.h"
 #include "yagl_resource.h"
 #include "yagl_process.h"
+#include "yagl_thread.h"
+#include <EGL/eglext.h>
 
-static EGLint yagl_egl_config_get_renderable_type(struct yagl_process_state *ps)
+static EGLint yagl_egl_config_get_renderable_type(void)
 {
+    struct yagl_process_state *ps = cur_ts->ps;
     EGLint renderable_type = 0;
 
     if (ps->client_ifaces[yagl_client_api_ogl]) {
@@ -31,9 +35,8 @@ static void yagl_egl_config_destroy(struct yagl_ref *ref)
 {
     struct yagl_egl_config *cfg = (struct yagl_egl_config*)ref;
 
-    cfg->dpy->driver_ps->config_cleanup(cfg->dpy->driver_ps,
-                                        cfg->dpy->native_dpy,
-                                        &cfg->native);
+    cfg->dpy->backend_dpy->config_cleanup(cfg->dpy->backend_dpy,
+                                          &cfg->native);
 
     yagl_resource_cleanup(&cfg->res);
 
@@ -146,18 +149,23 @@ static struct yagl_egl_config
     cfg->native.surface_type = EGL_PBUFFER_BIT |
                                EGL_PIXMAP_BIT |
                                EGL_WINDOW_BIT |
-                               EGL_SWAP_BEHAVIOR_PRESERVED_BIT;
+                               EGL_SWAP_BEHAVIOR_PRESERVED_BIT |
+                               EGL_LOCK_SURFACE_BIT_KHR |
+                               EGL_OPTIMAL_FORMAT_BIT_KHR;
 
     cfg->native.native_renderable = EGL_TRUE;
 
     cfg->native.renderable_type =
-        yagl_egl_config_get_renderable_type(dpy->driver_ps->ps);
+        yagl_egl_config_get_renderable_type();
 
     cfg->native.conformant =
         (((cfg->native.red_size + cfg->native.green_size + cfg->native.blue_size + cfg->native.alpha_size) > 0) &&
          (cfg->native.caveat != EGL_NON_CONFORMANT_CONFIG)) ? cfg->native.renderable_type : 0;
 
     cfg->native.sample_buffers_num = (cfg->native.samples_per_pixel > 0) ? 1 : 0;
+
+    cfg->native.bind_to_texture_rgb = EGL_TRUE;
+    cfg->native.bind_to_texture_rgba = EGL_TRUE;
 
     return cfg;
 }
@@ -170,7 +178,7 @@ struct yagl_egl_config
     int num_native_configs, i;
     struct yagl_egl_config **configs;
 
-    native_configs = dpy->driver_ps->config_enum(dpy->driver_ps, dpy->native_dpy, &num_native_configs);
+    native_configs = dpy->backend_dpy->config_enum(dpy->backend_dpy, &num_native_configs);
 
     if (num_native_configs <= 0) {
         return NULL;
@@ -190,9 +198,27 @@ struct yagl_egl_config
             (native_configs[i].green_size != 8) ||
             (native_configs[i].blue_size != 8) ||
             (native_configs[i].alpha_size != 8)) {
-            dpy->driver_ps->config_cleanup(dpy->driver_ps,
-                                           dpy->native_dpy,
-                                           &native_configs[i]);
+            dpy->backend_dpy->config_cleanup(dpy->backend_dpy,
+                                             &native_configs[i]);
+            continue;
+        }
+
+        /*
+         * A bugfix for Tizen's WebKit. When it chooses a config it
+         * doesn't always pass EGL_DEPTH_SIZE, thus, if host GPU has at least
+         * one config without a depth buffer it gets chosen (EGL_DEPTH_SIZE is
+         * 0 by default and has an AtLeast,Smaller sorting rule). But WebKit
+         * WANTS THE DEPTH BUFFER! If someone wants to have a depth buffer
+         * a value greater than zero must be passed with EGL_DEPTH_SIZE,
+         * read the manual goddamit!
+         *
+         * P.S: We just drop all configs with depth_size == 0 and
+         * also with stencil_size == 0, just in case.
+         */
+        if ((native_configs[i].depth_size == 0) ||
+            (native_configs[i].stencil_size == 0)) {
+            dpy->backend_dpy->config_cleanup(dpy->backend_dpy,
+                                             &native_configs[i]);
             continue;
         }
 
@@ -256,6 +282,8 @@ bool yagl_egl_config_is_chosen_by(const struct yagl_egl_config *cfg,
     YAGL_CHECK_ATTRIB_CAST(caveat, !=);
     YAGL_CHECK_ATTRIB_CAST(native_renderable, !=);
     YAGL_CHECK_ATTRIB_CAST(transparent_type, !=);
+    YAGL_CHECK_ATTRIB_CAST(bind_to_texture_rgb, !=);
+    YAGL_CHECK_ATTRIB_CAST(bind_to_texture_rgba, !=);
 
     /*
      * Mask.
@@ -273,6 +301,16 @@ bool yagl_egl_config_is_chosen_by(const struct yagl_egl_config *cfg,
 
     if (dummy->renderable_type != EGL_DONT_CARE &&
        ((dummy->renderable_type & cfg->native.renderable_type) != dummy->renderable_type)) {
+        return false;
+    }
+
+    /*
+     * EGL_MATCH_FORMAT_KHR.
+     */
+
+    if ((dummy->match_format_khr != EGL_DONT_CARE) &&
+        (dummy->match_format_khr != EGL_FORMAT_RGBA_8888_EXACT_KHR) &&
+        (dummy->match_format_khr != EGL_FORMAT_RGBA_8888_KHR)) {
         return false;
     }
 
@@ -299,10 +337,10 @@ bool yagl_egl_config_get_attrib(const struct yagl_egl_config *cfg,
         *value = cfg->native.alpha_size;
         break;
     case EGL_BIND_TO_TEXTURE_RGB:
-        *value = EGL_FALSE;
+        *value = cfg->native.bind_to_texture_rgb;
         break;
     case EGL_BIND_TO_TEXTURE_RGBA:
-        *value = EGL_FALSE;
+        *value = cfg->native.bind_to_texture_rgba;
         break;
     case EGL_CONFIG_CAVEAT:
         *value = cfg->native.caveat;
@@ -372,6 +410,9 @@ bool yagl_egl_config_get_attrib(const struct yagl_egl_config *cfg,
         break;
     case EGL_COLOR_BUFFER_TYPE:
         *value = EGL_RGB_BUFFER;
+        break;
+    case EGL_MATCH_FORMAT_KHR:
+        *value = EGL_FORMAT_RGBA_8888_EXACT_KHR;
         break;
     default:
         return false;

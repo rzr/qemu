@@ -1,16 +1,38 @@
 #include <GL/gl.h>
 #include "yagl_gles_texture.h"
+#include "yagl_gles_image.h"
+#include "yagl_gles_tex_image.h"
 #include "yagl_gles_driver.h"
+
+static bool yagl_gles_texture_unset_internal(struct yagl_gles_texture *texture)
+{
+    bool ret = false;
+
+    if (texture->image) {
+        yagl_gles_image_release(texture->image);
+        texture->image = NULL;
+        ret = true;
+    }
+
+    if (texture->tex_image) {
+        texture->tex_image->base.unbind(&texture->tex_image->base);
+        assert(!texture->tex_image);
+        texture->tex_image = NULL;
+        ret = true;
+    }
+
+    return ret;
+}
 
 static void yagl_gles_texture_destroy(struct yagl_ref *ref)
 {
     struct yagl_gles_texture *texture = (struct yagl_gles_texture*)ref;
 
-    if (!texture->base.nodelete) {
-        texture->driver_ps->DeleteTextures(texture->driver_ps, 1, &texture->global_name);
+    if (!yagl_gles_texture_unset_internal(texture)) {
+        yagl_ensure_ctx();
+        texture->driver->DeleteTextures(1, &texture->global_name);
+        yagl_unensure_ctx();
     }
-
-    qemu_mutex_destroy(&texture->mutex);
 
     yagl_object_cleanup(&texture->base);
 
@@ -18,22 +40,20 @@ static void yagl_gles_texture_destroy(struct yagl_ref *ref)
 }
 
 struct yagl_gles_texture
-    *yagl_gles_texture_create(struct yagl_gles_driver_ps *driver_ps)
+    *yagl_gles_texture_create(struct yagl_gles_driver *driver)
 {
     GLuint global_name = 0;
     struct yagl_gles_texture *texture;
 
-    driver_ps->GenTextures(driver_ps, 1, &global_name);
+    driver->GenTextures(1, &global_name);
 
     texture = g_malloc0(sizeof(*texture));
 
     yagl_object_init(&texture->base, &yagl_gles_texture_destroy);
 
-    texture->driver_ps = driver_ps;
+    texture->driver = driver;
     texture->global_name = global_name;
     texture->target = 0;
-
-    qemu_mutex_init(&texture->mutex);
 
     return texture;
 }
@@ -55,33 +75,109 @@ void yagl_gles_texture_release(struct yagl_gles_texture *texture)
 bool yagl_gles_texture_bind(struct yagl_gles_texture *texture,
                             GLenum target)
 {
-    qemu_mutex_lock(&texture->mutex);
-
     if (texture->target && (texture->target != target)) {
-        qemu_mutex_unlock(&texture->mutex);
         return false;
     }
 
-    texture->driver_ps->BindTexture(texture->driver_ps,
-                                    target,
-                                    texture->global_name);
+    texture->driver->BindTexture(target,
+                                 texture->global_name);
 
     texture->target = target;
-
-    qemu_mutex_unlock(&texture->mutex);
 
     return true;
 }
 
 GLenum yagl_gles_texture_get_target(struct yagl_gles_texture *texture)
 {
-    GLenum target;
+    return texture->target;
+}
 
-    qemu_mutex_lock(&texture->mutex);
+void yagl_gles_texture_set_image(struct yagl_gles_texture *texture,
+                                 struct yagl_gles_image *image)
+{
+    assert(texture->target);
+    assert(image);
 
-    target = texture->target;
+    if (texture->image == image) {
+        return;
+    }
 
-    qemu_mutex_unlock(&texture->mutex);
+    yagl_gles_image_acquire(image);
 
-    return target;
+    if (!yagl_gles_texture_unset_internal(texture)) {
+        texture->driver->DeleteTextures(1, &texture->global_name);
+    }
+
+    texture->global_name = image->tex_global_name;
+    texture->image = image;
+
+    texture->driver->BindTexture(texture->target,
+                                 texture->global_name);
+}
+
+void yagl_gles_texture_unset_image(struct yagl_gles_texture *texture)
+{
+    if (texture->image) {
+        GLuint global_name = 0;
+
+        yagl_gles_texture_unset_internal(texture);
+
+        texture->driver->GenTextures(1, &global_name);
+
+        texture->global_name = global_name;
+
+        texture->driver->BindTexture(texture->target,
+                                     texture->global_name);
+    }
+}
+
+void yagl_gles_texture_set_tex_image(struct yagl_gles_texture *texture,
+                                     struct yagl_gles_tex_image *tex_image)
+{
+    assert(texture->target);
+    assert(tex_image);
+
+    yagl_gles_tex_image_acquire(tex_image);
+
+    if (!yagl_gles_texture_unset_internal(texture)) {
+        texture->driver->DeleteTextures(1, &texture->global_name);
+    }
+
+    texture->global_name = tex_image->tex_global_name;
+    texture->tex_image = tex_image;
+
+    texture->driver->BindTexture(texture->target,
+                                 texture->global_name);
+}
+
+void yagl_gles_texture_unset_tex_image(struct yagl_gles_texture *texture)
+{
+    GLuint global_name = 0;
+
+    assert(texture->tex_image);
+
+    yagl_gles_tex_image_release(texture->tex_image);
+    texture->tex_image = NULL;
+
+    /*
+     * Should ensure context here since this function
+     * can be called when no context is active.
+     */
+    yagl_ensure_ctx();
+    texture->driver->GenTextures(1, &global_name);
+    yagl_unensure_ctx();
+
+    texture->global_name = global_name;
+}
+
+void yagl_gles_texture_release_tex_image(struct yagl_gles_texture *texture)
+{
+    if (texture->tex_image) {
+        yagl_gles_texture_unset_internal(texture);
+
+        assert(texture->global_name);
+
+        texture->driver->BindTexture(texture->target,
+                                     texture->global_name);
+    }
 }

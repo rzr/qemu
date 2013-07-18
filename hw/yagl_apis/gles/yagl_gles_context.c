@@ -6,6 +6,9 @@
 #include "yagl_gles_framebuffer.h"
 #include "yagl_gles_texture_unit.h"
 #include "yagl_gles_validate.h"
+#include "yagl_gles_image.h"
+#include "yagl_gles_tex_image.h"
+#include "yagl_gles_texture.h"
 #include "yagl_log.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
@@ -16,14 +19,14 @@ static void yagl_gles_context_flush(struct yagl_client_context *ctx)
 {
     struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
 
-    gles_ctx->driver_ps->Flush(gles_ctx->driver_ps);
+    gles_ctx->driver->Flush();
 }
 
 static void yagl_gles_context_finish(struct yagl_client_context *ctx)
 {
     struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
 
-    gles_ctx->driver_ps->Finish(gles_ctx->driver_ps);
+    gles_ctx->driver->Finish();
 }
 
 static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
@@ -34,6 +37,7 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
 {
     struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
     bool ret = false;
+    yagl_object_name current_fb = 0;
     yagl_object_name current_pbo = 0;
     uint32_t rp_line_size = width * bpp;
     uint32_t rp_size = rp_line_size * height;
@@ -42,16 +46,20 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
     void *mapped_pixels = NULL;
     uint32_t i;
 
-    YAGL_LOG_FUNC_ENTER_TS(gles_ctx->ts,
-                           yagl_gles_context_read_pixels,
-                           "%ux%ux%u", width, height, bpp);
+    YAGL_LOG_FUNC_ENTER(yagl_gles_context_read_pixels,
+                        "%ux%ux%u", width, height, bpp);
+
+    gles_ctx->driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+                                  (GLint*)&current_fb);
+
+    gles_ctx->driver->BindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if (!gles_ctx->rp_pbo) {
         /*
          * No buffer yet, create one.
          */
 
-        gles_ctx->rp_pbo = yagl_gles_buffer_create(gles_ctx->driver_ps);
+        gles_ctx->rp_pbo = yagl_gles_buffer_create(gles_ctx->driver);
 
         if (!gles_ctx->rp_pbo) {
             YAGL_LOG_ERROR("yagl_gles_buffer_create failed");
@@ -62,15 +70,13 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
                        gles_ctx->rp_pbo->default_part.global_name);
     }
 
-    gles_ctx->driver_ps->GetIntegerv(gles_ctx->driver_ps,
-                                     GL_PIXEL_PACK_BUFFER_BINDING_ARB,
-                                     (GLint*)&current_pbo);
+    gles_ctx->driver->GetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_ARB,
+                                  (GLint*)&current_pbo);
 
     if (current_pbo != gles_ctx->rp_pbo->default_part.global_name) {
         YAGL_LOG_TRACE("Binding pbo");
-        gles_ctx->driver_ps->BindBuffer(gles_ctx->driver_ps,
-                                        GL_PIXEL_PACK_BUFFER_ARB,
-                                        gles_ctx->rp_pbo->default_part.global_name);
+        gles_ctx->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
+                                     gles_ctx->rp_pbo->default_part.global_name);
     }
 
     if ((width != gles_ctx->rp_pbo_width) ||
@@ -86,11 +92,10 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
 
         YAGL_LOG_TRACE("Recreating pbo storage");
 
-        gles_ctx->driver_ps->BufferData(gles_ctx->driver_ps,
-                                        GL_PIXEL_PACK_BUFFER_ARB,
-                                        rp_size,
-                                        0,
-                                        GL_STREAM_READ);
+        gles_ctx->driver->BufferData(GL_PIXEL_PACK_BUFFER_ARB,
+                                     rp_size,
+                                     0,
+                                     GL_STREAM_READ);
     }
 
     switch (bpp) {
@@ -105,22 +110,19 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
         goto out;
     }
 
-    gles_ctx->driver_ps->PushClientAttrib(gles_ctx->driver_ps,
-                                          GL_CLIENT_PIXEL_STORE_BIT);
+    gles_ctx->driver->PushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+
     pop_attrib = true;
 
-    gles_ctx->driver_ps->PixelStorei(gles_ctx->driver_ps,
-                                     GL_PACK_ALIGNMENT,
-                                     ((bpp == 4) ? 4 : 1));
+    gles_ctx->driver->PixelStorei(GL_PACK_ALIGNMENT,
+                                  ((bpp == 4) ? 4 : 1));
 
-    gles_ctx->driver_ps->ReadPixels(gles_ctx->driver_ps,
-                                    0, 0,
-                                    width, height, format, GL_UNSIGNED_BYTE,
-                                    NULL);
+    gles_ctx->driver->ReadPixels(0, 0,
+                                 width, height, format, GL_UNSIGNED_BYTE,
+                                 NULL);
 
-    mapped_pixels = gles_ctx->driver_ps->MapBuffer(gles_ctx->driver_ps,
-                                                   GL_PIXEL_PACK_BUFFER_ARB,
-                                                   GL_READ_ONLY);
+    mapped_pixels = gles_ctx->driver->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB,
+                                                GL_READ_ONLY);
 
     if (!mapped_pixels) {
         YAGL_LOG_ERROR("MapBuffer failed");
@@ -142,33 +144,66 @@ static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
 
 out:
     if (mapped_pixels) {
-        gles_ctx->driver_ps->UnmapBuffer(gles_ctx->driver_ps,
-                                         GL_PIXEL_PACK_BUFFER_ARB);
+        gles_ctx->driver->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
     }
     if (pop_attrib) {
-        gles_ctx->driver_ps->PopClientAttrib(gles_ctx->driver_ps);
+        gles_ctx->driver->PopClientAttrib();
     }
     if ((current_pbo != 0) &&
         (current_pbo != gles_ctx->rp_pbo->default_part.global_name)) {
         YAGL_LOG_ERROR("Target binded a pbo ?");
-        gles_ctx->driver_ps->BindBuffer(gles_ctx->driver_ps,
-                                        GL_PIXEL_PACK_BUFFER_ARB,
-                                        current_pbo);
+        gles_ctx->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
+                                     current_pbo);
     }
+
+    gles_ctx->driver->BindFramebuffer(GL_FRAMEBUFFER, current_fb);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 
     return ret;
 }
 
+static struct yagl_client_image
+    *yagl_gles_context_create_image(struct yagl_client_context *ctx)
+{
+    struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
+    struct yagl_gles_image *image = yagl_gles_image_create(gles_ctx->driver);
+
+    return image ? &image->base : NULL;
+}
+
+static struct yagl_client_tex_image
+    *yagl_gles_context_create_tex_image(struct yagl_client_context *ctx,
+                                        yagl_object_name tex_global_name,
+                                        struct yagl_ref *tex_data)
+{
+    struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
+    struct yagl_gles_texture_target_state *texture_target_state =
+        yagl_gles_context_get_active_texture_target_state(gles_ctx,
+                                                          yagl_gles_texture_target_2d);
+
+    if (!texture_target_state->texture) {
+        return NULL;
+    }
+
+    yagl_gles_tex_image_create(tex_global_name,
+                               tex_data,
+                               texture_target_state->texture);
+
+    return texture_target_state->texture->tex_image ?
+           &texture_target_state->texture->tex_image->base : NULL;
+}
+
 void yagl_gles_context_init(struct yagl_gles_context *ctx,
-                            struct yagl_gles_driver_ps *driver_ps)
+                            struct yagl_gles_driver *driver)
 {
     ctx->base.flush = &yagl_gles_context_flush;
     ctx->base.finish = &yagl_gles_context_finish;
     ctx->base.read_pixels = &yagl_gles_context_read_pixels;
+    ctx->base.create_image = &yagl_gles_context_create_image;
+    ctx->base.create_tex_image = &yagl_gles_context_create_tex_image;
 
-    ctx->driver_ps = driver_ps;
+    ctx->driver = driver;
 
     ctx->rp_pbo = NULL;
     ctx->rp_pbo_width = 0;
@@ -208,12 +243,9 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
     ctx->fbo_local_name = 0;
 
     ctx->rbo_local_name = 0;
-
-    ctx->ts = NULL;
 }
 
 void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
-                               struct yagl_thread_state *ts,
                                struct yagl_gles_array *arrays,
                                int num_arrays,
                                int num_texture_units)
@@ -225,11 +257,10 @@ void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
         num_texture_units = 1;
     }
 
-    YAGL_LOG_FUNC_ENTER_TS(ts,
-                           yagl_gles_context_prepare,
-                           "num_arrays = %d, num_texture_units = %d",
-                           num_arrays,
-                           num_texture_units);
+    YAGL_LOG_FUNC_ENTER(yagl_gles_context_prepare,
+                        "num_arrays = %d, num_texture_units = %d",
+                        num_arrays,
+                        num_texture_units);
 
     ctx->arrays = arrays;
     ctx->num_arrays = num_arrays;
@@ -242,11 +273,10 @@ void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
         yagl_gles_texture_unit_init(&ctx->texture_units[i], ctx);
     }
 
-    ctx->driver_ps->GetIntegerv(ctx->driver_ps,
-                                GL_NUM_COMPRESSED_TEXTURE_FORMATS,
-                                &ctx->num_compressed_texture_formats);
+    ctx->driver->GetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS,
+                             &ctx->num_compressed_texture_formats);
 
-    extensions = (const char*)ctx->driver_ps->GetString(ctx->driver_ps, GL_EXTENSIONS);
+    extensions = (const char*)ctx->driver->GetString(GL_EXTENSIONS);
 
     ctx->pack_depth_stencil = (strstr(extensions, "GL_EXT_packed_depth_stencil ") != NULL);
 
@@ -262,34 +292,21 @@ void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-void yagl_gles_context_activate(struct yagl_gles_context *ctx,
-                                struct yagl_thread_state *ts)
+void yagl_gles_context_activate(struct yagl_gles_context *ctx)
 {
-    assert(ctx->ts == NULL);
-    ctx->ts = ts;
 }
 
 void yagl_gles_context_deactivate(struct yagl_gles_context *ctx)
 {
-    assert(ctx->ts != NULL);
-    ctx->ts = NULL;
 }
 
 void yagl_gles_context_cleanup(struct yagl_gles_context *ctx)
 {
     int i;
 
-    if (ctx->fbo) {
-        yagl_sharegroup_reap_object(ctx->base.sg, &ctx->fbo->base);
-    }
-
-    if (ctx->ebo) {
-        yagl_sharegroup_reap_object(ctx->base.sg, &ctx->ebo->base);
-    }
-
-    if (ctx->vbo) {
-        yagl_sharegroup_reap_object(ctx->base.sg, &ctx->vbo->base);
-    }
+    yagl_gles_framebuffer_release(ctx->fbo);
+    yagl_gles_buffer_release(ctx->ebo);
+    yagl_gles_buffer_release(ctx->vbo);
 
     for (i = 0; i < ctx->num_texture_units; ++i) {
         yagl_gles_texture_unit_cleanup(&ctx->texture_units[i]);
@@ -308,9 +325,7 @@ void yagl_gles_context_cleanup(struct yagl_gles_context *ctx)
     g_free(ctx->malloc_buff);
     ctx->malloc_buff = NULL;
 
-    if (ctx->rp_pbo) {
-        yagl_sharegroup_reap_object(ctx->base.sg, &ctx->rp_pbo->base);
-    }
+    yagl_gles_buffer_release(ctx->rp_pbo);
 }
 
 void yagl_gles_context_set_error(struct yagl_gles_context *ctx, GLenum error)
@@ -404,13 +419,28 @@ struct yagl_gles_texture_target_state
     return &yagl_gles_context_get_active_texture_unit(ctx)->target_states[texture_target];
 }
 
+void yagl_gles_context_active_texture_set_enabled(struct yagl_gles_context *ctx,
+               yagl_gles_texture_target texture_target, bool enabled)
+{
+    struct yagl_gles_texture_target_state *texture_target_state;
+
+    texture_target_state =
+            yagl_gles_context_get_active_texture_target_state(ctx,
+                                                              texture_target);
+    texture_target_state->enabled = enabled;
+}
+
 void yagl_gles_context_bind_texture(struct yagl_gles_context *ctx,
                                     yagl_gles_texture_target texture_target,
+                                    struct yagl_gles_texture *texture,
                                     yagl_object_name texture_local_name)
 {
     struct yagl_gles_texture_target_state *texture_target_state =
         yagl_gles_context_get_active_texture_target_state(ctx, texture_target);
 
+    yagl_gles_texture_acquire(texture);
+    yagl_gles_texture_release(texture_target_state->texture);
+    texture_target_state->texture = texture;
     texture_target_state->texture_local_name = texture_local_name;
 }
 
@@ -423,6 +453,8 @@ void yagl_gles_context_unbind_texture(struct yagl_gles_context *ctx,
 
     for (i = 0; i < YAGL_NUM_GLES_TEXTURE_TARGETS; ++i) {
         if (texture_unit->target_states[i].texture_local_name == texture_local_name) {
+            yagl_gles_texture_release(texture_unit->target_states[i].texture);
+            texture_unit->target_states[i].texture = NULL;
             texture_unit->target_states[i].texture_local_name = 0;
         }
     }

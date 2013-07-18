@@ -3,38 +3,28 @@
 
 #include "yagl_types.h"
 #include "yagl_resource_list.h"
-#include "qemu-thread.h"
-#include "qemu-queue.h"
+#include "qemu/queue.h"
 #include <EGL/egl.h>
 
-struct yagl_egl_driver_ps;
+struct yagl_egl_backend;
 struct yagl_egl_config;
 struct yagl_egl_native_config;
 struct yagl_egl_surface;
 struct yagl_egl_context;
+struct yagl_egl_image;
+struct yagl_eglb_display;
 
 struct yagl_egl_display
 {
-    /*
-     * Don't need to lock these.
-     * @{
-     */
-
     QLIST_ENTRY(yagl_egl_display) entry;
 
-    struct yagl_egl_driver_ps *driver_ps;
+    struct yagl_egl_backend *backend;
 
     target_ulong display_id;
 
     yagl_host_handle handle;
 
-    EGLNativeDisplayType native_dpy;
-
-    /*
-     * @}
-     */
-
-    QemuMutex mutex;
+    struct yagl_eglb_display *backend_dpy;
 
     bool initialized;
 
@@ -43,10 +33,12 @@ struct yagl_egl_display
     struct yagl_resource_list contexts;
 
     struct yagl_resource_list surfaces;
+
+    struct yagl_resource_list images;
 };
 
 struct yagl_egl_display
-    *yagl_egl_display_create(struct yagl_egl_driver_ps *driver_ps,
+    *yagl_egl_display_create(struct yagl_egl_backend *backend,
                              target_ulong display_id);
 
 void yagl_egl_display_destroy(struct yagl_egl_display *dpy);
@@ -145,6 +137,30 @@ struct yagl_egl_surface
 
 bool yagl_egl_display_remove_surface(struct yagl_egl_display *dpy,
                                      yagl_host_handle handle);
+
+/*
+ * @}
+ */
+
+/*
+ * Images.
+ * @{
+ */
+
+/*
+ * This acquires 'image', so the caller should
+ * release 'image' if he doesn't want to use it and wants it to belong to the
+ * display alone.
+ */
+void yagl_egl_display_add_image(struct yagl_egl_display *dpy,
+                                struct yagl_egl_image *image);
+
+struct yagl_egl_image
+    *yagl_egl_display_acquire_image(struct yagl_egl_display *dpy,
+                                    yagl_host_handle handle);
+
+bool yagl_egl_display_remove_image(struct yagl_egl_display *dpy,
+                                   yagl_host_handle handle);
 
 /*
  * @}

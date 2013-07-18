@@ -10,7 +10,7 @@
  */
 #define YAGL_NS_SHADER_PROGRAM 4
 
-struct yagl_gles2_driver_ps;
+struct yagl_gles2_driver;
 
 struct yagl_gles2_shader
 {
@@ -25,7 +25,7 @@ struct yagl_gles2_shader
      * @}
      */
 
-    struct yagl_gles2_driver_ps *driver_ps;
+    struct yagl_gles2_driver *driver;
 
     yagl_object_name global_name;
 
@@ -33,13 +33,12 @@ struct yagl_gles2_shader
 };
 
 struct yagl_gles2_shader
-    *yagl_gles2_shader_create(struct yagl_gles2_driver_ps *driver_ps,
+    *yagl_gles2_shader_create(struct yagl_gles2_driver *driver,
                               GLenum type);
 
 void yagl_gles2_shader_source(struct yagl_gles2_shader *shader,
                               GLchar **strings,
-                              int count,
-                              bool strip_precision);
+                              int count);
 
 void yagl_gles2_shader_compile(struct yagl_gles2_shader *shader);
 

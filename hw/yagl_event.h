@@ -2,7 +2,7 @@
 #define _QEMU_YAGL_EVENT_H
 
 #include "yagl_types.h"
-#include "qemu-thread.h"
+#include "qemu/thread.h"
 
 struct yagl_event
 {

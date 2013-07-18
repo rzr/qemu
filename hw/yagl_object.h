@@ -7,12 +7,6 @@
 struct yagl_object
 {
     struct yagl_ref ref;
-
-    /*
-     * An implementation should not attempt to delete
-     * a name when 'nodelete' is true.
-     */
-    volatile bool nodelete;
 };
 
 /*
@@ -27,8 +21,6 @@ void yagl_object_cleanup(struct yagl_object *obj);
 /*
  * @}
  */
-
-void yagl_object_set_nodelete(struct yagl_object *obj);
 
 /*
  * Passing NULL won't hurt, this is for convenience.

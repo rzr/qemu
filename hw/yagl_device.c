@@ -3,9 +3,22 @@
 #include "yagl_handle_gen.h"
 #include "yagl_marshal.h"
 #include "yagl_stats.h"
-#include "cpu-all.h"
-#include "hw.h"
-#include "pci.h"
+#include "yagl_process.h"
+#include "yagl_thread.h"
+#include "yagl_egl_driver.h"
+#include "yagl_drivers/gles1_ogl/yagl_gles1_ogl.h"
+#include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
+#include "yagl_drivers/gles1_onscreen/yagl_gles1_onscreen.h"
+#include "yagl_drivers/gles2_onscreen/yagl_gles2_onscreen.h"
+#include "yagl_backends/egl_offscreen/yagl_egl_offscreen.h"
+#include "yagl_backends/egl_onscreen/yagl_egl_onscreen.h"
+#include "exec/cpu-all.h"
+#include "hw/hw.h"
+#include "hw/pci/pci.h"
+#include <GL/gl.h>
+#include "winsys.h"
+#include "yagl_gles1_driver.h"
+#include "yagl_gles2_driver.h"
 
 #define PCI_VENDOR_ID_YAGL 0x19B1
 #define PCI_DEVICE_ID_YAGL 0x1010
@@ -28,6 +41,8 @@ struct yagl_user
 typedef struct YaGLState
 {
     PCIDevice dev;
+    void *display;
+    struct winsys_interface *wsi;
     MemoryRegion iomem;
     struct yagl_server_state *ss;
     struct yagl_user users[YAGL_MAX_USERS];
@@ -42,17 +57,17 @@ typedef struct YaGLState
 
 static void yagl_device_operate(YaGLState *s,
                                 int user_index,
-                                target_phys_addr_t buff_pa)
+                                hwaddr buff_pa)
 {
     yagl_pid target_pid;
     yagl_tid target_tid;
-    target_phys_addr_t buff_len = YAGL_MARSHAL_SIZE;
+    hwaddr buff_len = YAGL_MARSHAL_SIZE;
     uint8_t *buff = NULL, *tmp = NULL;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_operate,
-                            "user_index = %d, buff_ptr = 0x%X",
-                            user_index,
-                            (uint32_t)buff_pa);
+    YAGL_LOG_FUNC_ENTER(yagl_device_operate,
+                        "user_index = %d, buff_ptr = 0x%X",
+                        user_index,
+                        (uint32_t)buff_pa);
 
     if (buff_pa && s->users[user_index].buff) {
         YAGL_LOG_CRITICAL("user %d is already activated", user_index);
@@ -141,7 +156,7 @@ out:
 
 static void yagl_device_trigger(YaGLState *s, int user_index)
 {
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_trigger, "%d", user_index);
+    YAGL_LOG_FUNC_ENTER(yagl_device_trigger, "%d", user_index);
 
     if (!s->users[user_index].buff) {
         YAGL_LOG_CRITICAL("user %d not activated", user_index);
@@ -160,13 +175,13 @@ out:
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static uint64_t yagl_device_read(void *opaque, target_phys_addr_t offset,
+static uint64_t yagl_device_read(void *opaque, hwaddr offset,
                                  unsigned size)
 {
     return 0;
 }
 
-static void yagl_device_write(void *opaque, target_phys_addr_t offset,
+static void yagl_device_write(void *opaque, hwaddr offset,
                               uint64_t value, unsigned size)
 {
     YaGLState *s = (YaGLState*)opaque;
@@ -203,10 +218,14 @@ static const MemoryRegionOps yagl_device_ops =
 static int yagl_device_init(PCIDevice *dev)
 {
     YaGLState *s = DO_UPCAST(YaGLState, dev, dev);
+    struct yagl_egl_driver *egl_driver = NULL;
+    struct yagl_egl_backend *egl_backend = NULL;
+    struct yagl_gles1_driver *gles1_driver = NULL;
+    struct yagl_gles2_driver *gles2_driver = NULL;
 
     yagl_log_init();
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_init, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_device_init, NULL);
 
     memory_region_init_io(&s->iomem,
                           &yagl_device_ops,
@@ -218,18 +237,54 @@ static int yagl_device_init(PCIDevice *dev)
 
     yagl_stats_init();
 
-    s->ss = yagl_server_state_create();
+    egl_driver = yagl_egl_driver_create(s->display);
+
+    if (!egl_driver) {
+        goto fail;
+    }
+
+    gles1_driver = yagl_gles1_ogl_create(egl_driver->dyn_lib);
+
+    if (!gles1_driver) {
+        goto fail;
+    }
+
+    gles2_driver = yagl_gles2_ogl_create(egl_driver->dyn_lib);
+
+    if (!gles2_driver) {
+        goto fail;
+    }
+
+    if (s->wsi) {
+        egl_backend = yagl_egl_onscreen_create(s->wsi,
+                                               egl_driver,
+                                               &gles2_driver->base);
+        gles1_driver = yagl_gles1_onscreen_create(gles1_driver);
+        gles2_driver = yagl_gles2_onscreen_create(gles2_driver);
+    } else {
+        egl_backend = yagl_egl_offscreen_create(egl_driver);
+    }
+
+    if (!egl_backend) {
+        goto fail;
+    }
+
+    /*
+     * Now owned by EGL backend.
+     */
+    egl_driver = NULL;
+
+    s->ss = yagl_server_state_create(egl_backend, gles1_driver, gles2_driver);
+
+    /*
+     * Owned/destroyed by server state.
+     */
+    egl_backend = NULL;
+    gles1_driver = NULL;
+    gles2_driver = NULL;
 
     if (!s->ss) {
-        yagl_stats_cleanup();
-
-        yagl_handle_gen_cleanup();
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        yagl_log_cleanup();
-
-        return -1;
+        goto fail;
     }
 
     s->in_buff = g_malloc(YAGL_MARSHAL_MAX_RESPONSE);
@@ -239,6 +294,33 @@ static int yagl_device_init(PCIDevice *dev)
     YAGL_LOG_FUNC_EXIT(NULL);
 
     return 0;
+
+fail:
+    if (egl_backend) {
+        egl_backend->destroy(egl_backend);
+    }
+
+    if (gles1_driver) {
+        gles1_driver->destroy(gles1_driver);
+    }
+
+    if (gles2_driver) {
+        gles2_driver->destroy(gles2_driver);
+    }
+
+    if (egl_driver) {
+        egl_driver->destroy(egl_driver);
+    }
+
+    yagl_stats_cleanup();
+
+    yagl_handle_gen_cleanup();
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+
+    yagl_log_cleanup();
+
+    return -1;
 }
 
 static void yagl_device_reset(DeviceState *d)
@@ -246,7 +328,7 @@ static void yagl_device_reset(DeviceState *d)
     YaGLState *s = container_of(d, YaGLState, dev.qdev);
     int i;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_reset, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_device_reset, NULL);
 
     yagl_server_reset(s->ss);
 
@@ -263,7 +345,7 @@ static void yagl_device_exit(PCIDevice *dev)
 {
     YaGLState *s = DO_UPCAST(YaGLState, dev, dev);
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_device_exit, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_device_exit, NULL);
 
     memory_region_destroy(&s->iomem);
 
@@ -281,6 +363,20 @@ static void yagl_device_exit(PCIDevice *dev)
     yagl_log_cleanup();
 }
 
+static Property yagl_properties[] = {
+    {
+        .name   = "display",
+        .info   = &qdev_prop_ptr,
+        .offset = offsetof(YaGLState, display),
+    },
+    {
+        .name   = "winsys_gl_interface",
+        .info   = &qdev_prop_ptr,
+        .offset = offsetof(YaGLState, wsi),
+    },
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void yagl_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -292,6 +388,7 @@ static void yagl_class_init(ObjectClass *klass, void *data)
     k->device_id = PCI_DEVICE_ID_YAGL;
     k->class_id = PCI_CLASS_OTHERS;
     dc->reset = yagl_device_reset;
+    dc->props = yagl_properties;
     dc->desc = "YaGL device";
 }
 

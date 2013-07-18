@@ -4,8 +4,6 @@
 #include "yagl_types.h"
 #include <EGL/egl.h>
 
-struct yagl_process_state;
-
 struct yagl_egl_native_config
 {
     /*
@@ -46,6 +44,9 @@ struct yagl_egl_native_config
     EGLint renderable_type;
     EGLenum conformant;
     EGLint sample_buffers_num;
+    EGLint match_format_khr;
+    EGLBoolean bind_to_texture_rgb;
+    EGLBoolean bind_to_texture_rgba;
 };
 
 /*

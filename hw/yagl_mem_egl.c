@@ -4,20 +4,19 @@
 #include "yagl_thread.h"
 #include "yagl_process.h"
 
-EGLint *yagl_mem_get_attrib_list(struct yagl_thread_state *ts,
-                                 target_ulong va)
+EGLint *yagl_mem_get_attrib_list(target_ulong va)
 {
     struct yagl_vector v;
     int i = 0;
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_mem_get_attrib_list, "va = 0x%X", (uint32_t)va);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_get_attrib_list, "va = 0x%X", (uint32_t)va);
 
     yagl_vector_init(&v, sizeof(EGLint), 0);
 
     while (true) {
         EGLint tmp;
 
-        if (!yagl_mem_get_EGLint(ts, va + (i * sizeof(EGLint)), &tmp)) {
+        if (!yagl_mem_get_EGLint(va + (i * sizeof(EGLint)), &tmp)) {
             goto fail;
         }
 
@@ -29,7 +28,7 @@ EGLint *yagl_mem_get_attrib_list(struct yagl_thread_state *ts,
             break;
         }
 
-        if (!yagl_mem_get_EGLint(ts, va + (i * sizeof(EGLint)), &tmp)) {
+        if (!yagl_mem_get_EGLint(va + (i * sizeof(EGLint)), &tmp)) {
             goto fail;
         }
 

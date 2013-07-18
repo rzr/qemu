@@ -2,7 +2,7 @@
 #define _QEMU_YAGL_RESOURCE_LIST_H
 
 #include "yagl_types.h"
-#include "qemu-queue.h"
+#include "qemu/queue.h"
 
 /*
  * reference counted resource management.

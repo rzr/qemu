@@ -6,8 +6,10 @@
 #include "yagl_marshal.h"
 #include "yagl_stats.h"
 #include "yagl_mem_transfer.h"
-#include "kvm.h"
-#include "hax.h"
+#include "sysemu/kvm.h"
+#include "sysemu/hax.h"
+
+YAGL_DEFINE_TLS(struct yagl_thread_state*, cur_ts);
 
 #ifdef CONFIG_KVM
 static __inline void yagl_cpu_synchronize_state(struct yagl_process_state *ps)
@@ -27,15 +29,32 @@ static void *yagl_thread_func(void* arg)
     struct yagl_thread_state *ts = arg;
     int i;
 
-    YAGL_LOG_FUNC_ENTER_TS(ts, yagl_thread_func, NULL);
+    cur_ts = ts;
+
+    YAGL_LOG_FUNC_ENTER(yagl_thread_func, NULL);
+
+    if (ts->is_first) {
+        /*
+         * Init APIs (process).
+         */
+
+        for (i = 0; i < YAGL_NUM_APIS; ++i) {
+            if (ts->ps->ss->apis[i]) {
+                ts->ps->api_states[i] = ts->ps->ss->apis[i]->process_init(ts->ps->ss->apis[i]);
+                assert(ts->ps->api_states[i]);
+            }
+        }
+
+        yagl_event_set(&ts->call_processed_event);
+    }
 
     /*
-     * Init APIs.
+     * Init APIs (thread).
      */
 
     for (i = 0; i < YAGL_NUM_APIS; ++i) {
         if (ts->ps->api_states[i]) {
-            ts->ps->api_states[i]->thread_init(ts->ps->api_states[i], ts);
+            ts->ps->api_states[i]->thread_init(ts->ps->api_states[i]);
         }
     }
 
@@ -118,7 +137,7 @@ static void *yagl_thread_func(void* arg)
 
                 yagl_marshal_skip(&tmp);
 
-                if (!func(ts, &current_buff, tmp)) {
+                if (!func(&current_buff, tmp)) {
                     /*
                      * Retry is requested. Check if this is the last function
                      * in the batch, if it's not, then there's a logic error
@@ -164,7 +183,7 @@ static void *yagl_thread_func(void* arg)
     }
 
     /*
-     * Fini APIs.
+     * Fini APIs (thread).
      */
 
     for (i = 0; i < YAGL_NUM_APIS; ++i) {
@@ -173,25 +192,52 @@ static void *yagl_thread_func(void* arg)
         }
     }
 
+    if (ts->is_last) {
+        /*
+         * Fini APIs (process).
+         */
+
+        for (i = 0; i < YAGL_NUM_APIS; ++i) {
+            if (ts->ps->api_states[i]) {
+                ts->ps->api_states[i]->fini(ts->ps->api_states[i]);
+            }
+        }
+
+        /*
+         * Destroy APIs (process).
+         */
+
+        for (i = 0; i < YAGL_NUM_APIS; ++i) {
+            if (ts->ps->api_states[i]) {
+                ts->ps->api_states[i]->destroy(ts->ps->api_states[i]);
+                ts->ps->api_states[i] = NULL;
+            }
+        }
+    }
+
     YAGL_LOG_FUNC_EXIT(NULL);
+
+    cur_ts = NULL;
 
     return NULL;
 }
 
 struct yagl_thread_state
     *yagl_thread_state_create(struct yagl_process_state *ps,
-                              yagl_tid id)
+                              yagl_tid id,
+                              bool is_first)
 {
     struct yagl_thread_state *ts =
         g_malloc0(sizeof(struct yagl_thread_state));
 
     ts->ps = ps;
     ts->id = id;
+    ts->is_first = is_first;
 
-    ts->mt1 = yagl_mem_transfer_create(ts);
-    ts->mt2 = yagl_mem_transfer_create(ts);
-    ts->mt3 = yagl_mem_transfer_create(ts);
-    ts->mt4 = yagl_mem_transfer_create(ts);
+    ts->mt1 = yagl_mem_transfer_create();
+    ts->mt2 = yagl_mem_transfer_create();
+    ts->mt3 = yagl_mem_transfer_create();
+    ts->mt4 = yagl_mem_transfer_create();
 
     yagl_event_init(&ts->call_event, 0, 0);
     yagl_event_init(&ts->call_processed_event, 0, 0);
@@ -201,11 +247,22 @@ struct yagl_thread_state
                        ts,
                        QEMU_THREAD_JOINABLE);
 
+    if (is_first) {
+        /*
+         * If this is the first thread wait until API process states are
+         * initialized.
+         */
+
+        yagl_event_wait(&ts->call_processed_event);
+    }
+
     return ts;
 }
 
-void yagl_thread_state_destroy(struct yagl_thread_state *ts)
+void yagl_thread_state_destroy(struct yagl_thread_state *ts,
+                               bool is_last)
 {
+    ts->is_last = is_last;
     ts->destroying = true;
     yagl_event_set(&ts->call_event);
     qemu_thread_join(&ts->host_thread);
@@ -235,4 +292,6 @@ void yagl_thread_call(struct yagl_thread_state *ts,
 
     yagl_event_set(&ts->call_event);
     yagl_event_wait(&ts->call_processed_event);
+
+    ts->current_env = NULL;
 }

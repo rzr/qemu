@@ -10,11 +10,9 @@ static void yagl_gles2_program_destroy(struct yagl_ref *ref)
 {
     struct yagl_gles2_program *program = (struct yagl_gles2_program*)ref;
 
-    if (!program->base.nodelete) {
-        program->driver_ps->DeleteProgram(program->driver_ps, program->global_name);
-    }
-
-    qemu_mutex_destroy(&program->mutex);
+    yagl_ensure_ctx();
+    program->driver->DeleteProgram(program->global_name);
+    yagl_unensure_ctx();
 
     yagl_object_cleanup(&program->base);
 
@@ -22,22 +20,20 @@ static void yagl_gles2_program_destroy(struct yagl_ref *ref)
 }
 
 struct yagl_gles2_program
-    *yagl_gles2_program_create(struct yagl_gles2_driver_ps *driver_ps)
+    *yagl_gles2_program_create(struct yagl_gles2_driver *driver)
 {
     GLuint global_name;
     struct yagl_gles2_program *program;
 
-    global_name = driver_ps->CreateProgram(driver_ps);
+    global_name = driver->CreateProgram();
 
     program = g_malloc0(sizeof(*program));
 
     yagl_object_init(&program->base, &yagl_gles2_program_destroy);
 
     program->is_shader = false;
-    program->driver_ps = driver_ps;
+    program->driver = driver;
     program->global_name = global_name;
-
-    qemu_mutex_init(&program->mutex);
 
     return program;
 }
@@ -46,33 +42,25 @@ bool yagl_gles2_program_attach_shader(struct yagl_gles2_program *program,
                                       struct yagl_gles2_shader *shader,
                                       yagl_object_name shader_local_name)
 {
-    qemu_mutex_lock(&program->mutex);
-
     switch (shader->type) {
     case GL_VERTEX_SHADER:
         if (program->vertex_shader_local_name) {
-            qemu_mutex_unlock(&program->mutex);
             return false;
         }
         program->vertex_shader_local_name = shader_local_name;
         break;
     case GL_FRAGMENT_SHADER:
         if (program->fragment_shader_local_name) {
-            qemu_mutex_unlock(&program->mutex);
             return false;
         }
         program->fragment_shader_local_name = shader_local_name;
         break;
     default:
-        qemu_mutex_unlock(&program->mutex);
         return false;
     }
 
-    program->driver_ps->AttachShader(program->driver_ps,
-                                     program->global_name,
-                                     shader->global_name);
-
-    qemu_mutex_unlock(&program->mutex);
+    program->driver->AttachShader(program->global_name,
+                                  shader->global_name);
 
     return true;
 }
@@ -81,66 +69,55 @@ bool yagl_gles2_program_detach_shader(struct yagl_gles2_program *program,
                                       struct yagl_gles2_shader *shader,
                                       yagl_object_name shader_local_name)
 {
-    qemu_mutex_lock(&program->mutex);
-
     if (program->vertex_shader_local_name == shader_local_name) {
         program->vertex_shader_local_name = 0;
     } else if (program->fragment_shader_local_name == shader_local_name) {
         program->fragment_shader_local_name = 0;
     } else {
-        qemu_mutex_unlock(&program->mutex);
         return false;
     }
 
-    program->driver_ps->DetachShader(program->driver_ps,
-                                     program->global_name,
-                                     shader->global_name);
-
-    qemu_mutex_unlock(&program->mutex);
+    program->driver->DetachShader(program->global_name,
+                                  shader->global_name);
 
     return true;
 }
 
 void yagl_gles2_program_link(struct yagl_gles2_program *program)
 {
-    program->driver_ps->LinkProgram(program->driver_ps,
-                                    program->global_name);
+    program->driver->LinkProgram(program->global_name);
 }
 
 int yagl_gles2_program_get_attrib_location(struct yagl_gles2_program *program,
                                            const GLchar *name)
 {
-    return program->driver_ps->GetAttribLocation(program->driver_ps,
-                                                 program->global_name,
-                                                 name);
+    return program->driver->GetAttribLocation(program->global_name,
+                                              name);
 }
 
 int yagl_gles2_program_get_uniform_location(struct yagl_gles2_program *program,
                                             const GLchar *name)
 {
-    return program->driver_ps->GetUniformLocation(program->driver_ps,
-                                                  program->global_name,
-                                                  name);
+    return program->driver->GetUniformLocation(program->global_name,
+                                               name);
 }
 
 void yagl_gles2_program_bind_attrib_location(struct yagl_gles2_program *program,
                                              GLuint index,
                                              const GLchar *name)
 {
-    program->driver_ps->BindAttribLocation(program->driver_ps,
-                                           program->global_name,
-                                           index,
-                                           name);
+    program->driver->BindAttribLocation(program->global_name,
+                                        index,
+                                        name);
 }
 
 void yagl_gles2_program_get_param(struct yagl_gles2_program *program,
                                   GLenum pname,
                                   GLint *param)
 {
-    program->driver_ps->GetProgramiv(program->driver_ps,
-                                     program->global_name,
-                                     pname,
-                                     param);
+    program->driver->GetProgramiv(program->global_name,
+                                  pname,
+                                  param);
 }
 
 void yagl_gles2_program_get_active_attrib(struct yagl_gles2_program *program,
@@ -151,14 +128,13 @@ void yagl_gles2_program_get_active_attrib(struct yagl_gles2_program *program,
                                           GLenum *type,
                                           GLchar *name)
 {
-    program->driver_ps->GetActiveAttrib(program->driver_ps,
-                                        program->global_name,
-                                        index,
-                                        bufsize,
-                                        length,
-                                        size,
-                                        type,
-                                        name);
+    program->driver->GetActiveAttrib(program->global_name,
+                                     index,
+                                     bufsize,
+                                     length,
+                                     size,
+                                     type,
+                                     name);
 }
 
 void yagl_gles2_program_get_active_uniform(struct yagl_gles2_program *program,
@@ -169,14 +145,13 @@ void yagl_gles2_program_get_active_uniform(struct yagl_gles2_program *program,
                                            GLenum *type,
                                            GLchar *name)
 {
-    program->driver_ps->GetActiveUniform(program->driver_ps,
-                                         program->global_name,
-                                         index,
-                                         bufsize,
-                                         length,
-                                         size,
-                                         type,
-                                         name);
+    program->driver->GetActiveUniform(program->global_name,
+                                      index,
+                                      bufsize,
+                                      length,
+                                      size,
+                                      type,
+                                      name);
 }
 
 void yagl_gles2_program_get_info_log(struct yagl_gles2_program *program,
@@ -184,17 +159,15 @@ void yagl_gles2_program_get_info_log(struct yagl_gles2_program *program,
                                      GLsizei *length,
                                      GLchar *infolog)
 {
-    program->driver_ps->GetProgramInfoLog(program->driver_ps,
-                                          program->global_name,
-                                          bufsize,
-                                          length,
-                                          infolog);
+    program->driver->GetProgramInfoLog(program->global_name,
+                                       bufsize,
+                                       length,
+                                       infolog);
 }
 
 void yagl_gles2_program_validate(struct yagl_gles2_program *program)
 {
-    program->driver_ps->ValidateProgram(program->driver_ps,
-                                        program->global_name);
+    program->driver->ValidateProgram(program->global_name);
 }
 
 bool yagl_gles2_program_get_uniform_type(struct yagl_gles2_program *program,
@@ -207,30 +180,27 @@ bool yagl_gles2_program_get_uniform_type(struct yagl_gles2_program *program,
     GLchar *uniform_name = NULL;
     bool res = false;
 
-    YAGL_LOG_FUNC_SET(0, 0, yagl_gles2_program_get_uniform_type);
+    YAGL_LOG_FUNC_SET(yagl_gles2_program_get_uniform_type);
 
     if (location < 0) {
         return false;
     }
 
-    program->driver_ps->GetProgramiv(program->driver_ps,
-                                     program->global_name,
-                                     GL_LINK_STATUS,
-                                     &link_status);
+    program->driver->GetProgramiv(program->global_name,
+                                  GL_LINK_STATUS,
+                                  &link_status);
 
     if (link_status == GL_FALSE) {
         return false;
     }
 
-    program->driver_ps->GetProgramiv(program->driver_ps,
-                                     program->global_name,
-                                     GL_ACTIVE_UNIFORMS,
-                                     &num_active_uniforms);
+    program->driver->GetProgramiv(program->global_name,
+                                  GL_ACTIVE_UNIFORMS,
+                                  &num_active_uniforms);
 
-    program->driver_ps->GetProgramiv(program->driver_ps,
-                                     program->global_name,
-                                     GL_ACTIVE_UNIFORM_MAX_LENGTH,
-                                     &uniform_name_max_length);
+    program->driver->GetProgramiv(program->global_name,
+                                  GL_ACTIVE_UNIFORM_MAX_LENGTH,
+                                  &uniform_name_max_length);
 
     uniform_name = g_malloc(uniform_name_max_length + 1);
 
@@ -239,23 +209,21 @@ bool yagl_gles2_program_get_uniform_type(struct yagl_gles2_program *program,
         GLint size = 0;
         GLenum tmp_type = 0;
 
-        program->driver_ps->GetActiveUniform(program->driver_ps,
-                                             program->global_name,
-                                             i,
-                                             uniform_name_max_length,
-                                             &length,
-                                             &size,
-                                             &tmp_type,
-                                             uniform_name);
+        program->driver->GetActiveUniform(program->global_name,
+                                          i,
+                                          uniform_name_max_length,
+                                          &length,
+                                          &size,
+                                          &tmp_type,
+                                          uniform_name);
 
         if (length == 0) {
             YAGL_LOG_ERROR("Cannot get active uniform %d for program %d", i, program->global_name);
             continue;
         }
 
-        if (program->driver_ps->GetUniformLocation(program->driver_ps,
-                                                   program->global_name,
-                                                   uniform_name) == location) {
+        if (program->driver->GetUniformLocation(program->global_name,
+                                                uniform_name) == location) {
             *type = tmp_type;
             res = true;
             break;
@@ -271,20 +239,18 @@ void yagl_gles2_program_get_uniform_float(struct yagl_gles2_program *program,
                                           GLint location,
                                           GLfloat *params)
 {
-    program->driver_ps->GetUniformfv(program->driver_ps,
-                                     program->global_name,
-                                     location,
-                                     params);
+    program->driver->GetUniformfv(program->global_name,
+                                  location,
+                                  params);
 }
 
 void yagl_gles2_program_get_uniform_int(struct yagl_gles2_program *program,
                                         GLint location,
                                         GLint *params)
 {
-    program->driver_ps->GetUniformiv(program->driver_ps,
-                                     program->global_name,
-                                     location,
-                                     params);
+    program->driver->GetUniformiv(program->global_name,
+                                  location,
+                                  params);
 }
 
 void yagl_gles2_program_acquire(struct yagl_gles2_program *program)

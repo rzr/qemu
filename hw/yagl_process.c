@@ -1,30 +1,20 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_server.h"
-#include "yagl_egl_driver.h"
-#include "yagl_api.h"
 #include "yagl_log.h"
 #include "yagl_stats.h"
-#include "kvm.h"
+#include "sysemu/kvm.h"
 
 struct yagl_process_state
     *yagl_process_state_create(struct yagl_server_state *ss,
                                yagl_pid id)
 {
-    int i;
     struct yagl_process_state *ps =
         g_malloc0(sizeof(struct yagl_process_state));
 
     ps->ss = ss;
     ps->id = id;
     QLIST_INIT(&ps->threads);
-
-    for (i = 0; i < YAGL_NUM_APIS; ++i) {
-        if (ss->apis[i]) {
-            ps->api_states[i] = ss->apis[i]->process_init(ss->apis[i], ps);
-            assert(ps->api_states[i]);
-        }
-    }
 
 #ifdef CONFIG_KVM
     cpu_synchronize_state(cpu_single_env);
@@ -37,37 +27,17 @@ struct yagl_process_state
 void yagl_process_state_destroy(struct yagl_process_state *ps)
 {
     struct yagl_thread_state *ts, *next;
-    int i;
 
-    YAGL_LOG_FUNC_ENTER(ps->id, 0, yagl_process_state_destroy, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_process_state_destroy, NULL);
 
     QLIST_FOREACH_SAFE(ts, &ps->threads, entry, next) {
+        bool is_last;
         QLIST_REMOVE(ts, entry);
-        yagl_thread_state_destroy(ts);
+        is_last = QLIST_EMPTY(&ps->threads);
+        yagl_thread_state_destroy(ts, is_last);
     }
 
     assert(QLIST_EMPTY(&ps->threads));
-
-    /*
-     * Fini first.
-     */
-
-    for (i = 0; i < YAGL_NUM_APIS; ++i) {
-        if (ps->api_states[i]) {
-            ps->api_states[i]->fini(ps->api_states[i]);
-        }
-    }
-
-    /*
-     * Destroy.
-     */
-
-    for (i = 0; i < YAGL_NUM_APIS; ++i) {
-        if (ps->api_states[i]) {
-            ps->api_states[i]->destroy(ps->api_states[i]);
-            ps->api_states[i] = NULL;
-        }
-    }
 
     g_free(ps);
 
@@ -79,7 +49,7 @@ void yagl_process_state_destroy(struct yagl_process_state *ps)
 void yagl_process_register_egl_interface(struct yagl_process_state *ps,
                                          struct yagl_egl_interface *egl_iface)
 {
-    YAGL_LOG_FUNC_ENTER(ps->id, 0, yagl_process_register_egl_interface, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_process_register_egl_interface, NULL);
 
     assert(egl_iface);
     assert(!ps->egl_iface);
@@ -99,7 +69,7 @@ void yagl_process_register_egl_interface(struct yagl_process_state *ps,
 
 void yagl_process_unregister_egl_interface(struct yagl_process_state *ps)
 {
-    YAGL_LOG_FUNC_ENTER(ps->id, 0, yagl_process_unregister_egl_interface, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_process_unregister_egl_interface, NULL);
 
     assert(ps->egl_iface);
 
@@ -120,7 +90,7 @@ void yagl_process_register_client_interface(struct yagl_process_state *ps,
                                             yagl_client_api client_api,
                                             struct yagl_client_interface *client_iface)
 {
-    YAGL_LOG_FUNC_ENTER(ps->id, 0, yagl_process_register_client_interface, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_process_register_client_interface, NULL);
 
     assert(!ps->client_ifaces[client_api]);
 
@@ -141,7 +111,7 @@ void yagl_process_register_client_interface(struct yagl_process_state *ps,
 void yagl_process_unregister_client_interface(struct yagl_process_state *ps,
                                               yagl_client_api client_api)
 {
-    YAGL_LOG_FUNC_ENTER(ps->id, 0, yagl_process_unregister_client_interface, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_process_unregister_client_interface, NULL);
 
     assert(ps->client_ifaces[client_api]);
 
@@ -178,8 +148,9 @@ struct yagl_thread_state*
     yagl_process_add_thread(struct yagl_process_state *ps,
                             yagl_tid id)
 {
+    bool is_first = QLIST_EMPTY(&ps->threads);
     struct yagl_thread_state *ts =
-        yagl_thread_state_create(ps, id);
+        yagl_thread_state_create(ps, id, is_first);
 
     if (!ts) {
         return NULL;
@@ -197,9 +168,13 @@ void yagl_process_remove_thread(struct yagl_process_state *ps,
         yagl_process_find_thread(ps, id);
 
     if (ts) {
+        bool is_last;
+
         QLIST_REMOVE(ts, entry);
 
-        yagl_thread_state_destroy(ts);
+        is_last = QLIST_EMPTY(&ps->threads);
+
+        yagl_thread_state_destroy(ts, is_last);
     }
 }
 

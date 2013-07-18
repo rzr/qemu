@@ -5,6 +5,7 @@ EMUL_TARGET_LIST=""
 VIRTIOGL_EN=""
 YAGL_EN=""
 YAGL_STATS_EN=""
+VIGS_EN=""
 
 usage() {
     echo "usage: build.sh [options] [target]"
@@ -21,6 +22,8 @@ usage() {
     echo "    enable YaGL passthrough device"
     echo "-ys|--yagl-stats"
     echo "    enable YaGL stats"
+    echo "-vigs|--vigs-device"
+    echo "    enable VIGS device"
     echo "-e|--extra"
     echo "    extra options for QEMU configure"
     echo "-u|-h|--help|--usage"
@@ -72,6 +75,21 @@ yagl_stats_enable() {
   esac
 }
 
+vigs_enable() {
+  case "$1" in
+  0|no|disable)
+    VIGS_EN="no"
+  ;;
+  1|yes|enable)
+    VIGS_EN="yes"
+  ;;
+  *)
+    usage
+    exit 1
+  ;;
+  esac
+}
+
 set_target() {
   if [ ! -z "$EMUL_TARGET_LIST" ] ; then
       usage
@@ -84,11 +102,20 @@ set_target() {
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
+    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      yagl_enable yes
+    fi
+    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      vigs_enable yes
+    fi
   ;;
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
     if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
       yagl_enable yes
+    fi
+    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      vigs_enable yes
     fi
   ;;
   all)
@@ -97,9 +124,12 @@ set_target() {
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
-#    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then    
-#      yagl_enable yes
-#    fi
+    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      yagl_enable yes
+    fi
+    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+      vigs_enable yes
+    fi
   ;;
   esac
 }
@@ -141,6 +171,9 @@ do
     -ys|--yagl-stats)
         yagl_stats_enable 1
     ;;
+    -vigs|--vigs-device)
+        vigs_enable 1
+    ;;
     -u|-h|--help|--usage)
         usage
         exit 0
@@ -176,6 +209,12 @@ if test "$YAGL_STATS_EN" = "yes" ; then
   CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-yagl-stats"
 else
   CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-yagl-stats"
+fi
+
+if test "$VIGS_EN" = "yes" ; then
+  CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-vigs"
+else
+  CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-vigs"
 fi
 
 case $targetos in

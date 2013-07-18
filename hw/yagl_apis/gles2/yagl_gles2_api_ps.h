@@ -4,22 +4,22 @@
 #include "yagl_api.h"
 
 struct yagl_client_interface;
-struct yagl_gles2_driver_ps;
+struct yagl_gles2_driver;
 
 struct yagl_gles2_api_ps
 {
     struct yagl_api_ps base;
 
-    struct yagl_gles2_driver_ps *driver_ps;
+    struct yagl_gles2_driver *driver;
 
     struct yagl_client_interface *client_iface;
 };
 
 /*
- * Takes ownership of 'driver_ps' and 'client_iface'.
+ * Takes ownership of 'client_iface'.
  */
 void yagl_gles2_api_ps_init(struct yagl_gles2_api_ps *gles2_api_ps,
-                            struct yagl_gles2_driver_ps *driver_ps,
+                            struct yagl_gles2_driver *driver,
                             struct yagl_client_interface *client_iface);
 
 /*

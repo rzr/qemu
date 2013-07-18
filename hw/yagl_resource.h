@@ -3,7 +3,7 @@
 
 #include "yagl_types.h"
 #include "yagl_ref.h"
-#include "qemu-queue.h"
+#include "qemu/queue.h"
 
 struct yagl_resource
 {

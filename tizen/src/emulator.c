@@ -406,7 +406,7 @@ static void prepare_opengl_acceleration(void)
         }
     }
 
-    gchar * const tmp_str = g_strdup_printf(" gles=%d yagl=%d", enable_gl, enable_yagl);
+    gchar * const tmp_str = g_strdup_printf(" gles=%d yagl=%d", (enable_gl || enable_yagl), enable_yagl);
 
     g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
 

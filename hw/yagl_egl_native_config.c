@@ -15,4 +15,7 @@ void yagl_egl_native_config_init(struct yagl_egl_native_config *cfg)
     cfg->trans_red_val = EGL_DONT_CARE;
     cfg->trans_green_val = EGL_DONT_CARE;
     cfg->trans_blue_val = EGL_DONT_CARE;
+    cfg->match_format_khr = EGL_DONT_CARE;
+    cfg->bind_to_texture_rgb = EGL_DONT_CARE;
+    cfg->bind_to_texture_rgba = EGL_DONT_CARE;
 }

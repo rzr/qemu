@@ -2,7 +2,7 @@
 #define _QEMU_YAGL_PROCESS_H
 
 #include "yagl_types.h"
-#include "qemu-queue.h"
+#include "qemu/queue.h"
 
 struct yagl_server_state;
 struct yagl_thread_state;

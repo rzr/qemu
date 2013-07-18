@@ -24,30 +24,28 @@ static void yagl_gles2_array_apply(struct yagl_gles_array *array)
 
         yagl_gles_buffer_bind(array->vbo,
                               array->type,
+                              false,
                               GL_ARRAY_BUFFER,
                               &old_buffer_name);
 
-        gles2_ctx->driver_ps->VertexAttribPointer(gles2_ctx->driver_ps,
-                                                  array->index,
-                                                  array->size,
-                                                  array->type,
-                                                  array->normalized,
-                                                  array->stride,
-                                          (GLvoid*)(uintptr_t)array->offset);
+        gles2_ctx->driver->VertexAttribPointer(array->index,
+                                               array->size,
+                                               array->type,
+                                               array->normalized,
+                                               array->stride,
+                                               (GLvoid*)(uintptr_t)array->offset);
 
-        gles2_ctx->driver_ps->common->BindBuffer(gles2_ctx->driver_ps->common,
-                                                 GL_ARRAY_BUFFER,
-                                                 old_buffer_name);
+        gles2_ctx->driver->base.BindBuffer(GL_ARRAY_BUFFER,
+                                           old_buffer_name);
     } else {
         assert(array->host_data);
 
-        gles2_ctx->driver_ps->VertexAttribPointer(gles2_ctx->driver_ps,
-                                                  array->index,
-                                                  array->size,
-                                                  array->type,
-                                                  array->normalized,
-                                                  array->stride,
-                                                  array->host_data);
+        gles2_ctx->driver->VertexAttribPointer(array->index,
+                                               array->size,
+                                               array->type,
+                                               array->normalized,
+                                               array->stride,
+                                               array->host_data);
     }
 }
 
@@ -223,6 +221,13 @@ static bool yagl_gles2_context_get_floatv(struct yagl_gles_context *ctx,
     return true;
 }
 
+static bool yagl_gles2_context_is_enabled(struct yagl_gles_context *ctx,
+                                          GLboolean* retval,
+                                          GLenum cap)
+{
+    return false;
+}
+
 static GLchar *yagl_gles2_context_get_extensions(struct yagl_gles_context *ctx)
 {
     struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)ctx;
@@ -305,7 +310,7 @@ static GLchar *yagl_gles2_context_get_extensions(struct yagl_gles_context *ctx)
     return str;
 }
 
-static void yagl_gles2_context_pre_draw(struct yagl_gles_context *ctx, GLenum mode)
+static inline void yagl_gles2_context_pre_draw(struct yagl_gles_context *ctx, GLenum mode)
 {
     /*
      * Enable texture generation for GL_POINTS and gl_PointSize shader variable.
@@ -314,26 +319,49 @@ static void yagl_gles2_context_pre_draw(struct yagl_gles_context *ctx, GLenum mo
      */
 
     if (mode == GL_POINTS) {
-        ctx->driver_ps->Enable(ctx->driver_ps, GL_POINT_SPRITE);
-        ctx->driver_ps->Enable(ctx->driver_ps, GL_VERTEX_PROGRAM_POINT_SIZE);
+        ctx->driver->Enable(GL_POINT_SPRITE);
+        ctx->driver->Enable(GL_VERTEX_PROGRAM_POINT_SIZE);
     }
 }
 
-static void yagl_gles2_context_post_draw(struct yagl_gles_context *ctx, GLenum mode)
+static inline void yagl_gles2_context_post_draw(struct yagl_gles_context *ctx, GLenum mode)
 {
     if (mode == GL_POINTS) {
-        ctx->driver_ps->Disable(ctx->driver_ps, GL_VERTEX_PROGRAM_POINT_SIZE);
-        ctx->driver_ps->Disable(ctx->driver_ps, GL_POINT_SPRITE);
+        ctx->driver->Disable(GL_VERTEX_PROGRAM_POINT_SIZE);
+        ctx->driver->Disable(GL_POINT_SPRITE);
     }
+}
+
+static void yagl_gles2_context_draw_arrays(struct yagl_gles_context *ctx,
+                                           GLenum mode,
+                                           GLint first,
+                                           GLsizei count)
+{
+    yagl_gles2_context_pre_draw(ctx, mode);
+
+    ctx->driver->DrawArrays(mode, first, count);
+
+    yagl_gles2_context_post_draw(ctx, mode);
+}
+
+static void yagl_gles2_context_draw_elements(struct yagl_gles_context *ctx,
+                                             GLenum mode,
+                                             GLsizei count,
+                                             GLenum type,
+                                             const GLvoid *indices)
+{
+    yagl_gles2_context_pre_draw(ctx, mode);
+
+    ctx->driver->DrawElements(mode, count, type, indices);
+
+    yagl_gles2_context_post_draw(ctx, mode);
 }
 
 static void yagl_gles2_context_destroy(struct yagl_client_context *ctx)
 {
     struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)ctx;
 
-    YAGL_LOG_FUNC_ENTER(gles2_ctx->driver_ps->common->ps->id,
-                        0,
-                        yagl_gles2_context_destroy,
+    YAGL_LOG_FUNC_ENTER(yagl_gles2_context_destroy,
                         "%p",
                         gles2_ctx);
 
@@ -345,50 +373,18 @@ static void yagl_gles2_context_destroy(struct yagl_client_context *ctx)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static const char* g_shader_precision_test =
-    "varying lowp vec4 c;\n"
-    "void main(void) { gl_FragColor=c; }\n";
-
-static bool yagl_gles2_shader_precision_supported(struct yagl_gles2_driver_ps *driver_ps,
-                                                  struct yagl_thread_state *ts)
+static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx)
 {
-    GLuint shader = driver_ps->CreateShader(driver_ps, GL_FRAGMENT_SHADER);
-    GLint status = GL_FALSE;
-
-    YAGL_LOG_FUNC_ENTER_TS(ts,
-                           yagl_gles2_shader_precision_supported,
-                           NULL);
-
-    driver_ps->ShaderSource(driver_ps, shader, 1, &g_shader_precision_test, 0);
-    driver_ps->CompileShader(driver_ps, shader);
-    driver_ps->GetShaderiv(driver_ps, shader, GL_COMPILE_STATUS, &status);
-    driver_ps->DeleteShader(driver_ps, shader);
-
-    if (status == GL_FALSE) {
-        YAGL_LOG_WARN("Host OpenGL implementation doesn't understand precision keyword");
-    } else {
-        YAGL_LOG_DEBUG("Host OpenGL implementation understands precision keyword");
-    }
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-
-    return (status != GL_FALSE);
-}
-
-static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx,
-                                       struct yagl_thread_state *ts)
-{
-    struct yagl_gles_driver_ps *gles_driver = gles2_ctx->driver_ps->common;
+    struct yagl_gles_driver *gles_driver = &gles2_ctx->driver->base;
     GLint i, num_arrays = 0, num_texture_units = 0;
     struct yagl_gles_array *arrays;
     const char *extensions;
 
-    YAGL_LOG_FUNC_ENTER_TS(ts,
-                           yagl_gles2_context_prepare,
-                           "%p",
-                           gles2_ctx);
+    YAGL_LOG_FUNC_ENTER(yagl_gles2_context_prepare,
+                        "%p",
+                        gles2_ctx);
 
-    gles_driver->GetIntegerv(gles_driver, GL_MAX_VERTEX_ATTRIBS, &num_arrays);
+    gles_driver->GetIntegerv(GL_MAX_VERTEX_ATTRIBS, &num_arrays);
 
     arrays = g_malloc(num_arrays * sizeof(*arrays));
 
@@ -399,7 +395,7 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx,
                              &yagl_gles2_array_apply);
     }
 
-    gles_driver->GetIntegerv(gles_driver, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+    gles_driver->GetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
                              &num_texture_units);
 
     /*
@@ -409,17 +405,15 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx,
         num_texture_units = 32;
     }
 
-    yagl_gles_context_prepare(&gles2_ctx->base, ts, arrays, num_arrays,
+    yagl_gles_context_prepare(&gles2_ctx->base, arrays, num_arrays,
                               num_texture_units);
 
-    gles2_ctx->shader_strip_precision =
-        !yagl_gles2_shader_precision_supported(gles2_ctx->driver_ps, ts);
+    /*
+     * We don't support it for now...
+     */
+    gles2_ctx->num_shader_binary_formats = 0;
 
-    gles_driver->GetIntegerv(gles_driver,
-                             GL_NUM_SHADER_BINARY_FORMATS,
-                             &gles2_ctx->num_shader_binary_formats);
-
-    extensions = (const char*)gles_driver->GetString(gles_driver, GL_EXTENSIONS);
+    extensions = (const char*)gles_driver->GetString(GL_EXTENSIONS);
 
     gles2_ctx->texture_half_float = (strstr(extensions, "GL_ARB_half_float_pixel ") != NULL) ||
                                     (strstr(extensions, "GL_NV_half_float ") != NULL);
@@ -431,17 +425,16 @@ static void yagl_gles2_context_prepare(struct yagl_gles2_context *gles2_ctx,
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static void yagl_gles2_context_activate(struct yagl_client_context *ctx,
-                                        struct yagl_thread_state *ts)
+static void yagl_gles2_context_activate(struct yagl_client_context *ctx)
 {
     struct yagl_gles2_context *gles2_ctx = (struct yagl_gles2_context*)ctx;
 
     if (!gles2_ctx->prepared) {
-        yagl_gles2_context_prepare(gles2_ctx, ts);
+        yagl_gles2_context_prepare(gles2_ctx);
         gles2_ctx->prepared = true;
     }
 
-    yagl_gles_context_activate(&gles2_ctx->base, ts);
+    yagl_gles_context_activate(&gles2_ctx->base);
 }
 
 static void yagl_gles2_context_deactivate(struct yagl_client_context *ctx)
@@ -451,15 +444,35 @@ static void yagl_gles2_context_deactivate(struct yagl_client_context *ctx)
     yagl_gles_context_deactivate(&gles2_ctx->base);
 }
 
+static GLenum yagl_gles2_compressed_tex_image(struct yagl_gles_context *ctx,
+                                              GLenum target,
+                                              GLint level,
+                                              GLenum internalformat,
+                                              GLsizei width,
+                                              GLsizei height,
+                                              GLint border,
+                                              GLsizei imageSize,
+                                              const GLvoid *data)
+{
+    ctx->driver->CompressedTexImage2D(target,
+                                      level,
+                                      internalformat,
+                                      width,
+                                      height,
+                                      border,
+                                      imageSize,
+                                      data);
+
+    return GL_NO_ERROR;
+}
+
 struct yagl_gles2_context
     *yagl_gles2_context_create(struct yagl_sharegroup *sg,
-                               struct yagl_gles2_driver_ps *driver_ps)
+                               struct yagl_gles2_driver *driver)
 {
     struct yagl_gles2_context *gles2_ctx;
 
-    YAGL_LOG_FUNC_ENTER(driver_ps->common->ps->id,
-                        0,
-                        yagl_gles2_context_create,
+    YAGL_LOG_FUNC_ENTER(yagl_gles2_context_create,
                         NULL);
 
     gles2_ctx = g_malloc0(sizeof(*gles2_ctx));
@@ -470,20 +483,21 @@ struct yagl_gles2_context
     gles2_ctx->base.base.deactivate = &yagl_gles2_context_deactivate;
     gles2_ctx->base.base.destroy = &yagl_gles2_context_destroy;
 
-    yagl_gles_context_init(&gles2_ctx->base, driver_ps->common);
+    yagl_gles_context_init(&gles2_ctx->base, &driver->base);
 
     gles2_ctx->base.get_param_count = &yagl_gles2_context_get_param_count;
     gles2_ctx->base.get_booleanv = &yagl_gles2_context_get_booleanv;
     gles2_ctx->base.get_integerv = &yagl_gles2_context_get_integerv;
     gles2_ctx->base.get_floatv = &yagl_gles2_context_get_floatv;
     gles2_ctx->base.get_extensions = &yagl_gles2_context_get_extensions;
-    gles2_ctx->base.pre_draw = &yagl_gles2_context_pre_draw;
-    gles2_ctx->base.post_draw = &yagl_gles2_context_post_draw;
+    gles2_ctx->base.draw_arrays = &yagl_gles2_context_draw_arrays;
+    gles2_ctx->base.draw_elements = &yagl_gles2_context_draw_elements;
+    gles2_ctx->base.compressed_tex_image = &yagl_gles2_compressed_tex_image;
+    gles2_ctx->base.is_enabled = &yagl_gles2_context_is_enabled;
 
-    gles2_ctx->driver_ps = driver_ps;
+    gles2_ctx->driver = driver;
     gles2_ctx->prepared = false;
     gles2_ctx->sg = sg;
-    gles2_ctx->shader_strip_precision = true;
 
     gles2_ctx->num_shader_binary_formats = 0;
 

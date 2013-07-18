@@ -5,9 +5,7 @@
 
 struct yagl_mem_transfer
 {
-    struct yagl_thread_state *ts;
-
-    target_phys_addr_t *pages;
+    hwaddr *pages;
     int max_pages;
 
     target_ulong va;
@@ -19,8 +17,7 @@ struct yagl_mem_transfer
 /*
  * Guaranteed to succeed.
  */
-struct yagl_mem_transfer
-    *yagl_mem_transfer_create(struct yagl_thread_state *ts);
+struct yagl_mem_transfer *yagl_mem_transfer_create(void);
 
 void yagl_mem_transfer_destroy(struct yagl_mem_transfer *mt);
 
