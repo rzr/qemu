@@ -125,6 +125,10 @@ bool ntf_to_injector(const char* data, const int len);
 bool ntf_to_control(const char* data, const int len);
 bool ntf_to_monitor(const char* data, const int len);
 
+bool send_injector_ntf(const char* data, const int len);
+bool send_control_ntf(const char* data, const int len);
+bool send_monitor_ntf(const char* data, const int len);
+
 bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char *str);
 

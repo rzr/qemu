@@ -51,7 +51,7 @@ typedef struct mon_cmd_t {
 				MonitorCompletion *cb, void *opaque);
 	} mhandler;
 	int flags;
-}
+} mon_cmd_t;
 
 static QTAILQ_HEAD(ECS_ClientHead, ECS_Client)
 clients = QTAILQ_HEAD_INITIALIZER(clients);
@@ -750,7 +750,7 @@ bool ntf_to_injector(const char* data, const int len) {
 	return true;
 }
 
-bool ntf_to_injector2(const char* data, const int len) 
+bool send_injector_ntf(const char* data, const int len) 
 {
 	type_length length = 0;
 	type_group group = 0;
@@ -772,22 +772,21 @@ bool ntf_to_injector2(const char* data, const int len)
     LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
 			action, group);
    
-    if(!strcmp(cat, "telephony")) {
-        base64_encode(ijdata, length, &encoded_ijdata);
-    }
-  
+    //if(!strcmp(cat, "telephony")) {
+    //    base64_encode(ijdata, length, &encoded_ijdata);
+    //}
 
 	ECS__Master master = ECS__MASTER__INIT;
-	ECS__Injector ij = ECS__INJECTOR_INIT;
+	ECS__InjectorNtf ntf = ECS__INJECTOR_NTF__INIT;
 
-	strncpy(ij.category, cat, 10);
-	ij.length = length;
-	ij.group = group;
-	ij.action = action;
+	strncpy(ntf.category, cat, 10);
+	ntf.length = length;
+	ntf.group = group;
+	ntf.action = action;
 
-	memcpy(ij.data, ijdata, length);
+	memcpy(ntf.data.data, ijdata, length);
 
-	master.injector = &ij;
+	master.injector_ntf = &ntf;
 
 	int len_pack = ecs__master__get_packed_size(&master);
 	void* buf = malloc(len_pack);
@@ -795,48 +794,11 @@ bool ntf_to_injector2(const char* data, const int len)
 	
 	send_to_all_client(buf, len_pack);
 
-	free(buf); 
-	
+	if (buf)
+	{
+		free(buf); 
+	}	
 // 
-	QDict* obj_header = qdict_new();
-	make_header(obj_header, length, group, action);
-
-	QDict* objData = qdict_new();
-	qobject_incref(QOBJECT(obj_header));
-
-	qdict_put(objData, "cat", qstring_from_str(cat));
-	qdict_put(objData, "header", obj_header);
-    if(!strcmp(cat, "telephony")) { 
-        qdict_put(objData, "ijdata", qstring_from_str(encoded_ijdata));
-    } else {
-        qdict_put(objData, "ijdata", qstring_from_str(ijdata));
-    }
-
-	QDict* objMsg = qdict_new();
-	qobject_incref(QOBJECT(objData));
-
-	qdict_put(objMsg, "type", qstring_from_str("injector"));
-	qdict_put(objMsg, "result", qstring_from_str("success"));
-	qdict_put(objMsg, "data", objData);
-
-	QString *json;
-	json = qobject_to_json(QOBJECT(objMsg));
-
-	assert(json != NULL);
-
-	qstring_append_chr(json, '\n');
-	const char* snddata = qstring_get_str(json);
-
-	LOG("<< json str = %s", snddata);
-
-	send_to_all_client(snddata, strlen(snddata));
-
-	QDECREF(json);
-
-	QDECREF(obj_header);
-	QDECREF(objData);
-	QDECREF(objMsg);
-
 	return true;
 }
 
@@ -860,19 +822,19 @@ static bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 {
 	char cmd[10];
 	memset(cmd, 0, 10);
-	strcpy(cmd, injector->category);
-	type_length length = (type_length) injector->length;
-	type_group group = (type_group) (injector->group & 0xff);
-	type_action action = (type_action) (injector->action & 0xff);
+	strcpy(cmd, msg->category);
+	type_length length = (type_length) msg->length;
+	type_group group = (type_group) (msg->group & 0xff);
+	type_action action = (type_action) (msg->action & 0xff);
 
-	const char* data = injector->data.data;
-	LOG(">> count= %d", ++ijcount);
+	const char* data = msg->data.data;
+	//LOG(">> count= %d", ++ijcount);
 	LOG(">> print len = %d, data\" %s\"", strlen(data), data);
 	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
 			action, group);
     
 	//int datalen = strlen(data);
-	int datalen = injector->data.len;
+	int datalen = msg->data.len;
 	int sndlen = datalen + 14;
 	char* sndbuf = (char*) malloc(sndlen + 1);
 	if (!sndbuf) {
@@ -1028,12 +990,14 @@ static bool device_command_proc(ECS_Client *clii, QObject *obj) {
 		} else {
 			set_sensor_data(length, data);
 		}
-	}else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
+	}
+	else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
         if (group == MSG_GROUP_STATUS) {
-		    send_to_nfc(request_get, data, length);	
-		} else {
-		    send_to_nfc(request_set, data, length);	
-
+		    send_to_nfc(request_get, data, length);
+		} 
+		else 
+		{
+		    send_to_nfc(request_set, data, length);
 		}
     }
 
@@ -1219,7 +1183,7 @@ static void ecs_read(ECS_Client *clii) {
 	} else if (0 < size) {
 		LOG("read data: %s, len: %d, size: %d\n", buf, len, size);
 	
-		handle_protobuf_msg(clii, buf, size);
+		handle_protobuf_msg(clii, (char*)buf, size);
 	
 		//ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
 	}
@@ -1556,7 +1520,7 @@ int start_ecs(void) {
 
 bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
 {
-	ECS__Master* master = ecs__master__unpack(NULL, len, data);
+	ECS__Master* master = ecs__master__unpack(NULL, (size_t)len, (const uint8_t*)data);
 	if (!master)
 		return false;
 
@@ -1576,21 +1540,21 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
 	}
 	else if (master->type == ECS__MASTER__TYPE__CONTROL_REQ)
 	{
-		ECS__Control* msg = master->control_req
+		ECS__ControlReq* msg = master->control_req;
 		if (!msg)
 			goto fail;
 		msgproc_control_req(cli, msg);
 	}
 	else if (master->type == ECS__MASTER__TYPE__MONITOR_REQ)
 	{
-		ECS__Monitor* msg = master->monitor_req
+		ECS__MonitorReq* msg = master->monitor_req;
 		if (!msg)
 			goto fail;
 		msgproc_monitor_req(cli, msg);
 	}
 	else if (master->type == ECS__MASTER__TYPE__SCREEN_DUMP_REQ)
 	{
-		ECS__ScreenDumpReq* msg = master->screen_dump_req
+		ECS__ScreenDumpReq* msg = master->screen_dump_req;
 		if (!msg)
 			goto fail;
 		msgproc_screen_dump_req(cli, msg);
@@ -1598,6 +1562,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
 	ecs__master__free_unpacked(master, NULL);
 	return true;
 fail:
+	LOG("invalid message type");
 	ecs__master__free_unpacked(master, NULL);
 	return false;
 } 
