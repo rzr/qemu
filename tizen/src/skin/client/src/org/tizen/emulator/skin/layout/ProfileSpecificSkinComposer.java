@@ -64,6 +64,7 @@ import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -159,6 +160,25 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
 			System.exit(-1);
+		}
+
+		/* open the key window if key window menu item was enabled */
+		PopupMenu popupMenu = skin.getPopupMenu();
+
+		if (popupMenu != null && popupMenu.keyWindowItem != null) {
+			final int dockValue = config.getSkinPropertyInt(
+					SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+
+			shell.getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (dockValue == 0 || dockValue == SWT.NONE) {
+						skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+					} else {
+						skin.openKeyWindow(dockValue, false);
+					}
+				}
+			});
 		}
 	}
 

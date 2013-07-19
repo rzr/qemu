@@ -304,7 +304,7 @@ public class PopupMenu {
 		closeItem.addSelectionListener(closeListener);
 	}
 
-	public Menu getMenu() {
+	public Menu getMenuRoot() {
 		return contextMenu;
 	}
 }

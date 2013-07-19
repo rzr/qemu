@@ -57,6 +57,7 @@ import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -201,20 +202,24 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		arrangeSkin(scale, rotationId);
 
-		/* open the key window */
-		final int dockValue = config.getSkinPropertyInt(
-				SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+		/* open the key window if key window menu item was enabled */
+		PopupMenu popupMenu = skin.getPopupMenu();
 
-		shell.getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (dockValue == 0 || dockValue == SWT.NONE) {
-					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
-				} else {
-					skin.openKeyWindow(dockValue, false);
+		if (popupMenu != null && popupMenu.keyWindowItem != null) {
+			final int dockValue = config.getSkinPropertyInt(
+					SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+
+			shell.getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (dockValue == 0 || dockValue == SWT.NONE) {
+						skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+					} else {
+						skin.openKeyWindow(dockValue, false);
+					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	@Override
