@@ -6,7 +6,7 @@
 
 #define YAGL_NS_FRAMEBUFFER 2
 
-struct yagl_gles_driver_ps;
+struct yagl_gles_driver;
 struct yagl_gles_texture;
 struct yagl_gles_renderbuffer;
 
@@ -21,11 +21,9 @@ struct yagl_gles_framebuffer
 {
     struct yagl_object base;
 
-    struct yagl_gles_driver_ps *driver_ps;
+    struct yagl_gles_driver *driver;
 
     yagl_object_name global_name;
-
-    QemuMutex mutex;
 
     struct yagl_gles_framebuffer_attachment_state attachment_states[YAGL_NUM_GLES_FRAMEBUFFER_ATTACHMENTS];
 
@@ -33,7 +31,7 @@ struct yagl_gles_framebuffer
 };
 
 struct yagl_gles_framebuffer
-    *yagl_gles_framebuffer_create(struct yagl_gles_driver_ps *driver_ps);
+    *yagl_gles_framebuffer_create(struct yagl_gles_driver *driver);
 
 /*
  * Passing NULL won't hurt, this is for convenience.

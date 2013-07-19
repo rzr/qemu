@@ -2,7 +2,7 @@
 #define _QEMU_YAGL_MARSHAL_H
 
 #include "yagl_types.h"
-#include "exec-memory.h"
+#include "exec/memory.h"
 
 /*
  * All marshalling/unmarshalling must be done with 8-byte alignment,
@@ -106,17 +106,75 @@ static __inline void yagl_marshal_put_call_result(uint8_t** buff, yagl_call_resu
     *buff += 8;
 }
 
-#define yagl_marshal_put_int8(buff, value) yagl_marshal_put_uint8(buff, (uint8_t)(value))
-#define yagl_marshal_get_int8(buff) ((int8_t)yagl_marshal_get_uint8(buff))
-#define yagl_marshal_put_int32(buff, value) yagl_marshal_put_uint32(buff, (uint32_t)(value))
-#define yagl_marshal_get_int32(buff) ((int32_t)yagl_marshal_get_uint32(buff))
-#define yagl_marshal_put_uint32_t(buff, value) yagl_marshal_put_uint32(buff, value)
-#define yagl_marshal_get_uint32_t(buff) yagl_marshal_get_uint32(buff)
-#define yagl_marshal_put_int(buff, value) yagl_marshal_put_int32(buff, (value))
-#define yagl_marshal_get_int(buff) yagl_marshal_get_int32(buff)
-#define yagl_marshal_get_pid(buff) yagl_marshal_get_uint32(buff)
-#define yagl_marshal_get_tid(buff) yagl_marshal_get_uint32(buff)
-#define yagl_marshal_get_api_id(buff) yagl_marshal_get_uint32(buff)
-#define yagl_marshal_get_func_id(buff) yagl_marshal_get_uint32(buff)
+static __inline void yagl_marshal_put_int8(uint8_t** buff, int8_t value)
+{
+    yagl_marshal_put_uint8(buff, value);
+}
+
+static __inline int8_t yagl_marshal_get_int8(uint8_t** buff)
+{
+    return yagl_marshal_get_uint8(buff);
+}
+
+static __inline void yagl_marshal_put_int32(uint8_t** buff, int32_t value)
+{
+    yagl_marshal_put_uint32(buff, value);
+}
+
+static __inline int32_t yagl_marshal_get_int32(uint8_t** buff)
+{
+    return yagl_marshal_get_uint32(buff);
+}
+
+static __inline void yagl_marshal_put_uint32_t(uint8_t** buff, uint32_t value)
+{
+    yagl_marshal_put_uint32(buff, value);
+}
+
+static __inline uint32_t yagl_marshal_get_uint32_t(uint8_t** buff)
+{
+    return yagl_marshal_get_uint32(buff);
+}
+
+static __inline void yagl_marshal_put_int(uint8_t** buff, int value)
+{
+    yagl_marshal_put_int32(buff, value);
+}
+
+static __inline int yagl_marshal_get_int(uint8_t** buff)
+{
+    return yagl_marshal_get_int32(buff);
+}
+
+static __inline yagl_pid yagl_marshal_get_pid(uint8_t** buff)
+{
+    return yagl_marshal_get_uint32(buff);
+}
+
+static __inline yagl_tid yagl_marshal_get_tid(uint8_t** buff)
+{
+    return yagl_marshal_get_uint32(buff);
+}
+
+static __inline yagl_api_id yagl_marshal_get_api_id(uint8_t** buff)
+{
+    return yagl_marshal_get_uint32(buff);
+}
+
+static __inline yagl_func_id yagl_marshal_get_func_id(uint8_t** buff)
+{
+    return yagl_marshal_get_uint32(buff);
+}
+
+static __inline void yagl_marshal_put_render_type(uint8_t** buff,
+                                                  yagl_render_type value)
+{
+    yagl_marshal_put_uint32(buff, value);
+}
+
+static __inline yagl_winsys_id yagl_marshal_get_yagl_winsys_id(uint8_t** buff)
+{
+    return yagl_marshal_get_uint32(buff);
+}
 
 #endif

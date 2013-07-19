@@ -17,30 +17,7 @@ void *yagl_dyn_lib_get_sym(struct yagl_dyn_lib *dyn_lib, const char* sym_name);
 
 const char *yagl_dyn_lib_get_error(struct yagl_dyn_lib *dyn_lib);
 
-#if defined(CONFIG_YAGL_EGL_GLX)
-
-void *yagl_egl_glx_procaddr_get(struct yagl_dyn_lib *dyn_lib,
-                                const char *sym_name);
-
-static inline void *yagl_dyn_lib_procaddr_get(struct yagl_dyn_lib *dyn_lib,
-                                              const char *sym_name)
-{
-    return yagl_egl_glx_procaddr_get(dyn_lib, sym_name);
-}
-
-#elif defined(CONFIG_YAGL_EGL_WGL)
-
-void *yagl_egl_wgl_procaddr_get(struct yagl_dyn_lib *dyn_lib,
-                                const char *sym_name);
-
-static inline void *yagl_dyn_lib_procaddr_get(struct yagl_dyn_lib *dyn_lib,
-                                              const char *sym_name)
-{
-    return yagl_egl_wgl_procaddr_get(dyn_lib, sym_name);
-}
-
-#else
-#error Unknown EGL backend
-#endif
+void *yagl_dyn_lib_get_ogl_procaddr(struct yagl_dyn_lib *dyn_lib,
+                                    const char *sym_name);
 
 #endif

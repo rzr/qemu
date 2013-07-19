@@ -69,6 +69,15 @@
 #include "maru_common.h"
 #include "guest_debug.h"
 #include "maru_pm.h"
+#if defined(__linux__)
+#include <X11/Xlib.h>
+#endif
+#include "vigs_device.h"
+#include "../tizen/src/hw/maru_brightness.h"
+extern int enable_yagl;
+extern const char *yagl_backend;
+extern int enable_vigs;
+extern const char *vigs_backend;
 
 #define MAX_IDE_BUS 2
 
@@ -118,6 +127,16 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     MemoryRegion *rom_memory;
     DeviceState *icc_bridge;
     void *fw_cfg = NULL;
+#if defined(__linux__)
+    Display *display = XOpenDisplay(0);
+    if (!display) {
+        fprintf(stderr, "Cannot open X display\n");
+        exit(1);
+    }
+#else
+    void *display = NULL;
+#endif
+    struct winsys_interface *vigs_wsi = NULL;
 
     icc_bridge = qdev_create(NULL, TYPE_ICC_BRIDGE);
     object_property_add_child(qdev_get_machine(), "icc-bridge",
@@ -270,6 +289,25 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     // maru specialized device init...
     if (pci_enabled) {
         codec_init(pci_bus);        
+    }
+
+    if (enable_vigs) {
+        pci_maru_brightness_init(pci_bus);
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
+        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        qdev_init_nofail(&pci_dev->qdev);
+        vigs_wsi = DO_UPCAST(VIGSDevice, pci_dev, pci_dev)->wsi;
+    }
+
+    if (enable_yagl) {
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
+        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        if (vigs_wsi &&
+            (strcmp(yagl_backend, "vigs") == 0) &&
+            (strcmp(vigs_backend, "gl") == 0)) {
+            qdev_prop_set_ptr(&pci_dev->qdev, "winsys_gl_interface", vigs_wsi);
+        }
+        qdev_init_nofail(&pci_dev->qdev);
     }
 }
 

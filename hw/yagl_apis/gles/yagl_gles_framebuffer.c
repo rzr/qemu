@@ -9,11 +9,9 @@ static void yagl_gles_framebuffer_destroy(struct yagl_ref *ref)
 {
     struct yagl_gles_framebuffer *fb = (struct yagl_gles_framebuffer*)ref;
 
-    if (!fb->base.nodelete) {
-        fb->driver_ps->DeleteFramebuffers(fb->driver_ps, 1, &fb->global_name);
-    }
-
-    qemu_mutex_destroy(&fb->mutex);
+    yagl_ensure_ctx();
+    fb->driver->DeleteFramebuffers(1, &fb->global_name);
+    yagl_unensure_ctx();
 
     yagl_object_cleanup(&fb->base);
 
@@ -21,22 +19,20 @@ static void yagl_gles_framebuffer_destroy(struct yagl_ref *ref)
 }
 
 struct yagl_gles_framebuffer
-    *yagl_gles_framebuffer_create(struct yagl_gles_driver_ps *driver_ps)
+    *yagl_gles_framebuffer_create(struct yagl_gles_driver *driver)
 {
     GLuint global_name = 0;
     struct yagl_gles_framebuffer *fb;
     int i;
 
-    driver_ps->GenFramebuffers(driver_ps, 1, &global_name);
+    driver->GenFramebuffers(1, &global_name);
 
     fb = g_malloc0(sizeof(*fb));
 
     yagl_object_init(&fb->base, &yagl_gles_framebuffer_destroy);
 
-    fb->driver_ps = driver_ps;
+    fb->driver = driver;
     fb->global_name = global_name;
-
-    qemu_mutex_init(&fb->mutex);
 
     for (i = 0; i < YAGL_NUM_GLES_FRAMEBUFFER_ATTACHMENTS; ++i) {
         fb->attachment_states[i].type = GL_NONE;
@@ -77,8 +73,6 @@ bool yagl_gles_framebuffer_renderbuffer(struct yagl_gles_framebuffer *fb,
         return false;
     }
 
-    qemu_mutex_lock(&fb->mutex);
-
     if (rb) {
         fb->attachment_states[framebuffer_attachment].type = GL_RENDERBUFFER;
         fb->attachment_states[framebuffer_attachment].local_name = rb_local_name;
@@ -87,24 +81,10 @@ bool yagl_gles_framebuffer_renderbuffer(struct yagl_gles_framebuffer *fb,
         fb->attachment_states[framebuffer_attachment].local_name = 0;
     }
 
-    /*
-     * Standalone stencil attachments are not supported on modern
-     * desktop graphics cards, so we just drop it here. Currently this
-     * doesn't do us any harm, but apps in target system that use
-     * framebuffers with stencil buffers might not be displayed correctly.
-     * If this ever happens we'll have to work around here by create some
-     * dummy texture with both color and stencil buffers and copying stencil
-     * data from that texture to texture/renderbuffer being attached here.
-     */
-    if (attachment != GL_STENCIL_ATTACHMENT) {
-        fb->driver_ps->FramebufferRenderbuffer(fb->driver_ps,
-                                               target,
-                                               attachment,
-                                               renderbuffer_target,
-                                               (rb ? rb->global_name : 0));
-    }
-
-    qemu_mutex_unlock(&fb->mutex);
+    fb->driver->FramebufferRenderbuffer(target,
+                                        attachment,
+                                        renderbuffer_target,
+                                        (rb ? rb->global_name : 0));
 
     return true;
 }
@@ -138,8 +118,6 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
         return false;
     }
 
-    qemu_mutex_lock(&fb->mutex);
-
     if (texture) {
         fb->attachment_states[framebuffer_attachment].type = GL_TEXTURE;
         fb->attachment_states[framebuffer_attachment].local_name = texture_local_name;
@@ -148,16 +126,11 @@ bool yagl_gles_framebuffer_texture2d(struct yagl_gles_framebuffer *fb,
         fb->attachment_states[framebuffer_attachment].local_name = 0;
     }
 
-    if (attachment != GL_STENCIL_ATTACHMENT) {
-        fb->driver_ps->FramebufferTexture2D(fb->driver_ps,
-                                            target,
-                                            attachment,
-                                            textarget,
-                                            (texture ? texture->global_name : 0),
-                                            level);
-    }
-
-    qemu_mutex_unlock(&fb->mutex);
+    fb->driver->FramebufferTexture2D(target,
+                                     attachment,
+                                     textarget,
+                                     (texture ? texture->global_name : 0),
+                                     level);
 
     return true;
 }
@@ -174,8 +147,6 @@ bool yagl_gles_framebuffer_get_attachment_parameter(struct yagl_gles_framebuffer
         return false;
     }
 
-    qemu_mutex_lock(&fb->mutex);
-
     switch (pname) {
     case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
         *value = fb->attachment_states[framebuffer_attachment].type;
@@ -185,40 +156,24 @@ bool yagl_gles_framebuffer_get_attachment_parameter(struct yagl_gles_framebuffer
         break;
     case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
     case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
-        fb->driver_ps->GetFramebufferAttachmentParameteriv(fb->driver_ps,
-                                                           fb->global_name,
-                                                           attachment,
-                                                           pname,
-                                                           value);
+        fb->driver->GetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER,
+                                                        attachment,
+                                                        pname,
+                                                        value);
         break;
     default:
-        qemu_mutex_unlock(&fb->mutex);
         return false;
     }
-
-    qemu_mutex_unlock(&fb->mutex);
 
     return true;
 }
 
 void yagl_gles_framebuffer_set_bound(struct yagl_gles_framebuffer *fb)
 {
-    qemu_mutex_lock(&fb->mutex);
-
     fb->was_bound = true;
-
-    qemu_mutex_unlock(&fb->mutex);
 }
 
 bool yagl_gles_framebuffer_was_bound(struct yagl_gles_framebuffer *fb)
 {
-    bool ret = false;
-
-    qemu_mutex_lock(&fb->mutex);
-
-    ret = fb->was_bound;
-
-    qemu_mutex_unlock(&fb->mutex);
-
-    return ret;
+    return fb->was_bound;
 }

@@ -5,11 +5,13 @@
 #include "yagl_marshal.h"
 #include "yagl_version.h"
 #include "yagl_log.h"
-#include "yagl_egl_driver.h"
+#include "yagl_egl_backend.h"
+#include "yagl_egl_interface.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
+#include "yagl_apis/gles1/yagl_gles1_api.h"
 #include "yagl_apis/gles2/yagl_gles2_api.h"
-#include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
 #include <GL/gl.h>
+#include "yagl_gles1_driver.h"
 #include "yagl_gles2_driver.h"
 
 static struct yagl_thread_state
@@ -28,33 +30,33 @@ static struct yagl_thread_state
     return NULL;
 }
 
-struct yagl_server_state *yagl_server_state_create(void)
+struct yagl_server_state
+    *yagl_server_state_create(struct yagl_egl_backend *egl_backend,
+                              struct yagl_gles1_driver *gles1_driver,
+                              struct yagl_gles2_driver *gles2_driver)
 {
     int i;
     struct yagl_server_state *ss =
         g_malloc0(sizeof(struct yagl_server_state));
-    struct yagl_egl_driver *egl_driver;
-    struct yagl_gles2_driver *gles2_driver;
 
     QLIST_INIT(&ss->processes);
 
-    egl_driver = yagl_egl_create();
-
-    if (!egl_driver) {
-        goto fail;
-    }
-
-    ss->apis[yagl_api_id_egl - 1] = yagl_egl_api_create(egl_driver);
+    ss->apis[yagl_api_id_egl - 1] = yagl_egl_api_create(egl_backend);
 
     if (!ss->apis[yagl_api_id_egl - 1]) {
-        egl_driver->destroy(egl_driver);
+        egl_backend->destroy(egl_backend);
+        gles1_driver->destroy(gles1_driver);
+        gles2_driver->destroy(gles2_driver);
 
         goto fail;
     }
 
-    gles2_driver = yagl_gles2_ogl_create(egl_driver->dyn_lib);
+    ss->apis[yagl_api_id_gles1 - 1] = yagl_gles1_api_create(gles1_driver);
 
-    if (!gles2_driver) {
+    if (!ss->apis[yagl_api_id_gles1 - 1]) {
+        gles1_driver->destroy(gles1_driver);
+        gles2_driver->destroy(gles2_driver);
+
         goto fail;
     }
 
@@ -114,6 +116,7 @@ void yagl_server_reset(struct yagl_server_state *ss)
  *  (uint32_t) version
  * in_buff must be:
  *  (uint32_t) 1 - init ok, 0 - init error
+ *  (yagl_render_type), in case of init ok
  */
 bool yagl_server_dispatch_init(struct yagl_server_state *ss,
                                yagl_pid target_pid,
@@ -125,7 +128,7 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
     struct yagl_process_state *ps = NULL;
     struct yagl_thread_state *ts = NULL;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_server_dispatch_init, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_init, NULL);
 
     if (version != YAGL_VERSION) {
         YAGL_LOG_CRITICAL(
@@ -173,6 +176,8 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
                     return false;
                 } else {
                     yagl_marshal_put_uint32(&in_buff, 1);
+                    yagl_marshal_put_render_type(&in_buff,
+                                                 ps->egl_iface->render_type);
 
                     YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -218,6 +223,7 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
         QLIST_INSERT_HEAD(&ss->processes, ps, entry);
 
         yagl_marshal_put_uint32(&in_buff, 1);
+        yagl_marshal_put_render_type(&in_buff, ps->egl_iface->render_type);
 
         YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -233,10 +239,7 @@ void yagl_server_dispatch(struct yagl_server_state *ss,
 {
     struct yagl_thread_state *ts;
 
-    YAGL_LOG_FUNC_ENTER(target_pid,
-                        target_tid,
-                        yagl_server_dispatch,
-                        NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch, NULL);
 
     ts = yagl_server_find_thread(ss, target_pid, target_tid);
 
@@ -261,10 +264,7 @@ void yagl_server_dispatch_exit(struct yagl_server_state *ss,
         yagl_server_find_thread(ss, target_pid, target_tid);
     struct yagl_process_state *ps = NULL;
 
-    YAGL_LOG_FUNC_ENTER(target_pid,
-                        target_tid,
-                        yagl_server_dispatch_exit,
-                        NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_exit, NULL);
 
     if (!ts) {
         YAGL_LOG_CRITICAL(

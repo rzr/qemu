@@ -4,7 +4,7 @@
 #include "yagl_types.h"
 #include "yagl_object.h"
 
-struct yagl_gles2_driver_ps;
+struct yagl_gles2_driver;
 struct yagl_gles2_shader;
 
 struct yagl_gles2_program
@@ -20,11 +20,9 @@ struct yagl_gles2_program
      * @}
      */
 
-    struct yagl_gles2_driver_ps *driver_ps;
+    struct yagl_gles2_driver *driver;
 
     yagl_object_name global_name;
-
-    QemuMutex mutex;
 
     yagl_object_name vertex_shader_local_name;
 
@@ -32,7 +30,7 @@ struct yagl_gles2_program
 };
 
 struct yagl_gles2_program
-    *yagl_gles2_program_create(struct yagl_gles2_driver_ps *driver_ps);
+    *yagl_gles2_program_create(struct yagl_gles2_driver *driver);
 
 bool yagl_gles2_program_attach_shader(struct yagl_gles2_program *program,
                                       struct yagl_gles2_shader *shader,

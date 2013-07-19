@@ -3,8 +3,9 @@
 
 #include "yagl_types.h"
 #include "yagl_event.h"
-#include "qemu-queue.h"
-#include "qemu-thread.h"
+#include "yagl_tls.h"
+#include "qemu/queue.h"
+#include "qemu/thread.h"
 
 struct yagl_process_state;
 struct yagl_mem_transfer;
@@ -36,6 +37,9 @@ struct yagl_thread_state
 
     volatile bool destroying; /* true when thread is being destroyed */
 
+    volatile bool is_first; /* true when this is first thread of a process */
+    volatile bool is_last; /* true when this is last thread of a process */
+
     /*
      * These events are auto reset.
      * @{
@@ -61,11 +65,15 @@ struct yagl_thread_state
     CPUArchState * volatile current_env;
 };
 
+YAGL_DECLARE_TLS(struct yagl_thread_state*, cur_ts);
+
 struct yagl_thread_state
     *yagl_thread_state_create(struct yagl_process_state *ps,
-                              yagl_tid id);
+                              yagl_tid id,
+                              bool is_first);
 
-void yagl_thread_state_destroy(struct yagl_thread_state *ts);
+void yagl_thread_state_destroy(struct yagl_thread_state *ts,
+                               bool is_last);
 
 void yagl_thread_call(struct yagl_thread_state *ts,
                       uint8_t *out_buff,

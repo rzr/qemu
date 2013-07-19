@@ -5,28 +5,28 @@
 #include "yagl_dyn_lib.h"
 #include <EGL/egl.h>
 
-struct yagl_thread_state;
-struct yagl_process_state;
 struct yagl_egl_native_config;
 struct yagl_egl_pbuffer_attribs;
 
 /*
- * YaGL EGL driver per-process state.
+ * YaGL EGL driver.
  * @{
  */
 
-struct yagl_egl_driver_ps
+struct yagl_egl_driver
 {
-    struct yagl_egl_driver *driver;
+    /*
+     * Open/close one and only display.
+     * @{
+     */
 
-    struct yagl_process_state *ps;
+    EGLNativeDisplayType (*display_open)(struct yagl_egl_driver */*driver*/);
+    void (*display_close)(struct yagl_egl_driver */*driver*/,
+                          EGLNativeDisplayType /*dpy*/);
 
-    void (*thread_init)(struct yagl_egl_driver_ps */*driver_ps*/,
-                        struct yagl_thread_state */*ts*/);
-
-    EGLNativeDisplayType (*display_create)(struct yagl_egl_driver_ps */*driver_ps*/);
-    void (*display_destroy)(struct yagl_egl_driver_ps */*driver_ps*/,
-                            EGLNativeDisplayType /*dpy*/);
+    /*
+     * @}
+     */
 
     /*
      * Returns a list of supported configs, must be freed with 'g_free'
@@ -37,93 +37,50 @@ struct yagl_egl_driver_ps
      * + Support RGBA
      * + Support at least PBUFFER surface type
      */
-    struct yagl_egl_native_config *(*config_enum)(struct yagl_egl_driver_ps */*driver_ps*/,
+    struct yagl_egl_native_config *(*config_enum)(struct yagl_egl_driver */*driver*/,
                                                   EGLNativeDisplayType /*dpy*/,
                                                   int */*num_configs*/);
 
-    void (*config_cleanup)(struct yagl_egl_driver_ps */*driver_ps*/,
+    void (*config_cleanup)(struct yagl_egl_driver */*driver*/,
                            EGLNativeDisplayType /*dpy*/,
-                           struct yagl_egl_native_config */*cfg*/);
+                           const struct yagl_egl_native_config */*cfg*/);
 
-    EGLSurface (*pbuffer_surface_create)(struct yagl_egl_driver_ps */*driver_ps*/,
+    EGLSurface (*pbuffer_surface_create)(struct yagl_egl_driver */*driver*/,
                                          EGLNativeDisplayType /*dpy*/,
                                          const struct yagl_egl_native_config */*cfg*/,
                                          EGLint /*width*/,
                                          EGLint /*height*/,
                                          const struct yagl_egl_pbuffer_attribs */*attribs*/);
 
-    void (*pbuffer_surface_destroy)(struct yagl_egl_driver_ps */*driver_ps*/,
+    void (*pbuffer_surface_destroy)(struct yagl_egl_driver */*driver*/,
                                     EGLNativeDisplayType /*dpy*/,
                                     EGLSurface /*sfc*/);
 
-    EGLContext (*context_create)(struct yagl_egl_driver_ps */*driver_ps*/,
+    EGLContext (*context_create)(struct yagl_egl_driver */*driver*/,
                                  EGLNativeDisplayType /*dpy*/,
                                  const struct yagl_egl_native_config */*cfg*/,
                                  yagl_client_api /*client_api*/,
                                  EGLContext /*share_context*/);
 
-    void (*context_destroy)(struct yagl_egl_driver_ps */*driver_ps*/,
+    void (*context_destroy)(struct yagl_egl_driver */*driver*/,
                             EGLNativeDisplayType /*dpy*/,
                             EGLContext /*ctx*/);
 
-    bool (*make_current)(struct yagl_egl_driver_ps */*driver_ps*/,
+    bool (*make_current)(struct yagl_egl_driver */*driver*/,
                          EGLNativeDisplayType /*dpy*/,
                          EGLSurface /*draw*/,
                          EGLSurface /*read*/,
                          EGLContext /*ctx*/);
-
-    void (*wait_native)(struct yagl_egl_driver_ps */*driver_ps*/);
-
-    void (*thread_fini)(struct yagl_egl_driver_ps */*driver_ps*/);
-
-    void (*destroy)(struct yagl_egl_driver_ps */*driver_ps*/);
-};
-
-void yagl_egl_driver_ps_init(struct yagl_egl_driver_ps *driver_ps,
-                             struct yagl_egl_driver *driver,
-                             struct yagl_process_state *ps);
-void yagl_egl_driver_ps_cleanup(struct yagl_egl_driver_ps *driver_ps);
-
-/*
- * @}
- */
-
-/*
- * YaGL EGL driver.
- * @{
- */
-
-struct yagl_egl_driver
-{
-    struct yagl_egl_driver_ps *(*process_init)(struct yagl_egl_driver */*driver*/,
-                                               struct yagl_process_state */*ps*/);
 
     void (*destroy)(struct yagl_egl_driver */*driver*/);
 
     struct yagl_dyn_lib *dyn_lib;
 };
 
-#if defined(CONFIG_YAGL_EGL_GLX)
-
-struct yagl_egl_driver *yagl_egl_glx_create(void);
-
-static inline struct yagl_egl_driver *yagl_egl_create(void)
-{
-    return yagl_egl_glx_create();
-}
-
-#elif defined(CONFIG_YAGL_EGL_WGL)
-
-struct yagl_egl_driver *yagl_egl_wgl_create(void);
-
-static inline struct yagl_egl_driver *yagl_egl_create(void)
-{
-    return yagl_egl_wgl_create();
-}
-
-#else
-#error Unknown EGL backend
-#endif
+/*
+ * 'display' is Display* on linux and HWND on windows.
+ */
+struct yagl_egl_driver *yagl_egl_driver_create(void *display);
 
 void yagl_egl_driver_init(struct yagl_egl_driver *driver);
 void yagl_egl_driver_cleanup(struct yagl_egl_driver *driver);

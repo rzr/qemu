@@ -2,16 +2,13 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_log.h"
-#include "cpu-all.h"
+#include "exec/cpu-all.h"
 
-struct yagl_mem_transfer
-    *yagl_mem_transfer_create(struct yagl_thread_state *ts)
+struct yagl_mem_transfer *yagl_mem_transfer_create(void)
 {
     struct yagl_mem_transfer *mt;
 
     mt = g_malloc0(sizeof(*mt));
-
-    mt->ts = ts;
 
     return mt;
 }
@@ -28,12 +25,10 @@ bool yagl_mem_prepare(struct yagl_mem_transfer *mt,
 {
     bool res = true;
     int l;
-    target_phys_addr_t page_pa;
+    hwaddr page_pa;
     target_ulong page_va;
 
-    YAGL_LOG_FUNC_ENTER_TS(mt->ts, yagl_mem_prepare, "va = 0x%X, len = %d", (uint32_t)va, len);
-
-    assert(mt->ts->current_env);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_prepare, "va = 0x%X, len = %d", (uint32_t)va, len);
 
     if (len >= 0) {
         int max_pages = ((len + TARGET_PAGE_SIZE - 1) / TARGET_PAGE_SIZE) + 1;
@@ -54,7 +49,7 @@ bool yagl_mem_prepare(struct yagl_mem_transfer *mt,
     if (va) {
         while (len > 0) {
             page_va = va & TARGET_PAGE_MASK;
-            page_pa = cpu_get_phys_page_debug(mt->ts->current_env, page_va);
+            page_pa = cpu_get_phys_page_debug(cur_ts->current_env, page_va);
 
             if (page_pa == -1) {
                 YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)page_va);
@@ -107,7 +102,7 @@ static void yagl_mem_put_internal(struct yagl_mem_transfer *mt, const void *data
 
 void yagl_mem_put(struct yagl_mem_transfer *mt, const void *data)
 {
-    YAGL_LOG_FUNC_ENTER_TS(mt->ts, yagl_mem_put, "va = 0X%X, data = %p", (uint32_t)mt->va, data);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_put, "va = 0X%X, data = %p", (uint32_t)mt->va, data);
 
     yagl_mem_put_internal(mt, data);
 
@@ -116,7 +111,7 @@ void yagl_mem_put(struct yagl_mem_transfer *mt, const void *data)
 
 void yagl_mem_put_uint8(struct yagl_mem_transfer *mt, uint8_t value)
 {
-    YAGL_LOG_FUNC_ENTER_TS(mt->ts, yagl_mem_put_uint8, "va = 0x%X, value = 0x%X", (uint32_t)mt->va, (uint32_t)value);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_put_uint8, "va = 0x%X, value = 0x%X", (uint32_t)mt->va, (uint32_t)value);
 
     yagl_mem_put_internal(mt, &value);
 
@@ -125,7 +120,7 @@ void yagl_mem_put_uint8(struct yagl_mem_transfer *mt, uint8_t value)
 
 void yagl_mem_put_uint16(struct yagl_mem_transfer *mt, uint16_t value)
 {
-    YAGL_LOG_FUNC_ENTER_TS(mt->ts, yagl_mem_put_uint16, "va = 0x%X, value = 0x%X", (uint32_t)mt->va, (uint32_t)value);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_put_uint16, "va = 0x%X, value = 0x%X", (uint32_t)mt->va, (uint32_t)value);
 
     yagl_mem_put_internal(mt, &value);
 
@@ -134,7 +129,7 @@ void yagl_mem_put_uint16(struct yagl_mem_transfer *mt, uint16_t value)
 
 void yagl_mem_put_uint32(struct yagl_mem_transfer *mt, uint32_t value)
 {
-    YAGL_LOG_FUNC_ENTER_TS(mt->ts, yagl_mem_put_uint32, "va = 0x%X, value = 0x%X", (uint32_t)mt->va, value);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_put_uint32, "va = 0x%X, value = 0x%X", (uint32_t)mt->va, value);
 
     yagl_mem_put_internal(mt, &value);
 
@@ -143,7 +138,7 @@ void yagl_mem_put_uint32(struct yagl_mem_transfer *mt, uint32_t value)
 
 void yagl_mem_put_float(struct yagl_mem_transfer *mt, float value)
 {
-    YAGL_LOG_FUNC_ENTER_TS(mt->ts, yagl_mem_put_float, "va = 0x%X, value = %f", (uint32_t)mt->va, value);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_put_float, "va = 0x%X, value = %f", (uint32_t)mt->va, value);
 
     yagl_mem_put_internal(mt, &value);
 

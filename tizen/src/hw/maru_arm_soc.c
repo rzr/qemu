@@ -30,13 +30,10 @@
 #include "maru_arm.h"
 #include "i2c.h"
 #include "exec-memory.h"
-#ifdef CONFIG_BUILD_GLES
-#include "gles2.h"
-#endif
 
 #include "loader.h"
-#include "virtio-transport.h"
 #include "exynos4210_i2s.h"
+extern int enable_vigs;
 
 #define EXYNOS4210_CHIPID_ADDR         0x10000000
 
@@ -128,10 +125,6 @@
 
 /* I2S */
 #define EXYNOS4210_I2S0_BASE_ADDR           0x03830000
-
-/* VirtIO MMIO */
-#define EXYNOS4210_VIRTIO_MMIO0_BASE_ADDR   0x10AD0000
-#define EXYNOS4210_VIRTIO_MMIO1_BASE_ADDR   0x10AC0000
 
 /* pl050 ps/2 interface */
 #define EXYNOS4210_PL050_BASE_ADDR          0x12E30000
@@ -407,30 +400,19 @@ Exynos4210State *maru_arm_soc_init(MemoryRegion *system_mem,
                            EXYNOS4210_UART3_FIFO_SIZE, 3, NULL,
                   s->irq_table[exynos4210_get_irq(EXYNOS4210_UART_INT_GRP, 3)]);
 
-    /*** Display controller (FIMD) ***/
-    sysbus_create_varargs("exynos4210.fimd", EXYNOS4210_FIMD0_BASE_ADDR,
-            s->irq_table[exynos4210_get_irq(11, 0)],
-            s->irq_table[exynos4210_get_irq(11, 1)],
-            s->irq_table[exynos4210_get_irq(11, 2)],
-            NULL);
-
-    /*** GPU openGLES passthrough device ***/
-#ifdef CONFIG_BUILD_GLES
-    gles2_init(first_cpu);
-#endif
+    if (!enable_vigs) {
+        /*** Display controller (FIMD) ***/
+        sysbus_create_varargs("exynos4210.fimd", EXYNOS4210_FIMD0_BASE_ADDR,
+                s->irq_table[exynos4210_get_irq(11, 0)],
+                s->irq_table[exynos4210_get_irq(11, 1)],
+                s->irq_table[exynos4210_get_irq(11, 2)],
+                NULL);
+    }
 
     /* I2S0 */
     s->i2s_bus[0] = exynos4210_i2s_bus_new("exynos4210.i2s",
                                  EXYNOS4210_I2S0_BASE_ADDR,
                                  s->irqs.ext_gic_irq[97]);
-
-    sysbus_create_simple(VIRTIO_MMIO,
-                         EXYNOS4210_VIRTIO_MMIO0_BASE_ADDR,
-                         s->irq_table[exynos4210_get_irq(37, 3)]);
-
-    sysbus_create_simple(VIRTIO_MMIO,
-                         EXYNOS4210_VIRTIO_MMIO1_BASE_ADDR,
-                         s->irq_table[exynos4210_get_irq(37, 2)]);
 
     /* PL050 PS/2 if keyboard */
     sysbus_create_simple("pl050_keyboard", EXYNOS4210_PL050_BASE_ADDR,

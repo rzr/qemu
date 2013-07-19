@@ -9,9 +9,7 @@
 #include <GL/glx.h>
 
 #define YAGL_EGL_GLX_ENTER(func, format, ...) \
-    YAGL_LOG_FUNC_ENTER((egl_glx_ts ? egl_glx_ts->ps->id : driver_ps->ps->id), \
-                        (egl_glx_ts ? egl_glx_ts->id : 0), \
-                        func, format,##__VA_ARGS__)
+    YAGL_LOG_FUNC_ENTER(func, format,##__VA_ARGS__)
 
 #define YAGL_EGL_GLX_GET_PROC(proc_type, proc_name) \
     do { \
@@ -35,8 +33,6 @@
 #error GL/glx.h must be equal to or greater than GLX 1.4
 #endif
 
-static YAGL_DEFINE_TLS(struct yagl_thread_state*, egl_glx_ts);
-
 /* GLX 1.0 */
 typedef GLXContext (*GLXCREATECONTEXTPROC)( Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct );
 typedef void (*GLXDESTROYCONTEXTPROC)( Display *dpy, GLXContext ctx );
@@ -54,14 +50,11 @@ typedef const char *(*GLXQUERYEXTENSIONSSTRINGPROC)( Display *dpy, int screen );
 typedef const char *(*GLXQUERYSERVERSTRINGPROC)( Display *dpy, int screen, int name );
 typedef const char *(*GLXGETCLIENTSTRINGPROC)( Display *dpy, int name );
 
-struct yagl_egl_glx_ps
-{
-    struct yagl_egl_driver_ps base;
-};
-
 struct yagl_egl_glx
 {
     struct yagl_egl_driver base;
+
+    EGLNativeDisplayType global_dpy;
 
     /* GLX 1.0 */
     GLXCREATECONTEXTPROC glXCreateContext;
@@ -102,12 +95,12 @@ struct yagl_egl_glx
  * @{
  */
 
-static bool yagl_egl_glx_config_fill(struct yagl_egl_driver_ps *driver_ps,
+static bool yagl_egl_glx_config_fill(struct yagl_egl_driver *driver,
                                      EGLNativeDisplayType dpy,
                                      struct yagl_egl_native_config *cfg,
                                      GLXFBConfig glx_cfg)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     int tmp = 0;
     int transparent_type = 0;
     int trans_red_val = 0;
@@ -206,8 +199,8 @@ static bool yagl_egl_glx_config_fill(struct yagl_egl_driver_ps *driver_ps,
     cfg->max_pbuffer_width = max_pbuffer_width;
     cfg->max_pbuffer_height = max_pbuffer_height;
     cfg->max_pbuffer_size = max_pbuffer_size;
-    cfg->max_swap_interval = 10;
-    cfg->min_swap_interval = 1;
+    cfg->max_swap_interval = 1000;
+    cfg->min_swap_interval = 0;
     cfg->native_visual_id = native_visual_id;
     cfg->native_visual_type = native_visual_type;
     cfg->samples_per_pixel = samples_per_pixel;
@@ -233,47 +226,31 @@ static bool yagl_egl_glx_config_fill(struct yagl_egl_driver_ps *driver_ps,
  * @{
  */
 
-static EGLNativeDisplayType yagl_egl_glx_display_create(struct yagl_egl_driver_ps *driver_ps)
+static EGLNativeDisplayType yagl_egl_glx_display_open(struct yagl_egl_driver *driver)
 {
-    EGLNativeDisplayType dpy;
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
 
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_display_create, NULL);
+    YAGL_EGL_GLX_ENTER(yagl_egl_glx_display_open, NULL);
 
-    dpy = XOpenDisplay(0);
+    YAGL_LOG_FUNC_EXIT("%p", egl_glx->global_dpy);
 
-    YAGL_LOG_FUNC_EXIT("%p", dpy);
-
-    return dpy;
+    return egl_glx->global_dpy;
 }
 
-static void yagl_egl_glx_display_destroy(struct yagl_egl_driver_ps *driver_ps,
-                                         EGLNativeDisplayType dpy)
+static void yagl_egl_glx_display_close(struct yagl_egl_driver *driver,
+                                       EGLNativeDisplayType dpy)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
-
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_display_destroy, "%p", dpy);
-
-    /*
-     * Nvidia X driver workaround: We need to make at least one GLX call
-     * before XCloseDisplay or nvidia X driver might crash our app. This
-     * is happening when there were no GLX calls on a thread and the thread is
-     * calling XCloseDisplay. From X point of view this is perfectly legal, but
-     * nvidia seems to maintain some sort of per-thread state in TLS and
-     * crashes.
-     */
-    egl_glx->glXQueryVersion(dpy, 0, 0);
-
-    XCloseDisplay(dpy);
+    YAGL_EGL_GLX_ENTER(yagl_egl_glx_display_close, "%p", dpy);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
 static struct yagl_egl_native_config
-    *yagl_egl_glx_config_enum(struct yagl_egl_driver_ps *driver_ps,
+    *yagl_egl_glx_config_enum(struct yagl_egl_driver *driver,
                               EGLNativeDisplayType dpy,
                               int *num_configs)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     struct yagl_egl_native_config *configs = NULL;
     int glx_cfg_index, cfg_index, n;
     GLXFBConfig *glx_configs;
@@ -289,7 +266,7 @@ static struct yagl_egl_native_config
     configs = g_malloc0(n * sizeof(*configs));
 
     for (glx_cfg_index = 0, cfg_index = 0; glx_cfg_index < n; ++glx_cfg_index) {
-        if (yagl_egl_glx_config_fill(driver_ps,
+        if (yagl_egl_glx_config_fill(driver,
                                      dpy,
                                      &configs[cfg_index],
                                      glx_configs[glx_cfg_index])) {
@@ -317,28 +294,26 @@ static struct yagl_egl_native_config
     return configs;
 }
 
-static void yagl_egl_glx_config_cleanup(struct yagl_egl_driver_ps *driver_ps,
+static void yagl_egl_glx_config_cleanup(struct yagl_egl_driver *driver,
                                         EGLNativeDisplayType dpy,
-                                        struct yagl_egl_native_config *cfg)
+                                        const struct yagl_egl_native_config *cfg)
 {
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_config_cleanup,
                        "dpy = %p, cfg = %d",
                        dpy,
                        cfg->config_id);
 
-    cfg->driver_data = NULL;
-
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static EGLSurface yagl_egl_glx_pbuffer_surface_create(struct yagl_egl_driver_ps *driver_ps,
+static EGLSurface yagl_egl_glx_pbuffer_surface_create(struct yagl_egl_driver *driver,
                                                       EGLNativeDisplayType dpy,
                                                       const struct yagl_egl_native_config *cfg,
                                                       EGLint width,
                                                       EGLint height,
                                                       const struct yagl_egl_pbuffer_attribs *attribs)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     int glx_attribs[] = {
         GLX_PBUFFER_WIDTH, width,
         GLX_PBUFFER_HEIGHT, height,
@@ -371,11 +346,11 @@ static EGLSurface yagl_egl_glx_pbuffer_surface_create(struct yagl_egl_driver_ps 
     }
 }
 
-static void yagl_egl_glx_pbuffer_surface_destroy(struct yagl_egl_driver_ps *driver_ps,
+static void yagl_egl_glx_pbuffer_surface_destroy(struct yagl_egl_driver *driver,
                                                  EGLNativeDisplayType dpy,
                                                  EGLSurface sfc)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_pbuffer_surface_destroy,
                        "dpy = %p, sfc = %p",
@@ -387,13 +362,13 @@ static void yagl_egl_glx_pbuffer_surface_destroy(struct yagl_egl_driver_ps *driv
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver_ps *driver_ps,
+static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType dpy,
                                               const struct yagl_egl_native_config *cfg,
                                               yagl_client_api client_api,
                                               EGLContext share_context)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     GLXContext ctx;
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_context_create,
@@ -423,11 +398,11 @@ static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver_ps *driver_
     }
 }
 
-static void yagl_egl_glx_context_destroy(struct yagl_egl_driver_ps *driver_ps,
+static void yagl_egl_glx_context_destroy(struct yagl_egl_driver *driver,
                                          EGLNativeDisplayType dpy,
                                          EGLContext ctx)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_context_destroy,
                        "dpy = %p, ctx = %p",
@@ -439,13 +414,13 @@ static void yagl_egl_glx_context_destroy(struct yagl_egl_driver_ps *driver_ps,
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static bool yagl_egl_glx_make_current(struct yagl_egl_driver_ps *driver_ps,
+static bool yagl_egl_glx_make_current(struct yagl_egl_driver *driver,
                                       EGLNativeDisplayType dpy,
                                       EGLSurface draw,
                                       EGLSurface read,
                                       EGLContext ctx)
 {
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
+    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     bool ret;
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_make_current,
@@ -462,89 +437,15 @@ static bool yagl_egl_glx_make_current(struct yagl_egl_driver_ps *driver_ps,
     return ret;
 }
 
-static void yagl_egl_glx_wait_native(struct yagl_egl_driver_ps *driver_ps)
-{
-    struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)(driver_ps->driver);
-
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_wait_native, NULL);
-
-    egl_glx->glXWaitX();
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
 /*
  * @}
  */
-
-static void yagl_egl_glx_thread_init(struct yagl_egl_driver_ps *driver_ps,
-                                     struct yagl_thread_state *ts)
-{
-    egl_glx_ts = ts;
-
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_thread_init, NULL);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-static void yagl_egl_glx_thread_fini(struct yagl_egl_driver_ps *driver_ps)
-{
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_thread_fini, NULL);
-
-    egl_glx_ts = NULL;
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-static void yagl_egl_glx_process_destroy(struct yagl_egl_driver_ps *driver_ps)
-{
-    struct yagl_egl_glx_ps *egl_glx_ps = (struct yagl_egl_glx_ps*)driver_ps;
-
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_process_destroy, NULL);
-
-    yagl_egl_driver_ps_cleanup(&egl_glx_ps->base);
-
-    g_free(egl_glx_ps);
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-static struct yagl_egl_driver_ps
-    *yagl_egl_glx_process_init(struct yagl_egl_driver *driver,
-                               struct yagl_process_state *ps)
-{
-    struct yagl_egl_glx_ps *egl_glx_ps =
-        g_malloc0(sizeof(struct yagl_egl_glx_ps));
-    struct yagl_egl_driver_ps *driver_ps = &egl_glx_ps->base;
-
-    yagl_egl_driver_ps_init(driver_ps, driver, ps);
-
-    YAGL_EGL_GLX_ENTER(yagl_egl_glx_process_init, NULL);
-
-    egl_glx_ps->base.thread_init = &yagl_egl_glx_thread_init;
-    egl_glx_ps->base.display_create = &yagl_egl_glx_display_create;
-    egl_glx_ps->base.display_destroy = &yagl_egl_glx_display_destroy;
-    egl_glx_ps->base.config_enum = &yagl_egl_glx_config_enum;
-    egl_glx_ps->base.config_cleanup = &yagl_egl_glx_config_cleanup;
-    egl_glx_ps->base.pbuffer_surface_create = &yagl_egl_glx_pbuffer_surface_create;
-    egl_glx_ps->base.pbuffer_surface_destroy = &yagl_egl_glx_pbuffer_surface_destroy;
-    egl_glx_ps->base.context_create = &yagl_egl_glx_context_create;
-    egl_glx_ps->base.context_destroy = &yagl_egl_glx_context_destroy;
-    egl_glx_ps->base.make_current = &yagl_egl_glx_make_current;
-    egl_glx_ps->base.wait_native = &yagl_egl_glx_wait_native;
-    egl_glx_ps->base.thread_fini = &yagl_egl_glx_thread_fini;
-    egl_glx_ps->base.destroy = &yagl_egl_glx_process_destroy;
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-
-    return &egl_glx_ps->base;
-}
 
 static void yagl_egl_glx_destroy(struct yagl_egl_driver *driver)
 {
     struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_glx_destroy, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_glx_destroy, NULL);
 
     yagl_egl_driver_cleanup(&egl_glx->base);
 
@@ -553,14 +454,17 @@ static void yagl_egl_glx_destroy(struct yagl_egl_driver *driver)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-struct yagl_egl_driver *yagl_egl_glx_create(void)
+struct yagl_egl_driver *yagl_egl_driver_create(void *display)
 {
     struct yagl_egl_driver *egl_driver;
     struct yagl_egl_glx *egl_glx;
+    Display *x_display = display;
 
-    YAGL_LOG_FUNC_ENTER_NPT(yagl_egl_glx_create, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_glx_create, NULL);
 
     egl_glx = g_malloc0(sizeof(*egl_glx));
+
+    egl_glx->global_dpy = x_display;
 
     egl_driver = &egl_glx->base;
 
@@ -622,7 +526,15 @@ struct yagl_egl_driver *yagl_egl_glx_create(void)
     YAGL_EGL_GLX_GET_PROC(PFNGLXCREATENEWCONTEXTPROC, glXCreateNewContext);
     YAGL_EGL_GLX_GET_PROC(PFNGLXMAKECONTEXTCURRENTPROC, glXMakeContextCurrent);
 
-    egl_glx->base.process_init = &yagl_egl_glx_process_init;
+    egl_glx->base.display_open = &yagl_egl_glx_display_open;
+    egl_glx->base.display_close = &yagl_egl_glx_display_close;
+    egl_glx->base.config_enum = &yagl_egl_glx_config_enum;
+    egl_glx->base.config_cleanup = &yagl_egl_glx_config_cleanup;
+    egl_glx->base.pbuffer_surface_create = &yagl_egl_glx_pbuffer_surface_create;
+    egl_glx->base.pbuffer_surface_destroy = &yagl_egl_glx_pbuffer_surface_destroy;
+    egl_glx->base.context_create = &yagl_egl_glx_context_create;
+    egl_glx->base.context_destroy = &yagl_egl_glx_context_destroy;
+    egl_glx->base.make_current = &yagl_egl_glx_make_current;
     egl_glx->base.destroy = &yagl_egl_glx_destroy;
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -638,25 +550,25 @@ fail:
     return NULL;
 }
 
-void *yagl_egl_glx_procaddr_get(struct yagl_dyn_lib *dyn_lib,
-                                const char *sym_name)
+void *yagl_dyn_lib_get_ogl_procaddr(struct yagl_dyn_lib *dyn_lib,
+                                    const char *sym_name)
 {
-    static PFNGLXGETPROCADDRESSPROC get_address = NULL;
-    void *ret_func = NULL;
+    PFNGLXGETPROCADDRESSPROC get_proc_addr;
+    void *res = NULL;
 
-    if (get_address) {
-        ret_func = (void *)get_address((const GLubyte *)sym_name);
-    } else {
-        get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
+    get_proc_addr = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddress");
 
-        if (!get_address) {
-            get_address = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
-        }
+    if (!get_proc_addr) {
+        get_proc_addr = yagl_dyn_lib_get_sym(dyn_lib, "glXGetProcAddressARB");
     }
 
-    if (!ret_func) {
-        ret_func = yagl_dyn_lib_get_sym(dyn_lib, sym_name);
+    if (get_proc_addr) {
+        res = get_proc_addr((const GLubyte*)sym_name);
     }
 
-    return ret_func;
+    if (!res) {
+        res = yagl_dyn_lib_get_sym(dyn_lib, sym_name);
+    }
+
+    return res;
 }

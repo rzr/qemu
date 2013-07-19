@@ -4,9 +4,7 @@
 #include "yagl_api.h"
 #include <EGL/egl.h>
 
-struct yagl_api_ps
-    *yagl_host_egl_process_init(struct yagl_api *api,
-                                struct yagl_process_state *ps);
+struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api);
 
 bool yagl_host_eglGetError(EGLint* retval);
 bool yagl_host_eglGetDisplay(yagl_host_handle* retval,
@@ -57,12 +55,12 @@ bool yagl_host_eglSurfaceAttrib(EGLBoolean* retval,
     EGLint attribute,
     EGLint value);
 bool yagl_host_eglBindTexImage(EGLBoolean* retval,
-    yagl_host_handle dpy,
-    yagl_host_handle surface,
+    yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLint buffer);
 bool yagl_host_eglReleaseTexImage(EGLBoolean* retval,
-    yagl_host_handle dpy,
-    yagl_host_handle surface,
+    yagl_host_handle dpy_,
+    yagl_host_handle surface_,
     EGLint buffer);
 bool yagl_host_eglCreateContext(yagl_host_handle* retval,
     yagl_host_handle dpy_,
@@ -82,16 +80,21 @@ bool yagl_host_eglQueryContext(EGLBoolean* retval,
     yagl_host_handle ctx_,
     EGLint attribute,
     target_ulong /* EGLint* */ value_);
-bool yagl_host_eglWaitGL(EGLBoolean* retval);
-bool yagl_host_eglWaitNative(EGLBoolean* retval,
-    EGLint engine);
 bool yagl_host_eglSwapBuffers(EGLBoolean* retval,
     yagl_host_handle dpy_,
     yagl_host_handle surface_);
 bool yagl_host_eglCopyBuffers(EGLBoolean* retval,
     yagl_host_handle dpy_,
-    yagl_host_handle surface_,
-    EGLNativePixmapType target);
+    yagl_host_handle surface_);
+bool yagl_host_eglCreateImageKHR(yagl_host_handle* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle ctx,
+    EGLenum target,
+    yagl_winsys_id buffer,
+    target_ulong /* const EGLint* */ attrib_list_);
+bool yagl_host_eglDestroyImageKHR(EGLBoolean* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle image_);
 bool yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle* retval,
     yagl_host_handle dpy_,
     yagl_host_handle config_,
@@ -123,5 +126,29 @@ bool yagl_host_eglResizeOffscreenSurfaceYAGL(EGLBoolean* retval,
     uint32_t height,
     uint32_t bpp,
     target_ulong /* void* */ pixels_);
+bool yagl_host_eglUpdateOffscreenImageYAGL(yagl_host_handle dpy_,
+    yagl_host_handle image_,
+    uint32_t width,
+    uint32_t height,
+    uint32_t bpp,
+    target_ulong /* const void* */ pixels);
+bool yagl_host_eglCreateWindowSurfaceOnscreenYAGL(yagl_host_handle* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle config_,
+    yagl_winsys_id win,
+    target_ulong /* const EGLint* */ attrib_list_);
+bool yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(yagl_host_handle* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle config_,
+    yagl_winsys_id buffer,
+    target_ulong /* const EGLint* */ attrib_list_);
+bool yagl_host_eglCreatePixmapSurfaceOnscreenYAGL(yagl_host_handle* retval,
+    yagl_host_handle dpy_,
+    yagl_host_handle config_,
+    yagl_winsys_id pixmap,
+    target_ulong /* const EGLint* */ attrib_list_);
+bool yagl_host_eglInvalidateOnscreenSurfaceYAGL(yagl_host_handle dpy_,
+    yagl_host_handle surface_,
+    yagl_winsys_id buffer);
 
 #endif

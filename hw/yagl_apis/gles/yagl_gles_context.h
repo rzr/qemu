@@ -4,9 +4,10 @@
 #include "yagl_gles_types.h"
 #include "yagl_client_context.h"
 
-struct yagl_gles_driver_ps;
+struct yagl_gles_driver;
 struct yagl_gles_array;
 struct yagl_gles_buffer;
+struct yagl_gles_texture;
 struct yagl_gles_framebuffer;
 struct yagl_gles_texture_unit;
 
@@ -14,7 +15,7 @@ struct yagl_gles_context
 {
     struct yagl_client_context base;
 
-    struct yagl_gles_driver_ps *driver_ps;
+    struct yagl_gles_driver *driver;
 
     bool (*get_param_count)(struct yagl_gles_context */*ctx*/,
                             GLenum /*pname*/,
@@ -32,11 +33,32 @@ struct yagl_gles_context
                        GLenum /*pname*/,
                        GLfloat */*params*/);
 
+    bool (*is_enabled)(struct yagl_gles_context */*ctx*/,
+                       GLboolean* retval/*retval*/,
+                       GLenum /*cap*/);
+
     GLchar *(*get_extensions)(struct yagl_gles_context */*ctx*/);
 
-    void (*pre_draw)(struct yagl_gles_context */*ctx*/, GLenum mode);
+    void (*draw_arrays)(struct yagl_gles_context *ctx,
+                        GLenum mode,
+                        GLint first,
+                        GLsizei count);
 
-    void (*post_draw)(struct yagl_gles_context */*ctx*/, GLenum mode);
+    void (*draw_elements)(struct yagl_gles_context *ctx,
+                          GLenum mode,
+                          GLsizei count,
+                          GLenum type,
+                          const GLvoid *indices);
+
+    GLenum (*compressed_tex_image)(struct yagl_gles_context *ctx,
+                                   GLenum target,
+                                   GLint level,
+                                   GLenum internalformat,
+                                   GLsizei width,
+                                   GLsizei height,
+                                   GLint border,
+                                   GLsizei imageSize,
+                                   const GLvoid *data);
 
     /*
      * Pixel Buffer Object (PBO) for quick access to current surface pixels.
@@ -94,24 +116,10 @@ struct yagl_gles_context
     yagl_object_name fbo_local_name;
 
     yagl_object_name rbo_local_name;
-
-    /*
-     * Things below are changed on 'activate'/'deactivate'.
-     * @{
-     */
-
-    /*
-     * The thread this context is currently running on.
-     */
-    struct yagl_thread_state *ts;
-
-    /*
-     * @}
-     */
 };
 
 void yagl_gles_context_init(struct yagl_gles_context *ctx,
-                            struct yagl_gles_driver_ps *driver_ps);
+                            struct yagl_gles_driver *driver);
 
 /*
  * Called when the context is being activated for the first time.
@@ -120,13 +128,11 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
  * Takes ownership of 'arrays'.
  */
 void yagl_gles_context_prepare(struct yagl_gles_context *ctx,
-                               struct yagl_thread_state *ts,
                                struct yagl_gles_array *arrays,
                                int num_arrays,
                                int num_texture_units);
 
-void yagl_gles_context_activate(struct yagl_gles_context *ctx,
-                                struct yagl_thread_state *ts);
+void yagl_gles_context_activate(struct yagl_gles_context *ctx);
 
 void yagl_gles_context_deactivate(struct yagl_gles_context *ctx);
 
@@ -168,8 +174,12 @@ struct yagl_gles_texture_target_state
     *yagl_gles_context_get_active_texture_target_state(struct yagl_gles_context *ctx,
                                                        yagl_gles_texture_target texture_target);
 
+void yagl_gles_context_active_texture_set_enabled(struct yagl_gles_context *ctx,
+               yagl_gles_texture_target texture_target, bool enabled);
+
 void yagl_gles_context_bind_texture(struct yagl_gles_context *ctx,
                                     yagl_gles_texture_target texture_target,
+                                    struct yagl_gles_texture *texture,
                                     yagl_object_name texture_local_name);
 
 void yagl_gles_context_unbind_texture(struct yagl_gles_context *ctx,

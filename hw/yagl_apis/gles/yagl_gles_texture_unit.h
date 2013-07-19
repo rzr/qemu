@@ -4,14 +4,16 @@
 #include "yagl_gles_types.h"
 
 struct yagl_gles_context;
+struct yagl_gles_texture;
 
 struct yagl_gles_texture_target_state
 {
+    struct yagl_gles_texture *texture;
     yagl_object_name texture_local_name;
 
     /*
      * For GLESv1 only. In GLESv2 2D texture and cubemap textures cannot be
-     * enabled/disabled.
+     * enabled/disabled. Currently not used.
      */
     bool enabled;
 };

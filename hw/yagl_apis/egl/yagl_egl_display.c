@@ -1,39 +1,41 @@
 #include "yagl_egl_display.h"
-#include "yagl_egl_driver.h"
+#include "yagl_egl_backend.h"
+#include "yagl_eglb_display.h"
 #include "yagl_egl_config.h"
 #include "yagl_egl_surface.h"
 #include "yagl_egl_context.h"
+#include "yagl_egl_image.h"
 #include "yagl_process.h"
+#include "yagl_thread.h"
 #include "yagl_log.h"
 #include "yagl_handle_gen.h"
 
 struct yagl_egl_display
-    *yagl_egl_display_create(struct yagl_egl_driver_ps *driver_ps,
+    *yagl_egl_display_create(struct yagl_egl_backend *backend,
                              target_ulong display_id)
 {
-    EGLNativeDisplayType native_dpy;
+    struct yagl_eglb_display *backend_dpy;
     struct yagl_egl_display *dpy;
 
-    native_dpy = driver_ps->display_create(driver_ps);
+    backend_dpy = backend->create_display(backend);
 
-    if (!native_dpy) {
+    if (!backend_dpy) {
         return NULL;
     }
 
     dpy = g_malloc0(sizeof(*dpy));
 
-    dpy->driver_ps = driver_ps;
+    dpy->backend = backend;
     dpy->display_id = display_id;
     dpy->handle = yagl_handle_gen();
-    dpy->native_dpy = native_dpy;
-
-    qemu_mutex_init(&dpy->mutex);
+    dpy->backend_dpy = backend_dpy;
 
     dpy->initialized = false;
 
     yagl_resource_list_init(&dpy->configs);
     yagl_resource_list_init(&dpy->contexts);
     yagl_resource_list_init(&dpy->surfaces);
+    yagl_resource_list_init(&dpy->images);
 
     return dpy;
 }
@@ -42,13 +44,12 @@ void yagl_egl_display_destroy(struct yagl_egl_display *dpy)
 {
     yagl_egl_display_terminate(dpy);
 
+    yagl_resource_list_cleanup(&dpy->images);
     yagl_resource_list_cleanup(&dpy->surfaces);
     yagl_resource_list_cleanup(&dpy->contexts);
     yagl_resource_list_cleanup(&dpy->configs);
 
-    qemu_mutex_destroy(&dpy->mutex);
-
-    dpy->driver_ps->display_destroy(dpy->driver_ps, dpy->native_dpy);
+    dpy->backend_dpy->destroy(dpy->backend_dpy);
 
     g_free(dpy);
 }
@@ -58,9 +59,7 @@ void yagl_egl_display_initialize(struct yagl_egl_display *dpy)
     struct yagl_egl_config **cfgs;
     int i, num_configs = 0;
 
-    YAGL_LOG_FUNC_ENTER(dpy->driver_ps->ps->id, 0, yagl_egl_display_initialize, NULL);
-
-    qemu_mutex_lock(&dpy->mutex);
+    YAGL_LOG_FUNC_ENTER(yagl_egl_display_initialize, NULL);
 
     if (dpy->initialized) {
         goto out;
@@ -86,8 +85,6 @@ void yagl_egl_display_initialize(struct yagl_egl_display *dpy)
 out:
     dpy->initialized = true;
 
-    qemu_mutex_unlock(&dpy->mutex);
-
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
@@ -95,11 +92,7 @@ bool yagl_egl_display_is_initialized(struct yagl_egl_display *dpy)
 {
     bool ret;
 
-    qemu_mutex_lock(&dpy->mutex);
-
     ret = dpy->initialized;
-
-    qemu_mutex_unlock(&dpy->mutex);
 
     return ret;
 }
@@ -114,20 +107,12 @@ void yagl_egl_display_terminate(struct yagl_egl_display *dpy)
 
     yagl_resource_list_init(&tmp_list);
 
-    qemu_mutex_lock(&dpy->mutex);
-
+    yagl_resource_list_move(&dpy->images, &tmp_list);
     yagl_resource_list_move(&dpy->surfaces, &tmp_list);
     yagl_resource_list_move(&dpy->contexts, &tmp_list);
     yagl_resource_list_move(&dpy->configs, &tmp_list);
 
     dpy->initialized = false;
-
-    qemu_mutex_unlock(&dpy->mutex);
-
-    /*
-     * We release here because we don't want the resources to be released
-     * when display mutex is held.
-     */
 
     yagl_resource_list_cleanup(&tmp_list);
 }
@@ -136,11 +121,7 @@ int yagl_egl_display_get_config_count(struct yagl_egl_display *dpy)
 {
     int ret;
 
-    qemu_mutex_lock(&dpy->mutex);
-
     ret = yagl_resource_list_get_count(&dpy->configs);
-
-    qemu_mutex_unlock(&dpy->mutex);
 
     return ret;
 }
@@ -153,8 +134,6 @@ yagl_host_handle
     struct yagl_resource *res;
     int i = 0;
 
-    qemu_mutex_lock(&dpy->mutex);
-
     QTAILQ_FOREACH(res, &dpy->configs.resources, entry) {
         if (i >= *num_configs) {
             break;
@@ -162,8 +141,6 @@ yagl_host_handle
         handles[i] = res->handle;
         ++i;
     }
-
-    qemu_mutex_unlock(&dpy->mutex);
 
     *num_configs = i;
 
@@ -184,8 +161,6 @@ yagl_host_handle
         handles = g_malloc(*num_configs * sizeof(yagl_host_handle));
     }
 
-    qemu_mutex_lock(&dpy->mutex);
-
     QTAILQ_FOREACH(res, &dpy->configs.resources, entry) {
         if (!count_only && (i >= *num_configs)) {
             break;
@@ -198,8 +173,6 @@ yagl_host_handle
         }
     }
 
-    qemu_mutex_unlock(&dpy->mutex);
-
     *num_configs = i;
 
     return handles;
@@ -209,15 +182,7 @@ struct yagl_egl_config
     *yagl_egl_display_acquire_config(struct yagl_egl_display *dpy,
                                      yagl_host_handle handle)
 {
-    struct yagl_egl_config *cfg;
-
-    qemu_mutex_lock(&dpy->mutex);
-
-    cfg = (struct yagl_egl_config*)yagl_resource_list_acquire(&dpy->configs, handle);
-
-    qemu_mutex_unlock(&dpy->mutex);
-
-    return cfg;
+    return (struct yagl_egl_config*)yagl_resource_list_acquire(&dpy->configs, handle);
 }
 
 struct yagl_egl_config
@@ -226,19 +191,13 @@ struct yagl_egl_config
 {
     struct yagl_resource *res;
 
-    qemu_mutex_lock(&dpy->mutex);
-
     QTAILQ_FOREACH(res, &dpy->configs.resources, entry) {
         if (((struct yagl_egl_config*)res)->native.config_id == config_id) {
             yagl_resource_acquire(res);
 
-            qemu_mutex_unlock(&dpy->mutex);
-
             return (struct yagl_egl_config*)res;
         }
     }
-
-    qemu_mutex_unlock(&dpy->mutex);
 
     return NULL;
 }
@@ -246,77 +205,56 @@ struct yagl_egl_config
 void yagl_egl_display_add_context(struct yagl_egl_display *dpy,
                                   struct yagl_egl_context *ctx)
 {
-    qemu_mutex_lock(&dpy->mutex);
-
     yagl_resource_list_add(&dpy->contexts, &ctx->res);
-
-    qemu_mutex_unlock(&dpy->mutex);
 }
 
 struct yagl_egl_context
     *yagl_egl_display_acquire_context(struct yagl_egl_display *dpy,
                                       yagl_host_handle handle)
 {
-    struct yagl_egl_context *ctx;
-
-    qemu_mutex_lock(&dpy->mutex);
-
-    ctx = (struct yagl_egl_context*)yagl_resource_list_acquire(&dpy->contexts, handle);
-
-    qemu_mutex_unlock(&dpy->mutex);
-
-    return ctx;
+    return (struct yagl_egl_context*)yagl_resource_list_acquire(&dpy->contexts, handle);
 }
 
 bool yagl_egl_display_remove_context(struct yagl_egl_display *dpy,
                                      yagl_host_handle handle)
 {
-    bool res;
-
-    qemu_mutex_lock(&dpy->mutex);
-
-    res = yagl_resource_list_remove(&dpy->contexts, handle);
-
-    qemu_mutex_unlock(&dpy->mutex);
-
-    return res;
+    return yagl_resource_list_remove(&dpy->contexts, handle);
 }
 
 void yagl_egl_display_add_surface(struct yagl_egl_display *dpy,
                                   struct yagl_egl_surface *sfc)
 {
-    qemu_mutex_lock(&dpy->mutex);
-
     yagl_resource_list_add(&dpy->surfaces, &sfc->res);
-
-    qemu_mutex_unlock(&dpy->mutex);
 }
 
 struct yagl_egl_surface
     *yagl_egl_display_acquire_surface(struct yagl_egl_display *dpy,
                                       yagl_host_handle handle)
 {
-    struct yagl_egl_surface *sfc;
-
-    qemu_mutex_lock(&dpy->mutex);
-
-    sfc = (struct yagl_egl_surface*)yagl_resource_list_acquire(&dpy->surfaces, handle);
-
-    qemu_mutex_unlock(&dpy->mutex);
-
-    return sfc;
+    return (struct yagl_egl_surface*)yagl_resource_list_acquire(&dpy->surfaces, handle);
 }
 
 bool yagl_egl_display_remove_surface(struct yagl_egl_display *dpy,
                                      yagl_host_handle handle)
 {
-    bool res;
+    return yagl_resource_list_remove(&dpy->surfaces, handle);
+}
 
-    qemu_mutex_lock(&dpy->mutex);
+void yagl_egl_display_add_image(struct yagl_egl_display *dpy,
+                                struct yagl_egl_image *image)
+{
+    yagl_resource_list_add(&dpy->images, &image->res);
+}
 
-    res = yagl_resource_list_remove(&dpy->surfaces, handle);
+struct yagl_egl_image
+    *yagl_egl_display_acquire_image(struct yagl_egl_display *dpy,
+                                    yagl_host_handle handle)
+{
+    return (struct yagl_egl_image*)yagl_resource_list_acquire(&dpy->images, handle);
+}
 
-    qemu_mutex_unlock(&dpy->mutex);
-
-    return res;
+bool yagl_egl_display_remove_image(struct yagl_egl_display *dpy,
+                                   yagl_host_handle handle)
+{
+    return yagl_resource_list_remove(&dpy->images, handle);
 }

@@ -38,6 +38,14 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 #include "maru_common.h"
+#if defined(__linux__)
+#include <X11/Xlib.h>
+#endif
+#include "vigs_device.h"
+extern int enable_yagl;
+extern const char *yagl_backend;
+extern int enable_vigs;
+extern const char *vigs_backend;
 
 #undef DEBUG
 //#define DEBUG
@@ -78,6 +86,16 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
     Exynos4210State *s;
     DeviceState *dev;
     PCIBus *pci_bus;
+#if defined(__linux__)
+    Display *display = XOpenDisplay(0);
+    if (!display) {
+        fprintf(stderr, "Cannot open X display\n");
+        exit(1);
+    }
+#else
+    void *display = NULL;
+#endif
+    struct winsys_interface *vigs_wsi = NULL;
 
     /*
      * W/A for allocate larger continuous heap. From maru_board.c
@@ -129,9 +147,24 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
     maru_camera_pci_init(pci_bus);
     codec_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
-#ifdef CONFIG_YAGL
-    pci_create_simple(pci_bus, -1, "yagl");
-#endif
+
+    if (enable_vigs) {
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
+        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        qdev_init_nofail(&pci_dev->qdev);
+        vigs_wsi = DO_UPCAST(VIGSDevice, pci_dev, pci_dev)->wsi;
+    }
+
+    if (enable_yagl) {
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
+        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        if (vigs_wsi &&
+            (strcmp(yagl_backend, "vigs") == 0) &&
+            (strcmp(vigs_backend, "gl") == 0)) {
+            qdev_prop_set_ptr(&pci_dev->qdev, "winsys_gl_interface", vigs_wsi);
+        }
+        qdev_init_nofail(&pci_dev->qdev);
+    }
 
     audio_init(NULL, pci_bus);
 

@@ -45,6 +45,16 @@ struct yagl_gles_array
     GLsizei stride;
 
     /*
+     * Specifies if array data needs to be converted before transfering to
+     * host OpenGL occures.
+     * This could be used with GL_FIXED or GL_BYTE types, then data is
+     * converted to GL_FLOAT or GL_SHORT respectively. Setting this flag
+     * when yagl_gles_array::type is not either GL_FIXED or GL_FLOAT is
+     * programming error.
+     */
+    bool need_convert;
+
+    /*
      * Is array enabled by 'glEnableClientState'/'glEnableVertexAttribArray'.
      */
     bool enabled;
@@ -88,6 +98,7 @@ void yagl_gles_array_enable(struct yagl_gles_array *array, bool enable);
 bool yagl_gles_array_update(struct yagl_gles_array *array,
                             GLint size,
                             GLenum type,
+                            bool need_convert,
                             GLboolean normalized,
                             GLsizei stride,
                             target_ulong target_data);
@@ -95,6 +106,7 @@ bool yagl_gles_array_update(struct yagl_gles_array *array,
 bool yagl_gles_array_update_vbo(struct yagl_gles_array *array,
                                 GLint size,
                                 GLenum type,
+                                bool need_convert,
                                 GLboolean normalized,
                                 GLsizei stride,
                                 struct yagl_gles_buffer *vbo,

@@ -234,6 +234,7 @@ efence="no"
 yagl="no"
 yagl_stats="no"
 glx=""
+vigs="no"
 zlib="yes"
 guest_agent="yes"
 want_tools="yes"
@@ -907,6 +908,10 @@ for opt do
   ;;
   --enable-opengl) opengl="yes"
   ;;
+  --enable-vigs) vigs="yes"
+  ;;
+  --disable-vigs) vigs="no"
+  ;;
   --disable-opengl) opengl="no"
   ;;
   --disable-vhost-scsi) vhost_scsi="no"
@@ -1236,6 +1241,8 @@ echo "  --enable-yagl            enable YaGL device"
 echo "  --disable-yagl           disable YaGL device"
 echo "  --enable-yagl-stats      enable YaGL stats"
 echo "  --disable-yagl-stats     disable YaGL stats"
+echo "  --enable-vigs            enable VIGS device"
+echo "  --disable-vigs           disable VIGS device"
 echo "  --disable-smartcard      disable smartcard support"
 echo "  --enable-smartcard       enable smartcard support"
 echo "  --disable-smartcard-nss  disable smartcard nss support"
@@ -3641,6 +3648,7 @@ echo "EFence support    $efence"
 echo "YaGL support      $yagl"
 echo "YaGL stats        $yagl_stats"
 echo "GLX support       $glx"
+echo "VIGS support      $vigs"
 echo "libiscsi support  $libiscsi"
 echo "build guest agent $guest_agent"
 echo "seccomp support   $seccomp"
@@ -3962,9 +3970,9 @@ fi
 if test "$yagl" = "yes" ; then
   echo "CONFIG_YAGL=y" >> $config_host_mak
   if test "$linux" = "yes" ; then
-    echo "CONFIG_YAGL_EGL_GLX=y" >> $config_host_mak
+    echo -n;
   elif test "$mingw32" = "yes" ; then
-    echo "CONFIG_YAGL_EGL_WGL=y" >> $config_host_mak
+    echo -n;
   else
     echo "ERROR: YaGL is not available on $targetos"
     exit 1
@@ -3973,6 +3981,10 @@ fi
 
 if test "$yagl_stats" = "yes" ; then
   echo "CONFIG_YAGL_STATS=y" >> $config_host_mak
+fi
+
+if test "$vigs" = "yes" ; then
+  echo "CONFIG_VIGS=y" >> $config_host_mak
 fi
 
 if test "$smartcard" = "yes" ; then
@@ -4577,6 +4589,10 @@ fi
 
 if test "$yagl" = "yes" ; then
   echo "CONFIG_BUILD_YAGL=y" >> $config_target_mak
+fi
+
+if test "$vigs" = "yes" ; then
+  echo "CONFIG_BUILD_VIGS=y" >> $config_target_mak
 fi
 
 for i in $ARCH $TARGET_BASE_ARCH ; do

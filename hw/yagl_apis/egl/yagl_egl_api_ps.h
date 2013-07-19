@@ -2,40 +2,25 @@
 #define _QEMU_YAGL_EGL_API_PS_H
 
 #include "yagl_api.h"
-#include "qemu-thread.h"
-#include "qemu-queue.h"
+#include "qemu/queue.h"
 
 struct yagl_egl_interface;
-struct yagl_egl_driver_ps;
+struct yagl_egl_backend;
 struct yagl_egl_display;
 
 struct yagl_egl_api_ps
 {
-    /*
-     * Can access these without locking.
-     * @{
-     */
-
     struct yagl_api_ps base;
 
-    struct yagl_egl_driver_ps *driver_ps;
+    struct yagl_egl_backend *backend;
 
     struct yagl_egl_interface *egl_iface;
-
-    /*
-     * @}
-     */
-
-    QemuMutex mutex;
 
     QLIST_HEAD(, yagl_egl_display) displays;
 };
 
-/*
- * Takes ownership of 'driver_ps' and 'egl_iface'.
- */
 void yagl_egl_api_ps_init(struct yagl_egl_api_ps *egl_api_ps,
-                          struct yagl_egl_driver_ps *driver_ps,
+                          struct yagl_egl_backend *backend,
                           struct yagl_egl_interface *egl_iface);
 
 /*

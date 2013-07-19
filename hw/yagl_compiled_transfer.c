@@ -3,17 +3,16 @@
 #include "yagl_thread.h"
 #include "yagl_process.h"
 #include "yagl_log.h"
-#include "cpu-all.h"
+#include "exec/cpu-all.h"
 
 #define YAGL_TARGET_PAGE_VA(addr) ((addr) & ~(TARGET_PAGE_SIZE - 1))
 
 #define YAGL_TARGET_PAGE_OFFSET(addr) ((addr) & (TARGET_PAGE_SIZE - 1))
 
-static target_phys_addr_t yagl_pa(struct yagl_thread_state *ts,
-                                  target_ulong va)
+static hwaddr yagl_pa(target_ulong va)
 {
-    target_phys_addr_t ret =
-        cpu_get_phys_page_debug(ts->current_env, va);
+    hwaddr ret =
+        cpu_get_phys_page_debug(cur_ts->current_env, va);
 
     if (ret == -1) {
         return 0;
@@ -23,8 +22,7 @@ static target_phys_addr_t yagl_pa(struct yagl_thread_state *ts,
 }
 
 struct yagl_compiled_transfer
-    *yagl_compiled_transfer_create(struct yagl_thread_state *ts,
-                                   target_ulong va,
+    *yagl_compiled_transfer_create(target_ulong va,
                                    uint32_t len,
                                    bool is_write)
 {
@@ -34,18 +32,17 @@ struct yagl_compiled_transfer
     target_ulong cur_va = va;
     int i, num_sections;
 
-    YAGL_LOG_FUNC_ENTER_TS(ts,
-                           yagl_compiled_transfer_init,
-                           "va = 0x%X, len = 0x%X, is_write = %u",
-                           (uint32_t)va,
-                           len,
-                           (uint32_t)is_write);
+    YAGL_LOG_FUNC_ENTER(yagl_compiled_transfer_init,
+                        "va = 0x%X, len = 0x%X, is_write = %u",
+                        (uint32_t)va,
+                        len,
+                        (uint32_t)is_write);
 
     yagl_vector_init(&v, sizeof(struct yagl_compiled_transfer_section), 0);
 
     while (len) {
         target_ulong start_page_va = YAGL_TARGET_PAGE_VA(cur_va);
-        target_phys_addr_t start_page_pa = yagl_pa(ts, start_page_va);
+        hwaddr start_page_pa = yagl_pa(start_page_va);
         target_ulong end_page_va;
         struct yagl_compiled_transfer_section section;
 
@@ -58,7 +55,7 @@ struct yagl_compiled_transfer
 
         while (end_page_va < last_page_va) {
             target_ulong next_page_va = end_page_va + TARGET_PAGE_SIZE;
-            target_phys_addr_t next_page_pa = yagl_pa(ts, next_page_va);
+            hwaddr next_page_pa = yagl_pa(next_page_va);
 
             if (!next_page_pa) {
                 YAGL_LOG_ERROR("yagl_pa of va 0x%X failed", (uint32_t)next_page_va);

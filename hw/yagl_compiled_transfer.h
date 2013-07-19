@@ -9,7 +9,7 @@ struct yagl_compiled_transfer_section
      * For 'cpy_physical_memory_unmap'.
      */
     void *map_base;
-    target_phys_addr_t map_len;
+    hwaddr map_len;
 
     /*
      * For actual I/O.
@@ -26,8 +26,7 @@ struct yagl_compiled_transfer
 };
 
 struct yagl_compiled_transfer
-    *yagl_compiled_transfer_create(struct yagl_thread_state *ts,
-                                   target_ulong va,
+    *yagl_compiled_transfer_create(target_ulong va,
                                    uint32_t len,
                                    bool is_write);
 
