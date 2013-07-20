@@ -1,6 +1,6 @@
 
 #include "qemu-common.h"
-#include "sysemu.h"
+#include "sysemu/sysemu.h"
 #include "qmp-commands.h"
 
 AccelInfo *qmp_query_accel(Error **errp)
