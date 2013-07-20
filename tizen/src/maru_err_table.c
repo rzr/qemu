@@ -28,15 +28,16 @@
  *
  */
 
-
 #include "qemu-common.h"
+#include "maru_common.h"
 #include "maru_err_table.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
 #include <windows.h>
 #else
 #include <execinfo.h>
@@ -48,7 +49,7 @@ static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
     /* 1 */ "Failed to allocate memory in qemu.",
     /* 2 */ "Failed to load a kernel file the following path.\
 Check if the file is corrupted or missing.\n\n",
-    /* 3 */ "Failed to load a bios file the following path.\
+    /* 3 */ "Failed to load a bios file in bios path that mentioned on document.\
 Check if the file is corrupted or missing.\n\n",
     /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
     /* 5 */ "Emulator has stopped working.\n\

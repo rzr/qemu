@@ -1,7 +1,7 @@
 /**
  * Capture a screenshot of the Emulator framebuffer
  *
- * Copyright ( C ) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -11,7 +11,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or ( at your option ) any later version.
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -67,7 +67,6 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
@@ -80,29 +79,22 @@ import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class ScreenShotDialog {
-
 	public final static String DEFAULT_FILE_EXTENSION = "png";
-
-	public static final int RED_MASK = 0x0000FF00;
-	public static final int GREEN_MASK = 0x00FF0000;
-	public static final int BLUE_MASK = 0xFF000000;
-	public static final int COLOR_DEPTH = 32;
-
 	public static final int CANVAS_MARGIN = 30;
 	public static final int TOOLITEM_COOLTIME = 200;
 
-	private Logger logger =
+	private static Logger logger =
 			SkinLogger.getSkinLogger(ScreenShotDialog.class).getLogger();
 
-	protected PaletteData paletteData;
-	protected PaletteData paletteData2;
+	protected PaletteData paletteData_ARGB;
+	protected PaletteData paletteData_BGRA;
+	protected PaletteData paletteData_RGBA;
 	protected Image image;
 	protected Canvas imageCanvas;
 	private Shell shell;
 	private ScrolledComposite scrollComposite;
 	private Label label;
 
-	protected SocketCommunicator communicator;
 	protected EmulatorSkin emulatorSkin;
 	protected EmulatorConfig config;
 
@@ -113,31 +105,34 @@ public class ScreenShotDialog {
 	private ToolItem increaseScaleItem;
 	private ToolItem decreaseScaleItem;
 	private double scaleLevel;
+
 	/**
 	 * @brief constructor
 	 * @param Image icon : screenshot window icon resource
 	*/
 	public ScreenShotDialog(Shell parent,
-			SocketCommunicator communicator, final EmulatorSkin emulatorSkin,
-			EmulatorConfig config, Image icon) throws ScreenShotException {
-
-		this.communicator = communicator;
+			final EmulatorSkin emulatorSkin, EmulatorConfig config,
+			Image icon) throws ScreenShotException {
 		this.emulatorSkin = emulatorSkin;
 		this.config = config;
 		this.scaleLevel = 100d;
 
-		shell = new Shell(Display.getDefault(), SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX);
+		shell = new Shell(Display.getDefault(),
+				SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX);
 		shell.setText("Screen Shot - " + SkinUtil.makeEmulatorName(config));
-        if(!SwtUtil.isMacPlatform()) {
-            if (icon != null) {
-			    shell.setImage(icon);
-		    }
-        }
-		shell.addListener( SWT.Close, new Listener() {
+
+		/* To prevent the icon switching on Mac */
+		if (!SwtUtil.isMacPlatform()) {
+			if (icon != null) {
+				shell.setImage(icon);
+			}
+		}
+
+		shell.addListener(SWT.Close, new Listener() {
 			@Override
-			public void handleEvent( Event event ) {
-				if ( null != image ) {
-					if ( !reserveImage ) {
+			public void handleEvent(Event event) {
+				if (null != image) {
+					if (!reserveImage) {
 						image.dispose();
 					}
 				}
@@ -151,9 +146,9 @@ public class ScreenShotDialog {
 		gridLayout.marginHeight = 0;
 		gridLayout.horizontalSpacing = 0;
 		gridLayout.verticalSpacing = 0;
-		shell.setLayout( gridLayout );
+		shell.setLayout(gridLayout);
 
-		makeMenuBar( shell );
+		makeMenuBar(shell);
 
 		scrollComposite = new ScrolledComposite( shell, SWT.V_SCROLL | SWT.H_SCROLL );
 		GridData gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
@@ -176,17 +171,23 @@ public class ScreenShotDialog {
 					//e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
 					Rectangle r = image.getBounds();
 					//logger.info("r.width: " +r.width +", r.height " + r.height);
-					e.gc.drawImage(image, 0, 0, r.width, r.height,
-							CANVAS_MARGIN, CANVAS_MARGIN, (int)(r.width  * scaleLevel * 1/100), (int)(r.height * scaleLevel * 1/100));
-				}
 
+					e.gc.drawImage(image, 0, 0, r.width, r.height,
+							CANVAS_MARGIN, CANVAS_MARGIN,
+							(int)(r.width  * scaleLevel / 100),
+							(int)(r.height * scaleLevel / 100));
+				}
 			}
 		} );
 
-		paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
-		paletteData2 = new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF);
+		paletteData_ARGB = new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF);
 
-		scrollComposite.setContent( imageCanvas );
+		/* for Endian */
+		paletteData_BGRA = new PaletteData(0x0000FF00, 0x00FF0000, 0xFF000000);
+		/* for clipboard on Windows */
+		paletteData_RGBA = new PaletteData(0xFF000000, 0x00FF0000, 0x0000FF00);
+
+		scrollComposite.setContent(imageCanvas);
 
 		try {
 			clickShutter();
@@ -196,13 +197,15 @@ public class ScreenShotDialog {
 			}
 			throw e;
 		}
-		
+
 		shell.pack();
-		
-		label = new Label(shell, SWT.NORMAL );
-		label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
-				"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
-		
+
+		label = new Label(shell, SWT.NORMAL);
+		label.setText(" Resolution : " +
+				config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) + "x" +
+				config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " +
+				scaleLevel + "%");
+
 //		imageCanvas.addMouseMoveListener(new MouseMoveListener() {
 //		      public void mouseMove(MouseEvent e) {
 //		    		  Rectangle rectangle = imageCanvas.getBounds();
@@ -277,8 +280,9 @@ public class ScreenShotDialog {
 	}
 
 	protected void capture() throws ScreenShotException {
+		/* abstract */
 	}
-	
+
 	private double getScaleLevel() {
 		return scaleLevel;
 	}
@@ -411,12 +415,13 @@ public class ScreenShotDialog {
 		return rotationInfo;
 	}
 
-	private void makeMenuBar( final Shell shell ) {
+	private void makeMenuBar(final Shell shell) {
+		ToolBar toolBar = new ToolBar(shell, SWT.HORIZONTAL);
+		GridData gridData = new GridData(
+				GridData.FILL_HORIZONTAL, GridData.CENTER, true, false);
+		toolBar.setLayoutData(gridData);
 
-		ToolBar toolBar = new ToolBar( shell, SWT.HORIZONTAL );
-		GridData gridData = new GridData( GridData.FILL_HORIZONTAL, GridData.CENTER, true, false );
-		toolBar.setLayoutData( gridData );
-
+		/* save */
 		ToolItem saveItem = new ToolItem( toolBar, SWT.FLAT );
 		saveItem.setImage( ImageRegistry.getInstance().getIcon( IconName.SAVE_SCREEN_SHOT ) );
 		saveItem.setToolTipText( "Save to file" );
@@ -455,6 +460,7 @@ public class ScreenShotDialog {
 
 		} );
 
+		/* copy to clipboard */
 		copyItem = new ToolItem( toolBar, SWT.FLAT );
 		copyItem.setImage( ImageRegistry.getInstance().getIcon( IconName.COPY_SCREEN_SHOT ) );
 		copyItem.setToolTipText( "Copy to clipboard" );
@@ -462,9 +468,9 @@ public class ScreenShotDialog {
 		copyItem.addSelectionListener( new SelectionAdapter() {
 			@Override
 			public void widgetSelected( SelectionEvent e ) {
-
-				if ( null == image || image.isDisposed() ) {
-					SkinUtil.openMessage( shell, null, "Fail to copy to clipboard.", SWT.ICON_ERROR, config );
+				if (null == image || image.isDisposed()) {
+					SkinUtil.openMessage(shell, null,
+							"Fail to copy to clipboard.", SWT.ICON_ERROR, config);
 					return;
 				}
 
@@ -481,15 +487,14 @@ public class ScreenShotDialog {
 				});
 
 				ImageLoader loader = new ImageLoader();
-
 				ImageData data = null;
 
-				if ( SwtUtil.isWindowsPlatform() ) {
-					// change RGB mask
+				if (SwtUtil.isWindowsPlatform()) {
+					/* change RGB mask */
 					ImageData imageData = image.getImageData();
-					PaletteData paletteData = new PaletteData( BLUE_MASK, GREEN_MASK, RED_MASK );
-					data = new ImageData( imageData.width, imageData.height, imageData.depth, paletteData,
-							imageData.bytesPerLine, imageData.data );
+					data = new ImageData(imageData.width, imageData.height,
+							imageData.depth, paletteData_RGBA,
+							imageData.bytesPerLine, imageData.data);
 				} else {
 					data = image.getImageData();
 				}
@@ -511,6 +516,7 @@ public class ScreenShotDialog {
 
 		} );
 
+		/* refresh */
 		refreshItem = new ToolItem( toolBar, SWT.FLAT );
 		refreshItem.setImage( ImageRegistry.getInstance().getIcon( IconName.REFRESH_SCREEN_SHOT ) );
 		refreshItem.setToolTipText( "Refresh image" );
@@ -554,6 +560,7 @@ public class ScreenShotDialog {
 
 		} );
 
+		/* zoom in */
 		increaseScaleItem = new ToolItem(toolBar, SWT.FLAT);
 		increaseScaleItem.setImage(ImageRegistry.getInstance().getIcon(IconName.INCREASE_SCALE));
 		increaseScaleItem.setToolTipText("Increase view size");
@@ -562,7 +569,7 @@ public class ScreenShotDialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				double level = getScaleLevel();
-				Point dialogSize = shell.getSize();	
+				Point dialogSize = shell.getSize();
 				
 				upScaleLevel();
 
@@ -588,6 +595,7 @@ public class ScreenShotDialog {
 
 		} );
 
+		/* zoom out */
 		decreaseScaleItem = new ToolItem(toolBar, SWT.FLAT);
 		decreaseScaleItem.setImage(ImageRegistry.getInstance().getIcon(IconName.DECREASE_SCALE));
 		decreaseScaleItem.setToolTipText("Decrease view size");

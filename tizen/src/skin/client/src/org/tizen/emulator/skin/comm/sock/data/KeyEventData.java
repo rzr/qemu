@@ -42,9 +42,9 @@ public class KeyEventData extends AbstractSendData {
 	public int stateMask;
 	public int keyLocation;
 
-	public KeyEventData(int eventType, int keycode, int stateMask, int keyLocation) {
+	public KeyEventData(int eventType, int keyCode, int stateMask, int keyLocation) {
 		this.eventType = eventType;
-		this.keycode = keycode;
+		this.keycode = keyCode;
 		this.stateMask = stateMask;
 		this.keyLocation = keyLocation;
 	}

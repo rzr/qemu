@@ -10,7 +10,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or ( at your option ) any later version.
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -130,7 +130,7 @@ public class KeyWindow extends SkinWindow {
 		int heightTailPart = SHELL_MARGIN_BOTTOM;
 
 		/* make a frame image */
-		this.cntHiddenButton = 0; //keyMapList.size() - BUTTON_DEFAULT_CNT;
+		this.cntHiddenButton = keyMapList.size() - BUTTON_DEFAULT_CNT;
 
 		this.imageFrame = frameMaker.getPatchedImage(
 				widthBase + ((cntHiddenButton > 0) ? widthScrollbar : 0),
@@ -248,14 +248,16 @@ public class KeyWindow extends SkinWindow {
 					public void mouseDown(MouseEvent e) {
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 					}
 
 					@Override
 					public void mouseUp(MouseEvent e) {
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 					}
 
 					@Override
@@ -425,29 +427,53 @@ public class KeyWindow extends SkinWindow {
 					Rectangle childBounds = shell.getBounds();
 
 					int heightOneThird = parentBounds.height / 3;
+					int widthDockingArea = 30;
+					int widthIntersectRegion = 5;
 
 					/* right-middle */
-					Rectangle attachBounds1 = new Rectangle(
-							(parentBounds.x + parentBounds.width) - 5,
+					Rectangle attachBoundsRC = new Rectangle(
+							(parentBounds.x + parentBounds.width) - widthIntersectRegion,
 							parentBounds.y + heightOneThird,
-							30, heightOneThird);
+							widthDockingArea, heightOneThird);
 					/* right-top */
-					Rectangle attachBounds2 = new Rectangle(
-							(parentBounds.x + parentBounds.width) - 5,
+					Rectangle attachBoundsRT = new Rectangle(
+							(parentBounds.x + parentBounds.width) - widthIntersectRegion,
 							parentBounds.y,
-							30, heightOneThird);
+							widthDockingArea, heightOneThird);
 					/* right-bottom */
-					Rectangle attachBounds3 = new Rectangle(
-							(parentBounds.x + parentBounds.width) - 5,
+					Rectangle attachBoundsRB = new Rectangle(
+							(parentBounds.x + parentBounds.width) - widthIntersectRegion,
 							parentBounds.y + (heightOneThird * 2),
-							30, heightOneThird);
+							widthDockingArea, heightOneThird);
 
-					if (childBounds.intersects(attachBounds1) == true) {
+					/* left-middle */
+					Rectangle attachBoundsLC = new Rectangle(
+							parentBounds.x - (widthDockingArea - widthIntersectRegion),
+							parentBounds.y + heightOneThird,
+							widthDockingArea, heightOneThird);
+					/* left-top */
+					Rectangle attachBoundsLT = new Rectangle(
+							parentBounds.x - (widthDockingArea - widthIntersectRegion),
+							parentBounds.y,
+							widthDockingArea, heightOneThird);
+					/* left-bottom */
+					Rectangle attachBoundsLB = new Rectangle(
+							parentBounds.x - (widthDockingArea - widthIntersectRegion),
+							parentBounds.y + (heightOneThird * 2),
+							widthDockingArea, heightOneThird);
+
+					if (childBounds.intersects(attachBoundsRC) == true) {
 						dock(SWT.RIGHT | SWT.CENTER, false, true);
-					} else if (childBounds.intersects(attachBounds2) == true) {
+					} else if (childBounds.intersects(attachBoundsRT) == true) {
 						dock(SWT.RIGHT | SWT.TOP, false, true);
-					} else if (childBounds.intersects(attachBounds3) == true) {
+					} else if (childBounds.intersects(attachBoundsRB) == true) {
 						dock(SWT.RIGHT | SWT.BOTTOM, false, true);
+					} else if (childBounds.intersects(attachBoundsLC) == true) {
+						dock(SWT.LEFT | SWT.CENTER, false, true);
+					} else if (childBounds.intersects(attachBoundsLT) == true) {
+						dock(SWT.LEFT | SWT.TOP, false, true);
+					} else if (childBounds.intersects(attachBoundsLB) == true) {
+						dock(SWT.LEFT | SWT.BOTTOM, false, true);
 					} else {
 						dock(SWT.NONE, false, true);
 					}

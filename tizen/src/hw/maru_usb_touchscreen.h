@@ -33,9 +33,9 @@
 #define MARU_TOUCH_H_
 
 #include <pthread.h>
-#include "hw.h"
-#include "console.h"
-#include "usb.h"
+#include "hw/hw.h"
+#include "ui/console.h"
+#include "hw/usb.h"
 #include "hw/usb/desc.h"
 
 

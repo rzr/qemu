@@ -39,18 +39,19 @@ build()
 		echo "x86 build failure"
 		exit 1
 	fi
-	make install_dibs
-#	make clean
 
-#	./emulator_configure.sh arm
-#	make all_dibs
-#	if [ $? -eq 0 ]
-#	then
-#		echo "arm build success"
-#	else
-#		echo "arm build failure"
-#		exit 1
-#	fi
+#	make install_dibs		
+#	make clean		
+#
+#	./emulator_configure.sh arm		
+#	make all_dibs		
+#	if [ $? -eq 0 ]		
+#	then		
+#		echo "arm build success"		
+#	else		
+#		echo "arm build failure"		
+#		exit 1		
+#	fi		
 #	make install_dibs
 }
 
@@ -58,16 +59,17 @@ build()
 install()
 {
 	X86_BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
-	ARM_BIN_DIR=$SRCDIR/package/emulator-qemu-arm.package.${TARGET_OS}/data/tools
+#	ARM_BIN_DIR=$SRCDIR/package/emulator-qemu-arm.package.${TARGET_OS}/data/tools
 	COMMON_BIN_DIR=$SRCDIR/package/emulator-qemu-common.package.${TARGET_OS}/data/tools
 	mkdir -p $X86_BIN_DIR
-	mkdir -p $ARM_BIN_DIR
+#	mkdir -p $ARM_BIN_DIR
 	mkdir -p $COMMON_BIN_DIR
 
 	cd $SRCDIR/tizen
+	make install_dibs
 
 	mv x86 $X86_BIN_DIR/emulator
-	mv arm $ARM_BIN_DIR/emulator
+#	mv x86 $ARM_BIN_DIR/emulator
 	mv common $COMMON_BIN_DIR/emulator
 }
 

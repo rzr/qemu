@@ -28,7 +28,7 @@
  */
 
 
-#include "pci.h"
+#include "hw/pci/pci.h"
 
 #include "maru_device_ids.h"
 #include "maru_virtio_sensor.h"
@@ -37,19 +37,11 @@
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-sensor);
 
-#define VIRTIO_SENSOR_DEVICE_NAME 	"sensor"
+#define SENSOR_DEVICE_NAME 	"sensor"
 #define _MAX_BUF					1024
 
-typedef struct VirtIOSensor {
-    VirtIODevice    vdev;
-    VirtQueue       *rvq;
-    VirtQueue       *svq;
-    DeviceState     *qdev;
 
-	QEMUBH			*bh;
-} VirtIO_Sensor;
-
-VirtIO_Sensor* vsensor;
+VirtIOSensor* vsensor;
 
 typedef struct msg_info {
 	char buf[_MAX_BUF];
@@ -101,13 +93,6 @@ void req_sensor_data (enum sensor_types type, enum request_cmd req, char* data, 
 	msg->req = req;
 
 	add_msg_queue(msg);
-}
-
-static uint32_t virtio_sensor_get_features(VirtIODevice *vdev,
-                                            uint32_t request_feature)
-{
-    TRACE("virtio_sensor_get_features.\n");
-    return 0;
 }
 
 static void flush_sensor_recv_queue(void)
@@ -227,7 +212,7 @@ static void send_to_ecs(struct msg_info* msg)
 
 static void virtio_sensor_send(VirtIODevice *vdev, VirtQueue *vq)
 {
-	VirtIO_Sensor *vsensor = (VirtIO_Sensor *)vdev;
+	VirtIOSensor *vsensor = (VirtIOSensor*)vdev;
 	struct msg_info msg;
     VirtQueueElement elem;
 	int index = 0;
@@ -246,38 +231,82 @@ static void virtio_sensor_send(VirtIODevice *vdev, VirtQueue *vq)
 		send_to_ecs(&msg);
     }
 
-	virtqueue_push(vq, &elem, sizeof(VirtIO_Sensor));
+	virtqueue_push(vq, &elem, sizeof(VirtIOSensor));
 	virtio_notify(&vsensor->vdev, vq);
 }
 
-VirtIODevice *virtio_sensor_init(DeviceState *dev)
+
+static int virtio_sensor_init(VirtIODevice *vdev)
 {
     INFO("initialize virtio-sensor device\n");
 
-    vsensor = (VirtIO_Sensor *)virtio_common_init(VIRTIO_SENSOR_DEVICE_NAME,
-            VIRTIO_ID_SENSOR, 0, sizeof(VirtIO_Sensor));
+    vsensor = VIRTIO_SENSOR(vdev);
+
+    virtio_init(vdev, SENSOR_DEVICE_NAME, VIRTIO_ID_SENSOR, 0);
+
     if (vsensor == NULL) {
         ERR("failed to initialize sensor device\n");
-        return NULL;
+        return -1;
     }
 
-    vsensor->vdev.get_features = virtio_sensor_get_features;
     vsensor->rvq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_recv);
     vsensor->svq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_send);
-    vsensor->qdev = dev;
 
     vsensor->bh = qemu_bh_new(maru_sensor_bh, vsensor);
 
-    return &vsensor->vdev;
+    return 0;
 }
 
-void virtio_sensor_exit(VirtIODevice *vdev)
+static int virtio_sensor_exit(DeviceState *dev)
 {
+	VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     INFO("destroy sensor device\n");
 
 	if (vsensor->bh)
 		qemu_bh_delete(vsensor->bh);
 
     virtio_cleanup(vdev);
+
+    return 0;
 }
+
+
+static void virtio_sensor_reset(VirtIODevice *vdev)
+{
+    TRACE("virtio_sensor_reset.\n");
+}
+
+static uint32_t virtio_sensor_get_features(VirtIODevice *vdev,
+                                            uint32_t request_feature)
+{
+    TRACE("virtio_sensor_get_features.\n");
+    return 0;
+}
+
+
+static void virtio_sensor_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_sensor_exit;
+    vdc->init = virtio_sensor_init;
+    vdc->get_features = virtio_sensor_get_features;
+    vdc->reset = virtio_sensor_reset;
+}
+
+
+
+static const TypeInfo virtio_device_info = {
+    .name = TYPE_VIRTIO_SENSOR,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOSensor),
+    .class_init = virtio_sensor_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_device_info);
+}
+
+type_init(virtio_register_types)
 

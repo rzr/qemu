@@ -1,29 +1,31 @@
+#include <stdbool.h>
+#include <pthread.h>
+
 #include "hw/qdev.h"
-#include "net.h"
-#include "console.h"
-#include "migration.h"
+#include "net/net.h"
+#include "ui/console.h"
+#include "migration/migration.h"
+#include "qapi/qmp/qjson.h"
+#include "qapi/qmp/json-parser.h"
+#include "qapi/qmp/qint.h"
+#include "ui/qemu-spice.h"
 
 #include "qemu-common.h"
-#include "qemu_socket.h"
-#include "qemu-queue.h"
-#include "qemu-option.h"
-#include "qemu-config.h"
-#include "qemu-timer.h"
-#include "main-loop.h"
-#include "ui/qemu-spice.h"
-#include "qemu-char.h"
-#include "sdb.h"
-#include "qjson.h"
-
-#include "json-parser.h"
+#include "qemu/queue.h"
+#include "qemu/sockets.h"
+#include "qemu/option.h"
+#include "qemu/timer.h"
+#include "qemu/main-loop.h"
+#include "sysemu/char.h"
 #include "qmp-commands.h"
-#include "qint.h"
+#include "config.h"
+
+#include "sdb.h"
 #include "ecs.h"
 #include "hw/maru_virtio_evdi.h"
 #include "hw/maru_virtio_sensor.h"
 #include "hw/maru_virtio_nfc.h"
-#include <stdbool.h>
-#include <pthread.h>
+
 #include "base64.h"
 #include "genmsg/ecs.pb-c.h"
 
@@ -321,7 +323,7 @@ static int do_qmp_capabilities(Monitor *mon, const QDict *params,
 }
 
 static const mon_cmd_t qmp_cmds[] = {
-#include "qmp-commands-old.h"
+//#include "qmp-commands-old.h"
 		{ /* NULL */}, };
 
 static int check_mandatory_args(const QDict *cmd_args, const QDict *client_args,
@@ -1223,7 +1225,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 		return -1;
 	}
 
-	socket_set_nonblock(fd);
+	qemu_set_nonblock(fd);
 
 	clii->client_fd = fd;
 	clii->cs = cs;
@@ -1339,7 +1341,7 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
 
 	LOG("Listen fd is %d", fd);
 
-	socket_set_nonblock(fd);
+	qemu_set_nonblock(fd);
 
 	cs->listen_fd = fd;
 

@@ -5,6 +5,7 @@
 #include <sys/epoll.h>
 #endif
 
+#include "qapi/qmp/qerror.h"
 #include "qemu-common.h"
 #include "ecs-json-streamer.h"
 

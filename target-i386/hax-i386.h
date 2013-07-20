@@ -13,7 +13,7 @@
 #define _HAX_I386_H
 
 //#include "android/utils/debug.h"
-#include "hax.h"
+#include "sysemu/hax.h"
 
 #ifdef CONFIG_DARWIN
 typedef int hax_fd;

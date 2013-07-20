@@ -1,7 +1,7 @@
 /**
  * Display the emulator detail information
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -74,7 +74,8 @@ public class DetailInfoDialog extends SkinDialog {
 	public final static String VALUE_SUPPORTED = "Supported";
 	public final static String VALUE_NOTSUPPORTED = "Not Supported";
 
-	private Logger logger = SkinLogger.getSkinLogger( DetailInfoDialog.class ).getLogger();
+	private Logger logger =
+			SkinLogger.getSkinLogger(DetailInfoDialog.class).getLogger();
 
 	private SocketCommunicator communicator;
 	private EmulatorConfig config;
@@ -207,8 +208,9 @@ public class DetailInfoDialog extends SkinDialog {
 
 		String infoData = null;
 
-		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.DETAIL_INFO, null, true );
-		byte[] receivedData = communicator.getReceivedData( dataTranfer );
+		DataTranfer dataTranfer =
+				communicator.sendDataToQEMU(SendCommand.DETAIL_INFO, null, true);
+		byte[] receivedData = communicator.getReceivedData(dataTranfer);
 
 		if ( null != receivedData ) {
 			infoData = new String( receivedData );

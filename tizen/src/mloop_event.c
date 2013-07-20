@@ -1,7 +1,7 @@
 /*
  * mainloop_evhandle.c
  *
- * Copyright (C) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * Kitae Kim <kt920.kim@samsung.com>
@@ -36,17 +36,17 @@
 #include <sys/ioctl.h>
 #endif
 
-#include "qobject.h"
+//#include "qobject.h"
 #include "qemu-common.h"
 #include "hw/usb.h"
 #include "hw/irq.h"
 #include "mloop_event.h"
-#include "console.h"
+#include "ui/console.h"
 #include "emul_state.h"
 #include "debug_ch.h"
-#include "monitor.h"
-#include "pci.h"
-#include "sysemu.h"
+#include "monitor/monitor.h"
+#include "hw/pci/pci.h"
+#include "sysemu/sysemu.h"
 
 #include "emulator.h"
 #include "guest_debug.h"
@@ -79,7 +79,6 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_USB_DEL    2
 #define MLOOP_EVTYPE_INTR_UP    3
 #define MLOOP_EVTYPE_INTR_DOWN  4
-#define MLOOP_EVTYPE_HWKEY      5
 #define MLOOP_EVTYPE_TOUCH      6
 #define MLOOP_EVTYPE_KEYBOARD   7
 #define MLOOP_EVTYPE_KBD_ADD    8
@@ -206,8 +205,8 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
 
 static USBDevice *usbkbd = NULL;
 static USBDevice *usbdisk = NULL;
-static PCIDevice *hostkbd = NULL;
 #ifdef TARGET_I386
+static PCIDevice *hostkbd = NULL;
 static PCIDevice *virtio_sdcard = NULL;
 #endif
 
@@ -271,28 +270,6 @@ static void mloop_evhandle_intr_down(long data)
     qemu_irq_lower((qemu_irq)data);
 }
 
-static void mloop_evhandle_hwkey(struct mloop_evpack* pack)
-{
-    int event_type = 0;
-    int keycode = 0;
-
-    memcpy(&event_type, pack->data, sizeof(int));
-    memcpy(&keycode, pack->data + sizeof(int), sizeof(int));
-
-    if (KEY_PRESSED == event_type) {
-        if (kbd_mouse_is_absolute()) {
-            ps2kbd_put_keycode(keycode & 0x7f);
-        }
-    } else if (KEY_RELEASED == event_type) {
-        if (kbd_mouse_is_absolute()) {
-            ps2kbd_put_keycode(keycode | 0x80);
-        }
-    } else {
-        ERR("Unknown hardkey event type.[event_type:%d, keycode:%d]\n",
-            event_type, keycode);
-    }
-}
-
 static void mloop_evhandle_touch(struct mloop_evpack* pack)
 {
     maru_virtio_touchscreen_notify();
@@ -306,6 +283,8 @@ static void mloop_evhandle_keyboard(long data)
 #ifdef TARGET_I386
 static void mloop_evhandle_kbd_add(char *name)
 {
+    QDict *qdict;
+
     TRACE("mloop_evhandle_kbd_add\n");
 
     if (name == NULL) {
@@ -314,68 +293,54 @@ static void mloop_evhandle_kbd_add(char *name)
     }
 
     if (hostkbd) {
-        INFO("virtio-keyboard has already been added.\n");
+        INFO("virtio-keyboard has been already added.\n");
         return;
     }
 
-    if (strcmp(name, "keyboard") == 0) {
-        QDict *qdict = qdict_new();
+    qdict = qdict_new();
+    qdict_put(qdict, "pci_addr", qstring_from_str("auto"));
+    qdict_put(qdict, "type", qstring_from_str(name));
 
-        qdict_put(qdict, "pci_addr", qstring_from_str("auto"));
-        qdict_put(qdict, "type", qstring_from_str(name));
-
-        TRACE("hot_add keyboard device.\n");
-        pci_device_hot_add(cur_mon, qdict);
-
-        if (hostkbd) {
-            TRACE("virtio-keyboard device: domain %d, bus %d, slot %d, function %d\n",
-                    pci_find_domain(hostkbd->bus), pci_bus_num(hostkbd->bus),
-                    PCI_SLOT(hostkbd->devfn), PCI_FUNC(hostkbd->devfn));
-        } else {
-            ERR("failed to hot_add keyboard device.\n");
-        }
-
-        QDECREF(qdict);
+    hostkbd = do_pci_device_hot_add(cur_mon, qdict);
+    if (hostkbd) {
+        INFO("hot_add keyboard device.\n");
+        TRACE("virtio-keyboard device: domain %d, bus %d, slot %d, function %d\n",
+                pci_find_domain(hostkbd->bus), pci_bus_num(hostkbd->bus),
+                PCI_SLOT(hostkbd->devfn), PCI_FUNC(hostkbd->devfn));
     } else {
-        WARN("There is no %s device.\n", name);
+        ERR("failed to hot_add keyboard device.\n");
     }
+
+    QDECREF(qdict);
 }
 
-static void mloop_evhandle_kbd_del(char *name)
+static void mloop_evhandle_kbd_del(void)
 {
+    QDict *qdict;
+    int slot = 0;
+    char slotbuf[4] = {0,};
+
     TRACE("mloop_evhandle_kbd_del\n");
 
-    if (name == NULL) {
-        ERR("packet data is NULL.\n");
-        return;
-    }
-
     if (!hostkbd) {
-        ERR("Failed to remove keyboard"
-            "because the keyboard device is not created.\n");
+        ERR("Failed to remove a keyboard device "
+            "because the device has not been created yet.\n");
         return;
     }
 
-    if (strcmp(name, "keyboard") == 0) {
-        QDict *qdict = qdict_new();
-        int slot = 0;
-        char slotbuf[4] = {0,};
+    slot = PCI_SLOT(hostkbd->devfn);
+    snprintf(slotbuf, sizeof(slotbuf), "%x", slot);
+    TRACE("virtio-keyboard slot %s.\n", slotbuf);
 
-        if (hostkbd) {
-            slot = PCI_SLOT(hostkbd->devfn);
-            snprintf(slotbuf, sizeof(slotbuf), "%x", slot);
-            TRACE("virtio-keyboard slot %s.\n", slotbuf);
-        }
+    qdict = qdict_new();
+    qdict_put(qdict, "pci_addr", qstring_from_str(slotbuf));
 
-        qdict_put(qdict, "pci_addr", qstring_from_str(slotbuf));
+    do_pci_device_hot_remove(cur_mon, qdict);
+    INFO("hot_remove keyboard.\n");
 
-        TRACE("hot_remove keyboard.\n");
-        do_pci_device_hot_remove(cur_mon, qdict);
+    hostkbd = NULL;
 
-        QDECREF(qdict);
-    } else {
-        WARN("There is no %s device.\n", name);
-    }
+    QDECREF(qdict);
 }
 
 static void mloop_evhandle_sdcard_attach(char *name)
@@ -398,27 +363,25 @@ static void mloop_evhandle_sdcard_attach(char *name)
 
     qdict_put(qdict, "pci_addr", qstring_from_str("auto"));
     qdict_put(qdict, "type", qstring_from_str("storage"));
-    snprintf(opts, sizeof(opts), "file=%s,if=virtio", name); 
+    snprintf(opts, sizeof(opts), "file=%s,if=virtio", name);
     qdict_put(qdict, "opts", qstring_from_str(opts));
 
-    virtio_sdcard = pci_device_hot_add(cur_mon, qdict);
+    virtio_sdcard = do_pci_device_hot_add(cur_mon, qdict);
+    if (virtio_sdcard) {
+        INFO("hot add virtio storage device with [%s]\n", opts);
+        INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",
+                pci_find_domain(virtio_sdcard->bus), pci_bus_num(virtio_sdcard->bus),
+                PCI_SLOT(virtio_sdcard->devfn), PCI_FUNC(virtio_sdcard->devfn));
+    } else {
+        ERR("failed to hot_add sdcard device.\n");
 
-    INFO("hot add virtio storage device with [%s]\n", opts);
-    INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",
-            pci_find_domain(virtio_sdcard->bus), pci_bus_num(virtio_sdcard->bus),
-            PCI_SLOT(virtio_sdcard->devfn), PCI_FUNC(virtio_sdcard->devfn));
-
+    }
     QDECREF(qdict);
 }
 
-static void mloop_evhandle_sdcard_detach(char *name)
+static void mloop_evhandle_sdcard_detach(void)
 {
     INFO("mloop_evhandle_sdcard_detach\n");
-
-    if (name == NULL) {
-        ERR("packet data is NULL.\n");
-        return;
-    }
 
     if (!virtio_sdcard) {
         ERR("sdcard is not attached yet.\n");
@@ -442,8 +405,12 @@ static void mloop_evhandle_sdcard_detach(char *name)
 
     QDECREF(qdict);
 }
-#endif
 
+int mloop_evcmd_get_hostkbd_status(void)
+{
+    return hostkbd ? 1 : 0;
+}
+#endif
 
 static void mloop_evhandle_ramdump(struct mloop_evpack* pack)
 {
@@ -520,9 +487,6 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     case MLOOP_EVTYPE_INTR_DOWN:
         mloop_evhandle_intr_down(*(long*)&pack.data[0]);
         break;
-    case MLOOP_EVTYPE_HWKEY:
-        mloop_evhandle_hwkey(&pack);
-        break;
     case MLOOP_EVTYPE_TOUCH:
         mloop_evhandle_touch(&pack);
         break;
@@ -534,7 +498,7 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         mloop_evhandle_kbd_add(pack.data);
         break;
     case MLOOP_EVTYPE_KBD_DEL:
-        mloop_evhandle_kbd_del(pack.data);
+        mloop_evhandle_kbd_del();
         break;
 #endif
     case MLOOP_EVTYPE_RAMDUMP:
@@ -545,7 +509,7 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         mloop_evhandle_sdcard_attach(pack.data);
         break;
     case MLOOP_EVTYPE_SDCARD_DETACH:
-        mloop_evhandle_sdcard_detach(pack.data);
+        mloop_evhandle_sdcard_detach();
         break;
 #endif
     default:
@@ -663,29 +627,6 @@ void mloop_evcmd_set_usbkbd(void *dev)
 void mloop_evcmd_set_usbdisk(void *dev)
 {
     usbdisk = (USBDevice *)dev;
-}
-
-int mloop_evcmd_get_hostkbd_status(void)
-{
-    return hostkbd ? 1 : 0;
-}
-
-void mloop_evcmd_set_hostkbd(void *dev)
-{
-    hostkbd = (PCIDevice *)dev;
-}
-
-void mloop_evcmd_hwkey(int event_type, int keycode)
-{
-    struct mloop_evpack pack;
-
-    pack.type = MLOOP_EVTYPE_HWKEY;
-    pack.size = 5 + 8; //TODO: ?
-
-    memcpy(pack.data, &event_type, sizeof(int));
-    memcpy(pack.data + sizeof(int), &keycode, sizeof(int));
-
-    mloop_evsock_send(&mloop, &pack);
 }
 
 void mloop_evcmd_touch(void)

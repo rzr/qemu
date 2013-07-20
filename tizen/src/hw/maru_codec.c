@@ -31,7 +31,6 @@
 
 #include "maru_codec.h"
 #include "qemu-common.h"
-#include "qemu-thread.h"
 
 #define MARU_CODEC_DEV_NAME     "codec"
 #define MARU_CODEC_VERSION      14
@@ -336,9 +335,9 @@ void qemu_reset_codec_info(SVCodecState *s, uint32_t value)
     for (ctx_idx = 0; ctx_idx < CODEC_CONTEXT_MAX; ctx_idx++) {
         if (s->codec_ctx[ctx_idx].file_index == value) {
             TRACE("reset %d context\n", ctx_idx);
-		    qemu_mutex_unlock(&s->thread_mutex);
-			qemu_av_free(s, ctx_idx);
-		    qemu_mutex_lock(&s->thread_mutex);
+            qemu_mutex_unlock(&s->thread_mutex);
+            qemu_av_free(s, ctx_idx);
+            qemu_mutex_lock(&s->thread_mutex);
             s->codec_ctx[ctx_idx].avctx_use = false;
             break;
         }
@@ -398,6 +397,16 @@ static void qemu_init_pix_fmt_info(void)
     pix_fmt_info[PIX_FMT_YUV411P].x_chroma_shift = 2;
     pix_fmt_info[PIX_FMT_YUV411P].y_chroma_shift = 0;
 
+    /* JPEG YUV */
+    pix_fmt_info[PIX_FMT_YUVJ420P].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUVJ420P].y_chroma_shift = 1;
+
+    pix_fmt_info[PIX_FMT_YUVJ422P].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUVJ422P].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_YUVJ444P].x_chroma_shift = 0;
+    pix_fmt_info[PIX_FMT_YUVJ444P].y_chroma_shift = 0;
+
     /* RGB formats */
     pix_fmt_info[PIX_FMT_RGB24].x_chroma_shift = 0;
     pix_fmt_info[PIX_FMT_RGB24].y_chroma_shift = 0;
@@ -413,6 +422,9 @@ static void qemu_init_pix_fmt_info(void)
 
     pix_fmt_info[PIX_FMT_RGB555].x_chroma_shift = 0;
     pix_fmt_info[PIX_FMT_RGB555].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_YUVA420P].x_chroma_shift = 1,
+    pix_fmt_info[PIX_FMT_YUVA420P].y_chroma_shift = 1;
 }
 
 static uint8_t *qemu_malloc_avpicture (int picture_size)
@@ -445,6 +457,9 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
     case PIX_FMT_YUV444P:
     case PIX_FMT_YUV410P:
     case PIX_FMT_YUV411P:
+    case PIX_FMT_YUVJ420P:
+    case PIX_FMT_YUVJ422P:
+    case PIX_FMT_YUVJ444P:
         stride = ROUND_UP_4(width);
         h2 = ROUND_UP_X(height, pinfo->y_chroma_shift);
         size = stride * h2;
@@ -466,14 +481,39 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->linesize[1] = stride2;
         picture->linesize[2] = stride2;
         picture->linesize[3] = 0;
-        TRACE("planes %d %d %d", 0, size, size + size2);
-        TRACE("strides %d %d %d", stride, stride2, stride2);
+        TRACE("planes %d %d %d\n", 0, size, size + size2);
+        TRACE("strides %d %d %d\n", stride, stride2, stride2);
+        break;
+    case PIX_FMT_YUVA420P:
+        stride = ROUND_UP_4 (width);
+        h2 = ROUND_UP_X (height, pinfo->y_chroma_shift);
+        size = stride * h2;
+        w2 = DIV_ROUND_UP_X (width, pinfo->x_chroma_shift);
+        stride2 = ROUND_UP_4 (w2);
+        h2 = DIV_ROUND_UP_X (height, pinfo->y_chroma_shift);
+        size2 = stride2 * h2;
+        fsize = 2 * size + 2 * size2;
+        TRACE("stride %d, stride2 %d, size %d, size2 %d, fsize %d\n",
+            stride, stride2, size, size2, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = picture->data[0] + size;
+        picture->data[2] = picture->data[1] + size2;
+        picture->data[3] = picture->data[2] + size2;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = stride2;
+        picture->linesize[2] = stride2;
+        picture->linesize[3] = stride;
+        TRACE("planes %d %d %d %d\n", 0, size, size + size2, size + 2 * size2);
+        TRACE("strides %d %d %d %d\n", stride, stride2, stride2, stride);
         break;
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
         stride = ROUND_UP_4 (width * 3);
         fsize = stride * height;
-        TRACE("stride: %d, size: %d\n", stride, fsize);
+        TRACE("stride: %d, fsize: %d\n", stride, fsize);
         if (!encode && !ptr) {
             ptr = qemu_malloc_avpicture(fsize);
         }
@@ -489,7 +529,7 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
     case PIX_FMT_RGB32:
         stride = width * 4;
         fsize = stride * height;
-        TRACE("stride: %d, size: %d\n", stride, fsize);
+        TRACE("stride: %d, fsize: %d\n", stride, fsize);
         if (!encode && !ptr) {
             ptr = qemu_malloc_avpicture(fsize);
         }
@@ -504,9 +544,11 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         break;
     case PIX_FMT_RGB555:
     case PIX_FMT_RGB565:
+    case PIX_FMT_YUYV422:
+    case PIX_FMT_UYVY422:
         stride = ROUND_UP_4 (width * 2);
         fsize = stride * height;
-        TRACE("stride: %d, size: %d\n", stride, fsize);
+        TRACE("stride: %d, fsize: %d\n", stride, fsize);
         if (!encode && !ptr) {
             ptr = qemu_malloc_avpicture(fsize);
         }
@@ -516,6 +558,75 @@ static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->data[3] = NULL;
         picture->linesize[0] = stride;
         picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_UYYVYY411:
+        /* FIXME, probably not the right stride */
+        stride = ROUND_UP_4 (width);
+        size = stride * height;
+        fsize = size + size / 2;
+        TRACE("stride %d, size %d, fsize %d\n", stride, size, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = width + width / 2;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_GRAY8:
+        stride = ROUND_UP_4 (width);
+        fsize = stride * height;
+        TRACE("stride %d, fsize %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_MONOWHITE:
+    case PIX_FMT_MONOBLACK:
+        stride = ROUND_UP_4 ((width + 7) >> 3);
+        fsize = stride * height;
+        TRACE("stride %d, fsize %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_PAL8:
+        /* already forced to be with stride, so same result as other function */
+        stride = ROUND_UP_4 (width);
+        size = stride * height;
+        fsize = size + 256 * 4;
+        TRACE("stride %d, size %d, fsize %d\n", stride, size, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = ptr + size;    /* palette is stored here as 256 32 bit words */
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 4;
         picture->linesize[2] = 0;
         picture->linesize[3] = 0;
         break;
@@ -647,7 +758,7 @@ int qemu_avcodec_open(SVCodecState *s)
     if (codec->type == AVMEDIA_TYPE_AUDIO) {
         s->codec_ctx[ctx_index].mem_index = s->codec_param.mem_index;
         TRACE("set mem_index: %d into ctx_index: %d.\n",
-			s->codec_ctx[ctx_index].mem_index, ctx_index);
+            s->codec_ctx[ctx_index].mem_index, ctx_index);
     }
 
 #if 0
@@ -1405,7 +1516,7 @@ static uint32_t qemu_get_mmap_offset(SVCodecState *s)
 /*
  *  Codec Device APIs
  */
-uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
+uint64_t codec_read(void *opaque, hwaddr addr, unsigned size)
 {
     SVCodecState *s = (SVCodecState *)opaque;
     uint64_t ret = 0;
@@ -1442,7 +1553,7 @@ uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
     return ret;
 }
 
-void codec_write(void *opaque, target_phys_addr_t addr,
+void codec_write(void *opaque, hwaddr addr,
                 uint64_t value, unsigned size)
 {
     SVCodecState *s = (SVCodecState *)opaque;

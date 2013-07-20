@@ -30,11 +30,11 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#include "hw.h"
-#include "kvm.h"
-#include "pci.h"
-#include "pci_ids.h"
-#include "qemu-thread.h"
+#include "hw/hw.h"
+#include "sysemu/kvm.h"
+#include "hw/pci/pci.h"
+#include "hw/pci/pci_ids.h"
+#include "qemu/thread.h"
 #include "tizen/src/debug_ch.h"
 #include "maru_device_ids.h"
 
@@ -138,9 +138,9 @@ int encode_codec(SVCodecState *s);
  *  Codec Device Functions
  */
 int codec_init(PCIBus *bus);
-uint64_t codec_read(void *opaque, target_phys_addr_t addr,
+uint64_t codec_read(void *opaque, hwaddr addr,
                     unsigned size);
-void codec_write(void *opaque, target_phys_addr_t addr,
+void codec_write(void *opaque, hwaddr addr,
                 uint64_t value, unsigned size);
 int codec_operate(uint32_t api_index, uint32_t ctx_index,
                 SVCodecState *state);

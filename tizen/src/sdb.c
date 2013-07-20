@@ -13,9 +13,9 @@
 
 #include "emulator.h"
 #include "net/slirp.h"
-#include "qemu_socket.h"
+#include "qemu/sockets.h"
 #include "sdb.h"
-#include "nbd.h"
+#include "include/block/nbd.h"
 #include "tizen/src/debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, sdb);
@@ -210,38 +210,4 @@ int sdb_loopback_client(int port, int type)
 
     return s;
 
-}
-
-void notify_sdb_daemon_start(void) {
-
-    int s;
-    /*
-     * send a simple message to the SDB host server to tell it we just started.
-     * it should be listening on port 26099.
-     */
-    char *targetname = g_path_get_basename(tizen_target_path);
-    char tmp[MAXPACKETLEN] = { 0 };
-    // when connecting to loopback:26099, do not use tcp_socket_outgoing function
-    // tcp_socket_outgoing may occur "dns name service not known" in case of network unavaliable status.
-    s = sdb_loopback_client(SDB_HOST_PORT, SOCK_STREAM);
-    if (s < 0) {
-        INFO("can not create socket to talk to the SDB server.\n");
-        INFO("SDB server might not be started yet.\n");
-        free(targetname);
-        return;
-    }
-
-    /* length is hex host:emulator:port: -> 0x13 = 20 */
-    sprintf(tmp, "00%2xhost:emulator:%d:%s", 20 + strlen(targetname), tizen_base_port + 1, targetname);
-    INFO("message to send to SDB server: %s\n", tmp);
-    if (send(s, tmp, MAXPACKETLEN,0) < 0) {
-        ERR( "message sending to SDB server error!\n");
-        perror("sdb.c: ");
-    }
-
-    if (s >= 0){
-        socket_close(s);
-    }
-
-    free(targetname);
 }

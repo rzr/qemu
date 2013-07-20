@@ -31,7 +31,7 @@
 #ifndef __MARU_DISPLAY_H__
 #define __MARU_DISPLAY_H__
 
-#include "console.h"
+#include "ui/console.h"
 
 typedef struct MaruScreenshot {
     unsigned char *pixel_data;
@@ -41,8 +41,10 @@ typedef struct MaruScreenshot {
 
 void maru_display_init(DisplayState *ds);
 void maru_display_fini(void);
-void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
-DisplaySurface* get_qemu_display_surface(void);
-MaruScreenshot* get_maru_screenshot(void);
+void maruskin_init(uint64 swt_handle, int lcd_size_width,
+                   int lcd_size_height, bool is_resize);
+
+MaruScreenshot *get_maru_screenshot(void);
+void set_maru_screenshot(DisplaySurface *surface);
 
 #endif /* __MARU_DISPLAY_H__ */

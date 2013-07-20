@@ -87,9 +87,11 @@ obj-y += osutil-darwin.o
 endif
 
 # maru display
-obj-y += maru_display.o maru_shm.o
-ifndef CONFIG_DARWIN
-obj-y += maru_sdl.o SDL_rotozoom.o maru_finger.o
+obj-y += maru_display.o
+ifdef CONFIG_USE_SHM
+obj-y += maru_shm.o
+else
+obj-y += maru_sdl.o maru_finger.o
 endif
 
 # sdb
@@ -117,14 +119,15 @@ obj-y += ecs.pb-c.o
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 
 obj-y += maru_brightness.o
-obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
+obj-y += maru_virtio_touchscreen.o
+#obj-y += maru_usb_touchscreen.o
 obj-y += maru_virtio_keyboard.o
 obj-y += maru_codec.o
-obj-y += maru_virtio_esm.o
 obj-y += maru_virtio_hwkey.o
 obj-y += maru_virtio_evdi.o
 obj-y += maru_virtio_sensor.o
 obj-y += maru_virtio_nfc.o
+obj-y += maru_virtio_esm.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o

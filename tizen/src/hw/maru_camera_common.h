@@ -30,8 +30,8 @@
 #ifndef _MARU_CAMERA_COMMON_H_
 #define _MARU_CAMERA_COMMON_H_
 
-#include "pci.h"
-#include "qemu-thread.h"
+#include "hw/pci/pci.h"
+#include "qemu/thread.h"
 
 #define MARUCAM_MAX_PARAM    20
 #define MARUCAM_SKIPFRAMES    2

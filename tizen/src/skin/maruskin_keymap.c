@@ -29,7 +29,7 @@
 
 #include "maruskin_keymap.h"
 #include "emul_state.h"
-#include "console.h"
+#include "ui/console.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_keymap);

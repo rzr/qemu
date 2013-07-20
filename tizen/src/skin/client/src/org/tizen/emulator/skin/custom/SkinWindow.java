@@ -1,7 +1,7 @@
 /**
+ * child window of skin
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -10,7 +10,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or ( at your option ) any later version.
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -105,7 +105,19 @@ public class SkinWindow {
 				x += shift;
 				parent.setLocation(parentBounds.x + shift, parentBounds.y);
 			}*/
-		} else { /* SWT.RIGHT | SWT.CENTER */
+		}
+		else if (dockPosition == (SWT.LEFT | SWT.CENTER)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y + (parentBounds.height / 2) -
+					(childBounds.height / 2);
+		} else if (dockPosition == (SWT.LEFT | SWT.TOP)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y;
+		} else if (dockPosition == (SWT.LEFT | SWT.BOTTOM)) {
+			x = parentBounds.x - childBounds.width;
+			y = parentBounds.y + parentBounds.height - childBounds.height;
+		}
+		else { /* SWT.RIGHT | SWT.CENTER */
 			x = parentBounds.x + parentBounds.width;
 			y = parentBounds.y + (parentBounds.height / 2) -
 					(childBounds.height / 2);
@@ -113,15 +125,27 @@ public class SkinWindow {
 
 		/* correction of location */
 		if (correction == true) {
+			/* for right side */
 			int shift = (monitorBounds.x + monitorBounds.width) -
 					(x + childBounds.width);
 			if (shift < 0) {
 				x += shift;
 				parent.setLocation(parentBounds.x + shift, parentBounds.y);
 			}
+
+			/* for left side */
+			shift = monitorBounds.x - x;
+			if (shift > 0) {
+				x += shift;
+				parent.setLocation(parentBounds.x + shift, parentBounds.y);
+			}
 		}
 
 		shell.setLocation(x, y);
+	}
+
+	public void redock(boolean correction, boolean enableLogger) {
+		dock(getDockPosition(), correction, enableLogger);
 	}
 
 	public int getDockPosition() {

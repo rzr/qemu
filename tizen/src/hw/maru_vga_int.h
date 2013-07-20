@@ -32,18 +32,6 @@
 #define MARU_VGA_INT_H_
 
 void maru_vga_common_init(VGACommonState *s);
-
-void maru_vga_draw_cursor_line_8(uint8_t *d1, const uint8_t *src1,
-                            int poffset, int w,
-                            unsigned int color0, unsigned int color1,
-                            unsigned int color_xor);
-void maru_vga_draw_cursor_line_16(uint8_t *d1, const uint8_t *src1,
-                             int poffset, int w,
-                             unsigned int color0, unsigned int color1,
-                             unsigned int color_xor);
-void maru_vga_draw_cursor_line_32(uint8_t *d1, const uint8_t *src1,
-                             int poffset, int w,
-                             unsigned int color0, unsigned int color1,
-                             unsigned int color_xor);
+void maru_vga_common_fini(void);
 
 #endif /* MARU_VGA_INT_H_ */

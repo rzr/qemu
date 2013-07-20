@@ -60,6 +60,7 @@ void check_vm_lock_os(void)
     char *base_port = NULL;
     char *pBuf;
     HANDLE hMapFile;
+
     for (port = 26100; port < 26200; port += 10) {
         base_port = g_strdup_printf("%d", port);
         hMapFile = OpenFileMapping(FILE_MAP_READ, TRUE, base_port);

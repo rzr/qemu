@@ -1,7 +1,7 @@
 /*
  * Shared memory
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -31,12 +31,12 @@
 #ifndef MARU_SHM_H_
 #define MARU_SHM_H_
 
-#include "console.h"
+#include "ui/console.h"
 
+extern DisplayChangeListenerOps maru_dcl_ops;
 
-void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h);
-void qemu_ds_shm_resize(DisplayState *ds);
-void qemu_ds_shm_refresh(DisplayState *ds);
-void maruskin_shm_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
+void maruskin_shm_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height, bool is_resize);
+void maruskin_shm_quit(void);
 
 #endif /* MARU_SHM_H_ */

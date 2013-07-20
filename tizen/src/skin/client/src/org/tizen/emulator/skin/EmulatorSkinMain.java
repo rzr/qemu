@@ -1,7 +1,7 @@
 /**
- * 
+ * Emulator Skin Main
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -29,10 +29,8 @@
 
 package org.tizen.emulator.skin;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
@@ -59,7 +57,6 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
-import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -68,6 +65,9 @@ import org.tizen.emulator.skin.util.SwtUtil;
  *
  */
 public class EmulatorSkinMain {
+	public static final String SKINS_FOLDER = "skins";
+	public static final String DEFAULT_SKIN_FOLDER = "emul-general-3btn";
+
 	public static final String SKIN_INFO_FILE_NAME = "info.ini";
 	public static final String SKIN_PROPERTIES_FILE_NAME = ".skin.properties";
 	public static final String CONFIG_PROPERTIES_FILE_NAME = ".skinconfig.properties";
@@ -82,12 +82,7 @@ public class EmulatorSkinMain {
 		if (SwtUtil.isMacPlatform() == true) {
 			useSharedMemory = 1;
 		}
-
-		/* shared memory */
-		if (useSharedMemory == 1) {
-		    System.loadLibrary("shared");
-		}
-	 }
+	}
 
 	/**
 	 * @param args
@@ -99,7 +94,7 @@ public class EmulatorSkinMain {
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
 			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Emulator"); 
 		}
-		
+
 		String simpleMsg = getSimpleMsg(args);
 		if (simpleMsg != null) {
 			/* just show one message box. that's all. */
@@ -129,30 +124,31 @@ public class EmulatorSkinMain {
 			logger = SkinLogger.getSkinLogger(EmulatorSkinMain.class).getLogger();
 			logger.info("!!! Start Emualtor Skin !!!");
 
-			/* startup arguments parsing */
-			Map<String, String> argsMap = parsArgs(args);
+			logger.info("java.version: " + System.getProperty("java.version"));
+			logger.info("java vendor: " + System.getProperty("java.vendor"));
+			logger.info("vm version: " + System.getProperty("java.vm.version"));
+			logger.info("vm vendor: " + System.getProperty("java.vm.vendor"));
+			logger.info("vm name: " + System.getProperty("java.vm.name"));
+			logger.info("os name: " + System.getProperty("os.name"));
+			logger.info("os arch: " + System.getProperty("os.arch"));
+			logger.info("os version: " + System.getProperty("os.version"));
 
-			/* emulator resolution */
-			/*int resolutionW = Integer.parseInt(
-					argsMap.get(ArgsConstants.RESOLUTION_WIDTH));
-			int resolutionH = Integer.parseInt(
-					argsMap.get(ArgsConstants.RESOLUTION_HEIGHT));*/
+			/* startup arguments parsing */
+			Map<String, String> argsMap = parseArgs(args);
 
 			/* get skin path from startup argument */
-			String skinPath = ImageRegistry.getSkinPath(
-					(String) argsMap.get(ArgsConstants.SKIN_PATH));
+			String argSkinPath = (String) argsMap.get(ArgsConstants.SKIN_PATH);
+			String skinPath = ".." +
+					File.separator + SKINS_FOLDER + File.separator + DEFAULT_SKIN_FOLDER;
 
-			/* get maxtouchpoint from startup argument */
-			int maxtouchpoint;
-			if(argsMap.containsKey(ArgsConstants.MAX_TOUCHPOINT)) {
-				maxtouchpoint = Integer.parseInt(
-						argsMap.get(ArgsConstants.MAX_TOUCHPOINT));
-				logger.info("maxtouchpoint info:" + maxtouchpoint);
-			}
-			else {
-				maxtouchpoint = 1;
-				logger.info(ArgsConstants.MAX_TOUCHPOINT +
-						" does not exist set maxtouchpoint info to " + maxtouchpoint);
+			File f = new File(argSkinPath);
+			if (f.isDirectory() == false) {
+				/* When emulator receive a invalid skin path,
+				 emulator uses default skin path instead of it */
+				logger.info("Emulator uses default skin path (" + skinPath +
+						") instead of invalid skin path (" + argSkinPath + ").");
+			} else {
+				skinPath = argSkinPath;
 			}
 
 			/* set skin information */
@@ -162,7 +158,7 @@ public class EmulatorSkinMain {
 				logger.severe("Fail to load skin information file.");
 
 				Shell temp = new Shell(Display.getDefault());
-				MessageBox messageBox = new MessageBox( temp, SWT.ICON_ERROR );
+				MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
 				messageBox.setText("Emulator");
 				messageBox.setMessage("Fail to load \"" + SKIN_INFO_FILE_NAME + "\" file\n" +
 						"Check if the file is corrupted or missing from the following path.\n" +
@@ -175,18 +171,20 @@ public class EmulatorSkinMain {
 				logger.info("skin info:" + skinInfoProperties); //TODO:
 			}
 
-			boolean skinPhoneShape = true;
+			/* determine the layout */
 			String skinInfoResolutionW =
 					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
 			String skinInfoResolutionH =
 					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
 
+			boolean isGeneralSkin = false;
 			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
 					skinInfoResolutionH.equalsIgnoreCase("all")) {
-				skinPhoneShape = false;
+				isGeneralSkin = true;
 			}
 			SkinInformation skinInfo = new SkinInformation(
-					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME), skinPhoneShape);
+					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME),
+					skinPath, isGeneralSkin);
 
 			/* set emulator window skin property */
 			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
@@ -209,7 +207,7 @@ public class EmulatorSkinMain {
 			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
 			/* load dbi file */
-			EmulatorUI dbiContents = loadDbi(skinPath);
+			EmulatorUI dbiContents = loadXMLForSkin(skinPath);
 			if (null == dbiContents) {
 				logger.severe("Fail to load dbi file.");
 
@@ -224,56 +222,49 @@ public class EmulatorSkinMain {
 
 				System.exit(-1);
 			}
+			logger.info("dbi version : " + dbiContents.getDbiVersion());
 
 			/* collect configurations */
 			EmulatorConfig config = new EmulatorConfig(argsMap,
 					dbiContents, skinProperties, skinPropFilePath, configProperties);
 
-			/* load SDK version */
-			String strVersion = "Undefined";
-			String versionFilePath = SkinUtil.getSdkVersionFilePath();
-
-			File file = new File(versionFilePath);
-			if (file.exists() && file.isFile()) {
-				BufferedReader reader = new BufferedReader(
-						new FileReader(versionFilePath));
-
-				strVersion = reader.readLine();
-
-				reader.close();
-			} else {
-				logger.info("cannot find version file" + versionFilePath);
-			}
-
-			logger.info("SDK version : " + strVersion);
-			config.setSkinProperty(
-					EmulatorConfig.SkinInfoConstants.SDK_VERSION_NAME, strVersion);
-
 			/* load image resource */
-			ImageRegistry.getInstance().initialize(config);
+			ImageRegistry.getInstance().initialize(config, skinPath);
 
 			/* load Always on Top value */
 			String onTopVal = config.getSkinProperty(
 					SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString());
 			boolean isOnTop = Boolean.parseBoolean(onTopVal);
 
-			/* create a skin */
-			EmulatorSkin skin;
+			/* prepare for VM state management */
 			EmulatorSkinState currentState = new EmulatorSkinState();
-			currentState.setMaxTouchPoint(maxtouchpoint);
-			EmulatorFingers finger = new EmulatorFingers(currentState);
 
+			/* get MaxTouchPoint from startup argument */
+			int maxtouchpoint = 0;
+			if (argsMap.containsKey(ArgsConstants.MAX_TOUCHPOINT)) {
+				maxtouchpoint = Integer.parseInt(
+						argsMap.get(ArgsConstants.MAX_TOUCHPOINT));
+				logger.info("maximum touch point : " + maxtouchpoint);
+			} else {
+				maxtouchpoint = 1;
+				logger.info(ArgsConstants.MAX_TOUCHPOINT +
+						" does not exist set maxtouchpoint info to " + maxtouchpoint);
+			}
+
+			currentState.setMaxTouchPoint(maxtouchpoint);
+
+			/* create a skin */
+			EmulatorSkin skin = null;
 			if (useSharedMemory == 1) {
-				skin = new EmulatorShmSkin(currentState, finger, config, skinInfo, isOnTop);
-			} else { // linux & windows
-				skin = new EmulatorSdlSkin(currentState, finger, config, skinInfo, isOnTop);
+				skin = new EmulatorShmSkin(currentState, config, skinInfo, isOnTop);
+			} else { /* linux & windows */
+				skin = new EmulatorSdlSkin(currentState, config, skinInfo, isOnTop);
 			}
 
 			/* create a qemu communicator */
 			int uid = config.getArgInt(ArgsConstants.UID);
 			communicator = new SocketCommunicator(config, uid, skin);
 			skin.setCommunicator(communicator);
-			finger.setEmulatorSkin(skin);
 
 			/* initialize a skin layout */
 			long windowHandleId = skin.initLayout();
@@ -410,35 +401,32 @@ public class EmulatorSkinMain {
 
 	}
 	
-	private static Map<String, String> parsArgs( String[] args ) {
-
+	private static Map<String, String> parseArgs(String[] args) {
 		Map<String, String> map = new HashMap<String, String>();
 
-		for ( int i = 0; i < args.length; i++ ) {
+		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
-			logger.info( "arg[" + i + "] " + arg );
-			String[] split = arg.split( "=" );
+			logger.info("arg[" + i + "] " + arg);
 
-			if ( 1 < split.length ) {
-
+			String[] split = arg.split("=");
+			if (1 < split.length) {
 				String argKey = split[0].trim();
 				String argValue = split[1].trim();
-				map.put( argKey, argValue );
 
+				map.put(argKey, argValue);
 			} else {
-				logger.info( "sinlge argv:" + arg );
+				logger.info("sinlge argv:" + arg);
 			}
 		}
 
-		logger.info( "================= argsMap =====================" );
-		logger.info( map.toString() );
-		logger.info( "===============================================" );
+		logger.info("================= argsMap =====================");
+		logger.info(map.toString());
+		logger.info("===============================================");
 
 		return map;
-
 	}
 
-	private static EmulatorUI loadDbi(String skinPath) {
+	private static EmulatorUI loadXMLForSkin(String skinPath) {
 		String dbiPath = skinPath + File.separator + DBI_FILE_NAME;
 		logger.info("load dbi file from " + dbiPath);
 
@@ -446,25 +434,22 @@ public class EmulatorSkinMain {
 		EmulatorUI emulatorUI = null;
 
 		try {
-			
 			fis = new FileInputStream(dbiPath);
-			logger.info( "============ dbi contents ============" );
-			byte[] bytes = IOUtil.getBytes( fis );
-			logger.info( new String( bytes, "UTF-8" ) );
-			logger.info( "=======================================" );
-			
-			emulatorUI = JaxbUtil.unmarshal( bytes, EmulatorUI.class );
-			
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
-		} catch ( JaxbException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
+			logger.info("============ dbi contents ============");
+			byte[] bytes = IOUtil.getBytes(fis);
+			logger.info(new String(bytes, "UTF-8"));
+			logger.info("=======================================");
+
+			emulatorUI = JaxbUtil.unmarshal(bytes, EmulatorUI.class);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (JaxbException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 		} finally {
-			IOUtil.close( fis );
+			IOUtil.close(fis);
 		}
 
 		return emulatorUI;
-
 	}
 
 	private static Properties loadProperties( String filePath, boolean create ) {

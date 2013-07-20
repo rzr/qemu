@@ -27,37 +27,33 @@
  *
  */
 
-
-#include "maru_common.h"
-
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
+
+#include "qemu/sockets.h"
+#include "sysemu/sysemu.h"
+#include "hw/sysbus.h"
+
+#include "maru_common.h"
 #include "maruskin_operation.h"
 #include "hw/maru_brightness.h"
+#include "hw/maru_virtio_hwkey.h"
 #include "maru_display.h"
 #include "emulator.h"
 #include "debug_ch.h"
 #include "sdb.h"
-#include "nbd.h"
 #include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
 #include "maruskin_server.h"
 #include "emul_state.h"
 #include "hw/maru_pm.h"
-#include "sysemu.h"
-#include "sysbus.h"
 
 #ifdef CONFIG_HAX
 #include "guest_debug.h"
 
 #include "target-i386/hax-i386.h"
-#endif
-
-#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
-#include <sys/shm.h>
-int g_shmid;
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, skin_operation);
@@ -308,6 +304,14 @@ void do_rotation_event(int rotation_type)
 
     INFO( "do_rotation_event rotation_type:%d\n", rotation_type);
 
+    set_emul_rotation( rotation_type );
+}
+
+void send_rotation_event(int rotation_type)
+{
+
+    INFO( "send_rotation_event rotation_type:%d\n", rotation_type);
+
     char send_buf[32] = { 0 };
 
     switch ( rotation_type ) {
@@ -329,38 +333,49 @@ void do_rotation_event(int rotation_type)
     }
 
     send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
-
-    set_emul_rotation( rotation_type );
-
 }
 
-QemuSurfaceInfo* get_screenshot_info(void)
+void set_maru_screenshot(DisplaySurface *surface)
 {
-    DisplaySurface* qemu_display_surface = get_qemu_display_surface();
+    pthread_mutex_lock(&mutex_screenshot);
 
-    if ( !qemu_display_surface ) {
-        ERR( "qemu surface is NULL.\n" );
+    MaruScreenshot *maru_screenshot = get_maru_screenshot();
+    if (maru_screenshot) {
+        maru_screenshot->isReady = 1;
+        if (maru_screenshot->request_screenshot == 1) {
+            memcpy(maru_screenshot->pixel_data,
+                   surface_data(surface),
+                   surface_stride(surface) *
+                   surface_height(surface));
+            maru_screenshot->request_screenshot = 0;
+
+            pthread_cond_signal(&cond_screenshot);
+        }
+    }
+    pthread_mutex_unlock(&mutex_screenshot);
+}
+
+QemuSurfaceInfo *get_screenshot_info(void)
+{
+    QemuSurfaceInfo *info =
+            (QemuSurfaceInfo *)g_malloc0(sizeof(QemuSurfaceInfo));
+    if (!info) {
+        ERR("Fail to malloc for QemuSurfaceInfo.\n");
         return NULL;
     }
 
-    QemuSurfaceInfo* info = (QemuSurfaceInfo*) g_malloc0( sizeof(QemuSurfaceInfo) );
-    if ( !info ) {
-        ERR( "Fail to malloc for QemuSurfaceInfo.\n");
+    int length = get_emul_lcd_width() * get_emul_lcd_height() * 4;
+    INFO("screenshot data length:%d\n", length);
+
+    if (0 >= length) {
+        g_free(info);
+        ERR("screenshot data ( 0 >=length ). length:%d\n", length);
         return NULL;
     }
 
-    int length = qemu_display_surface->linesize * qemu_display_surface->height;
-    INFO( "screenshot data length:%d\n", length );
-
-    if ( 0 >= length ) {
-        g_free( info );
-        ERR( "screenshot data ( 0 >=length ). length:%d\n", length );
-        return NULL;
-    }
-
-    info->pixel_data = (unsigned char*) g_malloc0( length );
-    if ( !info->pixel_data ) {
-        g_free( info );
+    info->pixel_data = (unsigned char *)g_malloc0(length);
+    if (!info->pixel_data) {
+        g_free(info);
         ERR("Fail to malloc for pixel data.\n");
         return NULL;
     }
@@ -389,7 +404,7 @@ QemuSurfaceInfo* get_screenshot_info(void)
     return info;
 }
 
-void free_screenshot_info(QemuSurfaceInfo* info)
+void free_screenshot_info(QemuSurfaceInfo *info)
 {
     if (info) {
         if(info->pixel_data) {
@@ -577,13 +592,6 @@ static void* run_timed_shutdown_thread(void* args)
 
     INFO("Shutdown qemu !!!\n");
 
-#if defined(CONFIG_USE_SHM) && defined(TARGET_I386)
-    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
-        perror("maruskin_operation.c:g_shmid: ");
-    }
-#endif
-
     qemu_system_shutdown_request();
 
     return NULL;
@@ -593,10 +601,15 @@ static void* run_timed_shutdown_thread(void* args)
 static void send_to_emuld(const char* request_type,
     int request_size, const char* send_buf, int buf_size)
 {
-    int s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
+    char addr[128];
+    int s = 0;
+
+    snprintf(addr, 128, ":%u", (uint16_t) (tizen_base_port + SDB_TCP_EMULD_INDEX));
+    //TODO: Error handling
+    s = inet_connect(addr, NULL);
 
     if ( s < 0 ) {
-        ERR( "can't create socket to talk to the sdb forwarding session \n" );
+        ERR( "can't create socket to emulator daemon in guest\n" );
         ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , tizen_base_port + SDB_TCP_EMULD_INDEX , errno, strerror(errno) );
         return;
     }

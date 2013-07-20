@@ -35,7 +35,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-nfc);
 
-#define VIRTIO_NFC_DEVICE_NAME "virtio-nfc"
+#define NFC_DEVICE_NAME "virtio-nfc"
 
 
 enum {
@@ -49,17 +49,9 @@ enum {
 #endif
 
 #define MAX_BUF_SIZE    4096
-typedef struct VirtIO_NFC{
-    VirtIODevice    vdev;
-    VirtQueue       *rvq;
-    VirtQueue		*svq;
-    DeviceState     *qdev;
-
-    QEMUBH *bh;
-} VirtIO_NFC;
 
 
-VirtIO_NFC* vio_nfc;
+VirtIONFC* vio_nfc;
 
 
 typedef unsigned int CSCliSN;
@@ -106,7 +98,7 @@ static int count = 0;
 
 static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-bool send_to_nfc(enum request_cmd req, char* data, const uint32_t len)
+bool send_to_nfc(enum request_cmd_nfc req, char* data, const uint32_t len)
 {
     MsgInfo* _msg = (MsgInfo*) malloc(sizeof(MsgInfo));
     if (!_msg)
@@ -226,7 +218,7 @@ static void send_to_ecs(struct msg_info* msg)
 
 static void virtio_nfc_send(VirtIODevice *vdev, VirtQueue *vq)
 {
-	VirtIO_NFC *vnfc = (VirtIO_NFC *)vdev;
+	VirtIONFC *vnfc = (VirtIONFC *)vdev;
     int index = 0;
     struct msg_info _msg;
 
@@ -257,7 +249,7 @@ static void virtio_nfc_send(VirtIODevice *vdev, VirtQueue *vq)
 
     }
 
-	virtqueue_push(vq, &elem, sizeof(VirtIO_NFC));
+	virtqueue_push(vq, &elem, sizeof(VirtIONFC));
 	virtio_notify(&vio_nfc->vdev, vq);
 }
 
@@ -273,35 +265,69 @@ static void maru_nfc_bh(void *opaque)
 	flush_nfc_recv_queue();
 }
 
-VirtIODevice *virtio_nfc_init(DeviceState *dev)
+static int virtio_nfc_init(VirtIODevice* vdev)
 {
     INFO("initialize nfc device\n");
+    vio_nfc = VIRTIO_NFC(vdev);
 
-    vio_nfc = (VirtIO_NFC *)virtio_common_init(VIRTIO_NFC_DEVICE_NAME,
-            VIRTIO_ID_NFC, 0, sizeof(VirtIO_NFC));
+    virtio_init(vdev, NFC_DEVICE_NAME, VIRTIO_ID_NFC, 0);
+
     if (vio_nfc == NULL) {
         ERR("failed to initialize nfc device\n");
-        return NULL;
+        return -1;
     }
 
-    vio_nfc->vdev.get_features = virtio_nfc_get_features;
     vio_nfc->rvq = virtio_add_queue(&vio_nfc->vdev, 256, virtio_nfc_recv);
     vio_nfc->svq = virtio_add_queue(&vio_nfc->vdev, 256, virtio_nfc_send);
-    vio_nfc->qdev = dev;
 
     vio_nfc->bh = qemu_bh_new(maru_nfc_bh, vio_nfc);
 
-    return &vio_nfc->vdev;
+    return 0;
 }
 
-void virtio_nfc_exit(VirtIODevice *vdev)
+static int virtio_nfc_exit(DeviceState* dev)
 {
     INFO("destroy nfc device\n");
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
 
     if (vio_nfc->bh) {
             qemu_bh_delete(vio_nfc->bh);
         }
 
     virtio_cleanup(vdev);
+
+    return 0;
 }
+
+static void virtio_nfc_reset(VirtIODevice *vdev)
+{
+    TRACE("virtio_sensor_reset.\n");
+}
+
+
+static void virtio_nfc_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_nfc_exit;
+    vdc->init = virtio_nfc_init;
+    vdc->get_features = virtio_nfc_get_features;
+    vdc->reset = virtio_nfc_reset;
+}
+
+
+
+static const TypeInfo virtio_device_info = {
+    .name = TYPE_VIRTIO_NFC,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIONFC),
+    .class_init = virtio_nfc_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_device_info);
+}
+
+type_init(virtio_register_types)
 

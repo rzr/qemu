@@ -24,8 +24,9 @@
  * THE SOFTWARE.
  */
 
+#if 0
 #include "hw.h"
-#include "virtio.h"
+#include "maru_device_ids.h"
 
 typedef target_phys_addr_t arg_t;
 #include "opengl_process.h"
@@ -34,6 +35,8 @@ typedef target_phys_addr_t arg_t;
 
 #include "tizen/src/debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, virtio-gl);
+
+#define TYPE_VIRTIO_GL	"virtio-gl"
 
 int decode_call_int(ProcessStruct *p, char *in_args, int args_len, char *r_buffer);
 
@@ -64,6 +67,9 @@ struct d_hdr
 #define SIZE_IN_HEADER 4
 #endif
 
+#endif
+#include "virtio-gl.h"
+
 static void virtio_gl_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
 	VirtQueueElement elem;
@@ -79,7 +85,9 @@ static void virtio_gl_handle(VirtIODevice *vdev, VirtQueue *vq)
 
 		if(!elem.out_num) {
 			fprintf(stderr, "Bad packet\n");
-			goto done;
+			virtqueue_push(vq, &elem, ret);
+			virtio_notify(vdev, vq);
+			return;
 		}
 
 		process = vmgl_get_process(hdr->pid);
@@ -178,7 +186,7 @@ static void virtio_gl_handle(VirtIODevice *vdev, VirtQueue *vq)
 					gl_disconnect(process);
 			}
 		}
-done:
+
 		virtqueue_push(vq, &elem, ret);
 
 		virtio_notify(vdev, vq);
@@ -208,19 +216,60 @@ static int virtio_gl_load(QEMUFile *f, void *opaque, int version_id)
 	return 0;
 }
 
-VirtIODevice *virtio_gl_init(DeviceState *dev)
+static int virtio_gl_device_init(VirtIODevice *vdev)
 {
-	VirtIOGL *s;
+	VirtIOGL *s = VIRTIO_GL(vdev);
+	//DeviceState *qdev = DEVICE(vdev);
 
-	s = (VirtIOGL *)virtio_common_init("virtio-gl", VIRTIO_ID_GL,
-			0, sizeof(VirtIOGL));
-	if (!s)
-		return NULL;
+	virtio_init(vdev, TYPE_VIRTIO_GL, VIRTIO_ID_GL, 0);
+	if (vdev == NULL) {
+		ERR("Failed to initialize virtio gl device.\n");
+		return -1;
+	}
 
-	s->vdev.get_features = virtio_gl_get_features;
+	/*
+	VirtioDeviceClass *vdc = VIRTIO_DEVICE_GET_CLASS(&s->vdev);
+	vdc->get_features = virtio_gl_get_features;
+
 	s->vq = virtio_add_queue(&s->vdev, 128, virtio_gl_handle);
-	register_savevm(dev, "virtio-gl", -1, 1, virtio_gl_save, virtio_gl_load, s);
+	register_savevm(qdev, TYPE_VIRTIO_GL, -1, 1, virtio_gl_save, virtio_gl_load, s);
+	*/
+	s->vq = virtio_add_queue(vdev, 128, virtio_gl_handle);
 
-	return &s->vdev;
+	return 0;
 }
+
+static int virtio_gl_device_exit(DeviceState *qdev)
+{
+    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
+
+    INFO("destroy virtio-gl device\n");
+
+    virtio_cleanup(vdev);
+
+    return 0;
+}
+
+static void virtio_gl_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_gl_device_exit;
+    vdc->init = virtio_gl_device_init;
+    vdc->get_features = virtio_gl_get_features;
+}
+
+static const TypeInfo virtio_gl_info = {
+    .name = TYPE_VIRTIO_GL,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOGL),
+    .class_init = virtio_gl_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_gl_info);
+}
+
+type_init(virtio_register_types)
 

@@ -30,10 +30,15 @@
 #ifndef MARU_HWKEY_H_
 #define MARU_HWKEY_H_
 
-#include "console.h"
-#include "hw/virtio.h"
+#include "ui/console.h"
+#include "hw/virtio/virtio.h"
 
-typedef struct VirtIOHwKey
+#define TYPE_VIRTIO_HWKEY "virtio-hwkey-device"
+#define VIRTIO_HWKEY(obj) \
+        OBJECT_CHECK(VirtIOHWKey, (obj), TYPE_VIRTIO_HWKEY)
+
+
+typedef struct VirtIOHWKey
 {
     VirtIODevice vdev;
     /* simply a queue into which buffers are posted
@@ -42,13 +47,13 @@ typedef struct VirtIOHwKey
 
     QEMUBH *bh;
     DeviceState *qdev;
-} VirtIOHwKey;
+} VirtIOHWKey;
 
 /* This structure must match the kernel definitions */
-typedef struct EmulHwKeyEvent {
+typedef struct EmulHWKeyEvent {
     uint8_t event_type;
     uint32_t keycode;
-} EmulHwKeyEvent;
+} EmulHWKeyEvent;
 
 
 VirtIODevice *maru_virtio_hwkey_init(DeviceState *dev);

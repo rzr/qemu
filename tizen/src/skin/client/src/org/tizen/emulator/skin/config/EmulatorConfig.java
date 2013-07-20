@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -29,8 +29,11 @@
 
 package org.tizen.emulator.skin.config;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
@@ -46,6 +49,7 @@ import org.tizen.emulator.skin.exception.ConfigException;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.IOUtil;
+import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 
 
@@ -89,7 +93,8 @@ public class EmulatorConfig {
 		public static final String WINDOW_Y = "window.y";
 		public static final String WINDOW_ROTATION = "window.rotate";
 		public static final String WINDOW_SCALE = "window.scale";
-		public static final String WINDOW_ONTOP = "window.ontop"; // always on top
+		public static final String WINDOW_ONTOP = "window.ontop"; /* always on top */
+		public static final String KEYWINDOW_POSITION = "window.keywindow.position";
 	}
 
 	public interface ConfigPropertiesConstants {
@@ -103,6 +108,9 @@ public class EmulatorConfig {
 	private Properties configProperties;
 	private String skinPropertiesFilePath;
 
+	/**
+	 *  Constructor
+	 */
 	public EmulatorConfig(Map<String, String> args,
 			EmulatorUI dbiContents, Properties skinProperties,
 			String skinPropertiesFilePath, Properties configProperties) {
@@ -115,6 +123,33 @@ public class EmulatorConfig {
 		if (null == configProperties) {
 			this.configProperties = new Properties();
 		}
+
+		/* load SDK version */
+		String strVersion = "Undefined";
+		String versionFilePath = SkinUtil.getSdkVersionFilePath();
+
+		File file = new File(versionFilePath);
+
+		try {
+			if (file.exists() && file.isFile()) {
+				BufferedReader reader = new BufferedReader(
+						new FileReader(versionFilePath));
+
+				strVersion = reader.readLine();
+
+				reader.close();
+			} else {
+				logger.info("cannot find version file" + versionFilePath);
+			}
+		} catch (FileNotFoundException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		}
+
+		logger.info("SDK version : " + strVersion);
+		setSkinProperty(
+				EmulatorConfig.SkinInfoConstants.SDK_VERSION_NAME, strVersion);
 	}
 
 	public static void validateArgs(Map<String, String> args) throws ConfigException {
@@ -207,14 +242,15 @@ public class EmulatorConfig {
 			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_X, "" + xx);
 		}
 
-		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_Y ) ) {
+		if ( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_Y ) ) {
 			String y = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_Y );
 			int yy = 0;
 
 			try {
 				yy = Integer.parseInt( y );
 			} catch ( NumberFormatException e ) {
-				String msg = SkinPropertiesConstants.WINDOW_Y + " in .skin.properties is not numeric. : " + y;
+				String msg = SkinPropertiesConstants.WINDOW_Y +
+						" in .skin.properties is not numeric. : " + y;
 				throw new ConfigException( msg );
 			}
 
@@ -239,7 +275,8 @@ public class EmulatorConfig {
 			try {
 				Integer.parseInt( rotation );
 			} catch ( NumberFormatException e ) {
-				String msg = SkinPropertiesConstants.WINDOW_ROTATION + " in .skin.properties is not numeric. : " + rotation;
+				String msg = SkinPropertiesConstants.WINDOW_ROTATION +
+						" in .skin.properties is not numeric. : " + rotation;
 				throw new ConfigException( msg );
 			}
 		}
@@ -249,7 +286,8 @@ public class EmulatorConfig {
 			try {
 				Integer.parseInt( scale );
 			} catch ( NumberFormatException e ) {
-				String msg = SkinPropertiesConstants.WINDOW_SCALE + " in .skin.properties is not numeric. : " + scale;
+				String msg = SkinPropertiesConstants.WINDOW_SCALE +
+						" in .skin.properties is not numeric. : " + scale;
 				throw new ConfigException( msg );
 			}
 		}

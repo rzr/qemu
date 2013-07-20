@@ -53,9 +53,10 @@
 #define PCI_DEVICE_ID_VIRTIO_KEYBOARD    0x1020
 #define PCI_DEVICE_ID_VIRTIO_ESM         0x1024
 #define PCI_DEVICE_ID_VIRTIO_HWKEY       0x1028
-#define PCI_DEVICE_ID_VIRTIO_EVDI        0x102C
-#define PCI_DEVICE_ID_VIRTIO_SENSOR      0x1030
-#define PCI_DEVICE_ID_VIRTIO_NFC         0x1034
+#define PCI_DEVICE_ID_VIRTIO_EVDI        0x1032
+#define PCI_DEVICE_ID_VIRTIO_GL          0x1036
+#define PCI_DEVICE_ID_VIRTIO_SENSOR      0x103A
+#define PCI_DEVICE_ID_VIRTIO_NFC         0x103E
 
 /* Virtio */
 /*
@@ -84,12 +85,14 @@
 |         10           |   mac80211 wlan    |       -       |
 +----------------------+--------------------+---------------+
 */
-#define VIRTIO_ID_TOUCHSCREEN   11
-#define VIRTIO_ID_KEYBOARD      12
-#define VIRTIO_ID_ESM           13
-#define VIRTIO_ID_HWKEY         14
-#define VIRTIO_ID_EVDI          15
-#define VIRTIO_ID_SENSOR        16
-#define VIRTIO_ID_NFC           17
+
+#define VIRTIO_ID_TOUCHSCREEN   31
+#define VIRTIO_ID_KEYBOARD      32
+#define VIRTIO_ID_ESM           33
+#define VIRTIO_ID_HWKEY         34
+#define VIRTIO_ID_EVDI          35
+#define VIRTIO_ID_GL			36
+#define VIRTIO_ID_SENSOR        37
+#define VIRTIO_ID_NFC           38
 
 #endif /* MARU_DEVICE_IDS_H_ */

@@ -1,3 +1,69 @@
+* 1.5.69
+- support multiple linux distro when installing and removing this package.
+== Kitae Kim <kt920.kim@samsung.com> 2013-07-16
+* 1.5.68
+- changed sh to bash in the install and remove script.
+== Kitae Kim <kt920.kim@samsung.com> 2013-07-11
+* 1.5.67
+- Modified messages in the install and remove script files.
+== Kitae Kim <kt920.kim@samsung.com> 2013-07-11
+* 1.5.66
+- Modified install script to use TSUDO on Linux.
+== Kitae Kim <kt920.kim@samsung.com> 2013-07-11
+* 1.5.61
+- cancel a scrollbar timer
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-07-01
+* 1.5.59
+- remove notifying to sdb server
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-29
+* 1.5.56
+- apply a custom scrollbar to KeyWindow
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-24
+* 1.5.52
+- position correction for emulator window
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-19
+* 1.5.50
+- modified keycode for 480x800-3btn
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-14
+* 1.5.47
+- Modified guest_server to support multi SDK installation.
+== Seokyeon Hwang <syeon.hwang@samsung.com> 2013-06-11
+* 1.5.46
+- added 3btn skins
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-06-04
+* 1.5.41
+- erase unused variable in virtio-keyboard
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-05-21
+* 1.5.38
+- modified process of using virtio keyboard queue and added key release event when context menu is activated
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-05-14
+* 1.5.37
+- call setBounds of display in arrangeSkin on only mac
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-05-06
+* 1.5.34
+- apply patch modified by Fengqian.Gao
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-04-29
+* 1.5.33
+- Remove a shared memory if not using it anymore
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-04-25
+* 1.5.32
+- Fix the slideshow problem of gallery app.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-23
+* 1.5.29
+- synchronization of display updating
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-04-17
+* 1.5.28
+- Fix pBuffer issue for xcomposite.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-16
+* 1.5.27
+- Change the FB configs limitaion from 10 to 32 for each process.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-12
+* 1.5.26
+- Add glFinish() after AGL function aglTexImagePBuffer() cause of pbuffer bug on MAC os.
+== Sangjin Kim <sangjin3.kim@samsung.com> 2013-04-11
+* 1.5.25
+- Do not exit if log directory is deleted on runtime.
+== Seokyeon Hwang <syeon.hwang@samsung.com> 2013-04-10
 * 1.5.24
 - increased virtio keyboard queue and fixed overwrite bug
 == SungMin Ha <sungmin82.ha@samsung.com> 2013-04-06

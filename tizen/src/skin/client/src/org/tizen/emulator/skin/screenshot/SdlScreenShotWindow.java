@@ -1,7 +1,7 @@
 /**
  * Capture a screenshot of the Emulator framebuffer
  *
- * Copyright ( C ) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -10,7 +10,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or ( at your option ) any later version.
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -37,7 +37,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSdlSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
-import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
@@ -45,7 +44,7 @@ import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 public class SdlScreenShotWindow extends ScreenShotDialog {
-	private Logger logger = SkinLogger.getSkinLogger(
+	private static Logger logger = SkinLogger.getSkinLogger(
 			SdlScreenShotWindow.class).getLogger();
 
 	/**
@@ -53,21 +52,24 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 	 * @param Image icon : screenshot window icon resource
 	*/
 	public SdlScreenShotWindow(Shell parent,
-			SocketCommunicator communicator, EmulatorSdlSkin emulatorSkin,
-			EmulatorConfig config, Image icon) throws ScreenShotException {
-		super(parent, communicator, emulatorSkin, config, icon);
+			EmulatorSdlSkin emulatorSkin, EmulatorConfig config,
+			Image icon) throws ScreenShotException {
+		super(parent, emulatorSkin, config, icon);
 	}
 
 	protected void capture() throws ScreenShotException {
-		DataTranfer dataTranfer = communicator.sendToQEMU(
+		logger.info("screenshot capture");
+
+		DataTranfer dataTranfer = emulatorSkin.communicator.sendDataToQEMU(
 				SendCommand.SCREEN_SHOT, null, true);
-		byte[] receivedData = communicator.getReceivedData(dataTranfer);
+		byte[] receivedData =
+				emulatorSkin.communicator.getReceivedData(dataTranfer);
 
 		if (null != receivedData) {
 			int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
 			int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
 			ImageData imageData = new ImageData(
-					width, height, COLOR_DEPTH, paletteData, 1, receivedData);
+					width, height, 32, paletteData_BGRA, 1, receivedData);
 
 			RotationInfo rotation = getCurrentRotation();
 			imageData = rotateImageData(imageData, rotation);

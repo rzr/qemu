@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -40,22 +40,24 @@ import java.net.Socket;
  *
  */
 public class IOUtil {
+	private IOUtil() {
+		/* do nothing */
+	}
 
-	private IOUtil(){}
-
-	public static void closeSocket( Socket socket ) {
+	public static void closeSocket(Socket socket) {
 		try {
-			if ( null != socket ) {
+			if (null != socket) {
 				socket.close();
+				socket = null;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public static void close( Closeable closeable ) {
+	public static void close(Closeable closeable) {
 		try {
-			if ( null != closeable ) {
+			if (null != closeable) {
 				closeable.close();
 			}
 		} catch (IOException e) {
@@ -63,18 +65,15 @@ public class IOUtil {
 		}
 	}
 
-	public static byte[] getBytes( InputStream is ) throws IOException {
-		
+	public static byte[] getBytes(InputStream is) throws IOException {
 		ByteArrayOutputStream bao = new ByteArrayOutputStream();
 		byte[] buffer = new byte[1024];
 		
 		int read = 0;
-		while( 0 < ( read = is.read( buffer ) ) ) {
-			bao.write( buffer, 0, read );
+		while(0 < (read = is.read(buffer))) {
+			bao.write(buffer, 0, read);
 		}
-		
+
 		return bao.toByteArray();
-		
 	}
-	
 }

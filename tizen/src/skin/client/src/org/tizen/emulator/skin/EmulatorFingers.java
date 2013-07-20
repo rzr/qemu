@@ -1,7 +1,7 @@
 /**
+ * Multi-touch
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * Munkyu Im <munkyu.im@samsung.com>
@@ -61,30 +61,31 @@ public class EmulatorFingers {
 	private int maxTouchPoint;
 	protected int fingerCnt;
 	private int fingerCntMax;
+
+	private int grabFingerID = 0;
+	private ArrayList<FingerPoint> FingerPointList;
+	protected FingerPoint fingerSlot;
+
 	protected int fingerPointSize;
 	protected int fingerPointSizeHalf;
 	private Color fingerPointColor;
 	private Color fingerPointOutlineColor;
-	private int grabFingerID = 0;
 	protected Image fingerSlotimage;
 	protected ImageData imageData;
-	protected FingerPoint fingerSlot;
+
 	protected SocketCommunicator communicator;
-	protected EmulatorSkin emulatorSkin;
-	ArrayList<FingerPoint> FingerPointList;
+	private EmulatorSkinState currentState;
 
-	EmulatorSkinState currentState;
-
-	EmulatorFingers(EmulatorSkinState currentState) {
+	/**
+	 *  Constructor
+	 */
+	EmulatorFingers(EmulatorSkinState currentState, SocketCommunicator communicator) {
 		this.currentState = currentState;
+		this.communicator = communicator;
+
 		initMultiTouchState();
 	}
 
-	protected void setCommunicator(SocketCommunicator communicator) {
-		 this.communicator = communicator;
-	 }
-
-	//private fingerPointSurface;
 	protected class FingerPoint {
 		int id;
 		int originX;
@@ -137,10 +138,6 @@ public class EmulatorFingers {
 		}
 
 		return null;
-	}
-
-	protected void setEmulatorSkin(EmulatorSkin emulatorSkin) {
-		this.emulatorSkin = emulatorSkin;
 	}
 
 	public void initMultiTouchState() {
@@ -251,7 +248,8 @@ public class EmulatorFingers {
 						mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 								originX, originY, x, y, grabFingerID - 1);
-						communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 					} 
 				}
 
@@ -267,7 +265,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, 0);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 			else if ((finger = getFingerPointSearch(x, y)) != null)
 			{ /* check the position of previous touch event */
@@ -282,7 +281,8 @@ public class EmulatorFingers {
 	        		mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 							originX, originY, finger.x, finger.y, this.fingerCntMax - 1);
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 
 					finger.originX = originX;
 					finger.originY = originY;
@@ -293,7 +293,8 @@ public class EmulatorFingers {
 						mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 								originX, originY, x, y, this.fingerCntMax - 1);
-						communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+						communicator.sendToQEMU(
+								SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 					}
 				}
 			}
@@ -303,7 +304,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, this.fingerCnt - 1);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		} else if (touchType == MouseEventType.RELEASE.value()) { /* released */
 			logger.info("mouse up for multi touch");
@@ -360,7 +362,8 @@ public class EmulatorFingers {
 								mouseEventData = new MouseEventData(
 										MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 										originX, originY, finger.x, finger.y, i);
-								communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+								communicator.sendToQEMU(
+										SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 
 								/* logger.info(String.format(
 										"id %d finger multi-touch dragging = (%d, %d)",
@@ -388,7 +391,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, 0);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 			else if ((finger = this.getFingerPointSearch(x, y)) != null)
 			{ /* check the position of previous touch event */
@@ -406,7 +410,8 @@ public class EmulatorFingers {
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 						originX, originY, x, y, this.fingerCnt - 1);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		} else if (touchType == MouseEventType.RELEASE.value()) { /* released */
 			logger.info("mouse up for multi touch");
@@ -506,7 +511,8 @@ public class EmulatorFingers {
 				MouseEventData mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 						0, 0, finger.x, finger.y, finger.id - 1);
-				communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+				communicator.sendToQEMU(
+						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 
 			finger.id = 0;
@@ -533,7 +539,7 @@ public class EmulatorFingers {
 	}
 
 	public void setMaxTouchPoint(int cnt) {
-		if (cnt <=0) {
+		if (cnt <= 0) {
 			cnt = 1;
 		}
 

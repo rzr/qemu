@@ -28,9 +28,10 @@
 
 
 #include <pthread.h>
-#include "console.h"
+#include "ui/console.h"
 #include "maru_virtio_touchscreen.h"
 #include "maru_device_ids.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, touchscreen);
@@ -77,7 +78,7 @@ static unsigned int elem_ringbuf_cnt; /* _elem_buf */
 static unsigned int elem_queue_cnt; /* elem_queue */
 
 
-TouchscreenState *ts;
+VirtIOTouchscreen *ts;
 
 /* lock for between communication thread and IO thread */
 static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -106,7 +107,7 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
 
     pthread_mutex_lock(&event_mutex);
 
-    entry->index = ++event_queue_cnt; // 1 ~
+    entry->index = ++event_queue_cnt; /* 1 ~ */
 
     QTAILQ_INSERT_TAIL(&events_queue, entry, node);
 
@@ -116,7 +117,8 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
     qemu_bh_schedule(ts->bh);
 
     TRACE("touch event (%d) : x=%d, y=%d, z=%d, state=%d\n",
-        entry->index, entry->touch.x, entry->touch.y, entry->touch.z, entry->touch.state);
+        entry->index, entry->touch.x, entry->touch.y,
+        entry->touch.z, entry->touch.state);
 }
 
 static void maru_virtio_touchscreen_handle(VirtIODevice *vdev, VirtQueue *vq)
@@ -268,10 +270,27 @@ void maru_virtio_touchscreen_notify(void)
     }
 }
 
+static void virtio_touchscreen_get_config(
+    VirtIODevice *vdev, uint8_t *config_data)
+{
+    int max_trkid = 10;
+    INFO("virtio_touchscreen_get_config\n");
+
+    max_trkid = get_emul_max_touch_point();
+    memcpy(config_data, &max_trkid, 4);
+}
+
+static void virtio_touchscreen_set_config(
+    VirtIODevice *vdev, const uint8_t *config_data)
+{
+    /* do nothing */
+}
+
 static uint32_t virtio_touchscreen_get_features(
     VirtIODevice *vdev, uint32_t request_features)
 {
-    // TODO:
+    /* do nothing */
+
     return request_features;
 }
 
@@ -282,22 +301,21 @@ static void maru_touchscreen_bh(void *opaque)
     maru_virtio_touchscreen_notify();
 }
 
-VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
+static int virtio_touchscreen_device_init(VirtIODevice *vdev)
 {
+    DeviceState *qdev = DEVICE(vdev);
+    ts = VIRTIO_TOUCHSCREEN(vdev);
+
     INFO("initialize the touchscreen device\n");
 
-    ts = (TouchscreenState *)virtio_common_init(DEVICE_NAME,
-        VIRTIO_ID_TOUCHSCREEN, 0 /*config_size*/, sizeof(TouchscreenState));
-
-    if (ts == NULL) {
+    virtio_init(vdev, DEVICE_NAME, VIRTIO_ID_TOUCHSCREEN, 4);
+    /*if (ts == NULL) {
         ERR("failed to initialize the touchscreen device\n");
         return NULL;
-    }
+    }*/
 
-    ts->vdev.get_features = virtio_touchscreen_get_features;
     ts->vq = virtio_add_queue(&ts->vdev, 64, maru_virtio_touchscreen_handle);
-
-    ts->qdev = dev;
+    ts->qdev = qdev;
 
     /* reset the counters */
     event_queue_cnt = event_ringbuf_cnt = 0;
@@ -316,11 +334,13 @@ VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
     INFO("virtio touchscreen is added to qemu mouse event handler\n");
 #endif
 
-    return &(ts->vdev);
+    return 0;
 }
 
-void maru_virtio_touchscreen_exit(VirtIODevice *vdev)
+static int virtio_touchscreen_device_exit(DeviceState *qdev)
 {
+    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
+
     INFO("exit the touchscreen device\n");
 
     if (ts->eh_entry) {
@@ -335,5 +355,36 @@ void maru_virtio_touchscreen_exit(VirtIODevice *vdev)
 
     pthread_mutex_destroy(&event_mutex);
     pthread_mutex_destroy(&elem_mutex);
+
+    return 0;
 }
 
+static Property virtio_touchscreen_properties[] = {
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void virtio_touchscreen_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_touchscreen_device_exit;
+    dc->props = virtio_touchscreen_properties;
+    vdc->init = virtio_touchscreen_device_init;
+    vdc->get_config = virtio_touchscreen_get_config;
+    vdc->set_config = virtio_touchscreen_set_config;
+    vdc->get_features = virtio_touchscreen_get_features;
+}
+
+static const TypeInfo virtio_touchscreen_info = {
+    .name = TYPE_VIRTIO_TOUCHSCREEN,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOTouchscreen),
+    .class_init = virtio_touchscreen_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_touchscreen_info);
+}
+
+type_init(virtio_register_types)

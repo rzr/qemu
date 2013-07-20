@@ -368,6 +368,10 @@ void glo_surface_destroy(GloSurface *surface) {
 
     if(surface->pixmap)
         XFreePixmap( glo.dpy, surface->pixmap);
+
+    if(surface->glxPixmap)
+	glXDestroyPixmap( glo.dpy, surface->glxPixmap);
+
     XDestroyWindow( glo.dpy, surface->window);
     if(surface->image)
         glo_surface_free_xshm_image(surface);
@@ -503,6 +507,23 @@ void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
     fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d, glFormat=0x%x, glType=0x%x.\n", surface->width, surface->height, glFormat, glType);
     /* glTexImage2D use different RGB order than the contexts in the pixmap surface */
 /*    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->image->data);*/
+
+    if ((glFormat == GL_RGBA || glFormat == GL_BGRA) && glType == GL_UNSIGNED_BYTE) {
+        GLubyte *b = (GLubyte *)surface->image->data;
+        int stride = surface->width * 4;
+        GLubyte *c = &((GLubyte *)surface->image->data)[stride*(surface->height-1)];
+        GLubyte *tmp = (GLubyte*)g_malloc(stride);
+        int irow;
+
+        for(irow = 0; irow < surface->height / 2; irow++) {
+            memcpy(tmp, b, stride);
+            memcpy(b, c, stride);
+            memcpy(c, tmp, stride);
+            b += stride;
+            c -= stride;
+        }
+        g_free(tmp);
+    }
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->image->data);
 #endif
 }

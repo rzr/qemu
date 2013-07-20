@@ -33,7 +33,17 @@
 extern "C" {
 #endif
 
-#include "hw/virtio.h"
+#include "hw/virtio/virtio.h"
+
+#define TYPE_VIRTIO_ESM "virtio-esm-device"
+#define VIRTIO_ESM(obj) \
+        OBJECT_CHECK(VirtIOESM, (obj), TYPE_VIRTIO_ESM)
+
+typedef struct VirtIOEmulatorStatusMedium {
+    VirtIODevice    vdev;
+    VirtQueue       *vq;
+    DeviceState     *qdev;
+} VirtIOESM;
 
 VirtIODevice *virtio_esm_init(DeviceState *dev);
 

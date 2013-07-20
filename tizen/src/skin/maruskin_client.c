@@ -27,13 +27,15 @@
  *
  */
 
-
-#include "maru_common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+
+#include "qemu-common.h"
+
+#include "maru_common.h"
 #include "maruskin_client.h"
 #include "maruskin_server.h"
 #include "emulator.h"
@@ -43,8 +45,8 @@
 #include "maruskin_operation.h"
 
 #ifdef CONFIG_WIN32
-#include "maru_err_table.h"
 #include <windows.h>
+#include "maru_err_table.h"
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, skin_client);
@@ -352,69 +354,3 @@ int start_simple_client(char* msg)
 
     return 1;
 }
-
-#ifdef CONFIG_WIN32
-typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
-LPFN_ISWOW64PROCESS fnIsWow64Process;
-
-int is_wow64(void)
-{
-    int result = 0;
-
-    //IsWow64Process is not available on all supported versions of Windows.
-    //Use GetModuleHandle to get a handle to the DLL that contains the function
-    //and GetProcAddress to get a pointer to the function if available.
-
-    fnIsWow64Process = (LPFN_ISWOW64PROCESS) GetProcAddress(
-        GetModuleHandle(TEXT("kernel32")),"IsWow64Process");
-
-    if(NULL != fnIsWow64Process)
-    {
-        if (!fnIsWow64Process(GetCurrentProcess(),&result))
-        {
-            //handle error
-            INFO("Can not find 'IsWow64Process'\n");
-        }
-    }
-    return result;
-}
-
-int get_java_path(char** java_path)
-{
-    HKEY hKeyNew;
-    HKEY hKey;
-    //char strJavaRuntimePath[JAVA_MAX_COMMAND_LENGTH] = {0};
-    char strChoosenName[JAVA_MAX_COMMAND_LENGTH] = {0};
-    char strSubKeyName[JAVA_MAX_COMMAND_LENGTH] = {0};
-    char strJavaHome[JAVA_MAX_COMMAND_LENGTH] = {0};
-    int index;
-    DWORD dwSubKeyNameMax = JAVA_MAX_COMMAND_LENGTH;
-    DWORD dwBufLen = JAVA_MAX_COMMAND_LENGTH;
-
-    RegOpenKeyEx(HKEY_LOCAL_MACHINE, "SOFTWARE\\JavaSoft\\Java Runtime Environment", 0,
-                                     KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | MY_KEY_WOW64_64KEY, &hKey);
-    RegEnumKeyEx(hKey, 0, (LPSTR)strSubKeyName, &dwSubKeyNameMax, NULL, NULL, NULL, NULL);
-    strcpy(strChoosenName, strSubKeyName);
-
-    index = 1;
-    while (ERROR_SUCCESS == RegEnumKeyEx(hKey, index, (LPSTR)strSubKeyName, &dwSubKeyNameMax,
-            NULL, NULL, NULL, NULL)) {
-        if (strcmp(strChoosenName, strSubKeyName) < 0) {
-            strcpy(strChoosenName, strSubKeyName);
-        }
-        index++;
-    }
-
-    RegOpenKeyEx(hKey, strChoosenName, 0, KEY_QUERY_VALUE | MY_KEY_WOW64_64KEY, &hKeyNew);
-    RegQueryValueEx(hKeyNew, "JavaHome", NULL, NULL, (LPBYTE)strJavaHome, &dwBufLen);
-    RegCloseKey(hKey);
-    if (strJavaHome[0] != '\0') {
-        sprintf(*java_path, "\"%s\\bin\\java\"", strJavaHome);
-        //strcpy(*java_path, strJavaHome);
-        //strcat(*java_path, "\\bin\\java");
-    } else {
-        return 0;
-    }
-    return 1;
-}
-#endif

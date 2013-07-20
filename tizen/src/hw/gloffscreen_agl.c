@@ -351,6 +351,7 @@ void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
 	if (aglTexImagePBuffer(ctxt->context, surface->pbuffer, GL_BACK) == GL_FALSE)
 		fprintf(stderr, "aglTexImagePBuffer failed: %s", aglErrorString(aglGetError())); 
 
+	glFinish();
 #endif
 }
 

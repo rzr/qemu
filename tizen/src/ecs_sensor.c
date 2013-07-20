@@ -28,11 +28,11 @@
  */
 
 #include "qemu-common.h"
-#include "qemu_socket.h"
-#include "qemu-queue.h"
-#include "qemu-option.h"
-#include "qemu-config.h"
-#include "qemu-timer.h"
+//#include "qemu_socket.h"
+//#include "qemu-queue.h"
+//#include "qemu-option.h"
+//#include "qemu-config.h"
+//#include "qemu-timer.h"
 
 #include "ecs.h"
 #include "hw/maru_virtio_sensor.h"

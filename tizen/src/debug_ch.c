@@ -50,10 +50,10 @@ static HANDLE handle;
 
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
-	int ret;
+	int ret_val;
 	__asm__ __volatile__( "lock; xaddl %0,(%1)"
-			: "=r" (ret) : "r" (dest), "0" (incr) : "memory" );
-	return ret;
+			: "=r" (ret_val) : "r" (dest), "0" (incr) : "memory" );
+	return ret_val;
 }
 
 static const char * const debug_classes[] = {"fixme", "err", "warn", "trace", "info"};
@@ -444,7 +444,8 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	fd = qemu_open(log_path, open_flags, 0666);
 	if(fd < 0) {
         fprintf(stderr, "Can't open logfile: %s\n", log_path);
-    	exit(1);
+        // commented out for prevent shutdown when log directory is removed on runtime.
+        //exit(1);
     }
     ret_write = qemu_write_full(fd, buf, ret);
     if (ret_write != ret) {

@@ -82,34 +82,32 @@ public class SkinUtil {
 		/* do nothing */
 	}
 
-	public static String getVmName( EmulatorConfig config ) {
-		
-		String vmPath = config.getArg( ArgsConstants.VM_PATH );
+	public static String getVmName(EmulatorConfig config) {
+		String vmPath = config.getArg(ArgsConstants.VM_PATH);
 
 		String regex = "";
-		if ( SwtUtil.isWindowsPlatform() ) {
+		if (SwtUtil.isWindowsPlatform()) {
 			regex = "\\" + File.separator;
 		} else {
 			regex = File.separator;
 		}
-		String[] split = StringUtil.nvl( vmPath ).split( regex );
+
+		String[] split = StringUtil.nvl(vmPath).split(regex);
 		String vmName = split[split.length - 1];
 
 		return vmName;
-		
 	}
-	
-	public static String makeEmulatorName( EmulatorConfig config ) {
 
-		String vmName = getVmName( config );
+	public static String makeEmulatorName(EmulatorConfig config) {
+		String vmName = getVmName(config);
 
-		if ( StringUtil.isEmpty( vmName ) ) {
+		if (StringUtil.isEmpty(vmName)) {
 			vmName = EMULATOR_PREFIX;
 		}
 
-		int portNumber = config.getArgInt( ArgsConstants.NET_BASE_PORT );
-		return vmName + ":" + portNumber;
+		int portNumber = config.getArgInt(ArgsConstants.NET_BASE_PORT);
 
+		return vmName + ":" + portNumber;
 	}
 
 	public static String getSdbPath() {
@@ -183,17 +181,17 @@ public class SkinUtil {
 		return null;
 	}
 
-	public static boolean isInGeometry( int currentX, int currentY, int targetX, int targetY, int targetWidth,
-			int targetHeight ) {
+	public static boolean isInGeometry(int currentX, int currentY,
+			int targetX, int targetY, int targetWidth, int targetHeight) {
 
-		if ( ( currentX >= targetX ) && ( currentY >= targetY ) ) {
-			if ( ( currentX <= ( targetX + targetWidth ) ) && ( currentY <= ( targetY + targetHeight ) ) ) {
+		if ((currentX >= targetX) && (currentY >= targetY)) {
+			if ((currentX <= (targetX + targetWidth)) &&
+					(currentY <= (targetY + targetHeight))) {
 				return true;
 			}
 		}
 
 		return false;
-
 	}
 
 	public static void trimShell( Shell shell, Image image ) {
@@ -282,8 +280,8 @@ public class SkinUtil {
 
 	}
 
-	public static Image createScaledImage( ImageRegistry imageRegistry, Shell shell, short rotationId, int scale,
-			ImageType type ) {
+	public static Image createScaledImage(ImageRegistry imageRegistry,
+			Shell shell, short rotationId, int scale, ImageType type) {
 
 		ImageData originalImageData = imageRegistry.getSkinImageData( rotationId, type );
 

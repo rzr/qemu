@@ -28,9 +28,8 @@
  */
 
 #include "qemu-common.h"
+#include "sysemu/kvm.h"
 #include "maru_camera_common.h"
-#include "pci.h"
-#include "kvm.h"
 #include "tizen/src/debug_ch.h"
 
 #include <linux/videodev2.h>
@@ -64,15 +63,101 @@ typedef struct marucam_framebuffer {
     size_t size;
 } marucam_framebuffer;
 
+struct marucam_saved_frame {
+    void *data;
+    uint32_t pixelformat;
+    uint32_t width;
+    uint32_t height;
+    uint32_t size;
+};
+
+static struct marucam_saved_frame saved_frame;
+static char has_success_frame;
 static int n_framebuffer;
+static int previous_frame_index = -1;
 static struct marucam_framebuffer *framebuffer;
 
 static const char *dev_name = "/dev/video0";
 static int v4l2_fd;
 static int convert_trial;
 static int ready_count;
+static int timeout_n;
 
 static struct v4l2_format dst_fmt;
+
+static void ScalePlaneSimple(int src_width, int src_height,
+                             int dst_width, int dst_height,
+                             int src_stride, int dst_stride,
+                             const uint8_t *src_ptr, uint8_t *dst_ptr) {
+    int i, j;
+    int dx = (src_width << 16) / dst_width;
+    int dy = (src_height << 16) / dst_height;
+    int y = (dy >= 65536) ? ((dy >> 1) - 32768) : (dy >> 1);
+    for (j = 0; j < dst_height; ++j) {
+        int x = (dx >= 65536) ? ((dx >> 1) - 32768) : (dx >> 1);
+        int yi = y >> 16;
+        const uint8_t *src = src_ptr + yi * src_stride;
+        uint8_t *dst = dst_ptr;
+        for (i = 0; i < dst_width; ++i) {
+            *dst++ = src[x >> 16];
+            x += dx;
+        }
+        dst_ptr += dst_stride;
+        y += dy;
+    }
+}
+
+static void make_yu12_black(unsigned char *dest, uint32_t width, uint32_t height)
+{
+    uint32_t x, y;
+    unsigned char *udest, *vdest;
+
+    /* Y */
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            *dest++ = 16;
+        }
+    }
+
+    /* U + V */
+    udest = dest;
+    vdest = dest + width * height / 4;
+
+    for (y = 0; y < height / 2; y++) {
+        for (x = 0; x < width / 2; x++) {
+            *udest++ = *vdest++ = 128;
+        }
+    }
+}
+
+static void marucam_scale_yuv420(void *src,
+                    uint32_t src_width, uint32_t src_height,
+                    void *dst, uint32_t dst_width, uint32_t dst_height)
+{
+    uint32_t src_halfwidth = (src_width + 1) >> 1;
+    uint32_t src_halfheight = (src_height + 1) >> 1;
+    uint32_t dst_halfwidth = (dst_width + 1) >> 1;
+    uint32_t dst_halfheight = (dst_height + 1) >> 1;
+
+    uint8_t *src_u = src + (src_width * src_height);
+    uint8_t *src_v = src_u + (src_width * src_height / 4);
+
+    uint8_t *dst_u = dst + (dst_width * dst_height);
+    uint8_t *dst_v = dst_u + (dst_width * dst_height /4);
+
+    ScalePlaneSimple(src_width, src_height,
+                     dst_width, dst_height,
+                     src_width, dst_width,
+                     src, dst);
+    ScalePlaneSimple(src_halfwidth, src_halfheight,
+                     dst_halfwidth, dst_halfheight,
+                     src_halfwidth, dst_halfwidth,
+                     src_u, dst_u);
+    ScalePlaneSimple(src_halfwidth, src_halfheight,
+                     dst_halfwidth, dst_halfheight,
+                     src_halfwidth, dst_halfwidth,
+                     src_v, dst_v);
+}
 
 static int yioctl(int fd, int req, void *arg)
 {
@@ -299,6 +384,7 @@ static void free_framebuffers(marucam_framebuffer *fb, int buf_num)
             ERR("framebuffer[%d].data is NULL.\n", i);
         }
     }
+    previous_frame_index = -1;
 }
 
 static uint32_t
@@ -384,19 +470,52 @@ static int is_stream_paused(MaruCamState *state)
     return (st == _MC_THREAD_PAUSED);
 }
 
+/* sends a frame, YU12/black color  */
+/* TODO: add other pixel format method */
+static void __raise_dummy_intr(MaruCamState *state)
+{
+    void *buf = NULL;
+    qemu_mutex_lock(&state->thread_mutex);
+    if (state->streamon == _MC_THREAD_STREAMON && state->req_frame) {
+        buf = state->vaddr + state->buf_size * (state->req_frame - 1);
+        if (saved_frame.data) {
+            if (saved_frame.width == dst_fmt.fmt.pix.width &&
+                saved_frame.height == dst_fmt.fmt.pix.height) {
+                TRACE("Copies the previuos frame\n");
+                memcpy(buf, saved_frame.data, state->buf_size);
+            } else {
+                TRACE("Resizes the previous frame\n");
+                marucam_scale_yuv420(saved_frame.data, saved_frame.width,
+                                     saved_frame.height,
+                                     buf, dst_fmt.fmt.pix.width,
+                                     dst_fmt.fmt.pix.height);
+            }
+        } else {
+            TRACE("Sends a black frame\n");
+            make_yu12_black(buf,
+                            dst_fmt.fmt.pix.width,
+                            dst_fmt.fmt.pix.height);
+        }
+        state->req_frame = 0; /* clear request */
+        state->isr |= 0x01;   /* set a flag of raising a interrupt */
+        qemu_bh_schedule(state->tx_bh);
+    }
+    qemu_mutex_unlock(&state->thread_mutex);
+}
+
 static void __raise_err_intr(MaruCamState *state)
 {
     qemu_mutex_lock(&state->thread_mutex);
     if (state->streamon == _MC_THREAD_STREAMON) {
         state->req_frame = 0; /* clear request */
-        state->isr = 0x08;   /* set a error flag of rasing a interrupt */
+        state->isr = 0x08;   /* set a error flag of raising a interrupt */
         qemu_bh_schedule(state->tx_bh);
     }
     qemu_mutex_unlock(&state->thread_mutex);
 }
 
 static void
-notify_buffer_ready(MaruCamState *state, void *ptr, size_t size)
+notify_buffer_ready(MaruCamState *state, uint32_t buf_index)
 {
     void *buf = NULL;
 
@@ -415,7 +534,9 @@ notify_buffer_ready(MaruCamState *state, void *ptr, size_t size)
             return;
         }
         buf = state->vaddr + state->buf_size * (state->req_frame - 1);
-        memcpy(buf, ptr, state->buf_size);
+        memcpy(buf, framebuffer[buf_index].data, state->buf_size);
+        previous_frame_index = buf_index;
+        has_success_frame = 1;
         state->req_frame = 0; /* clear request */
         state->isr |= 0x01;   /* set a flag of rasing a interrupt */
         qemu_bh_schedule(state->tx_bh);
@@ -450,7 +571,7 @@ static int read_frame(MaruCamState *state)
         }
     }
 
-    notify_buffer_ready(state, framebuffer[buf.index].data, buf.bytesused);
+    notify_buffer_ready(state, buf.index);
 
     if (xioctl(v4l2_fd, VIDIOC_QBUF, &buf) < 0) {
         ERR("QBUF error: %s\n", strerror(errno));
@@ -464,7 +585,6 @@ static int __v4l2_streaming(MaruCamState *state)
     fd_set fds;
     struct timeval tv;
     int ret;
-    static uint32_t timeout_n;
 
     FD_ZERO(&fds);
     FD_SET(v4l2_fd, &fds);
@@ -484,9 +604,32 @@ static int __v4l2_streaming(MaruCamState *state)
     } else if (!ret) {
         timeout_n++;
         ERR("Select timed out: count(%u)\n", timeout_n);
+        if (ready_count <= MARUCAM_SKIPFRAMES) {
+            switch (timeout_n) {
+            case 1:
+                ERR("Waiting for reading a frame data\n");
+                return 0;
+            case 2:
+            case 3:
+            case 4:
+                ERR("Sends dummy data to initialize the camera\n");
+                __raise_dummy_intr(state);
+                return 0;
+            default:
+                ERR("Webcam is busy, failed to a read frame."
+                    " Raises an error\n");
+                __raise_err_intr(state);
+                return -1;
+            }
+        }
         if (timeout_n >= 5) {
+            ERR("Webcam is busy, failed to a read frame. Raises an error\n");
             __raise_err_intr(state);
             return -1;
+        }
+        if (previous_frame_index != -1) {
+            ERR("Sends previous frame data\n");
+            notify_buffer_ready(state, previous_frame_index);
         }
         return 0;
     }
@@ -529,6 +672,8 @@ static void *marucam_worker_thread(void *thread_param)
 
         convert_trial = 10;
         ready_count = 0;
+        timeout_n = 0;
+        has_success_frame = 0;
         qemu_mutex_lock(&state->thread_mutex);
         state->streamon = _MC_THREAD_STREAMON;
         qemu_mutex_unlock(&state->thread_mutex);
@@ -788,6 +933,21 @@ void marucam_device_stop_preview(MaruCamState *state)
         while (!is_stream_paused(state)) {
             nanosleep(&req, NULL);
         }
+    }
+
+    if (has_success_frame) {
+        saved_frame.width = dst_fmt.fmt.pix.width;
+        saved_frame.height = dst_fmt.fmt.pix.height;
+        saved_frame.size = dst_fmt.fmt.pix.sizeimage;
+        if (saved_frame.data) {
+            g_free(saved_frame.data);
+            saved_frame.data = NULL;
+        }
+        saved_frame.data = (void *)g_malloc0(saved_frame.size);
+        memcpy(saved_frame.data,
+               framebuffer[previous_frame_index].data,
+               saved_frame.size);
+        TRACE("Saves a frame data\n");
     }
 
     param->errCode = stop_capturing();
@@ -1188,6 +1348,12 @@ void marucam_device_close(MaruCamState *state)
     }
 
     marucam_reset_controls();
+
+    if (saved_frame.data) {
+        g_free(saved_frame.data);
+        saved_frame.data = NULL;
+    }
+    memset(&saved_frame, 0x00, sizeof(saved_frame));
 
     v4l2_close(v4l2_fd);
     v4l2_fd = 0;

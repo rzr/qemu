@@ -33,17 +33,37 @@
 extern "C" {
 #endif
 
-#include "hw/virtio.h"
+#include "hw/virtio/virtio.h"
+
+enum request_cmd_nfc {
+	request_nfc_get = 0,
+	request_nfc_set,
+	request_nfc_answer
+};
 
 
 /* device protocol */
 
 #define __MAX_BUF_SIZE	1024
 
-VirtIODevice *virtio_nfc_init(DeviceState *dev);
 
-void virtio_nfc_exit(VirtIODevice *vdev);
-bool send_to_nfc(enum request_cmd req, char* data, const uint32_t len);
+typedef struct VirtIONFC{
+    VirtIODevice    vdev;
+    VirtQueue       *rvq;
+    VirtQueue		*svq;
+    DeviceState     *qdev;
+
+    QEMUBH *bh;
+} VirtIONFC;
+
+
+#define TYPE_VIRTIO_NFC "virtio-nfc-device"
+#define VIRTIO_NFC(obj) \
+        OBJECT_CHECK(VirtIONFC, (obj), TYPE_VIRTIO_NFC)
+
+
+bool send_to_nfc(enum request_cmd_nfc req, char* data, const uint32_t len);
+
 
 #ifdef __cplusplus
 }

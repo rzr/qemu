@@ -1,5 +1,5 @@
 /**
- * 
+ * General-Purpose Skin Layout
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -143,6 +143,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
 
+		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
 		shell.setText("Emulator - " + emulatorName);
 
@@ -172,7 +173,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		toggleButton.addMouseListener(new MouseListener() {
 			@Override
 			public void mouseDown(MouseEvent e) {
-				if (skin.isSelectKeyWindow() == true) {
+				if (skin.isKeyWindow == true) {
 					skin.closeKeyWindow();
 					skin.recentlyDocked = SWT.RIGHT | SWT.CENTER;
 				} else {
@@ -203,10 +204,17 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		arrangeSkin(scale, rotationId);
 
 		/* open the key window */
+		final int dockValue = config.getSkinPropertyInt(
+				SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				if (dockValue == 0 || dockValue == SWT.NONE) {
+					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+				} else {
+					skin.openKeyWindow(dockValue, false);
+				}
 			}
 		});
 	}
@@ -223,9 +231,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
 		if (displayBounds == null) {
-			logger.severe("Failed to lcd information for phone shape skin.");
+			logger.severe("Failed to read display information for skin.");
 			SkinUtil.openMessage(shell, null,
-					"Failed to read lcd information for phone shape skin.\n" +
+					"Failed to read display information for skin.\n" +
 					"Check the contents of skin dbi file.",
 					SWT.ICON_ERROR, config);
 			System.exit(-1);
@@ -250,8 +258,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* arrange the toggle button of key window */
-		toggleButton.setBounds(displayBounds.x + displayBounds.width,
-				displayBounds.y + (displayBounds.height / 2) - (toggleButton.getImageSize().y / 2),
+		toggleButton.setBounds(displayBounds.x + displayBounds.width + 4,
+				displayBounds.y + ((displayBounds.height - toggleButton.getImageSize().y) / 2),
 				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
 
 		/* arrange the progress bar */
@@ -369,11 +377,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
 
-					/* Let's do one more update for sdl display surface
-					while skipping of framebuffer drawing */
-					DisplayStateData lcdStateData = new DisplayStateData(
-							currentState.getCurrentScale(), currentState.getCurrentRotationId());
-					skin.communicator.sendToQEMU(SendCommand.CHANGE_LCD_STATE, lcdStateData);
+//					if (skin.communicator.isSensorDaemonStarted() == true) {
+//						/* Let's do one more update for sdl display surface
+//						while skipping of framebuffer drawing */
+//						DisplayStateData lcdStateData = new DisplayStateData(
+//								currentState.getCurrentScale(), currentState.getCurrentRotationId());
+//						skin.communicator.sendToQEMU(
+//								SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
+//					}
 				}
 
 				/* general shell does not support native transparency,
@@ -382,10 +393,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
 
-				if (skin.keyWindow != null &&
-						skin.keyWindow.getDockPosition() != SWT.NONE) {
-					skin.keyWindow.dock(
-							skin.keyWindow.getDockPosition(), false, false);
+				if (skin.keyWindow != null) {
+					skin.keyWindow.redock(false, false);
 				}
 			}
 		};
@@ -403,10 +412,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 					shell.setLocation(x, y);
 
-					if (skin.keyWindow != null &&
-							skin.keyWindow.getDockPosition() != SWT.NONE) {
-						skin.keyWindow.dock(
-								skin.keyWindow.getDockPosition(), false, false);
+					if (skin.keyWindow != null) {
+						skin.keyWindow.redock(false, false);
 					}
 				}
 			}
@@ -423,10 +430,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
-					if (skin.keyWindow != null &&
-							skin.keyWindow.getDockPosition() != SWT.NONE) {
-						skin.keyWindow.dock(
-								skin.keyWindow.getDockPosition(), false, true);
+					if (skin.keyWindow != null) {
+						skin.keyWindow.redock(false, true);
 					}
 				}
 			}

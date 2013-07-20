@@ -1,33 +1,33 @@
+#include <stdbool.h>
+#include <pthread.h>
 
 #include "hw/qdev.h"
-#include "net.h"
-#include "console.h"
-#include "migration.h"
+#include "net/net.h"
+#include "ui/console.h"
+#include "migration/migration.h"
+#include "qapi/qmp/qint.h"
+#include "qapi/qmp/qbool.h"
+#include "qapi/qmp/qjson.h"
+#include "qapi/qmp/json-parser.h"
+#include "ui/qemu-spice.h"
+#include "qemu/queue.h"
+#include "qemu/option.h"
+#include "sysemu/char.h"
+#include "qemu/main-loop.h"
 
 #ifndef _WIN32
 #include <sys/epoll.h>
 #endif
 
 #include "qemu-common.h"
-#include "qemu_socket.h"
-#include "qemu-queue.h"
-#include "qemu-option.h"
-#include "main-loop.h"
-#include "ui/qemu-spice.h"
-#include "qemu-char.h"
+//#include "qemu_socket.h"
 #include "sdb.h"
-#include "qjson.h"
 #include "ecs-json-streamer.h"
-#include "json-parser.h"
 #include "qmp-commands.h"
-#include "qint.h"
-#include "qbool.h"
+
 #include "ecs.h"
 #include "hw/maru_virtio_evdi.h"
 #include "skin/maruskin_operation.h"
-#include <stdbool.h>
-#include <pthread.h>
-
 
 void ecs_startinfo_req(ECS_Client *clii)
 {

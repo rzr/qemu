@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -208,25 +208,26 @@ public interface ICommunicator extends Runnable {
 	public enum SendCommand {
 		/* This values must match the QEMU definitions */
 
-		SEND_START( (short)1 ),
-		
-		SEND_MOUSE_EVENT( (short)10 ),
-		SEND_KEY_EVENT( (short)11 ),
-		SEND_HARD_KEY_EVENT( (short)12 ),
-		CHANGE_LCD_STATE( (short)13 ),
-		OPEN_SHELL( (short)14 ),
-		HOST_KBD( (short)15 ),
-		SCREEN_SHOT( (short)16 ),
-		DETAIL_INFO( (short)17 ),
-		RAM_DUMP( (short)18 ),
-		GUEST_DUMP( (short)19 ),
-		
-		RESPONSE_HEART_BEAT( (short)900 ),
-		CLOSE( (short)998 ),
-		RESPONSE_SHUTDOWN( (short)999 );
-		
+		SEND_START((short) 1),
+
+		SEND_MOUSE_EVENT((short) 10),
+		SEND_KEY_EVENT((short) 11),
+		SEND_HARD_KEY_EVENT((short) 12),
+		CHANGE_LCD_STATE((short) 13),
+		OPEN_SHELL((short) 14),
+		HOST_KBD((short) 15),
+		SCREEN_SHOT((short) 16),
+		DETAIL_INFO((short) 17),
+		RAM_DUMP((short) 18),
+		GUEST_DUMP((short) 19),
+
+		RESPONSE_HEART_BEAT((short) 900),
+		RESPONSE_DRAW_FRAMEBUFFER((short) 901),
+		CLOSE((short) 998),
+		RESPONSE_SHUTDOWN((short) 999);
+
 		private short value;
-		SendCommand( short value ) {
+		SendCommand(short value) {
 			this.value = value;
 		}
 
@@ -234,24 +235,24 @@ public interface ICommunicator extends Runnable {
 			return this.value;
 		}
 
-		public static SendCommand getValue( String val ) {
+		public static SendCommand getValue(String val) {
 			SendCommand[] values = SendCommand.values();
 			for (int i = 0; i < values.length; i++) {
-				if( values[i].value == Short.parseShort( val ) ) {
+				if (values[i].value == Short.parseShort(val)) {
 					return values[i];
 				}
 			}
-			throw new IllegalArgumentException( val );
+			throw new IllegalArgumentException(val);
 		}
 
-		public static SendCommand getValue( short val ) {
+		public static SendCommand getValue(short val) {
 			SendCommand[] values = SendCommand.values();
 			for (int i = 0; i < values.length; i++) {
-				if( values[i].value == val ) {
+				if (values[i].value == val) {
 					return values[i];
 				}
 			}
-			throw new IllegalArgumentException( Integer.toString(val) );
+			throw new IllegalArgumentException(Integer.toString(val));
 		}
 	}
 
@@ -265,6 +266,8 @@ public interface ICommunicator extends Runnable {
 		BOOTING_PROGRESS((short) 5),
 		BRIGHTNESS_VALUE((short) 6),
 		SENSOR_DAEMON_START((short) 800),
+		SDB_DAEMON_START((short) 801),
+		DRAW_FRAME((short) 900),
 		SHUTDOWN((short) 999);
 
 		private short value;
@@ -276,29 +279,28 @@ public interface ICommunicator extends Runnable {
 			return this.value;
 		}
 
-		public static ReceiveCommand getValue( String val ) {
+		public static ReceiveCommand getValue(String val) {
 			ReceiveCommand[] values = ReceiveCommand.values();
 			for (int i = 0; i < values.length; i++) {
-				if( values[i].value == Short.parseShort( val ) ) {
+				if (values[i].value == Short.parseShort(val)) {
 					return values[i];
 				}
 			}
-			throw new IllegalArgumentException( val );
+			throw new IllegalArgumentException(val);
 		}
 
-		public static ReceiveCommand getValue( short val ) {
+		public static ReceiveCommand getValue(short val) {
 			ReceiveCommand[] values = ReceiveCommand.values();
 			for (int i = 0; i < values.length; i++) {
-				if( values[i].value == val ) {
+				if (values[i].value == val) {
 					return values[i];
 				}
 			}
-			throw new IllegalArgumentException( Integer.toString(val) );
+			throw new IllegalArgumentException(Integer.toString(val));
 		}
 	}
 
-	public void sendToQEMU( SendCommand command, ISendData data );
-	
+	public void sendToQEMU(SendCommand command, ISendData data, boolean urgent);
+
 	public void terminate();
-	
 }

@@ -81,24 +81,25 @@ set_target() {
   case "$1" in
   x86|i386|i486|i586|i686)
     EMUL_TARGET_LIST="i386-softmmu"
-    if [ -z "$VIRTIOGL_EN" ] && [ -z "$YAGL_EN" ] ; then
+    if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
   ;;
   arm)
     EMUL_TARGET_LIST="arm-softmmu"
-    if [ -z "$YAGL_EN" ] && [ -z "$VIRTIOGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
+    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
       yagl_enable yes
     fi
   ;;
   all)
-    EMUL_TARGET_LIST="i386-softmmu,arm-softmmu"
+#    EMUL_TARGET_LIST="i386-softmmu,arm-softmmu"
+    EMUL_TARGET_LIST="i386-softmmu"
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
-    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then    
-      yagl_enable yes
-    fi
+#    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then    
+#      yagl_enable yes
+#    fi
   ;;
   esac
 }
@@ -195,11 +196,10 @@ exec ./configure \
  $CONFIGURE_APPEND \
  --disable-werror \
  --audio-drv-list=alsa \
- --audio-card-list=ac97 \
  --enable-maru \
  --disable-vnc \
  --disable-pie $1
- # --enable-ldst-optimization \
+ #--enable-ldst-optimization \
 ;;
 MINGW*)
 cd distrib/libav
@@ -213,10 +213,13 @@ cd ..
 echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
+# We add CFLAGS '-fno-omit-frame-pointer'.
+# A GCC might have a bug related with omitting frame pointer. It generates weird instructions.
 exec ./configure \
  $CONFIGURE_APPEND \
+ --extra-cflags=-fno-omit-frame-pointer \
+ --cc=gcc \
  --audio-drv-list=winwave \
- --audio-card-list=ac97 \
  --enable-hax \
  --enable-maru \
  --disable-vnc $1
@@ -239,7 +242,6 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
  --extra-cflags=-mmacosx-version-min=10.4 \
  --audio-drv-list=coreaudio \
  --enable-mixemu \
- --audio-card-list=ac97 \
  --enable-maru \
  --enable-shm \
  --enable-hax \

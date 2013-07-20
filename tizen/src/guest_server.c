@@ -1,7 +1,7 @@
 /*
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * JiHye Kim <jihye1128.kim@samsung.com>
@@ -45,6 +45,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "emulator.h"
 #include "guest_server.h"
 #include "mloop_event.h"
 #include "skin/maruskin_server.h"
@@ -83,36 +84,83 @@ pthread_t start_guest_server(int server_port)
 /* get_emulator_vms_sdcard_path = "/home/{USER}/tizen-sdk-data/emulator-vms/sdcard" */
 static char* get_emulator_vms_sdcard_path(void)
 {
+
+// FIXME: A draft code for multi-SDK install. It needs some cleans up.
     char *emulator_vms_sdcard_path = NULL;
+    gsize emulator_vms_sdcard_path_len = 0;
+
+    gchar const *key = "TIZEN_SDK_DATA_PATH";
+    gchar base_dir[PATH_MAX] = { '\0', };
+    gchar info_path[PATH_MAX] = { '\0', };
 
 #ifndef _WIN32
-    char emulator_vms[] = "/tizen-sdk-data/emulator-vms/sdcard/";
-    char *homedir = (char*)g_getenv("HOME");
+    gchar const *info_file = "/../../../sdk.info";
 
-    if (!homedir) {
-        homedir = (char*)g_get_home_dir();
+    gchar const *emulator_vms = "/emulator-vms/sdcard/";
+    gchar const *legacy_data_dir = "/tizen-sdk-data/";
+#else
+    gchar const *info_file = "\\..\\..\\..\\sdk.info";
+
+    gchar const *emulator_vms = "\\emulator-vms\\sdcard\\";
+    gchar const *legacy_data_dir = "\\tizen-sdk-data";
+#endif
+
+    g_strlcpy(info_path, bin_path, sizeof(info_path));
+    g_strlcat(info_path, info_file, sizeof(info_path));
+    INFO("[%s] \n", info_path);
+    FILE *file = fopen(info_path, "r");
+    char tmp[256] = { '\0', };
+    char *tmpline = NULL;
+    while (file != NULL && fgets(tmp, sizeof(tmp), file) != NULL) {
+        INFO("[%s] \n", tmp);
+        if ((tmpline = g_strstr_len(tmp, sizeof(tmp), key))) {
+            tmpline += strlen(key) + 1; // 1 for '='
+            break;
+        }
     }
 
-    emulator_vms_sdcard_path = malloc(strlen(homedir) + sizeof emulator_vms + 1);
-    assert(emulator_vms_sdcard_path != NULL);
-    strcpy(emulator_vms_sdcard_path, homedir);
-    strcat(emulator_vms_sdcard_path, emulator_vms);
+    if (tmpline[strlen(tmpline) -1] == '\n') {
+        tmpline[strlen(tmpline) -1] = '\0';
+    }
+    if (tmpline[strlen(tmpline) -1] == '\r') {
+        tmpline[strlen(tmpline) -1] = '\0';
+    }
+
+    if (tmpline) {
+        INFO("SDK info file is found.\n");
+        g_strlcpy(base_dir, tmpline, sizeof(base_dir));
+        g_strlcpy(base_dir, tmpline, sizeof(base_dir));
+    }
+    else {
+        INFO("SDK info file is not found. Use legacy data directory.\n");
+#ifndef _WIN32
+        gchar *home_dir = (char*)g_getenv("HOME");
+
+        if (!home_dir) {
+            home_dir = (char*)g_get_home_dir();
+        }
 #else
-    char emulator_vms[] = "\\tizen-sdk-data\\emulator-vms\\sdcard\\";
-    HKEY hKey;
-    char strLocalAppDataPath[1024] = { 0 };
-    DWORD dwBufLen = 1024;
-    RegOpenKeyEx(HKEY_CURRENT_USER,
-        "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
-        0, KEY_QUERY_VALUE, &hKey);
+        HKEY hKey;
+        gchar home_dir[1024] = { 0 };
+        DWORD dwBufLen = 1024;
 
-    RegQueryValueEx(hKey, "Local AppData", NULL, NULL, (LPBYTE)strLocalAppDataPath, &dwBufLen);
-    RegCloseKey(hKey);
+        RegOpenKeyEx(HKEY_CURRENT_USER,
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                0, KEY_QUERY_VALUE, &hKey);
 
-    emulator_vms_sdcard_path = malloc(strlen(strLocalAppDataPath) + sizeof emulator_vms + 1);
-    strcpy(emulator_vms_sdcard_path, strLocalAppDataPath);
-    strcat(emulator_vms_sdcard_path, emulator_vms);
+        RegQueryValueEx(hKey, "Local AppData", NULL, NULL, (LPBYTE)home_dir, &dwBufLen);
+        RegCloseKey(hKey);
 #endif
+        g_strlcpy(base_dir, home_dir, sizeof(base_dir));
+        g_strlcat(base_dir, legacy_data_dir, sizeof(base_dir));
+
+    }
+
+    emulator_vms_sdcard_path_len = strlen(base_dir) + strlen(emulator_vms) + 1;
+    emulator_vms_sdcard_path = g_malloc0(emulator_vms_sdcard_path_len);
+    g_strlcpy(emulator_vms_sdcard_path, base_dir, emulator_vms_sdcard_path_len);
+    g_strlcat(emulator_vms_sdcard_path, emulator_vms, emulator_vms_sdcard_path_len);
+    INFO("Emulator sdcard directory is [%s].\n", emulator_vms_sdcard_path);
 
     return emulator_vms_sdcard_path;
 }
@@ -205,21 +253,23 @@ static void* run_guest_server(void* args)
             parse_val(readbuf, 0x0a, command);
 
             TRACE("----------------------------------------\n");
-            if (strcmp(command, "3\n" ) == 0) {
+
+            if (strcmp(command, "2\n" ) == 0) {
                 TRACE("command:%s\n", command);
                 notify_sdb_daemon_start();
+            } 
+            if (strcmp(command, "3\n" ) == 0) {
+                TRACE("command:%s\n", command);
                 notify_sensor_daemon_start();
             } 
             else if (strcmp(command, "4\n") == 0) {
                 /* sdcard mount/umount msg recv from emuld */
-                INFO("command:%s\n", command);
+                TRACE("command:%s\n", command);
+
                 char token[] = "\n";
                 char* ret = NULL;
                 ret = strtok(readbuf, token);
-                INFO("%s\n", ret);
-
                 ret = strtok(NULL, token);
-                INFO("%s\n", ret);
 
                 if (atoi(ret) == 0) {
                     /* umount sdcard */
@@ -253,9 +303,6 @@ static void* run_guest_server(void* args)
         }
     }
 
-#if 0
-cleanup:
-#endif
 #ifdef _WIN32
     if (server_sock) {
         closesocket(server_sock);
@@ -266,6 +313,7 @@ cleanup:
     }
 #endif
     server_sock = 0;
+
     return NULL;
 }
 

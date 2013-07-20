@@ -1,7 +1,7 @@
 /*
  * Emulator
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
@@ -30,35 +30,42 @@
  *
  */
 
+#include <stdlib.h>
+#include <string.h>
 
-#include "maru_common.h"
-#include "emulator.h"
-#include "osutil.h"
-#include "guest_debug.h"
-#include "sdb.h"
-#include "string.h"
-#include "skin/maruskin_server.h"
-#include "skin/maruskin_client.h"
-#include "guest_server.h"
-#include "emul_state.h"
-#include "qemu_socket.h"
+#include "qemu/config-file.h"
+#include "qemu/sockets.h"
+
 #include "build_info.h"
-#include "maru_err_table.h"
-#include "maru_display.h"
-#include "qemu-config.h"
-#include "mloop_event.h"
+#include "emulator.h"
+#include "emul_state.h"
+#include "guest_debug.h"
+#include "guest_server.h"
 #include "hw/maru_camera_common.h"
 #include "hw/gloffscreen_test.h"
+#include "maru_common.h"
+#include "maru_err_table.h"
+#include "maru_display.h"
+#include "mloop_event.h"
+#include "osutil.h"
+#include "sdb.h"
+#include "skin/maruskin_server.h"
+#include "skin/maruskin_client.h"
 #include "debug_ch.h"
 #include "ecs.h"
 
-#include <stdlib.h>
 #ifdef CONFIG_SDL
 #include <SDL.h>
+#endif
+#ifdef CONFIG_LINUX
+#include <sys/ipc.h>
+#include <sys/shm.h>
+extern int g_shmid;
 #endif
 
 #ifdef CONFIG_DARWIN
 #include "ns_event.h"
+int thread_running = 1; /* Check if we need exit main */
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, main);
@@ -75,6 +82,8 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define LCD_HEIGHT_PREFIX "height="
 
 #define MIDBUF  128
+#define LEN_MARU_KERNEL_CMDLINE 512
+gchar maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
 
 gchar bin_path[PATH_MAX] = { 0, };
 gchar log_path[PATH_MAX] = { 0, };
@@ -85,20 +94,12 @@ char tizen_target_img_path[PATH_MAX];
 
 int enable_gl = 0;
 int enable_yagl = 0;
-
 int is_webcam_enabled;
-
-#define LEN_MARU_KERNEL_CMDLINE 512
-gchar maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
 
 static int _skin_argc;
 static char **_skin_argv;
 static int _qemu_argc;
 static char **_qemu_argv;
-
-#ifdef CONFIG_DARWIN
-int thread_running = 1; /* Check if we need exit main */
-#endif
 
 const gchar *get_log_path(void)
 {
@@ -111,6 +112,14 @@ void exit_emulator(void)
     shutdown_skin_server();
     shutdown_guest_server();
 	stop_ecs();
+
+#ifdef CONFIG_LINUX
+    /* clean up the vm lock memory by munkyu */
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("emulator.c: ");
+    }
+#endif
 
     maru_display_fini();
 }
@@ -298,6 +307,7 @@ static void print_system_info(void)
     INFO("* Package %s\n", pkginfo_version);
     INFO("* Package %s\n", pkginfo_maintainer);
     INFO("* Git Head : %s\n", pkginfo_githead);
+    INFO("* %s\n", latest_gittag);
     INFO("* User name : %s\n", g_get_real_name());
     INFO("* Host name : %s\n", g_get_host_name());
 
@@ -309,12 +319,13 @@ static void print_system_info(void)
     INFO("* Current time : %s\n", timeinfo);
 
 #ifdef CONFIG_SDL
-    /* Gets the version of the dynamically linked SDL library */
-    INFO("* Host sdl version : (%d, %d, %d)\n",
-        SDL_Linked_Version()->major,
-        SDL_Linked_Version()->minor,
-        SDL_Linked_Version()->patch);
+	/* Gets the version of the dynamically linked SDL library */
+	INFO("* Host sdl version : (%d, %d, %d)\n",
+			SDL_Linked_Version()->major,
+			SDL_Linked_Version()->minor,
+			SDL_Linked_Version()->patch);
 #endif
+
     print_system_info_os();
 }
 

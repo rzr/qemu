@@ -30,8 +30,8 @@
  *
  */
 
-#include "pc.h"
-#include "pci.h"
+#include "hw/i386/pc.h"
+#include "hw/pci/pci.h"
 #include "maru_device_ids.h"
 #include "maru_overlay.h"
 #include "debug_ch.h"
@@ -65,6 +65,9 @@ uint16_t overlay1_top;
 uint16_t overlay1_width;
 uint16_t overlay1_height;
 
+pixman_image_t *overlay0_image;
+pixman_image_t *overlay1_image;
+
 typedef struct OverlayState {
     PCIDevice       dev;
 
@@ -74,7 +77,7 @@ typedef struct OverlayState {
 
 
 static uint64_t overlay_reg_read(void *opaque,
-                                 target_phys_addr_t addr,
+                                 hwaddr addr,
                                  unsigned size)
 {
     switch (addr) {
@@ -115,7 +118,7 @@ static uint64_t overlay_reg_read(void *opaque,
 }
 
 static void overlay_reg_write(void *opaque,
-                              target_phys_addr_t addr,
+                              hwaddr addr,
                               uint64_t val,
                               unsigned size)
 {
@@ -127,7 +130,17 @@ static void overlay_reg_write(void *opaque,
             /* clear the last overlay area. */
             memset(overlay_ptr, 0x00, (OVERLAY_MEM_SIZE / 2));
             overlay0_left = overlay0_top = overlay0_width = overlay0_height = 0;
+            if (overlay0_image) {
+                pixman_image_unref(overlay0_image);
+                overlay0_image = NULL;
+            }
             TRACE("clear the last overlay0 area\n");
+        } else {
+            overlay0_image = pixman_image_create_bits(PIXMAN_a8r8g8b8,
+                                overlay0_width, overlay0_height,
+                                (uint32_t *)overlay_ptr,
+                                overlay0_width * 4);
+            TRACE("create the overlay0 pixman image\n");
         }
         break;
     case OVERLAY_POSITION:
@@ -150,7 +163,17 @@ static void overlay_reg_write(void *opaque,
             memset(overlay_ptr + OVERLAY1_REG_OFFSET,
                    0x00, (OVERLAY_MEM_SIZE / 2));
             overlay1_left = overlay1_top = overlay1_width = overlay1_height = 0;
+            if (overlay1_image) {
+                pixman_image_unref(overlay1_image);
+                overlay1_image = NULL;
+            }
             TRACE("clear the last overlay1 area\n");
+        } else {
+            overlay1_image = pixman_image_create_bits(PIXMAN_a8r8g8b8,
+                                overlay1_width, overlay1_height,
+                                (uint32_t *)(overlay_ptr + OVERLAY1_REG_OFFSET),
+                                overlay1_width * 4);
+            TRACE("create the overlay1 pixman image\n");
         }
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:

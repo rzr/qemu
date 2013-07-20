@@ -35,8 +35,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-evdi);
 
-#define VIRTIO_EVDI_DEVICE_NAME "virtio-evdi"
-
+#define EVDI_DEVICE_NAME "virtio-evdi"
 
 enum {
 	IOTYPE_INPUT = 0,
@@ -49,17 +48,7 @@ enum {
 #endif
 
 
-typedef struct VirtIO_EVDI{
-    VirtIODevice    vdev;
-    VirtQueue       *rvq;
-    VirtQueue		*svq;
-    DeviceState     *qdev;
-
-    QEMUBH *bh;
-} VirtIO_EVDI;
-
-
-VirtIO_EVDI* vio_evdi;
+VirtIOEVDI* vio_evdi;
 
 
 //
@@ -183,7 +172,7 @@ static void virtio_evdi_recv(VirtIODevice *vdev, VirtQueue *vq)
 
 static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 {
-	VirtIO_EVDI *vevdi = (VirtIO_EVDI *)vdev;
+	VirtIOEVDI *vevdi = (VirtIOEVDI *)vdev;
     int index = 0;
     struct msg_info _msg;
 
@@ -213,7 +202,7 @@ static void virtio_evdi_send(VirtIODevice *vdev, VirtQueue *vq)
 		send_injector_ntf(_msg.buf, _msg.use);
     }
 
-	virtqueue_push(vq, &elem, sizeof(VirtIO_EVDI));
+	virtqueue_push(vq, &elem, sizeof(VirtIOEVDI));
 	virtio_notify(&vio_evdi->vdev, vq);
 }
 
@@ -229,29 +218,31 @@ static void maru_evdi_bh(void *opaque)
 	flush_evdi_recv_queue();
 }
 
-VirtIODevice *virtio_evdi_init(DeviceState *dev)
+static int virtio_evdi_init(VirtIODevice *vdev)
 {
     INFO("initialize evdi device\n");
 
-    vio_evdi = (VirtIO_EVDI *)virtio_common_init(VIRTIO_EVDI_DEVICE_NAME,
-            VIRTIO_ID_EVDI, 0, sizeof(VirtIO_EVDI));
+    vio_evdi = VIRTIO_EVDI(vdev);
+
+    virtio_init(vdev, EVDI_DEVICE_NAME, VIRTIO_ID_EVDI, 0);
+
     if (vio_evdi == NULL) {
         ERR("failed to initialize evdi device\n");
-        return NULL;
+        return -1; //need any guide for return value
     }
 
-    vio_evdi->vdev.get_features = virtio_evdi_get_features;
     vio_evdi->rvq = virtio_add_queue(&vio_evdi->vdev, 256, virtio_evdi_recv);
     vio_evdi->svq = virtio_add_queue(&vio_evdi->vdev, 256, virtio_evdi_send);
-    vio_evdi->qdev = dev;
 
     vio_evdi->bh = qemu_bh_new(maru_evdi_bh, vio_evdi);
 
-    return &vio_evdi->vdev;
+    return 0;
 }
 
-void virtio_evdi_exit(VirtIODevice *vdev)
+static int virtio_evdi_exit(DeviceState *dev)
 {
+	VirtIODevice *vdev = VIRTIO_DEVICE(dev);
+
     INFO("destroy evdi device\n");
 
     if (vio_evdi->bh) {
@@ -259,5 +250,38 @@ void virtio_evdi_exit(VirtIODevice *vdev)
         }
 
     virtio_cleanup(vdev);
+
+    return 0;
 }
 
+static void virtio_evdi_reset(VirtIODevice *vdev)
+{
+    TRACE("virtio_evdi_reset.\n");
+}
+
+
+static void virtio_evdi_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    dc->exit = virtio_evdi_exit;
+    vdc->init = virtio_evdi_init;
+    vdc->get_features = virtio_evdi_get_features;
+    vdc->reset = virtio_evdi_reset;
+}
+
+
+
+static const TypeInfo virtio_device_info = {
+    .name = TYPE_VIRTIO_EVDI,
+    .parent = TYPE_VIRTIO_DEVICE,
+    .instance_size = sizeof(VirtIOEVDI),
+    .class_init = virtio_evdi_class_init,
+};
+
+static void virtio_register_types(void)
+{
+    type_register_static(&virtio_device_info);
+}
+
+type_init(virtio_register_types)
