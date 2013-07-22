@@ -28,6 +28,8 @@
  */
 
 
+#include <pthread.h>
+
 #include "hw/pci/pci.h"
 
 #include "maru_device_ids.h"
