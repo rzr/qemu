@@ -57,8 +57,6 @@
 #include "hw/boards.h"
 
 #ifdef CONFIG_MARU
-#include "../../tizen/src/hw/maru_overlay.h"
-#include "../../tizen/src/hw/maru_brightness.h"
 #include "../../tizen/src/maru_err_table.h"
 #endif
 /* debug PC/ISA interrupts */
@@ -1106,12 +1104,6 @@ DeviceState *pc_vga_init(ISABus *isa_bus, PCIBus *pci_bus)
     if (pci_bus) {
         PCIDevice *pcidev = pci_vga_init(pci_bus);
         dev = pcidev ? &pcidev->qdev : NULL;
-#ifdef CONFIG_MARU
-        if (maru_vga_enabled) {
-            pci_maru_overlay_init(pci_bus);
-            pci_maru_brightness_init(pci_bus);
-        }
-#endif
     } else if (isa_bus) {
         ISADevice *isadev = isa_vga_init(isa_bus);
         dev = isadev ? &isadev->qdev : NULL;

@@ -69,11 +69,12 @@
 #include "maru_common.h"
 #include "guest_debug.h"
 #include "maru_pm.h"
+#include "maru_brightness.h"
+#include "maru_overlay.h"
 #if defined(__linux__)
 #include <X11/Xlib.h>
 #endif
 #include "vigs_device.h"
-#include "../tizen/src/hw/maru_brightness.h"
 extern int enable_yagl;
 extern const char *yagl_backend;
 extern int enable_vigs;
@@ -286,13 +287,14 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         pvpanic_init(isa_bus);
     }
 
-    // maru specialized device init...
+    /* maru specialized device init */
     if (pci_enabled) {
-        codec_init(pci_bus);        
+        codec_init(pci_bus);
+        pci_maru_overlay_init(pci_bus);
+        pci_maru_brightness_init(pci_bus);
     }
 
     if (enable_vigs) {
-        pci_maru_brightness_init(pci_bus);
         PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
         qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
         qdev_init_nofail(&pci_dev->qdev);
