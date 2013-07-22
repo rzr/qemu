@@ -99,6 +99,15 @@ static uint64_t brightness_reg_read(void *opaque,
     return 0;
 }
 
+static void maru_pixman_image_set_alpha(uint8_t value)
+{
+    if (brightness_image) {
+        pixman_image_unref(brightness_image);
+    }
+    level_color.alpha = value << 8;
+    brightness_image = pixman_image_create_solid_fill(&level_color);
+}
+
 static void brightness_reg_write(void *opaque,
                                  hwaddr addr,
                                  uint64_t val,
@@ -106,6 +115,10 @@ static void brightness_reg_write(void *opaque,
 {
     switch (addr & 0xFF) {
     case BRIGHTNESS_LEVEL:
+        INFO("brightness_level : %lld\n", val);
+        if (brightness_level == val) {
+            return;
+        }
 #if BRIGHTNESS_MIN > 0
         if (val < BRIGHTNESS_MIN || val > BRIGHTNESS_MAX) {
 #else
@@ -114,12 +127,7 @@ static void brightness_reg_write(void *opaque,
             ERR("brightness_reg_write: Invalide brightness level.\n");
         } else {
             brightness_level = val;
-            if (brightness_image) {
-                pixman_image_unref(brightness_image);
-            }
-            level_color.alpha = brightness_tbl[brightness_level] << 8;
-            brightness_image = pixman_image_create_solid_fill(&level_color);
-            INFO("brightness_level : %lld\n", val);
+            maru_pixman_image_set_alpha(brightness_tbl[brightness_level]);
 #ifdef TARGET_ARM
             graphic_hw_invalidate(NULL);
 #endif
@@ -131,6 +139,11 @@ static void brightness_reg_write(void *opaque,
             return;
         }
         brightness_off = val;
+        if (brightness_off) {
+            maru_pixman_image_set_alpha(0xFF); /* set black */
+        } else {
+            maru_pixman_image_set_alpha(brightness_tbl[brightness_level]);
+        }
 
 #ifdef TARGET_ARM
         graphic_hw_invalidate(NULL);
