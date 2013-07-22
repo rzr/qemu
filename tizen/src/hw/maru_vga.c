@@ -42,11 +42,9 @@
 
 #include <pthread.h>
 
+#define MARU_VGA
 #include "maru_common.h"
 #include "maru_vga_int.h"
-#include "maru_brightness.h"
-#include "maru_overlay.h"
-#include "emul_state.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maru_vga);
@@ -84,8 +82,6 @@ MULTI_DEBUG_CHANNEL(qemu, maru_vga);
 #else
 #define GET_PLANE(data, p) (((data) >> ((p) * 8)) & 0xff)
 #endif
-
-#define MARU_VGA
 
 static const uint32_t mask16[16] = {
     PAT(0x00000000),
@@ -968,6 +964,7 @@ static void vga_draw_graphic(VGACommonState *s, int full_update)
         s->last_depth != depth) {
         if (depth == 32 || (depth == 16 && !byteswap)) {
 #ifdef MARU_VGA /* create new sufrace by g_new0 in MARU VGA */
+            TRACE("create the display surface\n");
             surface = qemu_create_displaysurface(disp_width, height);
 #else /* MARU_VGA */
             surface = qemu_create_displaysurface_from(disp_width,
@@ -1190,11 +1187,6 @@ static void vga_update_display(void *opaque)
             s->graphic_mode = graphic_mode;
             s->cursor_blink_time = qemu_get_clock_ms(vm_clock);
             full_update = 1;
-        }
-        if (brightness_off) {
-            full_update = 1;
-            vga_draw_blank(s, full_update);
-            return;
         }
         switch(graphic_mode) {
         case GMODE_TEXT:
@@ -1459,9 +1451,11 @@ void maru_vga_common_init(VGACommonState *s)
         break;
     }
     vga_dirty_log_start(s);
+    TRACE("%s\n", __func__);
 }
 
 void maru_vga_common_fini(void)
 {
     /* do nothing */
+    TRACE("%s\n", __func__);
 }
