@@ -4,9 +4,6 @@
 #include "vigs_backend.h"
 #include "vigs_surface.h"
 #include "vigs_utils.h"
-#ifdef CONFIG_MARU
-#include "../tizen/src/hw/maru_brightness.h"
-#endif
 
 static void vigs_server_surface_destroy_func(gpointer data)
 {
@@ -489,22 +486,7 @@ void vigs_server_update_display(struct vigs_server *server)
         switch (root_sfc->format) {
         case vigsp_surface_bgrx8888:
         case vigsp_surface_bgra8888:
-#ifdef CONFIG_MARU
-            if (brightness_level < BRIGHTNESS_MAX) {
-                uint32_t level =
-                    brightness_off ? 0 : brightness_tbl[brightness_level];
-                for (j = 0; j < root_sfc->ws_sfc->width; ++j) {
-                    *dst++ = ((uint32_t)(*src++) * level) >> 8;
-                    *dst++ = ((uint32_t)(*src++) * level) >> 8;
-                    *dst++ = ((uint32_t)(*src++) * level) >> 8;
-                    *dst++ = ((uint32_t)(*src++) * level) >> 8;
-                }
-            } else {
-#endif
             memcpy(dst, src, root_sfc->ws_sfc->width * 4);
-#ifdef CONFIG_MARU
-            }
-#endif
             break;
         default:
             assert(false);
