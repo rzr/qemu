@@ -310,8 +310,14 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 //					}
 				}
 
+				/* set window size once again (for ubuntu 12.04) */
+				if (currentState.getCurrentImage() != null) {
+					ImageData imageData = currentState.getCurrentImage().getImageData();
+					shell.setSize(imageData.width, imageData.height);
+				}
+
 				/* general shell does not support native transparency,
-				 * so draw image with GC. */
+				 so draw image with GC */
 				if (currentState.getCurrentImage() != null) {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
