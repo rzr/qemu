@@ -410,8 +410,10 @@ public class ScreenShotDialog {
 	}
 
 	protected RotationInfo getCurrentRotation() {
-		short currentRotationId = emulatorSkin.getCurrentRotationId();
-		RotationInfo rotationInfo = RotationInfo.getValue( currentRotationId );
+		short currentRotationId =
+				emulatorSkin.getEmulatorSkinState().getCurrentRotationId();
+		RotationInfo rotationInfo = RotationInfo.getValue(currentRotationId);
+
 		return rotationInfo;
 	}
 

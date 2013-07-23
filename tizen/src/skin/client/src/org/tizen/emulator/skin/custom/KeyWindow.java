@@ -324,7 +324,6 @@ public class KeyWindow extends SkinWindow {
 				if (skin.pairTag != null) {
 					skin.pairTag.setVisible(false);
 				}
-				skin.keyWindow = null;
 
 				if (null != shellPaintListener) {
 					shell.removePaintListener(shellPaintListener);

@@ -79,9 +79,8 @@ import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
-import org.tizen.emulator.skin.custom.KeyWindow;
+import org.tizen.emulator.skin.custom.SkinWindow;
 import org.tizen.emulator.skin.dbi.HoverType;
-import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RgbType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dialog.AboutDialog;
@@ -93,6 +92,7 @@ import org.tizen.emulator.skin.layout.GeneralPurposeSkinComposer;
 import org.tizen.emulator.skin.layout.ISkinComposer;
 import org.tizen.emulator.skin.layout.ProfileSpecificSkinComposer;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
 import org.tizen.emulator.skin.util.SkinRotation;
@@ -106,11 +106,10 @@ import org.tizen.emulator.skin.util.SwtUtil;
 public class EmulatorSkin {
 
 	public class SkinReopenPolicy {
-
 		private EmulatorSkin reopenSkin;
 		private boolean reopen;
 
-		private SkinReopenPolicy( EmulatorSkin reopenSkin, boolean reopen ) {
+		private SkinReopenPolicy(EmulatorSkin reopenSkin, boolean reopen) {
 			this.reopenSkin = reopenSkin;
 			this.reopen = reopen;
 		}
@@ -122,7 +121,6 @@ public class EmulatorSkin {
 		public boolean isReopen() {
 			return reopen;
 		}
-
 	}
 
 	public enum SkinBasicColor {
@@ -174,8 +172,7 @@ public class EmulatorSkin {
 	private PopupMenu popupMenu;
 
 	public Color colorVM;
-	public KeyWindow keyWindow;
-	public int recentlyDocked;
+	private KeyWindowKeeper keyWindowKeeper;
 	public ColorTag pairTag;
 	public CustomProgressBar bootingProgress;
 	public ScreenShotDialog screenShotDialog;
@@ -207,12 +204,10 @@ public class EmulatorSkin {
 		this.skinInfo = skinInfo;
 
 		this.screenShotDialog = null;
-		this.keyWindow = null;
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		this.isOnTop = isOnTop;
 		this.isKeyWindow = false;
-		this.recentlyDocked = SWT.NONE;
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
 		this.shell = new Shell(Display.getDefault(), style);
@@ -223,8 +218,8 @@ public class EmulatorSkin {
 
 		this.displayCanvasStyle = displayCanvasStyle;
 
-		/* generate a pair tag color of key window */
-		setColorVM();
+		setColorVM(); /* generate a identity color */
+		this.keyWindowKeeper = new KeyWindowKeeper(this);
 
 		this.currentState = state;
 	}
@@ -340,16 +335,29 @@ public class EmulatorSkin {
 		return (new Color(shell.getDisplay(), new RGB(255, 255, 255)));
 	}
 
-	public Color getColorVM() {
-		return colorVM;
+	/* getters */
+	public Shell getShell() {
+		return shell;
+	}
+
+	public EmulatorSkinState getEmulatorSkinState() {
+		return currentState;
 	}
 
 	public ImageRegistry getImageRegistry() {
 		return imageRegistry;
 	}
 
+	public Color getColorVM() {
+		return colorVM;
+	}
+
 	public PopupMenu getPopupMenu() {
 		return popupMenu;
+	}
+
+	public KeyWindowKeeper getKeyWindowKeeper() {
+		return keyWindowKeeper;
 	}
 
 	public SkinReopenPolicy open() {
@@ -422,8 +430,10 @@ public class EmulatorSkin {
 								SkinPropertiesConstants.WINDOW_ONTOP, Boolean.toString(isOnTop));
 
 						int dockValue = 0;
-						if (keyWindow != null && keyWindow.getShell().isVisible()) {
-							dockValue = keyWindow.getDockPosition();
+						SkinWindow keyWindow = getKeyWindowKeeper().getKeyWindow();
+						if (keyWindow != null &&
+								keyWindow.getShell().isVisible() == true) {
+							dockValue = getKeyWindowKeeper().getDockPosition();
 						}
 						config.setSkinProperty(
 								SkinPropertiesConstants.KEYWINDOW_POSITION, dockValue);
@@ -431,7 +441,9 @@ public class EmulatorSkin {
 						config.saveSkinProperties();
 
 						/* close the Key Window */
-						closeKeyWindow();
+						if (getKeyWindowKeeper() != null) {
+							getKeyWindowKeeper().closeKeyWindow();
+						}
 
 						/* dispose the color */
 						if (colorVM != null) {
@@ -467,16 +479,17 @@ public class EmulatorSkin {
 			public void shellActivated(ShellEvent event) {
 				logger.info("activate");
 
-				if (keyWindow != null && isKeyWindow == true) {
+				if (isKeyWindow == true && getKeyWindowKeeper().getKeyWindow() != null) {
 					if (isOnTop == false) {
-						keyWindow.getShell().moveAbove(shell);
+						getKeyWindowKeeper().getKeyWindow().getShell().moveAbove(shell);
 
-						if (keyWindow.getDockPosition() != SWT.NONE) {
-							shell.moveAbove(keyWindow.getShell());
+						if (getKeyWindowKeeper().getDockPosition() != SWT.NONE) {
+							shell.moveAbove(
+									getKeyWindowKeeper().getKeyWindow().getShell());
 						}
 					} else {
-						if (keyWindow.getDockPosition() == SWT.NONE) {
-							keyWindow.getShell().moveAbove(shell);
+						if (getKeyWindowKeeper().getDockPosition() == SWT.NONE) {
+							getKeyWindowKeeper().getKeyWindow().getShell().moveAbove(shell);
 						}
 					}
 				}
@@ -497,12 +510,14 @@ public class EmulatorSkin {
 				shell.getDisplay().asyncExec(new Runnable() {
 					@Override
 					public void run() {
-						if (isKeyWindow == true && keyWindow != null) {
-							if (keyWindow.getShell().getMinimized() == false) {
-								keyWindow.getShell().setVisible(false);
+						if (isKeyWindow == true && getKeyWindowKeeper().getKeyWindow() != null) {
+							Shell keyWindowShell = getKeyWindowKeeper().getKeyWindow().getShell();
+
+							if (keyWindowShell.getMinimized() == false) {
+								keyWindowShell.setVisible(false);
 								/* the tool style window is exposed
 								when even it was minimized */
-								keyWindow.getShell().setMinimized(true);
+								keyWindowShell.setMinimized(true);
 							}
 						}
 					}
@@ -513,10 +528,12 @@ public class EmulatorSkin {
 			public void shellDeiconified(ShellEvent event) {
 				logger.info("deiconified");
 
-				if (isKeyWindow == true && keyWindow != null) {
-					if (keyWindow.getShell().getMinimized() == true) {
-						keyWindow.getShell().setMinimized(false);
-						keyWindow.getShell().setVisible(true);
+				if (isKeyWindow == true && getKeyWindowKeeper().getKeyWindow() != null) {
+					Shell keyWindowShell = getKeyWindowKeeper().getKeyWindow().getShell();
+
+					if (keyWindowShell.getMinimized() == true) {
+						keyWindowShell.setMinimized(false);
+						keyWindowShell.setVisible(true);
 					}
 				}
 
@@ -657,9 +674,7 @@ public class EmulatorSkin {
 		canvasMouseListener = new MouseListener() {
 			@Override
 			public void mouseUp(MouseEvent e) {
-				if (keyWindow != null) {
-					keyWindow.redock(false, false);
-				}
+				getKeyWindowKeeper().redock(false, false);
 
 				if (1 == e.button) /* left button */
 				{
@@ -1000,91 +1015,6 @@ public class EmulatorSkin {
 		/* abstract */
 	}
 
-	public boolean isSelectKeyWindowMenu() {
-		if (popupMenu.keyWindowItem != null) {
-			return popupMenu.keyWindowItem.getSelection();
-		}
-
-		return false;
-	}
-
-	public void selectKeyWindowMenu(boolean on) {
-		if (popupMenu.keyWindowItem != null) {
-			popupMenu.keyWindowItem.setSelection(on);
-		}
-	}
-
-	public void openKeyWindow(int dockValue, boolean recreate) {
-		if (keyWindow != null) {
-			if (recreate == false) {
-				/* show the key window */
-				selectKeyWindowMenu(isKeyWindow = true);
-
-				if (pairTag != null) {
-					pairTag.setVisible(true);
-				}
-
-				keyWindow.getShell().setVisible(true);
-				SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
-
-				return;
-			} else {
-				logger.info("recreate a keywindow");
-				closeKeyWindow();
-			}
-		}
-
-		/* create a key window */
-		List<KeyMapType> keyMapList =
-				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
-
-		if (keyMapList == null) {
-			selectKeyWindowMenu(isKeyWindow = false);
-			logger.info("keyMapList is null");
-			return;
-		} else if (keyMapList.isEmpty() == true) {
-			selectKeyWindowMenu(isKeyWindow = false);
-			logger.info("keyMapList is empty");
-			return;
-		}
-
-		keyWindow = new KeyWindow(this, shell, communicator, keyMapList);
-
-		selectKeyWindowMenu(isKeyWindow = true);
-		SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
-
-		if (pairTag != null) {
-			pairTag.setVisible(true);
-		}
-
-		keyWindow.open(dockValue);
-	}
-
-	public void hideKeyWindow() {
-		selectKeyWindowMenu(isKeyWindow = false);
-
-		if (pairTag != null) {
-			pairTag.setVisible(false);
-		}
-
-		if (keyWindow != null) {
-			keyWindow.getShell().setVisible(false);
-		}
-	}
-
-	public void closeKeyWindow() {
-		selectKeyWindowMenu(isKeyWindow = false);
-
-		if (pairTag != null) {
-			pairTag.setVisible(false);
-		}
-
-		if (keyWindow != null) {
-			keyWindow.getShell().close();
-			keyWindow = null;
-		}
-	}
-
 	/* for popup menu */
 	public SelectionAdapter createDetailInfoMenu() {
 		SelectionAdapter listener = new SelectionAdapter() {
@@ -1118,8 +1048,9 @@ public class EmulatorSkin {
 
 					popupMenu.onTopItem.setSelection(isOnTop = false);
 				} else {
-					if (keyWindow != null) {
-						SkinUtil.setTopMost(keyWindow.getShell(), isOnTop);
+					if (getKeyWindowKeeper().getKeyWindow() != null) {
+						SkinUtil.setTopMost(
+								getKeyWindowKeeper().getKeyWindow().getShell(), isOnTop);
 					}
 				}
 			}
@@ -1183,7 +1114,6 @@ public class EmulatorSkin {
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-
 				MenuItem item = (MenuItem) e.getSource();
 
 				boolean selection = item.getSelection();
@@ -1206,7 +1136,8 @@ public class EmulatorSkin {
 					}
 
 					SkinUtil.openMessage(shell, null,
-							"Rotation is not ready.\nPlease wait until the emulator is completely boot up.",
+							"Rotation is not ready.\n" +
+							"Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
 					return;
 				}
@@ -1319,26 +1250,34 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (isSelectKeyWindowMenu() == true) {
-					if (keyWindow == null) {
-						if (recentlyDocked != SWT.NONE) {
-							openKeyWindow(recentlyDocked, false);
-							recentlyDocked = SWT.NONE;
+				if (getKeyWindowKeeper().isSelectKeyWindowMenu() == true)
+				{
+					if (getKeyWindowKeeper().getKeyWindow() == null) {
+						if (getKeyWindowKeeper().getRecentlyDocked() != SWT.NONE) {
+							getKeyWindowKeeper().openKeyWindow(
+									getKeyWindowKeeper().getRecentlyDocked(), false);
+
+							getKeyWindowKeeper().setRecentlyDocked(SWT.NONE);
 						} else {
 							/* opening for first time */
-							openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+							getKeyWindowKeeper().openKeyWindow(
+									SWT.RIGHT | SWT.CENTER, false);
 						}
 					} else {
-						openKeyWindow(keyWindow.getDockPosition(), false);
+						getKeyWindowKeeper().openKeyWindow(
+								getKeyWindowKeeper().getDockPosition(), false);
 					}
-				} else { /* hide a key window */
-					if (keyWindow != null &&
-							keyWindow.getDockPosition() != SWT.NONE) {
+				}
+				else
+				{ /* hide a key window */
+					if (getKeyWindowKeeper().getDockPosition() != SWT.NONE) {
 						/* close the Key Window if it is docked to Main Window */
-						recentlyDocked = keyWindow.getDockPosition();
-						closeKeyWindow();
+						getKeyWindowKeeper().setRecentlyDocked(
+								getKeyWindowKeeper().getDockPosition());
+
+						getKeyWindowKeeper().closeKeyWindow();
 					} else {
-						hideKeyWindow();
+						getKeyWindowKeeper().hideKeyWindow();
 					}
 				}
 			}
@@ -1550,10 +1489,6 @@ public class EmulatorSkin {
 			} );
 		}
 
-	}
-
-	public short getCurrentRotationId() {
-		return currentState.getCurrentRotationId();
 	}
 
 	public void keyForceRelease(boolean isMetaFilter) {
