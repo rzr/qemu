@@ -63,27 +63,18 @@ enum sensor_types {
 #define ACTION_LIGHT		113
 #define ACTION_PROXI		114
 
+#define TYPE_VIRTIO_SENSOR "virtio-sensor-device"
+#define VIRTIO_SENSOR(obj) \
+        OBJECT_CHECK(VirtIOSENSOR, (obj), TYPE_VIRTIO_SENSOR)
 
-typedef struct VirtIOSensor {
+typedef struct VirtIOSENSOR {
     VirtIODevice    vdev;
     VirtQueue       *rvq;
     VirtQueue       *svq;
     DeviceState     *qdev;
 
 	QEMUBH			*bh;
-} VirtIOSensor;
-
-
-
-#define TYPE_VIRTIO_SENSOR "virtio-sensor-device"
-#define VIRTIO_SENSOR(obj) \
-        OBJECT_CHECK(VirtIOSensor, (obj), TYPE_VIRTIO_SENSOR)
-
-
-
-//VirtIODevice *virtio_sensor_init(DeviceState *dev);
-
-//void virtio_sensor_exit(VirtIODevice *vdev);
+} VirtIOSENSOR;
 
 void req_sensor_data(enum sensor_types type, enum request_cmd req, char* data, int len);
 

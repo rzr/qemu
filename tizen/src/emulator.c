@@ -501,6 +501,8 @@ void prepare_maru(void)
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server(guest_server_port);
 
+    qemu_add_opts(&qemu_ecs_opts);
+
 	start_ecs();
 
     mloop_ev_init();

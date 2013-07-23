@@ -43,6 +43,7 @@
 #include "../tizen/src/hw/maru_virtio_keyboard.h"
 #include "../tizen/src/hw/maru_virtio_touchscreen.h"
 #include "../tizen/src/hw/virtio-gl.h"
+#include "../tizen/src/hw/maru_virtio_sensor.h"
 #endif
 
 typedef struct VirtIOPCIProxy VirtIOPCIProxy;
@@ -61,6 +62,7 @@ typedef struct VirtIOEVDIPCI VirtIOEVDIPCI;
 typedef struct VirtIOESMPCI VirtIOESMPCI;
 typedef struct VirtIOHWKeyPCI VirtIOHWKeyPCI;
 typedef struct VirtIOKeyboardPCI VirtIOKeyboardPCI;
+typedef struct VirtIOSENSORPCI VirtIOSENSORPCI;
 #endif
 
 /* virtio-pci-bus */
@@ -293,6 +295,18 @@ struct VirtIOESMPCI {
 struct VirtIOHWKeyPCI {
     VirtIOPCIProxy parent_obj;
     VirtIOHWKey vdev;
+};
+
+/*
+ * virtio-sensor-pci: This extends VirtioPCIProxy.
+ */
+#define TYPE_VIRTIO_SENSOR_PCI "virtio-sensor-pci"
+#define VIRTIO_SENSOR_PCI(obj) \
+        OBJECT_CHECK(VirtIOSENSORPCI, (obj), TYPE_VIRTIO_SENSOR_PCI)
+
+struct VirtIOSENSORPCI {
+    VirtIOPCIProxy parent_obj;
+    VirtIOSENSOR vdev;
 };
 #endif
 

@@ -28,6 +28,7 @@
 #define LOG_PATH 				"\\tizen-sdk-data\\emulator-vms\\vms\\ecs.log"
 #endif
 
+#define ECS_OPTS_NAME			"ecs"
 #define HOST_LISTEN_ADDR		"127.0.0.1"
 #define HOST_LISTEN_PORT		27000
 #define EMULATOR_SERVER_NUM		3
@@ -152,5 +153,36 @@ void ecs_startinfo_req(ECS_Client *clii);
 void control_host_keyboard_onoff_req(ECS_Client *clii, QDict* data);
 
 void set_sensor_data(int length, const char* data);
+
+static QemuOptsList qemu_ecs_opts = {
+    .name = ECS_OPTS_NAME,
+    .implied_opt_name = ECS_OPTS_NAME,
+    .head = QTAILQ_HEAD_INITIALIZER(qemu_ecs_opts.head),
+    .desc = {
+		{
+            .name = "host",
+            .type = QEMU_OPT_STRING,
+        },{
+            .name = "port",
+            .type = QEMU_OPT_STRING,
+        },{
+            .name = "localaddr",
+            .type = QEMU_OPT_STRING,
+        },{
+            .name = "localport",
+            .type = QEMU_OPT_STRING,
+        },{
+            .name = "to",
+            .type = QEMU_OPT_NUMBER,
+        },{
+            .name = "ipv4",
+            .type = QEMU_OPT_BOOL,
+        },{
+            .name = "ipv6",
+            .type = QEMU_OPT_BOOL,
+        },
+        { /* End of list */ }
+    },
+};
 
 #endif /* __ECS_H__ */

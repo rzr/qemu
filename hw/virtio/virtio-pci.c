@@ -1752,6 +1752,48 @@ static TypeInfo virtio_evdi_pci_info = {
 	.instance_init = virtio_evdi_pci_instance_init,
     .class_init    = virtio_evdi_pci_class_init,
 };
+
+/* virtio-sensor-pci */
+
+static int virtio_sensor_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOSENSORPCI *dev = VIRTIO_SENSOR_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static void virtio_sensor_pci_class_init(ObjectClass *klass, void *data)
+{
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_sensor_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_SENSOR;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_sensor_pci_instance_init(Object *obj)
+{
+    VirtIOSENSORPCI *dev = VIRTIO_SENSOR_PCI(obj);
+    object_initialize(OBJECT(&dev->vdev), TYPE_VIRTIO_SENSOR);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_sensor_pci_info = {
+    .name          = TYPE_VIRTIO_SENSOR_PCI,
+    .parent        = TYPE_VIRTIO_PCI,
+    .instance_size = sizeof(VirtIOSENSORPCI),
+	.instance_init = virtio_sensor_pci_instance_init,
+    .class_init    = virtio_sensor_pci_class_init,
+};
+
 #endif
 
 /* virtio-pci-bus */
@@ -1816,6 +1858,7 @@ static void virtio_pci_register_types(void)
     type_register_static(&virtio_keyboard_pci_info);
     type_register_static(&virtio_touchscreen_pci_info);
     type_register_static(&virtio_gl_pci_info);
+    type_register_static(&virtio_sensor_pci_info);
 #endif
 }
 

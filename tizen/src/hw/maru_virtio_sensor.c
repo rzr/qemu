@@ -28,8 +28,6 @@
  */
 
 
-#include <pthread.h>
-
 #include "hw/pci/pci.h"
 
 #include "maru_device_ids.h"
@@ -43,7 +41,7 @@ MULTI_DEBUG_CHANNEL(qemu, virtio-sensor);
 #define _MAX_BUF					1024
 
 
-VirtIOSensor* vsensor;
+VirtIOSENSOR* vsensor;
 
 typedef struct msg_info {
 	char buf[_MAX_BUF];
@@ -214,7 +212,7 @@ static void send_to_ecs(struct msg_info* msg)
 
 static void virtio_sensor_send(VirtIODevice *vdev, VirtQueue *vq)
 {
-	VirtIOSensor *vsensor = (VirtIOSensor*)vdev;
+	VirtIOSENSOR *vsensor = (VirtIOSENSOR*)vdev;
 	struct msg_info msg;
     VirtQueueElement elem;
 	int index = 0;
@@ -233,7 +231,7 @@ static void virtio_sensor_send(VirtIODevice *vdev, VirtQueue *vq)
 		send_to_ecs(&msg);
     }
 
-	virtqueue_push(vq, &elem, sizeof(VirtIOSensor));
+	virtqueue_push(vq, &elem, sizeof(VirtIOSENSOR));
 	virtio_notify(&vsensor->vdev, vq);
 }
 
@@ -301,7 +299,7 @@ static void virtio_sensor_class_init(ObjectClass *klass, void *data)
 static const TypeInfo virtio_device_info = {
     .name = TYPE_VIRTIO_SENSOR,
     .parent = TYPE_VIRTIO_DEVICE,
-    .instance_size = sizeof(VirtIOSensor),
+    .instance_size = sizeof(VirtIOSENSOR),
     .class_init = virtio_sensor_class_init,
 };
 

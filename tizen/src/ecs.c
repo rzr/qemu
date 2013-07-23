@@ -1440,7 +1440,7 @@ static void* ecs_initialize(void* args) {
 	start_logging();
 	LOG("ecs starts initializing.");
 
-	opts = qemu_opts_create(qemu_find_opts("ecs"), "ECS", 1, &local_err);
+	opts = qemu_opts_create(qemu_find_opts(ECS_OPTS_NAME), ECS_OPTS_NAME, 1, &local_err);
 	if (error_is_set(&local_err)) {
 		qerror_report_err(local_err);
 		error_free(local_err);
