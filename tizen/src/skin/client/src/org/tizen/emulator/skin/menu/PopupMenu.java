@@ -28,6 +28,9 @@
 
 package org.tizen.emulator.skin.menu;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.util.ArrayList;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
@@ -59,6 +62,8 @@ public class PopupMenu {
 	public static final String FORCECLOSE_MENUITEM_NAME = "&Force Close";
 	public static final String SDBSHELL_MENUITEM_NAME = "S&hell";
 	public static final String CLOSE_MENUITEM_NAME = "&Close";
+
+	public static final String KEYWINDOW_LAYOUT_ROOT = "keywindow-layout";
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(PopupMenu.class).getLogger();
@@ -192,12 +197,42 @@ public class PopupMenu {
 
 		if (keywindowMenuType == null ||
 				(keywindowMenuType != null && keywindowMenuType.isVisible() == true)) {
-			keyWindowItem = new MenuItem(menu, SWT.CHECK);
-			keyWindowItem.setText(menuName);
-			keyWindowItem.setSelection(skin.isKeyWindow);
+			String pathLayoutRoot = skin.skinInfo.getSkinPath() +
+					File.separator + KEYWINDOW_LAYOUT_ROOT;
+			ArrayList<File> layouts = getKeyWindowLayoutList(pathLayoutRoot);
 
-			SelectionAdapter keyWindowListener = skin.createKeyWindowMenu();
-			keyWindowItem.addSelectionListener(keyWindowListener);
+			if (layouts != null) {
+				keyWindowItem = new MenuItem(menu, SWT.CASCADE);
+				keyWindowItem.setText(menuName);
+				//TODO: advancedItem.setImage
+
+				Menu keywindowSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+				{
+					MenuItem keywindowLayoutItem = null;
+
+					for (int i = 0; i < layouts.size(); i++) {
+						File dir = layouts.get(i);
+
+						keywindowLayoutItem = new MenuItem(keywindowSubMenu, SWT.RADIO);
+						keywindowLayoutItem.setText(dir.getName());
+						if (i == 0) {
+							keywindowLayoutItem.setSelection(true);
+						}
+
+						// TODO:
+						//SelectionAdapter keywindowLayoutListener =
+						//keywindowLayoutItem.addSelectionListener(keywindowLayoutListener);
+					}
+				}
+				keyWindowItem.setMenu(keywindowSubMenu);
+			} else {
+				keyWindowItem = new MenuItem(menu, SWT.CHECK);
+				keyWindowItem.setText(menuName);
+				keyWindowItem.setSelection(skin.isKeyWindow);
+
+				SelectionAdapter keyWindowListener = skin.createKeyWindowMenu();
+				keyWindowItem.addSelectionListener(keyWindowListener);
+			}
 		}
 
 		/* Advanced menu */
@@ -306,5 +341,39 @@ public class PopupMenu {
 
 	public Menu getMenuRoot() {
 		return contextMenu;
+	}
+
+	private ArrayList<File> getKeyWindowLayoutList(String path) {
+		File pathRoot = new File(path);
+
+		if (pathRoot.exists() == true) {
+			FileFilter filter = new FileFilter() {
+				@Override
+				public boolean accept(File pathname) {
+					if (!pathname.isDirectory()) {
+						return false;
+					}
+
+					return true;
+				}
+			};
+
+			File[] layoutPaths = pathRoot.listFiles(filter);
+			if (layoutPaths.length <= 0) {
+				logger.info("the layout of key window not found");
+				return null;
+			}
+
+			ArrayList<File> layoutList = new ArrayList<File>();
+			for (File layout : layoutPaths) {
+				logger.info("the layout of key window detected : " + layout.getName());
+
+				layoutList.add(layout);
+			}
+
+			return layoutList;
+		}
+
+		return null;
 	}
 }
