@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.MenuItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.custom.KeyWindow;
 import org.tizen.emulator.skin.custom.SkinWindow;
@@ -46,6 +47,7 @@ public class KeyWindowKeeper {
 	private EmulatorSkin skin;
 	private SkinWindow keyWindow;
 	private int recentlyDocked;
+	private int indexLayout;
 
 	/**
 	 *  Constructor
@@ -53,12 +55,13 @@ public class KeyWindowKeeper {
 	public KeyWindowKeeper(EmulatorSkin skin) {
 		this.skin = skin;
 		this.recentlyDocked = SWT.NONE;
+		this.indexLayout = -1;
 	}
 
 	public void openKeyWindow(int dockValue, boolean recreate) {
 		if (keyWindow != null) {
 			if (recreate == false) {
-				/* show the key window */
+				/* show the Key Window */
 				selectKeyWindowMenu(skin.isKeyWindow = true);
 
 				if (skin.pairTag != null) {
@@ -75,22 +78,32 @@ public class KeyWindowKeeper {
 			}
 		}
 
-		/* create a key window */
-		List<KeyMapType> keyMapList = SkinUtil.getHWKeyMapList(
-				skin.getEmulatorSkinState().getCurrentRotationId());
+		/* create a Key Window */
+		if (isGeneralKeyWindow() == true) {
+			List<KeyMapType> keyMapList = SkinUtil.getHWKeyMapList(
+					skin.getEmulatorSkinState().getCurrentRotationId());
 
-		if (keyMapList == null) {
-			selectKeyWindowMenu(skin.isKeyWindow = false);
-			logger.info("keyMapList is null");
-			return;
-		} else if (keyMapList.isEmpty() == true) {
-			selectKeyWindowMenu(skin.isKeyWindow = false);
-			logger.info("keyMapList is empty");
-			return;
+			if (keyMapList == null) {
+				selectKeyWindowMenu(skin.isKeyWindow = false);
+				logger.info("keyMapList is null");
+				return;
+			} else if (keyMapList.isEmpty() == true) {
+				selectKeyWindowMenu(skin.isKeyWindow = false);
+				logger.info("keyMapList is empty");
+				return;
+			}
+
+			keyWindow = new KeyWindow(
+					skin, skin.getShell(), skin.communicator, keyMapList);
+		} else {
+			// TODO:
+			String layoutName =
+					skin.getPopupMenu().keyWindowItem.getMenu().getItem(indexLayout).getText();
+			logger.info("generate a \'" + layoutName + "\' key window!");
+
+			keyWindow = new KeyWindow(
+					skin, skin.getShell(), skin.communicator, null);
 		}
-
-		keyWindow = new KeyWindow(
-				skin, skin.getShell(), skin.communicator, keyMapList);
 
 		selectKeyWindowMenu(skin.isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), skin.isOnTop);
@@ -131,18 +144,68 @@ public class KeyWindowKeeper {
 		return keyWindow;
 	}
 
+	public int getLayoutIndex() {
+		return indexLayout;
+	}
+
+	public boolean isGeneralKeyWindow() {
+		return (getLayoutIndex() < 0);
+	}
+
+	public int determineLayout() {
+		MenuItem keywindowItem = skin.getPopupMenu().keyWindowItem;
+
+		if (keywindowItem != null && keywindowItem.getMenu() != null) {
+			logger.info("key window has a special layout");
+
+			MenuItem[] layouts = keywindowItem.getMenu().getItems();
+			for (int i = 0; i < layouts.length; i++) {
+				MenuItem layout = layouts[i];
+
+				if (layout.getSelection() == true) {
+					indexLayout = i;
+
+					logger.info("the \'" + layout.getText() +
+							"\' layout is selected for key window");
+					break;
+				}
+			}
+		} else {
+			logger.info("key window has a general layout");
+			indexLayout = -1;
+		}
+
+		return indexLayout;
+	}
+
 	/* for Menu */
 	public boolean isSelectKeyWindowMenu() {
-		if (skin.getPopupMenu().keyWindowItem != null) {
-			return skin.getPopupMenu().keyWindowItem.getSelection();
+		MenuItem keywindow = skin.getPopupMenu().keyWindowItem;
+
+		if (keywindow != null) {
+			if (isGeneralKeyWindow() == true) {
+				return keywindow.getSelection();
+			} else {
+				for (MenuItem layout : keywindow.getMenu().getItems()) {
+					if (layout.getSelection() == true) {
+						return true;
+					}
+				}
+			}
 		}
 
 		return false;
 	}
 
 	public void selectKeyWindowMenu(boolean on) {
-		if (skin.getPopupMenu().keyWindowItem != null) {
-			skin.getPopupMenu().keyWindowItem.setSelection(on);
+		MenuItem keywindow = skin.getPopupMenu().keyWindowItem;
+
+		if (keywindow != null) {
+			if (isGeneralKeyWindow() == true) {
+				keywindow.setSelection(on);
+			} else {
+				keywindow.getMenu().getItem(indexLayout).setSelection(on);
+			}
 		}
 	}
 
@@ -165,7 +228,7 @@ public class KeyWindowKeeper {
 		return recentlyDocked;
 	}
 
-	public void setRecentlyDocked(int recentlyDocked) {
-		this.recentlyDocked = recentlyDocked;
+	public void setRecentlyDocked(int dockValue) {
+		recentlyDocked = dockValue;
 	}
 }

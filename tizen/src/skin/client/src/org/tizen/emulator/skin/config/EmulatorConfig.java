@@ -139,7 +139,7 @@ public class EmulatorConfig {
 
 				reader.close();
 			} else {
-				logger.info("cannot find version file" + versionFilePath);
+				logger.warning("cannot read version from " + versionFilePath);
 			}
 		} catch (FileNotFoundException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
