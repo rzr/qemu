@@ -235,6 +235,7 @@ exec ./configure \
  $CONFIGURE_APPEND \
  --disable-werror \
  --audio-drv-list=alsa \
+ --enable-virtfs \
  --enable-maru \
  --disable-vnc \
  --disable-pie $1
