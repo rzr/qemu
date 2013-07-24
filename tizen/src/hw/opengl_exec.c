@@ -116,6 +116,12 @@ void g_free(void *ptr);
 
 /*#define glGetError() 0*/
 
+#ifdef WIN32
+#	define CCONV __stdcall
+#else
+#	define CCONV
+#endif
+
 #define GET_EXT_PTR(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
     static type(*ptr_func_##funcname)args_decl = NULL; \
@@ -128,11 +134,11 @@ void g_free(void *ptr);
 
 #define GET_EXT_PTR_NO_FAIL(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
-    static type(*ptr_func_##funcname)args_decl = NULL; \
+    static type(CCONV *ptr_func_##funcname)args_decl = NULL; \
     if (detect_##funcname == 0) \
     { \
         detect_##funcname = 1; \
-        ptr_func_##funcname = (type(*)args_decl)glo_getprocaddress((const char*)#funcname); \
+        ptr_func_##funcname = (type(CCONV *)args_decl)glo_getprocaddress((const char*)#funcname); \
     }
 
 #ifndef WIN32
@@ -1987,7 +1993,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
         {
 //            if (display_function_call)
             //DEBUGF( "glXGetProcAddress %s  ", (char *) args[0]);
-            ret.i = glo_getprocaddress((const char *) args[0]) != NULL;
+            // ret.i = glo_getprocaddress((const char *) args[0]) != NULL;
             //   DEBUGF( " == %08x\n", ret.i);
             ret.i = 0;
             break;
