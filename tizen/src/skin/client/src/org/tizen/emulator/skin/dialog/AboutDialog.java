@@ -57,7 +57,6 @@ import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class AboutDialog extends SkinDialog {
-
 	public static final String ABOUT_PROP_FILENAME = "about.properties";
 
 	public static final String PROP_KEY_VERSION = "version";
@@ -72,9 +71,12 @@ public class AboutDialog extends SkinDialog {
 	private Image aboutImage;
 	private EmulatorConfig config;
 
-
+	/**
+	 *  Constructor
+	 */
 	public AboutDialog(Shell parent, EmulatorConfig config) {
-		super(parent, "About Tizen Emulator", SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+		super(parent, "About Tizen Emulator",
+				SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
 		this.config = config;
 	}
@@ -293,10 +295,12 @@ public class AboutDialog extends SkinDialog {
 		return properties;
 	}
 
+	@Override
 	protected void setShellSize() {
 		shell.setSize(436, shell.getSize().y);
 	}
 
+	@Override
 	protected void close() {
 		logger.info("close the about dialog");
 		aboutImage.dispose();

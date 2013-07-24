@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -29,6 +29,8 @@
 
 package org.tizen.emulator.skin.dialog;
 
+import java.util.logging.Logger;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -42,6 +44,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.StringUtil;
 
 /**
@@ -49,9 +52,11 @@ import org.tizen.emulator.skin.util.StringUtil;
  *
  */
 public abstract class SkinDialog extends Dialog {
-
 	public static final String OK = "        " + "OK" + "        ";
-	
+
+	private Logger logger =
+			SkinLogger.getSkinLogger(SkinDialog.class).getLogger();
+
 	protected Shell shell;
 	protected Composite buttonComposite;
 	private Shell parent;
@@ -81,9 +86,10 @@ public abstract class SkinDialog extends Dialog {
 			return;
 		}
 
+		/* bottom side */
 		buttonComposite = new Composite(parent, SWT.NONE);
-		buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		buttonComposite.setLayout(new FillLayout(SWT.HORIZONTAL));
+		buttonComposite.setLayoutData(new GridData(SWT.RIGHT, SWT.BOTTOM, true, true));
+		buttonComposite.setLayout(new GridLayout(1, false));
 
 		createButtons(buttonComposite);
 	}
@@ -101,7 +107,7 @@ public abstract class SkinDialog extends Dialog {
 
 		setShellSize();
 
-		if (this.parent != null) {
+		if (parent != null) {
 			Point central = new Point(
 					this.parent.getLocation().x + (this.parent.getSize().x / 2),
 					this.parent.getLocation().y + (this.parent.getSize().y / 2));
@@ -140,11 +146,13 @@ public abstract class SkinDialog extends Dialog {
 	}
 
 	protected void close() {
+		/* do nothing */
 	}
 
 	protected void setShellSize() {
+		/* do nothing */
 	}
-	
+
 	protected abstract Composite createArea(Composite parent);
 
 	protected void createButtons(Composite parent) {
@@ -175,14 +183,15 @@ public abstract class SkinDialog extends Dialog {
 	}
 
 	protected Button createOKButton(Composite parent, boolean setFocus) {
+		logger.info("create OK button");
 
 		Button okButton = createButton(parent, OK);
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				SkinDialog.this.shell.close();
+				shell.close();
 			}
-		} );
+		});
 
 		if (setFocus) {
 			okButton.setFocus();

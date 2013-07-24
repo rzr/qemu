@@ -37,13 +37,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.program.Program;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
@@ -54,6 +51,7 @@ import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
+import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
@@ -64,67 +62,84 @@ import org.tizen.emulator.skin.util.SwtUtil;
  *
  */
 public class DetailInfoDialog extends SkinDialog {
-
 	public final static String DATA_DELIMITER = "#";
-	public final static String KEY_SDCARD_PATH = "SD Card Path";
+
+	public final static String KEY_VM_NAME = "VM Name";
+	public final static String KEY_SKIN_NAME = "Skin Name";
+	public final static String KEY_CPU_ARCH = "CPU";
+	public final static String KEY_RAM_SIZE = "RAM Size";
+	public final static String KEY_DISPLAY_RESOLUTION = "Display Resolution";
+	public final static String KEY_DISPLAY_DENSITY = "Display Density";
+	public final static String KEY_FILESHARING = "File Sharing";
 	public final static String KEY_FILESHARED_PATH = "File Shared Path";
+	public final static String KEY_CPU_VIRTUALIZATION = "CPU Virtualization";
+	public final static String KEY_GPU_VIRTUALIZATION = "GPU Virtualization";
 	public final static String KEY_IMAGE_PATH = "Image Path";
 	public final static String KEY_LOG_PATH = "Log Path";
+
 	public final static String VALUE_NONE = "None";
 	public final static String VALUE_SUPPORTED = "Supported";
 	public final static String VALUE_NOTSUPPORTED = "Not Supported";
+	public final static String VALUE_ENABLED = "Enabled";
+	public final static String VALUE_DISABLED = "Disabled";
 
 	private Logger logger =
 			SkinLogger.getSkinLogger(DetailInfoDialog.class).getLogger();
 
 	private SocketCommunicator communicator;
 	private EmulatorConfig config;
+	private SkinInformation skinInfo;
 	private Table table;
 	private LinkedHashMap<String, String> refinedData;
 
-	public DetailInfoDialog( Shell parent, String emulatorName, SocketCommunicator communicator, EmulatorConfig config ) {
-		super( parent, "Detail Info" + " - " + emulatorName, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE
-				| SWT.MAX );
+	/**
+	 *  Constructor
+	 */
+	public DetailInfoDialog(Shell parent, String emulatorName,
+			SocketCommunicator communicator, EmulatorConfig config, SkinInformation skinInfo) {
+		super(parent, "Detail Info" + " - " + emulatorName,
+				SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX);
+
 		this.communicator = communicator;
 		this.config = config;
+		this.skinInfo = skinInfo;
 	}
 
 	@Override
-	protected Composite createArea( Composite parent ) {
-
+	protected Composite createArea(Composite parent) {
 		String infoData = queryData();
-		if ( StringUtil.isEmpty( infoData ) ) {
+		if (StringUtil.isEmpty(infoData)) {
 			return null;
 		}
 
-		Composite composite = new Composite( parent, SWT.NONE );
-		composite.setLayout( new FillLayout() );
+		Composite composite = new Composite(parent, SWT.NONE);
+		composite.setLayout(new FillLayout());
 
-		table = new Table( composite, SWT.BORDER | SWT.MULTI | SWT.FULL_SELECTION );
-		table.setHeaderVisible( true );
-		table.setLinesVisible( true );
+		table = new Table(composite,
+				SWT.BORDER | SWT.MULTI | SWT.FULL_SELECTION);
+		table.setHeaderVisible(true);
+		table.setLinesVisible(true);
 
 		TableColumn[] column = new TableColumn[2];
 
-		column[0] = new TableColumn( table, SWT.LEFT );
-		column[0].setText( "Feature" );
+		column[0] = new TableColumn(table, SWT.LEFT);
+		column[0].setText("Feature");
 
-		column[1] = new TableColumn( table, SWT.LEFT );
-		column[1].setText( "Value" );
+		column[1] = new TableColumn(table, SWT.LEFT);
+		column[1].setText("Value");
 
 		int index = 0;
 
-		refinedData = composeAndParseData( infoData );
-		Iterator<Entry<String, String>> iterator = refinedData.entrySet().iterator();
+		refinedData = composeAndParseData(infoData);
+		Iterator<Entry<String, String>> iterator =
+				refinedData.entrySet().iterator();
 
-		while ( iterator.hasNext() ) {
-
+		while (iterator.hasNext()) {
 			Entry<String, String> entry = iterator.next();
 
-			TableItem tableItem = new TableItem( table, SWT.NONE, index );
-			tableItem.setText( new String[] { entry.getKey(), entry.getValue() } );
+			TableItem tableItem = new TableItem(table, SWT.NONE, index);
+			tableItem.setText(new String[] { entry.getKey(), entry.getValue() });
 			index++;
-
 		}
 
 		column[0].pack();
@@ -135,7 +150,7 @@ public class DetailInfoDialog extends SkinDialog {
 		table.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				//do nothing
+				/* do nothing */
 			}
 
 			@Override
@@ -153,17 +168,16 @@ public class DetailInfoDialog extends SkinDialog {
 					openPath = refinedData.get(KEY_IMAGE_PATH);
 				} else if (tableItem.getText().compareTo(KEY_FILESHARED_PATH) == 0) {
 					openPath = refinedData.get(KEY_FILESHARED_PATH);
-				} else if (tableItem.getText().compareTo(KEY_SDCARD_PATH) == 0) {
-					openPath = refinedData.get(KEY_SDCARD_PATH);
 				}
 
 				try {
 					openPath = StringUtil.getCanonicalPath(openPath);
 				} catch (IOException e) {
-					logger.warning( "Invalid path" );
+					logger.warning("Invalid path");
 				}
 
-				if (openPath.compareTo(VALUE_NONE) == 0 || openPath.compareTo("") == 0) {
+				if (openPath.compareTo(VALUE_NONE) == 0 ||
+						openPath.compareTo("") == 0) {
 					return;
 				}
 
@@ -176,8 +190,7 @@ public class DetailInfoDialog extends SkinDialog {
 				} else if (SwtUtil.isWindowsPlatform()) {
 					procBrowser.command("explorer", "\"" + openPath + "\"");
 				} else if (SwtUtil.isMacPlatform()) {
-					//TODO:
-					logger.warning( "not supported yet" );
+					logger.warning("not supported yet");
 				}
 
 				if (procBrowser.command().isEmpty() == false) {
@@ -192,149 +205,143 @@ public class DetailInfoDialog extends SkinDialog {
 		});
 
 		return composite;
-
 	}
 
 	@Override
 	protected void setShellSize() {
-		if( SwtUtil.isLinuxPlatform() ) {
-			shell.setSize( (int) ( 402 * 1.618 ), 402 );
+		if (SwtUtil.isLinuxPlatform()) {
+			shell.setSize((int) (402 * 1.618/* golden ratio */), 402);
 		} else {
-			shell.setSize( (int) ( 372 * 1.618 ), 372 );
+			shell.setSize((int) (372 * 1.618), 372);
 		}
 	}
 
 	private String queryData() {
-
 		String infoData = null;
 
 		DataTranfer dataTranfer =
 				communicator.sendDataToQEMU(SendCommand.DETAIL_INFO, null, true);
 		byte[] receivedData = communicator.getReceivedData(dataTranfer);
 
-		if ( null != receivedData ) {
-			infoData = new String( receivedData );
+		if (null != receivedData) {
+			infoData = new String(receivedData);
 		} else {
-			logger.severe( "Fail to get detail info." );
-			SkinUtil.openMessage( shell, null, "Fail to get detail info.", SWT.ICON_ERROR, config );
+			logger.severe("Fail to get detail info");
+			SkinUtil.openMessage(shell, null,
+					"Fail to get detail info", SWT.ICON_ERROR, config);
 		}
 
 		return infoData;
-
 	}
 
-	private LinkedHashMap<String, String> composeAndParseData( String infoData ) {
-
-		logger.info( "Received infoData:" + infoData );
+	private LinkedHashMap<String, String> composeAndParseData(String infoData) {
+		logger.info("Received infoData : " + infoData);
 
 		String cpu = "";
-		String ram = "";
+		String ramSize = "";
 		String dpi = "";
-		String sdPath = "";
 		String imagePath = "";
-		boolean isFirstDrive = true;
 		String sharedPath = "";
-		boolean isHwVirtual = false;
-		String hwVirtualCompare = "";
+		boolean isCpuVirtual = false;
+		boolean isGpuVirtual = false;
+		String cpuVirtualCompare = "";
+		String gpuVirtualCompare = "";
 		String logPath = "";
 		boolean isHaxError = false;
-		
-		if ( SwtUtil.isLinuxPlatform() ) {
-			hwVirtualCompare = "-enable-kvm";
-		} else if ( SwtUtil.isWindowsPlatform() ) {
-			hwVirtualCompare = "-enable-hax";
+
+		if (SwtUtil.isLinuxPlatform()) {
+			cpuVirtualCompare = "-enable-kvm";
+		} else if (SwtUtil.isWindowsPlatform()) {
+			cpuVirtualCompare = "-enable-hax";
 		}
-		
-		String[] split = infoData.split( DATA_DELIMITER );
+		gpuVirtualCompare = "-enable-gl";
 
-		for ( int i = 0; i < split.length; i++ ) {
+		String[] split = infoData.split(DATA_DELIMITER);
 
-			if ( 0 == i ) {
-
+		for (int i = 0; i < split.length; i++) {
+			if (0 == i) {
 				String exec = split[i].trim().toLowerCase();
-				if ( SwtUtil.isWindowsPlatform() ) {
-					if ( 4 <= exec.length() ) {
-						// remove '.exe' in Windows
-						exec = exec.substring( 0, exec.length() - 4 );
+				if (SwtUtil.isWindowsPlatform()) {
+					if (4 <= exec.length()) {
+						/* remove '.exe' in Windows */
+						exec = exec.substring(0, exec.length() - 4);
 					}
 				}
-				
-				if ( exec.endsWith( "x86" ) ) {
+
+				// TODO:
+				if (exec.endsWith("x86")) {
 					cpu = "x86";
-				} else if ( exec.endsWith( "arm" ) ) {
+				} else if (exec.endsWith("arm")) {
 					cpu = "ARM";
 				}
-
 			} else {
-
-				if ( i + 1 <= split.length ) {
-
+				if (i + 1 <= split.length) {
 					String arg = split[i].trim();
 
-					if ( "-m".equals( arg ) ) {
-
-						ram = split[i + 1].trim();
-
-					} else if ( "-drive".equals( arg ) ) {
-
-						// arg : file=/home/xxx/tizen-sdk-data/emulator-vms/vms/xxx/emulimg-xxx.x86
+					if ("-m".equals(arg))
+					{
+						ramSize = split[i + 1].trim();
+					}
+					else if ("-drive".equals(arg))
+					{
+						/* arg : file=/path/emulimg.x86,... */
 						arg = split[i + 1].trim();
 
-						if ( arg.startsWith( "file=" ) ) {
-
-							String[] sp = arg.split( "," );
-							String[] sp2 = sp[0].split( "=" );
+						if (arg.startsWith("file=")) {
+							String[] sp = arg.split(",");
+							String[] sp2 = sp[0].split("=");
 							String drivePath = sp2[sp2.length - 1];
 
-							if ( isFirstDrive ) {
-								imagePath = drivePath;
-								isFirstDrive = false;
-							} else {
-								sdPath = drivePath;
-							}
-
+							imagePath = drivePath;
 						}
-
-					} else if ( "-virtfs".equals( arg ) ) {
-
-						// arg : local,path=/home/xxx/xxx/xxx,security_model=none,mount_tag=fileshare
+					}
+					else if ("-virtfs".equals(arg))
+					{
+						/* arg : local,path=/path,... */
 						arg = split[i + 1].trim();
-						String[] sp = arg.split( "," );
+						String[] sp = arg.split(",");
 
-						if ( 1 < sp.length ) {
-							int spIndex = sp[1].indexOf( "=" );
-							sharedPath = sp[1].substring( spIndex + 1, sp[1].length() );
+						if (1 < sp.length) {
+							int spIndex = sp[1].indexOf("=");
+							sharedPath = sp[1].substring(spIndex + 1, sp[1].length());
 						}
-
-					} else if ( "-append".equals( arg ) ) {
-
+					}
+					else if ("-append".equals(arg))
+					{
 						arg = split[i + 1].trim();
+						String[] splitSub = arg.split(" ");
 
-						int idx = arg.indexOf( "dpi" );
+						for (int j = 0; j < splitSub.length; j++) {
+							String parameterKernel = splitSub[j].trim();
 
-						if ( -1 != idx ) {
-							if ( idx + 7 <= arg.length() ) {
-								
-								dpi = arg.substring( idx, idx + 7 ); // end index is not 8, remove last '0'
-								
-								String[] sp = dpi.split( "=" );
-								if ( 1 < sp.length ) {
-									dpi = sp[1];
+							if (parameterKernel.startsWith("dpi=")) {
+								String[] sp = parameterKernel.split("=");
+								if (1 < sp.length) {
+									dpi = Integer.toString(
+											Integer.parseInt(sp[1]) / 10);
 								}
-								
 							}
 						}
-
-					} else if ( hwVirtualCompare.equals( arg ) ) {
-						isHwVirtual = true;
-					} else if ( arg.startsWith("hax_error=") ) {
-						String[] sp = arg.split( "=" );
-						if ( 1 < sp.length ) {
-							isHaxError = Boolean.parseBoolean( sp[1] );
-						}
-					} else if (arg.startsWith("log_path=")) {
+					}
+					else if (cpuVirtualCompare.equals(arg))
+					{
+						isCpuVirtual = true;
+					}
+					else if (gpuVirtualCompare.equals(arg))
+					{
+						isGpuVirtual = true;
+					}
+					else if (arg.startsWith("hax_error="))
+					{
 						String[] sp = arg.split("=");
-						if ( 1 < sp.length ) {
+						if (1 < sp.length) {
+							isHaxError = Boolean.parseBoolean(sp[1]);
+						}
+					}
+					else if (arg.startsWith("log_path="))
+					{
+						String[] sp = arg.split("=");
+						if (1 < sp.length) {
 							logPath = sp[1];
 
 							try {
@@ -342,72 +349,73 @@ public class DetailInfoDialog extends SkinDialog {
 							} catch (IOException e) {
 								logger.log(Level.SEVERE, e.getMessage(), e);
 							}
-							logger.info("log path = " + logPath); //without filename
+
+							logger.info("log path = " + logPath); /* without filename */
 						}
 					}
 
 				}
-
 			}
-
 		}
 
-		LinkedHashMap<String, String> result = new LinkedHashMap<String, String>();
+		LinkedHashMap<String, String> result =
+				new LinkedHashMap<String, String>();
 
-		/* Target name */
-		result.put( "Name", SkinUtil.getVmName( config ) );
+		/* VM name */
+		result.put(KEY_VM_NAME, SkinUtil.getVmName(config));
+
+		/* Skin name */
+		result.put(KEY_SKIN_NAME, skinInfo.getSkinName());
 
 		/* CPU srchitecture */
-		result.put( "CPU", cpu );
-
-		/* Target display resolution */
-		int width = config.getArgInt( ArgsConstants.RESOLUTION_WIDTH );
-		int height = config.getArgInt( ArgsConstants.RESOLUTION_HEIGHT );
-		result.put( "Display Resolution", width + "x" + height );
-
-		/* DPI (dots per inch) */
-		result.put( "Display Density", dpi );
-
-		/* SD card path */
-		if ( StringUtil.isEmpty( sdPath ) ) {
-			result.put("SD Card", VALUE_NOTSUPPORTED);
-			result.put(KEY_SDCARD_PATH, VALUE_NONE);
-		} else {
-			result.put("SD Card", VALUE_SUPPORTED);
-			result.put(KEY_SDCARD_PATH, sdPath);
-		}
+		result.put(KEY_CPU_ARCH, cpu);
 
 		/* RAM size */
-		result.put( "RAM Size", ram );
+		result.put(KEY_RAM_SIZE, ramSize);
+
+		/* Target display resolution */
+		int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+		result.put(KEY_DISPLAY_RESOLUTION, width + " x " + height);
+
+		/* DPI (dots per inch) */
+		result.put(KEY_DISPLAY_DENSITY, dpi);
 
 		/* Whether host file sharing is supported */
-		if ( StringUtil.isEmpty( sharedPath ) ) {
-			result.put("File Sharing", VALUE_NOTSUPPORTED);
+		if (StringUtil.isEmpty(sharedPath)) {
+			result.put(KEY_FILESHARING, VALUE_NOTSUPPORTED);
 			result.put(KEY_FILESHARED_PATH, VALUE_NONE);
 		} else {
-			result.put("File Sharing", VALUE_SUPPORTED);
+			result.put(KEY_FILESHARING, VALUE_SUPPORTED);
 			result.put(KEY_FILESHARED_PATH, sharedPath);
 		}
 
 		/* Whether hardware virtualization is supported */
-		if ( isHwVirtual ) {
-			if ( isHaxError ) {
-				result.put( "HW Virtualization State", "Disable(insufficient memory for driver)" );
+		if (isCpuVirtual == true) {
+			if (isHaxError == true) {
+				result.put(KEY_CPU_VIRTUALIZATION,
+						"Disable(insufficient memory for driver)");
 			} else {
-				result.put( "HW Virtualization State", "Enable" );
+				result.put(KEY_CPU_VIRTUALIZATION, VALUE_ENABLED);
 			}
 		} else {
-			result.put( "HW Virtualization State", "Disable" );
+			result.put(KEY_CPU_VIRTUALIZATION, VALUE_DISABLED);
 		}
 
-		/* Target image path */
-		if ( StringUtil.isEmpty( imagePath ) ) {
+		if (isGpuVirtual == true) {
+			result.put(KEY_GPU_VIRTUALIZATION, VALUE_ENABLED);
+		} else {
+			result.put(KEY_GPU_VIRTUALIZATION, VALUE_DISABLED);
+		}
+
+		/* platform image path */
+		if (StringUtil.isEmpty(imagePath)) {
 			result.put(KEY_IMAGE_PATH, "Not identified");
 		} else {
 			result.put(KEY_IMAGE_PATH, imagePath);
 		}
 
-		/* Emulator log file path */
+		/* emulator log path */
 		if (StringUtil.isEmpty(logPath)) {
 			result.put(KEY_LOG_PATH, VALUE_NONE);
 		} else {
@@ -415,30 +423,20 @@ public class DetailInfoDialog extends SkinDialog {
 		}
 
 		return result;
-
 	}
 
-	protected void createButtons( Composite parent ) {
-		super.createButtons( parent );
+	@Override
+	protected void createButtons(Composite parent) {
+		super.createButtons(parent);
 
-		Button okButton = createButton( parent, OK );
+		Composite composite = new Composite(parent, SWT.NONE);
+		FillLayout fillLayout = new FillLayout(SWT.HORIZONTAL);
+		composite.setLayout(fillLayout);
 
-		GridData gd = new GridData();
-		gd.grabExcessHorizontalSpace = true;
-		gd.horizontalAlignment = SWT.RIGHT;
-		okButton.setLayoutData( gd );
-
-		okButton.setFocus();
-
-		okButton.addSelectionListener( new SelectionAdapter() {
-			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				DetailInfoDialog.this.shell.close();
-			}
-		} );
-
+		createOKButton(composite, true);
 	};
 
+	@Override
 	protected void close() {
 		logger.info("close the detail info dialog");
 	}
