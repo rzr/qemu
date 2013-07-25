@@ -64,16 +64,12 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public static final int BLUE_MASK = 0x000000FF;
 	public static final int COLOR_DEPTH = 24; /* no need to Alpha channel */
 
-	private static Logger logger = SkinLogger.getSkinLogger(
-			EmulatorShmSkin.class).getLogger();
-
-	private EmulatorFingers finger;
-	private int multiTouchKey;
-	private int multiTouchKeySub;
-
 	/* touch values */
 	protected static int pressingX = -1, pressingY = -1;
 	protected static int pressingOriginX = -1, pressingOriginY = -1;
+
+	private static Logger logger = SkinLogger.getSkinLogger(
+			EmulatorShmSkin.class).getLogger();
 
 	static {
 		/* load JNI library file */
@@ -101,6 +97,11 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	private PaletteData paletteData;
 	private PollFBThread pollThread;
+
+	private int maxTouchPoint;
+	private EmulatorFingers finger;
+	private int multiTouchKey;
+	private int multiTouchKeySub;
 
 	class PollFBThread extends Thread {
 		private Display display;
@@ -208,11 +209,14 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorShmSkin(EmulatorSkinState state,
-			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
-		super(state, config, skinInfo, SWT.NONE, isOnTop);
+	public EmulatorShmSkin(EmulatorConfig config,
+			SkinInformation skinInfo, boolean isOnTop) {
+		super(config, skinInfo, SWT.NONE, isOnTop);
 
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+
+		/* get MaxTouchPoint from startup argument */
+		this.maxTouchPoint = config.getArgInt(ArgsConstants.MAX_TOUCHPOINT);
 	}
 
 	protected void skinFinalize() {
@@ -228,7 +232,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public long initLayout() {
 		super.initLayout();
 
-		finger = new EmulatorFingers(currentState, communicator);
+		finger = new EmulatorFingers(maxTouchPoint, currentState, communicator);
 		if (SwtUtil.isMacPlatform() == true) {
 			multiTouchKey = SWT.COMMAND;
 		} else {

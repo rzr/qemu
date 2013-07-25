@@ -197,8 +197,7 @@ public class EmulatorSkin {
 	 * @param config : configuration of emulator skin
 	 * @param isOnTop : always on top flag
 	*/
-	protected EmulatorSkin(EmulatorSkinState state,
-			EmulatorConfig config, SkinInformation skinInfo,
+	protected EmulatorSkin(EmulatorConfig config, SkinInformation skinInfo,
 			int displayCanvasStyle, boolean isOnTop) {
 		this.config = config;
 		this.skinInfo = skinInfo;
@@ -211,17 +210,17 @@ public class EmulatorSkin {
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
 		this.shell = new Shell(Display.getDefault(), style);
-
 		if (isOnTop == true) {
 			SkinUtil.setTopMost(shell, true);
 		}
 
 		this.displayCanvasStyle = displayCanvasStyle;
 
+		/* prepare for VM state management */
+		this.currentState = new EmulatorSkinState();
+
 		setColorVM(); /* generate a identity color */
 		this.keyWindowKeeper = new KeyWindowKeeper(this);
-
-		this.currentState = state;
 	}
 
 	public void setCommunicator(SocketCommunicator communicator) {

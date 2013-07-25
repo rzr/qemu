@@ -49,6 +49,8 @@ import org.tizen.emulator.skin.log.SkinLogger;
 
 public class EmulatorFingers {
 	private static final int MAX_FINGER_CNT = 10;
+	private static final int FINGER_POINT_SIZE = 32;
+
 	private static final int RED_MASK = 0x0000FF00;
 	private static final int GREEN_MASK = 0x00FF0000;
 	private static final int BLUE_MASK = 0xFF000000;
@@ -60,7 +62,6 @@ public class EmulatorFingers {
 	private int multiTouchEnable;
 	private int maxTouchPoint;
 	protected int fingerCnt;
-	private int fingerCntMax;
 
 	private int grabFingerID = 0;
 	private ArrayList<FingerPoint> FingerPointList;
@@ -79,19 +80,20 @@ public class EmulatorFingers {
 	/**
 	 *  Constructor
 	 */
-	EmulatorFingers(EmulatorSkinState currentState, SocketCommunicator communicator) {
+	EmulatorFingers(int maximum,
+			EmulatorSkinState currentState, SocketCommunicator communicator) {
 		this.currentState = currentState;
 		this.communicator = communicator;
 
-		initMultiTouchState();
+		initMultiTouchState(maximum);
 	}
 
 	protected class FingerPoint {
-		int id;
-		int originX;
-		int originY;
-		int x;
-		int y;
+		private int id;
+		private int originX;
+		private int originY;
+		private int x;
+		private int y;
 
 		FingerPoint(int originX, int originY, int x, int y) {
 			this.originX = originX;
@@ -110,7 +112,7 @@ public class EmulatorFingers {
 	}
 
 	public FingerPoint getFingerPointFromSlot(int index) {
-		if (index < 0 || index > this.fingerCntMax) {
+		if (index < 0 || index > getMaxTouchPoint()) {
 			return null;
 		}
 
@@ -140,16 +142,16 @@ public class EmulatorFingers {
 		return null;
 	}
 
-	public void initMultiTouchState() {
-		this.multiTouchEnable = 0;
-		this.fingerCntMax = this.currentState.getMaxTouchPoint();
+	public void initMultiTouchState(int maximum) {
+		multiTouchEnable = 0;
 
-		if (this.fingerCntMax > MAX_FINGER_CNT) {
-			this.fingerCntMax = MAX_FINGER_CNT;
-			setMaxTouchPoint(this.fingerCntMax);
+		int fingerCntMax = maximum;
+		if (fingerCntMax > MAX_FINGER_CNT) {
+			fingerCntMax = MAX_FINGER_CNT;
 		}
+		setMaxTouchPoint(fingerCntMax);
 
-		logger.info("maxTouchPoint="+ this.fingerCntMax);
+		logger.info("maxTouchPoint : " + getMaxTouchPoint());
 		this.fingerCnt = 0;
 
 		if (this.fingerSlot != null) {
@@ -157,11 +159,11 @@ public class EmulatorFingers {
 		}
 
 		FingerPointList = new ArrayList<FingerPoint>();
-		int i;
-		for (i = 0; i <= fingerCntMax; i++) {
+		for (int i = 0; i <= getMaxTouchPoint(); i++) {
 			FingerPointList.add(new FingerPoint(-1, -1, -1, -1));
 		} 
-		this.fingerPointSize = 32;
+
+		this.fingerPointSize = FINGER_POINT_SIZE;
 		this.fingerPointSizeHalf = this.fingerPointSize / 2;
 
 		this.fingerPointOutlineColor = new Color(Display.getCurrent(), 0xDD, 0xDD, 0xDD);
@@ -175,11 +177,11 @@ public class EmulatorFingers {
 
 		GC gc = new GC(this.fingerSlotimage);
 
-		gc.setForeground(this.fingerPointOutlineColor);
-		gc.drawOval(0, 0, this.fingerPointSize + 2, this.fingerPointSize + 2);
-
 		gc.setBackground(this.fingerPointColor);
 		gc.fillOval(2, 2, this.fingerPointSize, this.fingerPointSize);
+
+		gc.setForeground(this.fingerPointOutlineColor);
+		gc.drawOval(0, 0, this.fingerPointSize + 2, this.fingerPointSize + 2);
 
 		gc.dispose();
 	}
@@ -193,18 +195,18 @@ public class EmulatorFingers {
 	}
 
 	protected int addFingerPoint(int originX, int originY, int x, int y) {
-		if (this.fingerCnt == this.fingerCntMax) {
+		if (this.fingerCnt == getMaxTouchPoint()) {
 			logger.info("support multi-touch up to "
-					+ this.fingerCntMax + " fingers");
+					+ getMaxTouchPoint() + " fingers");
 			return -1;
 		}
 		this.fingerCnt += 1;
 
-		FingerPointList.get(fingerCnt -1).id = this.fingerCnt;
-		FingerPointList.get(fingerCnt -1).originX = originX;
-		FingerPointList.get(fingerCnt -1).originY = originY;
-		FingerPointList.get(fingerCnt -1).x = x;
-		FingerPointList.get(fingerCnt -1).y = y;
+		FingerPointList.get(fingerCnt - 1).id = this.fingerCnt;
+		FingerPointList.get(fingerCnt - 1).originX = originX;
+		FingerPointList.get(fingerCnt - 1).originY = originY;
+		FingerPointList.get(fingerCnt - 1).x = x;
+		FingerPointList.get(fingerCnt - 1).y = y;
 		logger.info(this.fingerCnt + " finger touching");
 
 		return this.fingerCnt;
@@ -274,13 +276,13 @@ public class EmulatorFingers {
 				this.grabFingerID = finger.id;
 				logger.info(String.format("id %d finger is grabbed\n", this.grabFingerID));
 			}
-			else if (this.fingerCnt == this.fingerCntMax)
+			else if (this.fingerCnt == getMaxTouchPoint())
 			{ /* Let's assume that this event is last finger touch input */
-				finger = getFingerPointFromSlot(this.fingerCntMax - 1);
+				finger = getFingerPointFromSlot(getMaxTouchPoint() - 1);
 				if (finger != null) {
 	        		mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
-							originX, originY, finger.x, finger.y, this.fingerCntMax - 1);
+							originX, originY, finger.x, finger.y, getMaxTouchPoint() - 1);
 					communicator.sendToQEMU(
 							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 
@@ -292,7 +294,7 @@ public class EmulatorFingers {
 					if (finger.id != 0) {
 						mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
-								originX, originY, x, y, this.fingerCntMax - 1);
+								originX, originY, x, y, getMaxTouchPoint() - 1);
 						communicator.sendToQEMU(
 								SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 					}
@@ -400,7 +402,7 @@ public class EmulatorFingers {
 				this.grabFingerID = finger.id;
 		    	logger.info(String.format("id %d finger is grabbed\n", this.grabFingerID));
 			}
-			else if (this.fingerCnt == this.fingerCntMax)
+			else if (this.fingerCnt == getMaxTouchPoint())
 			{  /* Let's assume that this event is last finger touch input */
 				/* do nothing */
 			}

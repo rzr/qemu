@@ -49,9 +49,9 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	/**
 	 *  Constructor
 	 */
-	public EmulatorSdlSkin(EmulatorSkinState state,
-			EmulatorConfig config, SkinInformation skinInfo, boolean isOnTop) {
-		super(state, config, skinInfo, SWT.EMBEDDED, isOnTop);
+	public EmulatorSdlSkin(EmulatorConfig config,
+			SkinInformation skinInfo, boolean isOnTop) {
+		super(config, skinInfo, SWT.EMBEDDED, isOnTop);
 	}
 
 	public long initLayout() {

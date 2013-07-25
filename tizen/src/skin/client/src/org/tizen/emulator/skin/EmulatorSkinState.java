@@ -40,7 +40,6 @@ public class EmulatorSkinState {
 	private int currentScale;
 	private short currentRotationId;
 	private int currentAngle;
-	private int maxTouchPoint;
 
 	private Rectangle displayBounds;
 	private boolean updateDisplayBounds;
@@ -57,7 +56,6 @@ public class EmulatorSkinState {
 		this.currentScale = 50;
 		this.currentRotationId = RotationInfo.PORTRAIT.id();
 		this.currentAngle = 0;
-		this.maxTouchPoint = 0;
 
 		this.displayBounds = null;
 		this.updateDisplayBounds = false;
@@ -185,14 +183,5 @@ public class EmulatorSkinState {
 
 	public synchronized void setCurrentHoveredHWKey(HWKey hwKey) {
 		this.currentHoveredHWKey = hwKey;
-	}
-
-	/* max touch point */
-	public synchronized void setMaxTouchPoint(int maxTouchPoint) {
-		this.maxTouchPoint = maxTouchPoint;
-	}
-
-	public synchronized int getMaxTouchPoint() {
-		return maxTouchPoint;
 	}
 }

@@ -75,7 +75,6 @@ public class EmulatorSkinMain {
 
 	private static Logger logger;
 
-	public EmulatorSkinState currentState;
 	private static int useSharedMemory = 0;
 
 	static {
@@ -191,7 +190,6 @@ public class EmulatorSkinMain {
 			Properties skinProperties = loadProperties(skinPropFilePath, true);
 			if (null == skinProperties) {
 				logger.severe("Fail to load skin properties file.");
-				System.exit(-1);
 			}
 
 			/* set emulator window config property */
@@ -236,29 +234,12 @@ public class EmulatorSkinMain {
 					SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString());
 			boolean isOnTop = Boolean.parseBoolean(onTopVal);
 
-			/* prepare for VM state management */
-			EmulatorSkinState currentState = new EmulatorSkinState();
-
-			/* get MaxTouchPoint from startup argument */
-			int maxtouchpoint = 0;
-			if (argsMap.containsKey(ArgsConstants.MAX_TOUCHPOINT)) {
-				maxtouchpoint = Integer.parseInt(
-						argsMap.get(ArgsConstants.MAX_TOUCHPOINT));
-				logger.info("maximum touch point : " + maxtouchpoint);
-			} else {
-				maxtouchpoint = 1;
-				logger.info(ArgsConstants.MAX_TOUCHPOINT +
-						" does not exist set maxtouchpoint info to " + maxtouchpoint);
-			}
-
-			currentState.setMaxTouchPoint(maxtouchpoint);
-
 			/* create a skin */
 			EmulatorSkin skin = null;
 			if (useSharedMemory == 1) {
-				skin = new EmulatorShmSkin(currentState, config, skinInfo, isOnTop);
+				skin = new EmulatorShmSkin(config, skinInfo, isOnTop);
 			} else { /* linux & windows */
-				skin = new EmulatorSdlSkin(currentState, config, skinInfo, isOnTop);
+				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
 			}
 
 			/* create a qemu communicator */
