@@ -36,6 +36,8 @@
 MULTI_DEBUG_CHANNEL(qemu, hwkey);
 
 #define DEVICE_NAME "virtio-hwkey"
+#define MAX_BUF_COUNT 64
+static int vqidx = 0;
 
 /*
  * HW key event queue
@@ -68,7 +70,6 @@ typedef struct ElementEntry {
     QTAILQ_ENTRY(ElementEntry) node;
 } ElementEntry;
 
-static ElementEntry _elem_buf[10];
 static QTAILQ_HEAD(, ElementEntry) elem_queue =
     QTAILQ_HEAD_INITIALIZER(elem_queue);
 
@@ -76,10 +77,10 @@ static unsigned int elem_ringbuf_cnt; /* _elem_buf */
 static unsigned int elem_queue_cnt; /* elem_queue */
 
 VirtIOHWKey *vhk;
+VirtQueueElement elem_vhk;
 
 /* lock for between communication thread and IO thread */
 static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t elem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void maru_hwkey_event(int event_type, int keycode)
 {
@@ -117,7 +118,6 @@ void maru_hwkey_event(int event_type, int keycode)
 static void maru_virtio_hwkey_handle(VirtIODevice *vdev, VirtQueue *vq)
 {
     int virt_sg_index = 0;
-    ElementEntry *elem_entry = NULL;
 
     TRACE("maru_virtio_hwkey_handle\n");
 
@@ -125,41 +125,16 @@ static void maru_virtio_hwkey_handle(VirtIODevice *vdev, VirtQueue *vq)
         TRACE("virtqueue is empty\n");
         return;
     }
-
-    while (true) {
-        elem_entry = &(_elem_buf[elem_ringbuf_cnt % 10]);
-        elem_ringbuf_cnt++;
-
-        virt_sg_index = virtqueue_pop(vhk->vq, &elem_entry->elem);
-        if (virt_sg_index == 0) {
-            elem_ringbuf_cnt--;
-            break;
-        } else if (virt_sg_index < 0) {
-            ERR("virtqueue is broken\n");
-            elem_ringbuf_cnt--;
-            return;
-        }
-
-        pthread_mutex_lock(&elem_mutex);
-
-        elem_entry->el_index = ++elem_queue_cnt;
-        elem_entry->sg_index = (unsigned int)virt_sg_index;
-
-        /* save VirtQueueElement */
-        QTAILQ_INSERT_TAIL(&elem_queue, elem_entry, node);
-        /* call maru_virtio_hwkey_notify */
-        qemu_bh_schedule(vhk->bh);
-
-        pthread_mutex_unlock(&elem_mutex);
-    }
+    /* Get a queue buffer which is written by guest side. */
+    do {
+        virt_sg_index = virtqueue_pop(vq, &elem_vhk);
+        TRACE("virtqueue pop.\n");
+    } while (virt_sg_index < MAX_BUF_COUNT);
 }
 
 void maru_virtio_hwkey_notify(void)
 {
     HwKeyEventEntry *event_entry = NULL;
-    ElementEntry *elem_entry = NULL;
-    VirtQueueElement *element = NULL;
-    void *vbuf = NULL;
 
     TRACE("maru_virtio_hwkey_notify\n");
 
@@ -174,27 +149,21 @@ void maru_virtio_hwkey_notify(void)
             break;
         }
 
-        elem_entry = QTAILQ_FIRST(&elem_queue);
+        /* get hwkey event from host queue */
+        event_entry = QTAILQ_FIRST(&events_queue);
 
-        if ( elem_entry->sg_index > 0) {
-            /* get hwkey event from host queue */
-            event_entry = QTAILQ_FIRST(&events_queue);
-
-            TRACE("hwkey(%d) : keycode=%d, event_type=%d | \
-              event_queue_cnt=%d\n",
-              event_entry->index,
+        printf("keycode=%d, event_type=%d, event_queue_cnt=%d, vqidx=%d\n",
               event_entry->hwkey.keycode, event_entry->hwkey.event_type,
-              event_queue_cnt);
-          
-            element = &elem_entry->elem;
-            vbuf = element->in_sg[elem_entry->sg_index - 1].iov_base;
+              event_queue_cnt, vqidx);
 
-            /* copy event into virtio buffer */
-            memcpy(vbuf, &(event_entry->hwkey), sizeof(EmulHWKeyEvent));
-
-            virtqueue_push(vhk->vq, element, sizeof(EmulHWKeyEvent));
-            virtio_notify(&vhk->vdev, vhk->vq);
+        /* copy event into virtio buffer */
+        memcpy(elem_vhk.in_sg[vqidx++].iov_base, &(event_entry->hwkey), sizeof(EmulHWKeyEvent));
+        if (vqidx == MAX_BUF_COUNT) {
+            vqidx = 0;
         }
+
+        virtqueue_push(vhk->vq, &elem_vhk, sizeof(EmulHWKeyEvent));
+        virtio_notify(&vhk->vdev, vhk->vq);
 
         pthread_mutex_lock(&event_mutex);
 
@@ -231,7 +200,7 @@ static int virtio_hwkey_device_init(VirtIODevice *vdev)
         return -1;
     }
 
-    vhk->vq = virtio_add_queue(vdev, 64, maru_virtio_hwkey_handle);
+    vhk->vq = virtio_add_queue(vdev, MAX_BUF_COUNT, maru_virtio_hwkey_handle);
 
     vhk->qdev = qdev;
 
