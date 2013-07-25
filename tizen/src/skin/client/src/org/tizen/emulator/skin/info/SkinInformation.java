@@ -37,6 +37,9 @@ public class SkinInformation {
 	private boolean isGeneralSkin;
 	private int skinOption;
 
+	/**
+	 *  Constructor
+	 */
 	public SkinInformation(String skinName, String skinPath, boolean isGeneralSkin) {
 		this.skinName = skinName;
 		this.skinPath = skinPath;

@@ -69,6 +69,7 @@ public class EmulatorConfig {
 	public static final SkinLogLevel DEFAULT_LOG_LEVEL = SkinLogLevel.DEBUG;
 
 	public interface ArgsConstants {
+		public static final String SIMPLE_MESSAGE = "simple.msg";
 		public static final String UID = "uid";
 		public static final String SERVER_PORT = "svr.port";
 		public static final String RESOLUTION_WIDTH = "width";
@@ -78,14 +79,16 @@ public class EmulatorConfig {
 		public static final String LOG_LEVEL = "log.level";
 		public static final String NET_BASE_PORT = "net.baseport";
 		public static final String SKIN_PATH = "skin.path";
+		public static final String DISPLAY_SHM = "display.shm";
 		public static final String MAX_TOUCHPOINT = "max.touchpoint";
 	}
 
 	public interface SkinInfoConstants {
-		public static final String SDK_VERSION_NAME = "sdk.version-name";
+		public static final String SDK_VERSION_NAME = "sdk.version-name"; /* from version file */
 		public static final String SKIN_NAME = "skin.name";
 		public static final String RESOLUTION_WIDTH = "resolution.width";
 		public static final String RESOLUTION_HEIGHT = "resolution.height";
+		public static final String MANAGER_PRIORITY = "manager.priority";
 	}
 
 	public interface SkinPropertiesConstants {

@@ -1,7 +1,7 @@
 /*
  * communicate with java skin process
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -51,13 +51,15 @@
 
 MULTI_DEBUG_CHANNEL(qemu, skin_client);
 
-#define SKIN_SERVER_READY_TIME 3 // second
-#define SKIN_SERVER_SLEEP_TIME 10 // milli second
+
+#define SKIN_SERVER_READY_TIME 3 /* second */
+#define SKIN_SERVER_SLEEP_TIME 10 /* milli second */
 
 #define OPT_SVR_PORT "svr.port"
 #define OPT_UID "uid"
 #define OPT_VM_PATH "vm.path"
 #define OPT_NET_BASE_PORT "net.baseport"
+#define OPT_DISPLAY_SHM "display.shm"
 #define OPT_MAX_TOUCHPOINT "max.touchpoint"
 
 extern char tizen_target_path[];
@@ -97,8 +99,15 @@ static void* run_skin_client(void* arg)
     sprintf(buf_uid, "%d", uid);
     sprintf(buf_tizen_base_port, "%d", get_emul_vm_base_port());
 
+    char buf_display_shm[8] = { 0, };
+#ifdef CONFIG_USE_SHM
+    strcpy(buf_display_shm, "true");
+#else
+    strcpy(buf_display_shm, "false");
+#endif
+
 #ifdef CONFIG_WIN32
-    // find java path in 64bit windows
+    /* find java path in 64bit windows */
     JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
     memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
     if (is_wow64()) {
@@ -130,19 +139,24 @@ static void* run_skin_client(void* arg)
 
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
 #ifdef CONFIG_WIN32
-            strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+        strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
 #else
-            strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+        strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
 #endif
-        strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) + strlen(OPT_UID) + strlen(buf_uid) +
-        strlen(OPT_VM_PATH) + strlen(vm_path) + strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
-        strlen(OPT_MAX_TOUCHPOINT) + len_maxtouchpoint + strlen(argv) + 46;
+        strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) +
+        strlen(OPT_UID) + strlen(buf_uid) +
+        strlen(OPT_VM_PATH) + strlen(vm_path) +
+        strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
+        strlen(OPT_MAX_TOUCHPOINT) + len_maxtouchpoint +
+        strlen(OPT_DISPLAY_SHM) + strlen(buf_display_shm) +
+        strlen(argv) + 48;
+
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         INFO("swt command length is too long! (%d)\n", len);
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=%d %s",
+    snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=%s %s=%d %s",
         JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH,
 #ifdef CONFIG_WIN32
         bin_dir_win, bin_dir, JAR_SKINFILE,
@@ -153,13 +167,14 @@ static void* run_skin_client(void* arg)
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, get_emul_vm_base_port(),
+        OPT_DISPLAY_SHM, buf_display_shm,
         OPT_MAX_TOUCHPOINT, maxtouchpoint,
         argv);
 
     INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32
-    // for 64bit windows
+    /* for 64bit windows */
     free(JAVA_EXEFILE_PATH);
     JAVA_EXEFILE_PATH = NULL;
 
@@ -202,7 +217,7 @@ static void* run_skin_client(void* arg)
             break;
         }
 
-        //retrieves the termination status of the specified process
+        /* retrieves the termination status of the specified process */
         if (GetExitCodeProcess(pi.hProcess, &dwRet) != 0) {
             ERR("failed to GetExitCodeProcess, error %u\n", GetLastError());
         }
@@ -221,7 +236,7 @@ static void* run_skin_client(void* arg)
         }
     }
 
-#else //ifndef CONFIG_WIN32
+#else /* ifndef CONFIG_WIN32 */
     int ret = system(cmd);
 
     if (ret == 127) {
@@ -230,8 +245,8 @@ static void* run_skin_client(void* arg)
         INFO("fork error!\n");
     } else {
         ret = WEXITSTATUS(ret);
-        //The high-order 8 bits are the exit code from exit().
-        //The low-order 8 bits are zero if the process exited normally.
+        /* The high-order 8 bits are the exit code from exit() */
+        /* The low-order 8 bits are zero if the process exited normally */
         INFO("child return value : %d\n", ret);
 
         if (ret != 0) {
@@ -252,7 +267,6 @@ int start_skin_client(int argc, char* argv[])
     int skin_server_ready = 0;
 
     while(1) {
-
         if (100 * SKIN_SERVER_READY_TIME < count) {
             break;
         }
@@ -284,7 +298,7 @@ int start_skin_client(int argc, char* argv[])
     pthread_t thread_id;
 
     if (0 != pthread_create(&thread_id, NULL, run_skin_client, NULL)) {
-        ERR( "fail to create skin_client pthread.\n" );
+        ERR("fail to create skin_client pthread\n");
         return -1;
     }
 
@@ -299,7 +313,7 @@ int start_simple_client(char* msg)
     INFO("run simple client\n");
 
 #ifdef CONFIG_WIN32
-    // find java path in 64bit windows
+    /* find java path in 64bit windows */
     JAVA_EXEFILE_PATH = malloc(JAVA_MAX_COMMAND_LENGTH);
     memset(JAVA_EXEFILE_PATH, 0, JAVA_MAX_COMMAND_LENGTH);
     if (is_wow64()) {
@@ -310,6 +324,7 @@ int start_simple_client(char* msg)
     } else {
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
+
     char* bin_dir = get_bin_path();
     int bin_dir_len = strlen(bin_dir);
     char bin_dir_win[bin_dir_len];
@@ -323,25 +338,28 @@ int start_simple_client(char* msg)
 
     int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAVA_LIBRARY_PATH) +
 #ifdef CONFIG_WIN32
-            strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+        strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
 #else
-            strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+        strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
 #endif
-            strlen(bin_dir) + strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 11;
+        strlen(bin_dir) + strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 11;
+
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         len = JAVA_MAX_COMMAND_LENGTH;
     }
+
     snprintf(cmd, len, "%s %s %s=\"%s\" %s%s %s=\"%s\"",
 #ifdef CONFIG_WIN32
-    JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir_win,
+        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir_win,
 #else
-    JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir,
+        JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir,
 #endif
-    bin_dir, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, msg);
+        bin_dir, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, msg);
+
     INFO("command for swt : %s\n", cmd);
 
 #ifdef CONFIG_WIN32
-    // for 64bit windows
+    /* for 64bit windows */
     free(JAVA_EXEFILE_PATH);
     JAVA_EXEFILE_PATH=0;
 

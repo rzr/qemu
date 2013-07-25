@@ -75,20 +75,11 @@ public class EmulatorSkinMain {
 
 	private static Logger logger;
 
-	private static int useSharedMemory = 0;
-
-	static {
-		if (SwtUtil.isMacPlatform() == true) {
-			useSharedMemory = 1;
-		}
-	}
-
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
-		if(SwtUtil.isMacPlatform()) {
+		if (SwtUtil.isMacPlatform()) {
 			//TODO: event handling of about dialog 
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
 			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Emulator"); 
@@ -110,7 +101,6 @@ public class EmulatorSkinMain {
 		SocketCommunicator communicator = null;
 
 		try {
-
 			/* get vm path from startup argument */
 			String vmPath = getVmPath(args);
 			if (StringUtil.isEmpty(vmPath)) {
@@ -137,8 +127,8 @@ public class EmulatorSkinMain {
 
 			/* get skin path from startup argument */
 			String argSkinPath = (String) argsMap.get(ArgsConstants.SKIN_PATH);
-			String skinPath = ".." +
-					File.separator + SKINS_FOLDER + File.separator + DEFAULT_SKIN_FOLDER;
+			String skinPath = ".." + File.separator +
+					SKINS_FOLDER + File.separator + DEFAULT_SKIN_FOLDER;
 
 			File f = new File(argSkinPath);
 			if (f.isDirectory() == false) {
@@ -151,7 +141,8 @@ public class EmulatorSkinMain {
 			}
 
 			/* set skin information */
-			String skinInfoFilePath = skinPath + File.separator + SKIN_INFO_FILE_NAME;
+			String skinInfoFilePath =
+					skinPath + File.separator + SKIN_INFO_FILE_NAME;
 			Properties skinInfoProperties = loadProperties(skinInfoFilePath, false);
 			if (null == skinInfoProperties) {
 				logger.severe("Fail to load skin information file.");
@@ -166,34 +157,33 @@ public class EmulatorSkinMain {
 				temp.dispose();
 
 				System.exit(-1);
-			} else {
-				logger.info("skin info:" + skinInfoProperties); //TODO:
 			}
 
-			/* determine the layout */
 			String skinInfoResolutionW =
 					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_WIDTH);
 			String skinInfoResolutionH =
 					skinInfoProperties.getProperty(SkinInfoConstants.RESOLUTION_HEIGHT);
 
-			boolean isGeneralSkin = false;
-			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
-					skinInfoResolutionH.equalsIgnoreCase("all")) {
-				isGeneralSkin = true;
-			}
-			SkinInformation skinInfo = new SkinInformation(
-					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME),
-					skinPath, isGeneralSkin);
+			logger.info("skin ini : " + SkinInfoConstants.SKIN_NAME + "=" +
+					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME));
+			logger.info("skin ini : " + SkinInfoConstants.RESOLUTION_WIDTH +
+					"=" + skinInfoResolutionW);
+			logger.info("skin ini : " + SkinInfoConstants.RESOLUTION_HEIGHT +
+					"=" + skinInfoResolutionH);
+			logger.info("skin ini : " + SkinInfoConstants.MANAGER_PRIORITY + "=" +
+					skinInfoProperties.getProperty(SkinInfoConstants.MANAGER_PRIORITY));
 
 			/* set emulator window skin property */
-			String skinPropFilePath = vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
+			String skinPropFilePath =
+					vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
 			Properties skinProperties = loadProperties(skinPropFilePath, true);
 			if (null == skinProperties) {
 				logger.severe("Fail to load skin properties file.");
 			}
 
 			/* set emulator window config property */
-			String configPropFilePath = vmPath + File.separator + CONFIG_PROPERTIES_FILE_NAME;
+			String configPropFilePath =
+					vmPath + File.separator + CONFIG_PROPERTIES_FILE_NAME;
 			Properties configProperties = loadProperties(configPropFilePath, false);
 
 			/* able to use log file after loading properties */
@@ -203,6 +193,16 @@ public class EmulatorSkinMain {
 			EmulatorConfig.validateArgs(argsMap);
 			EmulatorConfig.validateSkinProperties(skinProperties);
 			EmulatorConfig.validateSkinConfigProperties(configProperties);
+
+			/* determine the layout */
+			boolean isGeneralSkin = false;
+			if (skinInfoResolutionW.equalsIgnoreCase("all") ||
+					skinInfoResolutionH.equalsIgnoreCase("all")) {
+				isGeneralSkin = true;
+			}
+			SkinInformation skinInfo = new SkinInformation(
+					skinInfoProperties.getProperty(SkinInfoConstants.SKIN_NAME),
+					skinPath, isGeneralSkin);
 
 			/* load dbi file */
 			EmulatorUI dbiContents = loadXMLForSkin(skinPath);
@@ -236,9 +236,13 @@ public class EmulatorSkinMain {
 
 			/* create a skin */
 			EmulatorSkin skin = null;
-			if (useSharedMemory == 1) {
+			if (config.getArgBoolean(ArgsConstants.DISPLAY_SHM) == true) {
+				logger.info("maru_shm"); /* shared framebuffer */
+
 				skin = new EmulatorShmSkin(config, skinInfo, isOnTop);
 			} else { /* linux & windows */
+				logger.info("maru_sdl"); /* WINDOWID_hack */
+
 				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
 			}
 
@@ -254,7 +258,6 @@ public class EmulatorSkinMain {
 			Socket commSocket = communicator.getSocket();
 
 			if (null != commSocket) {
-
 				Runtime.getRuntime().addShutdownHook(
 						new EmulatorShutdownhook(communicator));
 
@@ -291,7 +294,6 @@ public class EmulatorSkinMain {
 			}
 
 		} catch (Throwable e) {
-
 			if (null != logger) {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				logger.warning("Shutdown skin process !!!");
@@ -303,17 +305,15 @@ public class EmulatorSkinMain {
 			if (null != communicator) {
 				communicator.terminate();
 			}
-
 		} finally {
 			ImageRegistry.getInstance().dispose();
 			Display.getDefault().close();
 			SkinLogger.end();
 		}
-
 	}
 
-	private static void initLog(Map<String, String> argsMap, Properties properties) {
-
+	private static void initLog(
+			Map<String, String> argsMap, Properties properties) {
 		String argLogLevel = argsMap.get(ArgsConstants.LOG_LEVEL);
 		String configPropertyLogLevel = null;
 		
@@ -346,40 +346,38 @@ public class EmulatorSkinMain {
 		}
 
 		SkinLogger.setLevel(skinLogLevel.level());
-		
 	}
 
 	private static String getSimpleMsg(String[] args) {
-
-		for ( int i = 0; i < args.length; i++ ) {
-			final String simple = "simple.msg";
+		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
-			String[] split = arg.split( "=" );
-			if ( 1 < split.length ) {
-				if ( simple.equals( split[0].trim() ) ) {
+			String[] split = arg.split("=");
+
+			if (1 < split.length) {
+				if (ArgsConstants.SIMPLE_MESSAGE.equals(
+						split[0].trim())) {
 					return split[1].trim();
 				}
 			}
 		}
 
 		return null;
-
 	}
 
-	private static String getVmPath( String[] args ) {
-
-		for ( int i = 0; i < args.length; i++ ) {
+	private static String getVmPath(String[] args) {
+		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
-			String[] split = arg.split( "=" );
-			if ( 1 < split.length ) {
-				if ( ArgsConstants.VM_PATH.equals( split[0].trim() ) ) {
+			String[] split = arg.split("=");
+
+			if (1 < split.length) {
+				if (ArgsConstants.VM_PATH.equals(
+						split[0].trim())) {
 					return split[1].trim();
 				}
 			}
 		}
 
 		return null;
-
 	}
 	
 	private static Map<String, String> parseArgs(String[] args) {
@@ -433,48 +431,41 @@ public class EmulatorSkinMain {
 		return emulatorUI;
 	}
 
-	private static Properties loadProperties( String filePath, boolean create ) {
-
+	private static Properties loadProperties(
+			String filePath, boolean create) {
 		FileInputStream fis = null;
 		Properties properties = null;
 
 		try {
-
-			File file = new File( filePath );
+			File file = new File(filePath);
 			
-			if (create) {
-				if ( !file.exists() ) {
-					if ( !file.createNewFile() ) {
-						logger.severe( "Fail to create new " + filePath + " property file." );
+			if (create == true) {
+				if (file.exists() == false) {
+					if (file.createNewFile() == false) {
+						logger.severe(
+								"Fail to create new " + filePath + " property file.");
 						return null;
 					}
 				}
-				
-				fis = new FileInputStream( filePath );
+
+				fis = new FileInputStream(filePath);
 				properties = new Properties();
-				properties.load( fis );
-				
+				properties.load(fis);
 			} else {
-				
-				if ( file.exists() ) {
-
-					fis = new FileInputStream( filePath );
+				if (file.exists() == true) {
+					fis = new FileInputStream(filePath);
 					properties = new Properties();
-					properties.load( fis );
+					properties.load(fis);
 				}
-
 			}
 
-			logger.info( "load properties file : " + filePath );
-
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, "Fail to load skin properties file.", e );
+			logger.info("load properties file : " + filePath);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "failed to load skin properties file", e);
 		} finally {
-			IOUtil.close( fis );
+			IOUtil.close(fis);
 		}
 
 		return properties;
-
 	}
-	
 }
