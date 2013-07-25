@@ -324,6 +324,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
 
+				skin.getKeyWindowKeeper().redock(false, false);
 			}
 		};
 

@@ -130,7 +130,9 @@ public class KeyWindow extends SkinWindow {
 		int heightTailPart = SHELL_MARGIN_BOTTOM;
 
 		/* make a frame image */
-		this.cntHiddenButton = keyMapList.size() - BUTTON_DEFAULT_CNT;
+		if (keyMapList != null) {
+			this.cntHiddenButton = keyMapList.size() - BUTTON_DEFAULT_CNT;
+		}
 
 		this.imageFrame = frameMaker.getPatchedImage(
 				widthBase + ((cntHiddenButton > 0) ? widthScrollbar : 0),

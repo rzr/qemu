@@ -247,9 +247,11 @@ public class EmulatorSkin {
 	public long initLayout() {
 		imageRegistry = ImageRegistry.getInstance();
 
-		/* attach a menu */
+		/* create and attach a popup menu */
 		isOnKbd = false;
 		popupMenu = new PopupMenu(config, this, shell, imageRegistry);
+
+		getKeyWindowKeeper().determineLayout();
 
 		/* build a skin layout */
 		if (skinInfo.isGeneralPurposeSkin() == false) {
@@ -1250,8 +1252,30 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				/* control the menu */
+				if (getKeyWindowKeeper().isGeneralKeyWindow() == false) {
+					MenuItem layoutSelected = (MenuItem) e.widget;
+
+					if (layoutSelected.getSelection() == true) {
+						for (MenuItem layout : layoutSelected.getParent().getItems()) {
+							if (layout != layoutSelected) {
+								/* uncheck other menu items */
+								layout.setSelection(false);
+							} else {
+								int layoutIndex = getKeyWindowKeeper().getLayoutIndex();
+								if (getKeyWindowKeeper().determineLayout() != layoutIndex) {
+									/* switch */
+									getKeyWindowKeeper().closeKeyWindow();
+									layoutSelected.setSelection(true);
+								}
+							}
+						}
+					}
+				}
+
+				/* control the window */
 				if (getKeyWindowKeeper().isSelectKeyWindowMenu() == true)
-				{
+				{ /* checked */
 					if (getKeyWindowKeeper().getKeyWindow() == null) {
 						if (getKeyWindowKeeper().getRecentlyDocked() != SWT.NONE) {
 							getKeyWindowKeeper().openKeyWindow(
@@ -1269,7 +1293,7 @@ public class EmulatorSkin {
 					}
 				}
 				else
-				{ /* hide a key window */
+				{ /* unchecked */
 					if (getKeyWindowKeeper().getDockPosition() != SWT.NONE) {
 						/* close the Key Window if it is docked to Main Window */
 						getKeyWindowKeeper().setRecentlyDocked(
@@ -1277,6 +1301,7 @@ public class EmulatorSkin {
 
 						getKeyWindowKeeper().closeKeyWindow();
 					} else {
+						/* hide a Key Window */
 						getKeyWindowKeeper().hideKeyWindow();
 					}
 				}

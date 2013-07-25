@@ -204,7 +204,6 @@ public class PopupMenu {
 			if (layouts != null) {
 				keyWindowItem = new MenuItem(menu, SWT.CASCADE);
 				keyWindowItem.setText(menuName);
-				//TODO: advancedItem.setImage
 
 				Menu keywindowSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
 				{
@@ -213,15 +212,14 @@ public class PopupMenu {
 					for (int i = 0; i < layouts.size(); i++) {
 						File dir = layouts.get(i);
 
-						keywindowLayoutItem = new MenuItem(keywindowSubMenu, SWT.RADIO);
+						keywindowLayoutItem = new MenuItem(keywindowSubMenu, SWT.CHECK);
 						keywindowLayoutItem.setText(dir.getName());
 						if (i == 0) {
 							keywindowLayoutItem.setSelection(true);
 						}
 
-						// TODO:
-						//SelectionAdapter keywindowLayoutListener =
-						//keywindowLayoutItem.addSelectionListener(keywindowLayoutListener);
+						SelectionAdapter keywindowLayoutListener = skin.createKeyWindowMenu();
+						keywindowLayoutItem.addSelectionListener(keywindowLayoutListener);
 					}
 				}
 				keyWindowItem.setMenu(keywindowSubMenu);
