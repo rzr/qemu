@@ -173,9 +173,11 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 				@Override
 				public void run() {
 					if (dockValue == 0 || dockValue == SWT.NONE) {
-						skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+						skin.getKeyWindowKeeper().openKeyWindow(
+								SWT.RIGHT | SWT.CENTER, false);
 					} else {
-						skin.openKeyWindow(dockValue, false);
+						skin.getKeyWindowKeeper().openKeyWindow(
+								dockValue, false);
 					}
 				}
 			});
@@ -360,9 +362,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 					shell.setLocation(x, y);
 
-					if (skin.keyWindow != null) {
-						skin.keyWindow.redock(false, false);
-					}
+					skin.getKeyWindowKeeper().redock(false, false);
 
 					return;
 				}
@@ -425,9 +425,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
-					if (skin.keyWindow != null) {
-						skin.keyWindow.redock(false, true);
-					}
+					skin.getKeyWindowKeeper().redock(false, true);
 
 					/* HW key handling */
 					HWKey pressedHWKey = currentState.getCurrentPressedHWKey();

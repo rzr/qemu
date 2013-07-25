@@ -173,10 +173,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (skin.isKeyWindow == true) {
-					skin.closeKeyWindow();
-					skin.recentlyDocked = SWT.RIGHT | SWT.CENTER;
+					skin.getKeyWindowKeeper().closeKeyWindow();
+					skin.getKeyWindowKeeper().setRecentlyDocked(SWT.RIGHT | SWT.CENTER);
 				} else {
-					skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, true);
+					skin.getKeyWindowKeeper().openKeyWindow(
+							SWT.RIGHT | SWT.CENTER, true);
 				}
 			}
 
@@ -213,9 +214,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				@Override
 				public void run() {
 					if (dockValue == 0 || dockValue == SWT.NONE) {
-						skin.openKeyWindow(SWT.RIGHT | SWT.CENTER, false);
+						skin.getKeyWindowKeeper().openKeyWindow(
+								SWT.RIGHT | SWT.CENTER, false);
 					} else {
-						skin.openKeyWindow(dockValue, false);
+						skin.getKeyWindowKeeper().openKeyWindow(
+								dockValue, false);
 					}
 				}
 			});
@@ -402,9 +405,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
 
-				if (skin.keyWindow != null) {
-					skin.keyWindow.redock(false, false);
-				}
+				skin.getKeyWindowKeeper().redock(false, false);
 			}
 		};
 
@@ -421,9 +422,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 					shell.setLocation(x, y);
 
-					if (skin.keyWindow != null) {
-						skin.keyWindow.redock(false, false);
-					}
+					skin.getKeyWindowKeeper().redock(false, false);
 				}
 			}
 		};
@@ -439,9 +438,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
-					if (skin.keyWindow != null) {
-						skin.keyWindow.redock(false, true);
-					}
+					skin.getKeyWindowKeeper().redock(false, true);
 				}
 			}
 
