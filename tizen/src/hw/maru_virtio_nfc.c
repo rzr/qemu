@@ -4,7 +4,7 @@
  * Copyright (c) 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
- *  DaiYoung Kim <munkyu.im@samsung.com>
+ *  Munkyu Im <munkyu.im@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -85,13 +85,13 @@ static QTAILQ_HEAD(MsgInfoSendHead , MsgInfo) nfc_send_msg_queue =
 
 //
 
-typedef struct EvdiBuf {
+typedef struct NFCBuf {
     VirtQueueElement elem;
 
-    QTAILQ_ENTRY(EvdiBuf) next;
-} EvdiBuf;
+    QTAILQ_ENTRY(NFCBuf) next;
+} NFCBuf;
 
-static QTAILQ_HEAD(EvdiMsgHead , EvdiBuf) nfc_in_queue =
+static QTAILQ_HEAD(NFCMsgHead , NFCBuf) nfc_in_queue =
     QTAILQ_HEAD_INITIALIZER(nfc_in_queue);
 
 static int count = 0;

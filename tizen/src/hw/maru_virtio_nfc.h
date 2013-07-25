@@ -4,7 +4,7 @@
  * Copyright (c) 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
- *  DaiYoung Kim <munkyu.im@samsung.com>
+ *  Munkyu Im <munkyu.im@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or

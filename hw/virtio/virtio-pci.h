@@ -44,6 +44,7 @@
 #include "../tizen/src/hw/maru_virtio_touchscreen.h"
 #include "../tizen/src/hw/virtio-gl.h"
 #include "../tizen/src/hw/maru_virtio_sensor.h"
+#include "../tizen/src/hw/maru_virtio_nfc.h"
 #endif
 
 typedef struct VirtIOPCIProxy VirtIOPCIProxy;
@@ -63,6 +64,7 @@ typedef struct VirtIOESMPCI VirtIOESMPCI;
 typedef struct VirtIOHWKeyPCI VirtIOHWKeyPCI;
 typedef struct VirtIOKeyboardPCI VirtIOKeyboardPCI;
 typedef struct VirtIOSENSORPCI VirtIOSENSORPCI;
+typedef struct VirtIONFCPCI VirtIONFCPCI;
 #endif
 
 /* virtio-pci-bus */
@@ -308,6 +310,19 @@ struct VirtIOSENSORPCI {
     VirtIOPCIProxy parent_obj;
     VirtIOSENSOR vdev;
 };
+
+/*
+ * virtio-nfc-pci: This extends VirtioPCIProxy.
+ */
+#define TYPE_VIRTIO_NFC_PCI "virtio-nfc-pci"
+#define VIRTIO_NFC_PCI(obj) \
+        OBJECT_CHECK(VirtIONFCPCI, (obj), TYPE_VIRTIO_NFC_PCI)
+
+struct VirtIONFCPCI {
+    VirtIOPCIProxy parent_obj;
+    VirtIONFC vdev;
+};
+
 #endif
 
 /* Virtio ABI version, if we increment this, we break the guest driver. */
