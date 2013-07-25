@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "hw/qdev.h"
 #include "net/net.h"
@@ -38,6 +39,10 @@ struct mon_fd_t {
 	QLIST_ENTRY(mon_fd_t)
 	next;
 };
+
+#ifndef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#endif
 
 typedef struct mon_cmd_t {
 	const char *name;
@@ -127,20 +132,29 @@ bool send_to_all_client(const char* data, const int len) {
 
 	QTAILQ_FOREACH(clii, &clients, next)
 	{
-		send_to_client(clii->client_fd, data);
+		send_to_client(clii->client_fd, data, len);
 	}
 	pthread_mutex_unlock(&mutex_clilist);
 
 	return true;
 }
 
-void send_to_client(int fd, const char *str) {
+
+void send_to_client(int fd, const char* data, const int len)
+{
+
+	ecs_write(fd, (const uint8_t*) data, len);
+}
+
+/*
+void send_to_client(int fd, const char* data, const int len)
+{
 	char c;
 	uint8_t outbuf[OUT_BUF_SIZE];
 	int outbuf_index = 0;
 
 	for (;;) {
-		c = *str++;
+		c = *data++;
 		if (outbuf_index >= OUT_BUF_SIZE - 1) {
 			LOG("string is too long: overflow buffer.");
 			return;
@@ -157,6 +171,7 @@ void send_to_client(int fd, const char *str) {
 	}
 	ecs_write(fd, outbuf, outbuf_index);
 }
+*/
 
 #define QMP_ACCEPT_UNKNOWNS 1
 static void ecs_monitor_flush(ECS_Client *clii, Monitor *mon) {
@@ -685,124 +700,7 @@ void make_header(QDict* obj, type_length length, type_group group,
 	qdict_put(obj, "action", qint_from_int((int64_t )action));
 }
 
-bool ntf_to_injector(const char* data, const int len) {
-	type_length length = 0;
-	type_group group = 0;
-	type_action action = 0;
 
-	const int catsize = 10;
-	char cat[catsize + 1];
-	memset(cat, 0, catsize + 1);
-
-	read_val_str(data, cat, catsize);
-	read_val_short(data + catsize, &length);
-	read_val_char(data + catsize + 2, &group);
-	read_val_char(data + catsize + 2 + 1, &action);
-
-   
-    const char* ijdata = (data + catsize + 2 + 1 + 1);
-
-    char *encoded_ijdata = NULL;
-     LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
-			action, group);
-   
-    if(!strcmp(cat, "telephony")) {
-        base64_encode(ijdata, length, &encoded_ijdata);
-    }
-   
-	QDict* obj_header = qdict_new();
-	make_header(obj_header, length, group, action);
-
-	QDict* objData = qdict_new();
-	qobject_incref(QOBJECT(obj_header));
-
-	qdict_put(objData, "cat", qstring_from_str(cat));
-	qdict_put(objData, "header", obj_header);
-    if(!strcmp(cat, "telephony")) { 
-        qdict_put(objData, "ijdata", qstring_from_str(encoded_ijdata));
-    } else {
-        qdict_put(objData, "ijdata", qstring_from_str(ijdata));
-    }
-
-	QDict* objMsg = qdict_new();
-	qobject_incref(QOBJECT(objData));
-
-	qdict_put(objMsg, "type", qstring_from_str("injector"));
-	qdict_put(objMsg, "result", qstring_from_str("success"));
-	qdict_put(objMsg, "data", objData);
-
-	QString *json;
-	json = qobject_to_json(QOBJECT(objMsg));
-
-	assert(json != NULL);
-
-	qstring_append_chr(json, '\n');
-	const char* snddata = qstring_get_str(json);
-
-	LOG("<< json str = %s", snddata);
-
-	send_to_all_client(snddata, strlen(snddata));
-
-	QDECREF(json);
-
-	QDECREF(obj_header);
-	QDECREF(objData);
-	QDECREF(objMsg);
-
-	return true;
-}
-
-bool send_injector_ntf(const char* data, const int len) 
-{
-	type_length length = 0;
-	type_group group = 0;
-	type_action action = 0;
-
-	const int catsize = 10;
-	char cat[catsize + 1];
-	memset(cat, 0, catsize + 1);
-
-	read_val_str(data, cat, catsize);
-	read_val_short(data + catsize, &length);
-	read_val_char(data + catsize + 2, &group);
-	read_val_char(data + catsize + 2 + 1, &action);
-
-   
-    const char* ijdata = (data + catsize + 2 + 1 + 1);
-
-    char *encoded_ijdata = NULL;
-    LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
-			action, group);
-   
-    //if(!strcmp(cat, "telephony")) {
-    //    base64_encode(ijdata, length, &encoded_ijdata);
-    //}
-
-	ECS__Master master = ECS__MASTER__INIT;
-	ECS__InjectorNtf ntf = ECS__INJECTOR_NTF__INIT;
-
-	strncpy(ntf.category, cat, 10);
-	ntf.length = length;
-	ntf.group = group;
-	ntf.action = action;
-
-	memcpy(ntf.data.data, ijdata, length);
-
-	master.injector_ntf = &ntf;
-
-	int len_pack = ecs__master__get_packed_size(&master);
-	void* buf = malloc(len_pack);
-	ecs__master__pack(&master, buf);	
-	
-	send_to_all_client(buf, len_pack);
-
-	if (buf)
-	{
-		free(buf); 
-	}	
-// 
-	return true;
-}
 
 bool ntf_to_control(const char* data, const int len) {
 	return true;
@@ -814,68 +712,6 @@ bool ntf_to_monitor(const char* data, const int len) {
 
 static int ijcount = 0;
 
-static bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg)
-{
-
-	return true;
-}
-
-static bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
-{
-	char cmd[10];
-	memset(cmd, 0, 10);
-	strcpy(cmd, msg->category);
-	type_length length = (type_length) msg->length;
-	type_group group = (type_group) (msg->group & 0xff);
-	type_action action = (type_action) (msg->action & 0xff);
-
-	const char* data = msg->data.data;
-	//LOG(">> count= %d", ++ijcount);
-	LOG(">> print len = %d, data\" %s\"", strlen(data), data);
-	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
-			action, group);
-    
-	//int datalen = strlen(data);
-	int datalen = msg->data.len;
-	int sndlen = datalen + 14;
-	char* sndbuf = (char*) malloc(sndlen + 1);
-	if (!sndbuf) {
-		return false;
-    }
-
-	memset(sndbuf, 0, sndlen + 1);
-
-	// set data
-	memcpy(sndbuf, cmd, 10);
-	memcpy(sndbuf + 10, &length, 2);
-	memcpy(sndbuf + 12, &group, 1);
-	memcpy(sndbuf + 13, &action, 1);
-	memcpy(sndbuf + 14, data, datalen);
-
-	send_to_evdi(route_ij, sndbuf, sndlen);
-
-   	free(sndbuf);
-
-	return true;
-}
-
-static bool msgproc_control_req(ECS_Client *ccli, ECS__ControlReq* msg)
-{
-
-	return true;
-}
-
-static bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
-{
-
-	return true;
-}
-
-static bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg)
-{
-
-	return true;
-}
 
 static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
 	QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
@@ -1072,7 +908,7 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens,
 	} else if (!strcmp(type_name, COMMAND_TYPE_DEVICE)) {
 		device_command_proc(clii, obj);
 	} else if (!strcmp(type_name, ECS_MSG_STARTINFO_REQ)) {
-		ecs_startinfo_req(clii);
+		//ecs_startinfo_req(clii);
 	} else {
 		LOG("handler not found");
 	}
@@ -1168,27 +1004,78 @@ static ssize_t ecs_recv(int fd, char *buf, size_t len)
 }
 #endif
 
-static void ecs_read(ECS_Client *clii) {
-	uint8_t buf[READ_BUF_LEN];
-	int len, size;
-	len = sizeof(buf);
-	memset(buf, 0, READ_BUF_LEN);
 
-	if (!clii || 0 > clii->client_fd) {
-		LOG("read client info is NULL.");
+static void reset_sbuf(sbuf* sbuf)
+{
+	memset(sbuf->_buf, 0, 4096);
+	sbuf->_use = 0;
+	sbuf->_netlen = 0;
+}
+
+static void ecs_read(ECS_Client *cli) {
+
+	int read = 0;
+	int to_read_bytes = 0;
+	if (ioctl(cli->client_fd, FIONREAD, &to_read_bytes) < 0)
+	{
+		LOG("ioctl failed");
 		return;
 	}
 
-	size = ecs_recv(clii->client_fd, (char*) buf, len);
-	if (0 == size) {
-		ecs_client_close(clii);
-	} else if (0 < size) {
-		LOG("read data: %s, len: %d, size: %d\n", buf, len, size);
-	
-		handle_protobuf_msg(clii, (char*)buf, size);
-	
-		//ecs_json_message_parser_feed(&clii->parser, (const char *) buf, size);
+	LOG("ioctl FIONREAD: %d\n", to_read_bytes);
+	if (to_read_bytes == 0)
+		goto fail;
+
+
+	if (cli->sbuf._netlen == 0)
+	{
+		if (to_read_bytes < 4)
+		{
+			LOG("insufficient data size to read");
+			return;
+		}
+
+		long payloadsize = 0;
+		read = ecs_recv(cli->client_fd, (char*) &payloadsize, 4);
+
+		if (read < 4)
+		{
+			LOG("insufficient header size");
+			goto fail;
+		}
+
+		payloadsize = ntohl(payloadsize);
+
+		cli->sbuf._netlen = payloadsize;
+
+		LOG("payload size: %ld\n", payloadsize);
+
+		to_read_bytes -= 4;
 	}
+
+	if (to_read_bytes == 0)
+		return;
+
+
+	to_read_bytes = min(to_read_bytes, cli->sbuf._netlen - cli->sbuf._use);
+
+	read = ecs_recv(cli->client_fd, (char*)(cli->sbuf._buf + cli->sbuf._use), to_read_bytes);
+	if (read == 0)
+		goto fail;
+
+
+	cli->sbuf._use += read;
+
+
+	if (cli->sbuf._netlen == cli->sbuf._use)
+	{
+		handle_protobuf_msg(cli, (char*)cli->sbuf._buf, cli->sbuf._use);
+		reset_sbuf(&cli->sbuf);
+	}
+
+	return;
+fail:
+	ecs_client_close(cli);
 }
 
 #ifndef _WIN32
@@ -1225,6 +1112,8 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 		return -1;
 	}
 
+	reset_sbuf(&clii->sbuf);
+
 	qemu_set_nonblock(fd);
 
 	clii->client_fd = fd;
@@ -1245,7 +1134,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 
 	welcome = WELCOME_MESSAGE;
 
-	send_to_client(fd, welcome);
+	//send_to_client(fd, welcome);
 
 	pthread_mutex_unlock(&mutex_clilist);
 
@@ -1314,6 +1203,7 @@ static void alive_checker(void *opaque) {
 		return;
 	}
 
+	/*
 	QTAILQ_FOREACH(clii, &clients, next)
 	{
 		if (1 == clii->keep_alive) {
@@ -1328,6 +1218,7 @@ static void alive_checker(void *opaque) {
 
 	qemu_mod_timer(cs->alive_timer,
 			qemu_get_clock_ns(vm_clock) + get_ticks_per_sec() * TIMER_ALIVE_S);
+	*/
 }
 
 static int socket_initialize(ECS_State *cs, QemuOpts *opts) {

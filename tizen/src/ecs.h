@@ -8,6 +8,7 @@
 #include "qapi/qmp/qerror.h"
 #include "qemu-common.h"
 #include "ecs-json-streamer.h"
+#include "genmsg/ecs.pb-c.h"
 
 #define ECS_DEBUG	1
 
@@ -78,6 +79,15 @@ typedef unsigned char	type_action;
 #define READ_BUF_LEN 	4096
 
 
+
+typedef struct sbuf
+{
+	int _netlen;
+	int _use;
+	char _buf[4096];
+}sbuf;
+
+
 struct Monitor {
     int suspend_cnt;
     uint8_t outbuf[OUT_BUF_SIZE];
@@ -109,6 +119,9 @@ typedef struct ECS_Client {
 	int client_id;
 	int keep_alive;
 	const char* type;
+
+	sbuf sbuf;
+
 	ECS_State *cs;
 	JSONMessageParser parser;
     QTAILQ_ENTRY(ECS_Client) next;
@@ -123,16 +136,21 @@ void ecs_printf(const char *type, const char *fmt, ...) GCC_FMT_ATTR(2, 3);
 
 
 bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);
+
 bool ntf_to_injector(const char* data, const int len);
 bool ntf_to_control(const char* data, const int len);
 bool ntf_to_monitor(const char* data, const int len);
 
+
+bool send_to_ecp(ECS__Master* master);
+
+bool send_start_ans(int host_keyboard_onff);
 bool send_injector_ntf(const char* data, const int len);
 bool send_control_ntf(const char* data, const int len);
 bool send_monitor_ntf(const char* data, const int len);
 
 bool send_to_all_client(const char* data, const int len);
-void send_to_client(int fd, const char *str);
+void send_to_client(int fd, const char* data, const int len) ;
 
 
 void make_header(QDict* obj, type_length length, type_group group, type_action action);
@@ -142,6 +160,12 @@ void read_val_char(const char* data, unsigned char* ret_val);
 void read_val_str(const char* data, char* ret_val, int len);
 
 
+bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg);
+bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
+bool msgproc_control_req(ECS_Client *ccli, ECS__ControlReq* msg);
+bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
+bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg);
+
 
 enum{
 	CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ = 1,
@@ -149,7 +173,7 @@ enum{
 };
 
 // messages
-void ecs_startinfo_req(ECS_Client *clii);
+//void ecs_startinfo_req(ECS_Client *clii);
 void control_host_keyboard_onoff_req(ECS_Client *clii, QDict* data);
 
 void set_sensor_data(int length, const char* data);

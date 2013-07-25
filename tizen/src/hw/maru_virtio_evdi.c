@@ -224,7 +224,7 @@ static int virtio_evdi_init(VirtIODevice *vdev)
 
     vio_evdi = VIRTIO_EVDI(vdev);
 
-    virtio_init(vdev, EVDI_DEVICE_NAME, VIRTIO_ID_EVDI, 0);
+    virtio_init(vdev, TYPE_VIRTIO_EVDI, VIRTIO_ID_EVDI, 0); //EVDI_DEVICE_NAME
 
     if (vio_evdi == NULL) {
         ERR("failed to initialize evdi device\n");

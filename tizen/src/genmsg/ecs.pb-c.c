@@ -1333,12 +1333,29 @@ const ProtobufCMessageDescriptor ecs__start_req__descriptor =
   (ProtobufCMessageInit) ecs__start_req__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__start_ans__field_descriptors[0] =
+static const ProtobufCFieldDescriptor ecs__start_ans__field_descriptors[1] =
 {
+  {
+    "host_keyboard_onoff",
+    1,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_host_keyboard_onoff),
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, host_keyboard_onoff),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned ecs__start_ans__field_indices_by_name[] = {
+  0,   /* field[0] = host_keyboard_onoff */
 };
-#define ecs__start_ans__number_ranges NULL
+static const ProtobufCIntRange ecs__start_ans__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
 const ProtobufCMessageDescriptor ecs__start_ans__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
@@ -1347,10 +1364,10 @@ const ProtobufCMessageDescriptor ecs__start_ans__descriptor =
   "ECS__StartAns",
   "ECS",
   sizeof(ECS__StartAns),
-  0,
+  1,
   ecs__start_ans__field_descriptors,
   ecs__start_ans__field_indices_by_name,
-  0,  ecs__start_ans__number_ranges,
+  1,  ecs__start_ans__number_ranges,
   (ProtobufCMessageInit) ecs__start_ans__init,
   NULL,NULL,NULL    /* reserved[123] */
 };

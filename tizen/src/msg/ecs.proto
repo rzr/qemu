@@ -74,7 +74,7 @@ message StartReq {
 }
 
 message StartAns {
-
+	optional int32 host_keyboard_onoff = 1;
 }
 
 message Master {

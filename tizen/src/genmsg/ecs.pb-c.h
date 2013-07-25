@@ -194,10 +194,12 @@ struct  _ECS__StartReq
 struct  _ECS__StartAns
 {
   ProtobufCMessage base;
+  protobuf_c_boolean has_host_keyboard_onoff;
+  int32_t host_keyboard_onoff;
 };
 #define ECS__START_ANS__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ecs__start_ans__descriptor) \
-     }
+    , 0,0 }
 
 
 struct  _ECS__Master
