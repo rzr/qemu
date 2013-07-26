@@ -874,7 +874,7 @@ void glo_surface_update_context(GloSurface *surface, GloContext *context, int fr
 
     if ( surface->context )
     {
-            if ( free_flags) /* light-weight context */
+		if ( free_flags ) /* light-weight context */
             g_free(surface->context);
     }
     surface->context = context;

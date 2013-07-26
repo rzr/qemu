@@ -52,6 +52,7 @@
 #include "skin/maruskin_server.h"
 #include "skin/maruskin_client.h"
 #include "debug_ch.h"
+#include "ecs.h"
 
 #ifdef CONFIG_SDL
 #include <SDL.h>
@@ -110,6 +111,7 @@ void exit_emulator(void)
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
+	stop_ecs();
 
 #ifdef CONFIG_LINUX
     /* clean up the vm lock memory by munkyu */
@@ -498,6 +500,10 @@ void prepare_maru(void)
 
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server(guest_server_port);
+
+    qemu_add_opts(&qemu_ecs_opts);
+
+	start_ecs();
 
     mloop_ev_init();
 }

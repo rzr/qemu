@@ -40,6 +40,10 @@
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xcomposite.h>
 
+#ifdef MANGLE_OPENGL_SYMBOLS
+#include "gl_mangled.h"
+#endif
+
 void *g_malloc(size_t size);
 void *g_realloc(void *ptr, size_t size);
 void g_free(void *ptr);
@@ -264,7 +268,7 @@ void glo_surface_update_context(GloSurface *surface, GloContext *context, int fr
 
      if ( surface->context )
     {
-            if ( free_flags ) /* light-weight context */
+		if (free_flags) /* light-weight context */
             g_free(surface->context);
     }
     surface->context = context;

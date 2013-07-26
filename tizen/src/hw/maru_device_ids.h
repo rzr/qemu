@@ -55,6 +55,8 @@
 #define PCI_DEVICE_ID_VIRTIO_HWKEY       0x1028
 #define PCI_DEVICE_ID_VIRTIO_EVDI        0x1032
 #define PCI_DEVICE_ID_VIRTIO_GL          0x1036
+#define PCI_DEVICE_ID_VIRTIO_SENSOR      0x103A
+#define PCI_DEVICE_ID_VIRTIO_NFC         0x103E
 
 /* Virtio */
 /*
@@ -90,5 +92,7 @@
 #define VIRTIO_ID_HWKEY         34
 #define VIRTIO_ID_EVDI          35
 #define VIRTIO_ID_GL			36
+#define VIRTIO_ID_SENSOR        37
+#define VIRTIO_ID_NFC           38
 
 #endif /* MARU_DEVICE_IDS_H_ */

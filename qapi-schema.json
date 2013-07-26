@@ -2991,7 +2991,7 @@
 # Since: 1.2.0
 ##
 { 'type': 'FdsetInfo',
-  'data': {'fdset-id': 'int', 'fds': ['FdsetFdInfo']} }
+  'data': {'fdset-id': yy'int', 'fds': ['FdsetFdInfo']} }
 
 ##
 # @query-fdsets:
@@ -3045,6 +3045,35 @@
 # Since: 1.2.0
 ##
 { 'command': 'query-target', 'returns': 'TargetInfo' }
+
+
+
+## Eric 2013.3.7 ##
+
+##
+# @AccelInfo:
+#
+# Information describing the acceleration sensor value
+#
+# @Xaxis: x axis value of the acceleration sensor
+# @Yaxis: y axis value of the acceleration sensor
+# @Zaxis: z axis value of the acceleration sensor
+#
+# Since: 1.2.0
+##
+{ 'type': 'AccelInfo',
+  'data': { 'Xaxis': 'int', 'Yaxis': 'int', 'Zaxis' : 'int'} }
+
+##
+# @query-accel:
+#
+# Return information about the acceleration sensor value
+#
+# Returns: AccelInfo
+#
+# Since: 1.2.0
+##
+{ 'command': 'query-accel', 'returns': 'AccelInfo' }
 
 ##
 # @QKeyCode:
@@ -3619,3 +3648,4 @@
             '*cpuid-input-ecx': 'int',
             'cpuid-register': 'X86CPURegister32',
             'features': 'int' } }
+

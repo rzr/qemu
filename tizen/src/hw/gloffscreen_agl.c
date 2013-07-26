@@ -188,51 +188,52 @@ GloContext *__glo_context_create(int formatFlags)
  
 GloContext *glo_context_create(int formatFlags, GloContext *shareLists) 
 { 
-        GloContext *context = __glo_context_create(formatFlags);
-        if(!context)
-                return NULL;
+	GloContext *context = __glo_context_create(formatFlags);
+	if(!context)
+		return NULL;
 
-        context->context = aglCreateContext(context->pixelFormat, shareLists ? shareLists->context : NULL); 
-        if (context->context == NULL) 
-        { 
-                fprintf(stderr, "aglCreateContext failed: %s", aglErrorString(aglGetError())); 
-        } 
-        else
-        {
-                if(context->pixelFormat != NULL)
-                {
-                        aglDestroyPixelFormat(context->pixelFormat);
-                        context->pixelFormat = NULL;    
-                }
-        }
+	context->context = aglCreateContext(context->pixelFormat, shareLists ? shareLists->context : NULL); 
+	if (context->context == NULL) 
+	{ 
+		fprintf(stderr, "aglCreateContext failed: %s", aglErrorString(aglGetError())); 
+	} 
 
-        TRACE("context=%p", context); 
-        return context; 
+	else
+	{
+		if(context->pixelFormat != NULL)
+		{
+			aglDestroyPixelFormat(context->pixelFormat);
+			context->pixelFormat = NULL;	
+		}
+	}
+
+	TRACE("context=%p", context); 
+	return context; 
 } 
-
+  
 /* Destroy a previously created OpenGL context */ 
 void glo_context_destroy(GloContext *context) 
 { 
-     TRACE("context=%p", context); 
-     if (context) 
-     { 
-             aglDestroyContext(context->context);
-             if(context->pixelFormat != NULL)
-             { 
-                     aglDestroyPixelFormat(context->pixelFormat);
-                     context->pixelFormat = NULL; 
-             }
-             context->context = NULL;  
-             g_free(context); 
-     } 
- }
+	TRACE("context=%p", context); 
+	if (context) 
+	{ 
+		aglDestroyContext(context->context);
+		if(context->pixelFormat != NULL)
+		{ 
+			aglDestroyPixelFormat(context->pixelFormat);
+			context->pixelFormat = NULL; 
+		}
+		context->context = NULL;  
+		g_free(context); 
+	} 
+}
 
 void glo_surface_update_context(GloSurface *surface, GloContext *context, int free_flags)
 {
     if ( surface->context )
     {
-            if (free_flags) /* light-weight context */
-                    g_free(surface->context);
+		if ( free_flags) /* light-weight context */
+            g_free(surface->context);
     }
     surface->context = context;
 }

@@ -81,6 +81,7 @@ void virtio_keyboard_notify(void *opaque)
 
     while ((written_cnt--)) {
         kbdevt = &vkbd->kbdqueue.kbdevent[vkbd->kbdqueue.rptr];
+
 	if (((EmulKbdEvent*)(elem.in_sg[vkbd->kbdqueue.rptr].iov_base))->code != 0) {
 	    TRACE("FIXME: virtio queue is full.\n");
 	}
