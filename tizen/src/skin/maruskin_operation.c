@@ -86,8 +86,10 @@ void start_display(uint64 handle_id,
     int lcd_size_width, int lcd_size_height,
     double scale_factor, short rotation_type)
 {
-    INFO("start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%f, rotation_type:%d\n",
-        (long)handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type);
+    INFO("start_display handle_id:%ld, lcd size:%dx%d, \
+            scale_factor:%f, rotation_type:%d\n",
+        (long) handle_id, lcd_size_width, lcd_size_height,
+        scale_factor, rotation_type);
 
     set_emul_win_scale(scale_factor);
     maruskin_init(handle_id, lcd_size_width, lcd_size_height, false);
@@ -558,21 +560,27 @@ void request_close(void)
 #endif
 
     do_hardkey_event(KEY_RELEASED, HARD_KEY_POWER);
-
 }
 
 void shutdown_qemu_gracefully(void)
 {
-    requested_shutdown_qemu_gracefully = 1;
+    if (is_requested_shutdown_qemu_gracefully() != 1) {
+        requested_shutdown_qemu_gracefully = 1;
 
-    pthread_t thread_id;
-    if (0 > pthread_create(
-        &thread_id, NULL, run_timed_shutdown_thread, NULL)) {
+        INFO("shutdown_qemu_gracefully was called\n");
 
-        ERR("!!! Fail to create run_timed_shutdown_thread. shutdown qemu right now !!!\n");
+        pthread_t thread_id;
+        if (0 > pthread_create(
+            &thread_id, NULL, run_timed_shutdown_thread, NULL)) {
+
+            ERR("!!! Fail to create run_timed_shutdown_thread. \
+                shutdown qemu right now !!!\n");
+            qemu_system_shutdown_request();
+        }
+    } else {
+        INFO("shutdown_qemu_gracefully was called twice\n");
         qemu_system_shutdown_request();
     }
-
 }
 
 int is_requested_shutdown_qemu_gracefully(void)
@@ -602,7 +610,6 @@ static void* run_timed_shutdown_thread(void* args)
     qemu_system_shutdown_request();
 
     return NULL;
-
 }
 
 static void send_to_emuld(const char* request_type,
