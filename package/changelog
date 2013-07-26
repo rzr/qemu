@@ -1,3 +1,9 @@
+* 1.5.71
+- merge ecp branch into develop
+- evdi, nfc and sensor device added
+- control server added
+- protocol buffer applied
+== DaiYoung Kim <daiyoung777.kim@samsung.com> 2013-07-26
 * 1.5.70
 - modified structure of virtio-hwkey
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-07-25
