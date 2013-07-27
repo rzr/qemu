@@ -3,6 +3,36 @@ package ECS;
 
 option java_package = "org.tizen.ecp.msg.genmsg.ecs";
 
+
+message CheckVersionReq {
+	required string version_str = 1;
+}
+
+message CheckVersionAns {
+	required int32 errcode = 1;
+	required string version_str = 2;
+}
+
+message KeepAliveReq {
+	optional string time_str = 1;
+
+}
+
+message KeepAliveAns {
+	optional string time_str = 1;
+}
+
+
+message StartReq {
+
+}
+
+message StartAns {
+	optional int32 host_keyboard_onoff = 1;
+	optional int32 earjack_onoff = 2;
+	optional int32 camera_onoff = 3;
+}
+
 message InjectorReq {
 	required string category = 1;
 	required int32 length = 2;
@@ -28,6 +58,33 @@ message InjectorNtf {
 	required int32 action = 4; 
 	optional bytes data = 5;
 }
+
+message DeviceReq {
+	required string category = 1;
+	required int32 length = 2;
+	required int32 group = 3;
+	required int32 action = 4; 
+	optional bytes data = 5;
+}
+
+message DeviceAns {
+	required int32 errcode = 1;
+	optional string errstr = 2;
+	required string category = 3;
+	required int32 length = 4;
+	required int32 group = 5;
+	required int32 action = 6; 
+	optional bytes data = 7;
+}
+
+message DeviceNtf {
+	required string category = 1;
+	required int32 length = 2;
+	required int32 group = 3;
+	required int32 action = 4; 
+	optional bytes data = 5;
+}
+
 
 message ControlReq {
 	required string command = 1;
@@ -69,36 +126,48 @@ message ScreenDumpAns {
 	optional string errmsg = 2;
 }
 
-message StartReq {
-
-}
-
-message StartAns {
-	optional int32 host_keyboard_onoff = 1;
-}
 
 message Master {
-	enum Type { START_REQ = 1; START_ANS = 2; INJECTOR_REQ = 3; INJECTOR_ANS = 4; INJECTOR_NTF = 5; CONTROL_REQ = 6; CONTROL_ANS = 7; CONTROL_NTF = 8; MONITOR_REQ = 9; MONITOR_ANS = 10; MONITOR_NTF = 11; SCREEN_DUMP_REQ = 12; SCREEN_DUMP_ANS = 13; }
+	enum Type { 
+	CHECKVERSION_REQ = 2; CHECKVERSION_ANS = 3; 
+	KEEPALIVE_REQ = 4; KEEPALIVE_ANS = 5; 
+	START_REQ = 6; START_ANS = 7; 
+	INJECTOR_REQ = 8; INJECTOR_ANS = 9; INJECTOR_NTF = 10;
+	DEVICE_REQ = 11; DEVICE_ANS = 12; DEVICE_NTF = 13; 
+	CONTROL_REQ = 14; CONTROL_ANS = 15; CONTROL_NTF = 16; 
+	MONITOR_REQ = 17; MONITOR_ANS = 18; MONITOR_NTF = 19; 
+	SCREEN_DUMP_REQ = 20; SCREEN_DUMP_ANS = 21; 
+	}
 	
 	required Type type = 1;
 
-	optional StartReq start_req = 2;
-	optional StartAns start_ans = 3;
+	optional CheckVersionReq checkversion_req = 2;
+	optional CheckVersionAns checkversion_ans = 3;
+	
+	optional KeepAliveReq keepalive_req = 4;
+	optional KeepAliveAns keepalive_ans = 5;
+	
+	optional StartReq start_req = 6;
+	optional StartAns start_ans = 7;
 
-	optional InjectorReq injector_req = 4;
-	optional InjectorAns injector_ans = 5;
-	optional InjectorNtf injector_ntf = 6;
+	optional InjectorReq injector_req = 8;
+	optional InjectorAns injector_ans = 9;
+	optional InjectorNtf injector_ntf = 10;
+	
+	optional DeviceReq device_req = 11;
+	optional DeviceAns device_ans = 12;
+	optional DeviceNtf device_ntf = 13;
 
-	optional ControlReq control_req = 7;
-	optional ControlAns control_ans	= 8;
-	optional ControlNtf control_ntf	= 9;
+	optional ControlReq control_req = 14;
+	optional ControlAns control_ans	= 15;
+	optional ControlNtf control_ntf	= 16;
 
-	optional MonitorReq monitor_req = 10;
-	optional MonitorAns monitor_ans = 11;
-	optional MonitorNtf monitor_ntf = 12;
+	optional MonitorReq monitor_req = 17;
+	optional MonitorAns monitor_ans = 18;
+	optional MonitorNtf monitor_ntf = 19;
 
-	optional ScreenDumpReq screen_dump_req = 13;
-	optional ScreenDumpAns screen_dump_ans = 14;
+	optional ScreenDumpReq screen_dump_req = 20;
+	optional ScreenDumpAns screen_dump_ans = 21;
 
 }
 

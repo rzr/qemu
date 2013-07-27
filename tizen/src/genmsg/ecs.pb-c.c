@@ -6,6 +6,264 @@
 #endif
 
 #include "ecs.pb-c.h"
+void   ecs__check_version_req__init
+                     (ECS__CheckVersionReq         *message)
+{
+  static ECS__CheckVersionReq init_value = ECS__CHECK_VERSION_REQ__INIT;
+  *message = init_value;
+}
+size_t ecs__check_version_req__get_packed_size
+                     (const ECS__CheckVersionReq *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_req__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__check_version_req__pack
+                     (const ECS__CheckVersionReq *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_req__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__check_version_req__pack_to_buffer
+                     (const ECS__CheckVersionReq *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_req__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__CheckVersionReq *
+       ecs__check_version_req__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__CheckVersionReq *)
+     protobuf_c_message_unpack (&ecs__check_version_req__descriptor,
+                                allocator, len, data);
+}
+void   ecs__check_version_req__free_unpacked
+                     (ECS__CheckVersionReq *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_req__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__check_version_ans__init
+                     (ECS__CheckVersionAns         *message)
+{
+  static ECS__CheckVersionAns init_value = ECS__CHECK_VERSION_ANS__INIT;
+  *message = init_value;
+}
+size_t ecs__check_version_ans__get_packed_size
+                     (const ECS__CheckVersionAns *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_ans__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__check_version_ans__pack
+                     (const ECS__CheckVersionAns *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_ans__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__check_version_ans__pack_to_buffer
+                     (const ECS__CheckVersionAns *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_ans__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__CheckVersionAns *
+       ecs__check_version_ans__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__CheckVersionAns *)
+     protobuf_c_message_unpack (&ecs__check_version_ans__descriptor,
+                                allocator, len, data);
+}
+void   ecs__check_version_ans__free_unpacked
+                     (ECS__CheckVersionAns *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__check_version_ans__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__keep_alive_req__init
+                     (ECS__KeepAliveReq         *message)
+{
+  static ECS__KeepAliveReq init_value = ECS__KEEP_ALIVE_REQ__INIT;
+  *message = init_value;
+}
+size_t ecs__keep_alive_req__get_packed_size
+                     (const ECS__KeepAliveReq *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_req__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__keep_alive_req__pack
+                     (const ECS__KeepAliveReq *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_req__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__keep_alive_req__pack_to_buffer
+                     (const ECS__KeepAliveReq *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_req__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__KeepAliveReq *
+       ecs__keep_alive_req__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__KeepAliveReq *)
+     protobuf_c_message_unpack (&ecs__keep_alive_req__descriptor,
+                                allocator, len, data);
+}
+void   ecs__keep_alive_req__free_unpacked
+                     (ECS__KeepAliveReq *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_req__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__keep_alive_ans__init
+                     (ECS__KeepAliveAns         *message)
+{
+  static ECS__KeepAliveAns init_value = ECS__KEEP_ALIVE_ANS__INIT;
+  *message = init_value;
+}
+size_t ecs__keep_alive_ans__get_packed_size
+                     (const ECS__KeepAliveAns *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_ans__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__keep_alive_ans__pack
+                     (const ECS__KeepAliveAns *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_ans__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__keep_alive_ans__pack_to_buffer
+                     (const ECS__KeepAliveAns *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_ans__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__KeepAliveAns *
+       ecs__keep_alive_ans__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__KeepAliveAns *)
+     protobuf_c_message_unpack (&ecs__keep_alive_ans__descriptor,
+                                allocator, len, data);
+}
+void   ecs__keep_alive_ans__free_unpacked
+                     (ECS__KeepAliveAns *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_ans__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__start_req__init
+                     (ECS__StartReq         *message)
+{
+  static ECS__StartReq init_value = ECS__START_REQ__INIT;
+  *message = init_value;
+}
+size_t ecs__start_req__get_packed_size
+                     (const ECS__StartReq *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__start_req__pack
+                     (const ECS__StartReq *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__start_req__pack_to_buffer
+                     (const ECS__StartReq *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__StartReq *
+       ecs__start_req__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__StartReq *)
+     protobuf_c_message_unpack (&ecs__start_req__descriptor,
+                                allocator, len, data);
+}
+void   ecs__start_req__free_unpacked
+                     (ECS__StartReq *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__start_ans__init
+                     (ECS__StartAns         *message)
+{
+  static ECS__StartAns init_value = ECS__START_ANS__INIT;
+  *message = init_value;
+}
+size_t ecs__start_ans__get_packed_size
+                     (const ECS__StartAns *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__start_ans__pack
+                     (const ECS__StartAns *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__start_ans__pack_to_buffer
+                     (const ECS__StartAns *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__StartAns *
+       ecs__start_ans__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__StartAns *)
+     protobuf_c_message_unpack (&ecs__start_ans__descriptor,
+                                allocator, len, data);
+}
+void   ecs__start_ans__free_unpacked
+                     (ECS__StartAns *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   ecs__injector_req__init
                      (ECS__InjectorReq         *message)
 {
@@ -133,6 +391,135 @@ void   ecs__injector_ntf__free_unpacked
                       ProtobufCAllocator *allocator)
 {
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__injector_ntf__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__device_req__init
+                     (ECS__DeviceReq         *message)
+{
+  static ECS__DeviceReq init_value = ECS__DEVICE_REQ__INIT;
+  *message = init_value;
+}
+size_t ecs__device_req__get_packed_size
+                     (const ECS__DeviceReq *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_req__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__device_req__pack
+                     (const ECS__DeviceReq *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_req__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__device_req__pack_to_buffer
+                     (const ECS__DeviceReq *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_req__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__DeviceReq *
+       ecs__device_req__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__DeviceReq *)
+     protobuf_c_message_unpack (&ecs__device_req__descriptor,
+                                allocator, len, data);
+}
+void   ecs__device_req__free_unpacked
+                     (ECS__DeviceReq *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_req__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__device_ans__init
+                     (ECS__DeviceAns         *message)
+{
+  static ECS__DeviceAns init_value = ECS__DEVICE_ANS__INIT;
+  *message = init_value;
+}
+size_t ecs__device_ans__get_packed_size
+                     (const ECS__DeviceAns *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ans__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__device_ans__pack
+                     (const ECS__DeviceAns *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ans__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__device_ans__pack_to_buffer
+                     (const ECS__DeviceAns *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ans__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__DeviceAns *
+       ecs__device_ans__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__DeviceAns *)
+     protobuf_c_message_unpack (&ecs__device_ans__descriptor,
+                                allocator, len, data);
+}
+void   ecs__device_ans__free_unpacked
+                     (ECS__DeviceAns *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ans__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__device_ntf__init
+                     (ECS__DeviceNtf         *message)
+{
+  static ECS__DeviceNtf init_value = ECS__DEVICE_NTF__INIT;
+  *message = init_value;
+}
+size_t ecs__device_ntf__get_packed_size
+                     (const ECS__DeviceNtf *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ntf__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__device_ntf__pack
+                     (const ECS__DeviceNtf *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ntf__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__device_ntf__pack_to_buffer
+                     (const ECS__DeviceNtf *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ntf__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__DeviceNtf *
+       ecs__device_ntf__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__DeviceNtf *)
+     protobuf_c_message_unpack (&ecs__device_ntf__descriptor,
+                                allocator, len, data);
+}
+void   ecs__device_ntf__free_unpacked
+                     (ECS__DeviceNtf *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ntf__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   ecs__control_req__init
@@ -479,92 +866,6 @@ void   ecs__screen_dump_ans__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_ans__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   ecs__start_req__init
-                     (ECS__StartReq         *message)
-{
-  static ECS__StartReq init_value = ECS__START_REQ__INIT;
-  *message = init_value;
-}
-size_t ecs__start_req__get_packed_size
-                     (const ECS__StartReq *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__start_req__pack
-                     (const ECS__StartReq *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__start_req__pack_to_buffer
-                     (const ECS__StartReq *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__StartReq *
-       ecs__start_req__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__StartReq *)
-     protobuf_c_message_unpack (&ecs__start_req__descriptor,
-                                allocator, len, data);
-}
-void   ecs__start_req__free_unpacked
-                     (ECS__StartReq *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__start_ans__init
-                     (ECS__StartAns         *message)
-{
-  static ECS__StartAns init_value = ECS__START_ANS__INIT;
-  *message = init_value;
-}
-size_t ecs__start_ans__get_packed_size
-                     (const ECS__StartAns *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__start_ans__pack
-                     (const ECS__StartAns *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__start_ans__pack_to_buffer
-                     (const ECS__StartAns *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__StartAns *
-       ecs__start_ans__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__StartAns *)
-     protobuf_c_message_unpack (&ecs__start_ans__descriptor,
-                                allocator, len, data);
-}
-void   ecs__start_ans__free_unpacked
-                     (ECS__StartAns *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
 void   ecs__master__init
                      (ECS__Master         *message)
 {
@@ -608,6 +909,256 @@ void   ecs__master__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__master__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+static const ProtobufCFieldDescriptor ecs__check_version_req__field_descriptors[1] =
+{
+  {
+    "version_str",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__CheckVersionReq, version_str),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__check_version_req__field_indices_by_name[] = {
+  0,   /* field[0] = version_str */
+};
+static const ProtobufCIntRange ecs__check_version_req__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor ecs__check_version_req__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.CheckVersionReq",
+  "CheckVersionReq",
+  "ECS__CheckVersionReq",
+  "ECS",
+  sizeof(ECS__CheckVersionReq),
+  1,
+  ecs__check_version_req__field_descriptors,
+  ecs__check_version_req__field_indices_by_name,
+  1,  ecs__check_version_req__number_ranges,
+  (ProtobufCMessageInit) ecs__check_version_req__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__check_version_ans__field_descriptors[2] =
+{
+  {
+    "errcode",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__CheckVersionAns, errcode),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "version_str",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__CheckVersionAns, version_str),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__check_version_ans__field_indices_by_name[] = {
+  0,   /* field[0] = errcode */
+  1,   /* field[1] = version_str */
+};
+static const ProtobufCIntRange ecs__check_version_ans__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor ecs__check_version_ans__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.CheckVersionAns",
+  "CheckVersionAns",
+  "ECS__CheckVersionAns",
+  "ECS",
+  sizeof(ECS__CheckVersionAns),
+  2,
+  ecs__check_version_ans__field_descriptors,
+  ecs__check_version_ans__field_indices_by_name,
+  1,  ecs__check_version_ans__number_ranges,
+  (ProtobufCMessageInit) ecs__check_version_ans__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__keep_alive_req__field_descriptors[1] =
+{
+  {
+    "time_str",
+    1,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__KeepAliveReq, time_str),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__keep_alive_req__field_indices_by_name[] = {
+  0,   /* field[0] = time_str */
+};
+static const ProtobufCIntRange ecs__keep_alive_req__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor ecs__keep_alive_req__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.KeepAliveReq",
+  "KeepAliveReq",
+  "ECS__KeepAliveReq",
+  "ECS",
+  sizeof(ECS__KeepAliveReq),
+  1,
+  ecs__keep_alive_req__field_descriptors,
+  ecs__keep_alive_req__field_indices_by_name,
+  1,  ecs__keep_alive_req__number_ranges,
+  (ProtobufCMessageInit) ecs__keep_alive_req__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__keep_alive_ans__field_descriptors[1] =
+{
+  {
+    "time_str",
+    1,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__KeepAliveAns, time_str),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__keep_alive_ans__field_indices_by_name[] = {
+  0,   /* field[0] = time_str */
+};
+static const ProtobufCIntRange ecs__keep_alive_ans__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor ecs__keep_alive_ans__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.KeepAliveAns",
+  "KeepAliveAns",
+  "ECS__KeepAliveAns",
+  "ECS",
+  sizeof(ECS__KeepAliveAns),
+  1,
+  ecs__keep_alive_ans__field_descriptors,
+  ecs__keep_alive_ans__field_indices_by_name,
+  1,  ecs__keep_alive_ans__number_ranges,
+  (ProtobufCMessageInit) ecs__keep_alive_ans__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__start_req__field_descriptors[0] =
+{
+};
+static const unsigned ecs__start_req__field_indices_by_name[] = {
+};
+#define ecs__start_req__number_ranges NULL
+const ProtobufCMessageDescriptor ecs__start_req__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.StartReq",
+  "StartReq",
+  "ECS__StartReq",
+  "ECS",
+  sizeof(ECS__StartReq),
+  0,
+  ecs__start_req__field_descriptors,
+  ecs__start_req__field_indices_by_name,
+  0,  ecs__start_req__number_ranges,
+  (ProtobufCMessageInit) ecs__start_req__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__start_ans__field_descriptors[3] =
+{
+  {
+    "host_keyboard_onoff",
+    1,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_host_keyboard_onoff),
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, host_keyboard_onoff),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "earjack_onoff",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_earjack_onoff),
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, earjack_onoff),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "camera_onoff",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_camera_onoff),
+    PROTOBUF_C_OFFSETOF(ECS__StartAns, camera_onoff),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__start_ans__field_indices_by_name[] = {
+  2,   /* field[2] = camera_onoff */
+  1,   /* field[1] = earjack_onoff */
+  0,   /* field[0] = host_keyboard_onoff */
+};
+static const ProtobufCIntRange ecs__start_ans__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 3 }
+};
+const ProtobufCMessageDescriptor ecs__start_ans__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.StartAns",
+  "StartAns",
+  "ECS__StartAns",
+  "ECS",
+  sizeof(ECS__StartAns),
+  3,
+  ecs__start_ans__field_descriptors,
+  ecs__start_ans__field_indices_by_name,
+  1,  ecs__start_ans__number_ranges,
+  (ProtobufCMessageInit) ecs__start_ans__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const ProtobufCFieldDescriptor ecs__injector_req__field_descriptors[5] =
 {
   {
@@ -902,6 +1453,302 @@ const ProtobufCMessageDescriptor ecs__injector_ntf__descriptor =
   ecs__injector_ntf__field_indices_by_name,
   1,  ecs__injector_ntf__number_ranges,
   (ProtobufCMessageInit) ecs__injector_ntf__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__device_req__field_descriptors[5] =
+{
+  {
+    "category",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceReq, category),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "length",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceReq, length),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "group",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceReq, group),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "action",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceReq, action),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "data",
+    5,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BYTES,
+    PROTOBUF_C_OFFSETOF(ECS__DeviceReq, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__DeviceReq, data),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__device_req__field_indices_by_name[] = {
+  3,   /* field[3] = action */
+  0,   /* field[0] = category */
+  4,   /* field[4] = data */
+  2,   /* field[2] = group */
+  1,   /* field[1] = length */
+};
+static const ProtobufCIntRange ecs__device_req__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 5 }
+};
+const ProtobufCMessageDescriptor ecs__device_req__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.DeviceReq",
+  "DeviceReq",
+  "ECS__DeviceReq",
+  "ECS",
+  sizeof(ECS__DeviceReq),
+  5,
+  ecs__device_req__field_descriptors,
+  ecs__device_req__field_indices_by_name,
+  1,  ecs__device_req__number_ranges,
+  (ProtobufCMessageInit) ecs__device_req__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__device_ans__field_descriptors[7] =
+{
+  {
+    "errcode",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, errcode),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "errstr",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, errstr),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "category",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, category),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "length",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, length),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "group",
+    5,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, group),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "action",
+    6,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, action),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "data",
+    7,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BYTES,
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__DeviceAns, data),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__device_ans__field_indices_by_name[] = {
+  5,   /* field[5] = action */
+  2,   /* field[2] = category */
+  6,   /* field[6] = data */
+  0,   /* field[0] = errcode */
+  1,   /* field[1] = errstr */
+  4,   /* field[4] = group */
+  3,   /* field[3] = length */
+};
+static const ProtobufCIntRange ecs__device_ans__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 7 }
+};
+const ProtobufCMessageDescriptor ecs__device_ans__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.DeviceAns",
+  "DeviceAns",
+  "ECS__DeviceAns",
+  "ECS",
+  sizeof(ECS__DeviceAns),
+  7,
+  ecs__device_ans__field_descriptors,
+  ecs__device_ans__field_indices_by_name,
+  1,  ecs__device_ans__number_ranges,
+  (ProtobufCMessageInit) ecs__device_ans__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__device_ntf__field_descriptors[5] =
+{
+  {
+    "category",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceNtf, category),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "length",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceNtf, length),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "group",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceNtf, group),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "action",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__DeviceNtf, action),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "data",
+    5,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BYTES,
+    PROTOBUF_C_OFFSETOF(ECS__DeviceNtf, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__DeviceNtf, data),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__device_ntf__field_indices_by_name[] = {
+  3,   /* field[3] = action */
+  0,   /* field[0] = category */
+  4,   /* field[4] = data */
+  2,   /* field[2] = group */
+  1,   /* field[1] = length */
+};
+static const ProtobufCIntRange ecs__device_ntf__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 5 }
+};
+const ProtobufCMessageDescriptor ecs__device_ntf__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.DeviceNtf",
+  "DeviceNtf",
+  "ECS__DeviceNtf",
+  "ECS",
+  sizeof(ECS__DeviceNtf),
+  5,
+  ecs__device_ntf__field_descriptors,
+  ecs__device_ntf__field_indices_by_name,
+  1,  ecs__device_ntf__number_ranges,
+  (ProtobufCMessageInit) ecs__device_ntf__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor ecs__control_req__field_descriptors[1] =
@@ -1312,99 +2159,54 @@ const ProtobufCMessageDescriptor ecs__screen_dump_ans__descriptor =
   (ProtobufCMessageInit) ecs__screen_dump_ans__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__start_req__field_descriptors[0] =
+const ProtobufCEnumValue ecs__master__type__enum_values_by_number[20] =
 {
-};
-static const unsigned ecs__start_req__field_indices_by_name[] = {
-};
-#define ecs__start_req__number_ranges NULL
-const ProtobufCMessageDescriptor ecs__start_req__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.StartReq",
-  "StartReq",
-  "ECS__StartReq",
-  "ECS",
-  sizeof(ECS__StartReq),
-  0,
-  ecs__start_req__field_descriptors,
-  ecs__start_req__field_indices_by_name,
-  0,  ecs__start_req__number_ranges,
-  (ProtobufCMessageInit) ecs__start_req__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor ecs__start_ans__field_descriptors[1] =
-{
-  {
-    "host_keyboard_onoff",
-    1,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_host_keyboard_onoff),
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, host_keyboard_onoff),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__start_ans__field_indices_by_name[] = {
-  0,   /* field[0] = host_keyboard_onoff */
-};
-static const ProtobufCIntRange ecs__start_ans__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 1 }
-};
-const ProtobufCMessageDescriptor ecs__start_ans__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.StartAns",
-  "StartAns",
-  "ECS__StartAns",
-  "ECS",
-  sizeof(ECS__StartAns),
-  1,
-  ecs__start_ans__field_descriptors,
-  ecs__start_ans__field_indices_by_name,
-  1,  ecs__start_ans__number_ranges,
-  (ProtobufCMessageInit) ecs__start_ans__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-const ProtobufCEnumValue ecs__master__type__enum_values_by_number[13] =
-{
-  { "START_REQ", "ECS__MASTER__TYPE__START_REQ", 1 },
-  { "START_ANS", "ECS__MASTER__TYPE__START_ANS", 2 },
-  { "INJECTOR_REQ", "ECS__MASTER__TYPE__INJECTOR_REQ", 3 },
-  { "INJECTOR_ANS", "ECS__MASTER__TYPE__INJECTOR_ANS", 4 },
-  { "INJECTOR_NTF", "ECS__MASTER__TYPE__INJECTOR_NTF", 5 },
-  { "CONTROL_REQ", "ECS__MASTER__TYPE__CONTROL_REQ", 6 },
-  { "CONTROL_ANS", "ECS__MASTER__TYPE__CONTROL_ANS", 7 },
-  { "CONTROL_NTF", "ECS__MASTER__TYPE__CONTROL_NTF", 8 },
-  { "MONITOR_REQ", "ECS__MASTER__TYPE__MONITOR_REQ", 9 },
-  { "MONITOR_ANS", "ECS__MASTER__TYPE__MONITOR_ANS", 10 },
-  { "MONITOR_NTF", "ECS__MASTER__TYPE__MONITOR_NTF", 11 },
-  { "SCREEN_DUMP_REQ", "ECS__MASTER__TYPE__SCREEN_DUMP_REQ", 12 },
-  { "SCREEN_DUMP_ANS", "ECS__MASTER__TYPE__SCREEN_DUMP_ANS", 13 },
+  { "CHECKVERSION_REQ", "ECS__MASTER__TYPE__CHECKVERSION_REQ", 2 },
+  { "CHECKVERSION_ANS", "ECS__MASTER__TYPE__CHECKVERSION_ANS", 3 },
+  { "KEEPALIVE_REQ", "ECS__MASTER__TYPE__KEEPALIVE_REQ", 4 },
+  { "KEEPALIVE_ANS", "ECS__MASTER__TYPE__KEEPALIVE_ANS", 5 },
+  { "START_REQ", "ECS__MASTER__TYPE__START_REQ", 6 },
+  { "START_ANS", "ECS__MASTER__TYPE__START_ANS", 7 },
+  { "INJECTOR_REQ", "ECS__MASTER__TYPE__INJECTOR_REQ", 8 },
+  { "INJECTOR_ANS", "ECS__MASTER__TYPE__INJECTOR_ANS", 9 },
+  { "INJECTOR_NTF", "ECS__MASTER__TYPE__INJECTOR_NTF", 10 },
+  { "DEVICE_REQ", "ECS__MASTER__TYPE__DEVICE_REQ", 11 },
+  { "DEVICE_ANS", "ECS__MASTER__TYPE__DEVICE_ANS", 12 },
+  { "DEVICE_NTF", "ECS__MASTER__TYPE__DEVICE_NTF", 13 },
+  { "CONTROL_REQ", "ECS__MASTER__TYPE__CONTROL_REQ", 14 },
+  { "CONTROL_ANS", "ECS__MASTER__TYPE__CONTROL_ANS", 15 },
+  { "CONTROL_NTF", "ECS__MASTER__TYPE__CONTROL_NTF", 16 },
+  { "MONITOR_REQ", "ECS__MASTER__TYPE__MONITOR_REQ", 17 },
+  { "MONITOR_ANS", "ECS__MASTER__TYPE__MONITOR_ANS", 18 },
+  { "MONITOR_NTF", "ECS__MASTER__TYPE__MONITOR_NTF", 19 },
+  { "SCREEN_DUMP_REQ", "ECS__MASTER__TYPE__SCREEN_DUMP_REQ", 20 },
+  { "SCREEN_DUMP_ANS", "ECS__MASTER__TYPE__SCREEN_DUMP_ANS", 21 },
 };
 static const ProtobufCIntRange ecs__master__type__value_ranges[] = {
-{1, 0},{0, 13}
+{2, 0},{0, 20}
 };
-const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[13] =
+const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[20] =
 {
-  { "CONTROL_ANS", 6 },
-  { "CONTROL_NTF", 7 },
-  { "CONTROL_REQ", 5 },
-  { "INJECTOR_ANS", 3 },
-  { "INJECTOR_NTF", 4 },
-  { "INJECTOR_REQ", 2 },
-  { "MONITOR_ANS", 9 },
-  { "MONITOR_NTF", 10 },
-  { "MONITOR_REQ", 8 },
-  { "SCREEN_DUMP_ANS", 12 },
-  { "SCREEN_DUMP_REQ", 11 },
-  { "START_ANS", 1 },
-  { "START_REQ", 0 },
+  { "CHECKVERSION_ANS", 1 },
+  { "CHECKVERSION_REQ", 0 },
+  { "CONTROL_ANS", 13 },
+  { "CONTROL_NTF", 14 },
+  { "CONTROL_REQ", 12 },
+  { "DEVICE_ANS", 10 },
+  { "DEVICE_NTF", 11 },
+  { "DEVICE_REQ", 9 },
+  { "INJECTOR_ANS", 7 },
+  { "INJECTOR_NTF", 8 },
+  { "INJECTOR_REQ", 6 },
+  { "KEEPALIVE_ANS", 3 },
+  { "KEEPALIVE_REQ", 2 },
+  { "MONITOR_ANS", 16 },
+  { "MONITOR_NTF", 17 },
+  { "MONITOR_REQ", 15 },
+  { "SCREEN_DUMP_ANS", 19 },
+  { "SCREEN_DUMP_REQ", 18 },
+  { "START_ANS", 5 },
+  { "START_REQ", 4 },
 };
 const ProtobufCEnumDescriptor ecs__master__type__descriptor =
 {
@@ -1413,15 +2215,15 @@ const ProtobufCEnumDescriptor ecs__master__type__descriptor =
   "Type",
   "ECS__Master__Type",
   "ECS",
-  13,
+  20,
   ecs__master__type__enum_values_by_number,
-  13,
+  20,
   ecs__master__type__enum_values_by_name,
   1,
   ecs__master__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
+static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
 {
   {
     "type",
@@ -1436,8 +2238,56 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "start_req",
+    "checkversion_req",
     2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, checkversion_req),
+    &ecs__check_version_req__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "checkversion_ans",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, checkversion_ans),
+    &ecs__check_version_ans__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "keepalive_req",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, keepalive_req),
+    &ecs__keep_alive_req__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "keepalive_ans",
+    5,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, keepalive_ans),
+    &ecs__keep_alive_ans__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "start_req",
+    6,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1449,7 +2299,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "start_ans",
-    3,
+    7,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1461,7 +2311,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "injector_req",
-    4,
+    8,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1473,7 +2323,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "injector_ans",
-    5,
+    9,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1485,7 +2335,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "injector_ntf",
-    6,
+    10,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1496,8 +2346,44 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
+    "device_req",
+    11,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, device_req),
+    &ecs__device_req__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "device_ans",
+    12,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, device_ans),
+    &ecs__device_ans__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "device_ntf",
+    13,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, device_ntf),
+    &ecs__device_ntf__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
     "control_req",
-    7,
+    14,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1509,7 +2395,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "control_ans",
-    8,
+    15,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1521,7 +2407,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "control_ntf",
-    9,
+    16,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1533,7 +2419,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "monitor_req",
-    10,
+    17,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1545,7 +2431,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "monitor_ans",
-    11,
+    18,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1557,7 +2443,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "monitor_ntf",
-    12,
+    19,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1569,7 +2455,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "screen_dump_req",
-    13,
+    20,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1581,7 +2467,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
   {
     "screen_dump_ans",
-    14,
+    21,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -1593,25 +2479,32 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
   },
 };
 static const unsigned ecs__master__field_indices_by_name[] = {
-  7,   /* field[7] = control_ans */
-  8,   /* field[8] = control_ntf */
-  6,   /* field[6] = control_req */
-  4,   /* field[4] = injector_ans */
-  5,   /* field[5] = injector_ntf */
-  3,   /* field[3] = injector_req */
-  10,   /* field[10] = monitor_ans */
-  11,   /* field[11] = monitor_ntf */
-  9,   /* field[9] = monitor_req */
-  13,   /* field[13] = screen_dump_ans */
-  12,   /* field[12] = screen_dump_req */
-  2,   /* field[2] = start_ans */
-  1,   /* field[1] = start_req */
+  2,   /* field[2] = checkversion_ans */
+  1,   /* field[1] = checkversion_req */
+  14,   /* field[14] = control_ans */
+  15,   /* field[15] = control_ntf */
+  13,   /* field[13] = control_req */
+  11,   /* field[11] = device_ans */
+  12,   /* field[12] = device_ntf */
+  10,   /* field[10] = device_req */
+  8,   /* field[8] = injector_ans */
+  9,   /* field[9] = injector_ntf */
+  7,   /* field[7] = injector_req */
+  4,   /* field[4] = keepalive_ans */
+  3,   /* field[3] = keepalive_req */
+  17,   /* field[17] = monitor_ans */
+  18,   /* field[18] = monitor_ntf */
+  16,   /* field[16] = monitor_req */
+  20,   /* field[20] = screen_dump_ans */
+  19,   /* field[19] = screen_dump_req */
+  6,   /* field[6] = start_ans */
+  5,   /* field[5] = start_req */
   0,   /* field[0] = type */
 };
 static const ProtobufCIntRange ecs__master__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 14 }
+  { 0, 21 }
 };
 const ProtobufCMessageDescriptor ecs__master__descriptor =
 {
@@ -1621,7 +2514,7 @@ const ProtobufCMessageDescriptor ecs__master__descriptor =
   "ECS__Master",
   "ECS",
   sizeof(ECS__Master),
-  14,
+  21,
   ecs__master__field_descriptors,
   ecs__master__field_indices_by_name,
   1,  ecs__master__number_ranges,
