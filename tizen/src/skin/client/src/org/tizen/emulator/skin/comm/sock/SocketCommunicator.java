@@ -119,7 +119,8 @@ public class SocketCommunicator implements ICommunicator {
 	private DataTranfer detailInfoTransfer;
 	private DataTranfer progressDataTransfer;
 	private DataTranfer brightnessDataTransfer;
-
+	private DataTranfer ecpTransfer;
+	
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
 
@@ -148,6 +149,10 @@ public class SocketCommunicator implements ICommunicator {
 		this.brightnessDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
 		this.brightnessDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
 
+		this.ecpTransfer = new DataTranfer();
+		this.ecpTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
+		this.ecpTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+		
 		this.heartbeatCount = new AtomicInteger(0);
 		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
 		this.heartbeatTimer = new Timer();
@@ -382,6 +387,13 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
+				case ECP_PORT: {
+					logger.info("received ECP_PORT from QEMU.");
+					resetDataTransfer(ecpTransfer);
+					receiveData( ecpTransfer, length );
+					
+					break;
+				}
 				case SENSOR_DAEMON_START: {
 					logger.info("received SENSOR_DAEMON_START from QEMU.");
 
@@ -528,6 +540,8 @@ public class SocketCommunicator implements ICommunicator {
 				dataTranfer = resetDataTransfer(screenShotDataTransfer);
 			} else if (SendCommand.DETAIL_INFO.equals(command)) {
 				dataTranfer = resetDataTransfer(detailInfoTransfer);
+			} else if (SendCommand.ECP_PORT_REQ.equals(command)) {
+				dataTranfer = resetDataTransfer(ecpTransfer);
 			}
 		}
 

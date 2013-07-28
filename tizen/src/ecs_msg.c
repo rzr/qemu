@@ -27,6 +27,7 @@
 
 #include "ecs.h"
 #include "hw/maru_virtio_evdi.h"
+#include "hw/maru_virtio_sensor.h"
 #include "skin/maruskin_operation.h"
 
 // utility functions
@@ -148,6 +149,54 @@ bool msgproc_control_req(ECS_Client *ccli, ECS__ControlReq* msg)
 
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
 {
+
+	return true;
+}
+
+bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
+{
+	char cmd[10];
+	char* data;
+	memset(cmd, 0, 10);
+	strcpy(cmd, msg->category);
+	type_length length = (type_length) msg->length;
+	type_group group = (type_group) (msg->group & 0xff);
+	type_action action = (type_action) (msg->action & 0xff);
+
+	if (msg->has_data && msg->data.len > 0)
+	{
+		data = msg->data.data;
+	}
+
+	LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
+			action, group);
+ 
+	if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
+		if (group == MSG_GROUP_STATUS) {
+			if (action ==MSG_ACTION_ACCEL) {
+				get_sensor_accel();
+			} else if (action == MSG_ACTION_GYRO) {
+				get_sensor_gyro();
+			} else if (action == MSG_ACTION_MAG) {
+				get_sensor_mag();
+			} else if (action == MSG_ACTION_LIGHT) {
+				get_sensor_light();
+			} else if (action == MSG_ACTION_PROXI) {
+				get_sensor_proxi();
+			}
+		} else {
+			set_sensor_data(length, data);
+		}
+	}
+	else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
+        if (group == MSG_GROUP_STATUS) {
+		    send_to_nfc(request_get, data, length);
+		} 
+		else 
+		{
+		    send_to_nfc(request_set, data, length);
+		}
+    }
 
 	return true;
 }
@@ -364,3 +413,10 @@ bool send_injector_ntf(const char* data, const int len)
 
 	return true;
 }
+
+
+bool send_device_ntf(const char* data, const int len)
+{
+	return send_injector_ntf(data, len);
+}
+

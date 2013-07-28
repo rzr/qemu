@@ -64,6 +64,7 @@ static QTAILQ_HEAD(ECS_ClientHead, ECS_Client)
 clients = QTAILQ_HEAD_INITIALIZER(clients);
 
 static ECS_State *current_ecs;
+static int port;
 
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1319,13 +1320,16 @@ static int check_port(void) {
 	return -1;
 }
 
+int get_ecs_port(void) {
+	return port;
+}
+
 static void* ecs_initialize(void* args) {
 	int ret = 1;
 	ECS_State *cs = NULL;
 	QemuOpts *opts = NULL;
 	Error *local_err = NULL;
 	Monitor* mon = NULL;
-	int port;
 	char host_port[16];
 
 	start_logging();
@@ -1444,6 +1448,13 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
 		if (!msg)
 			goto fail;
 		msgproc_monitor_req(cli, msg);
+	}
+	else if (master->type == ECS__MASTER__TYPE__DEVICE_REQ)
+	{
+		ECS__DeviceReq* msg = master->device_req;
+		if (!msg)
+			goto fail;
+		msgproc_device_req(cli, msg);
 	}
 	else if (master->type == ECS__MASTER__TYPE__SCREEN_DUMP_REQ)
 	{

@@ -61,6 +61,7 @@ void send_rotation_event(int rotation_type);
 
 QemuSurfaceInfo *get_screenshot_info(void);
 DetailInfo *get_detail_info(int qemu_argc, char **qemu_argv);
+int get_ecs_port_req(void);
 void free_detail_info(DetailInfo *detail_info);
 void free_screenshot_info(QemuSurfaceInfo *);
 

@@ -220,7 +220,8 @@ public interface ICommunicator extends Runnable {
 		DETAIL_INFO((short) 17),
 		RAM_DUMP((short) 18),
 		GUEST_DUMP((short) 19),
-
+		ECP_PORT_REQ((short) 20),
+		
 		RESPONSE_HEART_BEAT((short) 900),
 		RESPONSE_DRAW_FRAMEBUFFER((short) 901),
 		CLOSE((short) 998),
@@ -265,6 +266,7 @@ public interface ICommunicator extends Runnable {
 		RAMDUMP_COMPLETE((short) 4),
 		BOOTING_PROGRESS((short) 5),
 		BRIGHTNESS_VALUE((short) 6),
+		ECP_PORT((short) 7),
 		SENSOR_DAEMON_START((short) 800),
 		SDB_DAEMON_START((short) 801),
 		DRAW_FRAME((short) 900),

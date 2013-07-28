@@ -49,6 +49,7 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class PopupMenu {
+	public static final String ECP_NAME = "Control &Panel";
 	public static final String TOPMOST_MENUITEM_NAME = "&Always On Top";
 	public static final String ROTATE_MENUITEM_NAME = "&Rotate";
 	public static final String SCALE_MENUITEM_NAME = "&Scale";
@@ -76,6 +77,7 @@ public class PopupMenu {
 
 	/* default menu items */
 	public MenuItem detailInfoItem;
+	public MenuItem ecpItem;
 	public MenuItem onTopItem;
 	public MenuItem rotateItem;
 	public MenuItem scaleItem;
@@ -126,7 +128,7 @@ public class PopupMenu {
 
 		SelectionAdapter detailInfoListener = skin.createDetailInfoMenu();
 		detailInfoItem.addSelectionListener(detailInfoListener);
-
+		
 		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* Always on top menu */
@@ -328,6 +330,16 @@ public class PopupMenu {
 
 		new MenuItem(menu, SWT.SEPARATOR);
 
+		ecpItem = new MenuItem(menu, SWT.PUSH);
+		{
+			ecpItem.setText(ECP_NAME);
+		
+			SelectionAdapter ecpListener = skin.createEcpMenu();
+			ecpItem.addSelectionListener(ecpListener);
+		}
+		
+		new MenuItem(menu, SWT.SEPARATOR);
+		
 		/* Close menu */
 		closeItem = new MenuItem(menu, SWT.PUSH);
 		closeItem.setText(CLOSE_MENUITEM_NAME);
