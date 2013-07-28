@@ -394,6 +394,57 @@ bool send_hostkeyboard_ntf(int is_on)
 
 bool send_device_ntf(const char* data, const int len)
 {
-	return send_injector_ntf(data, len);
+	type_length length = 0;
+	type_group group = 0;
+	type_action action = 0;
+
+	const int catsize = 10;
+	char cat[catsize + 1];
+	memset(cat, 0, catsize + 1);
+
+	read_val_str(data, cat, catsize);
+	read_val_short(data + catsize, &length);
+	read_val_char(data + catsize + 2, &group);
+	read_val_char(data + catsize + 2 + 1, &action);
+
+
+    const char* ijdata = (data + catsize + 2 + 1 + 1);
+
+    LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,action, group);
+
+	ECS__Master master = ECS__MASTER__INIT;
+	ECS__DeviceNtf ntf = ECS__DEVICE_NTF__INIT;
+
+	ntf.category = (char*) g_malloc(catsize + 1);
+	strncpy(ntf.category, cat, 10);
+
+
+	ntf.length = length;
+	ntf.group = group;
+	ntf.action = action;
+
+	if (length > 0)
+	{
+		ntf.has_data = 1;
+
+		ntf.data.data = g_malloc(length);
+		ntf.data.len = length;
+		memcpy(ntf.data.data, ijdata, length);
+	}
+
+	master.type = ECS__MASTER__TYPE__DEVICE_NTF;
+	master.device_ntf = &ntf;
+
+	send_to_ecp(&master);
+
+	if (ntf.data.data && ntf.data.len > 0)
+	{
+		g_free(ntf.data.data);
+	}
+
+	if (ntf.category)
+		g_free(ntf.category);
+
+	return true;
 }
 
