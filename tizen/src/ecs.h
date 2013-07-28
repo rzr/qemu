@@ -148,6 +148,7 @@ bool send_start_ans(int host_keyboard_onff);
 bool send_injector_ntf(const char* data, const int len);
 bool send_control_ntf(const char* data, const int len);
 bool send_monitor_ntf(const char* data, const int len);
+bool send_hostkeyboard_ntf(int is_on);
 
 bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char* data, const int len) ;
@@ -162,7 +163,7 @@ void read_val_str(const char* data, char* ret_val, int len);
 
 bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg);
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
-bool msgproc_control_req(ECS_Client *ccli, ECS__ControlReq* msg);
+bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
 bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg);
 
@@ -172,9 +173,8 @@ enum{
 	CONTROL_COMMAND_SCREENSHOT_REQ = 2
 };
 
-// messages
-//void ecs_startinfo_req(ECS_Client *clii);
-void control_host_keyboard_onoff_req(ECS_Client *clii, QDict* data);
+// control sub messages
+void msgproc_control_hostkeyboard_req(ECS_Client *cli, ECS__HostKeyboardReq* req);
 
 void set_sensor_data(int length, const char* data);
 

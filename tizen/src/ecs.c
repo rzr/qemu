@@ -780,20 +780,6 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
 	return true;
 }
 
-static bool control_command_proc(ECS_Client *clii, QObject *obj) {
-	int64_t control_type = qdict_get_int(qobject_to_qdict(obj), "control_type");
-
-	QDict* data = qdict_get_qdict(qobject_to_qdict(obj), "data");
-
-	if (control_type == CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ) {
-		control_host_keyboard_onoff_req(clii, data);
-	} else if (control_type == CONTROL_COMMAND_SCREENSHOT_REQ) {
-
-	}
-	//LOG(">> control : feature = %s, action=%d, data=%s", feature, action, data);
-
-	return true;
-}
 
 static bool device_command_proc(ECS_Client *clii, QObject *obj) {
 	QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
@@ -902,7 +888,7 @@ static void handle_ecs_command(JSONMessageParser *parser, QList *tokens,
 	} else if (!strcmp(type_name, COMMAND_TYPE_INJECTOR)) {
 		injector_command_proc(clii, obj);
 	} else if (!strcmp(type_name, COMMAND_TYPE_CONTROL)) {
-		control_command_proc(clii, obj);
+		//control_command_proc(clii, obj);
 	} else if (!strcmp(type_name, COMMAND_TYPE_MONITOR)) {
 		handle_qmp_command(clii, type_name, get_data_object(obj));
 	} else if (!strcmp(type_name, COMMAND_TYPE_DEVICE)) {
@@ -1431,12 +1417,12 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
 			goto fail;
 		msgproc_injector_req(cli, msg);
 	}
-	else if (master->type == ECS__MASTER__TYPE__CONTROL_REQ)
+	else if (master->type == ECS__MASTER__TYPE__CONTROL_MSG)
 	{
-		ECS__ControlReq* msg = master->control_req;
+		ECS__ControlMsg* msg = master->control_msg;
 		if (!msg)
 			goto fail;
-		msgproc_control_req(cli, msg);
+		msgproc_control_msg(cli, msg);
 	}
 	else if (master->type == ECS__MASTER__TYPE__MONITOR_REQ)
 	{

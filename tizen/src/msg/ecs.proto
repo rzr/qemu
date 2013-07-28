@@ -86,9 +86,33 @@ message DeviceNtf {
 }
 
 
-message ControlReq {
-	required string command = 1;
+
+// control message
+
+message HostKeyboardReq {
+	optional int32 ison = 3;
 }
+
+message HostKeyboardNtf {
+
+	required int32 errcode = 1;
+	optional string errstr = 2;
+	optional int32 ison = 3;
+}
+
+message ControlMsg {
+
+	enum ControlType { 
+		HOSTKEYBOARD_REQ = 2; HOSTKEYBOARD_NTF = 3;
+	}
+	
+	required ControlType type = 1;
+	
+	optional HostKeyboardReq hostkeyboard_req = 2;
+	optional HostKeyboardNtf hostkeyboard_ntf = 3;
+}
+
+//
 
 message ControlAns {
 	required int32 errcode = 1;
@@ -134,7 +158,7 @@ message Master {
 	START_REQ = 6; START_ANS = 7; 
 	INJECTOR_REQ = 8; INJECTOR_ANS = 9; INJECTOR_NTF = 10;
 	DEVICE_REQ = 11; DEVICE_ANS = 12; DEVICE_NTF = 13; 
-	CONTROL_REQ = 14; CONTROL_ANS = 15; CONTROL_NTF = 16; 
+	CONTROL_MSG = 14; CONTROL_ANS = 15; CONTROL_NTF = 16; 
 	MONITOR_REQ = 17; MONITOR_ANS = 18; MONITOR_NTF = 19; 
 	SCREEN_DUMP_REQ = 20; SCREEN_DUMP_ANS = 21; 
 	}
@@ -158,7 +182,7 @@ message Master {
 	optional DeviceAns device_ans = 12;
 	optional DeviceNtf device_ntf = 13;
 
-	optional ControlReq control_req = 14;
+	optional ControlMsg control_msg = 14;
 	optional ControlAns control_ans	= 15;
 	optional ControlNtf control_ntf	= 16;
 

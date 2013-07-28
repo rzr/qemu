@@ -20,7 +20,9 @@ typedef struct _ECS__InjectorNtf ECS__InjectorNtf;
 typedef struct _ECS__DeviceReq ECS__DeviceReq;
 typedef struct _ECS__DeviceAns ECS__DeviceAns;
 typedef struct _ECS__DeviceNtf ECS__DeviceNtf;
-typedef struct _ECS__ControlReq ECS__ControlReq;
+typedef struct _ECS__HostKeyboardReq ECS__HostKeyboardReq;
+typedef struct _ECS__HostKeyboardNtf ECS__HostKeyboardNtf;
+typedef struct _ECS__ControlMsg ECS__ControlMsg;
 typedef struct _ECS__ControlAns ECS__ControlAns;
 typedef struct _ECS__ControlNtf ECS__ControlNtf;
 typedef struct _ECS__MonitorReq ECS__MonitorReq;
@@ -33,6 +35,10 @@ typedef struct _ECS__Master ECS__Master;
 
 /* --- enums --- */
 
+typedef enum _ECS__ControlMsg__ControlType {
+  ECS__CONTROL_MSG__CONTROL_TYPE__HOSTKEYBOARD_REQ = 2,
+  ECS__CONTROL_MSG__CONTROL_TYPE__HOSTKEYBOARD_NTF = 3
+} ECS__ControlMsg__ControlType;
 typedef enum _ECS__Master__Type {
   ECS__MASTER__TYPE__CHECKVERSION_REQ = 2,
   ECS__MASTER__TYPE__CHECKVERSION_ANS = 3,
@@ -46,7 +52,7 @@ typedef enum _ECS__Master__Type {
   ECS__MASTER__TYPE__DEVICE_REQ = 11,
   ECS__MASTER__TYPE__DEVICE_ANS = 12,
   ECS__MASTER__TYPE__DEVICE_NTF = 13,
-  ECS__MASTER__TYPE__CONTROL_REQ = 14,
+  ECS__MASTER__TYPE__CONTROL_MSG = 14,
   ECS__MASTER__TYPE__CONTROL_ANS = 15,
   ECS__MASTER__TYPE__CONTROL_NTF = 16,
   ECS__MASTER__TYPE__MONITOR_REQ = 17,
@@ -217,14 +223,40 @@ struct  _ECS__DeviceNtf
     , NULL, 0, 0, 0, 0,{0,NULL} }
 
 
-struct  _ECS__ControlReq
+struct  _ECS__HostKeyboardReq
 {
   ProtobufCMessage base;
-  char *command;
+  protobuf_c_boolean has_ison;
+  int32_t ison;
 };
-#define ECS__CONTROL_REQ__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__control_req__descriptor) \
-    , NULL }
+#define ECS__HOST_KEYBOARD_REQ__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__host_keyboard_req__descriptor) \
+    , 0,0 }
+
+
+struct  _ECS__HostKeyboardNtf
+{
+  ProtobufCMessage base;
+  int32_t errcode;
+  char *errstr;
+  protobuf_c_boolean has_ison;
+  int32_t ison;
+};
+#define ECS__HOST_KEYBOARD_NTF__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__host_keyboard_ntf__descriptor) \
+    , 0, NULL, 0,0 }
+
+
+struct  _ECS__ControlMsg
+{
+  ProtobufCMessage base;
+  ECS__ControlMsg__ControlType type;
+  ECS__HostKeyboardReq *hostkeyboard_req;
+  ECS__HostKeyboardNtf *hostkeyboard_ntf;
+};
+#define ECS__CONTROL_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__control_msg__descriptor) \
+    , 0, NULL, NULL }
 
 
 struct  _ECS__ControlAns
@@ -324,7 +356,7 @@ struct  _ECS__Master
   ECS__DeviceReq *device_req;
   ECS__DeviceAns *device_ans;
   ECS__DeviceNtf *device_ntf;
-  ECS__ControlReq *control_req;
+  ECS__ControlMsg *control_msg;
   ECS__ControlAns *control_ans;
   ECS__ControlNtf *control_ntf;
   ECS__MonitorReq *monitor_req;
@@ -566,24 +598,62 @@ ECS__DeviceNtf *
 void   ecs__device_ntf__free_unpacked
                      (ECS__DeviceNtf *message,
                       ProtobufCAllocator *allocator);
-/* ECS__ControlReq methods */
-void   ecs__control_req__init
-                     (ECS__ControlReq         *message);
-size_t ecs__control_req__get_packed_size
-                     (const ECS__ControlReq   *message);
-size_t ecs__control_req__pack
-                     (const ECS__ControlReq   *message,
+/* ECS__HostKeyboardReq methods */
+void   ecs__host_keyboard_req__init
+                     (ECS__HostKeyboardReq         *message);
+size_t ecs__host_keyboard_req__get_packed_size
+                     (const ECS__HostKeyboardReq   *message);
+size_t ecs__host_keyboard_req__pack
+                     (const ECS__HostKeyboardReq   *message,
                       uint8_t             *out);
-size_t ecs__control_req__pack_to_buffer
-                     (const ECS__ControlReq   *message,
+size_t ecs__host_keyboard_req__pack_to_buffer
+                     (const ECS__HostKeyboardReq   *message,
                       ProtobufCBuffer     *buffer);
-ECS__ControlReq *
-       ecs__control_req__unpack
+ECS__HostKeyboardReq *
+       ecs__host_keyboard_req__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   ecs__control_req__free_unpacked
-                     (ECS__ControlReq *message,
+void   ecs__host_keyboard_req__free_unpacked
+                     (ECS__HostKeyboardReq *message,
+                      ProtobufCAllocator *allocator);
+/* ECS__HostKeyboardNtf methods */
+void   ecs__host_keyboard_ntf__init
+                     (ECS__HostKeyboardNtf         *message);
+size_t ecs__host_keyboard_ntf__get_packed_size
+                     (const ECS__HostKeyboardNtf   *message);
+size_t ecs__host_keyboard_ntf__pack
+                     (const ECS__HostKeyboardNtf   *message,
+                      uint8_t             *out);
+size_t ecs__host_keyboard_ntf__pack_to_buffer
+                     (const ECS__HostKeyboardNtf   *message,
+                      ProtobufCBuffer     *buffer);
+ECS__HostKeyboardNtf *
+       ecs__host_keyboard_ntf__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   ecs__host_keyboard_ntf__free_unpacked
+                     (ECS__HostKeyboardNtf *message,
+                      ProtobufCAllocator *allocator);
+/* ECS__ControlMsg methods */
+void   ecs__control_msg__init
+                     (ECS__ControlMsg         *message);
+size_t ecs__control_msg__get_packed_size
+                     (const ECS__ControlMsg   *message);
+size_t ecs__control_msg__pack
+                     (const ECS__ControlMsg   *message,
+                      uint8_t             *out);
+size_t ecs__control_msg__pack_to_buffer
+                     (const ECS__ControlMsg   *message,
+                      ProtobufCBuffer     *buffer);
+ECS__ControlMsg *
+       ecs__control_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   ecs__control_msg__free_unpacked
+                     (ECS__ControlMsg *message,
                       ProtobufCAllocator *allocator);
 /* ECS__ControlAns methods */
 void   ecs__control_ans__init
@@ -775,8 +845,14 @@ typedef void (*ECS__DeviceAns_Closure)
 typedef void (*ECS__DeviceNtf_Closure)
                  (const ECS__DeviceNtf *message,
                   void *closure_data);
-typedef void (*ECS__ControlReq_Closure)
-                 (const ECS__ControlReq *message,
+typedef void (*ECS__HostKeyboardReq_Closure)
+                 (const ECS__HostKeyboardReq *message,
+                  void *closure_data);
+typedef void (*ECS__HostKeyboardNtf_Closure)
+                 (const ECS__HostKeyboardNtf *message,
+                  void *closure_data);
+typedef void (*ECS__ControlMsg_Closure)
+                 (const ECS__ControlMsg *message,
                   void *closure_data);
 typedef void (*ECS__ControlAns_Closure)
                  (const ECS__ControlAns *message,
@@ -820,7 +896,10 @@ extern const ProtobufCMessageDescriptor ecs__injector_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__device_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__device_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__device_ntf__descriptor;
-extern const ProtobufCMessageDescriptor ecs__control_req__descriptor;
+extern const ProtobufCMessageDescriptor ecs__host_keyboard_req__descriptor;
+extern const ProtobufCMessageDescriptor ecs__host_keyboard_ntf__descriptor;
+extern const ProtobufCMessageDescriptor ecs__control_msg__descriptor;
+extern const ProtobufCEnumDescriptor    ecs__control_msg__control_type__descriptor;
 extern const ProtobufCMessageDescriptor ecs__control_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__control_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__monitor_req__descriptor;
