@@ -70,6 +70,7 @@ import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
+import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
 import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
@@ -1029,6 +1030,59 @@ public class EmulatorSkin {
 				DetailInfoDialog detailInfoDialog = new DetailInfoDialog(
 						shell, emulatorName, communicator, config, skinInfo);
 				detailInfoDialog.open();
+			}
+		};
+
+		return listener;
+	}
+
+	public SelectionAdapter createEcpMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+
+				String emulName = SkinUtil.getVmName(config);
+				int portSdb = config.getArgInt(ArgsConstants.NET_BASE_PORT);
+				int portEcp = 0;
+
+				DataTranfer dataTranfer = communicator.sendDataToQEMU(
+						SendCommand.ECP_PORT_REQ, null, true);
+				byte[] receivedData = communicator.getReceivedData(dataTranfer);
+				portEcp = receivedData[0] << 24;
+				portEcp |= receivedData[1] << 16;
+				portEcp |= receivedData[2] << 8;
+				portEcp |= receivedData[3];
+
+				ProcessBuilder procEcp = new ProcessBuilder();
+
+				// FIXME: appropriate running binary setting is necessary.
+				if (SwtUtil.isLinuxPlatform()) {
+					procEcp.command("/usr/bin/java", "-jar",
+							"./emulator-control-panel.jar", "vmname="
+									+ emulName, "sdb.port=" + portSdb,
+							"svr.port=" + portEcp);
+				} else if (SwtUtil.isWindowsPlatform()) {
+					procEcp.command("java.exe", "-jar",
+							"emulator-control-panel.jar", "vmname=" + emulName,
+							"sdb.port=" + portSdb, "svr.port=" + portEcp);
+				} else if (SwtUtil.isMacPlatform()) {
+					// procSdb.command("./sdbscript", "emulator-" + portSdb);
+					/*
+					 * procSdb.command( "/usr/X11/bin/uxterm", "-T", "emulator-"
+					 * + portSdb, "-e", sdbPath,"shell");
+					 */
+				}
+
+				logger.log(Level.INFO, procEcp.command().toString());
+
+				try {
+					procEcp.start(); /* open ECP */
+				} catch (Exception ee) {
+					logger.log(Level.SEVERE, ee.getMessage(), ee);
+					SkinUtil.openMessage(shell, null,
+							"Fail to open control panel: \n" + ee.getMessage(),
+							SWT.ICON_ERROR, config);
+				}
 			}
 		};
 

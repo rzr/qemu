@@ -109,6 +109,7 @@ enum {
     RECV_DETAIL_INFO = 17,
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
+    RECV_ECP_PORT_REQ = 20,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_RESPONSE_DRAW_FRAME = 901,
     RECV_CLOSE = 998,
@@ -125,6 +126,7 @@ enum {
     SEND_RAMDUMP_COMPLETE = 4,
     SEND_BOOTING_PROGRESS = 5,
     SEND_BRIGHTNESS_VALUE = 6,
+    SEND_ECP_PORT = 7,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SDB_DAEMON_START = 801,
     SEND_DRAW_FRAME = 900,
@@ -961,6 +963,21 @@ static void* run_skin_server(void* args)
                     do_ram_dump();
                     break;
                 }
+				case RECV_ECP_PORT_REQ: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_ECP_PORT_REQ ==\n");
+                    TRACE(log_buf);
+
+					int port = get_ecs_port_req();
+                	unsigned char port_buf[5];
+					memset(port_buf, 0, 5);
+					port_buf[0] = (port & 0xFF000000) >> 24;
+					port_buf[1] = (port & 0x00FF0000) >> 16;
+					port_buf[2] = (port & 0x0000FF00) >> 8;
+					port_buf[3] = (port & 0x000000FF);
+
+                    send_skin_data( client_sock, SEND_ECP_PORT, port_buf, 4, 0);
+					break;
+				}
                 case RECV_GUESTMEMORY_DUMP: {
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_GUESTMEMORY_DUMP ==\n");
                     TRACE(log_buf);

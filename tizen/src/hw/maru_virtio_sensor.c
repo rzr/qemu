@@ -204,7 +204,8 @@ static void send_to_ecs(struct msg_info* msg)
 
 	INFO("ntf_to_injector- bufnum: %s, group: %s, action: %s, data: %s\n", data_len, group, action, msg->buf);
 
-	ntf_to_injector(ecs_message, message_len);
+	//ntf_to_injector(ecs_message, message_len);
+	send_device_ntf(ecs_message, message_len);
 
 	if (ecs_message)
 		free(ecs_message);

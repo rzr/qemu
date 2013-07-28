@@ -134,6 +134,7 @@ int stop_ecs(void);
 void ecs_vprintf(const char *type, const char *fmt, va_list ap);
 void ecs_printf(const char *type, const char *fmt, ...) GCC_FMT_ATTR(2, 3);
 
+int get_ecs_port(void);
 
 bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);
 
@@ -149,6 +150,7 @@ bool send_injector_ntf(const char* data, const int len);
 bool send_control_ntf(const char* data, const int len);
 bool send_monitor_ntf(const char* data, const int len);
 bool send_hostkeyboard_ntf(int is_on);
+bool send_device_ntf(const char* data, const int len);
 
 bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char* data, const int len) ;
@@ -165,6 +167,7 @@ bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg);
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
 bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
+bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
 bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg);
 
 
