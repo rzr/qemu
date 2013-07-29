@@ -302,8 +302,17 @@ public class EmulatorSkinMain {
 				System.out.println("Shutdown skin process !!!");
 			}
 
+			Shell temp = new Shell(Display.getDefault());
+			MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
+			messageBox.setText("Emulator");
+			messageBox.setMessage(e.getMessage());
+			messageBox.open();
+			temp.dispose();
+
 			if (null != communicator) {
 				communicator.terminate();
+			} else {
+				System.exit(-1);
 			}
 		} finally {
 			ImageRegistry.getInstance().dispose();

@@ -58,6 +58,8 @@ import org.tizen.emulator.skin.util.StringUtil;
  *
  */
 public class EmulatorConfig {
+	public static final String INVALID_OPTION_MESSAGE =
+			"An invalid option have caused the error.\n";
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(EmulatorConfig.class).getLogger();
@@ -83,14 +85,6 @@ public class EmulatorConfig {
 		public static final String MAX_TOUCHPOINT = "max.touchpoint";
 	}
 
-	public interface SkinInfoConstants {
-		public static final String SDK_VERSION_NAME = "sdk.version-name"; /* from version file */
-		public static final String SKIN_NAME = "skin.name";
-		public static final String RESOLUTION_WIDTH = "resolution.width";
-		public static final String RESOLUTION_HEIGHT = "resolution.height";
-		public static final String MANAGER_PRIORITY = "manager.priority";
-	}
-
 	public interface SkinPropertiesConstants {
 		public static final String WINDOW_X = "window.x";
 		public static final String WINDOW_Y = "window.y";
@@ -103,6 +97,14 @@ public class EmulatorConfig {
 	public interface ConfigPropertiesConstants {
 		public static final String TEST_HEART_BEAT_IGNORE = "test.hb.ignore";
 		public static final String LOG_LEVEL = "log.level";
+	}
+
+	public interface SkinInfoConstants {
+		public static final String SDK_VERSION_NAME = "sdk.version-name"; /* from version file */
+		public static final String SKIN_NAME = "skin.name";
+		public static final String RESOLUTION_WIDTH = "resolution.width";
+		public static final String RESOLUTION_HEIGHT = "resolution.height";
+		public static final String MANAGER_PRIORITY = "manager.priority";
 	}
 
 	private Map<String, String> args;
@@ -165,7 +167,9 @@ public class EmulatorConfig {
 			try {
 				Integer.parseInt(uid);
 			} catch (NumberFormatException e) {
-				String msg = ArgsConstants.UID + " argument is not numeric. : " + uid;
+				String msg = INVALID_OPTION_MESSAGE + "The \'" +
+						ArgsConstants.UID +
+						"\' argument is not numeric.\n: " + uid;
 				throw new ConfigException(msg);
 			}
 		}
@@ -175,11 +179,14 @@ public class EmulatorConfig {
 			try {
 				Integer.parseInt(serverPort);
 			} catch (NumberFormatException e) {
-				String msg = ArgsConstants.SERVER_PORT + " argument is not numeric. : " + serverPort;
+				String msg = INVALID_OPTION_MESSAGE + "The \'" +
+						ArgsConstants.SERVER_PORT +
+						"\' argument is not numeric.\n: " + serverPort;
 				throw new ConfigException(msg);
 			}
 		} else {
-			String msg = ArgsConstants.SERVER_PORT + " is required argument.";
+			String msg = INVALID_OPTION_MESSAGE + "The \'" +
+					ArgsConstants.SERVER_PORT + "\' is required argument.";
 			throw new ConfigException(msg);
 		}
 
@@ -188,11 +195,14 @@ public class EmulatorConfig {
 			try {
 				Integer.parseInt(width);
 			} catch (NumberFormatException e) {
-				String msg = ArgsConstants.RESOLUTION_WIDTH + " argument is not numeric. : " + width;
+				String msg = INVALID_OPTION_MESSAGE + "The \'" +
+						ArgsConstants.RESOLUTION_WIDTH +
+						"\' argument is not numeric.\n: " + width;
 				throw new ConfigException(msg);
 			}
 		} else {
-			String msg = ArgsConstants.RESOLUTION_WIDTH + " is required argument.";
+			String msg = INVALID_OPTION_MESSAGE + "The \'" +
+					ArgsConstants.RESOLUTION_WIDTH + "\' is required argument.";
 			throw new ConfigException(msg);
 		}
 
@@ -201,35 +211,43 @@ public class EmulatorConfig {
 			try {
 				Integer.parseInt(height);
 			} catch (NumberFormatException e) {
-				String msg = ArgsConstants.RESOLUTION_HEIGHT + " argument is not numeric. : " + height;
+				String msg = INVALID_OPTION_MESSAGE + "The \'" +
+						ArgsConstants.RESOLUTION_HEIGHT +
+						"\' argument is not numeric.\n: " + height;
 				throw new ConfigException(msg);
 			}
 		} else {
-			String msg = ArgsConstants.RESOLUTION_HEIGHT + " is required argument.";
+			String msg = INVALID_OPTION_MESSAGE + "The \'" +
+					ArgsConstants.RESOLUTION_HEIGHT + "\' is required argument.";
 			throw new ConfigException(msg);
 		}
 	}
 
-	public static void validateSkinProperties( Properties skinProperties ) throws ConfigException {
-		if ( null == skinProperties || 0 == skinProperties.size() ) {
+	public static void validateSkinProperties(
+			Properties skinProperties) throws ConfigException {
+		if (null == skinProperties || 0 == skinProperties.size()) {
 			return;
 		}
 
 		Rectangle monitorBound = Display.getDefault().getBounds();
 		logger.info("current display size : " + monitorBound);
 
-		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_X ) ) {
-			String x = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_X );
+		if (skinProperties.containsKey(
+				SkinPropertiesConstants.WINDOW_X) == true) {
+			String x = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_X);
 			int xx = 0;
 
 			try {
-				xx = Integer.parseInt( x );
-			} catch ( NumberFormatException e ) {
-				String msg = SkinPropertiesConstants.WINDOW_X + " in .skin.properties is not numeric. : " + x;
-				throw new ConfigException( msg );
+				xx = Integer.parseInt(x);
+			} catch (NumberFormatException e) {
+				String msg = SkinPropertiesConstants.WINDOW_X +
+						" in .skin.properties is not numeric : " + x;
+				logger.warning(msg);
+
+				xx = DEFAULT_WINDOW_X;
 			}
 
-			//location correction
+			/* location correction */
 			if (xx < monitorBound.x) {
 				int correction = monitorBound.x;
 				logger.info("WINDOW_X = " + xx + ", set to " + correction);
@@ -245,19 +263,22 @@ public class EmulatorConfig {
 			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_X, "" + xx);
 		}
 
-		if ( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_Y ) ) {
-			String y = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_Y );
+		if (skinProperties.containsKey(
+				SkinPropertiesConstants.WINDOW_Y ) == true) {
+			String y = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_Y);
 			int yy = 0;
 
 			try {
-				yy = Integer.parseInt( y );
-			} catch ( NumberFormatException e ) {
+				yy = Integer.parseInt(y);
+			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_Y +
 						" in .skin.properties is not numeric. : " + y;
-				throw new ConfigException( msg );
+				logger.warning(msg);
+
+				yy = DEFAULT_WINDOW_Y;
 			}
 
-			//location correction
+			/* location correction */
 			if (yy < monitorBound.y) {
 				int correction = monitorBound.y;
 				logger.info("WINDOW_Y = " + yy + ", set to " + correction);
@@ -273,196 +294,214 @@ public class EmulatorConfig {
 			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_Y, "" + yy);
 		}
 
-		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_ROTATION ) ) {
-			String rotation = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_ROTATION );
+		if (skinProperties.containsKey(
+				SkinPropertiesConstants.WINDOW_ROTATION) == true) {
+			String rotation = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_ROTATION);
+
 			try {
-				Integer.parseInt( rotation );
-			} catch ( NumberFormatException e ) {
+				Integer.parseInt(rotation);
+			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_ROTATION +
 						" in .skin.properties is not numeric. : " + rotation;
-				throw new ConfigException( msg );
+				logger.warning(msg);
+
+				// TODO:
 			}
 		}
 
-		if( skinProperties.containsKey( SkinPropertiesConstants.WINDOW_SCALE ) ) {
-			String scale = skinProperties.getProperty( SkinPropertiesConstants.WINDOW_SCALE );
+		if (skinProperties.containsKey(
+				SkinPropertiesConstants.WINDOW_SCALE) == true) {
+			String scale = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_SCALE);
+			int percent = 0;
+
 			try {
-				Integer.parseInt( scale );
-			} catch ( NumberFormatException e ) {
+				percent = Integer.parseInt(scale);
+			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_SCALE +
 						" in .skin.properties is not numeric. : " + scale;
-				throw new ConfigException( msg );
-			}
-		}
+				logger.warning(msg);
 
+				percent = DEFAULT_WINDOW_SCALE;
+			}
+
+			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_SCALE, "" + percent);
+		}
 	}
 
-	public static void validateSkinConfigProperties( Properties skinConfigProperties ) throws ConfigException {
-		if ( null == skinConfigProperties || 0 == skinConfigProperties.size() ) {
+	public static void validateSkinConfigProperties(
+			Properties skinConfigProperties) throws ConfigException {
+		if (null == skinConfigProperties || 0 == skinConfigProperties.size()) {
 			return;
 		}
+
+		// TODO:
 	}
 
 	public void saveSkinProperties() {
+		File file = new File(skinPropertiesFilePath);
 
-		File file = new File( skinPropertiesFilePath );
-
-		if ( !file.exists() ) {
-
+		if (!file.exists()) {
 			try {
-				if ( !file.createNewFile() ) {
+				if (!file.createNewFile()) {
 					return;
 				}
-			} catch ( IOException e ) {
-				logger.log( Level.SEVERE, "Fail to create skin properties file.", e );
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, "Fail to create skin properties file.", e);
 				return;
 			}
-
 		}
 
 		FileOutputStream fos = null;
 
 		try {
+			fos = new FileOutputStream(file);
 
-			fos = new FileOutputStream( file );
-			skinProperties.store( fos, "Automatically generated by emulator skin." );
-
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
+			skinProperties.store(fos, "Automatically generated by emulator skin.");
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 		} finally {
-			IOUtil.close( fos );
+			IOUtil.close(fos);
 		}
-
 	}
 
 	public EmulatorUI getDbiContents() {
 		return dbiContents;
 	}
 
-	public String getArg( String argKey ) {
-		return args.get( argKey );
+	/* arguments */
+	public String getArg(String argKey) { /* string */
+		return args.get(argKey);
 	}
 
-	public String getArg( String argKey, String defaultValue ) {
-		String arg = args.get( argKey );
-		if ( StringUtil.isEmpty( arg ) ) {
+	public String getArg(String argKey, String defaultValue) {
+		String arg = args.get(argKey);
+		if (StringUtil.isEmpty(arg)) {
 			return defaultValue;
 		} else {
 			return arg;
 		}
 	}
 
-	public int getArgInt( String argKey ) {
-		String arg = args.get( argKey );
-		if ( StringUtil.isEmpty( arg ) ) {
+	public int getArgInt(String argKey) { /* integer */
+		String arg = args.get(argKey);
+		if (StringUtil.isEmpty(arg)) {
 			return 0;
 		}
-		return Integer.parseInt( arg );
+		return Integer.parseInt(arg);
 	}
 
-	public int getArgInt( String argKey, int defaultValue ) {
-		String arg = args.get( argKey );
-		if ( StringUtil.isEmpty( arg ) ) {
+	public int getArgInt(String argKey, int defaultValue) {
+		String arg = args.get(argKey);
+		if (StringUtil.isEmpty(arg)) {
 			return defaultValue;
 		}
-		return Integer.parseInt( arg );
+		return Integer.parseInt(arg);
 	}
 
-	public boolean getArgBoolean( String argKey ) {
-		String arg = args.get( argKey );
-		return Boolean.parseBoolean( arg );
+	public boolean getArgBoolean(String argKey) { /* boolean */
+		String arg = args.get(argKey);
+		return Boolean.parseBoolean(arg);
 	}
 
-	private String getProperty( Properties properties, String key ) {
-		return properties.getProperty( key );
+	public boolean getArgBoolean(String argKey, boolean defaultValue) {
+		String arg = args.get(argKey);
+		if (StringUtil.isEmpty(arg)) {
+			return defaultValue;
+		}
+		return Boolean.parseBoolean(arg);
 	}
 
-	private String getProperty( Properties properties, String key, String defaultValue ) {
-		String property = properties.getProperty( key );
-		if ( StringUtil.isEmpty( property ) ) {
+	/* java properties */
+	private void setProperty(Properties properties, String key, String value) {
+		properties.put(key, value);
+	}
+
+	private void setProperty(Properties properties, String key, int value) {
+		properties.put(key, Integer.toString(value));
+	}
+
+	private String getProperty(Properties properties, String key) {
+		return properties.getProperty(key);
+	}
+
+	private String getProperty(Properties properties, String key,
+			String defaultValue) {
+		String property = properties.getProperty(key);
+		if (StringUtil.isEmpty(property)) {
 			return defaultValue;
 		}
 		return property;
 	}
 
-	private int getPropertyInt( Properties properties, String key ) {
-		return Integer.parseInt( properties.getProperty( key ) );
+	private int getPropertyInt(Properties properties, String key) {
+		return Integer.parseInt(properties.getProperty(key));
 	}
 
-	private int getPropertyInt( Properties properties, String key, int defaultValue ) {
-		String property = properties.getProperty( key );
-		if ( StringUtil.isEmpty( property ) ) {
+	private int getPropertyInt(Properties properties, String key,
+			int defaultValue) {
+		String property = properties.getProperty(key);
+		if (StringUtil.isEmpty(property)) {
 			return defaultValue;
 		}
-		return Integer.parseInt( property );
+		return Integer.parseInt(property);
 	}
 
-	private short getPropertyShort( Properties properties, String key ) {
-		return Short.parseShort( properties.getProperty( key ) );
+	private short getPropertyShort(Properties properties, String key) {
+		return Short.parseShort(properties.getProperty(key));
 	}
 
-	private short getPropertyShort( Properties properties, String key, short defaultValue ) {
-		String property = properties.getProperty( key );
-		if ( StringUtil.isEmpty( property ) ) {
+	private short getPropertyShort(Properties properties, String key,
+			short defaultValue) {
+		String property = properties.getProperty(key);
+		if (StringUtil.isEmpty(property)) {
 			return defaultValue;
 		}
-		return Short.parseShort( property );
-	}
-
-	private void setProperty( Properties properties, String key, String value ) {
-		properties.put( key, value );
-	}
-
-	private void setProperty( Properties properties, String key, int value ) {
-		properties.put( key, Integer.toString( value ) );
+		return Short.parseShort(property);
 	}
 
 	/* skin properties */
-
-	public String getSkinProperty( String key ) {
-		return getProperty( skinProperties, key );
+	public String getSkinProperty(String key) {
+		return getProperty(skinProperties, key);
 	}
 
-	public String getSkinProperty( String key, String defaultValue ) {
-		return getProperty( skinProperties, key, defaultValue );
+	public String getSkinProperty(String key, String defaultValue) {
+		return getProperty(skinProperties, key, defaultValue);
 	}
 
-	public int getSkinPropertyInt( String key ) {
-		return getPropertyInt( skinProperties, key );
+	public int getSkinPropertyInt(String key) {
+		return getPropertyInt(skinProperties, key);
 	}
 
-	public int getSkinPropertyInt( String key, int defaultValue ) {
-		return getPropertyInt( skinProperties, key, defaultValue );
+	public int getSkinPropertyInt(String key, int defaultValue) {
+		return getPropertyInt(skinProperties, key, defaultValue);
 	}
 
-	public short getSkinPropertyShort( String key ) {
-		return getPropertyShort( skinProperties, key );
+	public short getSkinPropertyShort(String key) {
+		return getPropertyShort(skinProperties, key);
 	}
 
-	public short getSkinPropertyShort( String key, short defaultValue ) {
-		return getPropertyShort( skinProperties, key, defaultValue );
+	public short getSkinPropertyShort(String key, short defaultValue) {
+		return getPropertyShort(skinProperties, key, defaultValue);
 	}
 
-	public void setSkinProperty( String key, String value ) {
-		setProperty( skinProperties, key, value );
+	public void setSkinProperty(String key, String value) {
+		setProperty(skinProperties, key, value);
 	}
 
-	public void setSkinProperty( String key, int value ) {
-		setProperty( skinProperties, key, value );
+	public void setSkinProperty(String key, int value) {
+		setProperty(skinProperties, key, value);
 	}
 
 	/* config properties */
-
-	public String getConfigProperty( String key ) {
-		return getProperty( configProperties, key );
+	public String getConfigProperty(String key) {
+		return getProperty(configProperties, key);
 	}
 
-	public String getConfigProperty( String key, String defaultValue ) {
-		return getProperty( configProperties, key, defaultValue );
+	public String getConfigProperty(String key, String defaultValue) {
+		return getProperty(configProperties, key, defaultValue);
 	}
 
-	public int getConfigPropertyInt( String key, int defaultValue ) {
-		return getPropertyInt( configProperties, key, defaultValue );
+	public int getConfigPropertyInt(String key, int defaultValue) {
+		return getPropertyInt(configProperties, key, defaultValue);
 	}
-
 }
