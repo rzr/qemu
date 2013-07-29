@@ -82,7 +82,9 @@ public class EmulatorConfig {
 		public static final String NET_BASE_PORT = "net.baseport";
 		public static final String SKIN_PATH = "skin.path";
 		public static final String DISPLAY_SHM = "display.shm";
-		public static final String MAX_TOUCHPOINT = "max.touchpoint";
+		public static final String INPUT_MOUSE = "input.mouse";
+		public static final String INPUT_TOUCHSCREEN = "input.touch";
+		public static final String INPUT_TOUCH_MAXPOINT = "input.touch.maxpoint";
 	}
 
 	public interface SkinPropertiesConstants {

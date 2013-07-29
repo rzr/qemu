@@ -216,7 +216,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 
 		/* get MaxTouchPoint from startup argument */
-		this.maxTouchPoint = config.getArgInt(ArgsConstants.MAX_TOUCHPOINT);
+		this.maxTouchPoint = config.getArgInt(
+				ArgsConstants.INPUT_TOUCH_MAXPOINT);
 	}
 
 	protected void skinFinalize() {

@@ -108,6 +108,8 @@ const gchar *get_log_path(void)
 
 void exit_emulator(void)
 {
+    INFO("exit emulator!\n");
+
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
