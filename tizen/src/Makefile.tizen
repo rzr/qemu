@@ -109,7 +109,7 @@ endif
 obj-y += debug_ch.o
 
 # ecs
-obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o ecs_sensor.o
+obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o ecs_sensor.o protobuf-c.o
 
 # ecs msg
 obj-y += ecs.pb-c.o
