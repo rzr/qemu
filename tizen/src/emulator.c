@@ -365,7 +365,6 @@ static void prepare_basic_features(void)
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
     check_vm_lock();
-    socket_init();
     make_vm_lock();
 
     sdb_setup(); /* determine the base port for emulator */
@@ -544,6 +543,9 @@ static int emulator_main(int argc, char *argv[])
         fprintf(stdout, "%s ", _skin_argv[i]);
     }
     fprintf(stdout, "\nskin args: =========================================\n");
+
+    INFO("socket initialize\n");
+    socket_init();
 
     INFO("qemu main start!\n");
     qemu_main(_qemu_argc, _qemu_argv, NULL);

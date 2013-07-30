@@ -1003,11 +1003,23 @@ static void ecs_read(ECS_Client *cli) {
 
 	int read = 0;
 	int to_read_bytes = 0;
-	if (ioctl(cli->client_fd, FIONREAD, &to_read_bytes) < 0)
-	{
-		LOG("ioctl failed");
-		return;
-	}
+
+#ifndef __WIN32
+    if (ioctl(cli->client_fd, FIONREAD, &to_read_bytes) < 0)
+    {
+        LOG("ioctl failed");
+        return;
+    }
+	
+#else
+    unsigned long to_read_bytes_long = 0;
+    if (ioctlsocket(cli->client_fd, FIONREAD, &to_read_bytes_long) < 0)
+    {
+        LOG("ioctl failed");
+         return;
+    }
+     to_read_bytes = (int)to_read_bytes_long;
+#endif
 
 	LOG("ioctl FIONREAD: %d\n", to_read_bytes);
 	if (to_read_bytes == 0)
