@@ -23,10 +23,10 @@ CFLAGS += -g -O0
 endif
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32 -lprotobuf-c
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext -lprotobuf-c
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now
@@ -109,10 +109,10 @@ endif
 obj-y += debug_ch.o
 
 # ecs
-obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o ecs_sensor.o protobuf-c.o
+obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o ecs_sensor.o 
 
 # ecs msg
-obj-y += ecs.pb-c.o
+obj-y += ecs.pb-c.o protobuf-c.o
 
 
 # maru hardware
