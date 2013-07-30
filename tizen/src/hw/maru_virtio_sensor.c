@@ -27,6 +27,7 @@
  *
  */
 
+#include <pthread.h>
 
 #include "hw/pci/pci.h"
 
