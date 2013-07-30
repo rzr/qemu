@@ -182,7 +182,7 @@ void print_system_info_os(void)
     }
 
     /* pci device description */
-    INFO("* PCI devices :\n");
+    INFO("* Host PCI devices :\n");
     char lspci_cmd[MAXLEN] = "lspci >> ";
     strcat(lspci_cmd, log_path);
 

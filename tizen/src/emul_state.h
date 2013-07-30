@@ -1,7 +1,7 @@
 /*
  * Emulator
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: 
  * SeokYeon Hwang <syeon.hwang@samsung.com>
@@ -79,6 +79,8 @@ typedef  struct EmulatorConfigInfo {
     int lcd_size_w;
     int lcd_size_h;
     int sdl_bpp;
+    bool input_mouse_enable;
+    bool input_touch_enable;
     int max_touch_point;
     int vm_base_port;
     /* add here */
@@ -100,6 +102,8 @@ void set_emul_skin_enable(int enable);
 void set_emul_lcd_size(int width, int height);
 void set_emul_win_scale(double scale);
 void set_emul_sdl_bpp(int bpp);
+void set_emul_input_mouse_enable(bool on);
+void set_emul_input_touch_enable(bool on);
 void set_emul_max_touch_point(int cnt);
 void set_emul_vm_base_port(int port);
 
@@ -114,6 +118,8 @@ int get_emul_lcd_width(void);
 int get_emul_lcd_height(void);
 double get_emul_win_scale(void);
 int get_emul_sdl_bpp(void);
+bool is_emul_input_mouse_enable(void);
+bool is_emul_input_touch_enable(void);
 int get_emul_max_touch_point(void);
 int get_emul_vm_base_port(void);
 

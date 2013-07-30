@@ -65,8 +65,11 @@ MULTI_DEBUG_CHANNEL(qemu, skin_client);
 #define OPT_NET_BASE_PORT "net.baseport"
 #define OPT_DISPLAY_SHM "display.shm"
 #define OPT_INPUT_MOUSE "input.mouse"
-#define OPT_INPUT_TOUCHSCREEN "input.touch"
+#define OPT_INPUT_TOUCH "input.touch"
 #define OPT_MAX_TOUCHPOINT "input.touch.maxpoint"
+
+#define OPT_BOOLEAN_TRUE "true"
+#define OPT_BOOLEAN_FALSE "false"
 
 extern char tizen_target_path[];
 
@@ -77,16 +80,17 @@ static char** skin_argv;
 static char* JAVA_EXEFILE_PATH = NULL;
 #endif
 
-static void* run_skin_client(void* arg)
+static void *run_skin_client(void *arg)
 {
-    char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
+    gchar *cmd = NULL;
     char argv[JAVA_MAX_COMMAND_LENGTH] = { 0, };
 
     INFO("run skin client\n");
     int i;
     for (i = 0; i < skin_argc; ++i) {
+        strncat(argv, "\"", 1);
         strncat(argv, skin_argv[i], strlen(skin_argv[i]));
-        strncat(argv, " ", 1);
+        strncat(argv, "\" ", 2);
         INFO("[skin args %d] %s\n", i, skin_argv[i]);
     }
 
@@ -105,12 +109,27 @@ static void* run_skin_client(void* arg)
     sprintf(buf_uid, "%d", uid);
     sprintf(buf_tizen_base_port, "%d", get_emul_vm_base_port());
 
+    /* display */
     char buf_display_shm[8] = { 0, };
 #ifdef CONFIG_USE_SHM
-    strcpy(buf_display_shm, "true"); /* maru_shm */
+    strcpy(buf_display_shm, OPT_BOOLEAN_TRUE); /* maru_shm */
 #else
-    strcpy(buf_display_shm, "false"); /* maru_sdl */
+    strcpy(buf_display_shm, OPT_BOOLEAN_FALSE); /* maru_sdl */
 #endif
+
+    /* input */
+    char buf_input_mouse[8] = { 0, };
+    if (is_emul_input_mouse_enable() == true) {
+        strcpy(buf_input_mouse, OPT_BOOLEAN_TRUE);
+    } else {
+        strcpy(buf_input_mouse, OPT_BOOLEAN_FALSE);
+    }
+    char buf_input_touch[8] = { 0, };
+    if (is_emul_input_touch_enable() == true) {
+        strcpy(buf_input_touch, OPT_BOOLEAN_TRUE);
+    } else {
+        strcpy(buf_input_touch, OPT_BOOLEAN_FALSE);
+    }
 
 #ifdef CONFIG_WIN32
     /* find java path in 64bit windows */
@@ -136,7 +155,7 @@ static void* run_skin_client(void* arg)
     INFO("bin directory : %s\n", bin_dir);
 
     int maxtouchpoint = get_emul_max_touch_point();
-    int len_maxtouchpoint;
+    int len_maxtouchpoint = 0;
     if (maxtouchpoint > 9) {
         len_maxtouchpoint = 2;
     } else {
@@ -144,7 +163,7 @@ static void* run_skin_client(void* arg)
     }
 
     /* calculate buffer length */
-    int len = strlen(JAVA_EXEFILE_PATH) + SPACE_LEN +
+    int cmd_len = strlen(JAVA_EXEFILE_PATH) + SPACE_LEN +
         strlen(JAVA_EXEOPTION) + SPACE_LEN +
         strlen(JAVA_LIBRARY_PATH) + EQUAL_LEN +
 #ifdef CONFIG_WIN32
@@ -165,21 +184,27 @@ static void* run_skin_client(void* arg)
             strlen(buf_tizen_base_port) + SPACE_LEN +
         strlen(OPT_DISPLAY_SHM) + EQUAL_LEN +
             strlen(buf_display_shm) + SPACE_LEN +
+        strlen(OPT_INPUT_TOUCH) + EQUAL_LEN +
+            strlen(buf_input_touch) + SPACE_LEN +
         strlen(OPT_MAX_TOUCHPOINT) + EQUAL_LEN +
             len_maxtouchpoint + SPACE_LEN + 1 +
         strlen(argv);
 
-    if (len > JAVA_MAX_COMMAND_LENGTH) {
+    INFO("skin command length : %d\n", cmd_len);
+    cmd = g_malloc0(cmd_len);
+
+    /*if (len > JAVA_MAX_COMMAND_LENGTH) {
         INFO("swt command length is too long! (%d)\n", len);
         len = JAVA_MAX_COMMAND_LENGTH;
-    }
+    }*/
 
-    snprintf(cmd, len, "%s %s %s=\"%s\" \
+    snprintf(cmd, cmd_len, "%s %s %s=\"%s\" \
 \"%s%s\" \
 %s=%d \
 %s=%d \
 %s=\"%s\" \
 %s=%d \
+%s=%s \
 %s=%s \
 %s=%d \
 %s",
@@ -194,6 +219,7 @@ static void* run_skin_client(void* arg)
         OPT_VM_PATH, vm_path,
         OPT_NET_BASE_PORT, get_emul_vm_base_port(),
         OPT_DISPLAY_SHM, buf_display_shm,
+        OPT_INPUT_TOUCH, buf_input_touch,
         OPT_MAX_TOUCHPOINT, maxtouchpoint,
         argv);
 
@@ -284,6 +310,8 @@ static void* run_skin_client(void* arg)
 
 #endif
 
+    g_free(cmd);
+
     return NULL;
 }
 
@@ -334,7 +362,7 @@ int start_skin_client(int argc, char* argv[])
 int start_simple_client(char* msg)
 {
     int ret = 0;
-    char cmd[JAVA_MAX_COMMAND_LENGTH] = { 0, };
+    gchar *cmd = NULL;
 
     INFO("run simple client\n");
 
@@ -362,7 +390,7 @@ int start_simple_client(char* msg)
     INFO("bin directory : %s\n", bin_dir);
 
     /* calculate buffer length */
-    int len = strlen(JAVA_EXEFILE_PATH) + SPACE_LEN +
+    int cmd_len = strlen(JAVA_EXEFILE_PATH) + SPACE_LEN +
         strlen(JAVA_EXEOPTION) + SPACE_LEN +
         strlen(JAVA_LIBRARY_PATH) + EQUAL_LEN +
 #ifdef CONFIG_WIN32
@@ -376,11 +404,10 @@ int start_simple_client(char* msg)
         strlen(JAVA_SIMPLEMODE_OPTION) + EQUAL_LEN +
         QUOTATION_LEN + strlen(msg) + 1;
 
-    if (len > JAVA_MAX_COMMAND_LENGTH) {
-        len = JAVA_MAX_COMMAND_LENGTH;
-    }
+    INFO("skin command length : %d\n", cmd_len);
+    cmd = g_malloc0(cmd_len);
 
-    snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%s\"",
+    snprintf(cmd, cmd_len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%s\"",
 #ifdef CONFIG_WIN32
         JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir_win,
 #else
@@ -401,6 +428,8 @@ int start_simple_client(char* msg)
 #endif
 
     INFO("child return value : %d\n", ret);
+
+    g_free(cmd);
 
     return 1;
 }

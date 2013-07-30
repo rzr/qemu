@@ -78,8 +78,9 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define SDB_PORT_PREFIX     "sdb_port="
 #define LOGS_SUFFIX         "/logs/"
 #define LOGFILE             "emulator.log"
-#define LCD_WIDTH_PREFIX "width="
-#define LCD_HEIGHT_PREFIX "height="
+#define DISPLAY_WIDTH_PREFIX "width="
+#define DISPLAY_HEIGHT_PREFIX "height="
+#define INPUT_TOUCH_PARAMETER "virtio-touchscreen-pci"
 
 #define MIDBUF  128
 #define LEN_MARU_KERNEL_CMDLINE 512
@@ -265,10 +266,10 @@ static void extract_qemu_info(int qemu_argc, char **qemu_argv)
     for (i = 0; i < qemu_argc; ++i) {
         if (strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
             set_image_and_log_path(qemu_argv[i]);
-            break;
+        } else if (strstr(qemu_argv[i], INPUT_TOUCH_PARAMETER) != NULL) {
+            set_emul_input_touch_enable(true);
         }
     }
-
 }
 
 static void extract_skin_info(int skin_argc, char **skin_argv)
@@ -277,16 +278,16 @@ static void extract_skin_info(int skin_argc, char **skin_argv)
     int w = 0, h = 0;
 
     for (i = 0; i < skin_argc; ++i) {
-        if (strstr(skin_argv[i], LCD_WIDTH_PREFIX) != NULL) {
-            char *width_arg = skin_argv[i] + strlen(LCD_WIDTH_PREFIX);
+        if (strstr(skin_argv[i], DISPLAY_WIDTH_PREFIX) != NULL) {
+            char *width_arg = skin_argv[i] + strlen(DISPLAY_WIDTH_PREFIX);
             w = atoi(width_arg);
 
-            INFO("lcd width option = %d\n", w);
-        } else if (strstr(skin_argv[i], LCD_HEIGHT_PREFIX) != NULL) {
-            char *height_arg = skin_argv[i] + strlen(LCD_HEIGHT_PREFIX);
+            INFO("display width option : %d\n", w);
+        } else if (strstr(skin_argv[i], DISPLAY_HEIGHT_PREFIX) != NULL) {
+            char *height_arg = skin_argv[i] + strlen(DISPLAY_HEIGHT_PREFIX);
             h = atoi(height_arg);
 
-            INFO("lcd height option = %d\n", h);
+            INFO("display height option : %d\n", h);
         }
 
         if (w != 0 && h != 0) {

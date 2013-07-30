@@ -86,8 +86,8 @@ void start_display(uint64 handle_id,
     int lcd_size_width, int lcd_size_height,
     double scale_factor, short rotation_type)
 {
-    INFO("start_display handle_id:%ld, lcd size:%dx%d, \
-            scale_factor:%f, rotation_type:%d\n",
+    INFO("start_display handle_id:%ld, display size:%dx%d, \
+scale_factor:%f, rotation_type:%d\n",
         (long) handle_id, lcd_size_width, lcd_size_height,
         scale_factor, rotation_type);
 

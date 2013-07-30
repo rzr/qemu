@@ -1,7 +1,7 @@
 /*
  * Emulator
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
@@ -57,14 +57,14 @@ int get_emul_skin_enable(void)
     return _emul_info.skin_enable;
 }
 
-/* lcd screen size */
+/* display screen size */
 void set_emul_lcd_size(int width, int height)
 {
     _emul_info.lcd_size_w = width;
     _emul_info.lcd_size_h = height;
 
-    INFO("emulator graphic resolution = %dx%d\n",
-        _emul_info.lcd_size_w,  _emul_info.lcd_size_h);
+    INFO("emulator graphic resolution : %dx%d\n",
+        _emul_info.lcd_size_w, _emul_info.lcd_size_h);
 }
 
 int get_emul_lcd_width(void)
@@ -83,13 +83,43 @@ void set_emul_sdl_bpp(int bpp)
     _emul_info.sdl_bpp = bpp;
 
     if (_emul_info.sdl_bpp != 32) {
-        INFO("?? sdl bpp = %d\n", _emul_info.sdl_bpp);
+        INFO("sdl bpp : %d\n", _emul_info.sdl_bpp);
     }
 }
 
 int get_emul_sdl_bpp(void)
 {
     return _emul_info.sdl_bpp;
+}
+
+/* mouse device */
+void set_emul_input_mouse_enable(bool on)
+{
+    _emul_info.input_mouse_enable = on;
+
+    if (_emul_info.input_mouse_enable == true) {
+        INFO("set_emul_input_mouse_enable\n");
+    }
+}
+
+bool is_emul_input_mouse_enable(void)
+{
+    return _emul_info.input_mouse_enable;
+}
+
+/* touchscreen device */
+void set_emul_input_touch_enable(bool on)
+{
+    _emul_info.input_touch_enable = on;
+
+    if (_emul_info.input_touch_enable == true) {
+        INFO("set_emul_input_touch_enable\n");
+    }
+}
+
+bool is_emul_input_touch_enable(void)
+{
+    return _emul_info.input_touch_enable;
 }
 
 /* maximum number of touch point */
@@ -135,12 +165,12 @@ void set_emulator_condition(int state)
 void set_emul_win_scale(double scale_factor)
 {
     if (scale_factor < 0.0 || scale_factor > 1.0) {
-        INFO("scale_factor is out of range = %f\n", scale_factor);
+        INFO("scale_factor is out of range : %f\n", scale_factor);
         scale_factor = 1.0;
     }
 
     _emul_state.scale_factor = scale_factor;
-    INFO("emulator window scale_factor = %f\n", _emul_state.scale_factor);
+    INFO("emulator window scale_factor : %f\n", _emul_state.scale_factor);
 }
 
 double get_emul_win_scale(void)
@@ -151,13 +181,14 @@ double get_emul_win_scale(void)
 /* emulator rotation */
 void set_emul_rotation(short rotation_type)
 {
-    if (rotation_type < ROTATION_PORTRAIT || rotation_type > ROTATION_REVERSE_LANDSCAPE) {
-        INFO("rotation type is out of range = %d\n", rotation_type);
+    if (rotation_type < ROTATION_PORTRAIT ||
+            rotation_type > ROTATION_REVERSE_LANDSCAPE) {
+        INFO("rotation type is out of range : %d\n", rotation_type);
         rotation_type = ROTATION_PORTRAIT;
     }
 
     _emul_state.rotation_type = rotation_type;
-    INFO("emulator rotation type = %d\n", _emul_state.rotation_type);
+    INFO("emulator rotation type : %d\n", _emul_state.rotation_type);
 }
 
 short get_emul_rotation(void)
