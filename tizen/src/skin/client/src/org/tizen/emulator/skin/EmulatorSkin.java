@@ -182,7 +182,6 @@ public class EmulatorSkin {
 	private ShellListener shellListener;
 	private MenuDetectListener shellMenuDetectListener;
 
-	//private DragDetectListener canvasDragDetectListener;
 	private MouseMoveListener canvasMouseMoveListener;
 	private MouseListener canvasMouseListener;
 	private MouseWheelListener canvasMouseWheelListener;
@@ -272,8 +271,8 @@ public class EmulatorSkin {
 		currentState.setHoverColor(loadHoverColor());
 
 		/* added event handlers */
-		addMainWindowListener(shell);
-		addCanvasListener(shell, lcdCanvas);
+		addMainWindowListeners();
+		addCanvasListeners();
 
 		setFocus();
 
@@ -398,8 +397,7 @@ public class EmulatorSkin {
 		skinComposer.composerFinalize();
 	}
 
-	private void addMainWindowListener(final Shell shell) {
-
+	private void addMainWindowListeners() {
 		shellListener = new ShellListener() {
 			@Override
 			public void shellClosed(ShellEvent event) {
@@ -421,15 +419,20 @@ public class EmulatorSkin {
 
 						/* save config only for emulator close */
 						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_X, shell.getLocation().x);
+								SkinPropertiesConstants.WINDOW_X,
+								shell.getLocation().x);
 						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_Y, shell.getLocation().y);
+								SkinPropertiesConstants.WINDOW_Y,
+								shell.getLocation().y);
 						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_SCALE, currentState.getCurrentScale());
+								SkinPropertiesConstants.WINDOW_SCALE,
+								currentState.getCurrentScale());
 						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_ROTATION, currentState.getCurrentRotationId());
+								SkinPropertiesConstants.WINDOW_ROTATION,
+								currentState.getCurrentRotationId());
 						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_ONTOP, Boolean.toString(isOnTop));
+								SkinPropertiesConstants.WINDOW_ONTOP,
+								Boolean.toString(isOnTop));
 
 						int dockValue = 0;
 						SkinWindow keyWindow = getKeyWindowKeeper().getKeyWindow();
@@ -578,73 +581,13 @@ public class EmulatorSkin {
 		}
 	}
 
-	private void addCanvasListener(final Shell shell, final Canvas canvas) {
-		/* menu */
-		canvasMenuDetectListener = new MenuDetectListener() {
-			@Override
-			public void menuDetected(MenuDetectEvent e) {
-				Menu menu = popupMenu.getMenuRoot();
-				keyForceRelease(true);
-
-				if (menu != null && isDisplayDragging == false) {
-					lcdCanvas.setMenu(menu);
-					menu.setVisible(true);
-					e.doit = false;
-				} else {
-					lcdCanvas.setMenu(null);
-				}
-			}
-		};
-
-		/* remove 'input method' menu item (avoid bug) */
-		canvas.addMenuDetectListener(canvasMenuDetectListener);
-
-		/* focus */
-		canvasFocusListener = new FocusListener() {
-			@Override
-			public void focusGained(FocusEvent event) {
-				//logger.info("gain focus");
-
-				/* do nothing */
-			}
-
-			@Override
-			public void focusLost(FocusEvent event) {
-				logger.info("lost focus");
-				keyForceRelease(false);
-			}
-		};
-
-		lcdCanvas.addFocusListener(canvasFocusListener);
-
-		/* mouse event */
-		/*canvasDragDetectListener = new DragDetectListener() {
-
-			@Override
-			public void dragDetected( DragDetectEvent e ) {
-				if ( logger.isLoggable( Level.FINE ) ) {
-					logger.fine( "dragDetected e.button:" + e.button );
-				}
-				if ( 1 == e.button && // left button
-						e.x > 0 && e.x < canvas.getSize().x && e.y > 0 && e.y < canvas.getSize().y ) {
-
-					if ( logger.isLoggable( Level.FINE ) ) {
-						logger.fine( "dragDetected in display" );
-					}
-					EmulatorSkin.this.isDragStartedInLCD = true;
-
-				}
-			}
-		};
-
-		canvas.addDragDetectListener(canvasDragDetectListener);*/
-
-		canvasMouseMoveListener = new MouseMoveListener() {
+	private MouseMoveListener makeDisplayTouchMoveLitener() {
+		MouseMoveListener listener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
 				if (true == isDisplayDragging) {
 					int eventType = MouseEventType.DRAG.value();
-					Point canvasSize = canvas.getSize();
+					Point canvasSize = lcdCanvas.getSize();
 
 					if (e.x < 0) {
 						e.x = 0;
@@ -671,9 +614,23 @@ public class EmulatorSkin {
 			}
 		};
 
-		canvas.addMouseMoveListener(canvasMouseMoveListener);
+		return listener;
+	}
 
-		canvasMouseListener = new MouseListener() {
+	private MouseMoveListener makeDisplayMouseMoveLitener() {
+		MouseMoveListener listener = new MouseMoveListener() {
+			@Override
+			public void mouseMove(MouseEvent e) {
+				logger.info("mouse move : " + e);
+				//TODO:
+			}
+		};
+
+		return listener;
+	}
+
+	private MouseListener makeDisplayTouchClickLitener() {
+		MouseListener listener = new MouseListener() {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				getKeyWindowKeeper().redock(false, false);
@@ -710,10 +667,35 @@ public class EmulatorSkin {
 			}
 		};
 
-		canvas.addMouseListener(canvasMouseListener);
+		return listener;
+	}
 
-		canvasMouseWheelListener = new MouseWheelListener() {
+	private MouseListener makeDisplayMouseClickLitener() {
+		MouseListener listener = new MouseListener() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+				logger.info("mouse up : " + e);
+				//TODO:
+			}
 
+			@Override
+			public void mouseDown(MouseEvent e) {
+				logger.info("mouse down : " + e);
+				//TODO:
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				logger.info("mouse double click : " + e);
+				//TODO:
+			}
+		};
+
+		return listener;
+	}
+
+	private MouseWheelListener makeDisplayMouseWheelLitener() {
+		MouseWheelListener listener = new MouseWheelListener() {
 			@Override
 			public void mouseScrolled(MouseEvent e) {
 				int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
@@ -739,7 +721,67 @@ public class EmulatorSkin {
 			}
 		};
 
-		canvas.addMouseWheelListener(canvasMouseWheelListener);
+		return listener;
+	}
+
+	private void addCanvasListeners() {
+		/* menu */
+		canvasMenuDetectListener = new MenuDetectListener() {
+			@Override
+			public void menuDetected(MenuDetectEvent e) {
+				Menu menu = popupMenu.getMenuRoot();
+				keyForceRelease(true);
+
+				if (menu != null && isDisplayDragging == false) {
+					lcdCanvas.setMenu(menu);
+					menu.setVisible(true);
+					e.doit = false;
+				} else {
+					lcdCanvas.setMenu(null);
+				}
+			}
+		};
+
+		/* remove 'input method' menu item (avoid bug) */
+		lcdCanvas.addMenuDetectListener(canvasMenuDetectListener);
+
+		/* focus */
+		canvasFocusListener = new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent event) {
+				//logger.info("gain focus");
+
+				/* do nothing */
+			}
+
+			@Override
+			public void focusLost(FocusEvent event) {
+				logger.info("lost focus");
+				keyForceRelease(false);
+			}
+		};
+
+		lcdCanvas.addFocusListener(canvasFocusListener);
+
+		/* mouse event */
+		if (config.getArgBoolean(
+				ArgsConstants.INPUT_MOUSE, false) == true) {
+			canvasMouseMoveListener = makeDisplayMouseMoveLitener();
+		} else {
+			canvasMouseMoveListener = makeDisplayTouchMoveLitener();
+		}
+		lcdCanvas.addMouseMoveListener(canvasMouseMoveListener);
+
+		if (config.getArgBoolean(
+				ArgsConstants.INPUT_MOUSE, false) == true) {
+			canvasMouseListener = makeDisplayMouseClickLitener();
+		} else {
+			canvasMouseListener = makeDisplayTouchClickLitener();
+		}
+		lcdCanvas.addMouseListener(canvasMouseListener);
+
+		canvasMouseWheelListener = makeDisplayMouseWheelLitener();
+		lcdCanvas.addMouseWheelListener(canvasMouseWheelListener);
 
 		/* keyboard event */
 		canvasKeyListener = new KeyListener() {
@@ -856,7 +898,7 @@ public class EmulatorSkin {
 
 		};
 
-		canvas.addKeyListener(canvasKeyListener);
+		lcdCanvas.addKeyListener(canvasKeyListener);
 	}
 
 	/* for display */
