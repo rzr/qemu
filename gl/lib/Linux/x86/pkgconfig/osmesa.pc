@@ -1,0 +1,12 @@
+prefix=/home/mackross/eclipse_linux_cdt_space/qemu_exynos4_gles/gl/mesa/../lib/Linux/x86
+exec_prefix=${prefix}
+libdir=/home/mackross/eclipse_linux_cdt_space/qemu_exynos4_gles/gl/mesa/../lib/Linux/x86
+includedir=/home/mackross/eclipse_linux_cdt_space/qemu_exynos4_gles/gl/mesa/../include
+
+Name: osmesa
+Description: Mesa Off-screen Rendering library
+Requires: 
+Version: 8.0.3
+Libs: -L${libdir} -lOSMesa
+Libs.private: -lm -lpthread  -ldl
+Cflags: -I${includedir}

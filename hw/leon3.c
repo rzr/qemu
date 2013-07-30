@@ -23,6 +23,7 @@
  */
 #include "hw.h"
 #include "qemu-timer.h"
+#include "ptimer.h"
 #include "qemu-char.h"
 #include "sysemu.h"
 #include "boards.h"
@@ -41,16 +42,16 @@
 #define MAX_PILS 16
 
 typedef struct ResetData {
-    CPUState *env;
+    SPARCCPU *cpu;
     uint32_t  entry;            /* save kernel entry in case of reset */
 } ResetData;
 
 static void main_cpu_reset(void *opaque)
 {
     ResetData *s   = (ResetData *)opaque;
-    CPUState  *env = s->env;
+    CPUSPARCState  *env = &s->cpu->env;
 
-    cpu_reset(env);
+    cpu_reset(CPU(s->cpu));
 
     env->halted = 0;
     env->pc     = s->entry;
@@ -64,7 +65,7 @@ void leon3_irq_ack(void *irq_manager, int intno)
 
 static void leon3_set_pil_in(void *opaque, uint32_t pil_in)
 {
-    CPUState *env = (CPUState *)opaque;
+    CPUSPARCState *env = (CPUSPARCState *)opaque;
 
     assert(env != NULL);
 
@@ -100,7 +101,8 @@ static void leon3_generic_hw_init(ram_addr_t  ram_size,
                                   const char *initrd_filename,
                                   const char *cpu_model)
 {
-    CPUState   *env;
+    SPARCCPU *cpu;
+    CPUSPARCState   *env;
     MemoryRegion *address_space_mem = get_system_memory();
     MemoryRegion *ram = g_new(MemoryRegion, 1);
     MemoryRegion *prom = g_new(MemoryRegion, 1);
@@ -116,17 +118,18 @@ static void leon3_generic_hw_init(ram_addr_t  ram_size,
         cpu_model = "LEON3";
     }
 
-    env = cpu_init(cpu_model);
-    if (!env) {
+    cpu = cpu_sparc_init(cpu_model);
+    if (cpu == NULL) {
         fprintf(stderr, "qemu: Unable to find Sparc CPU definition\n");
         exit(1);
     }
+    env = &cpu->env;
 
     cpu_sparc_set_id(env, 0);
 
     /* Reset data */
     reset_info        = g_malloc0(sizeof(ResetData));
-    reset_info->env   = env;
+    reset_info->cpu   = cpu;
     qemu_register_reset(main_cpu_reset, reset_info);
 
     /* Allocate IRQ manager */
@@ -142,12 +145,14 @@ static void leon3_generic_hw_init(ram_addr_t  ram_size,
         exit(1);
     }
 
-    memory_region_init_ram(ram, NULL, "leon3.ram", ram_size);
+    memory_region_init_ram(ram, "leon3.ram", ram_size);
+    vmstate_register_ram_global(ram);
     memory_region_add_subregion(address_space_mem, 0x40000000, ram);
 
     /* Allocate BIOS */
     prom_size = 8 * 1024 * 1024; /* 8Mb */
-    memory_region_init_ram(prom, NULL, "Leon3.bios", prom_size);
+    memory_region_init_ram(prom, "Leon3.bios", prom_size);
+    vmstate_register_ram_global(prom);
     memory_region_set_readonly(prom, true);
     memory_region_add_subregion(address_space_mem, 0x00000000, prom);
 

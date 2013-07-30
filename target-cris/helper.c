@@ -18,10 +18,6 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <string.h>
-
-#include "config.h"
 #include "cpu.h"
 #include "mmu.h"
 #include "host-utils.h"
@@ -40,13 +36,13 @@
 
 #if defined(CONFIG_USER_ONLY)
 
-void do_interrupt (CPUState *env)
+void do_interrupt (CPUCRISState *env)
 {
 	env->exception_index = -1;
 	env->pregs[PR_ERP] = env->pc;
 }
 
-int cpu_cris_handle_mmu_fault(CPUState * env, target_ulong address, int rw,
+int cpu_cris_handle_mmu_fault(CPUCRISState * env, target_ulong address, int rw,
                               int mmu_idx)
 {
 	env->exception_index = 0xaa;
@@ -58,7 +54,7 @@ int cpu_cris_handle_mmu_fault(CPUState * env, target_ulong address, int rw,
 #else /* !CONFIG_USER_ONLY */
 
 
-static void cris_shift_ccs(CPUState *env)
+static void cris_shift_ccs(CPUCRISState *env)
 {
 	uint32_t ccs;
 	/* Apply the ccs shift.  */
@@ -67,7 +63,7 @@ static void cris_shift_ccs(CPUState *env)
 	env->pregs[PR_CCS] = ccs;
 }
 
-int cpu_cris_handle_mmu_fault (CPUState *env, target_ulong address, int rw,
+int cpu_cris_handle_mmu_fault (CPUCRISState *env, target_ulong address, int rw,
                                int mmu_idx)
 {
 	struct cris_mmu_result res;
@@ -110,7 +106,7 @@ int cpu_cris_handle_mmu_fault (CPUState *env, target_ulong address, int rw,
 	return r;
 }
 
-static void do_interruptv10(CPUState *env)
+static void do_interruptv10(CPUCRISState *env)
 {
 	int ex_vec = -1;
 
@@ -125,14 +121,14 @@ static void do_interruptv10(CPUState *env)
 			/* These exceptions are genereated by the core itself.
 			   ERP should point to the insn following the brk.  */
 			ex_vec = env->trap_vector;
-			env->pregs[PR_ERP] = env->pc;
+			env->pregs[PRV10_BRP] = env->pc;
 			break;
 
 		case EXCP_NMI:
 			/* NMI is hardwired to vector zero.  */
 			ex_vec = 0;
-			env->pregs[PR_CCS] &= ~M_FLAG;
-			env->pregs[PR_NRP] = env->pc;
+			env->pregs[PR_CCS] &= ~M_FLAG_V10;
+			env->pregs[PRV10_BRP] = env->pc;
 			break;
 
 		case EXCP_BUSFAULT:
@@ -166,7 +162,7 @@ static void do_interruptv10(CPUState *env)
 		      env->pregs[PR_ERP]);
 }
 
-void do_interrupt(CPUState *env)
+void do_interrupt(CPUCRISState *env)
 {
 	int ex_vec = -1;
 
@@ -189,7 +185,7 @@ void do_interrupt(CPUState *env)
 		case EXCP_NMI:
 			/* NMI is hardwired to vector zero.  */
 			ex_vec = 0;
-			env->pregs[PR_CCS] &= ~M_FLAG;
+			env->pregs[PR_CCS] &= ~M_FLAG_V32;
 			env->pregs[PR_NRP] = env->pc;
 			break;
 
@@ -250,7 +246,7 @@ void do_interrupt(CPUState *env)
 		   env->pregs[PR_ERP]);
 }
 
-target_phys_addr_t cpu_get_phys_page_debug(CPUState * env, target_ulong addr)
+target_phys_addr_t cpu_get_phys_page_debug(CPUCRISState * env, target_ulong addr)
 {
 	uint32_t phy = addr;
 	struct cris_mmu_result res;

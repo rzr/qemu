@@ -43,31 +43,17 @@
 #include "emulator.h"
 #include "debug_ch.h"
 
-// DEBUGCH file is located in binary directory.
-char bin_dir[256] = {0,};
-
-static char logpath[512] = {0,};
 static char debugchfile[512] = {0, };
 #ifdef _WIN32
 static HANDLE handle;
 #endif
 
-void set_log_path(char *path)
-{
-    strcpy(logpath, path);
-}
-
-char *get_log_path(void)
-{
-    return logpath;
-}
-
 static inline int interlocked_xchg_add( int *dest, int incr )
 {
-	int ret;
+	int ret_val;
 	__asm__ __volatile__( "lock; xaddl %0,(%1)"
-			: "=r" (ret) : "r" (dest), "0" (incr) : "memory" );
-	return ret;
+			: "=r" (ret_val) : "r" (dest), "0" (incr) : "memory" );
+	return ret_val;
 }
 
 static const char * const debug_classes[] = {"fixme", "err", "warn", "trace", "info"};
@@ -289,16 +275,11 @@ static void debug_init(void)
 	strcat(debugchfile, "/DEBUGCH");
 #endif
 
-    if ( 0 == strlen( bin_dir ) ) {
-        strcpy( debugchfile, "DEBUGCH" );
+    if (0 == strlen(bin_path)) {
+        strcpy(debugchfile, "DEBUGCH");
     } else {
-        strcat( debugchfile, bin_dir );
-#ifdef _WIN32
-        strcat( debugchfile, "\\" );
-#else
-        strcat( debugchfile, "/" );
-#endif
-        strcat( debugchfile, "DEBUGCH" );
+        strcat(debugchfile, bin_path);
+        strcat(debugchfile, "DEBUGCH");
     }
 
 	fp= fopen(debugchfile, "r");
@@ -331,9 +312,9 @@ static void debug_init(void)
 	}
 	
 	open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
-	fd = qemu_open(logpath, open_flags, 0666);
+	fd = qemu_open(log_path, open_flags, 0666);
     if(fd < 0) {
-        fprintf(stderr, "Can't open logfile: %s\n", logpath);
+        fprintf(stderr, "Can't open logfile: %s\n", log_path);
     	exit(1);
     }
     close(fd);
@@ -380,7 +361,7 @@ static int dbg_vprintf( const char *format, va_list args )
 	sprintf(txt, "%s", tmp);
 
 	// unlock
-	if ((fp = fopen(logpath, "a+")) == NULL) {
+	if ((fp = fopen(log_path, "a+")) == NULL) {
 		fprintf(stdout, "Emulator can't open.\n"
 				"Please check if "
 				"this binary file is running on the right path.\n");
@@ -439,6 +420,7 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 		const char *format, ... )
 {
 	int ret = 0;
+        int ret_write = 0;
 	char buf[2048];
 	va_list valist;
 	int open_flags;
@@ -458,13 +440,17 @@ int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
 	va_end(valist);
    
-    open_flags = O_RDWR | O_APPEND | O_BINARY ;
-	fd = qemu_open(logpath, open_flags, 0666);
+    open_flags = O_RDWR | O_APPEND | O_BINARY | O_CREAT ;
+	fd = qemu_open(log_path, open_flags, 0666);
 	if(fd < 0) {
-        fprintf(stderr, "Can't open logfile: %s\n", logpath);
-    	exit(1);
+        fprintf(stderr, "Can't open logfile: %s\n", log_path);
+        // commented out for prevent shutdown when log directory is removed on runtime.
+        //exit(1);
     }
-    qemu_write_full(fd, buf, ret);
+    ret_write = qemu_write_full(fd, buf, ret);
+    if (ret_write != ret) {
+        // TODO: error handling...
+    }
     close(fd);
 
 	return ret;

@@ -1,13 +1,13 @@
 /*
  * Virtual Codec device
  *
- * Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2011 - 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
  *  SeokYeon Hwang <syeon.hwang@samsung.com>
- *  DongKyun Yun <dk77.yun@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ *  DongKyun Yun
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,40 +31,78 @@
 
 #include "maru_codec.h"
 #include "qemu-common.h"
+#include "qemu-thread.h"
 
 #define MARU_CODEC_DEV_NAME     "codec"
-#define MARU_CODEC_VERSION      "1.3"
+#define MARU_CODEC_VERSION      14
 
 /*  Needs 16M to support 1920x1080 video resolution.
  *  Output size for encoding has to be greater than (width * height * 6)
  */
 #define MARU_CODEC_MEM_SIZE     (2 * 16 * 1024 * 1024)
 #define MARU_CODEC_REG_SIZE     (256)
+#define MARU_CODEC_IRQ 0x7f
 
-#define MARU_ROUND_UP_16(num)   (((num) + 15) & ~15)
-#define CODEC_IRQ 0x7f
+#define GEN_MASK(x) ((1<<(x))-1)
+#define ROUND_UP_X(v, x) (((v) + GEN_MASK(x)) & ~GEN_MASK(x))
+#define ROUND_UP_2(x) ROUND_UP_X(x, 1)
+#define ROUND_UP_4(x) ROUND_UP_X(x, 2)
+#define ROUND_UP_8(x) ROUND_UP_X(x, 3)
+#define DIV_ROUND_UP_X(v, x) (((v) + GEN_MASK(x)) >> (x))
+
+typedef struct PixFmtInfo {
+    uint8_t x_chroma_shift;
+    uint8_t y_chroma_shift;
+} PixFmtInfo;
+
+static PixFmtInfo pix_fmt_info[PIX_FMT_NB];
 
 /* define debug channel */
 MULTI_DEBUG_CHANNEL(qemu, marucodec);
 
 void codec_thread_init(SVCodecState *s)
 {
+    int index = 0;
+    QemuThread *pthread = NULL;
     TRACE("Enter, %s\n", __func__);
 
-    qemu_thread_create(&s->thread_id, codec_worker_thread, (void *)s);
+    pthread = g_malloc0(sizeof(QemuThread) * CODEC_MAX_THREAD);
+    if (!pthread) {
+        ERR("Failed to allocate wrk_thread memory.\n");
+        return;
+    }
+    qemu_cond_init(&s->codec_thread.cond);
+    qemu_mutex_init(&s->codec_thread.mutex);
 
+    qemu_mutex_lock(&s->thread_mutex);
+    s->isrunning = 1;
+    qemu_mutex_unlock(&s->thread_mutex);
+
+    for (; index < CODEC_MAX_THREAD; index++) {
+        qemu_thread_create(&pthread[index], codec_worker_thread, (void *)s,
+            QEMU_THREAD_JOINABLE);
+    }
+
+    s->codec_thread.wrk_thread = pthread;
     TRACE("Leave, %s\n", __func__);
 }
 
 void codec_thread_exit(SVCodecState *s)
 {
     TRACE("Enter, %s\n", __func__);
+    int index;
+
+    /* stop to run dedicated threads. */
+    s->isrunning = 0;
+
+    for (index = 0; index < CODEC_MAX_THREAD; index++) {
+        qemu_thread_join(&s->codec_thread.wrk_thread[index]);
+    }
 
     TRACE("destroy mutex and conditional.\n");
-    qemu_mutex_destroy(&s->thread_mutex);
-    qemu_cond_destroy(&s->thread_cond);
+    qemu_mutex_destroy(&s->codec_thread.mutex);
+    qemu_cond_destroy(&s->codec_thread.cond);
 
-/*  qemu_thread_exit((void*)0); */
     TRACE("Leave, %s\n", __func__);
 }
 
@@ -72,7 +110,7 @@ void wake_codec_worker_thread(SVCodecState *s)
 {
     TRACE("Enter, %s\n", __func__);
 
-    qemu_cond_signal(&s->thread_cond);
+    qemu_cond_signal(&s->codec_thread.cond);
     TRACE("sent a conditional signal to a worker thread.\n");
 
     TRACE("Leave, %s\n", __func__);
@@ -81,18 +119,21 @@ void wake_codec_worker_thread(SVCodecState *s)
 void *codec_worker_thread(void *opaque)
 {
     SVCodecState *s = (SVCodecState *)opaque;
+    QemuThread thread;
     AVCodecContext *avctx;
 
     TRACE("Enter, %s\n", __func__);
     qemu_mutex_lock(&s->thread_mutex);
 
-    while (1) {
-        TRACE("wait conditional signal.\n");
-        qemu_cond_wait(&s->thread_cond, &s->thread_mutex);
+    while (s->isrunning) {
+        TRACE("wait for conditional signal.\n");
+        qemu_cond_wait(&s->codec_thread.cond, &s->thread_mutex);
 
-        TRACE("wake up a worker thread.\n");
-        avctx = s->ctx_arr[s->codec_param.ctx_index].avctx;
-        /* decode and encode */
+        qemu_thread_get_self(&thread);
+#ifdef CONFIG_LINUX
+        TRACE("wake up a worker thread. :%x\n", thread.thread);
+#endif
+        avctx = s->codec_ctx[s->codec_param.ctx_index].avctx;
         if (avctx) {
             if (avctx->codec->decode) {
                 decode_codec(s);
@@ -105,11 +146,13 @@ void *codec_worker_thread(void *opaque)
             continue;
         }
 
-        s->thread_state = CODEC_IRQ;
+        s->codec_thread.state = MARU_CODEC_IRQ;
         qemu_bh_schedule(s->tx_bh);
     }
     qemu_mutex_unlock(&s->thread_mutex);
     TRACE("Leave, %s\n", __func__);
+
+    return NULL;
 }
 
 int decode_codec(SVCodecState *s)
@@ -118,19 +161,17 @@ int decode_codec(SVCodecState *s)
     uint32_t len = 0, ctx_index;
 
     TRACE("Enter, %s\n", __func__);
-    qemu_mutex_unlock(&s->thread_mutex);
-/*  qemu_mutex_lock(&s->thread_mutex); */
 
+    qemu_mutex_lock(&s->codec_thread.mutex);
     ctx_index = s->codec_param.ctx_index;
-    avctx = s->ctx_arr[ctx_index].avctx;
+    qemu_mutex_unlock(&s->codec_thread.mutex);
+
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         len = qemu_avcodec_decode_video(s, ctx_index);
     } else {
         len = qemu_avcodec_decode_audio(s, ctx_index);
     }
-
-/*  qemu_mutex_unlock(&s->thread_mutex); */
-    qemu_mutex_lock(&s->thread_mutex);
 
     TRACE("Leave, %s\n", __func__);
     return len;
@@ -144,17 +185,15 @@ int encode_codec(SVCodecState *s)
     TRACE("Enter, %s\n", __func__);
 
     qemu_mutex_unlock(&s->thread_mutex);
-/*  qemu_mutex_lock(&s->thread_mutex); */
 
     ctx_index = s->codec_param.ctx_index;
-    avctx = s->ctx_arr[ctx_index].avctx;
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         len = qemu_avcodec_encode_video(s, ctx_index);
     } else {
         len = qemu_avcodec_encode_audio(s, ctx_index);
     }
 
-/*  qemu_mutex_unlock(&s->thread_mutex); */
     qemu_mutex_lock(&s->thread_mutex);
 
     TRACE("Leave, %s\n", __func__);
@@ -281,49 +320,33 @@ void qemu_parser_init(SVCodecState *s, int ctx_index)
 {
     TRACE("[%s] Enter\n", __func__);
 
-    s->ctx_arr[ctx_index].parser_buf = NULL;
-    s->ctx_arr[ctx_index].parser_use = false;
+    s->codec_ctx[ctx_index].parser_buf = NULL;
+    s->codec_ctx[ctx_index].parser_use = false;
 
     TRACE("[%s] Leave\n", __func__);
 }
 
-void qemu_codec_close(SVCodecState *s, uint32_t value)
+void qemu_reset_codec_info(SVCodecState *s, uint32_t value)
 {
-    int i;
-    int ctx_index = 0;
+    int ctx_idx;
 
     TRACE("[%s] Enter\n", __func__);
     qemu_mutex_lock(&s->thread_mutex);
 
-    for (i = 0; i < CODEC_MAX_CONTEXT; i++) {
-        if (s->ctx_arr[i].file_value == value) {
-            ctx_index = i;
+    for (ctx_idx = 0; ctx_idx < CODEC_CONTEXT_MAX; ctx_idx++) {
+        if (s->codec_ctx[ctx_idx].file_index == value) {
+            TRACE("reset %d context\n", ctx_idx);
+            qemu_mutex_unlock(&s->thread_mutex);
+            qemu_av_free(s, ctx_idx);
+            qemu_mutex_lock(&s->thread_mutex);
+            s->codec_ctx[ctx_idx].avctx_use = false;
             break;
         }
     }
-
-    TRACE("[%s] close %d context\n", __func__, ctx_index);
-    s->ctx_arr[ctx_index].ctx_used = false;
-    qemu_parser_init(s, ctx_index);
+    qemu_parser_init(s, ctx_idx);
 
     qemu_mutex_unlock(&s->thread_mutex);
     TRACE("[%s] Leave\n", __func__);
-}
-
-void qemu_get_codec_ver(SVCodecState *s)
-{
-    char codec_ver[32];
-    off_t offset;
-    int ctx_index;
-
-    offset = s->codec_param.mmap_offset;
-    ctx_index = s->codec_param.ctx_index;
-
-    memset(codec_ver, 0, 32);
-    pstrcpy(codec_ver, sizeof(codec_ver), MARU_CODEC_VERSION);
-
-    TRACE("%d of codec_version:%s\n", ctx_index, codec_ver);
-    memcpy((uint8_t *)s->vaddr + offset, codec_ver, sizeof(codec_ver));
 }
 
 /* void av_register_all() */
@@ -333,7 +356,6 @@ void qemu_av_register_all(void)
     TRACE("av_register_all\n");
 }
 
-#if 0
 /* int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic) */
 int qemu_avcodec_get_buffer(AVCodecContext *context, AVFrame *picture)
 {
@@ -354,10 +376,276 @@ void qemu_avcodec_release_buffer(AVCodecContext *context, AVFrame *picture)
     TRACE("avcodec_default_release_buffer\n");
     avcodec_default_release_buffer(context, picture);
 }
-#endif
+
+static void qemu_init_pix_fmt_info(void)
+{
+    /* YUV formats */
+    pix_fmt_info[PIX_FMT_YUV420P].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUV420P].y_chroma_shift = 1;
+
+    pix_fmt_info[PIX_FMT_YUV422P].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUV422P].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_YUV444P].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUV444P].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_YUYV422].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUYV422].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_YUV410P].x_chroma_shift = 2;
+    pix_fmt_info[PIX_FMT_YUV410P].y_chroma_shift = 2;
+
+    pix_fmt_info[PIX_FMT_YUV411P].x_chroma_shift = 2;
+    pix_fmt_info[PIX_FMT_YUV411P].y_chroma_shift = 0;
+
+    /* JPEG YUV */
+    pix_fmt_info[PIX_FMT_YUVJ420P].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUVJ420P].y_chroma_shift = 1;
+
+    pix_fmt_info[PIX_FMT_YUVJ422P].x_chroma_shift = 1;
+    pix_fmt_info[PIX_FMT_YUVJ422P].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_YUVJ444P].x_chroma_shift = 0;
+    pix_fmt_info[PIX_FMT_YUVJ444P].y_chroma_shift = 0;
+
+    /* RGB formats */
+    pix_fmt_info[PIX_FMT_RGB24].x_chroma_shift = 0;
+    pix_fmt_info[PIX_FMT_RGB24].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_BGR24].x_chroma_shift = 0;
+    pix_fmt_info[PIX_FMT_BGR24].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_RGB32].x_chroma_shift = 0;
+    pix_fmt_info[PIX_FMT_RGB32].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_RGB565].x_chroma_shift = 0;
+    pix_fmt_info[PIX_FMT_RGB565].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_RGB555].x_chroma_shift = 0;
+    pix_fmt_info[PIX_FMT_RGB555].y_chroma_shift = 0;
+
+    pix_fmt_info[PIX_FMT_YUVA420P].x_chroma_shift = 1,
+    pix_fmt_info[PIX_FMT_YUVA420P].y_chroma_shift = 1;
+}
+
+static uint8_t *qemu_malloc_avpicture (int picture_size)
+{
+    uint8_t *ptr = NULL;
+
+    ptr = av_mallocz(picture_size);
+    if (!ptr) {
+        ERR("failed to allocate memory.\n");
+        return NULL;
+    }
+
+    return ptr;
+}
+
+static int qemu_avpicture_fill(AVPicture *picture, uint8_t *ptr,
+                                int pix_fmt, int width,
+                                int height, bool encode)
+{
+    int size, w2, h2, size2;
+    int stride, stride2;
+    int fsize;
+    PixFmtInfo *pinfo;
+
+    pinfo = &pix_fmt_info[pix_fmt];
+
+    switch (pix_fmt) {
+    case PIX_FMT_YUV420P:
+    case PIX_FMT_YUV422P:
+    case PIX_FMT_YUV444P:
+    case PIX_FMT_YUV410P:
+    case PIX_FMT_YUV411P:
+    case PIX_FMT_YUVJ420P:
+    case PIX_FMT_YUVJ422P:
+    case PIX_FMT_YUVJ444P:
+        stride = ROUND_UP_4(width);
+        h2 = ROUND_UP_X(height, pinfo->y_chroma_shift);
+        size = stride * h2;
+        w2 = DIV_ROUND_UP_X(width, pinfo->x_chroma_shift);
+        stride2 = ROUND_UP_4(w2);
+        h2 = DIV_ROUND_UP_X(height, pinfo->y_chroma_shift);
+        size2 = stride2 * h2;
+        fsize = size + 2 * size2;
+        TRACE("stride: %d, stride2: %d, size: %d, size2: %d, fsize: %d\n",
+            stride, stride2, size, size2, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = picture->data[0] + size;
+        picture->data[2] = picture->data[1] + size2;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = stride2;
+        picture->linesize[2] = stride2;
+        picture->linesize[3] = 0;
+        TRACE("planes %d %d %d\n", 0, size, size + size2);
+        TRACE("strides %d %d %d\n", stride, stride2, stride2);
+        break;
+    case PIX_FMT_YUVA420P:
+        stride = ROUND_UP_4 (width);
+        h2 = ROUND_UP_X (height, pinfo->y_chroma_shift);
+        size = stride * h2;
+        w2 = DIV_ROUND_UP_X (width, pinfo->x_chroma_shift);
+        stride2 = ROUND_UP_4 (w2);
+        h2 = DIV_ROUND_UP_X (height, pinfo->y_chroma_shift);
+        size2 = stride2 * h2;
+        fsize = 2 * size + 2 * size2;
+        TRACE("stride %d, stride2 %d, size %d, size2 %d, fsize %d\n",
+            stride, stride2, size, size2, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = picture->data[0] + size;
+        picture->data[2] = picture->data[1] + size2;
+        picture->data[3] = picture->data[2] + size2;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = stride2;
+        picture->linesize[2] = stride2;
+        picture->linesize[3] = stride;
+        TRACE("planes %d %d %d %d\n", 0, size, size + size2, size + 2 * size2);
+        TRACE("strides %d %d %d %d\n", stride, stride2, stride2, stride);
+        break;
+    case PIX_FMT_RGB24:
+    case PIX_FMT_BGR24:
+        stride = ROUND_UP_4 (width * 3);
+        fsize = stride * height;
+        TRACE("stride: %d, fsize: %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_RGB32:
+        stride = width * 4;
+        fsize = stride * height;
+        TRACE("stride: %d, fsize: %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_RGB555:
+    case PIX_FMT_RGB565:
+    case PIX_FMT_YUYV422:
+    case PIX_FMT_UYVY422:
+        stride = ROUND_UP_4 (width * 2);
+        fsize = stride * height;
+        TRACE("stride: %d, fsize: %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_UYYVYY411:
+        /* FIXME, probably not the right stride */
+        stride = ROUND_UP_4 (width);
+        size = stride * height;
+        fsize = size + size / 2;
+        TRACE("stride %d, size %d, fsize %d\n", stride, size, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = width + width / 2;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_GRAY8:
+        stride = ROUND_UP_4 (width);
+        fsize = stride * height;
+        TRACE("stride %d, fsize %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_MONOWHITE:
+    case PIX_FMT_MONOBLACK:
+        stride = ROUND_UP_4 ((width + 7) >> 3);
+        fsize = stride * height;
+        TRACE("stride %d, fsize %d\n", stride, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 0;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    case PIX_FMT_PAL8:
+        /* already forced to be with stride, so same result as other function */
+        stride = ROUND_UP_4 (width);
+        size = stride * height;
+        fsize = size + 256 * 4;
+        TRACE("stride %d, size %d, fsize %d\n", stride, size, fsize);
+        if (!encode && !ptr) {
+            ptr = qemu_malloc_avpicture(fsize);
+        }
+        picture->data[0] = ptr;
+        picture->data[1] = ptr + size;    /* palette is stored here as 256 32 bit words */
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        picture->linesize[0] = stride;
+        picture->linesize[1] = 4;
+        picture->linesize[2] = 0;
+        picture->linesize[3] = 0;
+        break;
+    default:
+        picture->data[0] = NULL;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->data[3] = NULL;
+        fsize = -1;
+        ERR("pixel format: %d was wrong.\n", pix_fmt);
+        break;
+    }
+
+    return fsize;
+}
 
 /* int avcodec_open(AVCodecContext *avctx, AVCodec *codec) */
-int qemu_avcodec_open(SVCodecState *s, int ctx_index)
+int qemu_avcodec_open(SVCodecState *s)
 {
     AVCodecContext *avctx;
     AVCodec *codec;
@@ -366,17 +654,26 @@ int qemu_avcodec_open(SVCodecState *s, int ctx_index)
     int ret = -1;
     int bEncode = 0;
     int size = 0;
+    int ctx_index = 0;
+
+    av_register_all();
+    TRACE("av_register_all\n");
+
+    ctx_index = qemu_avcodec_alloc_context(s);
+    if (ctx_index < 0) {
+        return ret;
+    }
 
     qemu_mutex_lock(&s->thread_mutex);
+    offset = s->codec_param.mmap_offset;
+    qemu_mutex_unlock(&s->thread_mutex);
 
-    avctx = s->ctx_arr[ctx_index].avctx;
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (!avctx) {
         ERR("[%s] %d of AVCodecContext is NULL!\n", __func__, ctx_index);
         qemu_mutex_unlock(&s->thread_mutex);
         return ret;
     }
-
-    offset = s->codec_param.mmap_offset;
 
     TRACE("[%s] Context Index:%d, offset:%d\n", __func__, ctx_index, offset);
     memcpy(&avctx->bit_rate, (uint8_t *)s->vaddr + offset, sizeof(int));
@@ -437,14 +734,14 @@ int qemu_avcodec_open(SVCodecState *s, int ctx_index)
 
     if (avctx->extradata_size > 0) {
         avctx->extradata = (uint8_t *)av_mallocz(avctx->extradata_size +
-                             MARU_ROUND_UP_16(FF_INPUT_BUFFER_PADDING_SIZE));
+                             ROUND_UP_X(FF_INPUT_BUFFER_PADDING_SIZE, 4));
         memcpy(avctx->extradata,
                 (uint8_t *)s->vaddr + offset + size, avctx->extradata_size);
         size += avctx->extradata_size;
     } else {
         TRACE("[%s] allocate dummy extradata\n", __func__);
         avctx->extradata =
-                av_mallocz(MARU_ROUND_UP_16(FF_INPUT_BUFFER_PADDING_SIZE));
+                av_mallocz(ROUND_UP_X(FF_INPUT_BUFFER_PADDING_SIZE, 4));
     }
 
     if (bEncode) {
@@ -459,6 +756,12 @@ int qemu_avcodec_open(SVCodecState *s, int ctx_index)
         ERR("[%s] failed to find codec of %d\n", __func__, codec_id);
     }
 
+    if (codec->type == AVMEDIA_TYPE_AUDIO) {
+        s->codec_ctx[ctx_index].mem_index = s->codec_param.mem_index;
+        TRACE("set mem_index: %d into ctx_index: %d.\n",
+            s->codec_ctx[ctx_index].mem_index, ctx_index);
+    }
+
 #if 0
     avctx->get_buffer = qemu_avcodec_get_buffer;
     avctx->release_buffer = qemu_avcodec_release_buffer;
@@ -469,13 +772,10 @@ int qemu_avcodec_open(SVCodecState *s, int ctx_index)
         ERR("[%s] avcodec_open failure, %d\n", __func__, ret);
     }
 
-    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        TRACE("[%s] sample_rate:%d, channels:%d\n", __func__,
-              avctx->sample_rate, avctx->channels);
-    }
-
-    memcpy((uint8_t *)s->vaddr + offset, &avctx->pix_fmt, sizeof(int));
+    memcpy((uint8_t *)s->vaddr + offset, &ctx_index, sizeof(int));
     size = sizeof(int);
+    memcpy((uint8_t *)s->vaddr + offset + size, &avctx->pix_fmt, sizeof(int));
+    size += sizeof(int);
     size += qemu_serialize_rational(&avctx->time_base,
             (uint8_t *)s->vaddr + offset + size);
     memcpy((uint8_t *)s->vaddr + offset + size, &avctx->channels, sizeof(int));
@@ -508,7 +808,6 @@ int qemu_avcodec_open(SVCodecState *s, int ctx_index)
     memcpy((uint8_t *)s->vaddr + offset + size, &ret, sizeof(int));
     size += sizeof(int);
 
-    qemu_mutex_unlock(&s->thread_mutex);
     TRACE("Leave, %s\n", __func__);
     return ret;
 }
@@ -525,7 +824,7 @@ int qemu_avcodec_close(SVCodecState *s, int ctx_index)
 
     offset = s->codec_param.mmap_offset;
 
-    avctx = s->ctx_arr[ctx_index].avctx;
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (!avctx) {
         ERR("[%s] %d of AVCodecContext is NULL\n", __func__, ctx_index);
         memcpy((uint8_t *)s->vaddr + offset, &ret, sizeof(int));
@@ -545,64 +844,39 @@ int qemu_avcodec_close(SVCodecState *s, int ctx_index)
 }
 
 /* AVCodecContext* avcodec_alloc_context (void) */
-void qemu_avcodec_alloc_context(SVCodecState *s)
+int qemu_avcodec_alloc_context(SVCodecState *s)
 {
-    off_t offset;
     int index;
 
     TRACE("[%s] Enter\n", __func__);
-    qemu_mutex_lock(&s->thread_mutex);
 
-    offset = s->codec_param.mmap_offset;
-
-    for (index = 0; index < CODEC_MAX_CONTEXT; index++) {
-        if (s->ctx_arr[index].ctx_used == false) {
-            TRACE("[%s] Succeeded to get context[%d].\n", __func__, index);
+    for (index = 0; index < CODEC_CONTEXT_MAX; index++) {
+        if (s->codec_ctx[index].avctx_use == false) {
+            TRACE("Succeeded to get %d of context.\n", index);
+            s->codec_ctx[index].avctx_use = true;
             break;
         }
-        TRACE("[%s] Failed to get context[%d].\n", __func__, index);
+        TRACE("Failed to get context.\n");
     }
 
-    if (index == CODEC_MAX_CONTEXT) {
-        ERR("[%s] Failed to get available codec context from now\n", __func__);
-        ERR("[%s] Try to run codec again\n", __func__);
-        qemu_mutex_unlock(&s->thread_mutex);
-        return;
+    if (index == CODEC_CONTEXT_MAX) {
+        ERR("Failed to get available codec context.");
+        ERR(" Try to run codec again.\n");
+        return -1;
     }
 
     TRACE("allocate %d of context and frame.\n", index);
-    s->ctx_arr[index].avctx = avcodec_alloc_context();
-    s->ctx_arr[index].frame = avcodec_alloc_frame();
+    s->codec_ctx[index].avctx = avcodec_alloc_context();
+    s->codec_ctx[index].frame = avcodec_alloc_frame();
 
-    s->ctx_arr[index].file_value = s->codec_param.file_index;
-    s->ctx_arr[index].ctx_used = true;
-    memcpy((uint8_t *)s->vaddr + offset, &index, sizeof(int));
+    s->codec_ctx[index].file_index = s->codec_param.file_index;
     qemu_parser_init(s, index);
-
-    qemu_mutex_unlock(&s->thread_mutex);
+    qemu_init_pix_fmt_info();
 
     TRACE("[%s] Leave\n", __func__);
+
+    return index;
 }
-
-#if 0
-/* AVFrame *avcodec_alloc_frame(void) */
-void qemu_avcodec_alloc_frame(SVCodecState *s, int ctx_index)
-{
-    AVFrame *frame = NULL;
-
-    TRACE("[%s] Enter\n", __func__);
-    qemu_mutex_lock(&s->thread_mutex);
-
-    frame = avcodec_alloc_frame();
-    if (!frame) {
-        ERR("[%s] Failed to allocate frame\n", __func__);
-    }
-    s->ctx_arr[ctx_index].frame = frame;
-
-    qemu_mutex_unlock(&s->thread_mutex);
-    TRACE("[%s] Leave\n", __func__);
-}
-#endif
 
 /* void av_free(void *ptr) */
 void qemu_av_free(SVCodecState *s, int ctx_index)
@@ -613,8 +887,8 @@ void qemu_av_free(SVCodecState *s, int ctx_index)
     TRACE("enter %s\n", __func__);
     qemu_mutex_lock(&s->thread_mutex);
 
-    avctx = s->ctx_arr[ctx_index].avctx;
-    avframe = s->ctx_arr[ctx_index].frame;
+    avctx = s->codec_ctx[ctx_index].avctx;
+    avframe = s->codec_ctx[ctx_index].frame;
 
     if (avctx && avctx->palctrl) {
         av_free(avctx->palctrl);
@@ -627,16 +901,22 @@ void qemu_av_free(SVCodecState *s, int ctx_index)
         avctx->extradata = NULL;
     }
 
+    if (avctx && avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        int audio_idx = s->codec_ctx[ctx_index].mem_index;
+        TRACE("reset audio mem_idex: %d\n", __LINE__, audio_idx);
+        s->audio_codec_offset[audio_idx] = 0;
+    }
+
     if (avctx) {
-        TRACE("free codec context\n");
+        TRACE("free codec context of %d.\n", ctx_index);
         av_free(avctx);
-        s->ctx_arr[ctx_index].avctx = NULL;
+        s->codec_ctx[ctx_index].avctx = NULL;
     }
 
     if (avframe) {
-        TRACE("free codec frame\n");
+        TRACE("free codec frame of %d.\n", ctx_index);
         av_free(avframe);
-        s->ctx_arr[ctx_index].frame = NULL;
+        s->codec_ctx[ctx_index].frame = NULL;
     }
 
     qemu_mutex_unlock(&s->thread_mutex);
@@ -651,7 +931,7 @@ void qemu_avcodec_flush_buffers(SVCodecState *s, int ctx_index)
     TRACE("Enter\n");
     qemu_mutex_lock(&s->thread_mutex);
 
-    avctx = s->ctx_arr[ctx_index].avctx;
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (avctx) {
         avcodec_flush_buffers(avctx);
     } else {
@@ -681,22 +961,22 @@ int qemu_avcodec_decode_video(SVCodecState *s, int ctx_index)
     off_t offset;
 
     TRACE("Enter, %s\n", __func__);
-    qemu_mutex_lock(&s->thread_mutex);
+    qemu_mutex_lock(&s->codec_thread.mutex);
 
     TRACE("[%s] Video Context Index : %d\n", __func__, ctx_index);
 
-    avctx = s->ctx_arr[ctx_index].avctx;
-    picture = s->ctx_arr[ctx_index].frame;
+    avctx = s->codec_ctx[ctx_index].avctx;
+    picture = s->codec_ctx[ctx_index].frame;
     if (!avctx || !picture) {
         ERR("[%s] %d of Context or Frame is NULL!\n", __func__, ctx_index);
-        qemu_mutex_unlock(&s->thread_mutex);
+        qemu_mutex_unlock(&s->codec_thread.mutex);
         return ret;
     }
 
     offset = s->codec_param.mmap_offset;
 
-    parser_buf = s->ctx_arr[ctx_index].parser_buf;
-    parser_use = s->ctx_arr[ctx_index].parser_use;
+    parser_buf = s->codec_ctx[ctx_index].parser_buf;
+    parser_use = s->codec_ctx[ctx_index].parser_use;
     TRACE("[%s] Parser Buffer : %p, Parser:%d\n", __func__,
             parser_buf, parser_use);
 
@@ -715,8 +995,6 @@ int qemu_avcodec_decode_video(SVCodecState *s, int ctx_index)
         buf = parser_buf;
     } else if (buf_size > 0) {
         TRACE("[%s] not use parser, codec_id:%x\n", __func__, avctx->codec_id);
-/*      buf = av_mallocz(buf_size);
-        memcpy(buf, (uint8_t *)s->vaddr + offset + size, buf_size); */
         buf = (uint8_t *)s->vaddr + offset + size;
         size += buf_size;
     } else {
@@ -743,11 +1021,6 @@ int qemu_avcodec_decode_video(SVCodecState *s, int ctx_index)
 
     memcpy((uint8_t *)s->vaddr + offset, &avctx->pix_fmt, sizeof(int));
     size = sizeof(int);
-#if 0
-    memcpy((uint8_t *)s->vaddr + offset + size,
-            &avctx->time_base, sizeof(AVRational));
-    size += sizeof(AVRational);
-#endif
     size += qemu_serialize_rational(&avctx->time_base,
                                     (uint8_t *)s->vaddr + offset + size);
     memcpy((uint8_t *)s->vaddr + offset + size, &avctx->width, sizeof(int));
@@ -760,11 +1033,6 @@ int qemu_avcodec_decode_video(SVCodecState *s, int ctx_index)
     memcpy((uint8_t *)s->vaddr + offset + size,
             &avctx->frame_number, sizeof(int));
     size += sizeof(int);
-#if 0
-    memcpy((uint8_t *)s->vaddr + offset + size,
-            &avctx->sample_aspect_ratio, sizeof(AVRational));
-    size += sizeof(AVRational);
-#endif
     size += qemu_serialize_rational(&avctx->sample_aspect_ratio,
                                     (uint8_t *)s->vaddr + offset + size);
     memcpy((uint8_t *)s->vaddr + offset + size,
@@ -785,18 +1053,16 @@ int qemu_avcodec_decode_video(SVCodecState *s, int ctx_index)
     memcpy((uint8_t *)s->vaddr + offset + size, dst.data[0], numbytes);
     av_free(buffer);
 
-/*    av_free(buf); */
-
     if (parser_buf && parser_use) {
         TRACE("[%s] Free input buffer after decoding video\n", __func__);
         TRACE("[%s] input buffer : %p, %p\n",
             __func__, avpkt.data, parser_buf);
         av_free(avpkt.data);
-        s->ctx_arr[ctx_index].parser_buf = NULL;
+        s->codec_ctx[ctx_index].parser_buf = NULL;
     }
 #endif
 
-    qemu_mutex_unlock(&s->thread_mutex);
+    qemu_mutex_unlock(&s->codec_thread.mutex);
     TRACE("Leave, %s\n", __func__);
 
     return ret;
@@ -811,17 +1077,16 @@ int qemu_avcodec_encode_video(SVCodecState *s, int ctx_index)
     AVFrame *pict = NULL;
     uint8_t *inputBuf = NULL;
     int outbufSize = 0;
-    int numBytes = 0;
     int bPict = -1;
     int size = 0;
     int ret = -1;
     off_t offset;
 
     TRACE("Enter, %s\n", __func__);
-    qemu_mutex_lock(&s->thread_mutex);
+    qemu_mutex_lock(&s->codec_thread.mutex);
 
-    avctx = s->ctx_arr[ctx_index].avctx;
-    pict = s->ctx_arr[ctx_index].frame;
+    avctx = s->codec_ctx[ctx_index].avctx;
+    pict = s->codec_ctx[ctx_index].frame;
     if (!avctx || !pict) {
         ERR("[%s] %d of Context or Frame is NULL\n", __func__, ctx_index);
         qemu_mutex_unlock(&s->thread_mutex);
@@ -840,17 +1105,15 @@ int qemu_avcodec_encode_video(SVCodecState *s, int ctx_index)
         size +=
             qemu_deserialize_frame((uint8_t *)s->vaddr + offset + size, pict);
 
-        numBytes =
-            avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-        TRACE("[%s] input buffer size :%d\n", __func__, numBytes);
-
         inputBuf = (uint8_t *)s->vaddr + offset + size;
         if (!inputBuf) {
             ERR("[%s] failed to get input buffer\n", __func__);
             return ret;
         }
-        ret = avpicture_fill((AVPicture *)pict, inputBuf, avctx->pix_fmt,
-                            avctx->width, avctx->height);
+
+        ret = qemu_avpicture_fill((AVPicture *)pict, inputBuf, avctx->pix_fmt,
+                            avctx->width, avctx->height, true);
+
         if (ret < 0) {
             ERR("after avpicture_fill, ret:%d\n", ret);
         }
@@ -872,7 +1135,7 @@ int qemu_avcodec_encode_video(SVCodecState *s, int ctx_index)
 
     memcpy((uint8_t *)s->vaddr + offset + outbufSize, &ret, sizeof(int));
 
-    qemu_mutex_unlock(&s->thread_mutex);
+    qemu_mutex_unlock(&s->codec_thread.mutex);
     TRACE("Leave, %s\n", __func__);
 
     return ret;
@@ -897,31 +1160,28 @@ int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index)
     off_t offset;
 
     TRACE("Enter, %s\n", __func__);
-    qemu_mutex_lock(&s->thread_mutex);
 
     TRACE("Audio Context Index : %d\n", ctx_index);
-    avctx = s->ctx_arr[ctx_index].avctx;
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (!avctx) {
         ERR("[%s] %d of Context is NULL!\n", __func__, ctx_index);
-        qemu_mutex_unlock(&s->thread_mutex);
+        qemu_mutex_unlock(&s->codec_thread.mutex);
         return ret;
     }
 
     if (!avctx->codec) {
         ERR("[%s] %d of Codec is NULL\n", __func__, ctx_index);
-        qemu_mutex_unlock(&s->thread_mutex);
+        qemu_mutex_unlock(&s->codec_thread.mutex);
         return ret;
     }
 
     offset = s->codec_param.mmap_offset;
 
-    parser_buf = s->ctx_arr[ctx_index].parser_buf;
-    parser_use = s->ctx_arr[ctx_index].parser_use;
+    parser_buf = s->codec_ctx[ctx_index].parser_buf;
+    parser_use = s->codec_ctx[ctx_index].parser_use;
 
     memcpy(&buf_size, (uint8_t *)s->vaddr + offset, sizeof(int));
     size = sizeof(int);
-    TRACE("input buffer size : %d\n", buf_size);
-
     if (parser_buf && parser_use) {
         TRACE("[%s] use parser, buf:%p codec_id:%x\n",
                 __func__, parser_buf, avctx->codec_id);
@@ -948,10 +1208,14 @@ int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index)
 
     memcpy((uint8_t *)s->vaddr + offset, &avctx->bit_rate, sizeof(int));
     size = sizeof(int);
-    memcpy((uint8_t *)s->vaddr + offset + size, &avctx->sample_rate, sizeof(int));
+    memcpy((uint8_t *)s->vaddr + offset + size,
+            &avctx->sample_rate, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t *)s->vaddr + offset + size, &avctx->channels, sizeof(int));
     size += sizeof(int);
+    memcpy((uint8_t *)s->vaddr + offset + size,
+        &avctx->channel_layout, sizeof(int64_t));
+    size += sizeof(int64_t);
     memcpy((uint8_t *)s->vaddr + offset + size, &avctx->sub_id, sizeof(int));
     size += sizeof(int);
     memcpy((uint8_t *)s->vaddr + offset + size,
@@ -969,6 +1233,7 @@ int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index)
 
     TRACE("before free input buffer and output buffer!\n");
     if (samples) {
+        TRACE("release allocated audio buffer.\n");
         av_free(samples);
         samples = NULL;
     }
@@ -976,10 +1241,9 @@ int qemu_avcodec_decode_audio(SVCodecState *s, int ctx_index)
     if (parser_buf && parser_use) {
         TRACE("[%s] free parser buf\n", __func__);
         av_free(avpkt.data);
-        s->ctx_arr[ctx_index].parser_buf = NULL;
+        s->codec_ctx[ctx_index].parser_buf = NULL;
     }
 
-    qemu_mutex_unlock(&s->thread_mutex);
     TRACE("[%s] Leave\n", __func__);
 
     return ret;
@@ -996,19 +1260,18 @@ int qemu_avcodec_encode_audio(SVCodecState *s, int ctx_index)
  */
 void qemu_av_picture_copy(SVCodecState *s, int ctx_index)
 {
-    AVCodecContext *avctx;
+    AVCodecContext *avctx = NULL;
     AVPicture dst;
-    AVPicture *src;
-    int numBytes;
-    int ret;
+    AVPicture *src = NULL;
+    int numBytes = 0;
     uint8_t *buffer = NULL;
-    off_t offset;
+    off_t offset = 0;
 
     TRACE("Enter :%s\n", __func__);
     qemu_mutex_lock(&s->thread_mutex);
 
-    avctx = s->ctx_arr[ctx_index].avctx;
-    src = (AVPicture *)s->ctx_arr[ctx_index].frame;
+    avctx = s->codec_ctx[ctx_index].avctx;
+    src = (AVPicture *)s->codec_ctx[ctx_index].frame;
     if (!avctx && !src) {
         ERR("[%s] %d of context or frame is NULL\n", __func__, ctx_index);
         qemu_mutex_unlock(&s->thread_mutex);
@@ -1017,28 +1280,22 @@ void qemu_av_picture_copy(SVCodecState *s, int ctx_index)
 
     offset = s->codec_param.mmap_offset;
 
-    numBytes =
-        avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    numBytes = qemu_avpicture_fill(&dst, NULL, avctx->pix_fmt,
+                                  avctx->width, avctx->height, false);
+    TRACE("after avpicture_fill: %d\n", numBytes);
     if (numBytes < 0) {
-        ERR("[%s] failed to get size of pixel format:%d\n",
-            __func__, avctx->pix_fmt);
-    }
-    TRACE("After avpicture_get_size:%d\n", numBytes);
-
-    buffer = (uint8_t *)av_mallocz(numBytes);
-    if (!buffer) {
-        ERR("[%s] failed to allocate memory\n");
+        ERR("picture size:%d is wrong.\n", numBytes);
         qemu_mutex_unlock(&s->thread_mutex);
         return;
     }
 
-    ret = avpicture_fill(&dst, buffer, avctx->pix_fmt,
-                        avctx->width, avctx->height);
     av_picture_copy(&dst, src, avctx->pix_fmt, avctx->width, avctx->height);
-    memcpy((uint8_t *)s->vaddr + offset, dst.data[0], numBytes);
+    buffer = dst.data[0];
+    memcpy((uint8_t *)s->vaddr + offset, buffer, numBytes);
     TRACE("after copy image buffer from host to guest.\n");
 
     if (buffer) {
+        TRACE("release allocated video frame.\n");
         av_free(buffer);
     }
 
@@ -1055,7 +1312,7 @@ void qemu_av_parser_init(SVCodecState *s, int ctx_index)
     TRACE("Enter :%s\n", __func__);
     qemu_mutex_lock(&s->thread_mutex);
 
-    avctx = s->ctx_arr[ctx_index].avctx;
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (!avctx) {
         ERR("[%s] %d of AVCodecContext is NULL!!\n", __func__, ctx_index);
         qemu_mutex_unlock(&s->thread_mutex);
@@ -1068,12 +1325,12 @@ void qemu_av_parser_init(SVCodecState *s, int ctx_index)
     parser_ctx = av_parser_init(avctx->codec_id);
     if (parser_ctx) {
         TRACE("[%s] using parser\n", __func__);
-        s->ctx_arr[ctx_index].parser_use = true;
+        s->codec_ctx[ctx_index].parser_use = true;
     } else {
         TRACE("[%s] no parser\n", __func__);
-        s->ctx_arr[ctx_index].parser_use = false;
+        s->codec_ctx[ctx_index].parser_use = false;
     }
-    s->ctx_arr[ctx_index].parser_ctx = parser_ctx;
+    s->codec_ctx[ctx_index].parser_ctx = parser_ctx;
 
     qemu_mutex_unlock(&s->thread_mutex);
     TRACE("[%s] Leave\n", __func__);
@@ -1101,8 +1358,8 @@ int qemu_av_parser_parse(SVCodecState *s, int ctx_index)
     TRACE("Enter %s\n", __func__);
     qemu_mutex_lock(&s->thread_mutex);
 
-    parser_ctx = s->ctx_arr[ctx_index].parser_ctx;
-    avctx = s->ctx_arr[ctx_index].avctx;
+    parser_ctx = s->codec_ctx[ctx_index].parser_ctx;
+    avctx = s->codec_ctx[ctx_index].avctx;
     if (!avctx) {
         ERR("[%s] %d of AVCodecContext is NULL\n", __func__, ctx_index);
         qemu_mutex_unlock(&s->thread_mutex);
@@ -1140,7 +1397,7 @@ int qemu_av_parser_parse(SVCodecState *s, int ctx_index)
         memcpy(inbuf, (uint8_t *)s->vaddr + offset + size, inbuf_size);
     } else {
         inbuf = NULL;
-        INFO("[%s] input buffer size is zero.\n", __func__);
+        INFO("input buffer size for parser is zero.\n");
     }
 
     TRACE("[%s] inbuf:%p inbuf_size :%d\n", __func__, inbuf, inbuf_size);
@@ -1149,7 +1406,7 @@ int qemu_av_parser_parse(SVCodecState *s, int ctx_index)
     TRACE("after parsing, outbuf size :%d, ret:%d\n", poutbuf_size, ret);
 
     if (poutbuf) {
-        s->ctx_arr[ctx_index].parser_buf = poutbuf;
+        s->codec_ctx[ctx_index].parser_buf = poutbuf;
     }
 
     TRACE("[%s] inbuf : %p, outbuf : %p\n", __func__, inbuf, poutbuf);
@@ -1186,7 +1443,7 @@ void qemu_av_parser_close(SVCodecState *s, int ctx_index)
     TRACE("Enter, %s\n", __func__);
     qemu_mutex_lock(&s->thread_mutex);
 
-    parser_ctx = s->ctx_arr[ctx_index].parser_ctx;
+    parser_ctx = s->codec_ctx[ctx_index].parser_ctx;
     if (!parser_ctx) {
         ERR("AVCodecParserContext is NULL\n");
         qemu_mutex_unlock(&s->thread_mutex);
@@ -1209,46 +1466,21 @@ int codec_operate(uint32_t api_index, uint32_t ctx_index, SVCodecState *s)
         qemu_av_register_all();
         break;
     case EMUL_AVCODEC_OPEN:
-        ret = qemu_avcodec_open(s, ctx_index);
+        ret = qemu_avcodec_open(s);
         break;
     case EMUL_AVCODEC_CLOSE:
         ret = qemu_avcodec_close(s, ctx_index);
-        break;
-    case EMUL_AVCODEC_ALLOC_CONTEXT:
-        qemu_avcodec_alloc_context(s);
-        break;
-#if 0
-    case EMUL_AVCODEC_ALLOC_FRAME:
-        qemu_avcodec_alloc_frame(s, ctx_index);
-        break;
-#endif
-    case EMUL_AV_FREE:
         qemu_av_free(s, ctx_index);
         break;
     case EMUL_AVCODEC_FLUSH_BUFFERS:
         qemu_avcodec_flush_buffers(s, ctx_index);
         break;
-#ifndef CODEC_THREAD
     case EMUL_AVCODEC_DECODE_VIDEO:
     case EMUL_AVCODEC_ENCODE_VIDEO:
     case EMUL_AVCODEC_DECODE_AUDIO:
     case EMUL_AVCODEC_ENCODE_AUDIO:
         wake_codec_worker_thread(s);
         break;
-#else
-    case EMUL_AVCODEC_DECODE_VIDEO:
-        ret = qemu_avcodec_decode_video(s, ctx_index);
-        break;
-    case EMUL_AVCODEC_ENCODE_VIDEO:
-        ret = qemu_avcodec_encode_video(s, ctx_index);
-        break;
-    case EMUL_AVCODEC_DECODE_AUDIO:
-        ret = qemu_avcodec_decode_audio(s, ctx_index);
-        break;
-    case EMUL_AVCODEC_ENCODE_AUDIO:
-        ret = qemu_avcodec_encode_audio(s, ctx_index);
-        break;
-#endif
     case EMUL_AV_PICTURE_COPY:
         qemu_av_picture_copy(s, ctx_index);
         break;
@@ -1261,13 +1493,25 @@ int codec_operate(uint32_t api_index, uint32_t ctx_index, SVCodecState *s)
     case EMUL_AV_PARSER_CLOSE:
         qemu_av_parser_close(s, ctx_index);
         break;
-    case EMUL_GET_CODEC_VER:
-        qemu_get_codec_ver(s);
-        break;
     default:
         WARN("api index %d does not exist!.\n", api_index);
     }
     return ret;
+}
+
+static uint32_t qemu_get_mmap_offset(SVCodecState *s)
+{
+    int index = 0;
+
+    for (; index < AUDIO_CODEC_MEM_OFFSET_MAX; index++)  {
+        if (s->audio_codec_offset[index] == 0) {
+            s->audio_codec_offset[index] = 1;
+            break;
+        }
+    }
+    TRACE("return mmap offset: %d\n", index);
+
+    return index;
 }
 
 /*
@@ -1279,14 +1523,32 @@ uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
     uint64_t ret = 0;
 
     switch (addr) {
-    case CODEC_QUERY_STATE:
-        ret = s->thread_state;
-        s->thread_state = 0;
-        TRACE("thread state: %d\n", s->thread_state);
+    case CODEC_CMD_GET_THREAD_STATE:
+        qemu_mutex_lock(&s->thread_mutex);
+        ret = s->codec_thread.state;
+        s->codec_thread.state = 0;
+        qemu_mutex_unlock(&s->thread_mutex);
+        TRACE("ret: %d, thread state: %d\n", ret, s->codec_thread.state);
         qemu_irq_lower(s->dev.irq[0]);
         break;
+    case CODEC_CMD_GET_VERSION:
+        ret = MARU_CODEC_VERSION;
+        TRACE("codec version: %d\n", ret);
+        break;
+    case CODEC_CMD_GET_DEVICE_MEM:
+        qemu_mutex_lock(&s->thread_mutex);
+        ret = s->device_mem_avail;
+        if (s->device_mem_avail != 1) {
+            s->device_mem_avail = 1;
+        }
+        qemu_mutex_unlock(&s->thread_mutex);
+        break;
+    case CODEC_CMD_GET_MMAP_OFFSET:
+        ret = qemu_get_mmap_offset(s);
+        TRACE("mem index: %d\n", ret);
+        break;
     default:
-        ERR("There is no avaiable command for %s\n", MARU_CODEC_DEV_NAME);
+        ERR("no avaiable command for read. %d\n", addr);
     }
 
     return ret;
@@ -1295,32 +1557,37 @@ uint64_t codec_read(void *opaque, target_phys_addr_t addr, unsigned size)
 void codec_write(void *opaque, target_phys_addr_t addr,
                 uint64_t value, unsigned size)
 {
-    int ret = -1;
     SVCodecState *s = (SVCodecState *)opaque;
 
-/*  qemu_mutex_lock(&s->thread_mutex); */
     switch (addr) {
-    case CODEC_API_INDEX:
-        ret = codec_operate(value, s->codec_param.ctx_index, s);
+    case CODEC_CMD_API_INDEX:
+        codec_operate(value, s->codec_param.ctx_index, s);
         break;
-    case CODEC_CONTEXT_INDEX:
+    case CODEC_CMD_CONTEXT_INDEX:
         s->codec_param.ctx_index = value;
         TRACE("Context Index: %d\n", s->codec_param.ctx_index);
         break;
-    case CODEC_MMAP_OFFSET:
+    case CODEC_CMD_FILE_INDEX:
+        s->codec_param.file_index = value;
+        break;
+    case CODEC_CMD_DEVICE_MEM_OFFSET:
         s->codec_param.mmap_offset = value;
         TRACE("MMAP Offset: %d\n", s->codec_param.mmap_offset);
         break;
-    case CODEC_FILE_INDEX:
-        s->codec_param.file_index = value;
+    case CODEC_CMD_RESET_CODEC_INFO:
+        qemu_reset_codec_info(s, value);
         break;
-    case CODEC_CLOSED:
-        qemu_codec_close(s, value);
+    case CODEC_CMD_SET_DEVICE_MEM:
+        qemu_mutex_lock(&s->thread_mutex);
+        s->device_mem_avail = value;
+        qemu_mutex_unlock(&s->thread_mutex);
+        break;
+    case CODEC_CMD_SET_MMAP_OFFSET:
+        s->codec_param.mem_index = value;
         break;
     default:
-        ERR("There is no avaiable command for %s\n", MARU_CODEC_DEV_NAME);
+        ERR("no avaiable command for write. %d\n", addr);
     }
-/*  qemu_mutex_unlock(&s->thread_mutex); */
 }
 
 static const MemoryRegionOps codec_mmio_ops = {
@@ -1337,17 +1604,15 @@ static void codec_tx_bh(void *opaque)
     AVCodecContext *ctx;
 
     ctx_index = s->codec_param.ctx_index;
-    ctx = s->ctx_arr[ctx_index].avctx;
+    ctx = s->codec_ctx[ctx_index].avctx;
 
     TRACE("Enter, %s\n", __func__);
 
     /* raise irq as soon as a worker thread had finished a job*/
-    if (s->thread_state) {
+    if (s->codec_thread.state) {
         TRACE("raise codec irq. state:%d, codec:%d\n",
-                s->thread_state, ctx->codec_type);
+              s->codec_thread.state, ctx->codec_type);
         qemu_irq_raise(s->dev.irq[0]);
-/*      s->thread_state = 0;
-        qemu_bh_schedule(s->tx_bh); */
     }
 
     TRACE("Leave, %s\n", __func__);
@@ -1361,19 +1626,14 @@ static int codec_initfn(PCIDevice *dev)
     INFO("[%s] device init\n", __func__);
 
     memset(&s->codec_param, 0, sizeof(SVCodecParam));
-/*    pthread_mutex_init(&s->codec_mutex, NULL); */
-#ifndef CODEC_THREAD
+
     qemu_mutex_init(&s->thread_mutex);
-    qemu_cond_init(&s->thread_cond);
-
     codec_thread_init(s);
-
     s->tx_bh = qemu_bh_new(codec_tx_bh, s);
-#endif
 
     pci_config_set_interrupt_pin(pci_conf, 1);
 
-    memory_region_init_ram(&s->vram, NULL, "codec.ram", MARU_CODEC_MEM_SIZE);
+    memory_region_init_ram(&s->vram, "codec.ram", MARU_CODEC_MEM_SIZE);
     s->vaddr = memory_region_get_ram_ptr(&s->vram);
 
     memory_region_init_io(&s->mmio, &codec_mmio_ops, s,
@@ -1385,7 +1645,7 @@ static int codec_initfn(PCIDevice *dev)
     return 0;
 }
 
-static int codec_exitfn(PCIDevice *dev)
+static void codec_exitfn(PCIDevice *dev)
 {
     SVCodecState *s = DO_UPCAST(SVCodecState, dev, dev);
     INFO("[%s] device exit\n", __func__);
@@ -1394,7 +1654,6 @@ static int codec_exitfn(PCIDevice *dev)
 
     memory_region_destroy(&s->vram);
     memory_region_destroy(&s->mmio);
-    return 0;
 }
 
 int codec_init(PCIBus *bus)
@@ -1404,19 +1663,29 @@ int codec_init(PCIBus *bus)
     return 0;
 }
 
-static PCIDeviceInfo codec_info = {
-    .qdev.name      = MARU_CODEC_DEV_NAME,
-    .qdev.desc      = "Virtual Codec device for Tizen emulator",
-    .qdev.size      = sizeof(SVCodecState),
-    .init           = codec_initfn,
-    .exit           = codec_exitfn,
-    .vendor_id      = PCI_VENDOR_ID_TIZEN,
-    .device_id      = PCI_DEVICE_ID_VIRTUAL_CODEC,
-    .class_id       = PCI_CLASS_MULTIMEDIA_AUDIO,
+static void codec_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+
+    k->init = codec_initfn;
+    k->exit = codec_exitfn;
+    k->vendor_id = PCI_VENDOR_ID_TIZEN;
+    k->device_id = PCI_DEVICE_ID_VIRTUAL_CODEC;
+    k->class_id = PCI_CLASS_MULTIMEDIA_AUDIO;
+    dc->desc = "Virtual Codec device for Tizen emulator";
+}
+
+static TypeInfo codec_info = {
+    .name          = MARU_CODEC_DEV_NAME,
+    .parent        = TYPE_PCI_DEVICE,
+    .instance_size = sizeof(SVCodecState),
+    .class_init    = codec_class_init,
 };
 
-static void codec_register(void)
+static void codec_register_types(void)
 {
-    pci_qdev_register(&codec_info);
+    type_register_static(&codec_info);
 }
-device_init(codec_register);
+
+type_init(codec_register_types)

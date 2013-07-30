@@ -32,9 +32,6 @@
 # error Unknown pointer size for tcg target
 #endif
 
-#include "tcg-target.h"
-#include "tcg-runtime.h"
-
 #if TCG_TARGET_REG_BITS == 32
 typedef int32_t tcg_target_long;
 typedef uint32_t tcg_target_ulong;
@@ -48,6 +45,9 @@ typedef uint64_t tcg_target_ulong;
 #else
 #error unsupported
 #endif
+
+#include "tcg-target.h"
+#include "tcg-runtime.h"
 
 #if TCG_TARGET_NB_REGS <= 32
 typedef uint32_t TCGRegSet;
@@ -178,7 +178,7 @@ typedef tcg_target_ulong TCGArg;
 /* Define a type and accessor macros for variables.  Using a struct is
    nice because it gives some level of type safely.  Ideally the compiler
    be able to see through all this.  However in practice this is not true,
-   expecially on targets with braindamaged ABIs (e.g. i386).
+   especially on targets with braindamaged ABIs (e.g. i386).
    We use plain int by default to avoid this runtime overhead.
    Users of tcg_gen_* don't need to know about any of this, and should
    treat TCGv as an opaque type.
@@ -188,29 +188,22 @@ typedef tcg_target_ulong TCGArg;
  */
 
 #if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
-#if defined(__i386__) || defined(__x86_64__)
-/* Macros and structures for qemu_ld/st IR code optimization:
-   It looks good for TCG_MAX_HELPER_LABELS to be half of OPC_BUF_SIZE in exec-all.h. */
-#define TCG_MAX_QEMU_LDST       320
-#define HL_LDST_SHIFT           4
-#define HL_LDST_MASK            (1 << HL_LDST_SHIFT)
-#define HL_ST_MASK              HL_LDST_MASK
-#define HL_OPC_MASK             (HL_LDST_MASK - 1)
-#define IS_QEMU_LD_LABEL(L)     (!((L)->opc_ext & HL_LDST_MASK))
-#define IS_QEMU_ST_LABEL(L)     ((L)->opc_ext & HL_LDST_MASK)
+/* Macros/structures for qemu_ld/st IR code optimization:
+   TCG_MAX_HELPER_LABELS is defined as same as OPC_BUF_SIZE in exec-all.h. */
+#define TCG_MAX_QEMU_LDST       640
 
 typedef struct TCGLabelQemuLdst {
-    int opc_ext;                /* | 27bit (reserved) | 1bit (ld/st flag) | 4bit (opc) | */
-    int addrlo_reg;             /* reg index for the low word of guest virtual address */
-    int addrhi_reg;             /* reg index for the high word of guest virtual address */
-    int datalo_reg;             /* reg index for the low word to be loaded or to be stored */
-    int datahi_reg;             /* reg index for the high word to be loaded or to be stored */
-    int mem_index;              /* soft MMU memory index */
-    uint8_t *raddr;             /* return address (located end of TB) */
-    uint32_t *label_ptr[2];     /* label pointers to be updated */
+    int is_ld:1;            /* qemu_ld: 1, qemu_st: 0 */
+    int opc:4;
+    int addrlo_reg;         /* reg index for low word of guest virtual addr */
+    int addrhi_reg;         /* reg index for high word of guest virtual addr */
+    int datalo_reg;         /* reg index for low word to be loaded or stored */
+    int datahi_reg;         /* reg index for high word to be loaded or stored */
+    int mem_index;        /* soft MMU memory index */
+    uint8_t *raddr;         /* gen code addr of the next IR of qemu_ld/st IR */
+    uint8_t *label_ptr[2];      /* label pointers to be updated */
 } TCGLabelQemuLdst;
 #endif
-#endif  /* CONFIG_QEMU_LDST_OPTIMIZATION */
 
 #ifdef CONFIG_DEBUG_TCG
 #define DEBUG_TCGV 1
@@ -277,11 +270,6 @@ typedef int TCGv_i64;
 #define TCGV_UNUSED_I64(x) x = MAKE_TCGV_I64(-1)
 
 /* call flags */
-#define TCG_CALL_TYPE_MASK      0x000f
-#define TCG_CALL_TYPE_STD       0x0000 /* standard C call */
-#define TCG_CALL_TYPE_REGPARM_1 0x0001 /* i386 style regparm call (1 reg) */
-#define TCG_CALL_TYPE_REGPARM_2 0x0002 /* i386 style regparm call (2 regs) */
-#define TCG_CALL_TYPE_REGPARM   0x0003 /* i386 style regparm call (3 regs) */
 /* A pure function only reads its arguments and TCG global variables
    and cannot raise exceptions. Hence a call to a pure function can be
    safely suppressed if the return value is not used. */
@@ -362,7 +350,7 @@ typedef struct TCGContext TCGContext;
 
 struct TCGContext {
     uint8_t *pool_cur, *pool_end;
-    TCGPool *pool_first, *pool_current;
+    TCGPool *pool_first, *pool_current, *pool_first_large;
     TCGLabel *labels;
     int nb_labels;
     TCGTemp *temps; /* globals first, temps after */
@@ -576,7 +564,7 @@ void tcg_add_target_add_op_defs(const TCGTargetOpDef *tdefs);
 #define TCGV_NAT_TO_PTR(n) MAKE_TCGV_PTR(GET_TCGV_I32(n))
 #define TCGV_PTR_TO_NAT(n) MAKE_TCGV_I32(GET_TCGV_PTR(n))
 
-#define tcg_const_ptr(V) TCGV_NAT_TO_PTR(tcg_const_i32(V))
+#define tcg_const_ptr(V) TCGV_NAT_TO_PTR(tcg_const_i32((tcg_target_long)(V)))
 #define tcg_global_reg_new_ptr(R, N) \
     TCGV_NAT_TO_PTR(tcg_global_reg_new_i32((R), (N)))
 #define tcg_global_mem_new_ptr(R, O, N) \
@@ -587,7 +575,7 @@ void tcg_add_target_add_op_defs(const TCGTargetOpDef *tdefs);
 #define TCGV_NAT_TO_PTR(n) MAKE_TCGV_PTR(GET_TCGV_I64(n))
 #define TCGV_PTR_TO_NAT(n) MAKE_TCGV_I64(GET_TCGV_PTR(n))
 
-#define tcg_const_ptr(V) TCGV_NAT_TO_PTR(tcg_const_i64(V))
+#define tcg_const_ptr(V) TCGV_NAT_TO_PTR(tcg_const_i64((tcg_target_long)(V)))
 #define tcg_global_reg_new_ptr(R, N) \
     TCGV_NAT_TO_PTR(tcg_global_reg_new_i64((R), (N)))
 #define tcg_global_mem_new_ptr(R, O, N) \
@@ -608,7 +596,7 @@ TCGArg *tcg_optimize(TCGContext *s, uint16_t *tcg_opc_ptr, TCGArg *args,
 /* only used for debugging purposes */
 void tcg_register_helper(void *func, const char *name);
 const char *tcg_helper_get_name(TCGContext *s, void *func);
-void tcg_dump_ops(TCGContext *s, FILE *outfile);
+void tcg_dump_ops(TCGContext *s);
 
 void dump_ops(const uint16_t *opc_buf, const TCGArg *opparam_buf);
 TCGv_i32 tcg_const_i32(int32_t val);
@@ -621,10 +609,12 @@ extern uint8_t code_gen_prologue[];
 /* TCG targets may use a different definition of tcg_qemu_tb_exec. */
 #if !defined(tcg_qemu_tb_exec)
 # define tcg_qemu_tb_exec(env, tb_ptr) \
-    ((long REGPARM (*)(void *, void *))code_gen_prologue)(env, tb_ptr)
+    ((tcg_target_ulong (*)(void *, void *))code_gen_prologue)(env, tb_ptr)
 #endif
 
-#if defined(CONFIG_QEMU_LDST_OPTIMIZATION)
-/* qemu_ld/st generation at the end of TB */
-void tcg_out_qemu_ldst_slow_path(TCGContext *s);
+void tcg_register_jit(void *buf, size_t buf_size);
+
+#if defined(CONFIG_QEMU_LDST_OPTIMIZATION) && defined(CONFIG_SOFTMMU)
+/* Generate TB finalization at the end of block */
+void tcg_out_tb_finalize(TCGContext *s);
 #endif

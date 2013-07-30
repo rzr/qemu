@@ -1,0 +1,163 @@
+# Makefile.tizen
+# for TIZEN-maru board
+
+
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
+
+QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
+QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
+QEMU_CFLAGS += $(SDL_CFLAGS)
+QEMU_CFLAGS += $(GLIB_CFLAGS)
+ifdef CONFIG_DARWIN
+QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
+QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
+QEMU_CFLAGS += -framework AppKit
+endif
+ifndef CONFIG_DEBUG_EXEC
+CFLAGS += -g -O2
+else
+CFLAGS += -g -O0
+endif
+
+ifdef CONFIG_WIN32
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32
+endif
+ifdef CONFIG_LINUX
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
+endif
+ifdef CONFIG_DARWIN
+# FIXME: disabled codec on Mac now
+LIBS += -lavformat -lavcodec -lavutil -lm
+endif
+
+ifdef CONFIG_DEBUG_EXEC
+GL_CFLAGS := -Wall -g -O0 -fno-strict-aliasing
+else
+GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
+endif
+
+#ifndef CONFIG_DARWIN
+###########################################################
+## Build openGL
+# i386
+ifdef CONFIG_GL
+
+GL_CUR_PATH = $(SRC_PATH)/tizen/src/hw
+
+GL_CFLAGS += -I$(GL_CUR_PATH) -I$(SRC_PATH)/fpu
+GL_CFLAGS += -I$(SRC_PATH)/i386-softmmu $(QEMU_CFLAGS) $(CFLAGS)
+
+parse_gl_h: parse_gl_h.c
+	$(CC) -g -o $@ $<
+server_stub.c: parse_gl_h
+	./parse_gl_h 2>/dev/null
+gl_func.h: parse_gl_h
+	./parse_gl_h 2>/dev/null
+opengl_func.h: gl_func.h
+helper_opengl.o: helper_opengl.c opengl_func.h server_stub.c opengl_process.h
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $<
+gl_beginend.h: $(GL_CUR_PATH)/beginend_funcs.sh
+	$< > $@
+mesa_mipmap.o : mesa_mipmap.c
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $<
+opengl_exec.o : opengl_exec.c server_stub.c opengl_func.h gl_beginend.h opengl_process.h mesa_mipmap.o
+	$(CC) $(GL_CFLAGS) $(DEFINES) $(GL_LDFLAGS) -c -o $@ $<
+
+endif #CONFIG_GL
+
+ifdef CONFIG_OPENGLES
+
+parse_gl_h: parse_gl_h.c
+	$(CC) -g -o $@ $<
+
+gl_mangled.h: parse_gl_h
+	./parse_gl_h mangle 2>/dev/null
+
+gl_mangled.c: gl_mangled.h
+	./parse_gl_h mangle 2>/dev/null
+
+gloffscreen_glx.o gloffscreen_wgl.o gloffscreen_xcomposite.o: gl_mangled.h
+maru_sdl.o gloffscreen_test.o gloffscreen_common.o: gl_mangled.h
+
+obj-y += gl_mangled.o
+
+endif #CONFIG_OPENGLES
+###########################################################
+#endif #!CONFIG_DARWIN
+
+# maru loader
+obj-y += emulator.o emul_state.o maru_err_table.o
+
+# osutil
+obj-y += osutil.o
+ifdef CONFIG_LINUX
+obj-y += osutil-linux.o
+endif
+ifdef CONFIG_WIN32
+obj-y += osutil-win32.o
+endif
+ifdef CONFIG_DARWIN
+obj-y += osutil-darwin.o
+endif
+
+# maru display
+obj-y += maru_display.o maru_shm.o
+ifndef CONFIG_DARWIN
+obj-y += maru_sdl.o maru_finger.o
+endif
+
+# sdb
+obj-y += sdb.o
+
+# mloop event
+obj-y += mloop_event.o
+
+# NSRunLoop on Mac
+ifdef CONFIG_DARWIN
+obj-y += ns_event.o
+endif
+
+# debug channel
+obj-y += debug_ch.o
+
+# maru hardware
+include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
+
+obj-y += maru_brightness.o
+obj-y += maru_usb_touchscreen.o maru_virtio_touchscreen.o
+obj-y += maru_virtio_keyboard.o
+obj-y += maru_codec.o
+obj-y += maru_virtio_esm.o
+obj-y += maru_virtio_hwkey.o
+
+obj-$(CONFIG_PCI) += maru_camera_common_pci.o
+obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
+obj-$(CONFIG_WIN32) += maru_camera_win32_pci.o
+obj-$(CONFIG_DARWIN) += maru_camera_darwin_converter.o
+obj-$(CONFIG_DARWIN) += maru_camera_darwin_pci.o
+obj-$(CONFIG_DARWIN) += emul_state_darwin.o
+
+ifdef CONFIG_LINUX # libs for maru camera on linux host
+LIBS += -lv4l2 -lv4lconvert
+endif
+
+ifdef CONFIG_WIN32 # libs for maru camera on windows host
+LIBS += -lole32 -loleaut32 -luuid -lstrmiids
+endif
+
+# maru skin
+obj-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keymap.o
+
+# guest server
+obj-y += guest_server.o
+
+#ifndef CONFIG_DARWIN
+###########################################################
+## opengl library for i386
+obj-$(CONFIG_GL) += virtio-gl.o 
+obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
+obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
+obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o gloffscreen_agl.o
+###########################################################
+#endif

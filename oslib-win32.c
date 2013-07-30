@@ -28,6 +28,7 @@
 #include <windows.h>
 #include "config-host.h"
 #include "sysemu.h"
+#include "main-loop.h"
 #include "trace.h"
 #include "qemu_socket.h"
 
@@ -121,14 +122,14 @@ void *qemu_oom_check(void *ptr)
             strcpy(JAVA_EXEFILE_PATH, "java");
         }
 #endif
-        int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE_PATH) +
+        int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAR_SKINFILE) +
            strlen(JAVA_SIMPLEMODE_OPTION) + strlen(_msg) + 7;
         if (len > JAVA_MAX_COMMAND_LENGTH) {
             len = JAVA_MAX_COMMAND_LENGTH;
         }
 
         snprintf(cmd, len, "%s %s %s %s=\"%s\"",
-            JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE_PATH, JAVA_SIMPLEMODE_OPTION, _msg);
+            JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAR_SKINFILE, JAVA_SIMPLEMODE_OPTION, _msg);
         int ret = WinExec(cmd, SW_SHOW);
 #ifdef CONFIG_WIN32
 	    // for 64bit windows
@@ -178,6 +179,7 @@ void qemu_vfree(void *ptr)
 void socket_set_block(int fd)
 {
     unsigned long opt = 0;
+    WSAEventSelect(fd, NULL, 0);
     ioctlsocket(fd, FIONBIO, &opt);
 }
 
@@ -185,6 +187,7 @@ void socket_set_nonblock(int fd)
 {
     unsigned long opt = 1;
     ioctlsocket(fd, FIONBIO, &opt);
+    qemu_fd_register(fd);
 }
 
 int inet_aton(const char *cp, struct in_addr *ia)
@@ -219,4 +222,9 @@ int qemu_gettimeofday(qemu_timeval *tp)
   /* Always return 0 as per Open Group Base Specifications Issue 6.
      Do not set errno on error.  */
   return 0;
+}
+
+int qemu_get_thread_id(void)
+{
+    return GetCurrentThreadId();
 }

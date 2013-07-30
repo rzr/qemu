@@ -1,0 +1,15 @@
+#!/bin/sh
+if [ "$1" == "" ];
+then
+        echo "There is no emulator name for an argument. \nusage: sdbscript emulator-261xx"
+        exit -1
+else
+    TITLE=$1
+    osascript > /dev/null << END
+    tell application "Terminal"
+        activate
+        do script "`pwd`/../../sdb -s $TITLE shell"
+        set custom title of first window to "$TITLE"
+    end tell
+END
+fi

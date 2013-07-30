@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/vfs.h>
 
 #include <linux/kvm.h>
 
@@ -27,6 +28,7 @@
 #include "kvm.h"
 #include "kvm_ppc.h"
 #include "cpu.h"
+#include "cpus.h"
 #include "device_tree.h"
 #include "hw/sysbus.h"
 #include "hw/spapr.h"
@@ -93,7 +95,7 @@ int kvm_arch_init(KVMState *s)
     return 0;
 }
 
-static int kvm_arch_sync_sregs(CPUState *cenv)
+static int kvm_arch_sync_sregs(CPUPPCState *cenv)
 {
     struct kvm_sregs sregs;
     int ret;
@@ -121,7 +123,7 @@ static int kvm_arch_sync_sregs(CPUState *cenv)
 }
 
 /* Set up a shared TLB array with KVM */
-static int kvm_booke206_tlb_init(CPUState *env)
+static int kvm_booke206_tlb_init(CPUPPCState *env)
 {
     struct kvm_book3e_206_tlb_params params = {};
     struct kvm_config_tlb cfg = {};
@@ -166,10 +168,217 @@ static int kvm_booke206_tlb_init(CPUState *env)
     return 0;
 }
 
-int kvm_arch_init_vcpu(CPUState *cenv)
+
+#if defined(TARGET_PPC64)
+static void kvm_get_fallback_smmu_info(CPUPPCState *env,
+                                       struct kvm_ppc_smmu_info *info)
+{
+    memset(info, 0, sizeof(*info));
+
+    /* We don't have the new KVM_PPC_GET_SMMU_INFO ioctl, so
+     * need to "guess" what the supported page sizes are.
+     *
+     * For that to work we make a few assumptions:
+     *
+     * - If KVM_CAP_PPC_GET_PVINFO is supported we are running "PR"
+     *   KVM which only supports 4K and 16M pages, but supports them
+     *   regardless of the backing store characteritics. We also don't
+     *   support 1T segments.
+     *
+     *   This is safe as if HV KVM ever supports that capability or PR
+     *   KVM grows supports for more page/segment sizes, those versions
+     *   will have implemented KVM_CAP_PPC_GET_SMMU_INFO and thus we
+     *   will not hit this fallback
+     *
+     * - Else we are running HV KVM. This means we only support page
+     *   sizes that fit in the backing store. Additionally we only
+     *   advertize 64K pages if the processor is ARCH 2.06 and we assume
+     *   P7 encodings for the SLB and hash table. Here too, we assume
+     *   support for any newer processor will mean a kernel that
+     *   implements KVM_CAP_PPC_GET_SMMU_INFO and thus doesn't hit
+     *   this fallback.
+     */
+    if (kvm_check_extension(env->kvm_state, KVM_CAP_PPC_GET_PVINFO)) {
+        /* No flags */
+        info->flags = 0;
+        info->slb_size = 64;
+
+        /* Standard 4k base page size segment */
+        info->sps[0].page_shift = 12;
+        info->sps[0].slb_enc = 0;
+        info->sps[0].enc[0].page_shift = 12;
+        info->sps[0].enc[0].pte_enc = 0;
+
+        /* Standard 16M large page size segment */
+        info->sps[1].page_shift = 24;
+        info->sps[1].slb_enc = SLB_VSID_L;
+        info->sps[1].enc[0].page_shift = 24;
+        info->sps[1].enc[0].pte_enc = 0;
+    } else {
+        int i = 0;
+
+        /* HV KVM has backing store size restrictions */
+        info->flags = KVM_PPC_PAGE_SIZES_REAL;
+
+        if (env->mmu_model & POWERPC_MMU_1TSEG) {
+            info->flags |= KVM_PPC_1T_SEGMENTS;
+        }
+
+        if (env->mmu_model == POWERPC_MMU_2_06) {
+            info->slb_size = 32;
+        } else {
+            info->slb_size = 64;
+        }
+
+        /* Standard 4k base page size segment */
+        info->sps[i].page_shift = 12;
+        info->sps[i].slb_enc = 0;
+        info->sps[i].enc[0].page_shift = 12;
+        info->sps[i].enc[0].pte_enc = 0;
+        i++;
+
+        /* 64K on MMU 2.06 */
+        if (env->mmu_model == POWERPC_MMU_2_06) {
+            info->sps[i].page_shift = 16;
+            info->sps[i].slb_enc = 0x110;
+            info->sps[i].enc[0].page_shift = 16;
+            info->sps[i].enc[0].pte_enc = 1;
+            i++;
+        }
+
+        /* Standard 16M large page size segment */
+        info->sps[i].page_shift = 24;
+        info->sps[i].slb_enc = SLB_VSID_L;
+        info->sps[i].enc[0].page_shift = 24;
+        info->sps[i].enc[0].pte_enc = 0;
+    }
+}
+
+static void kvm_get_smmu_info(CPUPPCState *env, struct kvm_ppc_smmu_info *info)
 {
     int ret;
 
+    if (kvm_check_extension(env->kvm_state, KVM_CAP_PPC_GET_SMMU_INFO)) {
+        ret = kvm_vm_ioctl(env->kvm_state, KVM_PPC_GET_SMMU_INFO, info);
+        if (ret == 0) {
+            return;
+        }
+    }
+
+    kvm_get_fallback_smmu_info(env, info);
+}
+
+static long getrampagesize(void)
+{
+    struct statfs fs;
+    int ret;
+
+    if (!mem_path) {
+        /* guest RAM is backed by normal anonymous pages */
+        return getpagesize();
+    }
+
+    do {
+        ret = statfs(mem_path, &fs);
+    } while (ret != 0 && errno == EINTR);
+
+    if (ret != 0) {
+        fprintf(stderr, "Couldn't statfs() memory path: %s\n",
+                strerror(errno));
+        exit(1);
+    }
+
+#define HUGETLBFS_MAGIC       0x958458f6
+
+    if (fs.f_type != HUGETLBFS_MAGIC) {
+        /* Explicit mempath, but it's ordinary pages */
+        return getpagesize();
+    }
+
+    /* It's hugepage, return the huge page size */
+    return fs.f_bsize;
+}
+
+static bool kvm_valid_page_size(uint32_t flags, long rampgsize, uint32_t shift)
+{
+    if (!(flags & KVM_PPC_PAGE_SIZES_REAL)) {
+        return true;
+    }
+
+    return (1ul << shift) <= rampgsize;
+}
+
+static void kvm_fixup_page_sizes(CPUPPCState *env)
+{
+    static struct kvm_ppc_smmu_info smmu_info;
+    static bool has_smmu_info;
+    long rampagesize;
+    int iq, ik, jq, jk;
+
+    /* We only handle page sizes for 64-bit server guests for now */
+    if (!(env->mmu_model & POWERPC_MMU_64)) {
+        return;
+    }
+
+    /* Collect MMU info from kernel if not already */
+    if (!has_smmu_info) {
+        kvm_get_smmu_info(env, &smmu_info);
+        has_smmu_info = true;
+    }
+
+    rampagesize = getrampagesize();
+
+    /* Convert to QEMU form */
+    memset(&env->sps, 0, sizeof(env->sps));
+
+    for (ik = iq = 0; ik < KVM_PPC_PAGE_SIZES_MAX_SZ; ik++) {
+        struct ppc_one_seg_page_size *qsps = &env->sps.sps[iq];
+        struct kvm_ppc_one_seg_page_size *ksps = &smmu_info.sps[ik];
+
+        if (!kvm_valid_page_size(smmu_info.flags, rampagesize,
+                                 ksps->page_shift)) {
+            continue;
+        }
+        qsps->page_shift = ksps->page_shift;
+        qsps->slb_enc = ksps->slb_enc;
+        for (jk = jq = 0; jk < KVM_PPC_PAGE_SIZES_MAX_SZ; jk++) {
+            if (!kvm_valid_page_size(smmu_info.flags, rampagesize,
+                                     ksps->enc[jk].page_shift)) {
+                continue;
+            }
+            qsps->enc[jq].page_shift = ksps->enc[jk].page_shift;
+            qsps->enc[jq].pte_enc = ksps->enc[jk].pte_enc;
+            if (++jq >= PPC_PAGE_SIZES_MAX_SZ) {
+                break;
+            }
+        }
+        if (++iq >= PPC_PAGE_SIZES_MAX_SZ) {
+            break;
+        }
+    }
+    env->slb_nr = smmu_info.slb_size;
+    if (smmu_info.flags & KVM_PPC_1T_SEGMENTS) {
+        env->mmu_model |= POWERPC_MMU_1TSEG;
+    } else {
+        env->mmu_model &= ~POWERPC_MMU_1TSEG;
+    }
+}
+#else /* defined (TARGET_PPC64) */
+
+static inline void kvm_fixup_page_sizes(CPUPPCState *env)
+{
+}
+
+#endif /* !defined (TARGET_PPC64) */
+
+int kvm_arch_init_vcpu(CPUPPCState *cenv)
+{
+    int ret;
+
+    /* Gather server mmu info from KVM and update the CPU state */
+    kvm_fixup_page_sizes(cenv);
+
+    /* Synchronize sregs with kvm */
     ret = kvm_arch_sync_sregs(cenv);
     if (ret) {
         return ret;
@@ -189,11 +398,11 @@ int kvm_arch_init_vcpu(CPUState *cenv)
     return ret;
 }
 
-void kvm_arch_reset_vcpu(CPUState *env)
+void kvm_arch_reset_vcpu(CPUPPCState *env)
 {
 }
 
-static void kvm_sw_tlb_put(CPUState *env)
+static void kvm_sw_tlb_put(CPUPPCState *env)
 {
     struct kvm_dirty_tlb dirty_tlb;
     unsigned char *bitmap;
@@ -218,7 +427,7 @@ static void kvm_sw_tlb_put(CPUState *env)
     g_free(bitmap);
 }
 
-int kvm_arch_put_registers(CPUState *env, int level)
+int kvm_arch_put_registers(CPUPPCState *env, int level)
 {
     struct kvm_regs regs;
     int ret;
@@ -263,7 +472,7 @@ int kvm_arch_put_registers(CPUState *env, int level)
     return ret;
 }
 
-int kvm_arch_get_registers(CPUState *env)
+int kvm_arch_get_registers(CPUPPCState *env)
 {
     struct kvm_regs regs;
     struct kvm_sregs sregs;
@@ -440,7 +649,7 @@ int kvm_arch_get_registers(CPUState *env)
     return 0;
 }
 
-int kvmppc_set_interrupt(CPUState *env, int irq, int level)
+int kvmppc_set_interrupt(CPUPPCState *env, int irq, int level)
 {
     unsigned virq = level ? KVM_INTERRUPT_SET_LEVEL : KVM_INTERRUPT_UNSET;
 
@@ -465,12 +674,12 @@ int kvmppc_set_interrupt(CPUState *env, int irq, int level)
 #define PPC_INPUT_INT PPC6xx_INPUT_INT
 #endif
 
-void kvm_arch_pre_run(CPUState *env, struct kvm_run *run)
+void kvm_arch_pre_run(CPUPPCState *env, struct kvm_run *run)
 {
     int r;
     unsigned irq;
 
-    /* PowerPC Qemu tracks the various core input pins (interrupt, critical
+    /* PowerPC QEMU tracks the various core input pins (interrupt, critical
      * interrupt, reset, etc) in PPC-specific env->irq_input_state. */
     if (!cap_interrupt_level &&
         run->ready_for_interrupt_injection &&
@@ -498,16 +707,16 @@ void kvm_arch_pre_run(CPUState *env, struct kvm_run *run)
      * anyways, so we will get a chance to deliver the rest. */
 }
 
-void kvm_arch_post_run(CPUState *env, struct kvm_run *run)
+void kvm_arch_post_run(CPUPPCState *env, struct kvm_run *run)
 {
 }
 
-int kvm_arch_process_async_events(CPUState *env)
+int kvm_arch_process_async_events(CPUPPCState *env)
 {
     return env->halted;
 }
 
-static int kvmppc_handle_halt(CPUState *env)
+static int kvmppc_handle_halt(CPUPPCState *env)
 {
     if (!(env->interrupt_request & CPU_INTERRUPT_HARD) && (msr_ee)) {
         env->halted = 1;
@@ -518,7 +727,7 @@ static int kvmppc_handle_halt(CPUState *env)
 }
 
 /* map dcr access to existing qemu dcr emulation */
-static int kvmppc_handle_dcr_read(CPUState *env, uint32_t dcrn, uint32_t *data)
+static int kvmppc_handle_dcr_read(CPUPPCState *env, uint32_t dcrn, uint32_t *data)
 {
     if (ppc_dcr_read(env->dcr_env, dcrn, data) < 0)
         fprintf(stderr, "Read to unhandled DCR (0x%x)\n", dcrn);
@@ -526,7 +735,7 @@ static int kvmppc_handle_dcr_read(CPUState *env, uint32_t dcrn, uint32_t *data)
     return 0;
 }
 
-static int kvmppc_handle_dcr_write(CPUState *env, uint32_t dcrn, uint32_t data)
+static int kvmppc_handle_dcr_write(CPUPPCState *env, uint32_t dcrn, uint32_t data)
 {
     if (ppc_dcr_write(env->dcr_env, dcrn, data) < 0)
         fprintf(stderr, "Write to unhandled DCR (0x%x)\n", dcrn);
@@ -534,7 +743,7 @@ static int kvmppc_handle_dcr_write(CPUState *env, uint32_t dcrn, uint32_t data)
     return 0;
 }
 
-int kvm_arch_handle_exit(CPUState *env, struct kvm_run *run)
+int kvm_arch_handle_exit(CPUPPCState *env, struct kvm_run *run)
 {
     int ret;
 
@@ -557,7 +766,7 @@ int kvm_arch_handle_exit(CPUState *env, struct kvm_run *run)
         dprintf("handle PAPR hypercall\n");
         run->papr_hcall.ret = spapr_hypercall(env, run->papr_hcall.nr,
                                               run->papr_hcall.args);
-        ret = 1;
+        ret = 0;
         break;
 #endif
     default:
@@ -704,7 +913,7 @@ uint32_t kvmppc_get_dfp(void)
     return kvmppc_read_int_cpu_dt("ibm,dfp");
 }
 
-int kvmppc_get_hypercall(CPUState *env, uint8_t *buf, int buf_len)
+int kvmppc_get_hypercall(CPUPPCState *env, uint8_t *buf, int buf_len)
 {
     uint32_t *hc = (uint32_t*)buf;
 
@@ -734,12 +943,13 @@ int kvmppc_get_hypercall(CPUState *env, uint8_t *buf, int buf_len)
     return 0;
 }
 
-void kvmppc_set_papr(CPUState *env)
+void kvmppc_set_papr(CPUPPCState *env)
 {
     struct kvm_enable_cap cap = {};
     struct kvm_one_reg reg = {};
     struct kvm_sregs sregs = {};
     int ret;
+    uint64_t hior = env->spr[SPR_HIOR];
 
     cap.cap = KVM_CAP_PPC_PAPR;
     ret = kvm_vcpu_ioctl(env, KVM_ENABLE_CAP, &cap);
@@ -755,11 +965,14 @@ void kvmppc_set_papr(CPUState *env)
      *     Once we have qdev CPUs, move HIOR to a qdev property and
      *     remove this chunk.
      */
-    reg.id = KVM_ONE_REG_PPC_HIOR;
-    reg.u.reg64 = env->spr[SPR_HIOR];
+    reg.id = KVM_REG_PPC_HIOR;
+    reg.addr = (uintptr_t)&hior;
     ret = kvm_vcpu_ioctl(env, KVM_SET_ONE_REG, &reg);
     if (ret) {
-        goto fail;
+        fprintf(stderr, "Couldn't set HIOR. Maybe you're running an old \n"
+                        "kernel with support for HV KVM but no PAPR PR \n"
+                        "KVM in which case things will work. If they don't \n"
+                        "please update your host kernel!\n");
     }
 
     /* Set SDR1 so kernel space finds the HTAB */
@@ -822,7 +1035,8 @@ off_t kvmppc_alloc_rma(const char *name, MemoryRegion *sysmem)
     };
 
     rma_region = g_new(MemoryRegion, 1);
-    memory_region_init_ram_ptr(rma_region, NULL, name, size, rma);
+    memory_region_init_ram_ptr(rma_region, name, size, rma);
+    vmstate_register_ram_global(rma_region);
     memory_region_add_subregion(sysmem, 0, rma_region);
 
     return size;
@@ -853,7 +1067,7 @@ void *kvmppc_create_spapr_tce(uint32_t liobn, uint32_t window_size, int *pfd)
         return NULL;
     }
 
-    len = (window_size / SPAPR_VIO_TCE_PAGE_SIZE) * sizeof(VIOsPAPR_RTCE);
+    len = (window_size / SPAPR_TCE_PAGE_SIZE) * sizeof(sPAPRTCE);
     /* FIXME: round this up to page size */
 
     table = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
@@ -876,7 +1090,7 @@ int kvmppc_remove_spapr_tce(void *table, int fd, uint32_t window_size)
         return -1;
     }
 
-    len = (window_size / SPAPR_VIO_TCE_PAGE_SIZE)*sizeof(VIOsPAPR_RTCE);
+    len = (window_size / SPAPR_TCE_PAGE_SIZE)*sizeof(sPAPRTCE);
     if ((munmap(table, len) < 0) ||
         (close(fd) < 0)) {
         fprintf(stderr, "KVM: Unexpected error removing TCE table: %s",
@@ -933,12 +1147,25 @@ const ppc_def_t *kvmppc_host_cpu_def(void)
     return spec;
 }
 
-bool kvm_arch_stop_on_emulation_error(CPUState *env)
+int kvmppc_fixup_cpu(CPUPPCState *env)
+{
+    int smt;
+
+    /* Adjust cpu index for SMT */
+    smt = kvmppc_smt_threads();
+    env->cpu_index = (env->cpu_index / smp_threads) * smt
+        + (env->cpu_index % smp_threads);
+
+    return 0;
+}
+
+
+bool kvm_arch_stop_on_emulation_error(CPUPPCState *env)
 {
     return true;
 }
 
-int kvm_arch_on_sigbus_vcpu(CPUState *env, int code, void *addr)
+int kvm_arch_on_sigbus_vcpu(CPUPPCState *env, int code, void *addr)
 {
     return 1;
 }

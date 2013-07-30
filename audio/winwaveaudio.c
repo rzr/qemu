@@ -72,7 +72,7 @@ static void winwave_log_mmresult (MMRESULT mr)
         break;
 
     case MMSYSERR_NOMEM:
-        str = "Unable to allocate or locl memory";
+        str = "Unable to allocate or lock memory";
         break;
 
     case WAVERR_SYNC:
@@ -349,33 +349,16 @@ static int winwave_ctl_out (HWVoiceOut *hw, int cmd, ...)
             else {
                 hw->poll_mode = 0;
             }
-#if defined(CONFIG_MARU)
-                wave->paused = 0;
-#else
-            if (wave->paused) {
-                mr = waveOutRestart (wave->hwo);
-                if (mr != MMSYSERR_NOERROR) {
-                    winwave_logerr (mr, "waveOutRestart");
-                }
-                wave->paused = 0;
-            }
-#endif
+            wave->paused = 0;
         }
         return 0;
 
     case VOICE_DISABLE:
         if (!wave->paused) {
-#if defined(CONFIG_MARU)
-        mr = waveOutReset (wave->hwo);
+            mr = waveOutReset (wave->hwo);
             if (mr != MMSYSERR_NOERROR) {
                 winwave_logerr (mr, "waveOutReset");
             }
-#else
-            mr = waveOutPause (wave->hwo);
-            if (mr != MMSYSERR_NOERROR) {
-                winwave_logerr (mr, "waveOutPause");
-            }
-#endif
             else {
                 wave->paused = 1;
             }

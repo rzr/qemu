@@ -3,12 +3,20 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdbool.h>
 #ifdef __OpenBSD__
 #include <sys/types.h>
 #include <sys/signal.h>
 #endif
 
 #include <sys/time.h>
+
+#if defined(CONFIG_SOLARIS) && CONFIG_SOLARIS_VERSION < 10
+/* [u]int_fast*_t not in <sys/int_types.h> */
+typedef unsigned char           uint_fast8_t;
+typedef unsigned int            uint_fast16_t;
+typedef signed int              int_fast16_t;
+#endif
 
 #ifndef glue
 #define xglue(x, y) x ## y
@@ -26,9 +34,6 @@
 #define unlikely(x)   __builtin_expect(!!(x), 0)
 #endif
 
-#ifdef CONFIG_NEED_OFFSETOF
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *) 0)->MEMBER)
-#endif
 #ifndef container_of
 #define container_of(ptr, type, member) ({                      \
         const typeof(((type *) 0)->member) *__mptr = (ptr);     \
@@ -66,17 +71,13 @@
 #ifndef always_inline
 #if !((__GNUC__ < 3) || defined(__APPLE__))
 #ifdef __OPTIMIZE__
+#undef inline
 #define inline __attribute__ (( always_inline )) __inline__
 #endif
 #endif
 #else
+#undef inline
 #define inline always_inline
-#endif
-
-#ifdef __i386__
-#define REGPARM __attribute((regparm(3)))
-#else
-#define REGPARM
 #endif
 
 #define qemu_printf printf
@@ -102,6 +103,11 @@ void qemu_vfree(void *ptr);
 #else
 #define QEMU_MADV_MERGEABLE QEMU_MADV_INVALID
 #endif
+#ifdef MADV_DONTDUMP
+#define QEMU_MADV_DONTDUMP MADV_DONTDUMP
+#else
+#define QEMU_MADV_DONTDUMP QEMU_MADV_INVALID
+#endif
 
 #elif defined(CONFIG_POSIX_MADVISE)
 
@@ -109,6 +115,7 @@ void qemu_vfree(void *ptr);
 #define QEMU_MADV_DONTNEED  POSIX_MADV_DONTNEED
 #define QEMU_MADV_DONTFORK  QEMU_MADV_INVALID
 #define QEMU_MADV_MERGEABLE QEMU_MADV_INVALID
+#define QEMU_MADV_DONTDUMP QEMU_MADV_INVALID
 
 #else /* no-op */
 
@@ -116,6 +123,7 @@ void qemu_vfree(void *ptr);
 #define QEMU_MADV_DONTNEED  QEMU_MADV_INVALID
 #define QEMU_MADV_DONTFORK  QEMU_MADV_INVALID
 #define QEMU_MADV_MERGEABLE QEMU_MADV_INVALID
+#define QEMU_MADV_DONTDUMP QEMU_MADV_INVALID
 
 #endif
 
@@ -148,5 +156,13 @@ static inline void qemu_timersub(const struct timeval *val1,
 #else
 #define qemu_timersub timersub
 #endif
+
+void qemu_set_cloexec(int fd);
+
+void qemu_set_version(const char *);
+const char *qemu_get_version(void);
+
+void fips_set_state(bool requested);
+bool fips_get_state(void);
 
 #endif

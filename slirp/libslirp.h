@@ -15,6 +15,7 @@ Slirp *slirp_init(int restricted, struct in_addr vnetwork,
                   struct in_addr vnameserver, void *opaque);
 void slirp_cleanup(Slirp *slirp);
 
+void slirp_update_timeout(uint32_t *timeout);
 void slirp_select_fill(int *pnfds,
                        fd_set *readfds, fd_set *writefds, fd_set *xfds);
 
@@ -24,7 +25,6 @@ void slirp_select_poll(fd_set *readfds, fd_set *writefds, fd_set *xfds,
 void slirp_input(Slirp *slirp, const uint8_t *pkt, int pkt_len);
 
 /* you must provide the following functions: */
-int slirp_can_output(void *opaque);
 void slirp_output(void *opaque, const uint8_t *pkt, int pkt_len);
 
 int slirp_add_hostfwd(Slirp *slirp, int is_udp,

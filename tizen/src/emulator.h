@@ -5,10 +5,10 @@
  *
  * Contact: 
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * HyunJun Son
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,24 +31,28 @@
 
 /**
  * @file emulator.h
- * @brief - header of file these are config struecture and defines in emulator
+ * @brief - header file for emulator.c
  */
 
 #ifndef __EMULATOR_H__
 #define __EMULATOR_H__
 
+#include "maru_common.h"
+#include "qlist.h"
+#include "qemu-option.h"
+
 #define MAXLEN  512
 #define MAXPACKETLEN 60
+#define SHMKEY	26099
 
-extern char tizen_target_path[MAXLEN];
+extern gchar bin_path[];
+extern gchar log_path[];
 
 void exit_emulator(void);
-void set_image_and_log_path(char *qemu_argv);
-void redir_output(void);
-void extract_qemu_info(int qemu_argc, char **qemu_argv);
-void extract_skin_info(int skin_argc, char **skin_argv);
+char *get_bin_path(void);
 void prepare_maru(void);
-void check_shdmem(void);
-void make_shdmem(void);
 
+const gchar * get_log_path(void);
+const gchar * prepare_maru_devices(const gchar * kernel_cmdline);
+int maru_device_check(QemuOpts *opts);
 #endif /* __EMULATOR_H__ */

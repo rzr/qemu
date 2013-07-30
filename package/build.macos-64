@@ -1,0 +1,63 @@
+#!/bin/sh -xe
+# clean
+clean()
+{
+	prepare
+
+	cd $SRCDIR/tizen
+	if test -e "Makefile"
+	then
+		./emulator_configure.sh x86
+		make distclean
+	fi
+	rm -rf $SRCDIR/*.zip
+	rm -rf $SRCDIR/*.tar.gz
+}
+
+# check build environment
+prepare()
+{
+    if [ "$JAVA_HOME" = "" ]
+    then
+        echo "Make sure that you have installed JDK"
+        echo "and then set installed JDK/bin path into JAVA_HOME"
+        echo "as a system environment variable on your PC!!"
+        exit 1
+    fi
+}
+
+# build
+build()
+{
+	cd $SRCDIR/tizen/
+	./emulator_configure.sh x86
+	make all_dibs
+	if [ $? -eq 0 ]
+	then
+		echo "build success"
+	else
+		echo "build failure"
+		exit 1
+	fi
+}
+
+# install
+install()
+{
+	X86_BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
+	COMMON_BIN_DIR=$SRCDIR/package/emulator-qemu-common.package.${TARGET_OS}/data/tools
+	mkdir -p $X86_BIN_DIR
+	mkdir -p $COMMON_BIN_DIR
+
+	cd $SRCDIR/tizen
+	make install_dibs
+
+	mv x86 $X86_BIN_DIR/emulator
+	mv common $COMMON_BIN_DIR/emulator
+}
+
+[ "$1" = "clean" ] && clean
+[ "$1" = "build" ] && build
+[ "$1" = "install" ] && install
+
+echo "success"

@@ -5,6 +5,9 @@
  * Written by Andrzej Zaborowski <balrog@zabor.org>
  *
  * This code is licensed under the GNU GPL v2.
+ *
+ * Contributions after 2012-01-13 are licensed under the terms of the
+ * GNU GPL, version 2 or (at your option) any later version.
  */
 
 #include "hw.h"
@@ -167,7 +170,7 @@ static int sl_nand_init(SysBusDevice *dev) {
     s->nand = nand_init(nand ? nand->bdrv : NULL, s->manf_id, s->chip_id);
 
     memory_region_init_io(&s->iomem, &sl_ops, s, "sl", 0x40);
-    sysbus_init_mmio_region(dev, &s->iomem);
+    sysbus_init_mmio(dev, &s->iomem);
 
     return 0;
 }
@@ -714,7 +717,7 @@ static void spitz_microdrive_attach(PXA2xxState *cpu, int slot)
 
 static void spitz_wm8750_addr(void *opaque, int line, int level)
 {
-    i2c_slave *wm = (i2c_slave *) opaque;
+    I2CSlave *wm = (I2CSlave *) opaque;
     if (level)
         i2c_set_slave_address(wm, SPITZ_WM_ADDRH);
     else
@@ -881,7 +884,7 @@ static void spitz_common_init(ram_addr_t ram_size,
                 const char *kernel_cmdline, const char *initrd_filename,
                 const char *cpu_model, enum spitz_model_e model, int arm_id)
 {
-    PXA2xxState *cpu;
+    PXA2xxState *mpu;
     DeviceState *scp0, *scp1 = NULL;
     MemoryRegion *address_space_mem = get_system_memory();
     MemoryRegion *rom = g_new(MemoryRegion, 1);
@@ -890,45 +893,46 @@ static void spitz_common_init(ram_addr_t ram_size,
         cpu_model = (model == terrier) ? "pxa270-c5" : "pxa270-c0";
 
     /* Setup CPU & memory */
-    cpu = pxa270_init(address_space_mem, spitz_binfo.ram_size, cpu_model);
+    mpu = pxa270_init(address_space_mem, spitz_binfo.ram_size, cpu_model);
 
-    sl_flash_register(cpu, (model == spitz) ? FLASH_128M : FLASH_1024M);
+    sl_flash_register(mpu, (model == spitz) ? FLASH_128M : FLASH_1024M);
 
-    memory_region_init_ram(rom, NULL, "spitz.rom", SPITZ_ROM);
+    memory_region_init_ram(rom, "spitz.rom", SPITZ_ROM);
+    vmstate_register_ram_global(rom);
     memory_region_set_readonly(rom, true);
     memory_region_add_subregion(address_space_mem, 0, rom);
 
     /* Setup peripherals */
-    spitz_keyboard_register(cpu);
+    spitz_keyboard_register(mpu);
 
-    spitz_ssp_attach(cpu);
+    spitz_ssp_attach(mpu);
 
     scp0 = sysbus_create_simple("scoop", 0x10800000, NULL);
     if (model != akita) {
         scp1 = sysbus_create_simple("scoop", 0x08800040, NULL);
     }
 
-    spitz_scoop_gpio_setup(cpu, scp0, scp1);
+    spitz_scoop_gpio_setup(mpu, scp0, scp1);
 
-    spitz_gpio_setup(cpu, (model == akita) ? 1 : 2);
+    spitz_gpio_setup(mpu, (model == akita) ? 1 : 2);
 
-    spitz_i2c_setup(cpu);
+    spitz_i2c_setup(mpu);
 
     if (model == akita)
-        spitz_akita_i2c_setup(cpu);
+        spitz_akita_i2c_setup(mpu);
 
     if (model == terrier)
         /* A 6.0 GB microdrive is permanently sitting in CF slot 1.  */
-        spitz_microdrive_attach(cpu, 1);
+        spitz_microdrive_attach(mpu, 1);
     else if (model != akita)
         /* A 4.0 GB microdrive is permanently sitting in CF slot 0.  */
-        spitz_microdrive_attach(cpu, 0);
+        spitz_microdrive_attach(mpu, 0);
 
     spitz_binfo.kernel_filename = kernel_filename;
     spitz_binfo.kernel_cmdline = kernel_cmdline;
     spitz_binfo.initrd_filename = initrd_filename;
     spitz_binfo.board_id = arm_id;
-    arm_load_kernel(cpu->env, &spitz_binfo);
+    arm_load_kernel(mpu->cpu, &spitz_binfo);
     sl_bootparam_write(SL_PXA_PARAM_BASE);
 }
 
@@ -1019,16 +1023,27 @@ static VMStateDescription vmstate_sl_nand_info = {
     },
 };
 
-static SysBusDeviceInfo sl_nand_info = {
-    .init = sl_nand_init,
-    .qdev.name = "sl-nand",
-    .qdev.size = sizeof(SLNANDState),
-    .qdev.vmsd = &vmstate_sl_nand_info,
-    .qdev.props = (Property []) {
-        DEFINE_PROP_UINT8("manf_id", SLNANDState, manf_id, NAND_MFR_SAMSUNG),
-        DEFINE_PROP_UINT8("chip_id", SLNANDState, chip_id, 0xf1),
-        DEFINE_PROP_END_OF_LIST(),
-    },
+static Property sl_nand_properties[] = {
+    DEFINE_PROP_UINT8("manf_id", SLNANDState, manf_id, NAND_MFR_SAMSUNG),
+    DEFINE_PROP_UINT8("chip_id", SLNANDState, chip_id, 0xf1),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void sl_nand_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    SysBusDeviceClass *k = SYS_BUS_DEVICE_CLASS(klass);
+
+    k->init = sl_nand_init;
+    dc->vmsd = &vmstate_sl_nand_info;
+    dc->props = sl_nand_properties;
+}
+
+static TypeInfo sl_nand_info = {
+    .name          = "sl-nand",
+    .parent        = TYPE_SYS_BUS_DEVICE,
+    .instance_size = sizeof(SLNANDState),
+    .class_init    = sl_nand_class_init,
 };
 
 static VMStateDescription vmstate_spitz_kbd = {
@@ -1045,14 +1060,25 @@ static VMStateDescription vmstate_spitz_kbd = {
     },
 };
 
-static SysBusDeviceInfo spitz_keyboard_info = {
-    .init = spitz_keyboard_init,
-    .qdev.name = "spitz-keyboard",
-    .qdev.size = sizeof(SpitzKeyboardState),
-    .qdev.vmsd = &vmstate_spitz_kbd,
-    .qdev.props = (Property []) {
-        DEFINE_PROP_END_OF_LIST(),
-    },
+static Property spitz_keyboard_properties[] = {
+    DEFINE_PROP_END_OF_LIST(),
+};
+
+static void spitz_keyboard_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    SysBusDeviceClass *k = SYS_BUS_DEVICE_CLASS(klass);
+
+    k->init = spitz_keyboard_init;
+    dc->vmsd = &vmstate_spitz_kbd;
+    dc->props = spitz_keyboard_properties;
+}
+
+static TypeInfo spitz_keyboard_info = {
+    .name          = "spitz-keyboard",
+    .parent        = TYPE_SYS_BUS_DEVICE,
+    .instance_size = sizeof(SpitzKeyboardState),
+    .class_init    = spitz_keyboard_class_init,
 };
 
 static const VMStateDescription vmstate_corgi_ssp_regs = {
@@ -1066,12 +1092,21 @@ static const VMStateDescription vmstate_corgi_ssp_regs = {
     }
 };
 
-static SSISlaveInfo corgi_ssp_info = {
-    .qdev.name = "corgi-ssp",
-    .qdev.size = sizeof(CorgiSSPState),
-    .qdev.vmsd = &vmstate_corgi_ssp_regs,
-    .init = corgi_ssp_init,
-    .transfer = corgi_ssp_transfer
+static void corgi_ssp_class_init(ObjectClass *klass, void *data)
+{
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    SSISlaveClass *k = SSI_SLAVE_CLASS(klass);
+
+    k->init = corgi_ssp_init;
+    k->transfer = corgi_ssp_transfer;
+    dc->vmsd = &vmstate_corgi_ssp_regs;
+}
+
+static TypeInfo corgi_ssp_info = {
+    .name          = "corgi-ssp",
+    .parent        = TYPE_SSI_SLAVE,
+    .instance_size = sizeof(CorgiSSPState),
+    .class_init    = corgi_ssp_class_init,
 };
 
 static const VMStateDescription vmstate_spitz_lcdtg_regs = {
@@ -1086,20 +1121,29 @@ static const VMStateDescription vmstate_spitz_lcdtg_regs = {
     }
 };
 
-static SSISlaveInfo spitz_lcdtg_info = {
-    .qdev.name = "spitz-lcdtg",
-    .qdev.size = sizeof(SpitzLCDTG),
-    .qdev.vmsd = &vmstate_spitz_lcdtg_regs,
-    .init = spitz_lcdtg_init,
-    .transfer = spitz_lcdtg_transfer
-};
-
-static void spitz_register_devices(void)
+static void spitz_lcdtg_class_init(ObjectClass *klass, void *data)
 {
-    ssi_register_slave(&corgi_ssp_info);
-    ssi_register_slave(&spitz_lcdtg_info);
-    sysbus_register_withprop(&spitz_keyboard_info);
-    sysbus_register_withprop(&sl_nand_info);
+    DeviceClass *dc = DEVICE_CLASS(klass);
+    SSISlaveClass *k = SSI_SLAVE_CLASS(klass);
+
+    k->init = spitz_lcdtg_init;
+    k->transfer = spitz_lcdtg_transfer;
+    dc->vmsd = &vmstate_spitz_lcdtg_regs;
 }
 
-device_init(spitz_register_devices)
+static TypeInfo spitz_lcdtg_info = {
+    .name          = "spitz-lcdtg",
+    .parent        = TYPE_SSI_SLAVE,
+    .instance_size = sizeof(SpitzLCDTG),
+    .class_init    = spitz_lcdtg_class_init,
+};
+
+static void spitz_register_types(void)
+{
+    type_register_static(&corgi_ssp_info);
+    type_register_static(&spitz_lcdtg_info);
+    type_register_static(&spitz_keyboard_info);
+    type_register_static(&sl_nand_info);
+}
+
+type_init(spitz_register_types)

@@ -1,0 +1,10 @@
+prefix=@INSTALL_DIR@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: egl
+Description: DGLES egl library
+Version: @DEGL_VERSION@
+Libs: -L${libdir} -lEGL
+Cflags: -I${includedir} 

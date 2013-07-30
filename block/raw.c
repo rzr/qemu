@@ -12,12 +12,14 @@ static int raw_open(BlockDriverState *bs, int flags)
 static int coroutine_fn raw_co_readv(BlockDriverState *bs, int64_t sector_num,
                                      int nb_sectors, QEMUIOVector *qiov)
 {
+    BLKDBG_EVENT(bs->file, BLKDBG_READ_AIO);
     return bdrv_co_readv(bs->file, sector_num, nb_sectors, qiov);
 }
 
 static int coroutine_fn raw_co_writev(BlockDriverState *bs, int64_t sector_num,
                                       int nb_sectors, QEMUIOVector *qiov)
 {
+    BLKDBG_EVENT(bs->file, BLKDBG_WRITE_AIO);
     return bdrv_co_writev(bs->file, sector_num, nb_sectors, qiov);
 }
 
@@ -25,9 +27,11 @@ static void raw_close(BlockDriverState *bs)
 {
 }
 
-static int coroutine_fn raw_co_flush(BlockDriverState *bs)
+static int coroutine_fn raw_co_is_allocated(BlockDriverState *bs,
+                                            int64_t sector_num,
+                                            int nb_sectors, int *pnum)
 {
-    return bdrv_co_flush(bs->file);
+    return bdrv_co_is_allocated(bs->file, sector_num, nb_sectors, pnum);
 }
 
 static int64_t raw_getlength(BlockDriverState *bs)
@@ -61,7 +65,7 @@ static int raw_media_changed(BlockDriverState *bs)
     return bdrv_media_changed(bs->file);
 }
 
-static void raw_eject(BlockDriverState *bs, int eject_flag)
+static void raw_eject(BlockDriverState *bs, bool eject_flag)
 {
     bdrv_eject(bs->file, eject_flag);
 }
@@ -113,7 +117,7 @@ static BlockDriver bdrv_raw = {
 
     .bdrv_co_readv          = raw_co_readv,
     .bdrv_co_writev         = raw_co_writev,
-    .bdrv_co_flush_to_disk  = raw_co_flush,
+    .bdrv_co_is_allocated   = raw_co_is_allocated,
     .bdrv_co_discard        = raw_co_discard,
 
     .bdrv_probe         = raw_probe,

@@ -4,8 +4,8 @@
 #include "qemu-char.h"
 #include "qdict.h"
 #include "notify.h"
-#include "qerror.h"
 #include "monitor.h"
+#include "trace.h"
 
 /* keyboard/mouse support */
 
@@ -79,8 +79,6 @@ struct MouseTransformInfo {
     int a[7];
 };
 
-void do_info_mice_print(Monitor *mon, const QObject *data);
-void do_info_mice(Monitor *mon, QObject **ret_data);
 void do_mouse_set(Monitor *mon, const QDict *qdict);
 
 /* keysym is a unicode code except for special keys (see QEMU_KEY_xxx
@@ -168,6 +166,9 @@ struct DisplayChangeListener {
     void (*dpy_fill)(struct DisplayState *s, int x, int y,
                      int w, int h, uint32_t c);
     void (*dpy_text_cursor)(struct DisplayState *s, int x, int y);
+#ifdef CONFIG_OPENGLES
+    void (*dpy_updatecaption)(void);
+#endif
 
     struct DisplayChangeListener *next;
 };
@@ -210,11 +211,13 @@ static inline DisplaySurface* qemu_create_displaysurface(DisplayState *ds, int w
 
 static inline DisplaySurface* qemu_resize_displaysurface(DisplayState *ds, int width, int height)
 {
+    trace_displaysurface_resize(ds, ds->surface, width, height);
     return ds->allocator->resize_displaysurface(ds->surface, width, height);
 }
 
 static inline void qemu_free_displaysurface(DisplayState *ds)
 {
+    trace_displaysurface_free(ds, ds->surface);
     ds->allocator->free_displaysurface(ds->surface);
 }
 
@@ -246,6 +249,20 @@ static inline void dpy_update(DisplayState *s, int x, int y, int w, int h)
         dcl = dcl->next;
     }
 }
+
+#ifdef CONFIG_OPENGLES
+static inline void dpy_updatecaption(DisplayState *s)
+{
+    struct DisplayChangeListener *dcl = s->listeners;
+    while (dcl != NULL) {
+        if(dcl->dpy_updatecaption != NULL)
+        {
+            dcl->dpy_updatecaption();
+        }
+        dcl = dcl->next;
+    }
+}
+#endif
 
 static inline void dpy_resize(DisplayState *s)
 {
@@ -348,7 +365,7 @@ static inline void console_write_ch(console_ch_t *dest, uint32_t ch)
 
 typedef void (*vga_hw_update_ptr)(void *);
 typedef void (*vga_hw_invalidate_ptr)(void *);
-typedef void (*vga_hw_screen_dump_ptr)(void *, const char *);
+typedef void (*vga_hw_screen_dump_ptr)(void *, const char *, bool cswitch);
 typedef void (*vga_hw_text_update_ptr)(void *, console_ch_t *);
 
 DisplayState *graphic_console_init(vga_hw_update_ptr update,
@@ -364,7 +381,7 @@ void vga_hw_text_update(console_ch_t *chardata);
 
 int is_graphic_console(void);
 int is_fixedsize_console(void);
-int text_console_init(QemuOpts *opts, CharDriverState **_chr);
+CharDriverState *text_console_init(QemuOpts *opts);
 void text_consoles_set_display(DisplayState *ds);
 void console_select(unsigned int index);
 void console_color_init(DisplayState *ds);
@@ -391,12 +408,10 @@ int vnc_display_pw_expire(DisplayState *ds, time_t expires);
 #else
 static inline int vnc_display_password(DisplayState *ds, const char *password)
 {
-    qerror_report(QERR_FEATURE_DISABLED, "vnc");
     return -ENODEV;
 }
 static inline int vnc_display_pw_expire(DisplayState *ds, time_t expires)
 {
-    qerror_report(QERR_FEATURE_DISABLED, "vnc");
     return -ENODEV;
 };
 #endif

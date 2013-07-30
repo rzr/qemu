@@ -1,14 +1,14 @@
 /*
  * Emulator
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * HyunJun Son <hj79.son@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * HyunJun Son
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,44 +32,41 @@
 
 
 #include "maru_common.h"
-#include <stdlib.h>
-#ifdef CONFIG_SDL
-#include <SDL.h>
-#endif
 #include "emulator.h"
+#include "osutil.h"
 #include "guest_debug.h"
 #include "sdb.h"
 #include "string.h"
 #include "skin/maruskin_server.h"
 #include "skin/maruskin_client.h"
 #include "guest_server.h"
-#include "debug_ch.h"
-#include "option.h"
 #include "emul_state.h"
 #include "qemu_socket.h"
 #include "build_info.h"
 #include "maru_err_table.h"
-#include <glib.h>
-#include <glib/gstdio.h>
+#include "maru_display.h"
+#include "qemu-config.h"
+#include "mloop_event.h"
+#include "hw/maru_camera_common.h"
+#include "hw/gloffscreen_test.h"
+#include "debug_ch.h"
 
-#if defined(CONFIG_WIN32)
-#include <windows.h>
-#elif defined(CONFIG_LINUX)
-#include <linux/version.h>
-#include <sys/utsname.h>
-#include <sys/sysinfo.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
+#include <stdlib.h>
+#ifdef CONFIG_SDL
+#include <SDL.h>
 #endif
 
-#include "mloop_event.h"
+#ifdef CONFIG_DARWIN
+#include "ns_event.h"
+#endif
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
 #define QEMU_ARGS_PREFIX "--qemu-args"
 #define SKIN_ARGS_PREFIX "--skin-args"
 #define IMAGE_PATH_PREFIX   "file="
-#define IMAGE_PATH_SUFFIX   ",if=virtio"
+//#define IMAGE_PATH_SUFFIX   ",if=virtio"
+#define IMAGE_PATH_SUFFIX   ",if=virtio,index=1"
 #define SDB_PORT_PREFIX     "sdb_port="
 #define LOGS_SUFFIX         "/logs/"
 #define LOGFILE             "emulator.log"
@@ -78,20 +75,38 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 
 #define MIDBUF  128
 
+gchar bin_path[PATH_MAX] = { 0, };
+gchar log_path[PATH_MAX] = { 0, };
+
 int tizen_base_port;
-char tizen_target_path[MAXLEN];
-char logpath[MAXLEN];
+char tizen_target_path[PATH_MAX];
+char tizen_target_img_path[PATH_MAX];
 
-static int skin_argc;
-static char **skin_argv;
-static int qemu_argc;
-static char **qemu_argv;
+int enable_gl = 0;
+int enable_yagl = 0;
 
-void maru_display_fini(void);
+int is_webcam_enabled;
 
-char *get_logpath(void)
+#define LEN_MARU_KERNEL_CMDLINE 512
+gchar maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
+
+static int _skin_argc;
+static char **_skin_argv;
+static int _qemu_argc;
+static char **_qemu_argv;
+
+#if defined(CONFIG_LINUX)
+#include <sys/shm.h>
+extern int g_shmid;
+#endif
+
+#ifdef CONFIG_DARWIN
+int thread_running = 1; /* Check if we need exit main */
+#endif
+
+const gchar *get_log_path(void)
 {
-    return logpath;
+    return log_path;
 }
 
 void exit_emulator(void)
@@ -100,141 +115,15 @@ void exit_emulator(void)
     shutdown_skin_server();
     shutdown_guest_server();
 
+#if defined(CONFIG_LINUX)
+    /* clean up the vm lock memory by munkyu */
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("emulator.c: ");
+    }
+#endif
+
     maru_display_fini();
-}
-
-void check_shdmem(void)
-{
-#if defined(CONFIG_LINUX)
-    int shm_id;
-    void *shm_addr;
-    u_int port;
-    int val;
-    struct shmid_ds shm_info;
-
-    for (port = 26100; port < 26200; port += 10) {
-        shm_id = shmget((key_t)port, 0, 0);
-        if (shm_id != -1) {
-            shm_addr = shmat(shm_id, (void *)0, 0);
-            if ((void *)-1 == shm_addr) {
-                ERR("error occured at shmat()\n");
-                break;
-            }
-
-            val = shmctl(shm_id, IPC_STAT, &shm_info);
-            if (val != -1) {
-                INFO("count of process that use shared memory : %d\n",
-                    shm_info.shm_nattch);
-                if ((shm_info.shm_nattch > 0) &&
-                    strcmp(tizen_target_path, (char *)shm_addr) == 0) {
-                    if (check_port_bind_listen(port + 1) > 0) {
-                        shmdt(shm_addr);
-                        continue;
-                    }
-                    shmdt(shm_addr);
-                    maru_register_exit_msg(MARU_EXIT_UNKNOWN,
-                                        (char *)"Can not execute this VM.\n \
-                                        The same name is running now.");
-                    exit(0);
-                } else {
-                    shmdt(shm_addr);
-                }
-            }
-        }
-    }
-
-#elif defined(CONFIG_WIN32)
-    u_int port;
-    char *base_port = NULL;
-    char *pBuf;
-    HANDLE hMapFile;
-    for (port = 26100; port < 26200; port += 10) {
-        base_port = g_strdup_printf("%d", port);
-        hMapFile = OpenFileMapping(FILE_MAP_READ, TRUE, base_port);
-        if (hMapFile == NULL) {
-            INFO("port %s is not used.\n", base_port);
-            continue;
-        } else {
-             pBuf = (char *)MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 50);
-            if (pBuf == NULL) {
-                ERR("Could not map view of file (%d).\n", GetLastError());
-                CloseHandle(hMapFile);
-            }
-
-            if (strcmp(pBuf, tizen_target_path) == 0) {
-                maru_register_exit_msg(MARU_EXIT_UNKNOWN,
-                    "Can not execute this VM.\nThe same name is running now.");
-                UnmapViewOfFile(pBuf);
-                CloseHandle(hMapFile);
-                free(base_port);
-                exit(0);
-            } else {
-                UnmapViewOfFile(pBuf);
-            }
-        }
-
-        CloseHandle(hMapFile);
-        free(base_port);
-    }
-#elif defined(CONFIG_DARWIN)
-    /* TODO: */
-#endif
-}
-
-void make_shdmem(void)
-{
-#if defined(CONFIG_LINUX)
-    int shmid;
-    char *shared_memory;
-
-    shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
-    if (shmid == -1) {
-        ERR("shmget failed\n");
-        return;
-    }
-
-    shared_memory = shmat(shmid, (char *)0x00, 0);
-    if (shared_memory == (void *)-1) {
-        ERR("shmat failed\n");
-        return;
-    }
-    sprintf(shared_memory, "%s", tizen_target_path);
-    INFO("shared memory key: %d value: %s\n",
-        tizen_base_port, (char *)shared_memory);
-#elif defined(CONFIG_WIN32)
-    HANDLE hMapFile;
-    char *pBuf;
-    char *port_in_use;
-    char *shared_memory;
-
-    shared_memory = g_strdup_printf("%s", tizen_target_path);
-    port_in_use =  g_strdup_printf("%d", tizen_base_port);
-    hMapFile = CreateFileMapping(
-                 INVALID_HANDLE_VALUE, /* use paging file */
-                 NULL,                 /* default security */
-                 PAGE_READWRITE,       /* read/write access */
-                 0,                /* maximum object size (high-order DWORD) */
-                 50,               /* maximum object size (low-order DWORD) */
-                 port_in_use);         /* name of mapping object */
-    if (hMapFile == NULL) {
-        ERR("Could not create file mapping object (%d).\n", GetLastError());
-        return;
-    }
-    pBuf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 50);
-
-    if (pBuf == NULL) {
-        ERR("Could not map view of file (%d).\n", GetLastError());
-        CloseHandle(hMapFile);
-        return;
-    }
-
-    CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
-    free(port_in_use);
-    free(shared_memory);
-#elif defined(CONFIG_DARWIN)
-    /* TODO: */
-#endif
-    return;
 }
 
 static void construct_main_window(int skin_argc, char *skin_argv[],
@@ -260,7 +149,13 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
                         char ***skin_argv, int *qemu_argc, char ***qemu_argv)
 {
     int i = 0;
-    int j = 0; //skin args index
+    int skin_args_index = 0;
+
+    if (argc <= 1) {
+        fprintf(stderr, "Arguments are not enough to launch Emulator. "
+                "Please try to use Emulator Manager.\n");
+        exit(1);
+    }
 
     /* classification */
     for (i = 1; i < argc; ++i) {
@@ -270,59 +165,51 @@ static void parse_options(int argc, char *argv[], int *skin_argc,
         }
     }
 
-    for (j = i; j < argc; ++j) {
-        if (strstr(argv[j], QEMU_ARGS_PREFIX)) {
-            *skin_argc = j - i - 1;
+    for (skin_args_index = i; skin_args_index < argc; ++skin_args_index) {
+        if (strstr(argv[skin_args_index], QEMU_ARGS_PREFIX)) {
+            *skin_argc = skin_args_index - i - 1;
 
-            *qemu_argc = argc - j - i + 1;
-            *qemu_argv = &(argv[j]);
+            *qemu_argc = argc - skin_args_index - i + 1;
+            *qemu_argv = &(argv[skin_args_index]);
 
-            argv[j] = argv[0];
+            argv[skin_args_index] = argv[0];
         }
     }
 }
 
-static void get_bin_dir(char *exec_argv)
+static void get_host_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
-
-    if (!exec_argv) {
-        return;
-    }
-
-    char *data = strdup(exec_argv);
-    if (!data) {
-        fprintf(stderr, "Fail to strdup for paring a binary directory.\n");
-        return;
-    }
-
-    char *p = NULL;
-#ifdef _WIN32
-    p = strrchr(data, '\\');
-    if (!p) {
-        p = strrchr(data, '/');
-    }
-#else
-    p = strrchr(data, '/');
-#endif
-    if (!p) {
-        free(data);
-        return;
-    }
-
-    strncpy(bin_dir, data, strlen(data) - strlen(p));
-
-    free(data);
-
+    get_host_proxy_os(http_proxy, https_proxy, ftp_proxy, socks_proxy);
 }
 
-void set_image_and_log_path(char *qemu_argv)
+static void set_bin_path(gchar * exec_argv)
+{
+    set_bin_path_os(exec_argv);
+}
+
+gchar * get_bin_path(void)
+{
+    return bin_path;
+}
+
+static void check_vm_lock(void)
+{
+    check_vm_lock_os();
+}
+
+static void make_vm_lock(void)
+{
+    make_vm_lock_os();
+}
+
+static void set_image_and_log_path(char *qemu_argv)
 {
     int i, j = 0;
     int name_len = 0;
     int prefix_len = 0;
     int suffix_len = 0;
     int max = 0;
-    char *path = malloc(MAXLEN);
+    char *path = malloc(PATH_MAX);
     name_len = strlen(qemu_argv);
     prefix_len = strlen(IMAGE_PATH_PREFIX);
     suffix_len = strlen(IMAGE_PATH_SUFFIX);
@@ -337,31 +224,33 @@ void set_image_and_log_path(char *qemu_argv)
         strcpy(tizen_target_path, g_path_get_dirname(path));
     }
 
-    strcpy(logpath, tizen_target_path);
-    strcat(logpath, LOGS_SUFFIX);
+    strcpy(tizen_target_img_path, path);
+    free(path);
+
+    strcpy(log_path, tizen_target_path);
+    strcat(log_path, LOGS_SUFFIX);
 #ifdef CONFIG_WIN32
-    if (access(g_win32_locale_filename_from_utf8(logpath), R_OK) != 0) {
-        g_mkdir(g_win32_locale_filename_from_utf8(logpath), 0755);
+    if (access(g_win32_locale_filename_from_utf8(log_path), R_OK) != 0) {
+        g_mkdir(g_win32_locale_filename_from_utf8(log_path), 0755);
     }
 #else
-    if (access(logpath, R_OK) != 0) {
-        g_mkdir(logpath, 0755);
+    if (access(log_path, R_OK) != 0) {
+        g_mkdir(log_path, 0755);
     }
 #endif
-    strcat(logpath, LOGFILE);
-    set_log_path(logpath);
+    strcat(log_path, LOGFILE);
 }
 
-void redir_output(void)
+static void redir_output(void)
 {
     FILE *fp;
 
-    fp = freopen(logpath, "a+", stdout);
+    fp = freopen(log_path, "a+", stdout);
     if (fp == NULL) {
         fprintf(stderr, "log file open error\n");
     }
 
-    fp = freopen(logpath, "a+", stderr);
+    fp = freopen(log_path, "a+", stderr);
     if (fp == NULL) {
         fprintf(stderr, "log file open error\n");
     }
@@ -369,7 +258,7 @@ void redir_output(void)
     setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 }
 
-void extract_qemu_info(int qemu_argc, char **qemu_argv)
+static void extract_qemu_info(int qemu_argc, char **qemu_argv)
 {
     int i = 0;
 
@@ -380,10 +269,9 @@ void extract_qemu_info(int qemu_argc, char **qemu_argv)
         }
     }
 
-    tizen_base_port = get_sdb_base_port();
 }
 
-void extract_skin_info(int skin_argc, char **skin_argv)
+static void extract_skin_info(int skin_argc, char **skin_argv)
 {
     int i = 0;
     int w = 0, h = 0;
@@ -409,7 +297,7 @@ void extract_skin_info(int skin_argc, char **skin_argv)
 }
 
 
-static void system_info(void)
+static void print_system_info(void)
 {
 #define DIV 1024
 
@@ -417,7 +305,7 @@ static void system_info(void)
     struct tm *tm_time;
     struct timeval tval;
 
-    INFO("* SDK Version : %s\n", build_version);
+    INFO("* Board name : %s\n", build_version);
     INFO("* Package %s\n", pkginfo_version);
     INFO("* Package %s\n", pkginfo_maintainer);
     INFO("* Git Head : %s\n", pkginfo_githead);
@@ -438,70 +326,168 @@ static void system_info(void)
         SDL_Linked_Version()->minor,
         SDL_Linked_Version()->patch);
 #endif
+    print_system_info_os();
+}
 
-#if defined(CONFIG_WIN32)
-    /* Retrieves information about the current os */
-    OSVERSIONINFO osvi;
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+typedef struct {
+    const char *device_name;
+    int found;
+} device_opt_finding_t;
 
-    if (GetVersionEx(&osvi)) {
-        INFO("* MajorVersion : %d, MinorVersion : %d, BuildNumber : %d, \
-            PlatformId : %d, CSDVersion : %s\n", osvi.dwMajorVersion,
-            osvi.dwMinorVersion, osvi.dwBuildNumber,
-            osvi.dwPlatformId, osvi.szCSDVersion);
+static int find_device_opt (QemuOpts *opts, void *opaque)
+{
+    device_opt_finding_t *devp = (device_opt_finding_t *) opaque;
+    if (devp->found == 1) {
+        return 0;
     }
 
-    /* Retrieves information about the current system */
-    SYSTEM_INFO sysi;
-    ZeroMemory(&sysi, sizeof(SYSTEM_INFO));
+    const char *str = qemu_opt_get (opts, "driver");
+    if (strcmp (str, devp->device_name) == 0) {
+        devp->found = 1;
+    }
+    return 0;
+}
 
-    GetSystemInfo(&sysi);
-    INFO("* Processor type : %d, Number of processors : %d\n",
-            sysi.dwProcessorType, sysi.dwNumberOfProcessors);
+#define DEFAULT_QEMU_DNS_IP "10.0.2.3"
+static void prepare_basic_features(void)
+{
+    char http_proxy[MIDBUF] ={0}, https_proxy[MIDBUF] = {0,},
+        ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},
+        dns[MIDBUF] = {0};
 
-    MEMORYSTATUSEX memInfo;
-    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-    GlobalMemoryStatusEx(&memInfo);
-    INFO("* Total Ram : %llu kB, Free: %lld kB\n",
-            memInfo.ullTotalPhys / DIV, memInfo.ullAvailPhys / DIV);
+    tizen_base_port = get_sdb_base_port();
 
-#elif defined(CONFIG_LINUX)
-    /* depends on building */
-    INFO("* Qemu build machine linux kernel version : (%d, %d, %d)\n",
-            LINUX_VERSION_CODE >> 16,
-            (LINUX_VERSION_CODE >> 8) & 0xff,
-            LINUX_VERSION_CODE & 0xff);
+    get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+    /* using "DNS" provided by default QEMU */
+    g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
-     /* depends on launching */
-    struct utsname host_uname_buf;
-    if (uname(&host_uname_buf) == 0) {
-        INFO("* Host machine uname : %s %s %s %s %s\n",
-            host_uname_buf.sysname, host_uname_buf.nodename,
-            host_uname_buf.release, host_uname_buf.version,
-            host_uname_buf.machine);
+    check_vm_lock();
+    socket_init();
+    make_vm_lock();
+
+    sdb_setup(); /* determine the base port for emulator */
+    set_emul_vm_base_port(tizen_base_port);
+
+    gchar * const tmp_str = g_strdup_printf(" sdb_port=%d,"
+        " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
+        " dns1=%s", get_emul_vm_base_port(),
+        http_proxy, https_proxy, ftp_proxy, socks_proxy, dns);
+
+    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+
+    g_free(tmp_str);
+}
+
+#define VIRTIOGL_DEV_NAME "virtio-gl-pci"
+#ifdef CONFIG_GL_BACKEND
+static void prepare_opengl_acceleration(void)
+{
+    int capability_check_gl = 0;
+
+    if (enable_gl && enable_yagl) {
+        ERR("Error: only one openGL passthrough device can be used at one time!\n");
+        exit(1);
     }
 
-    struct sysinfo sys_info;
-    if (sysinfo(&sys_info) == 0) {
-        INFO("* Total Ram : %llu kB, Free: %llu kB\n",
-            sys_info.totalram * (unsigned long long)sys_info.mem_unit / DIV,
-            sys_info.freeram * (unsigned long long)sys_info.mem_unit / DIV);
+
+    if (enable_gl || enable_yagl) {
+        capability_check_gl = gl_acceleration_capability_check();
+
+        if (capability_check_gl != 0) {
+            enable_gl = enable_yagl = 0;
+            WARN("Warn: GL acceleration was disabled due to the fail of GL check!\n");
+        }
+    }
+    if (enable_gl) {
+        device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
+        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+        if (devp.found == 0) {
+            if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, 1)) {
+                exit(1);
+            }
+        }
     }
 
-    /* pci device description */
-    INFO("* Pci devices :\n");
-    char lscmd[MAXLEN] = "lspci >> ";
-    strcat(lscmd, logpath);
-    int i = system(lscmd);
-    INFO("system function command : %s, \
-        system function returned value : %d\n", lscmd, i);
+    gchar * const tmp_str = g_strdup_printf(" gles=%d yagl=%d", enable_gl, enable_yagl);
 
-#elif defined(CONFIG_DARWIN)
-    /* TODO: */
+    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+
+    g_free(tmp_str);
+}
 #endif
 
-    INFO("\n");
+#define MARUCAM_DEV_NAME "maru_camera_pci"
+#define WEBCAM_INFO_IGNORE 0x00
+#define WEBCAM_INFO_WRITE 0x04
+static void prepare_host_webcam(void)
+{
+    is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
+
+    if (!is_webcam_enabled) {
+        INFO("[Webcam] <WARNING> Webcam support was disabled "
+                         "due to the fail of webcam capability check!\n");
+    }
+    else {
+        device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
+        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
+        if (devp.found == 0) {
+            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, 1)) {
+                INFO("Failed to initialize the marucam device.\n");
+                exit(1);
+            }
+        }
+        INFO("[Webcam] Webcam support was enabled.\n");
+    }
+
+    gchar * const tmp_str = g_strdup_printf(" enable_cam=%d", is_webcam_enabled);
+
+    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+
+    g_free(tmp_str);
+}
+
+const gchar * prepare_maru_devices(const gchar *kernel_cmdline)
+{
+    INFO("Prepare maru specified kernel command line\n");
+
+    g_strlcpy(maru_kernel_cmdline, kernel_cmdline, LEN_MARU_KERNEL_CMDLINE);
+
+    // Prepare basic features
+    prepare_basic_features();
+
+    // Prepare GL acceleration
+#ifdef CONFIG_GL_BACKEND
+    prepare_opengl_acceleration();
+#endif
+
+    // Prepare host webcam
+    prepare_host_webcam();
+
+    INFO("kernel command : %s\n", maru_kernel_cmdline);
+
+    return maru_kernel_cmdline;
+}
+
+int maru_device_check(QemuOpts *opts)
+{
+#if defined(CONFIG_GL_BACKEND)
+    // virtio-gl pci device
+    if (!enable_gl) {
+        // ignore virtio-gl-pci device, even if users set it in option.
+        const char *driver = qemu_opt_get(opts, "driver");
+        if (driver && (strcmp (driver, VIRTIOGL_DEV_NAME) == 0)) {
+            return -1;
+        }
+    }
+#endif
+    if (!is_webcam_enabled) {
+        const char *driver = qemu_opt_get(opts, "driver");
+        if (driver && (strcmp (driver, MARUCAM_DEV_NAME) == 0)) {
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 void prepare_maru(void)
@@ -510,7 +496,7 @@ void prepare_maru(void)
 
     INFO("call construct_main_window\n");
 
-    construct_main_window(skin_argc, skin_argv, qemu_argc, qemu_argv);
+    construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
 
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server(guest_server_port);
@@ -520,49 +506,82 @@ void prepare_maru(void)
 
 int qemu_main(int argc, char **argv, char **envp);
 
-int main(int argc, char *argv[])
+static int emulator_main(int argc, char *argv[])
 {
-    parse_options(argc, argv, &skin_argc, &skin_argv, &qemu_argc, &qemu_argv);
-    get_bin_dir(qemu_argv[0]);
-    socket_init();
-    extract_qemu_info(qemu_argc, qemu_argv);
+    parse_options(argc, argv, &_skin_argc,
+                &_skin_argv, &_qemu_argc, &_qemu_argv);
+    set_bin_path(_qemu_argv[0]);
+    extract_qemu_info(_qemu_argc, _qemu_argv);
 
     INFO("Emulator start !!!\n");
     atexit(maru_atexit);
 
-    extract_skin_info(skin_argc, skin_argv);
+    extract_skin_info(_skin_argc, _skin_argv);
 
-    check_shdmem();
-    make_shdmem();
-    sdb_setup();
-
-    system_info();
+    print_system_info();
 
     INFO("Prepare running...\n");
     /* Redirect stdout and stderr after debug_ch is initialized. */
     redir_output();
-
+    INFO("tizen_target_img_path: %s\n", tizen_target_img_path);
     int i;
 
-    fprintf(stdout, "qemu args : =========================================\n");
-    for (i = 0; i < qemu_argc; ++i) {
-        fprintf(stdout, "%s ", qemu_argv[i]);
+    fprintf(stdout, "qemu args: =========================================\n");
+    for (i = 0; i < _qemu_argc; ++i) {
+        fprintf(stdout, "%s ", _qemu_argv[i]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "=====================================================\n");
+    fprintf(stdout, "\nqemu args: =========================================\n");
 
-    fprintf(stdout, "skin args : =========================================\n");
-    for (i = 0; i < skin_argc; ++i) {
-        fprintf(stdout, "%s ", skin_argv[i]);
+    fprintf(stdout, "skin args: =========================================\n");
+    for (i = 0; i < _skin_argc; ++i) {
+        fprintf(stdout, "%s ", _skin_argv[i]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "=====================================================\n");
+    fprintf(stdout, "\nskin args: =========================================\n");
 
     INFO("qemu main start!\n");
-    qemu_main(qemu_argc, qemu_argv, NULL);
+    qemu_main(_qemu_argc, _qemu_argv, NULL);
 
     exit_emulator();
 
     return 0;
 }
+
+#ifndef CONFIG_DARWIN
+int main(int argc, char *argv[])
+{
+    return emulator_main(argc, argv);
+}
+#else
+int g_argc;
+
+static void* main_thread(void* args)
+{
+    char** argv;
+    int argc = g_argc;
+    argv = (char**) args;
+
+    emulator_main(argc, argv);
+
+    thread_running = 0;
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[])
+{
+    char** args;
+    pthread_t main_thread_id;
+
+    g_argc = argc;
+    args = argv;
+
+    if (0 != pthread_create(&main_thread_id, NULL, main_thread, args)) {
+        INFO("Create main thread failed\n");
+        return -1;
+    }
+
+    ns_event_loop(&thread_running);
+
+    return 0;
+}
+#endif
 

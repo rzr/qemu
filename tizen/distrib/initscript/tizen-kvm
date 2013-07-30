@@ -1,0 +1,36 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          tizen-kvm
+# Required-Start:    $local_fs $syslog
+# Required-Stop:     $local_fs $syslog
+# Should-Start:      udev
+# Should-Stop:       udev
+# Default-Start:     2 3 4 5
+# Default-Stop:      1
+# Short-Description: modprobe kvm module.
+# Description:       enable kvm module to use hardware virtualization.
+### END INIT INFO
+
+do_start () {
+	if grep -qs "^flags.* vmx" /proc/cpuinfo; then
+		modprobe -b kvm_intel
+	elif grep -qs "^flags.* svm" /proc/cpuinfo; then
+		modprobe -b kvm_amd
+	fi
+}
+
+case "$1" in
+  start)
+	do_start
+	;;
+  restart|reload|force-reload)
+	# No-op
+	;;
+  stop)
+	# No-op
+	;;
+  *)
+	echo "Usage: $0 start|stop" >&2
+	exit 3
+	;;
+esac

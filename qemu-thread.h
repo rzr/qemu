@@ -2,6 +2,7 @@
 #define __QEMU_THREAD_H 1
 
 #include <inttypes.h>
+#include <stdbool.h>
 
 typedef struct QemuMutex QemuMutex;
 typedef struct QemuCond QemuCond;
@@ -12,6 +13,9 @@ typedef struct QemuThread QemuThread;
 #else
 #include "qemu-thread-posix.h"
 #endif
+
+#define QEMU_THREAD_JOINABLE 0
+#define QEMU_THREAD_DETACHED 1
 
 void qemu_mutex_init(QemuMutex *mutex);
 void qemu_mutex_destroy(QemuMutex *mutex);
@@ -35,10 +39,11 @@ void qemu_cond_broadcast(QemuCond *cond);
 void qemu_cond_wait(QemuCond *cond, QemuMutex *mutex);
 
 void qemu_thread_create(QemuThread *thread,
-                       void *(*start_routine)(void*),
-                       void *arg);
+                        void *(*start_routine)(void *),
+                        void *arg, int mode);
+void *qemu_thread_join(QemuThread *thread);
 void qemu_thread_get_self(QemuThread *thread);
-int qemu_thread_is_self(QemuThread *thread);
+bool qemu_thread_is_self(QemuThread *thread);
 void qemu_thread_exit(void *retval);
 
 #endif

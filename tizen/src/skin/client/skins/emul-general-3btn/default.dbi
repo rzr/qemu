@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmulatorUI xmlns="http://www.tizen.org/emulator/skin/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dbi version="2.0"/>
+    <rotations>
+        <rotation name="Portrait">
+            <lcd id="0">
+            </lcd>
+            <keyMapList>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>169</keyCode>
+                        <keyName>Menu</keyName>
+                    </eventInfo>
+                    <tooltip>Menu</tooltip>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                    <tooltip>Home</tooltip>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>158</keyCode>
+                        <keyName>Back</keyName>
+                    </eventInfo>
+                    <tooltip>Back</tooltip>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume +</keyName>
+                    </eventInfo>
+                    <tooltip>Volume +</tooltip>
+                </keyMap>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume -</keyName>
+                    </eventInfo>
+                    <tooltip>Volume -</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Landscape">
+            <lcd id="0">
+            </lcd>
+        </rotation>
+        <rotation name="Reverse Portrait">
+            <lcd id="0">
+            </lcd>
+        </rotation>
+        <rotation name="Reverse Landscape">
+            <lcd id="0">
+            </lcd>
+        </rotation>
+    </rotations>
+    <colors>
+        <hoverColor B="255" G="255" R="255" />
+    </colors>
+</EmulatorUI>

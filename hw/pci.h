@@ -75,6 +75,7 @@
 #define PCI_DEVICE_ID_VIRTIO_BLOCK       0x1001
 #define PCI_DEVICE_ID_VIRTIO_BALLOON     0x1002
 #define PCI_DEVICE_ID_VIRTIO_CONSOLE     0x1003
+#define PCI_DEVICE_ID_VIRTIO_SCSI        0x1004
 
 #define PCI_DEVICE_ID_VIRTIO_GL          0x1006
 
@@ -86,7 +87,7 @@ typedef uint32_t PCIConfigReadFunc(PCIDevice *pci_dev,
                                    uint32_t address, int len);
 typedef void PCIMapIORegionFunc(PCIDevice *pci_dev, int region_num,
                                 pcibus_t addr, pcibus_t size, int type);
-typedef int PCIUnregisterFunc(PCIDevice *pci_dev);
+typedef void PCIUnregisterFunc(PCIDevice *pci_dev);
 
 typedef struct PCIIORegion {
     pcibus_t addr; /* current PCI mapping address. -1 means not mapped */
@@ -127,10 +128,70 @@ enum {
     /* command register SERR bit enabled */
 #define QEMU_PCI_CAP_SERR_BITNR 4
     QEMU_PCI_CAP_SERR = (1 << QEMU_PCI_CAP_SERR_BITNR),
+    /* Standard hot plug controller. */
+#define QEMU_PCI_SHPC_BITNR 5
+    QEMU_PCI_CAP_SHPC = (1 << QEMU_PCI_SHPC_BITNR),
+#define QEMU_PCI_SLOTID_BITNR 6
+    QEMU_PCI_CAP_SLOTID = (1 << QEMU_PCI_SLOTID_BITNR),
 };
+
+#define TYPE_PCI_DEVICE "pci-device"
+#define PCI_DEVICE(obj) \
+     OBJECT_CHECK(PCIDevice, (obj), TYPE_PCI_DEVICE)
+#define PCI_DEVICE_CLASS(klass) \
+     OBJECT_CLASS_CHECK(PCIDeviceClass, (klass), TYPE_PCI_DEVICE)
+#define PCI_DEVICE_GET_CLASS(obj) \
+     OBJECT_GET_CLASS(PCIDeviceClass, (obj), TYPE_PCI_DEVICE)
+
+typedef struct PCIINTxRoute {
+    enum {
+        PCI_INTX_ENABLED,
+        PCI_INTX_INVERTED,
+        PCI_INTX_DISABLED,
+    } mode;
+    int irq;
+} PCIINTxRoute;
+
+typedef struct PCIDeviceClass {
+    DeviceClass parent_class;
+
+    int (*init)(PCIDevice *dev);
+    PCIUnregisterFunc *exit;
+    PCIConfigReadFunc *config_read;
+    PCIConfigWriteFunc *config_write;
+
+    uint16_t vendor_id;
+    uint16_t device_id;
+    uint8_t revision;
+    uint16_t class_id;
+    uint16_t subsystem_vendor_id;       /* only for header type = 0 */
+    uint16_t subsystem_id;              /* only for header type = 0 */
+
+    /*
+     * pci-to-pci bridge or normal device.
+     * This doesn't mean pci host switch.
+     * When card bus bridge is supported, this would be enhanced.
+     */
+    int is_bridge;
+
+    /* pcie stuff */
+    int is_express;   /* is this device pci express? */
+
+    /* device isn't hot-pluggable */
+    int no_hotplug;
+
+    /* rom bar */
+    const char *romfile;
+} PCIDeviceClass;
+
+typedef void (*PCIINTxRoutingNotifier)(PCIDevice *dev);
+typedef int (*MSIVectorUseNotifier)(PCIDevice *dev, unsigned int vector,
+                                      MSIMessage msg);
+typedef void (*MSIVectorReleaseNotifier)(PCIDevice *dev, unsigned int vector);
 
 struct PCIDevice {
     DeviceState qdev;
+
     /* PCI config space */
     uint8_t *config;
 
@@ -149,9 +210,10 @@ struct PCIDevice {
 
     /* the following fields are read only */
     PCIBus *bus;
-    uint32_t devfn;
+    int32_t devfn;
     char name[64];
     PCIIORegion io_regions[PCI_NUM_REGIONS];
+    DMAContext *dma;
 
     /* do not access the following fields */
     PCIConfigReadFunc *config_read;
@@ -172,14 +234,16 @@ struct PCIDevice {
     /* MSI-X entries */
     int msix_entries_nr;
 
-    /* Space to store MSIX table */
-    uint8_t *msix_table_page;
-    /* MMIO index used to map MSIX table and pending bit entries. */
-    MemoryRegion msix_mmio;
+    /* Space to store MSIX table & pending bit array */
+    uint8_t *msix_table;
+    uint8_t *msix_pba;
+    /* MemoryRegion container for msix exclusive BAR setup */
+    MemoryRegion msix_exclusive_bar;
+    /* Memory Regions for MSIX table and pending bit entries. */
+    MemoryRegion msix_table_mmio;
+    MemoryRegion msix_pba_mmio;
     /* Reference-count for entries actually in use by driver. */
     unsigned *msix_entry_used;
-    /* Region including the MSI-X table */
-    uint32_t msix_bar_size;
     /* MSIX function mask set or MSIX disabled */
     bool msix_function_masked;
     /* Version id needed for VMState */
@@ -191,21 +255,28 @@ struct PCIDevice {
     /* PCI Express */
     PCIExpressDevice exp;
 
+    /* SHPC */
+    SHPCDevice *shpc;
+
     /* Location of option rom */
     char *romfile;
     bool has_rom;
     MemoryRegion rom;
     uint32_t rom_bar;
-};
 
-PCIDevice *pci_register_device(PCIBus *bus, const char *name,
-                               int instance_size, int devfn,
-                               PCIConfigReadFunc *config_read,
-                               PCIConfigWriteFunc *config_write);
+    /* INTx routing notifier */
+    PCIINTxRoutingNotifier intx_routing_notifier;
+
+    /* MSI-X notifiers */
+    MSIVectorUseNotifier msix_vector_use_notifier;
+    MSIVectorReleaseNotifier msix_vector_release_notifier;
+};
 
 void pci_register_bar(PCIDevice *pci_dev, int region_num,
                       uint8_t attr, MemoryRegion *memory);
 pcibus_t pci_get_bar_addr(PCIDevice *pci_dev, int region_num);
+
+int pci_add_option_rom(PCIDevice *pdev, bool is_default_rom);
 
 int pci_add_capability(PCIDevice *pdev, uint8_t cap_id,
                        uint8_t offset, uint8_t size);
@@ -226,6 +297,7 @@ MemoryRegion *pci_address_space_io(PCIDevice *dev);
 
 typedef void (*pci_set_irq_fn)(void *opaque, int irq_num, int level);
 typedef int (*pci_map_irq_fn)(PCIDevice *pci_dev, int irq_num);
+typedef PCIINTxRoute (*pci_route_irq_fn)(void *opaque, int pin);
 
 typedef enum {
     PCI_HOTPLUG_DISABLED,
@@ -254,6 +326,11 @@ PCIBus *pci_register_bus(DeviceState *parent, const char *name,
                          MemoryRegion *address_space_mem,
                          MemoryRegion *address_space_io,
                          uint8_t devfn_min, int nirq);
+void pci_bus_set_route_irq_fn(PCIBus *, pci_route_irq_fn);
+PCIINTxRoute pci_device_route_intx_to_irq(PCIDevice *dev, int pin);
+void pci_bus_fire_intx_routing_notifier(PCIBus *bus);
+void pci_device_set_intx_routing_notifier(PCIDevice *dev,
+                                          PCIINTxRoutingNotifier notifier);
 void pci_device_reset(PCIDevice *dev);
 void pci_bus_reset(PCIBus *bus);
 
@@ -262,20 +339,23 @@ PCIDevice *pci_nic_init(NICInfo *nd, const char *default_model,
 PCIDevice *pci_nic_init_nofail(NICInfo *nd, const char *default_model,
                                const char *default_devaddr);
 int pci_bus_num(PCIBus *s);
-void pci_for_each_device(PCIBus *bus, int bus_num, void (*fn)(PCIBus *bus, PCIDevice *d));
+void pci_for_each_device(PCIBus *bus, int bus_num,
+                         void (*fn)(PCIBus *bus, PCIDevice *d, void *opaque),
+                         void *opaque);
 PCIBus *pci_find_root_bus(int domain);
 int pci_find_domain(const PCIBus *bus);
-PCIBus *pci_find_bus(PCIBus *bus, int bus_num);
 PCIDevice *pci_find_device(PCIBus *bus, int bus_num, uint8_t devfn);
 int pci_qdev_find_device(const char *id, PCIDevice **pdev);
 PCIBus *pci_get_bus_devfn(int *devfnp, const char *devaddr);
 
-int pci_parse_devaddr(const char *addr, int *domp, int *busp,
-                      unsigned int *slotp, unsigned int *funcp);
 int pci_read_devaddr(Monitor *mon, const char *addr, int *domp, int *busp,
                      unsigned *slotp);
 
 void pci_device_deassert_intx(PCIDevice *dev);
+
+typedef DMAContext *(*PCIDMAContextFunc)(PCIBus *, void *, int);
+
+void pci_setup_iommu(PCIBus *bus, PCIDMAContextFunc fn, void *opaque);
 
 static inline void
 pci_set_byte(uint8_t *config, uint8_t val)
@@ -431,52 +511,74 @@ pci_quad_test_and_set_mask(uint8_t *config, uint64_t mask)
     return val & mask;
 }
 
-typedef int (*pci_qdev_initfn)(PCIDevice *dev);
-typedef struct {
-    DeviceInfo qdev;
-    pci_qdev_initfn init;
-    PCIUnregisterFunc *exit;
-    PCIConfigReadFunc *config_read;
-    PCIConfigWriteFunc *config_write;
+/* Access a register specified by a mask */
+static inline void
+pci_set_byte_by_mask(uint8_t *config, uint8_t mask, uint8_t reg)
+{
+    uint8_t val = pci_get_byte(config);
+    uint8_t rval = reg << (ffs(mask) - 1);
+    pci_set_byte(config, (~mask & val) | (mask & rval));
+}
 
-    uint16_t vendor_id;
-    uint16_t device_id;
-    uint8_t revision;
-    uint16_t class_id;
-    uint16_t subsystem_vendor_id;       /* only for header type = 0 */
-    uint16_t subsystem_id;              /* only for header type = 0 */
+static inline uint8_t
+pci_get_byte_by_mask(uint8_t *config, uint8_t mask)
+{
+    uint8_t val = pci_get_byte(config);
+    return (val & mask) >> (ffs(mask) - 1);
+}
 
-    /*
-     * pci-to-pci bridge or normal device.
-     * This doesn't mean pci host switch.
-     * When card bus bridge is supported, this would be enhanced.
-     */
-    int is_bridge;
+static inline void
+pci_set_word_by_mask(uint8_t *config, uint16_t mask, uint16_t reg)
+{
+    uint16_t val = pci_get_word(config);
+    uint16_t rval = reg << (ffs(mask) - 1);
+    pci_set_word(config, (~mask & val) | (mask & rval));
+}
 
-    /* pcie stuff */
-    int is_express;   /* is this device pci express? */
+static inline uint16_t
+pci_get_word_by_mask(uint8_t *config, uint16_t mask)
+{
+    uint16_t val = pci_get_word(config);
+    return (val & mask) >> (ffs(mask) - 1);
+}
 
-    /* device isn't hot-pluggable */
-    int no_hotplug;
+static inline void
+pci_set_long_by_mask(uint8_t *config, uint32_t mask, uint32_t reg)
+{
+    uint32_t val = pci_get_long(config);
+    uint32_t rval = reg << (ffs(mask) - 1);
+    pci_set_long(config, (~mask & val) | (mask & rval));
+}
 
-    /* rom bar */
-    const char *romfile;
-} PCIDeviceInfo;
+static inline uint32_t
+pci_get_long_by_mask(uint8_t *config, uint32_t mask)
+{
+    uint32_t val = pci_get_long(config);
+    return (val & mask) >> (ffs(mask) - 1);
+}
 
-void pci_qdev_register(PCIDeviceInfo *info);
-void pci_qdev_register_many(PCIDeviceInfo *info);
+static inline void
+pci_set_quad_by_mask(uint8_t *config, uint64_t mask, uint64_t reg)
+{
+    uint64_t val = pci_get_quad(config);
+    uint64_t rval = reg << (ffs(mask) - 1);
+    pci_set_quad(config, (~mask & val) | (mask & rval));
+}
+
+static inline uint64_t
+pci_get_quad_by_mask(uint8_t *config, uint64_t mask)
+{
+    uint64_t val = pci_get_quad(config);
+    return (val & mask) >> (ffs(mask) - 1);
+}
 
 PCIDevice *pci_create_multifunction(PCIBus *bus, int devfn, bool multifunction,
                                     const char *name);
 PCIDevice *pci_create_simple_multifunction(PCIBus *bus, int devfn,
                                            bool multifunction,
                                            const char *name);
-PCIDevice *pci_try_create_multifunction(PCIBus *bus, int devfn,
-                                        bool multifunction,
-                                        const char *name);
 PCIDevice *pci_create(PCIBus *bus, int devfn, const char *name);
 PCIDevice *pci_create_simple(PCIBus *bus, int devfn, const char *name);
-PCIDevice *pci_try_create(PCIBus *bus, int devfn, const char *name);
 
 static inline int pci_is_express(const PCIDevice *d)
 {
@@ -489,10 +591,15 @@ static inline uint32_t pci_config_size(const PCIDevice *d)
 }
 
 /* DMA access functions */
+static inline DMAContext *pci_dma_context(PCIDevice *dev)
+{
+    return dev->dma;
+}
+
 static inline int pci_dma_rw(PCIDevice *dev, dma_addr_t addr,
                              void *buf, dma_addr_t len, DMADirection dir)
 {
-    cpu_physical_memory_rw(addr, buf, len, dir == DMA_DIRECTION_FROM_DEVICE);
+    dma_memory_rw(pci_dma_context(dev), addr, buf, len, dir);
     return 0;
 }
 
@@ -512,12 +619,12 @@ static inline int pci_dma_write(PCIDevice *dev, dma_addr_t addr,
     static inline uint##_bits##_t ld##_l##_pci_dma(PCIDevice *dev,      \
                                                    dma_addr_t addr)     \
     {                                                                   \
-        return ld##_l##_phys(addr);                                     \
+        return ld##_l##_dma(pci_dma_context(dev), addr);                \
     }                                                                   \
     static inline void st##_s##_pci_dma(PCIDevice *dev,                 \
-                          dma_addr_t addr, uint##_bits##_t val)         \
+                                        dma_addr_t addr, uint##_bits##_t val) \
     {                                                                   \
-        st##_s##_phys(addr, val);                                       \
+        st##_s##_dma(pci_dma_context(dev), addr, val);                  \
     }
 
 PCI_DMA_DEFINE_LDST(ub, b, 8);
@@ -533,25 +640,40 @@ PCI_DMA_DEFINE_LDST(q_be, q_be, 64);
 static inline void *pci_dma_map(PCIDevice *dev, dma_addr_t addr,
                                 dma_addr_t *plen, DMADirection dir)
 {
-    target_phys_addr_t len = *plen;
     void *buf;
 
-    buf = cpu_physical_memory_map(addr, &len, dir == DMA_DIRECTION_FROM_DEVICE);
-    *plen = len;
+    buf = dma_memory_map(pci_dma_context(dev), addr, plen, dir);
     return buf;
 }
 
 static inline void pci_dma_unmap(PCIDevice *dev, void *buffer, dma_addr_t len,
                                  DMADirection dir, dma_addr_t access_len)
 {
-    cpu_physical_memory_unmap(buffer, len, dir == DMA_DIRECTION_FROM_DEVICE,
-                              access_len);
+    dma_memory_unmap(pci_dma_context(dev), buffer, len, dir, access_len);
 }
 
 static inline void pci_dma_sglist_init(QEMUSGList *qsg, PCIDevice *dev,
                                        int alloc_hint)
 {
-    qemu_sglist_init(qsg, alloc_hint);
+    qemu_sglist_init(qsg, alloc_hint, pci_dma_context(dev));
+}
+
+extern const VMStateDescription vmstate_pci_device;
+
+#define VMSTATE_PCI_DEVICE(_field, _state) {                         \
+    .name       = (stringify(_field)),                               \
+    .size       = sizeof(PCIDevice),                                 \
+    .vmsd       = &vmstate_pci_device,                               \
+    .flags      = VMS_STRUCT,                                        \
+    .offset     = vmstate_offset_value(_state, _field, PCIDevice),   \
+}
+
+#define VMSTATE_PCI_DEVICE_POINTER(_field, _state) {                 \
+    .name       = (stringify(_field)),                               \
+    .size       = sizeof(PCIDevice),                                 \
+    .vmsd       = &vmstate_pci_device,                               \
+    .flags      = VMS_STRUCT|VMS_POINTER,                            \
+    .offset     = vmstate_offset_pointer(_state, _field, PCIDevice), \
 }
 
 #endif

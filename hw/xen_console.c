@@ -28,13 +28,12 @@
 #include <termios.h>
 #include <stdarg.h>
 #include <sys/mman.h>
-#include <xs.h>
-#include <xen/io/console.h>
-#include <xenctrl.h>
 
 #include "hw.h"
 #include "qemu-char.h"
 #include "xen_backend.h"
+
+#include <xen/io/console.h>
 
 struct buffer {
     uint8_t *data;
@@ -248,6 +247,9 @@ static void con_disconnect(struct XenDevice *xendev)
 {
     struct XenConsole *con = container_of(xendev, struct XenConsole, xendev);
 
+    if (!xendev->dev) {
+        return;
+    }
     if (con->chr)
         qemu_chr_add_handlers(con->chr, NULL, NULL, NULL, NULL);
     xen_be_unbind_evtchn(&con->xendev);

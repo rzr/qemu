@@ -89,19 +89,17 @@ static int curl_sock_cb(CURL *curl, curl_socket_t fd, int action,
     DPRINTF("CURL (AIO): Sock action %d on fd %d\n", action, fd);
     switch (action) {
         case CURL_POLL_IN:
-            qemu_aio_set_fd_handler(fd, curl_multi_do, NULL, curl_aio_flush,
-                                    NULL, s);
+            qemu_aio_set_fd_handler(fd, curl_multi_do, NULL, curl_aio_flush, s);
             break;
         case CURL_POLL_OUT:
-            qemu_aio_set_fd_handler(fd, NULL, curl_multi_do, curl_aio_flush,
-                                    NULL, s);
+            qemu_aio_set_fd_handler(fd, NULL, curl_multi_do, curl_aio_flush, s);
             break;
         case CURL_POLL_INOUT:
             qemu_aio_set_fd_handler(fd, curl_multi_do, curl_multi_do,
-                                    curl_aio_flush, NULL, s);
+                                    curl_aio_flush, s);
             break;
         case CURL_POLL_REMOVE:
-            qemu_aio_set_fd_handler(fd, NULL, NULL, NULL, NULL, NULL);
+            qemu_aio_set_fd_handler(fd, NULL, NULL, NULL, NULL);
             break;
     }
 
@@ -142,8 +140,8 @@ static size_t curl_read_cb(void *ptr, size_t size, size_t nmemb, void *opaque)
             continue;
 
         if ((s->buf_off >= acb->end)) {
-            qemu_iovec_from_buffer(acb->qiov, s->orig_buf + acb->start,
-                                   acb->end - acb->start);
+            qemu_iovec_from_buf(acb->qiov, 0, s->orig_buf + acb->start,
+                                acb->end - acb->start);
             acb->common.cb(acb->common.opaque, 0);
             qemu_aio_release(acb);
             s->acb[i] = NULL;
@@ -178,7 +176,7 @@ static int curl_find_buf(BDRVCURLState *s, size_t start, size_t len,
         {
             char *buf = state->orig_buf + (start - state->buf_start);
 
-            qemu_iovec_from_buffer(acb->qiov, buf, len);
+            qemu_iovec_from_buf(acb->qiov, 0, buf, len);
             acb->common.cb(acb->common.opaque, 0);
 
             return FIND_RET_OK;
@@ -282,7 +280,7 @@ static CURLState *curl_init_state(BDRVCURLState *s)
             break;
         }
         if (!state) {
-            usleep(100);
+            g_usleep(100);
             curl_multi_do(s);
         }
     } while(!state);
@@ -508,10 +506,6 @@ static BlockDriverAIOCB *curl_aio_readv(BlockDriverState *bs,
     CURLAIOCB *acb;
 
     acb = qemu_aio_get(&curl_aio_pool, bs, cb, opaque);
-
-    if (!acb) {
-        return NULL;
-    }
 
     acb->qiov = qiov;
     acb->sector_num = sector_num;

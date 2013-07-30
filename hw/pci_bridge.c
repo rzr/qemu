@@ -249,13 +249,14 @@ void pci_bridge_disable_base_limit(PCIDevice *dev)
                                PCI_PREF_RANGE_MASK & 0xffff);
     pci_word_test_and_clear_mask(conf + PCI_PREF_MEMORY_LIMIT,
                                  PCI_PREF_RANGE_MASK & 0xffff);
-    pci_set_word(conf + PCI_PREF_BASE_UPPER32, 0);
-    pci_set_word(conf + PCI_PREF_LIMIT_UPPER32, 0);
+    pci_set_long(conf + PCI_PREF_BASE_UPPER32, 0);
+    pci_set_long(conf + PCI_PREF_LIMIT_UPPER32, 0);
 }
 
 /* reset bridge specific configuration registers */
-void pci_bridge_reset_reg(PCIDevice *dev)
+void pci_bridge_reset(DeviceState *qdev)
 {
+    PCIDevice *dev = PCI_DEVICE(qdev);
     uint8_t *conf = dev->config;
 
     conf[PCI_PRIMARY_BUS] = 0;
@@ -285,17 +286,10 @@ void pci_bridge_reset_reg(PCIDevice *dev)
                                  PCI_PREF_RANGE_MASK & 0xffff);
     pci_word_test_and_clear_mask(conf + PCI_PREF_MEMORY_LIMIT,
                                  PCI_PREF_RANGE_MASK & 0xffff);
-    pci_set_word(conf + PCI_PREF_BASE_UPPER32, 0);
-    pci_set_word(conf + PCI_PREF_LIMIT_UPPER32, 0);
+    pci_set_long(conf + PCI_PREF_BASE_UPPER32, 0);
+    pci_set_long(conf + PCI_PREF_LIMIT_UPPER32, 0);
 
     pci_set_word(conf + PCI_BRIDGE_CONTROL, 0);
-}
-
-/* default reset function for PCI-to-PCI bridge */
-void pci_bridge_reset(DeviceState *qdev)
-{
-    PCIDevice *dev = DO_UPCAST(PCIDevice, qdev, qdev);
-    pci_bridge_reset_reg(dev);
 }
 
 /* default qdev initialization function for PCI-to-PCI bridge */
@@ -305,8 +299,8 @@ int pci_bridge_initfn(PCIDevice *dev)
     PCIBridge *br = DO_UPCAST(PCIBridge, dev, dev);
     PCIBus *sec_bus = &br->sec_bus;
 
-    pci_set_word(dev->config + PCI_STATUS,
-                 PCI_STATUS_66MHZ | PCI_STATUS_FAST_BACK);
+    pci_word_test_and_set_mask(dev->config + PCI_STATUS,
+                               PCI_STATUS_66MHZ | PCI_STATUS_FAST_BACK);
     pci_config_set_class(dev->config, PCI_CLASS_BRIDGE_PCI);
     dev->config[PCI_HEADER_TYPE] =
         (dev->config[PCI_HEADER_TYPE] & PCI_HEADER_TYPE_MULTI_FUNCTION) |
@@ -314,7 +308,17 @@ int pci_bridge_initfn(PCIDevice *dev)
     pci_set_word(dev->config + PCI_SEC_STATUS,
                  PCI_STATUS_66MHZ | PCI_STATUS_FAST_BACK);
 
-    qbus_create_inplace(&sec_bus->qbus, &pci_bus_info, &dev->qdev,
+    /*
+     * If we don't specify the name, the bus will be addressed as <id>.0, where
+     * id is the device id.
+     * Since PCI Bridge devices have a single bus each, we don't need the index:
+     * let users address the bus using the device name.
+     */
+    if (!br->bus_name && dev->qdev.id && *dev->qdev.id) {
+	    br->bus_name = dev->qdev.id;
+    }
+
+    qbus_create_inplace(&sec_bus->qbus, TYPE_PCI_BUS, &dev->qdev,
                         br->bus_name);
     sec_bus->parent_dev = dev;
     sec_bus->map_irq = br->map_irq;
@@ -329,7 +333,7 @@ int pci_bridge_initfn(PCIDevice *dev)
 }
 
 /* default qdev clean up function for PCI-to-PCI bridge */
-int pci_bridge_exitfn(PCIDevice *pci_dev)
+void pci_bridge_exitfn(PCIDevice *pci_dev)
 {
     PCIBridge *s = DO_UPCAST(PCIBridge, dev, pci_dev);
     assert(QLIST_EMPTY(&s->sec_bus.child));
@@ -338,7 +342,6 @@ int pci_bridge_exitfn(PCIDevice *pci_dev)
     memory_region_destroy(&s->address_space_mem);
     memory_region_destroy(&s->address_space_io);
     /* qbus_free() is called automatically by qdev_free() */
-    return 0;
 }
 
 /*

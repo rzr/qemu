@@ -24,6 +24,8 @@
 #include "hw.h"
 #include "ps2.h"
 #include "console.h"
+#include "sysemu.h"
+#include "qemu-thread.h"
 
 /* debug PC keyboard */
 //#define DEBUG_KBD
@@ -87,7 +89,7 @@ typedef struct {
 typedef struct {
     PS2State common;
     int scan_enabled;
-    /* Qemu uses translated PC scancodes internally.  To avoid multiple
+    /* QEMU uses translated PC scancodes internally.  To avoid multiple
        conversions we do the translation (if any) in the PS/2 emulation
        not the keyboard controller.  */
     int translate;
@@ -131,6 +133,8 @@ static const unsigned char ps2_raw_keycode_set3[128] = {
  19,  25,  57,  81,  83,  92,  95,  98,  99, 100, 101, 103, 104, 106, 109, 110
 };
 
+static QemuMutex mutex;
+
 void ps2_queue(void *opaque, int b)
 {
     PS2State *s = (PS2State *)opaque;
@@ -154,6 +158,7 @@ static void ps2_put_keycode(void *opaque, int keycode)
 {
     PS2KbdState *s = opaque;
 
+    qemu_system_wakeup_request(QEMU_WAKEUP_REASON_OTHER);
     /* XXX: add support for scancode set 1 */
     if (!s->translate && keycode < 0xe0 && s->scancode_set > 1) {
         if (keycode & 0x80) {
@@ -368,12 +373,18 @@ static void ps2_mouse_event(void *opaque,
 	return;
     s->mouse_buttons = buttons_state;
 
+    if (buttons_state) {
+        qemu_system_wakeup_request(QEMU_WAKEUP_REASON_OTHER);
+    }
+
     if (!(s->mouse_status & MOUSE_STATUS_REMOTE) &&
         (s->common.queue.count < (PS2_QUEUE_SIZE - 16))) {
         for(;;) {
             /* if not remote, send event. Multiple events are sent if
                too big deltas */
+            qemu_mutex_lock(&mutex);
             ps2_mouse_send_packet(s);
+            qemu_mutex_unlock(&mutex);
             if (s->mouse_dx == 0 && s->mouse_dy == 0 && s->mouse_dz == 0)
                 break;
         }
@@ -670,5 +681,7 @@ void *ps2_mouse_init(void (*update_irq)(void *, int), void *update_arg)
     vmstate_register(NULL, 0, &vmstate_ps2_mouse, s);
     qemu_add_mouse_event_handler(ps2_mouse_event, s, 0, "QEMU PS/2 Mouse");
     qemu_register_reset(ps2_mouse_reset, s);
+    qemu_mutex_init(&mutex);
+
     return s;
 }

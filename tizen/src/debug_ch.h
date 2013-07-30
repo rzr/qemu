@@ -57,9 +57,6 @@ struct _debug_channel
 	char multiname[15];
 };
 
-void set_log_path(char *path);
-char *get_log_path(void);
-
 #ifndef NO_DEBUG
 #define MSGSIZE_MAX 2048
 #define __GET_DEBUGGING_FIXME(dbch) ((dbch)->flags & (1 << __DBCL_FIXME))
@@ -97,8 +94,6 @@ char *get_log_path(void);
 (void)0 : (void)dbg_printf
 */
 
-extern char bin_dir[256];
-
 extern unsigned char _dbg_get_channel_flags( struct _debug_channel *channel );
 extern int _dbg_set_channel_flags( struct _debug_channel *channel,
 		unsigned char set, unsigned char clear );
@@ -130,6 +125,7 @@ extern void release_dbg_temp_buffer( char *buffer, size_t size );
 #endif
 #define FIXME_ON(ch)          __IS_DEBUG_ON(_FIXME,&_dbch_##ch)
 
+#undef ERR
 #define ERR                   __DPRINTF(_ERR,_dbch___default)
 #define ERR_(ch)              __DPRINTF(_ERR,&_dbch_##ch)
 #define ERR_ON(ch)            __IS_DEBUG_ON(_ERR,&_dbch_##ch)

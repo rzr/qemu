@@ -1,0 +1,11 @@
+prefix=@INSTALL_DIR@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: glesv1_cm
+Description: DGLES OpenGL ES 1.1 CM library
+Requires.private: egl
+Version: @GLES_CM_VERSION@
+Libs: -L${libdir} -lGLES_CM
+Cflags: -I${includedir}
