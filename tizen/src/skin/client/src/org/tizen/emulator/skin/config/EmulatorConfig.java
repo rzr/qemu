@@ -77,9 +77,10 @@ public class EmulatorConfig {
 		public static final String RESOLUTION_WIDTH = "width";
 		public static final String RESOLUTION_HEIGHT = "height";
 		public static final String TEST_HEART_BEAT_IGNORE = "test.hb.ignore";
-		public static final String VM_PATH = "vm.path";
 		public static final String LOG_LEVEL = "log.level";
-		public static final String NET_BASE_PORT = "net.baseport";
+		public static final String VM_PATH = "vm.path";
+		public static final String VM_BASE_PORT = "vm.baseport";
+		public static final String VM_ECS_PORT = "vm.ecsport";
 		public static final String SKIN_PATH = "skin.path";
 		public static final String DISPLAY_SHM = "display.shm";
 		public static final String INPUT_MOUSE = "input.mouse";

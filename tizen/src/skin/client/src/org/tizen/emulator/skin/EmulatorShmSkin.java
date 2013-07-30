@@ -243,7 +243,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		/* base + 1 = sdb port */
 		/* base + 2 = shared memory key */
-		int shmkey = config.getArgInt(ArgsConstants.NET_BASE_PORT) + 2;
+		int shmkey = config.getArgInt(ArgsConstants.VM_BASE_PORT) + 2;
 		logger.info("shmkey = " + shmkey);
 
 		/* initialize shared memory */

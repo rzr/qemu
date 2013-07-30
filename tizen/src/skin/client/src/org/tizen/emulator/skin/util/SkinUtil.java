@@ -105,7 +105,7 @@ public class SkinUtil {
 			vmName = EMULATOR_PREFIX;
 		}
 
-		int portNumber = config.getArgInt(ArgsConstants.NET_BASE_PORT);
+		int portNumber = config.getArgInt(ArgsConstants.VM_BASE_PORT);
 
 		return vmName + ":" + portNumber;
 	}

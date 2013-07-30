@@ -228,7 +228,8 @@ public class EmulatorSkin {
 	}
 
 	private void setColorVM() {
-		int portNumber = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
+		int portNumber =
+				config.getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
 
 		if (portNumber >= 26200) {
 			int red = (int) (Math.random() * 256);
@@ -1084,9 +1085,10 @@ public class EmulatorSkin {
 			public void widgetSelected(SelectionEvent e) {
 
 				String emulName = SkinUtil.getVmName(config);
-				int portSdb = config.getArgInt(ArgsConstants.NET_BASE_PORT);
-				int portEcp = 0;
+				int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
+				int portEcp = config.getArgInt(ArgsConstants.VM_ECS_PORT);
 
+				/*
 				DataTranfer dataTranfer = communicator.sendDataToQEMU(
 						SendCommand.ECP_PORT_REQ, null, true);
 				byte[] receivedData = communicator.getReceivedData(dataTranfer);
@@ -1094,6 +1096,7 @@ public class EmulatorSkin {
 				portEcp |= receivedData[1] << 16;
 				portEcp |= receivedData[2] << 8;
 				portEcp |= receivedData[3];
+				*/
 
 				ProcessBuilder procEcp = new ProcessBuilder();
 
@@ -1544,7 +1547,7 @@ public class EmulatorSkin {
 					return;
 				}
 
-				int portSdb = config.getArgInt(ArgsConstants.NET_BASE_PORT);
+				int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
 
 				ProcessBuilder procSdb = new ProcessBuilder();
 

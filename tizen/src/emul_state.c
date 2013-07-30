@@ -150,6 +150,17 @@ int get_emul_vm_base_port(void)
     return _emul_info.vm_base_port;
 }
 
+/* ecs port for emualtor vm */
+void set_emul_vm_ecs_port(int port)
+{
+    _emul_info.vm_ecs_port = port;
+}
+
+int get_emul_vm_ecs_port(void)
+{
+    return _emul_info.vm_ecs_port;
+}
+
 /* current emulator condition */
 int get_emulator_condition(void)
 {

@@ -62,7 +62,8 @@ MULTI_DEBUG_CHANNEL(qemu, skin_client);
 #define OPT_SVR_PORT "svr.port"
 #define OPT_UID "uid"
 #define OPT_VM_PATH "vm.path"
-#define OPT_NET_BASE_PORT "net.baseport"
+#define OPT_VM_BASE_PORT "vm.baseport"
+#define OPT_VM_ECS_PORT "vm.ecsport"
 #define OPT_DISPLAY_SHM "display.shm"
 #define OPT_INPUT_MOUSE "input.mouse"
 #define OPT_INPUT_TOUCH "input.touch"
@@ -102,12 +103,15 @@ static void *run_skin_client(void *arg)
 
     char* vm_path = tizen_target_path;
     //INFO( "vm_path:%s\n", vm_path );
+
     char buf_skin_server_port[16];
     char buf_uid[16];
-    char buf_tizen_base_port[16];
+    char buf_vm_base_port[16];
+    char buf_vm_ecs_port[16];
     sprintf(buf_skin_server_port, "%d", skin_server_port);
     sprintf(buf_uid, "%d", uid);
-    sprintf(buf_tizen_base_port, "%d", get_emul_vm_base_port());
+    sprintf(buf_vm_base_port, "%d", get_emul_vm_base_port());
+    sprintf(buf_vm_ecs_port, "%d", get_emul_vm_ecs_port());
 
     /* display */
     char buf_display_shm[8] = { 0, };
@@ -180,8 +184,10 @@ static void *run_skin_client(void *arg)
             strlen(buf_uid) + SPACE_LEN +
         strlen(OPT_VM_PATH) + EQUAL_LEN +
             QUOTATION_LEN + strlen(vm_path) + SPACE_LEN +
-        strlen(OPT_NET_BASE_PORT) + EQUAL_LEN +
-            strlen(buf_tizen_base_port) + SPACE_LEN +
+        strlen(OPT_VM_BASE_PORT) + EQUAL_LEN +
+            strlen(buf_vm_base_port) + SPACE_LEN +
+        strlen(OPT_VM_ECS_PORT) + EQUAL_LEN +
+            strlen(buf_vm_ecs_port) + SPACE_LEN +
         strlen(OPT_DISPLAY_SHM) + EQUAL_LEN +
             strlen(buf_display_shm) + SPACE_LEN +
         strlen(OPT_INPUT_TOUCH) + EQUAL_LEN +
@@ -204,6 +210,7 @@ static void *run_skin_client(void *arg)
 %s=%d \
 %s=\"%s\" \
 %s=%d \
+%s=%d \
 %s=%s \
 %s=%s \
 %s=%d \
@@ -217,7 +224,8 @@ static void *run_skin_client(void *arg)
         OPT_SVR_PORT, skin_server_port,
         OPT_UID, uid,
         OPT_VM_PATH, vm_path,
-        OPT_NET_BASE_PORT, get_emul_vm_base_port(),
+        OPT_VM_BASE_PORT, get_emul_vm_base_port(),
+        OPT_VM_ECS_PORT, get_emul_vm_ecs_port(),
         OPT_DISPLAY_SHM, buf_display_shm,
         OPT_INPUT_TOUCH, buf_input_touch,
         OPT_MAX_TOUCHPOINT, maxtouchpoint,

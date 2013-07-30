@@ -48,8 +48,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
-import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -115,7 +113,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		displayCanvas = new Canvas(shell, style);
 
-		int vmIndex = config.getArgInt(ArgsConstants.NET_BASE_PORT) % 100;
+		int vmIndex =
+				config.getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
 
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
 				EmulatorConfig.DEFAULT_WINDOW_X + vmIndex);

@@ -377,6 +377,8 @@ static void prepare_basic_features(void)
     sdb_setup(); /* determine the base port for emulator */
     set_emul_vm_base_port(tizen_base_port);
 
+    set_emul_vm_ecs_port(tizen_ecs_port);
+
     gchar * const tmp_str = g_strdup_printf(" sdb_port=%d,"
         " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
         " dns1=%s", get_emul_vm_base_port(),
