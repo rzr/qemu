@@ -55,12 +55,18 @@ MULTI_DEBUG_CHANNEL(qemu, skin_client);
 #define SKIN_SERVER_READY_TIME 3 /* second */
 #define SKIN_SERVER_SLEEP_TIME 10 /* milli second */
 
+#define SPACE_LEN 1
+#define QUOTATION_LEN 2
+#define EQUAL_LEN 1
+
 #define OPT_SVR_PORT "svr.port"
 #define OPT_UID "uid"
 #define OPT_VM_PATH "vm.path"
 #define OPT_NET_BASE_PORT "net.baseport"
 #define OPT_DISPLAY_SHM "display.shm"
-#define OPT_MAX_TOUCHPOINT "max.touchpoint"
+#define OPT_INPUT_MOUSE "input.mouse"
+#define OPT_INPUT_TOUCHSCREEN "input.touch"
+#define OPT_MAX_TOUCHPOINT "input.touch.maxpoint"
 
 extern char tizen_target_path[];
 
@@ -101,9 +107,9 @@ static void* run_skin_client(void* arg)
 
     char buf_display_shm[8] = { 0, };
 #ifdef CONFIG_USE_SHM
-    strcpy(buf_display_shm, "true");
+    strcpy(buf_display_shm, "true"); /* maru_shm */
 #else
-    strcpy(buf_display_shm, "false");
+    strcpy(buf_display_shm, "false"); /* maru_sdl */
 #endif
 
 #ifdef CONFIG_WIN32
@@ -137,26 +143,46 @@ static void* run_skin_client(void* arg)
         len_maxtouchpoint = 1;
     }
 
-    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) +
+    /* calculate buffer length */
+    int len = strlen(JAVA_EXEFILE_PATH) + SPACE_LEN +
+        strlen(JAVA_EXEOPTION) + SPACE_LEN +
+        strlen(JAVA_LIBRARY_PATH) + EQUAL_LEN +
 #ifdef CONFIG_WIN32
-        strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+            QUOTATION_LEN + strlen((char*)bin_dir_win) + SPACE_LEN +
+        QUOTATION_LEN + strlen(bin_dir) + strlen(JAR_SKINFILE) + SPACE_LEN +
 #else
-        strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+            QUOTATION_LEN + strlen(bin_dir) + SPACE_LEN +
+        QUOTATION_LEN + strlen(bin_dir) + strlen(JAR_SKINFILE) + SPACE_LEN +
 #endif
-        strlen(OPT_SVR_PORT) + strlen(buf_skin_server_port) +
-        strlen(OPT_UID) + strlen(buf_uid) +
-        strlen(OPT_VM_PATH) + strlen(vm_path) +
-        strlen(OPT_NET_BASE_PORT) + strlen(buf_tizen_base_port) +
-        strlen(OPT_MAX_TOUCHPOINT) + len_maxtouchpoint +
-        strlen(OPT_DISPLAY_SHM) + strlen(buf_display_shm) +
-        strlen(argv) + 48;
+
+        strlen(OPT_SVR_PORT) + EQUAL_LEN +
+            strlen(buf_skin_server_port) + SPACE_LEN +
+        strlen(OPT_UID) + EQUAL_LEN +
+            strlen(buf_uid) + SPACE_LEN +
+        strlen(OPT_VM_PATH) + EQUAL_LEN +
+            QUOTATION_LEN + strlen(vm_path) + SPACE_LEN +
+        strlen(OPT_NET_BASE_PORT) + EQUAL_LEN +
+            strlen(buf_tizen_base_port) + SPACE_LEN +
+        strlen(OPT_DISPLAY_SHM) + EQUAL_LEN +
+            strlen(buf_display_shm) + SPACE_LEN +
+        strlen(OPT_MAX_TOUCHPOINT) + EQUAL_LEN +
+            len_maxtouchpoint + SPACE_LEN + 1 +
+        strlen(argv);
 
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         INFO("swt command length is too long! (%d)\n", len);
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%d\" %s=\"%d\" %s=\"%s\" %s=\"%d\" %s=%s %s=%d %s",
+    snprintf(cmd, len, "%s %s %s=\"%s\" \
+\"%s%s\" \
+%s=%d \
+%s=%d \
+%s=\"%s\" \
+%s=%d \
+%s=%s \
+%s=%d \
+%s",
         JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH,
 #ifdef CONFIG_WIN32
         bin_dir_win, bin_dir, JAR_SKINFILE,
@@ -335,20 +361,26 @@ int start_simple_client(char* msg)
 #endif
     INFO("bin directory : %s\n", bin_dir);
 
-
-    int len = strlen(JAVA_EXEFILE_PATH) + strlen(JAVA_EXEOPTION) + strlen(JAVA_LIBRARY_PATH) +
+    /* calculate buffer length */
+    int len = strlen(JAVA_EXEFILE_PATH) + SPACE_LEN +
+        strlen(JAVA_EXEOPTION) + SPACE_LEN +
+        strlen(JAVA_LIBRARY_PATH) + EQUAL_LEN +
 #ifdef CONFIG_WIN32
-        strlen((char*)bin_dir_win) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+            QUOTATION_LEN + strlen((char*)bin_dir_win) + SPACE_LEN +
+        QUOTATION_LEN + strlen(bin_dir) + strlen(JAR_SKINFILE) + SPACE_LEN +
 #else
-        strlen(bin_dir) + strlen(bin_dir) + strlen(JAR_SKINFILE) +
+            QUOTATION_LEN + strlen(bin_dir) + SPACE_LEN +
+        QUOTATION_LEN + strlen(bin_dir) + strlen(JAR_SKINFILE) + SPACE_LEN +
 #endif
-        strlen(bin_dir) + strlen(JAVA_SIMPLEMODE_OPTION) + strlen(msg) + 11;
+
+        strlen(JAVA_SIMPLEMODE_OPTION) + EQUAL_LEN +
+        QUOTATION_LEN + strlen(msg) + 1;
 
     if (len > JAVA_MAX_COMMAND_LENGTH) {
         len = JAVA_MAX_COMMAND_LENGTH;
     }
 
-    snprintf(cmd, len, "%s %s %s=\"%s\" %s%s %s=\"%s\"",
+    snprintf(cmd, len, "%s %s %s=\"%s\" \"%s%s\" %s=\"%s\"",
 #ifdef CONFIG_WIN32
         JAVA_EXEFILE_PATH, JAVA_EXEOPTION, JAVA_LIBRARY_PATH, bin_dir_win,
 #else
