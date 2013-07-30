@@ -32,7 +32,7 @@ static int DecodeMimeBase64[256] = {
     -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1   /* F0-FF */
     };
 
-int base64_decode(char *text, unsigned char *dst, int numBytes )
+int base64_decode(const char *text, unsigned char *dst, int numBytes )
 {
   const char* cp;
   int space_idx = 0, phase;
@@ -76,7 +76,7 @@ int base64_decode(char *text, unsigned char *dst, int numBytes )
 
 }
 
-int base64_encode(char *text, int numBytes, char **encodedText)
+int base64_encode(const char *text, int numBytes, char **encodedText)
 {
   unsigned char input[3]  = {0,0,0};
   unsigned char output[4] = {0,0,0,0};

@@ -90,6 +90,7 @@ gchar bin_path[PATH_MAX] = { 0, };
 gchar log_path[PATH_MAX] = { 0, };
 
 int tizen_base_port;
+int tizen_ecs_port;
 char tizen_target_path[PATH_MAX];
 char tizen_target_img_path[PATH_MAX];
 
@@ -360,6 +361,12 @@ static void prepare_basic_features(void)
 
     tizen_base_port = get_sdb_base_port();
 
+	tizen_ecs_port = get_ecs_port();
+
+    qemu_add_opts(&qemu_ecs_opts);
+
+	start_ecs(tizen_ecs_port);
+
     get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
     /* using "DNS" provided by default QEMU */
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
@@ -502,10 +509,6 @@ void prepare_maru(void)
 
     int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
     start_guest_server(guest_server_port);
-
-    qemu_add_opts(&qemu_ecs_opts);
-
-	start_ecs();
 
     mloop_ev_init();
 }

@@ -33,7 +33,6 @@
 #define HOST_LISTEN_ADDR		"127.0.0.1"
 #define HOST_LISTEN_PORT		27000
 #define EMULATOR_SERVER_NUM		3
-#define WELCOME_MESSAGE			"### Welcome to ECS service. ###\n"
 
 #define COMMANDS_TYPE			"type"
 #define COMMANDS_DATA			"data"
@@ -128,13 +127,12 @@ typedef struct ECS_Client {
 } ECS_Client;
 
 
-int start_ecs(void);
+int start_ecs(int port);
 int stop_ecs(void);
+int get_ecs_port(void);
 
 void ecs_vprintf(const char *type, const char *fmt, va_list ap);
 void ecs_printf(const char *type, const char *fmt, ...) GCC_FMT_ATTR(2, 3);
-
-int get_ecs_port(void);
 
 bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);
 

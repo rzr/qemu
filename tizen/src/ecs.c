@@ -64,7 +64,6 @@ static QTAILQ_HEAD(ECS_ClientHead, ECS_Client)
 clients = QTAILQ_HEAD_INITIALIZER(clients);
 
 static ECS_State *current_ecs;
-static int port;
 
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
@@ -315,11 +314,12 @@ static inline bool handler_is_async(const mon_cmd_t *cmd) {
 	return cmd->flags & MONITOR_CMD_ASYNC;
 }
 
+/*
 static void monitor_user_noop(Monitor *mon, const QObject *data) {
 }
 
 static int do_screen_dump(Monitor *mon, const QDict *qdict, QObject **ret_data) {
-	vga_hw_screen_dump(qdict_get_str(qdict, "filename"));
+	//vga_hw_screen_dump(qdict_get_str(qdict, "filename"));
 	return 0;
 }
 
@@ -337,6 +337,7 @@ static int do_qmp_capabilities(Monitor *mon, const QDict *params,
 		QObject **ret_data) {
 	return 0;
 }
+*/
 
 static const mon_cmd_t qmp_cmds[] = {
 //#include "qmp-commands-old.h"
@@ -1103,7 +1104,6 @@ static ECS_Client *ecs_find_client(int fd) {
 }
 
 static int ecs_add_client(ECS_State *cs, int fd) {
-	const char* welcome;
 
 	ECS_Client *clii = g_malloc0(sizeof(ECS_Client));
 	if (NULL == clii) {
@@ -1130,10 +1130,6 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 	QTAILQ_INSERT_TAIL(&clients, clii, next);
 
 	LOG("Add an ecs client. fd: %d", fd);
-
-	welcome = WELCOME_MESSAGE;
-
-	//send_to_client(fd, welcome);
 
 	pthread_mutex_unlock(&mutex_clilist);
 
@@ -1192,6 +1188,7 @@ static void epoll_init(ECS_State *cs) {
 #endif
 
 static void alive_checker(void *opaque) {
+	/*
 	ECS_State *cs = opaque;
 	ECS_Client *clii;
 	QObject *obj;
@@ -1202,7 +1199,6 @@ static void alive_checker(void *opaque) {
 		return;
 	}
 
-	/*
 	QTAILQ_FOREACH(clii, &clients, next)
 	{
 		if (1 == clii->keep_alive) {
@@ -1304,7 +1300,7 @@ static int ecs_loop(ECS_State *cs)
 }
 #endif
 
-static int check_port(void) {
+int get_ecs_port(void) {
 	int port = HOST_LISTEN_PORT;
 	int try = EMULATOR_SERVER_NUM;
 
@@ -1318,10 +1314,6 @@ static int check_port(void) {
 	return -1;
 }
 
-int get_ecs_port(void) {
-	return port;
-}
-
 static void* ecs_initialize(void* args) {
 	int ret = 1;
 	ECS_State *cs = NULL;
@@ -1329,6 +1321,7 @@ static void* ecs_initialize(void* args) {
 	Error *local_err = NULL;
 	Monitor* mon = NULL;
 	char host_port[16];
+	int port = -1;
 
 	start_logging();
 	LOG("ecs starts initializing.");
@@ -1340,7 +1333,7 @@ static void* ecs_initialize(void* args) {
 		return NULL;
 	}
 
-	port = check_port();
+	port = (int) args;
 	if (port < 0) {
 		LOG("None of port is available.");
 		return NULL;
@@ -1403,10 +1396,10 @@ int stop_ecs(void) {
 	return 0;
 }
 
-int start_ecs(void) {
+int start_ecs(int port) {
 	pthread_t thread_id;
 
-	if (0 != pthread_create(&thread_id, NULL, ecs_initialize, NULL)) {
+	if (0 != pthread_create(&thread_id, NULL, ecs_initialize, (void*) port)) {
 		LOG("pthread creation failed.");
 		return -1;
 	}

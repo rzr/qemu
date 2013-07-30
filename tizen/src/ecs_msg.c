@@ -26,13 +26,16 @@
 #include "qmp-commands.h"
 
 #include "ecs.h"
+#include "base64.h"
+#include "mloop_event.h"
 #include "hw/maru_virtio_evdi.h"
 #include "hw/maru_virtio_sensor.h"
+#include "hw/maru_virtio_nfc.h"
 #include "skin/maruskin_operation.h"
 
 // utility functions
 
-void* build_master(ECS__Master* master, int* payloadsize)
+static void* build_master(ECS__Master* master, int* payloadsize)
 {
 	int len_pack = ecs__master__get_packed_size(master);
 	*payloadsize = len_pack + 4;
@@ -76,7 +79,6 @@ bool send_to_ecp(ECS__Master* master)
 bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg)
 {
 	LOG("ecs_startinfo_req");
-
 
 	int hostkbd_status = mloop_evcmd_get_hostkbd_status();
 
@@ -133,7 +135,6 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 		}
 	}
 
-
 	send_to_evdi(route_ij, sndbuf, sndlen);
 
    	g_free(sndbuf);
@@ -163,7 +164,7 @@ bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
 bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 {
 	char cmd[10];
-	char* data;
+	char* data = NULL;
 	memset(cmd, 0, 10);
 	strcpy(cmd, msg->category);
 	type_length length = (type_length) msg->length;
