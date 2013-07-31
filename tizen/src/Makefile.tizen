@@ -2,10 +2,11 @@
 # for TIZEN-maru board
 
 
-$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/tizen/src/genmsg:$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/tizen/src/genmsg:$(SRC_PATH)/tizen/distrib/protobuf:$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
 
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src/genmsg
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/protobuf
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
 QEMU_CFLAGS += -L$(HOME)/install/lib

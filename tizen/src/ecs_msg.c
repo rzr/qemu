@@ -255,7 +255,7 @@ bool ntf_to_injector(const char* data, const int len) {
     }
 
 	QDict* obj_header = qdict_new();
-	make_header(obj_header, length, group, action);
+	ecs_make_header(obj_header, length, group, action);
 
 	QDict* objData = qdict_new();
 	qobject_incref(QOBJECT(obj_header));

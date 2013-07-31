@@ -43,7 +43,6 @@
 #include "emulator.h"
 #include "debug_ch.h"
 #include "sdb.h"
-#include "ecs.h"
 #include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
@@ -506,11 +505,6 @@ void free_detail_info(DetailInfo* detail_info)
 
         g_free(detail_info);
     }
-}
-
-int get_ecs_port_req(void)
-{
-	return get_ecs_port();
 }
 
 void do_open_shell(void)

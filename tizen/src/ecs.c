@@ -65,6 +65,9 @@ clients = QTAILQ_HEAD_INITIALIZER(clients);
 
 static ECS_State *current_ecs;
 
+static int port;
+static int port_setting = -1;
+
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
 static inline void start_logging(void) {
@@ -695,7 +698,7 @@ void read_val_str(const char* data, char* ret_val, int len) {
 	memcpy(ret_val, data, len);
 }
 
-void make_header(QDict* obj, type_length length, type_group group,
+void ecs_make_header(QDict* obj, type_length length, type_group group,
 		type_action action) {
 	qdict_put(obj, "length", qint_from_int((int64_t )length));
 	qdict_put(obj, "group", qint_from_int((int64_t )group));
@@ -1218,10 +1221,12 @@ static void alive_checker(void *opaque) {
 
 static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
 	int fd = -1;
+	Error *local_err = NULL;
 
-	fd = inet_listen_opts(opts, 0, NULL);
-	if (0 > fd) {
-		LOG("listen fd failed %d", fd);
+	fd = inet_listen_opts(opts, 0, &local_err);
+	if (0 > fd || error_is_set(&local_err)) {
+		qerror_report_err(local_err);
+		error_free(local_err);
 		return -1;
 	}
 
@@ -1300,8 +1305,7 @@ static int ecs_loop(ECS_State *cs)
 }
 #endif
 
-int get_ecs_port(void) {
-	int port = HOST_LISTEN_PORT;
+static int check_port(int port) {
 	int try = EMULATOR_SERVER_NUM;
 
 	for (; try > 0; try--) {
@@ -1314,14 +1318,22 @@ int get_ecs_port(void) {
 	return -1;
 }
 
+int get_ecs_port(void) {
+	if (port_setting < 0) {
+		LOG("ecs port is not determined yet.");
+		return 0;
+	}
+	return port;
+}
+
 static void* ecs_initialize(void* args) {
 	int ret = 1;
+	int index;
 	ECS_State *cs = NULL;
 	QemuOpts *opts = NULL;
 	Error *local_err = NULL;
 	Monitor* mon = NULL;
 	char host_port[16];
-	int port = -1;
 
 	start_logging();
 	LOG("ecs starts initializing.");
@@ -1333,15 +1345,13 @@ static void* ecs_initialize(void* args) {
 		return NULL;
 	}
 
-	port = (int) args;
+	port = check_port(HOST_LISTEN_PORT);
 	if (port < 0) {
 		LOG("None of port is available.");
 		return NULL;
 	}
-	sprintf(host_port, "%d", port);
 
 	qemu_opt_set(opts, "host", HOST_LISTEN_ADDR);
-	qemu_opt_set(opts, "port", host_port);
 
 	cs = g_malloc0(sizeof(ECS_State));
 	if (NULL == cs) {
@@ -1349,11 +1359,31 @@ static void* ecs_initialize(void* args) {
 		return NULL;
 	}
 
-	ret = socket_initialize(cs, opts);
-	if (0 > ret) {
-		LOG("socket initialization failed.");
-		return NULL;
+	for (index = 0; index < EMULATOR_SERVER_NUM; index ++) {
+		sprintf(host_port, "%d", port);
+		qemu_opt_set(opts, "port", host_port);
+		ret = socket_initialize(cs, opts);
+		if (0 > ret) {
+			LOG("socket initialization failed with port %d. next trial", port);
+			port ++;
+
+			port = check_port(port);
+			if (port < 0) {
+				LOG("None of port is available.");
+				break;
+			}
+		} else {
+			break;
+		}
 	}
+
+	if (0 > ret) {
+		LOG("socket resource is full.");
+		port = -1;
+		return ret;
+	}
+
+	port_setting = 1;
 
 	mon = monitor_create();
 	if (NULL == mon) {
@@ -1373,6 +1403,7 @@ static void* ecs_initialize(void* args) {
 	current_ecs = cs;
 	cs->ecs_running = 1;
 
+	LOG("ecs_loop entered.");
 	while (cs->ecs_running) {
 		ret = ecs_loop(cs);
 		if (0 > ret) {
@@ -1396,10 +1427,10 @@ int stop_ecs(void) {
 	return 0;
 }
 
-int start_ecs(int port) {
+int start_ecs(void) {
 	pthread_t thread_id;
 
-	if (0 != pthread_create(&thread_id, NULL, ecs_initialize, (void*) port)) {
+	if (0 != pthread_create(&thread_id, NULL, ecs_initialize, NULL)) {
 		LOG("pthread creation failed.");
 		return -1;
 	}

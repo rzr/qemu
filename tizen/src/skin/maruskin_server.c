@@ -44,6 +44,7 @@
 #include "maruskin_client.h"
 #include "emulator.h"
 #include "maru_err_table.h"
+#include "ecs.h"
 
 #ifndef CONFIG_USE_SHM
 #include "maru_sdl.h"
@@ -970,7 +971,7 @@ static void* run_skin_server(void* args)
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_ECP_PORT_REQ ==\n");
                     TRACE(log_buf);
 
-					int port = get_ecs_port_req();
+					int port = get_ecs_port();
                 	unsigned char port_buf[5];
 					memset(port_buf, 0, 5);
 					port_buf[0] = (port & 0xFF000000) >> 24;

@@ -32,7 +32,7 @@
 #define ECS_OPTS_NAME			"ecs"
 #define HOST_LISTEN_ADDR		"127.0.0.1"
 #define HOST_LISTEN_PORT		27000
-#define EMULATOR_SERVER_NUM		3
+#define EMULATOR_SERVER_NUM		10
 
 #define COMMANDS_TYPE			"type"
 #define COMMANDS_DATA			"data"
@@ -127,7 +127,7 @@ typedef struct ECS_Client {
 } ECS_Client;
 
 
-int start_ecs(int port);
+int start_ecs(void);
 int stop_ecs(void);
 int get_ecs_port(void);
 
@@ -154,7 +154,7 @@ bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char* data, const int len) ;
 
 
-void make_header(QDict* obj, type_length length, type_group group, type_action action);
+void ecs_make_header(QDict* obj, type_length length, type_group group, type_action action);
 
 void read_val_short(const char* data, unsigned short* ret_val);
 void read_val_char(const char* data, unsigned char* ret_val);
