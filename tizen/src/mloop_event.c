@@ -285,7 +285,7 @@ static void mloop_evhandle_kbd_add(char *name)
 {
     QDict *qdict;
 
-    TRACE("mloop_evhandle_kbd_add\n");
+    TRACE("try to add a keyboard device.\n");
 
     if (name == NULL) {
         ERR("packet data is NULL.\n");
@@ -293,7 +293,7 @@ static void mloop_evhandle_kbd_add(char *name)
     }
 
     if (hostkbd) {
-        INFO("virtio-keyboard has been already added.\n");
+        INFO("virtio-keyboard has already been added.\n");
         return;
     }
 
@@ -303,7 +303,6 @@ static void mloop_evhandle_kbd_add(char *name)
 
     hostkbd = do_pci_device_hot_add(cur_mon, qdict);
     if (hostkbd) {
-        INFO("hot_add keyboard device.\n");
         TRACE("virtio-keyboard device: domain %d, bus %d, slot %d, function %d\n",
                 pci_find_domain(hostkbd->bus), pci_bus_num(hostkbd->bus),
                 PCI_SLOT(hostkbd->devfn), PCI_FUNC(hostkbd->devfn));
@@ -320,7 +319,7 @@ static void mloop_evhandle_kbd_del(void)
     int slot = 0;
     char slotbuf[4] = {0,};
 
-    TRACE("mloop_evhandle_kbd_del\n");
+    TRACE("try to remove a keyboard device.\n");
 
     if (!hostkbd) {
         ERR("Failed to remove a keyboard device "
@@ -347,7 +346,7 @@ static void mloop_evhandle_sdcard_attach(char *name)
 {
     char opts[PATH_MAX];
 
-    INFO("mloop_evhandle_sdcard_attach\n");
+    INFO("try to attach sdcard.\n");
 
     if (name == NULL) {
         ERR("Packet data is NULL.\n");
@@ -370,18 +369,18 @@ static void mloop_evhandle_sdcard_attach(char *name)
     if (virtio_sdcard) {
         INFO("hot add virtio storage device with [%s]\n", opts);
         INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",
-                pci_find_domain(virtio_sdcard->bus), pci_bus_num(virtio_sdcard->bus),
-                PCI_SLOT(virtio_sdcard->devfn), PCI_FUNC(virtio_sdcard->devfn));
+            pci_find_domain(virtio_sdcard->bus), pci_bus_num(virtio_sdcard->bus),
+            PCI_SLOT(virtio_sdcard->devfn), PCI_FUNC(virtio_sdcard->devfn));
     } else {
-        ERR("failed to hot_add sdcard device.\n");
-
+        ERR("failed to create a sdcard device.\n");
     }
+
     QDECREF(qdict);
 }
 
 static void mloop_evhandle_sdcard_detach(void)
 {
-    INFO("mloop_evhandle_sdcard_detach\n");
+    INFO("try to detach sdcard.\n");
 
     if (!virtio_sdcard) {
         ERR("sdcard is not attached yet.\n");
@@ -576,7 +575,6 @@ void mloop_evcmd_usbdisk(char *img)
 
     if (img) {
         if (strlen(img) > PACKET_LEN-5) {
-            // Need log
             ERR("The length of disk image path is greater than "
                 "lenth of maximum packet.\n");
             return;
@@ -598,7 +596,6 @@ void mloop_evcmd_sdcard(char *img)
 
     if (img) {
         if (strlen(img) > PACKET_LEN-5) {
-            // Need log
             ERR("The length of disk image path is greater than "
                 "lenth of maximum packet.\n");
             return;
@@ -659,4 +656,3 @@ void mloop_evcmd_ramdump(void)
     pack.size = 5;
     mloop_evsock_send(&mloop, &pack);
 }
-

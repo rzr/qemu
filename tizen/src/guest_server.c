@@ -1,5 +1,5 @@
 /*
- * 
+ *
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -51,9 +51,9 @@
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 #include "sdb.h"
+#include "maru_common.h"
 
 MULTI_DEBUG_CHANNEL(qemu, guest_server);
-
 
 #define RECV_BUF_SIZE 32
 
@@ -63,7 +63,6 @@ static int svr_port = 0;
 static int server_sock = 0;
 
 static int parse_val(char *buff, unsigned char data, char *parsbuf);
-
 
 pthread_t start_guest_server(int server_port)
 {
@@ -81,98 +80,236 @@ pthread_t start_guest_server(int server_port)
 
 }
 
-/* get_emulator_vms_sdcard_path = "/home/{USER}/tizen-sdk-data/emulator-vms/sdcard" */
+/*
+ *  In case that SDK does not refer to sdk.info to get tizen-sdk-data path.
+ *  When SDK is not installed by the latest SDK installer,
+ *  SDK installed path is fixed and there is no sdk.info file.
+ */
+static gchar *get_old_tizen_sdk_data_path(void)
+{
+    gchar *tizen_sdk_data_path = NULL;
+
+    INFO("try to search tizen-sdk-data path in another way.\n");
+
+#ifndef CONFIG_WIN32
+    gchar tizen_sdk_data[] = "/tizen-sdk-data";
+    gchar *home_dir;
+
+    home_dir = (gchar *)g_getenv("HOME");
+    if (!home_dir) {
+        home_dir = (gchar *)g_get_home_dir();
+    }
+
+    tizen_sdk_data_path =
+        g_malloc(strlen(home_dir) + sizeof(tizen_sdk_data) + 1);
+    if (!tizen_sdk_data_path) {
+        ERR("failed to allocate memory.\n");
+        return NULL;
+    }
+    strcpy(tizen_sdk_data_path, home_dir);
+    strcat(tizen_sdk_data_path, tizen_sdk_data);
+
+#else
+    gchar tizen_sdk_data[] = "\\tizen-sdk-data\\";
+    HKEY hKey;
+    char strLocalAppDataPath[1024] = { 0 };
+    DWORD dwBufLen = 1024;
+
+    RegOpenKeyEx(HKEY_CURRENT_USER,
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+        0, KEY_QUERY_VALUE, &hKey);
+
+    RegQueryValueEx(hKey, "Local AppData", NULL,
+                    NULL, (LPBYTE)strLocalAppDataPath, &dwBufLen);
+    RegCloseKey(hKey);
+
+    tizen_sdk_data_path =
+        g_malloc(strlen(strLocalAppDataPath) + sizeof(tizen_sdk_data) + 1);
+    if (!tizen_sdk_data_path) {
+        ERR("failed to allocate memory.\n");
+        return NULL;
+    }
+
+    strcpy(tizen_sdk_data_path, strLocalAppDataPath);
+    strcat(tizen_sdk_data_path, tizen_sdk_data);
+#endif
+
+    INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
+    return tizen_sdk_data_path;
+}
+
+/*
+ *  get tizen-sdk-data path from sdk.info.
+ */
+static gchar *get_tizen_sdk_data_path(void)
+{
+    gchar *emul_bin_path = NULL;
+    gchar *sdk_info_file_path = NULL;
+    gchar *tizen_sdk_data = NULL;
+    gchar *tizen_sdk_data_path = NULL;
+#ifndef CONFIG_WIN32
+    const char *sdk_info = "../../../sdk.info";
+#else
+    const char *sdk_info = "..\\..\\..\\sdk.info";
+#endif
+    const char sdk_data_var[] = "TIZEN_SDK_DATA_PATH";
+    bool is_sdk_data_var = false;
+    char *ptr_sdk_data = NULL;
+
+    FILE *sdk_info_fp = NULL;
+    int sdk_info_path_len = 0;
+    int buf_len = 32, old_buf_len, tizen_sdk_data_path_len;
+    int ch, i = 0;
+
+    TRACE("%s\n", __func__);
+
+    emul_bin_path = get_bin_path();
+    if (!emul_bin_path) {
+        ERR("failed to get emulator path.\n");
+        return NULL;
+    }
+
+    sdk_info_path_len = strlen(emul_bin_path) + strlen(sdk_info) + 1;
+    sdk_info_file_path = g_malloc(sdk_info_path_len);
+    if (!sdk_info_file_path) {
+        ERR("failed to allocate sdk-data buffer.\n");
+        return NULL;
+    }
+
+    g_snprintf(sdk_info_file_path, sdk_info_path_len, "%s%s",
+                emul_bin_path, sdk_info);
+    INFO("sdk.info path: %s\n", sdk_info_file_path);
+
+    sdk_info_fp = fopen(sdk_info_file_path, "r");
+    g_free(sdk_info_file_path);
+
+    if (!sdk_info_fp) {
+        ERR("failed to open sdk.info\n");
+        return get_old_tizen_sdk_data_path();
+    }
+
+    INFO("succeeded to open sdk.info.\n");
+    tizen_sdk_data = g_malloc(buf_len);
+    if (!tizen_sdk_data) {
+        fclose(sdk_info_fp);
+        ERR("failed to allocate tizen_sdk_data buffer.\n");
+        return NULL;
+    }
+
+    // get tizen-sdk-data path from sdk.info
+    while ((ch = fgetc(sdk_info_fp)) != EOF) {
+        if ((buf_len - 1) < i) {
+            gchar *temp_buf = NULL;
+
+            TRACE("reallocate sdk-data buffer.\n");
+
+            old_buf_len = buf_len;
+            buf_len = buf_len << 1;
+
+            temp_buf = g_malloc(old_buf_len);
+            strncpy(temp_buf, tizen_sdk_data, old_buf_len);
+            g_free(tizen_sdk_data);
+
+            tizen_sdk_data = g_malloc(buf_len);
+            strncpy(tizen_sdk_data, temp_buf, old_buf_len);
+
+            TRACE("temp buffer: %s, length: %d\n", tizen_sdk_data, buf_len);
+            g_free(temp_buf);
+        }
+
+        tizen_sdk_data[i++] = ch;
+        if (ch == '\n') {
+            tizen_sdk_data[i - 1] = '\0';
+            TRACE("len: %d, tizen-sdk-data: %s\n", i, tizen_sdk_data);
+            if (strstr(tizen_sdk_data, sdk_data_var)) {
+                TRACE("find %s variable!!\n", sdk_data_var);
+                is_sdk_data_var = true;
+                break;
+            }
+            i = 0;
+            continue;
+        }
+    }
+
+    if (!is_sdk_data_var) {
+        fclose(sdk_info_fp);
+        g_free(tizen_sdk_data);
+        ERR("failed to find tizen-sdk-data path.\n");
+        return NULL;
+    }
+
+    ptr_sdk_data = (strchr(tizen_sdk_data, '=') + 1);
+    tizen_sdk_data_path_len = strlen(ptr_sdk_data);
+    TRACE("len: %d, ptr_sdk_data: %s\n", tizen_sdk_data_path_len, ptr_sdk_data);
+
+    if (!ptr_sdk_data) {
+        fclose(sdk_info_fp);
+        g_free(tizen_sdk_data);
+        ERR("failed to find tizen-sdk-data path.\n");
+        return NULL;
+    }
+
+    tizen_sdk_data_path = g_malloc(tizen_sdk_data_path_len + 1);
+    if (!tizen_sdk_data_path) {
+        fclose(sdk_info_fp);
+        g_free(tizen_sdk_data);
+        ERR("failed to allocate tizen_sdk_data_path buffer.\n");
+        return NULL;
+    }
+
+    strncpy(tizen_sdk_data_path, ptr_sdk_data, tizen_sdk_data_path_len);
+    tizen_sdk_data_path[tizen_sdk_data_path_len] = '\0';
+    TRACE("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
+
+    fclose(sdk_info_fp);
+    g_free(tizen_sdk_data);
+
+    return tizen_sdk_data_path;
+}
+
 static char* get_emulator_vms_sdcard_path(void)
 {
-
-// FIXME: A draft code for multi-SDK install. It needs some cleans up.
-    char *emulator_vms_sdcard_path = NULL;
-    gsize emulator_vms_sdcard_path_len = 0;
-
-    gchar const *key = "TIZEN_SDK_DATA_PATH";
-    gchar base_dir[PATH_MAX] = { '\0', };
-    gchar info_path[PATH_MAX] = { '\0', };
-
-#ifndef _WIN32
-    gchar const *info_file = "/../../../sdk.info";
-
-    gchar const *emulator_vms = "/emulator-vms/sdcard/";
-    gchar const *legacy_data_dir = "/tizen-sdk-data/";
+    gchar *emulator_vms_sdcard_path = NULL;
+    gchar *tizen_sdk_data = NULL;
+#ifndef CONFIG_WIN32
+    char emulator_vms[] = "/emulator-vms/sdcard/";
 #else
-    gchar const *info_file = "\\..\\..\\..\\sdk.info";
-
-    gchar const *emulator_vms = "\\emulator-vms\\sdcard\\";
-    gchar const *legacy_data_dir = "\\tizen-sdk-data";
+    char emulator_vms[] = "\\emulator-vms\\sdcard\\";
 #endif
 
-    g_strlcpy(info_path, bin_path, sizeof(info_path));
-    g_strlcat(info_path, info_file, sizeof(info_path));
-    INFO("[%s] \n", info_path);
-    FILE *file = fopen(info_path, "r");
-    char tmp[256] = { '\0', };
-    char *tmpline = NULL;
-    while (file != NULL && fgets(tmp, sizeof(tmp), file) != NULL) {
-        INFO("[%s] \n", tmp);
-        if ((tmpline = g_strstr_len(tmp, sizeof(tmp), key))) {
-            tmpline += strlen(key) + 1; // 1 for '='
-            break;
-        }
+    TRACE("vms path: %s, %d\n", emulator_vms, sizeof(emulator_vms));
+
+    tizen_sdk_data = get_tizen_sdk_data_path();
+    if (!tizen_sdk_data) {
+        ERR("failed to get tizen-sdk-data path.\n");
+        return NULL;
     }
 
-    if (tmpline[strlen(tmpline) -1] == '\n') {
-        tmpline[strlen(tmpline) -1] = '\0';
-    }
-    if (tmpline[strlen(tmpline) -1] == '\r') {
-        tmpline[strlen(tmpline) -1] = '\0';
-    }
-
-    if (tmpline) {
-        INFO("SDK info file is found.\n");
-        g_strlcpy(base_dir, tmpline, sizeof(base_dir));
-        g_strlcpy(base_dir, tmpline, sizeof(base_dir));
-    }
-    else {
-        INFO("SDK info file is not found. Use legacy data directory.\n");
-#ifndef _WIN32
-        gchar *home_dir = (char*)g_getenv("HOME");
-
-        if (!home_dir) {
-            home_dir = (char*)g_get_home_dir();
-        }
-#else
-        HKEY hKey;
-        gchar home_dir[1024] = { 0 };
-        DWORD dwBufLen = 1024;
-
-        RegOpenKeyEx(HKEY_CURRENT_USER,
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
-                0, KEY_QUERY_VALUE, &hKey);
-
-        RegQueryValueEx(hKey, "Local AppData", NULL, NULL, (LPBYTE)home_dir, &dwBufLen);
-        RegCloseKey(hKey);
-#endif
-        g_strlcpy(base_dir, home_dir, sizeof(base_dir));
-        g_strlcat(base_dir, legacy_data_dir, sizeof(base_dir));
-
+    emulator_vms_sdcard_path =
+        g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_vms) + 1);
+    if (!emulator_vms_sdcard_path) {
+        ERR("failed to allocate memory.\n");
+        return NULL;
     }
 
-    emulator_vms_sdcard_path_len = strlen(base_dir) + strlen(emulator_vms) + 1;
-    emulator_vms_sdcard_path = g_malloc0(emulator_vms_sdcard_path_len);
-    g_strlcpy(emulator_vms_sdcard_path, base_dir, emulator_vms_sdcard_path_len);
-    g_strlcat(emulator_vms_sdcard_path, emulator_vms, emulator_vms_sdcard_path_len);
-    INFO("Emulator sdcard directory is [%s].\n", emulator_vms_sdcard_path);
+    g_snprintf(emulator_vms_sdcard_path, strlen(tizen_sdk_data) + sizeof(emulator_vms),
+             "%s%s", tizen_sdk_data, emulator_vms);
 
+    g_free(tizen_sdk_data);
+
+    TRACE("sdcard dir: %s\n", emulator_vms_sdcard_path);
     return emulator_vms_sdcard_path;
 }
 
 static void* run_guest_server(void* args)
 {
-    INFO("start guest server thread.\n");
-
-    uint16_t port;
+    uint16_t port = svr_port;
+    int opt = 1, read_cnt = 0;
+    char readbuf[RECV_BUF_SIZE];
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len;
-    port = svr_port;
+
+    INFO("start guest server thread.\n");
 
     if ((server_sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
         ERR("create listen socket error\n");
@@ -195,12 +332,11 @@ static void* run_guest_server(void* args)
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     server_addr.sin_port = htons(port);
 
-    int opt = 1;
-    setsockopt( server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof( opt ) );
+    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    if ( 0 > bind( server_sock, (struct sockaddr*) &server_addr, sizeof( server_addr ) ) ) {
-        ERR( "guest server bind error: " );
-        perror( "bind" );
+    if (bind(server_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
+        ERR("guest server bind error: ");
+        perror("bind");
 #ifdef _WIN32
         if (server_sock) {
             closesocket(server_sock);
@@ -213,32 +349,29 @@ static void* run_guest_server(void* args)
         server_sock = 0;
         return NULL;
     } else {
-        INFO( "success to bind port[127.0.0.1:%d/udp] for guest_server in host \n", port );
+        INFO("success to bind port[127.0.0.1:%d/udp] for guest_server in host \n", port);
     }
 
-    client_len = sizeof( client_addr );
+    client_len = sizeof(client_addr);
+    INFO("guest server start...port:%d\n", port);
 
-    char readbuf[RECV_BUF_SIZE];
-
-    INFO( "guest server start...port:%d\n", port );
-
-    while ( 1 ) {
+    while (1) {
         memset(&readbuf, 0, RECV_BUF_SIZE);
 
         if (server_sock == 0) {
             INFO("server_sock is closed\n");
             return NULL;
         }
-        int read_cnt = recvfrom(server_sock, readbuf,
-            RECV_BUF_SIZE, 0, (struct sockaddr*) &client_addr, &client_len);
+        read_cnt = recvfrom(server_sock, readbuf, RECV_BUF_SIZE, 0,
+                            (struct sockaddr*) &client_addr, &client_len);
 
-        if (0 > read_cnt) {
+        if (read_cnt < 0) {
             ERR("fail to recvfrom in guest_server.\n");
             perror("fail to recvfrom in guest_server.:");
             break;
         } else {
 
-            if (0 == read_cnt) {
+            if (read_cnt == 0) {
                 ERR("read_cnt is 0.\n");
                 break;
             }
@@ -253,19 +386,15 @@ static void* run_guest_server(void* args)
             parse_val(readbuf, 0x0a, command);
 
             TRACE("----------------------------------------\n");
-
             if (strcmp(command, "2\n" ) == 0) {
                 TRACE("command:%s\n", command);
                 notify_sdb_daemon_start();
-            } 
-            else if (strcmp(command, "3\n" ) == 0) {
+            } else if (strcmp(command, "3\n" ) == 0) {
                 TRACE("command:%s\n", command);
                 notify_sensor_daemon_start();
-            } 
-            else if (strcmp(command, "4\n") == 0) {
+            } else if (strcmp(command, "4\n") == 0) {
                 /* sdcard mount/umount msg recv from emuld */
-                TRACE("command:%s\n", command);
-
+                INFO("command:%s\n", command);
                 char token[] = "\n";
                 char* ret = NULL;
                 ret = strtok(readbuf, token);
@@ -278,20 +407,25 @@ static void* run_guest_server(void* args)
                 } else if (atoi(ret) == 1) {
                     /* mount sdcard */
                     char sdcard_path[256];
-                    char* vms_path = get_emulator_vms_sdcard_path();
-                    memset(sdcard_path, '\0', sizeof(sdcard_path));
+                    char* vms_path = NULL;
 
-                    strcpy(sdcard_path, vms_path);
+                    vms_path = get_emulator_vms_sdcard_path();
+                    if (vms_path) {
+                        memset(sdcard_path, '\0', sizeof(sdcard_path));
+                        strcpy(sdcard_path, vms_path);
 
-                    /* emulator_vms_sdcard_path + sdcard img name */
-                    ret = strtok(NULL, token);
-                    strcat(sdcard_path, ret);
-                    INFO("%s\n", sdcard_path);
+                        /* emulator_vms_sdcard_path + sdcard img name */
+                        ret = strtok(NULL, token);
+                        strcat(sdcard_path, ret);
+                        INFO("%s\n", sdcard_path);
 
-                    //mloop_evcmd_usbdisk(sdcard_path);
-                    mloop_evcmd_sdcard(sdcard_path);
+                        //mloop_evcmd_usbdisk(sdcard_path);
+                        mloop_evcmd_sdcard(sdcard_path);
 
-                    free(vms_path);
+                        g_free(vms_path);
+                    } else {
+                        ERR("failed to get sdcard path!!\n");
+                    }
                 } else {
                     ERR("!!! unknown command : %s\n", ret);
                 }
@@ -303,7 +437,7 @@ static void* run_guest_server(void* args)
         }
     }
 
-#ifdef _WIN32
+#ifdef CONFIG_WIN32
     if (server_sock) {
         closesocket(server_sock);
     }
@@ -321,7 +455,7 @@ static int parse_val(char* buff, unsigned char data, char* parsbuf)
 {
     int count = 0;
 
-    while ( 1 ) {
+    while (1) {
         if (count > 12) {
             return -1;
         }
@@ -354,4 +488,3 @@ void shutdown_guest_server(void)
 
     server_sock = 0;
 }
-
