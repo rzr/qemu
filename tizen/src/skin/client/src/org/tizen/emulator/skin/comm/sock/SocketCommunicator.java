@@ -62,7 +62,6 @@ import org.tizen.emulator.skin.util.SkinUtil;
  * 
  */
 public class SocketCommunicator implements ICommunicator {
-
 	public class DataTranfer {
 
 		private boolean isTransferState;
@@ -127,8 +126,10 @@ public class SocketCommunicator implements ICommunicator {
 	private ByteArrayOutputStream bao;
 	private DataOutputStream dataOutputStream;
 
+	/**
+	 *  Constructor
+	 */
 	public SocketCommunicator(EmulatorConfig config, int uId, EmulatorSkin skin) {
-
 		this.config = config;
 		this.uId = uId;
 		this.skin = skin;
@@ -158,15 +159,13 @@ public class SocketCommunicator implements ICommunicator {
 		this.heartbeatTimer = new Timer();
 
 		try {
-
-			int port = config.getArgInt( ArgsConstants.SERVER_PORT );
-			socket = new Socket( "127.0.0.1", port );
-			logger.info( "socket.isConnected():" + socket.isConnected() );
-
-		} catch ( UnknownHostException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
-		} catch ( IOException e ) {
-			logger.log( Level.SEVERE, e.getMessage(), e );
+			int port = config.getArgInt(ArgsConstants.VM_SKIN_PORT);
+			socket = new Socket("127.0.0.1", port);
+			logger.info("socket.isConnected() : " + socket.isConnected());
+		} catch (UnknownHostException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
 
 		this.bao = new ByteArrayOutputStream();

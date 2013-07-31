@@ -90,6 +90,7 @@ MULTI_DEBUG_CHANNEL(qemu, skin_server);
 #define PORT_RETRY_COUNT 50
 
 #define TEST_HB_IGNORE "test.hb.ignore"
+#define TEST_VM_SKINPORT "test.vm.skinport"
 #define SKIN_CONFIG_PROP ".skinconfig.properties"
 
 extern char tizen_target_path[];
@@ -135,6 +136,7 @@ enum {
 
 static int seq_req_id = 0;
 
+static int arg_skin_port = 0;
 static uint16_t svr_port = 0;
 static int server_sock = 0;
 static int client_sock = 0;
@@ -194,7 +196,7 @@ int start_skin_server(int argc, char** argv,
     /* arguments have higher priority than '.skinconfig.properties' */
     parse_skin_args();
 
-    INFO("ignore_heartbeat:%d\n", ignore_heartbeat);
+    INFO("ignore_heartbeat : %d\n", ignore_heartbeat);
 
     qmu_argc = qemu_argc;
     qmu_argv = qemu_argv;
@@ -415,126 +417,125 @@ int get_skin_server_port(void)
 
 static void parse_skinconfig_prop(void)
 {
-    int target_path_len = strlen( tizen_target_path );
+    int target_path_len = strlen(tizen_target_path);
     char skin_config_path[target_path_len + 32];
 
-    memset( skin_config_path, 0, target_path_len + 32 );
-    strcpy( skin_config_path, tizen_target_path );
+    memset(skin_config_path, 0, target_path_len + 32);
+    strcpy(skin_config_path, tizen_target_path);
 #ifdef CONFIG_WIN32
-    strcat( skin_config_path, "\\" );
+    strcat(skin_config_path, "\\");
 #else
-    strcat( skin_config_path, "/" );
+    strcat(skin_config_path, "/");
 #endif
-    strcat( skin_config_path, SKIN_CONFIG_PROP );
+    strcat(skin_config_path, SKIN_CONFIG_PROP);
 
-    FILE* fp = fopen( skin_config_path, "r" );
+    FILE* fp = fopen(skin_config_path, "r");
 
-    if ( !fp ) {
-        INFO( "There is no %s. skin_config_path:%s\n", SKIN_CONFIG_PROP, skin_config_path );
+    if (!fp) {
+        INFO("There is no %s. skin_config_path:%s\n",
+            SKIN_CONFIG_PROP, skin_config_path);
         return;
     }
 
-    fseek( fp, 0L, SEEK_END );
-    int buf_size = ftell( fp );
-    rewind( fp );
+    fseek(fp, 0L, SEEK_END);
+    int buf_size = ftell(fp);
+    rewind(fp);
 
-    if ( 0 >= buf_size ) {
-        INFO( "%s contents is empty.\n", SKIN_CONFIG_PROP );
-        fclose( fp );
+    if (0 >= buf_size) {
+        INFO("%s contents is empty.\n", SKIN_CONFIG_PROP);
+        fclose(fp);
         return;
     }
 
-    char* buf = g_malloc0( buf_size );
-    if ( !buf ) {
-        ERR( "Fail to malloc for %s\n", SKIN_CONFIG_PROP );
-        fclose( fp );
+    char* buf = g_malloc0(buf_size);
+    if (!buf) {
+        ERR("Fail to malloc for %s\n", SKIN_CONFIG_PROP);
+        fclose(fp);
         return;
     }
 
     int read_cnt = 0;
     int total_cnt = 0;
 
-    while ( 1 ) {
-
-        if ( total_cnt == buf_size ) {
+    while (1) {
+        if (total_cnt == buf_size) {
             break;
         }
 
-        read_cnt = fread( (void*) ( buf + read_cnt ), 1, buf_size - total_cnt, fp );
-        if ( 0 > read_cnt ) {
+        read_cnt = fread((void*) (buf + read_cnt), 1, buf_size - total_cnt, fp);
+        if (0 > read_cnt) {
             break;
         } else {
             total_cnt += read_cnt;
         }
-
     }
 
-    fclose( fp );
+    fclose(fp);
 
-    INFO( "====== %s ======\n%s\n====================================\n", SKIN_CONFIG_PROP, buf );
+    INFO("====== %s ======\n%s\n====================================\n",
+        SKIN_CONFIG_PROP, buf);
 
-    char hb_ignore_prop[32];
-    memset( hb_ignore_prop, 0, 32 );
-    strcat( hb_ignore_prop, TEST_HB_IGNORE );
-    strcat( hb_ignore_prop, "=true" );
+    char hb_ignore_prop[32] = { 0, };
+    memset(hb_ignore_prop, 0, 32);
+    strcat(hb_ignore_prop, TEST_HB_IGNORE);
+    strcat(hb_ignore_prop, "=true");
 
-    char* line_str = strtok( buf, "\n" );
+    char* line_str = strtok(buf, "\n");
 
-    while ( 1 ) {
+    while (1) {
+        if (line_str) {
+            TRACE("prop line_str : %s\n", line_str);
 
-        if ( line_str ) {
-
-            TRACE( "prop line_str:%s\n", line_str );
-
-            if ( 0 == strcmp( line_str, hb_ignore_prop ) ) {
+            if (0 == strcmp(line_str, hb_ignore_prop)) {
                 ignore_heartbeat = 1;
-                INFO( "ignore heartbeat by %s\n", SKIN_CONFIG_PROP );
+                INFO("ignore heartbeat by %s\n", SKIN_CONFIG_PROP);
             }
-
         } else {
             break;
         }
 
-        line_str = strtok( NULL, "\n" );
-
+        line_str = strtok(NULL, "\n");
     }
 
-    g_free( buf );
-
+    g_free(buf);
 }
 
 static void parse_skin_args(void)
 {
-    int i;
+#define OPT_BOOLEAN_TRUE "true"
+#define OPT_BOOLEAN_FALSE "false"
+    int i = 0;
 
-    for (i = 0; i < skin_argc; i++) {
-
+    for ( ; i < skin_argc; i++) {
         char* arg = NULL;
         arg = strdup(skin_argv[i]);
 
         if (arg) {
-
             char* key = strtok(arg, "=");
             char* value = strtok(NULL, "=");
 
-            INFO("skin params key:%s, value:%s\n", key, value);
+            INFO("skin parameter key : %s, value : %s\n",
+                key, value);
 
             if (0 == strcmp(TEST_HB_IGNORE, key)) {
-                if (0 == strcmp("true", value)) {
+                if (0 == strcmp(OPT_BOOLEAN_TRUE, value)) {
                     ignore_heartbeat = 1;
-                } else if (0 == strcmp("false", value)) {
+                } else if (0 == strcmp(OPT_BOOLEAN_FALSE, value)) {
                     ignore_heartbeat = 0;
+                }
+            } else if (0 == strcmp(TEST_VM_SKINPORT, key)) {
+                arg_skin_port = atoi(value);
+                if (arg_skin_port > 65535 || arg_skin_port < 0) {
+                    INFO("invalid skin port argument : %d\n", arg_skin_port);
+                    arg_skin_port = 0;
                 }
             }
 
             free(arg);
-
         } else {
-            ERR("fail to strdup.");
+            ERR("fail to strdup.\n");
         }
-
     }
-
 }
 
 static void print_fail_log(void)
@@ -562,13 +563,15 @@ static void* run_skin_server(void* args)
         return NULL;
     }
 
-    memset( &server_addr, '\0', sizeof( server_addr ) );
-    ( (struct sockaddr_in *) &server_addr )->sin_family = AF_INET;
-    memcpy( &( (struct sockaddr_in *) &server_addr )->sin_addr, "\177\000\000\001", 4 ); // 127.0.0.1
-    ( (struct sockaddr_in *) &server_addr )->sin_port = htons( 0 );
+    memset(&server_addr, '\0', sizeof(server_addr));
+    ((struct sockaddr_in *) &server_addr)->sin_family = AF_INET;
 
-    server_len = sizeof( server_addr );
+    memcpy( &((struct sockaddr_in *) &server_addr)->sin_addr,
+        "\177\000\000\001", 4 ); /* 127.0.0.1 */
 
+    ((struct sockaddr_in *) &server_addr)->sin_port = htons(arg_skin_port);
+
+    server_len = sizeof(server_addr);
     if (0 != bind(server_sock, &server_addr, server_len)) {
         ERR("skin server bind error\n");
         perror("skin server bind error : ");
@@ -588,13 +591,14 @@ static void* run_skin_server(void* args)
         return NULL;
     }
 
-    memset( &server_addr, '\0', sizeof( server_addr ) );
-    getsockname( server_sock, (struct sockaddr *) &server_addr, &server_len );
-    svr_port = ntohs( ( (struct sockaddr_in *) &server_addr )->sin_port );
+    memset(&server_addr, '\0', sizeof(server_addr));
+    getsockname(server_sock, (struct sockaddr *) &server_addr, &server_len);
+    svr_port = ntohs( ((struct sockaddr_in *) &server_addr)->sin_port );
 
-    INFO("success to bind port[127.0.0.1:%d/tcp] for skin_server in host \n", svr_port);
+    INFO("success to bind port[127.0.0.1:%d/tcp] for skin_server in host\n",
+        svr_port);
 
-    if (0 > listen( server_sock, 4)) {
+    if (0 > listen(server_sock, 4)) {
         ERR("skin_server listen error\n");
         perror("skin_server listen error : ");
 
@@ -617,10 +621,9 @@ static void* run_skin_server(void* args)
 
     char recvbuf[RECV_BUF_SIZE];
 
-    INFO("skin server start...port:%d\n", svr_port);
+    INFO("skin server start...port : %d\n", svr_port);
 
     while (1) {
-
         if (stop_server) {
             INFO("close server socket normally.\n");
             break;
@@ -628,40 +631,42 @@ static void* run_skin_server(void* args)
 
         ready_server = 1;
 
-        if( !is_started_heartbeat ) {
-            if ( !start_heart_beat() ) {
-                ERR( "Fail to start heartbeat thread.\n" );
+        if (!is_started_heartbeat) {
+            if (!start_heart_beat()) {
+                ERR("Fail to start heartbeat thread.\n");
+
                 shutdown_qemu = 1;
                 break;
             }
         }
 
-        INFO( "start accepting socket...\n" );
+        INFO("start accepting socket...\n");
 
-        if ( 0 > ( client_sock = accept( server_sock, (struct sockaddr *) &client_addr, &client_len ) ) ) {
+        if (0 > (client_sock = accept(
+            server_sock, (struct sockaddr *) &client_addr, &client_len)))
+        {
             ERR("skin_server accept error\n");
             perror("skin_server accept error : ");
 
             continue;
         }
 
-        INFO( "accept client : client_sock:%d\n", client_sock );
+        INFO("accept client sock : %d\n", client_sock);
 
-        while ( 1 ) {
-
-            if ( stop_server ) {
-                INFO( "stop receiving current client socket.\n" );
+        while (1) {
+            if (stop_server) {
+                INFO("stop receiving current client socket.\n");
                 break;
             }
 
             stop_heartbeat = 0;
-            memset( &recvbuf, 0, RECV_BUF_SIZE );
+            memset(&recvbuf, 0, RECV_BUF_SIZE);
 
-            int read_cnt = recv_n( client_sock, recvbuf, RECV_HEADER_SIZE );
+            int read_cnt = recv_n(client_sock, recvbuf, RECV_HEADER_SIZE);
 
             if (0 > read_cnt) {
                 if (is_force_close_client) {
-                    INFO( "force close client socket.\n" );
+                    INFO("force close client socket.\n");
                     is_force_close_client = 0;
                 } else {
                     ERR("skin_server read error (%d): %d\n",
@@ -670,9 +675,7 @@ static void* run_skin_server(void* args)
                 }
 
                 break;
-
             } else {
-
                 if (0 == read_cnt) {
                     ERR("read_cnt is 0.\n");
                     break;
@@ -1374,7 +1377,6 @@ static void* do_heart_beat(void* args)
     }
 
     return NULL;
-
 }
 
 static int start_heart_beat(void)
