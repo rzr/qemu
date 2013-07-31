@@ -1086,9 +1086,8 @@ public class EmulatorSkin {
 
 				String emulName = SkinUtil.getVmName(config);
 				int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
-				int portEcp = config.getArgInt(ArgsConstants.VM_ECS_PORT);
+				int portEcp = 0;
 
-				/*
 				DataTranfer dataTranfer = communicator.sendDataToQEMU(
 						SendCommand.ECP_PORT_REQ, null, true);
 				byte[] receivedData = communicator.getReceivedData(dataTranfer);
@@ -1096,7 +1095,6 @@ public class EmulatorSkin {
 				portEcp |= receivedData[1] << 16;
 				portEcp |= receivedData[2] << 8;
 				portEcp |= receivedData[3];
-				*/
 
 				ProcessBuilder procEcp = new ProcessBuilder();
 

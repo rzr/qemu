@@ -73,14 +73,13 @@ public class EmulatorConfig {
 	public interface ArgsConstants {
 		public static final String SIMPLE_MESSAGE = "simple.msg";
 		public static final String UID = "uid";
-		public static final String SERVER_PORT = "svr.port";
 		public static final String RESOLUTION_WIDTH = "width";
 		public static final String RESOLUTION_HEIGHT = "height";
 		public static final String TEST_HEART_BEAT_IGNORE = "test.hb.ignore";
 		public static final String LOG_LEVEL = "log.level";
 		public static final String VM_PATH = "vm.path";
+		public static final String VM_SKIN_PORT = "vm.skinport";
 		public static final String VM_BASE_PORT = "vm.baseport";
-		public static final String VM_ECS_PORT = "vm.ecsport";
 		public static final String SKIN_PATH = "skin.path";
 		public static final String DISPLAY_SHM = "display.shm";
 		public static final String INPUT_MOUSE = "input.mouse";
@@ -177,19 +176,19 @@ public class EmulatorConfig {
 			}
 		}
 
-		if (args.containsKey(ArgsConstants.SERVER_PORT)) {
-			String serverPort = args.get(ArgsConstants.SERVER_PORT);
+		if (args.containsKey(ArgsConstants.VM_SKIN_PORT)) {
+			String serverPort = args.get(ArgsConstants.VM_SKIN_PORT);
 			try {
 				Integer.parseInt(serverPort);
 			} catch (NumberFormatException e) {
 				String msg = INVALID_OPTION_MESSAGE + "The \'" +
-						ArgsConstants.SERVER_PORT +
+						ArgsConstants.VM_SKIN_PORT +
 						"\' argument is not numeric.\n: " + serverPort;
 				throw new ConfigException(msg);
 			}
 		} else {
 			String msg = INVALID_OPTION_MESSAGE + "The \'" +
-					ArgsConstants.SERVER_PORT + "\' is required argument.";
+					ArgsConstants.VM_SKIN_PORT + "\' is required argument.";
 			throw new ConfigException(msg);
 		}
 
