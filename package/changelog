@@ -1,3 +1,7 @@
+* 1.5.72
+- modified location of protobuf
+- changed skin process for ecp
+== Jinhyung Choi <jinhyung2.choi@samsung.com> 2013-07-31
 * 1.5.71
 - merge ecp branch into develop
 - evdi, nfc and sensor device added
