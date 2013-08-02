@@ -199,6 +199,14 @@ static void vigs_winsys_gl_surface_release(struct winsys_surface *sfc)
     vigs_ref_release(&vigs_sfc->ref);
 }
 
+static void vigs_winsys_gl_surface_set_dirty(struct winsys_surface *sfc)
+{
+    struct vigs_winsys_gl_surface *vigs_sfc = (struct vigs_winsys_gl_surface*)sfc;
+    if (vigs_sfc->parent) {
+        vigs_sfc->parent->base.is_dirty = true;
+    }
+}
+
 static GLuint vigs_winsys_gl_surface_get_texture(struct winsys_gl_surface *sfc)
 {
     struct vigs_winsys_gl_surface *vigs_sfc = (struct vigs_winsys_gl_surface*)sfc;
@@ -259,6 +267,7 @@ static struct vigs_winsys_gl_surface
     ws_sfc->base.base.height = height;
     ws_sfc->base.base.acquire = &vigs_winsys_gl_surface_acquire;
     ws_sfc->base.base.release = &vigs_winsys_gl_surface_release;
+    ws_sfc->base.base.set_dirty = &vigs_winsys_gl_surface_set_dirty;
     ws_sfc->base.get_texture = &vigs_winsys_gl_surface_get_texture;
     ws_sfc->tex_internalformat = tex_internalformat;
     ws_sfc->tex_format = tex_format;

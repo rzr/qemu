@@ -89,7 +89,6 @@ bool yagl_host_glDrawElements(GLenum mode,
     GLenum type,
     target_ulong /* const GLvoid* */ indices_);
 bool yagl_host_glEnable(GLenum cap);
-bool yagl_host_glFinish(void);
 bool yagl_host_glFlush(void);
 bool yagl_host_glFrontFace(GLenum mode);
 bool yagl_host_glGenBuffers(GLsizei n,

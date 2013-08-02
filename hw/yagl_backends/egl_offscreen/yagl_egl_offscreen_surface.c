@@ -139,6 +139,10 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
     return true;
 }
 
+static void yagl_egl_offscreen_surface_wait_gl(struct yagl_eglb_surface *sfc)
+{
+}
+
 static bool yagl_egl_offscreen_surface_bind_tex_image(struct yagl_eglb_surface *sfc)
 {
     YAGL_LOG_FUNC_SET(eglBindTexImage);
@@ -252,6 +256,7 @@ struct yagl_egl_offscreen_surface
     sfc->base.query = &yagl_egl_offscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_offscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_offscreen_surface_copy_buffers;
+    sfc->base.wait_gl = &yagl_egl_offscreen_surface_wait_gl;
     sfc->base.bind_tex_image = &yagl_egl_offscreen_surface_bind_tex_image;
     sfc->base.release_tex_image = &yagl_egl_offscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_offscreen_surface_destroy;

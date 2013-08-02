@@ -518,19 +518,7 @@ static bool yagl_func_glEnable(uint8_t **out_buff,
 }
 
 /*
- * glFinish dispatcher. id = 35
- */
-static bool yagl_func_glFinish(uint8_t **out_buff,
-    uint8_t *in_buff)
-{
-    YAGL_LOG_FUNC_ENTER_SPLIT0(glFinish);
-    bool res = yagl_host_glFinish();
-    YAGL_LOG_FUNC_EXIT(NULL);
-    return res;
-}
-
-/*
- * glFlush dispatcher. id = 36
+ * glFlush dispatcher. id = 35
  */
 static bool yagl_func_glFlush(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -542,7 +530,7 @@ static bool yagl_func_glFlush(uint8_t **out_buff,
 }
 
 /*
- * glFramebufferTexture2D dispatcher. id = 37
+ * glFramebufferTexture2D dispatcher. id = 36
  */
 static bool yagl_func_glFramebufferTexture2D(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -559,7 +547,7 @@ static bool yagl_func_glFramebufferTexture2D(uint8_t **out_buff,
 }
 
 /*
- * glFramebufferRenderbuffer dispatcher. id = 38
+ * glFramebufferRenderbuffer dispatcher. id = 37
  */
 static bool yagl_func_glFramebufferRenderbuffer(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -575,7 +563,7 @@ static bool yagl_func_glFramebufferRenderbuffer(uint8_t **out_buff,
 }
 
 /*
- * glFrontFace dispatcher. id = 39
+ * glFrontFace dispatcher. id = 38
  */
 static bool yagl_func_glFrontFace(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -588,7 +576,7 @@ static bool yagl_func_glFrontFace(uint8_t **out_buff,
 }
 
 /*
- * glGenBuffers dispatcher. id = 40
+ * glGenBuffers dispatcher. id = 39
  */
 static bool yagl_func_glGenBuffers(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -602,7 +590,7 @@ static bool yagl_func_glGenBuffers(uint8_t **out_buff,
 }
 
 /*
- * glGenerateMipmap dispatcher. id = 41
+ * glGenerateMipmap dispatcher. id = 40
  */
 static bool yagl_func_glGenerateMipmap(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -615,7 +603,7 @@ static bool yagl_func_glGenerateMipmap(uint8_t **out_buff,
 }
 
 /*
- * glGenFramebuffers dispatcher. id = 42
+ * glGenFramebuffers dispatcher. id = 41
  */
 static bool yagl_func_glGenFramebuffers(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -629,7 +617,7 @@ static bool yagl_func_glGenFramebuffers(uint8_t **out_buff,
 }
 
 /*
- * glGenRenderbuffers dispatcher. id = 43
+ * glGenRenderbuffers dispatcher. id = 42
  */
 static bool yagl_func_glGenRenderbuffers(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -643,7 +631,7 @@ static bool yagl_func_glGenRenderbuffers(uint8_t **out_buff,
 }
 
 /*
- * glGenTextures dispatcher. id = 44
+ * glGenTextures dispatcher. id = 43
  */
 static bool yagl_func_glGenTextures(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -657,7 +645,7 @@ static bool yagl_func_glGenTextures(uint8_t **out_buff,
 }
 
 /*
- * glGetBooleanv dispatcher. id = 45
+ * glGetBooleanv dispatcher. id = 44
  */
 static bool yagl_func_glGetBooleanv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -671,7 +659,7 @@ static bool yagl_func_glGetBooleanv(uint8_t **out_buff,
 }
 
 /*
- * glGetBufferParameteriv dispatcher. id = 46
+ * glGetBufferParameteriv dispatcher. id = 45
  */
 static bool yagl_func_glGetBufferParameteriv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -686,7 +674,7 @@ static bool yagl_func_glGetBufferParameteriv(uint8_t **out_buff,
 }
 
 /*
- * glGetError dispatcher. id = 47
+ * glGetError dispatcher. id = 46
  */
 static bool yagl_func_glGetError(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -704,7 +692,7 @@ static bool yagl_func_glGetError(uint8_t **out_buff,
 }
 
 /*
- * glGetFloatv dispatcher. id = 48
+ * glGetFloatv dispatcher. id = 47
  */
 static bool yagl_func_glGetFloatv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -718,7 +706,7 @@ static bool yagl_func_glGetFloatv(uint8_t **out_buff,
 }
 
 /*
- * glGetFramebufferAttachmentParameteriv dispatcher. id = 49
+ * glGetFramebufferAttachmentParameteriv dispatcher. id = 48
  */
 static bool yagl_func_glGetFramebufferAttachmentParameteriv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -734,7 +722,7 @@ static bool yagl_func_glGetFramebufferAttachmentParameteriv(uint8_t **out_buff,
 }
 
 /*
- * glGetIntegerv dispatcher. id = 50
+ * glGetIntegerv dispatcher. id = 49
  */
 static bool yagl_func_glGetIntegerv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -748,7 +736,7 @@ static bool yagl_func_glGetIntegerv(uint8_t **out_buff,
 }
 
 /*
- * glGetRenderbufferParameteriv dispatcher. id = 51
+ * glGetRenderbufferParameteriv dispatcher. id = 50
  */
 static bool yagl_func_glGetRenderbufferParameteriv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -763,7 +751,7 @@ static bool yagl_func_glGetRenderbufferParameteriv(uint8_t **out_buff,
 }
 
 /*
- * glGetTexParameterfv dispatcher. id = 52
+ * glGetTexParameterfv dispatcher. id = 51
  */
 static bool yagl_func_glGetTexParameterfv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -778,7 +766,7 @@ static bool yagl_func_glGetTexParameterfv(uint8_t **out_buff,
 }
 
 /*
- * glGetTexParameteriv dispatcher. id = 53
+ * glGetTexParameteriv dispatcher. id = 52
  */
 static bool yagl_func_glGetTexParameteriv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -793,7 +781,7 @@ static bool yagl_func_glGetTexParameteriv(uint8_t **out_buff,
 }
 
 /*
- * glHint dispatcher. id = 54
+ * glHint dispatcher. id = 53
  */
 static bool yagl_func_glHint(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -807,7 +795,7 @@ static bool yagl_func_glHint(uint8_t **out_buff,
 }
 
 /*
- * glIsBuffer dispatcher. id = 55
+ * glIsBuffer dispatcher. id = 54
  */
 static bool yagl_func_glIsBuffer(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -826,7 +814,7 @@ static bool yagl_func_glIsBuffer(uint8_t **out_buff,
 }
 
 /*
- * glIsEnabled dispatcher. id = 56
+ * glIsEnabled dispatcher. id = 55
  */
 static bool yagl_func_glIsEnabled(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -845,7 +833,7 @@ static bool yagl_func_glIsEnabled(uint8_t **out_buff,
 }
 
 /*
- * glIsFramebuffer dispatcher. id = 57
+ * glIsFramebuffer dispatcher. id = 56
  */
 static bool yagl_func_glIsFramebuffer(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -864,7 +852,7 @@ static bool yagl_func_glIsFramebuffer(uint8_t **out_buff,
 }
 
 /*
- * glIsRenderbuffer dispatcher. id = 58
+ * glIsRenderbuffer dispatcher. id = 57
  */
 static bool yagl_func_glIsRenderbuffer(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -883,7 +871,7 @@ static bool yagl_func_glIsRenderbuffer(uint8_t **out_buff,
 }
 
 /*
- * glIsTexture dispatcher. id = 59
+ * glIsTexture dispatcher. id = 58
  */
 static bool yagl_func_glIsTexture(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -902,7 +890,7 @@ static bool yagl_func_glIsTexture(uint8_t **out_buff,
 }
 
 /*
- * glLineWidth dispatcher. id = 60
+ * glLineWidth dispatcher. id = 59
  */
 static bool yagl_func_glLineWidth(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -915,7 +903,7 @@ static bool yagl_func_glLineWidth(uint8_t **out_buff,
 }
 
 /*
- * glPixelStorei dispatcher. id = 61
+ * glPixelStorei dispatcher. id = 60
  */
 static bool yagl_func_glPixelStorei(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -929,7 +917,7 @@ static bool yagl_func_glPixelStorei(uint8_t **out_buff,
 }
 
 /*
- * glPolygonOffset dispatcher. id = 62
+ * glPolygonOffset dispatcher. id = 61
  */
 static bool yagl_func_glPolygonOffset(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -943,7 +931,7 @@ static bool yagl_func_glPolygonOffset(uint8_t **out_buff,
 }
 
 /*
- * glReadPixels dispatcher. id = 63
+ * glReadPixels dispatcher. id = 62
  */
 static bool yagl_func_glReadPixels(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -962,7 +950,7 @@ static bool yagl_func_glReadPixels(uint8_t **out_buff,
 }
 
 /*
- * glRenderbufferStorage dispatcher. id = 64
+ * glRenderbufferStorage dispatcher. id = 63
  */
 static bool yagl_func_glRenderbufferStorage(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -978,7 +966,7 @@ static bool yagl_func_glRenderbufferStorage(uint8_t **out_buff,
 }
 
 /*
- * glSampleCoverage dispatcher. id = 65
+ * glSampleCoverage dispatcher. id = 64
  */
 static bool yagl_func_glSampleCoverage(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -992,7 +980,7 @@ static bool yagl_func_glSampleCoverage(uint8_t **out_buff,
 }
 
 /*
- * glScissor dispatcher. id = 66
+ * glScissor dispatcher. id = 65
  */
 static bool yagl_func_glScissor(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1008,7 +996,7 @@ static bool yagl_func_glScissor(uint8_t **out_buff,
 }
 
 /*
- * glStencilFunc dispatcher. id = 67
+ * glStencilFunc dispatcher. id = 66
  */
 static bool yagl_func_glStencilFunc(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1023,7 +1011,7 @@ static bool yagl_func_glStencilFunc(uint8_t **out_buff,
 }
 
 /*
- * glStencilMask dispatcher. id = 68
+ * glStencilMask dispatcher. id = 67
  */
 static bool yagl_func_glStencilMask(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1036,7 +1024,7 @@ static bool yagl_func_glStencilMask(uint8_t **out_buff,
 }
 
 /*
- * glStencilOp dispatcher. id = 69
+ * glStencilOp dispatcher. id = 68
  */
 static bool yagl_func_glStencilOp(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1051,7 +1039,7 @@ static bool yagl_func_glStencilOp(uint8_t **out_buff,
 }
 
 /*
- * glTexImage2D dispatcher. id = 70
+ * glTexImage2D dispatcher. id = 69
  */
 static bool yagl_func_glTexImage2D(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1072,7 +1060,7 @@ static bool yagl_func_glTexImage2D(uint8_t **out_buff,
 }
 
 /*
- * glTexParameterf dispatcher. id = 71
+ * glTexParameterf dispatcher. id = 70
  */
 static bool yagl_func_glTexParameterf(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1087,7 +1075,7 @@ static bool yagl_func_glTexParameterf(uint8_t **out_buff,
 }
 
 /*
- * glTexParameterfv dispatcher. id = 72
+ * glTexParameterfv dispatcher. id = 71
  */
 static bool yagl_func_glTexParameterfv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1102,7 +1090,7 @@ static bool yagl_func_glTexParameterfv(uint8_t **out_buff,
 }
 
 /*
- * glTexParameteri dispatcher. id = 73
+ * glTexParameteri dispatcher. id = 72
  */
 static bool yagl_func_glTexParameteri(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1117,7 +1105,7 @@ static bool yagl_func_glTexParameteri(uint8_t **out_buff,
 }
 
 /*
- * glTexParameteriv dispatcher. id = 74
+ * glTexParameteriv dispatcher. id = 73
  */
 static bool yagl_func_glTexParameteriv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1132,7 +1120,7 @@ static bool yagl_func_glTexParameteriv(uint8_t **out_buff,
 }
 
 /*
- * glTexSubImage2D dispatcher. id = 75
+ * glTexSubImage2D dispatcher. id = 74
  */
 static bool yagl_func_glTexSubImage2D(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1153,7 +1141,7 @@ static bool yagl_func_glTexSubImage2D(uint8_t **out_buff,
 }
 
 /*
- * glViewport dispatcher. id = 76
+ * glViewport dispatcher. id = 75
  */
 static bool yagl_func_glViewport(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1169,7 +1157,7 @@ static bool yagl_func_glViewport(uint8_t **out_buff,
 }
 
 /*
- * glGetExtensionStringYAGL dispatcher. id = 77
+ * glGetExtensionStringYAGL dispatcher. id = 76
  */
 static bool yagl_func_glGetExtensionStringYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1188,7 +1176,7 @@ static bool yagl_func_glGetExtensionStringYAGL(uint8_t **out_buff,
 }
 
 /*
- * glGetVertexAttribRangeYAGL dispatcher. id = 78
+ * glGetVertexAttribRangeYAGL dispatcher. id = 77
  */
 static bool yagl_func_glGetVertexAttribRangeYAGL(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1205,7 +1193,7 @@ static bool yagl_func_glGetVertexAttribRangeYAGL(uint8_t **out_buff,
 }
 
 /*
- * glAttachShader dispatcher. id = 79
+ * glAttachShader dispatcher. id = 78
  */
 static bool yagl_func_glAttachShader(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1219,7 +1207,7 @@ static bool yagl_func_glAttachShader(uint8_t **out_buff,
 }
 
 /*
- * glBindAttribLocation dispatcher. id = 80
+ * glBindAttribLocation dispatcher. id = 79
  */
 static bool yagl_func_glBindAttribLocation(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1234,7 +1222,7 @@ static bool yagl_func_glBindAttribLocation(uint8_t **out_buff,
 }
 
 /*
- * glBlendColor dispatcher. id = 81
+ * glBlendColor dispatcher. id = 80
  */
 static bool yagl_func_glBlendColor(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1250,7 +1238,7 @@ static bool yagl_func_glBlendColor(uint8_t **out_buff,
 }
 
 /*
- * glCompileShader dispatcher. id = 82
+ * glCompileShader dispatcher. id = 81
  */
 static bool yagl_func_glCompileShader(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1263,7 +1251,7 @@ static bool yagl_func_glCompileShader(uint8_t **out_buff,
 }
 
 /*
- * glCreateProgram dispatcher. id = 83
+ * glCreateProgram dispatcher. id = 82
  */
 static bool yagl_func_glCreateProgram(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1281,7 +1269,7 @@ static bool yagl_func_glCreateProgram(uint8_t **out_buff,
 }
 
 /*
- * glCreateShader dispatcher. id = 84
+ * glCreateShader dispatcher. id = 83
  */
 static bool yagl_func_glCreateShader(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1300,7 +1288,7 @@ static bool yagl_func_glCreateShader(uint8_t **out_buff,
 }
 
 /*
- * glDeleteProgram dispatcher. id = 85
+ * glDeleteProgram dispatcher. id = 84
  */
 static bool yagl_func_glDeleteProgram(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1313,7 +1301,7 @@ static bool yagl_func_glDeleteProgram(uint8_t **out_buff,
 }
 
 /*
- * glDeleteShader dispatcher. id = 86
+ * glDeleteShader dispatcher. id = 85
  */
 static bool yagl_func_glDeleteShader(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1326,7 +1314,7 @@ static bool yagl_func_glDeleteShader(uint8_t **out_buff,
 }
 
 /*
- * glDetachShader dispatcher. id = 87
+ * glDetachShader dispatcher. id = 86
  */
 static bool yagl_func_glDetachShader(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1340,7 +1328,7 @@ static bool yagl_func_glDetachShader(uint8_t **out_buff,
 }
 
 /*
- * glDisableVertexAttribArray dispatcher. id = 88
+ * glDisableVertexAttribArray dispatcher. id = 87
  */
 static bool yagl_func_glDisableVertexAttribArray(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1353,7 +1341,7 @@ static bool yagl_func_glDisableVertexAttribArray(uint8_t **out_buff,
 }
 
 /*
- * glEnableVertexAttribArray dispatcher. id = 89
+ * glEnableVertexAttribArray dispatcher. id = 88
  */
 static bool yagl_func_glEnableVertexAttribArray(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1366,7 +1354,7 @@ static bool yagl_func_glEnableVertexAttribArray(uint8_t **out_buff,
 }
 
 /*
- * glGetActiveAttrib dispatcher. id = 90
+ * glGetActiveAttrib dispatcher. id = 89
  */
 static bool yagl_func_glGetActiveAttrib(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1385,7 +1373,7 @@ static bool yagl_func_glGetActiveAttrib(uint8_t **out_buff,
 }
 
 /*
- * glGetActiveUniform dispatcher. id = 91
+ * glGetActiveUniform dispatcher. id = 90
  */
 static bool yagl_func_glGetActiveUniform(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1404,7 +1392,7 @@ static bool yagl_func_glGetActiveUniform(uint8_t **out_buff,
 }
 
 /*
- * glGetAttachedShaders dispatcher. id = 92
+ * glGetAttachedShaders dispatcher. id = 91
  */
 static bool yagl_func_glGetAttachedShaders(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1420,7 +1408,7 @@ static bool yagl_func_glGetAttachedShaders(uint8_t **out_buff,
 }
 
 /*
- * glGetAttribLocation dispatcher. id = 93
+ * glGetAttribLocation dispatcher. id = 92
  */
 static bool yagl_func_glGetAttribLocation(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1440,7 +1428,7 @@ static bool yagl_func_glGetAttribLocation(uint8_t **out_buff,
 }
 
 /*
- * glGetProgramiv dispatcher. id = 94
+ * glGetProgramiv dispatcher. id = 93
  */
 static bool yagl_func_glGetProgramiv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1455,7 +1443,7 @@ static bool yagl_func_glGetProgramiv(uint8_t **out_buff,
 }
 
 /*
- * glGetProgramInfoLog dispatcher. id = 95
+ * glGetProgramInfoLog dispatcher. id = 94
  */
 static bool yagl_func_glGetProgramInfoLog(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1471,7 +1459,7 @@ static bool yagl_func_glGetProgramInfoLog(uint8_t **out_buff,
 }
 
 /*
- * glGetShaderiv dispatcher. id = 96
+ * glGetShaderiv dispatcher. id = 95
  */
 static bool yagl_func_glGetShaderiv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1486,7 +1474,7 @@ static bool yagl_func_glGetShaderiv(uint8_t **out_buff,
 }
 
 /*
- * glGetShaderInfoLog dispatcher. id = 97
+ * glGetShaderInfoLog dispatcher. id = 96
  */
 static bool yagl_func_glGetShaderInfoLog(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1502,7 +1490,7 @@ static bool yagl_func_glGetShaderInfoLog(uint8_t **out_buff,
 }
 
 /*
- * glGetShaderPrecisionFormat dispatcher. id = 98
+ * glGetShaderPrecisionFormat dispatcher. id = 97
  */
 static bool yagl_func_glGetShaderPrecisionFormat(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1518,7 +1506,7 @@ static bool yagl_func_glGetShaderPrecisionFormat(uint8_t **out_buff,
 }
 
 /*
- * glGetShaderSource dispatcher. id = 99
+ * glGetShaderSource dispatcher. id = 98
  */
 static bool yagl_func_glGetShaderSource(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1534,7 +1522,7 @@ static bool yagl_func_glGetShaderSource(uint8_t **out_buff,
 }
 
 /*
- * glGetUniformfv dispatcher. id = 100
+ * glGetUniformfv dispatcher. id = 99
  */
 static bool yagl_func_glGetUniformfv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1549,7 +1537,7 @@ static bool yagl_func_glGetUniformfv(uint8_t **out_buff,
 }
 
 /*
- * glGetUniformiv dispatcher. id = 101
+ * glGetUniformiv dispatcher. id = 100
  */
 static bool yagl_func_glGetUniformiv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1564,7 +1552,7 @@ static bool yagl_func_glGetUniformiv(uint8_t **out_buff,
 }
 
 /*
- * glGetUniformLocation dispatcher. id = 102
+ * glGetUniformLocation dispatcher. id = 101
  */
 static bool yagl_func_glGetUniformLocation(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1584,7 +1572,7 @@ static bool yagl_func_glGetUniformLocation(uint8_t **out_buff,
 }
 
 /*
- * glGetVertexAttribfv dispatcher. id = 103
+ * glGetVertexAttribfv dispatcher. id = 102
  */
 static bool yagl_func_glGetVertexAttribfv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1599,7 +1587,7 @@ static bool yagl_func_glGetVertexAttribfv(uint8_t **out_buff,
 }
 
 /*
- * glGetVertexAttribiv dispatcher. id = 104
+ * glGetVertexAttribiv dispatcher. id = 103
  */
 static bool yagl_func_glGetVertexAttribiv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1614,7 +1602,7 @@ static bool yagl_func_glGetVertexAttribiv(uint8_t **out_buff,
 }
 
 /*
- * glGetVertexAttribPointerv dispatcher. id = 105
+ * glGetVertexAttribPointerv dispatcher. id = 104
  */
 static bool yagl_func_glGetVertexAttribPointerv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1629,7 +1617,7 @@ static bool yagl_func_glGetVertexAttribPointerv(uint8_t **out_buff,
 }
 
 /*
- * glIsProgram dispatcher. id = 106
+ * glIsProgram dispatcher. id = 105
  */
 static bool yagl_func_glIsProgram(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1648,7 +1636,7 @@ static bool yagl_func_glIsProgram(uint8_t **out_buff,
 }
 
 /*
- * glIsShader dispatcher. id = 107
+ * glIsShader dispatcher. id = 106
  */
 static bool yagl_func_glIsShader(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1667,7 +1655,7 @@ static bool yagl_func_glIsShader(uint8_t **out_buff,
 }
 
 /*
- * glLinkProgram dispatcher. id = 108
+ * glLinkProgram dispatcher. id = 107
  */
 static bool yagl_func_glLinkProgram(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1680,7 +1668,7 @@ static bool yagl_func_glLinkProgram(uint8_t **out_buff,
 }
 
 /*
- * glReleaseShaderCompiler dispatcher. id = 109
+ * glReleaseShaderCompiler dispatcher. id = 108
  */
 static bool yagl_func_glReleaseShaderCompiler(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1692,7 +1680,7 @@ static bool yagl_func_glReleaseShaderCompiler(uint8_t **out_buff,
 }
 
 /*
- * glShaderBinary dispatcher. id = 110
+ * glShaderBinary dispatcher. id = 109
  */
 static bool yagl_func_glShaderBinary(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1709,7 +1697,7 @@ static bool yagl_func_glShaderBinary(uint8_t **out_buff,
 }
 
 /*
- * glShaderSource dispatcher. id = 111
+ * glShaderSource dispatcher. id = 110
  */
 static bool yagl_func_glShaderSource(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1725,7 +1713,7 @@ static bool yagl_func_glShaderSource(uint8_t **out_buff,
 }
 
 /*
- * glStencilFuncSeparate dispatcher. id = 112
+ * glStencilFuncSeparate dispatcher. id = 111
  */
 static bool yagl_func_glStencilFuncSeparate(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1741,7 +1729,7 @@ static bool yagl_func_glStencilFuncSeparate(uint8_t **out_buff,
 }
 
 /*
- * glStencilMaskSeparate dispatcher. id = 113
+ * glStencilMaskSeparate dispatcher. id = 112
  */
 static bool yagl_func_glStencilMaskSeparate(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1755,7 +1743,7 @@ static bool yagl_func_glStencilMaskSeparate(uint8_t **out_buff,
 }
 
 /*
- * glStencilOpSeparate dispatcher. id = 114
+ * glStencilOpSeparate dispatcher. id = 113
  */
 static bool yagl_func_glStencilOpSeparate(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1771,7 +1759,7 @@ static bool yagl_func_glStencilOpSeparate(uint8_t **out_buff,
 }
 
 /*
- * glUniform1f dispatcher. id = 115
+ * glUniform1f dispatcher. id = 114
  */
 static bool yagl_func_glUniform1f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1785,7 +1773,7 @@ static bool yagl_func_glUniform1f(uint8_t **out_buff,
 }
 
 /*
- * glUniform1fv dispatcher. id = 116
+ * glUniform1fv dispatcher. id = 115
  */
 static bool yagl_func_glUniform1fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1800,7 +1788,7 @@ static bool yagl_func_glUniform1fv(uint8_t **out_buff,
 }
 
 /*
- * glUniform1i dispatcher. id = 117
+ * glUniform1i dispatcher. id = 116
  */
 static bool yagl_func_glUniform1i(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1814,7 +1802,7 @@ static bool yagl_func_glUniform1i(uint8_t **out_buff,
 }
 
 /*
- * glUniform1iv dispatcher. id = 118
+ * glUniform1iv dispatcher. id = 117
  */
 static bool yagl_func_glUniform1iv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1829,7 +1817,7 @@ static bool yagl_func_glUniform1iv(uint8_t **out_buff,
 }
 
 /*
- * glUniform2f dispatcher. id = 119
+ * glUniform2f dispatcher. id = 118
  */
 static bool yagl_func_glUniform2f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1844,7 +1832,7 @@ static bool yagl_func_glUniform2f(uint8_t **out_buff,
 }
 
 /*
- * glUniform2fv dispatcher. id = 120
+ * glUniform2fv dispatcher. id = 119
  */
 static bool yagl_func_glUniform2fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1859,7 +1847,7 @@ static bool yagl_func_glUniform2fv(uint8_t **out_buff,
 }
 
 /*
- * glUniform2i dispatcher. id = 121
+ * glUniform2i dispatcher. id = 120
  */
 static bool yagl_func_glUniform2i(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1874,7 +1862,7 @@ static bool yagl_func_glUniform2i(uint8_t **out_buff,
 }
 
 /*
- * glUniform2iv dispatcher. id = 122
+ * glUniform2iv dispatcher. id = 121
  */
 static bool yagl_func_glUniform2iv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1889,7 +1877,7 @@ static bool yagl_func_glUniform2iv(uint8_t **out_buff,
 }
 
 /*
- * glUniform3f dispatcher. id = 123
+ * glUniform3f dispatcher. id = 122
  */
 static bool yagl_func_glUniform3f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1905,7 +1893,7 @@ static bool yagl_func_glUniform3f(uint8_t **out_buff,
 }
 
 /*
- * glUniform3fv dispatcher. id = 124
+ * glUniform3fv dispatcher. id = 123
  */
 static bool yagl_func_glUniform3fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1920,7 +1908,7 @@ static bool yagl_func_glUniform3fv(uint8_t **out_buff,
 }
 
 /*
- * glUniform3i dispatcher. id = 125
+ * glUniform3i dispatcher. id = 124
  */
 static bool yagl_func_glUniform3i(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1936,7 +1924,7 @@ static bool yagl_func_glUniform3i(uint8_t **out_buff,
 }
 
 /*
- * glUniform3iv dispatcher. id = 126
+ * glUniform3iv dispatcher. id = 125
  */
 static bool yagl_func_glUniform3iv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1951,7 +1939,7 @@ static bool yagl_func_glUniform3iv(uint8_t **out_buff,
 }
 
 /*
- * glUniform4f dispatcher. id = 127
+ * glUniform4f dispatcher. id = 126
  */
 static bool yagl_func_glUniform4f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1968,7 +1956,7 @@ static bool yagl_func_glUniform4f(uint8_t **out_buff,
 }
 
 /*
- * glUniform4fv dispatcher. id = 128
+ * glUniform4fv dispatcher. id = 127
  */
 static bool yagl_func_glUniform4fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -1983,7 +1971,7 @@ static bool yagl_func_glUniform4fv(uint8_t **out_buff,
 }
 
 /*
- * glUniform4i dispatcher. id = 129
+ * glUniform4i dispatcher. id = 128
  */
 static bool yagl_func_glUniform4i(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2000,7 +1988,7 @@ static bool yagl_func_glUniform4i(uint8_t **out_buff,
 }
 
 /*
- * glUniform4iv dispatcher. id = 130
+ * glUniform4iv dispatcher. id = 129
  */
 static bool yagl_func_glUniform4iv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2015,7 +2003,7 @@ static bool yagl_func_glUniform4iv(uint8_t **out_buff,
 }
 
 /*
- * glUniformMatrix2fv dispatcher. id = 131
+ * glUniformMatrix2fv dispatcher. id = 130
  */
 static bool yagl_func_glUniformMatrix2fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2031,7 +2019,7 @@ static bool yagl_func_glUniformMatrix2fv(uint8_t **out_buff,
 }
 
 /*
- * glUniformMatrix3fv dispatcher. id = 132
+ * glUniformMatrix3fv dispatcher. id = 131
  */
 static bool yagl_func_glUniformMatrix3fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2047,7 +2035,7 @@ static bool yagl_func_glUniformMatrix3fv(uint8_t **out_buff,
 }
 
 /*
- * glUniformMatrix4fv dispatcher. id = 133
+ * glUniformMatrix4fv dispatcher. id = 132
  */
 static bool yagl_func_glUniformMatrix4fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2063,7 +2051,7 @@ static bool yagl_func_glUniformMatrix4fv(uint8_t **out_buff,
 }
 
 /*
- * glUseProgram dispatcher. id = 134
+ * glUseProgram dispatcher. id = 133
  */
 static bool yagl_func_glUseProgram(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2076,7 +2064,7 @@ static bool yagl_func_glUseProgram(uint8_t **out_buff,
 }
 
 /*
- * glValidateProgram dispatcher. id = 135
+ * glValidateProgram dispatcher. id = 134
  */
 static bool yagl_func_glValidateProgram(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2089,7 +2077,7 @@ static bool yagl_func_glValidateProgram(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib1f dispatcher. id = 136
+ * glVertexAttrib1f dispatcher. id = 135
  */
 static bool yagl_func_glVertexAttrib1f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2103,7 +2091,7 @@ static bool yagl_func_glVertexAttrib1f(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib1fv dispatcher. id = 137
+ * glVertexAttrib1fv dispatcher. id = 136
  */
 static bool yagl_func_glVertexAttrib1fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2117,7 +2105,7 @@ static bool yagl_func_glVertexAttrib1fv(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib2f dispatcher. id = 138
+ * glVertexAttrib2f dispatcher. id = 137
  */
 static bool yagl_func_glVertexAttrib2f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2132,7 +2120,7 @@ static bool yagl_func_glVertexAttrib2f(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib2fv dispatcher. id = 139
+ * glVertexAttrib2fv dispatcher. id = 138
  */
 static bool yagl_func_glVertexAttrib2fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2146,7 +2134,7 @@ static bool yagl_func_glVertexAttrib2fv(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib3f dispatcher. id = 140
+ * glVertexAttrib3f dispatcher. id = 139
  */
 static bool yagl_func_glVertexAttrib3f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2162,7 +2150,7 @@ static bool yagl_func_glVertexAttrib3f(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib3fv dispatcher. id = 141
+ * glVertexAttrib3fv dispatcher. id = 140
  */
 static bool yagl_func_glVertexAttrib3fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2176,7 +2164,7 @@ static bool yagl_func_glVertexAttrib3fv(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib4f dispatcher. id = 142
+ * glVertexAttrib4f dispatcher. id = 141
  */
 static bool yagl_func_glVertexAttrib4f(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2193,7 +2181,7 @@ static bool yagl_func_glVertexAttrib4f(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttrib4fv dispatcher. id = 143
+ * glVertexAttrib4fv dispatcher. id = 142
  */
 static bool yagl_func_glVertexAttrib4fv(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2207,7 +2195,7 @@ static bool yagl_func_glVertexAttrib4fv(uint8_t **out_buff,
 }
 
 /*
- * glVertexAttribPointer dispatcher. id = 144
+ * glVertexAttribPointer dispatcher. id = 143
  */
 static bool yagl_func_glVertexAttribPointer(uint8_t **out_buff,
     uint8_t *in_buff)
@@ -2224,7 +2212,7 @@ static bool yagl_func_glVertexAttribPointer(uint8_t **out_buff,
     return res;
 }
 
-const uint32_t yagl_gles2_api_num_funcs = 144;
+const uint32_t yagl_gles2_api_num_funcs = 143;
 
 yagl_api_func yagl_gles2_api_funcs[] = {
     &yagl_func_glActiveTexture,
@@ -2261,7 +2249,6 @@ yagl_api_func yagl_gles2_api_funcs[] = {
     &yagl_func_glDrawElements,
     &yagl_func_glEGLImageTargetTexture2DOES,
     &yagl_func_glEnable,
-    &yagl_func_glFinish,
     &yagl_func_glFlush,
     &yagl_func_glFramebufferTexture2D,
     &yagl_func_glFramebufferRenderbuffer,

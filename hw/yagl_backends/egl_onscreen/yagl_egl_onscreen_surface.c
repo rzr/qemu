@@ -102,22 +102,42 @@ static bool yagl_egl_onscreen_surface_query(struct yagl_eglb_surface *sfc,
 
 static bool yagl_egl_onscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc)
 {
+    struct yagl_egl_onscreen_surface *osfc =
+        (struct yagl_egl_onscreen_surface*)sfc;
     struct yagl_egl_onscreen *egl_onscreen =
         (struct yagl_egl_onscreen*)sfc->dpy->backend;
 
     egl_onscreen->gles_driver->Finish();
+
+    osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
 
     return true;
 }
 
 static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
 {
+    struct yagl_egl_onscreen_surface *osfc =
+        (struct yagl_egl_onscreen_surface*)sfc;
     struct yagl_egl_onscreen *egl_onscreen =
         (struct yagl_egl_onscreen*)sfc->dpy->backend;
 
     egl_onscreen->gles_driver->Finish();
 
+    osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
+
     return true;
+}
+
+static void yagl_egl_onscreen_surface_wait_gl(struct yagl_eglb_surface *sfc)
+{
+    struct yagl_egl_onscreen_surface *osfc =
+        (struct yagl_egl_onscreen_surface*)sfc;
+    struct yagl_egl_onscreen *egl_onscreen =
+        (struct yagl_egl_onscreen*)sfc->dpy->backend;
+
+    egl_onscreen->gles_driver->Finish();
+
+    osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
 }
 
 static bool yagl_egl_onscreen_surface_bind_tex_image(struct yagl_eglb_surface *sfc)
@@ -255,6 +275,7 @@ struct yagl_egl_onscreen_surface
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
+    sfc->base.wait_gl = &yagl_egl_onscreen_surface_wait_gl;
     sfc->base.bind_tex_image = &yagl_egl_onscreen_surface_bind_tex_image;
     sfc->base.release_tex_image = &yagl_egl_onscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_onscreen_surface_destroy;
@@ -322,6 +343,7 @@ struct yagl_egl_onscreen_surface
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
+    sfc->base.wait_gl = &yagl_egl_onscreen_surface_wait_gl;
     sfc->base.bind_tex_image = &yagl_egl_onscreen_surface_bind_tex_image;
     sfc->base.release_tex_image = &yagl_egl_onscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_onscreen_surface_destroy;
@@ -389,6 +411,7 @@ struct yagl_egl_onscreen_surface
     sfc->base.query = &yagl_egl_onscreen_surface_query;
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
+    sfc->base.wait_gl = &yagl_egl_onscreen_surface_wait_gl;
     sfc->base.bind_tex_image = &yagl_egl_onscreen_surface_bind_tex_image;
     sfc->base.release_tex_image = &yagl_egl_onscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_onscreen_surface_destroy;
