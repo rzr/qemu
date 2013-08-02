@@ -419,41 +419,68 @@ const char *dbg_sprintf( const char *format, ... )
 int dbg_log( enum _debug_class cls, struct _debug_channel *channel,
 		const char *format, ... )
 {
-	int ret = 0;
-        int ret_write = 0;
-	char buf[2048];
-	va_list valist;
-	int open_flags;
-	int fd;
-    
-    if (!(_dbg_get_channel_flags( channel ) & (1 << cls)))
-		return -1;
+    int ret = 0;
+    int ret_write = 0;
+    char buf_msg[2048];
+    char buf_time[128];
+    va_list valist;
+    int open_flags;
+    int fd;
 
-	ret += snprintf(buf, sizeof(buf),"[%s:%s", debug_classes[cls], channel->name);
+#ifdef _WIN32
+    struct tm *ptm;
+#else
+    struct tm tm;
+#endif
+    qemu_timeval tv = { 0, 0 };
+    time_t ti;
 
-	if (*channel->multiname)
-		ret += snprintf(buf + ret, sizeof(buf) - ret, ":%s]", channel->multiname);
-	else
-		ret += snprintf(buf + ret, sizeof(buf) - ret, "]");
+    if (!(_dbg_get_channel_flags( channel ) & (1 << cls))) {
+        return -1;
+    }
 
- 	va_start(valist, format);
-	ret += vsnprintf(buf + ret, sizeof(buf) - ret, format, valist );
-	va_end(valist);
-   
-    open_flags = O_RDWR | O_APPEND | O_BINARY | O_CREAT ;
-	fd = qemu_open(log_path, open_flags, 0666);
-	if(fd < 0) {
+    qemu_gettimeofday(&tv);
+    ti = tv.tv_sec;
+
+#ifdef _WIN32
+    ptm = localtime(&ti);
+    strftime(buf_time, sizeof(buf_time),
+             "%H:%M:%S", ptm);
+#else
+    localtime_r(&ti, &tm);
+    strftime(buf_time, sizeof(buf_time),
+             "%H:%M:%S", &tm);
+#endif
+
+    ret += snprintf(buf_msg, sizeof(buf_msg),"%s [%s:%s",
+        buf_time, debug_classes[cls], channel->name);
+
+    if (*channel->multiname) {
+        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, ":%s]", channel->multiname);
+    } else {
+        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, "]");
+    }
+
+    va_start(valist, format);
+    ret += vsnprintf(buf_msg + ret, sizeof(buf_msg) - ret, format, valist);
+    va_end(valist);
+
+    open_flags = O_RDWR | O_APPEND | O_BINARY | O_CREAT;
+
+    fd = qemu_open(log_path, open_flags, 0666);
+    if (fd < 0) {
         fprintf(stderr, "Can't open logfile: %s\n", log_path);
-        // commented out for prevent shutdown when log directory is removed on runtime.
+        /* commented out for prevent shutdown when log directory is removed on runtime. */
         //exit(1);
     }
-    ret_write = qemu_write_full(fd, buf, ret);
+
+    ret_write = qemu_write_full(fd, buf_msg, ret);
     if (ret_write != ret) {
         // TODO: error handling...
     }
     close(fd);
 
-	return ret;
+    return ret;
 }
 
 void assert_fail(char *exp, const char *file, int line)
