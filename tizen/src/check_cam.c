@@ -27,9 +27,10 @@
  *
  */
 
+#include <stdio.h>
+
 #ifdef _WIN32
 /* Windows implement */
-#include <stdio.h>
 #include <windows.h>
 #define CINTERFACE
 #define COBJMACROS
@@ -183,7 +184,7 @@ static int check_cam(void)
 #elif __linux
 
 /* Linux implement */
-#include <stdio.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -237,6 +238,7 @@ static int check_cam(void)
 /* MacOS, Now, not implemented. */
 static int check_cam(void)
 {
+    fprintf(stdout, "[Webcam] Not implemented.\n");
     return 1;
 }
 
