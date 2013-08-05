@@ -9,7 +9,6 @@ QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src/genmsg
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/protobuf
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
 QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
-QEMU_CFLAGS += -L$(HOME)/install/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
