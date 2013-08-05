@@ -1276,7 +1276,7 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
 
 	if (retlen == 0) {
 		*p = 0;
-		return;
+		return NULL;
 	}
 
 	while (retlen > 0) {
