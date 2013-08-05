@@ -445,7 +445,7 @@ void vigs_server_update_display(struct vigs_server *server)
     uint32_t display_stride, display_bpp;
     uint8_t *display_data;
     uint8_t *sfc_data = server->root_sfc_data;
-    uint32_t i, j;
+    uint32_t i;
 
     if (!root_sfc) {
         return;
