@@ -82,6 +82,9 @@ static GLint yagl_get_stride(struct yagl_gles_context *ctx,
     case GL_RGBA:
         num_components = 4;
         break;
+    case GL_BGRA:
+        num_components = 4;
+        break;
     case GL_LUMINANCE:
         num_components = 1;
         break;
