@@ -822,11 +822,11 @@ static bool device_command_proc(ECS_Client *clii, QObject *obj) {
 	}
 	else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
         if (group == MSG_GROUP_STATUS) {
-		    send_to_nfc(request_get, data, length);
+		    send_to_nfc(request_nfc_get, data, length);
 		} 
 		else 
 		{
-		    send_to_nfc(request_set, data, length);
+		    send_to_nfc(request_nfc_set, data, length);
 		}
     }
 
@@ -1081,7 +1081,7 @@ fail:
 	ecs_client_close(cli);
 }
 
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 static void epoll_cli_add(ECS_State *cs, int fd) {
 	struct epoll_event events;
 
@@ -1122,7 +1122,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 	clii->cs = cs;
 	ecs_json_message_parser_init(&clii->parser, handle_ecs_command, clii);
 
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 	epoll_cli_add(cs, fd);
 #else
 	FD_SET(fd, &cs->reads);
@@ -1171,7 +1171,7 @@ static void ecs_accept(ECS_State *cs) {
 	}
 }
 
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 static void epoll_init(ECS_State *cs) {
 	struct epoll_event events;
 
@@ -1236,7 +1236,7 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
 
 	cs->listen_fd = fd;
 
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 	epoll_init(cs);
 #else
 	FD_ZERO(&cs->reads);
@@ -1251,7 +1251,7 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
 	return 0;
 }
 
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 static int ecs_loop(ECS_State *cs) {
 	int i, nfds;
 
@@ -1275,7 +1275,7 @@ static int ecs_loop(ECS_State *cs) {
 
 	return 0;
 }
-#else
+#elif defined(CONFIG_WIN32)
 static int ecs_loop(ECS_State *cs)
 {
 	int index = 0;
@@ -1285,7 +1285,7 @@ static int ecs_loop(ECS_State *cs)
 	timeout.tv_sec = 5;
 	timeout.tv_usec = 0;
 
-	if (select(0, &temps, 0, 0, &timeout) == SOCKET_ERROR) {
+	if (select(0, &temps, 0, 0, &timeout) < 0) {
 		LOG("select error.");
 		return -1;
 	}
@@ -1303,6 +1303,36 @@ static int ecs_loop(ECS_State *cs)
 
 	return 0;
 }
+#elif defined(CONFIG_DARWIN)
+#define FD_MAX_SIZE 1024
+static int ecs_loop(ECS_State *cs)
+{
+	int index = 0;
+	struct timeval timeout;
+	fd_set temps = cs->reads;
+
+	timeout.tv_sec = 5;
+	timeout.tv_usec = 0;
+
+	if (select(0, &temps, 0, 0, &timeout) < 0) {
+		LOG("select error.");
+		return -1;
+	}
+
+	for (index = 0; index < FD_MAX_SIZE; index++) {
+		if (FD_ISSET(cs->reads.fds_bits[index], &temps)) {
+			if (cs->reads.fds_bits[index] == cs->listen_fd) {
+				ecs_accept(cs);
+				continue;
+			}
+
+			ecs_read(ecs_find_client(cs->reads.fds_bits[index]));
+		}
+	}
+
+	return 0;
+}
+
 #endif
 
 static int check_port(int port) {
