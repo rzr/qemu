@@ -1,7 +1,7 @@
 #ifndef __ECS_H__
 #define __ECS_H__
 
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 #include <sys/epoll.h>
 #endif
 
@@ -101,7 +101,7 @@ struct Monitor {
 #define MAX_EVENTS	1000
 typedef struct ECS_State {
 	int listen_fd;
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 	int epoll_fd;
 	struct epoll_event events[MAX_EVENTS];
 #else

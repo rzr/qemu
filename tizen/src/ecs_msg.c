@@ -15,7 +15,7 @@
 #include "sysemu/char.h"
 #include "qemu/main-loop.h"
 
-#ifndef _WIN32
+#ifdef CONFIG_LINUX
 #include <sys/epoll.h>
 #endif
 
