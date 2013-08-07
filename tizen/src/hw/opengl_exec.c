@@ -117,28 +117,28 @@ void g_free(void *ptr);
 /*#define glGetError() 0*/
 
 #ifdef WIN32
-#	define CCONV __stdcall
+#	define CCONV _stdcall	/* DLL entry points are WINAPI */
 #else
 #	define CCONV
 #endif
 
 #define GET_EXT_PTR(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
-    static type(*ptr_func_##funcname)args_decl = NULL; \
+    static type CCONV (*ptr_func_##funcname)args_decl = NULL; \
     if (detect_##funcname == 0) \
     { \
         detect_##funcname = 1; \
-        ptr_func_##funcname = (type(*)args_decl)glo_getprocaddress((const char*)#funcname); \
+        ptr_func_##funcname = (type CCONV (*)args_decl)glo_getprocaddress((const char*)#funcname); \
         assert (ptr_func_##funcname); \
     }
 
 #define GET_EXT_PTR_NO_FAIL(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
-    static type(CCONV *ptr_func_##funcname)args_decl = NULL; \
+    static type CCONV (*ptr_func_##funcname)args_decl = NULL; \
     if (detect_##funcname == 0) \
     { \
         detect_##funcname = 1; \
-        ptr_func_##funcname = (type(CCONV *)args_decl)glo_getprocaddress((const char*)#funcname); \
+        ptr_func_##funcname = (type CCONV (*)args_decl)glo_getprocaddress((const char*)#funcname); \
     }
 
 #ifndef WIN32
@@ -172,11 +172,11 @@ static void *get_glu_ptr(const char *name)
 
 #define GET_GLU_PTR(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
-    static type(*ptr_func_##funcname)args_decl = NULL; \
+    static type CCONV (*ptr_func_##funcname)args_decl = NULL; \
     if (detect_##funcname == 0) \
     { \
         detect_##funcname = 1; \
-        ptr_func_##funcname = (type(*)args_decl)get_glu_ptr(#funcname); \
+        ptr_func_##funcname = (type CCONV (*)args_decl)get_glu_ptr(#funcname); \
     }
 
 int display_function_call = 0;
