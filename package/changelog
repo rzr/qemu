@@ -1,3 +1,6 @@
+* 1.5.74
+- updated binary package names
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-08-07
 * 1.5.73
 - print the time information to the debug channel output
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-08-05

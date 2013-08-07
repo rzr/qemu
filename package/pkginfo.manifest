@@ -1,4 +1,4 @@
-Version: 1.5.73
+Version: 1.5.74
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
 Source: emulator
 
@@ -57,14 +57,14 @@ Description: Tizen x86 Emulator
 Package: emulator-qemu-x86
 OS: windows-32, windows-64
 Build-host-os: windows-32
-Build-dependency: SDL-1.2.14 [ windows-32 ], apache-ant-1.8.3-bin [ windows-32 ], gtk-bundle_2.16.6 [ windows-32 ], directx-dev [ windows-32 ], libcurl-4 [ windows-32 ], pixman-0.30.0 [ windows-32 ], emulator-lib [ windows-32 ]
+Build-dependency: SDL [ windows-32 ], apache-ant [ windows-32 ], gtk-bundle [ windows-32 ], libcurl-4 [ windows-32 ], pixman-0.30.0 [ windows-32 ], emulator-lib [ windows-32 ]
 Install-dependency: emulator-kernel-x86 [ windows-32 ], vgabios [ windows-32 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
 #OS: windows-32, windows-64
 #Build-host-os: windows-32
-#Build-dependency: SDL-1.2.14 [ windows-32 ], apache-ant-1.8.3-bin [ windows-32 ], gtk-bundle_2.16.6 [ windows-32 ], directx-dev [ windows-32 ], libcurl-4 [ windows-32 ], emulator-lib [ windows-32 ]
+#Build-dependency: SDL [ windows-32 ], apache-ant [ windows-32 ], gtk-bundle [ windows-32 ], libcurl-4 [ windows-32 ], emulator-lib [ windows-32 ], pixman-0.30.0 [ windows-32 ]
 #Install-dependency: emulator-kernel-arm [ windows-32 ]
 #Description: Tizen ARM Emulator
 
