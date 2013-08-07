@@ -98,7 +98,7 @@ static int count = 0;
 
 static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-bool send_to_nfc(enum request_cmd_nfc req, char* data, const uint32_t len)
+bool send_to_nfc(enum request_cmd_nfc req, const char* data, const uint32_t len)
 {
     MsgInfo* _msg = (MsgInfo*) malloc(sizeof(MsgInfo));
     if (!_msg)
