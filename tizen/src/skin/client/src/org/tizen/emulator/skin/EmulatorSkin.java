@@ -1141,7 +1141,7 @@ public class EmulatorSkin {
 
 				// FIXME: appropriate running binary setting is necessary.
 				if (SwtUtil.isLinuxPlatform()) {
-					procEcp.command("/usr/bin/java", "-jar",
+					procEcp.command("java", "-jar",
 							"./emulator-control-panel.jar", "vmname="
 									+ emulName, "sdb.port=" + portSdb,
 							"svr.port=" + portEcp);
@@ -1150,11 +1150,10 @@ public class EmulatorSkin {
 							"emulator-control-panel.jar", "vmname=" + emulName,
 							"sdb.port=" + portSdb, "svr.port=" + portEcp);
 				} else if (SwtUtil.isMacPlatform()) {
-					// procSdb.command("./sdbscript", "emulator-" + portSdb);
-					/*
-					 * procSdb.command( "/usr/X11/bin/uxterm", "-T", "emulator-"
-					 * + portSdb, "-e", sdbPath,"shell");
-					 */
+					procEcp.command("java", "-jar", "-XstartOnFirstThread",
+							"./emulator-control-panel.jar", "vmname="
+									+ emulName, "sdb.port=" + portSdb,
+							"svr.port=" + portEcp);
 				}
 
 				logger.log(Level.INFO, procEcp.command().toString());
@@ -1605,7 +1604,7 @@ public class EmulatorSkin {
 					return;
 				}
 
-				int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
+				int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT) + 1;
 
 				ProcessBuilder procSdb = new ProcessBuilder();
 
