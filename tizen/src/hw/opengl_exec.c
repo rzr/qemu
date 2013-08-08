@@ -1583,7 +1583,10 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
             // We have to assume the current context here
             // since we assume that a drawable must belong to a specific context
-            resize_surface(process, qsurface, (int)args[1], (int)args[2]);
+            if (qsurface)
+                resize_surface(process, qsurface, (int)args[1], (int)args[2]);
+            else
+                DEBUGF("%s Failed to find surface for client_drawable %p process %p ->current_state %p ->->current_surface %p\n", "_resize_surface_func", client_drawable, process, process->current_state, process->current_state->current_qsurface);
             break;
 
         }
