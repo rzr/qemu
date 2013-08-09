@@ -1606,48 +1606,12 @@ bool yagl_host_eglCreateImageKHR(yagl_host_handle* retval,
     yagl_winsys_id buffer,
     target_ulong /* const EGLint* */ attrib_list_)
 {
-    bool res = true;
-    EGLint *attrib_list = NULL;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_image *image = NULL;
-    int i = 0;
 
     YAGL_LOG_FUNC_SET(eglCreateImageKHR);
 
     *retval = 0;
-
-    if (ctx) {
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-        goto out;
-    }
-
-    if (target != EGL_NATIVE_PIXMAP_KHR) {
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-        goto out;
-    }
-
-    if (attrib_list_) {
-        attrib_list = yagl_mem_get_attrib_list(attrib_list_);
-
-        if (!attrib_list) {
-            res = false;
-            goto out;
-        }
-    }
-
-    if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
-        while (attrib_list[i] != EGL_NONE) {
-            switch (attrib_list[i]) {
-            case EGL_IMAGE_PRESERVED_KHR:
-                break;
-            default:
-                YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
-                goto out;
-            }
-
-            i += 2;
-        }
-    }
 
     if (!yagl_validate_display(dpy_, &dpy)) {
         goto out;
@@ -1666,9 +1630,7 @@ bool yagl_host_eglCreateImageKHR(yagl_host_handle* retval,
     *retval = image->res.handle;
 
 out:
-    g_free(attrib_list);
-
-    return res;
+    return true;
 }
 
 bool yagl_host_eglDestroyImageKHR(EGLBoolean* retval,
