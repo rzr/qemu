@@ -178,9 +178,9 @@ static void brightness_exitfn(PCIDevice *dev)
 static void maru_brightness_bh(void *opaque)
 {
     if (brightness_off == 0) {
-        notify_brightness(TRUE);
+        notify_brightness(true);
     } else {
-        notify_brightness(FALSE);
+        notify_brightness(false);
     }
 }
 

@@ -31,10 +31,12 @@
 
 #include <pthread.h>
 #include <math.h>
+#include <png.h>
 #include "ui/console.h"
 #include "maru_sdl.h"
 #include "maru_display.h"
 #include "emul_state.h"
+#include "emulator.h"
 #include "maru_finger.h"
 #include "hw/maru_pm.h"
 #include "hw/maru_brightness.h"
@@ -50,6 +52,7 @@ static SDL_Surface *surface_screen;
 static SDL_Surface *surface_qemu;
 static SDL_Surface *scaled_screen;
 static SDL_Surface *rotated_screen;
+static SDL_Surface *surface_guide; /* blank guide image */
 
 static double current_scale_factor = 1.0;
 static double current_screen_degree;
@@ -60,6 +63,10 @@ static int sdl_initialized;
 static int sdl_alteration;
 
 static int sdl_skip_update;
+static int blank_cnt;
+#define MAX_BLANK_FRAME_CNT 100
+#define BLANK_GUIDE_IMAGE_PATH "../images/"
+#define BLANK_GUIDE_IMAGE_NAME "blank-guide.png"
 
 #if 0
 static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
@@ -285,6 +292,193 @@ static int maru_sdl_poll_event(SDL_Event *ev)
 
     return ret;
 }
+
+static png_bytep read_png_file(const char *file_name,
+    unsigned int *width_out, unsigned int *height_out)
+{
+#define PNG_HEADER_SIZE 8
+
+    FILE *fp = NULL;
+    png_byte header[PNG_HEADER_SIZE] = { 0, };
+    png_structp png_ptr = NULL;
+
+    png_infop info_ptr = NULL;
+    png_uint_32 width = 0;
+    png_uint_32 height = 0;
+    png_byte channels = 0;
+    unsigned int stride = 0;
+    int bit_depth = 0;
+    int color_type = 0;
+    int i = 0;
+
+    png_bytep pixel_data = NULL;
+    png_bytepp row_ptr_data = NULL;
+
+    if (file_name == NULL) {
+        ERR("file name is empty\n");
+        return NULL;
+    }
+
+    fp = fopen(file_name, "rb");
+    if (fp == NULL) {
+        ERR("file %s could not be opened\n", file_name);
+        return NULL;
+    }
+
+    if (fread(header, sizeof(png_byte), PNG_HEADER_SIZE, fp) != PNG_HEADER_SIZE) {
+        ERR("failed to read header from png file\n");
+        fclose(fp);
+        return NULL;
+    }
+
+    if (png_sig_cmp(header, 0, PNG_HEADER_SIZE) != 0) {
+        ERR("file %s is not recognized as a PNG image\n", file_name);
+        fclose(fp);
+        return NULL;
+    }
+
+    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (png_ptr == NULL) {
+        ERR("failed to allocate png read struct\n");
+        fclose(fp);
+        return NULL;
+    }
+
+    info_ptr = png_create_info_struct(png_ptr);
+    if (info_ptr == NULL) {
+        ERR("failed to allocate png info struct\n");
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        fclose(fp);
+        return NULL;
+    }
+
+    if (setjmp(png_jmpbuf(png_ptr)) != 0) {
+        ERR("error during init_io\n");
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        png_destroy_info_struct(png_ptr, &info_ptr);
+        fclose(fp);
+        return NULL;
+    }
+
+    png_init_io(png_ptr, fp);
+    png_set_sig_bytes(png_ptr, PNG_HEADER_SIZE);
+
+    /* read the PNG image information */
+    png_read_info(png_ptr, info_ptr);
+    png_get_IHDR(png_ptr, info_ptr,
+        &width, &height, &bit_depth, &color_type,
+        NULL, NULL, NULL);
+
+    channels = png_get_channels(png_ptr, info_ptr);
+    stride = width * bit_depth * channels / 8;
+
+    pixel_data = (png_bytep) g_malloc0(stride * height);
+    if (pixel_data == NULL) {
+        ERR("could not allocate data buffer for pixels\n");
+
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        png_destroy_info_struct(png_ptr, &info_ptr);
+        fclose(fp);
+        return NULL;
+    }
+
+    row_ptr_data = (png_bytepp) g_malloc0(sizeof(png_bytep) * height);
+    if (row_ptr_data == NULL) {
+        ERR("could not allocate data buffer for row_ptr\n");
+
+        g_free(pixel_data);
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        png_destroy_info_struct(png_ptr, &info_ptr);
+        fclose(fp);
+        return NULL;
+    }
+
+    switch(color_type) {
+        case PNG_COLOR_TYPE_PALETTE :
+            png_set_palette_to_rgb(png_ptr);
+            break;
+        case PNG_COLOR_TYPE_RGB :
+            if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
+                /* transparency data for image */
+                png_set_tRNS_to_alpha(png_ptr);
+            } else {
+                png_set_filter(png_ptr, 0xff, PNG_FILLER_AFTER);
+            }
+            break;
+        case PNG_COLOR_TYPE_RGB_ALPHA :
+            break;
+        default :
+            INFO("png file has an unsupported color type\n");
+            break;
+    }
+
+    for (i = 0; i < height; i++) {
+        row_ptr_data[i] = pixel_data + (stride * i);
+    }
+
+    /* read the entire image into memory */
+    png_read_image(png_ptr, row_ptr_data);
+
+    /* image information */
+    INFO("=== blank guide image was loaded ===============\n");
+    INFO("file path : %s\n", file_name);
+    INFO("width : %d, height : %d, stride : %d\n",
+        width, height, stride);
+    INFO("color type : %d, channels : %d, bit depth : %d\n",
+        color_type, channels, bit_depth);
+    INFO("================================================\n");
+
+    if (width_out != NULL) {
+        *width_out = (unsigned int) width;
+    }
+    if (height_out != NULL) {
+        *height_out = (unsigned int) height;
+    }
+
+    g_free(row_ptr_data);
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    png_destroy_info_struct(png_ptr, &info_ptr);
+    fclose(fp);
+
+    return pixel_data;
+}
+
+static SDL_Surface *get_blank_guide_image(void)
+{
+    unsigned int width = 0;
+    unsigned int height = 0;
+    char *guide_image_path = NULL;
+    int path_len = 0;
+    void *guide_image_data = NULL;
+
+    path_len = strlen(get_bin_path()) +
+        strlen(BLANK_GUIDE_IMAGE_PATH) + strlen(BLANK_GUIDE_IMAGE_NAME) + 1;
+    guide_image_path = g_malloc0(sizeof(char) * path_len);
+    snprintf(guide_image_path, path_len, "%s%s%s",
+        get_bin_path(), BLANK_GUIDE_IMAGE_PATH, BLANK_GUIDE_IMAGE_NAME);
+
+    if (surface_guide == NULL) {
+        /* load png image */
+        guide_image_data = (void *) read_png_file(
+            guide_image_path, &width, &height);
+        if (guide_image_data != NULL) {
+            surface_guide = SDL_CreateRGBSurfaceFrom(
+                guide_image_data, width, height,
+                get_emul_sdl_bpp(), width * 4,
+                dpy_surface->pf.bmask,
+                dpy_surface->pf.gmask,
+                dpy_surface->pf.rmask,
+                dpy_surface->pf.amask);
+        } else {
+            ERR("failed to draw a blank guide image\n");
+        }
+    }
+
+    g_free(guide_image_path);
+
+    return surface_guide;
+}
+
 static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
 {
     SDL_Event ev1, *ev = &ev1;
@@ -311,10 +505,33 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
         }
     }
 
-    /* If the LCD is turned off,
-       the screen does not update until the LCD is turned on */
+    /* If the display is turned off,
+       the screen does not update until the display is turned on */
     if (sdl_skip_update && brightness_off) {
+        if (blank_cnt > MAX_BLANK_FRAME_CNT) {
+            /* do nothing */
+            return;
+        } else if (blank_cnt == MAX_BLANK_FRAME_CNT) {
+            /* draw guide image */
+            INFO("draw a blank guide image\n");
+
+            SDL_Surface *guide = get_blank_guide_image();
+            if (guide != NULL) {
+                SDL_BlitSurface(guide, NULL, surface_screen, NULL);
+                SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+            }
+        } else if (blank_cnt == 0) {
+            INFO("skipping of the display updating is started\n");
+        }
+
+        blank_cnt++;
+
         return;
+    } else {
+        if (blank_cnt != 0) {
+            INFO("skipping of the display updating is ended\n");
+            blank_cnt = 0;
+        }
     }
 
     graphic_hw_update(NULL);
@@ -712,6 +929,11 @@ void maruskin_sdl_init(uint64 swt_handle,
 void maruskin_sdl_quit(void)
 {
     INFO("maru sdl quit\n");
+
+    if (surface_guide != NULL) {
+        g_free(surface_guide->pixels);
+        SDL_FreeSurface(surface_guide);
+    }
 
     /* remove multi-touch finger points */
     cleanup_multi_touch_state();

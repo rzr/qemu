@@ -23,10 +23,10 @@ CFLAGS += -g -O0
 endif
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32 -lpng -lz
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext -lpng
 endif
 ifdef CONFIG_DARWIN
 # FIXME: disabled codec on Mac now

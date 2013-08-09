@@ -78,6 +78,7 @@ install: all
 	mkdir -p $(EMUL_DIR)/bin
 	mkdir -p $(EMUL_DIR)/etc
 	mkdir -p $(EMUL_DIR)/data
+	mkdir -p $(EMUL_DIR)/images
 ifndef CONFIG_DARWIN
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
@@ -141,10 +142,12 @@ ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -dpr skin/client/skins $(EMUL_DIR)
+	cp -dpr skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
 else
 	cp ../../qemu-img $(EMUL_DIR)/bin
 	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
 	cp -pPR skin/client/skins $(EMUL_DIR)
+	cp -pPR skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
 endif
 
 ifdef CONFIG_USE_SHM
@@ -191,6 +194,7 @@ skin_client_dibs:
 install_dibs: all_dibs
 	mkdir -p $(DIBS_COMMON_DIR)/bin
 	mkdir -p $(DIBS_COMMON_DIR)/etc
+	mkdir -p $(DIBS_COMMON_DIR)/images
 	mkdir -p $(DIBS_X86_DIR)/bin
 	mkdir -p $(DIBS_X86_DIR)/data
 	mkdir -p $(DIBS_X86_DIR)/etc
@@ -259,9 +263,11 @@ endif
 ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
 	cp -dpr skin/client/skins $(DIBS_COMMON_DIR)
+	cp -dpr skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
 else
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
+	cp -pPR skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
 endif
 
 ifdef CONFIG_USE_SHM

@@ -34,6 +34,7 @@
   @brief    Collection of utilities for win32
  */
 
+#include <png.h>
 #include "maru_common.h"
 #include "osutil.h"
 #include "emulator.h"
@@ -143,6 +144,8 @@ void set_bin_path_os(gchar * exec_argv)
 void print_system_info_os(void)
 {
     INFO("* Windows\n");
+
+    INFO("* LibPNG Version : %s\n", PNG_LIBPNG_VER_STRING);
 
     /* Retrieves information about the current os */
     OSVERSIONINFO osvi;

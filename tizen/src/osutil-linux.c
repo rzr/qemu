@@ -34,6 +34,7 @@
   @brief    Collection of utilities for linux
  */
 
+#include <png.h>
 #include "maru_common.h"
 #include "osutil.h"
 #include "emulator.h"
@@ -164,6 +165,8 @@ void set_bin_path_os(gchar * exec_argv)
 void print_system_info_os(void)
 {
     INFO("* Linux\n");
+
+    INFO("* LibPNG Version : %s\n", PNG_LIBPNG_VER_STRING);
 
     /* depends on building */
     INFO("* QEMU build machine linux kernel version : (%d, %d, %d)\n",
