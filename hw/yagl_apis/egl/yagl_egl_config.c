@@ -336,6 +336,9 @@ bool yagl_egl_config_get_attrib(const struct yagl_egl_config *cfg,
     case EGL_ALPHA_SIZE:
         *value = cfg->native.alpha_size;
         break;
+    case EGL_ALPHA_MASK_SIZE:
+        *value = 0;
+        break;
     case EGL_BIND_TO_TEXTURE_RGB:
         *value = cfg->native.bind_to_texture_rgb;
         break;
