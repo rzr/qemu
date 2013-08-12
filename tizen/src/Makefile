@@ -263,11 +263,11 @@ endif
 ifndef CONFIG_DARWIN
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
 	cp -dpr skin/client/skins $(DIBS_COMMON_DIR)
-	cp -dpr skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
+	cp -dpr skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images/blank-guide.png
 else
 	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
-	cp -pPR skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
+	cp -pPR skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images/blank-guide.png
 endif
 
 ifdef CONFIG_USE_SHM
