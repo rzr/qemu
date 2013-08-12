@@ -38,19 +38,27 @@ static bool yagl_egl_offscreen_make_current(struct yagl_egl_backend *backend,
     struct yagl_egl_offscreen_context *egl_offscreen_ctx = (struct yagl_egl_offscreen_context*)ctx;
     struct yagl_egl_offscreen_surface *egl_offscreen_draw = (struct yagl_egl_offscreen_surface*)draw;
     struct yagl_egl_offscreen_surface *egl_offscreen_read = (struct yagl_egl_offscreen_surface*)read;
-    bool res;
+    bool res = false;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_make_current, NULL);
 
-    res = egl_offscreen->driver->make_current(egl_offscreen->driver,
-                                              egl_offscreen_dpy->native_dpy,
-                                              egl_offscreen_draw->native_sfc,
-                                              egl_offscreen_read->native_sfc,
-                                              egl_offscreen_ctx->native_ctx);
+    if (draw && read) {
+        res = egl_offscreen->driver->make_current(egl_offscreen->driver,
+                                                  egl_offscreen_dpy->native_dpy,
+                                                  egl_offscreen_draw->native_sfc,
+                                                  egl_offscreen_read->native_sfc,
+                                                  egl_offscreen_ctx->native_ctx);
 
-    if (res) {
-        egl_offscreen_ts->dpy = egl_offscreen_dpy;
-        egl_offscreen_ts->ctx = egl_offscreen_ctx;
+        if (res) {
+            egl_offscreen_ts->dpy = egl_offscreen_dpy;
+            egl_offscreen_ts->ctx = egl_offscreen_ctx;
+        }
+    } else {
+        /*
+         * EGL_KHR_surfaceless_context not supported for offscreen yet.
+         */
+
+        YAGL_LOG_ERROR("EGL_KHR_surfaceless_context not supported");
     }
 
     YAGL_LOG_FUNC_EXIT("%d", res);

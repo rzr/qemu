@@ -19,8 +19,13 @@ static void yagl_egl_onscreen_setup_framebuffer_zero(struct yagl_egl_onscreen *e
 
     assert(egl_onscreen_ts->dpy);
 
-    yagl_egl_onscreen_surface_setup(egl_onscreen_ts->sfc_draw);
     yagl_egl_onscreen_context_setup(egl_onscreen_ts->ctx);
+
+    if (!egl_onscreen_ts->sfc_draw) {
+        return;
+    }
+
+    yagl_egl_onscreen_surface_setup(egl_onscreen_ts->sfc_draw);
 
     egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
                                            (GLint*)&cur_fb);
@@ -69,11 +74,23 @@ static bool yagl_egl_onscreen_make_current(struct yagl_egl_backend *backend,
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_make_current, NULL);
 
-    res = egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
-                                                 egl_onscreen_dpy->native_dpy,
-                                                 egl_onscreen_draw->dummy_native_sfc,
-                                                 egl_onscreen_read->dummy_native_sfc,
-                                                 egl_onscreen_ctx->native_ctx);
+    if (draw && read) {
+        res = egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                                     egl_onscreen_dpy->native_dpy,
+                                                     egl_onscreen_draw->dummy_native_sfc,
+                                                     egl_onscreen_read->dummy_native_sfc,
+                                                     egl_onscreen_ctx->native_ctx);
+    } else {
+        res = yagl_egl_onscreen_context_setup_surfaceless(egl_onscreen_ctx);
+
+        if (res) {
+            res = egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                                         egl_onscreen_dpy->native_dpy,
+                                                         egl_onscreen_ctx->null_sfc,
+                                                         egl_onscreen_ctx->null_sfc,
+                                                         egl_onscreen_ctx->native_ctx);
+        }
+    }
 
     if (res) {
         GLuint cur_fb = 0;
@@ -99,14 +116,25 @@ static bool yagl_egl_onscreen_make_current(struct yagl_egl_backend *backend,
             /*
              * Setup default viewport and scissor.
              */
-            egl_onscreen->gles_driver->Viewport(0,
-                0,
-                yagl_egl_onscreen_surface_width(egl_onscreen_draw),
-                yagl_egl_onscreen_surface_height(egl_onscreen_draw));
-            egl_onscreen->gles_driver->Scissor(0,
-                0,
-                yagl_egl_onscreen_surface_width(egl_onscreen_draw),
-                yagl_egl_onscreen_surface_height(egl_onscreen_draw));
+            if (draw) {
+                egl_onscreen->gles_driver->Viewport(0,
+                    0,
+                    yagl_egl_onscreen_surface_width(egl_onscreen_draw),
+                    yagl_egl_onscreen_surface_height(egl_onscreen_draw));
+                egl_onscreen->gles_driver->Scissor(0,
+                    0,
+                    yagl_egl_onscreen_surface_width(egl_onscreen_draw),
+                    yagl_egl_onscreen_surface_height(egl_onscreen_draw));
+            } else {
+                /*
+                 * "If the first time <ctx> is made current, it is without a default
+                 * framebuffer (e.g. both <draw> and <read> are EGL_NO_SURFACE), then
+                 * the viewport and scissor regions are set as though
+                 * glViewport(0,0,0,0) and glScissor(0,0,0,0) were called."
+                 */
+                egl_onscreen->gles_driver->Viewport(0, 0, 0, 0);
+                egl_onscreen->gles_driver->Scissor(0, 0, 0, 0);
+            }
         }
     }
 
