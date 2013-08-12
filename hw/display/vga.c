@@ -648,7 +648,7 @@ void vbe_ioport_write_data(void *opaque, uint32_t addr, uint32_t val)
             }
             break;
         case VBE_DISPI_INDEX_XRES:
-            if ((val <= VBE_DISPI_MAX_XRES) && ((val & 7) == 0)) {
+            if (val <= VBE_DISPI_MAX_XRES){
                 s->vbe_regs[s->vbe_index] = val;
             }
             break;
