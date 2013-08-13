@@ -23,7 +23,7 @@ CFLAGS += -g -O0
 endif
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32 -lpng -lz
+LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32 -lpng14
 endif
 ifdef CONFIG_LINUX
 LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext -lpng
