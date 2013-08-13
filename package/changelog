@@ -1,3 +1,6 @@
+* 1.5.77
+- modified lib linking on Windows
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-08-13
 * 1.5.76
 - added blank guide image
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-08-12
