@@ -99,13 +99,14 @@ struct Monitor {
 };
 
 #define MAX_EVENTS	1000
+#define MAX_FD_NUM	300
 typedef struct ECS_State {
 	int listen_fd;
 #ifdef CONFIG_LINUX
 	int epoll_fd;
 	struct epoll_event events[MAX_EVENTS];
 #else
-	fd_set reads;
+    fd_set reads;
 #endif
 	int is_unix;
 	int ecs_running;

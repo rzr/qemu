@@ -114,7 +114,7 @@ static void ecs_client_close(ECS_Client* clii) {
 	if (0 <= clii->client_fd) {
 		LOG("ecs client closed with fd: %d", clii->client_fd);
 		closesocket(clii->client_fd);
-#ifdef _WIN32
+#ifndef CONFIG_LINUX
 		FD_CLR(clii->client_fd, &clii->cs->reads);
 #endif
 		clii->client_fd = -1;
@@ -1304,29 +1304,29 @@ static int ecs_loop(ECS_State *cs)
 	return 0;
 }
 #elif defined(CONFIG_DARWIN)
-#define FD_MAX_SIZE 1024
 static int ecs_loop(ECS_State *cs)
 {
 	int index = 0;
+    int res = 0;
 	struct timeval timeout;
 	fd_set temps = cs->reads;
 
 	timeout.tv_sec = 5;
 	timeout.tv_usec = 0;
 
-	if (select(0, &temps, 0, 0, &timeout) < 0) {
-		LOG("select error.");
+	if ((res = select(MAX_FD_NUM + 1, &temps, NULL, NULL, &timeout)) < 0) {
+		LOG("select failed..");
 		return -1;
-	}
+    }
 
-	for (index = 0; index < FD_MAX_SIZE; index++) {
-		if (FD_ISSET(cs->reads.fds_bits[index], &temps)) {
-			if (cs->reads.fds_bits[index] == cs->listen_fd) {
+	for (index = 0; index < MAX_FD_NUM; index ++) {
+		if (FD_ISSET(index, &temps)) {
+			if (index == cs->listen_fd) {
 				ecs_accept(cs);
 				continue;
 			}
 
-			ecs_read(ecs_find_client(cs->reads.fds_bits[index]));
+			ecs_read(ecs_find_client(index));
 		}
 	}
 
