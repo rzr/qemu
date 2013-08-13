@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmulatorUI xmlns="http://www.tizen.org/emulator/skin/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dbi version="2.0"/>
+    <rotations>
+        <rotation name="Portrait">
+            <display id="0">
+                <region left="35" top="86" width="540" height="960"/>
+            </display>
+            <imageList>
+                <mainImage>default_0.png</mainImage>
+                <keyPressedImage>default_0_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="129" top="1050" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>169</keyCode>
+                        <keyName>Menu</keyName>
+                    </eventInfo>
+                    <tooltip>Menu</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="270" top="1050" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                    <tooltip>Home</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="411" top="1050" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>158</keyCode>
+                        <keyName>Back</keyName>
+                    </eventInfo>
+                    <tooltip>Back</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="600" top="979" width="20" height="74"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="600" top="80" width="20" height="74"/>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume +</keyName>
+                    </eventInfo>
+                    <tooltip>Volume +</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="600" top="167" width="20" height="74"/>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume -</keyName>
+                    </eventInfo>
+                    <tooltip>Volume -</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Landscape">
+            <display id="0">
+                <region left="86" top="46" width="960" height="540"/>
+            </display>
+            <imageList>
+                <mainImage>default_L90.png</mainImage>
+                <keyPressedImage>default_L90_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="1049" top="419" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>169</keyCode>
+                        <keyName>Menu</keyName>
+                    </eventInfo>
+                    <tooltip>Menu</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="1049" top="279" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                    <tooltip>Home</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="1049" top="139" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>158</keyCode>
+                        <keyName>Back</keyName>
+                    </eventInfo>
+                    <tooltip>Back</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="978" top="1" width="74" height="20"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="80" top="1" width="74" height="20"/>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume +</keyName>
+                    </eventInfo>
+                    <tooltip>Volume +</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="166" top="1" width="74" height="20"/>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume -</keyName>
+                    </eventInfo>
+                    <tooltip>Volume -</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Reverse Portrait">
+            <display id="0">
+                <region left="46" top="89" width="540" height="960"/>
+            </display>
+            <imageList>
+                <mainImage>default_180.png</mainImage>
+                <keyPressedImage>default_180_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="422" top="14" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>169</keyCode>
+                        <keyName>Menu</keyName>
+                    </eventInfo>
+                    <tooltip>Menu</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="278" top="14" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                    <tooltip>Home</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="137" top="14" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>158</keyCode>
+                        <keyName>Back</keyName>
+                    </eventInfo>
+                    <tooltip>Back</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="1" top="84" width="20" height="74"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="1" top="981" width="20" height="74"/>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume +</keyName>
+                    </eventInfo>
+                    <tooltip>Volume +</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="1" top="895" width="20" height="74"/>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume -</keyName>
+                    </eventInfo>
+                    <tooltip>Volume -</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Reverse Landscape">
+            <display id="0">
+                <region left="89" top="35" width="960" height="540"/>
+            </display>
+            <imageList>
+                <mainImage>default_R90.png</mainImage>
+                <keyPressedImage>default_R90_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="14" top="128" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>169</keyCode>
+                        <keyName>Menu</keyName>
+                    </eventInfo>
+                    <tooltip>Menu</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="14" top="270" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>139</keyCode>
+                        <keyName>Home</keyName>
+                    </eventInfo>
+                    <tooltip>Home</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="14" top="413" width="74" height="74"/>
+                    <eventInfo>
+                        <keyCode>158</keyCode>
+                        <keyName>Back</keyName>
+                    </eventInfo>
+                    <tooltip>Back</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="84" top="600" width="74" height="20"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="980" top="600" width="74" height="20"/>
+                    <eventInfo>
+                        <keyCode>115</keyCode>
+                        <keyName>Volume +</keyName>
+                    </eventInfo>
+                    <tooltip>Volume +</tooltip>
+                </keyMap>
+                <keyMap>
+                    <region left="894" top="600" width="74" height="20"/>
+                    <eventInfo>
+                        <keyCode>114</keyCode>
+                        <keyName>Volume -</keyName>
+                    </eventInfo>
+                    <tooltip>Volume -</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+    </rotations>
+    <hover>
+        <color B="255" G="255" R="255" />
+    </hover>
+    <popupMenu>
+        <keywindowItem visible="false" />
+    </popupMenu>
+</EmulatorUI>
