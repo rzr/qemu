@@ -145,7 +145,6 @@ static gchar *get_tizen_sdk_data_path(void)
 {
     gchar *emul_bin_path = NULL;
     gchar *sdk_info_file_path = NULL;
-    gchar *tizen_sdk_data = NULL;
     gchar *tizen_sdk_data_path = NULL;
 #ifndef CONFIG_WIN32
     const char *sdk_info = "../../../sdk.info";
@@ -153,13 +152,9 @@ static gchar *get_tizen_sdk_data_path(void)
     const char *sdk_info = "..\\..\\..\\sdk.info";
 #endif
     const char sdk_data_var[] = "TIZEN_SDK_DATA_PATH";
-    bool is_sdk_data_var = false;
-    char *ptr_sdk_data = NULL;
 
     FILE *sdk_info_fp = NULL;
     int sdk_info_path_len = 0;
-    int buf_len = 32, old_buf_len, tizen_sdk_data_path_len;
-    int ch, i = 0;
 
     TRACE("%s\n", __func__);
 
@@ -183,88 +178,41 @@ static gchar *get_tizen_sdk_data_path(void)
     sdk_info_fp = fopen(sdk_info_file_path, "r");
     g_free(sdk_info_file_path);
 
-    if (!sdk_info_fp) {
-        ERR("failed to open sdk.info\n");
-        return get_old_tizen_sdk_data_path();
-    }
+    if (sdk_info_fp) {
+        INFO("Succeeded to open [sdk.info].\n");
 
-    INFO("succeeded to open sdk.info.\n");
-    tizen_sdk_data = g_malloc(buf_len);
-    if (!tizen_sdk_data) {
-        fclose(sdk_info_fp);
-        ERR("failed to allocate tizen_sdk_data buffer.\n");
-        return NULL;
-    }
-
-    // get tizen-sdk-data path from sdk.info
-    while ((ch = fgetc(sdk_info_fp)) != EOF) {
-        if ((buf_len - 1) < i) {
-            gchar *temp_buf = NULL;
-
-            TRACE("reallocate sdk-data buffer.\n");
-
-            old_buf_len = buf_len;
-            buf_len = buf_len << 1;
-
-            temp_buf = g_malloc(old_buf_len);
-            strncpy(temp_buf, tizen_sdk_data, old_buf_len);
-            g_free(tizen_sdk_data);
-
-            tizen_sdk_data = g_malloc(buf_len);
-            strncpy(tizen_sdk_data, temp_buf, old_buf_len);
-
-            TRACE("temp buffer: %s, length: %d\n", tizen_sdk_data, buf_len);
-            g_free(temp_buf);
-        }
-
-        tizen_sdk_data[i++] = ch;
-        if (ch == '\n') {
-            tizen_sdk_data[i - 1] = '\0';
-            TRACE("len: %d, tizen-sdk-data: %s\n", i, tizen_sdk_data);
-            if (strstr(tizen_sdk_data, sdk_data_var)) {
-                TRACE("find %s variable!!\n", sdk_data_var);
-                is_sdk_data_var = true;
+        char tmp[256] = { '\0', };
+        char *tmpline = NULL;
+        while (fgets(tmp, sizeof(tmp), sdk_info_fp) != NULL) {
+            if ((tmpline = g_strstr_len(tmp, sizeof(tmp), sdk_data_var))) {
+                tmpline += strlen(sdk_data_var) + 1; // 1 for '='
                 break;
             }
-            i = 0;
-            continue;
         }
-    }
 
-    if (!is_sdk_data_var) {
+        if (tmpline) {
+            if (tmpline[strlen(tmpline) - 1] == '\n') {
+                tmpline[strlen(tmpline) - 1] = '\0';
+            }
+            if (tmpline[strlen(tmpline) - 1] == '\r') {
+                tmpline[strlen(tmpline) - 1] = '\0';
+            }
+
+            tizen_sdk_data_path = g_malloc(strlen(tmpline) + 1);
+            g_strlcpy(tizen_sdk_data_path, tmpline, strlen(tmpline) + 1);
+
+            INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
+
+            return tizen_sdk_data_path;
+        }
+
         fclose(sdk_info_fp);
-        g_free(tizen_sdk_data);
-        ERR("failed to find tizen-sdk-data path.\n");
-        return NULL;
     }
 
-    ptr_sdk_data = (strchr(tizen_sdk_data, '=') + 1);
-    tizen_sdk_data_path_len = strlen(ptr_sdk_data);
-    TRACE("len: %d, ptr_sdk_data: %s\n", tizen_sdk_data_path_len, ptr_sdk_data);
+    // legacy mode
+    ERR("Failed to open [sdk.info].\n");
 
-    if (!ptr_sdk_data) {
-        fclose(sdk_info_fp);
-        g_free(tizen_sdk_data);
-        ERR("failed to find tizen-sdk-data path.\n");
-        return NULL;
-    }
-
-    tizen_sdk_data_path = g_malloc(tizen_sdk_data_path_len + 1);
-    if (!tizen_sdk_data_path) {
-        fclose(sdk_info_fp);
-        g_free(tizen_sdk_data);
-        ERR("failed to allocate tizen_sdk_data_path buffer.\n");
-        return NULL;
-    }
-
-    strncpy(tizen_sdk_data_path, ptr_sdk_data, tizen_sdk_data_path_len);
-    tizen_sdk_data_path[tizen_sdk_data_path_len] = '\0';
-    TRACE("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
-
-    fclose(sdk_info_fp);
-    g_free(tizen_sdk_data);
-
-    return tizen_sdk_data_path;
+    return get_old_tizen_sdk_data_path();
 }
 
 static char* get_emulator_vms_sdcard_path(void)
