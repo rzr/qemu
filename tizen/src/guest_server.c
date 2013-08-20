@@ -93,6 +93,7 @@ static gchar *get_old_tizen_sdk_data_path(void)
 
 #ifndef CONFIG_WIN32
     gchar tizen_sdk_data[] = "/tizen-sdk-data";
+    gint tizen_sdk_data_len = 0;
     gchar *home_dir;
 
     home_dir = (gchar *)g_getenv("HOME");
@@ -100,17 +101,18 @@ static gchar *get_old_tizen_sdk_data_path(void)
         home_dir = (gchar *)g_get_home_dir();
     }
 
-    tizen_sdk_data_path =
-        g_malloc(strlen(home_dir) + sizeof(tizen_sdk_data) + 1);
+    tizen_sdk_data_len = strlen(home_dir) + sizeof(tizen_sdk_data) + 1;
+    tizen_sdk_data_path = g_malloc(tizen_sdk_data_len);
     if (!tizen_sdk_data_path) {
         ERR("failed to allocate memory.\n");
         return NULL;
     }
-    strcpy(tizen_sdk_data_path, home_dir);
-    strcat(tizen_sdk_data_path, tizen_sdk_data);
+    g_strlcpy(tizen_sdk_data_path, home_dir, tizen_sdk_data_len);
+    g_strlcat(tizen_sdk_data_path, tizen_sdk_data, tizen_sdk_data_len);
 
 #else
     gchar tizen_sdk_data[] = "\\tizen-sdk-data\\";
+    gint tizen_sdk_data_len = 0;
     HKEY hKey;
     char strLocalAppDataPath[1024] = { 0 };
     DWORD dwBufLen = 1024;
@@ -123,15 +125,15 @@ static gchar *get_old_tizen_sdk_data_path(void)
                     NULL, (LPBYTE)strLocalAppDataPath, &dwBufLen);
     RegCloseKey(hKey);
 
-    tizen_sdk_data_path =
-        g_malloc(strlen(strLocalAppDataPath) + sizeof(tizen_sdk_data) + 1);
+    tizen_sdk_data_len = strlen(strLocalAppDataPath) + sizeof(tizen_sdk_data) + 1;
+    tizen_sdk_data_path = g_malloc(tizen_sdk_data_len);
     if (!tizen_sdk_data_path) {
         ERR("failed to allocate memory.\n");
         return NULL;
     }
 
-    strcpy(tizen_sdk_data_path, strLocalAppDataPath);
-    strcat(tizen_sdk_data_path, tizen_sdk_data);
+    g_strlcpy(tizen_sdk_data_path, strLocalAppDataPath, tizen_sdk_data_len);
+    g_strlcat(tizen_sdk_data_path, tizen_sdk_data, tizen_sdk_data_len);
 #endif
 
     INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
@@ -359,13 +361,13 @@ static void* run_guest_server(void* args)
 
                     vms_path = get_emulator_vms_sdcard_path();
                     if (vms_path) {
-                        memset(sdcard_path, '\0', sizeof(sdcard_path));
-                        strcpy(sdcard_path, vms_path);
+                        g_strlcpy(sdcard_path, vms_path, sizeof(sdcard_path));
 
                         /* emulator_vms_sdcard_path + sdcard img name */
                         ret = strtok(NULL, token);
-                        strcat(sdcard_path, ret);
-                        INFO("%s\n", sdcard_path);
+
+                        g_strlcat(sdcard_path, ret, sizeof(sdcard_path));
+                        TRACE("sdcard path: %s\n", sdcard_path);
 
                         //mloop_evcmd_usbdisk(sdcard_path);
                         mloop_evcmd_sdcard(sdcard_path);
