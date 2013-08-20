@@ -526,7 +526,7 @@ static char *compute_gl_extensions() {
 static inline QGloSurface *get_qsurface_from_client_drawable(GLState *state, ClientGLXDrawable client_drawable) {
     QGloSurface *qsurface;
 
-    if(state->current_qsurface->client_drawable == client_drawable)
+    if (state->current_qsurface && state->current_qsurface->client_drawable == client_drawable)
         return state->current_qsurface;
 
     QTAILQ_FOREACH(qsurface, &state->qsurfaces, next) {
@@ -1604,7 +1604,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
             // We have to assume the current context here
             // since we assume that a drawable must belong to a specific context
-            render_surface(qsurface, bpp, stride, render_buffer);
+            if (qsurface)
+                render_surface(qsurface, bpp, stride, render_buffer);
             break;
 
         }
