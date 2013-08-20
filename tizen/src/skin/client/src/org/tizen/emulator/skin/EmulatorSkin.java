@@ -245,6 +245,19 @@ public class EmulatorSkin {
 	public long initLayout() {
 		imageRegistry = ImageRegistry.getInstance();
 
+		/* set emulator states */
+		currentState.setCurrentResolutionWidth(
+				config.getArgInt(ArgsConstants.RESOLUTION_WIDTH));
+		currentState.setCurrentResolutionHeight(
+				config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT));
+
+		int scale = SkinUtil.getValidScale(config);
+		currentState.setCurrentScale(scale);
+
+		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
+		currentState.setCurrentRotationId(rotationId);
+		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
+
 		/* create and attach a popup menu */
 		isOnKbd = false;
 		popupMenu = new PopupMenu(config, this, shell, imageRegistry);

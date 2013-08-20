@@ -106,21 +106,15 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	public Canvas compose(int style) {
 		lcdCanvas = new Canvas(shell, style);
 
+		int vmIndex =
+				config.getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
 		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
-				EmulatorConfig.DEFAULT_WINDOW_X);
+				EmulatorConfig.DEFAULT_WINDOW_X + vmIndex);
 		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
-				EmulatorConfig.DEFAULT_WINDOW_Y);
+				EmulatorConfig.DEFAULT_WINDOW_Y + vmIndex);
 
-		currentState.setCurrentResolutionWidth(
-				config.getArgInt(ArgsConstants.RESOLUTION_WIDTH));
-		currentState.setCurrentResolutionHeight(
-				config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT));
-
-		int scale = SkinUtil.getValidScale(config);
-//		int rotationId = config.getPropertyShort( PropertiesConstants.WINDOW_ROTATION,
-//				EmulatorConfig.DEFAULT_WINDOW_ROTATION );
-		// has to be portrait mode at first booting time
-		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
+		int scale = currentState.getCurrentScale();
+		short rotationId = currentState.getCurrentRotationId();
 
 		composeInternal(lcdCanvas, x, y, scale, rotationId);
 		logger.info("resolution : " + currentState.getCurrentResolution() +

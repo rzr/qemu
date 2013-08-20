@@ -56,7 +56,6 @@ import org.tizen.emulator.skin.util.SkinRotation;
  *
  */
 public class ImageRegistry {
-	public static final String GENERAL_FOLDER = "emul-general-3btn";
 	public static final String ICON_FOLDER = "icons";
 	public static final String IMAGES_FOLDER = "images";
 	public static final String KEYWINDOW_FOLDER = "key-window";
