@@ -113,8 +113,7 @@ static void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
 }
 
 static SDL_Surface *maru_do_pixman_scale(SDL_Surface *rz_src,
-                                         SDL_Surface *rz_dst,
-                                         int angle)
+                                         SDL_Surface *rz_dst)
 {
     pixman_image_t *src = NULL;
     pixman_image_t *dst = NULL;
@@ -445,22 +444,22 @@ static png_bytep read_png_file(const char *file_name,
 
 static SDL_Surface *get_blank_guide_image(void)
 {
-    unsigned int width = 0;
-    unsigned int height = 0;
-    char *guide_image_path = NULL;
-    int path_len = 0;
-    void *guide_image_data = NULL;
-
-    path_len = strlen(get_bin_path()) +
-        strlen(BLANK_GUIDE_IMAGE_PATH) + strlen(BLANK_GUIDE_IMAGE_NAME) + 1;
-    guide_image_path = g_malloc0(sizeof(char) * path_len);
-    snprintf(guide_image_path, path_len, "%s%s%s",
-        get_bin_path(), BLANK_GUIDE_IMAGE_PATH, BLANK_GUIDE_IMAGE_NAME);
-
     if (surface_guide == NULL) {
+        unsigned int width = 0;
+        unsigned int height = 0;
+        char *guide_image_path = NULL;
+        void *guide_image_data = NULL;
+
         /* load png image */
+        int path_len = strlen(get_bin_path()) +
+            strlen(BLANK_GUIDE_IMAGE_PATH) + strlen(BLANK_GUIDE_IMAGE_NAME) + 1;
+        guide_image_path = g_malloc0(sizeof(char) * path_len);
+        snprintf(guide_image_path, path_len, "%s%s%s",
+            get_bin_path(), BLANK_GUIDE_IMAGE_PATH, BLANK_GUIDE_IMAGE_NAME);
+
         guide_image_data = (void *) read_png_file(
             guide_image_path, &width, &height);
+
         if (guide_image_data != NULL) {
             surface_guide = SDL_CreateRGBSurfaceFrom(
                 guide_image_data, width, height,
@@ -472,9 +471,9 @@ static SDL_Surface *get_blank_guide_image(void)
         } else {
             ERR("failed to draw a blank guide image\n");
         }
-    }
 
-    g_free(guide_image_path);
+        g_free(guide_image_path);
+    }
 
     return surface_guide;
 }
@@ -517,8 +516,43 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
 
             SDL_Surface *guide = get_blank_guide_image();
             if (guide != NULL) {
-                SDL_BlitSurface(guide, NULL, surface_screen, NULL);
-                SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+                int dst_w = 0;
+                int dst_h = 0;
+                int dst_x = 0;
+                int dst_y = 0;
+
+                if (current_scale_factor != 1.0) {
+                    /* guide image scaling */
+                    SDL_Surface *scaled_guide = SDL_CreateRGBSurface(
+                        SDL_SWSURFACE,
+                        guide->w * current_scale_factor,
+                        guide->h * current_scale_factor,
+                        get_emul_sdl_bpp(),
+                        guide->format->Rmask, guide->format->Gmask,
+                        guide->format->Bmask, guide->format->Amask);
+
+                    scaled_guide = maru_do_pixman_scale(guide, scaled_guide);
+
+                    dst_w = scaled_guide->w;
+                    dst_h = scaled_guide->h;
+                    dst_x = (surface_screen->w - dst_w) / 2;
+                    dst_y = (surface_screen->h - dst_h) / 2;
+                    SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
+
+                    SDL_BlitSurface(scaled_guide, NULL, surface_screen, &dst_rect);
+                    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
+                    SDL_FreeSurface(scaled_guide);
+                } else {
+                    dst_w = guide->w;
+                    dst_h = guide->h;
+                    dst_x = (surface_screen->w - dst_w) / 2;
+                    dst_y = (surface_screen->h - dst_h) / 2;
+                    SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
+
+                    SDL_BlitSurface(guide, NULL, surface_screen, &dst_rect);
+                    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+                }
             }
         } else if (blank_cnt == 0) {
             INFO("skipping of the display updating is started\n");
@@ -813,13 +847,13 @@ static void qemu_update(void)
 #endif
             maru_do_pixman_dpy_surface(dpy_surface->image);
             set_maru_screenshot(dpy_surface);
+
             if (current_scale_factor != 1.0) {
                 rotated_screen = maru_do_pixman_rotate(
                     surface_qemu, rotated_screen,
                     (int)current_screen_degree);
                 scaled_screen = maru_do_pixman_scale(
-                    rotated_screen, scaled_screen,
-                    (int)current_screen_degree);
+                    rotated_screen, scaled_screen);
                 SDL_BlitSurface(scaled_screen, NULL, surface_screen, NULL);
             }
             else {/* current_scale_factor == 1.0 */
