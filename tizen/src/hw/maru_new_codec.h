@@ -40,7 +40,6 @@
 #include <libavformat/avformat.h>
 
 #define CODEC_CONTEXT_MAX           1024
-#define CODEC_WORK_THREAD_MAX       10
 
 #define VIDEO_CODEC_MEM_OFFSET_MAX  16
 #define AUDIO_CODEC_MEM_OFFSET_MAX  64
@@ -80,7 +79,7 @@ typedef struct CodecContext {
     AVCodecParserContext    *parser_ctx;
     uint8_t                 *parser_buf;
     uint16_t                parser_use;
-    uint16_t                avctx_use;
+    uint16_t                occupied;
     CodecParam              ioparam;
 } CodecContext;
 
@@ -119,14 +118,13 @@ enum codec_io_cmd {
     CODEC_CMD_GET_THREAD_STATE      = 0x38,
     CODEC_CMD_GET_QUEUE             = 0x3C,
     CODEC_CMD_POP_WRITE_QUEUE       = 0x40,
-    CODEC_CMD_RESET_AVCONTEXT       = 0x44,
+    CODEC_CMD_RELEASE_CONTEXT       = 0x44,
     CODEC_CMD_GET_VERSION           = 0x50,
     CODEC_CMD_GET_ELEMENT           = 0x54,
     CODEC_CMD_GET_CONTEXT_INDEX     = 0x58,
 };
 
 enum codec_api_type {
-//    CODEC_QUERY_LIST = 1,
     CODEC_INIT = 0,
     CODEC_DECODE_VIDEO,
     CODEC_ENCODE_VIDEO,
@@ -155,32 +153,28 @@ enum thread_state {
     CODEC_TASK_FIN = 0x1f,
 };
 
+#if 0
 /*
  *  Codec Thread Functions
  */
-void *new_codec_worker_thread(void *opaque);
 void *new_codec_dedicated_thread(void *opaque);
-
-int new_decode_codec(NewCodecState *s);
-int new_encode_codec(NewCodecState *s);
 
 void *new_codec_pop_readqueue(NewCodecState *s, int32_t file_index);
 void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index);
-
+#endif
 
 /*
  *  Codec Device Functions
  */
-int new_codec_init(PCIBus *bus);
+int new_codec_device_init(PCIBus *bus);
 #if 0
 uint64_t new_codec_read(void *opaque, target_phys_addr_t addr,
                     unsigned size);
 void new_codec_write(void *opaque, target_phys_addr_t addr,
                 uint64_t value, unsigned size);
 #endif
-int codec_operate(uint32_t api_index, uint32_t ctx_index,
-                NewCodecState *state);
 
+#if 0
 /*
  *  Codec Helper Functions
  */
@@ -193,15 +187,16 @@ void new_codec_reset_avcontext(NewCodecState *s, int32_t value);
 int new_avcodec_query_list(NewCodecState *s);
 int new_avcodec_alloc_context(NewCodecState *s, int index);
 
-int new_avcodec_init(NewCodecState *s, CodecParam *ioparam);
-int new_avcodec_deinit(NewCodecState *s, CodecParam *ioparam);
-int new_avcodec_decode_video(NewCodecState *s, CodecParam *ioparam);
-int new_avcodec_encode_video(NewCodecState *s, CodecParam *ioparam);
-int new_avcodec_decode_audio(NewCodecState *s, CodecParam *ioparam);
-int new_avcodec_encode_audio(NewCodecState *s, CodecParam *ioparam);
-int new_avcodec_picture_copy(NewCodecState *s, CodecParam *ioparam);
+int new_avcodec_init(NewCodecState *s, int ctx_id, int f_id);
+int new_avcodec_deinit(NewCodecState *s, int ctx_id, int f_id);
+int new_avcodec_decode_video(NewCodecState *s, int ctx_id, int f_id);
+int new_avcodec_encode_video(NewCodecState *s, int ctx_id, int f_id);
+int new_avcodec_decode_audio(NewCodecState *s, int ctx_id, int f_id);
+int new_avcodec_encode_audio(NewCodecState *s, int ctx_id, int f_id);
+int new_avcodec_picture_copy(NewCodecState *s, int ctx_id, int f_id);
 
 AVCodecParserContext *new_avcodec_parser_init(AVCodecContext *avctx);
 int new_avcodec_parser_parse (AVCodecParserContext *pctx, AVCodecContext *avctx,
                             uint8_t *inbuf, int inbuf_size,
                             int64_t pts, int64_t dts, int64_t pos);
+#endif
