@@ -69,7 +69,7 @@ static void YAGL_GLES_APIENTRY yagl_gles_onscreen_DeleteFramebuffers(GLsizei n,
 
     for (i = 0; i < n; ++i) {
         if (framebuffers[i] != egl_onscreen_ts->ctx->fb) {
-            egl_onscreen_ts->gles_driver->DeleteBuffers(1, &framebuffers[i]);
+            egl_onscreen_ts->gles_driver->DeleteFramebuffers(1, &framebuffers[i]);
         }
     }
 }
