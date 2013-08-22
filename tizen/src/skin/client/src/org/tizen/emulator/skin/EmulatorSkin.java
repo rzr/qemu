@@ -653,7 +653,33 @@ public class EmulatorSkin {
 			@Override
 			public void mouseMove(MouseEvent e) {
 				logger.info("mouse move : " + e);
-				// TODO:
+				int eventType = MouseEventType.MOVE.value();
+
+				if (true == isDisplayDragging) {
+					Point canvasSize = lcdCanvas.getSize();
+					eventType = MouseEventType.DRAG.value();
+					if (e.x < 0) {
+						e.x = 0;
+						eventType = MouseEventType.RELEASE.value();
+						isDisplayDragging = false;
+					} else if (e.x >= canvasSize.x) {
+						e.x = canvasSize.x - 1;
+						eventType = MouseEventType.RELEASE.value();
+						isDisplayDragging = false;
+					}
+
+					if (e.y < 0) {
+						e.y = 0;
+						eventType = MouseEventType.RELEASE.value();
+						isDisplayDragging = false;
+					} else if (e.y >= canvasSize.y) {
+						e.y = canvasSize.y - 1;
+						eventType = MouseEventType.RELEASE.value();
+						isDisplayDragging = false;
+					}
+				}
+
+				mouseMoveDelivery(e, eventType);
 			}
 		};
 
@@ -705,13 +731,25 @@ public class EmulatorSkin {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				logger.info("mouse up : " + e);
-				// TODO:
+				if (1 == e.button) { /* left button */
+					if (true == isDisplayDragging) {
+						isDisplayDragging = false;
+					}
+					mouseUpDelivery(e);
+				} else if (2 == e.button) { /* wheel button */
+					logger.info("wheelUp in display");
+				}
 			}
 
 			@Override
 			public void mouseDown(MouseEvent e) {
 				logger.info("mouse down : " + e);
-				// TODO:
+				if (1 == e.button) { /* left button */
+					if (false == isDisplayDragging) {
+						isDisplayDragging = true;
+					}
+					mouseDownDelivery(e);
+				}
 			}
 
 			@Override

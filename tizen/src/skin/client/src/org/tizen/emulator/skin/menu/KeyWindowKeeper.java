@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.custom.KeyWindow;
 import org.tizen.emulator.skin.custom.SkinWindow;
+import org.tizen.emulator.skin.custom.SpecialKeyWindow;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinUtil;
@@ -101,8 +102,8 @@ public class KeyWindowKeeper {
 					skin.getPopupMenu().keyWindowItem.getMenu().getItem(indexLayout).getText();
 			logger.info("generate a \'" + layoutName + "\' key window!");
 
-			keyWindow = new KeyWindow(
-					skin, skin.getShell(), skin.communicator, null);
+			keyWindow = new SpecialKeyWindow(
+					skin, skin.getShell(), skin.communicator, layoutName);
 		}
 
 		selectKeyWindowMenu(skin.isKeyWindow = true);

@@ -96,7 +96,9 @@ public interface ICommunicator extends Runnable {
 		RELEASE( (short)2 ),
 		DRAG( (short)3 ),
 		WHEELUP( (short)4 ),
-		WHEELDOWN( (short)5 );
+		WHEELDOWN( (short)5 ),
+		MOVE( (short)6 ),
+		DOUBLECLICK( (short)7 );
 
 		private short value;
 		MouseEventType( short value ) {
