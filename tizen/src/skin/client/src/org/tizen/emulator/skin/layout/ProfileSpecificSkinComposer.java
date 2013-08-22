@@ -364,11 +364,11 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 				final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 						currentState.getCurrentRotationId(), currentState.getCurrentScale());
-				if (hwKey == null) {
-					/* remove hover */
-					HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
+				HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
 
+				if (hwKey == null) {
 					if (hoveredHWKey != null) {
+						/* remove hover */
 						shell.redraw(hoveredHWKey.getRegion().x,
 								hoveredHWKey.getRegion().y,
 								hoveredHWKey.getRegion().width,
@@ -379,10 +379,20 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					}
 
 					return;
+				} else {
+					if (hoveredHWKey != null &&
+							(hoveredHWKey.getRegion().x != hwKey.getRegion().x &&
+							hoveredHWKey.getRegion().y != hwKey.getRegion().y)) {
+						/* remove hover */
+						shell.redraw(hoveredHWKey.getRegion().x,
+								hoveredHWKey.getRegion().y,
+								hoveredHWKey.getRegion().width,
+								hoveredHWKey.getRegion().height, false);
+					}
 				}
 
 				/* register a tooltip */
-				if (currentState.getCurrentHoveredHWKey() == null &&
+				if (hoveredHWKey == null &&
 						hwKey.getTooltip().isEmpty() == false) {
 					shell.setToolTipText(hwKey.getTooltip());
 				}
