@@ -33,6 +33,7 @@
 #define __OSUTIL_H__
 
 #include "maru_common.h"
+#include "emul_state.h"
 
 #define HTTP_PROTOCOL "http="
 #define HTTP_PREFIX "http://"

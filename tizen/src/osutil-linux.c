@@ -57,23 +57,22 @@
 MULTI_DEBUG_CHANNEL(emulator, osutil);
 
 extern char tizen_target_img_path[];
-extern int tizen_base_port;
 int g_shmid;
 char *g_shared_memory;
 int gproxytool = GCONFTOOL;
 
 /* Getting proxy commands */
 static const char* gproxycmds[][2] = {
-	{ "gconftool-2 -g /system/proxy/mode" , "gsettings get org.gnome.system.proxy mode" },
-	{ "gconftool-2 -g /system/proxy/autoconfig_url", "gsettings get org.gnome.system.proxy autoconfig-url" },
-	{ "gconftool-2 -g /system/http_proxy/host", "gsettings get org.gnome.system.proxy.http host" },
-	{ "gconftool-2 -g /system/http_proxy/port", "gsettings get org.gnome.system.proxy.http port"},
-	{ "gconftool-2 -g /system/proxy/secure_host", "gsettings get org.gnome.system.proxy.https host" },
-	{ "gconftool-2 -g /system/proxy/secure_port", "gsettings get org.gnome.system.proxy.https port" },
-	{ "gconftool-2 -g /system/proxy/ftp_host", "gsettings get org.gnome.system.proxy.ftp host" },
-	{ "gconftool-2 -g /system/proxy/ftp_port", "gsettings get org.gnome.system.proxy.ftp port" },
-	{ "gconftool-2 -g /system/proxy/socks_host", "gsettings get org.gnome.system.proxy.socks host" },
-	{ "gconftool-2 -g /system/proxy/socks_port", "gsettings get org.gnome.system.proxy.socks port" },
+    { "gconftool-2 -g /system/proxy/mode" , "gsettings get org.gnome.system.proxy mode" },
+    { "gconftool-2 -g /system/proxy/autoconfig_url", "gsettings get org.gnome.system.proxy autoconfig-url" },
+    { "gconftool-2 -g /system/http_proxy/host", "gsettings get org.gnome.system.proxy.http host" },
+    { "gconftool-2 -g /system/http_proxy/port", "gsettings get org.gnome.system.proxy.http port"},
+    { "gconftool-2 -g /system/proxy/secure_host", "gsettings get org.gnome.system.proxy.https host" },
+    { "gconftool-2 -g /system/proxy/secure_port", "gsettings get org.gnome.system.proxy.https port" },
+    { "gconftool-2 -g /system/proxy/ftp_host", "gsettings get org.gnome.system.proxy.ftp host" },
+    { "gconftool-2 -g /system/proxy/ftp_port", "gsettings get org.gnome.system.proxy.ftp port" },
+    { "gconftool-2 -g /system/proxy/socks_host", "gsettings get org.gnome.system.proxy.socks host" },
+    { "gconftool-2 -g /system/proxy/socks_port", "gsettings get org.gnome.system.proxy.socks port" },
 };
 
 void check_vm_lock_os(void)
@@ -118,7 +117,11 @@ void check_vm_lock_os(void)
 
 void make_vm_lock_os(void)
 {
-    g_shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
+    int base_port;
+
+    base_port = get_emul_vm_base_port();
+
+    g_shmid = shmget((key_t)base_port, MAXLEN, 0666|IPC_CREAT);
     if (g_shmid == -1) {
         ERR("shmget failed\n");
         perror("osutil-linux: ");
@@ -134,7 +137,7 @@ void make_vm_lock_os(void)
 
     g_sprintf(g_shared_memory, "%s", tizen_target_img_path);
     INFO("shared memory key: %d value: %s\n",
-        tizen_base_port, (char *)g_shared_memory);
+        base_port, (char *)g_shared_memory);
 
     if (shmdt(g_shared_memory) == -1) {
         ERR("shmdt failed\n");
@@ -274,7 +277,7 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     } 
     else {
         ERR("fail to get pacfile fp\n");
-	return -1;
+    return -1;
     }
 
     remove(pac_tempfile);

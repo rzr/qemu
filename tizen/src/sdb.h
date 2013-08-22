@@ -29,12 +29,12 @@
 
 #define SDB_HOST_PORT 26099
 
-#define SDB_TCP_EMULD_INDEX  3    /* emulator daemon port */
-#define SDB_TCP_OPENGL_INDEX  4   /* opengl server port */
-#define SDB_UDP_SENSOR_INDEX  3   /* sensor server port */
+#define SDB_TCP_EMULD_INDEX  2    /* emulator daemon port */
+#define SDB_TCP_OPENGL_INDEX  3   /* opengl server port */
+#define SDB_UDP_SENSOR_INDEX  2   /* sensor server port */
 
 void sdb_setup(void);
-int get_sdb_base_port(void);
+void set_sdb_base_port(void);
 int inet_strtoip(const char*  str, uint32_t  *ip);
 int socket_send(int fd, const void*  buf, int  buflen);
 void socket_close(int fd);
