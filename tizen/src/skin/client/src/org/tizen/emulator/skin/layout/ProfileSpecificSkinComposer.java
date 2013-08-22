@@ -364,7 +364,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 				final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 						currentState.getCurrentRotationId(), currentState.getCurrentScale());
-				HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
+				final HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
 
 				if (hwKey == null) {
 					if (hoveredHWKey != null) {
@@ -379,43 +379,44 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					}
 
 					return;
-				} else {
-					if (hoveredHWKey != null &&
-							(hoveredHWKey.getRegion().x != hwKey.getRegion().x &&
-							hoveredHWKey.getRegion().y != hwKey.getRegion().y)) {
-						/* remove hover */
-						shell.redraw(hoveredHWKey.getRegion().x,
-								hoveredHWKey.getRegion().y,
-								hoveredHWKey.getRegion().width,
-								hoveredHWKey.getRegion().height, false);
-					}
 				}
 
 				/* register a tooltip */
 				if (hoveredHWKey == null &&
 						hwKey.getTooltip().isEmpty() == false) {
 					shell.setToolTipText(hwKey.getTooltip());
-				}
 
-				/* draw hover */
-				shell.getDisplay().syncExec(new Runnable() {
-					public void run() {
-						if (hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
-							GC gc = new GC(shell);
-							if (gc != null) {
-								gc.setLineWidth(1);
-								gc.setForeground(currentState.getHoverColor());
-								gc.drawRectangle(hwKey.getRegion().x, hwKey.getRegion().y,
-										hwKey.getRegion().width - 1, hwKey.getRegion().height - 1);
+					currentState.setCurrentHoveredHWKey(hwKey);
 
-								gc.dispose();
+					/* draw hover */
+					shell.getDisplay().syncExec(new Runnable() {
+						public void run() {
+							if (hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
+								GC gc = new GC(shell);
+								if (gc != null) {
+									gc.setLineWidth(1);
+									gc.setForeground(currentState.getHoverColor());
+									gc.drawRectangle(hwKey.getRegion().x, hwKey.getRegion().y,
+											hwKey.getRegion().width - 1, hwKey.getRegion().height - 1);
 
-								currentState.setCurrentHoveredHWKey(hwKey);
+									gc.dispose();
+								}
 							}
 						}
-					}
-				});
+					});
+				} else {
+					if (hwKey.getRegion().x != hoveredHWKey.getRegion().x ||
+							hwKey.getRegion().y != hoveredHWKey.getRegion().y) {
+						/* remove hover */
+						shell.redraw(hoveredHWKey.getRegion().x,
+								hoveredHWKey.getRegion().y,
+								hoveredHWKey.getRegion().width,
+								hoveredHWKey.getRegion().height, false);
 
+						currentState.setCurrentHoveredHWKey(null);
+						shell.setToolTipText(null);
+					}
+				}
 			}
 		};
 
