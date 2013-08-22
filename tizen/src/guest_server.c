@@ -217,17 +217,17 @@ static gchar *get_tizen_sdk_data_path(void)
     return get_old_tizen_sdk_data_path();
 }
 
-static char* get_emulator_vms_sdcard_path(void)
+static char* get_emulator_sdcard_path(void)
 {
-    gchar *emulator_vms_sdcard_path = NULL;
+    gchar *emulator_sdcard_path = NULL;
     gchar *tizen_sdk_data = NULL;
 #ifndef CONFIG_WIN32
-    char emulator_vms[] = "/emulator-vms/sdcard/";
+    char emulator_sdcard[] = "/emulator/sdcard/";
 #else
-    char emulator_vms[] = "\\emulator-vms\\sdcard\\";
+    char emulator_sdcard[] = "\\emulator\\sdcard\\";
 #endif
 
-    TRACE("vms path: %s, %d\n", emulator_vms, sizeof(emulator_vms));
+    TRACE("emulator_sdcard: %s, %d\n", emulator_sdcard, sizeof(emulator_sdcard));
 
     tizen_sdk_data = get_tizen_sdk_data_path();
     if (!tizen_sdk_data) {
@@ -235,20 +235,20 @@ static char* get_emulator_vms_sdcard_path(void)
         return NULL;
     }
 
-    emulator_vms_sdcard_path =
-        g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_vms) + 1);
-    if (!emulator_vms_sdcard_path) {
+    emulator_sdcard_path =
+        g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_sdcard) + 1);
+    if (!emulator_sdcard_path) {
         ERR("failed to allocate memory.\n");
         return NULL;
     }
 
-    g_snprintf(emulator_vms_sdcard_path, strlen(tizen_sdk_data) + sizeof(emulator_vms),
-             "%s%s", tizen_sdk_data, emulator_vms);
+    g_snprintf(emulator_sdcard_path, strlen(tizen_sdk_data) + sizeof(emulator_sdcard),
+             "%s%s", tizen_sdk_data, emulator_sdcard);
 
     g_free(tizen_sdk_data);
 
-    TRACE("sdcard dir: %s\n", emulator_vms_sdcard_path);
-    return emulator_vms_sdcard_path;
+    TRACE("sdcard path: %s\n", emulator_sdcard_path);
+    return emulator_sdcard_path;
 }
 
 static void* run_guest_server(void* args)
@@ -357,23 +357,23 @@ static void* run_guest_server(void* args)
                     mloop_evcmd_sdcard(NULL);
                 } else if (atoi(ret) == 1) {
                     /* mount sdcard */
-                    char sdcard_path[256];
-                    char* vms_path = NULL;
+                    char sdcard_img_path[256];
+                    char* sdcard_path = NULL;
 
-                    vms_path = get_emulator_vms_sdcard_path();
-                    if (vms_path) {
-                        g_strlcpy(sdcard_path, vms_path, sizeof(sdcard_path));
+                    sdcard_path = get_emulator_sdcard_path();
+                    if (sdcard_path) {
+                        g_strlcpy(sdcard_img_path, sdcard_path, sizeof(sdcard_img_path));
 
-                        /* emulator_vms_sdcard_path + sdcard img name */
+                        /* emulator_sdcard_img_path + sdcard img name */
                         ret = strtok(NULL, token);
 
-                        g_strlcat(sdcard_path, ret, sizeof(sdcard_path));
-                        TRACE("sdcard path: %s\n", sdcard_path);
+                        g_strlcat(sdcard_img_path, ret, sizeof(sdcard_img_path));
+                        TRACE("sdcard path: %s\n", sdcard_img_path);
 
-                        //mloop_evcmd_usbdisk(sdcard_path);
-                        mloop_evcmd_sdcard(sdcard_path);
+                        //mloop_evcmd_usbdisk(sdcard_img_path);
+                        mloop_evcmd_sdcard(sdcard_img_path);
 
-                        g_free(vms_path);
+                        g_free(sdcard_path);
                     } else {
                         ERR("failed to get sdcard path!!\n");
                     }
