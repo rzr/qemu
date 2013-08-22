@@ -306,7 +306,7 @@ void notify_draw_frame(void)
 
 void notify_sdb_daemon_start(void)
 {
-    INFO("notify_sensor_daemon_start\n");
+    INFO("notify_sdb_daemon_start\n");
 
     is_sdbd_initialized = 1;
     if (client_sock) {
