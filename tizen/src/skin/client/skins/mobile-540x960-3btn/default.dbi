@@ -12,7 +12,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="129" top="1050" width="74" height="74"/>
+                    <region left="129" top="1049" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>169</keyCode>
                         <keyName>Menu</keyName>
@@ -20,7 +20,7 @@
                     <tooltip>Menu</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="270" top="1050" width="74" height="74"/>
+                    <region left="270" top="1049" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>139</keyCode>
                         <keyName>Home</keyName>
@@ -28,7 +28,7 @@
                     <tooltip>Home</tooltip>
                 </keyMap>
                 <keyMap>
-                    <region left="411" top="1050" width="74" height="74"/>
+                    <region left="411" top="1049" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>158</keyCode>
                         <keyName>Back</keyName>
@@ -130,7 +130,7 @@
             </imageList>
             <keyMapList>
                 <keyMap>
-                    <region left="422" top="14" width="74" height="74"/>
+                    <region left="420" top="14" width="74" height="74"/>
                     <eventInfo>
                         <keyCode>169</keyCode>
                         <keyName>Menu</keyName>
