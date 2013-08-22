@@ -11,6 +11,12 @@ config-host.mak:
 	@exit 1
 endif
 
+ifdef CONFIG_WIN32
+EXECUTABLE_EXTENSION=.exe
+else
+EXECUTABLE_EXTENSION=
+endif
+
 all: qemu skin_client
 qemu: build_info ffmpeg_install check_hax check_cam
 	cd ../../ && $(MAKE)
@@ -30,11 +36,11 @@ endif
 
 check_cam:
 	@echo "build check cam"
-ifdef CONFIG_WIN32
-	$(CC) -o check-cam.exe check_cam.c -lole32 -loleaut32 -luuid -lstrmiids
-endif
 ifdef CONFIG_LINUX
 	$(CC) -o check-cam check_cam.c -lv4l2 -lv4lconvert
+endif
+ifdef CONFIG_WIN32
+	$(CC) -o check-cam.exe check_cam.c -lole32 -loleaut32 -luuid -lstrmiids
 endif
 ifdef CONFIG_DARWIN
 	$(CC) -o check-cam check_cam.c
@@ -60,16 +66,12 @@ ffmpeg_install: ffmpeg
 ffmpeg_clean:
 	cd ../distrib/libav/ && $(MAKE) clean
 ffmpeg_distclean:
-	cd ../distrib/libav/ && $(MAKE) clean && rm -rf ${ARCH}
+	cd ../distrib/libav/ && $(MAKE) clean && rm -rf $(ARCH)
 
 clean: ffmpeg_clean qemu_clean
-ifdef CONFIG_WIN32
-	rm -f check-hax.exe check-cam.exe
-endif
-ifdef CONFIG_DARWIN
-	rm -f check-hax check-cam
-endif
-ifdef CONFIG_LINUX
+ifndef CONFIG_LINUX
+	rm -f check-hax$(EXECUTABLE_EXTENSION) check-cam$(EXECUTABLE_EXTENSION)
+else
 	rm -f check-cam
 endif
 distclean: clean ffmpeg_distclean qemu_distclean
@@ -79,86 +81,65 @@ install: all
 	mkdir -p $(EMUL_DIR)/etc
 	mkdir -p $(EMUL_DIR)/data
 	mkdir -p $(EMUL_DIR)/images
-ifndef CONFIG_DARWIN
-	@for target in $(TARGET_DIRS); do \
-	case "$$target" in \
-	i386-softmmu) \
-		mkdir -p $(EMUL_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
-		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
-		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
-		cp -dpr ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/efi-virtio.rom $(EMUL_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/acpi-dsdt.aml $(EMUL_DIR)/data/bios ;\
-		;; \
-	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
-		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
-		;; \
-	esac; \
-	done
-else
-	@for target in $(TARGET_DIRS); do \
-	case "$$target" in \
-	i386-softmmu) \
-		mkdir -p $(EMUL_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386 to $(EMUL_DIR)/bin/emulator-x86" ;\
-		cp ../../i386-softmmu/qemu-system-i386 $(EMUL_DIR)/bin/emulator-x86 ;\
-		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
-		cp -pPR ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/efi-virtio.rom $(EMUL_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/acpi-dsdt.aml $(EMUL_DIR)/data/bios ;\
-		;; \
-	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm to $(EMUL_DIR)/bin/emulator-arm" ;\
-		cp ../../arm-softmmu/qemu-system-arm $(EMUL_DIR)/bin/emulator-arm ;\
-		;; \
-	esac; \
-	done
-endif
-	
-	cp skin/client/emulator-skin.jar $(EMUL_DIR)/bin
-ifdef CONFIG_WIN32
-	cp ../../i386-softmmu/check-gl.exe $(EMUL_DIR)/bin
-	cp check-hax.exe $(EMUL_DIR)/bin
-	cp check-cam.exe $(EMUL_DIR)/bin
-endif
-ifdef CONFIG_DARWIN
-	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin
-	cp check-hax $(EMUL_DIR)/bin
-	cp check-cam $(EMUL_DIR)/bin
-	cp sdbscript $(EMUL_DIR)/bin
-endif
-ifdef CONFIG_LINUX
-	cp ../../i386-softmmu/check-gl $(EMUL_DIR)/bin
-	cp check-cam $(EMUL_DIR)/bin
-	cp -pPr ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
-	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
-endif
 
-ifndef CONFIG_DARWIN
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
-	cp -dpr skin/client/skins $(EMUL_DIR)
-	cp -dpr skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
-else
-	cp ../../qemu-img $(EMUL_DIR)/bin
-	cp skin/client/lib/swt.jar $(EMUL_DIR)/bin/swt.jar
+	@for target in $(TARGET_DIRS); do \
+	case "$$target" in \
+	i386-softmmu) \
+		mkdir -p $(EMUL_DIR)/data/bios ;\
+		echo "Copying i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) to $(EMUL_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION)" ;\
+		cp -pP ../../i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION) ;\
+		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
+		cp -pP ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/efi-virtio.rom $(EMUL_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/acpi-dsdt.aml $(EMUL_DIR)/data/bios ;\
+		;; \
+	arm-softmmu) \
+		echo "Copying arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) to $(EMUL_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION)" ;\
+		cp -pP ../../arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION) ;\
+		;; \
+	esac; \
+	done
+
+	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+
+# resources and jar for skin
+	cp -pP skin/client/emulator-skin.jar $(EMUL_DIR)/bin
+	cp -pP skin/client/lib/swt.jar $(EMUL_DIR)/bin
 	cp -pPR skin/client/skins $(EMUL_DIR)
-	cp -pPR skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images/blank-guide.png
-endif
+	cp -pP skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images
 
-ifdef CONFIG_USE_SHM
-ifdef CONFIG_DARWIN
-	cp -pPR skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
-endif
+# check capabilities of OpenGL and Webcam
+	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+	cp -pP check-cam$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+
+# Enable HW Virtualization on Linux
 ifdef CONFIG_LINUX
-	cp -dpr skin/client/native_src/libshared.so $(EMUL_DIR)/bin
+	cp -pP ../distrib/initscript/tizen-kvm $(EMUL_DIR)/etc
+	cp -pP ../distrib/initscript/45-tizen-kvm.rules $(EMUL_DIR)/etc
+endif
+
+# check HW Virtualization on Windows and MAC OS X.
+ifndef CONFIG_LINUX
+	cp -pP check-hax$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+endif
+
+# give a title name for sdb terminal.
+ifdef CONFIG_DARWIN
+	cp -pP sdbscript $(EMUL_DIR)/bin
+endif
+
+# use shared memory to display LCD
+ifdef CONFIG_USE_SHM
+ifdef CONFIG_LINUX
+	cp -pP skin/client/native_src/libshared.so $(EMUL_DIR)/bin
+endif
+ifdef CONFIG_DARWIN
+	cp -pP skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
 endif
 endif
 
+# change loading path of dynamic shared libraries on MAC OS X
 ifdef CONFIG_DARWIN
 	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(EMUL_DIR)/bin/qemu-img
@@ -199,88 +180,67 @@ install_dibs: all_dibs
 	mkdir -p $(DIBS_X86_DIR)/data
 	mkdir -p $(DIBS_X86_DIR)/etc
 	mkdir -p $(DIBS_ARM_DIR)/bin
-ifndef CONFIG_DARWIN
 	@for target in $(TARGET_DIRS); do \
 	case "$$target" in \
 	i386-softmmu) \
 		mkdir -p $(DIBS_X86_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386 to $(DIBS_X86__DIR)/bin/emulator-x86" ;\
-		cp ../../i386-softmmu/qemu-system-i386 $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		echo "Copying i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) to $(DIBS_X86__DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION)" ;\
+		cp ../../i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) $(DIBS_X86_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION) ;\
 		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
-		cp -dpr ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/efi-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
-		cp -dpr ../../pc-bios/acpi-dsdt.aml $(DIBS_X86_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/efi-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/acpi-dsdt.aml $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
-		cp ../../arm-softmmu/qemu-system-arm $(DIBS_ARM_DIR)/bin/emulator-arm ;\
+		echo "Copying arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) to $(DIBS_ARM_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION)" ;\
+		cp -pP ../../arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) $(DIBS_ARM_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION) ;\
 		;; \
 	esac; \
 	done
-else
-	@for target in $(TARGET_DIRS); do \
-	case "$$target" in \
-	i386-softmmu) \
-		mkdir -p $(DIBS_X86_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386 to $(DIBS_X86_DIR)/bin/emulator-x86" ;\
-		cp ../../i386-softmmu/qemu-system-i386 $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
-		cp -pPR ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/efi-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
-		cp -pPR ../../pc-bios/acpi-dsdt.aml $(DIBS_X86_DIR)/data/bios ;\
-		;; \
-	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm to $(DIBS_ARM_DIR)/bin/emulator-arm" ;\
-		cp ../../arm-softmmu/qemu-system-arm $(DIBS_ARM_DIR)/bin/emulator-arm ;\
-		;; \
-	esac; \
-	done
-endif
 
-	cp skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
-ifdef CONFIG_WIN32
-	cp ../../i386-softmmu/check-gl.exe $(DIBS_COMMON_DIR)/bin
-	cp check-hax.exe $(DIBS_COMMON_DIR)/bin
-	cp check-cam.exe $(DIBS_COMMON_DIR)/bin
-endif
+	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
 
-ifdef CONFIG_DARWIN
-	cp ../../i386-softmmu/check-gl $(DIBS_COMMON_DIR)/bin
-	cp check-hax $(DIBS_COMMON_DIR)/bin
-	cp check-cam $(DIBS_COMMON_DIR)/bin
-	cp sdbscript $(DIBS_COMMON_DIR)/bin
-endif
-ifdef CONFIG_LINUX
-	cp ../../i386-softmmu/check-gl $(DIBS_COMMON_DIR)/bin
-	cp check-cam $(DIBS_COMMON_DIR)/bin
-	echo "Copying tizen-kvm to $(DIBS_X86_DIR)/etc"
-	cp -pPr ../distrib/initscript/tizen-kvm $(DIBS_X86_DIR)/etc
-	cp -pPr ../distrib/initscript/45-tizen-kvm.rules $(DIBS_X86_DIR)/etc
-endif
-
-ifndef CONFIG_DARWIN
-	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
-	cp -dpr skin/client/skins $(DIBS_COMMON_DIR)
-	cp -dpr skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images/blank-guide.png
-else
-	cp ../../qemu-img $(DIBS_COMMON_DIR)/bin
+# resources and jar for skin
+	cp -pP skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
-	cp -pPR skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images/blank-guide.png
-endif
+	cp -pP skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images
 
-ifdef CONFIG_USE_SHM
-ifdef CONFIG_DARWIN
-	cp -pPR skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
-endif
+# check capabilities of OpenGL and Webcam
+	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+	cp -pP check-cam$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+
+
+# Enable HW Virtualization on Linux
 ifdef CONFIG_LINUX
-	cp -dpr skin/client/native_src/libshared.so $(DIBS_COMMON_DIR)/bin
+	echo "Copying tizen-kvm to $(DIBS_X86_DIR)/etc"
+	cp -pP ../distrib/initscript/tizen-kvm $(DIBS_X86_DIR)/etc
+	cp -pP ../distrib/initscript/45-tizen-kvm.rules $(DIBS_X86_DIR)/etc
+endif
+
+# check HW Virtualization on Windows and MAC OS X.
+ifndef CONFIG_LINUX
+	cp -pP check-hax$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+endif
+
+# give a title name for sdb terminal.
+ifdef CONFIG_DARWIN
+	cp -pP sdbscript $(DIBS_COMMON_DIR)/bin
+endif
+
+# use shared memory to display LCD
+ifdef CONFIG_USE_SHM
+ifdef CONFIG_LINUX
+	cp -pP skin/client/native_src/libshared.so $(DIBS_COMMON_DIR)/bin
+endif
+ifdef CONFIG_DARWIN
+	cp -pP skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
 endif
 endif
 
+# change loading path of dynamic shared libraries on MAC OS X
 ifdef CONFIG_DARWIN
-	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img 
+	install_name_tool -change /opt/local/lib/libgthread-2.0.*.dylib @loader_path/libgthread-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libglib-2.0.*.dylib @loader_path/libglib-2.0.0.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/libintl.8.dylib @loader_path/libintl.8.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
 	install_name_tool -change /opt/local/lib/gcc47/libgcc_s.1.dylib @loader_path/libgcc_s.1.dylib $(DIBS_COMMON_DIR)/bin/qemu-img
