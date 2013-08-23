@@ -1312,7 +1312,7 @@ bool yagl_host_eglMakeCurrent(EGLBoolean* retval,
     yagl_host_handle read_,
     yagl_host_handle ctx_)
 {
-    bool bad_match = ctx_ ? (!draw_ || !read_) : (draw_ || read_);
+    bool bad_match = ctx_ ? (!draw_ ^ !read_) : (draw_ || read_);
     bool release_context = !draw_ && !read_ && !ctx_;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_context *prev_ctx = NULL;
@@ -1367,11 +1367,11 @@ bool yagl_host_eglMakeCurrent(EGLBoolean* retval,
             goto out;
         }
 
-        if (!yagl_validate_surface(dpy, draw_, &draw)) {
+        if (draw_ && !yagl_validate_surface(dpy, draw_, &draw)) {
             goto out;
         }
 
-        if (!yagl_validate_surface(dpy, read_, &read)) {
+        if (read_ && !yagl_validate_surface(dpy, read_, &read)) {
             goto out;
         }
 
@@ -1393,8 +1393,8 @@ bool yagl_host_eglMakeCurrent(EGLBoolean* retval,
         if (!egl_api_ts->backend->make_current(egl_api_ts->backend,
                                                dpy->backend_dpy,
                                                ctx->backend_ctx,
-                                               draw->backend_sfc,
-                                               read->backend_sfc)) {
+                                               (draw ? draw->backend_sfc : NULL),
+                                               (read ? read->backend_sfc : NULL))) {
             if (prev_ctx && (prev_ctx != ctx)) {
                 /*
                  * If host 'make_current' failed then re-activate.

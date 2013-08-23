@@ -2,7 +2,7 @@
 #include "yagl_egl_onscreen_context.h"
 #include "yagl_egl_onscreen_display.h"
 #include "yagl_egl_onscreen.h"
-#include "yagl_egl_native_config.h"
+#include "yagl_egl_surface_attribs.h"
 #include "yagl_client_context.h"
 #include "yagl_gles_driver.h"
 #include "yagl_log.h"
@@ -25,6 +25,14 @@ static void yagl_egl_onscreen_context_destroy(struct yagl_eglb_context *ctx)
         yagl_ensure_ctx();
         egl_onscreen->gles_driver->DeleteFramebuffers(1, &egl_onscreen_ctx->fb);
         yagl_unensure_ctx();
+    }
+
+    if (egl_onscreen_ctx->null_sfc != EGL_NO_SURFACE) {
+        egl_onscreen->egl_driver->pbuffer_surface_destroy(
+            egl_onscreen->egl_driver,
+            dpy->native_dpy,
+            egl_onscreen_ctx->null_sfc);
+        egl_onscreen_ctx->null_sfc = EGL_NO_SURFACE;
     }
 
     egl_onscreen->egl_driver->context_destroy(egl_onscreen->egl_driver,
@@ -74,6 +82,10 @@ struct yagl_egl_onscreen_context
 
     ctx->native_ctx = native_ctx;
 
+    memcpy(&ctx->cfg, cfg, sizeof(*cfg));
+
+    ctx->null_sfc = EGL_NO_SURFACE;
+
     YAGL_LOG_FUNC_EXIT(NULL);
 
     return ctx;
@@ -89,4 +101,28 @@ void yagl_egl_onscreen_context_setup(struct yagl_egl_onscreen_context *ctx)
     }
 
     egl_onscreen->gles_driver->GenFramebuffers(1, &ctx->fb);
+}
+
+bool yagl_egl_onscreen_context_setup_surfaceless(struct yagl_egl_onscreen_context *ctx)
+{
+    struct yagl_egl_onscreen *egl_onscreen =
+        (struct yagl_egl_onscreen*)ctx->base.dpy->backend;
+    struct yagl_egl_onscreen_display *dpy =
+        (struct yagl_egl_onscreen_display*)ctx->base.dpy;
+    struct yagl_egl_pbuffer_attribs pbuffer_attribs;
+
+    if (ctx->null_sfc != EGL_NO_SURFACE) {
+        return true;
+    }
+
+    yagl_egl_pbuffer_attribs_init(&pbuffer_attribs);
+
+    ctx->null_sfc = egl_onscreen->egl_driver->pbuffer_surface_create(egl_onscreen->egl_driver,
+                                                                     dpy->native_dpy,
+                                                                     &ctx->cfg,
+                                                                     1,
+                                                                     1,
+                                                                     &pbuffer_attribs);
+
+    return ctx->null_sfc != EGL_NO_SURFACE;
 }
