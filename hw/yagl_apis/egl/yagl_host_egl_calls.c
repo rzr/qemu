@@ -357,7 +357,7 @@ bool yagl_host_eglGetError(EGLint* retval)
 }
 
 bool yagl_host_eglGetDisplay(yagl_host_handle* retval,
-    target_ulong /* Display* */ display_id)
+    target_ulong /* void* */ display_id)
 {
     struct yagl_egl_display *dpy;
 

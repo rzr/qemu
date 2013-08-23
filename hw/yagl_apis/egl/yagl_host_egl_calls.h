@@ -8,7 +8,7 @@ struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api);
 
 bool yagl_host_eglGetError(EGLint* retval);
 bool yagl_host_eglGetDisplay(yagl_host_handle* retval,
-    target_ulong /* Display* */ display_id);
+    target_ulong /* void* */ display_id);
 bool yagl_host_eglInitialize(EGLBoolean* retval,
     yagl_host_handle dpy_,
     target_ulong /* EGLint* */ major,
