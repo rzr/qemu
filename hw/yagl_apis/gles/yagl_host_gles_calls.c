@@ -61,6 +61,16 @@ static GLenum yagl_get_actual_type(GLenum type)
     }
 }
 
+static GLint yagl_get_actual_internalformat(GLint internalformat)
+{
+    switch (internalformat) {
+    case GL_BGRA:
+        return GL_RGBA;
+    default:
+        return internalformat;
+    }
+}
+
 static GLint yagl_get_stride(struct yagl_gles_context *ctx,
                              GLuint alignment_type,
                              GLsizei width,
@@ -1500,6 +1510,7 @@ bool yagl_host_glTexImage2D(GLenum target,
     GLvoid *pixels = NULL;
     GLsizei stride = 0;
     GLenum actual_type = yagl_get_actual_type(type);
+    GLint actual_internalformat = yagl_get_actual_internalformat(internalformat);
 
     YAGL_GET_CTX(glTexImage2D);
 
@@ -1545,7 +1556,7 @@ bool yagl_host_glTexImage2D(GLenum target,
 
     ctx->driver->TexImage2D(target,
                             level,
-                            internalformat,
+                            actual_internalformat,
                             width,
                             height,
                             border,
