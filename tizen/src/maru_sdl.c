@@ -571,7 +571,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
     graphic_hw_update(NULL);
 
     /* Usually, continuously updated.
-       When the LCD is turned off,
+       When the display is turned off,
        ten more updates the screen for a black screen. */
     if (brightness_off) {
         if (++sdl_skip_count > 10) {

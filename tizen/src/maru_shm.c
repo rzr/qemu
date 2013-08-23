@@ -48,6 +48,9 @@ static int skin_shmid;
 
 static int shm_skip_update;
 static int shm_skip_count;
+static int blank_cnt;
+#define MAX_BLANK_FRAME_CNT 100
+
 extern pthread_mutex_t mutex_draw_display;
 extern int draw_display_state;
 
@@ -92,12 +95,14 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
 
         if (draw_display_state == 0) {
             draw_display_state = 1;
+
             pthread_mutex_unlock(&mutex_draw_display);
             maru_do_pixman_dpy_surface(dpy_surface->image);
             memcpy(shared_memory,
                    surface_data(dpy_surface),
                    surface_stride(dpy_surface) *
                    surface_height(dpy_surface));
+
 #ifdef INFO_FRAME_DROP_RATE
             draw_frame++;
 #endif
@@ -108,6 +113,7 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
 #endif
             pthread_mutex_unlock(&mutex_draw_display);
         }
+
 #ifdef INFO_FRAME_DROP_RATE
         INFO("! frame drop rate = (%d/%d)\n",
              drop_frame, draw_frame + drop_frame);
@@ -133,7 +139,26 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
     /* If the display is turned off,
     the screen does not update until the it is turned on */
     if (shm_skip_update && brightness_off) {
+        if (blank_cnt > MAX_BLANK_FRAME_CNT) {
+            /* do nothing */
+            return;
+        } else if (blank_cnt == MAX_BLANK_FRAME_CNT) {
+            /* draw guide image */
+            INFO("draw a blank guide image\n");
+
+            notify_draw_blank_guide();
+        } else if (blank_cnt == 0) {
+            INFO("skipping of the display updating is started\n");
+        }
+
+        blank_cnt++;
+
         return;
+    } else {
+        if (blank_cnt != 0) {
+            INFO("skipping of the display updating is ended\n");
+            blank_cnt = 0;
+        }
     }
 
     graphic_hw_update(NULL);

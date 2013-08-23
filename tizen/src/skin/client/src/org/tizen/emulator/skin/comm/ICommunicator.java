@@ -272,10 +272,12 @@ public interface ICommunicator extends Runnable {
 		SENSOR_DAEMON_START((short) 800),
 		SDB_DAEMON_START((short) 801),
 		DRAW_FRAME((short) 900),
+		DRAW_BLANK_GUIDE((short) 901),
 		SHUTDOWN((short) 999);
 
 		private short value;
-		ReceiveCommand( short value ) {
+
+		ReceiveCommand(short value) {
 			this.value = value;
 		}
 

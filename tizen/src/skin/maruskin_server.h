@@ -36,6 +36,7 @@ int start_skin_server(int argc, char** argv, int qemu_argc, char** qemu_argv);
 void shutdown_skin_server(void);
 
 void notify_draw_frame(void);
+void notify_draw_blank_guide(void);
 void notify_sensor_daemon_start(void);
 void notify_sdb_daemon_start(void);
 void notify_ramdump_completed(void);

@@ -132,6 +132,7 @@ enum {
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SDB_DAEMON_START = 801,
     SEND_DRAW_FRAME = 900,
+    SEND_DRAW_BLANK_GUIDE = 901,
     SEND_SHUTDOWN = 999,
 };
 
@@ -298,6 +299,21 @@ void notify_draw_frame(void)
             client_sock, SEND_DRAW_FRAME, 1)) {
 
             ERR("fail to send SEND_DRAW_FRAME to skin.\n");
+        }
+    } else {
+        INFO("skin client socket is not connected yet\n");
+    }
+}
+
+void notify_draw_blank_guide(void)
+{
+    INFO("notify_draw_blank_guide\n");
+
+    if (client_sock) {
+        if (0 > send_skin_header_only(
+            client_sock, SEND_DRAW_BLANK_GUIDE, 1)) {
+
+            ERR("fail to send SEND_DRAW_BLANK_GUIDE to skin.\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
