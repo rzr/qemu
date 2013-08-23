@@ -56,7 +56,7 @@ import org.tizen.emulator.skin.util.SkinRotation;
  *
  */
 public class ImageRegistry {
-	public static final String ICON_FOLDER = "icons";
+	public static final String ICONS_FOLDER = "icons";
 	public static final String IMAGES_FOLDER = "images";
 	public static final String KEYWINDOW_FOLDER = "key-window";
 
@@ -66,6 +66,21 @@ public class ImageRegistry {
 	public enum ImageType {
 		IMG_TYPE_MAIN,
 		IMG_TYPE_PRESSED
+	}
+
+	public enum ResourceImageName {
+		RESOURCE_ABOUT("about_Tizen_SDK.png"),
+		RESOURCE_BLANK_GUIDE("blank-guide.png");
+
+		private String name;
+
+		private ResourceImageName(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return this.name;
+		}
 	}
 
 	public enum IconName {
@@ -100,7 +115,6 @@ public class ImageRegistry {
 		public String getName() {
 			return this.name;
 		}
-		
 	}
 
 	public enum KeyWindowImageName {
@@ -131,8 +145,9 @@ public class ImageRegistry {
 	private Display display;
 	private EmulatorUI dbiContents;
 
+	private Map<String, Image> resourceImageMap;
+	private Map<String, Image> iconImageMap;
 	private Map<String, Image> skinImageMap;
-	private Map<String, Image> iconMap;
 	private Map<String, Image> keyWindowImageMap;
 
 	private String skinPath;
@@ -162,15 +177,16 @@ public class ImageRegistry {
 
 		this.skinPath = skinPath;
 		this.dbiContents = config.getDbiContents();
+
+		this.resourceImageMap = new HashMap<String, Image>();
+		this.iconImageMap = new HashMap<String, Image>();
 		this.skinImageMap = new HashMap<String, Image>();
-		this.iconMap = new HashMap<String, Image>();
 		this.keyWindowImageMap = new HashMap<String, Image>();
 
 		init(this.skinPath);
 	}
 
 	private void init(String argSkinPath) {
-
 		RotationsType rotations = dbiContents.getRotations();
 
 		if (null == rotations) {
@@ -183,11 +199,13 @@ public class ImageRegistry {
 		for (RotationType rotation : rotationList) {
 			SkinRotation.put(rotation);
 		}
+	}
 
+	private String makeKey(Short id, ImageType imageType) {
+		return id + ":" + imageType.ordinal();
 	}
 
 	public ImageData getSkinImageData(Short id, ImageType imageType) {
-
 		Image image = skinImageMap.get(makeKey(id, imageType));
 
 		if (null != image) {
@@ -231,123 +249,153 @@ public class ImageRegistry {
 
 			if (null != registeredImage) {
 				return registeredImage.getImageData();
-			} else {
-				return null;
 			}
-
 		}
+
+		return null;
 	}
 
-	private String makeKey(Short id, ImageType imageType) {
-		return id + ":" + imageType.ordinal();
+	public Image getResourceImage(ResourceImageName name) {
+		String imageName = name.getName();
+		Image image = resourceImageMap.get(imageName);
+
+		if (image == null) {
+			ClassLoader classLoader = this.getClass().getClassLoader();
+			InputStream is = null;
+
+			String resourcePath = IMAGES_FOLDER + "/" + imageName;
+
+			try {
+				is = classLoader.getResourceAsStream(resourcePath);
+				if (null != is) {
+					logger.info("resource image is loaded");
+					resourceImageMap.put(imageName, new Image(display, is));
+				} else {
+					logger.severe("missing image : " + resourcePath);
+				}
+			} finally {
+				IOUtil.close(is);
+			}
+
+			image = resourceImageMap.get(imageName);
+			if (image != null) {
+				logger.info("resource " + imageName + " size : " +
+						image.getImageData().width + "x" +
+						image.getImageData().height);
+			}
+		}
+
+		return image;
 	}
 
 	public Image getIcon(IconName name) {
-
-		if (0 != iconMap.size()) {
-			Image image = iconMap.get(name.getName());
-
-			return image;
-		} else {
-
-			// load all of the icons at once.
-
+		if (iconImageMap.size() == 0) {
+			/* load all of the icons at once */
 			ClassLoader classLoader = this.getClass().getClassLoader();
+			InputStream is = null;
+			String imageName, imagePath;
+
 			IconName[] values = IconName.values();
-
 			for (IconName iconName : values) {
+				imageName = iconName.getName();
+				imagePath = ICONS_FOLDER + "/" + imageName;
 
-				String icoNname = iconName.getName();
-
-				String iconPath = ICON_FOLDER + "/" + icoNname;
-
-				InputStream is = null;
-				try {
-					is = classLoader.getResourceAsStream(iconPath);
-					if (null != is) {
-						logger.fine("load icon:" + iconPath);
-						iconMap.put(icoNname, new Image(display, is));
-					} else {
-						logger.severe("missing icon:" + iconPath);
-					}
-				} finally {
-					IOUtil.close(is);
-				}
-
-			}
-
-			return iconMap.get(name.getName());
-		}
-	}
-
-	public Image getKeyWindowImageData(KeyWindowImageName name) {
-		if (0 != keyWindowImageMap.size()) {
-			Image image = keyWindowImageMap.get(name.getName());
-
-			return image;
-		} else {
-			ClassLoader classLoader = this.getClass().getClassLoader();
-			KeyWindowImageName[] values = KeyWindowImageName.values();
-
-			for (KeyWindowImageName value : values) {
-
-				String imageName = value.getName();
-
-				String imagePath = IMAGES_FOLDER + "/" +
-						KEYWINDOW_FOLDER + "/" + imageName;
-
-				InputStream is = null;
 				try {
 					is = classLoader.getResourceAsStream(imagePath);
 					if (null != is) {
-						logger.fine("load keywindow images:" + imagePath);
-						keyWindowImageMap.put(imageName, new Image(display, is));
+						logger.fine("icon is loaded : " + imagePath);
+						iconImageMap.put(imageName, new Image(display, is));
 					} else {
-						logger.severe("missing image:" + imagePath);
+						logger.severe("missing icon : " + imagePath);
 					}
 				} finally {
 					IOUtil.close(is);
 				}
-
 			}
-
-			return keyWindowImageMap.get(name.getName());
 		}
+
+		return iconImageMap.get(name.getName());
+	}
+
+	public Image getKeyWindowImageData(KeyWindowImageName name) {
+		if (keyWindowImageMap.size() == 0) {
+			/* load all of the images at once */
+			ClassLoader classLoader = this.getClass().getClassLoader();
+			InputStream is = null;
+			String imageName, imagePath;
+
+			KeyWindowImageName[] values = KeyWindowImageName.values();
+			for (KeyWindowImageName value : values) {
+				imageName = value.getName();
+				imagePath = IMAGES_FOLDER + "/" +
+						KEYWINDOW_FOLDER + "/" + imageName;
+
+				try {
+					is = classLoader.getResourceAsStream(imagePath);
+					if (null != is) {
+						logger.fine("KeyWindow image is loaded : " + imagePath);
+						keyWindowImageMap.put(imageName, new Image(display, is));
+					} else {
+						logger.severe("missing image : " + imagePath);
+					}
+				} finally {
+					IOUtil.close(is);
+				}
+			}
+		}
+
+		return keyWindowImageMap.get(name.getName());
 	}
 
 	public void dispose() {
-		/* skin image */
-		if (null != skinImageMap) {
-			Collection<Image> images = skinImageMap.values();
+		Collection<Image> images = null;
+		Iterator<Image> imageIterator = null;
+		Image image = null;
 
-			Iterator<Image> imageIterator = images.iterator();
+		/* resource */
+		if (null != resourceImageMap) {
+			images = resourceImageMap.values();
+
+			imageIterator = images.iterator();
 
 			while (imageIterator.hasNext()) {
-				Image image = imageIterator.next();
+				image = imageIterator.next();
 				image.dispose();
 			}
 		}
 
 		/* icon */
-		if (null != iconMap) {
-			Collection<Image> icons = iconMap.values();
+		if (null != iconImageMap) {
+			images = iconImageMap.values();
 
-			Iterator<Image> iconIterator = icons.iterator();
+			imageIterator = images.iterator();
 
-			while (iconIterator.hasNext()) {
-				Image image = iconIterator.next();
+			while (imageIterator.hasNext()) {
+				image = imageIterator.next();
+				image.dispose();
+			}
+		}
+
+		/* skin image */
+		if (null != skinImageMap) {
+			images = skinImageMap.values();
+
+			imageIterator = images.iterator();
+
+			while (imageIterator.hasNext()) {
+				image = imageIterator.next();
 				image.dispose();
 			}
 		}
 
 		/* key window image */
 		if (null != keyWindowImageMap) {
-			Collection<Image> images = keyWindowImageMap.values();
+			images = keyWindowImageMap.values();
 
-			Iterator<Image> imagesIterator = images.iterator();
+			imageIterator = images.iterator();
 
-			while (imagesIterator.hasNext()) {
-				Image image = imagesIterator.next();
+			while (imageIterator.hasNext()) {
+				image = imageIterator.next();
 				image.dispose();
 			}
 		}
