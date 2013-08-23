@@ -25,8 +25,6 @@ struct yagl_client_context
 
     void (*flush)(struct yagl_client_context */*ctx*/);
 
-    void (*finish)(struct yagl_client_context */*ctx*/);
-
     /*
      * Read pixel data from framebuffer.
      */

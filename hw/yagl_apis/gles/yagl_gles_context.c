@@ -22,13 +22,6 @@ static void yagl_gles_context_flush(struct yagl_client_context *ctx)
     gles_ctx->driver->Flush();
 }
 
-static void yagl_gles_context_finish(struct yagl_client_context *ctx)
-{
-    struct yagl_gles_context *gles_ctx = (struct yagl_gles_context*)ctx;
-
-    gles_ctx->driver->Finish();
-}
-
 static bool yagl_gles_context_read_pixels(struct yagl_client_context *ctx,
                                           uint32_t width,
                                           uint32_t height,
@@ -198,7 +191,6 @@ void yagl_gles_context_init(struct yagl_gles_context *ctx,
                             struct yagl_gles_driver *driver)
 {
     ctx->base.flush = &yagl_gles_context_flush;
-    ctx->base.finish = &yagl_gles_context_finish;
     ctx->base.read_pixels = &yagl_gles_context_read_pixels;
     ctx->base.create_image = &yagl_gles_context_create_image;
     ctx->base.create_tex_image = &yagl_gles_context_create_tex_image;

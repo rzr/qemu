@@ -36,6 +36,10 @@ static void vigs_winsys_sw_surface_release(struct winsys_surface *sfc)
     vigs_ref_release(&vigs_sfc->ref);
 }
 
+static void vigs_winsys_sw_surface_set_dirty(struct winsys_surface *sfc)
+{
+}
+
 static void vigs_winsys_sw_surface_destroy(struct vigs_ref *ref)
 {
     struct vigs_winsys_sw_surface *vigs_sfc =
@@ -58,6 +62,7 @@ static struct vigs_winsys_sw_surface
     ws_sfc->base.height = height;
     ws_sfc->base.acquire = &vigs_winsys_sw_surface_acquire;
     ws_sfc->base.release = &vigs_winsys_sw_surface_release;
+    ws_sfc->base.set_dirty = &vigs_winsys_sw_surface_set_dirty;
 
     vigs_ref_init(&ws_sfc->ref, &vigs_winsys_sw_surface_destroy);
 

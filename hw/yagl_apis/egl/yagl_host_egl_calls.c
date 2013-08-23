@@ -982,35 +982,21 @@ bool yagl_host_eglWaitClient(EGLBoolean* retval)
 {
     struct yagl_egl_surface *sfc = NULL;
 
-    YAGL_LOG_FUNC_SET(eglWaitClient);
-
-    *retval = EGL_FALSE;
-
-    if (!egl_api_ts->context) {
-        *retval = EGL_TRUE;
-        goto out;
-    }
-
-    if (!egl_api_ts->context->draw) {
-        YAGL_SET_ERR(EGL_BAD_CURRENT_SURFACE);
-        goto out;
-    }
-
-    sfc = yagl_egl_display_acquire_surface(egl_api_ts->context->dpy,
-                                           egl_api_ts->context->draw->res.handle);
-
-    if (!sfc || (sfc != egl_api_ts->context->draw)) {
-        YAGL_SET_ERR(EGL_BAD_CURRENT_SURFACE);
-        goto out;
-    }
-
-    egl_api_ts->context->backend_ctx->client_ctx->finish(egl_api_ts->context->backend_ctx->client_ctx);
-
     *retval = EGL_TRUE;
 
-out:
-    yagl_egl_surface_release(sfc);
+    if (!egl_api_ts->context) {
+        goto out;
+    }
 
+    sfc = egl_api_ts->context->draw;
+
+    if (!sfc) {
+        goto out;
+    }
+
+    sfc->backend_sfc->wait_gl(sfc->backend_sfc);
+
+out:
     return true;
 }
 

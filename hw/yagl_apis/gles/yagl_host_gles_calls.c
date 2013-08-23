@@ -939,15 +939,6 @@ bool yagl_host_glEnable(GLenum cap)
     return true;
 }
 
-bool yagl_host_glFinish(void)
-{
-    YAGL_GET_CTX(glFinish);
-
-    ctx->driver->Finish();
-
-    return true;
-}
-
 bool yagl_host_glFlush(void)
 {
     YAGL_GET_CTX(glFlush);

@@ -46,6 +46,8 @@ struct yagl_eglb_surface
 
     bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/);
 
+    void (*wait_gl)(struct yagl_eglb_surface */*sfc*/);
+
     /*
      * Can be called even when this surface is not current!
      * @{

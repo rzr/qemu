@@ -12,6 +12,8 @@ struct winsys_surface
 
     void (*acquire)(struct winsys_surface */*sfc*/);
     void (*release)(struct winsys_surface */*sfc*/);
+
+    void (*set_dirty)(struct winsys_surface */*sfc*/);
 };
 
 struct winsys_info
