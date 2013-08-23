@@ -49,6 +49,7 @@
 #include "maruskin_server.h"
 #include "emul_state.h"
 #include "hw/maru_pm.h"
+#include "emul_state.h"
 
 #ifdef CONFIG_HAX
 #include "guest_debug.h"
@@ -73,8 +74,6 @@ static int pressing_origin_x = -1, pressing_origin_y = -1;
 
 extern pthread_mutex_t mutex_screenshot;
 extern pthread_cond_t cond_screenshot;
-
-extern int tizen_base_port;
 
 static void* run_timed_shutdown_thread(void* args);
 static void send_to_emuld(const char* request_type,
@@ -611,14 +610,15 @@ static void send_to_emuld(const char* request_type,
 {
     char addr[128];
     int s = 0;
+    int device_serial_number = get_device_serial_number();
+    snprintf(addr, 128, ":%u", (uint16_t) ( device_serial_number + SDB_TCP_EMULD_INDEX));
 
-    snprintf(addr, 128, ":%u", (uint16_t) (tizen_base_port + SDB_TCP_EMULD_INDEX));
     //TODO: Error handling
     s = inet_connect(addr, NULL);
 
     if ( s < 0 ) {
         ERR( "can't create socket to emulator daemon in guest\n" );
-        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , tizen_base_port + SDB_TCP_EMULD_INDEX , errno, strerror(errno) );
+        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , device_serial_number + SDB_TCP_EMULD_INDEX , errno, strerror(errno) );
         return;
     }
 
@@ -633,7 +633,7 @@ static void send_to_emuld(const char* request_type,
     }
 
     INFO( "send to emuld [req_type:%s, send_data:%s, send_size:%d] 127.0.0.1:%d/tcp \n",
-        request_type, send_buf, buf_size, tizen_base_port + SDB_TCP_EMULD_INDEX );
+            request_type, send_buf, buf_size, device_serial_number + SDB_TCP_EMULD_INDEX );
 
 #ifdef CONFIG_WIN32
     closesocket( s );

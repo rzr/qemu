@@ -83,6 +83,7 @@ typedef  struct EmulatorConfigInfo {
     bool input_touch_enable;
     int max_touch_point;
     int vm_base_port;
+    int device_serial_number;
     /* add here */
 } EmulatorConfigInfo;
 
@@ -122,6 +123,7 @@ bool is_emul_input_mouse_enable(void);
 bool is_emul_input_touch_enable(void);
 int get_emul_max_touch_point(void);
 int get_emul_vm_base_port(void);
+int get_device_serial_number(void);
 
 int get_emulator_condition(void);
 short get_emul_rotation(void);

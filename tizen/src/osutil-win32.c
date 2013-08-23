@@ -51,7 +51,6 @@
 MULTI_DEBUG_CHANNEL (emulator, osutil);
 
 extern char tizen_target_img_path[];
-extern int tizen_base_port;
 
 static const char *pactempfile = ".autoproxy";
 
@@ -99,9 +98,11 @@ void make_vm_lock_os(void)
     char *pBuf;
     char *port_in_use;
     char *shared_memory;
+    int base_port;
 
+    base_port = get_emul_vm_base_port();
     shared_memory = g_strdup_printf("%s", tizen_target_img_path);
-    port_in_use =  g_strdup_printf("%d", tizen_base_port);
+    port_in_use =  g_strdup_printf("%d", base_port);
     hMapFile = CreateFileMapping(
                  INVALID_HANDLE_VALUE, /* use paging file */
                  NULL,                 /* default security */

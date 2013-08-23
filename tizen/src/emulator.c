@@ -89,7 +89,6 @@ gchar maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
 gchar bin_path[PATH_MAX] = { 0, };
 gchar log_path[PATH_MAX] = { 0, };
 
-int tizen_base_port;
 char tizen_target_path[PATH_MAX];
 char tizen_target_img_path[PATH_MAX];
 
@@ -114,7 +113,7 @@ void exit_emulator(void)
     mloop_ev_stop();
     shutdown_skin_server();
     shutdown_guest_server();
-	stop_ecs();
+    stop_ecs();
 
 #ifdef CONFIG_LINUX
     /* clean up the vm lock memory by munkyu */
@@ -322,11 +321,11 @@ static void print_system_info(void)
     INFO("* Current time : %s\n", timeinfo);
 
 #ifdef CONFIG_SDL
-	/* Gets the version of the dynamically linked SDL library */
-	INFO("* Host sdl version : (%d, %d, %d)\n",
-			SDL_Linked_Version()->major,
-			SDL_Linked_Version()->minor,
-			SDL_Linked_Version()->patch);
+    /* Gets the version of the dynamically linked SDL library */
+    INFO("* Host sdl version : (%d, %d, %d)\n",
+            SDL_Linked_Version()->major,
+            SDL_Linked_Version()->minor,
+            SDL_Linked_Version()->patch);
 #endif
 
     print_system_info_os();
@@ -358,21 +357,20 @@ static void prepare_basic_features(void)
         ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},
         dns[MIDBUF] = {0};
 
-    tizen_base_port = get_sdb_base_port();
-
     qemu_add_opts(&qemu_ecs_opts);
 
-	start_ecs();
+    start_ecs();
 
     get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
     /* using "DNS" provided by default QEMU */
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
+    set_sdb_base_port();
+
     check_vm_lock();
     make_vm_lock();
 
     sdb_setup(); /* determine the base port for emulator */
-    set_emul_vm_base_port(tizen_base_port);
 
     gchar * const tmp_str = g_strdup_printf(" sdb_port=%d,"
         " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
@@ -504,7 +502,7 @@ void prepare_maru(void)
 
     construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
 
-    int guest_server_port = tizen_base_port + SDB_UDP_SENSOR_INDEX;
+    int guest_server_port = get_device_serial_number() + SDB_UDP_SENSOR_INDEX;
     start_guest_server(guest_server_port);
 
     mloop_ev_init();

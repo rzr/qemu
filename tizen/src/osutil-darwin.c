@@ -53,7 +53,6 @@
 MULTI_DEBUG_CHANNEL(qemu, osutil);
 
 extern char tizen_target_img_path[];
-extern int tizen_base_port;
 CFDictionaryRef proxySettings;
 
 static char *cfstring_to_cstring(CFStringRef str) {
@@ -87,8 +86,9 @@ void make_vm_lock_os(void)
 {
     int shmid;
     char *shared_memory;
-
-    shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
+    int base_port;
+    base_port = get_emul_vm_base_port();
+    shmid = shmget((key_t)base_port, MAXLEN, 0666|IPC_CREAT);
     if (shmid == -1) {
         ERR("shmget failed\n");
         perror("osutil-darwin: ");
@@ -102,7 +102,7 @@ void make_vm_lock_os(void)
         return;
     }
     sprintf(shared_memory, "%s", tizen_target_img_path);
-    INFO("shared memory key: %d, value: %s\n", tizen_base_port, (char *)shared_memory);
+    INFO("shared memory key: %d, value: %s\n", base_port, (char *)shared_memory);
     
     if (shmdt(shared_memory) == -1) {
         ERR("shmdt failed\n");
@@ -210,12 +210,12 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     char *p = NULL;
 
     CFStringRef pacURL = (CFStringRef)CFDictionaryGetValue(proxySettings,
-			        kSCPropNetProxiesProxyAutoConfigURLString);
-	if (pacURL) {
-		char url[MAXLEN] = {};
-		CFStringGetCString(pacURL, url, sizeof url, kCFStringEncodingASCII);
+                    kSCPropNetProxiesProxyAutoConfigURLString);
+    if (pacURL) {
+        char url[MAXLEN] = {};
+        CFStringGetCString(pacURL, url, sizeof url, kCFStringEncodingASCII);
                 INFO("pac address: %s\n", (char*)url);
-		download_url(url);
+        download_url(url);
         }
 
     fp_pacfile = fopen(pac_tempfile, "r");
@@ -252,7 +252,7 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     }
     else {
         ERR("fail to get pacfile fp\n");
-	return -1;
+    return -1;
     }
 
     remove(pac_tempfile);
@@ -344,7 +344,7 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
         ret = get_auto_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
         if(strlen(http_proxy) == 0 && ret < 0) {
             INFO("MANUAL PROXY MODE\n");
-	        get_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-	    }
+            get_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+        }
     }
 }

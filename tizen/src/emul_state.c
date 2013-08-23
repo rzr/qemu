@@ -42,7 +42,7 @@
 MULTI_DEBUG_CHANNEL(qemu, emul_state);
 
 
-static EmulatorConfigInfo _emul_info;
+static EmulatorConfigInfo _emul_info = {0,};
 static EmulatorConfigState _emul_state;
 
 /* start_skin_client or not ? */
@@ -142,12 +142,19 @@ int get_emul_max_touch_point(void)
 void set_emul_vm_base_port(int port)
 {
     _emul_info.vm_base_port = port;
+    _emul_info.device_serial_number = port + 1;
 }
 
 int get_emul_vm_base_port(void)
 {
     return _emul_info.vm_base_port;
 }
+
+int get_device_serial_number(void)
+{
+    return _emul_info.device_serial_number;
+}
+
 
 /* current emulator condition */
 int get_emulator_condition(void)
