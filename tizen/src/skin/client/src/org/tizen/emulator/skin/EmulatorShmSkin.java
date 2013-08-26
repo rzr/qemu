@@ -97,6 +97,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	private PaletteData paletteData;
 	private PollFBThread pollThread;
+	private Image imageGuide;
 
 	private int maxTouchPoint;
 	private EmulatorFingers finger;
@@ -218,6 +219,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		/* get MaxTouchPoint from startup argument */
 		this.maxTouchPoint = config.getArgInt(
 				ArgsConstants.INPUT_TOUCH_MAXPOINT);
+
+		this.imageGuide = null;
 	}
 
 	protected void skinFinalize() {
@@ -268,7 +271,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			System.exit(-1);
 		}
 
-		/* update lcd thread */
+		/* display updater thread */
 		pollThread = new PollFBThread(
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight());
@@ -280,8 +283,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					logger.info("Advanced graphics not supported");
 				} */
 
-				int x = lcdCanvas.getSize().x;
-				int y = lcdCanvas.getSize().y;
+				int ww = lcdCanvas.getSize().x;
+				int hh = lcdCanvas.getSize().y;
 
 				/* if (pollThread.getWaitIntervalTime() == 0) {
 					logger.info("draw black screen");
@@ -293,59 +296,71 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.imageFramebuffer,
 							0, 0, pollThread.widthFB, pollThread.heightFB,
-							0, 0, x, y);
+							0, 0, ww, hh);
+				} else { /* non-portrait */
+					Transform newTransform = new Transform(lcdCanvas.getDisplay());
+					Transform oldTransform = new Transform(lcdCanvas.getDisplay());
+					newTransform.rotate(currentState.getCurrentAngle());
 
+					if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
+						int temp = ww;
+						ww = hh;
+						hh = temp;
+						newTransform.translate(0, hh * -1);
+					} else if (currentState.getCurrentAngle() == 180) { /* reverse portrait */
+						newTransform.translate(ww * -1, hh * -1);
+					} else if (currentState.getCurrentAngle() == -90) { /* landscape */
+						int temp = ww;
+						ww = hh;
+						hh = temp;
+						newTransform.translate(ww * -1, 0);
+					}
+
+					/* save current transform as oldTransform */
+					e.gc.getTransform(oldTransform);
+					/* set to new transform */
+					e.gc.setTransform(newTransform);
+					e.gc.drawImage(pollThread.imageFramebuffer,
+							0, 0, pollThread.widthFB, pollThread.heightFB,
+							0, 0, ww, hh);
+					/* back to old transform */
+					e.gc.setTransform(oldTransform);
+
+					newTransform.dispose();
+					oldTransform.dispose();
+				}
+
+				/* blank guide */
+				if (imageGuide != null) {
+					logger.info("draw blank guide");
+
+					float convertedScale = SkinUtil.convertScale(
+							currentState.getCurrentScale());
+
+					int widthImage = imageGuide.getImageData().width;
+					int heightImage = imageGuide.getImageData().height;
+					int scaledWidthImage = (int)(widthImage * convertedScale);
+					int scaledHeightImage = (int)(heightImage * convertedScale);
+
+					e.gc.drawImage(imageGuide, 0, 0,
+							widthImage, heightImage,
+							(lcdCanvas.getSize().x - scaledWidthImage) / 2,
+							(lcdCanvas.getSize().y - scaledHeightImage) / 2,
+							scaledWidthImage, scaledHeightImage);
+
+					imageGuide = null;
+				} else {
+					/* draw finger image for when rotate while use multitouch */
 					if (finger.getMultiTouchEnable() == 1 ||
 							finger.getMultiTouchEnable() == 2) {
-						finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
-								currentState.getCurrentResolutionHeight(), 
-								currentState.getCurrentScale(), 
+						finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(),
+								currentState.getCurrentResolutionHeight(),
+								currentState.getCurrentScale(),
 								currentState.getCurrentRotationId());
 					}
 
 					finger.drawImage(e, currentState.getCurrentAngle());
-					return;
 				}
-
-				Transform transform = new Transform(lcdCanvas.getDisplay());
-				Transform oldtransform = new Transform(lcdCanvas.getDisplay());
-				transform.rotate(currentState.getCurrentAngle());
-
-				if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
-					int temp;
-					temp = x;
-					x = y;
-					y = temp;
-					transform.translate(0, y * -1);
-				} else if (currentState.getCurrentAngle() == 180) { /* reverse portrait */
-					transform.translate(x * -1, y * -1);
-				} else if (currentState.getCurrentAngle() == -90) { /* landscape */
-					int temp;
-					temp = x;
-					x = y;
-					y = temp;
-					transform.translate(x * -1, 0);
-				}
-
-				/* draw finger image for when rotate while use multitouch */
-				if (finger.getMultiTouchEnable() == 1) {
-					finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(), 
-							currentState.getCurrentResolutionHeight(), 
-							currentState.getCurrentScale(), 
-							currentState.getCurrentRotationId());
-				}
-				/* save current transform as "oldtransform" */
-				e.gc.getTransform(oldtransform);
-				/* set to new transfrom */
-				e.gc.setTransform(transform);
-				e.gc.drawImage(pollThread.imageFramebuffer,
-						0, 0, pollThread.widthFB, pollThread.heightFB,
-						0, 0, x, y);
-				/* back to old transform */
-				e.gc.setTransform(oldtransform);
-
-				transform.dispose();
-				finger.drawImage(e, currentState.getCurrentAngle());
 			}
 		});
 
@@ -361,6 +376,18 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		synchronized(pollThread) {
 			pollThread.notify();
 		}
+	}
+
+	@Override
+	public void drawImageToDisplay(Image image) {
+		imageGuide = image;
+
+		Display.getDefault().syncExec(new Runnable() {
+			@Override
+			public void run() {
+				lcdCanvas.redraw();
+			}
+		});
 	}
 
 	@Override

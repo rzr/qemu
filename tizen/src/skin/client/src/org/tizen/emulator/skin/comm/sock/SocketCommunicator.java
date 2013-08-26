@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.swt.graphics.Image;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -52,6 +53,7 @@ import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
+import org.tizen.emulator.skin.image.ImageRegistry.ResourceImageName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
@@ -419,7 +421,12 @@ public class SocketCommunicator implements ICommunicator {
 				case DRAW_BLANK_GUIDE: {
 					logger.info("received DRAW_BLANK_GUIDE from QEMU.");
 
-					//TODO:
+					Image imageGuide = skin.getImageRegistry().getResourceImage(
+							ResourceImageName.RESOURCE_BLANK_GUIDE);
+					if (imageGuide != null) {
+						skin.drawImageToDisplay(imageGuide);
+					}
+
 					break;
 				}
 				case SHUTDOWN: {

@@ -64,7 +64,7 @@ static int sdl_alteration;
 
 static int sdl_skip_update;
 static int blank_cnt;
-#define MAX_BLANK_FRAME_CNT 100
+#define MAX_BLANK_FRAME_CNT 120
 #define BLANK_GUIDE_IMAGE_PATH "../images/"
 #define BLANK_GUIDE_IMAGE_NAME "blank-guide.png"
 

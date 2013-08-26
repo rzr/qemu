@@ -48,6 +48,8 @@
 
 #ifndef CONFIG_USE_SHM
 #include "maru_sdl.h"
+#else
+#include "maru_shm.h"
 #endif
 
 #ifdef CONFIG_WIN32
@@ -937,7 +939,9 @@ static void* run_skin_server(void* args)
                     }
 
 #ifndef CONFIG_USE_SHM
-                    maruskin_sdl_resize(); // send sdl event
+                    maruskin_sdl_resize(); /* send sdl event */
+#else
+                    maruskin_shm_resize();
 #endif
                     if (is_rotate) {
                         send_rotation_event( rotation_type );

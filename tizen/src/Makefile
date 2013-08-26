@@ -107,7 +107,9 @@ install: all
 	cp -pP skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 	cp -pP skin/client/lib/swt.jar $(EMUL_DIR)/bin
 	cp -pPR skin/client/skins $(EMUL_DIR)
+ifndef CONFIG_USE_SHM
 	cp -pP skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images
+endif
 
 # check capabilities of OpenGL and Webcam
 	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
@@ -204,7 +206,9 @@ install_dibs: all_dibs
 # resources and jar for skin
 	cp -pP skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
 	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
+ifndef CONFIG_USE_SHM
 	cp -pP skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images
+endif
 
 # check capabilities of OpenGL and Webcam
 	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin

@@ -49,7 +49,7 @@ static int skin_shmid;
 static int shm_skip_update;
 static int shm_skip_count;
 static int blank_cnt;
-#define MAX_BLANK_FRAME_CNT 100
+#define MAX_BLANK_FRAME_CNT 120
 
 extern pthread_mutex_t mutex_draw_display;
 extern int draw_display_state;
@@ -265,3 +265,7 @@ void maruskin_shm_quit(void)
     }
 }
 
+void maruskin_shm_resize(void)
+{
+    shm_skip_update = 0;
+}

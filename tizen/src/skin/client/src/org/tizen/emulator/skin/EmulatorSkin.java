@@ -55,6 +55,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
@@ -1116,6 +1117,10 @@ public class EmulatorSkin {
 	}
 
 	public void updateDisplay() {
+		/* abstract */
+	}
+
+	public void drawImageToDisplay(Image image) {
 		/* abstract */
 	}
 
