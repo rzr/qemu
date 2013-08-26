@@ -1588,7 +1588,7 @@ public class EmulatorSkin {
 			public void widgetSelected(SelectionEvent e) {
 				logger.info("Open the about dialog");
 
-				AboutDialog dialog = new AboutDialog(shell, config);
+				AboutDialog dialog = new AboutDialog(shell, config, imageRegistry);
 				dialog.open();
 			}
 		};

@@ -205,12 +205,10 @@ public class ImageRegistry {
 		return id + ":" + imageType.ordinal();
 	}
 
-	public ImageData getSkinImageData(Short id, ImageType imageType) {
+	public Image getSkinImage(Short id, ImageType imageType) {
 		Image image = skinImageMap.get(makeKey(id, imageType));
 
-		if (null != image) {
-			return image.getImageData();
-		} else {
+		if (image == null) {
 			RotationsType rotations = dbiContents.getRotations();
 
 			if (null == rotations) {
@@ -218,7 +216,7 @@ public class ImageRegistry {
 				return null;
 			}
 
-			logger.info("get image data of skin from " + skinPath);
+			logger.info("get skin image from " + skinPath);
 
 			RotationType targetRotation = SkinRotation.getRotation(id);
 			List<RotationType> rotationList = rotations.getRotation();
@@ -245,14 +243,10 @@ public class ImageRegistry {
 				}
 			}
 
-			Image registeredImage = skinImageMap.get(makeKey(id, imageType));
-
-			if (null != registeredImage) {
-				return registeredImage.getImageData();
-			}
+			image = skinImageMap.get(makeKey(id, imageType));
 		}
 
-		return null;
+		return image;
 	}
 
 	public Image getResourceImage(ResourceImageName name) {

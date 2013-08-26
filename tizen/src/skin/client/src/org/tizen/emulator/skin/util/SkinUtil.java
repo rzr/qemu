@@ -194,11 +194,10 @@ public class SkinUtil {
 		return false;
 	}
 
-	public static void trimShell( Shell shell, Image image ) {
-
-		// trim transparent pixels in image. especially, corner round areas.
-
-		if ( null == image ) {
+	public static void trimShell(Shell shell, Image image) {
+		/* trim transparent pixels in image.
+		 * especially, corner round areas. */
+		if (null == image) {
 			return;
 		}
 
@@ -208,24 +207,22 @@ public class SkinUtil {
 		int height = imageData.height;
 
 		Region region = new Region();
-		region.add( new Rectangle( 0, 0, width, height ) );
+		region.add(new Rectangle(0, 0, width, height));
 
-		for ( int i = 0; i < width; i++ ) {
-			for ( int j = 0; j < height; j++ ) {
-				int alpha = imageData.getAlpha( i, j );
-				if ( 0 == alpha ) {
-					region.subtract( i, j, 1, 1 );
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				int alpha = imageData.getAlpha(i, j);
+				if (0 == alpha) {
+					region.subtract(i, j, 1, 1);
 				}
 			}
 		}
 
-		shell.setRegion( region );
-
+		shell.setRegion(region);
 	}
 
 	public static void trimShell(Shell shell, Image image,
 			int left, int top, int width, int height) {
-
 		if (null == image) {
 			return;
 		}
@@ -283,26 +280,24 @@ public class SkinUtil {
 	public static Image createScaledImage(ImageRegistry imageRegistry,
 			Shell shell, short rotationId, int scale, ImageType type) {
 
-		ImageData originalImageData = imageRegistry.getSkinImageData( rotationId, type );
-
-		if ( null == originalImageData ) {
+		Image imageOrigin = imageRegistry.getSkinImage(rotationId, type);
+		if (imageOrigin == null) {
 			return null;
 		}
 
-		ImageData imageData = (ImageData) originalImageData.clone();
+		ImageData imageDataSrc = imageOrigin.getImageData();
+		ImageData imageDataDst = (ImageData) imageDataSrc.clone();
 
-		float convertedScale = convertScale( scale );
+		float convertedScale = convertScale(scale);
 
-		int width = (int) ( originalImageData.width * convertedScale );
-		int height = (int) ( originalImageData.height * convertedScale );
-		imageData = imageData.scaledTo( width, height );
+		int width = (int) (imageDataSrc.width * convertedScale);
+		int height = (int) (imageDataSrc.height * convertedScale);
+		imageDataDst = imageDataDst.scaledTo(width, height);
 
-		Image image = new Image( shell.getDisplay(), imageData );
-		return image;
-
+		return new Image(shell.getDisplay(), imageDataDst);
 	}
 
-	public static float convertScale( int scale ) {
+	public static float convertScale(int scale) {
 		return (float) scale / SCALE_CONVERTER;
 	}
 

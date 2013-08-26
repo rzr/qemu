@@ -51,6 +51,8 @@ import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.image.ImageRegistry;
+import org.tizen.emulator.skin.image.ImageRegistry.ResourceImageName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.StringUtil;
@@ -70,15 +72,18 @@ public class AboutDialog extends SkinDialog {
 
 	private Image aboutImage;
 	private EmulatorConfig config;
+	private ImageRegistry imageRegistry;
 
 	/**
 	 *  Constructor
 	 */
-	public AboutDialog(Shell parent, EmulatorConfig config) {
+	public AboutDialog(Shell parent,
+			EmulatorConfig config, ImageRegistry imageRegistry) {
 		super(parent, "About Tizen Emulator",
 				SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
 		this.config = config;
+		this.imageRegistry = imageRegistry;
 	}
 
 	private GridLayout getNopaddedGridLayout(int numColumns, boolean makeColumnEqualWidth) {
@@ -129,8 +134,7 @@ public class AboutDialog extends SkinDialog {
 		compositeLeft.setLayout(getNopaddedGridLayout(1, false));
 
 		Label imageLabel = new Label(compositeLeft, SWT.NONE);
-		aboutImage = new Image(shell.getDisplay(),
-				this.getClass().getClassLoader().getResourceAsStream("images/about_Tizen_SDK.png"));
+		aboutImage = imageRegistry.getResourceImage(ResourceImageName.RESOURCE_ABOUT);
 		imageLabel.setImage(aboutImage);
 
 		/* right side */
@@ -166,10 +170,6 @@ public class AboutDialog extends SkinDialog {
 
 		/* SDK version */
 		Text versionText = new Text(compositeRight, SWT.NONE);
-		/*String version = getValue(properties, PROP_KEY_VERSION);
-		if (version.isEmpty()) {
-			version = "Not identified";
-		}*/
 		String version = config.getSkinProperty(
 				EmulatorConfig.SkinInfoConstants.SDK_VERSION_NAME);
 
@@ -200,7 +200,7 @@ public class AboutDialog extends SkinDialog {
 		visit.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetDefaultSelected(SelectionEvent arg0) {
-				//do nothing
+				/* do nothing */
 			}
 
 			@Override
