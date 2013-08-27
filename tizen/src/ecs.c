@@ -1255,7 +1255,7 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
 static int ecs_loop(ECS_State *cs) {
 	int i, nfds;
 
-	nfds = epoll_wait(cs->epoll_fd, cs->events, MAX_EVENTS, 0);
+	nfds = epoll_wait(cs->epoll_fd, cs->events, MAX_EVENTS, 100);
 	if (0 == nfds) {
 		return 0;
 	}
@@ -1410,7 +1410,7 @@ static void* ecs_initialize(void* args) {
 	if (0 > ret) {
 		LOG("socket resource is full.");
 		port = -1;
-		return ret;
+		return NULL;
 	}
 
 	port_setting = 1;
