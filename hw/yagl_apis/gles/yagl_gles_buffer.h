@@ -47,6 +47,13 @@ struct yagl_gles_buffer
     GLenum usage;
 
     bool was_bound;
+
+    bool cached_minmax_idx;
+    GLenum cached_type;
+    GLint cached_offset;
+    GLint cached_count;
+    uint32_t cached_min_idx;
+    uint32_t cached_max_idx;
 };
 
 struct yagl_gles_buffer

@@ -218,6 +218,8 @@ void yagl_gles_buffer_set_data(struct yagl_gles_buffer *buffer,
     yagl_range_list_add(&buffer->default_part.range_list, 0, buffer->size);
     yagl_range_list_add(&buffer->fixed_part.range_list, 0, buffer->size);
     yagl_range_list_add(&buffer->byte_part.range_list, 0, buffer->size);
+
+    buffer->cached_minmax_idx = false;
 }
 
 bool yagl_gles_buffer_update_data(struct yagl_gles_buffer *buffer,
@@ -238,6 +240,8 @@ bool yagl_gles_buffer_update_data(struct yagl_gles_buffer *buffer,
     yagl_range_list_add(&buffer->default_part.range_list, offset, size);
     yagl_range_list_add(&buffer->fixed_part.range_list, offset, size);
     yagl_range_list_add(&buffer->byte_part.range_list, offset, size);
+
+    buffer->cached_minmax_idx = false;
 
     return true;
 }
@@ -261,6 +265,15 @@ bool yagl_gles_buffer_get_minmax_index(struct yagl_gles_buffer *buffer,
 
     if ((offset < 0) || (count <= 0) || ((offset + (count * index_size)) > buffer->size)) {
         return false;
+    }
+
+    if (buffer->cached_minmax_idx &&
+        (buffer->cached_type == type) &&
+        (buffer->cached_offset == offset) &&
+        (buffer->cached_count == count)) {
+        *min_idx = buffer->cached_min_idx;
+        *max_idx = buffer->cached_max_idx;
+        return true;
     }
 
     for (i = 0; i < count; ++i) {
@@ -288,6 +301,13 @@ bool yagl_gles_buffer_get_minmax_index(struct yagl_gles_buffer *buffer,
             *max_idx = idx;
         }
     }
+
+    buffer->cached_minmax_idx = true;
+    buffer->cached_type = type;
+    buffer->cached_offset = offset;
+    buffer->cached_count = count;
+    buffer->cached_min_idx = *min_idx;
+    buffer->cached_max_idx = *max_idx;
 
     return true;
 }
