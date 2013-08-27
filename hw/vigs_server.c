@@ -479,21 +479,36 @@ void vigs_server_update_display(struct vigs_server *server)
         exit(1);
     }
 
-    for (i = 0; i < root_sfc->ws_sfc->height; ++i) {
-        uint8_t *src = sfc_data;
-        uint8_t *dst = display_data;
-
+    if (display_stride == root_sfc->stride) {
         switch (root_sfc->format) {
         case vigsp_surface_bgrx8888:
         case vigsp_surface_bgra8888:
-            memcpy(dst, src, root_sfc->ws_sfc->width * 4);
+            memcpy(display_data,
+                   sfc_data,
+                   root_sfc->ws_sfc->height * display_stride);
             break;
         default:
             assert(false);
             VIGS_LOG_CRITICAL("unknown format: %d", root_sfc->format);
             exit(1);
         }
-        sfc_data += root_sfc->stride;
-        display_data += display_stride;
+    } else {
+        for (i = 0; i < root_sfc->ws_sfc->height; ++i) {
+            uint8_t *src = sfc_data;
+            uint8_t *dst = display_data;
+
+            switch (root_sfc->format) {
+            case vigsp_surface_bgrx8888:
+            case vigsp_surface_bgra8888:
+                memcpy(dst, src, root_sfc->ws_sfc->width * 4);
+                break;
+            default:
+                assert(false);
+                VIGS_LOG_CRITICAL("unknown format: %d", root_sfc->format);
+                exit(1);
+            }
+            sfc_data += root_sfc->stride;
+            display_data += display_stride;
+        }
     }
 }
