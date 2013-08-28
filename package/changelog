@@ -1,3 +1,6 @@
+* 1.5.83
+- apply emulator-lib-dev package
+== Munkyu Im <munkyu.im@samsung.com> 2013-08-28
 * 1.5.82
 - remove sdb notification
 == Munkyu Im <munkyu.im@samsung.com> 2013-08-26

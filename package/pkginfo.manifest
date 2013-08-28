@@ -1,4 +1,4 @@
-Version: 1.5.82
+Version: 1.5.83
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
 Source: emulator
 
@@ -71,7 +71,7 @@ Description: Tizen x86 Emulator
 Package: emulator-qemu-x86
 OS: macos-64
 Build-host-os: macos-64
-Build-dependency: emulator-lib [ macos-64 ]
+Build-dependency: emulator-lib [ macos-64 ], emulator-lib-dev [ macos-64 ]
 Install-dependency: emulator-kernel-x86 [ macos-64 ], vgabios [ macos-64 ]
 Description: Tizen x86 Emulator
 

@@ -163,6 +163,7 @@ ifdef CONFIG_DARWIN
 		install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libpixman-1.0.dylib @loader_path/libpixman-1.0.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \
@@ -264,6 +265,7 @@ ifdef CONFIG_DARWIN
 		install_name_tool -change /opt/local/lib/libz.1.dylib @loader_path/libz.1.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change /opt/local/lib/libpixman-1.0.dylib @loader_path/libpixman-1.0.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \
