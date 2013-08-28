@@ -1166,20 +1166,31 @@ static GLuint translate_id(GLsizei n, GLenum type, const GLvoid *list)
     }
 }
 
-GLState *_create_context(ProcessState *process, int fake_ctxt, int fake_shareList)
+static GLState *_create_context(ProcessState *process, int fake_ctxt)
 {
-    // FIXMEIM - realloc? really?
-    process->glstates = g_realloc(process->glstates,
-                                  (process->nb_states + 1) * sizeof(GLState *));
+    GLState *state = g_try_malloc0(sizeof(GLState));
 
-    process->glstates[process->nb_states] = g_malloc(sizeof(GLState));
-    memset(process->glstates[process->nb_states], 0, sizeof(GLState));
+    if (state) {
+        state->ref = 1;
+        state->fake_ctxt = fake_ctxt;
+        init_gl_state(state);
 
-    process->glstates[process->nb_states]->ref = 1;
-    process->glstates[process->nb_states]->fake_ctxt = fake_ctxt;
-    process->glstates[process->nb_states]->fake_shareList = fake_shareList;
+        // FIXMEIM - realloc? really?
+        process->glstates = g_realloc(process->glstates,
+                (process->nb_states + 1) * sizeof(GLState *));
 
-    init_gl_state(process->glstates[process->nb_states]);
+        process->glstates[process->nb_states] = state;
+
+        process->nb_states++;
+    }
+
+    DEBUGF("state %p fake_ctxt %08x process->nb_states %d\n", state, fake_ctxt, process->nb_states);
+    return state;
+}
+
+static void set_context_sharelist(ProcessState *process, GLState *state, int fake_shareList)
+{
+    state->fake_shareList = fake_shareList;
 
     if (fake_shareList) {
         int i;
@@ -1187,25 +1198,16 @@ GLState *_create_context(ProcessState *process, int fake_ctxt, int fake_shareLis
         for (i = 0; i < process->nb_states; i++) {
             if (process->glstates[i]->fake_ctxt == fake_shareList) {
                 process->glstates[i]->ref++;
-                process->glstates[process->nb_states]->textureAllocator =
-                    process->glstates[i]->textureAllocator;
-                process->glstates[process->nb_states]->tabTextures =
-                    process->glstates[i]->tabTextures;
-                process->glstates[process->nb_states]->bufferAllocator =
-                    process->glstates[i]->bufferAllocator;
-                process->glstates[process->nb_states]->tabBuffers =
-                    process->glstates[i]->tabBuffers;
-                process->glstates[process->nb_states]->listAllocator =
-                    process->glstates[i]->listAllocator;
-                process->glstates[process->nb_states]->tabLists =
-                    process->glstates[i]->tabLists;
+                state->textureAllocator = process->glstates[i]->textureAllocator;
+                state->tabTextures      = process->glstates[i]->tabTextures;
+                state->bufferAllocator  = process->glstates[i]->bufferAllocator;
+                state->tabBuffers       = process->glstates[i]->tabBuffers;
+                state->listAllocator    = process->glstates[i]->listAllocator;
+                state->tabLists         = process->glstates[i]->tabLists;
                 break;
             }
         }
     }
-    process->nb_states++;
-
-    return process->glstates[process->nb_states-1];
 }
 
 GLState *get_glstate_for_fake_ctxt(ProcessState *process, int fake_ctxt)
@@ -1687,23 +1689,31 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                         fake_shareList);
 
             GLState *shareListState = get_glstate_for_fake_ctxt(process, fake_shareList);
-            int fake_ctxt = ++process->next_available_context_number;
 
-            ret.i = fake_ctxt;
+            ret.i = 0;
 
             // Work out format flags from visual id
             int formatFlags = GLO_FF_DEFAULT;
             if (visualid>=0 && visualid<DIM(FBCONFIGS))
-              formatFlags = FBCONFIGS[visualid].formatFlags;
+                formatFlags = FBCONFIGS[visualid].formatFlags;
 
-            GLState *state = _create_context(process, fake_ctxt, fake_shareList);
-            state->context = glo_context_create(formatFlags,
-                                                (GloContext*)shareListState?shareListState->context:0);
-
-            DEBUGF( " created context %p for %08x\n", state, fake_ctxt);
+            GloContext *context = glo_context_create(formatFlags,
+                                            (GloContext*)shareListState ? shareListState->context : 0);
+            if (context) {
+                GLState *state = _create_context(process, ++process->next_available_context_number);
+                if (state) {
+                    state->context = context;
+                    set_context_sharelist(process, state, fake_shareList);
+                    ret.i = state->fake_ctxt;
+                } else {
+                    DEBUGF("Failed to allocate state context for format %08x\n", formatFlags);
+                    glo_context_destroy(context);
+                }
+            } else {
+                DEBUGF("Failed to create context for format %08x\n", formatFlags);
+            }
             break;
         }
-
 
     case glXCreateNewContext_func:
         {
@@ -1716,15 +1726,21 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 int fake_shareList = args[3];
                 GLState *shareListState = get_glstate_for_fake_ctxt(process, fake_shareList);
 
-                process->next_available_context_number++;
-                int fake_ctxt = process->next_available_context_number;
-                ret.i = fake_ctxt;
-
-                DEBUGF( "fake_ctxt = %d\n", fake_ctxt);
-
-                GLState *state = _create_context(process, fake_ctxt, fake_shareList);
-                state->context = glo_context_create(fbconfig->formatFlags,
-                                                    shareListState?shareListState->context:0); // FIXME GW get from fbconfig
+                GloContext *context = glo_context_create(fbconfig->formatFlags,
+                                                (GloContext*)shareListState ? shareListState->context : 0);  // FIXME GW get from fbconfig
+                if (context) {
+                    GLState *state = _create_context(process, ++process->next_available_context_number);
+                    if (state) {
+                        state->context = context;
+                        set_context_sharelist(process, state, fake_shareList);
+                        ret.i = state->fake_ctxt;
+                    } else {
+                        DEBUGF("Failed to allocate state context for format %08x", fbconfig->formatFlags);
+                        glo_context_destroy(context);
+                    }
+                } else {
+                    DEBUGF("Failed to create context for format %08x", fbconfig->formatFlags);
+                }
             }
             break;
         }
