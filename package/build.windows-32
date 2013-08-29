@@ -35,12 +35,22 @@ prepare()
 
 	
 	PURIFIED_ROOTDIR=`TEMP=\`echo "${ROOTDIR}" | cut -c-2 | sed "s/[:/]//g" | awk {'print tolower ($_)'}\`; echo \`echo "${ROOTDIR}" | sed "s/^../\/${TEMP}/"\``
-	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant-1.8.3/bin
+	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant_1.9.2/bin:$PURIFIED_ROOTDIR/SDL_1.2.15/bin:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/bin:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/bin:$PURIFIED_ROOTDIR/pixman_0.30.0/bin
 	export PATH
 
-	export PKG_CONFIG_PATH=$ROOTDIR/lib/pkgconfig
-	BUILD_CFLAGS=--extra-cflags=-I$ROOTDIR/include
-	BUILD_LDFLAGS=--extra-ldflags=-L$ROOTDIR/lib
+	export PKG_CONFIG_PATH=$ROOTDIR/lib/pkgconfig:$ROOTDIR/SDL_1.2.15/lib/pkgconfig:$ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig
+	BUILD_CFLAGS=--extra-cflags="-I$ROOTDIR/include "
+	BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/apache-ant_1.9.2/include "
+	BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/SDL_1.2.15/include "
+	BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/gtk-bundle_2.24.10/include "
+	BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/libcurl-4_1.0.1/include "
+	BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/pixman_0.30.0/include"
+	BUILD_LDFLAGS=--extra-ldflags="-L$ROOTDIR/lib "
+	BUILD_LDFLAGS=--extra-ldflags="-L$ROOTDIR/apache-ant_1.9.2/lib "
+	BUILD_LDFLAGS=--extra-ldflags="-L$ROOTDIR/SDL_1.2.15/lib "
+	BUILD_LDFLAGS=--extra-ldflags="-L$ROOTDIR/gtk-bundle_2.24.10/lib "
+	BUILD_LDFLAGS=--extra-ldflags="-L$ROOTDIR/libcurl-4_1.0.1/lib "
+	BUILD_LDFLAGS=--extra-ldflags="-L$ROOTDIR/pixman_0.30.0/lib"
 }
 
 # build
