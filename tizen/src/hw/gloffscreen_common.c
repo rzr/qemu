@@ -30,7 +30,7 @@
 #include <windows.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#elif __APPLE__
+#elif defined __APPLE__
 #include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
