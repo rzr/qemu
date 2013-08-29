@@ -374,6 +374,11 @@ static char *strip_extensions(const char *avail, const char *ext[]) {
   return supported;
 }
 
+extern void vmgl_context_switch(ProcessStruct *p, int switch_gl_context);
+extern ProcessStruct *vmgl_get_process(pid_t pid);
+extern void gl_disconnect(ProcessState *process);
+extern int do_function_call(ProcessState *process, int func_number, unsigned long *args, char *ret_string);
+
 static const char *glx_ext_supported[] = {
     "GLX_ARB_multisample",
     0
