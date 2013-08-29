@@ -127,10 +127,16 @@ public class EmulatorSkin {
 	}
 
 	public enum SkinBasicColor {
-		BLUE(0, 174, 239), YELLOW(246, 226, 0), LIME(0, 246, 12), VIOLET(168,
-				43, 255), ORANGE(246, 110, 0), MAGENTA(245, 48, 233), PURPLE(
-				94, 73, 255), GREEN(179, 246, 0), RED(245, 48, 48), CYON(29,
-				223, 221);
+		BLUE(0, 174, 239),
+		YELLOW(246, 226, 0),
+		LIME(0, 246, 12),
+		VIOLET(168, 43, 255),
+		ORANGE(246, 110, 0),
+		MAGENTA(245, 48, 233),
+		PURPLE(94, 73, 255),
+		GREEN(179, 246, 0),
+		RED(245, 48, 48),
+		CYON(29, 223, 221);
 
 		private int channelRed;
 		private int channelGreen;
@@ -190,10 +196,8 @@ public class EmulatorSkin {
 
 	/**
 	 * @brief constructor
-	 * @param config
-	 *            : configuration of emulator skin
-	 * @param isOnTop
-	 *            : always on top flag
+	 * @param config : configuration of emulator skin
+	 * @param isOnTop : always on top flag
 	 */
 	protected EmulatorSkin(EmulatorConfig config, SkinInformation skinInfo,
 			int displayCanvasStyle, boolean isOnTop) {
@@ -853,7 +857,6 @@ public class EmulatorSkin {
 
 		/* keyboard event */
 		canvasKeyListener = new KeyListener() {
-
 			private KeyEvent previous;
 			private boolean disappearEvent = false;
 			private int disappearKeycode = 0;
@@ -863,8 +866,16 @@ public class EmulatorSkin {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				if (logger.isLoggable(Level.INFO)) {
-					logger.info("'" + e.character + "':" + e.keyCode + ":"
-							+ e.stateMask + ":" + e.keyLocation);
+					String character =
+							(e.character == '\0') ? "\\0" :
+							(e.character == '\n') ? "\\n" :
+							(e.character == '\r') ? "\\r" :
+							("" + e.character);
+
+					logger.info("'" + character + "':"
+							+ e.keyCode + ":"
+							+ e.stateMask + ":"
+							+ e.keyLocation);
 				} else if (logger.isLoggable(Level.FINE)) {
 					logger.fine(e.toString());
 				}
@@ -872,31 +883,79 @@ public class EmulatorSkin {
 				int keyCode = e.keyCode;
 				int stateMask = e.stateMask;
 
-				previous = null;
+				if (SwtUtil.isWindowsPlatform() == true) {
+					if (disappearEvent == true) {
+						/* generate a disappeared key event in Windows */
+						disappearEvent = false;
 
-				/* generate a disappeared key event in Windows */
-				if (SwtUtil.isWindowsPlatform() && disappearEvent) {
-					disappearEvent = false;
-					if (isMetaKey(e.keyCode) && e.character != '\0') {
-						logger.info("send disappear release : keycode="
-								+ disappearKeycode + ", stateMask="
-								+ disappearStateMask + ", keyLocation="
-								+ disappearKeyLocation);
+						if (isMetaKey(keyCode) && e.character != '\0') {
+							logger.info("send disappear release : keycode="
+									+ disappearKeycode + ", stateMask="
+									+ disappearStateMask + ", keyLocation="
+									+ disappearKeyLocation);
 
-						KeyEventData keyEventData = new KeyEventData(
-								KeyEventType.RELEASED.value(),
-								disappearKeycode, disappearStateMask,
-								disappearKeyLocation);
-						communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT,
-								keyEventData, false);
+							KeyEventData keyEventData = new KeyEventData(
+									KeyEventType.RELEASED.value(),
+									disappearKeycode, disappearStateMask,
+									disappearKeyLocation);
+							communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT,
+									keyEventData, false);
 
-						removePressedKeyFromList(keyEventData);
+							removePressedKeyFromList(keyEventData);
 
-						disappearKeycode = 0;
-						disappearStateMask = 0;
-						disappearKeyLocation = 0;
+							disappearKeycode = 0;
+							disappearStateMask = 0;
+							disappearKeyLocation = 0;
+						}
 					}
-				}
+
+					if (previous != null) {
+						KeyEventData keyEventData = null;
+
+						/* separate a merged release event */
+						if (previous.keyCode == SWT.CR &&
+								(keyCode & SWT.KEYCODE_BIT) != 0 && e.character == SWT.CR) {
+							logger.info("send upon release : keycode=" + (int)SWT.CR);
+
+							keyEventData = new KeyEventData(
+									KeyEventType.RELEASED.value(),
+									SWT.CR, 0, 0);
+						} else if (previous.keyCode == SWT.SPACE &&
+								(keyCode & SWT.KEYCODE_BIT) != 0 &&
+								(e.character == SWT.SPACE)) {
+							logger.info("send upon release : keycode=" + (int)SWT.SPACE);
+
+							keyEventData = new KeyEventData(
+									KeyEventType.RELEASED.value(),
+									SWT.SPACE, 0, 0);
+						} else if (previous.keyCode == SWT.TAB &&
+								(keyCode & SWT.KEYCODE_BIT) != 0 &&
+								(e.character == SWT.TAB)) {
+							logger.info("send upon release : keycode=" + (int)SWT.TAB);
+
+							keyEventData = new KeyEventData(
+									KeyEventType.RELEASED.value(),
+									SWT.TAB, 0, 0);
+						} else if (previous.keyCode == SWT.KEYPAD_CR &&
+								(keyCode & SWT.KEYCODE_BIT) != 0 &&
+								(e.character == SWT.CR) &&
+								(keyCode != SWT.KEYPAD_CR)) {
+							logger.info("send upon release : keycode=" + (int)SWT.KEYPAD_CR);
+
+							keyEventData = new KeyEventData(
+									KeyEventType.RELEASED.value(),
+									SWT.KEYPAD_CR, 0, 2);
+						}
+
+						if (keyEventData != null) {
+							communicator.sendToQEMU(SendCommand.SEND_KEY_EVENT,
+									keyEventData, false);
+							removePressedKeyFromList(keyEventData);
+						}
+					}
+				} /* end isWindowsPlatform */
+
+				previous = null;
 
 				keyReleasedDelivery(keyCode, stateMask, e.keyLocation);
 			}
@@ -912,9 +971,9 @@ public class EmulatorSkin {
 				 * So, we generate a release key event by ourselves that had
 				 * been disappeared.
 				 */
-				if (SwtUtil.isWindowsPlatform()) {
+				if (SwtUtil.isWindowsPlatform() == true) {
 					if (null != previous) {
-						if (previous.keyCode != e.keyCode) {
+						if (previous.keyCode != keyCode) {
 
 							if (isMetaKey(previous.keyCode)) {
 								disappearEvent = true;
@@ -922,10 +981,8 @@ public class EmulatorSkin {
 								disappearStateMask = stateMask;
 								disappearKeyLocation = e.keyLocation;
 							} else {
-								/*
-								 * three or more keys were pressed at the same
-								 * time
-								 */
+								/* three or more keys were pressed at the
+								 * same time */
 								if (disappearEvent == true) {
 									logger.info("replace the disappearEvent : "
 											+ disappearKeycode + "->" + keyCode);
@@ -939,8 +996,14 @@ public class EmulatorSkin {
 								int previousStateMask = previous.stateMask;
 
 								if (logger.isLoggable(Level.INFO)) {
+									String character =
+											(previous.character == '\0') ? "\\0" :
+											(previous.character == '\n') ? "\\n" :
+											(previous.character == '\r') ? "\\r" :
+											("" + previous.character);
+
 									logger.info("send previous release : '"
-											+ previous.character + "':"
+											+ character + "':"
 											+ previous.keyCode + ":"
 											+ previous.stateMask + ":"
 											+ previous.keyLocation);
@@ -965,8 +1028,16 @@ public class EmulatorSkin {
 				} /* end isWindowsPlatform */
 
 				if (logger.isLoggable(Level.INFO)) {
-					logger.info("'" + e.character + "':" + e.keyCode + ":"
-							+ e.stateMask + ":" + e.keyLocation);
+					String character =
+							(e.character == '\0') ? "\\0" :
+							(e.character == '\n') ? "\\n" :
+							(e.character == '\r') ? "\\r" :
+							("" + e.character);
+
+					logger.info("'" + character + "':"
+							+ e.keyCode + ":"
+							+ e.stateMask + ":"
+							+ e.keyLocation);
 				} else if (logger.isLoggable(Level.FINE)) {
 					logger.fine(e.toString());
 				}
@@ -975,7 +1046,6 @@ public class EmulatorSkin {
 
 				previous = e;
 			}
-
 		};
 
 		lcdCanvas.addKeyListener(canvasKeyListener);
@@ -1729,6 +1799,10 @@ public class EmulatorSkin {
 	}
 
 	public void keyForceRelease(boolean isMetaFilter) {
+		if (isShutdownRequested == true) {
+			return;
+		}
+
 		/* key event compensation */
 		if (pressedKeyEventList.isEmpty() == false) {
 			for (KeyEventData data : pressedKeyEventList) {

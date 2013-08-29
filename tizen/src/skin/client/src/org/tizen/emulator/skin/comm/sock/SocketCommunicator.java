@@ -233,6 +233,7 @@ public class SocketCommunicator implements ICommunicator {
 			dis = new DataInputStream(socket.getInputStream());
 			dos = new DataOutputStream(socket.getOutputStream());
 
+			sendThread.setDaemon(true);
 			sendThread.start();
 
 			int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
