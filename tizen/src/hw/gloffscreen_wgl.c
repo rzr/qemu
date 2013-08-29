@@ -112,6 +112,7 @@ int glo_initialised(void) {
     return glo_inited;
 }
 
+#if 0
 /* Sanity test of the host GL capabilities to see whether the gl offscreen
  * could be well supported
  */
@@ -143,6 +144,7 @@ int glo_sanity_test (void) {
     }
     return 0;
 }
+#endif
 
 /* Initialise gloffscreen */
 int glo_init(void) {

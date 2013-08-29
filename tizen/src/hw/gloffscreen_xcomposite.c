@@ -106,12 +106,14 @@ static int x_errhandler(Display *dpy, XErrorEvent *e)
     return 0;
 }
 
+#if 0
 /* Sanity test of the host GL capabilities to see whether the gl offscreen
  * could be well supported
  */
 int glo_sanity_test (void) {
     return 0;
 }
+#endif
 
 /* Initialise gloffscreen */
 int glo_init(void) {
