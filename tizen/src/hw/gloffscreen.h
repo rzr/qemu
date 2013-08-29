@@ -125,6 +125,8 @@ extern int glo_get_glx_from_flags(int formatFlags, int glxEnum);
 /* Get the width and height from attrib_list */
 extern void glo_geometry_get_from_glx(const int* attrib_list, int* width, int* height);
 
+extern void glo_surface_release_texture(GloSurface *surface);
+
 /* In terms of speed, glReadPixels actually seems the best we can do.
  * * On Windows PFB_DRAW_TO_BITMAP is software-only.
  * * http://www.opengl.org/registry/specs/ARB/pixel_buffer_object.txt would be
