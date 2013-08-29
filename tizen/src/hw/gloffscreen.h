@@ -126,6 +126,7 @@ extern int glo_get_glx_from_flags(int formatFlags, int glxEnum);
 extern void glo_geometry_get_from_glx(const int* attrib_list, int* width, int* height);
 
 extern void glo_surface_release_texture(GloSurface *surface);
+extern void glo_surface_updatecontents(GloSurface *surface);
 
 /* In terms of speed, glReadPixels actually seems the best we can do.
  * * On Windows PFB_DRAW_TO_BITMAP is software-only.
