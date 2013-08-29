@@ -699,7 +699,7 @@ static void unbind_qsurface(GLState *state,
 }
 
 /* Find the qsurface with required drawable in all pixmap/pbuffer surfaces */
-QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLXDrawable client_drawable)
+static QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLXDrawable client_drawable)
 {
     int i;
     QGloSurface *qsurface;
@@ -937,7 +937,7 @@ static int get_server_list(ProcessState *process, unsigned int client_list)
     return server_list;
 }
 
-const GLXFBConfig *get_fbconfig(ProcessState *process, int client_fbconfig)
+static const GLXFBConfig *get_fbconfig(ProcessState *process, int client_fbconfig)
 {
     int i;
 	
@@ -1210,7 +1210,7 @@ static void set_context_sharelist(ProcessState *process, GLState *state, int fak
     }
 }
 
-GLState *get_glstate_for_fake_ctxt(ProcessState *process, int fake_ctxt)
+static GLState *get_glstate_for_fake_ctxt(ProcessState *process, int fake_ctxt)
 {
     int i;
     for (i = 0; i < process->nb_states; i++) {
@@ -1512,7 +1512,7 @@ static void mac_dump_texture()
 }
 #endif
 
-int record_fbconfig_set (ProcessState *process, const GLXFBConfig* fbconfigs, int nconfigs)
+static int record_fbconfig_set (ProcessState *process, const GLXFBConfig* fbconfigs, int nconfigs)
 {
 	int i;
 	int id;
