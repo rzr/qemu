@@ -1297,9 +1297,9 @@ void vmgl_context_switch(ProcessStruct *p, int switch_gl_context)
     }
 }
 
-static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *prevbuf)
+static const char *opengl_strtok(const char *s, int *n, char const **saveptr, char *prevbuf)
 {
-	char *start;
+	const char *start;
 	char *ret;
 	char *p;
 	int retlen;
@@ -1353,7 +1353,7 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
 
 	if (retlen == 0) {
 		*p = 0;
-		return NULL;
+		return ret;
 	}
 
 	while (retlen > 0) {
@@ -1381,7 +1381,7 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
 
 static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
 {
-	char *saveptr = NULL;
+	const char *saveptr = NULL;
 	char *sp;
 	char *p = NULL;
 
