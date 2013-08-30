@@ -1,3 +1,6 @@
+* 1.5.84
+- apply emulator-lib-dev package for windows-32
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-08-29
 * 1.5.83
 - apply emulator-lib-dev package
 == Munkyu Im <munkyu.im@samsung.com> 2013-08-28
