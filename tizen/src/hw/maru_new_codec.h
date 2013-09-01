@@ -50,15 +50,19 @@
 typedef struct CodecParam {
     int32_t     api_index;
     int32_t     ctx_index;
-    int32_t     file_index;
+    uint32_t    file_index;
     uint32_t    mem_offset;
 } CodecParam;
 
 struct video_data {
-    int width, height;
-    int fps_n, fps_d;
-    int par_n, par_d;
-    int pix_fmt, bpp;
+    int width;
+    int height;
+    int fps_n;
+    int fps_d;
+    int par_n;
+    int par_d;
+    int pix_fmt;
+    int bpp;
     int ticks_per_frame;
 };
 
@@ -80,7 +84,8 @@ typedef struct CodecContext {
     uint8_t                 *parser_buf;
     uint16_t                parser_use;
     uint16_t                occupied;
-    CodecParam              ioparam;
+    uint32_t                file_index;
+    bool                    opened;
 } CodecContext;
 
 typedef struct CodecThreadPool {
@@ -99,11 +104,13 @@ typedef struct NewCodecState {
     MemoryRegion        mmio;
 
     QEMUBH              *codec_bh;
-    QemuMutex           codec_mutex;
-    QemuMutex           codec_job_queue_mutex;
+    QemuMutex           context_mutex;
+    QemuMutex           context_queue_mutex;
+    QemuMutex           ioparam_queue_mutex;
+
     CodecThreadPool     wrk_thread;
 
-    CodecContext        codec_ctx[CODEC_CONTEXT_MAX];
+    CodecContext        context[CODEC_CONTEXT_MAX];
     CodecParam          ioparam;
 
     uint32_t            context_index;
@@ -149,8 +156,8 @@ enum media_type {
 #endif
 
 enum thread_state {
-    CODEC_TASK_INIT = 0,
-    CODEC_TASK_FIN = 0x1f,
+    CODEC_TASK_INIT     = 0,
+    CODEC_TASK_END      = 0x1f,
 };
 
 #if 0
