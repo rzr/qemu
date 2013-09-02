@@ -100,7 +100,7 @@ void ecs_json_message_parser_init(JSONMessageParser *parser,
     parser->bracket_count = 0;
     parser->tokens = qlist_new();
     parser->token_size = 0;
-	parser->opaque = opaque;
+    parser->opaque = opaque;
 
     json_lexer_init(&parser->lexer, ecs_json_message_process_token);
 }

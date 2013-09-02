@@ -10,80 +10,80 @@
 #include "ecs-json-streamer.h"
 #include "genmsg/ecs.pb-c.h"
 
-#define ECS_DEBUG	1
+#define ECS_DEBUG   1
 
 #ifdef ECS_DEBUG
-#define LOG(fmt, arg...)	\
-	do {	\
-		fprintf(stdout,"[%s-%s:%d] "fmt"\n", __TIME__, __FUNCTION__, __LINE__, ##arg);	\
-	} while (0)
+#define LOG(fmt, arg...)    \
+    do {    \
+        fprintf(stdout,"[%s-%s:%d] "fmt"\n", __TIME__, __FUNCTION__, __LINE__, ##arg);  \
+    } while (0)
 #else
 #define LOG(fmt, arg...)
 #endif
 
 #ifndef _WIN32
-#define LOG_HOME				"HOME"
-#define LOG_PATH 				"/tizen-sdk-data/emulator-vms/vms/ecs.log"
+#define LOG_HOME                "HOME"
+#define LOG_PATH                "/tizen-sdk-data/emulator/vms/ecs.log"
 #else
-#define LOG_HOME				"LOCALAPPDATA"
-#define LOG_PATH 				"\\tizen-sdk-data\\emulator-vms\\vms\\ecs.log"
+#define LOG_HOME                "LOCALAPPDATA"
+#define LOG_PATH                "\\tizen-sdk-data\\emulator\\vms\\ecs.log"
 #endif
 
-#define ECS_OPTS_NAME			"ecs"
-#define HOST_LISTEN_ADDR		"127.0.0.1"
-#define HOST_LISTEN_PORT		27000
-#define EMULATOR_SERVER_NUM		10
+#define ECS_OPTS_NAME           "ecs"
+#define HOST_LISTEN_ADDR        "127.0.0.1"
+#define HOST_LISTEN_PORT        27000
+#define EMULATOR_SERVER_NUM     10
 
-#define COMMANDS_TYPE			"type"
-#define COMMANDS_DATA			"data"
+#define COMMANDS_TYPE           "type"
+#define COMMANDS_DATA           "data"
 
 
-#define COMMAND_TYPE_INJECTOR	"injector"
-#define COMMAND_TYPE_CONTROL	"control"
-#define COMMAND_TYPE_MONITOR	"monitor"
-#define COMMAND_TYPE_DEVICE		"device"
+#define COMMAND_TYPE_INJECTOR   "injector"
+#define COMMAND_TYPE_CONTROL    "control"
+#define COMMAND_TYPE_MONITOR    "monitor"
+#define COMMAND_TYPE_DEVICE     "device"
 
-#define ECS_MSG_STARTINFO_REQ 	"startinfo_req"
-#define ECS_MSG_STARTINFO_ANS 	"startinfo_ans"
+#define ECS_MSG_STARTINFO_REQ   "startinfo_req"
+#define ECS_MSG_STARTINFO_ANS   "startinfo_ans"
 
-#define MSG_TYPE_SENSOR			"sensor"
-#define MSG_TYPE_NFC			"nfc"
+#define MSG_TYPE_SENSOR         "sensor"
+#define MSG_TYPE_NFC            "nfc"
 
-#define MSG_GROUP_STATUS		15
+#define MSG_GROUP_STATUS        15
 
-#define MSG_ACTION_ACCEL		110
-#define MSG_ACTION_GYRO			111
-#define MSG_ACTION_MAG			112
-#define MSG_ACTION_LIGHT		113
-#define MSG_ACTION_PROXI		114
+#define MSG_ACTION_ACCEL        110
+#define MSG_ACTION_GYRO         111
+#define MSG_ACTION_MAG          112
+#define MSG_ACTION_LIGHT        113
+#define MSG_ACTION_PROXI        114
 
-#define TIMER_ALIVE_S			60	
-#define TYPE_DATA_SELF			"self"
+#define TIMER_ALIVE_S           60
+#define TYPE_DATA_SELF          "self"
 
 enum sensor_level {
-	level_accel = 1,
-	level_proxi = 2,
-	level_light = 3,
-	level_gyro = 4,
-	level_geo = 5,
-	level_tilt = 12,
-	level_magnetic = 13
+    level_accel = 1,
+    level_proxi = 2,
+    level_light = 3,
+    level_gyro = 4,
+    level_geo = 5,
+    level_tilt = 12,
+    level_magnetic = 13
 };
 
-typedef unsigned short	type_length;
-typedef unsigned char	type_group;
-typedef unsigned char	type_action;
+typedef unsigned short  type_length;
+typedef unsigned char   type_group;
+typedef unsigned char   type_action;
 
-#define OUT_BUF_SIZE	4096
-#define READ_BUF_LEN 	4096
+#define OUT_BUF_SIZE    4096
+#define READ_BUF_LEN    4096
 
 
 
 typedef struct sbuf
 {
-	int _netlen;
-	int _use;
-	char _buf[4096];
+    int _netlen;
+    int _use;
+    char _buf[4096];
 }sbuf;
 
 
@@ -98,32 +98,32 @@ struct Monitor {
     QLIST_ENTRY(Monitor) entry;
 };
 
-#define MAX_EVENTS	1000
-#define MAX_FD_NUM	300
+#define MAX_EVENTS  1000
+#define MAX_FD_NUM  300
 typedef struct ECS_State {
-	int listen_fd;
+    int listen_fd;
 #ifdef CONFIG_LINUX
-	int epoll_fd;
-	struct epoll_event events[MAX_EVENTS];
+    int epoll_fd;
+    struct epoll_event events[MAX_EVENTS];
 #else
     fd_set reads;
 #endif
-	int is_unix;
-	int ecs_running;
-	QEMUTimer *alive_timer;
-	Monitor *mon;
+    int is_unix;
+    int ecs_running;
+    QEMUTimer *alive_timer;
+    Monitor *mon;
 } ECS_State;
 
 typedef struct ECS_Client {
-	int client_fd;
-	int client_id;
-	int keep_alive;
-	const char* type;
+    int client_fd;
+    int client_id;
+    int keep_alive;
+    const char* type;
 
-	sbuf sbuf;
+    sbuf sbuf;
 
-	ECS_State *cs;
-	JSONMessageParser parser;
+    ECS_State *cs;
+    JSONMessageParser parser;
     QTAILQ_ENTRY(ECS_Client) next;
 } ECS_Client;
 
@@ -171,8 +171,8 @@ bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg);
 
 
 enum{
-	CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ = 1,
-	CONTROL_COMMAND_SCREENSHOT_REQ = 2
+    CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ = 1,
+    CONTROL_COMMAND_SCREENSHOT_REQ = 2
 };
 
 // control sub messages
@@ -185,7 +185,7 @@ static QemuOptsList qemu_ecs_opts = {
     .implied_opt_name = ECS_OPTS_NAME,
     .head = QTAILQ_HEAD_INITIALIZER(qemu_ecs_opts.head),
     .desc = {
-		{
+        {
             .name = "host",
             .type = QEMU_OPT_STRING,
         },{
