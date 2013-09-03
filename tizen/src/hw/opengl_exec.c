@@ -1922,7 +1922,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                     if (glstate->current_qsurface && SURFACE_PIXMAP == glstate->current_qsurface->type )
                     {
                         /* Release it if the surface is used as texture target */
-                        glo_surface_release_texture(glstate->current_qsurface);
+                        glo_surface_release_texture(glstate->current_qsurface->surface);
                     }
 
                     process->current_state = glstate;
