@@ -33,6 +33,7 @@
 
 #include <windows.h>
 #include <wingdi.h>
+#include <glib.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include "GL/wglext.h"
@@ -101,8 +102,6 @@ PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB;
 
 /* ------------------------------------------------------------------------ */
 
-extern const char *glo_glXQueryExtensionsString(void);
-
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride,
                                     int bpp, int width, int height, void *data, int noflip);
 
@@ -150,7 +149,7 @@ int glo_sanity_test (void) {
 int glo_init(void) {
     WNDCLASSEX wcx;
     PIXELFORMATDESCRIPTOR pfd;
-	char *ext_str;
+	const char *ext_str;
 
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );

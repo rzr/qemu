@@ -821,7 +821,6 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
 			{
 				unbind_qsurface(qsurface->glstate, qsurface);
 				glo_surface_update_context(qsurface->surface, glstate->context, 0);
-
 			}
 
             bind_qsurface(glstate, qsurface);
