@@ -1899,11 +1899,10 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 					   qsurface->status = SURFACE_ACTIVE;
 
                        bind_qsurface(glstate, qsurface);
-                       DEBUGF( " --Client drawable not found, create new surface: %16x %16lx\n", (unsigned int)qsurface, (unsigned long int)client_drawable);
-
+                       DEBUGF( " --Client drawable not found, create new surface: %p %16lx\n", qsurface, (unsigned long int)client_drawable);
                     }
                     else {
-                       DEBUGF( " --Client drawable found, using surface: %16x %16lx\n", (unsigned int)glstate->current_qsurface, (unsigned long int)client_drawable);
+                       DEBUGF( " --Client drawable found, using surface: %p %16lx\n", glstate->current_qsurface, (unsigned long int)client_drawable);
                     }
 #if 0
                     /*Test old surface contents */
