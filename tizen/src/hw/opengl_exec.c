@@ -1499,7 +1499,7 @@ shadersrc_gles_to_gl(GLsizei count, const char** string, char **s, const GLint* 
  * read texture back right after glTexSubImage2D, thus guarantee a
  * synchronization.
  */
-static void mac_dump_texture()
+static void mac_dump_texture(void)
 {
 	int w, h;
 	unsigned char *buf;
