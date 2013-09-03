@@ -1,7 +1,7 @@
 /*
  * MARU display driver
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,10 +36,6 @@
 #include "maru_sdl.h"
 #else
 #include "maru_shm.h"
-
-#if defined(TARGET_I386)
-extern void maru_vga_common_fini(void);
-#endif
 #endif
 
 
@@ -79,12 +75,12 @@ void maru_display_fini(void)
 }
 
 void maruskin_init(uint64 swt_handle,
-    int lcd_size_width, int lcd_size_height, bool is_resize)
+    int lcd_size_width, int lcd_size_height)
 {
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
+    maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height);
 #else
-    maruskin_shm_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
+    maruskin_shm_init(swt_handle, lcd_size_width, lcd_size_height);
 #endif
 }
 

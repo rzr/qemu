@@ -186,14 +186,12 @@ DisplayChangeListenerOps maru_dcl_ops = {
 };
 
 void maruskin_shm_init(uint64 swt_handle,
-    int lcd_size_width, int lcd_size_height, bool is_resize)
+    int lcd_size_width, int lcd_size_height)
 {
-    INFO("maru shm initialization = %d\n", is_resize);
+    INFO("maru shm init\n");
 
-    if (is_resize == FALSE) { //once
-        set_emul_lcd_size(lcd_size_width, lcd_size_height);
-        set_emul_sdl_bpp(32);
-    }
+    set_emul_lcd_size(lcd_size_width, lcd_size_height);
+    set_emul_sdl_bpp(32);
 
     /* byte */
     int shm_size =

@@ -45,6 +45,8 @@
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
+static QEMUBH *sdl_init_bh;
+static QEMUBH *sdl_resize_bh;
 static DisplaySurface *dpy_surface;
 
 static SDL_Surface *surface_screen;
@@ -55,14 +57,12 @@ static SDL_Surface *surface_guide; /* blank guide image */
 
 static double current_scale_factor = 1.0;
 static double current_screen_degree;
-static int current_screen_width;
-static int current_screen_height;
 
-static int sdl_initialized;
 static int sdl_alteration;
 
-static int sdl_skip_update;
-static int blank_cnt;
+static unsigned int sdl_skip_update;
+static unsigned int sdl_skip_count;
+static unsigned int blank_cnt;
 #define MAX_BLANK_FRAME_CNT 120
 #define BLANK_GUIDE_IMAGE_PATH "../images/"
 #define BLANK_GUIDE_IMAGE_NAME "blank-guide.png"
@@ -220,18 +220,22 @@ static void qemu_ds_sdl_update(DisplayChangeListener *dcl,
 static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
                                struct DisplaySurface *new_surface)
 {
-    int w, h;
+    int console_width = 0, console_height = 0;
 
     if (!new_surface) {
-        ERR("qemu_ds_sdl_switch: new_surface is NULL\n");
+        ERR("qemu_ds_sdl_switch : new_surface is NULL\n");
         return;
     }
 
     dpy_surface = new_surface;
-    w = surface_width(new_surface);
-    h = surface_height(new_surface);
+    console_width = surface_width(new_surface);
+    console_height = surface_height(new_surface);
 
-    INFO("qemu_ds_sdl_switch = (%d, %d)\n", w, h);
+    INFO("qemu_ds_sdl_switch : (%d, %d)\n",
+        console_width, console_height);
+
+    sdl_skip_update = 0;
+    sdl_skip_count = 0;
 
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
@@ -243,12 +247,14 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
     }
 
     /* create surface_qemu */
-    if (w == get_emul_lcd_width() && h == get_emul_lcd_height()) {
-        INFO("create SDL screen = (%d, %d)\n",
-             get_emul_lcd_width(), get_emul_lcd_height());
+    if (console_width == get_emul_lcd_width() &&
+        console_height == get_emul_lcd_height()) {
+        INFO("create SDL screen : (%d, %d)\n",
+             console_width, console_height);
+
         surface_qemu = SDL_CreateRGBSurfaceFrom(
             surface_data(dpy_surface),
-            w, h,
+            console_width, console_height,
             surface_bits_per_pixel(dpy_surface),
             surface_stride(dpy_surface),
             dpy_surface->pf.rmask,
@@ -256,10 +262,14 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
             dpy_surface->pf.bmask,
             dpy_surface->pf.amask);
     } else {
-        INFO("create blank screen = (%d, %d)\n",
+        INFO("create blank screen : (%d, %d)\n",
              get_emul_lcd_width(), get_emul_lcd_height());
-        surface_qemu = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h,
-            surface_bits_per_pixel(dpy_surface), 0, 0, 0, 0);
+
+        surface_qemu = SDL_CreateRGBSurface(
+            SDL_SWSURFACE,
+            console_width, console_height,
+            surface_bits_per_pixel(dpy_surface),
+            0, 0, 0, 0);
     }
 
 #ifdef SDL_THREAD
@@ -270,20 +280,6 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
         ERR("Unable to set the RGBSurface: %s\n", SDL_GetError());
         return;
     }
-
-}
-
-static int maru_sdl_poll_event(SDL_Event *ev)
-{
-    int ret = 0;
-
-    if (sdl_initialized == 1) {
-        //pthread_mutex_lock(&sdl_mutex);
-        ret = SDL_PollEvent(ev);
-        //pthread_mutex_unlock(&sdl_mutex);
-    }
-
-    return ret;
 }
 
 static png_bytep read_png_file(const char *file_name,
@@ -446,10 +442,12 @@ static SDL_Surface *get_blank_guide_image(void)
 
         /* load png image */
         int path_len = strlen(get_bin_path()) +
-            strlen(BLANK_GUIDE_IMAGE_PATH) + strlen(BLANK_GUIDE_IMAGE_NAME) + 1;
+            strlen(BLANK_GUIDE_IMAGE_PATH) +
+            strlen(BLANK_GUIDE_IMAGE_NAME) + 1;
         guide_image_path = g_malloc0(sizeof(char) * path_len);
         snprintf(guide_image_path, path_len, "%s%s%s",
-            get_bin_path(), BLANK_GUIDE_IMAGE_PATH, BLANK_GUIDE_IMAGE_NAME);
+            get_bin_path(), BLANK_GUIDE_IMAGE_PATH,
+            BLANK_GUIDE_IMAGE_NAME);
 
         guide_image_data = (void *) read_png_file(
             guide_image_path, &width, &height);
@@ -474,28 +472,10 @@ static SDL_Surface *get_blank_guide_image(void)
 
 static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
 {
-    SDL_Event ev1, *ev = &ev1;
-    static uint32_t sdl_skip_count = 0;
-
-    while (maru_sdl_poll_event(ev)) {
-        switch (ev->type) {
-            case SDL_VIDEORESIZE:
-            {
-                pthread_mutex_lock(&sdl_mutex);
-
-                maruskin_sdl_init(0,
-                        get_emul_lcd_width(), get_emul_lcd_height(),
-                        true);
-
-                pthread_mutex_unlock(&sdl_mutex);
-                sdl_skip_update = 0;
-                sdl_skip_count = 0;
-                break;
-            }
-
-            default:
-                break;
-        }
+    if (sdl_alteration == 1) {
+        sdl_alteration = 0;
+        sdl_skip_update = 0;
+        sdl_skip_count = 0;
     }
 
     /* If the display is turned off,
@@ -533,7 +513,8 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
                     dst_y = (surface_screen->h - dst_h) / 2;
                     SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
 
-                    SDL_BlitSurface(scaled_guide, NULL, surface_screen, &dst_rect);
+                    SDL_BlitSurface(scaled_guide, NULL,
+                        surface_screen, &dst_rect);
                     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
                     SDL_FreeSurface(scaled_guide);
@@ -544,7 +525,8 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
                     dst_y = (surface_screen->h - dst_h) / 2;
                     SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
 
-                    SDL_BlitSurface(guide, NULL, surface_screen, &dst_rect);
+                    SDL_BlitSurface(guide, NULL,
+                        surface_screen, &dst_rect);
                     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
                 }
             }
@@ -603,83 +585,13 @@ DisplayChangeListenerOps maru_dcl_ops = {
     .dpy_refresh       = qemu_ds_sdl_refresh,
 };
 
-static void _sdl_init(void)
-{
-    int w, h, rwidth, rheight, temp;
-
-    INFO("Set up a video mode with the specified width, "
-         "height and bits-per-pixel\n");
-
-    /* get current setting information and calculate screen size */
-    rwidth = get_emul_lcd_width();
-    rheight = get_emul_lcd_height();
-    current_scale_factor = get_emul_win_scale();
-    w = current_screen_width = rwidth * current_scale_factor;
-    h = current_screen_height = rheight * current_scale_factor;
-
-    short rotaton_type = get_emul_rotation();
-    if (rotaton_type == ROTATION_PORTRAIT) {
-        current_screen_degree = 0.0;
-    } else if (rotaton_type == ROTATION_LANDSCAPE) {
-        current_screen_degree = 90.0;
-        temp = w;
-        w = h;
-        h = temp;
-        temp = rwidth;
-        rwidth = rheight;
-        rheight = temp;
-    } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
-        current_screen_degree = 180.0;
-    } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
-        current_screen_degree = 270.0;
-        temp = w;
-        w = h;
-        h = temp;
-        temp = rwidth;
-        rwidth = rheight;
-        rheight = temp;
-    }
-
-    surface_screen = SDL_SetVideoMode(w, h,
-                                      get_emul_sdl_bpp(),
-                                      SDL_FLAGS);
-    if (surface_screen == NULL) {
-        ERR("Could not open SDL display (%dx%dx%d): %s\n",
-            w, h, get_emul_sdl_bpp(), SDL_GetError());
-        return;
-    }
-
-    /* create buffer for image processing */
-    SDL_FreeSurface(scaled_screen);
-    scaled_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
-        w, h, get_emul_sdl_bpp(),
-        surface_qemu->format->Rmask, surface_qemu->format->Gmask,
-        surface_qemu->format->Bmask, surface_qemu->format->Amask);
-    SDL_FreeSurface(rotated_screen);
-    rotated_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
-        rwidth, rheight, get_emul_sdl_bpp(),
-        surface_qemu->format->Rmask, surface_qemu->format->Gmask,
-        surface_qemu->format->Bmask, surface_qemu->format->Amask);
-
-    /* rearrange multi-touch finger points */
-    if (get_emul_multi_touch_state()->multitouch_enable == 1 ||
-            get_emul_multi_touch_state()->multitouch_enable == 2) {
-        rearrange_finger_points(get_emul_lcd_width(), get_emul_lcd_height(),
-            current_scale_factor, rotaton_type);
-    }
-}
-
 static void qemu_update(void)
 {
-    if (sdl_alteration == 1) {
-        sdl_alteration = 0;
-        _sdl_init();
-    } else if (sdl_alteration == -1) {
+    if (sdl_alteration == -1) {
         SDL_FreeSurface(scaled_screen);
         SDL_FreeSurface(rotated_screen);
         SDL_FreeSurface(surface_qemu);
         surface_qemu = NULL;
-        SDL_Quit();
 
         return;
     }
@@ -696,6 +608,7 @@ static void qemu_update(void)
                 (int)current_screen_degree);
             scaled_screen = maru_do_pixman_scale(
                 rotated_screen, scaled_screen);
+
             SDL_BlitSurface(scaled_screen, NULL, surface_screen, NULL);
         }
         else {/* current_scale_factor == 1.0 */
@@ -703,6 +616,7 @@ static void qemu_update(void)
                 rotated_screen = maru_do_pixman_rotate(
                     surface_qemu, rotated_screen,
                     (int)current_screen_degree);
+
                 SDL_BlitSurface(rotated_screen, NULL, surface_screen, NULL);
             } else {
                 /* as-is */
@@ -725,8 +639,8 @@ static void qemu_update(void)
                     rect.w = rect.h = mts->finger_point_size;
 
                     SDL_BlitSurface(
-                            (SDL_Surface *)mts->finger_point_surface,
-                            NULL, surface_screen, &rect);
+                        (SDL_Surface *)mts->finger_point_surface,
+                        NULL, surface_screen, &rect);
                 }
             }
         } /* end of draw multi-touch */
@@ -737,7 +651,7 @@ static void qemu_update(void)
 
 
 #ifdef SDL_THREAD
-static void *run_qemu_update(void* arg)
+static void *run_qemu_update(void *arg)
 {
     while(1) {
         pthread_mutex_lock(&sdl_mutex);
@@ -753,52 +667,147 @@ static void *run_qemu_update(void* arg)
 }
 #endif
 
-void maruskin_sdl_init(uint64 swt_handle,
-    int lcd_size_width, int lcd_size_height, bool is_resize)
+static void maru_sdl_resize_bh(void *opaque)
 {
-    gchar SDL_windowhack[32];
-    SDL_SysWMinfo info;
-    long window_id = swt_handle;
+    int surface_width = 0, surface_height = 0;
+    int display_width = 0, display_height = 0;
+    int temp = 0;
 
-    INFO("maru sdl initialization = %d\n", is_resize);
+    INFO("Set up a video mode with the specified width, "
+         "height and bits-per-pixel\n");
 
-    if (is_resize == FALSE) { //once
-        sprintf(SDL_windowhack, "%ld", window_id);
-        g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
-        INFO("register SDL environment variable. (SDL_WINDOWID = %s)\n", SDL_windowhack);
-
-        if (SDL_Init(SDL_INIT_VIDEO) < 0 ) {
-            ERR("unable to init SDL: %s\n", SDL_GetError());
-        }
-
-        set_emul_lcd_size(lcd_size_width, lcd_size_height);
-        set_emul_sdl_bpp(SDL_BPP);
-    }
-
-    if (sdl_initialized == 0) {
-        sdl_initialized = 1;
-
-        init_multi_touch_state();
-
-#ifndef _WIN32
-        SDL_VERSION(&info.version);
-        SDL_GetWMInfo(&info);
+#ifdef SDL_THREAD
+        pthread_mutex_lock(&sdl_mutex);
 #endif
-    }
 
     sdl_alteration = 1;
+    sdl_skip_update = 0;
+
+    /* get current setting information and calculate screen size */
+    display_width = get_emul_lcd_width();
+    display_height = get_emul_lcd_height();
+    current_scale_factor = get_emul_win_scale();
+
+    short rotaton_type = get_emul_rotation();
+    if (rotaton_type == ROTATION_PORTRAIT) {
+        current_screen_degree = 0.0;
+    } else if (rotaton_type == ROTATION_LANDSCAPE) {
+        current_screen_degree = 90.0;
+        temp = display_width;
+        display_width = display_height;
+        display_height = temp;
+    } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
+        current_screen_degree = 180.0;
+    } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
+        current_screen_degree = 270.0;
+        temp = display_width;
+        display_width = display_height;
+        display_height = temp;
+    }
+
+    surface_width = display_width * current_scale_factor;
+    surface_height = display_height * current_scale_factor;
+
+    surface_screen = SDL_SetVideoMode(
+        surface_width, surface_height,
+        get_emul_sdl_bpp(), SDL_FLAGS);
+
+    INFO("SDL_SetVideoMode\n");
+
+    if (surface_screen == NULL) {
+        ERR("Could not open SDL display (%dx%dx%d): %s\n",
+            surface_width, surface_height,
+            get_emul_sdl_bpp(), SDL_GetError());
+        return;
+    }
+
+    /* create buffer for image processing */
+    SDL_FreeSurface(scaled_screen);
+    scaled_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        surface_width, surface_height,
+        get_emul_sdl_bpp(),
+        surface_qemu->format->Rmask,
+        surface_qemu->format->Gmask,
+        surface_qemu->format->Bmask,
+        surface_qemu->format->Amask);
+
+    SDL_FreeSurface(rotated_screen);
+    rotated_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        display_width, display_height,
+        get_emul_sdl_bpp(),
+        surface_qemu->format->Rmask,
+        surface_qemu->format->Gmask,
+        surface_qemu->format->Bmask,
+        surface_qemu->format->Amask);
+
+    /* rearrange multi-touch finger points */
+    if (get_emul_multi_touch_state()->multitouch_enable == 1 ||
+            get_emul_multi_touch_state()->multitouch_enable == 2) {
+        rearrange_finger_points(get_emul_lcd_width(), get_emul_lcd_height(),
+            current_scale_factor, rotaton_type);
+    }
+
+#ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+}
+
+static void maru_sdl_init_bh(void *opaque)
+{
+    SDL_SysWMinfo info;
+
+    INFO("SDL_Init\n");
+
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        ERR("unable to init SDL: %s\n", SDL_GetError());
+        // TODO:
+    }
+
+#ifndef _WIN32
+    SDL_VERSION(&info.version);
+    SDL_GetWMInfo(&info);
+#endif
+
+    qemu_bh_schedule(sdl_resize_bh);
 
 #ifdef SDL_THREAD
     if (sdl_thread_initialized == 0) {
         sdl_thread_initialized = 1;
-        pthread_t thread_id;
+
         INFO("sdl update thread create\n");
-        if (pthread_create(&thread_id, NULL, run_qemu_update, NULL) != 0) {
+
+        pthread_t thread_id;
+        if (pthread_create(
+            &thread_id, NULL, run_qemu_update, NULL) != 0) {
             ERR("pthread_create fail\n");
             return;
         }
     }
 #endif
+}
+
+void maruskin_sdl_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height)
+{
+    gchar SDL_windowhack[32] = { 0, };
+    long window_id = swt_handle;
+
+    INFO("maru sdl init\n");
+
+    sdl_init_bh = qemu_bh_new(maru_sdl_init_bh, NULL);
+    sdl_resize_bh = qemu_bh_new(maru_sdl_resize_bh, NULL);
+
+    sprintf(SDL_windowhack, "%ld", window_id);
+    g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
+
+    INFO("register SDL environment variable. "
+        "(SDL_WINDOWID = %s)\n", SDL_windowhack);
+
+    set_emul_lcd_size(lcd_size_width, lcd_size_height);
+    set_emul_sdl_bpp(SDL_BPP);
+    init_multi_touch_state();
+
+    qemu_bh_schedule(sdl_init_bh);
 }
 
 void maruskin_sdl_quit(void)
@@ -815,6 +824,13 @@ void maruskin_sdl_quit(void)
 
     sdl_alteration = -1;
 
+    if (sdl_init_bh != NULL) {
+        qemu_bh_delete(sdl_init_bh);
+    }
+    if (sdl_resize_bh != NULL) {
+        qemu_bh_delete(sdl_resize_bh);
+    }
+
     SDL_Quit();
 
 #ifdef SDL_THREAD
@@ -826,13 +842,7 @@ void maruskin_sdl_quit(void)
 
 void maruskin_sdl_resize(void)
 {
-    SDL_Event ev;
+    INFO("maru sdl resize\n");
 
-    /* this fails if SDL is not initialized */
-    memset(&ev, 0, sizeof(ev));
-    ev.resize.type = SDL_VIDEORESIZE;
-
-    /* This function is thread safe,
-    and can be called from other threads safely. */
-    SDL_PushEvent(&ev);
+    qemu_bh_schedule(sdl_resize_bh);
 }

@@ -4,6 +4,7 @@
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
+ * Jinhyung Jo <jinhyung.jo@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
@@ -38,7 +39,8 @@
 
 extern DisplayChangeListenerOps maru_dcl_ops;
 
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
+void maruskin_sdl_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height);
 void maruskin_sdl_resize(void);
 void maruskin_sdl_quit(void);
 

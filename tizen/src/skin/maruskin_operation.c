@@ -90,7 +90,7 @@ scale_factor:%f, rotation_type:%d\n",
         scale_factor, rotation_type);
 
     set_emul_win_scale(scale_factor);
-    maruskin_init(handle_id, lcd_size_width, lcd_size_height, false);
+    maruskin_init(handle_id, lcd_size_width, lcd_size_height);
 }
 
 void do_mouse_event(int button_type, int event_type,
