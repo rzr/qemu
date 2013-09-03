@@ -42,7 +42,6 @@
 #include "hw/maru_brightness.h"
 #include "hw/maru_overlay.h"
 #include "debug_ch.h"
-/* #include "SDL_opengl.h" */
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
@@ -67,11 +66,6 @@ static int blank_cnt;
 #define MAX_BLANK_FRAME_CNT 120
 #define BLANK_GUIDE_IMAGE_PATH "../images/"
 #define BLANK_GUIDE_IMAGE_NAME "blank-guide.png"
-
-#if 0
-static int sdl_opengl = 0; //0 : just SDL surface, 1 : using SDL with OpenGL
-GLuint texture;
-#endif
 
 
 #define SDL_THREAD
@@ -609,7 +603,6 @@ DisplayChangeListenerOps maru_dcl_ops = {
     .dpy_refresh       = qemu_ds_sdl_refresh,
 };
 
-//extern int capability_check_gl;
 static void _sdl_init(void)
 {
     int w, h, rwidth, rheight, temp;
@@ -617,7 +610,7 @@ static void _sdl_init(void)
     INFO("Set up a video mode with the specified width, "
          "height and bits-per-pixel\n");
 
-    //get current setting information and calculate screen size
+    /* get current setting information and calculate screen size */
     rwidth = get_emul_lcd_width();
     rheight = get_emul_lcd_height();
     current_scale_factor = get_emul_win_scale();
@@ -647,34 +640,14 @@ static void _sdl_init(void)
         rheight = temp;
     }
 
-#if 0
-    if (capability_check_gl != 0) {
-        ERR("GL check returned non-zero\n");
-        surface_screen = NULL;
-    } else {
-        surface_screen = SDL_SetVideoMode(w, h, get_emul_sdl_bpp(), SDL_OPENGL);
-    }
-
+    surface_screen = SDL_SetVideoMode(w, h,
+                                      get_emul_sdl_bpp(),
+                                      SDL_FLAGS);
     if (surface_screen == NULL) {
-        sdl_opengl = 0;
-        INFO("No OpenGL support on this system!??\n");
-        ERR("%s\n", SDL_GetError());
-#endif
-
-        surface_screen = SDL_SetVideoMode(w, h,
-                                          get_emul_sdl_bpp(),
-                                          SDL_FLAGS);
-        if (surface_screen == NULL) {
-            ERR("Could not open SDL display (%dx%dx%d): %s\n",
-                w, h, get_emul_sdl_bpp(), SDL_GetError());
-            return;
-        }
-#if 0
-    } else {
-        sdl_opengl = 1;
-        INFO("OpenGL is supported on this system.\n");
+        ERR("Could not open SDL display (%dx%dx%d): %s\n",
+            w, h, get_emul_sdl_bpp(), SDL_GetError());
+        return;
     }
-#endif
 
     /* create buffer for image processing */
     SDL_FreeSurface(scaled_screen);
@@ -688,25 +661,6 @@ static void _sdl_init(void)
         surface_qemu->format->Rmask, surface_qemu->format->Gmask,
         surface_qemu->format->Bmask, surface_qemu->format->Amask);
 
-#if 0
-    if (sdl_opengl == 1) {
-        /* Set the OpenGL state */
-        glClear(GL_COLOR_BUFFER_BIT);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, w, h, 0, -1, 1);
-        glMatrixMode(GL_MODELVIEW);
-        glViewport(0, 0, w, h);
-        glLoadIdentity();
-
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        //glGenerateMipmapEXT(GL_TEXTURE_2D); // GL_MIPMAP_LINEAR
-    }
-#endif
-
     /* rearrange multi-touch finger points */
     if (get_emul_multi_touch_state()->multitouch_enable == 1 ||
             get_emul_multi_touch_state()->multitouch_enable == 2) {
@@ -714,60 +668,6 @@ static void _sdl_init(void)
             current_scale_factor, rotaton_type);
     }
 }
-
-#if 0
-static int point_degree = 0;
-static void draw_outline_circle(int cx, int cy, int r, int num_segments)
-{
-    int ii;
-    float theta = 2 * 3.1415926 / (num_segments);
-    float c = cosf(theta);//precalculate the sine and cosine
-    float s = sinf(theta);
-    float t;
-
-    float x = r;//we start at angle = 0
-    float y = 0;
-
-    glEnable(GL_LINE_STIPPLE);
-    glLoadIdentity();
-    glColor3f(0.9, 0.9, 0.9);
-    glLineStipple(1, 0xcccc);
-    glLineWidth(3.f);
-
-    glTranslatef(cx, cy, 0);
-    glRotated(point_degree++ % 360, 0, 0, 1);
-
-    glBegin(GL_LINE_LOOP);
-    for(ii = 0; ii < num_segments; ii++) {
-        glVertex2f(x, y); //output vertex
-
-        //apply the rotation matrix
-        t = x;
-        x = c * x - s * y;
-        y = s * t + c * y;
-    }
-    glEnd();
-
-    glDisable(GL_LINE_STIPPLE);
-}
-
-static void draw_fill_circle(int cx, int cy, int r)
-{
-    glEnable(GL_POINT_SMOOTH);
-    glLoadIdentity();
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glColor4f(0.1, 0.1, 0.1, 0.6);
-    glPointSize(r - 2);
-
-    glBegin(GL_POINTS);
-        glVertex2f(cx, cy);
-    glEnd();
-
-    glDisable(GL_POINT_SMOOTH);
-    glDisable(GL_BLEND);
-}
-#endif
 
 static void qemu_update(void)
 {
@@ -785,110 +685,52 @@ static void qemu_update(void)
     }
 
     if (surface_qemu != NULL) {
-        int i;
+        int i = 0;
 
-#if 0
-        if (sdl_opengl == 1)
-        { //gl surface
-            glEnable(GL_TEXTURE_2D);
-            glLoadIdentity();
-            glColor3f(1.0, 1.0, 1.0);
-            glTexImage2D(GL_TEXTURE_2D,
-                0, 3, surface_qemu->w, surface_qemu->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, surface_qemu->pixels);
+        maru_do_pixman_dpy_surface(dpy_surface->image);
+        set_maru_screenshot(dpy_surface);
 
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            /* rotation */
-            if (current_screen_degree == 270.0) { //reverse landscape
-                glRotated(90, 0, 0, 1);
-                glTranslatef(0, -current_screen_height, 0);
-            } else if (current_screen_degree == 180.0) { //reverse portrait
-                glRotated(180, 0, 0, 1);
-                glTranslatef(-current_screen_width, -current_screen_height, 0);
-            } else if (current_screen_degree == 90.0) { //landscape
-                glRotated(270, 0, 0, 1);
-                glTranslatef(-current_screen_width, 0, 0);
-            }
-
-            glBegin(GL_QUADS);
-                glTexCoord2i(0, 0);
-                glVertex3f(0, 0, 0);
-                glTexCoord2i(1, 0);
-                glVertex3f(current_screen_width, 0, 0);
-                glTexCoord2i(1, 1);
-                glVertex3f(current_screen_width, current_screen_height, 0);
-                glTexCoord2i(0, 1);
-                glVertex3f(0, current_screen_height, 0);
-            glEnd();
-
-            glDisable(GL_TEXTURE_2D);
-
-            /* draw multi-touch finger points */
-            MultiTouchState *mts = get_emul_multi_touch_state();
-            if (mts->multitouch_enable != 0) {
-                FingerPoint *finger = NULL;
-                int finger_point_size_half = mts->finger_point_size / 2;
-
-                for (i = 0; i < mts->finger_cnt; i++) {
-                    finger = get_finger_point_from_slot(i);
-                    if (finger != NULL && finger->id != 0) {
-                        draw_outline_circle(finger->origin_x, finger->origin_y, finger_point_size_half, 10); //TODO: optimize
-                        draw_fill_circle(finger->origin_x, finger->origin_y, mts->finger_point_size);
-                    }
-                }
-            } //end  of draw multi-touch
-
-            glFlush();
-
-            SDL_GL_SwapBuffers();
+        if (current_scale_factor != 1.0) {
+            rotated_screen = maru_do_pixman_rotate(
+                surface_qemu, rotated_screen,
+                (int)current_screen_degree);
+            scaled_screen = maru_do_pixman_scale(
+                rotated_screen, scaled_screen);
+            SDL_BlitSurface(scaled_screen, NULL, surface_screen, NULL);
         }
-        else
-        { //sdl surface
-#endif
-            maru_do_pixman_dpy_surface(dpy_surface->image);
-            set_maru_screenshot(dpy_surface);
-
-            if (current_scale_factor != 1.0) {
+        else {/* current_scale_factor == 1.0 */
+            if (current_screen_degree != 0.0) {
                 rotated_screen = maru_do_pixman_rotate(
                     surface_qemu, rotated_screen,
                     (int)current_screen_degree);
-                scaled_screen = maru_do_pixman_scale(
-                    rotated_screen, scaled_screen);
-                SDL_BlitSurface(scaled_screen, NULL, surface_screen, NULL);
+                SDL_BlitSurface(rotated_screen, NULL, surface_screen, NULL);
+            } else {
+                /* as-is */
+                SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
             }
-            else {/* current_scale_factor == 1.0 */
-                if (current_screen_degree != 0.0) {
-                    rotated_screen = maru_do_pixman_rotate(
-                        surface_qemu, rotated_screen,
-                        (int)current_screen_degree);
-                    SDL_BlitSurface(rotated_screen, NULL, surface_screen, NULL);
-                } else {
-                    /* as-is */
-                    SDL_BlitSurface(surface_qemu, NULL, surface_screen, NULL);
-                }
-            }
-
-            /* draw multi-touch finger points */
-            MultiTouchState *mts = get_emul_multi_touch_state();
-            if (mts->multitouch_enable != 0 && mts->finger_point_surface != NULL) {
-                FingerPoint *finger = NULL;
-                int finger_point_size_half = mts->finger_point_size / 2;
-                SDL_Rect rect;
-
-                for (i = 0; i < mts->finger_cnt; i++) {
-                    finger = get_finger_point_from_slot(i);
-                    if (finger != NULL && finger->id != 0) {
-                        rect.x = finger->origin_x - finger_point_size_half;
-                        rect.y = finger->origin_y - finger_point_size_half;
-                        rect.w = rect.h = mts->finger_point_size;
-
-                        SDL_BlitSurface(
-                                (SDL_Surface *)mts->finger_point_surface,
-                                NULL, surface_screen, &rect);
-                    }
-                }
-            } /* end of draw multi-touch */
         }
+
+        /* draw multi-touch finger points */
+        MultiTouchState *mts = get_emul_multi_touch_state();
+        if (mts->multitouch_enable != 0 && mts->finger_point_surface != NULL) {
+            FingerPoint *finger = NULL;
+            int finger_point_size_half = mts->finger_point_size / 2;
+            SDL_Rect rect;
+
+            for (i = 0; i < mts->finger_cnt; i++) {
+                finger = get_finger_point_from_slot(i);
+                if (finger != NULL && finger->id != 0) {
+                    rect.x = finger->origin_x - finger_point_size_half;
+                    rect.y = finger->origin_y - finger_point_size_half;
+                    rect.w = rect.h = mts->finger_point_size;
+
+                    SDL_BlitSurface(
+                            (SDL_Surface *)mts->finger_point_surface,
+                            NULL, surface_screen, &rect);
+                }
+            }
+        } /* end of draw multi-touch */
+    }
 
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 }
@@ -936,7 +778,6 @@ void maruskin_sdl_init(uint64 swt_handle,
     if (sdl_initialized == 0) {
         sdl_initialized = 1;
 
-        //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         init_multi_touch_state();
 
 #ifndef _WIN32
@@ -971,12 +812,6 @@ void maruskin_sdl_quit(void)
 
     /* remove multi-touch finger points */
     cleanup_multi_touch_state();
-
-#if 0
-    if (sdl_opengl == 1) {
-        glDeleteTextures(1, &texture);
-    }
-#endif
 
     sdl_alteration = -1;
 
