@@ -1302,7 +1302,7 @@ void vmgl_context_switch(ProcessStruct *p, int switch_gl_context)
     }
 }
 
-static const char *opengl_strtok(const char *s, int *n, char const **saveptr, char *prevbuf)
+static char *opengl_strtok(const char *s, int *n, char const **saveptr, char *prevbuf)
 {
 	const char *start;
 	char *ret;
@@ -1410,15 +1410,18 @@ static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
 				;
 			}
         } else {
+            const char *p2;
             if (!strncmp(p, "gl_MaxVertexUniformVectors", 26)) {
-                p = "(gl_MaxVertexUniformComponents / 4)";
+                p2 = "(gl_MaxVertexUniformComponents / 4)";
             } else if (!strncmp(p, "gl_MaxFragmentUniformVectors", 28)) {
-                p = "(gl_MaxFragmentUniformComponents / 4)";
+                p2 = "(gl_MaxFragmentUniformComponents / 4)";
             } else if (!strncmp(p, "gl_MaxVaryingVectors", 20)) {
-                p = "(gl_MaxVaryingFloats / 4)";
+                p2 = "(gl_MaxVaryingFloats / 4)";
+            } else {
+                p2 = p;
             }
 
-            int new_len = strlen(p);
+            int new_len = strlen(p2);
             if (*patched_len + new_len > patched_size) {
                 patched_size *= 2;
                 patched = realloc(patched, patched_size + 1);
@@ -1427,7 +1430,7 @@ static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
                     return NULL;
             }
 
-            memcpy(patched + *patched_len, p, new_len);
+            memcpy(patched + *patched_len, p2, new_len);
             *patched_len += new_len;
         }     
     }
@@ -2735,7 +2738,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 				acc_length += tab_length[i];
 			}
 
-			shadersrc_gles_to_gl(args[1], tab_prog, tab_prog_new, tab_length, tab_length_new);
+			shadersrc_gles_to_gl(args[1], (const char **)tab_prog, tab_prog_new, tab_length, tab_length_new);
 
 			if (!tab_prog_new || !tab_length_new)
 				break;
