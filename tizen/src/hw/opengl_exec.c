@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/types.h> // for pid_t
 
 #include "qemu-common.h"
@@ -204,7 +205,7 @@ typedef struct {
 
 #define MAX_CLIENT_STATE_STACK_SIZE 16
 
-typedef void *ClientGLXDrawable;
+typedef uint32_t ClientGLXDrawable;
 
 typedef struct GLState GLState;
 
@@ -222,7 +223,7 @@ enum {
 typedef struct QGloSurface {
     GLState *glstate;
     GloSurface *surface;
-    ClientGLXDrawable *client_drawable;
+    ClientGLXDrawable client_drawable;
     int type; /* window, pixmap or pbuffer */
     int ready;
 	int status;
@@ -657,7 +658,6 @@ void init_process_tab()
 
 #include "server_stub.c"
 
-//typedef void *ClientGLXDrawable;
 static inline ClientGLXDrawable to_drawable(arg_t arg)
 {
 #ifdef TARGET_X86_64
@@ -666,7 +666,7 @@ static inline ClientGLXDrawable to_drawable(arg_t arg)
         exit(-1);
     }
 #endif
-    return (void *) (unsigned long) arg;
+    return (ClientGLXDrawable)arg;
 }
 
 /* ---- */
@@ -2188,7 +2188,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 							qsurface->surface, qsurface->type);
 
 
-                ret.i = client_drawable;
+                ret.i = (int)client_drawable;
 
             }
             break;
@@ -2282,7 +2282,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 				qsurface->surface = glo_surface_create(width, height, context);
 				/* Use GloSurface handler as no input client_drawable, and
 				 * keep only low 32bit of handler on x86_64 host.  */
-				qsurface->client_drawable = (int)qsurface->surface;
+				qsurface->client_drawable = (ClientGLXDrawable)(long)qsurface->surface;
 				qsurface->type = SURFACE_PBUFFER;
 				qsurface->status = SURFACE_PENDING;
 				/*                qsurface->ref = 1;*/
