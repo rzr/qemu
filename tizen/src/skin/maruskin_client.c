@@ -120,18 +120,11 @@ static void *run_skin_client(void *arg)
 #endif
 
     /* input */
-    char buf_input_mouse[8] = { 0, };
-    if (is_emul_input_mouse_enable() == true) {
-        strcpy(buf_input_mouse, OPT_BOOLEAN_TRUE);
-    } else {
-        strcpy(buf_input_mouse, OPT_BOOLEAN_FALSE);
-    }
-    char buf_input_touch[8] = { 0, };
-    if (is_emul_input_touch_enable() == true) {
-        strcpy(buf_input_touch, OPT_BOOLEAN_TRUE);
-    } else {
-        strcpy(buf_input_touch, OPT_BOOLEAN_FALSE);
-    }
+    char buf_input[12] = { 0, };
+    if (is_emul_input_mouse_enable() == true)
+        strcpy(buf_input, OPT_INPUT_MOUSE);
+    else
+        strcpy(buf_input, OPT_INPUT_TOUCH);
 
 #ifdef CONFIG_WIN32
     /* find java path in 64bit windows */
@@ -186,8 +179,8 @@ static void *run_skin_client(void *arg)
             strlen(buf_vm_base_port) + SPACE_LEN +
         strlen(OPT_DISPLAY_SHM) + EQUAL_LEN +
             strlen(buf_display_shm) + SPACE_LEN +
-        strlen(OPT_INPUT_TOUCH) + EQUAL_LEN +
-            strlen(buf_input_touch) + SPACE_LEN +
+        strlen(buf_input) + EQUAL_LEN +
+            strlen(OPT_BOOLEAN_TRUE) + SPACE_LEN +
         strlen(OPT_MAX_TOUCHPOINT) + EQUAL_LEN +
             len_maxtouchpoint + SPACE_LEN + 1 +
         strlen(argv);
@@ -221,7 +214,7 @@ static void *run_skin_client(void *arg)
         OPT_VM_PATH, vm_path,
         OPT_VM_BASE_PORT, vm_base_port,
         OPT_DISPLAY_SHM, buf_display_shm,
-        OPT_INPUT_TOUCH, buf_input_touch,
+        buf_input, OPT_BOOLEAN_TRUE,
         OPT_MAX_TOUCHPOINT, maxtouchpoint,
         argv);
 

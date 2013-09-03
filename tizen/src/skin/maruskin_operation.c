@@ -141,12 +141,25 @@ void do_mouse_event(int button_type, int event_type,
             break;
         case MOUSE_WHEELUP:
         case MOUSE_WHEELDOWN:
-            x -= guest_x;
-            y -= guest_y;
-            guest_x += x;
-            guest_y += y;
+            if (is_emul_input_touch_enable() == true) {
+                x -= guest_x;
+                y -= guest_y;
+                guest_x += x;
+                guest_y += y;
+            } else {
+                guest_x = x;
+                guest_y = y;
+            }
 
             kbd_mouse_event(x, y, -z, event_type);
+            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
+            event_type, origin_x, origin_y, x, y, z);
+            break;
+        case MOUSE_MOVE:
+            guest_x = x;
+            guest_y = y;
+
+            kbd_mouse_event(x, y, z, event_type);
             TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
             event_type, origin_x, origin_y, x, y, z);
             break;

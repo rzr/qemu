@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -121,13 +122,15 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	@Override
 	public void displayOn() {
 		logger.info("display on");
-		/* do nothing */
+		if (super.config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
+			super.isDisplayOn = true;
 	}
 
 	@Override
 	public void displayOff() {
 		logger.info("display off");
-		/* do nothing */
+		if (super.config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
+			super.isDisplayOn = false;
 	}
 
 	@Override

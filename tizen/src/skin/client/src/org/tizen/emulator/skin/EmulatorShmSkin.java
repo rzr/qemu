@@ -393,6 +393,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	@Override
 	public void displayOn() {
 		logger.info("display on");
+		if (super.config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
+			super.isDisplayOn = true;
 
 //		if (pollThread.isAlive()) {
 //			pollThread.setWaitIntervalTime(30);
@@ -406,6 +408,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	@Override
 	public void displayOff() {
 		logger.info("display off");
+		if (super.config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
+			super.isDisplayOn = false;
 
 //		if (pollThread.isAlive()) {
 //			pollThread.setWaitIntervalTime(0);

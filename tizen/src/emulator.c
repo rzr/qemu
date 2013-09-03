@@ -270,6 +270,8 @@ static void extract_qemu_info(int qemu_argc, char **qemu_argv)
             set_emul_input_touch_enable(true);
         }
     }
+    if (is_emul_input_touch_enable() != true)
+        set_emul_input_mouse_enable(true);
 }
 
 static void extract_skin_info(int skin_argc, char **skin_argv)

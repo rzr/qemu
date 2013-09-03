@@ -184,6 +184,9 @@ public class EmulatorSkin {
 	private ShellListener shellListener;
 	private MenuDetectListener shellMenuDetectListener;
 
+	protected boolean isDisplayOn;
+	private int prev_x;
+	private int prev_y;
 	private MouseMoveListener canvasMouseMoveListener;
 	private MouseListener canvasMouseListener;
 	private MouseWheelListener canvasMouseWheelListener;
@@ -285,6 +288,13 @@ public class EmulatorSkin {
 		}
 
 		lcdCanvas = skinComposer.compose(displayCanvasStyle);
+
+		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
+			prev_x = lcdCanvas.getSize().x / 2;
+			prev_y = lcdCanvas.getSize().y / 2;
+			logger.info("prev_x : " + prev_x + " prev_y : " + prev_y);
+			isDisplayOn = false;
+		}
 
 		/* load a hover color */
 		currentState.setHoverColor(loadHoverColor());
@@ -617,7 +627,7 @@ public class EmulatorSkin {
 		}
 	}
 
-	private MouseMoveListener makeDisplayTouchMoveLitener() {
+	private MouseMoveListener makeDisplayTouchMoveListener() {
 		MouseMoveListener listener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
@@ -653,45 +663,79 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	private MouseMoveListener makeDisplayMouseMoveLitener() {
+	private void getRelativePoint(MouseEvent e) {
+		int diff_x = e.x - prev_x;
+		int diff_y = e.y - prev_y;
+		int final_x = e.x;
+		int final_y = e.y;
+		Point canvasSize = lcdCanvas.getSize();
+
+		/* caculate maximum relative point */
+		if (final_x >= canvasSize.x) {
+			e.x = canvasSize.x - prev_x - 1;
+			prev_x = canvasSize.x - 1;
+		} else if (final_x <= 0) {
+			e.x = -prev_x;
+			prev_x = 0;
+		} else {
+			prev_x = e.x;
+			e.x = diff_x;
+		}
+
+		if (final_y >= canvasSize.y) {
+			e.y = canvasSize.y - prev_y - 1;
+			prev_y = canvasSize.y - 1;
+		} else if (final_y <= 0) {
+			e.y = -prev_y;
+			prev_y = 0;
+		} else {
+			prev_y = e.y;
+			e.y = diff_y;
+		}
+	}
+
+	private MouseMoveListener makeDisplayMouseMoveListener() {
 		MouseMoveListener listener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				logger.info("mouse move : " + e);
-				int eventType = MouseEventType.MOVE.value();
+				if (isDisplayOn) {
+					int eventType = MouseEventType.MOVE.value();
 
-				if (true == isDisplayDragging) {
-					Point canvasSize = lcdCanvas.getSize();
-					eventType = MouseEventType.DRAG.value();
-					if (e.x < 0) {
-						e.x = 0;
-						eventType = MouseEventType.RELEASE.value();
-						isDisplayDragging = false;
-					} else if (e.x >= canvasSize.x) {
-						e.x = canvasSize.x - 1;
-						eventType = MouseEventType.RELEASE.value();
-						isDisplayDragging = false;
-					}
+					if (true == isDisplayDragging) {
+						Point canvasSize = lcdCanvas.getSize();
+						eventType = MouseEventType.DRAG.value();
+						if (e.x < 0) {
+							e.x = 0;
+							eventType = MouseEventType.RELEASE.value();
+							isDisplayDragging = false;
+						} else if (e.x >= canvasSize.x) {
+							e.x = canvasSize.x - 1;
+							eventType = MouseEventType.RELEASE.value();
+							isDisplayDragging = false;
+						}
 
-					if (e.y < 0) {
-						e.y = 0;
-						eventType = MouseEventType.RELEASE.value();
-						isDisplayDragging = false;
-					} else if (e.y >= canvasSize.y) {
-						e.y = canvasSize.y - 1;
-						eventType = MouseEventType.RELEASE.value();
-						isDisplayDragging = false;
+						if (e.y < 0) {
+							e.y = 0;
+							eventType = MouseEventType.RELEASE.value();
+							isDisplayDragging = false;
+						} else if (e.y >= canvasSize.y) {
+							e.y = canvasSize.y - 1;
+							eventType = MouseEventType.RELEASE.value();
+							isDisplayDragging = false;
+						}
 					}
+					getRelativePoint(e);
+
+					if (e.x != 0 || e.y != 0)
+						mouseMoveDelivery(e, eventType);
 				}
-
-				mouseMoveDelivery(e, eventType);
 			}
 		};
 
 		return listener;
 	}
 
-	private MouseListener makeDisplayTouchClickLitener() {
+	private MouseListener makeDisplayTouchClickListener() {
 		MouseListener listener = new MouseListener() {
 			@Override
 			public void mouseUp(MouseEvent e) {
@@ -731,29 +775,35 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	private MouseListener makeDisplayMouseClickLitener() {
+	private MouseListener makeDisplayMouseClickListener() {
 		MouseListener listener = new MouseListener() {
 			@Override
 			public void mouseUp(MouseEvent e) {
-				logger.info("mouse up : " + e);
-				if (1 == e.button) { /* left button */
-					if (true == isDisplayDragging) {
-						isDisplayDragging = false;
+				if (isDisplayOn) {
+					logger.info("mouse up : " + e);
+					if (1 == e.button) { /* left button */
+						if (true == isDisplayDragging) {
+							isDisplayDragging = false;
+						}
+						getRelativePoint(e);
+						mouseUpDelivery(e);
+					} else if (2 == e.button) { /* wheel button */
+						logger.info("wheelUp in display");
 					}
-					mouseUpDelivery(e);
-				} else if (2 == e.button) { /* wheel button */
-					logger.info("wheelUp in display");
 				}
 			}
 
 			@Override
 			public void mouseDown(MouseEvent e) {
-				logger.info("mouse down : " + e);
-				if (1 == e.button) { /* left button */
-					if (false == isDisplayDragging) {
-						isDisplayDragging = true;
+				if (isDisplayOn) {
+					logger.info("mouse down : " + e);
+					if (1 == e.button) { /* left button */
+						if (false == isDisplayDragging) {
+							isDisplayDragging = true;
+						}
+						getRelativePoint(e);
+						mouseDownDelivery(e);
 					}
-					mouseDownDelivery(e);
 				}
 			}
 
@@ -767,10 +817,13 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	private MouseWheelListener makeDisplayMouseWheelLitener() {
+	private MouseWheelListener makeDisplayMouseWheelListener() {
 		MouseWheelListener listener = new MouseWheelListener() {
 			@Override
 			public void mouseScrolled(MouseEvent e) {
+				if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
+					getRelativePoint(e);
+
 				int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 						currentState.getCurrentResolutionWidth(),
 						currentState.getCurrentResolutionHeight(),
@@ -839,20 +892,20 @@ public class EmulatorSkin {
 
 		/* mouse event */
 		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
-			canvasMouseMoveListener = makeDisplayMouseMoveLitener();
+			canvasMouseMoveListener = makeDisplayMouseMoveListener();
 		} else {
-			canvasMouseMoveListener = makeDisplayTouchMoveLitener();
+			canvasMouseMoveListener = makeDisplayTouchMoveListener();
 		}
 		lcdCanvas.addMouseMoveListener(canvasMouseMoveListener);
 
 		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
-			canvasMouseListener = makeDisplayMouseClickLitener();
+			canvasMouseListener = makeDisplayMouseClickListener();
 		} else {
-			canvasMouseListener = makeDisplayTouchClickLitener();
+			canvasMouseListener = makeDisplayTouchClickListener();
 		}
 		lcdCanvas.addMouseListener(canvasMouseListener);
 
-		canvasMouseWheelListener = makeDisplayMouseWheelLitener();
+		canvasMouseWheelListener = makeDisplayMouseWheelListener();
 		lcdCanvas.addMouseWheelListener(canvasMouseWheelListener);
 
 		/* keyboard event */
