@@ -1130,6 +1130,8 @@ static void fprintf_prototype_args(FILE* f, FuncDesc* funcDesc)
     else
       fprintf(f, "%s arg_%d", funcDesc->args[j], j);
   }
+  if (j == 0)
+      fprintf(f, "void");
 }
 
 int main(int argc, char* argv[])
