@@ -127,7 +127,7 @@ public abstract class SkinDialog extends Dialog {
 
 			if (y < monitorBounds.y) {
 				y = monitorBounds.y;
-			} else if ((y + width) > (monitorBounds.y + monitorBounds.height)) {
+			} else if ((y + height) > (monitorBounds.y + monitorBounds.height)) {
 				y = (monitorBounds.y + monitorBounds.height) - height;
 			}
 

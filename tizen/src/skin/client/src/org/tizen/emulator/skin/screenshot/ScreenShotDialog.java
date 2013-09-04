@@ -117,8 +117,7 @@ public class ScreenShotDialog {
 		this.config = config;
 		this.scaleLevel = 100d;
 
-		shell = new Shell(Display.getDefault(),
-				SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX);
+		shell = new Shell(parent, SWT.SHELL_TRIM);
 		shell.setText("Screen Shot - " + SkinUtil.makeEmulatorName(config));
 
 		/* To prevent the icon switching on Mac */
@@ -228,28 +227,33 @@ public class ScreenShotDialog {
 //		      		}
 //		 });
 
-		Rectangle monitorBound = Display.getDefault().getBounds();
-		logger.info("host monitor display bound : " + monitorBound);
-		Rectangle emulatorBound = parent.getBounds();
-		logger.info("current Emulator window bound : " + emulatorBound);
-		Rectangle dialogBound = shell.getBounds();
-		logger.info("current ScreenShot Dialog bound : " + dialogBound);
+		Rectangle monitorBounds = Display.getDefault().getBounds();
+		logger.info("host monitor display bounds : " + monitorBounds);
+		Rectangle emulatorBounds = parent.getBounds();
+		logger.info("current Emulator window bounds : " + emulatorBounds);
+		Rectangle dialogBounds = shell.getBounds();
+		logger.info("current ScreenShot Dialog bounds : " + dialogBounds);
 
 		/* size correction */
-		shell.setSize(emulatorBound.width, emulatorBound.height);
-		dialogBound = shell.getBounds();
-		logger.info("current ScreenShot Dialog bound : " + dialogBound);
+		shell.setSize(emulatorBounds.width, emulatorBounds.height);
+		dialogBounds = shell.getBounds();
+		logger.info("current ScreenShot Dialog bounds : " + dialogBounds);
 
 		/* location correction */
-		int x = emulatorBound.x + emulatorBound.width + 20;
-		int y = emulatorBound.y;
-		if ((x + dialogBound.width) > (monitorBound.x + monitorBound.width)) {
-			x = emulatorBound.x - dialogBound.width - 20;
+		int x = emulatorBounds.x + emulatorBounds.width + 20;
+		int y = emulatorBounds.y;
+		if ((x + dialogBounds.width) > (monitorBounds.x + monitorBounds.width)) {
+			x = emulatorBounds.x - dialogBounds.width - 20;
+		}
+		if (y < monitorBounds.y) {
+			y = monitorBounds.y;
+		} else if ((y + dialogBounds.height) > (monitorBounds.y + monitorBounds.height)) {
+			y = (monitorBounds.y + monitorBounds.height) - dialogBounds.height;
 		}
 		shell.setLocation(x, y);
-		dialogBound = shell.getBounds();
-		logger.info("current ScreenShot Dialog bound : " + dialogBound);
 
+		dialogBounds = shell.getBounds();
+		logger.info("current ScreenShot Dialog bounds : " + dialogBounds);
 	}
 
 //	private void drawRotatedImage( GC gc, int width, int height ) {
