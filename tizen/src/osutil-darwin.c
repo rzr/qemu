@@ -137,6 +137,27 @@ void set_bin_path_os(gchar * exec_argv)
     free(data);
 }
 
+int get_number_of_processors(void)
+{
+    int mib[2], sys_num = 0;
+    size_t len;
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_AVAILCPU;
+
+    sysctl(mib, 2, &sys_num, &len, NULL, 0);
+    if (num_processor < 1) {
+        mib[1] = HW_NCPU;
+        sysctl(mib, 2, &sys_num, &len, NULL, 0);
+
+        if (sys_num < 1) {
+            sys_num = 1;
+        }
+    }
+    INFO("* Number of processors : %d\n", sys_num);
+
+    return sys_num;
+}
 
 void print_system_info_os(void)
 {
@@ -175,12 +196,15 @@ void print_system_info_os(void)
     }
     free(sys_info);
 
+#if 0
     mib[0] = CTL_HW;
     mib[1] = HW_NCPU;
     len = sizeof(sys_num);
     if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
         INFO("* Number of processors : %d\n", sys_num);
     }
+#endif
+    get_number_of_processors();
 
     mib[0] = CTL_HW;
     mib[1] = HW_PHYSMEM;

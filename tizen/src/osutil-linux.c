@@ -1,9 +1,9 @@
-/* 
+/*
  * Emulator
  *
  * Copyright (C) 2012, 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -165,6 +165,19 @@ void set_bin_path_os(gchar * exec_argv)
     g_strlcat(bin_path, "/", PATH_MAX);
 }
 
+int get_number_of_processors(void)
+{
+    int num_processors = 0;
+
+    num_processors = sysconf(_SC_NPROCESSORS_ONLN);
+    if (num_processors < 1) {
+        num_processors = 1;
+    }
+    TRACE("Number of processors : %d\n", num_processors);
+
+    return num_processors;
+}
+
 void print_system_info_os(void)
 {
     INFO("* Linux\n");
@@ -274,7 +287,7 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
             ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
             fclose(fp_pacfile);
         }
-    } 
+    }
     else {
         ERR("fail to get pacfile fp\n");
     return -1;
@@ -300,7 +313,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         snprintf(buf_proxy, MAXLEN, "%s", buf);
     }
     pclose(output);
-    
+
     output = popen(gproxycmds[GNOME_PROXY_HTTP_PORT][gproxytool], "r");
     if(fscanf(output, "%s", buf_port) <= 0) {
         //for abnormal case: if can't find the key of http port, get from environment value.
@@ -394,7 +407,7 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
     }
     if (ret > 0) {
         process_string(buf);
-        //priority : auto > manual > none       
+        //priority : auto > manual > none
         if (strcmp(buf, "auto") == 0) {
             INFO("AUTO PROXY MODE\n");
             get_auto_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
