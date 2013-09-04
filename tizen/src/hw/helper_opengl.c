@@ -34,6 +34,7 @@
 #include "opengl_func.h"
 #include "opengl_process.h"
 #include "opengl_exec.h"
+#include "helper_opengl.h"
 
 #include "tizen/src/debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, opengl);

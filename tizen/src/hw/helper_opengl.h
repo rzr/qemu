@@ -1,7 +1,7 @@
 /*
- *  Copyright (c) 2010 Intel Corporation
- *  Written by:
- *    Ian Molton <ian.molton@collabora.co.uk>
+ *  Host-side implementation of GL/GLX API
+ *
+ *  Copyright (c) 2013 Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -17,21 +17,11 @@
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
  * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISiNG FROM,
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
 
-#ifndef __OPENGL_PROCESS_H
-#define __OPENGL_PROCESS_H
+#include "opengl_process.h"
 
-typedef struct {
-    int process_id;
-    int wordsize;
-    int rq_l, rrq_l;
-    int sum; // Debugging only
-    char *rq, *rq_p;
-    char *rrq, *rrq_p;
-} ProcessStruct;
-
-#endif
+int decode_call_int(ProcessStruct *p, char *in_args, int args_len, char *r_buffer);

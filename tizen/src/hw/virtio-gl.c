@@ -31,6 +31,7 @@
 typedef target_phys_addr_t arg_t;
 #include "opengl_process.h"
 #include "opengl_exec.h"
+#include "helper_opengl.h"
 #include <sys/time.h>
 
 #include "tizen/src/debug_ch.h"
