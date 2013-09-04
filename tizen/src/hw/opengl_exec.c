@@ -647,12 +647,12 @@ void init_process_tab()
     memset(processes, 0, sizeof(processes));
 }
 
-#define ARG_TO_CHAR(x)                (char)(x)
-#define ARG_TO_UNSIGNED_CHAR(x)       (unsigned char)(x)
-#define ARG_TO_SHORT(x)               (short)(x)
-#define ARG_TO_UNSIGNED_SHORT(x)      (unsigned short)(x)
-#define ARG_TO_INT(x)                 (int)(x)
-#define ARG_TO_UNSIGNED_INT(x)        (unsigned int)(x)
+#define ARG_TO_CHAR(x)                (char)(long)(x)
+#define ARG_TO_UNSIGNED_CHAR(x)       (unsigned char)(long)(x)
+#define ARG_TO_SHORT(x)               (short)(long)(x)
+#define ARG_TO_UNSIGNED_SHORT(x)      (unsigned short)(long)(x)
+#define ARG_TO_INT(x)                 (int)(long)(x)
+#define ARG_TO_UNSIGNED_INT(x)        (unsigned int)(long)(x)
 #define ARG_TO_FLOAT(x)               (*(float*)&(x))
 #define ARG_TO_DOUBLE(x)              (*(double*)(x))
 
