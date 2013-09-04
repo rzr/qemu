@@ -346,7 +346,8 @@ typedef struct {
 
 static ProcessState processes[MAX_HANDLED_PROCESS];
 
-static char *strip_extensions(const char *avail, const char *ext[]) {
+static char *strip_extensions(const char *avail, const char *ext[])
+{
     char *pos, *supported, *srcp;
 
     supported = (char *)g_malloc(strlen(avail) + 2);
@@ -385,7 +386,8 @@ static const char *glx_ext_supported[] = {
     0
 };
 
-static char *supported_glx_extensions() {
+static char *supported_glx_extensions(void)
+{
     static char *supported;
 
     if(!supported)
@@ -519,7 +521,8 @@ static const char *gl_ext_supported[] = {
     0
 };
 
-static char *compute_gl_extensions() {
+static char *compute_gl_extensions(void)
+{
     static char *supported;
 
     if(!supported)
@@ -642,7 +645,7 @@ static inline void resize_surface(ProcessState *process, QGloSurface *qsurface,
 }
 
 
-void init_process_tab()
+static void init_process_tab(void)
 {
     memset(processes, 0, sizeof(processes));
 }
