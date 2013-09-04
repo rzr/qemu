@@ -62,7 +62,7 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
 {
     Signature *signature;
     int i, ret;
-    char *argptr, *tmp;
+    char *argptr;
     static void* args[50];
     int func_number;
 #ifdef __APPLE__
@@ -84,8 +84,6 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
         }
 
         signature = (Signature *) tab_opengl_calls[func_number];
-
-        tmp = argptr;
 
         for (i = 0; i < signature->nb_args; i++) {
             int args_size = *(int*)argptr;
