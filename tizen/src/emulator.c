@@ -94,6 +94,7 @@ char tizen_target_img_path[PATH_MAX];
 
 int enable_gl = 0;
 int enable_yagl = 0;
+int enable_spice = 0;
 int is_webcam_enabled;
 
 static int _skin_argc;

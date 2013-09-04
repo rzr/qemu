@@ -79,6 +79,7 @@ extern int enable_yagl;
 extern const char *yagl_backend;
 extern int enable_vigs;
 extern const char *vigs_backend;
+extern int enable_spice;
 
 #define MAX_IDE_BUS 2
 
@@ -130,7 +131,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     void *fw_cfg = NULL;
 #if defined(__linux__)
     Display *display = XOpenDisplay(0);
-    if (!display) {
+    if (!display && !enable_spice) {
         fprintf(stderr, "Cannot open X display\n");
         exit(1);
     }

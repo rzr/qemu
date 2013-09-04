@@ -92,7 +92,7 @@ MULTI_DEBUG_CHANNEL(qemu, skin_server);
 
 #define PORT_RETRY_COUNT 50
 
-#define TEST_HB_IGNORE "test.hb.ignore"
+#define HB_IGNORE "hb.ignore"
 #define TEST_VM_SKINPORT "test.vm.skinport"
 #define SKIN_CONFIG_PROP ".skinconfig.properties"
 
@@ -496,7 +496,7 @@ static void parse_skinconfig_prop(void)
 
     char hb_ignore_prop[32] = { 0, };
     memset(hb_ignore_prop, 0, 32);
-    strcat(hb_ignore_prop, TEST_HB_IGNORE);
+    strcat(hb_ignore_prop, HB_IGNORE);
     strcat(hb_ignore_prop, "=true");
 
     char* line_str = strtok(buf, "\n");
@@ -536,7 +536,7 @@ static void parse_skin_args(void)
             INFO("skin parameter key : %s, value : %s\n",
                 key, value);
 
-            if (0 == strcmp(TEST_HB_IGNORE, key)) {
+            if (0 == strcmp(HB_IGNORE, key)) {
                 if (0 == strcmp(OPT_BOOLEAN_TRUE, value)) {
                     ignore_heartbeat = 1;
                 } else if (0 == strcmp(OPT_BOOLEAN_FALSE, value)) {

@@ -257,7 +257,7 @@ public class SocketCommunicator implements ICommunicator {
 		}
 
 		boolean ignoreHeartbeat =
-				config.getArgBoolean(ArgsConstants.TEST_HEART_BEAT_IGNORE);
+				config.getArgBoolean(ArgsConstants.HEART_BEAT_IGNORE);
 
 		if (ignoreHeartbeat) {
 			logger.info("Ignore Skin heartbeat.");

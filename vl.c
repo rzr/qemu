@@ -204,6 +204,7 @@ int skin_disabled = 0;
 //virtio-gl
 extern int enable_gl;
 extern int enable_yagl;
+extern int enable_spice;
 const char *yagl_backend = NULL;
 int enable_vigs = 0;
 char *vigs_backend = NULL;
@@ -3934,6 +3935,9 @@ int main(int argc, char **argv, char **envp)
                     fprintf(stderr, "spice is not supported by this qemu build.\n");
                     exit(1);
                 }
+#ifdef CONFIG_MARU
+                enable_spice = 1;
+#endif
                 opts = qemu_opts_parse(olist, optarg, 0);
                 if (!opts) {
                     exit(1);
