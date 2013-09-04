@@ -677,7 +677,7 @@ static void maru_sdl_resize_bh(void *opaque)
          "height and bits-per-pixel\n");
 
 #ifdef SDL_THREAD
-        pthread_mutex_lock(&sdl_mutex);
+    pthread_mutex_lock(&sdl_mutex);
 #endif
 
     sdl_alteration = 1;
@@ -822,8 +822,6 @@ void maruskin_sdl_quit(void)
     /* remove multi-touch finger points */
     cleanup_multi_touch_state();
 
-    sdl_alteration = -1;
-
     if (sdl_init_bh != NULL) {
         qemu_bh_delete(sdl_init_bh);
     }
@@ -831,14 +829,21 @@ void maruskin_sdl_quit(void)
         qemu_bh_delete(sdl_resize_bh);
     }
 
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
+    sdl_alteration = -1;
+
     SDL_Quit();
 
 #ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
     pthread_cond_destroy(&sdl_cond);
 #endif
+
     pthread_mutex_destroy(&sdl_mutex);
 }
-
 
 void maruskin_sdl_resize(void)
 {
