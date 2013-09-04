@@ -2159,37 +2159,43 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             const GLXFBConfig *fbconfig = get_fbconfig(process, client_fbconfig);
 
             if (fbconfig) {
-
                 /* Create a light-weight context just for creating surface */
                 GloContext *context = __glo_context_create(fbconfig->formatFlags);
+                if (context) {
+                    /* glXPixmap same as input Pixmap */
+                    ClientGLXDrawable client_drawable = to_drawable(args[2]);
 
-                /* glXPixmap same as input Pixmap */
-                ClientGLXDrawable client_drawable = to_drawable(args[2]);
+                    QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                    if (qsurface) {
+                        /* get the width and height */
+                        int width, height;
+                        glo_geometry_get_from_glx((int*)args[3], &width, &height);
 
-                QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                        DEBUGF( "glXCreatePixmap: %dX%d.\n", width, height);
+                        qsurface->surface = glo_surface_create(width, height, context);
+                        if (qsurface->surface) {
+                            qsurface->client_drawable = client_drawable;
+                            qsurface->type = SURFACE_PIXMAP;
+                            qsurface->status = SURFACE_PENDING;
+                            qsurface_pixmap_ref(qsurface);
 
-                /* get the width and height */
-                int width, height;
-                glo_geometry_get_from_glx((int*)args[3], &width, &height);
+                            /* Keep this surface, will link it with context in MakeCurrent */
+                            keep_qsurface(process, qsurface);
 
-                DEBUGF( "glXCreatePixmap: %dX%d.\n", width, height);
-                qsurface->surface = glo_surface_create(width, height, context);
-                qsurface->client_drawable = client_drawable;
-				qsurface->type = SURFACE_PIXMAP;
-				qsurface->status = SURFACE_PENDING;
-                qsurface_pixmap_ref(qsurface);
+                            /* If this pixmap is linked as texture previously */
+                            if (link_drawable(process, client_drawable))
+                                glo_surface_as_texture(process->current_state->context,
+                                        qsurface->surface, qsurface->type);
 
-                /* Keep this surface, will link it with context in MakeCurrent */
-                keep_qsurface(process, qsurface);
-
-                /* If this pixmap is linked as texture previously */
-				if (link_drawable(process, client_drawable))
-					glo_surface_as_texture(process->current_state->context,
-							qsurface->surface, qsurface->type);
-
-
-                ret.i = (int)client_drawable;
-
+                            ret.i = (int)client_drawable;
+                        } else {
+                            free(qsurface);
+                            glo_context_destroy(context);
+                        }
+                    } else {
+                        glo_context_destroy(context);
+                    }
+                }
             }
             break;
         }
@@ -2267,31 +2273,40 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 			ret.i = 0;
 			const GLXFBConfig *fbconfig = get_fbconfig(process, client_fbconfig);
 
-			if (fbconfig) {
+            if (fbconfig) {
 
-				/* Create a light-weight context just for creating surface */
-				GloContext *context = __glo_context_create(fbconfig->formatFlags);
+                /* Create a light-weight context just for creating surface */
+                GloContext *context = __glo_context_create(fbconfig->formatFlags);
+                if (context) {
+                    QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                    if (qsurface) {
+                        /* get the width and height */
+                        int width, height;
+                        glo_geometry_get_from_glx((int*)args[2], &width, &height);
 
-				QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                        DEBUGF( "glXCreatePbuffer: %dX%d.\n", width, height);
+                        qsurface->surface = glo_surface_create(width, height, context);
+                        if (qsurface->surface) {
+                            /* Use GloSurface handler as no input client_drawable, and
+                             * keep only low 32bit of handler on x86_64 host.  */
+                            qsurface->client_drawable = (ClientGLXDrawable)(long)qsurface->surface;
+                            qsurface->type = SURFACE_PBUFFER;
+                            qsurface->status = SURFACE_PENDING;
+                            /*                qsurface->ref = 1;*/
 
-				/* get the width and height */
-				int width, height;
-				glo_geometry_get_from_glx((int*)args[2], &width, &height);
+                            /* Keep this surface, will link it with context in MakeCurrent */
+                            keep_qsurface(process, qsurface);
 
-				DEBUGF( "glXCreatePbuffer: %dX%d.\n", width, height);
-				qsurface->surface = glo_surface_create(width, height, context);
-				/* Use GloSurface handler as no input client_drawable, and
-				 * keep only low 32bit of handler on x86_64 host.  */
-				qsurface->client_drawable = (ClientGLXDrawable)(long)qsurface->surface;
-				qsurface->type = SURFACE_PBUFFER;
-				qsurface->status = SURFACE_PENDING;
-				/*                qsurface->ref = 1;*/
-
-				/* Keep this surface, will link it with context in MakeCurrent */
-				keep_qsurface(process, qsurface);
-
-				ret.i = qsurface->client_drawable;
-			}
+                            ret.i = qsurface->client_drawable;
+                        } else {
+                            free(qsurface);
+                            glo_context_destroy(context);
+                        }
+                    } else {
+                        glo_context_destroy(context);
+                    }
+                }
+            }
 			break;
 		}
 	case glXDestroyPbuffer_func:
