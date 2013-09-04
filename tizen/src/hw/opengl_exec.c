@@ -111,10 +111,6 @@ const GLXFBConfig FBCONFIGS[] = {
 #define FAKE_GLX_VERSION_MAJOR 1
 #define FAKE_GLX_VERSION_MINOR 2
 
-void *g_malloc(size_t size);
-void *g_realloc(void *ptr, size_t size);
-void g_free(void *ptr);
-
 /*#define glGetError() 0*/
 
 #ifdef WIN32
