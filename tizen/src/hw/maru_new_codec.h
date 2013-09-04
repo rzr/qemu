@@ -30,14 +30,16 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#include "hw.h"
-#include "kvm.h"
-#include "pci.h"
-#include "pci_ids.h"
-#include "qemu-thread.h"
-#include "maru_device_ids.h"
 
-#include <libavformat/avformat.h>
+#include "hw/hw.h"
+#include "sysemu/kvm.h"
+#include "hw/pci/pci.h"
+#include "hw/pci/pci_ids.h"
+#include "qemu/thread.h"
+
+#include "tizen/src/debug_ch.h"
+#include "maru_device_ids.h"
+#include "libavformat/avformat.h"
 
 #define CODEC_CONTEXT_MAX           1024
 
