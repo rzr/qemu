@@ -1274,7 +1274,7 @@ int main(int argc, char* argv[])
   fprintf(header, "  GL_N_CALLS\n};\n");
 
 
-  fprintf(server_stub, "void execute_func(int func_number, void **args, union gl_ret_type *pret)\n");
+  fprintf(server_stub, "static void execute_func(int func_number, void **args, union gl_ret_type *pret)\n");
   fprintf(server_stub, "{\n");
   fprintf(server_stub, "  switch(func_number)\n");
   fprintf(server_stub, "  {\n");
