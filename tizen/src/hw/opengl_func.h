@@ -33,10 +33,8 @@
 
 #ifdef TARGET_X86_64
 #define TARGET_LONG_BITS 64
-#define TARGET_PHYS_ADDR_BITS 64
 #else
 #define TARGET_LONG_BITS 32
-#define TARGET_PHYS_ADDR_BITS 32
 #endif
 
 //#define NEED_CPU_H
