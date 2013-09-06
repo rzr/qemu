@@ -197,12 +197,9 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					SWT.ICON_ERROR, config);
 			System.exit(-1);
 		}
-		logger.info("lcd bounds : " + lcdBounds);
+		logger.info("display bounds : " + lcdBounds);
 
 		currentState.setDisplayBounds(lcdBounds);
-		if (SwtUtil.isMacPlatform() == true) {
-			lcdCanvas.setBounds(currentState.getDisplayBounds());
-		}
 
 		/* arrange the skin image */
 		Image tempImage = null;
@@ -227,19 +224,15 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			tempKeyPressedImage.dispose();
 		}
 
+		if (SwtUtil.isMacPlatform() == true) {
+			lcdCanvas.setBounds(currentState.getDisplayBounds());
+		}
+
 		/* arrange the progress bar */
 		if (skin.bootingProgress != null) {
 			skin.bootingProgress.setBounds(lcdBounds.x,
 					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
 		}
-
-		/* set window size */
-		if (currentState.getCurrentImage() != null) {
-			ImageData imageData = currentState.getCurrentImage().getImageData();
-			shell.setMinimumSize(imageData.width, imageData.height);
-		}
-
-		shell.pack();
 
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {
@@ -292,18 +285,10 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			public void paintControl(final PaintEvent e) {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
+
 					if (SwtUtil.isMacPlatform() == false) {
 						lcdCanvas.setBounds(currentState.getDisplayBounds());
 					}
-
-//					if (skin.communicator.isSensorDaemonStarted() == true) {
-//						/* Let's do one more update for sdl display surface
-//						while skipping of framebuffer drawing */
-//						DisplayStateData lcdStateData = new DisplayStateData(
-//								currentState.getCurrentScale(), currentState.getCurrentRotationId());
-//						skin.communicator.sendToQEMU(
-//								SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
-//					}
 				}
 
 				/* set window size once again (for ubuntu 12.04) */

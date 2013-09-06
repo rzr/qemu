@@ -4,6 +4,7 @@
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
+ * Munkyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * HyunJun Son
@@ -117,11 +118,15 @@ public class ScreenShotDialog {
 		this.config = config;
 		this.scaleLevel = 100d;
 
-		shell = new Shell(parent, SWT.SHELL_TRIM);
+		if (SwtUtil.isMacPlatform() == false) {
+			shell = new Shell(parent, SWT.SHELL_TRIM);
+		} else {
+			shell = new Shell(parent.getDisplay(), SWT.SHELL_TRIM);
+		}
 		shell.setText("Screen Shot - " + SkinUtil.makeEmulatorName(config));
 
 		/* To prevent the icon switching on Mac */
-		if (!SwtUtil.isMacPlatform()) {
+		if (SwtUtil.isMacPlatform() == false) {
 			if (icon != null) {
 				shell.setImage(icon);
 			}
@@ -130,6 +135,8 @@ public class ScreenShotDialog {
 		shell.addListener(SWT.Close, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
+				logger.info("ScreenShot Window is closed");
+
 				if (null != image) {
 					if (!reserveImage) {
 						image.dispose();

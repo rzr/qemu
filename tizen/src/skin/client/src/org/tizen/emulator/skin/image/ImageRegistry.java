@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.EmulatorUI;

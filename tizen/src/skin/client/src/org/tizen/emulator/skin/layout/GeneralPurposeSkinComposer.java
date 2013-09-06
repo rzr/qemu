@@ -272,13 +272,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		/* set window size */
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
-			shell.setMinimumSize(imageData.width, imageData.height);
-		}
-
-		shell.pack();
-
-		if (currentState.getCurrentImage() != null) {
-			ImageData imageData = currentState.getCurrentImage().getImageData();
 			shell.setSize(imageData.width, imageData.height);
 		}
 
@@ -377,15 +370,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			public void paintControl(final PaintEvent e) {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
-
-//					if (skin.communicator.isSensorDaemonStarted() == true) {
-//						/* Let's do one more update for sdl display surface
-//						while skipping of framebuffer drawing */
-//						DisplayStateData lcdStateData = new DisplayStateData(
-//								currentState.getCurrentScale(), currentState.getCurrentRotationId());
-//						skin.communicator.sendToQEMU(
-//								SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
-//					}
 				}
 
 				/* set window size once again (for ubuntu 12.04) */
