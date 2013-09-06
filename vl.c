@@ -3666,7 +3666,7 @@ int main(int argc, char **argv, char **envp)
 #endif
                 break;
            case QEMU_OPTION_enable_yagl:
-#if defined(CONFIG_YAGL) && !defined(CONFIG_DARWIN)
+#if defined(CONFIG_YAGL)
                 enable_yagl = 1;
 #else
                 fprintf(stderr, "YaGL openGLES passthrough support is disabled,"
@@ -3674,7 +3674,7 @@ int main(int argc, char **argv, char **envp)
 #endif
                 break;
            case QEMU_OPTION_yagl_backend:
-#if defined(CONFIG_YAGL) && !defined(CONFIG_DARWIN)
+#if defined(CONFIG_YAGL)
                 yagl_backend = optarg;
 #else
                 fprintf(stderr, "YaGL openGLES passthrough support is disabled,"
@@ -3682,7 +3682,7 @@ int main(int argc, char **argv, char **envp)
 #endif
                 break;
            case QEMU_OPTION_enable_vigs:
-#if defined(CONFIG_VIGS) && !defined(CONFIG_DARWIN)
+#if defined(CONFIG_VIGS)
                 enable_vigs = 1;
 #else
                 fprintf(stderr, "VIGS support is disabled,"
@@ -3690,7 +3690,7 @@ int main(int argc, char **argv, char **envp)
 #endif
                 break;
            case QEMU_OPTION_vigs_backend:
-#if defined(CONFIG_VIGS) && !defined(CONFIG_DARWIN)
+#if defined(CONFIG_VIGS)
                 vigs_backend = g_strdup(optarg);
 #else
                 fprintf(stderr, "VIGS support is disabled,"

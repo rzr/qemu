@@ -3973,7 +3973,8 @@ if test "$yagl" = "yes" ; then
     echo -n;
   elif test "$mingw32" = "yes" ; then
     echo -n;
-  else
+  elif test "$darwin" = "yes" ; then
+    echo -n;  else
     echo "ERROR: YaGL is not available on $targetos"
     exit 1
   fi

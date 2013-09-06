@@ -102,10 +102,10 @@ set_target() {
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
-    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
+    if [ -z "$YAGL_EN" ] ; then
       yagl_enable yes
     fi
-    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+    if [ -z "$VIGS_EN" ] ; then
       vigs_enable yes
     fi
   ;;
@@ -124,10 +124,10 @@ set_target() {
     if [ -z "$VIRTIOGL_EN" ] ; then
       virtgl_enable yes
     fi
-    if [ -z "$YAGL_EN" ] && [ "$targetos" != "Darwin" ] ; then
-      yagl_enable yes
+    if [ -z "$YAGL_EN" ] ; then   
+        yagl_enable yes
     fi
-    if [ -z "$VIGS_EN" ] && [ "$targetos" != "Darwin" ] ; then
+    if [ -z "$VIGS_EN" ] ; then
       vigs_enable yes
     fi
   ;;

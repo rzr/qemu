@@ -168,6 +168,7 @@ $(call set-vpath, $(SRC_PATH)/hw/yagl_apis/egl: \
                   $(SRC_PATH)/hw/yagl_backends/egl_onscreen: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_glx: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_wgl: \
+                  $(SRC_PATH)/hw/yagl_drivers/egl_agl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles_ogl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles_onscreen: \
                   $(SRC_PATH)/hw/yagl_drivers/gles1_ogl: \
@@ -278,6 +279,11 @@ endif
 ifdef CONFIG_WIN32
 obj-y += yagl_egl_wgl.o
 endif
+# EGL AGL driver
+ifdef CONFIG_DARWIN
+QEMU_CFLAGS += -Wno-comment
+obj-y += yagl_egl_agl.o
+endif
 # GLES OpenGL common driver
 obj-y += yagl_gles_ogl.o
 # GLESv1_CM OpenGL driver
@@ -316,6 +322,10 @@ endif
 # GL WGL backend
 ifdef CONFIG_WIN32
 obj-y += vigs_gl_backend_wgl.o
+endif
+# GL AGL backend
+ifdef CONFIG_DARWIN
+obj-y += vigs_gl_backend_agl.o
 endif
 
 endif

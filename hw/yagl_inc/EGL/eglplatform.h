@@ -104,6 +104,12 @@ typedef struct ANativeWindow        *EGLNativeWindowType;
 typedef struct egl_native_pixmap_t  *EGLNativePixmapType;
 typedef void                        *EGLNativeDisplayType;
 
+#elif defined(__APPLE__) && defined (__MACH__) /* Mac OS X */
+
+typedef void                *EGLNativeDisplayType;
+typedef void                *EGLNativePixmapType;
+typedef void                *EGLNativeWindowType;
+
 #elif defined(__unix__)
 
 #ifdef MESA_EGL_NO_X11_HEADERS
