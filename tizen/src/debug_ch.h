@@ -20,12 +20,12 @@
 
 
 /**
- * @file	debug_ch.h
- * @brief	Management of the debugging channels
+ * @file    debug_ch.h
+ * @brief   Management of the debugging channels
  *
- * @author	
+ * @author
  * @date
- * @attention 
+ * @attention
  */
 
 #ifndef __DEBUGCHANNEL_H
@@ -41,20 +41,20 @@ extern "C" {
 
 enum _debug_class
 {
-	__DBCL_FIXME,
-	__DBCL_ERR,
-	__DBCL_WARN,
-	__DBCL_TRACE,
-	__DBCL_INFO,
+    __DBCL_FIXME,
+    __DBCL_ERR,
+    __DBCL_WARN,
+    __DBCL_TRACE,
+    __DBCL_INFO,
 
-	__DBCL_INIT = 7  /* lazy init flag */
+    __DBCL_INIT = 7  /* lazy init flag */
 };
 
 struct _debug_channel
 {
-	unsigned char flags;
-	char name[15];
-	char multiname[15];
+    unsigned char flags;
+    char name[15];
+    char multiname[15];
 };
 
 #ifndef NO_DEBUG
@@ -75,37 +75,37 @@ struct _debug_channel
 #define __GET_DEBUGGING(dbcl,dbch)  __GET_DEBUGGING##dbcl(dbch)
 
 #define __IS_DEBUG_ON(dbcl,dbch) \
-	(__GET_DEBUGGING##dbcl(dbch) && \
-	 (_dbg_get_channel_flags(dbch) & (1 << __DBCL##dbcl)))
+    (__GET_DEBUGGING##dbcl(dbch) && \
+     (_dbg_get_channel_flags(dbch) & (1 << __DBCL##dbcl)))
 
 #define __DPRINTF(dbcl,dbch) \
-	do{ if(__GET_DEBUGGING(dbcl,(dbch))){ \
-		struct _debug_channel * const __dbch =(struct _debug_channel *)(dbch); \
-		const enum _debug_class __dbcl = __DBCL##dbcl; \
-		_DBG_LOG
+    do{ if(__GET_DEBUGGING(dbcl,(dbch))){ \
+        struct _debug_channel * const __dbch =(struct _debug_channel *)(dbch); \
+        const enum _debug_class __dbcl = __DBCL##dbcl; \
+        _DBG_LOG
 
 #define _DBG_LOG(args...) \
-		dbg_log(__dbcl, (struct _debug_channel *)(__dbch), args); } }while(0)
+        dbg_log(__dbcl, (struct _debug_channel *)(__dbch), args); } }while(0)
 /*
 
 #define __DPRINTF(dbcl,dbch) \
-	(!__GET_DEBUGGING(dbcl,(dbch)) || \
-	 (dbg_log(__DBCL##dbcl,(dbch), "") == -1)) ? \
+    (!__GET_DEBUGGING(dbcl,(dbch)) || \
+     (dbg_log(__DBCL##dbcl,(dbch), "") == -1)) ? \
 (void)0 : (void)dbg_printf
 */
 
-extern unsigned char _dbg_get_channel_flags( struct _debug_channel *channel );
-extern int _dbg_set_channel_flags( struct _debug_channel *channel,
-		unsigned char set, unsigned char clear );
+extern unsigned char _dbg_get_channel_flags(struct _debug_channel *channel);
+extern int _dbg_set_channel_flags(struct _debug_channel *channel,
+        unsigned char set, unsigned char clear);
 
-extern const char *dbg_sprintf( const char *format, ... );
-extern int dbg_printf( const char *format, ... );
-extern int dbg_printf_nonewline( const char *format, ... );
-extern int dbg_log( enum _debug_class cls, struct _debug_channel *ch,
-		const char *format, ... );
+extern const char *dbg_sprintf(const char *format, ...);
+extern int dbg_printf(const char *format, ...);
+extern int dbg_printf_nonewline(const char *format, ...);
+extern int dbg_log(enum _debug_class cls, struct _debug_channel *ch,
+        const char *format, ...);
 
-extern char *get_dbg_temp_buffer( size_t size );
-extern void release_dbg_temp_buffer( char *buffer, size_t size );
+extern char *get_dbg_temp_buffer(size_t size);
+extern void release_dbg_temp_buffer(char *buffer, size_t size);
 
 #ifndef TRACE
 #define TRACE                 __DPRINTF(_TRACE,_dbch___default)
@@ -137,13 +137,13 @@ extern void release_dbg_temp_buffer( char *buffer, size_t size );
 #define INFO_ON(ch)           __IS_DEBUG_ON(_INFO,&_dbch_##ch)
 
 #define DECLARE_DEBUG_CHANNEL(ch) \
-	static struct _debug_channel _dbch_##ch = { ~0, #ch, ""};
+    static struct _debug_channel _dbch_##ch = { ~0, #ch, ""};
 #define DEFAULT_DEBUG_CHANNEL(ch) \
-	static struct _debug_channel _dbch_##ch = { ~0, #ch, ""}; \
+    static struct _debug_channel _dbch_##ch = { ~0, #ch, ""}; \
 static struct _debug_channel * const _dbch___default = &_dbch_##ch
 
 #define MULTI_DEBUG_CHANNEL(ch, chm) \
-	static struct _debug_channel _dbch_##ch = { ~0, #ch , #chm}; \
+    static struct _debug_channel _dbch_##ch = { ~0, #ch , #chm}; \
 static struct _debug_channel * const _dbch___default = &_dbch_##ch
 
 #define DPRINTF               dbg_printf
@@ -152,7 +152,7 @@ static struct _debug_channel * const _dbch___default = &_dbch_##ch
 void assert_fail(char *exp, const char *file, int line);
 
 #define ASSERT(exp) if (exp) ;                                      \
-	else assert_fail( (char *)#exp, __FILE__, __LINE__ )
+    else assert_fail( (char *)#exp, __FILE__, __LINE__ )
 
 #ifdef __cplusplus
 }
