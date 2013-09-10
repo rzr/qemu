@@ -91,14 +91,14 @@ typedef struct CodecContext {
 } CodecContext;
 
 typedef struct CodecThreadPool {
-    QemuThread          *wrk_thread;
+    QemuThread          *threads;
     QemuMutex           mutex;
     QemuCond            cond;
     uint32_t            state;
     uint8_t             isrunning;
 } CodecThreadPool;
 
-typedef struct NewCodecState {
+typedef struct MaruBrillCodecState {
     PCIDevice           dev;
 
     uint8_t             *vaddr;
@@ -110,14 +110,14 @@ typedef struct NewCodecState {
     QemuMutex           context_queue_mutex;
     QemuMutex           ioparam_queue_mutex;
 
-    CodecThreadPool     wrk_thread;
+    CodecThreadPool     threadpool;
 
     CodecContext        context[CODEC_CONTEXT_MAX];
     CodecParam          ioparam;
 
     uint32_t            context_index;
     uint8_t             isrunning;
-} NewCodecState;
+} MaruBrillCodecState;
 
 enum codec_io_cmd {
     CODEC_CMD_API_INDEX             = 0x28,
@@ -149,63 +149,12 @@ enum codec_type {
     CODEC_TYPE_ENCODE,
 };
 
-#if 0
-enum media_type {
-    MEDIA_TYPE_UNKNOWN = -1,
-    MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_AUDIO,
-};
-#endif
-
 enum thread_state {
-    CODEC_TASK_INIT     = 0,
+    CODEC_TASK_START    = 0,
     CODEC_TASK_END      = 0x1f,
 };
-
-#if 0
-/*
- *  Codec Thread Functions
- */
-void *new_codec_dedicated_thread(void *opaque);
-
-void *new_codec_pop_readqueue(NewCodecState *s, int32_t file_index);
-void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index);
-#endif
 
 /*
  *  Codec Device Functions
  */
-int new_codec_device_init(PCIBus *bus);
-#if 0
-uint64_t new_codec_read(void *opaque, target_phys_addr_t addr,
-                    unsigned size);
-void new_codec_write(void *opaque, target_phys_addr_t addr,
-                uint64_t value, unsigned size);
-#endif
-
-#if 0
-/*
- *  Codec Helper Functions
- */
-void new_codec_reset_parser_info(NewCodecState *s, int32_t ctx_index);
-void new_codec_reset_avcontext(NewCodecState *s, int32_t value);
-
-/*
- *  FFMPEG Functions
- */
-int new_avcodec_query_list(NewCodecState *s);
-int new_avcodec_alloc_context(NewCodecState *s, int index);
-
-int new_avcodec_init(NewCodecState *s, int ctx_id, int f_id);
-int new_avcodec_deinit(NewCodecState *s, int ctx_id, int f_id);
-int new_avcodec_decode_video(NewCodecState *s, int ctx_id, int f_id);
-int new_avcodec_encode_video(NewCodecState *s, int ctx_id, int f_id);
-int new_avcodec_decode_audio(NewCodecState *s, int ctx_id, int f_id);
-int new_avcodec_encode_audio(NewCodecState *s, int ctx_id, int f_id);
-int new_avcodec_picture_copy(NewCodecState *s, int ctx_id, int f_id);
-
-AVCodecParserContext *new_avcodec_parser_init(AVCodecContext *avctx);
-int new_avcodec_parser_parse (AVCodecParserContext *pctx, AVCodecContext *avctx,
-                            uint8_t *inbuf, int inbuf_size,
-                            int64_t pts, int64_t dts, int64_t pos);
-#endif
+int maru_brill_codec_pci_device_init(PCIBus *bus);

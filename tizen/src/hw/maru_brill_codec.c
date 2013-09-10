@@ -28,21 +28,23 @@
  *
  */
 
-
-#include "maru_new_codec.h"
 #include "qemu-common.h"
+
+#include "maru_brill_codec.h"
 #include "osutil.h"
 
 /* define debug channel */
-MULTI_DEBUG_CHANNEL(qemu, new_codec);
+// brill: brilliant abbreviation
+MULTI_DEBUG_CHANNEL(qemu, brillcodec);
 
-#define NEW_CODEC_DEV_NAME     "new_codec"
-#define NEW_CODEC_VERSION      1
+// device
+#define CODEC_DEVICE_NAME   "brilcodec"
+#define CODEC_VERSION       1
 
-#define NEW_CODEC_MEM_SIZE          (32 * 1024 * 1024)
-#define NEW_CODEC_REG_SIZE          (256)
-#define NEW_CODEC_META_DATA_SIZE    (256)
+#define CODEC_MEM_SIZE          (32 * 1024 * 1024)
+#define CODEC_REG_SIZE          (256)
 
+// FFmpeg
 #define GEN_MASK(x) ((1 << (x)) - 1)
 #define ROUND_UP_X(v, x) (((v) + GEN_MASK(x)) & ~GEN_MASK(x))
 #define ROUND_UP_2(x) ROUND_UP_X(x, 1)
@@ -52,6 +54,7 @@ MULTI_DEBUG_CHANNEL(qemu, new_codec);
 
 #define DEFAULT_VIDEO_GOP_SIZE 15
 
+// debug
 #ifdef CODEC_DEBUG
 #include <sys/time.h>
 #define CODEC_CURRENT_TIME \
@@ -63,6 +66,9 @@ MULTI_DEBUG_CHANNEL(qemu, new_codec);
 #else
 #define CODEC_CURRENT_TIME
 #endif
+
+// device memory
+#define CODEC_META_DATA_SIZE    (256)
 
 typedef struct DeviceMemEntry {
     uint8_t *buf;
@@ -77,7 +83,6 @@ static DeviceMemEntry *entry[CODEC_CONTEXT_MAX];
 
 typedef struct CodecParamStg {
     void *buf;
-
     QTAILQ_ENTRY(CodecParamStg) node;
 } CodecParamStg;
 
@@ -97,77 +102,83 @@ typedef struct PixFmtInfo {
 
 static PixFmtInfo pix_fmt_info[PIX_FMT_NB];
 
-static void new_codec_reset_parser_info(NewCodecState *s, int32_t ctx_index);
+// static void maru_brill_codec_reset_parser_info(MaruBrillCodecState *s, int32_t ctx_index);
 
-static int new_codec_query_list(NewCodecState *s);
-static void new_codec_alloc_context(NewCodecState *s, int index);
-static void new_codec_release_context(NewCodecState *s, int32_t value);
+static int maru_brill_codec_query_list(MaruBrillCodecState *s);
+static void maru_brill_codec_alloc_context(MaruBrillCodecState *s, int index);
+static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t value);
 
-static void new_codec_init(NewCodecState *s, int ctx_id, int f_id);
-static void new_codec_deinit(NewCodecState *s, int ctx_id, int f_id);
-static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id);
-static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id);
-static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id);
-static void new_codec_encode_audio(NewCodecState *s, int ctx_id, int f_id);
-static void new_codec_picture_copy(NewCodecState *s, int ctx_id, int f_id);
+// codec functions
+static void codec_init(MaruBrillCodecState *s, int ctx_id, int f_id);
+static void codec_deinit(MaruBrillCodecState *s, int ctx_id, int f_id);
+static void codec_decode_video(MaruBrillCodecState *s, int ctx_id, int f_id);
+static void codec_encode_video(MaruBrillCodecState *s, int ctx_id, int f_id);
+static void codec_decode_audio(MaruBrillCodecState *s, int ctx_id, int f_id);
+static void codec_encode_audio(MaruBrillCodecState *s, int ctx_id, int f_id);
+static void codec_picture_copy(MaruBrillCodecState *s, int ctx_id, int f_id);
 
-static AVCodecParserContext *new_codec_parser_init(AVCodecContext *avctx);
+typedef void (*CodecFuncEntry)(MaruBrillCodecState *, int, int);
+static CodecFuncEntry codec_func_handler[] = {
+    codec_init,
+    codec_decode_video,
+    codec_encode_video,
+    codec_decode_audio,
+    codec_encode_audio,
+    codec_picture_copy,
+    codec_deinit,
+};
+
+static AVCodecParserContext *maru_brill_codec_parser_init(AVCodecContext *avctx);
 #if 0
-static int new_codec_parser_parse (AVCodecParserContext *pctx, AVCodecContext *avctx,
+static int maru_brill_codec_parser_parse (AVCodecParserContext *pctx, AVCodecContext *avctx,
                             uint8_t *inbuf, int inbuf_size,
                             int64_t pts, int64_t dts, int64_t pos);
 #endif
 
-static void *new_codec_dedicated_thread(void *opaque);
-static void *new_codec_pop_readqueue(NewCodecState *s, int32_t file_index);
-static void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index);
-
-typedef void (*CodecFuncEntry)(NewCodecState *, int, int);
-
-static CodecFuncEntry codec_func_handler[] = {
-    new_codec_init,
-    new_codec_decode_video,
-    new_codec_encode_video,
-    new_codec_decode_audio,
-    new_codec_encode_audio,
-    new_codec_picture_copy,
-    new_codec_deinit,
-};
-
 static int worker_thread_cnt = 0;
+static void *maru_brill_codec_threads(void *opaque);
 
-static void get_host_cpu_cores(void)
+static void *maru_brill_codec_pop_readqueue(MaruBrillCodecState *s, int32_t file_index);
+static void maru_brill_codec_pop_writequeue(MaruBrillCodecState *s, int32_t file_index);
+static void maru_brill_codec_push_readqueue(MaruBrillCodecState *s, CodecParam *ioparam);
+static void maru_brill_codec_push_writequeue(MaruBrillCodecState *s, void* buf,
+                                            uint32_t buf_size, int ctx_id, int f_id);
+
+static void maru_brill_codec_add_ioparam_queue(MaruBrillCodecState *s, void *ioparam);
+
+// threads
+static void maru_brill_codec_get_cpu_cores(void)
 {
     worker_thread_cnt = get_number_of_processors();
-    INFO("number of dedicated threads: %d\n", worker_thread_cnt);
+    TRACE("number of threads: %d\n", worker_thread_cnt);
 }
 
-static void new_codec_dedicated_thread_init(NewCodecState *s)
+static void maru_brill_codec_threads_create(MaruBrillCodecState *s)
 {
-    int index = 0;
+    int index;
     QemuThread *pthread = NULL;
 
     TRACE("enter: %s\n", __func__);
 
     pthread = g_malloc0(sizeof(QemuThread) * worker_thread_cnt);
     if (!pthread) {
-        ERR("Failed to allocate wrk_thread memory.\n");
+        ERR("Failed to allocate threadpool memory.\n");
         return;
     }
-    qemu_cond_init(&s->wrk_thread.cond);
-    qemu_mutex_init(&s->wrk_thread.mutex);
+    qemu_cond_init(&s->threadpool.cond);
+    qemu_mutex_init(&s->threadpool.mutex);
     s->isrunning = 1;
 
-    for (; index < worker_thread_cnt; index++) {
+    for (index = 0; index < worker_thread_cnt; index++) {
         qemu_thread_create(&pthread[index],
-            new_codec_dedicated_thread, (void *)s, QEMU_THREAD_JOINABLE);
+            maru_brill_codec_threads, (void *)s, QEMU_THREAD_JOINABLE);
     }
 
-    s->wrk_thread.wrk_thread = pthread;
+    s->threadpool.threads = pthread;
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_thread_exit(NewCodecState *s)
+static void maru_brill_codec_thread_exit(MaruBrillCodecState *s)
 {
     int index;
 
@@ -177,170 +188,28 @@ static void new_codec_thread_exit(NewCodecState *s)
     s->isrunning = 0;
 
     for (index = 0; index < worker_thread_cnt; index++) {
-        qemu_thread_join(&s->wrk_thread.wrk_thread[index]);
+        qemu_thread_join(&s->threadpool.threads[index]);
     }
 
     TRACE("destroy mutex and conditional.\n");
-    qemu_mutex_destroy(&s->wrk_thread.mutex);
-    qemu_cond_destroy(&s->wrk_thread.cond);
+    qemu_mutex_destroy(&s->threadpool.mutex);
+    qemu_cond_destroy(&s->threadpool.cond);
 
-    if (s->wrk_thread.wrk_thread) {
-        g_free (s->wrk_thread.wrk_thread);
-        s->wrk_thread.wrk_thread = NULL;
+    if (s->threadpool.threads) {
+        g_free (s->threadpool.threads);
+        s->threadpool.threads = NULL;
     }
 
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_add_ioparam_queue(NewCodecState *s, void *ctx_info)
-{
-    CodecParamStg *elem = NULL;
-
-    elem = g_malloc0(sizeof(CodecParamStg));
-    if (!elem) {
-        ERR("failed to allocate ioparam_queue. %d\n", sizeof(CodecParamStg));
-        return;
-    }
-
-    elem->buf = ctx_info;
-
-    qemu_mutex_lock(&s->ioparam_queue_mutex);
-    QTAILQ_INSERT_TAIL(&ioparam_queue, elem, node);
-    qemu_mutex_unlock(&s->ioparam_queue_mutex);
-}
-
-static void new_codec_push_readqueue(NewCodecState *s, CodecParam *ioparam)
-{
-    DeviceMemEntry *elem = NULL;
-    int readbuf_size, size = 0;
-    uint8_t *readbuf = NULL;
-    uint8_t *device_mem = NULL;
-
-    TRACE("push_readqueue. mem_offset: 0x%x\n", ioparam->mem_offset);
-
-    device_mem = (uint8_t *)s->vaddr + ioparam->mem_offset;
-    if (!device_mem) {
-        ERR("[%d] device memory region is null\n");
-        return;
-    }
-
-    elem = g_malloc0(sizeof(DeviceMemEntry));
-    if (!elem) {
-        ERR("failed to allocate a buffer for readqueue. size: %d\n",
-            sizeof(DeviceMemEntry));
-        return;
-    }
-
-    memcpy(&readbuf_size, device_mem, sizeof(readbuf_size));
-    size = sizeof(readbuf_size);
-
-    TRACE("read data as many as %d size from guest\n", readbuf_size);
-    if (readbuf_size <= 0) {
-        TRACE("readbuf size is smaller than zero. %d\n", readbuf_size);
-    } else {
-        readbuf = g_malloc0(readbuf_size);
-        if (!readbuf) {
-            ERR("failed to allocate a read buffer. size: %d\n", readbuf_size);
-        } else {
-            TRACE("copy input buffer from guest.\n");
-            memcpy(readbuf, device_mem + size, readbuf_size);
-//          memset(device_mem, 0x00, sizeof(readbuf_size) + readbuf_size);
-        }
-    }
-    memset(device_mem, 0x00, sizeof(readbuf_size));
-
-    elem->buf = readbuf;
-    elem->buf_size = readbuf_size;
-    elem->buf_id = ioparam->file_index;
-    elem->ctx_id = ioparam->ctx_index;
-
-    qemu_mutex_lock(&s->context_queue_mutex);
-    QTAILQ_INSERT_TAIL(&codec_rq, elem, node);
-    qemu_mutex_unlock(&s->context_queue_mutex);
-}
-
-#if 0
-static int new_codec_header(void *opaque, int ctx_index, uint8_t *mem_start)
-{
-    int size = 0;
-    uint8_t *device_mem = NULL;
-    CodecParam *ioparam = (CodecParam *)opaque;
-
-    TRACE("enter: %s\n", __func__);
-
-    TRACE("context_index: %d\n", ctx_index);
-    device_mem = mem_start + ((ctx_index - 1) * 256);
-    if (!device_mem) {
-        ERR("device memory is null.\n");
-        return -1;
-    }
-
-    memcpy(&ioparam->api_index, device_mem, sizeof(ioparam->api_index));
-    size = sizeof(ioparam->api_index);
-    memcpy(&ioparam->mem_offset, device_mem + size, sizeof(ioparam->mem_offset));
-    size += sizeof(ioparam->mem_offset);
-
-    TRACE("api_index: %d, mem_offset 0x%x\n",
-        ioparam->api_index, ioparam->mem_offset);
-
-    TRACE("leave: %s\n", __func__);
-
-    return size;
-}
-
-static void new_codec_switch_thread(NewCodecState *s, int32_t ctx_idx)
-{
-    CodecParam *ioparam;
-
-    ioparam = g_malloc0(sizeof(CodecParam));
-    if (!ioparam) {
-        ERR("switch_thread. failed to allocate memory.\n");
-        return;
-    }
-    ioparam->file_index = s->ioparam.file_index;
-    ioparam->ctx_index = ctx_idx;
-
-    TRACE("before parse codec_header, ctx_id: %d\n", ctx_idx);
-    new_codec_header(ioparam, ctx_idx, s->vaddr);
-
-#if 1
-    switch (ioparam->api_index) {
-    case CODEC_INIT:
-        new_codec_init(s, ctx_idx, s->ioparam.file_index);
-        g_free(ioparam);
-        break;
-    case CODEC_DECODE_VIDEO ... CODEC_ENCODE_AUDIO:
-        new_codec_push_readqueue(s, ioparam);
-
-        new_codec_add_ioparam_queue(s, (void *)ioparam);
-        qemu_cond_signal(&s->wrk_thread.cond);
-
-        break;
-    default:
-        TRACE("no need to push data to readqueue. %d\n", ioparam->api_index);
-        break;
-    }
-#endif
-    // FIXME: in case of default, need to call the below functions?
-//    new_codec_add_ioparam_queue(s, (void *)ioparam);
-//    qemu_cond_signal(&s->wrk_thread.cond);
-}
-#endif
-
-static void new_codec_wakeup_thread(NewCodecState *s, int api_index)
+static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_index)
 {
     int32_t ctx_id = 0;
-    CodecParam *ioparam;
-//    CodecParam *ctx_info = NULL;
+    CodecParam *ioparam = NULL;
 
     ctx_id = s->ioparam.ctx_index;
     TRACE("[%d] context index: %d\n", __LINE__, ctx_id);
-
-#if 0
-    ioparam = &(s->context[ctx_id].ioparam);
-    memset(ioparam, 0x00, sizeof(CodecParam));
-    memcpy(ioparam, &s->ioparam, sizeof(CodecParam));
-#endif
 
     ioparam = g_malloc0(sizeof(CodecParam));
     memcpy(ioparam, &s->ioparam, sizeof(CodecParam));
@@ -350,30 +219,20 @@ static void new_codec_wakeup_thread(NewCodecState *s, int api_index)
         ioparam->api_index, ioparam->ctx_index);
 
     switch (ioparam->api_index) {
-    case CODEC_INIT:
-//        TRACE("no use large memory size\n");
-        break;
     case CODEC_DECODE_VIDEO ... CODEC_ENCODE_AUDIO:
-        new_codec_push_readqueue(s, ioparam);
+        maru_brill_codec_push_readqueue(s, ioparam);
         break;
-    case CODEC_PICTURE_COPY ... CODEC_DEINIT:
-        TRACE("no data from guest.\n");
-        break;
-//  case CODEC_DEINIT:
-//      new_codec_deinit(s, ctx_id, ioparam->file_index);
-//      break;
     default:
-        TRACE("invalid codec command.\n");
+        TRACE("no buffer from guest\n");
         break;
     }
-
-    new_codec_add_ioparam_queue(s, (void *)ioparam);
-    qemu_cond_signal(&s->wrk_thread.cond);
+    maru_brill_codec_add_ioparam_queue(s, (void *)ioparam);
+    qemu_cond_signal(&s->threadpool.cond);
 }
 
-static void *new_codec_dedicated_thread(void *opaque)
+static void *maru_brill_codec_threads(void *opaque)
 {
-    NewCodecState *s = (NewCodecState *)opaque;
+    MaruBrillCodecState *s = (MaruBrillCodecState *)opaque;
 
     TRACE("enter: %s\n", __func__);
 
@@ -382,7 +241,7 @@ static void *new_codec_dedicated_thread(void *opaque)
         int ctx_id, f_id, api_id;
         CodecParamStg *elem = NULL;
 
-        qemu_cond_wait(&s->wrk_thread.cond, &s->context_mutex);
+        qemu_cond_wait(&s->threadpool.cond, &s->context_mutex);
 
         qemu_mutex_lock(&s->ioparam_queue_mutex);
         elem = QTAILQ_FIRST(&ioparam_queue);
@@ -409,9 +268,9 @@ static void *new_codec_dedicated_thread(void *opaque)
 
         codec_func_handler[api_id](s, ctx_id, f_id);
 
-        qemu_mutex_lock(&s->wrk_thread.mutex);
-        s->wrk_thread.state = CODEC_TASK_END;
-        qemu_mutex_unlock(&s->wrk_thread.mutex);
+        qemu_mutex_lock(&s->threadpool.mutex);
+        s->threadpool.state = CODEC_TASK_END;
+        qemu_mutex_unlock(&s->threadpool.mutex);
 
         if (api_id == CODEC_DEINIT) {
             TRACE("deinit func does not need to raise interrupt.\n");
@@ -421,14 +280,172 @@ static void *new_codec_dedicated_thread(void *opaque)
         }
     }
     qemu_mutex_unlock(&s->context_mutex);
-    new_codec_thread_exit(s);
+    maru_brill_codec_thread_exit(s);
 
     TRACE("leave: %s\n", __func__);
     return NULL;
 }
 
-static void new_serialize_video_data(const struct video_data *video,
-                                    AVCodecContext *avctx)
+static DeviceMemEntry *get_device_mem_ptr(MaruBrillCodecState *s,
+                                        uint32_t file_index)
+{
+    DeviceMemEntry *elem = NULL;
+
+    TRACE("pop element from codec readqueue.\n");
+    elem = (DeviceMemEntry *)maru_brill_codec_pop_readqueue(s, file_index);
+    if (!elem) {
+        ERR("failed to pop from the queue.\n");
+        return NULL;
+    }
+
+    qemu_mutex_lock(&s->context_queue_mutex);
+    QTAILQ_REMOVE(&codec_rq, elem, node);
+    qemu_mutex_unlock(&s->context_queue_mutex);
+
+    return elem;
+}
+
+// queue
+static void maru_brill_codec_add_ioparam_queue(MaruBrillCodecState *s, void *ioparam)
+{
+    CodecParamStg *elem = NULL;
+
+    elem = g_malloc0(sizeof(CodecParamStg));
+    if (!elem) {
+        ERR("failed to allocate ioparam_queue. %d\n", sizeof(CodecParamStg));
+        return;
+    }
+
+    elem->buf = ioparam;
+
+    qemu_mutex_lock(&s->ioparam_queue_mutex);
+    QTAILQ_INSERT_TAIL(&ioparam_queue, elem, node);
+    qemu_mutex_unlock(&s->ioparam_queue_mutex);
+}
+
+static void maru_brill_codec_push_readqueue(MaruBrillCodecState *s, CodecParam *ioparam)
+{
+    DeviceMemEntry *elem = NULL;
+    int readbuf_size, size = 0;
+    uint8_t *readbuf = NULL;
+    uint8_t *device_mem = NULL;
+
+    TRACE("push_readqueue. mem_offset: 0x%x\n", ioparam->mem_offset);
+
+    device_mem = (uint8_t *)s->vaddr + ioparam->mem_offset;
+    if (!device_mem) {
+        ERR("[%d] device memory region is null\n");
+        return;
+    }
+
+    elem = g_malloc0(sizeof(DeviceMemEntry));
+    if (!elem) {
+        ERR("failed to allocate a buffer for readqueue. size: %d\n",
+            sizeof(DeviceMemEntry));
+        return;
+    }
+
+    memcpy(&readbuf_size, device_mem, sizeof(readbuf_size));
+    size = sizeof(readbuf_size);
+
+    TRACE("readbuf size: %d\n", readbuf_size);
+    if (readbuf_size <= 0) {
+        TRACE("readbuf size is smaller than 0. %d\n", readbuf_size);
+    } else {
+        readbuf = g_malloc0(readbuf_size);
+        if (!readbuf) {
+            ERR("failed to allocate a read buffer. size: %d\n", readbuf_size);
+        } else {
+            TRACE("copy input buffer from guest.\n");
+            memcpy(readbuf, device_mem + size, readbuf_size);
+        }
+    }
+    memset(device_mem, 0x00, sizeof(readbuf_size));
+
+    elem->buf = readbuf;
+    elem->buf_size = readbuf_size;
+    elem->buf_id = ioparam->file_index;
+    elem->ctx_id = ioparam->ctx_index;
+
+    qemu_mutex_lock(&s->context_queue_mutex);
+    QTAILQ_INSERT_TAIL(&codec_rq, elem, node);
+    qemu_mutex_unlock(&s->context_queue_mutex);
+}
+
+static void maru_brill_codec_push_writequeue(MaruBrillCodecState *s, void* buf, uint32_t buf_size, int ctx_id, int f_id)
+{
+    DeviceMemEntry *elem = NULL;
+    elem = g_malloc0(sizeof(DeviceMemEntry));
+
+    elem->buf = buf;
+    elem->buf_size = buf_size;
+    elem->buf_id = f_id;
+    elem->ctx_id = ctx_id;
+
+    qemu_mutex_lock(&s->context_queue_mutex);
+    QTAILQ_INSERT_TAIL(&codec_wq, elem, node);
+    qemu_mutex_unlock(&s->context_queue_mutex);
+}
+
+static void *maru_brill_codec_pop_readqueue(MaruBrillCodecState *s, int32_t file_index)
+{
+    DeviceMemEntry *elem = NULL;
+
+    qemu_mutex_lock(&s->context_queue_mutex);
+    elem = QTAILQ_FIRST(&codec_rq);
+    qemu_mutex_unlock(&s->context_queue_mutex);
+    if (!elem) {
+        ERR("codec_rq is empty.\n");
+        return NULL;
+    }
+
+    return elem;
+}
+
+static void maru_brill_codec_pop_writequeue(MaruBrillCodecState *s, int32_t file_index)
+{
+    DeviceMemEntry *elem = NULL;
+    uint32_t mem_offset = 0, ctx_idx;
+
+    TRACE("enter: %s\n", __func__);
+
+    for (ctx_idx = 1; ctx_idx < CODEC_CONTEXT_MAX; ctx_idx++) {
+        if (s->context[ctx_idx].file_index == file_index) {
+            break;
+        }
+    }
+
+    if (ctx_idx == CODEC_CONTEXT_MAX) {
+        ERR("failed to find a proper entry via file_index. %x\n", file_index);
+        return;
+    }
+    TRACE("pop_writeqeue. context index: %d\n", ctx_idx);
+
+    elem = entry[ctx_idx];
+    if (elem) {
+        mem_offset = s->ioparam.mem_offset;
+
+        TRACE("write data as many as %d to guest,  mem_offset: 0x%x\n",
+            elem->buf_size, mem_offset);
+        memcpy(s->vaddr + mem_offset, elem->buf, elem->buf_size);
+
+        if (elem->buf) {
+            TRACE("pop_writequeue. release buffer: %p\n", elem->buf);
+            g_free(elem->buf);
+        }
+
+        TRACE("pop_writequeue. release elem: %p\n", elem);
+        g_free(elem);
+        entry[ctx_idx] = NULL;
+    } else {
+        ERR("failed to get ioparam from file_index %x\n", file_index);
+    }
+
+    TRACE("leave: %s\n", __func__);
+}
+
+static void serialize_video_data(const struct video_data *video,
+                                AVCodecContext *avctx)
 {
     if (video->width) {
         avctx->width = video->width;
@@ -459,7 +476,7 @@ static void new_serialize_video_data(const struct video_data *video,
     }
 }
 
-static void new_deserialize_video_data (const AVCodecContext *avctx,
+static void deserialize_video_data (const AVCodecContext *avctx,
                                     struct video_data *video)
 {
     memset(video, 0x00, sizeof(struct video_data));
@@ -475,11 +492,9 @@ static void new_deserialize_video_data (const AVCodecContext *avctx,
     video->ticks_per_frame = avctx->ticks_per_frame;
 }
 
-static void new_serialize_audio_data (const struct audio_data *audio,
-                                    AVCodecContext *avctx)
+static void serialize_audio_data (const struct audio_data *audio,
+                                  AVCodecContext *avctx)
 {
-    TRACE("audio. sample_fmt: %d\n", audio->sample_fmt);
-
     if (audio->channels) {
         avctx->channels = audio->channels;
     }
@@ -495,31 +510,15 @@ static void new_serialize_audio_data (const struct audio_data *audio,
     }
 }
 
-static DeviceMemEntry *get_device_mem_ptr(NewCodecState *s, uint32_t file_index)
-{
-    DeviceMemEntry *elem = NULL;
-
-    TRACE("pop element from codec readqueue.\n");
-    elem = (DeviceMemEntry *)new_codec_pop_readqueue(s, file_index);
-    if (!elem) {
-        ERR("failed to pop from the queue.\n");
-        return NULL;
-    }
-
-    qemu_mutex_lock(&s->context_queue_mutex);
-    QTAILQ_REMOVE(&codec_rq, elem, node);
-    qemu_mutex_unlock(&s->context_queue_mutex);
-
-    return elem;
-}
-
-static void new_codec_reset_parser_info(NewCodecState *s, int32_t ctx_index)
+#if 0
+static void maru_brill_codec_reset_parser_info(MaruBrillCodecState *s, int32_t ctx_index)
 {
     s->context[ctx_index].parser_buf = NULL;
     s->context[ctx_index].parser_use = false;
 }
+#endif
 
-static void new_codec_release_context(NewCodecState *s, int32_t file_index)
+static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t file_index)
 {
     DeviceMemEntry *rq_elem = NULL, *wq_elem = NULL;
     DeviceMemEntry *next = NULL;
@@ -527,7 +526,7 @@ static void new_codec_release_context(NewCodecState *s, int32_t file_index)
 
     TRACE("enter: %s\n", __func__);
 
-    qemu_mutex_lock(&s->wrk_thread.mutex);
+    qemu_mutex_lock(&s->threadpool.mutex);
 
     for (ctx_id = 1; ctx_id < CODEC_CONTEXT_MAX; ctx_id++) {
         if (s->context[ctx_id].file_index == file_index) {
@@ -542,12 +541,11 @@ static void new_codec_release_context(NewCodecState *s, int32_t file_index)
     } else {
         if (s->context[ctx_id].opened) {
             INFO("%d of context has not closed yet.\n", ctx_id);
-            new_codec_deinit(s, ctx_id, file_index);
+            codec_deinit(s, ctx_id, file_index);
         }
 
         QTAILQ_FOREACH_SAFE(rq_elem, &codec_rq, node, next) {
             if (rq_elem && rq_elem->buf_id == file_index) {
-//        if (rq_elem && rq_elem->ctx_id == ctx_id) {
                 TRACE("remove unused node from codec_rq. file: %p\n", file_index);
                 qemu_mutex_lock(&s->context_queue_mutex);
                 QTAILQ_REMOVE(&codec_rq, rq_elem, node);
@@ -560,17 +558,14 @@ static void new_codec_release_context(NewCodecState *s, int32_t file_index)
                 TRACE("release rq_elem: %p\n", rq_elem);
                 g_free(rq_elem);
             } else {
-            TRACE("remain this node in the codec_rq. :%x\n", rq_elem->buf_id);
-//                TRACE("remain this node in the codec_rq. :%x\n", ctx_id);
+                TRACE("remain this node in the codec_rq. :%x\n", rq_elem->buf_id);
             }
         }
 
         QTAILQ_FOREACH_SAFE(wq_elem, &codec_wq, node, next) {
             if (wq_elem && wq_elem->buf_id == file_index) {
-//          if (wq_elem && wq_elem->ctx_id == ctx_id) {
                 TRACE("remove nodes from codec_wq."
                     " elem: %p, buf_id: %p, ctx_id: %d\n", wq_elem, wq_elem->ctx_id, file_index);
-//              TRACE("remove nodes from codec_wq. ctx_id: %d\n", ctx_id);
                 qemu_mutex_lock(&s->context_queue_mutex);
                 QTAILQ_REMOVE(&codec_wq, wq_elem, node);
                 qemu_mutex_unlock(&s->context_queue_mutex);
@@ -585,39 +580,18 @@ static void new_codec_release_context(NewCodecState *s, int32_t file_index)
                 g_free(wq_elem);
             } else {
                 TRACE("remain this node in the codec_wq. :%x\n", wq_elem->buf_id);
-//                TRACE("remain this node in the codec_wq. :%x\n", ctx_id);
             }
         }
-
-        new_codec_reset_parser_info(s, ctx_id);
+//        maru_brill_codec_reset_parser_info(s, ctx_id);
     }
 
-    qemu_mutex_unlock(&s->wrk_thread.mutex);
+    qemu_mutex_unlock(&s->threadpool.mutex);
     TRACE("leave: %s\n", __func__);
 }
 
-#if 0
-int new_codec_get_buffer(AVCodecContext *context, AVFrame *picture)
-{
-    int ret;
-    TRACE("%s\n", __func__);
 
-    picture->reordered_opaque = context->reordered_opaque;
-    picture->opaque = NULL;
-
-    ret = avcodec_default_get_buffer(context, picture);
-
-    return ret;
-}
-
-void new_codec_release_buffer(AVCodecContext *context, AVFrame *picture)
-{
-    TRACE("%s\n", __func__);
-    avcodec_default_release_buffer(context, picture);
-}
-#endif
-
-static void initialize_pixel_fmt_info(void)
+// initialize each pixel format.
+static void maru_brill_codec_pixfmt_info_init(void)
 {
     /* YUV formats */
     pix_fmt_info[PIX_FMT_YUV420P].x_chroma_shift = 1;
@@ -667,8 +641,9 @@ static void initialize_pixel_fmt_info(void)
     pix_fmt_info[PIX_FMT_YUVA420P].y_chroma_shift = 1;
 }
 
-static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
-                            int width, int height, bool encode)
+static int maru_brill_codec_get_picture_size(AVPicture *picture, uint8_t *ptr,
+                                    int pix_fmt, int width,
+                                    int height, bool encode)
 {
     int size, w2, h2, size2;
     int stride, stride2;
@@ -704,13 +679,7 @@ static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
                 ERR("[%d] failed to allocate memory.\n", __LINE__);
                 return -1;
             }
-        } else {
-//            TRACE("calculate encoded picture.\n");
-            if (!ptr) {
-                return -1;
-            }
         }
-
         picture->data[0] = ptr;
         picture->data[1] = picture->data[0] + size;
         picture->data[2] = picture->data[1] + size2;
@@ -738,13 +707,7 @@ static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
                 ERR("[%d] failed to allocate memory.\n", __LINE__);
                 return -1;
             }
-        } else {
-//          TRACE("calculate encoded picture.\n");
-            if (!ptr) {
-                return -1;
-            }
         }
-
         picture->data[0] = ptr;
         picture->data[1] = picture->data[0] + size;
         picture->data[2] = picture->data[1] + size2;
@@ -769,13 +732,7 @@ static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
                 ERR("[%d] failed to allocate memory.\n", __LINE__);
                 return -1;
             }
-        } else {
-            TRACE("calculate encoded picture.\n");
-            if (!ptr) {
-                return -1;
-            }
         }
-
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -797,13 +754,7 @@ static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
                 ERR("[%d] failed to allocate memory.\n", __LINE__);
                 return -1;
             }
-        } else {
-//            TRACE("calculate encoded picture.\n");
-            if (!ptr) {
-                return -1;
-            }
         }
-
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -826,13 +777,7 @@ static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
                 ERR("[%d] failed to allocate memory.\n", __LINE__);
                 return -1;
             }
-        } else {
-//            TRACE("calculate encoded picture.\n");
-            if (!ptr) {
-                return -1;
-            }
         }
-
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -853,11 +798,6 @@ static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
             ptr = av_mallocz(fsize);
             if (!ptr) {
                 ERR("[%d] failed to allocate memory.\n", __LINE__);
-                return -1;
-            }
-        } else {
-//            TRACE("calculate encoded picture.\n");
-            if (!ptr) {
                 return -1;
             }
         }
@@ -883,8 +823,7 @@ static int get_picture_size(AVPicture *picture, uint8_t *ptr, int pix_fmt,
     return fsize;
 }
 
-// FFmpeg Functions
-static int new_codec_query_list (NewCodecState *s)
+static int maru_brill_codec_query_list (MaruBrillCodecState *s)
 {
     AVCodec *codec = NULL;
     uint32_t size = 0, mem_size = 0;
@@ -952,7 +891,7 @@ static int new_codec_query_list (NewCodecState *s)
     return 0;
 }
 
-static int new_codec_get_context_index(NewCodecState *s)
+static int maru_brill_codec_get_context_index(MaruBrillCodecState *s)
 {
     int index;
 
@@ -972,10 +911,13 @@ static int new_codec_get_context_index(NewCodecState *s)
         index = -1;
     }
 
+    TRACE("leave: %s\n", __func__);
+
     return index;
 }
 
-static void new_codec_alloc_context(NewCodecState *s, int index)
+// allocate avcontext and avframe struct.
+static void maru_brill_codec_alloc_context(MaruBrillCodecState *s, int index)
 {
     TRACE("enter: %s\n", __func__);
 
@@ -990,90 +932,7 @@ static void new_codec_alloc_context(NewCodecState *s, int index)
     TRACE("leave: %s\n", __func__);
 }
 
-#if 0
-void new_codec_flush_buffers(NewCodecState *s, int ctx_index)
-{
-    AVCodecContext *avctx;
-
-    TRACE("enter:\n");
-    qemu_mutex_lock(&s->wrk_thread.mutex);
-
-    avctx = s->context[ctx_index].avctx;
-    if (avctx) {
-        avcodec_flush_buffers(avctx);
-    } else {
-        ERR("[%s] %d of AVCodecContext is NULL\n", __func__, ctx_index);
-    }
-
-    qemu_mutex_unlock(&s->wrk_thread.mutex);
-    TRACE("[%s] leave:\n", __func__);
-}
-#endif
-
-static void copyback_init_data(AVCodecContext *avctx, uint8_t *mem_buf)
-{
-    int size = 0;
-
-    if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-        int osize = 0;
-
-        TRACE("codec_init. audio sample_fmt: %d\n", avctx->sample_fmt);
-
-        memcpy(mem_buf, &avctx->sample_fmt, sizeof(avctx->sample_fmt));
-        size = sizeof(avctx->sample_fmt);
-        memcpy(mem_buf + size,
-                &avctx->frame_size, sizeof(avctx->frame_size));
-        size += sizeof(avctx->frame_size);
-        osize = av_get_bits_per_sample(avctx->codec->id) / 8;
-        memcpy(mem_buf + size, &osize, sizeof(osize));
-
-        TRACE("codec_init. audio sample_fmt1: %d\n", *(int *)(mem_buf));
-    }
-}
-
-static void copyback_decode_video_data(AVCodecContext *avctx, int len,
-                                        int got_pic_ptr, uint8_t *mem_buf)
-{
-    struct video_data video;
-    int size = 0;
-
-    memcpy(mem_buf, &len, sizeof(len));
-    size = sizeof(len);
-    memcpy(mem_buf + size, &got_pic_ptr, sizeof(got_pic_ptr));
-    size += sizeof(got_pic_ptr);
-    new_deserialize_video_data(avctx, &video);
-    memcpy(mem_buf + size, &video, sizeof(struct video_data));
-}
-
-static void copyback_decode_audio_data(int64_t channel_layout, int len,
-                                       int frame_size_ptr, uint8_t *mem_buf)
-
-//                                        int frame_size_ptr, int outbuf_size, uint8_t *mem_buf)
-{
-    int size = 0;
-
-    TRACE("copy decode_audio. len %d, frame_size %d\n", len, frame_size_ptr);
-
-    memcpy(mem_buf, &channel_layout, sizeof(channel_layout));
-    size = sizeof(channel_layout);
-    memcpy(mem_buf + size, &len, sizeof(len));
-    size += sizeof(len);
-    memcpy(mem_buf + size, &frame_size_ptr, sizeof(frame_size_ptr));
-}
-
-#if 0
-static void copyback_encode_video_data(int len, uint8_t *mem_buf)
-{
-    memcpy(mem_buf, &len, sizeof(len));
-}
-
-static void copyback_encode_audio_data(int len, uint8_t *mem_buf)
-{
-    memcpy(mem_buf, &len, sizeof(len));
-}
-#endif
-
-static AVCodec *new_codec_find_avcodec(uint8_t *mem_buf)
+static AVCodec *maru_brill_codec_find_avcodec(uint8_t *mem_buf)
 {
     AVCodec *codec = NULL;
     int32_t encode, size = 0;
@@ -1098,18 +957,72 @@ static AVCodec *new_codec_find_avcodec(uint8_t *mem_buf)
     return codec;
 }
 
-static void new_codec_init(NewCodecState *s, int ctx_id, int f_id)
+// write the result of codec_init
+static void copyback_init_data(AVCodecContext *avctx, uint8_t *mem_buf)
+{
+    int size = 0;
+
+    if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
+        int osize = 0;
+
+        TRACE("codec_init. audio sample_fmt: %d\n", avctx->sample_fmt);
+
+        memcpy(mem_buf, &avctx->sample_fmt, sizeof(avctx->sample_fmt));
+        size = sizeof(avctx->sample_fmt);
+        memcpy(mem_buf + size,
+                &avctx->frame_size, sizeof(avctx->frame_size));
+        size += sizeof(avctx->frame_size);
+        osize = av_get_bits_per_sample(avctx->codec->id) / 8;
+        memcpy(mem_buf + size, &osize, sizeof(osize));
+
+        TRACE("codec_init. audio sample_fmt1: %d\n", *(int *)(mem_buf));
+    }
+}
+
+// write the result of codec_decode_video
+static void copyback_decode_video_data(AVCodecContext *avctx, int len,
+                                        int got_pic_ptr, uint8_t *mem_buf)
+{
+    struct video_data video;
+    int size = 0;
+
+    memcpy(mem_buf, &len, sizeof(len));
+    size = sizeof(len);
+    memcpy(mem_buf + size, &got_pic_ptr, sizeof(got_pic_ptr));
+    size += sizeof(got_pic_ptr);
+    deserialize_video_data(avctx, &video);
+    memcpy(mem_buf + size, &video, sizeof(struct video_data));
+}
+
+// write the result of codec_decode_audio
+static void copyback_decode_audio_data(int64_t channel_layout, int len,
+                                       int frame_size_ptr, uint8_t *mem_buf)
+{
+    int size = 0;
+
+    TRACE("copy decode_audio. len %d, frame_size %d\n", len, frame_size_ptr);
+
+    memcpy(mem_buf, &channel_layout, sizeof(channel_layout));
+    size = sizeof(channel_layout);
+    memcpy(mem_buf + size, &len, sizeof(len));
+    size += sizeof(len);
+    memcpy(mem_buf + size, &frame_size_ptr, sizeof(frame_size_ptr));
+}
+
+// codec functions
+static void codec_init(MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx = NULL;
     AVCodecParserContext *parser = NULL;
     AVCodec *codec = NULL;
-    int size = 0, ret;
+    int size = 0, ret = -1;
     int bitrate = 0;
     uint8_t *meta_buf = NULL;
 
     TRACE("enter: %s\n", __func__);
 
-    new_codec_alloc_context(s, ctx_id);
+
+    maru_brill_codec_alloc_context(s, ctx_id);
     avctx = s->context[ctx_id].avctx;
     if (!avctx) {
         ERR("[%d] failed to allocate context.\n", __LINE__);
@@ -1118,26 +1031,40 @@ static void new_codec_init(NewCodecState *s, int ctx_id, int f_id)
 
     s->context[ctx_id].file_index = f_id;
 
-    meta_buf = s->vaddr + ((ctx_id - 1) * NEW_CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
-    codec = new_codec_find_avcodec(meta_buf);
+    codec = maru_brill_codec_find_avcodec(meta_buf);
     if (codec) {
         size = sizeof(int32_t) + 32; // buffer size of codec_name
+#if 0
         if (codec->type == AVMEDIA_TYPE_VIDEO) {
             struct video_data video = { 0 };
 
             memcpy(&video, meta_buf + size, sizeof(video));
             size += sizeof(video);
-            new_serialize_video_data(&video, avctx);
+            serialize_video_data(&video, avctx);
         } else if (codec->type == AVMEDIA_TYPE_AUDIO) {
             struct audio_data audio = { 0 };
 
             memcpy(&audio, meta_buf + size, sizeof(audio));
             size += sizeof(audio);
-            new_serialize_audio_data(&audio, avctx);
+            serialize_audio_data(&audio, avctx);
         } else {
             ERR("unknown media type.\n");
+        }
+#endif
+        {
+            struct video_data video = { 0, };
+            struct audio_data audio = { 0, };
+
+            memcpy(&video, meta_buf + size, sizeof(video));
+            size += sizeof(video);
+            serialize_video_data(&video, avctx);
+
+            memcpy(&audio, meta_buf + size, sizeof(audio));
+            size += sizeof(audio);
+            serialize_audio_data(&audio, avctx);
         }
 
         memcpy(&bitrate, meta_buf + size, sizeof(bitrate));
@@ -1170,7 +1097,6 @@ static void new_codec_init(NewCodecState *s, int ctx_id, int f_id)
         s->context[ctx_id].opened = true;
     } else {
         ERR("failed to find codec.\n");
-        ret = -1;
     }
 
     memcpy(meta_buf, &ret, sizeof(ret));
@@ -1178,20 +1104,13 @@ static void new_codec_init(NewCodecState *s, int ctx_id, int f_id)
     if (ret < 0) {
         ERR("failed to open codec contex.\n");
     } else {
-//      uint32_t aaa = ((ctx_id - 1) * NEW_CODEC_META_DATA_SIZE);
-
         TRACE("ctx: %d, meta_buf: 0x%x, size: %d\n",
-            ctx_id, ((ctx_id - 1) * NEW_CODEC_META_DATA_SIZE), size);
+            ctx_id, ((ctx_id - 1) * CODEC_META_DATA_SIZE), size);
         copyback_init_data(avctx, meta_buf + size);
-
-#if 0
-        if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-        TRACE("audio. codec_init. ret: %d, sample_fmt: %d\n", *(int *)(s->vaddr + aaa + 8), *(int *)(s->vaddr + aaa + 12));
-        }
-#endif
     }
 
-#if 1
+    maru_brill_codec_push_writequeue(s, NULL, 0, ctx_id, f_id);
+#if 0
     {
         DeviceMemEntry *elem = NULL;
         elem = g_malloc0(sizeof(DeviceMemEntry));
@@ -1205,13 +1124,13 @@ static void new_codec_init(NewCodecState *s, int ctx_id, int f_id)
     }
 #endif
 
-    parser = new_codec_parser_init(avctx);
+    parser = maru_brill_codec_parser_init(avctx);
     s->context[ctx_id].parser_ctx = parser;
 
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_deinit(NewCodecState *s, int ctx_id, int f_id)
+static void codec_deinit(MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx;
     AVFrame *frame;
@@ -1262,7 +1181,7 @@ static void new_codec_deinit(NewCodecState *s, int ctx_id, int f_id)
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
+static void codec_decode_video(MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx = NULL;
     AVFrame *picture = NULL;
@@ -1271,9 +1190,11 @@ static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
     uint8_t *inbuf = NULL;
     int inbuf_size, idx, size = 0;
     int64_t in_offset;
-//    AVCodecParserContext *pctx = NULL;
-//    int parser_ret, bsize;
-//    uint8_t *bdata;
+#if 0
+    AVCodecParserContext *pctx = NULL;
+    int parser_ret, bsize;
+    uint8_t *bdata;
+#endif
     DeviceMemEntry *elem = NULL;
     uint8_t *meta_buf = NULL;
 
@@ -1292,7 +1213,7 @@ static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
         return;
     }
 
-    meta_buf = s->vaddr + ((ctx_id - 1) * NEW_CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
@@ -1305,7 +1226,9 @@ static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
 
     elem = get_device_mem_ptr(s, f_id);
     if (elem && elem->buf) {
-        inbuf = elem->buf;
+//        inbuf = elem->buf;
+        inbuf = g_malloc(inbuf_size);
+        memcpy(inbuf, elem->buf, inbuf_size);
     } else if (elem && inbuf_size > 0) {
         inbuf_size = 0;
     } else {
@@ -1316,9 +1239,9 @@ static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
     // TODO: not sure that it needs to parser a packet or not.
     if (pctx) {
         parser_ret =
-            new_codec_parser_parse (pctx, avctx, inbuf, inbuf_size, idx, idx, in_offset);
-//                            &bdata, &bsize, idx, idx, in_offset);
-
+            maru_brill_codec_parser_parse (pctx, avctx, inbuf, inbuf_size,
+                                    idx, idx, in_offset);
+                                    &bdata, &bsize, idx, idx, in_offset);
         INFO("returned parser_ret: %d.\n", parser_ret);
     }
 #endif
@@ -1329,7 +1252,7 @@ static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
 
     len = avcodec_decode_video2(avctx, picture, &got_pic_ptr, &avpkt);
     if (len < 0) {
-        ERR("failed to decode a frame\n");
+        ERR("failed to decode video.\n");
     }
     TRACE("after decoding video. len: %d, have_data: %d\n", len);
     if (inbuf) {
@@ -1339,6 +1262,8 @@ static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
     }
 
     copyback_decode_video_data(avctx, len, got_pic_ptr, meta_buf);
+    maru_brill_codec_push_writequeue(s, NULL, 0, ctx_id, f_id);
+#if 0
     {
         DeviceMemEntry *elem = NULL;
         elem = g_malloc0(sizeof(DeviceMemEntry));
@@ -1350,16 +1275,18 @@ static void new_codec_decode_video(NewCodecState *s, int ctx_id, int f_id)
         QTAILQ_INSERT_TAIL(&codec_wq, elem, node);
         qemu_mutex_unlock(&s->context_queue_mutex);
     }
+#endif
 
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_picture_copy (NewCodecState *s, int ctx_id, int f_id)
+static void codec_picture_copy (MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx;
     AVPicture *src;
     AVPicture dst;
-    uint8_t *out_buffer;
+    uint8_t *out_buffer, *tempbuf = NULL;
+;
     int pict_size;
 
     TRACE("enter: %s\n", __func__);
@@ -1378,13 +1305,12 @@ static void new_codec_picture_copy (NewCodecState *s, int ctx_id, int f_id)
         return;
     }
 
-//  avctx->file_index = f_id;
-
     TRACE("decoded image. pix_fmt: %d width: %d, height: %d\n",
         avctx->pix_fmt, avctx->width, avctx->height);
 
-    pict_size = get_picture_size(&dst, NULL, avctx->pix_fmt,
-                                avctx->width, avctx->height, false);
+    pict_size =
+        maru_brill_codec_get_picture_size(&dst, NULL, avctx->pix_fmt,
+                                    avctx->width, avctx->height, false);
     if ((pict_size) < 0) {
         ERR("picture size: %d\n", pict_size);
         return;
@@ -1392,18 +1318,7 @@ static void new_codec_picture_copy (NewCodecState *s, int ctx_id, int f_id)
     TRACE("picture size: %d\n", pict_size);
 
     av_picture_copy(&dst, src, avctx->pix_fmt, avctx->width, avctx->height);
-
 #if 0
-    out_buffer = dst.data[0];
-
-    TRACE("after copying image src to dest.\n");
-    if (out_buffer) {
-        memcpy(s->vaddr, out_buffer, pict_size);
-        av_free (out_buffer);
-    }
-#endif
-
-#if 1
     {
         DeviceMemEntry *elem = NULL;
         uint8_t *tempbuf = NULL;
@@ -1441,10 +1356,22 @@ static void new_codec_picture_copy (NewCodecState *s, int ctx_id, int f_id)
     }
 #endif
 
+    tempbuf = g_malloc0(pict_size);
+    if (!tempbuf) {
+        ERR("failed to allocate a picture buffer. size: %d\n", pict_size);
+        pict_size = 0;
+    } else {
+        out_buffer = dst.data[0];
+        memcpy(tempbuf, out_buffer, pict_size);
+        av_free(out_buffer);
+    }
+
+    maru_brill_codec_push_writequeue(s, tempbuf, pict_size, ctx_id, f_id);
+
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id)
+static void codec_decode_audio(MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx;
     AVPacket avpkt;
@@ -1457,7 +1384,6 @@ static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id)
     bool parser_use;
 #endif
     uint8_t *meta_buf = NULL;
-
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
 
@@ -1481,7 +1407,7 @@ static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id)
     }
 #endif
 
-    meta_buf = s->vaddr + ((ctx_id - 1) * NEW_CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
@@ -1508,7 +1434,6 @@ static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id)
     avpkt.size = inbuf_size;
 
     frame_size_ptr = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-//    outbuf_size = frame_size_ptr;
     samples = av_mallocz(frame_size_ptr);
     if (!samples) {
         ERR("failed to allocate an outbuf of audio.\n");
@@ -1531,6 +1456,7 @@ static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id)
 
     copyback_decode_audio_data(avctx->channel_layout, len, frame_size_ptr, meta_buf);
 
+#if 0
     elem = g_malloc0(sizeof(DeviceMemEntry));
     if (len > 0) {
         tempbuf = g_malloc0(frame_size_ptr);
@@ -1556,6 +1482,21 @@ static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id)
     qemu_mutex_lock(&s->context_queue_mutex);
     QTAILQ_INSERT_TAIL(&codec_wq, elem, node);
     qemu_mutex_unlock(&s->context_queue_mutex);
+#endif
+
+    if (len > 0) {
+        tempbuf = g_malloc0(frame_size_ptr);
+        if (!tempbuf) {
+            ERR("decode_audio. failed to allocate memory "
+                "len %d, have_data: %d\n", len, frame_size_ptr);
+        } else {
+            memcpy(tempbuf, samples, frame_size_ptr);
+        }
+        av_free(samples);
+    } else {
+        frame_size_ptr = 0;
+    }
+    maru_brill_codec_push_writequeue(s, tempbuf, frame_size_ptr, ctx_id, f_id);
 
 #if 0
     if (parser_buf && parser_use) {
@@ -1567,7 +1508,7 @@ static void new_codec_decode_audio(NewCodecState *s, int ctx_id, int f_id)
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id)
+static void codec_encode_video(MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx = NULL;
     AVFrame *pict = NULL;
@@ -1576,9 +1517,9 @@ static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id)
     int ret;
     int64_t in_timestamp;
 
+    uint8_t *meta_buf = NULL;
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
-    uint8_t *meta_buf = NULL;
 
     TRACE("enter: %s\n", __func__);
 
@@ -1594,7 +1535,7 @@ static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id)
         return;
     }
 
-    meta_buf = s->vaddr + ((ctx_id - 1) * NEW_CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
@@ -1613,17 +1554,13 @@ static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id)
     TRACE("pixel format: %d inbuf: %p, picture data: %p\n",
         avctx->pix_fmt, inbuf, pict->data[0]);
 
-    ret = get_picture_size((AVPicture *)pict, inbuf, avctx->pix_fmt,
-                           avctx->width, avctx->height, true);
+    ret =
+        maru_brill_codec_get_picture_size((AVPicture *)pict, inbuf, avctx->pix_fmt,
+                                    avctx->width, avctx->height, true);
     if (ret < 0) {
         ERR("after avpicture_fill, ret:%d\n", ret);
         len = -1;
     } else {
-#if 0
-        if (ret != inbuf_size) {
-            ERR("");
-        }
-#endif
         if (avctx->time_base.num == 0) {
             pict->pts = AV_NOPTS_VALUE;
         } else {
@@ -1641,10 +1578,11 @@ static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id)
         } else {
             len = avcodec_encode_video(avctx, outbuf, outbuf_size, pict);
             if (len < 0) {
-                ERR("failed to encode video. ret: %d\n", len);
+                ERR("failed to encode video. len: %d\n", len);
             }
+
             TRACE("encode video, len:%d, pts:%lld, outbuf size: %d\n",
-                    len, pict->pts, outbuf_size);
+                len, pict->pts, outbuf_size);
             if (inbuf) {
                 TRACE("[%d] release used read bufffer.\n", __LINE__);
                 g_free(inbuf);
@@ -1652,9 +1590,10 @@ static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id)
             }
         }
     }
-//    copyback_encode_video_data(len, meta_buf);
-    memcpy(meta_buf, &len, sizeof(len));
 
+    // copyback encoded video data
+    memcpy(meta_buf, &len, sizeof(len));
+#if 0
     elem = g_malloc0(sizeof(DeviceMemEntry));
     if (len > 0) {
         tempbuf = g_malloc0(len);
@@ -1677,11 +1616,24 @@ static void new_codec_encode_video(NewCodecState *s, int ctx_id, int f_id)
     qemu_mutex_lock(&s->context_queue_mutex);
     QTAILQ_INSERT_TAIL(&codec_wq, elem, node);
     qemu_mutex_unlock(&s->context_queue_mutex);
+#endif
+    if (len > 0) {
+        tempbuf = g_malloc0(len);
+        if (!tempbuf) {
+            ERR("failed to allocate an element of writequeue.\n");
+        } else {
+            memcpy(tempbuf, outbuf, len);
+        }
+        g_free(outbuf);
+    } else {
+        len = 0;
+    }
+    maru_brill_codec_push_writequeue(s, tempbuf, len, ctx_id, f_id);
 
     TRACE("leave: %s\n", __func__);
 }
 
-static void new_codec_encode_audio(NewCodecState *s, int ctx_id, int f_id)
+static void codec_encode_audio(MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx;
     uint8_t *inbuf = NULL, *outbuf = NULL;
@@ -1704,7 +1656,7 @@ static void new_codec_encode_audio(NewCodecState *s, int ctx_id, int f_id)
         return;
     }
 
-    meta_buf = s->vaddr + ((ctx_id - 1) * NEW_CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
@@ -1723,6 +1675,7 @@ static void new_codec_encode_audio(NewCodecState *s, int ctx_id, int f_id)
     outbuf = g_malloc0(max_size + FF_MIN_BUFFER_SIZE);
     if (!outbuf) {
         ERR("failed to allocate a buffer of encoding audio.\n");
+        len = -1;
     } else {
         len =
             avcodec_encode_audio(avctx, outbuf, max_size, (short *)inbuf);
@@ -1737,9 +1690,9 @@ static void new_codec_encode_audio(NewCodecState *s, int ctx_id, int f_id)
         }
     }
 
-//    copyback_encode_audio_data(len, meta_buf);
+    // copyback encoded audio data
     memcpy(meta_buf, &len, sizeof(len));
-
+#if 0
     elem = g_malloc0(sizeof(DeviceMemEntry));
     if (len > 0) {
         tempbuf = g_malloc0(len);
@@ -1762,11 +1715,26 @@ static void new_codec_encode_audio(NewCodecState *s, int ctx_id, int f_id)
     qemu_mutex_lock(&s->context_queue_mutex);
     QTAILQ_INSERT_TAIL(&codec_wq, elem, node);
     qemu_mutex_unlock(&s->context_queue_mutex);
+#endif
+
+    if (len > 0) {
+        tempbuf = g_malloc0(len);
+        if (!tempbuf) {
+            ERR("encode_audio. failed to allocate temporary buffer.\n");
+        } else {
+            memcpy(tempbuf, outbuf, len);
+        }
+        av_free(outbuf);
+    } else {
+        len = 0;
+    }
+    maru_brill_codec_push_writequeue(s, tempbuf, len, ctx_id, f_id);
+
 
     TRACE("[%s] leave:\n", __func__);
 }
 
-static AVCodecParserContext *new_codec_parser_init(AVCodecContext *avctx)
+static AVCodecParserContext *maru_brill_codec_parser_init(AVCodecContext *avctx)
 {
     AVCodecParserContext *parser = NULL;
 
@@ -1798,7 +1766,7 @@ static AVCodecParserContext *new_codec_parser_init(AVCodecContext *avctx)
 }
 
 #if 0
-static int new_codec_parser_parse(AVCodecParserContext *pctx, AVCodecContext *avctx,
+static int maru_brill_codec_parser_parse(AVCodecParserContext *pctx, AVCodecContext *avctx,
                             uint8_t *inbuf, int inbuf_size,
                             int64_t pts, int64_t dts, int64_t pos)
 {
@@ -1821,89 +1789,22 @@ static int new_codec_parser_parse(AVCodecParserContext *pctx, AVCodecContext *av
 }
 #endif
 
-static void *new_codec_pop_readqueue(NewCodecState *s, int32_t file_index)
+//
+static void maru_brill_codec_bh_callback(void *opaque)
 {
-    DeviceMemEntry *elem = NULL;
-
-    qemu_mutex_lock(&s->context_queue_mutex);
-    elem = QTAILQ_FIRST(&codec_rq);
-    qemu_mutex_unlock(&s->context_queue_mutex);
-    if (!elem) {
-        ERR("codec_rq is empty.\n");
-        return NULL;
-    }
-
-#if 0
-    if (!elem->buf || (elem->buf_size == 0)) {
-        ERR("cannot copy data to guest\n");
-        return NULL;
-    }
-#endif
-
-#if 0
-    if (elem->buf_id != file_index) {
-        DeviceMemEntry *next = NULL;
-        TRACE("failed to pop codec_rq because of file index.\n");
-        TRACE("head node file: %p, current file: %p\n", elem->buf_id, file_index);
-        next = QTAILQ_NEXT(elem, node);
-        if (next) {
-            TRACE("next node file: %p\n", next->buf_id);
-        }
-        return NULL;
-    }
-#endif
-
-//    TRACE("pop codec_rq. id: %x buf_size: %d\n",
-//        elem->buf_id, elem->buf_size);
-
-    return elem;
-}
-
-static void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index)
-{
-    DeviceMemEntry *elem = NULL;
-    uint32_t mem_offset = 0, ctx_idx;
+    MaruBrillCodecState *s = (MaruBrillCodecState *)opaque;
 
     TRACE("enter: %s\n", __func__);
 
-#if 1
-    for (ctx_idx = 1; ctx_idx < CODEC_CONTEXT_MAX; ctx_idx++) {
-        if (s->context[ctx_idx].file_index == file_index) {
-            break;
-        }
-    }
-#endif
+    qemu_mutex_lock(&s->context_queue_mutex);
+    if (!QTAILQ_EMPTY(&codec_wq)) {
+        qemu_mutex_unlock(&s->context_queue_mutex);
 
-    if (ctx_idx == CODEC_CONTEXT_MAX) {
-        ERR("failed to find a proper entry via file_index. %x\n", file_index);
-        return;
-    }
-    TRACE("pop_writeqeue. context index: %d\n", ctx_idx);
-
-#if 0
-    if (ctx_idx > 1) {
-        ERR("[caramis] %d : 0x%x\n", ctx_idx, s->ioparam.mem_offset);
-    }
-#endif
-
-    elem = entry[ctx_idx];
-    if (elem) {
-        mem_offset = s->ioparam.mem_offset;
-
-        TRACE("write data as many as %d to guest,  mem_offset: 0x%x\n",
-            elem->buf_size, mem_offset);
-        memcpy(s->vaddr + mem_offset, elem->buf, elem->buf_size);
-
-        if (elem->buf) {
-            TRACE("pop_writequeue. release buffer: %p\n", elem->buf);
-            g_free(elem->buf);
-        }
-
-        TRACE("pop_writequeue. release elem: %p\n", elem);
-        g_free(elem);
-        entry[ctx_idx] = NULL;
+        TRACE("raise irq for shared task.\n");
+        qemu_irq_raise(s->dev.irq[0]);
     } else {
-        ERR("failed to get ioparam from file_index %x\n", file_index);
+        qemu_mutex_unlock(&s->context_queue_mutex);
+        TRACE("codec_wq is empty!!\n");
     }
 
     TRACE("leave: %s\n", __func__);
@@ -1912,15 +1813,17 @@ static void new_codec_pop_writequeue(NewCodecState *s, int32_t file_index)
 /*
  *  Codec Device APIs
  */
-static uint64_t new_codec_read(void *opaque, hwaddr addr, unsigned size)
+static uint64_t maru_brill_codec_read(void *opaque,
+                                        hwaddr addr,
+                                        unsigned size)
 {
-    NewCodecState *s = (NewCodecState *)opaque;
+    MaruBrillCodecState *s = (MaruBrillCodecState *)opaque;
     uint64_t ret = 0;
 
     switch (addr) {
     case CODEC_CMD_GET_THREAD_STATE:
-        if (s->wrk_thread.state) {
-            s->wrk_thread.state = CODEC_TASK_INIT;
+        if (s->threadpool.state) {
+            s->threadpool.state = CODEC_TASK_START;
 
             qemu_mutex_lock(&s->context_queue_mutex);
             if (!QTAILQ_EMPTY(&codec_wq)) {
@@ -1945,7 +1848,6 @@ static uint64_t new_codec_read(void *opaque, hwaddr addr, unsigned size)
             QTAILQ_REMOVE(&codec_wq, head, node);
             qemu_mutex_unlock(&s->context_queue_mutex);
             entry[ret] = head;
-//            qemu_mutex_unlock(&s->wrk_thread.mutex);
             TRACE("get a elem from codec_wq. 0x%x\n", head);
         } else {
             ret = 0;
@@ -1955,17 +1857,17 @@ static uint64_t new_codec_read(void *opaque, hwaddr addr, unsigned size)
         break;
 
     case CODEC_CMD_GET_VERSION:
-        ret = NEW_CODEC_VERSION;
+        ret = CODEC_VERSION;
         TRACE("codec version: %d\n", ret);
         break;
 
     case CODEC_CMD_GET_ELEMENT:
-        ret = new_codec_query_list(s);
+        ret = maru_brill_codec_query_list(s);
         break;
 
     case CODEC_CMD_GET_CONTEXT_INDEX:
-        ret = new_codec_get_context_index(s);
-//        TRACE("get context index: %d\n", ret);
+        ret = maru_brill_codec_get_context_index(s);
+        TRACE("get context index: %d\n", ret);
         break;
 
     default:
@@ -1975,22 +1877,21 @@ static uint64_t new_codec_read(void *opaque, hwaddr addr, unsigned size)
     return ret;
 }
 
-static void new_codec_write(void *opaque, hwaddr addr,
-                uint64_t value, unsigned size)
+static void maru_brill_codec_write(void *opaque, hwaddr addr,
+                                    uint64_t value, unsigned size)
 {
-    NewCodecState *s = (NewCodecState *)opaque;
+    MaruBrillCodecState *s = (MaruBrillCodecState *)opaque;
 
     switch (addr) {
     case CODEC_CMD_API_INDEX:
         TRACE("set codec_cmd value: %d\n", value);
         s->ioparam.api_index = value;
-        new_codec_wakeup_thread(s, value);
+        maru_brill_codec_wakeup_threads(s, value);
         break;
 
     case CODEC_CMD_CONTEXT_INDEX:
         TRACE("set context_index value: %d\n", value);
         s->ioparam.ctx_index = value;
-///        new_codec_switch_thread(s, value);
         break;
 
     case CODEC_CMD_FILE_INDEX:
@@ -2000,33 +1901,24 @@ static void new_codec_write(void *opaque, hwaddr addr,
 
     case CODEC_CMD_DEVICE_MEM_OFFSET:
         TRACE("set mem_offset value: 0x%x\n", value);
-#if 0
-        if (value == NEW_CODEC_MEM_SIZE) {
-            // FIXME: how to handle this case?
-            ERR("memory offset is overflow. set offset to 0.\n");
-            s->ioparam.mem_offset = 0;
-        } else {
-            s->ioparam.mem_offset = value;
-        }
-#endif
         s->ioparam.mem_offset = value;
         break;
 
     case CODEC_CMD_RELEASE_CONTEXT:
-        new_codec_release_context(s, (int32_t)value);
+        maru_brill_codec_release_context(s, (int32_t)value);
         break;
 
     case CODEC_CMD_POP_WRITE_QUEUE:
-        new_codec_pop_writequeue(s, (uint32_t)value);
+        maru_brill_codec_pop_writequeue(s, (uint32_t)value);
         break;
     default:
         ERR("no available command for write. %d\n", addr);
     }
 }
 
-static const MemoryRegionOps new_codec_mmio_ops = {
-    .read = new_codec_read,
-    .write = new_codec_write,
+static const MemoryRegionOps maru_brill_codec_mmio_ops = {
+    .read = maru_brill_codec_read,
+    .write = maru_brill_codec_write,
     .valid = {
         .min_access_size = 4,
         .max_access_size = 4,
@@ -2035,54 +1927,33 @@ static const MemoryRegionOps new_codec_mmio_ops = {
     .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
-static void new_codec_bh_callback(void *opaque)
+static int maru_brill_codec_initfn(PCIDevice *dev)
 {
-    NewCodecState *s = (NewCodecState *)opaque;
-
-    TRACE("enter: %s\n", __func__);
-
-    qemu_mutex_lock(&s->context_queue_mutex);
-    if (!QTAILQ_EMPTY(&codec_wq)) {
-        qemu_mutex_unlock(&s->context_queue_mutex);
-
-        TRACE("raise irq for shared task.\n");
-        qemu_irq_raise(s->dev.irq[0]);
-    } else {
-        qemu_mutex_unlock(&s->context_queue_mutex);
-        TRACE("codec_wq is empty!!\n");
-    }
-
-    TRACE("leave: %s\n", __func__);
-}
-
-static int new_codec_initfn(PCIDevice *dev)
-{
-    NewCodecState *s = DO_UPCAST(NewCodecState, dev, dev);
+    MaruBrillCodecState *s = DO_UPCAST(MaruBrillCodecState, dev, dev);
     uint8_t *pci_conf = s->dev.config;
 
     INFO("device initialization.\n");
     memset(&s->ioparam, 0, sizeof(CodecParam));
 
-
-    get_host_cpu_cores();
+    maru_brill_codec_get_cpu_cores();
+    maru_brill_codec_threads_create(s);
 
     qemu_mutex_init(&s->context_mutex);
     qemu_mutex_init(&s->context_queue_mutex);
     qemu_mutex_init(&s->ioparam_queue_mutex);
 
-    new_codec_dedicated_thread_init(s);
-    initialize_pixel_fmt_info();
+    maru_brill_codec_pixfmt_info_init();
 
     // register a function to qemu bottom-halves to switch context.
-    s->codec_bh = qemu_bh_new(new_codec_bh_callback, s);
+    s->codec_bh = qemu_bh_new(maru_brill_codec_bh_callback, s);
 
     pci_config_set_interrupt_pin(pci_conf, 1);
 
-    memory_region_init_ram(&s->vram, "new_codec.vram", NEW_CODEC_MEM_SIZE);
+    memory_region_init_ram(&s->vram, "maru_brill_codec.vram", CODEC_MEM_SIZE);
     s->vaddr = (uint8_t *)memory_region_get_ram_ptr(&s->vram);
 
-    memory_region_init_io(&s->mmio, &new_codec_mmio_ops, s,
-                        "new_codec.mmio", NEW_CODEC_REG_SIZE);
+    memory_region_init_io(&s->mmio, &maru_brill_codec_mmio_ops, s,
+                        "maru_brill_codec.mmio", CODEC_REG_SIZE);
 
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->vram);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio);
@@ -2090,9 +1961,9 @@ static int new_codec_initfn(PCIDevice *dev)
     return 0;
 }
 
-static void new_codec_exitfn(PCIDevice *dev)
+static void maru_brill_codec_exitfn(PCIDevice *dev)
 {
-    NewCodecState *s = DO_UPCAST(NewCodecState, dev, dev);
+    MaruBrillCodecState *s = DO_UPCAST(MaruBrillCodecState, dev, dev);
     INFO("device exit\n");
 
     qemu_mutex_destroy(&s->context_mutex);
@@ -2105,36 +1976,36 @@ static void new_codec_exitfn(PCIDevice *dev)
     memory_region_destroy(&s->mmio);
 }
 
-int new_codec_device_init(PCIBus *bus)
-{
-    INFO("device create.\n");
-    pci_create_simple(bus, -1, NEW_CODEC_DEV_NAME);
-    return 0;
-}
-
-static void new_codec_class_init(ObjectClass *klass, void *data)
+static void maru_brill_codec_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
-    k->init = new_codec_initfn;
-    k->exit = new_codec_exitfn;
+    k->init = maru_brill_codec_initfn;
+    k->exit = maru_brill_codec_exitfn;
     k->vendor_id = PCI_VENDOR_ID_TIZEN;
-    k->device_id = PCI_DEVICE_ID_VIRTUAL_NEW_CODEC;
+    k->device_id = PCI_DEVICE_ID_VIRTUAL_BRILL_CODEC;
     k->class_id = PCI_CLASS_OTHERS;
     dc->desc = "Virtual new codec device for Tizen emulator";
 }
 
-static TypeInfo codec_info = {
-    .name          = NEW_CODEC_DEV_NAME,
+static TypeInfo codec_device_info = {
+    .name          = CODEC_DEVICE_NAME,
     .parent        = TYPE_PCI_DEVICE,
-    .instance_size = sizeof(NewCodecState),
-    .class_init    = new_codec_class_init,
+    .instance_size = sizeof(MaruBrillCodecState),
+    .class_init    = maru_brill_codec_class_init,
 };
 
 static void codec_register_types(void)
 {
-    type_register_static(&codec_info);
+    type_register_static(&codec_device_info);
 }
 
 type_init(codec_register_types)
+
+int maru_brill_codec_pci_device_init(PCIBus *bus)
+{
+    INFO("device create.\n");
+    pci_create_simple(bus, -1, CODEC_DEVICE_NAME);
+    return 0;
+}
