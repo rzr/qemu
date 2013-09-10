@@ -44,7 +44,7 @@
 #include "maruskin_client.h"
 #include "emulator.h"
 #include "maru_err_table.h"
-#include "ecs.h"
+#include "ecs/ecs.h"
 
 #ifndef CONFIG_USE_SHM
 #include "maru_sdl.h"

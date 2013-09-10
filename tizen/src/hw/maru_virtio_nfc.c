@@ -31,7 +31,7 @@
 #include "maru_device_ids.h"
 #include "maru_virtio_nfc.h"
 #include "debug_ch.h"
-#include "../ecs.h"
+#include "../ecs/ecs.h"
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-nfc);
 
