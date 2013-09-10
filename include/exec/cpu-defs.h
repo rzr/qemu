@@ -180,8 +180,6 @@ typedef struct CPUWatchpoint {
     int hax_vcpu_dirty;                                                 \
     struct hax_vcpu_state *hax_vcpu;                                    \
                                                                         \
-    CPUArchState *next_cpu; /* next CPU sharing TB cache */                 \
-
     /* user data */                                                     \
     void *opaque;                                                       \
                                                                         \

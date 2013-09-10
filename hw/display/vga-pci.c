@@ -151,7 +151,7 @@ static int pci_std_vga_initfn(PCIDevice *dev)
 
     /* vga + console init */
 #ifdef CONFIG_MARU
-    maru_vga_common_init(s);
+    maru_vga_common_init(s, OBJECT(dev));
 #else
     vga_common_init(s, OBJECT(dev));
 #endif

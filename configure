@@ -1145,7 +1145,6 @@ echo "  --enable-bluez           enable bluez stack connectivity"
 echo "  --disable-slirp          disable SLIRP userspace network connectivity"
 echo "  --disable-kvm            disable KVM acceleration support"
 echo "  --enable-kvm             enable KVM acceleration support"
-echo "  --disable-gl             disable GL acceleration support"
 
 echo "  --disable-hax            disable HAX acceleration support"
 echo "  --enable-hax             enable HAX acceleration support"
@@ -4483,13 +4482,13 @@ case "$target_name" in
       fi
     fi
 esac
-case "$target_arch2" in
+case "$target_name" in
   i386|x86_64)
     echo "CONFIG_HAVE_GET_MEMORY_MAPPING=y" >> $config_target_mak
 esac
 if test "$hax" = "yes" ; then
   if test "$target_softmmu" = "yes" ; then
-    case "$target_arch2" in
+    case "$target_name" in
     i386|x86_64)
       echo "CONFIG_HAX=y" >> $config_target_mak
     ;;
@@ -4502,7 +4501,7 @@ if test "$hax" = "yes" ; then
   fi
 fi
 if test "$gl" = "yes" ; then
-  case "$target_arch2" in
+  case "$target_name" in
   i386|x86_64|arm)
     echo "CONFIG_GL=y" >> $config_target_mak
     if test "$mingw32" = "yes" ; then
@@ -4517,9 +4516,6 @@ if test "$gl" = "yes" ; then
     echo "CONFIG_NO_GL=y" >> $config_target_mak
   ;;
   esac
-fi
-if test "$target_arch2" = "ppc64" -a "$fdt" = "yes"; then
-  echo "CONFIG_PSERIES=y" >> $config_target_mak
 fi
 if test "$target_bigendian" = "yes" ; then
   echo "TARGET_WORDS_BIGENDIAN=y" >> $config_target_mak

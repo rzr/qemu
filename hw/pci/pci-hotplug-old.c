@@ -267,10 +267,17 @@ static PCIDevice *qemu_pci_hot_add_keyboard(Monitor *mon,
                                             const char *opts)
 {
     PCIDevice *dev;
+    PCIBus *root = pci_find_primary_bus();
     PCIBus *bus;
     int devfn;
 
-    bus = pci_get_bus_devfn(&devfn, devaddr);
+    if (!root) {
+        monitor_printf(mon, "no primary PCI bus (if there are multiple"
+                       " PCI roots, you must use device_add instead)");
+        return NULL;
+    }
+
+    bus = pci_get_bus_devfn(&devfn, root, devaddr);
     if (!bus) {
         monitor_printf(mon, "Invalid PCI device address %s\n", devaddr);
         return NULL;

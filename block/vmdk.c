@@ -524,7 +524,6 @@ static int vmdk_open_vmdk4(BlockDriverState *bs,
         return ret;
     }
     if (header.capacity == 0) {
-        int64_t desc_offset = le64_to_cpu(header.desc_offset);
         uint64_t desc_offset = le64_to_cpu(header.desc_offset);
         if (desc_offset) {
             return vmdk_open_desc_file(bs, flags, desc_offset << 9);

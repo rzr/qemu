@@ -3082,7 +3082,7 @@
 # Since: 1.2.0
 ##
 { 'type': 'FdsetInfo',
-  'data': {'fdset-id': yy'int', 'fds': ['FdsetFdInfo']} }
+  'data': {'fdset-id': 'int', 'fds': ['FdsetFdInfo']} }
 
 ##
 # @query-fdsets:
@@ -3121,8 +3121,6 @@
 ##
 { 'command': 'query-target', 'returns': 'TargetInfo' }
 
-
-
 ## Eric 2013.3.7 ##
 
 ##
@@ -3138,17 +3136,6 @@
 ##
 { 'type': 'AccelInfo',
   'data': { 'Xaxis': 'int', 'Yaxis': 'int', 'Zaxis' : 'int'} }
-
-##
-# @query-accel:
-#
-# Return information about the acceleration sensor value
-#
-# Returns: AccelInfo
-#
-# Since: 1.2.0
-##
-{ 'command': 'query-accel', 'returns': 'AccelInfo' }
 
 ##
 # @QKeyCode:
