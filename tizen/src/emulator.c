@@ -52,7 +52,7 @@
 #include "skin/maruskin_server.h"
 #include "skin/maruskin_client.h"
 #include "debug_ch.h"
-#include "ecs.h"
+#include "ecs/ecs.h"
 
 #ifdef CONFIG_SDL
 #include <SDL.h>

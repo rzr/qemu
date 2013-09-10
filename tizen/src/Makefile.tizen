@@ -1,12 +1,9 @@
 # Makefile.tizen
 # for TIZEN-maru board
 
-
-$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/tizen/src/genmsg:$(SRC_PATH)/tizen/distrib/protobuf:$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
 
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
-QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src/genmsg
-QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/protobuf
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
 LDFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
@@ -108,12 +105,8 @@ endif
 # debug channel
 obj-y += debug_ch.o
 
-# ecs
-obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o ecs_sensor.o 
-
-# ecs msg
-obj-y += ecs.pb-c.o protobuf-c.o
-
+# ECS
+include $(SRC_PATH)/tizen/src/ecs/Makefile.tizen
 
 # maru hardware
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
@@ -149,10 +142,6 @@ obj-y += maruskin_client.o maruskin_server.o maruskin_operation.o maruskin_keyma
 
 # guest server
 obj-y += guest_server.o
-
-# base64
-obj-y += base64.o
-
 
 #ifndef CONFIG_DARWIN
 ###########################################################

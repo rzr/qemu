@@ -1,0 +1,11 @@
+# ECS Makefile.tizen
+
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/tizen/src/ecs:$(SRC_PATH)/tizen/src/ecs/genmsg:$(SRC_PATH)/tizen/distrib/protobuf)
+
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/protobuf
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src/ecs/genmsg
+
+obj-y += ecs.pb-c.o protobuf-c.o
+obj-y += base64.o
+obj-y += ecs_msg.o ecs.o ecs-json-streamer.o qmp_handler.o ecs_sensor.o
+

@@ -81,14 +81,15 @@ int base64_encode(const char *text, int numBytes, char **encodedText)
   unsigned char input[3]  = {0,0,0};
   unsigned char output[4] = {0,0,0,0};
   int   index, i, j, size;
-  char *p, *plen;
+  char *p, *plen, *ptext;
 
-  plen           = text + numBytes - 1;
+  ptext          = (char*)text;
+  plen           = ptext + numBytes - 1;
   size           = (4 * (numBytes / 3)) + (numBytes % 3? 4 : 0) + 1;
   (*encodedText) = malloc(size);
   j              = 0;
 
-    for  (i = 0, p = text;p <= plen; i++, p++) {
+    for  (i = 0, p = ptext;p <= plen; i++, p++) {
         index = i % 3;
         input[index] = *p;
 

@@ -34,7 +34,7 @@
 #include "maru_device_ids.h"
 #include "maru_virtio_sensor.h"
 #include "debug_ch.h"
-#include "../ecs.h"
+#include "../ecs/ecs.h"
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-sensor);
 
