@@ -1,3 +1,6 @@
+* 1.5.91
+- make skins package for ubuntu
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-09-10
 * 1.5.88
 - modified test.hb.ignore to hb.ignore and add conditional sentence for remote excution
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-09-04
