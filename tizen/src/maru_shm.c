@@ -49,7 +49,7 @@ static int skin_shmid;
 static int shm_skip_update;
 static int shm_skip_count;
 static int blank_cnt;
-#define MAX_BLANK_FRAME_CNT 120
+#define MAX_BLANK_FRAME_CNT 10
 
 extern pthread_mutex_t mutex_draw_display;
 extern int draw_display_state;
@@ -146,7 +146,9 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
             /* draw guide image */
             INFO("draw a blank guide image\n");
 
-            notify_draw_blank_guide();
+            if (get_emul_skin_enable() == 1) {
+                notify_draw_blank_guide();
+            }
         } else if (blank_cnt == 0) {
             INFO("skipping of the display updating is started\n");
         }

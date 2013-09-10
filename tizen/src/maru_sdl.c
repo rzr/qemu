@@ -63,7 +63,7 @@ static int sdl_alteration;
 static unsigned int sdl_skip_update;
 static unsigned int sdl_skip_count;
 static unsigned int blank_cnt;
-#define MAX_BLANK_FRAME_CNT 120
+#define MAX_BLANK_FRAME_CNT 10
 #define BLANK_GUIDE_IMAGE_PATH "../images/"
 #define BLANK_GUIDE_IMAGE_NAME "blank-guide.png"
 
@@ -489,11 +489,9 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
             INFO("draw a blank guide image\n");
 
             SDL_Surface *guide = get_blank_guide_image();
-            if (guide != NULL) {
-                int dst_w = 0;
-                int dst_h = 0;
-                int dst_x = 0;
-                int dst_y = 0;
+            if (guide != NULL && get_emul_skin_enable() == 1) {
+                int dst_x = 0; int dst_y = 0;
+                int dst_w = 0; int dst_h = 0;
 
                 if (current_scale_factor != 1.0) {
                     /* guide image scaling */
