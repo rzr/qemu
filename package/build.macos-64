@@ -129,9 +129,11 @@ install()
     X86_BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
 #   ARM_BIN_DIR=$SRCDIR/package/emulator-qemu-arm.package.${TARGET_OS}/data/tools
     COMMON_BIN_DIR=$SRCDIR/package/emulator-qemu-common.package.${TARGET_OS}/data/tools
+    MOBILE_3_0_SKIN_RESOURCE_DIR=$SRCDIR/package/mobile-3.0-emulator-qemu-skins.package.${TARGET_OS}/data/platforms/mobile-3.0/emulator-resources/skins/
     mkdir -p $X86_BIN_DIR
 #   mkdir -p $ARM_BIN_DIR
     mkdir -p $COMMON_BIN_DIR
+    mkdir -p $MOBILE_3_0_SKIN_RESOURCE_DIR
 
     cd $SRCDIR/tizen
     make install_dibs
@@ -139,6 +141,10 @@ install()
     mv x86 $X86_BIN_DIR/emulator
 #   mv x86 $ARM_BIN_DIR/emulator
     mv common $COMMON_BIN_DIR/emulator
+
+    #profile skins
+    cp -pPR src/skin/client/skins/mobile-480x800-3btn $MOBILE_3_0_SKIN_RESOURCE_DIR/
+    cp -pPR src/skin/client/skins/mobile-720x1280-3btn $MOBILE_3_0_SKIN_RESOURCE_DIR/
 }
 
 [ "$1" = "clean" ] && clean

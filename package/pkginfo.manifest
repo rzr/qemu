@@ -91,3 +91,13 @@ Package: mobile-3.0-emulator-qemu-skins
 OS: ubuntu-64
 Build-host-os: ubuntu-64
 Description: Skin images for Mobile 3.0 Tizen Emulator
+
+Package: mobile-3.0-emulator-qemu-skins
+OS: windows-32, windows-64
+Build-host-os: windows-32
+Description: Skin images for Mobile 3.0 Tizen Emulator
+
+Package: mobile-3.0-emulator-qemu-skins
+OS: macos-64
+Build-host-os: macos-64
+Description: Skin images for Mobile 3.0 Tizen Emulator
