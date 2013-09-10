@@ -209,10 +209,10 @@ static int overlay_initfn(PCIDevice *dev)
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_OVERLAY);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    memory_region_init_ram(&s->mem_addr, "maru_overlay.ram", OVERLAY_MEM_SIZE);
+    memory_region_init_ram(&s->mem_addr, NULL, "maru_overlay.ram", OVERLAY_MEM_SIZE);
     overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
-    memory_region_init_io(&s->mmio_addr, &overlay_mmio_ops,
+    memory_region_init_io(&s->mmio_addr, NULL, &overlay_mmio_ops,
                           s,
                           "maru_overlay_mmio",
                           OVERLAY_REG_SIZE);

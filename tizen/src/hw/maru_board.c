@@ -90,6 +90,7 @@ static const int ide_iobase2[MAX_IDE_BUS] = { 0x3f6, 0x376 };
 static const int ide_irq[MAX_IDE_BUS] = { 14, 15 };
 
 static bool has_pvpanic = true;
+static bool has_pci_info = true;
 
 MemoryRegion *global_ram_memory;
 
@@ -129,6 +130,8 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     MemoryRegion *rom_memory;
     DeviceState *icc_bridge;
     void *fw_cfg = NULL;
+    PcGuestInfo *guest_info;
+
 #if defined(__linux__)
     Display *display = XOpenDisplay(0);
     if (!display && !enable_spice) {
@@ -139,6 +142,11 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     void *display = NULL;
 #endif
     struct winsys_interface *vigs_wsi = NULL;
+
+    if (xen_enabled() && xen_hvm_init() != 0) {
+        fprintf(stderr, "xen hardware virtual machine initialisation failed\n");
+        exit(1);
+    }
 
     icc_bridge = qdev_create(NULL, TYPE_ICC_BRIDGE);
     object_property_add_child(qdev_get_machine(), "icc-bridge",
@@ -161,12 +169,16 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
     if (pci_enabled) {
         pci_memory = g_new(MemoryRegion, 1);
-        memory_region_init(pci_memory, "pci", INT64_MAX);
+        memory_region_init(pci_memory, NULL, "pci", INT64_MAX);
         rom_memory = pci_memory;
     } else {
         pci_memory = NULL;
         rom_memory = system_memory;
     }
+
+    guest_info = pc_guest_info_init(below_4g_mem_size, above_4g_mem_size);
+    guest_info->has_pci_info = has_pci_info;
+    guest_info->isapc_ram_fw = !pci_enabled;
 
     /* allocate ram and load rom/bios */
     if (!xen_enabled()) {
@@ -179,7 +191,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         fw_cfg = pc_memory_init(system_memory,
                        kernel_filename, kernel_cmdline, initrd_filename,
                        below_4g_mem_size, above_4g_mem_size,
-                       rom_memory, &ram_memory);
+                       rom_memory, &ram_memory, guest_info);
     }
 
     // for ramdump...
@@ -199,10 +211,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
                               system_memory, system_io, ram_size,
                               below_4g_mem_size,
                               0x100000000ULL - below_4g_mem_size,
-                              0x100000000ULL + above_4g_mem_size,
-                              (sizeof(hwaddr) == 4
-                               ? 0
-                               : ((uint64_t)1 << 62)),
+                              above_4g_mem_size,
                               pci_memory, ram_memory);
     } else {
         pci_bus = NULL;
@@ -257,7 +266,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
             dev = isa_ide_init(isa_bus, ide_iobase[i], ide_iobase2[i],
                                ide_irq[i],
                                hd[MAX_IDE_DEVS * i], hd[MAX_IDE_DEVS * i + 1]);
-            idebus[i] = qdev_get_child_bus(&dev->qdev, "ide.0");
+            idebus[i] = qdev_get_child_bus(DEVICE(dev), "ide.0");
         }
     }
 
@@ -271,8 +280,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
     if (pci_enabled && acpi_enabled) {
         i2c_bus *smbus;
 
-        smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt,
-                                     x86_env_get_cpu(first_cpu), 1);
+        smi_irq = qemu_allocate_irqs(pc_acpi_smi_interrupt, first_cpu, 1);
         /* TODO: Populate SPD eeprom data.  */
         smbus = piix4_pm_init(pci_bus, piix3_devfn + 3, 0xb100,
                               gsi[9], *smi_irq,
@@ -316,6 +324,8 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
 static void maru_x86_board_init(QEMUMachineInitArgs *args)
 {
+    has_pci_info = false;
+
     ram_addr_t ram_size = args->ram_size;
     const char *cpu_model = args->cpu_model;
     const char *kernel_filename = args->kernel_filename;

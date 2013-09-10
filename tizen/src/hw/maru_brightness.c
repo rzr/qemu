@@ -193,7 +193,7 @@ static int brightness_initfn(PCIDevice *dev)
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_BRIGHTNESS);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    memory_region_init_io(&s->mmio_addr, &brightness_mmio_ops, s,
+    memory_region_init_io(&s->mmio_addr, OBJECT(s), &brightness_mmio_ops, s,
                             "maru_brightness_mmio", BRIGHTNESS_REG_SIZE);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
 
