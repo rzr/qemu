@@ -227,7 +227,7 @@ static int yagl_device_init(PCIDevice *dev)
 
     YAGL_LOG_FUNC_ENTER(yagl_device_init, NULL);
 
-    memory_region_init_io(&s->iomem,
+    memory_region_init_io(&s->iomem, OBJECT(s),
                           &yagl_device_ops,
                           s,
                           TYPE_YAGL_DEVICE,

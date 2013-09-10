@@ -17,8 +17,8 @@ struct yagl_process_state
     QLIST_INIT(&ps->threads);
 
 #ifdef CONFIG_KVM
-    cpu_synchronize_state(cpu_single_env);
-    memcpy(&ps->cr[0], &((CPUX86State*)cpu_single_env)->cr[0], sizeof(ps->cr));
+    cpu_synchronize_state(current_cpu);
+    memcpy(&ps->cr[0], &((CPUX86State*)current_cpu)->cr[0], sizeof(ps->cr));
 #endif
 
     return ps;
