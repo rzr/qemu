@@ -745,10 +745,10 @@ static void do_hax_cpu_synchronize_state(void *_env)
 	}
 }
 
-void hax_cpu_synchronize_state(CPUArchState *env)
+void hax_cpu_synchronize_state(CPUState *cpu)
 {
-	if (!env->hax_vcpu_dirty) {
-		run_on_cpu(env, do_hax_cpu_synchronize_state, env);
+	if (!cpu->env.hax_vcpu_dirty) {
+		run_on_cpu(cpu, do_hax_cpu_synchronize_state, cpu);
 	}
 }
 
