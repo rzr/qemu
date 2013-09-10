@@ -81,3 +81,8 @@ Description: Tizen x86 Emulator
 #Build-dependency: emulator-lib [ macos-64 ]
 #Install-dependency: emulator-kernel-arm [ macos-64 ]
 #Description: Tizen ARM Emulator
+
+Package: mobile-3.0-emulator-qemu-skins
+OS: ubuntu-32, ubuntu-64
+Build-host-os: ubuntu-32
+Description: Skin images for Mobile 3.0 Tizen Emulator
