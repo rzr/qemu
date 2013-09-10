@@ -65,7 +65,6 @@ import org.tizen.emulator.skin.util.SkinUtil;
  */
 public class SocketCommunicator implements ICommunicator {
 	public class DataTranfer {
-
 		private boolean isTransferState;
 		private byte[] receivedData;
 
@@ -112,6 +111,7 @@ public class SocketCommunicator implements ICommunicator {
 	private boolean isTerminated;
 	private boolean isSensorDaemonStarted;
 	private boolean isSdbDaemonStarted;
+	private boolean isEcsServerStarted;
 	private boolean isRamdump;
 	private TimerTask heartbeatExecutor;
 	private Timer heartbeatTimer;
@@ -180,38 +180,32 @@ public class SocketCommunicator implements ICommunicator {
 
 	@Override
 	public void run() {
-
 		sendQueue = new LinkedList<SkinSendData>();
 
 		sendThread = new Thread("sendThread") {
-
 			List<SkinSendData> list = new ArrayList<SkinSendData>();
 
 			@Override
 			public void run() {
-
-				while ( true ) {
-
-					synchronized ( sendQueue ) {
-
-						if ( sendQueue.isEmpty() ) {
+				while (true) {
+					synchronized (sendQueue) {
+						if (sendQueue.isEmpty()) {
 							try {
 								sendQueue.wait();
-							} catch ( InterruptedException e ) {
-								logger.log( Level.SEVERE, e.getMessage(), e );
+							} catch (InterruptedException e) {
+								logger.log(Level.SEVERE, e.getMessage(), e);
 							}
 						}
 
 						SkinSendData sendData = null;
-						while ( true ) {
+						while (true) {
 							sendData = sendQueue.poll();
-							if ( null != sendData ) {
-								list.add( sendData );
+							if (null != sendData) {
+								list.add(sendData);
 							} else {
 								break;
 							}
 						}
-
 					}
 
 					if (isTerminated) {
@@ -219,13 +213,12 @@ public class SocketCommunicator implements ICommunicator {
 						break;
 					}
 
-					for ( SkinSendData data : list ) {
-						sendToQEMUInternal( data );
+					for (SkinSendData data : list) {
+						sendToQEMUInternal(data);
 					}
 
 					list.clear();
 				}
-
 			}
 		};
 
@@ -409,6 +402,14 @@ public class SocketCommunicator implements ICommunicator {
 
 					synchronized (this) {
 						isSdbDaemonStarted = true;
+					}
+					break;
+				}
+				case ECS_SERVER_START: {
+					logger.info("received ECS_SERVER_START from QEMU.");
+
+					synchronized (this) {
+						isEcsServerStarted = true;
 					}
 					break;
 				}

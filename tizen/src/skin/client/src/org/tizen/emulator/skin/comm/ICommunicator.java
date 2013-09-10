@@ -194,16 +194,16 @@ public interface ICommunicator extends Runnable {
 			return this.id;
 		}
 		
-		public static RotationInfo getValue( short id ) {
+		public static RotationInfo getValue(short id) {
 			RotationInfo[] values = RotationInfo.values();
 			for (int i = 0; i < values.length; i++) {
-				if( values[i].id == id ) {
+				if (values[i].id == id) {
 					return values[i];
 				}
 			}
-			throw new IllegalArgumentException( Integer.toString(id) );
-		}
 
+			throw new IllegalArgumentException(Integer.toString(id));
+		}
 	}
 
 	public enum SendCommand {
@@ -270,6 +270,7 @@ public interface ICommunicator extends Runnable {
 		ECP_PORT((short) 7),
 		SENSOR_DAEMON_START((short) 800),
 		SDB_DAEMON_START((short) 801),
+		ECS_SERVER_START((short) 802),
 		DRAW_FRAME((short) 900),
 		DRAW_BLANK_GUIDE((short) 901),
 		SHUTDOWN((short) 999);
