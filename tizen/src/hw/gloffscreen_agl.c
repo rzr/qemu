@@ -27,6 +27,8 @@
 #include <string.h> 
 #include <inttypes.h>
 #include <dlfcn.h>
+#include <glib.h>
+
 /*hack due to conflicting typedefs in qemu's softfloat.h*/
 #define __SECURITYHI__ 1
   
@@ -39,6 +41,8 @@
 #else 
 #define TRACE(...) 
 #endif 
+
+
  
 struct _GloContext 
 { 
@@ -178,6 +182,7 @@ GloContext *__glo_context_create(int formatFlags)
          }
      }
     GloContext *context = (GloContext *)g_malloc(sizeof(*context));
+
     memset(context, 0, sizeof(*context));
     context->formatFlags = formatFlags;
     context->pixelFormat = pf;
