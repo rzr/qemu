@@ -62,7 +62,7 @@ struct yagl_thread_state
      * the time of call. This is the time when host thread can
      * read/write target memory.
      */
-    CPUArchState * volatile current_env;
+    CPUState * volatile current_env;
 };
 
 YAGL_DECLARE_TLS(struct yagl_thread_state*, cur_ts);
