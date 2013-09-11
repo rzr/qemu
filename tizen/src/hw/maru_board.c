@@ -84,6 +84,7 @@ extern int enable_spice;
 #define MAX_IDE_BUS 2
 
 int codec_init(PCIBus *bus);
+int new_codec_device_init(PCIBus *bus);
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
 static const int ide_iobase2[MAX_IDE_BUS] = { 0x3f6, 0x376 };
@@ -293,6 +294,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         codec_init(pci_bus);
         pci_maru_overlay_init(pci_bus);
         pci_maru_brightness_init(pci_bus);
+        new_codec_device_init(pci_bus);
     }
 
     if (enable_vigs) {
