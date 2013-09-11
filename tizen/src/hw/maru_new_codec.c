@@ -748,7 +748,7 @@ int new_avcodec_query_list (NewCodecState *s)
 {
     AVCodec *codec = NULL;
     uint32_t size = 0, mem_size = 0;
-    uint32_t data_length = 0;
+    uint32_t data_len = 0, length = 0;
     int32_t codec_type, media_type;
     int32_t codec_fmts[4], i;
 
@@ -763,7 +763,9 @@ int new_avcodec_query_list (NewCodecState *s)
     }
 
     // a region to store the number of codecs.
-    data_length = 32 + 64 + 6 * sizeof(int32_t);
+    length = 32 + 64 + 6 * sizeof(int32_t);
+    mem_size = size = sizeof(uint32_t);
+
     while (codec) {
         codec_type =
             codec->decode ? CODEC_TYPE_DECODE : CODEC_TYPE_ENCODE;
@@ -786,27 +788,27 @@ int new_avcodec_query_list (NewCodecState *s)
             ERR("%s of media type is unknown.\n", codec->name);
         }
 
-        memset((uint8_t *)s->vaddr + mem_size,
-            0x00, (data_length + sizeof(data_length)));
-        mem_size += (data_length + sizeof(data_length));
+        memset(s->vaddr + mem_size, 0x00, length);
+        mem_size += length;
 
-        memcpy((uint8_t *)s->vaddr + size, &data_length, sizeof(uint32_t));
-        size += sizeof(uint32_t);
-        memcpy((uint8_t *)s->vaddr + size, &codec_type, sizeof(codec_type));
+        data_len += length;
+        memcpy(s->vaddr, &data_len, sizeof(data_len));
+
+        memcpy(s->vaddr + size, &codec_type, sizeof(codec_type));
         size += sizeof(codec_type);
-        memcpy((uint8_t *)s->vaddr + size, &media_type, sizeof(media_type));
+        memcpy(s->vaddr + size, &media_type, sizeof(media_type));
         size += sizeof(media_type);
-        memcpy((uint8_t *)s->vaddr + size, codec->name, strlen(codec->name));
+        memcpy(s->vaddr + size, codec->name, strlen(codec->name));
         size += 32;
-        memcpy((uint8_t *)s->vaddr + size,
+        memcpy(s->vaddr + size,
            codec->long_name, strlen(codec->long_name));
         size += 64;
-        memcpy((uint8_t *)s->vaddr + size, codec_fmts, sizeof(codec_fmts));
+        memcpy(s->vaddr + size, codec_fmts, sizeof(codec_fmts));
         size += sizeof(codec_fmts);
 
         codec = av_codec_next(codec);
     }
-    memset((uint8_t *)s->vaddr + size, 0, sizeof(uint32_t));
+//    memset((uint8_t *)s->vaddr + size, 0, sizeof(uint32_t));
 
     return 0;
 }
