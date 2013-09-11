@@ -57,21 +57,22 @@ typedef struct CodecParam {
 } CodecParam;
 
 struct video_data {
-  int width, height;
-  int fps_n, fps_d;
-  int par_n, par_d;
-  int pix_fmt, bpp;
-  int ticks_per_frame;
+    int width, height;
+    int fps_n, fps_d;
+    int par_n, par_d;
+    int pix_fmt, bpp;
+    int ticks_per_frame;
 };
 
 struct audio_data {
-  int channels;
-  int sample_rate;
-  int bit_rate;
-  int block_align;
-  int depth;
-  int sample_fmt;
-  int64_t channel_layout;
+    int channels;
+    int sample_rate;
+    int block_align;
+    int depth;
+    int sample_fmt;
+    int frame_size;
+    int bits_per_smp_fmt;
+    int64_t channel_layout;
 };
 
 typedef struct CodecContext {
@@ -81,8 +82,7 @@ typedef struct CodecContext {
     uint8_t                 *parser_buf;
     uint16_t                parser_use;
     uint16_t                avctx_use;
-    int32_t                 file_index;
-    uint32_t                mem_offset;
+    CodecParam              ioparam;
 } CodecContext;
 
 typedef struct CodecThreadPool {
@@ -108,7 +108,7 @@ typedef struct NewCodecState {
     CodecContext        codec_ctx[CODEC_CONTEXT_MAX];
     CodecParam          ioparam;
 
-    uint8_t             codec_offset[AUDIO_CODEC_MEM_OFFSET_MAX];
+    uint32_t            context_index;
     uint8_t             isrunning;
 } NewCodecState;
 
@@ -124,7 +124,7 @@ enum codec_io_cmd {
     CODEC_CMD_POP_WRITE_QUEUE       = 0x48,
     CODEC_CMD_RESET_CODEC_CONTEXT   = 0x4C,
     CODEC_CMD_GET_VERSION           = 0x50,
-
+    CODEC_CMD_GET_CONTEXT_INDEX     = 0x54,
 };
 
 enum codec_api_type {
@@ -148,7 +148,7 @@ enum codec_type {
 enum media_type {
     MEDIA_TYPE_UNKNOWN = -1,
     MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_AUDIO,    
+    MEDIA_TYPE_AUDIO,
 };
 #endif
 
@@ -201,7 +201,7 @@ void new_codec_reset_codec_context(NewCodecState *s, int32_t value);
  *  FFMPEG Functions
  */
 int new_avcodec_query_list(NewCodecState *s);
-int new_avcodec_alloc_context(NewCodecState *s);
+int new_avcodec_alloc_context(NewCodecState *s, int index);
 int new_avcodec_init(NewCodecState *s, CodecParam *ioparam);
 void new_avcodec_deinit(NewCodecState *s, CodecParam *ioparam);
 int new_avcodec_decode_video(NewCodecState *s, CodecParam *ioparam);
@@ -211,7 +211,6 @@ int new_avcodec_encode_audio(NewCodecState *s, CodecParam *ioparam);
 void new_avcodec_picture_copy (NewCodecState *s, CodecParam *ioparam);
 
 AVCodecParserContext *new_avcodec_parser_init(AVCodecContext *avctx);
-int new_avcodec_parser_parse (AVCodecParserContext *pctx, AVCodecContext *avctx, 
+int new_avcodec_parser_parse (AVCodecParserContext *pctx, AVCodecContext *avctx,
                             uint8_t *inbuf, int inbuf_size,
-                            uint8_t * outbuf, int outbuf_size,
                             int64_t pts, int64_t dts, int64_t pos);
