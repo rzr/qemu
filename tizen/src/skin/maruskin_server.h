@@ -39,6 +39,7 @@ void notify_draw_frame(void);
 void notify_draw_blank_guide(void);
 void notify_sensor_daemon_start(void);
 void notify_sdb_daemon_start(void);
+void notify_ecs_server_start(void);
 void notify_ramdump_completed(void);
 void notify_booting_progress(int progress_value);
 void notify_brightness(bool on);

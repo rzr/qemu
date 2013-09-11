@@ -133,6 +133,7 @@ enum {
     SEND_ECP_PORT = 7,
     SEND_SENSOR_DAEMON_START = 800,
     SEND_SDB_DAEMON_START = 801,
+    SEND_ECS_SERVER_START = 802,
     SEND_DRAW_FRAME = 900,
     SEND_DRAW_BLANK_GUIDE = 901,
     SEND_SHUTDOWN = 999,
@@ -147,6 +148,7 @@ static int client_sock = 0;
 static int stop_server = 0;
 static int is_sensord_initialized = 0;
 static int is_sdbd_initialized = 0;
+static int is_ecs_initialized = 0;
 static int ready_server = 0;
 static int ignore_heartbeat = 0;
 static int is_force_close_client = 0;
@@ -322,6 +324,22 @@ void notify_draw_blank_guide(void)
     }
 }
 
+void notify_ecs_server_start(void)
+{
+    INFO("notify_ecs_server_start\n");
+
+    is_ecs_initialized = 1;
+    if (client_sock) {
+        if (0 > send_skin_header_only(
+            client_sock, SEND_ECS_SERVER_START, 1)) {
+
+            ERR("fail to send SEND_ECS_SERVER_START to skin.\n");
+        }
+    } else {
+        INFO("skin client socket is not connected yet\n");
+    }
+}
+
 void notify_sdb_daemon_start(void)
 {
     INFO("notify_sdb_daemon_start\n");
@@ -333,6 +351,8 @@ void notify_sdb_daemon_start(void)
 
             ERR("fail to send SEND_SDB_DAEMON_START to skin.\n");
         }
+    } else {
+        INFO("skin client socket is not connected yet\n");
     }
 }
 
@@ -347,6 +367,8 @@ void notify_sensor_daemon_start(void)
 
             ERR("fail to send SEND_SENSOR_DAEMON_START to skin.\n");
         }
+    } else {
+        INFO("skin client socket is not connected yet\n");
     }
 }
 
