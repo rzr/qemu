@@ -1,7 +1,7 @@
 /**
- * 
+ * initial data for Qemu
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,28 +36,37 @@ import java.io.IOException;
  *
  */
 public class StartData extends AbstractSendData {
-
 	private long windowHandleId;
-	private int lcdSizeWidth;
-	private int lcdSizeHeight;
+	private int displayWidth;
+	private int displayHeight;
 	private int scale;
 	private short rotation;
+	private boolean isBlankGuide;
 	
-	public StartData(long windowHandleId, int lcdSizeWidth, int lcdSizeHeight, int scale, short rotation ) {
+	public StartData(long windowHandleId,
+			int displayWidth, int displayHeight, int scale, short rotation,
+			boolean isBlankGuide) {
 		this.windowHandleId = windowHandleId;
-		this.lcdSizeWidth = lcdSizeWidth;
-		this.lcdSizeHeight = lcdSizeHeight;
+		this.displayWidth = displayWidth;
+		this.displayHeight = displayHeight;
 		this.scale = scale;
 		this.rotation = rotation;
+		this.isBlankGuide = isBlankGuide;
 	}
 
 	@Override
 	protected void write() throws IOException {
-		writeLong( windowHandleId );
-		writeInt( lcdSizeWidth );
-		writeInt( lcdSizeHeight );
-		writeInt( scale );
-		writeShort( rotation );
+		writeLong(windowHandleId);
+		writeInt(displayWidth);
+		writeInt(displayHeight);
+		writeInt(scale);
+		writeShort(rotation);
+
+		if (isBlankGuide == true) {
+			writeShort(1);
+		} else {
+			writeShort(0);
+		}
 	}
 
 	@Override
@@ -65,11 +74,13 @@ public class StartData extends AbstractSendData {
 		StringBuilder builder = new StringBuilder();
 		builder.append("StartData [windowHandleId=");
 		builder.append(windowHandleId);
-		builder.append(", lcd size " + lcdSizeWidth +"x" + lcdSizeHeight);
+		builder.append(", display size " + displayWidth + "x" + displayHeight);
 		builder.append(", scale=");
 		builder.append(scale);
 		builder.append(", rotation=");
 		builder.append(rotation);
+		builder.append(", blank guide=");
+		builder.append(isBlankGuide);
 		builder.append("]");
 		return builder.toString();
 	}

@@ -785,7 +785,8 @@ static void maru_sdl_init_bh(void *opaque)
 }
 
 void maruskin_sdl_init(uint64 swt_handle,
-    int lcd_size_width, int lcd_size_height)
+    unsigned int display_width, unsigned int display_height,
+    bool blank_guide)
 {
     gchar SDL_windowhack[32] = { 0, };
     long window_id = swt_handle;
@@ -801,7 +802,7 @@ void maruskin_sdl_init(uint64 swt_handle,
     INFO("register SDL environment variable. "
         "(SDL_WINDOWID = %s)\n", SDL_windowhack);
 
-    set_emul_lcd_size(lcd_size_width, lcd_size_height);
+    set_emul_lcd_size(display_width, display_height);
     set_emul_sdl_bpp(SDL_BPP);
     init_multi_touch_state();
 

@@ -1727,7 +1727,7 @@ public class EmulatorSkin {
 
 				int answer = SkinUtil.openMessage(shell, null,
 						"If you force stop an emulator, it may cause some problems.\n"
-								+ "Are you sure you want to contiue?",
+								+ "Are you sure you want to continue?",
 						SWT.ICON_QUESTION | SWT.OK | SWT.CANCEL, config);
 
 				if (answer == SWT.OK) {

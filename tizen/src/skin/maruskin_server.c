@@ -778,34 +778,37 @@ static void* run_skin_server(void* args)
 
                 }
 
-                switch ( cmd ) {
+                switch (cmd) {
                 case RECV_START: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_START ==\n" );
-                    INFO( log_buf );
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_START ==\n");
+                    INFO(log_buf);
 
-                    if ( 0 >= length ) {
-                        ERR( "there is no data looking at 0 length." );
+                    if (0 >= length) {
+                        ERR("there is no data looking at 0 length.");
                         continue;
                     }
 
                     /* keep it consistent with emulator-skin definition */
                     uint64 handle_id = 0;
-                    int lcd_size_width = 0;
-                    int lcd_size_height = 0;
+                    int display_width = 0;
+                    int display_height = 0;
                     int scale = 0;
                     double scale_ratio = 0.0;
                     short rotation = 0;
+                    short blank_guide = 0;
 
                     char* p = recvbuf;
-                    memcpy( &handle_id, p, sizeof( handle_id ) );
-                    p += sizeof( handle_id );
-                    memcpy( &lcd_size_width, p, sizeof( lcd_size_width ) );
-                    p += sizeof( lcd_size_width );
-                    memcpy( &lcd_size_height, p, sizeof( lcd_size_height ) );
-                    p += sizeof( lcd_size_height );
-                    memcpy( &scale, p, sizeof( scale ) );
-                    p += sizeof( scale );
-                    memcpy( &rotation, p, sizeof( rotation ) );
+                    memcpy(&handle_id, p, sizeof(handle_id));
+                    p += sizeof(handle_id);
+                    memcpy(&display_width, p, sizeof(display_width));
+                    p += sizeof(display_width);
+                    memcpy(&display_height, p, sizeof(display_height));
+                    p += sizeof(display_height);
+                    memcpy(&scale, p, sizeof(scale));
+                    p += sizeof(scale);
+                    memcpy(&rotation, p, sizeof(rotation));
+                    p += sizeof(rotation);
+                    memcpy(&blank_guide, p, sizeof(blank_guide));
 
                     int low_id = (int)handle_id;
                     int high_id = (int)(handle_id >> 32);
@@ -814,15 +817,18 @@ static void* run_skin_server(void* args)
                     handle_id = high_id;
                     handle_id = (handle_id << 32) | low_id;
 
-                    lcd_size_width = ntohl( lcd_size_width );
-                    lcd_size_height = ntohl( lcd_size_height );
-                    scale = ntohl( scale );
-                    scale_ratio = ( (double) scale ) / 100;
-                    rotation = ntohs( rotation );
+                    display_width = ntohl(display_width);
+                    display_height = ntohl(display_height);
+                    scale = ntohl(scale);
+                    scale_ratio = ((double) scale) / 100;
+                    rotation = ntohs(rotation);
+                    blank_guide = ntohs(blank_guide);
 
-                    set_emul_win_scale( scale_ratio );
+                    set_emul_win_scale(scale_ratio);
 
-                    start_display( handle_id, lcd_size_width, lcd_size_height, scale_ratio, rotation );
+                    start_display(handle_id,
+                        display_width, display_height, scale_ratio, rotation,
+                        (blank_guide == 1) ? true : false);
 
                     break;
                 }

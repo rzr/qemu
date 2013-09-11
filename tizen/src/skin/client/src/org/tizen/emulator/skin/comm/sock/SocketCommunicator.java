@@ -225,29 +225,28 @@ public class SocketCommunicator implements ICommunicator {
 		try {
 			dis = new DataInputStream(socket.getInputStream());
 			dos = new DataOutputStream(socket.getOutputStream());
-
-			sendThread.setDaemon(true);
-			sendThread.start();
-
-			int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
-			int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
-			int scale = SkinUtil.getValidScale(config);
-//			short rotation = config.getSkinPropertyShort( SkinPropertiesConstants.WINDOW_ROTATION,
-//					EmulatorConfig.DEFAULT_WINDOW_ROTATION );
-			// has to be portrait mode at first booting time
-			short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-
-			StartData startData =
-					new StartData(initialData, width, height, scale, rotation);
-			logger.info("StartData" + startData);
-
-			sendToQEMU(SendCommand.SEND_START, startData, false);
-
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 			terminate();
 			return;
 		}
+
+		sendThread.setDaemon(true);
+		sendThread.start();
+
+		int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+		int scale = SkinUtil.getValidScale(config);
+		short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
+
+		boolean isBlankGuide = true;
+		// TODO:
+
+		StartData startData = new StartData(initialData,
+				width, height, scale, rotation, isBlankGuide);
+		logger.info("" + startData);
+
+		sendToQEMU(SendCommand.SEND_START, startData, false);
 
 		boolean ignoreHeartbeat =
 				config.getArgBoolean(ArgsConstants.HEART_BEAT_IGNORE);

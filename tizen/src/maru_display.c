@@ -75,12 +75,15 @@ void maru_display_fini(void)
 }
 
 void maruskin_init(uint64 swt_handle,
-    int lcd_size_width, int lcd_size_height)
+    unsigned int display_width, unsigned int display_height,
+    bool blank_guide)
 {
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height);
+    maruskin_sdl_init(swt_handle,
+        display_width, display_height, blank_guide);
 #else
-    maruskin_shm_init(swt_handle, lcd_size_width, lcd_size_height);
+    maruskin_shm_init(swt_handle,
+        display_width, display_height, blank_guide);
 #endif
 }
 

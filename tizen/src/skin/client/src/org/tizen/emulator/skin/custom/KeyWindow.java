@@ -236,7 +236,7 @@ public class KeyWindow extends SkinWindow {
 		/* attach HW keys */
 		if (keyMapList != null && keyMapList.isEmpty() == false) {
 			for (KeyMapType keyEntry : keyMapList) {
-				CustomButton HWKeyButton = new CustomButton(composite,
+				final CustomButton HWKeyButton = new CustomButton(composite,
 						SWT.NO_FOCUS, imageNormal, imageHover, imagePushed);
 				HWKeyButton.setText(keyEntry.getEventInfo().getKeyName());
 				HWKeyButton.setToolTipText(keyEntry.getTooltip());
@@ -248,6 +248,8 @@ public class KeyWindow extends SkinWindow {
 				HWKeyButton.addMouseListener(new MouseListener() {
 					@Override
 					public void mouseDown(MouseEvent e) {
+						logger.info(HWKeyButton.getText() + " key is pressed");
+
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), keycode, 0, 0);
 						communicator.sendToQEMU(
@@ -256,6 +258,8 @@ public class KeyWindow extends SkinWindow {
 
 					@Override
 					public void mouseUp(MouseEvent e) {
+						logger.info(HWKeyButton.getText() + " key is released");
+
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), keycode, 0, 0);
 						communicator.sendToQEMU(

@@ -81,16 +81,17 @@ static void send_to_emuld(const char* request_type,
 
 
 void start_display(uint64 handle_id,
-    int lcd_size_width, int lcd_size_height,
-    double scale_factor, short rotation_type)
+    unsigned int display_width, unsigned int display_height,
+    double scale_factor, short rotation_type, bool blank_guide)
 {
-    INFO("start_display handle_id:%ld, display size:%dx%d, \
-scale_factor:%f, rotation_type:%d\n",
-        (long) handle_id, lcd_size_width, lcd_size_height,
-        scale_factor, rotation_type);
+    INFO("start display : handle_id=%ld, display size=%dx%d, "
+        "scale factor=%f, rotation=%d, blank guide=%d\n",
+        (long) handle_id, display_width, display_height,
+        scale_factor, rotation_type, blank_guide);
 
     set_emul_win_scale(scale_factor);
-    maruskin_init(handle_id, lcd_size_width, lcd_size_height);
+    maruskin_init(handle_id,
+        display_width, display_height, blank_guide);
 }
 
 void do_mouse_event(int button_type, int event_type,

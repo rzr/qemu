@@ -40,7 +40,8 @@
 extern DisplayChangeListenerOps maru_dcl_ops;
 
 void maruskin_sdl_init(uint64 swt_handle,
-    int lcd_size_width, int lcd_size_height);
+    unsigned int display_width, unsigned int display_height,
+    bool blank_guide);
 void maruskin_sdl_resize(void);
 void maruskin_sdl_quit(void);
 

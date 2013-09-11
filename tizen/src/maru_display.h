@@ -42,7 +42,8 @@ typedef struct MaruScreenshot {
 void maru_display_init(DisplayState *ds);
 void maru_display_fini(void);
 void maruskin_init(uint64 swt_handle,
-    int lcd_size_width, int lcd_size_height);
+    unsigned int display_width, unsigned int display_height,
+    bool blank_guide);
 
 MaruScreenshot *get_maru_screenshot(void);
 void set_maru_screenshot(DisplaySurface *surface);
