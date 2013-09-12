@@ -57,25 +57,25 @@ typedef struct CodecParam {
 } CodecParam;
 
 struct video_data {
-    int width;
-    int height;
-    int fps_n;
-    int fps_d;
-    int par_n;
-    int par_d;
-    int pix_fmt;
-    int bpp;
-    int ticks_per_frame;
+    int32_t width;
+    int32_t height;
+    int32_t fps_n;
+    int32_t fps_d;
+    int32_t par_n;
+    int32_t par_d;
+    int32_t pix_fmt;
+    int32_t bpp;
+    int32_t ticks_per_frame;
 };
 
 struct audio_data {
-    int channels;
-    int sample_rate;
-    int block_align;
-    int depth;
-    int sample_fmt;
-    int frame_size;
-    int bits_per_smp_fmt;
+    int32_t channels;
+    int32_t sample_rate;
+    int32_t block_align;
+    int32_t depth;
+    int32_t sample_fmt;
+    int32_t frame_size;
+    int32_t bits_per_smp_fmt;
     int64_t channel_layout;
 };
 
@@ -95,7 +95,7 @@ typedef struct CodecThreadPool {
     QemuMutex           mutex;
     QemuCond            cond;
     uint32_t            state;
-    uint8_t             isrunning;
+    uint8_t             is_running;
 } CodecThreadPool;
 
 typedef struct MaruBrillCodecState {
@@ -114,9 +114,6 @@ typedef struct MaruBrillCodecState {
 
     CodecContext        context[CODEC_CONTEXT_MAX];
     CodecParam          ioparam;
-
-    uint32_t            context_index;
-    uint8_t             isrunning;
 } MaruBrillCodecState;
 
 enum codec_io_cmd {
