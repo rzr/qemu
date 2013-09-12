@@ -31,7 +31,7 @@
 #ifndef MARU_VGA_INT_H_
 #define MARU_VGA_INT_H_
 
-void maru_vga_common_init(VGACommonState *s);
+void maru_vga_common_init(VGACommonState *s, Object *obj);
 void maru_vga_common_fini(void);
 
 #endif /* MARU_VGA_INT_H_ */

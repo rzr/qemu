@@ -206,15 +206,15 @@ static int vigs_device_init(PCIDevice *dev)
 
     pci_config_set_interrupt_pin(dev->config, 1);
 
-    memory_region_init_ram(&s->vram_bar,
+    memory_region_init_ram(&s->vram_bar, OBJECT(s),
                            TYPE_VIGS_DEVICE ".vram",
                            s->vram_size);
 
-    memory_region_init_ram(&s->ram_bar,
+    memory_region_init_ram(&s->ram_bar, OBJECT(s),
                            TYPE_VIGS_DEVICE ".ram",
                            s->ram_size);
 
-    memory_region_init_io(&s->io_bar,
+    memory_region_init_io(&s->io_bar, OBJECT(s),
                           &vigs_io_ops,
                           s,
                           TYPE_VIGS_DEVICE ".io",

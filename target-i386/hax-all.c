@@ -25,6 +25,7 @@
  */
 
 #include "hax-i386.h"
+#include "sysemu/kvm.h"
 
 #define HAX_EMUL_ONE    0x1
 #define HAX_EMUL_REAL   0x2
@@ -369,7 +370,7 @@ static void hax_log_sync(MemoryListener *listener, MemoryRegionSection *section)
 {
     MemoryRegion *mr = section->mr;
     unsigned long c;
-    unsigned int len = ((section->size / TARGET_PAGE_SIZE) + HOST_LONG_BITS - 1) /
+    unsigned int len = ((int128_get64(section->size) / TARGET_PAGE_SIZE) + HOST_LONG_BITS - 1) /
     			HOST_LONG_BITS;
     unsigned long bitmap[len];
     int i, j;
@@ -430,15 +431,17 @@ static MemoryListener hax_memory_listener = {
     .log_global_stop = hax_log_global_stop,
 };
 
+#if 0
 static void hax_handle_interrupt(CPUArchState *env, int mask)
 {
     CPUState *cpu = ENV_GET_CPU(env);
     cpu->interrupt_request |= mask;
 
-    if (!qemu_cpu_is_self(env)) {
-        qemu_cpu_kick(env);
+    if (!qemu_cpu_is_self(cpu)) {
+        qemu_cpu_kick(cpu);
     }
 }
+#endif
 
 int hax_pre_init(uint64_t ram_size)
 {
@@ -695,14 +698,14 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
 	        dprint("VCPU shutdown request\n");
                 qemu_system_reset_request();
                 hax_prepare_emulation(env);
-                cpu_dump_state(env, stderr, fprintf, 0);
+                cpu_dump_state(cpu, stderr, fprintf, 0);
                 ret = HAX_EMUL_EXITLOOP;
                 break;
             case HAX_EXIT_UNKNOWN_VMEXIT:
                 dprint("Unknown VMX exit %x from guest\n", ht->_exit_reason);
                 qemu_system_reset_request();
                 hax_prepare_emulation(env);
-                cpu_dump_state(env, stderr, fprintf, 0);
+                cpu_dump_state(cpu, stderr, fprintf, 0);
                 ret = HAX_EMUL_EXITLOOP;
                 break;
             case HAX_EXIT_HLT:
@@ -723,7 +726,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
                 dprint("Unknow exit %x from hax\n", ht->_exit_status);
                 qemu_system_reset_request();
                 hax_prepare_emulation(env);
-                cpu_dump_state(env, stderr, fprintf, 0);
+                cpu_dump_state(cpu, stderr, fprintf, 0);
                 ret = HAX_EMUL_EXITLOOP;
                 break;
         }
@@ -745,10 +748,10 @@ static void do_hax_cpu_synchronize_state(void *_env)
 	}
 }
 
-void hax_cpu_synchronize_state(CPUArchState *env)
+void hax_cpu_synchronize_state(CPUState *cpu)
 {
-	if (!env->hax_vcpu_dirty) {
-		run_on_cpu(env, do_hax_cpu_synchronize_state, env);
+	if (!((CPUArchState *)cpu->env_ptr)->hax_vcpu_dirty) {
+		run_on_cpu(cpu, do_hax_cpu_synchronize_state, cpu);
 	}
 }
 
@@ -781,12 +784,12 @@ int hax_vcpu_exec(CPUArchState *env)
     {
         case HAX_EMUL_ONE:
             ret = 1;
-            env->hax_vcpu->emulation_state = HAX_EMULATE_STATE_MMIO;
+            vcpu->emulation_state = HAX_EMULATE_STATE_MMIO;
             hax_prepare_emulation(env);
             break;
         case HAX_EMUL_REAL:
             ret = 1;
-            env->hax_vcpu->emulation_state =
+            vcpu->emulation_state =
               HAX_EMULATE_STATE_REAL;
             hax_prepare_emulation(env);
             break;
@@ -1191,16 +1194,16 @@ int hax_sync_vcpus(void)
 {
     if (hax_enabled())
     {
-        CPUArchState *env;
+        CPUState *cpu;
 
-        env = first_cpu;
-        if (!env)
+        cpu = first_cpu;
+        if (!cpu)
             return 0;
 
-        for (; env != NULL; env = env->next_cpu) {
+        for (; cpu != NULL; cpu = cpu->next_cpu) {
             int ret;
 
-            ret = hax_arch_set_registers(env);
+            ret = hax_arch_set_registers(cpu->env_ptr);
             if (ret < 0)
             {
                 dprint("Failed to sync HAX vcpu context\n");
@@ -1213,16 +1216,15 @@ int hax_sync_vcpus(void)
 }
 void hax_reset_vcpu_state(void *opaque)
 {
-	CPUArchState *env = opaque;
-    for (env = first_cpu; env != NULL; env = env->next_cpu)
-       {
-               dprint("*********ReSet hax_vcpu->emulation_state \n");
-               env->hax_vcpu->emulation_state  = HAX_EMULATE_STATE_INITIAL;
-               env->hax_vcpu->tunnel->user_event_pending = 0;
-               env->hax_vcpu->tunnel->ready_for_interrupt_injection = 0;
-
-       }
-
+    CPUState *cpu;
+    for (cpu = first_cpu; cpu != NULL; cpu = cpu->next_cpu)
+    {
+        CPUArchState *env = (CPUArchState *) cpu->env_ptr;
+        dprint("*********ReSet hax_vcpu->emulation_state \n");
+        env->hax_vcpu->emulation_state  = HAX_EMULATE_STATE_INITIAL;
+        env->hax_vcpu->tunnel->user_event_pending = 0;
+        env->hax_vcpu->tunnel->ready_for_interrupt_injection = 0;
+    }
 }
 
 

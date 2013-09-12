@@ -33,6 +33,7 @@
 
 #include <windows.h>
 #include <wingdi.h>
+#include <glib.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include "GL/wglext.h"
@@ -42,6 +43,12 @@
 #ifdef MANGLE_OPENGL_SYMBOLS
 #include "gl_mangled.h"
 #endif
+
+enum {
+    SURFACE_WINDOW,
+    SURFACE_PIXMAP,
+    SURFACE_PBUFFER
+};
 
 /* In Windows, you must create a window *before* you can create a pbuffer or
  * get a context. So we create a hidden Window on startup (see glo_init/GloMain).
@@ -95,10 +102,8 @@ PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB;
 
 /* ------------------------------------------------------------------------ */
 
-extern const char *glo_glXQueryExtensionsString(void);
-
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride,
-                                    int bpp, int width, int height, void *data);
+                                    int bpp, int width, int height, void *data, int noflip);
 
 /* ------------------------------------------------------------------------ */
 
@@ -106,6 +111,7 @@ int glo_initialised(void) {
     return glo_inited;
 }
 
+#if 0
 /* Sanity test of the host GL capabilities to see whether the gl offscreen
  * could be well supported
  */
@@ -137,12 +143,13 @@ int glo_sanity_test (void) {
     }
     return 0;
 }
+#endif
 
 /* Initialise gloffscreen */
 int glo_init(void) {
     WNDCLASSEX wcx;
     PIXELFORMATDESCRIPTOR pfd;
-	char *ext_str;
+	const char *ext_str;
 
     if (glo_inited) {
         printf( "gloffscreen already inited\n" );
@@ -946,7 +953,7 @@ void glo_surface_getcontents(GloSurface *surface, int stride, int bpp, void *dat
   // Compatible / fallback method.
   glo_surface_getcontents_readpixels(surface->context->formatFlags,
                                         stride, bpp, surface->width,
-                                        surface->height, data);
+                                        surface->height, data, 0);
 }
 
 /* Return the width and height of the given surface */
@@ -958,35 +965,37 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height) {
 }
 
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface, int surface_type)
 {
-#if 0
     int glFormat, glType;
-    glo_surface_updatecontents(surface);
-    /*XXX: change the fixed target: GL_TEXTURE_2D*/
-    glo_flags_get_readpixel_type(surface->context->formatFlags, &glFormat, &glType);
-    fprintf(stderr, "surface_as_texture:teximage:width=%d,height=%d,glFormat=0x%x,glType=0x%x.\n", surface->width, surface->height, glFormat, glType);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, surface->image->data);
-#else
-	if(!Render_texture_support)
-	{
-		//fprintf(stderr, "Render to texture not supported on this machine, just return!\n");
-		return ;
-	}
+    int bpp = 4;
+    int stride = surface->width * bpp;
+    char *data;
+    HGLRC oldCtx;
+    HDC oldDC;
 
-    if (!wglBindTexImageARB)
-    {
-        fprintf (stderr, "wglBindTexImageEXT not supported! Can't emulate glEGLImageTargetTexture2DOES!\n");
+    data = malloc(surface->width * surface->height * bpp);
+    if (!data)
         return;
-    }
 
-    if ( !wglBindTexImageARB(surface->hPBuffer, WGL_FRONT_LEFT_ARB) )
-    {
-        fprintf(stderr, "wglBindTexImageARBr error=%d.\n", glGetError());
-    }
+    /* Read pixels from Speficied context */
+    oldCtx = wglGetCurrentContext();
+    oldDC = wglGetCurrentDC();
+    glo_surface_makecurrent(surface);
+    glo_surface_updatecontents(surface);
+    glo_flags_get_readpixel_type(surface->context->formatFlags, &glFormat, &glType);
+    // Make sure we do not flip pbuffer surfaces on Windows
+    glo_surface_getcontents_readpixels(surface->context->formatFlags,
+                                          stride, bpp *8, surface->width,
+                                          surface->height, data, (surface_type == SURFACE_PBUFFER));
 
-#endif
+    /* Restore previous context for setting texture */
+    wglMakeCurrent(oldDC, oldCtx);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->width, surface->height, 0, glFormat, glType, data);
+    free(data);
 }
+
 void glo_surface_release_texture(GloSurface *surface)
 {
     if(!Render_texture_support)

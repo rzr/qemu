@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/types.h> // for pid_t
 
 #include "qemu-common.h"
@@ -110,35 +111,31 @@ const GLXFBConfig FBCONFIGS[] = {
 #define FAKE_GLX_VERSION_MAJOR 1
 #define FAKE_GLX_VERSION_MINOR 2
 
-void *g_malloc(size_t size);
-void *g_realloc(void *ptr, size_t size);
-void g_free(void *ptr);
-
 /*#define glGetError() 0*/
 
 #ifdef WIN32
-#	define CCONV __stdcall
+#	define CCONV _stdcall	/* DLL entry points are WINAPI */
 #else
 #	define CCONV
 #endif
 
 #define GET_EXT_PTR(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
-    static type(*ptr_func_##funcname)args_decl = NULL; \
+    static type CCONV (*ptr_func_##funcname)args_decl = NULL; \
     if (detect_##funcname == 0) \
     { \
         detect_##funcname = 1; \
-        ptr_func_##funcname = (type(*)args_decl)glo_getprocaddress((const char*)#funcname); \
+        ptr_func_##funcname = (type CCONV (*)args_decl)glo_getprocaddress((const char*)#funcname); \
         assert (ptr_func_##funcname); \
     }
 
 #define GET_EXT_PTR_NO_FAIL(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
-    static type(CCONV *ptr_func_##funcname)args_decl = NULL; \
+    static type CCONV (*ptr_func_##funcname)args_decl = NULL; \
     if (detect_##funcname == 0) \
     { \
         detect_##funcname = 1; \
-        ptr_func_##funcname = (type(CCONV *)args_decl)glo_getprocaddress((const char*)#funcname); \
+        ptr_func_##funcname = (type CCONV (*)args_decl)glo_getprocaddress((const char*)#funcname); \
     }
 
 #ifndef WIN32
@@ -172,11 +169,11 @@ static void *get_glu_ptr(const char *name)
 
 #define GET_GLU_PTR(type, funcname, args_decl) \
     static int detect_##funcname = 0; \
-    static type(*ptr_func_##funcname)args_decl = NULL; \
+    static type CCONV (*ptr_func_##funcname)args_decl = NULL; \
     if (detect_##funcname == 0) \
     { \
         detect_##funcname = 1; \
-        ptr_func_##funcname = (type(*)args_decl)get_glu_ptr(#funcname); \
+        ptr_func_##funcname = (type CCONV (*)args_decl)get_glu_ptr(#funcname); \
     }
 
 int display_function_call = 0;
@@ -204,7 +201,7 @@ typedef struct {
 
 #define MAX_CLIENT_STATE_STACK_SIZE 16
 
-typedef void *ClientGLXDrawable;
+typedef uint32_t ClientGLXDrawable;
 
 typedef struct GLState GLState;
 
@@ -222,7 +219,7 @@ enum {
 typedef struct QGloSurface {
     GLState *glstate;
     GloSurface *surface;
-    ClientGLXDrawable *client_drawable;
+    ClientGLXDrawable client_drawable;
     int type; /* window, pixmap or pbuffer */
     int ready;
 	int status;
@@ -325,9 +322,16 @@ typedef struct {
     QGloSurface **pending_qsurfaces;
     int nb_qsurf;
 
-    int nfbconfig;
+    /* Number of FB configs sets allocated on behalf of this process */
+	int nfbconfig;
+	
+	/* Array of FB configs sets */
     const GLXFBConfig *fbconfigs[MAX_FBCONFIG];
+	
+	/* Number of FB configs per set */
     int fbconfigs_max[MAX_FBCONFIG];
+	
+	/* Total number of FB configs allocated on behalf of this process */
     int nfbconfig_total;
 
     int primitive;
@@ -338,7 +342,8 @@ typedef struct {
 
 static ProcessState processes[MAX_HANDLED_PROCESS];
 
-static char *strip_extensions(const char *avail, const char *ext[]) {
+static char *strip_extensions(const char *avail, const char *ext[])
+{
     char *pos, *supported, *srcp;
 
     supported = (char *)g_malloc(strlen(avail) + 2);
@@ -367,12 +372,18 @@ static char *strip_extensions(const char *avail, const char *ext[]) {
   return supported;
 }
 
+extern void vmgl_context_switch(ProcessStruct *p, int switch_gl_context);
+extern ProcessStruct *vmgl_get_process(pid_t pid);
+extern void gl_disconnect(ProcessState *process);
+extern int do_function_call(ProcessState *process, int func_number, unsigned long *args, char *ret_string);
+
 static const char *glx_ext_supported[] = {
     "GLX_ARB_multisample",
     0
 };
 
-static char *supported_glx_extensions() {
+static char *supported_glx_extensions(void)
+{
     static char *supported;
 
     if(!supported)
@@ -506,7 +517,8 @@ static const char *gl_ext_supported[] = {
     0
 };
 
-static char *compute_gl_extensions() {
+static char *compute_gl_extensions(void)
+{
     static char *supported;
 
     if(!supported)
@@ -519,7 +531,7 @@ static char *compute_gl_extensions() {
 static inline QGloSurface *get_qsurface_from_client_drawable(GLState *state, ClientGLXDrawable client_drawable) {
     QGloSurface *qsurface;
 
-    if(state->current_qsurface->client_drawable == client_drawable)
+    if (state->current_qsurface && state->current_qsurface->client_drawable == client_drawable)
         return state->current_qsurface;
 
     QTAILQ_FOREACH(qsurface, &state->qsurfaces, next) {
@@ -540,6 +552,56 @@ static inline void render_surface(QGloSurface *qsurface, int bpp, int stride, ch
     glo_surface_get_size(qsurface->surface, &w, &h);
 
     glo_surface_getcontents(qsurface->surface, stride, bpp, buffer);
+}
+
+static void qsurface_pixmap_ref(QGloSurface *qsurface)
+{
+    if (!qsurface) {
+        DEBUGF( "%s %p\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    if (qsurface->type != SURFACE_PIXMAP) {
+        DEBUGF( "%s %p is not a pixmap\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    qsurface->ref++;
+    DEBUGF("%s %p references increased to %d\n", __FUNCTION__, qsurface, qsurface->ref);
+}
+
+static void qsurface_pixmap_unref(QGloSurface *qsurface)
+{
+    if (!qsurface) {
+        DEBUGF( "%s %p\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    if (qsurface->type != SURFACE_PIXMAP) {
+        DEBUGF( "%s %p is not a pixmap\n", __FUNCTION__, qsurface);
+        return;
+    }
+
+    qsurface->ref--;
+    DEBUGF("%s %p references decreased to %d\n", __FUNCTION__, qsurface, qsurface->ref);
+
+    if (qsurface->ref == 0)
+    {
+        glo_surface_destroy(qsurface->surface);
+        g_free(qsurface);
+        DEBUGF( "%s freed: %p\n", __FUNCTION__, qsurface);
+    }
+}
+
+static void state_set_current_surface(GLState *state, QGloSurface *qsurface)
+{
+    if (state->current_qsurface != NULL)
+        qsurface_pixmap_unref(state->current_qsurface);
+
+    if (qsurface != NULL)
+        qsurface_pixmap_ref(qsurface);
+
+    state->current_qsurface = qsurface;
 }
 
 // This must always be called only on surfaces belonging to the current context
@@ -579,23 +641,22 @@ static inline void resize_surface(ProcessState *process, QGloSurface *qsurface,
 }
 
 
-void init_process_tab()
+static void init_process_tab(void)
 {
     memset(processes, 0, sizeof(processes));
 }
 
-#define ARG_TO_CHAR(x)                (char)(x)
-#define ARG_TO_UNSIGNED_CHAR(x)       (unsigned char)(x)
-#define ARG_TO_SHORT(x)               (short)(x)
-#define ARG_TO_UNSIGNED_SHORT(x)      (unsigned short)(x)
-#define ARG_TO_INT(x)                 (int)(x)
-#define ARG_TO_UNSIGNED_INT(x)        (unsigned int)(x)
+#define ARG_TO_CHAR(x)                (char)(long)(x)
+#define ARG_TO_UNSIGNED_CHAR(x)       (unsigned char)(long)(x)
+#define ARG_TO_SHORT(x)               (short)(long)(x)
+#define ARG_TO_UNSIGNED_SHORT(x)      (unsigned short)(long)(x)
+#define ARG_TO_INT(x)                 (int)(long)(x)
+#define ARG_TO_UNSIGNED_INT(x)        (unsigned int)(long)(x)
 #define ARG_TO_FLOAT(x)               (*(float*)&(x))
 #define ARG_TO_DOUBLE(x)              (*(double*)(x))
 
 #include "server_stub.c"
 
-//typedef void *ClientGLXDrawable;
 static inline ClientGLXDrawable to_drawable(arg_t arg)
 {
 #ifdef TARGET_X86_64
@@ -604,7 +665,7 @@ static inline ClientGLXDrawable to_drawable(arg_t arg)
         exit(-1);
     }
 #endif
-    return (void *) (unsigned long) arg;
+    return (ClientGLXDrawable)arg;
 }
 
 /* ---- */
@@ -613,29 +674,36 @@ static inline ClientGLXDrawable to_drawable(arg_t arg)
 static void bind_qsurface(GLState *state,
                           QGloSurface *qsurface)
 {
+    DEBUGF("%s qsurface %p qsurface->glstate %p new state %p\n", __FUNCTION__, qsurface, qsurface->glstate, state);
     qsurface->glstate = state;
 
 	if ( qsurface->type == SURFACE_WINDOW )
 		QTAILQ_INSERT_HEAD(&state->qsurfaces, qsurface, next);
 
-    state->current_qsurface = qsurface;
+    state_set_current_surface(state, qsurface);
 }
 
 /* Unbind a qsurface from a context (GLState) */
 static void unbind_qsurface(GLState *state,
                           QGloSurface *qsurface)
 {
+    if (!state || !qsurface) {
+        DEBUGF("%s invalid parameter, state %p, qsurface %p\n", __FUNCTION__, state, qsurface);
+        return;
+    }
+
+    DEBUGF("%s qsurface %p qsurface->glstate %p old state %p\n", __FUNCTION__, qsurface, qsurface->glstate, state);
     qsurface->glstate = NULL;
 
 	if ( qsurface->type == SURFACE_WINDOW )
 		QTAILQ_REMOVE(&state->qsurfaces, qsurface, next);
 
-	if ( state->current_qsurface == qsurface )
-		state->current_qsurface = NULL;
+    if ( state->current_qsurface == qsurface )
+           state_set_current_surface(state, NULL);
 }
 
 /* Find the qsurface with required drawable in all pixmap/pbuffer surfaces */
-QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLXDrawable client_drawable)
+static QGloSurface* find_qsurface_from_client_drawable(ProcessState *process, ClientGLXDrawable client_drawable)
 {
     int i;
     QGloSurface *qsurface;
@@ -661,13 +729,13 @@ static int set_current_qsurface(GLState *state,
 
     QTAILQ_FOREACH(qsurface, &state->qsurfaces, next) {
         if(qsurface->client_drawable == client_drawable) {
-            state->current_qsurface = qsurface;
-			qsurface->glstate = state;
+            state_set_current_surface(state, qsurface);
+            qsurface->glstate = state;
             return 1;
         }
     }
 
-    state->current_qsurface = NULL;
+    state_set_current_surface(state, NULL);
 
     return 0;
 }
@@ -739,7 +807,10 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
                     (process->nb_qsurf - i - 1) * sizeof(QGloSurface*));
 #endif
 
-            qsurface->ref = 1;
+            if (qsurface->type != SURFACE_PIXMAP) {
+                DEBUGF("%s Forcing non pixmap qsurface->ref to 1 (type %d, ref %d)\n", __FUNCTION__, qsurface->type, qsurface->ref);
+                qsurface->ref = 1;
+            }
 			if(qsurface->status == SURFACE_PENDING)
 			{
 				glo_surface_update_context(qsurface->surface, glstate->context, 1);
@@ -749,7 +820,6 @@ static int link_qsurface(ProcessState *process, GLState *glstate, ClientGLXDrawa
 			{
 				unbind_qsurface(qsurface->glstate, qsurface);
 				glo_surface_update_context(qsurface->surface, glstate->context, 0);
-
 			}
 
             bind_qsurface(glstate, qsurface);
@@ -870,17 +940,23 @@ static int get_server_list(ProcessState *process, unsigned int client_list)
     return server_list;
 }
 
-const GLXFBConfig *get_fbconfig(ProcessState *process, int client_fbconfig)
+static const GLXFBConfig *get_fbconfig(ProcessState *process, int client_fbconfig)
 {
     int i;
+	
+	/* The client_fbconfig returned to upper layers is 1 + the index of the
+	 * fb config in the set that contains it, + the number of fb configs
+	 * store in previously allocated sets. */
     int nbtotal = 0;
 
-    for (i = 0; i < process->nfbconfig; i++) {
-        assert(client_fbconfig >= 1 + nbtotal);
+    /* For each set */
+	for (i = 0; i < process->nfbconfig; i++) {
+		/* If the fb config is stored within this set, return it */
         if (client_fbconfig <= nbtotal + process->fbconfigs_max[i]) {
             return &process->fbconfigs[i][client_fbconfig - 1 - nbtotal];
         }
-        nbtotal += process->fbconfigs_max[i];
+        /* Otherwise proceed to next set */
+		nbtotal += process->fbconfigs_max[i];
     }
     return 0;
 }
@@ -982,6 +1058,8 @@ static void destroy_gl_state(GLState *state)
     int i;
 
     QGloSurface *qsurface, *tmp;
+
+    DEBUGF("%s state %p\n", __FUNCTION__, state);
 
     QTAILQ_FOREACH_SAFE(qsurface, &state->qsurfaces, next, tmp) {
         glo_surface_destroy(qsurface->surface);
@@ -1091,20 +1169,31 @@ static GLuint translate_id(GLsizei n, GLenum type, const GLvoid *list)
     }
 }
 
-GLState *_create_context(ProcessState *process, int fake_ctxt, int fake_shareList)
+static GLState *_create_context(ProcessState *process, int fake_ctxt)
 {
-    // FIXMEIM - realloc? really?
-    process->glstates = g_realloc(process->glstates,
-                                  (process->nb_states + 1) * sizeof(GLState *));
+    GLState *state = g_try_malloc0(sizeof(GLState));
 
-    process->glstates[process->nb_states] = g_malloc(sizeof(GLState));
-    memset(process->glstates[process->nb_states], 0, sizeof(GLState));
+    if (state) {
+        state->ref = 1;
+        state->fake_ctxt = fake_ctxt;
+        init_gl_state(state);
 
-    process->glstates[process->nb_states]->ref = 1;
-    process->glstates[process->nb_states]->fake_ctxt = fake_ctxt;
-    process->glstates[process->nb_states]->fake_shareList = fake_shareList;
+        // FIXMEIM - realloc? really?
+        process->glstates = g_realloc(process->glstates,
+                (process->nb_states + 1) * sizeof(GLState *));
 
-    init_gl_state(process->glstates[process->nb_states]);
+        process->glstates[process->nb_states] = state;
+
+        process->nb_states++;
+    }
+
+    DEBUGF("state %p fake_ctxt %08x process->nb_states %d\n", state, fake_ctxt, process->nb_states);
+    return state;
+}
+
+static void set_context_sharelist(ProcessState *process, GLState *state, int fake_shareList)
+{
+    state->fake_shareList = fake_shareList;
 
     if (fake_shareList) {
         int i;
@@ -1112,28 +1201,19 @@ GLState *_create_context(ProcessState *process, int fake_ctxt, int fake_shareLis
         for (i = 0; i < process->nb_states; i++) {
             if (process->glstates[i]->fake_ctxt == fake_shareList) {
                 process->glstates[i]->ref++;
-                process->glstates[process->nb_states]->textureAllocator =
-                    process->glstates[i]->textureAllocator;
-                process->glstates[process->nb_states]->tabTextures =
-                    process->glstates[i]->tabTextures;
-                process->glstates[process->nb_states]->bufferAllocator =
-                    process->glstates[i]->bufferAllocator;
-                process->glstates[process->nb_states]->tabBuffers =
-                    process->glstates[i]->tabBuffers;
-                process->glstates[process->nb_states]->listAllocator =
-                    process->glstates[i]->listAllocator;
-                process->glstates[process->nb_states]->tabLists =
-                    process->glstates[i]->tabLists;
+                state->textureAllocator = process->glstates[i]->textureAllocator;
+                state->tabTextures      = process->glstates[i]->tabTextures;
+                state->bufferAllocator  = process->glstates[i]->bufferAllocator;
+                state->tabBuffers       = process->glstates[i]->tabBuffers;
+                state->listAllocator    = process->glstates[i]->listAllocator;
+                state->tabLists         = process->glstates[i]->tabLists;
                 break;
             }
         }
     }
-    process->nb_states++;
-
-    return process->glstates[process->nb_states-1];
 }
 
-GLState *get_glstate_for_fake_ctxt(ProcessState *process, int fake_ctxt)
+static GLState *get_glstate_for_fake_ctxt(ProcessState *process, int fake_ctxt)
 {
     int i;
     for (i = 0; i < process->nb_states; i++) {
@@ -1220,9 +1300,9 @@ void vmgl_context_switch(ProcessStruct *p, int switch_gl_context)
     }
 }
 
-static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *prevbuf)
+static char *opengl_strtok(const char *s, int *n, char const **saveptr, char *prevbuf)
 {
-	char *start;
+	const char *start;
 	char *ret;
 	char *p;
 	int retlen;
@@ -1276,7 +1356,7 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
 
 	if (retlen == 0) {
 		*p = 0;
-		return NULL;
+		return ret;
 	}
 
 	while (retlen > 0) {
@@ -1304,7 +1384,7 @@ static const char *opengl_strtok(const char *s, int *n, char **saveptr, char *pr
 
 static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
 {
-	char *saveptr = NULL;
+	const char *saveptr = NULL;
 	char *sp;
 	char *p = NULL;
 
@@ -1328,15 +1408,18 @@ static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
 				;
 			}
         } else {
+            const char *p2;
             if (!strncmp(p, "gl_MaxVertexUniformVectors", 26)) {
-                p = "(gl_MaxVertexUniformComponents / 4)";
+                p2 = "(gl_MaxVertexUniformComponents / 4)";
             } else if (!strncmp(p, "gl_MaxFragmentUniformVectors", 28)) {
-                p = "(gl_MaxFragmentUniformComponents / 4)";
+                p2 = "(gl_MaxFragmentUniformComponents / 4)";
             } else if (!strncmp(p, "gl_MaxVaryingVectors", 20)) {
-                p = "(gl_MaxVaryingFloats / 4)";
+                p2 = "(gl_MaxVaryingFloats / 4)";
+            } else {
+                p2 = p;
             }
 
-            int new_len = strlen(p);
+            int new_len = strlen(p2);
             if (*patched_len + new_len > patched_size) {
                 patched_size *= 2;
                 patched = realloc(patched, patched_size + 1);
@@ -1345,7 +1428,7 @@ static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
                     return NULL;
             }
 
-            memcpy(patched + *patched_len, p, new_len);
+            memcpy(patched + *patched_len, p2, new_len);
             *patched_len += new_len;
         }     
     }
@@ -1415,7 +1498,7 @@ shadersrc_gles_to_gl(GLsizei count, const char** string, char **s, const GLint* 
  * read texture back right after glTexSubImage2D, thus guarantee a
  * synchronization.
  */
-static void mac_dump_texture()
+static void mac_dump_texture(void)
 {
 	int w, h;
 	unsigned char *buf;
@@ -1434,6 +1517,51 @@ static void mac_dump_texture()
 	g_free(buf);
 }
 #endif
+
+static int record_fbconfig_set (ProcessState *process, const GLXFBConfig* fbconfigs, int nconfigs)
+{
+	int i;
+	int id;
+	int previous_entries = 0;
+
+	if (!fbconfigs)
+			return 0;
+		
+	/* Check if we already have a similar set in our tables */
+	for (i=0; i<process->nfbconfig; i++)
+	{
+		if (process->fbconfigs_max[i] == nconfigs &&
+				!memcmp(fbconfigs, process->fbconfigs[i], sizeof(GLXFBConfig) * nconfigs))
+		{
+			/* No need to store this set as it's identical to another one */
+			// XFree(fbconfigs);
+			
+			/* Return the identifier of the previously allocated set matching the query */
+			id = previous_entries + 1;
+			return id;
+		}
+		else
+			previous_entries += process->fbconfigs_max[i];		
+	}
+
+	/* Check if we have room for a new set */
+	if (process->nfbconfig >= MAX_FBCONFIG)
+	{
+		fprintf(stderr, "[%s]:%d Too many FB configs allocated for this process\n", __FUNCTION__, __LINE__);
+		// XFree(fbconfigs);
+		return 0;
+	}
+	
+	/* Store new set - this block should be released using XFree on process exit */
+	process->fbconfigs[process->nfbconfig] = fbconfigs;
+	process->fbconfigs_max[process->nfbconfig] = nconfigs;
+	process->nfbconfig++;
+	process->nfbconfig_total += nconfigs;
+	
+	id = previous_entries + 1;
+	return id;
+}	
+	
 
 int do_function_call(ProcessState *process, int func_number, unsigned long *args, char *ret_string)
 {
@@ -1463,7 +1591,10 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
             // We have to assume the current context here
             // since we assume that a drawable must belong to a specific context
-            resize_surface(process, qsurface, (int)args[1], (int)args[2]);
+            if (qsurface)
+                resize_surface(process, qsurface, (int)args[1], (int)args[2]);
+            else
+                DEBUGF("%s Failed to find surface for client_drawable %p process %p ->current_state %p ->->current_surface %p\n", "_resize_surface_func", client_drawable, process, process->current_state, process->current_state->current_qsurface);
             break;
 
         }
@@ -1481,7 +1612,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
             // We have to assume the current context here
             // since we assume that a drawable must belong to a specific context
-            render_surface(qsurface, bpp, stride, render_buffer);
+            if (qsurface)
+                render_surface(qsurface, bpp, stride, render_buffer);
             break;
 
         }
@@ -1563,23 +1695,31 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                         fake_shareList);
 
             GLState *shareListState = get_glstate_for_fake_ctxt(process, fake_shareList);
-            int fake_ctxt = ++process->next_available_context_number;
 
-            ret.i = fake_ctxt;
+            ret.i = 0;
 
             // Work out format flags from visual id
             int formatFlags = GLO_FF_DEFAULT;
             if (visualid>=0 && visualid<DIM(FBCONFIGS))
-              formatFlags = FBCONFIGS[visualid].formatFlags;
+                formatFlags = FBCONFIGS[visualid].formatFlags;
 
-            GLState *state = _create_context(process, fake_ctxt, fake_shareList);
-            state->context = glo_context_create(formatFlags,
-                                                (GloContext*)shareListState?shareListState->context:0);
-
-            DEBUGF( " created context %p for %08x\n", state, fake_ctxt);
+            GloContext *context = glo_context_create(formatFlags,
+                                            (GloContext*)shareListState ? shareListState->context : 0);
+            if (context) {
+                GLState *state = _create_context(process, ++process->next_available_context_number);
+                if (state) {
+                    state->context = context;
+                    set_context_sharelist(process, state, fake_shareList);
+                    ret.i = state->fake_ctxt;
+                } else {
+                    DEBUGF("Failed to allocate state context for format %08x\n", formatFlags);
+                    glo_context_destroy(context);
+                }
+            } else {
+                DEBUGF("Failed to create context for format %08x\n", formatFlags);
+            }
             break;
         }
-
 
     case glXCreateNewContext_func:
         {
@@ -1592,13 +1732,21 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 int fake_shareList = args[3];
                 GLState *shareListState = get_glstate_for_fake_ctxt(process, fake_shareList);
 
-                process->next_available_context_number++;
-                int fake_ctxt = process->next_available_context_number;
-                ret.i = fake_ctxt;
-
-                GLState *state = _create_context(process, fake_ctxt, fake_shareList);
-                state->context = glo_context_create(fbconfig->formatFlags,
-                                                    shareListState?shareListState->context:0); // FIXME GW get from fbconfig
+                GloContext *context = glo_context_create(fbconfig->formatFlags,
+                                                (GloContext*)shareListState ? shareListState->context : 0);  // FIXME GW get from fbconfig
+                if (context) {
+                    GLState *state = _create_context(process, ++process->next_available_context_number);
+                    if (state) {
+                        state->context = context;
+                        set_context_sharelist(process, state, fake_shareList);
+                        ret.i = state->fake_ctxt;
+                    } else {
+                        DEBUGF("Failed to allocate state context for format %08x", fbconfig->formatFlags);
+                        glo_context_destroy(context);
+                    }
+                } else {
+                    DEBUGF("Failed to create context for format %08x", fbconfig->formatFlags);
+                }
             }
             break;
         }
@@ -1650,7 +1798,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                                 process->glstates[i]->ref--;
                                 if (process->glstates[i]->ref == 0) {
                                     DEBUGF(
-                                            "destroy_gl_state fake_ctxt = %d\n",
+                                            "destroy_gl_state fake_sharelist fake_ctxt = %d\n",
                                             process->glstates[i]->
                                             fake_ctxt);
                                     destroy_gl_state(process->
@@ -1718,15 +1866,19 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             int fake_ctxt = (int) args[2];
             GLState *glstate = NULL;
 
-//            DEBUGF( "Makecurrent: fake_ctx=%d client_drawable=%08x\n", fake_ctxt, client_drawable);
+            DEBUGF( "Makecurrent: fake_ctx=%d client_drawable=%08x\n", fake_ctxt, client_drawable);
 
             if (client_drawable == 0 && fake_ctxt == 0) {
                 /* Release context */
-                if(process->current_state->current_qsurface)
-                    process->current_state->current_qsurface->ref--;
+                if(process->current_state->current_qsurface) {
+                    if(process->current_state->current_qsurface->type != SURFACE_PIXMAP)
+                        process->current_state->current_qsurface->ref--;
+                    else
+                        unbind_qsurface(process->current_state, process->current_state->current_qsurface);
+                }
                 process->current_state = &process->default_state;
 
-//                DEBUGF( " --release\n");
+                DEBUGF( " --release\n");
                 glo_surface_makecurrent(0);
             } else { /* Lookup GLState struct for this context */
                 glstate = get_glstate_for_fake_ctxt(process, fake_ctxt);
@@ -1745,11 +1897,10 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 					   qsurface->status = SURFACE_ACTIVE;
 
                        bind_qsurface(glstate, qsurface);
-//                       DEBUGF( " --Client drawable not found, create new surface: %16x %16lx\n", (unsigned int)qsurface, (unsigned long int)client_drawable);
-
+                       DEBUGF( " --Client drawable not found, create new surface: %p %16lx\n", qsurface, (unsigned long int)client_drawable);
                     }
                     else {
-//                       DEBUGF( " --Client drawable found, using surface: %16x %16lx\n", (unsigned int)glstate->current_qsurface, (unsigned long int)client_drawable);
+                       DEBUGF( " --Client drawable found, using surface: %p %16lx\n", glstate->current_qsurface, (unsigned long int)client_drawable);
                     }
 #if 0
                     /*Test old surface contents */
@@ -1769,7 +1920,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                     if (glstate->current_qsurface && SURFACE_PIXMAP == glstate->current_qsurface->type )
                     {
                         /* Release it if the surface is used as texture target */
-                        glo_surface_release_texture(glstate->current_qsurface);
+                        glo_surface_release_texture(glstate->current_qsurface->surface);
                     }
 
                     process->current_state = glstate;
@@ -1838,47 +1989,31 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
     case glXChooseFBConfig_func:
         {
-            if (process->nfbconfig >= MAX_FBCONFIG) {
-				fprintf(stderr, "[%s]:%d Request FB configs error, excceed the MAX FBCONFIG of one process, return NULL!\n", __FUNCTION__, __LINE__);
-                *(int *) args[3] = 0;
-                ret.i = 0;
-            } else {
-                const GLXFBConfig *fbconfigs =
-                    glXChooseFBConfigFunc(args[1], (int *) args[2], (int *) args[3]);
-                if (fbconfigs) {
-                    process->fbconfigs[process->nfbconfig] = fbconfigs;
-                    process->fbconfigs_max[process->nfbconfig] =
-                        *(int *) args[3];
-                    process->nfbconfig++;
-                    ret.i = 1 + process->nfbconfig_total;
-                    process->nfbconfig_total +=
-                        process->fbconfigs_max[process->nfbconfig];
-                } else {
-                    ret.i = 0;
-                }
-            }
-            break;
-        }
+			/* Retrieve array of FB configs matching our contraints */
+			const GLXFBConfig *fbconfigs = glXChooseFBConfigFunc(args[1], (int *) args[2], (int *) args[3]);
+			
+			/* Record this in our tables and return a client-side identifier for the first entry in the array */
+			ret.i = record_fbconfig_set(process, fbconfigs, *(int *) args[3]);
+			
+			/* Zero indicates failure */
+			if (ret.i == 0)
+				*(int *) args[3] = 0;
+				
+			break;
+		}
+			
     case glXGetFBConfigs_func:
         {
-            if (process->nfbconfig == MAX_FBCONFIG) {
-                *(int *) args[2] = 0;
-                ret.i = 0;
-            } else {
-                const GLXFBConfig *fbconfigs =
-                    glXGetFBConfigsFunc(args[1], (int *) args[2]);
-                if (fbconfigs) {
-                    process->fbconfigs[process->nfbconfig] = fbconfigs;
-                    process->fbconfigs_max[process->nfbconfig] =
-                        *(int *) args[2];
-                    process->nfbconfig++;
-                    ret.i = 1 + process->nfbconfig_total;
-                    process->nfbconfig_total +=
-                        process->fbconfigs_max[process->nfbconfig];
-                } else {
-                    ret.i = 0;
-                }
-            }
+			/* Retrieve array of available FB configs */
+			const GLXFBConfig *fbconfigs = glXGetFBConfigsFunc(args[1], (int *) args[2]);
+			
+			/* Record this in our tables and return a client-side identifier for the first entry in the array */
+			ret.i = record_fbconfig_set(process, fbconfigs, *(int *) args[2]);
+			
+			/* Zero indicates failure */
+			if (ret.i == 0)
+				*(int *) args[2] = 0;
+				
             break;
         }
     case glXGetFBConfigAttrib_func:
@@ -2024,37 +2159,43 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             const GLXFBConfig *fbconfig = get_fbconfig(process, client_fbconfig);
 
             if (fbconfig) {
-
                 /* Create a light-weight context just for creating surface */
                 GloContext *context = __glo_context_create(fbconfig->formatFlags);
+                if (context) {
+                    /* glXPixmap same as input Pixmap */
+                    ClientGLXDrawable client_drawable = to_drawable(args[2]);
 
-                /* glXPixmap same as input Pixmap */
-                ClientGLXDrawable client_drawable = to_drawable(args[2]);
+                    QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                    if (qsurface) {
+                        /* get the width and height */
+                        int width, height;
+                        glo_geometry_get_from_glx((int*)args[3], &width, &height);
 
-                QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                        DEBUGF( "glXCreatePixmap: %dX%d.\n", width, height);
+                        qsurface->surface = glo_surface_create(width, height, context);
+                        if (qsurface->surface) {
+                            qsurface->client_drawable = client_drawable;
+                            qsurface->type = SURFACE_PIXMAP;
+                            qsurface->status = SURFACE_PENDING;
+                            qsurface_pixmap_ref(qsurface);
 
-                /* get the width and height */
-                int width, height;
-                glo_geometry_get_from_glx((int*)args[3], &width, &height);
+                            /* Keep this surface, will link it with context in MakeCurrent */
+                            keep_qsurface(process, qsurface);
 
-                DEBUGF( "glXCreatePixmap: %dX%d.\n", width, height);
-                qsurface->surface = glo_surface_create(width, height, context);
-                qsurface->client_drawable = client_drawable;
-				qsurface->type = SURFACE_PIXMAP;
-				qsurface->status = SURFACE_PENDING;
-                /*                qsurface->ref = 1;*/
+                            /* If this pixmap is linked as texture previously */
+                            if (link_drawable(process, client_drawable))
+                                glo_surface_as_texture(process->current_state->context,
+                                        qsurface->surface, qsurface->type);
 
-                /* Keep this surface, will link it with context in MakeCurrent */
-                keep_qsurface(process, qsurface);
-
-                /* If this pixmap is linked as texture previously */
-				if (link_drawable(process, client_drawable))
-					glo_surface_as_texture(process->current_state->context,
-							qsurface->surface);
-
-
-                ret.i = client_drawable;
-
+                            ret.i = (int)client_drawable;
+                        } else {
+                            free(qsurface);
+                            glo_context_destroy(context);
+                        }
+                    } else {
+                        glo_context_destroy(context);
+                    }
+                }
             }
             break;
         }
@@ -2063,14 +2204,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
             /* glXPixmap same as input Pixmap */
             ClientGLXDrawable client_drawable = to_drawable(args[1]);
             QGloSurface *qsurface = find_qsurface_from_client_drawable(process, client_drawable);
-            if ( qsurface &&
-                 qsurface != process->current_state->current_qsurface &&
-                 qsurface->glstate == NULL &&
-                 qsurface->type == SURFACE_PIXMAP )
-            {
-                glo_surface_destroy(qsurface->surface);
-                g_free(qsurface);
-            }
+            qsurface_pixmap_unref(qsurface);
             break;
         }
     case glEGLImageTargetTexture2DOES_fake_func:
@@ -2094,7 +2228,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
                 }
             }
             else
-				glo_surface_as_texture(process->current_state->context, qsurface->surface);
+				glo_surface_as_texture(process->current_state->context, qsurface->surface, qsurface->type);
 
 			break;
 		}
@@ -2110,7 +2244,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 				add_pixmap_texture_mapping(process->current_state,
 						process->current_state->bindTexture2D,
 						client_drawable);
-				glo_surface_as_texture(process->current_state->context, qsurface->surface);
+				glo_surface_as_texture(process->current_state->context, qsurface->surface, qsurface->type);
 				ret.i = 1;
 			}
 			else
@@ -2139,31 +2273,40 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 			ret.i = 0;
 			const GLXFBConfig *fbconfig = get_fbconfig(process, client_fbconfig);
 
-			if (fbconfig) {
+            if (fbconfig) {
 
-				/* Create a light-weight context just for creating surface */
-				GloContext *context = __glo_context_create(fbconfig->formatFlags);
+                /* Create a light-weight context just for creating surface */
+                GloContext *context = __glo_context_create(fbconfig->formatFlags);
+                if (context) {
+                    QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                    if (qsurface) {
+                        /* get the width and height */
+                        int width, height;
+                        glo_geometry_get_from_glx((int*)args[2], &width, &height);
 
-				QGloSurface *qsurface = calloc(1, sizeof(QGloSurface));
+                        DEBUGF( "glXCreatePbuffer: %dX%d.\n", width, height);
+                        qsurface->surface = glo_surface_create(width, height, context);
+                        if (qsurface->surface) {
+                            /* Use GloSurface handler as no input client_drawable, and
+                             * keep only low 32bit of handler on x86_64 host.  */
+                            qsurface->client_drawable = (ClientGLXDrawable)(long)qsurface->surface;
+                            qsurface->type = SURFACE_PBUFFER;
+                            qsurface->status = SURFACE_PENDING;
+                            /*                qsurface->ref = 1;*/
 
-				/* get the width and height */
-				int width, height;
-				glo_geometry_get_from_glx((int*)args[2], &width, &height);
+                            /* Keep this surface, will link it with context in MakeCurrent */
+                            keep_qsurface(process, qsurface);
 
-				DEBUGF( "glXCreatePbuffer: %dX%d.\n", width, height);
-				qsurface->surface = glo_surface_create(width, height, context);
-				/* Use GloSurface handler as no input client_drawable, and
-				 * keep only low 32bit of handler on x86_64 host.  */
-				qsurface->client_drawable = (int)qsurface->surface;
-				qsurface->type = SURFACE_PBUFFER;
-				qsurface->status = SURFACE_PENDING;
-				/*                qsurface->ref = 1;*/
-
-				/* Keep this surface, will link it with context in MakeCurrent */
-				keep_qsurface(process, qsurface);
-
-				ret.i = qsurface->client_drawable;
-			}
+                            ret.i = qsurface->client_drawable;
+                        } else {
+                            free(qsurface);
+                            glo_context_destroy(context);
+                        }
+                    } else {
+                        glo_context_destroy(context);
+                    }
+                }
+            }
 			break;
 		}
 	case glXDestroyPbuffer_func:
@@ -2221,8 +2364,8 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 
                     if ( qsurface )
                     {
-                        glo_surface_as_texture(process->current_state->context, qsurface->surface);
-                        fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);
+                        glo_surface_as_texture(process->current_state->context, qsurface->surface, qsurface->type);
+                        /*fprintf(stderr, "edwin:bindtexture: drawable=0x%x,qsurface=%p.\n", drawable, qsurface);*/
                     }
                 }
 
@@ -2607,7 +2750,7 @@ int do_function_call(ProcessState *process, int func_number, unsigned long *args
 				acc_length += tab_length[i];
 			}
 
-			shadersrc_gles_to_gl(args[1], tab_prog, tab_prog_new, tab_length, tab_length_new);
+			shadersrc_gles_to_gl(args[1], (const char **)tab_prog, tab_prog_new, tab_length, tab_length_new);
 
 			if (!tab_prog_new || !tab_length_new)
 				break;

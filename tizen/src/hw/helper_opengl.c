@@ -34,6 +34,7 @@
 #include "opengl_func.h"
 #include "opengl_process.h"
 #include "opengl_exec.h"
+#include "helper_opengl.h"
 
 #include "tizen/src/debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, opengl);
@@ -62,8 +63,8 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
 {
     Signature *signature;
     int i, ret;
-    char *argptr, *tmp;
-    static void* args[50];
+    char *argptr;
+    static host_ptr args[50];
     int func_number;
 #ifdef __APPLE__
     char temp4mac[256];
@@ -84,8 +85,6 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
         }
 
         signature = (Signature *) tab_opengl_calls[func_number];
-
-        tmp = argptr;
 
         for (i = 0; i < signature->nb_args; i++) {
             int args_size = *(int*)argptr;
@@ -141,9 +140,9 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
 						r_buffer += 4;
 #ifdef __APPLE__
 /*On MAC OS, GL call glGetProgramInfoLog and glGetShaderInfoLog will crash if ouput pointer is NULL*/
-						args[i] = temp4mac;
+						args[i] = (host_ptr)temp4mac;
 #else
-						args[i] = NULL;
+						args[i] = (host_ptr)NULL;
 #endif
 					} else if(*(int*)argptr) {
                         *(int*)r_buffer = args_size;

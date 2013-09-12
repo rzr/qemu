@@ -30,7 +30,7 @@
 #include <windows.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#elif __APPLE__
+#elif defined __APPLE__
 #include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
@@ -102,7 +102,7 @@ void g_free(void *ptr);
 // ---------------------------------------------------
 
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride,
-                                    int bpp, int width, int height, void *data);
+                                    int bpp, int width, int height, void *data, int noflip);
 
 // ---------------------------------------------------
 
@@ -370,7 +370,7 @@ void glo_geometry_get_from_glx(const int* attrib_list, int* width, int* height)
 }
 
 void glo_surface_getcontents_readpixels(int formatFlags, int stride, int bpp,
-                             int width, int height, void *data) {
+                             int width, int height, void *data, int noflip) {
     int glFormat, glType, rl, pa;
     static int once;
 
@@ -418,12 +418,14 @@ void glo_surface_getcontents_readpixels(int formatFlags, int stride, int bpp,
 
     glReadPixels(0, 0, width, height, glFormat, glType, data);
 
-    for(irow = 0; irow < height/2; irow++) {
-        memcpy(tmp, b, stride);
-        memcpy(b, c, stride);
-        memcpy(c, tmp, stride);
-        b += stride;
-        c -= stride;
+    if (noflip == 0) {
+        for(irow = 0; irow < height/2; irow++) {
+            memcpy(tmp, b, stride);
+            memcpy(b, c, stride);
+            memcpy(c, tmp, stride);
+            b += stride;
+            c -= stride;
+        }
     }
     g_free(tmp);
 

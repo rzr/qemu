@@ -47,6 +47,7 @@
 #include "monitor/monitor.h"
 #include "hw/pci/pci.h"
 #include "sysemu/sysemu.h"
+#include "exec/memory-internal.h"
 
 #include "emulator.h"
 #include "guest_debug.h"
@@ -303,8 +304,8 @@ static void mloop_evhandle_kbd_add(char *name)
 
     hostkbd = do_pci_device_hot_add(cur_mon, qdict);
     if (hostkbd) {
-        TRACE("virtio-keyboard device: domain %d, bus %d, slot %d, function %d\n",
-                pci_find_domain(hostkbd->bus), pci_bus_num(hostkbd->bus),
+        TRACE("virtio-keyboard device: root_bus_path %s, bus %d, slot %d, function %d\n",
+                pci_root_bus_path(hostkbd), pci_bus_num(hostkbd->bus),
                 PCI_SLOT(hostkbd->devfn), PCI_FUNC(hostkbd->devfn));
     } else {
         ERR("failed to hot_add keyboard device.\n");
@@ -368,8 +369,8 @@ static void mloop_evhandle_sdcard_attach(char *name)
     virtio_sdcard = do_pci_device_hot_add(cur_mon, qdict);
     if (virtio_sdcard) {
         INFO("hot add virtio storage device with [%s]\n", opts);
-        INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",
-            pci_find_domain(virtio_sdcard->bus), pci_bus_num(virtio_sdcard->bus),
+        INFO("virtio-sdcard device: root_bus_path %s, bus %d, slot %d, function %d\n",
+            pci_root_bus_path(virtio_sdcard), pci_bus_num(virtio_sdcard->bus),
             PCI_SLOT(virtio_sdcard->devfn), PCI_FUNC(virtio_sdcard->devfn));
     } else {
         ERR("failed to create a sdcard device.\n");

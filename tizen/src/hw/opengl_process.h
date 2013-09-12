@@ -22,6 +22,9 @@
  * THE SOFTWARE.
  */
 
+#ifndef __OPENGL_PROCESS_H
+#define __OPENGL_PROCESS_H
+
 typedef struct {
     int process_id;
     int wordsize;
@@ -31,3 +34,4 @@ typedef struct {
     char *rrq, *rrq_p;
 } ProcessStruct;
 
+#endif

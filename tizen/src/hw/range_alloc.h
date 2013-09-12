@@ -26,10 +26,6 @@
 #ifndef _OPENGL_UTILS
 #define _OPENGL_UTILS
 
-void *g_malloc(size_t size);
-void *g_realloc(void *ptr, size_t size);
-void g_free(void *ptr);
-
 typedef struct {
     unsigned int *values;
     int nbValues;

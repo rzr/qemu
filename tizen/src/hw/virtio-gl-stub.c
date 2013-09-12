@@ -16,7 +16,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "virtio.h"
+#include "hw/virtio/virtio.h"
 
 VirtIODevice *virtio_gl_init(DeviceState *dev)
 {

@@ -206,11 +206,11 @@ static int marucam_initfn(PCIDevice *dev)
 
     pci_config_set_interrupt_pin(pci_conf, 0x03);
 
-    memory_region_init_ram(&s->vram, "marucamera.ram", MARUCAM_MEM_SIZE);
+    memory_region_init_ram(&s->vram, OBJECT(s), "marucamera.ram", MARUCAM_MEM_SIZE);
     s->vaddr = memory_region_get_ram_ptr(&s->vram);
     memset(s->vaddr, 0, MARUCAM_MEM_SIZE);
 
-    memory_region_init_io(&s->mmio,
+    memory_region_init_io(&s->mmio, OBJECT(s),
                           &maru_camera_mmio_ops,
                           s,
                           "maru-camera-mmio",

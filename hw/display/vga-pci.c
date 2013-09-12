@@ -151,11 +151,12 @@ static int pci_std_vga_initfn(PCIDevice *dev)
 
     /* vga + console init */
 #ifdef CONFIG_MARU
-    maru_vga_common_init(s);
+    maru_vga_common_init(s, OBJECT(dev));
 #else
-    vga_common_init(s);
+    vga_common_init(s, OBJECT(dev));
 #endif
-    vga_init(s, pci_address_space(dev), pci_address_space_io(dev), true);
+    vga_init(s, OBJECT(dev), pci_address_space(dev), pci_address_space_io(dev),
+             true);
 
     s->con = graphic_console_init(DEVICE(dev), s->hw_ops, s);
 
@@ -164,10 +165,10 @@ static int pci_std_vga_initfn(PCIDevice *dev)
 
     /* mmio bar for vga register access */
     if (d->flags & (1 << PCI_VGA_FLAG_ENABLE_MMIO)) {
-        memory_region_init(&d->mmio, "vga.mmio", 4096);
-        memory_region_init_io(&d->ioport, &pci_vga_ioport_ops, d,
+        memory_region_init(&d->mmio, NULL, "vga.mmio", 4096);
+        memory_region_init_io(&d->ioport, NULL, &pci_vga_ioport_ops, d,
                               "vga ioports remapped", PCI_VGA_IOPORT_SIZE);
-        memory_region_init_io(&d->bochs, &pci_vga_bochs_ops, d,
+        memory_region_init_io(&d->bochs, NULL, &pci_vga_bochs_ops, d,
                               "bochs dispi interface", PCI_VGA_BOCHS_SIZE);
 
         memory_region_add_subregion(&d->mmio, PCI_VGA_IOPORT_OFFSET,
@@ -179,7 +180,7 @@ static int pci_std_vga_initfn(PCIDevice *dev)
 
     if (!dev->rom_bar) {
         /* compatibility with pc-0.13 and older */
-        vga_init_vbe(s, pci_address_space(dev));
+        vga_init_vbe(s, OBJECT(dev), pci_address_space(dev));
     }
 
     return 0;
@@ -208,6 +209,7 @@ static void vga_class_init(ObjectClass *klass, void *data)
     k->class_id = PCI_CLASS_DISPLAY_VGA;
     dc->vmsd = &vmstate_vga_pci;
     dc->props = vga_pci_properties;
+    set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
 }
 
 static const TypeInfo vga_info = {

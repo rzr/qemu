@@ -61,7 +61,7 @@ struct _GloSurface
   
 extern void glo_surface_getcontents_readpixels(int formatFlags, int stride, 
                                                 int bpp, int width, int height, 
-                                                void *data); 
+                                                void *data, int noflip);
 
 
   
@@ -321,7 +321,7 @@ void glo_surface_getcontents(GloSurface *surface, int stride, int bpp,
      { 
         aglSwapBuffers(surface->context->context); 	
 	aglSetInteger(surface->context->context, AGL_SWAP_INTERVAL, &swap_interval);
-        glo_surface_getcontents_readpixels(surface->context->formatFlags, stride, bpp, surface->width, surface->height, data); 
+        glo_surface_getcontents_readpixels(surface->context->formatFlags, stride, bpp, surface->width, surface->height, data, 0);
     } 
 } 
   
@@ -340,7 +340,7 @@ void glo_surface_get_size(GloSurface *surface, int *width, int *height)
 } 
  
 /* Bind the surface as texture */
-void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface)
+void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface, int surface_type)
 {
 #if 0
 	//Not QUit sure about this function;
