@@ -1949,10 +1949,10 @@ static int maru_brill_codec_initfn(PCIDevice *dev)
 
     pci_config_set_interrupt_pin(pci_conf, 1);
 
-    memory_region_init_ram(&s->vram, "maru_brill_codec.vram", CODEC_MEM_SIZE);
+    memory_region_init_ram(&s->vram, OBJECT(s), "maru_brill_codec.vram", CODEC_MEM_SIZE);
     s->vaddr = (uint8_t *)memory_region_get_ram_ptr(&s->vram);
 
-    memory_region_init_io(&s->mmio, &maru_brill_codec_mmio_ops, s,
+    memory_region_init_io(&s->mmio, OBJECT(s), &maru_brill_codec_mmio_ops, s,
                         "maru_brill_codec.mmio", CODEC_REG_SIZE);
 
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->vram);
