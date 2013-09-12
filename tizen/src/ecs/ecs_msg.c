@@ -131,7 +131,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
         {
             const char* data = (const char*)msg->data.data;
             memcpy(sndbuf + 14, data, datalen);
-            LOG(">> print len = %d, data\" %s\"", strlen(data), data);
+            LOG(">> print len = %zd, data\" %s\"", strlen(data), data);
         }
     }
 
@@ -198,11 +198,11 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
     }
     else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
         if (group == MSG_GROUP_STATUS) {
-            send_to_nfc(request_get, data, length);
+            send_to_nfc(request_nfc_get, data, length);
         }
         else
         {
-            send_to_nfc(request_set, data, length);
+            send_to_nfc(request_nfc_set, data, length);
         }
     }
 

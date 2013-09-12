@@ -20,11 +20,11 @@
 
 static char* qemu_strdup(const char *str)
 {
-	char *ptr;
-	size_t len = strlen(str);
-	ptr = g_malloc(len + 1);
-	memcpy(ptr, str, len+1);
-	return ptr;
+    char *ptr;
+    size_t len = strlen(str);
+    ptr = g_malloc(len + 1);
+    memcpy(ptr, str, len+1);
+    return ptr;
 }
 
 
@@ -65,19 +65,19 @@ int hax_populate_ram(uint64_t va, uint32_t size)
 
 int hax_set_phys_mem(MemoryRegionSection *section)
 {
-    struct hax_set_ram_info info, *pinfo = &info;	
-    MemoryRegionSection *mr = section->mr;
+    struct hax_set_ram_info info, *pinfo = &info;
+    MemoryRegion *mr = section->mr;
     hwaddr start_addr = section->offset_within_address_space;
-    ram_addr_t size = section->size;
+    ram_addr_t size = int128_get64(section->size);
     int ret;
 
-	/*We only care for the RAM and ROM*/
+    /*We only care for the RAM and ROM*/
     if(!memory_region_is_ram(mr))
-	return 0;
-	
+    return 0;
+
     if ( (start_addr & ~TARGET_PAGE_MASK) || (size & ~TARGET_PAGE_MASK))
     {
-        dprint("set_phys_mem %x %lx requires page aligned addr and size\n", start_addr, size);
+        dprint("set_phys_mem %llx %lx requires page aligned addr and size\n", start_addr, size);
         exit(1);
         return -1;
     }
