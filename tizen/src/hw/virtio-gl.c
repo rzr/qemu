@@ -199,6 +199,7 @@ static uint32_t virtio_gl_get_features(VirtIODevice *vdev, uint32_t f)
 	return 0;
 }
 
+/*
 static void virtio_gl_save(QEMUFile *f, void *opaque)
 {
 	VirtIOGL *s = opaque;
@@ -216,6 +217,7 @@ static int virtio_gl_load(QEMUFile *f, void *opaque, int version_id)
 	virtio_load(&s->vdev, f);
 	return 0;
 }
+*/
 
 static int virtio_gl_device_init(VirtIODevice *vdev)
 {
