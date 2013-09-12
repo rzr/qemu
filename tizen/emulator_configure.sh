@@ -233,13 +233,12 @@ echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 exec ./configure \
  $CONFIGURE_APPEND \
- --disable-werror \
+ --enable-werror \
  --audio-drv-list=alsa \
  --enable-virtfs \
  --enable-maru \
  --disable-vnc \
  --disable-pie $1
- #--enable-ldst-optimization \
 ;;
 MINGW*)
 cd distrib/libav
@@ -263,7 +262,6 @@ exec ./configure \
  --enable-hax \
  --enable-maru \
  --disable-vnc $1
- # --enable-ldst-optimization \
 ;;
 Darwin*)
 cd distrib/libav
