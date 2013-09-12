@@ -48,7 +48,7 @@ static int hax_open_device(hax_fd *fd)
 hax_fd hax_mod_open(void)
 {
     int ret;
-    hax_fd fd;
+    hax_fd fd = NULL;
 
     ret = hax_open_device(&fd);
     if (ret != 0)
@@ -102,7 +102,7 @@ int hax_set_phys_mem(MemoryRegionSection *section)
     struct hax_set_ram_info info, *pinfo = &info;
     MemoryRegion *mr = section->mr;
     hwaddr start_addr = section->offset_within_address_space;
-    ram_addr_t size = section->size;
+    ram_addr_t size = int128_get64(section->size);
     HANDLE hDeviceVM;
     DWORD dSize = 0;
     int ret = 0;
