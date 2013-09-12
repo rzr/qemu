@@ -16,7 +16,6 @@
  */
 
 /* TODO items:
-
      * 64-BIT OPTIMIZATION: certain implementations use 32-bit math even on 64-bit platforms
         (uint64_size, uint64_pack, parse_uint64)
 
@@ -32,17 +31,17 @@
      * use size_t consistently
  */
 
-#if HAVE_PROTOBUF_C_CONFIG_H
-#include "protobuf-c-config.h"
-#endif
+//#if HAVE_PROTOBUF_C_CONFIG_H
+//#include "protobuf-c-config.h"
+//#endif
 #include <stdio.h>                      /* for occasional printf()s */
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
-#if HAVE_ALLOCA_H
-#include <alloca.h>
-#elif HAVE_MALLOC_H
-#include <malloc.h>
-#endif
+//#if HAVE_ALLOCA_H
+//#include <alloca.h>
+//#elif HAVE_MALLOC_H
+//#include <malloc.h>
+//#endif
 
 #ifndef PRINT_UNPACK_ERRORS
 #define PRINT_UNPACK_ERRORS              1
@@ -602,7 +601,7 @@ sint64_pack (int64_t value, uint8_t *out)
 static inline size_t
 fixed32_pack (uint32_t value, void *out)
 {
-#if IS_LITTLE_ENDIAN
+#if 0 // IS_LITTLE_ENDIAN
   memcpy (out, &value, 4);
 #else
   uint8_t *buf = out;
@@ -622,7 +621,7 @@ fixed32_pack (uint32_t value, void *out)
 static inline size_t
 fixed64_pack (uint64_t value, void *out)
 {
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
   memcpy (out, &value, 8);
 #else
   fixed32_pack (value, out);
@@ -826,7 +825,7 @@ sizeof_elt_in_repeated_array (ProtobufCType type)
 static void
 copy_to_little_endian_32 (void *out, const void *in, unsigned N)
 {
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
   memcpy (out, in, N * 4);
 #else
   unsigned i;
@@ -838,7 +837,7 @@ copy_to_little_endian_32 (void *out, const void *in, unsigned N)
 static void
 copy_to_little_endian_64 (void *out, const void *in, unsigned N)
 {
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
   memcpy (out, in, N * 8);
 #else
   unsigned i;
@@ -1228,7 +1227,7 @@ pack_buffer_packed_payload (const ProtobufCFieldDescriptor *field,
       case PROTOBUF_C_TYPE_SFIXED32:
       case PROTOBUF_C_TYPE_FIXED32:
       case PROTOBUF_C_TYPE_FLOAT:
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
         rv = count * 4;
         goto no_packing_needed;
 #else
@@ -1243,7 +1242,7 @@ pack_buffer_packed_payload (const ProtobufCFieldDescriptor *field,
       case PROTOBUF_C_TYPE_SFIXED64:
       case PROTOBUF_C_TYPE_FIXED64:
       case PROTOBUF_C_TYPE_DOUBLE:
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
         rv = count * 8;
         goto no_packing_needed;
 #else
@@ -1312,9 +1311,9 @@ pack_buffer_packed_payload (const ProtobufCFieldDescriptor *field,
     }
   return rv;
 
-no_packing_needed:
-  buffer->append (buffer, rv, array);
-  return rv;
+//no_packing_needed:
+//  buffer->append (buffer, rv, array);
+//  return rv;
 }
 
 static size_t
@@ -1617,7 +1616,7 @@ unzigzag32 (uint32_t v)
 static inline uint32_t
 parse_fixed_uint32 (const uint8_t *data)
 {
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
   uint32_t t;
   memcpy (&t, data, 4);
   return t;
@@ -1655,7 +1654,7 @@ unzigzag64 (uint64_t v)
 static inline uint64_t
 parse_fixed_uint64 (const uint8_t *data)
 {
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
   uint64_t t;
   memcpy (&t, data, 8);
   return t;
@@ -1860,7 +1859,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
       case PROTOBUF_C_TYPE_FIXED32:
       case PROTOBUF_C_TYPE_FLOAT:
         count = (scanned_member->len - scanned_member->length_prefix_len) / 4;
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
         goto no_unpacking_needed;
 #else
         for (i = 0; i < count; i++)
@@ -1874,7 +1873,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
       case PROTOBUF_C_TYPE_FIXED64:
       case PROTOBUF_C_TYPE_DOUBLE:
         count = (scanned_member->len - scanned_member->length_prefix_len) / 8;
-#if IS_LITTLE_ENDIAN
+#if 0 //IS_LITTLE_ENDIAN
         goto no_unpacking_needed;
 #else
         for (i = 0; i < count; i++)
@@ -1976,10 +1975,10 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
   *p_n += count;
   return TRUE;
 
-no_unpacking_needed:
-  memcpy (array, at, count * siz);
-  *p_n += count;
-  return TRUE;
+//no_unpacking_needed:
+//  memcpy (array, at, count * siz);
+//  *p_n += count;
+//  return TRUE;
 }
 
 static protobuf_c_boolean
@@ -2021,7 +2020,7 @@ parse_member (ScannedMember *scanned_member,
 /* TODO: expose/use this function if desc->message_init==NULL 
    (which occurs for old code, and may be useful for certain
    programatic techniques for generating descriptors). */
-void
+static void
 protobuf_c_message_init_generic (const ProtobufCMessageDescriptor *desc,
                                  ProtobufCMessage *message)
 {

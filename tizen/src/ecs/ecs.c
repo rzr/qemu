@@ -1259,7 +1259,9 @@ static int ecs_loop(ECS_State *cs) {
     }
 
     if (0 > nfds) {
-        LOG("epoll wait error:%d.", nfds);
+        if (errno == EINTR)
+            return 0;
+        perror("epoll wait error");
         return -1;
     }
 
