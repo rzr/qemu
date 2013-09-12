@@ -3,6 +3,8 @@
 #include "sysemu/sysemu.h"
 #include "qmp-commands.h"
 
+AccelInfo *qmp_query_accel(Error **);
+
 AccelInfo *qmp_query_accel(Error **errp)
 {
     AccelInfo *info = g_malloc0(sizeof(*info));
