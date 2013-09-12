@@ -146,7 +146,7 @@ int get_number_of_processors(void)
     mib[1] = HW_AVAILCPU;
 
     sysctl(mib, 2, &sys_num, &len, NULL, 0);
-    if (num_processor < 1) {
+    if (sys_num < 1) {
         mib[1] = HW_NCPU;
         sysctl(mib, 2, &sys_num, &len, NULL, 0);
 
