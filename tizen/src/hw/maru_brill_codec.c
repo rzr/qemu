@@ -990,7 +990,7 @@ static void read_codec_init_data(AVCodecContext *avctx, uint8_t *mem_buf)
     if (avctx->extradata_size > 0) {
         TRACE("extradata size: %d.\n", avctx->extradata_size);
         avctx->extradata =
-            g_malloc0(ROUND_UP_X(avctx->extradata_size +
+            av_mallocz(ROUND_UP_X(avctx->extradata_size +
                         FF_INPUT_BUFFER_PADDING_SIZE, 4));
         if (avctx->extradata) {
             memcpy(avctx->extradata, mem_buf + size, avctx->extradata_size);
@@ -998,7 +998,7 @@ static void read_codec_init_data(AVCodecContext *avctx, uint8_t *mem_buf)
     } else {
         TRACE("no extra data.\n");
         avctx->extradata =
-            g_malloc0(ROUND_UP_X(FF_INPUT_BUFFER_PADDING_SIZE, 4));
+            av_mallocz(ROUND_UP_X(FF_INPUT_BUFFER_PADDING_SIZE, 4));
     }
 }
 
