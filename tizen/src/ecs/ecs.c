@@ -122,6 +122,7 @@ static void ecs_client_close(ECS_Client* clii) {
     QTAILQ_REMOVE(&clients, clii, next);
     if (NULL != clii) {
         g_free(clii);
+        clii = NULL;
     }
 
     pthread_mutex_unlock(&mutex_clilist);
@@ -885,21 +886,18 @@ static Monitor *monitor_create(void) {
     return mon;
 }
 
-static int device_initialize(void) {
-    // currently nothing to do with it.
-    return 1;
-}
-
 static void ecs_close(ECS_State *cs) {
     ECS_Client *clii;
     LOG("### Good bye! ECS ###");
 
     if (0 <= cs->listen_fd) {
         closesocket(cs->listen_fd);
+        cs->listen_fd = -1;
     }
 
     if (NULL != cs->mon) {
         g_free(cs->mon);
+        cs->mon = NULL;
     }
 
     if (NULL != cs->alive_timer) {
@@ -915,10 +913,9 @@ static void ecs_close(ECS_State *cs) {
     }
     pthread_mutex_unlock(&mutex_clilist);
 
-    //TODO: device close
-
     if (NULL != cs) {
         g_free(cs);
+        cs = NULL;
     }
 }
 
@@ -1392,13 +1389,6 @@ static void* ecs_initialize(void* args) {
     }
 
     cs->mon = mon;
-    ret = device_initialize();
-    if (0 > ret) {
-        LOG("device initialization failed.");
-        ecs_close(cs);
-        return NULL;
-    }
-
     current_ecs = cs;
     cs->ecs_running = 1;
 
