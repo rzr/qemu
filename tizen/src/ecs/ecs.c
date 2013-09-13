@@ -27,7 +27,6 @@
 #include "hw/maru_virtio_sensor.h"
 #include "hw/maru_virtio_nfc.h"
 
-#include "base64.h"
 #include "genmsg/ecs.pb-c.h"
 
 #define DEBUG
@@ -704,8 +703,6 @@ void ecs_make_header(QDict* obj, type_length length, type_group group,
     qdict_put(obj, "action", qint_from_int((int64_t )action));
 }
 
-
-
 bool ntf_to_control(const char* data, const int len) {
     return true;
 }
@@ -715,7 +712,6 @@ bool ntf_to_monitor(const char* data, const int len) {
 }
 
 static int ijcount = 0;
-
 
 static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
     QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
@@ -730,7 +726,7 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
     // get data
     const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
     LOG(">> count= %d", ++ijcount);
-    LOG(">> print len = %d, data\" %s\"", strlen(data), data);
+    LOG(">> print len = %zu, data\" %s\"", strlen(data), data);
     LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
             action, group);
     
@@ -743,47 +739,19 @@ static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
 
     memset(sndbuf, 0, sndlen + 1);
 
-    if(!strcmp(cmd, "telephony")) {
-        unsigned char *decoded_data = (unsigned char*)malloc(datalen + 1);
+    // set data
+    memcpy(sndbuf, cmd, 10);
+    memcpy(sndbuf + 10, &length, 2);
+    memcpy(sndbuf + 12, &group, 1);
+    memcpy(sndbuf + 13, &action, 1);
+    memcpy(sndbuf + 14, data, datalen);
 
-        if (!decoded_data) {
-            return false;
-        }
+    send_to_evdi(route_ij, sndbuf, sndlen);
 
-        int len_b64 = base64_decode(data, decoded_data, datalen);
-        length = (type_length)len_b64; 
-        sndlen = length + 14;
-        memcpy(sndbuf, cmd, 10);
-        memcpy(sndbuf + 10, &length, 2);
-        memcpy(sndbuf + 12, &group, 1);
-        memcpy(sndbuf + 13, &action, 1);
-        memcpy(sndbuf + 14, decoded_data, length);
-
-        send_to_evdi(route_ij, sndbuf, sndlen);
-
-        free(sndbuf);
-    
-        if(decoded_data != NULL) {
-            free(decoded_data);
-        }
-
-    } else {
-
-        // set data
-        memcpy(sndbuf, cmd, 10);
-        memcpy(sndbuf + 10, &length, 2);
-        memcpy(sndbuf + 12, &group, 1);
-        memcpy(sndbuf + 13, &action, 1);
-        memcpy(sndbuf + 14, data, datalen);
-
-        send_to_evdi(route_ij, sndbuf, sndlen);
-
-        free(sndbuf);
-    }
+    free(sndbuf);
 
     return true;
 }
-
 
 static bool device_command_proc(ECS_Client *clii, QObject *obj) {
     QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
@@ -798,7 +766,7 @@ static bool device_command_proc(ECS_Client *clii, QObject *obj) {
     // get data
     const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
     LOG(">> count= %d", ++ijcount);
-    LOG(">> print len = %d, data\" %s\"", strlen(data), data);
+    LOG(">> print len = %zu, data\" %s\"", strlen(data), data);
     LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
             action, group);
  
@@ -1118,6 +1086,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 
     clii->client_fd = fd;
     clii->cs = cs;
+
     ecs_json_message_parser_init(&clii->parser, handle_ecs_command, clii);
 
 #ifdef CONFIG_LINUX
@@ -1442,7 +1411,7 @@ static void* ecs_initialize(void* args) {
         }
     }
 
-    return (void*) ret;
+    return NULL;
 }
 
 int stop_ecs(void) {
