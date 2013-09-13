@@ -1,3 +1,6 @@
+* 1.5.93
+- rebase QEMU onto 1.6.
+== Kitae Kim <kt920.kim@samsung.com> 2013-09-13
 * 1.5.92
 - make skins package for windows/macos
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-09-10
