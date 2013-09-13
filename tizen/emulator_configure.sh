@@ -232,13 +232,13 @@ echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 exec ./configure \
- $CONFIGURE_APPEND \
  --enable-werror \
  --audio-drv-list=alsa \
- --enable-virtfs \
  --enable-maru \
  --disable-vnc \
- --disable-pie $1
+ --disable-pie $1 \
+ --enable-virtfs \
+ $CONFIGURE_APPEND \
 ;;
 MINGW*)
 cd distrib/libav
@@ -255,13 +255,13 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
 # We add CFLAGS '-fno-omit-frame-pointer'.
 # A GCC might have a bug related with omitting frame pointer. It generates weird instructions.
 exec ./configure \
- $CONFIGURE_APPEND \
  --extra-cflags=-fno-omit-frame-pointer \
  --cc=gcc \
  --audio-drv-list=winwave \
  --enable-hax \
  --enable-maru \
- --disable-vnc $1
+ --disable-vnc $1 \
+ $CONFIGURE_APPEND \
 ;;
 Darwin*)
 cd distrib/libav
@@ -276,7 +276,6 @@ echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 ./configure \
- $CONFIGURE_APPEND \
  --extra-cflags=-mmacosx-version-min=10.4 \
  --audio-drv-list=coreaudio \
  --enable-mixemu \
@@ -286,6 +285,7 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
  --disable-vnc \
  --disable-cocoa \
  --enable-gl \
- --disable-sdl $1
+ --disable-sdl $1 \
+ $CONFIGURE_APPEND \
 ;;
 esac

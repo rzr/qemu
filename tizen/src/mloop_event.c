@@ -418,15 +418,15 @@ static void mloop_evhandle_ramdump(struct mloop_evpack* pack)
     INFO("dumping...\n");
 
 #if defined(CONFIG_LINUX) && !defined(TARGET_ARM) /* FIXME: Handle ARM ram as list */
-    MemoryRegion* rm = get_ram_memory();
-    unsigned int size = rm->size.lo;
+    MemoryRegion* mr = get_ram_memory();
+    size_t size = mr->size.lo;
     char dump_fullpath[MAX_PATH];
     char dump_filename[MAX_PATH];
 
     char* dump_path = g_path_get_dirname(get_log_path());
 
-    sprintf(dump_filename, "0x%08x%s0x%08x%s", rm->ram_addr, "-",
-        rm->ram_addr + size, "_RAM.dump");
+    sprintf(dump_filename, "0x%08x%s0x%08x%s", (unsigned int)mr->ram_addr, "-",
+        (unsigned int)(mr->ram_addr + size), "_RAM.dump");
     sprintf(dump_fullpath, "%s/%s", dump_path, dump_filename);
     free(dump_path);
 
@@ -438,13 +438,13 @@ static void mloop_evhandle_ramdump(struct mloop_evpack* pack)
     }
 
     size_t written;
-    written = fwrite(qemu_get_ram_ptr(rm->ram_addr), sizeof(char), size, dump_file);
-    fprintf(stdout, "Dump file written [%08x][%d bytes]\n", rm->ram_addr, written);
+    written = fwrite(qemu_get_ram_ptr(mr->ram_addr), sizeof(char), size, dump_file);
+    fprintf(stdout, "Dump file written [%08x][%zu bytes]\n", (unsigned int)mr->ram_addr, written);
     if(written != size) {
-        fprintf(stderr, "Dump file size error [%d, %d, %d]\n", written, size, errno);
+        fprintf(stderr, "Dump file size error [%zu, %zu, %d]\n", written, size, errno);
     }
 
-    fprintf(stdout, "Dump file create success [%s, %d bytes]\n", dump_fullpath, size);
+    fprintf(stdout, "Dump file create success [%s, %zu bytes]\n", dump_fullpath, size);
 
     fclose(dump_file);
 #endif
