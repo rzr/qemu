@@ -26,7 +26,6 @@
 #include "qmp-commands.h"
 
 #include "ecs.h"
-#include "base64.h"
 #include "mloop_event.h"
 #include "hw/maru_virtio_evdi.h"
 #include "hw/maru_virtio_sensor.h"
@@ -249,10 +248,6 @@ bool ntf_to_injector(const char* data, const int len) {
     char *encoded_ijdata = NULL;
      LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
             action, group);
-
-    if(!strcmp(cat, "telephony")) {
-        base64_encode(ijdata, length, &encoded_ijdata);
-    }
 
     QDict* obj_header = qdict_new();
     ecs_make_header(obj_header, length, group, action);
