@@ -1040,15 +1040,20 @@ static void write_codec_decode_video_data(AVCodecContext *avctx, int len,
 }
 
 // write the result of codec_decode_audio
-static void write_codec_decode_audio_data(int64_t channel_layout, int len,
-                                       int frame_size_ptr, uint8_t *mem_buf)
+static void write_codec_decode_audio_data(int sample_rate, int channel,
+                                        int64_t channel_layout, int len,
+                                        int frame_size_ptr, uint8_t *mem_buf)
 {
     int size = 0;
 
     TRACE("copy decode_audio. len %d, frame_size %d\n", len, frame_size_ptr);
 
-    memcpy(mem_buf, &channel_layout, sizeof(channel_layout));
-    size = sizeof(channel_layout);
+    memcpy(mem_buf, &sample_rate, sizeof(sample_rate));
+    size = sizeof(sample_rate);
+    memcpy(mem_buf + size, &channel, sizeof(channel));
+    size += sizeof(channel);
+    memcpy(mem_buf + size, &channel_layout, sizeof(channel_layout));
+    size += sizeof(channel_layout);
     memcpy(mem_buf + size, &len, sizeof(len));
     size += sizeof(len);
     memcpy(mem_buf + size, &frame_size_ptr, sizeof(frame_size_ptr));
@@ -1383,7 +1388,9 @@ static void codec_decode_audio(MaruBrillCodecState *s, int ctx_id, int f_id)
         }
     }
 
-    write_codec_decode_audio_data(avctx->channel_layout, len, frame_size_ptr, meta_buf);
+    write_codec_decode_audio_data(avctx->sample_rate, avctx->channels,
+                                avctx->channel_layout, len,
+                                frame_size_ptr, meta_buf);
 
     if (len > 0) {
         tempbuf = g_malloc0(frame_size_ptr);
