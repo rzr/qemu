@@ -302,7 +302,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
         codec_init(pci_bus);
         pci_maru_overlay_init(pci_bus);
         pci_maru_brightness_init(pci_bus);
-        maru_brill_codec_pci_device_init(pci_bus);
+//        maru_brill_codec_pci_device_init(pci_bus);
     }
 
     if (enable_vigs) {
