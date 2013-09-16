@@ -48,6 +48,8 @@ static int skin_shmid;
 
 static int shm_skip_update;
 static int shm_skip_count;
+
+static bool blank_guide_enable;
 static int blank_cnt;
 #define MAX_BLANK_FRAME_CNT 10
 
@@ -143,11 +145,13 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
             /* do nothing */
             return;
         } else if (blank_cnt == MAX_BLANK_FRAME_CNT) {
-            /* draw guide image */
-            INFO("draw a blank guide image\n");
+            if (blank_guide_enable == true) {
+                INFO("draw a blank guide image\n");
 
-            if (get_emul_skin_enable() == 1) {
-                notify_draw_blank_guide();
+                if (get_emul_skin_enable() == 1) {
+                    /* draw guide image */
+                    notify_draw_blank_guide();
+                }
             }
         } else if (blank_cnt == 0) {
             INFO("skipping of the display updating is started\n");
@@ -191,10 +195,16 @@ void maruskin_shm_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide)
 {
+    blank_guide_enable = blank_guide;
+
     INFO("maru shm init\n");
 
     set_emul_lcd_size(display_width, display_height);
     set_emul_sdl_bpp(32);
+
+    if (blank_guide_enable == true) {
+        INFO("blank guide is on\n");
+    }
 
     /* byte */
     int shm_size =
