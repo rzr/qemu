@@ -1,3 +1,8 @@
+* 1.5.94
+- fixed the bug
+- change finding java path routine at 64bit windows (add Wow6432Node)
+== jihye kim <jihye1128@samsung.com> 2013-09-16
+
 * 1.5.93
 - rebase QEMU onto 1.6.
 == Kitae Kim <kt920.kim@samsung.com> 2013-09-13

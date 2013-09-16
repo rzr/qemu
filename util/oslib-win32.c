@@ -73,7 +73,7 @@ bool get_java_path(char** java_path)
     DWORD dwBufLen = JAVA_MAX_COMMAND_LENGTH;
 
     RegOpenKeyEx(HKEY_LOCAL_MACHINE,
-                "SOFTWARE\\JavaSoft\\Java Runtime Environment",
+                "SOFTWARE\\Wow6432Node\\JavaSoft\\Java Runtime Environment",
                 0,
                 KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | MY_KEY_WOW64_64KEY,
                 &hKey);
