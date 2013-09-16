@@ -62,6 +62,8 @@ static int sdl_alteration;
 
 static unsigned int sdl_skip_update;
 static unsigned int sdl_skip_count;
+
+static bool blank_guide_enable;
 static unsigned int blank_cnt;
 #define MAX_BLANK_FRAME_CNT 10
 #define BLANK_GUIDE_IMAGE_PATH "../images/"
@@ -485,47 +487,49 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
             /* do nothing */
             return;
         } else if (blank_cnt == MAX_BLANK_FRAME_CNT) {
-            /* draw guide image */
-            INFO("draw a blank guide image\n");
+            if (blank_guide_enable == true) {
+                INFO("draw a blank guide image\n");
 
-            SDL_Surface *guide = get_blank_guide_image();
-            if (guide != NULL && get_emul_skin_enable() == 1) {
-                int dst_x = 0; int dst_y = 0;
-                int dst_w = 0; int dst_h = 0;
+                SDL_Surface *guide = get_blank_guide_image();
+                if (guide != NULL && get_emul_skin_enable() == 1) {
+                    /* draw guide image */
+                    int dst_x = 0; int dst_y = 0;
+                    int dst_w = 0; int dst_h = 0;
 
-                if (current_scale_factor != 1.0) {
-                    /* guide image scaling */
-                    SDL_Surface *scaled_guide = SDL_CreateRGBSurface(
-                        SDL_SWSURFACE,
-                        guide->w * current_scale_factor,
-                        guide->h * current_scale_factor,
-                        get_emul_sdl_bpp(),
-                        guide->format->Rmask, guide->format->Gmask,
-                        guide->format->Bmask, guide->format->Amask);
+                    if (current_scale_factor != 1.0) {
+                        /* guide image scaling */
+                        SDL_Surface *scaled_guide = SDL_CreateRGBSurface(
+                            SDL_SWSURFACE,
+                            guide->w * current_scale_factor,
+                            guide->h * current_scale_factor,
+                            get_emul_sdl_bpp(),
+                            guide->format->Rmask, guide->format->Gmask,
+                            guide->format->Bmask, guide->format->Amask);
 
-                    scaled_guide = maru_do_pixman_scale(guide, scaled_guide);
+                        scaled_guide = maru_do_pixman_scale(guide, scaled_guide);
 
-                    dst_w = scaled_guide->w;
-                    dst_h = scaled_guide->h;
-                    dst_x = (surface_screen->w - dst_w) / 2;
-                    dst_y = (surface_screen->h - dst_h) / 2;
-                    SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
+                        dst_w = scaled_guide->w;
+                        dst_h = scaled_guide->h;
+                        dst_x = (surface_screen->w - dst_w) / 2;
+                        dst_y = (surface_screen->h - dst_h) / 2;
+                        SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
 
-                    SDL_BlitSurface(scaled_guide, NULL,
-                        surface_screen, &dst_rect);
-                    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+                        SDL_BlitSurface(scaled_guide, NULL,
+                            surface_screen, &dst_rect);
+                        SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
-                    SDL_FreeSurface(scaled_guide);
-                } else {
-                    dst_w = guide->w;
-                    dst_h = guide->h;
-                    dst_x = (surface_screen->w - dst_w) / 2;
-                    dst_y = (surface_screen->h - dst_h) / 2;
-                    SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
+                        SDL_FreeSurface(scaled_guide);
+                    } else {
+                        dst_w = guide->w;
+                        dst_h = guide->h;
+                        dst_x = (surface_screen->w - dst_w) / 2;
+                        dst_y = (surface_screen->h - dst_h) / 2;
+                        SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
 
-                    SDL_BlitSurface(guide, NULL,
-                        surface_screen, &dst_rect);
-                    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+                        SDL_BlitSurface(guide, NULL,
+                            surface_screen, &dst_rect);
+                        SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+                    }
                 }
             }
         } else if (blank_cnt == 0) {
@@ -790,6 +794,7 @@ void maruskin_sdl_init(uint64 swt_handle,
 {
     gchar SDL_windowhack[32] = { 0, };
     long window_id = swt_handle;
+    blank_guide_enable = blank_guide;
 
     INFO("maru sdl init\n");
 
@@ -805,6 +810,10 @@ void maruskin_sdl_init(uint64 swt_handle,
     set_emul_lcd_size(display_width, display_height);
     set_emul_sdl_bpp(SDL_BPP);
     init_multi_touch_state();
+
+    if (blank_guide_enable == true) {
+        INFO("blank guide is on\n");
+    }
 
     qemu_bh_schedule(sdl_init_bh);
 }

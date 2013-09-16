@@ -72,4 +72,7 @@
         <keywindowItem visible="true" />
         <shellItem visible="true" />
     </popupMenu>
+    <option>
+        <blankGuide visible="true" />
+    </option>
 </EmulatorUI>

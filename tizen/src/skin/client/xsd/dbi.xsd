@@ -9,6 +9,7 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 				<element name="rotations" type="dbi:rotationsType" minOccurs="1" maxOccurs="1"></element>
 				<element name="hover" type="dbi:hoverType" minOccurs="0" maxOccurs="1"></element>
 				<element name="popupMenu" type="dbi:popupMenuType" minOccurs="0" maxOccurs="1"></element>
+				<element name="option" type="dbi:optionType" minOccurs="0" maxOccurs="1"></element>
 			</all>
 		</complexType>
 	</element>
@@ -103,6 +104,16 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 
 	<complexType name="menuItemType">
 		<attribute name="itemName" type="string" default="" use="optional"></attribute>
+		<attribute name="visible" type="boolean" default="true" use="optional"></attribute>
+	</complexType>
+
+	<complexType name="optionType">
+		<all>
+			<element name="blankGuide" type="dbi:blankGuideType" minOccurs="0" maxOccurs="1"></element>
+		</all>
+	</complexType>
+
+	<complexType name="blankGuideType">
 		<attribute name="visible" type="boolean" default="true" use="optional"></attribute>
 	</complexType>
 </schema>

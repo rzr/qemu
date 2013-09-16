@@ -1,5 +1,5 @@
 /**
- * 
+ * communticate with Qemu
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -53,6 +53,7 @@ import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
+import org.tizen.emulator.skin.dbi.OptionType;
 import org.tizen.emulator.skin.image.ImageRegistry.ResourceImageName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
@@ -240,7 +241,11 @@ public class SocketCommunicator implements ICommunicator {
 		short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 
 		boolean isBlankGuide = true;
-		// TODO:
+		OptionType option = config.getDbiContents().getOption();
+		if (option != null) {
+			isBlankGuide = (option.getBlankGuide() == null) ?
+					true : option.getBlankGuide().isVisible();
+		}
 
 		StartData startData = new StartData(initialData,
 				width, height, scale, rotation, isBlankGuide);
@@ -478,40 +483,37 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	private byte[] readData( DataInputStream is, int length ) throws IOException {
-
-		if ( 0 >= length ) {
+	private byte[] readData(
+			DataInputStream is, int length) throws IOException {
+		if (0 >= length) {
 			return null;
 		}
 
-		BufferedInputStream bfis = new BufferedInputStream( is, length );
+		BufferedInputStream bfis = new BufferedInputStream(is, length);
 		byte[] data = new byte[length];
 
 		int read = 0;
 		int total = 0;
 
-		while ( true ) {
-
-			if ( total == length ) {
+		while (true) {
+			if (total == length) {
 				break;
 			}
 
-			read = bfis.read( data, total, length - total );
+			read = bfis.read(data, total, length - total);
 
-			if ( 0 > read ) {
-				if ( total < length ) {
+			if (0 > read) {
+				if (total < length) {
 					continue;
 				}
 			} else {
 				total += read;
 			}
-
 		}
 
-		logger.info( "finished reading stream. read:" + total );
+		logger.info("finished reading stream. read:" + total);
 
 		return data;
-
 	}
 
 	private DataTranfer resetDataTransfer(final DataTranfer dataTransfer) {
@@ -539,9 +541,7 @@ public class SocketCommunicator implements ICommunicator {
 			timer.schedule(timerTask, dataTransfer.maxWaitTime + 1000);
 
 			return dataTransfer;
-
 		}
-
 	}
 
 	public synchronized DataTranfer sendDataToQEMU(
@@ -633,46 +633,41 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	public byte[] getReceivedData( DataTranfer dataTranfer ) {
-
+	public byte[] getReceivedData(DataTranfer dataTranfer) {
 		if (null == dataTranfer) {
 			return null;
 		}
 
 		synchronized (dataTranfer) {
-
 			int count = 0;
 			byte[] receivedData = null;
 			long sleep = dataTranfer.sleep;
 			long maxWaitTime = dataTranfer.maxWaitTime;
-			int limitCount = (int) ( maxWaitTime / sleep );
+			int limitCount = (int) (maxWaitTime / sleep);
 
-			while ( dataTranfer.isTransferState ) {
+			while (dataTranfer.isTransferState) {
+				if (limitCount < count) {
+					logger.severe("time out for receiving data from skin server.");
 
-				if ( limitCount < count ) {
-					logger.severe( "time out for receiving data from skin server." );
 					dataTranfer.receivedData = null;
 					break;
 				}
 
 				try {
-					dataTranfer.wait( sleep );
-				} catch ( InterruptedException e ) {
-					logger.log( Level.SEVERE, e.getMessage(), e );
+					dataTranfer.wait(sleep);
+				} catch (InterruptedException e) {
+					logger.log(Level.SEVERE, e.getMessage(), e);
 				}
 
 				count++;
-				logger.info( "wait data... count:" + count );
-
+				logger.info("wait data... count : " + count);
 			}
 
 			receivedData = dataTranfer.receivedData;
 			dataTranfer.receivedData = null;
 			
 			return receivedData;
-
 		}
-
 	}
 	
 	public Socket getSocket() {
@@ -750,13 +745,6 @@ public class SocketCommunicator implements ICommunicator {
 			skin.shutdown();
 		}
 	}
-
-	public void resetSkin( EmulatorSkin skin ) {
-		synchronized ( this ) {
-			this.skin = skin;
-		}
-	}
-
 }
 
 class SkinSendData {
