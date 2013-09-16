@@ -1,3 +1,6 @@
+* 1.5.95
+- modified skin info
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-09-16
 * 1.5.94
 - fixed the bug
 - change finding java path routine at 64bit windows (add Wow6432Node)
