@@ -45,6 +45,7 @@ MULTI_DEBUG_CHANNEL(tizen, maru_shm);
 static DisplaySurface *dpy_surface;
 static void *shared_memory = (void *) 0;
 static int skin_shmid;
+static bool is_fit_console_size;
 
 static int shm_skip_update;
 static int shm_skip_count;
@@ -99,11 +100,19 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
             draw_display_state = 1;
 
             pthread_mutex_unlock(&mutex_draw_display);
-            maru_do_pixman_dpy_surface(dpy_surface->image);
-            memcpy(shared_memory,
-                   surface_data(dpy_surface),
-                   surface_stride(dpy_surface) *
-                   surface_height(dpy_surface));
+
+            if (is_fit_console_size == true) {
+                maru_do_pixman_dpy_surface(dpy_surface->image);
+
+                memcpy(shared_memory,
+                    surface_data(dpy_surface),
+                    surface_stride(dpy_surface) *
+                    surface_height(dpy_surface));
+            } else {
+                int shm_size =
+                   get_emul_lcd_width() * get_emul_lcd_height() * 4;
+                memset(shared_memory, 0x00, (size_t)shm_size);
+            }
 
 #ifdef INFO_FRAME_DROP_RATE
             draw_frame++;
@@ -126,14 +135,27 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
 static void qemu_ds_shm_switch(DisplayChangeListener *dcl,
                         struct DisplaySurface *new_surface)
 {
-    TRACE("qemu_ds_shm_switch\n");
-
-    if (new_surface) {
-        dpy_surface = new_surface;
-    }
+    int console_width = 0, console_height = 0;
 
     shm_skip_update = 0;
     shm_skip_count = 0;
+
+    if (!new_surface) {
+        ERR("qemu_ds_shm_switch : new_surface is NULL\n");
+        return;
+    }
+
+    dpy_surface = new_surface;
+    console_width = surface_width(new_surface);
+    console_height = surface_height(new_surface);
+
+    INFO("qemu_ds_shm_switch : (%d, %d)\n",
+        console_width, console_height);
+
+    if (console_width == get_emul_lcd_width() &&
+        console_height == get_emul_lcd_height()) {
+        is_fit_console_size = true;
+    }
 }
 
 static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)

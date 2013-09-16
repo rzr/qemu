@@ -224,6 +224,9 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
 {
     int console_width = 0, console_height = 0;
 
+    sdl_skip_update = 0;
+    sdl_skip_count = 0;
+
     if (!new_surface) {
         ERR("qemu_ds_sdl_switch : new_surface is NULL\n");
         return;
@@ -235,9 +238,6 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
 
     INFO("qemu_ds_sdl_switch : (%d, %d)\n",
         console_width, console_height);
-
-    sdl_skip_update = 0;
-    sdl_skip_count = 0;
 
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
