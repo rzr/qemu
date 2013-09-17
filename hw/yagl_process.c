@@ -18,7 +18,7 @@ struct yagl_process_state
 
 #ifdef CONFIG_KVM
     cpu_synchronize_state(current_cpu);
-    memcpy(&ps->cr[0], &((CPUX86State*)current_cpu)->cr[0], sizeof(ps->cr));
+    memcpy(&ps->cr[0], &((CPUX86State*)current_cpu->env_ptr)->cr[0], sizeof(ps->cr));
 #endif
 
     return ps;

@@ -15,7 +15,7 @@ YAGL_DEFINE_TLS(struct yagl_thread_state*, cur_ts);
 static __inline void yagl_cpu_synchronize_state(struct yagl_process_state *ps)
 {
     if (kvm_enabled()) {
-        memcpy(&((CPUX86State*)current_cpu)->cr[0], &ps->cr[0], sizeof(ps->cr));
+        memcpy(&((CPUX86State*)current_cpu->env_ptr)->cr[0], &ps->cr[0], sizeof(ps->cr));
     }
 }
 #else
