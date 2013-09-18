@@ -12,7 +12,7 @@
 
 struct yagl_egl_display
     *yagl_egl_display_create(struct yagl_egl_backend *backend,
-                             target_ulong display_id)
+                             uint32_t display_id)
 {
     struct yagl_eglb_display *backend_dpy;
     struct yagl_egl_display *dpy;
@@ -117,22 +117,17 @@ void yagl_egl_display_terminate(struct yagl_egl_display *dpy)
     yagl_resource_list_cleanup(&tmp_list);
 }
 
-int yagl_egl_display_get_config_count(struct yagl_egl_display *dpy)
+int32_t yagl_egl_display_get_config_count(struct yagl_egl_display *dpy)
 {
-    int ret;
-
-    ret = yagl_resource_list_get_count(&dpy->configs);
-
-    return ret;
+    return yagl_resource_list_get_count(&dpy->configs);
 }
 
-yagl_host_handle
-    *yagl_egl_display_get_config_handles(struct yagl_egl_display *dpy,
-                                         int *num_configs)
+void yagl_egl_display_get_config_handles(struct yagl_egl_display *dpy,
+                                         yagl_host_handle *handles,
+                                         int32_t *num_configs)
 {
-    yagl_host_handle *handles = g_malloc(*num_configs * sizeof(yagl_host_handle));
     struct yagl_resource *res;
-    int i = 0;
+    int32_t i = 0;
 
     QTAILQ_FOREACH(res, &dpy->configs.resources, entry) {
         if (i >= *num_configs) {
@@ -143,30 +138,22 @@ yagl_host_handle
     }
 
     *num_configs = i;
-
-    return handles;
 }
 
-yagl_host_handle
-    *yagl_egl_display_choose_configs(struct yagl_egl_display *dpy,
+void yagl_egl_display_choose_configs(struct yagl_egl_display *dpy,
                                      const struct yagl_egl_native_config *dummy,
-                                     int *num_configs,
-                                     bool count_only)
+                                     yagl_host_handle *handles,
+                                     int32_t *num_configs)
 {
-    yagl_host_handle *handles = NULL;
     struct yagl_resource *res;
-    int i = 0;
-
-    if (!count_only) {
-        handles = g_malloc(*num_configs * sizeof(yagl_host_handle));
-    }
+    int32_t i = 0;
 
     QTAILQ_FOREACH(res, &dpy->configs.resources, entry) {
-        if (!count_only && (i >= *num_configs)) {
+        if (handles && (i >= *num_configs)) {
             break;
         }
         if (yagl_egl_config_is_chosen_by((struct yagl_egl_config*)res, dummy)) {
-            if (!count_only) {
+            if (handles) {
                 handles[i] = res->handle;
             }
             ++i;
@@ -174,8 +161,6 @@ yagl_host_handle
     }
 
     *num_configs = i;
-
-    return handles;
 }
 
 struct yagl_egl_config

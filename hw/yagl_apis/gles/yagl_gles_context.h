@@ -151,18 +151,7 @@ void *yagl_gles_context_malloc0(struct yagl_gles_context *ctx, GLsizei size);
 struct yagl_gles_array
     *yagl_gles_context_get_array(struct yagl_gles_context *ctx, GLuint index);
 
-/*
- * For all arrays: transfers and applies 'count' array elements starting
- * from 'first' element.
- * On error returns false, some arrays might not get
- * transferred on error.
- *
- * Note that the current thread MUST be in sync with target while making this
- * call, since this call might transfer data from target to host.
- */
-bool yagl_gles_context_transfer_arrays(struct yagl_gles_context *ctx,
-                                       uint32_t first,
-                                       uint32_t count);
+void yagl_gles_context_transfer_arrays_vbo(struct yagl_gles_context *ctx);
 
 bool yagl_gles_context_set_active_texture(struct yagl_gles_context *ctx,
                                           GLenum texture);

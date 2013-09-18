@@ -1,83 +1,108 @@
 #include "yagl_mem.h"
-#include "yagl_log.h"
-#include "yagl_thread.h"
 #include "yagl_process.h"
-#include "yagl_vector.h"
+#include "yagl_thread.h"
+#include "yagl_log.h"
+#include "exec/cpu-all.h"
 
-bool yagl_mem_get_uint8(target_ulong va, uint8_t* value)
+struct yagl_mem_transfer *yagl_mem_transfer_create(void)
 {
-    int ret;
+    struct yagl_mem_transfer *mt;
 
-    YAGL_LOG_FUNC_ENTER(yagl_mem_get_uint8, "va = 0x%X", (uint32_t)va);
+    mt = g_malloc0(sizeof(*mt));
 
-    ret = cpu_memory_rw_debug(cur_ts->current_env, va, value, sizeof(*value), 0);
-
-    if (ret == -1) {
-        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-    } else {
-        YAGL_LOG_FUNC_EXIT("0x%X", (uint32_t)*value);
-    }
-
-    return ret != -1;
+    return mt;
 }
 
-bool yagl_mem_get_uint16(target_ulong va, uint16_t* value)
+void yagl_mem_transfer_destroy(struct yagl_mem_transfer *mt)
 {
-    int ret;
-
-    YAGL_LOG_FUNC_ENTER(yagl_mem_get_uint16, "va = 0x%X", (uint32_t)va);
-
-    ret = cpu_memory_rw_debug(cur_ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
-
-    if (ret == -1) {
-        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-    } else {
-        YAGL_LOG_FUNC_EXIT("0x%X", (uint32_t)*value);
-    }
-
-    return ret != -1;
+    g_free(mt->pages);
+    g_free(mt);
 }
 
-bool yagl_mem_get_uint32(target_ulong va, uint32_t* value)
+bool yagl_mem_prepare(struct yagl_mem_transfer *mt,
+                      target_ulong va,
+                      int len)
 {
-    int ret;
+    bool res = true;
+    int l;
+    hwaddr page_pa;
+    target_ulong page_va;
 
-    YAGL_LOG_FUNC_ENTER(yagl_mem_get_uint32, "va = 0x%X", (uint32_t)va);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_prepare, "va = 0x%X, len = %d", (uint32_t)va, len);
 
-    ret = cpu_memory_rw_debug(cur_ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
+    if (len >= 0) {
+        int max_pages = ((len + TARGET_PAGE_SIZE - 1) / TARGET_PAGE_SIZE) + 1;
 
-    if (ret == -1) {
-        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
+        if (max_pages > mt->max_pages) {
+            g_free(mt->pages);
+            mt->pages = g_malloc(sizeof(*mt->pages) * max_pages);
+        }
 
-        YAGL_LOG_FUNC_EXIT(NULL);
-    } else {
-        YAGL_LOG_FUNC_EXIT("0x%X", *value);
+        mt->max_pages = max_pages;
     }
 
-    return ret != -1;
+    mt->va = va;
+    mt->offset = (va & ~TARGET_PAGE_MASK);
+    mt->len = len;
+    mt->num_pages = 0;
+
+    if (va) {
+        while (len > 0) {
+            page_va = va & TARGET_PAGE_MASK;
+            page_pa = cpu_get_phys_page_debug(cur_ts->current_env, page_va);
+
+            if (page_pa == -1) {
+                YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)page_va);
+                res = false;
+                break;
+            }
+
+            l = (page_va + TARGET_PAGE_SIZE) - va;
+            if (l > len) {
+                l = len;
+            }
+
+            len -= l;
+            va += l;
+
+            assert(mt->num_pages < mt->max_pages);
+
+            mt->pages[mt->num_pages++] = page_pa;
+        }
+    }
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+
+    return res;
 }
 
-bool yagl_mem_get_float(target_ulong va, float* value)
+void yagl_mem_put(struct yagl_mem_transfer *mt, const void *data, int len)
 {
-    int ret;
+    int offset = mt->offset, i = 0;
 
-    YAGL_LOG_FUNC_ENTER(yagl_mem_get_float, "va = 0x%X", (uint32_t)va);
+    YAGL_LOG_FUNC_ENTER(yagl_mem_put, "va = 0X%X, data = %p, len = %d", (uint32_t)mt->va, data, len);
 
-    ret = cpu_memory_rw_debug(cur_ts->current_env, va, (uint8_t*)value, sizeof(*value), 0);
-
-    if (ret == -1) {
-        YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va);
-
+    if (!mt->va) {
+        assert(false);
+        YAGL_LOG_CRITICAL("mt->va is 0");
         YAGL_LOG_FUNC_EXIT(NULL);
-    } else {
-        YAGL_LOG_FUNC_EXIT("%f", *value);
+        return;
     }
 
-    return ret != -1;
+    while (len > 0) {
+        int l = MIN(len, (TARGET_PAGE_SIZE - offset));
+
+        assert(i < mt->num_pages);
+
+        cpu_physical_memory_write_rom(mt->pages[i++] + offset, data, l);
+
+        offset = 0;
+
+        data += l;
+        len -= l;
+    }
+
+    YAGL_LOG_FUNC_EXIT(NULL);
 }
 
 bool yagl_mem_get(target_ulong va, uint32_t len, void* data)
@@ -95,91 +120,4 @@ bool yagl_mem_get(target_ulong va, uint32_t len, void* data)
     YAGL_LOG_FUNC_EXIT(NULL);
 
     return ret != -1;
-}
-
-bool yagl_mem_get_array(target_ulong va,
-                        target_ulong el_size,
-                        yagl_mem_array_cb cb,
-                        void *user_data)
-{
-    uint8_t buff[TARGET_PAGE_SIZE];
-    target_ulong rem = 0;
-    bool res = true;
-
-    assert(el_size <= sizeof(buff));
-
-    YAGL_LOG_FUNC_ENTER(yagl_mem_get_array, "va = 0x%X, el_size = %u",
-                        (uint32_t)va, (uint32_t)el_size);
-
-    while (true) {
-        target_ulong i;
-        target_ulong len = TARGET_PAGE_SIZE - (va & (TARGET_PAGE_SIZE - 1));
-        len = MIN(len, (sizeof(buff) - rem));
-
-        if (cpu_memory_rw_debug(cur_ts->current_env,
-                                va,
-                                &buff[rem],
-                                len,
-                                0) == -1) {
-            YAGL_LOG_WARN("page fault at 0x%X:%u", (uint32_t)va, (uint32_t)len);
-            res = false;
-            break;
-        }
-
-        rem += len;
-        va += len;
-
-        if (rem < el_size) {
-            YAGL_LOG_WARN("array element crosses page boundaries ?");
-            continue;
-        }
-
-        assert(rem >= el_size);
-
-        len = (rem / el_size);
-
-        for (i = 0; i < len; ++i) {
-            if (!cb(&buff[0] + (el_size * i), user_data)) {
-                goto out;
-            }
-        }
-
-        rem %= el_size;
-
-        if (rem != 0) {
-            YAGL_LOG_WARN("array element crosses page boundaries ?");
-            memmove(&buff[0], &buff[len * el_size], rem);
-        }
-    }
-
-out:
-    YAGL_LOG_FUNC_EXIT(NULL);
-
-    return res;
-}
-
-static bool yagl_mem_get_string_cb(const void *el, void *user_data)
-{
-    const char *c = el;
-    struct yagl_vector *v = user_data;
-
-    yagl_vector_push_back(v, c);
-
-    return (*c != 0);
-}
-
-char *yagl_mem_get_string(target_ulong va)
-{
-    struct yagl_vector v;
-
-    yagl_vector_init(&v, sizeof(char), 0);
-
-    if (yagl_mem_get_array(va, sizeof(char),
-                           &yagl_mem_get_string_cb,
-                           &v)) {
-        return yagl_vector_detach(&v);
-    } else {
-        yagl_vector_cleanup(&v);
-        return NULL;
-    }
 }

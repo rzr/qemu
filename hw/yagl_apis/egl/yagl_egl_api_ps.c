@@ -51,7 +51,7 @@ struct yagl_egl_display *yagl_egl_api_ps_display_get(struct yagl_egl_api_ps *egl
 }
 
 struct yagl_egl_display *yagl_egl_api_ps_display_add(struct yagl_egl_api_ps *egl_api_ps,
-                                                     target_ulong display_id)
+                                                     uint32_t display_id)
 {
     struct yagl_egl_display *dpy;
 

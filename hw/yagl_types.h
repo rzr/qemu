@@ -10,6 +10,8 @@ typedef uint32_t yagl_host_handle;
 typedef uint32_t yagl_object_name;
 typedef uint32_t yagl_winsys_id;
 
+struct yagl_transport;
+
 /*
  * YaGL supported render types.
  */
@@ -44,8 +46,7 @@ typedef enum
 
 #define YAGL_NUM_CLIENT_APIS 4
 
-typedef bool (*yagl_api_func)(uint8_t **/*out_buff*/,
-                              uint8_t */*in_buff*/);
+typedef bool (*yagl_api_func)(struct yagl_transport */*t*/);
 
 static inline float yagl_fixed_to_float(int32_t x)
 {

@@ -205,67 +205,65 @@ bool yagl_gles_array_update_vbo(struct yagl_gles_array *array,
     return true;
 }
 
-bool yagl_gles_array_transfer(struct yagl_gles_array *array,
+void yagl_gles_array_transfer(struct yagl_gles_array *array,
                               uint32_t first,
-                              uint32_t count)
+                              const void *data,
+                              uint32_t size)
 {
     uint32_t host_data_size;
 
-    if (!array->enabled) {
-        return true;
+    if (!array->enabled || array->vbo || !array->target_data) {
+        return;
     }
 
-    if (array->vbo) {
-        yagl_gles_buffer_transfer(array->vbo,
-                                  array->type,
-                                  GL_ARRAY_BUFFER,
-                                  array->need_convert);
-    } else {
-        if (!array->target_data) {
-            return true;
-        }
+    /*
+     * We must take 'first' into account since we're going to
+     * feed 'host_data' to glVertexAttribPointer or whatever, so
+     * the data before 'first' can be garbage, the host won't touch it,
+     * what matters is data starting at 'first' and 'count' elements long.
+     *
+     * Nokia dgles has an implementation of this where there's an extra
+     * variable called 'delta' = first * stride, which is being subtracted
+     * from 'host_data', thus, giving host implementation a bad pointer which
+     * it will increment according to GL rules and will get to what we need.
+     * Though works, I find this approach awkward, so I'll keep with
+     * overallocating for now...
+     */
 
-        /*
-         * We must take 'first' into account since we're going to
-         * feed 'host_data' to glVertexAttribPointer or whatever, so
-         * the data before 'first' can be garbage, the host won't touch it,
-         * what matters is data starting at 'first' and 'count' elements long.
-         *
-         * Nokia dgles has an implementation of this where there's an extra
-         * variable called 'delta' = first * stride, which is being subtracted
-         * from 'host_data', thus, giving host implementation a bad pointer which
-         * it will increment according to GL rules and will get to what we need.
-         * Though works, I find this approach awkward, so I'll keep with
-         * overallocating for now...
-         */
+    host_data_size = first * array->stride + size;
 
-        host_data_size = (first + count) * array->stride;
+    if (host_data_size > array->host_data_size) {
+        array->host_data_size = host_data_size;
+        g_free(array->host_data);
+        array->host_data = g_malloc(array->host_data_size);
+    }
 
-        if (host_data_size > array->host_data_size) {
-            array->host_data_size = host_data_size;
-            g_free(array->host_data);
-            array->host_data = g_malloc(array->host_data_size);
-        }
+    memcpy(array->host_data + (first * array->stride), data, size);
 
-        if (!yagl_mem_get(array->target_data + (first * array->stride),
-                          (count * array->stride),
-                          array->host_data + (first * array->stride))) {
-            return false;
-        }
-
-        if (array->need_convert) {
-            switch (array->type) {
-            case GL_BYTE:
-                yagl_gles1_array_byte_to_short(array, first, count);
-                break;
-            case GL_FIXED:
-                yagl_gles1_array_fixed_to_float(array, first, count);
-                break;
-            }
+    if (array->need_convert) {
+        switch (array->type) {
+        case GL_BYTE:
+            yagl_gles1_array_byte_to_short(array, first, (size / array->stride));
+            break;
+        case GL_FIXED:
+            yagl_gles1_array_fixed_to_float(array, first, (size / array->stride));
+            break;
         }
     }
 
     array->apply(array);
+}
 
-    return true;
+void yagl_gles_array_transfer_vbo(struct yagl_gles_array *array)
+{
+    if (!array->enabled || !array->vbo) {
+        return;
+    }
+
+    yagl_gles_buffer_transfer(array->vbo,
+                              array->type,
+                              GL_ARRAY_BUFFER,
+                              array->need_convert);
+
+    array->apply(array);
 }

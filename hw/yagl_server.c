@@ -2,9 +2,9 @@
 #include "yagl_api.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
-#include "yagl_marshal.h"
 #include "yagl_version.h"
 #include "yagl_log.h"
+#include "yagl_transport.h"
 #include "yagl_egl_backend.h"
 #include "yagl_egl_interface.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
@@ -13,6 +13,19 @@
 #include <GL/gl.h>
 #include "yagl_gles1_driver.h"
 #include "yagl_gles2_driver.h"
+
+static __inline void yagl_marshal_put_uint32_t(uint8_t** buff, uint32_t value)
+{
+    *(uint32_t*)(*buff) = value;
+    *buff += 8;
+}
+
+static __inline uint32_t yagl_marshal_get_uint32_t(uint8_t** buff)
+{
+    uint32_t tmp = *(uint32_t*)*buff;
+    *buff += 8;
+    return tmp;
+}
 
 static struct yagl_thread_state
     *yagl_server_find_thread(struct yagl_server_state *ss,
@@ -40,6 +53,16 @@ struct yagl_server_state
         g_malloc0(sizeof(struct yagl_server_state));
 
     QLIST_INIT(&ss->processes);
+
+    ss->t = yagl_transport_create();
+
+    if (!ss->t) {
+        egl_backend->destroy(egl_backend);
+        gles1_driver->destroy(gles1_driver);
+        gles2_driver->destroy(gles2_driver);
+
+        goto fail;
+    }
 
     ss->apis[yagl_api_id_egl - 1] = yagl_egl_api_create(egl_backend);
 
@@ -78,6 +101,10 @@ fail:
         }
     }
 
+    if (ss->t) {
+        yagl_transport_destroy(ss->t);
+    }
+
     g_free(ss);
 
     return NULL;
@@ -96,6 +123,8 @@ void yagl_server_state_destroy(struct yagl_server_state *ss)
         }
     }
 
+    yagl_transport_destroy(ss->t);
+
     g_free(ss);
 }
 
@@ -112,23 +141,31 @@ void yagl_server_reset(struct yagl_server_state *ss)
 }
 
 /*
- * init command out_buff is:
- *  (uint32_t) version
- * in_buff must be:
- *  (uint32_t) 1 - init ok, 0 - init error
- *  (yagl_render_type), in case of init ok
+ * buff is:
+ *  IN (uint32_t) version
+ *  IN (uint32_t) pid
+ *  IN (uint32_t) tid
+ *  OUT (uint32_t) res: 1 - init ok, 0 - init error
+ *  OUT (uint32_t) render_type: in case of init ok
  */
 bool yagl_server_dispatch_init(struct yagl_server_state *ss,
-                               yagl_pid target_pid,
-                               yagl_tid target_tid,
-                               uint8_t *out_buff,
-                               uint8_t *in_buff)
+                               uint8_t *buff,
+                               yagl_pid *target_pid,
+                               yagl_tid *target_tid)
 {
-    uint32_t version = yagl_marshal_get_uint32(&out_buff);
+    uint8_t *orig_buff;
+    uint32_t version;
     struct yagl_process_state *ps = NULL;
     struct yagl_thread_state *ts = NULL;
+    uint8_t **pages;
 
     YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_init, NULL);
+
+    orig_buff = buff;
+
+    version = yagl_marshal_get_uint32_t(&buff);
+    *target_pid = yagl_marshal_get_uint32_t(&buff);
+    *target_tid = yagl_marshal_get_uint32_t(&buff);
 
     if (version != YAGL_VERSION) {
         YAGL_LOG_CRITICAL(
@@ -136,7 +173,7 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
             version,
             YAGL_VERSION);
 
-        yagl_marshal_put_uint32(&in_buff, 0);
+        yagl_marshal_put_uint32_t(&buff, 0);
 
         YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -144,44 +181,38 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
     }
 
     QLIST_FOREACH(ps, &ss->processes, entry) {
-        if (ps->id == target_pid) {
+        if (ps->id == *target_pid) {
             /*
              * Process already exists.
              */
 
-            ts = yagl_process_find_thread(ps, target_tid);
+            ts = yagl_process_find_thread(ps, *target_tid);
 
             if (ts) {
                 YAGL_LOG_CRITICAL(
                     "thread %u already initialized in process %u",
-                    target_tid, target_pid);
+                    *target_tid, *target_pid);
 
-                yagl_marshal_put_uint32(&in_buff, 0);
+                yagl_marshal_put_uint32_t(&buff, 0);
 
                 YAGL_LOG_FUNC_EXIT(NULL);
 
                 return false;
             } else {
-                ts = yagl_process_add_thread(ps, target_tid);
+                ts = yagl_process_add_thread(ps, *target_tid);
 
                 if (!ts) {
                     YAGL_LOG_CRITICAL(
                         "cannot add thread %u to process %u",
-                        target_tid, target_pid);
+                        *target_tid, *target_pid);
 
-                    yagl_marshal_put_uint32(&in_buff, 0);
+                    yagl_marshal_put_uint32_t(&buff, 0);
 
                     YAGL_LOG_FUNC_EXIT(NULL);
 
                     return false;
                 } else {
-                    yagl_marshal_put_uint32(&in_buff, 1);
-                    yagl_marshal_put_render_type(&in_buff,
-                                                 ps->egl_iface->render_type);
-
-                    YAGL_LOG_FUNC_EXIT(NULL);
-
-                    return true;
+                    goto out;
                 }
             }
         }
@@ -191,30 +222,28 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
      * No process found, create one.
      */
 
-    ps = yagl_process_state_create(ss, target_pid);
+    ps = yagl_process_state_create(ss, *target_pid);
 
     if (!ps) {
-        YAGL_LOG_CRITICAL(
-            "cannot create process %u",
-            target_pid);
+        YAGL_LOG_CRITICAL("cannot create process %u", *target_pid);
 
-        yagl_marshal_put_uint32(&in_buff, 0);
+        yagl_marshal_put_uint32_t(&buff, 0);
 
         YAGL_LOG_FUNC_EXIT(NULL);
 
         return false;
     }
 
-    ts = yagl_process_add_thread(ps, target_tid);
+    ts = yagl_process_add_thread(ps, *target_tid);
 
     if (!ts) {
         YAGL_LOG_CRITICAL(
             "cannot add thread %u to process %u",
-            target_tid, target_pid);
+            *target_tid, *target_pid);
 
         yagl_process_state_destroy(ps);
 
-        yagl_marshal_put_uint32(&in_buff, 0);
+        yagl_marshal_put_uint32_t(&buff, 0);
 
         YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -222,35 +251,110 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
     } else {
         QLIST_INSERT_HEAD(&ss->processes, ps, entry);
 
-        yagl_marshal_put_uint32(&in_buff, 1);
-        yagl_marshal_put_render_type(&in_buff, ps->egl_iface->render_type);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        return true;
+        goto out;
     }
+
+out:
+    pages = g_malloc0(2 * sizeof(*pages));
+
+    pages[0] = orig_buff;
+
+    yagl_thread_set_buffer(ts, pages);
+
+    yagl_marshal_put_uint32_t(&buff, 1);
+    yagl_marshal_put_uint32_t(&buff, ps->egl_iface->render_type);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+
+    return true;
 }
 
-void yagl_server_dispatch(struct yagl_server_state *ss,
-                          yagl_pid target_pid,
-                          yagl_tid target_tid,
-                          uint8_t *out_buff,
-                          uint8_t *in_buff)
+/*
+ * buff is:
+ *  IN (uint32_t) count
+ *  IN (uint32_t) phys_addr
+ *  ...
+ *  IN (uint32_t) phys_addr
+ *  OUT (uint32_t) res: 1 - update ok, no change - update error
+ */
+void yagl_server_dispatch_update(struct yagl_server_state *ss,
+                                 yagl_pid target_pid,
+                                 yagl_tid target_tid,
+                                 uint8_t *buff)
+{
+    struct yagl_thread_state *ts;
+    uint32_t i, count = 0;
+    uint8_t **pages = NULL;
+
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_update, NULL);
+
+    ts = yagl_server_find_thread(ss, target_pid, target_tid);
+
+    if (!ts) {
+        YAGL_LOG_CRITICAL("process/thread %u/%u not found",
+                          target_pid, target_tid);
+        goto fail;
+    }
+
+    count = yagl_marshal_get_uint32_t(&buff);
+
+    if (count > ((TARGET_PAGE_SIZE / 8) - 2)) {
+        YAGL_LOG_CRITICAL("bad count = %u", count);
+        goto fail;
+    }
+
+    pages = g_malloc0((count + 1) * sizeof(*pages));
+
+    for (i = 0; i < count; ++i) {
+        hwaddr page_pa = yagl_marshal_get_uint32_t(&buff);
+        hwaddr len = TARGET_PAGE_SIZE;
+
+        pages[i] = cpu_physical_memory_map(page_pa, &len, false);
+
+        if (!pages[i] || (len != TARGET_PAGE_SIZE)) {
+            YAGL_LOG_CRITICAL("cpu_physical_memory_map(read) failed for page_pa = 0x%X",
+                              (uint32_t)page_pa);
+            goto fail;
+        }
+    }
+
+    yagl_thread_set_buffer(ts, pages);
+
+    yagl_marshal_put_uint32_t(&buff, 1);
+
+    goto out;
+
+fail:
+    for (i = count; i > 0; --i) {
+        if (pages[i - 1]) {
+            cpu_physical_memory_unmap(pages[i - 1],
+                                      TARGET_PAGE_SIZE,
+                                      false,
+                                      TARGET_PAGE_SIZE);
+        }
+    }
+    g_free(pages);
+
+out:
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+void yagl_server_dispatch_batch(struct yagl_server_state *ss,
+                                yagl_pid target_pid,
+                                yagl_tid target_tid,
+                                uint32_t offset)
 {
     struct yagl_thread_state *ts;
 
-    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch, NULL);
+    YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_batch, NULL);
 
     ts = yagl_server_find_thread(ss, target_pid, target_tid);
 
     if (ts) {
-        yagl_thread_call(ts, out_buff, in_buff);
+        yagl_thread_call(ts, offset);
     } else {
-        YAGL_LOG_CRITICAL(
-            "process/thread %u/%u not found",
-            target_pid, target_tid);
-
-        yagl_marshal_put_call_result(&in_buff, yagl_call_result_fail);
+        YAGL_LOG_CRITICAL("process/thread %u/%u not found",
+                          target_pid, target_tid);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -267,9 +371,8 @@ void yagl_server_dispatch_exit(struct yagl_server_state *ss,
     YAGL_LOG_FUNC_ENTER(yagl_server_dispatch_exit, NULL);
 
     if (!ts) {
-        YAGL_LOG_CRITICAL(
-            "process/thread %u/%u not found",
-            target_pid, target_tid);
+        YAGL_LOG_CRITICAL("process/thread %u/%u not found",
+                          target_pid, target_tid);
 
         YAGL_LOG_FUNC_EXIT(NULL);
 

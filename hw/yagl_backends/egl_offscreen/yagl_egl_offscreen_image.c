@@ -11,27 +11,27 @@
 
 YAGL_DECLARE_TLS(struct yagl_egl_offscreen_ts*, egl_offscreen_ts);
 
-static bool yagl_egl_offscreen_image_update(struct yagl_eglb_image *image,
+static void yagl_egl_offscreen_image_update(struct yagl_eglb_image *image,
                                             uint32_t width,
                                             uint32_t height,
                                             uint32_t bpp,
-                                            target_ulong pixels)
+                                            const void *pixels)
 {
     struct yagl_eglb_context *ctx =
         (egl_offscreen_ts->ctx ? &egl_offscreen_ts->ctx->base : NULL);
 
     if (!ctx) {
-        return true;
+        return;
     }
 
     if (!image->glegl_image) {
         image->glegl_image = ctx->client_ctx->create_image(ctx->client_ctx);
         if (!image->glegl_image) {
-            return true;
+            return;
         }
     }
 
-    return image->glegl_image->update(image->glegl_image, width, height, bpp, pixels);
+    image->glegl_image->update(image->glegl_image, width, height, bpp, pixels);
 }
 
 static void yagl_egl_offscreen_image_destroy(struct yagl_eglb_image *image)

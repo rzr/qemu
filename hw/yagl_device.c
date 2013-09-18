@@ -1,7 +1,6 @@
 #include "yagl_server.h"
 #include "yagl_log.h"
 #include "yagl_handle_gen.h"
-#include "yagl_marshal.h"
 #include "yagl_stats.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
@@ -33,7 +32,7 @@
 
 struct yagl_user
 {
-    uint8_t *buff;
+    bool activated;
     yagl_pid process_id;
     yagl_tid thread_id;
 };
@@ -46,83 +45,66 @@ typedef struct YaGLState
     MemoryRegion iomem;
     struct yagl_server_state *ss;
     struct yagl_user users[YAGL_MAX_USERS];
-
-    /*
-     * YAGL_MARSHAL_MAX_RESPONSE byte buffer to hold the response.
-     */
-    uint8_t *in_buff;
 } YaGLState;
 
 #define TYPE_YAGL_DEVICE "yagl"
 
-static void yagl_device_operate(YaGLState *s,
-                                int user_index,
-                                hwaddr buff_pa)
+static void yagl_device_operate(YaGLState *s, int user_index, hwaddr buff_pa)
 {
     yagl_pid target_pid;
     yagl_tid target_tid;
-    hwaddr buff_len = YAGL_MARSHAL_SIZE;
-    uint8_t *buff = NULL, *tmp = NULL;
+    hwaddr buff_len = TARGET_PAGE_SIZE;
+    uint8_t *buff = NULL;
 
     YAGL_LOG_FUNC_ENTER(yagl_device_operate,
-                        "user_index = %d, buff_ptr = 0x%X",
+                        "user_index = %d, buff_pa = 0x%X",
                         user_index,
                         (uint32_t)buff_pa);
 
-    if (buff_pa && s->users[user_index].buff) {
-        YAGL_LOG_CRITICAL("user %d is already activated", user_index);
-        goto out;
-    }
-
-    if (!buff_pa && !s->users[user_index].buff) {
+    if (!buff_pa && !s->users[user_index].activated) {
         YAGL_LOG_CRITICAL("user %d is not activated", user_index);
         goto out;
     }
 
     if (buff_pa) {
-        /*
-         * Activate user.
-         */
-
         buff = cpu_physical_memory_map(buff_pa, &buff_len, false);
 
-        if (!buff || (buff_len != YAGL_MARSHAL_SIZE)) {
-            YAGL_LOG_CRITICAL("cpu_physical_memory_map(read) failed for user %d, buff_ptr = 0x%X",
+        if (!buff || (buff_len != TARGET_PAGE_SIZE)) {
+            YAGL_LOG_CRITICAL("cpu_physical_memory_map(read) failed for user %d, buff_pa = 0x%X",
                               user_index,
                               (uint32_t)buff_pa);
             goto out;
         }
 
-        tmp = buff;
+        if (s->users[user_index].activated) {
+            /*
+             * Update user.
+             */
 
-        yagl_marshal_skip(&tmp);
+            yagl_server_dispatch_update(s->ss,
+                                        s->users[user_index].process_id,
+                                        s->users[user_index].thread_id,
+                                        buff);
+        } else {
+            /*
+             * Activate user.
+             */
 
-        target_pid = yagl_marshal_get_pid(&tmp);
-        target_tid = yagl_marshal_get_tid(&tmp);
+            if (yagl_server_dispatch_init(s->ss,
+                                          buff,
+                                          &target_pid,
+                                          &target_tid)) {
+                s->users[user_index].activated = true;
+                s->users[user_index].process_id = target_pid;
+                s->users[user_index].thread_id = target_tid;
 
-        YAGL_LOG_TRACE("pid = %u, tid = %u", target_pid, target_tid);
+                YAGL_LOG_INFO("user %d activated", user_index);
 
-        if (!target_pid || !target_tid) {
-            YAGL_LOG_CRITICAL(
-                "target-host protocol error, zero pid or tid from target");
-            goto out;
-        }
-
-        if (yagl_server_dispatch_init(s->ss,
-                                      target_pid,
-                                      target_tid,
-                                      buff,
-                                      s->in_buff)) {
-
-            memcpy(buff, s->in_buff, YAGL_MARSHAL_MAX_RESPONSE);
-
-            s->users[user_index].buff = buff;
-            s->users[user_index].process_id = target_pid;
-            s->users[user_index].thread_id = target_tid;
-
-            buff = NULL;
-
-            YAGL_LOG_INFO("user %d activated", user_index);
+                /*
+                 * The buff is now owned by client.
+                 */
+                buff = NULL;
+            }
         }
     } else {
         /*
@@ -133,11 +115,6 @@ static void yagl_device_operate(YaGLState *s,
                                   s->users[user_index].process_id,
                                   s->users[user_index].thread_id);
 
-        cpu_physical_memory_unmap(s->users[user_index].buff,
-                                  YAGL_MARSHAL_SIZE,
-                                  0,
-                                  YAGL_MARSHAL_SIZE);
-
         memset(&s->users[user_index], 0, sizeof(s->users[user_index]));
 
         YAGL_LOG_INFO("user %d deactivated", user_index);
@@ -146,32 +123,27 @@ static void yagl_device_operate(YaGLState *s,
 out:
     if (buff) {
         cpu_physical_memory_unmap(buff,
-                                  YAGL_MARSHAL_SIZE,
+                                  TARGET_PAGE_SIZE,
                                   0,
-                                  YAGL_MARSHAL_SIZE);
+                                  TARGET_PAGE_SIZE);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static void yagl_device_trigger(YaGLState *s, int user_index)
+static void yagl_device_trigger(YaGLState *s, int user_index, uint32_t offset)
 {
-    YAGL_LOG_FUNC_ENTER(yagl_device_trigger, "%d", user_index);
+    YAGL_LOG_FUNC_ENTER(yagl_device_trigger, "%d, %u", user_index, offset);
 
-    if (!s->users[user_index].buff) {
+    if (s->users[user_index].activated) {
+        yagl_server_dispatch_batch(s->ss,
+                                   s->users[user_index].process_id,
+                                   s->users[user_index].thread_id,
+                                   offset);
+    } else {
         YAGL_LOG_CRITICAL("user %d not activated", user_index);
-        goto out;
     }
 
-    yagl_server_dispatch(s->ss,
-                         s->users[user_index].process_id,
-                         s->users[user_index].thread_id,
-                         s->users[user_index].buff,
-                         s->in_buff);
-
-    memcpy(s->users[user_index].buff, s->in_buff, YAGL_MARSHAL_MAX_RESPONSE);
-
-out:
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
@@ -200,7 +172,7 @@ static void yagl_device_write(void *opaque, hwaddr offset,
         yagl_device_operate(s, user_index, value);
         break;
     case YAGL_REG_TRIGGER:
-        yagl_device_trigger(s, user_index);
+        yagl_device_trigger(s, user_index, value);
         break;
     default:
         YAGL_LOG_CRITICAL("user %d, bad offset = %d", user_index, offset);
@@ -234,8 +206,6 @@ static int yagl_device_init(PCIDevice *dev)
                           YAGL_MEM_SIZE);
 
     yagl_handle_gen_init();
-
-    yagl_stats_init();
 
     egl_driver = yagl_egl_driver_create(s->display);
 
@@ -287,8 +257,6 @@ static int yagl_device_init(PCIDevice *dev)
         goto fail;
     }
 
-    s->in_buff = g_malloc(YAGL_MARSHAL_MAX_RESPONSE);
-
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->iomem);
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -311,8 +279,6 @@ fail:
     if (egl_driver) {
         egl_driver->destroy(egl_driver);
     }
-
-    yagl_stats_cleanup();
 
     yagl_handle_gen_cleanup();
 
@@ -349,12 +315,7 @@ static void yagl_device_exit(PCIDevice *dev)
 
     memory_region_destroy(&s->iomem);
 
-    g_free(s->in_buff);
-    s->in_buff = NULL;
-
     yagl_server_state_destroy(s->ss);
-
-    yagl_stats_cleanup();
 
     yagl_handle_gen_cleanup();
 

@@ -3,9 +3,8 @@
 #include "yagl_server.h"
 #include "yagl_api.h"
 #include "yagl_log.h"
-#include "yagl_marshal.h"
 #include "yagl_stats.h"
-#include "yagl_mem_transfer.h"
+#include "yagl_transport.h"
 #include "sysemu/kvm.h"
 #include "sysemu/hax.h"
 
@@ -27,6 +26,7 @@ static __inline void yagl_cpu_synchronize_state(struct yagl_process_state *ps)
 static void *yagl_thread_func(void* arg)
 {
     struct yagl_thread_state *ts = arg;
+    struct yagl_transport *t = ts->ps->ss->t;
     int i;
 
     cur_ts = ts;
@@ -59,12 +59,7 @@ static void *yagl_thread_func(void* arg)
     }
 
     while (true) {
-        yagl_call_result res = yagl_call_result_ok;
-        uint8_t *current_buff;
-        uint8_t *tmp;
-#ifdef CONFIG_YAGL_STATS
         uint32_t num_calls = 0;
-#endif
 
         yagl_event_wait(&ts->call_event);
 
@@ -72,19 +67,9 @@ static void *yagl_thread_func(void* arg)
             break;
         }
 
-        current_buff = ts->current_out_buff;
-
         YAGL_LOG_TRACE("batch started");
 
-        /*
-         * current_buff is:
-         *  (yagl_api_id) api_id
-         *  (yagl_func_id) func_id
-         *  ... api_id/func_id dependent
-         * current_in_buff must be:
-         *  (uint32_t) 1/0 - call ok/failed
-         *  ... api_id/func_id dependent
-         */
+        yagl_transport_begin(t, ts->pages, ts->offset);
 
         while (true) {
             yagl_api_id api_id;
@@ -92,31 +77,17 @@ static void *yagl_thread_func(void* arg)
             struct yagl_api_ps *api_ps;
             yagl_api_func func;
 
-            if (current_buff >= (ts->current_out_buff + YAGL_MARSHAL_SIZE)) {
-                YAGL_LOG_CRITICAL("batch passes the end of buffer, protocol error");
-
-                res = yagl_call_result_fail;
-
-                break;
-            }
-
-            api_id = yagl_marshal_get_api_id(&current_buff);
+            yagl_transport_begin_call(t, &api_id, &func_id);
 
             if (api_id == 0) {
                 /*
                  * Batch ended.
                  */
-
                 break;
             }
 
-            func_id = yagl_marshal_get_func_id(&current_buff);
-
             if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
                 YAGL_LOG_CRITICAL("target-host protocol error, bad api_id - %u", api_id);
-
-                res = yagl_call_result_fail;
-
                 break;
             }
 
@@ -124,60 +95,33 @@ static void *yagl_thread_func(void* arg)
 
             if (!api_ps) {
                 YAGL_LOG_CRITICAL("uninitialized api - %u. host logic error", api_id);
-
-                res = yagl_call_result_fail;
-
                 break;
             }
 
             func = api_ps->get_func(api_ps, func_id);
 
             if (func) {
-                tmp = ts->current_in_buff;
-
-                yagl_marshal_skip(&tmp);
-
-                if (!func(&current_buff, tmp)) {
+                if (func(t)) {
+                    yagl_transport_end_call(t);
+                } else {
                     /*
-                     * Retry is requested. Check if this is the last function
-                     * in the batch, if it's not, then there's a logic error
-                     * in target <-> host interaction.
+                     * Retry is requested.
                      */
-
-                    if (((current_buff + 8) > (ts->current_out_buff + YAGL_MARSHAL_SIZE)) ||
-                        (yagl_marshal_get_api_id(&current_buff) != 0)) {
-                        YAGL_LOG_CRITICAL("retry request not at the end of the batch");
-
-                        res = yagl_call_result_fail;
-                    } else {
-                        res = yagl_call_result_retry;
-                    }
-
                     break;
                 }
             } else {
                 YAGL_LOG_CRITICAL("bad function call (api = %u, func = %u)",
                                   api_id,
                                   func_id);
-
-                res = yagl_call_result_fail;
-
                 break;
             }
 
-#ifdef CONFIG_YAGL_STATS
             ++num_calls;
-#endif
         }
 
         YAGL_LOG_TRACE("batch ended");
 
-        tmp = ts->current_in_buff;
-
-        yagl_stats_batch(num_calls,
-            (ts->current_out_buff + YAGL_MARSHAL_SIZE - current_buff));
-
-        yagl_marshal_put_call_result(&tmp, res);
+        yagl_stats_batch(num_calls, yagl_transport_bytes_processed(t));
 
         yagl_event_set(&ts->call_processed_event);
     }
@@ -234,11 +178,6 @@ struct yagl_thread_state
     ts->id = id;
     ts->is_first = is_first;
 
-    ts->mt1 = yagl_mem_transfer_create();
-    ts->mt2 = yagl_mem_transfer_create();
-    ts->mt3 = yagl_mem_transfer_create();
-    ts->mt4 = yagl_mem_transfer_create();
-
     yagl_event_init(&ts->call_event, 0, 0);
     yagl_event_init(&ts->call_processed_event, 0, 0);
 
@@ -270,23 +209,36 @@ void yagl_thread_state_destroy(struct yagl_thread_state *ts,
     yagl_event_cleanup(&ts->call_processed_event);
     yagl_event_cleanup(&ts->call_event);
 
-    yagl_mem_transfer_destroy(ts->mt1);
-    yagl_mem_transfer_destroy(ts->mt2);
-    yagl_mem_transfer_destroy(ts->mt3);
-    yagl_mem_transfer_destroy(ts->mt4);
+    yagl_thread_set_buffer(ts, NULL);
 
     g_free(ts);
 }
 
-void yagl_thread_call(struct yagl_thread_state *ts,
-                      uint8_t *out_buff,
-                      uint8_t *in_buff)
+void yagl_thread_set_buffer(struct yagl_thread_state *ts, uint8_t **pages)
+{
+    if (ts->pages) {
+        uint8_t **tmp;
+
+        for (tmp = ts->pages; *tmp; ++tmp) {
+            cpu_physical_memory_unmap(*tmp,
+                                      TARGET_PAGE_SIZE,
+                                      false,
+                                      TARGET_PAGE_SIZE);
+        }
+
+        g_free(ts->pages);
+        ts->pages = NULL;
+    }
+
+    ts->pages = pages;
+}
+
+void yagl_thread_call(struct yagl_thread_state *ts, uint32_t offset)
 {
     assert(current_cpu);
 
-    ts->current_out_buff = out_buff;
-    ts->current_in_buff = in_buff;
     ts->current_env = current_cpu;
+    ts->offset = offset;
 
     yagl_cpu_synchronize_state(ts->ps);
 
@@ -294,4 +246,5 @@ void yagl_thread_call(struct yagl_thread_state *ts,
     yagl_event_wait(&ts->call_processed_event);
 
     ts->current_env = NULL;
+    ts->offset = 0;
 }
