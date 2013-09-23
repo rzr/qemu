@@ -166,8 +166,8 @@ public class EmulatorSkin {
 
 	protected EmulatorSkinState currentState;
 
-	private boolean isDisplayDragging;
-	private boolean isShutdownRequested;
+	protected boolean isDisplayDragging;
+	protected boolean isShutdownRequested;
 	private boolean isAboutToReopen;
 	public boolean isOnTop;
 	public boolean isKeyWindow;
@@ -1260,11 +1260,29 @@ public class EmulatorSkin {
 	}
 
 	protected void displayOn() {
-		/* abstract */
+		logger.info("display on");
+
+		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
+			isDisplayOn = true;
+		}
 	}
 
 	protected void displayOff() {
-		/* abstract */
+		logger.info("display off");
+
+		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
+			isDisplayOn = false;
+		}
+
+		if (isDisplayDragging == true) {
+			logger.info("auto release : mouseEvent");
+			MouseEventData mouseEventData = new MouseEventData(
+					0, MouseEventType.RELEASE.value(),
+					0, 0, 0, 0, 0);
+
+			communicator.sendToQEMU(
+					SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+		}
 	}
 
 	/* for popup menu */
