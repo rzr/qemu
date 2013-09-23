@@ -85,6 +85,7 @@ typedef  struct EmulatorConfigInfo {
     int max_touch_point;
     int vm_base_port;
     int device_serial_number;
+    char *vm_name;
     /* add here */
 } EmulatorConfigInfo;
 
@@ -113,6 +114,7 @@ void set_emulator_condition(int state);
 void set_emul_rotation(short rotation_type);
 void set_emul_caps_lock_state(int state);
 void set_emul_num_lock_state(int state);
+void set_emul_vm_name(char *vm_name);
 
 /* getter */
 int get_emul_skin_enable(void);
@@ -133,6 +135,6 @@ int get_host_lock_key_state(int key);
 int get_host_lock_key_state_darwin(int key);
 int get_emul_caps_lock_state(void);
 int get_emul_num_lock_state(void);
-
+char* get_emul_vm_name(void);
 
 #endif /* __EMUL_STATE_H__ */

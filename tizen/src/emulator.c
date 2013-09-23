@@ -225,6 +225,7 @@ static void set_image_and_log_path(char *qemu_argv)
         strcpy(tizen_target_path, g_path_get_dirname(path));
     }
 
+    set_emul_vm_name(g_path_get_basename(tizen_target_path));
     strcpy(tizen_target_img_path, path);
     free(path);
 

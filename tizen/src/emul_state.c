@@ -261,3 +261,14 @@ int get_emul_num_lock_state(void)
     return _emul_state.qemu_num_lock;
 }
 
+/* emualtor vm name */
+void set_emul_vm_name(char *vm_name)
+{
+    _emul_info.vm_name = vm_name;
+}
+
+char* get_emul_vm_name(void)
+{
+    return _emul_info.vm_name;
+}
+
