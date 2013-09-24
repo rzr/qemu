@@ -98,12 +98,21 @@ void do_mouse_event(int button_type, int event_type,
     int origin_x, int origin_y, int x, int y, int z)
 {
     if (brightness_off) {
-        TRACE("reject mouse touch in lcd off = button:%d, type:%d, x:%d, y:%d, z:%d\n",
-            button_type, event_type, x, y, z);
-        return;
+        if (button_type == 0) {
+            INFO("auto mouse release\n");
+            kbd_mouse_event(0, 0, 0, 0);
+
+            return;
+        } else {
+            TRACE("reject mouse touch in display off : "
+                    "button=%d, type=%d, x=%d, y=%d, z=%d\n",
+                    button_type, event_type, x, y, z);
+            return;
+        }
     }
 
-    TRACE("mouse_event button:%d, type:%d, host:(%d, %d), x:%d, y:%d, z:%d\n",
+    TRACE("mouse event : button=%d, type=%d, "
+        "host=(%d, %d), x=%d, y=%d, z=%d\n",
         button_type, event_type, origin_x, origin_y, x, y, z);
 
 #ifndef CONFIG_USE_SHM
@@ -127,8 +136,7 @@ void do_mouse_event(int button_type, int event_type,
             pressing_origin_y = origin_y;
 
             kbd_mouse_event(x, y, z, 1);
-            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
-            event_type, origin_x, origin_y, x, y, z);
+
             break;
         case MOUSE_UP:
             guest_x = x;
@@ -137,8 +145,7 @@ void do_mouse_event(int button_type, int event_type,
             pressing_origin_x = pressing_origin_y = -1;
 
             kbd_mouse_event(x, y, z, 0);
-            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
-            event_type, origin_x, origin_y, x, y, z);
+
             break;
         case MOUSE_WHEELUP:
         case MOUSE_WHEELDOWN:
@@ -153,16 +160,14 @@ void do_mouse_event(int button_type, int event_type,
             }
 
             kbd_mouse_event(x, y, -z, event_type);
-            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
-            event_type, origin_x, origin_y, x, y, z);
+
             break;
         case MOUSE_MOVE:
             guest_x = x;
             guest_y = y;
 
             kbd_mouse_event(x, y, z, event_type);
-            TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
-            event_type, origin_x, origin_y, x, y, z);
+
             break;
         default:
             ERR("undefined mouse event type passed:%d\n", event_type);

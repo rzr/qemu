@@ -392,35 +392,23 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	@Override
 	public void displayOn() {
-		logger.info("display on");
-		if (super.config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
-			super.isDisplayOn = true;
-
-//		if (pollThread.isAlive()) {
-//			pollThread.setWaitIntervalTime(30);
-//
-//			synchronized(pollThread) {
-//				pollThread.notify();
-//			}
-//		}
+		super.displayOn();
 	}
 
 	@Override
 	public void displayOff() {
-		logger.info("display off");
-		if (super.config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
-			super.isDisplayOn = false;
+		super.displayOff();
 
-//		if (pollThread.isAlive()) {
-//			pollThread.setWaitIntervalTime(0);
-//
-//			shell.getDisplay().asyncExec(new Runnable() {
-//				@Override
-//				public void run() {
-//					lcdCanvas.redraw();
-//				}
-//			});
-//		}
+		/*if (pollThread.isAlive()) {
+			pollThread.setWaitIntervalTime(0);
+
+			shell.getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					lcdCanvas.redraw();
+				}
+			});
+		}*/
 	}
 
 	/* mouse event */
