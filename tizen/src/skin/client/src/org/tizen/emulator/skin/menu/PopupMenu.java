@@ -333,7 +333,8 @@ public class PopupMenu {
 		ecpItem = new MenuItem(menu, SWT.PUSH);
 		{
 			ecpItem.setText(ECP_NAME);
-		
+			ecpItem.setImage(imageRegistry.getIcon(IconName.ECP));
+
 			SelectionAdapter ecpListener = skin.createEcpMenu();
 			ecpItem.addSelectionListener(ecpListener);
 		}

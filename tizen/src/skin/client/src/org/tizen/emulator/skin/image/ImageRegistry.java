@@ -87,6 +87,7 @@ public class ImageRegistry {
 		ROTATE("rotate.png"),
 		SCALE("scale.png"),
 		SHELL("shell.png"),
+		ECP("ecp.png"),
 		ADVANCED("advanced.png"),
 		CLOSE("close.png"),
 		SCREENSHOT("screenshot.png"),
