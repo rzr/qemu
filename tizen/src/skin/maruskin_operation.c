@@ -47,9 +47,8 @@
 #include "emul_state.h"
 #include "maruskin_keymap.h"
 #include "maruskin_server.h"
-#include "emul_state.h"
 #include "hw/maru_pm.h"
-#include "emul_state.h"
+#include "ecs/ecs.h"
 
 #ifdef CONFIG_HAX
 #include "guest_debug.h"
@@ -307,7 +306,7 @@ void do_hardkey_event(int event_type, int keycode)
 
 void do_scale_event(double scale_factor)
 {
-    INFO("do_scale_event scale_factor:%lf\n", scale_factor);
+    INFO("do_scale_event scale_factor : %lf\n", scale_factor);
 
     set_emul_win_scale(scale_factor);
 
@@ -321,38 +320,36 @@ void do_scale_event(double scale_factor)
 
 void do_rotation_event(int rotation_type)
 {
+    INFO("do_rotation_event rotation_type : %d\n", rotation_type);
 
-    INFO( "do_rotation_event rotation_type:%d\n", rotation_type);
+    int x = 0, y = 0, z = 0;
 
-    set_emul_rotation( rotation_type );
-}
-
-void send_rotation_event(int rotation_type)
-{
-
-    INFO( "send_rotation_event rotation_type:%d\n", rotation_type);
-
-    char send_buf[32] = { 0 };
-
-    switch ( rotation_type ) {
+    switch (rotation_type) {
         case ROTATION_PORTRAIT:
-            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
+            x = 0;
+            y = 9.80665;
+            z = 0;
             break;
         case ROTATION_LANDSCAPE:
-            sprintf( send_buf, "1\n3\n9.80665\n0\n0\n" );
+            x = 9.80665;
+            y = 0;
+            z = 0;
             break;
         case ROTATION_REVERSE_PORTRAIT:
-            sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
+            x = 0;
+            y = -9.80665;
+            z = 0;
             break;
         case ROTATION_REVERSE_LANDSCAPE:
-            sprintf(send_buf, "1\n3\n-9.80665\n0\n0\n");
+            x = -9.80665;
+            y = 0;
+            z = 0;
             break;
-
         default:
             break;
     }
 
-    send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
+    req_set_sensor_accel(x, y, z);
 }
 
 void set_maru_screenshot(DisplaySurface *surface)

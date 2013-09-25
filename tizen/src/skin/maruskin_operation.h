@@ -58,7 +58,6 @@ void do_key_event(int event_type,
 void do_hardkey_event(int event_type, int keycode);
 void do_scale_event(double scale_factor);
 void do_rotation_event(int rotation_type);
-void send_rotation_event(int rotation_type);
 
 QemuSurfaceInfo *get_screenshot_info(void);
 DetailInfo *get_detail_info(int qemu_argc, char **qemu_argv);

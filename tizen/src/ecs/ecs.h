@@ -175,6 +175,9 @@ enum{
     CONTROL_COMMAND_SCREENSHOT_REQ = 2
 };
 
+/* request */
+void req_set_sensor_accel(int x, int y, int z);
+
 // control sub messages
 void msgproc_control_hostkeyboard_req(ECS_Client *cli, ECS__HostKeyboardReq* req);
 

@@ -934,11 +934,11 @@ static void* run_skin_server(void* args)
                     break;
                 }
                 case RECV_CHANGE_LCD_STATE: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_CHANGE_LCD_STATE ==\n" );
-                    TRACE( log_buf );
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_CHANGE_LCD_STATE ==\n");
+                    TRACE(log_buf);
 
-                    if ( 0 >= length ) {
-                        ERR( "there is no data looking at 0 length." );
+                    if (0 >= length) {
+                        ERR("there is no data looking at 0 length.");
                         continue;
                     }
 
@@ -946,33 +946,37 @@ static void* run_skin_server(void* args)
                     int scale = 0;
                     double scale_ratio = 0.0;
                     short rotation_type = 0;
-                    int is_rotate = 0;
 
                     char* p = recvbuf;
-                    memcpy( &scale, p, sizeof( scale ) );
-                    p += sizeof( scale );
-                    memcpy( &rotation_type, p, sizeof( rotation_type ) );
+                    memcpy(&scale, p, sizeof(scale));
+                    p += sizeof(scale);
+                    memcpy(&rotation_type, p, sizeof(rotation_type));
 
-                    scale = ntohl( scale );
-                    scale_ratio = ( (double) scale ) / 100;
-                    rotation_type = ntohs( rotation_type );
+                    scale = ntohl(scale);
+                    scale_ratio = ((double) scale) / 100;
+                    rotation_type = ntohs(rotation_type);
 
-                    if ( get_emul_win_scale() != scale_ratio ) {
-                        do_scale_event( scale_ratio );
+                    /* scaling */
+                    if (get_emul_win_scale() != scale_ratio) {
+                        do_scale_event(scale_ratio);
                     }
 
-                    if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation_type ) {
-                        do_rotation_event( rotation_type );
-                        is_rotate = 1;
+                    /* rotation */
+                    bool is_rotate = false;
+                    if (is_sensord_initialized == 1 && get_emul_rotation() != rotation_type) {
+                        set_emul_rotation(rotation_type);
+                        is_rotate = true;
                     }
 
 #ifndef CONFIG_USE_SHM
-                    maruskin_sdl_resize(); /* send sdl event */
+                    maruskin_sdl_resize();
 #else
                     maruskin_shm_resize();
 #endif
-                    if (is_rotate) {
-                        send_rotation_event( rotation_type );
+
+                    /* after display resizing */
+                    if (is_rotate == true) {
+                        do_rotation_event(rotation_type);
                     }
 
                     break;

@@ -89,7 +89,16 @@ static int accel_min_max(char* tmp)
     return value;
 }
 
-static void req_set_sensor_accel(int len, const char* data)
+void req_set_sensor_accel(int x, int y, int z)
+{
+    char tmp[TEMP_BUF_SIZE] = { 0, };
+
+    sprintf(tmp, "%d, %d, %d", x, y, z);
+
+    set_sensor_accel(tmp, strlen(tmp));
+}
+
+static void _req_set_sensor_accel(int len, const char* data)
 {
     char tmp[TEMP_BUF_SIZE];
     int x, y, z;
@@ -116,7 +125,7 @@ static void req_set_sensor_accel(int len, const char* data)
     set_sensor_accel(tmp, strlen(tmp));
 }
 
-static void req_set_sensor_proxi(int len, const char* data)
+static void _req_set_sensor_proxi(int len, const char* data)
 {
     char tmp[TEMP_BUF_SIZE];
 
@@ -129,7 +138,7 @@ static void req_set_sensor_proxi(int len, const char* data)
     set_sensor_proxi(tmp, strlen(tmp));
 }
 
-static void req_set_sensor_light(int len, const char* data)
+static void _req_set_sensor_light(int len, const char* data)
 {
     char tmp[TEMP_BUF_SIZE];
     int x;
@@ -149,7 +158,7 @@ static void req_set_sensor_light(int len, const char* data)
     }
 }
 
-static void req_set_sensor_gyro(int len, const char* data)
+static void _req_set_sensor_gyro(int len, const char* data)
 {
     char tmp[TEMP_BUF_SIZE];
     int x, y, z;
@@ -176,7 +185,7 @@ static void req_set_sensor_gyro(int len, const char* data)
     set_sensor_gyro(tmp, strlen(tmp));
 }
 
-static void req_set_sensor_geo(int len, const char* data)
+static void _req_set_sensor_geo(int len, const char* data)
 {
     char tmp[TEMP_BUF_SIZE];
     int x, y, z, accuracy, t_north, t_east, t_vertical;
@@ -224,7 +233,7 @@ static void req_set_sensor_geo(int len, const char* data)
     set_sensor_mag(tmp, strlen(tmp));
 }
 
-static void req_set_sensor_tilt(int len, const char* data)
+static void _req_set_sensor_tilt(int len, const char* data)
 {
     char tmp[TEMP_BUF_SIZE];
     int x, y, z, accuracy = 3;
@@ -251,7 +260,7 @@ static void req_set_sensor_tilt(int len, const char* data)
     set_sensor_tilt(tmp, strlen(tmp));
 }
 
-static void req_set_sensor_mag(int len, const char* data)
+static void _req_set_sensor_mag(int len, const char* data)
 {
     char tmp[TEMP_BUF_SIZE];
     int x, y, z;
@@ -285,25 +294,25 @@ void set_sensor_data(int length, const char* data)
 
     switch(atoi(tmpbuf)) {
         case level_accel:
-            req_set_sensor_accel(len, data);
+            _req_set_sensor_accel(len, data);
             break;
         case level_proxi:
-            req_set_sensor_proxi(len, data);
+            _req_set_sensor_proxi(len, data);
             break;
         case level_light:
-            req_set_sensor_light(len, data);
+            _req_set_sensor_light(len, data);
             break;
         case level_gyro:
-            req_set_sensor_gyro(len, data);
+            _req_set_sensor_gyro(len, data);
             break;
         case level_geo:
-            req_set_sensor_geo(len, data);
+            _req_set_sensor_geo(len, data);
             break;
         case level_tilt:
-            req_set_sensor_tilt(len, data);
+            _req_set_sensor_tilt(len, data);
             break;
         case level_magnetic:
-            req_set_sensor_mag(len, data);
+            _req_set_sensor_mag(len, data);
             break;
         default:
             break;
