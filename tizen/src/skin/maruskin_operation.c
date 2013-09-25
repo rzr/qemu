@@ -322,26 +322,27 @@ void do_rotation_event(int rotation_type)
 {
     INFO("do_rotation_event rotation_type : %d\n", rotation_type);
 
+#if 0
     int x = 0, y = 0, z = 0;
 
     switch (rotation_type) {
         case ROTATION_PORTRAIT:
             x = 0;
-            y = 9.80665;
+            y = accel_min_max(9.80665);
             z = 0;
             break;
         case ROTATION_LANDSCAPE:
-            x = 9.80665;
+            x = accel_min_max(9.80665);
             y = 0;
             z = 0;
             break;
         case ROTATION_REVERSE_PORTRAIT:
             x = 0;
-            y = -9.80665;
+            y = accel_min_max(-9.80665);
             z = 0;
             break;
         case ROTATION_REVERSE_LANDSCAPE:
-            x = -9.80665;
+            x = accel_min_max(-9.80665);
             y = 0;
             z = 0;
             break;
@@ -350,6 +351,29 @@ void do_rotation_event(int rotation_type)
     }
 
     req_set_sensor_accel(x, y, z);
+#else
+    char send_buf[32] = { 0 };
+
+    switch ( rotation_type ) {
+        case ROTATION_PORTRAIT:
+            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
+            break;
+        case ROTATION_LANDSCAPE:
+            sprintf( send_buf, "1\n3\n9.80665\n0\n0\n" );
+            break;
+        case ROTATION_REVERSE_PORTRAIT:
+            sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
+            break;
+        case ROTATION_REVERSE_LANDSCAPE:
+            sprintf(send_buf, "1\n3\n-9.80665\n0\n0\n");
+            break;
+
+        default:
+            break;
+    }
+
+    send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
+#endif
 }
 
 void set_maru_screenshot(DisplaySurface *surface)

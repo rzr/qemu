@@ -176,6 +176,7 @@ enum{
 };
 
 /* request */
+int accel_min_max(double value);
 void req_set_sensor_accel(int x, int y, int z);
 
 // control sub messages

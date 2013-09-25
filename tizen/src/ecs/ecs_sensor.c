@@ -76,17 +76,22 @@ static int get_parse_val (const char* buf, char* tmp)
     return index;
 }
 
-static int accel_min_max(char* tmp)
+int accel_min_max(double value)
 {
-    int value = (int)(atof(tmp) * ACCEL_ADJUST);
+    int result = (int)(value * ACCEL_ADJUST);
 
-    if (value > ACCEL_MAX)
-        value = ACCEL_MAX;
+    if (result > ACCEL_MAX)
+        result = ACCEL_MAX;
 
-    if (value < -ACCEL_MAX)
-        value = -ACCEL_MAX;
+    if (result < -ACCEL_MAX)
+        result = -ACCEL_MAX;
 
-    return value;
+    return result;
+}
+
+static int _accel_min_max(char* tmp)
+{
+    return accel_min_max(atof(tmp));
 }
 
 void req_set_sensor_accel(int x, int y, int z)
@@ -108,15 +113,15 @@ static void _req_set_sensor_accel(int len, const char* data)
 
     // x
     len += get_parse_val(data + len, tmp);
-    x = accel_min_max(tmp);
+    x = _accel_min_max(tmp);
 
     // y
     len += get_parse_val(data + len, tmp);
-    y = accel_min_max(tmp);
+    y = _accel_min_max(tmp);
 
     // z
     len += get_parse_val(data + len, tmp);
-    z = accel_min_max(tmp);
+    z = _accel_min_max(tmp);
 
     memset(tmp, 0, TEMP_BUF_SIZE);
 
