@@ -1,7 +1,7 @@
 /*
  * Virtio Sensor Device
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  Jinhyung Choi <jinhyung2.choi@samsung.com>
@@ -38,19 +38,19 @@
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-sensor);
 
-#define SENSOR_DEVICE_NAME 	"sensor"
-#define _MAX_BUF					1024
+#define SENSOR_DEVICE_NAME  "sensor"
+#define _MAX_BUF                    1024
 
 
 VirtIOSENSOR* vsensor;
 
 typedef struct msg_info {
-	char buf[_MAX_BUF];
+    char buf[_MAX_BUF];
 
-	uint16_t type;
-	uint16_t req;
+    uint16_t type;
+    uint16_t req;
 
-	QTAILQ_ENTRY(msg_info) next;
+    QTAILQ_ENTRY(msg_info) next;
 } msg_info;
 
 
@@ -61,163 +61,158 @@ static pthread_mutex_t buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void add_msg_queue(msg_info* msg)
 {
-	pthread_mutex_lock(&buf_mutex);
-	QTAILQ_INSERT_TAIL(&sensor_msg_queue, msg, next);
-	pthread_mutex_unlock(&buf_mutex);
+    pthread_mutex_lock(&buf_mutex);
+    QTAILQ_INSERT_TAIL(&sensor_msg_queue, msg, next);
+    pthread_mutex_unlock(&buf_mutex);
 
-	qemu_bh_schedule(vsensor->bh);
+    qemu_bh_schedule(vsensor->bh);
 }
 
 void req_sensor_data (enum sensor_types type, enum request_cmd req, char* data, int len)
 {
-	if (type >= sensor_type_max || (req != request_get && req != request_set)) {
-		ERR("unavailable sensor type request.\n");
-	}
+    if (type >= sensor_type_max || (req != request_get && req != request_set)) {
+        ERR("unavailable sensor type request.\n");
+    }
 
-	msg_info* msg = (msg_info*) malloc(sizeof(msg_info));
-	if (!msg) {
-		ERR("The allocation of msg_info is failed.\n");
-		return;
-	}
+    msg_info* msg = (msg_info*) malloc(sizeof(msg_info));
+    if (!msg) {
+        ERR("The allocation of msg_info is failed.\n");
+        return;
+    }
 
-	memset(msg, 0, sizeof(msg_info));
+    memset(msg, 0, sizeof(msg_info));
 
-	if (req == request_set) {
-		if (len > _MAX_BUF) {
-			ERR("The data is too big to send.\n");
-			return;
-		}
-		memcpy(msg->buf, data, len);
-	}
+    if (req == request_set) {
+        if (len > _MAX_BUF) {
+            ERR("The data is too big to send.\n");
+            return;
+        }
+        memcpy(msg->buf, data, len);
+    }
 
-	msg->type = type;
-	msg->req = req;
+    msg->type = type;
+    msg->req = req;
 
-	add_msg_queue(msg);
+    add_msg_queue(msg);
 }
 
 static void flush_sensor_recv_queue(void)
 {
-	int index;
+    int index;
 
     if (unlikely(!virtio_queue_ready(vsensor->rvq))) {
         INFO("virtio queue is not ready\n");
         return;
     }
 
-	if (unlikely(virtio_queue_empty(vsensor->rvq))) {
-		INFO("virtqueue is empty\n");
-		return;
-	}
+    if (unlikely(virtio_queue_empty(vsensor->rvq))) {
+        INFO("virtqueue is empty\n");
+        return;
+    }
 
-	pthread_mutex_lock(&buf_mutex);
-	while (!QTAILQ_EMPTY(&sensor_msg_queue))
-	{
-		msg_info* msginfo = QTAILQ_FIRST(&sensor_msg_queue);
-		if (!msginfo) {
-			ERR("msginfo is NULL!\n");
-			break;
-		}
+    pthread_mutex_lock(&buf_mutex);
+    while (!QTAILQ_EMPTY(&sensor_msg_queue))
+    {
+        msg_info* msginfo = QTAILQ_FIRST(&sensor_msg_queue);
+        if (!msginfo) {
+            ERR("msginfo is NULL!\n");
+            break;
+        }
 
-		INFO("sending message: %s, type: %d, req: %d\n", msginfo->buf, msginfo->type, msginfo->req);
+        INFO("sending message: %s, type: %d, req: %d\n", msginfo->buf, msginfo->type, msginfo->req);
 
-		VirtQueueElement elem;
-		index = virtqueue_pop(vsensor->rvq, &elem);
-		if (index == 0)
-			break;
+        VirtQueueElement elem;
+        index = virtqueue_pop(vsensor->rvq, &elem);
+        if (index == 0)
+            break;
 
-		memcpy(elem.in_sg[0].iov_base, msginfo, sizeof(struct msg_info));
+        memcpy(elem.in_sg[0].iov_base, msginfo, sizeof(struct msg_info));
 
-		virtqueue_push(vsensor->rvq, &elem, sizeof(msg_info));
-		virtio_notify(&vsensor->vdev, vsensor->rvq);
+        virtqueue_push(vsensor->rvq, &elem, sizeof(msg_info));
+        virtio_notify(&vsensor->vdev, vsensor->rvq);
 
-		QTAILQ_REMOVE(&sensor_msg_queue, msginfo, next);
-		if (msginfo)
-			free(msginfo);
-	}
-	pthread_mutex_unlock(&buf_mutex);
+        QTAILQ_REMOVE(&sensor_msg_queue, msginfo, next);
+        if (msginfo)
+            free(msginfo);
+    }
+    pthread_mutex_unlock(&buf_mutex);
 }
 
 static void virtio_sensor_recv(VirtIODevice *vdev, VirtQueue *vq)
 {
-	flush_sensor_recv_queue();
+    flush_sensor_recv_queue();
 }
 
 static void maru_sensor_bh(void *opaque)
 {
-	flush_sensor_recv_queue();
+    flush_sensor_recv_queue();
 }
 
-static int get_action(enum sensor_types type)
+static type_action get_action(enum sensor_types type)
 {
-	int action = 0;
+    type_action action = 0;
 
-	switch (type) {
-	case sensor_type_accel:
-		action = ACTION_ACCEL;
-		break;
-	case sensor_type_gyro:
-		action = ACTION_GYRO;
-		break;
-	case sensor_type_mag:
-		action = ACTION_MAG;
-		break;
-	case sensor_type_light:
-		action = ACTION_LIGHT;
-		break;
-	case sensor_type_proxi:
-		action = ACTION_PROXI;
-		break;
-	default:
-		break;
-	}
+    switch (type) {
+    case sensor_type_accel:
+        action = ACTION_ACCEL;
+        break;
+    case sensor_type_gyro:
+        action = ACTION_GYRO;
+        break;
+    case sensor_type_mag:
+        action = ACTION_MAG;
+        break;
+    case sensor_type_light:
+        action = ACTION_LIGHT;
+        break;
+    case sensor_type_proxi:
+        action = ACTION_PROXI;
+        break;
+    default:
+        break;
+    }
 
-	return action;
+    return action;
 }
 
 static void send_to_ecs(struct msg_info* msg)
 {
-	int buf_len;
-	char data_len [2];
-	char group [1] = { GROUP_STATUS };
-	char action [1];
-	int message_len = 0;
+    type_length length = 0;
+    type_group group = GROUP_STATUS;
+    type_action action = 0;
 
-	char* ecs_message = NULL;
+    int buf_len = strlen(msg->buf);
+    int message_len =  buf_len + 14;
 
-	buf_len = strlen(msg->buf);
-	message_len =  buf_len + 14;
+    char* ecs_message = (char*) malloc(message_len + 1);
+    if (!ecs_message)
+        return;
 
-	ecs_message = (char*) malloc(message_len + 1);
-	if (!ecs_message)
-		return;
+    memset(ecs_message, 0, message_len + 1);
 
-	memset(ecs_message, 0, message_len + 1);
+    length = (unsigned short) buf_len;
+    action = get_action(msg->type);
 
-	data_len[0] = buf_len;
-	action[0] = get_action(msg->type);
+    memcpy(ecs_message, MESSAGE_TYPE_SENSOR, 10);
+    memcpy(ecs_message + 10, &length, sizeof(unsigned short));
+    memcpy(ecs_message + 12, &group, sizeof(unsigned char));
+    memcpy(ecs_message + 13, &action, sizeof(unsigned char));
+    memcpy(ecs_message + 14, msg->buf, buf_len);
 
-	memcpy(ecs_message, MESSAGE_TYPE_SENSOR, 10);
-	memcpy(ecs_message + 10, &data_len, 2);
-	memcpy(ecs_message + 12, &group, 1);
-	memcpy(ecs_message + 13, &action, 1);
-	memcpy(ecs_message + 14, msg->buf, buf_len);
+    INFO("ntf_to_injector- len: %d, group: %d, action: %d, data: %s\n", length, group, action, msg->buf);
 
-	INFO("ntf_to_injector- bufnum: %s, group: %s, action: %s, data: %s\n", data_len, group, action, msg->buf);
+    send_device_ntf(ecs_message, message_len);
 
-	//ntf_to_injector(ecs_message, message_len);
-	send_device_ntf(ecs_message, message_len);
-
-	if (ecs_message)
-		free(ecs_message);
+    if (ecs_message)
+        free(ecs_message);
 }
 
 static void virtio_sensor_send(VirtIODevice *vdev, VirtQueue *vq)
 {
-	VirtIOSENSOR *vsensor = (VirtIOSENSOR*)vdev;
-	struct msg_info msg;
+    VirtIOSENSOR *vsensor = (VirtIOSENSOR*)vdev;
+    struct msg_info msg;
     VirtQueueElement elem;
-	int index = 0;
+    int index = 0;
 
     if (virtio_queue_empty(vsensor->svq)) {
         INFO("<< virtqueue is empty.\n");
@@ -226,15 +221,15 @@ static void virtio_sensor_send(VirtIODevice *vdev, VirtQueue *vq)
 
     while ((index = virtqueue_pop(vq, &elem))) {
 
-		memset(&msg, 0x00, sizeof(msg));
-		memcpy(&msg, elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
+        memset(&msg, 0x00, sizeof(msg));
+        memcpy(&msg, elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
 
-		INFO("send to ecs: %s, len: %d, type: %d, req: %d\n", msg.buf, strlen(msg.buf), msg.type, msg.req);
-		send_to_ecs(&msg);
+        INFO("send to ecs: %s, len: %d, type: %d, req: %d\n", msg.buf, strlen(msg.buf), msg.type, msg.req);
+        send_to_ecs(&msg);
     }
 
-	virtqueue_push(vq, &elem, sizeof(VirtIOSENSOR));
-	virtio_notify(&vsensor->vdev, vq);
+    virtqueue_push(vq, &elem, sizeof(VirtIOSENSOR));
+    virtio_notify(&vsensor->vdev, vq);
 }
 
 
@@ -261,11 +256,11 @@ static int virtio_sensor_init(VirtIODevice *vdev)
 
 static int virtio_sensor_exit(DeviceState *dev)
 {
-	VirtIODevice *vdev = VIRTIO_DEVICE(dev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     INFO("destroy sensor device\n");
 
-	if (vsensor->bh)
-		qemu_bh_delete(vsensor->bh);
+    if (vsensor->bh)
+        qemu_bh_delete(vsensor->bh);
 
     virtio_cleanup(vdev);
 

@@ -1,10 +1,11 @@
 /*
  * Emulator Control Server - Sensor Device Handler
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  Jinhyung choi   <jinhyung2.choi@samsung.com>
+ *  MunKyu Im       <munkyu.im@samsung.com>
  *  Daiyoung Kim    <daiyoung777.kim@samsung.com>
  *  YeongKyoon Lee  <yeongkyoon.lee@samsung.com>
  *
