@@ -342,6 +342,7 @@ static void* run_guest_server(void* args)
             } else if (strcmp(command, "3\n" ) == 0) {
                 TRACE("command:%s\n", command);
                 notify_sensor_daemon_start();
+                notify_ecs_server_start();
             } else if (strcmp(command, "4\n") == 0) {
                 /* sdcard mount/umount msg recv from emuld */
                 INFO("command:%s\n", command);

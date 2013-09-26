@@ -122,6 +122,10 @@ public class SkinUtil {
 		return sdbPath;
 	}
 
+	public static String getEcpPath() {
+		return "emulator-control-panel.jar";
+	}
+
 	public static String getSdkVersionFilePath() {
 		return ".." + File.separator + "etc" + File.separator + "version";
 	}
