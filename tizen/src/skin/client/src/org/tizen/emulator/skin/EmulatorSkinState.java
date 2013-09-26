@@ -154,7 +154,7 @@ public class EmulatorSkinState {
 		return currentKeyPressedImage;
 	}
 
-	public synchronized void setCurrentKeyPressedImag(Image keyPressedImage) {
+	public synchronized void setCurrentKeyPressedImage(Image keyPressedImage) {
 		this.currentKeyPressedImage = keyPressedImage;
 	}
 

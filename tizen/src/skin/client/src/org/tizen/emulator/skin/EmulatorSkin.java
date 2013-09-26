@@ -107,25 +107,6 @@ import org.tizen.emulator.skin.util.SwtUtil;
  *
  */
 public class EmulatorSkin {
-
-	public class SkinReopenPolicy {
-		private EmulatorSkin reopenSkin;
-		private boolean reopen;
-
-		private SkinReopenPolicy(EmulatorSkin reopenSkin, boolean reopen) {
-			this.reopenSkin = reopenSkin;
-			this.reopen = reopen;
-		}
-
-		public EmulatorSkin getReopenSkin() {
-			return reopenSkin;
-		}
-
-		public boolean isReopen() {
-			return reopen;
-		}
-	}
-
 	public enum SkinBasicColor {
 		BLUE(0, 174, 239),
 		YELLOW(246, 226, 0),
@@ -153,8 +134,8 @@ public class EmulatorSkin {
 		}
 	}
 
-	private static Logger logger = SkinLogger.getSkinLogger(EmulatorSkin.class)
-			.getLogger();
+	private static Logger logger =
+			SkinLogger.getSkinLogger(EmulatorSkin.class).getLogger();
 
 	protected EmulatorConfig config;
 	protected Shell shell;
@@ -168,7 +149,6 @@ public class EmulatorSkin {
 
 	protected boolean isDisplayDragging;
 	protected boolean isShutdownRequested;
-	private boolean isAboutToReopen;
 	public boolean isOnTop;
 	public boolean isKeyWindow;
 	public boolean isOnKbd;
@@ -194,8 +174,6 @@ public class EmulatorSkin {
 	private MenuDetectListener canvasMenuDetectListener;
 	private FocusListener canvasFocusListener;
 	private LinkedList<KeyEventData> pressedKeyEventList;
-
-	private EmulatorSkin reopenSkin;
 
 	/**
 	 * @brief constructor
@@ -308,43 +286,6 @@ public class EmulatorSkin {
 		return 0;
 	}
 
-	// private void readyToReopen( EmulatorSkin sourceSkin, boolean isOnTop ) {
-	//
-	// logger.info( "Start Changing AlwaysOnTop status" );
-	//
-	// sourceSkin.reopenSkin = new EmulatorSkin( sourceSkin.config, isOnTop );
-	//
-	// sourceSkin.reopenSkin.lcdCanvas = sourceSkin.lcdCanvas;
-	// Point previousLocation = sourceSkin.shell.getLocation();
-	//
-	// sourceSkin.reopenSkin.composeInternal( sourceSkin.lcdCanvas,
-	// previousLocation.x, previousLocation.y,
-	// sourceSkin.currentLcdWidth, sourceSkin.currentLcdHeight,
-	// sourceSkin.currentScale,
-	// sourceSkin.currentRotationId, sourceSkin.isOnKbd );
-	//
-	// sourceSkin.reopenSkin.windowHandleId = sourceSkin.windowHandleId;
-	//
-	// sourceSkin.reopenSkin.communicator = sourceSkin.communicator;
-	// sourceSkin.reopenSkin.communicator.resetSkin( reopenSkin );
-	//
-	// sourceSkin.isAboutToReopen = true;
-	// sourceSkin.isShutdownRequested = true;
-	//
-	// if ( sourceSkin.isScreenShotOpened && ( null !=
-	// sourceSkin.screenShotDialog ) ) {
-	// sourceSkin.screenShotDialog.setReserveImage( true );
-	// sourceSkin.screenShotDialog.setEmulatorSkin( reopenSkin );
-	// reopenSkin.isScreenShotOpened = true;
-	// reopenSkin.screenShotDialog = sourceSkin.screenShotDialog;
-	// // see open() method to know next logic for screenshot dialog.
-	// }
-	//
-	// sourceSkin.lcdCanvas.setParent( reopenSkin.shell );
-	// sourceSkin.shell.close();
-	//
-	// }
-
 	private Color loadHoverColor() {
 		HoverType hover = config.getDbiContents().getHover();
 
@@ -393,34 +334,21 @@ public class EmulatorSkin {
 		return keyWindowKeeper;
 	}
 
-	public SkinReopenPolicy open() {
+	public void open() {
 		if (null == this.communicator) {
 			logger.severe("communicator is null.");
-			return null;
+			return;
 		}
 
 		Display display = this.shell.getDisplay();
 
 		this.shell.open();
 
-		// logic only for reopen case ///////
-		// if ( isScreenShotOpened && ( null != screenShotDialog ) ) {
-		// try {
-		// screenShotDialog.setReserveImage( false );
-		// screenShotDialog.open();
-		// } finally {
-		// isScreenShotOpened = false;
-		// }
-		// }
-		// ///////////////////////////////////
-
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
 			}
 		}
-
-		return new SkinReopenPolicy(reopenSkin, isAboutToReopen);
 	}
 
 	protected void skinFinalize() {
@@ -439,62 +367,62 @@ public class EmulatorSkin {
 					removeShellListeners();
 					removeCanvasListeners();
 
-					if (!isAboutToReopen) {
-						/* close the screen shot window */
-						if (null != screenShotDialog) {
-							Shell scShell = screenShotDialog.getShell();
-							if (!scShell.isDisposed()) {
-								scShell.close();
-							}
-							screenShotDialog = null;
+					/* close the screen shot window */
+					if (null != screenShotDialog) {
+						Shell scShell = screenShotDialog.getShell();
+						if (!scShell.isDisposed()) {
+							scShell.close();
 						}
-
-						/* save config only for emulator close */
-						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_X,
-								shell.getLocation().x);
-						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_Y,
-								shell.getLocation().y);
-						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_SCALE,
-								currentState.getCurrentScale());
-						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_ROTATION,
-								currentState.getCurrentRotationId());
-						config.setSkinProperty(
-								SkinPropertiesConstants.WINDOW_ONTOP,
-								Boolean.toString(isOnTop));
-
-						int dockValue = 0;
-						SkinWindow keyWindow = getKeyWindowKeeper()
-								.getKeyWindow();
-						if (keyWindow != null
-								&& keyWindow.getShell().isVisible() == true) {
-							dockValue = getKeyWindowKeeper().getDockPosition();
-						}
-						config.setSkinProperty(
-								SkinPropertiesConstants.KEYWINDOW_POSITION,
-								dockValue);
-
-						config.saveSkinProperties();
-
-						/* close the Key Window */
-						if (getKeyWindowKeeper() != null) {
-							getKeyWindowKeeper().closeKeyWindow();
-						}
-
-						/* dispose the color */
-						if (colorVM != null) {
-							colorVM.dispose();
-						}
+						screenShotDialog = null;
 					}
 
+					/* save config only for emulator close */
+					config.setSkinProperty(
+							SkinPropertiesConstants.WINDOW_X,
+							shell.getLocation().x);
+					config.setSkinProperty(
+							SkinPropertiesConstants.WINDOW_Y,
+							shell.getLocation().y);
+					config.setSkinProperty(
+							SkinPropertiesConstants.WINDOW_SCALE,
+							currentState.getCurrentScale());
+					config.setSkinProperty(
+							SkinPropertiesConstants.WINDOW_ROTATION,
+							currentState.getCurrentRotationId());
+					config.setSkinProperty(
+							SkinPropertiesConstants.WINDOW_ONTOP,
+							Boolean.toString(isOnTop));
+
+					int dockValue = 0;
+					SkinWindow keyWindow = getKeyWindowKeeper().getKeyWindow();
+					if (keyWindow != null
+							&& keyWindow.getShell().isVisible() == true) {
+						dockValue = getKeyWindowKeeper().getDockPosition();
+					}
+					config.setSkinProperty(
+							SkinPropertiesConstants.KEYWINDOW_POSITION,
+							dockValue);
+
+					config.saveSkinProperties();
+
+					/* close the Key Window */
+					if (getKeyWindowKeeper() != null) {
+						getKeyWindowKeeper().closeKeyWindow();
+					}
+
+					/* dispose the images */
 					if (currentState.getCurrentImage() != null) {
 						currentState.getCurrentImage().dispose();
+						currentState.setCurrentImage(null);
 					}
 					if (currentState.getCurrentKeyPressedImage() != null) {
 						currentState.getCurrentKeyPressedImage().dispose();
+						currentState.setCurrentKeyPressedImage(null);
+					}
+
+					/* dispose the color */
+					if (colorVM != null) {
+						colorVM.dispose();
 					}
 
 					if (currentState.getHoverColor() != null) {
@@ -1376,7 +1304,6 @@ public class EmulatorSkin {
 				isOnTop = popupMenu.onTopItem.getSelection();
 
 				logger.info("Select Always On Top : " + isOnTop);
-				// readyToReopen(EmulatorSkin.this, isOnTop);
 
 				if (SkinUtil.setTopMost(shell, isOnTop) == false) {
 					logger.info("failed to Always On Top");
@@ -1399,11 +1326,10 @@ public class EmulatorSkin {
 
 		final List<MenuItem> rotationList = new ArrayList<MenuItem>();
 
-		Iterator<Entry<Short, RotationType>> iterator = SkinRotation
-				.getRotationIterator();
+		Iterator<Entry<Short, RotationType>> iterator =
+				SkinRotation.getRotationIterator();
 
 		while (iterator.hasNext()) {
-
 			Entry<Short, RotationType> entry = iterator.next();
 			Short rotationId = entry.getKey();
 			RotationType section = entry.getValue();
@@ -1417,7 +1343,6 @@ public class EmulatorSkin {
 			}
 
 			rotationList.add(menuItem);
-
 		}
 
 		/* temp : swap rotation menu names */
@@ -1462,7 +1387,6 @@ public class EmulatorSkin {
 				}
 
 				if (!communicator.isSensorDaemonStarted()) {
-
 					/* roll back a selection */
 					item.setSelection(false);
 
@@ -1492,8 +1416,7 @@ public class EmulatorSkin {
 								currentState.getCurrentScale(), rotationId);
 
 						/* location correction */
-						Rectangle monitorBounds = Display.getDefault()
-								.getBounds();
+						Rectangle monitorBounds = Display.getDefault().getBounds();
 						Rectangle emulatorBounds = shell.getBounds();
 						shell.setLocation(
 								Math.max(emulatorBounds.x, monitorBounds.x),
@@ -1543,7 +1466,6 @@ public class EmulatorSkin {
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-
 				MenuItem item = (MenuItem) e.getSource();
 
 				boolean selection = item.getSelection();
@@ -1561,8 +1483,7 @@ public class EmulatorSkin {
 								currentState.getCurrentRotationId());
 
 						/* location correction */
-						Rectangle monitorBounds = Display.getDefault()
-								.getBounds();
+						Rectangle monitorBounds = Display.getDefault().getBounds();
 						Rectangle emulatorBounds = shell.getBounds();
 						shell.setLocation(
 								Math.max(emulatorBounds.x, monitorBounds.x),
@@ -1579,7 +1500,6 @@ public class EmulatorSkin {
 		};
 
 		for (MenuItem menuItem : scaleList) {
-
 			int scale = ((Scale) menuItem.getData()).value();
 			if (currentState.getCurrentScale() == scale) {
 				menuItem.setSelection(true);
@@ -1695,9 +1615,7 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (!communicator.isSensorDaemonStarted()) {
-					SkinUtil.openMessage(
-							shell,
-							null,
+					SkinUtil.openMessage(shell, null,
 							"Host Keyboard is not ready.\n"
 									+ "Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
@@ -1773,9 +1691,7 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (!communicator.isSdbDaemonStarted()) {
-					SkinUtil.openMessage(
-							shell,
-							null,
+					SkinUtil.openMessage(shell, null,
 							"SDB is not ready.\n"
 									+ "Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
@@ -1786,13 +1702,10 @@ public class EmulatorSkin {
 
 				File sdbFile = new File(sdbPath);
 				if (!sdbFile.exists()) {
-					logger.log(
-							Level.INFO,
-							"SDB file is not exist : "
-									+ sdbFile.getAbsolutePath());
+					logger.info("SDB file does not exist : " + sdbFile.getAbsolutePath());
 					try {
 						SkinUtil.openMessage(shell, null,
-								"SDB file is not exist in the following path.\n"
+								"SDB file does not exist in the following path.\n"
 										+ sdbFile.getCanonicalPath(),
 								SWT.ICON_ERROR, config);
 					} catch (IOException ee) {

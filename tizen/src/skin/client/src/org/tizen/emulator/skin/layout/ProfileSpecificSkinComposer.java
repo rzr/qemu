@@ -214,7 +214,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 		currentState.setCurrentImage(SkinUtil.createScaledImage(
 				imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN));
-		currentState.setCurrentKeyPressedImag(SkinUtil.createScaledImage(
+		currentState.setCurrentKeyPressedImage(SkinUtil.createScaledImage(
 				imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_PRESSED));
 
 		if (tempImage != null) {
