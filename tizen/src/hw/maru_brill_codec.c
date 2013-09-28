@@ -537,15 +537,14 @@ static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t fil
             break;
         }
     }
+    qemu_mutex_unlock(&s->threadpool.mutex);
 
     if (ctx_id == CODEC_CONTEXT_MAX) {
         ERR("cannot find a context for 0x%x\n", file_index);
     } else {
-        if (s->context[ctx_id].opened) {
-            INFO("%d of context has not closed yet.\n", ctx_id);
-            codec_deinit(s, ctx_id, file_index);
-        }
+        codec_deinit(s, ctx_id, file_index);
 
+        // TODO: check how long takes time to iterate.
         QTAILQ_FOREACH_SAFE(rq_elem, &codec_rq, node, next) {
             if (rq_elem && rq_elem->buf_id == file_index) {
                 TRACE("remove unused node from codec_rq. file: %p\n", file_index);
@@ -587,7 +586,7 @@ static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t fil
 //        maru_brill_codec_reset_parser_info(s, ctx_id);
     }
 
-    qemu_mutex_unlock(&s->threadpool.mutex);
+//    qemu_mutex_unlock(&s->threadpool.mutex);
     TRACE("leave: %s\n", __func__);
 }
 
@@ -1122,6 +1121,16 @@ static void codec_deinit(MaruBrillCodecState *s, int ctx_id, int f_id)
 
     TRACE("enter: %s\n", __func__);
 
+    qemu_mutex_lock(&s->threadpool.mutex);
+    if (!s->context[ctx_id].opened) {
+        qemu_mutex_unlock(&s->threadpool.mutex);
+        INFO("%d of context has already been closed.\n", ctx_id);
+        return;
+    } else {
+        qemu_mutex_unlock(&s->threadpool.mutex);
+        INFO("%d of context has not been closed yet.\n", ctx_id);
+    }
+
     avctx = s->context[ctx_id].avctx;
     frame = s->context[ctx_id].frame;
     parserctx = s->context[ctx_id].parser_ctx;
@@ -1130,6 +1139,7 @@ static void codec_deinit(MaruBrillCodecState *s, int ctx_id, int f_id)
     } else {
         avcodec_close(avctx);
         INFO("close avcontext of %d\n", ctx_id);
+        s->context[ctx_id].opened = false;
 
         if (avctx->extradata) {
             TRACE("free context extradata\n");
@@ -1160,7 +1170,6 @@ static void codec_deinit(MaruBrillCodecState *s, int ctx_id, int f_id)
             s->context[ctx_id].parser_ctx = NULL;
         }
     }
-    s->context[ctx_id].opened = false;
 
     TRACE("leave: %s\n", __func__);
 }
