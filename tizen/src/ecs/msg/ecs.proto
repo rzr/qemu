@@ -1,3 +1,5 @@
+import "ecs_ids.proto";
+
 package ECS;
 
 
@@ -20,17 +22,6 @@ message KeepAliveReq {
 
 message KeepAliveAns {
 	optional string time_str = 1;
-}
-
-
-message StartReq {
-
-}
-
-message StartAns {
-	optional int32 host_keyboard_onoff = 1;
-	optional int32 earjack_onoff = 2;
-	optional int32 camera_onoff = 3;
 }
 
 message InjectorReq {
@@ -85,46 +76,6 @@ message DeviceNtf {
 	optional bytes data = 5;
 }
 
-
-
-// control message
-
-message HostKeyboardReq {
-	optional int32 ison = 3;
-}
-
-message HostKeyboardNtf {
-
-	required int32 errcode = 1;
-	optional string errstr = 2;
-	optional int32 ison = 3;
-}
-
-message ControlMsg {
-
-	enum ControlType { 
-		HOSTKEYBOARD_REQ = 2; HOSTKEYBOARD_NTF = 3;
-	}
-	
-	required ControlType type = 1;
-	
-	optional HostKeyboardReq hostkeyboard_req = 2;
-	optional HostKeyboardNtf hostkeyboard_ntf = 3;
-}
-
-//
-
-message ControlAns {
-	required int32 errcode = 1;
-	optional string errmsg = 2;
-}
-
-message ControlNtf {
-	required string category = 1;
-	required string command = 2;
-	optional bytes data = 3;
-}
-
 message MonitorReq {
 	required string command = 1;
 }
@@ -141,29 +92,9 @@ message MonitorNtf {
 	optional bytes data = 2;
 }
 
-message ScreenDumpReq {
-	required string output_path = 1;
-}
-
-message ScreenDumpAns {
-	required int32 errcode = 1;
-	optional string errmsg = 2;
-}
-
 
 message Master {
-	enum Type { 
-	CHECKVERSION_REQ = 2; CHECKVERSION_ANS = 3; 
-	KEEPALIVE_REQ = 4; KEEPALIVE_ANS = 5; 
-	START_REQ = 6; START_ANS = 7; 
-	INJECTOR_REQ = 8; INJECTOR_ANS = 9; INJECTOR_NTF = 10;
-	DEVICE_REQ = 11; DEVICE_ANS = 12; DEVICE_NTF = 13; 
-	CONTROL_MSG = 14; CONTROL_ANS = 15; CONTROL_NTF = 16; 
-	MONITOR_REQ = 17; MONITOR_ANS = 18; MONITOR_NTF = 19; 
-	SCREEN_DUMP_REQ = 20; SCREEN_DUMP_ANS = 21; 
-	}
-	
-	required Type type = 1;
+	required Master_Type type = 1;
 
 	optional CheckVersionReq checkversion_req = 2;
 	optional CheckVersionAns checkversion_ans = 3;
@@ -171,28 +102,19 @@ message Master {
 	optional KeepAliveReq keepalive_req = 4;
 	optional KeepAliveAns keepalive_ans = 5;
 	
-	optional StartReq start_req = 6;
-	optional StartAns start_ans = 7;
-
-	optional InjectorReq injector_req = 8;
-	optional InjectorAns injector_ans = 9;
-	optional InjectorNtf injector_ntf = 10;
+	optional InjectorReq injector_req = 6;
+	optional InjectorAns injector_ans = 7;
+	optional InjectorNtf injector_ntf = 8;
 	
-	optional DeviceReq device_req = 11;
-	optional DeviceAns device_ans = 12;
-	optional DeviceNtf device_ntf = 13;
+	optional DeviceReq device_req = 9;
+	optional DeviceAns device_ans = 10;
+	optional DeviceNtf device_ntf = 11;
 
-	optional ControlMsg control_msg = 14;
-	optional ControlAns control_ans	= 15;
-	optional ControlNtf control_ntf	= 16;
+	optional MonitorReq monitor_req = 12;
+	optional MonitorAns monitor_ans = 13;
+	optional MonitorNtf monitor_ntf = 14;
 
-	optional MonitorReq monitor_req = 17;
-	optional MonitorAns monitor_ans = 18;
-	optional MonitorNtf monitor_ntf = 19;
-
-	optional ScreenDumpReq screen_dump_req = 20;
-	optional ScreenDumpAns screen_dump_ans = 21;
-
+	extensions 101 to 150;
 }
 
 

@@ -934,13 +934,10 @@ static void ecs_close(ECS_State *cs) {
         cs->alive_timer = NULL;
     }
 
-    pthread_mutex_lock(&mutex_clilist);
-
     QTAILQ_FOREACH(clii, &clients, next)
     {
         ecs_client_close(clii);
     }
-    pthread_mutex_unlock(&mutex_clilist);
 
     if (NULL != cs) {
         g_free(cs);
@@ -1429,6 +1426,7 @@ static void* ecs_initialize(void* args) {
             break;
         }
     }
+    LOG("ecs_loop exited.");
 
     return NULL;
 }
@@ -1460,7 +1458,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
     ECS__Master* master = ecs__master__unpack(NULL, (size_t)len, (const uint8_t*)data);
     if (!master)
         return false;
-
+#if 0
     if (master->type == ECS__MASTER__TYPE__START_REQ)
     {
         ECS__StartReq* msg = master->start_req;
@@ -1468,6 +1466,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_start_req(cli, msg);
     }
+#endif
     if (master->type == ECS__MASTER__TYPE__INJECTOR_REQ)
     {
         ECS__InjectorReq* msg = master->injector_req;
@@ -1475,6 +1474,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_injector_req(cli, msg);
     }
+#if 0
     else if (master->type == ECS__MASTER__TYPE__CONTROL_MSG)
     {
         ECS__ControlMsg* msg = master->control_msg;
@@ -1482,6 +1482,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_control_msg(cli, msg);
     }
+#endif
     else if (master->type == ECS__MASTER__TYPE__MONITOR_REQ)
     {
         ECS__MonitorReq* msg = master->monitor_req;
@@ -1496,6 +1497,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_device_req(cli, msg);
     }
+#if 0
     else if (master->type == ECS__MASTER__TYPE__SCREEN_DUMP_REQ)
     {
         ECS__ScreenDumpReq* msg = master->screen_dump_req;
@@ -1503,6 +1505,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_screen_dump_req(cli, msg);
     }
+#endif
     ecs__master__free_unpacked(master, NULL);
     return true;
 fail:

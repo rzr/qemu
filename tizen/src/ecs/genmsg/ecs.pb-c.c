@@ -178,92 +178,6 @@ void   ecs__keep_alive_ans__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__keep_alive_ans__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   ecs__start_req__init
-                     (ECS__StartReq         *message)
-{
-  static ECS__StartReq init_value = ECS__START_REQ__INIT;
-  *message = init_value;
-}
-size_t ecs__start_req__get_packed_size
-                     (const ECS__StartReq *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__start_req__pack
-                     (const ECS__StartReq *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__start_req__pack_to_buffer
-                     (const ECS__StartReq *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__StartReq *
-       ecs__start_req__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__StartReq *)
-     protobuf_c_message_unpack (&ecs__start_req__descriptor,
-                                allocator, len, data);
-}
-void   ecs__start_req__free_unpacked
-                     (ECS__StartReq *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_req__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__start_ans__init
-                     (ECS__StartAns         *message)
-{
-  static ECS__StartAns init_value = ECS__START_ANS__INIT;
-  *message = init_value;
-}
-size_t ecs__start_ans__get_packed_size
-                     (const ECS__StartAns *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__start_ans__pack
-                     (const ECS__StartAns *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__start_ans__pack_to_buffer
-                     (const ECS__StartAns *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__StartAns *
-       ecs__start_ans__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__StartAns *)
-     protobuf_c_message_unpack (&ecs__start_ans__descriptor,
-                                allocator, len, data);
-}
-void   ecs__start_ans__free_unpacked
-                     (ECS__StartAns *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__start_ans__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
 void   ecs__injector_req__init
                      (ECS__InjectorReq         *message)
 {
@@ -522,221 +436,6 @@ void   ecs__device_ntf__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__device_ntf__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   ecs__host_keyboard_req__init
-                     (ECS__HostKeyboardReq         *message)
-{
-  static ECS__HostKeyboardReq init_value = ECS__HOST_KEYBOARD_REQ__INIT;
-  *message = init_value;
-}
-size_t ecs__host_keyboard_req__get_packed_size
-                     (const ECS__HostKeyboardReq *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_req__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__host_keyboard_req__pack
-                     (const ECS__HostKeyboardReq *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_req__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__host_keyboard_req__pack_to_buffer
-                     (const ECS__HostKeyboardReq *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_req__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__HostKeyboardReq *
-       ecs__host_keyboard_req__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__HostKeyboardReq *)
-     protobuf_c_message_unpack (&ecs__host_keyboard_req__descriptor,
-                                allocator, len, data);
-}
-void   ecs__host_keyboard_req__free_unpacked
-                     (ECS__HostKeyboardReq *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_req__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__host_keyboard_ntf__init
-                     (ECS__HostKeyboardNtf         *message)
-{
-  static ECS__HostKeyboardNtf init_value = ECS__HOST_KEYBOARD_NTF__INIT;
-  *message = init_value;
-}
-size_t ecs__host_keyboard_ntf__get_packed_size
-                     (const ECS__HostKeyboardNtf *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_ntf__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__host_keyboard_ntf__pack
-                     (const ECS__HostKeyboardNtf *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_ntf__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__host_keyboard_ntf__pack_to_buffer
-                     (const ECS__HostKeyboardNtf *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_ntf__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__HostKeyboardNtf *
-       ecs__host_keyboard_ntf__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__HostKeyboardNtf *)
-     protobuf_c_message_unpack (&ecs__host_keyboard_ntf__descriptor,
-                                allocator, len, data);
-}
-void   ecs__host_keyboard_ntf__free_unpacked
-                     (ECS__HostKeyboardNtf *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__host_keyboard_ntf__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__control_msg__init
-                     (ECS__ControlMsg         *message)
-{
-  static ECS__ControlMsg init_value = ECS__CONTROL_MSG__INIT;
-  *message = init_value;
-}
-size_t ecs__control_msg__get_packed_size
-                     (const ECS__ControlMsg *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_msg__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__control_msg__pack
-                     (const ECS__ControlMsg *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_msg__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__control_msg__pack_to_buffer
-                     (const ECS__ControlMsg *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_msg__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__ControlMsg *
-       ecs__control_msg__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__ControlMsg *)
-     protobuf_c_message_unpack (&ecs__control_msg__descriptor,
-                                allocator, len, data);
-}
-void   ecs__control_msg__free_unpacked
-                     (ECS__ControlMsg *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_msg__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__control_ans__init
-                     (ECS__ControlAns         *message)
-{
-  static ECS__ControlAns init_value = ECS__CONTROL_ANS__INIT;
-  *message = init_value;
-}
-size_t ecs__control_ans__get_packed_size
-                     (const ECS__ControlAns *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ans__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__control_ans__pack
-                     (const ECS__ControlAns *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ans__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__control_ans__pack_to_buffer
-                     (const ECS__ControlAns *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ans__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__ControlAns *
-       ecs__control_ans__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__ControlAns *)
-     protobuf_c_message_unpack (&ecs__control_ans__descriptor,
-                                allocator, len, data);
-}
-void   ecs__control_ans__free_unpacked
-                     (ECS__ControlAns *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ans__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__control_ntf__init
-                     (ECS__ControlNtf         *message)
-{
-  static ECS__ControlNtf init_value = ECS__CONTROL_NTF__INIT;
-  *message = init_value;
-}
-size_t ecs__control_ntf__get_packed_size
-                     (const ECS__ControlNtf *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ntf__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__control_ntf__pack
-                     (const ECS__ControlNtf *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ntf__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__control_ntf__pack_to_buffer
-                     (const ECS__ControlNtf *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ntf__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__ControlNtf *
-       ecs__control_ntf__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__ControlNtf *)
-     protobuf_c_message_unpack (&ecs__control_ntf__descriptor,
-                                allocator, len, data);
-}
-void   ecs__control_ntf__free_unpacked
-                     (ECS__ControlNtf *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__control_ntf__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
 void   ecs__monitor_req__init
                      (ECS__MonitorReq         *message)
 {
@@ -864,92 +563,6 @@ void   ecs__monitor_ntf__free_unpacked
                       ProtobufCAllocator *allocator)
 {
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__monitor_ntf__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__screen_dump_req__init
-                     (ECS__ScreenDumpReq         *message)
-{
-  static ECS__ScreenDumpReq init_value = ECS__SCREEN_DUMP_REQ__INIT;
-  *message = init_value;
-}
-size_t ecs__screen_dump_req__get_packed_size
-                     (const ECS__ScreenDumpReq *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_req__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__screen_dump_req__pack
-                     (const ECS__ScreenDumpReq *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_req__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__screen_dump_req__pack_to_buffer
-                     (const ECS__ScreenDumpReq *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_req__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__ScreenDumpReq *
-       ecs__screen_dump_req__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__ScreenDumpReq *)
-     protobuf_c_message_unpack (&ecs__screen_dump_req__descriptor,
-                                allocator, len, data);
-}
-void   ecs__screen_dump_req__free_unpacked
-                     (ECS__ScreenDumpReq *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_req__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   ecs__screen_dump_ans__init
-                     (ECS__ScreenDumpAns         *message)
-{
-  static ECS__ScreenDumpAns init_value = ECS__SCREEN_DUMP_ANS__INIT;
-  *message = init_value;
-}
-size_t ecs__screen_dump_ans__get_packed_size
-                     (const ECS__ScreenDumpAns *message)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_ans__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t ecs__screen_dump_ans__pack
-                     (const ECS__ScreenDumpAns *message,
-                      uint8_t       *out)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_ans__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t ecs__screen_dump_ans__pack_to_buffer
-                     (const ECS__ScreenDumpAns *message,
-                      ProtobufCBuffer *buffer)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_ans__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-ECS__ScreenDumpAns *
-       ecs__screen_dump_ans__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (ECS__ScreenDumpAns *)
-     protobuf_c_message_unpack (&ecs__screen_dump_ans__descriptor,
-                                allocator, len, data);
-}
-void   ecs__screen_dump_ans__free_unpacked
-                     (ECS__ScreenDumpAns *message,
-                      ProtobufCAllocator *allocator)
-{
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__screen_dump_ans__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   ecs__master__init
@@ -1158,91 +771,6 @@ const ProtobufCMessageDescriptor ecs__keep_alive_ans__descriptor =
   ecs__keep_alive_ans__field_indices_by_name,
   1,  ecs__keep_alive_ans__number_ranges,
   (ProtobufCMessageInit) ecs__keep_alive_ans__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor ecs__start_req__field_descriptors[0] =
-{
-};
-static const unsigned ecs__start_req__field_indices_by_name[] = {
-};
-#define ecs__start_req__number_ranges NULL
-const ProtobufCMessageDescriptor ecs__start_req__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.StartReq",
-  "StartReq",
-  "ECS__StartReq",
-  "ECS",
-  sizeof(ECS__StartReq),
-  0,
-  ecs__start_req__field_descriptors,
-  ecs__start_req__field_indices_by_name,
-  0,  ecs__start_req__number_ranges,
-  (ProtobufCMessageInit) ecs__start_req__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor ecs__start_ans__field_descriptors[3] =
-{
-  {
-    "host_keyboard_onoff",
-    1,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_host_keyboard_onoff),
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, host_keyboard_onoff),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "earjack_onoff",
-    2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_earjack_onoff),
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, earjack_onoff),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "camera_onoff",
-    3,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, has_camera_onoff),
-    PROTOBUF_C_OFFSETOF(ECS__StartAns, camera_onoff),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__start_ans__field_indices_by_name[] = {
-  2,   /* field[2] = camera_onoff */
-  1,   /* field[1] = earjack_onoff */
-  0,   /* field[0] = host_keyboard_onoff */
-};
-static const ProtobufCIntRange ecs__start_ans__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 3 }
-};
-const ProtobufCMessageDescriptor ecs__start_ans__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.StartAns",
-  "StartAns",
-  "ECS__StartAns",
-  "ECS",
-  sizeof(ECS__StartAns),
-  3,
-  ecs__start_ans__field_descriptors,
-  ecs__start_ans__field_indices_by_name,
-  1,  ecs__start_ans__number_ranges,
-  (ProtobufCMessageInit) ecs__start_ans__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor ecs__injector_req__field_descriptors[5] =
@@ -1837,315 +1365,6 @@ const ProtobufCMessageDescriptor ecs__device_ntf__descriptor =
   (ProtobufCMessageInit) ecs__device_ntf__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__host_keyboard_req__field_descriptors[1] =
-{
-  {
-    "ison",
-    3,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(ECS__HostKeyboardReq, has_ison),
-    PROTOBUF_C_OFFSETOF(ECS__HostKeyboardReq, ison),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__host_keyboard_req__field_indices_by_name[] = {
-  0,   /* field[0] = ison */
-};
-static const ProtobufCIntRange ecs__host_keyboard_req__number_ranges[1 + 1] =
-{
-  { 3, 0 },
-  { 0, 1 }
-};
-const ProtobufCMessageDescriptor ecs__host_keyboard_req__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.HostKeyboardReq",
-  "HostKeyboardReq",
-  "ECS__HostKeyboardReq",
-  "ECS",
-  sizeof(ECS__HostKeyboardReq),
-  1,
-  ecs__host_keyboard_req__field_descriptors,
-  ecs__host_keyboard_req__field_indices_by_name,
-  1,  ecs__host_keyboard_req__number_ranges,
-  (ProtobufCMessageInit) ecs__host_keyboard_req__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor ecs__host_keyboard_ntf__field_descriptors[3] =
-{
-  {
-    "errcode",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__HostKeyboardNtf, errcode),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "errstr",
-    2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__HostKeyboardNtf, errstr),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "ison",
-    3,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(ECS__HostKeyboardNtf, has_ison),
-    PROTOBUF_C_OFFSETOF(ECS__HostKeyboardNtf, ison),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__host_keyboard_ntf__field_indices_by_name[] = {
-  0,   /* field[0] = errcode */
-  1,   /* field[1] = errstr */
-  2,   /* field[2] = ison */
-};
-static const ProtobufCIntRange ecs__host_keyboard_ntf__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 3 }
-};
-const ProtobufCMessageDescriptor ecs__host_keyboard_ntf__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.HostKeyboardNtf",
-  "HostKeyboardNtf",
-  "ECS__HostKeyboardNtf",
-  "ECS",
-  sizeof(ECS__HostKeyboardNtf),
-  3,
-  ecs__host_keyboard_ntf__field_descriptors,
-  ecs__host_keyboard_ntf__field_indices_by_name,
-  1,  ecs__host_keyboard_ntf__number_ranges,
-  (ProtobufCMessageInit) ecs__host_keyboard_ntf__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-const ProtobufCEnumValue ecs__control_msg__control_type__enum_values_by_number[2] =
-{
-  { "HOSTKEYBOARD_REQ", "ECS__CONTROL_MSG__CONTROL_TYPE__HOSTKEYBOARD_REQ", 2 },
-  { "HOSTKEYBOARD_NTF", "ECS__CONTROL_MSG__CONTROL_TYPE__HOSTKEYBOARD_NTF", 3 },
-};
-static const ProtobufCIntRange ecs__control_msg__control_type__value_ranges[] = {
-{2, 0},{0, 2}
-};
-const ProtobufCEnumValueIndex ecs__control_msg__control_type__enum_values_by_name[2] =
-{
-  { "HOSTKEYBOARD_NTF", 1 },
-  { "HOSTKEYBOARD_REQ", 0 },
-};
-const ProtobufCEnumDescriptor ecs__control_msg__control_type__descriptor =
-{
-  PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "ECS.ControlMsg.ControlType",
-  "ControlType",
-  "ECS__ControlMsg__ControlType",
-  "ECS",
-  2,
-  ecs__control_msg__control_type__enum_values_by_number,
-  2,
-  ecs__control_msg__control_type__enum_values_by_name,
-  1,
-  ecs__control_msg__control_type__value_ranges,
-  NULL,NULL,NULL,NULL   /* reserved[1234] */
-};
-static const ProtobufCFieldDescriptor ecs__control_msg__field_descriptors[3] =
-{
-  {
-    "type",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_ENUM,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ControlMsg, type),
-    &ecs__control_msg__control_type__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "hostkeyboard_req",
-    2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ControlMsg, hostkeyboard_req),
-    &ecs__host_keyboard_req__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "hostkeyboard_ntf",
-    3,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ControlMsg, hostkeyboard_ntf),
-    &ecs__host_keyboard_ntf__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__control_msg__field_indices_by_name[] = {
-  2,   /* field[2] = hostkeyboard_ntf */
-  1,   /* field[1] = hostkeyboard_req */
-  0,   /* field[0] = type */
-};
-static const ProtobufCIntRange ecs__control_msg__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 3 }
-};
-const ProtobufCMessageDescriptor ecs__control_msg__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.ControlMsg",
-  "ControlMsg",
-  "ECS__ControlMsg",
-  "ECS",
-  sizeof(ECS__ControlMsg),
-  3,
-  ecs__control_msg__field_descriptors,
-  ecs__control_msg__field_indices_by_name,
-  1,  ecs__control_msg__number_ranges,
-  (ProtobufCMessageInit) ecs__control_msg__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor ecs__control_ans__field_descriptors[2] =
-{
-  {
-    "errcode",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ControlAns, errcode),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "errmsg",
-    2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ControlAns, errmsg),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__control_ans__field_indices_by_name[] = {
-  0,   /* field[0] = errcode */
-  1,   /* field[1] = errmsg */
-};
-static const ProtobufCIntRange ecs__control_ans__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 2 }
-};
-const ProtobufCMessageDescriptor ecs__control_ans__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.ControlAns",
-  "ControlAns",
-  "ECS__ControlAns",
-  "ECS",
-  sizeof(ECS__ControlAns),
-  2,
-  ecs__control_ans__field_descriptors,
-  ecs__control_ans__field_indices_by_name,
-  1,  ecs__control_ans__number_ranges,
-  (ProtobufCMessageInit) ecs__control_ans__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor ecs__control_ntf__field_descriptors[3] =
-{
-  {
-    "category",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ControlNtf, category),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "command",
-    2,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ControlNtf, command),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "data",
-    3,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_BYTES,
-    PROTOBUF_C_OFFSETOF(ECS__ControlNtf, has_data),
-    PROTOBUF_C_OFFSETOF(ECS__ControlNtf, data),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__control_ntf__field_indices_by_name[] = {
-  0,   /* field[0] = category */
-  1,   /* field[1] = command */
-  2,   /* field[2] = data */
-};
-static const ProtobufCIntRange ecs__control_ntf__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 3 }
-};
-const ProtobufCMessageDescriptor ecs__control_ntf__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.ControlNtf",
-  "ControlNtf",
-  "ECS__ControlNtf",
-  "ECS",
-  sizeof(ECS__ControlNtf),
-  3,
-  ecs__control_ntf__field_descriptors,
-  ecs__control_ntf__field_indices_by_name,
-  1,  ecs__control_ntf__number_ranges,
-  (ProtobufCMessageInit) ecs__control_ntf__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
 static const ProtobufCFieldDescriptor ecs__monitor_req__field_descriptors[1] =
 {
   {
@@ -2312,160 +1531,7 @@ const ProtobufCMessageDescriptor ecs__monitor_ntf__descriptor =
   (ProtobufCMessageInit) ecs__monitor_ntf__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__screen_dump_req__field_descriptors[1] =
-{
-  {
-    "output_path",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ScreenDumpReq, output_path),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__screen_dump_req__field_indices_by_name[] = {
-  0,   /* field[0] = output_path */
-};
-static const ProtobufCIntRange ecs__screen_dump_req__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 1 }
-};
-const ProtobufCMessageDescriptor ecs__screen_dump_req__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.ScreenDumpReq",
-  "ScreenDumpReq",
-  "ECS__ScreenDumpReq",
-  "ECS",
-  sizeof(ECS__ScreenDumpReq),
-  1,
-  ecs__screen_dump_req__field_descriptors,
-  ecs__screen_dump_req__field_indices_by_name,
-  1,  ecs__screen_dump_req__number_ranges,
-  (ProtobufCMessageInit) ecs__screen_dump_req__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor ecs__screen_dump_ans__field_descriptors[2] =
-{
-  {
-    "errcode",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ScreenDumpAns, errcode),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "errmsg",
-    2,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__ScreenDumpAns, errmsg),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned ecs__screen_dump_ans__field_indices_by_name[] = {
-  0,   /* field[0] = errcode */
-  1,   /* field[1] = errmsg */
-};
-static const ProtobufCIntRange ecs__screen_dump_ans__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 2 }
-};
-const ProtobufCMessageDescriptor ecs__screen_dump_ans__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.ScreenDumpAns",
-  "ScreenDumpAns",
-  "ECS__ScreenDumpAns",
-  "ECS",
-  sizeof(ECS__ScreenDumpAns),
-  2,
-  ecs__screen_dump_ans__field_descriptors,
-  ecs__screen_dump_ans__field_indices_by_name,
-  1,  ecs__screen_dump_ans__number_ranges,
-  (ProtobufCMessageInit) ecs__screen_dump_ans__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-const ProtobufCEnumValue ecs__master__type__enum_values_by_number[20] =
-{
-  { "CHECKVERSION_REQ", "ECS__MASTER__TYPE__CHECKVERSION_REQ", 2 },
-  { "CHECKVERSION_ANS", "ECS__MASTER__TYPE__CHECKVERSION_ANS", 3 },
-  { "KEEPALIVE_REQ", "ECS__MASTER__TYPE__KEEPALIVE_REQ", 4 },
-  { "KEEPALIVE_ANS", "ECS__MASTER__TYPE__KEEPALIVE_ANS", 5 },
-  { "START_REQ", "ECS__MASTER__TYPE__START_REQ", 6 },
-  { "START_ANS", "ECS__MASTER__TYPE__START_ANS", 7 },
-  { "INJECTOR_REQ", "ECS__MASTER__TYPE__INJECTOR_REQ", 8 },
-  { "INJECTOR_ANS", "ECS__MASTER__TYPE__INJECTOR_ANS", 9 },
-  { "INJECTOR_NTF", "ECS__MASTER__TYPE__INJECTOR_NTF", 10 },
-  { "DEVICE_REQ", "ECS__MASTER__TYPE__DEVICE_REQ", 11 },
-  { "DEVICE_ANS", "ECS__MASTER__TYPE__DEVICE_ANS", 12 },
-  { "DEVICE_NTF", "ECS__MASTER__TYPE__DEVICE_NTF", 13 },
-  { "CONTROL_MSG", "ECS__MASTER__TYPE__CONTROL_MSG", 14 },
-  { "CONTROL_ANS", "ECS__MASTER__TYPE__CONTROL_ANS", 15 },
-  { "CONTROL_NTF", "ECS__MASTER__TYPE__CONTROL_NTF", 16 },
-  { "MONITOR_REQ", "ECS__MASTER__TYPE__MONITOR_REQ", 17 },
-  { "MONITOR_ANS", "ECS__MASTER__TYPE__MONITOR_ANS", 18 },
-  { "MONITOR_NTF", "ECS__MASTER__TYPE__MONITOR_NTF", 19 },
-  { "SCREEN_DUMP_REQ", "ECS__MASTER__TYPE__SCREEN_DUMP_REQ", 20 },
-  { "SCREEN_DUMP_ANS", "ECS__MASTER__TYPE__SCREEN_DUMP_ANS", 21 },
-};
-static const ProtobufCIntRange ecs__master__type__value_ranges[] = {
-{2, 0},{0, 20}
-};
-const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[20] =
-{
-  { "CHECKVERSION_ANS", 1 },
-  { "CHECKVERSION_REQ", 0 },
-  { "CONTROL_ANS", 13 },
-  { "CONTROL_MSG", 12 },
-  { "CONTROL_NTF", 14 },
-  { "DEVICE_ANS", 10 },
-  { "DEVICE_NTF", 11 },
-  { "DEVICE_REQ", 9 },
-  { "INJECTOR_ANS", 7 },
-  { "INJECTOR_NTF", 8 },
-  { "INJECTOR_REQ", 6 },
-  { "KEEPALIVE_ANS", 3 },
-  { "KEEPALIVE_REQ", 2 },
-  { "MONITOR_ANS", 16 },
-  { "MONITOR_NTF", 17 },
-  { "MONITOR_REQ", 15 },
-  { "SCREEN_DUMP_ANS", 19 },
-  { "SCREEN_DUMP_REQ", 18 },
-  { "START_ANS", 5 },
-  { "START_REQ", 4 },
-};
-const ProtobufCEnumDescriptor ecs__master__type__descriptor =
-{
-  PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "ECS.Master.Type",
-  "Type",
-  "ECS__Master__Type",
-  "ECS",
-  20,
-  ecs__master__type__enum_values_by_number,
-  20,
-  ecs__master__type__enum_values_by_name,
-  1,
-  ecs__master__type__value_ranges,
-  NULL,NULL,NULL,NULL   /* reserved[1234] */
-};
-static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
+static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
 {
   {
     "type",
@@ -2528,32 +1594,8 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "start_req",
-    6,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, start_req),
-    &ecs__start_req__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "start_ans",
-    7,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, start_ans),
-    &ecs__start_ans__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
     "injector_req",
-    8,
+    6,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2565,7 +1607,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
   },
   {
     "injector_ans",
-    9,
+    7,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2577,7 +1619,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
   },
   {
     "injector_ntf",
-    10,
+    8,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2589,7 +1631,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
   },
   {
     "device_req",
-    11,
+    9,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2601,7 +1643,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
   },
   {
     "device_ans",
-    12,
+    10,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2613,7 +1655,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
   },
   {
     "device_ntf",
-    13,
+    11,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2624,44 +1666,8 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "control_msg",
-    14,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, control_msg),
-    &ecs__control_msg__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "control_ans",
-    15,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, control_ans),
-    &ecs__control_ans__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "control_ntf",
-    16,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, control_ntf),
-    &ecs__control_ntf__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
     "monitor_req",
-    17,
+    12,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2673,7 +1679,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
   },
   {
     "monitor_ans",
-    18,
+    13,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2685,7 +1691,7 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
   },
   {
     "monitor_ntf",
-    19,
+    14,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -2695,58 +1701,27 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[21] =
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
-  {
-    "screen_dump_req",
-    20,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, screen_dump_req),
-    &ecs__screen_dump_req__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "screen_dump_ans",
-    21,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_MESSAGE,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, screen_dump_ans),
-    &ecs__screen_dump_ans__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
 };
 static const unsigned ecs__master__field_indices_by_name[] = {
   2,   /* field[2] = checkversion_ans */
   1,   /* field[1] = checkversion_req */
-  14,   /* field[14] = control_ans */
-  13,   /* field[13] = control_msg */
-  15,   /* field[15] = control_ntf */
-  11,   /* field[11] = device_ans */
-  12,   /* field[12] = device_ntf */
-  10,   /* field[10] = device_req */
-  8,   /* field[8] = injector_ans */
-  9,   /* field[9] = injector_ntf */
-  7,   /* field[7] = injector_req */
+  9,   /* field[9] = device_ans */
+  10,   /* field[10] = device_ntf */
+  8,   /* field[8] = device_req */
+  6,   /* field[6] = injector_ans */
+  7,   /* field[7] = injector_ntf */
+  5,   /* field[5] = injector_req */
   4,   /* field[4] = keepalive_ans */
   3,   /* field[3] = keepalive_req */
-  17,   /* field[17] = monitor_ans */
-  18,   /* field[18] = monitor_ntf */
-  16,   /* field[16] = monitor_req */
-  20,   /* field[20] = screen_dump_ans */
-  19,   /* field[19] = screen_dump_req */
-  6,   /* field[6] = start_ans */
-  5,   /* field[5] = start_req */
+  12,   /* field[12] = monitor_ans */
+  13,   /* field[13] = monitor_ntf */
+  11,   /* field[11] = monitor_req */
   0,   /* field[0] = type */
 };
 static const ProtobufCIntRange ecs__master__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 21 }
+  { 0, 14 }
 };
 const ProtobufCMessageDescriptor ecs__master__descriptor =
 {
@@ -2756,7 +1731,7 @@ const ProtobufCMessageDescriptor ecs__master__descriptor =
   "ECS__Master",
   "ECS",
   sizeof(ECS__Master),
-  21,
+  14,
   ecs__master__field_descriptors,
   ecs__master__field_indices_by_name,
   1,  ecs__master__number_ranges,

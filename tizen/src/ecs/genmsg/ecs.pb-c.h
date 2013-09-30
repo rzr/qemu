@@ -3,64 +3,30 @@
 #ifndef PROTOBUF_C_ecs_2eproto__INCLUDED
 #define PROTOBUF_C_ecs_2eproto__INCLUDED
 
-#include "../../../distrib/protobuf/protobuf-c.h"
+#include <google/protobuf-c/protobuf-c.h>
 
 PROTOBUF_C_BEGIN_DECLS
 
+#include "ecs_ids.pb-c.h"
 
 typedef struct _ECS__CheckVersionReq ECS__CheckVersionReq;
 typedef struct _ECS__CheckVersionAns ECS__CheckVersionAns;
 typedef struct _ECS__KeepAliveReq ECS__KeepAliveReq;
 typedef struct _ECS__KeepAliveAns ECS__KeepAliveAns;
-typedef struct _ECS__StartReq ECS__StartReq;
-typedef struct _ECS__StartAns ECS__StartAns;
 typedef struct _ECS__InjectorReq ECS__InjectorReq;
 typedef struct _ECS__InjectorAns ECS__InjectorAns;
 typedef struct _ECS__InjectorNtf ECS__InjectorNtf;
 typedef struct _ECS__DeviceReq ECS__DeviceReq;
 typedef struct _ECS__DeviceAns ECS__DeviceAns;
 typedef struct _ECS__DeviceNtf ECS__DeviceNtf;
-typedef struct _ECS__HostKeyboardReq ECS__HostKeyboardReq;
-typedef struct _ECS__HostKeyboardNtf ECS__HostKeyboardNtf;
-typedef struct _ECS__ControlMsg ECS__ControlMsg;
-typedef struct _ECS__ControlAns ECS__ControlAns;
-typedef struct _ECS__ControlNtf ECS__ControlNtf;
 typedef struct _ECS__MonitorReq ECS__MonitorReq;
 typedef struct _ECS__MonitorAns ECS__MonitorAns;
 typedef struct _ECS__MonitorNtf ECS__MonitorNtf;
-typedef struct _ECS__ScreenDumpReq ECS__ScreenDumpReq;
-typedef struct _ECS__ScreenDumpAns ECS__ScreenDumpAns;
 typedef struct _ECS__Master ECS__Master;
 
 
 /* --- enums --- */
 
-typedef enum _ECS__ControlMsg__ControlType {
-  ECS__CONTROL_MSG__CONTROL_TYPE__HOSTKEYBOARD_REQ = 2,
-  ECS__CONTROL_MSG__CONTROL_TYPE__HOSTKEYBOARD_NTF = 3
-} ECS__ControlMsg__ControlType;
-typedef enum _ECS__Master__Type {
-  ECS__MASTER__TYPE__CHECKVERSION_REQ = 2,
-  ECS__MASTER__TYPE__CHECKVERSION_ANS = 3,
-  ECS__MASTER__TYPE__KEEPALIVE_REQ = 4,
-  ECS__MASTER__TYPE__KEEPALIVE_ANS = 5,
-  ECS__MASTER__TYPE__START_REQ = 6,
-  ECS__MASTER__TYPE__START_ANS = 7,
-  ECS__MASTER__TYPE__INJECTOR_REQ = 8,
-  ECS__MASTER__TYPE__INJECTOR_ANS = 9,
-  ECS__MASTER__TYPE__INJECTOR_NTF = 10,
-  ECS__MASTER__TYPE__DEVICE_REQ = 11,
-  ECS__MASTER__TYPE__DEVICE_ANS = 12,
-  ECS__MASTER__TYPE__DEVICE_NTF = 13,
-  ECS__MASTER__TYPE__CONTROL_MSG = 14,
-  ECS__MASTER__TYPE__CONTROL_ANS = 15,
-  ECS__MASTER__TYPE__CONTROL_NTF = 16,
-  ECS__MASTER__TYPE__MONITOR_REQ = 17,
-  ECS__MASTER__TYPE__MONITOR_ANS = 18,
-  ECS__MASTER__TYPE__MONITOR_NTF = 19,
-  ECS__MASTER__TYPE__SCREEN_DUMP_REQ = 20,
-  ECS__MASTER__TYPE__SCREEN_DUMP_ANS = 21
-} ECS__Master__Type;
 
 /* --- messages --- */
 
@@ -103,30 +69,6 @@ struct  _ECS__KeepAliveAns
 #define ECS__KEEP_ALIVE_ANS__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ecs__keep_alive_ans__descriptor) \
     , NULL }
-
-
-struct  _ECS__StartReq
-{
-  ProtobufCMessage base;
-};
-#define ECS__START_REQ__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__start_req__descriptor) \
-     }
-
-
-struct  _ECS__StartAns
-{
-  ProtobufCMessage base;
-  protobuf_c_boolean has_host_keyboard_onoff;
-  int32_t host_keyboard_onoff;
-  protobuf_c_boolean has_earjack_onoff;
-  int32_t earjack_onoff;
-  protobuf_c_boolean has_camera_onoff;
-  int32_t camera_onoff;
-};
-#define ECS__START_ANS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__start_ans__descriptor) \
-    , 0,0, 0,0, 0,0 }
 
 
 struct  _ECS__InjectorReq
@@ -223,66 +165,6 @@ struct  _ECS__DeviceNtf
     , NULL, 0, 0, 0, 0,{0,NULL} }
 
 
-struct  _ECS__HostKeyboardReq
-{
-  ProtobufCMessage base;
-  protobuf_c_boolean has_ison;
-  int32_t ison;
-};
-#define ECS__HOST_KEYBOARD_REQ__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__host_keyboard_req__descriptor) \
-    , 0,0 }
-
-
-struct  _ECS__HostKeyboardNtf
-{
-  ProtobufCMessage base;
-  int32_t errcode;
-  char *errstr;
-  protobuf_c_boolean has_ison;
-  int32_t ison;
-};
-#define ECS__HOST_KEYBOARD_NTF__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__host_keyboard_ntf__descriptor) \
-    , 0, NULL, 0,0 }
-
-
-struct  _ECS__ControlMsg
-{
-  ProtobufCMessage base;
-  ECS__ControlMsg__ControlType type;
-  ECS__HostKeyboardReq *hostkeyboard_req;
-  ECS__HostKeyboardNtf *hostkeyboard_ntf;
-};
-#define ECS__CONTROL_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__control_msg__descriptor) \
-    , 0, NULL, NULL }
-
-
-struct  _ECS__ControlAns
-{
-  ProtobufCMessage base;
-  int32_t errcode;
-  char *errmsg;
-};
-#define ECS__CONTROL_ANS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__control_ans__descriptor) \
-    , 0, NULL }
-
-
-struct  _ECS__ControlNtf
-{
-  ProtobufCMessage base;
-  char *category;
-  char *command;
-  protobuf_c_boolean has_data;
-  ProtobufCBinaryData data;
-};
-#define ECS__CONTROL_NTF__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__control_ntf__descriptor) \
-    , NULL, NULL, 0,{0,NULL} }
-
-
 struct  _ECS__MonitorReq
 {
   ProtobufCMessage base;
@@ -319,55 +201,27 @@ struct  _ECS__MonitorNtf
     , NULL, 0,{0,NULL} }
 
 
-struct  _ECS__ScreenDumpReq
-{
-  ProtobufCMessage base;
-  char *output_path;
-};
-#define ECS__SCREEN_DUMP_REQ__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__screen_dump_req__descriptor) \
-    , NULL }
-
-
-struct  _ECS__ScreenDumpAns
-{
-  ProtobufCMessage base;
-  int32_t errcode;
-  char *errmsg;
-};
-#define ECS__SCREEN_DUMP_ANS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__screen_dump_ans__descriptor) \
-    , 0, NULL }
-
-
 struct  _ECS__Master
 {
   ProtobufCMessage base;
-  ECS__Master__Type type;
+  ECS__MasterType type;
   ECS__CheckVersionReq *checkversion_req;
   ECS__CheckVersionAns *checkversion_ans;
   ECS__KeepAliveReq *keepalive_req;
   ECS__KeepAliveAns *keepalive_ans;
-  ECS__StartReq *start_req;
-  ECS__StartAns *start_ans;
   ECS__InjectorReq *injector_req;
   ECS__InjectorAns *injector_ans;
   ECS__InjectorNtf *injector_ntf;
   ECS__DeviceReq *device_req;
   ECS__DeviceAns *device_ans;
   ECS__DeviceNtf *device_ntf;
-  ECS__ControlMsg *control_msg;
-  ECS__ControlAns *control_ans;
-  ECS__ControlNtf *control_ntf;
   ECS__MonitorReq *monitor_req;
   ECS__MonitorAns *monitor_ans;
   ECS__MonitorNtf *monitor_ntf;
-  ECS__ScreenDumpReq *screen_dump_req;
-  ECS__ScreenDumpAns *screen_dump_ans;
 };
 #define ECS__MASTER__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ecs__master__descriptor) \
-    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 
 
 /* ECS__CheckVersionReq methods */
@@ -445,44 +299,6 @@ ECS__KeepAliveAns *
                       const uint8_t       *data);
 void   ecs__keep_alive_ans__free_unpacked
                      (ECS__KeepAliveAns *message,
-                      ProtobufCAllocator *allocator);
-/* ECS__StartReq methods */
-void   ecs__start_req__init
-                     (ECS__StartReq         *message);
-size_t ecs__start_req__get_packed_size
-                     (const ECS__StartReq   *message);
-size_t ecs__start_req__pack
-                     (const ECS__StartReq   *message,
-                      uint8_t             *out);
-size_t ecs__start_req__pack_to_buffer
-                     (const ECS__StartReq   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__StartReq *
-       ecs__start_req__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__start_req__free_unpacked
-                     (ECS__StartReq *message,
-                      ProtobufCAllocator *allocator);
-/* ECS__StartAns methods */
-void   ecs__start_ans__init
-                     (ECS__StartAns         *message);
-size_t ecs__start_ans__get_packed_size
-                     (const ECS__StartAns   *message);
-size_t ecs__start_ans__pack
-                     (const ECS__StartAns   *message,
-                      uint8_t             *out);
-size_t ecs__start_ans__pack_to_buffer
-                     (const ECS__StartAns   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__StartAns *
-       ecs__start_ans__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__start_ans__free_unpacked
-                     (ECS__StartAns *message,
                       ProtobufCAllocator *allocator);
 /* ECS__InjectorReq methods */
 void   ecs__injector_req__init
@@ -598,101 +414,6 @@ ECS__DeviceNtf *
 void   ecs__device_ntf__free_unpacked
                      (ECS__DeviceNtf *message,
                       ProtobufCAllocator *allocator);
-/* ECS__HostKeyboardReq methods */
-void   ecs__host_keyboard_req__init
-                     (ECS__HostKeyboardReq         *message);
-size_t ecs__host_keyboard_req__get_packed_size
-                     (const ECS__HostKeyboardReq   *message);
-size_t ecs__host_keyboard_req__pack
-                     (const ECS__HostKeyboardReq   *message,
-                      uint8_t             *out);
-size_t ecs__host_keyboard_req__pack_to_buffer
-                     (const ECS__HostKeyboardReq   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__HostKeyboardReq *
-       ecs__host_keyboard_req__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__host_keyboard_req__free_unpacked
-                     (ECS__HostKeyboardReq *message,
-                      ProtobufCAllocator *allocator);
-/* ECS__HostKeyboardNtf methods */
-void   ecs__host_keyboard_ntf__init
-                     (ECS__HostKeyboardNtf         *message);
-size_t ecs__host_keyboard_ntf__get_packed_size
-                     (const ECS__HostKeyboardNtf   *message);
-size_t ecs__host_keyboard_ntf__pack
-                     (const ECS__HostKeyboardNtf   *message,
-                      uint8_t             *out);
-size_t ecs__host_keyboard_ntf__pack_to_buffer
-                     (const ECS__HostKeyboardNtf   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__HostKeyboardNtf *
-       ecs__host_keyboard_ntf__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__host_keyboard_ntf__free_unpacked
-                     (ECS__HostKeyboardNtf *message,
-                      ProtobufCAllocator *allocator);
-/* ECS__ControlMsg methods */
-void   ecs__control_msg__init
-                     (ECS__ControlMsg         *message);
-size_t ecs__control_msg__get_packed_size
-                     (const ECS__ControlMsg   *message);
-size_t ecs__control_msg__pack
-                     (const ECS__ControlMsg   *message,
-                      uint8_t             *out);
-size_t ecs__control_msg__pack_to_buffer
-                     (const ECS__ControlMsg   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__ControlMsg *
-       ecs__control_msg__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__control_msg__free_unpacked
-                     (ECS__ControlMsg *message,
-                      ProtobufCAllocator *allocator);
-/* ECS__ControlAns methods */
-void   ecs__control_ans__init
-                     (ECS__ControlAns         *message);
-size_t ecs__control_ans__get_packed_size
-                     (const ECS__ControlAns   *message);
-size_t ecs__control_ans__pack
-                     (const ECS__ControlAns   *message,
-                      uint8_t             *out);
-size_t ecs__control_ans__pack_to_buffer
-                     (const ECS__ControlAns   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__ControlAns *
-       ecs__control_ans__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__control_ans__free_unpacked
-                     (ECS__ControlAns *message,
-                      ProtobufCAllocator *allocator);
-/* ECS__ControlNtf methods */
-void   ecs__control_ntf__init
-                     (ECS__ControlNtf         *message);
-size_t ecs__control_ntf__get_packed_size
-                     (const ECS__ControlNtf   *message);
-size_t ecs__control_ntf__pack
-                     (const ECS__ControlNtf   *message,
-                      uint8_t             *out);
-size_t ecs__control_ntf__pack_to_buffer
-                     (const ECS__ControlNtf   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__ControlNtf *
-       ecs__control_ntf__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__control_ntf__free_unpacked
-                     (ECS__ControlNtf *message,
-                      ProtobufCAllocator *allocator);
 /* ECS__MonitorReq methods */
 void   ecs__monitor_req__init
                      (ECS__MonitorReq         *message);
@@ -750,44 +471,6 @@ ECS__MonitorNtf *
 void   ecs__monitor_ntf__free_unpacked
                      (ECS__MonitorNtf *message,
                       ProtobufCAllocator *allocator);
-/* ECS__ScreenDumpReq methods */
-void   ecs__screen_dump_req__init
-                     (ECS__ScreenDumpReq         *message);
-size_t ecs__screen_dump_req__get_packed_size
-                     (const ECS__ScreenDumpReq   *message);
-size_t ecs__screen_dump_req__pack
-                     (const ECS__ScreenDumpReq   *message,
-                      uint8_t             *out);
-size_t ecs__screen_dump_req__pack_to_buffer
-                     (const ECS__ScreenDumpReq   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__ScreenDumpReq *
-       ecs__screen_dump_req__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__screen_dump_req__free_unpacked
-                     (ECS__ScreenDumpReq *message,
-                      ProtobufCAllocator *allocator);
-/* ECS__ScreenDumpAns methods */
-void   ecs__screen_dump_ans__init
-                     (ECS__ScreenDumpAns         *message);
-size_t ecs__screen_dump_ans__get_packed_size
-                     (const ECS__ScreenDumpAns   *message);
-size_t ecs__screen_dump_ans__pack
-                     (const ECS__ScreenDumpAns   *message,
-                      uint8_t             *out);
-size_t ecs__screen_dump_ans__pack_to_buffer
-                     (const ECS__ScreenDumpAns   *message,
-                      ProtobufCBuffer     *buffer);
-ECS__ScreenDumpAns *
-       ecs__screen_dump_ans__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   ecs__screen_dump_ans__free_unpacked
-                     (ECS__ScreenDumpAns *message,
-                      ProtobufCAllocator *allocator);
 /* ECS__Master methods */
 void   ecs__master__init
                      (ECS__Master         *message);
@@ -821,12 +504,6 @@ typedef void (*ECS__KeepAliveReq_Closure)
 typedef void (*ECS__KeepAliveAns_Closure)
                  (const ECS__KeepAliveAns *message,
                   void *closure_data);
-typedef void (*ECS__StartReq_Closure)
-                 (const ECS__StartReq *message,
-                  void *closure_data);
-typedef void (*ECS__StartAns_Closure)
-                 (const ECS__StartAns *message,
-                  void *closure_data);
 typedef void (*ECS__InjectorReq_Closure)
                  (const ECS__InjectorReq *message,
                   void *closure_data);
@@ -845,21 +522,6 @@ typedef void (*ECS__DeviceAns_Closure)
 typedef void (*ECS__DeviceNtf_Closure)
                  (const ECS__DeviceNtf *message,
                   void *closure_data);
-typedef void (*ECS__HostKeyboardReq_Closure)
-                 (const ECS__HostKeyboardReq *message,
-                  void *closure_data);
-typedef void (*ECS__HostKeyboardNtf_Closure)
-                 (const ECS__HostKeyboardNtf *message,
-                  void *closure_data);
-typedef void (*ECS__ControlMsg_Closure)
-                 (const ECS__ControlMsg *message,
-                  void *closure_data);
-typedef void (*ECS__ControlAns_Closure)
-                 (const ECS__ControlAns *message,
-                  void *closure_data);
-typedef void (*ECS__ControlNtf_Closure)
-                 (const ECS__ControlNtf *message,
-                  void *closure_data);
 typedef void (*ECS__MonitorReq_Closure)
                  (const ECS__MonitorReq *message,
                   void *closure_data);
@@ -868,12 +530,6 @@ typedef void (*ECS__MonitorAns_Closure)
                   void *closure_data);
 typedef void (*ECS__MonitorNtf_Closure)
                  (const ECS__MonitorNtf *message,
-                  void *closure_data);
-typedef void (*ECS__ScreenDumpReq_Closure)
-                 (const ECS__ScreenDumpReq *message,
-                  void *closure_data);
-typedef void (*ECS__ScreenDumpAns_Closure)
-                 (const ECS__ScreenDumpAns *message,
                   void *closure_data);
 typedef void (*ECS__Master_Closure)
                  (const ECS__Master *message,
@@ -888,27 +544,16 @@ extern const ProtobufCMessageDescriptor ecs__check_version_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__check_version_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__keep_alive_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__keep_alive_ans__descriptor;
-extern const ProtobufCMessageDescriptor ecs__start_req__descriptor;
-extern const ProtobufCMessageDescriptor ecs__start_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__injector_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__injector_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__injector_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__device_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__device_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__device_ntf__descriptor;
-extern const ProtobufCMessageDescriptor ecs__host_keyboard_req__descriptor;
-extern const ProtobufCMessageDescriptor ecs__host_keyboard_ntf__descriptor;
-extern const ProtobufCMessageDescriptor ecs__control_msg__descriptor;
-extern const ProtobufCEnumDescriptor    ecs__control_msg__control_type__descriptor;
-extern const ProtobufCMessageDescriptor ecs__control_ans__descriptor;
-extern const ProtobufCMessageDescriptor ecs__control_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__monitor_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__monitor_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__monitor_ntf__descriptor;
-extern const ProtobufCMessageDescriptor ecs__screen_dump_req__descriptor;
-extern const ProtobufCMessageDescriptor ecs__screen_dump_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__master__descriptor;
-extern const ProtobufCEnumDescriptor    ecs__master__type__descriptor;
 
 PROTOBUF_C_END_DECLS
 

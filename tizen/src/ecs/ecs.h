@@ -39,6 +39,7 @@
 #include "qemu-common.h"
 #include "ecs-json-streamer.h"
 #include "genmsg/ecs.pb-c.h"
+#include "genmsg/ecs_ids.pb-c.h"
 
 #define ECS_DEBUG   1
 
@@ -192,25 +193,25 @@ void read_val_char(const char* data, unsigned char* ret_val);
 void read_val_str(const char* data, char* ret_val, int len);
 
 
-bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg);
+//bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg);
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
-bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg);
+//bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
 bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
-bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg);
+//bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg);
 
 
-enum{
-    CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ = 1,
-    CONTROL_COMMAND_SCREENSHOT_REQ = 2
-};
+//enum{
+//    CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ = 1,
+//    CONTROL_COMMAND_SCREENSHOT_REQ = 2
+//};
 
 /* request */
 int accel_min_max(double value);
 void req_set_sensor_accel(int x, int y, int z);
 
 // control sub messages
-void msgproc_control_hostkeyboard_req(ECS_Client *cli, ECS__HostKeyboardReq* req);
+//void msgproc_control_hostkeyboard_req(ECS_Client *cli, ECS__HostKeyboardReq* req);
 
 void set_sensor_data(int length, const char* data);
 

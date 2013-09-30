@@ -103,7 +103,7 @@ bool send_to_ecp(ECS__Master* master)
 
 // message handlers
 
-
+#if 0
 bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg)
 {
     LOG("ecs_startinfo_req");
@@ -116,7 +116,7 @@ bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg)
 
     return true;
 }
-
+#endif
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 {
     char cmd[10];
@@ -169,7 +169,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 
     return true;
 }
-
+#if 0
 bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg)
 {
     if (msg->type == ECS__CONTROL_MSG__CONTROL_TYPE__HOSTKEYBOARD_REQ)
@@ -182,7 +182,7 @@ bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg)
 
     return true;
 }
-
+#endif
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
 {
 
@@ -236,7 +236,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 
     return true;
 }
-
+#if 0
 bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg)
 {
 
@@ -251,7 +251,7 @@ void msgproc_control_hostkeyboard_req(ECS_Client *clii, ECS__HostKeyboardReq* re
     int64_t is_on = req->ison;
     onoff_host_kbd(is_on);
 }
-
+#endif
 // end control command
 
 
@@ -319,7 +319,7 @@ bool ntf_to_injector(const char* data, const int len) {
 
     return true;
 }
-
+#if 0
 bool send_start_ans(int host_keyboard_onff)
 {
     ECS__Master master = ECS__MASTER__INIT;
@@ -339,7 +339,7 @@ bool send_start_ans(int host_keyboard_onff)
 
     return send_to_ecp(&master);
 }
-
+#endif
 bool send_injector_ntf(const char* data, const int len)
 {
     type_length length = 0;
@@ -396,7 +396,7 @@ bool send_injector_ntf(const char* data, const int len)
     return true;
 }
 
-
+#if 0
 bool send_hostkeyboard_ntf(int is_on)
 {
     ECS__Master master = ECS__MASTER__INIT;
@@ -415,7 +415,7 @@ bool send_hostkeyboard_ntf(int is_on)
 
     return send_to_ecp(&master);
 }
-
+#endif
 
 bool send_device_ntf(const char* data, const int len)
 {

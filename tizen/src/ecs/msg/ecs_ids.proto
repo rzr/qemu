@@ -1,0 +1,22 @@
+package ECS;
+
+option java_package = "org.tizen.ecp.msg.genmsg.ecs";
+
+enum Master_Type {
+    CHECKVERSION_REQ = 2;
+    CHECKVERSION_ANS = 3;
+	KEEPALIVE_REQ = 4;
+	KEEPALIVE_ANS = 5;
+	INJECTOR_REQ = 6;
+	INJECTOR_ANS = 7;
+	INJECTOR_NTF = 8;
+	DEVICE_REQ = 9;
+	DEVICE_ANS = 10;
+	DEVICE_NTF = 11;
+	MONITOR_REQ = 12;
+	MONITOR_ANS = 13;
+	MONITOR_NTF = 14;
+
+	NFC_REQ = 101;
+	NFC_NTF = 102;
+}

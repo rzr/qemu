@@ -37,6 +37,9 @@
 pthread_t start_guest_server( int server_port );
 void shutdown_guest_server( void );
 
+
+#define STATE_RESUME 0
+#define STATE_SUSPEND 1
 void notify_all_sdb_clients(int state);
 
 #endif /* GUEST_SERVER_H_ */
