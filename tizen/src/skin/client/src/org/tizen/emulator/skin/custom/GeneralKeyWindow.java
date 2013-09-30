@@ -1,5 +1,5 @@
 /**
- *
+ * General Key Window
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -49,7 +49,6 @@ import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -57,7 +56,8 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.dbi.KeyMapType;
-import org.tizen.emulator.skin.image.ImageRegistry.KeyWindowImageName;
+import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry;
+import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry.KeyWindowImageName;
 import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -86,6 +86,7 @@ public class GeneralKeyWindow extends SkinWindow {
 
 	private Color colorFrame;
 	private SocketCommunicator communicator;
+	private GeneralKeyWindowImageRegistry imageRegistry;
 	private List<KeyMapType> keyMapList;
 
 	private ShellListener shellListener;
@@ -101,8 +102,15 @@ public class GeneralKeyWindow extends SkinWindow {
 		super(parent, SWT.RIGHT | SWT.CENTER);
 
 		this.skin = skin;
-		this.shell = new Shell(parent,
-				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
+		if (SwtUtil.isMacPlatform() == false) {
+			this.shell = new Shell(parent,
+					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
+		} else {
+			this.shell = new Shell(parent.getDisplay(),
+					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
+		}
+
+		this.imageRegistry = new GeneralKeyWindowImageRegistry();
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 
 		this.keyMapList = keyMapList; //TODO: null
@@ -113,11 +121,11 @@ public class GeneralKeyWindow extends SkinWindow {
 		shell.setImage(parent.getImage());
 
 		/* load image for HW key button */
-		imageNormal = skin.getImageRegistry().getKeyWindowImageData(
+		imageNormal = imageRegistry.getKeyWindowImageData(
 				KeyWindowImageName.KEYBUTTON_NORMAL);
-		imageHover = skin.getImageRegistry().getKeyWindowImageData(
+		imageHover = imageRegistry.getKeyWindowImageData(
 				KeyWindowImageName.KEYBUTTON_HOVER);
-		imagePushed = skin.getImageRegistry().getKeyWindowImageData(
+		imagePushed = imageRegistry.getKeyWindowImageData(
 				KeyWindowImageName.KEYBUTTON_PUSHED);
 
 		/* calculate the key window size */
@@ -168,30 +176,29 @@ public class GeneralKeyWindow extends SkinWindow {
 		/* make a region of HW keys */
 		if (cntHiddenButton > 0) {
 			/* added custom scrollbar */
-
 			Image imagesScrollArrowUp[] = new Image[3];
 			Image imagesScrollArrowDown[] = new Image[3];
 
-			imagesScrollArrowUp[0] = skin.getImageRegistry().getKeyWindowImageData(
+			imagesScrollArrowUp[0] = imageRegistry.getKeyWindowImageData(
 					KeyWindowImageName.SCROLL_UPBUTTON_NORMAL);
-			imagesScrollArrowUp[1] = skin.getImageRegistry().getKeyWindowImageData(
+			imagesScrollArrowUp[1] = imageRegistry.getKeyWindowImageData(
 					KeyWindowImageName.SCROLL_UPBUTTON_HOVER);
-			imagesScrollArrowUp[2] = skin.getImageRegistry().getKeyWindowImageData(
+			imagesScrollArrowUp[2] = imageRegistry.getKeyWindowImageData(
 					KeyWindowImageName.SCROLL_UPBUTTON_PUSHED);
 
-			imagesScrollArrowDown[0] = skin.getImageRegistry().getKeyWindowImageData(
+			imagesScrollArrowDown[0] = imageRegistry.getKeyWindowImageData(
 					KeyWindowImageName.SCROLL_DOWNBUTTON_NORMAL);
-			imagesScrollArrowDown[1] = skin.getImageRegistry().getKeyWindowImageData(
+			imagesScrollArrowDown[1] = imageRegistry.getKeyWindowImageData(
 					KeyWindowImageName.SCROLL_DOWNBUTTON_HOVER);
-			imagesScrollArrowDown[2] = skin.getImageRegistry().getKeyWindowImageData(
+			imagesScrollArrowDown[2] = imageRegistry.getKeyWindowImageData(
 					KeyWindowImageName.SCROLL_DOWNBUTTON_PUSHED);
 
 			CustomScrolledComposite compositeScroll =
 					new CustomScrolledComposite(shell, SWT.NONE,
 							imagesScrollArrowUp, imagesScrollArrowDown,
-							skin.getImageRegistry().getKeyWindowImageData(
+							imageRegistry.getKeyWindowImageData(
 									KeyWindowImageName.SCROLL_THUMB),
-							skin.getImageRegistry().getKeyWindowImageData(
+							imageRegistry.getKeyWindowImageData(
 									KeyWindowImageName.SCROLL_SHAFT));
 			compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 
@@ -218,7 +225,9 @@ public class GeneralKeyWindow extends SkinWindow {
 			compositeScroll.setContent(compositeBase);
 			compositeScroll.setExpandHorizontal(true);
 			compositeScroll.setExpandVertical(true);
-			compositeScroll.setMinSize(compositeBase.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+
+			compositeScroll.setMinSize(
+					compositeBase.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 		}
 	}
 
@@ -327,29 +336,7 @@ public class GeneralKeyWindow extends SkinWindow {
 			public void shellClosed(ShellEvent event) {
 				logger.info("Key Window is closed");
 
-				if (skin.pairTag != null) {
-					skin.pairTag.setVisible(false);
-				}
-
-				if (null != shellPaintListener) {
-					shell.removePaintListener(shellPaintListener);
-				}
-
-				if (null != shellListener) {
-					shell.removeShellListener(shellListener);
-				}
-
-				if (null != shellMouseMoveListener) {
-					shell.removeMouseMoveListener(shellMouseMoveListener);
-				}
-
-				if (null != shellMouseListener) {
-					shell.removeMouseListener(shellMouseListener);
-				}
-
-				colorFrame.dispose();
-
-				frameMaker.freePatches();
+				dispose();
 			}
 
 			@Override
@@ -501,5 +488,32 @@ public class GeneralKeyWindow extends SkinWindow {
 		};
 
 		shell.addMouseListener(shellMouseListener);
+	}
+
+	private void dispose() {
+		if (skin.pairTag != null) {
+			skin.pairTag.setVisible(false);
+		}
+
+		if (null != shellPaintListener) {
+			shell.removePaintListener(shellPaintListener);
+		}
+
+		if (null != shellListener) {
+			shell.removeShellListener(shellListener);
+		}
+
+		if (null != shellMouseMoveListener) {
+			shell.removeMouseMoveListener(shellMouseMoveListener);
+		}
+
+		if (null != shellMouseListener) {
+			shell.removeMouseListener(shellMouseListener);
+		}
+
+		colorFrame.dispose();
+
+		frameMaker.freePatches();
+		imageRegistry.dispose();
 	}
 }
