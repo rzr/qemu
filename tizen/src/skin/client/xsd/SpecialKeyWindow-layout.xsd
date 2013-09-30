@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.tizen.org/emulator/skin/keywindow/dbi"
+xmlns:dbi="http://www.tizen.org/emulator/skin/keywindow/dbi" elementFormDefault="qualified">
+
+	<element name="KeyWindowUI">
+		<complexType>
+			<sequence>
+				<element name="dbi_version" type="float" minOccurs="1" maxOccurs="1"> </element>
+				<element name="imageList" type="dbi:imageListType" minOccurs="1" maxOccurs="1"> </element>
+				<element name="keyMapList" type="dbi:keyMapListType" minOccurs="1" maxOccurs="1"> </element>
+				<element name="hover" type="dbi:hoverType" minOccurs="0" maxOccurs="1"> </element>
+			</sequence>
+		</complexType>
+	</element>
+
+	<complexType name="imageListType">
+		<all>
+			<element name="mainImage" type="string" minOccurs="1" maxOccurs="1"> </element>
+			<element name="keyPressedImage" type="string" minOccurs="0" maxOccurs="1"> </element>
+		</all>
+	</complexType>
+
+	<complexType name="keyMapListType">
+		<sequence>
+			<element name="keyMap" type="dbi:keyMapType" minOccurs="0" maxOccurs="unbounded"> </element>
+		</sequence>
+	</complexType>
+
+	<complexType name="keyMapType">
+		<sequence>
+			<element name="region" type="dbi:regionType" minOccurs="1" maxOccurs="1"> </element>
+			<element name="eventInfo" type="dbi:eventInfoType" minOccurs="0" maxOccurs="1"> </element>
+			<element name="tooltip" type="string" minOccurs="0" maxOccurs="1"> </element>
+		</sequence>
+	</complexType>
+
+	<complexType name="eventInfoType">
+		<all>
+            <element name="keyCode" type="int" minOccurs="1" maxOccurs="1"> </element>
+            <element name="keyName" type="string" minOccurs="1" maxOccurs="1"> </element>
+		</all>
+	</complexType>
+
+	<complexType name="regionType">
+		<attribute name="left" type="int"> </attribute>
+		<attribute name="top" type="int"> </attribute>
+		<attribute name="width" type="int"> </attribute>
+		<attribute name="height" type="int"> </attribute>
+	</complexType>
+
+	<complexType name="hoverType">
+		<all>
+			<element name="color" type="dbi:rgbType" minOccurs="0" maxOccurs="1"> </element>
+		</all>
+	</complexType>
+
+	<complexType name="rgbType">
+		<attribute name="R" type="unsignedInt"> </attribute>
+		<attribute name="G" type="unsignedInt"> </attribute>
+		<attribute name="B" type="unsignedInt"> </attribute>
+	</complexType>
+</schema>
