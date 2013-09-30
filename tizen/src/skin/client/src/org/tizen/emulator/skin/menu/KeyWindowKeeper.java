@@ -94,8 +94,7 @@ public class KeyWindowKeeper {
 				return;
 			}
 
-			keyWindow = new GeneralKeyWindow(
-					skin, skin.getShell(), skin.communicator, keyMapList);
+			keyWindow = new GeneralKeyWindow(skin, keyMapList);
 		} else {
 			// TODO:
 			String layoutName =

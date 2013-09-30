@@ -1,7 +1,7 @@
 /**
- * 
+ * Skin Utilities
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -43,6 +43,7 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
@@ -55,8 +56,8 @@ import org.tizen.emulator.skin.dbi.KeyMapListType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
-import org.tizen.emulator.skin.image.ImageRegistry;
-import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
+import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
+import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.layout.HWKey;
 import org.tizen.emulator.skin.log.SkinLogger;
 
@@ -281,9 +282,9 @@ public class SkinUtil {
 
 	}
 
-	public static Image createScaledImage(ImageRegistry imageRegistry,
-			Shell shell, short rotationId, int scale, ImageType type) {
-
+	public static Image createScaledImage(Display display,
+			ProfileSkinImageRegistry imageRegistry, SkinImageType type,
+			short rotationId, int scale) {
 		Image imageOrigin = imageRegistry.getSkinImage(rotationId, type);
 		if (imageOrigin == null) {
 			return null;
@@ -298,7 +299,7 @@ public class SkinUtil {
 		int height = (int) (imageDataSrc.height * convertedScale);
 		imageDataDst = imageDataDst.scaledTo(width, height);
 
-		return new Image(shell.getDisplay(), imageDataDst);
+		return new Image(display, imageDataDst);
 	}
 
 	public static float convertScale(int scale) {
