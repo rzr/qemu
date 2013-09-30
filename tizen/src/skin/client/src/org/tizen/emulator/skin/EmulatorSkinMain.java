@@ -265,28 +265,10 @@ public class EmulatorSkinMain {
 						new Thread(communicator, "communicator");
 				communicatorThread.start();
 
-//				SkinReopenPolicy reopenPolicy = skin.open();
-//				
-//				while( true ) {
-//
-//					if( null != reopenPolicy ) {
-//						
-//						if( reopenPolicy.isReopen() ) {
-//							
-//							EmulatorSkin reopenSkin = reopenPolicy.getReopenSkin();
-//							logger.info( "Reopen skin dialog." );
-//							reopenPolicy = reopenSkin.open();
-//							
-//						}else {
-//							break;
-//						}
-//						
-//					}else {
-//						break;
-//					}
-//
-//				}
-				
+				/* Moves the receiver to the top of the drawing order for
+				 the display on which it was created, marks it visible,
+				 sets the focus and asks the window manager to make the
+				 shell active */
 				skin.open();
 				
 			} else {

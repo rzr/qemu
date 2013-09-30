@@ -1,5 +1,5 @@
 /**
- * 
+ * Skin Information
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -28,10 +28,17 @@
 
 package org.tizen.emulator.skin.info;
 
+import java.util.logging.Logger;
+
+import org.tizen.emulator.skin.log.SkinLogger;
+
 /*
  * 
  */
 public class SkinInformation {
+	private static Logger logger =
+			SkinLogger.getSkinLogger(SkinInformation.class).getLogger();
+
 	private String skinName;
 	private String skinPath;
 	private boolean isGeneralSkin;
@@ -45,6 +52,12 @@ public class SkinInformation {
 		this.skinPath = skinPath;
 		this.isGeneralSkin = isGeneralSkin;
 		this.skinOption = 0;
+
+		if (isGeneralPurposeSkin() == true) {
+			logger.info("This skin has a general purpose layout");
+		} else {
+			logger.info("This skin has a profile specific layout");
+		}
 	}
 
 	public String getSkinName() {
@@ -58,7 +71,7 @@ public class SkinInformation {
 	public boolean isGeneralPurposeSkin() {
 		return isGeneralSkin;
 	}
-	
+
 	public int getSkinOption() {
 		return skinOption;
 	}

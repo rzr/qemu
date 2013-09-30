@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.MenuItem;
 import org.tizen.emulator.skin.EmulatorSkin;
-import org.tizen.emulator.skin.custom.KeyWindow;
+import org.tizen.emulator.skin.custom.GeneralKeyWindow;
 import org.tizen.emulator.skin.custom.SkinWindow;
 import org.tizen.emulator.skin.custom.SpecialKeyWindow;
 import org.tizen.emulator.skin.dbi.KeyMapType;
@@ -94,7 +94,7 @@ public class KeyWindowKeeper {
 				return;
 			}
 
-			keyWindow = new KeyWindow(
+			keyWindow = new GeneralKeyWindow(
 					skin, skin.getShell(), skin.communicator, keyMapList);
 		} else {
 			// TODO:
