@@ -51,7 +51,11 @@ yagl_enable() {
     YAGL_EN="no"
   ;;
   1|yes|enable)
-    YAGL_EN="yes"
+    if [ "$targetos" != "Darwin" ] ; then
+      YAGL_EN="yes"
+    else
+      YAGL_EN="no"
+    fi
   ;;
   *)
     usage
@@ -66,7 +70,11 @@ yagl_stats_enable() {
     YAGL_STATS_EN="no"
   ;;
   1|yes|enable)
-    YAGL_STATS_EN="yes"
+    if [ "$targetos" != "Darwin" ] ; then
+      YAGL_STATS_EN="yes"
+    else
+      YAGL_STATS_EN="no"
+    fi
   ;;
   *)
     usage
