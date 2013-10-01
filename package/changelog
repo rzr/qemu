@@ -1,3 +1,6 @@
+* 1.5.97
+- YAGL module is excluded from the build on MacOS in temparary.
+== Jinhyung Jo <jinhyung.jo@samsung.com> 2013-09-27
 * 1.5.96
 - remove Wow6432Node
 == jihye kim <jihye1128.kim@samsung.com> 2013-09-17
