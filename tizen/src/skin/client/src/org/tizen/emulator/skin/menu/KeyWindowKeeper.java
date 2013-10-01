@@ -101,8 +101,7 @@ public class KeyWindowKeeper {
 					skin.getPopupMenu().keyWindowItem.getMenu().getItem(indexLayout).getText();
 			logger.info("generate a \'" + layoutName + "\' key window!");
 
-			keyWindow = new SpecialKeyWindow(
-					skin, skin.getShell(), skin.communicator, layoutName);
+			keyWindow = new SpecialKeyWindow(skin, layoutName);
 		}
 
 		selectKeyWindowMenu(skin.isKeyWindow = true);

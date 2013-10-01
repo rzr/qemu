@@ -1,7 +1,7 @@
 /**
+ * Special Key Window
  *
- *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -45,12 +45,8 @@ import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.graphics.Region;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -64,32 +60,29 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.KeyWindowImageRegistry;
-import org.tizen.emulator.skin.image.KeyWindowImageRegistry.ImageType;
+import org.tizen.emulator.skin.image.KeyWindowImageRegistry.SpecailKeyWindowImageType;
 import org.tizen.emulator.skin.layout.HWKey;
-import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.SpecialKeyWindowUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class SpecialKeyWindow extends SkinWindow {
-	private static final String PATCH_IMAGES_PATH = "images/key-window/";
 	private static final String KEYWINDOW_LAYOUT = "keywindow-layout";	
 	private static final String DBI_FILE_NAME = "default.dbi";	
 
 	private EmulatorSkin skin;
-	private SkinPatches frameMaker;
 	
 	private HWKey currentPressedHWKey;
 
 	private int widthBase;
 	private int heightBase;
-	
-	private Image imageFrame; /* nine-patch image */
+
 	private Image keyWindowImage;
 	private Image keyWindowPressedImage;
 
 	private Color colorFrame;
+	private KeyWindowImageRegistry imageRegistry;
 	private SocketCommunicator communicator;	
 
 	private ShellListener shellListener;
@@ -101,32 +94,37 @@ public class SpecialKeyWindow extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public SpecialKeyWindow(EmulatorSkin skin, Shell parent, SocketCommunicator communicator, String path) {
-		super(parent, SWT.RIGHT | SWT.CENTER);
+	public SpecialKeyWindow(EmulatorSkin skin, String layoutName) {
+		super(skin.getShell(), SWT.RIGHT | SWT.CENTER);
 
 		this.skin = skin;
-		this.shell = new Shell(Display.getDefault(),
-				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
-		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
-		
-		this.communicator = communicator;	
+		this.parent = skin.getShell();
+		if (SwtUtil.isMacPlatform() == false) {
+			this.shell = new Shell(parent,
+					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
+		} else {
+			this.shell = new Shell(parent.getDisplay(),
+					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
+		}
+
+		this.communicator = skin.communicator;
 		this.grabPosition = new Point(0, 0);
 
 		shell.setText(parent.getText());
 		shell.setImage(parent.getImage());
-		
+
 		/* load dbi file */
 		String skinPath = skin.skinInfo.getSkinPath();
-		String specialKeyWindowPath = skinPath + File.separator + KEYWINDOW_LAYOUT + File.separator + path;
+		String specialKeyWindowPath = skinPath + File.separator + KEYWINDOW_LAYOUT + File.separator + layoutName;
 		logger.info("special key window path : " + specialKeyWindowPath);
 		EmulatorUI dbiContents = loadXMLForKeyWindow(specialKeyWindowPath);
 
 		/* image init */
-		KeyWindowImageRegistry.getInstance().initialize(dbiContents, specialKeyWindowPath);
+		this.imageRegistry = new KeyWindowImageRegistry(shell.getDisplay(), dbiContents, specialKeyWindowPath);
 		
 		/* get keywindow image */
-		keyWindowImage = KeyWindowImageRegistry.getInstance().getSpecialKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, ImageType.IMG_TYPE_MAIN);		
-		keyWindowPressedImage = KeyWindowImageRegistry.getInstance().getSpecialKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, ImageType.IMG_TYPE_PRESSED);
+		keyWindowImage = imageRegistry.getSpecialKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);		
+		keyWindowPressedImage = imageRegistry.getSpecialKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
 		
 		SpecialKeyWindowUtil.trimShell(shell, keyWindowImage);
 		SpecialKeyWindowUtil.trimShell(shell, keyWindowPressedImage);
@@ -136,14 +134,9 @@ public class SpecialKeyWindow extends SkinWindow {
 		heightBase = keyWindowImage.getImageData().height;
 
 		/* make a frame image */
-		this.imageFrame = frameMaker.getPatchedImage(
-				widthBase,
-				heightBase);
 		this.colorFrame = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 
 		shell.setBackground(colorFrame);
-		
-		trimPatchedShell(shell, imageFrame);
 
 		addKeyWindowListener();
 
@@ -176,41 +169,6 @@ public class SpecialKeyWindow extends SkinWindow {
 		return emulatorUI;
 	}
 
-	public static void trimPatchedShell(Shell shell, Image image) {
-		if (null == image) {
-			return;
-		}
-		ImageData imageData = image.getImageData();
-
-		int width = imageData.width;
-		int height = imageData.height;
-
-		Region region = new Region();
-		region.add(new Rectangle(0, 0, width, height));
-
-		int r = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getRed();
-		int g = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getGreen();
-		int b = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getBlue();
-		int colorKey;
-
-		if (SwtUtil.isWindowsPlatform()) {
-			colorKey = r << 24 | g << 16 | b << 8;
-		} else {
-			colorKey = r << 16 | g << 8 | b;
-		}
-
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				int colorPixel = imageData.getPixel(i, j);
-				if (colorPixel == colorKey /* magenta */) {
-					region.subtract(i, j, 1, 1);
-				}
-			}
-		}
-
-		shell.setRegion(region);
-	}
-
 	private void addKeyWindowListener() {
 		shellPaintListener = new PaintListener() {
 			@Override
@@ -228,29 +186,7 @@ public class SpecialKeyWindow extends SkinWindow {
 			public void shellClosed(ShellEvent event) {
 				logger.info("Special Key Window is closed");
 
-				if (skin.pairTag != null) {
-					skin.pairTag.setVisible(false);
-				}
-
-				if (null != shellPaintListener) {
-					shell.removePaintListener(shellPaintListener);
-				}
-
-				if (null != shellListener) {
-					shell.removeShellListener(shellListener);
-				}
-
-				if (null != shellMouseMoveListener) {
-					shell.removeMouseMoveListener(shellMouseMoveListener);
-				}
-
-				if (null != shellMouseListener) {
-					shell.removeMouseListener(shellMouseListener);
-				}
-
-				colorFrame.dispose();
-
-				frameMaker.freePatches();
+				dispose();
 			}
 
 			@Override
@@ -309,7 +245,7 @@ public class SpecialKeyWindow extends SkinWindow {
 					int width = pressedHWKey.getRegion().width;
 					int height = pressedHWKey.getRegion().height;
 					int eventType;
-					
+
 					if (SpecialKeyWindowUtil.isInGeometry(e.x, e.y, x, y, width, height)) {
 						eventType = MouseEventType.DRAG.value();
 					} else {
@@ -318,7 +254,7 @@ public class SpecialKeyWindow extends SkinWindow {
 						/* rollback a keyPressed image resion */
 						shell.redraw(x, y, width, height, false);
 					}
-					
+
 					MouseEventData mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), MouseEventType.DRAG.value(), e.x, e.y, e.x, e.y, 0);
 					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
@@ -349,7 +285,7 @@ public class SpecialKeyWindow extends SkinWindow {
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 					HWKey pressedHWKey = currentPressedHWKey;
-					
+
 					if (pressedHWKey != null && pressedHWKey.getKeyCode() != SpecialKeyWindowUtil.UNKNOWN_KEYCODE) {
 						/* send event */
 						if (isTouch) {
@@ -361,9 +297,9 @@ public class SpecialKeyWindow extends SkinWindow {
 							KeyEventData keyEventData = new KeyEventData(KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
 							communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 						}
-						
+
 						currentPressedHWKey = null;
-						
+
 						/* rollback a keyPressed image resion */
 						shell.redraw(pressedHWKey.getRegion().x, pressedHWKey.getRegion().y, 
 								pressedHWKey.getRegion().width, pressedHWKey.getRegion().height, false);
@@ -375,7 +311,7 @@ public class SpecialKeyWindow extends SkinWindow {
 			public void mouseDown(MouseEvent e) {
 				if (1 == e.button) { /* left button */
 					logger.info("MouseDown in SpecialKeyWindow : " + e.x + ", " + e.y);
-						
+
 					/* HW key handling */
 					final HWKey hwKey = SpecialKeyWindowUtil.getHWKey(e.x, e.y, EmulatorConfig.DEFAULT_WINDOW_ROTATION);
 					if (hwKey == null) {		
@@ -384,7 +320,7 @@ public class SpecialKeyWindow extends SkinWindow {
 						grabPosition.y = e.y;
 						return;						
 					}
-					
+
 					if (hwKey.getKeyCode() != SpecialKeyWindowUtil.UNKNOWN_KEYCODE) {
 						if (hwKey.getTooltip().equalsIgnoreCase("touch")) {
 							isTouch = true;
@@ -396,10 +332,10 @@ public class SpecialKeyWindow extends SkinWindow {
 							KeyEventData keyEventData = new KeyEventData(KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
 							communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 						}
-						
+
 						currentPressedHWKey = hwKey;
 						shell.setToolTipText(null);
-						
+
 						/* draw the HW key region as the cropped keyPressed image area */
 						if(hwKey.getRegion() != null &&
 								hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
@@ -430,5 +366,30 @@ public class SpecialKeyWindow extends SkinWindow {
 		};
 
 		shell.addMouseListener(shellMouseListener);
+	}
+
+	private void dispose() {
+		if (skin.pairTag != null) {
+			skin.pairTag.setVisible(false);
+		}
+
+		if (null != shellPaintListener) {
+			shell.removePaintListener(shellPaintListener);
+		}
+
+		if (null != shellListener) {
+			shell.removeShellListener(shellListener);
+		}
+
+		if (null != shellMouseMoveListener) {
+			shell.removeMouseMoveListener(shellMouseMoveListener);
+		}
+
+		if (null != shellMouseListener) {
+			shell.removeMouseListener(shellMouseListener);
+		}
+
+		colorFrame.dispose();
+		imageRegistry.dispose();
 	}
 }

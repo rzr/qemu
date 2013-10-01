@@ -38,7 +38,6 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
-import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.dbi.ImageListType;
 import org.tizen.emulator.skin.dbi.RotationType;
@@ -63,11 +62,11 @@ public class ProfileSkinImageRegistry {
 	/**
 	 *  Constructor
 	 */
-	public ProfileSkinImageRegistry(EmulatorConfig config,
-			Display display, String skinPath) {
+	public ProfileSkinImageRegistry(
+			Display display, EmulatorUI dbiContents, String skinPath) {
 		this.display = display;
 		this.skinPath = skinPath;
-		this.dbiContents = config.getDbiContents();
+		this.dbiContents = dbiContents;
 		this.skinImageMap = new HashMap<String, Image>();
 
 		initialize(skinPath);

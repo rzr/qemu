@@ -101,7 +101,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		this.grabPosition = new Point(0, 0);
 
 		this.imageRegistry = new ProfileSkinImageRegistry(
-				config, shell.getDisplay(), skin.skinInfo.getSkinPath());
+				shell.getDisplay(), config.getDbiContents(), skin.skinInfo.getSkinPath());
 	}
 
 	@Override
