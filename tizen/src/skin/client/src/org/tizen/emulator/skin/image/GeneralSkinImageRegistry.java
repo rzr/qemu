@@ -1,5 +1,5 @@
 /**
- * Image Resource Management For General Key Window
+ * Image Resource Management For General-Purpose Skin
  *
  * Copyright (C) 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -41,29 +41,20 @@ import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 
-public class GeneralKeyWindowImageRegistry {
-	public static final String KEYWINDOW_FOLDER = "key-window";
+public class GeneralSkinImageRegistry {
+	private static final String PATCH_IMAGES_PATH = "emul-window";
 
 	private static Logger logger = SkinLogger.getSkinLogger(
-			GeneralKeyWindowImageRegistry.class).getLogger();
+			GeneralSkinImageRegistry.class).getLogger();
 
-	public enum GeneralKeyWindowImageName {
-		KEYBUTTON_NORMAL("keybutton_nml.png"),
-		KEYBUTTON_HOVER("keybutton_hover.png"),
-		KEYBUTTON_PUSHED("keybutton_pushed.png"),
-
-		SCROLL_UPBUTTON_NORMAL("scroll_button_up_nml.png"),
-		SCROLL_UPBUTTON_HOVER("scroll_button_up_hover.png"),
-		SCROLL_UPBUTTON_PUSHED("scroll_button_up_pushed.png"),
-		SCROLL_DOWNBUTTON_NORMAL("scroll_button_down_nml.png"),
-		SCROLL_DOWNBUTTON_HOVER("scroll_button_down_hover.png"),
-		SCROLL_DOWNBUTTON_PUSHED("scroll_button_down_pushed.png"),
-		SCROLL_THUMB("scroll_thumb.png"),
-		SCROLL_SHAFT("scroll_back.png");
+	public enum GeneralSkinImageName {
+		TOGGLE_BUTTON_NORMAL("arrow_nml.png"),
+		TOGGLE_BUTTON_HOVER("arrow_hover.png"),
+		TOGGLE_BUTTON_PUSHED("arrow_pushed.png");
 
 		private String name;
 
-		private GeneralKeyWindowImageName(String name) {
+		private GeneralSkinImageName(String name) {
 			this.name = name;
 		}
 
@@ -73,34 +64,34 @@ public class GeneralKeyWindowImageRegistry {
 	}
 
 	private Display display;
-	private Map<String, Image> keyWindowImageMap;
+	private Map<String, Image> skinImageMap;
 
 	/**
 	 *  Constructor
 	 */
-	public GeneralKeyWindowImageRegistry(Display display) {
+	public GeneralSkinImageRegistry(Display display) {
 		this.display = display;
-		this.keyWindowImageMap = new HashMap<String, Image>();
+		this.skinImageMap = new HashMap<String, Image>();
 	}
 
-	public Image getKeyWindowImage(GeneralKeyWindowImageName name) {
-		if (keyWindowImageMap.size() == 0) {
+	public Image getSkinImage(GeneralSkinImageName name) {
+		if (skinImageMap.size() == 0) {
 			/* load all of the images at once */
 			ClassLoader classLoader = this.getClass().getClassLoader();
 			InputStream is = null;
 			String imageName, imagePath;
 
-			GeneralKeyWindowImageName[] values = GeneralKeyWindowImageName.values();
-			for (GeneralKeyWindowImageName value : values) {
+			GeneralSkinImageName[] values = GeneralSkinImageName.values();
+			for (GeneralSkinImageName value : values) {
 				imageName = value.getName();
 				imagePath = ImageRegistry.IMAGES_FOLDER + File.separator
-						+ KEYWINDOW_FOLDER + File.separator + imageName;
+						+ PATCH_IMAGES_PATH + File.separator + imageName;
 
 				try {
 					is = classLoader.getResourceAsStream(imagePath);
 					if (null != is) {
 						logger.fine("KeyWindow image is loaded : " + imagePath);
-						keyWindowImageMap.put(imageName, new Image(display, is));
+						skinImageMap.put(imageName, new Image(display, is));
 					} else {
 						logger.severe("missing image : " + imagePath);
 					}
@@ -110,14 +101,14 @@ public class GeneralKeyWindowImageRegistry {
 			}
 		}
 
-		return keyWindowImageMap.get(name.getName());
+		return skinImageMap.get(name.getName());
 	}
 
 	public void dispose() {
-		if (null != keyWindowImageMap) {
+		if (null != skinImageMap) {
 			Image image = null;
 
-			Collection<Image> images = keyWindowImageMap.values();
+			Collection<Image>  images = skinImageMap.values();
 			Iterator<Image> imageIterator = images.iterator();
 
 			while (imageIterator.hasNext()) {

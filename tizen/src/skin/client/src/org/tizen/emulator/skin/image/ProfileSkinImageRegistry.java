@@ -68,23 +68,6 @@ public class ProfileSkinImageRegistry {
 		this.skinPath = skinPath;
 		this.dbiContents = dbiContents;
 		this.skinImageMap = new HashMap<String, Image>();
-
-		initialize(skinPath);
-	}
-
-	private void initialize(String argSkinPath) {
-		RotationsType rotations = dbiContents.getRotations();
-
-		if (null == rotations) {
-			logger.severe("Fail to loading rotations element from XML");
-			return;
-		}
-
-		List<RotationType> rotationList = rotations.getRotation();
-
-		for (RotationType rotation : rotationList) {
-			SkinRotation.put(rotation);
-		}
 	}
 
 	private String makeKey(Short id, SkinImageType imageType) {
