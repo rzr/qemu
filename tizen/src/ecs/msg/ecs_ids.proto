@@ -17,6 +17,7 @@ enum Master_Type {
 	MONITOR_ANS = 13;
 	MONITOR_NTF = 14;
 
+	// extension from 101 to 150
 	NFC_REQ = 101;
 	NFC_NTF = 102;
 }

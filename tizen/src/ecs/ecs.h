@@ -108,15 +108,12 @@ typedef unsigned char   type_action;
 #define OUT_BUF_SIZE    4096
 #define READ_BUF_LEN    4096
 
-
-
 typedef struct sbuf
 {
     int _netlen;
     int _use;
     char _buf[4096];
 }sbuf;
-
 
 struct Monitor {
     int suspend_cnt;
@@ -163,57 +160,41 @@ int start_ecs(void);
 int stop_ecs(void);
 int get_ecs_port(void);
 
-void ecs_vprintf(const char *type, const char *fmt, va_list ap);
-void ecs_printf(const char *type, const char *fmt, ...) GCC_FMT_ATTR(2, 3);
-
 bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);
 
 bool ntf_to_injector(const char* data, const int len);
 bool ntf_to_control(const char* data, const int len);
 bool ntf_to_monitor(const char* data, const int len);
 
-
 bool send_to_ecp(ECS__Master* master);
 
-bool send_start_ans(int host_keyboard_onff);
 bool send_injector_ntf(const char* data, const int len);
-bool send_control_ntf(const char* data, const int len);
 bool send_monitor_ntf(const char* data, const int len);
-bool send_hostkeyboard_ntf(int is_on);
 bool send_device_ntf(const char* data, const int len);
 
 bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char* data, const int len) ;
 
-
+void ecs_client_close(ECS_Client* clii);
+int ecs_write(int fd, const uint8_t *buf, int len);
 void ecs_make_header(QDict* obj, type_length length, type_group group, type_action action);
 
 void read_val_short(const char* data, unsigned short* ret_val);
 void read_val_char(const char* data, unsigned char* ret_val);
 void read_val_str(const char* data, char* ret_val, int len);
 
-
-//bool msgproc_start_req(ECS_Client* ccli, ECS__StartReq* msg);
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
-//bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
 bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
-//bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg);
-
-
-//enum{
-//    CONTROL_COMMAND_HOST_KEYBOARD_ONOFF_REQ = 1,
-//    CONTROL_COMMAND_SCREENSHOT_REQ = 2
-//};
 
 /* request */
 int accel_min_max(double value);
 void req_set_sensor_accel(int x, int y, int z);
-
-// control sub messages
-//void msgproc_control_hostkeyboard_req(ECS_Client *cli, ECS__HostKeyboardReq* req);
-
 void set_sensor_data(int length, const char* data);
+
+/* Monitor */
+void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *opaque);
+void handle_qmp_command(JSONMessageParser *parser, QList *tokens, void *opaque);
 
 static QemuOptsList qemu_ecs_opts = {
     .name = ECS_OPTS_NAME,

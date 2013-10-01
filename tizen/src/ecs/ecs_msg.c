@@ -183,11 +183,6 @@ bool msgproc_control_msg(ECS_Client *cli, ECS__ControlMsg* msg)
     return true;
 }
 #endif
-bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
-{
-
-    return true;
-}
 
 bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 {
