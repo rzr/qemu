@@ -77,8 +77,8 @@ public class GeneralKeyWindowImageRegistry {
 	/**
 	 *  Constructor
 	 */
-	public GeneralKeyWindowImageRegistry() {
-		this.display = Display.getDefault();
+	public GeneralKeyWindowImageRegistry(Display display) {
+		this.display = display;
 		this.keyWindowImageMap = new HashMap<String, Image>();
 	}
 

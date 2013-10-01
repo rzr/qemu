@@ -51,9 +51,9 @@ import org.tizen.emulator.skin.util.SkinRotation;
  * 
  *
  */
-public class KeyWindowImageRegistry {
+public class SpecialKeyWindowImageRegistry {
 	private static Logger logger =
-			SkinLogger.getSkinLogger(KeyWindowImageRegistry.class).getLogger();
+			SkinLogger.getSkinLogger(SpecialKeyWindowImageRegistry.class).getLogger();
 
 	public enum SpecailKeyWindowImageType {
 		SPECIAL_IMAGE_TYPE_NORMAL,
@@ -68,7 +68,7 @@ public class KeyWindowImageRegistry {
 	/**
 	 *  Constructor
 	 */
-	public KeyWindowImageRegistry(
+	public SpecialKeyWindowImageRegistry(
 			Display display, EmulatorUI dbiContents, String skinPath) {
 		this.display = display;
 		this.skinPath = skinPath;
