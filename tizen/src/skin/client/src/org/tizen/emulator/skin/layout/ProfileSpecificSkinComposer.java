@@ -418,8 +418,6 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				if (e.button == 1) { /* left button */
-					logger.info("mouseUp in Skin");
-
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
 
@@ -428,10 +426,13 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					/* HW key handling */
 					HWKey pressedHWKey = currentState.getCurrentPressedHWKey();
 					if (pressedHWKey == null) {
+						logger.info("mouseUp in Skin");
 						return;
 					}
 
 					if (pressedHWKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
+						logger.info(pressedHWKey.getName() + " key is released");
+
 						/* send event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
@@ -456,8 +457,6 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (1 == e.button) { /* left button */
-					logger.info("mouseDown in Skin");
-
 					isGrabbedShell = true;
 					grabPosition.x = e.x;
 					grabPosition.y = e.y;
@@ -466,10 +465,13 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 							currentState.getCurrentRotationId(), currentState.getCurrentScale());
 					if (hwKey == null) {
+						logger.info("mouseDown in Skin");
 						return;
 					}
 
 					if (hwKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
+						logger.info(hwKey.getName() + " key is pressed");
+
 						/* send event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);

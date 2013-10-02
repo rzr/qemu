@@ -163,21 +163,23 @@ public class SkinUtil {
 			return null;
 		}
 
-		for (KeyMapType keyMap : keyMapList) {
-			RegionType region = keyMap.getRegion();
+		for (KeyMapType keyEntry : keyMapList) {
+			RegionType region = keyEntry.getRegion();
 
 			int scaledX = (int) (region.getLeft() * convertedScale);
 			int scaledY = (int) (region.getTop() * convertedScale);
 			int scaledWidth = (int) (region.getWidth() * convertedScale);
 			int scaledHeight = (int) (region.getHeight() * convertedScale);
 
-			if (isInGeometry(currentX, currentY, scaledX, scaledY, scaledWidth, scaledHeight)) {
-				EventInfoType eventInfo = keyMap.getEventInfo();
+			if (isInGeometry(currentX, currentY,
+					scaledX, scaledY, scaledWidth, scaledHeight)) {
+				EventInfoType eventInfo = keyEntry.getEventInfo();
 
-				HWKey hwKey = new HWKey();
-				hwKey.setKeyCode(eventInfo.getKeyCode());
-				hwKey.setRegion(new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight));
-				hwKey.setTooltip(keyMap.getTooltip());
+				HWKey hwKey = new HWKey(
+						keyEntry.getEventInfo().getKeyName(),
+						eventInfo.getKeyCode(),
+						new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight),
+						keyEntry.getTooltip());
 
 				return hwKey;
 			}
