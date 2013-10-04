@@ -93,8 +93,8 @@ public class GeneralKeyWindowImageRegistry {
 			GeneralKeyWindowImageName[] values = GeneralKeyWindowImageName.values();
 			for (GeneralKeyWindowImageName value : values) {
 				imageName = value.getName();
-				imagePath = ImageRegistry.IMAGES_FOLDER + File.separator
-						+ KEYWINDOW_FOLDER + File.separator + imageName;
+				imagePath = ImageRegistry.IMAGES_FOLDER + "/"
+						+ KEYWINDOW_FOLDER + "/" + imageName;
 
 				try {
 					is = classLoader.getResourceAsStream(imagePath);
