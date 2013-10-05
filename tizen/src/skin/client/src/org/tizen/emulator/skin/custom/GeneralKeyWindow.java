@@ -100,13 +100,8 @@ public class GeneralKeyWindow extends SkinWindow {
 
 		this.skin = skin;
 		this.parent = skin.getShell();
-		if (SwtUtil.isMacPlatform() == false) {
-			this.shell = new Shell(parent,
-					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
-		} else {
-			this.shell = new Shell(parent.getDisplay(),
-					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
-		}
+		this.shell = new Shell(parent.getDisplay() /* for Mac & Always on Top */,
+				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL | SWT.NO_FOCUS);
 
 		this.imageRegistry = new GeneralKeyWindowImageRegistry(shell.getDisplay());
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);

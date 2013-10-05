@@ -62,8 +62,9 @@ public class ShmScreenShotWindow extends ScreenShotDialog {
 		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
 
 		int[] arrayFramebuffer = new int[width * height];
-		int result =
-				((EmulatorShmSkin) emulatorSkin).getPixels(arrayFramebuffer);
+
+		//int result =
+		((EmulatorShmSkin) emulatorSkin).getPixels(arrayFramebuffer);
 		//logger.info("getPixels native function returned " + result);
 
 		ImageData imageData = new ImageData(width, height, 24, paletteData_ARGB);

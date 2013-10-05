@@ -1017,6 +1017,8 @@ public class SkinUtil {
 			return false;
 		}
 
+		logger.info("set Always on Top : " + isOnTop);
+
 		/* internal/Library.java::arch() */
 		String osArch = System.getProperty("os.arch"); /* $NON-NLS-1$ */
 
