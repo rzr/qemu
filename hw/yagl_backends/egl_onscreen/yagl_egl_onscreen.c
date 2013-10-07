@@ -47,7 +47,49 @@ static void yagl_egl_onscreen_thread_init(struct yagl_egl_backend *backend)
 
     egl_onscreen_ts = yagl_egl_onscreen_ts_create(egl_onscreen->gles_driver);
 
+    cur_ts->egl_onscreen_ts = egl_onscreen_ts;
+
     YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_egl_onscreen_batch_start(struct yagl_egl_backend *backend)
+{
+    struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
+
+    egl_onscreen_ts = cur_ts->egl_onscreen_ts;
+
+    if (!egl_onscreen_ts->dpy) {
+        return;
+    }
+
+    if (egl_onscreen_ts->sfc_draw && egl_onscreen_ts->sfc_read) {
+        egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                               egl_onscreen_ts->dpy->native_dpy,
+                                               egl_onscreen_ts->sfc_draw->dummy_native_sfc,
+                                               egl_onscreen_ts->sfc_read->dummy_native_sfc,
+                                               egl_onscreen_ts->ctx->native_ctx);
+    } else {
+        egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                               egl_onscreen_ts->dpy->native_dpy,
+                                               egl_onscreen_ts->ctx->null_sfc,
+                                               egl_onscreen_ts->ctx->null_sfc,
+                                               egl_onscreen_ts->ctx->native_ctx);
+    }
+}
+
+static void yagl_egl_onscreen_batch_end(struct yagl_egl_backend *backend)
+{
+    struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
+
+    if (!egl_onscreen_ts->dpy) {
+        return;
+    }
+
+    egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                           egl_onscreen_ts->dpy->native_dpy,
+                                           EGL_NO_SURFACE,
+                                           EGL_NO_SURFACE,
+                                           EGL_NO_CONTEXT);
 }
 
 static struct yagl_eglb_display *yagl_egl_onscreen_create_display(struct yagl_egl_backend *backend)
@@ -179,7 +221,7 @@ static void yagl_egl_onscreen_thread_fini(struct yagl_egl_backend *backend)
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_thread_fini, NULL);
 
     yagl_egl_onscreen_ts_destroy(egl_onscreen_ts);
-    egl_onscreen_ts = NULL;
+    egl_onscreen_ts = cur_ts->egl_onscreen_ts = NULL;
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
@@ -237,6 +279,7 @@ static void yagl_egl_onscreen_destroy(struct yagl_egl_backend *backend)
 
     egl_onscreen->egl_driver->destroy(egl_onscreen->egl_driver);
     egl_onscreen->egl_driver = NULL;
+    egl_onscreen->gles_driver = NULL;
 
     yagl_egl_backend_cleanup(&egl_onscreen->base);
 
@@ -285,24 +328,24 @@ struct yagl_egl_backend *yagl_egl_onscreen_create(struct winsys_interface *wsi,
     }
 
     ctx = egl_driver->context_create(egl_driver, dpy, &configs[0],
-                                     yagl_client_api_gles2,
                                      (EGLContext)ws_info->context);
 
     if (ctx == EGL_NO_CONTEXT) {
         goto fail;
     }
 
-    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0],
-                                            yagl_client_api_gles2, ctx);
+    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx);
 
     if (global_ctx == EGL_NO_CONTEXT) {
         goto fail;
     }
 
     egl_onscreen->base.thread_init = &yagl_egl_onscreen_thread_init;
+    egl_onscreen->base.batch_start = &yagl_egl_onscreen_batch_start;
     egl_onscreen->base.create_display = &yagl_egl_onscreen_create_display;
     egl_onscreen->base.make_current = &yagl_egl_onscreen_make_current;
     egl_onscreen->base.release_current = &yagl_egl_onscreen_release_current;
+    egl_onscreen->base.batch_end = &yagl_egl_onscreen_batch_end;
     egl_onscreen->base.thread_fini = &yagl_egl_onscreen_thread_fini;
     egl_onscreen->base.ensure_current = &yagl_egl_onscreen_ensure_current;
     egl_onscreen->base.unensure_current = &yagl_egl_onscreen_unensure_current;

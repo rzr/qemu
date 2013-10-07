@@ -297,6 +297,14 @@ static void vigs_gl_backend_batch_start(struct vigs_backend *backend)
     if (!gl_backend->make_current(gl_backend, true)) {
         VIGS_LOG_CRITICAL("make_current failed");
     }
+
+    /*
+     * Wait until previous rendering is finished. If we don't do this
+     * then in case if vsync is off many frames will be batched together and
+     * then flushed once the display is finally updated. This can cause lags
+     * on some GPUs.
+     */
+    gl_backend->Finish();
 }
 
 /*
@@ -799,7 +807,6 @@ static void vigs_gl_backend_batch_end(struct vigs_backend *backend)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)backend;
 
-    gl_backend->Finish();
     gl_backend->make_current(gl_backend, false);
 }
 
@@ -827,35 +834,6 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         VIGS_LOG_CRITICAL("non power of 2 textures not supported");
         goto fail;
     }
-
-    /*
-     * Currently we shouldn't do this. Consider this scenario:
-     * 1. Host OpenGL has a large GL commands buffer
-     * 2. Target renders a lot of frames continuously
-     * 3. QEMU makes a glReadPixels call 50 times per second (to update its display)
-     * Thus, we might have a situation where target will queue up thousands
-     * of frames and glReadPixels will take really long until all of these
-     * frames are rendered which is foolish, since we only need the last one.
-     * We might have really large FPS, but true performance will degrade.
-     * The right way to implement all of this is via vsync, which is a todo.
-     * TODO: Implement vsync.
-     * @{
-     */
-
-    /*gl_backend->has_arb_sync = (strstr(extensions, "GL_ARB_sync ") != NULL) &&
-                                 gl_backend->FenceSync &&
-                                 gl_backend->DeleteSync &&
-                                 gl_backend->WaitSync &&
-                                 gl_backend->ClientWaitSync;
-    if (gl_backend->has_arb_sync) {
-        VIGS_LOG_INFO("ARB_sync supported");
-    } else {
-        VIGS_LOG_WARN("ARB_sync not supported!");
-    }*/
-
-    /*
-     * @}
-     */
 
     gl_backend->base.batch_start = &vigs_gl_backend_batch_start;
     gl_backend->base.create_surface = &vigs_gl_backend_create_surface;

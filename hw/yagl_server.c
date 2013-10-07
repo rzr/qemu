@@ -6,13 +6,10 @@
 #include "yagl_log.h"
 #include "yagl_transport.h"
 #include "yagl_egl_backend.h"
-#include "yagl_egl_interface.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
-#include "yagl_apis/gles1/yagl_gles1_api.h"
-#include "yagl_apis/gles2/yagl_gles2_api.h"
+#include "yagl_apis/gles/yagl_gles_api.h"
 #include <GL/gl.h>
-#include "yagl_gles1_driver.h"
-#include "yagl_gles2_driver.h"
+#include "yagl_gles_driver.h"
 
 static __inline void yagl_marshal_put_uint32_t(uint8_t** buff, uint32_t value)
 {
@@ -45,8 +42,7 @@ static struct yagl_thread_state
 
 struct yagl_server_state
     *yagl_server_state_create(struct yagl_egl_backend *egl_backend,
-                              struct yagl_gles1_driver *gles1_driver,
-                              struct yagl_gles2_driver *gles2_driver)
+                              struct yagl_gles_driver *gles_driver)
 {
     int i;
     struct yagl_server_state *ss =
@@ -58,8 +54,7 @@ struct yagl_server_state
 
     if (!ss->t) {
         egl_backend->destroy(egl_backend);
-        gles1_driver->destroy(gles1_driver);
-        gles2_driver->destroy(gles2_driver);
+        gles_driver->destroy(gles_driver);
 
         goto fail;
     }
@@ -68,28 +63,20 @@ struct yagl_server_state
 
     if (!ss->apis[yagl_api_id_egl - 1]) {
         egl_backend->destroy(egl_backend);
-        gles1_driver->destroy(gles1_driver);
-        gles2_driver->destroy(gles2_driver);
+        gles_driver->destroy(gles_driver);
 
         goto fail;
     }
 
-    ss->apis[yagl_api_id_gles1 - 1] = yagl_gles1_api_create(gles1_driver);
+    ss->apis[yagl_api_id_gles - 1] = yagl_gles_api_create(gles_driver);
 
-    if (!ss->apis[yagl_api_id_gles1 - 1]) {
-        gles1_driver->destroy(gles1_driver);
-        gles2_driver->destroy(gles2_driver);
-
-        goto fail;
-    }
-
-    ss->apis[yagl_api_id_gles2 - 1] = yagl_gles2_api_create(gles2_driver);
-
-    if (!ss->apis[yagl_api_id_gles2 - 1]) {
-        gles2_driver->destroy(gles2_driver);
+    if (!ss->apis[yagl_api_id_gles - 1]) {
+        gles_driver->destroy(gles_driver);
 
         goto fail;
     }
+
+    ss->render_type = egl_backend->render_type;
 
     return ss;
 
@@ -262,7 +249,7 @@ out:
     yagl_thread_set_buffer(ts, pages);
 
     yagl_marshal_put_uint32_t(&buff, 1);
-    yagl_marshal_put_uint32_t(&buff, ps->egl_iface->render_type);
+    yagl_marshal_put_uint32_t(&buff, ss->render_type);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 

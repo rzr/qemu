@@ -3,6 +3,7 @@
 #include "yagl_server.h"
 #include "yagl_log.h"
 #include "yagl_stats.h"
+#include "yagl_object_map.h"
 #include "sysemu/kvm.h"
 
 struct yagl_process_state
@@ -14,6 +15,7 @@ struct yagl_process_state
 
     ps->ss = ss;
     ps->id = id;
+    ps->object_map = yagl_object_map_create();
     QLIST_INIT(&ps->threads);
 
 #ifdef CONFIG_KVM
@@ -38,6 +40,8 @@ void yagl_process_state_destroy(struct yagl_process_state *ps)
     }
 
     assert(QLIST_EMPTY(&ps->threads));
+
+    yagl_object_map_destroy(ps->object_map);
 
     g_free(ps);
 
@@ -82,49 +86,6 @@ void yagl_process_unregister_egl_interface(struct yagl_process_state *ps)
     }
 
     ps->egl_iface = NULL;
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-void yagl_process_register_client_interface(struct yagl_process_state *ps,
-                                            yagl_client_api client_api,
-                                            struct yagl_client_interface *client_iface)
-{
-    YAGL_LOG_FUNC_ENTER(yagl_process_register_client_interface, NULL);
-
-    assert(!ps->client_ifaces[client_api]);
-
-    if (ps->client_ifaces[client_api]) {
-        YAGL_LOG_CRITICAL("client interface %d is already registered",
-                          client_api);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        return;
-    }
-
-    ps->client_ifaces[client_api] = client_iface;
-
-    YAGL_LOG_FUNC_EXIT(NULL);
-}
-
-void yagl_process_unregister_client_interface(struct yagl_process_state *ps,
-                                              yagl_client_api client_api)
-{
-    YAGL_LOG_FUNC_ENTER(yagl_process_unregister_client_interface, NULL);
-
-    assert(ps->client_ifaces[client_api]);
-
-    if (!ps->client_ifaces[client_api]) {
-        YAGL_LOG_CRITICAL("client interface %d was not registered",
-                          client_api);
-
-        YAGL_LOG_FUNC_EXIT(NULL);
-
-        return;
-    }
-
-    ps->client_ifaces[client_api] = NULL;
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }

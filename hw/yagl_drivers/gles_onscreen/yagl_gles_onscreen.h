@@ -5,7 +5,10 @@
 
 struct yagl_gles_driver;
 
-void yagl_gles_onscreen_init(struct yagl_gles_driver *driver);
-void yagl_gles_onscreen_cleanup(struct yagl_gles_driver *driver);
+/*
+ * Takes ownership of 'orig_driver'.
+ */
+struct yagl_gles_driver
+    *yagl_gles_onscreen_create(struct yagl_gles_driver *orig_driver);
 
 #endif

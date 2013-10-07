@@ -4,7 +4,6 @@
 #include "yagl_egl_config.h"
 #include "yagl_egl_surface.h"
 #include "yagl_egl_context.h"
-#include "yagl_egl_image.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_log.h"
@@ -35,7 +34,6 @@ struct yagl_egl_display
     yagl_resource_list_init(&dpy->configs);
     yagl_resource_list_init(&dpy->contexts);
     yagl_resource_list_init(&dpy->surfaces);
-    yagl_resource_list_init(&dpy->images);
 
     return dpy;
 }
@@ -44,7 +42,6 @@ void yagl_egl_display_destroy(struct yagl_egl_display *dpy)
 {
     yagl_egl_display_terminate(dpy);
 
-    yagl_resource_list_cleanup(&dpy->images);
     yagl_resource_list_cleanup(&dpy->surfaces);
     yagl_resource_list_cleanup(&dpy->contexts);
     yagl_resource_list_cleanup(&dpy->configs);
@@ -107,7 +104,6 @@ void yagl_egl_display_terminate(struct yagl_egl_display *dpy)
 
     yagl_resource_list_init(&tmp_list);
 
-    yagl_resource_list_move(&dpy->images, &tmp_list);
     yagl_resource_list_move(&dpy->surfaces, &tmp_list);
     yagl_resource_list_move(&dpy->contexts, &tmp_list);
     yagl_resource_list_move(&dpy->configs, &tmp_list);
@@ -223,23 +219,4 @@ bool yagl_egl_display_remove_surface(struct yagl_egl_display *dpy,
                                      yagl_host_handle handle)
 {
     return yagl_resource_list_remove(&dpy->surfaces, handle);
-}
-
-void yagl_egl_display_add_image(struct yagl_egl_display *dpy,
-                                struct yagl_egl_image *image)
-{
-    yagl_resource_list_add(&dpy->images, &image->res);
-}
-
-struct yagl_egl_image
-    *yagl_egl_display_acquire_image(struct yagl_egl_display *dpy,
-                                    yagl_host_handle handle)
-{
-    return (struct yagl_egl_image*)yagl_resource_list_acquire(&dpy->images, handle);
-}
-
-bool yagl_egl_display_remove_image(struct yagl_egl_display *dpy,
-                                   yagl_host_handle handle)
-{
-    return yagl_resource_list_remove(&dpy->images, handle);
 }

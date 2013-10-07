@@ -49,7 +49,7 @@ bool yagl_mem_prepare(struct yagl_mem_transfer *mt,
     if (va) {
         while (len > 0) {
             page_va = va & TARGET_PAGE_MASK;
-            page_pa = cpu_get_phys_page_debug(cur_ts->current_env, page_va);
+            page_pa = cpu_get_phys_page_debug(current_cpu, page_va);
 
             if (page_pa == -1) {
                 YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)page_va);
@@ -111,7 +111,7 @@ bool yagl_mem_get(target_ulong va, uint32_t len, void* data)
 
     YAGL_LOG_FUNC_ENTER(yagl_mem_get, "va = 0x%X, len = %u", (uint32_t)va, len);
 
-    ret = cpu_memory_rw_debug(cur_ts->current_env, va, data, len, 0);
+    ret = cpu_memory_rw_debug(current_cpu, va, data, len, 0);
 
     if (ret == -1) {
         YAGL_LOG_WARN("page fault at 0x%X", (uint32_t)va, len);

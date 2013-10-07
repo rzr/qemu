@@ -1,7 +1,6 @@
 #include "yagl_egl_api_ps.h"
 #include "yagl_egl_display.h"
 #include "yagl_egl_backend.h"
-#include "yagl_egl_interface.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
 
@@ -17,7 +16,7 @@ void yagl_egl_api_ps_init(struct yagl_egl_api_ps *egl_api_ps,
     QLIST_INIT(&egl_api_ps->displays);
 }
 
-void yagl_egl_api_ps_fini(struct yagl_egl_api_ps *egl_api_ps)
+void yagl_egl_api_ps_cleanup(struct yagl_egl_api_ps *egl_api_ps)
 {
     struct yagl_egl_display *dpy, *next;
 
@@ -26,11 +25,6 @@ void yagl_egl_api_ps_fini(struct yagl_egl_api_ps *egl_api_ps)
         yagl_egl_display_destroy(dpy);
     }
 
-    assert(QLIST_EMPTY(&egl_api_ps->displays));
-}
-
-void yagl_egl_api_ps_cleanup(struct yagl_egl_api_ps *egl_api_ps)
-{
     assert(QLIST_EMPTY(&egl_api_ps->displays));
 
     yagl_process_unregister_egl_interface(cur_ts->ps);

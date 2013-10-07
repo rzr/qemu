@@ -12,7 +12,7 @@
 static hwaddr yagl_pa(target_ulong va)
 {
     hwaddr ret =
-        cpu_get_phys_page_debug(cur_ts->current_env, va);
+        cpu_get_phys_page_debug(current_cpu, va);
 
     if (ret == -1) {
         return 0;

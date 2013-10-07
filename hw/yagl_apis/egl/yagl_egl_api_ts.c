@@ -3,7 +3,6 @@
 #include "yagl_egl_context.h"
 #include "yagl_eglb_context.h"
 #include "yagl_egl_backend.h"
-#include "yagl_client_context.h"
 
 void yagl_egl_api_ts_init(struct yagl_egl_api_ts *egl_api_ts,
                           struct yagl_egl_api_ps *api_ps)
@@ -18,13 +17,6 @@ void yagl_egl_api_ts_init(struct yagl_egl_api_ts *egl_api_ts,
 void yagl_egl_api_ts_cleanup(struct yagl_egl_api_ts *egl_api_ts)
 {
     if (egl_api_ts->context) {
-        /*
-         * If we have an active context here then it was activated for sure,
-         * deactivate it first.
-         */
-
-        egl_api_ts->context->backend_ctx->client_ctx->deactivate(egl_api_ts->context->backend_ctx->client_ctx);
-
         /*
          * Force release current.
          */
@@ -48,6 +40,5 @@ void yagl_egl_api_ts_update_context(struct yagl_egl_api_ts *egl_api_ts,
 
 void yagl_egl_api_ts_reset(struct yagl_egl_api_ts *egl_api_ts)
 {
-    egl_api_ts->error = EGL_SUCCESS;
     egl_api_ts->api = EGL_OPENGL_ES_API;
 }

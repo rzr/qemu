@@ -168,19 +168,13 @@ QEMU_CFLAGS += -I$(SRC_PATH)/hw/yagl_inc
 
 $(call set-vpath, $(SRC_PATH)/hw/yagl_apis/egl: \
                   $(SRC_PATH)/hw/yagl_apis/gles: \
-                  $(SRC_PATH)/hw/yagl_apis/gles1: \
-                  $(SRC_PATH)/hw/yagl_apis/gles2: \
                   $(SRC_PATH)/hw/yagl_backends/egl_offscreen: \
                   $(SRC_PATH)/hw/yagl_backends/egl_onscreen: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_glx: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_wgl: \
                   $(SRC_PATH)/hw/yagl_drivers/egl_agl: \
                   $(SRC_PATH)/hw/yagl_drivers/gles_ogl: \
-                  $(SRC_PATH)/hw/yagl_drivers/gles_onscreen: \
-                  $(SRC_PATH)/hw/yagl_drivers/gles1_ogl: \
-                  $(SRC_PATH)/hw/yagl_drivers/gles2_ogl: \
-                  $(SRC_PATH)/hw/yagl_drivers/gles1_onscreen: \
-                  $(SRC_PATH)/hw/yagl_drivers/gles2_onscreen)
+                  $(SRC_PATH)/hw/yagl_drivers/gles_onscreen)
 
 obj-y += yagl_device.o
 obj-y += yagl_log.o
@@ -196,26 +190,15 @@ obj-y += yagl_api.o
 obj-y += yagl_vector.o
 obj-y += yagl_avl.o
 obj-y += yagl_transport.o
-obj-y += yagl_range_list.o
 obj-y += yagl_egl_backend.o
 obj-y += yagl_eglb_display.o
 obj-y += yagl_eglb_context.o
 obj-y += yagl_eglb_surface.o
-obj-y += yagl_eglb_image.o
 obj-y += yagl_egl_driver.o
 obj-y += yagl_gles_driver.o
-obj-y += yagl_gles1_driver.o
-obj-y += yagl_gles2_driver.o
-obj-y += yagl_egl_interface.o
-obj-y += yagl_client_interface.o
-obj-y += yagl_client_context.o
-obj-y += yagl_client_image.o
-obj-y += yagl_client_tex_image.o
 obj-y += yagl_resource.o
 obj-y += yagl_resource_list.o
-obj-y += yagl_object.o
-obj-y += yagl_namespace.o
-obj-y += yagl_sharegroup.o
+obj-y += yagl_object_map.o
 obj-y += yagl_stats.o
 obj-y += yagl_compiled_transfer.o
 obj-y += yagl_egl_native_config.o
@@ -229,52 +212,26 @@ obj-y += yagl_egl_display.o
 obj-y += yagl_egl_config.o
 obj-y += yagl_egl_surface.o
 obj-y += yagl_egl_context.o
-obj-y += yagl_egl_image.o
 obj-y += yagl_egl_validate.o
 obj-y += yagl_host_egl_calls.o
-# GLES common api
-obj-y += yagl_gles_context.o
-obj-y += yagl_gles_array.o
-obj-y += yagl_gles_buffer.o
-obj-y += yagl_gles_texture.o
-obj-y += yagl_gles_framebuffer.o
-obj-y += yagl_gles_renderbuffer.o
-obj-y += yagl_gles_image.o
-obj-y += yagl_gles_tex_image.o
-obj-y += yagl_gles_texture_unit.o
-obj-y += yagl_gles_validate.o
+# GLES api
+obj-y += yagl_gles_api.o
+obj-y += yagl_gles_api_ps.o
+obj-y += yagl_gles_api_ts.o
+obj-y += yagl_gles_calls.o
 obj-y += yagl_host_gles_calls.o
-# GLESv1_CM api
-obj-y += yagl_gles1_api.o
-obj-y += yagl_gles1_api_ps.o
-obj-y += yagl_gles1_api_ts.o
-obj-y += yagl_gles1_calls.o
-obj-y += yagl_gles1_context.o
-obj-y += yagl_host_gles1_calls.o
-# GLESv2 api
-obj-y += yagl_gles2_api.o
-obj-y += yagl_gles2_api_ps.o
-obj-y += yagl_gles2_api_ts.o
-obj-y += yagl_gles2_calls.o
-obj-y += yagl_gles2_context.o
-obj-y += yagl_gles2_shader.o
-obj-y += yagl_gles2_program.o
-obj-y += yagl_gles2_validate.o
-obj-y += yagl_host_gles2_calls.o
 # EGL offscreen backend
 obj-y += yagl_egl_offscreen.o
 obj-y += yagl_egl_offscreen_ts.o
 obj-y += yagl_egl_offscreen_display.o
 obj-y += yagl_egl_offscreen_context.o
 obj-y += yagl_egl_offscreen_surface.o
-obj-y += yagl_egl_offscreen_image.o
 # EGL onscreen backend
 obj-y += yagl_egl_onscreen.o
 obj-y += yagl_egl_onscreen_ts.o
 obj-y += yagl_egl_onscreen_display.o
 obj-y += yagl_egl_onscreen_context.o
 obj-y += yagl_egl_onscreen_surface.o
-obj-y += yagl_egl_onscreen_image.o
 # EGL GLX driver
 ifdef CONFIG_LINUX
 obj-y += yagl_egl_glx.o
@@ -288,18 +245,10 @@ ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -Wno-comment
 obj-y += yagl_egl_agl.o
 endif
-# GLES OpenGL common driver
+# GLES OpenGL driver
 obj-y += yagl_gles_ogl.o
-# GLESv1_CM OpenGL driver
-obj-y += yagl_gles1_ogl.o
-# GLESv2 OpenGL driver
-obj-y += yagl_gles2_ogl.o
-# GLES onscreen common driver
+# GLES onscreen driver
 obj-y += yagl_gles_onscreen.o
-# GLESv1_CM onscreen driver
-obj-y += yagl_gles1_onscreen.o
-# GLESv2 onscreen driver
-obj-y += yagl_gles2_onscreen.o
 
 endif
 

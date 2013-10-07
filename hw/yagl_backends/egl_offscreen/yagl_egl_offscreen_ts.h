@@ -2,14 +2,18 @@
 #define _QEMU_YAGL_EGL_OFFSCREEN_TS_H
 
 #include "yagl_types.h"
+#include <EGL/egl.h>
 
 struct yagl_egl_offscreen_display;
 struct yagl_egl_offscreen_context;
+struct yagl_egl_offscreen_surface;
 
 struct yagl_egl_offscreen_ts
 {
     struct yagl_egl_offscreen_display *dpy;
     struct yagl_egl_offscreen_context *ctx;
+    EGLSurface sfc_draw;
+    EGLSurface sfc_read;
 };
 
 struct yagl_egl_offscreen_ts *yagl_egl_offscreen_ts_create(void);

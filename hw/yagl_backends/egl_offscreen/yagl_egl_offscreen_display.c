@@ -1,13 +1,37 @@
+#include <GL/gl.h>
 #include "yagl_egl_offscreen_display.h"
 #include "yagl_egl_offscreen_context.h"
 #include "yagl_egl_offscreen_surface.h"
-#include "yagl_egl_offscreen_image.h"
 #include "yagl_egl_offscreen.h"
 #include "yagl_egl_native_config.h"
 #include "yagl_log.h"
 #include "yagl_tls.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
+#include "yagl_object_map.h"
+#include "yagl_gles_driver.h"
+
+struct yagl_egl_offscreen_image
+{
+    struct yagl_object base;
+
+    struct yagl_gles_driver *driver;
+};
+
+static void yagl_egl_offscreen_image_destroy(struct yagl_object *obj)
+{
+    struct yagl_egl_offscreen_image *image = (struct yagl_egl_offscreen_image*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_image_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx();
+    image->driver->DeleteTextures(1, &obj->global_name);
+    yagl_unensure_ctx();
+
+    g_free(image);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
 
 static struct yagl_egl_native_config
     *yagl_egl_offscreen_display_config_enum(struct yagl_eglb_display *dpy,
@@ -23,9 +47,9 @@ static struct yagl_egl_native_config
                         "dpy = %p", dpy);
 
     native_configs =
-        egl_offscreen->driver->config_enum(egl_offscreen->driver,
-                                           egl_offscreen_dpy->native_dpy,
-                                           num_configs);
+        egl_offscreen->egl_driver->config_enum(egl_offscreen->egl_driver,
+                                               egl_offscreen_dpy->native_dpy,
+                                               num_configs);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -45,9 +69,9 @@ static void yagl_egl_offscreen_display_config_cleanup(struct yagl_eglb_display *
                         dpy,
                         cfg->config_id);
 
-    egl_offscreen->driver->config_cleanup(egl_offscreen->driver,
-                                          egl_offscreen_dpy->native_dpy,
-                                          cfg);
+    egl_offscreen->egl_driver->config_cleanup(egl_offscreen->egl_driver,
+                                              egl_offscreen_dpy->native_dpy,
+                                              cfg);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
@@ -55,7 +79,6 @@ static void yagl_egl_offscreen_display_config_cleanup(struct yagl_eglb_display *
 static struct yagl_eglb_context
     *yagl_egl_offscreen_display_create_context(struct yagl_eglb_display *dpy,
                                                const struct yagl_egl_native_config *cfg,
-                                               struct yagl_client_context *client_ctx,
                                                struct yagl_eglb_context *share_context)
 {
     struct yagl_egl_offscreen_display *egl_offscreen_dpy =
@@ -63,7 +86,6 @@ static struct yagl_eglb_context
     struct yagl_egl_offscreen_context *ctx =
         yagl_egl_offscreen_context_create(egl_offscreen_dpy,
                                           cfg,
-                                          client_ctx,
                                           (struct yagl_egl_offscreen_context*)share_context);
 
     return ctx ? &ctx->base : NULL;
@@ -94,16 +116,22 @@ static struct yagl_eglb_surface
     return sfc ? &sfc->base : NULL;
 }
 
-static struct yagl_eglb_image
-    *yagl_egl_offscreen_display_create_image(struct yagl_eglb_display *dpy,
-                                             yagl_winsys_id buffer)
+static struct yagl_object *yagl_egl_offscreen_display_create_image(struct yagl_eglb_display *dpy,
+                                                                   yagl_winsys_id buffer)
 {
-    struct yagl_egl_offscreen_display *egl_offscreen_dpy =
-        (struct yagl_egl_offscreen_display*)dpy;
-    struct yagl_egl_offscreen_image *image =
-        yagl_egl_offscreen_image_create(egl_offscreen_dpy, buffer);
+    struct yagl_egl_offscreen *egl_offscreen =
+        (struct yagl_egl_offscreen*)dpy->backend;
+    struct yagl_egl_offscreen_image *image;
 
-    return image ? &image->base : NULL;
+    image = g_malloc(sizeof(*image));
+
+    yagl_ensure_ctx();
+    egl_offscreen->gles_driver->GenTextures(1, &image->base.global_name);
+    yagl_unensure_ctx();
+    image->base.destroy = &yagl_egl_offscreen_image_destroy;
+    image->driver = egl_offscreen->gles_driver;
+
+    return &image->base;
 }
 
 static void yagl_egl_offscreen_display_destroy(struct yagl_eglb_display *dpy)
@@ -116,8 +144,8 @@ static void yagl_egl_offscreen_display_destroy(struct yagl_eglb_display *dpy)
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_display_destroy,
                         "dpy = %p", dpy);
 
-    egl_offscreen->driver->display_close(egl_offscreen->driver,
-                                         egl_offscreen_dpy->native_dpy);
+    egl_offscreen->egl_driver->display_close(egl_offscreen->egl_driver,
+                                             egl_offscreen_dpy->native_dpy);
 
     yagl_eglb_display_cleanup(dpy);
 
@@ -134,7 +162,7 @@ struct yagl_egl_offscreen_display
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_display_create, NULL);
 
-    native_dpy = egl_offscreen->driver->display_open(egl_offscreen->driver);
+    native_dpy = egl_offscreen->egl_driver->display_open(egl_offscreen->egl_driver);
 
     if (!native_dpy) {
         YAGL_LOG_FUNC_EXIT(NULL);

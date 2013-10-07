@@ -6,9 +6,9 @@
 
 struct yagl_server_state;
 struct yagl_thread_state;
-struct yagl_egl_interface;
-struct yagl_client_interface;
+struct yagl_object_map;
 struct yagl_api_ps;
+struct yagl_egl_interface;
 
 struct yagl_process_state
 {
@@ -21,7 +21,8 @@ struct yagl_process_state
     struct yagl_api_ps *api_states[YAGL_NUM_APIS];
 
     struct yagl_egl_interface *egl_iface;
-    struct yagl_client_interface *client_ifaces[YAGL_NUM_CLIENT_APIS];
+
+    struct yagl_object_map *object_map;
 
     QLIST_HEAD(, yagl_thread_state) threads;
 
@@ -40,13 +41,6 @@ void yagl_process_register_egl_interface(struct yagl_process_state *ps,
                                          struct yagl_egl_interface *egl_iface);
 
 void yagl_process_unregister_egl_interface(struct yagl_process_state *ps);
-
-void yagl_process_register_client_interface(struct yagl_process_state *ps,
-                                            yagl_client_api client_api,
-                                            struct yagl_client_interface *client_iface);
-
-void yagl_process_unregister_client_interface(struct yagl_process_state *ps,
-                                              yagl_client_api client_api);
 
 struct yagl_thread_state*
     yagl_process_find_thread(struct yagl_process_state *ps,

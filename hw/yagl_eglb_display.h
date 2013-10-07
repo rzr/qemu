@@ -7,12 +7,11 @@
 struct yagl_egl_backend;
 struct yagl_eglb_context;
 struct yagl_eglb_surface;
-struct yagl_eglb_image;
 struct yagl_egl_native_config;
 struct yagl_egl_window_attribs;
 struct yagl_egl_pixmap_attribs;
 struct yagl_egl_pbuffer_attribs;
-struct yagl_client_context;
+struct yagl_object;
 
 struct yagl_eglb_display
 {
@@ -26,7 +25,6 @@ struct yagl_eglb_display
 
     struct yagl_eglb_context *(*create_context)(struct yagl_eglb_display */*dpy*/,
                                                 const struct yagl_egl_native_config */*cfg*/,
-                                                struct yagl_client_context */*client_ctx*/,
                                                 struct yagl_eglb_context */*share_context*/);
 
     /*
@@ -56,8 +54,8 @@ struct yagl_eglb_display
                                                                  const struct yagl_egl_pbuffer_attribs */*attribs*/,
                                                                  yagl_winsys_id /*id*/);
 
-    struct yagl_eglb_image *(*create_image)(struct yagl_eglb_display */*dpy*/,
-                                            yagl_winsys_id /*buffer*/);
+    struct yagl_object *(*create_image)(struct yagl_eglb_display */*dpy*/,
+                                        yagl_winsys_id /*buffer*/);
 
     void (*destroy)(struct yagl_eglb_display */*dpy*/);
 };

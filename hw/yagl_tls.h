@@ -3,7 +3,7 @@
 
 #include "yagl_types.h"
 
-#define YAGL_DEFINE_TLS(type, x) __thread type x
+#define YAGL_DEFINE_TLS(type, x) type x
 #define YAGL_DECLARE_TLS(type, x) extern YAGL_DEFINE_TLS(type, x)
 
 #endif
