@@ -40,6 +40,7 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.custom.SpecialKeyWindow;
 import org.tizen.emulator.skin.dbi.MenuItemType;
 import org.tizen.emulator.skin.dbi.PopupMenuType;
 import org.tizen.emulator.skin.image.ImageRegistry;
@@ -63,8 +64,6 @@ public class PopupMenu {
 	public static final String FORCECLOSE_MENUITEM_NAME = "&Force Close";
 	public static final String SDBSHELL_MENUITEM_NAME = "S&hell";
 	public static final String CLOSE_MENUITEM_NAME = "&Close";
-
-	public static final String KEYWINDOW_LAYOUT_ROOT = "keywindow-layout";
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(PopupMenu.class).getLogger();
@@ -200,7 +199,7 @@ public class PopupMenu {
 				(keywindowMenuType != null && keywindowMenuType.isVisible() == true)) {
 			/* load Key Window layout */
 			String pathLayoutRoot = skin.skinInfo.getSkinPath() +
-					File.separator + KEYWINDOW_LAYOUT_ROOT;
+					File.separator + SpecialKeyWindow.KEYWINDOW_LAYOUT_ROOT;
 			ArrayList<File> layouts = getKeyWindowLayoutList(pathLayoutRoot);
 
 			if (layouts != null) {

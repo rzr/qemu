@@ -426,7 +426,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					/* HW key handling */
 					HWKey pressedHWKey = currentState.getCurrentPressedHWKey();
 					if (pressedHWKey == null) {
-						logger.info("mouseUp in Skin");
+						logger.info("mouseUp in Skin : " + e.x + ", " + e.y);
 						return;
 					}
 
@@ -457,15 +457,16 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (1 == e.button) { /* left button */
-					isGrabbedShell = true;
-					grabPosition.x = e.x;
-					grabPosition.y = e.y;
-
 					/* HW key handling */
 					final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 							currentState.getCurrentRotationId(), currentState.getCurrentScale());
 					if (hwKey == null) {
-						logger.info("mouseDown in Skin");
+						logger.info("mouseDown in Skin : " + e.x + ", " + e.y);
+
+						isGrabbedShell = true;
+						grabPosition.x = e.x;
+						grabPosition.y = e.y;
+
 						return;
 					}
 

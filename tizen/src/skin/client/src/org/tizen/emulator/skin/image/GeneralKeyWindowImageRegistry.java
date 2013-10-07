@@ -28,7 +28,6 @@
 
 package org.tizen.emulator.skin.image;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
