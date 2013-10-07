@@ -2,9 +2,9 @@ import "ecs_ids.proto";
 
 package ECS;
 
-
 option java_package = "org.tizen.ecp.msg.genmsg.ecs";
 
+// ======= Messages =======
 
 message CheckVersionReq {
 	required string version_str = 1;
@@ -92,6 +92,19 @@ message MonitorNtf {
 	optional bytes data = 2;
 }
 
+// ======= Extensions messages =======
+
+message NfcReq {
+	required string category = 1;
+	optional bytes data = 2;
+}
+
+message NfcNtf {
+	required string category = 1;
+	optional bytes data = 2;
+}
+
+// ======= Main master message =======
 
 message Master {
 	required Master_Type type = 1;
@@ -114,7 +127,9 @@ message Master {
 	optional MonitorAns monitor_ans = 13;
 	optional MonitorNtf monitor_ntf = 14;
 
-	extensions 101 to 150;
+	// Extensions 101 to 150;
+	optional NfcReq nfc_req = 101;
+	optional NfcNtf nfc_ntf = 102;
 }
 
 

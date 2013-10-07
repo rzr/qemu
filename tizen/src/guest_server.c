@@ -137,7 +137,8 @@ static void send_to_client(GS_Client* client, int state)
 
     memset(buf, 0, sizeof(buf));
 
-    sprintf(buf, "%d\n", state);
+    // send message "[4 digit message length]host:sync:emulator-26101:[0|1]"
+    sprintf(buf, "0026host:sync:emulator-%d:%d", svr_port, state);
 
     if (sendto(s, buf, sizeof(buf), 0, (struct sockaddr*)&sock_addr, slen) == -1)
     {

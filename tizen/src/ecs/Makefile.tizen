@@ -9,5 +9,3 @@ obj-y += ecs.pb-c.o ecs_ids.pb-c.o protobuf-c.o
 obj-y += ecs_msg.o ecs.o ecs_sensor.o
 obj-y += ecs_mon.o ecs-json-streamer.o
 
-# NFC message extension
-obj-y += nfc.pb-c.o

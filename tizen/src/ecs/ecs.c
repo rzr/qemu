@@ -197,6 +197,7 @@ static void ecs_close(ECS_State *cs) {
     LOG("### Good bye! ECS ###");
 
     if (0 <= cs->listen_fd) {
+        LOG("close listen_fd: %d", cs->listen_fd);
         closesocket(cs->listen_fd);
         cs->listen_fd = -1;
     }
@@ -726,15 +727,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
     ECS__Master* master = ecs__master__unpack(NULL, (size_t)len, (const uint8_t*)data);
     if (!master)
         return false;
-#if 0
-    if (master->type == ECS__MASTER__TYPE__START_REQ)
-    {
-        ECS__StartReq* msg = master->start_req;
-        if (!msg)
-            goto fail;
-        msgproc_start_req(cli, msg);
-    }
-#endif
+
     if (master->type == ECS__MASTER__TYPE__INJECTOR_REQ)
     {
         ECS__InjectorReq* msg = master->injector_req;
@@ -742,15 +735,6 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_injector_req(cli, msg);
     }
-#if 0
-    else if (master->type == ECS__MASTER__TYPE__CONTROL_MSG)
-    {
-        ECS__ControlMsg* msg = master->control_msg;
-        if (!msg)
-            goto fail;
-        msgproc_control_msg(cli, msg);
-    }
-#endif
     else if (master->type == ECS__MASTER__TYPE__MONITOR_REQ)
     {
         ECS__MonitorReq* msg = master->monitor_req;
@@ -765,15 +749,6 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_device_req(cli, msg);
     }
-#if 0
-    else if (master->type == ECS__MASTER__TYPE__SCREEN_DUMP_REQ)
-    {
-        ECS__ScreenDumpReq* msg = master->screen_dump_req;
-        if (!msg)
-            goto fail;
-        msgproc_screen_dump_req(cli, msg);
-    }
-#endif
     ecs__master__free_unpacked(master, NULL);
     return true;
 fail:

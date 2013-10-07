@@ -96,11 +96,33 @@ void send_to_client(int fd, const char* data, const int len)
 
 #define QMP_ACCEPT_UNKNOWNS 1
 
+bool send_monitor_ntf(const char* data, int size)
+{
+    ECS__Master master = ECS__MASTER__INIT;
+    ECS__MonitorNtf ntf = ECS__MONITOR_NTF__INIT;
+
+    LOG("data size : %d, data : %s", size, data);
+
+    ntf.command = (char*) g_malloc(size + 1);
+    memcpy(ntf.command, data, size);
+
+    master.type = ECS__MASTER__TYPE__MONITOR_NTF;
+    master.monitor_ntf = &ntf;
+
+    send_to_ecp(&master);
+
+    if (ntf.command)
+        g_free(ntf.command);
+
+    return true;
+}
+
 static void ecs_monitor_flush(ECS_Client *clii, Monitor *mon) {
     int ret;
 
     if (clii && 0 < clii->client_fd && mon && mon->outbuf_index != 0) {
-        ret = ecs_write(clii->client_fd, mon->outbuf, mon->outbuf_index);
+        //ret = ecs_write(clii->client_fd, mon->outbuf, mon->outbuf_index);
+        ret = send_monitor_ntf((char*)mon->outbuf, mon->outbuf_index);
         mon->outbuf_index = 0;
         if (ret < -1) {
             ecs_client_close(clii);
@@ -428,6 +450,7 @@ static QDict *qmp_check_input_obj(QObject *input_obj) {
                 return NULL;
             }
         } else if (!strcmp(arg_name, "id")) {
+        } else if (!strcmp(arg_name, "type")) {
         } else {
             qerror_report(QERR_QMP_EXTRA_MEMBER, arg_name);
             return NULL;
@@ -485,6 +508,7 @@ void handle_qmp_command(JSONMessageParser *parser, QList *tokens,
     QDict *input, *args;
     const mon_cmd_t *cmd;
     const char *cmd_name;
+    const char *type_name;
     Monitor *mon = cur_mon;
     ECS_Client *clii = opaque;
 
@@ -512,6 +536,8 @@ void handle_qmp_command(JSONMessageParser *parser, QList *tokens,
         goto err_out;
     }
 
+    type_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TYPE);
+
     obj = qdict_get(input, "arguments");
     if (!obj) {
         args = qdict_new();
@@ -532,7 +558,7 @@ void handle_qmp_command(JSONMessageParser *parser, QList *tokens,
             goto err_out;
         }
     } else {
-        ecs_qmp_call_cmd(clii, mon, NULL, cmd, args);
+        ecs_qmp_call_cmd(clii, mon, type_name, cmd, args);
     }
 
     goto out;

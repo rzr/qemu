@@ -565,6 +565,92 @@ void   ecs__monitor_ntf__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__monitor_ntf__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   ecs__nfc_req__init
+                     (ECS__NfcReq         *message)
+{
+  static ECS__NfcReq init_value = ECS__NFC_REQ__INIT;
+  *message = init_value;
+}
+size_t ecs__nfc_req__get_packed_size
+                     (const ECS__NfcReq *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_req__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__nfc_req__pack
+                     (const ECS__NfcReq *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_req__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__nfc_req__pack_to_buffer
+                     (const ECS__NfcReq *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_req__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__NfcReq *
+       ecs__nfc_req__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__NfcReq *)
+     protobuf_c_message_unpack (&ecs__nfc_req__descriptor,
+                                allocator, len, data);
+}
+void   ecs__nfc_req__free_unpacked
+                     (ECS__NfcReq *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_req__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   ecs__nfc_ntf__init
+                     (ECS__NfcNtf         *message)
+{
+  static ECS__NfcNtf init_value = ECS__NFC_NTF__INIT;
+  *message = init_value;
+}
+size_t ecs__nfc_ntf__get_packed_size
+                     (const ECS__NfcNtf *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_ntf__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t ecs__nfc_ntf__pack
+                     (const ECS__NfcNtf *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_ntf__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t ecs__nfc_ntf__pack_to_buffer
+                     (const ECS__NfcNtf *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_ntf__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+ECS__NfcNtf *
+       ecs__nfc_ntf__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (ECS__NfcNtf *)
+     protobuf_c_message_unpack (&ecs__nfc_ntf__descriptor,
+                                allocator, len, data);
+}
+void   ecs__nfc_ntf__free_unpacked
+                     (ECS__NfcNtf *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_ntf__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   ecs__master__init
                      (ECS__Master         *message)
 {
@@ -1531,7 +1617,109 @@ const ProtobufCMessageDescriptor ecs__monitor_ntf__descriptor =
   (ProtobufCMessageInit) ecs__monitor_ntf__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
+static const ProtobufCFieldDescriptor ecs__nfc_req__field_descriptors[2] =
+{
+  {
+    "category",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__NfcReq, category),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "data",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BYTES,
+    PROTOBUF_C_OFFSETOF(ECS__NfcReq, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__NfcReq, data),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__nfc_req__field_indices_by_name[] = {
+  0,   /* field[0] = category */
+  1,   /* field[1] = data */
+};
+static const ProtobufCIntRange ecs__nfc_req__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor ecs__nfc_req__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.NfcReq",
+  "NfcReq",
+  "ECS__NfcReq",
+  "ECS",
+  sizeof(ECS__NfcReq),
+  2,
+  ecs__nfc_req__field_descriptors,
+  ecs__nfc_req__field_indices_by_name,
+  1,  ecs__nfc_req__number_ranges,
+  (ProtobufCMessageInit) ecs__nfc_req__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__nfc_ntf__field_descriptors[2] =
+{
+  {
+    "category",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__NfcNtf, category),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "data",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BYTES,
+    PROTOBUF_C_OFFSETOF(ECS__NfcNtf, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__NfcNtf, data),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned ecs__nfc_ntf__field_indices_by_name[] = {
+  0,   /* field[0] = category */
+  1,   /* field[1] = data */
+};
+static const ProtobufCIntRange ecs__nfc_ntf__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor ecs__nfc_ntf__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "ECS.NfcNtf",
+  "NfcNtf",
+  "ECS__NfcNtf",
+  "ECS",
+  sizeof(ECS__NfcNtf),
+  2,
+  ecs__nfc_ntf__field_descriptors,
+  ecs__nfc_ntf__field_indices_by_name,
+  1,  ecs__nfc_ntf__number_ranges,
+  (ProtobufCMessageInit) ecs__nfc_ntf__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor ecs__master__field_descriptors[16] =
 {
   {
     "type",
@@ -1701,6 +1889,30 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[14] =
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "nfc_req",
+    101,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, nfc_req),
+    &ecs__nfc_req__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "nfc_ntf",
+    102,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(ECS__Master, nfc_ntf),
+    &ecs__nfc_ntf__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned ecs__master__field_indices_by_name[] = {
   2,   /* field[2] = checkversion_ans */
@@ -1716,12 +1928,15 @@ static const unsigned ecs__master__field_indices_by_name[] = {
   12,   /* field[12] = monitor_ans */
   13,   /* field[13] = monitor_ntf */
   11,   /* field[11] = monitor_req */
+  15,   /* field[15] = nfc_ntf */
+  14,   /* field[14] = nfc_req */
   0,   /* field[0] = type */
 };
-static const ProtobufCIntRange ecs__master__number_ranges[1 + 1] =
+static const ProtobufCIntRange ecs__master__number_ranges[2 + 1] =
 {
   { 1, 0 },
-  { 0, 14 }
+  { 101, 14 },
+  { 0, 16 }
 };
 const ProtobufCMessageDescriptor ecs__master__descriptor =
 {
@@ -1731,10 +1946,10 @@ const ProtobufCMessageDescriptor ecs__master__descriptor =
   "ECS__Master",
   "ECS",
   sizeof(ECS__Master),
-  14,
+  16,
   ecs__master__field_descriptors,
   ecs__master__field_indices_by_name,
-  1,  ecs__master__number_ranges,
+  2,  ecs__master__number_ranges,
   (ProtobufCMessageInit) ecs__master__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
