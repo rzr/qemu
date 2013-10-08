@@ -1,7 +1,7 @@
 /**
+ * Hardware Key
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -32,12 +32,33 @@ import org.tizen.emulator.skin.util.SkinRegion;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class HWKey {
+	private String name;
 	private int keyCode;
 	private SkinRegion region;
 	private String tooltip;
 
+	/**
+	 *  Constructor
+	 */
 	public HWKey() {
+		this.name = "unknown";
 		this.keyCode = SkinUtil.UNKNOWN_KEYCODE;
+	}
+
+	public HWKey(String name, int keyCode, SkinRegion region, String tooltip) {
+		this.name = name;
+		this.keyCode = keyCode;
+		this.region = region;
+		this.tooltip = tooltip;
+	}
+
+	/* name */
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	/* keycode */
