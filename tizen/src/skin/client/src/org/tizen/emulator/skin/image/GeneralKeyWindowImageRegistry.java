@@ -46,7 +46,7 @@ public class GeneralKeyWindowImageRegistry {
 	private static Logger logger = SkinLogger.getSkinLogger(
 			GeneralKeyWindowImageRegistry.class).getLogger();
 
-	public enum KeyWindowImageName {
+	public enum GeneralKeyWindowImageName {
 		KEYBUTTON_NORMAL("keybutton_nml.png"),
 		KEYBUTTON_HOVER("keybutton_hover.png"),
 		KEYBUTTON_PUSHED("keybutton_pushed.png"),
@@ -62,7 +62,7 @@ public class GeneralKeyWindowImageRegistry {
 
 		private String name;
 
-		private KeyWindowImageName(String name) {
+		private GeneralKeyWindowImageName(String name) {
 			this.name = name;
 		}
 
@@ -82,15 +82,15 @@ public class GeneralKeyWindowImageRegistry {
 		this.keyWindowImageMap = new HashMap<String, Image>();
 	}
 
-	public Image getKeyWindowImageData(KeyWindowImageName name) {
+	public Image getGeneralKeyWindowImageData(GeneralKeyWindowImageName name) {
 		if (keyWindowImageMap.size() == 0) {
 			/* load all of the images at once */
 			ClassLoader classLoader = this.getClass().getClassLoader();
 			InputStream is = null;
 			String imageName, imagePath;
 
-			KeyWindowImageName[] values = KeyWindowImageName.values();
-			for (KeyWindowImageName value : values) {
+			GeneralKeyWindowImageName[] values = GeneralKeyWindowImageName.values();
+			for (GeneralKeyWindowImageName value : values) {
 				imageName = value.getName();
 				imagePath = ImageRegistry.IMAGES_FOLDER + "/" +
 						KEYWINDOW_FOLDER + "/" + imageName;

@@ -56,7 +56,7 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry;
-import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry.KeyWindowImageName;
+import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry.GeneralKeyWindowImageName;
 import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -118,12 +118,12 @@ public class GeneralKeyWindow extends SkinWindow {
 		shell.setImage(parent.getImage());
 
 		/* load image for HW key button */
-		imageNormal = imageRegistry.getKeyWindowImageData(
-				KeyWindowImageName.KEYBUTTON_NORMAL);
-		imageHover = imageRegistry.getKeyWindowImageData(
-				KeyWindowImageName.KEYBUTTON_HOVER);
-		imagePushed = imageRegistry.getKeyWindowImageData(
-				KeyWindowImageName.KEYBUTTON_PUSHED);
+		imageNormal = imageRegistry.getGeneralKeyWindowImageData(
+				GeneralKeyWindowImageName.KEYBUTTON_NORMAL);
+		imageHover = imageRegistry.getGeneralKeyWindowImageData(
+				GeneralKeyWindowImageName.KEYBUTTON_HOVER);
+		imagePushed = imageRegistry.getGeneralKeyWindowImageData(
+				GeneralKeyWindowImageName.KEYBUTTON_PUSHED);
 
 		/* calculate the key window size */
 		widthBase = imageNormal.getImageData().width;
@@ -176,27 +176,27 @@ public class GeneralKeyWindow extends SkinWindow {
 			Image imagesScrollArrowUp[] = new Image[3];
 			Image imagesScrollArrowDown[] = new Image[3];
 
-			imagesScrollArrowUp[0] = imageRegistry.getKeyWindowImageData(
-					KeyWindowImageName.SCROLL_UPBUTTON_NORMAL);
-			imagesScrollArrowUp[1] = imageRegistry.getKeyWindowImageData(
-					KeyWindowImageName.SCROLL_UPBUTTON_HOVER);
-			imagesScrollArrowUp[2] = imageRegistry.getKeyWindowImageData(
-					KeyWindowImageName.SCROLL_UPBUTTON_PUSHED);
+			imagesScrollArrowUp[0] = imageRegistry.getGeneralKeyWindowImageData(
+					GeneralKeyWindowImageName.SCROLL_UPBUTTON_NORMAL);
+			imagesScrollArrowUp[1] = imageRegistry.getGeneralKeyWindowImageData(
+					GeneralKeyWindowImageName.SCROLL_UPBUTTON_HOVER);
+			imagesScrollArrowUp[2] = imageRegistry.getGeneralKeyWindowImageData(
+					GeneralKeyWindowImageName.SCROLL_UPBUTTON_PUSHED);
 
-			imagesScrollArrowDown[0] = imageRegistry.getKeyWindowImageData(
-					KeyWindowImageName.SCROLL_DOWNBUTTON_NORMAL);
-			imagesScrollArrowDown[1] = imageRegistry.getKeyWindowImageData(
-					KeyWindowImageName.SCROLL_DOWNBUTTON_HOVER);
-			imagesScrollArrowDown[2] = imageRegistry.getKeyWindowImageData(
-					KeyWindowImageName.SCROLL_DOWNBUTTON_PUSHED);
+			imagesScrollArrowDown[0] = imageRegistry.getGeneralKeyWindowImageData(
+					GeneralKeyWindowImageName.SCROLL_DOWNBUTTON_NORMAL);
+			imagesScrollArrowDown[1] = imageRegistry.getGeneralKeyWindowImageData(
+					GeneralKeyWindowImageName.SCROLL_DOWNBUTTON_HOVER);
+			imagesScrollArrowDown[2] = imageRegistry.getGeneralKeyWindowImageData(
+					GeneralKeyWindowImageName.SCROLL_DOWNBUTTON_PUSHED);
 
 			CustomScrolledComposite compositeScroll =
 					new CustomScrolledComposite(shell, SWT.NONE,
 							imagesScrollArrowUp, imagesScrollArrowDown,
-							imageRegistry.getKeyWindowImageData(
-									KeyWindowImageName.SCROLL_THUMB),
-							imageRegistry.getKeyWindowImageData(
-									KeyWindowImageName.SCROLL_SHAFT));
+							imageRegistry.getGeneralKeyWindowImageData(
+									GeneralKeyWindowImageName.SCROLL_THUMB),
+							imageRegistry.getGeneralKeyWindowImageData(
+									GeneralKeyWindowImageName.SCROLL_SHAFT));
 			compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 
 			Composite compositeBase = new Composite(compositeScroll, SWT.NONE);
@@ -331,7 +331,7 @@ public class GeneralKeyWindow extends SkinWindow {
 		shellListener = new ShellListener() {
 			@Override
 			public void shellClosed(ShellEvent event) {
-				logger.info("Key Window is closed");
+				logger.info("General Key Window is closed");
 
 				dispose();
 			}
