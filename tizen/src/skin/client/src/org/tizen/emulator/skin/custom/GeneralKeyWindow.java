@@ -108,7 +108,7 @@ public class GeneralKeyWindow extends SkinWindow {
 					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
 		}
 
-		this.imageRegistry = new GeneralKeyWindowImageRegistry();
+		this.imageRegistry = new GeneralKeyWindowImageRegistry(shell.getDisplay());
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 
 		this.keyMapList = keyMapList; //TODO: null

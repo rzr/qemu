@@ -59,8 +59,8 @@ import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.JaxbException;
-import org.tizen.emulator.skin.image.KeyWindowImageRegistry;
-import org.tizen.emulator.skin.image.KeyWindowImageRegistry.SpecailKeyWindowImageType;
+import org.tizen.emulator.skin.image.SpecialKeyWindowImageRegistry;
+import org.tizen.emulator.skin.image.SpecialKeyWindowImageRegistry.SpecailKeyWindowImageType;
 import org.tizen.emulator.skin.layout.HWKey;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
@@ -82,7 +82,7 @@ public class SpecialKeyWindow extends SkinWindow {
 	private Image keyWindowPressedImage;
 
 	private Color colorFrame;
-	private KeyWindowImageRegistry imageRegistry;
+	private SpecialKeyWindowImageRegistry imageRegistry;
 	private SocketCommunicator communicator;	
 
 	private ShellListener shellListener;
@@ -120,7 +120,7 @@ public class SpecialKeyWindow extends SkinWindow {
 		EmulatorUI dbiContents = loadXMLForKeyWindow(specialKeyWindowPath);
 
 		/* image init */
-		this.imageRegistry = new KeyWindowImageRegistry(shell.getDisplay(), dbiContents, specialKeyWindowPath);
+		this.imageRegistry = new SpecialKeyWindowImageRegistry(shell.getDisplay(), dbiContents, specialKeyWindowPath);
 		
 		/* get keywindow image */
 		keyWindowImage = imageRegistry.getSpecialKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);		
