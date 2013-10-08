@@ -528,6 +528,13 @@ public class EmulatorSkin {
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
+				if (isDisplayDragging == true) {
+					logger.info("menu blocking while display touching");
+
+					e.doit = false;
+					return;
+				}
+
 				Menu menu = popupMenu.getMenuRoot();
 
 				if (menu != null) {
