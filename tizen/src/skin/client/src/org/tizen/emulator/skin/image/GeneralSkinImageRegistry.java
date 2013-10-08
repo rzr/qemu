@@ -84,8 +84,8 @@ public class GeneralSkinImageRegistry {
 			GeneralSkinImageName[] values = GeneralSkinImageName.values();
 			for (GeneralSkinImageName value : values) {
 				imageName = value.getName();
-				imagePath = ImageRegistry.IMAGES_FOLDER + File.separator
-						+ PATCH_IMAGES_PATH + File.separator + imageName;
+				imagePath = ImageRegistry.IMAGES_FOLDER + "/"
+						+ PATCH_IMAGES_PATH + "/" + imageName;
 
 				try {
 					is = classLoader.getResourceAsStream(imagePath);
