@@ -87,10 +87,10 @@ public class SocketCommunicator implements ICommunicator {
 	public static final int HEART_BEAT_INTERVAL = 1; /* seconds */
 	public static final int HEART_BEAT_EXPIRE = 15;
 
-	public final static int SCREENSHOT_WAIT_INTERVAL = 3; /* milli-seconds */
-	public final static int SCREENSHOT_WAIT_LIMIT = 3000; /* milli-seconds */
-	public final static int DETAIL_INFO_WAIT_INTERVAL = 1; /* milli-seconds */
-	public final static int DETAIL_INFO_WAIT_LIMIT = 3000; /* milli-seconds */
+	public final static int LONG_WAIT_INTERVAL = 3; /* milli-seconds */
+	public final static int LONG_WAIT_LIMIT = 3000; /* milli-seconds */
+	public final static int SHORT_WAIT_INTERVAL = 1; /* milli-seconds */
+	public final static int SHORT_WAIT_LIMIT = 2000; /* milli-seconds */
 
 	public final static int MAX_SEND_QUEUE_SIZE = 100000;
 
@@ -105,8 +105,8 @@ public class SocketCommunicator implements ICommunicator {
 	private EmulatorSkin skin;
 
 	private Socket socket;
-	private DataInputStream dis;
-	private DataOutputStream dos;
+	private DataInputStream sockInputStream;
+	private DataOutputStream sockOutputStream;
 
 	private AtomicInteger heartbeatCount;
 	private boolean isTerminated;
@@ -138,24 +138,24 @@ public class SocketCommunicator implements ICommunicator {
 		this.skin = skin;
 
 		this.screenShotDataTransfer = new DataTranfer();
-		this.screenShotDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
-		this.screenShotDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+		this.screenShotDataTransfer.sleep = LONG_WAIT_INTERVAL;
+		this.screenShotDataTransfer.maxWaitTime = LONG_WAIT_LIMIT;
 
 		this.detailInfoTransfer = new DataTranfer();
-		this.detailInfoTransfer.sleep = DETAIL_INFO_WAIT_INTERVAL;
-		this.detailInfoTransfer.maxWaitTime = DETAIL_INFO_WAIT_LIMIT;
+		this.detailInfoTransfer.sleep = SHORT_WAIT_INTERVAL;
+		this.detailInfoTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
 
 		this.progressDataTransfer = new DataTranfer();
-		this.progressDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
-		this.progressDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+		this.progressDataTransfer.sleep = SHORT_WAIT_INTERVAL;
+		this.progressDataTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
 
 		this.brightnessDataTransfer = new DataTranfer();
-		this.brightnessDataTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
-		this.brightnessDataTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+		this.brightnessDataTransfer.sleep = LONG_WAIT_INTERVAL;
+		this.brightnessDataTransfer.maxWaitTime = LONG_WAIT_LIMIT;
 
 		this.ecpTransfer = new DataTranfer();
-		this.ecpTransfer.sleep = SCREENSHOT_WAIT_INTERVAL;
-		this.ecpTransfer.maxWaitTime = SCREENSHOT_WAIT_LIMIT;
+		this.ecpTransfer.sleep = LONG_WAIT_INTERVAL;
+		this.ecpTransfer.maxWaitTime = LONG_WAIT_LIMIT;
 		
 		this.heartbeatCount = new AtomicInteger(0);
 		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -224,8 +224,8 @@ public class SocketCommunicator implements ICommunicator {
 		};
 
 		try {
-			dis = new DataInputStream(socket.getInputStream());
-			dos = new DataOutputStream(socket.getOutputStream());
+			sockInputStream = new DataInputStream(socket.getInputStream());
+			sockOutputStream = new DataOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 			terminate();
@@ -280,10 +280,9 @@ public class SocketCommunicator implements ICommunicator {
 			}
 
 			try {
-
-				int reqId = dis.readInt();
-				short cmd = dis.readShort();
-				int length = dis.readInt();
+				int reqId = sockInputStream.readInt();
+				short cmd = sockInputStream.readShort();
+				int length = sockInputStream.readInt();
 
 				if (logger.isLoggable(Level.FINE)) {
 					logger.fine("[Socket] read - reqId:" + reqId +
@@ -299,7 +298,7 @@ public class SocketCommunicator implements ICommunicator {
 					continue;
 				}
 
-				switch ( command ) {
+				switch (command) {
 				case HEART_BEAT: {
 					resetHeartbeatCount();
 
@@ -311,14 +310,14 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				case SCREEN_SHOT_DATA: {
-					logger.info( "received SCREEN_SHOT_DATA from QEMU." );
-					receiveData( screenShotDataTransfer, length );
+					logger.info("received SCREEN_SHOT_DATA from QEMU.");
+					receiveData(screenShotDataTransfer, length );
 
 					break;
 				}
 				case DETAIL_INFO_DATA: {
-					logger.info( "received DETAIL_INFO_DATA from QEMU." );
-					receiveData( detailInfoTransfer, length );
+					logger.info("received DETAIL_INFO_DATA from QEMU.");
+					receiveData( detailInfoTransfer, length);
 
 					break;
 				}
@@ -443,7 +442,7 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				default: {
-					logger.severe("Unknown command from QEMU. command:" + cmd);
+					logger.severe("Unknown command from QEMU. command : " + cmd);
 					break;
 				}
 				}
@@ -465,7 +464,7 @@ public class SocketCommunicator implements ICommunicator {
 				dataTransfer.timer.cancel();
 			}
 
-			byte[] data = readData(dis, length);
+			byte[] data = readData(sockInputStream, length);
 
 			if (null != data) {
 				logger.info("finished receiving data from QEMU.");
@@ -490,7 +489,6 @@ public class SocketCommunicator implements ICommunicator {
 
 		BufferedInputStream bfis = new BufferedInputStream(is, length);
 		byte[] data = new byte[length];
-
 		int read = 0;
 		int total = 0;
 
@@ -510,7 +508,7 @@ public class SocketCommunicator implements ICommunicator {
 			}
 		}
 
-		logger.info("finished reading stream. read:" + total);
+		logger.info("finished reading stream. read : " + total);
 
 		return data;
 	}
@@ -582,7 +580,6 @@ public class SocketCommunicator implements ICommunicator {
 	
 	private void sendToQEMUInternal(SkinSendData sendData) {
 		try {
-
 			if (null == sendData) {
 				return;
 			}
@@ -609,8 +606,8 @@ public class SocketCommunicator implements ICommunicator {
 
 			dataOutputStream.flush();
 
-			dos.write(bao.toByteArray());
-			dos.flush();
+			sockOutputStream.write(bao.toByteArray());
+			sockOutputStream.flush();
 
 			bao.reset();
 
@@ -736,13 +733,11 @@ public class SocketCommunicator implements ICommunicator {
 		}
 
 		IOUtil.closeSocket(socket);
+		IOUtil.close(sockInputStream);
+		IOUtil.close(sockOutputStream);
 
-		try {
-			bao.close();
-			dataOutputStream.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		IOUtil.close(bao);
+		IOUtil.close(dataOutputStream);
 
 		synchronized (this) {
 			skin.shutdown();
@@ -751,7 +746,6 @@ public class SocketCommunicator implements ICommunicator {
 }
 
 class SkinSendData {
-
 	private SendCommand command;
 	private ISendData data;
 
@@ -767,5 +761,4 @@ class SkinSendData {
 	public ISendData getSendData() {
 		return data;
 	}
-
 }

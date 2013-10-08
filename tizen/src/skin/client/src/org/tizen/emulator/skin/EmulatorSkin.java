@@ -193,7 +193,10 @@ public class EmulatorSkin {
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
 		this.shell = new Shell(Display.getDefault(), style);
 		if (isOnTop == true) {
-			SkinUtil.setTopMost(shell, true);
+			if (SkinUtil.setTopMost(shell, true) == false) {
+				logger.info("failed to set top most");
+				this.isOnTop = false;
+			}
 		}
 
 		this.displayCanvasStyle = displayCanvasStyle;

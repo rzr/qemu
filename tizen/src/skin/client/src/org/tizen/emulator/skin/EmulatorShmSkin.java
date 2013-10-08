@@ -184,7 +184,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		}
 
 		public void getPixelsFromSharedMemory() {
-			int result = getPixels(arrayFramebuffer);
+			//int result =
+			getPixels(arrayFramebuffer);
 			//logger.info("getPixels native function returned " + result);
 
 			communicator.sendToQEMU(
