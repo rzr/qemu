@@ -251,14 +251,12 @@ public class EmulatorSkin {
 
 		/* build a skin layout */
 		if (skinInfo.isGeneralPurposeSkin() == false) {
-			skinComposer = new ProfileSpecificSkinComposer(config, this, shell,
-					currentState, imageRegistry, communicator);
+			skinComposer = new ProfileSpecificSkinComposer(config, this);
 
 			((ProfileSpecificSkinComposer) skinComposer)
 					.addProfileSpecificListener(shell);
 		} else { /* general purpose skin */
-			skinComposer = new GeneralPurposeSkinComposer(config, this, shell,
-					currentState, imageRegistry);
+			skinComposer = new GeneralPurposeSkinComposer(config, this);
 
 			((GeneralPurposeSkinComposer) skinComposer)
 					.addGeneralPurposeListener(shell);

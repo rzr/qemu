@@ -29,7 +29,6 @@
 
 package org.tizen.emulator.skin.image;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,7 +41,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
-import org.tizen.emulator.skin.dbi.ImageListType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dbi.RotationsType;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -60,11 +58,6 @@ public class ImageRegistry {
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(ImageRegistry.class).getLogger();
-
-	public enum ImageType {
-		IMG_TYPE_MAIN,
-		IMG_TYPE_PRESSED
-	}
 
 	public enum ResourceImageName {
 		RESOURCE_ABOUT("about_Tizen_SDK.png"),
@@ -121,7 +114,6 @@ public class ImageRegistry {
 
 	private Map<String, Image> resourceImageMap;
 	private Map<String, Image> iconImageMap;
-	private Map<String, Image> skinImageMap;
 
 	private String skinPath;
 
@@ -156,7 +148,6 @@ public class ImageRegistry {
 
 		this.resourceImageMap = new HashMap<String, Image>();
 		this.iconImageMap = new HashMap<String, Image>();
-		this.skinImageMap = new HashMap<String, Image>();
 
 		init(this.skinPath);
 	}
@@ -174,54 +165,6 @@ public class ImageRegistry {
 		for (RotationType rotation : rotationList) {
 			SkinRotation.put(rotation);
 		}
-	}
-
-	private String makeKey(Short id, ImageType imageType) {
-		return id + ":" + imageType.ordinal();
-	}
-
-	public Image getSkinImage(Short id, ImageType imageType) {
-		Image image = skinImageMap.get(makeKey(id, imageType));
-
-		if (image == null) {
-			RotationsType rotations = dbiContents.getRotations();
-
-			if (null == rotations) {
-				logger.severe("Fail to loading rotations element from dbi.");
-				return null;
-			}
-
-			logger.info("get skin image from " + skinPath);
-
-			RotationType targetRotation = SkinRotation.getRotation(id);
-			List<RotationType> rotationList = rotations.getRotation();
-
-			for (RotationType rotation : rotationList) {
-				ImageListType imageList = rotation.getImageList();
-				if (imageList == null) {
-					continue;
-				}
-
-				String mainImage = imageList.getMainImage();
-				String keyPressedImage = imageList.getKeyPressedImage();
-
-				if (targetRotation.getName().value().equals(rotation.getName().value())) {
-					String mainKey = makeKey(id, ImageType.IMG_TYPE_MAIN);
-					skinImageMap.put(mainKey,
-							new Image(display, skinPath + File.separator + mainImage));
-
-					String pressedKey = makeKey(id, ImageType.IMG_TYPE_PRESSED);
-					skinImageMap.put(pressedKey,
-							new Image(display, skinPath + File.separator + keyPressedImage));
-
-					break;
-				}
-			}
-
-			image = skinImageMap.get(makeKey(id, imageType));
-		}
-
-		return image;
 	}
 
 	public Image getResourceImage(ResourceImageName name) {
@@ -306,18 +249,6 @@ public class ImageRegistry {
 		/* icon */
 		if (null != iconImageMap) {
 			images = iconImageMap.values();
-
-			imageIterator = images.iterator();
-
-			while (imageIterator.hasNext()) {
-				image = imageIterator.next();
-				image.dispose();
-			}
-		}
-
-		/* skin image */
-		if (null != skinImageMap) {
-			images = skinImageMap.values();
 
 			imageIterator = images.iterator();
 

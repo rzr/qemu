@@ -54,7 +54,6 @@ import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomButton;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
-import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.PopupMenu;
@@ -82,7 +81,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private CustomButton toggleButton;
 	private EmulatorSkinState currentState;
 
-	private ImageRegistry imageRegistry;
 	private SkinPatches frameMaker;
 
 	private PaintListener shellPaintListener;
@@ -92,14 +90,13 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public GeneralPurposeSkinComposer(EmulatorConfig config, EmulatorSkin skin,
-			Shell shell, EmulatorSkinState currentState,
-			ImageRegistry imageRegistry) {
+	public GeneralPurposeSkinComposer(
+			EmulatorConfig config, EmulatorSkin skin) {
 		this.config = config;
 		this.skin = skin;
-		this.shell = shell;
-		this.currentState = currentState;
-		this.imageRegistry = imageRegistry;
+		this.shell = skin.getShell();
+		this.currentState = skin.getEmulatorSkinState();
+
 		this.isGrabbedShell= false;
 		this.grabPosition = new Point(0, 0);
 
@@ -133,8 +130,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	@Override
 	public void composeInternal(Canvas displayCanvas,
 			final int x, final int y, int scale, short rotationId) {
-
-		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
 
 		/* This string must match the definition of Emulator-Manager */
@@ -145,9 +140,11 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 
 		if (SwtUtil.isWindowsPlatform()) {
-			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE_ICO));
+			shell.setImage(skin.getImageRegistry()
+					.getIcon(IconName.EMULATOR_TITLE_ICO));
 		} else {
-			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
+			shell.setImage(skin.getImageRegistry()
+					.getIcon(IconName.EMULATOR_TITLE));
 		}
 
 		/* load image for toggle button of key window */

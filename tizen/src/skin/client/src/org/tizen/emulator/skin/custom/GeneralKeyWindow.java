@@ -53,7 +53,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
-import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry;
@@ -85,7 +84,6 @@ public class GeneralKeyWindow extends SkinWindow {
 	private Image imageFrame; /* nine-patch image */
 
 	private Color colorFrame;
-	private SocketCommunicator communicator;
 	private GeneralKeyWindowImageRegistry imageRegistry;
 	private List<KeyMapType> keyMapList;
 
@@ -97,11 +95,11 @@ public class GeneralKeyWindow extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public GeneralKeyWindow(EmulatorSkin skin, Shell parent,
-			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
-		super(parent, SWT.RIGHT | SWT.CENTER);
+	public GeneralKeyWindow(EmulatorSkin skin, List<KeyMapType> keyMapList) {
+		super(skin.getShell(), SWT.RIGHT | SWT.CENTER);
 
 		this.skin = skin;
+		this.parent = skin.getShell();
 		if (SwtUtil.isMacPlatform() == false) {
 			this.shell = new Shell(parent,
 					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
@@ -114,7 +112,6 @@ public class GeneralKeyWindow extends SkinWindow {
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 
 		this.keyMapList = keyMapList; //TODO: null
-		this.communicator = communicator;
 		this.grabPosition = new Point(0, 0);
 
 		shell.setText(parent.getText());
@@ -261,7 +258,7 @@ public class GeneralKeyWindow extends SkinWindow {
 
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(
+						skin.communicator.sendToQEMU(
 								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 					}
 
@@ -271,7 +268,7 @@ public class GeneralKeyWindow extends SkinWindow {
 
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), keycode, 0, 0);
-						communicator.sendToQEMU(
+						skin.communicator.sendToQEMU(
 								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 					}
 

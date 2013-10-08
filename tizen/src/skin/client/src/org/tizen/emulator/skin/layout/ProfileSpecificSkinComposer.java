@@ -60,9 +60,9 @@ import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.dbi.DisplayType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
-import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
-import org.tizen.emulator.skin.image.ImageRegistry.ImageType;
+import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
+import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.util.SkinRotation;
@@ -78,7 +78,6 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	private Shell shell;
 	private Canvas lcdCanvas;
 	private EmulatorSkinState currentState;
-	private ImageRegistry imageRegistry;
 	private SocketCommunicator communicator;
 
 	private PaintListener shellPaintListener;
@@ -86,20 +85,23 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
 
+	private ProfileSkinImageRegistry imageRegistry;
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public ProfileSpecificSkinComposer(EmulatorConfig config, EmulatorSkin skin,
-			Shell shell, EmulatorSkinState currentState,
-			ImageRegistry imageRegistry, SocketCommunicator communicator) {
+	public ProfileSpecificSkinComposer(
+			EmulatorConfig config, EmulatorSkin skin) {
 		this.config = config;
 		this.skin = skin;
-		this.shell = shell;
-		this.currentState = currentState;
-		this.imageRegistry = imageRegistry;
-		this.communicator = communicator;
+		this.shell = skin.getShell();
+		this.currentState = skin.getEmulatorSkinState();
+		this.communicator = skin.communicator;
+
 		this.isGrabbedShell= false;
 		this.grabPosition = new Point(0, 0);
+
+		this.imageRegistry = new ProfileSkinImageRegistry(
+				config, shell.getDisplay(), skin.skinInfo.getSkinPath());
 	}
 
 	@Override
@@ -126,20 +128,21 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	@Override
 	public void composeInternal(Canvas lcdCanvas,
 			int x, int y, int scale, short rotationId) {
-
-		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
 
 		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
 		shell.setText("Emulator - " + emulatorName);
 
-		lcdCanvas.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
+		lcdCanvas.setBackground(
+				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 
 		if (SwtUtil.isWindowsPlatform()) {
-			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE_ICO));
+			shell.setImage(skin.getImageRegistry()
+					.getIcon(IconName.EMULATOR_TITLE_ICO));
 		} else {
-			shell.setImage(imageRegistry.getIcon(IconName.EMULATOR_TITLE));
+			shell.setImage(skin.getImageRegistry()
+					.getIcon(IconName.EMULATOR_TITLE));
 		}
 
 		/* create a progress bar for booting status */
@@ -213,9 +216,13 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		}
 
 		currentState.setCurrentImage(SkinUtil.createScaledImage(
-				imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_MAIN));
+				shell.getDisplay(), imageRegistry,
+				SkinImageType.PROFILE_IMAGE_TYPE_NORMAL,
+				rotationId, scale));
 		currentState.setCurrentKeyPressedImage(SkinUtil.createScaledImage(
-				imageRegistry, shell, rotationId, scale, ImageType.IMG_TYPE_PRESSED));
+				shell.getDisplay(), imageRegistry,
+				SkinImageType.PROFILE_IMAGE_TYPE_PRESSED,
+				rotationId, scale));
 
 		if (tempImage != null) {
 			tempImage.dispose();
@@ -531,5 +538,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		if (null != shellMouseListener) {
 			shell.removeMouseListener(shellMouseListener);
 		}
+
+		imageRegistry.dispose();
 	}
 }
