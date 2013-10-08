@@ -32,19 +32,14 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
-import org.tizen.emulator.skin.dbi.EmulatorUI;
-import org.tizen.emulator.skin.dbi.ImageListType;
-import org.tizen.emulator.skin.dbi.RotationType;
-import org.tizen.emulator.skin.dbi.RotationsType;
+import org.tizen.emulator.skin.keywindow.dbi.ImageListType;
+import org.tizen.emulator.skin.keywindow.dbi.KeyWindowUI;
 import org.tizen.emulator.skin.log.SkinLogger;
-import org.tizen.emulator.skin.util.KeyWindowRotation;
-import org.tizen.emulator.skin.util.SkinRotation;
 
 
 /**
@@ -61,36 +56,19 @@ public class SpecialKeyWindowImageRegistry {
 	}
 
 	private Display display;
-	private String skinPath;
-	private EmulatorUI dbiContents;
+	private String imagePath;
+	private KeyWindowUI dbiContents;
 	private Map<String, Image> keyWindowImageMap;
 
 	/**
 	 *  Constructor
 	 */
 	public SpecialKeyWindowImageRegistry(
-			Display display, EmulatorUI dbiContents, String skinPath) {
+			Display display, KeyWindowUI dbiContents, String imagePath) {
 		this.display = display;
-		this.skinPath = skinPath;
+		this.imagePath = imagePath;
 		this.dbiContents = dbiContents;
 		this.keyWindowImageMap = new HashMap<String, Image>();
-
-		initialize(skinPath);
-	}
-
-	private void initialize(String argSkinPath) {
-		RotationsType rotations = dbiContents.getRotations();
-
-		if (null == rotations) {
-			logger.severe("Fail to loading rotations element from XML");
-			return;
-		}
-
-		List<RotationType> rotationList = rotations.getRotation();
-
-		for (RotationType rotation : rotationList) {
-			KeyWindowRotation.put(rotation);
-		}
 	}
 
 	private String makeKey(Short id, SpecailKeyWindowImageType imageType) {
@@ -101,41 +79,25 @@ public class SpecialKeyWindowImageRegistry {
 		Image image = keyWindowImageMap.get(makeKey(id, imageType));
 
 		if (image == null) {
-			RotationsType rotations = dbiContents.getRotations();
-
-			if (null == rotations) {
-				logger.severe("Fail to loading rotations element from XML");
+			ImageListType imageList = dbiContents.getImageList();
+			if (imageList == null) {
 				return null;
 			}
 
-			logger.info("get skin image from " + skinPath);
+			logger.info("get Key Window image from " + imagePath);
 
-			RotationType targetRotation = SkinRotation.getRotation(id);
-			List<RotationType> rotationList = rotations.getRotation();
+			String mainImage = imageList.getMainImage();
+			String keyPressedImage = imageList.getKeyPressedImage();
 
-			for (RotationType rotation : rotationList) {
-				ImageListType imageList = rotation.getImageList();
-				if (imageList == null) {
-					continue;
-				}
+			String mainKey = makeKey(id,
+					SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);
+			keyWindowImageMap.put(mainKey,
+					new Image(display, imagePath + File.separator + mainImage));
 
-				String mainImage = imageList.getMainImage();
-				String keyPressedImage = imageList.getKeyPressedImage();
-
-				if (targetRotation.getName().value().equals(rotation.getName().value())) {
-					String mainKey = makeKey(id,
-							SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);
-					keyWindowImageMap.put(mainKey,
-							new Image(display, skinPath + File.separator + mainImage));
-
-					String pressedKey = makeKey(id,
-							SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
-					keyWindowImageMap.put(pressedKey,
-							new Image(display, skinPath + File.separator + keyPressedImage));
-
-					break;
-				}
-			}
+			String pressedKey = makeKey(id,
+					SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
+			keyWindowImageMap.put(pressedKey,
+					new Image(display, imagePath + File.separator + keyPressedImage));
 
 			image = keyWindowImageMap.get(makeKey(id, imageType));
 		}

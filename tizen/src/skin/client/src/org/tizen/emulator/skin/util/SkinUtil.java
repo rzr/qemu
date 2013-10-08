@@ -176,7 +176,7 @@ public class SkinUtil {
 				EventInfoType eventInfo = keyEntry.getEventInfo();
 
 				HWKey hwKey = new HWKey(
-						keyEntry.getEventInfo().getKeyName(),
+						eventInfo.getKeyName(),
 						eventInfo.getKeyCode(),
 						new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight),
 						keyEntry.getTooltip());
@@ -190,7 +190,6 @@ public class SkinUtil {
 
 	public static boolean isInGeometry(int currentX, int currentY,
 			int targetX, int targetY, int targetWidth, int targetHeight) {
-
 		if ((currentX >= targetX) && (currentY >= targetY)) {
 			if ((currentX <= (targetX + targetWidth)) &&
 					(currentY <= (targetY + targetHeight))) {

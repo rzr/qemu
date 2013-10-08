@@ -32,6 +32,7 @@ package org.tizen.emulator.skin.custom;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Level;
 
 import org.eclipse.swt.SWT;
@@ -42,11 +43,9 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.events.ShellListener;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -57,98 +56,96 @@ import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.SpecialKeyWindowImageRegistry;
 import org.tizen.emulator.skin.image.SpecialKeyWindowImageRegistry.SpecailKeyWindowImageType;
+import org.tizen.emulator.skin.keywindow.dbi.EventInfoType;
+import org.tizen.emulator.skin.keywindow.dbi.KeyMapType;
+import org.tizen.emulator.skin.keywindow.dbi.KeyWindowUI;
+import org.tizen.emulator.skin.keywindow.dbi.RegionType;
 import org.tizen.emulator.skin.layout.HWKey;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
-import org.tizen.emulator.skin.util.SpecialKeyWindowUtil;
+import org.tizen.emulator.skin.util.SkinRegion;
+import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class SpecialKeyWindow extends SkinWindow {
-	private static final String KEYWINDOW_LAYOUT = "keywindow-layout";	
-	private static final String DBI_FILE_NAME = "default.dbi";	
+	public static final String KEYWINDOW_LAYOUT_ROOT = "keywindow-layout";
+	public static final String DBI_FILE_NAME = "default.dbi";
 
 	private EmulatorSkin skin;
-	
-	private HWKey currentPressedHWKey;
+	private SpecialKeyWindowImageRegistry imageRegistry;
+	private SocketCommunicator communicator;
 
-	private int widthBase;
-	private int heightBase;
-
+	private KeyWindowUI dbiContents;
 	private Image keyWindowImage;
 	private Image keyWindowPressedImage;
-
-	private Color colorFrame;
-	private SpecialKeyWindowImageRegistry imageRegistry;
-	private SocketCommunicator communicator;	
 
 	private ShellListener shellListener;
 	private PaintListener shellPaintListener;
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
-	
-	private boolean isTouch;
+
 	private boolean isGrabbedShell;
 	private Point grabPosition;
+	private HWKey currentPressedHWKey;
+	private boolean isTouch;
 
 	public SpecialKeyWindow(EmulatorSkin skin, String layoutName) {
 		super(skin.getShell(), SWT.RIGHT | SWT.CENTER);
 
 		this.skin = skin;
 		this.parent = skin.getShell();
-		if (SwtUtil.isMacPlatform() == false) {
-			this.shell = new Shell(parent,
-					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
-		} else {
-			this.shell = new Shell(parent.getDisplay(),
-					SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
-		}
-
+		this.shell = new Shell(parent.getDisplay() /* for Mac & Always on Top */,
+				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL | SWT.NO_FOCUS);
 		this.communicator = skin.communicator;
+
+		this.isGrabbedShell= false;
 		this.grabPosition = new Point(0, 0);
 
 		shell.setText(parent.getText());
+		shell.setBackground(parent.getBackground());
 		shell.setImage(parent.getImage());
 
 		/* load dbi file */
 		String skinPath = skin.skinInfo.getSkinPath();
-		String specialKeyWindowPath = skinPath + File.separator + KEYWINDOW_LAYOUT + File.separator + layoutName;
+		String specialKeyWindowPath = skinPath + File.separator
+				+ KEYWINDOW_LAYOUT_ROOT + File.separator + layoutName;
 		logger.info("special key window path : " + specialKeyWindowPath);
-		EmulatorUI dbiContents = loadXMLForKeyWindow(specialKeyWindowPath);
+
+		this.dbiContents = loadXMLForKeyWindow(specialKeyWindowPath);
 
 		/* image init */
-		this.imageRegistry = new SpecialKeyWindowImageRegistry(shell.getDisplay(), dbiContents, specialKeyWindowPath);
-		
+		this.imageRegistry = new SpecialKeyWindowImageRegistry(
+				shell.getDisplay(), dbiContents, specialKeyWindowPath);
+
 		/* get keywindow image */
-		keyWindowImage = imageRegistry.getKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);		
-		keyWindowPressedImage = imageRegistry.getKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
-		
-		SpecialKeyWindowUtil.trimShell(shell, keyWindowImage);
-		SpecialKeyWindowUtil.trimShell(shell, keyWindowPressedImage);
-		
-		/* calculate the key window size */
-		widthBase = keyWindowImage.getImageData().width;
-		heightBase = keyWindowImage.getImageData().height;
+		//TODO: null
+		keyWindowImage = imageRegistry.getKeyWindowImage(
+				EmulatorConfig.DEFAULT_WINDOW_ROTATION,
+				SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);
+		keyWindowPressedImage = imageRegistry.getKeyWindowImage(
+				EmulatorConfig.DEFAULT_WINDOW_ROTATION,
+				SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
 
-		/* make a frame image */
-		this.colorFrame = new Color(shell.getDisplay(), new RGB(38, 38, 38));
+		/* set window size */
+		shell.setSize(
+				keyWindowImage.getImageData().width,
+				keyWindowImage.getImageData().height);
 
-		shell.setBackground(colorFrame);
+		/* custom window shape */
+		SkinUtil.trimShell(shell, keyWindowImage);
 
 		addKeyWindowListener();
-
-		shell.setSize(widthBase, heightBase);
 	}
 
-	private EmulatorUI loadXMLForKeyWindow(String skinPath) {
+	private KeyWindowUI loadXMLForKeyWindow(String skinPath) {
 		String dbiPath = skinPath + File.separator + DBI_FILE_NAME;
 		logger.info("load dbi file from " + dbiPath);
 
 		FileInputStream fis = null;
-		EmulatorUI emulatorUI = null;
+		KeyWindowUI keyWindowUI = null;
 
 		try {
 			fis = new FileInputStream(dbiPath);
@@ -157,7 +154,7 @@ public class SpecialKeyWindow extends SkinWindow {
 			logger.info(new String(bytes, "UTF-8"));
 			logger.info("=======================================");
 
-			emulatorUI = JaxbUtil.unmarshal(bytes, EmulatorUI.class);
+			keyWindowUI = JaxbUtil.unmarshal(bytes, KeyWindowUI.class);
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 		} catch (JaxbException e) {
@@ -166,7 +163,38 @@ public class SpecialKeyWindow extends SkinWindow {
 			IOUtil.close(fis);
 		}
 
-		return emulatorUI;
+		return keyWindowUI;
+	}
+
+	private HWKey getHWKey(int currentX, int currentY) {
+		List<KeyMapType> keyMapList = dbiContents.getKeyMapList().getKeyMap();
+		if (keyMapList == null) {
+			return null;
+		}
+
+		for (KeyMapType keyEntry : keyMapList) {
+			RegionType region = keyEntry.getRegion();
+
+			int scaledX = (int) region.getLeft();
+			int scaledY = (int) region.getTop();
+			int scaledWidth = (int) region.getWidth();
+			int scaledHeight = (int) region.getHeight();
+
+			if (SkinUtil.isInGeometry(currentX, currentY,
+					scaledX, scaledY, scaledWidth, scaledHeight)) {
+				EventInfoType eventInfo = keyEntry.getEventInfo();
+
+				HWKey hwKey = new HWKey(
+						eventInfo.getKeyName(),
+						eventInfo.getKeyCode(),
+						new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight),
+						keyEntry.getTooltip());
+
+				return hwKey;
+			}
+		}
+
+		return null;
 	}
 
 	private void addKeyWindowListener() {
@@ -238,7 +266,8 @@ public class SpecialKeyWindow extends SkinWindow {
 			@Override
 			public void mouseMove(MouseEvent e) {
 				if (isTouch == true) {					
-					logger.info("MouseMove in SpecialKeyWindow : " + e.x + ", " + e.y);
+					logger.info("mouseMove in KeyWindow : " + e.x + ", " + e.y);
+
 					HWKey pressedHWKey = currentPressedHWKey;					
 					int x = pressedHWKey.getRegion().x;
 					int y = pressedHWKey.getRegion().y;
@@ -246,7 +275,7 @@ public class SpecialKeyWindow extends SkinWindow {
 					int height = pressedHWKey.getRegion().height;
 					int eventType;
 
-					if (SpecialKeyWindowUtil.isInGeometry(e.x, e.y, x, y, width, height)) {
+					if (SkinUtil.isInGeometry(e.x, e.y, x, y, width, height)) {
 						eventType = MouseEventType.DRAG.value();
 					} else {
 						isTouch = false;
@@ -256,8 +285,10 @@ public class SpecialKeyWindow extends SkinWindow {
 					}
 
 					MouseEventData mouseEventData = new MouseEventData(
-							MouseButtonType.LEFT.value(), MouseEventType.DRAG.value(), e.x, e.y, e.x, e.y, 0);
-					communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+							MouseButtonType.LEFT.value(), MouseEventType.DRAG.value(),
+							e.x, e.y, e.x, e.y, 0);
+					communicator.sendToQEMU(
+							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 				} else if (isGrabbedShell == true && e.button == 0/* left button */) {
 					if (getDockPosition() != SWT.NONE) {
 						dock(SWT.NONE, false, false);
@@ -281,21 +312,32 @@ public class SpecialKeyWindow extends SkinWindow {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				if (e.button == 1) { /* left button */
-					logger.info("MouseUp in SpecialKeyWindow : " + e.x + ", " + e.y);
 					isGrabbedShell = false;
 					grabPosition.x = grabPosition.y = 0;
-					HWKey pressedHWKey = currentPressedHWKey;
 
-					if (pressedHWKey != null && pressedHWKey.getKeyCode() != SpecialKeyWindowUtil.UNKNOWN_KEYCODE) {
+					/* HW key handling */
+					HWKey pressedHWKey = currentPressedHWKey;
+					if (pressedHWKey == null) {
+						logger.info("mouseUp in KeyWindow : " + e.x + ", " + e.y);
+						return;
+					}
+
+					if (pressedHWKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
+						logger.info(pressedHWKey.getName() + " key is released");
+
 						/* send event */
 						if (isTouch) {
 							isTouch = false;
 							MouseEventData mouseEventData = new MouseEventData(
-									MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(), e.x, e.y, e.x, e.y, 0);
-							communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+									MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
+									e.x, e.y, e.x, e.y, 0);
+							communicator.sendToQEMU(
+									SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 						} else {
-							KeyEventData keyEventData = new KeyEventData(KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
-							communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
+							KeyEventData keyEventData = new KeyEventData(
+									KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
+							communicator.sendToQEMU(
+									SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 						}
 
 						currentPressedHWKey = null;
@@ -310,40 +352,48 @@ public class SpecialKeyWindow extends SkinWindow {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (1 == e.button) { /* left button */
-					logger.info("MouseDown in SpecialKeyWindow : " + e.x + ", " + e.y);
-
 					/* HW key handling */
-					final HWKey hwKey = SpecialKeyWindowUtil.getHWKey(e.x, e.y, EmulatorConfig.DEFAULT_WINDOW_ROTATION);
-					if (hwKey == null) {		
+					final HWKey hwKey = getHWKey(e.x, e.y);
+					if (hwKey == null) {
+						logger.info("mouseDown in KeyWindow : " + e.x + ", " + e.y);
+
 						isGrabbedShell = true;
 						grabPosition.x = e.x;
 						grabPosition.y = e.y;
+
 						return;						
 					}
 
-					if (hwKey.getKeyCode() != SpecialKeyWindowUtil.UNKNOWN_KEYCODE) {
+					if (hwKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
+						logger.info(hwKey.getName() + " key is pressed");
+
+						/* send event */
 						if (hwKey.getTooltip().equalsIgnoreCase("touch")) {
 							isTouch = true;
 							MouseEventData mouseEventData = new MouseEventData(
-									MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(), e.x, e.y, e.x, e.y, 0);
-							communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+									MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
+									e.x, e.y, e.x, e.y, 0);
+							communicator.sendToQEMU(
+									SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 						} else {
-							/* send event */
-							KeyEventData keyEventData = new KeyEventData(KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
-							communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
+							KeyEventData keyEventData = new KeyEventData(
+									KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
+							communicator.sendToQEMU(
+									SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 						}
 
 						currentPressedHWKey = hwKey;
+
 						shell.setToolTipText(null);
 
 						/* draw the HW key region as the cropped keyPressed image area */
-						if(hwKey.getRegion() != null &&
+						if (hwKey.getRegion() != null &&
 								hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
 							shell.getDisplay().syncExec(new Runnable() {
 								public void run() {
-									if(keyWindowPressedImage != null) {
+									if (keyWindowPressedImage != null) {
 										GC gc = new GC(shell);
-										if(gc != null) {
+										if (gc != null) {
 											gc.drawImage(keyWindowPressedImage, 
 													hwKey.getRegion().x, hwKey.getRegion().y, 
 													hwKey.getRegion().width, hwKey.getRegion().height, 
@@ -389,7 +439,6 @@ public class SpecialKeyWindow extends SkinWindow {
 			shell.removeMouseListener(shellMouseListener);
 		}
 
-		colorFrame.dispose();
 		imageRegistry.dispose();
 	}
 }
