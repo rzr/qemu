@@ -57,7 +57,6 @@ import org.tizen.emulator.skin.util.SkinRotation;
 public class ImageRegistry {
 	public static final String ICONS_FOLDER = "icons";
 	public static final String IMAGES_FOLDER = "images";
-	public static final String KEYWINDOW_FOLDER = "key-window";
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(ImageRegistry.class).getLogger();
@@ -117,38 +116,12 @@ public class ImageRegistry {
 		}
 	}
 
-	public enum KeyWindowImageName {
-		KEYBUTTON_NORMAL("keybutton_nml.png"),
-		KEYBUTTON_HOVER("keybutton_hover.png"),
-		KEYBUTTON_PUSHED("keybutton_pushed.png"),
-
-		SCROLL_UPBUTTON_NORMAL("scroll_button_up_nml.png"),
-		SCROLL_UPBUTTON_HOVER("scroll_button_up_hover.png"),
-		SCROLL_UPBUTTON_PUSHED("scroll_button_up_pushed.png"),
-		SCROLL_DOWNBUTTON_NORMAL("scroll_button_down_nml.png"),
-		SCROLL_DOWNBUTTON_HOVER("scroll_button_down_hover.png"),
-		SCROLL_DOWNBUTTON_PUSHED("scroll_button_down_pushed.png"),
-		SCROLL_THUMB("scroll_thumb.png"),
-		SCROLL_SHAFT("scroll_back.png");
-
-		private String name;
-
-		private KeyWindowImageName(String name) {
-			this.name = name;
-		}
-
-		public String getName() {
-			return this.name;
-		}
-	}
-
 	private Display display;
 	private EmulatorUI dbiContents;
 
 	private Map<String, Image> resourceImageMap;
 	private Map<String, Image> iconImageMap;
 	private Map<String, Image> skinImageMap;
-	private Map<String, Image> keyWindowImageMap;
 
 	private String skinPath;
 
@@ -184,7 +157,6 @@ public class ImageRegistry {
 		this.resourceImageMap = new HashMap<String, Image>();
 		this.iconImageMap = new HashMap<String, Image>();
 		this.skinImageMap = new HashMap<String, Image>();
-		this.keyWindowImageMap = new HashMap<String, Image>();
 
 		init(this.skinPath);
 	}
@@ -314,36 +286,6 @@ public class ImageRegistry {
 		return iconImageMap.get(name.getName());
 	}
 
-	public Image getKeyWindowImageData(KeyWindowImageName name) {
-		if (keyWindowImageMap.size() == 0) {
-			/* load all of the images at once */
-			ClassLoader classLoader = this.getClass().getClassLoader();
-			InputStream is = null;
-			String imageName, imagePath;
-
-			KeyWindowImageName[] values = KeyWindowImageName.values();
-			for (KeyWindowImageName value : values) {
-				imageName = value.getName();
-				imagePath = IMAGES_FOLDER + "/" +
-						KEYWINDOW_FOLDER + "/" + imageName;
-
-				try {
-					is = classLoader.getResourceAsStream(imagePath);
-					if (null != is) {
-						logger.fine("KeyWindow image is loaded : " + imagePath);
-						keyWindowImageMap.put(imageName, new Image(display, is));
-					} else {
-						logger.severe("missing image : " + imagePath);
-					}
-				} finally {
-					IOUtil.close(is);
-				}
-			}
-		}
-
-		return keyWindowImageMap.get(name.getName());
-	}
-
 	public void dispose() {
 		Collection<Image> images = null;
 		Iterator<Image> imageIterator = null;
@@ -376,18 +318,6 @@ public class ImageRegistry {
 		/* skin image */
 		if (null != skinImageMap) {
 			images = skinImageMap.values();
-
-			imageIterator = images.iterator();
-
-			while (imageIterator.hasNext()) {
-				image = imageIterator.next();
-				image.dispose();
-			}
-		}
-
-		/* general key window image */
-		if (null != keyWindowImageMap) {
-			images = keyWindowImageMap.values();
 
 			imageIterator = images.iterator();
 
