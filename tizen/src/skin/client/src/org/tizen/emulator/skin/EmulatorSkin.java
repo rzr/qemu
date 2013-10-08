@@ -430,7 +430,6 @@ public class EmulatorSkin {
 					}
 
 					skinFinalize();
-
 				} else {
 					/*
 					 * Skin have to be alive until receiving shutdown request
@@ -1232,71 +1231,6 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createEcpMenu() {
-		SelectionAdapter listener = new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-
-				String emulName = SkinUtil.getVmName(config);
-				int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
-
-				DataTranfer dataTranfer = communicator.sendDataToQEMU(
-						SendCommand.ECP_PORT_REQ, null, true);
-				byte[] receivedData = communicator.getReceivedData(dataTranfer);
-				int portEcp = receivedData[0] << 24;
-				portEcp |= receivedData[1] << 16;
-				portEcp |= receivedData[2] << 8;
-				portEcp |= receivedData[3];
-
-				if (portEcp <= 0) {
-					logger.log(Level.INFO, "ecs server port failed: " + portEcp);
-					String ecpErrorMessage = "Please wait until ecs server is booting up.";
-					Shell temp = new Shell(Display.getDefault());
-					MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
-					messageBox.setText("Emulator");
-					if (portEcp == -1) {
-						ecpErrorMessage = "Failed to open ecs server. Please restart the emulator.";
-					}
-					messageBox.setMessage(ecpErrorMessage);
-					messageBox.open();
-					return;
-				}
-
-				ProcessBuilder procEcp = new ProcessBuilder();
-
-				// FIXME: appropriate running binary setting is necessary.
-				if (SwtUtil.isLinuxPlatform()) {
-					procEcp.command("java", "-jar",
-							"./emulator-control-panel.jar", "vmname="
-									+ emulName, "sdb.port=" + portSdb,
-							"svr.port=" + portEcp);
-				} else if (SwtUtil.isWindowsPlatform()) {
-					procEcp.command("java.exe", "-jar",
-							"emulator-control-panel.jar", "vmname=" + emulName,
-							"sdb.port=" + portSdb, "svr.port=" + portEcp);
-				} else if (SwtUtil.isMacPlatform()) {
-					procEcp.command("java", "-jar", "-XstartOnFirstThread",
-							"./emulator-control-panel.jar", "vmname="
-									+ emulName, "sdb.port=" + portSdb,
-							"svr.port=" + portEcp);
-				}
-
-				logger.log(Level.INFO, procEcp.command().toString());
-
-				try {
-					procEcp.start(); /* open ECP */
-				} catch (Exception ee) {
-					logger.log(Level.SEVERE, ee.getMessage(), ee);
-					SkinUtil.openMessage(shell, null,
-							"Fail to open control panel: \n" + ee.getMessage(),
-							SWT.ICON_ERROR, config);
-				}
-			}
-		};
-
-		return listener;
-	}
-
 	public SelectionAdapter createTopMostMenu() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
@@ -1398,9 +1332,7 @@ public class EmulatorSkin {
 						}
 					}
 
-					SkinUtil.openMessage(
-							shell,
-							null,
+					SkinUtil.openMessage(shell, null,
 							"Rotation is not ready.\n"
 									+ "Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
@@ -1690,7 +1622,7 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (!communicator.isSdbDaemonStarted()) {
+				if (communicator.isSdbDaemonStarted() == false) {
 					SkinUtil.openMessage(shell, null,
 							"SDB is not ready.\n"
 									+ "Please wait until the emulator is completely boot up.",
@@ -1701,8 +1633,9 @@ public class EmulatorSkin {
 				String sdbPath = SkinUtil.getSdbPath();
 
 				File sdbFile = new File(sdbPath);
-				if (!sdbFile.exists()) {
+				if (sdbFile.exists() == false) {
 					logger.info("SDB file does not exist : " + sdbFile.getAbsolutePath());
+
 					try {
 						SkinUtil.openMessage(shell, null,
 								"SDB file does not exist in the following path.\n"
@@ -1711,6 +1644,7 @@ public class EmulatorSkin {
 					} catch (IOException ee) {
 						logger.log(Level.SEVERE, ee.getMessage(), ee);
 					}
+
 					return;
 				}
 
@@ -1718,33 +1652,125 @@ public class EmulatorSkin {
 
 				ProcessBuilder procSdb = new ProcessBuilder();
 
-				if (SwtUtil.isLinuxPlatform()) {
-					procSdb.command("/usr/bin/gnome-terminal",
-							"--disable-factory",
-							"--title=" + SkinUtil.makeEmulatorName(config),
-							"-x", sdbPath, "-s", "emulator-" + portSdb, "shell");
-				} else if (SwtUtil.isWindowsPlatform()) {
+				if (SwtUtil.isWindowsPlatform()) {
 					procSdb.command("cmd.exe", "/c", "start", sdbPath, "sdb",
 							"-s", "emulator-" + portSdb, "shell");
 				} else if (SwtUtil.isMacPlatform()) {
 					procSdb.command("./sdbscript", "emulator-" + portSdb);
-					/*
-					 * procSdb.command( "/usr/X11/bin/uxterm", "-T", "emulator-"
-					 * + portSdb, "-e", sdbPath,"shell");
-					 */
+					/* procSdb.command( "/usr/X11/bin/uxterm", "-T",
+							"emulator-" + portSdb, "-e", sdbPath,"shell"); */
+				} else { /* Linux */
+					procSdb.command("/usr/bin/gnome-terminal",
+							"--disable-factory",
+							"--title=" + SkinUtil.makeEmulatorName(config),
+							"-x", sdbPath, "-s", "emulator-" + portSdb, "shell");
 				}
 
-				logger.log(Level.INFO, procSdb.command().toString());
+				logger.info(procSdb.command().toString());
 
 				try {
 					procSdb.start(); /* open the sdb shell */
 				} catch (Exception ee) {
 					logger.log(Level.SEVERE, ee.getMessage(), ee);
-					SkinUtil.openMessage(shell, null, "Fail to open Shell: \n"
-							+ ee.getMessage(), SWT.ICON_ERROR, config);
+					SkinUtil.openMessage(shell, null,
+							"Fail to open Shell : \n" + ee.getMessage(),
+							SWT.ICON_ERROR, config);
 				}
 
 				communicator.sendToQEMU(SendCommand.OPEN_SHELL, null, false);
+			}
+		};
+
+		return listener;
+	}
+
+	public SelectionAdapter createEcpMenu() {
+		SelectionAdapter listener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (communicator.isEcsServerStarted() == false) {
+					SkinUtil.openMessage(shell, null,
+							"Control Panel is not ready.\n"
+							+ "Please wait until the emulator is completely boot up.",
+							SWT.ICON_WARNING, config);
+					return;
+				}
+
+				String ecpPath = SkinUtil.getEcpPath();
+
+				File ecpFile = new File(ecpPath);
+				if (ecpFile.exists() == false) {
+					logger.info("Control Panel file does not exist : "
+							+ ecpFile.getAbsolutePath());
+
+					try {
+						SkinUtil.openMessage(shell, null,
+								"Control Panel file does not exist in the following path.\n"
+								+ ecpFile.getCanonicalPath(),
+								SWT.ICON_ERROR, config);
+					} catch (IOException ee) {
+						logger.log(Level.SEVERE, ee.getMessage(), ee);
+					}
+
+					return;
+				}
+
+				// TODO: thread
+				/* get ECS port from Qemu */
+				DataTranfer dataTranfer = communicator.sendDataToQEMU(
+						SendCommand.ECP_PORT_REQ, null, true);
+				byte[] receivedData = communicator.getReceivedData(dataTranfer);
+
+				if (null != receivedData) {
+					int portEcp = receivedData[0] << 24;
+					portEcp |= receivedData[1] << 16;
+					portEcp |= receivedData[2] << 8;
+					portEcp |= receivedData[3];
+
+					if (portEcp <= 0) {
+						logger.log(Level.INFO, "ECS port failed : " + portEcp);
+
+						SkinUtil.openMessage(shell, null,
+								"Failed to connect to Control Server. Please restart the emulator.",
+								SWT.ICON_ERROR, config);
+						return;
+					}
+
+					String emulName = SkinUtil.getVmName(config);
+					int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
+
+					ProcessBuilder procEcp = new ProcessBuilder();
+
+					// FIXME: appropriate running binary setting is necessary.
+					if (SwtUtil.isWindowsPlatform()) {
+						procEcp.command("java.exe", "-jar", ecpPath,
+								"vmname=" + emulName, "sdb.port=" + portSdb,
+								"svr.port=" + portEcp);
+					} else if (SwtUtil.isMacPlatform()) {
+						procEcp.command("java", "-jar", "-XstartOnFirstThread", ecpPath,
+								"vmname=" + emulName, "sdb.port=" + portSdb,
+								"svr.port=" + portEcp);
+					} else { /* Linux */
+						procEcp.command("java", "-jar", ecpPath,
+								"vmname=" + emulName, "sdb.port=" + portSdb,
+								"svr.port=" + portEcp);
+					}
+
+					logger.info(procEcp.command().toString());
+
+					try {
+						procEcp.start(); /* open ECP */
+					} catch (Exception ee) {
+						logger.log(Level.SEVERE, ee.getMessage(), ee);
+						SkinUtil.openMessage(shell, null,
+								"Fail to open control panel : \n" + ee.getMessage(),
+								SWT.ICON_ERROR, config);
+					}
+				} else {
+					logger.severe("Fail to get ECP data");
+					SkinUtil.openMessage(shell, null,
+							"Fail to get ECP data", SWT.ICON_ERROR, config);
+				}
 			}
 		};
 

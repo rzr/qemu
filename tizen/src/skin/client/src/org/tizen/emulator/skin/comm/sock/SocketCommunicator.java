@@ -388,8 +388,7 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case ECP_PORT: {
 					logger.info("received ECP_PORT from QEMU.");
-					resetDataTransfer(ecpTransfer);
-					receiveData( ecpTransfer, length );
+					receiveData(ecpTransfer, length);
 					
 					break;
 				}
@@ -680,6 +679,10 @@ public class SocketCommunicator implements ICommunicator {
 
 	public synchronized boolean isSdbDaemonStarted() {
 		return isSdbDaemonStarted;
+	}
+
+	public synchronized boolean isEcsServerStarted() {
+		return isEcsServerStarted;
 	}
 
 	public synchronized void setRamdumpFlag(boolean flag) {
