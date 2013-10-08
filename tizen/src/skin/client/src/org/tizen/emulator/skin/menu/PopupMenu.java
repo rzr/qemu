@@ -175,8 +175,8 @@ public class PopupMenu {
 				scaleMenuType.getItemName().isEmpty() == false) ?
 						scaleMenuType.getItemName() : SCALE_MENUITEM_NAME;
 
-		if (rotationMenuType == null ||
-				(rotationMenuType != null && rotationMenuType.isVisible() == true)) {
+		if (scaleMenuType == null ||
+				(scaleMenuType != null && scaleMenuType.isVisible() == true)) {
 			scaleItem = new MenuItem(menu, SWT.CASCADE);
 			scaleItem.setText(menuName);
 			scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
