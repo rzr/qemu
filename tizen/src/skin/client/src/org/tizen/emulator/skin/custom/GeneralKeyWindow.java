@@ -61,7 +61,7 @@ import org.tizen.emulator.skin.image.ImageRegistry.KeyWindowImageName;
 import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.SwtUtil;
 
-public class KeyWindow extends SkinWindow {
+public class GeneralKeyWindow extends SkinWindow {
 	private static final String PATCH_IMAGES_PATH = "images/key-window/";
 	private static final int SHELL_MARGIN_BOTTOM = 3;
 	private static final int PAIRTAG_CIRCLE_SIZE = 8;
@@ -96,12 +96,12 @@ public class KeyWindow extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public KeyWindow(EmulatorSkin skin, Shell parent,
+	public GeneralKeyWindow(EmulatorSkin skin, Shell parent,
 			SocketCommunicator communicator, List<KeyMapType> keyMapList) {
 		super(parent, SWT.RIGHT | SWT.CENTER);
 
 		this.skin = skin;
-		this.shell = new Shell(Display.getDefault(),
+		this.shell = new Shell(parent,
 				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL);
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 

@@ -63,7 +63,6 @@ import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
@@ -246,7 +245,7 @@ public class EmulatorSkin {
 
 		/* create and attach a popup menu */
 		isOnKbd = false;
-		popupMenu = new PopupMenu(config, this, shell, imageRegistry);
+		popupMenu = new PopupMenu(config, this);
 
 		getKeyWindowKeeper().determineLayout();
 

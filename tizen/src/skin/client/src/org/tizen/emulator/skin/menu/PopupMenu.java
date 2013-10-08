@@ -97,12 +97,11 @@ public class PopupMenu {
 	/**
 	 *  Constructor
 	 */
-	public PopupMenu(EmulatorConfig config, EmulatorSkin skin,
-			Shell shell, ImageRegistry imageRegistry) {
+	public PopupMenu(EmulatorConfig config, EmulatorSkin skin) {
 		this.config = config;
 		this.skin = skin;
-		this.shell = shell;
-		this.imageRegistry = imageRegistry;
+		this.shell = skin.getShell();
+		this.imageRegistry = skin.getImageRegistry();
 
 		createMenu();
 	}
@@ -199,6 +198,7 @@ public class PopupMenu {
 
 		if (keywindowMenuType == null ||
 				(keywindowMenuType != null && keywindowMenuType.isVisible() == true)) {
+			/* load Key Window layout */
 			String pathLayoutRoot = skin.skinInfo.getSkinPath() +
 					File.separator + KEYWINDOW_LAYOUT_ROOT;
 			ArrayList<File> layouts = getKeyWindowLayoutList(pathLayoutRoot);

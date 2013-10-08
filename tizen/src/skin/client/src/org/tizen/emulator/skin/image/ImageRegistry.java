@@ -1,5 +1,5 @@
 /**
- * image resources management
+ * Image Resource Management
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -155,6 +155,9 @@ public class ImageRegistry {
 	private static ImageRegistry instance;
 	private static boolean isInitialized;
 
+	/**
+	 *  Constructor
+	 */
 	private ImageRegistry() {
 		/* do nothing */
 	}
@@ -382,7 +385,7 @@ public class ImageRegistry {
 			}
 		}
 
-		/* key window image */
+		/* general key window image */
 		if (null != keyWindowImageMap) {
 			images = keyWindowImageMap.values();
 
