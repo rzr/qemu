@@ -97,7 +97,7 @@ public class SpecialKeyWindowImageRegistry {
 		return id + ":" + imageType.ordinal();
 	}
 
-	public Image getSpecialKeyWindowImage(Short id, SpecailKeyWindowImageType imageType) {
+	public Image getKeyWindowImage(Short id, SpecailKeyWindowImageType imageType) {
 		Image image = keyWindowImageMap.get(makeKey(id, imageType));
 
 		if (image == null) {

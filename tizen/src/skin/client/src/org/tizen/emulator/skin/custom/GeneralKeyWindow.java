@@ -118,11 +118,11 @@ public class GeneralKeyWindow extends SkinWindow {
 		shell.setImage(parent.getImage());
 
 		/* load image for HW key button */
-		imageNormal = imageRegistry.getGeneralKeyWindowImageData(
+		imageNormal = imageRegistry.getKeyWindowImage(
 				GeneralKeyWindowImageName.KEYBUTTON_NORMAL);
-		imageHover = imageRegistry.getGeneralKeyWindowImageData(
+		imageHover = imageRegistry.getKeyWindowImage(
 				GeneralKeyWindowImageName.KEYBUTTON_HOVER);
-		imagePushed = imageRegistry.getGeneralKeyWindowImageData(
+		imagePushed = imageRegistry.getKeyWindowImage(
 				GeneralKeyWindowImageName.KEYBUTTON_PUSHED);
 
 		/* calculate the key window size */
@@ -176,26 +176,26 @@ public class GeneralKeyWindow extends SkinWindow {
 			Image imagesScrollArrowUp[] = new Image[3];
 			Image imagesScrollArrowDown[] = new Image[3];
 
-			imagesScrollArrowUp[0] = imageRegistry.getGeneralKeyWindowImageData(
+			imagesScrollArrowUp[0] = imageRegistry.getKeyWindowImage(
 					GeneralKeyWindowImageName.SCROLL_UPBUTTON_NORMAL);
-			imagesScrollArrowUp[1] = imageRegistry.getGeneralKeyWindowImageData(
+			imagesScrollArrowUp[1] = imageRegistry.getKeyWindowImage(
 					GeneralKeyWindowImageName.SCROLL_UPBUTTON_HOVER);
-			imagesScrollArrowUp[2] = imageRegistry.getGeneralKeyWindowImageData(
+			imagesScrollArrowUp[2] = imageRegistry.getKeyWindowImage(
 					GeneralKeyWindowImageName.SCROLL_UPBUTTON_PUSHED);
 
-			imagesScrollArrowDown[0] = imageRegistry.getGeneralKeyWindowImageData(
+			imagesScrollArrowDown[0] = imageRegistry.getKeyWindowImage(
 					GeneralKeyWindowImageName.SCROLL_DOWNBUTTON_NORMAL);
-			imagesScrollArrowDown[1] = imageRegistry.getGeneralKeyWindowImageData(
+			imagesScrollArrowDown[1] = imageRegistry.getKeyWindowImage(
 					GeneralKeyWindowImageName.SCROLL_DOWNBUTTON_HOVER);
-			imagesScrollArrowDown[2] = imageRegistry.getGeneralKeyWindowImageData(
+			imagesScrollArrowDown[2] = imageRegistry.getKeyWindowImage(
 					GeneralKeyWindowImageName.SCROLL_DOWNBUTTON_PUSHED);
 
 			CustomScrolledComposite compositeScroll =
 					new CustomScrolledComposite(shell, SWT.NONE,
 							imagesScrollArrowUp, imagesScrollArrowDown,
-							imageRegistry.getGeneralKeyWindowImageData(
+							imageRegistry.getKeyWindowImage(
 									GeneralKeyWindowImageName.SCROLL_THUMB),
-							imageRegistry.getGeneralKeyWindowImageData(
+							imageRegistry.getKeyWindowImage(
 									GeneralKeyWindowImageName.SCROLL_SHAFT));
 			compositeScroll.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 

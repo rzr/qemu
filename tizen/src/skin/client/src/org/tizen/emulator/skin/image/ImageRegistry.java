@@ -33,19 +33,14 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.dbi.EmulatorUI;
-import org.tizen.emulator.skin.dbi.RotationType;
-import org.tizen.emulator.skin.dbi.RotationsType;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
-import org.tizen.emulator.skin.util.SkinRotation;
 
 
 /**
@@ -110,12 +105,8 @@ public class ImageRegistry {
 	}
 
 	private Display display;
-	private EmulatorUI dbiContents;
-
 	private Map<String, Image> resourceImageMap;
 	private Map<String, Image> iconImageMap;
-
-	private String skinPath;
 
 	private static ImageRegistry instance;
 	private static boolean isInitialized;
@@ -142,29 +133,8 @@ public class ImageRegistry {
 		isInitialized = true;
 
 		this.display = Display.getDefault();
-
-		this.skinPath = skinPath;
-		this.dbiContents = config.getDbiContents();
-
 		this.resourceImageMap = new HashMap<String, Image>();
 		this.iconImageMap = new HashMap<String, Image>();
-
-		init(this.skinPath);
-	}
-
-	private void init(String argSkinPath) {
-		RotationsType rotations = dbiContents.getRotations();
-
-		if (null == rotations) {
-			logger.severe("Fail to loading rotations element from dbi.");
-			return;
-		}
-
-		List<RotationType> rotationList = rotations.getRotation();
-
-		for (RotationType rotation : rotationList) {
-			SkinRotation.put(rotation);
-		}
 	}
 
 	public Image getResourceImage(ResourceImageName name) {

@@ -54,6 +54,8 @@ import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomButton;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
+import org.tizen.emulator.skin.image.GeneralSkinImageRegistry;
+import org.tizen.emulator.skin.image.GeneralSkinImageRegistry.GeneralSkinImageName;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.PopupMenu;
@@ -63,10 +65,6 @@ import org.tizen.emulator.skin.util.SwtUtil;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private static final String PATCH_IMAGES_PATH = "images/emul-window/";
-	private static final String TOGGLE_BUTTON_NORMAL_IMG = "arrow_nml.png";
-	private static final String TOGGLE_BUTTON_HOVER_IMG = "arrow_hover.png";
-	private static final String TOGGLE_BUTTON_PUSHED_IMG = "arrow_pushed.png";
-
 	private static final int PAIR_TAG_POSITION_X = 26;
 	private static final int PAIR_TAG_POSITION_Y = 13;
 
@@ -87,6 +85,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
 
+	private GeneralSkinImageRegistry imageRegistry;
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
@@ -99,6 +98,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		this.isGrabbedShell= false;
 		this.grabPosition = new Point(0, 0);
+
+		this.imageRegistry =
+				new GeneralSkinImageRegistry(shell.getDisplay());
 
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 		this.backgroundColor = new Color(shell.getDisplay(), new RGB(38, 38, 38));
@@ -148,13 +150,12 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* load image for toggle button of key window */
-		ClassLoader loader = this.getClass().getClassLoader();
-		Image imageNormal = new Image(shell.getDisplay(),
-				loader.getResourceAsStream(PATCH_IMAGES_PATH + TOGGLE_BUTTON_NORMAL_IMG));
-		Image imageHover = new Image(shell.getDisplay(),
-				loader.getResourceAsStream(PATCH_IMAGES_PATH + TOGGLE_BUTTON_HOVER_IMG));
-		Image imagePushed = new Image(shell.getDisplay(),
-				loader.getResourceAsStream(PATCH_IMAGES_PATH + TOGGLE_BUTTON_PUSHED_IMG));
+		Image imageNormal = imageRegistry.getSkinImage(
+				GeneralSkinImageName.TOGGLE_BUTTON_NORMAL);
+		Image imageHover = imageRegistry.getSkinImage(
+				GeneralSkinImageName.TOGGLE_BUTTON_HOVER);
+		Image imagePushed = imageRegistry.getSkinImage(
+				GeneralSkinImageName.TOGGLE_BUTTON_PUSHED);
 
 		/* create a toggle button of key window */
 		toggleButton = new CustomButton(shell, SWT.DRAW_TRANSPARENT | SWT.NO_FOCUS,
@@ -438,56 +439,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shell.addMouseListener(shellMouseListener);
 	}
 
-//	private void createHWKeyRegion() {
-//		if (compositeBase != null) {
-//			compositeBase.dispose();
-//			compositeBase = null;
-//		}
-//
-//		List<KeyMapType> keyMapList =
-//				SkinUtil.getHWKeyMapList(currentState.getCurrentRotationId());
-//
-//		if (keyMapList != null && keyMapList.isEmpty() == false) {
-//			compositeBase = new Composite(shell, SWT.NONE);
-//			compositeBase.setLayout(new GridLayout(1, true));
-//
-//			for (KeyMapType keyEntry : keyMapList) {
-//				Button hardKeyButton = new Button(compositeBase, SWT.FLAT);
-//				hardKeyButton.setText(keyEntry.getEventInfo().getKeyName());
-//				hardKeyButton.setToolTipText(keyEntry.getTooltip());
-//
-//				hardKeyButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-//
-//				final int keycode = keyEntry.getEventInfo().getKeyCode();
-//				hardKeyButton.addMouseListener(new MouseListener() {
-//					@Override
-//					public void mouseDown(MouseEvent e) {
-//						KeyEventData keyEventData = new KeyEventData(
-//								KeyEventType.PRESSED.value(), keycode, 0, 0);
-//						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-//					}
-//
-//					@Override
-//					public void mouseUp(MouseEvent e) {
-//						KeyEventData keyEventData = new KeyEventData(
-//								KeyEventType.RELEASED.value(), keycode, 0, 0);
-//						communicator.sendToQEMU(SendCommand.SEND_HARD_KEY_EVENT, keyEventData);
-//					}
-//
-//					@Override
-//					public void mouseDoubleClick(MouseEvent e) {
-//						/* do nothing */
-//					}
-//				});
-//			}
-//
-//			FormData dataComposite = new FormData();
-//			dataComposite.left = new FormAttachment(displayCanvas, 0);
-//			dataComposite.top = new FormAttachment(0, 0);
-//			compositeBase.setLayoutData(dataComposite);
-//		}
-//	}
-
 	@Override
 	public void composerFinalize() {
 		if (null != shellPaintListener) {
@@ -515,5 +466,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		frameMaker.freePatches();
+		imageRegistry.dispose();
 	}
 }

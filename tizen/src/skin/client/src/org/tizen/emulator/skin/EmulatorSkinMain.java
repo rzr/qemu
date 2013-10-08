@@ -34,6 +34,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -50,6 +51,8 @@ import org.tizen.emulator.skin.config.EmulatorConfig.ConfigPropertiesConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinInfoConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
+import org.tizen.emulator.skin.dbi.RotationType;
+import org.tizen.emulator.skin.dbi.RotationsType;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -57,6 +60,7 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
+import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -411,6 +415,18 @@ public class EmulatorSkinMain {
 			logger.info("=======================================");
 
 			emulatorUI = JaxbUtil.unmarshal(bytes, EmulatorUI.class);
+
+			/* register rotation info */
+			RotationsType rotations = emulatorUI.getRotations();
+			if (rotations != null) {
+				List<RotationType> rotationList = rotations.getRotation();
+
+				for (RotationType rotation : rotationList) {
+					SkinRotation.put(rotation);
+				}
+			} else {
+				logger.severe("Fail to loading rotations element from XML");
+			}
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 		} catch (JaxbException e) {

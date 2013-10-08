@@ -123,8 +123,8 @@ public class SpecialKeyWindow extends SkinWindow {
 		this.imageRegistry = new SpecialKeyWindowImageRegistry(shell.getDisplay(), dbiContents, specialKeyWindowPath);
 		
 		/* get keywindow image */
-		keyWindowImage = imageRegistry.getSpecialKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);		
-		keyWindowPressedImage = imageRegistry.getSpecialKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
+		keyWindowImage = imageRegistry.getKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);		
+		keyWindowPressedImage = imageRegistry.getKeyWindowImage(EmulatorConfig.DEFAULT_WINDOW_ROTATION, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
 		
 		SpecialKeyWindowUtil.trimShell(shell, keyWindowImage);
 		SpecialKeyWindowUtil.trimShell(shell, keyWindowPressedImage);
