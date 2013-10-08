@@ -69,6 +69,7 @@
     <popupMenu>
         <topmostItem visible="true" />
         <rotateItem visible="true" />
+        <scaleItem visible="true" />
         <keywindowItem visible="true" />
         <shellItem visible="true" />
     </popupMenu>
