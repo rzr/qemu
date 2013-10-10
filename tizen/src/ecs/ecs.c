@@ -48,6 +48,7 @@
 
 #include "sdb.h"
 #include "ecs.h"
+#include "guest_server.h"
 
 #include "genmsg/ecs.pb-c.h"
 
@@ -62,17 +63,50 @@ clients = QTAILQ_HEAD_INITIALIZER(clients);
 
 static ECS_State *current_ecs;
 
+static void* keepalive_buf;
+static int payloadsize;
+
 static int port;
 static int port_setting = -1;
 
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
-static inline void start_logging(void) {
-    char path[256];
-    char* home;
+static char* get_emulator_ecs_log_path(void)
+{
+    gchar *emulator_ecs_log_path = NULL;
+    gchar *tizen_sdk_data = NULL;
+#ifndef CONFIG_WIN32
+    char emulator_ecs[] = "/emulator/vms/ecs.log";
+#else
+    char emulator_ecs[] = "\\emulator\\vms\\ecs.log";
+#endif
 
-    home = getenv(LOG_HOME);
-    sprintf(path, "%s%s", home, LOG_PATH);
+    tizen_sdk_data = get_tizen_sdk_data_path();
+    if (!tizen_sdk_data) {
+        LOG("failed to get tizen-sdk-data path.\n");
+        return NULL;
+    }
+
+    emulator_ecs_log_path =
+        g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_ecs) + 1);
+    if (!emulator_ecs_log_path) {
+        LOG("failed to allocate memory.\n");
+        return NULL;
+    }
+
+    g_snprintf(emulator_ecs_log_path, strlen(tizen_sdk_data) + sizeof(emulator_ecs),
+             "%s%s", tizen_sdk_data, emulator_ecs);
+
+    g_free(tizen_sdk_data);
+
+    LOG("ecs log path: %s\n", emulator_ecs_log_path);
+    return emulator_ecs_log_path;
+}
+
+static inline void start_logging(void) {
+    char* path = get_emulator_ecs_log_path();
+    if (!path)
+        return;
 
 #ifdef _WIN32
     FILE* fnul;
@@ -94,7 +128,7 @@ static inline void start_logging(void) {
     int fd = open("/dev/null", O_RDONLY);
     dup2(fd, 0);
 
-    fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0640);
+    fd = creat(path, 0640);
     if (fd < 0) {
         fd = open("/dev/null", O_WRONLY);
     }
@@ -104,7 +138,7 @@ static inline void start_logging(void) {
 }
 
 int ecs_write(int fd, const uint8_t *buf, int len) {
-    LOG("write buflen : %d, buf : %s", len, buf);
+    LOG("write buflen : %d, buf : %s", len, (char*)buf);
     if (fd < 0) {
         return -1;
     }
@@ -134,6 +168,7 @@ void ecs_client_close(ECS_Client* clii) {
 }
 
 bool send_to_all_client(const char* data, const int len) {
+    LOG("data len: %d, data: %s", len, data);
     pthread_mutex_lock(&mutex_clilist);
 
     ECS_Client *clii;
@@ -205,6 +240,10 @@ static void ecs_close(ECS_State *cs) {
     if (NULL != cs->mon) {
         g_free(cs->mon);
         cs->mon = NULL;
+    }
+
+    if (keepalive_buf) {
+        g_free(keepalive_buf);
     }
 
     if (NULL != cs->alive_timer) {
@@ -395,6 +434,8 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 
     pthread_mutex_unlock(&mutex_clilist);
 
+//    send_ecs_version_check(clii);
+
     return 0;
 }
 
@@ -449,13 +490,42 @@ static void epoll_init(ECS_State *cs) {
 }
 #endif
 
-static void alive_checker(void *opaque) {
-    /*
-    ECS_State *cs = opaque;
-    ECS_Client *clii;
-    QObject *obj;
+static void send_keep_alive_msg(ECS_Client *clii) {
+    send_to_client(clii->client_fd, keepalive_buf, payloadsize);
+}
 
-    obj = qobject_from_jsonf("{\"type\":\"self\"}");
+static void make_keep_alive_msg(void) {
+    int len_pack = 0;
+    char msg [5] = {'s','e','l','f'};
+
+    ECS__Master master = ECS__MASTER__INIT;
+    ECS__KeepAliveReq req = ECS__KEEP_ALIVE_REQ__INIT;
+
+    req.time_str = (char*) g_malloc(5);
+
+    strncpy(req.time_str, msg, 4);
+
+    master.type = ECS__MASTER__TYPE__KEEPALIVE_REQ;
+    master.keepalive_req = &req;
+
+    len_pack = ecs__master__get_packed_size(&master);
+    payloadsize = len_pack + 4;
+
+    keepalive_buf = g_malloc(len_pack + 4);
+    if (!keepalive_buf) {
+        LOG("keep alive message creation is failed.");
+        return;
+    }
+
+    ecs__master__pack(&master, keepalive_buf + 4);
+
+    len_pack = htonl(len_pack);
+    memcpy(keepalive_buf, &len_pack, 4);
+}
+
+static void alive_checker(void *opaque) {
+
+    ECS_Client *clii;
 
     if (NULL != current_ecs && !current_ecs->ecs_running) {
         return;
@@ -465,17 +535,17 @@ static void alive_checker(void *opaque) {
     {
         if (1 == clii->keep_alive) {
             LOG("get client fd %d - keep alive fail", clii->client_fd);
-            //ecs_client_close(clii);
+            ecs_client_close(clii);
             continue;
         }
         LOG("set client fd %d - keep alive 1", clii->client_fd);
         clii->keep_alive = 1;
-        ecs_json_emitter(clii, obj);
+        send_keep_alive_msg(clii);
     }
 
-    qemu_mod_timer(cs->alive_timer,
+    qemu_mod_timer(current_ecs->alive_timer,
             qemu_get_clock_ns(vm_clock) + get_ticks_per_sec() * TIMER_ALIVE_S);
-    */
+
 }
 
 static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
@@ -501,6 +571,8 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
     FD_ZERO(&cs->reads);
     FD_SET(fd, &cs->reads);
 #endif
+
+    make_keep_alive_msg();
 
     cs->alive_timer = qemu_new_timer_ns(vm_clock, alive_checker, cs);
 
@@ -755,6 +827,22 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
         if (!msg)
             goto fail;
         msgproc_nfc_req(cli, msg);
+	}
+#if 0
+    else if (master->type == ECS__MASTER__TYPE__CHECKVERSION_REQ)
+    {
+        ECS__CheckVersionReq* msg = master->checkversion_req;
+        if (!msg)
+            goto fail;
+        msgproc_checkversion_req(cli, msg);
+    }
+#endif
+    else if (master->type == ECS__MASTER__TYPE__KEEPALIVE_ANS)
+    {
+        ECS__KeepAliveAns* msg = master->keepalive_ans;
+        if (!msg)
+            goto fail;
+        msgproc_keepalive_ans(cli, msg);
     }
 
     ecs__master__free_unpacked(master, NULL);

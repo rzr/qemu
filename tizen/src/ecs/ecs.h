@@ -41,6 +41,8 @@
 #include "genmsg/ecs.pb-c.h"
 #include "genmsg/ecs_ids.pb-c.h"
 
+#define ECS_VERSION   "1.0"
+
 #define ECS_DEBUG   1
 
 #ifdef ECS_DEBUG
@@ -188,6 +190,11 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
 bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
 bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg);
+void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg);
+void msgproc_keepalive_ans(ECS_Client* ccli, ECS__KeepAliveAns* msg);
+
+/* version check  */
+//void send_ecs_version_check(ECS_Client* ccli);
 
 /* request */
 int accel_min_max(double value);

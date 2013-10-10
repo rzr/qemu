@@ -246,7 +246,7 @@ static gchar *get_old_tizen_sdk_data_path(void)
 /*
  *  get tizen-sdk-data path from sdk.info.
  */
-static gchar *get_tizen_sdk_data_path(void)
+gchar *get_tizen_sdk_data_path(void)
 {
     gchar *emul_bin_path = NULL;
     gchar *sdk_info_file_path = NULL;
