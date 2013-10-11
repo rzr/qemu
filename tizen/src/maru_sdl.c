@@ -78,7 +78,7 @@ static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized;
 #endif
 
-#define SDL_FLAGS (SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL | SDL_NOFRAME)
+#define SDL_FLAGS (SDL_SWSURFACE | SDL_ASYNCBLIT | SDL_NOFRAME)
 #define SDL_BPP 32
 
 /* Image processing functions using the pixman library */
@@ -717,7 +717,7 @@ static void maru_sdl_resize_bh(void *opaque)
     INFO("SDL_SetVideoMode\n");
 
     if (surface_screen == NULL) {
-        ERR("Could not open SDL display (%dx%dx%d): %s\n",
+        ERR("Could not open SDL display (%dx%dx%d) : %s\n",
             surface_width, surface_height,
             get_emul_sdl_bpp(), SDL_GetError());
         return;
