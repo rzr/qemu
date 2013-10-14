@@ -171,6 +171,7 @@ bool send_to_ecp(ECS__Master* master);
 bool send_injector_ntf(const char* data, const int len);
 bool send_monitor_ntf(const char* data, const int len);
 bool send_device_ntf(const char* data, const int len);
+bool send_nfc_ntf(const char* data, const int len);
 
 bool send_to_all_client(const char* data, const int len);
 void send_to_client(int fd, const char* data, const int len) ;
@@ -186,6 +187,7 @@ void read_val_str(const char* data, char* ret_val, int len);
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
 bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
+bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg);
 
 /* request */
 int accel_min_max(double value);

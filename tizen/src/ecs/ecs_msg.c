@@ -61,6 +61,7 @@
 #include "hw/maru_virtio_nfc.h"
 #include "skin/maruskin_operation.h"
 
+#define MAX_BUF_SIZE  255
 // utility functions
 
 static void* build_master(ECS__Master* master, int* payloadsize)
@@ -219,18 +220,30 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             set_sensor_data(length, data);
         }
     }
-    else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
-        if (group == MSG_GROUP_STATUS) {
-            send_to_nfc(request_nfc_get, data, length);
-        }
-        else
-        {
-            send_to_nfc(request_nfc_set, data, length);
-        }
+
+    return true;
+}
+
+
+bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
+{
+    char cmd[10];
+    char* data = NULL;
+    memset(cmd, 0, 10);
+    strcpy(cmd, msg->category);
+
+    if (msg->has_data && msg->data.len > 0)
+    {
+        data = (char*)msg->data.data;
+    }
+
+    if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
+        send_to_nfc(request_nfc_set, data, msg->data.len);
     }
 
     return true;
 }
+
 #if 0
 bool msgproc_screen_dump_req(ECS_Client *ccli, ECS__ScreenDumpReq* msg)
 {
@@ -456,6 +469,48 @@ bool send_device_ntf(const char* data, const int len)
 
     master.type = ECS__MASTER__TYPE__DEVICE_NTF;
     master.device_ntf = &ntf;
+
+    send_to_ecp(&master);
+
+    if (ntf.data.data && ntf.data.len > 0)
+    {
+        g_free(ntf.data.data);
+    }
+
+    if (ntf.category)
+        g_free(ntf.category);
+
+    return true;
+}
+
+bool send_nfc_ntf(const char* data, const int len)
+{
+    const int catsize = 10;
+    char cat[catsize + 1];
+    memset(cat, 0, catsize + 1);
+
+    read_val_str(data, cat, catsize);
+
+    const char* ijdata = (data + catsize + 2);
+
+    LOG("<< header cat = %s", cat);
+
+    ECS__Master master = ECS__MASTER__INIT;
+    ECS__NfcNtf ntf = ECS__NFC_NTF__INIT;
+
+    ntf.category = (char*) g_malloc(catsize + 1);
+    strncpy(ntf.category, cat, 10);
+
+    ntf.has_data = 1;
+
+    ntf.data.data = g_malloc(MAX_BUF_SIZE);
+    ntf.data.len = MAX_BUF_SIZE;
+    memcpy(ntf.data.data, ijdata, MAX_BUF_SIZE);
+
+    LOG("data = %s, length = %d", ijdata, len);
+
+    master.type = ECS__MASTER__TYPE__NFC_NTF;
+    master.nfc_ntf = &ntf;
 
     send_to_ecp(&master);
 

@@ -749,6 +749,14 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_device_req(cli, msg);
     }
+    else if (master->type == ECS__MASTER__TYPE__NFC_REQ)
+    {
+        ECS__NfcReq* msg = master->nfc_req;
+        if (!msg)
+            goto fail;
+        msgproc_nfc_req(cli, msg);
+    }
+
     ecs__master__free_unpacked(master, NULL);
     return true;
 fail:

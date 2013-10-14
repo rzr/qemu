@@ -36,7 +36,7 @@
 MULTI_DEBUG_CHANNEL(qemu, virtio-nfc);
 
 #define NFC_DEVICE_NAME "virtio-nfc"
-
+#define MAX_BUF_SIZE  255
 
 enum {
     IOTYPE_INPUT = 0,
@@ -47,9 +47,6 @@ enum {
 #ifndef min
 #define min(a,b) ((a)<(b)?(a):(b))
 #endif
-
-#define MAX_BUF_SIZE    4096
-
 
 VirtIONFC* vio_nfc;
 
@@ -183,11 +180,9 @@ static void virtio_nfc_recv(VirtIODevice *vdev, VirtQueue *vq)
 static void send_to_ecs(struct msg_info* msg)
 {
     type_length length = 0;
-    type_group group = 15;
-    type_action action = 0;
 
-    int buf_len = strlen(msg->buf);
-    int message_len =  buf_len + 14;
+    int buf_len = MAX_BUF_SIZE;
+    int message_len =  buf_len + 10;
 
     char* ecs_message = (char*) malloc(message_len + 1);
     if (!ecs_message)
@@ -198,14 +193,11 @@ static void send_to_ecs(struct msg_info* msg)
     length = (unsigned short) buf_len;
 
     memcpy(ecs_message, "nfc", 10);
-    memcpy(ecs_message + 10, &length, sizeof(unsigned short));
-    memcpy(ecs_message + 12, &group, sizeof(unsigned char));
-    memcpy(ecs_message + 13, &action, sizeof(unsigned char));
-    memcpy(ecs_message + 14, msg->buf, buf_len);
+    memcpy(ecs_message + 10, msg->buf, buf_len);
 
-    INFO("ntf_to_injector- len: %d, group: %d, action: %d, data: %s\n", length, group, action, msg->buf);
+    INFO("ntf_to_injector- len: %d, data: %s\n", length , msg->buf);
 
-    send_device_ntf(ecs_message, message_len);
+    send_nfc_ntf(ecs_message, message_len);
 
     if (ecs_message)
         free(ecs_message);
