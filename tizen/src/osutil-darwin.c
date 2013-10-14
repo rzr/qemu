@@ -52,6 +52,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, osutil);
 
+int g_shmid;
 extern char tizen_target_img_path[];
 CFDictionaryRef proxySettings;
 
@@ -84,24 +85,23 @@ void check_vm_lock_os(void)
 
 void make_vm_lock_os(void)
 {
-    int shmid;
     char *shared_memory;
     int base_port;
     base_port = get_emul_vm_base_port();
-    shmid = shmget((key_t)base_port, MAXLEN, 0666|IPC_CREAT);
-    if (shmid == -1) {
+    g_shmid = shmget((key_t)base_port, MAXLEN, 0666|IPC_CREAT);
+    if (g_shmid == -1) {
         ERR("shmget failed\n");
         perror("osutil-darwin: ");
         return;
     }
 
-    shared_memory = shmat(shmid, (char *)0x00, 0);
+    shared_memory = shmat(g_shmid, (char *)0x00, 0);
     if (shared_memory == (void *)-1) {
         ERR("shmat failed\n");
         perror("osutil-darwin: ");
         return;
     }
-    sprintf(shared_memory, "%s", tizen_target_img_path);
+    g_sprintf(shared_memory, "%s", tizen_target_img_path);
     INFO("shared memory key: %d, value: %s\n", base_port, (char *)shared_memory);
     
     if (shmdt(shared_memory) == -1) {

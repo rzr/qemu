@@ -57,7 +57,7 @@
 #ifdef CONFIG_SDL
 #include <SDL.h>
 #endif
-#ifdef CONFIG_LINUX
+#if defined(CONFIG_LINUX) || defined(CONFIG_DARWIN)
 #include <sys/ipc.h>
 #include <sys/shm.h>
 extern int g_shmid;
@@ -116,8 +116,7 @@ void exit_emulator(void)
     shutdown_guest_server();
     stop_ecs();
 
-#ifdef CONFIG_LINUX
-    /* clean up the vm lock memory by munkyu */
+#if defined(CONFIG_LINUX) || defined(CONFIG_DARWIN)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");
         perror("emulator.c: ");
