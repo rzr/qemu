@@ -344,17 +344,7 @@ public class SocketCommunicator implements ICommunicator {
 						}
 
 						/* draw progress bar */
-						if (skin.bootingProgress != null) {
-							skin.bootingProgress.setSelection(value);
-
-							if (value == 100 | value == 0) {
-								/* this means progressbar will be
-								disposed soon */
-								if (skin.bootingProgress != null) {
-									skin.bootingProgress = null;
-								}
-							}
-						}
+						skin.updateProgressBar(value);
 					}
 
 					break;
@@ -377,9 +367,9 @@ public class SocketCommunicator implements ICommunicator {
 						}
 
 						if (value == 0) {
-							skin.dispalyBrightness(false);
+							skin.updateBrightness(false);
 						} else {
-							skin.dispalyBrightness(true);
+							skin.updateBrightness(true);
 						}
 					}
 

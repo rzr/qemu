@@ -100,7 +100,7 @@ extern char tizen_target_path[];
 
 enum {
     /* This values must match the Java definitions
-        in Skin process */
+    in Skin process */
 
     RECV_START = 1,
     RECV_MOUSE_EVENT = 10,
@@ -191,6 +191,7 @@ static void* do_heart_beat(void* args);
 static int start_heart_beat(void);
 static void stop_heart_beat(void);
 
+
 int start_skin_server(int argc, char** argv,
     int qemu_argc, char** qemu_argv)
 {
@@ -213,7 +214,6 @@ int start_skin_server(int argc, char** argv,
         NULL, QEMU_THREAD_JOINABLE);
 
     return 1;
-
 }
 
 void shutdown_skin_server(void)
@@ -235,7 +235,6 @@ void shutdown_skin_server(void)
     }
 
     if (success_send) {
-
         int count = 0;
         int max_sleep_count = 10;
 
@@ -382,37 +381,26 @@ void notify_ramdump_completed(void)
 
             ERR("fail to send SEND_RAMDUMP_COMPLETE to skin.\n");
         }
+    } else {
+        INFO("skin client socket is not connected yet\n");
     }
 }
 
 void notify_booting_progress(int progress_value)
 {
 #define PROGRESS_DATA_LENGTH 4
-
     char progress_data[PROGRESS_DATA_LENGTH] = { 0, };
-    int len = 1;
 
     TRACE("notify_booting_progress\n");
 
-    /* percentage */
-    if (progress_value < 0) {
-        progress_value = 0;
-        len = 1;
-    } else if (progress_value < 10) {
-        len = 1;
-    } else if (progress_value < 100) {
-        len = 2;
-    } else {
-        progress_value = 100;
-        len = 3;
-    }
-
-    snprintf(progress_data, len + 1, "%d", progress_value);
+    snprintf(progress_data,
+        PROGRESS_DATA_LENGTH, "%03d", progress_value);
     TRACE("booting...%s\%\n", progress_data);
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,
-            SEND_BOOTING_PROGRESS, (unsigned char *)progress_data, len + 1, 0)) {
+            SEND_BOOTING_PROGRESS,
+            (unsigned char *)progress_data, PROGRESS_DATA_LENGTH, 0)) {
 
             ERR("fail to send SEND_BOOTING_PROGRESS to skin.\n");
         }
@@ -422,27 +410,34 @@ void notify_booting_progress(int progress_value)
 #else
         usleep(1000);
 #endif
+    } else {
+        INFO("skin client socket is not connected yet\n");
     }
 }
 
 void notify_brightness(bool on)
 {
-    char brightness_data[2] = { 0, };
+#define BRIGHTNESS_DATA_LENGTH 2
+    char brightness_data[BRIGHTNESS_DATA_LENGTH] = { 0, };
     int brightness_value = 1;
 
     if (on == FALSE) {
         brightness_value = 0;
     }
 
-    snprintf(brightness_data, 2, "%d", brightness_value);
+    snprintf(brightness_data,
+        BRIGHTNESS_DATA_LENGTH, "%d", brightness_value);
     TRACE("brightness value = %s\n", brightness_data);
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,
-            SEND_BRIGHTNESS_VALUE, (unsigned char *)brightness_data, 2, 0)) {
+            SEND_BRIGHTNESS_VALUE,
+            (unsigned char *)brightness_data, BRIGHTNESS_DATA_LENGTH, 0)) {
 
             ERR("fail to send SEND_BRIGHTNESS_VALUE to skin.\n");
         }
+    } else {
+        INFO("skin client socket is not connected yet\n");
     }
 }
 

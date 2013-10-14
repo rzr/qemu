@@ -1,7 +1,7 @@
 /**
+ * Custom Progress Bar
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -30,6 +30,8 @@ package org.tizen.emulator.skin.custom;
 
 import java.util.logging.Logger;
 
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
@@ -47,18 +49,34 @@ public class CustomProgressBar extends Canvas {
 
 	private Composite parent;
 	private int selection;
+	private Color colorProgress;
 
+	/**
+	 *  Constructor
+	 */
 	public CustomProgressBar(final Composite parent, int style) {
 		super(parent, style);
 
 		this.parent = parent;
 		this.selection = 0;
+		this.colorProgress = new Color(parent.getDisplay(), PROGRESS_COLOR);
 
-		this.addPaintListener(new PaintListener() {
+		addProgressBarListener();
+
+		/* default is hidden */
+		parent.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				setVisible(false);
+			}
+		});
+	}
+
+	protected void addProgressBarListener() {
+		addPaintListener(new PaintListener() {
 			@Override
 			public void paintControl(PaintEvent e) {
-				e.gc.setBackground(
-						new Color(parent.getDisplay(), PROGRESS_COLOR));
+				e.gc.setBackground(colorProgress);
 
 				Rectangle bounds = getBounds();
 				int width = (bounds.width * selection) / 100; 
@@ -77,22 +95,29 @@ public class CustomProgressBar extends Canvas {
 			}
 		});
 
-		/* default is hidden */
-		parent.getDisplay().asyncExec(new Runnable() {
+		addDisposeListener(new DisposeListener() {
 			@Override
-			public void run() {
-				setVisible(false);
+			public void widgetDisposed(DisposeEvent e) {
+				logger.info("progress bar is disposed");
+
+				colorProgress.dispose();
 			}
 		});
 	}
 
 	public void setSelection(int value) {
-		parent.getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				setVisible(true);
-			}
-		});
+		if (isDisposed() == true) {
+			return;
+		}
+
+		if (isVisible() == false) {
+			parent.getDisplay().syncExec(new Runnable() {
+				@Override
+				public void run() {
+					setVisible(true);
+				}
+			});
+		}
 
 		if (value < 0) {
 			value = 0;

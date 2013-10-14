@@ -1185,12 +1185,35 @@ public class EmulatorSkin {
 		/* abstract */
 	}
 
-	public void dispalyBrightness(boolean on) {
-		if (on == true) {
-			displayOn();
-		} else {
-			displayOff();
-		}
+	public void updateProgressBar(final int progress) {
+		getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (bootingProgress != null) {
+					bootingProgress.setSelection(progress);
+
+					if (progress == 100 | progress == 0) {
+						/* this means progressbar will be disposed */
+						if (bootingProgress != null) {
+							bootingProgress = null;
+						}
+					}
+				}
+			}
+		});
+	}
+
+	public void updateBrightness(final boolean on) {
+		getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (on == true) {
+					displayOn();
+				} else {
+					displayOff();
+				}
+			}
+		});
 	}
 
 	protected void displayOn() {
