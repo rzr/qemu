@@ -221,7 +221,9 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
     }
 
     maru_brill_codec_add_ioparam_queue(s, (void *)ioparam);
+    qemu_mutex_lock(&s->context_mutex);
     qemu_cond_signal(&s->threadpool.cond);
+    qemu_mutex_unlock(&s->context_mutex);
 }
 
 static void *maru_brill_codec_threads(void *opaque)
