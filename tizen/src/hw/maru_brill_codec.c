@@ -232,12 +232,13 @@ static void *maru_brill_codec_threads(void *opaque)
 
     TRACE("enter: %s\n", __func__);
 
-    qemu_mutex_lock(&s->context_mutex);
     while (s->is_thread_running) {
         int ctx_id, f_id, api_id;
         CodecParamStg *elem = NULL;
 
+        qemu_mutex_lock(&s->context_mutex);
         qemu_cond_wait(&s->threadpool.cond, &s->context_mutex);
+        qemu_mutex_unlock(&s->context_mutex);
 
         qemu_mutex_lock(&s->ioparam_queue_mutex);
         elem = QTAILQ_FIRST(&ioparam_queue);
@@ -280,7 +281,6 @@ static void *maru_brill_codec_threads(void *opaque)
 //            qemu_mutex_unlock(&s->threadpool.mutex);
         }
     }
-    qemu_mutex_unlock(&s->context_mutex);
 
     maru_brill_codec_thread_exit(s);
 
