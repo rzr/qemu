@@ -90,7 +90,8 @@ static PixFmtInfo pix_fmt_info[PIX_FMT_NB];
 
 // thread
 static int worker_thread_cnt = 0;
-#define DEFAULT_WORKER_THREAD_CNT 4
+static int idle_thread_cnt = 0;
+#define DEFAULT_WORKER_THREAD_CNT 8
 
 static void *maru_brill_codec_threads(void *opaque);
 
@@ -136,7 +137,7 @@ static void maru_brill_codec_add_ioparam_queue(MaruBrillCodecState *s, void *iop
 static void maru_brill_codec_get_cpu_cores(void)
 {
     worker_thread_cnt = get_number_of_processors();
-    if (worker_thread_cnt == 1) {
+    if (worker_thread_cnt < DEFAULT_WORKER_THREAD_CNT) {
         worker_thread_cnt = DEFAULT_WORKER_THREAD_CNT;
     }
 
@@ -221,7 +222,15 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
     }
 
     maru_brill_codec_add_ioparam_queue(s, (void *)ioparam);
+
     qemu_mutex_lock(&s->context_mutex);
+    // W/A for threads starvation.
+    while (idle_thread_cnt == 0) {
+        qemu_mutex_unlock(&s->context_mutex);
+        TRACE("Worker threads are exhausted\n");
+        usleep(2000); // wait 2ms.
+        qemu_mutex_lock(&s->context_mutex);
+    }
     qemu_cond_signal(&s->threadpool.cond);
     qemu_mutex_unlock(&s->context_mutex);
 }
@@ -237,7 +246,9 @@ static void *maru_brill_codec_threads(void *opaque)
         CodecParamStg *elem = NULL;
 
         qemu_mutex_lock(&s->context_mutex);
+        ++idle_thread_cnt; // protected under mutex.
         qemu_cond_wait(&s->threadpool.cond, &s->context_mutex);
+        --idle_thread_cnt; // protected under mutex.
         qemu_mutex_unlock(&s->context_mutex);
 
         qemu_mutex_lock(&s->ioparam_queue_mutex);
