@@ -386,16 +386,16 @@ void notify_ramdump_completed(void)
     }
 }
 
-void notify_booting_progress(int progress_value)
+void notify_booting_progress(unsigned int layer, int progress_value)
 {
-#define PROGRESS_DATA_LENGTH 4
+#define PROGRESS_DATA_LENGTH 5
     char progress_data[PROGRESS_DATA_LENGTH] = { 0, };
 
     TRACE("notify_booting_progress\n");
 
     snprintf(progress_data,
-        PROGRESS_DATA_LENGTH, "%03d", progress_value);
-    TRACE("booting...%s\%\n", progress_data);
+        PROGRESS_DATA_LENGTH, "%d%03d", layer % 10, progress_value);
+    INFO("booting...%s\%\n", progress_data);
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,

@@ -191,7 +191,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		skin.pairTag.setVisible(false);
 
 		/* create a progress bar for booting status */
-		skin.bootingProgress = new CustomProgressBar(shell, SWT.NONE);
+		skin.bootingProgress = new CustomProgressBar(skin, SWT.NONE, true);
 		skin.bootingProgress.setBackground(backgroundColor);
 
 		arrangeSkin(scale, rotationId);

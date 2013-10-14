@@ -1185,19 +1185,12 @@ public class EmulatorSkin {
 		/* abstract */
 	}
 
-	public void updateProgressBar(final int progress) {
+	public void updateProgressBar(final int idxLayer, final int progress) {
 		getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (bootingProgress != null) {
-					bootingProgress.setSelection(progress);
-
-					if (progress == 100 | progress == 0) {
-						/* this means progressbar will be disposed */
-						if (bootingProgress != null) {
-							bootingProgress = null;
-						}
-					}
+					bootingProgress.setSelection(idxLayer, progress);
 				}
 			}
 		});

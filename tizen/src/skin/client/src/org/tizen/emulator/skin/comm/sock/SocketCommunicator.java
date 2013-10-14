@@ -334,17 +334,20 @@ public class SocketCommunicator implements ICommunicator {
 
 					byte[] receivedData = getReceivedData(progressDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1);
+						String strLayer = new String(receivedData, 0, 1);
+						String strValue = new String(receivedData, 1, length - 2);
 
+						int layer = 0;
 						int value = 0;
 						try {
+							layer = Integer.parseInt(strLayer);
 							value = Integer.parseInt(strValue);
 						} catch (NumberFormatException e) {
 							e.printStackTrace();
 						}
 
 						/* draw progress bar */
-						skin.updateProgressBar(value);
+						skin.updateProgressBar(layer, value);
 					}
 
 					break;

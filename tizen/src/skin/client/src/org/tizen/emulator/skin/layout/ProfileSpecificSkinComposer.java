@@ -146,7 +146,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		}
 
 		/* create a progress bar for booting status */
-		skin.bootingProgress = new CustomProgressBar(shell, SWT.NONE);
+		skin.bootingProgress = new CustomProgressBar(skin, SWT.NONE, true);
 		skin.bootingProgress.setBackground(
 				new Color(shell.getDisplay(), new RGB(38, 38, 38)));
 
