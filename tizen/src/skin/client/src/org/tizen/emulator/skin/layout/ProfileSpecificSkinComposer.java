@@ -88,6 +88,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	private ProfileSkinImageRegistry imageRegistry;
 	private boolean isGrabbedShell;
 	private Point grabPosition;
+	private HWKey currentPressedHWKey;
+	private HWKey currentHoveredHWKey;
 
 	public ProfileSpecificSkinComposer(
 			EmulatorConfig config, EmulatorSkin skin) {
@@ -185,7 +187,6 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	public void arrangeSkin(int scale, short rotationId) {
 		currentState.setCurrentScale(scale);
 		currentState.setCurrentRotationId(rotationId);
-		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
 		/* arrange the display */
 		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
@@ -321,7 +322,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			public void mouseExit(MouseEvent e) {
 				/* shell does not receive event only with MouseMoveListener
 				 * in case that : hover hardkey -> mouse move into LCD area */
-				HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
+				HWKey hoveredHWKey = currentHoveredHWKey;
 
 				if (hoveredHWKey != null) {
 					shell.redraw(hoveredHWKey.getRegion().x,
@@ -329,7 +330,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 							hoveredHWKey.getRegion().width,
 							hoveredHWKey.getRegion().height, false);
 
-					currentState.setCurrentHoveredHWKey(null);
+					currentHoveredHWKey = null;
 					shell.setToolTipText(null);
 				}
 			}
@@ -341,7 +342,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseMove(MouseEvent e) {
 				if (isGrabbedShell == true && e.button == 0/* left button */ &&
-						currentState.getCurrentPressedHWKey() == null) {
+						currentPressedHWKey == null) {
 					/* move a window */
 					Point previousLocation = shell.getLocation();
 					int x = previousLocation.x + (e.x - grabPosition.x);
@@ -356,7 +357,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 				final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 						currentState.getCurrentRotationId(), currentState.getCurrentScale());
-				final HWKey hoveredHWKey = currentState.getCurrentHoveredHWKey();
+				final HWKey hoveredHWKey = currentHoveredHWKey;
 
 				if (hwKey == null) {
 					if (hoveredHWKey != null) {
@@ -366,7 +367,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 								hoveredHWKey.getRegion().width,
 								hoveredHWKey.getRegion().height, false);
 
-						currentState.setCurrentHoveredHWKey(null);
+						currentHoveredHWKey = null;
 						shell.setToolTipText(null);
 					}
 
@@ -378,7 +379,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 						hwKey.getTooltip().isEmpty() == false) {
 					shell.setToolTipText(hwKey.getTooltip());
 
-					currentState.setCurrentHoveredHWKey(hwKey);
+					currentHoveredHWKey = hwKey;
 
 					/* draw hover */
 					shell.getDisplay().syncExec(new Runnable() {
@@ -405,7 +406,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 								hoveredHWKey.getRegion().width,
 								hoveredHWKey.getRegion().height, false);
 
-						currentState.setCurrentHoveredHWKey(null);
+						currentHoveredHWKey = null;
 						shell.setToolTipText(null);
 					}
 				}
@@ -424,7 +425,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					skin.getKeyWindowKeeper().redock(false, true);
 
 					/* HW key handling */
-					HWKey pressedHWKey = currentState.getCurrentPressedHWKey();
+					HWKey pressedHWKey = currentPressedHWKey;
 					if (pressedHWKey == null) {
 						logger.info("mouseUp in Skin : " + e.x + ", " + e.y);
 						return;
@@ -439,7 +440,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 						communicator.sendToQEMU(
 								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 
-						currentState.setCurrentPressedHWKey(null);
+						currentPressedHWKey = null;
 
 						/* roll back a keyPressed image region */
 						shell.redraw(pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
@@ -479,7 +480,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 						communicator.sendToQEMU(
 								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
 
-						currentState.setCurrentPressedHWKey(hwKey);
+						currentPressedHWKey = hwKey;
 
 						shell.setToolTipText(null);
 

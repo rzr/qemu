@@ -244,7 +244,6 @@ public class EmulatorSkin {
 
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 		currentState.setCurrentRotationId(rotationId);
-		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
 		/* create and attach a popup menu */
 		isOnKbd = false;

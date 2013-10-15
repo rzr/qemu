@@ -46,6 +46,7 @@ import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -289,6 +290,8 @@ public class SpecialKeyWindow extends SkinWindow {
 							e.x, e.y, e.x, e.y, 0);
 					communicator.sendToQEMU(
 							SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
+
+					return;
 				} else if (isGrabbedShell == true && e.button == 0/* left button */) {
 					if (getDockPosition() != SWT.NONE) {
 						dock(SWT.NONE, false, false);
@@ -301,6 +304,7 @@ public class SpecialKeyWindow extends SkinWindow {
 					int y = previousLocation.y + (e.y - grabPosition.y);
 
 					shell.setLocation(x, y);
+
 					return;
 				}
 			}
@@ -319,6 +323,64 @@ public class SpecialKeyWindow extends SkinWindow {
 					HWKey pressedHWKey = currentPressedHWKey;
 					if (pressedHWKey == null) {
 						logger.info("mouseUp in KeyWindow : " + e.x + ", " + e.y);
+
+						/* Let me check whether the key window was landed
+						 * on docking area. */
+						Rectangle parentBounds = parent.getBounds();
+						Rectangle childBounds = shell.getBounds();
+
+						int heightOneThird = parentBounds.height / 3;
+						int widthDockingArea = 30;
+						int widthIntersectRegion = 5;
+
+						/* right-middle */
+						Rectangle attachBoundsRC = new Rectangle(
+								(parentBounds.x + parentBounds.width) - widthIntersectRegion,
+								parentBounds.y + heightOneThird,
+								widthDockingArea, heightOneThird);
+						/* right-top */
+						Rectangle attachBoundsRT = new Rectangle(
+								(parentBounds.x + parentBounds.width) - widthIntersectRegion,
+								parentBounds.y,
+								widthDockingArea, heightOneThird);
+						/* right-bottom */
+						Rectangle attachBoundsRB = new Rectangle(
+								(parentBounds.x + parentBounds.width) - widthIntersectRegion,
+								parentBounds.y + (heightOneThird * 2),
+								widthDockingArea, heightOneThird);
+
+						/* left-middle */
+						Rectangle attachBoundsLC = new Rectangle(
+								parentBounds.x - (widthDockingArea - widthIntersectRegion),
+								parentBounds.y + heightOneThird,
+								widthDockingArea, heightOneThird);
+						/* left-top */
+						Rectangle attachBoundsLT = new Rectangle(
+								parentBounds.x - (widthDockingArea - widthIntersectRegion),
+								parentBounds.y,
+								widthDockingArea, heightOneThird);
+						/* left-bottom */
+						Rectangle attachBoundsLB = new Rectangle(
+								parentBounds.x - (widthDockingArea - widthIntersectRegion),
+								parentBounds.y + (heightOneThird * 2),
+								widthDockingArea, heightOneThird);
+
+						if (childBounds.intersects(attachBoundsRC) == true) {
+							dock(SWT.RIGHT | SWT.CENTER, false, true);
+						} else if (childBounds.intersects(attachBoundsRT) == true) {
+							dock(SWT.RIGHT | SWT.TOP, false, true);
+						} else if (childBounds.intersects(attachBoundsRB) == true) {
+							dock(SWT.RIGHT | SWT.BOTTOM, false, true);
+						} else if (childBounds.intersects(attachBoundsLC) == true) {
+							dock(SWT.LEFT | SWT.CENTER, false, true);
+						} else if (childBounds.intersects(attachBoundsLT) == true) {
+							dock(SWT.LEFT | SWT.TOP, false, true);
+						} else if (childBounds.intersects(attachBoundsLB) == true) {
+							dock(SWT.LEFT | SWT.BOTTOM, false, true);
+						} else {
+							dock(SWT.NONE, false, true);
+						}
+
 						return;
 					}
 
@@ -405,6 +467,7 @@ public class SpecialKeyWindow extends SkinWindow {
 								} /* end of run */
 							});
 						}
+
 					}
 				}
 			}

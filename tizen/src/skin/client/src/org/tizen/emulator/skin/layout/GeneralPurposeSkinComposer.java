@@ -59,7 +59,6 @@ import org.tizen.emulator.skin.image.GeneralSkinImageRegistry.GeneralSkinImageNa
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.PopupMenu;
-import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -222,7 +221,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	public void arrangeSkin(int scale, short rotationId) {
 		currentState.setCurrentScale(scale);
 		currentState.setCurrentRotationId(rotationId);
-		currentState.setCurrentAngle(SkinRotation.getAngle(rotationId));
 
 		/* arrange the display */
 		Rectangle displayBounds = adjustLcdGeometry(displayCanvas,

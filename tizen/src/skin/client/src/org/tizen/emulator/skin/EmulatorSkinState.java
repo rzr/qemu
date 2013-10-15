@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -32,14 +32,13 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.layout.HWKey;
+import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.util.SkinRotation;
 
 public class EmulatorSkinState {
 	private Point currentResolution;
 	private int currentScale;
 	private short currentRotationId;
-	private int currentAngle;
 
 	private Rectangle displayBounds;
 	private boolean updateDisplayBounds;
@@ -48,14 +47,13 @@ public class EmulatorSkinState {
 	private Image currentKeyPressedImage;
 	private Color hoverColor;
 
-	private HWKey currentPressedHWKey;
-	private HWKey currentHoveredHWKey;
-
+	/**
+	 *  Constructor
+	 */
 	public EmulatorSkinState() {
-		this.currentResolution = new Point(480, 800);
-		this.currentScale = 50;
-		this.currentRotationId = RotationInfo.PORTRAIT.id();
-		this.currentAngle = 0;
+		this.currentResolution = new Point(720, 1280);
+		this.currentScale = EmulatorConfig.DEFAULT_WINDOW_SCALE;
+		this.currentRotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 
 		this.displayBounds = null;
 		this.updateDisplayBounds = false;
@@ -107,17 +105,12 @@ public class EmulatorSkinState {
 		return currentRotationId;
 	}
 
+	public synchronized int getCurrentAngle() {
+		return SkinRotation.getAngle(currentRotationId);
+	}
+
 	public synchronized void setCurrentRotationId(short rotationId) {
 		this.currentRotationId = rotationId;
-	}
-
-	/* angle */
-	public synchronized int getCurrentAngle() {
-		return currentAngle;
-	}
-
-	public synchronized void setCurrentAngle(int angle) {
-		this.currentAngle = angle;
 	}
 
 	/* display bounds */
@@ -165,23 +158,5 @@ public class EmulatorSkinState {
 
 	public synchronized void setHoverColor(Color color) {
 		this.hoverColor = color;
-	}
-
-	/* pressed HW key */
-	public synchronized HWKey getCurrentPressedHWKey() {
-		return currentPressedHWKey;
-	}
-
-	public synchronized void setCurrentPressedHWKey(HWKey hwKey) {
-		this.currentPressedHWKey = hwKey;
-	}
-
-	/* hovered HW key */
-	public synchronized HWKey getCurrentHoveredHWKey() {
-		return currentHoveredHWKey;
-	}
-
-	public synchronized void setCurrentHoveredHWKey(HWKey hwKey) {
-		this.currentHoveredHWKey = hwKey;
 	}
 }
