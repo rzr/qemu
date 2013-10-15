@@ -68,8 +68,8 @@ static void virtio_esm_handle(VirtIODevice *vdev, VirtQueue *vq)
         else {
             progress.percentage = *((uint16_t*)elem.out_sg[0].iov_base);
             INFO("boot up progress is [%u] percent done.\n", progress.percentage);
-            // notify to skin
-            notify_booting_progress(progress.percentage);
+            /* notify to skin */
+            //notify_booting_progress(0, progress.percentage);
         }
     }
 

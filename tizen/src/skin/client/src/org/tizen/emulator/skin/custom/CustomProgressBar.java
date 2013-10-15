@@ -1,7 +1,7 @@
 /**
+ * Custom Progress Bar
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -30,6 +30,8 @@ package org.tizen.emulator.skin.custom;
 
 import java.util.logging.Logger;
 
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
@@ -37,34 +39,76 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 public class CustomProgressBar extends Canvas {
-	public static final RGB PROGRESS_COLOR = new RGB(0, 173, 239);
+	public static final RGB PROGRESS_COLOR_0 = new RGB(0, 174, 239);
+	public static final RGB PROGRESS_COLOR_1 = new RGB(179, 246, 0);
 
 	private Logger logger =
 			SkinLogger.getSkinLogger(CustomProgressBar.class).getLogger();
 
+	private EmulatorSkin skin;
 	private Composite parent;
-	private int selection;
+	private boolean isDual;
+	private int[] selection;
+	private Color[] colorProgress;
 
-	public CustomProgressBar(final Composite parent, int style) {
-		super(parent, style);
+	/**
+	 *  Constructor
+	 */
+	public CustomProgressBar(EmulatorSkin skin, int style, boolean isDual) {
+		super(skin.getShell(), style);
 
-		this.parent = parent;
-		this.selection = 0;
+		this.skin = skin;
+		this.parent = skin.getShell();
+		this.isDual = isDual;
+		this.selection = new int[2];
+		this.selection[0] = this.selection[1] = 0;
 
-		this.addPaintListener(new PaintListener() {
+		this.colorProgress = new Color[2];
+		this.colorProgress[0] = new Color(parent.getDisplay(), PROGRESS_COLOR_0);
+		if (isDual == true) {
+			logger.info("dual progress bar is created");
+			this.colorProgress[1] = new Color(parent.getDisplay(), PROGRESS_COLOR_1);
+		} else {
+			logger.info("single progress bar is created");
+		}
+
+		addProgressBarListener();
+
+		/* default is hidden */
+		parent.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				setVisible(false);
+			}
+		});
+	}
+
+	protected void addProgressBarListener() {
+		addPaintListener(new PaintListener() {
 			@Override
 			public void paintControl(PaintEvent e) {
-				e.gc.setBackground(
-						new Color(parent.getDisplay(), PROGRESS_COLOR));
+				if (isDual == true) {
+					/* draw layer1 */
+					e.gc.setBackground(colorProgress[1]);
+					Rectangle bounds = getBounds();
+					int width = (bounds.width * selection[1]) / 100;
+					e.gc.fillRectangle(0, 0,
+							Math.min(bounds.width, width), bounds.height);
+				}
 
+				/* draw layer0 */
+				e.gc.setBackground(colorProgress[0]);
 				Rectangle bounds = getBounds();
-				int width = (bounds.width * selection) / 100; 
-				e.gc.fillRectangle(0, 0, width, bounds.height);
+				int width = (bounds.width * selection[0]) / 100;
+				e.gc.fillRectangle(0, 0,
+						Math.min(bounds.width, width), bounds.height);
 
-				if (selection == -1) {
+				if (selection[0] == 101 &&
+						(isDual == false || selection[1] == 101)) {
 					logger.info("progress : complete!");
 
 					parent.getDisplay().asyncExec(new Runnable() {
@@ -77,22 +121,40 @@ public class CustomProgressBar extends Canvas {
 			}
 		});
 
-		/* default is hidden */
-		parent.getDisplay().asyncExec(new Runnable() {
+		addDisposeListener(new DisposeListener() {
 			@Override
-			public void run() {
-				setVisible(false);
+			public void widgetDisposed(DisposeEvent e) {
+				logger.info("progress bar is disposed");
+
+				colorProgress[0].dispose();
+				if (isDual == true) {
+					colorProgress[1].dispose();
+				}
+
+				skin.bootingProgress = null;
 			}
 		});
 	}
 
-	public void setSelection(int value) {
-		parent.getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				setVisible(true);
-			}
-		});
+	public void setSelection(int idxLayer, int value) {
+		if (isDisposed() == true) {
+			return;
+		}
+
+		if (isVisible() == false) {
+			parent.getDisplay().syncExec(new Runnable() {
+				@Override
+				public void run() {
+					setVisible(true);
+				}
+			});
+		}
+
+		if (idxLayer < 0 || isDual == false) {
+			idxLayer = 0;
+		} else if (idxLayer > 1) {
+			idxLayer = 1;
+		}
 
 		if (value < 0) {
 			value = 0;
@@ -100,22 +162,23 @@ public class CustomProgressBar extends Canvas {
 			value = 100;
 		}
 
-		selection = value;
-		logger.info("progress : " + selection);
+		selection[idxLayer] = value;
+		logger.info("layer" + idxLayer + " progress : " + selection[idxLayer]);
 
+		final int index = idxLayer;
 		parent.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				redraw();
 
-				if (selection == 100) {
-					selection = -1;
+				if (selection[index] == 100) {
+					selection[index] = 101;
 				}
 			}
 		});
 	}
 
-	public int getSelection() {
-		return selection;
+	public int getSelection(int idxLayer) {
+		return selection[idxLayer];
 	}
 }

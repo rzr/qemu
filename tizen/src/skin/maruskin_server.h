@@ -41,7 +41,7 @@ void notify_sensor_daemon_start(void);
 void notify_sdb_daemon_start(void);
 void notify_ecs_server_start(void);
 void notify_ramdump_completed(void);
-void notify_booting_progress(int progress_value);
+void notify_booting_progress(unsigned int layer, int progress_value);
 void notify_brightness(bool on);
 
 int is_ready_skin_server(void);

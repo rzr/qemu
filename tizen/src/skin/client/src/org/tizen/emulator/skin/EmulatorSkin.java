@@ -1185,12 +1185,28 @@ public class EmulatorSkin {
 		/* abstract */
 	}
 
-	public void dispalyBrightness(boolean on) {
-		if (on == true) {
-			displayOn();
-		} else {
-			displayOff();
-		}
+	public void updateProgressBar(final int idxLayer, final int progress) {
+		getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (bootingProgress != null) {
+					bootingProgress.setSelection(idxLayer, progress);
+				}
+			}
+		});
+	}
+
+	public void updateBrightness(final boolean on) {
+		getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (on == true) {
+					displayOn();
+				} else {
+					displayOff();
+				}
+			}
+		});
 	}
 
 	protected void displayOn() {

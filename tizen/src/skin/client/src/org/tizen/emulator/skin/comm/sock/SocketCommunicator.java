@@ -334,27 +334,20 @@ public class SocketCommunicator implements ICommunicator {
 
 					byte[] receivedData = getReceivedData(progressDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1);
+						String strLayer = new String(receivedData, 0, 1);
+						String strValue = new String(receivedData, 1, length - 2);
 
+						int layer = 0;
 						int value = 0;
 						try {
+							layer = Integer.parseInt(strLayer);
 							value = Integer.parseInt(strValue);
 						} catch (NumberFormatException e) {
 							e.printStackTrace();
 						}
 
 						/* draw progress bar */
-						if (skin.bootingProgress != null) {
-							skin.bootingProgress.setSelection(value);
-
-							if (value == 100 | value == 0) {
-								/* this means progressbar will be
-								disposed soon */
-								if (skin.bootingProgress != null) {
-									skin.bootingProgress = null;
-								}
-							}
-						}
+						skin.updateProgressBar(layer, value);
 					}
 
 					break;
@@ -377,9 +370,9 @@ public class SocketCommunicator implements ICommunicator {
 						}
 
 						if (value == 0) {
-							skin.dispalyBrightness(false);
+							skin.updateBrightness(false);
 						} else {
-							skin.dispalyBrightness(true);
+							skin.updateBrightness(true);
 						}
 					}
 
