@@ -63,7 +63,6 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class GeneralPurposeSkinComposer implements ISkinComposer {
-	private static final String PATCH_IMAGES_PATH = "images/emul-window/";
 	private static final int PAIR_TAG_POSITION_X = 26;
 	private static final int PAIR_TAG_POSITION_Y = 13;
 
@@ -101,7 +100,16 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		this.imageRegistry =
 				new GeneralSkinImageRegistry(shell.getDisplay());
 
-		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
+		this.frameMaker = new SkinPatches(
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_LT),
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_T),
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_RT),
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_L),
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_R),
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_LB),
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_B),
+				imageRegistry.getSkinImage(GeneralSkinImageName.SKIN_PATCH_RB));
+
 		this.backgroundColor = new Color(shell.getDisplay(), new RGB(38, 38, 38));
 	}
 
@@ -463,7 +471,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			backgroundColor.dispose();
 		}
 
-		frameMaker.freePatches();
 		imageRegistry.dispose();
 	}
 }

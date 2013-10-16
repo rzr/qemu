@@ -1,7 +1,7 @@
 /**
+ * General Skin Frame Maker
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -43,7 +43,6 @@ public class SkinPatches {
 			SkinLogger.getSkinLogger(SkinPatches.class).getLogger();
 
 	private Display display;
-	private String pathImage;
 	private int patchWidth;
 	private int patchHeight;
 
@@ -59,23 +58,25 @@ public class SkinPatches {
 	private Image imageB;
 	private Image imageRB;
 
-	// TODO: configurable
-	private static final String SKIN_PATCH_IMG_LT = "LT.png";
-	private static final String SKIN_PATCH_IMG_T = "T.png";
-	private static final String SKIN_PATCH_IMG_RT = "RT.png";
-
-	private static final String SKIN_PATCH_IMG_L = "L.png";
-	private static final String SKIN_PATCH_IMG_R = "R.png";
-
-	private static final String SKIN_PATCH_IMG_LB = "LB.png";
-	private static final String SKIN_PATCH_IMG_B = "B.png";
-	private static final String SKIN_PATCH_IMG_RB = "RB.png";
-
-	public SkinPatches(String path) {
+	/**
+	 *  Constructor
+	 */
+	public SkinPatches(
+			Image leftTop, Image middleTop, Image rightTop,
+			Image leftMiddle, Image rightMiddle,
+			Image leftBottom, Image middleBottom, Image rightBottom) {
 		this.display = Display.getCurrent();
-		this.pathImage = path;
 
-		loadPatches(pathImage);
+		imageLT = leftTop;
+		imageT = middleTop;
+		imageRT = rightTop;
+
+		imageL = leftMiddle;
+		imageR = rightMiddle;
+
+		imageLB = leftBottom;
+		imageB = middleBottom;
+		imageRB = rightBottom;
 
 		// TODO: configurable
 		this.patchWidth = imageLT.getImageData().width;
@@ -126,43 +127,5 @@ public class SkinPatches {
 		gc.dispose();
 
 		return patchedImage;
-	}
-
-	private void loadPatches(String path) {
-		ClassLoader loader = this.getClass().getClassLoader();
-
-		imageLT = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_LT));
-		logger.info("left-top image is loaded from " +
-				path + SKIN_PATCH_IMG_LT);
-		imageT = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_T));
-		imageRT = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_RT));
-
-		imageL = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_L));
-		imageR = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_R));
-
-		imageLB = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_LB));
-		imageB = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_B));
-		imageRB = new Image(display,
-				loader.getResourceAsStream(path + SKIN_PATCH_IMG_RB));
-	}
-
-	public void freePatches() {
-		imageLT.dispose();
-		imageT.dispose();
-		imageRT.dispose();
-
-		imageL.dispose();
-		imageR.dispose();
-
-		imageLB.dispose();
-		imageB.dispose();
-		imageRB.dispose();
 	}
 }

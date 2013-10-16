@@ -47,6 +47,15 @@ public class GeneralSkinImageRegistry {
 			GeneralSkinImageRegistry.class).getLogger();
 
 	public enum GeneralSkinImageName {
+		SKIN_PATCH_LT("LT.png"),
+		SKIN_PATCH_T("T.png"),
+		SKIN_PATCH_RT("RT.png"),
+		SKIN_PATCH_L("L.png"),
+		SKIN_PATCH_R("R.png"),
+		SKIN_PATCH_LB("LB.png"),
+		SKIN_PATCH_B("B.png"),
+		SKIN_PATCH_RB("RB.png"),
+
 		TOGGLE_BUTTON_NORMAL("arrow_nml.png"),
 		TOGGLE_BUTTON_HOVER("arrow_hover.png"),
 		TOGGLE_BUTTON_PUSHED("arrow_pushed.png");
@@ -104,6 +113,8 @@ public class GeneralSkinImageRegistry {
 	}
 
 	public void dispose() {
+		logger.info("dispose");
+
 		if (null != skinImageMap) {
 			Image image = null;
 

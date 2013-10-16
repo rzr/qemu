@@ -61,7 +61,6 @@ import org.tizen.emulator.skin.layout.SkinPatches;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class GeneralKeyWindow extends SkinWindow {
-	private static final String PATCH_IMAGES_PATH = "images/key-window/";
 	private static final int SHELL_MARGIN_BOTTOM = 3;
 	private static final int PAIRTAG_CIRCLE_SIZE = 8;
 	private static final int PAIRTAG_MARGIN_BOTTOM = 6;
@@ -95,7 +94,8 @@ public class GeneralKeyWindow extends SkinWindow {
 	private boolean isGrabbedShell;
 	private Point grabPosition;
 
-	public GeneralKeyWindow(EmulatorSkin skin, List<KeyMapType> keyMapList) {
+	public GeneralKeyWindow(EmulatorSkin skin,
+			GeneralKeyWindowImageRegistry imageRegstry, List<KeyMapType> keyMapList) {
 		super(skin.getShell(), SWT.RIGHT | SWT.CENTER);
 
 		this.skin = skin;
@@ -103,8 +103,24 @@ public class GeneralKeyWindow extends SkinWindow {
 		this.shell = new Shell(parent.getDisplay() /* for Mac & Always on Top */,
 				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL | SWT.NO_FOCUS);
 
-		this.imageRegistry = new GeneralKeyWindowImageRegistry(shell.getDisplay());
-		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
+		this.imageRegistry = imageRegstry;
+		this.frameMaker = new SkinPatches(
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_LT),
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_T),
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_RT),
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_L),
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_R),
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_LB),
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_B),
+				imageRegistry.getKeyWindowImage(
+						GeneralKeyWindowImageName.KEYWINDOW_PATCH_RB));
 
 		this.keyMapList = keyMapList; //TODO: null
 		this.grabPosition = new Point(0, 0);
@@ -504,8 +520,5 @@ public class GeneralKeyWindow extends SkinWindow {
 		}
 
 		colorFrame.dispose();
-
-		frameMaker.freePatches();
-		imageRegistry.dispose();
 	}
 }

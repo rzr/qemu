@@ -119,6 +119,8 @@ public class ProfileSkinImageRegistry {
 	}
 
 	public void dispose() {
+		logger.info("dispose");
+
 		if (null != skinImageMap) {
 			Image image = null;
 

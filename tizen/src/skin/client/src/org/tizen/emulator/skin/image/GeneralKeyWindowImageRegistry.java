@@ -47,6 +47,15 @@ public class GeneralKeyWindowImageRegistry {
 			GeneralKeyWindowImageRegistry.class).getLogger();
 
 	public enum GeneralKeyWindowImageName {
+		KEYWINDOW_PATCH_LT("LT.png"),
+		KEYWINDOW_PATCH_T("T.png"),
+		KEYWINDOW_PATCH_RT("RT.png"),
+		KEYWINDOW_PATCH_L("L.png"),
+		KEYWINDOW_PATCH_R("R.png"),
+		KEYWINDOW_PATCH_LB("LB.png"),
+		KEYWINDOW_PATCH_B("B.png"),
+		KEYWINDOW_PATCH_RB("RB.png"),
+
 		KEYBUTTON_NORMAL("keybutton_nml.png"),
 		KEYBUTTON_HOVER("keybutton_hover.png"),
 		KEYBUTTON_PUSHED("keybutton_pushed.png"),
@@ -113,6 +122,8 @@ public class GeneralKeyWindowImageRegistry {
 	}
 
 	public void dispose() {
+		logger.info("dispose");
+
 		if (null != keyWindowImageMap) {
 			Image image = null;
 

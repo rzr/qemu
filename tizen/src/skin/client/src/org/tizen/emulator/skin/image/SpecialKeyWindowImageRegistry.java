@@ -106,6 +106,8 @@ public class SpecialKeyWindowImageRegistry {
 	}
 
 	public void dispose() {
+		logger.info("dispose");
+
 		if (null != keyWindowImageMap) {
 			Image image = null;
 

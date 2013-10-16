@@ -38,6 +38,7 @@ import org.tizen.emulator.skin.custom.GeneralKeyWindow;
 import org.tizen.emulator.skin.custom.SkinWindow;
 import org.tizen.emulator.skin.custom.SpecialKeyWindow;
 import org.tizen.emulator.skin.dbi.KeyMapType;
+import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinUtil;
 
@@ -50,6 +51,8 @@ public class KeyWindowKeeper {
 	private int recentlyDocked;
 	private int indexLayout;
 
+	private GeneralKeyWindowImageRegistry imageRegstry;
+
 	/**
 	 *  Constructor
 	 */
@@ -57,6 +60,7 @@ public class KeyWindowKeeper {
 		this.skin = skin;
 		this.recentlyDocked = SWT.NONE;
 		this.indexLayout = -1;
+		this.imageRegstry = null;
 	}
 
 	public void openKeyWindow(int dockValue, boolean recreate) {
@@ -80,7 +84,14 @@ public class KeyWindowKeeper {
 		}
 
 		/* create a Key Window */
+		determineLayout();
+
 		if (isGeneralKeyWindow() == true) {
+			if (imageRegstry == null) {
+				logger.warning("GeneralKeyWindowImageRegistry is null");
+				return;
+			}
+
 			List<KeyMapType> keyMapList = SkinUtil.getHWKeyMapList(
 					skin.getEmulatorSkinState().getCurrentRotationId());
 
@@ -94,7 +105,7 @@ public class KeyWindowKeeper {
 				return;
 			}
 
-			keyWindow = new GeneralKeyWindow(skin, keyMapList);
+			keyWindow = new GeneralKeyWindow(skin, imageRegstry, keyMapList);
 		} else {
 			// TODO:
 			String layoutName =
@@ -171,7 +182,13 @@ public class KeyWindowKeeper {
 			}
 		} else {
 			logger.info("key window has a general layout");
+
 			indexLayout = -1;
+
+			if (imageRegstry == null) {
+				imageRegstry = new GeneralKeyWindowImageRegistry(
+						skin.getShell().getDisplay());
+			}
 		}
 
 		return indexLayout;
@@ -229,5 +246,13 @@ public class KeyWindowKeeper {
 
 	public void setRecentlyDocked(int dockValue) {
 		recentlyDocked = dockValue;
+	}
+
+	public void dispose() {
+		closeKeyWindow();
+
+		if (imageRegstry != null) {
+			imageRegstry.dispose();
+		}
 	}
 }

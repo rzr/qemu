@@ -205,6 +205,7 @@ public class EmulatorSkin {
 		this.currentState = new EmulatorSkinState();
 
 		setColorVM(); /* generate a identity color */
+
 		this.keyWindowKeeper = new KeyWindowKeeper(this);
 	}
 
@@ -231,6 +232,8 @@ public class EmulatorSkin {
 	}
 
 	public long initLayout() {
+		logger.info("initialize the skin layout");
+
 		imageRegistry = ImageRegistry.getInstance();
 
 		/* set emulator states */
@@ -248,8 +251,6 @@ public class EmulatorSkin {
 		/* create and attach a popup menu */
 		isOnKbd = false;
 		popupMenu = new PopupMenu(config, this);
-
-		getKeyWindowKeeper().determineLayout();
 
 		/* build a skin layout */
 		if (skinInfo.isGeneralPurposeSkin() == false) {
@@ -406,7 +407,7 @@ public class EmulatorSkin {
 
 					/* close the Key Window */
 					if (getKeyWindowKeeper() != null) {
-						getKeyWindowKeeper().closeKeyWindow();
+						getKeyWindowKeeper().dispose();
 					}
 
 					/* dispose the images */
