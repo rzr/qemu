@@ -67,7 +67,6 @@ import org.tizen.emulator.skin.log.SkinLogger;
  *
  */
 public class SkinUtil {
-
 	public static final String GTK_OS_CLASS = "org.eclipse.swt.internal.gtk.OS";
 	public static final String WIN32_OS_CLASS = "org.eclipse.swt.internal.win32.OS";
 	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
@@ -257,30 +256,29 @@ public class SkinUtil {
 		shell.setRegion(region);
 	}
 
-	public static int[] convertMouseGeometry( int originalX, int originalY, int lcdWidth, int lcdHeight, int scale,
-			int angle ) {
+	public static int[] convertMouseGeometry(
+			int originalX, int originalY, int displayWidth, int displayHeight,
+			int scale, int angle) {
+		float convertedScale = convertScale(scale);
 
-		float convertedScale = convertScale( scale );
-
-		int x = (int) ( originalX * ( 1 / convertedScale ) );
-		int y = (int) ( originalY * ( 1 / convertedScale ) );
+		int x = (int) (originalX * (1 / convertedScale));
+		int y = (int) (originalY * (1 / convertedScale));
 
 		int rotatedX = x;
 		int rotatedY = y;
 
-		if ( RotationInfo.LANDSCAPE.angle() == angle ) {
-			rotatedX = lcdWidth - y;
+		if (RotationInfo.LANDSCAPE.angle() == angle) {
+			rotatedX = displayWidth - y;
 			rotatedY = x;
-		} else if ( RotationInfo.REVERSE_PORTRAIT.angle() == angle ) {
-			rotatedX = lcdWidth - x;
-			rotatedY = lcdHeight - y;
-		} else if ( RotationInfo.REVERSE_LANDSCAPE.angle() == angle ) {
+		} else if (RotationInfo.REVERSE_PORTRAIT.angle() == angle) {
+			rotatedX = displayWidth - x;
+			rotatedY = displayHeight - y;
+		} else if (RotationInfo.REVERSE_LANDSCAPE.angle() == angle) {
 			rotatedX = y;
-			rotatedY = lcdHeight - x;
+			rotatedY = displayHeight - x;
 		}
 
 		return new int[] { rotatedX, rotatedY };
-
 	}
 
 	public static Image createScaledImage(Display display,
@@ -307,22 +305,22 @@ public class SkinUtil {
 		return (float) scale / SCALE_CONVERTER;
 	}
 
-	public static int getValidScale( EmulatorConfig config ) {
+	public static int getValidScale(EmulatorConfig config) {
+		int storedScale = config.getSkinPropertyInt(
+				SkinPropertiesConstants.WINDOW_SCALE, EmulatorConfig.DEFAULT_WINDOW_SCALE);
 
-		int storedScale = config.getSkinPropertyInt( SkinPropertiesConstants.WINDOW_SCALE,
-				EmulatorConfig.DEFAULT_WINDOW_SCALE );
-
-		if ( !SkinUtil.isValidScale( storedScale ) ) {
+		if (!SkinUtil.isValidScale(storedScale)) {
 			return EmulatorConfig.DEFAULT_WINDOW_SCALE;
-		}else {
+		} else {
 			return storedScale;
 		}
-		
 	}
 
-	public static boolean isValidScale( int scale ) {
-		if ( Scale.SCALE_100.value() == scale || Scale.SCALE_75.value() == scale
-		|| Scale.SCALE_50.value() == scale || Scale.SCALE_25.value() == scale ) {
+	public static boolean isValidScale(int scale) {
+		if (Scale.SCALE_100.value() == scale
+				|| Scale.SCALE_75.value() == scale
+				|| Scale.SCALE_50.value() == scale
+				|| Scale.SCALE_25.value() == scale) {
 			return true;
 		} else {
 			return false;
@@ -421,7 +419,6 @@ public class SkinUtil {
 	}
 
 	private static boolean setTopMost32(Shell shell, boolean isOnTop) {
-
 		if (SwtUtil.isLinuxPlatform()) {
 			/* reference :
 			http://wmctrl.sourcearchive.com/documentation/1.07/main_8c-source.html */
@@ -528,7 +525,20 @@ public class SkinUtil {
 			Integer xDisplay = (Integer) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
 			if (null == xDisplay) {
 				logger.warning("GDK_DISPLAY returned null");
-				return false;
+
+				Integer gdkDisplay = (Integer) invokeOSMethod(
+						getOSMethod("gdk_display_get_default"));
+				if (null == gdkDisplay) {
+					logger.warning("gdk_display_get_default returned null");
+					return false;
+				}
+
+				xDisplay = (Integer) invokeOSMethod(
+						getOSMethod("gdk_x11_display_get_xdisplay", int.class), gdkDisplay);
+				if (null == xDisplay) {
+					logger.warning("gdk_x11_display_get_xdisplay returned null");
+					return false;
+				}
 			}
 
 			Method xInternAtom = getOSMethod(
@@ -573,15 +583,15 @@ public class SkinUtil {
 				return false;
 			}
 
-			Integer xMessageAtomType =
-					(Integer) invokeOSMethod(xInternAtom, xDisplay, messageBufferState, false);
+			Integer xMessageAtomType = (Integer) invokeOSMethod(
+					xInternAtom, xDisplay, messageBufferState, false);
 			if (null == xMessageAtomType) {
 				logger.warning("xMessageAtomType is null");
 				return false;
 			}
 
-			Integer xMessageAtomAbove =
-					(Integer) invokeOSMethod(xInternAtom, xDisplay, messageBufferAbove, false);
+			Integer xMessageAtomAbove = (Integer) invokeOSMethod(
+					xInternAtom, xDisplay, messageBufferAbove, false);
 			if (null == xMessageAtomAbove) {
 				logger.warning("xMessageAtomAbove is null");
 				return false;
@@ -739,6 +749,7 @@ public class SkinUtil {
 
 			invokeOSMethod(m, shellHandle, hWndInsertAfter,
 					location.x, location.y, 0, 0, noSize);
+
 		} else if (SwtUtil.isMacPlatform()) {
 			/* do nothing */
 			logger.warning("not supported yet");
@@ -749,7 +760,6 @@ public class SkinUtil {
 	}
 
 	private static boolean setTopMost64(Shell shell, boolean isOnTop) {
-
 		if (SwtUtil.isLinuxPlatform()) {
 			Boolean gdkWindowingX11 =
 					(Boolean) invokeOSMethod(getOSMethod("GDK_WINDOWING_X11"));
@@ -798,10 +808,23 @@ public class SkinUtil {
 				return false;
 			}
 
-			Long xDisplay = (Long) invokeOSMethod( getOSMethod("GDK_DISPLAY"));
+			Long xDisplay = (Long) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
 			if (null == xDisplay) {
 				logger.warning("GDK_DISPLAY returned null");
-				return false;
+
+				Long gdkDisplay = (Long) invokeOSMethod(
+						getOSMethod("gdk_display_get_default"));
+				if (null == gdkDisplay) {
+					logger.warning("gdk_display_get_default returned null");
+					return false;
+				}
+
+				xDisplay = (Long) invokeOSMethod(
+						getOSMethod("gdk_x11_display_get_xdisplay", long.class), gdkDisplay);
+				if (null == xDisplay) {
+					logger.warning("gdk_x11_display_get_xdisplay returned null");
+					return false;
+				}
 			}
 
 			Method xInternAtom = getOSMethod(
@@ -846,15 +869,15 @@ public class SkinUtil {
 				return false;
 			}
 
-			Long xMessageAtomType =
-					(Long) invokeOSMethod(xInternAtom, xDisplay, messageBufferState, false);
+			Long xMessageAtomType = (Long) invokeOSMethod(
+					xInternAtom, xDisplay, messageBufferState, false);
 			if (null == xMessageAtomType) {
 				logger.warning("xMessageAtomType is null");
 				return false;
 			}
 
-			Long xMessageAtomAbove =
-					(Long) invokeOSMethod(xInternAtom, xDisplay, messageBufferAbove, false);
+			Long xMessageAtomAbove = (Long) invokeOSMethod(
+					xInternAtom, xDisplay, messageBufferAbove, false);
 			if (null == xMessageAtomAbove) {
 				logger.warning("xMessageAtomAbove is null");
 				return false;
@@ -935,6 +958,7 @@ public class SkinUtil {
 			invokeOSMethod(xSendEvent, xDisplay, rootWin,
 					false, (long) (1L << 20 | 1L << 19), malloc);
 			invokeOSMethod(getOSMethod("g_free", long.class), malloc);
+
 		} else if (SwtUtil.isWindowsPlatform()) {
 			Point location = shell.getLocation();
 
@@ -1002,6 +1026,7 @@ public class SkinUtil {
 
 			invokeOSMethod(m, shellHandle, hWndInsertAfter,
 					location.x, location.y, 0, 0, noSize);
+
 		} else if (SwtUtil.isMacPlatform()) {
 			/* do nothing */
 			logger.warning("not supported yet");
