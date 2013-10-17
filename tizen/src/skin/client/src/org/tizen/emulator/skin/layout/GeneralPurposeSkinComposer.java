@@ -44,6 +44,7 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
@@ -143,7 +144,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
-		shell.setText("Emulator - " + emulatorName);
+		shell.setText(SkinUtil.EMULATOR_PREFIX + " - " + emulatorName);
 
 		displayCanvas.setBackground(
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
@@ -217,8 +218,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 						skin.getKeyWindowKeeper().openKeyWindow(
 								SWT.RIGHT | SWT.CENTER, false);
 					} else {
-						skin.getKeyWindowKeeper().openKeyWindow(
-								dockValue, false);
+						skin.getKeyWindowKeeper().openKeyWindow(dockValue, false);
 					}
 				}
 			});
@@ -227,13 +227,13 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 	@Override
 	public void arrangeSkin(int scale, short rotationId) {
-		currentState.setCurrentScale(scale);
-		currentState.setCurrentRotationId(rotationId);
+		//TODO: eject the calculation from UI thread
 
-		/* arrange the display */
-		Rectangle displayBounds = adjustLcdGeometry(displayCanvas,
+		/* calculate display bounds */
+		Rectangle displayBounds = adjustDisplayGeometry(displayCanvas,
 				currentState.getCurrentResolutionWidth(),
-				currentState.getCurrentResolutionHeight(), scale, rotationId);
+				currentState.getCurrentResolutionHeight(),
+				scale, rotationId);
 
 		if (displayBounds == null) {
 			logger.severe("Failed to read display information for skin.");
@@ -245,22 +245,30 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 		logger.info("display bounds : " + displayBounds);
 
+		/* make general skin */
+		Image generalSkin =
+				frameMaker.getPatchedImage(displayBounds.width, displayBounds.height);
+
+		/* make window region */
+		Region region = getTrimmingRegion(shell.getDisplay(), generalSkin);
+
+		/* update the skin state information */
+		currentState.setCurrentScale(scale);
+		currentState.setCurrentRotationId(rotationId);
 		currentState.setDisplayBounds(displayBounds);
-		displayCanvas.setBounds(displayBounds);
 
-		/* arrange the skin image */
 		Image tempImage = null;
-
 		if (currentState.getCurrentImage() != null) {
 			tempImage = currentState.getCurrentImage();
 		}
-
-		currentState.setCurrentImage(
-				frameMaker.getPatchedImage(displayBounds.width, displayBounds.height));
+		currentState.setCurrentImage(generalSkin);
 
 		if (tempImage != null) {
 			tempImage.dispose();
 		}
+
+		/* arrange the display */
+		displayCanvas.setBounds(displayBounds);
 
 		/* arrange the toggle button of key window */
 		toggleButton.setBounds(displayBounds.x + displayBounds.width + 4,
@@ -280,22 +288,21 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* arrange the pair tag */
-		int rotationType = currentState.getCurrentRotationId();
-		if (rotationType == RotationInfo.PORTRAIT.id()) {
+		if (rotationId == RotationInfo.PORTRAIT.id()) {
 			skin.pairTag.setBounds(
 					PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
 					skin.pairTag.getWidth(), skin.pairTag.getHeight());
-		} else if (rotationType == RotationInfo.LANDSCAPE.id()) {
+		} else if (rotationId == RotationInfo.LANDSCAPE.id()) {
 			skin.pairTag.setBounds(
 					PAIR_TAG_POSITION_Y,
 					shell.getSize().y - PAIR_TAG_POSITION_X - skin.pairTag.getHeight(),
 					skin.pairTag.getWidth(), skin.pairTag.getHeight());
-		} else if (rotationType == RotationInfo.REVERSE_PORTRAIT.id()) {
+		} else if (rotationId == RotationInfo.REVERSE_PORTRAIT.id()) {
 			skin.pairTag.setBounds(
 					shell.getSize().x - PAIR_TAG_POSITION_X - skin.pairTag.getWidth(),
 					shell.getSize().y - PAIR_TAG_POSITION_Y - skin.pairTag.getHeight(),
 					skin.pairTag.getWidth(), skin.pairTag.getHeight());
-		} else if (rotationType == RotationInfo.REVERSE_LANDSCAPE.id()) {
+		} else if (rotationId == RotationInfo.REVERSE_LANDSCAPE.id()) {
 			skin.pairTag.setBounds(
 					shell.getSize().x - PAIR_TAG_POSITION_Y - skin.pairTag.getWidth(),
 					PAIR_TAG_POSITION_X,
@@ -303,51 +310,53 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* custom window shape */
-		trimPatchedShell(shell, currentState.getCurrentImage());
+		if (region != null) {
+			shell.setRegion(region);
+		}
 
 		currentState.setNeedToUpdateDisplay(true);
 		shell.redraw();
 	}
 
 	@Override
-	public Rectangle adjustLcdGeometry(
+	public Rectangle adjustDisplayGeometry(
 			Canvas displayCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId) {
 
-		Rectangle lcdBounds = new Rectangle(
+		Rectangle displayBounds = new Rectangle(
 				frameMaker.getPatchWidth(), frameMaker.getPatchHeight(), 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationInfo rotation = RotationInfo.getValue(rotationId);
 
-		/* resoultion, that is lcd size in general skin mode */
+		/* resoultion, that is display size in general skin mode */
 		if (RotationInfo.LANDSCAPE == rotation ||
 				RotationInfo.REVERSE_LANDSCAPE == rotation) {
-			lcdBounds.width = (int)(resolutionH * convertedScale);
-			lcdBounds.height = (int)(resolutionW * convertedScale);
+			displayBounds.width = (int)(resolutionH * convertedScale);
+			displayBounds.height = (int)(resolutionW * convertedScale);
 		} else {
-			lcdBounds.width = (int)(resolutionW * convertedScale);
-			lcdBounds.height = (int)(resolutionH * convertedScale);
+			displayBounds.width = (int)(resolutionW * convertedScale);
+			displayBounds.height = (int)(resolutionH * convertedScale);
 		}
 
-		return lcdBounds;
+		return displayBounds;
 	}
 
-	public static void trimPatchedShell(Shell shell, Image image) {
+	public static Region getTrimmingRegion(Display display, Image image) {
 		if (null == image) {
-			return;
+			return null;
 		}
-		ImageData imageData = image.getImageData();
 
+		ImageData imageData = image.getImageData();
 		int width = imageData.width;
 		int height = imageData.height;
 
 		Region region = new Region();
 		region.add(new Rectangle(0, 0, width, height));
 
-		int r = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getRed();
-		int g = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getGreen();
-		int b = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getBlue();
+		int r = display.getSystemColor(SWT.COLOR_MAGENTA).getRed();
+		int g = display.getSystemColor(SWT.COLOR_MAGENTA).getGreen();
+		int b = display.getSystemColor(SWT.COLOR_MAGENTA).getBlue();
 		int colorKey = 0;
 
 		if (SwtUtil.isWindowsPlatform()) {
@@ -356,8 +365,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			colorKey = r << 16 | g << 8 | b;
 		}
 
+		int j = 0;
 		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
+			for (j = 0; j < height; j++) {
 				int colorPixel = imageData.getPixel(i, j);
 				if (colorPixel == colorKey /* magenta */) {
 					region.subtract(i, j, 1, 1);
@@ -365,7 +375,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			}
 		}
 
-		shell.setRegion(region);
+		return region;
 	}
 
 	public void addGeneralPurposeListener(final Shell shell) {

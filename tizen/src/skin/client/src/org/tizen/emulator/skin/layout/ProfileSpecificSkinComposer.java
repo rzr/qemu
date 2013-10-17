@@ -45,6 +45,7 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
@@ -134,7 +135,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
-		shell.setText("Emulator - " + emulatorName);
+		shell.setText(SkinUtil.EMULATOR_PREFIX + " - " + emulatorName);
 
 		lcdCanvas.setBackground(
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
@@ -185,15 +186,14 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 	@Override
 	public void arrangeSkin(int scale, short rotationId) {
-		currentState.setCurrentScale(scale);
-		currentState.setCurrentRotationId(rotationId);
+		//TODO: eject the calculation from UI thread
 
-		/* arrange the display */
-		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
+		/* calculate display bounds */
+		Rectangle displayBounds = adjustDisplayGeometry(lcdCanvas,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
-		if (lcdBounds == null) {
+		if (displayBounds == null) {
 			logger.severe("Failed to read display information for skin.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to read display information for skin.\n" +
@@ -201,11 +201,27 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					SWT.ICON_ERROR, config);
 			System.exit(-1);
 		}
-		logger.info("display bounds : " + lcdBounds);
+		logger.info("display bounds : " + displayBounds);
 
-		currentState.setDisplayBounds(lcdBounds);
+		/* make profile skin */
+		Image originSkin = imageRegistry.getSkinImage(
+				rotationId, SkinImageType.PROFILE_IMAGE_TYPE_NORMAL);
+		Image profileSkin = SkinUtil.createScaledImage(
+				shell.getDisplay(), originSkin, rotationId, scale);
 
-		/* arrange the skin image */
+		Image originSkinKeyPressed = imageRegistry.getSkinImage(
+				rotationId, SkinImageType.PROFILE_IMAGE_TYPE_PRESSED);
+		Image profileSkinKeyPressed = SkinUtil.createScaledImage(
+				shell.getDisplay(), originSkinKeyPressed, rotationId, scale);
+
+		/* make window region */
+		Region region = SkinUtil.getTrimmingRegion(profileSkin);
+
+		/* update the skin state information */
+		currentState.setCurrentScale(scale);
+		currentState.setCurrentRotationId(rotationId);
+		currentState.setDisplayBounds(displayBounds);
+
 		Image tempImage = null;
 		Image tempKeyPressedImage = null;
 
@@ -216,14 +232,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			tempKeyPressedImage = currentState.getCurrentKeyPressedImage();
 		}
 
-		currentState.setCurrentImage(SkinUtil.createScaledImage(
-				shell.getDisplay(), imageRegistry,
-				SkinImageType.PROFILE_IMAGE_TYPE_NORMAL,
-				rotationId, scale));
-		currentState.setCurrentKeyPressedImage(SkinUtil.createScaledImage(
-				shell.getDisplay(), imageRegistry,
-				SkinImageType.PROFILE_IMAGE_TYPE_PRESSED,
-				rotationId, scale));
+		currentState.setCurrentImage(profileSkin);
+		currentState.setCurrentKeyPressedImage(profileSkinKeyPressed);
 
 		if (tempImage != null) {
 			tempImage.dispose();
@@ -232,14 +242,15 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			tempKeyPressedImage.dispose();
 		}
 
+		/* arrange the display */
 		if (SwtUtil.isMacPlatform() == true) {
 			lcdCanvas.setBounds(currentState.getDisplayBounds());
 		}
 
 		/* arrange the progress bar */
 		if (skin.bootingProgress != null) {
-			skin.bootingProgress.setBounds(lcdBounds.x,
-					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
+			skin.bootingProgress.setBounds(displayBounds.x,
+					displayBounds.y + displayBounds.height + 1, displayBounds.width, 2);
 		}
 
 		/* set window size */
@@ -249,27 +260,29 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		}
 
 		/* custom window shape */
-		SkinUtil.trimShell(shell, currentState.getCurrentImage());
+		if (region != null) {
+			shell.setRegion(region);
+		}
 
 		currentState.setNeedToUpdateDisplay(true);
 		shell.redraw();
 	}
 
 	@Override
-	public Rectangle adjustLcdGeometry(
-			Canvas lcdCanvas, int resolutionW, int resolutionH,
+	public Rectangle adjustDisplayGeometry(
+			Canvas displayCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId) {
-		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
+		Rectangle displayBounds = new Rectangle(0, 0, 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationType rotation = SkinRotation.getRotation(rotationId);
 
-		DisplayType lcd = rotation.getDisplay(); /* from dbi */
-		if (lcd == null) {
+		DisplayType display = rotation.getDisplay(); /* from dbi */
+		if (display == null) {
 			return null;
 		}
 
-		RegionType region = lcd.getRegion();
+		RegionType region = display.getRegion();
 		if (region == null) {
 			return null;
 		}
@@ -279,12 +292,12 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		Integer width = region.getWidth();
 		Integer height = region.getHeight();
 
-		lcdBounds.x = (int) (left * convertedScale);
-		lcdBounds.y = (int) (top * convertedScale);
-		lcdBounds.width = (int) (width * convertedScale);
-		lcdBounds.height = (int) (height * convertedScale);
+		displayBounds.x = (int) (left * convertedScale);
+		displayBounds.y = (int) (top * convertedScale);
+		displayBounds.width = (int) (width * convertedScale);
+		displayBounds.height = (int) (height * convertedScale);
 
-		return lcdBounds;
+		return displayBounds;
 	}
 
 	public void addProfileSpecificListener(final Shell shell) {

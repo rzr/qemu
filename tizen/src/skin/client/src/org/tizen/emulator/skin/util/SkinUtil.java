@@ -56,8 +56,6 @@ import org.tizen.emulator.skin.dbi.KeyMapListType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
-import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
-import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.layout.HWKey;
 import org.tizen.emulator.skin.log.SkinLogger;
 
@@ -73,7 +71,7 @@ public class SkinUtil {
 
 	public static final int UNKNOWN_KEYCODE = -1;
 	public static final int SCALE_CONVERTER = 100;
-	public static final String EMULATOR_PREFIX = "emulator";
+	public static final String EMULATOR_PREFIX = "Emulator";
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(SkinUtil.class).getLogger();
@@ -199,31 +197,28 @@ public class SkinUtil {
 		return false;
 	}
 
-	public static void trimShell(Shell shell, Image image) {
-		/* trim transparent pixels in image.
-		 * especially, corner round areas. */
+	public static Region getTrimmingRegion(Image image) {
 		if (null == image) {
-			return;
+			return null;
 		}
 
 		ImageData imageData = image.getImageData();
-
 		int width = imageData.width;
 		int height = imageData.height;
 
 		Region region = new Region();
 		region.add(new Rectangle(0, 0, width, height));
 
+		int j = 0;
 		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				int alpha = imageData.getAlpha(i, j);
-				if (0 == alpha) {
+			for (j = 0; j < height; j++) {
+				if (0 == imageData.getAlpha(i, j)) {
 					region.subtract(i, j, 1, 1);
 				}
 			}
 		}
 
-		shell.setRegion(region);
+		return region;
 	}
 
 	public static void trimShell(Shell shell, Image image,
@@ -233,7 +228,6 @@ public class SkinUtil {
 		}
 
 		ImageData imageData = image.getImageData();
-
 		int right = left + width;
 		int bottom = top + height;
 
@@ -242,10 +236,10 @@ public class SkinUtil {
 			return;
 		}
 
+		int j = 0;
 		for (int i = left; i < right; i++) {
-			for (int j = top; j < bottom; j++) {
-				int alpha = imageData.getAlpha(i, j);
-				if (0 == alpha) {
+			for (j = top; j < bottom; j++) {
+				if (0 == imageData.getAlpha(i, j)) {
 					region.subtract(i, j, 1, 1);
 				} else {
 					region.add(i, j, 1, 1);
@@ -282,9 +276,7 @@ public class SkinUtil {
 	}
 
 	public static Image createScaledImage(Display display,
-			ProfileSkinImageRegistry imageRegistry, SkinImageType type,
-			short rotationId, int scale) {
-		Image imageOrigin = imageRegistry.getSkinImage(rotationId, type);
+			Image imageOrigin, short rotationId, int scale) {
 		if (imageOrigin == null) {
 			return null;
 		}
