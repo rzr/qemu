@@ -1,3 +1,6 @@
+* 1.5.103
+- function call re-ordering in arrangeSkin() & etc
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-10-17
 * 1.5.102
 - supports qmp handling for ecs.
 - added keep alive checking routine for ecs.
