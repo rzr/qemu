@@ -101,6 +101,8 @@ public class SkinPatches {
 
 		// TODO: copy alphaData
 		GC gc = new GC(patchedImage);
+		gc.setInterpolation(SWT.NONE);
+
 		gc.setBackground(display.getSystemColor(SWT.COLOR_MAGENTA));
 		gc.fillRectangle(0, 0, patchedImageWidth, patchedImageHeight);
 
