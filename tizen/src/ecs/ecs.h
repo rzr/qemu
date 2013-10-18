@@ -185,6 +185,7 @@ void ecs_make_header(QDict* obj, type_length length, type_group group, type_acti
 void read_val_short(const char* data, unsigned short* ret_val);
 void read_val_char(const char* data, unsigned char* ret_val);
 void read_val_str(const char* data, char* ret_val, int len);
+void print_binary(const char* data, const int len);
 
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);

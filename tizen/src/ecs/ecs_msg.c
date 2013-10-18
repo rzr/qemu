@@ -316,6 +316,8 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
     if (msg->has_data && msg->data.len > 0)
     {
         data = (char*)msg->data.data;
+        printf("recv from nfc injector: ");
+        print_binary(data, data[1] + 2);
     }
 
     if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
@@ -509,9 +511,9 @@ bool send_nfc_ntf(const char* data, const int len)
 
     read_val_str(data, cat, catsize);
 
-    const char* ijdata = (data + catsize + 2);
+    const char* ijdata = data + catsize;
 
-    LOG("<< header cat = %s", cat);
+    LOG("header category = %s", cat);
 
     ECS__Master master = ECS__MASTER__INIT;
     ECS__NfcNtf ntf = ECS__NFC_NTF__INIT;
@@ -525,8 +527,9 @@ bool send_nfc_ntf(const char* data, const int len)
     ntf.data.len = MAX_BUF_SIZE;
     memcpy(ntf.data.data, ijdata, MAX_BUF_SIZE);
 
-    LOG("data = %s, length = %d", ijdata, len);
-
+    LOG("length = %d", len);
+    printf("send to nfc injector: ");
+    print_binary(ijdata, ijdata[1] + 2);
     master.type = ECS__MASTER__TYPE__NFC_NTF;
     master.nfc_ntf = &ntf;
 

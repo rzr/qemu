@@ -208,6 +208,18 @@ bool ntf_to_monitor(const char* data, const int len) {
     return true;
 }
 
+void print_binary(const char* data, const int len) {
+    int i;
+    printf("[DATA: ");
+    for(i = 0; i < len; i++) {
+        if(i == len - 1) {
+            printf("%02x]\n", data[i]);
+        } else {
+            printf("%02x,", data[i]);
+        }
+    }
+}
+
 void ecs_make_header(QDict* obj, type_length length, type_group group,
         type_action action) {
     qdict_put(obj, "length", qint_from_int((int64_t )length));
