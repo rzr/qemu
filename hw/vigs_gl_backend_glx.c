@@ -52,10 +52,12 @@ struct vigs_gl_backend_glx
     PFNGLXGETFBCONFIGATTRIBPROC glXGetFBConfigAttrib;
     PFNGLXCREATEPBUFFERPROC glXCreatePbuffer;
     PFNGLXDESTROYPBUFFERPROC glXDestroyPbuffer;
-    PFNGLXCREATENEWCONTEXTPROC glXCreateNewContext;
     PFNGLXDESTROYCONTEXTPROC glXDestroyContext;
     PFNGLXMAKECONTEXTCURRENTPROC glXMakeContextCurrent;
     PFNGLXGETCURRENTCONTEXTPROC glXGetCurrentContext;
+
+    /* GLX_ARB_create_context */
+    PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
 
     Display *dpy;
     GLXPbuffer sfc;
@@ -141,14 +143,22 @@ static bool vigs_gl_backend_glx_create_surface(struct vigs_gl_backend_glx *gl_ba
 static bool vigs_gl_backend_glx_create_context(struct vigs_gl_backend_glx *gl_backend_glx,
                                                GLXFBConfig config)
 {
-    gl_backend_glx->ctx = gl_backend_glx->glXCreateNewContext(gl_backend_glx->dpy,
-                                                              config,
-                                                              GLX_RGBA_TYPE,
-                                                              NULL,
-                                                              True);
+    int attribs[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+        GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        None
+    };
+
+    gl_backend_glx->ctx = gl_backend_glx->glXCreateContextAttribsARB(gl_backend_glx->dpy,
+                                                                     config,
+                                                                     NULL,
+                                                                     True,
+                                                                     attribs);
 
     if (!gl_backend_glx->ctx) {
-        VIGS_LOG_CRITICAL("glXCreateNewContext failed");
+        VIGS_LOG_CRITICAL("glXCreateContextAttribsARB failed");
         return false;
     }
 
@@ -239,10 +249,10 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GLX_GET_PROC(PFNGLXGETFBCONFIGATTRIBPROC, glXGetFBConfigAttrib);
     VIGS_GLX_GET_PROC(PFNGLXCREATEPBUFFERPROC, glXCreatePbuffer);
     VIGS_GLX_GET_PROC(PFNGLXDESTROYPBUFFERPROC, glXDestroyPbuffer);
-    VIGS_GLX_GET_PROC(PFNGLXCREATENEWCONTEXTPROC, glXCreateNewContext);
     VIGS_GLX_GET_PROC(PFNGLXDESTROYCONTEXTPROC, glXDestroyContext);
     VIGS_GLX_GET_PROC(PFNGLXMAKECONTEXTCURRENTPROC, glXMakeContextCurrent);
     VIGS_GLX_GET_PROC(PFNGLXGETCURRENTCONTEXTPROC, glXGetCurrentContext);
+    VIGS_GLX_GET_PROC(PFNGLXCREATECONTEXTATTRIBSARBPROC, glXCreateContextAttribsARB);
 
     VIGS_GL_GET_PROC(GenTextures, glGenTextures);
     VIGS_GL_GET_PROC(DeleteTextures, glDeleteTextures);

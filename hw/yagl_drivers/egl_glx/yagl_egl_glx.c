@@ -88,6 +88,9 @@ struct yagl_egl_glx
 
     /* GLX 1.4 or GLX_ARB_get_proc_address */
     PFNGLXGETPROCADDRESSPROC glXGetProcAddress;
+
+    /* GLX_ARB_create_context */
+    PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
 };
 
 /*
@@ -369,22 +372,29 @@ static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
 {
     struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     GLXContext ctx;
+    int attribs[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+        GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        None
+    };
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_context_create,
                        "dpy = %p, share_context = %p",
                        dpy,
                        share_context);
 
-    ctx = egl_glx->glXCreateNewContext(dpy,
-                                       (GLXFBConfig)cfg->driver_data,
-                                       GLX_RGBA_TYPE,
-                                       ((share_context == EGL_NO_CONTEXT) ?
-                                           NULL
-                                         : (GLXContext)share_context),
-                                       True);
+    ctx = egl_glx->glXCreateContextAttribsARB(dpy,
+                                              (GLXFBConfig)cfg->driver_data,
+                                              ((share_context == EGL_NO_CONTEXT) ?
+                                                  NULL
+                                                : (GLXContext)share_context),
+                                              True,
+                                              attribs);
 
     if (!ctx) {
-        YAGL_LOG_ERROR("glXCreateNewContext failed");
+        YAGL_LOG_ERROR("glXCreateContextAttribsARB failed");
 
         YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -523,6 +533,9 @@ struct yagl_egl_driver *yagl_egl_driver_create(void *display)
     YAGL_EGL_GLX_GET_PROC(PFNGLXDESTROYPBUFFERPROC, glXDestroyPbuffer);
     YAGL_EGL_GLX_GET_PROC(PFNGLXCREATENEWCONTEXTPROC, glXCreateNewContext);
     YAGL_EGL_GLX_GET_PROC(PFNGLXMAKECONTEXTCURRENTPROC, glXMakeContextCurrent);
+
+    /* GLX_ARB_create_context */
+    YAGL_EGL_GLX_GET_PROC(PFNGLXCREATECONTEXTATTRIBSARBPROC, glXCreateContextAttribsARB);
 
     egl_glx->base.display_open = &yagl_egl_glx_display_open;
     egl_glx->base.display_close = &yagl_egl_glx_display_close;
