@@ -466,7 +466,6 @@ fail:
 static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType egl_dpy,
                                               const struct yagl_egl_native_config *cfg,
-                                              yagl_client_api client_api,
                                               EGLContext share_context)
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
@@ -475,8 +474,8 @@ static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
     HDC dc;
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_context_create,
-                       "dpy = %p, api = %u, share_context = %p, cfgid=%d",
-                       dpy, client_api, share_context, cfg->config_id);
+                       "dpy = %p, share_context = %p, cfgid=%d",
+                       dpy, share_context, cfg->config_id);
 
     dc = yagl_egl_wgl_get_dc_by_cfgid(dpy, cfg);
     if (!dc) {

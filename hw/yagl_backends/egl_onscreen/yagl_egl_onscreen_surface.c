@@ -8,33 +8,9 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_gles_driver.h"
-#include "yagl_client_tex_image.h"
-#include "yagl_client_context.h"
 #include "winsys_gl.h"
 
 YAGL_DECLARE_TLS(struct yagl_egl_onscreen_ts*, egl_onscreen_ts);
-
-struct yagl_egl_onscreen_surface_data
-{
-    struct yagl_ref ref;
-
-    struct yagl_egl_onscreen_surface *sfc;
-};
-
-static void yagl_egl_onscreen_surface_data_destroy(struct yagl_ref *ref)
-{
-    struct yagl_egl_onscreen_surface_data *surface_data =
-        (struct yagl_egl_onscreen_surface_data*)ref;
-
-    if (surface_data->sfc->tex_image) {
-        yagl_client_tex_image_release(surface_data->sfc->tex_image);
-        surface_data->sfc->tex_image = NULL;
-    }
-
-    yagl_ref_cleanup(ref);
-
-    g_free(surface_data);
-}
 
 static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
                                                  yagl_winsys_id id)
@@ -106,10 +82,6 @@ static bool yagl_egl_onscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
-    struct yagl_egl_onscreen *egl_onscreen =
-        (struct yagl_egl_onscreen*)sfc->dpy->backend;
-
-    egl_onscreen->gles_driver->Finish();
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
 
@@ -120,10 +92,6 @@ static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
-    struct yagl_egl_onscreen *egl_onscreen =
-        (struct yagl_egl_onscreen*)sfc->dpy->backend;
-
-    egl_onscreen->gles_driver->Finish();
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
 
@@ -134,59 +102,12 @@ static void yagl_egl_onscreen_surface_wait_gl(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
-    struct yagl_egl_onscreen *egl_onscreen =
-        (struct yagl_egl_onscreen*)sfc->dpy->backend;
 
-    egl_onscreen->gles_driver->Finish();
+    /*
+     * M.b. glFinish here ?
+     */
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
-}
-
-static bool yagl_egl_onscreen_surface_bind_tex_image(struct yagl_eglb_surface *sfc)
-{
-    struct yagl_egl_onscreen_surface *osfc =
-        (struct yagl_egl_onscreen_surface*)sfc;
-    struct yagl_eglb_context *ctx =
-        (egl_onscreen_ts->ctx ? &egl_onscreen_ts->ctx->base : NULL);
-    struct yagl_egl_onscreen_surface_data *surface_data = NULL;
-
-    if (osfc->tex_image) {
-        return false;
-    }
-
-    if (!ctx) {
-        return true;
-    }
-
-    surface_data = g_malloc0(sizeof(*surface_data));
-
-    yagl_ref_init(&surface_data->ref, &yagl_egl_onscreen_surface_data_destroy);
-    surface_data->sfc = osfc;
-
-    osfc->tex_image =
-        ctx->client_ctx->create_tex_image(ctx->client_ctx,
-                                          osfc->ws_sfc->get_texture(osfc->ws_sfc),
-                                          &surface_data->ref);
-
-    yagl_ref_release(&surface_data->ref);
-
-    return osfc->tex_image != NULL;
-}
-
-static bool yagl_egl_onscreen_surface_release_tex_image(struct yagl_eglb_surface *sfc)
-{
-    struct yagl_egl_onscreen_surface *osfc =
-        (struct yagl_egl_onscreen_surface*)sfc;
-
-    if (!osfc->tex_image) {
-        return true;
-    }
-
-    osfc->tex_image->unbind(osfc->tex_image);
-    assert(!osfc->tex_image);
-    osfc->tex_image = NULL;
-
-    return true;
 }
 
 static void yagl_egl_onscreen_surface_destroy(struct yagl_eglb_surface *sfc)
@@ -197,12 +118,6 @@ static void yagl_egl_onscreen_surface_destroy(struct yagl_eglb_surface *sfc)
         (struct yagl_egl_onscreen*)sfc->dpy->backend;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_surface_destroy, NULL);
-
-    if (osfc->tex_image) {
-        osfc->tex_image->unbind(osfc->tex_image);
-        assert(!osfc->tex_image);
-        osfc->tex_image = NULL;
-    }
 
     egl_onscreen->egl_driver->pbuffer_surface_destroy(
         egl_onscreen->egl_driver,
@@ -278,8 +193,6 @@ struct yagl_egl_onscreen_surface
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
     sfc->base.wait_gl = &yagl_egl_onscreen_surface_wait_gl;
-    sfc->base.bind_tex_image = &yagl_egl_onscreen_surface_bind_tex_image;
-    sfc->base.release_tex_image = &yagl_egl_onscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_onscreen_surface_destroy;
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -346,8 +259,6 @@ struct yagl_egl_onscreen_surface
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
     sfc->base.wait_gl = &yagl_egl_onscreen_surface_wait_gl;
-    sfc->base.bind_tex_image = &yagl_egl_onscreen_surface_bind_tex_image;
-    sfc->base.release_tex_image = &yagl_egl_onscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_onscreen_surface_destroy;
 
     YAGL_LOG_FUNC_EXIT(NULL);
@@ -414,8 +325,6 @@ struct yagl_egl_onscreen_surface
     sfc->base.swap_buffers = &yagl_egl_onscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_onscreen_surface_copy_buffers;
     sfc->base.wait_gl = &yagl_egl_onscreen_surface_wait_gl;
-    sfc->base.bind_tex_image = &yagl_egl_onscreen_surface_bind_tex_image;
-    sfc->base.release_tex_image = &yagl_egl_onscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_onscreen_surface_destroy;
 
     YAGL_LOG_FUNC_EXIT(NULL);

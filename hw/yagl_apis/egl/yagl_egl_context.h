@@ -7,7 +7,6 @@
 struct yagl_egl_display;
 struct yagl_egl_config;
 struct yagl_egl_surface;
-struct yagl_client_context;
 struct yagl_eglb_context;
 
 struct yagl_egl_context
@@ -31,7 +30,6 @@ struct yagl_egl_context
 struct yagl_egl_context
     *yagl_egl_context_create(struct yagl_egl_display *dpy,
                              struct yagl_egl_config *cfg,
-                             struct yagl_client_context *client_ctx,
                              struct yagl_eglb_context *backend_share_ctx);
 
 void yagl_egl_context_update_surfaces(struct yagl_egl_context *ctx,

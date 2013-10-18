@@ -16,8 +16,6 @@ struct yagl_egl_api_ts
      */
     struct yagl_egl_backend *backend;
 
-    EGLint error;
-
     EGLenum api;
 
     /*

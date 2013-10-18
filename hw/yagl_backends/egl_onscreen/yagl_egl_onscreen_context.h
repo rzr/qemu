@@ -44,7 +44,6 @@ struct yagl_egl_onscreen_context
 struct yagl_egl_onscreen_context
     *yagl_egl_onscreen_context_create(struct yagl_egl_onscreen_display *dpy,
                                       const struct yagl_egl_native_config *cfg,
-                                      struct yagl_client_context *client_ctx,
                                       struct yagl_egl_onscreen_context *share_context);
 
 void yagl_egl_onscreen_context_setup(struct yagl_egl_onscreen_context *ctx);

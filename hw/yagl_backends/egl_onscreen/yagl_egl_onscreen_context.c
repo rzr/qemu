@@ -3,7 +3,6 @@
 #include "yagl_egl_onscreen_display.h"
 #include "yagl_egl_onscreen.h"
 #include "yagl_egl_surface_attribs.h"
-#include "yagl_client_context.h"
 #include "yagl_gles_driver.h"
 #include "yagl_log.h"
 #include "yagl_tls.h"
@@ -49,7 +48,6 @@ static void yagl_egl_onscreen_context_destroy(struct yagl_eglb_context *ctx)
 struct yagl_egl_onscreen_context
     *yagl_egl_onscreen_context_create(struct yagl_egl_onscreen_display *dpy,
                                       const struct yagl_egl_native_config *cfg,
-                                      struct yagl_client_context *client_ctx,
                                       struct yagl_egl_onscreen_context *share_context)
 {
     struct yagl_egl_onscreen *egl_onscreen =
@@ -66,7 +64,6 @@ struct yagl_egl_onscreen_context
         egl_onscreen->egl_driver,
         dpy->native_dpy,
         cfg,
-        client_ctx->client_api,
         egl_onscreen->global_ctx);
 
     if (!native_ctx) {
@@ -76,7 +73,7 @@ struct yagl_egl_onscreen_context
 
     ctx = g_malloc0(sizeof(*ctx));
 
-    yagl_eglb_context_init(&ctx->base, &dpy->base, client_ctx);
+    yagl_eglb_context_init(&ctx->base, &dpy->base);
 
     ctx->base.destroy = &yagl_egl_onscreen_context_destroy;
 

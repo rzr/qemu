@@ -5,11 +5,15 @@
 #include "yagl_egl_driver.h"
 #include "yagl_egl_native_config.h"
 
+struct yagl_gles_driver;
+
 struct yagl_egl_offscreen
 {
     struct yagl_egl_backend base;
 
-    struct yagl_egl_driver *driver;
+    struct yagl_egl_driver *egl_driver;
+
+    struct yagl_gles_driver *gles_driver;
 
     /*
      * Display, config, context and surface which'll be used
@@ -31,8 +35,9 @@ struct yagl_egl_offscreen
 };
 
 /*
- * Takes ownership of 'driver'
+ * Takes ownership of 'egl_driver'
  */
-struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *driver);
+struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *egl_driver,
+                                                   struct yagl_gles_driver *gles_driver);
 
 #endif

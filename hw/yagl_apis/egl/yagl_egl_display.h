@@ -11,7 +11,6 @@ struct yagl_egl_config;
 struct yagl_egl_native_config;
 struct yagl_egl_surface;
 struct yagl_egl_context;
-struct yagl_egl_image;
 struct yagl_eglb_display;
 
 struct yagl_egl_display
@@ -33,8 +32,6 @@ struct yagl_egl_display
     struct yagl_resource_list contexts;
 
     struct yagl_resource_list surfaces;
-
-    struct yagl_resource_list images;
 };
 
 struct yagl_egl_display
@@ -134,30 +131,6 @@ struct yagl_egl_surface
 
 bool yagl_egl_display_remove_surface(struct yagl_egl_display *dpy,
                                      yagl_host_handle handle);
-
-/*
- * @}
- */
-
-/*
- * Images.
- * @{
- */
-
-/*
- * This acquires 'image', so the caller should
- * release 'image' if he doesn't want to use it and wants it to belong to the
- * display alone.
- */
-void yagl_egl_display_add_image(struct yagl_egl_display *dpy,
-                                struct yagl_egl_image *image);
-
-struct yagl_egl_image
-    *yagl_egl_display_acquire_image(struct yagl_egl_display *dpy,
-                                    yagl_host_handle handle);
-
-bool yagl_egl_display_remove_image(struct yagl_egl_display *dpy,
-                                   yagl_host_handle handle);
 
 /*
  * @}

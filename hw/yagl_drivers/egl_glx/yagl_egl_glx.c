@@ -365,16 +365,14 @@ static void yagl_egl_glx_pbuffer_surface_destroy(struct yagl_egl_driver *driver,
 static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType dpy,
                                               const struct yagl_egl_native_config *cfg,
-                                              yagl_client_api client_api,
                                               EGLContext share_context)
 {
     struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     GLXContext ctx;
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_context_create,
-                       "dpy = %p, client_api = %u, share_context = %p",
+                       "dpy = %p, share_context = %p",
                        dpy,
-                       client_api,
                        share_context);
 
     ctx = egl_glx->glXCreateNewContext(dpy,

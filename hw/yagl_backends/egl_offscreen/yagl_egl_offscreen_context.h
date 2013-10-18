@@ -12,12 +12,22 @@ struct yagl_egl_offscreen_context
     struct yagl_eglb_context base;
 
     EGLContext native_ctx;
+
+    GLuint rp_pbo;
+    uint32_t rp_pbo_width;
+    uint32_t rp_pbo_height;
+    uint32_t rp_pbo_bpp;
 };
 
 struct yagl_egl_offscreen_context
     *yagl_egl_offscreen_context_create(struct yagl_egl_offscreen_display *dpy,
                                        const struct yagl_egl_native_config *cfg,
-                                       struct yagl_client_context *client_ctx,
                                        struct yagl_egl_offscreen_context *share_context);
+
+bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *ctx,
+                                            uint32_t width,
+                                            uint32_t height,
+                                            uint32_t bpp,
+                                            void *pixels);
 
 #endif

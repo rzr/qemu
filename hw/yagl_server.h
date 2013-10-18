@@ -7,12 +7,13 @@
 struct yagl_api;
 struct yagl_process_state;
 struct yagl_egl_backend;
-struct yagl_gles1_driver;
-struct yagl_gles2_driver;
+struct yagl_gles_driver;
 struct yagl_transport;
 
 struct yagl_server_state
 {
+    yagl_render_type render_type;
+
     struct yagl_api *apis[YAGL_NUM_APIS];
 
     QLIST_HEAD(, yagl_process_state) processes;
@@ -30,13 +31,12 @@ struct yagl_server_state
  */
 
 /*
- * 'egl_backend', 'gles1_driver' and 'gles2_driver' will be owned by
+ * 'egl_backend' and 'gles_driver' will be owned by
  * returned server state or destroyed in case of error.
  */
 struct yagl_server_state
     *yagl_server_state_create(struct yagl_egl_backend *egl_backend,
-                              struct yagl_gles1_driver *gles1_driver,
-                              struct yagl_gles2_driver *gles2_driver);
+                              struct yagl_gles_driver *gles_driver);
 
 void yagl_server_state_destroy(struct yagl_server_state *ss);
 /*

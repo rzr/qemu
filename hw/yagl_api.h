@@ -14,12 +14,14 @@ struct yagl_api_ps
 
     void (*thread_init)(struct yagl_api_ps */*api_ps*/);
 
+    void (*batch_start)(struct yagl_api_ps */*api_ps*/);
+
     yagl_api_func (*get_func)(struct yagl_api_ps */*api_ps*/,
                               uint32_t /*func_id*/);
 
-    void (*thread_fini)(struct yagl_api_ps */*api_ps*/);
+    void (*batch_end)(struct yagl_api_ps */*api_ps*/);
 
-    void (*fini)(struct yagl_api_ps */*api_ps*/);
+    void (*thread_fini)(struct yagl_api_ps */*api_ps*/);
 
     void (*destroy)(struct yagl_api_ps */*api_ps*/);
 };

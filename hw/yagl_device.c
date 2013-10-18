@@ -5,10 +5,8 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_egl_driver.h"
-#include "yagl_drivers/gles1_ogl/yagl_gles1_ogl.h"
-#include "yagl_drivers/gles2_ogl/yagl_gles2_ogl.h"
-#include "yagl_drivers/gles1_onscreen/yagl_gles1_onscreen.h"
-#include "yagl_drivers/gles2_onscreen/yagl_gles2_onscreen.h"
+#include "yagl_drivers/gles_ogl/yagl_gles_ogl.h"
+#include "yagl_drivers/gles_onscreen/yagl_gles_onscreen.h"
 #include "yagl_backends/egl_offscreen/yagl_egl_offscreen.h"
 #include "yagl_backends/egl_onscreen/yagl_egl_onscreen.h"
 #include "exec/cpu-all.h"
@@ -16,8 +14,7 @@
 #include "hw/pci/pci.h"
 #include <GL/gl.h>
 #include "winsys.h"
-#include "yagl_gles1_driver.h"
-#include "yagl_gles2_driver.h"
+#include "yagl_gles_driver.h"
 
 #define PCI_VENDOR_ID_YAGL 0x19B1
 #define PCI_DEVICE_ID_YAGL 0x1010
@@ -192,8 +189,7 @@ static int yagl_device_init(PCIDevice *dev)
     YaGLState *s = DO_UPCAST(YaGLState, dev, dev);
     struct yagl_egl_driver *egl_driver = NULL;
     struct yagl_egl_backend *egl_backend = NULL;
-    struct yagl_gles1_driver *gles1_driver = NULL;
-    struct yagl_gles2_driver *gles2_driver = NULL;
+    struct yagl_gles_driver *gles_driver = NULL;
 
     yagl_log_init();
 
@@ -213,26 +209,19 @@ static int yagl_device_init(PCIDevice *dev)
         goto fail;
     }
 
-    gles1_driver = yagl_gles1_ogl_create(egl_driver->dyn_lib);
+    gles_driver = yagl_gles_ogl_create(egl_driver->dyn_lib);
 
-    if (!gles1_driver) {
-        goto fail;
-    }
-
-    gles2_driver = yagl_gles2_ogl_create(egl_driver->dyn_lib);
-
-    if (!gles2_driver) {
+    if (!gles_driver) {
         goto fail;
     }
 
     if (s->wsi) {
         egl_backend = yagl_egl_onscreen_create(s->wsi,
                                                egl_driver,
-                                               &gles2_driver->base);
-        gles1_driver = yagl_gles1_onscreen_create(gles1_driver);
-        gles2_driver = yagl_gles2_onscreen_create(gles2_driver);
+                                               gles_driver);
+        gles_driver = yagl_gles_onscreen_create(gles_driver);
     } else {
-        egl_backend = yagl_egl_offscreen_create(egl_driver);
+        egl_backend = yagl_egl_offscreen_create(egl_driver, gles_driver);
     }
 
     if (!egl_backend) {
@@ -244,14 +233,13 @@ static int yagl_device_init(PCIDevice *dev)
      */
     egl_driver = NULL;
 
-    s->ss = yagl_server_state_create(egl_backend, gles1_driver, gles2_driver);
+    s->ss = yagl_server_state_create(egl_backend, gles_driver);
 
     /*
      * Owned/destroyed by server state.
      */
     egl_backend = NULL;
-    gles1_driver = NULL;
-    gles2_driver = NULL;
+    gles_driver = NULL;
 
     if (!s->ss) {
         goto fail;
@@ -268,12 +256,8 @@ fail:
         egl_backend->destroy(egl_backend);
     }
 
-    if (gles1_driver) {
-        gles1_driver->destroy(gles1_driver);
-    }
-
-    if (gles2_driver) {
-        gles2_driver->destroy(gles2_driver);
+    if (gles_driver) {
+        gles_driver->destroy(gles_driver);
     }
 
     if (egl_driver) {

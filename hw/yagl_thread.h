@@ -17,31 +17,19 @@ struct yagl_thread_state
 
     yagl_tid id;
 
-    QemuThread host_thread;
-
-    bool destroying; /* true when thread is being destroyed */
-
-    bool is_first; /* true when this is first thread of a process */
-    bool is_last; /* true when this is last thread of a process */
-
-    /*
-     * These events are auto reset.
-     * @{
-     */
-    struct yagl_event call_event; /* Set whenever target calls us */
-    struct yagl_event call_processed_event; /* Set whenever host processed target call */
-    /*
-     * @}
-     */
-
     uint8_t **pages;
 
     /*
-     * Set by the caller of yagl_thread_call for
-     * the time of call.
+     * Fake TLS.
+     * @{
      */
-    uint32_t offset;
-    CPUState *current_env;
+    void *egl_api_ts;
+    void *gles_api_ts;
+    void *egl_offscreen_ts;
+    void *egl_onscreen_ts;
+    /*
+     * @}
+     */
 };
 
 YAGL_DECLARE_TLS(struct yagl_thread_state*, cur_ts);

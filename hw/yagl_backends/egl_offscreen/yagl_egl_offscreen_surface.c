@@ -1,3 +1,4 @@
+#include <GL/gl.h>
 #include "yagl_egl_offscreen_surface.h"
 #include "yagl_egl_offscreen_display.h"
 #include "yagl_egl_offscreen_context.h"
@@ -9,7 +10,6 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_compiled_transfer.h"
-#include "yagl_client_context.h"
 
 YAGL_DECLARE_TLS(struct yagl_egl_offscreen_ts*, egl_offscreen_ts);
 
@@ -25,9 +25,9 @@ static void yagl_egl_offscreen_surface_cleanup(struct yagl_egl_offscreen_surface
     g_free(sfc->host_pixels);
     sfc->host_pixels = NULL;
 
-    egl_offscreen->driver->pbuffer_surface_destroy(egl_offscreen->driver,
-                                                   dpy->native_dpy,
-                                                   sfc->native_sfc);
+    egl_offscreen->egl_driver->pbuffer_surface_destroy(egl_offscreen->egl_driver,
+                                                       dpy->native_dpy,
+                                                       sfc->native_sfc);
     sfc->native_sfc = EGL_NO_SURFACE;
 
     if (sfc->bimage_ct) {
@@ -97,16 +97,16 @@ static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sf
 
     assert(octx);
 
-    if (!octx->base.client_ctx->read_pixels(octx->base.client_ctx,
-                                            osfc->width,
-                                            osfc->height,
-                                            osfc->bpp,
-                                            osfc->host_pixels)) {
+    if (!yagl_egl_offscreen_context_read_pixels(octx,
+                                                osfc->width,
+                                                osfc->height,
+                                                osfc->bpp,
+                                                osfc->host_pixels)) {
         YAGL_LOG_ERROR("read_pixels failed");
         return false;
     }
 
-    assert (osfc->bimage_ct);
+    assert(osfc->bimage_ct);
 
     yagl_compiled_transfer_exec(osfc->bimage_ct, osfc->host_pixels);
 
@@ -123,11 +123,11 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
 
     assert(octx);
 
-    if (!octx->base.client_ctx->read_pixels(octx->base.client_ctx,
-                                            osfc->width,
-                                            osfc->height,
-                                            osfc->bpp,
-                                            osfc->host_pixels)) {
+    if (!yagl_egl_offscreen_context_read_pixels(octx,
+                                                osfc->width,
+                                                osfc->height,
+                                                osfc->bpp,
+                                                osfc->host_pixels)) {
         YAGL_LOG_ERROR("read_pixels failed");
         return false;
     }
@@ -141,24 +141,6 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
 
 static void yagl_egl_offscreen_surface_wait_gl(struct yagl_eglb_surface *sfc)
 {
-}
-
-static bool yagl_egl_offscreen_surface_bind_tex_image(struct yagl_eglb_surface *sfc)
-{
-    YAGL_LOG_FUNC_SET(eglBindTexImage);
-
-    YAGL_LOG_WARN("Not supported!");
-
-    return false;
-}
-
-static bool yagl_egl_offscreen_surface_release_tex_image(struct yagl_eglb_surface *sfc)
-{
-    YAGL_LOG_FUNC_SET(eglReleaseTexImage);
-
-    YAGL_LOG_WARN("Not supported!");
-
-    return false;
 }
 
 static void yagl_egl_offscreen_surface_destroy(struct yagl_eglb_surface *sfc)
@@ -226,12 +208,12 @@ struct yagl_egl_offscreen_surface
         return NULL;
     }
 
-    native_sfc = egl_offscreen->driver->pbuffer_surface_create(egl_offscreen->driver,
-                                                               dpy->native_dpy,
-                                                               cfg,
-                                                               width,
-                                                               height,
-                                                               &pbuffer_attribs);
+    native_sfc = egl_offscreen->egl_driver->pbuffer_surface_create(egl_offscreen->egl_driver,
+                                                                   dpy->native_dpy,
+                                                                   cfg,
+                                                                   width,
+                                                                   height,
+                                                                   &pbuffer_attribs);
 
     if (!native_sfc) {
         yagl_compiled_transfer_destroy(bimage_ct);
@@ -257,8 +239,6 @@ struct yagl_egl_offscreen_surface
     sfc->base.swap_buffers = &yagl_egl_offscreen_surface_swap_buffers;
     sfc->base.copy_buffers = &yagl_egl_offscreen_surface_copy_buffers;
     sfc->base.wait_gl = &yagl_egl_offscreen_surface_wait_gl;
-    sfc->base.bind_tex_image = &yagl_egl_offscreen_surface_bind_tex_image;
-    sfc->base.release_tex_image = &yagl_egl_offscreen_surface_release_tex_image;
     sfc->base.destroy = &yagl_egl_offscreen_surface_destroy;
 
     YAGL_LOG_FUNC_EXIT(NULL);

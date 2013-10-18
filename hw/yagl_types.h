@@ -27,11 +27,10 @@ typedef enum
 typedef enum
 {
     yagl_api_id_egl = 1,
-    yagl_api_id_gles1 = 2,
-    yagl_api_id_gles2 = 3,
+    yagl_api_id_gles = 2
 } yagl_api_id;
 
-#define YAGL_NUM_APIS 3
+#define YAGL_NUM_APIS 2
 
 /*
  * EGL client APIs.
@@ -47,35 +46,5 @@ typedef enum
 #define YAGL_NUM_CLIENT_APIS 4
 
 typedef bool (*yagl_api_func)(struct yagl_transport */*t*/);
-
-static inline float yagl_fixed_to_float(int32_t x)
-{
-    return (float)x * (1.0f / 65536.0f);
-}
-
-static inline double yagl_fixed_to_double(int32_t x)
-{
-    return (double)x * (1.0f / 65536.0f);
-}
-
-static inline int32_t yagl_fixed_to_int(int32_t x)
-{
-    return (x + 0x0800) >> 16;
-}
-
-static inline int32_t yagl_float_to_fixed(float f)
-{
-    return (int32_t)(f * 65536.0f + 0.5f);
-}
-
-static inline int32_t yagl_double_to_fixed(double d)
-{
-    return (int32_t)(d * 65536.0f + 0.5f);
-}
-
-static inline int32_t yagl_int_to_fixed(int32_t i)
-{
-    return i << 16;
-}
 
 #endif

@@ -7,30 +7,6 @@
 #include "yagl_thread.h"
 #include <EGL/eglext.h>
 
-static EGLint yagl_egl_config_get_renderable_type(void)
-{
-    struct yagl_process_state *ps = cur_ts->ps;
-    EGLint renderable_type = 0;
-
-    if (ps->client_ifaces[yagl_client_api_ogl]) {
-        renderable_type |= EGL_OPENGL_BIT;
-    }
-
-    if (ps->client_ifaces[yagl_client_api_gles1]) {
-        renderable_type |= EGL_OPENGL_ES_BIT;
-    }
-
-    if (ps->client_ifaces[yagl_client_api_gles2]) {
-        renderable_type |= EGL_OPENGL_ES2_BIT;
-    }
-
-    if (ps->client_ifaces[yagl_client_api_ovg]) {
-        renderable_type |= EGL_OPENVG_BIT;
-    }
-
-    return renderable_type;
-}
-
 static void yagl_egl_config_destroy(struct yagl_ref *ref)
 {
     struct yagl_egl_config *cfg = (struct yagl_egl_config*)ref;
@@ -154,9 +130,7 @@ static struct yagl_egl_config
                                EGL_OPTIMAL_FORMAT_BIT_KHR;
 
     cfg->native.native_renderable = EGL_TRUE;
-
-    cfg->native.renderable_type =
-        yagl_egl_config_get_renderable_type();
+    cfg->native.renderable_type = EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT;
 
     cfg->native.conformant =
         (((cfg->native.red_size + cfg->native.green_size + cfg->native.blue_size + cfg->native.alpha_size) > 0) &&

@@ -48,17 +48,6 @@ struct yagl_eglb_surface
 
     void (*wait_gl)(struct yagl_eglb_surface */*sfc*/);
 
-    /*
-     * Can be called even when this surface is not current!
-     * @{
-     */
-    bool (*bind_tex_image)(struct yagl_eglb_surface */*sfc*/);
-
-    bool (*release_tex_image)(struct yagl_eglb_surface */*sfc*/);
-    /*
-     * @}
-     */
-
     void (*destroy)(struct yagl_eglb_surface */*sfc*/);
 };
 

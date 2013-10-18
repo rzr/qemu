@@ -9,29 +9,22 @@
 #include "yagl_egl_config.h"
 #include "yagl_egl_surface.h"
 #include "yagl_egl_context.h"
-#include "yagl_egl_image.h"
 #include "yagl_egl_validate.h"
 #include "yagl_eglb_display.h"
 #include "yagl_eglb_context.h"
 #include "yagl_eglb_surface.h"
-#include "yagl_eglb_image.h"
 #include "yagl_log.h"
 #include "yagl_tls.h"
 #include "yagl_thread.h"
 #include "yagl_process.h"
-#include "yagl_client_interface.h"
-#include "yagl_client_context.h"
-#include "yagl_client_image.h"
-#include "yagl_sharegroup.h"
+#include "yagl_object_map.h"
 #include <EGL/eglext.h>
 
 #define YAGL_EGL_VERSION_MAJOR 1
 #define YAGL_EGL_VERSION_MINOR 4
 
 #define YAGL_SET_ERR(err) \
-    if (egl_api_ts->error == EGL_SUCCESS) { \
-        egl_api_ts->error = err; \
-    } \
+    *error = err; \
     YAGL_LOG_ERROR("error = 0x%X", err)
 
 #define YAGL_UNIMPLEMENTED(func, ret) \
@@ -47,10 +40,23 @@ struct yagl_egl_interface_impl
     struct yagl_egl_backend *backend;
 };
 
+static void yagl_egl_ensure_current(struct yagl_egl_interface *iface)
+{
+    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
+    egl_iface->backend->ensure_current(egl_iface->backend);
+}
+
+static void yagl_egl_unensure_current(struct yagl_egl_interface *iface)
+{
+    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
+    egl_iface->backend->unensure_current(egl_iface->backend);
+}
+
 static YAGL_DEFINE_TLS(struct yagl_egl_api_ts*, egl_api_ts);
 
 static __inline bool yagl_validate_display(yagl_host_handle dpy_,
-                                           struct yagl_egl_display **dpy)
+                                           struct yagl_egl_display **dpy,
+                                           EGLint *error)
 {
     YAGL_LOG_FUNC_SET(yagl_validate_display);
 
@@ -71,7 +77,8 @@ static __inline bool yagl_validate_display(yagl_host_handle dpy_,
 
 static __inline bool yagl_validate_config(struct yagl_egl_display *dpy,
                                           yagl_host_handle cfg_,
-                                          struct yagl_egl_config **cfg)
+                                          struct yagl_egl_config **cfg,
+                                          EGLint *error)
 {
     YAGL_LOG_FUNC_SET(yagl_validate_config);
 
@@ -87,7 +94,8 @@ static __inline bool yagl_validate_config(struct yagl_egl_display *dpy,
 
 static __inline bool yagl_validate_surface(struct yagl_egl_display *dpy,
                                            yagl_host_handle sfc_,
-                                           struct yagl_egl_surface **sfc)
+                                           struct yagl_egl_surface **sfc,
+                                           EGLint *error)
 {
     YAGL_LOG_FUNC_SET(yagl_validate_surface);
 
@@ -103,7 +111,8 @@ static __inline bool yagl_validate_surface(struct yagl_egl_display *dpy,
 
 static __inline bool yagl_validate_context(struct yagl_egl_display *dpy,
                                            yagl_host_handle ctx_,
-                                           struct yagl_egl_context **ctx)
+                                           struct yagl_egl_context **ctx,
+                                           EGLint *error)
 {
     YAGL_LOG_FUNC_SET(yagl_validate_context);
 
@@ -117,114 +126,13 @@ static __inline bool yagl_validate_context(struct yagl_egl_display *dpy,
     return true;
 }
 
-static __inline bool yagl_validate_image(struct yagl_egl_display *dpy,
-                                         yagl_host_handle image_,
-                                         struct yagl_egl_image **image)
-{
-    YAGL_LOG_FUNC_SET(yagl_validate_image);
-
-    *image = yagl_egl_display_acquire_image(dpy, image_);
-
-    if (!*image) {
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-        return false;
-    }
-
-    return true;
-}
-
-static bool yagl_get_client_api(const EGLint *attrib_list, yagl_client_api *client_api)
-{
-    int i = 0;
-
-    switch (egl_api_ts->api) {
-    case EGL_OPENGL_ES_API:
-        *client_api = yagl_client_api_gles1;
-        if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
-            while (attrib_list[i] != EGL_NONE) {
-                switch (attrib_list[i]) {
-                case EGL_CONTEXT_CLIENT_VERSION:
-                    if (attrib_list[i + 1] == 1) {
-                        *client_api = yagl_client_api_gles1;
-                    } else if (attrib_list[i + 1] == 2) {
-                        *client_api = yagl_client_api_gles2;
-                    } else {
-                        return false;
-                    }
-                    break;
-                default:
-                    return false;
-                }
-
-                i += 2;
-            }
-        }
-        break;
-    case EGL_OPENVG_API:
-        *client_api = yagl_client_api_ovg;
-        break;
-    case EGL_OPENGL_API:
-        *client_api = yagl_client_api_ogl;
-        break;
-    default:
-        return false;
-    }
-    return true;
-}
-
-static struct yagl_client_context *yagl_egl_get_ctx(struct yagl_egl_interface *iface)
-{
-    if (egl_api_ts->context) {
-        return egl_api_ts->context->backend_ctx->client_ctx;
-    } else {
-        return NULL;
-    }
-}
-
-static struct yagl_client_image *yagl_egl_get_image(struct yagl_egl_interface *iface,
-                                                    yagl_host_handle image)
-{
-    if (egl_api_ts->context) {
-        struct yagl_egl_image *egl_image =
-            yagl_egl_display_acquire_image(egl_api_ts->context->dpy, image);
-        if (egl_image) {
-            struct yagl_client_image *client_image =
-                egl_image->backend_image->glegl_image;
-            yagl_client_image_acquire(client_image);
-            yagl_egl_image_release(egl_image);
-            return client_image;
-        }
-    }
-
-    return NULL;
-}
-
-static void yagl_egl_ensure_ctx(struct yagl_egl_interface *iface)
-{
-    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
-    egl_iface->backend->ensure_current(egl_iface->backend);
-}
-
-static void yagl_egl_unensure_ctx(struct yagl_egl_interface *iface)
-{
-    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
-    egl_iface->backend->unensure_current(egl_iface->backend);
-}
-
 static bool yagl_egl_release_current_context(struct yagl_egl_display *dpy)
 {
     if (!egl_api_ts->context) {
         return true;
     }
 
-    egl_api_ts->context->backend_ctx->client_ctx->flush(egl_api_ts->context->backend_ctx->client_ctx);
-    egl_api_ts->context->backend_ctx->client_ctx->deactivate(egl_api_ts->context->backend_ctx->client_ctx);
-
     if (!egl_api_ts->backend->release_current(egl_api_ts->backend, false)) {
-        /*
-         * If host 'make_current' failed then re-activate.
-         */
-        egl_api_ts->context->backend_ctx->client_ctx->activate(egl_api_ts->context->backend_ctx->client_ctx);
         return false;
     }
 
@@ -257,7 +165,25 @@ static void yagl_host_egl_thread_init(struct yagl_api_ps *api_ps)
 
     yagl_egl_api_ts_init(egl_api_ts, egl_api_ps);
 
+    cur_ts->egl_api_ts = egl_api_ts;
+
     YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_host_egl_batch_start(struct yagl_api_ps *api_ps)
+{
+    struct yagl_egl_api_ps *egl_api_ps = (struct yagl_egl_api_ps*)api_ps;
+
+    egl_api_ts = cur_ts->egl_api_ts;
+
+    egl_api_ps->backend->batch_start(egl_api_ps->backend);
+}
+
+static void yagl_host_egl_batch_end(struct yagl_api_ps *api_ps)
+{
+    struct yagl_egl_api_ps *egl_api_ps = (struct yagl_egl_api_ps*)api_ps;
+
+    egl_api_ps->backend->batch_end(egl_api_ps->backend);
 }
 
 static void yagl_host_egl_thread_fini(struct yagl_api_ps *api_ps)
@@ -266,35 +192,31 @@ static void yagl_host_egl_thread_fini(struct yagl_api_ps *api_ps)
 
     YAGL_LOG_FUNC_ENTER(yagl_host_egl_thread_fini, NULL);
 
+    egl_api_ts = cur_ts->egl_api_ts;
+
+    egl_api_ps->backend->batch_start(egl_api_ps->backend);
+
     yagl_egl_api_ts_cleanup(egl_api_ts);
 
     g_free(egl_api_ts);
 
-    egl_api_ts = NULL;
+    egl_api_ts = cur_ts->egl_api_ts = NULL;
 
+    egl_api_ps->backend->batch_end(egl_api_ps->backend);
     egl_api_ps->backend->thread_fini(egl_api_ps->backend);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static void yagl_host_egl_process_fini(struct yagl_api_ps *api_ps)
-{
-    struct yagl_egl_api_ps *egl_api_ps = (struct yagl_egl_api_ps*)api_ps;
-
-    yagl_egl_api_ps_fini(egl_api_ps);
-}
-
 static void yagl_host_egl_process_destroy(struct yagl_api_ps *api_ps)
 {
     struct yagl_egl_api_ps *egl_api_ps = (struct yagl_egl_api_ps*)api_ps;
-    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)egl_api_ps->egl_iface;
 
     YAGL_LOG_FUNC_ENTER(yagl_host_egl_process_destroy, NULL);
 
     yagl_egl_api_ps_cleanup(egl_api_ps);
 
-    yagl_egl_interface_cleanup(&egl_iface->base);
-    g_free(egl_iface);
+    g_free(egl_api_ps->egl_iface);
 
     yagl_api_ps_cleanup(&egl_api_ps->base);
 
@@ -317,12 +239,8 @@ struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api)
 
     egl_iface = g_malloc0(sizeof(*egl_iface));
 
-    yagl_egl_interface_init(&egl_iface->base, egl_api->backend->render_type);
-
-    egl_iface->base.get_ctx = &yagl_egl_get_ctx;
-    egl_iface->base.get_image = &yagl_egl_get_image;
-    egl_iface->base.ensure_ctx = &yagl_egl_ensure_ctx;
-    egl_iface->base.unensure_ctx = &yagl_egl_unensure_ctx;
+    egl_iface->base.ensure_ctx = &yagl_egl_ensure_current;
+    egl_iface->base.unensure_ctx = &yagl_egl_unensure_current;
     egl_iface->backend = egl_api->backend;
 
     /*
@@ -334,9 +252,10 @@ struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api)
     yagl_api_ps_init(&egl_api_ps->base, api);
 
     egl_api_ps->base.thread_init = &yagl_host_egl_thread_init;
+    egl_api_ps->base.batch_start = &yagl_host_egl_batch_start;
     egl_api_ps->base.get_func = &yagl_host_egl_get_func;
+    egl_api_ps->base.batch_end = &yagl_host_egl_batch_end;
     egl_api_ps->base.thread_fini = &yagl_host_egl_thread_fini;
-    egl_api_ps->base.fini = &yagl_host_egl_process_fini;
     egl_api_ps->base.destroy = &yagl_host_egl_process_destroy;
 
     yagl_egl_api_ps_init(egl_api_ps, egl_api->backend, &egl_iface->base);
@@ -346,16 +265,8 @@ struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api)
     return &egl_api_ps->base;
 }
 
-EGLint yagl_host_eglGetError(void)
-{
-    EGLint res = egl_api_ts->error;
-
-    egl_api_ts->error = EGL_SUCCESS;
-
-    return res;
-}
-
-yagl_host_handle yagl_host_eglGetDisplay(uint32_t display_id)
+yagl_host_handle yagl_host_eglGetDisplay(uint32_t display_id,
+    EGLint *error)
 {
     struct yagl_egl_display *dpy;
 
@@ -366,7 +277,8 @@ yagl_host_handle yagl_host_eglGetDisplay(uint32_t display_id)
 
 EGLBoolean yagl_host_eglInitialize(yagl_host_handle dpy_,
     EGLint *major,
-    EGLint *minor)
+    EGLint *minor,
+    EGLint *error)
 {
     struct yagl_egl_display *dpy;
 
@@ -392,11 +304,12 @@ EGLBoolean yagl_host_eglInitialize(yagl_host_handle dpy_,
     return EGL_TRUE;
 }
 
-EGLBoolean yagl_host_eglTerminate(yagl_host_handle dpy_)
+EGLBoolean yagl_host_eglTerminate(yagl_host_handle dpy_,
+    EGLint *error)
 {
     struct yagl_egl_display *dpy = NULL;
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         return EGL_FALSE;
     }
 
@@ -406,11 +319,12 @@ EGLBoolean yagl_host_eglTerminate(yagl_host_handle dpy_)
 }
 
 EGLBoolean yagl_host_eglGetConfigs(yagl_host_handle dpy_,
-    yagl_host_handle *configs, int32_t configs_maxcount, int32_t *configs_count)
+    yagl_host_handle *configs, int32_t configs_maxcount, int32_t *configs_count,
+    EGLint *error)
 {
     struct yagl_egl_display *dpy = NULL;
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         return EGL_FALSE;
     }
 
@@ -426,7 +340,8 @@ EGLBoolean yagl_host_eglGetConfigs(yagl_host_handle dpy_,
 
 EGLBoolean yagl_host_eglChooseConfig(yagl_host_handle dpy_,
     const EGLint *attrib_list, int32_t attrib_list_count,
-    yagl_host_handle *configs, int32_t configs_maxcount, int32_t *configs_count)
+    yagl_host_handle *configs, int32_t configs_maxcount, int32_t *configs_count,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -437,7 +352,7 @@ EGLBoolean yagl_host_eglChooseConfig(yagl_host_handle dpy_,
 
     yagl_egl_native_config_init(&dummy);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
@@ -676,7 +591,8 @@ out:
 EGLBoolean yagl_host_eglGetConfigAttrib(yagl_host_handle dpy_,
     yagl_host_handle config_,
     EGLint attribute,
-    EGLint *value)
+    EGLint *value,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -685,11 +601,11 @@ EGLBoolean yagl_host_eglGetConfigAttrib(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglGetConfigAttrib);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
@@ -711,7 +627,8 @@ out:
 }
 
 EGLBoolean yagl_host_eglDestroySurface(yagl_host_handle dpy_,
-    yagl_host_handle surface_)
+    yagl_host_handle surface_,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -719,11 +636,11 @@ EGLBoolean yagl_host_eglDestroySurface(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglDestroySurface);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
         goto out;
     }
 
@@ -743,7 +660,8 @@ out:
 EGLBoolean yagl_host_eglQuerySurface(yagl_host_handle dpy_,
     yagl_host_handle surface_,
     EGLint attribute,
-    EGLint *value)
+    EGLint *value,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -752,11 +670,11 @@ EGLBoolean yagl_host_eglQuerySurface(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglQuerySurface);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
         goto out;
     }
 
@@ -846,41 +764,29 @@ out:
     return res;
 }
 
-EGLBoolean yagl_host_eglBindAPI(EGLenum api)
+void yagl_host_eglBindAPI(EGLenum api)
 {
-    YAGL_LOG_FUNC_SET(eglBindAPI);
-
-    if (!yagl_egl_is_api_valid(api)) {
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-        return EGL_FALSE;
-    }
-
     egl_api_ts->api = api;
-
-    return EGL_TRUE;
 }
 
-EGLBoolean yagl_host_eglWaitClient(void)
+void yagl_host_eglWaitClient(void)
 {
     struct yagl_egl_surface *sfc = NULL;
 
     if (!egl_api_ts->context) {
-        goto out;
+        return;
     }
 
     sfc = egl_api_ts->context->draw;
 
     if (!sfc) {
-        goto out;
+        return;
     }
 
     sfc->backend_sfc->wait_gl(sfc->backend_sfc);
-
-out:
-    return EGL_TRUE;
 }
 
-EGLBoolean yagl_host_eglReleaseThread(void)
+EGLBoolean yagl_host_eglReleaseThread(EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
 
@@ -904,17 +810,18 @@ out:
 EGLBoolean yagl_host_eglSurfaceAttrib(yagl_host_handle dpy_,
     yagl_host_handle surface_,
     EGLint attribute,
-    EGLint value)
+    EGLint value,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_surface *surface = NULL;
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
         goto out;
     }
 
@@ -930,172 +837,36 @@ out:
     return res;
 }
 
-EGLBoolean yagl_host_eglBindTexImage(yagl_host_handle dpy_,
-    yagl_host_handle surface_,
-    EGLint buffer)
-{
-    EGLBoolean res = EGL_FALSE;
-    struct yagl_egl_display *dpy = NULL;
-    struct yagl_egl_surface *surface = NULL;
-
-    YAGL_LOG_FUNC_SET(eglBindTexImage);
-
-    if (!egl_api_ts->context) {
-        YAGL_LOG_WARN("No context");
-        res = EGL_TRUE;
-        goto out;
-    }
-
-    if (!yagl_validate_display(dpy_, &dpy)) {
-        goto out;
-    }
-
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
-        goto out;
-    }
-
-    if (buffer != EGL_BACK_BUFFER) {
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-        goto out;
-    }
-
-    if (surface->backend_sfc->type != EGL_PBUFFER_BIT) {
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
-    if (surface->backend_sfc->attribs.pbuffer.tex_format == EGL_NO_TEXTURE) {
-        YAGL_SET_ERR(EGL_BAD_MATCH);
-        goto out;
-    }
-
-    if (surface->backend_sfc->attribs.pbuffer.tex_target == EGL_NO_TEXTURE) {
-        YAGL_SET_ERR(EGL_BAD_MATCH);
-        goto out;
-    }
-
-    if (!surface->backend_sfc->bind_tex_image(surface->backend_sfc)) {
-        YAGL_SET_ERR(EGL_BAD_ACCESS);
-        goto out;
-    }
-
-    res = EGL_TRUE;
-
-out:
-    yagl_egl_surface_release(surface);
-
-    return res;
-}
-
-EGLBoolean yagl_host_eglReleaseTexImage(yagl_host_handle dpy_,
-    yagl_host_handle surface_,
-    EGLint buffer)
-{
-    EGLBoolean res = EGL_FALSE;
-    struct yagl_egl_display *dpy = NULL;
-    struct yagl_egl_surface *surface = NULL;
-
-    YAGL_LOG_FUNC_SET(eglReleaseTexImage);
-
-    if (!yagl_validate_display(dpy_, &dpy)) {
-        goto out;
-    }
-
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
-        goto out;
-    }
-
-    if (buffer != EGL_BACK_BUFFER) {
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-        goto out;
-    }
-
-    if (surface->backend_sfc->type != EGL_PBUFFER_BIT) {
-        YAGL_SET_ERR(EGL_BAD_SURFACE);
-        goto out;
-    }
-
-    if (surface->backend_sfc->attribs.pbuffer.tex_format == EGL_NO_TEXTURE) {
-        YAGL_SET_ERR(EGL_BAD_MATCH);
-        goto out;
-    }
-
-    if (surface->backend_sfc->attribs.pbuffer.tex_target == EGL_NO_TEXTURE) {
-        YAGL_SET_ERR(EGL_BAD_MATCH);
-        goto out;
-    }
-
-    if (!surface->backend_sfc->release_tex_image(surface->backend_sfc)) {
-        YAGL_SET_ERR(EGL_BAD_ACCESS);
-        goto out;
-    }
-
-    res = EGL_TRUE;
-
-out:
-    yagl_egl_surface_release(surface);
-
-    return res;
-}
-
 yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
     yagl_host_handle config_,
     yagl_host_handle share_context_,
-    const EGLint *attrib_list, int32_t attrib_list_count)
+    const EGLint *attrib_list, int32_t attrib_list_count,
+    EGLint *error)
 {
     yagl_host_handle res = 0;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_config *config = NULL;
-    yagl_client_api client_api;
-    struct yagl_client_interface *client_iface = NULL;
     struct yagl_egl_context *share_context = NULL;
-    struct yagl_sharegroup *sg = NULL;
-    struct yagl_client_context *client_ctx = NULL;
     struct yagl_egl_context *ctx = NULL;
 
     YAGL_LOG_FUNC_SET(eglCreateContext);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
-        goto out;
-    }
-
-    if (!yagl_get_client_api(attrib_list, &client_api)) {
-        YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
-        goto out;
-    }
-
-    client_iface = cur_ts->ps->client_ifaces[client_api];
-
-    if (!client_iface) {
-        YAGL_LOG_ERROR("client API %d is not supported", client_api);
-        YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
     if (share_context_) {
-        if (!yagl_validate_context(dpy, share_context_, &share_context)) {
+        if (!yagl_validate_context(dpy, share_context_, &share_context, error)) {
             goto out;
         }
-        sg = share_context->backend_ctx->client_ctx->sg;
-        yagl_sharegroup_acquire(sg);
-    } else {
-        sg = yagl_sharegroup_create();
-    }
-
-    client_ctx = client_iface->create_ctx(client_iface, sg);
-
-    if (!client_ctx) {
-        YAGL_SET_ERR(EGL_BAD_ALLOC);
-        goto out;
     }
 
     ctx = yagl_egl_context_create(dpy,
                                   config,
-                                  client_ctx,
                                   (share_context ? share_context->backend_ctx
                                                  : NULL));
 
@@ -1104,21 +875,12 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
         goto out;
     }
 
-    /*
-     * Now owned by 'ctx'.
-     */
-    client_ctx = NULL;
-
     yagl_egl_display_add_context(dpy, ctx);
     yagl_egl_context_release(ctx);
 
     res = ctx->res.handle;
 
 out:
-    if (client_ctx) {
-        client_ctx->destroy(client_ctx);
-    }
-    yagl_sharegroup_release(sg);
     yagl_egl_context_release(share_context);
     yagl_egl_config_release(config);
 
@@ -1126,7 +888,8 @@ out:
 }
 
 EGLBoolean yagl_host_eglDestroyContext(yagl_host_handle dpy_,
-    yagl_host_handle ctx_)
+    yagl_host_handle ctx_,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -1134,11 +897,11 @@ EGLBoolean yagl_host_eglDestroyContext(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglDestroyContext);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_context(dpy, ctx_, &ctx)) {
+    if (!yagl_validate_context(dpy, ctx_, &ctx, error)) {
         goto out;
     }
 
@@ -1154,13 +917,12 @@ out:
     return res;
 }
 
-EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
+void yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
     yagl_host_handle draw_,
     yagl_host_handle read_,
     yagl_host_handle ctx_)
 {
-    EGLBoolean res = EGL_FALSE;
-    bool bad_match = ctx_ ? (!draw_ ^ !read_) : (draw_ || read_);
+    EGLint error = 0;
     bool release_context = !draw_ && !read_ && !ctx_;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_context *prev_ctx = NULL;
@@ -1170,8 +932,7 @@ EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglMakeCurrent);
 
-    if (bad_match) {
-        YAGL_SET_ERR(EGL_BAD_MATCH);
+    if (!yagl_validate_display(dpy_, &dpy, &error)) {
         goto out;
     }
 
@@ -1179,45 +940,20 @@ EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
     yagl_egl_context_acquire(prev_ctx);
 
     if (release_context) {
-        if (prev_ctx) {
-            if (!dpy_) {
-                /*
-                 * Workaround for the case when dpy
-                 * passed is EGL_NO_DISPLAY and we're releasing
-                 * the current context.
-                 */
-
-                dpy_ = prev_ctx->dpy->handle;
-                dpy = prev_ctx->dpy;
-            } else {
-                dpy = yagl_egl_api_ps_display_get(egl_api_ts->api_ps, dpy_);
-                if (!dpy) {
-                    YAGL_SET_ERR(EGL_BAD_DISPLAY);
-                    goto out;
-                }
-            }
-        }
-    } else {
-        if (!yagl_validate_display(dpy_, &dpy)) {
-            goto out;
-        }
-    }
-
-    if (release_context) {
         if (!yagl_egl_release_current_context(dpy)) {
-            YAGL_SET_ERR(EGL_BAD_ACCESS);
+            YAGL_LOG_ERROR("cannot release current context");
             goto out;
         }
     } else {
-        if (!yagl_validate_context(dpy, ctx_, &ctx)) {
+        if (!yagl_validate_context(dpy, ctx_, &ctx, &error)) {
             goto out;
         }
 
-        if (draw_ && !yagl_validate_surface(dpy, draw_, &draw)) {
+        if (draw_ && !yagl_validate_surface(dpy, draw_, &draw, &error)) {
             goto out;
         }
 
-        if (read_ && !yagl_validate_surface(dpy, read_, &read)) {
+        if (read_ && !yagl_validate_surface(dpy, read_, &read, &error)) {
             goto out;
         }
 
@@ -1229,35 +965,18 @@ EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
             release_context = true;
         }
 
-        if (prev_ctx) {
-            prev_ctx->backend_ctx->client_ctx->flush(prev_ctx->backend_ctx->client_ctx);
-            if (prev_ctx != ctx) {
-                prev_ctx->backend_ctx->client_ctx->deactivate(prev_ctx->backend_ctx->client_ctx);
-            }
-        }
-
         if (!egl_api_ts->backend->make_current(egl_api_ts->backend,
                                                dpy->backend_dpy,
                                                ctx->backend_ctx,
                                                (draw ? draw->backend_sfc : NULL),
                                                (read ? read->backend_sfc : NULL))) {
-            if (prev_ctx && (prev_ctx != ctx)) {
-                /*
-                 * If host 'make_current' failed then re-activate.
-                 */
-                prev_ctx->backend_ctx->client_ctx->activate(prev_ctx->backend_ctx->client_ctx);
-            }
-            YAGL_SET_ERR(EGL_BAD_ACCESS);
+            YAGL_LOG_ERROR("make_current failed");
             goto out;
         }
 
         yagl_egl_context_update_surfaces(ctx, draw, read);
 
         yagl_egl_api_ts_update_context(egl_api_ts, ctx);
-
-        if (prev_ctx != ctx) {
-            ctx->backend_ctx->client_ctx->activate(ctx->backend_ctx->client_ctx);
-        }
     }
 
     if (release_context && prev_ctx) {
@@ -1270,21 +989,18 @@ EGLBoolean yagl_host_eglMakeCurrent(yagl_host_handle dpy_,
                    read_,
                    ctx_);
 
-    res = EGL_TRUE;
-
 out:
     yagl_egl_surface_release(read);
     yagl_egl_surface_release(draw);
     yagl_egl_context_release(ctx);
     yagl_egl_context_release(prev_ctx);
-
-    return res;
 }
 
 EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy_,
     yagl_host_handle ctx_,
     EGLint attribute,
-    EGLint *value)
+    EGLint *value,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -1292,11 +1008,11 @@ EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglQueryContext);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_context(dpy, ctx_, &ctx)) {
+    if (!yagl_validate_context(dpy, ctx_, &ctx, error)) {
         goto out;
     }
 
@@ -1304,52 +1020,6 @@ EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy_,
     case EGL_CONFIG_ID:
         if (value) {
             *value = ctx->cfg->native.config_id;
-        }
-        break;
-    case EGL_CONTEXT_CLIENT_TYPE:
-        switch (ctx->backend_ctx->client_ctx->client_api) {
-        case yagl_client_api_gles1:
-        case yagl_client_api_gles2:
-            if (value) {
-                *value = EGL_OPENGL_ES_API;
-            }
-            break;
-        case yagl_client_api_ogl:
-            if (value) {
-                *value = EGL_OPENGL_API;
-            }
-            break;
-        case yagl_client_api_ovg:
-            if (value) {
-                *value = EGL_OPENVG_API;
-            }
-            break;
-        default:
-            if (value) {
-                *value = EGL_NONE;
-            }
-            break;
-        }
-        break;
-    case EGL_CONTEXT_CLIENT_VERSION:
-        switch (ctx->backend_ctx->client_ctx->client_api) {
-        case yagl_client_api_gles1:
-            if (value) {
-                *value = 1;
-            }
-            break;
-        case yagl_client_api_gles2:
-            if (value) {
-                *value = 2;
-            }
-            break;
-        case yagl_client_api_ogl:
-        case yagl_client_api_ovg:
-        default:
-            if (value) {
-                *value = 0;
-            }
-            break;
         }
         break;
     case EGL_RENDER_BUFFER:
@@ -1390,7 +1060,8 @@ out:
 }
 
 EGLBoolean yagl_host_eglSwapBuffers(yagl_host_handle dpy_,
-    yagl_host_handle surface_)
+    yagl_host_handle surface_,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -1398,11 +1069,11 @@ EGLBoolean yagl_host_eglSwapBuffers(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglSwapBuffers);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
         goto out;
     }
 
@@ -1420,7 +1091,8 @@ out:
 }
 
 EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy_,
-    yagl_host_handle surface_)
+    yagl_host_handle surface_,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -1428,11 +1100,11 @@ EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglCopyBuffers);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
         goto out;
     }
 
@@ -1449,74 +1121,14 @@ out:
     return res;
 }
 
-yagl_host_handle yagl_host_eglCreateImageKHR(yagl_host_handle dpy_,
-    yagl_host_handle ctx,
-    EGLenum target,
-    yagl_winsys_id buffer,
-    const EGLint *attrib_list, int32_t attrib_list_count)
-{
-    yagl_host_handle res = 0;
-    struct yagl_egl_display *dpy = NULL;
-    struct yagl_egl_image *image = NULL;
-
-    YAGL_LOG_FUNC_SET(eglCreateImageKHR);
-
-    if (!yagl_validate_display(dpy_, &dpy)) {
-        goto out;
-    }
-
-    image = yagl_egl_image_create(dpy, buffer);
-
-    if (!image) {
-        YAGL_SET_ERR(EGL_BAD_ALLOC);
-        goto out;
-    }
-
-    yagl_egl_display_add_image(dpy, image);
-    yagl_egl_image_release(image);
-
-    res = image->res.handle;
-
-out:
-    return res;
-}
-
-EGLBoolean yagl_host_eglDestroyImageKHR(yagl_host_handle dpy_,
-    yagl_host_handle image_)
-{
-    EGLBoolean res = EGL_FALSE;
-    struct yagl_egl_display *dpy = NULL;
-    struct yagl_egl_image *image = NULL;
-
-    YAGL_LOG_FUNC_SET(eglDestroyImageKHR);
-
-    if (!yagl_validate_display(dpy_, &dpy)) {
-        goto out;
-    }
-
-    if (!yagl_validate_image(dpy, image_, &image)) {
-        goto out;
-    }
-
-    if (yagl_egl_display_remove_image(dpy, image->res.handle)) {
-        res = EGL_TRUE;
-    } else {
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-    }
-
-out:
-    yagl_egl_image_release(image);
-
-    return res;
-}
-
 yagl_host_handle yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle dpy_,
     yagl_host_handle config_,
     uint32_t width,
     uint32_t height,
     uint32_t bpp,
     target_ulong pixels,
-    const EGLint *attrib_list, int32_t attrib_list_count)
+    const EGLint *attrib_list, int32_t attrib_list_count,
+    EGLint *error)
 {
     yagl_host_handle res = 0;
     struct yagl_eglb_surface *backend_sfc = NULL;
@@ -1544,11 +1156,11 @@ yagl_host_handle yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle 
         }
     }
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
@@ -1604,7 +1216,8 @@ yagl_host_handle yagl_host_eglCreatePbufferSurfaceOffscreenYAGL(yagl_host_handle
     uint32_t height,
     uint32_t bpp,
     target_ulong pixels,
-    const EGLint *attrib_list, int32_t attrib_list_count)
+    const EGLint *attrib_list, int32_t attrib_list_count,
+    EGLint *error)
 {
     yagl_host_handle res = 0;
     struct yagl_eglb_surface *backend_sfc = NULL;
@@ -1662,11 +1275,11 @@ yagl_host_handle yagl_host_eglCreatePbufferSurfaceOffscreenYAGL(yagl_host_handle
         }
     }
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
@@ -1722,7 +1335,8 @@ yagl_host_handle yagl_host_eglCreatePixmapSurfaceOffscreenYAGL(yagl_host_handle 
     uint32_t height,
     uint32_t bpp,
     target_ulong pixels,
-    const EGLint *attrib_list, int32_t attrib_list_count)
+    const EGLint *attrib_list, int32_t attrib_list_count,
+    EGLint *error)
 {
     yagl_host_handle res = 0;
     struct yagl_eglb_surface *backend_sfc = NULL;
@@ -1740,11 +1354,11 @@ yagl_host_handle yagl_host_eglCreatePixmapSurfaceOffscreenYAGL(yagl_host_handle 
         goto out;
     }
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
@@ -1799,7 +1413,8 @@ EGLBoolean yagl_host_eglResizeOffscreenSurfaceYAGL(yagl_host_handle dpy_,
     uint32_t width,
     uint32_t height,
     uint32_t bpp,
-    target_ulong pixels)
+    target_ulong pixels,
+    EGLint *error)
 {
     EGLBoolean res = EGL_FALSE;
     struct yagl_egl_display *dpy = NULL;
@@ -1810,11 +1425,11 @@ EGLBoolean yagl_host_eglResizeOffscreenSurfaceYAGL(yagl_host_handle dpy_,
 
     YAGL_LOG_FUNC_SET(eglResizeOffscreenSurfaceYAGL);
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
         goto out;
     }
 
@@ -1879,46 +1494,11 @@ out:
     return res;
 }
 
-void yagl_host_eglUpdateOffscreenImageYAGL(yagl_host_handle dpy_,
-    yagl_host_handle image_,
-    uint32_t width,
-    uint32_t height,
-    uint32_t bpp,
-    const void *pixels, int32_t pixels_count)
-{
-    struct yagl_egl_display *dpy = NULL;
-    struct yagl_egl_image *image = NULL;
-
-    YAGL_LOG_FUNC_SET(eglUpdateOffscreenImageYAGL);
-
-    if (!yagl_validate_display(dpy_, &dpy)) {
-        goto out;
-    }
-
-    if (!yagl_validate_image(dpy, image_, &image)) {
-        goto out;
-    }
-
-    if (!image->backend_image->update_offscreen) {
-        YAGL_LOG_CRITICAL("Offscreen images not supported");
-        YAGL_SET_ERR(EGL_BAD_PARAMETER);
-        goto out;
-    }
-
-    image->backend_image->update_offscreen(image->backend_image,
-                                           width,
-                                           height,
-                                           bpp,
-                                           pixels);
-
-out:
-    yagl_egl_image_release(image);
-}
-
 yagl_host_handle yagl_host_eglCreateWindowSurfaceOnscreenYAGL(yagl_host_handle dpy_,
     yagl_host_handle config_,
     yagl_winsys_id win,
-    const EGLint *attrib_list, int32_t attrib_list_count)
+    const EGLint *attrib_list, int32_t attrib_list_count,
+    EGLint *error)
 {
     yagl_host_handle res = 0;
     struct yagl_eglb_surface *backend_sfc = NULL;
@@ -1946,11 +1526,11 @@ yagl_host_handle yagl_host_eglCreateWindowSurfaceOnscreenYAGL(yagl_host_handle d
         }
     }
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
@@ -2000,7 +1580,8 @@ out:
 yagl_host_handle yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(yagl_host_handle dpy_,
     yagl_host_handle config_,
     yagl_winsys_id buffer,
-    const EGLint *attrib_list, int32_t attrib_list_count)
+    const EGLint *attrib_list, int32_t attrib_list_count,
+    EGLint *error)
 {
     yagl_host_handle res = 0;
     struct yagl_eglb_surface *backend_sfc = NULL;
@@ -2058,11 +1639,11 @@ yagl_host_handle yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(yagl_host_handle 
         }
     }
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
@@ -2111,7 +1692,8 @@ out:
 yagl_host_handle yagl_host_eglCreatePixmapSurfaceOnscreenYAGL(yagl_host_handle dpy_,
     yagl_host_handle config_,
     yagl_winsys_id pixmap,
-    const EGLint *attrib_list, int32_t attrib_list_count)
+    const EGLint *attrib_list, int32_t attrib_list_count,
+    EGLint *error)
 {
     yagl_host_handle res = 0;
     struct yagl_eglb_surface *backend_sfc = NULL;
@@ -2129,11 +1711,11 @@ yagl_host_handle yagl_host_eglCreatePixmapSurfaceOnscreenYAGL(yagl_host_handle d
         goto out;
     }
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
         goto out;
     }
 
-    if (!yagl_validate_config(dpy, config_, &config)) {
+    if (!yagl_validate_config(dpy, config_, &config, error)) {
         goto out;
     }
 
@@ -2184,14 +1766,15 @@ void yagl_host_eglInvalidateOnscreenSurfaceYAGL(yagl_host_handle dpy_,
     yagl_host_handle surface_,
     yagl_winsys_id buffer)
 {
+    EGLint error = 0;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_surface *surface = NULL;
 
-    if (!yagl_validate_display(dpy_, &dpy)) {
+    if (!yagl_validate_display(dpy_, &dpy, &error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, &error)) {
         goto out;
     }
 
@@ -2199,4 +1782,34 @@ void yagl_host_eglInvalidateOnscreenSurfaceYAGL(yagl_host_handle dpy_,
 
 out:
     yagl_egl_surface_release(surface);
+}
+
+EGLBoolean yagl_host_eglCreateImageYAGL(uint32_t texture,
+    yagl_host_handle dpy_,
+    yagl_winsys_id buffer,
+    EGLint *error)
+{
+    EGLBoolean res = EGL_FALSE;
+    struct yagl_egl_display *dpy = NULL;
+    struct yagl_object *image;
+
+    YAGL_LOG_FUNC_SET(eglCreateImageYAGL);
+
+    if (!yagl_validate_display(dpy_, &dpy, error)) {
+        goto out;
+    }
+
+    image = dpy->backend_dpy->create_image(dpy->backend_dpy, buffer);
+
+    if (!image) {
+        YAGL_SET_ERR(EGL_BAD_ALLOC);
+        goto out;
+    }
+
+    yagl_object_map_add(cur_ts->ps->object_map, texture, image);
+
+    res = EGL_TRUE;
+
+out:
+    return res;
 }

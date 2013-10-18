@@ -140,17 +140,15 @@ static void yagl_egl_agl_config_cleanup(struct yagl_egl_driver *driver,
 
 static EGLContext yagl_egl_agl_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType egl_dpy,
-                                              const struct
-                                              yagl_egl_native_config *cfg,
-                                              yagl_client_api client_api,
+                                              const struct yagl_egl_native_config *cfg,
                                               EGLContext share_context)
 {
     YaglEglAglContext *egl_glc;
     AGLContext agl_share_glc;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_agl_context_create,
-                        "dpy = %p, api = %u, share_context = %p, cfgid=%d",
-                        egl_dpy, client_api, share_context, cfg->config_id);
+                       "dpy = %p, share_context = %p, cfgid=%d",
+                       egl_dpy, share_context, cfg->config_id);
 
     egl_glc = g_new0(YaglEglAglContext, 1);
 

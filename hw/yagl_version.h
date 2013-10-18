@@ -6,6 +6,6 @@
 /*
  * Whenever protocol changes be sure to bump this.
  */
-#define YAGL_VERSION 20
+#define YAGL_VERSION 21
 
 #endif

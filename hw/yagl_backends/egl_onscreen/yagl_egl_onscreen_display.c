@@ -2,13 +2,34 @@
 #include <GL/gl.h>
 #include "yagl_egl_onscreen_context.h"
 #include "yagl_egl_onscreen_surface.h"
-#include "yagl_egl_onscreen_image.h"
 #include "yagl_egl_onscreen.h"
 #include "yagl_egl_native_config.h"
 #include "yagl_log.h"
 #include "yagl_tls.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
+#include "yagl_object_map.h"
+#include "winsys_gl.h"
+
+struct yagl_egl_onscreen_image
+{
+    struct yagl_object base;
+
+    struct winsys_gl_surface *ws_sfc;
+};
+
+static void yagl_egl_onscreen_image_destroy(struct yagl_object *obj)
+{
+    struct yagl_egl_onscreen_image *image = (struct yagl_egl_onscreen_image*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_image_destroy, "%u", obj->global_name);
+
+    image->ws_sfc->base.release(&image->ws_sfc->base);
+
+    g_free(image);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
 
 static struct yagl_egl_native_config
     *yagl_egl_onscreen_display_config_enum(struct yagl_eglb_display *dpy,
@@ -56,7 +77,6 @@ static void yagl_egl_onscreen_display_config_cleanup(struct yagl_eglb_display *d
 static struct yagl_eglb_context
     *yagl_egl_onscreen_display_create_context(struct yagl_eglb_display *dpy,
                                               const struct yagl_egl_native_config *cfg,
-                                              struct yagl_client_context *client_ctx,
                                               struct yagl_eglb_context *share_context)
 {
     struct yagl_egl_onscreen_display *egl_onscreen_dpy =
@@ -64,7 +84,6 @@ static struct yagl_eglb_context
     struct yagl_egl_onscreen_context *ctx =
         yagl_egl_onscreen_context_create(egl_onscreen_dpy,
                                          cfg,
-                                         client_ctx,
                                          (struct yagl_egl_onscreen_context*)share_context);
 
     return ctx ? &ctx->base : NULL;
@@ -121,16 +140,27 @@ static struct yagl_eglb_surface
     return sfc ? &sfc->base : NULL;
 }
 
-static struct yagl_eglb_image
-    *yagl_egl_onscreen_display_create_image(struct yagl_eglb_display *dpy,
-                                            yagl_winsys_id buffer)
+static struct yagl_object *yagl_egl_onscreen_display_create_image(struct yagl_eglb_display *dpy,
+                                                                  yagl_winsys_id buffer)
 {
-    struct yagl_egl_onscreen_display *egl_onscreen_dpy =
-        (struct yagl_egl_onscreen_display*)dpy;
-    struct yagl_egl_onscreen_image *image =
-        yagl_egl_onscreen_image_create(egl_onscreen_dpy, buffer);
+    struct yagl_egl_onscreen *egl_onscreen =
+        (struct yagl_egl_onscreen*)dpy->backend;
+    struct winsys_gl_surface *ws_sfc = NULL;
+    struct yagl_egl_onscreen_image *image;
 
-    return image ? &image->base : NULL;
+    ws_sfc = (struct winsys_gl_surface*)egl_onscreen->wsi->acquire_surface(egl_onscreen->wsi, buffer);
+
+    if (!ws_sfc) {
+        return NULL;
+    }
+
+    image = g_malloc(sizeof(*image));
+
+    image->base.global_name = ws_sfc->get_texture(ws_sfc);
+    image->base.destroy = &yagl_egl_onscreen_image_destroy;
+    image->ws_sfc = ws_sfc;
+
+    return &image->base;
 }
 
 static void yagl_egl_onscreen_display_destroy(struct yagl_eglb_display *dpy)
