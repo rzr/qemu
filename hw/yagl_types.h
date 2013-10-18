@@ -32,19 +32,6 @@ typedef enum
 
 #define YAGL_NUM_APIS 2
 
-/*
- * EGL client APIs.
- */
-typedef enum
-{
-    yagl_client_api_ogl = 0,
-    yagl_client_api_gles1 = 1,
-    yagl_client_api_gles2 = 2,
-    yagl_client_api_ovg = 3
-} yagl_client_api;
-
-#define YAGL_NUM_CLIENT_APIS 4
-
 typedef bool (*yagl_api_func)(struct yagl_transport */*t*/);
 
 #endif
