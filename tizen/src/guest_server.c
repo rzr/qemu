@@ -106,12 +106,14 @@ static void add_sdb_client(const char* addr, int port)
 
 static void remove_sdb_client(GS_Client* client)
 {
+    if (client == NULL) {
+        return;
+    }
+
     pthread_mutex_lock(&mutex_clilist);
 
     QTAILQ_REMOVE(&clients, client, next);
-    if (NULL != client) {
-        g_free(client);
-    }
+    g_free(client);
 
     pthread_mutex_unlock(&mutex_clilist);
 }
@@ -308,6 +310,7 @@ gchar *get_tizen_sdk_data_path(void)
 
             INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
 
+            fclose(sdk_info_fp);
             return tizen_sdk_data_path;
         }
 

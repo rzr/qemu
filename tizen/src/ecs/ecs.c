@@ -69,6 +69,8 @@ static int payloadsize;
 static int port;
 static int port_setting = -1;
 
+static int log_fd = -1;
+
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
 static char* get_emulator_ecs_log_path(void)
@@ -125,16 +127,26 @@ static inline void start_logging(void) {
     stdout[0] = flog[0];
     stderr[0] = flog[0];
 #else
-    int fd = open("/dev/null", O_RDONLY);
-    dup2(fd, 0);
+    log_fd = open("/dev/null", O_RDONLY);
+    dup2(log_fd, 0);
 
-    fd = creat(path, 0640);
-    if (fd < 0) {
-        fd = open("/dev/null", O_WRONLY);
+    log_fd = creat(path, 0640);
+    if (log_fd < 0) {
+        log_fd = open("/dev/null", O_WRONLY);
     }
-    dup2(fd, 1);
-    dup2(fd, 2);
+    dup2(log_fd, 1);
+    dup2(log_fd, 2);
 #endif
+}
+
+static inline void stop_logging(void) {
+    int ret = -1;
+    if (log_fd >= 0) {
+        ret = close(log_fd);
+        if (ret != 0) {
+            LOG("failed to close log fd.");
+        }
+    }
 }
 
 int ecs_write(int fd, const uint8_t *buf, int len) {
@@ -147,9 +159,12 @@ int ecs_write(int fd, const uint8_t *buf, int len) {
 }
 
 void ecs_client_close(ECS_Client* clii) {
+    if (clii == NULL)
+        return;
+
     pthread_mutex_lock(&mutex_clilist);
 
-    if (0 <= clii->client_fd) {
+    if (clii->client_fd > 0) {
         LOG("ecs client closed with fd: %d", clii->client_fd);
         closesocket(clii->client_fd);
 #ifndef CONFIG_LINUX
@@ -159,10 +174,9 @@ void ecs_client_close(ECS_Client* clii) {
     }
 
     QTAILQ_REMOVE(&clients, clii, next);
-    if (NULL != clii) {
-        g_free(clii);
-        clii = NULL;
-    }
+
+    g_free(clii);
+    clii = NULL;
 
     pthread_mutex_unlock(&mutex_clilist);
 }
@@ -243,13 +257,16 @@ static void ecs_close(ECS_State *cs) {
     ECS_Client *clii;
     LOG("### Good bye! ECS ###");
 
+    if (cs == NULL)
+        return;
+
     if (0 <= cs->listen_fd) {
         LOG("close listen_fd: %d", cs->listen_fd);
         closesocket(cs->listen_fd);
         cs->listen_fd = -1;
     }
 
-    if (NULL != cs->mon) {
+    if (cs->mon != NULL) {
         g_free(cs->mon);
         cs->mon = NULL;
     }
@@ -258,7 +275,7 @@ static void ecs_close(ECS_State *cs) {
         g_free(keepalive_buf);
     }
 
-    if (NULL != cs->alive_timer) {
+    if (cs->alive_timer != NULL) {
         qemu_del_timer(cs->alive_timer);
         cs->alive_timer = NULL;
     }
@@ -268,10 +285,11 @@ static void ecs_close(ECS_State *cs) {
         ecs_client_close(clii);
     }
 
-    if (NULL != cs) {
-        g_free(cs);
-        cs = NULL;
-    }
+    g_free(cs);
+    cs = NULL;
+    current_ecs = NULL;
+
+    stop_logging();
 }
 
 #ifndef _WIN32
@@ -553,6 +571,11 @@ static void alive_checker(void *opaque) {
         LOG("set client fd %d - keep alive 1", clii->client_fd);
         clii->keep_alive = 1;
         send_keep_alive_msg(clii);
+    }
+
+    if (current_ecs == NULL) {
+        LOG("alive checking is failed because current ecs is null.");
+        return;
     }
 
     qemu_mod_timer(current_ecs->alive_timer,
@@ -839,7 +862,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
         if (!msg)
             goto fail;
         msgproc_nfc_req(cli, msg);
-	}
+    }
 #if 0
     else if (master->type == ECS__MASTER__TYPE__CHECKVERSION_REQ)
     {
