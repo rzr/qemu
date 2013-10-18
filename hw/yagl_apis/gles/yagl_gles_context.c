@@ -370,19 +370,13 @@ struct yagl_gles_array
     return NULL;
 }
 
-bool yagl_gles_context_transfer_arrays(struct yagl_gles_context *ctx,
-                                       uint32_t first,
-                                       uint32_t count)
+void yagl_gles_context_transfer_arrays_vbo(struct yagl_gles_context *ctx)
 {
     int i;
 
     for (i = 0; i < ctx->num_arrays; ++i) {
-        if (!yagl_gles_array_transfer(&ctx->arrays[i], first, count)) {
-            return false;
-        }
+        yagl_gles_array_transfer_vbo(&ctx->arrays[i]);
     }
-
-    return true;
 }
 
 bool yagl_gles_context_set_active_texture(struct yagl_gles_context *ctx,

@@ -71,13 +71,13 @@ void yagl_gles_buffer_release(struct yagl_gles_buffer *buffer);
 
 void yagl_gles_buffer_set_data(struct yagl_gles_buffer *buffer,
                                GLint size,
-                               void *data,
+                               const void *data,
                                GLenum usage);
 
 bool yagl_gles_buffer_update_data(struct yagl_gles_buffer *buffer,
                                   GLint offset,
                                   GLint size,
-                                  void *data);
+                                  const void *data);
 
 bool yagl_gles_buffer_get_minmax_index(struct yagl_gles_buffer *buffer,
                                        GLenum type,

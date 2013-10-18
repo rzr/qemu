@@ -10,14 +10,11 @@ struct yagl_client_image
 
     struct yagl_ref *data;
 
-    /*
-     * Returns 'false' on page fault while reading 'pixels'.
-     */
-    bool (*update)(struct yagl_client_image */*image*/,
+    void (*update)(struct yagl_client_image */*image*/,
                    uint32_t /*width*/,
                    uint32_t /*height*/,
                    uint32_t /*bpp*/,
-                   target_ulong /*pixels*/);
+                   const void */*pixels*/);
 };
 
 void yagl_client_image_init(struct yagl_client_image *image,

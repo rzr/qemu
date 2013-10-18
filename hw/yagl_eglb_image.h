@@ -17,14 +17,11 @@ struct yagl_eglb_image
      */
     struct yagl_client_image *glegl_image;
 
-    /*
-     * Returns 'false' on page fault while reading 'pixels'.
-     */
-    bool (*update_offscreen)(struct yagl_eglb_image */*image*/,
+    void (*update_offscreen)(struct yagl_eglb_image */*image*/,
                              uint32_t /*width*/,
                              uint32_t /*height*/,
                              uint32_t /*bpp*/,
-                             target_ulong /*pixels*/);
+                             const void */*pixels*/);
 
     void (*destroy)(struct yagl_eglb_image */*image*/);
 };

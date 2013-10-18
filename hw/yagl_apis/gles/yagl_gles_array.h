@@ -114,15 +114,17 @@ bool yagl_gles_array_update_vbo(struct yagl_gles_array *array,
                                 GLint offset);
 
 /*
- * Transfers and applies 'count' array elements starting from 'first' element.
+ * Transfers 'size' bytes starting from 'first' element.
  * Transferred data is kept in 'host_data'.
- * On error returns false.
- *
- * Note that the current thread MUST be in sync with target while making this
- * call, since this call might transfer data from target to host.
  */
-bool yagl_gles_array_transfer(struct yagl_gles_array *array,
+void yagl_gles_array_transfer(struct yagl_gles_array *array,
                               uint32_t first,
-                              uint32_t count);
+                              const void *data,
+                              uint32_t size);
+
+/*
+ * Transfers 'vbo' if this array uses 'vbo'.
+ */
+void yagl_gles_array_transfer_vbo(struct yagl_gles_array *array);
 
 #endif

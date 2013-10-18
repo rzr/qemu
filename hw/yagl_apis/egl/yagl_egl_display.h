@@ -20,7 +20,7 @@ struct yagl_egl_display
 
     struct yagl_egl_backend *backend;
 
-    target_ulong display_id;
+    uint32_t display_id;
 
     yagl_host_handle handle;
 
@@ -39,7 +39,7 @@ struct yagl_egl_display
 
 struct yagl_egl_display
     *yagl_egl_display_create(struct yagl_egl_backend *backend,
-                             target_ulong display_id);
+                             uint32_t display_id);
 
 void yagl_egl_display_destroy(struct yagl_egl_display *dpy);
 
@@ -54,33 +54,30 @@ void yagl_egl_display_terminate(struct yagl_egl_display *dpy);
  * @{
  */
 
-int yagl_egl_display_get_config_count(struct yagl_egl_display *dpy);
+int32_t yagl_egl_display_get_config_count(struct yagl_egl_display *dpy);
 
 /*
  * Gets at most '*num_configs' config handles and updates
  * 'num_configs' with number of configs actually returned.
  * The configs themselves are not acquired.
- * Use 'g_free' to free up the returned handles array.
  */
-yagl_host_handle
-    *yagl_egl_display_get_config_handles(struct yagl_egl_display *dpy,
-                                         int *num_configs);
+void yagl_egl_display_get_config_handles(struct yagl_egl_display *dpy,
+                                         yagl_host_handle *handles,
+                                         int32_t *num_configs);
 
 /*
  * Gets at most '*num_configs' config handles and updates
  * 'num_configs' with number of configs actually returned.
  * The configs themselves are not acquired.
- * Use 'g_free' to free up the returned handles array.
  *
  * 'dummy' is used for matching, only handles of configs that matched
- * 'dummy' will be returned. if 'count_only' is true then no handles are
- * returned (return value is NULL), but 'num_configs' is still updated.
+ * 'dummy' will be returned. if 'handles' is NULL then no handles are
+ * returned, but 'num_configs' is still updated.
  */
-yagl_host_handle
-    *yagl_egl_display_choose_configs(struct yagl_egl_display *dpy,
+void yagl_egl_display_choose_configs(struct yagl_egl_display *dpy,
                                      const struct yagl_egl_native_config *dummy,
-                                     int *num_configs,
-                                     bool count_only);
+                                     yagl_host_handle *handles,
+                                     int32_t *num_configs);
 
 struct yagl_egl_config
     *yagl_egl_display_acquire_config(struct yagl_egl_display *dpy,

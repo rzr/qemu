@@ -37,8 +37,7 @@ struct yagl_gles2_shader
                               GLenum type);
 
 void yagl_gles2_shader_source(struct yagl_gles2_shader *shader,
-                              GLchar **strings,
-                              int count);
+                              const GLchar *string);
 
 void yagl_gles2_shader_compile(struct yagl_gles2_shader *shader);
 

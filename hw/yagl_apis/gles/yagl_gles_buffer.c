@@ -191,7 +191,7 @@ void yagl_gles_buffer_release(struct yagl_gles_buffer *buffer)
 
 void yagl_gles_buffer_set_data(struct yagl_gles_buffer *buffer,
                                GLint size,
-                               void *data,
+                               const void *data,
                                GLenum usage)
 {
     if (size > 0) {
@@ -225,7 +225,7 @@ void yagl_gles_buffer_set_data(struct yagl_gles_buffer *buffer,
 bool yagl_gles_buffer_update_data(struct yagl_gles_buffer *buffer,
                                   GLint offset,
                                   GLint size,
-                                  void *data)
+                                  const void *data)
 {
     if ((offset < 0) || (size < 0) || ((offset + size) > buffer->size)) {
         return false;
