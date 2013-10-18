@@ -85,6 +85,7 @@ void req_sensor_data (enum sensor_types type, enum request_cmd req, char* data, 
     if (req == request_set) {
         if (len > _MAX_BUF) {
             ERR("The data is too big to send.\n");
+			free(msg);
             return;
         }
         memcpy(msg->buf, data, len);

@@ -272,7 +272,9 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
                 get_sensor_proxi();
             }
         } else {
-            set_sensor_data(length, data);
+            if (data != NULL) {
+                set_sensor_data(length, data);
+            }
         }
     } else if (!strncmp(cmd, "Network", 7)) {
         LOG(">>> Network msg: '%s'", data);
@@ -321,7 +323,9 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
     }
 
     if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
-        send_to_nfc(request_nfc_set, data, msg->data.len);
+        if (data != NULL) {
+            send_to_nfc(request_nfc_set, data, msg->data.len);
+        }
     }
 
     return true;
@@ -344,7 +348,7 @@ bool ntf_to_injector(const char* data, const int len) {
 
     const char* ijdata = (data + catsize + 2 + 1 + 1);
 
-    char *encoded_ijdata = NULL;
+    const char *encoded_ijdata = "";
      LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
             action, group);
 
