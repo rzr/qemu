@@ -3,6 +3,7 @@
 void yagl_egl_driver_init(struct yagl_egl_driver *driver)
 {
     driver->dyn_lib = NULL;
+    driver->gl_version = yagl_gl_2;
 }
 
 void yagl_egl_driver_cleanup(struct yagl_egl_driver *driver)

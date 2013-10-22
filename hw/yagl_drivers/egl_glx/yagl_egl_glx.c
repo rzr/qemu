@@ -77,6 +77,7 @@ struct yagl_egl_glx
     PFNGLXGETFBCONFIGSPROC glXGetFBConfigs;
     PFNGLXGETFBCONFIGATTRIBPROC glXGetFBConfigAttrib;
     PFNGLXGETVISUALFROMFBCONFIGPROC glXGetVisualFromFBConfig;
+    PFNGLXCHOOSEFBCONFIGPROC glXChooseFBConfig;
     PFNGLXCREATEWINDOWPROC glXCreateWindow;
     PFNGLXDESTROYWINDOWPROC glXDestroyWindow;
     PFNGLXCREATEPIXMAPPROC glXCreatePixmap;
@@ -92,6 +93,181 @@ struct yagl_egl_glx
     /* GLX_ARB_create_context */
     PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
 };
+
+static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
+                                        yagl_gl_version *version)
+{
+    int config_attribs[] =
+    {
+        GLX_DOUBLEBUFFER, True,
+        GLX_RED_SIZE, 8,
+        GLX_GREEN_SIZE, 8,
+        GLX_BLUE_SIZE, 8,
+        GLX_ALPHA_SIZE, 8,
+        GLX_BUFFER_SIZE, 32,
+        GLX_DEPTH_SIZE, 24,
+        GLX_STENCIL_SIZE, 8,
+        GLX_RENDER_TYPE, GLX_RGBA_BIT,
+        GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT,
+        None
+    };
+    int ctx_attribs[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 1,
+        GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+        None
+    };
+    int surface_attribs[] = {
+        GLX_PBUFFER_WIDTH, 1,
+        GLX_PBUFFER_HEIGHT, 1,
+        GLX_LARGEST_PBUFFER, False,
+        GLX_PRESERVED_CONTENTS, False,
+        None
+    };
+    bool res = false;
+    const char *tmp;
+    int n = 0;
+    GLXFBConfig *configs = NULL;
+    GLXContext ctx = NULL;
+    GLXPbuffer pbuffer = 0;
+    const GLubyte *(GLAPIENTRY *GetStringi)(GLenum, GLuint) = NULL;
+    void (GLAPIENTRY *GetIntegerv)(GLenum, GLint*) = NULL;
+    uint32_t i;
+    GLint major = 0, minor = 0;
+
+    YAGL_EGL_GLX_ENTER(yagl_egl_glx_get_gl_version, NULL);
+
+    tmp = getenv("YAGL_GL_VERSION");
+
+    if (tmp) {
+        if (strcmp(tmp, "gl_2") == 0) {
+            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 2.1");
+            *version = yagl_gl_2;
+            res = true;
+        } else if (strcmp(tmp, "gl_3") == 0) {
+            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.2");
+            *version = yagl_gl_3;
+            res = true;
+        } else if (strcmp(tmp, "gl_3_es3") == 0) {
+            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.1");
+            *version = yagl_gl_3_es3;
+            res = true;
+        } else {
+            YAGL_LOG_CRITICAL("Bad YAGL_GL_VERSION value = %s", tmp);
+        }
+
+        goto out;
+    }
+
+    configs = egl_glx->glXChooseFBConfig(egl_glx->global_dpy,
+                                         DefaultScreen(egl_glx->global_dpy),
+                                         config_attribs,
+                                         &n);
+
+    if (n <= 0) {
+        YAGL_LOG_ERROR("glXChooseFBConfig failed");
+        goto out;
+    }
+
+    ctx = egl_glx->glXCreateContextAttribsARB(egl_glx->global_dpy,
+                                              configs[0],
+                                              NULL,
+                                              True,
+                                              ctx_attribs);
+
+    if (!ctx) {
+        YAGL_LOG_INFO("glXCreateContextAttribsARB failed, using OpenGL 2.1");
+        *version = yagl_gl_2;
+        res = true;
+        goto out;
+    }
+
+    pbuffer = egl_glx->glXCreatePbuffer(egl_glx->global_dpy,
+                                        configs[0],
+                                        surface_attribs);
+
+    if (!pbuffer) {
+        YAGL_LOG_ERROR("glXCreatePbuffer failed");
+        goto out;
+    }
+
+    if (!egl_glx->glXMakeContextCurrent(egl_glx->global_dpy,
+                                        pbuffer, pbuffer, ctx)) {
+        YAGL_LOG_ERROR("glXMakeContextCurrent failed");
+        goto out;
+    }
+
+    GetStringi = yagl_dyn_lib_get_ogl_procaddr(egl_glx->base.dyn_lib,
+                                               "glGetStringi");
+
+    if (!GetStringi) {
+        YAGL_LOG_ERROR("Unable to get symbol: %s",
+                       yagl_dyn_lib_get_error(egl_glx->base.dyn_lib));
+        goto out;
+    }
+
+    for (i = 0, tmp = (const char*)GetStringi(GL_EXTENSIONS, i);
+         tmp;
+         ++i, tmp = (const char*)GetStringi(GL_EXTENSIONS, i)) {
+        if (strcmp(tmp, "GL_ARB_ES3_compatibility") == 0) {
+            YAGL_LOG_INFO("GL_ARB_ES3_compatibility supported, using OpenGL 3.1");
+            *version = yagl_gl_3_es3;
+            res = true;
+            goto out;
+        }
+    }
+
+    /*
+     * No GL_ARB_ES3_compatibility, so we need at least OpenGL 3.2 to be
+     * able to patch shaders and run them with GLSL 1.50.
+     */
+
+    GetIntegerv = yagl_dyn_lib_get_ogl_procaddr(egl_glx->base.dyn_lib,
+                                                "glGetIntegerv");
+
+    if (!GetIntegerv) {
+        YAGL_LOG_ERROR("Unable to get symbol: %s",
+                       yagl_dyn_lib_get_error(egl_glx->base.dyn_lib));
+        goto out;
+    }
+
+    GetIntegerv(GL_MAJOR_VERSION, &major);
+    GetIntegerv(GL_MINOR_VERSION, &minor);
+
+    if ((major > 3) ||
+        ((major == 3) && (minor >= 2))) {
+        YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, using OpenGL 3.2");
+        *version = yagl_gl_3;
+        res = true;
+        goto out;
+    }
+
+    YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, OpenGL 3.2 not supported, using OpenGL 2.1");
+    *version = yagl_gl_2;
+    res = true;
+
+out:
+    if (pbuffer) {
+        egl_glx->glXDestroyPbuffer(egl_glx->global_dpy, pbuffer);
+    }
+    if (ctx) {
+        egl_glx->glXMakeContextCurrent(egl_glx->global_dpy, 0, 0, NULL);
+        egl_glx->glXDestroyContext(egl_glx->global_dpy, ctx);
+    }
+    if (configs) {
+        XFree(configs);
+    }
+
+    if (res) {
+        YAGL_LOG_FUNC_EXIT("%d, version = %u", res, *version);
+    } else {
+        YAGL_LOG_FUNC_EXIT("%d", res);
+    }
+
+    return res;
+}
 
 /*
  * INTERNAL IMPLEMENTATION FUNCTIONS
@@ -375,8 +551,9 @@ static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
     int attribs[] =
     {
         GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-        GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 1,
         GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
         None
     };
 
@@ -385,16 +562,26 @@ static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
                        dpy,
                        share_context);
 
-    ctx = egl_glx->glXCreateContextAttribsARB(dpy,
-                                              (GLXFBConfig)cfg->driver_data,
-                                              ((share_context == EGL_NO_CONTEXT) ?
-                                                  NULL
-                                                : (GLXContext)share_context),
-                                              True,
-                                              attribs);
+    if (egl_glx->base.gl_version > yagl_gl_2) {
+        ctx = egl_glx->glXCreateContextAttribsARB(dpy,
+                                                  (GLXFBConfig)cfg->driver_data,
+                                                  ((share_context == EGL_NO_CONTEXT) ?
+                                                      NULL
+                                                    : (GLXContext)share_context),
+                                                  True,
+                                                  attribs);
+    } else {
+        ctx = egl_glx->glXCreateNewContext(dpy,
+                                           (GLXFBConfig)cfg->driver_data,
+                                           GLX_RGBA_TYPE,
+                                           ((share_context == EGL_NO_CONTEXT) ?
+                                               NULL
+                                             : (GLXContext)share_context),
+                                           True);
+    }
 
     if (!ctx) {
-        YAGL_LOG_ERROR("glXCreateContextAttribsARB failed");
+        YAGL_LOG_ERROR("glXCreateContextAttribsARB/glXCreateNewContext failed");
 
         YAGL_LOG_FUNC_EXIT(NULL);
 
@@ -525,6 +712,7 @@ struct yagl_egl_driver *yagl_egl_driver_create(void *display)
     YAGL_EGL_GLX_GET_PROC(PFNGLXGETFBCONFIGSPROC, glXGetFBConfigs);
     YAGL_EGL_GLX_GET_PROC(PFNGLXGETFBCONFIGATTRIBPROC, glXGetFBConfigAttrib);
     YAGL_EGL_GLX_GET_PROC(PFNGLXGETVISUALFROMFBCONFIGPROC, glXGetVisualFromFBConfig);
+    YAGL_EGL_GLX_GET_PROC(PFNGLXCHOOSEFBCONFIGPROC, glXChooseFBConfig);
     YAGL_EGL_GLX_GET_PROC(PFNGLXCREATEWINDOWPROC, glXCreateWindow);
     YAGL_EGL_GLX_GET_PROC(PFNGLXDESTROYWINDOWPROC, glXDestroyWindow);
     YAGL_EGL_GLX_GET_PROC(PFNGLXCREATEPIXMAPPROC, glXCreatePixmap);
@@ -536,6 +724,10 @@ struct yagl_egl_driver *yagl_egl_driver_create(void *display)
 
     /* GLX_ARB_create_context */
     YAGL_EGL_GLX_GET_PROC(PFNGLXCREATECONTEXTATTRIBSARBPROC, glXCreateContextAttribsARB);
+
+    if (!yagl_egl_glx_get_gl_version(egl_glx, &egl_glx->base.gl_version)) {
+        goto fail;
+    }
 
     egl_glx->base.display_open = &yagl_egl_glx_display_open;
     egl_glx->base.display_close = &yagl_egl_glx_display_close;

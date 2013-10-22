@@ -17,7 +17,8 @@ static void yagl_gles_ogl_destroy(struct yagl_gles_driver *driver)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
+struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
+                                              yagl_gl_version gl_version)
 {
     struct yagl_gles_driver *driver = NULL;
 
@@ -25,7 +26,7 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
 
     driver = g_malloc0(sizeof(*driver));
 
-    yagl_gles_driver_init(driver);
+    yagl_gles_driver_init(driver, gl_version);
 
     YAGL_GLES_OGL_GET_PROC(driver, DrawArrays, glDrawArrays);
     YAGL_GLES_OGL_GET_PROC(driver, DrawElements, glDrawElements);
@@ -165,11 +166,6 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(driver, StencilFuncSeparate, glStencilFuncSeparate);
     YAGL_GLES_OGL_GET_PROC(driver, StencilMaskSeparate, glStencilMaskSeparate);
     YAGL_GLES_OGL_GET_PROC(driver, StencilOpSeparate, glStencilOpSeparate);
-    YAGL_GLES_OGL_GET_PROC(driver, PushClientAttrib, glPushClientAttrib);
-    YAGL_GLES_OGL_GET_PROC(driver, PopClientAttrib, glPopClientAttrib);
-    YAGL_GLES_OGL_GET_PROC(driver, MapBuffer, glMapBuffer);
-    YAGL_GLES_OGL_GET_PROC(driver, UnmapBuffer, glUnmapBuffer);
-    YAGL_GLES_OGL_GET_PROC(driver, Finish, glFinish);
     YAGL_GLES_OGL_GET_PROC(driver, PointSize, glPointSize);
     YAGL_GLES_OGL_GET_PROC(driver, AlphaFunc, glAlphaFunc);
     YAGL_GLES_OGL_GET_PROC(driver, MatrixMode, glMatrixMode);
@@ -202,6 +198,15 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(driver, LoadMatrixf, glLoadMatrixf);
     YAGL_GLES_OGL_GET_PROC(driver, ClipPlane, glClipPlane);
     YAGL_GLES_OGL_GET_PROC(driver, GetClipPlane, glGetClipPlane);
+    YAGL_GLES_OGL_GET_PROC(driver, PushClientAttrib, glPushClientAttrib);
+    YAGL_GLES_OGL_GET_PROC(driver, PopClientAttrib, glPopClientAttrib);
+    YAGL_GLES_OGL_GET_PROC(driver, MapBuffer, glMapBuffer);
+    YAGL_GLES_OGL_GET_PROC(driver, UnmapBuffer, glUnmapBuffer);
+    YAGL_GLES_OGL_GET_PROC(driver, Finish, glFinish);
+
+    if (gl_version > yagl_gl_2) {
+        YAGL_GLES_OGL_GET_PROC(driver, GetStringi, glGetStringi);
+    }
 
     driver->destroy = &yagl_gles_ogl_destroy;
 

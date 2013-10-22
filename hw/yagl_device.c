@@ -209,7 +209,8 @@ static int yagl_device_init(PCIDevice *dev)
         goto fail;
     }
 
-    gles_driver = yagl_gles_ogl_create(egl_driver->dyn_lib);
+    gles_driver = yagl_gles_ogl_create(egl_driver->dyn_lib,
+                                       egl_driver->gl_version);
 
     if (!gles_driver) {
         goto fail;

@@ -132,6 +132,10 @@ static struct yagl_egl_config
     cfg->native.native_renderable = EGL_TRUE;
     cfg->native.renderable_type = EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT;
 
+    if (dpy->backend->gl_version > yagl_gl_2) {
+        cfg->native.renderable_type |= EGL_OPENGL_ES3_BIT_KHR;
+    }
+
     cfg->native.conformant =
         (((cfg->native.red_size + cfg->native.green_size + cfg->native.blue_size + cfg->native.alpha_size) > 0) &&
          (cfg->native.caveat != EGL_NON_CONFORMANT_CONFIG)) ? cfg->native.renderable_type : 0;

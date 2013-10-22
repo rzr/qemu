@@ -4,8 +4,10 @@
 #include "yagl_process.h"
 #include "yagl_egl_interface.h"
 
-void yagl_gles_driver_init(struct yagl_gles_driver *driver)
+void yagl_gles_driver_init(struct yagl_gles_driver *driver,
+                           yagl_gl_version gl_version)
 {
+    driver->gl_version = gl_version;
 }
 
 void yagl_gles_driver_cleanup(struct yagl_gles_driver *driver)

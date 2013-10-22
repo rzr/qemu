@@ -32,6 +32,16 @@ typedef enum
 
 #define YAGL_NUM_APIS 2
 
+typedef enum
+{
+    /* OpenGL 2.1 or OpenGL >= 3.1 compatibility. */
+    yagl_gl_2 = 0,
+    /* OpenGL >= 3.2 core, no GL_ARB_ES3_compatibility support. */
+    yagl_gl_3 = 1,
+    /* OpenGL >= 3.1 core, GL_ARB_ES3_compatibility support. */
+    yagl_gl_3_es3 = 2
+} yagl_gl_version;
+
 typedef bool (*yagl_api_func)(struct yagl_transport */*t*/);
 
 #endif

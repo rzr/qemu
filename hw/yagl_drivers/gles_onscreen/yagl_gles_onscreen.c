@@ -63,7 +63,7 @@ struct yagl_gles_driver
     memcpy(&driver->base, orig_driver, sizeof(*orig_driver));
     driver->orig_driver = orig_driver;
 
-    yagl_gles_driver_init(&driver->base);
+    yagl_gles_driver_init(&driver->base, orig_driver->gl_version);
 
     driver->base.BindFramebuffer = &yagl_gles_onscreen_BindFramebuffer;
 

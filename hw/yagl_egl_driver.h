@@ -74,6 +74,8 @@ struct yagl_egl_driver
     void (*destroy)(struct yagl_egl_driver */*driver*/);
 
     struct yagl_dyn_lib *dyn_lib;
+
+    yagl_gl_version gl_version;
 };
 
 /*

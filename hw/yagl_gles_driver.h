@@ -69,6 +69,11 @@ typedef double yagl_GLdouble;
 
 struct yagl_gles_driver
 {
+    /*
+     * OpenGL 2.1
+     * @{
+     */
+
     YAGL_GLES_DRIVER_FUNC3(DrawArrays, GLenum, GLint, GLsizei, mode, first, count)
     YAGL_GLES_DRIVER_FUNC4(DrawElements, GLenum, GLsizei, GLenum, const GLvoid*, mode, count, type, indices)
     YAGL_GLES_DRIVER_FUNC7(ReadPixels, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, GLvoid*, x, y, width, height, format, type, pixels)
@@ -239,17 +244,33 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC1(LoadMatrixf, const GLfloat*, m)
     YAGL_GLES_DRIVER_FUNC2(ClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
     YAGL_GLES_DRIVER_FUNC2(GetClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
-
     YAGL_GLES_DRIVER_FUNC1(PushClientAttrib, GLbitfield, mask)
     YAGL_GLES_DRIVER_FUNC0(PopClientAttrib)
     YAGL_GLES_DRIVER_FUNC_RET2(void*, MapBuffer, GLenum, GLenum, target, access)
     YAGL_GLES_DRIVER_FUNC_RET1(GLboolean, UnmapBuffer, GLenum, target)
     YAGL_GLES_DRIVER_FUNC0(Finish)
 
+    /*
+     * @}
+     */
+
+    /*
+     * OpenGL 3.1+ core.
+     */
+
+    YAGL_GLES_DRIVER_FUNC_RET2(const GLubyte*, GetStringi, GLenum, GLuint, name, index)
+
+    /*
+     * @}
+     */
+
+    yagl_gl_version gl_version;
+
     void (*destroy)(struct yagl_gles_driver */*driver*/);
 };
 
-void yagl_gles_driver_init(struct yagl_gles_driver *driver);
+void yagl_gles_driver_init(struct yagl_gles_driver *driver,
+                           yagl_gl_version gl_version);
 void yagl_gles_driver_cleanup(struct yagl_gles_driver *driver);
 
 /*

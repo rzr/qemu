@@ -306,7 +306,9 @@ struct yagl_egl_backend *yagl_egl_onscreen_create(struct winsys_interface *wsi,
 
     yagl_egl_pbuffer_attribs_init(&attribs);
 
-    yagl_egl_backend_init(&egl_onscreen->base, yagl_render_type_onscreen);
+    yagl_egl_backend_init(&egl_onscreen->base,
+                          yagl_render_type_onscreen,
+                          egl_driver->gl_version);
 
     dpy = egl_driver->display_open(egl_driver);
 

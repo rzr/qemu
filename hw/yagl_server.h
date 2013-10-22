@@ -14,6 +14,8 @@ struct yagl_server_state
 {
     yagl_render_type render_type;
 
+    yagl_gl_version gl_version;
+
     struct yagl_api *apis[YAGL_NUM_APIS];
 
     QLIST_HEAD(, yagl_process_state) processes;

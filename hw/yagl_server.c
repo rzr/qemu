@@ -77,6 +77,7 @@ struct yagl_server_state
     }
 
     ss->render_type = egl_backend->render_type;
+    ss->gl_version = egl_backend->gl_version;
 
     return ss;
 
@@ -134,6 +135,7 @@ void yagl_server_reset(struct yagl_server_state *ss)
  *  IN (uint32_t) tid
  *  OUT (uint32_t) res: 1 - init ok, 0 - init error
  *  OUT (uint32_t) render_type: in case of init ok
+ *  OUT (uint32_t) gl_version: in case of init ok
  */
 bool yagl_server_dispatch_init(struct yagl_server_state *ss,
                                uint8_t *buff,
@@ -250,6 +252,7 @@ out:
 
     yagl_marshal_put_uint32_t(&buff, 1);
     yagl_marshal_put_uint32_t(&buff, ss->render_type);
+    yagl_marshal_put_uint32_t(&buff, ss->gl_version);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 

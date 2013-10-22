@@ -222,7 +222,9 @@ struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *egl_d
 
     yagl_egl_pbuffer_attribs_init(&attribs);
 
-    yagl_egl_backend_init(&egl_offscreen->base, yagl_render_type_offscreen);
+    yagl_egl_backend_init(&egl_offscreen->base,
+                          yagl_render_type_offscreen,
+                          egl_driver->gl_version);
 
     dpy = egl_driver->display_open(egl_driver);
 

@@ -1486,7 +1486,48 @@ void yagl_host_glGetFloatv(GLenum pname,
 void yagl_host_glGetString(GLenum name,
     GLchar *str, int32_t str_maxcount, int32_t *str_count)
 {
-    const char *tmp = (const char*)gles_api_ts->driver->GetString(name);
+    const char *tmp;
+
+    if ((name == GL_EXTENSIONS) &&
+        (gles_api_ts->driver->gl_version > yagl_gl_2)) {
+        struct yagl_vector v;
+        uint32_t i;
+        char nb = '\0';
+
+        yagl_vector_init(&v, 1, 0);
+
+        for (i = 0, tmp = (const char*)gles_api_ts->driver->GetStringi(name, i);
+             tmp;
+             ++i, tmp = (const char*)gles_api_ts->driver->GetStringi(name, i)) {
+            int size = yagl_vector_size(&v);
+            int ext_len = strlen(tmp);
+
+            yagl_vector_resize(&v, size + ext_len + 1);
+
+            memcpy(yagl_vector_data(&v) + size, tmp, ext_len);
+
+            *(char*)(yagl_vector_data(&v) + size + ext_len) = ' ';
+        }
+
+        yagl_vector_push_back(&v, &nb);
+
+        tmp = yagl_vector_data(&v);
+
+        if (str_count) {
+            *str_count = strlen(tmp) + 1;
+        }
+
+        if (str && (str_maxcount > 0)) {
+            strncpy(str, tmp, str_maxcount);
+            str[str_maxcount - 1] = '\0';
+        }
+
+        yagl_vector_cleanup(&v);
+
+        return;
+    }
+
+    tmp = (const char*)gles_api_ts->driver->GetString(name);
 
     if (str_count) {
         *str_count = strlen(tmp) + 1;
