@@ -5,7 +5,6 @@
 
 struct yagl_gles_driver;
 struct yagl_gles_api_ps;
-struct yagl_vector;
 
 struct yagl_gles_api_ts
 {
@@ -13,7 +12,7 @@ struct yagl_gles_api_ts
 
     struct yagl_gles_api_ps *ps;
 
-    struct yagl_vector *arrays;
+    GLuint *arrays;
     uint32_t num_arrays;
 };
 

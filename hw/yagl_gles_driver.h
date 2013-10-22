@@ -244,8 +244,6 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC1(LoadMatrixf, const GLfloat*, m)
     YAGL_GLES_DRIVER_FUNC2(ClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
     YAGL_GLES_DRIVER_FUNC2(GetClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
-    YAGL_GLES_DRIVER_FUNC1(PushClientAttrib, GLbitfield, mask)
-    YAGL_GLES_DRIVER_FUNC0(PopClientAttrib)
     YAGL_GLES_DRIVER_FUNC_RET2(void*, MapBuffer, GLenum, GLenum, target, access)
     YAGL_GLES_DRIVER_FUNC_RET1(GLboolean, UnmapBuffer, GLenum, target)
     YAGL_GLES_DRIVER_FUNC0(Finish)
@@ -259,6 +257,9 @@ struct yagl_gles_driver
      */
 
     YAGL_GLES_DRIVER_FUNC_RET2(const GLubyte*, GetStringi, GLenum, GLuint, name, index)
+    YAGL_GLES_DRIVER_FUNC2(GenVertexArrays, GLsizei, GLuint*, n, arrays)
+    YAGL_GLES_DRIVER_FUNC1(BindVertexArray, GLuint, array)
+    YAGL_GLES_DRIVER_FUNC2(DeleteVertexArrays, GLsizei, const GLuint*, n, arrays)
 
     /*
      * @}

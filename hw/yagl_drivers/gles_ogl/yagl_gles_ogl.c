@@ -198,14 +198,15 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
     YAGL_GLES_OGL_GET_PROC(driver, LoadMatrixf, glLoadMatrixf);
     YAGL_GLES_OGL_GET_PROC(driver, ClipPlane, glClipPlane);
     YAGL_GLES_OGL_GET_PROC(driver, GetClipPlane, glGetClipPlane);
-    YAGL_GLES_OGL_GET_PROC(driver, PushClientAttrib, glPushClientAttrib);
-    YAGL_GLES_OGL_GET_PROC(driver, PopClientAttrib, glPopClientAttrib);
     YAGL_GLES_OGL_GET_PROC(driver, MapBuffer, glMapBuffer);
     YAGL_GLES_OGL_GET_PROC(driver, UnmapBuffer, glUnmapBuffer);
     YAGL_GLES_OGL_GET_PROC(driver, Finish, glFinish);
 
     if (gl_version > yagl_gl_2) {
         YAGL_GLES_OGL_GET_PROC(driver, GetStringi, glGetStringi);
+        YAGL_GLES_OGL_GET_PROC(driver, GenVertexArrays, glGenVertexArrays);
+        YAGL_GLES_OGL_GET_PROC(driver, BindVertexArray, glBindVertexArray);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteVertexArrays, glDeleteVertexArrays);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;

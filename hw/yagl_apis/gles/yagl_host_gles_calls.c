@@ -29,13 +29,16 @@ typedef enum
     yagl_gles1_array_texcoord,
 } yagl_gles1_array_type;
 
-static void *yagl_gles_get_array(uint32_t indx, uint32_t size)
+static GLuint yagl_gles_bind_array(uint32_t indx,
+                                   GLint first,
+                                   GLsizei stride,
+                                   const GLvoid *data,
+                                   int32_t data_count)
 {
-    struct yagl_vector *array;
+    GLuint current_vbo;
 
     if (indx >= gles_api_ts->num_arrays) {
-        struct yagl_vector *arrays;
-        uint32_t i;
+        GLuint *arrays;
 
         arrays = g_malloc((indx + 1) * sizeof(arrays[0]));
 
@@ -43,9 +46,8 @@ static void *yagl_gles_get_array(uint32_t indx, uint32_t size)
                gles_api_ts->arrays,
                gles_api_ts->num_arrays * sizeof(arrays[0]));
 
-        for (i = gles_api_ts->num_arrays; i < (indx + 1); ++i) {
-            yagl_vector_init(&arrays[i], 1, 0);
-        }
+        gles_api_ts->driver->GenBuffers(indx + 1 - gles_api_ts->num_arrays,
+                                        &arrays[gles_api_ts->num_arrays]);
 
         g_free(gles_api_ts->arrays);
 
@@ -53,11 +55,18 @@ static void *yagl_gles_get_array(uint32_t indx, uint32_t size)
         gles_api_ts->num_arrays = indx + 1;
     }
 
-    array = &gles_api_ts->arrays[indx];
+    gles_api_ts->driver->GetIntegerv(GL_ARRAY_BUFFER_BINDING,
+                                     (GLint*)&current_vbo);
 
-    yagl_vector_resize(array, size);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, gles_api_ts->arrays[indx]);
 
-    return yagl_vector_data(array);
+    gles_api_ts->driver->BufferData(GL_ARRAY_BUFFER,
+                                    first * stride + data_count, NULL,
+                                    GL_DYNAMIC_DRAW);
+    gles_api_ts->driver->BufferSubData(GL_ARRAY_BUFFER,
+                                       first * stride, data_count, data);
+
+    return current_vbo;
 }
 
 static bool yagl_gles_program_get_uniform_type(GLuint program,
@@ -272,6 +281,21 @@ static void yagl_gles_shader_destroy(struct yagl_object *obj)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
+static void yagl_gles_vertex_array_destroy(struct yagl_object *obj)
+{
+    struct yagl_gles_object *gles_obj = (struct yagl_gles_object*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_gles_vertex_array_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx();
+    gles_obj->driver->DeleteVertexArrays(1, &obj->global_name);
+    yagl_unensure_ctx();
+
+    g_free(gles_obj);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
 static __inline GLuint yagl_gles_object_get(GLuint local_name)
 {
     return (local_name > 0) ? yagl_object_map_get(cur_ts->ps->object_map, local_name) : 0;
@@ -418,6 +442,26 @@ void yagl_host_glReadPixels(GLint x,
     }
 }
 
+void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count)
+{
+    int i;
+
+    for (i = 0; i < arrays_count; ++i) {
+        GLuint global_name;
+
+        gles_api_ts->driver->GenVertexArrays(1, &global_name);
+
+        yagl_gles_object_add(arrays[i],
+                             global_name,
+                             &yagl_gles_vertex_array_destroy);
+    }
+}
+
+void yagl_host_glBindVertexArray(GLuint array)
+{
+    gles_api_ts->driver->BindVertexArray(yagl_gles_object_get(array));
+}
+
 void yagl_host_glDisableVertexAttribArray(GLuint index)
 {
     gles_api_ts->driver->DisableVertexAttribArray(index);
@@ -436,12 +480,14 @@ void yagl_host_glVertexAttribPointerData(GLuint indx,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(indx, first * stride + data_count);
-
-    memcpy(array_data + (first * stride), data, data_count);
+    GLuint current_vbo = yagl_gles_bind_array(indx, first, stride,
+                                              data, data_count);
 
     gles_api_ts->driver->VertexAttribPointer(indx, size, type, normalized,
-                                             stride, array_data);
+                                             stride,
+                                             (const GLvoid*)(first * stride));
+
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glVertexAttribPointerOffset(GLuint indx,
@@ -452,7 +498,8 @@ void yagl_host_glVertexAttribPointerOffset(GLuint indx,
     GLsizei offset)
 {
     gles_api_ts->driver->VertexAttribPointer(indx, size, type, normalized,
-                                             stride, (const GLvoid*)(uintptr_t)offset);
+                                             stride,
+                                             (const GLvoid*)(uintptr_t)offset);
 }
 
 void yagl_host_glVertexPointerData(GLint size,
@@ -461,11 +508,14 @@ void yagl_host_glVertexPointerData(GLint size,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_vertex, first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_vertex,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->VertexPointer(size, type, stride,
+                                       (const GLvoid*)(first * stride));
 
-    gles_api_ts->driver->VertexPointer(size, type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glVertexPointerOffset(GLint size,
@@ -481,11 +531,14 @@ void yagl_host_glNormalPointerData(GLenum type,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_normal, first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_normal,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->NormalPointer(type, stride,
+                                       (const GLvoid*)(first * stride));
 
-    gles_api_ts->driver->NormalPointer(type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glNormalPointerOffset(GLenum type,
@@ -501,11 +554,14 @@ void yagl_host_glColorPointerData(GLint size,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_color, first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_color,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->ColorPointer(size, type, stride,
+                                      (const GLvoid*)(first * stride));
 
-    gles_api_ts->driver->ColorPointer(size, type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glColorPointerOffset(GLint size,
@@ -523,12 +579,14 @@ void yagl_host_glTexCoordPointerData(GLint tex_id,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_texcoord + tex_id,
-                                           first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_texcoord + tex_id,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->TexCoordPointer(size, type, stride,
+                                         (const GLvoid*)(first * stride));
 
-    gles_api_ts->driver->TexCoordPointer(size, type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glTexCoordPointerOffset(GLint size,

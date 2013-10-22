@@ -20,6 +20,8 @@ void yagl_host_glReadPixels(GLint x,
     GLenum format,
     GLenum type,
     GLvoid *pixels, int32_t pixels_maxcount, int32_t *pixels_count);
+void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count);
+void yagl_host_glBindVertexArray(GLuint array);
 void yagl_host_glDisableVertexAttribArray(GLuint index);
 void yagl_host_glEnableVertexAttribArray(GLuint index);
 void yagl_host_glVertexAttribPointerData(GLuint indx,
