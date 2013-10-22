@@ -87,8 +87,6 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	private MouseListener shellMouseListener;
 
 	private ProfileSkinImageRegistry imageRegistry;
-	private boolean isGrabbedShell;
-	private Point grabPosition;
 	private HWKey currentPressedHWKey;
 	private HWKey currentHoveredHWKey;
 
@@ -99,9 +97,6 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		this.shell = skin.getShell();
 		this.currentState = skin.getEmulatorSkinState();
 		this.communicator = skin.communicator;
-
-		this.isGrabbedShell= false;
-		this.grabPosition = new Point(0, 0);
 
 		this.imageRegistry = new ProfileSkinImageRegistry(
 				shell.getDisplay(), config.getDbiContents(), skin.skinInfo.getSkinPath());
@@ -334,7 +329,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseExit(MouseEvent e) {
 				/* shell does not receive event only with MouseMoveListener
-				 * in case that : hover hardkey -> mouse move into LCD area */
+				in case that : hover hardkey -> mouse move into display area */
 				HWKey hoveredHWKey = currentHoveredHWKey;
 
 				if (hoveredHWKey != null) {
@@ -354,14 +349,17 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				if (isGrabbedShell == true && e.button == 0/* left button */ &&
-						currentPressedHWKey == null) {
+				if (skin.isShellGrabbing() == true && e.button == 0/* left button */
+						&& currentPressedHWKey == null) {
 					/* move a window */
 					Point previousLocation = shell.getLocation();
-					int x = previousLocation.x + (e.x - grabPosition.x);
-					int y = previousLocation.y + (e.y - grabPosition.y);
+					Point grabLocation = skin.getGrabPosition();
+					if (grabLocation != null) {
+						int x = previousLocation.x + (e.x - grabLocation.x);
+						int y = previousLocation.y + (e.y - grabLocation.y);
 
-					shell.setLocation(x, y);
+						shell.setLocation(x, y);
+					}
 
 					skin.getKeyWindowKeeper().redock(false, false);
 
@@ -432,8 +430,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				if (e.button == 1) { /* left button */
-					isGrabbedShell = false;
-					grabPosition.x = grabPosition.y = 0;
+					skin.ungrabShell();
 
 					skin.getKeyWindowKeeper().redock(false, true);
 
@@ -471,15 +468,13 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (1 == e.button) { /* left button */
+					skin.grabShell(e.x, e.y);
+
 					/* HW key handling */
 					final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 							currentState.getCurrentRotationId(), currentState.getCurrentScale());
 					if (hwKey == null) {
 						logger.info("mouseDown in Skin : " + e.x + ", " + e.y);
-
-						isGrabbedShell = true;
-						grabPosition.x = e.x;
-						grabPosition.y = e.y;
 
 						return;
 					}

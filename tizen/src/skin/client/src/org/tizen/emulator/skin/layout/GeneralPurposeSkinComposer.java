@@ -85,8 +85,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private MouseListener shellMouseListener;
 
 	private GeneralSkinImageRegistry imageRegistry;
-	private boolean isGrabbedShell;
-	private Point grabPosition;
 
 	public GeneralPurposeSkinComposer(
 			EmulatorConfig config, EmulatorSkin skin) {
@@ -94,9 +92,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		this.skin = skin;
 		this.shell = skin.getShell();
 		this.currentState = skin.getEmulatorSkinState();
-
-		this.isGrabbedShell= false;
-		this.grabPosition = new Point(0, 0);
 
 		this.imageRegistry =
 				new GeneralSkinImageRegistry(shell.getDisplay());
@@ -407,13 +402,16 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				if (isGrabbedShell == true && e.button == 0/* left button */) {
+				if (skin.isShellGrabbing() == true && e.button == 0/* left button */) {
 					/* move a window */
 					Point previousLocation = shell.getLocation();
-					int x = previousLocation.x + (e.x - grabPosition.x);
-					int y = previousLocation.y + (e.y - grabPosition.y);
+					Point grabLocation = skin.getGrabPosition();
+					if (grabLocation != null) {
+						int x = previousLocation.x + (e.x - grabLocation.x);
+						int y = previousLocation.y + (e.y - grabLocation.y);
 
-					shell.setLocation(x, y);
+						shell.setLocation(x, y);
+					}
 
 					skin.getKeyWindowKeeper().redock(false, false);
 				}
@@ -428,8 +426,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (e.button == 1) { /* left button */
 					logger.info("mouseUp in Skin");
 
-					isGrabbedShell = false;
-					grabPosition.x = grabPosition.y = 0;
+					skin.ungrabShell();
 
 					skin.getKeyWindowKeeper().redock(false, true);
 				}
@@ -440,9 +437,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (1 == e.button) { /* left button */
 					logger.info("mouseDown in Skin");
 
-					isGrabbedShell = true;
-					grabPosition.x = e.x;
-					grabPosition.y = e.y;
+					skin.grabShell(e.x, e.y);
 				}
 			}
 

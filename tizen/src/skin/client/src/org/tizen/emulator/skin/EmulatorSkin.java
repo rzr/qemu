@@ -147,6 +147,7 @@ public class EmulatorSkin {
 	protected EmulatorSkinState currentState;
 
 	protected boolean isDisplayDragging;
+	protected Point shellGrabPosition;
 	protected boolean isShutdownRequested;
 	public boolean isOnTop;
 	public boolean isKeyWindow;
@@ -202,6 +203,7 @@ public class EmulatorSkin {
 		this.displayCanvasStyle = displayCanvasStyle;
 
 		/* prepare for VM state management */
+		this.shellGrabPosition = new Point(-1, -1);
 		this.currentState = new EmulatorSkinState();
 
 		setColorVM(); /* generate a identity color */
@@ -355,6 +357,29 @@ public class EmulatorSkin {
 		logger.info("skinFinalize");
 
 		skinComposer.composerFinalize();
+	}
+
+	/* window grabbing */
+	public void grabShell(int x, int y) {
+		shellGrabPosition.x = x;
+		shellGrabPosition.y = y;
+	}
+
+	public void ungrabShell() {
+		shellGrabPosition.x = -1;
+		shellGrabPosition.y = -1;
+	}
+
+	public boolean isShellGrabbing() {
+		return shellGrabPosition.x >= 0 && shellGrabPosition.y >= 0;
+	}
+
+	public Point getGrabPosition() {
+		if (isShellGrabbing() == false) {
+			return null;
+		}
+
+		return shellGrabPosition;
 	}
 
 	private void addMainWindowListeners() {
@@ -528,14 +553,16 @@ public class EmulatorSkin {
 		shellMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
-				if (isDisplayDragging == true) {
-					logger.info("menu blocking while display touching");
+				if (isDisplayDragging == true || isShellGrabbing() == true
+						|| isShutdownRequested == true) {
+					logger.info("menu is blocked");
 
 					e.doit = false;
 					return;
 				}
 
 				Menu menu = popupMenu.getMenuRoot();
+				keyForceRelease(true);
 
 				if (menu != null) {
 					shell.setMenu(menu);
@@ -790,12 +817,21 @@ public class EmulatorSkin {
 		canvasMenuDetectListener = new MenuDetectListener() {
 			@Override
 			public void menuDetected(MenuDetectEvent e) {
+				if (isDisplayDragging == true || isShellGrabbing() == true
+						|| isShutdownRequested == true) {
+					logger.info("menu is blocked");
+
+					e.doit = false;
+					return;
+				}
+
 				Menu menu = popupMenu.getMenuRoot();
 				keyForceRelease(true);
 
-				if (menu != null && isDisplayDragging == false) {
+				if (menu != null) {
 					lcdCanvas.setMenu(menu);
 					menu.setVisible(true);
+
 					e.doit = false;
 				} else {
 					lcdCanvas.setMenu(null);
