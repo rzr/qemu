@@ -229,7 +229,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		finger.setMultiTouchEnable(0);
 		finger.clearFingerSlot();
-		finger.cleanup_multiTouchState();
+		finger.cleanupMultiTouchState();
 
 		super.skinFinalize();
 	}
@@ -360,7 +360,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 								currentState.getCurrentRotationId());
 					}
 
-					finger.drawImage(e, currentState.getCurrentAngle());
+					finger.drawFingerPoints(e.gc);
 				}
 			}
 		});

@@ -1,5 +1,5 @@
 /**
- * 
+ * Emulator Configuration Information
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -137,21 +137,30 @@ public class EmulatorConfig {
 
 		File file = new File(versionFilePath);
 
-		try {
-			if (file.exists() && file.isFile()) {
-				BufferedReader reader = new BufferedReader(
+		if (file.exists() == false || file.isFile() == false) {
+			logger.warning("cannot read version from " + versionFilePath);
+		} else {
+			BufferedReader reader = null;
+			try {
+				reader = new BufferedReader(
 						new FileReader(versionFilePath));
-
-				strVersion = reader.readLine();
-
-				reader.close();
-			} else {
-				logger.warning("cannot read version from " + versionFilePath);
+			} catch (FileNotFoundException e) {
+				logger.warning(e.getMessage());
 			}
-		} catch (FileNotFoundException e) {
-			logger.log(Level.SEVERE, e.getMessage(), e);
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, e.getMessage(), e);
+
+			if (reader != null) {
+				try {
+					strVersion = reader.readLine();
+				} catch (IOException e) {
+					logger.warning(e.getMessage());
+				}
+
+				try {
+					reader.close();
+				} catch (IOException e) {
+					logger.warning(e.getMessage());
+				}
+			}
 		}
 
 		logger.info("SDK version : " + strVersion);

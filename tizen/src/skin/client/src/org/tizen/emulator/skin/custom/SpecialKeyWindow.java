@@ -45,8 +45,10 @@ import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -131,12 +133,16 @@ public class SpecialKeyWindow extends SkinWindow {
 				SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
 
 		/* set window size */
-		shell.setSize(
-				keyWindowImage.getImageData().width,
-				keyWindowImage.getImageData().height);
+		if (keyWindowImage != null) {
+			ImageData imageData = keyWindowImage.getImageData();
+			shell.setSize(imageData.width, imageData.height);
+		}
 
 		/* custom window shape */
-		shell.setRegion(SkinUtil.getTrimmingRegion(keyWindowImage));
+		Region region = SkinUtil.getTrimmingRegion(keyWindowImage);
+		if (region != null) {
+			shell.setRegion(region);
+		}
 
 		addKeyWindowListener();
 	}
