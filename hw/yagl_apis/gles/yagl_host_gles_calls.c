@@ -62,7 +62,7 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
 
     gles_api_ts->driver->BufferData(GL_ARRAY_BUFFER,
                                     first * stride + data_count, NULL,
-                                    GL_DYNAMIC_DRAW);
+                                    GL_STREAM_DRAW);
     gles_api_ts->driver->BufferSubData(GL_ARRAY_BUFFER,
                                        first * stride, data_count, data);
 
