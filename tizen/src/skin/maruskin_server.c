@@ -58,19 +58,18 @@
 #include <ws2tcpip.h>
 
 #define socket_error() WSAGetLastError()
-
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 
 #define socket_error() errno
-
 #endif
 
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_server);
+
 
 #define MAX_REQ_ID 0x7fffffff
 #define RECV_BUF_SIZE 32
@@ -83,12 +82,6 @@ MULTI_DEBUG_CHANNEL(qemu, skin_server);
 #define HEART_BEAT_INTERVAL 1
 #define HEART_BEAT_FAIL_COUNT 10
 #define HEART_BEAT_EXPIRE_COUNT 10
-
-#if 0 // do not restarting skin process ( prevent from abnormal behavior killing a skin process in Windows )
-#define RESTART_CLIENT_MAX_COUNT 1
-#else
-#define RESTART_CLIENT_MAX_COUNT 0
-#endif
 
 #define PORT_RETRY_COUNT 50
 
@@ -628,11 +621,16 @@ static void* run_skin_server(void* args)
     }
 
     memset(&server_addr, '\0', sizeof(server_addr));
-    getsockname(server_sock, (struct sockaddr *) &server_addr, &server_len);
-    svr_port = ntohs( ((struct sockaddr_in *) &server_addr)->sin_port );
+    if (getsockname(server_sock,
+            (struct sockaddr *) &server_addr, &server_len) != 0) {
+        ERR("failed to obtain the local name for a socket\n");
+    } else {
+        svr_port = ntohs(((struct sockaddr_in *) &server_addr)->sin_port);
 
-    INFO("success to bind port[127.0.0.1:%d/tcp] for skin_server in host\n",
-        svr_port);
+        INFO("success to bind port[%s:%d/tcp] for skin_server in host\n",
+                inet_ntoa(((struct sockaddr_in *) &server_addr)->sin_addr),
+                svr_port);
+    }
 
     if (0 > listen(server_sock, 4)) {
         ERR("skin_server listen error\n");
@@ -1291,14 +1289,12 @@ static void* do_heart_beat(void* args)
     is_started_heartbeat = 1;
 
     int send_fail_count = 0;
-    int restart_client_count = 0;
-    int need_restart_skin_client = 0;
     int shutdown = 0;
 
     unsigned int booting_handicap_cnt = 0;
     unsigned int hb_interval = HEART_BEAT_INTERVAL * 1000;
 
-    while ( 1 ) {
+    while (1) {
         if (booting_handicap_cnt < 5) {
             booting_handicap_cnt++;
 
@@ -1320,9 +1316,10 @@ static void* do_heart_beat(void* args)
             break;
         }
 
-        if ( client_sock ) {
-            TRACE( "send HB\n" );
-            if ( 0 > send_skin_header_only( client_sock, SEND_HEART_BEAT, 0 ) ) {
+        if (client_sock) {
+            TRACE("send HB\n");
+
+            if (0 > send_skin_header_only(client_sock, SEND_HEART_BEAT, 0)) {
                 send_fail_count++;
             } else {
                 send_fail_count = 0;
@@ -1330,87 +1327,53 @@ static void* do_heart_beat(void* args)
         } else {
             /* fail to get socket in accepting or client is not yet accepted */
             send_fail_count++;
-            TRACE( "[HB] client socket is NULL yet.\n" );
+            TRACE("[HB] client socket is NULL yet.\n");
         }
 
-        if ( HEART_BEAT_FAIL_COUNT < send_fail_count ) {
-            ERR( "[HB] fail to send heart beat to skin. fail count:%d\n", HEART_BEAT_FAIL_COUNT );
-            need_restart_skin_client = 1;
+        if ((HEART_BEAT_FAIL_COUNT + 1) < send_fail_count) {
+            ERR("[HB] fail to send heart beat to skin. fail count : %d\n",
+                HEART_BEAT_FAIL_COUNT);
+
+            shutdown = 1;
+            break;
         }
 
-        pthread_mutex_lock( &mutex_recv_heartbeat_count );
+        pthread_mutex_lock(&mutex_recv_heartbeat_count);
         recv_heartbeat_count++;
         if (1 < recv_heartbeat_count) {
-            INFO("[HB] recv_heartbeat_count:%d\n", recv_heartbeat_count);
+            INFO("[HB] recv_heartbeat_count : %d\n", recv_heartbeat_count);
         }
-        pthread_mutex_unlock( &mutex_recv_heartbeat_count );
+        pthread_mutex_unlock(&mutex_recv_heartbeat_count);
 
-        if ( HEART_BEAT_EXPIRE_COUNT < recv_heartbeat_count ) {
-            ERR( "received heartbeat count is expired.\n" );
-            need_restart_skin_client = 1;
+        if (HEART_BEAT_EXPIRE_COUNT < recv_heartbeat_count) {
+            ERR("received heartbeat count is expired.\n");
+
+            shutdown = 1;
+            break;
         }
-
-        if ( need_restart_skin_client ) {
-
-            if ( RESTART_CLIENT_MAX_COUNT <= restart_client_count ) {
-                shutdown = 1;
-                break;
-            } else {
-
-                if ( is_requested_shutdown_qemu_gracefully() ) {
-                    INFO( "requested shutdown_qemu_gracefully, do not retry starting skin client process.\n" );
-                    break;
-                } else {
-
-                    send_fail_count = 0;
-                    recv_heartbeat_count = 0;
-                    need_restart_skin_client = 0;
-                    restart_client_count++;
-
-                    INFO( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
-                    INFO( "!!! restart skin client process !!!\n" );
-                    INFO( "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" );
-
-                    is_force_close_client = 1;
-                    if ( client_sock ) {
-#ifdef CONFIG_WIN32
-                        closesocket( client_sock );
-#else
-                        close( client_sock );
-#endif
-                        client_sock = 0;
-                    }
-
-                    start_skin_client( skin_argc, skin_argv );
-
-                }
-
-            }
-
-        }
-
     }
 
-    if ( shutdown ) {
-
-        INFO( "[HB] shutdown skin_server by heartbeat thread.\n" );
+    if (shutdown != 0) {
+        INFO("[HB] shutdown skin_server by heartbeat thread.\n");
 
         is_force_close_client = 1;
-        if ( client_sock ) {
+
+        if (client_sock) {
 #ifdef CONFIG_WIN32
-            closesocket( client_sock );
+            closesocket(client_sock);
 #else
-            close( client_sock );
+            close(client_sock);
 #endif
             client_sock = 0;
         }
 
         stop_server = 1;
-        if ( server_sock ) {
+
+        if (server_sock) {
 #ifdef CONFIG_WIN32
-            closesocket( server_sock );
+            closesocket(server_sock);
 #else
-            close( server_sock );
+            close(server_sock);
 #endif
             server_sock = 0;
         }
@@ -1421,7 +1384,6 @@ static void* do_heart_beat(void* args)
 
         maru_register_exit_msg(MARU_EXIT_HB_TIME_EXPIRED, NULL);
         shutdown_qemu_gracefully();
-
     }
 
     return NULL;

@@ -265,7 +265,7 @@ public class SocketCommunicator implements ICommunicator {
 					increaseHeartbeatCount();
 
 					if (isHeartbeatExpired()) {
-						logger.info("heartbeat was expired");
+						logger.info("heartbeat was expired!");
 						terminate();
 					}
 				}

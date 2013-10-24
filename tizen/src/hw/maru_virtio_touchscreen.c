@@ -318,10 +318,15 @@ static int virtio_touchscreen_device_init(VirtIODevice *vdev)
     ts->qdev = qdev;
 
     /* reset the counters */
+    pthread_mutex_lock(&event_mutex);
     event_queue_cnt = event_ringbuf_cnt = 0;
+    pthread_mutex_unlock(&event_mutex);
+
+    pthread_mutex_lock(&elem_mutex);
     elem_queue_cnt = elem_ringbuf_cnt = 0;
 
     ts->waitBuf = false;
+    pthread_mutex_unlock(&elem_mutex);
 
     /* bottom halves */
     ts->bh = qemu_bh_new(maru_touchscreen_bh, ts);
