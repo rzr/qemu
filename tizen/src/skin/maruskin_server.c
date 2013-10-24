@@ -395,7 +395,7 @@ void notify_booting_progress(unsigned int layer, int progress_value)
 
     snprintf(progress_data,
         PROGRESS_DATA_LENGTH, "%d%03d", layer % 10, progress_value);
-    INFO("booting...%s\%\n", progress_data);
+    TRACE("booting...%s\%\n", progress_data);
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,

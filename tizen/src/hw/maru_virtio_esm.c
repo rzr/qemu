@@ -34,6 +34,7 @@
 MULTI_DEBUG_CHANNEL(qemu, virtio-esm);
 
 struct progress_info {
+    char mode;
     uint16_t percentage;
 };
 
@@ -57,19 +58,24 @@ static void virtio_esm_handle(VirtIODevice *vdev, VirtQueue *vq)
 
     TRACE("virtio element out number : %d\n", elem.out_num);
     if (elem.out_num != 1) {
-        ERR("virtio element out number is wierd.");
+        ERR("virtio element out number is wierd.\n");
     }
     else {
         TRACE("caramis elem.out_sg[0].iov_len : %x\n", elem.out_sg[0].iov_len);
         TRACE("caramis elem.out_sg[0].iov_base : %x\n", elem.out_sg[0].iov_base);
-        if (elem.out_sg[0].iov_len != 2) {
-            ERR("out lenth is wierd.");
+        if (elem.out_sg[0].iov_len != 4) {
+            ERR("out lenth is wierd.\n");
         }
         else {
-            progress.percentage = *((uint16_t*)elem.out_sg[0].iov_base);
-            INFO("boot up progress is [%u] percent done.\n", progress.percentage);
+            progress = *((struct progress_info*)elem.out_sg[0].iov_base);
+            TRACE("Boot up progress is [%u] percent done at %s.\n",
+                progress.percentage,
+                progress.mode == 's' || progress.mode == 'S' ? "system mode" : "user mode");
             /* notify to skin */
-            //notify_booting_progress(0, progress.percentage);
+            if(progress.mode == 's' || progress.mode == 'S')
+                notify_booting_progress(1, progress.percentage);
+            else
+                notify_booting_progress(0, progress.percentage);
         }
     }
 
