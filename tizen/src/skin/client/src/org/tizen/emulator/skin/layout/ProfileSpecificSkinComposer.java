@@ -167,7 +167,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			shell.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (dockValue == 0 || dockValue == SWT.NONE) {
+					if (dockValue == SWT.NONE) {
 						skin.getKeyWindowKeeper().openKeyWindow(
 								SWT.RIGHT | SWT.CENTER, false);
 					} else {

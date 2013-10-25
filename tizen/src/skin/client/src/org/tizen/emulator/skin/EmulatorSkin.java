@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -219,11 +220,12 @@ public class EmulatorSkin {
 		int portNumber = config.getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
 
 		if (portNumber >= 26200) {
-			int red = (int) (Math.random() * 256);
-			int green = (int) (Math.random() * 256);
-			int blue = (int) (Math.random() * 256);
-			this.colorVM = new Color(shell.getDisplay(), new RGB(red, green,
-					blue));
+			Random rand = new Random();
+
+			int red = rand.nextInt(255);
+			int green = rand.nextInt(255);
+			int blue = rand.nextInt(255);
+			this.colorVM = new Color(shell.getDisplay(), new RGB(red, green, blue));
 		} else {
 			int vmIndex = (portNumber % 100) / 10;
 

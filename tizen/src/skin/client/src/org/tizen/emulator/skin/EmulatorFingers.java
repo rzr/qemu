@@ -84,7 +84,7 @@ public class EmulatorFingers {
 		initMultiTouchState(maximum);
 	}
 
-	protected class FingerPoint {
+	class FingerPoint {
 		private int id;
 		private int originX;
 		private int originY;
@@ -241,9 +241,8 @@ public class EmulatorFingers {
 					finger.y = y;
 
 					if (finger.id != 0) {
-						logger.info(String.format(
-								"id %d finger multi-touch dragging = (%d, %d)",
-								this.grabFingerID, x, y));
+						logger.info("id " + grabFingerID + " finger multi-touch dragging : ("
+								+ x + ", " + y + ")");
 
 						mouseEventData = new MouseEventData(
 								MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
@@ -256,7 +255,7 @@ public class EmulatorFingers {
 				return;
 			}
 
-			if (this.fingerCnt == 0)
+			if (fingerCnt == 0)
 			{ /* first finger touch input */
 				if (addFingerPoint(originX, originY, x, y) == -1) {
 					return;
@@ -271,10 +270,10 @@ public class EmulatorFingers {
 			else if ((finger = getFingerPointSearch(x, y)) != null)
 			{ /* check the position of previous touch event */
 				/* finger point is selected */
-				this.grabFingerID = finger.id;
-				logger.info(String.format("id %d finger is grabbed\n", this.grabFingerID));
+				grabFingerID = finger.id;
+				logger.info("id " + grabFingerID + " finger is grabbed");
 			}
-			else if (this.fingerCnt == getMaxTouchPoint())
+			else if (fingerCnt == getMaxTouchPoint())
 			{ /* Let's assume that this event is last finger touch input */
 				finger = getFingerPointFromSlot(getMaxTouchPoint() - 1);
 				if (finger != null) {
@@ -303,13 +302,13 @@ public class EmulatorFingers {
 				addFingerPoint(originX, originY, x, y);
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
-						originX, originY, x, y, this.fingerCnt - 1);
+						originX, originY, x, y, fingerCnt - 1);
 				communicator.sendToQEMU(
 						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		} else if (touchType == MouseEventType.RELEASE.value()) { /* released */
 			logger.info("mouse up for multi touch");
-			this.grabFingerID = 0;
+			grabFingerID = 0;
 		}
 	}
 
@@ -320,7 +319,7 @@ public class EmulatorFingers {
 
 		if (touchType == MouseEventType.PRESS.value() ||
 				touchType == MouseEventType.DRAG.value()) { /* pressed */
-			if (this.grabFingerID > 0) {
+			if (grabFingerID > 0) {
 				finger = getFingerPointFromSlot(grabFingerID - 1);
 				if (finger != null) {
 					int originDistanceX = originX - finger.originX;
@@ -330,11 +329,12 @@ public class EmulatorFingers {
 
 					int currrntScreenW = currentState.getCurrentResolutionWidth();
 					int currrntScreenH = currentState.getCurrentResolutionHeight();
-					int tempFingerX, tempFingerY;
+					int tempFingerX = 0, tempFingerY = 0;
 
-					int i;
+					int i = 0;
+
 					/* bounds checking */                                             
-					for (i = 0; i < this.fingerCnt; i++) {
+					for (i = 0; i < fingerCnt; i++) {
 						finger = getFingerPointFromSlot(i);
 						if (finger != null) {
 							tempFingerX = finger.x + distanceX;
@@ -342,15 +342,15 @@ public class EmulatorFingers {
 
 							if (tempFingerX > currrntScreenW || tempFingerX < 0 ||
 									tempFingerY > currrntScreenH || tempFingerY < 0) {
-								logger.info(String.format(
-										"id %d finger is out of bounds (%d, %d)\n",
-										i + 1, tempFingerX, tempFingerY));
+								logger.info("id " + (i + 1) + " finger is out of bounds : ("
+									+ tempFingerX + ", " + tempFingerY + ")");
+
 								return;
 							}
 						}
 					}
 
-					for (i = 0; i < this.fingerCnt; i++) {
+					for (i = 0; i < fingerCnt; i++) {
 						finger = getFingerPointFromSlot(i);
 						if (finger != null) {
 							finger.originX += originDistanceX;
@@ -382,9 +382,9 @@ public class EmulatorFingers {
 				return;
 			}
 
-			if (this.fingerCnt == 0)
+			if (fingerCnt == 0)
 			{ /* first finger touch input */
-				if (this.addFingerPoint(originX, originY, x, y) == -1) {
+				if (addFingerPoint(originX, originY, x, y) == -1) {
 					return;
 				}
 
@@ -394,13 +394,13 @@ public class EmulatorFingers {
 				communicator.sendToQEMU(
 						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
-			else if ((finger = this.getFingerPointSearch(x, y)) != null)
+			else if ((finger = getFingerPointSearch(x, y)) != null)
 			{ /* check the position of previous touch event */
 				/* finger point is selected */
-				this.grabFingerID = finger.id;
-		    	logger.info(String.format("id %d finger is grabbed\n", this.grabFingerID));
+				grabFingerID = finger.id;
+				logger.info("id " + grabFingerID + " finger is grabbed");
 			}
-			else if (this.fingerCnt == getMaxTouchPoint())
+			else if (fingerCnt == getMaxTouchPoint())
 			{  /* Let's assume that this event is last finger touch input */
 				/* do nothing */
 			}
@@ -409,13 +409,13 @@ public class EmulatorFingers {
 				addFingerPoint(originX, originY, x, y);
 				mouseEventData = new MouseEventData(
 						MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
-						originX, originY, x, y, this.fingerCnt - 1);
+						originX, originY, x, y, fingerCnt - 1);
 				communicator.sendToQEMU(
 						SendCommand.SEND_MOUSE_EVENT, mouseEventData, false);
 			}
 		} else if (touchType == MouseEventType.RELEASE.value()) { /* released */
 			logger.info("mouse up for multi touch");
-			this.grabFingerID = 0;
+			grabFingerID = 0;
 		}
 	}
 

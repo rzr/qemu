@@ -1,7 +1,7 @@
 /**
- * 
+ * Log Management
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -51,11 +51,9 @@ import org.tizen.emulator.skin.util.StringUtil;
  *
  */
 public class SkinLogger {
-	
 	public static final String LOG_FOLDER = "logs";
-	
+
 	public enum SkinLogLevel {
-		
 		ERROR(Level.SEVERE, "error"),
 		WARN(Level.WARNING, "warn"),
 		DEBUG(Level.INFO, "debug"),
@@ -63,13 +61,16 @@ public class SkinLogger {
 		
 		private Level level;
 		private String value;
-		private SkinLogLevel( Level level, String value ) {
+
+		private SkinLogLevel(Level level, String value) {
 			this.level = level;
 			this.value = value;
 		}
+
 		public Level level() {
 			return this.level;
 		}
+
 		public String value() {
 			return this.value;
 		}
@@ -82,176 +83,168 @@ public class SkinLogger {
 	private static Map<Class<?>, SkinLogger> loggerMap = new HashMap<Class<?>, SkinLogger>();
 	
 	private Logger logger;
-	
-	private SkinLogger( Logger logger ) {
+
+	/**
+	 *  Constructor
+	 */
+	private SkinLogger(Logger logger) {
 		this.logger = logger;
 	}
-	
+
 	public Logger getLogger() {
 		return this.logger;
 	}
 
-	public static void setLevel( Level level ) {
-		if( null != fileHandler ) {
-			fileHandler.setLevel( level );
+	public static void setLevel(Level level) {
+		if (null != fileHandler) {
+			fileHandler.setLevel(level);
 		}
 	}
 
-	
-	public static void init( SkinLogLevel logLevel, String filePath ) {
-		
-		if( !isInit ) {
-			
+	public static void init(SkinLogLevel logLevel, String filePath) {
+		if (!isInit) {
 			isInit = true;
-			
+
 			String path = "";
-			
-			if( !StringUtil.isEmpty( filePath ) ) {
+
+			if (!StringUtil.isEmpty(filePath)) {
 				path = filePath + File.separator;
 			}
 
-			File dir = new File( path + LOG_FOLDER );
+			File dir = new File(path + LOG_FOLDER);
 			dir.mkdir();
-			
-			// delete .lck files after abnomal skin termination
+
+			/* delete .lck files after abnomal skin termination */
 			File[] listFiles = dir.listFiles();
-			for ( File f : listFiles ) {
+			for (File f : listFiles) {
 				String name = f.getName();
-				if ( !FILE_NAME.equals( name ) && name.startsWith( FILE_NAME ) ) {
+
+				if (!FILE_NAME.equals(name) && name.startsWith(FILE_NAME)) {
 					f.delete();
 				}
 			}
-			
-			File file = new File( dir + File.separator + FILE_NAME );
-			if( !file.exists() ) {
+
+			File file = new File(dir + File.separator + FILE_NAME);
+			if (!file.exists()) {
 				try {
-					if( !file.createNewFile() ) {
-						System.err.println( "[SkinLog:error]Cannot create skin log file. path:" + file.getAbsolutePath() );
-						System.exit( -1 );
+					if(!file.createNewFile()) {
+						System.err.println("[SkinLog:error] "
+								+ "Cannot create skin log file. path : " + file.getAbsolutePath());
+
+						System.exit(-1);
 						return;
 					}
-				} catch ( IOException e ) {
+				} catch (IOException e) {
 					e.printStackTrace();
-					System.exit( -1 );
+
+					System.exit(-1);
 					return;
 				}
 			}
-			
+
 			try {
-				fileHandler = new FileHandler( file.getAbsolutePath(), false );
-			} catch ( SecurityException e1 ) {
+				fileHandler = new FileHandler(file.getAbsolutePath(), false);
+			} catch (SecurityException e1) {
 				e1.printStackTrace();
-			} catch ( IOException e1 ) {
+			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
 
 			try {
-				fileHandler.setEncoding( "UTF-8" );
-			} catch ( SecurityException e ) {
+				fileHandler.setEncoding("UTF-8");
+			} catch (SecurityException e) {
 				e.printStackTrace();
-			} catch ( UnsupportedEncodingException e ) {
+			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
-			
-			fileHandler.setFormatter( new SkinFormatter() );
-			fileHandler.setLevel( logLevel.level() );
-			
+
+			fileHandler.setFormatter(new SkinFormatter());
+			fileHandler.setLevel(logLevel.level());
 		}
-		
 	}
-	
+
 	public static void end() {
 		loggerMap.clear();
 	}
-	
-	public static <T> SkinLogger getSkinLogger( Class<T> clazz ) {
-		
+
+	public static <T> SkinLogger getSkinLogger(Class<T> clazz) {
 		String name = null;
-		
-		if( null == clazz ) {
+
+		if (null == clazz) {
 			name = SkinLogger.class.getName();
-		}else {
+		} else {
 			name = clazz.getName();
 		}
-		
-		SkinLogger skinLogger = loggerMap.get( clazz );
-		
-		if( null != skinLogger ) {
-			return skinLogger;
-		}else {
-			
-			Logger logger = Logger.getLogger( name );
-			logger.addHandler( fileHandler );
-			logger.setLevel( fileHandler.getLevel() );
-			logger.setUseParentHandlers( false );
-			
-			SkinLogger sLogger = new SkinLogger( logger );
-			loggerMap.put( clazz, sLogger );
-			
-			return sLogger;
-			
-		}
-		
-	}
 
+		SkinLogger skinLogger = loggerMap.get(clazz);
+
+		if (null != skinLogger) {
+			return skinLogger;
+		} else {
+			Logger logger = Logger.getLogger(name);
+			logger.addHandler(fileHandler);
+			logger.setLevel(fileHandler.getLevel());
+			logger.setUseParentHandlers(false);
+
+			SkinLogger sLogger = new SkinLogger(logger);
+			loggerMap.put(clazz, sLogger);
+
+			return sLogger;
+		}
+	}
 }
 
 class SkinFormatter extends Formatter {
-
-	private SimpleDateFormat simpleDateFormat = new SimpleDateFormat( "yyyyMMdd-HHmmss" );
-	private String lineSeparator = System.getProperty( "line.separator" );
+	private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
+	private String lineSeparator = System.getProperty("line.separator");
 
 	@Override
-	public String format( LogRecord record ) {
-
+	public String format(LogRecord record) {
 		StringBuilder builder = new StringBuilder();
 
-		builder.append( "[" );
-		builder.append( record.getLevel().toString() );
-		builder.append( ":" );
+		builder.append("[");
+		builder.append(record.getLevel().toString());
+		builder.append(":");
 
-		String formattedDate = simpleDateFormat.format( new Date( record.getMillis() ) );
-		builder.append( formattedDate );
-		builder.append( ":" );
+		String formattedDate = simpleDateFormat.format(new Date(record.getMillis()));
+		builder.append(formattedDate);
+		builder.append(":");
 
-		if ( null != record.getSourceClassName() ) {
+		if (null != record.getSourceClassName()) {
 			String sourceClassName = record.getSourceClassName();
-			String[] split = sourceClassName.split( "\\." );
-			builder.append( split[split.length - 1] );
+			String[] split = sourceClassName.split("\\.");
+			builder.append(split[split.length - 1]);
 		} else {
-			builder.append( record.getLoggerName() );
-		}
-		
-		if ( null != record.getSourceMethodName() ) {
-			builder.append( "." );
-			builder.append( record.getSourceMethodName() );
+			builder.append(record.getLoggerName());
 		}
 
-		builder.append( "] " );
+		if (null != record.getSourceMethodName()) {
+			builder.append(".");
+			builder.append(record.getSourceMethodName());
+		}
 
-		String message = formatMessage( record );
-		builder.append( message );
+		builder.append("] ");
 
-		builder.append( lineSeparator );
+		String message = formatMessage(record);
+		builder.append(message);
 
-		if ( null != record.getThrown() ) {
-			
+		builder.append(lineSeparator);
+
+		if (null != record.getThrown()) {
 			try {
-				
 				StringWriter sw = new StringWriter();
-				PrintWriter pw = new PrintWriter( sw );
-				record.getThrown().printStackTrace( pw );
+				PrintWriter pw = new PrintWriter(sw);
+
+				record.getThrown().printStackTrace(pw);
 				pw.close();
-				
-				builder.append( sw.toString() );
-				
-			} catch ( Exception ex ) {
+
+				builder.append(sw.toString());
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 
 		return builder.toString();
-
 	}
-
 }
 	
