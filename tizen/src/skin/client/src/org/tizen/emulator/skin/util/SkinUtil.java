@@ -223,7 +223,8 @@ public class SkinUtil {
 
 	public static void trimShell(Shell shell, Image image,
 			int left, int top, int width, int height) {
-		if (null == image) {
+		if (image == null
+				|| (width == 0 && height == 0)) {
 			return;
 		}
 
