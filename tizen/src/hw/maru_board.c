@@ -144,7 +144,7 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 #endif
     struct winsys_interface *vigs_wsi = NULL;
 
-    if (xen_enabled() && xen_hvm_init() != 0) {
+    if (xen_enabled() && xen_hvm_init(&ram_memory) != 0) {
         fprintf(stderr, "xen hardware virtual machine initialisation failed\n");
         exit(1);
     }
