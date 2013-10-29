@@ -175,7 +175,8 @@ public class SkinUtil {
 				HWKey hwKey = new HWKey(
 						eventInfo.getKeyName(),
 						eventInfo.getKeyCode(),
-						new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight),
+						new HWKeyRegion(scaledX, scaledY, scaledWidth, scaledHeight,
+								keyEntry.getRegion().isUpdate()),
 						keyEntry.getTooltip());
 
 				return hwKey;

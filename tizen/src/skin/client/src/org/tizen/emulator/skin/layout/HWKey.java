@@ -28,13 +28,13 @@
 
 package org.tizen.emulator.skin.layout;
 
-import org.tizen.emulator.skin.util.SkinRegion;
+import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class HWKey {
 	private String name;
 	private int keyCode;
-	private SkinRegion region;
+	private HWKeyRegion region;
 	private String tooltip;
 
 	/**
@@ -45,7 +45,7 @@ public class HWKey {
 		this.keyCode = SkinUtil.UNKNOWN_KEYCODE;
 	}
 
-	public HWKey(String name, int keyCode, SkinRegion region, String tooltip) {
+	public HWKey(String name, int keyCode, HWKeyRegion region, String tooltip) {
 		this.name = name;
 		this.keyCode = keyCode;
 		this.region = region;
@@ -71,11 +71,11 @@ public class HWKey {
 	}
 
 	/* region */
-	public SkinRegion getRegion() {
+	public HWKeyRegion getRegion() {
 		return region;
 	}
 
-	public void setRegion(SkinRegion region) {
+	public void setRegion(HWKeyRegion region) {
 		this.region = region;
 	}
 

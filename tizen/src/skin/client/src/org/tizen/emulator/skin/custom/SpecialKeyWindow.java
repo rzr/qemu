@@ -69,7 +69,7 @@ import org.tizen.emulator.skin.keywindow.dbi.RegionType;
 import org.tizen.emulator.skin.layout.HWKey;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
-import org.tizen.emulator.skin.util.SkinRegion;
+import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -194,7 +194,7 @@ public class SpecialKeyWindow extends SkinWindow {
 				HWKey hwKey = new HWKey(
 						eventInfo.getKeyName(),
 						eventInfo.getKeyCode(),
-						new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight),
+						new HWKeyRegion(scaledX, scaledY, scaledWidth, scaledHeight),
 						keyEntry.getTooltip());
 
 				return hwKey;

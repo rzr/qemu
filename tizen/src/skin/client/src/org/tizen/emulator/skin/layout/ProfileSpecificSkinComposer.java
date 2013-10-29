@@ -485,7 +485,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 									pressedHWKey.getRegion().width, pressedHWKey.getRegion().height, false);
 
 							/* roll back HW key region */
-							if (pressedHWKey.getKeyCode() != 101) { // TODO: not necessary for home key
+							if (pressedHWKey.getRegion().isNeedUpdate() == true) {
 								SkinUtil.trimShell(shell, currentState.getCurrentImage(),
 										pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
 										pressedHWKey.getRegion().width, pressedHWKey.getRegion().height);
@@ -529,7 +529,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 									hwKey.getRegion().width, hwKey.getRegion().height, false);
 
 							/* set pressed HW key region */
-							if (hwKey.getKeyCode() != 101) { // TODO: not necessary for home key
+							if (hwKey.getRegion().isNeedUpdate() == true) {
 								SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
 										hwKey.getRegion().x, hwKey.getRegion().y,
 										hwKey.getRegion().width, hwKey.getRegion().height);
