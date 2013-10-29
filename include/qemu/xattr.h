@@ -23,7 +23,9 @@
 #ifdef CONFIG_LIBATTR
 #  include <attr/xattr.h>
 #else
+#ifndef ENOATTR
 #  define ENOATTR ENODATA
+#endif
 #  include <sys/xattr.h>
 #endif
 

@@ -21,6 +21,11 @@
 #include "trace.h"
 #include "migration/migration.h"
 
+#ifdef CONFIG_DARWIN
+#define O_DIRECT 040000 /* Direct disk access */
+#define O_NOATIME 01000000 /* Do not set atime */
+#endif
+
 int open_fd_hw;
 int total_open_fd;
 static int open_fd_rc;
@@ -854,12 +859,21 @@ static void stat_to_v9stat_dotl(V9fsState *s, const struct stat *stbuf,
     v9lstat->st_size = stbuf->st_size;
     v9lstat->st_blksize = stbuf->st_blksize;
     v9lstat->st_blocks = stbuf->st_blocks;
+#ifdef CONFIG_LINUX
     v9lstat->st_atime_sec = stbuf->st_atime;
     v9lstat->st_atime_nsec = stbuf->st_atim.tv_nsec;
     v9lstat->st_mtime_sec = stbuf->st_mtime;
     v9lstat->st_mtime_nsec = stbuf->st_mtim.tv_nsec;
     v9lstat->st_ctime_sec = stbuf->st_ctime;
     v9lstat->st_ctime_nsec = stbuf->st_ctim.tv_nsec;
+#else // darwin
+	v9lstat->st_atime_sec = stbuf->st_atimespec.tv_sec;
+    v9lstat->st_atime_nsec = stbuf->st_atimespec.tv_nsec;
+    v9lstat->st_mtime_sec = stbuf->st_mtimespec.tv_sec;
+    v9lstat->st_mtime_nsec = stbuf->st_mtimespec.tv_nsec;
+    v9lstat->st_ctime_sec = stbuf->st_ctimespec.tv_sec;
+    v9lstat->st_ctime_nsec = stbuf->st_ctimespec.tv_nsec;
+#endif
     /* Currently we only support BASIC fields in stat */
     v9lstat->st_result_mask = P9_STATS_BASIC;
 
@@ -1788,6 +1802,12 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
         if (err || !result) {
             break;
         }
+
+#ifdef CONFIG_DARWIN
+		uint64_t d_offset = 0;
+		d_offset = v9fs_co_telldir(pdu, fidp);
+#endif
+
         v9fs_string_init(&name);
         v9fs_string_sprintf(&name, "%s", dent->d_name);
         if ((count + v9fs_readdir_data_size(&name)) > max_count) {
@@ -1810,7 +1830,11 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
 
         /* 11 = 7 + 4 (7 = start offset, 4 = space for storing count) */
         len = pdu_marshal(pdu, 11 + count, "Qqbs",
+#ifdef CONFIG_LINUX
                           &qid, dent->d_off,
+#else
+						  &qid, d_offset,
+#endif
                           dent->d_type, &name);
         if (len < 0) {
             v9fs_co_seekdir(pdu, fidp, saved_dir_pos);
@@ -1820,7 +1844,11 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
         }
         count += len;
         v9fs_string_free(&name);
+#ifdef CONFIG_LINUX
         saved_dir_pos = dent->d_off;
+#else
+		saved_dir_pos = d_offset;
+#endif
     }
     g_free(dent);
     if (err < 0) {

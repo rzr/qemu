@@ -21,7 +21,9 @@
 #include <sys/un.h>
 #include "qemu/xattr.h"
 #include <libgen.h>
+#ifdef CONFIG_LINUX
 #include <linux/fs.h>
+#endif
 #ifdef CONFIG_LINUX_MAGIC_H
 #include <linux/magic.h>
 #endif
@@ -131,6 +133,7 @@ static int local_lstat(FsContext *fs_ctx, V9fsPath *fs_path, struct stat *stbuf)
         gid_t tmp_gid;
         mode_t tmp_mode;
         dev_t tmp_dev;
+#ifdef CONFIG_LINUX
         if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.uid", &tmp_uid,
                     sizeof(uid_t)) > 0) {
             stbuf->st_uid = tmp_uid;
@@ -147,6 +150,24 @@ static int local_lstat(FsContext *fs_ctx, V9fsPath *fs_path, struct stat *stbuf)
                         sizeof(dev_t)) > 0) {
                 stbuf->st_rdev = tmp_dev;
         }
+#else
+		if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.uid", &tmp_uid,
+					sizeof(uid_t), 0, 0) > 0) {
+			stbuf->st_uid = tmp_uid;
+		}
+		if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.gid", &tmp_gid,
+					sizeof(gid_t), 0, 0) > 0) {
+			stbuf->st_gid = tmp_gid;
+		}
+		if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.mode",
+					&tmp_mode, sizeof(mode_t), 0, 0) > 0) {
+			stbuf->st_mode = tmp_mode;
+		}
+		if(getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.rdev", &tmp_dev,
+						sizeof(dev_t)) > 0) {
+				stbuf->st_rdev = tmp_dev;
+		}
+#endif
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         local_mapped_file_attr(fs_ctx, path, stbuf);
     }
@@ -250,28 +271,44 @@ static int local_set_xattr(const char *path, FsCred *credp)
 
     if (credp->fc_uid != -1) {
         err = setxattr(path, "user.virtfs.uid", &credp->fc_uid, sizeof(uid_t),
+#ifdef CONFIG_LINUX
                 0);
+#else
+				0, 0);
+#endif
         if (err) {
             return err;
         }
     }
     if (credp->fc_gid != -1) {
         err = setxattr(path, "user.virtfs.gid", &credp->fc_gid, sizeof(gid_t),
+#ifdef CONFIG_LINUX
                 0);
+#else
+				0, 0);
+#endif
         if (err) {
             return err;
         }
     }
     if (credp->fc_mode != -1) {
         err = setxattr(path, "user.virtfs.mode", &credp->fc_mode,
+#ifdef CONFIG_LINUX
                 sizeof(mode_t), 0);
+#else
+				sizeof(mode_t), 0, 0);
+#endif
         if (err) {
             return err;
         }
     }
     if (credp->fc_rdev != -1) {
         err = setxattr(path, "user.virtfs.rdev", &credp->fc_rdev,
+#ifdef CONFIG_LINUX
                 sizeof(dev_t), 0);
+#else
+				sizeof(dev_t), 0, 0);
+#endif
         if (err) {
             return err;
         }
@@ -595,6 +632,7 @@ static int local_fstat(FsContext *fs_ctx, int fid_type,
         mode_t tmp_mode;
         dev_t tmp_dev;
 
+#ifdef CONFIG_LINUX
         if (fgetxattr(fd, "user.virtfs.uid",
                       &tmp_uid, sizeof(uid_t)) > 0) {
             stbuf->st_uid = tmp_uid;
@@ -611,6 +649,25 @@ static int local_fstat(FsContext *fs_ctx, int fid_type,
                       &tmp_dev, sizeof(dev_t)) > 0) {
                 stbuf->st_rdev = tmp_dev;
         }
+#else
+        if (fgetxattr(fd, "user.virtfs.uid",
+                      &tmp_uid, sizeof(uid_t), 0, 0) > 0) {
+            stbuf->st_uid = tmp_uid;
+        }
+        if (fgetxattr(fd, "user.virtfs.gid",
+                      &tmp_gid, sizeof(gid_t), 0, 0) > 0) {
+            stbuf->st_gid = tmp_gid;
+        }
+        if (fgetxattr(fd, "user.virtfs.mode",
+                      &tmp_mode, sizeof(mode_t), 0, 0) > 0) {
+            stbuf->st_mode = tmp_mode;
+        }
+        if (fgetxattr(fd, "user.virtfs.rdev",
+                      &tmp_dev, sizeof(dev_t), 0, 0) > 0) {
+                stbuf->st_rdev = tmp_dev;
+        }
+
+#endif
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         errno = EOPNOTSUPP;
         return -1;

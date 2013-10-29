@@ -224,7 +224,9 @@ typedef struct V9fsState
     CoRwlock rename_lock;
     int32_t root_fid;
     Error *migration_blocker;
+#ifdef CONFIG_LINUX
     V9fsConf fsconf;
+#endif
 } V9fsState;
 
 typedef struct V9fsStatState {

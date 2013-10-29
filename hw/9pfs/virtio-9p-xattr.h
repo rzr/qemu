@@ -55,7 +55,11 @@ static inline ssize_t pt_getxattr(FsContext *ctx, const char *path,
                                   const char *name, void *value, size_t size)
 {
     char buffer[PATH_MAX];
+#ifdef CONFIG_LINUX
     return lgetxattr(rpath(ctx, path, buffer), name, value, size);
+#else
+    return getxattr(rpath(ctx, path, buffer), name, value, size, 0, XATTR_NOFOLLOW);
+#endif
 }
 
 static inline int pt_setxattr(FsContext *ctx, const char *path,
@@ -63,14 +67,22 @@ static inline int pt_setxattr(FsContext *ctx, const char *path,
                               size_t size, int flags)
 {
     char buffer[PATH_MAX];
+#ifdef CONFIG_LINUX
     return lsetxattr(rpath(ctx, path, buffer), name, value, size, flags);
+#else
+    return setxattr(rpath(ctx, path, buffer), name, value, size, 0, flags | XATTR_NOFOLLOW);
+#endif
 }
 
 static inline int pt_removexattr(FsContext *ctx,
                                  const char *path, const char *name)
 {
     char buffer[PATH_MAX];
+#ifdef CONFIG_LINUX
     return lremovexattr(rpath(ctx, path, buffer), name);
+#else
+	return removexattr(rpath(ctx, path, buffer), name, XATTR_NOFOLLOW);
+#endif
 }
 
 static inline ssize_t notsup_getxattr(FsContext *ctx, const char *path,

@@ -26,8 +26,12 @@
 static ssize_t mp_pacl_getxattr(FsContext *ctx, const char *path,
                                 const char *name, void *value, size_t size)
 {
+#ifdef CONFIG_LINUX
     char buffer[PATH_MAX];
     return lgetxattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS, value, size);
+#else
+	return 0;
+#endif
 }
 
 static ssize_t mp_pacl_listxattr(FsContext *ctx, const char *path,
@@ -52,14 +56,19 @@ static ssize_t mp_pacl_listxattr(FsContext *ctx, const char *path,
 static int mp_pacl_setxattr(FsContext *ctx, const char *path, const char *name,
                             void *value, size_t size, int flags)
 {
+#ifdef CONFIG_LINUX
     char buffer[PATH_MAX];
     return lsetxattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS, value,
             size, flags);
+#else
+	return 0;
+#endif
 }
 
 static int mp_pacl_removexattr(FsContext *ctx,
                                const char *path, const char *name)
 {
+#ifdef CONFIG_LINUX
     int ret;
     char buffer[PATH_MAX];
     ret  = lremovexattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS);
@@ -73,13 +82,20 @@ static int mp_pacl_removexattr(FsContext *ctx,
         ret = 0;
     }
     return ret;
+#else
+	return 0;
+#endif
 }
 
 static ssize_t mp_dacl_getxattr(FsContext *ctx, const char *path,
                                 const char *name, void *value, size_t size)
 {
+#ifdef CONFIG_LINUX
     char buffer[PATH_MAX];
     return lgetxattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT, value, size);
+#else
+	return 0;
+#endif
 }
 
 static ssize_t mp_dacl_listxattr(FsContext *ctx, const char *path,
@@ -104,14 +120,19 @@ static ssize_t mp_dacl_listxattr(FsContext *ctx, const char *path,
 static int mp_dacl_setxattr(FsContext *ctx, const char *path, const char *name,
                             void *value, size_t size, int flags)
 {
+#ifdef CONFIG_LINUX
     char buffer[PATH_MAX];
     return lsetxattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT, value,
             size, flags);
+#else
+	return 0;
+#endif
 }
 
 static int mp_dacl_removexattr(FsContext *ctx,
                                const char *path, const char *name)
 {
+#ifdef CONFIG_LINUX
     int ret;
     char buffer[PATH_MAX];
     ret  = lremovexattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT);
@@ -125,6 +146,9 @@ static int mp_dacl_removexattr(FsContext *ctx,
         ret = 0;
     }
     return ret;
+#else
+	return 0;
+#endif
 }
 
 
