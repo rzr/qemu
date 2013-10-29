@@ -490,9 +490,9 @@ public class EmulatorFingers {
 			}
 		}
 
-		if (count != 0) {
+		/* if (count != 0) {
 			grabFingerID = 0;
-		}
+		}*/
 
 		return count;
 	}
