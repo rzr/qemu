@@ -1,5 +1,5 @@
 /**
- * 
+ * About Dialog
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -303,6 +303,5 @@ public class AboutDialog extends SkinDialog {
 	@Override
 	protected void close() {
 		logger.info("close the about dialog");
-		aboutImage.dispose();
 	}
 }
