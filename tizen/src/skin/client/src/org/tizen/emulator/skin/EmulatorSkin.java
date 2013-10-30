@@ -1282,9 +1282,8 @@ public class EmulatorSkin {
 					logger.fine("Open detail info");
 				}
 
-				String emulatorName = SkinUtil.makeEmulatorName(config);
-				DetailInfoDialog detailInfoDialog = new DetailInfoDialog(shell,
-						emulatorName, communicator, config, skinInfo);
+				DetailInfoDialog detailInfoDialog = new DetailInfoDialog(
+						shell, communicator, config, skinInfo);
 				detailInfoDialog.open();
 			}
 		};
