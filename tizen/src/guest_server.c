@@ -68,6 +68,7 @@ static int server_sock = 0;
 typedef struct GS_Client {
     int port;
     char addr[RECV_BUF_SIZE];
+    char serial[RECV_BUF_SIZE];
 
     QTAILQ_ENTRY(GS_Client) next;
 } GS_Client;
@@ -95,6 +96,7 @@ static void send_to_client(GS_Client* client, int state)
 {
     struct sockaddr_in sock_addr;
     int s, slen = sizeof(sock_addr);
+    int serial_len = 0;
     char buf [32];
 
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1){
@@ -112,8 +114,10 @@ static void send_to_client(GS_Client* client, int state)
 
     memset(buf, 0, sizeof(buf));
 
+    serial_len = strlen(client->serial);
+
     // send message "[4 digit message length]host:sync:emulator-26101:[0|1]"
-    sprintf(buf, "0026host:sync:emulator-%d:%d", svr_port, state);
+    sprintf(buf, "%04dhost:sync:%s:%d", (serial_len + 12), client->serial, state);
 
     if (sendto(s, buf, sizeof(buf), 0, (struct sockaddr*)&sock_addr, slen) == -1)
     {
@@ -137,7 +141,7 @@ void notify_all_sdb_clients(int state)
 
 }
 
-static void add_sdb_client(const char* addr, int port)
+static void add_sdb_client(const char* addr, int port, const char* serial)
 {
     GS_Client *client = g_malloc0(sizeof(GS_Client));
     if (NULL == client) {
@@ -151,10 +155,17 @@ static void add_sdb_client(const char* addr, int port)
     } else if (strlen(addr) > RECV_BUF_SIZE) {
         INFO("GS_Client client's address is too long. %s\n", addr);
         return;
+    } else if (serial == NULL || strlen(serial) <= 0) {
+        INFO("GS_Client client's serial is EMPTY.\n");
+        return;
+    } else if (strlen(serial) > RECV_BUF_SIZE) {
+        INFO("GS_Client client's serial is too long. %s\n", serial);
+        return;
     }
 
     strcpy(client->addr, addr);
     client->port = port;
+    strcpy(client->serial, serial);
 
     pthread_mutex_lock(&mutex_clilist);
 
@@ -404,16 +415,23 @@ static void register_sdb_server(char* readbuf)
     char token[] = "\n";
     char* ret = NULL;
     char* addr = NULL;
+    char* serial = NULL;
+
     ret = strtok(readbuf, token);
     addr = strtok(NULL, token);
     if (addr == NULL)
         return;
+
     ret = strtok(NULL, token);
     if (ret == NULL)
         return;
     port = atoi(ret);
 
-    add_sdb_client(addr, port);
+    serial = strtok(NULL, token);
+    if (serial == NULL)
+        return;
+
+    add_sdb_client(addr, port, serial);
 }
 
 #define PRESS     1
