@@ -516,21 +516,22 @@ public class SkinUtil {
 				return false;
 			}
 
-			Integer xDisplay = (Integer) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
+			Integer gdkDisplay = (Integer) invokeOSMethod(
+					getOSMethod("gdk_display_get_default"));
+			if (null == gdkDisplay) {
+				logger.warning("gdk_display_get_default returned null");
+				return false;
+			}
+
+			Integer xDisplay = (Integer) invokeOSMethod(
+					getOSMethod("gdk_x11_display_get_xdisplay", int.class), gdkDisplay);
 			if (null == xDisplay) {
-				logger.warning("GDK_DISPLAY returned null");
+				logger.warning("gdk_x11_display_get_xdisplay returned null");
 
-				Integer gdkDisplay = (Integer) invokeOSMethod(
-						getOSMethod("gdk_display_get_default"));
-				if (null == gdkDisplay) {
-					logger.warning("gdk_display_get_default returned null");
-					return false;
-				}
-
-				xDisplay = (Integer) invokeOSMethod(
-						getOSMethod("gdk_x11_display_get_xdisplay", int.class), gdkDisplay);
+				/* deprecated function */
+				xDisplay = (Integer) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
 				if (null == xDisplay) {
-					logger.warning("gdk_x11_display_get_xdisplay returned null");
+					logger.warning("GDK_DISPLAY returned null");
 					return false;
 				}
 			}
@@ -802,21 +803,22 @@ public class SkinUtil {
 				return false;
 			}
 
-			Long xDisplay = (Long) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
+			Long gdkDisplay = (Long) invokeOSMethod(
+					getOSMethod("gdk_display_get_default"));
+			if (null == gdkDisplay) {
+				logger.warning("gdk_display_get_default returned null");
+				return false;
+			}
+
+			Long xDisplay = (Long) invokeOSMethod(
+					getOSMethod("gdk_x11_display_get_xdisplay", long.class), gdkDisplay);
 			if (null == xDisplay) {
-				logger.warning("GDK_DISPLAY returned null");
+				logger.warning("gdk_x11_display_get_xdisplay returned null");
 
-				Long gdkDisplay = (Long) invokeOSMethod(
-						getOSMethod("gdk_display_get_default"));
-				if (null == gdkDisplay) {
-					logger.warning("gdk_display_get_default returned null");
-					return false;
-				}
-
-				xDisplay = (Long) invokeOSMethod(
-						getOSMethod("gdk_x11_display_get_xdisplay", long.class), gdkDisplay);
+				/* deprecated function */
+				xDisplay = (Long) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
 				if (null == xDisplay) {
-					logger.warning("gdk_x11_display_get_xdisplay returned null");
+					logger.warning("GDK_DISPLAY returned null");
 					return false;
 				}
 			}
