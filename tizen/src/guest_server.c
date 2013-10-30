@@ -53,6 +53,7 @@
 #include "sdb.h"
 #include "maru_common.h"
 #include "hw/maru_virtio_hwkey.h"
+#include "hw/maru_pm.h"
 
 MULTI_DEBUG_CHANNEL(qemu, guest_server);
 
@@ -75,34 +76,6 @@ static QTAILQ_HEAD(GS_ClientHead, GS_Client)
 clients = QTAILQ_HEAD_INITIALIZER(clients);
 
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
-
-static void add_sdb_client(const char* addr, int port)
-{
-    GS_Client *client = g_malloc0(sizeof(GS_Client));
-    if (NULL == client) {
-        INFO("GS_Client allocation failed.\n");
-        return;
-    }
-
-    if (addr == NULL || strlen(addr) <= 0) {
-        INFO("GS_Client client's address is EMPTY.\n");
-        return;
-    } else if (strlen(addr) > RECV_BUF_SIZE) {
-        INFO("GS_Client client's address is too long. %s\n", addr);
-        return;
-    }
-
-    strcpy(client->addr, addr);
-    client->port = port;
-
-    pthread_mutex_lock(&mutex_clilist);
-
-    QTAILQ_INSERT_TAIL(&clients, client, next);
-
-    pthread_mutex_unlock(&mutex_clilist);
-
-    INFO("Added new sdb client. ip: %s, port: %d\n", client->addr, client->port);
-}
 
 static void remove_sdb_client(GS_Client* client)
 {
@@ -162,6 +135,36 @@ void notify_all_sdb_clients(int state)
     }
     pthread_mutex_unlock(&mutex_clilist);
 
+}
+
+static void add_sdb_client(const char* addr, int port)
+{
+    GS_Client *client = g_malloc0(sizeof(GS_Client));
+    if (NULL == client) {
+        INFO("GS_Client allocation failed.\n");
+        return;
+    }
+
+    if (addr == NULL || strlen(addr) <= 0) {
+        INFO("GS_Client client's address is EMPTY.\n");
+        return;
+    } else if (strlen(addr) > RECV_BUF_SIZE) {
+        INFO("GS_Client client's address is too long. %s\n", addr);
+        return;
+    }
+
+    strcpy(client->addr, addr);
+    client->port = port;
+
+    pthread_mutex_lock(&mutex_clilist);
+
+    QTAILQ_INSERT_TAIL(&clients, client, next);
+
+    pthread_mutex_unlock(&mutex_clilist);
+
+    INFO("Added new sdb client. ip: %s, port: %d\n", client->addr, client->port);
+
+    send_to_client(client, is_suspended_state());
 }
 
 static int parse_val(char* buff, unsigned char data, char* parsbuf)
