@@ -78,6 +78,7 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 		<attribute name="top" type="int"> </attribute>
 		<attribute name="width" type="int"> </attribute>
 		<attribute name="height" type="int"> </attribute>
+		<attribute name="update" type="boolean" default="false" use="optional"> </attribute>
 	</complexType>
 
 	<complexType name="hoverType">

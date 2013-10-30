@@ -384,10 +384,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				/* set window size once again (for ubuntu 12.04) */
 				if (currentState.getCurrentImage() != null) {
 					ImageData imageData = currentState.getCurrentImage().getImageData();
-					shell.setSize(imageData.width, imageData.height);
+
+					if (shell.getSize().x != imageData.width
+							|| shell.getSize().y != imageData.height) {
+						shell.setSize(imageData.width, imageData.height);
+					}
 				}
 
-				/* general shell does not support native transparency,
+				/* swt shell does not support native transparency,
 				 so draw image with GC */
 				if (currentState.getCurrentImage() != null) {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);

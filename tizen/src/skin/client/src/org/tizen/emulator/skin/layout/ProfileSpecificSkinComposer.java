@@ -100,6 +100,9 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 		this.imageRegistry = new ProfileSkinImageRegistry(
 				shell.getDisplay(), config.getDbiContents(), skin.skinInfo.getSkinPath());
+
+		this.currentPressedHWKey = null;
+		this.currentHoveredHWKey = null;
 	}
 
 	@Override
@@ -310,13 +313,35 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 				/* set window size once again (for ubuntu 12.04) */
 				if (currentState.getCurrentImage() != null) {
 					ImageData imageData = currentState.getCurrentImage().getImageData();
-					shell.setSize(imageData.width, imageData.height);
+
+					if (shell.getSize().x != imageData.width
+							|| shell.getSize().y != imageData.height) {
+						shell.setSize(imageData.width, imageData.height);
+					}
 				}
 
-				/* general shell does not support native transparency,
+				/* swt shell does not support native transparency,
 				 so draw image with GC */
 				if (currentState.getCurrentImage() != null) {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
+
+					/* draw the HW key region as the cropped keyPressed image area */
+					if (currentPressedHWKey != null
+							&& currentState.getCurrentKeyPressedImage() != null) {
+						if (currentPressedHWKey.getRegion() != null
+								&& currentPressedHWKey.getRegion().width != 0
+								&& currentPressedHWKey.getRegion().height != 0) {
+							e.gc.drawImage(currentState.getCurrentKeyPressedImage(),
+									currentPressedHWKey.getRegion().x,
+									currentPressedHWKey.getRegion().y,
+									currentPressedHWKey.getRegion().width,
+									currentPressedHWKey.getRegion().height,
+									currentPressedHWKey.getRegion().x,
+									currentPressedHWKey.getRegion().y,
+									currentPressedHWKey.getRegion().width,
+									currentPressedHWKey.getRegion().height);
+						}
+					}
 				}
 
 				skin.getKeyWindowKeeper().redock(false, false);
@@ -444,7 +469,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					if (pressedHWKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
 						logger.info(pressedHWKey.getName() + " key is released");
 
-						/* send event */
+						/* send HW key event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
 						communicator.sendToQEMU(
@@ -452,14 +477,19 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 						currentPressedHWKey = null;
 
-						/* roll back a keyPressed image region */
-						shell.redraw(pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
-								pressedHWKey.getRegion().width, pressedHWKey.getRegion().height, false);
+						if (pressedHWKey.getRegion() != null &&
+								pressedHWKey.getRegion().width != 0 &&
+								pressedHWKey.getRegion().height != 0) {
+							/* roll back a keyPressed image */
+							shell.redraw(pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
+									pressedHWKey.getRegion().width, pressedHWKey.getRegion().height, false);
 
-						if (pressedHWKey.getKeyCode() != 101) { // TODO: not necessary for home key
-							SkinUtil.trimShell(shell, currentState.getCurrentImage(),
-									pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
-									pressedHWKey.getRegion().width, pressedHWKey.getRegion().height);
+							/* roll back HW key region */
+							if (pressedHWKey.getRegion().isNeedUpdate() == true) {
+								SkinUtil.trimShell(shell, currentState.getCurrentImage(),
+										pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
+										pressedHWKey.getRegion().width, pressedHWKey.getRegion().height);
+							}
 						}
 					}
 				}
@@ -482,7 +512,9 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					if (hwKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
 						logger.info(hwKey.getName() + " key is pressed");
 
-						/* send event */
+						shell.setToolTipText(null);
+
+						/* send HW key event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
 						communicator.sendToQEMU(
@@ -490,36 +522,19 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 						currentPressedHWKey = hwKey;
 
-						shell.setToolTipText(null);
-
-						/* draw the HW key region as the cropped keyPressed image area */
 						if (hwKey.getRegion() != null &&
 								hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
-							shell.getDisplay().syncExec(new Runnable() {
-								public void run() {
-									if (currentState.getCurrentKeyPressedImage() != null) {
-										GC gc = new GC(shell);
-										if (gc != null) {
-											gc.drawImage(currentState.getCurrentKeyPressedImage(),
-													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height, /* src */
-													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height); /* dst */
+							/* draw the HW key region as the cropped keyPressed image area */
+							shell.redraw(hwKey.getRegion().x, hwKey.getRegion().y,
+									hwKey.getRegion().width, hwKey.getRegion().height, false);
 
-											gc.dispose();
-
-											if (hwKey.getKeyCode() != 101) { // TODO: not necessary for home key
-												SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
-														hwKey.getRegion().x, hwKey.getRegion().y,
-														hwKey.getRegion().width, hwKey.getRegion().height);
-											}
-
-										}
-									}
-								} /* end of run */
-							});
+							/* set pressed HW key region */
+							if (hwKey.getRegion().isNeedUpdate() == true) {
+								SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
+										hwKey.getRegion().x, hwKey.getRegion().y,
+										hwKey.getRegion().width, hwKey.getRegion().height);
+							}
 						}
-
 					}
 				}
 			}

@@ -1,3 +1,6 @@
+* 1.6.0
+- keep the touch point grabbing while finger rearranging
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-10-29
 * 1.5.103
 - function call re-ordering in arrangeSkin() & etc
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-10-17

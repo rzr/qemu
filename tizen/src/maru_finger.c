@@ -1,7 +1,7 @@
 /*
  * Multi-touch processing
  *
- * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: 
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -195,10 +195,10 @@ void init_multi_touch_state(void)
         finger->x = finger->y = -1;
     }
 
-    mts->finger_point_size = DEFAULT_FINGER_POINT_SIZE; //temp
+    mts->finger_point_size = DEFAULT_FINGER_POINT_SIZE;
     int finger_point_size_half = mts->finger_point_size / 2;
-    mts->finger_point_color = DEFAULT_FINGER_POINT_COLOR; //temp
-    mts->finger_point_outline_color = DEFAULT_FINGER_POINT_OUTLINE_COLOR; //temp
+    mts->finger_point_color = DEFAULT_FINGER_POINT_COLOR;
+    mts->finger_point_outline_color = DEFAULT_FINGER_POINT_OUTLINE_COLOR;
 
     /* create finger point surface */
     Uint32 rmask, gmask, bmask, amask;
@@ -318,7 +318,7 @@ void maru_finger_processing_1(
 
                 if (finger->id != 0) {
                     kbd_mouse_event(x, y, _grab_finger_id - 1, QEMU_MOUSE_PRESSED);
-                    TRACE("id %d finger multi-touch dragging = (%d, %d)\n",
+                    TRACE("id %d finger multi-touch dragging : (%d, %d)\n",
                         _grab_finger_id, x, y);
                 }
             }
@@ -404,7 +404,8 @@ void maru_finger_processing_2(
 
                     if (temp_finger_x > current_screen_w || temp_finger_x < 0
                         || temp_finger_y > current_screen_h || temp_finger_y < 0) {
-                        TRACE("id %d finger is out of bounds (%d, %d)\n", i + 1, temp_finger_x, temp_finger_y);
+                        TRACE("id %d finger is out of bounds (%d, %d)\n",
+                            i + 1, temp_finger_x, temp_finger_y);
                         return;
                     }
                 }
@@ -470,24 +471,25 @@ void maru_finger_processing_2(
     }
 }
 
-static bool _calculate_origin_coordinates(int scaled_lcd_w, int scaled_lcd_h,
+static bool _calculate_origin_coordinates(
+    int scaled_display_w, int scaled_display_h,
     double scale_factor, int rotaton_type, FingerPoint *finger)
 {
-    int point_x, point_y, rotated_point_x, rotated_point_y, flag;
-
-    flag = 0;
+    int point_x = 0, point_y = 0;
+    int rotated_point_x = 0, rotated_point_y = 0;
+    int flag = 0;
 
     rotated_point_x = point_x = (int)(finger->x * scale_factor);
     rotated_point_y = point_y = (int)(finger->y * scale_factor);
 
     if (rotaton_type == ROTATION_LANDSCAPE) {
         rotated_point_x = point_y;
-        rotated_point_y = scaled_lcd_w - point_x;
+        rotated_point_y = scaled_display_w - point_x;
     } else if (rotaton_type == ROTATION_REVERSE_PORTRAIT) {
-        rotated_point_x = scaled_lcd_w - point_x;
-        rotated_point_y = scaled_lcd_h - point_y;
+        rotated_point_x = scaled_display_w - point_x;
+        rotated_point_y = scaled_display_h - point_y;
     } else if (rotaton_type == ROTATION_REVERSE_LANDSCAPE) {
-        rotated_point_x = scaled_lcd_h - point_y;
+        rotated_point_x = scaled_display_h - point_y;
         rotated_point_y = point_x;
     }
 
@@ -500,7 +502,7 @@ static bool _calculate_origin_coordinates(int scaled_lcd_w, int scaled_lcd_h,
         flag = 1;
     }
 
-    if (flag) {
+    if (flag != 0) {
         return true;
     }
 
@@ -545,20 +547,22 @@ void clear_finger_slot(void)
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
 
+    INFO("clear multi-touch\n");
+
     for (i = 0; i < mts->finger_cnt; i++) {
         finger = get_finger_point_from_slot(i);
-        if (finger != NULL && finger->id != 0) {
-            kbd_mouse_event(finger->x, finger->y, finger->id - 1, QEMU_MOUSE_RELEASEED);
-        }
+        if (finger != NULL) {
+            if (finger->id > 0) {
+                kbd_mouse_event(finger->x, finger->y, finger->id - 1, QEMU_MOUSE_RELEASEED);
+            }
 
-        finger->id = 0;
-        finger->origin_x = finger->origin_y = finger->x = finger->y = -1;
+            finger->id = 0;
+            finger->origin_x = finger->origin_y = finger->x = finger->y = -1;
+        }
     }
 
     _grab_finger_id = 0;
-
     mts->finger_cnt = 0;
-    INFO("clear multi-touch\n");
 }
 
 void cleanup_multi_touch_state(void)

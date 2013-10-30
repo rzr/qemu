@@ -1,5 +1,5 @@
 /**
- * 
+ * Hardware Key Region
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -33,17 +33,31 @@ package org.tizen.emulator.skin.util;
  * 
  *
  */
-public class SkinRegion {
+public class HWKeyRegion {
 	public int x;
 	public int y;
 	public int width;
 	public int height;
-	
-	public SkinRegion( int x, int y, int width, int height ) {
+	private boolean update;
+
+	public HWKeyRegion(int x, int y, int width, int height) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
+		this.update = false;
 	}
-	
+
+	public HWKeyRegion(int x, int y, int width, int height,
+			boolean update) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.update = update;
+	}
+
+	public boolean isNeedUpdate() {
+		return update;
+	}
 }
