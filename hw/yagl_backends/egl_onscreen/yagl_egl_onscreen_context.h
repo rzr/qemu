@@ -21,6 +21,7 @@ struct yagl_egl_onscreen_context
      * Onscreen GLES API redirects framebuffer zero to this framebuffer.
      */
     GLuint fb;
+    uint32_t fb_ctx_id;
 
     /*
      * Config with which this context was created, used

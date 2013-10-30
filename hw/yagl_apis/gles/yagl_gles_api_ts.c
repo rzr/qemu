@@ -15,10 +15,10 @@ void yagl_gles_api_ts_init(struct yagl_gles_api_ts *gles_api_ts,
 void yagl_gles_api_ts_cleanup(struct yagl_gles_api_ts *gles_api_ts)
 {
     if (gles_api_ts->num_arrays > 0) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         gles_api_ts->driver->DeleteBuffers(gles_api_ts->num_arrays,
                                            gles_api_ts->arrays);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
     }
 
     g_free(gles_api_ts->arrays);

@@ -18,6 +18,8 @@ struct yagl_gles_object
     struct yagl_object base;
 
     struct yagl_gles_driver *driver;
+
+    uint32_t ctx_id;
 };
 
 typedef enum
@@ -176,6 +178,7 @@ static bool yagl_gles_get_array_param_count(GLenum pname, int *count)
 
 static void yagl_gles_object_add(GLuint local_name,
                                  GLuint global_name,
+                                 uint32_t ctx_id,
                                  void (*destroy_func)(struct yagl_object */*obj*/))
 {
     struct yagl_gles_object *obj;
@@ -185,6 +188,7 @@ static void yagl_gles_object_add(GLuint local_name,
     obj->base.global_name = global_name;
     obj->base.destroy = destroy_func;
     obj->driver = gles_api_ts->driver;
+    obj->ctx_id = ctx_id;
 
     yagl_object_map_add(cur_ts->ps->object_map,
                         local_name,
@@ -197,9 +201,9 @@ static void yagl_gles_buffer_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_buffer_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteBuffers(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -212,9 +216,9 @@ static void yagl_gles_texture_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_texture_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteTextures(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -227,9 +231,9 @@ static void yagl_gles_framebuffer_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_framebuffer_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(gles_obj->ctx_id);
     gles_obj->driver->DeleteFramebuffers(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(gles_obj->ctx_id);
 
     g_free(gles_obj);
 
@@ -242,9 +246,9 @@ static void yagl_gles_renderbuffer_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_renderbuffer_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteRenderbuffers(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -257,9 +261,9 @@ static void yagl_gles_program_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_program_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteProgram(obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -272,9 +276,9 @@ static void yagl_gles_shader_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_shader_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteShader(obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -287,9 +291,9 @@ static void yagl_gles_vertex_array_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_vertex_array_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(gles_obj->ctx_id);
     gles_obj->driver->DeleteVertexArrays(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(gles_obj->ctx_id);
 
     g_free(gles_obj);
 
@@ -453,6 +457,7 @@ void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count)
 
         yagl_gles_object_add(arrays[i],
                              global_name,
+                             yagl_get_ctx_id(),
                              &yagl_gles_vertex_array_destroy);
     }
 }
@@ -618,6 +623,7 @@ void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count)
 
         yagl_gles_object_add(buffers[i],
                              global_name,
+                             0,
                              &yagl_gles_buffer_destroy);
     }
 }
@@ -654,12 +660,13 @@ void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count)
          * might be called without an active context, but
          * which needs to create a texture.
          */
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         gles_api_ts->driver->GenTextures(1, &global_name);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
 
         yagl_gles_object_add(textures[i],
                              global_name,
+                             0,
                              &yagl_gles_texture_destroy);
     }
 }
@@ -940,6 +947,7 @@ void yagl_host_glGenFramebuffers(const GLuint *framebuffers, int32_t framebuffer
 
         yagl_gles_object_add(framebuffers[i],
                              global_name,
+                             yagl_get_ctx_id(),
                              &yagl_gles_framebuffer_destroy);
     }
 }
@@ -985,6 +993,7 @@ void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuf
 
         yagl_gles_object_add(renderbuffers[i],
                              global_name,
+                             0,
                              &yagl_gles_renderbuffer_destroy);
     }
 }
@@ -1025,6 +1034,7 @@ void yagl_host_glCreateProgram(GLuint program)
 
     yagl_gles_object_add(program,
                          global_name,
+                         0,
                          &yagl_gles_program_destroy);
 }
 
@@ -1035,6 +1045,7 @@ void yagl_host_glCreateShader(GLuint shader,
 
     yagl_gles_object_add(shader,
                          global_name,
+                         0,
                          &yagl_gles_shader_destroy);
 }
 

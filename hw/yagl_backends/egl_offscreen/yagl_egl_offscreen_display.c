@@ -24,9 +24,9 @@ static void yagl_egl_offscreen_image_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_image_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     image->driver->DeleteTextures(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(image);
 
@@ -125,9 +125,9 @@ static struct yagl_object *yagl_egl_offscreen_display_create_image(struct yagl_e
 
     image = g_malloc(sizeof(*image));
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     egl_offscreen->gles_driver->GenTextures(1, &image->base.global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
     image->base.destroy = &yagl_egl_offscreen_image_destroy;
     image->driver = egl_offscreen->gles_driver;
 

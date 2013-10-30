@@ -230,10 +230,6 @@ static void yagl_egl_onscreen_ensure_current(struct yagl_egl_backend *backend)
 {
     struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
 
-    if (egl_onscreen_ts && egl_onscreen_ts->dpy) {
-        return;
-    }
-
     egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
                                            egl_onscreen->ensure_dpy,
                                            egl_onscreen->ensure_sfc,
@@ -246,14 +242,26 @@ static void yagl_egl_onscreen_unensure_current(struct yagl_egl_backend *backend)
     struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
 
     if (egl_onscreen_ts && egl_onscreen_ts->dpy) {
-        return;
+        if (egl_onscreen_ts->sfc_draw && egl_onscreen_ts->sfc_read) {
+            egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                                   egl_onscreen_ts->dpy->native_dpy,
+                                                   egl_onscreen_ts->sfc_draw->dummy_native_sfc,
+                                                   egl_onscreen_ts->sfc_read->dummy_native_sfc,
+                                                   egl_onscreen_ts->ctx->native_ctx);
+        } else {
+            egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                                   egl_onscreen_ts->dpy->native_dpy,
+                                                   egl_onscreen_ts->ctx->null_sfc,
+                                                   egl_onscreen_ts->ctx->null_sfc,
+                                                   egl_onscreen_ts->ctx->native_ctx);
+        }
+    } else {
+        egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                               egl_onscreen->ensure_dpy,
+                                               EGL_NO_SURFACE,
+                                               EGL_NO_SURFACE,
+                                               EGL_NO_CONTEXT);
     }
-
-    egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
-                                           egl_onscreen->ensure_dpy,
-                                           EGL_NO_SURFACE,
-                                           EGL_NO_SURFACE,
-                                           EGL_NO_CONTEXT);
 }
 
 static void yagl_egl_onscreen_destroy(struct yagl_egl_backend *backend)

@@ -40,19 +40,36 @@ struct yagl_egl_interface_impl
     struct yagl_egl_backend *backend;
 };
 
-static void yagl_egl_ensure_current(struct yagl_egl_interface *iface)
-{
-    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
-    egl_iface->backend->ensure_current(egl_iface->backend);
-}
-
-static void yagl_egl_unensure_current(struct yagl_egl_interface *iface)
-{
-    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
-    egl_iface->backend->unensure_current(egl_iface->backend);
-}
-
 static YAGL_DEFINE_TLS(struct yagl_egl_api_ts*, egl_api_ts);
+
+static uint32_t yagl_egl_get_ctx_id(struct yagl_egl_interface *iface)
+{
+    if (egl_api_ts) {
+        return egl_api_ts->context ? egl_api_ts->context->res.handle : 0;
+    } else {
+        return 0;
+    }
+}
+
+static void yagl_egl_ensure_ctx(struct yagl_egl_interface *iface, uint32_t ctx_id)
+{
+    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
+    uint32_t current_ctx_id = yagl_egl_get_ctx_id(iface);
+
+    if (!current_ctx_id || (ctx_id && (current_ctx_id != ctx_id))) {
+        egl_iface->backend->ensure_current(egl_iface->backend);
+    }
+}
+
+static void yagl_egl_unensure_ctx(struct yagl_egl_interface *iface, uint32_t ctx_id)
+{
+    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
+    uint32_t current_ctx_id = yagl_egl_get_ctx_id(iface);
+
+    if (!current_ctx_id || (ctx_id && (current_ctx_id != ctx_id))) {
+        egl_iface->backend->unensure_current(egl_iface->backend);
+    }
+}
 
 static __inline bool yagl_validate_display(yagl_host_handle dpy_,
                                            struct yagl_egl_display **dpy,
@@ -239,8 +256,9 @@ struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api)
 
     egl_iface = g_malloc0(sizeof(*egl_iface));
 
-    egl_iface->base.ensure_ctx = &yagl_egl_ensure_current;
-    egl_iface->base.unensure_ctx = &yagl_egl_unensure_current;
+    egl_iface->base.get_ctx_id = &yagl_egl_get_ctx_id;
+    egl_iface->base.ensure_ctx = &yagl_egl_ensure_ctx;
+    egl_iface->base.unensure_ctx = &yagl_egl_unensure_ctx;
     egl_iface->backend = egl_api->backend;
 
     /*

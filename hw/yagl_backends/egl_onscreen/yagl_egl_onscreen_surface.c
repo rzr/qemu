@@ -40,9 +40,9 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
     if (((osfc->ws_sfc->base.width != ws_sfc->base.width) ||
          (osfc->ws_sfc->base.height != ws_sfc->base.height)) &&
          osfc->rb) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         egl_onscreen->gles_driver->DeleteRenderbuffers(1, &osfc->rb);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
         osfc->rb = 0;
     }
 
@@ -131,9 +131,9 @@ static void yagl_egl_onscreen_surface_destroy(struct yagl_eglb_surface *sfc)
     }
 
     if (osfc->rb) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         egl_onscreen->gles_driver->DeleteRenderbuffers(1, &osfc->rb);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
     }
 
     yagl_eglb_surface_cleanup(sfc);

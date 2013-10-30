@@ -21,9 +21,9 @@ static void yagl_egl_onscreen_context_destroy(struct yagl_eglb_context *ctx)
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_context_destroy, NULL);
 
     if (egl_onscreen_ctx->fb) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(egl_onscreen_ctx->fb_ctx_id);
         egl_onscreen->gles_driver->DeleteFramebuffers(1, &egl_onscreen_ctx->fb);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(egl_onscreen_ctx->fb_ctx_id);
     }
 
     if (egl_onscreen_ctx->null_sfc != EGL_NO_SURFACE) {
@@ -98,6 +98,7 @@ void yagl_egl_onscreen_context_setup(struct yagl_egl_onscreen_context *ctx)
     }
 
     egl_onscreen->gles_driver->GenFramebuffers(1, &ctx->fb);
+    ctx->fb_ctx_id = yagl_get_ctx_id();
 }
 
 bool yagl_egl_onscreen_context_setup_surfaceless(struct yagl_egl_onscreen_context *ctx)

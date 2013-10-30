@@ -5,9 +5,11 @@
 
 struct yagl_egl_interface
 {
-    void (*ensure_ctx)(struct yagl_egl_interface */*iface*/);
+    uint32_t (*get_ctx_id)(struct yagl_egl_interface */*iface*/);
 
-    void (*unensure_ctx)(struct yagl_egl_interface */*iface*/);
+    void (*ensure_ctx)(struct yagl_egl_interface */*iface*/, uint32_t /*ctx_id*/);
+
+    void (*unensure_ctx)(struct yagl_egl_interface */*iface*/, uint32_t /*ctx_id*/);
 };
 
 #endif

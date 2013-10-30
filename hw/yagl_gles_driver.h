@@ -283,8 +283,9 @@ void yagl_gles_driver_cleanup(struct yagl_gles_driver *driver);
  * @{
  */
 
-void yagl_ensure_ctx(void);
-void yagl_unensure_ctx(void);
+uint32_t yagl_get_ctx_id(void);
+void yagl_ensure_ctx(uint32_t ctx_id);
+void yagl_unensure_ctx(uint32_t ctx_id);
 
 /*
  * @}

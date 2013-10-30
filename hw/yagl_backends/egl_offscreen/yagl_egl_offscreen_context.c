@@ -21,9 +21,9 @@ static void yagl_egl_offscreen_context_destroy(struct yagl_eglb_context *ctx)
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_context_destroy, NULL);
 
     if (egl_offscreen_ctx->rp_pbo) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         egl_offscreen->gles_driver->DeleteBuffers(1, &egl_offscreen_ctx->rp_pbo);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
     }
 
     egl_offscreen->egl_driver->context_destroy(egl_offscreen->egl_driver,
