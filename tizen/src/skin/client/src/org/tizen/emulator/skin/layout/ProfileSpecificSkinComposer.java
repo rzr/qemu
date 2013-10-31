@@ -66,6 +66,7 @@ import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.PopupMenu;
+import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -298,6 +299,46 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		return displayBounds;
 	}
 
+	private void drawHover(final HWKey hwKey) {
+		if (hwKey == null || hwKey.getRegion() == null
+				|| hwKey.getRegion().width == 0
+				|| hwKey.getRegion().height == 0) {
+			return;
+		}
+
+		currentHoveredHWKey = hwKey;
+
+		shell.getDisplay().syncExec(new Runnable() {
+			public void run() {
+				GC gc = new GC(shell);
+				if (gc != null) {
+					gc.setLineWidth(1);
+					gc.setForeground(currentState.getHoverColor());
+					gc.drawRectangle(currentHoveredHWKey.getRegion().x,
+							currentHoveredHWKey.getRegion().y,
+							currentHoveredHWKey.getRegion().width - 1,
+							currentHoveredHWKey.getRegion().height - 1);
+
+					gc.dispose();
+				}
+			}
+		});
+	}
+
+	private void removeHover() {
+		if (currentHoveredHWKey == null
+				|| currentHoveredHWKey.getRegion() == null) {
+			return;
+		}
+
+		shell.redraw(currentHoveredHWKey.getRegion().x,
+				currentHoveredHWKey.getRegion().y,
+				currentHoveredHWKey.getRegion().width,
+				currentHoveredHWKey.getRegion().height, false);
+
+		currentHoveredHWKey = null;
+	}
+
 	public void addProfileSpecificListener(final Shell shell) {
 		shellPaintListener = new PaintListener() {
 			@Override
@@ -355,17 +396,9 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			public void mouseExit(MouseEvent e) {
 				/* shell does not receive event only with MouseMoveListener
 				in case that : hover hardkey -> mouse move into display area */
-				HWKey hoveredHWKey = currentHoveredHWKey;
 
-				if (hoveredHWKey != null) {
-					shell.redraw(hoveredHWKey.getRegion().x,
-							hoveredHWKey.getRegion().y,
-							hoveredHWKey.getRegion().width,
-							hoveredHWKey.getRegion().height, false);
-
-					currentHoveredHWKey = null;
-					shell.setToolTipText(null);
-				}
+				shell.setToolTipText(null);
+				removeHover();
 			}
 		};
 
@@ -393,57 +426,34 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 				final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 						currentState.getCurrentRotationId(), currentState.getCurrentScale());
-				final HWKey hoveredHWKey = currentHoveredHWKey;
 
 				if (hwKey == null) {
-					if (hoveredHWKey != null) {
-						/* remove hover */
-						shell.redraw(hoveredHWKey.getRegion().x,
-								hoveredHWKey.getRegion().y,
-								hoveredHWKey.getRegion().width,
-								hoveredHWKey.getRegion().height, false);
-
-						currentHoveredHWKey = null;
-						shell.setToolTipText(null);
+					shell.setToolTipText(null);
+					removeHover();
+				} else {
+					/* enable tool tip */
+					if (hwKey.getTooltip().isEmpty() == false) {
+						shell.setToolTipText(hwKey.getTooltip());
 					}
 
-					return;
-				}
+					if (hwKey.getRegion() != null) {
+						if (currentHoveredHWKey != null) {
+							HWKeyRegion keyBounds = currentHoveredHWKey.getRegion();
 
-				/* register a tooltip */
-				if (hoveredHWKey == null &&
-						hwKey.getTooltip().isEmpty() == false) {
-					shell.setToolTipText(hwKey.getTooltip());
-
-					currentHoveredHWKey = hwKey;
-
-					/* draw hover */
-					shell.getDisplay().syncExec(new Runnable() {
-						public void run() {
-							if (hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
-								GC gc = new GC(shell);
-								if (gc != null) {
-									gc.setLineWidth(1);
-									gc.setForeground(currentState.getHoverColor());
-									gc.drawRectangle(hwKey.getRegion().x, hwKey.getRegion().y,
-											hwKey.getRegion().width - 1, hwKey.getRegion().height - 1);
-
-									gc.dispose();
+							if (keyBounds != null) {
+								if (hwKey.getRegion().x == keyBounds.x
+										&& hwKey.getRegion().y == keyBounds.y
+										&& hwKey.getRegion().width == keyBounds.width
+										&& hwKey.getRegion().height == keyBounds.height) {
+									/* already got hover rect */
+									return;
+								} else {
+									removeHover();
 								}
 							}
 						}
-					});
-				} else {
-					if (hwKey.getRegion().x != hoveredHWKey.getRegion().x ||
-							hwKey.getRegion().y != hoveredHWKey.getRegion().y) {
-						/* remove hover */
-						shell.redraw(hoveredHWKey.getRegion().x,
-								hoveredHWKey.getRegion().y,
-								hoveredHWKey.getRegion().width,
-								hoveredHWKey.getRegion().height, false);
 
-						currentHoveredHWKey = null;
-						shell.setToolTipText(null);
+						drawHover(hwKey);
 					}
 				}
 			}
