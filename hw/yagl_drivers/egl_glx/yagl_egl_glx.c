@@ -134,7 +134,7 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
     GLXPbuffer pbuffer = 0;
     const GLubyte *(GLAPIENTRY *GetStringi)(GLenum, GLuint) = NULL;
     void (GLAPIENTRY *GetIntegerv)(GLenum, GLint*) = NULL;
-    uint32_t i;
+    GLint i, num_extensions = 0;
     GLint major = 0, minor = 0;
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_get_gl_version, NULL);
@@ -208,9 +208,19 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
         goto out;
     }
 
-    for (i = 0, tmp = (const char*)GetStringi(GL_EXTENSIONS, i);
-         tmp;
-         ++i, tmp = (const char*)GetStringi(GL_EXTENSIONS, i)) {
+    GetIntegerv = yagl_dyn_lib_get_ogl_procaddr(egl_glx->base.dyn_lib,
+                                                "glGetIntegerv");
+
+    if (!GetIntegerv) {
+        YAGL_LOG_ERROR("Unable to get symbol: %s",
+                       yagl_dyn_lib_get_error(egl_glx->base.dyn_lib));
+        goto out;
+    }
+
+    GetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+
+    for (i = 0; i < num_extensions; ++i) {
+        tmp = (const char*)GetStringi(GL_EXTENSIONS, i);
         if (strcmp(tmp, "GL_ARB_ES3_compatibility") == 0) {
             YAGL_LOG_INFO("GL_ARB_ES3_compatibility supported, using OpenGL 3.1");
             *version = yagl_gl_3_es3;
@@ -223,15 +233,6 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
      * No GL_ARB_ES3_compatibility, so we need at least OpenGL 3.2 to be
      * able to patch shaders and run them with GLSL 1.50.
      */
-
-    GetIntegerv = yagl_dyn_lib_get_ogl_procaddr(egl_glx->base.dyn_lib,
-                                                "glGetIntegerv");
-
-    if (!GetIntegerv) {
-        YAGL_LOG_ERROR("Unable to get symbol: %s",
-                       yagl_dyn_lib_get_error(egl_glx->base.dyn_lib));
-        goto out;
-    }
 
     GetIntegerv(GL_MAJOR_VERSION, &major);
     GetIntegerv(GL_MINOR_VERSION, &minor);

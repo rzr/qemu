@@ -1560,14 +1560,15 @@ void yagl_host_glGetString(GLenum name,
     if ((name == GL_EXTENSIONS) &&
         (gles_api_ts->driver->gl_version > yagl_gl_2)) {
         struct yagl_vector v;
-        uint32_t i;
+        GLint i, num_extensions = 0;
         char nb = '\0';
 
         yagl_vector_init(&v, 1, 0);
 
-        for (i = 0, tmp = (const char*)gles_api_ts->driver->GetStringi(name, i);
-             tmp;
-             ++i, tmp = (const char*)gles_api_ts->driver->GetStringi(name, i)) {
+        gles_api_ts->driver->GetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+
+        for (i = 0; i < num_extensions; ++i) {
+            tmp = (const char*)gles_api_ts->driver->GetStringi(name, i);
             int size = yagl_vector_size(&v);
             int ext_len = strlen(tmp);
 
