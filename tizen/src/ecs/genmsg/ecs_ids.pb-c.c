@@ -6,7 +6,7 @@
 #endif
 
 #include "ecs_ids.pb-c.h"
-const ProtobufCEnumValue ecs__master__type__enum_values_by_number[15] =
+const ProtobufCEnumValue ecs__master__type__enum_values_by_number[18] =
 {
   { "CHECKVERSION_REQ", "ECS__MASTER__TYPE__CHECKVERSION_REQ", 2 },
   { "CHECKVERSION_ANS", "ECS__MASTER__TYPE__CHECKVERSION_ANS", 3 },
@@ -23,11 +23,14 @@ const ProtobufCEnumValue ecs__master__type__enum_values_by_number[15] =
   { "MONITOR_NTF", "ECS__MASTER__TYPE__MONITOR_NTF", 14 },
   { "NFC_REQ", "ECS__MASTER__TYPE__NFC_REQ", 101 },
   { "NFC_NTF", "ECS__MASTER__TYPE__NFC_NTF", 102 },
+  { "TETHERING_REQ", "ECS__MASTER__TYPE__TETHERING_REQ", 103 },
+  { "TETHERING_ANS", "ECS__MASTER__TYPE__TETHERING_ANS", 104 },
+  { "TETHERING_NTF", "ECS__MASTER__TYPE__TETHERING_NTF", 105 },
 };
 static const ProtobufCIntRange ecs__master__type__value_ranges[] = {
-{2, 0},{101, 13},{0, 15}
+{2, 0},{101, 13},{0, 18}
 };
-const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[15] =
+const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[18] =
 {
   { "CHECKVERSION_ANS", 1 },
   { "CHECKVERSION_REQ", 0 },
@@ -44,6 +47,9 @@ const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[15] =
   { "MONITOR_REQ", 10 },
   { "NFC_NTF", 14 },
   { "NFC_REQ", 13 },
+  { "TETHERING_ANS", 16 },
+  { "TETHERING_NTF", 17 },
+  { "TETHERING_REQ", 15 },
 };
 const ProtobufCEnumDescriptor ecs__master__type__descriptor =
 {
@@ -52,9 +58,9 @@ const ProtobufCEnumDescriptor ecs__master__type__descriptor =
   "Master_Type",
   "ECS__MasterType",
   "ECS",
-  15,
+  18,
   ecs__master__type__enum_values_by_number,
-  15,
+  18,
   ecs__master__type__enum_values_by_name,
   2,
   ecs__master__type__value_ranges,

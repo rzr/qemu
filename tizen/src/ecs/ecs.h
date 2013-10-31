@@ -76,6 +76,9 @@
 #define COMMAND_TYPE_MONITOR    "monitor"
 #define COMMAND_TYPE_DEVICE     "device"
 
+//
+#define COMMAND_TYPE_TETHERING  "tethering"
+
 #define ECS_MSG_STARTINFO_REQ   "startinfo_req"
 #define ECS_MSG_STARTINFO_ANS   "startinfo_ans"
 
@@ -210,6 +213,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
 bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg);
 void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg);
 void msgproc_keepalive_ans(ECS_Client* ccli, ECS__KeepAliveAns* msg);
+bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg);
 
 /* version check  */
 //void send_ecs_version_check(ECS_Client* ccli);

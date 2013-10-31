@@ -966,6 +966,13 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_keepalive_ans(cli, msg);
     }
+    else if (master->type == ECS__MASTER__TYPE__TETHERING_REQ)
+    {
+        ECS__TetheringReq* msg = master->tethering_req;
+        if (!msg)
+            goto fail;
+        msgproc_tethering_req(cli, msg);
+    }
 
     ecs__master__free_unpacked(master, NULL);
     return true;
@@ -974,4 +981,3 @@ fail:
     ecs__master__free_unpacked(master, NULL);
     return false;
 } 
-
