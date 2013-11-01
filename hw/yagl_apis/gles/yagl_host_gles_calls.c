@@ -490,7 +490,7 @@ void yagl_host_glVertexAttribPointerData(GLuint indx,
 
     gles_api_ts->driver->VertexAttribPointer(indx, size, type, normalized,
                                              stride,
-                                             (const GLvoid*)(first * stride));
+                                             NULL);
 
     gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
@@ -517,8 +517,7 @@ void yagl_host_glVertexPointerData(GLint size,
                                               first, stride,
                                               data, data_count);
 
-    gles_api_ts->driver->VertexPointer(size, type, stride,
-                                       (const GLvoid*)(first * stride));
+    gles_api_ts->driver->VertexPointer(size, type, stride, NULL);
 
     gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
@@ -540,8 +539,7 @@ void yagl_host_glNormalPointerData(GLenum type,
                                               first, stride,
                                               data, data_count);
 
-    gles_api_ts->driver->NormalPointer(type, stride,
-                                       (const GLvoid*)(first * stride));
+    gles_api_ts->driver->NormalPointer(type, stride, NULL);
 
     gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
@@ -563,8 +561,7 @@ void yagl_host_glColorPointerData(GLint size,
                                               first, stride,
                                               data, data_count);
 
-    gles_api_ts->driver->ColorPointer(size, type, stride,
-                                      (const GLvoid*)(first * stride));
+    gles_api_ts->driver->ColorPointer(size, type, stride, NULL);
 
     gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
@@ -588,8 +585,7 @@ void yagl_host_glTexCoordPointerData(GLint tex_id,
                                               first, stride,
                                               data, data_count);
 
-    gles_api_ts->driver->TexCoordPointer(size, type, stride,
-                                         (const GLvoid*)(first * stride));
+    gles_api_ts->driver->TexCoordPointer(size, type, stride, NULL);
 
     gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
