@@ -1782,10 +1782,10 @@ public class EmulatorSkin {
 				byte[] receivedData = communicator.getReceivedData(dataTranfer);
 
 				if (null != receivedData) {
-					int portEcp = receivedData[0] << 24;
-					portEcp |= receivedData[1] << 16;
-					portEcp |= receivedData[2] << 8;
-					portEcp |= receivedData[3];
+					int portEcp = (receivedData[0] & 0xFF) << 24;
+					portEcp |= (receivedData[1] & 0xFF) << 16;
+					portEcp |= (receivedData[2] & 0xFF) << 8;
+					portEcp |= (receivedData[3] & 0xFF);
 
 					if (portEcp <= 0) {
 						logger.log(Level.INFO, "ECS port failed : " + portEcp);
