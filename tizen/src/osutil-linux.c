@@ -59,7 +59,7 @@ MULTI_DEBUG_CHANNEL(emulator, osutil);
 extern char tizen_target_img_path[];
 int g_shmid;
 char *g_shared_memory;
-int gproxytool = GCONFTOOL;
+int gproxytool = GSETTINGS;
 
 /* Getting proxy commands */
 static const char* gproxycmds[][2] = {

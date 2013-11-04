@@ -1,3 +1,6 @@
+* 1.6.1
+- use gsettings instead of gconftool-2
+== Munkyu Im <munkyu.im@samsung.com> 2013-11-04
 * 1.6.0
 - keep the touch point grabbing while finger rearranging
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-10-29
