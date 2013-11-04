@@ -137,6 +137,7 @@ enum codec_api_type {
     CODEC_ENCODE_AUDIO,
     CODEC_PICTURE_COPY,
     CODEC_DEINIT,
+    CODEC_FLUSH_BUFFERS,
  };
 
 enum codec_type {

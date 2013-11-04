@@ -107,6 +107,7 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, int f_id);
 static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, int f_id);
 static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, int f_id);
 static bool codec_picture_copy(MaruBrillCodecState *s, int ctx_id, int f_id);
+static bool codec_flush_buffers(MaruBrillCodecState *s, int ctx_id, int f_id);
 
 typedef bool (*CodecFuncEntry)(MaruBrillCodecState *, int, int);
 static CodecFuncEntry codec_func_handler[] = {
@@ -117,6 +118,7 @@ static CodecFuncEntry codec_func_handler[] = {
     codec_encode_audio,
     codec_picture_copy,
     codec_deinit,
+    codec_flush_buffers,
 };
 
 static AVCodecParserContext *maru_brill_codec_parser_init(AVCodecContext *avctx);
@@ -233,6 +235,8 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
     }
     qemu_cond_signal(&s->threadpool.cond);
     qemu_mutex_unlock(&s->context_mutex);
+
+    TRACE("after sending conditional signal\n");
 }
 
 static void *maru_brill_codec_threads(void *opaque)
@@ -1110,7 +1114,8 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, int f_id)
             INFO("avcodec_open done: %d\n", ret);
 
             s->context[ctx_id].opened = true;
-            s->context[ctx_id].parser_ctx = maru_brill_codec_parser_init(avctx);
+            s->context[ctx_id].parser_ctx =
+                maru_brill_codec_parser_init(avctx);
         } else {
             ERR("failed to find codec.\n");
         }
@@ -1195,6 +1200,27 @@ static bool codec_deinit(MaruBrillCodecState *s, int ctx_id, int f_id)
     return true;
 }
 
+//
+static bool codec_flush_buffers(MaruBrillCodecState *s, int ctx_id, int f_id)
+{
+    AVCodecContext *avctx = NULL;
+
+    TRACE("enter: %s\n", __func__);
+
+    avctx = s->context[ctx_id].avctx;
+    if (!avctx) {
+        ERR("%d of AVCodecContext is NULL.\n", ctx_id);
+        return false;
+    } else {
+        avcodec_flush_buffers(avctx);
+        TRACE("flush %d context of buffers.\n", ctx_id);
+    }
+
+    TRACE("leave: %s\n", __func__);
+
+    return true;
+}
+
 static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, int f_id)
 {
     AVCodecContext *avctx = NULL;
@@ -1219,7 +1245,7 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, int f_id)
     size += sizeof(idx);
     memcpy(&in_offset, meta_buf + size, sizeof(in_offset));
     size += sizeof(in_offset);
-    TRACE("input buffer size: %d\n", inbuf_size);
+    TRACE("decode_video. input buffer size: %d\n", inbuf_size);
 
     elem = get_device_mem_ptr(s, f_id);
     if (elem && elem->buf) {
@@ -1247,15 +1273,18 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, int f_id)
         ERR("%d of AVCodec is NULL.\n", ctx_id);
         len = -1;
     } else {
+        // in case of skipping frames
+        picture->pict_type = -1;
+
         len = avcodec_decode_video2(avctx, picture, &got_pic_ptr, &avpkt);
         if (len < 0) {
             ERR("failed to decode video.\n");
         }
     }
 
-    TRACE("after decoding video. len: %d, have_data: %d\n", len);
+    TRACE("after decoding video. len: %d, have_data: %d\n", len, got_pic_ptr);
     if (inbuf) {
-        TRACE("decode_video input bufffer.\n");
+        TRACE("decode_video input buffer.\n");
         g_free(inbuf);
         g_free(elem);
     }
