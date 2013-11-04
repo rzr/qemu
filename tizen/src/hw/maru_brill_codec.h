@@ -35,16 +35,15 @@
 #include "sysemu/kvm.h"
 #include "hw/pci/pci.h"
 #include "hw/pci/pci_ids.h"
+#include "qemu-common.h"
 #include "qemu/thread.h"
 
+#include "osutil.h"
 #include "tizen/src/debug_ch.h"
 #include "maru_device_ids.h"
 #include "libavformat/avformat.h"
 
 #define CODEC_CONTEXT_MAX           1024
-
-#define VIDEO_CODEC_MEM_OFFSET_MAX  16
-#define AUDIO_CODEC_MEM_OFFSET_MAX  64
 
 /*
  *  Codec Device Structures
@@ -94,8 +93,6 @@ typedef struct CodecThreadPool {
     QemuThread          *threads;
     QemuMutex           mutex;
     QemuCond            cond;
-    uint32_t            state;
-    uint8_t             is_running;
 } CodecThreadPool;
 
 typedef struct MaruBrillCodecState {
@@ -111,6 +108,8 @@ typedef struct MaruBrillCodecState {
     QemuMutex           ioparam_queue_mutex;
 
     CodecThreadPool     threadpool;
+    uint32_t            thread_state;
+    uint8_t             is_thread_running;
 
     CodecContext        context[CODEC_CONTEXT_MAX];
     CodecParam          ioparam;
@@ -122,8 +121,8 @@ enum codec_io_cmd {
     CODEC_CMD_FILE_INDEX            = 0x30,
     CODEC_CMD_DEVICE_MEM_OFFSET     = 0x34,
     CODEC_CMD_GET_THREAD_STATE      = 0x38,
-    CODEC_CMD_GET_QUEUE             = 0x3C,
-    CODEC_CMD_POP_WRITE_QUEUE       = 0x40,
+    CODEC_CMD_GET_CTX_FROM_QUEUE    = 0x3C,
+    CODEC_CMD_GET_DATA_FROM_QUEUE   = 0x40,
     CODEC_CMD_RELEASE_CONTEXT       = 0x44,
     CODEC_CMD_GET_VERSION           = 0x50,
     CODEC_CMD_GET_ELEMENT           = 0x54,
