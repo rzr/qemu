@@ -86,7 +86,8 @@ public class KeyWindowKeeper {
 		/* create a Key Window */
 		determineLayout();
 
-		if (isGeneralKeyWindow() == true) {
+		if (isGeneralKeyWindow() == true
+				|| skin.getPopupMenu().keyWindowItem.getMenu() == null) {
 			if (imageRegstry == null) {
 				logger.warning("GeneralKeyWindowImageRegistry is null");
 				return;
@@ -96,12 +97,14 @@ public class KeyWindowKeeper {
 					skin.getEmulatorSkinState().getCurrentRotationId());
 
 			if (keyMapList == null) {
-				selectKeyWindowMenu(skin.isKeyWindow = false);
 				logger.info("keyMapList is null");
+
+				selectKeyWindowMenu(skin.isKeyWindow = false);
 				return;
 			} else if (keyMapList.isEmpty() == true) {
-				selectKeyWindowMenu(skin.isKeyWindow = false);
 				logger.info("keyMapList is empty");
+
+				selectKeyWindowMenu(skin.isKeyWindow = false);
 				return;
 			}
 
@@ -196,15 +199,19 @@ public class KeyWindowKeeper {
 
 	/* for Menu */
 	public boolean isSelectKeyWindowMenu() {
-		MenuItem keywindow = skin.getPopupMenu().keyWindowItem;
+		MenuItem keywindowMenu = skin.getPopupMenu().keyWindowItem;
 
-		if (keywindow != null) {
+		if (keywindowMenu != null) {
 			if (isGeneralKeyWindow() == true) {
-				return keywindow.getSelection();
+				return keywindowMenu.getSelection();
 			} else {
-				for (MenuItem layout : keywindow.getMenu().getItems()) {
-					if (layout.getSelection() == true) {
-						return true;
+				if (keywindowMenu.getMenu() == null) {
+					logger.info("Special KeyWindow menu item is null");
+				} else {
+					for (MenuItem layout : keywindowMenu.getMenu().getItems()) {
+						if (layout.getSelection() == true) {
+							return true;
+						}
 					}
 				}
 			}
@@ -214,13 +221,17 @@ public class KeyWindowKeeper {
 	}
 
 	public void selectKeyWindowMenu(boolean on) {
-		MenuItem keywindow = skin.getPopupMenu().keyWindowItem;
+		MenuItem keywindowMenu = skin.getPopupMenu().keyWindowItem;
 
-		if (keywindow != null) {
+		if (keywindowMenu != null) {
 			if (isGeneralKeyWindow() == true) {
-				keywindow.setSelection(on);
+				keywindowMenu.setSelection(on);
 			} else {
-				keywindow.getMenu().getItem(indexLayout).setSelection(on);
+				if (keywindowMenu.getMenu() == null) {
+					logger.info("Special KeyWindow menu item is null");
+				} else {
+					keywindowMenu.getMenu().getItem(indexLayout).setSelection(on);
+				}
 			}
 		}
 	}

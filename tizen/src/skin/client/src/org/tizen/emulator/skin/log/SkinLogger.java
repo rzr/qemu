@@ -112,9 +112,11 @@ public class SkinLogger {
 			}
 
 			File dir = new File(path + LOG_FOLDER);
-			dir.mkdir();
+			if (dir.mkdir() == false) {
+				/* do nothing */
+			}
 
-			/* delete .lck files after abnomal skin termination */
+			/* delete .lck files after abnormal skin termination */
 			File[] listFiles = dir.listFiles();
 			for (File f : listFiles) {
 				String name = f.getName();

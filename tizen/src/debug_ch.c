@@ -481,9 +481,9 @@ int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
         buf_time, debug_classes[cls], channel->name);
 
     if (*channel->multiname) {
-        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, ":%s]", channel->multiname);
+        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, ":%s] ", channel->multiname);
     } else {
-        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, "]");
+        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, "] ");
     }
 
     va_start(valist, format);

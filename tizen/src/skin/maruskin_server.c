@@ -57,13 +57,17 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#define socket_error() WSAGetLastError()
+#define SLEEP(x) Sleep(x)
+#define SOCKET_CLOSE(sock) closesocket(sock)
+#define SOCKET_ERROR() WSAGetLastError()
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#define socket_error() errno
+#define SLEEP(x) usleep(x * 1000)
+#define SOCKET_CLOSE(sock) close(sock)
+#define SOCKET_ERROR() errno
 #endif
 
 #include "debug_ch.h"
@@ -242,11 +246,8 @@ void shutdown_skin_server(void)
                 INFO("skin client sent normal shutdown response.\n");
                 break;
             } else {
-#ifdef CONFIG_WIN32
-                Sleep(1); /* 1ms */
-#else
-                usleep(1000);
-#endif
+                SLEEP(1); /* 1ms */
+
                 count++;
             }
         }
@@ -259,22 +260,16 @@ void shutdown_skin_server(void)
     is_force_close_client = 1;
 
     if (client_sock) {
-#ifdef CONFIG_WIN32
-        closesocket(client_sock);
-#else
-        close(client_sock);
-#endif
+        SOCKET_CLOSE(client_sock);
+
         client_sock = 0;
     }
 
     if (close_server_socket) {
         INFO("skin client did not send normal shutdown response.\n");
         if (server_sock) {
-#ifdef CONFIG_WIN32
-            closesocket(server_sock);
-#else
-            close(server_sock);
-#endif
+            SOCKET_CLOSE(server_sock);
+
             server_sock = 0;
         }
     }
@@ -398,11 +393,7 @@ void notify_booting_progress(unsigned int layer, int progress_value)
             ERR("fail to send SEND_BOOTING_PROGRESS to skin.\n");
         }
 
-#ifdef CONFIG_WIN32
-        Sleep(1); /* 1ms */
-#else
-        usleep(1000);
-#endif
+        SLEEP(1); /* 1ms */
     } else {
         INFO("skin client socket is not connected yet\n");
     }
@@ -606,11 +597,8 @@ static void* run_skin_server(void* args)
         perror("skin server bind error : ");
 
         if (server_sock) {
-#ifdef CONFIG_WIN32
-            closesocket(server_sock);
-#else
-            close(server_sock);
-#endif
+            SOCKET_CLOSE(server_sock);
+
             server_sock = 0;
         }
 
@@ -637,11 +625,8 @@ static void* run_skin_server(void* args)
         perror("skin_server listen error : ");
 
         if (server_sock) {
-#ifdef CONFIG_WIN32
-            closesocket(server_sock);
-#else
-            close(server_sock);
-#endif
+            SOCKET_CLOSE(server_sock);
+
             server_sock = 0;
         }
 
@@ -674,6 +659,10 @@ static void* run_skin_server(void* args)
             }
         }
 
+        if (client_sock != 0) {
+            SOCKET_CLOSE(client_sock);
+        }
+
         INFO("start accepting socket...\n");
 
         if (0 > (client_sock = accept(
@@ -704,7 +693,7 @@ static void* run_skin_server(void* args)
                     is_force_close_client = 0;
                 } else {
                     ERR("skin_server read error (%d): %d\n",
-                        socket_error(), read_cnt);
+                        SOCKET_ERROR(), read_cnt);
                     perror("skin_server read error : ");
                 }
 
@@ -1088,36 +1077,31 @@ static void* run_skin_server(void* args)
                     break;
                 }
                 case RECV_RESPONSE_SHUTDOWN: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_RESPONSE_SHUTDOWN ==\n" );
-                    INFO( log_buf );
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_SHUTDOWN ==\n");
+                    INFO(log_buf);
 
                     stop_server = 1;
                     break;
                 }
                 default: {
-                    log_cnt += sprintf( log_buf + log_cnt, "!!! unknown command : %d\n", cmd );
-                    TRACE( log_buf );
+                    log_cnt += sprintf(log_buf + log_cnt, "!!! unknown command : %d\n", cmd);
+                    TRACE(log_buf);
 
-                    ERR( "!!! unknown command : %d\n", cmd );
+                    ERR("!!! unknown command : %d\n", cmd);
                     break;
                 }
                 }
-
             }
 
-        }
-
-    }
+        } /* end of while */
+    } /* end of while */
 
     stop_heart_beat();
 
     /* clean up */
     if (server_sock) {
-#ifdef CONFIG_WIN32
-        closesocket(server_sock);
-#else
-        close(server_sock);
-#endif
+        SOCKET_CLOSE(server_sock);
+
         server_sock = 0;
     }
 
@@ -1298,17 +1282,9 @@ static void* do_heart_beat(void* args)
         if (booting_handicap_cnt < 5) {
             booting_handicap_cnt++;
 
-#ifdef CONFIG_WIN32
-            Sleep(hb_interval * 10); /* 10sec */
-#else
-            usleep(hb_interval * 1000 * 10);
-#endif
+            SLEEP(hb_interval * 10); /* 10sec */
         } else {
-#ifdef CONFIG_WIN32
-            Sleep(hb_interval); /* 1sec */
-#else
-            usleep(hb_interval * 1000);
-#endif
+            SLEEP(hb_interval); /* 1sec */
         }
 
         if (stop_heartbeat) {
@@ -1359,22 +1335,16 @@ static void* do_heart_beat(void* args)
         is_force_close_client = 1;
 
         if (client_sock) {
-#ifdef CONFIG_WIN32
-            closesocket(client_sock);
-#else
-            close(client_sock);
-#endif
+            SOCKET_CLOSE(client_sock);
+
             client_sock = 0;
         }
 
         stop_server = 1;
 
         if (server_sock) {
-#ifdef CONFIG_WIN32
-            closesocket(server_sock);
-#else
-            close(server_sock);
-#endif
+            SOCKET_CLOSE(server_sock);
+
             server_sock = 0;
         }
 
@@ -1409,5 +1379,7 @@ static int start_heart_beat(void)
 
 static void stop_heart_beat(void)
 {
+    INFO("stop the heart beat signal\n");
+
     stop_heartbeat = 1;
 }

@@ -272,22 +272,22 @@ public class SpecialKeyWindow extends SkinWindow {
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				if (isTouch == true) {					
+				if (isTouch == true) {
 					logger.info("mouseMove in KeyWindow : " + e.x + ", " + e.y);
 
-					HWKey pressedHWKey = currentPressedHWKey;					
+					HWKey pressedHWKey = currentPressedHWKey;
 					int x = pressedHWKey.getRegion().x;
 					int y = pressedHWKey.getRegion().y;
 					int width = pressedHWKey.getRegion().width;
 					int height = pressedHWKey.getRegion().height;
-					int eventType;
+					//int eventType;
 
 					if (SkinUtil.isInGeometry(e.x, e.y, x, y, width, height)) {
-						eventType = MouseEventType.DRAG.value();
+						//eventType = MouseEventType.DRAG.value();
 					} else {
 						isTouch = false;
-						eventType = MouseEventType.RELEASE.value();
-						/* rollback a keyPressed image resion */
+						//eventType = MouseEventType.RELEASE.value();
+						/* rollback a keyPressed image region */
 						shell.redraw(x, y, width, height, false);
 					}
 

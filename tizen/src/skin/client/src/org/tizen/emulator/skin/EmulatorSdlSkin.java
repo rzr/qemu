@@ -66,7 +66,6 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 
 		/* org.eclipse.swt.widgets.Widget */
 		if (SwtUtil.isLinuxPlatform()) {
-
 			try {
 				Field field = lcdCanvas.getClass().getField("embeddedHandle");
 				windowHandleId = field.getLong(lcdCanvas);
@@ -84,9 +83,7 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
 			}
-
 		} else if (SwtUtil.isWindowsPlatform()) {
-
 			try {
 				Field field = lcdCanvas.getClass().getField("handle");
 				windowHandleId = field.getLong(lcdCanvas);
@@ -104,15 +101,10 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
 			}
-
-		} else if (SwtUtil.isMacPlatform()) {
-
-			// not supported
-			windowHandleId = 0;
-
 		} else {
+			/* not supported */
 			logger.severe("Not Supported OS platform:" + SWT.getPlatform());
-			System.exit(-1);
+			shutdown();
 		}
 
 		return windowHandleId;

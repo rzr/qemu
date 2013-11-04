@@ -1,5 +1,5 @@
 /**
- *
+ * Custom Scrolled Composite
  *
  * Copyright (C) 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *

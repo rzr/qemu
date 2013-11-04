@@ -129,7 +129,9 @@ public class ProfileSkinImageRegistry {
 
 			while (imageIterator.hasNext()) {
 				image = imageIterator.next();
-				image.dispose();
+				if (image != null) {
+					image.dispose();
+				}
 			}
 		}
 	}

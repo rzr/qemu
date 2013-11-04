@@ -678,12 +678,12 @@ static void maru_sdl_resize_bh(void *opaque)
     INFO("Set up a video mode with the specified width, "
          "height and bits-per-pixel\n");
 
+    sdl_alteration = 1;
+    sdl_skip_update = 0;
+
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
-
-    sdl_alteration = 1;
-    sdl_skip_update = 0;
 
     /* get current setting information and calculate screen size */
     display_width = get_emul_lcd_width();
@@ -720,6 +720,11 @@ static void maru_sdl_resize_bh(void *opaque)
         ERR("Could not open SDL display (%dx%dx%d) : %s\n",
             surface_width, surface_height,
             get_emul_sdl_bpp(), SDL_GetError());
+
+#ifdef SDL_THREAD
+        pthread_mutex_unlock(&sdl_mutex);
+#endif
+
         return;
     }
 
@@ -837,11 +842,11 @@ void maruskin_sdl_quit(void)
         qemu_bh_delete(sdl_resize_bh);
     }
 
+    sdl_alteration = -1;
+
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
-
-    sdl_alteration = -1;
 
     SDL_Quit();
 

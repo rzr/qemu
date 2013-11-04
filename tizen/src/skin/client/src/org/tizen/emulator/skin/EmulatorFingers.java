@@ -84,7 +84,7 @@ public class EmulatorFingers {
 		initMultiTouchState(maximum);
 	}
 
-	class FingerPoint {
+	static class FingerPoint {
 		private int id;
 		private int originX;
 		private int originY;

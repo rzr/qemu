@@ -65,7 +65,7 @@ import org.tizen.emulator.skin.util.SkinUtil;
  * 
  */
 public class SocketCommunicator implements ICommunicator {
-	public class DataTranfer {
+	public static class DataTranfer {
 		private boolean isTransferState;
 		private byte[] receivedData;
 
@@ -572,16 +572,16 @@ public class SocketCommunicator implements ICommunicator {
 	}
 	
 	private void sendToQEMUInternal(SkinSendData sendData) {
+		if (null == sendData) {
+			return;
+		}
+
+		SendCommand command = sendData.getCommand();
+		ISendData data = sendData.getSendData();
+
+		reqId = (Integer.MAX_VALUE == reqId) ? 0 : ++reqId;
+
 		try {
-			if (null == sendData) {
-				return;
-			}
-			
-			SendCommand command = sendData.getCommand();
-			ISendData data = sendData.getSendData();
-
-			reqId = (Integer.MAX_VALUE == reqId) ? 0 : ++reqId;
-
 			dataOutputStream.writeInt(uId);
 			dataOutputStream.writeInt(reqId);
 			dataOutputStream.writeShort(command.value());
@@ -615,11 +615,9 @@ public class SocketCommunicator implements ICommunicator {
 					logger.fine("[Socket] data  - " + data.toString());
 				}
 			}
-
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
-
 	}
 
 	public byte[] getReceivedData(DataTranfer dataTranfer) {
@@ -714,10 +712,8 @@ public class SocketCommunicator implements ICommunicator {
 
 		isTerminated = true;
 
-		if (null != sendQueue) {
-			synchronized (sendQueue) {
-				sendQueue.notifyAll();
-			}
+		synchronized (sendQueue) {
+			sendQueue.notifyAll();
 		}
 
 		if (null != heartbeatTimer) {

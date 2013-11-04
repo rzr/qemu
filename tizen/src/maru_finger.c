@@ -186,13 +186,14 @@ void init_multi_touch_state(void)
         mts->finger_slot = NULL;
     }
     mts->finger_slot =
-        (FingerPoint *)g_malloc0(sizeof(FingerPoint) * mts->finger_cnt_max);
+        (FingerPoint *) g_malloc0(sizeof(FingerPoint) * mts->finger_cnt_max);
 
     for (i = 0; i < mts->finger_cnt_max; i++) {
         finger = get_finger_point_from_slot(i);
-        //finger->id = 0;
-        finger->origin_x = finger->origin_y = -1;
-        finger->x = finger->y = -1;
+        if (finger != NULL) {
+            finger->origin_x = finger->origin_y = -1;
+            finger->x = finger->y = -1;
+        }
     }
 
     mts->finger_point_size = DEFAULT_FINGER_POINT_SIZE;
