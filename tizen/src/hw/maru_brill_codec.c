@@ -262,7 +262,7 @@ static void *maru_brill_codec_threads(void *opaque)
         TRACE("api_id: %d ctx_id: %d f_id: %x\n", api_id, ctx_id, f_id);
 
         if (!codec_func_handler[api_id](s, ctx_id, f_id, indata_buf)) {
-            ERR("codec_func failure or double access.\n");
+            ERR("codec_func failure.\n");
             continue;
         }
 
@@ -544,7 +544,8 @@ static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t fil
         codec_deinit(s, ctx_id, file_index, NULL);
 
         QTAILQ_FOREACH_SAFE(rq_elem, &codec_rq, node, rnext) {
-            if (rq_elem && rq_elem->data_buf->buf_id == file_index) {
+            if (rq_elem && rq_elem->data_buf &&
+                (rq_elem->data_buf->buf_id == file_index)) {
                 TRACE("remove unused node from codec_rq. file: %p\n", file_index);
                 qemu_mutex_lock(&s->context_queue_mutex);
                 QTAILQ_REMOVE(&codec_rq, rq_elem, node);
@@ -1070,7 +1071,7 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, int f_id, void *elem)
     TRACE("enter: %s\n", __func__);
 
     // assign meta_buf
-    meta_buf = s->vaddr + ((ctx_id) * CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     // allocate AVCodecContext
@@ -1125,12 +1126,13 @@ static bool codec_deinit(MaruBrillCodecState *s, int ctx_id, int f_id, void *dat
     frame = s->context[ctx_id].frame;
     parserctx = s->context[ctx_id].parser_ctx;
     if (!avctx || !frame) {
-        INFO("%d of context has alread been closed\n", ctx_id);
+        TRACE("%d of AVCodecContext or AVFrame is NULL. "
+            " Those resources have been released before.\n", ctx_id);
         return false;
     } else {
         qemu_mutex_lock(&s->threadpool.mutex);
         if (!s->context[ctx_id].opened) {
-            INFO("%d of context has alread been closed\n", ctx_id);
+            TRACE("%d of context has already been closed\n", ctx_id);
             qemu_mutex_unlock(&s->threadpool.mutex);
             return false;
         }
@@ -1210,7 +1212,7 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, int f_id, voi
 
     TRACE("enter: %s\n", __func__);
 
-    meta_buf = s->vaddr + ((ctx_id) * CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
@@ -1329,7 +1331,7 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, int f_id, voi
 
     TRACE("enter: %s\n", __func__);
 
-    meta_buf = s->vaddr + ((ctx_id) * CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
@@ -1414,7 +1416,7 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, int f_id, voi
 
     TRACE("enter: %s\n", __func__);
 
-    meta_buf = s->vaddr + ((ctx_id) * CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
@@ -1514,7 +1516,7 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, int f_id, voi
 
     TRACE("enter: %s\n", __func__);
 
-    meta_buf = s->vaddr + ((ctx_id) * CODEC_META_DATA_SIZE);
+    meta_buf = s->vaddr + ((ctx_id - 1) * CODEC_META_DATA_SIZE);
     meta_buf += 8; // skipped header.
 
     memcpy(&inbuf_size, meta_buf, sizeof(inbuf_size));
