@@ -61,7 +61,7 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 		logger.info("screenshot capture");
 
 		DataTranfer dataTranfer = emulatorSkin.communicator.sendDataToQEMU(
-				SendCommand.SCREEN_SHOT, null, true);
+				SendCommand.SEND_SCREENSHOT_REQ, null, true);
 		byte[] receivedData =
 				emulatorSkin.communicator.getReceivedData(dataTranfer);
 

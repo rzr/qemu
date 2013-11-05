@@ -189,7 +189,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			//logger.info("getPixels native function returned " + result);
 
 			communicator.sendToQEMU(
-					SendCommand.RESPONSE_DRAW_FRAMEBUFFER, null, true);
+					SendCommand.RESPONSE_DRAW_FRAME, null, true);
 
 			dataFramebuffer.setPixels(0, 0,
 					sizeFramebuffer, arrayFramebuffer, 0);
@@ -527,7 +527,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		KeyEventData keyEventData = new KeyEventData(
 				KeyEventType.RELEASED.value(), keyCode, stateMask, keyLocation);
 		communicator.sendToQEMU(
-				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
 		removePressedKeyFromList(keyEventData);
 	}
@@ -575,7 +575,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		KeyEventData keyEventData = new KeyEventData(
 				KeyEventType.PRESSED.value(), keyCode, stateMask, keyLocation);
 		communicator.sendToQEMU(
-				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
 		addPressedKeyToList(keyEventData);
 	}

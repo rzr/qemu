@@ -122,7 +122,7 @@ public class SocketCommunicator implements ICommunicator {
 	private DataTranfer progressDataTransfer;
 	private DataTranfer brightnessDataTransfer;
 	private DataTranfer ecpTransfer;
-	
+
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
 
@@ -251,7 +251,7 @@ public class SocketCommunicator implements ICommunicator {
 				width, height, scale, rotation, isBlankGuide);
 		logger.info("" + startData);
 
-		sendToQEMU(SendCommand.SEND_START, startData, false);
+		sendToQEMU(SendCommand.SEND_SKIN_OPENED, startData, false);
 
 		boolean ignoreHeartbeat =
 				config.getArgBoolean(ArgsConstants.HEART_BEAT_IGNORE);
@@ -299,34 +299,34 @@ public class SocketCommunicator implements ICommunicator {
 				}
 
 				switch (command) {
-				case HEART_BEAT: {
+				case RECV_HEART_BEAT: {
 					resetHeartbeatCount();
 
 					if (logger.isLoggable(Level.FINE)) {
-						logger.fine("received HEAR_BEAT from QEMU.");
+						logger.fine("received HEART_BEAT from QEMU");
 					}
 
 					sendToQEMU(SendCommand.RESPONSE_HEART_BEAT, null, true);
 					break;
 				}
-				case SCREEN_SHOT_DATA: {
-					logger.info("received SCREEN_SHOT_DATA from QEMU.");
+				case RECV_SCREENSHOT_DATA: {
+					logger.info("received SCREENSHOT_DATA from QEMU");
 					receiveData(screenShotDataTransfer, length );
 
 					break;
 				}
-				case DETAIL_INFO_DATA: {
-					logger.info("received DETAIL_INFO_DATA from QEMU.");
+				case RECV_DETAIL_INFO_DATA: {
+					logger.info("received DETAIL_INFO_DATA from QEMU");
 					receiveData( detailInfoTransfer, length);
 
 					break;
 				}
-				case RAMDUMP_COMPLETE: {
-					logger.info("received RAMDUMP_COMPLETE from QEMU.");
+				case RECV_RAMDUMP_COMPLETED: {
+					logger.info("received RAMDUMP_COMPLETED from QEMU");
 					setRamdumpFlag(false);
 					break;
 				}
-				case BOOTING_PROGRESS: {
+				case RECV_BOOTING_PROGRESS: {
 					//logger.info("received BOOTING_PROGRESS from QEMU.");
 
 					resetDataTransfer(progressDataTransfer);
@@ -352,8 +352,8 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case BRIGHTNESS_VALUE: {
-					//logger.info("received BRIGHTNESS_VALUE from QEMU.");
+				case RECV_BRIGHTNESS_STATE: {
+					//logger.info("received BRIGHTNESS_STATE from QEMU");
 
 					resetDataTransfer(brightnessDataTransfer);
 					receiveData(brightnessDataTransfer, length);
@@ -378,44 +378,44 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case ECP_PORT: {
-					logger.info("received ECP_PORT from QEMU.");
+				case RECV_ECP_PORT_DATA: {
+					logger.info("received ECP_PORT_DATA from QEMU");
 					receiveData(ecpTransfer, length);
-					
+
 					break;
 				}
-				case SENSOR_DAEMON_START: {
-					logger.info("received SENSOR_DAEMON_START from QEMU.");
+				case RECV_SENSORD_STARTED: {
+					logger.info("received SENSORD_STARTED from QEMU");
 
 					synchronized (this) {
 						isSensorDaemonStarted = true;
 					}
 					break;
 				}
-				case SDB_DAEMON_START: {
-					logger.info("received SDB_DAEMON_START from QEMU.");
+				case RECV_SDBD_STARTED: {
+					logger.info("received SDBD_STARTED from QEMU");
 
 					synchronized (this) {
 						isSdbDaemonStarted = true;
 					}
 					break;
 				}
-				case ECS_SERVER_START: {
-					logger.info("received ECS_SERVER_START from QEMU.");
+				case RECV_ECS_STARTED: {
+					logger.info("received ECS_STARTED from QEMU");
 
 					synchronized (this) {
 						isEcsServerStarted = true;
 					}
 					break;
 				}
-				case DRAW_FRAME: {
+				case RECV_DRAW_FRAME: {
 					//logger.info("received DRAW_FRAME from QEMU.");
 
 					skin.updateDisplay();
 
 					break;
 				}
-				case DRAW_BLANK_GUIDE: {
+				case RECV_DRAW_BLANK_GUIDE: {
 					logger.info("received DRAW_BLANK_GUIDE from QEMU.");
 
 					Image imageGuide = skin.getImageRegistry().getResourceImage(
@@ -426,8 +426,8 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case SHUTDOWN: {
-					logger.info("received RESPONSE_SHUTDOWN from QEMU.");
+				case RECV_SHUTDOWN: {
+					logger.info("received SHUTDOWN from QEMU");
 
 					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null, false);
 					terminate();
@@ -539,11 +539,11 @@ public class SocketCommunicator implements ICommunicator {
 		DataTranfer dataTranfer = null;
 
 		if (useDataTransfer) {
-			if (SendCommand.SCREEN_SHOT.equals(command)) {
+			if (SendCommand.SEND_SCREENSHOT_REQ.equals(command)) {
 				dataTranfer = resetDataTransfer(screenShotDataTransfer);
-			} else if (SendCommand.DETAIL_INFO.equals(command)) {
+			} else if (SendCommand.SEND_DETAIL_INFO_REQ.equals(command)) {
 				dataTranfer = resetDataTransfer(detailInfoTransfer);
-			} else if (SendCommand.ECP_PORT_REQ.equals(command)) {
+			} else if (SendCommand.SEND_ECP_PORT_REQ.equals(command)) {
 				dataTranfer = resetDataTransfer(ecpTransfer);
 			}
 		}

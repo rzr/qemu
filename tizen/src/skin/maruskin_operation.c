@@ -169,7 +169,7 @@ void do_mouse_event(int button_type, int event_type,
 
             break;
         default:
-            ERR("undefined mouse event type passed:%d\n", event_type);
+            ERR("undefined mouse event type passed : %d\n", event_type);
             break;
     }
 
@@ -182,11 +182,13 @@ void do_mouse_event(int button_type, int event_type,
 #endif
 }
 
-void do_key_event(int event_type, int keycode, int state_mask, int key_location)
+void do_keyboard_key_event(int event_type,
+    int keycode, int state_mask, int key_location)
 {
     int scancode = -1;
 
-    TRACE("key_event event_type:%d, keycode:%d, state_mask:%d, key_location:%d\n",
+    TRACE("Keyboard Key : event_type=%d, keycode=%d,"
+        "state_mask=%d, key_location=%d\n",
         event_type, keycode, state_mask, key_location);
 
 #ifndef CONFIG_USE_SHM
@@ -279,9 +281,9 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 }
 
-void do_hardkey_event(int event_type, int keycode)
+void do_hw_key_event(int event_type, int keycode)
 {
-    INFO("do_hardkey_event event_type:%d, keycode:%d\n",
+    INFO("HW Key : event_type=%d, keycode=%d\n",
         event_type, keycode);
 
     if ( is_suspended_state() ) {
@@ -553,9 +555,9 @@ void do_open_shell(void)
     /* do nothing */
 }
 
-void onoff_host_kbd(int on)
+void do_host_kbd_enable(bool on)
 {
-    INFO("host kbd on/off: %d.\n", on);
+    INFO("host kbd enable : %d\n", on);
 
 #if defined(TARGET_ARM)
     mloop_evcmd_usbkbd(on);
@@ -584,7 +586,7 @@ void request_close(void)
     INFO("request_close\n");
 
     /* FIXME: convert to device emulatoion */
-    do_hardkey_event(KEY_PRESSED, HARD_KEY_POWER);
+    do_hw_key_event(KEY_PRESSED, HARD_KEY_POWER);
 
 #ifdef CONFIG_WIN32
         Sleep(CLOSE_POWER_KEY_INTERVAL);
@@ -592,7 +594,7 @@ void request_close(void)
         usleep(CLOSE_POWER_KEY_INTERVAL * 1000);
 #endif
 
-    do_hardkey_event(KEY_RELEASED, HARD_KEY_POWER);
+    do_hw_key_event(KEY_RELEASED, HARD_KEY_POWER);
 }
 
 void shutdown_qemu_gracefully(void)

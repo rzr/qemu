@@ -99,21 +99,21 @@ enum {
     /* This values must match the Java definitions
     in Skin process */
 
-    RECV_START = 1,
+    RECV_SKIN_OPENED = 1,
     RECV_MOUSE_EVENT = 10,
-    RECV_KEY_EVENT = 11,
-    RECV_HARD_KEY_EVENT = 12,
-    RECV_CHANGE_LCD_STATE = 13,
+    RECV_KEYBOARD_KEY_EVENT = 11,
+    RECV_HW_KEY_EVENT = 12,
+    RECV_DISPLAY_STATE = 13,
     RECV_OPEN_SHELL = 14,
-    RECV_HOST_KBD = 15,
-    RECV_SCREEN_SHOT = 16,
-    RECV_DETAIL_INFO = 17,
+    RECV_HOST_KBD_STATE = 15,
+    RECV_SCREENSHOT_REQ = 16,
+    RECV_DETAIL_INFO_REQ = 17,
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
     RECV_ECP_PORT_REQ = 20,
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_RESPONSE_DRAW_FRAME = 901,
-    RECV_CLOSE = 998,
+    RECV_CLOSE_REQ = 998,
     RECV_RESPONSE_SHUTDOWN = 999,
 };
 
@@ -122,15 +122,16 @@ enum {
     in Skin process */
 
     SEND_HEART_BEAT = 1,
-    SEND_SCREEN_SHOT = 2,
-    SEND_DETAIL_INFO = 3,
-    SEND_RAMDUMP_COMPLETE = 4,
+    SEND_SCREENSHOT_DATA = 2,
+    SEND_DETAIL_INFO_DATA = 3,
+    SEND_RAMDUMP_COMPLETED = 4,
     SEND_BOOTING_PROGRESS = 5,
-    SEND_BRIGHTNESS_VALUE = 6,
-    SEND_ECP_PORT = 7,
-    SEND_SENSOR_DAEMON_START = 800,
-    SEND_SDB_DAEMON_START = 801,
-    SEND_ECS_SERVER_START = 802,
+    SEND_BRIGHTNESS_STATE = 6,
+    SEND_ECP_PORT_DATA = 7,
+    SEND_HOST_KBD_STATE = 8,
+    SEND_SENSORD_STARTED = 800,
+    SEND_SDBD_STARTED = 801,
+    SEND_ECS_STARTED = 802,
     SEND_DRAW_FRAME = 900,
     SEND_DRAW_BLANK_GUIDE = 901,
     SEND_SHUTDOWN = 999,
@@ -289,7 +290,7 @@ void notify_draw_frame(void)
         if (0 > send_skin_header_only(
             client_sock, SEND_DRAW_FRAME, 1)) {
 
-            ERR("fail to send SEND_DRAW_FRAME to skin.\n");
+            ERR("fail to send SEND_DRAW_FRAME to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -304,7 +305,7 @@ void notify_draw_blank_guide(void)
         if (0 > send_skin_header_only(
             client_sock, SEND_DRAW_BLANK_GUIDE, 1)) {
 
-            ERR("fail to send SEND_DRAW_BLANK_GUIDE to skin.\n");
+            ERR("fail to send SEND_DRAW_BLANK_GUIDE to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -318,9 +319,9 @@ void notify_ecs_server_start(void)
     is_ecs_initialized = 1;
     if (client_sock) {
         if (0 > send_skin_header_only(
-            client_sock, SEND_ECS_SERVER_START, 1)) {
+            client_sock, SEND_ECS_STARTED, 1)) {
 
-            ERR("fail to send SEND_ECS_SERVER_START to skin.\n");
+            ERR("fail to send SEND_ECS_STARTED to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -334,9 +335,9 @@ void notify_sdb_daemon_start(void)
     is_sdbd_initialized = 1;
     if (client_sock) {
         if (0 > send_skin_header_only(
-            client_sock, SEND_SDB_DAEMON_START, 1)) {
+            client_sock, SEND_SDBD_STARTED, 1)) {
 
-            ERR("fail to send SEND_SDB_DAEMON_START to skin.\n");
+            ERR("fail to send SEND_SDBD_STARTED to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -350,9 +351,9 @@ void notify_sensor_daemon_start(void)
     is_sensord_initialized = 1;
     if (client_sock) {
         if (0 > send_skin_header_only(
-            client_sock, SEND_SENSOR_DAEMON_START, 1)) {
+            client_sock, SEND_SENSORD_STARTED, 1)) {
 
-            ERR("fail to send SEND_SENSOR_DAEMON_START to skin.\n");
+            ERR("fail to send SEND_SENSORD_STARTED to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -365,9 +366,9 @@ void notify_ramdump_completed(void)
 
     if (client_sock) {
         if (0 > send_skin_header_only(
-            client_sock, SEND_RAMDUMP_COMPLETE, 1)) {
+            client_sock, SEND_RAMDUMP_COMPLETED, 1)) {
 
-            ERR("fail to send SEND_RAMDUMP_COMPLETE to skin.\n");
+            ERR("fail to send SEND_RAMDUMP_COMPLETED to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -390,7 +391,7 @@ void notify_booting_progress(unsigned int layer, int progress_value)
             SEND_BOOTING_PROGRESS,
             (unsigned char *)progress_data, PROGRESS_DATA_LENGTH, 0)) {
 
-            ERR("fail to send SEND_BOOTING_PROGRESS to skin.\n");
+            ERR("fail to send SEND_BOOTING_PROGRESS to skin\n");
         }
 
         SLEEP(1); /* 1ms */
@@ -399,26 +400,25 @@ void notify_booting_progress(unsigned int layer, int progress_value)
     }
 }
 
-void notify_brightness(bool on)
+void notify_brightness_state(bool on)
 {
 #define BRIGHTNESS_DATA_LENGTH 2
     char brightness_data[BRIGHTNESS_DATA_LENGTH] = { 0, };
-    int brightness_value = 1;
 
-    if (on == FALSE) {
-        brightness_value = 0;
+    if (on == false) {
+        snprintf(brightness_data, BRIGHTNESS_DATA_LENGTH, "0");
+    } else {
+        snprintf(brightness_data, BRIGHTNESS_DATA_LENGTH, "1");
     }
 
-    snprintf(brightness_data,
-        BRIGHTNESS_DATA_LENGTH, "%d", brightness_value);
-    TRACE("brightness value = %s\n", brightness_data);
+    TRACE("notify brightness state : %s\n", brightness_data);
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,
-            SEND_BRIGHTNESS_VALUE,
+            SEND_BRIGHTNESS_STATE,
             (unsigned char *)brightness_data, BRIGHTNESS_DATA_LENGTH, 0)) {
 
-            ERR("fail to send SEND_BRIGHTNESS_VALUE to skin.\n");
+            ERR("fail to send SEND_BRIGHTNESS_STATE to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -761,8 +761,8 @@ static void* run_skin_server(void* args)
                 }
 
                 switch (cmd) {
-                case RECV_START: {
-                    log_cnt += sprintf(log_buf + log_cnt, "RECV_START ==\n");
+                case RECV_SKIN_OPENED: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_SKIN_OPENED ==\n");
                     INFO(log_buf);
 
                     if (0 >= length) {
@@ -859,12 +859,12 @@ static void* run_skin_server(void* args)
                         host_x, host_y, guest_x, guest_y, z);
                     break;
                 }
-                case RECV_KEY_EVENT: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_KEY_EVENT ==\n" );
-                    TRACE( log_buf );
+                case RECV_KEYBOARD_KEY_EVENT: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_KEYBOARD_KEY_EVENT ==\n");
+                    TRACE(log_buf);
 
-                    if ( 0 >= length ) {
-                        ERR( "there is no data looking at 0 length." );
+                    if (0 >= length) {
+                        ERR("there is no data looking at 0 length.");
                         continue;
                     }
 
@@ -875,28 +875,28 @@ static void* run_skin_server(void* args)
                     int key_location = 0;
 
                     char* p = recvbuf;
-                    memcpy( &event_type, p, sizeof( event_type ) );
-                    p += sizeof( event_type );
-                    memcpy( &keycode, p, sizeof( keycode ) );
-                    p += sizeof( keycode );
-                    memcpy( &state_mask, p, sizeof( state_mask ) );
-                    p += sizeof( state_mask );
-                    memcpy( &key_location, p, sizeof( key_location ) );
+                    memcpy(&event_type, p, sizeof(event_type));
+                    p += sizeof(event_type);
+                    memcpy(&keycode, p, sizeof(keycode));
+                    p += sizeof(keycode);
+                    memcpy(&state_mask, p, sizeof(state_mask));
+                    p += sizeof(state_mask);
+                    memcpy(&key_location, p, sizeof(key_location));
 
-                    event_type = ntohl( event_type );
-                    keycode = ntohl( keycode );
-                    state_mask = ntohl( state_mask );
-                    key_location = ntohl( key_location );
+                    event_type = ntohl(event_type);
+                    keycode = ntohl(keycode);
+                    state_mask = ntohl(state_mask);
+                    key_location = ntohl(key_location);
 
-                    do_key_event(event_type, keycode, state_mask, key_location);
+                    do_keyboard_key_event(event_type, keycode, state_mask, key_location);
                     break;
                 }
-                case RECV_HARD_KEY_EVENT: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_HARD_KEY_EVENT ==\n" );
-                    TRACE( log_buf );
+                case RECV_HW_KEY_EVENT: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_HW_KEY_EVENT ==\n");
+                    TRACE(log_buf);
 
-                    if ( 0 >= length ) {
-                        ERR( "there is no data looking at 0 length." );
+                    if (0 >= length) {
+                        ERR("there is no data looking at 0 length.");
                         continue;
                     }
 
@@ -905,18 +905,18 @@ static void* run_skin_server(void* args)
                     int keycode = 0;
 
                     char* p = recvbuf;
-                    memcpy( &event_type, p, sizeof( event_type ) );
-                    p += sizeof( event_type );
-                    memcpy( &keycode, p, sizeof( keycode ) );
+                    memcpy(&event_type, p, sizeof(event_type));
+                    p += sizeof(event_type);
+                    memcpy(&keycode, p, sizeof(keycode));
 
-                    event_type = ntohl( event_type );
-                    keycode = ntohl( keycode );
+                    event_type = ntohl(event_type);
+                    keycode = ntohl(keycode);
 
-                    do_hardkey_event( event_type, keycode );
+                    do_hw_key_event(event_type, keycode);
                     break;
                 }
-                case RECV_CHANGE_LCD_STATE: {
-                    log_cnt += sprintf(log_buf + log_cnt, "RECV_CHANGE_LCD_STATE ==\n");
+                case RECV_DISPLAY_STATE: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_DISPLAY_STATE ==\n");
                     TRACE(log_buf);
 
                     if (0 >= length) {
@@ -963,33 +963,34 @@ static void* run_skin_server(void* args)
 
                     break;
                 }
-                case RECV_SCREEN_SHOT: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_SCREEN_SHOT ==\n" );
-                    TRACE( log_buf );
+                case RECV_SCREENSHOT_REQ: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_SCREENSHOT_REQ ==\n");
+                    TRACE(log_buf);
 
                     QemuSurfaceInfo* info = get_screenshot_info();
 
-                    if ( info ) {
-                        send_skin_data( client_sock, SEND_SCREEN_SHOT, info->pixel_data, info->pixel_data_length, 1 );
-                        free_screenshot_info( info );
+                    if (info) {
+                        send_skin_data(client_sock, SEND_SCREENSHOT_DATA,
+                            info->pixel_data, info->pixel_data_length, 1);
+                        free_screenshot_info(info);
                     } else {
-                        ERR( "Fail to get screenshot data.\n" );
+                        ERR("Fail to get screen shot data\n");
                     }
 
                     break;
                 }
-                case RECV_DETAIL_INFO: {
-                    log_cnt += sprintf( log_buf + log_cnt, "RECV_DETAIL_INFO ==\n" );
-                    TRACE( log_buf );
+                case RECV_DETAIL_INFO_REQ: {
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_DETAIL_INFO_REQ ==\n");
+                    TRACE(log_buf);
 
-                    DetailInfo* detail_info = get_detail_info( qmu_argc, qmu_argv );
+                    DetailInfo* detail_info = get_detail_info(qmu_argc, qmu_argv);
 
-                    if ( detail_info ) {
-                        send_skin_data( client_sock, SEND_DETAIL_INFO, (unsigned char*) detail_info->data,
-                            detail_info->data_length, 0 );
-                        free_detail_info( detail_info );
+                    if (detail_info) {
+                        send_skin_data(client_sock, SEND_DETAIL_INFO_DATA,
+                            (unsigned char*) detail_info->data, detail_info->data_length, 0);
+                        free_detail_info(detail_info);
                     } else {
-                        ERR( "Fail to get detail info.\n" );
+                        ERR("Fail to get detail info\n");
                     }
 
                     break;
@@ -1001,21 +1002,21 @@ static void* run_skin_server(void* args)
                     do_ram_dump();
                     break;
                 }
-				case RECV_ECP_PORT_REQ: {
+                case RECV_ECP_PORT_REQ: {
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_ECP_PORT_REQ ==\n");
                     TRACE(log_buf);
 
-					int port = get_ecs_port();
-                	unsigned char port_buf[5];
-					memset(port_buf, 0, 5);
-					port_buf[0] = (port & 0xFF000000) >> 24;
-					port_buf[1] = (port & 0x00FF0000) >> 16;
-					port_buf[2] = (port & 0x0000FF00) >> 8;
-					port_buf[3] = (port & 0x000000FF);
+                    int port = get_ecs_port();
+                    unsigned char port_buf[5];
+                    memset(port_buf, 0, 5);
+                    port_buf[0] = (port & 0xFF000000) >> 24;
+                    port_buf[1] = (port & 0x00FF0000) >> 16;
+                    port_buf[2] = (port & 0x0000FF00) >> 8;
+                    port_buf[3] = (port & 0x000000FF);
 
-                    send_skin_data( client_sock, SEND_ECP_PORT, port_buf, 4, 0);
-					break;
-				}
+                    send_skin_data(client_sock, SEND_ECP_PORT_DATA, port_buf, 4, 0);
+                    break;
+                }
                 case RECV_GUESTMEMORY_DUMP: {
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_GUESTMEMORY_DUMP ==\n");
                     TRACE(log_buf);
@@ -1043,10 +1044,10 @@ static void* run_skin_server(void* args)
                     do_open_shell();
                     break;
                 }
-                case RECV_HOST_KBD: {
+                case RECV_HOST_KBD_STATE: {
                     char on = 0;
 
-                    log_cnt += sprintf(log_buf + log_cnt, "RECV_HOST_KBD ==\n");
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_HOST_KBD_STATE ==\n");
                     TRACE(log_buf);
 
                     if (length <= 0) {
@@ -1055,7 +1056,12 @@ static void* run_skin_server(void* args)
                     }
 
                     memcpy(&on, recvbuf, sizeof(on));
-                    onoff_host_kbd(on);
+
+                    if (on == 0) {
+                        do_host_kbd_enable(false);
+                    } else {
+                        do_host_kbd_enable(true);
+                    }
                     break;
                 }
                 case RECV_RESPONSE_DRAW_FRAME: {
@@ -1069,7 +1075,7 @@ static void* run_skin_server(void* args)
 #endif
                     break;
                 }
-                case RECV_CLOSE: {
+                case RECV_CLOSE_REQ: {
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_CLOSE ==\n");
                     TRACE(log_buf);
 
@@ -1263,7 +1269,7 @@ static int send_skin_data(int sockfd,
 
     pthread_mutex_unlock(&mutex_send_data);
 
-    TRACE("send_n result:%d\n", send_cnt);
+    TRACE("send_n result : %d\n", send_cnt);
 
     return send_cnt;
 }
@@ -1322,7 +1328,7 @@ static void* do_heart_beat(void* args)
         pthread_mutex_unlock(&mutex_recv_heartbeat_count);
 
         if (HEART_BEAT_EXPIRE_COUNT < recv_heartbeat_count) {
-            ERR("received heartbeat count is expired.\n");
+            ERR("received heart beat count is expired\n");
 
             shutdown = 1;
             break;
@@ -1330,7 +1336,7 @@ static void* do_heart_beat(void* args)
     }
 
     if (shutdown != 0) {
-        INFO("[HB] shutdown skin_server by heartbeat thread.\n");
+        INFO("[HB] shutdown skin_server by heart beat thread\n");
 
         is_force_close_client = 1;
 
@@ -1369,7 +1375,7 @@ static int start_heart_beat(void)
         return 1;
     } else {
         if (0 != pthread_create(&thread_id_heartbeat, NULL, do_heart_beat, NULL)) {
-            ERR("[HB] fail to create heartbean pthread.\n");
+            ERR("[HB] fail to create heart beat thread\n");
             return 0;
         } else {
             return 1;
