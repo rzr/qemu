@@ -50,8 +50,20 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
     osfc->ws_sfc = ws_sfc;
 
     if (egl_onscreen_ts->sfc_draw == osfc) {
+        GLuint cur_fb = 0;
+
         yagl_egl_onscreen_surface_setup(osfc);
+
+        egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+                                               (GLint*)&cur_fb);
+
+        egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+                                                   egl_onscreen_ts->ctx->fb);
+
         yagl_egl_onscreen_surface_attach_to_framebuffer(osfc);
+
+        egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+                                                   cur_fb);
     }
 
     YAGL_LOG_FUNC_EXIT(NULL);
