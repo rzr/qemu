@@ -200,6 +200,7 @@ void yagl_host_glBlitFramebuffer(GLint srcX0,
     GLint dstY1,
     GLbitfield mask,
     GLenum filter);
+void yagl_host_glDrawBuffers(const GLenum *bufs, int32_t bufs_count);
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count);
 void yagl_host_glBindRenderbuffer(GLenum target,
     GLuint renderbuffer);

@@ -994,6 +994,11 @@ void yagl_host_glBlitFramebuffer(GLint srcX0,
                                          mask, filter);
 }
 
+void yagl_host_glDrawBuffers(const GLenum *bufs, int32_t bufs_count)
+{
+    gles_api_ts->driver->DrawBuffers(bufs_count, bufs);
+}
+
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count)
 {
     int i;

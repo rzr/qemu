@@ -75,6 +75,7 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
     YAGL_GLES_OGL_GET_PROC(driver, FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
     YAGL_GLES_OGL_GET_PROC(driver, DeleteFramebuffers, glDeleteFramebuffersEXT);
     YAGL_GLES_OGL_GET_PROC(driver, BlitFramebuffer, glBlitFramebufferEXT);
+    YAGL_GLES_OGL_GET_PROC(driver, DrawBuffers, glDrawBuffers);
     YAGL_GLES_OGL_GET_PROC(driver, GenRenderbuffers, glGenRenderbuffersEXT);
     YAGL_GLES_OGL_GET_PROC(driver, BindRenderbuffer, glBindRenderbufferEXT);
     YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorage, glRenderbufferStorageEXT);
