@@ -146,13 +146,17 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
             YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 2.1");
             *version = yagl_gl_2;
             res = true;
-        } else if (strcmp(tmp, "gl_3") == 0) {
-            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.2");
-            *version = yagl_gl_3;
-            res = true;
-        } else if (strcmp(tmp, "gl_3_es3") == 0) {
+        } else if (strcmp(tmp, "gl_3_1") == 0) {
             YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.1");
-            *version = yagl_gl_3_es3;
+            *version = yagl_gl_3_1;
+            res = true;
+        } else if (strcmp(tmp, "gl_3_1_es3") == 0) {
+            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.1 ES3");
+            *version = yagl_gl_3_1_es3;
+            res = true;
+        } else if (strcmp(tmp, "gl_3_2") == 0) {
+            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.2");
+            *version = yagl_gl_3_2;
             res = true;
         } else {
             YAGL_LOG_CRITICAL("Bad YAGL_GL_VERSION value = %s", tmp);
@@ -222,8 +226,8 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
     for (i = 0; i < num_extensions; ++i) {
         tmp = (const char*)GetStringi(GL_EXTENSIONS, i);
         if (strcmp(tmp, "GL_ARB_ES3_compatibility") == 0) {
-            YAGL_LOG_INFO("GL_ARB_ES3_compatibility supported, using OpenGL 3.1");
-            *version = yagl_gl_3_es3;
+            YAGL_LOG_INFO("GL_ARB_ES3_compatibility supported, using OpenGL 3.1 ES3");
+            *version = yagl_gl_3_1_es3;
             res = true;
             goto out;
         }
@@ -240,13 +244,13 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
     if ((major > 3) ||
         ((major == 3) && (minor >= 2))) {
         YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, using OpenGL 3.2");
-        *version = yagl_gl_3;
+        *version = yagl_gl_3_2;
         res = true;
         goto out;
     }
 
-    YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, OpenGL 3.2 not supported, using OpenGL 2.1");
-    *version = yagl_gl_2;
+    YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, OpenGL 3.2 not supported, using OpenGL 3.1");
+    *version = yagl_gl_3_1;
     res = true;
 
 out:

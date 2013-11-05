@@ -132,7 +132,7 @@ static struct yagl_egl_config
     cfg->native.native_renderable = EGL_TRUE;
     cfg->native.renderable_type = EGL_OPENGL_ES_BIT | EGL_OPENGL_ES2_BIT;
 
-    if (dpy->backend->gl_version > yagl_gl_2) {
+    if (dpy->backend->gl_version >= yagl_gl_3_1_es3) {
         cfg->native.renderable_type |= EGL_OPENGL_ES3_BIT_KHR;
     }
 
