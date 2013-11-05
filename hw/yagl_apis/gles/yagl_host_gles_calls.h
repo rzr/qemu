@@ -190,6 +190,16 @@ void yagl_host_glFramebufferRenderbuffer(GLenum target,
     GLenum attachment,
     GLenum renderbuffertarget,
     GLuint renderbuffer);
+void yagl_host_glBlitFramebuffer(GLint srcX0,
+    GLint srcY0,
+    GLint srcX1,
+    GLint srcY1,
+    GLint dstX0,
+    GLint dstY0,
+    GLint dstX1,
+    GLint dstY1,
+    GLbitfield mask,
+    GLenum filter);
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count);
 void yagl_host_glBindRenderbuffer(GLenum target,
     GLuint renderbuffer);

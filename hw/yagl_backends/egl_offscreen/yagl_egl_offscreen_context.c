@@ -97,13 +97,13 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_context_read_pixels,
                         "%ux%ux%u", width, height, bpp);
 
-    gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+    gles_driver->GetIntegerv(GL_READ_FRAMEBUFFER_BINDING,
                              (GLint*)&current_fb);
 
     gles_driver->GetIntegerv(GL_PACK_ALIGNMENT,
                              &current_pack_alignment);
 
-    gles_driver->BindFramebuffer(GL_FRAMEBUFFER, 0);
+    gles_driver->BindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     if (!ctx->rp_pbo) {
         /*
@@ -198,7 +198,7 @@ out:
                                 current_pbo);
     }
 
-    gles_driver->BindFramebuffer(GL_FRAMEBUFFER, current_fb);
+    gles_driver->BindFramebuffer(GL_READ_FRAMEBUFFER, current_fb);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 

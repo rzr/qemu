@@ -27,15 +27,16 @@ static void yagl_egl_onscreen_setup_framebuffer_zero(struct yagl_egl_onscreen *e
 
     yagl_egl_onscreen_surface_setup(egl_onscreen_ts->sfc_draw);
 
-    egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+    egl_onscreen->gles_driver->GetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
                                            (GLint*)&cur_fb);
 
-    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+    egl_onscreen->gles_driver->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
                                                egl_onscreen_ts->ctx->fb);
 
-    yagl_egl_onscreen_surface_attach_to_framebuffer(egl_onscreen_ts->sfc_draw);
+    yagl_egl_onscreen_surface_attach_to_framebuffer(egl_onscreen_ts->sfc_draw,
+                                                    GL_DRAW_FRAMEBUFFER);
 
-    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+    egl_onscreen->gles_driver->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
                                                cur_fb);
 }
 
@@ -144,7 +145,7 @@ static bool yagl_egl_onscreen_make_current(struct yagl_egl_backend *backend,
 
         yagl_egl_onscreen_setup_framebuffer_zero(egl_onscreen);
 
-        egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+        egl_onscreen->gles_driver->GetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
                                                (GLint*)&cur_fb);
 
         if (cur_fb == 0) {

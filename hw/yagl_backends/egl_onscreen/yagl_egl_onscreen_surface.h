@@ -51,7 +51,8 @@ struct yagl_egl_onscreen_surface
 
 void yagl_egl_onscreen_surface_setup(struct yagl_egl_onscreen_surface *sfc);
 
-void yagl_egl_onscreen_surface_attach_to_framebuffer(struct yagl_egl_onscreen_surface *sfc);
+void yagl_egl_onscreen_surface_attach_to_framebuffer(struct yagl_egl_onscreen_surface *sfc,
+                                                     GLenum target);
 
 uint32_t yagl_egl_onscreen_surface_width(struct yagl_egl_onscreen_surface *sfc);
 

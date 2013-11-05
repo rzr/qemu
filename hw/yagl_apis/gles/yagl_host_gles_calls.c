@@ -978,6 +978,22 @@ void yagl_host_glFramebufferRenderbuffer(GLenum target,
                                                  yagl_gles_object_get(renderbuffer));
 }
 
+void yagl_host_glBlitFramebuffer(GLint srcX0,
+    GLint srcY0,
+    GLint srcX1,
+    GLint srcY1,
+    GLint dstX0,
+    GLint dstY0,
+    GLint dstX1,
+    GLint dstY1,
+    GLbitfield mask,
+    GLenum filter)
+{
+    gles_api_ts->driver->BlitFramebuffer(srcX0, srcY0, srcX1, srcY1,
+                                         dstX0, dstY0, dstX1, dstY1,
+                                         mask, filter);
+}
+
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count)
 {
     int i;

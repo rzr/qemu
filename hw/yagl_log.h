@@ -224,6 +224,13 @@ bool yagl_log_is_enabled_for_func_tracing(void);
                                #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, #arg4_type, #arg4, #arg5_type, #arg5, #arg6_type, #arg6, #arg7_type, #arg7, #arg8_type, #arg8, \
                                arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 )
 
+#define YAGL_LOG_FUNC_ENTER_SPLIT10( func, \
+                                     arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg7_type, arg8_type, arg9_type, \
+                                     arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 ) \
+    YAGL_LOG_FUNC_ENTER_SPLIT( func, 10, \
+                               #arg0_type, #arg0, #arg1_type, #arg1, #arg2_type, #arg2, #arg3_type, #arg3, #arg4_type, #arg4, #arg5_type, #arg5, #arg6_type, #arg6, #arg7_type, #arg7, #arg8_type, #arg8, #arg9_type, #arg9, \
+                               arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 )
+
 #define YAGL_LOG_TRACE(format, ...)    YAGL_LOG_EVENT(trace, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, format,##__VA_ARGS__)
 #define YAGL_LOG_DEBUG(format, ...)    YAGL_LOG_EVENT(debug, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, format,##__VA_ARGS__)
 #define YAGL_LOG_INFO(format, ...)     YAGL_LOG_EVENT(info, _yagl_log_current_pid, _yagl_log_current_tid, _yagl_log_current_func, format,##__VA_ARGS__)
