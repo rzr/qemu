@@ -1,5 +1,12 @@
 #!/bin/bash -ex
 
+TIZEN_KVM_SCRIPT="/etc/init.d/tizen-kvm-multi"
+if [ -f ${TIZEN_KVM_SCRIPT} ]
+then
+	echo "tizen-kvm-multi does exist. tizen-kvm does not need to be uninstalled."
+	exit 0;
+fi
+
 TIZEN_SDK_INSTALL_PATH=`echo ${INSTALLED_PATH}`
 if [ -z ${TIZEN_SDK_INSTALL_PATH} ]
 then
