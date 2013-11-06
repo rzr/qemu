@@ -52,6 +52,11 @@
 
 MULTI_DEBUG_CHANNEL(qemu, osutil);
 
+
+static qemu_timeval tv = { 0, 0 };
+static time_t ti;
+static char buf_time[64];
+
 int g_shmid;
 extern char tizen_target_img_path[];
 CFDictionaryRef proxySettings;
@@ -223,6 +228,19 @@ void print_system_info_os(void)
         INFO("system function command '%s' \
             returns error !", lspci_cmd);
     }
+}
+
+char *get_timeofday(void)
+{
+    qemu_gettimeofday(&tv);
+    ti = tv.tv_sec;
+
+    struct tm tm;
+    localtime_r(&ti, &tm);
+    strftime(buf_time, sizeof(buf_time),
+             "%H:%M:%S", &tm);
+
+    return buf_time;
 }
 
 static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)

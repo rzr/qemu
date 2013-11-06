@@ -42,7 +42,8 @@
 
 MULTI_DEBUG_CHANNEL(emulator, osutil);
 
-const char *pac_tempfile = ".autoproxy"; 
+
+const char *pac_tempfile = ".autoproxy";
 
 inline size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) 
 {     
@@ -53,27 +54,29 @@ inline size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
 
 inline void download_url(char *url) 
 {     
-    CURL *curl;     
-    FILE *fp;     
-    CURLcode res;     
+    CURL *curl;
+    FILE *fp;
+    CURLcode res;
 
     curl = curl_easy_init();
-    if (curl) { 
-        fp = fopen(pac_tempfile,"wb");
+    if (curl) {
+        fp = fopen(pac_tempfile, "wb");
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-        //just in case network does not work.
+        /* just in case network does not work */
         curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 3000);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+
         res = curl_easy_perform(curl);
-        if(res != 0) {
+        if (res != 0) {
             ERR("Fail to download pac file: %s\n", url);
         }
-        curl_easy_cleanup(curl); 
-        fclose(fp);
-    }     
 
-    return; 
+        curl_easy_cleanup(curl);
+        fclose(fp);
+    }
+
+    return;
 } 
 
 inline void remove_string(char *src, char *dst, const char *toremove)

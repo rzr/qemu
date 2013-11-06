@@ -32,6 +32,7 @@
 #ifndef __OSUTIL_H__
 #define __OSUTIL_H__
 
+#include "qemu-common.h"
 #include "maru_common.h"
 #include "emul_state.h"
 
@@ -71,6 +72,7 @@ void get_host_proxy_os(char *, char *, char *, char *);
 void download_url(char *);
 size_t write_data(void *, size_t, size_t, FILE *);
 void remove_string(char *, char *, const char *);
+char *get_timeofday(void);
 
 int get_number_of_processors(void);
 

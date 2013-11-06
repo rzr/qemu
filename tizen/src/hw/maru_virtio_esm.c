@@ -29,9 +29,15 @@
 #include "maru_device_ids.h"
 #include "maru_virtio_esm.h"
 #include "skin/maruskin_server.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-esm);
+
+
+#define SYSTEM_MODE_LAYER 1
+#define USER_MODE_LAYER 0
+static uint8_t boot_complete;
 
 struct progress_info {
     char mode;
@@ -71,11 +77,27 @@ static void virtio_esm_handle(VirtIODevice *vdev, VirtQueue *vq)
             TRACE("Boot up progress is [%u] percent done at %s.\n",
                 progress.percentage,
                 progress.mode == 's' || progress.mode == 'S' ? "system mode" : "user mode");
+
             /* notify to skin */
-            if(progress.mode == 's' || progress.mode == 'S')
-                notify_booting_progress(1, progress.percentage);
-            else
-                notify_booting_progress(0, progress.percentage);
+            if (progress.mode == 's' || progress.mode == 'S') {
+                if (progress.percentage >= 100) {
+                    boot_complete |= (1 << SYSTEM_MODE_LAYER);
+                }
+
+                notify_booting_progress(SYSTEM_MODE_LAYER, progress.percentage);
+            } else {
+                if (progress.percentage >= 100) {
+                    boot_complete |= (1 << USER_MODE_LAYER);
+                }
+
+                notify_booting_progress(USER_MODE_LAYER, progress.percentage);
+            }
+
+            /* booting complete check */
+            if ((boot_complete & (1 << SYSTEM_MODE_LAYER)) &&
+                (boot_complete & (1 << USER_MODE_LAYER))) {
+                set_emulator_condition(BOOT_COMPLETED);
+            }
         }
     }
 

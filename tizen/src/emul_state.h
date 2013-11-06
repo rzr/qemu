@@ -37,6 +37,11 @@
 #include "maru_common.h"
 #include "maru_finger.h"
 
+enum {
+    BOOTING = 0,
+    BOOT_COMPLETED = 1,
+};
+
 /* keep it consistent with emulator-skin definition */
 enum {
     HARD_KEY_HOME = 139,
