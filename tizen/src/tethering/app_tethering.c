@@ -320,7 +320,7 @@ static void set_sensor_data(Injector__SensorData *data)
         char tmp[255] = {0};
 
         sprintf(tmp, "%s, %s, %s", data->x, data->y, data->z);
-        set_sensor_accel(tmp, strlen(tmp));
+        send_tethering_sensor_data(tmp, strlen(tmp));
 
         INFO("sensor_accel x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
     }
@@ -330,7 +330,7 @@ static void set_sensor_data(Injector__SensorData *data)
         char tmp[255] = {0};
 
         sprintf(tmp, "%s %s %s", data->x, data->y, data->z);
-        set_sensor_mag(tmp, strlen(tmp));
+        send_tethering_sensor_data(tmp, strlen(tmp));
 
         INFO("sensor_mag x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
     }
@@ -340,7 +340,7 @@ static void set_sensor_data(Injector__SensorData *data)
         char tmp[255] = {0};
 
         sprintf(tmp, "%s %s %s", data->x, data->y, data->z);
-        set_sensor_gyro(tmp, strlen(tmp));
+        send_tethering_sensor_data(tmp, strlen(tmp));
 
         INFO("sensor_gyro x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
     }
@@ -350,7 +350,8 @@ static void set_sensor_data(Injector__SensorData *data)
         char tmp[255] = {0};
 
         sprintf(tmp, "%s", data->x);
-        set_sensor_proxi(tmp, strlen(tmp));
+        send_tethering_sensor_data(tmp, strlen(tmp));
+
         INFO("sensor_proxi x: %s\n", data->x);
     }
         break;
@@ -359,8 +360,9 @@ static void set_sensor_data(Injector__SensorData *data)
         char tmp[255] = {0};
 
         sprintf(tmp, "%s", data->x);
-        set_sensor_light(tmp, strlen(tmp));
-        INFO("sensor_light x: %s\n", data->x);
+        send_tethering_sensor_data(tmp, strlen(tmp));
+
+        TRACE("sensor_light x: %s\n", data->x);
     }
         break;
     default:
@@ -458,10 +460,9 @@ static void set_multitouch_data(Injector__MultiTouchData *data)
         break;
     }
 
-    INFO("MT. index: %d, x: %f, y: %f\n", index, x, y);
-
+    INFO("set touch_data. index: %d, x: %d, y: %d\n", index, x, y);
     // set ecs_multitouch
-    kbd_mouse_event(x, y, index, data->status);
+    send_tethering_touch_data(x, y, index, status);
 }
 
 static void msgproc_tethering_handshake_ans(Injector__HandShakeAns *msg)
