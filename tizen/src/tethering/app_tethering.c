@@ -38,7 +38,6 @@
 #include "app_tethering.h"
 #include "../ecs/ecs_tethering.h"
 #include "genmsg/tethering.pb-c.h"
-#include "../hw/maru_virtio_sensor.h"
 
 #include "../debug_ch.h"
 MULTI_DEBUG_CHANNEL(tizen, app_tethering);
@@ -72,6 +71,21 @@ enum connection_status {
 enum device_status {
     ENABLED = 1,
     DISABLED,
+};
+
+enum sensor_level {
+    level_accel = 1,
+    level_proxi = 2,
+    level_light = 3,
+    level_gyro = 4,
+    level_geo = 5,
+    level_tilt = 12,
+    level_magnetic = 13
+};
+
+enum touch_status {
+    RELEASED = 0,
+    PRESSED,
 };
 
 #ifndef DEBUG
@@ -314,52 +328,67 @@ static bool send_set_sensor_status_msg(Injector__SensorType sensor_type,
 
 static void set_sensor_data(Injector__SensorData *data)
 {
+
+    /*
+     * data format for sensor device
+     * each value is classified by carriage return character
+     * sensor_type/param numbers/parameters
+     * ex) acceleration sensor: "level_accel\n3\nx\ny\nz\n"
+     */
+
     switch(data->sensor) {
     case INJECTOR__SENSOR_TYPE__ACCEL:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s, %s, %s", data->x, data->y, data->z);
+        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
+                level_accel, 3, data->x, data->y, data->z);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        INFO("sensor_accel x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
+        TRACE("sensor_accel x: %s, y: %s, z: %s\n",
+            data->x, data->y, data->z);
     }
         break;
     case INJECTOR__SENSOR_TYPE__MAGNETIC:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s %s %s", data->x, data->y, data->z);
+        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
+                level_magnetic, 3, data->x, data->y, data->z);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        INFO("sensor_mag x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
+        TRACE("sensor_mag x: %s, y: %s, z: %s\n",
+            data->x, data->y, data->z);
     }
         break;
     case INJECTOR__SENSOR_TYPE__GYROSCOPE:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s %s %s", data->x, data->y, data->z);
+        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
+                level_gyro, 3, data->x, data->y, data->z);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        INFO("sensor_gyro x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
+        TRACE("sensor_gyro x: %s, y: %s, z: %s\n",
+            data->x, data->y, data->z);
     }
         break;
     case INJECTOR__SENSOR_TYPE__PROXIMITY:
     {
         char tmp[255] = {0};
+        double x = (double)(atoi(data->x));
 
-        sprintf(tmp, "%s", data->x);
+        sprintf(tmp, "%d\n%d\n%.1f\n", level_proxi, 1, x);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        INFO("sensor_proxi x: %s\n", data->x);
+        TRACE("sensor_proxi x: %.1f, %s\n", x, tmp);
     }
         break;
     case INJECTOR__SENSOR_TYPE__LIGHT:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s", data->x);
+        sprintf(tmp, "%d\n%d\n%s\n", level_light, 1, data->x);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
         TRACE("sensor_light x: %s\n", data->x);
@@ -438,7 +467,7 @@ static bool send_multitouch_max_count(void)
 static void set_multitouch_data(Injector__MultiTouchData *data)
 {
     float x = 0.0, y = 0.0;
-    int32_t index = 0;
+    int32_t index = 0, status = 0;
 
     switch(data->status) {
     case INJECTOR__TOUCH_STATUS__PRESS:
@@ -447,6 +476,7 @@ static void set_multitouch_data(Injector__MultiTouchData *data)
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
+        status = PRESSED;
         break;
     case INJECTOR__TOUCH_STATUS__RELEASE:
         TRACE("touch released\n");
@@ -454,6 +484,7 @@ static void set_multitouch_data(Injector__MultiTouchData *data)
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
+        status = RELEASED;
         break;
     default:
         TRACE("invalid multitouch data\n");
@@ -467,7 +498,8 @@ static void set_multitouch_data(Injector__MultiTouchData *data)
 
 static void msgproc_tethering_handshake_ans(Injector__HandShakeAns *msg)
 {
-//  ans = msg->result;
+    // FIXME: handle handshake answer
+    //  ans = msg->result;
 }
 
 static void msgproc_app_state_msg(Injector__AppState *msg)
