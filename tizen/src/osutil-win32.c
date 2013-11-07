@@ -50,6 +50,11 @@
 
 MULTI_DEBUG_CHANNEL (emulator, osutil);
 
+
+static qemu_timeval tv = { 0, 0 };
+static time_t ti;
+static char buf_time[64];
+
 extern char tizen_target_img_path[];
 
 static const char *pactempfile = ".autoproxy";
@@ -193,6 +198,18 @@ void print_system_info_os(void)
     GlobalMemoryStatusEx(&memInfo);
     INFO("* Total Ram : %llu kB, Free: %lld kB\n",
             memInfo.ullTotalPhys / 1024, memInfo.ullAvailPhys / 1024);
+}
+
+char *get_timeofday(void)
+{
+    qemu_gettimeofday(&tv);
+    ti = tv.tv_sec;
+
+    struct tm *ptm = localtime(&ti);
+    strftime(buf_time, sizeof(buf_time),
+             "%H:%M:%S", ptm);
+
+    return buf_time;
 }
 
 static int get_auto_proxy(BYTE *url, char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)

@@ -405,7 +405,7 @@ public class SpecialKeyWindow extends SkinWindow {
 							KeyEventData keyEventData = new KeyEventData(
 									KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
 							communicator.sendToQEMU(
-									SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
+									SendCommand.SEND_HW_KEY_EVENT, keyEventData, false);
 						}
 
 						currentPressedHWKey = null;
@@ -447,7 +447,7 @@ public class SpecialKeyWindow extends SkinWindow {
 							KeyEventData keyEventData = new KeyEventData(
 									KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
 							communicator.sendToQEMU(
-									SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
+									SendCommand.SEND_HW_KEY_EVENT, keyEventData, false);
 						}
 
 						currentPressedHWKey = hwKey;

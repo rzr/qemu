@@ -290,7 +290,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             if (!strncmp(data, "1", 1)) {
                 is_on = 1;
             }
-            onoff_host_kbd(is_on);
+            do_host_kbd_enable(is_on);
         }
     } else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
         if (group == MSG_GROUP_STATUS) {

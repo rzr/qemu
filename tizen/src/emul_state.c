@@ -164,6 +164,10 @@ int get_emulator_condition(void)
 
 void set_emulator_condition(int state)
 {
+    if (state == BOOT_COMPLETED) {
+        INFO("boot completed!\n");
+    }
+
     _emul_state.emulator_condition = state;
 }
 

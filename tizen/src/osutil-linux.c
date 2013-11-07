@@ -56,6 +56,11 @@
 
 MULTI_DEBUG_CHANNEL(emulator, osutil);
 
+
+static qemu_timeval tv = { 0, 0 };
+static time_t ti;
+static char buf_time[64];
+
 extern char tizen_target_img_path[];
 int g_shmid;
 char *g_shared_memory;
@@ -225,6 +230,19 @@ void print_system_info_os(void)
         INFO("system function command '%s' \
             returns error !", lspci_cmd);
     }
+}
+
+char *get_timeofday(void)
+{
+    qemu_gettimeofday(&tv);
+    ti = tv.tv_sec;
+
+    struct tm tm;
+    localtime_r(&ti, &tm);
+    strftime(buf_time, sizeof(buf_time),
+             "%H:%M:%S", &tm);
+
+    return buf_time;
 }
 
 static void process_string(char *buf)
