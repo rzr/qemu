@@ -67,7 +67,7 @@ static int server_sock = 0;
  */
 typedef struct GS_Client {
     int port;
-    char addr[RECV_BUF_SIZE];
+    struct sockaddr_in addr;
     char serial[RECV_BUF_SIZE];
 
     QTAILQ_ENTRY(GS_Client) next;
@@ -108,9 +108,7 @@ static void send_to_client(GS_Client* client, int state)
 
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_port = htons(client->port);
-    if (inet_aton(client->addr, &sock_addr.sin_addr) == 0) {
-          INFO("inet_aton() failed\n");
-    }
+    sock_addr.sin_addr = (client->addr).sin_addr;
 
     memset(buf, 0, sizeof(buf));
 
@@ -141,19 +139,17 @@ void notify_all_sdb_clients(int state)
 
 }
 
-static void add_sdb_client(const char* addr, int port, const char* serial)
+static void add_sdb_client(struct sockaddr_in* addr, int port, const char* serial)
 {
+
     GS_Client *client = g_malloc0(sizeof(GS_Client));
     if (NULL == client) {
         INFO("GS_Client allocation failed.\n");
         return;
     }
 
-    if (addr == NULL || strlen(addr) <= 0) {
+    if (addr == NULL) {
         INFO("GS_Client client's address is EMPTY.\n");
-        return;
-    } else if (strlen(addr) > RECV_BUF_SIZE) {
-        INFO("GS_Client client's address is too long. %s\n", addr);
         return;
     } else if (serial == NULL || strlen(serial) <= 0) {
         INFO("GS_Client client's serial is EMPTY.\n");
@@ -163,7 +159,7 @@ static void add_sdb_client(const char* addr, int port, const char* serial)
         return;
     }
 
-    strcpy(client->addr, addr);
+    memcpy(&client->addr, addr, sizeof(struct sockaddr_in));
     client->port = port;
     strcpy(client->serial, serial);
 
@@ -409,29 +405,25 @@ static void handle_sdcard(char* readbuf)
     }
 }
 
-static void register_sdb_server(char* readbuf)
+#define SDB_SERVER_PORT 26097
+static void register_sdb_server(char* readbuf, struct sockaddr_in* client_addr)
 {
     int port = 0;
     char token[] = "\n";
     char* ret = NULL;
-    char* addr = NULL;
     char* serial = NULL;
 
     ret = strtok(readbuf, token);
-    addr = strtok(NULL, token);
-    if (addr == NULL)
-        return;
-
-    ret = strtok(NULL, token);
     if (ret == NULL)
         return;
-    port = atoi(ret);
 
     serial = strtok(NULL, token);
     if (serial == NULL)
         return;
 
-    add_sdb_client(addr, port, serial);
+    port = SDB_SERVER_PORT;
+
+    add_sdb_client(client_addr, port, serial);
 }
 
 #define PRESS     1
@@ -445,7 +437,7 @@ static void wakeup_guest(void)
     maru_hwkey_event(RELEASE, POWER_KEY);
 }
 
-static void command_handler(char* readbuf)
+static void command_handler(char* readbuf, struct sockaddr_in* client_addr)
 {
     char command[RECV_BUF_SIZE];
     memset(command, '\0', sizeof(command));
@@ -462,7 +454,7 @@ static void command_handler(char* readbuf)
     } else if (strcmp(command, "4\n") == 0) {
         handle_sdcard(readbuf);
     } else if (strcmp(command, "5\n") == 0) {
-        register_sdb_server(readbuf);
+        register_sdb_server(readbuf, client_addr);
     } else if (strcmp(command, "6\n") == 0) {
         wakeup_guest();
     } else {
@@ -505,16 +497,15 @@ static void server_process(void)
             TRACE("read_cnt:%d\n", read_cnt);
             TRACE("readbuf:%s\n", readbuf);
 
-            command_handler(readbuf);
+            command_handler(readbuf, &client_addr);
         }
     }
 }
 
 static void close_clients(void)
 {
-    GS_Client * client;
-
     pthread_mutex_lock(&mutex_clilist);
+    GS_Client * client;
 
     QTAILQ_FOREACH(client, &clients, next)
     {
