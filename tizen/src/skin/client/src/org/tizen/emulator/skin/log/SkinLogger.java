@@ -122,7 +122,9 @@ public class SkinLogger {
 				String name = f.getName();
 
 				if (!FILE_NAME.equals(name) && name.startsWith(FILE_NAME)) {
-					f.delete();
+					if (f.delete() == false) {
+						/* do nothing */
+					}
 				}
 			}
 
@@ -249,4 +251,4 @@ class SkinFormatter extends Formatter {
 		return builder.toString();
 	}
 }
-	
+

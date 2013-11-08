@@ -1,5 +1,5 @@
 /**
- * communticate with Qemu
+ * Communicate With Qemu
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -87,10 +87,10 @@ public class SocketCommunicator implements ICommunicator {
 	public static final int HEART_BEAT_INTERVAL = 1; /* seconds */
 	public static final int HEART_BEAT_EXPIRE = 15;
 
-	public final static int LONG_WAIT_INTERVAL = 3; /* milli-seconds */
-	public final static int LONG_WAIT_LIMIT = 3000; /* milli-seconds */
-	public final static int SHORT_WAIT_INTERVAL = 1; /* milli-seconds */
-	public final static int SHORT_WAIT_LIMIT = 2000; /* milli-seconds */
+	public final static int LONG_WAIT_INTERVAL = 3; /* ms */
+	public final static int LONG_WAIT_LIMIT = 3000; /* ms */
+	public final static int SHORT_WAIT_INTERVAL = 1;
+	public final static int SHORT_WAIT_LIMIT = 2000;
 
 	public final static int MAX_SEND_QUEUE_SIZE = 100000;
 
@@ -119,8 +119,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
-	private DataTranfer progressDataTransfer;
-	private DataTranfer brightnessDataTransfer;
+	private DataTranfer miscDataTransfer;
 	private DataTranfer ecpTransfer;
 
 	private Thread sendThread;
@@ -145,18 +144,14 @@ public class SocketCommunicator implements ICommunicator {
 		this.detailInfoTransfer.sleep = SHORT_WAIT_INTERVAL;
 		this.detailInfoTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
 
-		this.progressDataTransfer = new DataTranfer();
-		this.progressDataTransfer.sleep = SHORT_WAIT_INTERVAL;
-		this.progressDataTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
-
-		this.brightnessDataTransfer = new DataTranfer();
-		this.brightnessDataTransfer.sleep = LONG_WAIT_INTERVAL;
-		this.brightnessDataTransfer.maxWaitTime = LONG_WAIT_LIMIT;
+		this.miscDataTransfer = new DataTranfer();
+		this.miscDataTransfer.sleep = SHORT_WAIT_INTERVAL;
+		this.miscDataTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
 
 		this.ecpTransfer = new DataTranfer();
 		this.ecpTransfer.sleep = LONG_WAIT_INTERVAL;
 		this.ecpTransfer.maxWaitTime = LONG_WAIT_LIMIT;
-		
+
 		this.heartbeatCount = new AtomicInteger(0);
 		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
 		this.heartbeatTimer = new Timer();
@@ -311,13 +306,13 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case RECV_SCREENSHOT_DATA: {
 					logger.info("received SCREENSHOT_DATA from QEMU");
-					receiveData(screenShotDataTransfer, length );
+					receiveData(screenShotDataTransfer, length);
 
 					break;
 				}
 				case RECV_DETAIL_INFO_DATA: {
 					logger.info("received DETAIL_INFO_DATA from QEMU");
-					receiveData( detailInfoTransfer, length);
+					receiveData(detailInfoTransfer, length);
 
 					break;
 				}
@@ -327,12 +322,12 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				case RECV_BOOTING_PROGRESS: {
-					//logger.info("received BOOTING_PROGRESS from QEMU.");
+					//logger.info("received BOOTING_PROGRESS from QEMU");
 
-					resetDataTransfer(progressDataTransfer);
-					receiveData(progressDataTransfer, length);
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
 
-					byte[] receivedData = getReceivedData(progressDataTransfer);
+					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
 						String strLayer = new String(receivedData, 0, 1);
 						String strValue = new String(receivedData, 1, length - 2);
@@ -355,10 +350,10 @@ public class SocketCommunicator implements ICommunicator {
 				case RECV_BRIGHTNESS_STATE: {
 					//logger.info("received BRIGHTNESS_STATE from QEMU");
 
-					resetDataTransfer(brightnessDataTransfer);
-					receiveData(brightnessDataTransfer, length);
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
 
-					byte[] receivedData = getReceivedData(brightnessDataTransfer);
+					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
 						String strValue = new String(receivedData, 0, length - 1);
 
@@ -471,7 +466,6 @@ public class SocketCommunicator implements ICommunicator {
 			dataTransfer.setData(data);
 			dataTransfer.notifyAll();
 		}
-
 	}
 
 	private byte[] readData(
