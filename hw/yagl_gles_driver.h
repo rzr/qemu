@@ -178,6 +178,7 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC2(VertexAttrib3fv, GLuint, const GLfloat*, indx, values)
     YAGL_GLES_DRIVER_FUNC5(VertexAttrib4f, GLuint, GLfloat, GLfloat, GLfloat, GLfloat, indx, x, y, z, w)
     YAGL_GLES_DRIVER_FUNC2(VertexAttrib4fv, GLuint, const GLfloat*, indx, values)
+    YAGL_GLES_DRIVER_FUNC5(GetActiveUniformsiv, GLuint, GLsizei, const GLuint*, GLenum, GLint*, program, uniformCount, uniformIndices, pname, params)
     YAGL_GLES_DRIVER_FUNC2(GetIntegerv, GLenum, GLint*, pname, params)
     YAGL_GLES_DRIVER_FUNC2(GetFloatv, GLenum, GLfloat*, pname, params)
     YAGL_GLES_DRIVER_FUNC_RET1(const GLubyte*, GetString, GLenum, name)

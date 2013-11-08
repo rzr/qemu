@@ -360,6 +360,9 @@ void yagl_host_glVertexAttrib4f(GLuint indx,
     GLfloat w);
 void yagl_host_glVertexAttrib4fv(GLuint indx,
     const GLfloat *values, int32_t values_count);
+void yagl_host_glGetActiveUniformsiv(GLuint program,
+    const GLuint *uniformIndices, int32_t uniformIndices_count,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetFloatv(GLenum pname,

@@ -1300,7 +1300,7 @@ void yagl_host_glLinkProgram(GLuint program,
 
     gles_api_ts->driver->LinkProgram(obj);
 
-    if (!params || (params_maxcount != 6)) {
+    if (!params || (params_maxcount != 8)) {
         return;
     }
 
@@ -1312,6 +1312,13 @@ void yagl_host_glLinkProgram(GLuint program,
     gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORM_MAX_LENGTH, &params[5]);
 
     *params_count = 6;
+
+    if (gles_api_ts->driver->gl_version > yagl_gl_2) {
+        gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORM_BLOCKS, &params[6]);
+        gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &params[7]);
+
+        *params_count = 8;
+    }
 }
 
 void yagl_host_glUniform1f(GLboolean tl,
@@ -1561,6 +1568,40 @@ void yagl_host_glVertexAttrib4fv(GLuint indx,
     const GLfloat *values, int32_t values_count)
 {
     gles_api_ts->driver->VertexAttrib4fv(indx, values);
+}
+
+void yagl_host_glGetActiveUniformsiv(GLuint program,
+    const GLuint *uniformIndices, int32_t uniformIndices_count,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    const GLenum pnames[] =
+    {
+        GL_UNIFORM_TYPE,
+        GL_UNIFORM_SIZE,
+        GL_UNIFORM_NAME_LENGTH,
+        GL_UNIFORM_BLOCK_INDEX,
+        GL_UNIFORM_OFFSET,
+        GL_UNIFORM_ARRAY_STRIDE,
+        GL_UNIFORM_MATRIX_STRIDE,
+        GL_UNIFORM_IS_ROW_MAJOR
+    };
+    GLuint obj = yagl_gles_object_get(program);
+    int i, num_pnames = sizeof(pnames)/sizeof(pnames[0]);
+
+    if (params_maxcount != (uniformIndices_count * num_pnames)) {
+        return;
+    }
+
+    for (i = 0; i < num_pnames; ++i) {
+        gles_api_ts->driver->GetActiveUniformsiv(obj,
+                                                 uniformIndices_count,
+                                                 uniformIndices,
+                                                 pnames[i],
+                                                 params);
+        params += uniformIndices_count;
+    }
+
+    *params_count = uniformIndices_count * num_pnames;
 }
 
 void yagl_host_glGetIntegerv(GLenum pname,
