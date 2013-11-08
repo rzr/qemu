@@ -1,0 +1,2 @@
+# EGL WGL driver
+obj-y += yagl_egl_wgl.o

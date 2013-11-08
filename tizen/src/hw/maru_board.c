@@ -74,7 +74,7 @@
 #if defined(__linux__)
 #include <X11/Xlib.h>
 #endif
-#include "vigs_device.h"
+#include "vigs/vigs_device.h"
 extern int enable_yagl;
 extern const char *yagl_backend;
 extern int enable_vigs;

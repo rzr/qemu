@@ -1,0 +1,11 @@
+# EGL api
+obj-y += yagl_egl_api.o
+obj-y += yagl_egl_api_ps.o
+obj-y += yagl_egl_api_ts.o
+obj-y += yagl_egl_calls.o
+obj-y += yagl_egl_display.o
+obj-y += yagl_egl_config.o
+obj-y += yagl_egl_surface.o
+obj-y += yagl_egl_context.o
+obj-y += yagl_egl_validate.o
+obj-y += yagl_host_egl_calls.o

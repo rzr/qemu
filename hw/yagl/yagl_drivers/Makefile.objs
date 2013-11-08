@@ -1,0 +1,6 @@
+obj-$(CONFIG_LINUX) += egl_glx/
+obj-$(CONFIG_WIN32) += egl_wgl/
+obj-$(CONFIG_DARWIN) += egl_agl/
+obj-y += gles_ogl/
+obj-y += gles_onscreen/
+

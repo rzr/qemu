@@ -1,0 +1,26 @@
+# VIGS
+QEMU_CFLAGS += -I$(SRC_PATH)/hw/vigs/vigs_inc
+
+obj-y += vigs_log.o
+obj-y += vigs_device.o
+obj-y += vigs_comm.o
+obj-y += vigs_server.o
+obj-y += vigs_backend.o
+obj-y += vigs_surface.o
+obj-y += vigs_utils.o
+obj-y += vigs_vector.o
+obj-y += vigs_ref.o
+obj-y += vigs_gl_backend.o
+obj-y += vigs_sw_backend.o
+# GL GLX backend
+ifdef CONFIG_LINUX
+obj-y += vigs_gl_backend_glx.o
+endif
+# GL WGL backend
+ifdef CONFIG_WIN32
+obj-y += vigs_gl_backend_wgl.o
+endif
+# GL AGL backend
+ifdef CONFIG_DARWIN
+obj-y += vigs_gl_backend_agl.o
+endif
