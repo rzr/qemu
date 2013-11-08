@@ -1604,6 +1604,34 @@ void yagl_host_glGetActiveUniformsiv(GLuint program,
     *params_count = uniformIndices_count * num_pnames;
 }
 
+void yagl_host_glGetUniformIndices(GLuint program,
+    const GLchar *uniformNames, int32_t uniformNames_count,
+    GLuint *uniformIndices, int32_t uniformIndices_maxcount, int32_t *uniformIndices_count)
+{
+    GLuint obj = yagl_gles_object_get(program);
+    int max_active_uniform_bufsize = 1, i;
+    const GLchar **name_pointers;
+
+    gles_api_ts->driver->GetProgramiv(obj,
+                                      GL_ACTIVE_UNIFORM_MAX_LENGTH,
+                                      &max_active_uniform_bufsize);
+
+    name_pointers = g_malloc(uniformIndices_maxcount * sizeof(*name_pointers));
+
+    for (i = 0; i < uniformIndices_maxcount; ++i) {
+        name_pointers[i] = &uniformNames[max_active_uniform_bufsize * i];
+    }
+
+    gles_api_ts->driver->GetUniformIndices(obj,
+                                           uniformIndices_maxcount,
+                                           name_pointers,
+                                           uniformIndices);
+
+    g_free(name_pointers);
+
+    *uniformIndices_count = uniformIndices_maxcount;
+}
+
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count)
 {

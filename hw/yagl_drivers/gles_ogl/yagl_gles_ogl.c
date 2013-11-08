@@ -210,6 +210,7 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, BindVertexArray, glBindVertexArray);
         YAGL_GLES_OGL_GET_PROC(driver, DeleteVertexArrays, glDeleteVertexArrays);
         YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformsiv, glGetActiveUniformsiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GetUniformIndices, glGetUniformIndices);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;
