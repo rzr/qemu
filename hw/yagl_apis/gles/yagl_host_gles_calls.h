@@ -224,12 +224,12 @@ void yagl_host_glCompileShader(GLuint shader);
 void yagl_host_glBindAttribLocation(GLuint program,
     GLuint index,
     const GLchar *name, int32_t name_count);
-GLboolean yagl_host_glGetActiveAttrib(GLuint program,
+void yagl_host_glGetActiveAttrib(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
     GLchar *name, int32_t name_maxcount, int32_t *name_count);
-GLboolean yagl_host_glGetActiveUniform(GLuint program,
+void yagl_host_glGetActiveUniform(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
@@ -262,7 +262,8 @@ void yagl_host_glGetVertexAttribfv(GLuint index,
 void yagl_host_glGetVertexAttribiv(GLuint index,
     GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
-void yagl_host_glLinkProgram(GLuint program);
+void yagl_host_glLinkProgram(GLuint program,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glUniform1f(GLboolean tl,
     uint32_t location,
     GLfloat x);

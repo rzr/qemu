@@ -1109,7 +1109,7 @@ void yagl_host_glBindAttribLocation(GLuint program,
                                             name);
 }
 
-GLboolean yagl_host_glGetActiveAttrib(GLuint program,
+void yagl_host_glGetActiveAttrib(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
@@ -1127,13 +1127,10 @@ GLboolean yagl_host_glGetActiveAttrib(GLuint program,
 
     if (tmp >= 0) {
         *name_count = MIN(tmp + 1, name_maxcount);
-        return GL_TRUE;
-    } else {
-        return GL_FALSE;
     }
 }
 
-GLboolean yagl_host_glGetActiveUniform(GLuint program,
+void yagl_host_glGetActiveUniform(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
@@ -1151,9 +1148,6 @@ GLboolean yagl_host_glGetActiveUniform(GLuint program,
 
     if (tmp >= 0) {
         *name_count = MIN(tmp + 1, name_maxcount);
-        return GL_TRUE;
-    } else {
-        return GL_FALSE;
     }
 }
 
@@ -1299,9 +1293,25 @@ void yagl_host_glGetVertexAttribiv(GLuint index,
     gles_api_ts->driver->GetVertexAttribiv(index, pname, params);
 }
 
-void yagl_host_glLinkProgram(GLuint program)
+void yagl_host_glLinkProgram(GLuint program,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
 {
-    gles_api_ts->driver->LinkProgram(yagl_gles_object_get(program));
+    GLuint obj = yagl_gles_object_get(program);
+
+    gles_api_ts->driver->LinkProgram(obj);
+
+    if (!params || (params_maxcount != 6)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetProgramiv(obj, GL_LINK_STATUS, &params[0]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_INFO_LOG_LENGTH, &params[1]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_ATTRIBUTES, &params[2]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &params[3]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORMS, &params[4]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORM_MAX_LENGTH, &params[5]);
+
+    *params_count = 6;
 }
 
 void yagl_host_glUniform1f(GLboolean tl,

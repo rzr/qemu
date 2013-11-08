@@ -1299,7 +1299,6 @@ static bool yagl_func_glGetActiveAttrib(struct yagl_transport *t)
     GLchar *name;
     int32_t name_maxcount;
     int32_t *name_count;
-    GLboolean *retval;
     program = yagl_transport_get_out_GLuint(t);
     index = yagl_transport_get_out_GLuint(t);
     yagl_transport_get_in_arg(t, (void**)&size);
@@ -1307,11 +1306,10 @@ static bool yagl_func_glGetActiveAttrib(struct yagl_transport *t)
     if (!yagl_transport_get_in_array(t, sizeof(GLchar), (void**)&name, &name_maxcount, &name_count)) {
         return false;
     }
-    yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT5(glGetActiveAttrib, GLuint, GLuint, void*, void*, void*, program, index, size, type, name);
     *name_count = 0;
-    *retval = yagl_host_glGetActiveAttrib(program, index, size, type, name, name_maxcount, name_count);
-    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, *retval);
+    (void)yagl_host_glGetActiveAttrib(program, index, size, type, name, name_maxcount, name_count);
+    YAGL_LOG_FUNC_EXIT(NULL);
 
     return true;
 }
@@ -1328,7 +1326,6 @@ static bool yagl_func_glGetActiveUniform(struct yagl_transport *t)
     GLchar *name;
     int32_t name_maxcount;
     int32_t *name_count;
-    GLboolean *retval;
     program = yagl_transport_get_out_GLuint(t);
     index = yagl_transport_get_out_GLuint(t);
     yagl_transport_get_in_arg(t, (void**)&size);
@@ -1336,11 +1333,10 @@ static bool yagl_func_glGetActiveUniform(struct yagl_transport *t)
     if (!yagl_transport_get_in_array(t, sizeof(GLchar), (void**)&name, &name_maxcount, &name_count)) {
         return false;
     }
-    yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT5(glGetActiveUniform, GLuint, GLuint, void*, void*, void*, program, index, size, type, name);
     *name_count = 0;
-    *retval = yagl_host_glGetActiveUniform(program, index, size, type, name, name_maxcount, name_count);
-    YAGL_LOG_FUNC_EXIT_SPLIT(GLboolean, *retval);
+    (void)yagl_host_glGetActiveUniform(program, index, size, type, name, name_maxcount, name_count);
+    YAGL_LOG_FUNC_EXIT(NULL);
 
     return true;
 }
@@ -1571,9 +1567,16 @@ static bool yagl_func_glGetVertexAttribiv(struct yagl_transport *t)
 static bool yagl_func_glLinkProgram(struct yagl_transport *t)
 {
     GLuint program;
+    GLint *params;
+    int32_t params_maxcount;
+    int32_t *params_count;
     program = yagl_transport_get_out_GLuint(t);
-    YAGL_LOG_FUNC_ENTER_SPLIT1(glLinkProgram, GLuint, program);
-    (void)yagl_host_glLinkProgram(program);
+    if (!yagl_transport_get_in_array(t, sizeof(GLint), (void**)&params, &params_maxcount, &params_count)) {
+        return false;
+    }
+    YAGL_LOG_FUNC_ENTER_SPLIT2(glLinkProgram, GLuint, void*, program, params);
+    *params_count = 0;
+    (void)yagl_host_glLinkProgram(program, params, params_maxcount, params_count);
     YAGL_LOG_FUNC_EXIT(NULL);
 
     return true;
