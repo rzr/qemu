@@ -91,6 +91,8 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC4(BufferData, GLenum, GLsizeiptr, const GLvoid*, GLenum, target, size, data, usage)
     YAGL_GLES_DRIVER_FUNC4(BufferSubData, GLenum, GLintptr, GLsizeiptr, const GLvoid*, target, offset, size, data)
     YAGL_GLES_DRIVER_FUNC2(DeleteBuffers, GLsizei, const GLuint*, n, buffers)
+    YAGL_GLES_DRIVER_FUNC3(BindBufferBase, GLenum, GLuint, GLuint, target, index, buffer)
+    YAGL_GLES_DRIVER_FUNC5(BindBufferRange, GLenum, GLuint, GLuint, GLintptr, GLsizeiptr, target, index, buffer, offset, size)
     YAGL_GLES_DRIVER_FUNC2(GenTextures, GLsizei, GLuint*, n, textures)
     YAGL_GLES_DRIVER_FUNC2(BindTexture, GLenum, GLuint, target, texture)
     YAGL_GLES_DRIVER_FUNC2(DeleteTextures, GLsizei, const GLuint*, n, textures)
@@ -180,6 +182,8 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC2(VertexAttrib4fv, GLuint, const GLfloat*, indx, values)
     YAGL_GLES_DRIVER_FUNC5(GetActiveUniformsiv, GLuint, GLsizei, const GLuint*, GLenum, GLint*, program, uniformCount, uniformIndices, pname, params)
     YAGL_GLES_DRIVER_FUNC4(GetUniformIndices, GLuint, GLsizei, const GLchar* const*, GLuint*, program, uniformCount, uniformNames, uniformIndices)
+    YAGL_GLES_DRIVER_FUNC_RET2(GLuint, GetUniformBlockIndex, GLuint, const GLchar*, program, uniformBlockName);
+    YAGL_GLES_DRIVER_FUNC3(UniformBlockBinding, GLuint, GLuint, GLuint, program, uniformBlockIndex, uniformBlockBinding);
     YAGL_GLES_DRIVER_FUNC2(GetIntegerv, GLenum, GLint*, pname, params)
     YAGL_GLES_DRIVER_FUNC2(GetFloatv, GLenum, GLfloat*, pname, params)
     YAGL_GLES_DRIVER_FUNC_RET1(const GLubyte*, GetString, GLenum, name)

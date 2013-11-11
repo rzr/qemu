@@ -644,6 +644,25 @@ void yagl_host_glBufferSubData(GLenum target,
     gles_api_ts->driver->BufferSubData(target, offset, data_count, data);
 }
 
+void yagl_host_glBindBufferBase(GLenum target,
+    GLuint index,
+    GLuint buffer)
+{
+    gles_api_ts->driver->BindBufferBase(target, index,
+                                        yagl_gles_object_get(buffer));
+}
+
+void yagl_host_glBindBufferRange(GLenum target,
+    GLuint index,
+    GLuint buffer,
+    GLint offset,
+    GLsizei size)
+{
+    gles_api_ts->driver->BindBufferRange(target, index,
+                                         yagl_gles_object_get(buffer),
+                                         offset, size);
+}
+
 void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count)
 {
     int i;
@@ -1630,6 +1649,22 @@ void yagl_host_glGetUniformIndices(GLuint program,
     g_free(name_pointers);
 
     *uniformIndices_count = uniformIndices_maxcount;
+}
+
+GLuint yagl_host_glGetUniformBlockIndex(GLuint program,
+    const GLchar *uniformBlockName, int32_t uniformBlockName_count)
+{
+    return gles_api_ts->driver->GetUniformBlockIndex(yagl_gles_object_get(program),
+                                                     uniformBlockName);
+}
+
+void yagl_host_glUniformBlockBinding(GLuint program,
+    GLuint uniformBlockIndex,
+    GLuint uniformBlockBinding)
+{
+    gles_api_ts->driver->UniformBlockBinding(yagl_gles_object_get(program),
+                                             uniformBlockIndex,
+                                             uniformBlockBinding);
 }
 
 void yagl_host_glGetIntegerv(GLenum pname,

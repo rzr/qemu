@@ -83,6 +83,14 @@ void yagl_host_glBufferData(GLenum target,
 void yagl_host_glBufferSubData(GLenum target,
     GLsizei offset,
     const GLvoid *data, int32_t data_count);
+void yagl_host_glBindBufferBase(GLenum target,
+    GLuint index,
+    GLuint buffer);
+void yagl_host_glBindBufferRange(GLenum target,
+    GLuint index,
+    GLuint buffer,
+    GLint offset,
+    GLsizei size);
 void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count);
 void yagl_host_glBindTexture(GLenum target,
     GLuint texture);
@@ -366,6 +374,11 @@ void yagl_host_glGetActiveUniformsiv(GLuint program,
 void yagl_host_glGetUniformIndices(GLuint program,
     const GLchar *uniformNames, int32_t uniformNames_count,
     GLuint *uniformIndices, int32_t uniformIndices_maxcount, int32_t *uniformIndices_count);
+GLuint yagl_host_glGetUniformBlockIndex(GLuint program,
+    const GLchar *uniformBlockName, int32_t uniformBlockName_count);
+void yagl_host_glUniformBlockBinding(GLuint program,
+    GLuint uniformBlockIndex,
+    GLuint uniformBlockBinding);
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetFloatv(GLenum pname,
