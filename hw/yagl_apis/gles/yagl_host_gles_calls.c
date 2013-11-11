@@ -156,6 +156,29 @@ static bool yagl_gles_get_uniform_type_count(GLenum uniform_type, int *count)
     case GL_BOOL_VEC4: *count = 4; break;
     case GL_SAMPLER_2D: *count = 1; break;
     case GL_SAMPLER_CUBE: *count = 1; break;
+    case GL_UNSIGNED_INT: *count = 1; break;
+    case GL_UNSIGNED_INT_VEC2: *count = 2; break;
+    case GL_UNSIGNED_INT_VEC3: *count = 3; break;
+    case GL_UNSIGNED_INT_VEC4: *count = 4; break;
+    case GL_FLOAT_MAT2x3: *count = 2*3; break;
+    case GL_FLOAT_MAT2x4: *count = 2*4; break;
+    case GL_FLOAT_MAT3x2: *count = 3*2; break;
+    case GL_FLOAT_MAT3x4: *count = 3*4; break;
+    case GL_FLOAT_MAT4x2: *count = 4*2; break;
+    case GL_FLOAT_MAT4x3: *count = 4*3; break;
+    case GL_SAMPLER_3D: *count = 1; break;
+    case GL_SAMPLER_2D_SHADOW: *count = 1; break;
+    case GL_SAMPLER_2D_ARRAY: *count = 1; break;
+    case GL_SAMPLER_2D_ARRAY_SHADOW: *count = 1; break;
+    case GL_SAMPLER_CUBE_SHADOW: *count = 1; break;
+    case GL_INT_SAMPLER_2D: *count = 1; break;
+    case GL_INT_SAMPLER_3D: *count = 1; break;
+    case GL_INT_SAMPLER_CUBE: *count = 1; break;
+    case GL_INT_SAMPLER_2D_ARRAY: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_2D: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_3D: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_CUBE: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY: *count = 1; break;
     default: return false;
     }
     return true;
@@ -1665,6 +1688,82 @@ void yagl_host_glUniformBlockBinding(GLuint program,
     gles_api_ts->driver->UniformBlockBinding(yagl_gles_object_get(program),
                                              uniformBlockIndex,
                                              uniformBlockBinding);
+}
+
+void yagl_host_glGetActiveUniformBlockName(GLuint program,
+    GLuint uniformBlockIndex,
+    GLchar *uniformBlockName, int32_t uniformBlockName_maxcount, int32_t *uniformBlockName_count)
+{
+    GLsizei tmp = -1;
+
+    gles_api_ts->driver->GetActiveUniformBlockName(yagl_gles_object_get(program),
+                                                   uniformBlockIndex,
+                                                   uniformBlockName_maxcount,
+                                                   &tmp,
+                                                   uniformBlockName);
+
+    if (tmp >= 0) {
+        *uniformBlockName_count = MIN(tmp + 1, uniformBlockName_maxcount);
+    }
+}
+
+void yagl_host_glGetActiveUniformBlockiv(GLuint program,
+    GLuint uniformBlockIndex,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    GLuint obj;
+    const GLenum pnames[] =
+    {
+        GL_UNIFORM_BLOCK_DATA_SIZE,
+        GL_UNIFORM_BLOCK_NAME_LENGTH,
+        GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS,
+        GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER,
+        GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER
+    };
+    int i, num_pnames = sizeof(pnames)/sizeof(pnames[0]);
+
+    if (!params) {
+        return;
+    }
+
+    obj = yagl_gles_object_get(program);
+
+    switch (pname) {
+    case 0:
+        /*
+         * Return everything else.
+         */
+        if (params_maxcount != num_pnames) {
+            return;
+        }
+
+        for (i = 0; i < num_pnames; ++i) {
+            gles_api_ts->driver->GetActiveUniformBlockiv(obj,
+                                                         uniformBlockIndex,
+                                                         pnames[i],
+                                                         &params[i]);
+        }
+
+        *params_count = num_pnames;
+
+        break;
+    case GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES:
+        /*
+         * Return active uniform indices only.
+         */
+
+        gles_api_ts->driver->GetActiveUniformBlockiv(obj,
+                                                     uniformBlockIndex,
+                                                     GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES,
+                                                     params);
+
+        *params_count = params_maxcount;
+
+        break;
+    default:
+        break;
+    }
 }
 
 void yagl_host_glGetIntegerv(GLenum pname,

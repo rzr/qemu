@@ -184,6 +184,8 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC4(GetUniformIndices, GLuint, GLsizei, const GLchar* const*, GLuint*, program, uniformCount, uniformNames, uniformIndices)
     YAGL_GLES_DRIVER_FUNC_RET2(GLuint, GetUniformBlockIndex, GLuint, const GLchar*, program, uniformBlockName);
     YAGL_GLES_DRIVER_FUNC3(UniformBlockBinding, GLuint, GLuint, GLuint, program, uniformBlockIndex, uniformBlockBinding);
+    YAGL_GLES_DRIVER_FUNC5(GetActiveUniformBlockName, GLuint, GLuint, GLsizei, GLsizei*, GLchar*, program, uniformBlockIndex, bufSize, length, uniformBlockName);
+    YAGL_GLES_DRIVER_FUNC4(GetActiveUniformBlockiv, GLuint, GLuint, GLenum, GLint*, program, uniformBlockIndex, pname, params);
     YAGL_GLES_DRIVER_FUNC2(GetIntegerv, GLenum, GLint*, pname, params)
     YAGL_GLES_DRIVER_FUNC2(GetFloatv, GLenum, GLfloat*, pname, params)
     YAGL_GLES_DRIVER_FUNC_RET1(const GLubyte*, GetString, GLenum, name)

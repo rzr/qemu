@@ -215,6 +215,8 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, UniformBlockBinding, glUniformBlockBinding);
         YAGL_GLES_OGL_GET_PROC(driver, BindBufferBase, glBindBufferBase);
         YAGL_GLES_OGL_GET_PROC(driver, BindBufferRange, glBindBufferRange);
+        YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformBlockName, glGetActiveUniformBlockName);
+        YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformBlockiv, glGetActiveUniformBlockiv);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;

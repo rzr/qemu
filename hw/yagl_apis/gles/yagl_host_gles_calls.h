@@ -379,6 +379,13 @@ GLuint yagl_host_glGetUniformBlockIndex(GLuint program,
 void yagl_host_glUniformBlockBinding(GLuint program,
     GLuint uniformBlockIndex,
     GLuint uniformBlockBinding);
+void yagl_host_glGetActiveUniformBlockName(GLuint program,
+    GLuint uniformBlockIndex,
+    GLchar *uniformBlockName, int32_t uniformBlockName_maxcount, int32_t *uniformBlockName_count);
+void yagl_host_glGetActiveUniformBlockiv(GLuint program,
+    GLuint uniformBlockIndex,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetFloatv(GLenum pname,
