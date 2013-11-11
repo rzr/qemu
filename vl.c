@@ -1995,6 +1995,7 @@ void qemu_register_suspend_notifier(Notifier *notifier)
 
 void qemu_system_wakeup_request(WakeupReason reason)
 {
+
     if (!runstate_check(RUN_STATE_SUSPENDED)) {
         return;
     }
@@ -2098,7 +2099,13 @@ static bool main_loop_should_exit(void)
     if (qemu_wakeup_requested()) {
         pause_all_vcpus();
         cpu_synchronize_all_states();
+#ifndef CONFIG_MARU
+        // A "system reset" causes "virtio_queue" malfunction.
+        // It might be a bug of virtio bus or virtio devices.
+        // We don't want suspend(deep sleep), so It's OK now.
+        // However, we should fix it later.
         qemu_system_reset(VMRESET_SILENT);
+#endif
         notifier_list_notify(&wakeup_notifiers, &wakeup_reason);
         wakeup_reason = QEMU_WAKEUP_REASON_NONE;
         resume_all_vcpus();

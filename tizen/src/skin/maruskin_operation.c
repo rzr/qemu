@@ -286,7 +286,7 @@ void do_hw_key_event(int event_type, int keycode)
     INFO("HW Key : event_type=%d, keycode=%d\n",
         event_type, keycode);
 
-    if ( is_suspended_state() ) {
+    if ( runstate_check(RUN_STATE_SUSPENDED) ) {
         if ( KEY_PRESSED == event_type ) {
             if ( kbd_mouse_is_absolute() ) {
                 // home key or power key is used for resume.

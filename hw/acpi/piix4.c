@@ -30,6 +30,10 @@
 #include "hw/nvram/fw_cfg.h"
 #include "exec/address-spaces.h"
 
+#ifdef CONFIG_MARU
+#include "tizen/src/hw/maru_pm.h"
+#endif
+
 //#define DEBUG
 
 #ifdef DEBUG
@@ -446,6 +450,9 @@ static int piix4_pm_initfn(PCIDevice *dev)
     acpi_pm1_evt_init(&s->ar, pm_tmr_timer, &s->io);
     acpi_pm1_cnt_init(&s->ar, &s->io, s->s4_val);
     acpi_gpe_init(&s->ar, GPE_LEN);
+#ifdef CONFIG_MARU
+    acpi_maru_pm_init(&s->ar, pm_tmr_timer);
+#endif
 
     s->powerdown_notifier.notify = piix4_pm_powerdown_req;
     qemu_register_powerdown_notifier(&s->powerdown_notifier);

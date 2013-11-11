@@ -179,7 +179,7 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
 
     INFO("Added new sdb client. ip: %s, port: %d, serial: %s\n", inet_ntoa(client->addr.sin_addr), client->port, client->serial);
 
-    send_to_client(client, is_suspended_state());
+    send_to_client(client, runstate_check(RUN_STATE_SUSPENDED));
 }
 
 static int parse_val(char* buff, unsigned char data, char* parsbuf)
