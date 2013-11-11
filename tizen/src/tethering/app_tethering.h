@@ -28,6 +28,23 @@
  *
  */
 
+enum connection_status {
+    CONNECTED = 1,
+    DISCONNECTED,
+    CONNECTING,
+    CONNREFUSED,
+};
+
+enum device_status {
+    ENABLED = 1,
+    DISABLED,
+};
+
+enum touch_status {
+    RELEASED = 0,
+    PRESSED,
+};
+
 int connect_tethering_app(int port);
 
 int disconnect_tethering_app(void);

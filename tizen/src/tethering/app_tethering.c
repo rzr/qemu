@@ -62,16 +62,24 @@ typedef struct _TetheringState {
     tethering_recv_buf recv_buf;
 } TetheringState;
 
+#if 0
 enum connection_status {
     CONNECTED = 1,
     DISCONNECTED,
     CONNECTING,
+    CONNREFUSED,
 };
 
 enum device_status {
     ENABLED = 1,
     DISABLED,
 };
+
+enum touch_status {
+    RELEASED = 0,
+    PRESSED,
+};
+#endif
 
 enum sensor_level {
     level_accel = 1,
@@ -83,14 +91,9 @@ enum sensor_level {
     level_magnetic = 13
 };
 
-enum touch_status {
-    RELEASED = 0,
-    PRESSED,
-};
-
 #ifndef DEBUG
-const char *connection_status_str[3] = {"CONNECTED", "DISCONNECTED",
-                                        "CONNECTING"};
+const char *connection_status_str[4] = {"CONNECTED", "DISCONNECTED",
+                                        "CONNECTING", "CONNREFUSED"};
 #endif
 
 static tethering_recv_buf recv_buf;
@@ -501,8 +504,8 @@ static bool send_set_multitouch_resolution(void)
 
     TRACE("enter: %s\n", __func__);
 
-    resolution.width = get_emul_lcd_width();
-    resolution.height = get_emul_lcd_height();
+    resolution.width = get_emul_resolution_width();
+    resolution.height = get_emul_resolution_height();
 
     mt.type = INJECTOR__MULTI_TOUCH_MSG__TYPE__RESOLUTION;
     mt.resolution = &resolution;
@@ -862,7 +865,7 @@ static int start_tethering_socket(int port)
 {
     struct sockaddr_in addr;
 
-    int sock = -1, opt = 0;
+    int sock = -1;
     int ret = 0;
 
     addr.sin_family = AF_INET;
@@ -871,22 +874,12 @@ static int start_tethering_socket(int port)
 
     sock = qemu_socket(PF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        // handle error, print message
-        set_tethering_connection_status(DISCONNECTED);
+//        set_tethering_connection_status(DISCONNECTED);
+        ERR("tethering socket creation is failed\n", sock);
         return -1;
     }
     INFO("tethering socket is created: %d\n", sock);
 
-    ret =
-        qemu_setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    if (ret < 0) {
-        // handle error,
-        ERR("setsockopt failure\n");
-        end_tethering_socket(sock);
-        return -1;
-    }
-
-    // set nonblock mode
     qemu_set_nonblock(sock);
 
     set_tethering_connection_status(CONNECTING);
@@ -900,14 +893,15 @@ static int start_tethering_socket(int port)
 //          set_tethering_app_state(true);
             break;
         }
-        INFO("ret: %d\n", ret);
-//    } while (ret == -EINTR);
+        TRACE("ret: %d\n", ret);
     } while (ret == -EINPROGRESS);
 
-    if (ret < 0) {
-        end_tethering_socket(sock);
+    if (ret < 0 && ret != -EISCONN) {
+        if (ret == -ECONNREFUSED) {
+            set_tethering_connection_status(CONNREFUSED);
+        }
+        closesocket(sock);
         sock = -1;
-        INFO("tethering_sock: %d\n", sock);
     }
 
     return sock;
@@ -974,7 +968,7 @@ int get_tethering_multitouch_status(void)
 static void set_tethering_multitouch_status(int status)
 {
     mt_device_status = status;
-    send_tethering_multitouch_status_ecp();
+    send_tethering_touch_status_ecp();
 }
 
 int connect_tethering_app(int port)
@@ -990,6 +984,7 @@ int connect_tethering_app(int port)
         return -1;
     }
 
+    INFO("tethering_sock: %d\n", sock);
     tethering_sock = sock;
 
     reset_tethering_recv_buf(&recv_buf);
