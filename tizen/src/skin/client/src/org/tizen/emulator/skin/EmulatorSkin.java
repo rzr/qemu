@@ -1248,6 +1248,18 @@ public class EmulatorSkin {
 		});
 	}
 
+	public void updateHostKbdMenu(final boolean on) {
+		isOnKbd = on;
+
+		getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				getPopupMenu().kbdOnItem.setSelection(isOnKbd);
+				getPopupMenu().kbdOffItem.setSelection(!isOnKbd);
+			}
+		});
+	}
+
 	protected void displayOn() {
 		logger.info("display on");
 

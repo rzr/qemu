@@ -379,6 +379,32 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
+				case RECV_HOST_KBD_STATE: {
+					logger.info("received HOST_KBD_STATE from QEMU");
+
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
+
+					byte[] receivedData = getReceivedData(miscDataTransfer);
+					if (null != receivedData) {
+						String strValue = new String(receivedData, 0, length - 1);
+
+						int value = 1;
+						try {
+							value = Integer.parseInt(strValue);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+						if (value == 0) {
+							skin.updateHostKbdMenu(false);
+						} else {
+							skin.updateHostKbdMenu(true);
+						}
+					}
+
+					break;
+				}
 				case RECV_SENSORD_STARTED: {
 					logger.info("received SENSORD_STARTED from QEMU");
 

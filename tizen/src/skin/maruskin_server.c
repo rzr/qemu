@@ -100,6 +100,7 @@ enum {
     in Skin process */
 
     RECV_SKIN_OPENED = 1,
+
     RECV_MOUSE_EVENT = 10,
     RECV_KEYBOARD_KEY_EVENT = 11,
     RECV_HW_KEY_EVENT = 12,
@@ -111,6 +112,7 @@ enum {
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
     RECV_ECP_PORT_REQ = 20,
+
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_RESPONSE_DRAW_FRAME = 901,
     RECV_CLOSE_REQ = 998,
@@ -129,6 +131,7 @@ enum {
     SEND_BRIGHTNESS_STATE = 6,
     SEND_ECP_PORT_DATA = 7,
     SEND_HOST_KBD_STATE = 8,
+
     SEND_SENSORD_STARTED = 800,
     SEND_SDBD_STARTED = 801,
     SEND_ECS_STARTED = 802,
@@ -419,6 +422,31 @@ void notify_brightness_state(bool on)
             (unsigned char *)brightness_data, BRIGHTNESS_DATA_LENGTH, 0)) {
 
             ERR("fail to send SEND_BRIGHTNESS_STATE to skin\n");
+        }
+    } else {
+        INFO("skin client socket is not connected yet\n");
+    }
+}
+
+void notify_host_kbd_state(bool on)
+{
+#define HOSTKBD_DATA_LENGTH 2
+    char kbd_state_data[HOSTKBD_DATA_LENGTH] = { 0, };
+
+    if (on == false) {
+        snprintf(kbd_state_data, HOSTKBD_DATA_LENGTH, "0");
+    } else {
+        snprintf(kbd_state_data, HOSTKBD_DATA_LENGTH, "1");
+    }
+
+    TRACE("notify host kbd state : %s\n", kbd_state_data);
+
+    if (client_sock) {
+        if (0 > send_skin_data(client_sock,
+            SEND_HOST_KBD_STATE,
+            (unsigned char *)kbd_state_data, HOSTKBD_DATA_LENGTH, 0)) {
+
+            ERR("fail to send SEND_HOST_KBD_STATE to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
