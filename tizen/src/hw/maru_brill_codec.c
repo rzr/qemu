@@ -206,6 +206,11 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
     CodecParam *ioparam = NULL;
 
     ioparam = g_malloc0(sizeof(CodecParam));
+    if (!ioparam) {
+        ERR("failed to allocate ioparam\n");
+        return;
+    }
+
     memcpy(ioparam, &s->ioparam, sizeof(CodecParam));
 
     TRACE("wakeup thread. ctx_id: %u, api_id: %u, mem_offset: 0x%x\n",
@@ -254,6 +259,10 @@ static void *maru_brill_codec_threads(void *opaque)
             continue;
         }
 
+        if (!elem->param_buf) {
+            continue;
+        }
+
         api_id = elem->param_buf->api_index;
         ctx_id = elem->param_buf->ctx_index;
         f_id = elem->param_buf->file_index;
@@ -266,27 +275,22 @@ static void *maru_brill_codec_threads(void *opaque)
             continue;
         }
 
-        if (elem) {
-            TRACE("release an element of CodecDataStg\n");
+        TRACE("release a buffer of CodecParam\n");
+        g_free(elem->param_buf);
 
-            if (elem->param_buf) {
-                TRACE("release a buffer of CodecParam\n");
-                g_free(elem->param_buf);
+        if (elem->data_buf) {
+
+            if (elem->data_buf->buf) {
+                TRACE("release inbuf\n");
+                g_free(elem->data_buf->buf);
             }
 
-            if (elem->data_buf) {
-
-                if (elem->data_buf->buf) {
-                    TRACE("release inbuf\n");
-                    g_free(elem->data_buf->buf);
-                }
-
-                TRACE("release a buffer indata_buf\n");
-                g_free(elem->data_buf);
-            }
-
-            g_free(elem);
+            TRACE("release a buffer indata_buf\n");
+            g_free(elem->data_buf);
         }
+
+        TRACE("release an element of CodecDataStg\n");
+        g_free(elem);
 
         if (api_id == CODEC_DEINIT) {
             TRACE("deinit doesn't need to raise interrupt.\n");
@@ -339,13 +343,7 @@ static void *maru_brill_codec_store_inbuf(uint8_t *mem_base_offset,
     DeviceMemEntry *elem = NULL;
     int readbuf_size, size = 0;
     uint8_t *readbuf = NULL;
-    uint8_t *device_mem = NULL;
-
-    device_mem = mem_base_offset + ioparam->mem_offset;
-    if (!device_mem) {
-        ERR("[%d] device memory region is null\n");
-        return NULL;
-    }
+    uint8_t *device_mem = mem_base_offset + ioparam->mem_offset;
 
     elem = g_malloc0(sizeof(DeviceMemEntry));
     if (!elem) {
@@ -546,6 +544,7 @@ static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t fil
         QTAILQ_FOREACH_SAFE(rq_elem, &codec_rq, node, rnext) {
             if (rq_elem && rq_elem->data_buf &&
                 (rq_elem->data_buf->buf_id == file_index)) {
+
                 TRACE("remove unused node from codec_rq. file: %p\n", file_index);
                 qemu_mutex_lock(&s->context_queue_mutex);
                 QTAILQ_REMOVE(&codec_rq, rq_elem, node);
