@@ -81,6 +81,7 @@
 
 #define MSG_TYPE_SENSOR         "sensor"
 #define MSG_TYPE_NFC            "nfc"
+#define MSG_TYPE_SIMUL_NFC      "simul_nfc"
 
 #define MSG_GROUP_STATUS        15
 
@@ -109,7 +110,7 @@ typedef unsigned char   type_action;
 
 #define OUT_BUF_SIZE    4096
 #define READ_BUF_LEN    4096
-
+#define MAX_ID_SIZE     255
 typedef struct sbuf
 {
     int _netlen;
@@ -144,9 +145,14 @@ typedef struct ECS_State {
     Monitor *mon;
 } ECS_State;
 
+#define TYPE_NONE       0x00
+#define TYPE_ECP        0x01
+#define TYPE_SIMUL_NFC  0x02
+
 typedef struct ECS_Client {
-    int client_fd;
-    int client_id;
+    unsigned char client_fd;
+    unsigned char client_id;
+    unsigned char client_type;
     int keep_alive;
     const char* type;
 
@@ -157,11 +163,21 @@ typedef struct ECS_Client {
     QTAILQ_ENTRY(ECS_Client) next;
 } ECS_Client;
 
+#define MAX_BUF_SIZE  255
+
+typedef struct nfc_msg_info {
+    unsigned char client_id;
+    unsigned char client_type;
+    uint32_t use;
+    unsigned char buf[MAX_BUF_SIZE];
+
+}nfc_msg_info;
 
 int start_ecs(void);
 int stop_ecs(void);
 int get_ecs_port(void);
 
+ECS_Client *find_client(unsigned char id, unsigned char type);
 bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);
 
 bool ntf_to_injector(const char* data, const int len);
@@ -173,10 +189,11 @@ bool send_to_ecp(ECS__Master* master);
 bool send_injector_ntf(const char* data, const int len);
 bool send_monitor_ntf(const char* data, const int len);
 bool send_device_ntf(const char* data, const int len);
-bool send_nfc_ntf(const char* data, const int len);
+bool send_nfc_ntf(struct nfc_msg_info *msg);
 
+void send_to_single_client(ECS_Client *clii, const char* data, const int len);
 bool send_to_all_client(const char* data, const int len);
-void send_to_client(int fd, const char* data, const int len) ;
+void send_to_client(int fd, const char* data, const int len);
 
 void ecs_client_close(ECS_Client* clii);
 int ecs_write(int fd, const uint8_t *buf, int len);

@@ -95,15 +95,10 @@ struct  _ECS__InjectorAns
   int32_t errcode;
   char *errstr;
   char *category;
-  int32_t length;
-  int32_t group;
-  int32_t action;
-  protobuf_c_boolean has_data;
-  ProtobufCBinaryData data;
 };
 #define ECS__INJECTOR_ANS__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ecs__injector_ans__descriptor) \
-    , 0, NULL, NULL, 0, 0, 0, 0,{0,NULL} }
+    , 0, NULL, NULL }
 
 
 struct  _ECS__InjectorNtf

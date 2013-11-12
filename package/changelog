@@ -1,3 +1,6 @@
+* 1.6.3
+- modify protobuf protocol
+== Munkyu Im <munkyu.im@samsung.com> 2013-11-12
 * 1.6.2
 - changed message format when a sdb server registers in guest server
 - previously it gets ip, port, serial, but now serial only

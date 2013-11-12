@@ -36,7 +36,6 @@
 MULTI_DEBUG_CHANNEL(qemu, virtio-nfc);
 
 #define NFC_DEVICE_NAME "virtio-nfc"
-#define MAX_BUF_SIZE  255
 
 enum {
     IOTYPE_INPUT = 0,
@@ -50,34 +49,18 @@ enum {
 
 VirtIONFC* vio_nfc;
 
-
-typedef unsigned int CSCliSN;
-
-typedef struct msg_info {
-    char buf[MAX_BUF_SIZE];
-
-    uint32_t route;
-    uint32_t use;
-    uint16_t count;
-    uint16_t index;
-
-    CSCliSN cclisn;
-}msg_info;
-
-//
-
 typedef struct MsgInfo
 {
-    msg_info info;
+    nfc_msg_info info;
     QTAILQ_ENTRY(MsgInfo) next;
 }MsgInfo;
 
 static QTAILQ_HEAD(MsgInfoRecvHead , MsgInfo) nfc_recv_msg_queue =
-    QTAILQ_HEAD_INITIALIZER(nfc_recv_msg_queue);
+QTAILQ_HEAD_INITIALIZER(nfc_recv_msg_queue);
 
 
 static QTAILQ_HEAD(MsgInfoSendHead , MsgInfo) nfc_send_msg_queue =
-    QTAILQ_HEAD_INITIALIZER(nfc_send_msg_queue);
+QTAILQ_HEAD_INITIALIZER(nfc_send_msg_queue);
 
 
 //
@@ -89,24 +72,23 @@ typedef struct NFCBuf {
 } NFCBuf;
 
 static QTAILQ_HEAD(NFCMsgHead , NFCBuf) nfc_in_queue =
-    QTAILQ_HEAD_INITIALIZER(nfc_in_queue);
-
-static int count = 0;
+QTAILQ_HEAD_INITIALIZER(nfc_in_queue);
 
 static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-bool send_to_nfc(enum request_cmd_nfc req, const char* data, const uint32_t len)
+bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const uint32_t len)
 {
     MsgInfo* _msg = (MsgInfo*) malloc(sizeof(MsgInfo));
     if (!_msg)
         return false;
 
-    memset(&_msg->info, 0, sizeof(msg_info));
+    memset(&_msg->info, 0, sizeof(nfc_msg_info));
 
     memcpy(_msg->info.buf, data, len);
     _msg->info.use = len;
-    _msg->info.index = count++;
-    _msg->info.route = req;
+    _msg->info.client_id = id;
+    _msg->info.client_type = type;
+
     pthread_mutex_lock(&recv_buf_mutex);
 
     QTAILQ_INSERT_TAIL(&nfc_recv_msg_queue, _msg, next);
@@ -140,31 +122,31 @@ static void flush_nfc_recv_queue(void)
 
     while (!QTAILQ_EMPTY(&nfc_recv_msg_queue))
     {
-         MsgInfo* msginfo = QTAILQ_FIRST(&nfc_recv_msg_queue);
-         if (!msginfo)
-             break;
+        MsgInfo* msginfo = QTAILQ_FIRST(&nfc_recv_msg_queue);
+        if (!msginfo)
+            break;
 
-         VirtQueueElement elem;
-         index = virtqueue_pop(vio_nfc->rvq, &elem);
-         if (index == 0)
-         {
-             //ERR("unexpected empty queue");
-             break;
-         }
+        VirtQueueElement elem;
+        index = virtqueue_pop(vio_nfc->rvq, &elem);
+        if (index == 0)
+        {
+            //ERR("unexpected empty queue");
+            break;
+        }
 
-         INFO(">> virtqueue_pop. index: %d, out_num : %d, in_num : %d\n", index, elem.out_num, elem.in_num);
+        INFO(">> virtqueue_pop. index: %d, out_num : %d, in_num : %d\n", index, elem.out_num, elem.in_num);
 
-         memcpy(elem.in_sg[0].iov_base, &msginfo->info, sizeof(struct msg_info));
+        memcpy(elem.in_sg[0].iov_base, &msginfo->info, sizeof(struct nfc_msg_info));
 
-         INFO(">> send to guest count = %d, use = %d, msg = %s, iov_len = %d \n",
-                 ++g_cnt, msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
+        INFO(">> send to guest count = %d, use = %d, msg = %s, iov_len = %d \n",
+                ++g_cnt, msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
 
-         virtqueue_push(vio_nfc->rvq, &elem, sizeof(msg_info));
-         virtio_notify(&vio_nfc->vdev, vio_nfc->rvq);
+        virtqueue_push(vio_nfc->rvq, &elem, sizeof(nfc_msg_info));
+        virtio_notify(&vio_nfc->vdev, vio_nfc->rvq);
 
-         QTAILQ_REMOVE(&nfc_recv_msg_queue, msginfo, next);
-         if (msginfo)
-             free(msginfo);
+        QTAILQ_REMOVE(&nfc_recv_msg_queue, msginfo, next);
+        if (msginfo)
+            free(msginfo);
     }
 
     pthread_mutex_unlock(&recv_buf_mutex);
@@ -177,37 +159,11 @@ static void virtio_nfc_recv(VirtIODevice *vdev, VirtQueue *vq)
     flush_nfc_recv_queue();
 }
 
-static void send_to_ecs(struct msg_info* msg)
-{
-    type_length length = 0;
-
-    int buf_len = MAX_BUF_SIZE;
-    int message_len =  buf_len + 10;
-
-    char* ecs_message = (char*) malloc(message_len + 1);
-    if (!ecs_message)
-        return;
-
-    memset(ecs_message, 0, message_len + 1);
-
-    length = (unsigned short) buf_len;
-
-    memcpy(ecs_message, "nfc", 10);
-    memcpy(ecs_message + 10, msg->buf, buf_len);
-
-    INFO("ntf_to_injector- len: %d, data: %s\n", length , msg->buf);
-
-    send_nfc_ntf(ecs_message, message_len);
-
-    if (ecs_message)
-        free(ecs_message);
-}
-
 static void virtio_nfc_send(VirtIODevice *vdev, VirtQueue *vq)
 {
     VirtIONFC *vnfc = (VirtIONFC *)vdev;
     int index = 0;
-    struct msg_info _msg;
+    struct nfc_msg_info _msg;
 
     if (virtio_queue_empty(vnfc->svq)) {
         INFO("<< virtqueue is empty.\n");
@@ -225,14 +181,13 @@ static void virtio_nfc_send(VirtIODevice *vdev, VirtQueue *vq)
             break;
         }
 
-        INFO("<< use=%d, iov_len = %d\n", _msg.use, elem.out_sg[0].iov_len);
+        INFO("<< iov_len = %d\n", elem.out_sg[0].iov_len);
 
         memset(&_msg, 0x00, sizeof(_msg));
         memcpy(&_msg, elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
 
         INFO("<< recv from guest len = %d, msg = %s \n", _msg.use, _msg.buf);
-
-        send_to_ecs(&_msg);
+        send_nfc_ntf(&_msg);
 
     }
 
@@ -241,7 +196,7 @@ static void virtio_nfc_send(VirtIODevice *vdev, VirtQueue *vq)
 }
 
 static uint32_t virtio_nfc_get_features(VirtIODevice *vdev,
-                                            uint32_t request_feature)
+        uint32_t request_feature)
 {
     TRACE("virtio_nfc_get_features.\n");
     return 0;
@@ -278,8 +233,8 @@ static int virtio_nfc_exit(DeviceState* dev)
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
 
     if (vio_nfc->bh) {
-            qemu_bh_delete(vio_nfc->bh);
-        }
+        qemu_bh_delete(vio_nfc->bh);
+    }
 
     virtio_cleanup(vdev);
 
@@ -301,8 +256,6 @@ static void virtio_nfc_class_init(ObjectClass *klass, void *data)
     vdc->get_features = virtio_nfc_get_features;
     vdc->reset = virtio_nfc_reset;
 }
-
-
 
 static const TypeInfo virtio_device_info = {
     .name = TYPE_VIRTIO_NFC,
