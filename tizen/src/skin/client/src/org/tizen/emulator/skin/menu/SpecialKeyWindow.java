@@ -27,7 +27,7 @@
  *
  */
 
-package org.tizen.emulator.skin.custom;
+package org.tizen.emulator.skin.menu;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,6 +59,7 @@ import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.custom.SkinWindow;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.SpecialKeyWindowImageRegistry;
 import org.tizen.emulator.skin.image.SpecialKeyWindowImageRegistry.SpecailKeyWindowImageType;

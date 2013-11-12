@@ -40,7 +40,6 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.custom.SpecialKeyWindow;
 import org.tizen.emulator.skin.dbi.MenuItemType;
 import org.tizen.emulator.skin.dbi.PopupMenuType;
 import org.tizen.emulator.skin.image.ImageRegistry;
