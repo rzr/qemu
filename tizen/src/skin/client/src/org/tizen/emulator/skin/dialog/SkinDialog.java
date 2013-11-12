@@ -1,5 +1,5 @@
 /**
- * 
+ * Skin Dialog
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -60,14 +60,29 @@ public abstract class SkinDialog extends Dialog {
 	protected Shell shell;
 	protected Composite buttonComposite;
 	private Shell parent;
-	private String title;
 	private int style;
-	
-	public SkinDialog(Shell parent, String title, int style) {
+	private String title;
+	private boolean hasButton;
+
+	/**
+	 *  Constructor
+	 */
+	public SkinDialog(Shell parent, int style, String title) {
 		super(parent, style);
+
 		this.parent = parent;
-		this.title = title;
 		this.style = style;
+		this.title = title;
+		this.hasButton = true;
+	}
+
+	public SkinDialog(Shell parent, int style, String title, boolean hasButton) {
+		super(parent, style);
+
+		this.parent = parent;
+		this.style = style;
+		this.title = title;
+		this.hasButton = hasButton;
 	}
 
 	protected void createComposite() {
@@ -86,12 +101,14 @@ public abstract class SkinDialog extends Dialog {
 			return;
 		}
 
+		if (hasButton == true) {
 		/* bottom side */
-		buttonComposite = new Composite(parent, SWT.NONE);
-		buttonComposite.setLayoutData(new GridData(SWT.RIGHT, SWT.BOTTOM, true, true));
-		buttonComposite.setLayout(new GridLayout(1, false));
+			buttonComposite = new Composite(parent, SWT.NONE);
+			buttonComposite.setLayoutData(new GridData(SWT.RIGHT, SWT.BOTTOM, true, true));
+			buttonComposite.setLayout(new GridLayout(1, false));
 
-		createButtons(buttonComposite);
+			createButtons(buttonComposite);
+		}
 	}
 
 	public void open() {
@@ -146,6 +163,8 @@ public abstract class SkinDialog extends Dialog {
 	}
 
 	protected void close() {
+		logger.info("closed");
+
 		/* do nothing */
 	}
 
@@ -157,14 +176,13 @@ public abstract class SkinDialog extends Dialog {
 
 	protected void createButtons(Composite parent) {
 		if (null == parent) {
-			throw new IllegalArgumentException("Buttons parent is null");
+			throw new IllegalArgumentException("button composite is null");
 		}
 	}
 
 	protected Button createButton(Composite parent, String text) {
-
 		if (null == parent) {
-			throw new IllegalArgumentException("Button parent is null");
+			throw new IllegalArgumentException("button composite is null");
 		}
 
 		Composite composite = new Composite(parent, SWT.NONE);
@@ -198,7 +216,5 @@ public abstract class SkinDialog extends Dialog {
 		}
 
 		return okButton;
-
 	}
-
 }

@@ -59,6 +59,7 @@ import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class AboutDialog extends SkinDialog {
+	public static final String ABOUT_DIALOG_TITLE = "About Tizen Emulator";
 	public static final String ABOUT_PROP_FILENAME = "about.properties";
 
 	public static final String PROP_KEY_VERSION = "version";
@@ -79,14 +80,14 @@ public class AboutDialog extends SkinDialog {
 	 */
 	public AboutDialog(Shell parent,
 			EmulatorConfig config, ImageRegistry imageRegistry) {
-		super(parent, "About Tizen Emulator",
-				SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+		super(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL, ABOUT_DIALOG_TITLE);
 
 		this.config = config;
 		this.imageRegistry = imageRegistry;
 	}
 
-	private GridLayout getNopaddedGridLayout(int numColumns, boolean makeColumnEqualWidth) {
+	private GridLayout getNopaddedGridLayout(
+			int numColumns, boolean makeColumnEqualWidth) {
 		GridLayout layout = new GridLayout(numColumns, makeColumnEqualWidth);
 		layout.marginLeft = layout.marginRight = 0;
 		layout.marginTop = layout.marginBottom = 0;
@@ -224,7 +225,6 @@ public class AboutDialog extends SkinDialog {
 			String property = properties.getProperty(key);
 
 			if (!StringUtil.isEmpty(property)) {
-
 				if (!property.contains(key)) {
 					return property;
 				} else {

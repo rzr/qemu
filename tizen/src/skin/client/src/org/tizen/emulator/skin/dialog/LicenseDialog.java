@@ -1,7 +1,7 @@
 /**
- * 
+ * License Dialog
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -53,88 +53,86 @@ import org.tizen.emulator.skin.util.StringUtil;
  *
  */
 public class LicenseDialog extends SkinDialog {
-
 	public static final String LICENSE_FILE_PATH = "../license/Open_Source_Announcement.txt";
 
-	private Logger logger = SkinLogger.getSkinLogger( LicenseDialog.class ).getLogger();
+	private Logger logger =
+			SkinLogger.getSkinLogger(LicenseDialog.class).getLogger();
 
-	public LicenseDialog( Shell parent, String title ) {
-		super( parent, title, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX );
+	/**
+	 *  Constructor
+	 */
+	public LicenseDialog(Shell parent, String title) {
+		super(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX, title);
 	}
 
 	@Override
-	protected Composite createArea( Composite parent ) {
+	protected Composite createArea(Composite parent) {
+		Composite composite = new Composite(parent, SWT.NONE);
+		composite.setLayout(new GridLayout());
 
-		Composite composite = new Composite( parent, SWT.NONE );
-		composite.setLayout( new GridLayout() );
+		final Text text = new Text(composite,
+				SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI);
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		text.setLayoutData(gridData);
 
-		final Text text = new Text( composite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI );
-		GridData gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
-		text.setLayoutData( gridData );
-
-		text.setEditable( false );
-		text.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_WHITE ) );
-		String license = StringUtil.nvl( getLicense() );
-		text.setText( license );
+		text.setEditable(false);
+		text.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+		String license = StringUtil.nvl(getLicense());
+		text.setText(license);
 
 		return composite;
-
 	}
 
 	@Override
 	protected void setShellSize() {
-		shell.setSize( (int) ( 400 * 1.618 ), 400 );
+		shell.setSize((int) (400 * 1.618/* golden ratio */), 400);
 	}
 
 	@Override
-	protected void createButtons( Composite parent ) {
-		super.createButtons( parent );
+	protected void createButtons(Composite parent) {
+		super.createButtons(parent);
 
-		Button okButton = createButton( parent, OK );
+		Button okButton = createButton(parent, OK);
 
 		GridData gd = new GridData();
 		gd.grabExcessHorizontalSpace = true;
 		gd.horizontalAlignment = SWT.RIGHT;
-		okButton.setLayoutData( gd );
+		okButton.setLayoutData(gd);
 
 		okButton.setFocus();
 
-		okButton.addSelectionListener( new SelectionAdapter() {
+		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				LicenseDialog.this.shell.close();
+			public void widgetSelected(SelectionEvent e) {
+				shell.close();
 			}
-		} );
-
+		});
 	}
 
 	private String getLicense() {
-
 		FileInputStream fis = null;
 		String string = "";
 
 		try {
-
-			fis = new FileInputStream( LICENSE_FILE_PATH );
+			fis = new FileInputStream(LICENSE_FILE_PATH);
 
 			try {
-				byte[] bytes = IOUtil.getBytes( fis );
-				string = new String( bytes, "UTF-8" );
-			} catch ( IOException e ) {
-				logger.log( Level.SEVERE, e.getMessage(), e );
+				byte[] bytes = IOUtil.getBytes(fis);
+				string = new String(bytes, "UTF-8");
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, e.getMessage(), e);
 				string = "File control error.";
 			}
-
-		} catch ( FileNotFoundException e ) {
+		} catch (FileNotFoundException e) {
 			string = "There is no license info.";
 		} finally {
-			IOUtil.close( fis );
+			IOUtil.close(fis);
 		}
 
 		return string;
-
 	}
 
+	@Override
 	protected void close() {
 		logger.info("close the license dialog");
 	}

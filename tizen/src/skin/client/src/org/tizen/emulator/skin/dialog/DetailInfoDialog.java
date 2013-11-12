@@ -30,6 +30,7 @@
 package org.tizen.emulator.skin.dialog;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -64,6 +65,8 @@ import org.tizen.emulator.skin.util.SwtUtil;
  *
  */
 public class DetailInfoDialog extends SkinDialog {
+	public final static String DETAIL_INFO_DIALOG_TITLE = "Detail Info";
+
 	public final static String TABLE_COLUMN_NAME_0 = "Feature";
 	public final static String TABLE_COLUMN_NAME_1 = "Value";
 
@@ -107,8 +110,8 @@ public class DetailInfoDialog extends SkinDialog {
 	 */
 	public DetailInfoDialog(Shell parent, SocketCommunicator communicator,
 			EmulatorConfig config, SkinInformation skinInfo) {
-		super(parent, "Detail Info" + " - " + SkinUtil.makeEmulatorName(config),
-				SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX);
+		super(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX,
+				DETAIL_INFO_DIALOG_TITLE + " - " + SkinUtil.makeEmulatorName(config));
 
 		this.communicator = communicator;
 		this.config = config;
@@ -237,7 +240,12 @@ public class DetailInfoDialog extends SkinDialog {
 		byte[] receivedData = communicator.getReceivedData(dataTranfer);
 
 		if (null != receivedData) {
-			infoData = new String(receivedData);
+			try {
+				infoData = new String(receivedData, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				logger.warning("unsupported encoding exception");
+				infoData = new String(receivedData);
+			}
 		} else {
 			logger.severe("Fail to get detail info");
 			SkinUtil.openMessage(shell, null,
