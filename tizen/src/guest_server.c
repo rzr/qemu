@@ -101,6 +101,7 @@ static void send_to_client(GS_Client* client, int state)
 
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1){
           INFO("socket error!\n");
+          perror("socket creation is failed: ");
           return;
     }
 
@@ -110,16 +111,23 @@ static void send_to_client(GS_Client* client, int state)
     sock_addr.sin_port = htons(client->port);
     sock_addr.sin_addr = (client->addr).sin_addr;
 
+    if (connect(s, (struct sockaddr*)&sock_addr, slen) == -1) {
+        INFO("connect error! remove this client.\n");
+        remove_sdb_client(client);
+        close(s);
+        return;
+    }
+
     memset(buf, 0, sizeof(buf));
 
     serial_len = strlen(client->serial);
 
     // send message "[4 digit message length]host:sync:emulator-26101:[0|1]"
-    sprintf(buf, "%04dhost:sync:%s:%d", (serial_len + 12), client->serial, state);
+    sprintf(buf, "%04dhost:sync:%s:%01d", (serial_len + 12), client->serial, state);
 
-    if (sendto(s, buf, sizeof(buf), 0, (struct sockaddr*)&sock_addr, slen) == -1)
+    if (send(s, buf, sizeof(buf), 0) == -1)
     {
-        INFO("sendto error! remove this client.\n");
+        INFO("send error! remove this client.\n");
         remove_sdb_client(client);
     }
 
@@ -169,7 +177,7 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
 
     pthread_mutex_unlock(&mutex_clilist);
 
-    INFO("Added new sdb client. ip: %s, port: %d\n", client->addr, client->port);
+    INFO("Added new sdb client. ip: %s, port: %d, serial: %s\n", inet_ntoa(client->addr.sin_addr), client->port, client->serial);
 
     send_to_client(client, is_suspended_state());
 }
@@ -414,12 +422,16 @@ static void register_sdb_server(char* readbuf, struct sockaddr_in* client_addr)
     char* serial = NULL;
 
     ret = strtok(readbuf, token);
-    if (ret == NULL)
+    if (ret == NULL) {
+        INFO("command is not found.");
         return;
+    }
 
     serial = strtok(NULL, token);
-    if (serial == NULL)
+    if (serial == NULL) {
+        INFO("serial is not found.");
         return;
+    }
 
     port = SDB_SERVER_PORT;
 
