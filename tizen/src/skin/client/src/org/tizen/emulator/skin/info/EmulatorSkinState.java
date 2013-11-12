@@ -1,5 +1,5 @@
 /**
- * Emulator Skin Process
+ * Emulator Skin State
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -26,7 +26,7 @@
  *
  */
 
-package org.tizen.emulator.skin;
+package org.tizen.emulator.skin.info;
 
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;

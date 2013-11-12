@@ -26,7 +26,7 @@
  *
  */
 
-package org.tizen.emulator.skin.custom;
+package org.tizen.emulator.skin.menu;
 
 import java.util.List;
 
@@ -54,6 +54,10 @@ import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
+import org.tizen.emulator.skin.custom.ColorTag;
+import org.tizen.emulator.skin.custom.CustomButton;
+import org.tizen.emulator.skin.custom.CustomScrolledComposite;
+import org.tizen.emulator.skin.custom.SkinWindow;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry;
 import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry.GeneralKeyWindowImageName;
