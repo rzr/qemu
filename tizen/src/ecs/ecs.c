@@ -70,6 +70,7 @@ static int port;
 static int port_setting = -1;
 
 static int log_fd = -1;
+static int g_client_id = 1;
 
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
@@ -196,6 +197,12 @@ bool send_to_all_client(const char* data, const int len) {
     return true;
 }
 
+void send_to_single_client(ECS_Client *clii, const char* data, const int len)
+{
+    pthread_mutex_lock(&mutex_clilist);
+    send_to_client(clii->client_fd, data, len);
+    pthread_mutex_unlock(&mutex_clilist);
+}
 
 void send_to_client(int fd, const char* data, const int len)
 {
@@ -433,6 +440,17 @@ static ECS_Client *ecs_find_client(int fd) {
     return NULL;
 }
 
+ECS_Client *find_client(unsigned char id, unsigned char type) {
+    ECS_Client *clii;
+
+    QTAILQ_FOREACH(clii, &clients, next)
+    {
+        if (clii->client_id == id && clii->client_type == type)
+            return clii;
+    }
+    return NULL;
+}
+
 static int ecs_add_client(ECS_State *cs, int fd) {
 
     ECS_Client *clii = g_malloc0(sizeof(ECS_Client));
@@ -447,6 +465,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 
     clii->client_fd = fd;
     clii->cs = cs;
+    clii->client_type = TYPE_NONE;
 
     ecs_json_message_parser_init(&clii->parser, handle_qmp_command, clii);
 
@@ -521,7 +540,7 @@ static void epoll_init(ECS_State *cs) {
 #endif
 
 static void send_keep_alive_msg(ECS_Client *clii) {
-    send_to_client(clii->client_fd, keepalive_buf, payloadsize);
+    send_to_single_client(clii, keepalive_buf, payloadsize);
 }
 
 static void make_keep_alive_msg(void) {
@@ -851,6 +870,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
     }
     else if (master->type == ECS__MASTER__TYPE__DEVICE_REQ)
     {
+        cli->client_type = TYPE_ECP;
         ECS__DeviceReq* msg = master->device_req;
         if (!msg)
             goto fail;
@@ -861,6 +881,35 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
         ECS__NfcReq* msg = master->nfc_req;
         if (!msg)
             goto fail;
+
+        pthread_mutex_lock(&mutex_clilist);
+        if(cli->client_type == TYPE_NONE) {
+            if (!strncmp(msg->category, MSG_TYPE_NFC, 3)) {
+                QTAILQ_REMOVE(&clients, cli, next);
+                cli->client_type = TYPE_ECP;
+                if(g_client_id > 255) {
+                    g_client_id = 1;
+                }
+                cli->client_id = g_client_id++;
+
+                QTAILQ_INSERT_TAIL(&clients, cli, next);
+            }
+            else if (!strncmp(msg->category, MSG_TYPE_SIMUL_NFC, 9)) {
+                QTAILQ_REMOVE(&clients, cli, next);
+                cli->client_type = TYPE_SIMUL_NFC;
+                if(g_client_id > 255) {
+                    g_client_id = 1;
+                }
+                cli->client_id = g_client_id++;
+                QTAILQ_INSERT_TAIL(&clients, cli, next);
+            }
+            else {
+                LOG("unsupported category is found: %s", msg->category);
+                goto fail;
+            }
+        }
+        pthread_mutex_unlock(&mutex_clilist);
+
         msgproc_nfc_req(cli, msg);
     }
 #if 0

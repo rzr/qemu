@@ -62,8 +62,7 @@ typedef struct VirtIONFC{
         OBJECT_CHECK(VirtIONFC, (obj), TYPE_VIRTIO_NFC)
 
 
-bool send_to_nfc(enum request_cmd_nfc req, const char* data, const uint32_t len);
-
+bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const uint32_t len);
 
 #ifdef __cplusplus
 }

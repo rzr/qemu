@@ -949,7 +949,7 @@ const ProtobufCMessageDescriptor ecs__injector_req__descriptor =
   (ProtobufCMessageInit) ecs__injector_req__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__injector_ans__field_descriptors[7] =
+static const ProtobufCFieldDescriptor ecs__injector_ans__field_descriptors[3] =
 {
   {
     "errcode",
@@ -987,68 +987,16 @@ static const ProtobufCFieldDescriptor ecs__injector_ans__field_descriptors[7] =
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
-  {
-    "length",
-    4,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__InjectorAns, length),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "group",
-    5,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__InjectorAns, group),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "action",
-    6,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__InjectorAns, action),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "data",
-    7,
-    PROTOBUF_C_LABEL_OPTIONAL,
-    PROTOBUF_C_TYPE_BYTES,
-    PROTOBUF_C_OFFSETOF(ECS__InjectorAns, has_data),
-    PROTOBUF_C_OFFSETOF(ECS__InjectorAns, data),
-    NULL,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
 };
 static const unsigned ecs__injector_ans__field_indices_by_name[] = {
-  5,   /* field[5] = action */
   2,   /* field[2] = category */
-  6,   /* field[6] = data */
   0,   /* field[0] = errcode */
   1,   /* field[1] = errstr */
-  4,   /* field[4] = group */
-  3,   /* field[3] = length */
 };
 static const ProtobufCIntRange ecs__injector_ans__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 7 }
+  { 0, 3 }
 };
 const ProtobufCMessageDescriptor ecs__injector_ans__descriptor =
 {
@@ -1058,7 +1006,7 @@ const ProtobufCMessageDescriptor ecs__injector_ans__descriptor =
   "ECS__InjectorAns",
   "ECS",
   sizeof(ECS__InjectorAns),
-  7,
+  3,
   ecs__injector_ans__field_descriptors,
   ecs__injector_ans__field_indices_by_name,
   1,  ecs__injector_ans__number_ranges,

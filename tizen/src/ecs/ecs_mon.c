@@ -691,16 +691,17 @@ static bool device_command_proc(ECS_Client *clii, QObject *obj) {
             set_sensor_data(length, data);
         }
     }
-    else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
-        if (group == MSG_GROUP_STATUS) {
-            send_to_nfc(request_nfc_get, data, length);
-        }
-        else
-        {
-            send_to_nfc(request_nfc_set, data, length);
-        }
-    }
-
+    /*
+       else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
+       if (group == MSG_GROUP_STATUS) {
+       send_to_nfc(request_nfc_get, data, length);
+       }
+       else
+       {
+       send_to_nfc(request_nfc_set, data, length);
+       }
+       }
+     */
 
     return true;
 }

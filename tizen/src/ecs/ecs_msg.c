@@ -82,6 +82,25 @@ static void* build_master(ECS__Master* master, int* payloadsize)
     return buf;
 }
 
+static bool send_single_msg(ECS__Master* master, ECS_Client *clii)
+{
+    int payloadsize = 0;
+    void* buf = build_master(master, &payloadsize);
+    if (!buf)
+    {
+        LOG("invalid buf");
+        return false;
+    }
+
+    send_to_single_client(clii, buf, payloadsize);
+
+    if (buf)
+    {
+        g_free(buf);
+    }
+    return true;
+}
+
 bool send_to_ecp(ECS__Master* master)
 {
     int payloadsize = 0;
@@ -122,9 +141,32 @@ static bool send_to_single_client(ECS__Master* master, ECS_Client *ccli)
     return true;
 }
 #endif
+static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool succeed)
+{
+    int catlen = 0;
+    ECS__Master master = ECS__MASTER__INIT;
+    ECS__InjectorAns ans = ECS__INJECTOR_ANS__INIT;
+
+    LOG("injector ans - category : %s, succed : %d", category, succeed);
+
+    catlen = strlen(category);
+    ans.category = (char*) g_malloc0(catlen + 1);
+    memcpy(ans.category, category, catlen);
+
+    ans.errcode = !succeed;
+    master.type = ECS__MASTER__TYPE__INJECTOR_ANS;
+    master.injector_ans = &ans;
+
+    send_single_msg(&master, ccli);
+
+    if (ans.category)
+        g_free(ans.category);
+}
+
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 {
     char cmd[10];
+    bool ret = false;
     memset(cmd, 0, 10);
     strcpy(cmd, msg->category);
     type_length length = (type_length) msg->length;
@@ -146,7 +188,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     int sndlen = datalen + 14;
     char* sndbuf = (char*) g_malloc(sndlen + 1);
     if (!sndbuf) {
-        return false;
+        goto injector_req_fail;
     }
 
     memset(sndbuf, 0, sndlen + 1);
@@ -168,11 +210,19 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
         }
     }
 
-    send_to_evdi(route_ij, sndbuf, sndlen);
+    ret = send_to_evdi(route_ij, sndbuf, sndlen);
 
     g_free(sndbuf);
 
+    if (!ret)
+        goto injector_req_fail;
+
+    msgproc_injector_ans(ccli, cmd, ret);
     return true;
+
+injector_req_fail:
+    msgproc_injector_ans(ccli, cmd, ret);
+    return false;
 }
 #if 0
 void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg)
@@ -292,14 +342,6 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             }
             do_host_kbd_enable(is_on);
         }
-    } else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
-        if (group == MSG_GROUP_STATUS) {
-            send_to_nfc(request_nfc_get, data, length);
-        }
-        else
-        {
-            send_to_nfc(request_nfc_set, data, length);
-        }
     }
 
     if (data)
@@ -310,25 +352,28 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 
 bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
 {
-    char cmd[10];
-    char* data = NULL;
-    memset(cmd, 0, 10);
-    strcpy(cmd, msg->category);
+    int datalen = msg->data.len;
+    void* data = (void*)g_malloc(datalen);
+    if(!data) {
+        LOG("g_malloc failed!");
+        return false;
+    }
+
+    memset(data, 0, datalen);
+    memcpy(data, msg->data.data, msg->data.len);
 
     if (msg->has_data && msg->data.len > 0)
     {
-        data = (char*)msg->data.data;
-        printf("recv from nfc injector: ");
-        print_binary(data, data[1] + 2);
+        LOG("recv from nfc injector: ");
+        print_binary(data, datalen);
     }
 
-    if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
-        if (data != NULL) {
-            send_to_nfc(request_nfc_set, data, msg->data.len);
-        }
+    if (data != NULL) {
+        send_to_nfc(ccli->client_id, ccli->client_type, data, msg->data.len);
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 bool ntf_to_injector(const char* data, const int len) {
@@ -507,17 +552,29 @@ bool send_device_ntf(const char* data, const int len)
     return true;
 }
 
-bool send_nfc_ntf(const char* data, const int len)
+bool send_nfc_ntf(struct nfc_msg_info* msg)
 {
     const int catsize = 10;
     char cat[catsize + 1];
+    ECS_Client *clii;
     memset(cat, 0, catsize + 1);
 
-    read_val_str(data, cat, catsize);
-
-    const char* ijdata = data + catsize;
-
-    LOG("header category = %s", cat);
+    print_binary((char*)msg->buf, msg->use);
+    LOG("id: %02x, type: %02x, use: %d", msg->client_id, msg->client_type, msg->use);
+    clii =  find_client(msg->client_id, msg->client_type);
+    if (clii) {
+        if(clii->client_type == TYPE_SIMUL_NFC) {
+            strncpy(cat, MSG_TYPE_NFC, 3);
+        } else if (clii->client_type == TYPE_ECP) {
+            strncpy(cat, MSG_TYPE_SIMUL_NFC, 9);
+        }else {
+            LOG("cannot find type!");
+        }
+        LOG("header category = %s", cat);
+    }
+    else {
+        LOG("cannot find client!");
+    }
 
     ECS__Master master = ECS__MASTER__INIT;
     ECS__NfcNtf ntf = ECS__NFC_NTF__INIT;
@@ -529,15 +586,13 @@ bool send_nfc_ntf(const char* data, const int len)
 
     ntf.data.data = g_malloc(MAX_BUF_SIZE);
     ntf.data.len = MAX_BUF_SIZE;
-    memcpy(ntf.data.data, ijdata, MAX_BUF_SIZE);
+    memcpy(ntf.data.data, msg->buf, MAX_BUF_SIZE);
 
-    LOG("length = %d", len);
     printf("send to nfc injector: ");
-    print_binary(ijdata, ijdata[1] + 2);
     master.type = ECS__MASTER__TYPE__NFC_NTF;
     master.nfc_ntf = &ntf;
 
-    send_to_ecp(&master);
+    send_single_msg(&master, clii);
 
     if (ntf.data.data && ntf.data.len > 0)
     {
