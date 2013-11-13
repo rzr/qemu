@@ -226,6 +226,11 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, DeleteTransformFeedbacks, glDeleteTransformFeedbacks);
         YAGL_GLES_OGL_GET_PROC(driver, TransformFeedbackVaryings, glTransformFeedbackVaryings);
         YAGL_GLES_OGL_GET_PROC(driver, GetTransformFeedbackVarying, glGetTransformFeedbackVarying);
+        YAGL_GLES_OGL_GET_PROC(driver, GenQueries, glGenQueries);
+        YAGL_GLES_OGL_GET_PROC(driver, BeginQuery, glBeginQuery);
+        YAGL_GLES_OGL_GET_PROC(driver, EndQuery, glEndQuery);
+        YAGL_GLES_OGL_GET_PROC(driver, GetQueryObjectuiv, glGetQueryObjectuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteQueries, glDeleteQueries);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;

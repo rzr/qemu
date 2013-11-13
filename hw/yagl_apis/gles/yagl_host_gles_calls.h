@@ -406,6 +406,12 @@ void yagl_host_glTransformFeedbackVaryings(GLuint program,
 void yagl_host_glGetTransformFeedbackVaryings(GLuint program,
     GLsizei *sizes, int32_t sizes_maxcount, int32_t *sizes_count,
     GLenum *types, int32_t types_maxcount, int32_t *types_count);
+void yagl_host_glGenQueries(const GLuint *ids, int32_t ids_count);
+void yagl_host_glBeginQuery(GLenum target,
+    GLuint id);
+void yagl_host_glEndQuery(GLenum target);
+GLboolean yagl_host_glGetQueryObjectuiv(GLuint id,
+    GLuint *result);
 void yagl_host_glDeleteObjects(const GLuint *objects, int32_t objects_count);
 void yagl_host_glBlendEquation(GLenum mode);
 void yagl_host_glBlendEquationSeparate(GLenum modeRGB,

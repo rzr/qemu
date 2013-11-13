@@ -289,16 +289,15 @@ const char **yagl_transport_get_out_string_array(const char *data,
         tmp = memchr(data, '\0', data_count);
 
         if (!tmp) {
-            YAGL_LOG_ERROR("NULL not found in string array of size %d",
-                           data_count);
+            YAGL_LOG_ERROR("0 not found in string array");
             break;
         }
 
         yagl_vector_push_back(&v, &data);
 
-        data = tmp + 1;
+        data_count -= tmp - data + 1;
 
-        data_count -= (tmp - data);
+        data = tmp + 1;
     }
 
     *array_count = yagl_vector_size(&v);

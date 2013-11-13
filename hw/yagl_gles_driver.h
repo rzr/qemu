@@ -279,6 +279,11 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC2(DeleteTransformFeedbacks, GLsizei, const GLuint*, n, ids)
     YAGL_GLES_DRIVER_FUNC4(TransformFeedbackVaryings, GLuint, GLsizei, const GLchar* const*, GLenum, program, count, varyings, bufferMode)
     YAGL_GLES_DRIVER_FUNC7(GetTransformFeedbackVarying, GLuint, GLuint, GLsizei, GLsizei*, GLsizei*, GLenum*, GLchar*, program, index, bufSize, length, size, type, name)
+    YAGL_GLES_DRIVER_FUNC2(GenQueries, GLsizei, GLuint*, n, ids)
+    YAGL_GLES_DRIVER_FUNC2(BeginQuery, GLenum, GLuint, target, id)
+    YAGL_GLES_DRIVER_FUNC1(EndQuery, GLenum, target)
+    YAGL_GLES_DRIVER_FUNC3(GetQueryObjectuiv, GLuint, GLenum, GLuint*, id, pname, params)
+    YAGL_GLES_DRIVER_FUNC2(DeleteQueries, GLsizei, const GLuint*, n, ids)
 
     /*
      * @}
