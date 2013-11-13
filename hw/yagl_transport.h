@@ -87,6 +87,10 @@ bool yagl_transport_get_in_array(struct yagl_transport *t,
                                  int32_t *maxcount,
                                  int32_t **count);
 
+const char **yagl_transport_get_out_string_array(const char *data,
+                                                 int32_t data_count,
+                                                 int32_t *array_count);
+
 static __inline void yagl_transport_advance(struct yagl_transport *t,
                                             uint32_t size)
 {

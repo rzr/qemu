@@ -393,6 +393,19 @@ void yagl_host_glGetFloatv(GLenum pname,
 void yagl_host_glGetString(GLenum name,
     GLchar *str, int32_t str_maxcount, int32_t *str_count);
 GLboolean yagl_host_glIsEnabled(GLenum cap);
+void yagl_host_glGenTransformFeedbacks(const GLuint *ids, int32_t ids_count);
+void yagl_host_glBindTransformFeedback(GLenum target,
+    GLuint id);
+void yagl_host_glBeginTransformFeedback(GLenum primitiveMode);
+void yagl_host_glEndTransformFeedback(void);
+void yagl_host_glPauseTransformFeedback(void);
+void yagl_host_glResumeTransformFeedback(void);
+void yagl_host_glTransformFeedbackVaryings(GLuint program,
+    const GLchar *varyings, int32_t varyings_count,
+    GLenum bufferMode);
+void yagl_host_glGetTransformFeedbackVaryings(GLuint program,
+    GLsizei *sizes, int32_t sizes_maxcount, int32_t *sizes_count,
+    GLenum *types, int32_t types_maxcount, int32_t *types_count);
 void yagl_host_glDeleteObjects(const GLuint *objects, int32_t objects_count);
 void yagl_host_glBlendEquation(GLenum mode);
 void yagl_host_glBlendEquationSeparate(GLenum modeRGB,

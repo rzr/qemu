@@ -10,6 +10,7 @@
 #include "yagl_thread.h"
 #include "yagl_vector.h"
 #include "yagl_object_map.h"
+#include "yagl_transport.h"
 
 static YAGL_DEFINE_TLS(struct yagl_gles_api_ts*, gles_api_ts);
 
@@ -316,6 +317,21 @@ static void yagl_gles_vertex_array_destroy(struct yagl_object *obj)
 
     yagl_ensure_ctx(gles_obj->ctx_id);
     gles_obj->driver->DeleteVertexArrays(1, &obj->global_name);
+    yagl_unensure_ctx(gles_obj->ctx_id);
+
+    g_free(gles_obj);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_gles_transform_feedback_destroy(struct yagl_object *obj)
+{
+    struct yagl_gles_object *gles_obj = (struct yagl_gles_object*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_gles_transform_feedback_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx(gles_obj->ctx_id);
+    gles_obj->driver->DeleteTransformFeedbacks(1, &obj->global_name);
     yagl_unensure_ctx(gles_obj->ctx_id);
 
     g_free(gles_obj);
@@ -1842,6 +1858,97 @@ void yagl_host_glGetString(GLenum name,
 GLboolean yagl_host_glIsEnabled(GLenum cap)
 {
     return gles_api_ts->driver->IsEnabled(cap);
+}
+
+void yagl_host_glGenTransformFeedbacks(const GLuint *ids, int32_t ids_count)
+{
+    int i;
+
+    for (i = 0; i < ids_count; ++i) {
+        GLuint global_name;
+
+        gles_api_ts->driver->GenTransformFeedbacks(1, &global_name);
+
+        yagl_gles_object_add(ids[i],
+                             global_name,
+                             yagl_get_ctx_id(),
+                             &yagl_gles_transform_feedback_destroy);
+    }
+}
+
+void yagl_host_glBindTransformFeedback(GLenum target,
+    GLuint id)
+{
+    gles_api_ts->driver->BindTransformFeedback(target,
+                                               yagl_gles_object_get(id));
+}
+
+void yagl_host_glBeginTransformFeedback(GLenum primitiveMode)
+{
+    gles_api_ts->driver->BeginTransformFeedback(primitiveMode);
+}
+
+void yagl_host_glEndTransformFeedback(void)
+{
+    gles_api_ts->driver->EndTransformFeedback();
+}
+
+void yagl_host_glPauseTransformFeedback(void)
+{
+    gles_api_ts->driver->PauseTransformFeedback();
+}
+
+void yagl_host_glResumeTransformFeedback(void)
+{
+    gles_api_ts->driver->ResumeTransformFeedback();
+}
+
+void yagl_host_glTransformFeedbackVaryings(GLuint program,
+    const GLchar *varyings, int32_t varyings_count,
+    GLenum bufferMode)
+{
+    const char **strings;
+    int32_t num_strings = 0;
+
+    strings = yagl_transport_get_out_string_array(varyings,
+                                                  varyings_count,
+                                                  &num_strings);
+
+    gles_api_ts->driver->TransformFeedbackVaryings(yagl_gles_object_get(program),
+                                                   num_strings,
+                                                   strings,
+                                                   bufferMode);
+
+    g_free(strings);
+}
+
+void yagl_host_glGetTransformFeedbackVaryings(GLuint program,
+    GLsizei *sizes, int32_t sizes_maxcount, int32_t *sizes_count,
+    GLenum *types, int32_t types_maxcount, int32_t *types_count)
+{
+    GLuint obj = yagl_gles_object_get(program);
+    int32_t i;
+
+    if (sizes_maxcount != types_maxcount) {
+        return;
+    }
+
+    for (i = 0; i < sizes_maxcount; ++i) {
+        GLsizei length = -1;
+        GLchar c[2];
+
+        gles_api_ts->driver->GetTransformFeedbackVarying(obj,
+                                                         i, sizeof(c), &length,
+                                                         &sizes[i], &types[i],
+                                                         c);
+
+        if (length <= 0) {
+            sizes[i] = 0;
+            types[i] = 0;
+        }
+    }
+
+    *sizes_count = *types_count = sizes_maxcount;
 }
 
 void yagl_host_glDeleteObjects(const GLuint *objects, int32_t objects_count)

@@ -217,6 +217,15 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, BindBufferRange, glBindBufferRange);
         YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformBlockName, glGetActiveUniformBlockName);
         YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformBlockiv, glGetActiveUniformBlockiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GenTransformFeedbacks, glGenTransformFeedbacks);
+        YAGL_GLES_OGL_GET_PROC(driver, BindTransformFeedback, glBindTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, BeginTransformFeedback, glBeginTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, EndTransformFeedback, glEndTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, PauseTransformFeedback, glPauseTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, ResumeTransformFeedback, glResumeTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteTransformFeedbacks, glDeleteTransformFeedbacks);
+        YAGL_GLES_OGL_GET_PROC(driver, TransformFeedbackVaryings, glTransformFeedbackVaryings);
+        YAGL_GLES_OGL_GET_PROC(driver, GetTransformFeedbackVarying, glGetTransformFeedbackVarying);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;
