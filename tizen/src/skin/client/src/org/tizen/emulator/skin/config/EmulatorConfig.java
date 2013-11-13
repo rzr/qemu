@@ -275,7 +275,7 @@ public class EmulatorConfig {
 		}
 
 		if (skinProperties.containsKey(
-				SkinPropertiesConstants.WINDOW_Y ) == true) {
+				SkinPropertiesConstants.WINDOW_Y) == true) {
 			String y = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_Y);
 			int yy = 0;
 

@@ -1,7 +1,7 @@
 /**
- * 
+ * Display State Data
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,10 +36,9 @@ import java.io.IOException;
  *
  */
 public class DisplayStateData extends AbstractSendData {
-	
 	int scale;
 	short rotation;
-	
+
 	public DisplayStateData(int scale, short rotation) {
 		this.scale = scale;
 		this.rotation = rotation;
@@ -59,7 +58,7 @@ public class DisplayStateData extends AbstractSendData {
 		builder.append(", rotation=");
 		builder.append(rotation);
 		builder.append("]");
+
 		return builder.toString();
 	}
-
 }

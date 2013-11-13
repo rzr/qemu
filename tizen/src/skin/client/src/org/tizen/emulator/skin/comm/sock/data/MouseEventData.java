@@ -1,7 +1,7 @@
 /**
- * 
+ * Mouse Event Data
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,7 +36,6 @@ import java.io.IOException;
  *
  */
 public class MouseEventData extends AbstractSendData {
-
 	int mouseButton;
 	int eventType;
 	int hostX;
@@ -85,7 +84,7 @@ public class MouseEventData extends AbstractSendData {
 		builder.append(", id=");
 		builder.append(z);
 		builder.append("]");
+
 		return builder.toString();
 	}
-
 }

@@ -1,5 +1,5 @@
 /**
- * initial data for Qemu
+ * Initial Data From Skin
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -82,7 +82,7 @@ public class StartData extends AbstractSendData {
 		builder.append(", blank guide=");
 		builder.append(isBlankGuide);
 		builder.append("]");
+
 		return builder.toString();
 	}
-
 }

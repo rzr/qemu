@@ -1,7 +1,7 @@
 /**
- * 
+ * Abstract Data
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -38,41 +38,39 @@ import java.io.IOException;
  *
  */
 public abstract class AbstractSendData implements ISendData {
-	
 	private DataOutputStream dos;
 	private ByteArrayOutputStream bao;
 	
 	public AbstractSendData() {
 		bao = new ByteArrayOutputStream();
-		dos = new DataOutputStream( bao );
+		dos = new DataOutputStream(bao);
 	}
-	
+
 	protected abstract void write() throws IOException ;
-	
+
 	@Override
 	public byte[] serialize() throws IOException {
 		write();
 		return bao.toByteArray();
 	}
 
-	protected void writeShort ( int val ) throws IOException {
-		dos.writeShort( val );
+	protected void writeShort(int val) throws IOException {
+		dos.writeShort(val);
 	}
 
-	protected void writeInt ( int val ) throws IOException {
-		dos.writeInt( val );
+	protected void writeInt(int val) throws IOException {
+		dos.writeInt(val);
 	}
 
-	protected void writeLong ( long val ) throws IOException {
-		dos.writeLong( val );
+	protected void writeLong(long val) throws IOException {
+		dos.writeLong(val);
 	}
 
-	protected void writeBoolean ( boolean val ) throws IOException {
-		dos.writeBoolean( val );
+	protected void writeBoolean(boolean val) throws IOException {
+		dos.writeBoolean(val);
 	}
 
-	protected void writeChar ( char val ) throws IOException {
-		dos.writeChar( val );
+	protected void writeChar(char val) throws IOException {
+		dos.writeChar(val);
 	}
-
 }

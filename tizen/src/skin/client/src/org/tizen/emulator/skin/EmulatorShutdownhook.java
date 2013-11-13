@@ -1,7 +1,7 @@
 /**
- * 
+ * Shutdown Hook
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -53,5 +53,4 @@ public class EmulatorShutdownhook extends Thread {
 		logger.info("EmulatorShutdownhook run by a signal.");
 		communicator.terminate();
 	}
-	
 }
