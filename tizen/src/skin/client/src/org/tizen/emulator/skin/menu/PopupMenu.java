@@ -1,5 +1,5 @@
 /**
- * Pop-up Menu
+ * Right Click Popup Menu
  *
  * Copyright (C) 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -49,7 +49,6 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class PopupMenu {
-	public static final String ECP_NAME = "Control &Panel";
 	public static final String TOPMOST_MENUITEM_NAME = "&Always On Top";
 	public static final String ROTATE_MENUITEM_NAME = "&Rotate";
 	public static final String SCALE_MENUITEM_NAME = "&Scale";
@@ -62,6 +61,7 @@ public class PopupMenu {
 	public static final String ABOUT_MENUITEM_NAME = "&About";
 	public static final String FORCECLOSE_MENUITEM_NAME = "&Force Close";
 	public static final String SDBSHELL_MENUITEM_NAME = "S&hell";
+	public static final String ECP_MENUITEM_NAME = "Control &Panel";
 	public static final String CLOSE_MENUITEM_NAME = "&Close";
 
 	private static Logger logger =
@@ -75,12 +75,11 @@ public class PopupMenu {
 
 	/* default menu items */
 	public MenuItem detailInfoItem;
-	public MenuItem ecpItem;
 	public MenuItem onTopItem;
 	public MenuItem rotateItem;
 	public MenuItem scaleItem;
 	public MenuItem keyWindowItem; /* key window menu */
-	public MenuItem advancedItem;
+	public MenuItem advancedItem; /* advanced menu */
 	public MenuItem screenshotItem;
 	public MenuItem hostKeyboardItem;
 	public MenuItem kbdOnItem;
@@ -90,6 +89,7 @@ public class PopupMenu {
 	public MenuItem aboutItem;
 	public MenuItem forceCloseItem;
 	public MenuItem shellItem;
+	public MenuItem ecpItem;
 	public MenuItem closeItem;
 
 	/**
@@ -115,121 +115,59 @@ public class PopupMenu {
 
 	private void addMenuItems(final Menu menu) {
 		PopupMenuType itemProperties = config.getDbiContents().getPopupMenu();
-		String menuName = "N/A";
 
 		/* Emulator detail info menu */
-		detailInfoItem = new MenuItem(menu, SWT.PUSH);
-		String emulatorName = SkinUtil.makeEmulatorName(config);
-		detailInfoItem.setText(emulatorName);
-		detailInfoItem.setImage(imageRegistry.getIcon(IconName.DETAIL_INFO));
+		createDetailInfoItem(menu);
 
-		SelectionAdapter detailInfoListener = skin.createDetailInfoMenu();
-		detailInfoItem.addSelectionListener(detailInfoListener);
-		
 		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* Always on top menu */
 		if (SwtUtil.isMacPlatform() == false) { /* not supported on mac */
-			MenuItemType topmostMenuType = (itemProperties != null) ?
-					itemProperties.getTopmostItem() : null;
-
-			menuName = (topmostMenuType != null &&
-					topmostMenuType.getItemName().isEmpty() == false) ?
-							topmostMenuType.getItemName() : TOPMOST_MENUITEM_NAME;
-
-			if (topmostMenuType == null ||
-					(topmostMenuType != null && topmostMenuType.isVisible() == true)) {
-				onTopItem = new MenuItem(menu, SWT.CHECK);
-				onTopItem.setText(menuName);
-				onTopItem.setSelection(skin.isOnTop);
-
-				SelectionAdapter topMostListener = skin.createTopMostMenu();
-				onTopItem.addSelectionListener(topMostListener);
+			if (itemProperties == null || itemProperties.getTopmostItem() == null) {
+				createOnTopItem(menu, TOPMOST_MENUITEM_NAME);
+			} else {
+				MenuItemType topmostMenuType = itemProperties.getTopmostItem();
+				if (topmostMenuType.isVisible() == true) {
+					createOnTopItem(menu, (topmostMenuType.getItemName().isEmpty()) ?
+							TOPMOST_MENUITEM_NAME : topmostMenuType.getItemName());
+				}
 			}
 		}
 
 		/* Rotate menu */
-		MenuItemType rotationMenuType = (itemProperties != null) ?
-				itemProperties.getRotateItem() : null;
-
-		menuName = (rotationMenuType != null &&
-				rotationMenuType.getItemName().isEmpty() == false) ?
-						rotationMenuType.getItemName() : ROTATE_MENUITEM_NAME;
-
-		if (rotationMenuType == null ||
-				(rotationMenuType != null && rotationMenuType.isVisible() == true)) {
-			rotateItem = new MenuItem(menu, SWT.CASCADE);
-			rotateItem.setText(menuName);
-			rotateItem.setImage(imageRegistry.getIcon(IconName.ROTATE));
-
-			Menu rotateSubMenu = skin.createRotateMenu();
-			rotateItem.setMenu(rotateSubMenu);
+		if (itemProperties == null || itemProperties.getRotateItem() == null) {
+			createRotateItem(menu, ROTATE_MENUITEM_NAME);
+		} else {
+			MenuItemType rotationMenuType = itemProperties.getRotateItem();
+			if (rotationMenuType.isVisible() == true) {
+				createRotateItem(menu, (rotationMenuType.getItemName().isEmpty()) ?
+						ROTATE_MENUITEM_NAME : rotationMenuType.getItemName());
+			}
 		}
 
 		/* Scale menu */
-		MenuItemType scaleMenuType = (itemProperties != null) ?
-				itemProperties.getScaleItem() : null;
-
-		menuName = (scaleMenuType != null &&
-				scaleMenuType.getItemName().isEmpty() == false) ?
-						scaleMenuType.getItemName() : SCALE_MENUITEM_NAME;
-
-		if (scaleMenuType == null ||
-				(scaleMenuType != null && scaleMenuType.isVisible() == true)) {
-			scaleItem = new MenuItem(menu, SWT.CASCADE);
-			scaleItem.setText(menuName);
-			scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
-
-			Menu scaleSubMenu = skin.createScaleMenu();
-			scaleItem.setMenu(scaleSubMenu);
+		if (itemProperties == null || itemProperties.getScaleItem() == null) {
+			createScaleItem(menu, SCALE_MENUITEM_NAME);
+		} else {
+			MenuItemType scaleMenuType = itemProperties.getScaleItem();
+			if (scaleMenuType.isVisible() == true) {
+				createScaleItem(menu, (scaleMenuType.getItemName().isEmpty()) ?
+						SCALE_MENUITEM_NAME : scaleMenuType.getItemName());
+			}
 		}
 
-		new MenuItem(menu, SWT.SEPARATOR);
+		if (onTopItem != null || rotateItem != null || scaleItem != null) {
+			new MenuItem(menu, SWT.SEPARATOR);
+		}
 
 		/* Key Window menu */
-		MenuItemType keywindowMenuType = (itemProperties != null) ?
-				itemProperties.getKeywindowItem() : null;
-
-		menuName = (keywindowMenuType != null &&
-				keywindowMenuType.getItemName().isEmpty() == false) ?
-						keywindowMenuType.getItemName() : KEYWINDOW_MENUITEM_NAME;
-
-		if (keywindowMenuType == null ||
-				(keywindowMenuType != null && keywindowMenuType.isVisible() == true)) {
-			/* load Key Window layout */
-			String pathLayoutRoot = skin.skinInfo.getSkinPath() +
-					File.separator + SpecialKeyWindow.KEYWINDOW_LAYOUT_ROOT;
-			ArrayList<File> layouts = getKeyWindowLayoutList(pathLayoutRoot);
-
-			if (layouts != null) {
-				keyWindowItem = new MenuItem(menu, SWT.CASCADE);
-				keyWindowItem.setText(menuName);
-
-				Menu keywindowSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
-				{
-					MenuItem keywindowLayoutItem = null;
-
-					for (int i = 0; i < layouts.size(); i++) {
-						File dir = layouts.get(i);
-
-						keywindowLayoutItem = new MenuItem(keywindowSubMenu, SWT.CHECK);
-						keywindowLayoutItem.setText(dir.getName());
-						if (i == 0) {
-							keywindowLayoutItem.setSelection(true);
-						}
-
-						SelectionAdapter keywindowLayoutListener = skin.createKeyWindowMenu();
-						keywindowLayoutItem.addSelectionListener(keywindowLayoutListener);
-					}
-				}
-				keyWindowItem.setMenu(keywindowSubMenu);
-			} else {
-				keyWindowItem = new MenuItem(menu, SWT.CHECK);
-				keyWindowItem.setText(menuName);
-				keyWindowItem.setSelection(skin.isKeyWindow);
-
-				SelectionAdapter keyWindowListener = skin.createKeyWindowMenu();
-				keyWindowItem.addSelectionListener(keyWindowListener);
+		if (itemProperties == null || itemProperties.getKeywindowItem() == null) {
+			createKeyWindowItem(menu, KEYWINDOW_MENUITEM_NAME);
+		} else {
+			MenuItemType keywindowMenuType = itemProperties.getKeywindowItem();
+			if (keywindowMenuType.isVisible() == true) {
+				createKeyWindowItem(menu, (keywindowMenuType.getItemName().isEmpty()) ?
+						KEYWINDOW_MENUITEM_NAME : keywindowMenuType.getItemName());
 			}
 		}
 
@@ -241,31 +179,16 @@ public class PopupMenu {
 		Menu advancedSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
 		{
 			/* Screen shot menu */
-			screenshotItem = new MenuItem(advancedSubMenu, SWT.PUSH);
-			screenshotItem.setText(SCREENSHOT_MENUITEM_NAME);
-			screenshotItem.setImage(imageRegistry.getIcon(IconName.SCREENSHOT));
+			createScreenShotItem(advancedSubMenu, SCREENSHOT_MENUITEM_NAME);
 
-			SelectionAdapter screenshotListener = skin.createScreenshotMenu();
-			screenshotItem.addSelectionListener(screenshotListener);
-
-			/* VirtIO Keyboard Menu */
+			/* VirtIO Keyboard menu */
 			hostKeyboardItem = new MenuItem(advancedSubMenu, SWT.CASCADE);
 			hostKeyboardItem.setText(HOSTKEYBOARD_MENUITEM_NAME);
 			hostKeyboardItem.setImage(imageRegistry.getIcon(IconName.HOST_KEYBOARD));
 
-			Menu hostKeyboardSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+			Menu hostKeyboardSubMenu = new Menu(advancedSubMenu.getShell(), SWT.DROP_DOWN);
 			{
-				kbdOnItem = new MenuItem(hostKeyboardSubMenu, SWT.RADIO);
-				kbdOnItem.setText("On");
-				kbdOnItem.setSelection(skin.isOnKbd);
-
-				kbdOffItem = new MenuItem(hostKeyboardSubMenu, SWT.RADIO);
-				kbdOffItem.setText("Off");
-				kbdOffItem.setSelection(!skin.isOnKbd);
-
-				SelectionAdapter hostKeyboardListener = skin.createHostKeyboardMenu();
-				kbdOnItem.addSelectionListener(hostKeyboardListener);
-				kbdOffItem.addSelectionListener(hostKeyboardListener);
+				createKeyboardOnOffItem(hostKeyboardSubMenu);
 			}
 			hostKeyboardItem.setMenu(hostKeyboardSubMenu);
 
@@ -275,13 +198,10 @@ public class PopupMenu {
 				diagnosisItem.setText(DIAGNOSIS_MENUITEM_NAME);
 				diagnosisItem.setImage(imageRegistry.getIcon(IconName.DIAGNOSIS));
 
-				Menu diagnosisSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+				Menu diagnosisSubMenu = new Menu(advancedSubMenu.getShell(), SWT.DROP_DOWN);
 				{
-					ramdumpItem = new MenuItem(diagnosisSubMenu, SWT.PUSH);
-					ramdumpItem.setText(RAMDUMP_MENUITEM_NAME);
-
-					SelectionAdapter ramdumpListener = skin.createRamdumpMenu();
-					ramdumpItem.addSelectionListener(ramdumpListener);
+					/* Ram Dump menu */
+					createRamDumpItem(diagnosisSubMenu, RAMDUMP_MENUITEM_NAME);
 				}
 				diagnosisItem.setMenu(diagnosisSubMenu);
 			}
@@ -289,62 +209,183 @@ public class PopupMenu {
 			new MenuItem(advancedSubMenu, SWT.SEPARATOR);
 
 			/* About menu */
-			aboutItem = new MenuItem(advancedSubMenu, SWT.PUSH);
-			aboutItem.setText(ABOUT_MENUITEM_NAME);
-			aboutItem.setImage(imageRegistry.getIcon(IconName.ABOUT));
-
-			SelectionAdapter aboutListener = skin.createAboutMenu();
-			aboutItem.addSelectionListener(aboutListener);
+			createAboutItem(advancedSubMenu, ABOUT_MENUITEM_NAME);
 
 			new MenuItem(advancedSubMenu, SWT.SEPARATOR);
 
 			/* Force close menu */
-			forceCloseItem = new MenuItem(advancedSubMenu, SWT.PUSH);
-			forceCloseItem.setText(FORCECLOSE_MENUITEM_NAME);
-			forceCloseItem.setImage(imageRegistry.getIcon(IconName.FORCE_CLOSE));
-
-			SelectionAdapter forceCloseListener = skin.createForceCloseMenu();
-			forceCloseItem.addSelectionListener(forceCloseListener);
+			createForceCloseItem(advancedSubMenu, FORCECLOSE_MENUITEM_NAME);
 		}
 		advancedItem.setMenu(advancedSubMenu);
 
 		/* Shell menu */
-		MenuItemType shellMenuType = (itemProperties != null) ?
-				itemProperties.getShellItem() : null;
-
-		menuName = (shellMenuType != null &&
-				shellMenuType.getItemName().isEmpty() == false) ?
-						shellMenuType.getItemName() : SDBSHELL_MENUITEM_NAME;
-
-		if (shellMenuType == null ||
-				(shellMenuType != null && shellMenuType.isVisible() == true)) {
-			shellItem = new MenuItem(menu, SWT.PUSH);
-			shellItem.setText(menuName);
-			shellItem.setImage(imageRegistry.getIcon(IconName.SHELL));
-
-			SelectionAdapter shellListener = skin.createShellMenu();
-			shellItem.addSelectionListener(shellListener);
+		if (itemProperties == null || itemProperties.getShellItem() == null) {
+			createShellItem(menu, SDBSHELL_MENUITEM_NAME);
+		} else {
+			MenuItemType shellMenuType = itemProperties.getShellItem();
+			if (shellMenuType.isVisible() == true) {
+				createShellItem(menu, (shellMenuType.getItemName().isEmpty()) ?
+						SDBSHELL_MENUITEM_NAME : shellMenuType.getItemName());
+			}
 		}
 
 		new MenuItem(menu, SWT.SEPARATOR);
 
-		ecpItem = new MenuItem(menu, SWT.PUSH);
-		{
-			ecpItem.setText(ECP_NAME);
-			ecpItem.setImage(imageRegistry.getIcon(IconName.ECP));
+		/* Emulator Control Panel menu */
+		createEcpItem(menu, ECP_MENUITEM_NAME);
 
-			SelectionAdapter ecpListener = skin.createEcpMenu();
-			ecpItem.addSelectionListener(ecpListener);
-		}
-		
 		new MenuItem(menu, SWT.SEPARATOR);
-		
+
 		/* Close menu */
+		createCloseItem(menu, CLOSE_MENUITEM_NAME);
+	}
+
+	private void createDetailInfoItem(Menu menu) {
+		detailInfoItem = new MenuItem(menu, SWT.PUSH);
+		detailInfoItem.setText(SkinUtil.makeEmulatorName(config));
+		detailInfoItem.setImage(imageRegistry.getIcon(IconName.DETAIL_INFO));
+
+		SelectionAdapter detailInfoListener = skin.createDetailInfoMenuListener();
+		detailInfoItem.addSelectionListener(detailInfoListener);
+	}
+
+	private void createOnTopItem(Menu menu, String name) {
+		onTopItem = new MenuItem(menu, SWT.CHECK);
+		onTopItem.setText(name);
+		onTopItem.setSelection(skin.isOnTop);
+
+		SelectionAdapter topMostListener = skin.createTopMostMenuListener();
+		onTopItem.addSelectionListener(topMostListener);
+	}
+
+	private void createRotateItem(Menu menu, String name) {
+		rotateItem = new MenuItem(menu, SWT.CASCADE);
+		rotateItem.setText(name);
+		rotateItem.setImage(imageRegistry.getIcon(IconName.ROTATE));
+
+		Menu rotateSubMenu = skin.createRotateMenu();
+		rotateItem.setMenu(rotateSubMenu);
+	}
+
+	private void createScaleItem(Menu menu, String name) {
+		scaleItem = new MenuItem(menu, SWT.CASCADE);
+		scaleItem.setText(name);
+		scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
+
+		Menu scaleSubMenu = skin.createScaleMenuListener();
+		scaleItem.setMenu(scaleSubMenu);
+	}
+
+	private void createKeyWindowItem(Menu menu, String name) {
+		/* load Key Window layout */
+		String pathLayoutRoot = skin.skinInfo.getSkinPath() +
+				File.separator + SpecialKeyWindow.KEYWINDOW_LAYOUT_ROOT;
+		ArrayList<File> layouts = getKeyWindowLayoutList(pathLayoutRoot);
+
+		if (layouts != null) {
+			keyWindowItem = new MenuItem(menu, SWT.CASCADE);
+			keyWindowItem.setText(name);
+
+			Menu keywindowSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+			{
+				MenuItem keywindowLayoutItem = null;
+
+				for (int i = 0; i < layouts.size(); i++) {
+					File dir = layouts.get(i);
+
+					keywindowLayoutItem = new MenuItem(keywindowSubMenu, SWT.CHECK);
+					keywindowLayoutItem.setText(dir.getName());
+					if (i == 0) {
+						keywindowLayoutItem.setSelection(true);
+					}
+
+					keywindowLayoutItem.addSelectionListener(
+							skin.createKeyWindowMenuListener());
+				}
+			}
+			keyWindowItem.setMenu(keywindowSubMenu);
+		} else { /* general key window */
+			keyWindowItem = new MenuItem(menu, SWT.CHECK);
+			keyWindowItem.setText(name);
+			keyWindowItem.setSelection(skin.isKeyWindow);
+
+			keyWindowItem.addSelectionListener(skin.createKeyWindowMenuListener());
+		}
+	}
+
+	private void createScreenShotItem(Menu menu, String name) {
+		screenshotItem = new MenuItem(menu, SWT.PUSH);
+		screenshotItem.setText(name);
+		screenshotItem.setImage(imageRegistry.getIcon(IconName.SCREENSHOT));
+
+		SelectionAdapter screenshotListener = skin.createScreenshotMenuListener();
+		screenshotItem.addSelectionListener(screenshotListener);
+	}
+
+	private void createKeyboardOnOffItem(Menu menu) {
+		kbdOnItem = new MenuItem(menu, SWT.RADIO);
+		kbdOnItem.setText("On");
+		kbdOnItem.setSelection(skin.isOnKbd);
+
+		kbdOffItem = new MenuItem(menu, SWT.RADIO);
+		kbdOffItem.setText("Off");
+		kbdOffItem.setSelection(!skin.isOnKbd);
+
+		SelectionAdapter hostKeyboardListener = skin.createHostKeyboardMenuListener();
+		kbdOnItem.addSelectionListener(hostKeyboardListener);
+		kbdOffItem.addSelectionListener(hostKeyboardListener);
+	}
+
+	private void createRamDumpItem(Menu menu, String name) {
+		ramdumpItem = new MenuItem(menu, SWT.PUSH);
+		ramdumpItem.setText(name);
+
+		SelectionAdapter ramdumpListener = skin.createRamdumpMenuListener();
+		ramdumpItem.addSelectionListener(ramdumpListener);
+	}
+
+	private void createAboutItem(Menu menu, String name) {
+		aboutItem = new MenuItem(menu, SWT.PUSH);
+		aboutItem.setText(name);
+		aboutItem.setImage(imageRegistry.getIcon(IconName.ABOUT));
+
+		SelectionAdapter aboutListener = skin.createAboutMenuListener();
+		aboutItem.addSelectionListener(aboutListener);
+	}
+
+	private void createForceCloseItem(Menu menu, String name) {
+		forceCloseItem = new MenuItem(menu, SWT.PUSH);
+		forceCloseItem.setText(name);
+		forceCloseItem.setImage(imageRegistry.getIcon(IconName.FORCE_CLOSE));
+
+		SelectionAdapter forceCloseListener = skin.createForceCloseMenuListener();
+		forceCloseItem.addSelectionListener(forceCloseListener);
+	}
+
+	private void createShellItem(Menu menu, String name) {
+		shellItem = new MenuItem(menu, SWT.PUSH);
+		shellItem.setText(name);
+		shellItem.setImage(imageRegistry.getIcon(IconName.SHELL));
+
+		SelectionAdapter shellListener = skin.createShellMenuListener();
+		shellItem.addSelectionListener(shellListener);
+	}
+
+	private void createEcpItem(Menu menu, String name) {
+		ecpItem = new MenuItem(menu, SWT.PUSH);
+		ecpItem.setText(name);
+		ecpItem.setImage(imageRegistry.getIcon(IconName.ECP));
+
+		SelectionAdapter ecpListener = skin.createEcpMenuListener();
+		ecpItem.addSelectionListener(ecpListener);
+	}
+
+	private void createCloseItem(Menu menu, String name) {
 		closeItem = new MenuItem(menu, SWT.PUSH);
-		closeItem.setText(CLOSE_MENUITEM_NAME);
+		closeItem.setText(name);
 		closeItem.setImage(imageRegistry.getIcon(IconName.CLOSE));
 
-		SelectionAdapter closeListener = skin.createCloseMenu();
+		SelectionAdapter closeListener = skin.createCloseMenuListener();
 		closeItem.addSelectionListener(closeListener);
 	}
 

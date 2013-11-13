@@ -1287,7 +1287,7 @@ public class EmulatorSkin {
 	}
 
 	/* for popup menu */
-	public SelectionAdapter createDetailInfoMenu() {
+	public SelectionAdapter createDetailInfoMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1304,7 +1304,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createTopMostMenu() {
+	public SelectionAdapter createTopMostMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1443,7 +1443,7 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	public Menu createScaleMenu() {
+	public Menu createScaleMenuListener() {
 		Menu menu = new Menu(shell, SWT.DROP_DOWN);
 
 		final List<MenuItem> scaleList = new ArrayList<MenuItem>();
@@ -1516,7 +1516,7 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	public SelectionAdapter createKeyWindowMenu() {
+	public SelectionAdapter createKeyWindowMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1579,7 +1579,7 @@ public class EmulatorSkin {
 		return listener;
 	};
 
-	public SelectionAdapter createRamdumpMenu() {
+	public SelectionAdapter createRamdumpMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1602,7 +1602,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createScreenshotMenu() {
+	public SelectionAdapter createScreenshotMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1615,7 +1615,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createHostKeyboardMenu() {
+	public SelectionAdapter createHostKeyboardMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1645,7 +1645,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createAboutMenu() {
+	public SelectionAdapter createAboutMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1659,7 +1659,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createForceCloseMenu() {
+	public SelectionAdapter createForceCloseMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1690,7 +1690,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createShellMenu() {
+	public SelectionAdapter createShellMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1756,7 +1756,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createEcpMenu() {
+	public SelectionAdapter createEcpMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1849,7 +1849,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createCloseMenu() {
+	public SelectionAdapter createCloseMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
