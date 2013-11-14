@@ -1,3 +1,6 @@
+* 1.6.4
+- added schema for host keyboard menu
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-11-14
 * 1.6.3
 - modify protobuf protocol
 == Munkyu Im <munkyu.im@samsung.com> 2013-11-12
